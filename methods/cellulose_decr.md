@@ -21,7 +21,7 @@ physiology (see [`biological_interpretation.md`](biological_interpretation.md)).
 
 | Input | Use |
 | --- | --- |
-| `trait-visualization/study_trait_profile_study_metadata.tsv` | Defines the 5,829 retained human profiles (one per study, experiment and direction) and their non-MediaDive annotation totals. Its condition and body-site columns are **not** used (see below). |
+| `trait-visualization/study_trait_profile_study_metadata.tsv` | Defines the 5,629 retained human profiles (one per study, experiment and direction) and their non-MediaDive annotation totals. Its condition and body-site columns are **not** used (see below). |
 | `data/derived/experiments.tsv` | Condition, body site and host of each experiment. It matches `data/raw/full_dump.csv` for all 4,435 experiments. |
 | `data/derived/study_trait_profiles_wide.tsv` | Annotation counts per profile, used for the cellulose annotation share. |
 | `data/derived/bugsigdb_taxa.tsv` | Taxa reported in each signature. |
@@ -191,7 +191,7 @@ ways:
 | U3 | Uniform draws from the annotated taxa ever reported decreased in feces | set sizes |
 | U4 | A random trait placed on as many of the conditions' decreased feces taxa as the observed union | each condition's decreased feces taxa |
 | U5 | Draws from U3, the taxa an observed set can contain, weighted by the number of other feces decreased studies reporting the taxon plus 0.5 | set sizes, reporting prevalence |
-| U6 | Whole study signatures: 49, 19 and 31 distinct feces-decreased studies drawn from all 646, each giving one of its condition-level signatures | number of studies, taxa reported together |
+| U6 | Whole study signatures: 47, 19 and 31 distinct feces-decreased studies drawn from all 629, each giving one of its condition-level signatures | number of studies, taxa reported together |
 | U6 size-matched | U6 draws whose three set sizes are each within max(2, 10%) of the observed | as U6, plus set sizes |
 | Within-condition reference | Random subsets of each condition's own decreased feces taxa (any trait), of the observed set sizes | each condition's decreased feces taxa, set sizes |
 
@@ -206,7 +206,7 @@ exact convolution for the 3-way core.
 
 **Monte Carlo tests.** Each Monte Carlo null makes 100,000 draws with a fixed
 seed, and p = (1 + draws at least as extreme) / (1 + draws). The size-matched U6
-keeps the 5,284 of its draws that match. An earlier U5 drew from U2, which
+keeps the 5,557 of its draws that match. An earlier U5 drew from U2, which
 includes 27 taxa never reported decreased in feces. Those taxa can never appear
 in an observed set, so that version overstated significance (#567).
 

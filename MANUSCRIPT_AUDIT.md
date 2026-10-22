@@ -33,7 +33,7 @@ Both analysis arms are now computed on the **same corpus**: BugSigDBExports **v1
 | Analysis A (composition / paired contrast) | `clustered-heatmap-generation` (CultureBotAI/microbial-trait-profiling); manuscript pins the v1.3.1 regeneration `3afeecd`. Safe despite later commits: no analysis artifact has changed since, and the tip `c519f52` (2026-09-02) is documentation-only |
 | Analysis B (ORA / enrichment) | `enrichment-analysis-heatmap-cluster` (CultureBotAI/microbial-trait-profiling) @ `c75744a` (2026-08-31 v1.3.1 rerun; also the tip). Note: authored `Zoo Bot <bot@example.com>`, landed without an issue or PR — see #155 |
 | KG-Microbe inputs | unchanged since April: `merged-kg_edges.tsv` md5 `555ecf5ba5d89288cdc44e368375374f`, `merged-kg_nodes.tsv` md5 `dd76b4656f9341db25a7c4afa96cd58e` |
-| Corpus | 5,829 profiles in the wide matrix, of which 4,670 (= 2 × 2,335 pairs) enter the paired analyses; 4,517 testable; 315 traits tested by A, 267 significant traits exported by B |
+| Corpus | 5,829 profiles in the wide matrix (post-#742 `count_input_16s_wms_v1`: 5,629 human profiles from 1,047 studies), of which 4,670 (= 2 × 2,335 pairs across 959 studies; post-#742: 4,514 = 2 × 2,257 pairs across 932 studies) enter the paired analyses; 4,517 testable (post-#742: 4,438 testable nonzero profiles across 2,202 pairs and 922 studies); 315 traits tested by A (post-#742: 313 traits tested by A), 267 significant traits exported by B (post-#742: 268 significant traits) |
 
 The two committed artifacts every number below reproduces from:
 `trait-visualization/trait-profile-investigation/trait_profile_paired_contrast_trait_stats.tsv`
@@ -106,9 +106,9 @@ of A's per-trait dz (sampling variance taken as 1/n).
 1. ~~Apply the 204 → 261 correction family (above) to the Google Doc and derived md.~~ ✅ Done
    2026-09-08.
 2. Corpus numbers in the text still say 12,108 profiles / 4,784 pairs. The 12,108 was a
-   wide-matrix profile count, so the correction chain is: **12,108 → 5,829** profiles in the
+   wide-matrix profile count, so the correction chain at `3afeecd` / `c75744a` was: **12,108 → 5,829** profiles in the
    matrix, of which **4,670** (= 2 × **2,335** pairs, replacing 4,784) enter the paired analyses,
-   **4,517** testable. Substituting 4,670 for 12,108 directly would compare a paired subset to a
+   **4,517** testable; under the post-#742 `count_input_16s_wms_v1` rerun (`8b280a3`), those become **5,629** human profiles in the wide matrix (1,047 studies), of which **4,514** (= 2 × **2,257** pairs across 932 studies) enter the paired analyses and **4,438** are testable nonzero profiles (2,202 pairs across 922 studies). Substituting 4,670 (or 4,514) for 12,108 directly would compare a paired subset to a
    matrix total.
 3. Figures 2B/4A/4B are one ORA run behind — regenerated from `45c0593`, not `c75744a`.
 4. Table 1 provenance strings reference the pre-rename output paths (see #155: the `_p0.001`

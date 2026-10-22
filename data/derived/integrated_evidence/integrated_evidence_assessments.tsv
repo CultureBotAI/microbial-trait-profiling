@@ -31,6 +31,9 @@ issue	assessment	scope_kind	scope	state_variable	state_value
 #182	calibration_status	scenario	injected_2x_study_flip	replicates_completed	400
 #182	calibration_status	scenario	injected_4x_study_flip	replicates_completed	400
 #182	calibration_status	note	calibration_status_rule	rule	per procedure: 'fail' if any judged criterion failed; otherwise 'pass' only if every judged criterion passed; otherwise 'not_certified' (a criterion was insufficient_budget or not_evaluated). 'reported' rows and passing sanity checks are not judged; a failing sanity check is.
+#182	calibration_status	source	calibration_status	path	/Users/marcin/Documents/VIMSS/ontology/KG-Hub/KG-Microbe/microbial-trait-profiling/.claude/worktrees/rerun-main/data/derived/calibration/calibration_status.json
+#182	calibration_status	source	calibration_status	sha256	3007e1f1d3b91189b945abf088e16209635515741ba30e9ecbb266a27b1159a3
+#182	calibration_status	source	calibration_status	corpus_binding	matched
 #184	coverage_status	procedure	aggregated_profile_support	status_applied	pending #184
 #184	coverage_status	procedure	composition_arm_native_transformed_contrast	status_applied	pending #184
 #184	coverage_status	procedure	enrichment_arm_profile_hypergeometric	status_applied	pending #184
@@ -38,32 +41,35 @@ issue	assessment	scope_kind	scope	state_variable	state_value
 #184	coverage_status	procedure	guild_mcnemar	status_applied	pending #184
 #184	coverage_status	procedure	log_ratio_sign_test	status_applied	pending #184
 #184	coverage_status	procedure	oxygen_guild_cell_support	status_applied	pending #184
-#188	orientation_status	procedure	aggregated_profile_support	status_applied	contrast population described, hand_review_disagreements_unresolved, no verdict #188
-#188	orientation_status	procedure	composition_arm_native_transformed_contrast	status_applied	contrast population described, hand_review_disagreements_unresolved, no verdict #188
-#188	orientation_status	procedure	enrichment_arm_profile_hypergeometric	status_applied	contrast population described, hand_review_disagreements_unresolved, no verdict #188
-#188	orientation_status	procedure	fraction_sign_test	status_applied	contrast population described, hand_review_disagreements_unresolved, no verdict #188
-#188	orientation_status	procedure	guild_mcnemar	status_applied	contrast population described, hand_review_disagreements_unresolved, no verdict #188
-#188	orientation_status	procedure	log_ratio_sign_test	status_applied	contrast population described, hand_review_disagreements_unresolved, no verdict #188
-#188	orientation_status	procedure	oxygen_guild_cell_support	status_applied	contrast population described, hand_review_disagreements_unresolved, no verdict #188
-#188	orientation_status	contrast_class	disease_vs_healthy:native	experiments	1047
-#188	orientation_status	contrast_class	disease_vs_healthy:native	studies	592
+#188	orientation_status	procedure	aggregated_profile_support	status_applied	contrast population described, hand_review_agreed, no verdict #188
+#188	orientation_status	procedure	composition_arm_native_transformed_contrast	status_applied	contrast population described, hand_review_agreed, no verdict #188
+#188	orientation_status	procedure	enrichment_arm_profile_hypergeometric	status_applied	contrast population described, hand_review_agreed, no verdict #188
+#188	orientation_status	procedure	fraction_sign_test	status_applied	contrast population described, hand_review_agreed, no verdict #188
+#188	orientation_status	procedure	guild_mcnemar	status_applied	contrast population described, hand_review_agreed, no verdict #188
+#188	orientation_status	procedure	log_ratio_sign_test	status_applied	contrast population described, hand_review_agreed, no verdict #188
+#188	orientation_status	procedure	oxygen_guild_cell_support	status_applied	contrast population described, hand_review_agreed, no verdict #188
+#188	orientation_status	contrast_class	disease_vs_healthy:native	experiments	1005
+#188	orientation_status	contrast_class	disease_vs_healthy:native	studies	574
 #188	orientation_status	contrast_class	disease_vs_healthy:reversed	experiments	1
 #188	orientation_status	contrast_class	disease_vs_healthy:reversed	studies	1
-#188	orientation_status	contrast_class	disease_vs_disease:not_applicable	experiments	252
-#188	orientation_status	contrast_class	disease_vs_disease:not_applicable	studies	166
-#188	orientation_status	contrast_class	treatment_exposure:not_applicable	experiments	351
-#188	orientation_status	contrast_class	treatment_exposure:not_applicable	studies	169
-#188	orientation_status	contrast_class	longitudinal_timepoint:not_applicable	experiments	200
-#188	orientation_status	contrast_class	longitudinal_timepoint:not_applicable	studies	105
-#188	orientation_status	contrast_class	other:not_applicable	experiments	321
-#188	orientation_status	contrast_class	other:not_applicable	studies	123
-#188	orientation_status	contrast_class	unresolved:not_applicable	experiments	163
-#188	orientation_status	contrast_class	unresolved:not_applicable	studies	102
+#188	orientation_status	contrast_class	disease_vs_disease:not_applicable	experiments	236
+#188	orientation_status	contrast_class	disease_vs_disease:not_applicable	studies	160
+#188	orientation_status	contrast_class	treatment_exposure:not_applicable	experiments	345
+#188	orientation_status	contrast_class	treatment_exposure:not_applicable	studies	166
+#188	orientation_status	contrast_class	longitudinal_timepoint:not_applicable	experiments	189
+#188	orientation_status	contrast_class	longitudinal_timepoint:not_applicable	studies	97
+#188	orientation_status	contrast_class	other:not_applicable	experiments	320
+#188	orientation_status	contrast_class	other:not_applicable	studies	128
+#188	orientation_status	contrast_class	unresolved:not_applicable	experiments	161
+#188	orientation_status	contrast_class	unresolved:not_applicable	studies	100
 #188	orientation_status	validation	hand_review	reviewed_experiments	60
-#188	orientation_status	validation	hand_review	agreed	58
-#188	orientation_status	validation	hand_review	disagreed	2
-#188	orientation_status	validation	hand_review	validation_status	hand_review_disagreements_unresolved
-#188	orientation_status	note	classifier_version	version	contrast-orientation-v4
+#188	orientation_status	validation	hand_review	agreed	60
+#188	orientation_status	validation	hand_review	disagreed	0
+#188	orientation_status	validation	hand_review	validation_status	hand_review_agreed
+#188	orientation_status	note	classifier_version	version	contrast-orientation-v5
+#188	orientation_status	source	orientation_status	path	/Users/marcin/Documents/VIMSS/ontology/KG-Hub/KG-Microbe/microbial-trait-profiling/.claude/worktrees/rerun-main/data/derived/contrast_orientation/contrast_orientation_provenance.json
+#188	orientation_status	source	orientation_status	sha256	12de1b522e2bf963aacb2a5467a1115957abd7a537d730d5acafa40ad43e9889
+#188	orientation_status	source	orientation_status	corpus_binding	matched
 #183	sensitivity_status	procedure	aggregated_profile_support	status_applied	pending #183
 #183	sensitivity_status	procedure	composition_arm_native_transformed_contrast	status_applied	pending #183
 #183	sensitivity_status	procedure	enrichment_arm_profile_hypergeometric	status_applied	pending #183
@@ -112,7 +118,7 @@ issue	assessment	scope_kind	scope	state_variable	state_value
 #183	sensitivity_status	family	S4:six_fractions	tested	6
 #183	sensitivity_status	family	S5:sixty_triple_ratios	correction	Benjamini-Yekutieli
 #183	sensitivity_status	family	S5:sixty_triple_ratios	family_size	60
-#183	sensitivity_status	family	S5:sixty_triple_ratios	q_at_or_below_0.05	13
+#183	sensitivity_status	family	S5:sixty_triple_ratios	q_at_or_below_0.05	12
 #183	sensitivity_status	family	S5:sixty_triple_ratios	scenario	S5_triple_common_support
 #183	sensitivity_status	family	S5:sixty_triple_ratios	tested	60
 #183	sensitivity_status	family	S6:fifteen_ratios	correction	Benjamini-Yekutieli

@@ -2703,8 +2703,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "trait count / sum of all retained non-MediaDive trait counts in the profile"
             ),
             "z": (
-                "per-trait z-score of log1p(1000 * annotation share) over all 5,829 retained "
-                "profiles"
+                f"per-trait z-score of log1p(1000 * annotation share) over all "
+                f"{len(corpus.profiles):,} retained profiles"
             ),
             "paired_delta": "annotation share in the increased profile minus the decreased profile",
             "down": "the decreased signature has the larger annotation share (paired delta < 0)",

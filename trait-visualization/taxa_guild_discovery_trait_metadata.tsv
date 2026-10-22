@@ -1,91 +1,91 @@
 	trait_id	bugsigdb_taxa_support	study_profile_support	display_label	column_label	object_name	object_category	display_category	selection_score
-METPO:1000872	METPO:1000872	76	5539	"non-spore forming
-METPO:1000872"	non-spore forming METPO:1000872	non-spore forming	biolink:PhenotypicQuality	PhenotypicQuality	655.1009832603411
-METPO:1000603	METPO:1000603	76	5438	"anaerobic
-METPO:1000603"	anaerobic METPO:1000603	anaerobic	biolink:PhenotypicQuality	PhenotypicQuality	653.7026379561449
-METPO:1000615	METPO:1000615	71	5463	"mesophilic
-METPO:1000615"	mesophilic METPO:1000615	mesophilic	biolink:PhenotypicQuality	PhenotypicQuality	611.0214844887944
-METPO:1000703	METPO:1000703	63	5408	"non motile
-METPO:1000703"	non motile METPO:1000703	non motile	biolink:PhenotypicQuality	PhenotypicQuality	541.5366292478999
-METPO:1000667	METPO:1000667	59	5404	"bacillus shaped
-METPO:1000667"	bacillus shaped METPO:1000667	bacillus shaped	biolink:PhenotypicQuality	PhenotypicQuality	507.10970407432524
-METPO:1000698	METPO:1000698	54	5293	"gram positive
-METPO:1000698"	gram positive METPO:1000698	gram positive	biolink:PhenotypicQuality	PhenotypicQuality	463.01378667050056
-METPO:1000699	METPO:1000699	42	5212	"gram negative
-METPO:1000699"	gram negative METPO:1000699	gram negative	biolink:PhenotypicQuality	PhenotypicQuality	359.47425296026046
-METPO:1000429	METPO:1000429	29	4904	"GC low
-METPO:1000429"	GC low METPO:1000429	GC low	biolink:PhenotypicQuality	PhenotypicQuality	246.44230078798444
-METPO:1000432	METPO:1000432	24	4753	"GC high
-METPO:1000432"	GC high METPO:1000432	GC high	biolink:PhenotypicQuality	PhenotypicQuality	203.20179955008336
-METPO:1000668	METPO:1000668	24	4409	"coccus shaped
-METPO:1000668"	coccus shaped METPO:1000668	coccus shaped	biolink:PhenotypicQuality	PhenotypicQuality	201.3991192425814
-METPO:1000607	METPO:1000607	22	4018	"obligately anaerobic
-METPO:1000607"	obligately anaerobic METPO:1000607	obligately anaerobic	biolink:PhenotypicQuality	PhenotypicQuality	182.5733446778824
-METPO:1000604	METPO:1000604	19	4496	"microaerophilic
-METPO:1000604"	microaerophilic METPO:1000604	microaerophilic	biolink:PhenotypicQuality	PhenotypicQuality	159.81214994864345
-METPO:1000608	METPO:1000608	17	4491	"facultatively aerobic
-METPO:1000608"	facultatively aerobic METPO:1000608	facultatively aerobic	biolink:PhenotypicQuality	PhenotypicQuality	142.9709063695917
-METPO:1000702	METPO:1000702	14	4591	"motile
-METPO:1000702"	motile METPO:1000702	motile	biolink:PhenotypicQuality	PhenotypicQuality	118.04899313199164
-METPO:1002005	METPO:1002005	14	4550	"Fermentation
-METPO:1002005"	Fermentation METPO:1002005	Fermentation	biolink:OntologyClass	OntologyClass	117.92343175223299
-METPO:1000624	METPO:1000624	14	4196	"non halophilic
-METPO:1000624"	non halophilic METPO:1000624	non halophilic	biolink:PhenotypicQuality	PhenotypicQuality	116.78975368667027
-METPO:1000681	METPO:1000681	11	4548	"rod shaped
-METPO:1000681"	rod shaped METPO:1000681	rod shaped	biolink:PhenotypicQuality	PhenotypicQuality	92.64928978327004
-METPO:1000602	METPO:1000602	11	4283	"aerobic
-METPO:1000602"	aerobic METPO:1000602	aerobic	biolink:PhenotypicQuality	PhenotypicQuality	91.98906674724404
-METPO:2000006|CHEBI:17234	METPO:2000006|CHEBI:17234	9	4526	"D-glucose
-CHEBI:17234"	uses as carbon source: D-glucose CHEBI:17234 [METPO:2000006]	D-glucose	biolink:SmallMolecule	SmallMolecule	75.76033272692362
-METPO:2000006|CHEBI:17716	METPO:2000006|CHEBI:17716	9	4225	"lactose
-CHEBI:17716"	uses as carbon source: lactose CHEBI:17716 [METPO:2000006]	lactose	biolink:SmallMolecule	SmallMolecule	75.14110078358402
-METPO:1000431	METPO:1000431	9	3864	"GC mid2
-METPO:1000431"	GC mid2 METPO:1000431	GC mid2	biolink:PhenotypicQuality	PhenotypicQuality	74.33745264919371
-METPO:1000446	METPO:1000446	8	4531	"temperature optimum mid4
-METPO:1000446"	temperature optimum mid4 METPO:1000446	temperature optimum mid4	biolink:PhenotypicQuality	PhenotypicQuality	67.35134897718318
-METPO:2000006|CHEBI:17306	METPO:2000006|CHEBI:17306	8	4357	"maltose
-CHEBI:17306"	uses as carbon source: maltose CHEBI:17306 [METPO:2000006]	maltose	biolink:SmallMolecule	SmallMolecule	67.03814812403652
-METPO:2000006|CHEBI:16634	METPO:2000006|CHEBI:16634	8	4069	"raffinose
-CHEBI:16634"	uses as carbon source: raffinose CHEBI:16634 [METPO:2000006]	raffinose	biolink:SmallMolecule	SmallMolecule	66.49118622749313
-METPO:2000006|CHEBI:22599	METPO:2000006|CHEBI:22599	8	4029	"arabinose
-CHEBI:22599"	uses as carbon source: arabinose CHEBI:22599 [METPO:2000006]	arabinose	biolink:SmallMolecule	SmallMolecule	66.41217323952583
-METPO:2000006|CHEBI:18222	METPO:2000006|CHEBI:18222	8	3867	"xylose
-CHEBI:18222"	uses as carbon source: xylose CHEBI:18222 [METPO:2000006]	xylose	biolink:SmallMolecule	SmallMolecule	66.08394285258548
-METPO:2000103|pathways:nitrate_reduction	METPO:2000103|pathways:nitrate_reduction	8	3776	"nitrate reduction
-nitrate_reduction"	capable of: nitrate_reduction pathways:nitrate_reduction [METPO:2000103]	nitrate_reduction	biolink:BiologicalProcess	BiologicalProcess	65.89348258169966
-METPO:2000006|CHEBI:37684	METPO:2000006|CHEBI:37684	7	4361	"mannose
-CHEBI:37684"	uses as carbon source: mannose CHEBI:37684 [METPO:2000006]	mannose	biolink:SmallMolecule	SmallMolecule	58.664801627331016
-METPO:2000006|CHEBI:17992	METPO:2000006|CHEBI:17992	7	4250	"sucrose
-CHEBI:17992"	uses as carbon source: sucrose CHEBI:17992 [METPO:2000006]	sucrose	biolink:SmallMolecule	SmallMolecule	58.484366698511536
-METPO:1000885	METPO:1000885	7	3749	"cell length medium
-METPO:1000885"	cell length medium METPO:1000885	cell length medium	biolink:PhenotypicQuality	PhenotypicQuality	57.6065778327512
-METPO:1000456	METPO:1000456	6	4374	"pH optimum mid1
-METPO:1000456"	pH optimum mid1 METPO:1000456	pH optimum mid1	biolink:PhenotypicQuality	PhenotypicQuality	50.301970792750296
-METPO:2000006|CHEBI:17057	METPO:2000006|CHEBI:17057	6	4098	"cellobiose
-CHEBI:17057"	uses as carbon source: cellobiose CHEBI:17057 [METPO:2000006]	cellobiose	biolink:SmallMolecule	SmallMolecule	49.91098992302602
-METPO:2000006|CHEBI:17814	METPO:2000006|CHEBI:17814	6	4012	"D-salicin
-CHEBI:17814"	uses as carbon source: D-salicin CHEBI:17814 [METPO:2000006]	D-salicin	biolink:SmallMolecule	SmallMolecule	49.783766221601496
-METPO:1000871	METPO:1000871	6	3775	"spore forming
-METPO:1000871"	spore forming METPO:1000871	spore forming	biolink:PhenotypicQuality	PhenotypicQuality	49.41852316359235
-METPO:2000103|GO:0045493	METPO:2000103|GO:0045493	6	3443	"xylan catabolic process
-GO:0045493"	capable of: xylan catabolic process GO:0045493 [METPO:2000103]	xylan catabolic process	biolink:BiologicalProcess	BiologicalProcess	48.86633319328573
-METPO:1000623	METPO:1000623	6	3424	"moderately halophilic
-METPO:1000623"	moderately halophilic METPO:1000623	moderately halophilic	biolink:PhenotypicQuality	PhenotypicQuality	48.83314050417795
-METPO:2000006|CHEBI:26546	METPO:2000006|CHEBI:26546	6	3288	"rhamnose
-CHEBI:26546"	uses as carbon source: rhamnose CHEBI:26546 [METPO:2000006]	rhamnose	biolink:SmallMolecule	SmallMolecule	48.590033077134336
-METPO:1000889	METPO:1000889	5	4254	"cell width medium
-METPO:1000889"	cell width medium METPO:1000889	cell width medium	biolink:PhenotypicQuality	PhenotypicQuality	41.77925020503737
-METPO:2000006|CHEBI:27082	METPO:2000006|CHEBI:27082	5	3975	"trehalose
-CHEBI:27082"	uses as carbon source: trehalose CHEBI:27082 [METPO:2000006]	trehalose	biolink:SmallMolecule	SmallMolecule	41.44015783888232
-METPO:1000644	METPO:1000644	5	3291	"heterotrophic
-METPO:1000644"	heterotrophic METPO:1000644	heterotrophic	biolink:PhenotypicQuality	PhenotypicQuality	40.496252808984806
-METPO:2000103|GO:0030245	METPO:2000103|GO:0030245	5	2963	"cellulose catabolic process
-GO:0030245"	capable of: cellulose catabolic process GO:0030245 [METPO:2000103]	cellulose catabolic process	biolink:BiologicalProcess	BiologicalProcess	39.971474932079886
-METPO:1000453	METPO:1000453	4	4463	"temperature range mid4
-METPO:1000453"	temperature range mid4 METPO:1000453	temperature range mid4	biolink:PhenotypicQuality	PhenotypicQuality	33.61520201624459
-METPO:1000887	METPO:1000887	4	4055	"cell width very small
-METPO:1000887"	cell width very small METPO:1000887	cell width very small	biolink:PhenotypicQuality	PhenotypicQuality	33.23181018108408
-METPO:1000688	METPO:1000688	4	3932	"coccobacillus shaped
-METPO:1000688"	coccobacillus shaped METPO:1000688	coccobacillus shaped	biolink:PhenotypicQuality	PhenotypicQuality	33.10863108972724
-METPO:2000006|CHEBI:29864	METPO:2000006|CHEBI:29864	4	3855	"mannitol
-CHEBI:29864"	uses as carbon source: mannitol CHEBI:29864 [METPO:2000006]	mannitol	biolink:SmallMolecule	SmallMolecule	33.029542622921745
+METPO:1000872	METPO:1000872	77	5442	"non-spore forming
+METPO:1000872"	non-spore forming METPO:1000872	non-spore forming	biolink:PhenotypicQuality	PhenotypicQuality	662.3605956994335
+METPO:1000603	METPO:1000603	76	5345	"anaerobic
+METPO:1000603"	anaerobic METPO:1000603	anaerobic	biolink:PhenotypicQuality	PhenotypicQuality	652.3918961491136
+METPO:1000615	METPO:1000615	70	5374	"mesophilic
+METPO:1000615"	mesophilic METPO:1000615	mesophilic	biolink:PhenotypicQuality	PhenotypicQuality	601.2659697097105
+METPO:1000703	METPO:1000703	65	5314	"non motile
+METPO:1000703"	non motile METPO:1000703	non motile	biolink:PhenotypicQuality	PhenotypicQuality	557.5887389004432
+METPO:1000667	METPO:1000667	58	5307	"bacillus shaped
+METPO:1000667"	bacillus shaped METPO:1000667	bacillus shaped	biolink:PhenotypicQuality	PhenotypicQuality	497.4642829362217
+METPO:1000698	METPO:1000698	53	5203	"gram positive
+METPO:1000698"	gram positive METPO:1000698	gram positive	biolink:PhenotypicQuality	PhenotypicQuality	453.53069050051704
+METPO:1000699	METPO:1000699	43	5124	"gram negative
+METPO:1000699"	gram negative METPO:1000699	gram negative	biolink:PhenotypicQuality	PhenotypicQuality	367.3010895722842
+METPO:1000429	METPO:1000429	28	4826	"GC low
+METPO:1000429"	GC low METPO:1000429	GC low	biolink:PhenotypicQuality	PhenotypicQuality	237.4954521984938
+METPO:1000668	METPO:1000668	25	4338	"coccus shaped
+METPO:1000668"	coccus shaped METPO:1000668	coccus shaped	biolink:PhenotypicQuality	PhenotypicQuality	209.38497964495878
+METPO:1000432	METPO:1000432	24	4679	"GC high
+METPO:1000432"	GC high METPO:1000432	GC high	biolink:PhenotypicQuality	PhenotypicQuality	202.8252813338806
+METPO:1000607	METPO:1000607	21	3959	"obligately anaerobic
+METPO:1000607"	obligately anaerobic METPO:1000607	obligately anaerobic	biolink:PhenotypicQuality	PhenotypicQuality	173.96398538921906
+METPO:1000604	METPO:1000604	19	4415	"microaerophilic
+METPO:1000604"	microaerophilic METPO:1000604	microaerophilic	biolink:PhenotypicQuality	PhenotypicQuality	159.46680217118168
+METPO:1000608	METPO:1000608	17	4411	"facultatively aerobic
+METPO:1000608"	facultatively aerobic METPO:1000608	facultatively aerobic	biolink:PhenotypicQuality	PhenotypicQuality	142.66541746634766
+METPO:1002005	METPO:1002005	15	4486	"Fermentation
+METPO:1002005"	Fermentation METPO:1002005	Fermentation	biolink:OntologyClass	OntologyClass	126.13409408963976
+METPO:1000624	METPO:1000624	13	4126	"non halophilic
+METPO:1000624"	non halophilic METPO:1000624	non halophilic	biolink:PhenotypicQuality	PhenotypicQuality	108.22897838678357
+METPO:1000702	METPO:1000702	12	4516	"motile
+METPO:1000702"	motile METPO:1000702	motile	biolink:PhenotypicQuality	PhenotypicQuality	100.98724002785525
+METPO:1000681	METPO:1000681	12	4473	"rod shaped
+METPO:1000681"	rod shaped METPO:1000681	rod shaped	biolink:PhenotypicQuality	PhenotypicQuality	100.8724577046009
+METPO:1000602	METPO:1000602	11	4208	"aerobic
+METPO:1000602"	aerobic METPO:1000602	aerobic	biolink:PhenotypicQuality	PhenotypicQuality	91.79478405647629
+METPO:1000431	METPO:1000431	10	3801	"GC mid2
+METPO:1000431"	GC mid2 METPO:1000431	GC mid2	biolink:PhenotypicQuality	PhenotypicQuality	82.43282523048376
+METPO:1000446	METPO:1000446	9	4460	"temperature optimum mid4
+METPO:1000446"	temperature optimum mid4 METPO:1000446	temperature optimum mid4	biolink:PhenotypicQuality	PhenotypicQuality	75.62815411615438
+METPO:2000006|CHEBI:17234	METPO:2000006|CHEBI:17234	9	4455	"D-glucose
+CHEBI:17234"	uses as carbon source: D-glucose CHEBI:17234 [METPO:2000006]	D-glucose	biolink:SmallMolecule	SmallMolecule	75.61806103446409
+METPO:2000006|CHEBI:17716	METPO:2000006|CHEBI:17716	9	4157	"lactose
+CHEBI:17716"	uses as carbon source: lactose CHEBI:17716 [METPO:2000006]	lactose	biolink:SmallMolecule	SmallMolecule	74.99510521576163
+METPO:2000006|CHEBI:16634	METPO:2000006|CHEBI:16634	9	4004	"raffinose
+CHEBI:16634"	uses as carbon source: raffinose CHEBI:16634 [METPO:2000006]	raffinose	biolink:SmallMolecule	SmallMolecule	74.65768973552213
+METPO:2000006|CHEBI:37684	METPO:2000006|CHEBI:37684	8	4292	"mannose
+CHEBI:37684"	uses as carbon source: mannose CHEBI:37684 [METPO:2000006]	mannose	biolink:SmallMolecule	SmallMolecule	66.91792854579649
+METPO:2000006|CHEBI:17306	METPO:2000006|CHEBI:17306	8	4290	"maltose
+CHEBI:17306"	uses as carbon source: maltose CHEBI:17306 [METPO:2000006]	maltose	biolink:SmallMolecule	SmallMolecule	66.9142006799322
+METPO:2000006|CHEBI:22599	METPO:2000006|CHEBI:22599	8	3964	"arabinose
+CHEBI:22599"	uses as carbon source: arabinose CHEBI:22599 [METPO:2000006]	arabinose	biolink:SmallMolecule	SmallMolecule	66.28208907255159
+METPO:2000006|CHEBI:18222	METPO:2000006|CHEBI:18222	8	3804	"xylose
+CHEBI:18222"	uses as carbon source: xylose CHEBI:18222 [METPO:2000006]	xylose	biolink:SmallMolecule	SmallMolecule	65.95257016236629
+METPO:2000103|pathways:nitrate_reduction	METPO:2000103|pathways:nitrate_reduction	8	3717	"nitrate reduction
+nitrate_reduction"	capable of: nitrate_reduction pathways:nitrate_reduction [METPO:2000103]	nitrate_reduction	biolink:BiologicalProcess	BiologicalProcess	65.76752934625111
+METPO:1000456	METPO:1000456	7	4309	"pH optimum mid1
+METPO:1000456"	pH optimum mid1 METPO:1000456	pH optimum mid1	biolink:PhenotypicQuality	PhenotypicQuality	58.58085228168456
+METPO:2000006|CHEBI:17992	METPO:2000006|CHEBI:17992	7	4182	"sucrose
+CHEBI:17992"	uses as carbon source: sucrose CHEBI:17992 [METPO:2000006]	sucrose	biolink:SmallMolecule	SmallMolecule	58.371487800095395
+METPO:1000885	METPO:1000885	7	3691	"cell length medium
+METPO:1000885"	cell length medium METPO:1000885	cell length medium	biolink:PhenotypicQuality	PhenotypicQuality	57.4974651693592
+METPO:2000006|CHEBI:17057	METPO:2000006|CHEBI:17057	6	4034	"cellobiose
+CHEBI:17057"	uses as carbon source: cellobiose CHEBI:17057 [METPO:2000006]	cellobiose	biolink:SmallMolecule	SmallMolecule	49.81656948422429
+METPO:2000006|CHEBI:17814	METPO:2000006|CHEBI:17814	6	3951	"D-salicin
+CHEBI:17814"	uses as carbon source: D-salicin CHEBI:17814 [METPO:2000006]	D-salicin	biolink:SmallMolecule	SmallMolecule	49.691862353206545
+METPO:2000103|GO:0045493	METPO:2000103|GO:0045493	6	3394	"xylan catabolic process
+GO:0045493"	capable of: xylan catabolic process GO:0045493 [METPO:2000103]	xylan catabolic process	biolink:BiologicalProcess	BiologicalProcess	48.78035423995678
+METPO:1000623	METPO:1000623	6	3364	"moderately halophilic
+METPO:1000623"	moderately halophilic METPO:1000623	moderately halophilic	biolink:PhenotypicQuality	PhenotypicQuality	48.72709945247297
+METPO:2000006|CHEBI:26546	METPO:2000006|CHEBI:26546	6	3233	"rhamnose
+CHEBI:26546"	uses as carbon source: rhamnose CHEBI:26546 [METPO:2000006]	rhamnose	biolink:SmallMolecule	SmallMolecule	48.488850240822316
+METPO:1000889	METPO:1000889	5	4191	"cell width medium
+METPO:1000889"	cell width medium METPO:1000889	cell width medium	biolink:PhenotypicQuality	PhenotypicQuality	41.70466613000439
+METPO:1000887	METPO:1000887	5	3991	"cell width very small
+METPO:1000887"	cell width very small METPO:1000887	cell width very small	biolink:PhenotypicQuality	PhenotypicQuality	41.46023818715677
+METPO:2000006|CHEBI:27082	METPO:2000006|CHEBI:27082	5	3914	"trehalose
+CHEBI:27082"	uses as carbon source: trehalose CHEBI:27082 [METPO:2000006]	trehalose	biolink:SmallMolecule	SmallMolecule	41.36285304212451
+METPO:1000871	METPO:1000871	5	3721	"spore forming
+METPO:1000871"	spore forming METPO:1000871	spore forming	biolink:PhenotypicQuality	PhenotypicQuality	41.110082186010985
+METPO:2000103|GO:0030245	METPO:2000103|GO:0030245	5	2922	"cellulose catabolic process
+GO:0030245"	capable of: cellulose catabolic process GO:0030245 [METPO:2000103]	cellulose catabolic process	biolink:BiologicalProcess	BiologicalProcess	39.90182882555623
+METPO:1000453	METPO:1000453	4	4390	"temperature range mid4
+METPO:1000453"	temperature range mid4 METPO:1000453	temperature range mid4	biolink:PhenotypicQuality	PhenotypicQuality	33.54924908224687
+METPO:1000688	METPO:1000688	4	3871	"coccobacillus shaped
+METPO:1000688"	coccobacillus shaped METPO:1000688	coccobacillus shaped	biolink:PhenotypicQuality	PhenotypicQuality	33.04610579358587
+METPO:2000006|CHEBI:29864	METPO:2000006|CHEBI:29864	4	3797	"mannitol
+CHEBI:29864"	uses as carbon source: mannitol CHEBI:29864 [METPO:2000006]	mannitol	biolink:SmallMolecule	SmallMolecule	32.968919565488925
+METPO:1000644	METPO:1000644	4	3248	"heterotrophic
+METPO:1000644"	heterotrophic METPO:1000644	heterotrophic	biolink:PhenotypicQuality	PhenotypicQuality	32.3444101426764

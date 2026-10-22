@@ -1,2 +1,2 @@
 trait_id	trait_name	slug	base_color	paired_q_value	paired_p_value	paired_mean_increased_minus_decreased	paired_direction
-METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	1.686007827805464e-09	5.352405802557029e-12	0.1863100713633421	trait enriched in increased profiles
+METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	9.253285415445715e-09	2.956321218992242e-11	0.1862991850074555	trait enriched in increased profiles

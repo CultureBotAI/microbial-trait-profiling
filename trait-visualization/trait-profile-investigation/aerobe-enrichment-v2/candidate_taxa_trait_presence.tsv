@@ -4,7 +4,7 @@ NCBITaxon:573	Klebsiella pneumoniae	species	3	True	20	True	8	True	1
 NCBITaxon:1328	Streptococcus anginosus	species	3	True	1	True	1	True	4
 NCBITaxon:84112	Eggerthella lenta	species	1	False	0	False	0	True	1
 NCBITaxon:33033	Parvimonas micra	species	1	False	0	False	0	True	1
-NCBITaxon:208479	Enterocloster bolteae	species	0	False	0	False	0	False	0
+NCBITaxon:208479	Enterocloster bolteae		0	False	0	False	0	False	0
 NCBITaxon:851	Fusobacterium nucleatum	species	0	False	0	False	0	False	0
 NCBITaxon:837	Porphyromonas gingivalis		0	False	0	False	0	False	0
 NCBITaxon:28131	Prevotella intermedia	species	0	False	0	False	0	False	0

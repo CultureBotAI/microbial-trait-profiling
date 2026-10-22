@@ -20,8 +20,8 @@ def study_flip_draw_order(profiles_df: pd.DataFrame) -> list[str]:
     ``mtp.calibration`` and ``mtp.screen_calibration`` call ``drop_zero_total_pairs()``
     before drawing study flips, leaving the studies that have at least one paired
     experiment with positive retained non-MediaDive trait totals on both sides
-    (939 studies on the canonical corpus). ``JedCompositionAdapter`` retains all
-    959 paired studies in its corpus. Drawing in ``repr``-sorted order over the
+    (922 studies on the canonical corpus). ``JedCompositionAdapter`` retains all
+    932 paired studies in its corpus. Drawing in ``repr``-sorted order over the
     non-zero-total paired studies first, followed by any zero-total-only paired
     studies and any unpaired studies, guarantees that every study shared with
     ``calibration_flip_assignments.tsv`` receives the identical flip assignment

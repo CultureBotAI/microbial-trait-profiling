@@ -1,37 +1,36 @@
 analysis	trait_id	trait_label	trait_slug	trait_color	focus_direction	raw_condition	condition	condition_rollup_rule	profile_count	study_count	focus_profile_count	selected_guild_enriched_profile_count
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Parkinson's disease	Neurologic / cognitive disease	neurologic/cognitive condition group	276	59	143	145
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Colorectal cancer	Colorectal neoplasia	colorectal neoplasia condition group	198	55	105	105
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Parkinson's disease	Neurologic / cognitive disease	neurologic/cognitive condition group	271	57	141	142
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Colorectal cancer	Colorectal neoplasia	colorectal neoplasia condition group	198	55	105	104
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Obesity	Metabolic / endocrine	metabolic/endocrine condition group	173	37	90	69
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	COVID-19	Infectious disease	infectious-disease condition group	141	33	72	81
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Irritable bowel syndrome	GI / digestive disease	gi/digestive condition group	99	17	50	56
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Antimicrobial agent	Antibiotic / antimicrobial exposure	antibiotic/antimicrobial condition group	98	22	45	47
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	COVID-19	Infectious disease	infectious-disease condition group	123	31	61	79
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Irritable bowel syndrome	GI / digestive disease	gi/digestive condition group	98	16	50	56
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Population	Population / social covariates	population/social-covariate condition group	96	4	52	74
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	HIV infection	Infectious disease	infectious-disease condition group	94	30	47	47
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Diet	Diet / nutrition / supplements	diet/nutrition/supplement condition group	94	18	54	33
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Chronic constipation	GI / digestive disease	gi/digestive condition group	89	15	48	38
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Antimicrobial agent	Antibiotic / antimicrobial exposure	antibiotic/antimicrobial condition group	93	20	43	44
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Chronic constipation	GI / digestive disease	gi/digestive condition group	89	15	48	37
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Human papilloma virus infection	Infectious disease	infectious-disease condition group	81	22	45	56
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Gastric cancer	Cancer / neoplasia	cancer/neoplasia condition group	75	14	38	48
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Gestational diabetes	Metabolic / endocrine	metabolic/endocrine condition group	70	12	37	34
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Polycystic ovary syndrome	Metabolic / endocrine	metabolic/endocrine condition group	64	14	34	26
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Type II diabetes mellitus	Metabolic / endocrine	metabolic/endocrine condition group	62	21	32	22
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Gastric cancer	Cancer / neoplasia	cancer/neoplasia condition group	67	13	34	48
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Gestational diabetes	Metabolic / endocrine	metabolic/endocrine condition group	67	12	35	34
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Type II diabetes mellitus	Metabolic / endocrine	metabolic/endocrine condition group	60	21	31	22
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Age	Age / development / sex	age/development/sex condition group	60	16	37	38
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Polycystic ovary syndrome	Metabolic / endocrine	metabolic/endocrine condition group	54	13	29	25
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Asthma	Respiratory / airway disease	respiratory/airway condition group	54	12	28	36
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Metabolic toxicity	Metabolic / endocrine	metabolic/endocrine condition group	53	1	26	35
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Schizophrenia	Psychiatric / behavioral health	psychiatric/behavioral condition group	52	17	25	21
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Metabolic toxicity	Metabolic / endocrine	metabolic/endocrine condition group	53	1	26	34
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Cervical glandular intraepithelial neoplasia	Reproductive / hormonal health	reproductive/hormonal condition group	50	12	30	30
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Dry eye syndrome	Ocular / eye disease	ocular/eye condition group	50	11	29	37
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Schizophrenia	Psychiatric / behavioral health	psychiatric/behavioral condition group	48	16	23	21
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Aging	Age / development / sex	age/development/sex condition group	48	5	27	24
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Lifestyle measurement	Activity / lifestyle score	activity/lifestyle-score condition group	47	7	28	8
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Diet measurement	Diet / nutrition / supplements	diet/nutrition/supplement condition group	47	6	17	8
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Rheumatoid arthritis	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	45	14	23	29
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Ulcerative colitis	Inflammatory bowel disease	ibd condition group	45	14	22	15
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Crohn's disease	Inflammatory bowel disease	ibd condition group	45	13	21	18
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Ovarian cancer	Cancer / neoplasia	cancer/neoplasia condition group	45	4	27	22
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Rheumatoid arthritis	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	43	13	22	27
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Ulcerative colitis	Inflammatory bowel disease	ibd condition group	43	13	21	13
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Endometriosis	Reproductive / hormonal health	reproductive/hormonal condition group	43	12	28	26
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Stroke	Stroke	stroke condition group	43	5	28	23
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Ovarian cancer	Cancer / neoplasia	cancer/neoplasia condition group	43	3	26	21
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Atopic eczema	Skin / hair disease	skin/hair condition group	40	9	23	26
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Ethnic group	Population / social covariates	population/social-covariate condition group	39	8	20	8
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Health study participation	Population / social covariates	population/social-covariate condition group	36	7	23	14
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Lifestyle measurement	Activity / lifestyle score	activity/lifestyle-score condition group	36	6	23	8
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Pancreatic carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	35	6	19	13
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Psoriasis	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	34	10	16	16
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Smoking behavior	Smoking / alcohol / drug use	smoking/alcohol/drug-use condition group	33	11	17	22
@@ -39,10 +38,8 @@ facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultativel
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Response to antiviral drug	Infectious disease	infectious-disease condition group	32	6	14	7
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Chronic kidney disease	Renal / urinary disease	renal/urinary condition group	31	10	16	18
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Breast cancer	Cancer / neoplasia	cancer/neoplasia condition group	31	8	16	17
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Response to transplant	Transplant / graft response	transplant/graft condition group	30	6	17	10
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Atopic asthma	Respiratory / airway disease	respiratory/airway condition group	30	2	16	27
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Atopic asthma	Respiratory / airway disease	respiratory/airway condition group	30	2	16	26
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Cesarean section	Pregnancy / neonatal	pregnancy/neonatal condition group	29	8	14	19
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Food allergy	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	28	9	14	16
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Multiple sclerosis	Neurologic / cognitive disease	neurologic/cognitive condition group	28	6	14	11
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Response to diet	Medication / clinical treatment	medication/clinical-treatment condition group	28	6	14	13
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Socioeconomic status	Population / social covariates	population/social-covariate condition group	27	11	14	12
@@ -51,39 +48,40 @@ facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultativel
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Phenylketonuria	Metabolic / endocrine	metabolic/endocrine condition group	27	2	13	23
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Helminthiasis	Infectious disease	infectious-disease condition group	27	1	12	14
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Smoking behaviour measurement	Smoking / alcohol / drug use	smoking/alcohol/drug-use condition group	27	1	14	17
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Response to transplant	Transplant / graft response	transplant/graft condition group	26	5	15	10
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Eczema	Skin / hair disease	skin/hair condition group	26	4	10	14
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Oral squamous cell carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	25	7	12	20
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Head and neck squamous cell carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	25	4	13	10
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Psoriasis vulgaris	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	25	1	14	13
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Non-alcoholic fatty liver disease	GI / digestive disease	gi/digestive condition group	24	7	12	7
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Age-related macular degeneration	Ocular / eye disease	ocular/eye condition group	24	5	12	12
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Food allergy	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	24	8	12	12
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Human immunodeficiency virus	Infectious disease	infectious-disease condition group	24	4	11	9
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Diarrhea	GI / digestive disease	gi/digestive condition group	24	3	12	15
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Constipation	GI / digestive disease	gi/digestive condition group	23	7	11	11
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Periodontitis	Oral / periodontal disease	oral/periodontal condition group	23	7	13	11
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Oral squamous cell carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	23	6	11	19
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Glaucoma	Ocular / eye disease	ocular/eye condition group	23	5	13	17
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Smoking status measurement	Smoking / alcohol / drug use	smoking/alcohol/drug-use condition group	23	5	13	15
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Smoking status measurement	Smoking / alcohol / drug use	smoking/alcohol/drug-use condition group	23	5	13	14
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Cervical cancer	Cancer / neoplasia	cancer/neoplasia condition group	22	7	11	16
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Treatment	Medication / clinical treatment	medication/clinical-treatment condition group	22	5	11	9
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Health study participation	Population / social covariates	population/social-covariate condition group	22	6	13	12
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Non-alcoholic fatty liver disease	GI / digestive disease	gi/digestive condition group	22	6	11	5
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Age-related macular degeneration	Ocular / eye disease	ocular/eye condition group	22	5	11	11
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Attention deficit-hyperactivity disorder	Neurologic / cognitive disease	neurologic/cognitive condition group	22	3	12	7
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Time	Sampling site / time protocol	sampling-site/time condition group	22	2	21	20
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Obstructive sleep apnea	Neurologic / cognitive disease	neurologic/cognitive condition group	22	1	10	10
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Delivery method	Pregnancy / neonatal	pregnancy/neonatal condition group	21	6	10	6
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Delivery method	Pregnancy / neonatal	pregnancy/neonatal condition group	20	5	9	6
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Response to allogeneic hematopoietic stem cell transplant	Blood / immune deficiency	blood/immune-deficiency condition group	20	5	9	10
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Squamous cell carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	20	5	9	18
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Head and neck squamous cell carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	20	4	10	10
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Health-related quality of life measurement	Disease activity / severity	disease-activity/severity condition group	20	4	10	8
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Treatment	Medication / clinical treatment	medication/clinical-treatment condition group	20	4	10	8
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Acute lymphoblastic leukemia	Cancer / neoplasia	cancer/neoplasia condition group	19	5	13	9
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Major depressive disorder	Psychiatric / behavioral health	psychiatric/behavioral condition group	19	5	9	7
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Major depressive disorder	Psychiatric / behavioral health	psychiatric/behavioral condition group	19	5	9	6
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Esophageal squamous cell carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	19	3	9	7
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Papillary thyroid carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	19	1	8	11
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Response to drug	Medication / clinical treatment	medication/clinical-treatment condition group	19	1	10	8
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Response to immunochemotherapy	Medication / clinical treatment	medication/clinical-treatment condition group	18	9	9	12
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Response to immunochemotherapy	Medication / clinical treatment	medication/clinical-treatment condition group	18	9	9	11
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Type I diabetes mellitus	Metabolic / endocrine	metabolic/endocrine condition group	18	6	8	6
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Bipolar disorder	Psychiatric / behavioral health	psychiatric/behavioral condition group	18	4	11	9
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Oral mucositis	Oral / periodontal disease	oral/periodontal condition group	18	3	10	16
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Waist circumference	Body composition / growth	body-composition/growth condition group	18	2	10	12
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Bacterial vaginosis	Reproductive / hormonal health	reproductive/hormonal condition group	17	4	10	2
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Alzheimer's disease	Neurologic / cognitive disease	neurologic/cognitive condition group	16	6	8	7
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Environmental exposure measurement	Diet / nutrition / supplements	diet/nutrition/supplement condition group	16	5	8	6
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Epilepsy	Neurologic / cognitive disease	neurologic/cognitive condition group	16	5	10	7
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Breastfeeding duration	Pregnancy / neonatal	pregnancy/neonatal condition group	16	2	8	9
@@ -93,24 +91,22 @@ facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultativel
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Cognitive impairment	Neurologic / cognitive disease	neurologic/cognitive condition group	15	4	8	9
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	HIV mother to child transmission	Infectious disease	infectious-disease condition group	15	1	7	9
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Viral disease	Infectious disease	infectious-disease condition group	15	1	8	4
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Alzheimer's disease	Neurologic / cognitive disease	neurologic/cognitive condition group	14	5	7	7
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Graft versus host disease	Transplant / graft response	transplant/graft condition group	14	5	7	4
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Autism	Neurologic / cognitive disease	neurologic/cognitive condition group	14	4	8	8
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Milk allergic reaction	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	14	4	8	4
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Gastric adenocarcinoma	Cancer / neoplasia	cancer/neoplasia condition group	14	3	8	10
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Dental caries	Oral / periodontal disease	oral/periodontal condition group	14	2	7	8
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Pregnancy	Pregnancy / neonatal	pregnancy/neonatal condition group	13	5	7	8
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Chronic obstructive pulmonary disease	Respiratory / airway disease	respiratory/airway condition group	13	4	7	9
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Microbiome	Microbiome phenotype	microbiome-phenotype condition group	13	4	8	8
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Urinary tract infection	Infectious disease	infectious-disease condition group	13	4	7	6
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Alcohol drinking	Smoking / alcohol / drug use	smoking/alcohol/drug-use condition group	13	3	6	11
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Colorectal carcinoma	Colorectal neoplasia	colorectal neoplasia condition group	13	3	6	9
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Unipolar depression	Psychiatric / behavioral health	psychiatric/behavioral condition group	13	3	7	7
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Unipolar depression	Psychiatric / behavioral health	psychiatric/behavioral condition group	13	3	7	6
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Chlamydia trachomatis	Infectious disease	infectious-disease condition group	13	2	7	12
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Response to ketogenic diet	Medication / clinical treatment	medication/clinical-treatment condition group	13	2	5	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Respiratory Syncytial Virus Infection	Infectious disease	infectious-disease condition group	13	1	7	10
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Acne	Skin / hair disease	skin/hair condition group	12	4	5	4
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Clinical treatment	Medication / clinical treatment	medication/clinical-treatment condition group	12	4	6	7
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Inflammatory bowel disease	Inflammatory bowel disease	ibd condition group	12	4	7	10
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Chronic hepatitis B virus infection	Infectious disease	infectious-disease condition group	12	3	6	7
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Diabetes mellitus	Metabolic / endocrine	metabolic/endocrine condition group	12	3	6	3
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Ischemic stroke	Stroke	stroke condition group	12	3	8	8
@@ -122,12 +118,13 @@ facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultativel
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Endometrial cancer	Cancer / neoplasia	cancer/neoplasia condition group	11	3	6	9
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Hepatocellular carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	11	3	5	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Response to vaccine	Medication / clinical treatment	medication/clinical-treatment condition group	11	2	6	8
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Acne	Skin / hair disease	skin/hair condition group	10	3	4	4
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Esophageal cancer	Cancer / neoplasia	cancer/neoplasia condition group	10	3	5	7
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Vitiligo	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	10	3	5	8
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Gingivitis	Oral / periodontal disease	oral/periodontal condition group	10	2	2	8
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Physical activity	Activity / lifestyle score	activity/lifestyle-score condition group	10	2	5	4
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Respiratory tract infectious disease	Infectious disease	infectious-disease condition group	10	2	6	4
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Spontaneous preterm birth	Pregnancy / neonatal	pregnancy/neonatal condition group	10	2	5	8
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Spontaneous preterm birth	Pregnancy / neonatal	pregnancy/neonatal condition group	10	2	5	7
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Autoantibody measurement	Immune biomarker	immune-biomarker condition group	10	1	5	3
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Body odor measurement	ENT / oral mucosal disease	ent/oral-mucosal condition group	10	1	4	5
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	COPRO-seq	Other specific clinical labels	other-specific-clinical-label condition group	10	1	5	7
@@ -147,17 +144,17 @@ facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultativel
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Disease progression measurement	Disease activity / severity	disease-activity/severity condition group	8	3	5	4
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Risk factor	Disease activity / severity	disease-activity/severity condition group	8	3	4	5
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Autoimmune disease	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	8	2	4	5
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Dental caries	Oral / periodontal disease	oral/periodontal condition group	8	2	4	8
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Intestinal polyp	GI / digestive disease	gi/digestive condition group	8	2	4	3
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Aggressive periodontitis	Oral / periodontal disease	oral/periodontal condition group	8	1	4	5
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Cannabis use	Smoking / alcohol / drug use	smoking/alcohol/drug-use condition group	8	1	4	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Cardiovascular disease	Cardiovascular disease	cardiovascular condition group	8	1	4	4
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Clostridium difficile infection	Infectious disease	infectious-disease condition group	8	1	4	4
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Genital neoplasm, female	Cancer / neoplasia	cancer/neoplasia condition group	8	1	4	5
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Glucose	Metabolic / endocrine	metabolic/endocrine condition group	8	1	4	7
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Grey matter volume measurement	Brain morphology measurement	brain-morphology condition group	8	1	4	7
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Hippocampal volume	Other specific clinical labels	other-specific-clinical-label condition group	8	1	4	4
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Hormone	Other specific clinical labels	other-specific-clinical-label condition group	8	1	2	3
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Hypothyroidism	Metabolic / endocrine	metabolic/endocrine condition group	8	1	2	7
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Hypothyroidism	Metabolic / endocrine	metabolic/endocrine condition group	8	1	2	6
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Increased intestinal transit time	Sampling site / time protocol	sampling-site/time condition group	8	1	5	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Methamphetamine dependence	Smoking / alcohol / drug use	smoking/alcohol/drug-use condition group	8	1	4	5
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Peutz-Jeghers Polyp	Cancer / neoplasia	cancer/neoplasia condition group	8	1	4	5
@@ -168,6 +165,7 @@ facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultativel
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	White matter volume measurement	Other specific clinical labels	other-specific-clinical-label condition group	8	1	4	4
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Anorexia nervosa	Psychiatric / behavioral health	psychiatric/behavioral condition group	7	3	3	4
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Autism spectrum disorder	Neurologic / cognitive disease	neurologic/cognitive condition group	7	3	5	2
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Inflammatory bowel disease	Inflammatory bowel disease	ibd condition group	7	3	5	5
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Anxiety disorder	Psychiatric / behavioral health	psychiatric/behavioral condition group	7	2	4	6
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Head and neck carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	7	2	3	3
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Human papillomavirus	Infectious disease	infectious-disease condition group	7	2	3	5
@@ -180,9 +178,7 @@ facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultativel
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Female infertility	Reproductive / hormonal health	reproductive/hormonal condition group	7	1	5	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	High altitude adaptation	Environmental / chemical exposure	environmental/chemical condition group	7	1	5	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Hypertriglyceridemia	Other specific clinical labels	other-specific-clinical-label condition group	7	1	3	1
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Insulin	Metabolic / endocrine	metabolic/endocrine condition group	7	1	3	7
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Medroxyprogesterone acetate	Reproductive / hormonal health	reproductive/hormonal condition group	7	1	4	1
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Metabolic process	Metabolic / endocrine	metabolic/endocrine condition group	7	1	3	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Response to risperidone	Medication / clinical treatment	medication/clinical-treatment condition group	7	1	2	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Systemic lupus erythematosus	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	7	1	3	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Arthritis	Musculoskeletal / connective tissue	musculoskeletal/connective condition group	6	4	3	5
@@ -193,10 +189,8 @@ facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultativel
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Fasting blood glucose measurement	Metabolic / endocrine	metabolic/endocrine condition group	6	3	3	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Sampling site	Sampling site / time protocol	sampling-site/time condition group	6	3	4	4
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Acute graft vs. host disease	Transplant / graft response	transplant/graft condition group	6	2	2	2
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Acute myeloid leukemia	Cancer / neoplasia	cancer/neoplasia condition group	6	2	3	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Biliary atresia	GI / digestive disease	gi/digestive condition group	6	2	3	3
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Breast carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	6	2	3	6
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Diabetic retinopathy	Ocular / eye disease	ocular/eye condition group	6	2	3	5
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Menopause	Reproductive / hormonal health	reproductive/hormonal condition group	6	2	3	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Non-alcoholic steatohepatitis	Infectious disease	infectious-disease condition group	6	2	4	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Prediabetes syndrome	Metabolic / endocrine	metabolic/endocrine condition group	6	2	3	3
@@ -210,7 +204,7 @@ facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultativel
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Chronic hepatitis C virus infection	Infectious disease	infectious-disease condition group	6	1	3	3
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Dental fluorosis	Oral / periodontal disease	oral/periodontal condition group	6	1	3	4
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Meibomian cyst	Ocular / eye disease	ocular/eye condition group	6	1	3	5
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Nutraceutical	Diet / nutrition / supplements	diet/nutrition/supplement condition group	6	1	3	6
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Nutraceutical	Diet / nutrition / supplements	diet/nutrition/supplement condition group	6	1	3	3
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Relapsing-remitting multiple sclerosis	Neurologic / cognitive disease	neurologic/cognitive condition group	6	1	4	3
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Response to radiation	Medication / clinical treatment	medication/clinical-treatment condition group	6	1	3	4
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Sensory perception of bitter taste	ENT / oral mucosal disease	ent/oral-mucosal condition group	6	1	3	3
@@ -241,8 +235,6 @@ facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultativel
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Treatment refractory schizophrenia	Psychiatric / behavioral health	psychiatric/behavioral condition group	5	1	3	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Total cholesterol measurement	Metabolic / endocrine	metabolic/endocrine condition group	4	3	2	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Attention deficit hyperactivity disorder	Neurologic / cognitive disease	neurologic/cognitive condition group	4	2	2	1
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Diabetic nephropathy	Renal / urinary disease	renal/urinary condition group	4	2	3	1
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Diabetic neuropathy	Neurologic / cognitive disease	neurologic/cognitive condition group	4	2	2	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Estradiol measurement	Reproductive / hormonal health	reproductive/hormonal condition group	4	2	1	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Health trait	Experimental phenotype labels	experimental-phenotype-label condition group	4	2	2	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Leukemia	Cancer / neoplasia	cancer/neoplasia condition group	4	2	2	1
@@ -263,6 +255,7 @@ facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultativel
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Cancer	Cancer / neoplasia	cancer/neoplasia condition group	4	1	2	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Cervical squamous cell carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	4	1	2	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Cognitive function measurement	Other specific clinical labels	other-specific-clinical-label condition group	4	1	3	0
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Diabetic retinopathy	Ocular / eye disease	ocular/eye condition group	4	1	2	4
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Disease prognosis measurement	Disease activity / severity	disease-activity/severity condition group	4	1	2	4
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Down syndrome	Neurologic / cognitive disease	neurologic/cognitive condition group	4	1	2	4
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Drug resistance	Medication / clinical treatment	medication/clinical-treatment condition group	4	1	2	4
@@ -271,14 +264,13 @@ facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultativel
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Gut microbiome measurement	Microbiome phenotype	microbiome-phenotype condition group	4	1	2	3
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Hepatitis virus-related hepatocellular carcinoma	Infectious disease	infectious-disease condition group	4	1	2	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	High fat diet	Diet / nutrition / supplements	diet/nutrition/supplement condition group	4	1	2	2
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Intestinal helminthiasis	Infectious disease	infectious-disease condition group	4	1	2	4
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Intestinal helminthiasis	Infectious disease	infectious-disease condition group	4	1	2	3
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Melanoma	Cancer / neoplasia	cancer/neoplasia condition group	4	1	2	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Neonatal jaundice	Pregnancy / neonatal	pregnancy/neonatal condition group	4	1	2	3
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Nutraceutical,Colorectal cancer	Colorectal neoplasia	colorectal neoplasia condition group	4	1	2	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Oral leukoplakia	Cancer / neoplasia	cancer/neoplasia condition group	4	1	2	4
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Osteoarthritis, knee	Musculoskeletal / connective tissue	musculoskeletal/connective condition group	4	1	2	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Osteoarthritis,Rheumatoid arthritis	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	4	1	2	3
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Pancreatic ductal adenocarcinoma	Cancer / neoplasia	cancer/neoplasia condition group	4	1	2	4
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Periapical Periodontitis	Oral / periodontal disease	oral/periodontal condition group	4	1	2	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Periodontitis,Type II diabetes mellitus	Oral / periodontal disease	oral/periodontal condition group	4	1	2	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Primary bacterial infectious disease	Infectious disease	infectious-disease condition group	4	1	2	3
@@ -286,12 +278,13 @@ facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultativel
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Remission	Disease activity / severity	disease-activity/severity condition group	4	1	2	4
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Response to proton-pump inhibitor	Medication / clinical treatment	medication/clinical-treatment condition group	4	1	2	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Schizophrenia,Metabolic syndrome	Metabolic / endocrine	metabolic/endocrine condition group	4	1	2	3
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Seasonality measurement	Environmental / chemical exposure	environmental/chemical condition group	4	1	2	2
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Seasonality measurement	Environmental / chemical exposure	environmental/chemical condition group	4	1	2	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Short stature	Body composition / growth	body-composition/growth condition group	4	1	4	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Tumor size	Cancer / neoplasia	cancer/neoplasia condition group	4	1	2	3
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Viral pneumonia	Infectious disease	infectious-disease condition group	4	1	2	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Anxiety	Psychiatric / behavioral health	psychiatric/behavioral condition group	3	2	2	3
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Autoimmune type 1 diabetes	Metabolic / endocrine	metabolic/endocrine condition group	3	2	2	1
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Bacterial vaginosis	Reproductive / hormonal health	reproductive/hormonal condition group	3	2	2	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Environmental factor	Diet / nutrition / supplements	diet/nutrition/supplement condition group	3	2	2	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Fasting blood insulin measurement	Metabolic / endocrine	metabolic/endocrine condition group	3	2	1	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Gonorrhea	Infectious disease	infectious-disease condition group	3	2	0	2
@@ -302,6 +295,7 @@ facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultativel
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Lactobacillus rhamnosus GG	Diet / nutrition / supplements	diet/nutrition/supplement condition group	3	2	2	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Abnormal stool composition	GI / digestive disease	gi/digestive condition group	3	1	1	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Abnormality of the gastrointestinal tract	GI / digestive disease	gi/digestive condition group	3	1	1	2
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Acute myeloid leukemia	Cancer / neoplasia	cancer/neoplasia condition group	3	1	2	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Adenomyosis,Endometriosis	Reproductive / hormonal health	reproductive/hormonal condition group	3	1	3	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Azithromycin	Antibiotic / antimicrobial exposure	antibiotic/antimicrobial condition group	3	1	3	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Colorectal Gastrointestinal Stromal Tumor	Cancer / neoplasia	cancer/neoplasia condition group	3	1	2	2
@@ -315,7 +309,6 @@ facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultativel
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	HDL cholesterol	Metabolic / endocrine	metabolic/endocrine condition group	3	1	3	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	HIV-1 infection	Infectious disease	infectious-disease condition group	3	1	1	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Hidradenitis suppurativa	Skin / hair disease	skin/hair condition group	3	1	1	0
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Hypoglycemia	Other specific clinical labels	other-specific-clinical-label condition group	3	1	2	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Illness severity status	Disease activity / severity	disease-activity/severity condition group	3	1	2	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Necrotizing enterocolitis	GI / digestive disease	gi/digestive condition group	3	1	2	3
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Neoplasm	Cancer / neoplasia	cancer/neoplasia condition group	3	1	2	1
@@ -361,7 +354,6 @@ facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultativel
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Breast cancer stage	Cancer / neoplasia	cancer/neoplasia condition group	2	1	1	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	C-peptide measurement	Other specific clinical labels	other-specific-clinical-label condition group	2	1	1	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	CD4-positive T-lymphocyte count	Blood / immune deficiency	blood/immune-deficiency condition group	2	1	1	2
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Cancer or benign tumor	Cancer / neoplasia	cancer/neoplasia condition group	2	1	1	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Carotid artery intima media thickness	Cardiovascular disease	cardiovascular condition group	2	1	1	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Cerebral infarction	Neurologic / cognitive disease	neurologic/cognitive condition group	2	1	1	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Cervical carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	2	1	1	1
@@ -383,21 +375,17 @@ facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultativel
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Constipation,Parkinson's disease	GI / digestive disease	gi/digestive condition group	2	1	1	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Coronary artery disease	Cardiovascular disease	cardiovascular condition group	2	1	1	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Crohn's colitis	Inflammatory bowel disease	ibd condition group	2	1	1	2
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Cutaneous T-cell lymphoma	Cancer / neoplasia	cancer/neoplasia condition group	2	1	1	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Cytokine	Other specific clinical labels	other-specific-clinical-label condition group	2	1	1	0
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Diabetic foot	Other specific clinical labels	other-specific-clinical-label condition group	2	1	1	1
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Diabetic ketoacidosis	Other specific clinical labels	other-specific-clinical-label condition group	2	1	1	0
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Diabetic neuropathy	Neurologic / cognitive disease	neurologic/cognitive condition group	2	1	1	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Digestive system cancer	Cancer / neoplasia	cancer/neoplasia condition group	2	1	1	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Disease recurrence	Other specific clinical labels	other-specific-clinical-label condition group	2	1	1	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Distal colitis,Pancolitis	GI / digestive disease	gi/digestive condition group	2	1	1	1
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Doxycycline	Other specific clinical labels	other-specific-clinical-label condition group	2	1	1	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Ectopic pregnancy	Pregnancy / neonatal	pregnancy/neonatal condition group	2	1	0	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Eczema,Allergic rhinitis	Respiratory / airway disease	respiratory/airway condition group	2	1	1	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Eczema,Urticaria	Skin / hair disease	skin/hair condition group	2	1	1	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Electroencephalogram measurement	Other specific clinical labels	other-specific-clinical-label condition group	2	1	1	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Ethnic group,Socioeconomic status	Population / social covariates	population/social-covariate condition group	2	1	1	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Fibromyalgia	Musculoskeletal / connective tissue	musculoskeletal/connective condition group	2	1	1	1
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Gastric adenocarcinoma,Epstein-Barr virus infection	Infectious disease	infectious-disease condition group	2	1	1	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Gastric carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	2	1	1	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Glioma	Cancer / neoplasia	cancer/neoplasia condition group	2	1	1	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Glucose tolerance test	Metabolic / endocrine	metabolic/endocrine condition group	2	1	1	0
@@ -424,7 +412,6 @@ facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultativel
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	LDL cholesterol	Metabolic / endocrine	metabolic/endocrine condition group	2	1	1	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Leukopenia	Other specific clinical labels	other-specific-clinical-label condition group	2	1	1	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Luteinizing hormone measurement	Other specific clinical labels	other-specific-clinical-label condition group	2	1	1	0
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	M1 distant metastasis stage	Age / development / sex	age/development/sex condition group	2	1	1	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Macrophage inflammatory protein 1b measurement	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	2	1	1	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Mammographic density measurement	Other specific clinical labels	other-specific-clinical-label condition group	2	1	1	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Maternal milk	Pregnancy / neonatal	pregnancy/neonatal condition group	2	1	1	1
@@ -442,7 +429,6 @@ facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultativel
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Pemphigus vulgaris	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	2	1	1	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Peptic esophagitis	GI / digestive disease	gi/digestive condition group	2	1	1	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Perceived unattractiveness to mosquitos measurement	Environmental / chemical exposure	environmental/chemical condition group	2	1	1	2
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Phenotype	Experimental phenotype labels	experimental-phenotype-label condition group	2	1	1	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Physical activity measurement	Activity / lifestyle score	activity/lifestyle-score condition group	2	1	1	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Pituitary Gland Adenoma	Cancer / neoplasia	cancer/neoplasia condition group	2	1	1	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Place of residence measurement,Ethnic group	Population / social covariates	population/social-covariate condition group	2	1	1	2
@@ -450,13 +436,12 @@ facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultativel
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Polycystic ovary syndrome,Rare dyslipidemia	Metabolic / endocrine	metabolic/endocrine condition group	2	1	1	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Post-COVID-19 disorder	Infectious disease	infectious-disease condition group	2	1	1	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Postmenopausal osteoporosis	Reproductive / hormonal health	reproductive/hormonal condition group	2	1	1	1
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Pruritus	Skin / hair disease	skin/hair condition group	2	1	1	2
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Pruritus	Skin / hair disease	skin/hair condition group	2	1	1	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Psychiatric disorder	Other specific clinical labels	other-specific-clinical-label condition group	2	1	0	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Pulmonary tuberculosis	Infectious disease	infectious-disease condition group	2	1	1	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	REM sleep behavior disorder	Neurologic / cognitive disease	neurologic/cognitive condition group	2	1	1	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Rare dyslipidemia,Polycystic ovary syndrome	Metabolic / endocrine	metabolic/endocrine condition group	2	1	1	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Response to clozapine	Medication / clinical treatment	medication/clinical-treatment condition group	2	1	1	0
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Response to platinum-based neoadjuvant chemotherapy	Medication / clinical treatment	medication/clinical-treatment condition group	2	1	1	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Response to surgery	Medication / clinical treatment	medication/clinical-treatment condition group	2	1	1	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Response to vaccine,Timepoint	Medication / clinical treatment	medication/clinical-treatment condition group	2	1	1	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Root caries	Dental / periodontal measurement	dental/periodontal-measurement group	2	1	1	1
@@ -471,7 +456,6 @@ facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultativel
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Survival time	Disease activity / severity	disease-activity/severity condition group	2	1	1	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Temporomandibular joint disorder	Other specific clinical labels	other-specific-clinical-label condition group	2	1	1	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Thyroid carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	2	1	1	1
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Timepoint	Sampling site / time protocol	sampling-site/time condition group	2	1	0	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Tongue neoplasm	Cancer / neoplasia	cancer/neoplasia condition group	2	1	1	2
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Trichomonas vaginitis	Other specific clinical labels	other-specific-clinical-label condition group	2	1	1	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Tumor grading	Cancer / neoplasia	cancer/neoplasia condition group	2	1	1	2
@@ -500,8 +484,8 @@ facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultativel
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Crohn ileitis	Inflammatory bowel disease	ibd condition group	1	1	1	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Dehydroepiandrosterone measurement	Other specific clinical labels	other-specific-clinical-label condition group	1	1	1	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Dermatitis	Skin / hair disease	skin/hair condition group	1	1	1	0
+facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Diabetic nephropathy	Renal / urinary disease	renal/urinary condition group	1	1	1	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Digestive system disease	Other specific clinical labels	other-specific-clinical-label condition group	1	1	0	0
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Disease staging	Age / development / sex	age/development/sex condition group	1	1	0	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Distal colitis	GI / digestive disease	gi/digestive condition group	1	1	1	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Equol	Diet / nutrition / supplements	diet/nutrition/supplement condition group	1	1	1	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Estrogen receptor status	Other specific clinical labels	other-specific-clinical-label condition group	1	1	0	1
@@ -517,7 +501,6 @@ facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultativel
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	HOMA-IR	Other specific clinical labels	other-specific-clinical-label condition group	1	1	0	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Household income	Other specific clinical labels	other-specific-clinical-label condition group	1	1	1	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Hyperproinsulinemia	Metabolic / endocrine	metabolic/endocrine condition group	1	1	0	0
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Increased inflammatory response	Autoimmune / inflammatory disease	autoimmune/inflammatory condition group	1	1	0	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Interleukin 1 receptor antagonist measurement	Other specific clinical labels	other-specific-clinical-label condition group	1	1	0	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Interleukin 17 measurement	Other specific clinical labels	other-specific-clinical-label condition group	1	1	1	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Interleukin 8 measurement	Other specific clinical labels	other-specific-clinical-label condition group	1	1	0	0
@@ -535,7 +518,6 @@ facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultativel
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Postmenopausal	Reproductive / hormonal health	reproductive/hormonal condition group	1	1	1	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Prostate carcinoma	Cancer / neoplasia	cancer/neoplasia condition group	1	1	1	1
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Protein intake measurement	Other specific clinical labels	other-specific-clinical-label condition group	1	1	0	0
-facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Spontaneous abortion	Reproductive / hormonal health	reproductive/hormonal condition group	1	1	0	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Sugar consumption measurement	Other specific clinical labels	other-specific-clinical-label condition group	1	1	0	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Syncope	Cardiovascular disease	cardiovascular condition group	1	1	1	0
 facultatively_aerobic_increased	METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	increased	Systolic blood pressure	Other specific clinical labels	other-specific-clinical-label condition group	1	1	0	1

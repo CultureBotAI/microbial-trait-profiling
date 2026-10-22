@@ -1,1 +1,1 @@
-study_id	experiment_id	signature_id	direction	taxon_id	taxon_name	taxonomic_rank	profile_id	host_species	condition	condition_group
+study_id	experiment_id	signature_id	direction	taxon_id	taxon_name	taxonomic_rank	profile_id	host_species	sequencing_type	exclusion_reason	condition	condition_group

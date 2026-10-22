@@ -1,8 +1,8 @@
 condition	qualifying_significant_trait_count	qualifying_significant_traits	selection_rule	is_parkinsons_disease
-Parkinson's disease	4	moderately halophilic; facultatively aerobic; arsenate reduction; cellulose catabolic process	at least one of six individual traits has a descriptive 95% study-level t interval excluding zero	True
+Parkinson's disease	3	moderately halophilic; arsenate reduction; cellulose catabolic process	at least one of six individual traits has a descriptive 95% study-level t interval excluding zero	True
 Colorectal cancer	5	moderately halophilic; facultatively aerobic; arsenate reduction; sphere shaped; cellulose catabolic process	at least one of six individual traits has a descriptive 95% study-level t interval excluding zero	False
-COVID-19	4	moderately halophilic; facultatively aerobic; arsenate reduction; cellulose catabolic process	at least one of six individual traits has a descriptive 95% study-level t interval excluding zero	False
 Irritable bowel syndrome	4	facultatively aerobic; arsenate reduction; coccus shaped; sphere shaped	at least one of six individual traits has a descriptive 95% study-level t interval excluding zero	False
+COVID-19	3	facultatively aerobic; arsenate reduction; cellulose catabolic process	at least one of six individual traits has a descriptive 95% study-level t interval excluding zero	False
 Chronic kidney disease	3	moderately halophilic; facultatively aerobic; cellulose catabolic process	at least one of six individual traits has a descriptive 95% study-level t interval excluding zero	False
 Atopic eczema	2	coccus shaped; sphere shaped	at least one of six individual traits has a descriptive 95% study-level t interval excluding zero	False
 Crohn's disease	2	facultatively aerobic; arsenate reduction	at least one of six individual traits has a descriptive 95% study-level t interval excluding zero	False
@@ -14,4 +14,5 @@ Constipation	1	cellulose catabolic process	at least one of six individual traits
 Diarrhea	1	cellulose catabolic process	at least one of six individual traits has a descriptive 95% study-level t interval excluding zero	False
 Gastric cancer	1	facultatively aerobic	at least one of six individual traits has a descriptive 95% study-level t interval excluding zero	False
 Graft versus host disease	1	moderately halophilic	at least one of six individual traits has a descriptive 95% study-level t interval excluding zero	False
+Response to transplant	1	coccus shaped	at least one of six individual traits has a descriptive 95% study-level t interval excluding zero	False
 Socioeconomic status	1	cellulose catabolic process	at least one of six individual traits has a descriptive 95% study-level t interval excluding zero	False

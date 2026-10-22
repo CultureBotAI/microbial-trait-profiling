@@ -12,7 +12,7 @@ Rows follow the heatmap order: descending BugSigDB PD increased/decreased log2 p
 | Methanobrevibacter smithii | 3/0 | increased | increased | Methanobrevibacter; genus; exact | 0 | agrees | coccus shaped ↓ (+0.03; mixed) |
 | Escherichia coli | 1/2 | decreased | increased | Escherichia-Shigella; genus group; exact | 1 | differs | arsenate reduction ↑ (+0.10; mixed) |
 | Roseburia faecis | 0/6 | decreased | decreased | Roseburia; genus; genus_or_parent | 0 | agrees | cellulose catabolic process ↓ (-0.03; mixed) |
-| Faecalibacterium prausnitzii | 0/13 | decreased | decreased | Faecalibacterium; genus/species; exact | 0 | agrees | facultatively aerobic ↑ (-0.10; mixed) |
+| Faecalibacterium prausnitzii | 0/12 | decreased | decreased | Faecalibacterium; genus/species; exact | 0 | agrees | facultatively aerobic ↑ (-0.10; mixed) |
 
 ## Methods: Literature Review and Direction Comparison
 
@@ -52,6 +52,6 @@ BugSigDB direction is a recurrence summary, not a pooled abundance effect: `incr
 
 ### Faecalibacterium prausnitzii
 - Literature match: Faecalibacterium (decreased; genus/species; exact); source(s): [10.1016/j.parkreldis.2016.08.019](https://doi.org/10.1016/j.parkreldis.2016.08.019); [10.1007/s11427-016-9001-4](https://doi.org/10.1007/s11427-016-9001-4); [10.1002/mds.28119](https://doi.org/10.1002/mds.28119)
-- BugSigDB PD direction: decreased (0/13 increased/decreased profiles); Hamming distance: 0 (similar); agreement: agrees
+- BugSigDB PD direction: decreased (0/12 increased/decreased profiles); Hamming distance: 0 (similar); agreement: agrees
 - KG-Microbe direct six-trait annotations: facultatively aerobic
 - Interpretation: BugSigDB PD occurrence agrees with literature (decreased); treat this as a higher-priority taxon for trait-level follow-up. KG-Microbe direct six-trait annotations: facultatively aerobic. Strongest current influence: facultatively aerobic (lollipop direction increased; -0.10 fixed-reference z, mixed).

@@ -1,13 +1,13 @@
 shared_pattern_rank	condition	body_site_group	shared_pattern_trait_count	shared_pattern_link_count	shared_pattern_focus_profile_count	shared_pattern_max_focus_profile_count	shared_pattern_max_rank_score
-1	Metabolic / endocrine	Feces	6	6	602	114	937.4682979291061
-2	Neurologic / cognitive disease	Feces	6	6	574	119	1081.8442518711392
-3	Infectious disease	Feces	6	6	391	84	635.6088716584345
-4	Cancer / neoplasia	Feces	6	6	302	72	535.1229111664494
-5	Colorectal neoplasia	Feces	6	6	251	56	353.86611742586194
-6	Reproductive / hormonal health	Vaginal / reproductive	6	6	169	40	300.7261156799288
-7	Cancer / neoplasia	Oral cavity / dental	6	6	141	43	232.66431115073368
-8	Ocular / eye disease	Ocular / eye	6	6	138	33	140.93744649452952
-9	Infectious disease	Vaginal / reproductive	6	6	129	32	154.61972657031106
-10	Infectious disease	Upper airway / nasal	6	6	129	31	157.88119733543581
-11	Respiratory / airway disease	Feces	6	6	92	19	93.4429539781984
-12	Cancer / neoplasia	Stomach / esophagus	6	6	90	20	92.39543787420855
+1	Neurologic / cognitive disease	Feces	6	6	565	117	1069.101351763854
+2	Metabolic / endocrine	Feces	6	6	558	107	868.9815428679424
+3	Infectious disease	Feces	6	6	384	82	623.6961022853786
+4	Cancer / neoplasia	Feces	6	6	302	72	537.5962148144149
+5	Colorectal neoplasia	Feces	6	6	247	55	346.75907679831784
+6	Reproductive / hormonal health	Vaginal / reproductive	6	6	168	39	278.4426634756292
+7	Cancer / neoplasia	Oral cavity / dental	6	6	139	42	209.8917343424685
+8	Ocular / eye disease	Ocular / eye	6	6	136	33	141.44428944846626
+9	Infectious disease	Upper airway / nasal	6	6	129	31	157.55389097615205
+10	Infectious disease	Vaginal / reproductive	6	6	127	32	154.72917384795457
+11	Cancer / neoplasia	Stomach / esophagus	6	6	90	20	80.57560253729
+12	Infectious disease	Oral cavity / dental	6	6	83	22	108.69696547832088

@@ -183,7 +183,7 @@ framework, described under [Compositionality](#compositionality).
 | Paired | yes, by construction | no; increased and decreased tested separately | yes, then reduced to one sign per study |
 | Native multiple testing | Benjamini-Hochberg within each output table | Benjamini-Hochberg across every test in the inspected run | Benjamini-Yekutieli across all 317 retained traits, reported at the nominal and the effective family size (#255, #265); the six-trait Benjamini-Hochberg family is retained separately for the published Table 1 numbers |
 | Historical selection/display rule | no significance cutoff; the figure takes the top ten by p | q at most 0.001 and fold at least 1.5 | no display cutoff; q reported per trait |
-| Typical n per test | 2,335 pairs, identical for every trait | a mean of 9.05 taxa per profile against 5,829 background taxa in the production run; tens of thousands of assertions per profile in the Table 1 native reruns | 2 to 942 of the 959 studies across the 317 candidates, 616 to 917 for the six of Table 1 (ties excluded) |
+| Typical n per test | 2,257 pairs, identical for every trait | a mean of 9.05 taxa per profile against 5,829 background taxa in the production run; tens of thousands of assertions per profile in the Table 1 native reruns | 2 to 905 of the 922 nonzero studies (932 total) across the 317 candidates, 606 to 898 for the six of Table 1 (ties excluded) |
 | Strength | Uses matched contrasts and their magnitudes; screens many traits | Locates profile-specific excess relative to a declared corpus background | Gives each study one directional vote; exact test without a normality assumption for magnitudes |
 | Main limitations | Repeated experiments within studies are not independent; denominator and transformation affect the estimand | Nested taxa inherit the same annotations, so draws are not independent; coverage and background composition affect calls | Discards magnitude, excludes ties, and remains denominator-dependent; support varies by orders of magnitude across the 317 candidates, so a lopsided share on few studies is not a finding |
 | Contribution to the shared comparison | Supply matched source counts and native transformed effects; reconcile the denominator, then report the common study-weighted fraction/ratio quantities | Supply profile counts, fixed-background folds and native profile evidence; provide separate descriptive increased/decreased study summaries | Supply study-level direction and coverage for the shared fraction quantities and all 15 explicitly referenced ratios |
@@ -240,13 +240,13 @@ decision require the method-appropriate nulls and selection-aware calibration in
 The three tests count different things, so their sample sizes differ by orders of
 magnitude and their p-values cannot be ranked against one another.
 
-The enrichment arm's production urn is built from taxa. Each of the 4,670
+The enrichment arm's production urn is built from taxa. Each of the 4,514
 testable paired human profiles is a draw of its distinct reported taxa (mean 9.05
 per profile) from the 5,829 BugSigDB-reported taxa of `taxa_trait_matrix.tsv`; a
 taxon counts as trait-bearing if the matrix marks it so, including positivity
 inherited from descendants at any rank. Over the 317 non-MediaDive traits that is
-1,480,390 tests, which at Benjamini-Hochberg q at most 0.001 and fold at least 1.5
-call 66,240 enrichments; the lower-tail run at fold at most 0.5 calls 23
+1,430,938 tests, which at Benjamini-Hochberg q at most 0.001 and fold at least 1.5
+call 66,064 enrichments; the lower-tail run at fold at most 0.5 calls 3
 depletions (`data/derived/trait_enrichment_all_results.tsv` and
 `trait_depletion_all_results.tsv` headers). An earlier assertion-level run,
 with a mean of 23,686.87 assertions per testable profile and 556,516 tests,
@@ -381,18 +381,19 @@ this note reported 2,290 MediaDive columns, and the run below measures 2,333.
 | | |
 |---|---|
 | matrix | `data/derived/study_trait_profiles_wide.tsv` |
-| sha256 | `6e70724ee807cf24e9c1f371a51421fa5b09d6283fa7f3abcd6620e5492c6a73` |
-| header columns | 2,653 = 3 identifier + **2,333 MediaDive** + **317 retained** |
-| profile rows | 7,329 |
+| sha256 | `4c99aa8b4e386d42cc7938ab15c452ad4278b143b7779c4eb1635f71d386f21a` |
+| header columns | 2,610 = 3 identifier + **2,290 MediaDive** + **317 retained** |
+| profile rows | 5,629 (`count_input_16s_wms_v1` human 16S/WMS profiles; pre-#742 run had 7,329 rows before host filtering) |
 | BugSigDB vintage | `2026-04-24_00:41_UTC` (v1.3.1) |
 | KG-Microbe nodes | declared md5 `dd76b4656f9341db25a7c4afa96cd58e` (declared by `data/kg-microbe/provenance.json` sidecar) |
 | KG-Microbe edges | declared md5 `555ecf5ba5d89288cdc44e368375374f` (declared by `data/kg-microbe/provenance.json` sidecar) |
 | KG-Microbe release | `20260120` (pinned Drive build folder in `scripts/download_kg_microbe.py`) |
 
-Filter cascade on that matrix: 7,329 profile rows read (0 unmatched in the
-metadata join), **1,500 rows dropped as non-human**, leaving 3,494 human
-experiments after the host filter, of which 1,159 are dropped as unpaired,
-leaving **2,335 experiments, 4,670 profiles and 959 studies**. Every recipe prints
+Filter cascade on that matrix: 5,629 profile rows read (0 unmatched in the
+metadata join), **0 rows dropped as non-human** (already restricted to human 16S
+and WMS profiles under `count_input_16s_wms_v1`), leaving 3,372 human
+experiments after the host filter, of which 1,115 are dropped as unpaired,
+leaving **2,257 experiments, 4,514 profiles and 932 studies**. Every recipe prints
 this block and writes it to a `corpus_identity.json` beside its outputs, so a
 number can be traced to the file it came from rather than to a vintage string.
 

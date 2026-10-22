@@ -1,25 +1,25 @@
 scope	rank	direction	trait_key	trait_slug	trait_label	trait_direction	total_count	resolved_count	unresolved_rank_count	ambiguous_rank_count	other_unresolved_count	unresolved_or_ambiguous_count	resolved_share	unresolved_or_ambiguous_share
-parkinsons_feces	species	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	increased	107666	79595	19831	8240	0	28071	0.7392770233871417	0.26072297661285826
-parkinsons_feces	species	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	increased	69063	55796	12269	998	0	13267	0.8079000333029264	0.1920999666970737
+parkinsons_feces	species	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	increased	106460	78670	19784	8006	0	27790	0.7389629907946647	0.26103700920533535
+parkinsons_feces	species	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	increased	68918	55680	12240	998	0	13238	0.8079166545750022	0.19208334542499783
 parkinsons_feces	species	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	decreased	2449	1342	1107	0	0	1107	0.5479787668436097	0.45202123315639037
-parkinsons_feces	species	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	decreased	3384	2143	1241	0	0	1241	0.633274231678487	0.366725768321513
-parkinsons_feces	species	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	decreased	62415	55029	7261	125	0	7386	0.881663061763999	0.11833693823600096
-parkinsons_feces	species	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	decreased	103177	97151	5871	155	0	6026	0.9415955106273685	0.0584044893726315
-parkinsons_feces	species	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	decreased	3789	747	2992	50	0	3042	0.19714964370546317	0.8028503562945368
-parkinsons_feces	species	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	decreased	3260	960	2238	62	0	2300	0.294478527607362	0.7055214723926381
-parkinsons_feces	species	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	increased	887	640	247	0	0	247	0.7215332581736189	0.27846674182638104
+parkinsons_feces	species	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	decreased	3382	2142	1240	0	0	1240	0.6333530455351862	0.3666469544648137
+parkinsons_feces	species	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	decreased	62411	55028	7258	125	0	7383	0.8817035458492893	0.1182964541507106
+parkinsons_feces	species	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	decreased	103010	97014	5841	155	0	5996	0.9417920590233958	0.058207940976604214
+parkinsons_feces	species	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	decreased	3787	747	2990	50	0	3040	0.19725376287298654	0.8027462371270134
+parkinsons_feces	species	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	decreased	3248	954	2232	62	0	2294	0.2937192118226601	0.7062807881773399
+parkinsons_feces	species	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	increased	872	626	246	0	0	246	0.7178899082568807	0.28211009174311924
 parkinsons_feces	species	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	increased	417	143	274	0	0	274	0.34292565947242204	0.657074340527578
-parkinsons_feces	species	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	increased	4717	1702	2945	70	0	3015	0.36082255670977315	0.6391774432902269
-parkinsons_feces	species	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	increased	2167	917	1242	8	0	1250	0.4231656668204892	0.5768343331795108
-parkinsons_feces	family	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	increased	107666	104690	2976	0	0	2976	0.9723589619749967	0.02764103802500325
-parkinsons_feces	family	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	increased	69063	67905	1158	0	0	1158	0.9832327005777334	0.016767299422266627
+parkinsons_feces	species	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	increased	4703	1692	2943	68	0	3011	0.3597703593450989	0.6402296406549012
+parkinsons_feces	species	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	increased	2150	901	1241	8	0	1249	0.4190697674418605	0.5809302325581396
+parkinsons_feces	family	inc	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	increased	106460	103484	2976	0	0	2976	0.9720458388126996	0.027954161187300396
+parkinsons_feces	family	dec	METPO:1000608	facultatively_aerobic	facultatively aerobic (METPO:1000608)	increased	68918	67760	1158	0	0	1158	0.9831974230244639	0.016802576975536145
 parkinsons_feces	family	inc	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	decreased	2449	2290	159	0	0	159	0.9350755410371581	0.06492445896284198
-parkinsons_feces	family	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	decreased	3384	3231	153	0	0	153	0.9547872340425532	0.04521276595744681
-parkinsons_feces	family	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	decreased	62415	61028	1387	0	0	1387	0.9777777777777777	0.022222222222222223
-parkinsons_feces	family	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	decreased	103177	102599	578	0	0	578	0.9943979762931661	0.005602023706833888
-parkinsons_feces	family	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	decreased	3789	3271	518	0	0	518	0.8632884666138823	0.13671153338611772
-parkinsons_feces	family	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	decreased	3260	3087	173	0	0	173	0.9469325153374233	0.053067484662576686
-parkinsons_feces	family	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	increased	887	782	105	0	0	105	0.8816234498308907	0.11837655016910936
+parkinsons_feces	family	dec	METPO:2000103|GO:0030245	cellulose_catabolic_process	cellulose catabolic process (GO:0030245)	decreased	3382	3229	153	0	0	153	0.9547604967474866	0.0452395032525133
+parkinsons_feces	family	inc	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	decreased	62411	61024	1387	0	0	1387	0.9777763535274231	0.02222364647257695
+parkinsons_feces	family	dec	METPO:1000668	coccus_shaped	coccus shaped (METPO:1000668)	decreased	103010	102432	578	0	0	578	0.9943888942821085	0.005611105717891467
+parkinsons_feces	family	inc	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	decreased	3787	3269	518	0	0	518	0.8632162661737524	0.1367837338262477
+parkinsons_feces	family	dec	METPO:1000683	sphere_shaped	sphere shaped (METPO:1000683)	decreased	3248	3075	173	0	0	173	0.9467364532019704	0.053263546798029554
+parkinsons_feces	family	inc	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	increased	872	767	105	0	0	105	0.8795871559633027	0.12041284403669725
 parkinsons_feces	family	dec	METPO:2000103|pathways:arsenate_reduction	arsenate_reduction	arsenate reduction (pathways:arsenate_reduction)	increased	417	305	112	0	0	112	0.7314148681055156	0.2685851318944844
-parkinsons_feces	family	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	increased	4717	3869	848	0	0	848	0.8202247191011236	0.1797752808988764
-parkinsons_feces	family	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	increased	2167	1775	392	0	0	392	0.8191047531149054	0.1808952468850946
+parkinsons_feces	family	inc	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	increased	4703	3855	848	0	0	848	0.8196895598554115	0.18031044014458855
+parkinsons_feces	family	dec	METPO:1000623	moderately_halophilic	moderately halophilic (METPO:1000623)	increased	2150	1758	392	0	0	392	0.8176744186046512	0.18232558139534882

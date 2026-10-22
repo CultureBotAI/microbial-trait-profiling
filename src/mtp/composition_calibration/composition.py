@@ -4,7 +4,7 @@ Evaluates empirical Type I error control, family-wise error rates, and Table 1
 canonical trait calibration for the study-aggregated paired compositional inference
 arm (JedCompositionAdapter) under a label-swapping null benchmark.
 
-For a random half of the 959 paired studies, the increased and decreased direction
+For a random half of the 932 paired studies, the increased and decreased direction
 labels are exchanged. In paired composition inference, exchanging direction labels
 inverts the study-level mean contrast (Delta'_sj = -Delta_sj) while holding all
 profile trait counts, normalizations, and column z-score scalings invariant.

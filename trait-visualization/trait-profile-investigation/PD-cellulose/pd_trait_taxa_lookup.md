@@ -2,15 +2,15 @@
 
 Source: `pd_six_trait_direction_lollipop.png` and its companion summary. The recomputed summary matches the saved source table.
 
-Scope: 128 increased and 119 decreased PD fecal profiles. Occurrences are deduplicated by taxon and profile; names and traits come from the local KG-Microbe taxa-trait matrix.
+Scope: 126 increased and 116 decreased PD fecal profiles. Occurrences are deduplicated by taxon and profile; names and traits come from the local KG-Microbe taxa-trait matrix.
 
-All six lollipop traits are traced whatever their sign. Each trait's observed direction is the profile direction in which its mean z is higher, from the sign of `increased_minus_decreased_mean_z` in `pd_six_trait_direction_summary.tsv`; the tables carry it in `trait_direction`. Observed direction (increased minus decreased mean z): moderately halophilic increased (+0.494); arsenate reduction increased (+0.420); facultatively aerobic increased (+0.349); coccus shaped decreased (-0.081); sphere shaped decreased (-0.133); cellulose catabolic process decreased (-0.701). A lollipop value is a descriptive difference in mean z, not evidence of statistical significance or of gene expression.
+All six lollipop traits are traced whatever their sign. Each trait's observed direction is the profile direction in which its mean z is higher, from the sign of `increased_minus_decreased_mean_z` in `pd_six_trait_direction_summary.tsv`; the tables carry it in `trait_direction`. Observed direction (increased minus decreased mean z): moderately halophilic increased (+0.509); arsenate reduction increased (+0.390); facultatively aerobic increased (+0.348); coccus shaped decreased (-0.076); sphere shaped decreased (-0.128); cellulose catabolic process decreased (-0.711). A lollipop value is a descriptive difference in mean z, not evidence of statistical significance or of gene expression.
 
 These are observed annotation carriers, not estimated causal contributions to the z-score difference. Profile z>0 describes relative trait enrichment. The matrix counts trait-bearing taxa at or below each reported taxon (src/bsdbng/taxa_trait_matrix.py, compute_trait_counts). Different descendant taxa can supply different annotations, including for species with strain-level descendants, so one reported label carrying several trait annotations does not establish that one organism has those traits together. Counts across taxonomic ranks must not be added. Raw KG edges are not present locally, so original assertion and strain provenance were not independently verified.
 
 ## moderately halophilic
 
-Observed direction: increased (+0.494); its mean z is higher in increased than in decreased PD fecal profiles. Annotated taxon labels observed: 79 in increased profiles, 53 in decreased profiles; 100 across both directions.
+Observed direction: increased (+0.509); its mean z is higher in increased than in decreased PD fecal profiles. Annotated taxon labels observed: 79 in increased profiles, 53 in decreased profiles; 100 across both directions.
 
 Top genus/species labels by occurrence in positive-z increased profiles, the trait's observed direction:
 
@@ -20,7 +20,7 @@ Top genus/species labels by occurrence in positive-z increased profiles, the tra
 | Escherichia | genus | 9 | 2 | 9 | 2 |
 | Alistipes | genus | 8 | 0 | 8 | 0 |
 | Streptococcus | genus | 10 | 5 | 7 | 2 |
-| Enterococcus | genus | 7 | 2 | 7 | 2 |
+| Enterococcus | genus | 7 | 1 | 7 | 1 |
 | Klebsiella | genus | 6 | 1 | 6 | 1 |
 | Serratia | genus | 6 | 0 | 6 | 0 |
 | Enterobacter | genus | 4 | 0 | 4 | 0 |
@@ -31,7 +31,7 @@ Top genus/species labels by occurrence in positive-z increased profiles, the tra
 
 ## arsenate reduction
 
-Observed direction: increased (+0.420); its mean z is higher in increased than in decreased PD fecal profiles. Annotated taxon labels observed: 23 in increased profiles, 13 in decreased profiles; 26 across both directions.
+Observed direction: increased (+0.390); its mean z is higher in increased than in decreased PD fecal profiles. Annotated taxon labels observed: 23 in increased profiles, 13 in decreased profiles; 26 across both directions.
 
 Top genus/species labels by occurrence in positive-z increased profiles, the trait's observed direction:
 
@@ -43,7 +43,7 @@ Top genus/species labels by occurrence in positive-z increased profiles, the tra
 
 ## facultatively aerobic
 
-Observed direction: increased (+0.349); its mean z is higher in increased than in decreased PD fecal profiles. Annotated taxon labels observed: 105 in increased profiles, 89 in decreased profiles; 149 across both directions.
+Observed direction: increased (+0.348); its mean z is higher in increased than in decreased PD fecal profiles. Annotated taxon labels observed: 105 in increased profiles, 89 in decreased profiles; 149 across both directions.
 
 Top genus/species labels by occurrence in positive-z increased profiles, the trait's observed direction:
 
@@ -54,7 +54,7 @@ Top genus/species labels by occurrence in positive-z increased profiles, the tra
 | Streptococcus | genus | 10 | 5 | 10 | 5 |
 | Desulfovibrio | genus | 11 | 3 | 9 | 0 |
 | Escherichia | genus | 9 | 2 | 9 | 2 |
-| Enterococcus | genus | 7 | 2 | 7 | 2 |
+| Enterococcus | genus | 7 | 1 | 7 | 1 |
 | Klebsiella | genus | 6 | 1 | 6 | 0 |
 | Serratia | genus | 6 | 0 | 6 | 0 |
 | Bifidobacterium longum | species | 6 | 0 | 4 | 0 |
@@ -64,7 +64,7 @@ Top genus/species labels by occurrence in positive-z increased profiles, the tra
 
 ## coccus shaped
 
-Observed direction: decreased (-0.081); its mean z is higher in decreased than in increased PD fecal profiles. Annotated taxon labels observed: 108 in increased profiles, 94 in decreased profiles; 149 across both directions.
+Observed direction: decreased (-0.076); its mean z is higher in decreased than in increased PD fecal profiles. Annotated taxon labels observed: 108 in increased profiles, 94 in decreased profiles; 149 across both directions.
 
 Top genus/species labels by occurrence in positive-z decreased profiles, the trait's observed direction:
 
@@ -79,13 +79,13 @@ Top genus/species labels by occurrence in positive-z decreased profiles, the tra
 | Actinomyces | genus | 1 | 3 | 1 | 2 |
 | Brevibacterium | genus | 0 | 3 | 0 | 2 |
 | Dialister | genus | 0 | 2 | 0 | 2 |
-| Enterococcus | genus | 7 | 2 | 5 | 2 |
 | Gemella | genus | 0 | 2 | 0 | 2 |
 | Granulicatella | genus | 1 | 2 | 1 | 2 |
+| Ruminococcus gauvreauii | species | 0 | 2 | 0 | 2 |
 
 ## sphere shaped
 
-Observed direction: decreased (-0.133); its mean z is higher in decreased than in increased PD fecal profiles. Annotated taxon labels observed: 53 in increased profiles, 49 in decreased profiles; 72 across both directions.
+Observed direction: decreased (-0.128); its mean z is higher in decreased than in increased PD fecal profiles. Annotated taxon labels observed: 53 in increased profiles, 49 in decreased profiles; 72 across both directions.
 
 Top genus/species labels by occurrence in positive-z decreased profiles, the trait's observed direction:
 
@@ -96,16 +96,16 @@ Top genus/species labels by occurrence in positive-z decreased profiles, the tra
 | Streptococcus | genus | 10 | 5 | 10 | 5 |
 | Brevibacterium | genus | 0 | 3 | 0 | 3 |
 | Dialister | genus | 0 | 2 | 0 | 2 |
-| Enterococcus | genus | 7 | 2 | 5 | 2 |
 | Ruminococcus gauvreauii | species | 0 | 2 | 0 | 2 |
-| Lactococcus | genus | 2 | 3 | 2 | 1 |
+| Enterococcus | genus | 7 | 1 | 5 | 1 |
 | Howardella | genus | 0 | 1 | 0 | 1 |
+| Lactococcus | genus | 2 | 2 | 2 | 0 |
 | Veillonella | genus | 5 | 2 | 5 | 0 |
 | Phocaeicola | genus | 0 | 1 | 0 | 0 |
 
 ## cellulose catabolic process
 
-Observed direction: decreased (-0.701); its mean z is higher in decreased than in increased PD fecal profiles. Annotated taxon labels observed: 49 in increased profiles, 38 in decreased profiles; 58 across both directions.
+Observed direction: decreased (-0.711); its mean z is higher in decreased than in increased PD fecal profiles. Annotated taxon labels observed: 49 in increased profiles, 38 in decreased profiles; 58 across both directions.
 
 Top genus/species labels by occurrence in positive-z decreased profiles, the trait's observed direction:
 
