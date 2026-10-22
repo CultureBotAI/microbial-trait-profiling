@@ -29,35 +29,35 @@ They do not rerun the hypergeometric ORA. Instead, they use the selected profile
 
 | condition | positive profiles | increased | decreased | studies |
 | --- | ---: | ---: | ---: | ---: |
-| Parkinson's disease | 274 | 142 | 132 | 59 |
+| Parkinson's disease | 271 | 141 | 130 | 57 |
 | Colorectal cancer | 197 | 105 | 92 | 55 |
 | Obesity | 171 | 89 | 82 | 37 |
-| COVID-19 | 124 | 62 | 62 | 33 |
-| Irritable bowel syndrome | 99 | 50 | 49 | 17 |
+| COVID-19 | 122 | 61 | 61 | 31 |
+| Irritable bowel syndrome | 98 | 50 | 48 | 16 |
 
 ## Top Conditions By Average Positive Trait Depth
 
 | condition | decreased mean | increased mean | direction-mean total | profiles | studies |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Chronic obstructive pulmonary disease | 46.33 | 48.71 | 95.05 | 13 | 4 |
-| Glaucoma | 44.50 | 46.85 | 91.35 | 23 | 5 |
-| Response to vaccine | 43.80 | 46.33 | 90.13 | 11 | 2 |
-| Human immunodeficiency virus | 47.46 | 39.09 | 86.55 | 24 | 4 |
-| Attention deficit-hyperactivity disorder | 43.30 | 37.83 | 81.13 | 22 | 3 |
+| Chronic obstructive pulmonary disease | 45.67 | 47.71 | 93.38 | 13 | 4 |
+| Glaucoma | 43.80 | 46.62 | 90.42 | 23 | 5 |
+| Response to vaccine | 43.40 | 45.67 | 89.07 | 11 | 2 |
+| Human immunodeficiency virus | 46.69 | 38.82 | 85.51 | 24 | 4 |
+| Alzheimer's disease | 42.71 | 41.71 | 84.43 | 14 | 5 |
 
 ## Top Depleted-Profile Conditions
 
 | condition | direction delta | focus mean | comparator mean | focus profiles | comparator profiles | studies |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
-| Diarrhea | 16.67 | 38.08 | 21.42 | 12 | 12 | 3 |
-| Acute lymphoblastic leukemia | 16.42 | 43.50 | 27.08 | 6 | 13 | 5 |
-| Response to allogeneic hematopoietic stem cell transplant | 12.63 | 36.18 | 23.56 | 11 | 9 | 5 |
-| Vitiligo | 11.00 | 45.20 | 34.20 | 5 | 5 | 3 |
-| Endometrial cancer | 10.97 | 45.80 | 34.83 | 5 | 6 | 3 |
+| Diarrhea | 16.83 | 37.58 | 20.75 | 12 | 12 | 3 |
+| Acute lymphoblastic leukemia | 16.55 | 43.17 | 26.62 | 6 | 13 | 5 |
+| Response to allogeneic hematopoietic stem cell transplant | 13.02 | 35.91 | 22.89 | 11 | 9 | 5 |
+| Lung cancer | 10.94 | 42.82 | 31.88 | 11 | 16 | 8 |
+| Endometrial cancer | 10.67 | 45.00 | 34.33 | 5 | 6 | 3 |
 
 ## Uncapped Follow-Up Figures
 
-The scatterplot and condition x trait heatmap include all 47 focus-eligible condition rows after the shared filters, minimum focus-direction profile filter, and positive direction-delta filter. The heatmap includes all 60 selected trait columns from the input matrix.
+The scatterplot and condition x trait heatmap include all 48 focus-eligible condition rows after the shared filters, minimum focus-direction profile filter, and positive direction-delta filter. The heatmap includes all 60 selected trait columns from the input matrix.
 
 The scatterplot is intended to separate large but sparsely supported direction deltas from conditions with broader profile/study support. `coverage_weighted_signal` in the scatter TSV is a descriptive product of the direction delta, square-root positive-signal profile count, and square-root study count; it is not used as a filter.
 

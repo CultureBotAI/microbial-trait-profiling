@@ -1,11 +1,11 @@
 {
   "method": "Table 1 contribution ledger (#190) restricted to PD fecal profiles",
   "profile_scope": "human PD fecal profiles in experiments with both directions",
-  "pd_feces_profiles": 247,
-  "ledger_profiles": 198,
-  "ledger_increased_profiles": 99,
-  "ledger_decreased_profiles": 99,
-  "ledger_studies": 45,
+  "pd_feces_profiles": 242,
+  "ledger_profiles": 194,
+  "ledger_increased_profiles": 97,
+  "ledger_decreased_profiles": 97,
+  "ledger_studies": 43,
   "ranks": [
     "species",
     "family"
@@ -59,24 +59,24 @@
   "kg_md5_verified_against": "methods/table1_taxon_influence_protocol.json",
   "input_sha256_chunks": {
     "study_trait_profiles_wide.tsv": [
-      "c07d589f",
-      "6cc88724",
-      "e43c683e",
-      "bd132bcd",
-      "5c7f316f",
-      "36b95df3",
-      "ff9acad2",
-      "4ebbf62f"
+      "519a095b",
+      "09e179dc",
+      "92fb51f9",
+      "d892984a",
+      "52dd100d",
+      "ece4dadf",
+      "6c94b036",
+      "a5323e6c"
     ],
     "experiments.tsv": [
-      "403afea9",
-      "8d9b0a5b",
-      "56939f68",
-      "bcc9aace",
-      "56a8eda3",
-      "50232a58",
-      "6806fe7b",
-      "f30ad230"
+      "16271237",
+      "a70f61c8",
+      "195d9f2a",
+      "cdd16f71",
+      "e88f6585",
+      "9160f95b",
+      "b734626b",
+      "c1328e06"
     ],
     "bugsigdb_taxa.tsv": [
       "e7fa982b",

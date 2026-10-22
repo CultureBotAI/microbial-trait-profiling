@@ -590,8 +590,8 @@ def compute_correlation(
     # either side. That zero is missingness, not a measured share, so it is
     # dropped rather than ranked (#289). The McNemar above already drops these as
     # ties; excluding them here makes both statistics describe one population.
-    # They are 15 of 959 on the pinned corpus, and keeping them as identical
-    # (0, 0) points attenuates the within-side correlations from -0.710 to -0.635.
+    # They are 5 of 932 on the pinned corpus, and keeping them as identical
+    # (0, 0) points attenuates the within-side correlations.
     direction_keys = [f"{guild}_{d}" for guild in GUILD_ORDER for d in DIRECTIONS]
     per_study: dict[str, dict[str, float]] = {}
     excluded_no_annotation = 0

@@ -24,7 +24,7 @@ case-control experiment does.
 ## The manifest
 
 `contrast_manifest.tsv` has one row per experiment in the pinned v1.3.1 export
-(4,457 experiments, 2,335 of them in the analysed human paired corpus). Each row
+(4,457 experiments, 2,257 of them in the analysed human paired corpus across 932 studies). Each row
 carries the export's own fields verbatim - PMID, DOI, study design, condition and
 EFO ID, body site and UBERON ID, host, both group names, the Group 1 definition,
 both sample sizes and the description - with the curated direction convention, the
@@ -150,31 +150,31 @@ from the disease-versus-healthy population rather than into it.
    stratified along two orthogonal columns:
 
    - `contrast_type`:
-     - `case_vs_control_subject` (997 analysed experiments, 574 studies): subject-level
+     - `case_vs_control_subject` (961 analysed experiments, 559 studies): subject-level
        case versus control comparisons.
      - `comorbidity_within_disease` (29 analysed experiments, 17 studies): both groups
        share a background disease or clinical state and differ in a second condition
        (for example, "Maintenance Hemodialysis without Constipation" vs "Maintenance
        Hemodialysis with Constipation", flagged `comorbidity_control`).
-     - `paired_tissue_autologous` (22 analysed experiments, 13 studies): tumour or
+     - `paired_tissue_autologous` (16 analysed experiments, 11 studies): tumour or
        lesional tissue compared against adjacent normal tissue from the same patients
        (flagged `paired_tissue_comparison`).
    - `control_tier`:
-     - `tier_1_healthy_normal` (821 analysed experiments, 491 studies): explicit
+     - `tier_1_healthy_normal` (792 analysed experiments, 478 studies): explicit
        healthy, normal, unaffected, uninfected or full-term subject controls
        (`case_vs_control_subject` with strong comparison evidence and no hospital,
        comorbidity or treatment confound).
-     - `tier_2_condition_negative_screened` (149 analysed experiments, 78 studies):
+     - `tier_2_condition_negative_screened` (143 analysed experiments, 76 studies):
        asymptomatic condition-negative or screened subject controls ("non-diabetic",
        "non-obese", "HPV-", "Normal weight"). Together, Tier 1 + Tier 2 comprise
-       **970 subject-level Disease Case vs. Healthy/Normal Control experiments across
-       563 studies**.
-     - `tier_3_hospital_comorbid_or_tissue` (78 analysed experiments, 45 studies):
-       the 22 `paired_tissue_autologous` experiments, the 29
-       `comorbidity_within_disease` experiments, and 27 `case_vs_control_subject`
+       **935 subject-level Disease Case vs. Healthy/Normal Control experiments across
+       548 studies**.
+     - `tier_3_hospital_comorbid_or_tissue` (71 analysed experiments, 42 studies):
+       the 16 `paired_tissue_autologous` experiments, the 29
+       `comorbidity_within_disease` experiments, and 26 `case_vs_control_subject`
        experiments whose control group is a hospital, surgical, symptomatic,
        precursor-lesion or benign-disease patient control (flagged
-       `hospital_or_symptomatic_control`: 16 experiments in 10 studies, including 4
+       `hospital_or_symptomatic_control`: 15 experiments in 9 studies, including 4
        colorectal-cancer contrasts against controls with a few polyps, #672) or whose
        disease group is confounded by named pharmacotherapy (`treated_disease_group`:
        11 experiments in 6 studies, 8 of them people with HIV on antiretroviral
@@ -230,16 +230,16 @@ from the disease-versus-healthy population rather than into it.
 
 **Analysis populations.** Five populations are reported side by side in
 `disease_control_comparison.tsv`:
-- `historical_human_paired` (2,335 experiments, 959 studies): all human paired
+- `historical_human_paired` (2,257 experiments, 932 studies): all human paired
   experiments in the historical corpus.
-- `disease_vs_healthy_oriented` (1,048 experiments, 592 studies): all experiments
+- `disease_vs_healthy_oriented` (1,006 experiments, 574 studies): all experiments
   classed `disease_vs_healthy`, with the 1 reversed experiment relabelled so `inc`
   means higher in the disease group.
-- `disease_vs_healthy_strong_evidence` (870 experiments, 514 studies):
+- `disease_vs_healthy_strong_evidence` (834 experiments, 498 studies):
   `disease_vs_healthy` experiments without `weak_comparison_evidence`.
-- `disease_vs_healthy_tier1_healthy_normal` (821 experiments, 491 studies):
+- `disease_vs_healthy_tier1_healthy_normal` (792 experiments, 478 studies):
   `tier_1_healthy_normal` subject-level healthy/normal controls only.
-- `disease_vs_healthy_tier1_2_subject_controls` (970 experiments, 563 studies):
+- `disease_vs_healthy_tier1_2_subject_controls` (935 experiments, 548 studies):
   combined `tier_1_healthy_normal` and `tier_2_condition_negative_screened`
   subject-level controls, excluding all `tier_3_hospital_comorbid_or_tissue`
   contrasts.
@@ -247,18 +247,18 @@ from the disease-versus-healthy population rather than into it.
 ## Selecting patients against controls
 
 `contrast_class = disease_vs_healthy` says only that exactly one group reads as a
-comparison. Of its 1,048 analysed experiments, 22 are `paired_tissue_autologous`:
+comparison. Of its 1,006 analysed experiments, 16 are `paired_tissue_autologous`:
 tumour or lesional tissue against adjacent normal tissue from the same patients, such
 as 25699023-2 ("adjacent non-cancerous tissues" against "cancerous tissues", colorectal
 mucosa). Another 29 are `comorbidity_within_disease`. A consumer that filters on the
 class alone counts these as patients against controls. To keep only comparisons of
 people with the condition against people without it:
 
-- filter the manifest on `contrast_type = case_vs_control_subject` (997 analysed
-  experiments, 574 studies). This drops the paired-tissue and comorbidity contrasts and
+- filter the manifest on `contrast_type = case_vs_control_subject` (961 analysed
+  experiments, 559 studies). This drops the paired-tissue and comorbidity contrasts and
   keeps the Tier 3 hospital, symptomatic, precursor-lesion and treated-case contrasts; or
 - filter on `control_tier` in {`tier_1_healthy_normal`,
-  `tier_2_condition_negative_screened`} (970 experiments, 563 studies), which drops all
+  `tier_2_condition_negative_screened`} (935 experiments, 548 studies), which drops all
   of Tier 3. `oriented_profiles(profiles, classes, control_tiers=...)` applies this
   filter in code, and it defines `disease_vs_healthy_tier1_2_subject_controls`.
 
@@ -321,30 +321,30 @@ to **60/60 (100.0%)**.
 
 ## Retained, reversed, excluded and unresolved
 
-Within the 2,335 analysed experiments (959 studies):
+Within the 2,257 analysed experiments (932 studies):
 
 | Class | Orientation | Experiments | Studies |
 | --- | --- | --- | --- |
-| disease_vs_healthy | native | 1,047 | 592 |
+| disease_vs_healthy | native | 1,005 | 574 |
 | disease_vs_healthy | reversed | 1 | 1 |
-| disease_vs_disease | - | 252 | 166 |
-| treatment_exposure | - | 351 | 169 |
-| longitudinal_timepoint | - | 191 | 99 |
-| other | - | 330 | 131 |
-| unresolved | - | 163 | 102 |
+| disease_vs_disease | - | 236 | 160 |
+| treatment_exposure | - | 345 | 166 |
+| longitudinal_timepoint | - | 189 | 97 |
+| other | - | 320 | 128 |
+| unresolved | - | 161 | 100 |
 
-Studies appear in more than one class when their experiments differ. 1,048
-experiments from 592 studies are retained in `disease_vs_healthy`, 1 of them
-reversed; 1,124 are excluded as other classes and 163 are unresolved. Within the
-1,048 `disease_vs_healthy` experiments:
+Studies appear in more than one class when their experiments differ. 1,006
+experiments from 574 studies are retained in `disease_vs_healthy`, 1 of them
+reversed; 1,090 are excluded as other classes and 161 are unresolved. Within the
+1,006 `disease_vs_healthy` experiments:
 
 | Contrast type | Control tier | Experiments | Studies |
 | --- | --- | --- | --- |
-| `case_vs_control_subject` | `tier_1_healthy_normal` | 821 | 491 |
-| `case_vs_control_subject` | `tier_2_condition_negative_screened` | 149 | 78 |
-| `case_vs_control_subject` | `tier_3_hospital_comorbid_or_tissue` | 27 | 16 |
+| `case_vs_control_subject` | `tier_1_healthy_normal` | 792 | 478 |
+| `case_vs_control_subject` | `tier_2_condition_negative_screened` | 143 | 76 |
+| `case_vs_control_subject` | `tier_3_hospital_comorbid_or_tissue` | 26 | 15 |
 | `comorbidity_within_disease` | `tier_3_hospital_comorbid_or_tissue` | 29 | 17 |
-| `paired_tissue_autologous` | `tier_3_hospital_comorbid_or_tissue` | 22 | 13 |
+| `paired_tissue_autologous` | `tier_3_hospital_comorbid_or_tissue` | 16 | 11 |
 
 ## Changes from `contrast-orientation-v3` to `-v4` (#569)
 
@@ -430,32 +430,31 @@ analysis) and the 15 paired log-ratios (positive-count complete cases,
 Benjamini-Yekutieli over 15). In all four oriented populations "increased" means
 higher in the disease group.
 
-| Comparison | Historical (959 studies) | All `disease_vs_healthy` (592) | Tier 1 + 2 subject controls (563) | Tier 1 healthy/normal only (491) |
+| Comparison | Historical (932 studies) | All `disease_vs_healthy` (574) | Tier 1 + 2 subject controls (548) | Tier 1 healthy/normal only (478) |
 | --- | --- | --- | --- | --- |
-| facultatively aerobic | 0.581 [0.549, 0.614], q 5.7e-06 | 0.582 [0.540, 0.623], q 3.5e-04 | 0.574 [0.531, 0.617], q 0.0014 | 0.570 [0.523, 0.615], q 0.0044 |
-| cellulose catabolic process | 0.430 [0.395, 0.466], q 2.3e-04 | 0.394 [0.349, 0.439], q 2.5e-05 | 0.404 [0.359, 0.451], q 3.5e-04 | 0.388 [0.340, 0.438], q 5.8e-05 |
-| coccus shaped | 0.545 [0.512, 0.578], q 0.0073 | 0.572 [0.530, 0.614], q 0.0011 | 0.565 [0.521, 0.607], q 0.0038 | 0.557 [0.511, 0.603], q 0.017 |
-| sphere shaped | 0.554 [0.520, 0.588], q 0.0029 | 0.545 [0.501, 0.588], q 0.044 | 0.549 [0.504, 0.593], q 0.034 | 0.554 [0.506, 0.602], q 0.027 |
-| arsenate reduction | 0.560 [0.520, 0.600], q 0.0038 | 0.580 [0.528, 0.631], q 0.0027 | 0.586 [0.532, 0.638], q 0.0024 | 0.589 [0.532, 0.643], q 0.0039 |
-| moderately halophilic | 0.572 [0.538, 0.605], q 1.0e-04 | 0.580 [0.536, 0.623], q 6.9e-04 | 0.578 [0.533, 0.623], q 0.0014 | 0.577 [0.529, 0.624], q 0.0039 |
-| facultatively aerobic / cellulose | 0.595 [0.549, 0.640], q 0.0011 | 0.631 [0.571, 0.689], q 8.0e-04 | 0.625 [0.563, 0.685], q 0.0032 | 0.626 [0.560, 0.689], q 0.0079 |
-| cellulose / sphere shaped | 0.407 [0.361, 0.456], q 0.0026 | 0.396 [0.336, 0.459], q 0.018 | 0.403 [0.341, 0.468], q 0.038 | 0.407 [0.341, 0.476], q 0.097 (p 0.0078) |
-| cellulose / arsenate reduction | 0.365 [0.304, 0.429], q 0.0011 | 0.348 [0.274, 0.429], q 0.0049 | 0.340 [0.263, 0.424], q 0.0039 | 0.344 [0.263, 0.431], q 0.011 |
-| cellulose / moderately halophilic | 0.435 [0.386, 0.485], q 0.12 | 0.405 [0.342, 0.471], q 0.052 (p 0.0042) | 0.397 [0.333, 0.465], q 0.038 | 0.400 [0.332, 0.471], q 0.094 (p 0.0057) |
+| facultatively aerobic | 0.580 [0.547, 0.613], q 1.0e-05 | 0.580 [0.538, 0.622], q 5.6e-04 | 0.573 [0.529, 0.616], q 0.0020 | 0.567 [0.520, 0.613], q 0.0067 |
+| cellulose catabolic process | 0.433 [0.397, 0.469], q 4.3e-04 | 0.396 [0.351, 0.442], q 4.2e-05 | 0.407 [0.360, 0.454], q 5.4e-04 | 0.391 [0.342, 0.441], q 9.3e-05 |
+| coccus shaped | 0.545 [0.511, 0.578], q 0.0083 | 0.571 [0.529, 0.613], q 0.0014 | 0.563 [0.519, 0.606], q 0.0052 | 0.555 [0.508, 0.601], q 0.024 |
+| sphere shaped | 0.556 [0.521, 0.590], q 0.0021 | 0.548 [0.503, 0.592], q 0.036 | 0.551 [0.506, 0.596], q 0.027 | 0.558 [0.509, 0.606], q 0.021 |
+| arsenate reduction | 0.563 [0.522, 0.603], q 0.0027 | 0.581 [0.529, 0.633], q 0.0026 | 0.587 [0.533, 0.640], q 0.0020 | 0.590 [0.533, 0.646], q 0.0038 |
+| moderately halophilic | 0.574 [0.540, 0.608], q 6.6e-05 | 0.583 [0.538, 0.626], q 5.6e-04 | 0.581 [0.536, 0.626], q 0.0013 | 0.581 [0.532, 0.628], q 0.0038 |
+| facultatively aerobic / cellulose | 0.595 [0.548, 0.641], q 0.0012 | 0.629 [0.568, 0.688], q 0.0012 | 0.623 [0.560, 0.684], q 0.0044 | 0.624 [0.556, 0.688], q 0.011 |
+| cellulose / sphere shaped | 0.403 [0.357, 0.452], q 0.0016 | 0.391 [0.330, 0.454], q 0.014 | 0.398 [0.335, 0.464], q 0.032 | 0.402 [0.335, 0.471], q 0.079 (p 0.0063) |
+| cellulose / arsenate reduction | 0.363 [0.301, 0.428], q 0.0012 | 0.346 [0.271, 0.428], q 0.0052 | 0.338 [0.261, 0.422], q 0.0044 | 0.342 [0.260, 0.430], q 0.012 |
+| cellulose / moderately halophilic | 0.431 [0.382, 0.481], q 0.094 | 0.401 [0.337, 0.468], q 0.045 | 0.393 [0.328, 0.461], q 0.032 | 0.395 [0.326, 0.467], q 0.079 (p 0.0048) |
 
 All 105 rows across the five populations, with study counts, are in
 `disease_control_comparison.tsv`. Every one of the six fraction directions keeps its
-direction and significance ($q \le 0.044$) across all five populations, including the
-strictest `tier_1_healthy_normal` subset (491 studies) and the combined subject-level
-control subset `tier_1_2_subject_controls` (563 studies). The four log-ratios above
-keep their direction in every population. All four have $q \le 0.05$ in
-`disease_vs_healthy_tier1_2_subject_controls` (563 studies). Three do in
-`disease_vs_healthy_oriented` (592 studies), where `cellulose / moderately_halophilic`
-is at $q = 0.052$ (nominal $p = 0.0042$). The two strongest ratios
+direction and significance ($q \le 0.036$) across all five populations, including the
+strictest `tier_1_healthy_normal` subset (478 studies) and the combined subject-level
+control subset `tier_1_2_subject_controls` (548 studies). The four log-ratios above
+keep their direction in every population. All four have $q \le 0.05$ in both
+`disease_vs_healthy_oriented` (574 studies) and
+`disease_vs_healthy_tier1_2_subject_controls` (548 studies). The two strongest ratios
 (`facultatively_aerobic / cellulose` and `cellulose / arsenate_reduction`) remain
 significant under Benjamini-Yekutieli even in the smaller `tier_1_healthy_normal`
-subset ($q = 0.0079$ and $q = 0.011$, with the other two at nominal $p = 0.0078$ and
-$p = 0.0057$).
+subset ($q = 0.011$ and $q = 0.012$, with the other two at nominal $p = 0.0063$ and
+$p = 0.0048$).
 
 Two log-ratios crossed $q = 0.05$ between `contrast-orientation-v3` and `-v4`, both by
 small margins and both in populations the HIV experiments joined. All 10 joined

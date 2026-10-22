@@ -77,12 +77,6 @@ NCBITaxon:816	Bacteroides	genus	METPO:1000668	coccus shaped	0	False	4	6	2
 NCBITaxon:816	Bacteroides	genus	METPO:1000683	sphere shaped	0	False	4	6	2
 NCBITaxon:816	Bacteroides	genus	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	0	False	4	6	2
 NCBITaxon:816	Bacteroides	genus	METPO:1000623	moderately halophilic	0	False	4	6	2
-NCBITaxon:200643	Bacteroidia	class	METPO:1000608	facultatively aerobic	12	True	2	6	4
-NCBITaxon:200643	Bacteroidia	class	METPO:2000103|GO:0030245	cellulose catabolic process	2	True	2	6	4
-NCBITaxon:200643	Bacteroidia	class	METPO:1000668	coccus shaped	4	True	2	6	4
-NCBITaxon:200643	Bacteroidia	class	METPO:1000683	sphere shaped	2	True	2	6	4
-NCBITaxon:200643	Bacteroidia	class	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	0	False	2	6	4
-NCBITaxon:200643	Bacteroidia	class	METPO:1000623	moderately halophilic	1	True	2	6	4
 NCBITaxon:201174	Actinomycetota	phylum	METPO:1000608	facultatively aerobic	197	True	8	0	-8
 NCBITaxon:201174	Actinomycetota	phylum	METPO:2000103|GO:0030245	cellulose catabolic process	51	True	8	0	-8
 NCBITaxon:201174	Actinomycetota	phylum	METPO:1000668	coccus shaped	238	True	8	0	-8
@@ -101,6 +95,12 @@ NCBITaxon:301302	Roseburia faecis	species	METPO:1000668	coccus shaped	0	False	0	
 NCBITaxon:301302	Roseburia faecis	species	METPO:1000683	sphere shaped	0	False	0	6	6
 NCBITaxon:301302	Roseburia faecis	species	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	0	False	0	6	6
 NCBITaxon:301302	Roseburia faecis	species	METPO:1000623	moderately halophilic	0	False	0	6	6
+NCBITaxon:200643	Bacteroidia	class	METPO:1000608	facultatively aerobic	12	True	2	4	2
+NCBITaxon:200643	Bacteroidia	class	METPO:2000103|GO:0030245	cellulose catabolic process	2	True	2	4	2
+NCBITaxon:200643	Bacteroidia	class	METPO:1000668	coccus shaped	4	True	2	4	2
+NCBITaxon:200643	Bacteroidia	class	METPO:1000683	sphere shaped	2	True	2	4	2
+NCBITaxon:200643	Bacteroidia	class	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	0	False	2	4	2
+NCBITaxon:200643	Bacteroidia	class	METPO:1000623	moderately halophilic	1	True	2	4	2
 NCBITaxon:613	Serratia	genus	METPO:1000608	facultatively aerobic	23	True	6	0	-6
 NCBITaxon:613	Serratia	genus	METPO:2000103|GO:0030245	cellulose catabolic process	5	True	6	0	-6
 NCBITaxon:613	Serratia	genus	METPO:1000668	coccus shaped	0	False	6	0	-6

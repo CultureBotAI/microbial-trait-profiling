@@ -65,8 +65,8 @@ for all oral labels. Separate body-site groups such as `Saliva` and
 `Subgingival dental plaque` have their own TSVs. The `Mouth` file uses matched
 increased/decreased study-experiment pairs whose upstream paired metadata has
 `body_site_group = Mouth`. In the current human-host experiment-level corpus
-(#555), only `Feces` (`1,531` pairs), `Feces excluded` (`804` pairs), `Other`
-(`563` pairs), and `Saliva` (`152` pairs) meet the `>= 50`-pair manifest
+(#555), only `Feces` (`1,416` pairs), `Feces excluded` (`841` pairs), `Other`
+(`492` pairs), and `Saliva` (`152` pairs) meet the `>= 50`-pair manifest
 threshold; the `caecum`, `colon`, `mouth`, `subgingival_dental_plaque`, and
 `vagina` TSVs on disk are legacy outputs from before that restriction and are
 not listed in `trait_profile_paired_contrast_trait_stats_manifest.tsv`.

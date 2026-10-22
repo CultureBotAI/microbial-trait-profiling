@@ -26,8 +26,8 @@ the paired-profile run under its three names) (#586).
 The current workflow diagram uses `waldronlab/BugSigDBExports` `v1.3.1`
 `full_dump.csv` (`BugSigDB 2026-04-24_00:41_UTC`, DOI
 `10.5281/zenodo.19740674`) as the citable BugSigDB input. The plotted Sankey
-corpus is restricted to `Homo sapiens` host samples only: 5,829 profiles from
-1,080 studies. Trait scores are log1p-scaled profile trait fractions converted
+corpus is restricted to `Homo sapiens` host samples only: 5,629 profiles from
+1,047 studies. Trait scores are log1p-scaled profile trait fractions converted
 to column z-scores, and paired trait contrasts use one-sample t-tests with
 Benjamini-Hochberg q-values.
 

@@ -45,20 +45,22 @@ host_species field, leaving Homo sapiens only. Experiments were restricted to
 those carrying both an increased and a decreased signature, so every contributing
 experiment supports a paired contrast. Growth-medium columns, identified by a
 mediadive.medium marker in the trait column identifier, were removed from the
-trait space before any total was computed. Of 7,329 profile rows read, 1,500 were
-dropped as non-human and 1,159 experiments as unpaired; 2,333 trait columns were
-MediaDive, leaving 317 traits, 2,335 experiments, 4,670 profiles, and 959
+trait space before any total was computed. Of 7,111 profile rows read under the
+`count_input_16s_wms_v1` profile policy, 1,482 were
+dropped as non-human (leaving 5,629 human profiles from 1,047 studies) and 1,115
+experiments as unpaired; 2,333 trait columns were
+MediaDive, leaving 317 traits, 2,257 experiments, 4,514 profiles, and 932
 studies. Every experiment in the profile matrix resolved against the experiment
 metadata table, so no rows were lost to a failed join.
 
 An earlier revision of this note said the v1.3.1 wide matrix is already human-only
 upstream and that the host filter drops 0 rows. That is not true of the matrix
-identified below, where the host filter drops 1,500 rows (#222).
+identified below, where the host filter drops 1,482 rows (#222).
 
 The matrix these counts were measured on is
 `data/derived/study_trait_profiles_wide.tsv`, sha256
-`6e70724ee807cf24e9c1f371a51421fa5b09d6283fa7f3abcd6620e5492c6a73`: 2,653
-header columns (3 identifier, 2,333 MediaDive, 317 retained) over 7,329 profile
+`a0c28978c5e58c153afba517f8a9fb9a50bd62d5dddefb78f583e0cb2aedf334`: 2,653
+header columns (3 identifier, 2,333 MediaDive, 317 retained) over 7,111 profile
 rows, joined from BugSigDB `2026-04-24_00:41_UTC` and a KG-Microbe build whose
 nodes are md5 `dd76b4656f9341db25a7c4afa96cd58e` and which records no release
 tag. Naming the dump does not identify the matrix, so the run writes this
@@ -144,14 +146,14 @@ columns; of 4,368 cells, 344 carry a value, 308 fall below the study threshold,
 
 The association between guild and direction was tested on studies scored once
 per guild by the sign of the mean increased fraction minus the mean decreased
-fraction. Over 959 studies, aerobes shifted toward the increased side in 536
-studies and toward the decreased side in 396, while anaerobes shifted toward the
-increased side in 412 and toward the decreased side in 530. Because the **same
+fraction. Over 932 studies, aerobes shifted toward the increased side in 525
+studies and toward the decreased side in 390, while anaerobes shifted toward the
+increased side in 405 and toward the decreased side in 520. Because the **same
 studies provide both signs**, the two guilds form matched pairs, not independent
 samples, so the test is an **exact McNemar** — a two-sided binomial on the
-discordant studies. Of the 932 studies with both signs, 420 shift aerobe up
-while anaerobe shifts down and 290 the reverse, giving a paired odds ratio of
-1.448 with p = 1.2e-06. (An earlier draft applied Fisher's exact test to the
+discordant studies. Of the 915 studies with both signs (694 discordant), 410 shift aerobe up
+while anaerobe shifts down and 284 the reverse, giving a paired odds ratio of
+1.444 with p = 2.0e-06. (An earlier draft applied Fisher's exact test to the
 marginal two-by-two; that assumes independent rows, and on this data it was
 anticonservative by roughly three orders of magnitude and inflated the odds
 ratio by a fifth.) Counting studies with any non-zero guild signal instead of
@@ -163,7 +165,7 @@ escape compositionality: both signs derive from shares of the same profile
 denominator. An increase in one guild's counts can lower the other guild's share
 without a change in the latter's counts. This does not force every pair of
 components to correlate negatively. On this corpus 76 per cent of the scored
-studies (710 of 932) carry opposite signs for the two guilds; that observation
+studies (694 of 915) carry opposite signs for the two guilds; that observation
 alone does not quantify the structural contribution. The odds ratio reads as
 "the discordance runs more
 often in the aerobe-up direction than the reverse", not as independent
@@ -178,16 +180,14 @@ each study's mean guild fraction per direction and its paired contrast (the mean
 increased minus mean decreased fraction). An earlier version correlated the 86
 condition-by-body-site cells that survived masking; one study reaches many cells,
 so that counted dependent cells as independent observations, and it is replaced
-here by the per-study template the matched-corpus Table 1-trait analog figure already uses (#165). Fifteen of
-the 959 studies carry no oxygen annotation on either side. Their zero is
+here by the per-study template the matched-corpus Table 1-trait analog figure already uses (#165). Five of
+the 932 studies carry no oxygen annotation on either side. Their zero is
 missingness rather than a measured share, so they are excluded from the rank
-correlations, which leaves 944 (#289). The McNemar already dropped them as ties,
-so both statistics now describe the same population. Keeping them would add
-fifteen identical points at the origin and attenuate the within-side correlations
-to -0.635 and -0.630. Over those 944 studies, aerobe and anaerobe fractions
-correlate negatively within the same direction, rho = -0.710 on the increased side
-and -0.704 on the decreased side, and the two guilds' per-study contrasts
-correlate at rho = -0.727. These are
+correlations, which leaves 927 (#289). The McNemar already dropped them as ties,
+so both statistics now describe the same population. Over those 927 studies, aerobe and anaerobe fractions
+correlate negatively within the same direction, rho = -0.714 on the increased side
+and -0.708 on the decreased side, and the two guilds' per-study contrasts
+correlate at rho = -0.724. These are
 largely the structural artefact described above - two shares of one denominator -
 and are not to be read as support. Studies are still not fully independent where
 they share cohorts, which this computation does not model.

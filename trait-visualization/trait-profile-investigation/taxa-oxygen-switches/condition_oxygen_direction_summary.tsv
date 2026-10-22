@@ -12,7 +12,6 @@ Autoimmune / inflammatory disease	Food allergy	Feces	aerobic_only	4	2	2	1	3	1	1	
 Autoimmune / inflammatory disease	Food allergy	Feces	anaerobic_only	33	6	20	16	17	5	5	Feces	-0.030303030303030304
 Autoimmune / inflammatory disease	Graves disease	Feces	anaerobic_only	3	1	3	1	2	1	1	Feces	-0.3333333333333333
 Autoimmune / inflammatory disease	Henoch-Schoenlein purpura	Feces	anaerobic_only	10	1	10	3	7	1	1	Feces	-0.4
-Autoimmune / inflammatory disease	Increased inflammatory response	Feces	anaerobic_only	5	1	5	0	5	0	1	Feces	-1.0
 Autoimmune / inflammatory disease	Milk allergic reaction	Feces	aerobic_only	1	1	1	1	0	1	0	Feces	1.0
 Autoimmune / inflammatory disease	Milk allergic reaction	Feces	anaerobic_only	14	3	8	8	6	2	2	Feces	0.14285714285714285
 Autoimmune / inflammatory disease	Osteoarthritis,Rheumatoid arthritis	Oral cavity / dental	aerobic_only	19	1	16	7	12	1	1	Saliva	-0.2631578947368421
@@ -29,8 +28,8 @@ Autoimmune / inflammatory disease	Psoriasis vulgaris	Feces	aerobic_only	4	1	1	1	
 Autoimmune / inflammatory disease	Psoriasis vulgaris	Feces	anaerobic_only	50	1	17	20	30	1	1	Feces	-0.2
 Autoimmune / inflammatory disease	Rheumatoid arthritis	Feces	aerobic_only	4	2	3	3	1	2	1	Feces	0.5
 Autoimmune / inflammatory disease	Rheumatoid arthritis	Feces	anaerobic_only	24	5	22	10	14	4	3	Feces	-0.16666666666666666
-Autoimmune / inflammatory disease	Rheumatoid arthritis	Oral cavity / dental	aerobic_only	58	8	42	14	44	5	6	Subgingival dental plaque; Saliva; Internal cheek pouch	-0.5172413793103449
-Autoimmune / inflammatory disease	Rheumatoid arthritis	Oral cavity / dental	anaerobic_only	125	9	80	86	39	8	7	Subgingival dental plaque; Saliva; Supragingival dental plaque; Internal cheek pouch	0.376
+Autoimmune / inflammatory disease	Rheumatoid arthritis	Oral cavity / dental	aerobic_only	55	7	40	14	41	5	5	Subgingival dental plaque; Saliva; Internal cheek pouch	-0.4909090909090909
+Autoimmune / inflammatory disease	Rheumatoid arthritis	Oral cavity / dental	anaerobic_only	124	8	79	85	39	7	7	Subgingival dental plaque; Saliva; Supragingival dental plaque; Internal cheek pouch	0.3709677419354839
 Autoimmune / inflammatory disease	Sjogren syndrome	Oral cavity / dental	aerobic_only	2	1	2	0	2	0	1	Saliva	-1.0
 Autoimmune / inflammatory disease	Sjogren syndrome	Oral cavity / dental	anaerobic_only	2	1	2	1	1	1	1	Saliva	0.0
 Autoimmune / inflammatory disease	Systemic lupus erythematosus	Oral cavity / dental	aerobic_only	11	1	7	2	9	1	1	Subgingival dental plaque	-0.6363636363636364
@@ -58,8 +57,6 @@ Cancer / neoplasia	Breast carcinoma	Feces	anaerobic_only	31	1	23	6	25	1	1	Feces	
 Cancer / neoplasia	Breast ductal carcinoma in situ	Feces	anaerobic_only	7	1	6	6	1	1	1	Feces	0.7142857142857143
 Cancer / neoplasia	Breast ductal carcinoma in situ	Oral cavity / dental	anaerobic_only	1	1	1	0	1	0	1	Saliva	-1.0
 Cancer / neoplasia	Cancer	Feces	anaerobic_only	5	1	3	2	3	1	1	Feces	-0.2
-Cancer / neoplasia	Cancer or benign tumor	Hepatobiliary / pancreas	aerobic_only	8	1	8	1	7	1	1	Pancreas	-0.75
-Cancer / neoplasia	Cancer or benign tumor	Hepatobiliary / pancreas	anaerobic_only	1	1	1	0	1	0	1	Pancreas	-1.0
 Cancer / neoplasia	Cervical cancer	Feces	aerobic_only	2	2	2	0	2	0	2	Feces	-1.0
 Cancer / neoplasia	Cervical cancer	Feces	anaerobic_only	40	2	22	21	19	2	2	Feces	0.05
 Cancer / neoplasia	Cervical cancer	Vaginal / reproductive	aerobic_only	6	4	6	3	3	3	1	Vagina; Uterine cervix; Posterior fornix of vagina	0.0
@@ -74,7 +71,6 @@ Cancer / neoplasia	Colon carcinoma	Unlocalized mucosal samples	anaerobic_only	2	
 Cancer / neoplasia	Colorectal Gastrointestinal Stromal Tumor	Feces	anaerobic_only	2	1	2	1	1	1	1	Feces	0.0
 Cancer / neoplasia	Colorectal adenocarcinoma	Feces	aerobic_only	3	1	3	3	0	1	0	Feces	1.0
 Cancer / neoplasia	Colorectal adenocarcinoma	Feces	anaerobic_only	25	1	25	18	7	1	1	Feces	0.44
-Cancer / neoplasia	Cutaneous T-cell lymphoma	Skin	aerobic_only	1	1	1	0	1	0	1	Skin epidermis	-1.0
 Cancer / neoplasia	Digestive system cancer	Oral cavity / dental	aerobic_only	5	1	5	3	2	1	1	Saliva	0.2
 Cancer / neoplasia	Digestive system cancer	Oral cavity / dental	anaerobic_only	6	1	6	3	3	1	1	Saliva	0.0
 Cancer / neoplasia	Endometrial cancer	Feces	aerobic_only	2	1	1	2	0	1	0	Feces	1.0
@@ -120,13 +116,12 @@ Cancer / neoplasia	Nasopharyngeal squamous cell carcinoma	Oral cavity / dental	a
 Cancer / neoplasia	Non-Hodgkins lymphoma	Feces	anaerobic_only	14	2	11	2	12	1	2	Feces	-0.7142857142857143
 Cancer / neoplasia	Oral cavity carcinoma	Oral cavity / dental	aerobic_only	16	1	8	2	14	1	1	Mouth	-0.75
 Cancer / neoplasia	Oral cavity carcinoma	Oral cavity / dental	anaerobic_only	9	1	7	5	4	1	1	Mouth	0.1111111111111111
-Cancer / neoplasia	Oral squamous cell carcinoma	Oral cavity / dental	aerobic_only	21	5	17	9	12	4	4	Saliva; Mucosa of oral region; Oral cavity	-0.14285714285714285
-Cancer / neoplasia	Oral squamous cell carcinoma	Oral cavity / dental	anaerobic_only	47	6	36	27	20	6	5	Saliva; Mucosa of oral region; Oral cavity	0.14893617021276595
+Cancer / neoplasia	Oral squamous cell carcinoma	Oral cavity / dental	aerobic_only	20	4	16	8	12	3	4	Saliva; Mucosa of oral region; Oral cavity	-0.2
+Cancer / neoplasia	Oral squamous cell carcinoma	Oral cavity / dental	anaerobic_only	45	5	35	26	19	5	4	Saliva; Mucosa of oral region; Oral cavity	0.15555555555555556
 Cancer / neoplasia	Ovarian cancer	Feces	anaerobic_only	36	1	35	15	21	1	1	Feces	-0.16666666666666666
 Cancer / neoplasia	Ovarian cancer	Miscellaneous sampled tissues	aerobic_only	10	1	3	10	0	1	0	Peritoneal fluid	1.0
 Cancer / neoplasia	Ovarian cancer	Miscellaneous sampled tissues	anaerobic_only	6	1	4	6	0	1	0	Omentum; Peritoneal fluid	1.0
-Cancer / neoplasia	Ovarian cancer	Reproductive / genital	aerobic_only	24	2	22	17	7	2	2	Ovary	0.4166666666666667
-Cancer / neoplasia	Ovarian cancer	Reproductive / genital	anaerobic_only	2	1	2	2	0	1	0	Ovary	1.0
+Cancer / neoplasia	Ovarian cancer	Reproductive / genital	aerobic_only	4	1	2	2	2	1	1	Ovary	0.0
 Cancer / neoplasia	Ovarian cancer	Urinary tract	anaerobic_only	40	1	23	19	21	1	1	Urine	-0.05
 Cancer / neoplasia	Ovarian cancer	Vaginal / reproductive	aerobic_only	29	3	18	21	8	2	3	Uterus; Vagina,Uterine cervix	0.4482758620689655
 Cancer / neoplasia	Ovarian cancer	Vaginal / reproductive	anaerobic_only	154	1	72	114	40	1	1	Vagina,Uterine cervix	0.4805194805194805
@@ -135,8 +130,6 @@ Cancer / neoplasia	Pancreatic carcinoma	Blood	anaerobic_only	6	1	1	6	0	1	0	Blood
 Cancer / neoplasia	Pancreatic carcinoma	Feces	aerobic_only	4	1	4	2	2	1	1	Feces	0.0
 Cancer / neoplasia	Pancreatic carcinoma	Feces	anaerobic_only	36	4	31	15	21	4	3	Feces	-0.16666666666666666
 Cancer / neoplasia	Pancreatic carcinoma	Oral cavity / dental	aerobic_only	1	1	1	0	1	0	1	Saliva	-1.0
-Cancer / neoplasia	Pancreatic ductal adenocarcinoma	Hepatobiliary / pancreas	aerobic_only	13	1	8	0	13	0	1	Pancreas	-1.0
-Cancer / neoplasia	Pancreatic ductal adenocarcinoma	Hepatobiliary / pancreas	anaerobic_only	1	1	1	1	0	1	0	Pancreas	1.0
 Cancer / neoplasia	Papillary thyroid carcinoma	Thyroid tissue	aerobic_only	98	1	17	44	54	1	1	Thyroid gland	-0.10204081632653061
 Cancer / neoplasia	Papillary thyroid carcinoma	Thyroid tissue	anaerobic_only	84	1	14	46	38	1	1	Thyroid gland	0.09523809523809523
 Cancer / neoplasia	Peutz-Jeghers Polyp	Feces	aerobic_only	9	1	9	7	2	1	1	Feces	0.5555555555555556
@@ -220,7 +213,7 @@ GI / digestive disease	Intestinal polyp	Feces	aerobic_only	4	1	4	1	3	1	1	Feces	-
 GI / digestive disease	Intestinal polyp	Feces	anaerobic_only	9	1	8	7	2	1	1	Feces	0.5555555555555556
 GI / digestive disease	Intestinal polyp	Lower GI tract	anaerobic_only	13	1	12	9	4	1	1	Colonic mucosa	0.38461538461538464
 GI / digestive disease	Irritable bowel syndrome	Feces	aerobic_only	23	4	11	19	4	4	2	Feces	0.6521739130434783
-GI / digestive disease	Irritable bowel syndrome	Feces	anaerobic_only	351	14	137	149	202	11	11	Feces,Mucosa of small intestine; Feces	-0.150997150997151
+GI / digestive disease	Irritable bowel syndrome	Feces	anaerobic_only	349	13	136	149	200	11	10	Feces	-0.14613180515759314
 GI / digestive disease	Irritable bowel syndrome	Intestinal / GI mucosa	aerobic_only	9	1	9	6	3	1	1	Duodenal mucosa; Lumen of duodenum	0.3333333333333333
 GI / digestive disease	Irritable bowel syndrome	Intestinal / GI mucosa	anaerobic_only	2	1	2	2	0	1	0	Lumen of duodenum	1.0
 GI / digestive disease	Irritable bowel syndrome	Lower GI tract	aerobic_only	2	1	2	1	1	1	1	Mucosa of rectum	0.0
@@ -232,7 +225,7 @@ GI / digestive disease	Irritable bowel syndrome	Oral cavity / dental	anaerobic_o
 GI / digestive disease	Necrotizing enterocolitis	Lower GI tract	aerobic_only	5	1	5	0	5	0	1	Mucosa of small intestine	-1.0
 GI / digestive disease	Necrotizing enterocolitis	Lower GI tract	anaerobic_only	1	1	1	0	1	0	1	Mucosa of small intestine	-1.0
 GI / digestive disease	Non-alcoholic fatty liver disease	Feces	aerobic_only	2	1	1	1	1	1	1	Feces	0.0
-GI / digestive disease	Non-alcoholic fatty liver disease	Feces	anaerobic_only	86	6	39	42	44	4	5	Feces	-0.023255813953488372
+GI / digestive disease	Non-alcoholic fatty liver disease	Feces	anaerobic_only	79	5	38	42	37	4	4	Feces	0.06329113924050633
 GI / digestive disease	Peptic esophagitis	Oral cavity / dental	aerobic_only	5	1	5	1	4	1	1	Saliva	-0.6
 GI / digestive disease	Peptic esophagitis	Oral cavity / dental	anaerobic_only	13	1	13	9	4	1	1	Saliva	0.38461538461538464
 GI / digestive disease	Small intestine enteropathy	Intestinal / GI mucosa	aerobic_only	12	1	12	4	8	1	1	Duodenal mucosa	-0.3333333333333333
@@ -242,8 +235,8 @@ Infectious disease	Age,Human papilloma virus infection	Oral cavity / dental	aero
 Infectious disease	Age,Human papilloma virus infection	Oral cavity / dental	anaerobic_only	4	1	4	3	1	1	1	Mouth	0.5
 Infectious disease	Antimicrobial agent,Urinary tract infection	Feces	anaerobic_only	5	1	4	5	0	1	0	Feces	1.0
 Infectious disease	Autoimmune Hepatitis	Feces	anaerobic_only	4	1	4	2	2	1	1	Feces	0.0
-Infectious disease	COVID-19	Feces	aerobic_only	59	10	38	34	25	9	9	Feces	0.15254237288135594
-Infectious disease	COVID-19	Feces	anaerobic_only	374	13	158	117	257	11	13	Feces	-0.37433155080213903
+Infectious disease	COVID-19	Feces	aerobic_only	56	9	36	34	22	9	8	Feces	0.21428571428571427
+Infectious disease	COVID-19	Feces	anaerobic_only	343	12	150	117	226	11	12	Feces	-0.3177842565597668
 Infectious disease	COVID-19	Lower GI tract	aerobic_only	53	1	32	40	13	1	1	Rectum	0.5094339622641509
 Infectious disease	COVID-19	Lower GI tract	anaerobic_only	170	2	112	54	116	2	1	Rectum	-0.36470588235294116
 Infectious disease	COVID-19	Lower airway / lung	aerobic_only	39	2	38	35	4	2	1	Lung	0.7948717948717948
@@ -266,8 +259,6 @@ Infectious disease	Chronic hepatitis C virus infection	Feces	anaerobic_only	11	1
 Infectious disease	Clonorchiasis	Feces	anaerobic_only	5	1	5	5	0	1	0	Feces	1.0
 Infectious disease	Coinfection,Age	Oral cavity / dental	aerobic_only	2	1	2	2	0	1	0	Saliva	1.0
 Infectious disease	Coinfection,Age	Oral cavity / dental	anaerobic_only	3	1	3	1	2	1	1	Saliva	-0.3333333333333333
-Infectious disease	Gastric adenocarcinoma,Epstein-Barr virus infection	Stomach / esophagus	aerobic_only	5	1	5	1	4	1	1	Stomach	-0.6
-Infectious disease	Gastric adenocarcinoma,Epstein-Barr virus infection	Stomach / esophagus	anaerobic_only	2	1	2	0	2	0	1	Stomach	-1.0
 Infectious disease	Gonorrhea	Upper airway / nasal	aerobic_only	1	1	1	0	1	0	1	Tonsillar fossa	-1.0
 Infectious disease	Gonorrhea	Vaginal / reproductive	anaerobic_only	1	1	1	0	1	0	1	Vagina	-1.0
 Infectious disease	HIV infection	Feces	aerobic_only	21	6	15	16	5	5	3	Feces; Oral cavity,Feces	0.5238095238095238
@@ -369,10 +360,10 @@ Inflammatory bowel disease	Crohn's disease	Intestinal / GI mucosa	aerobic_only	3
 Inflammatory bowel disease	Crohn's disease	Lower GI tract	anaerobic_only	43	3	26	28	15	2	2	Cecum mucosa,Colonic mucosa,Mucosa of rectum,Ileal mucosa; Ileum; Ileum,Right colon,Rectum; Rectum; Right colon	0.3023255813953488
 Inflammatory bowel disease	Crohn's disease	Stomach / esophagus	aerobic_only	1	1	1	1	0	1	0	Esophagus	1.0
 Inflammatory bowel disease	Crohn's disease	Unlocalized mucosal samples	anaerobic_only	2	1	2	2	0	1	0	Mucosa of pyloric antrum	1.0
-Inflammatory bowel disease	Inflammatory bowel disease	Feces	aerobic_only	10	2	10	8	2	2	1	Feces	0.6
-Inflammatory bowel disease	Inflammatory bowel disease	Feces	anaerobic_only	65	3	38	13	52	1	2	Feces	-0.6
-Inflammatory bowel disease	Ulcerative colitis	Feces	aerobic_only	13	7	13	9	4	5	4	Feces	0.38461538461538464
-Inflammatory bowel disease	Ulcerative colitis	Feces	anaerobic_only	113	7	87	35	78	7	7	Feces	-0.3805309734513274
+Inflammatory bowel disease	Inflammatory bowel disease	Feces	aerobic_only	8	1	8	6	2	1	1	Feces	0.5
+Inflammatory bowel disease	Inflammatory bowel disease	Feces	anaerobic_only	14	2	8	13	1	1	1	Feces	0.8571428571428571
+Inflammatory bowel disease	Ulcerative colitis	Feces	aerobic_only	11	6	11	8	3	4	3	Feces	0.45454545454545453
+Inflammatory bowel disease	Ulcerative colitis	Feces	anaerobic_only	100	6	79	27	73	6	6	Feces	-0.46
 Inflammatory bowel disease	Ulcerative colitis	Lower GI tract	aerobic_only	2	1	1	2	0	1	0	Cecum mucosa,Colonic mucosa,Mucosa of rectum,Ileal mucosa	1.0
 Inflammatory bowel disease	Ulcerative colitis	Lower GI tract	anaerobic_only	36	2	19	14	22	1	2	Cecum mucosa,Colonic mucosa,Mucosa of rectum,Ileal mucosa; Rectum; Ileum,Right colon,Rectum; Right colon; Ileum	-0.2222222222222222
 Liver / biliary biomarker	Cholestasis	Feces	aerobic_only	2	1	2	0	2	0	1	Feces	-1.0
@@ -397,13 +388,9 @@ Metabolic / endocrine	HDL cholesterol	Oral cavity / dental	anaerobic_only	1	1	1	
 Metabolic / endocrine	HIV infection,Diabetes mellitus	Feces	anaerobic_only	4	1	4	0	4	0	1	Feces	-1.0
 Metabolic / endocrine	Hashimoto's thyroiditis	Feces	anaerobic_only	17	1	17	12	5	1	1	Feces	0.4117647058823529
 Metabolic / endocrine	Hyperproinsulinemia	Feces	anaerobic_only	1	1	1	0	1	0	1	Feces	-1.0
-Metabolic / endocrine	Insulin	Feces	anaerobic_only	12	1	6	2	10	1	1	Feces	-0.6666666666666666
 Metabolic / endocrine	Malnutrition	Feces	aerobic_only	2	1	2	2	0	1	0	Feces	1.0
 Metabolic / endocrine	Malnutrition	Feces	anaerobic_only	1	1	1	0	1	0	1	Feces	-1.0
 Metabolic / endocrine	Malnutrition	Lower GI tract	anaerobic_only	5	1	5	3	2	1	1	Ileum,Right colon,Rectum	0.2
-Metabolic / endocrine	Metabolic process	Feces	aerobic_only	1	1	1	0	1	0	1	Feces	-1.0
-Metabolic / endocrine	Metabolic process	Feces	anaerobic_only	1	1	1	1	0	1	0	Feces	1.0
-Metabolic / endocrine	Metabolic process	Lower GI tract	anaerobic_only	3	1	2	2	1	1	1	Intestine	0.3333333333333333
 Metabolic / endocrine	Metabolic toxicity	Feces	aerobic_only	45	1	3	31	14	1	1	Feces	0.37777777777777777
 Metabolic / endocrine	Metabolic toxicity	Feces	anaerobic_only	237	1	34	105	132	1	1	Feces	-0.11392405063291139
 Metabolic / endocrine	Obesity	Feces	aerobic_only	52	10	44	28	24	8	7	Feces	0.07692307692307693
@@ -460,7 +447,7 @@ Neurologic / cognitive disease	Cerebral infarction	Feces	anaerobic_only	17	1	17	
 Neurologic / cognitive disease	Cognitive impairment	Feces	anaerobic_only	14	4	12	12	2	3	2	Feces	0.7142857142857143
 Neurologic / cognitive disease	Dementia	Feces	aerobic_only	1	1	1	1	0	1	0	Feces	1.0
 Neurologic / cognitive disease	Dementia	Feces	anaerobic_only	22	1	20	21	1	1	1	Feces	0.9090909090909091
-Neurologic / cognitive disease	Diabetic neuropathy	Feces	anaerobic_only	8	2	8	7	1	2	1	Feces	0.75
+Neurologic / cognitive disease	Diabetic neuropathy	Feces	anaerobic_only	4	1	4	4	0	1	0	Feces	1.0
 Neurologic / cognitive disease	Down syndrome	Oral cavity / dental	aerobic_only	15	1	11	13	2	1	1	Oral cavity	0.7333333333333333
 Neurologic / cognitive disease	Down syndrome	Oral cavity / dental	anaerobic_only	7	1	7	0	7	0	1	Oral cavity	-1.0
 Neurologic / cognitive disease	Encephalitis	Feces	anaerobic_only	3	1	3	1	2	1	1	Feces	-0.3333333333333333
@@ -474,7 +461,7 @@ Neurologic / cognitive disease	Neuromyelitis optica	Feces	anaerobic_only	10	1	10
 Neurologic / cognitive disease	Obstructive sleep apnea	Upper airway / nasal	aerobic_only	29	1	20	19	10	1	1	Throat	0.3103448275862069
 Neurologic / cognitive disease	Obstructive sleep apnea	Upper airway / nasal	anaerobic_only	21	1	14	16	5	1	1	Throat	0.5238095238095238
 Neurologic / cognitive disease	Parkinson's disease	Feces	aerobic_only	36	13	25	18	18	8	9	Feces	0.0
-Neurologic / cognitive disease	Parkinson's disease	Feces	anaerobic_only	652	52	199	332	320	42	45	Feces; Feces,Blood	0.018404907975460124
+Neurologic / cognitive disease	Parkinson's disease	Feces	anaerobic_only	651	51	199	331	320	41	45	Feces; Feces,Blood	0.016897081413210446
 Neurologic / cognitive disease	Parkinson's disease	Intestinal / GI mucosa	aerobic_only	2	1	2	2	0	1	0	Duodenal mucosa	1.0
 Neurologic / cognitive disease	Parkinson's disease	Lower GI tract	aerobic_only	1	1	1	1	0	1	0	Colonic mucosa	1.0
 Neurologic / cognitive disease	Parkinson's disease	Lower GI tract	anaerobic_only	1	1	1	0	1	0	1	Colonic mucosa	-1.0
@@ -495,12 +482,12 @@ Neurologic / cognitive disease	Spinal cord injury	Feces	anaerobic_only	24	1	24	8
 Ocular / eye disease	Age-related macular degeneration	Feces	anaerobic_only	28	3	18	10	18	3	3	Feces	-0.2857142857142857
 Ocular / eye disease	Age-related macular degeneration	Oral cavity / dental	aerobic_only	2	1	2	2	0	1	0	Buccal mucosa	1.0
 Ocular / eye disease	Age-related macular degeneration	Oral cavity / dental	anaerobic_only	2	1	2	1	1	1	1	Buccal mucosa	0.0
-Ocular / eye disease	Age-related macular degeneration	Upper airway / nasal	anaerobic_only	5	1	1	0	5	0	1	Throat	-1.0
+Ocular / eye disease	Age-related macular degeneration	Upper airway / nasal	anaerobic_only	4	1	1	0	4	0	1	Throat	-1.0
 Ocular / eye disease	Anterior uveitis	Feces	aerobic_only	9	1	7	2	7	1	1	Feces	-0.5555555555555556
 Ocular / eye disease	Anterior uveitis	Feces	anaerobic_only	21	1	14	3	18	1	1	Feces	-0.7142857142857143
 Ocular / eye disease	Anterior uveitis,Ankylosing spondylitis	Feces	anaerobic_only	3	1	3	1	2	1	1	Feces	-0.3333333333333333
 Ocular / eye disease	Diabetic retinopathy	Feces	aerobic_only	4	1	3	2	2	1	1	Feces	0.0
-Ocular / eye disease	Diabetic retinopathy	Feces	anaerobic_only	21	2	16	10	11	2	1	Feces	-0.047619047619047616
+Ocular / eye disease	Diabetic retinopathy	Feces	anaerobic_only	20	1	16	9	11	1	1	Feces	-0.1
 Ocular / eye disease	Dry eye syndrome	Ocular / eye	aerobic_only	176	9	79	70	106	9	6	Conjunctiva; Margin of eyelid,Conjunctival sac; Tear film; Conjunctival fornix; Bulbar conjunctiva; Margin of eyelid; Conjunctival sac	-0.20454545454545456
 Ocular / eye disease	Dry eye syndrome	Ocular / eye	anaerobic_only	21	6	13	10	11	5	3	Tear film; Conjunctival fornix; Bulbar conjunctiva; Conjunctival sac; Conjunctiva	-0.047619047619047616
 Ocular / eye disease	Glaucoma	Ocular / eye	aerobic_only	67	4	43	31	36	4	2	Margin of eyelid; Eyelid; Margin of eyelid,Conjunctiva; Conjunctiva	-0.07462686567164178
@@ -545,8 +532,6 @@ Other specific clinical labels	COPRO-seq	Feces	anaerobic_only	11	1	11	9	2	1	1	Fe
 Other specific clinical labels	Complicated disease course	Feces	aerobic_only	1	1	1	0	1	0	1	Feces	-1.0
 Other specific clinical labels	Complicated disease course	Feces	anaerobic_only	7	1	7	7	0	1	0	Feces	1.0
 Other specific clinical labels	Cytokine	Feces	anaerobic_only	3	1	3	1	2	1	1	Feces,Blood	-0.3333333333333333
-Other specific clinical labels	Diabetic foot	Feces	anaerobic_only	5	1	5	4	1	1	1	Feces	0.6
-Other specific clinical labels	Diabetic ketoacidosis	Feces	anaerobic_only	4	1	4	4	0	1	0	Feces	1.0
 Other specific clinical labels	Digestive system disease	Feces	anaerobic_only	2	1	2	0	2	0	1	Feces	-1.0
 Other specific clinical labels	Disease recurrence	Urinary tract	aerobic_only	2	1	2	2	0	1	0	Urine	1.0
 Other specific clinical labels	Energy intake	Feces	anaerobic_only	4	1	4	0	4	0	1	Feces	-1.0
@@ -562,7 +547,6 @@ Other specific clinical labels	Hyperplastic Polyp	Feces	anaerobic_only	3	1	3	2	1
 Other specific clinical labels	Hypertriglyceridemia	Feces	anaerobic_only	5	1	4	2	3	1	1	Feces	-0.2
 Other specific clinical labels	Hypertriglyceridemia	Oral cavity / dental	aerobic_only	1	1	1	0	1	0	1	Saliva	-1.0
 Other specific clinical labels	Hypertriglyceridemia	Oral cavity / dental	anaerobic_only	1	1	1	1	0	1	0	Saliva	1.0
-Other specific clinical labels	Hypoglycemia	Feces	anaerobic_only	2	1	2	1	1	1	1	Feces	0.0
 Other specific clinical labels	Inflammation	Feces	aerobic_only	1	1	1	0	1	0	1	Feces	-1.0
 Other specific clinical labels	Inflammation	Feces	anaerobic_only	4	1	4	2	2	1	1	Feces	0.0
 Other specific clinical labels	Leukopenia	Feces	anaerobic_only	12	1	12	1	11	1	1	Feces	-0.8333333333333334
@@ -634,7 +618,7 @@ Renal / urinary disease	Chronic kidney disease	Feces	aerobic_only	11	6	9	10	1	6	
 Renal / urinary disease	Chronic kidney disease	Feces	anaerobic_only	118	9	81	54	64	8	9	Feces	-0.0847457627118644
 Renal / urinary disease	Chronic kidney disease	Oral cavity / dental	aerobic_only	6	1	6	5	1	1	1	Gingiva	0.6666666666666666
 Renal / urinary disease	Chronic kidney disease	Oral cavity / dental	anaerobic_only	5	1	5	0	5	0	1	Gingiva	-1.0
-Renal / urinary disease	Diabetic nephropathy	Feces	anaerobic_only	6	2	6	6	0	2	0	Feces	1.0
+Renal / urinary disease	Diabetic nephropathy	Feces	anaerobic_only	3	1	3	3	0	1	0	Feces	1.0
 Renal / urinary disease	Kidney disease	Feces	anaerobic_only	17	1	17	9	8	1	1	Feces	0.058823529411764705
 Renal / urinary disease	Kidney transplant	Feces	anaerobic_only	3	1	3	2	1	1	1	Feces	0.3333333333333333
 Renal / urinary disease	Nephrolithiasis	Feces	aerobic_only	3	1	3	0	3	0	1	Feces	-1.0
@@ -650,7 +634,7 @@ Reproductive / hormonal health	Adenomyosis	Vaginal / reproductive	aerobic_only	1
 Reproductive / hormonal health	Adenomyosis	Vaginal / reproductive	anaerobic_only	3	1	3	2	1	1	1	Upper part of vagina	0.3333333333333333
 Reproductive / hormonal health	Adenomyosis,Endometriosis	Vaginal / reproductive	anaerobic_only	4	1	2	4	0	1	0	Cervical cavity	1.0
 Reproductive / hormonal health	Bacterial vaginosis	Vaginal / reproductive	aerobic_only	2	1	2	2	0	1	0	Vagina	1.0
-Reproductive / hormonal health	Bacterial vaginosis	Vaginal / reproductive	anaerobic_only	10	3	9	10	0	3	0	Vagina; Vaginal fluid; Uterine cervix,Vaginal fluid	1.0
+Reproductive / hormonal health	Bacterial vaginosis	Vaginal / reproductive	anaerobic_only	9	2	8	9	0	2	0	Vagina; Uterine cervix,Vaginal fluid	1.0
 Reproductive / hormonal health	Cervical glandular intraepithelial neoplasia	Vaginal / reproductive	aerobic_only	53	9	40	24	29	7	5	Posterior fornix of vagina; Uterine cervix; Uterus; Vagina; Endocervix	-0.09433962264150944
 Reproductive / hormonal health	Cervical glandular intraepithelial neoplasia	Vaginal / reproductive	anaerobic_only	126	10	56	64	62	10	3	Posterior fornix of vagina; Uterine cervix; Uterus; Vagina; Vaginal fluid	0.015873015873015872
 Reproductive / hormonal health	Cervix erosion	Vaginal / reproductive	aerobic_only	3	1	3	2	1	1	1	Vagina	0.3333333333333333
@@ -679,7 +663,6 @@ Reproductive / hormonal health	Postmenopausal	Vaginal / reproductive	aerobic_onl
 Reproductive / hormonal health	Postmenopausal	Vaginal / reproductive	anaerobic_only	7	1	7	7	0	1	0	Lower part of vagina	1.0
 Reproductive / hormonal health	Postmenopausal osteoporosis	Feces	aerobic_only	1	1	1	1	0	1	0	Feces	1.0
 Reproductive / hormonal health	Postmenopausal osteoporosis	Feces	anaerobic_only	2	1	2	1	1	1	1	Feces	0.0
-Reproductive / hormonal health	Spontaneous abortion	Vaginal / reproductive	aerobic_only	1	1	1	0	1	0	1	Posterior fornix of vagina	-1.0
 Reproductive / hormonal health	Vaginal inflammation	Vaginal / reproductive	anaerobic_only	3	1	3	2	1	1	1	Wall of vagina	0.3333333333333333
 Reproductive / hormonal health	Vulvovaginal candidiasis	Vaginal / reproductive	aerobic_only	1	1	1	1	0	1	0	Vagina	1.0
 Reproductive / hormonal health	Vulvovaginal candidiasis	Vaginal / reproductive	anaerobic_only	8	1	8	8	0	1	0	Vagina	1.0

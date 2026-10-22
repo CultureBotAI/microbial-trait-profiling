@@ -1,15 +1,15 @@
 label	display_trait_edge_count	display_trait_count	focus_enriched_profile_count	focus_enriched_study_count	profile_count	node_type	area_scale_max_profiles	radius_axis_units
-Metabolic / endocrine	6	6	539	66	241	condition	1592.0	0.01322866158903409
-Neurologic / cognitive disease	6	6	474	77	195	condition	1592.0	0.011899389790528533
-Infectious disease	18	6	617	95	238	condition	1592.0	0.013146067681150396
-Cancer / neoplasia	12	6	436	69	174	condition	1592.0	0.01124040629462929
-Colorectal neoplasia	12	6	284	47	109	condition	1592.0	0.008896529728272151
-Reproductive / hormonal health	6	6	118	22	48	condition	1592.0	0.005903750617766974
-Ocular / eye disease	6	6	80	14	31	condition	1592.0	0.004744475761478425
-Respiratory / airway disease	6	6	80	13	27	condition	1592.0	0.004427812963325231
-Feces	36	6	1858	282	767	body_site_group	1592.0	0.023599623112568482
-Oral cavity / dental	6	6	198	31	80	body_site_group	1592.0	0.007621709274257747
-Upper airway / nasal	6	6	152	20	55	body_site_group	1592.0	0.006319587480971226
-Vaginal / reproductive	12	6	261	43	95	body_site_group	1592.0	0.008305565125884061
-Ocular / eye	6	6	80	14	31	body_site_group	1592.0	0.004744475761478425
-Lower GI tract	6	6	79	14	35	body_site_group	1592.0	0.005041286826230146
+Metabolic / endocrine	6	6	497	63	224	condition	1519.0	0.013056417812055087
+Neurologic / cognitive disease	6	6	467	76	190	condition	1519.0	0.012024771447887493
+Infectious disease	18	6	606	94	237	condition	1519.0	0.013429944042016405
+Cancer / neoplasia	12	6	436	69	169	condition	1519.0	0.011340791927976358
+Colorectal neoplasia	12	6	281	47	109	condition	1519.0	0.009107795675527061
+Reproductive / hormonal health	6	6	114	21	41	condition	1519.0	0.0055858845896698634
+Ocular / eye disease	6	6	80	14	31	condition	1519.0	0.004857142857142858
+Respiratory / airway disease	6	6	79	13	27	condition	1519.0	0.004532960265535859
+Feces	36	6	1796	277	744	body_site_group	1519.0	0.02379504321560802
+Oral cavity / dental	6	6	198	31	75	body_site_group	1519.0	0.007554933775893099
+Upper airway / nasal	6	6	150	20	55	body_site_group	1519.0	0.006469658764517307
+Vaginal / reproductive	12	6	257	42	88	body_site_group	1519.0	0.008183542951978253
+Ocular / eye	6	6	80	14	31	body_site_group	1519.0	0.004857142857142858
+Lower GI tract	6	6	79	14	35	body_site_group	1519.0	0.005161002296110788
