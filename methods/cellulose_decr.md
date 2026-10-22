@@ -214,8 +214,22 @@ in an observed set, so that version overstated significance (#567).
 not. Genera, their families and their phyla are reported together, and some taxa
 are reported in most feces studies whatever the condition. U6 keeps both features
 and is the reference null for claims about overlap.
-`condition_definition_overlap.tsv` repeats the overlap and U6 under each
-condition definition.
+
+**Condition definitions.** `condition_definition_overlap.tsv` repeats the overlap,
+U3's exact 3-way test and U6 under each condition definition. Each row builds its
+sets, U3 and U6 from one population, named in `contrast_population`:
+
+- The four case-control definitions (cases named as treated set aside, Tier 1–2
+  controls only, paired-tissue or comorbidity contrasts counted) choose among
+  disease-versus-healthy contrasts. Their rows use the oriented
+  disease-versus-healthy population only. Over all contrasts these rules select
+  nothing, and until #769 their rows repeated the primary row.
+- The exact-label, synonym and rectal-mucosa definitions have a row for each
+  population. Read a case-control row against the exact-label row on
+  disease-versus-healthy contrasts.
+- On disease-versus-healthy contrasts, U3 and U6 come from those contrasts too.
+  U3 holds the annotated taxa that their feces signatures report lower in disease,
+  and U6 draws from the studies with such a signature, in any condition.
 
 **Sensitivity table.** It repeats the overlap under other set definitions:
 
@@ -241,14 +255,13 @@ are not a test; traits share taxa.
 | File | Contents |
 | --- | --- |
 | `cellulose_decr_summary.json` | Every result, definition, universe, null summary, label inventory, case-control inventory and label-source comparison |
-
 | `cellulose_decr_provenance.json` | Input hashes and pins, classifier version, code commit, seeds, package versions |
 | `pairwise_jaccard_significance.tsv` | Pairwise, mean and 3-way overlap under U1–U6 and the within-condition reference |
 | `sensitivity_definitions_jaccard.tsv` | Overlap under eleven set definitions |
 | `compartment_jaccard_and_direction_stats.tsv` | Direction tests by population, compartment and condition, at experiment and study level |
 | `compartment_direction_interaction.tsv` | Fisher tests of direction by compartment, crude and stratified |
 | `condition_definition_sensitivity.tsv` | Feces direction tests under each condition definition |
-| `condition_definition_overlap.tsv` | Overlap and U6 under each condition definition |
+| `condition_definition_overlap.tsv` | Overlap and U6 under each condition definition and contrast population; the case-control definitions on disease-vs-healthy contrasts only |
 | `condition_definition_interaction.tsv` | Feces-vs-GI tests under each condition definition |
 | `condition_label_inventory.tsv` | Every human condition label naming the three diseases, with its status |
 | `cellulose_decreased_taxa_catalog.tsv` | The taxa in any condition's set, with counts and flags |
