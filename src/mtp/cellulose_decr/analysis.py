@@ -2248,7 +2248,12 @@ def scenario_corpora(corpus: Corpus) -> list[tuple[str, str, Corpus]]:
 def scenario_tables(
     corpus: Corpus, cellulose: set[str], permutations: int, seed: int
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Feces direction, overlap and the Feces-vs-GI interaction under each scenario."""
+    """Feces direction, overlap and the Feces-vs-GI interaction under each scenario.
+
+    The case-control rules choose among disease-vs-healthy contrasts and select nothing
+    from all contrasts, so a scenario that changes only the rule has its overlap on the
+    disease-vs-healthy contrasts alone; the other scenarios have it on both (#769).
+    """
     direction_rows: list[dict[str, Any]] = []
     overlap_rows: list[dict[str, Any]] = []
     interaction_frames: list[pd.DataFrame] = []
@@ -2283,41 +2288,44 @@ def scenario_tables(
                             "wilcoxon_p_two_sided": tests["wilcoxon_p_two_sided"],
                         }
                     )
-        profiles, taxa = population(scenario, ALL_CONTRASTS)
-        sets = condition_sets(taxa, cellulose)
-        summary = set_summary(sets)
-        feces_taxa = taxa[taxa["compartment"].eq(FECES)]
-        u3 = len(set(feces_taxa.loc[feces_taxa["dir"].eq("dec"), "taxon_id"]) & cellulose)
-        exact = three_way_exact(
-            u3, [len(sets[short]) for short in SHORT], summary["three_way_core"]
-        )
-        unit_matrix, unit_study, unit_counts, _ = u6_units(profiles, taxa, cellulose)
-        u6 = signature_null(
-            np.random.default_rng(seed), unit_matrix, unit_study, unit_counts, permutations
-        ).summary(summary)
-        overlap_rows.append(
-            {
-                "scenario": slug,
-                "scenario_label": label,
-                **{f"n_{short}": len(sets[short]) for short in SHORT},
-                **{
-                    f"intersection_{a}_{b}": summary["intersections"][f"{a} vs. {b}"]
-                    for a, b in PAIRS
-                },
-                "three_way_core": summary["three_way_core"],
-                "three_way_union": summary["three_way_union"],
-                "mean_pairwise_jaccard_distance": summary["mean_pairwise_jaccard_distance"],
-                "u3_N": u3,
-                "u3_three_way_exact_p": exact["p_3way_exact"],
-                **{f"u6_units_{short}": unit_counts[short] for short in SHORT},
-                "u6_expected_mean_jaccard_distance": u6["mean_pairwise_jaccard_distance"][
-                    "expected"
-                ],
-                "u6_mean_jaccard_distance_p": u6["mean_pairwise_jaccard_distance"]["p"],
-                "u6_expected_core": u6["three_way_core"]["expected"],
-                "u6_core_p": u6["three_way_core"]["p"],
-            }
-        )
+        changes_rule = scenario.case_control != SUBJECT_CONTROLS
+        for name in (ORIENTED,) if changes_rule else (ALL_CONTRASTS, ORIENTED):
+            profiles, taxa = population(scenario, name)
+            sets = condition_sets(taxa, cellulose)
+            summary = set_summary(sets)
+            feces_taxa = taxa[taxa["compartment"].eq(FECES)]
+            u3 = len(set(feces_taxa.loc[feces_taxa["dir"].eq("dec"), "taxon_id"]) & cellulose)
+            exact = three_way_exact(
+                u3, [len(sets[short]) for short in SHORT], summary["three_way_core"]
+            )
+            unit_matrix, unit_study, unit_counts, _ = u6_units(profiles, taxa, cellulose)
+            u6 = signature_null(
+                np.random.default_rng(seed), unit_matrix, unit_study, unit_counts, permutations
+            ).summary(summary)
+            overlap_rows.append(
+                {
+                    "scenario": slug,
+                    "scenario_label": label,
+                    "contrast_population": name,
+                    **{f"n_{short}": len(sets[short]) for short in SHORT},
+                    **{
+                        f"intersection_{a}_{b}": summary["intersections"][f"{a} vs. {b}"]
+                        for a, b in PAIRS
+                    },
+                    "three_way_core": summary["three_way_core"],
+                    "three_way_union": summary["three_way_union"],
+                    "mean_pairwise_jaccard_distance": summary["mean_pairwise_jaccard_distance"],
+                    "u3_N": u3,
+                    "u3_three_way_exact_p": exact["p_3way_exact"],
+                    **{f"u6_units_{short}": unit_counts[short] for short in SHORT},
+                    "u6_expected_mean_jaccard_distance": u6["mean_pairwise_jaccard_distance"][
+                        "expected"
+                    ],
+                    "u6_mean_jaccard_distance_p": u6["mean_pairwise_jaccard_distance"]["p"],
+                    "u6_expected_core": u6["three_way_core"]["expected"],
+                    "u6_core_p": u6["three_way_core"]["p"],
+                }
+            )
     interactions = pd.concat(interaction_frames, ignore_index=True)
     leading = ["scenario", "scenario_label"]
     interactions = interactions[[*leading, *(c for c in interactions if c not in leading)]]
