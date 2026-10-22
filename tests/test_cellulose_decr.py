@@ -38,6 +38,7 @@ from mtp.cellulose_decr.analysis import (
     choose,
     clean,
     compartment_of,
+    condition_sets,
     direct_trait_subjects,
     direction_row,
     hypergeom_pair,
@@ -791,9 +792,10 @@ def test_case_control_scenarios_build_their_overlap_on_disease_vs_healthy_contra
     tmp_path: Path,
 ) -> None:
     """A case-control rule chooses among disease-vs-healthy contrasts, so its scenario's
-    overlap is built on them. Setting aside the treated PD stool experiment, the only one
-    reporting t3 decreased, takes t3 out of the PD set and the U3 universe. Built on all
-    contrasts, where the rule selects nothing, the row repeated the primary one (#769)."""
+    overlap, U3 and U6 are built on them. Setting aside the treated PD stool experiment, the
+    only one reporting t3 decreased, takes t3 out of the PD set, the U3 universe and the U6
+    pool. Built on all contrasts, where the rule selects nothing, the row repeated the
+    primary one (#769, #792)."""
     corpus = load_corpus(_input_root(tmp_path), "experiment")
     manifest = corpus.manifest.copy()
     # bsdb:1-1 compares PD cases named as treated with Tier 3 controls; bsdb:1-3 compares
@@ -829,6 +831,27 @@ def test_case_control_scenarios_build_their_overlap_on_disease_vs_healthy_contra
         "comorbidity_counted": (ORIENTED,),
         "without_site_miscurations": both,
     }
+
+    # U6 draws whole studies from the same disease-vs-healthy contrasts as the sets.
+    cellulose = {"t1", "t3"}
+    scenario = replace(corpus, case_control="cases_not_named_treated")
+    profiles, oriented = population(scenario, ORIENTED)
+    observed = set_summary(condition_sets(oriented, cellulose))
+    units, unit_study, counts, _ = u6_units(profiles, oriented, cellulose)
+    null = signature_null(np.random.default_rng(0), units, unit_study, counts, 20).summary(observed)
+    mean, core = null["mean_pairwise_jaccard_distance"], null["three_way_core"]
+    row = rows.get_group("named_treated_cases_excluded").iloc[0]
+    assert [row[f"u6_units_{short}"] for short in SHORT] == [counts[short] for short in SHORT]
+    assert [
+        row["u6_expected_mean_jaccard_distance"],
+        row["u6_mean_jaccard_distance_p"],
+        row["u6_expected_core"],
+        row["u6_core_p"],
+    ] == pytest.approx([mean["expected"], mean["p"], core["expected"], core["p"]])
+    # All contrasts still hold t3, so a pool drawn from them would give another U6.
+    everything = u6_units(*population(scenario, ALL_CONTRASTS), cellulose)
+    other = signature_null(np.random.default_rng(0), *everything[:3], 20).summary(observed)
+    assert other["mean_pairwise_jaccard_distance"]["expected"] != pytest.approx(mean["expected"])
 
 
 def test_direction_tests_ask_whether_decreased_signatures_carry_more() -> None:

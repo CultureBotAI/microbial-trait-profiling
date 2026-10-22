@@ -227,8 +227,9 @@ sets, U3 and U6 from one population, named in `contrast_population`:
 - The exact-label, synonym and rectal-mucosa definitions have a row for each
   population. Read a case-control row against the exact-label row on
   disease-versus-healthy contrasts.
-- On disease-versus-healthy contrasts, U3 and U6 come from those contrasts too:
-  the taxa and studies of feces signatures decreased in disease, in any condition.
+- On disease-versus-healthy contrasts, U3 and U6 come from those contrasts too.
+  U3 holds the annotated taxa that their feces signatures report lower in disease,
+  and U6 draws from the studies with such a signature, in any condition.
 
 **Sensitivity table.** It repeats the overlap under other set definitions:
 
@@ -254,7 +255,6 @@ are not a test; traits share taxa.
 | File | Contents |
 | --- | --- |
 | `cellulose_decr_summary.json` | Every result, definition, universe, null summary, label inventory, case-control inventory and label-source comparison |
-
 | `cellulose_decr_provenance.json` | Input hashes and pins, classifier version, code commit, seeds, package versions |
 | `pairwise_jaccard_significance.tsv` | Pairwise, mean and 3-way overlap under U1–U6 and the within-condition reference |
 | `sensitivity_definitions_jaccard.tsv` | Overlap under eleven set definitions |

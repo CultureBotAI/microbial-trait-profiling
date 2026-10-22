@@ -32,7 +32,7 @@ overlap under those definitions.
   only.
 - The exact-label, synonym and rectal-mucosa definitions have a row on each
   population, so a case-control row can be read against the exact-label row on
-  the same contrasts.
+  the same population.
 - The committed table changes at the next run of `just cellulose-decr`; until
   then it holds the old rows.
 

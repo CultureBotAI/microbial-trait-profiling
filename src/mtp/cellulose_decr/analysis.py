@@ -2251,8 +2251,10 @@ def scenario_tables(
     """Feces direction, overlap and the Feces-vs-GI interaction under each scenario.
 
     The case-control rules choose among disease-vs-healthy contrasts and select nothing
-    from all contrasts, so a scenario that changes only the rule has its overlap on the
-    disease-vs-healthy contrasts alone; the other scenarios have it on both (#769).
+    from all contrasts. Each scenario changes one definition (``scenario_corpora``), so a
+    scenario whose rule is not the primary one would repeat the primary all-contrasts
+    overlap. Its overlap is built on the disease-vs-healthy contrasts alone; the other
+    scenarios have it on both (#769).
     """
     direction_rows: list[dict[str, Any]] = []
     overlap_rows: list[dict[str, Any]] = []
