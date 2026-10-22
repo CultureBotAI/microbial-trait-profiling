@@ -138,9 +138,12 @@ guild; previously such a cell was drawn as a fraction of zero and was
 indistinguishable from a genuinely small fraction, which understated how often a
 guild is simply absent. A cell is left blank when the site was sampled by fewer
 studies than the threshold, and blank when the site was never sampled for that
-condition at all. On the run described here the grid is 52 conditions by 84
-columns; of 4,368 cells, 344 carry a value, 308 fall below the study threshold,
-24 are sampled with no guild signal, and 3,692 were never sampled.
+condition at all. On the run described here the grid is 52 condition rows (51
+conditions and the pooled Other) by 80 columns, which are 20 body-site blocks: 19
+sites and the pooled Other. Tongue is inside the top-20 cut, but nothing in its
+block is drawn, so the block is left out. Of 4,160 cells, 340 carry a value, 296
+fall below the study threshold, 20 are sampled with no guild signal, and 3,504
+were never sampled.
 
 ## Statistics
 
