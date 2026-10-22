@@ -33,8 +33,6 @@ overlap under those definitions.
 - The exact-label, synonym and rectal-mucosa definitions have a row on each
   population, so a case-control row can be read against the exact-label row on
   the same population.
-- The committed table changes at the next run of `just cellulose-decr`; until
-  then it holds the old rows.
 
 ## What changed on 2026-10-19 (#580, #672)
 
@@ -219,10 +217,11 @@ The nulls show three things:
 
 So most of the shared taxa are ones that many feces studies report decreased,
 whatever the condition. The data give no evidence of a condition-specific
-convergence beyond that. With synonym labels counted, the sets are 38 / 27 / 37 and
-the core is 20 of 50, and U6 still gives p = 0.15 for the mean distance and 0.54
-for the core. Without the rectal-mucosa study the U6 p-values are 0.26 and 0.79
-([`condition_definition_overlap.tsv`](condition_definition_overlap.tsv)).
+convergence beyond that. Over all contrasts (the `all_contrasts` rows of
+[`condition_definition_overlap.tsv`](condition_definition_overlap.tsv)), counting
+the synonym labels gives sets of 38 / 27 / 37 and a core of 20 of 50, and U6 still
+gives p = 0.14 for the mean distance and 0.54 for the core. Without the
+rectal-mucosa study, the U6 p-values over all contrasts are 0.25 and 0.79.
 
 ## 3. The 17 taxa in all three sets
 
