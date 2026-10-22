@@ -78,13 +78,28 @@ def load_study_condition_pairs(full_dump_path: Path) -> pd.DataFrame:
     return pd.DataFrame(pairs)
 
 
+def rank_by_study_count(frame: pd.DataFrame, column: str) -> pd.Series:
+    """Count each value's unique studies, most first, ties in ascending name order.
+
+    The stable sort makes a top-N cut that falls inside a tie keep the same values
+    on every run (#794).
+    """
+    counts = frame.groupby(column)["study_id"].nunique().sort_index()
+    return counts.sort_values(ascending=False, kind="stable")
+
+
 def build_condition_genus_matrix(
     taxa_path: Path,
     full_dump_path: Path,
     top_conditions: int,
     top_taxa: int,
 ) -> tuple[pd.DataFrame, pd.Series]:
-    """Build a condition x genus prevalence matrix."""
+    """Build a condition x genus prevalence matrix.
+
+    The taxa table's experiments are the population: dump condition labels are kept
+    only for them, so a contrast-population subset ranks conditions and counts each
+    condition's studies from its own experiments, not the whole corpus (#768).
+    """
     study_conditions = load_study_condition_pairs(full_dump_path)
     if study_conditions.empty:
         msg = "No condition labels found in full_dump.csv"
@@ -95,18 +110,18 @@ def build_condition_genus_matrix(
         sep="\t",
         usecols=["study_id", "experiment_id", "taxon_name", "taxonomic_rank"],
     )
+    study_conditions = study_conditions.merge(
+        taxa[["study_id", "experiment_id"]].drop_duplicates(), on=["study_id", "experiment_id"]
+    )
+    if study_conditions.empty:
+        msg = f"No full_dump.csv condition labels for the experiments in {taxa_path}"
+        raise ValueError(msg)
     taxa = taxa[taxa["taxonomic_rank"] == "genus"].copy()
     taxa = taxa[["study_id", "experiment_id", "taxon_name"]].drop_duplicates()
 
-    top_condition_names = (
-        study_conditions.groupby("condition")["study_id"]
-        .nunique()
-        .sort_values(ascending=False)
-        .head(top_conditions)
-        .index
-    )
+    condition_sizes = rank_by_study_count(study_conditions, "condition").head(top_conditions)
     study_conditions = study_conditions[
-        study_conditions["condition"].isin(top_condition_names)
+        study_conditions["condition"].isin(condition_sizes.index)
     ].copy()
 
     merged = study_conditions.merge(taxa, on=["study_id", "experiment_id"], how="inner")
@@ -114,19 +129,10 @@ def build_condition_genus_matrix(
         msg = "No overlap between condition labels and genus taxa"
         raise ValueError(msg)
 
-    top_taxon_names = (
-        merged.groupby("taxon_name")["study_id"]
-        .nunique()
-        .sort_values(ascending=False)
-        .head(top_taxa)
-        .index
-    )
+    top_taxon_names = rank_by_study_count(merged, "taxon_name").head(top_taxa).index
     merged = merged[merged["taxon_name"].isin(top_taxon_names)].copy()
 
     unique_condition_taxa = merged[["condition", "study_id", "taxon_name"]].drop_duplicates()
-    condition_sizes = (
-        study_conditions.groupby("condition")["study_id"].nunique().sort_values(ascending=False)
-    )
 
     counts = (
         unique_condition_taxa.groupby(["condition", "taxon_name"])["study_id"]
@@ -204,13 +210,19 @@ def main() -> None:
         "--taxa-input",
         type=Path,
         default=REPO_ROOT / "data/derived/bugsigdb_taxa.tsv",
-        help="Input taxa TSV path.",
+        help=(
+            "Input taxa TSV path. Its experiments are the population whose conditions are "
+            "ranked and whose studies form each condition's denominator."
+        ),
     )
     parser.add_argument(
         "--full-dump-input",
         type=Path,
         default=REPO_ROOT / "data/raw/full_dump.csv",
-        help="Input full_dump.csv path.",
+        help=(
+            "Input full_dump.csv path. It supplies the condition labels and keeps Homo "
+            "sapiens 16S and WMS experiments."
+        ),
     )
     parser.add_argument(
         "--output",
