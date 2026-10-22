@@ -13,6 +13,8 @@ from pathlib import Path
 from mtp.count_input import profile_count_reader, taxa_trait_count_reader
 from mtp.datamodel.workflow_pydantic import (
     ComparisonRun,
+    ContrastPopulation,
+    DirectionBasis,
     ExecutionStatus,
     FileInventoryEntry,
 )
@@ -129,7 +131,7 @@ def _inventory_directory(root: Path, subdir: Path) -> list[FileInventoryEntry]:
         if member.is_file():
             entries.append(
                 FileInventoryEntry(
-                    relative_path=member.relative_to(root).as_posix(),
+                    path=member.relative_to(root).as_posix(),
                     size_bytes=member.stat().st_size,
                     sha256=file_sha256(member),
                 )
@@ -191,8 +193,10 @@ def execute_comparison_run(
             )
 
     started_at = datetime.now(UTC)
-    git_commit_actual, git_dirty = repository_state()
+    git_commit_actual, git_dirty = repository_state(REPO_ROOT)
     effective_commit = code_commit or git_commit_actual
+    contrast_population = core_run.contrast_population or ContrastPopulation.all_paired
+    direction_basis = core_run.direction_basis or DirectionBasis.group_1_vs_group_0
 
     noel_dir = Path(noel_run.manifest_path).parent
     jed_dir = Path(jed_run.manifest_path).parent
@@ -265,7 +269,7 @@ def execute_comparison_run(
     ledger_fraction = build_eligibility_ledger(
         ledger_id="ledger:noel_table1_six_trait_sign_test_v1",
         analysis_spec_id="noel_table1_six_trait_sign_test_v1",
-        contrast_population=core_run.contrast_population,
+        contrast_population=contrast_population,
         included_ids=synthetic_kept,
         exclusion_counts={"zero_retained_total": n_dropped},
     )
@@ -319,10 +323,10 @@ def execute_comparison_run(
     ended_at = datetime.now(UTC)
     manifest_file = output / "comparison_run.json"
     comparison_record = ComparisonRun(
-        id=f"comparison-{core_run.contrast_population}-{uuid.uuid4().hex[:12]}",
-        contrast_population=core_run.contrast_population,
-        direction_basis=core_run.direction_basis,
-        status=ExecutionStatus.succeeded,
+        id=f"comparison-{contrast_population}-{uuid.uuid4().hex[:12]}",
+        contrast_population=contrast_population,
+        direction_basis=direction_basis,
+        status=ExecutionStatus.completed,
         started_at=started_at,
         ended_at=ended_at,
         manifest_path=str(manifest_file),
@@ -356,9 +360,9 @@ def verify_comparison_run(path: Path) -> ComparisonRun:
     if not manifest.is_file():
         raise FileNotFoundError(f"ComparisonRun manifest not found: {manifest}")
     record = ComparisonRun.model_validate_json(manifest.read_text(encoding="utf-8"))
-    if record.status != ExecutionStatus.succeeded:
+    if record.status != ExecutionStatus.completed:
         raise ValueError(
-            f"ComparisonRun {record.id} has status {record.status}, expected succeeded"
+            f"ComparisonRun {record.id} has status {record.status}, expected completed"
         )
     if Path(record.manifest_path).resolve() != manifest:
         raise ValueError(
@@ -396,7 +400,7 @@ def verify_comparison_run(path: Path) -> ComparisonRun:
     if not record.outputs:
         raise ValueError("ComparisonRun has no recorded outputs")
     for entry in record.outputs:
-        target = root / entry.relative_path
+        target = root / entry.path
         if not target.is_file():
             raise FileNotFoundError(f"Missing ComparisonRun output file: {target}")
         if target.stat().st_size != entry.size_bytes:
@@ -412,7 +416,7 @@ def verify_comparison_run(path: Path) -> ComparisonRun:
     with method_results.open(encoding="utf-8", newline="") as handle:
         reader = csv.DictReader(handle, delimiter="\t")
         missing = [
-            f"{row.get('method')}:{row.get('feature')}"
+            f"{row.get('method')}:{row.get('trait') or row.get('feature')}"
             for row in reader
             if row.get("test_status") == "source_not_supplied"
         ]

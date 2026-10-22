@@ -9,11 +9,14 @@ import pytest
 
 from mtp.datamodel.workflow_pydantic import (
     CalibrationOutcome,
+    ComparisonRun,
     ContrastPopulation,
     DirectionBasis,
+    ExecutionStatus,
 )
 from mtp.integrated_evidence import read_status
 from mtp.workflow.arms.__main__ import build_parser
+from mtp.workflow.comparison import _inventory_directory
 from mtp.workflow.downstream_contracts import (
     STANDARD_ANALYSIS_SPECS,
     build_analysis_basis,
@@ -182,7 +185,7 @@ def test_b5_read_status_binds_sensitivity_and_coverage_input_hashes(tmp_path: Pa
     assert status_ok.source["binding"] == "matched"
 
 
-def test_b6_arms_cli_exposes_compare_and_verify_comparison() -> None:
+def test_b6_arms_cli_exposes_compare_and_verify_comparison(tmp_path: Path) -> None:
     parser = build_parser()
     parsed = parser.parse_args(
         [
@@ -200,6 +203,43 @@ def test_b6_arms_cli_exposes_compare_and_verify_comparison() -> None:
     assert parsed.jed_run == Path("jed/arm_run.json")
     assert parsed.ilyas_run == Path("ilyas/arm_run.json")
     assert parsed.output == Path("out/comparison")
+
+    subdir = tmp_path / "integrated_evidence"
+    subdir.mkdir()
+    sample = subdir / "integrated_evidence_method_results.tsv"
+    sample.write_text("method\ttrait\ttest_status\n", encoding="utf-8")
+    entries = _inventory_directory(tmp_path, subdir)
+    assert len(entries) == 1
+    assert entries[0].path == "integrated_evidence/integrated_evidence_method_results.tsv"
+    from datetime import UTC, datetime
+
+    now = datetime.now(UTC)
+    run_obj = ComparisonRun(
+        id="comparison-all_paired-test01",
+        contrast_population=ContrastPopulation.all_paired,
+        direction_basis=DirectionBasis.group_1_vs_group_0,
+        status=ExecutionStatus.completed,
+        started_at=now,
+        ended_at=now,
+        manifest_path=str(tmp_path / "comparison_run.json"),
+        core_manifest_path=str(tmp_path / "core.json"),
+        core_manifest_sha256="a" * 64,
+        core_run_id="core-1",
+        noel_manifest_path=str(tmp_path / "noel.json"),
+        noel_manifest_sha256="b" * 64,
+        jed_manifest_path=str(tmp_path / "jed.json"),
+        jed_manifest_sha256="c" * 64,
+        ilyas_manifest_path=str(tmp_path / "ilyas.json"),
+        ilyas_manifest_sha256="d" * 64,
+        git_commit="0" * 40,
+        git_dirty=False,
+        analysis_specs=[STANDARD_ANALYSIS_SPECS["noel_table1_six_trait_sign_test_v1"]],
+        eligibility_ledgers=[],
+        analysis_bases=[],
+        calibration_verdicts=[],
+        outputs=entries,
+    )
+    assert run_obj.status == ExecutionStatus.completed
 
 
 def test_b7_scientific_result_record_rejects_unqualified_feature() -> None:

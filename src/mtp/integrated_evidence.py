@@ -2584,7 +2584,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
         missing_rows = sorted(
             {
-                f"{record.method}:{record.feature}"
+                f"{record.method}:{record.trait}"
                 for record in records
                 if record.test_status == SOURCE_MISSING
             }
