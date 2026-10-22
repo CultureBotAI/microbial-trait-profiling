@@ -125,82 +125,6 @@ Response to antibiotic	increased	METPO:1000608	facultatively aerobic	PhenotypicQ
 Response to antibiotic	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1660	Schaalia odontolytica	species	1	1	3
 Response to antibiotic	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1301	Streptococcus	genus	1	1	736
 Response to antibiotic	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:68892	Streptococcus infantis	species	1	1	3
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1301	Streptococcus	genus	5	2	736
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1378	Gemella	genus	4	2	8
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:29317	Actinomyces sp.	species	2	1	1
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:2049	Actinomycetaceae	family	1	1	40
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:201174	Actinomycetota	phylum	1	1	197
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1239	Bacillota	phylum	1	1	2377
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:815	Bacteroidaceae	family	1	1	5
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:171549	Bacteroidales	order	1	1	8
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:816	Bacteroides	genus	1	1	2
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:200643	Bacteroidia	class	1	1	12
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:976	Bacteroidota	phylum	1	1	83
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:80840	Burkholderiales	order	1	1	75
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1716	Corynebacterium	genus	1	1	75
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1350	Enterococcus	genus	1	1	109
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1236	Gammaproteobacteria	class	1	1	2190
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:570	Klebsiella	genus	1	1	28
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:186826	Lactobacillales	order	1	1	1138
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1578	Lactobacillus	genus	1	1	60
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:216572	Oscillospiraceae	family	1	1	2
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:31957	Propionibacteriaceae	family	1	1	5
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:135621	Pseudomonadaceae	family	1	1	25
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1224	Pseudomonadota	phylum	1	1	2507
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:32207	Rothia	genus	1	1	3
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:29387	Staphylococcus sp.	species	1	1	1
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1300	Streptococcaceae	family	1	1	763
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1306	Streptococcus sp.	species	1	1	1
-Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:191303	Turicibacter	genus	1	1	1
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1301	Streptococcus	genus	5	2	141
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1378	Gemella	genus	4	2	5
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:29317	Actinomyces sp.	species	2	1	1
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:2049	Actinomycetaceae	family	1	1	45
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:201174	Actinomycetota	phylum	1	1	331
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1239	Bacillota	phylum	1	1	671
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:815	Bacteroidaceae	family	1	1	2
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:171549	Bacteroidales	order	1	1	7
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:816	Bacteroides	genus	1	1	2
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:200643	Bacteroidia	class	1	1	7
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:976	Bacteroidota	phylum	1	1	49
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:80840	Burkholderiales	order	1	1	46
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1716	Corynebacterium	genus	1	1	76
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1350	Enterococcus	genus	1	1	64
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1236	Gammaproteobacteria	class	1	1	243
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:570	Klebsiella	genus	1	1	3
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186826	Lactobacillales	order	1	1	564
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1578	Lactobacillus	genus	1	1	63
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:909932	Negativicutes	class	1	1	1
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:216572	Oscillospiraceae	family	1	1	1
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:162289	Peptoniphilus	genus	1	1	1
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:31957	Propionibacteriaceae	family	1	1	14
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:135621	Pseudomonadaceae	family	1	1	8
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1224	Pseudomonadota	phylum	1	1	425
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:32207	Rothia	genus	1	1	7
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1300	Streptococcaceae	family	1	1	154
-Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1306	Streptococcus sp.	species	1	1	1
-Age-related macular degeneration	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1301	Streptococcus	genus	5	2	33
-Age-related macular degeneration	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:2049	Actinomycetaceae	family	1	1	5
-Age-related macular degeneration	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:201174	Actinomycetota	phylum	1	1	2394
-Age-related macular degeneration	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1239	Bacillota	phylum	1	1	1259
-Age-related macular degeneration	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:815	Bacteroidaceae	family	1	1	2
-Age-related macular degeneration	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:171549	Bacteroidales	order	1	1	6
-Age-related macular degeneration	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:816	Bacteroides	genus	1	1	1
-Age-related macular degeneration	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:200643	Bacteroidia	class	1	1	17
-Age-related macular degeneration	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:976	Bacteroidota	phylum	1	1	762
-Age-related macular degeneration	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:80840	Burkholderiales	order	1	1	580
-Age-related macular degeneration	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1716	Corynebacterium	genus	1	1	122
-Age-related macular degeneration	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1350	Enterococcus	genus	1	1	34
-Age-related macular degeneration	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1236	Gammaproteobacteria	class	1	1	2036
-Age-related macular degeneration	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:570	Klebsiella	genus	1	1	15
-Age-related macular degeneration	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:186826	Lactobacillales	order	1	1	204
-Age-related macular degeneration	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1578	Lactobacillus	genus	1	1	8
-Age-related macular degeneration	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:909932	Negativicutes	class	1	1	1
-Age-related macular degeneration	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:31957	Propionibacteriaceae	family	1	1	28
-Age-related macular degeneration	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:135621	Pseudomonadaceae	family	1	1	430
-Age-related macular degeneration	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1224	Pseudomonadota	phylum	1	1	4306
-Age-related macular degeneration	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:32207	Rothia	genus	1	1	10
-Age-related macular degeneration	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1300	Streptococcaceae	family	1	1	38
 Graft versus host disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1239	Bacillota	phylum	2	2	1259
 Graft versus host disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:543	Enterobacteriaceae	family	2	1	227
 Graft versus host disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:40323	Stenotrophomonas	genus	2	1	19
@@ -222,6 +146,115 @@ Graft versus host disease	increased	METPO:1000608	facultatively aerobic	Phenotyp
 Graft versus host disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:32033	Lysobacteraceae	family	1	1	5
 Graft versus host disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:135614	Lysobacterales	order	1	1	13
 Graft versus host disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1224	Pseudomonadota	phylum	1	1	2507
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1578	Lactobacillus	genus	3	1	63
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1301	Streptococcus	genus	3	1	141
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:249189	Enterococcus hermanniensis	species	2	1	1
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:209	Helicobacter	genus	2	1	69
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:33958	Lactobacillaceae	family	2	1	281
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186826	Lactobacillales	order	2	1	564
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:482	Neisseria	genus	2	1	28
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:433	Acetobacteraceae	family	1	1	1
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:12916	Acidovorax	genus	1	1	1
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:713	Actinobacillus	genus	1	1	16
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1654	Actinomyces	genus	1	1	17
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:2049	Actinomycetaceae	family	1	1	45
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:201174	Actinomycetota	phylum	1	1	331
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:72275	Alteromonadaceae	family	1	1	1
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:135622	Alteromonadales	order	1	1	1
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:55079	Aneurinibacillus	genus	1	1	2
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:194	Campylobacter	genus	1	1	195
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1016	Capnocytophaga	genus	1	1	12
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:84998	Coriobacteriia	class	1	1	1
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1720	Corynebacterium sp.	species	1	1	1
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:73029	Dechloromonas	genus	1	1	1
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:91347	Enterobacterales	order	1	1	13
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:543	Enterobacteriaceae	family	1	1	7
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:128827	Erysipelotrichaceae	family	1	1	5
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:526525	Erysipelotrichales	order	1	1	6
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:526524	Erysipelotrichia	class	1	1	6
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:561	Escherichia	genus	1	1	1
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:562	Escherichia coli	species	1	1	1
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1236	Gammaproteobacteria	class	1	1	243
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1378	Gemella	genus	1	1	5
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:117563	Granulicatella	genus	1	1	3
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:724	Haemophilus	genus	1	1	17
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186803	Lachnospiraceae	family	1	1	1
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1590	Lactiplantibacillus plantarum	species	1	1	7
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1579	Lactobacillus acidophilus	species	1	1	2
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:52242	Lactobacillus gallinarum	species	1	1	1
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:168471	Laribacter hongkongensis	species	1	1	1
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:47670	Lautropia	genus	1	1	1
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:32067	Leptotrichia	genus	1	1	2
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:33964	Leuconostoc citreum	species	1	1	1
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:181675	Limosilactobacillus coleohominis	species	1	1	1
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1421	Lysinibacillus sphaericus	species	1	1	1
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:33882	Microbacterium	genus	1	1	14
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:216572	Oscillospiraceae	family	1	1	1
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1451	Paenibacillus amylolyticus	species	1	1	1
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:543311	Parvimonas	genus	1	1	1
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:286	Pseudomonas	genus	1	1	5
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:75787	Rhodocyclaceae	family	1	1	1
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:206389	Rhodocyclales	order	1	1	2
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:32207	Rothia	genus	1	1	7
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:970	Selenomonas	genus	1	1	1
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:200666	Sphingobacteriales	order	1	1	2
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:117747	Sphingobacteriia	class	1	1	2
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1290	Staphylococcus hominis	species	1	1	2
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:45634	Streptococcus cristatus	species	1	1	2
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1303	Streptococcus oralis	species	1	1	4
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:82806	Streptococcus ovis	species	1	1	2
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1343	Streptococcus vestibularis	species	1	1	2
+Response to transplant	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:2062	Streptomycetaceae	family	1	1	4
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1578	Lactobacillus	genus	3	1	60
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1301	Streptococcus	genus	3	1	736
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:504481	Sediminibacterium	genus	2	2	1
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:216851	Faecalibacterium	genus	2	1	1
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:33958	Lactobacillaceae	family	2	1	238
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:186826	Lactobacillales	order	2	1	1138
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:482	Neisseria	genus	2	1	5
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:433	Acetobacteraceae	family	1	1	1
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:713	Actinobacillus	genus	1	1	24
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1654	Actinomyces	genus	1	1	16
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:2049	Actinomycetaceae	family	1	1	40
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:201174	Actinomycetota	phylum	1	1	197
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:72275	Alteromonadaceae	family	1	1	4
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:135622	Alteromonadales	order	1	1	109
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1465	Brevibacillus laterosporus	species	1	1	1
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:194	Campylobacter	genus	1	1	2
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1016	Capnocytophaga	genus	1	1	14
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:73029	Dechloromonas	genus	1	1	4
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:91347	Enterobacterales	order	1	1	1482
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:543	Enterobacteriaceae	family	1	1	1206
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:128827	Erysipelotrichaceae	family	1	1	1
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:526525	Erysipelotrichales	order	1	1	3
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:526524	Erysipelotrichia	class	1	1	3
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:561	Escherichia	genus	1	1	800
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:562	Escherichia coli	species	1	1	779
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1236	Gammaproteobacteria	class	1	1	2190
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1378	Gemella	genus	1	1	8
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:724	Haemophilus	genus	1	1	38
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:186803	Lachnospiraceae	family	1	1	5
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1590	Lactiplantibacillus plantarum	species	1	1	4
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1579	Lactobacillus acidophilus	species	1	1	3
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:52242	Lactobacillus gallinarum	species	1	1	1
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:168471	Laribacter hongkongensis	species	1	1	2
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:32067	Leptotrichia	genus	1	1	2
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:33964	Leuconostoc citreum	species	1	1	2
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:181675	Limosilactobacillus coleohominis	species	1	1	3
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:68	Lysobacter	genus	1	1	3
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:33882	Microbacterium	genus	1	1	1
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:216572	Oscillospiraceae	family	1	1	2
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1451	Paenibacillus amylolyticus	species	1	1	1
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:286	Pseudomonas	genus	1	1	16
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:75787	Rhodocyclaceae	family	1	1	7
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:206389	Rhodocyclales	order	1	1	16
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:32207	Rothia	genus	1	1	3
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:200666	Sphingobacteriales	order	1	1	11
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:117747	Sphingobacteriia	class	1	1	11
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1290	Staphylococcus hominis	species	1	1	3
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1156431	Streptococcus ilei	species	1	1	1
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1303	Streptococcus oralis	species	1	1	6
+Response to transplant	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:82806	Streptococcus ovis	species	1	1	1
 Epilepsy	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:91061	Bacilli	class	2	2	2357
 Epilepsy	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:91347	Enterobacterales	order	2	2	1482
 Epilepsy	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:543	Enterobacteriaceae	family	2	2	1206
@@ -374,6 +407,60 @@ Cognitive impairment	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon
 Cognitive impairment	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1224	Pseudomonadota	phylum	1	1	4306
 Cognitive impairment	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1300	Streptococcaceae	family	1	1	38
 Cognitive impairment	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:74201	Verrucomicrobiota	phylum	1	1	25
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1378	Gemella	genus	4	2	8
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1301	Streptococcus	genus	4	2	736
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:29317	Actinomyces sp.	species	2	1	1
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:2049	Actinomycetaceae	family	1	1	40
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:201174	Actinomycetota	phylum	1	1	197
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1239	Bacillota	phylum	1	1	2377
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:815	Bacteroidaceae	family	1	1	5
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:171549	Bacteroidales	order	1	1	8
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:816	Bacteroides	genus	1	1	2
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:200643	Bacteroidia	class	1	1	12
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:976	Bacteroidota	phylum	1	1	83
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:80840	Burkholderiales	order	1	1	75
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1716	Corynebacterium	genus	1	1	75
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1350	Enterococcus	genus	1	1	109
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1236	Gammaproteobacteria	class	1	1	2190
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:570	Klebsiella	genus	1	1	28
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:186826	Lactobacillales	order	1	1	1138
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1578	Lactobacillus	genus	1	1	60
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:216572	Oscillospiraceae	family	1	1	2
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:31957	Propionibacteriaceae	family	1	1	5
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:135621	Pseudomonadaceae	family	1	1	25
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1224	Pseudomonadota	phylum	1	1	2507
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:32207	Rothia	genus	1	1	3
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:29387	Staphylococcus sp.	species	1	1	1
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1300	Streptococcaceae	family	1	1	763
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1306	Streptococcus sp.	species	1	1	1
+Age-related macular degeneration	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:191303	Turicibacter	genus	1	1	1
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1378	Gemella	genus	4	2	5
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1301	Streptococcus	genus	4	2	141
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:29317	Actinomyces sp.	species	2	1	1
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:2049	Actinomycetaceae	family	1	1	45
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:201174	Actinomycetota	phylum	1	1	331
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1239	Bacillota	phylum	1	1	671
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:815	Bacteroidaceae	family	1	1	2
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:171549	Bacteroidales	order	1	1	7
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:816	Bacteroides	genus	1	1	2
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:200643	Bacteroidia	class	1	1	7
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:976	Bacteroidota	phylum	1	1	49
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:80840	Burkholderiales	order	1	1	46
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1716	Corynebacterium	genus	1	1	76
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1350	Enterococcus	genus	1	1	64
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1236	Gammaproteobacteria	class	1	1	243
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:570	Klebsiella	genus	1	1	3
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186826	Lactobacillales	order	1	1	564
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1578	Lactobacillus	genus	1	1	63
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:909932	Negativicutes	class	1	1	1
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:216572	Oscillospiraceae	family	1	1	1
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:162289	Peptoniphilus	genus	1	1	1
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:31957	Propionibacteriaceae	family	1	1	14
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:135621	Pseudomonadaceae	family	1	1	8
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1224	Pseudomonadota	phylum	1	1	425
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:32207	Rothia	genus	1	1	7
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1300	Streptococcaceae	family	1	1	154
+Age-related macular degeneration	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1306	Streptococcus sp.	species	1	1	1
 Diarrhea	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1301	Streptococcus	genus	7	2	736
 Diarrhea	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1350	Enterococcus	genus	4	1	109
 Diarrhea	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:561	Escherichia	genus	4	1	800
@@ -417,14 +504,3 @@ Diarrhea	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:80840	Burkh
 Diarrhea	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:543	Enterobacteriaceae	family	1	1	227
 Diarrhea	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1578	Lactobacillus	genus	1	1	8
 Diarrhea	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:171552	Prevotellaceae	family	1	1	1
-Bipolar disorder	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:33958	Lactobacillaceae	family	4	1	281
-Bipolar disorder	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1578	Lactobacillus	genus	4	1	63
-Bipolar disorder	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:201174	Actinomycetota	phylum	2	1	331
-Bipolar disorder	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:31979	Clostridiaceae	family	2	1	2
-Bipolar disorder	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:84998	Coriobacteriia	class	2	1	1
-Bipolar disorder	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:91061	Bacilli	class	1	1	651
-Bipolar disorder	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:543	Enterobacteriaceae	family	1	1	7
-Bipolar disorder	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186803	Lachnospiraceae	family	1	1	1
-Bipolar disorder	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186826	Lactobacillales	order	1	1	564
-Bipolar disorder	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1300	Streptococcaceae	family	1	1	154
-Bipolar disorder	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1301	Streptococcus	genus	1	1	141

@@ -1,73 +1,73 @@
 ================================================================================
 TRAIT COUPLING SENSITIVITY AUDIT REPORT (Issue #260)
 ================================================================================
-Code commit: 42300e031e0631198e81b11752904064aa61ab41
+Code commit: 8b280a399d71a36d2f8eec639800f282503eeb93
 
 1. LEAVE-ONE-TRAIT-OUT (LOTO) - COMPOSITION DELTA EFFECT MATRIX (6 x 6):
    Rows: Dropped Trait | Columns: Evaluated Trait
 --------------------------------------------------------------------------------
                              facultatively aerobic  cellulose catabolic process  coccus shaped  sphere shaped  arsenate reduction  moderately halophilic
-facultatively aerobic                          NaN                     0.000813       0.002660       0.004982            0.003390               0.006020
-cellulose catabolic process              -0.000260                          NaN      -0.000369      -0.000637           -0.000263              -0.000186
-coccus shaped                             0.001367                     0.001009            NaN       0.003684            0.001064               0.005123
-sphere shaped                             0.000087                     0.000052       0.000012            NaN            0.000029               0.000192
-arsenate reduction                        0.000018                     0.000005       0.000016       0.000012                 NaN               0.000036
-moderately halophilic                     0.000026                     0.000027       0.000063       0.000135            0.000037                    NaN
+facultatively aerobic                          NaN                     0.000801       0.002651       0.005055            0.002979               0.005937
+cellulose catabolic process              -0.000261                          NaN      -0.000370      -0.000652           -0.000265              -0.000188
+coccus shaped                             0.001090                     0.001037            NaN       0.003657            0.001020               0.005092
+sphere shaped                             0.000091                     0.000052       0.000014            NaN            0.000039               0.000206
+arsenate reduction                        0.000017                     0.000005       0.000017       0.000013                 NaN               0.000036
+moderately halophilic                     0.000026                     0.000026       0.000064       0.000144            0.000041                    NaN
 
 2. LEAVE-ONE-TRAIT-OUT (LOTO) - COMPOSITION DELTA Q-VALUE MATRIX (6 x 6):
    Rows: Dropped Trait | Columns: Evaluated Trait
    Note (#478): Focal-set BH sensitivity check (m=6 baseline -> m=5 LOTO; not full-family Table 1 q)
 --------------------------------------------------------------------------------
                              facultatively aerobic  cellulose catabolic process  coccus shaped  sphere shaped  arsenate reduction  moderately halophilic
-facultatively aerobic                          NaN                 5.960887e-09  -1.352231e-08  -3.047683e-07       -2.425670e-07          -1.181800e-06
-cellulose catabolic process          -3.552401e-12                          NaN   1.650388e-08   9.479643e-08        9.479643e-08           6.100470e-08
-coccus shaped                        -1.354870e-11                 1.856963e-10            NaN  -2.096721e-07       -9.044443e-08          -1.120750e-06
-sphere shaped                        -6.028849e-12                -9.948708e-10  -7.938728e-09            NaN        2.236982e-08          -6.570108e-08
-arsenate reduction                   -5.444878e-12                -1.048584e-09  -7.975220e-09   1.049184e-08                 NaN          -1.069075e-08
-moderately halophilic                -5.529366e-12                -1.019084e-09  -8.354466e-09  -1.099403e-07       -1.099403e-07                    NaN
+facultatively aerobic                          NaN                 1.363659e-08  -3.228257e-08  -3.834377e-07       -4.471150e-07          -1.073527e-06
+cellulose catabolic process          -2.014094e-11                          NaN   4.236376e-08   1.704490e-07        8.896674e-08           5.626914e-08
+coccus shaped                        -6.512879e-11                 3.894700e-10            NaN  -2.964525e-07       -3.109120e-07          -9.373241e-07
+sphere shaped                        -3.317800e-11                -2.310487e-09  -2.076033e-08            NaN        3.513825e-08          -6.346964e-08
+arsenate reduction                   -3.002555e-11                -2.430415e-09  -2.079506e-08  -1.132782e-07                 NaN          -9.618338e-09
+moderately halophilic                -3.045346e-11                -2.365330e-09  -2.171904e-08  -1.275052e-07       -1.800080e-07                    NaN
 
 3. LEAVE-CLUSTER-OUT (LCO) - DROPPING COCCUS + SPHERE SIMULTANEOUSLY:
    Note (#478): Base q and LCO q are focal-set BH sensitivity checks (m=6 baseline -> m=4 LCO; not full-family Table 1 q)
 --------------------------------------------------------------------------------
 Arm            | Trait Name                   | Base Stat  | LCO Stat   | Delta Stat  | Base q    | LCO q
 --------------------------------------------------------------------------------
-composition    | facultatively aerobic        |    +0.1827 |    +0.1842 |   +0.001463 |  3.21e-11 |  1.44e-11
-composition    | cellulose catabolic process  |    -0.1613 |    -0.1602 |   +0.001069 |  6.31e-09 |  5.27e-09
-composition    | arsenate reduction           |    +0.1506 |    +0.1517 |   +0.001097 |  6.36e-07 |  5.78e-07
-composition    | moderately halophilic        |    +0.1293 |    +0.1346 |   +0.005338 |  1.79e-06 |  6.43e-07
-directional    | facultatively aerobic        |    +0.5823 |    +0.5823 |   +0.000000 |  4.14e-06 |  2.76e-06
-directional    | cellulose catabolic process  |    +0.4315 |    +0.4380 |   +0.006460 |  3.14e-04 |  8.39e-04
-directional    | arsenate reduction           |    +0.5617 |    +0.5649 |   +0.003247 |  2.98e-03 |  1.44e-03
-directional    | moderately halophilic        |    +0.5740 |    +0.5763 |   +0.002367 |  5.79e-05 |  2.05e-05
-ora            | facultatively aerobic        |    +0.8969 |    +0.9279 |   +0.030949 |  0.00e+00 |  0.00e+00
-ora            | cellulose catabolic process  |    +2.6318 |    +2.6353 |   +0.003446 |  0.00e+00 |  0.00e+00
-ora            | arsenate reduction           |    +0.6217 |    +0.6104 |   -0.011313 |  0.00e+00 |  0.00e+00
-ora            | moderately halophilic        |    +0.7294 |    +0.7263 |   -0.003073 |  0.00e+00 |  0.00e+00
+composition    | facultatively aerobic        |    +0.1824 |    +0.1836 |   +0.001190 |  1.77e-10 |  8.74e-11
+composition    | cellulose catabolic process  |    -0.1608 |    -0.1597 |   +0.001096 |  1.46e-08 |  1.22e-08
+composition    | arsenate reduction           |    +0.1505 |    +0.1515 |   +0.001063 |  1.04e-06 |  7.22e-07
+composition    | moderately halophilic        |    +0.1332 |    +0.1385 |   +0.005322 |  1.67e-06 |  7.22e-07
+directional    | facultatively aerobic        |    +0.5811 |    +0.5800 |   -0.001111 |  7.66e-06 |  7.14e-06
+directional    | cellulose catabolic process  |    +0.4338 |    +0.4404 |   +0.006553 |  5.78e-04 |  1.11e-03
+directional    | arsenate reduction           |    +0.5641 |    +0.5674 |   +0.003289 |  2.12e-03 |  1.11e-03
+directional    | moderately halophilic        |    +0.5764 |    +0.5788 |   +0.002407 |  3.58e-05 |  1.25e-05
+ora            | facultatively aerobic        |    +0.8942 |    +0.9253 |   +0.031085 |  0.00e+00 |  0.00e+00
+ora            | cellulose catabolic process  |    +2.6646 |    +2.6691 |   +0.004515 |  0.00e+00 |  0.00e+00
+ora            | arsenate reduction           |    +0.6173 |    +0.6063 |   -0.011025 |  0.00e+00 |  0.00e+00
+ora            | moderately halophilic        |    +0.7267 |    +0.7238 |   -0.002924 |  0.00e+00 |  0.00e+00
 
 4. FORMAL DECISION RULE EVALUATION:
 --------------------------------------------------------------------------------
 Criterion: |Delta effect| < min adjacent row spacing in Table 1
-Table 1 baseline sorted effects: [-0.1613, 0.1293, 0.1377, 0.1506, 0.1543, 0.1827]
-Inter-trait adjacent distances:  [0.2906, 0.0084, 0.0129, 0.0036, 0.0284]
-Minimum adjacent row distance:   0.003619 (between arsenate reduction and coccus shaped)
+Table 1 baseline sorted effects: [-0.1608, 0.1332, 0.1418, 0.1505, 0.1544, 0.1824]
+Inter-trait adjacent distances:  [0.294, 0.0086, 0.0087, 0.0039, 0.028]
+Minimum adjacent row distance:   0.003904 (between arsenate reduction and coccus shaped)
 
 Direct Test (Drop Sphere -> Coccus Effect Shift):
-  Delta effect(coccus):            +0.000012
-  |Delta effect|:                  0.000012
-  Criterion verdict:               Passes stability criterion: |Delta effect| (0.000012) < min adjacent row distance (0.003619). Denominator coupling does not destabilize effect rankings.
+  Delta effect(coccus):            +0.000014
+  |Delta effect|:                  0.000014
+  Criterion verdict:               Passes stability criterion: |Delta effect| (0.000014) < min adjacent row distance (0.003904). Denominator coupling does not destabilize effect rankings.
 
 Reverse Test (Drop Coccus -> Sphere Effect Shift):
-  Delta effect(sphere):            +0.003684
-  |Delta effect|:                  0.003684
-  Criterion verdict:               Fails stability criterion: |Delta effect| (0.003684) >= min adjacent row distance (0.003619). Near-twin coupling destabilizes separate reporting.
+  Delta effect(sphere):            +0.003657
+  |Delta effect|:                  0.003657
+  Criterion verdict:               Passes stability criterion: |Delta effect| (0.003657) < min adjacent row distance (0.003904). Denominator coupling does not destabilize effect rankings.
 
 5. METHODOLOGICAL & BIOLOGICAL SYNTHESIS:
 --------------------------------------------------------------------------------
 a. Denominator Coupling Sensitivity by Analytical Arm:
-   In the composition arm, denominator coupling induced by dropping any single Table 1 trait across all 30 LOTO pairs produces a maximum |Delta effect| of 0.006020 (and up to 0.005338 under LCO; overall composition |Delta effect| <= 0.006020), compared against the tightest Table 1 inter-trait gap of 0.003619.
-   In the directional sign-test arm, maximum |Delta share_up| is 0.006460; in the ORA arm, maximum |Delta mean_fold| is 0.072357 as removing high-count traits shrinks the shared background urn M. Note that focal-set BH q-values above are evaluated over m=6 (baseline), m=5 (LOTO), and m=4 (LCO) traits as a sensitivity check rather than full-family Table 1 q-values.
+   In the composition arm, denominator coupling induced by dropping any single Table 1 trait across all 30 LOTO pairs produces a maximum |Delta effect| of 0.005937 (and up to 0.005322 under LCO; overall composition |Delta effect| <= 0.005937), compared against the tightest Table 1 inter-trait gap of 0.003904.
+   In the directional sign-test arm, maximum |Delta share_up| is 0.006553; in the ORA arm, maximum |Delta mean_fold| is 0.073474 as removing high-count traits shrinks the shared background urn M. Note that focal-set BH q-values above are evaluated over m=6 (baseline), m=5 (LOTO), and m=4 (LCO) traits as a sensitivity check rather than full-family Table 1 q-values.
 
 b. Distinction Between Redundancy and Denominator Coupling:
    Coccus and sphere correlate strongly (r = +0.797, VIF = 2.74, Issue #264) due to semantic/curation redundancy in METPO mappings, NOT denominator distortion.
-   Because total non-MediaDive annotation counts are distributed across 317 columns (121.76M annotations), removing even a high-annotation trait like coccus (4.54M counts) shrinks the denominator smoothly without tilting relative compositions. Therefore, while coccus and sphere should not be claimed as independent biological mechanisms (due to semantic overlap), their Table 1 statistics are structurally stable.
+   Because total non-MediaDive annotation counts are distributed across 317 columns (119.80M annotations), removing even a high-annotation trait like coccus (4.43M counts) shrinks the denominator smoothly without tilting relative compositions. Therefore, while coccus and sphere should not be claimed as independent biological mechanisms (due to semantic overlap), their Table 1 statistics are structurally stable.
 ================================================================================

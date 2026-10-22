@@ -5,8 +5,8 @@ Escherichia coli	Colorectal cancer	Feces	0	5	0	4	5	1.0
 Prevotella intermedia	Colorectal cancer	Feces	0	4	0	4	4	1.0
 Enterocloster bolteae	COVID-19	Feces	0	4	0	3	4	1.0
 Klebsiella pneumoniae	Parkinson's disease	Feces	0	4	0	3	4	1.0
-Streptococcus anginosus	Rheumatoid arthritis	Subgingival dental plaque	0	4	0	3	4	1.0
 Veillonella dispar	Type II diabetes mellitus	Feces	0	4	0	2	4	1.0
+Streptococcus anginosus	Rheumatoid arthritis	Subgingival dental plaque	0	3	0	2	3	1.0
 Eggerthella lenta	Colorectal cancer	Feces	0	2	0	2	2	1.0
 Eggerthella lenta	HIV infection	Feces	0	2	0	2	2	1.0
 Eggerthella lenta	Irritable bowel syndrome	Feces	0	2	0	2	2	1.0
@@ -22,9 +22,7 @@ Klebsiella pneumoniae	Aging	Feces	0	7	0	1	7	1.0
 Prevotella intermedia	Colorectal cancer	Other	0	4	0	1	4	1.0
 Streptococcus anginosus	Gastric cancer	Other	0	4	0	1	4	1.0
 Eggerthella lenta	Tumor stage	Feces	0	3	0	1	3	1.0
-Enterocloster bolteae	Glucose	Feces	0	3	0	1	3	1.0
 Enterocloster bolteae	Tumor stage	Feces	0	3	0	1	3	1.0
-Escherichia coli	Glucose	Feces	0	3	0	1	3	1.0
 Escherichia coli	Psoriasis vulgaris	Feces	0	3	0	1	3	1.0
 Parvimonas micra	Colorectal carcinoma	Feces	0	3	0	1	3	1.0
 Parvimonas micra	Squamous cell carcinoma	Mouth	0	3	0	1	3	1.0
@@ -106,7 +104,6 @@ Escherichia coli	Health study participation	Other	0	1	0	1	1	1.0
 Escherichia coli	Inflammatory bowel disease	Feces	0	1	0	1	1	1.0
 Escherichia coli	Meibomian cyst	Other	0	1	0	1	1	1.0
 Escherichia coli	Peutz-Jeghers Polyp	Feces	0	1	0	1	1	1.0
-Escherichia coli	Phenotype	Feces	0	1	0	1	1	1.0
 Escherichia coli	Relapsing-remitting multiple sclerosis	Feces	0	1	0	1	1	1.0
 Escherichia coli	Response to immunochemotherapy	Feces	0	1	0	1	1	1.0
 Escherichia coli	Response to transplant	Other	0	1	0	1	1	1.0
@@ -223,7 +220,7 @@ Veillonella dispar	Tumor size	Feces	0	1	0	1	1	1.0
 Veillonella dispar	Type II diabetes mellitus	Subgingival dental plaque	0	1	0	1	1	1.0
 Veillonella dispar	Ulcerative colitis	Feces	0	1	0	1	1	1.0
 Fusobacterium nucleatum	Population	Saliva	1	5	1	1	6	0.6666666666666666
-Fusobacterium nucleatum	Ovarian cancer	Other	1	4	1	2	5	0.6
+Fusobacterium nucleatum	Ovarian cancer	Other	1	3	1	1	4	0.5
 Escherichia coli	Population	Saliva	3	7	1	1	10	0.4
 Eggerthella lenta	Obesity	Feces	1	2	1	2	3	0.3333333333333333
 Escherichia coli	Irritable bowel syndrome	Feces	1	2	1	2	3	0.3333333333333333
@@ -275,7 +272,6 @@ Enterocloster bolteae	Psoriasis	Feces	1	0	1	0	1	-1.0
 Escherichia coli	Acne	Other	1	0	1	0	1	-1.0
 Escherichia coli	Adverse effect	Feces	1	0	1	0	1	-1.0
 Escherichia coli	Breast carcinoma	Other	1	0	1	0	1	-1.0
-Escherichia coli	Cancer or benign tumor	Other	1	0	1	0	1	-1.0
 Escherichia coli	Delivery method	Feces	1	0	1	0	1	-1.0
 Escherichia coli	Human immunodeficiency virus	Feces	1	0	1	0	1	-1.0
 Escherichia coli	Pulmonary non-tuberculous mycobacterial infection	Other	1	0	1	0	1	-1.0

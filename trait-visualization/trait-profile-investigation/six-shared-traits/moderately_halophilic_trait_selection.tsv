@@ -1,2 +1,2 @@
 trait_id	trait_name	slug	base_color	paired_q_value	paired_p_value	paired_mean_increased_minus_decreased	paired_direction
-METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	9.411149738395968e-05	1.7925999501706602e-06	0.1317090107285474	trait enriched in increased profiles
+METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	8.686640973196955e-05	1.6651707935840809e-06	0.1357294715712632	trait enriched in increased profiles

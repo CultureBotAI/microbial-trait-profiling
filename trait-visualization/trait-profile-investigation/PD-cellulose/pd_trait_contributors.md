@@ -2,7 +2,7 @@
 
 ![Contributor heatmap](pd_trait_contributors_species_family_dot_heatmap.png)
 
-Counts come from the Table 1 contribution ledger (`mtp.contribution_inputs`, `mtp.taxon_contributions`, #190) on the pinned KG-Microbe release. They cover the 198 PD fecal profiles that the ledger retains (99 increased and 99 decreased, from 45 studies): human profiles in experiments with both directions, out of 247 PD fecal profiles. Every trait-bearing KG taxon at or below a reported taxon adds one count, once per reported taxon, exactly as the taxa-trait matrix and the profile trait sums count it. Each such taxon is attributed to its species and its family when the pinned taxonomy gives exactly one; otherwise it is unresolved (no ancestor at that rank) or ambiguous (several).
+Counts come from the Table 1 contribution ledger (`mtp.contribution_inputs`, `mtp.taxon_contributions`, #190) on the pinned KG-Microbe release. They cover the 194 PD fecal profiles that the ledger retains (97 increased and 97 decreased, from 43 studies): human profiles in experiments with both directions, out of 242 PD fecal profiles. Every trait-bearing KG taxon at or below a reported taxon adds one count, once per reported taxon, exactly as the taxa-trait matrix and the profile trait sums count it. Each such taxon is attributed to its species and its family when the pinned taxonomy gives exactly one; otherwise it is unresolved (no ancestor at that rank) or ambiguous (several).
 
 Each trait carries its observed direction in the PD six-trait lollipop, the sign of `increased_minus_decreased_mean_z` in `pd_six_trait_direction_summary.tsv`: the `trait_direction` column in the cell, coverage and co-carriage tables, and an up or down arrow in the figure labels.
 
@@ -32,9 +32,9 @@ The contributor counts are not valid independent observations for a significance
 
 | trait | lollipop direction | mean increased - decreased z | 95% interval | pattern |
 | --- | --- | ---: | ---: | --- |
-| moderately halophilic | increased | 0.434 | [0.175, 0.694] | inc |
-| arsenate reduction | increased | 0.512 | [0.062, 0.961] | inc |
-| cellulose catabolic process | decreased | -0.691 | [-1.177, -0.205] | dec |
+| moderately halophilic | increased | 0.465 | [0.207, 0.723] | inc |
+| arsenate reduction | increased | 0.427 | [0.001, 0.852] | inc |
+| cellulose catabolic process | decreased | -0.693 | [-1.186, -0.199] | dec |
 
 These intervals are aggregate directional context, not contributor-level tests, and the table does not add a new multiple-testing correction.
 
@@ -45,8 +45,8 @@ These intervals are aggregate directional context, not contributor-level tests, 
 | species | sphere shaped | inc | 80.3% |
 | species | sphere shaped | dec | 70.6% |
 | species | arsenate reduction | dec | 65.7% |
-| species | moderately halophilic | inc | 63.9% |
-| species | moderately halophilic | dec | 57.7% |
+| species | moderately halophilic | inc | 64.0% |
+| species | moderately halophilic | dec | 58.1% |
 | species | cellulose catabolic process | inc | 45.2% |
 
 High unresolved shares limit rank-specific attribution. They do not create extra colored contributor mass because every contributor share is divided by the full trait-direction count.
@@ -57,11 +57,11 @@ Top profile-pool-normalized reported taxon labels (descriptive):
 
 | rank | taxon | PD/other profiles | PD/other prevalence | prevalence difference |
 | --- | --- | ---: | ---: | ---: |
-| family | Lachnospiraceae (186803) | 49/307 | 19.84%/9.15% | +10.69 pp |
-| family | Oscillospiraceae (216572) | 27/222 | 10.93%/6.61% | +4.32 pp |
-| family | Lactobacillaceae (33958) | 17/128 | 6.88%/3.81% | +3.07 pp |
-| family | Bifidobacteriaceae (31953) | 15/106 | 6.07%/3.16% | +2.92 pp |
-| family | Enterobacteriaceae (543) | 20/196 | 8.10%/5.84% | +2.26 pp |
+| family | Lachnospiraceae (186803) | 49/300 | 20.25%/9.23% | +11.02 pp |
+| family | Oscillospiraceae (216572) | 27/215 | 11.16%/6.61% | +4.54 pp |
+| family | Lactobacillaceae (33958) | 17/126 | 7.02%/3.88% | +3.15 pp |
+| family | Bifidobacteriaceae (31953) | 15/106 | 6.20%/3.26% | +2.94 pp |
+| family | Streptococcaceae (1300) | 13/107 | 5.37%/3.29% | +2.08 pp |
 
 ## Counting and selection bias
 

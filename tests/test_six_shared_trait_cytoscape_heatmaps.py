@@ -998,31 +998,31 @@ def test_oral_and_full_contrast_nominal_p_versus_bh_border_regression() -> None:
     contrasts = pd.read_csv(source_path, sep="\t")
 
     individual = contrasts[contrasts["view_key"] == "individual_conditions_direction_contrast"]
-    assert len(individual) == 3144
-    assert individual["passes_support"].sum() == 663
+    assert len(individual) == 3064
+    assert individual["passes_support"].sum() == 645
     assert individual["nominal_p_value_selected"].sum() == 29
     assert individual["significant_in_heatmap"].sum() == 29
     assert individual["selected_after_bh"].sum() == 1
-    assert individual["displayed_in_heatmap"].sum() == 632
+    assert individual["displayed_in_heatmap"].sum() == 614
     assert (individual["nominal_p_value_selected"] == individual["significant_in_heatmap"]).all()
 
     # Oral cavity / dental subset within individual view
     oral_site = individual[individual["body_site_group"] == "Oral cavity / dental"]
-    assert oral_site["passes_support"].sum() == 87
+    assert oral_site["passes_support"].sum() == 86
     assert oral_site["nominal_p_value_selected"].sum() == 2
     assert oral_site["significant_in_heatmap"].sum() == 2
     assert oral_site["selected_after_bh"].sum() == 0
-    assert oral_site["displayed_in_heatmap"].sum() == 83
+    assert oral_site["displayed_in_heatmap"].sum() == 80
 
     # Oral export subset via select_oral_contrast_cells
     oral_export = heatmaps.select_oral_contrast_cells(contrasts)
-    assert len(oral_export) == 522
+    assert len(oral_export) == 518
     assert oral_export["condition_body_site_pair"].nunique() == 117
-    assert oral_export["passes_support"].sum() == 87
+    assert oral_export["passes_support"].sum() == 86
     assert oral_export["nominal_p_value_selected"].sum() == 2
     assert oral_export["significant_in_heatmap"].sum() == 2
     assert oral_export["selected_after_bh"].sum() == 0
-    assert oral_export["displayed_in_heatmap"].sum() == 83
+    assert oral_export["displayed_in_heatmap"].sum() == 80
     assert (oral_export["nominal_p_value_selected"] == oral_export["significant_in_heatmap"]).all()
 
     # Squamous cell carcinoma and oral squamous cell carcinoma stay separate oral rows.
@@ -1046,7 +1046,7 @@ def test_oral_and_full_contrast_nominal_p_versus_bh_border_regression() -> None:
     assert math.isclose(cell["increased_minus_decreased_positive_fraction"], 5 / 7, rel_tol=1e-9)
     assert math.isclose(cell["fisher_p_value"], 0.00339366515837, rel_tol=1e-6)
     assert cell["fisher_p_value"] < heatmaps.P_VALUE_CUTOFF
-    assert math.isclose(cell["fisher_q_value"], 0.587927267704, rel_tol=1e-6)
+    assert math.isclose(cell["fisher_q_value"], 0.577677224736, rel_tol=1e-6)
     assert cell["fisher_q_value"] > heatmaps.Q_VALUE_CUTOFF
     assert bool(cell["passes_support"]) is True
     assert bool(cell["nominal_p_value_selected"]) is True
