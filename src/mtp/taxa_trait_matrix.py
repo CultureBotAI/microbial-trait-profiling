@@ -11,6 +11,7 @@ from pathlib import Path
 from mtp.paths import KG_MICROBE_DIR, REPO_ROOT
 
 TAXON_PREFIX = "NCBITaxon:"
+STRAIN_PREFIX = "kgmicrobe.strain:"
 TRAIT_PREFIX = "METPO:"
 SUBCLASS_OF = "biolink:subclass_of"
 TRAIT_KEY_SEPARATOR = "|"
@@ -51,8 +52,27 @@ class NodeMetadata:
     category: str
 
 
+@dataclass(frozen=True)
+class KgTraitEdges:
+    """Taxonomy links and trait sets read from KG edges.
+
+    ``strain_taxa`` maps each BacDive strain to the NCBITaxon nodes it is a
+    ``biolink:subclass_of``, and ``strain_traits`` holds the strain's own trait keys
+    (#774). Both are empty unless strains were read.
+    """
+
+    child_to_parents: dict[str, set[str]]
+    taxon_traits: dict[str, set[str]]
+    strain_taxa: dict[str, set[str]]
+    strain_traits: dict[str, set[str]]
+
+
 def _is_taxon(value: str) -> bool:
     return value.startswith(TAXON_PREFIX)
+
+
+def _is_strain(value: str) -> bool:
+    return value.startswith(STRAIN_PREFIX)
 
 
 def _is_trait(value: str) -> bool:
@@ -156,16 +176,22 @@ def node_ids_for_trait_keys(trait_keys: set[str]) -> set[str]:
     return node_ids
 
 
-def read_kg_edges(edges_path: Path) -> tuple[dict[str, set[str]], dict[str, set[str]]]:
-    """Read taxonomy parent links and direct taxon-trait assertions from KG edges.
+def read_kg_trait_edges(edges_path: Path, *, strains: bool = False) -> KgTraitEdges:
+    """Read taxonomy parent links and direct trait assertions from KG edges.
+
+    Trait sets are keyed by NCBITaxon subject. With ``strains``, the trait edges of
+    BacDive strain subjects (``kgmicrobe.strain:``) and the strains' NCBITaxon
+    ``subclass_of`` links are also kept, apart from the taxon sets (#774).
 
     Memory: materializes the full taxonomy graph plus per-taxon trait sets in
     Python dicts. On the current ~1 GB merged-kg_edges.tsv this peaks around
-    2-3 GB of resident memory; switch to a streaming / two-pass implementation
-    if that becomes a constraint.
+    2-3 GB of resident memory, and around 6 GB with strains; switch to a
+    streaming / two-pass implementation if that becomes a constraint.
     """
     child_to_parents: defaultdict[str, set[str]] = defaultdict(set)
     taxon_traits: defaultdict[str, set[str]] = defaultdict(set)
+    strain_taxa: defaultdict[str, set[str]] = defaultdict(set)
+    strain_traits: defaultdict[str, set[str]] = defaultdict(set)
 
     with edges_path.open("r", encoding="utf-8", newline="") as fh:
         reader = csv.reader(fh, delimiter="\t")
@@ -182,8 +208,53 @@ def read_kg_edges(edges_path: Path) -> tuple[dict[str, set[str]], dict[str, set[
                 child_to_parents[subject].add(obj)
             elif _is_taxon(subject) and (_is_trait(obj) or _is_trait(predicate)):
                 taxon_traits[subject].add(make_trait_key(predicate, obj))
+            elif strains and _is_strain(subject):
+                if predicate == SUBCLASS_OF and _is_taxon(obj):
+                    strain_taxa[subject].add(obj)
+                elif _is_trait(obj) or _is_trait(predicate):
+                    strain_traits[subject].add(make_trait_key(predicate, obj))
 
-    return dict(child_to_parents), dict(taxon_traits)
+    return KgTraitEdges(
+        dict(child_to_parents), dict(taxon_traits), dict(strain_taxa), dict(strain_traits)
+    )
+
+
+def roll_up_strain_traits(
+    taxon_traits: dict[str, set[str]],
+    strain_taxa: dict[str, set[str]],
+    strain_traits: dict[str, set[str]],
+) -> dict[str, set[str]]:
+    """Count each strain's trait keys as assertions on the NCBITaxon nodes it links to.
+
+    A node carries a trait once, whether from its own edges or from any number of its
+    strains, so a strain adds traits to its species without becoming another annotated
+    taxon: the matrix still counts trait-bearing NCBITaxon nodes. A strain linked to
+    several nodes adds its traits to each, and one linked to none adds nothing (#774).
+    The arguments are left unchanged.
+    """
+    rolled = {taxon_id: set(traits) for taxon_id, traits in taxon_traits.items()}
+    for strain_id, traits in strain_traits.items():
+        for taxon_id in strain_taxa.get(strain_id, ()):
+            rolled.setdefault(taxon_id, set()).update(traits)
+    return rolled
+
+
+def read_kg_edges(
+    edges_path: Path, *, strain_rollup: bool = False
+) -> tuple[dict[str, set[str]], dict[str, set[str]]]:
+    """Read taxonomy parent links and per-taxon trait sets from KG edges.
+
+    Only NCBITaxon subjects carry traits by default, so BacDive strain records never
+    reach the matrix. ``strain_rollup`` adds them at the strains' NCBITaxon nodes through
+    roll_up_strain_traits; it stays off by default because it adds traits to the
+    vocabulary of every downstream analysis (#774).
+    """
+    edges = read_kg_trait_edges(edges_path, strains=strain_rollup)
+    if not strain_rollup:
+        return edges.child_to_parents, edges.taxon_traits
+    return edges.child_to_parents, roll_up_strain_traits(
+        edges.taxon_traits, edges.strain_taxa, edges.strain_traits
+    )
 
 
 def _target_ancestors(
@@ -367,8 +438,12 @@ def create_taxa_trait_matrix(
     column_metadata_path: Path | None = None,
     edges_path: Path | None = None,
     nodes_path: Path | None = None,
+    strain_rollup: bool = False,
 ) -> MatrixStats:
-    """Create data/derived/taxa_trait_matrix.tsv from BugSigDB taxa and KG-Microbe."""
+    """Create data/derived/taxa_trait_matrix.tsv from BugSigDB taxa and KG-Microbe.
+
+    ``strain_rollup`` also counts BacDive strain trait edges (read_kg_edges, #774).
+    """
     resolved_edges_path = resolve_kg_file(EDGES_FILENAME, kg_dir, edges_path)
     resolved_nodes_path = resolve_kg_file(NODES_FILENAME, kg_dir, nodes_path)
     resolved_column_metadata_path = column_metadata_path or output_path.with_name(
@@ -379,7 +454,7 @@ def create_taxa_trait_matrix(
         raise FileNotFoundError(f"BugSigDB taxa TSV not found: {taxa_path}")
 
     reported_taxa = read_reported_taxa(taxa_path)
-    child_to_parents, taxon_traits = read_kg_edges(resolved_edges_path)
+    child_to_parents, taxon_traits = read_kg_edges(resolved_edges_path, strain_rollup=strain_rollup)
     counts = compute_trait_counts(reported_taxa, child_to_parents, taxon_traits)
     trait_keys = {
         trait_key
@@ -448,6 +523,15 @@ def build_parser() -> argparse.ArgumentParser:
             "Defaults to a path derived from --output."
         ),
     )
+    parser.add_argument(
+        "--strain-rollup",
+        action="store_true",
+        help=(
+            "Also count the trait edges of BacDive strains (kgmicrobe.strain:) at the "
+            "NCBITaxon node each strain is a subclass of. Off by default: it adds traits "
+            "to the matrix vocabulary (#774)."
+        ),
+    )
     return parser
 
 
@@ -460,11 +544,14 @@ def main() -> int:
         column_metadata_path=args.column_metadata_output,
         edges_path=args.edges,
         nodes_path=args.nodes,
+        strain_rollup=args.strain_rollup,
     )
     print(f"Wrote matrix: {stats.output_path}")
     print(f"Wrote column metadata: {stats.column_metadata_path}")
     print(f"Reported taxa rows: {stats.reported_taxa}")
     print(f"Trait columns: {stats.traits}")
+    if args.strain_rollup:
+        print("BacDive strain trait edges counted at their NCBITaxon nodes (--strain-rollup)")
     print(f"KG edges: {stats.edges_path}")
     print(f"KG nodes: {stats.nodes_path}")
     return 0
