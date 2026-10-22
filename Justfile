@@ -536,9 +536,9 @@ html-to-pdf HTML PDF:
 taxa-trait-matrix: download-kg study-tsvs
 	uv run python scripts/create_taxa_trait_matrix.py
 
-# Compare trait coverage with and without the opt-in BacDive strain rollup (#774), from
-# explicit inputs: --reported-taxa, --edges, --nodes, --output-dir, and optionally a
-# contrast-selected --study-dir for the signature taxa that gain a trait label.
+# Takes explicit inputs: --reported-taxa, --edges, --nodes and --output-dir, and optionally
+# a contrast-selected --study-dir for the signature taxa that gain a trait label.
+# Compare trait coverage with and without the opt-in BacDive strain rollup (#774).
 [positional-arguments]
 audit-strain-rollup *ARGS:
 	uv run python scripts/adhoc/issue774_strain_rollup_coverage.py "$@"

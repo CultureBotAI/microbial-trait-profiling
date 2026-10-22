@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import csv
 from collections import Counter, defaultdict
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -529,14 +530,18 @@ def build_parser() -> argparse.ArgumentParser:
         help=(
             "Also count the trait edges of BacDive strains (kgmicrobe.strain:) at the "
             "NCBITaxon node each strain is a subclass of. Off by default: it adds traits "
-            "to the matrix vocabulary (#774)."
+            "to the matrix vocabulary (#774). Needs an --output other than the default."
         ),
     )
     return parser
 
 
-def main() -> int:
-    args = build_parser().parse_args()
+def main(argv: Sequence[str] | None = None) -> int:
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    # The analyses read the default path, so a rolled-up matrix must not replace it (#797)
+    if args.strain_rollup and args.output.resolve() == DEFAULT_OUTPUT_PATH.resolve():
+        parser.error("--strain-rollup needs an --output other than the default matrix path")
     stats = create_taxa_trait_matrix(
         taxa_path=args.taxa,
         kg_dir=args.kg_dir,

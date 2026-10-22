@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from bsdbng.taxa_trait_matrix import create_taxa_trait_matrix
 from mtp import taxa_trait_matrix
 
@@ -231,6 +233,22 @@ def test_strain_rollup_counts_strain_traits_at_the_linked_ncbitaxon_node(tmp_pat
     ]
 
 
+def test_strain_links_keep_ncbitaxon_parents_only(tmp_path: Path) -> None:
+    """Strain 5's subclass_of a kgmicrobe.genus node is not a taxon link (#797)."""
+    _, _, edges_path = _write_strain_fixture(tmp_path, [*TAXONOMY_AND_TAXON_EDGES, *STRAIN_EDGES])
+
+    edges = taxa_trait_matrix.read_kg_trait_edges(edges_path, strains=True)
+
+    assert edges.strain_taxa == {
+        "kgmicrobe.strain:1": {"NCBITaxon:101"},
+        "kgmicrobe.strain:2": {"NCBITaxon:101"},
+        "kgmicrobe.strain:3": {"NCBITaxon:102"},
+    }
+    assert edges.strain_traits["kgmicrobe.strain:5"] == {"METPO:1000668"}
+    default = taxa_trait_matrix.read_kg_trait_edges(edges_path)
+    assert (default.strain_taxa, default.strain_traits) == ({}, {})
+
+
 def test_roll_up_strain_traits_adds_to_every_linked_node_without_mutating() -> None:
     taxon_traits = {"NCBITaxon:101": {"METPO:1000603"}}
     strain_taxa = {"kgmicrobe.strain:1": {"NCBITaxon:101", "NCBITaxon:201"}}
@@ -252,3 +270,33 @@ def test_strain_rollup_is_opt_in_on_the_command_line() -> None:
     parser = taxa_trait_matrix.build_parser()
     assert parser.parse_args([]).strain_rollup is False
     assert parser.parse_args(["--strain-rollup"]).strain_rollup is True
+
+
+@pytest.mark.parametrize("output", [[], ["--output", str(taxa_trait_matrix.DEFAULT_OUTPUT_PATH)]])
+def test_strain_rollup_refuses_the_default_matrix_path(
+    output: list[str], tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The analyses read the default path, so a rolled-up matrix must go elsewhere (#797).
+
+    The empty --kg-dir stops a build before it writes anything if the guard is missing.
+    """
+    with pytest.raises(SystemExit) as exited:
+        taxa_trait_matrix.main(["--strain-rollup", "--kg-dir", str(tmp_path), *output])
+
+    assert exited.value.code == 2
+    assert "--strain-rollup needs an --output" in capsys.readouterr().err
+
+
+def test_strain_rollup_writes_an_explicit_output(tmp_path: Path) -> None:
+    taxa_path, nodes_path, edges_path = _write_strain_fixture(
+        tmp_path, [*TAXONOMY_AND_TAXON_EDGES, *STRAIN_EDGES]
+    )
+    output_path = tmp_path / "rolled" / "taxa_trait_matrix.tsv"
+    paths = ["--taxa", taxa_path, "--nodes", nodes_path, "--edges", edges_path]
+
+    exit_code = taxa_trait_matrix.main(
+        ["--strain-rollup", *map(str, paths), "--output", str(output_path)]
+    )
+
+    assert exit_code == 0
+    assert output_path.read_text(encoding="utf-8").splitlines()[0].endswith("\tMETPO:1000605")
