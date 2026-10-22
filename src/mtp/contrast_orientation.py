@@ -64,7 +64,7 @@ from mtp.trait_guilds import (
     write_stats_report,
 )
 
-CLASSIFIER_VERSION = "contrast-orientation-v5"
+CLASSIFIER_VERSION = "contrast-orientation-v6"
 DEFAULT_OUTPUT_DIR = DERIVED_DATA_DIR / "contrast_orientation"
 DIRECTION_CONVENTION = "inc = higher abundance in Group 1 than in Group 0 (BugSigDB)"
 

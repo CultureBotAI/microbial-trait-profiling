@@ -6,8 +6,9 @@ import csv
 import hashlib
 import itertools
 import json
+import re
 from collections import Counter
-from dataclasses import replace
+from dataclasses import asdict, replace
 from pathlib import Path
 
 import pytest
@@ -211,6 +212,8 @@ def test_a_two_by_two_marker_design_has_no_unaffected_group() -> None:
 #: Every contrast that review #291 found wrongly admitted to, or wrongly kept out of,
 #: ``disease_vs_healthy``, with the curated strings copied verbatim from the pinned
 #: v1.3.1 export. The identifier is PMID and experiment number, as the review cites them.
+#: The classifier-version guard (#793) classifies these cases, so they stay as they are:
+#: a new case goes in a test of its own.
 ELIGIBILITY_FIXTURES: tuple[tuple[str, dict[str, str], tuple[str, str]], ...] = (
     # A bare "negative" whose subject is a marker, an antibody or a drug, not the
     # condition. Everyone in these contrasts has the disease.
@@ -1134,7 +1137,7 @@ def test_main_writes_every_artefact_and_accounts_for_every_experiment(tmp_path: 
     assert {row["in_analysed_corpus"] for row in manifest} == {"true"}
     # Spelled out, so that bumping the version is a deliberate edit to this test too:
     # the manifest and provenance are what downstream work keys off.
-    assert CLASSIFIER_VERSION == "contrast-orientation-v5"
+    assert CLASSIFIER_VERSION == "contrast-orientation-v6"
     assert {row["classifier_version"] for row in manifest} == {CLASSIFIER_VERSION}
     assert {row["bugsigdb_vintage"] for row in manifest} == {"2026-04-24_00:41_UTC"}
 
@@ -1476,6 +1479,8 @@ def _stratified(**changes: str) -> tuple[str, str, str, str]:
 #: HIV-negative comparison groups as the export spells them, and people with HIV on
 #: antiretroviral therapy compared against them (#569), with the curated strings copied
 #: verbatim from the pinned v1.3.1 export. The identifier is PMID and experiment number.
+#: The classifier-version guard (#793) classifies these cases, so they stay as they are:
+#: a new case goes in a test of its own.
 HIV_STATUS_FIXTURES: tuple[tuple[str, dict[str, str], tuple[str, str, str, str]], ...] = (
     # Spellings of an HIV-negative comparison group.
     (
@@ -2072,3 +2077,128 @@ def test_precursor_lesions_in_controls_are_tier3_subject_controls_not_comorbidit
     assert non_adenoma.contrast_type == CASE_VS_CONTROL_SUBJECT
     assert non_adenoma.control_tier == TIER_2_CONDITION_NEGATIVE_SCREENED
     assert "hospital_or_symptomatic_control" not in non_adenoma.flags.split(",")
+
+
+#: The classifier-version guard's pins (#793): for each CLASSIFIER_VERSION, SHA-256 digests
+#: of the guard's cases and of the classifier's decisions on them. A pinned version's digests
+#: never change. A rule change that moves any case needs a new CLASSIFIER_VERSION, an entry in
+#: the version history of methods/contrast_orientation.md, and new digests under the new
+#: version. The digests are public checksums, so .secrets.baseline lists them as reviewed.
+CLASSIFIER_GUARD_DIGESTS = (
+    Path(__file__).parent / "fixtures" / "contrast_orientation_guard_digests.json"
+)
+
+
+def _guard_cases() -> list[ExperimentRecord]:
+    """The fixed cases the classifier-version guard classifies (#793).
+
+    They are the repository's committed tables of experiment strings: the 60 experiments
+    of the committed hand review, which records their condition and group names but not
+    their design, Group 1 definition or description, and the #291 and #569 regression
+    tables above. They stay fixed so that a change in the decisions on them can only come
+    from the classifier.
+    """
+    review = Path(__file__).resolve().parents[1] / "methods" / "contrast_orientation_review.tsv"
+    with review.open(encoding="utf-8", newline="") as handle:
+        reviewed = [
+            ExperimentRecord(
+                study_id=row["study_id"],
+                experiment_id=row["experiment_id"],
+                pmid=row["pmid"],
+                doi="",
+                study_design="",
+                condition=row["condition"],
+                efo_id="",
+                body_site="",
+                uberon_id="",
+                host_species="",
+                group_0_name=row["group_0_name"],
+                group_1_name=row["group_1_name"],
+                group_1_definition="",
+                group_0_sample_size="",
+                group_1_sample_size="",
+                description="",
+            )
+            for row in csv.DictReader(handle, delimiter="\t")
+        ]
+    regression = [
+        replace(BASE, **changes) for _, changes, _ in (*ELIGIBILITY_FIXTURES, *HIV_STATUS_FIXTURES)
+    ]
+    return reviewed + regression
+
+
+def _guard_digests(cases: list[ExperimentRecord]) -> dict[str, str]:
+    """SHA-256 of the cases, and of the classifier's decision on each.
+
+    A decision is what a consumer can select on: the class, orientation, contrast type,
+    control tier and flags. The evidence string explains a decision and is left out, so
+    rewording it needs no new version.
+    """
+    inputs, decisions = [], []
+    for record in cases:
+        case = json.dumps(asdict(record), ensure_ascii=False, sort_keys=True)
+        found = classify(record)
+        flags = ",".join(sorted(flag for flag in found.flags.split(",") if flag))
+        inputs.append(case)
+        decisions.append(
+            "\t".join(
+                [
+                    case,
+                    found.contrast_class,
+                    found.orientation,
+                    found.contrast_type,
+                    found.control_tier,
+                    flags,
+                ]
+            )
+        )
+    return {
+        "inputs": hashlib.sha256("\n".join(sorted(inputs)).encode()).hexdigest(),
+        "decisions": hashlib.sha256("\n".join(sorted(decisions)).encode()).hexdigest(),
+    }
+
+
+def test_the_classifier_s_decisions_change_only_with_its_version() -> None:
+    """A classifier that decides differently is a new classifier version (#793).
+
+    #739 changed how duration bands, a spaced "pre - <therapy>" and "(ART) Na\u00efve" are
+    read, and moved four experiments out of ``treatment_exposure``, while the classifier
+    still reported ``contrast-orientation-v5``. Run records, manifests and provenance then
+    gave one version for two classifications.
+    """
+    found = _guard_digests(_guard_cases())
+    pins = json.loads(CLASSIFIER_GUARD_DIGESTS.read_text(encoding="utf-8"))
+    pinned = pins.get(CLASSIFIER_VERSION)
+    assert pinned is not None, (
+        f"no guard digests are pinned for {CLASSIFIER_VERSION}. Once the version history in "
+        f"methods/contrast_orientation.md describes the change, pin {found} under "
+        f"{CLASSIFIER_VERSION!r} in {CLASSIFIER_GUARD_DIGESTS.name}, and list both digests "
+        "in .secrets.baseline as reviewed checksums."
+    )
+    assert found["inputs"] == pinned["inputs"], (
+        "the guard's cases (the committed review's experiments and the #291 and #569 "
+        f"regression tables) changed under {CLASSIFIER_VERSION}, so the guard cannot tell "
+        "whether the classifications changed. Restore them and put a new case in a test of "
+        "its own, or pin the new digests under a new CLASSIFIER_VERSION."
+    )
+    assert found["decisions"] == pinned["decisions"], (
+        "the classifier's decisions on the guard's cases changed, but CLASSIFIER_VERSION is "
+        f"still {CLASSIFIER_VERSION}. Bump it, list the experiments the change reclassifies "
+        f"in the version history of methods/contrast_orientation.md, and pin {found} under "
+        f"the new version in {CLASSIFIER_GUARD_DIGESTS.name}. A pinned version's digests "
+        "never change."
+    )
+
+
+def test_the_classifier_version_has_an_entry_in_the_version_history() -> None:
+    """Each version says in the methods note what it changed and which experiments moved."""
+    methods = Path(__file__).resolve().parents[1] / "methods" / "contrast_orientation.md"
+    version = CLASSIFIER_VERSION.removeprefix("contrast-orientation-")
+    heading = re.compile(
+        rf"^## Changes from `contrast-orientation-v\d+` to `-{re.escape(version)}`",
+        re.MULTILINE,
+    )
+    assert heading.search(methods.read_text(encoding="utf-8")), (
+        f"methods/contrast_orientation.md has no '## Changes from `contrast-orientation-vN` "
+        f"to `-{version}`' section for {CLASSIFIER_VERSION}"
+    )
