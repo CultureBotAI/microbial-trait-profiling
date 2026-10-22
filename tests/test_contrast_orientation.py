@@ -53,6 +53,9 @@ from bsdbng.contrast_orientation import (
 from bsdbng.trait_guilds import TABLE1_TRAITS, Profile
 from mtp.contrast_orientation import _acronym_spelled_out
 
+#: The record that the regression tables and most tests below change a few fields of. The
+#: classifier-version guard (#793) classifies the regression tables built on it, so an edit
+#: here changes the guard's cases as an edit to those tables would.
 BASE = ExperimentRecord(
     study_id="bsdb:1",
     experiment_id="bsdb:1-1",
@@ -2079,6 +2082,77 @@ def test_precursor_lesions_in_controls_are_tier3_subject_controls_not_comorbidit
     assert "hospital_or_symptomatic_control" not in non_adenoma.flags.split(",")
 
 
+#: The four experiments that contrast-orientation-v6 reclassifies (#739, #793), with the
+#: condition and group names that its version history in methods/contrast_orientation.md
+#: lists, and the v6 reading it gives them. v5 read all four as ``treatment_exposure``.
+#: The classifier-version guard (#793) classifies these cases, so they stay as they are:
+#: a new case goes in a test of its own.
+V6_RECLASSIFIED_FIXTURES: tuple[tuple[str, dict[str, str], tuple[str, str, str, str]], ...] = (
+    (
+        "29808701-1 therapy for more than 1 year is a duration, not a visit",
+        {
+            "condition": "HIV infection",
+            "group_0_name": "Age-matched HIV-uninfected women",
+            "group_1_name": "HIV-positive women who have been taking ART for more than 1 year",
+        },
+        (
+            DISEASE_VS_HEALTHY,
+            NATIVE,
+            CASE_VS_CONTROL_SUBJECT,
+            TIER_3_HOSPITAL_COMORBID_OR_TISSUE,
+        ),
+    ),
+    (
+        "33324725-1 a spaced pre - ART baseline against uninfected controls",
+        {
+            "condition": "HIV infection",
+            "group_0_name": "Human immunodeficiency virus negative (HIV-)Uninfected Controls",
+            "group_1_name": (
+                "Human immunodeficiency virus positive(HIV+) pre - antiretroviral therapy(ART)"
+            ),
+        },
+        (DISEASE_VS_HEALTHY, NATIVE, CASE_VS_CONTROL_SUBJECT, TIER_1_HEALTHY_NORMAL),
+    ),
+    (
+        "33324725-4 two Fiebig stages, both before ART",
+        {
+            "condition": "HIV infection",
+            "group_0_name": (
+                "Human immunodeficiency virus positive(HIV+) pre- antiretroviral therapy (ART) "
+                "in Fiebig stage 1-2(F1-2)"
+            ),
+            "group_1_name": (
+                "Human immunodeficiency virus positive (HIV+) pre- antiretroviral therapy(ART) "
+                "in Fiebig stage 3(F3)"
+            ),
+        },
+        (DISEASE_VS_DISEASE, NOT_APPLICABLE, DISEASE_VS_DISEASE, NOT_APPLICABLE),
+    ),
+    (
+        "38310301-1 ART-naive cases at baseline against healthy controls",
+        {
+            "condition": "HIV infection",
+            "group_0_name": "Healthy controls (HC)",
+            "group_1_name": "Antiretroviral therapy (ART) Na\u00efve at baseline",
+        },
+        (DISEASE_VS_HEALTHY, NATIVE, CASE_VS_CONTROL_SUBJECT, TIER_1_HEALTHY_NORMAL),
+    ),
+)
+
+
+@pytest.mark.parametrize(
+    ("changes", "expected"),
+    [
+        pytest.param(changes, expected, id=name)
+        for name, changes, expected in V6_RECLASSIFIED_FIXTURES
+    ],
+)
+def test_the_experiments_v6_reclassifies_read_as_its_version_history_says(
+    changes: dict[str, str], expected: tuple[str, str, str, str]
+) -> None:
+    assert _stratified(**changes) == expected
+
+
 #: The classifier-version guard's pins (#793): for each CLASSIFIER_VERSION, SHA-256 digests
 #: of the guard's cases and of the classifier's decisions on them. A pinned version's digests
 #: never change. A rule change that moves any case needs a new CLASSIFIER_VERSION, an entry in
@@ -2094,9 +2168,9 @@ def _guard_cases() -> list[ExperimentRecord]:
 
     They are the repository's committed tables of experiment strings: the 60 experiments
     of the committed hand review, which records their condition and group names but not
-    their design, Group 1 definition or description, and the #291 and #569 regression
-    tables above. They stay fixed so that a change in the decisions on them can only come
-    from the classifier.
+    their design, Group 1 definition or description, and the #291, #569 and v6 regression
+    tables above, each case built on BASE. They stay fixed so that a change in the
+    decisions on them can only come from the classifier.
     """
     review = Path(__file__).resolve().parents[1] / "methods" / "contrast_orientation_review.tsv"
     with review.open(encoding="utf-8", newline="") as handle:
@@ -2122,7 +2196,12 @@ def _guard_cases() -> list[ExperimentRecord]:
             for row in csv.DictReader(handle, delimiter="\t")
         ]
     regression = [
-        replace(BASE, **changes) for _, changes, _ in (*ELIGIBILITY_FIXTURES, *HIV_STATUS_FIXTURES)
+        replace(BASE, **changes)
+        for _, changes, _ in (
+            *ELIGIBILITY_FIXTURES,
+            *HIV_STATUS_FIXTURES,
+            *V6_RECLASSIFIED_FIXTURES,
+        )
     ]
     return reviewed + regression
 
@@ -2176,10 +2255,11 @@ def test_the_classifier_s_decisions_change_only_with_its_version() -> None:
         "in .secrets.baseline as reviewed checksums."
     )
     assert found["inputs"] == pinned["inputs"], (
-        "the guard's cases (the committed review's experiments and the #291 and #569 "
-        f"regression tables) changed under {CLASSIFIER_VERSION}, so the guard cannot tell "
-        "whether the classifications changed. Restore them and put a new case in a test of "
-        "its own, or pin the new digests under a new CLASSIFIER_VERSION."
+        "the guard's cases (the committed review's experiments, the #291, #569 and v6 "
+        "regression tables, and BASE, which those tables build on) changed under "
+        f"{CLASSIFIER_VERSION}, so the guard cannot tell whether the classifications "
+        "changed. Restore them and put a new case in a test of its own, or pin the new "
+        "digests under a new CLASSIFIER_VERSION."
     )
     assert found["decisions"] == pinned["decisions"], (
         "the classifier's decisions on the guard's cases changed, but CLASSIFIER_VERSION is "

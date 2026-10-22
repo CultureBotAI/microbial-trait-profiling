@@ -361,19 +361,24 @@ new version and a section below saying which experiments moved, measured by clas
 the same pinned export under the old and the new rules. Rewording an evidence string
 alone needs no new version.
 
-`tests/test_contrast_orientation.py` enforces this (#793). For each version,
-`tests/fixtures/contrast_orientation_guard_digests.json` pins SHA-256 digests of a fixed
-set of cases and of the classifier's decisions on them, and the test fails when the
-decisions change but the version does not, or when the version has no section below.
-The cases are the repository's committed tables of experiment strings: the 60
-experiments of the committed review, from the condition and group names it records, and
-the 52 cases of the #291 and #569 regression tables. The guard sees only these cases.
-They tell each version from the next (v3, v4, v5 and v6 give four different digests),
-and a guard pinned before #739 would have failed that change. But of the 321 single-term
-deletions from the classifier's term lists, 138 move at least one experiment of the
-pinned export and only 37 of those move a guard case. A rule change can therefore still
-move experiments without failing the guard, and the comparison on the pinned export
-remains the measure of what a version changed.
+`tests/test_contrast_orientation.py` checks this for a fixed set of cases only (#793).
+For each version, `tests/fixtures/contrast_orientation_guard_digests.json` pins SHA-256
+digests of the cases and of the classifier's decisions on them, and the test fails when
+the decisions change but the version does not, or when the version has no section below.
+The 116 cases are the repository's committed tables of experiment strings: the 60
+experiments of the committed review, from the condition and group names it records, the
+52 cases of the #291 and #569 regression tables, and the four experiments that the v6
+section below lists. They tell each version from the next (v3, v4, v5 and v6 give four
+different digests). The four v6 experiments are cases because the other 112 caught #739
+only through one flag on review experiment 29776865-2: on those 112, #739's pre-ART rules
+alone leave the digest where v5 had it. With the four, undoing either the duration-band
+rule or the pre-ART rules changes the digest; restoring the bare-space "pre treatment"
+reading (#805) would not. Beyond these cases the guard sees nothing. Of the 337 terms in
+the classifier's 20 term lists, deleting any one of 146 moves at least one experiment of
+the pinned export, and only 42 of those deletions move a guard case, with or without the
+four v6 experiments. A rule change can therefore still move experiments without failing
+the guard, and the comparison on the pinned export remains the measure of what a version
+changed.
 
 ## Changes from `contrast-orientation-v3` to `-v4` (#569)
 
@@ -447,7 +452,12 @@ classifier source it records tells them apart: `analysis_source_sha256` in the
 contrast-orientation provenance or `classifier.source_sha256` in a workflow contrast
 selection is `a0a7819ff0d202f05bd1282c75abbd0e9be129815f9fbdb7fc3861cfc1c769ff` under the
 v5 rules and `e7d5f4c9ecf37ce566f3ef763362d445d6a32e673d0ee2435d768739924df5d1` under the
-v6 rules.
+v6 rules. The tracked cellulose_decr (`data/analysis/cellulose_decr/`) and
+integrated-evidence (`data/derived/integrated_evidence/`) outputs labelled v5 were built
+from source `e7d5f4c9…`, the v6 rules. `cellulose_decr_provenance.json` records no
+classifier source hash, so there the test cannot be applied from the tracked files: its
+code commit, f38e401, holds that source, and its pinned contrast manifest (`a8ececf2…`)
+was written at 8b280a3 from it.
 
 - **Duration bands**: `DURATION_BAND` masks treatment and disease duration qualifiers
   ("for more than 1 year", "duration less than 5 years") out of `_timepoints` and
@@ -456,6 +466,15 @@ v6 rules.
   reads "pre - antiretroviral therapy(ART)" as a baseline before therapy, and
   `NEGATED_TREATMENT` reads it and "Antiretroviral therapy (ART) Naïve" as untreated
   disease.
+- **Bare-space `pre treatment` no longer reads as untreated**: rewriting
+  `NEGATED_TREATMENT` also dropped "pre treatment", "pre therapy" and "pre surgery"
+  written with a plain space, while "pre-treatment" and "pretreatment" still read as
+  untreated. "Healthy controls" against "HIV patients pre treatment" is
+  `longitudinal_timepoint` at 51bb108 (v5) and `treatment_exposure` at f52923a (v6). No
+  experiment of the pinned export moves. The phrase appears only in the group names of
+  40247863-2 ("Pre treatment of Mandibular Advancement Devices (MAD) group" against "Post
+  treatment …"), which stays `longitudinal_timepoint`, and in the Group 1 definition of
+  27171425-1, which is unchanged. Whether the narrowing was intended is #805.
 
 The effect was measured by comparing per-experiment classifications in the
 `contrast_selection.json` of two Tier 1+2 core runs on the same pinned export
@@ -481,7 +500,11 @@ class, type, tier or orientation: 29776865-2 (`age_band_not_timepoint` instead o
 38310301-2 (`negated_treatment_term` added). Four changed their evidence string only
 (33324725-3, -5, -6 and -7, whose time word `pre` now reads `pre-therapy`). No other
 experiment changed, so the class counts, control tiers and populations reported above
-are the same under both versions.
+are the same under both versions. Analyses that also read single-direction signatures do
+see the change. 38310301-1 is a decreased feces signature, so under v6 it joins
+cellulose_decr's disease-versus-healthy HIV units, which go from 14 to 15 U6 units on
+#767's inputs (measured in the review of #780, #793). cellulose_decr's tracked
+all-contrast tables cite bsdb:38310301 in the HIV feces pair under either version.
 
 ## The oriented and control-tier subsets against the historical corpus
 
