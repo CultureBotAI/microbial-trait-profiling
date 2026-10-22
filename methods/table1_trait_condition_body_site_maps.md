@@ -2,7 +2,7 @@
 
 > [!IMPORTANT]
 > **Matched-Corpus Table 1-Trait Analog (Issue #210)**
-> The figures and numbers described here are a matched-corpus Table 1-trait analog sensitivity analysis, not a reproduction of the published Table 1 baseline. They use the pinned human paired KG-Microbe profile corpus (959 studies, 2,335 pairs) and do not reproduce published Table 1 baseline values (e.g. facultatively aerobic $q = 2.8 \times 10^{-10}$).
+> The figures and numbers described here are a matched-corpus Table 1-trait analog sensitivity analysis, not a reproduction of the published Table 1 baseline. They use the pinned human paired KG-Microbe profile corpus (932 studies, 2,257 pairs under `count_input_16s_wms_v1`) and do not reproduce published Table 1 baseline values (e.g. facultatively aerobic $q = 2.8 \times 10^{-10}$).
 
 Figures: `table1_traits_condition_body_site_heatmap.png`, the four cuts
 `table1_traits_focus_feces.png`, `table1_traits_focus_feces_other.png`,
@@ -32,19 +32,20 @@ the full_dump.csv of the **pinned BugSigDBExports v1.3.1 release** (Zenodo
 stamped on every output row) into per-study YAML records, flattened to
 per-experiment tables, and joined to KG-Microbe taxon-trait assertions to give a
 study/experiment/direction by trait count matrix. Non-human samples are excluded
-on the per-experiment host_species field (the v1.3.1 wide matrix is already
-human-only upstream, so that filter drops 0 rows on this run), experiments were
+on the per-experiment host_species field, experiments were
 restricted to those carrying both an increased and a decreased signature, and
 growth-medium columns carrying a mediadive.medium marker were removed from the
-trait space before any total was computed. Of 7,329 profile rows read, 1,500 were
-dropped as non-human and 1,159 experiments as unpaired; 2,333 of the trait columns
-were MediaDive, leaving 317 traits, 2,335 experiments, 4,670 profiles, and 959
-studies — the same corpus as the composition arm's 2,335 pairs.
+trait space before any total was computed. Of 7,111 profile rows read under the
+`count_input_16s_wms_v1` profile policy, 1,482 were
+dropped as non-human (leaving 5,629 human profiles from 1,047 studies) and 1,115
+experiments as unpaired; 2,333 of the trait columns
+were MediaDive, leaving 317 traits, 2,257 experiments, 4,514 profiles, and 932
+studies — the same corpus as the composition arm's 2,257 pairs.
 
 The matrix these counts were measured on is
 `data/derived/study_trait_profiles_wide.tsv`, sha256
-`6e70724ee807cf24e9c1f371a51421fa5b09d6283fa7f3abcd6620e5492c6a73`: 2,653
-header columns (3 identifier, 2,333 MediaDive, 317 retained) over 7,329 profile
+`a0c28978c5e58c153afba517f8a9fb9a50bd62d5dddefb78f583e0cb2aedf334`: 2,653
+header columns (3 identifier, 2,333 MediaDive, 317 retained) over 7,111 profile
 rows, joined from BugSigDB `2026-04-24_00:41_UTC` and a KG-Microbe build whose
 nodes are md5 `dd76b4656f9341db25a7c4afa96cd58e` and which records no release
 tag. Naming the dump does not identify the matrix, so the run writes this
@@ -231,31 +232,31 @@ sides, which is why the denominator differs between traits. A trait whose every
 study ties has no defined share: its share, interval, p and q are written blank
 with status `all_tied`, it keeps its place in the six-trait family at p = 1, and
 the figure draws no marker for it rather than a point at 0 that would read as
-every study shifting down. Ties are common for the rarer traits — 343 studies for
-arsenate reduction against 42 for facultatively aerobic — and almost all of them
+every study shifting down. Ties are common for the rarer traits — 316 studies for
+arsenate reduction against 24 for facultatively aerobic — and almost all of them
 are studies where the trait is absent from both sides. Each trait then gets a
 two-sided exact binomial test against a half-and-half null with an exact
 binomial 95 per cent interval, and the six p-values are Benjamini-Hochberg
 corrected together as one family.
 
 One boundary case is scored rather than dropped: a profile whose taxa carry none
-of the retained traits enters with fraction 0 instead of as missing. 24
-experiments have such an empty decreased side against 11 with an empty increased
+of the retained traits enters with fraction 0 instead of as missing. 35
+experiments have such an empty decreased side against 20 with an empty increased
 side, a small net push toward "up". A sensitivity run dropping every experiment
-with an empty side (2,241 experiments, 939 studies) changes no conclusion — the
-largest movement is facultatively aerobic's share, 0.582 to 0.581.
+with an empty side (2,202 experiments, 922 studies) changes no conclusion — the
+largest movement is facultatively aerobic's share, 0.580 to 0.580.
 
 This figure reads the profile table directly rather than the heatmap matrix, so
 it is unaffected by the axis cuts above: every study in the corpus contributes,
 not only those on a drawn row.
 
-Over 959 studies, five of the six traits sit on the increased side and one on
-the decreased side. Facultatively aerobic shifts up in 534 of 917 scored studies
-(share 0.582, q = 4.1e-06), moderately halophilic in 485 of 845 (0.574,
-q = 5.8e-05), arsenate reduction in 346 of 616 (0.562, q = 0.0030), sphere
-shaped in 467 of 844 (0.553, q = 0.0030), and coccus shaped in 499 of 915
-(0.545, q = 0.0067). Cellulose catabolic process runs the other way, shifting up
-in only 334 of 774 studies (0.432, q = 0.00031). These directions agree
+Over 932 studies, five of the six traits sit on the increased side and one on
+the decreased side. Facultatively aerobic shifts up in 521 of 898 scored studies
+(share 0.580, q = 1.0e-05), moderately halophilic in 476 of 829 (0.574,
+q = 6.6e-05), arsenate reduction in 341 of 606 (0.563, q = 0.0027), sphere
+shaped in 463 of 833 (0.556, q = 0.0021), and coccus shaped in 488 of 896
+(0.545, q = 0.0083). Cellulose catabolic process runs the other way, shifting up
+in only 330 of 763 studies (0.433, q = 0.00043). These directions agree
 trait-for-trait with the composition arm's paired t-test on the same matrix,
 which also places cellulose catabolic process alone on the decreased side — the
 same corpus and the same six traits, so this is a robustness check against
@@ -270,11 +271,11 @@ across those per-study contrasts. These still depend on the profile totals:
 differencing and study-level averaging do not remove compositional effects.
 Closure can produce positive as well as negative component correlations, so
 neither sign alone establishes biological association. Coccus shaped and sphere
-shaped correlate at rho = 0.45 over 959
+shaped correlate at rho = 0.44 over 922
 studies, which is high enough to treat them as overlapping evidence rather than
 two independent lines of it, but well short of the near-identity their names
-suggest. Facultatively aerobic correlates positively with coccus shaped (0.45),
-arsenate reduction (0.40), and moderately halophilic (0.38), and negatively with
+suggest. Facultatively aerobic correlates positively with coccus shaped (0.46),
+arsenate reduction (0.39), and moderately halophilic (0.38), and negatively with
 cellulose catabolic process (-0.26); arsenate reduction and moderately halophilic
 correlate at 0.34. A pair is omitted rather than written as a
 missing value if either series is constant, since Spearman is undefined there.

@@ -165,7 +165,7 @@ CANONICAL_REDUNDANCY_CLUSTERS: list[RedundancyCluster] = [
         selection_rule="max_support_canonical",
         rationale=(
             "CHEBI:15792 (malonate) and CHEBI:38083 (malonate ester) share exact synonym "
-            "'malonate' and identical profile annotations across all 5,829 profiles (r = 1.000)."
+            "'malonate' and identical profile annotations across all 5,629 profiles (r = 1.000)."
         ),
     ),
     RedundancyCluster(

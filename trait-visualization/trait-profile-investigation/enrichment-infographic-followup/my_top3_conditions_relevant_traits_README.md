@@ -8,9 +8,9 @@ The target conditions for this run are selected from the top 3 paired-profile co
 
 | condition | paired absolute contrast load | local profiles | studies | experiments | local mean nonzero traits/profile | local percentile | local outlier? |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
-| Multiple sclerosis | 1.01 | 28 | 6 | 14 | 97.1 | 40.9% | no |
-| Stroke | 0.91 | 43 | 5 | 28 | 134.0 | 68.3% | no |
-| Constipation | 0.76 | 23 | 7 | 12 | 104.0 | 46.7% | no |
+| Multiple sclerosis | 1.00 | 28 | 6 | 14 | 97.1 | 40.3% | no |
+| Stroke | 0.92 | 43 | 5 | 28 | 134.0 | 68.0% | no |
+| Constipation | 0.76 | 23 | 7 | 12 | 104.0 | 45.7% | no |
 
 Interpretation: condition support matters because profile counts, study counts, and body-site mix vary across exact BugSigDB condition labels.
 
@@ -93,16 +93,16 @@ Profile similarity uses cosine similarity over log1p-transformed full non-MediaD
 | Multiple sclerosis | 3 | Adverse effect | 0.931 | Intestinal microbiota influences clinical outcome and side effects of early breast cancer treatment | Experiment 13: No - increased BMI (Post-Chemo) vs Yes - increased BMI (Post-Chemo) |
 | Multiple sclerosis | 4 | Root caries | 0.929 | Comparative analysis of microbiome in coronal and root caries | Experiment 1: Coronal Caries group vs Root Caries group |
 | Multiple sclerosis | 5 | Age | 0.927 | Faecal microbiota of schoolchildren is associated with nutritional status and markers of inflammation: a double-blinded cluster-randomized controlled trial using multi-micronutrient fortified rice | Experiment 8: 10-14 years old vs 6-9 years old |
-| Stroke | 1 | Glucose | 0.959 | The human gut microbiota and glucose metabolism: a scoping review of key bacteria and the potential role of SCFAs | Experiment 2: Bacteria associated with glucose metabolism outcomes vs Bacteria associated with glucose metabolism outcomes |
-| Stroke | 2 | Response to drug | 0.959 | The Parkinson's disease drug entacapone disrupts gut microbiome homoeostasis via iron sequestration | Experiment 10: No drug - Dimethyl sulfoxide only (DMSO only) vs Entacapone High Concentration(ENT-High) after 24 hrs of incubation - Donor 3 |
-| Stroke | 3 | Response to drug | 0.959 | The Parkinson's disease drug entacapone disrupts gut microbiome homoeostasis via iron sequestration | Experiment 9: No drug - Dimethyl sulfoxide only (DMSO only) vs Entacapone High Concentration(ENT-High) after 24 hrs of incubation - Donor 2 |
-| Stroke | 4 | HIV infection | 0.957 | Impact of Acute HIV Infection and Early Antiretroviral Therapy on the Human Gut Microbiome | Experiment 1: Human immunodeficiency virus negative (HIV-)Uninfected Controls vs Human immunodeficiency virus positive(HIV+) pre - antiretroviral therapy(ART) |
-| Stroke | 5 | Parkinson's disease | 0.956 | Gut microbiota in Parkinson's disease: Temporal stability and relations to disease progression | Experiment 4: Tremor-dominant phenotype (TD) at baseline vs Postural instability and gait difficulty (PIGD) phenotype at baseline |
+| Stroke | 1 | Response to drug | 0.959 | The Parkinson's disease drug entacapone disrupts gut microbiome homoeostasis via iron sequestration | Experiment 10: No drug - Dimethyl sulfoxide only (DMSO only) vs Entacapone High Concentration(ENT-High) after 24 hrs of incubation - Donor 3 |
+| Stroke | 2 | Response to drug | 0.959 | The Parkinson's disease drug entacapone disrupts gut microbiome homoeostasis via iron sequestration | Experiment 9: No drug - Dimethyl sulfoxide only (DMSO only) vs Entacapone High Concentration(ENT-High) after 24 hrs of incubation - Donor 2 |
+| Stroke | 3 | HIV infection | 0.957 | Impact of Acute HIV Infection and Early Antiretroviral Therapy on the Human Gut Microbiome | Experiment 1: Human immunodeficiency virus negative (HIV-)Uninfected Controls vs Human immunodeficiency virus positive(HIV+) pre - antiretroviral therapy(ART) |
+| Stroke | 4 | Parkinson's disease | 0.956 | Gut microbiota in Parkinson's disease: Temporal stability and relations to disease progression | Experiment 4: Tremor-dominant phenotype (TD) at baseline vs Postural instability and gait difficulty (PIGD) phenotype at baseline |
+| Stroke | 5 | Antimicrobial agent | 0.956 | Association of prenatal antibiotics with measures of infant adiposity and the gut microbiome | Experiment 3: 12-month-old infants not exposed to antibiotics during the second trimester vs 12-month-old infants exposed to antibiotics during the second trimester |
 | Constipation | 1 | COVID-19 | 0.953 | The gut microbiome of COVID-19 recovered patients returns to uninfected status in a minority-dominated United States cohort | Experiment 1: Non-infected patients with unrelated respiratory medical conditions vs SARS-CoV-2 infected patients |
 | Constipation | 2 | Gestational diabetes | 0.950 | Gestational diabetes is associated with change in the gut microbiota composition in third trimester of pregnancy and postpartum | Experiment 4: Previous normoglycaemic  pregnancy vs Previous gestational diabetes mellitus (GDM) pregnancy |
 | Constipation | 3 | Response to drug | 0.948 | The Parkinson's disease drug entacapone disrupts gut microbiome homoeostasis via iron sequestration | Experiment 10: No drug - Dimethyl sulfoxide only (DMSO only) vs Entacapone High Concentration(ENT-High) after 24 hrs of incubation - Donor 3 |
 | Constipation | 4 | Response to drug | 0.948 | The Parkinson's disease drug entacapone disrupts gut microbiome homoeostasis via iron sequestration | Experiment 9: No drug - Dimethyl sulfoxide only (DMSO only) vs Entacapone High Concentration(ENT-High) after 24 hrs of incubation - Donor 2 |
-| Constipation | 5 | Glucose | 0.948 | The human gut microbiota and glucose metabolism: a scoping review of key bacteria and the potential role of SCFAs | Experiment 2: Bacteria associated with glucose metabolism outcomes vs Bacteria associated with glucose metabolism outcomes |
+| Constipation | 5 | Population | 0.948 | Oral microbiome homogeneity across diverse human groups from southern Africa: first results from southwestern Angola and Zimbabwe | Experiment 6: Kuvale vs Tshwa |
 
 ### Cross-Target Check
 
@@ -116,15 +116,15 @@ Top five condition-centroid neighbors are also written to `target_condition_cent
 
 | query condition | rank | centroid neighbor | similarity | other target? |
 | --- | ---: | --- | ---: | --- |
-| Multiple sclerosis | 1 | Ulcerative colitis | 0.980 | no |
+| Multiple sclerosis | 1 | Ulcerative colitis | 0.979 | no |
 | Multiple sclerosis | 2 | Physical activity | 0.974 | no |
 | Multiple sclerosis | 3 | Chronic kidney disease | 0.974 | no |
 | Multiple sclerosis | 4 | Obesity | 0.973 | no |
 | Multiple sclerosis | 5 | Socioeconomic status | 0.973 | no |
 | Stroke | 1 | Age | 0.989 | no |
 | Stroke | 2 | Response to immunochemotherapy | 0.986 | no |
-| Stroke | 3 | Cervical cancer | 0.985 | no |
-| Stroke | 4 | Parkinson's disease | 0.985 | no |
+| Stroke | 3 | Inflammatory bowel disease | 0.986 | no |
+| Stroke | 4 | Cervical cancer | 0.985 | no |
 | Stroke | 5 | Polycystic ovary syndrome | 0.985 | no |
 | Constipation | 1 | Schizophrenia | 0.991 | no |
 | Constipation | 2 | Colorectal cancer | 0.988 | no |

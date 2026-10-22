@@ -70,7 +70,7 @@ This figure clusters BugSigDB study/experiment/direction profiles by aggregate t
 composition. Each source row represents one study, one experiment, and one curated
 profile direction (`increased` or `decreased`; stored in profile IDs as
 `inc` or `dec`), so increased and decreased profiles are not merged before
-clustering. The current full matrix contains 5,829 human-host profiles from 1,080
+clustering. The current full matrix contains 5,629 human-host profiles from 1,047
 studies and 60 selected traits. The PNG rendering averages adjacent clustered profiles into 320
 direction-specific display bins so that the full dataset remains legible.
 
@@ -144,7 +144,7 @@ Thus, while pairing removes baseline offsets individually within each experiment
 the aggregate mean contrast directly reflects twice the increased profiles' average
 standardized trait abundance.
 
-The current paired matrix contains 2,335 matched study/experiment pairs from 959
+The current paired matrix contains 2,257 matched study/experiment pairs from 932
 studies and the same 60 selected traits. The full paired matrix is written without
 display binning. The PNG rendering orders matched-pair rows by average-linkage
 hierarchical clustering with Euclidean distance on the paired enrichment vectors,
@@ -178,8 +178,8 @@ enrichment or depletion in cases versus controls (#134). Pass `--direction inc` 
 `--direction dec` to `scripts/create_condition_trait_module_heatmap.py` for
 direction-stratified module heatmaps. The current matrix contains 80
 condition/body-site modules and 60 selected traits; the selected modules contain
-2,598 study/experiment/direction profiles from 572 distinct studies of the
-human-host corpus. Their per-module study counts sum to 636 because 52 studies
+2,524 study/experiment/direction profiles from 555 distinct studies of the
+human-host corpus. Their per-module study counts sum to 619 because 52 studies
 have experiments in more than one selected module.
 
 The companion diagram `condition_trait_module_guild_definition_table.png` is a
@@ -353,8 +353,8 @@ contrasts and target-taxa direction consistency.
 
 The analysis filters the study-profile metadata to exact condition
 `Parkinson's disease` and body-site group `Feces`. The current filtered dataset
-contains 247 BugSigDB study/experiment/direction profiles: 128 increased
-profiles and 119 decreased profiles from 55 studies. BugSigDB profile directions
+contains 242 BugSigDB study/experiment/direction profiles: 126 increased
+profiles and 116 decreased profiles from 53 studies. BugSigDB profile directions
 are the curated increased/decreased directions already present in
 `study_trait_profile_study_metadata.tsv`; the follow-up analysis does not
 recalculate differential abundance.
@@ -439,7 +439,7 @@ minus the decreased profile z-score for each eligible selected trait.
 
 Panel A ranks eligible traits by one-sample paired t-test signal against zero.
 Because multiple experiment pairs frequently originate from the same publication or study
-(e.g., 2,335 pairs derived from 959 studies), pairs within a study share technical and
+(e.g., 2,257 pairs derived from 932 studies), pairs within a study share technical and
 biological idiosyncrasies. To prevent repeated experiments from artificially inflating degrees
 of freedom, contrasts are aggregated by study ID (`.groupby(study_ids).mean()`) prior to
 hypothesis testing. The plotted value in Panel A is `-log10(study-level p)`, bar color encodes
@@ -468,14 +468,14 @@ robustness run in
 `trait_profile_paired_contrast_trait_stats_feces_excluded.tsv`. The manifest
 `trait_profile_paired_contrast_trait_stats_manifest.tsv` records the 4 strata
 that currently meet the `>= 50`-pair threshold in the human-host experiment-level
-corpus (`feces` with 1,460 pairs / 602 studies, `feces_excluded` with 875 pairs /
-381 studies, `other` with 510 pairs / 238 studies, and `saliva` with 158 pairs /
-67 studies), along with their selected-trait counts and output paths. Five
+corpus (`feces` with 1,416 pairs / 578 studies, `feces_excluded` with 841 pairs /
+369 studies, `other` with 492 pairs / 230 studies, and `saliva` with 152 pairs /
+64 studies), along with their selected-trait counts and output paths. Five
 additional per-stratum TSVs remain on disk from earlier runs prior to the
 human-host-only and experiment-level body-site restriction (#555)—`caecum`,
 `colon`, `mouth`, `subgingival_dental_plaque`, and `vagina`—whose current
 human-host pair counts now fall below 50 (`Vagina` 48, `Subgingival dental
-plaque` 35, `Mouth` 34, and `Colon`/`Caecum` below threshold in
+plaque` 34, `Mouth` 34, and `Colon`/`Caecum` below threshold in
 `trait_profile_paired_contrast_body_site_summary.tsv`); those legacy files are
 therefore omitted from `trait_profile_paired_contrast_trait_stats_manifest.tsv`
 and do not carry the newer `study_*` columns.

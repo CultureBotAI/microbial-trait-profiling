@@ -145,8 +145,8 @@ def drop_zero_total_pairs(profiles: Sequence[Profile]) -> PairExclusion:
     of #178 forbids (#294).
 
     The whole experiment goes, not the offending side, so the corpus stays
-    paired. On the pinned corpus this removes 94 of 2,335 experiments and takes
-    the study count from 959 to 939.
+    paired. On the pinned corpus this removes 55 of 2,257 experiments and takes
+    the study count from 932 to 922.
     """
     by_experiment: defaultdict[tuple[str, str], list[Profile]] = defaultdict(list)
     for profile in profiles:

@@ -54,7 +54,7 @@ uv run python scripts/create_study_trait_profile_heatmap.py
 This clusters every BugSigDB study/experiment/direction trait profile rather
 than aggregating increased and decreased profiles together at the study level.
 The full matrix and row metadata include the study ID, experiment ID, and inc/dec
-direction for 5,829 human-host profiles from 1,080 studies. Each row's
+direction for 5,629 human-host profiles from 1,047 studies. Each row's
 `condition`, `body_site` and `location` are its own experiment's labels; the
 study's majority labels are kept only in the `study_majority_*` columns (#555).
 To keep the PNG from

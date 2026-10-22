@@ -1,4 +1,4 @@
 comparison	n_profiles_a	n_profiles_b	n_profile_pairs	mean_profile_pair_jaccard_distance	mean_profile_pair_jaccard_similarity	frac_profile_pairs_with_overlap	n_studies_a	n_studies_b	n_study_pairs	mean_study_pair_jaccard_distance	mean_study_pair_jaccard_similarity	frac_study_pairs_with_overlap
-PD vs. HIV	77	26	2002	0.939865	0.0601355	0.274226	40	16	640	0.920425	0.0795754	0.392188
-PD vs. CRC	77	39	3003	0.932852	0.0671483	0.294705	40	22	880	0.91389	0.0861104	0.392045
+PD vs. HIV	75	26	1950	0.939083	0.0609173	0.277436	39	16	624	0.918883	0.0811172	0.399038
+PD vs. CRC	75	39	2925	0.93111	0.0688901	0.30188	39	22	858	0.911765	0.0882351	0.400932
 HIV vs. CRC	26	39	1014	0.948414	0.0515861	0.233728	16	22	352	0.925406	0.0745936	0.360795
