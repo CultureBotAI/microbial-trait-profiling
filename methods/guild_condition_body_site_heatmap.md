@@ -202,7 +202,10 @@ All statistics use scipy (binomtest, spearmanr) rather than hand-rolled
 implementations. The figure was produced by `src/bsdbng/guild_maps.py`, driven
 deterministically by `just guild-maps`, alongside the value matrix, the
 study-count matrix, the cell-status table, the row-cluster table, and the
-statistics table as tab-separated files. The BugSigDB export timestamp is read
+statistics table as tab-separated files. The integrated evidence table
+inventories the same cells from the same builder, `build_figure_matrix`, and a
+test runs both command lines on one corpus and requires the two cell tables to
+agree (#770). The BugSigDB export timestamp is read
 from the dump's leading comment line and is recorded in every output. PNG export
 runs through kaleido 1.x, which drives a headless Chrome. For a reproducible
 figure run, run `just get-chrome` once first: it downloads (~170 MB) a

@@ -9,7 +9,7 @@ dictionary (`integrated_evidence.md`) and a provenance record. It implements
 the shared comparison basis in [`three_arm_statistics.md`](three_arm_statistics.md).
 
 That basis requires excluding a whole experiment pair whose retained-annotation
-total is zero on either side, and this table now does (#294). `Profile.fraction`
+total is zero on either side, and this table's own tests now do (#294). `Profile.fraction`
 returns 0.0 for a zero total, so such a pair would otherwise enter the contrast
 as a measured share of nothing, produce a contrast of exactly zero, and be
 counted by the sign test as a tie - merging zero-annotation studies into the
@@ -17,7 +17,9 @@ all-tied count, which is the collapse the basis forbids. On the pinned corpus
 this removes **94 of 2,335 experiments** and takes the study count from **959 to
 939**. It changes the tie counts rather than the directions: facultatively
 aerobic 42 to 24, arsenate reduction 343 to 325, moderately halophilic 114 to 96.
-All six fraction traits remain significant at q <= 0.05.
+All six fraction traits remain significant at q <= 0.05. The figure-cell
+inventory keeps those pairs, because it describes the oxygen guild figure and
+the figure draws them (#770).
 
 ## What problem it solves
 
@@ -99,7 +101,7 @@ read as a negative result.
 
 ## What is in it now
 
-On the pinned v1.3.1 corpus, **1,912 rows: 40 method results and 1,872 figure
+On the pinned v1.3.1 corpus, **4,408 rows: 40 method results and 4,368 figure
 cells**.
 
 | Method | Records | Family | Tested | q <= 0.05 | q <= 0.001 |
@@ -110,7 +112,7 @@ cells**.
 | composition arm, native transformed contrast | 6 | - | 0 | not supplied | not supplied |
 | enrichment arm, profile hypergeometric | 6 | - | 0 | not supplied | not supplied |
 | aggregated profile support | 6 | - | 0 | not supplied | not supplied |
-| oxygen guild cell support | 1,872 | - | 0 | not a test | not a test |
+| oxygen guild cell support | 4,368 | - | 0 | not a test | not a test |
 
 The guild McNemar is a single uncorrected test. It carries p = 2.2e-06 and leaves
 q blank, so it has no threshold decision in either column: a decision in this
@@ -118,10 +120,17 @@ table is a decision on a corrected value and there is no corrected value here.
 An earlier version wrote the uncorrected p into `q_value` as well, which made it
 look like a one-member FDR family (#294).
 
-The cell rows are the oxygen guild figure's own inventory, one per cell of the
-condition-by-body-site grid at the figure's parameters: **316 drawn, 7 drawn as
-sampled-without-signal, 209 masked for too little support and 1,340 never
-sampled**. They report support and display, never a test, which is why they are
+The cell rows are the oxygen guild figure's own inventory, one per cell of its
+condition-by-body-site grid: 52 conditions by 21 body-site blocks (the top 20
+sites and Other), each block four guild-by-direction columns wide, of which
+**344 are drawn, 24 drawn as sampled-without-signal, 308 masked for too little
+support and 3,692 never sampled**. The figure's own builder,
+`guild_maps.build_figure_matrix`, makes them at the figure's parameters and over
+its population, every paired human profile, so unlike the tests above they
+include the 94 zero-total pairs. An earlier version rebuilt the grid here, at an
+8-site cut the figure had left for 20 and after that exclusion, so its 1,872
+cells described a grid the figure never drew (#770). They report support and
+display, never a test, which is why they are
 counted in the generated view rather than listed row by row. Before they
 existed, nothing in the table set `drawn` or `masked_below_min_studies` and
 `not_sampled` was never emitted at all, so three of the four display states named
@@ -248,7 +257,8 @@ hashes, the corpus cascade, the assessment statuses and the per-method summary.
 `tests/test_integrated_evidence.py` covers the states the contract exists to
 preserve: an all-tied trait, a pair with no eligible experiment, a method that was
 not supplied, two methods keeping separate families and units, the four figure-cell
-support states taken from the real matrix, a masked cell leaving a tested result
+support states taken from the real matrix, the cell inventory equal to the
+figure's own cell-status table on one corpus, a masked cell leaving a tested result
 alone, each assessment reaching only the procedure it assessed, ten malformed
 status files, both thresholds deciding independently, the ratio populations and
 effect summaries reconciling with their source run, the McNemar keeping its p with

@@ -4,18 +4,29 @@ from __future__ import annotations
 
 import csv
 import json
+import sys
 from dataclasses import fields, replace
 from pathlib import Path
 from typing import TypedDict
 
 import pytest
 
-from mtp.guild_maps import build_matrix, cell_status_rows, compute_correlation
+from mtp import guild_maps
+from mtp.guild_maps import (
+    CELL_NO_SIGNAL,
+    CELL_VALUE,
+    GuildMatrix,
+    build_matrix,
+    cell_status_rows,
+    compute_correlation,
+)
 from mtp.integrated_evidence import (
     ALL_TIED,
     ASSESSMENTS,
     CELL_STATES,
     DRAWN,
+    GUILD_MAX_BODY_SITES,
+    GUILD_MAX_CONDITIONS,
     GUILD_MIN_STUDIES,
     INSUFFICIENT,
     MASKED,
@@ -177,17 +188,20 @@ CORPUS_BLOCKS: tuple[tuple[int, str, str, str, str, tuple[str, ...]], ...] = (
 )
 
 
-def _corpus(tmp_path: Path) -> tuple[Path, Path]:
+def _corpus(
+    tmp_path: Path,
+    blocks: tuple[tuple[int, str, str, str, str, tuple[str, ...]], ...] = CORPUS_BLOCKS,
+) -> tuple[Path, Path]:
     """A matrix and an experiments table exercising every filter the run applies.
 
-    Twelve human paired studies with an oxygen signal, three more that carry no
-    oxygen term at all, one whose retained-annotation total is zero on both
-    sides, one mouse study, and one experiment with only an increased side.
+    By default, twelve human paired studies with an oxygen signal, three more
+    that carry no oxygen term at all, one whose retained-annotation total is zero
+    on both sides, one mouse study, and one experiment with only an increased side.
     """
     rows: list[list[str]] = []
     experiments: list[list[str]] = []
     index = 0
-    for count, condition, site, host, kind, directions in CORPUS_BLOCKS:
+    for count, condition, site, host, kind, directions in blocks:
         for _ in range(count):
             index += 1
             study = f"bsdb:{index}"
@@ -1278,6 +1292,163 @@ def test_main_writes_every_artifact_and_its_provenance(tmp_path: Path) -> None:
     assert "oxygen_guild_cell_support" not in records_section
     assert "oxygen_guild_cell_support" in before
     assert "oxygen_guild_mcnemar" in records_section
+
+
+#: Ten body sites, more than the 8 the table's own copy of the figure's cut kept
+#: after the figure moved to 20, and two cells whose state the zero-total pair
+#: exclusion changes, which the figure never applies (#770). Crohn in Feces has
+#: two annotated studies and one with a zero total, so the figure draws it from
+#: three studies; IBS in Saliva has only zero-total studies, so the figure shades
+#: it as sampled without signal.
+FIGURE_SITES = (
+    "Feces",
+    "Lung",
+    "Nasopharynx",
+    "Oropharynx",
+    "Saliva",
+    "Skin",
+    "Subgingival dental plaque",
+    "Tongue",
+    "Uterine cervix",
+    "Vagina",
+)
+FIGURE_BLOCKS: tuple[tuple[int, str, str, str, str, tuple[str, ...]], ...] = (
+    *((3, "Colitis", site, "Homo sapiens", "signal", ("inc", "dec")) for site in FIGURE_SITES),
+    (2, "Crohn", "Feces", "Homo sapiens", "signal", ("inc", "dec")),
+    (1, "Crohn", "Feces", "Homo sapiens", "zero_total", ("inc", "dec")),
+    (3, "IBS", "Saliva", "Homo sapiens", "zero_total", ("inc", "dec")),
+    (3, "IBS", "Feces", "Homo sapiens", "signal", ("inc", "dec")),
+)
+
+
+def _figure_cells(directory: Path) -> dict[tuple[str, str], tuple[str, int]]:
+    """The figure's cell-status and study-count tables, keyed by (condition, column)."""
+    tables: list[dict[tuple[str, str], str]] = []
+    for name in ("cell_status", "study_counts"):
+        path = directory / f"guild_condition_body_site_{name}.tsv"
+        with path.open(encoding="utf-8") as handle:
+            header, *rows = list(csv.reader(handle, delimiter="\t"))
+        tables.append(
+            {
+                (row[0], column): value
+                for row in rows
+                for column, value in zip(header[1:], row[1:], strict=True)
+            }
+        )
+    statuses, counts = tables
+    return {key: (status, int(counts[key])) for key, status in statuses.items()}
+
+
+def _inventory_cells(path: Path) -> dict[tuple[str, str], tuple[str, int]]:
+    """The table's cell rows, in the figure's own status vocabulary."""
+    status_of = {(display, test): status for status, (test, display) in CELL_STATES.items()}
+    with path.open(encoding="utf-8") as handle:
+        rows = [row for row in csv.DictReader(handle, delimiter="\t") if row["support_threshold"]]
+    return {
+        (row["condition"], f"{row['body_site']}|{row['trait']}_{row['direction']}"): (
+            status_of[(row["display_status"], row["test_status"])],
+            int(row["unique_studies"]),
+        )
+        for row in rows
+    }
+
+
+def test_the_cell_inventory_is_the_figures_cell_status_table(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Both command lines on one corpus list the same cells, states and studies (#770).
+
+    The table rebuilt the figure's grid itself, at an 8-site cut the figure had
+    left for 20 and after the zero-total pair exclusion the figure never
+    applies. On the Tier 1+2 subset that inventoried 1,148 cells against the
+    figure's 2,016, while claiming to classify the figure's own cells.
+    """
+    profile_path, experiments_path = _corpus(tmp_path, FIGURE_BLOCKS)
+    inputs = [
+        "--profile-input",
+        str(profile_path),
+        "--experiments-input",
+        str(experiments_path),
+        "--full-dump-input",
+        str(tmp_path / "no_such_full_dump.csv"),
+    ]
+
+    def render_stub(_matrix: GuildMatrix, path: Path, _vintage: str | None) -> Path:
+        path.write_text("renderer excluded from the cell inventory test\n", encoding="utf-8")
+        return path
+
+    figure_dir = tmp_path / "guild_maps"
+    monkeypatch.setattr(guild_maps, "write_figure", render_stub)
+    monkeypatch.setattr(
+        sys, "argv", ["create_guild_maps.py", *inputs, "--output-dir", str(figure_dir)]
+    )
+    assert guild_maps.main() == 0
+
+    evidence_dir = tmp_path / "integrated_evidence"
+    absent = tmp_path / "no_such_status"
+    assert (
+        main(
+            [
+                *inputs,
+                "--calibration-status",
+                str(absent / "calibration_status.json"),
+                "--sensitivity-status",
+                str(absent / "sensitivity_status.json"),
+                "--orientation-provenance",
+                str(absent / "contrast_orientation_provenance.json"),
+                "--output-dir",
+                str(evidence_dir),
+            ]
+        )
+        == 0
+    )
+
+    figure = _figure_cells(figure_dir)
+    inventory = _inventory_cells(evidence_dir / "integrated_evidence.tsv")
+    # The same cells in the figure's own order, each with the figure's state and
+    # the number of studies behind it.
+    assert list(inventory.items()) == list(figure.items())
+
+    # The corpus reaches both ways the two grids came apart, so this cannot pass
+    # on a fixture where they happen to coincide.
+    assert len({column.split("|", 1)[0] for _, column in figure}) == len(FIGURE_SITES) > 8
+    assert figure[("Crohn", "Feces|aerobe_inc")] == (CELL_VALUE, 3)
+    assert figure[("IBS", "Saliva|aerobe_inc")] == (CELL_NO_SIGNAL, 3)
+
+    # The view names the grid it counts, so it can be set against the figure's.
+    view = " ".join((evidence_dir / "integrated_evidence.md").read_text(encoding="utf-8").split())
+    conditions = {condition for condition, _ in figure}
+    assert (
+        f"{len(conditions)} conditions by {len(FIGURE_SITES)} body sites by 4 guild-direction"
+        in view
+    )
+
+    # The tests in the table keep the shared comparison basis: following the
+    # figure moves the inventory, not the population a test runs on.
+    provenance = json.loads(
+        (evidence_dir / "integrated_evidence_provenance.json").read_text(encoding="utf-8")
+    )
+    exclusion = provenance["pair_exclusion"]
+    assert exclusion["zero_total_experiments"] == 4
+    with (evidence_dir / "integrated_evidence.tsv").open(encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle, delimiter="\t"))
+    mcnemar = next(row for row in rows if row["method"] == "oxygen_guild_mcnemar")
+    assert int(mcnemar["unique_studies"]) == exclusion["studies_after"]
+
+
+def test_the_inventory_is_cut_at_the_figures_own_parameters() -> None:
+    """The cut the cell rows report is the figure's command-line default (#770).
+
+    The table kept its own copy of the parameters, which stayed at 8 body sites
+    when the figure moved to 20, and nothing compared the two.
+    """
+    parser = guild_maps.build_parser()
+    figure_defaults = (
+        parser.get_default("max_conditions"),
+        parser.get_default("max_body_sites"),
+        parser.get_default("min_studies"),
+    )
+    assert figure_defaults == (GUILD_MAX_CONDITIONS, GUILD_MAX_BODY_SITES, GUILD_MIN_STUDIES)
 
 
 FIXTURES = Path(__file__).parent / "fixtures"

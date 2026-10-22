@@ -41,6 +41,15 @@ from mtp.trait_guilds import (
 OTHER_LABEL = "Other"
 GUILD_ORDER = ("aerobe", "anaerobe")
 
+#: The oxygen guild figure's aggregation parameters, which are its command-line
+#: defaults. The integrated evidence table inventories the figure's cells through
+#: ``build_figure_matrix`` at these values. It used to keep its own copy, which
+#: stayed at 8 body sites after the figure moved to 20 (#770).
+FIGURE_MAX_CONDITIONS = 60
+FIGURE_MAX_BODY_SITES = 20
+FIGURE_MIN_STUDIES = 3
+FIGURE_ROW_CLUSTERS = 6
+
 
 @dataclass(frozen=True)
 class PooledLabels:
@@ -356,6 +365,31 @@ def build_matrix(
         sampled_no_signal=[sampled_no_signal[i] for i in order],
         mark_no_signal=mark_no_signal,
         dropped_site_conditions=dropped_with_sites,
+    )
+
+
+def build_figure_matrix(
+    profiles: Sequence[Profile],
+    *,
+    max_conditions: int = FIGURE_MAX_CONDITIONS,
+    max_body_sites: int = FIGURE_MAX_BODY_SITES,
+    min_studies: int = FIGURE_MIN_STUDIES,
+    n_clusters: int = FIGURE_ROW_CLUSTERS,
+) -> GuildMatrix:
+    """The matrix the oxygen guild figure draws, at the figure's parameters by default.
+
+    ``main`` draws the figure and writes its cell-status table from this call, and
+    the integrated evidence table builds its cell inventory from it too, so the two
+    cannot describe different grids (#770). ``profiles`` are the figure's
+    population: the paired profiles ``load_profiles`` keeps, with no zero-total
+    pair exclusion.
+    """
+    return build_matrix(
+        list(profiles),
+        max_conditions=max_conditions,
+        max_body_sites=max_body_sites,
+        min_studies=min_studies,
+        n_clusters=n_clusters,
     )
 
 
@@ -1373,18 +1407,18 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--experiments-input", type=Path)
     parser.add_argument("--full-dump-input", type=Path)
     parser.add_argument("--output-dir", type=Path, default=DERIVED_DATA_DIR / "guild_maps")
-    parser.add_argument("--max-conditions", type=int, default=60)
-    parser.add_argument("--max-body-sites", type=int, default=20)
+    parser.add_argument("--max-conditions", type=int, default=FIGURE_MAX_CONDITIONS)
+    parser.add_argument("--max-body-sites", type=int, default=FIGURE_MAX_BODY_SITES)
     parser.add_argument(
         "--row-clusters",
         type=int,
-        default=6,
+        default=FIGURE_ROW_CLUSTERS,
         help="Number of condition clusters to cut the Euclidean tree into.",
     )
     parser.add_argument(
         "--min-studies",
         type=int,
-        default=3,
+        default=FIGURE_MIN_STUDIES,
         help="Cells backed by fewer studies are masked rather than drawn.",
     )
     parser.add_argument(
@@ -1430,7 +1464,7 @@ def main() -> int:
     )
     print("\n".join(summary_lines(identity)))
 
-    matrix = build_matrix(
+    matrix = build_figure_matrix(
         profiles,
         max_conditions=args.max_conditions,
         max_body_sites=args.max_body_sites,
