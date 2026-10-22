@@ -35,14 +35,16 @@ All evidence in this audit is evaluated against the pinned KG-Microbe snapshot r
 
 The machine-readable table captures all required audit attributes across the 6 features:
 
-| Trait Key | Feature Name | Ontology ID & Label | Primary KG Source | Direct KG Taxa | BugSigDB Matrix Taxa | Profile Support ($N=5,829$) | Evidence Status | Decision |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| `METPO:1000608` | Facultatively aerobic | `METPO:1000608` (facultatively aerobic) | `infores:madin_etal` (5,496); `infores:bacdive` (53) | 5,496 | 861 (16.6%) | 4,491 (77.0%) | measured + propagated | **keep_separate** |
-| `METPO:2000103\|GO:0030245` | Cellulose catabolic process | `GO:0030245` (cellulose catabolic process) | `infores:madin_etal` (186) | 186 | 164 (3.2%) | 2,963 (50.8%) | measured + propagated | **keep_separate** |
-| `METPO:1000668` | Coccus shaped | `METPO:1000668` (coccus shaped) | `infores:madin_etal` (5,614); `infores:bacdive` (1,476) | 5,614 | 675 (13.0%) | 4,409 (75.6%) | measured + propagated | **keep_separate** |
-| `METPO:1000683` | Sphere shaped | `METPO:1000683` (sphere shaped) | `infores:bactotraits` (381); `infores:bacdive` (11) | 381 | 283 (5.5%) | 3,541 (60.8%) | measured + propagated | **keep_separate** |
-| `METPO:2000103\|pathways:arsenate_reduction` | Arsenate reduction | `pathways:arsenate_reduction` (arsenate_reduction) | `infores:madin_etal` (51) | 51 | 58 (1.1%) | 1,770 (30.4%) | unresolved mechanism + propagated | **unresolved / keep_separate** |
-| `METPO:1000623` | Moderately halophilic | `METPO:1000623` (moderately halophilic) | `infores:madin_etal` (426); `infores:bacdive` (4) | 426 | 337 (6.5%) | 3,424 (58.7%) | measured (discrete) + unresolved (quant) + propagated | **keep_separate** |
+| Trait Key | Feature Name | Ontology ID & Label | Primary KG Source (Edges Reaching the Matrix) | BacDive Strain Edges Not Read | Direct KG Taxa | BugSigDB Matrix Taxa | Profile Support ($N=5,829$) | Evidence Status | Decision |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `METPO:1000608` | Facultatively aerobic | `METPO:1000608` (facultatively aerobic) | `infores:madin_etal` (5,496) | 53 | 5,496 | 861 (16.6%) | 4,491 (77.0%) | measured + propagated | **keep_separate** |
+| `METPO:2000103\|GO:0030245` | Cellulose catabolic process | `GO:0030245` (cellulose catabolic process) | `infores:madin_etal` (186) | 0 | 186 | 164 (3.2%) | 2,963 (50.8%) | measured + propagated | **keep_separate** |
+| `METPO:1000668` | Coccus shaped | `METPO:1000668` (coccus shaped) | `infores:madin_etal` (5,614) | 1,476 | 5,614 | 675 (13.0%) | 4,409 (75.6%) | measured + propagated | **keep_separate** |
+| `METPO:1000683` | Sphere shaped | `METPO:1000683` (sphere shaped) | `infores:bactotraits` (381) | 11 | 381 | 283 (5.5%) | 3,541 (60.8%) | measured + propagated | **keep_separate** |
+| `METPO:2000103\|pathways:arsenate_reduction` | Arsenate reduction | `pathways:arsenate_reduction` (arsenate_reduction) | `infores:madin_etal` (51) | 0 | 51 | 58 (1.1%) | 1,770 (30.4%) | unresolved mechanism + propagated | **unresolved / keep_separate** |
+| `METPO:1000623` | Moderately halophilic | `METPO:1000623` (moderately halophilic) | `infores:madin_etal` (426) | 4 | 426 | 337 (6.5%) | 3,424 (58.7%) | measured (discrete) + unresolved (quant) + propagated | **keep_separate** |
+
+**Source columns ([#774](https://github.com/CultureBotAI/microbial-trait-profiling/issues/774)).** Edges are counted by `primary_knowledge_source` in the pinned edge file. The matrix builder (`src/mtp/taxa_trait_matrix.py`) reads trait edges only on `NCBITaxon:` subjects, so the source column counts those edges alone; each subject carries one edge per trait here, so it equals *Direct KG Taxa*. Every `infores:bacdive` edge for these traits sits on a BacDive strain node (`kgmicrobe.strain:`), which the matrix does not read. An earlier version of this table listed those edges as a primary source; they now have their own column. Each of these strains links to an NCBITaxon node through `biolink:subclass_of`. The opt-in `--strain-rollup` of `taxa_trait_matrix` would count them at that node, but it also adds about 8,000 traits to the vocabulary, so it is off by default; #774 reports what it would change.
 
 ---
 
@@ -60,6 +62,7 @@ The machine-readable table captures all required audit attributes across the 6 f
 The existence of two sibling terms in METPO is an artifact of upstream multi-source extract-transform-load (ETL) harmonization:
 - `METPO:1000668` originates from **Madin et al. (2020)** (`infores:madin_etal`), where the primary column `cell_shape` was annotated with `"coccus"`.
 - `METPO:1000683` originates from **Bactotraits / BacDive** (`infores:bactotraits`), which utilizes the shape code `S_sphere`.
+- BacDive strain records (`infores:bacdive`) also assert both terms (1,476 coccus, 11 sphere), but on strain nodes, which the matrix does not read ([#774](https://github.com/CultureBotAI/microbial-trait-profiling/issues/774)). The matrix evidence is Madin et al. for coccus and BactoTraits for sphere.
 
 #### Quantified Overlap & Statistical Dependence
 1. **Direct KG Taxa Assertions:**
@@ -128,7 +131,7 @@ Microbial reduction of arsenate ($As^{5+}$) to arsenite ($As^{3+}$) proceeds via
 - METPO defines an explicit **requirement** ($>0.2$ M NaCl, $\approx 1.2\%$ w/v).
 
 #### Missing Quantitative Parameters
-- Direct KG edges: 426 taxa from `infores:madin_etal` (qualitative column `range_salinity == "moderate-halophilic"`), 4 strains from `infores:bacdive`.
+- Direct KG edges: 426 taxa from `infores:madin_etal` (qualitative column `range_salinity == "moderate-halophilic"`). Four BacDive strain records (`infores:bacdive`) also assert the term, on strain nodes the matrix does not read ([#774](https://github.com/CultureBotAI/microbial-trait-profiling/issues/774)).
 - Quantitative continuous parameters in KG edges: **None**. The KG records zero values for salt concentration optimum, min/max ranges, ionic composition, or specific growth media.
 - **Decision:** Retain original label **"moderately halophilic"**. Reading this trait as "halotolerant" is unsupported by METPO semantics. Missing quantitative culture parameters are classified as **unresolved**.
 
