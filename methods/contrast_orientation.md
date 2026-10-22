@@ -456,8 +456,8 @@ v6 rules. The tracked cellulose_decr (`data/analysis/cellulose_decr/`) and
 integrated-evidence (`data/derived/integrated_evidence/`) outputs labelled v5 were built
 from source `e7d5f4c9…`, the v6 rules. `cellulose_decr_provenance.json` records no
 classifier source hash, so there the test cannot be applied from the tracked files: its
-code commit, f38e401, holds that source, and its pinned contrast manifest (`a8ececf2…`)
-was written at 8b280a3 from it.
+code commit holds that source, and its pinned contrast manifest (`a8ececf2…`) was
+written at 8b280a3 from it.
 
 - **Duration bands**: `DURATION_BAND` masks treatment and disease duration qualifiers
   ("for more than 1 year", "duration less than 5 years") out of `_timepoints` and
@@ -502,8 +502,9 @@ class, type, tier or orientation: 29776865-2 (`age_band_not_timepoint` instead o
 experiment changed, so the class counts, control tiers and populations reported above
 are the same under both versions. Analyses that also read single-direction signatures do
 see the change. 38310301-1 is a decreased feces signature, so under v6 it joins
-cellulose_decr's disease-versus-healthy HIV units, which go from 14 to 15 U6 units on
-#767's inputs (measured in the review of #780, #793). cellulose_decr's tracked
+cellulose_decr's disease-versus-healthy HIV units: #780's tracked
+`condition_definition_overlap.tsv` counts 15 HIV U6 units in `disease_vs_healthy_oriented`
+with exact labels, where the v5 rules give 14 (#793). cellulose_decr's tracked
 all-contrast tables cite bsdb:38310301 in the HIV feces pair under either version.
 
 ## The oriented and control-tier subsets against the historical corpus
