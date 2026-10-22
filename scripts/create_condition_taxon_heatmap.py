@@ -84,7 +84,12 @@ def build_condition_genus_matrix(
     top_conditions: int,
     top_taxa: int,
 ) -> tuple[pd.DataFrame, pd.Series]:
-    """Build a condition x genus prevalence matrix."""
+    """Build a condition x genus prevalence matrix.
+
+    The taxa table's experiments are the population: dump condition labels are kept
+    only for them, so a contrast-population subset ranks conditions and counts each
+    condition's studies from its own experiments, not the whole corpus (#768).
+    """
     study_conditions = load_study_condition_pairs(full_dump_path)
     if study_conditions.empty:
         msg = "No condition labels found in full_dump.csv"
@@ -95,6 +100,12 @@ def build_condition_genus_matrix(
         sep="\t",
         usecols=["study_id", "experiment_id", "taxon_name", "taxonomic_rank"],
     )
+    study_conditions = study_conditions.merge(
+        taxa[["study_id", "experiment_id"]].drop_duplicates(), on=["study_id", "experiment_id"]
+    )
+    if study_conditions.empty:
+        msg = f"No full_dump.csv condition labels for the experiments in {taxa_path}"
+        raise ValueError(msg)
     taxa = taxa[taxa["taxonomic_rank"] == "genus"].copy()
     taxa = taxa[["study_id", "experiment_id", "taxon_name"]].drop_duplicates()
 
@@ -204,13 +215,19 @@ def main() -> None:
         "--taxa-input",
         type=Path,
         default=REPO_ROOT / "data/derived/bugsigdb_taxa.tsv",
-        help="Input taxa TSV path.",
+        help=(
+            "Input taxa TSV path. Its experiments are the population whose conditions are "
+            "ranked and whose studies form each condition's denominator."
+        ),
     )
     parser.add_argument(
         "--full-dump-input",
         type=Path,
         default=REPO_ROOT / "data/raw/full_dump.csv",
-        help="Input full_dump.csv path.",
+        help=(
+            "Input full_dump.csv path. It supplies the condition labels and keeps Homo "
+            "sapiens 16S and WMS experiments."
+        ),
     )
     parser.add_argument(
         "--output",
