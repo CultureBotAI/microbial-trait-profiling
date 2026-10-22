@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+import asyncio
 import csv
 import json
-import subprocess
 import sys
 import uuid
 from datetime import UTC, datetime
@@ -139,6 +139,13 @@ def _inventory_directory(root: Path, subdir: Path) -> list[FileInventoryEntry]:
     return entries
 
 
+async def _exec_command(cmd: list[str], cwd: Path) -> None:
+    process = await asyncio.create_subprocess_exec(*cmd, cwd=cwd)
+    returncode = await process.wait()
+    if returncode != 0:
+        raise RuntimeError(f"Command failed with exit code {returncode}: {cmd}")
+
+
 def execute_comparison_run(
     core_manifest: Path,
     noel_manifest: Path,
@@ -222,7 +229,7 @@ def execute_comparison_run(
                 "--output-dir",
                 str(stats_dir),
             ]
-            subprocess.run(cmd, check=True, cwd=REPO_ROOT)
+            asyncio.run(_exec_command(cmd, REPO_ROOT))
             pooled_stats_path = stats_dir / "trait_profile_paired_contrast_trait_stats_pooled.tsv"
 
     integrated_dir = output / "integrated_evidence"
