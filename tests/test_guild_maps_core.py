@@ -53,7 +53,7 @@ def test_core_guild_identity_never_uses_checkout_sidecar(
         raise AssertionError("The core adapter consulted the default KG sidecar")
 
     def write_render_stub(
-        _matrix: guild_maps.GuildMatrix, path: Path, _vintage: str | None
+        _matrix: guild_maps.GuildMatrix, path: Path, _vintage: str | None, **_options: object
     ) -> Path:
         path.write_text("renderer excluded from numerical provenance test\n")
         return path
