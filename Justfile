@@ -149,6 +149,15 @@ rerun-jed run output *ARGS:
 rerun-verify record:
 	uv run python -m mtp.workflow.arms verify "$@"
 
+# Execute complete cross-arm comparison consuming verified core, Noel, Jed, and Ilyas manifests.
+[positional-arguments]
+rerun-compare core_run noel_run jed_run ilyas_run output *ARGS:
+	uv run python -m mtp.workflow.arms compare "$@"
+
+[positional-arguments]
+rerun-verify-comparison record:
+	uv run python -m mtp.workflow.arms verify-comparison "$@"
+
 sync:
 	uv sync --all-extras --group dev --group qa
 
