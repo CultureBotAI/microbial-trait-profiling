@@ -164,6 +164,15 @@ rerun-compare core_run noel_run jed_run ilyas_run output *ARGS:
 rerun-verify-comparison record:
 	uv run python -m mtp.workflow.arms verify-comparison "$@"
 
+# Additive BY/BH sidecars from a verified completed comparison; native tables unchanged.
+[positional-arguments]
+rerun-multiplicity comparison output:
+	uv run python -m mtp.multiplicity run --comparison-run "$1" --output "$2"
+
+[positional-arguments]
+rerun-verify-multiplicity record:
+	uv run python -m mtp.multiplicity verify --run "$1"
+
 sync:
 	uv sync --all-extras --group dev --group qa
 
@@ -304,6 +313,9 @@ test:
 # Additive policy and full-family BH/BY contract; no scientific rerun inputs.
 test-multiple-testing:
 	uv run pytest tests/test_multiple_testing.py
+
+test-multiplicity-adapters:
+	uv run pytest tests/test_multiplicity_adapters.py
 
 # Analyzer, ranking exporter, and complete-universe density regression checks (#664).
 test-stratification:
