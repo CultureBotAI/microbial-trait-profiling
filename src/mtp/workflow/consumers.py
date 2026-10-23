@@ -25,6 +25,7 @@ from mtp.datamodel.workflow_pydantic import (
 from mtp.human_host_corpus import CORPUS_SEQUENCING_TYPES
 from mtp.paths import file_sha256
 from mtp.workflow.locations import LocationResolver, locate
+from mtp.workflow.operations import run_strain_rollup
 from mtp.workflow.runtime import artifact_path
 from mtp.workflow.verification import verify_core_run
 
@@ -104,7 +105,9 @@ def core_corpus_identity(bundle: CoreBundle, *, bugsigdb_vintage: str | None) ->
     path = bundle.path("source_identity")
     source = SourceIdentity.model_validate_json(path.read_text(encoding="utf-8"))
     return CorpusIdentity(
-        matrix=measure_matrix(bundle.path(bundle.profile_product)),
+        matrix=measure_matrix(
+            bundle.path(bundle.profile_product), strain_rollup=run_strain_rollup(bundle.run)
+        ),
         bugsigdb_vintage=bugsigdb_vintage,
         kg_release_tag=None,
         kg_provenance_path=str(path),

@@ -11,6 +11,11 @@ from bsdbng.study_trait_profiles import (
 from bsdbng.taxa_trait_matrix import create_taxa_trait_matrix
 from bsdbng.trait_guilds import retained_trait_columns
 from mtp.human_host_corpus import CORPUS_SEQUENCING_TYPES
+from mtp.strain_rollup_record import (
+    record_path,
+    recorded_strain_rollup,
+    write_strain_rollup_record,
+)
 
 
 def _write_study_yaml(study_dir: Path) -> None:
@@ -717,6 +722,41 @@ def test_without_the_drop_every_matrix_column_is_written(tmp_path: Path) -> None
     assert main([*argv, "--output", str(output), "--host-species", "Homo sapiens"]) == 0
     header = output.read_text(encoding="utf-8").splitlines()[0].split("\t")
     assert header[3:] == ["METPO:1", "METPO:MOUSE", "mediadive.medium:1", "METPO:2"]
+
+
+def test_the_profiles_record_the_scope_their_matrix_records(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """The profile table carries its matrix's scope; from a matrix without a record it
+    carries none, never a stale record of an earlier build (#847)."""
+    study_dir, matrix = _write_mixed_host_inputs(tmp_path)
+    output = tmp_path / "profiles.tsv"
+    argv = ["--study-dir", str(study_dir), "--taxa-trait-matrix", str(matrix)]
+    argv += ["--output", str(output)]
+    write_strain_rollup_record(matrix, "phenotype")
+
+    assert main(argv) == 0
+    assert recorded_strain_rollup(output) == "phenotype"
+    record_path(matrix).unlink()
+    assert main(argv) == 0
+    assert not record_path(output).exists()
+    assert "records no strain rollup scope" in capsys.readouterr().out
+
+
+def test_a_matrix_replaced_without_its_record_is_refused(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    study_dir, matrix = _write_mixed_host_inputs(tmp_path)
+    write_strain_rollup_record(matrix, "phenotype")
+    with matrix.open("a", encoding="utf-8") as handle:
+        handle.write("NCBITaxon:9\tTaxon nine\tspecies\t0\t0\t0\t0\n")
+    output = tmp_path / "profiles.tsv"
+    argv = ["--study-dir", str(study_dir), "--taxa-trait-matrix", str(matrix)]
+
+    with pytest.raises(SystemExit):
+        main([*argv, "--output", str(output)])
+    assert "not the table its record" in capsys.readouterr().err
+    assert not output.exists()
 
 
 def test_the_sequencing_filter_keeps_16s_and_shotgun_experiments(tmp_path: Path) -> None:

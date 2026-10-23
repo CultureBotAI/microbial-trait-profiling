@@ -4,6 +4,7 @@ import pytest
 
 from bsdbng.taxa_trait_matrix import create_taxa_trait_matrix
 from mtp import taxa_trait_matrix
+from mtp.strain_rollup_record import recorded_strain_rollup
 from mtp.taxa_trait_matrix import StrainRollup
 
 
@@ -437,3 +438,20 @@ def test_strain_rollup_writes_an_explicit_output(tmp_path: Path) -> None:
 
     assert exit_code == 0
     assert output_path.read_text(encoding="utf-8").splitlines()[0].endswith("\tMETPO:1000605")
+
+
+@pytest.mark.parametrize("scope", ["off", "phenotype", "full"])
+def test_the_matrix_cli_records_its_scope_beside_the_matrix(scope: str, tmp_path: Path) -> None:
+    """The older pipeline's readers check this record against each other (#847)."""
+    taxa_path, nodes_path, edges_path = _write_strain_fixture(
+        tmp_path, [*TAXONOMY_AND_TAXON_EDGES, *STRAIN_EDGES]
+    )
+    output_path = tmp_path / "built" / "taxa_trait_matrix.tsv"
+    paths = ["--taxa", taxa_path, "--nodes", nodes_path, "--edges", edges_path]
+
+    exit_code = taxa_trait_matrix.main(
+        ["--strain-rollup", scope, *map(str, paths), "--output", str(output_path)]
+    )
+
+    assert exit_code == 0
+    assert recorded_strain_rollup(output_path) == scope

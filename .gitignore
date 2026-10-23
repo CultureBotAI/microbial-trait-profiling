@@ -22,6 +22,8 @@ data/raw/*.csv
 data/studies/*.yaml
 data/derived/*
 !data/derived/.gitkeep
+# The strain rollup record of the committed canonical profile table (#847).
+!data/derived/study_trait_profiles_wide.tsv.gz.strain_rollup.json
 # Reviewed native evidence and compact calibration artifacts (#551).
 !data/derived/trait_profile_paired_contrast_trait_stats_pooled.tsv
 !data/derived/integrated_evidence/

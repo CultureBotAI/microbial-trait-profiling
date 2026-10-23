@@ -669,6 +669,9 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    # The record module reads this one's scopes, so it is imported here
+    from mtp.strain_rollup_record import write_strain_rollup_record
+
     parser = build_parser()
     args = parser.parse_args(argv)
     # The analyses read the default path as the primary matrix, so another scope must not
@@ -688,7 +691,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         nodes_path=args.nodes,
         strain_rollup=args.strain_rollup,
     )
+    # The older pipeline's readers check the scope against this record (#847)
+    record = write_strain_rollup_record(stats.output_path, args.strain_rollup)
     print(f"Wrote matrix: {stats.output_path}")
+    print(f"Wrote strain rollup record: {record}")
     print(f"Wrote column metadata: {stats.column_metadata_path}")
     print(f"Reported taxa rows: {stats.reported_taxa}")
     print(f"Trait columns: {stats.traits}")

@@ -40,6 +40,7 @@ from bsdbng.ora_calibration.protocol import MethodInferenceResult
 from bsdbng.ora_calibration.scenarios import flip_profile_dataframe, shared_trait_columns
 from bsdbng.paths import DERIVED_DATA_DIR
 from bsdbng.trait_guilds import Profile
+from mtp.strain_rollup_record import write_strain_rollup_record
 
 TRAITS: list[str] = ["TRAIT_A", "TRAIT_B", "TRAIT_C", "TRAIT_D", "TRAIT_E", "TRAIT_F"]
 CalibrationData = tuple[pd.DataFrame, pd.DataFrame]
@@ -383,6 +384,19 @@ def test_cli_invalid_inputs_exit_nonzero_and_record_failure(
     assert summary["provenance"]["completed_replicates"] == 0
     assert summary["provenance"]["error_message"]
     assert not (out / NULL_PVALUES_FILENAME).exists()
+
+
+def test_cli_refuses_profiles_and_matrix_recorded_under_different_scopes(
+    synthetic_calibration_data: CalibrationData, tmp_path: Path
+) -> None:
+    """The calibration reads both tables, so their recorded scopes must agree (#847)."""
+    profiles, taxa = _write_inputs(tmp_path, synthetic_calibration_data)
+    write_strain_rollup_record(profiles, "off")
+    write_strain_rollup_record(taxa, "phenotype")
+    out = tmp_path / "out"
+
+    assert harness_main(_cli_args(profiles, taxa, out)) == EXIT_FAILURE
+    assert "different strain rollup scopes" in (_read_summary(out)["provenance"]["error_message"])
 
 
 @pytest.mark.parametrize("bad_args", [["--replicates", "0"], ["--alpha", "1.5"]])

@@ -51,10 +51,12 @@ repos:
     rev: v1.5.0
     hooks:
       - id: detect-secrets
-        # Generated public checksums/commit IDs, not credential-bearing inputs (#259).
+        # Generated public checksums/commit IDs, not credential-bearing inputs (#259); the
+        # strain rollup records hold a table's content checksum (#847).
         exclude: |
           (?x)^(
             data/.*provenance\.json
+            |data/.*\.strain_rollup\.json
             |trait-visualization/trait-profile-investigation/
             six-shared-traits/oral/oral_six_trait_provenance\.json
           )$

@@ -1,6 +1,7 @@
 """The widened directional family: its correction, its dependence, its missing states."""
 
 import csv
+import gzip
 import json
 import random
 from pathlib import Path
@@ -9,7 +10,13 @@ import pytest
 from scipy.stats import false_discovery_control
 
 from bsdbng.table1_trait_maps import compute_direction_shifts
-from bsdbng.trait_guilds import TABLE1_TRAITS, Profile, load_profiles, retained_trait_columns
+from bsdbng.trait_guilds import (
+    DEFAULT_PROFILE_PATH,
+    TABLE1_TRAITS,
+    Profile,
+    load_profiles,
+    retained_trait_columns,
+)
 from bsdbng.trait_screen import (
     ALL_TIED,
     NO_ELIGIBLE_STUDIES,
@@ -26,6 +33,7 @@ from bsdbng.trait_screen import (
     step_up,
     table1_slug,
 )
+from mtp.strain_rollup_record import committed_path, require_strain_rollup
 
 
 def _profile(
@@ -379,9 +387,9 @@ def test_the_cli_writes_every_candidate_with_an_explicit_state(tmp_path: Path) -
 
 
 @pytest.mark.integration
-def test_the_pinned_corpus_screens_every_retained_trait_and_reproduces_the_quoted_dependence() -> (
-    None
-):
+def test_the_pinned_corpus_screens_every_retained_trait_and_reproduces_the_quoted_dependence(
+    tmp_path: Path,
+) -> None:
     """The profile-basis figures in #263/#265 must come back out of this code.
 
     Li & Ji 60.0, Galwey 48.9, Cheverud/Nyholt 198.9, PC1 60.4%, median rho
@@ -390,20 +398,26 @@ def test_the_pinned_corpus_screens_every_retained_trait_and_reproduces_the_quote
     rather than restating it. The values below are repinned to the 16S and shotgun
     corpus of #742 (5,629 profiles), where Li & Ji is 61.0 and Galwey 48.8.
     """
-    columns = screen_candidates()
+    # Every figure below was computed on the committed table, built under the off scope
+    # its record states, so the screen reads that table, not the local one (#847, #978).
+    committed = committed_path(DEFAULT_PROFILE_PATH)
+    scope = require_strain_rollup(committed)
+    assert scope == "off", (
+        f"the committed table records strain rollup scope {scope!r}, but the figures below "
+        "were computed on the off table; repin them for this table (#847)"
+    )
+    table = tmp_path / DEFAULT_PROFILE_PATH.name
+    with gzip.open(committed, "rb") as source:
+        table.write_bytes(source.read())
+    columns = screen_candidates(table)
     slots = candidate_slots(columns)
-    paired, stats = load_profiles(guilds=slots)
-    unpaired, _ = load_profiles(guilds=slots, paired_only=False)
+    paired, stats = load_profiles(table, guilds=slots)
+    unpaired, _ = load_profiles(table, guilds=slots, paired_only=False)
     # The family is every retained trait column of the table, so its size is read from the
     # data: 317 under the off strain rollup scope, 344 under phenotype (#788, #847).
-    assert stats.trait_columns_used == len(columns)
+    assert stats.trait_columns_used == len(columns) == 317
     result = run_screen(paired, columns, dependence_profiles=unpaired)
     assert result.family_size == len(columns)
-    # Every figure below was computed on the committed table, built under the off scope.
-    assert len(columns) == 317, (
-        f"{len(columns)} retained traits: the figures below are pinned to the off-scope "
-        "table of 317 and must be repinned for a table built under another scope (#847)"
-    )
     contrast = result.contrast_dependence
     assert contrast is not None
     assert contrast.li_ji == pytest.approx(112.0, abs=0.05)

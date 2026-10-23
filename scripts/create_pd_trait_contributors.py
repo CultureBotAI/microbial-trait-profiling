@@ -38,6 +38,7 @@ from create_pd_six_trait_taxon_heatmap import (
 )
 from lookup_pd_trait_taxa import SUMMARY_NAME, pd_feces_profile_ids, trait_directions
 from mtp.contribution_inputs import Base, Graph, Key, load_base, load_graph, verify_kg
+from mtp.strain_rollup_record import require_declared_strain_rollup
 from mtp.taxa_trait_matrix import PRIMARY_STRAIN_ROLLUP, StrainRollup
 from mtp.taxon_contributions import Ledger, reconcile
 from mtp.trait_guilds import TABLE1_TRAIT_LABELS
@@ -114,6 +115,9 @@ def load_contribution_ledger(
     the strain rollup scope, so a KG or scope that does not reproduce the matrix stops the
     analysis here.
     """
+    # Inputs recorded under another scope are named before the KG is read (#847)
+    tables = [derived_dir / LEDGER_INPUTS[0], derived_dir / LEDGER_INPUTS[-1]]
+    require_declared_strain_rollup(tables, strain_rollup)
     protocol = json.loads(protocol_path.read_text(encoding="utf-8"))
     verify_kg(kg_dir, protocol["kg_md5"])
     base = load_base(*(derived_dir / name for name in LEDGER_INPUTS))

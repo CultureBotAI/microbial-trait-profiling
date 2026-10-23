@@ -14,6 +14,11 @@ import yaml
 
 from mtp.count_input import COMPLETE_COUNT_MODE, CountInputMode, taxa_trait_count_reader
 from mtp.paths import DERIVED_DATA_DIR, STUDY_DATA_DIR
+from mtp.strain_rollup_record import (
+    record_path,
+    recorded_strain_rollup,
+    write_strain_rollup_record,
+)
 from mtp.trait_guilds import MEDIADIVE_MARKER
 
 DEFAULT_TAXA_TRAIT_MATRIX_PATH = DERIVED_DATA_DIR / "taxa_trait_matrix.tsv"
@@ -427,6 +432,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
     try:
+        # The profiles carry their matrix's scope; a stale matrix record is refused (#847)
+        strain_rollup = recorded_strain_rollup(args.taxa_trait_matrix)
         stats = create_study_trait_profiles(
             study_dir=args.study_dir,
             taxa_trait_matrix_path=args.taxa_trait_matrix,
@@ -443,6 +450,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         parser.error(str(exc))
 
     print(f"Wrote {stats.output_format} study trait profiles: {stats.output_path}")
+    if strain_rollup is None:
+        record_path(stats.output_path).unlink(missing_ok=True)
+        print(
+            f"{args.taxa_trait_matrix} records no strain rollup scope, so the profiles "
+            "carry no record (#847)"
+        )
+    else:
+        write_strain_rollup_record(stats.output_path, strain_rollup)
+        print(f"Strain rollup scope, from the matrix record: {strain_rollup}")
     print(f"Profiles: {stats.profiles}")
     print(f"Trait columns: {stats.trait_columns}")
     if stats.dropped_trait_columns:

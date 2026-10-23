@@ -27,6 +27,11 @@ import numpy as np
 import pandas as pd
 
 from mtp.paths import DERIVED_DATA_DIR, REPO_ROOT
+from mtp.strain_rollup_record import (
+    record_path,
+    shared_strain_rollup,
+    write_strain_rollup_record,
+)
 from mtp.workflow.consumers import (
     open_core_bundle,
     preflight_consumer_outputs,
@@ -686,6 +691,8 @@ def run_stratification_pipeline(
     profiles_path = resolved["profiles"]
     experiments_path = resolved["experiments"]
     taxa_matrix = resolved["taxa-matrix"]
+    # The tables the subsets come from must agree; each subset carries their scope (#847)
+    strain_rollup = shared_strain_rollup(profiles_path, taxa_matrix)
     products = [
         path
         for stratum in strata
@@ -717,6 +724,10 @@ def run_stratification_pipeline(
         strata=strata,
     )
     for stratum, path in partitions.items():
+        if strain_rollup is None:
+            record_path(path).unlink(missing_ok=True)
+        else:
+            write_strain_rollup_record(path, strain_rollup)
         print(f"  - Stratum '{stratum}': {path}")
 
     # 2. Run enrichment and ranking export per stratum
