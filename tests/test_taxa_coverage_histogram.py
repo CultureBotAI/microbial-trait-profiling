@@ -185,7 +185,7 @@ def test_sparse_figure_annotations_stay_visible_without_covering_bars(
         proportion_axis = captured[0].axes[1]
         parity_label = next(t for t in proportion_axis.texts if "parity threshold" in t.get_text())
         assert parity_label.get_window_extent().x1 <= proportion_axis.get_window_extent().x1
-        for ax in (captured[0].axes[0], captured[0].axes[2]):
+        for ax in captured[0].axes:
             bars = [patch for group in ax.containers for patch in group if patch.get_height() > 0]
             for text in ax.texts:
                 box = text.get_bbox_patch()
@@ -202,6 +202,110 @@ def test_sparse_figure_annotations_stay_visible_without_covering_bars(
     finally:
         for fig in captured:
             coverage.plt.close(fig)
+
+
+def narrow_segment_frames(zero_count: int) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Synthetic summaries with narrow taxon segments and two tiny profile segments."""
+    taxa = pd.DataFrame(
+        {"coverage_category": ["zero_traits"] * zero_count + ["rich_gte_3"] * (1000 - zero_count)}
+    )
+    ranks = pd.DataFrame(
+        {
+            "total_occurrences": [1000],
+            "zero_trait_occurrences": [zero_count],
+            "sparse_occurrences": [0],
+            "rich_occurrences": [1000 - zero_count],
+        }
+    )
+    profiles = pd.DataFrame(
+        {"mapped_trait_count": [0] * 998 + [1, 1], "zero_trait_taxa": [1] * 999 + [0]}
+    )
+    return ranks, taxa, profiles
+
+
+@pytest.mark.parametrize("zero_count", [78, 2, 998])
+def test_narrow_segments_keep_labels_inside_their_colored_regions(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, zero_count: int
+) -> None:
+    """Exercise the reviewed 7.8% width, tiny zeros and a tiny mapped segment (#947)."""
+    ranks, taxa, profiles = narrow_segment_frames(zero_count)
+    captured = []
+    monkeypatch.setattr(coverage, "save_figure", lambda fig, _path: captured.append(fig))
+    coverage.plot_occurrences_vs_unique(ranks, taxa, profiles, tmp_path / "narrow.png")
+    figure = captured[0]
+    try:
+        figure.canvas.draw()
+        axis = figure.axes[0]
+        bounds = axis.get_window_extent()
+        for label in axis.texts:
+            if not label.get_text():
+                continue
+            box = label.get_window_extent()
+            assert bounds.x0 <= box.x0 < box.x1 <= bounds.x1, label.get_text()
+            assert bounds.y0 <= box.y0 < box.y1 <= bounds.y1, label.get_text()
+            if coverage.matplotlib.colors.to_rgba(label.get_color()) == (1, 1, 1, 1):
+                # These fixtures have no sparse/rich boundary, so one segment must
+                # actually contain all white text; axis inclusion alone is too weak.
+                assert any(
+                    bar.get_window_extent().contains(box.x0, box.y0)
+                    and bar.get_window_extent().contains(box.x1, box.y1)
+                    for group in axis.containers
+                    for bar in group
+                    if bar.get_width() > 0
+                ), label.get_text()
+        assert any(f"{zero_count / 10:.1f}%" in t.get_text() for t in axis.texts)
+        boxes = [text.get_window_extent() for text in axis.texts if text.get_text()]
+        assert all(
+            not left.overlaps(right) for i, left in enumerate(boxes) for right in boxes[i + 1 :]
+        )
+    finally:
+        coverage.plt.close(figure)
+
+
+def dense_rank_frame(original: pd.DataFrame) -> pd.DataFrame:
+    """Seven fully mapped ranks expose parity boxes over the100% label at y=50."""
+    ranks = pd.concat([original.iloc[:1]] * 7, ignore_index=True)
+    ranks["taxonomic_rank"] = coverage.RANK_ORDER[:7]
+    ranks["zero_trait_pct"] = 0
+    ranks["sparse_1_2_pct"] = 0
+    ranks["rich_gte_3_pct"] = 100
+    ranks["total_taxa"] = 100
+    ranks["zero_trait_taxa"] = 0
+    ranks["sparse_1_2_taxa"] = 0
+    ranks["rich_gte_3_taxa"] = 100
+    ranks["trait_bearing_pct"] = 100
+    return ranks
+
+
+def test_parity_annotation_cannot_cover_dense_rank_bars_or_their_labels(
+    inputs: dict[str, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _, original, _, profiles, _, _ = coverage.load_and_process_data(**inputs)
+    ranks = dense_rank_frame(original)
+    captured = []
+    monkeypatch.setattr(coverage, "save_figure", lambda fig, _path: captured.append(fig))
+    coverage.plot_rank_stratified_histogram(ranks, tmp_path / "dense.png", profiles)
+    figure = captured[0]
+    try:
+        figure.canvas.draw()
+        axis = figure.axes[1]
+        parity = next(text for text in axis.texts if "parity threshold" in text.get_text())
+        patch = parity.get_bbox_patch()
+        box = patch.get_window_extent() if patch is not None else parity.get_window_extent()
+        bars = [bar for group in axis.containers for bar in group if bar.get_height() > 0]
+        assert not any(box.overlaps(bar.get_window_extent()) for bar in bars)
+        labels = [text for text in axis.texts if text is not parity]
+        assert len(labels) == 7
+        assert not any(box.overlaps(text.get_window_extent()) for text in labels)
+        for label in labels:
+            bounds = label.get_window_extent()
+            assert any(
+                bar.get_window_extent().contains(bounds.x0, bounds.y0)
+                and bar.get_window_extent().contains(bounds.x1, bounds.y1)
+                for bar in bars
+            ), label.get_text()
+    finally:
+        coverage.plt.close(figure)
 
 
 def test_readme_reconciles_with_written_tables_and_provenance(

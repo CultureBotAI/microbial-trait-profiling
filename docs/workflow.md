@@ -470,8 +470,13 @@ and `provenance.json` with input/output SHA-256 hashes, producer and lockfile
 hashes, Git revision (`+dirty` when applicable), corpus/KG identity, explicit
 population rules and exclusion counts. Paths are repository-relative, or
 `external/<basename>` for supplied external inputs; content hashes identify the
-bytes. `--bugsigdb-vintage` supplies a declared vintage (unknown if omitted), and
-`--kg-provenance` supplies the KG download sidecar. Its release and source-file
+bytes. `--bugsigdb-vintage` supplies a declared vintage; when omitted, the producer
+reads the header of `--raw-dump`, whose default is the repository's
+`data/raw/full_dump.csv`. Explicit derived inputs from another corpus do not
+change that default: supply their matching raw dump or an explicit vintage to
+avoid attributing the repository dump's date to them. The consumed raw dump is
+hashed; the recorded vintage alone does not verify that it produced the derived
+tables. `--kg-provenance` supplies the KG download sidecar. Its release and source-file
 claims are declared evidence, not proof of which KG built the matrix; the
 consumed sidecar itself is hashed. These are standalone
 execution provenance records, not verified core or arm manifests. Rerun them
@@ -482,6 +487,10 @@ different scope outputs in separate directories. Explicit `--taxa`, `--matrix`,
 directory with existing figures so those cannot silently remain stale. The
 profile-rank denominator column is now `pct_of_mapped_profiles`; the columns in
 the rank and taxon-detail tables read by existing deck builders are preserved.
+The README reports both all-annotation coverage (including MediaDive) and
+non-MediaDive coverage, plus the numbers of taxa and profiles with MediaDive
+annotations only. These are distinct quantities; a deck must name the one it
+cites rather than treating them as interchangeable.
 Empty rank rows are omitted from the exported rank table and README, avoiding
 undefined `0/0` percentages in the plate consumer. Nonempty unrecognized ranks
 remain in `other`. TaxID alias candidates require review, and higher-rank

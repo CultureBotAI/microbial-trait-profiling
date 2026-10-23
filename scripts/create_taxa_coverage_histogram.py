@@ -24,8 +24,10 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 from matplotlib.patches import Patch
+from matplotlib.text import Text
 
 from mtp.corpus_identity import DEFAULT_KG_PROVENANCE_PATH, corpus_identity
 from mtp.human_host_corpus import (
@@ -728,7 +730,7 @@ def plot_rank_stratified_histogram(
             ax2.text(
                 x[i],
                 zero_pcts[i] / 2.0,
-                f"{zero_pcts[i]:.1f}%\n({zeros[i]:,})",
+                f"{zero_pcts[i]:.1f}".removesuffix(".0") + f"%\n({zeros[i]:,})",
                 ha="center",
                 va="center",
                 color="white",
@@ -739,7 +741,7 @@ def plot_rank_stratified_histogram(
             ax2.text(
                 x[i],
                 zero_pcts[i] + sparse_pcts[i] + rich_pcts[i] / 2.0,
-                f"{rich_pcts[i]:.1f}%\n({rich[i]:,})",
+                f"{rich_pcts[i]:.1f}".removesuffix(".0") + f"%\n({rich[i]:,})",
                 ha="center",
                 va="center",
                 color="white",
@@ -750,12 +752,13 @@ def plot_rank_stratified_histogram(
     ax2.axhline(50, color=COLOR_SLATE_MID, linestyle=":", linewidth=1.2, alpha=0.7)
     ax2.text(
         0.98,
-        51.5,
+        104,
         "50% parity threshold",
         transform=ax2.get_yaxis_transform(),
         fontsize=8.5,
         color=COLOR_SLATE_MID,
         ha="right",
+        va="center",
         bbox={"facecolor": "white", "edgecolor": "none", "pad": 2},
     )
 
@@ -887,6 +890,71 @@ def plot_rank_stratified_histogram(
     print(f"  Saved Figure 1: {output_path} and .svg")
 
 
+def fit_coverage_segment_labels(
+    axis: Axes,
+    labels: list[tuple[Text, float, float, str, str]],
+    bar_height: float,
+) -> None:
+    """Fit labels to actual rendered segments; use outside leaders when needed (#947)."""
+    axis.figure.canvas.draw()
+    outside: dict[float, list[tuple[Text, float]]] = {}
+    for text, left, right, compact, description in labels:
+        center, row = (float(value) for value in text.get_position())
+        lower, upper = axis.transData.transform(
+            [(left, row - bar_height / 2), (right, row + bar_height / 2)]
+        )
+
+        fits = False
+        for candidate in (text.get_text(), compact):
+            text.set_text(candidate)
+            box = text.get_window_extent()
+            fits = bool(
+                lower[0] + 3 <= box.x0 < box.x1 <= upper[0] - 3
+                and lower[1] + 2 <= box.y0 < box.y1 <= upper[1] - 2
+            )
+            if fits:
+                break
+        if fits:
+            continue
+        text.remove()
+        callout = axis.text(
+            center,
+            row + bar_height / 2 + 0.08,
+            description,
+            ha="left",
+            va="bottom",
+            color=COLOR_SLATE_DARK,
+            fontsize=8.5,
+            fontweight="bold",
+        )
+        outside.setdefault(row, []).append((callout, center))
+
+    # Pack callouts horizontally within each row, then connect each to its own
+    # narrow segment. This also handles adjacent tiny mixed/all-mapped segments.
+    bounds = axis.get_window_extent()
+    for row, callouts in outside.items():
+        positions: list[tuple[Text, float, float, float]] = []
+        next_left = bounds.x0 + 4
+        for text, center in sorted(callouts, key=lambda item: item[1]):
+            width = text.get_window_extent().width
+            desired = axis.transData.transform((center, row))[0] - width / 2
+            left = max(next_left, min(desired, bounds.x1 - width - 4))
+            positions.append((text, center, left, width))
+            next_left = left + width + 8
+        overflow = max(0, next_left - 8 - (bounds.x1 - 4))
+        for text, center, left, width in positions:
+            row_y = float(text.get_position()[1])
+            x = axis.transData.inverted().transform((left - overflow, 0))[0]
+            text.set_x(x)
+            leader_x = axis.transData.inverted().transform((left - overflow + width / 2, 0))[0]
+            axis.annotate(
+                "",
+                xy=(center, row + bar_height / 2),
+                xytext=(leader_x, row_y),
+                arrowprops={"arrowstyle": "-", "color": COLOR_SLATE_MID, "linewidth": 0.8},
+            )
+
+
 def plot_occurrences_vs_unique(
     rank_df: pd.DataFrame, taxa_master: pd.DataFrame, prof_summary: pd.DataFrame, output_path: Path
 ) -> None:
@@ -966,6 +1034,7 @@ def plot_occurrences_vs_unique(
         label="Rich (≥3 Traits) / Fully Mapped Profiles (100% Taxa Mapped)",
     )
 
+    segment_labels = []
     # Combined annotation-bearing labels span sparse and rich segments together.
     for row, zero_count, mapped_count in (
         (0, zero_taxa, sparse_taxa + rich_taxa),
@@ -981,7 +1050,7 @@ def plot_occurrences_vs_unique(
             ),
         ):
             if width_pct > 0:
-                ax.text(
+                text = ax.text(
                     center,
                     y_pos[row],
                     f"{label}: {width_pct:.1f}%\n({count:,})",
@@ -990,6 +1059,15 @@ def plot_occurrences_vs_unique(
                     color="white",
                     fontweight="bold",
                     fontsize=9,
+                )
+                segment_labels.append(
+                    (
+                        text,
+                        center - width_pct / 2,
+                        center + width_pct / 2,
+                        f"{width_pct:.1f}%\n({count:,})",
+                        f"{label}: {width_pct:.1f}% ({count:,})",
+                    )
                 )
 
     # Row 2: Study Profiles
@@ -1024,7 +1102,7 @@ def plot_occurrences_vs_unique(
         ),
     ):
         if width_pct > 0:
-            ax.text(
+            text = ax.text(
                 center,
                 y_pos[2],
                 f"{label}:\n{width_pct:.1f}%\n({count:,})",
@@ -1033,6 +1111,15 @@ def plot_occurrences_vs_unique(
                 color="white",
                 fontweight="bold",
                 fontsize=8.5,
+            )
+            segment_labels.append(
+                (
+                    text,
+                    center - width_pct / 2,
+                    center + width_pct / 2,
+                    f"{width_pct:.1f}%\n({count:,})",
+                    f"{label}: {width_pct:.1f}% ({count:,})",
+                )
             )
 
     ax.set_yticks(y_pos)
@@ -1082,6 +1169,7 @@ def plot_occurrences_vs_unique(
         facecolor=COLOR_BG_LIGHT,
     )
 
+    fit_coverage_segment_labels(ax, segment_labels, bar_height)
     save_figure(fig, output_path)
     print(f"  Saved Figure 2: {output_path} and .svg")
 
