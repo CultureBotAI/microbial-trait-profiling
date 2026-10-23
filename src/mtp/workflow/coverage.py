@@ -3,6 +3,8 @@
 Coverage refers to matrix lookup and retained annotations, never in vivo activity.
 The aggregate matrix does not preserve the source edges needed to distinguish
 direct from descendant assertions; its evidence origin is explicitly unresolved.
+Under a strain rollup scope, the features it admits may also count BacDive strain
+records at their linked NCBITaxon nodes, a third unresolved origin (#788).
 """
 
 from __future__ import annotations
@@ -10,12 +12,13 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import asdict
 from pathlib import Path
 
 from mtp.count_input import COVERAGE_COLUMNS, ProfileCoverage, annotation_coverage_status
 from mtp.study_trait_profiles import ProfileKey, TaxaTraitMatrix
+from mtp.taxa_trait_matrix import StrainRollup, strain_trait_rolls_up
 
 FEATURE_METADATA_COLUMNS = (
     "column_id",
@@ -28,6 +31,7 @@ FEATURE_METADATA_COLUMNS = (
 )
 FEATURE_CATALOG_COLUMNS = (*FEATURE_METADATA_COLUMNS, "feature_class", "annotation_evidence")
 UNRESOLVED_EVIDENCE = "direct_or_descendant_unresolved"
+STRAIN_ATTRIBUTED_EVIDENCE = "direct_descendant_or_strain_unresolved"
 
 
 def feature_filter_id(feature_columns: Sequence[str]) -> str:
@@ -36,6 +40,27 @@ def feature_filter_id(feature_columns: Sequence[str]) -> str:
         raise ValueError("Feature vocabulary must contain unique, nonempty IDs")
     payload = json.dumps(list(feature_columns), ensure_ascii=True, separators=(",", ":"))
     return "sha256:" + hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def annotation_evidence(feature_id: str, strain_rollup: StrainRollup) -> str:
+    """The origins a feature's counts may combine; the aggregate never resolves which.
+
+    A feature the scope rolls up from BacDive strains may count strain records at their
+    linked NCBITaxon nodes as well as direct and descendant assertions (#788).
+    """
+    if strain_trait_rolls_up(feature_id, strain_rollup):
+        return STRAIN_ATTRIBUTED_EVIDENCE
+    return UNRESOLVED_EVIDENCE
+
+
+def product_evidence(feature_ids: Iterable[str], strain_rollup: StrainRollup) -> str:
+    """The origins any count in a product over these features may combine (#788)."""
+    if any(
+        annotation_evidence(feature, strain_rollup) == STRAIN_ATTRIBUTED_EVIDENCE
+        for feature in feature_ids
+    ):
+        return STRAIN_ATTRIBUTED_EVIDENCE
+    return UNRESOLVED_EVIDENCE
 
 
 def feature_class(feature_id: str) -> str:
@@ -114,7 +139,9 @@ def write_profile_coverage(path: Path, coverage: Mapping[ProfileKey, ProfileCove
             writer.writerow(values)
 
 
-def write_feature_catalog(metadata_path: Path, output_path: Path) -> None:
+def write_feature_catalog(
+    metadata_path: Path, output_path: Path, *, strain_rollup: StrainRollup = "off"
+) -> None:
     """Extend native feature metadata with explicit culture-medium and origin semantics."""
     # Local import avoids a module cycle while sharing strict TSV validation.
     from mtp.workflow.contracts import read_table, validate_product
@@ -131,6 +158,6 @@ def write_feature_catalog(metadata_path: Path, output_path: Path) -> None:
                 {
                     **{column: record[column] for column in FEATURE_METADATA_COLUMNS},
                     "feature_class": feature_class(record["column_id"]),
-                    "annotation_evidence": UNRESOLVED_EVIDENCE,
+                    "annotation_evidence": annotation_evidence(record["column_id"], strain_rollup),
                 }
             )

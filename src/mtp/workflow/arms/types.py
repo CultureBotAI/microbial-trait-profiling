@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from mtp.taxa_trait_matrix import StrainRollup
+
 
 @dataclass(frozen=True)
 class ArmContext:
@@ -20,6 +22,8 @@ class ArmContext:
     seed: int | None
     figures: bool
     contrast_population: str = "all_paired"
+    # The core's recorded BacDive strain rollup scope; a core from before #788 is off
+    strain_rollup: StrainRollup = "off"
 
 
 @dataclass(frozen=True)

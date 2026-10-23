@@ -38,6 +38,52 @@ different reported taxa, make traits mutually exclusive, or weight counts by
 patient-level abundance. A count is therefore a **rolled-up annotation count**,
 not a count of patients, cells, unique signature taxa, or independent assertions.
 
+### BacDive strain records, negation and excluded classes
+
+BacDive strain records (`kgmicrobe.strain:`) annotate culture-collection strains. The
+`strain_rollup` scope of the matrix decides which of them count, and every result must
+name its scope ([#788](https://github.com/CultureBotAI/microbial-trait-profiling/issues/788)):
+
+- `phenotype` is the primary scope. It counts bare METPO phenotype classes.
+- `off` is a sensitivity scope that counts no strain records.
+- `full` is exploratory. It is tested only as its own family and never supports a
+  headline claim.
+
+How strain records count:
+
+- **At the strain's taxon.** A strain's admitted trait keys count at the NCBITaxon node
+  it is a `biolink:subclass_of`, once per node however many strains assert them. A
+  strain without an NCBITaxon link adds nothing.
+- **Orphan links.** On the pinned KG, 71 trait-bearing strains link to 49 nodes that have
+  no NCBITaxon parent. They reach a matrix row only through the one such node that is
+  itself a reported taxon.
+- **Wording.** Strain-attributed annotations remain organism annotations from culture
+  collections, not observations of the profiled community. Write "taxa annotated as
+  facultatively anaerobic, including annotations from the taxon's BacDive strain
+  records". The feature catalog marks the features whose counts may include strain
+  records as `direct_descendant_or_strain_unresolved`.
+
+**Negation rule.** A "does not …" relation, such as "does not ferment" or "does not show
+activity of", records that a test found an activity or capability absent. It is never
+read as the activity:
+
+- A negated relation to a METPO object keeps its predicate in the trait key, so "does not
+  use for aerobic growth: X" can never become the phenotype X.
+- Under `full`, every negated key is dropped, a taxon's own included. No taxon carries
+  both an activity and its absence.
+- Under `off` and `phenotype`, the only negated keys are two direct "does not grow in"
+  MediaDive relations, which every analysis already excludes with MediaDive.
+- A negative test record never lowers or replaces the count of the activity. A zero
+  still means "no recorded annotation", not a negative result, with the limits in the
+  table below.
+
+**Excluded handling and clinical classes.** The `phenotype` scope excludes the BacDive
+classes biosafety level 1, 2 and 3 and human, animal and plant pathogen from the tested
+vocabulary (`PHENOTYPE_EXCLUDED_TRAITS`). They are handling and clinical
+categories, not ecophysiological traits. No result may present them as traits or use
+them to describe a signature as pathogenic. `full` keeps them as exploratory features
+under the same wording limits.
+
 | Reported quantity | Units and interpretation |
 | --- | --- |
 | Profile trait count | Sum of mapped annotation counts for one study/experiment/direction; record rollup and source multiplicity. |
