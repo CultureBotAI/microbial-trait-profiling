@@ -13,6 +13,8 @@ parameters:
     default: Homo sapiens
   - name: contrast_population
     default: all_paired
+  - name: strain_rollup
+    default: phenotype
 products:
   - id: raw_dump
     kind: raw_csv
@@ -326,6 +328,8 @@ steps:
     outputs:
       - taxa_matrix
       - feature_metadata
+    parameters:
+      - strain_rollup
   - id: feature_catalog
     operation: feature_catalog
     inputs:
@@ -333,6 +337,8 @@ steps:
       - taxa_matrix
     outputs:
       - feature_catalog
+    parameters:
+      - strain_rollup
   - id: count_profiles
     operation: count_profiles
     inputs:

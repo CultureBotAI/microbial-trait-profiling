@@ -291,6 +291,49 @@ def ledger_fixture() -> tuple[Base, Graph, Ledger]:
     return base, graph, Ledger(sources, {}, [])
 
 
+def test_the_ledger_reconciles_data_derived_under_the_recorded_scope(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Only a BacDive strain of S1 asserts the trait, so inputs built under the primary
+    phenotype scope reconcile under the scope the manifest records, and an off ledger is
+    refused with its scope named (#788)."""
+    trait = "METPO:1000608"
+    (tmp_path / "merged-kg_edges.tsv").write_text(
+        "id\tsubject\tpredicate\tobject\n"
+        f"s1\tkgmicrobe.strain:1\tbiolink:subclass_of\t{S1}\n"
+        f"s2\tkgmicrobe.strain:1\tbiolink:has_phenotype\t{trait}\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "merged-kg_nodes.tsv").write_text("id\tname\n", encoding="utf-8")
+    protocol = tmp_path / "protocol.json"
+    protocol.write_text('{"kg_md5": {}}', encoding="utf-8")
+    base = Base(
+        columns=[trait],
+        traits={"rod_shaped": trait},
+        profiles={INCREASED: {trait: 1}},
+        metadata={INCREASED[:2]: {"condition": "condition", "body_site": "site"}},
+        reported={INCREASED: {S1: {"sig-1"}}},
+        taxa={S1: {trait: 1}},
+        names={},
+        ranks={S1: "species"},
+        eligibility=[],
+    )
+
+    def load_base(*paths: Path) -> Base:
+        assert paths == tuple(tmp_path / name for name in contributors.LEDGER_INPUTS)
+        return base
+
+    monkeypatch.setattr(contributors, "load_base", load_base)
+
+    assert contributors.STRAIN_ROLLUP == "phenotype"
+    _, _, ledger = contributors.load_contribution_ledger(
+        tmp_path, tmp_path, protocol, contributors.STRAIN_ROLLUP
+    )
+    assert ledger.mismatches == []
+    with pytest.raises(ValueError, match="under the off strain rollup scope"):
+        contributors.load_contribution_ledger(tmp_path, tmp_path, protocol, "off")
+
+
 def test_contributions_resolve_each_source_to_one_species_and_family() -> None:
     base, graph, ledger = ledger_fixture()
 

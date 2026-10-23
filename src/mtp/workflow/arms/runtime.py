@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import asyncio
 import importlib.metadata
 import json
@@ -14,7 +15,9 @@ import uuid
 from collections.abc import Callable, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import NoReturn
 
+from mtp import taxon_contributions
 from mtp.datamodel.workflow_pydantic import (
     ArmCommandDefinition,
     ArmCommandExecution,
@@ -34,6 +37,7 @@ from mtp.workflow.consumers import (
     open_core_bundle,
     preflight_consumer_outputs,
 )
+from mtp.workflow.operations import run_strain_rollup
 from mtp.workflow.runtime import (
     artifact_path,
     content_hash,
@@ -44,6 +48,11 @@ from mtp.workflow.runtime import (
 from mtp.workflow.verification import verify_core_run
 
 Planner = Callable[[ArmContext], list[Command]]
+# Steps that rebuild matrix counts from the KG, and so must apply the core's strain rollup
+# scope, with the argument parser each module runs (#788, #881)
+SCOPED_MODULES: dict[str, Callable[[type[argparse.ArgumentParser]], argparse.ArgumentParser]] = {
+    "mtp.taxon_contributions": taxon_contributions.argument_parser
+}
 INPUT_NAMES = {
     "raw_dump": "full_dump.csv",
     "kg_edges": "merged-kg_edges.tsv",
@@ -178,7 +187,48 @@ def _definition(command: Command) -> ArmCommandDefinition:
     )
 
 
-def _validate_plan(commands: Sequence[Command], context: ArmContext) -> None:
+class _StepArguments(argparse.ArgumentParser):
+    """Parse a planned step's arguments as its module does, raising instead of exiting."""
+
+    def error(self, message: str) -> NoReturn:
+        raise ValueError(message)
+
+    def exit(self, status: int = 0, message: str | None = None) -> NoReturn:
+        raise ValueError(message or f"argument parsing stopped with status {status}")
+
+
+def _step_strain_rollup(command: Command, *, absent_scope_is_off: bool) -> str:
+    """The strain rollup scope a scoped step runs under, read by its module's own parser.
+
+    The parser's rules decide: the equals form and an unambiguous abbreviation count, the
+    last of repeated options wins, and a malformed option is refused. A plan must state the
+    scope; only a plan recorded before #788 states none, and it ran under off (#881).
+    """
+    parser = SCOPED_MODULES[command.argv[2]](_StepArguments)
+    parser.set_defaults(strain_rollup=None)
+    try:
+        scope = parser.parse_args(command.argv[3:]).strain_rollup
+    except ValueError as error:
+        raise ValueError(
+            f"{command.id} has invalid {command.argv[2]} arguments: {error}"
+        ) from error
+    if scope is not None:
+        return str(scope)
+    if not absent_scope_is_off:
+        raise ValueError(
+            f"{command.id} does not state --strain-rollup; a new plan must name its core's scope"
+        )
+    return "off"
+
+
+def _validate_plan(
+    commands: Sequence[Command], context: ArmContext, *, absent_scope_is_off: bool = False
+) -> None:
+    """Check a plan before execution or on verification.
+
+    ``absent_scope_is_off`` is only for verifying a plan recorded on a core that recorded no
+    strain rollup scope, as every core before #788 did (#881).
+    """
     seen: set[str] = set()
     available = {context.manifest, *context.products.values()}
     available.update(context.inputs / name for name in INPUT_NAMES.values())
@@ -206,6 +256,13 @@ def _validate_plan(commands: Sequence[Command], context: ArmContext) -> None:
                 or script.resolve() != script
             ):
                 raise ValueError(f"Command must execute a tracked Python entrypoint: {command.id}")
+        if command.argv[1] == "-m" and command.argv[2] in SCOPED_MODULES:
+            scope = _step_strain_rollup(command, absent_scope_is_off=absent_scope_is_off)
+            if scope != context.strain_rollup:
+                raise ValueError(
+                    f"{command.id} uses strain rollup scope {scope!r}, but its core "
+                    f"recorded {context.strain_rollup!r}"
+                )
         seen.add(command.id)
         if not command.outputs:
             raise ValueError(f"No declared outputs: {command.id}")
@@ -342,6 +399,7 @@ def execute_arm(
         seed=seed,
         figures=figures,
         contrast_population=ContrastPopulation(bundle.run.contrast_population).value,
+        strain_rollup=run_strain_rollup(bundle.run),
     )
     commands = planner(context)
     _validate_plan(commands, context)
@@ -502,6 +560,7 @@ def verify_arm(path: Path) -> ArmRun:
         seed=None,
         figures=True,
         contrast_population=ContrastPopulation(record.contrast_population).value,
+        strain_rollup=run_strain_rollup(core),
     )
     commands = [
         Command(
@@ -512,7 +571,9 @@ def verify_arm(path: Path) -> ArmRun:
         )
         for item in record.plan
     ]
-    _validate_plan(commands, context)
+    # Only a core from before #788 recorded no scope, and only its plans may omit it (#881)
+    declared = {item.name for item in core.parameters or []}
+    _validate_plan(commands, context, absent_scope_is_off="strain_rollup" not in declared)
     runtime = json.loads(record.runtime_json)
     if not isinstance(runtime, dict) or any(
         command.argv[0] != runtime.get("executable") for command in commands
