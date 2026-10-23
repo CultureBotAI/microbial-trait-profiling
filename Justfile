@@ -540,7 +540,7 @@ taxa-trait-matrix: download-kg study-tsvs
 
 # Takes explicit inputs: --reported-taxa, --edges, --nodes and --output-dir, and optionally
 # a contrast-selected --study-dir for the signature taxa that gain a trait label.
-# Compare trait coverage with and without the opt-in BacDive strain rollup (#774).
+# Compare trait coverage across the BacDive strain rollup scopes off, phenotype and full (#788).
 [positional-arguments]
 audit-strain-rollup *ARGS:
 	uv run python scripts/adhoc/issue774_strain_rollup_coverage.py "$@"
