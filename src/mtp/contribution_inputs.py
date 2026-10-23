@@ -16,11 +16,13 @@ from mtp.taxa_trait_matrix import (
     PRIMARY_STRAIN_ROLLUP,
     STRAIN_PREFIX,
     StrainRollup,
-    make_trait_key,
+    assertion_trait_key,
+    read_assertion_term_metadata,
     scoped_taxon_traits,
     strain_trait_rolls_up,
 )
 from mtp.trait_guilds import MEDIADIVE_MARKER, TABLE1_TRAITS, column_term_id
+from mtp.workflow.kg_inputs import iter_kg_edges
 
 Key = tuple[str, str, str]
 Pair = tuple[str, str]
@@ -237,54 +239,34 @@ def load_graph(
     strain_taxa: defaultdict[str, set[str]] = defaultdict(set)
     strain_traits: defaultdict[str, set[str]] = defaultdict(set)
     strain_assertions: defaultdict[tuple[str, str], list[Assertion]] = defaultdict(list)
-    repaired = False
-    continued = 0
-    with edges.open(encoding="utf-8", newline="") as handle:
-        reader = csv.reader(handle, delimiter="\t")
-        header = next(reader)
-        if header[:4] != ["id", "subject", "predicate", "object"]:
-            raise ValueError("Unexpected KG edge header")
-        for row in reader:
-            if row[:2] == ["", "knowledge_level"] and header[-1] == "agent_type":
-                # The pinned 20260120 export has a physical newline in its header.
-                if repaired:
-                    raise ValueError("Repeated KG header continuation")
-                header += row[1:]
-                repaired = True
+    terms = read_assertion_term_metadata(nodes, edges)
+    audit: dict[str, object] = {}
+    for meta in iter_kg_edges(edges, audit):
+        edge, subject, predicate, obj = (
+            meta[name].strip() for name in ("id", "subject", "predicate", "object")
+        )
+        strain = subject.startswith(STRAIN_PREFIX)
+        if not (strain or subject.startswith("NCBITaxon:")):
+            continue
+        if predicate == "biolink:subclass_of" and obj.startswith("NCBITaxon:"):
+            (strain_taxa if strain else parents)[subject].add(obj)
+        elif predicate.startswith("METPO:") or obj.startswith("METPO:"):
+            key = assertion_trait_key(meta, terms)
+            if key not in columns or (strain and not strain_trait_rolls_up(key, strain_rollup)):
                 continue
-            source_row = reader.line_num
-            if len(row) == 7 and row[6] == "manual_validation_of_automated_agent":
-                continuation = next(reader, [])
-                if len(continuation) != 5 or continuation[0] != "":
-                    raise ValueError(f"Invalid agent-field continuation at line {source_row}")
-                row += continuation[1:]
-                continued += 1
-            if len(row) != len(header):
-                raise ValueError(f"Malformed KG record at line {reader.line_num}")
-            edge, subject, predicate, obj = row[:4]
-            strain = strain_rollup != "off" and subject.startswith(STRAIN_PREFIX)
-            if not (strain or subject.startswith("NCBITaxon:")):
-                continue
-            if predicate == "biolink:subclass_of" and obj.startswith("NCBITaxon:"):
-                (strain_taxa if strain else parents)[subject].add(obj)
-            elif predicate.startswith("METPO:") or obj.startswith("METPO:"):
-                key = make_trait_key(predicate, obj)
-                if key not in columns or (strain and not strain_trait_rolls_up(key, strain_rollup)):
-                    continue
-                (strain_traits if strain else traits)[subject].add(key)
-                if key in six:
-                    meta = dict(zip(header, row, strict=True))
-                    (strain_assertions if strain else assertions)[(subject, key)].append(
-                        Assertion(
-                            edge,
-                            predicate,
-                            obj,
-                            meta.get("primary_knowledge_source", ""),
-                            meta.get("knowledge_source", ""),
-                            meta.get("knowledge_level", ""),
-                            source_row,
-                        )
+            (strain_traits if strain else traits)[subject].add(key)
+            if key in six:
+                (strain_assertions if strain else assertions)[(subject, key)].append(
+                    Assertion(
+                        edge,
+                        predicate,
+                        obj,
+                        meta.get("primary_knowledge_source", ""),
+                        meta.get("knowledge_source", ""),
+                        meta.get("knowledge_level", ""),
+                        int(meta["source_physical_row_start"]),
                     )
+                )
     for (source, key), evidence in strain_assertions.items():
         for taxon in sorted(strain_taxa.get(source, ())):
             assertions[(taxon, key)].extend(evidence)
@@ -292,6 +274,8 @@ def load_graph(
         dict(traits), dict(strain_taxa), dict(strain_traits), strain_rollup
     )
     names = {r["id"]: r["name"] for r in rows(nodes) if r["id"].startswith("NCBITaxon:")}
+    repaired = bool(audit["header_continuations_reconstructed"])
+    continued = int(str(audit["agent_field_continuations_reconstructed"]))
     return Graph(dict(parents), scoped, dict(assertions), names, repaired, continued)
 
 

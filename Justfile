@@ -332,8 +332,8 @@ verify-pinned-kg:
 
 # Check that every identifier the guild, gram-stain and Table 1 figures group exists
 # in data/kg-microbe/merged-kg_nodes.tsv with its expected label (run `just download-kg` first).
-verify-trait-terms:
-	uv run python scripts/verify_trait_terms.py
+verify-trait-terms *args:
+	uv run python scripts/verify_trait_terms.py {{args}}
 
 # Requires BugSigDB CSVs from `just download`; `just ingest` creates the data/studies/*.yaml inputs.
 # Flatten per-study YAML into data/derived/*.tsv, including bugsigdb_taxa.tsv.
@@ -556,6 +556,11 @@ taxa-trait-matrix: download-kg study-tsvs
 [positional-arguments]
 audit-strain-rollup *ARGS:
 	uv run python scripts/adhoc/issue774_strain_rollup_coverage.py "$@"
+
+# Sidecar carrier/source audit; explicit matching inputs, no primary output changes (#773).
+[positional-arguments]
+audit-label-support *ARGS:
+	uv run python -m mtp.label_support_audit "$@"
 
 # The analyses read human hosts only, without the trait columns that are zero in every
 # human profile, as committed in data/derived/study_trait_profiles_wide.tsv.gz (#656).
@@ -989,3 +994,8 @@ clean-all: clean-raw clean-studies clean-derived clean-logs
 [positional-arguments]
 calibration-screen *ARGS:
 	uv run python -m mtp.screen_calibration --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" "$@"
+
+# Audit literal phenotype co-assertions for all strain scopes without rerunning arms (#846).
+[positional-arguments]
+audit-coassertions *ARGS:
+	uv run python -m mtp.coassertion_audit "$@"

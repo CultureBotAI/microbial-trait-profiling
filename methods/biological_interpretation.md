@@ -44,7 +44,9 @@ BacDive strain records (`kgmicrobe.strain:`) annotate culture-collection strains
 `strain_rollup` scope of the matrix decides which of them count, and every result must
 name its scope ([#788](https://github.com/CultureBotAI/microbial-trait-profiling/issues/788)):
 
-- `phenotype` is the primary scope. It counts bare METPO phenotype classes.
+- `phenotype` is the primary scope. Strain records contribute METPO classes only through
+  affirmed `biolink:has_phenotype` edges. Direct edges to METPO classes follow that same
+  admission rule; legacy direct relation features with non-METPO objects remain.
 - `off` is a sensitivity scope that counts no strain records.
 - `full` is exploratory. It is tested only as its own family and never supports a
   headline claim.
@@ -67,19 +69,49 @@ How strain records count:
 activity of", records that a test found an activity or capability absent. It is never
 read as the activity:
 
-- A negated relation to a METPO object keeps its predicate in the trait key, so "does not
-  use for aerobic growth: X" can never become the phenotype X.
+- Every relation except `biolink:has_phenotype` keeps its predicate in the trait key,
+  including when the object is METPO. Thus a relation assertion cannot silently become
+  a phenotype class.
 - Under `full`, every negated key is dropped, a taxon's own included. No taxon carries
   both an activity and its absence.
-- Under `off` and `phenotype`, the only negated keys are two direct "does not grow in"
-  MediaDive relations, which every analysis already excludes with MediaDive.
+- `off` preserves reviewed direct negative relation keys. `phenotype` preserves direct
+  relation keys only when their objects are not METPO classes, including direct negative
+  MediaDive relations; analyses exclude MediaDive separately.
 - A negative test record never lowers or replaces the count of the activity. A zero
   still means "no recorded annotation", not a negative result, with the limits in the
   table below.
 
-**Excluded handling and clinical classes.** The `phenotype` scope excludes the BacDive
+The guard checks the reviewed negative-predicate catalog and explicit metadata before
+scope filtering. Supported metadata are `negated` or `is_negated` columns, or those keys
+at the root of a JSON object in `meta`. Boolean values and the strings `true`/`false` or
+`1`/`0` are supported; blank flags are unspecified. Malformed metadata and other flag
+encodings require review. Predicate term names and pipe-separated synonyms beginning
+with "does not", "is not", "cannot" or "lacks" also trigger review when absent from the
+catalog. Description matching is deliberately narrow: "A/An/The
+relation/relationship/predicate" followed by "asserting", "indicating", "that asserts"
+or "that indicates", then "[the] absence/negation". A later caveat such as "does not
+imply growth under all conditions" is not assertion negation. Generic words such as "negative" or
+"without" in phenotype descriptions do not imply a negated assertion: Gram-negative
+and nonmotile remain valid phenotype labels.
+
+A positive predicate with explicit negation, including `has_phenotype`, fails before
+matrix publication in **all** scopes. An unreviewed negative predicate similarly fails;
+the pipeline does not invent a negative key or silently discard the assertion. Matrix,
+source reconciliation, contribution ledger and trace readers share this guard and the
+KG serialization parser. This is a forward admission policy, not a claim that historical
+matrix counts have been re-derived ([#848](https://github.com/CultureBotAI/microbial-trait-profiling/issues/848)).
+
+The metadata reader first streams the edge file to identify actual predicate IDs in any
+namespace, then retains only those node records. This adds one edge pass per reader and
+avoids inferring predicate roles from unreliable node categories or interpreting unrelated
+organism metadata. `just verify-trait-terms --edges PATH` uses that same authoritative role
+census. Without `--edges`, its node-only census is limited to METPO terms and excludes
+explicit phenotype classes: an affirmed "lacks flagella" class is not a negated predicate.
+The execution guard still checks such a term if an edge actually uses it as a predicate.
+
+**Excluded handling and clinical classes.** The `phenotype` scope excludes the
 classes biosafety level 1, 2 and 3 and human, animal and plant pathogen from the tested
-vocabulary (`PHENOTYPE_EXCLUDED_TRAITS`). They are handling and clinical
+vocabulary for both direct taxon and strain edges (`PHENOTYPE_EXCLUDED_TRAITS`). They are handling and clinical
 categories, not ecophysiological traits. No result may present them as traits or use
 them to describe a signature as pathogenic. `full` keeps them as exploratory features
 under the same wording limits.

@@ -19,9 +19,10 @@ from mtp.taxa_trait_matrix import (
     SUBCLASS_OF,
     ReportedTaxon,
     StrainRollup,
+    assertion_trait_key,
     column_metadata_rows,
-    make_trait_key,
     node_ids_for_trait_keys,
+    read_assertion_term_metadata,
     read_node_metadata,
     read_reported_taxa,
     scoped_taxon_traits,
@@ -31,12 +32,13 @@ from mtp.workflow.kg_inputs import iter_kg_edges
 
 
 def _source_counts(
-    edges_path: Path, reported: list[ReportedTaxon], strain_rollup: StrainRollup
+    edges_path: Path, nodes_path: Path, reported: list[ReportedTaxon], strain_rollup: StrainRollup
 ) -> dict[str, Counter[str]]:
     parents: defaultdict[str, set[str]] = defaultdict(set)
     annotations: defaultdict[str, set[str]] = defaultdict(set)
     strain_taxa: defaultdict[str, set[str]] = defaultdict(set)
     strain_traits: defaultdict[str, set[str]] = defaultdict(set)
+    terms = read_assertion_term_metadata(nodes_path, edges_path)
     for record in iter_kg_edges(edges_path):
         subject, predicate, obj = (
             record[column].strip() for column in ("subject", "predicate", "object")
@@ -45,12 +47,12 @@ def _source_counts(
             if predicate == SUBCLASS_OF and obj.startswith("NCBITaxon:"):
                 parents[subject].add(obj)
             elif obj.startswith("METPO:") or predicate.startswith("METPO:"):
-                annotations[subject].add(make_trait_key(predicate, obj))
-        elif strain_rollup != "off" and subject.startswith(STRAIN_PREFIX):
+                annotations[subject].add(assertion_trait_key(record, terms))
+        elif subject.startswith(STRAIN_PREFIX):
             if predicate == SUBCLASS_OF and obj.startswith("NCBITaxon:"):
                 strain_taxa[subject].add(obj)
             elif obj.startswith("METPO:") or predicate.startswith("METPO:"):
-                key = make_trait_key(predicate, obj)
+                key = assertion_trait_key(record, terms)
                 if strain_trait_rolls_up(key, strain_rollup):
                     strain_traits[subject].add(key)
     scoped = scoped_taxon_traits(
@@ -94,7 +96,7 @@ def validate_matrix_sources(
     """
     reported = read_reported_taxa(reported_path)
     reported_by_id = {taxon.taxon_id: taxon for taxon in reported}
-    counts = _source_counts(edges_path, reported, strain_rollup)
+    counts = _source_counts(edges_path, nodes_path, reported, strain_rollup)
     metadata_header, metadata_rows = _expected_metadata(counts, nodes_path)
     features = tuple(row[0] for row in metadata_rows)
     reader = taxa_trait_count_reader(path)

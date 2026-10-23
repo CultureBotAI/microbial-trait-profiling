@@ -4,18 +4,22 @@ from __future__ import annotations
 
 import argparse
 import csv
+import json
+import re
 from collections import Counter, defaultdict
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
 from mtp.paths import KG_MICROBE_DIR, REPO_ROOT
+from mtp.workflow.kg_inputs import iter_kg_edges
 
 TAXON_PREFIX = "NCBITaxon:"
 STRAIN_PREFIX = "kgmicrobe.strain:"
 TRAIT_PREFIX = "METPO:"
 SUBCLASS_OF = "biolink:subclass_of"
+HAS_PHENOTYPE = "biolink:has_phenotype"
 TRAIT_KEY_SEPARATOR = "|"
 
 DEFAULT_TAXA_PATH = REPO_ROOT / "data" / "derived" / "bugsigdb_taxa.tsv"
@@ -33,8 +37,8 @@ STRAIN_ROLLUPS: tuple[StrainRollup, ...] = ("off", "phenotype", "full")
 # ledger default to it; off is the sensitivity scope and full the exploratory one.
 PRIMARY_STRAIN_ROLLUP: StrainRollup = "phenotype"
 
-# Handling and clinical classes that BacDive strain records assert, not ecophysiological
-# traits, so the phenotype scope never rolls them up (#788). Labels as in the pinned
+# Handling and clinical classes, not ecophysiological traits: the phenotype scope
+# excludes them from strain and direct taxon edges (#788, #848). Labels as in the pinned
 # node table; `just verify-trait-terms` checks them.
 PHENOTYPE_EXCLUDED_TRAITS = {
     "METPO:1001102": "biosafety level 1",
@@ -84,6 +88,93 @@ NEGATED_PREDICATES = {
     "METPO:2000303": "does not show activity of",
     "METPO:2000518": "does not grow in",
 }
+
+
+NEGATION_PREFIXES = ("does not ", "is not ", "cannot ", "lacks ")
+_NEGATION_FIELDS = ("negated", "is_negated")
+_NEGATIVE_RELATION_DESCRIPTION = re.compile(
+    r"^(?:a|an|the) (?:relation|relationship|predicate) "
+    r"(?:asserting|indicating|that asserts|that indicates) (?:the )?(?:absence|negation)\b"
+)
+
+
+def _explicit_negation(record: Mapping[str, str]) -> bool:
+    """Read declared boolean flags, including the root of an optional JSON meta object."""
+    values: list[object] = [record.get(field, "") for field in _NEGATION_FIELDS]
+    encoded = record.get("meta", "").strip()
+    if encoded:
+        try:
+            metadata = json.loads(encoded)
+        except json.JSONDecodeError as error:
+            raise ValueError("KG meta must be a JSON object; negation requires review") from error
+        if not isinstance(metadata, dict):
+            raise ValueError("KG meta must be a JSON object; negation requires review")
+        values.extend(metadata.get(field, "") for field in _NEGATION_FIELDS)
+    found = False
+    for value in values:
+        if value is None or value is False or value == "":
+            continue
+        if value is True or (isinstance(value, str) and value.strip().casefold() in {"true", "1"}):
+            found = True
+        elif isinstance(value, str) and value.strip().casefold() in {"false", "0"}:
+            continue
+        else:
+            raise ValueError(f"Unsupported explicit negation flag {value!r}; review required")
+    return found
+
+
+def negative_relation_metadata(record: Mapping[str, str]) -> bool:
+    """Recognize explicit relation negation, never a generic 'negative' phenotype label."""
+    labels = [record.get("name", ""), *record.get("synonym", "").split("|")]
+    if any(_clean_label(label).casefold().startswith(NEGATION_PREFIXES) for label in labels):
+        return True
+    description = _clean_label(record.get("description", "")).casefold()
+    return bool(_NEGATIVE_RELATION_DESCRIPTION.search(description)) or _explicit_negation(record)
+
+
+def read_metpo_term_metadata(nodes_path: Path) -> dict[str, dict[str, str]]:
+    """Keep METPO term metadata for predicate review without retaining the full node table."""
+    with nodes_path.open(encoding="utf-8", newline="") as handle:
+        reader = csv.DictReader(handle, delimiter="\t")
+        if not {"id", "name"} <= set(reader.fieldnames or []):
+            raise ValueError(f"{nodes_path} requires id and name columns")
+        return {row["id"]: row for row in reader if row["id"].startswith(TRAIT_PREFIX)}
+
+
+def read_assertion_term_metadata(nodes_path: Path, edges_path: Path) -> dict[str, dict[str, str]]:
+    """Read metadata for observed predicate IDs in any namespace (#916).
+
+    An extra streaming edge pass establishes exact roles with bounded memory. Unrelated
+    node metadata is never interpreted as assertion polarity. No cached input identity
+    is substituted for reading the supplied snapshots.
+    """
+    predicates = {record["predicate"].strip() for record in iter_kg_edges(edges_path)}
+    with nodes_path.open(encoding="utf-8", newline="") as handle:
+        reader = csv.DictReader(handle, delimiter="\t")
+        if not {"id", "name"} <= set(reader.fieldnames or []):
+            raise ValueError(f"{nodes_path} requires id and name columns")
+        return {row["id"]: row for row in reader if row["id"] in predicates}
+
+
+def assertion_trait_key(
+    record: Mapping[str, str], term_metadata: Mapping[str, Mapping[str, str]]
+) -> str:
+    """Validate assertion polarity before collapsing an affirmed phenotype edge to its class."""
+    predicate, obj = record["predicate"].strip(), record["object"].strip()
+    declared_negative = predicate in NEGATED_PREDICATES
+    try:
+        metadata_negative = negative_relation_metadata(term_metadata.get(predicate, {}))
+        assertion_negative = _explicit_negation(record)
+    except ValueError as error:
+        raise ValueError(
+            f"Edge {record.get('id', '(unknown)')} predicate {predicate}: {error}"
+        ) from error
+    if (metadata_negative or assertion_negative) and not declared_negative:
+        raise ValueError(
+            f"Edge {record.get('id', '(unknown)')} predicate {predicate} has negation "
+            "outside the reviewed predicate catalog; review its assertion polarity"
+        )
+    return make_trait_key(predicate, obj)
 
 
 @dataclass(frozen=True)
@@ -225,10 +316,10 @@ def parse_strain_rollup(value: object) -> StrainRollup:
 def make_trait_key(predicate: str, obj: str) -> str:
     """Create the output trait key for a KG taxon assertion.
 
-    A METPO object is its own key, except under a negated relation, which keeps its
-    predicate so that the absence of a phenotype is never keyed as the phenotype (#788).
+    Only an explicit has_phenotype assertion becomes a bare METPO class. Every other
+    assertion retains its predicate so relation semantics cannot disappear (#848).
     """
-    if _is_trait(obj) and predicate not in NEGATED_PREDICATES:
+    if _is_trait(obj) and predicate == HAS_PHENOTYPE:
         return obj
     return f"{predicate}{TRAIT_KEY_SEPARATOR}{obj}"
 
@@ -273,7 +364,11 @@ def node_ids_for_trait_keys(trait_keys: set[str]) -> set[str]:
 
 
 def read_kg_trait_edges(
-    edges_path: Path, *, strains: bool = False, strain_rollup: StrainRollup | None = None
+    edges_path: Path,
+    *,
+    strains: bool = False,
+    strain_rollup: StrainRollup | None = None,
+    nodes_path: Path | None = None,
 ) -> KgTraitEdges:
     """Read taxonomy parent links and direct trait assertions from KG edges.
 
@@ -281,6 +376,8 @@ def read_kg_trait_edges(
     BacDive strain subjects (``kgmicrobe.strain:``) and the strains' NCBITaxon
     ``subclass_of`` links are also kept, apart from the taxon sets (#774); a
     ``strain_rollup`` scope keeps only the strain keys that scope rolls up (#788).
+    Pass ``nodes_path`` to check relation labels, synonyms, descriptions and declared
+    negation flags; pipeline consumers always pass the consumed node snapshot (#848).
 
     Memory: materializes the full taxonomy graph plus per-taxon trait sets in
     Python dicts. On the current ~1 GB merged-kg_edges.tsv this peaks around
@@ -292,29 +389,28 @@ def read_kg_trait_edges(
     strain_taxa: defaultdict[str, set[str]] = defaultdict(set)
     strain_traits: defaultdict[str, set[str]] = defaultdict(set)
 
-    with edges_path.open("r", encoding="utf-8", newline="") as fh:
-        reader = csv.reader(fh, delimiter="\t")
-        next(reader, None)
-        for row in reader:
-            if len(row) < 4:
-                continue
-
-            subject = row[1].strip()
-            predicate = row[2].strip()
-            obj = row[3].strip()
-
-            if predicate == SUBCLASS_OF and _is_taxon(subject) and _is_taxon(obj):
+    terms = read_assertion_term_metadata(nodes_path, edges_path) if nodes_path is not None else {}
+    for record in iter_kg_edges(edges_path):
+        subject, predicate, obj = (
+            record[name].strip() for name in ("subject", "predicate", "object")
+        )
+        if predicate == SUBCLASS_OF and _is_taxon(obj):
+            if _is_taxon(subject):
                 child_to_parents[subject].add(obj)
-            elif _is_taxon(subject) and (_is_trait(obj) or _is_trait(predicate)):
-                taxon_traits[subject].add(make_trait_key(predicate, obj))
             elif strains and _is_strain(subject):
-                if predicate == SUBCLASS_OF and _is_taxon(obj):
-                    strain_taxa[subject].add(obj)
-                elif _is_trait(obj) or _is_trait(predicate):
-                    key = make_trait_key(predicate, obj)
-                    keys = strain_traits[subject]
-                    if strain_rollup is None or strain_trait_rolls_up(key, strain_rollup):
-                        keys.add(key)
+                strain_taxa[subject].add(obj)
+        elif (_is_taxon(subject) or _is_strain(subject)) and (
+            _is_trait(obj) or _is_trait(predicate)
+        ):
+            # Validate even excluded strain assertions: off is not an escape from
+            # an unreviewed polarity encoding.
+            key = assertion_trait_key(record, terms)
+            if _is_taxon(subject):
+                taxon_traits[subject].add(key)
+            elif strains:
+                keys = strain_traits[subject]
+                if strain_rollup is None or strain_trait_rolls_up(key, strain_rollup):
+                    keys.add(key)
 
     return KgTraitEdges(
         dict(child_to_parents), dict(taxon_traits), dict(strain_taxa), dict(strain_traits)
@@ -351,8 +447,9 @@ def scoped_taxon_traits(
 
     The strain keys the scope admits count at the strains' linked nodes, once per node
     (roll_up_strain_traits). ``full`` also drops every negated key, the nodes' own
-    included, so no node carries both an activity and its absence. ``off`` returns the
-    direct sets unchanged. Every reader of strain records shares this rule.
+    included. ``phenotype`` excludes handling classes and qualified assertions to a
+    METPO object from direct edges too; other legacy direct relation features remain.
+    ``off`` returns the direct sets unchanged. Every evidence reader shares this rule.
     """
     if strain_rollup == "off":
         return taxon_traits
@@ -363,13 +460,24 @@ def scoped_taxon_traits(
     }
     rolled = roll_up_strain_traits(taxon_traits, strain_taxa, admitted)
     if strain_rollup == "phenotype":
-        return rolled
+        # Direct legacy relation features with non-METPO objects remain available.
+        # METPO classes require affirmative has_phenotype regardless of subject rank.
+        retained = {
+            node: {
+                key
+                for key in keys
+                if (obj := split_trait_key(key)[1]) not in PHENOTYPE_EXCLUDED_TRAITS
+                and (not _is_trait(obj) or TRAIT_KEY_SEPARATOR not in key)
+            }
+            for node, keys in rolled.items()
+        }
+        return {node: keys for node, keys in retained.items() if keys}
     affirmed = {node: {key for key in keys if not is_negated(key)} for node, keys in rolled.items()}
     return {node: keys for node, keys in affirmed.items() if keys}
 
 
 def read_kg_edges(
-    edges_path: Path, *, strain_rollup: StrainRollup = "off"
+    edges_path: Path, *, strain_rollup: StrainRollup = "off", nodes_path: Path | None = None
 ) -> tuple[dict[str, set[str]], dict[str, set[str]]]:
     """Read taxonomy parent links and per-taxon trait sets from KG edges.
 
@@ -379,7 +487,9 @@ def read_kg_edges(
     unless told otherwise (#774, #788).
     """
     strains = strain_rollup != "off"
-    edges = read_kg_trait_edges(edges_path, strains=strains, strain_rollup=strain_rollup)
+    edges = read_kg_trait_edges(
+        edges_path, strains=strains, strain_rollup=strain_rollup, nodes_path=nodes_path
+    )
     return edges.child_to_parents, scoped_taxon_traits(
         edges.taxon_traits, edges.strain_taxa, edges.strain_traits, strain_rollup
     )
@@ -583,7 +693,9 @@ def create_taxa_trait_matrix(
         raise FileNotFoundError(f"BugSigDB taxa TSV not found: {taxa_path}")
 
     reported_taxa = read_reported_taxa(taxa_path)
-    child_to_parents, taxon_traits = read_kg_edges(resolved_edges_path, strain_rollup=strain_rollup)
+    child_to_parents, taxon_traits = read_kg_edges(
+        resolved_edges_path, strain_rollup=strain_rollup, nodes_path=resolved_nodes_path
+    )
     counts = compute_trait_counts(reported_taxa, child_to_parents, taxon_traits)
     trait_keys = {
         trait_key

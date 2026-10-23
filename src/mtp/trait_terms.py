@@ -27,7 +27,14 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from mtp.paths import KG_MICROBE_DIR
-from mtp.taxa_trait_matrix import NEGATED_PREDICATES, PHENOTYPE_EXCLUDED_TRAITS
+from mtp.taxa_trait_matrix import (
+    NEGATED_PREDICATES,
+    PHENOTYPE_EXCLUDED_TRAITS,
+    negative_relation_metadata,
+    read_assertion_term_metadata,
+    read_metpo_term_metadata,
+)
+from mtp.taxa_trait_matrix import NEGATION_PREFIXES as NEGATION_PREFIXES
 from mtp.trait_guilds import GRAM_GUILDS, OXYGEN_GUILDS, TABLE1_TRAITS
 
 DEFAULT_NODES_PATH = KG_MICROBE_DIR / "merged-kg_nodes.tsv"
@@ -54,7 +61,6 @@ EXPECTED_LABELS: dict[str, str] = {
     **NEGATED_PREDICATES,
 }
 #: How the node table labels a relation that asserts an absence.
-NEGATION_PREFIXES = ("does not ", "is not ")
 
 
 def grouped_identifiers() -> set[str]:
@@ -149,21 +155,35 @@ def check_term_labels(nodes_path: Path, expected: Mapping[str, str]) -> list[Ter
     return [TermCheck(term, label, found.get(term)) for term, label in sorted(wanted.items())]
 
 
-def unlisted_negations(nodes_path: Path) -> list[str]:
-    """METPO relations the node table labels as an absence that the rule does not list."""
-    with nodes_path.open(encoding="utf-8", newline="") as handle:
-        return sorted(
-            row["id"]
-            for row in csv.DictReader(handle, delimiter="\t")
-            if row["id"].startswith("METPO:")
-            and row["name"].startswith(NEGATION_PREFIXES)
-            and row["id"] not in NEGATED_PREDICATES
-        )
+def unlisted_negations(nodes_path: Path, edges_path: Path | None = None) -> list[str]:
+    """Unreviewed negative relations; an edge snapshot makes the role census authoritative.
+
+    Nodes alone cannot establish assertion roles. That limited census inspects METPO
+    terms except explicit phenotype classes, whose absence labels may be affirmed
+    phenotype annotations (#914). Observed predicates are checked regardless of category.
+    """
+    terms = (
+        read_assertion_term_metadata(nodes_path, edges_path)
+        if edges_path is not None
+        else read_metpo_term_metadata(nodes_path)
+    )
+    return sorted(
+        term
+        for term, row in terms.items()
+        if term not in NEGATED_PREDICATES
+        and (edges_path is not None or "PhenotypicQuality" not in row.get("category", ""))
+        and negative_relation_metadata(row)
+    )
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--nodes", type=Path, default=DEFAULT_NODES_PATH)
+    parser.add_argument(
+        "--edges",
+        type=Path,
+        help="Read actual predicate roles for an authoritative negative-relation census.",
+    )
     parser.add_argument("--provenance", type=Path, default=DEFAULT_PROVENANCE_PATH)
     parser.add_argument(
         "--allow-unpinned-nodes",
@@ -203,11 +223,13 @@ def main(argv: Sequence[str] | None = None) -> int:
             f"{len(failed)} of {len(checks)} identifiers do not match {args.nodes}", file=sys.stderr
         )
         return 1
-    unlisted = unlisted_negations(args.nodes)
+    unlisted = unlisted_negations(args.nodes, args.edges)
     if unlisted:
         print(f"negated relations the strain rollup rule does not list: {', '.join(unlisted)}")
         return 1
     print(f"all {len(checks)} identifiers match {args.nodes}")
+    if args.edges is None:
+        print("Nodes-only negation census: pass --edges to check actual predicate roles.")
     return 0
 
 

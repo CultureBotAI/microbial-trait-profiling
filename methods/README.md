@@ -165,6 +165,12 @@ C01–C11, P01–P10, R01–R09, G01–G13), recording resolution status for eac
 the semantic scope, source ontology mappings, approved vocabulary, and unverified
 inferences for each of the six Table 1 traits.
 
+[`coassertion_audit.md`](coassertion_audit.md) defines the scope-specific KG
+node and strain co-assertion census, the generated count-bearing methods table,
+and the proposed oxygen-guild carrier-exclusion sensitivity. It distinguishes
+annotation unions from physiological contradiction; final counts and the
+resolution decision remain pending under #846.
+
 The gram-stain directional Sankey diagrams live on the
 `147-add-gram-stain-directional-sankey-gram-positive-gram-negative-x-increased-decreased`
 branch together with their own methods file; they are not part of this branch.

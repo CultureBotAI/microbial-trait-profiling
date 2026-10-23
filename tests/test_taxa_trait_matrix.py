@@ -85,16 +85,17 @@ def test_create_taxa_trait_matrix_counts_self_and_descendants(tmp_path: Path) ->
     )
 
     assert stats.reported_taxa == 3
-    assert stats.traits == 5
+    # e8 uses capable_of, so it is not an affirmed phenotype class (#848).
+    assert stats.traits == 4
     assert output_path.read_text(encoding="utf-8").splitlines() == [
         (
             "taxon_id\ttaxon_name\ttaxonomic_rank\tMETPO:1000603"
-            "\tMETPO:2000103|GO:0008150\tMETPO:1000636\tMETPO:1000615"
+            "\tMETPO:2000103|GO:0008150\tMETPO:1000615"
             "\tMETPO:2000006|CHEBI:123"
         ),
-        "NCBITaxon:900\tFamilyaceae\tfamily\t1\t1\t1\t2\t1",
-        "NCBITaxon:100\tGenus\tgenus\t1\t1\t1\t2\t1",
-        "NCBITaxon:101\tSpecies a\tspecies\t1\t1\t1\t0\t1",
+        "NCBITaxon:900\tFamilyaceae\tfamily\t1\t1\t2\t1",
+        "NCBITaxon:100\tGenus\tgenus\t1\t1\t2\t1",
+        "NCBITaxon:101\tSpecies a\tspecies\t1\t1\t0\t1",
     ]
     assert column_metadata_path.read_text(encoding="utf-8").splitlines() == [
         (
@@ -108,10 +109,6 @@ def test_create_taxa_trait_matrix_counts_self_and_descendants(tmp_path: Path) ->
         (
             "METPO:2000103|GO:0008150\tcapable of: GO:0008150 [METPO:2000103]"
             "\tMETPO:2000103\tcapable of\tGO:0008150\t\t"
-        ),
-        (
-            "METPO:1000636\tchemoheterotrophic METPO:1000636\t\t\tMETPO:1000636"
-            "\tchemoheterotrophic\tbiolink:PhenotypicQuality"
         ),
         (
             "METPO:1000615\tmesophilic METPO:1000615\t\t\tMETPO:1000615"

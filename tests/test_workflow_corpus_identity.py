@@ -38,9 +38,10 @@ def test_core_consumer_identity_comes_only_from_bound_kg(
             term = identifiers[0]
             if term == "METPO:1000608":
                 continue
-            writer.writerow(
-                [f"extra-{index}", "NCBITaxon:103", "METPO:2000103", term, "fixture:custom"]
-            )
+            # Phenotype classes are has_phenotype assertions. The fixture must
+            # not depend on collapsing a capable_of relation into a class key.
+            predicate = "biolink:has_phenotype" if term.startswith("METPO:") else "METPO:2000103"
+            writer.writerow([f"extra-{index}", "NCBITaxon:103", predicate, term, "fixture:custom"])
     run = execute_workflow(
         REPO_ROOT / "workflows" / "bugsigdb_core.yaml",
         {
@@ -54,6 +55,15 @@ def test_core_consumer_identity_comes_only_from_bound_kg(
         validator=validate_core_product,
         repository_root=REPO_ROOT,
     )
+    with artifact_path(run, "taxa_matrix").open(encoding="utf-8", newline="") as stream:
+        features = set(next(csv.reader(stream, delimiter="\t")))
+    assert {
+        "METPO:1000668",
+        "METPO:1000683",
+        "METPO:1000623",
+        "METPO:2000103|GO:0030245",
+        "METPO:2000103|pathways:arsenate_reduction",
+    } <= features
     legacy_reads: list[Path] = []
 
     def unrelated_checkout_identity(path: Path) -> tuple[str, list[corpus_identity.KgInput]]:

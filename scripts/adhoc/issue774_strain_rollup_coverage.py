@@ -151,7 +151,7 @@ def audit(
     """Return the per-trait coverage rows and the summary, checking every scope's rule."""
     reported = read_reported_taxa(reported_taxa_path)
     targets = {taxon.taxon_id for taxon in reported}
-    edges = read_kg_trait_edges(edges_path, strains=True)
+    edges = read_kg_trait_edges(edges_path, strains=True, nodes_path=nodes_path)
     nodes: dict[StrainRollup, dict[str, set[str]]] = {}
     labels: dict[StrainRollup, dict[str, set[str]]] = {}
     vocabularies: dict[StrainRollup, set[str]] = {}
@@ -166,13 +166,19 @@ def audit(
         columns[scope] = set(carried(labels[scope].values()))
         vocabularies[scope] = retained(columns[scope])
     for scope in ("phenotype", "full"):
+        admitted_direct = present(
+            compute_trait_counts(
+                reported,
+                edges.child_to_parents,
+                scoped_taxon_traits(edges.taxon_traits, {}, {}, scope),
+            )
+        )
         dropped = {
-            taxon: {k for k in labels["off"][taxon] - labels[scope][taxon] if not is_negated(k)}
-            for taxon in labels["off"]
+            taxon: admitted_direct[taxon] - labels[scope][taxon] for taxon in admitted_direct
         }
         if any(dropped.values()):
             raise ValueError(f"The {scope} rollup removed a non-negated label from a taxon")
-        if not vocabularies["off"] <= vocabularies[scope]:
+        if not retained(carried(admitted_direct.values())) <= vocabularies[scope]:
             raise ValueError(f"A trait left the vocabulary under the {scope} rollup")
     if any(is_negated(key) for keys in nodes["full"].values() for key in keys):
         raise ValueError("A node carries a negated key under the full rollup")

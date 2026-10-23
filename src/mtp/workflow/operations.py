@@ -38,9 +38,10 @@ from mtp.taxa_trait_matrix import (
     STRAIN_PREFIX,
     SUBCLASS_OF,
     StrainRollup,
+    assertion_trait_key,
     create_taxa_trait_matrix,
-    make_trait_key,
     parse_strain_rollup,
+    read_assertion_term_metadata,
     read_node_metadata,
     scoped_taxon_traits,
     strain_trait_rolls_up,
@@ -541,12 +542,15 @@ def trace_profile_feature(
     strain_taxa: defaultdict[str, set[str]] = defaultdict(set)
     strain_evidence: defaultdict[str, list[dict[str, str]]] = defaultdict(list)
     kg_taxa: set[str] = set()
+    terms = read_assertion_term_metadata(nodes_path, edges_path)
     for row in iter_kg_edges(edges_path):
         subject, predicate, obj = (row[name].strip() for name in ("subject", "predicate", "object"))
         kg_taxa.update(item for item in (subject, obj) if item.startswith("NCBITaxon:"))
         is_link = predicate == SUBCLASS_OF and obj.startswith("NCBITaxon:")
-        is_evidence = (obj.startswith("METPO:") or predicate.startswith("METPO:")) and (
-            make_trait_key(predicate, obj) == feature_id
+        is_evidence = (
+            subject.startswith(("NCBITaxon:", STRAIN_PREFIX))
+            and (obj.startswith("METPO:") or predicate.startswith("METPO:"))
+            and assertion_trait_key(row, terms) == feature_id
         )
         if subject.startswith("NCBITaxon:"):
             if is_link:

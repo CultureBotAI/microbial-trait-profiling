@@ -120,6 +120,11 @@ def test_a_negated_relation_missing_from_the_rule_fails(
         tmp_path / "nodes.tsv", [*EXPECTED_LABELS.items(), ("METPO:2999999", "does not swim")]
     )
     provenance = _provenance(tmp_path / "provenance.json", nodes)
-
-    assert main(["--nodes", str(nodes), "--provenance", str(provenance)]) == 1
+    edges = tmp_path / "edges.tsv"
+    edges.write_text(
+        "id\tsubject\tpredicate\tobject\nnew-relation\tNCBITaxon:1\tMETPO:2999999\tMETPO:1000603\n"
+    )
+    assert (
+        main(["--nodes", str(nodes), "--provenance", str(provenance), "--edges", str(edges)]) == 1
+    )
     assert "METPO:2999999" in capsys.readouterr().out
