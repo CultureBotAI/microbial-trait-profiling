@@ -989,3 +989,8 @@ clean-all: clean-raw clean-studies clean-derived clean-logs
 [positional-arguments]
 calibration-screen *ARGS:
 	uv run python -m mtp.screen_calibration --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" "$@"
+
+# Audit literal phenotype co-assertions for all strain scopes without rerunning arms (#846).
+[positional-arguments]
+audit-coassertions *ARGS:
+	uv run python -m mtp.coassertion_audit "$@"
