@@ -7,8 +7,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 import pytest
+from matplotlib.text import Annotation
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts/create_taxa_coverage_histogram.py"
 SPEC = importlib.util.spec_from_file_location("taxa_coverage_histogram", SCRIPT)
@@ -16,6 +18,66 @@ assert SPEC is not None
 assert SPEC.loader is not None
 coverage = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(coverage)
+
+
+@pytest.mark.parametrize("scope", ["off", "phenotype"])
+def test_scope_is_explicitly_declared_in_readme_and_provenance(
+    inputs: dict[str, Path], tmp_path: Path, scope: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The same one-feature inputs cannot identify upstream strain rollup (#959)."""
+    output = tmp_path / scope
+    arguments = [
+        str(SCRIPT),
+        "--output-dir",
+        str(output),
+        "--tables-only",
+        "--strain-rollup",
+        scope,
+    ]
+    for name, path in inputs.items():
+        arguments.extend([f"--{name}", str(path)])
+    monkeypatch.setattr(sys, "argv", arguments)
+    coverage.main()
+    record = json.loads((output / "provenance.json").read_text())
+    assert record["strain_rollup"] == scope
+    assert record["strain_rollup_evidence"]["status"] == "declared_unverified"
+    assert record["inputs"]["matrix"]["sha256"] == coverage.file_sha256(inputs["matrix"])
+    assert record["inputs"]["profiles"]["sha256"] == coverage.file_sha256(inputs["profiles"])
+    readme = (output / "README.md").read_text()
+    assert f"Declared upstream strain-rollup scope: `{scope}`" in readme
+    assert f"`just taxa-coverage --strain-rollup {scope}`" in readme
+    assert "do not verify the upstream rollup scope" in readme
+
+
+@pytest.mark.parametrize("arguments", [[], ["--strain-rollup", "unknown"]])
+def test_cli_requires_valid_scope_before_reading_inputs(
+    monkeypatch: pytest.MonkeyPatch, arguments: list[str]
+) -> None:
+    def reject_execution(**_kwargs: object) -> None:
+        raise AssertionError("Scope validation must precede input consumption")
+
+    monkeypatch.setattr(coverage, "run_coverage", reject_execution)
+    monkeypatch.setattr(sys, "argv", [str(SCRIPT), *arguments])
+    with pytest.raises(SystemExit) as error:
+        coverage.main()
+    assert error.value.code == 2
+
+
+def test_api_rejects_missing_or_invalid_scope_before_writing(
+    inputs: dict[str, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def reject_read(_path: Path) -> str:
+        raise AssertionError("Scope validation must precede input hashing")
+
+    monkeypatch.setattr(coverage, "file_sha256", reject_read)
+    output = tmp_path / "invalid-scope"
+    with pytest.raises(TypeError, match="strain_rollup"):
+        coverage.run_coverage(output_dir=output, tables_only=True, **inputs)
+    with pytest.raises(ValueError, match="strain_rollup"):
+        coverage.run_coverage(
+            output_dir=output, tables_only=True, strain_rollup="unknown", **inputs
+        )
+    assert not output.exists()
 
 
 @pytest.fixture
@@ -105,7 +167,7 @@ def test_core_counts_exclude_qualified_mediadive_columns(
             frame[f"METPO:2000517|{term}"] = media
         frame.to_csv(inputs[name], sep="\t", index=False)
     output = tmp_path / "core-coverage"
-    coverage.run_coverage(output_dir=output, tables_only=True, **inputs)
+    coverage.run_coverage(output_dir=output, tables_only=True, strain_rollup="off", **inputs)
     taxa = pd.read_csv(output / "taxa_kgmicrobe_coverage_details.tsv", sep="\t").set_index(
         "taxon_id"
     )
@@ -126,7 +188,9 @@ def test_vintage_is_read_and_hashed_from_the_explicit_raw_dump(
     raw = tmp_path / "full_dump.csv"
     raw.write_text("# BugSigDB fixture-912, License: CC0\nStudy\nfixture\n")
     output = tmp_path / "vintage"
-    coverage.run_coverage(output_dir=output, tables_only=True, raw_dump=raw, **inputs)
+    coverage.run_coverage(
+        output_dir=output, tables_only=True, raw_dump=raw, strain_rollup="off", **inputs
+    )
     record = json.loads((output / "provenance.json").read_text())
     assert record["corpus_identity"]["bugsigdb_vintage"] == "fixture-912"
     assert record["inputs"]["raw_dump"]["sha256"] == coverage.file_sha256(raw)
@@ -253,7 +317,57 @@ def test_narrow_segments_keep_labels_inside_their_colored_regions(
                     for bar in group
                     if bar.get_width() > 0
                 ), label.get_text()
-        assert any(f"{zero_count / 10:.1f}%" in t.get_text() for t in axis.texts)
+        expected_callouts = {
+            "Mixed: 0.1% (1)": [axis.containers[1][2]],
+            "All mapped: 0.1% (1)": [axis.containers[2][2]],
+        }
+        if zero_count == 2:
+            expected_callouts["0 traits: 0.2% (2)"] = [axis.containers[0][i] for i in (0, 1)]
+        elif zero_count == 998:
+            expected_callouts["Trait-bearing: 0.2% (2)"] = [axis.containers[2][i] for i in (0, 1)]
+        for description, segments in expected_callouts.items():
+            labels = sorted(
+                (text for text in axis.texts if text.get_text() == description),
+                key=lambda text: text.get_position()[1],
+            )
+            assert len(labels) == len(segments), f"Missing segment callout: {description}"
+            for label, segment in zip(labels, segments, strict=True):
+                label_box = label.get_window_extent()
+                bar_box = segment.get_window_extent()
+                assert label_box.y0 > bar_box.y1, f"Callout is on its bar: {description}"
+                assert all(
+                    not label_box.overlaps(bar.get_window_extent())
+                    for group in axis.containers
+                    for bar in group
+                    if bar.get_width() > 0
+                ), f"Callout overlaps another bar: {description}"
+                endpoint = (
+                    segment.get_x() + segment.get_width() / 2,
+                    segment.get_y() + segment.get_height(),
+                )
+                leaders = [
+                    text
+                    for text in axis.texts
+                    if isinstance(text, Annotation)
+                    and text.arrow_patch is not None
+                    and text.xy == pytest.approx(endpoint)
+                ]
+                assert len(leaders) == 1, f"Missing segment leader: {description}"
+                leader = leaders[0]
+                start = axis.transData.transform(leader.get_position())
+                assert start[0] == pytest.approx((label_box.x0 + label_box.x1) / 2, abs=1)
+                assert start[1] == pytest.approx(label_box.y0, abs=1)
+                end = axis.transData.transform(leader.xy)
+                assert end[0] == pytest.approx((bar_box.x0 + bar_box.x1) / 2, abs=1)
+                assert end[1] == pytest.approx(bar_box.y1, abs=1)
+                arrow = leader.arrow_patch
+                assert arrow is not None
+                vertices = np.asarray(
+                    arrow.get_path().transformed(arrow.get_transform()).vertices, dtype=float
+                )
+                assert np.isfinite(vertices).all()
+                assert np.linalg.norm(vertices[-1] - vertices[0]) > 0
+                assert vertices[0, 1] > vertices[-1, 1]
         boxes = [text.get_window_extent() for text in axis.texts if text.get_text()]
         assert all(
             not left.overlaps(right) for i, left in enumerate(boxes) for right in boxes[i + 1 :]
@@ -263,7 +377,7 @@ def test_narrow_segments_keep_labels_inside_their_colored_regions(
 
 
 def dense_rank_frame(original: pd.DataFrame) -> pd.DataFrame:
-    """Seven fully mapped ranks expose parity boxes over the100% label at y=50."""
+    """Seven fully mapped ranks expose parity boxes over the 100% label at y=50."""
     ranks = pd.concat([original.iloc[:1]] * 7, ignore_index=True)
     ranks["taxonomic_rank"] = coverage.RANK_ORDER[:7]
     ranks["zero_trait_pct"] = 0
@@ -275,6 +389,57 @@ def dense_rank_frame(original: pd.DataFrame) -> pd.DataFrame:
     ranks["rich_gte_3_taxa"] = 100
     ranks["trait_bearing_pct"] = 100
     return ranks
+
+
+def four_digit_rank_frame(original: pd.DataFrame) -> pd.DataFrame:
+    """Synthetic seven-rank frame with the reviewed four-digit label widths (#959)."""
+    ranks = dense_rank_frame(original).astype(
+        dict.fromkeys(
+            ("zero_trait_pct", "sparse_1_2_pct", "rich_gte_3_pct", "trait_bearing_pct"), float
+        )
+    )
+    species = ranks.taxonomic_rank.eq("species")
+    ranks.loc[species, ["total_taxa", "zero_trait_taxa", "sparse_1_2_taxa", "rich_gte_3_taxa"]] = [
+        3165,
+        1636,
+        204,
+        1325,
+    ]
+    ranks.loc[species, ["zero_trait_pct", "sparse_1_2_pct", "rich_gte_3_pct"]] = (
+        np.array([1636, 204, 1325]) / 3165 * 100
+    )
+    ranks.loc[species, "trait_bearing_pct"] = (204 + 1325) / 3165 * 100
+    return ranks
+
+
+@pytest.mark.parametrize("dpi", [100, 300])
+def test_four_digit_species_labels_fit_their_actual_bars(
+    inputs: dict[str, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch, dpi: int
+) -> None:
+    _, original, _, profiles, _, _ = coverage.load_and_process_data(**inputs)
+    captured = []
+    monkeypatch.setattr(coverage, "save_figure", lambda fig, _path: captured.append(fig))
+    coverage.plot_rank_stratified_histogram(
+        four_digit_rank_frame(original), tmp_path / "four-digits.png", profiles
+    )
+    figure = captured[0]
+    try:
+        figure.set_dpi(dpi)
+        figure.canvas.draw()
+        axis = figure.axes[1]
+        for value, percentage, group in (("1,636", "51.7%", 0), ("1,325", "41.9%", 2)):
+            labels = [text for text in axis.texts if value in text.get_text()]
+            assert len(labels) == 1
+            label = labels[0]
+            assert percentage in label.get_text()
+            box = label.get_window_extent()
+            species_index = [tick.get_text() for tick in axis.get_xticklabels()].index("Species")
+            bar = axis.containers[group][species_index].get_window_extent()
+            assert bar.contains(box.x0, box.y0)
+            assert bar.contains(box.x1, box.y1)
+            assert label.get_fontsize() >= 6
+    finally:
+        coverage.plt.close(figure)
 
 
 def test_parity_annotation_cannot_cover_dense_rank_bars_or_their_labels(
@@ -313,7 +478,7 @@ def test_readme_reconciles_with_written_tables_and_provenance(
     tmp_path: Path,
 ) -> None:
     output = tmp_path / "coverage"
-    coverage.run_coverage(output_dir=output, tables_only=True, **inputs)
+    coverage.run_coverage(output_dir=output, tables_only=True, strain_rollup="off", **inputs)
     profiles = pd.read_csv(output / "profile_trait_mapping_summary.tsv", sep="\t")
     taxa = pd.read_csv(output / "taxa_kgmicrobe_coverage_details.tsv", sep="\t")
     readme = (output / "README.md").read_text()
@@ -364,7 +529,7 @@ def test_mismatched_inputs_fail_before_writing(
     frame.to_csv(inputs[name], sep="\t", index=False)
     output = tmp_path / "invalid"
     with pytest.raises(ValueError, match=r"metadata|missing|Duplicate|No profiles|reconcile"):
-        coverage.run_coverage(output_dir=output, tables_only=True, **inputs)
+        coverage.run_coverage(output_dir=output, tables_only=True, strain_rollup="off", **inputs)
     assert not output.exists()
 
 
@@ -374,7 +539,7 @@ def test_zero_mapped_profiles_still_produce_tables(inputs: dict[str, Path], tmp_
         frame["METPO:1"] = 0
         frame.to_csv(inputs[name], sep="\t", index=False)
     output = tmp_path / "zeros"
-    coverage.run_coverage(output_dir=output, tables_only=True, **inputs)
+    coverage.run_coverage(output_dir=output, tables_only=True, strain_rollup="off", **inputs)
     ranks = pd.read_csv(output / "profile_coverage_by_rank.tsv", sep="\t")
     assert ranks.pct_of_mapped_profiles.eq(0).all()
     assert "| Profiles with mapped traits | 0 |" in (output / "README.md").read_text()
@@ -387,7 +552,15 @@ def test_cli_accepts_canonical_profiles_without_taxa_count(
     profiles = pd.read_csv(inputs["profiles"], sep="\t").drop(columns="taxa_count")
     profiles.to_csv(inputs["profiles"], sep="\t", index=False)
     output = tmp_path / "cli"
-    args = [sys.executable, str(SCRIPT), "--tables-only", "--output-dir", str(output)]
+    args = [
+        sys.executable,
+        str(SCRIPT),
+        "--tables-only",
+        "--output-dir",
+        str(output),
+        "--strain-rollup",
+        "off",
+    ]
     for name, path in inputs.items():
         args.extend([f"--{name}", str(path)])
     result = subprocess.run(args, capture_output=True, text=True, check=False)
@@ -436,7 +609,7 @@ def test_tables_only_refuses_to_leave_old_figures(
     output.mkdir()
     (output / "old.svg").write_text("old figure")
     with pytest.raises(ValueError, match="existing figures"):
-        coverage.run_coverage(output_dir=output, tables_only=True, **inputs)
+        coverage.run_coverage(output_dir=output, tables_only=True, strain_rollup="off", **inputs)
     assert not (output / "provenance.json").exists()
 
 
@@ -508,6 +681,7 @@ def test_export_omits_empty_ranks_and_records_corpus_identity(
     monkeypatch.setattr(coverage, "repository_state", lambda _root: ("a" * 40, True))
     coverage.run_coverage(
         output_dir=output,
+        strain_rollup="off",
         tables_only=True,
         kg_provenance=sidecar,
         bugsigdb_vintage="fixture-vintage",
@@ -536,7 +710,7 @@ def test_plate6_reads_compact_remediation_and_nonempty_rank_rows(
         frame.loc[frame.taxon_id.eq("t2"), "taxon_id"] = "NCBITaxon:541000"
         frame.to_csv(inputs[name], sep="\t", index=False)
     output = tmp_path / "trait-visualization/trait-profile-investigation/taxa-coverage"
-    coverage.run_coverage(output_dir=output, tables_only=True, **inputs)
+    coverage.run_coverage(output_dir=output, tables_only=True, strain_rollup="off", **inputs)
     spec = importlib.util.spec_from_file_location(
         "coverage_plate_contract", SCRIPT.with_name("generate_tufte_plates.py")
     )
@@ -574,7 +748,7 @@ def test_every_readme_table_cell_matches_the_exported_tables(
             frame["METPO:1"] = 0
             frame.to_csv(inputs[name], sep="\t", index=False)
     output = tmp_path / "readme"
-    coverage.run_coverage(output_dir=output, tables_only=True, **inputs)
+    coverage.run_coverage(output_dir=output, tables_only=True, strain_rollup="off", **inputs)
     profiles = pd.read_csv(output / "profile_trait_mapping_summary.tsv", sep="\t")
     taxa = pd.read_csv(output / "taxa_kgmicrobe_coverage_details.tsv", sep="\t")
     ranks = pd.read_csv(output / "taxa_coverage_by_rank.tsv", sep="\t")
@@ -642,8 +816,8 @@ def test_two_fixture_runs_have_identical_tables_readme_and_svgs(
     first, second = tmp_path / "first", tmp_path / "second"
     # Serialize real SVGs, including their IDs and metadata; do not mock savefig.
     with coverage.plt.rc_context({"font.family": "DejaVu Sans"}):
-        coverage.run_coverage(output_dir=first, **inputs)
-        coverage.run_coverage(output_dir=second, **inputs)
+        coverage.run_coverage(output_dir=first, strain_rollup="off", **inputs)
+        coverage.run_coverage(output_dir=second, strain_rollup="off", **inputs)
     compared = []
     for path in first.iterdir():
         if path.suffix in {".tsv", ".svg"} or path.name == "README.md":
@@ -658,7 +832,9 @@ def test_pre_742_experiment_metadata_has_actionable_error(
     frame = pd.read_csv(inputs["experiments"], sep="\t").drop(columns="sequencing_type")
     frame.to_csv(inputs["experiments"], sep="\t", index=False)
     with pytest.raises(ValueError, match=r"#742.*sequencing_type"):
-        coverage.run_coverage(output_dir=tmp_path / "old", tables_only=True, **inputs)
+        coverage.run_coverage(
+            output_dir=tmp_path / "old", tables_only=True, strain_rollup="off", **inputs
+        )
     assert not (tmp_path / "old").exists()
 
 

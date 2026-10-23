@@ -1,4 +1,4 @@
-"""Render #947 narrow-segment/dense-rank fixtures for design review (2026-10-23).
+"""Render #947/#959 narrow-segment/dense-rank fixtures for design review (2026-10-23).
 
 Inputs: synthetic summary frames shared with the geometry regressions.
 Outputs: native-size PNG/SVG/PDF figures beneath a new --output-dir.
@@ -47,6 +47,9 @@ def main() -> int:
     _, original, _, profiles, _, _ = coverage.load_and_process_data(**paths)
     coverage.plot_rank_stratified_histogram(
         fixture.dense_rank_frame(original), root / "dense_rank.png", profiles
+    )
+    coverage.plot_rank_stratified_histogram(
+        fixture.four_digit_rank_frame(original), root / "four_digit_rank.png", profiles
     )
     return 0
 

@@ -568,6 +568,7 @@ study-trait-profiles: taxa-trait-matrix
 
 # Run after rebuilding data/derived: canonical human 16S/WMS coverage, README and hashes.
 # Explicit paths are supported; this recipe never rebuilds upstream tables (#820/#821).
+# Declare the upstream scope explicitly, e.g. just taxa-coverage --strain-rollup phenotype.
 [positional-arguments]
 taxa-coverage *ARGS:
 	uv run python scripts/create_taxa_coverage_histogram.py "$@"

@@ -26,7 +26,7 @@ import numpy as np
 import pandas as pd
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
-from matplotlib.patches import Patch
+from matplotlib.patches import Patch, Rectangle
 from matplotlib.text import Text
 
 from mtp.corpus_identity import DEFAULT_KG_PROVENANCE_PATH, corpus_identity
@@ -37,6 +37,7 @@ from mtp.human_host_corpus import (
 )
 from mtp.paths import file_sha256
 from mtp.study_trait_profiles import direction_to_inc_dec
+from mtp.taxa_trait_matrix import STRAIN_ROLLUPS, StrainRollup, parse_strain_rollup
 from mtp.trait_guilds import MEDIADIVE_MARKER, read_bugsigdb_vintage
 from mtp.workflow.runtime import repository_state
 
@@ -705,7 +706,7 @@ def plot_rank_stratified_histogram(
     sparse_pcts = rank_df["sparse_1_2_pct"].to_numpy()
     rich_pcts = rank_df["rich_gte_3_pct"].to_numpy()
 
-    ax2.bar(x, zero_pcts, width, color=COLOR_ZERO, edgecolor="white", linewidth=0.8)
+    zero_bars = ax2.bar(x, zero_pcts, width, color=COLOR_ZERO, edgecolor="white", linewidth=0.8)
     ax2.bar(
         x,
         sparse_pcts,
@@ -715,7 +716,7 @@ def plot_rank_stratified_histogram(
         edgecolor="white",
         linewidth=0.8,
     )
-    ax2.bar(
+    rich_bars = ax2.bar(
         x,
         rich_pcts,
         width,
@@ -725,28 +726,35 @@ def plot_rank_stratified_histogram(
         linewidth=0.8,
     )
 
+    segment_labels: list[tuple[Text, Rectangle, str]] = []
     for i in range(len(ranks)):
         if zero_pcts[i] >= 12.0:
-            ax2.text(
+            label = ax2.text(
                 x[i],
                 zero_pcts[i] / 2.0,
-                f"{zero_pcts[i]:.1f}".removesuffix(".0") + f"%\n({zeros[i]:,})",
+                f"{zero_pcts[i]:.1f}%\n({zeros[i]:,})",
                 ha="center",
                 va="center",
                 color="white",
                 fontsize=8.2,
                 fontweight="bold",
             )
+            segment_labels.append(
+                (label, zero_bars[i], f"{zero_pcts[i]:.1f}".removesuffix(".0") + f"%\n{zeros[i]:,}")
+            )
         if rich_pcts[i] >= 14.0:
-            ax2.text(
+            label = ax2.text(
                 x[i],
                 zero_pcts[i] + sparse_pcts[i] + rich_pcts[i] / 2.0,
-                f"{rich_pcts[i]:.1f}".removesuffix(".0") + f"%\n({rich[i]:,})",
+                f"{rich_pcts[i]:.1f}%\n({rich[i]:,})",
                 ha="center",
                 va="center",
                 color="white",
                 fontsize=8.2,
                 fontweight="bold",
+            )
+            segment_labels.append(
+                (label, rich_bars[i], f"{rich_pcts[i]:.1f}".removesuffix(".0") + f"%\n{rich[i]:,}")
             )
 
     ax2.axhline(50, color=COLOR_SLATE_MID, linestyle=":", linewidth=1.2, alpha=0.7)
@@ -886,8 +894,35 @@ def plot_rank_stratified_histogram(
         edgecolor=COLOR_SLATE_LIGHT,
     )
 
+    fit_rank_segment_labels(ax2, segment_labels)
     save_figure(fig, output_path)
     print(f"  Saved Figure 1: {output_path} and .svg")
+
+
+def fit_rank_segment_labels(axis: Axes, labels: list[tuple[Text, Rectangle, str]]) -> None:
+    """Preserve percentages/counts while fitting actual rendered rank bars (#959)."""
+    axis.figure.canvas.draw()
+
+    def fits(label: Text, bar: Rectangle) -> bool:
+        bounds = bar.get_window_extent()
+        box = label.get_window_extent()
+        # Point-based padding remains proportional when saving at another DPI.
+        padding = axis.figure.dpi / 72
+        return bool(
+            bounds.x0 + padding <= box.x0
+            and box.x1 <= bounds.x1 - padding
+            and bounds.y0 + padding <= box.y0
+            and box.y1 <= bounds.y1 - padding
+        )
+
+    for label, bar, compact in labels:
+        if fits(label, bar):
+            continue
+        label.set_text(compact)
+        while not fits(label, bar) and float(label.get_fontsize()) > 6:
+            label.set_fontsize(max(6, float(label.get_fontsize()) - 0.2))
+        if not fits(label, bar):
+            raise ValueError(f"Rank coverage label cannot fit at 6 pt: {compact!r}")
 
 
 def fit_coverage_segment_labels(
@@ -2192,7 +2227,11 @@ def distribution_stats(values: pd.Series) -> tuple[float, float, float, float]:
 
 
 def write_readme(
-    taxa: pd.DataFrame, ranks: pd.DataFrame, profiles: pd.DataFrame, output: Path
+    taxa: pd.DataFrame,
+    ranks: pd.DataFrame,
+    profiles: pd.DataFrame,
+    output: Path,
+    strain_rollup: StrainRollup,
 ) -> None:
     """Write the coverage narrative from the same frames as the backing tables."""
     mapped = profiles.loc[profiles.has_mapped_traits]
@@ -2220,6 +2259,10 @@ def write_readme(
         "",
         f"Population: {HUMAN_HOST_SPECIES}; sequencing types {', '.join(CORPUS_SEQUENCING_TYPES)}.",
         "No contrast-class, control-tier, pairing or direction-orientation restriction is applied.",
+        f"Declared upstream strain-rollup scope: `{strain_rollup}`.",
+        "This required caller declaration is recorded as `declared_unverified`.",
+        "Input hashes and count reconciliation bind the consumed tables but",
+        "do not verify the upstream rollup scope; no scope is inferred from feature counts.",
         "Profiles are study / experiment / curated direction; taxa and signature mentions",
         "are restricted to those same profiles. The matrix is restricted to the profile "
         "vocabulary,",
@@ -2267,7 +2310,8 @@ def write_readme(
             "heuristics for review, not verified causes or permission to propagate "
             "annotations downward.",
             "",
-            "Regenerate after rebuilding `data/derived`: `just taxa-coverage`.",
+            "Regenerate after rebuilding `data/derived`: "
+            f"`just taxa-coverage --strain-rollup {strain_rollup}`.",
             "The five TSVs, this README, and generated figures are inventoried by SHA-256 "
             "in `provenance.json`.",
             "`profile_coverage_by_rank.tsv` uses `pct_of_mapped_profiles`, whose denominator "
@@ -2292,6 +2336,7 @@ def provenance_path(path: Path) -> str:
 def run_coverage(
     *,
     output_dir: Path,
+    strain_rollup: str,
     taxa: Path = TAXA_PATH,
     matrix: Path = TAXA_TRAIT_MATRIX_PATH,
     profiles: Path = PROFILES_WIDE_PATH,
@@ -2302,6 +2347,7 @@ def run_coverage(
     raw_dump: Path | None = None,
 ) -> None:
     """Validate first, then write data-derived outputs and a consumed-byte manifest."""
+    scope = parse_strain_rollup(strain_rollup)
     inputs = {"taxa": taxa, "matrix": matrix, "profiles": profiles, "experiments": experiments}
     consumed = {**inputs}
     selected_dump = raw_dump or REPO_ROOT / "data/raw/full_dump.csv"
@@ -2376,7 +2422,7 @@ def run_coverage(
     write_tsv(top_zero_df, top_zero_tsv_path)
     print(f"  Written top 100 zero-trait diagnosis table: {top_zero_tsv_path}")
 
-    write_readme(taxa_master, exported_ranks, prof_summary, out_dir / "README.md")
+    write_readme(taxa_master, exported_ranks, prof_summary, out_dir / "README.md", scope)
 
     # 3. Generate visualizations unless explicitly testing/exporting tables only.
     if not tables_only:
@@ -2401,6 +2447,12 @@ def run_coverage(
         "recipe": "just taxa-coverage",
         "generated_at": datetime.now(UTC).isoformat(),
         "tables_only": tables_only,
+        "strain_rollup": scope,
+        "strain_rollup_evidence": {
+            "status": "declared_unverified",
+            "source": "required_argument",
+            "limitation": "Input hashes and reconciliation do not verify upstream rollup scope",
+        },
         "population": {
             "host_species": HUMAN_HOST_SPECIES,
             "sequencing_types": list(CORPUS_SEQUENCING_TYPES),
@@ -2477,6 +2529,12 @@ def render_figures(
 def main() -> None:
     """Execute the explicit-I/O coverage recipe."""
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--strain-rollup",
+        choices=STRAIN_ROLLUPS,
+        required=True,
+        help="Declare the upstream scope; hashes/reconciliation do not verify this declaration",
+    )
     parser.add_argument("--output-dir", type=Path, default=OUTPUT_DIR)
     parser.add_argument("--taxa", type=Path, default=TAXA_PATH)
     parser.add_argument("--matrix", type=Path, default=TAXA_TRAIT_MATRIX_PATH)

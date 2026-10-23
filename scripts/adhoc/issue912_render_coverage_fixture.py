@@ -44,7 +44,7 @@ def main() -> None:
         original(fig, path)
 
     coverage.save_figure = with_pdf
-    coverage.run_coverage(output_dir=root / "figures", **paths)
+    coverage.run_coverage(output_dir=root / "figures", strain_rollup="off", **paths)
 
 
 if __name__ == "__main__":

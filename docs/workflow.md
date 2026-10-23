@@ -444,7 +444,8 @@ inputs. Comparison never overwrites baseline or current products.
 
 ## Checks and maintenance
 
-After a full-corpus rebuild of `data/derived`, run `just taxa-coverage` to
+After a full-corpus rebuild of `data/derived` with phenotype strain rollup, run
+`just taxa-coverage --strain-rollup phenotype` to
 regenerate `trait-visualization/trait-profile-investigation/taxa-coverage/`
 before rebuilding decks or plates that cite its tables and README (#820/#821).
 The recipe consumes `bugsigdb_taxa.tsv`, `taxa_trait_matrix.tsv`,
@@ -456,6 +457,16 @@ normalization rules. Pre-#742 metadata receives an explicit regeneration error.
 The audit applies no
 contrast-tier, pairing or orientation restriction. This is coverage of the
 full canonical corpus, not coverage of a disease-vs-healthy subset.
+
+`--strain-rollup` is required and accepts `off`, `phenotype` or `full`. Supply the
+scope actually used upstream; identical paths or feature counts do not identify
+it. For example, use `just taxa-coverage --strain-rollup off --matrix PATH
+--profiles PATH --output-dir DIR` for an off-scope bundle (also supply its matching
+taxa and experiment paths when different). The README and provenance record this
+as `declared_unverified`: input hashes and count reconciliation bind the supplied
+tables but do not verify the upstream rollup scope. Keep distinct scopes in
+separate output directories; accepting `full` here does not authorize a full-scope
+production rerun.
 
 The audit reconciles profile counts with distinct signature taxa and the matrix;
 missing experiment metadata, missing canonical profiles, missing matrix taxa,
@@ -476,7 +487,9 @@ reads the header of `--raw-dump`, whose default is the repository's
 change that default: supply their matching raw dump or an explicit vintage to
 avoid attributing the repository dump's date to them. The consumed raw dump is
 hashed; the recorded vintage alone does not verify that it produced the derived
-tables. `--kg-provenance` supplies the KG download sidecar. Its release and source-file
+tables. Without a declaration or a readable vintage header, the provenance source
+is `unavailable`; a missing default dump is not evidence of a vintage.
+`--kg-provenance` supplies the KG download sidecar. Its release and source-file
 claims are declared evidence, not proof of which KG built the matrix; the
 consumed sidecar itself is hashed. These are standalone
 execution provenance records, not verified core or arm manifests. Rerun them
