@@ -20,10 +20,11 @@ from mtp.integrated_evidence import main as integrated_evidence_main
 from mtp.paths import REPO_ROOT
 from mtp.workflow.arms import ilyas, jed, noel
 from mtp.workflow.arms.__main__ import main as arms_main
-from mtp.workflow.arms.runtime import Planner, execute_arm, verify_arm
+from mtp.workflow.arms.runtime import INPUT_NAMES, Planner, execute_arm, verify_arm
 from mtp.workflow.arms.types import ArmContext, Command
 from mtp.workflow.comparison import (
     ARM_EVIDENCE_INPUTS,
+    CALIBRATION_SOURCES,
     jed_calibration_verdict,
     noel_calibration_verdict,
     recorded_output,
@@ -227,6 +228,31 @@ def _provenance(stage: dict[str, Path]) -> dict[str, object]:
     content = json.loads(path.read_text(encoding="utf-8"))
     assert isinstance(content, dict)
     return content
+
+
+def test_every_file_the_stage_reads_is_declared_by_its_arm_plan(tmp_path: Path) -> None:
+    # The fixture stands in for Noel's influence step, so the real plans are checked here.
+    products = {product: tmp_path / "core" / name for product, name in INPUT_NAMES.items()}
+    context = ArmContext(
+        REPO_ROOT,
+        tmp_path / "core" / "run.json",
+        tmp_path / "arm",
+        tmp_path / "arm" / "inputs",
+        products,
+        "a" * 40,
+        None,
+        None,
+        True,
+    )
+    declared = {
+        (arm, command.id, path.name)
+        for arm, planner in PLANNERS.items()
+        for command in planner(context)
+        for path in command.outputs
+    }
+    read = {(arm, step, name) for _, arm, step, name in ARM_EVIDENCE_INPUTS}
+    read |= {(arm, step, name) for arm, (step, name) in CALIBRATION_SOURCES.items()}
+    assert read <= declared
 
 
 def test_compare_stage_runs_on_arm_runs_and_verifies(stage: dict[str, Path]) -> None:

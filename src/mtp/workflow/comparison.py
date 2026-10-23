@@ -61,6 +61,12 @@ ARM_EVIDENCE_INPUTS: tuple[tuple[str, str, str, str], ...] = (
     ("--sensitivity-status", "jed", "composition_sensitivity", "sensitivity_status.json"),
 )
 
+#: The step and file each arm records its calibration outcome in (#815).
+CALIBRATION_SOURCES = {
+    "noel": ("empirical_calibration", "calibration_status.json"),
+    "jed": ("composition_calibration", "composition_calibration_summary.json"),
+}
+
 #: The procedure in Noel's calibration harness that evaluated each production spec (#815).
 NOEL_CALIBRATED_PROCEDURES = {"noel_table1_six_trait_sign_test_v1": "fraction_sign_test"}
 
@@ -372,10 +378,8 @@ def execute_comparison_run(
         for option, arm, step, name in ARM_EVIDENCE_INPUTS
         for part in (option, str(recorded_output(arm_runs[arm], step, name)))
     ]
-    noel_calibration = recorded_output(noel_run, "empirical_calibration", "calibration_status.json")
-    jed_calibration = recorded_output(
-        jed_run, "composition_calibration", "composition_calibration_summary.json"
-    )
+    noel_calibration = recorded_output(noel_run, *CALIBRATION_SOURCES["noel"])
+    jed_calibration = recorded_output(jed_run, *CALIBRATION_SOURCES["jed"])
 
     output.mkdir(parents=True, exist_ok=False)
     if arm1_pooled_stats is not None:
