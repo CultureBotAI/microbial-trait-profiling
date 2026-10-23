@@ -468,6 +468,17 @@ tables but do not verify the upstream rollup scope. Keep distinct scopes in
 separate output directories; accepting `full` here does not authorize a full-scope
 production rerun.
 
+The generated README includes a shell-quoted regeneration command naming the
+four consumed tables, declared scope, output directory and rendering mode. It
+also preserves the KG sidecar path, any consumed raw-dump path and any explicit
+vintage override; inferred header vintages remain inferred when replayed.
+Run it from the repository root. Repo-local paths keep their lexical spelling,
+including symlinks into shared data; external inputs retain their actual absolute
+paths. This command reuses paths, so compare the provenance hashes if their
+contents may have changed. Decompress committed profile archives before this
+coverage command; direct gzip input remains the pre-existing limitation noted
+in #970.
+
 The audit reconciles profile counts with distinct signature taxa and the matrix;
 missing experiment metadata, missing canonical profiles, missing matrix taxa,
 duplicate keys and count disagreements fail before publication. Only reported

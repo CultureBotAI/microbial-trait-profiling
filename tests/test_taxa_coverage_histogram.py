@@ -3,6 +3,7 @@
 import importlib.util
 import inspect
 import json
+import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -10,6 +11,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import pytest
+from matplotlib.axes import Axes
 from matplotlib.text import Annotation
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts/create_taxa_coverage_histogram.py"
@@ -18,6 +20,64 @@ assert SPEC is not None
 assert SPEC.loader is not None
 coverage = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(coverage)
+
+
+def readme_regeneration_argv(text: str) -> list[str]:
+    """Read the runnable shell block rather than searching for option substrings."""
+    if "```sh\n" in text:
+        command = text.split("```sh\n", 1)[1].split("\n```", 1)[0]
+    else:
+        # Keep the historical inline command readable for failing-first replay proof.
+        command = "just taxa-coverage" + text.split("`just taxa-coverage", 1)[1].split("`", 1)[0]
+    return shlex.split(command)
+
+
+@pytest.mark.parametrize("scope", ["off", "phenotype"])
+def test_readme_command_replays_explicit_inputs_and_options(
+    inputs: dict[str, Path], tmp_path: Path, scope: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    paths = {}
+    for name, path in inputs.items():
+        paths[name] = path.rename(tmp_path / f"input's {name}.tsv")
+    raw = tmp_path / "raw dump's data.csv"
+    raw.write_text("# BugSigDB fixture-970, License: CC0\nStudy\nfixture\n")
+    sidecar = tmp_path / "KG's provenance.json"
+    sidecar.write_text(json.dumps({"release": "fixture-release", "files": {}}))
+    output = tmp_path / f"{scope}'s coverage export"
+    arguments = [
+        str(SCRIPT),
+        "--strain-rollup",
+        scope,
+        "--tables-only",
+        "--output-dir",
+        str(output),
+        "--raw-dump",
+        str(raw),
+        "--kg-provenance",
+        str(sidecar),
+        "--bugsigdb-vintage",
+        "declared fixture vintage",
+    ]
+    for name, path in paths.items():
+        arguments.extend([f"--{name}", str(path)])
+    monkeypatch.setattr(sys, "argv", arguments)
+    coverage.main()
+    replay = readme_regeneration_argv((output / "README.md").read_text())
+    assert replay[:2] == ["just", "taxa-coverage"]
+    captured = {}
+    monkeypatch.setattr(coverage, "run_coverage", lambda **kwargs: captured.update(kwargs))
+    monkeypatch.setattr(sys, "argv", [str(SCRIPT), *replay[2:]])
+    coverage.main()
+    for name, path in paths.items():
+        assert Path(captured[name]).resolve() == path.resolve(), (
+            f"Regeneration changed input: {name}"
+        )
+    assert captured["strain_rollup"] == scope
+    assert Path(captured["output_dir"]).resolve() == output.resolve()
+    assert captured["tables_only"] is True
+    assert Path(captured["raw_dump"]).resolve() == raw.resolve()
+    assert Path(captured["kg_provenance"]).resolve() == sidecar.resolve()
+    assert captured["bugsigdb_vintage"] == "declared fixture vintage"
 
 
 @pytest.mark.parametrize("scope", ["off", "phenotype"])
@@ -45,7 +105,8 @@ def test_scope_is_explicitly_declared_in_readme_and_provenance(
     assert record["inputs"]["profiles"]["sha256"] == coverage.file_sha256(inputs["profiles"])
     readme = (output / "README.md").read_text()
     assert f"Declared upstream strain-rollup scope: `{scope}`" in readme
-    assert f"`just taxa-coverage --strain-rollup {scope}`" in readme
+    command = readme_regeneration_argv(readme)
+    assert command[command.index("--strain-rollup") + 1] == scope
     assert "do not verify the upstream rollup scope" in readme
 
 
@@ -61,6 +122,30 @@ def test_cli_requires_valid_scope_before_reading_inputs(
     with pytest.raises(SystemExit) as error:
         coverage.main()
     assert error.value.code == 2
+
+
+def test_regeneration_paths_preserve_repository_local_symlink_spelling(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    assert (
+        coverage.regeneration_path(coverage.TAXA_TRAIT_MATRIX_PATH)
+        == "data/derived/taxa_trait_matrix.tsv"
+    )
+    root = tmp_path / "checkout"
+    root.mkdir()
+    external = tmp_path / "external source's data"
+    external.mkdir()
+    (root / "data").symlink_to(external, target_is_directory=True)
+    monkeypatch.setattr(coverage, "REPO_ROOT", root)
+    assert coverage.regeneration_path(root / "data/matrix.tsv") == "data/matrix.tsv"
+    assert coverage.regeneration_path(external / "matrix.tsv") == str(external / "matrix.tsv")
+    (tmp_path / "matrix.tsv").write_text("intended symlink-parent input")
+    (root / "matrix.tsv").write_text("wrong lexically collapsed input")
+    parent_path = root / "data/../matrix.tsv"
+    assert parent_path.read_text() == "intended symlink-parent input"
+    spelling = coverage.regeneration_path(parent_path)
+    assert spelling == "data/../matrix.tsv"
+    assert (root / spelling).read_text() == "intended symlink-parent input"
 
 
 def test_api_rejects_missing_or_invalid_scope_before_writing(
@@ -195,6 +280,9 @@ def test_vintage_is_read_and_hashed_from_the_explicit_raw_dump(
     assert record["corpus_identity"]["bugsigdb_vintage"] == "fixture-912"
     assert record["inputs"]["raw_dump"]["sha256"] == coverage.file_sha256(raw)
     assert record["bugsigdb_vintage_source"] == "raw_dump_header"
+    command = readme_regeneration_argv((output / "README.md").read_text())
+    assert Path(command[command.index("--raw-dump") + 1]).resolve() == raw.resolve()
+    assert "--bugsigdb-vintage" not in command
 
 
 def test_empty_ranks_and_profile_status_colors_match_across_figures(
@@ -287,6 +375,20 @@ def narrow_segment_frames(zero_count: int) -> tuple[pd.DataFrame, pd.DataFrame, 
     return ranks, taxa, profiles
 
 
+def assert_fitted_segment_label(axis: Axes, expected: str, group: int, row: int) -> None:
+    """Require complete text on its own row and inside its actual segment (#970)."""
+    labels = [
+        text
+        for text in axis.texts
+        if text.get_text() == expected and text.get_position()[1] == pytest.approx(row)
+    ]
+    assert len(labels) == 1, f"Missing fitted segment label: {expected!r} on row {row}"
+    box = labels[0].get_window_extent()
+    segment = axis.containers[group][row].get_window_extent()
+    assert segment.contains(box.x0, box.y0), expected
+    assert segment.contains(box.x1, box.y1), expected
+
+
 @pytest.mark.parametrize("zero_count", [78, 2, 998])
 def test_narrow_segments_keep_labels_inside_their_colored_regions(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, zero_count: int
@@ -301,6 +403,14 @@ def test_narrow_segments_keep_labels_inside_their_colored_regions(
         figure.canvas.draw()
         axis = figure.axes[0]
         bounds = axis.get_window_extent()
+        inside = {
+            78: [("7.8%\n(78)", 0), ("Trait-bearing: 92.2%\n(922)", 2)],
+            2: [("Trait-bearing: 99.8%\n(998)", 2)],
+            998: [("0 traits: 99.8%\n(998)", 0)],
+        }
+        for expected, group in inside[zero_count]:
+            for row in (0, 1):
+                assert_fitted_segment_label(axis, expected, group, row)
         for label in axis.texts:
             if not label.get_text():
                 continue
@@ -372,6 +482,26 @@ def test_narrow_segments_keep_labels_inside_their_colored_regions(
         assert all(
             not left.overlaps(right) for i, left in enumerate(boxes) for right in boxes[i + 1 :]
         )
+    finally:
+        coverage.plt.close(figure)
+
+
+def test_fitted_profile_labels_keep_their_percentage_count_and_segment(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    ranks, taxa, _ = narrow_segment_frames(78)
+    profiles = pd.DataFrame(
+        {"mapped_trait_count": [1] * 1000, "zero_trait_taxa": [1] * 500 + [0] * 500}
+    )
+    captured = []
+    monkeypatch.setattr(coverage, "save_figure", lambda fig, _path: captured.append(fig))
+    coverage.plot_occurrences_vs_unique(ranks, taxa, profiles, tmp_path / "inside-profiles.png")
+    figure = captured[0]
+    try:
+        figure.canvas.draw()
+        axis = figure.axes[0]
+        assert_fitted_segment_label(axis, "Mixed:\n50.0%\n(500)", 1, 2)
+        assert_fitted_segment_label(axis, "All mapped:\n50.0%\n(500)", 2, 2)
     finally:
         coverage.plt.close(figure)
 
@@ -820,7 +950,20 @@ def test_two_fixture_runs_have_identical_tables_readme_and_svgs(
         coverage.run_coverage(output_dir=second, strain_rollup="off", **inputs)
     compared = []
     for path in first.iterdir():
-        if path.suffix in {".tsv", ".svg"} or path.name == "README.md":
+        if path.name == "README.md":
+            normalized = []
+            for directory in (first, second):
+                text = (directory / path.name).read_text()
+                arguments = readme_regeneration_argv(text)
+                command = shlex.join(arguments)
+                index = arguments.index("--output-dir") + 1
+                assert Path(arguments[index]).resolve() == directory.resolve()
+                arguments[index] = "OUTPUT_DIRECTORY"
+                normalized.append(text.replace(command, shlex.join(arguments)))
+            # Only the explicitly recorded destination differs between these runs.
+            assert normalized[0] == normalized[1]
+            compared.append(path.name)
+        elif path.suffix in {".tsv", ".svg"}:
             assert path.read_bytes() == (second / path.name).read_bytes(), path.name
             compared.append(path.name)
     assert len(compared) == 12  # Five TSVs, README, six SVGs.

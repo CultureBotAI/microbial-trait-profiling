@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import shlex
 from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
@@ -2232,6 +2233,7 @@ def write_readme(
     profiles: pd.DataFrame,
     output: Path,
     strain_rollup: StrainRollup,
+    regeneration_command: str,
 ) -> None:
     """Write the coverage narrative from the same frames as the backing tables."""
     mapped = profiles.loc[profiles.has_mapped_traits]
@@ -2310,8 +2312,11 @@ def write_readme(
             "heuristics for review, not verified causes or permission to propagate "
             "annotations downward.",
             "",
-            "Regenerate after rebuilding `data/derived`: "
-            f"`just taxa-coverage --strain-rollup {strain_rollup}`.",
+            "Regenerate from this repository's root with the same input paths and scope:",
+            "",
+            "```sh",
+            regeneration_command,
+            "```",
             "The five TSVs, this README, and generated figures are inventoried by SHA-256 "
             "in `provenance.json`.",
             "`profile_coverage_by_rank.tsv` uses `pct_of_mapped_profiles`, whose denominator "
@@ -2331,6 +2336,15 @@ def provenance_path(path: Path) -> str:
     if resolved.is_relative_to(REPO_ROOT):
         return resolved.relative_to(REPO_ROOT).as_posix()
     return f"external/{path.name}"
+
+
+def regeneration_path(path: Path) -> str:
+    """Keep repo-local symlink spelling; external command paths must remain runnable."""
+    # Preserve '..': after a symlink it can refer to a different parent than
+    # lexical normalization would choose.
+    absolute = path if path.is_absolute() else Path.cwd() / path
+    root = REPO_ROOT if REPO_ROOT.is_absolute() else Path.cwd() / REPO_ROOT
+    return absolute.relative_to(root).as_posix() if absolute.is_relative_to(root) else str(absolute)
 
 
 def run_coverage(
@@ -2422,7 +2436,23 @@ def run_coverage(
     write_tsv(top_zero_df, top_zero_tsv_path)
     print(f"  Written top 100 zero-trait diagnosis table: {top_zero_tsv_path}")
 
-    write_readme(taxa_master, exported_ranks, prof_summary, out_dir / "README.md", scope)
+    regeneration = ["just", "taxa-coverage", "--strain-rollup", scope]
+    for name, path in {**inputs, "output-dir": out_dir, "kg-provenance": kg_provenance}.items():
+        regeneration.extend([f"--{name}", regeneration_path(path)])
+    if "raw_dump" in consumed:
+        regeneration.extend(["--raw-dump", regeneration_path(selected_dump)])
+    if declared_vintage and bugsigdb_vintage is not None:
+        regeneration.extend(["--bugsigdb-vintage", bugsigdb_vintage])
+    if tables_only:
+        regeneration.append("--tables-only")
+    write_readme(
+        taxa_master,
+        exported_ranks,
+        prof_summary,
+        out_dir / "README.md",
+        scope,
+        shlex.join(regeneration),
+    )
 
     # 3. Generate visualizations unless explicitly testing/exporting tables only.
     if not tables_only:
