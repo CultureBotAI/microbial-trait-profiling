@@ -110,11 +110,16 @@ the new traits:
   m = 344. The ORA family grows with the trait count, as profiles × traits, and the
   calibrations are rerun at the new m.
 - **Denominators.** Every profile's fraction sums 344 retained columns. The retained count
-  mass summed over reported taxa rises by 11.4%.
+  mass summed over reported taxa rises by 11.4% (136,906). The 27 new traits add only 6.8%
+  of that rise. Most of it comes from existing traits that strain records also assert:
+  mesophilic adds 50.3% (27,509 to 96,358), rod shaped 15.9% and aerobic 10.4%.
 - **Existing traits.** METPO phenotypes that strain records also assert gain coverage:
   coccus shaped goes from 721 to 815 reported taxa, facultatively aerobic from 916 to 920,
   sphere shaped from 305 to 307 and moderately halophilic from 350 to 351. Cellulose
   catabolic process and arsenate reduction have no strain edges and do not change.
+- **Oxygen guilds.** Aerobic goes from 1,588 to 1,746 reported taxa, anaerobic from 1,707
+  to 1,884 and obligately anaerobic from 319 to 414. The aerobe guild's count mass rises
+  by 16.7% and the anaerobe guild's by 9.2%. Facultatively anaerobic is in neither guild.
 - **New traits.** Facultatively anaerobic enters with 712 reported taxa. The six Table 1
   trait keys, and the Table 1 families built on them, stay the same.
 
