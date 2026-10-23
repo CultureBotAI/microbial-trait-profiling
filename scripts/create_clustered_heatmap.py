@@ -42,10 +42,13 @@ def experiment_id_from_bsdb_id(bsdb_id: str) -> str:
 def load_human_experiment_ids(full_dump_path: Path | None) -> set[tuple[str, str]]:
     """Return study/experiment IDs for Homo sapiens 16S and WMS rows in full_dump.csv.
 
-    The sequencing type keeps the analysis corpus's rule; a blank one is left out (#742).
+    The raw export is required. The sequencing type keeps the analysis corpus's
+    rule; a blank one is left out (#742, #787).
     """
-    if full_dump_path is None or not full_dump_path.exists():
-        return set()
+    if full_dump_path is None:
+        raise ValueError("full_dump.csv is required to select the human 16S/WMS corpus")
+    if not full_dump_path.is_file():
+        raise FileNotFoundError(f"{full_dump_path} is missing; full_dump.csv is required")
 
     experiment_ids: set[tuple[str, str]] = set()
     with full_dump_path.open(encoding="utf-8", newline="") as handle:
@@ -76,30 +79,29 @@ def build_binary_matrix(
     full_dump_path: Path | None,
 ) -> tuple[pd.DataFrame, pd.Series]:
     """Build a binary profile x genus matrix from taxa.tsv."""
-    taxa = pd.read_csv(
-        taxa_path,
-        sep="\t",
-        usecols=["study_id", "experiment_id", "direction", "taxon_name", "taxonomic_rank"],
-    )
     human_experiment_ids = load_human_experiment_ids(full_dump_path)
-    # An export that yields no corpus row must not silently drop both filters (#753)
-    if full_dump_path is not None and full_dump_path.exists() and not human_experiment_ids:
+    # A missing or empty corpus must never become an all-host fallback (#753, #787).
+    if not human_experiment_ids:
         msg = (
             f"{full_dump_path} has no {HUMAN_HOST_SPECIES} 16S or WMS rows; check its "
             "Host species and Sequencing type columns"
         )
         raise ValueError(msg)
-    if human_experiment_ids:
-        taxa = taxa[
-            [
-                (study_id, experiment_id) in human_experiment_ids
-                for study_id, experiment_id in zip(
-                    taxa["study_id"],
-                    taxa["experiment_id"],
-                    strict=True,
-                )
-            ]
-        ].copy()
+    taxa = pd.read_csv(
+        taxa_path,
+        sep="\t",
+        usecols=["study_id", "experiment_id", "direction", "taxon_name", "taxonomic_rank"],
+    )
+    taxa = taxa[
+        [
+            (study_id, experiment_id) in human_experiment_ids
+            for study_id, experiment_id in zip(
+                taxa["study_id"],
+                taxa["experiment_id"],
+                strict=True,
+            )
+        ]
+    ].copy()
     taxa = taxa[taxa["taxonomic_rank"] == "genus"].copy()
     taxa["inc_dec"] = (
         taxa["direction"].map({"increased": "inc", "decreased": "dec"}).fillna(taxa["direction"])
@@ -204,7 +206,7 @@ def main() -> None:
         "--full-dump-input",
         type=Path,
         default=REPO_ROOT / "data/raw/full_dump.csv",
-        help="Input BugSigDB full_dump.csv path used to restrict profiles to Homo sapiens.",
+        help="Required BugSigDB full_dump.csv used to select Homo sapiens 16S/WMS profiles.",
     )
     parser.add_argument(
         "--output",
