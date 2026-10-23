@@ -168,7 +168,11 @@ back to the integrated McNemar. The basis covers:
 - the figure's condition-by-body-site cells;
 - its cell-status table;
 - its aerobe/anaerobe McNemar and rank correlations;
-- the integrated evidence table's figure-cell inventory and McNemar row.
+- the integrated evidence table's figure-cell inventory and McNemar row;
+- the matched-corpus Table 1-trait condition-by-body-site maps and their
+  cell-status table, which the same decision covers and which the guild figure's
+  builder now draws (#811). Their paired directional shift was already on the
+  basis (#228).
 
 A zero-total pair's guild share is undefined, so it cannot enter a cell mean or
 a study sign as a measured 0. Scored that way, it lowered cell means. It also
