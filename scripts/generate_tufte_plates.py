@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
 """Draw the deck's two methods plates and seven Tufte plates from the three-arm rerun data.
 
-The figures are computed from the TSV outputs of the rerun on main (``RERUN_COMMIT``)
-under ``trait-visualization/`` and ``data/derived/``, many of them gitignored, and are
-written as PNG and SVG to ``data/derived/tufte_plates/``. Plates IV and V also quote this
-checkout's cellulose_decr tables and the ``figure_captions.json`` that ``just
-cellulose-decr-figures`` writes beside them. ``plates_provenance.json`` records the
-drawing commit and each plate's inputs with their hashes. ``just figure-review-plates``
-runs this script; ``scripts/build_slide_deck.py`` places the plates in the deck (#573).
+Figures are computed from the rerun TSVs (``RERUN_COMMIT``) under ``trait-visualization/`` and
+``data/derived/`` and written as PNG/SVG to ``data/derived/tufte_plates/`` alongside
+``plates_provenance.json``. ``just figure-review-plates`` runs this script;
+``scripts/build_slide_deck.py`` places the plates in the deck (#573).
 """
 
 from __future__ import annotations
@@ -42,10 +39,12 @@ from mtp.quoted_results import (
     GUILD_CORRELATION,
     ORA_DEPLETION,
     ORA_ENRICHMENT,
+    MatrixCounts,
     McNemar,
     OraCalls,
     format_coverage_population,
     read_coverage_run_info,
+    read_matrix_counts,
     screened_rejection_rate,
 )
 from mtp.table1_directions import (
@@ -63,11 +62,11 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 PLATES_DIR = Path("data/derived/tufte_plates")
 CELLULOSE_DIR = Path("data/analysis/cellulose_decr")
 TRAIT_COLUMNS = Path("data/derived/taxa_trait_matrix_columns.tsv")
+TRAIT_MATRIX = Path("data/derived/taxa_trait_matrix.tsv")
 # The rerun the plates' tables come from. The deck stamps and links the plate slides at the
 # same revision and refuses inputs that differ from it (#637); the two move together (#579).
 RERUN_COMMIT = "edeb7bef2f0db052bb84aa638d3e74fc6c53ca6f"
 RERUN_SOURCE = f"Source: Rerun on main ({RERUN_COMMIT[:7]})"
-TRAIT_MATRIX = Path("data/derived/taxa_trait_matrix.tsv")
 
 # Tufte palette: muted, high-contrast, colorblind-safe ink on warm paper/clean white
 BG_COLOR = "#fcfbf8"
@@ -104,21 +103,17 @@ def read_json(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8"))
 
 
-def matrix_counts(repo: Path) -> tuple[int, int]:
-    """Total KG-Microbe organisms (rows) and retained traits (columns) from matrix (#755)."""
+def matrix_counts(repo: Path) -> MatrixCounts:
+    """BugSigDB matrix taxa, trait-bearing taxa, and retained/raw/MediaDive traits (#755, #988)."""
     matrix_path = repo / TRAIT_MATRIX
     columns_path = repo / TRAIT_COLUMNS
     if not matrix_path.exists():
         raise FileNotFoundError(f"missing {matrix_path}; run `just taxa-trait-matrix` first")
     if not columns_path.exists():
         raise FileNotFoundError(f"missing {columns_path}; run `just taxa-trait-matrix` first")
-    matrix_rows = read_tsv(matrix_path)
-    col_rows = read_tsv(columns_path)
-    if not matrix_rows:
-        raise ValueError(f"{matrix_path} has 0 organism rows")
-    if not col_rows:
-        raise ValueError(f"{columns_path} has 0 trait column rows")
-    return len(matrix_rows), len(col_rows)
+    INPUTS_READ.add(matrix_path)
+    INPUTS_READ.add(columns_path)
+    return read_matrix_counts(matrix_path, columns_path)
 
 
 def fmt_p(value: float) -> str:
@@ -535,11 +530,9 @@ def methods_plate1_coverage_labels(
     else:
         desync_clause = "All-rank: no focal NCBI TaxID desyncs in table"
     if present_rows:
-        prof_part = (
-            f"{retained_profiles:,} retained profiles"
-            if retained_profiles is not None
-            else "all retained profiles"
-        )
+        if not isinstance(retained_profiles, int) or retained_profiles <= 0:
+            raise ValueError("missing retained_profiles count in coverage run info")
+        prof_part = f"{retained_profiles:,} retained profiles"
         pop_label = format_coverage_population(population)
         occurrences_title = f"{total_occurrences:,} All-Profile Taxon Occurrences"
         taxa_subtitle = f"{total_taxa:,} unique NCBI TaxIDs across {prof_part}\n({pop_label})"
@@ -667,14 +660,16 @@ def build_methods_plate1(repo: Path, out_dir: Path) -> Path:
     )
     if run_info.retained_studies is None or run_info.retained_studies <= 0:
         raise ValueError("missing retained_studies count in coverage run info")
+    if run_info.retained_profiles is None or run_info.retained_profiles <= 0:
+        raise ValueError("missing retained_profiles count in coverage run info")
     retained_studies = run_info.retained_studies
     retained_profiles = run_info.retained_profiles
     coverage_scope = run_info.strain_rollup
-    matrix_taxa, trait_count = matrix_counts(repo)
+    m_counts = matrix_counts(repo)
     PLATE_COUNTS.update(
         {
-            "matrix_taxa": matrix_taxa,
-            "trait_count": trait_count,
+            "matrix_taxa": m_counts.matrix_taxa,
+            "trait_count": m_counts.trait_count,
         }
     )
     coverage_rows = read_tsv(coverage_dir / "taxa_coverage_by_rank.tsv")
@@ -803,8 +798,10 @@ def build_methods_plate1(repo: Path, out_dir: Path) -> Path:
     ax.text(
         50.0,
         80.8,
-        f"{matrix_taxa:,} KG-Microbe Taxa \N{MULTIPLICATION SIGN} {trait_count:,} Traits",
-        fontsize=10.1,
+        f"{m_counts.matrix_taxa:,} BugSigDB Taxa "
+        f"({m_counts.trait_bearing_taxa:,} with a KG-Microbe trait) "
+        f"\N{MULTIPLICATION SIGN} {m_counts.trait_count:,} Traits",
+        fontsize=8.3,
         fontweight="bold",
         color=INK,
         ha="center",
@@ -814,7 +811,8 @@ def build_methods_plate1(repo: Path, out_dir: Path) -> Path:
     ax.text(
         50.0,
         75.2,
-        "Filtered from 2,650 raw features by excluding\n2,333 MediaDive growth-media recipes",
+        f"Filtered from {m_counts.raw_trait_count:,} raw features by excluding\n"
+        f"{m_counts.mediadive_trait_count:,} MediaDive growth-media recipes",
         fontsize=8.1,
         color=MUTED,
         ha="center",
@@ -923,7 +921,7 @@ def build_methods_plate1(repo: Path, out_dir: Path) -> Path:
         19.8,
         "• Arm 1 & Arm 3: Continuous / Sign profile matrix\n  weighted by descendant trait "
         "assertion fractions\n• Arm 2 (Taxon ORA): Binary presence/absence\n"
-        f"  over M = {matrix_taxa:,} distinct organisms",
+        f"  over M = {m_counts.matrix_taxa:,} distinct organisms",
         fontsize=7.8,
         color=INK,
         ha="center",
@@ -1131,14 +1129,15 @@ def build_methods_plate2(repo: Path, out_dir: Path) -> Path:
         f"traits\npass Study BH q ≤ 0.05 · {fisher} Cond"
         "\N{MULTIPLICATION SIGN}Site Fisher BH survivors"
     )
-    # The test families of Arm 1's stratified screens and Arm 3's 317-trait screen (#624, #640)
+    # The test families of Arm 1's stratified screens and Arm 3's full-trait screen (#624, #640)
     views = [r.get("view_key") for r in contrasts]
     individual = views.count("individual_conditions_direction_contrast")
     grouped = views.count("grouped_direction_contrast")
     wilcoxon = len(
         read_tsv(stats / "PD-cellulose/pd_condition_taxon_trait_network_condition_trait_tests.tsv")
     )
-    matrix_taxa, trait_count = matrix_counts(repo)
+    m_counts = matrix_counts(repo)
+    trait_count = m_counts.trait_count
     screen = read_tsv(repo / "data/derived/trait_screen/trait_direction_screen.tsv")
     if len(screen) != trait_count:
         raise ValueError(
@@ -1147,6 +1146,7 @@ def build_methods_plate2(repo: Path, out_dir: Path) -> Path:
         )
     # Arm 2's tests and calls and the oxygen-guild McNemar test, read from their tables (#579)
     enriched, depleted = ora_calls(repo / ORA_ENRICHMENT), ora_calls(repo / ORA_DEPLETION)
+    matrix_taxa = enriched.background_taxa_m or m_counts.matrix_taxa
     enrichment_rows = read_tsv(repo / ORA_ENRICHMENT)
     by_side = {side: sum(r["inc_dec"] == side for r in enrichment_rows) for side in ("inc", "dec")}
     enriched_traits = {r["trait"] for r in enrichment_rows}
@@ -3895,7 +3895,7 @@ def build_plate6(repo: Path, out_dir: Path) -> Path:
 
 
 # ==============================================================================
-# PLATE 7: Three-Arm 317-Trait Concordance & Expanded Table 1 Forest Plot
+# PLATE 7: Three-Arm Trait Concordance & Expanded Table 1 Forest Plot
 # ==============================================================================
 def three_arm_traits(
     arm1_rows: Mapping[str, dict[str, str]],

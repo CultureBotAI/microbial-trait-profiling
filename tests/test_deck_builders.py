@@ -2053,17 +2053,32 @@ def _mock_rerun_repo_for_deck(
     rank_rows: list[dict[str, str]],
     zero_rows: list[dict[str, str]],
     matrix_taxa: int = 5829,
+    trait_bearing_taxa: int = 3574,
     trait_count: int = 317,
+    mediadive_trait_count: int = 2333,
 ) -> dict[str, Any]:
-    """Run deck.load_rerun_metrics against mocked TSV/JSON inputs (#755, #864, #956)."""
+    """Run deck.load_rerun_metrics against mocked TSV/JSON inputs (#755, #864, #956, #988)."""
     prov_path = tmp_path / deck.CONTRAST_PROVENANCE
     prov_path.parent.mkdir(parents=True, exist_ok=True)
     prov_path.write_text('{"classifier_version": "v2.0"}\n', encoding="utf-8")
     matrix_path = tmp_path / deck.TRAIT_MATRIX
     matrix_path.parent.mkdir(parents=True, exist_ok=True)
-    matrix_path.write_text("taxon_id\nNCBITaxon:1\n", encoding="utf-8")
+    matrix_path.write_text(
+        "taxon_id\ttaxon_name\ttaxonomic_rank\tT0\tmediadive.medium:M0\n"
+        + "".join(f"NCBITaxon:{i}\tTaxon {i}\tspecies\t1\t1\n" for i in range(trait_bearing_taxa))
+        + "".join(
+            f"NCBITaxon:{i}\tTaxon {i}\tspecies\t0\t0\n"
+            for i in range(trait_bearing_taxa, matrix_taxa)
+        ),
+        encoding="utf-8",
+    )
     columns_path = tmp_path / deck.TRAIT_COLUMNS
-    columns_path.write_text("column_id\nT1\n", encoding="utf-8")
+    columns_path.write_text(
+        "column_id\n"
+        + "".join(f"T{i}\n" for i in range(trait_count))
+        + "".join(f"mediadive.medium:M{i}\n" for i in range(mediadive_trait_count)),
+        encoding="utf-8",
+    )
     comparison_rows = _comparison(ALL_STUDIES, 959, ALL_PASSING, (333, 441)) + _comparison(
         ORIENTED, 592, ALL_PASSING, (187, 288)
     )
@@ -2086,10 +2101,6 @@ def _mock_rerun_repo_for_deck(
             return rank_rows
         if name == "top_zero_trait_bugsigdb_taxa.tsv":
             return zero_rows
-        if name == "taxa_trait_matrix.tsv":
-            return [{"taxon_id": f"NCBITaxon:{i}"} for i in range(matrix_taxa)]
-        if name == "taxa_trait_matrix_columns.tsv":
-            return [{"column_id": f"T{i}"} for i in range(trait_count)]
         if name == "profile_trait_mapping_summary.tsv":
             return [{"study_id": f"S{i % 932}", "experiment_id": f"E{i}"} for i in range(5629)]
         if name == "study_trait_profile_study_metadata.tsv":
@@ -2288,7 +2299,11 @@ def _mock_rerun_repo_for_deck(
         lambda _p: deck.OraCalls(calls=62205, tests=2172718, p_threshold=0.001, fold=1.5),
     )
     loaded: dict[str, Any] = deck.load_rerun_metrics(tmp_path)
-    loaded["plate_counts"] = dict.fromkeys(deck.PLATE_COUNT_KEYS, 5)
+    loaded["plate_counts"] = {
+        **dict.fromkeys(deck.PLATE_COUNT_KEYS, 5),
+        "matrix_taxa": matrix_taxa,
+        "trait_count": trait_count,
+    }
     loaded["cellulose_statements"] = {"fragile": ""}
     return loaded
 
@@ -2312,8 +2327,8 @@ def test_deck_coverage_text_reads_the_coverage_tsvs(
         "High-level visual overview of the data ingestion funnel: 932 BugSigDB v1.3.1 human "
         "studies (5,629 retained profiles, 46,865 all-profile taxon occurrences across "
         "4,750 unique NCBI TaxIDs; 2,335 paired experiments / 4,670 paired profiles) "
-        "joined to 5,829 KG-Microbe organisms \N{MULTIPLICATION SIGN} "
-        "317 normalized traits via NCBI Taxonomy subtree rollup."
+        "joined to 5,829 BugSigDB taxa (3,574 with a KG-Microbe trait) "
+        "\N{MULTIPLICATION SIGN} 317 normalized traits via NCBI Taxonomy subtree rollup."
     )
     assert "41,279" not in mp1_takeaway
     assert "4,569" not in mp1_takeaway
@@ -2509,12 +2524,15 @@ def test_plate_six_text_and_remediation_labels_read_the_coverage_tsvs(
     derived_dir = tmp_path / "data" / "derived"
     derived_dir.mkdir(parents=True, exist_ok=True)
     (derived_dir / "taxa_trait_matrix.tsv").write_text(
-        "taxon_id\n" + "".join(f"NCBITaxon:{i}\n" for i in range(5829)),
+        "taxon_id\ttaxon_name\ttaxonomic_rank\tT0\tmediadive.medium:M0\n"
+        + "".join(f"NCBITaxon:{i}\tTaxon {i}\tspecies\t1\t1\n" for i in range(3574))
+        + "".join(f"NCBITaxon:{i}\tTaxon {i}\tspecies\t0\t0\n" for i in range(3574, 5829)),
         encoding="utf-8",
     )
     (derived_dir / "taxa_trait_matrix_columns.tsv").write_text(
         "column_id\tobject_name\tpredicate_name\n"
-        + "".join(f"T{i}\ttrait_{i}\tcapable of\n" for i in range(317)),
+        + "".join(f"T{i}\ttrait_{i}\tcapable of\n" for i in range(317))
+        + "".join(f"mediadive.medium:M{i}\tmedium_{i}\tgrows in\n" for i in range(2333)),
         encoding="utf-8",
     )
 
@@ -2539,9 +2557,17 @@ def test_plate_six_text_and_remediation_labels_read_the_coverage_tsvs(
         assert mp1_labels["occurrences_title"] in mp1_all_text
         assert mp1_labels["taxa_subtitle"] in mp1_all_text
         assert mp1_labels["species_gap_note"] in mp1_all_text
-        assert "5,829 KG-Microbe Taxa \N{MULTIPLICATION SIGN} 317 Traits" in mp1_all_text
+        assert (
+            "5,829 BugSigDB Taxa (3,574 with a KG-Microbe trait) "
+            "\N{MULTIPLICATION SIGN} 317 Traits" in mp1_all_text
+        )
+        assert (
+            "Filtered from 2,650 raw features by excluding\n"
+            "2,333 MediaDive growth-media recipes" in mp1_all_text
+        )
         assert "over M = 5,829 distinct organisms" in mp1_all_text
         assert "5,829 Trait-Bearing Taxa" not in mp1_all_text
+        assert "5,829 KG-Microbe Taxa" not in mp1_all_text
         for stale_mp1 in ("41,279", "4,569"):
             assert stale_mp1 not in mp1_all_text
         # Verify the 4 funnel steps appear in top-to-bottom y order (#951, #982):
@@ -2679,11 +2705,18 @@ def test_plate_six_and_deck_handle_sparse_ranks_and_absent_alias_candidates(
     assert "NCBITaxon:541000" not in plate_text["footer"]
     assert "NCBITaxon:508215" not in plate_text["footer"]
 
-    sparse_mp1 = plates.methods_plate1_coverage_labels(species_only_ranks, non_alias_zero)
+    sparse_mp1 = plates.methods_plate1_coverage_labels(
+        species_only_ranks, non_alias_zero, retained_profiles=5629
+    )
     assert sparse_mp1["species_gap_note"] == (
         "Species gap (40% of species occurrences): Candidatus lineages;\n"
         "All-rank: no focal NCBI TaxID desyncs in table"
     )
+    for bad_retained in (None, 0, -1):
+        with pytest.raises(ValueError, match="retained_profiles"):
+            plates.methods_plate1_coverage_labels(
+                species_only_ranks, non_alias_zero, retained_profiles=bad_retained
+            )
 
     sparse_metrics = {
         "taxa_coverage_by_rank": {r["taxonomic_rank"]: r for r in species_only_ranks},
@@ -2717,7 +2750,9 @@ def test_plate_six_and_deck_handle_sparse_ranks_and_absent_alias_candidates(
             "suggested_remediation": "Investigate taxonomy without target ID",
         }
     ]
-    t_mp1 = plates.methods_plate1_coverage_labels(species_only_ranks, targetless_desync)
+    t_mp1 = plates.methods_plate1_coverage_labels(
+        species_only_ranks, targetless_desync, retained_profiles=5629
+    )
     assert "All-rank: no focal NCBI TaxID desyncs in table" in t_mp1["species_gap_note"]
     assert "Targetless taxon" not in t_mp1["species_gap_note"]
     t_plate = plates.plate6_text(species_only_ranks, targetless_desync)
@@ -2744,7 +2779,9 @@ def test_plate_six_and_deck_handle_sparse_ranks_and_absent_alias_candidates(
             ),
         }
     ]
-    mw_mp1 = plates.methods_plate1_coverage_labels(species_only_ranks, multiword_desync)
+    mw_mp1 = plates.methods_plate1_coverage_labels(
+        species_only_ranks, multiword_desync, retained_profiles=5629
+    )
     assert "All-rank NCBI TaxID desync: 1 (Ruminococcus gnavus group)" in mw_mp1["species_gap_note"]
 
     # An alias candidate at row 19 (index 18) is outside Panel C's top-18 bars (#982):
@@ -2810,7 +2847,9 @@ def test_plate_six_and_deck_handle_sparse_ranks_and_absent_alias_candidates(
     assert "No zero-trait taxa present in table" in gen_plate["panel_b_title"]
     assert "Zero-Trait BugSigDB Taxa & Remediation Path (0 Taxa)" in gen_plate["panel_c_title"]
 
-    gen_mp1 = plates.methods_plate1_coverage_labels([genus_only_row], full_zero)
+    gen_mp1 = plates.methods_plate1_coverage_labels(
+        [genus_only_row], full_zero, retained_profiles=5629
+    )
     assert (
         "Species coverage unavailable (species rank absent from table)"
         in (gen_mp1["species_gap_note"])
@@ -2826,6 +2865,14 @@ def test_plate_six_and_deck_handle_sparse_ranks_and_absent_alias_candidates(
     # Render Plate 6 with sparse species-only table and 1 non-alias zero-trait taxon:
     cov_dir = tmp_path / "trait-visualization" / "trait-profile-investigation" / "taxa-coverage"
     cov_dir.mkdir(parents=True)
+    (cov_dir / "profile_trait_mapping_summary.tsv").write_text(
+        "study_id\texperiment_id\nS0\tE0\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "trait-visualization" / "study_trait_profile_study_metadata.tsv").write_text(
+        "study_id\tprofile_id\nS0\tP0\n",
+        encoding="utf-8",
+    )
     rank_cols = list(species_only_ranks[0])
     (cov_dir / "taxa_coverage_by_rank.tsv").write_text(
         "\t".join(rank_cols)
@@ -2959,7 +3006,7 @@ def test_coverage_run_info_validates_strain_rollup_and_profile_count_agreement(
 def test_deck_and_plates_derive_corpus_and_trait_counts_from_tables(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Deck and Methods Plates I/II derive corpus, organism, and trait counts (#755)."""
+    """Deck and Methods Plates I/II derive corpus, organism, and trait counts (#755, #988)."""
     with pytest.raises(FileNotFoundError, match="taxa_trait_matrix"):
         plates.matrix_counts(tmp_path)
 
@@ -2974,6 +3021,13 @@ def test_deck_and_plates_derive_corpus_and_trait_counts_from_tables(
     matrix_path.write_text("taxon_id\nNCBITaxon:1\n", encoding="utf-8")
     with pytest.raises(ValueError, match="0 trait column rows"):
         plates.matrix_counts(tmp_path)
+    cols_path.write_text("column_id\nmediadive.medium:M0\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="0 retained trait columns"):
+        plates.matrix_counts(tmp_path)
+    cols_path.write_text("column_id\nT0\n", encoding="utf-8")
+    matrix_path.write_text("taxon_id\tT0\nNCBITaxon:1\t0\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="0 trait-bearing"):
+        plates.matrix_counts(tmp_path)
 
     rank_rows = _coverage_rank_rows()
     zero_rows = _zero_trait_rows()
@@ -2983,17 +3037,58 @@ def test_deck_and_plates_derive_corpus_and_trait_counts_from_tables(
         rank_rows,
         zero_rows,
         matrix_taxa=6120,
+        trait_bearing_taxa=3680,
         trait_count=344,
+        mediadive_trait_count=2333,
     )
     assert metrics["matrix_taxa"] == 6120
+    assert metrics["trait_bearing_taxa"] == 3680
     assert metrics["trait_count"] == 344
+    assert metrics["raw_trait_count"] == 2677
+    assert metrics["mediadive_trait_count"] == 2333
+    tables_read = {p.name for p in deck.TABLES_READ}
+    assert {"taxa_trait_matrix.tsv", "taxa_trait_matrix_columns.tsv"} <= tables_read
+
+    # Verify record_problems enforces matrix_taxa and trait_count agreement (#988):
+    assert (
+        deck.record_problems(
+            metrics["plate_counts"],
+            "v2.0",
+            "v2.0",
+            matrix_taxa=6120,
+            trait_count=344,
+        )
+        == []
+    )
+    assert deck.record_problems(
+        {**metrics["plate_counts"], "matrix_taxa": 5829, "trait_count": 317},
+        "v2.0",
+        "v2.0",
+        matrix_taxa=6120,
+        trait_count=344,
+    ) == [
+        "the plates record matrix_taxa=5829 and the deck reads 6120 (#988)",
+        "the plates record trait_count=317 and the deck reads 344 (#988)",
+    ]
+
+    # Verify Methods Plate I takeaway guards on missing/zero corpus or trait-bearing counts:
+    for bad_key, bad_val in (
+        ("retained_studies", None),
+        ("retained_studies", 0),
+        ("retained_profiles", None),
+        ("retained_profiles", 0),
+        ("trait_bearing_taxa", 0),
+    ):
+        with pytest.raises(ValueError, match=bad_key):
+            deck.methods_plate_one_takeaway({**metrics, bad_key: bad_val})
 
     # Verify Methods Plate I takeaway, Methods Plate II caveat, Plate VII selection_reason,
     # condition_trait_module_clustered_heatmap title, and enrichment_infographic takeaway:
     new_slides = deck.get_new_slides_metadata(metrics)
     by_analysis = {s["analysis"]: s for s in new_slides}
     assert (
-        "6,120 KG-Microbe organisms \N{MULTIPLICATION SIGN} 344 normalized traits"
+        "6,120 BugSigDB taxa (3,680 with a KG-Microbe trait) "
+        "\N{MULTIPLICATION SIGN} 344 normalized traits"
         in (by_analysis["methods_plate_1"]["takeaway"])
     )
     assert "how 344 KG-Microbe traits narrow to" in by_analysis["methods_plate_2"]["caveat"]
@@ -3001,7 +3096,9 @@ def test_deck_and_plates_derive_corpus_and_trait_counts_from_tables(
         "all 344 traits across all three analytical arms"
         in (by_analysis["tufte_plate_7"]["selection_reason"])
     )
-    assert by_analysis["condition_trait_module_clustered_heatmap"]["title"].endswith("(344 traits)")
+    assert by_analysis["condition_trait_module_clustered_heatmap"]["title"].endswith(
+        "(top 60 of 344 traits)"
+    )
 
     enr_row: dict[str, str] = {
         "figure_file_path": "data/derived/enrichment_infographic.png",
@@ -3014,9 +3111,19 @@ def test_deck_and_plates_derive_corpus_and_trait_counts_from_tables(
     )
     assert "(4,670 human profiles \N{MULTIPLICATION SIGN} 344 traits;" in enr_row["takeaway"]
     assert "317" not in enr_row["takeaway"]
+    enr_with_header = {
+        **metrics,
+        "ora_enrichment": deck.OraCalls(
+            calls=62205, tests=2172718, p_threshold=0.001, fold=1.5, input_profiles=4700
+        ),
+    }
+    _, enr_header_takeaway, _ = deck.update_previous_slide_text(dict(enr_row), enr_with_header)
+    assert "(4,700 human profiles \N{MULTIPLICATION SIGN} 344 traits;" in enr_header_takeaway
 
     all_slides = [*new_slides, enr_row]
-    deck.check_coverage_table_sync(metrics, all_slides)
+    deck.check_coverage_table_sync(metrics, all_slides, require_enrichment_infographic=True)
+    with pytest.raises(ValueError, match="enrichment_infographic"):
+        deck.check_coverage_table_sync(metrics, new_slides, require_enrichment_infographic=True)
 
     # Restoring any of the old corpus/trait literals fails check_coverage_table_sync:
     mp1 = by_analysis["methods_plate_1"]
@@ -3031,13 +3138,17 @@ def test_deck_and_plates_derive_corpus_and_trait_counts_from_tables(
         {**mp1, "takeaway": mp1["takeaway"].replace("4,750 unique", "1,039 unique")},
         {**mp1, "takeaway": mp1["takeaway"].replace("2,335 paired", "1,825 paired")},
         {**mp1, "takeaway": mp1["takeaway"].replace("4,670 paired", "3,650 paired")},
-        {**mp1, "takeaway": mp1["takeaway"].replace("6,120 KG-Microbe", "5,829 KG-Microbe")},
+        {**mp1, "takeaway": mp1["takeaway"].replace("6,120 BugSigDB", "5,829 BugSigDB")},
+        {**mp1, "takeaway": mp1["takeaway"].replace("3,680 with", "3,574 with")},
         {**mp1, "takeaway": mp1["takeaway"].replace("344 normalized", "317 normalized")},
         {**mp2, "takeaway": mp2["takeaway"].replace("all 959 studies", "all 999 studies")},
         {**mp2, "caveat": mp2["caveat"].replace("344 KG-Microbe", "317 KG-Microbe")},
         {**tp1, "takeaway": tp1["takeaway"].replace("2,335 paired", "1,999 paired")},
         {**tp7, "selection_reason": tp7["selection_reason"].replace("344 traits", "317 traits")},
-        {**hm, "title": hm["title"].replace("(344 traits)", "(317 traits)")},
+        {
+            **hm,
+            "title": hm["title"].replace("(top 60 of 344 traits)", "(top 60 of 317 traits)"),
+        },
         {**hm, "takeaway": hm["takeaway"].replace("5,629-profile", "6,356-profile")},
     ):
         broken = [
@@ -3047,17 +3158,21 @@ def test_deck_and_plates_derive_corpus_and_trait_counts_from_tables(
         with pytest.raises(ValueError, match="out of sync"):
             deck.check_coverage_table_sync(metrics, broken)
 
-    broken_enr = [
-        {**enr_row, "takeaway": enr_row["takeaway"].replace("344 traits", "317 traits")}
-        if s.get("figure_file_path") == "data/derived/enrichment_infographic.png"
-        else s
-        for s in all_slides
-    ]
-    with pytest.raises(ValueError, match="out of sync"):
-        deck.check_coverage_table_sync(metrics, broken_enr)
+    for bad_enr_takeaway in (
+        enr_row["takeaway"].replace("344 traits", "317 traits"),
+        enr_row["takeaway"].replace("4,670 human profiles", "4,000 human profiles"),
+    ):
+        broken_enr = [
+            {**enr_row, "takeaway": bad_enr_takeaway}
+            if s.get("figure_file_path") == "data/derived/enrichment_infographic.png"
+            else s
+            for s in all_slides
+        ]
+        with pytest.raises(ValueError, match="out of sync"):
+            deck.check_coverage_table_sync(metrics, broken_enr, require_enrichment_infographic=True)
 
-    # Also verify Methods Plate I and Methods Plate II render dynamic organism (6,120) and
-    # trait (344) counts from the matrix and screen tables:
+    # Also verify Methods Plate I and Methods Plate II render dynamic organism (6,120),
+    # trait-bearing (3,680), raw (2,677), MediaDive (2,333), and retained trait (344) counts:
     plate_repo = tmp_path / "plate_repo"
     cov_dir = plate_repo / "trait-visualization" / "trait-profile-investigation" / "taxa-coverage"
     cov_dir.mkdir(parents=True)
@@ -3122,12 +3237,15 @@ def test_deck_and_plates_derive_corpus_and_trait_counts_from_tables(
     p_derived = plate_repo / "data" / "derived"
     p_derived.mkdir(parents=True, exist_ok=True)
     (p_derived / "taxa_trait_matrix.tsv").write_text(
-        "taxon_id\n" + "".join(f"NCBITaxon:{i}\n" for i in range(6120)),
+        "taxon_id\ttaxon_name\ttaxonomic_rank\tT0\tmediadive.medium:M0\n"
+        + "".join(f"NCBITaxon:{i}\tTaxon {i}\tspecies\t1\t1\n" for i in range(3680))
+        + "".join(f"NCBITaxon:{i}\tTaxon {i}\tspecies\t0\t0\n" for i in range(3680, 6120)),
         encoding="utf-8",
     )
     (p_derived / "taxa_trait_matrix_columns.tsv").write_text(
         "column_id\tobject_name\tpredicate_name\n"
-        + "".join(f"T{i}\ttrait_{i}\tcapable of\n" for i in range(344)),
+        + "".join(f"T{i}\ttrait_{i}\tcapable of\n" for i in range(344))
+        + "".join(f"mediadive.medium:M{i}\tmedium_{i}\tgrows in\n" for i in range(2333)),
         encoding="utf-8",
     )
     screen_dir = p_derived / "trait_screen"
@@ -3202,12 +3320,20 @@ def test_deck_and_plates_derive_corpus_and_trait_counts_from_tables(
                 *(t.get_text() for ax in mp1_fig.axes for t in ax.texts),
             ]
         )
-        assert "6,120 KG-Microbe Taxa \N{MULTIPLICATION SIGN} 344 Traits" in mp1_text
+        assert (
+            "6,120 BugSigDB Taxa (3,680 with a KG-Microbe trait) "
+            "\N{MULTIPLICATION SIGN} 344 Traits" in mp1_text
+        )
+        assert (
+            "Filtered from 2,677 raw features by excluding\n"
+            "2,333 MediaDive growth-media recipes" in mp1_text
+        )
         assert "over M = 6,120 distinct organisms" in mp1_text
         assert "2,226 Paired Experiments" in mp1_text
         assert "4,452 Paired Directional Signatures" in mp1_text
         assert "5,829" not in mp1_text
         assert "317" not in mp1_text
+        assert "2,650" not in mp1_text
     finally:
         real_close(mp1_fig)
 

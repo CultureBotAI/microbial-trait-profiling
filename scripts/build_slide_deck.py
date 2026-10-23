@@ -57,6 +57,7 @@ from mtp.quoted_results import (
     McNemar,
     OraCalls,
     read_coverage_run_info,
+    read_matrix_counts,
     screened_rejection_rate,
 )
 from mtp.table1_directions import (
@@ -77,8 +78,7 @@ CELLULOSE_FIGURES = (f"{CELLULOSE_DIR}/figures/", f"{CELLULOSE_DIR}/figures_grap
 # Regenerated or untracked figure folders: their slides carry no GitHub figure link.
 UNLINKED_FIGURES = ("data/derived/", *CELLULOSE_FIGURES, f"{CELLULOSE_DIR}/figures_tufte/")
 REPO_URL = "https://github.com/CultureBotAI/microbial-trait-profiling"
-# Where `just figure-review-plates` draws the methods and Tufte plates.
-PLATES_DIR = "data/derived/tufte_plates/"
+PLATES_DIR = "data/derived/tufte_plates/"  # drawn by just figure-review-plates
 PROVENANCE_NAME = "figure_provenance_and_results.yaml"
 COMMIT = "edeb7bef2f0db052bb84aa638d3e74fc6c53ca6f"
 SHORT_COMMIT = COMMIT[:12]
@@ -477,18 +477,19 @@ def load_rerun_metrics(repo: Path) -> dict:
     metrics["coverage_population"] = cov_info.population
     matrix_path = repo / TRAIT_MATRIX
     columns_path = repo / TRAIT_COLUMNS
-    if not matrix_path.exists():
-        raise FileNotFoundError(f"missing {matrix_path}; run `just taxa-trait-matrix` first")
-    if not columns_path.exists():
-        raise FileNotFoundError(f"missing {columns_path}; run `just taxa-trait-matrix` first")
-    matrix_rows = read_tsv(matrix_path)
-    col_rows = read_tsv(columns_path)
-    if not matrix_rows:
-        raise ValueError(f"{matrix_path} has 0 organism rows")
-    if not col_rows:
-        raise ValueError(f"{columns_path} has 0 trait column rows")
-    metrics["matrix_taxa"] = len(matrix_rows)
-    metrics["trait_count"] = len(col_rows)
+    m_counts = read_matrix_counts(matrix_path, columns_path)
+    TABLES_READ.update({matrix_path, columns_path})
+    metrics["matrix_taxa"] = m_counts.matrix_taxa
+    metrics["trait_bearing_taxa"] = m_counts.trait_bearing_taxa
+    metrics["raw_trait_count"] = m_counts.raw_trait_count
+    metrics["mediadive_trait_count"] = m_counts.mediadive_trait_count
+    metrics["trait_count"] = m_counts.trait_count
+    hm_meta_path = repo / "trait-visualization/condition_trait_module_trait_metadata.tsv"
+    if hm_meta_path.exists():
+        with hm_meta_path.open("r", encoding="utf-8", newline="") as f:
+            metrics["heatmap_displayed_traits"] = sum(1 for _ in csv.DictReader(f, delimiter="\t"))
+    else:
+        metrics["heatmap_displayed_traits"] = 60
     metrics["ind_conditions"] = len({r["condition"] for r in ind_rows})
     metrics["ind_sites"] = len({r["body_site_group"] for r in ind_rows})
     metrics["ind_median_studies"] = median(int(r["study_count"]) for r in ind_rows)
@@ -778,6 +779,8 @@ def direction_shift_text(metrics: dict) -> tuple[str, str, str]:
 # The counts the plates record for the slides that quote them (#579, #640). A record from
 # older plates lacks some, so the build is a review build that prints "?" (#682).
 PLATE_COUNT_KEYS = (
+    "matrix_taxa",
+    "trait_count",
     "table1_concordant",
     "screened_traits",
     "three_arm_additional",
@@ -797,16 +800,32 @@ def plate_count(metrics: dict, key: str) -> str:
 
 
 def record_problems(
-    counts: Mapping[str, Any], cellulose_classifier: str | None, contrast_classifier: str
+    counts: Mapping[str, Any],
+    cellulose_classifier: str | None,
+    contrast_classifier: str,
+    *,
+    matrix_taxa: int | None = None,
+    trait_count: int | None = None,
 ) -> list[str]:
     """Why the records the slides quote disagree: a plate count the plates did not record
-    (#682), or cellulose_decr tables built on another contrast classifier than the Table 1
-    text (#679). Each is a review reason of its own (#704)."""
+    (#682), plate matrix/trait counts that disagree with the deck's (#988), or cellulose_decr
+    tables built on another contrast classifier than the Table 1 text (#679). Each is a review
+    reason of its own (#704)."""
     found = [
         f'the plates record no {key} count, so its slides would print "?" (#682)'
         for key in PLATE_COUNT_KEYS
         if key not in counts
     ]
+    if matrix_taxa is not None and "matrix_taxa" in counts and counts["matrix_taxa"] != matrix_taxa:
+        found.append(
+            f"the plates record matrix_taxa={counts['matrix_taxa']} and the deck "
+            f"reads {matrix_taxa} (#988)"
+        )
+    if trait_count is not None and "trait_count" in counts and counts["trait_count"] != trait_count:
+        found.append(
+            f"the plates record trait_count={counts['trait_count']} and the deck "
+            f"reads {trait_count} (#988)"
+        )
     if cellulose_classifier != contrast_classifier:
         found.append(
             f"the cellulose_decr tables use {cellulose_classifier} and the Table 1 text "
@@ -1080,14 +1099,19 @@ def _coverage_totals(metrics: Mapping[str, Any]) -> tuple[int, int]:
 
 
 def methods_plate_one_takeaway(metrics: Mapping[str, Any]) -> str:
-    """Methods Plate I's takeaway, read from corpus and coverage tables (#755, #864, #930, #956)."""
+    """Methods Plate I's takeaway, read from corpus and coverage tables (#755, #864, #988)."""
     total_occ, total_taxa = _coverage_totals(metrics)
-    retained = int(metrics["retained_studies"])
+    if metrics.get("retained_studies") is None or int(metrics["retained_studies"]) <= 0:
+        raise ValueError("missing retained_studies count in metrics")
     if metrics.get("retained_profiles") is None or int(metrics["retained_profiles"]) <= 0:
         raise ValueError("missing retained_profiles count in metrics")
+    if metrics.get("trait_bearing_taxa") is None or int(metrics["trait_bearing_taxa"]) <= 0:
+        raise ValueError("missing trait_bearing_taxa count in metrics")
+    retained = int(metrics["retained_studies"])
     retained_profiles = int(metrics["retained_profiles"])
     pooled = int(metrics["pooled_pairs"])
     matrix_taxa = int(metrics["matrix_taxa"])
+    trait_bearing_taxa = int(metrics["trait_bearing_taxa"])
     trait_count = int(metrics["trait_count"])
     return (
         "High-level visual overview of the data ingestion funnel: "
@@ -1095,8 +1119,9 @@ def methods_plate_one_takeaway(metrics: Mapping[str, Any]) -> str:
         f"v1.3.1 human studies ({retained_profiles:,} retained profiles, {total_occ:,} all-profile "
         f"taxon occurrences across {total_taxa:,} unique NCBI TaxIDs; "
         f"{pooled:,} paired experiments / {2 * pooled:,} paired profiles) joined to "
-        f"{matrix_taxa:,} KG-Microbe organisms \N{MULTIPLICATION SIGN} {trait_count:,} "
-        "normalized traits via NCBI Taxonomy subtree rollup."
+        f"{matrix_taxa:,} BugSigDB taxa ({trait_bearing_taxa:,} with a KG-Microbe trait) "
+        f"\N{MULTIPLICATION SIGN} {trait_count:,} normalized traits via NCBI Taxonomy subtree "
+        "rollup."
     )
 
 
@@ -1621,11 +1646,12 @@ def update_previous_slide_text(row: dict[str, str], metrics: dict) -> tuple[str,
         enriched = metrics["ora_enrichment"]
         inc_hits, dec_hits = metrics["ora_enrichment_sides"]
         trait_count = int(metrics["trait_count"])
+        ora_profiles = enriched.input_profiles or (2 * int(metrics["pooled_pairs"]))
         title = f"{enriched.calls:,} ORA enrichment calls describe individual microbial profiles"
         takeaway = (
             f"{enriched.calls:,} profile \N{MULTIPLICATION SIGN} trait enrichment calls pass BH "
             f"q ≤ {enriched.p_threshold} and fold ≥ {enriched.fold} across "
-            f"{enriched.tests:,} testable pairs ({2 * metrics['pooled_pairs']:,} human profiles "
+            f"{enriched.tests:,} testable pairs ({ora_profiles:,} human profiles "
             f"\N{MULTIPLICATION SIGN} {trait_count:,} traits; "
             f"{inc_hits:,} inc vs {dec_hits:,} dec)."
         )
@@ -2198,7 +2224,8 @@ def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
         # --- Section D: Distinct Jed Main Figures (Global Heatmaps, PD Cellulose, Oral Atlas) ---
         {
             "owner": "Jed",
-            "title": "Global condition \N{MULTIPLICATION SIGN} trait module clustered heatmap ("
+            "title": "Global condition \N{MULTIPLICATION SIGN} trait module clustered heatmap "
+            f"(top {int(metrics.get('heatmap_displayed_traits', 60)):,} of "
             f"{int(metrics['trait_count']):,} traits)",
             "tag": "Jed · Global trait-module atlas",
             "figure_file_path": "trait-visualization/condition_trait_module_clustered_heatmap.png",
@@ -2358,9 +2385,12 @@ def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
 
 
 def check_coverage_table_sync(
-    metrics: Mapping[str, Any], slides: Sequence[Mapping[str, str]]
+    metrics: Mapping[str, Any],
+    slides: Sequence[Mapping[str, str]],
+    *,
+    require_enrichment_infographic: bool = False,
 ) -> None:
-    """Assert deck slide text matches corpus, matrix, and coverage tables (#755, #864, #930)."""
+    """Assert deck slide text matches corpus, matrix, and coverage tables (#755, #864, #988)."""
     by_analysis = {s["analysis"]: s for s in slides if "analysis" in s}
     mp1 = by_analysis.get("methods_plate_1")
     if mp1 is None:
@@ -2458,10 +2488,12 @@ def check_coverage_table_sync(
     hm = by_analysis.get("condition_trait_module_clustered_heatmap")
     if hm is None:
         raise ValueError("Missing condition_trait_module_clustered_heatmap slide in metadata")
-    if f"({trait_count:,} traits)" not in hm.get("title", ""):
+    displayed_traits = int(metrics.get("heatmap_displayed_traits", 60))
+    expected_hm_traits = f"(top {displayed_traits:,} of {trait_count:,} traits)"
+    if expected_hm_traits not in hm.get("title", ""):
         raise ValueError(
             "condition_trait_module_clustered_heatmap title out of sync with trait matrix "
-            f"columns: expected '({trait_count:,} traits)' in {hm.get('title')!r}"
+            f"columns: expected {expected_hm_traits!r} in {hm.get('title')!r}"
         )
     if f"across the {retained_profiles:,}-profile wide matrix" not in hm.get("takeaway", ""):
         raise ValueError(
@@ -2470,17 +2502,26 @@ def check_coverage_table_sync(
             f"in {hm.get('takeaway')!r}"
         )
 
-    for slide in slides:
-        if slide.get("figure_file_path") == "data/derived/enrichment_infographic.png":
-            expected_enr = (
-                f"({2 * pooled_pairs:,} human profiles \N{MULTIPLICATION SIGN} "
-                f"{trait_count:,} traits;"
+    enriched = metrics.get("ora_enrichment")
+    ora_profiles = (
+        enriched.input_profiles
+        if enriched is not None and getattr(enriched, "input_profiles", None)
+        else 2 * pooled_pairs
+    )
+    enr_slides = [
+        s for s in slides if s.get("figure_file_path") == "data/derived/enrichment_infographic.png"
+    ]
+    if require_enrichment_infographic and not enr_slides:
+        raise ValueError("Missing data/derived/enrichment_infographic.png slide in deck")
+    for slide in enr_slides:
+        expected_enr = (
+            f"({ora_profiles:,} human profiles \N{MULTIPLICATION SIGN} {trait_count:,} traits;"
+        )
+        if expected_enr not in slide.get("takeaway", ""):
+            raise ValueError(
+                f"enrichment_infographic takeaway out of sync with corpus/trait counts: "
+                f"expected {expected_enr!r} in {slide.get('takeaway')!r}"
             )
-            if expected_enr not in slide.get("takeaway", ""):
-                raise ValueError(
-                    f"enrichment_infographic takeaway out of sync with corpus/trait counts: "
-                    f"expected {expected_enr!r} in {slide.get('takeaway')!r}"
-                )
 
 
 # The appendix histograms PR #315's scripts/plot_enrichment_histograms.py drew (checked at
@@ -3966,7 +4007,11 @@ def build_deck(
         (REPO_ROOT / CELLULOSE_DIR / "cellulose_decr_provenance.json").read_text(encoding="utf-8")
     ).get("contrast_classifier_version")
     gates = record_problems(
-        metrics["plate_counts"], cellulose_classifier, metrics["contrast_classifier"]
+        metrics["plate_counts"],
+        cellulose_classifier,
+        metrics["contrast_classifier"],
+        matrix_taxa=metrics["matrix_taxa"],
+        trait_count=metrics["trait_count"],
     )
     if gates and not allow_unverified:
         raise SystemExit(
@@ -4155,6 +4200,8 @@ def build_deck(
 
     for entry in ordered_entries:
         mark_unmerged(entry)
+
+    check_coverage_table_sync(metrics, ordered_entries, require_enrichment_infographic=True)
 
     # Check every committed file the slides link or quote against the revision it cites,
     # before anything is written (#637).

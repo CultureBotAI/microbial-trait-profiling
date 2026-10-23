@@ -22,11 +22,74 @@ from pathlib import Path
 from typing import Any
 
 from mtp.taxa_trait_matrix import STRAIN_ROLLUPS
+from mtp.trait_guilds import retained_trait_columns
 
 ORA_ENRICHMENT = Path("data/derived/trait_enrichment_results.tsv")
 ORA_DEPLETION = Path("data/derived/trait_depletion_results.tsv")
 GUILD_CORRELATION = Path("data/derived/guild_maps/guild_aerobe_anaerobe_correlation.tsv")
 CALIBRATION_CRITERIA = Path("data/derived/calibration/calibration_criteria.tsv")
+MATRIX_METADATA_COLUMNS = frozenset({"taxon_id", "taxon_name", "taxonomic_rank"})
+
+
+@dataclass(frozen=True)
+class MatrixCounts:
+    """Row and column counts from taxa_trait_matrix.tsv and taxa_trait_matrix_columns.tsv (#988)."""
+
+    matrix_taxa: int
+    trait_bearing_taxa: int
+    trait_count: int
+    raw_trait_count: int
+    mediadive_trait_count: int
+
+
+def read_matrix_counts(matrix_path: Path, columns_path: Path) -> MatrixCounts:
+    """Read taxon and retained/raw/MediaDive trait counts from matrix and columns (#988)."""
+    matrix_taxa = 0
+    trait_bearing_taxa = 0
+    with matrix_path.open(newline="", encoding="utf-8") as handle:
+        non_comment = (line for line in handle if not line.startswith("#"))
+        reader = csv.reader(non_comment, delimiter="\t")
+        header = next(reader, None)
+        if not header:
+            raise ValueError(f"0 organism rows in {matrix_path}")
+        trait_indices = [
+            idx for idx, col in enumerate(header) if col not in MATRIX_METADATA_COLUMNS
+        ]
+        for row in reader:
+            if not row:
+                continue
+            matrix_taxa += 1
+            if trait_indices and any(
+                idx < len(row) and row[idx] not in ("", "0", "0.0") for idx in trait_indices
+            ):
+                trait_bearing_taxa += 1
+    if matrix_taxa <= 0:
+        raise ValueError(f"0 organism rows in {matrix_path}")
+
+    with columns_path.open(newline="", encoding="utf-8") as handle:
+        col_lines = [line for line in handle if not line.startswith("#")]
+        col_rows = list(csv.DictReader(col_lines, delimiter="\t"))
+    if not col_rows:
+        raise ValueError(f"0 trait column rows in {columns_path}")
+    column_ids = [row["column_id"] for row in col_rows]
+    _, retained_columns, mediadive_excluded = retained_trait_columns(column_ids)
+    trait_count = len(retained_columns)
+    if trait_count <= 0:
+        raise ValueError(
+            f"0 retained trait columns in {columns_path} "
+            f"(raw={len(col_rows)}, mediadive={mediadive_excluded})"
+        )
+    if trait_bearing_taxa <= 0:
+        raise ValueError(f"0 trait-bearing taxa in {matrix_path}")
+
+    return MatrixCounts(
+        matrix_taxa=matrix_taxa,
+        trait_bearing_taxa=trait_bearing_taxa,
+        trait_count=trait_count,
+        raw_trait_count=len(col_rows),
+        mediadive_trait_count=mediadive_excluded,
+    )
+
 
 # Shared column and basis definitions for taxa-coverage tables (#858, #864, #956, #982).
 COVERAGE_TOTAL_TAXA_COL = "total_taxa"
@@ -186,6 +249,8 @@ class OraCalls:
     calls: int
     p_threshold: str
     fold: str
+    input_profiles: int | None = None
+    background_taxa_m: int | None = None
 
     @classmethod
     def from_header(cls, lines: Iterable[str]) -> OraCalls:
@@ -201,12 +266,16 @@ class OraCalls:
             raise ValueError(
                 f"the ORA table's calls are not FDR-controlled (FDR: {header.get('FDR')})"
             )
+        raw_profiles = header.get("Total-Profiles-Input") or header.get("Testable-Profiles")
+        raw_m = header.get("Background-Taxa-Universe-M")
         try:
             return cls(
                 tests=int(header["Total-Tests-Performed"]),
                 calls=int(header["Significant-Hits"]),
                 p_threshold=header["P-Threshold"],
                 fold=header.get("Min-Fold") or header["Max-Fold"],
+                input_profiles=int(raw_profiles) if raw_profiles else None,
+                background_taxa_m=int(raw_m) if raw_m else None,
             )
         except (KeyError, ValueError) as error:
             raise ValueError(f"an ORA table header without its counts ({error})") from error
