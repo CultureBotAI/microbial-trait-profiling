@@ -95,6 +95,115 @@ def test_population_and_table_contract(inputs: dict[str, Path]) -> None:
     assert {"taxon_id", "taxon_name", "taxonomic_rank", "trait_count"} <= set(taxa)
 
 
+def test_core_counts_exclude_qualified_mediadive_columns(
+    inputs: dict[str, Path], tmp_path: Path
+) -> None:
+    for name in ("matrix", "profiles"):
+        frame = pd.read_csv(inputs[name], sep="\t")
+        media = [0, 1, 0, 0, 0] if name == "matrix" else [1, 1, 0, 0, 0]
+        for term in ("mediadive.medium:1", "MediaDive.medium:2"):
+            frame[f"METPO:2000517|{term}"] = media
+        frame.to_csv(inputs[name], sep="\t", index=False)
+    output = tmp_path / "core-coverage"
+    coverage.run_coverage(output_dir=output, tables_only=True, **inputs)
+    taxa = pd.read_csv(output / "taxa_kgmicrobe_coverage_details.tsv", sep="\t").set_index(
+        "taxon_id"
+    )
+    assert taxa.loc["t2", "trait_count"] == 2
+    assert taxa.loc["t2", "core_trait_count"] == 0
+    assert taxa.loc["t1", "core_trait_count"] == 1
+    profiles = pd.read_csv(output / "profile_trait_mapping_summary.tsv", sep="\t")
+    assert profiles.mapped_trait_count.tolist() == [3, 2, 1]
+    assert profiles.mapped_core_trait_count.tolist() == [1, 0, 1]
+    text = (output / "README.md").read_text()
+    assert "| Taxa with MediaDive annotations only | 1 |" in text
+    assert "| Profiles with MediaDive annotations only | 1 |" in text
+
+
+def test_vintage_is_read_and_hashed_from_the_explicit_raw_dump(
+    inputs: dict[str, Path], tmp_path: Path
+) -> None:
+    raw = tmp_path / "full_dump.csv"
+    raw.write_text("# BugSigDB fixture-912, License: CC0\nStudy\nfixture\n")
+    output = tmp_path / "vintage"
+    coverage.run_coverage(output_dir=output, tables_only=True, raw_dump=raw, **inputs)
+    record = json.loads((output / "provenance.json").read_text())
+    assert record["corpus_identity"]["bugsigdb_vintage"] == "fixture-912"
+    assert record["inputs"]["raw_dump"]["sha256"] == coverage.file_sha256(raw)
+    assert record["bugsigdb_vintage_source"] == "raw_dump_header"
+
+
+def test_empty_ranks_and_profile_status_colors_match_across_figures(
+    inputs: dict[str, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    matrix = pd.read_csv(inputs["matrix"], sep="\t")
+    matrix.loc[matrix.taxon_id.eq("t2"), "taxonomic_rank"] = "species"
+    matrix.to_csv(inputs["matrix"], sep="\t", index=False)
+    taxa, ranks, profile_ranks, profiles, _, _ = coverage.load_and_process_data(**inputs)
+    captured = []
+    monkeypatch.setattr(coverage, "save_figure", lambda fig, _path: captured.append(fig))
+    coverage.plot_rank_stratified_histogram(ranks, tmp_path / "rank.png", profiles)
+    coverage.plot_occurrences_vs_unique(ranks, taxa, profiles, tmp_path / "summary.png")
+    coverage.plot_profile_distribution_by_rank(profile_ranks, profiles, tmp_path / "profile.png")
+    try:
+        assert [tick.get_text() for tick in captured[0].axes[0].get_xticklabels()] == ["Species"]
+        assert [tick.get_text() for tick in captured[2].axes[0].get_xticklabels()] == ["Species"]
+        mapped = coverage.matplotlib.colors.to_rgba(coverage.COLOR_ALL_MAPPED_PROFILE)
+        assert captured[0].axes[2].containers[2][0].get_facecolor() == mapped
+        assert captured[1].axes[0].containers[2][2].get_facecolor() == mapped
+        assert captured[2].axes[0].containers[2][0].get_facecolor() == mapped
+        mixed = next(
+            text for text in captured[1].axes[0].texts if text.get_text().startswith("Mixed:")
+        )
+        assert coverage.matplotlib.colors.to_rgba(mixed.get_color()) == (1, 1, 1, 1)
+        middle = captured[2].axes[0].containers[1][0]
+        label = next(
+            text
+            for text in captured[2].axes[0].texts
+            if text.get_position() == (0, middle.get_y() + middle.get_height() / 2)
+        )
+        assert coverage.matplotlib.colors.to_rgba(label.get_color()) == (1, 1, 1, 1)
+    finally:
+        for fig in captured:
+            coverage.plt.close(fig)
+
+
+def test_sparse_figure_annotations_stay_visible_without_covering_bars(
+    inputs: dict[str, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    matrix = pd.read_csv(inputs["matrix"], sep="\t")
+    matrix.loc[matrix.taxon_id.eq("t2"), "taxonomic_rank"] = "species"
+    matrix.to_csv(inputs["matrix"], sep="\t", index=False)
+    taxa, ranks, _, profiles, _, _ = coverage.load_and_process_data(**inputs)
+    captured = []
+    monkeypatch.setattr(coverage, "save_figure", lambda fig, _path: captured.append(fig))
+    coverage.plot_rank_stratified_histogram(ranks, tmp_path / "rank.png", profiles)
+    coverage.plot_occurrences_vs_unique(ranks, taxa, profiles, tmp_path / "summary.png")
+    try:
+        for fig in captured:
+            fig.canvas.draw()
+        proportion_axis = captured[0].axes[1]
+        parity_label = next(t for t in proportion_axis.texts if "parity threshold" in t.get_text())
+        assert parity_label.get_window_extent().x1 <= proportion_axis.get_window_extent().x1
+        for ax in (captured[0].axes[0], captured[0].axes[2]):
+            bars = [patch for group in ax.containers for patch in group if patch.get_height() > 0]
+            for text in ax.texts:
+                box = text.get_bbox_patch()
+                if box is not None:
+                    assert not any(
+                        box.get_window_extent().overlaps(bar.get_window_extent()) for bar in bars
+                    )
+        ax = captured[1].axes[0]
+        bounds = ax.get_window_extent()
+        for text in ax.texts:
+            if coverage.matplotlib.colors.to_rgba(text.get_color()) == (1, 1, 1, 1):
+                extent = text.get_window_extent()
+                assert bounds.x0 <= extent.x0 < extent.x1 <= bounds.x1
+    finally:
+        for fig in captured:
+            coverage.plt.close(fig)
+
+
 def test_readme_reconciles_with_written_tables_and_provenance(
     inputs: dict[str, Path],
     tmp_path: Path,
@@ -238,8 +347,8 @@ def test_dynamic_figure_labels_and_median_positions(
     coverage.plot_rank_stratified_histogram(ranks, tmp_path / "rank.png", profiles)
     coverage.plot_histogram1_mapped_profiles(profiles, tmp_path / "mapped.png")
     text = "\n".join(t.get_text() for fig in captured for ax in fig.axes for t in ax.texts)
-    assert "N = 3" in text
-    assert "N = 2 unique taxa" in text
+    assert captured[0].axes[0].get_title(loc="left") == "A. Unique Taxa by Rank (N=2)"
+    assert captured[0].axes[2].get_title(loc="left") == "C. Profiles by Rank and Mapping (N=3)"
     assert "7,329" not in text
     assert "7,102" not in text
     assert captured[1].axes[0].lines[0].get_xdata()[0] == 0
@@ -302,6 +411,8 @@ def test_export_omits_empty_ranks_and_records_corpus_identity(
     )
     ranks = pd.read_csv(output / "taxa_coverage_by_rank.tsv", sep="\t")
     assert ranks.total_taxa.gt(0).all()
+    profile_ranks = pd.read_csv(output / "profile_coverage_by_rank.tsv", sep="\t")
+    assert profile_ranks.profiles_containing_rank.gt(0).all()
     record = json.loads((output / "provenance.json").read_text())
     assert record["producer"]["code_commit"].endswith("+dirty")
     assert record["corpus_identity"]["bugsigdb_vintage"] == "fixture-vintage"
@@ -371,6 +482,14 @@ def test_every_readme_table_cell_matches_the_exported_tables(
         "Zero-trait profiles": [str(len(profiles) - len(mapped))],
         "Unique taxa": [str(len(taxa))],
         "Trait-bearing taxa": [str(taxa.has_traits.sum())],
+        "Taxa with non-MediaDive traits": [str(taxa.core_trait_count.gt(0).sum())],
+        "Taxa with MediaDive annotations only": [
+            str((taxa.has_traits & taxa.core_trait_count.eq(0)).sum())
+        ],
+        "Profiles with non-MediaDive traits": [str(profiles.mapped_core_trait_count.gt(0).sum())],
+        "Profiles with MediaDive annotations only": [
+            str((profiles.has_mapped_traits & profiles.mapped_core_trait_count.eq(0)).sum())
+        ],
         "Zero-trait taxa": [str(len(zero))],
         "Taxon signature mentions": [str(taxa.signature_occurrences.sum())],
         "Zero-trait taxa recurring in ≥20 profiles": [str(zero.profile_count.ge(20).sum())],
@@ -418,9 +537,7 @@ def test_two_fixture_runs_have_identical_tables_readme_and_svgs(
 ) -> None:
     first, second = tmp_path / "first", tmp_path / "second"
     # Serialize real SVGs, including their IDs and metadata; do not mock savefig.
-    with coverage.plt.rc_context(
-        {"svg.hashsalt": "coverage-fixture", "font.family": "DejaVu Sans"}
-    ):
+    with coverage.plt.rc_context({"font.family": "DejaVu Sans"}):
         coverage.run_coverage(output_dir=first, **inputs)
         coverage.run_coverage(output_dir=second, **inputs)
     compared = []

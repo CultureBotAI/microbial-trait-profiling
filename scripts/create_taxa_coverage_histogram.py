@@ -35,6 +35,7 @@ from mtp.human_host_corpus import (
 )
 from mtp.paths import file_sha256
 from mtp.study_trait_profiles import direction_to_inc_dec
+from mtp.trait_guilds import MEDIADIVE_MARKER, read_bugsigdb_vintage
 from mtp.workflow.runtime import repository_state
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -61,7 +62,7 @@ RANK_DISPLAY = {
 }
 
 # Colorblind-safe palette (Okabe-Ito & Viridis inspired)
-COLOR_RICH = "#0072b2"  # Deep Blue: >= 3 traits / All-mapped
+COLOR_RICH = "#0072b2"  # Deep Blue: >= 3 traits.
 COLOR_SPARSE = "#475569"  # Slate: 1-2 traits / Mixed mapped+zero
 COLOR_MIXED_PROFILE = "#475569"  # Dark slate separates profile status from taxonomic ranks.
 COLOR_ALL_MAPPED_PROFILE = "#111827"  # Charcoal: a profile status, distinct from rank colors.
@@ -139,7 +140,7 @@ def diagnose_zero_trait_taxon(taxon_id: str, name: str, rank: str) -> tuple[str,
     if "candidatus" in lower_name or lower_name.startswith("ca. "):
         return (
             "Candidatus Lineage",
-            "Infer phenotypic traits from MAG-derived metabolic models or phylogenetic neighbors",
+            "Seek direct trait evidence; neighboring taxa do not establish this lineage's traits",
         )
 
     if re.search(
@@ -300,7 +301,7 @@ def load_and_process_data(
 
     meta_cols = ["taxon_id", "taxon_name", "taxonomic_rank"]
     trait_cols = [c for c in matrix_df.columns if c not in meta_cols]
-    non_mediadive_cols = [c for c in trait_cols if not c.startswith("mediadive.medium:")]
+    non_mediadive_cols = [c for c in trait_cols if MEDIADIVE_MARKER not in c.lower()]
     print(
         f"  Loaded {len(matrix_df)} unique taxa and {len(trait_cols)} trait columns "
         f"({len(non_mediadive_cols)} core non-MediaDive)."
@@ -361,7 +362,7 @@ def load_and_process_data(
         if c in profiles_df.columns
     ]
     prof_trait_cols = [c for c in profiles_df.columns if c not in prof_meta_cols]
-    prof_core_cols = [c for c in prof_trait_cols if not c.startswith("mediadive.medium:")]
+    prof_core_cols = [c for c in prof_trait_cols if MEDIADIVE_MARKER not in c.lower()]
 
     prof_summary = profiles_df[prof_meta_cols].copy()
     prof_summary["profile_key"] = (
@@ -625,9 +626,10 @@ def plot_rank_stratified_histogram(
     rank_df: pd.DataFrame, output_path: Path, prof_summary: pd.DataFrame
 ) -> None:
     """Plot unique-taxon counts, mapped percentages and profile distributions by rank."""
+    rank_df = rank_df.loc[rank_df.total_taxa.gt(0)]
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(22, 7.2), gridspec_kw={"wspace": 0.25})
 
-    ranks = [RANK_DISPLAY[r] for r in RANK_ORDER]
+    ranks = [RANK_DISPLAY[r] for r in rank_df.taxonomic_rank]
     x = np.arange(len(ranks))
     width = 0.62
 
@@ -686,7 +688,7 @@ def plot_rank_stratified_histogram(
         "Unique Taxa in the Human 16S/WMS Corpus", fontsize=11, fontweight="bold", labelpad=8
     )
     ax1.set_title(
-        "A. Unique Taxa Counts & Mapped % by Rank",
+        f"A. Unique Taxa by Rank (N={int(rank_df.total_taxa.sum()):,})",
         fontsize=12,
         fontweight="bold",
         pad=12,
@@ -695,26 +697,6 @@ def plot_rank_stratified_histogram(
     ax1.set_ylim(0, max(totals) * 1.18)
     ax1.grid(axis="y", linestyle="--", alpha=0.35, color=COLOR_SLATE_LIGHT)
     ax1.set_axisbelow(True)
-
-    ax1.text(
-        0.32,
-        0.95,
-        f"Total catalog: N = {int(rank_df.total_taxa.sum()):,} unique taxa\n"
-        f"• Trait-bearing (≥1 trait): {int(rank_df.trait_bearing_taxa.sum()):,} "
-        f"({percent(rank_df.trait_bearing_taxa.sum(), rank_df.total_taxa.sum()):.1f}%)\n"
-        f"• Zero traits: {int(rank_df.zero_trait_taxa.sum()):,} "
-        f"({percent(rank_df.zero_trait_taxa.sum(), rank_df.total_taxa.sum()):.1f}%)\n"
-        "(Top label shows total N & % mapped)",
-        transform=ax1.transAxes,
-        fontsize=8.8,
-        verticalalignment="top",
-        bbox={
-            "boxstyle": "round,pad=0.4",
-            "facecolor": COLOR_BG_LIGHT,
-            "edgecolor": COLOR_SLATE_LIGHT,
-            "alpha": 0.92,
-        },
-    )
 
     # --- Panel B: 100% Normalized Proportions of Unique Taxa ---
     zero_pcts = rank_df["zero_trait_pct"].to_numpy()
@@ -767,12 +749,14 @@ def plot_rank_stratified_histogram(
 
     ax2.axhline(50, color=COLOR_SLATE_MID, linestyle=":", linewidth=1.2, alpha=0.7)
     ax2.text(
-        len(ranks) - 0.45,
+        0.98,
         51.5,
         "50% parity threshold",
+        transform=ax2.get_yaxis_transform(),
         fontsize=8.5,
         color=COLOR_SLATE_MID,
         ha="right",
+        bbox={"facecolor": "white", "edgecolor": "none", "pad": 2},
     )
 
     ax2.set_xticks(x)
@@ -820,7 +804,7 @@ def plot_rank_stratified_histogram(
         prof_all_mapped,
         width,
         bottom=prof_zero_only + prof_mixed,
-        color=COLOR_RICH,
+        color=COLOR_ALL_MAPPED_PROFILE,
         edgecolor="white",
         linewidth=0.8,
         label="Profile rank has All Taxa Mapped (≥1 trait)",
@@ -856,7 +840,7 @@ def plot_rank_stratified_histogram(
         "Number of Study Profiles Containing Rank", fontsize=11, fontweight="bold", labelpad=8
     )
     ax3.set_title(
-        "C. Profile Distribution by Taxa Rank & Mapping",
+        f"C. Profiles by Rank and Mapping (N={len(prof_summary):,})",
         fontsize=12,
         fontweight="bold",
         pad=12,
@@ -866,35 +850,16 @@ def plot_rank_stratified_histogram(
     ax3.grid(axis="y", linestyle="--", alpha=0.35, color=COLOR_SLATE_LIGHT)
     ax3.set_axisbelow(True)
 
-    ax3.text(
-        0.37,
-        0.96,
-        f"Across N = {len(prof_summary):,} Study Profiles:\n"
-        f"• {int(prof_summary.has_mapped_traits.sum()):,} "
-        f"({100 * prof_summary.has_mapped_traits.mean():.1f}%) map to ≥1 trait\n"
-        f"• {int((~prof_summary.has_mapped_traits).sum()):,} "
-        f"({100 * (~prof_summary.has_mapped_traits).mean():.1f}%) have 0 traits\n"
-        + "\n".join(
-            f"• {row.display_rank}: {row.profiles_with_rank:,} profiles "
-            f"({row.profiles_any_mapped_pct:.1f}% mapped)"
-            for row in rank_df.loc[rank_df.taxonomic_rank.isin(["genus", "species"])].itertuples()
-        ),
-        transform=ax3.transAxes,
-        fontsize=8.5,
-        verticalalignment="top",
-        bbox={
-            "boxstyle": "round,pad=0.38",
-            "facecolor": "#ecfdf5",
-            "edgecolor": COLOR_ACCENT,
-            "alpha": 0.94,
-        },
-    )
-
     handles = [
         Patch(
             facecolor=COLOR_RICH,
             edgecolor="white",
-            label="Mapped Rich (≥3 traits) / All Rank Taxa Mapped in Profile",
+            label="Mapped Rich (≥3 traits)",
+        ),
+        Patch(
+            facecolor=COLOR_ALL_MAPPED_PROFILE,
+            edgecolor="white",
+            label="All Rank Taxa Mapped in Profile",
         ),
         Patch(
             facecolor=COLOR_SPARSE,
@@ -910,8 +875,8 @@ def plot_rank_stratified_histogram(
     fig.legend(
         handles=handles,
         loc="upper center",
-        bbox_to_anchor=(0.5, 1.03),
-        ncol=3,
+        bbox_to_anchor=(0.5, 1.16),
+        ncol=2,
         fontsize=10,
         frameon=True,
         facecolor=COLOR_BG_LIGHT,
@@ -996,60 +961,40 @@ def plot_occurrences_vs_unique(
         top_pcts,
         height=bar_height,
         left=np.array(zero_pcts) + np.array(mid_pcts),
-        color=COLOR_RICH,
+        color=[COLOR_RICH, COLOR_RICH, COLOR_ALL_MAPPED_PROFILE],
         edgecolor="white",
         label="Rich (≥3 Traits) / Fully Mapped Profiles (100% Taxa Mapped)",
     )
 
-    # Row 0: Unique Taxa
-    ax.text(
-        zero_pcts[0] / 2,
-        y_pos[0],
-        f"0 Traits: {zero_pcts[0]:.1f}%\n({zero_taxa:,} taxa)",
-        ha="center",
-        va="center",
-        color="white",
-        fontweight="bold",
-        fontsize=9.5,
-    )
-    ax.text(
-        zero_pcts[0] + mid_pcts[0] + top_pcts[0] / 2,
-        y_pos[0],
-        f"Trait-Bearing Taxa: {mid_pcts[0] + top_pcts[0]:.1f}% "
-        f"({sparse_taxa + rich_taxa:,} / {total_taxa:,})",
-        ha="center",
-        va="center",
-        color="white",
-        fontweight="bold",
-        fontsize=10,
-    )
-
-    # Row 1: Occurrences
-    ax.text(
-        zero_pcts[1] / 2,
-        y_pos[1],
-        f"{zero_pcts[1]:.1f}%\n({zero_occ:,})",
-        ha="center",
-        va="center",
-        color="white",
-        fontweight="bold",
-        fontsize=9,
-    )
-    ax.text(
-        zero_pcts[1] + mid_pcts[1] + top_pcts[1] / 2,
-        y_pos[1],
-        f"Trait-Bearing Occurrences: {mid_pcts[1] + top_pcts[1]:.2f}% "
-        f"({sparse_occ + rich_occ:,} / {total_occ:,})",
-        ha="center",
-        va="center",
-        color="white",
-        fontweight="bold",
-        fontsize=10,
-    )
+    # Combined annotation-bearing labels span sparse and rich segments together.
+    for row, zero_count, mapped_count in (
+        (0, zero_taxa, sparse_taxa + rich_taxa),
+        (1, zero_occ, sparse_occ + rich_occ),
+    ):
+        for label, width_pct, center, count in (
+            ("0 traits", zero_pcts[row], zero_pcts[row] / 2, zero_count),
+            (
+                "Trait-bearing",
+                mid_pcts[row] + top_pcts[row],
+                zero_pcts[row] + (mid_pcts[row] + top_pcts[row]) / 2,
+                mapped_count,
+            ),
+        ):
+            if width_pct > 0:
+                ax.text(
+                    center,
+                    y_pos[row],
+                    f"{label}: {width_pct:.1f}%\n({count:,})",
+                    ha="center",
+                    va="center",
+                    color="white",
+                    fontweight="bold",
+                    fontsize=9,
+                )
 
     # Row 2: Study Profiles
     ax.text(
-        max(zero_pcts[2] + 0.8, 4.0),
+        0,
         y_pos[2] - 0.34,
         f"0-Trait Profiles: {zero_pcts[2]:.1f}% ({zero_prof:,})",
         ha="left",
@@ -1059,27 +1004,36 @@ def plot_occurrences_vs_unique(
         fontsize=9,
     )
     ax.text(
-        zero_pcts[2] + mid_pcts[2] / 2,
-        y_pos[2],
-        f"Mixed:\n{mid_pcts[2]:.1f}%\n({mixed_prof:,})",
-        ha="center",
+        100,
+        y_pos[2] - 0.34,
+        f"Any trait: {mid_pcts[2] + top_pcts[2]:.1f}% "
+        f"({mixed_prof + all_mapped_prof:,} / {total_prof:,})",
+        ha="right",
         va="center",
         color=COLOR_SLATE_DARK,
         fontweight="bold",
-        fontsize=8.5,
+        fontsize=9,
     )
-    ax.text(
-        zero_pcts[2] + mid_pcts[2] + top_pcts[2] / 2,
-        y_pos[2],
-        f"All Taxa Mapped: {top_pcts[2]:.1f}% ({all_mapped_prof:,})\n"
-        f"Total Trait-Mapped Profiles: {mid_pcts[2] + top_pcts[2]:.1f}% "
-        f"({mixed_prof + all_mapped_prof:,} / {total_prof:,})",
-        ha="center",
-        va="center",
-        color="white",
-        fontweight="bold",
-        fontsize=9.8,
-    )
+    for label, width_pct, center, count in (
+        ("Mixed", mid_pcts[2], zero_pcts[2] + mid_pcts[2] / 2, mixed_prof),
+        (
+            "All mapped",
+            top_pcts[2],
+            zero_pcts[2] + mid_pcts[2] + top_pcts[2] / 2,
+            all_mapped_prof,
+        ),
+    ):
+        if width_pct > 0:
+            ax.text(
+                center,
+                y_pos[2],
+                f"{label}:\n{width_pct:.1f}%\n({count:,})",
+                ha="center",
+                va="center",
+                color="white",
+                fontweight="bold",
+                fontsize=8.5,
+            )
 
     ax.set_yticks(y_pos)
     ax.set_yticklabels(categories, fontsize=10.5, fontweight="bold")
@@ -1100,7 +1054,12 @@ def plot_occurrences_vs_unique(
         Patch(
             facecolor=COLOR_RICH,
             edgecolor="white",
-            label="Rich (≥3 traits) / All Profile Taxa Mapped",
+            label="Rich (≥3 traits)",
+        ),
+        Patch(
+            facecolor=COLOR_ALL_MAPPED_PROFILE,
+            edgecolor="white",
+            label="All Profile Taxa Mapped",
         ),
         Patch(
             facecolor=COLOR_SPARSE,
@@ -1116,8 +1075,8 @@ def plot_occurrences_vs_unique(
     ax.legend(
         handles=handles,
         loc="upper center",
-        bbox_to_anchor=(0.5, 1.15),
-        ncol=3,
+        bbox_to_anchor=(0.5, 1.30),
+        ncol=2,
         fontsize=9.2,
         frameon=True,
         facecolor=COLOR_BG_LIGHT,
@@ -1131,9 +1090,10 @@ def plot_profile_distribution_by_rank(
     prof_rank_df: pd.DataFrame, prof_summary: pd.DataFrame, output_path: Path
 ) -> None:
     """Plot profile distributions by taxonomic rank and annotation coverage."""
+    prof_rank_df = prof_rank_df.loc[prof_rank_df.profiles_containing_rank.gt(0)]
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16.5, 6.8), gridspec_kw={"wspace": 0.26})
 
-    ranks = [RANK_DISPLAY[r] for r in RANK_ORDER]
+    ranks = [RANK_DISPLAY[r] for r in prof_rank_df.taxonomic_rank]
     x = np.arange(len(ranks))
     width = 0.62
 
@@ -1172,7 +1132,7 @@ def plot_profile_distribution_by_rank(
         all_map_pct,
         width,
         bottom=zero_pct + mixed_pct,
-        color=COLOR_RICH,
+        color=COLOR_ALL_MAPPED_PROFILE,
         edgecolor="white",
         linewidth=0.8,
         label="All Mapped for Rank (100% of rank taxa have ≥1 trait)",
@@ -1208,7 +1168,7 @@ def plot_profile_distribution_by_rank(
                 f"{mixed_pct[i]:.1f}%\n({mixed_n[i]:,})",
                 ha="center",
                 va="center",
-                color=COLOR_SLATE_DARK,
+                color="white",
                 fontsize=8.0,
                 fontweight="bold",
             )
@@ -1329,7 +1289,7 @@ def plot_profile_distribution_by_rank(
 
     handles = [
         Patch(
-            facecolor=COLOR_RICH,
+            facecolor=COLOR_ALL_MAPPED_PROFILE,
             edgecolor="white",
             label="All Rank Taxa Mapped in Profile (100% have ≥1 trait)",
         ),
@@ -2155,6 +2115,14 @@ def write_readme(
         "Zero-trait profiles": len(profiles) - len(mapped),
         "Unique taxa": len(taxa),
         "Trait-bearing taxa": int(taxa.has_traits.sum()),
+        "Taxa with non-MediaDive traits": int(taxa.core_trait_count.gt(0).sum()),
+        "Taxa with MediaDive annotations only": int(
+            (taxa.has_traits & taxa.core_trait_count.eq(0)).sum()
+        ),
+        "Profiles with non-MediaDive traits": int(profiles.mapped_core_trait_count.gt(0).sum()),
+        "Profiles with MediaDive annotations only": int(
+            (profiles.has_mapped_traits & profiles.mapped_core_trait_count.eq(0)).sum()
+        ),
         "Zero-trait taxa": len(zero),
         "Taxon signature mentions": int(taxa.signature_occurrences.sum()),
         "Zero-trait taxa recurring in ≥20 profiles": int(zero.profile_count.ge(20).sum()),
@@ -2169,6 +2137,9 @@ def write_readme(
         "vocabulary,",
         "including MediaDive columns if present. Source hashes and exclusions are in "
         "`provenance.json`.",
+        "Core counts exclude every MediaDive-qualified column, case-insensitively. The",
+        "all-annotation counts and coverage figures retain those columns; the rows below",
+        "show how many taxa and profiles have only MediaDive annotations.",
         "",
         "| Metric | Count |",
         "| --- | ---: |",
@@ -2240,10 +2211,19 @@ def run_coverage(
     tables_only: bool = False,
     kg_provenance: Path = DEFAULT_KG_PROVENANCE_PATH,
     bugsigdb_vintage: str | None = None,
+    raw_dump: Path | None = None,
 ) -> None:
     """Validate first, then write data-derived outputs and a consumed-byte manifest."""
     inputs = {"taxa": taxa, "matrix": matrix, "profiles": profiles, "experiments": experiments}
     consumed = {**inputs}
+    selected_dump = raw_dump or REPO_ROOT / "data/raw/full_dump.csv"
+    if raw_dump is not None and not raw_dump.is_file():
+        raise FileNotFoundError(f"Declared raw dump does not exist: {raw_dump}")
+    declared_vintage = bugsigdb_vintage is not None
+    if selected_dump.is_file():
+        consumed["raw_dump"] = selected_dump
+        if not declared_vintage:
+            bugsigdb_vintage = read_bugsigdb_vintage(selected_dump)
     if kg_provenance.is_file():
         consumed["kg_provenance"] = kg_provenance
     input_records = {
@@ -2290,7 +2270,7 @@ def run_coverage(
     print(f"  Written rank coverage summary: {rank_tsv_path}")
 
     prof_rank_tsv_path = out_dir / "profile_coverage_by_rank.tsv"
-    write_tsv(prof_rank_df, prof_rank_tsv_path)
+    write_tsv(prof_rank_df.loc[prof_rank_df.profiles_containing_rank.gt(0)], prof_rank_tsv_path)
     print(f"  Written profile coverage by rank summary: {prof_rank_tsv_path}")
 
     prof_summary_tsv_path = out_dir / "profile_trait_mapping_summary.tsv"
@@ -2343,12 +2323,17 @@ def run_coverage(
         "counts": prof_summary.attrs["population_counts"],
         "inputs": input_records,
         "corpus_identity": identity.as_record(),
+        "bugsigdb_vintage_source": "declared"
+        if declared_vintage
+        else ("raw_dump_header" if bugsigdb_vintage is not None else "unavailable"),
+        "core_feature_filter": "exclude columns containing mediadive case-insensitively",
         "producer": {
             "code_commit": commit + ("+dirty" if dirty else ""),
             "script_sha256": file_sha256(Path(__file__)),
             "corpus_policy_sha256": file_sha256(REPO_ROOT / "src/mtp/human_host_corpus.py"),
             "profile_builder_sha256": file_sha256(REPO_ROOT / "src/mtp/study_trait_profiles.py"),
             "corpus_identity_sha256": file_sha256(REPO_ROOT / "src/mtp/corpus_identity.py"),
+            "trait_guilds_sha256": file_sha256(REPO_ROOT / "src/mtp/trait_guilds.py"),
             "uv_lock_sha256": file_sha256(REPO_ROOT / "uv.lock"),
         },
         "outputs": {
@@ -2410,7 +2395,12 @@ def main() -> None:
     parser.add_argument("--profiles", type=Path, default=PROFILES_WIDE_PATH)
     parser.add_argument("--experiments", type=Path, default=EXPERIMENTS_PATH)
     parser.add_argument("--kg-provenance", type=Path, default=DEFAULT_KG_PROVENANCE_PATH)
-    parser.add_argument("--bugsigdb-vintage", help="Declared dump vintage; unknown when omitted")
+    parser.add_argument("--bugsigdb-vintage", help="Override the vintage read from the raw dump")
+    parser.add_argument(
+        "--raw-dump",
+        type=Path,
+        help="Raw dump for vintage; defaults to data/raw/full_dump.csv when present",
+    )
     parser.add_argument(
         "--tables-only",
         action="store_true",
