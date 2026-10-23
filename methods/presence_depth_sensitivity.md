@@ -11,9 +11,13 @@ family is the core catalog's non-MediaDive vocabulary, in the actual profile
 header order, including candidates with zero observed signal. Its actual size and
 fingerprint are recorded in an `AnalysisBasis`; no historical feature count is
 hard-coded. Each representation and test has a separately declared full family,
-BY as the primary correction and BH as a comparison. The focal table preserves
-the full-family corrections and adds a separately named six-trait BH comparison
-to match the Table 1 family. Missing focal features retain unavailable slots.
+BY as the primary correction and BH as a comparison. Both the full screen and
+the focal table retain these primary full-family values in `q_by` and `q_bh`,
+with `family_size` identifying the full number of candidates. The focal table's
+`full_family_id` names that source family; its `family_id` names the additional
+six-trait family, whose results appear only in `q_by_six_trait`,
+`q_bh_six_trait`, and `family_size_six_trait`. The six-trait BH comparison matches
+the Table 1 family. Missing focal features retain unavailable slots.
 Family declarations and correction records use the authoritative LinkML
 multiple-testing v1.1 models and `mtp.multiple_testing`; they are replay-verified
 against their declared inputs before writing. The shared policy also reports BY
@@ -103,11 +107,24 @@ composition summary and study ledger,
 profile coverage/depth audit, experiment eligibility ledger, compressed study
 effects, declared/executed test families, analysis bases and provenance. All
 artifacts are bound through separate count and ORA consumer records. Provenance
-includes Git commit and dirty state, consumed product hashes, the analysis and
-family-adapter module hashes, native test/aggregation/correction/consumer helper
-hashes, the shared tolerance source, policy artifact, and dependency lock. These
-named source hashes describe the declared implementation coverage; the lock
-captures package versions. Rollup vocabulary is
-`ncbi_taxonomy_closure_rollup_<scope>` as in #828. Outputs must
+includes Git commit and dirty state, consumed product hashes, all canonical
+`mtp` Python modules loaded in the process at provenance construction, the policy
+artifact, and dependency lock. This inventory includes indirect verification and
+aggregation imports; in a long-lived process it can also include modules loaded
+by earlier operations. It describes source coverage, not line-level execution.
+Before core consumption or scientific computation, the producer snapshots all
+canonical Python source files and the shared policy. Before creating the output
+directory, it compares the actually loaded source inventory with those original
+bytes, including modules imported lazily during analysis. Changes or removal of
+previously loaded source records abort publication. Unused source files are not
+added to the reported loaded-module inventory. This guard prevents final source
+hashes from silently relabelling an analysis performed under an earlier identity
+(#953).
+The lock captures package versions. Scope is read with the shared
+`run_strain_rollup` API, and rollup vocabulary is
+`ncbi_taxonomy_closure_rollup_<scope>` as in #828. The sensitivity supports `off`
+and `phenotype`; a valid exploratory `full` core is explicitly rejected before
+analysis because the multiplicity contract does not yet support that scope.
+Outputs must
 be outside the immutable core and in a new destination directory. The command
 never reruns an arm or modifies the source bundle.

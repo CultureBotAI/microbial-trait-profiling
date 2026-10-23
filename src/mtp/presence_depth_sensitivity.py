@@ -8,6 +8,7 @@ import gzip
 import io
 import json
 import math
+import sys
 from collections import defaultdict
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass, replace
@@ -36,6 +37,7 @@ from mtp.workflow.consumers import (
 )
 from mtp.workflow.coverage import feature_filter_id
 from mtp.workflow.downstream_contracts import build_analysis_basis
+from mtp.workflow.operations import run_strain_rollup
 from mtp.workflow.runtime import repository_state
 
 Key = tuple[str, str, str]
@@ -450,7 +452,7 @@ def build_screen(
 
 
 def focal_screen(screen: Sequence[Result], columns: Sequence[str]) -> list[Result]:
-    """A declared six-slot BH comparison beside the inherited full-family correction."""
+    """Keep primary full-family columns beside explicitly named six-trait comparisons."""
     mapped = focal_feature_map(columns)
     families = {row["family_id"] for row in screen}
     results = []
@@ -476,8 +478,9 @@ def focal_screen(screen: Sequence[Result], columns: Sequence[str]) -> list[Resul
                 hypothesis_id=slug,
                 focal_trait=slug,
                 full_family_id=family,
-                q_by_full=row.pop("q_by", None),
-                q_bh_full=row.pop("q_bh", None),
+                q_by=row.get("q_by"),
+                q_bh=row.get("q_bh"),
+                family_size=template["family_size"],
             )
             results.append(row)
     return results
@@ -561,8 +564,39 @@ def _write_tsv(path: Path, records: Iterable[Mapping[str, Any]], fields: Sequenc
             )
 
 
+def implementation_sources() -> dict[str, str]:
+    """Fingerprint loaded canonical mtp modules, plus the shared correction policy.
+
+    Inventory the actual process, including modules loaded indirectly by core
+    verification. A long-lived process can include additional mtp modules; this
+    is a conservative inventory, not a claim that each module executed a line.
+    """
+    paths = {Path(__file__).resolve()}
+    package_root = (REPO_ROOT / "src/mtp").resolve()
+    for name, module in sys.modules.copy().items():
+        if name != "mtp" and not name.startswith("mtp."):
+            continue
+        filename = getattr(module, "__file__", None)
+        if filename is None:
+            continue
+        path = Path(filename).resolve()
+        if not path.is_relative_to(package_root) or path.suffix != ".py":
+            raise ValueError(f"Loaded mtp module is outside canonical Python sources: {name}")
+        paths.add(path)
+    paths.add(REPO_ROOT / "methods/multiple_testing_policy_v1.yaml")
+    return {path.relative_to(REPO_ROOT).as_posix(): file_sha256(path) for path in sorted(paths)}
+
+
 def run_sensitivity(core_run: Path, output_dir: Path) -> Path:
     """Publish only separately named sidecars after complete input reconstruction."""
+    initially_loaded = implementation_sources()
+    # Guard even not-yet-imported canonical modules against changes before a lazy
+    # import. Only modules actually loaded are included in published provenance.
+    source_snapshot = {
+        path.relative_to(REPO_ROOT).as_posix(): file_sha256(path)
+        for path in (REPO_ROOT / "src/mtp").rglob("*.py")
+    }
+    source_snapshot.update(initially_loaded)
     bundle = open_core_bundle(core_run)
     ora_bundle = open_core_bundle(core_run, "ora_profiles")
     binding = output_dir / "core_consumption.json"
@@ -571,18 +605,18 @@ def run_sensitivity(core_run: Path, output_dir: Path) -> Path:
     preflight_consumer_outputs(ora_bundle, ora_binding, output_directory=output_dir)
     if output_dir.exists():
         raise FileExistsError("Sensitivity outputs require a new directory")
+    rollup = run_strain_rollup(bundle.run)
+    if rollup == "full":
+        raise ValueError(
+            "The full strain-rollup scope is not supported by the multiplicity contract; "
+            "presence/depth sensitivity supports only off and phenotype"
+        )
     columns, profiles, metadata = load_core_evidence(bundle)
     studies, ledger = make_study_observations(profiles, metadata)
     native = native_profile_inputs(profiles, metadata, columns, ledger)
     screen = build_screen(studies, columns, native)
     composition, composition_studies = composition_screen(native, columns)
     missing = sorted(set(TABLE1_TRAITS) - focal_feature_map(columns).keys())
-    rollup = next(
-        (p.value for p in bundle.run.parameters or [] if p.name == "strain_rollup"),
-        "off",
-    )
-    if rollup not in {"off", "phenotype"}:
-        raise ValueError(f"Unknown strain-rollup scope: {rollup}")
     bases = [
         build_analysis_basis(
             basis_id=f"{PROTOCOL}:{representation}",
@@ -627,6 +661,17 @@ def run_sensitivity(core_run: Path, output_dir: Path) -> Path:
     )
     families.extend(extra_families)
     corrections.extend(extra_corrections)
+    final_sources = implementation_sources()
+    changed_sources = sorted(
+        name
+        for name in initially_loaded.keys() | final_sources.keys()
+        if final_sources.get(name) != source_snapshot.get(name)
+    )
+    if changed_sources:
+        raise ValueError(
+            "Sensitivity implementation or policy changed during analysis: "
+            + ", ".join(changed_sources)
+        )
     output_dir.mkdir(parents=True)
     outputs: list[Path] = []
 
@@ -720,33 +765,10 @@ def run_sensitivity(core_run: Path, output_dir: Path) -> Path:
                 "feature_catalog",
             )
         },
-        "implementation_sha256": file_sha256(Path(__file__)),
+        "implementation_sha256": final_sources["src/mtp/presence_depth_sensitivity.py"],
         "code_commit": code_commit,
         "code_dirty": code_dirty,
-        "implementation_sources_sha256": {
-            name: file_sha256(REPO_ROOT / name)
-            for name in (
-                "src/mtp/presence_depth_sensitivity.py",
-                "src/mtp/presence_depth_families.py",
-                "src/mtp/trait_screen.py",
-                "src/mtp/trait_composition.py",
-                "src/mtp/table1_trait_maps.py",
-                "src/mtp/trait_guilds.py",
-                "src/mtp/guild_maps.py",
-                "src/mtp/count_input.py",
-                "src/mtp/contribution_inputs.py",
-                "src/mtp/human_host_corpus.py",
-                "src/mtp/paths.py",
-                "src/mtp/multiple_testing.py",
-                "src/mtp/workflow/consumers.py",
-                "src/mtp/workflow/coverage.py",
-                "src/mtp/workflow/downstream_contracts.py",
-                "src/mtp/workflow/runtime.py",
-                "src/mtp/datamodel/core_products_pydantic.py",
-                "src/mtp/datamodel/multiple_testing_pydantic.py",
-                "methods/multiple_testing_policy_v1.yaml",
-            )
-        },
+        "implementation_sources_sha256": final_sources,
         "methods_sha256": file_sha256(REPO_ROOT / "methods/presence_depth_sensitivity.md"),
         "dependency_lock_sha256": file_sha256(REPO_ROOT / "uv.lock"),
         "secondary_depth": "log1p(sum retained annotation counts / "
@@ -779,8 +801,9 @@ def run_sensitivity(core_run: Path, output_dir: Path) -> Path:
         "Presence fractions retain annotation-breadth weighting; taxon prevalence uses the "
         "verified binary ORA profile k/taxa_count. Native sign-test intervals and effective-m "
         "diagnostics are retained; the composition result uses the native paired-ratio test. "
-        "The focal extract retains full-screen BY/BH columns and adds an explicit six-trait BH "
-        "comparison. Families remain exploratory "
+        "The focal extract retains full-screen q_by/q_bh and family_size, and reports "
+        "q_by_six_trait/q_bh_six_trait with family_size_six_trait for the separate "
+        "six-trait comparison. Families remain exploratory "
         "across representations and tests. See methods/presence_depth_sensitivity.md for "
         "the declared transforms, HC3 support guards and denominators.\n",
         encoding="utf-8",

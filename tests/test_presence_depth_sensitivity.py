@@ -6,6 +6,7 @@ import json
 import math
 from dataclasses import asdict, replace
 from pathlib import Path
+from typing import Any
 from unittest.mock import patch
 
 import numpy as np
@@ -13,7 +14,7 @@ import pytest
 
 import mtp.presence_depth_sensitivity as sensitivity
 from mtp.contribution_inputs import rows
-from mtp.paths import REPO_ROOT
+from mtp.paths import REPO_ROOT, file_sha256
 from mtp.presence_depth_sensitivity import (
     StudyEvidence,
     build_screen,
@@ -183,6 +184,65 @@ def test_focal_mapping_requires_the_actual_trait_identifiers() -> None:
     assert sensitivity.focal_feature_map(columns[:1]) == {next(iter(TABLE1_TRAITS)): columns[0]}
 
 
+def test_focal_rows_keep_primary_corrections_and_exact_trait_identity() -> None:
+    from mtp.trait_guilds import TABLE1_TRAITS, column_term_id
+
+    columns = [f"METPO:relation|{terms[0]}" for terms in TABLE1_TRAITS.values()]
+    screen = [
+        {
+            "family_id": "fixture:full",
+            "representation": "raw",
+            "test": "sign",
+            "feature_id": column,
+            "feature_ids": [column],
+            "status": "tested",
+            "p_value": 0.001,
+            "q_by": 1.0,
+            "q_bh": 0.317,
+            "family_size": 317,
+        }
+        for column in columns
+    ]
+    for focal in sensitivity.focal_screen(screen, columns):
+        assert column_term_id(focal["feature_id"]) in TABLE1_TRAITS[focal["focal_trait"]]
+        assert focal["feature_ids"] == [focal["feature_id"]]
+        assert focal["q_by"] == 1.0
+        assert focal["q_bh"] == 0.317
+        assert focal["family_size"] == 317
+
+    # Missing focal classes retain their biological identity and explicit null calls.
+    for focal in sensitivity.focal_screen(screen[:1], columns[:1]):
+        assert column_term_id(focal["feature_id"]) in TABLE1_TRAITS[focal["focal_trait"]]
+        if focal["status"] == "missing_feature":
+            assert focal["q_by"] is None
+            assert focal["q_bh"] is None
+
+
+def test_native_sign_tally_mismatch_is_rejected() -> None:
+    from mtp.trait_guilds import Profile
+    from mtp.trait_screen import run_screen
+
+    columns = ["METPO:1", "METPO:2"]
+    studies = [StudyEvidence("s", "raw", 1, (0.5, -0.5), 0.0, 0.0)]
+    native: dict[str, list[Profile]] = {name: [] for name in sensitivity.REPRESENTATIONS}
+    native["raw"] = [
+        Profile("s", "e", direction, "", "", dict(zip(columns, counts, strict=True)), 4)
+        for direction, counts in (("inc", (3, 1)), ("dec", (1, 3)))
+    ]
+    screened = run_screen(native["raw"], columns)
+    # Keep sample size fixed but reverse a native sign: a count-only check is insufficient.
+    bad = replace(screened.rows[0], studies_up=0, studies_down=1)
+    with (
+        patch.object(
+            sensitivity,
+            "run_screen",
+            return_value=replace(screened, rows=[bad, *screened.rows[1:]]),
+        ),
+        pytest.raises(ValueError, match="study sign tallies disagree"),
+    ):
+        build_screen(studies, columns, native)
+
+
 def test_native_screen_and_composition_are_called_with_reconstructed_inputs() -> None:
     from mtp.trait_composition import compute_log_ratio_shifts
     from mtp.trait_guilds import TABLE1_TRAITS
@@ -283,7 +343,7 @@ def test_roundoff_ties_have_no_p_values_and_keep_family_slots() -> None:
     assert all(row["p_value"] is None and row["native_by_q_nominal"] is None for row in sign)
 
 
-def _core(tmp_path: Path, subset: bool) -> Path:
+def _core(tmp_path: Path, subset: bool, scope: str = "phenotype") -> Path:
     source = REPO_ROOT / "tests/fixtures/workflow"
     edges, nodes = tmp_path / "edges.tsv", tmp_path / "nodes.tsv"
     edges.write_text(
@@ -306,6 +366,7 @@ def _core(tmp_path: Path, subset: bool) -> Path:
         OPERATIONS,
         parameter_overrides={
             "source_mode": "fixture",
+            "strain_rollup": scope,
             **(
                 {"contrast_population": "disease_vs_healthy_tier1_2_subject_controls"}
                 if subset
@@ -319,10 +380,13 @@ def _core(tmp_path: Path, subset: bool) -> Path:
 
 
 @pytest.mark.parametrize("subset", [False, True])
+@pytest.mark.parametrize("scope", ["off", "phenotype"])
 def test_verified_core_run_records_actual_family_and_population(
-    tmp_path: Path, subset: bool
+    tmp_path: Path, subset: bool, scope: str
 ) -> None:
-    manifest = _core(tmp_path, subset)
+    from mtp.trait_guilds import TABLE1_TRAITS, column_term_id
+
+    manifest = _core(tmp_path, subset, scope)
     output = tmp_path / "sensitivity"
     binding = run_sensitivity(manifest, output)
     record = verify_consumer_record(binding)
@@ -330,6 +394,8 @@ def test_verified_core_run_records_actual_family_and_population(
     provenance = json.loads((output / "provenance.json").read_text())
     bases = json.loads((output / "analysis_bases.json").read_text())
     assert provenance["retained_features"] == bases[0]["retained_feature_count"] == 2
+    assert provenance["strain_rollup"] == scope
+    assert all(basis["rollup_policy"] == f"ncbi_taxonomy_closure_rollup_{scope}" for basis in bases)
     assert provenance["direction_basis"] == (
         "disease_vs_comparison" if subset else "group_1_vs_group_0"
     )
@@ -339,15 +405,22 @@ def test_verified_core_run_records_actual_family_and_population(
     full_screen = list(rows(output / "trait_screen.tsv"))
     assert len(full_screen) == 24
     for row in rows(output / "focal_traits.tsv"):
+        assert column_term_id(row["feature_id"]) in TABLE1_TRAITS[row["focal_trait"]]
+        assert "q_by_six_trait" in row
+        assert "q_bh_six_trait" in row
         if row["status"] == "missing_feature":
             assert row["p_value"] == ""
+            assert row["q_by"] == row["q_bh"] == ""
             continue
         original = next(
             r
             for r in full_screen
             if r["family_id"] == row["full_family_id"] and r["feature_id"] == row["feature_id"]
         )
-        assert row["q_by_full"] == original["q_by"]
+        assert row["q_by"] == original["q_by"]
+        assert row["q_bh"] == original["q_bh"]
+        assert row["family_size"] == original["family_size"]
+        assert row["family_size_six_trait"] == "6"
     ora_record = verify_consumer_record(output / "ora_core_consumption.json")
     assert "ora_profiles" in ora_record.product_ids
     assert "count_profiles" not in ora_record.product_ids
@@ -377,7 +450,13 @@ def test_verified_core_run_records_actual_family_and_population(
         "src/mtp/trait_screen.py",
         "src/mtp/workflow/consumers.py",
         "src/mtp/guild_maps.py",
+        "src/mtp/workflow/verification.py",
+        "src/mtp/study_trait_profiles.py",
     }.issubset(provenance["implementation_sources_sha256"])
+    assert all(
+        file_sha256(REPO_ROOT / path) == digest
+        for path, digest in provenance["implementation_sources_sha256"].items()
+    )
     eligibility = list(rows(output / "eligibility.tsv"))
     if not subset:
         assert (
@@ -449,7 +528,12 @@ def test_complete_family_keeps_untestable_slots_in_authoritative_correction(tmp_
     assert focal_families[0]["expected_family_size"] == 6
     tested_focal = [row for row in focal if row["p_value"] is not None]
     assert len(tested_focal) == 1
-    assert tested_focal[0]["focal_six_bh_comparison"] == pytest.approx(0.06)
+    assert tested_focal[0]["q_by"] == records[0]["q_by"]
+    assert tested_focal[0]["q_bh"] == records[0]["q_bh"]
+    assert tested_focal[0]["q_by_six_trait"] == pytest.approx(0.147)
+    assert tested_focal[0]["q_bh_six_trait"] == pytest.approx(0.06)
+    assert tested_focal[0]["family_size"] == 2
+    assert tested_focal[0]["family_size_six_trait"] == 6
     corrected = CorrectionRun.model_validate(corrections[0])
     family = HypothesisFamily.model_validate(families[0])
     inputs = [
@@ -481,3 +565,98 @@ def test_binary_ora_product_is_read_and_reconciled(tmp_path: Path) -> None:
     # Direct loader rechecks the consumed values, independently of opening the core again.
     with pytest.raises(ValueError, match="taxa_count fail source reconstruction"):
         load_core_evidence(bundle)
+
+
+@pytest.mark.parametrize("change", ["missing", "extra"])
+def test_binary_ora_population_requires_exact_equality(tmp_path: Path, change: str) -> None:
+    bundle = open_core_bundle(_core(tmp_path, True))
+    path = bundle.path("ora_profiles")
+    lines = path.read_text().splitlines()
+    if change == "missing":
+        lines.pop(1)
+    else:
+        extra = lines[1].split("\t")
+        extra[0] = "bsdb:outside-selected-population"
+        lines.append("\t".join(extra))
+    path.write_text("\n".join(lines) + "\n")
+    with pytest.raises(ValueError, match="population differs"):
+        load_core_evidence(bundle)
+
+
+def test_full_rollup_is_explicitly_unsupported_before_analysis(tmp_path: Path) -> None:
+    manifest = _core(tmp_path, True, "full")
+    output = tmp_path / "unsupported"
+    with (
+        patch.object(sensitivity, "load_core_evidence") as load,
+        pytest.raises(ValueError, match=r"(?i)full.*not supported.*multiplicity"),
+    ):
+        run_sensitivity(manifest, output)
+    load.assert_not_called()
+    assert not output.exists()
+
+
+def test_source_inventory_tracks_additionally_loaded_mtp_module() -> None:
+    import mtp.coupling
+
+    sources = sensitivity.implementation_sources()
+    assert sources["src/mtp/coupling.py"] == file_sha256(Path(mtp.coupling.__file__))
+    assert sources["src/mtp/workflow/verification.py"] == file_sha256(
+        REPO_ROOT / "src/mtp/workflow/verification.py"
+    )
+
+
+@pytest.mark.parametrize("change", ["code", "policy", "lazy_code", "missing_loaded"])
+def test_changed_execution_identity_is_rejected_before_publication(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, change: str
+) -> None:
+    manifest = _core(tmp_path, True)
+    output = tmp_path / "changed-identity"
+    hashes = sensitivity.implementation_sources()
+    target = {
+        "code": "src/mtp/presence_depth_sensitivity.py",
+        "policy": "methods/multiple_testing_policy_v1.yaml",
+        "lazy_code": "src/mtp/coupling.py",
+        "missing_loaded": "src/mtp/presence_depth_sensitivity.py",
+    }[change]
+    if change == "lazy_code":
+        hashes.pop(target, None)
+    original = sensitivity.build_screen
+
+    def changed_analysis(*args: Any, **kwargs: Any) -> list[sensitivity.Result]:
+        result = original(*args, **kwargs)
+        if change == "missing_loaded":
+            hashes.pop(target)
+        else:
+            # A lazy module's changed bytes precede its first inventory appearance.
+            hashes[target] = "f" * 64
+        return result
+
+    monkeypatch.setattr(sensitivity, "implementation_sources", lambda: dict(hashes))
+    monkeypatch.setattr(sensitivity, "build_screen", changed_analysis)
+    # Before the fix, even real final consumer verification accepts these outputs.
+    with pytest.raises(ValueError, match="implementation or policy changed during analysis"):
+        verify_consumer_record(run_sensitivity(manifest, output))
+    assert not output.exists()
+
+
+def test_unchanged_lazy_source_is_bound_to_its_preanalysis_bytes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    manifest = _core(tmp_path, True)
+    output = tmp_path / "lazy-identity"
+    hashes = sensitivity.implementation_sources()
+    target = "src/mtp/coupling.py"
+    hashes.pop(target, None)
+    original = sensitivity.build_screen
+    expected = file_sha256(REPO_ROOT / target)
+
+    def lazy_analysis(*args: Any, **kwargs: Any) -> list[sensitivity.Result]:
+        result = original(*args, **kwargs)
+        hashes[target] = expected
+        return result
+
+    monkeypatch.setattr(sensitivity, "implementation_sources", lambda: dict(hashes))
+    monkeypatch.setattr(sensitivity, "build_screen", lazy_analysis)
+    verify_consumer_record(run_sensitivity(manifest, output))
+    provenance = json.loads((output / "provenance.json").read_text())
+    assert provenance["implementation_sources_sha256"][target] == expected

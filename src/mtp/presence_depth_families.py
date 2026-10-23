@@ -106,9 +106,14 @@ def declare_and_correct(
         by_id = {row.hypothesis_id: row for row in correction.results}
         for row in rows:
             adjusted = by_id[row["hypothesis_id"]]
-            row.update(q_by=adjusted.q_by, q_bh=adjusted.q_bh, family_size=len(rows))
             if focal:
-                row["focal_six_bh_comparison"] = adjusted.q_bh
+                row.update(
+                    q_by_six_trait=adjusted.q_by,
+                    q_bh_six_trait=adjusted.q_bh,
+                    family_size_six_trait=len(rows),
+                )
+            else:
+                row.update(q_by=adjusted.q_by, q_bh=adjusted.q_bh, family_size=len(rows))
         families.append(family.model_dump(mode="json"))
         corrections.append(correction.model_dump(mode="json"))
     return families, corrections
