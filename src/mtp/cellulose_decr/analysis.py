@@ -2250,11 +2250,12 @@ def scenario_tables(
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Feces direction, overlap and the Feces-vs-GI interaction under each scenario.
 
-    The case-control rules choose among disease-vs-healthy contrasts and select nothing
-    from all contrasts. Each scenario changes one definition (``scenario_corpora``), so a
-    scenario whose rule is not the primary one would repeat the primary all-contrasts
-    rows. Its direction, overlap and interaction rows are built on the disease-vs-healthy
-    contrasts alone; the other scenarios have them on both (#769, #781).
+    The case-control rules choose among disease-vs-healthy contrasts; the all-contrasts
+    population does not apply them and keeps every profile. Each scenario changes one
+    definition (``scenario_corpora``), so a scenario whose rule is not the primary one
+    would repeat the primary all-contrasts rows. Its direction, overlap and interaction
+    rows are built on the disease-vs-healthy contrasts alone; the other scenarios have
+    them on both (#769, #781).
     """
     direction_rows: list[dict[str, Any]] = []
     overlap_rows: list[dict[str, Any]] = []

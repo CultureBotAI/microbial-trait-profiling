@@ -151,11 +151,12 @@ the larger share. Ties are excluded.
   row's p range across them (#673). The four case-control definitions (cases named
   as treated set aside, Tier 1–2 controls only, paired-tissue or comorbidity
   contrasts counted) choose among disease-versus-healthy contrasts, so both tables
-  test them on the oriented disease-versus-healthy population only. Over all
-  contrasts these rules select nothing, and until #781 their rows there repeated
-  the exact-label rows. The other definitions are tested on both populations, so a
-  p range on all contrasts spans the exact-label, synonym and rectal-mucosa
-  definitions. Since classifier v3 tumour-vs-adjacent tissue is
+  test them on the oriented disease-versus-healthy population only. The
+  all-contrasts population does not apply these rules and keeps every profile, so
+  until #781 their rows there repeated the exact-label rows. The other definitions
+  are tested on both populations, so a p range on all contrasts spans the
+  exact-label, synonym and rectal-mucosa definitions. Since classifier v3
+  tumour-vs-adjacent tissue is
   `paired_tissue_autologous` (#554). Since v4 the HIV– versus HIV+ and ART-treated
   HIV+ versus uninfected experiments are disease vs healthy (#569). Since v5 the
   Yachida et al. 2019 CRC experiments with polyp-bearing controls are
@@ -230,8 +231,8 @@ sets, U3 and U6 from one population, named in `contrast_population`:
   controls only, paired-tissue or comorbidity contrasts counted) choose among
   disease-versus-healthy contrasts. Their rows use the oriented
   disease-versus-healthy population only, as in the direction and Feces-vs-GI
-  tables. Over all contrasts these rules select nothing, and until #769 their rows
-  repeated the primary row.
+  tables. The all-contrasts population does not apply these rules and keeps every
+  profile, so until #769 their rows repeated the primary row.
 - The exact-label, synonym and rectal-mucosa definitions have a row for each
   population. Read a case-control row against the exact-label row on
   disease-versus-healthy contrasts.

@@ -21,9 +21,9 @@ same corpus, so every p-value here is nominal. Section 4 adds adjusted values.
 ## What changed on 2026-10-22 (#781)
 
 `condition_definition_sensitivity.tsv` and `condition_definition_interaction.tsv`
-had the defect that #769 fixed in the overlap table. Over all contrasts the four
-case-control definitions select nothing, so each of their `all_contrasts` rows
-repeated an exact-label row: 32 rows in each table.
+had the defect that #769 fixed in the overlap table. The all-contrasts population
+does not apply the four case-control definitions and keeps every profile, so each of
+their `all_contrasts` rows repeated an exact-label row: 32 rows in each table.
 
 - The analysis now tests these four definitions on disease-versus-healthy contrasts
   only, as the overlap table does, so the three `condition_definition_*` tables
@@ -39,9 +39,9 @@ repeated an exact-label row: 32 rows in each table.
 `condition_definition_overlap.tsv` built the sets, U3 and U6 of every condition
 definition from all contrasts. The four case-control definitions (cases named as
 treated set aside, Tier 1–2 controls only, paired-tissue or comorbidity contrasts
-counted) choose among disease-versus-healthy contrasts, so over all contrasts they
-select nothing. Their four rows repeated the primary row and did not test the
-overlap under those definitions.
+counted) choose among disease-versus-healthy contrasts. The all-contrasts population
+does not apply them and keeps every profile, so their four rows repeated the primary
+row and did not test the overlap under those definitions.
 
 - Each row now names its `contrast_population`.
 - The four case-control definitions are built on disease-versus-healthy contrasts

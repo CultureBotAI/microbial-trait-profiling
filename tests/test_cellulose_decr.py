@@ -794,7 +794,7 @@ def test_case_control_scenarios_build_their_overlap_on_disease_vs_healthy_contra
     """A case-control rule chooses among disease-vs-healthy contrasts, so its scenario's
     overlap, U3 and U6 are built on them. Setting aside the treated PD stool experiment, the
     only one reporting t3 decreased, takes t3 out of the PD set, the U3 universe and the U6
-    pool. Built on all contrasts, where the rule selects nothing, the row repeated the
+    pool. Built on all contrasts, where the rule is not applied, the row repeated the
     primary one (#769, #792)."""
     corpus = load_corpus(_input_root(tmp_path), "experiment")
     manifest = corpus.manifest.copy()
@@ -857,10 +857,11 @@ def test_case_control_scenarios_build_their_overlap_on_disease_vs_healthy_contra
 def test_case_control_scenarios_test_direction_and_interaction_on_disease_vs_healthy_contrasts(
     tmp_path: Path,
 ) -> None:
-    """A case-control rule selects nothing from all contrasts, so a case-control scenario's
-    feces direction and Feces-vs-GI rows there repeated the primary rows. Like its overlap
-    (#769), they are tested on disease-vs-healthy contrasts only, and the three
-    condition-definition tables share one layout (#781)."""
+    """The all-contrasts population does not apply a case-control rule, so a case-control
+    scenario's feces direction and Feces-vs-GI rows there repeated the primary rows. Like
+    its overlap (#769), they are tested on disease-vs-healthy contrasts only, where the
+    rows kept apply the rule, and the three condition-definition tables share one layout
+    (#781, #831)."""
     corpus = load_corpus(_input_root(tmp_path), "experiment")
     manifest = corpus.manifest.copy()
     # bsdb:1-1 compares PD cases named as treated with Tier 3 controls; bsdb:1-3 compares
@@ -893,11 +894,21 @@ def test_case_control_scenarios_test_direction_and_interaction_on_disease_vs_hea
     for table in (direction, interaction):
         assert table.groupby(["scenario", "contrast_population"]).size().eq(8).all()
 
-    # The rows dropped could only repeat the primary ones: on all contrasts the rule keeps
-    # every profile, while on disease-vs-healthy contrasts it sets bsdb:1-1 aside.
+    # The rows kept apply the scenario's rule: setting aside cases named as treated, or
+    # Tier 3 controls, drops bsdb:1-1, PD's decreased feces experiment, from both tables.
+    applied = ["exact_labels", "named_treated_cases_excluded", "control_tiers_1_2"]
+    for table, counts in ((direction, ["down", "up"]), (interaction, ["a_down", "a_up"])):
+        rows = table[
+            table["contrast_population"].eq(ORIENTED)
+            & table["short_condition"].eq("PD")
+            & table["unit"].eq("experiment")
+        ].set_index("scenario")
+        assert rows.loc[applied, counts].to_numpy().tolist() == [[1, 1], [0, 1], [0, 1]]
+
+    # The rows dropped could only repeat the primary ones: the all-contrasts population
+    # does not apply the rule and keeps every profile.
     tiers = replace(corpus, case_control="control_tiers_1_2")
     assert population(tiers, ALL_CONTRASTS)[0].equals(population(corpus, ALL_CONTRASTS)[0])
-    assert "bsdb:1-1" not in set(population(tiers, ORIENTED)[0]["experiment_id"])
 
 
 def test_direction_tests_ask_whether_decreased_signatures_carry_more() -> None:
