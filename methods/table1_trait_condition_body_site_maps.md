@@ -217,6 +217,12 @@ not the vintage, and the two conditions meet different rules:
 So drawing all four together is not a matter of widening the cut. It needs a
 corpus where gingivitis carries at least three studies in one body site.
 
+**Flagged for the rerun (#836).** This account, like the other map counts in
+this note, is from the 959-study build. The next regeneration must re-check it
+on the committed corpus rather than carry it over. Periodontitis sits close
+enough to the width cut that another corpus can move it back out, and the
+Subgingival dental plaque block and the cuts' contents above would move with it.
+
 With `--include-other-conditions`, conditions outside the width cut are
 assigned to a pooled Other row. The panel note uses the build's recorded
 membership to distinguish this from omission and reports whether that row is
