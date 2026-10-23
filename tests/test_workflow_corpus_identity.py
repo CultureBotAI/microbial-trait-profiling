@@ -79,6 +79,8 @@ def test_core_consumer_identity_comes_only_from_bound_kg(
         assert table1_trait_maps.main() == 0
         identity = json.loads((output / "corpus_identity.json").read_text())
     assert legacy_reads == []
+    # The scope the core recorded, which no legacy record states (#847)
+    assert identity["matrix"]["strain_rollup"] == "phenotype"
     kg = identity["kg_microbe"]
     assert kg["release_tag"] is None
     assert kg["provenance_path"] == str(artifact_path(run, "source_identity"))

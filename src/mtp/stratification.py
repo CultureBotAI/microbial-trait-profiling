@@ -27,6 +27,7 @@ import numpy as np
 import pandas as pd
 
 from mtp.paths import DERIVED_DATA_DIR, REPO_ROOT
+from mtp.strain_rollup_record import shared_strain_rollup
 from mtp.workflow.consumers import (
     open_core_bundle,
     preflight_consumer_outputs,
@@ -686,6 +687,8 @@ def run_stratification_pipeline(
     profiles_path = resolved["profiles"]
     experiments_path = resolved["experiments"]
     taxa_matrix = resolved["taxa-matrix"]
+    # The stratum subsets carry no record, so the tables they come from are checked (#847)
+    shared_strain_rollup(profiles_path, taxa_matrix)
     products = [
         path
         for stratum in strata

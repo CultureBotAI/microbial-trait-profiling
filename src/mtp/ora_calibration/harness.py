@@ -56,6 +56,7 @@ from mtp.ora_calibration.scenarios import (
     trait_presence_matrix,
 )
 from mtp.paths import DERIVED_DATA_DIR, file_sha256
+from mtp.strain_rollup_record import shared_strain_rollup
 
 logger = logging.getLogger(__name__)
 
@@ -742,6 +743,8 @@ def main(args: Sequence[str] | None = None) -> int:
     try:
         output_dir.mkdir(parents=True, exist_ok=True)
         _clear_previous_outputs(output_dir)
+        # A profile table and matrix recorded under different scopes are refused (#847)
+        shared_strain_rollup(parsed.profiles, parsed.taxa_matrix)
         profiles_df, taxa_matrix_df = _load_inputs(parsed)
         inputs = {
             "profiles": {

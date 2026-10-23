@@ -24,6 +24,7 @@ from mtp.contribution_inputs import (
     verify_kg,
 )
 from mtp.paths import DERIVED_DATA_DIR, REPO_ROOT
+from mtp.strain_rollup_record import StrainRollupRecordError, require_declared_strain_rollup
 from mtp.taxa_trait_matrix import PRIMARY_STRAIN_ROLLUP, STRAIN_ROLLUPS
 
 Record = dict[str, Any]
@@ -259,7 +260,16 @@ def argument_parser(
 
 
 def main() -> None:
-    args = argument_parser().parse_args()
+    parser = argument_parser()
+    args = parser.parse_args()
+    # Tables recorded under another scope are named before the KG is read (#847)
+    inputs = [
+        args.inputs / name for name in ("study_trait_profiles_wide.tsv", "taxa_trait_matrix.tsv")
+    ]
+    try:
+        require_declared_strain_rollup(inputs, args.strain_rollup)
+    except StrainRollupRecordError as error:
+        parser.error(str(error))
     protocol = json.loads(args.protocol.read_text(encoding="utf-8"))
     output: Path = args.output
     output.mkdir(parents=True, exist_ok=True)

@@ -7,6 +7,7 @@ import pandas as pd
 import pytest
 
 from mtp.contribution_inputs import Base, Graph
+from mtp.strain_rollup_record import write_strain_rollup_record
 from mtp.taxon_contributions import Ledger
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / "scripts/create_pd_trait_contributors.py"
@@ -332,6 +333,24 @@ def test_the_ledger_reconciles_data_derived_under_the_recorded_scope(
     assert ledger.mismatches == []
     with pytest.raises(ValueError, match="under the off strain rollup scope"):
         contributors.load_contribution_ledger(tmp_path, tmp_path, protocol, "off")
+
+
+def test_the_ledger_refuses_data_derived_built_under_another_scope(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Inputs that record another scope are named before the KG is read (#847)."""
+    for name in contributors.LEDGER_INPUTS[0], contributors.LEDGER_INPUTS[-1]:
+        (tmp_path / name).write_text("study_id\texperiment_id\tinc_dec\n", encoding="utf-8")
+        write_strain_rollup_record(tmp_path / name, "off")
+    protocol = tmp_path / "protocol.json"
+    protocol.write_text('{"kg_md5": {}}', encoding="utf-8")
+
+    def unread(*paths: Path) -> Base:
+        raise AssertionError(f"read {paths} after a scope mismatch")
+
+    monkeypatch.setattr(contributors, "load_base", unread)
+    with pytest.raises(ValueError, match="off strain rollup scope, not the declared phenotype"):
+        contributors.load_contribution_ledger(tmp_path, tmp_path, protocol, "phenotype")
 
 
 def test_contributions_resolve_each_source_to_one_species_and_family() -> None:

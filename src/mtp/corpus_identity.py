@@ -14,8 +14,9 @@ behind it - in one record that every recipe writes into its provenance JSON.
 
 It does not decide which corpus is correct. The shared corpus is the committed
 ``data/derived/study_trait_profiles_wide.tsv.gz``, which `just study-trait-profiles`
-reproduces and `just study-trait-profiles-check` verifies (#115, #656); the record
-still says precisely which file a given number came from.
+reproduces and `just study-trait-profiles-check` verifies, with its strain rollup record
+(#115, #656, #847); the record still says precisely which file a given number came from
+and the scope it was built under.
 """
 
 from __future__ import annotations
@@ -27,6 +28,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from mtp.paths import KG_MICROBE_DIR, file_sha256
+from mtp.strain_rollup_record import UNRECORDED, recorded_strain_rollup
 from mtp.trait_guilds import MEDIADIVE_MARKER, PROFILE_ID_COLUMNS, retained_trait_columns
 
 DEFAULT_KG_PROVENANCE_PATH = KG_MICROBE_DIR / "provenance.json"
@@ -74,6 +76,8 @@ class MatrixIdentity:
     mediadive_columns: int
     retained_trait_columns: int
     profile_rows: int
+    # The strain rollup scope the table was built under (#847)
+    strain_rollup: str = UNRECORDED
 
     def check(self) -> None:
         """The three column groups must account for the whole header."""
@@ -136,8 +140,13 @@ class CorpusIdentity:
         }
 
 
-def measure_matrix(profile_path: Path) -> MatrixIdentity:
-    """Read ``profile_path`` once for its shape, and hash it."""
+def measure_matrix(profile_path: Path, *, strain_rollup: str | None = None) -> MatrixIdentity:
+    """Read ``profile_path`` once for its shape, and hash it.
+
+    ``strain_rollup`` is the scope a core run recorded; without it, the table's own
+    record states the scope, and a table replaced without its record is refused (#847).
+    """
+    scope = strain_rollup or recorded_strain_rollup(profile_path) or UNRECORDED
     rows = 0
     with profile_path.open(encoding="utf-8", newline="") as handle:
         reader = csv.reader(handle, delimiter="\t")
@@ -163,6 +172,7 @@ def measure_matrix(profile_path: Path) -> MatrixIdentity:
         mediadive_columns=mediadive,
         retained_trait_columns=retained,
         profile_rows=rows,
+        strain_rollup=scope,
     )
     identity.check()
     return identity

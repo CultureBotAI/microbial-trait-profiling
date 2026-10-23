@@ -23,6 +23,11 @@ from mtp.corpus_identity import (
 from mtp.download import BUGSIGDB_EXPORTS_VERSION, PINNED_FULL_DUMP_MD5
 from mtp.human_host_corpus import CORPUS_SEQUENCING_TYPES
 from mtp.paths import file_sha256
+from mtp.strain_rollup_record import (
+    UNRECORDED,
+    StrainRollupRecordError,
+    write_strain_rollup_record,
+)
 from mtp.trait_composition import (
     LogRatioResult,
     LogRatioSummary,
@@ -41,6 +46,18 @@ def _matrix(path: Path, *, mediadive: int, retained: int, rows: int) -> Path:
         lines.append("\t".join([f"bsdb:{row}", f"bsdb:{row}-1", "inc", *counts]))
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return path
+
+
+def test_the_identity_states_the_scope_the_table_records(tmp_path: Path) -> None:
+    """A provenance record names the profile table's strain rollup scope, says when the
+    table records none, and refuses a table replaced without its record (#847)."""
+    table = _matrix(tmp_path / "m.tsv", mediadive=1, retained=2, rows=1)
+    assert measure_matrix(table).strain_rollup == UNRECORDED
+    write_strain_rollup_record(table, "phenotype")
+    assert measure_matrix(table).strain_rollup == "phenotype"
+    _matrix(table, mediadive=1, retained=2, rows=2)
+    with pytest.raises(StrainRollupRecordError, match="not the table its record"):
+        measure_matrix(table)
 
 
 def test_the_three_column_groups_account_for_the_whole_header(tmp_path: Path) -> None:

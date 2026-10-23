@@ -45,6 +45,7 @@ from mtp.enrichment_stats import (
     hypergeom_sf_many as _core_hypergeom_sf_many,
 )
 from mtp.paths import file_sha256
+from mtp.strain_rollup_record import shared_strain_rollup
 from mtp.trait_guilds import MEDIADIVE_MARKER
 
 
@@ -249,6 +250,8 @@ def main(argv: list[str] | None = None) -> None:
             ],
         )
 
+    # A profile table and matrix recorded under different scopes are refused (#847)
+    shared_strain_rollup(args.input, args.taxa_matrix)
     # Bind exported tests to actual input bytes, including non-core invocations (#705).
     profiles_sha256 = file_sha256(args.input)
     with open_input_text(args.input) as fh:
