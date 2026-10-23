@@ -206,6 +206,11 @@ PPTX replacement, and branch-only directional scripts are outside this standard
 suite. Their previous command lists remain in Git history; they must not be
 represented as rerun by an `arm_run.json` from this suite.
 
+The historical deck's pooled and per-site composition tables require the
+separate [body-site regeneration step](#regenerate-historical-body-site-composition-tables-824).
+Run it after rebuilding the legacy profiles and heatmap pair metadata; the owner
+arm commands alone do not refresh those checkout tables.
+
 Each attempt records its complete command plan before execution, actual command
 exit status, logs, input/output checksums, code/configuration inventory, runtime,
 and the upstream core manifest checksum in `arm_run.json`. The tracked LinkML
@@ -423,6 +428,75 @@ feces-excluded partitions are disjoint and together retain the pooled profiles.
 Direct-path commands remain available without verified core provenance. This
 standalone binding complements the owner rerun orchestration in #658 / PR #660.
 
+### Regenerate historical body-site composition tables (#824)
+
+The core-bound Jed arm and comparison stage write pooled statistics. They do
+not regenerate the historical `trait_profile_paired_contrast_trait_stats_<site>.tsv`
+tables. The rerun operator must run the following steps in order on the rebuilt
+legacy full-corpus inputs:
+
+```bash
+just study-trait-profiles
+just trait-heatmaps
+just trait-profile-site-stats
+```
+
+The final step uses `data/derived/study_trait_profiles_wide.tsv`,
+`data/derived/taxa_trait_matrix_columns.tsv`, and the heatmap producer's
+`trait-visualization/study_trait_profile_paired_enrichment_metadata.tsv`.
+It writes both pooled aliases (`trait_profile_paired_contrast_trait_stats.tsv`
+and `trait_profile_paired_contrast_trait_stats_pooled.tsv`), the eligible site
+tables, their manifest, and
+`trait-visualization/trait-profile-investigation/stratified_stats_provenance.json`,
+without rendering figures. Pooled and site tables are refreshed from the same
+inputs in one invocation. Input overrides
+(`--profiles`, `--pair-metadata`, `--trait-labels`, `--output-dir`) follow the
+recipe name. For a separate population, rebuild its heatmap metadata from its
+own profiles and use a separate output directory; do not mix full and subset
+files.
+
+The new heatmap metadata records SHA-256 identities for its profile and label
+inputs (and its raw dump and studies inputs). The site-statistics step rejects
+missing or mismatched profile/label bindings, absent profiles, and mismatched
+study/experiment/direction identities. Metadata from before this change must
+be rebuilt, even when its filenames match. The JSON inventories every consumed
+file, the producer code, parameters, emitted tables, and the manifest. It is
+explicitly `legacy_inputs_hashed_not_core_verified`: it does not establish a
+verified core lineage or independently certify the strain-rollup scope.
+Paths inside the checkout are repository-relative; external inputs are named
+by basename and SHA-256, without publishing local directory prefixes. Selection
+parameters from the heatmap producer, including the effective `--max-profiles`
+and `--max-body-site-categories`, are copied into the record. Older bound metadata
+without those columns is explicitly marked as unavailable. Scope remains
+unverified until the upstream scope-record contract in #847 is available; a
+retained-trait count is not evidence of scope.
+
+These populations retain the historical heatmap's profile filters and grouped
+`body_site_group` labels, including `Other`; they are not the pooled core cohort
+or necessarily exact anatomical sites. The pooled tables use all matched pairs
+selected by that heatmap metadata, while site tables use its eligible groups.
+Default eligibility requires 50 matched
+pairs per group, at least six annotated profiles per trait, at most 95% profile
+support, and variable annotation fractions. Feces and feces-excluded partitions
+retain their existing definitions. Native standardization, study averaging,
+zero-total handling, and within-stratum BH correction remain unchanged.
+`--min-stratified-pairs` overrides the site eligibility threshold only for this
+recipe; it is rejected outside `--stratified-stats-only` rather than ignored.
+
+The number and names of emitted site tables depend on eligibility. The manifest
+is authoritative for the site groups in this invocation; the JSON also inventories
+both refreshed pooled aliases. Existing historical statistics tables outside the
+emitted output set, the condition and body-site summaries, and the infographic PNG
+are listed with hashes under `not_regenerated` in the JSON. These pooled summaries
+and figure are not refreshed by the site-statistics step. They remain historical
+and must not be cited as fresh results. The rerun PR must either regenerate each
+intended table or figure or list these omissions explicitly; this implementation
+PR does not regenerate tracked data.
+The full infographic mode and pooled-only mode remove any previous site-stat
+JSON before overwriting its bound tables, so that a later invocation cannot leave
+an old success record beside newly computed tables. Regenerate the JSON with
+`just trait-profile-site-stats` after those modes when a complete inventory is needed.
+
 The shared `verify_consumer_record` API is the integration boundary for deck
 builders such as PR #575: verify the input analysis binding before accepting
 its results or figures. A legacy figure/deck manifest cannot acquire verified
@@ -451,12 +525,101 @@ inputs. Comparison never overwrites baseline or current products.
 
 ## Checks and maintenance
 
+After a full-corpus rebuild of `data/derived` with phenotype strain rollup, run
+`just taxa-coverage --strain-rollup phenotype` to
+regenerate `trait-visualization/trait-profile-investigation/taxa-coverage/`
+before rebuilding decks or plates that cite its tables and README (#820/#821).
+The recipe consumes `bugsigdb_taxa.tsv`, `taxa_trait_matrix.tsv`,
+`study_trait_profiles_wide.tsv` and `experiments.tsv`. It filters profiles and
+taxon occurrences to recorded `Homo sapiens` hosts sequenced by `16S` or `WMS`,
+using the same experiment-selection function as the canonical profile builder.
+Unrecognized signature directions and empty taxon IDs are skipped by the same
+normalization rules. Pre-#742 metadata receives an explicit regeneration error.
+The audit applies no
+contrast-tier, pairing or orientation restriction. This is coverage of the
+full canonical corpus, not coverage of a disease-vs-healthy subset.
+
+`--strain-rollup` is required and accepts `off`, `phenotype` or `full`. Supply the
+scope actually used upstream; identical paths or feature counts do not identify
+it. For example, use `just taxa-coverage --strain-rollup off --matrix PATH
+--profiles PATH --output-dir DIR` for an off-scope bundle (also supply its matching
+taxa and experiment paths when different). The README and provenance record this
+as `declared_unverified`: input hashes and count reconciliation bind the supplied
+tables but do not verify the upstream rollup scope. Keep distinct scopes in
+separate output directories; accepting `full` here does not authorize a full-scope
+production rerun.
+
+The generated README includes a shell-quoted regeneration command naming the
+four consumed tables, declared scope, output directory and rendering mode. It
+also preserves the KG sidecar path, any consumed raw-dump path and any explicit
+vintage override; inferred header vintages remain inferred when replayed.
+Run it from the repository root. Repo-local paths keep their lexical spelling,
+including symlinks into shared data; external inputs retain their actual absolute
+paths. This command reuses paths, so compare the provenance hashes if their
+contents may have changed. Decompress committed profile archives before this
+coverage command; direct gzip input remains the pre-existing limitation noted
+in #970.
+
+The audit reconciles profile counts with distinct signature taxa and the matrix;
+missing experiment metadata, missing canonical profiles, missing matrix taxa,
+duplicate keys and count disagreements fail before publication. Only reported
+taxa from the selected corpus enter taxon totals. Trait vocabulary comes from
+the profile table. Zero-trait profiles remain in audit tables; selected figure
+panels explicitly show mapped profiles only. No mapped annotation is not
+evidence of biological absence.
+
+The recipe generates five TSVs, six PNG/SVG figure pairs, a data-derived README,
+and `provenance.json` with input/output SHA-256 hashes, producer and lockfile
+hashes, Git revision (`+dirty` when applicable), corpus/KG identity, explicit
+population rules and exclusion counts. Paths are repository-relative, or
+`external/<basename>` for supplied external inputs; content hashes identify the
+bytes. `--bugsigdb-vintage` supplies a declared vintage; when omitted, the producer
+reads the header of `--raw-dump`, whose default is the repository's
+`data/raw/full_dump.csv`. Explicit derived inputs from another corpus do not
+change that default: supply their matching raw dump or an explicit vintage to
+avoid attributing the repository dump's date to them. The consumed raw dump is
+hashed; the recorded vintage alone does not verify that it produced the derived
+tables. Without a declaration or a readable vintage header, the provenance source
+is `unavailable`; a missing default dump is not evidence of a vintage.
+`--kg-provenance` supplies the KG download sidecar. Its release and source-file
+claims are declared evidence, not proof of which KG built the matrix; the
+consumed sidecar itself is hashed. These are standalone
+execution provenance records, not verified core or arm manifests. Rerun them
+after changing the profile population, matrix or strain-rollup scope; keep
+different scope outputs in separate directories. Explicit `--taxa`, `--matrix`,
+`--profiles`, `--experiments` and `--output-dir` arguments are supported.
+`--tables-only --output-dir PATH` supports an isolated table audit; it refuses a
+directory with existing figures so those cannot silently remain stale. The
+profile-rank denominator column is now `pct_of_mapped_profiles`; the columns in
+the rank and taxon-detail tables read by existing deck builders are preserved.
+The README reports both all-annotation coverage (including MediaDive) and
+non-MediaDive coverage, plus the numbers of taxa and profiles with MediaDive
+annotations only. These are distinct quantities; a deck must name the one it
+cites rather than treating them as interchangeable.
+Empty rank rows are omitted from the exported rank table and README, avoiding
+undefined `0/0` percentages in the plate consumer. Nonempty unrecognized ranks
+remain in `other`. TaxID alias candidates require review, and higher-rank
+annotations do not establish leaf-taxon traits; the companion Plate 6 update
+(#864) must preserve those cautions. #820/#821 remain open until the coordinated
+rerun regenerates and reviews the tracked outputs.
+
 `just check` includes generated-model consistency, schema lint, graph checks,
 and the offline pytest fixtures. CI also executes `just core-fixture` and saves
 its run evidence. Tests cover mixed ranks, duplicate observations/source edges,
 MediaDive-only and zero-annotation taxa, missing matrix matches, incomplete
 pairs, nonhuman hosts, malformed counts, stale collections, changed inputs,
 failed publication and consumer incompatibility.
+
+The guild and Table 1 layout regressions render synthetic PNGs through Kaleido
+and measure subtitle/header ink clearance. Their regression bounds are specific
+to the single-condition fixtures: 30 layout pixels for the guild fixtures and
+70 for the Table 1 fixtures. The Table 1 fixture's single-line `Feces` header
+accounts for its larger measured gap; the guild header wraps onto two lines.
+The 70-pixel bound is tied to that site-name geometry. Adding a two-line note
+within one entry may change clearance by at most 4 layout pixels. These bounds
+are independent of the renderer's margin constants. This checks vertical
+spacing, not overall figure design. It requires local Chrome/Chromium, available
+through `just get-chrome` if needed; it does not read production analysis tables.
 
 Change schema first, regenerate with `just gen-pydantic`, update the executable
 specification, and run `just workflow-describe` to refresh the product table.
