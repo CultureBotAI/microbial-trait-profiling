@@ -117,9 +117,11 @@ profiles are sha256
 BugSigDB export `2026-04-24_00:41_UTC` (full dump
 `af84bfca7bfe76913a20c1fedbaadbfad4e4bf78605a2cfd7d00eb0c0fdd5788`). The
 provenance record carries every other input's hash. Main's code at 35ece98
-(#808) writes every number in these files; #810 regenerated them only to reword
-one sentence of the view. The record's `code_commit` names the branch commit the
-run was made from, which a squash merge does not keep on main (#643).
+(#808) writes every number in these files. #810 regenerated them on main's code
+at 68d4e27 with its own change, which reworded one sentence of the view, added
+the provenance fields #813 introduced and changed no number. The record's
+`code_commit` names the branch commit the run was made from, which a squash
+merge does not keep on main (#643).
 
 | Method | Records | Family | Tested | q <= 0.05 | q <= 0.001 |
 | --- | --- | --- | --- | --- | --- |
