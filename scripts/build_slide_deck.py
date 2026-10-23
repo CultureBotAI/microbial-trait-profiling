@@ -56,6 +56,7 @@ from mtp.quoted_results import (
     ORA_ENRICHMENT,
     McNemar,
     OraCalls,
+    format_coverage_population,
     read_coverage_run_info,
     screened_rejection_rate,
 )
@@ -77,8 +78,7 @@ CELLULOSE_FIGURES = (f"{CELLULOSE_DIR}/figures/", f"{CELLULOSE_DIR}/figures_grap
 # Regenerated or untracked figure folders: their slides carry no GitHub figure link.
 UNLINKED_FIGURES = ("data/derived/", *CELLULOSE_FIGURES, f"{CELLULOSE_DIR}/figures_tufte/")
 REPO_URL = "https://github.com/CultureBotAI/microbial-trait-profiling"
-# Where `just figure-review-plates` draws the methods and Tufte plates.
-PLATES_DIR = "data/derived/tufte_plates/"
+PLATES_DIR = "data/derived/tufte_plates/"  # drawn by `just figure-review-plates`
 PROVENANCE_NAME = "figure_provenance_and_results.yaml"
 COMMIT = "edeb7bef2f0db052bb84aa638d3e74fc6c53ca6f"
 SHORT_COMMIT = COMMIT[:12]
@@ -464,6 +464,7 @@ def load_rerun_metrics(repo: Path) -> dict:
         cov_dir,
         profile_summary_rows=prof_summary_rows,
         study_meta_rows=study_meta,
+        require_counts=True,
     )
     metrics["retained_profiles"] = cov_info.retained_profiles
     metrics["retained_studies"] = cov_info.retained_studies
@@ -1085,6 +1086,8 @@ def methods_plate_one_caveat(metrics: Mapping[str, Any]) -> str:
     """Methods Plate I's caveat, read from taxa_coverage_by_rank.tsv (#864, #924, #956, #982)."""
     ranks = _present_coverage_ranks(metrics)
     scope = str(metrics.get("coverage_strain_rollup") or "unrecorded")
+    pop_label = format_coverage_population(metrics.get("coverage_population"))
+    basis_tag = f"{COVERAGE_ANNOTATION_BASIS}, strain_rollup={scope}, {pop_label}"
     sp = ranks.get("species")
     gen = ranks.get("genus")
     fam = ranks.get("family")
@@ -1111,19 +1114,15 @@ def methods_plate_one_caveat(metrics: Mapping[str, Any]) -> str:
         sp_part = f"Species {sp_occ:.1f}% occurrences / {sp_unique:.1f}% unique species"
 
     if higher_part is not None and sp_part is not None:
-        summary = (
-            f"the rank-stratified coverage cliff ({higher_part} vs {sp_part}; "
-            f"{COVERAGE_ANNOTATION_BASIS}, strain_rollup={scope})"
-        )
+        summary = f"the rank-stratified coverage cliff ({higher_part} vs {sp_part}; {basis_tag})"
     elif sp_part is not None:
         summary = (
             f"rank-stratified coverage ({sp_part}; Genus/Family absent from rank table; "
-            f"{COVERAGE_ANNOTATION_BASIS}, strain_rollup={scope})"
+            f"{basis_tag})"
         )
     elif higher_part is not None:
         summary = (
-            f"rank-stratified coverage ({higher_part}; Species absent from rank table; "
-            f"{COVERAGE_ANNOTATION_BASIS}, strain_rollup={scope})"
+            f"rank-stratified coverage ({higher_part}; Species absent from rank table; {basis_tag})"
         )
     elif ranks:
         other_parts = [
@@ -1133,8 +1132,7 @@ def methods_plate_one_caveat(metrics: Mapping[str, Any]) -> str:
         ]
         summary = (
             f"rank-stratified coverage ({', '.join(other_parts)}; "
-            f"Species/Genus/Family absent from rank table; {COVERAGE_ANNOTATION_BASIS}, "
-            f"strain_rollup={scope})"
+            f"Species/Genus/Family absent from rank table; {basis_tag})"
         )
     else:
         summary = "rank-stratified coverage (no non-empty rank rows in taxa_coverage_by_rank.tsv)"
@@ -1149,6 +1147,8 @@ def plate_six_text(metrics: Mapping[str, Any]) -> tuple[str, str]:
     """Tufte Plate VI takeaway and caveat, read from the coverage TSVs (#864, #924, #930, #982)."""
     ranks = _present_coverage_ranks(metrics)
     scope = str(metrics.get("coverage_strain_rollup") or "unrecorded")
+    pop_label = format_coverage_population(metrics.get("coverage_population"))
+    basis_tag = f"{COVERAGE_ANNOTATION_BASIS}, strain_rollup={scope}, {pop_label}"
     higher_clauses = [
         f"{label} ({float(ranks[rk][COVERAGE_TRAIT_BEARING_OCC_PCT_COL]):.1f}%)"
         for rk, label in (("genus", "Genus"), ("family", "Family"))
@@ -1166,7 +1166,7 @@ def plate_six_text(metrics: Mapping[str, Any]) -> tuple[str, str]:
         sp_clause = (
             f"{sp_zero_pct:.1f}% of distinct species ({sp_zero_taxa:,}/{sp_total_taxa:,}) and "
             f"{sp_zero_occ_pct:.1f}% of species occurrences ({sp_zero_occ:,}/{sp_total_occ:,}) "
-            f"have zero traits ({COVERAGE_ANNOTATION_BASIS}, strain_rollup={scope})"
+            f"have zero traits ({basis_tag})"
         )
 
     if higher_clauses and sp_clause is not None:
@@ -1182,8 +1182,7 @@ def plate_six_text(metrics: Mapping[str, Any]) -> tuple[str, str]:
     elif higher_clauses:
         takeaway = (
             f"{listing(higher_clauses)} occurrences in BugSigDB have high KG-Microbe coverage "
-            f"({COVERAGE_ANNOTATION_BASIS}, strain_rollup={scope}; "
-            "Species rank absent from rank table)."
+            f"({basis_tag}; Species rank absent from rank table)."
         )
     elif ranks:
         other_clauses = [
@@ -1193,8 +1192,7 @@ def plate_six_text(metrics: Mapping[str, Any]) -> tuple[str, str]:
         ]
         takeaway = (
             f"{listing(other_clauses)} occurrences in BugSigDB have recorded KG-Microbe coverage "
-            f"({COVERAGE_ANNOTATION_BASIS}, strain_rollup={scope}; "
-            "Species, Genus, and Family ranks absent from rank table)."
+            f"({basis_tag}; Species, Genus, and Family ranks absent from rank table)."
         )
     else:
         takeaway = "No non-empty rank rows are present in taxa_coverage_by_rank.tsv."
@@ -2357,8 +2355,8 @@ def check_coverage_table_sync(
         )
     ranks = _present_coverage_ranks(metrics)
     if ranks:
-        table_occ = sum(int(r["total_occurrences"]) for r in ranks.values())
-        table_taxa = sum(int(r["total_taxa"]) for r in ranks.values())
+        table_occ = sum(int(r[COVERAGE_TOTAL_OCC_COL]) for r in ranks.values())
+        table_taxa = sum(int(r[COVERAGE_TOTAL_TAXA_COL]) for r in ranks.values())
         if f"{table_occ:,}" not in mp1.get("takeaway", "") or f"{table_taxa:,}" not in mp1.get(
             "takeaway", ""
         ):
@@ -2367,6 +2365,14 @@ def check_coverage_table_sync(
                 f"expected {table_occ:,} occurrences and {table_taxa:,} taxa in "
                 f"{mp1.get('takeaway')!r}"
             )
+    retained_profiles = metrics.get("retained_profiles")
+    if retained_profiles is not None and f"{int(retained_profiles):,} retained profiles" not in (
+        mp1.get("takeaway", "")
+    ):
+        raise ValueError(
+            f"methods_plate_1 takeaway out of sync with coverage tables: "
+            f"expected {int(retained_profiles):,} retained profiles in {mp1.get('takeaway')!r}"
+        )
 
     tp6 = by_analysis.get("tufte_plate_6")
     if tp6 is None:
@@ -2382,6 +2388,18 @@ def check_coverage_table_sync(
             f"tufte_plate_6 caveat out of sync with coverage tables: "
             f"got {tp6.get('caveat')!r}, expected {expected_tp6_caveat!r}"
         )
+    if ranks:
+        scope = str(metrics.get("coverage_strain_rollup") or "unrecorded")
+        pop_label = format_coverage_population(metrics.get("coverage_population"))
+        for slide_name, text in (
+            ("methods_plate_1 caveat", mp1.get("caveat", "")),
+            ("tufte_plate_6 takeaway", tp6.get("takeaway", "")),
+        ):
+            if f"strain_rollup={scope}" not in text or pop_label not in text:
+                raise ValueError(
+                    f"{slide_name} out of sync with coverage provenance: "
+                    f"expected strain_rollup={scope} and {pop_label!r} in {text!r}"
+                )
 
 
 # The appendix histograms PR #315's scripts/plot_enrichment_histograms.py drew (checked at

@@ -28,18 +28,53 @@ ORA_DEPLETION = Path("data/derived/trait_depletion_results.tsv")
 GUILD_CORRELATION = Path("data/derived/guild_maps/guild_aerobe_anaerobe_correlation.tsv")
 CALIBRATION_CRITERIA = Path("data/derived/calibration/calibration_criteria.tsv")
 
-# Shared column and basis definitions for taxa-coverage tables (#858, #864, #956, #982).
-COVERAGE_TOTAL_TAXA_COL = "total_taxa"
-COVERAGE_TRAIT_BEARING_TAXA_COL = "trait_bearing_taxa"
-COVERAGE_ZERO_TRAIT_TAXA_COL = "zero_trait_taxa"
-COVERAGE_TRAIT_BEARING_PCT_COL = "trait_bearing_pct"
-COVERAGE_ZERO_TRAIT_PCT_COL = "zero_trait_pct"
-COVERAGE_TOTAL_OCC_COL = "total_occurrences"
-COVERAGE_TRAIT_BEARING_OCC_COL = "trait_bearing_occurrences"
-COVERAGE_ZERO_TRAIT_OCC_COL = "zero_trait_occurrences"
-COVERAGE_TRAIT_BEARING_OCC_PCT_COL = "trait_bearing_occurrences_pct"
-COVERAGE_ZERO_TRAIT_OCC_PCT_COL = "zero_trait_occurrences_pct"
-COVERAGE_ANNOTATION_BASIS = "any annotation [incl. MediaDive]"
+
+@dataclass(frozen=True)
+class CoverageBasis:
+    """Column names and label for a taxa-coverage annotation basis (#858, #956, #982, #985)."""
+
+    label: str
+    total_taxa_col: str
+    trait_bearing_taxa_col: str
+    zero_trait_taxa_col: str
+    trait_bearing_pct_col: str
+    zero_trait_pct_col: str
+    total_occ_col: str
+    trait_bearing_occ_col: str
+    zero_trait_occ_col: str
+    trait_bearing_occ_pct_col: str
+    zero_trait_occ_pct_col: str
+
+
+COVERAGE_BASES: dict[str, CoverageBasis] = {
+    "any": CoverageBasis(
+        label="any annotation [incl. MediaDive]",
+        total_taxa_col="total_taxa",
+        trait_bearing_taxa_col="trait_bearing_taxa",
+        zero_trait_taxa_col="zero_trait_taxa",
+        trait_bearing_pct_col="trait_bearing_pct",
+        zero_trait_pct_col="zero_trait_pct",
+        total_occ_col="total_occurrences",
+        trait_bearing_occ_col="trait_bearing_occurrences",
+        zero_trait_occ_col="zero_trait_occurrences",
+        trait_bearing_occ_pct_col="trait_bearing_occurrences_pct",
+        zero_trait_occ_pct_col="zero_trait_occurrences_pct",
+    ),
+}
+# One-line selector for the cited coverage basis; core-only columns await #858 export (#985).
+SELECTED_COVERAGE_BASIS = "any"
+COVERAGE_BASIS = COVERAGE_BASES[SELECTED_COVERAGE_BASIS]
+COVERAGE_TOTAL_TAXA_COL = COVERAGE_BASIS.total_taxa_col
+COVERAGE_TRAIT_BEARING_TAXA_COL = COVERAGE_BASIS.trait_bearing_taxa_col
+COVERAGE_ZERO_TRAIT_TAXA_COL = COVERAGE_BASIS.zero_trait_taxa_col
+COVERAGE_TRAIT_BEARING_PCT_COL = COVERAGE_BASIS.trait_bearing_pct_col
+COVERAGE_ZERO_TRAIT_PCT_COL = COVERAGE_BASIS.zero_trait_pct_col
+COVERAGE_TOTAL_OCC_COL = COVERAGE_BASIS.total_occ_col
+COVERAGE_TRAIT_BEARING_OCC_COL = COVERAGE_BASIS.trait_bearing_occ_col
+COVERAGE_ZERO_TRAIT_OCC_COL = COVERAGE_BASIS.zero_trait_occ_col
+COVERAGE_TRAIT_BEARING_OCC_PCT_COL = COVERAGE_BASIS.trait_bearing_occ_pct_col
+COVERAGE_ZERO_TRAIT_OCC_PCT_COL = COVERAGE_BASIS.zero_trait_occ_pct_col
+COVERAGE_ANNOTATION_BASIS = COVERAGE_BASIS.label
 
 
 @dataclass(frozen=True)
@@ -77,7 +112,7 @@ def read_coverage_run_info(
     study_meta_rows: Sequence[Mapping[str, str]] | None = None,
     require_counts: bool = False,
 ) -> CoverageRunInfo:
-    """Read and cross-check taxa-coverage provenance and profile counts (#858, #956, #982)."""
+    """Read and cross-check taxa-coverage provenance and profile counts (#858, #956, #982, #985)."""
     prov_path = coverage_dir / "provenance.json"
     strain_rollup = "unrecorded"
     population: Mapping[str, Any] | None = None
@@ -108,12 +143,19 @@ def read_coverage_run_info(
                 lines = [line for line in handle if not line.startswith("#")]
                 profile_summary_rows = list(csv.DictReader(lines, delimiter="\t"))
 
-    summary_profiles = len(profile_summary_rows) if profile_summary_rows else None
-    summary_studies = (
-        len({r["study_id"] for r in profile_summary_rows if "study_id" in r})
-        if profile_summary_rows
-        else None
-    )
+    if profile_summary_rows is not None:
+        if len(profile_summary_rows) == 0:
+            raise ValueError(
+                "taxa-coverage profile_trait_mapping_summary.tsv has 0 rows; "
+                "rerun `just taxa-coverage`"
+            )
+        summary_profiles: int | None = len(profile_summary_rows)
+        summary_studies: int | None = len(
+            {r["study_id"] for r in profile_summary_rows if "study_id" in r}
+        )
+    else:
+        summary_profiles = None
+        summary_studies = None
     meta_profiles = len(study_meta_rows) if study_meta_rows else None
     meta_studies = (
         len({r["study_id"] for r in study_meta_rows if "study_id" in r})
@@ -127,8 +169,9 @@ def read_coverage_run_info(
         and selected_profiles != summary_profiles
     ):
         raise ValueError(
-            f"taxa-coverage provenance.json selected_profiles ({selected_profiles}) "
-            f"disagrees with profile_trait_mapping_summary.tsv ({summary_profiles} rows)"
+            f"taxa-coverage provenance.json counts.selected_profiles ({selected_profiles}) "
+            f"disagrees with profile_trait_mapping_summary.tsv ({summary_profiles} rows); "
+            "rerun `just taxa-coverage`"
         )
     if summary_profiles is not None and meta_profiles is not None:
         studies_disagree = (
@@ -139,7 +182,7 @@ def read_coverage_run_info(
                 f"taxa-coverage profile_trait_mapping_summary.tsv ({summary_profiles} profiles "
                 f"across {summary_studies} studies) disagrees with "
                 f"study_trait_profile_study_metadata.tsv ({meta_profiles} profiles across "
-                f"{meta_studies} studies)"
+                f"{meta_studies} studies); rerun `just taxa-coverage`"
             )
     if (
         selected_profiles is not None
@@ -147,8 +190,9 @@ def read_coverage_run_info(
         and selected_profiles != meta_profiles
     ):
         raise ValueError(
-            f"taxa-coverage provenance.json selected_profiles ({selected_profiles}) "
-            f"disagrees with study_trait_profile_study_metadata.tsv ({meta_profiles} rows)"
+            f"taxa-coverage provenance.json counts.selected_profiles ({selected_profiles}) "
+            f"disagrees with study_trait_profile_study_metadata.tsv ({meta_profiles} rows); "
+            "rerun `just taxa-coverage`"
         )
 
     if summary_profiles is not None and summary_studies is not None:
@@ -157,13 +201,10 @@ def read_coverage_run_info(
     elif selected_profiles is not None:
         retained_profiles = selected_profiles
         retained_studies = meta_studies or 0
-    elif meta_profiles is not None and meta_studies is not None:
-        retained_profiles = meta_profiles
-        retained_studies = meta_studies
     elif require_counts:
         raise ValueError(
-            "Cannot determine coverage profile count: provide profile_trait_mapping_summary.tsv "
-            "or provenance.json"
+            "Cannot determine coverage profile count from profile_trait_mapping_summary.tsv "
+            "or provenance.json; rerun `just taxa-coverage`"
         )
     else:
         retained_profiles = 0
