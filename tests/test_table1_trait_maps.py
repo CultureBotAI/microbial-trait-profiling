@@ -14,10 +14,16 @@ from bsdbng import table1_trait_maps
 from bsdbng.guild_maps import (
     OTHER_LABEL,
     SIGN_TOLERANCE,
+    SITE_HEADER_HEIGHT,
+    SUBTITLE_LINE_HEIGHT,
+    TITLE_BLOCK_HEIGHT,
     GuildMatrix,
+    build_figure_matrix,
     build_matrix,
     subset_matrix,
     write_body_site_panels,
+    write_figure,
+    write_matrix_outputs,
 )
 from bsdbng.table1_trait_maps import (
     ANALYSIS_LABEL,
@@ -37,11 +43,15 @@ from bsdbng.trait_guilds import (
     TABLE1_TRAITS,
     Profile,
     column_term_id,
+    drop_zero_total_pairs,
+    format_pair_exclusion,
     load_profiles,
 )
 from mtp.paths import REPO_ROOT
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from plotly.graph_objects import Figure
 
 # Two of the six traits reach the profile matrix behind a METPO qualifier, so the
@@ -59,6 +69,13 @@ TRAIT_COLUMNS = [
 ]
 OTHER_COLUMN = "METPO:1000615"
 MEDIA_COLUMN = "METPO:2000517|mediadive.medium:J14"
+#: How the maps' subtitles state their population, as the oxygen guild figure's does.
+ZERO_TOTAL_NOTE = "experiment pairs with a zero retained-annotation total on a side are excluded"
+# One annotated side of a pair, both totalling 25, and a side carrying no retained
+# annotation: only the MediaDive column, which no total counts.
+ANNOTATED_INC = [8, 1, 6, 2, 0, 3, 5, 100]
+ANNOTATED_DEC = [2, 7, 2, 2, 0, 3, 9, 100]
+EMPTY_SIDE = [0, 0, 0, 0, 0, 0, 0, 100]
 
 
 def _write_profiles(path: Path, rows: list[tuple[str, str, str, list[int]]]) -> None:
@@ -391,6 +408,225 @@ def test_zero_total_pairs_are_excluded_by_default_from_direction_shifts() -> Non
     assert hist_result.studies == 2
     (hist_shift,) = hist_result.shifts
     assert (hist_shift.studies_up, hist_shift.studies_down, hist_shift.studies_tied) == (1, 1, 0)
+
+
+def _single_pair_corpus(
+    tmp_path: Path, blocks: list[tuple[str, str, list[int], list[int]]]
+) -> tuple[Path, Path]:
+    """One human study of one experiment per block: condition, body site, inc and dec."""
+    profile_rows: list[tuple[str, str, str, list[int]]] = []
+    experiment_rows: list[tuple[str, str, str, str, str]] = []
+    for index, (condition, site, inc, dec) in enumerate(blocks, start=1):
+        study = f"bsdb:{index}"
+        profile_rows += [(study, f"{study}-1", "inc", inc), (study, f"{study}-1", "dec", dec)]
+        experiment_rows.append((study, f"{study}-1", condition, site, "Homo sapiens"))
+    profiles = tmp_path / "profiles.tsv"
+    experiments = tmp_path / "experiments.tsv"
+    _write_profiles(profiles, profile_rows)
+    _write_experiments(experiments, experiment_rows)
+    return profiles, experiments
+
+
+#: Colitis in Feces has three annotated studies and one whose increased side carries
+#: no retained annotation. Asthma's only pair in Saliva carries none on either side.
+ZERO_TOTAL_BLOCKS: list[tuple[str, str, list[int], list[int]]] = [
+    *(("Colitis", "Feces", ANNOTATED_INC, ANNOTATED_DEC) for _ in range(3)),
+    *(("Asthma", "Feces", ANNOTATED_INC, ANNOTATED_DEC) for _ in range(3)),
+    ("Colitis", "Feces", EMPTY_SIDE, ANNOTATED_DEC),
+    ("Asthma", "Saliva", EMPTY_SIDE, EMPTY_SIDE),
+]
+
+
+@pytest.mark.parametrize("mark_no_signal", [False, True])
+def test_no_zero_total_pair_reaches_the_maps(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    mark_no_signal: bool,
+) -> None:
+    """The maps leave out every pair with a zero retained-annotation total on a side (#811).
+
+    They built their matrix from every paired profile, so such a pair's undefined
+    share entered their cells as a measured 0. Here it would add a fourth study to
+    each Colitis cell in Feces and pull the increased means down. With the shading
+    on, it would also draw a Saliva block of cells sampled without signal.
+    """
+    profiles_path, experiments_path = _single_pair_corpus(tmp_path, ZERO_TOTAL_BLOCKS)
+    output = tmp_path / "output"
+    notes: list[object] = []
+
+    def record_figure(*_args: object, **kwargs: object) -> Path:
+        notes.append(kwargs.get("note"))
+        return tmp_path / "all.png"
+
+    monkeypatch.setattr(table1_trait_maps, "write_figure", record_figure)
+    monkeypatch.setattr(
+        table1_trait_maps, "write_shift_figure", lambda *_a, **_kw: tmp_path / "shift.png"
+    )
+    monkeypatch.setattr(table1_trait_maps, "read_bugsigdb_vintage", lambda _path: "fixture")
+    monkeypatch.setattr(table1_trait_maps, "FOCUS_PANELS", ())
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "table1-trait-maps",
+            "--profile-input",
+            str(profiles_path),
+            "--experiments-input",
+            str(experiments_path),
+            "--output-dir",
+            str(output),
+            "--max-conditions",
+            "10",
+            "--max-body-sites",
+            "10",
+            "--min-site-conditions",
+            "1",
+            *(["--mark-no-signal"] if mark_no_signal else []),
+        ],
+    )
+    assert table1_trait_maps.main() == 0
+
+    loaded, _ = load_profiles(profiles_path, experiments_path, TABLE1_TRAITS)
+    exclusion = drop_zero_total_pairs(loaded)
+    assert exclusion.zero_total_experiments == 2
+
+    def build(profiles: list[Profile]) -> GuildMatrix:
+        return build_matrix(
+            profiles,
+            max_conditions=10,
+            max_body_sites=10,
+            min_studies=3,
+            guild_order=TRAIT_ORDER,
+            include_other_conditions=False,
+            mark_no_signal=mark_no_signal,
+            min_site_conditions=1,
+        )
+
+    # The pairs would change the maps, so leaving them out is not a no-op.
+    expected = build(exclusion.profiles)
+    assert build(loaded) != expected
+    for path in write_matrix_outputs(expected, tmp_path / "expected", "table1_traits"):
+        assert (output / path.name).read_text(encoding="utf-8") == path.read_text(encoding="utf-8")
+    counts_path = output / "table1_traits_condition_body_site_study_counts.tsv"
+    with counts_path.open(encoding="utf-8") as handle:
+        counts = {row["condition"]: row for row in csv.DictReader(handle, delimiter="\t")}
+    assert counts["Colitis"]["Feces|facultatively_aerobic_inc"] == "3"
+    assert not [column for column in counts["Colitis"] if column.startswith("Saliva|")]
+
+    # The run states its population in its log, its shift table and its figure.
+    assert format_pair_exclusion(exclusion) in capsys.readouterr().out
+    with (output / "table1_traits_direction_shift.tsv").open(encoding="utf-8") as handle:
+        shifts = list(csv.DictReader(handle, delimiter="\t"))
+    assert {row["excluded_experiment_pairs"] for row in shifts} == {"2"}
+    assert notes == [f"2 {ZERO_TOTAL_NOTE} (studies 8 to 6): their share is undefined, not zero."]
+
+
+def test_the_maps_builder_drops_zero_total_pairs_whatever_the_caller_passes() -> None:
+    """The maps come from the oxygen guild figure's builder, and its exclusion (#783, #811)."""
+    annotated = [
+        _paired_profile(f"bsdb:{index}", f"bsdb:{index}-1", direction, count)
+        for index in range(1, 4)
+        for direction, count in (("inc", 8), ("dec", 2))
+    ]
+    zero_total = [
+        _paired_profile("bsdb:4", "bsdb:4-1", "inc", 0, total=0),
+        _paired_profile("bsdb:4", "bsdb:4-1", "dec", 5),
+    ]
+
+    def build(builder: Callable[..., GuildMatrix], profiles: list[Profile]) -> GuildMatrix:
+        return builder(
+            profiles,
+            max_conditions=10,
+            max_body_sites=10,
+            min_studies=1,
+            guild_order=TRAIT_ORDER,
+            include_other_conditions=False,
+            mark_no_signal=False,
+            min_site_conditions=1,
+        )
+
+    assert build(build_figure_matrix, annotated + zero_total) == build(build_matrix, annotated)
+    assert build(build_matrix, annotated + zero_total) != build(build_matrix, annotated)
+
+
+def test_the_site_names_sit_below_the_last_subtitle_line(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Both map figures size their top margin from the subtitle and the site names (#811).
+
+    Fixed margins with the title centred in them let the population line the maps
+    now state run into a two-line site header, and a panel's last subtitle lines
+    into its site titles and top row. The note here is two lines in one entry, as
+    a focus cut's is: counting entries sized that margin a line short (#849).
+    Rendering needs a browser, so each figure is captured where it would be written.
+    """
+    import plotly.graph_objects as go
+
+    figures: list[go.Figure] = []
+    monkeypatch.setattr(go.Figure, "write_image", lambda figure, *_a, **_kw: figures.append(figure))
+    matrix = build_matrix(
+        [
+            _paired_profile(f"bsdb:{index}", f"bsdb:{index}-1", direction, count)
+            for index in range(1, 4)
+            for direction, count in (("inc", 8), ("dec", 2))
+        ],
+        max_conditions=10,
+        max_body_sites=10,
+        min_studies=1,
+        guild_order=TRAIT_ORDER,
+    )
+    scales: dict[str, object] = {trait: trait_colorscale(trait) for trait in TRAIT_ORDER}
+
+    def combined(note: str | None) -> Path:
+        return write_figure(
+            matrix,
+            tmp_path / "combined.png",
+            "v1.3.1",
+            guild_order=TRAIT_ORDER,
+            colorscales=scales,
+            separate_body_sites=True,
+            note=note,
+        )
+
+    def panel(note: str | None) -> Path:
+        return write_body_site_panels(
+            matrix,
+            tmp_path / "panel.png",
+            "v1.3.1",
+            sites=("Feces",),
+            guild_order=TRAIT_ORDER,
+            colorscales=scales,
+            note=note,
+        )
+
+    for draw in (combined, panel):
+        figures.clear()
+        draw(None)
+        draw("A missing-condition note.<br>A population line.")
+        short, long = (figure.layout for figure in figures)
+        lines = long.title.text.split("<sub>", 1)[1].count("<br>") + 1
+        subtitle = TITLE_BLOCK_HEIGHT + SUBTITLE_LINE_HEIGHT * lines
+        assert long.margin.t == subtitle + SITE_HEADER_HEIGHT
+        assert long.margin.t - short.margin.t == 2 * SUBTITLE_LINE_HEIGHT
+        assert (long.title.yref, long.title.yanchor) == ("container", "top")
+
+
+def test_a_condition_only_in_zero_total_pairs_is_named_as_excluded() -> None:
+    """Neither absent from the export nor cut by the display: its pairs were left out (#811)."""
+    missing = missing_conditions(
+        ("Asthma", "Never studied"),
+        corpus_conditions={"Colitis"},
+        drawn_conditions=["Colitis"],
+        zero_total_conditions={"Asthma"},
+    )
+    assert missing.excluded_zero_total == ("Asthma",)
+    assert missing.absent_from_corpus == ("Never studied",)
+    assert not missing.cut_by_display
+    assert missing_condition_note(missing, max_conditions=60, min_studies=3) == (
+        "Not drawn because this BugSigDB export does not contain them: Never studied. "
+        "In this export, but only in experiment pairs with a zero retained-annotation "
+        "total on a side, which are excluded, so not drawn: Asthma."
+    )
 
 
 def test_undrawn_panel_conditions_separate_all_three_causes() -> None:
@@ -895,13 +1131,19 @@ def _run_cli_with_panel(
     conditions: tuple[str, ...],
     extra_args: tuple[str, ...] = (),
 ) -> tuple[list[str | None], str]:
-    """Run main() with one condition-focused panel; return its notes and stdout."""
+    """Run main() with one condition-focused panel; return its notes and stdout.
+
+    Every cut states its population on its last line (#811). That line is checked
+    here and split off, so each note is the missing-condition note alone.
+    """
     notes: list[str | None] = []
 
     def record_panel(*_args: object, **kwargs: object) -> Path:
         note = kwargs["note"]
-        assert note is None or isinstance(note, str)
-        notes.append(note)
+        assert isinstance(note, str)
+        *lines, population = note.split("<br>")
+        assert ZERO_TOTAL_NOTE in population
+        notes.append("<br>".join(lines) or None)
         return tmp_path / "panel.png"
 
     monkeypatch.setattr(table1_trait_maps, "write_body_site_panels", record_panel)
@@ -1039,6 +1281,36 @@ def test_cli_skipped_panel_still_reports_why(
     assert "focus panel test: absent from the corpus: Not a condition" in out
     assert "focus panel test: assigned to Other, not drawn in this panel: Asthma" in out
     assert out.index("assigned to Other") < out.index("focus panel test: nothing drawn, skipped")
+
+
+def test_cli_panel_names_a_condition_left_out_with_its_zero_total_pairs(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """A condition whose only pair has a zero total is in the export, not cut by width (#811)."""
+    corpus = _single_pair_corpus(
+        tmp_path,
+        [
+            *(("Colitis", "Feces", ANNOTATED_INC, ANNOTATED_DEC) for _ in range(3)),
+            ("Asthma", "Feces", EMPTY_SIDE, ANNOTATED_DEC),
+        ],
+    )
+    notes, out = _run_cli_with_panel(
+        corpus,
+        tmp_path,
+        monkeypatch,
+        capsys,
+        ("Colitis", "Asthma"),
+        extra_args=("--max-conditions", "10"),
+    )
+    assert notes == [
+        "In this export, but only in experiment pairs with a zero retained-annotation "
+        "total on a side, which are excluded, so not drawn: Asthma."
+    ]
+    assert "focus panel test: only in excluded zero-total pairs: Asthma" in out
+    assert "absent from the corpus" not in out
+    assert "outside the top" not in out
 
 
 def test_requested_other_that_is_not_drawn_is_named_once() -> None:
