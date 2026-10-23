@@ -229,6 +229,58 @@ is biologically true. Noel's integrated-evidence output retains its existing
 explicit placeholders for unavailable native cross-arm results; running that
 command does not imply that it imported Ilyas's or Jed's separate result tables.
 
+The cross-arm comparison imports them from the three verified arm runs:
+
+```bash
+just rerun-compare /absolute/path/core-runs/run-ID/run.json \
+  /absolute/path/reruns/noel/arm_run.json /absolute/path/reruns/jed/arm_run.json \
+  /absolute/path/reruns/ilyas/arm_run.json /absolute/path/reruns/comparison
+just rerun-verify-comparison /absolute/path/reruns/comparison
+```
+
+Each `integrated_evidence` input is the file its producing step recorded in that
+arm's `arm_run.json`: Ilyas's `enrichment` and `depletion`, Noel's
+`directional_screen`, `empirical_calibration`, `contrast_orientation` and
+`native_taxon_influence`, and Jed's `composition_sensitivity`.
+`--require-complete-sources` rejects a native table or status input that is missing
+or unreadable, or a status that records other input bytes. No step produces the #184
+coverage status yet, so it is left out and recorded as not supplied.
+
+The `ComparisonRun` calibration verdicts and its eligibility ledger are built before
+the stage writes anything, so a bad input leaves no partial directory behind (#844).
+
+- **Noel's verdict.** It is read from `calibration_status.json`. That file covers
+  `fraction_sign_test` and `screened_fraction_sign_test`, and each overall status must
+  agree with its criteria.
+- **The screened procedure.** It is the protocol's negative control, declared in
+  advance to fail the acceptance criteria, so its failure is the expected outcome and
+  says nothing against the production procedure. A null criterion counts toward the
+  Table 1 verdict only where the control failed it as declared. Where the control
+  passed it, the criterion is too weak to be evidence, and certification is withheld.
+  The control's procedure, outcome and whether it behaved as declared are recorded in
+  their own `CalibrationVerdict` fields (#855).
+- **Selection of the six traits.** The traits were selected on this same corpus, so
+  their p-values are exploratory. The control's inflation does not bound that
+  selection's cost in either direction (#363). The verdict records the qualifier in
+  `selection_uncertainty` and repeats it in `summary_message` instead of putting it in
+  the label. A `partially_calibrated` Table 1 label is therefore not a validation of the
+  post-hoc six-trait analysis. Labelling the selected traits anti-conservative instead is
+  a single switch, `SELECTION_LABELS_ANTI_CONSERVATIVE`, left off as the protocol
+  declares.
+- **Noel's overall status.** It maps explicitly. `not_certified` is an unmet replicate
+  budget. `fail` is anti-conservative for a failed production null criterion and failed
+  power for the power criterion. Noel's protocol sets no threshold on power itself
+  (#850).
+- **Jed's budget.** It counts a replicate in `composition_calibration_replicates.tsv`
+  only when it has one row for every declared correction and threshold, with the
+  summary's seed, stream, unit and family size. The table must number its replicates
+  from 0 without gaps or duplicates, and must agree with the per-cell counts in
+  `composition_calibration_summary.json`. A truncated table is an error (#856).
+- **The ledger.** It lists the studies that the shared basis keeps after the zero-total
+  pair exclusion, computed from the core's count profiles. After integrated evidence
+  runs, its recorded exclusion must match the ledger, with studies before equal to
+  studies after plus studies lost (#814, #815, #844, #855, #856).
+
 ### Contrast populations and disease-oriented inputs
 
 Select a population once when preparing the core. Use fresh destinations for the

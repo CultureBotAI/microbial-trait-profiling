@@ -1449,6 +1449,10 @@ class AssessmentStatus:
         return self.verdicts.get(procedure, self.default)
 
 
+#: Bindings that mean a status belongs to other input bytes or names no producer.
+UNBOUND_STATUSES = frozenset({"mismatch_or_missing_identity", "missing_producer_identity"})
+
+
 def _unreadable(issue: str, why: str) -> AssessmentStatus:
     return AssessmentStatus(issue=issue, verdicts={}, default=f"unreadable {issue}: {why}")
 
@@ -2425,7 +2429,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument(
         "--require-complete-sources",
         action="store_true",
-        help="Reject missing native source tables or source_not_supplied placeholder rows (#776)",
+        help="Reject missing native source tables, missing, unreadable or unbound status "
+        "inputs, or source_not_supplied placeholder rows (#776, #814, #844)",
     )
     parser.add_argument("--code-commit", help="Source revision, supplied by the Justfile recipe")
     args = parser.parse_args(argv)
@@ -2574,9 +2579,17 @@ def main(argv: Sequence[str] | None = None) -> int:
                 ("arm2_depletion", depletion_path),
                 ("full_screen", screen_path),
                 ("full_screen_provenance", screen_provenance_path),
+                ("calibration_status", args.calibration_status),
+                ("sensitivity_status", args.sensitivity_status),
+                ("orientation_provenance", args.orientation_provenance),
+                ("influence_status", args.influence_status),
             )
-            if not candidate.is_file()
+            if candidate is None or not candidate.is_file()
         ]
+        # Nothing produces the #184 coverage status yet, so a complete run may leave it
+        # out and it reads as not supplied; a path that is supplied must exist (#814).
+        if args.coverage_status is not None and not args.coverage_status.is_file():
+            missing_files.append("coverage_status")
         if missing_files:
             raise ValueError(
                 "--require-complete-sources rejected missing source files: "
@@ -2637,6 +2650,21 @@ def main(argv: Sequence[str] | None = None) -> int:
             },
         ),
     }
+    if args.require_complete_sources:
+        # A status that cannot be read, or that belongs to other input bytes, is no more
+        # complete than a missing one (#844). A status that declares no input hashes is
+        # still accepted until #816 decides what it binds to.
+        rejected = [
+            f"{key} ({status.default})"
+            for key, status in sorted(statuses.items())
+            if status.default.startswith("unreadable")
+            or status.source.get("binding") in UNBOUND_STATUSES
+        ]
+        if rejected:
+            raise ValueError(
+                "--require-complete-sources rejected unreadable or unbound statuses: "
+                + "; ".join(rejected)
+            )
     records = apply_statuses(records, statuses)
     summary = summarize(records)
     families = family_inventory(records)
@@ -2716,6 +2744,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             "studies_before": exclusion.studies_before,
             "studies_after": exclusion.studies_after,
             "studies_lost": exclusion.studies_lost,
+            # The kept studies themselves, so an eligibility ledger lists real units
+            # rather than a count (#815).
+            "study_ids_after": sorted({p.study_id for p in exclusion.profiles}),
             "experiments_kept": len({(p.study_id, p.experiment_id) for p in exclusion.profiles}),
             "rule": (
                 "a whole experiment pair is dropped when its retained-annotation total "
