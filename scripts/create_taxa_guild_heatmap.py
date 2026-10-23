@@ -527,11 +527,12 @@ def save_heatmap(
     category_handles = [
         Patch(color=color, label=label) for label, color in category_palette.items()
     ]
+    # Left of the row dendrogram, whose root line the two-line title crossed (#896)
     cluster.ax_row_dendrogram.legend(
         handles=direction_handles,
         title=DIRECTION_LEGEND_TITLES[direction_basis],
-        loc="center",
-        bbox_to_anchor=(-0.05, 0.5),
+        loc="center right",
+        bbox_to_anchor=(-0.02, 0.5),
         frameon=False,
     )
     cluster.ax_col_dendrogram.legend(

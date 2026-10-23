@@ -291,11 +291,14 @@ DIRECTION_LEGENDS = [
 def test_taxa_guild_legend_names_the_run_direction_basis(
     tmp_path: Path, direction_basis: str, legend_title: str
 ) -> None:
-    """The row colours follow the run's direction basis, and the legend names it (#795).
+    """The row colours follow the run's direction basis, and the legend names it (#795),
+    left of the row dendrogram, whose root line crossed the two-line title (#896).
 
     A contrast-population subset flips its reversed experiments, so its increased and
     decreased are not the curated Group 1 direction that an all-paired run keeps.
     """
+    from matplotlib.collections import LineCollection
+
     module = load_script_module("create_taxa_guild_heatmap.py")
     taxa = ["NCBITaxon:562", "NCBITaxon:817", "NCBITaxon:841"]
     traits = ["Trait A", "Trait B", "Trait C"]
@@ -329,6 +332,22 @@ def test_taxa_guild_legend_names_the_run_direction_basis(
     figure = savefig.call_args.args[0]
     try:
         assert legend_titles(figure) == {legend_title, "Trait category"}
+        # Seaborn puts the root line at the same place whatever the data
+        figure.canvas.draw()
+        dendrogram = next(
+            axis
+            for axis in figure.axes
+            if axis.get_legend() and axis.get_legend().get_title().get_text() == legend_title
+        )
+        legend = dendrogram.get_legend().get_window_extent(figure.canvas.get_renderer())
+        lines_x = [
+            dendrogram.transData.transform(segment)[:, 0].min()
+            for lines in dendrogram.collections
+            if isinstance(lines, LineCollection)
+            for segment in lines.get_segments()
+        ]
+        assert lines_x
+        assert legend.x1 < min(lines_x)
     finally:
         module.plt.close(figure)
 
