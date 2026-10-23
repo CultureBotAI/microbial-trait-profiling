@@ -97,6 +97,8 @@ COVER_CODE = "scripts/create_six_shared_trait_cytoscape_heatmaps.py"
 UNMERGED_ORA_FIGURES = ("closed PR #315", "d500113ffb367d01de80a750d85c60ef38d30b54")
 UNMERGED_GRAM_SANKEY = ("open PR #148", "3778492a7e14e685a39c46f380bd9ab415120a1d")
 UNMERGED_TABLE1_MAPS = ("open PR #173", "bf235552cf58e0400fa24d6fc4836c44bc4a99f4")
+TRAIT_MATRIX = Path("data/derived/taxa_trait_matrix.tsv")
+TRAIT_COLUMNS = Path("data/derived/taxa_trait_matrix_columns.tsv")
 UNMERGED_CODE = {
     "scripts/create_trait_enrichment_heatmap.py": UNMERGED_ORA_FIGURES,
     "scripts/generate_cytoscape_diagram.py": UNMERGED_ORA_FIGURES,
@@ -465,10 +467,28 @@ def load_rerun_metrics(repo: Path) -> dict:
         profile_summary_rows=prof_summary_rows,
         study_meta_rows=study_meta,
     )
+    if cov_info.retained_studies is None or cov_info.retained_studies <= 0:
+        raise ValueError("missing retained_studies count in coverage run info")
+    if cov_info.retained_profiles is None or cov_info.retained_profiles <= 0:
+        raise ValueError("missing retained_profiles count in coverage run info")
     metrics["retained_profiles"] = cov_info.retained_profiles
     metrics["retained_studies"] = cov_info.retained_studies
     metrics["coverage_strain_rollup"] = cov_info.strain_rollup
     metrics["coverage_population"] = cov_info.population
+    matrix_path = repo / TRAIT_MATRIX
+    columns_path = repo / TRAIT_COLUMNS
+    if not matrix_path.exists():
+        raise FileNotFoundError(f"missing {matrix_path}; run `just taxa-trait-matrix` first")
+    if not columns_path.exists():
+        raise FileNotFoundError(f"missing {columns_path}; run `just taxa-trait-matrix` first")
+    matrix_rows = read_tsv(matrix_path)
+    col_rows = read_tsv(columns_path)
+    if not matrix_rows:
+        raise ValueError(f"{matrix_path} has 0 organism rows")
+    if not col_rows:
+        raise ValueError(f"{columns_path} has 0 trait column rows")
+    metrics["matrix_taxa"] = len(matrix_rows)
+    metrics["trait_count"] = len(col_rows)
     metrics["ind_conditions"] = len({r["condition"] for r in ind_rows})
     metrics["ind_sites"] = len({r["body_site_group"] for r in ind_rows})
     metrics["ind_median_studies"] = median(int(r["study_count"]) for r in ind_rows)
@@ -1060,24 +1080,23 @@ def _coverage_totals(metrics: Mapping[str, Any]) -> tuple[int, int]:
 
 
 def methods_plate_one_takeaway(metrics: Mapping[str, Any]) -> str:
-    """Methods Plate I's takeaway, read from the corpus and coverage tables (#864, #930, #956)."""
+    """Methods Plate I's takeaway, read from corpus and coverage tables (#755, #864, #930, #956)."""
     total_occ, total_taxa = _coverage_totals(metrics)
     retained = int(metrics["retained_studies"])
-    retained_profiles = metrics.get("retained_profiles")
+    if metrics.get("retained_profiles") is None or int(metrics["retained_profiles"]) <= 0:
+        raise ValueError("missing retained_profiles count in metrics")
+    retained_profiles = int(metrics["retained_profiles"])
     pooled = int(metrics["pooled_pairs"])
-    profiles_clause = (
-        f"{int(retained_profiles):,} retained profiles, "
-        if retained_profiles is not None
-        else "all retained profiles, "
-    )
+    matrix_taxa = int(metrics["matrix_taxa"])
+    trait_count = int(metrics["trait_count"])
     return (
         "High-level visual overview of the data ingestion funnel: "
         f"{retained:,} BugSigDB "
-        f"v1.3.1 human studies ({profiles_clause}{total_occ:,} all-profile "
+        f"v1.3.1 human studies ({retained_profiles:,} retained profiles, {total_occ:,} all-profile "
         f"taxon occurrences across {total_taxa:,} unique NCBI TaxIDs; "
-        f"{pooled:,} paired experiments / {2 * pooled:,} paired profiles) joined to 5,829 "
-        "KG-Microbe organisms \N{MULTIPLICATION SIGN} 317 normalized traits via NCBI "
-        "Taxonomy subtree rollup."
+        f"{pooled:,} paired experiments / {2 * pooled:,} paired profiles) joined to "
+        f"{matrix_taxa:,} KG-Microbe organisms \N{MULTIPLICATION SIGN} {trait_count:,} "
+        "normalized traits via NCBI Taxonomy subtree rollup."
     )
 
 
@@ -1601,12 +1620,14 @@ def update_previous_slide_text(row: dict[str, str], metrics: dict) -> tuple[str,
     elif fig_path == "data/derived/enrichment_infographic.png":
         enriched = metrics["ora_enrichment"]
         inc_hits, dec_hits = metrics["ora_enrichment_sides"]
+        trait_count = int(metrics["trait_count"])
         title = f"{enriched.calls:,} ORA enrichment calls describe individual microbial profiles"
         takeaway = (
             f"{enriched.calls:,} profile \N{MULTIPLICATION SIGN} trait enrichment calls pass BH "
             f"q ≤ {enriched.p_threshold} and fold ≥ {enriched.fold} across "
             f"{enriched.tests:,} testable pairs ({2 * metrics['pooled_pairs']:,} human profiles "
-            f"\N{MULTIPLICATION SIGN} 317 traits; {inc_hits:,} inc vs {dec_hits:,} dec)."
+            f"\N{MULTIPLICATION SIGN} {trait_count:,} traits; "
+            f"{inc_hits:,} inc vs {dec_hits:,} dec)."
         )
         caveat = (
             "Static figure drawn in the September rerun by PR #315's code (showing 66,240 "
@@ -1796,7 +1817,8 @@ def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
             f"{metrics['table1'][ORIENTED].studies:,} disease-vs-healthy oriented studies; the "
             f"sign tests keep {metrics['table1'][ALL_STUDIES].tested_studies:,} and "
             f"{metrics['table1'][ORIENTED].tested_studies:,} after the zero-total exclusion).",
-            "caveat": "Bottom convergence bar shows how 317 KG-Microbe traits narrow to "
+            "caveat": f"Bottom convergence bar shows how {int(metrics['trait_count']):,} "
+            "KG-Microbe traits narrow to "
             f"{plate_count(metrics, 'three_arm_concordant')} three-arm concordant "
             f"study-BH traits ({plate_count(metrics, 'three_arm_strict_by')} at "
             "strict BY q ≤ 0.05), explains "
@@ -1956,8 +1978,8 @@ def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
             "deck_section": "Main",
             "analysis": "tufte_plate_7",
             "selection_reason": "Visual forest-and-scatter comparison of the 6 Table 1 traits and "
-            "all 317 traits across all three analytical arms and oriented "
-            "disease-vs-healthy subset.",
+            f"all {int(metrics['trait_count']):,} traits across all three analytical arms "
+            "and oriented disease-vs-healthy subset.",
         },
         # --- Section A: Unique Publication Deck Figure (PC1 Annotation Density Confounding) ---
         {
@@ -2176,8 +2198,8 @@ def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
         # --- Section D: Distinct Jed Main Figures (Global Heatmaps, PD Cellulose, Oral Atlas) ---
         {
             "owner": "Jed",
-            "title": "Global condition \N{MULTIPLICATION SIGN} trait module clustered heatmap (317 "
-            "traits)",
+            "title": "Global condition \N{MULTIPLICATION SIGN} trait module clustered heatmap ("
+            f"{int(metrics['trait_count']):,} traits)",
             "tag": "Jed · Global trait-module atlas",
             "figure_file_path": "trait-visualization/condition_trait_module_clustered_heatmap.png",
             "code_path": "scripts/create_condition_trait_module_heatmap.py",
@@ -2338,7 +2360,7 @@ def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
 def check_coverage_table_sync(
     metrics: Mapping[str, Any], slides: Sequence[Mapping[str, str]]
 ) -> None:
-    """Assert Methods Plate I and Plate VI slide text match coverage tables (#864, #930, #956)."""
+    """Assert deck slide text matches corpus, matrix, and coverage tables (#755, #864, #930)."""
     by_analysis = {s["analysis"]: s for s in slides if "analysis" in s}
     mp1 = by_analysis.get("methods_plate_1")
     if mp1 is None:
@@ -2368,6 +2390,46 @@ def check_coverage_table_sync(
                 f"{mp1.get('takeaway')!r}"
             )
 
+    trait_count = int(metrics["trait_count"])
+    retained_profiles = int(metrics["retained_profiles"])
+    pooled_pairs = int(metrics["pooled_pairs"])
+    pooled_studies = int(metrics["pooled_studies"])
+    feces_studies = int(metrics["feces_studies"])
+
+    mp2 = by_analysis.get("methods_plate_2")
+    if mp2 is None:
+        raise ValueError("Missing methods_plate_2 slide in metadata")
+    all_t1 = metrics["table1"][ALL_STUDIES]
+    ori_t1 = metrics["table1"][ORIENTED]
+    expected_mp2_studies = (
+        f"all {all_t1.studies:,} studies and {ori_t1.studies:,} disease-vs-healthy oriented "
+        f"studies; the sign tests keep {all_t1.tested_studies:,} and {ori_t1.tested_studies:,}"
+    )
+    if expected_mp2_studies not in mp2.get("takeaway", ""):
+        raise ValueError(
+            f"methods_plate_2 takeaway out of sync with Table 1 study counts: "
+            f"expected {expected_mp2_studies!r} in {mp2.get('takeaway')!r}"
+        )
+    expected_mp2_traits = f"how {trait_count:,} KG-Microbe traits narrow to"
+    if expected_mp2_traits not in mp2.get("caveat", ""):
+        raise ValueError(
+            f"methods_plate_2 caveat out of sync with trait matrix columns: "
+            f"expected {expected_mp2_traits!r} in {mp2.get('caveat')!r}"
+        )
+
+    tp1 = by_analysis.get("tufte_plate_1")
+    if tp1 is None:
+        raise ValueError("Missing tufte_plate_1 slide in metadata")
+    expected_tp1_funnel = (
+        f"({pooled_pairs:,} paired experiments → {pooled_studies:,} studies → "
+        f"{feces_studies:,} fecal studies"
+    )
+    if expected_tp1_funnel not in tp1.get("takeaway", ""):
+        raise ValueError(
+            f"tufte_plate_1 takeaway out of sync with paired-contrast tables: "
+            f"expected {expected_tp1_funnel!r} in {tp1.get('takeaway')!r}"
+        )
+
     tp6 = by_analysis.get("tufte_plate_6")
     if tp6 is None:
         raise ValueError("Missing tufte_plate_6 slide in metadata")
@@ -2382,6 +2444,43 @@ def check_coverage_table_sync(
             f"tufte_plate_6 caveat out of sync with coverage tables: "
             f"got {tp6.get('caveat')!r}, expected {expected_tp6_caveat!r}"
         )
+
+    tp7 = by_analysis.get("tufte_plate_7")
+    if tp7 is None:
+        raise ValueError("Missing tufte_plate_7 slide in metadata")
+    expected_tp7_reason = f"all {trait_count:,} traits across all three analytical arms"
+    if expected_tp7_reason not in tp7.get("selection_reason", ""):
+        raise ValueError(
+            f"tufte_plate_7 selection_reason out of sync with trait matrix columns: "
+            f"expected {expected_tp7_reason!r} in {tp7.get('selection_reason')!r}"
+        )
+
+    hm = by_analysis.get("condition_trait_module_clustered_heatmap")
+    if hm is None:
+        raise ValueError("Missing condition_trait_module_clustered_heatmap slide in metadata")
+    if f"({trait_count:,} traits)" not in hm.get("title", ""):
+        raise ValueError(
+            "condition_trait_module_clustered_heatmap title out of sync with trait matrix "
+            f"columns: expected '({trait_count:,} traits)' in {hm.get('title')!r}"
+        )
+    if f"across the {retained_profiles:,}-profile wide matrix" not in hm.get("takeaway", ""):
+        raise ValueError(
+            "condition_trait_module_clustered_heatmap takeaway out of sync with "
+            f"retained_profiles: expected 'across the {retained_profiles:,}-profile wide matrix' "
+            f"in {hm.get('takeaway')!r}"
+        )
+
+    for slide in slides:
+        if slide.get("figure_file_path") == "data/derived/enrichment_infographic.png":
+            expected_enr = (
+                f"({2 * pooled_pairs:,} human profiles \N{MULTIPLICATION SIGN} "
+                f"{trait_count:,} traits;"
+            )
+            if expected_enr not in slide.get("takeaway", ""):
+                raise ValueError(
+                    f"enrichment_infographic takeaway out of sync with corpus/trait counts: "
+                    f"expected {expected_enr!r} in {slide.get('takeaway')!r}"
+                )
 
 
 # The appendix histograms PR #315's scripts/plot_enrichment_histograms.py drew (checked at

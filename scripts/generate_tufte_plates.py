@@ -67,6 +67,7 @@ TRAIT_COLUMNS = Path("data/derived/taxa_trait_matrix_columns.tsv")
 # same revision and refuses inputs that differ from it (#637); the two move together (#579).
 RERUN_COMMIT = "edeb7bef2f0db052bb84aa638d3e74fc6c53ca6f"
 RERUN_SOURCE = f"Source: Rerun on main ({RERUN_COMMIT[:7]})"
+TRAIT_MATRIX = Path("data/derived/taxa_trait_matrix.tsv")
 
 # Tufte palette: muted, high-contrast, colorblind-safe ink on warm paper/clean white
 BG_COLOR = "#fcfbf8"
@@ -101,6 +102,23 @@ def read_tsv(path: Path) -> list[dict[str, str]]:
 def read_json(path: Path) -> Any:
     INPUTS_READ.add(path)
     return json.loads(path.read_text(encoding="utf-8"))
+
+
+def matrix_counts(repo: Path) -> tuple[int, int]:
+    """Total KG-Microbe organisms (rows) and retained traits (columns) from matrix (#755)."""
+    matrix_path = repo / TRAIT_MATRIX
+    columns_path = repo / TRAIT_COLUMNS
+    if not matrix_path.exists():
+        raise FileNotFoundError(f"missing {matrix_path}; run `just taxa-trait-matrix` first")
+    if not columns_path.exists():
+        raise FileNotFoundError(f"missing {columns_path}; run `just taxa-trait-matrix` first")
+    matrix_rows = read_tsv(matrix_path)
+    col_rows = read_tsv(columns_path)
+    if not matrix_rows:
+        raise ValueError(f"{matrix_path} has 0 organism rows")
+    if not col_rows:
+        raise ValueError(f"{columns_path} has 0 trait column rows")
+    return len(matrix_rows), len(col_rows)
 
 
 def fmt_p(value: float) -> str:
@@ -647,9 +665,18 @@ def build_methods_plate1(repo: Path, out_dir: Path) -> Path:
         profile_summary_rows=prof_summary_rows,
         study_meta_rows=study_meta,
     )
-    retained_studies = run_info.retained_studies or 0
+    if run_info.retained_studies is None or run_info.retained_studies <= 0:
+        raise ValueError("missing retained_studies count in coverage run info")
+    retained_studies = run_info.retained_studies
     retained_profiles = run_info.retained_profiles
     coverage_scope = run_info.strain_rollup
+    matrix_taxa, trait_count = matrix_counts(repo)
+    PLATE_COUNTS.update(
+        {
+            "matrix_taxa": matrix_taxa,
+            "trait_count": trait_count,
+        }
+    )
     coverage_rows = read_tsv(coverage_dir / "taxa_coverage_by_rank.tsv")
     zero_rows = read_tsv(coverage_dir / "top_zero_trait_bugsigdb_taxa.tsv")
     mp1_labels = methods_plate1_coverage_labels(
@@ -776,7 +803,7 @@ def build_methods_plate1(repo: Path, out_dir: Path) -> Path:
     ax.text(
         50.0,
         80.8,
-        "5,829 Trait-Bearing Taxa \N{MULTIPLICATION SIGN} 317 Traits",
+        f"{matrix_taxa:,} KG-Microbe Taxa \N{MULTIPLICATION SIGN} {trait_count:,} Traits",
         fontsize=10.1,
         fontweight="bold",
         color=INK,
@@ -895,8 +922,8 @@ def build_methods_plate1(repo: Path, out_dir: Path) -> Path:
         50.0,
         19.8,
         "• Arm 1 & Arm 3: Continuous / Sign profile matrix\n  weighted by descendant trait "
-        "assertion fractions\n• Arm 2 (Taxon ORA): Binary presence/absence\n  over M = 5,829 "
-        "distinct organisms",
+        "assertion fractions\n• Arm 2 (Taxon ORA): Binary presence/absence\n"
+        f"  over M = {matrix_taxa:,} distinct organisms",
         fontsize=7.8,
         color=INK,
         ha="center",
@@ -1111,7 +1138,13 @@ def build_methods_plate2(repo: Path, out_dir: Path) -> Path:
     wilcoxon = len(
         read_tsv(stats / "PD-cellulose/pd_condition_taxon_trait_network_condition_trait_tests.tsv")
     )
+    matrix_taxa, trait_count = matrix_counts(repo)
     screen = read_tsv(repo / "data/derived/trait_screen/trait_direction_screen.tsv")
+    if len(screen) != trait_count:
+        raise ValueError(
+            f"trait_direction_screen.tsv has {len(screen)} rows, but "
+            f"taxa_trait_matrix_columns.tsv has {trait_count} traits"
+        )
     # Arm 2's tests and calls and the oxygen-guild McNemar test, read from their tables (#579)
     enriched, depleted = ora_calls(repo / ORA_ENRICHMENT), ora_calls(repo / ORA_DEPLETION)
     enrichment_rows = read_tsv(repo / ORA_ENRICHMENT)
@@ -1234,7 +1267,7 @@ def build_methods_plate2(repo: Path, out_dir: Path) -> Path:
     a1_blocks = [
         (
             68.5,
-            f"1. Dual Normalization ({2 * pooled_pairs:,} \N{MULTIPLICATION SIGN} 317)",
+            f"1. Dual Normalization ({2 * pooled_pairs:,} \N{MULTIPLICATION SIGN} {trait_count:,})",
             "log1p(assertion count) → profile row z-score\n→ trait column z-score across corpus",
             "#eef5fb",
         ),
@@ -1298,7 +1331,7 @@ def build_methods_plate2(repo: Path, out_dir: Path) -> Path:
         30.5,
         69.0,
         "ARM 2 · Taxon-Calibrated ORA",
-        "2\N{MULTIPLICATION SIGN}2 Hypergeometric Over-Representation (M = 5,829 Taxa)",
+        f"2\N{MULTIPLICATION SIGN}2 Hypergeometric Over-Representation (M = {matrix_taxa:,} Taxa)",
         TEAL_ACCENT,
     )
 
@@ -1540,7 +1573,7 @@ def build_methods_plate2(repo: Path, out_dir: Path) -> Path:
     conv_steps = [
         (
             3.5,
-            "317 Biological Traits",
+            f"{trait_count:,} Biological Traits",
             f"Full KG-Microbe phenome\n({len(paired['pooled'])} observed in corpus)",
             "#ffffff",
             MID_RULE,
@@ -1548,14 +1581,14 @@ def build_methods_plate2(repo: Path, out_dir: Path) -> Path:
         (
             27.5,
             f"{concordant} Three-Arm Traits",
-            "Arm 1 Study BH q ≤ 0.05\n+ Arm 3 BH₃₁₇ ≤ 0.05 + Arm 2 ORA",
+            f"Arm 1 Study BH q ≤ 0.05\n+ Arm 3 BH{family} ≤ 0.05 + Arm 2 ORA",
             "#e8f5f3",
             TEAL_ACCENT,
         ),
         (
             51.5,
             f"{strict} Strict BY Survivors",
-            "Pass conservative 317-trait\nBenjamini\N{EN DASH}Yekutieli q ≤ 0.05",
+            f"Pass conservative {trait_count:,}-trait\nBenjamini\N{EN DASH}Yekutieli q ≤ 0.05",
             "#eef5fb",
             DEC_COLOR,
         ),

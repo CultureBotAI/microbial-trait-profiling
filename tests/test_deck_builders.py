@@ -2052,11 +2052,18 @@ def _mock_rerun_repo_for_deck(
     monkeypatch: pytest.MonkeyPatch,
     rank_rows: list[dict[str, str]],
     zero_rows: list[dict[str, str]],
+    matrix_taxa: int = 5829,
+    trait_count: int = 317,
 ) -> dict[str, Any]:
-    """Run deck.load_rerun_metrics against mocked TSV/JSON inputs (#864, #956)."""
+    """Run deck.load_rerun_metrics against mocked TSV/JSON inputs (#755, #864, #956)."""
     prov_path = tmp_path / deck.CONTRAST_PROVENANCE
     prov_path.parent.mkdir(parents=True, exist_ok=True)
     prov_path.write_text('{"classifier_version": "v2.0"}\n', encoding="utf-8")
+    matrix_path = tmp_path / deck.TRAIT_MATRIX
+    matrix_path.parent.mkdir(parents=True, exist_ok=True)
+    matrix_path.write_text("taxon_id\nNCBITaxon:1\n", encoding="utf-8")
+    columns_path = tmp_path / deck.TRAIT_COLUMNS
+    columns_path.write_text("column_id\nT1\n", encoding="utf-8")
     comparison_rows = _comparison(ALL_STUDIES, 959, ALL_PASSING, (333, 441)) + _comparison(
         ORIENTED, 592, ALL_PASSING, (187, 288)
     )
@@ -2079,6 +2086,10 @@ def _mock_rerun_repo_for_deck(
             return rank_rows
         if name == "top_zero_trait_bugsigdb_taxa.tsv":
             return zero_rows
+        if name == "taxa_trait_matrix.tsv":
+            return [{"taxon_id": f"NCBITaxon:{i}"} for i in range(matrix_taxa)]
+        if name == "taxa_trait_matrix_columns.tsv":
+            return [{"column_id": f"T{i}"} for i in range(trait_count)]
         if name == "profile_trait_mapping_summary.tsv":
             return [{"study_id": f"S{i % 932}", "experiment_id": f"E{i}"} for i in range(5629)]
         if name == "study_trait_profile_study_metadata.tsv":
@@ -2345,7 +2356,7 @@ def test_deck_coverage_text_reads_the_coverage_tsvs(
     assert mp1_slide["caveat"] == deck.methods_plate_one_caveat(metrics)
     assert (p6_slide["takeaway"], p6_slide["caveat"]) == (takeaway, caveat)
 
-    slides = [mp1_slide, p6_slide]
+    slides = list(new_slides)
     deck.check_coverage_table_sync(metrics, slides)
     for bad_slide in (
         {**mp1_slide, "takeaway": mp1_slide["takeaway"].replace("46,865", "41,279")},
@@ -2495,6 +2506,17 @@ def test_plate_six_text_and_remediation_labels_read_the_coverage_tsvs(
         "individual_conditions_direction_contrast\tParkinson's disease\tFeces\n",
         encoding="utf-8",
     )
+    derived_dir = tmp_path / "data" / "derived"
+    derived_dir.mkdir(parents=True, exist_ok=True)
+    (derived_dir / "taxa_trait_matrix.tsv").write_text(
+        "taxon_id\n" + "".join(f"NCBITaxon:{i}\n" for i in range(5829)),
+        encoding="utf-8",
+    )
+    (derived_dir / "taxa_trait_matrix_columns.tsv").write_text(
+        "column_id\tobject_name\tpredicate_name\n"
+        + "".join(f"T{i}\ttrait_{i}\tcapable of\n" for i in range(317)),
+        encoding="utf-8",
+    )
 
     real_close = plates.plt.close
     closed: list[Any] = []
@@ -2517,6 +2539,9 @@ def test_plate_six_text_and_remediation_labels_read_the_coverage_tsvs(
         assert mp1_labels["occurrences_title"] in mp1_all_text
         assert mp1_labels["taxa_subtitle"] in mp1_all_text
         assert mp1_labels["species_gap_note"] in mp1_all_text
+        assert "5,829 KG-Microbe Taxa \N{MULTIPLICATION SIGN} 317 Traits" in mp1_all_text
+        assert "over M = 5,829 distinct organisms" in mp1_all_text
+        assert "5,829 Trait-Bearing Taxa" not in mp1_all_text
         for stale_mp1 in ("41,279", "4,569"):
             assert stale_mp1 not in mp1_all_text
         # Verify the 4 funnel steps appear in top-to-bottom y order (#951, #982):
@@ -2929,3 +2954,289 @@ def test_coverage_run_info_validates_strain_rollup_and_profile_count_agreement(
         match=r"profile_trait_mapping_summary\.tsv \(1 profiles across 1 studies\) disagrees",
     ):
         read_coverage_run_info(tmp_path, study_meta_rows=meta_rows)
+
+
+def test_deck_and_plates_derive_corpus_and_trait_counts_from_tables(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Deck and Methods Plates I/II derive corpus, organism, and trait counts (#755)."""
+    with pytest.raises(FileNotFoundError, match="taxa_trait_matrix"):
+        plates.matrix_counts(tmp_path)
+
+    derived = tmp_path / "data" / "derived"
+    derived.mkdir(parents=True, exist_ok=True)
+    matrix_path = derived / "taxa_trait_matrix.tsv"
+    cols_path = derived / "taxa_trait_matrix_columns.tsv"
+    matrix_path.write_text("taxon_id\n", encoding="utf-8")
+    cols_path.write_text("column_id\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="0 organism rows"):
+        plates.matrix_counts(tmp_path)
+    matrix_path.write_text("taxon_id\nNCBITaxon:1\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="0 trait column rows"):
+        plates.matrix_counts(tmp_path)
+
+    rank_rows = _coverage_rank_rows()
+    zero_rows = _zero_trait_rows()
+    metrics = _mock_rerun_repo_for_deck(
+        tmp_path,
+        monkeypatch,
+        rank_rows,
+        zero_rows,
+        matrix_taxa=6120,
+        trait_count=344,
+    )
+    assert metrics["matrix_taxa"] == 6120
+    assert metrics["trait_count"] == 344
+
+    # Verify Methods Plate I takeaway, Methods Plate II caveat, Plate VII selection_reason,
+    # condition_trait_module_clustered_heatmap title, and enrichment_infographic takeaway:
+    new_slides = deck.get_new_slides_metadata(metrics)
+    by_analysis = {s["analysis"]: s for s in new_slides}
+    assert (
+        "6,120 KG-Microbe organisms \N{MULTIPLICATION SIGN} 344 normalized traits"
+        in (by_analysis["methods_plate_1"]["takeaway"])
+    )
+    assert "how 344 KG-Microbe traits narrow to" in by_analysis["methods_plate_2"]["caveat"]
+    assert (
+        "all 344 traits across all three analytical arms"
+        in (by_analysis["tufte_plate_7"]["selection_reason"])
+    )
+    assert by_analysis["condition_trait_module_clustered_heatmap"]["title"].endswith("(344 traits)")
+
+    enr_row: dict[str, str] = {
+        "figure_file_path": "data/derived/enrichment_infographic.png",
+        "title": "",
+        "takeaway": "",
+        "caveat": "",
+    }
+    enr_row["title"], enr_row["takeaway"], enr_row["caveat"] = deck.update_previous_slide_text(
+        enr_row, metrics
+    )
+    assert "(4,670 human profiles \N{MULTIPLICATION SIGN} 344 traits;" in enr_row["takeaway"]
+    assert "317" not in enr_row["takeaway"]
+
+    all_slides = [*new_slides, enr_row]
+    deck.check_coverage_table_sync(metrics, all_slides)
+
+    # Restoring any of the old corpus/trait literals fails check_coverage_table_sync:
+    mp1 = by_analysis["methods_plate_1"]
+    mp2 = by_analysis["methods_plate_2"]
+    tp1 = by_analysis["tufte_plate_1"]
+    tp7 = by_analysis["tufte_plate_7"]
+    hm = by_analysis["condition_trait_module_clustered_heatmap"]
+    for mutated_slide in (
+        {**mp1, "takeaway": mp1["takeaway"].replace("932 BugSigDB", "959 BugSigDB")},
+        {**mp1, "takeaway": mp1["takeaway"].replace("5,629 retained", "6,356 retained")},
+        {**mp1, "takeaway": mp1["takeaway"].replace("46,865 all-profile", "48,370 all-profile")},
+        {**mp1, "takeaway": mp1["takeaway"].replace("4,750 unique", "1,039 unique")},
+        {**mp1, "takeaway": mp1["takeaway"].replace("2,335 paired", "1,825 paired")},
+        {**mp1, "takeaway": mp1["takeaway"].replace("4,670 paired", "3,650 paired")},
+        {**mp1, "takeaway": mp1["takeaway"].replace("6,120 KG-Microbe", "5,829 KG-Microbe")},
+        {**mp1, "takeaway": mp1["takeaway"].replace("344 normalized", "317 normalized")},
+        {**mp2, "takeaway": mp2["takeaway"].replace("all 959 studies", "all 999 studies")},
+        {**mp2, "caveat": mp2["caveat"].replace("344 KG-Microbe", "317 KG-Microbe")},
+        {**tp1, "takeaway": tp1["takeaway"].replace("2,335 paired", "1,999 paired")},
+        {**tp7, "selection_reason": tp7["selection_reason"].replace("344 traits", "317 traits")},
+        {**hm, "title": hm["title"].replace("(344 traits)", "(317 traits)")},
+        {**hm, "takeaway": hm["takeaway"].replace("5,629-profile", "6,356-profile")},
+    ):
+        broken = [
+            mutated_slide if s.get("analysis") == mutated_slide.get("analysis") else s
+            for s in all_slides
+        ]
+        with pytest.raises(ValueError, match="out of sync"):
+            deck.check_coverage_table_sync(metrics, broken)
+
+    broken_enr = [
+        {**enr_row, "takeaway": enr_row["takeaway"].replace("344 traits", "317 traits")}
+        if s.get("figure_file_path") == "data/derived/enrichment_infographic.png"
+        else s
+        for s in all_slides
+    ]
+    with pytest.raises(ValueError, match="out of sync"):
+        deck.check_coverage_table_sync(metrics, broken_enr)
+
+    # Also verify Methods Plate I and Methods Plate II render dynamic organism (6,120) and
+    # trait (344) counts from the matrix and screen tables:
+    plate_repo = tmp_path / "plate_repo"
+    cov_dir = plate_repo / "trait-visualization" / "trait-profile-investigation" / "taxa-coverage"
+    cov_dir.mkdir(parents=True)
+    rank_cols = list(rank_rows[0])
+    (cov_dir / "taxa_coverage_by_rank.tsv").write_text(
+        "\t".join(rank_cols)
+        + "\n"
+        + "\n".join("\t".join(r[c] for c in rank_cols) for r in rank_rows)
+        + "\n",
+        encoding="utf-8",
+    )
+    zero_cols = list(zero_rows[0])
+    (cov_dir / "top_zero_trait_bugsigdb_taxa.tsv").write_text(
+        "\t".join(zero_cols)
+        + "\n"
+        + "\n".join("\t".join(r[c] for c in zero_cols) for r in zero_rows)
+        + "\n",
+        encoding="utf-8",
+    )
+    (cov_dir / "profile_trait_mapping_summary.tsv").write_text(
+        "study_id\texperiment_id\n" + "".join(f"S{i % 932}\tE{i}\n" for i in range(5629)),
+        encoding="utf-8",
+    )
+    (cov_dir / "provenance.json").write_text(
+        json.dumps(
+            {
+                "strain_rollup": "phenotype",
+                "population": {
+                    "host_species": "Homo sapiens",
+                    "sequencing_types": ["16S", "WMS"],
+                },
+                "counts": {"selected_profiles": 5629},
+            }
+        ),
+        encoding="utf-8",
+    )
+    (plate_repo / "trait-visualization" / "study_trait_profile_study_metadata.tsv").write_text(
+        "study_id\tprofile_id\n" + "".join(f"S{i % 932}\tP{i}\n" for i in range(5629)),
+        encoding="utf-8",
+    )
+    paired_dir = plate_repo / "trait-visualization" / "trait-profile-investigation"
+    for stratum, studies_n in (("pooled", "908"), ("feces", "576"), ("feces_excluded", "390")):
+        (paired_dir / f"trait_profile_paired_contrast_trait_stats_{stratum}.tsv").write_text(
+            "trait\ttrait_label\tpair_count\tstudy_count\tstudy_q_value\t"
+            "study_mean_increased_minus_decreased\n"
+            + "".join(f"T{i}\ttrait_{i}\t2226\t{studies_n}\t0.01\t0.2\n" for i in range(344)),
+            encoding="utf-8",
+        )
+    six_dir = paired_dir / "six-shared-traits"
+    six_dir.mkdir(parents=True, exist_ok=True)
+    (six_dir / "six_shared_trait_condition_body_site_direction_contrasts.tsv").write_text(
+        "view_key\tcondition\tbody_site_group\tselected_after_bh\n"
+        "individual_conditions_direction_contrast\tParkinson's disease\tFeces\tTrue\n",
+        encoding="utf-8",
+    )
+    pd_dir = paired_dir / "PD-cellulose"
+    pd_dir.mkdir(parents=True, exist_ok=True)
+    (pd_dir / "pd_condition_taxon_trait_network_condition_trait_tests.tsv").write_text(
+        "condition\ttrait\tp_value\tq_value\nParkinson's disease\tT0\t0.01\t0.05\n",
+        encoding="utf-8",
+    )
+    p_derived = plate_repo / "data" / "derived"
+    p_derived.mkdir(parents=True, exist_ok=True)
+    (p_derived / "taxa_trait_matrix.tsv").write_text(
+        "taxon_id\n" + "".join(f"NCBITaxon:{i}\n" for i in range(6120)),
+        encoding="utf-8",
+    )
+    (p_derived / "taxa_trait_matrix_columns.tsv").write_text(
+        "column_id\tobject_name\tpredicate_name\n"
+        + "".join(f"T{i}\ttrait_{i}\tcapable of\n" for i in range(344)),
+        encoding="utf-8",
+    )
+    screen_dir = p_derived / "trait_screen"
+    screen_dir.mkdir(parents=True, exist_ok=True)
+    (screen_dir / "trait_direction_screen.tsv").write_text(
+        "trait\tbh_q_nominal\tby_q_nominal\tstudies_up\tstudies_down\tshare_up\n"
+        + "".join(f"T{i}\t0.01\t0.02\t300\t200\t0.6\n" for i in range(344)),
+        encoding="utf-8",
+    )
+    (p_derived / "trait_enrichment_traits_overall_ranked.tsv").write_text(
+        "trait\tinc_hits\tdec_hits\thit_rows\n" + "".join(f"T{i}\t10\t2\t12\n" for i in range(344)),
+        encoding="utf-8",
+    )
+    for ora_name in (plates.ORA_ENRICHMENT, plates.ORA_DEPLETION):
+        ora_p = plate_repo / ora_name
+        ora_p.parent.mkdir(parents=True, exist_ok=True)
+        ora_p.write_text("trait\tinc_dec\nT0\tinc\nT1\tdec\n", encoding="utf-8")
+    guild_corr = plate_repo / plates.GUILD_CORRELATION
+    guild_corr.parent.mkdir(parents=True, exist_ok=True)
+    guild_corr.write_text(
+        "statistic\tcomparison\tvalue\tp_value\n"
+        "discordant_studies\taerobe_up_anaerobe_down\t399\t\n"
+        "discordant_studies\tanaerobe_up_aerobe_down\t255\t\n"
+        "mcnemar_odds_ratio\taerobe_up_anaerobe_down_vs_reverse\t1.56\t1.95e-08\n",
+        encoding="utf-8",
+    )
+    comp_rows = _comparison(ALL_STUDIES, 908, ALL_PASSING, (333, 441)) + _comparison(
+        ORIENTED, 570, ALL_PASSING, (187, 288)
+    )
+    comp_p = plate_repo / plates.COMPARISON
+    comp_p.parent.mkdir(parents=True, exist_ok=True)
+    comp_cols = list(comp_rows[0])
+    comp_p.write_text(
+        "\t".join(comp_cols)
+        + "\n"
+        + "\n".join("\t".join(r[c] for c in comp_cols) for r in comp_rows)
+        + "\n",
+        encoding="utf-8",
+    )
+    cal_p = plate_repo / plates.CALIBRATION_CRITERIA
+    cal_p.parent.mkdir(parents=True, exist_ok=True)
+    cal_p.write_text(
+        "criterion\tprocedure\treplicates_recorded\treplicates_required\testimate\n"
+        "per_test_level\tscreened_fraction_sign_test\t200\t200\t0.354\n",
+        encoding="utf-8",
+    )
+
+    real_close = plates.plt.close
+    closed: list[Any] = []
+    monkeypatch.setattr(plates.plt, "close", lambda fig: closed.append(fig))
+    monkeypatch.setattr(plates, "guild_text", lambda _labels: "• Aerobes vs Anaerobes")
+    monkeypatch.setattr(
+        plates,
+        "ora_calls",
+        lambda _p: plates.OraCalls(calls=62205, tests=2172718, p_threshold=0.001, fold=1.5),
+    )
+
+    plates.INPUTS_READ.clear()
+    plates.PLATE_COUNTS.clear()
+    assert plates.build_methods_plate1(plate_repo, plate_repo).exists()
+    assert plates.PLATE_COUNTS["matrix_taxa"] == 6120
+    assert plates.PLATE_COUNTS["trait_count"] == 344
+    recorded_inputs = plates.input_record(plate_repo)
+    assert "data/derived/taxa_trait_matrix.tsv" in recorded_inputs
+    assert "data/derived/taxa_trait_matrix_columns.tsv" in recorded_inputs
+    mp1_fig = closed.pop()
+    try:
+        mp1_fig.canvas.draw()
+        mp1_text = "\n".join(
+            [
+                *(t.get_text() for t in mp1_fig.texts),
+                *(t.get_text() for ax in mp1_fig.axes for t in ax.texts),
+            ]
+        )
+        assert "6,120 KG-Microbe Taxa \N{MULTIPLICATION SIGN} 344 Traits" in mp1_text
+        assert "over M = 6,120 distinct organisms" in mp1_text
+        assert "2,226 Paired Experiments" in mp1_text
+        assert "4,452 Paired Directional Signatures" in mp1_text
+        assert "5,829" not in mp1_text
+        assert "317" not in mp1_text
+    finally:
+        real_close(mp1_fig)
+
+    assert plates.build_methods_plate2(plate_repo, plate_repo).exists()
+    mp2_fig = closed.pop()
+    try:
+        mp2_fig.canvas.draw()
+        mp2_text = "\n".join(
+            [
+                *(t.get_text() for t in mp2_fig.texts),
+                *(t.get_text() for ax in mp2_fig.axes for t in ax.texts),
+            ]
+        )
+        assert "1. Dual Normalization (4,452 \N{MULTIPLICATION SIGN} 344)" in mp2_text
+        assert "Aggregated across N = 908 unique studies" in mp2_text
+        assert "344-trait BH/BY screen (fixes 0.354 screening bias)" in mp2_text
+        assert "344 traits pass BH₃₄₄ ≤ 0.05" in mp2_text
+        assert "+ Arm 3 BH₃₄₄ ≤ 0.05 + Arm 2 ORA" in mp2_text
+        assert "344 Biological Traits" in mp2_text
+        assert "5,829" not in mp2_text
+        assert "317" not in mp2_text
+    finally:
+        real_close(mp2_fig)
+
+    # Mismatched trait_direction_screen.tsv row count raises ValueError:
+    (screen_dir / "trait_direction_screen.tsv").write_text(
+        "trait\tbh_q_nominal\tby_q_nominal\tstudies_up\tstudies_down\tshare_up\n"
+        "T0\t0.01\t0.02\t300\t200\t0.6\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match=r"trait_direction_screen\.tsv has 1 rows"):
+        plates.build_methods_plate2(plate_repo, plate_repo)
