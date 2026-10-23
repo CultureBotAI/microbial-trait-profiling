@@ -339,9 +339,10 @@ def study_trait_contrasts(
 ) -> dict[str, dict[str, float]]:
     """Per study, the increased minus decreased mean fraction for each trait.
 
-    Collapsing to one value per study first is the fix issue #133 asks for: 56.2%
-    of studies contribute more than one experiment on the pinned v1.3.1 corpus,
-    so treating experiments as independent overstates the sample size.
+    Collapsing to one value per study first is the fix issue #133 asks for: 55.4%
+    of the 922 studies left on the committed corpus after the zero-total
+    exclusion contribute more than one experiment, so treating experiments as
+    independent overstates the sample size.
 
     By default, experiments whose retained-annotation total is zero on either
     side are excluded via ``drop_zero_total_pairs`` to satisfy the shared

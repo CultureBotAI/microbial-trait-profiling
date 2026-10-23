@@ -36,21 +36,26 @@ study/experiment/direction by trait count matrix. Non-human samples are excluded
 on the per-experiment host_species field, experiments were
 restricted to those carrying both an increased and a decreased signature, and
 growth-medium columns carrying a mediadive.medium marker were removed from the
-trait space before any total was computed. Of 7,111 profile rows read under the
-`count_input_16s_wms_v1` profile policy, 1,482 were
-dropped as non-human (leaving 5,629 human profiles from 1,047 studies) and 1,115
-experiments as unpaired; 2,333 of the trait columns
-were MediaDive, leaving 317 traits, 2,257 experiments, 4,514 profiles, and 932
-studies — the same corpus as the composition arm's 2,257 pairs.
+trait space before any total was computed. Of 5,629 profile rows read under the
+`count_input_16s_wms_v1` profile policy, from 1,047 studies, none was dropped as
+non-human, because the matrix holds human profiles only (#656), and 1,115
+experiments were dropped as unpaired; 2,290 trait columns were MediaDive,
+leaving 317 traits, 2,257 experiments, 4,514 profiles, and 932 studies — the
+same corpus as the composition arm's 2,257 pairs.
 
 The matrix these counts were measured on is
 `data/derived/study_trait_profiles_wide.tsv`, sha256
-`a0c28978c5e58c153afba517f8a9fb9a50bd62d5dddefb78f583e0cb2aedf334`: 2,653
-header columns (3 identifier, 2,333 MediaDive, 317 retained) over 7,111 profile
-rows, joined from BugSigDB `2026-04-24_00:41_UTC` and a KG-Microbe build whose
-nodes are md5 `dd76b4656f9341db25a7c4afa96cd58e` and which records no release
-tag. Naming the dump does not identify the matrix, so the run writes this
-record to `corpus_identity.json` beside its outputs (#222).
+`519a095b09e179dc92fb51f9d892984a52dd100dece4dadf6c94b036a5323e6c`, the
+committed `study_trait_profiles_wide.tsv.gz` decompressed: 2,610 header columns
+(3 identifier, 2,290 MediaDive, 317 retained) over 5,629 profile rows, joined
+from BugSigDB `2026-04-24_00:41_UTC` and KG-Microbe release 20260120 (nodes md5
+`dd76b4656f9341db25a7c4afa96cd58e`), as the download sidecar
+`data/kg-microbe/provenance.json` declares it. These are the guild figure's
+inputs, and its note records the experiment metadata table and the full dump
+they were read with
+([`guild_condition_body_site_heatmap.md`](guild_condition_body_site_heatmap.md)).
+Naming the dump does not identify the matrix, so the run writes this record to
+`corpus_identity.json` beside its outputs (#222).
 
 Every figure here then runs on the shared comparison basis of
 [`three_arm_statistics.md`](three_arm_statistics.md), as the guild figure does
@@ -67,8 +72,9 @@ the number of pairs excluded, writes it as `excluded_experiment_pairs` on every
 row of `table1_traits_direction_shift.tsv`, and states it in the subtitle of the
 combined figure and of each cut. A cut names a requested condition that only
 such pairs carried. It does not report that condition as absent from the export
-or as cut by width. The map counts quoted below were measured on every paired
-profile, before #811, and the next regeneration replaces them.
+or as cut by width. The map counts quoted below predate #811: they were measured
+on every paired profile of an earlier, 959-study build of the corpus, and the
+next regeneration replaces them.
 
 
 ## Resolving the six traits to columns
@@ -240,8 +246,8 @@ There is no aerobe-against-anaerobe contrast to test here, so each trait is
 tested against itself across the two directions. Every study contributes one value
 per trait, the mean increased fraction minus the mean decreased fraction over that
 study's paired experiments; collapsing to the study first is the correction that
-issue #133 asks for, since 56.2 per cent of studies contribute more than one
-experiment.
+issue #133 asks for, since 511 of the 922 studies (55.4 per cent) contribute
+more than one experiment.
 A study counts as shifted up for a trait when that difference is positive and down
 when it is negative; a difference within 1e-12 of zero is treated as a tie, since
 at that magnitude it is floating-point residue of summing fractions rather than a
@@ -260,17 +266,20 @@ corrected together as one family.
 
 One boundary case is dropped rather than scored: a profile with no retained
 annotation has no defined fraction, so its whole experiment pair is left out
-(#228), as it is from the maps. 35 experiments have such an empty decreased side
-against 20 with an empty increased side; scored as 0 they would be a small net
-push toward "up". Dropping them leaves 2,202 experiments and 922 studies.
-Scoring them as 0 instead, as this test did before #228, changes no conclusion —
-the largest movement is facultatively aerobic's share, 0.580 to 0.580.
+(#228), as it is from the maps. Of the 55 such pairs, 24 have an empty decreased
+side only, 10 an empty increased side only and 21 both. Scored as 0, the first
+would push their studies toward "up", the second toward "down", and the third
+would add zero contrasts: a small net push toward "up". Dropping them leaves
+2,202 experiments and 922 studies. Scoring them as 0 instead, as this test did
+before #228, keeps all 932 studies and changes no conclusion — the largest
+movement is moderately halophilic's share, 0.576 with them against 0.574
+without.
 
 This figure reads the profile table directly rather than the heatmap matrix, so
 it is unaffected by the axis cuts above: every study on the shared basis
 contributes, not only those on a drawn row.
 
-Over 932 studies, five of the six traits sit on the increased side and one on
+Over 922 studies, five of the six traits sit on the increased side and one on
 the decreased side. Facultatively aerobic shifts up in 521 of 898 scored studies
 (share 0.580, q = 1.0e-05), moderately halophilic in 476 of 829 (0.574,
 q = 6.6e-05), arsenate reduction in 341 of 606 (0.563, q = 0.0027), sphere
