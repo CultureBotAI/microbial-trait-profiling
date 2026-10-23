@@ -88,6 +88,9 @@ included without filename collisions. Untracked scratch files and editor lock
 symlinks are excluded. Changes to a tracked canonical module require
 a new sidecar execution. Unresolved canonical Python entries in the Git index
 are rejected until the merge conflict is resolved (#977).
+The inventory prefix is derived from the actual package location inside its
+repository; it must include the executing `stage.py`. An unrelated outer
+repository or an incomplete copied package cannot produce an empty fingerprint.
 Implementation and policy identities are captured before
 source verification and family construction, then rechecked before the final
 manifest is published. A change during execution refuses publication; the manifest
@@ -105,6 +108,10 @@ checked at metadata and final-source boundaries against those recorded identitie
 A rejected run has no final `multiplicity_run.json`;
 partial diagnostic files may remain. These checks cover the recorded inputs and
 consumed export streams, not arbitrary filesystem mutation or pre-entry imports.
+In particular, a transient edit to a core table, label table or JSON input can
+escape boundary checks when restored before them; closing that consumed-byte
+gap is tracked in #983. The shared recorded-arm-output resolver consolidation is
+tracked in #984. Neither deferred item is implied complete by these guards.
 
 `migration.json` and the per-family migration tables distinguish three changes:
 
@@ -114,7 +121,9 @@ consumed export streams, not arbitrary filesystem mutation or pre-entry imports.
 3. Compare BY q <= 0.05 with BY q <= 0.001 without changing family or method.
 
 Native ORA hit flags also use fold cutoffs; these are separate from multiplicity
-rejection. No full-screen q-value is attached to focal rows by trait slug. The
+rejection. The native bounds are inclusive: enrichment accepts fold 1.5 and
+depletion accepts fold 0.5 when the native q threshold also passes.
+No full-screen q-value is attached to focal rows by trait slug. The
 historical focal selection and the native support/variance filter remain
 selection limitations. The sidecars make no global FDR claim across different
 arms/families and do not measure physiological activity.
@@ -136,3 +145,31 @@ scope is rejected. The four-arm adapter fixture stubs the upstream comparison
 execution-verification boundary, which the existing workflow tests cover.
 Its native pooled statistics come from the actual infographic producer's
 selection, transformations and statistical functions, independently of the adapter.
+
+## Updating the author branch after a base merge
+
+Merge `origin/main` into this branch; **never rebase it**. Important implementation
+and regression changes live inside merge commits, including `c492273` and
+`d8845cb`. A rebase can drop those changes together with their tests while leaving
+a superficially passing suite (#979). Resolve the known foundation conflicts by
+retaining both the accepted base and the sidecar fixes.
+
+Before publishing the updated author branch, require the retained fix commit
+and explicitly named regression/probe files, then run the complete focused and
+required gates:
+
+```bash
+git merge origin/main
+git merge-base --is-ancestor d8845cb HEAD
+git ls-files --error-unmatch src/mtp/multiplicity/sources.py \
+  tests/test_multiplicity_regression_guards.py \
+  scripts/adhoc/issue979_probe_multiplicity_boundaries.py
+just test-multiplicity-adapters
+just precommit
+just check
+just core-fixture
+```
+
+The ancestry check applies to this author branch before its PR is merged, not to
+the owner's eventual squash commit on main. The explicit file checks ensure a
+missing test file is a failure rather than a smaller silently passing test suite.

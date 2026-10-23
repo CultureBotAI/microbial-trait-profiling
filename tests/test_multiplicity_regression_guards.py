@@ -1,14 +1,17 @@
 """Independent weakening-guard regressions for additive multiplicity (#974)."""
 
+import json
 from pathlib import Path
 
 import pytest
 
-from mtp.datamodel.multiple_testing_pydantic import HypothesisFamilyMetadata
+from mtp.datamodel.multiple_testing_pydantic import HypothesisFamilyMetadata, SourceArtifact
 from mtp.multiplicity import native, ora, stage
+from mtp.multiplicity import sources as source_module
 from mtp.multiplicity.families import FamilyInput, NativeObservation, rows, validate_sign_status
 from mtp.multiplicity.inventory import correct_inventory
 from mtp.multiplicity.sources import recorded_arm_output
+from mtp.paths import file_sha256
 from multiplicity_fixture import fixture_sources, write_table
 from test_multiple_testing import family, raw
 
@@ -85,6 +88,64 @@ def test_ora_native_hit_needs_fold_as_well_as_q(
     write_table(path, records, ora.ora_comments(path))
     with pytest.raises(ValueError, match="ORA native hit flag disagrees with q/effect thresholds"):
         list(imported.observations())
+
+
+@pytest.mark.parametrize(("tail", "fold"), [("upper", "1.5"), ("lower", "0.5")])
+def test_ora_native_hit_includes_exact_fold_boundary(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, tail: str, fold: str
+) -> None:
+    sources = fixture_sources(tmp_path / "inputs", monkeypatch)
+    prefix = "enrichment" if tail == "upper" else "depletion"
+    path = recorded_arm_output(sources.arms["ilyas"], prefix, f"trait_{prefix}_all_results.tsv")
+    imported = ora.ora_family(sources)
+    records = list(rows(path))
+    records[0].update(p_value="0.0001", fdr_q="0.0001", fold=fold, is_significant="True")
+    write_table(path, records, ora.ora_comments(path))
+    observed = list(imported.observations())
+    boundary = [item for item in observed if item.row["is_significant"] == "True"]
+    assert len(boundary) == 1
+    assert boundary[0].row["fold"] == fold
+    assert boundary[0].raw.p_value == 0.0001
+
+
+@pytest.mark.parametrize("checkpoint", ["metadata", "final"])
+def test_non_rows_recorded_hash_checks(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, checkpoint: str
+) -> None:
+    sources = fixture_sources(tmp_path / "inputs", monkeypatch)
+    path = recorded_arm_output(
+        sources.arms["noel"], "directional_screen", "trait_screen_provenance.json"
+    )
+    before = file_sha256(path)
+    parsed = json.loads(path.read_text())
+
+    def open_then_change_metadata(_path: Path) -> source_module.VerifiedSources:
+        path.write_text(path.read_text() + "\n ", encoding="utf-8")
+        assert json.loads(path.read_text()) == parsed
+        assert file_sha256(path) != before
+        return sources
+
+    monkeypatch.setattr(stage, "open_verified_sources", open_then_change_metadata)
+    if checkpoint == "final":
+        # Deliberately relax the earlier metadata guard to prove that the final
+        # defense independently uses the recorded hash, not its own disk snapshot.
+        def unchecked_metadata_artifact(
+            _sources: source_module.VerifiedSources, consumed: Path
+        ) -> SourceArtifact:
+            return source_module.source(consumed)
+
+        monkeypatch.setattr(source_module.VerifiedSources, "artifact", unchecked_metadata_artifact)
+    output = tmp_path / "sidecars"
+    message = (
+        "Source bytes differ from upstream recorded hash"
+        if checkpoint == "metadata"
+        else "Source changed from recorded hash"
+    )
+    with pytest.raises(ValueError, match=message):
+        stage.run_post_arm(Path(sources.comparison.manifest_path), output)
+    assert not (output / "multiplicity_run.json").exists()
+    if checkpoint == "metadata":
+        assert not output.exists()
 
 
 def test_sign_eligible_count_reconciles_with_tallies() -> None:

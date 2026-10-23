@@ -146,6 +146,44 @@ def test_code_identity_rejects_unresolved_canonical_index_entries(
         stage_module.code_sha256()
 
 
+@pytest.mark.parametrize("tracked_sibling", [False, True])
+def test_code_identity_requires_its_own_tracked_module(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, tracked_sibling: bool
+) -> None:
+    from git import Repo
+
+    package = tmp_path / "nested" / "checkout" / "src" / "mtp"
+    module = package / "multiplicity" / "stage.py"
+    module.parent.mkdir(parents=True)
+    module.write_text("# untracked copied implementation\n")
+    tracked = package / "multiplicity" / "ora.py" if tracked_sibling else tmp_path / "README.md"
+    tracked.write_text("# tracked sibling\n")
+    with Repo.init(tmp_path) as repository:
+        repository.index.add([str(tracked)])
+    monkeypatch.setattr(stage_module, "__file__", str(module))
+    with pytest.raises(ValueError, match=r"Tracked code inventory.*stage.py"):
+        stage_module.code_sha256()
+
+
+def test_code_identity_tracks_the_actual_nested_package_prefix(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from git import Repo
+
+    package = tmp_path / "nested" / "checkout" / "src" / "mtp"
+    module = package / "multiplicity" / "stage.py"
+    sibling = module.with_name("ora.py")
+    module.parent.mkdir(parents=True)
+    module.write_text("# tracked entrypoint\n")
+    sibling.write_text("# tracked adapter\n")
+    with Repo.init(tmp_path) as repository:
+        repository.index.add([str(module), str(sibling)])
+    monkeypatch.setattr(stage_module, "__file__", str(module))
+    before = stage_module.code_sha256()
+    sibling.write_text("# changed tracked adapter\n")
+    assert stage_module.code_sha256() != before
+
+
 @pytest.mark.parametrize("kind", ["code", "policy"])
 def test_post_arm_refuses_identity_changes_during_execution(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, kind: str

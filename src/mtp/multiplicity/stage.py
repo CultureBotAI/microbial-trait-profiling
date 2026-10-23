@@ -37,16 +37,20 @@ def code_sha256() -> str:
     with Repo(package, search_parent_directories=True) as repository:
         if repository.working_tree_dir is None:
             raise ValueError("Multiplicity execution requires a Git working tree")
-        root = Path(repository.working_tree_dir)
+        root = Path(repository.working_tree_dir).resolve()
+        relative_package = package.relative_to(root).as_posix()
+        prefix = "" if relative_package == "." else relative_package + "/"
         paths = []
         for name, stage in repository.index.entries:
-            if not (str(name).startswith("src/mtp/") and str(name).endswith(".py")):
+            if not (str(name).startswith(prefix) and str(name).endswith(".py")):
                 continue
             if stage != 0:
                 raise ValueError(
                     f"Resolve the tracked Python merge conflict before execution: {name}"
                 )
             paths.append(root / name)
+        if Path(__file__).resolve() not in paths:
+            raise ValueError("Tracked code inventory must include the executing stage.py module")
     return canonical_sha256(
         {path.relative_to(package).as_posix(): file_sha256(path) for path in sorted(paths)}
     )
