@@ -25,8 +25,13 @@ given trait is the same colour in both arms' figures.
 
 ## Input corpus
 
-Inputs and corpus filters are the same code path as the guild figure and are not
-re-derived here. BugSigDB differential-abundance signatures were ingested from
+Inputs and corpus filters are the guild figure's, with one difference, and are not
+re-derived here. Since #783 the guild figure leaves out every experiment pair
+whose retained-annotation total is zero on a side. The direction-shift figure
+here does too, but the condition-by-body-site maps still build their matrix from
+every paired profile (`table1_trait_maps.main`), so such a pair's undefined share
+enters their cells as 0. That defect is #811. BugSigDB differential-abundance
+signatures were ingested from
 the full_dump.csv of the **pinned BugSigDBExports v1.3.1 release** (Zenodo
 10.5281/zenodo.19740674; the dump's internal timestamp, 2026-04-24_00:41_UTC, is
 stamped on every output row) into per-study YAML records, flattened to

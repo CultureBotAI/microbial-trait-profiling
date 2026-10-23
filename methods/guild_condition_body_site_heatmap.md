@@ -45,13 +45,13 @@ host_species field, leaving Homo sapiens only. Experiments were restricted to
 those carrying both an increased and a decreased signature, so every contributing
 experiment supports a paired contrast. Growth-medium columns, identified by a
 mediadive.medium marker in the trait column identifier, were removed from the
-trait space before any total was computed. Of 7,111 profile rows read under the
-`count_input_16s_wms_v1` profile policy, 1,482 were
-dropped as non-human (leaving 5,629 human profiles from 1,047 studies) and 1,115
-experiments as unpaired; 2,333 trait columns were
-MediaDive, leaving 317 traits, 2,257 experiments, 4,514 profiles, and 932
-studies. Every experiment in the profile matrix resolved against the experiment
-metadata table, so no rows were lost to a failed join.
+trait space before any total was computed. Of 5,629 profile rows read under the
+`count_input_16s_wms_v1` profile policy, from 1,047 studies, none was dropped as
+non-human, because the matrix holds human profiles only (#656), and 1,115
+experiments were dropped as unpaired; 2,290 trait columns were MediaDive,
+leaving 317 traits, 2,257 experiments, 4,514 profiles, and 932 studies. Every
+experiment in the profile matrix resolved against the experiment metadata
+table, so no rows were lost to a failed join.
 
 The figure, its cell-status table and its McNemar then leave out every
 experiment pair whose retained-annotation total is zero on a side (#783). That
@@ -64,18 +64,33 @@ cells dark grey as if annotated profiles lacked the guild. It also gave this
 figure's McNemar a different population from the integrated table's, so the two
 reported different results for one run.
 
-An earlier revision of this note said the v1.3.1 wide matrix is already human-only
-upstream and that the host filter drops 0 rows. That is not true of the matrix
-identified below, where the host filter drops 1,482 rows (#222).
+The host filter drops nothing on the matrix identified below, which is written
+from human-host 16S and shotgun profiles only (#656, #742). Earlier revisions of
+this note named a matrix that was not human-only, sha256
+`a0c28978c5e58c153afba517f8a9fb9a50bd62d5dddefb78f583e0cb2aedf334` (2,653
+header columns, 2,333 of them MediaDive, over 7,111 profile rows), and there the
+filter dropped 1,482 rows (#222).
 
 The matrix these counts were measured on is
 `data/derived/study_trait_profiles_wide.tsv`, sha256
-`a0c28978c5e58c153afba517f8a9fb9a50bd62d5dddefb78f583e0cb2aedf334`: 2,653
-header columns (3 identifier, 2,333 MediaDive, 317 retained) over 7,111 profile
-rows, joined from BugSigDB `2026-04-24_00:41_UTC` and a KG-Microbe build whose
-nodes are md5 `dd76b4656f9341db25a7c4afa96cd58e` and which records no release
-tag. Naming the dump does not identify the matrix, so the run writes this
-record to `corpus_identity.json` beside its outputs (#222).
+`519a095b09e179dc92fb51f9d892984a52dd100dece4dadf6c94b036a5323e6c`, the
+committed `study_trait_profiles_wide.tsv.gz` decompressed: 2,610 header columns
+(3 identifier, 2,290 MediaDive, 317 retained) over 5,629 profile rows, joined
+from BugSigDB `2026-04-24_00:41_UTC` and KG-Microbe release 20260120 (nodes md5
+`dd76b4656f9341db25a7c4afa96cd58e`), as the download sidecar
+`data/kg-microbe/provenance.json` declares it rather than as measured when the
+matrix was built. The experiment metadata table is sha256
+`16271237a70f61c8195d9f2acdd16f71e88f65859160f95bb734626bc1328e06` and the full
+dump sha256 `af84bfca7bfe76913a20c1fedbaadbfad4e4bf78605a2cfd7d00eb0c0fdd5788`.
+Naming the dump does not identify the matrix, so the run writes this record to
+`corpus_identity.json` beside its outputs (#222).
+
+The counts in this note were measured on those inputs with the code main
+carries as commit 35ece98 (#808): the corpus cascade, the zero-total exclusion,
+the multi-experiment share, the pooled labels, the row cuts and clusters, the
+cell census, the McNemar and the rank correlations. The figure's numbers from
+before #783, given for comparison, are from main's code at 65850b0 on the same
+inputs.
 
 
 ## Cell values and axes
@@ -83,7 +98,7 @@ record to `corpus_identity.json` beside its outputs (#222).
 Each cell of the figure is a mean guild trait fraction. Within a profile, the
 guild's summed trait count was divided by that profile's total count across the
 retained traits — a share of taxonomically rolled-up trait assertions, not of
-taxa. Because 56.2 percent of studies contribute more than one
+taxa. Because 511 of the 922 studies (55.4 per cent) contribute more than one
 experiment, profile fractions were averaged within a study before being averaged
 across the studies in a cell, and the companion count matrix reports the number
 of contributing studies rather than experiments.
@@ -137,7 +152,9 @@ cluster of their own, so the grouping is driven by
 sampling site as much as by guild fraction — which is the intended behaviour,
 but means the clusters must not be read as guild-biology groupings on their own.
 (An earlier draft narrated a Periodontitis/Alzheimer separation from a
-pre-v1.3.1 run; those conditions no longer survive this corpus's row cuts.)
+pre-v1.3.1 run. Since #783 Periodontitis is back inside the top-60 cut, in the
+oral cluster above, which is cluster 5 in the row-cluster table; Alzheimer's
+disease is still outside it and is pooled into Other.)
 
 ## Cell states
 
@@ -164,14 +181,15 @@ were never sampled.
 
 The association between guild and direction was tested on studies scored once
 per guild by the sign of the mean increased fraction minus the mean decreased
-fraction. Over 922 studies, aerobes shifted toward the increased side in 520
-studies and toward the decreased side in 392, while anaerobes shifted toward the
-increased side in 402 and toward the decreased side in 519. Because the **same
-studies provide both signs**, the two guilds form matched pairs, not independent
-samples, so the test is an **exact McNemar** — a two-sided binomial on the
-discordant studies. Of the 912 studies with both signs (697 discordant), 410 shift aerobe up
-while anaerobe shifts down and 287 the reverse, giving a paired odds ratio of
-1.429 with p = 3.6e-06. That is the same test on the same population as the
+fraction. Over 922 studies, the aerobe guild's annotation share was higher in
+the increased signatures than in the decreased ones in 520 studies and lower in
+392, while the anaerobe share was higher in 402 and lower in 519. Because the
+**same studies provide both signs**, the two guilds form matched pairs, not
+independent samples, so the test is an **exact McNemar** — a two-sided binomial
+on the discordant studies. Of the 912 studies with both signs (697 discordant),
+410 have the higher aerobe share and the lower anaerobe share in the increased
+signatures and 287 the reverse, giving a paired odds ratio of 1.429 with
+p = 3.6e-06. That is the same test on the same population as the
 integrated evidence table's McNemar row. Before the zero-total exclusion (#783)
 this figure reported 410 and 284, p = 2.0e-06, over 932 studies. (An earlier draft applied Fisher's exact test to the
 marginal two-by-two; that assumes independent rows, and on this data it was
@@ -187,8 +205,8 @@ without a change in the latter's counts. This does not force every pair of
 components to correlate negatively. On this corpus 76 per cent of the scored
 studies (697 of 912) carry opposite signs for the two guilds; that observation
 alone does not quantify the structural contribution. The odds ratio reads as
-"the discordance runs more
-often in the aerobe-up direction than the reverse", not as independent
+"discordant studies more often pair a higher aerobe share with a lower anaerobe
+share in the increased signatures than the reverse", not as independent
 confirmation of the oxygen hypothesis. The matched-corpus Table 1-trait analog
 directional-shift figure tests each trait against itself across directions, but
 remains dependent on the same profile denominators. The [paired log-ratio analysis](table1_paired_log_ratios.md)

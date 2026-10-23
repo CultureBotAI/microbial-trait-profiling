@@ -13,12 +13,15 @@ from bsdbng.guild_maps import (
     CELL_NOT_SAMPLED,
     CELL_VALUE,
     OTHER_LABEL,
+    SUBTITLE_LINE_HEIGHT,
+    TITLE_BLOCK_HEIGHT,
     build_matrix,
     cell_status,
     compute_correlation,
     require_plotly,
     study_direction_means,
     subset_matrix,
+    write_figure,
 )
 from bsdbng.trait_guilds import (
     GRAM_GUILDS,
@@ -580,6 +583,38 @@ def test_a_missing_viz_extra_names_the_install_command(monkeypatch: pytest.Monke
 def test_require_plotly_passes_when_the_extra_is_installed() -> None:
     """The guard is a probe, not a second import path: present means it does nothing."""
     require_plotly()
+
+
+def test_the_plotting_area_starts_below_the_last_subtitle_line(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The top margin grows with the subtitle, and the title hangs from the top (#783).
+
+    A fixed 220-pixel margin with the title centred in it let the last subtitle
+    lines of the oxygen guild figure run over its top rows. Rendering needs a
+    browser, so each figure is captured where it would be written.
+    """
+    import plotly.graph_objects as go
+
+    figures: list[go.Figure] = []
+    monkeypatch.setattr(go.Figure, "write_image", lambda figure, *_a, **_kw: figures.append(figure))
+    matrix = build_matrix(
+        [_guild_profile("1", "A", "Feces")],
+        max_conditions=10,
+        max_body_sites=10,
+        min_studies=1,
+        guild_order=("aerobe",),
+    )
+    write_figure(matrix, tmp_path / "short.png", "v1.3.1", guild_order=("aerobe",))
+    write_figure(
+        matrix, tmp_path / "long.png", "v1.3.1", guild_order=("aerobe",), note="One more line."
+    )
+
+    short, long = (figure.layout for figure in figures)
+    lines = long.title.text.split("<sub>", 1)[1].count("<br>") + 1
+    assert long.margin.t == TITLE_BLOCK_HEIGHT + SUBTITLE_LINE_HEIGHT * lines
+    assert long.margin.t - short.margin.t == SUBTITLE_LINE_HEIGHT
+    assert (long.title.yref, long.title.yanchor) == ("container", "top")
 
 
 def _fixed_total_profile(
