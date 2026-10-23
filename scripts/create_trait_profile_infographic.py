@@ -983,9 +983,15 @@ def write_legacy_stratified_stats(
     profiles = load_profile_matrix(profiles_path)
     labels = load_trait_labels(trait_labels_path)
     audit = pair_denominator_summary(profiles, metadata)
-    previous_tables = set(output_dir.glob("trait_profile_paired_contrast_trait_stats*.tsv"))
+    pooled_summaries_and_figure = {
+        output_dir / path.name
+        for path in (CONDITION_SUMMARY_TSV, BODY_SITE_SUMMARY_TSV, OUTPUT_PNG)
+    }
+    previous_outputs = set(output_dir.glob("trait_profile_paired_contrast_trait_stats*.tsv")) | {
+        path for path in pooled_summaries_and_figure if path.is_file()
+    }
     provenance = output_dir / "stratified_stats_provenance.json"
-    for candidate in [*previous_tables, provenance]:
+    for candidate in [*previous_outputs, provenance]:
         if candidate.exists() and any(candidate.samefile(path) for path in paths.values()):
             raise ValueError("Site-statistics output overlaps an input file")
     # An interrupted/failed refresh must not leave a prior success record in place.
@@ -1046,8 +1052,8 @@ def write_legacy_stratified_stats(
         "pair_denominator_audit": audit,
         "outputs": [inventory(path) for path in outputs],
         "not_regenerated": [
-            {**inventory(path), "reason": "outside this run's emitted pooled/site tables"}
-            for path in sorted(previous_tables - set(outputs))
+            {**inventory(path), "reason": "not refreshed by pooled/site statistics mode"}
+            for path in sorted(previous_outputs - set(outputs))
         ],
     }
     provenance.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")

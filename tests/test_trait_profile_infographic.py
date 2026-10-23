@@ -76,7 +76,16 @@ def test_stratified_stats_only_records_outputs_and_stale_files(
     output = tmp_path / "analysis"
     output.mkdir()
     stale = output / "trait_profile_paired_contrast_trait_stats_saliva.tsv"
-    stale.write_text("historical table\n")
+    stale_contents = {
+        stale: b"historical table\n",
+        output / infographic.CONDITION_SUMMARY_TSV.name: b"historical condition summary\n",
+        output / infographic.BODY_SITE_SUMMARY_TSV.name: b"historical body-site summary\n",
+        output / infographic.OUTPUT_PNG.name: b"historical infographic bytes\n",
+    }
+    for path, content in stale_contents.items():
+        path.write_bytes(content)
+    unrelated = output / "unrelated.png"
+    unrelated.write_bytes(b"unrelated image\n")
     pooled = infographic.trait_stats_path(output, "pooled")
     pooled_alias = output / "trait_profile_paired_contrast_trait_stats.tsv"
     for path in (pooled, pooled_alias):
@@ -111,9 +120,15 @@ def test_stratified_stats_only_records_outputs_and_stale_files(
         assert not Path(item["path"]).is_absolute()
     assert not Path(record["producer"]["path"]).is_absolute()
     assert all(not Path(item["path"]).is_absolute() for item in record["inputs"].values())
-    assert [Path(item["path"]).name for item in record["not_regenerated"]] == [stale.name]
-    assert stale.read_text() == "historical table\n"
-    assert not list(output.glob("*.png"))
+    assert {Path(item["path"]).name for item in record["not_regenerated"]} == {
+        path.name for path in stale_contents
+    }
+    for item in record["not_regenerated"]:
+        path = output / Path(item["path"]).name
+        assert path.read_bytes() == stale_contents[path]
+        assert item["sha256"] == file_sha256(path)
+        assert item["size_bytes"] == len(stale_contents[path])
+    assert set(output.glob("*.png")) == {output / infographic.OUTPUT_PNG.name, unrelated}
     assert pooled.read_bytes() == pooled_alias.read_bytes()
     native_output = tmp_path / "native-pooled"
     infographic.main(
@@ -194,9 +209,44 @@ def test_stratified_stats_no_eligible_sites_has_readable_empty_manifest(
 
 
 @pytest.mark.parametrize("mode", [[], ["--stats-only"]])
-def test_min_stratified_pairs_is_rejected_outside_site_stats(mode: list[str]) -> None:
+def test_min_stratified_pairs_is_rejected_outside_site_stats(
+    stratified_inputs: tuple[Path, Path, Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    mode: list[str],
+) -> None:
+    profiles, pairs, labels = stratified_inputs
+    output = tmp_path / "isolated-legacy-output"
+    monkeypatch.setattr(infographic, "INVESTIGATION_DIR", output)
+    for name in (
+        "TRAIT_STATS_TSV",
+        "POOLED_TRAIT_STATS_TSV",
+        "CONDITION_SUMMARY_TSV",
+        "BODY_SITE_SUMMARY_TSV",
+        "STRATIFIED_TRAIT_STATS_MANIFEST_TSV",
+        "OUTPUT_PNG",
+    ):
+        monkeypatch.setattr(infographic, name, output / getattr(infographic, name).name)
+    monkeypatch.setattr(infographic, "create_infographic", lambda *_args, **_kwargs: None)
     with pytest.raises(SystemExit, match="2"):
-        infographic.main([*mode, "--min-stratified-pairs", "2"])
+        infographic.main(
+            [
+                *mode,
+                "--profiles",
+                str(profiles),
+                "--pair-metadata",
+                str(pairs),
+                "--trait-labels",
+                str(labels),
+                "--output-dir",
+                str(output),
+                "--min-stratified-pairs",
+                "2",
+            ]
+        )
+    assert "--min-stratified-pairs requires --stratified-stats-only" in capsys.readouterr().err
+    assert not output.exists()
 
 
 @pytest.mark.parametrize("mode", [[], ["--stats-only"]])
