@@ -17,6 +17,11 @@ sequence of U6 draws serves every triple and trait: each eligible condition take
 block of each draw's studies, so the draws a triple sees are U6's draws for that triple.
 A triple whose blocks would overlap gets its own U6 draws.
 
+The selection-aware lane of #835 (#854) splits the studies. Load a core once with
+``load_core_inputs``, apply the declared rule to the training studies with ``select``, and
+test the chosen hypotheses on the held-out studies with ``evaluate``. Each reads only the
+studies it is given. The CLI is ``select`` on every study.
+
 The counts are annotation counts of curated signature taxa, not measurements of patients,
 cells or pathway activity (methods/biological_interpretation.md). Every p-value is nominal.
 """
@@ -24,15 +29,16 @@ cells or pathway activity (methods/biological_interpretation.md). Every p-value 
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import itertools
 import json
 import sys
 import time
-from collections.abc import Iterator, Sequence
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import numpy.typing as npt
@@ -55,14 +61,18 @@ from mtp.cellulose_decr.analysis import (
     write_tsv,
 )
 from mtp.paths import REPO_ROOT, file_sha256
-from mtp.trait_guilds import load_profiles
+from mtp.trait_guilds import Profile, load_profiles
 from mtp.trait_screen import (
     TESTED,
+    ColumnLabel,
     candidate_slots,
     load_column_labels,
     run_screen,
     screen_candidates,
 )
+
+if TYPE_CHECKING:
+    from mtp.workflow.consumers import CoreBundle
 
 PROTOCOL_PATH = REPO_ROOT / "methods" / "cellulose_decr_selection_scan_protocol.json"
 METHODS_PATH = REPO_ROOT / "methods" / "cellulose_decr_selection_scan.md"
@@ -85,6 +95,8 @@ REFERENCE_SETS = (ALL_TRIPLES, DISJOINT)
 # A triple's test status for one trait.
 NO_TAXA = "all_sets_empty"
 POOL_TOO_SMALL = "pool_too_small"
+# A held-out hypothesis with a condition that no held-out study reports (``evaluate``).
+NO_UNITS = "no_units"
 # Where a triple's U6 draws come from.
 SHARED = "shared"
 OWN = "own"
@@ -108,6 +120,13 @@ BoolArray = npt.NDArray[np.bool_]
 FloatArray = npt.NDArray[np.float64]
 IntArray = npt.NDArray[np.int64]
 WordArray = npt.NDArray[np.uint64]
+# A seed for numpy's SeedSequence: an integer, or integers such as (seed, split, stage).
+SeedLike = int | Sequence[int]
+
+
+def seed_entropy(seed: SeedLike) -> list[int]:
+    """A seed as a list of integers; ``default_rng(s)`` and ``default_rng([s])`` agree."""
+    return [int(seed)] if isinstance(seed, int | np.integer) else [int(part) for part in seed]
 
 
 @dataclass(frozen=True)
@@ -270,13 +289,11 @@ def condition_table(profiles: pd.DataFrame, min_studies: int) -> pd.DataFrame:
 # --------------------------------------------------------------------------- traits
 
 
-def screen_table(profile_path: Path, experiments_path: Path, labels_path: Path) -> pd.DataFrame:
+def screen_table(
+    profiles: Sequence[Profile], columns: Sequence[str], labels: Mapping[str, ColumnLabel]
+) -> pd.DataFrame:
     """The Noel arm's directional screen on these profiles, one row per candidate trait."""
-    columns = screen_candidates(profile_path)
-    profiles, _ = load_profiles(
-        profile_path, experiments_path, candidate_slots(columns), reject_missing_counts=True
-    )
-    result = run_screen(profiles, columns, labels=load_column_labels(labels_path))
+    result = run_screen(list(profiles), columns, labels=dict(labels))
     return pd.DataFrame(
         [
             {
@@ -295,7 +312,7 @@ def screen_table(profile_path: Path, experiments_path: Path, labels_path: Path) 
     )
 
 
-def choose_traits(screen: pd.DataFrame, top_n: int, always: str) -> pd.DataFrame:
+def choose_traits(screen: pd.DataFrame, top_n: int, always: str | None) -> pd.DataFrame:
     """The top decreasing traits in the screen report's order, and ``always`` if missing.
 
     A trait is decreasing when the screen tested it and more studies shift down than up.
@@ -310,7 +327,7 @@ def choose_traits(screen: pd.DataFrame, top_n: int, always: str) -> pd.DataFrame
     ).reset_index(drop=True)
     decreasing.insert(0, "decreasing_rank", np.arange(1, len(decreasing) + 1))
     chosen = decreasing.head(top_n).assign(in_top_n=True)
-    if always not in set(chosen["trait_id"]):
+    if always is not None and always not in set(chosen["trait_id"]):
         row = screen[screen["trait_id"].eq(always)]
         if row.empty:
             raise ValueError(f"{always} is not a screen candidate")
@@ -390,7 +407,7 @@ def triple_values(masks: WordArray, offsets: IntArray) -> tuple[FloatArray, IntA
 
 def block_positions(counts: Sequence[int], n_studies: int) -> list[IntArray]:
     """Consecutive blocks of a draw's study order, one per condition, wrapping at the end."""
-    offsets = np.concatenate([[0], np.cumsum(counts)[:-1]]).astype(np.int64)
+    offsets = np.concatenate([[0], np.cumsum(counts)[:-1]])[: len(counts)].astype(np.int64)
     return [
         (offset + np.arange(count, dtype=np.int64)) % n_studies
         for offset, count in zip(offsets, counts, strict=True)
@@ -480,11 +497,16 @@ class ScanResult:
 
 @dataclass(frozen=True)
 class Prepared:
-    """Everything the null needs, built once from the population."""
+    """Everything the null needs, built once from the population.
+
+    ``triples`` index ``conditions``; ``complete`` says they are every combination, in
+    ``itertools.combinations`` order, which ``triple_blocks`` scores a block at a time.
+    """
 
     conditions: tuple[str, ...]
     traits: tuple[str, ...]
     triples: IntArray
+    complete: bool
     units: IntArray
     unit_bits: WordArray
     offsets: IntArray
@@ -503,17 +525,18 @@ def prepare(
     matrix: pd.DataFrame,
     traits: Sequence[str],
     conditions: Sequence[str],
+    triples: IntArray | None = None,
 ) -> Prepared:
     """U6 units and observed sets for each trait, and the block layout of the conditions.
 
-    ``conditions`` are the eligible conditions in layout order. Each trait's units come
-    from cellulose_decr's ``u6_units``; the units, and so the draws, are the same for
-    every trait, and only the taxa each unit carries differ.
+    ``conditions`` are laid out in the given order; every one needs a unit. ``triples``
+    (rows of increasing indices into ``conditions``) default to every combination. Each
+    trait's units come from cellulose_decr's ``u6_units``; the units, and so the draws,
+    are the same for every trait, and only the taxa each unit carries differ.
     """
+    _, unit_study, _, frame = u6_units(profiles, taxa, set())
     built = [u6_units(profiles, taxa, trait_taxa(matrix, trait)) for trait in traits]
-    frame = built[0][3]
-    unit_study = built[0][1]
-    for _, study, _, other in built[1:]:
+    for _, study, _, other in built:
         if not (other.equals(frame) and np.array_equal(study, unit_study)):
             raise ValueError("U6 units differ between traits")
     rows = frame.reset_index(drop=True)
@@ -524,21 +547,38 @@ def prepare(
         raise ValueError(f"conditions without a stool decreased signature: {missing}")
     packed = [pack(matrix_bits) for matrix_bits, *_ in built]
     widths = np.array([words.shape[1] for words in packed], dtype=np.int64)
-    offsets = np.concatenate([[0], np.cumsum(widths)[:-1]]).astype(np.int64)
-    unit_bits = np.hstack(packed)
-    observed = np.stack([np.bitwise_or.reduce(unit_bits[member], axis=0) for member in members])[
-        None
-    ]
+    offsets = np.concatenate([[0], np.cumsum(widths)[:-1]])[: len(widths)].astype(np.int64)
+    unit_bits = np.hstack(packed) if packed else np.zeros((len(unit_study), 0), dtype=np.uint64)
+    observed = np.zeros((1, len(conditions), unit_bits.shape[1]), dtype=np.uint64)
+    for column, member in enumerate(members):
+        observed[0, column] = np.bitwise_or.reduce(unit_bits[member], axis=0)
     sets = [
-        np.stack([matrix_bits[member].any(axis=0) for member in members])
+        np.stack([matrix_bits[member].any(axis=0) for member in members]).reshape(
+            len(conditions), matrix_bits.shape[1]
+        )
         for matrix_bits, *_ in built
     ]
-    n_studies = int(unit_study.max()) + 1
+    n_studies = int(unit_study.max()) + 1 if unit_study.size else 0
     incidence = np.zeros((n_studies, len(conditions)), dtype=bool)
     for column, member in enumerate(members):
         incidence[unit_study[member], column] = True
-    triples = np.array(list(itertools.combinations(range(len(conditions)), 3)), dtype=np.int64)
-    triples = triples.reshape(-1, 3)
+    every = np.array(list(itertools.combinations(range(len(conditions)), 3)), dtype=np.int64)
+    every = every.reshape(-1, 3)
+    if triples is None:
+        triples = every
+    elif (
+        triples.ndim != 2
+        or triples.shape[1] != 3
+        or (
+            len(triples)
+            and (
+                (np.diff(triples, axis=1) <= 0).any()
+                or triples.min() < 0
+                or triples.max() >= len(conditions)
+            )
+        )
+    ):
+        raise ValueError("triples must be rows of three increasing indices into conditions")
     positions = block_positions(units.tolist(), n_studies)
     occupied = np.zeros((n_studies, len(conditions)), dtype=np.int64)
     for column, block in enumerate(positions):
@@ -553,6 +593,7 @@ def prepare(
         conditions=tuple(conditions),
         traits=tuple(traits),
         triples=triples,
+        complete=bool(np.array_equal(triples, every)),
         units=units,
         unit_bits=unit_bits,
         offsets=offsets,
@@ -566,27 +607,67 @@ def prepare(
     )
 
 
+def observed_values(prepared: Prepared) -> tuple[FloatArray, IntArray]:
+    """Each triple's observed mean pairwise distance and core, ``(triples, traits)``."""
+    if not prepared.traits or not len(prepared.triples):
+        empty = (len(prepared.triples), len(prepared.traits))
+        return np.full(empty, np.nan), np.zeros(empty, dtype=np.int64)
+    if prepared.complete:
+        return triple_values(prepared.observed, prepared.offsets)
+    values = [
+        triple_values(prepared.observed[:, row], prepared.offsets) for row in prepared.triples
+    ]
+    return (
+        np.concatenate([mean for mean, _ in values]),
+        np.concatenate([core for _, core in values]),
+    )
+
+
+def score_draws(
+    totals: Totals,
+    masks: WordArray,
+    prepared: Prepared,
+    observed_mean: FloatArray,
+    observed_core: IntArray,
+    tolerance: float,
+) -> None:
+    """Count one chunk of shared draws for every triple of the layout.
+
+    Every combination is scored a block at a time; listed triples one at a time, with
+    the same arithmetic.
+    """
+    if prepared.complete:
+        for block, mean, core in triple_blocks(masks, prepared.offsets):
+            totals.add(block, mean, core, observed_mean[block], observed_core[block], tolerance)
+        return
+    for index, row in enumerate(prepared.triples):
+        target = slice(index, index + 1)
+        for _, mean, core in triple_blocks(masks[:, row], prepared.offsets):
+            totals.add(target, mean, core, observed_mean[target], observed_core[target], tolerance)
+
+
 def run_null(
-    prepared: Prepared, permutations: int, seed: int, tolerance: float
+    prepared: Prepared, permutations: int, seed: SeedLike, tolerance: float
 ) -> tuple[FloatArray, IntArray, Totals]:
     """Observed statistics and their U6 totals, from shared draws and each own-draw triple's.
 
     The shared draws use ``seed``. A triple whose blocks overlap is drawn on its own with
-    the seed ``[seed, triple index]``, laid out as (a, b, c).
+    the seed ``[*seed, triple index]`` (``[seed, triple index]`` for an integer seed),
+    laid out as (a, b, c).
     """
-    observed_mean, observed_core = triple_values(prepared.observed, prepared.offsets)
+    observed_mean, observed_core = observed_values(prepared)
     totals = Totals.zeros((len(prepared.triples), len(prepared.traits)))
-    if not len(prepared.triples):
+    if not prepared.traits or not len(prepared.triples):
         return observed_mean, observed_core, totals
-    rng = np.random.default_rng(seed)
+    entropy = seed_entropy(seed)
+    rng = np.random.default_rng(entropy)
     for unit_of_study, order in signature_draws(rng, prepared.unit_study, permutations):
         for start in range(0, order.shape[0], CHUNK):
             rows = slice(start, start + CHUNK)
             masks = draw_masks(
                 prepared.unit_bits, unit_of_study[rows], order[rows], prepared.positions
             )
-            for block, mean, core in triple_blocks(masks, prepared.offsets):
-                totals.add(block, mean, core, observed_mean[block], observed_core[block], tolerance)
+            score_draws(totals, masks, prepared, observed_mean, observed_core, tolerance)
     n_studies = int(prepared.unit_study.max()) + 1
     for index in np.flatnonzero(prepared.source != SHARED):
         for field in totals.__dataclass_fields__:
@@ -594,7 +675,7 @@ def run_null(
         if prepared.source[index] == NOT_DRAWN:
             continue
         own = block_positions(prepared.units[prepared.triples[index]].tolist(), n_studies)
-        rng = np.random.default_rng([seed, int(index)])
+        rng = np.random.default_rng([*entropy, int(index)])
         row = slice(int(index), int(index) + 1)
         for unit_of_study, order in signature_draws(rng, prepared.unit_study, permutations):
             for start in range(0, order.shape[0], CHUNK):
@@ -613,16 +694,23 @@ def scan(
     conditions: Sequence[str],
     *,
     permutations: int,
-    seed: int,
+    seed: SeedLike,
     tolerance: float,
+    triples: IntArray | None = None,
 ) -> ScanResult:
-    """Every triple of ``conditions`` (in that layout order) and trait, against U6."""
-    prepared = prepare(profiles, taxa, matrix, traits, conditions)
+    """Every triple of ``conditions`` (in that layout order) and trait, against U6.
+
+    ``triples`` restricts the scan to listed triples (see ``prepare``); the layout, and
+    so each triple's draws, still comes from all of ``conditions``.
+    """
+    prepared = prepare(profiles, taxa, matrix, traits, conditions, triples)
     observed_mean, observed_core, totals = run_null(prepared, permutations, seed, tolerance)
     a, b, c = prepared.triples.T
-    union = np.stack(
-        [(sets[a] | sets[b] | sets[c]).sum(axis=1) for sets in prepared.sets], axis=1
-    ).astype(np.int64)
+    union = np.zeros((len(prepared.triples), len(prepared.traits)), dtype=np.int64)
+    sizes = np.zeros((len(prepared.conditions), len(prepared.traits)), dtype=np.int64)
+    for column, sets in enumerate(prepared.sets):
+        union[:, column] = (sets[a] | sets[b] | sets[c]).sum(axis=1)
+        sizes[:, column] = sets.sum(axis=1)
     incidence = prepared.incidence
     pair_shared = (
         (incidence[:, a] & incidence[:, b])
@@ -634,14 +722,14 @@ def scan(
         traits=prepared.traits,
         triples=prepared.triples,
         units=prepared.units,
-        sizes=np.stack([sets.sum(axis=1) for sets in prepared.sets], axis=1).astype(np.int64),
-        union=union.reshape(len(prepared.triples), len(prepared.traits)),
+        sizes=sizes,
+        union=union,
         observed_mean=observed_mean,
         observed_core=observed_core,
         totals=totals,
         source=prepared.source,
         shared_studies=pair_shared.sum(axis=0).astype(np.int64),
-        pool_studies=int(prepared.unit_study.max()) + 1,
+        pool_studies=int(prepared.unit_study.max()) + 1 if prepared.unit_study.size else 0,
         u3_taxa=prepared.u3_taxa,
     )
 
@@ -683,6 +771,37 @@ def null_summary(result: ScanResult) -> dict[str, FloatArray]:
 
 P_COLUMNS = {MEAN_DISTANCE: "u6_p_mean_distance", CORE: "u6_p_core"}
 RANK_COLUMNS = {MEAN_DISTANCE: "rank_mean_distance", CORE: "rank_core"}
+# The columns of ``triple_table``, in order; a test keeps them in step with it.
+TRIPLE_COLUMNS = (
+    "trait_id",
+    "condition_a",
+    "condition_b",
+    "condition_c",
+    "n_a",
+    "n_b",
+    "n_c",
+    "u6_units_a",
+    "u6_units_b",
+    "u6_units_c",
+    "shared_studies",
+    "three_way_core",
+    "three_way_union",
+    MEAN_DISTANCE,
+    "u6_expected_mean_distance",
+    "u6_sd_mean_distance",
+    "u6_z_mean_distance",
+    "u6_p_mean_distance",
+    "u6_expected_core",
+    "u6_sd_core",
+    "u6_z_core",
+    "u6_p_core",
+    "u6_draws",
+    "u6_draws_without_distance",
+    "u6_draws_source",
+    "test_status",
+    "is_lead_triple",
+    *RANK_COLUMNS.values(),
+)
 
 
 def triple_table(result: ScanResult, lead: Sequence[str]) -> pd.DataFrame:
@@ -739,7 +858,7 @@ def triple_table(result: ScanResult, lead: Sequence[str]) -> pd.DataFrame:
             frame[RANK_COLUMNS[statistic]] = ranks.reindex(frame.index).astype("Int64")
         frames.append(frame)
     if not frames:
-        return pd.DataFrame()
+        return pd.DataFrame(columns=TRIPLE_COLUMNS)
     return pd.concat(frames, ignore_index=True)
 
 
@@ -912,25 +1031,25 @@ def read_matrix(path: Path, traits: Sequence[str]) -> pd.DataFrame:
 
 def time_draws(prepared: Prepared, tolerance: float) -> dict[str, float]:
     """Seconds per draw for the shared draws and for one own-draw triple, from a burst."""
-    observed_mean, observed_core = triple_values(prepared.observed, prepared.offsets)
+    if not prepared.traits or not len(prepared.triples):
+        return {SHARED: 0.0}
+    observed_mean, observed_core = observed_values(prepared)
     totals = Totals.zeros((len(prepared.triples), len(prepared.traits)))
     n_studies = int(prepared.unit_study.max()) + 1
-    layouts = {SHARED: (prepared.positions, slice(None))}
-    if len(prepared.triples):
-        first = prepared.units[prepared.triples[0]].tolist()
-        layouts[OWN] = (block_positions(first, n_studies), slice(0, 1))
+    first = block_positions(prepared.units[prepared.triples[0]].tolist(), n_studies)
     seconds: dict[str, float] = {}
-    for name, (positions, rows) in layouts.items():
+    for name, positions in ((SHARED, prepared.positions), (OWN, first)):
         started = time.perf_counter()
         for unit_of_study, order in signature_draws(
             np.random.default_rng(0), prepared.unit_study, CHUNK
         ):
             masks = draw_masks(prepared.unit_bits, unit_of_study, order, positions)
-            for block, mean, core in triple_blocks(masks, prepared.offsets):
-                target = block if name == SHARED else rows
-                totals.add(
-                    target, mean, core, observed_mean[target], observed_core[target], tolerance
-                )
+            if name == SHARED:
+                score_draws(totals, masks, prepared, observed_mean, observed_core, tolerance)
+                continue
+            for _, mean, core in triple_blocks(masks, prepared.offsets):
+                row = slice(0, 1)
+                totals.add(row, mean, core, observed_mean[row], observed_core[row], tolerance)
         seconds[name] = (time.perf_counter() - started) / CHUNK
     return seconds
 
@@ -953,7 +1072,7 @@ def plan(
         "traits": chosen[["trait_id", "trait_label", "decreasing_rank", "in_top_n"]].to_dict(
             "records"
         ),
-        "pool_studies": int(prepared.unit_study.max()) + 1,
+        "pool_studies": int(prepared.unit_study.max()) + 1 if prepared.unit_study.size else 0,
         "eligible_u6_units": int(prepared.units.sum()),
         "own_draw_triples": own,
         "untestable_triples": int((prepared.source == NOT_DRAWN).sum()),
@@ -967,12 +1086,257 @@ def plan(
     }
 
 
-def main(argv: Sequence[str] | None = None) -> int:
-    from mtp.workflow.consumers import (
-        open_core_bundle,
-        preflight_consumer_outputs,
-        write_consumer_record,
+# --------------------------------------------------------------------------- study splits (#854)
+
+
+@dataclass(frozen=True)
+class ScanInputs:
+    """One core population, read once and restricted to any set of its studies.
+
+    ``profiles`` and ``taxa`` are every selected experiment's profiles and signature taxa
+    (``load_population``). ``matrix`` holds every screen candidate trait. ``screen`` holds
+    the paired human profiles the directional screen votes on, over ``columns``, and
+    ``labels`` name the traits.
+    """
+
+    profiles: pd.DataFrame
+    taxa: pd.DataFrame
+    matrix: pd.DataFrame
+    screen: tuple[Profile, ...]
+    columns: tuple[str, ...]
+    labels: Mapping[str, ColumnLabel]
+
+    @property
+    def studies(self) -> frozenset[str]:
+        """Every study of the population; a split divides these."""
+        return frozenset(self.profiles["study_id"])
+
+    def restricted(self, studies: Iterable[str]) -> ScanInputs:
+        """The population without the studies outside ``studies``.
+
+        Whole studies are kept or dropped, with every experiment, profile and signature
+        taxon they hold. A study that is not in the population is an error.
+        """
+        keep = frozenset(studies)
+        unknown = sorted(keep - self.studies)
+        if unknown:
+            raise ValueError(f"{len(unknown)} studies are not in the population: {unknown[:3]}")
+        return dataclasses.replace(
+            self,
+            profiles=self.profiles[self.profiles["study_id"].isin(keep)],
+            taxa=self.taxa[self.taxa["study_id"].isin(keep)],
+            screen=tuple(profile for profile in self.screen if profile.study_id in keep),
+        )
+
+
+def load_inputs(paths: Mapping[str, Path]) -> ScanInputs:
+    """Read a core run's ``CORE_PRODUCTS`` once, for the scan and for any study split."""
+    columns = screen_candidates(paths["count_profiles"])
+    screen, _ = load_profiles(
+        paths["count_profiles"],
+        paths["experiments"],
+        candidate_slots(columns),
+        reject_missing_counts=True,
     )
+    matrix = read_matrix(paths["taxa_matrix"], columns)
+    profiles, taxa = load_population(
+        paths["experiments"], paths["reported_taxa"], paths["count_profiles"], matrix.index
+    )
+    labels = load_column_labels(paths["feature_metadata"])
+    return ScanInputs(profiles, taxa, matrix, tuple(screen), tuple(columns), labels)
+
+
+def open_tier1_2(core_run: Path) -> CoreBundle:
+    """Verify a core run, refusing one of another population or direction basis."""
+    from mtp.workflow.consumers import open_core_bundle
+    from mtp.workflow.population import ORIENTED_DIRECTION_BASIS
+
+    bundle = open_core_bundle(core_run)
+    if (
+        bundle.run.contrast_population != TIER1_2
+        or bundle.run.direction_basis != ORIENTED_DIRECTION_BASIS
+    ):
+        raise ValueError(
+            f"the scan reads a {TIER1_2} core oriented {ORIENTED_DIRECTION_BASIS}; "
+            f"{core_run} is {bundle.run.contrast_population}, {bundle.run.direction_basis}"
+        )
+    return bundle
+
+
+def load_core_inputs(core_run: Path) -> tuple[CoreBundle, ScanInputs]:
+    """Verify a Tier 1+2 core run (its ``run.json``) and read its population once."""
+    bundle = open_tier1_2(core_run)
+    return bundle, load_inputs({product: bundle.path(product) for product in CORE_PRODUCTS})
+
+
+def declared_sets(
+    inputs: ScanInputs, protocol: Protocol, always_included: bool = True
+) -> tuple[pd.DataFrame, pd.DataFrame, list[str]]:
+    """The declared rule's trait set, condition table and eligible conditions.
+
+    ``always_included`` false leaves the protocol's always-included trait out unless
+    the screen of these studies selects it.
+    """
+    screen = screen_table(inputs.screen, inputs.columns, inputs.labels)
+    always = protocol.always_included if always_included else None
+    traits = choose_traits(screen, protocol.top_n, always)
+    conditions = condition_table(inputs.profiles, protocol.min_studies)
+    eligible = sorted(conditions.loc[conditions["eligible"], "condition"])
+    return traits, conditions, eligible
+
+
+@dataclass(frozen=True)
+class Selection:
+    """The declared rule applied to one set of studies.
+
+    ``conditions`` is ``condition_table`` on those studies; ``traits`` the trait set,
+    chosen by the directional screen of those studies; ``triples`` one row per triple of
+    eligible conditions and trait (``triple_table``), with U6 drawn from those studies.
+    ``result`` holds the arrays behind ``triples``.
+    """
+
+    studies: frozenset[str]
+    conditions: pd.DataFrame
+    traits: pd.DataFrame
+    triples: pd.DataFrame
+    result: ScanResult
+
+
+def select(
+    inputs: ScanInputs,
+    studies: Iterable[str] | None = None,
+    *,
+    protocol: Protocol | None = None,
+    permutations: int | None = None,
+    seed: SeedLike | None = None,
+    always_included: bool = True,
+) -> Selection:
+    """Apply the declared rule (eligibility, trait set, U6 scan) to ``studies`` only.
+
+    ``studies`` defaults to every study of the population, which is the scan the CLI
+    writes. For a split, pass the training studies: nothing outside them is read, for
+    eligibility, the trait screen, the observed sets or the U6 pool. ``always_included``
+    false lets the training screen alone choose the traits, so the historical lead trait
+    is not forced into a split's selection. ``permutations`` and ``seed`` default to the
+    protocol's.
+    """
+    protocol = protocol or load_protocol()
+    chosen = inputs if studies is None else inputs.restricted(studies)
+    traits, conditions, eligible = declared_sets(chosen, protocol, always_included)
+    result = scan(
+        chosen.profiles,
+        chosen.taxa,
+        chosen.matrix,
+        traits["trait_id"].tolist(),
+        eligible,
+        permutations=protocol.permutations if permutations is None else permutations,
+        seed=protocol.seed if seed is None else seed,
+        tolerance=protocol.tolerance,
+    )
+    triples = triple_table(result, protocol.lead_triple)
+    return Selection(chosen.studies, conditions, traits, triples, result)
+
+
+KEY_COLUMNS = ["trait_id", "condition_a", "condition_b", "condition_c"]
+
+
+def evaluate(
+    inputs: ScanInputs,
+    studies: Iterable[str],
+    hypotheses: Iterable[Sequence[str]],
+    *,
+    protocol: Protocol | None = None,
+    permutations: int | None = None,
+    seed: SeedLike | None = None,
+) -> pd.DataFrame:
+    """U6 tests of hypotheses fixed beforehand, on ``studies`` only (a held-out half).
+
+    Each hypothesis is (condition, condition, condition, trait ID), for example a row
+    ``select`` chose on the training studies. Only ``studies`` are read: the sets, the U6
+    pool and its draws. No eligibility rule is applied and no hypothesis is replaced. One
+    whose condition has no stool decreased signature among ``studies`` is returned with
+    ``test_status`` ``no_units``.
+
+    Returns one row per hypothesis in the given order, numbered by ``hypothesis``, with
+    the conditions sorted and the columns of ``triple_table`` except the within-trait
+    ranks. The involved conditions, sorted, are the layout of the shared draws.
+    """
+    protocol = protocol or load_protocol()
+    held_out = inputs.restricted(studies)
+    asked: list[dict[str, Any]] = []
+    for number, hypothesis in enumerate(hypotheses):
+        if len(hypothesis) != 4 or len(set(hypothesis[:3])) != 3:
+            raise ValueError(f"hypothesis {number} is not three conditions and a trait")
+        if hypothesis[3] not in inputs.columns:
+            raise ValueError(f"hypothesis {number} names a trait that is not a screen candidate")
+        labels = sorted(hypothesis[:3])
+        asked.append(
+            {"hypothesis": number, **dict(zip(KEY_COLUMNS, [hypothesis[3], *labels], strict=True))}
+        )
+    frame = pd.DataFrame(asked, columns=["hypothesis", *KEY_COLUMNS])
+    units = condition_table(held_out.profiles, 1).set_index("condition")["u6_units"]
+    drawable = sorted(
+        {label for label in frame[KEY_COLUMNS[1:]].to_numpy().ravel() if units.get(label, 0)}
+    )
+    position = {label: index for index, label in enumerate(drawable)}
+    triples = sorted(
+        {
+            tuple(position[label] for label in row)
+            for row in frame[KEY_COLUMNS[1:]].itertuples(index=False, name=None)
+            if all(label in position for label in row)
+        }
+    )
+    result = scan(
+        held_out.profiles,
+        held_out.taxa,
+        held_out.matrix,
+        list(dict.fromkeys(frame["trait_id"])),
+        drawable,
+        permutations=protocol.permutations if permutations is None else permutations,
+        seed=protocol.seed if seed is None else seed,
+        tolerance=protocol.tolerance,
+        triples=np.array(triples, dtype=np.int64).reshape(-1, 3),
+    )
+    table = triple_table(result, protocol.lead_triple)
+    table = table.drop(columns=[*RANK_COLUMNS.values()], errors="ignore")
+    merged = frame.merge(table, on=KEY_COLUMNS, how="left", validate="many_to_one")
+    # A hypothesis the scan did not draw has a condition without held-out units.
+    drawn = merged["test_status"].notna()
+    merged["test_status"] = merged["test_status"].where(drawn, NO_UNITS)
+    merged["u6_draws_source"] = merged["u6_draws_source"].where(drawn, NOT_DRAWN)
+    for letter in "abc":
+        held = merged[f"condition_{letter}"].map(units).fillna(0)
+        merged[f"u6_units_{letter}"] = merged[f"u6_units_{letter}"].where(drawn, held)
+    lead = set(protocol.lead_triple)
+    merged["is_lead_triple"] = [
+        set(labels) == lead for labels in merged[KEY_COLUMNS[1:]].itertuples(index=False, name=None)
+    ]
+    counts = ["n_a", "n_b", "n_c", "u6_units_a", "u6_units_b", "u6_units_c", "shared_studies"]
+    counts += ["three_way_core", "three_way_union", "u6_draws", "u6_draws_without_distance"]
+    merged[counts] = merged[counts].astype("Int64")
+    return merged[["hypothesis", *table.columns]]
+
+
+def rank_candidates(triples: pd.DataFrame, statistic: str = MEAN_DISTANCE) -> pd.DataFrame:
+    """Tested triple-and-trait rows in a fixed order of evidence, strongest first.
+
+    The order is U6 p ascending, then z (lower for the mean distance, higher for the
+    core: more overlap first), then trait ID and the three conditions. It is an order,
+    not a selection: how many rows to take is the caller's declared rule.
+    """
+    p_column, z_column = P_COLUMNS[statistic], Z_COLUMNS[statistic]
+    tested = triples[triples["test_status"].eq(TESTED)]
+    sign = 1 if statistic == MEAN_DISTANCE else -1
+    ordered = tested.assign(_z=sign * tested[z_column]).sort_values(
+        [p_column, "_z", *KEY_COLUMNS], na_position="last", kind="mergesort"
+    )
+    ordered = ordered.drop(columns="_z").reset_index(drop=True)
+    ordered.insert(0, "candidate_rank", np.arange(1, len(ordered) + 1))
+    return ordered
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    from mtp.workflow.consumers import preflight_consumer_outputs, write_consumer_record
     from mtp.workflow.population import ORIENTED_DIRECTION_BASIS
 
     args = parse_args(argv)
@@ -982,22 +1346,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     out = args.output_dir
     if not args.plan and out.exists() and (not out.is_dir() or any(out.iterdir())):
         raise ValueError(f"{out} must be a new or empty directory")
-    bundle = open_core_bundle(args.core_run)
-    if (
-        bundle.run.contrast_population != TIER1_2
-        or bundle.run.direction_basis != ORIENTED_DIRECTION_BASIS
-    ):
-        raise ValueError(
-            f"the scan reads a {TIER1_2} core oriented {ORIENTED_DIRECTION_BASIS}; "
-            f"{args.core_run} is {bundle.run.contrast_population}, {bundle.run.direction_basis}"
-        )
+    bundle = open_tier1_2(args.core_run)
     outputs = [out / name for name in OUTPUTS.values()]
     if not args.plan:
         out.mkdir(parents=True, exist_ok=True)
         preflight_consumer_outputs(bundle, out / CONSUMER_RECORD, outputs, output_directory=out)
     paths = {product: bundle.path(product) for product in CORE_PRODUCTS}
     # Paths relative to the core run, so the record names no local directory.
-    inputs = {
+    hashes = {
         product: {
             "path": str(path.resolve().relative_to(bundle.manifest.parent)),
             "sha256": file_sha256(path),
@@ -1006,32 +1362,20 @@ def main(argv: Sequence[str] | None = None) -> int:
         for product, path in paths.items()
     }
 
-    screen = screen_table(paths["count_profiles"], paths["experiments"], paths["feature_metadata"])
-    chosen = choose_traits(screen, protocol.top_n, protocol.always_included)
-    traits = chosen["trait_id"].tolist()
-    matrix = read_matrix(paths["taxa_matrix"], traits)
-    profiles, taxa = load_population(
-        paths["experiments"], paths["reported_taxa"], paths["count_profiles"], matrix.index
-    )
-    conditions = condition_table(profiles, protocol.min_studies)
-    eligible = sorted(conditions.loc[conditions["eligible"], "condition"])
+    inputs = load_inputs(paths)
     if args.plan:
-        prepared = prepare(profiles, taxa, matrix, traits, eligible)
+        chosen, conditions, eligible = declared_sets(inputs, protocol)
+        traits = chosen["trait_id"].tolist()
+        prepared = prepare(inputs.profiles, inputs.taxa, inputs.matrix, traits, eligible)
         report = plan(conditions, chosen, prepared, protocol, permutations)
         print(json.dumps(clean(report), indent=1, ensure_ascii=False))
         return 0
 
-    result = scan(
-        profiles,
-        taxa,
-        matrix,
-        traits,
-        eligible,
-        permutations=permutations,
-        seed=seed,
-        tolerance=protocol.tolerance,
-    )
-    triples = triple_table(result, protocol.lead_triple)
+    selection = select(inputs, protocol=protocol, permutations=permutations, seed=seed)
+    result, triples, chosen = selection.result, selection.triples, selection.traits
+    conditions = selection.conditions.copy()
+    traits = chosen["trait_id"].tolist()
+    eligible = list(result.conditions)
     lead, histogram, quantiles = lead_and_distribution(triples, traits, protocol.bins)
     trait_frame = trait_table(chosen, lead, result, protocol.lead_trait)
     layout = {label: position for position, label in enumerate(eligible, start=1)}
@@ -1119,7 +1463,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "direction_basis": ORIENTED_DIRECTION_BASIS,
             "parameters": {item.name: item.value for item in bundle.run.parameters or []},
         },
-        "inputs": inputs,
+        "inputs": hashes,
         "permutations": permutations,
         "seed": seed,
         "follows_protocol": follows,

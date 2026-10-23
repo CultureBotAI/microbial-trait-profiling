@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import itertools
 import json
 from collections.abc import Mapping, Sequence
@@ -29,25 +30,33 @@ from mtp.cellulose_decr.selection_scan import (
     DISJOINT,
     MEAN_DISTANCE,
     NO_TAXA,
+    NO_UNITS,
     OUTPUTS,
     OWN,
     POOL_TOO_SMALL,
     PROTOCOL_PATH,
     SHARED,
     TIER1_2,
+    TRIPLE_COLUMNS,
+    ScanInputs,
     bin_counts,
     block_positions,
     choose_traits,
     condition_table,
+    evaluate,
     lead_and_distribution,
     lead_rank,
+    load_core_inputs,
     load_protocol,
     main,
     prepare,
+    rank_candidates,
     scan,
+    select,
     triple_table,
 )
 from mtp.paths import file_sha256
+from mtp.trait_guilds import Profile
 from mtp.trait_screen import ALL_TIED, TESTED
 
 PD, HIV, CRC = (CONDITIONS[short] for short in ("PD", "HIV", "CRC"))
@@ -207,6 +216,8 @@ def test_trait_set_is_the_top_decreasing_traits_and_cellulose() -> None:
     assert chosen["decreasing_rank"].tolist() == [1, 2, 3, 5]
     # Already among the top N, it is not added twice.
     assert choose_traits(screen, 5, TRAIT_ID)["trait_id"].tolist().count(TRAIT_ID) == 1
+    # Without an always-included trait, the screen alone chooses (#854).
+    assert TRAIT_ID not in set(choose_traits(screen, 3, None)["trait_id"])
 
 
 # --------------------------------------------------------------------------- U6 reuse
@@ -787,3 +798,216 @@ def test_plan_reports_counts_without_writing(
     assert report["permutations"] == 100_000
     assert report["estimated_null_minutes"] > 0
     assert not out.exists()
+
+
+# --------------------------------------------------------------------------- study splits (#854)
+
+
+def _inputs(records: Sequence[Signature], matrix: pd.DataFrame) -> ScanInputs:
+    """Scan inputs from signatures; each screen profile counts its taxa bearing each trait."""
+    profiles, taxa = _frames(records)
+    columns = tuple(c for c in matrix.columns if c not in ("taxon_name", "taxonomic_rank"))
+    bearing = {trait: set(matrix.index[matrix[trait] > 0]) for trait in columns}
+    members = taxa.groupby("profile_id")["taxon_id"].agg(set).to_dict()
+    screen = []
+    for profile_id, row in profiles.iterrows():
+        found = members.get(str(profile_id), set())
+        counts = {trait: len(found & bearing[trait]) for trait in columns}
+        screen.append(
+            Profile(
+                str(row["study_id"]),
+                str(row["experiment_id"]),
+                str(row["dir"]),
+                str(row["condition"]),
+                str(row["body_site"]),
+                counts,
+                sum(counts.values()),
+            )
+        )
+    return ScanInputs(profiles, taxa, matrix, tuple(screen), columns, {})
+
+
+def _split_corpus() -> tuple[ScanInputs, list[str], list[str]]:
+    """Eight conditions of eight studies, split by alternate studies into two halves.
+
+    Taxon t40 bears every trait and no signature reports it; ``_tamper`` uses it.
+    """
+    labels = (PD, HIV, CRC, "Asthma", "Autism", "Obesity", "Psoriasis", "Gout")
+    records = _random_corpus(31, dict.fromkeys(labels, 8), n_taxa=40, size=6)
+    traits = {
+        TRAIT_ID: [*range(0, 40, 2), 40],
+        OTHER_TRAIT: [*range(1, 40, 3), 40],
+        "METPO:1000623": [*range(0, 40, 5), 40],
+    }
+    inputs = _inputs(records, _matrix(41, traits))
+    ordered = sorted(inputs.studies, key=lambda study: int(study.split(":")[1]))
+    return inputs, ordered[::2], ordered[1::2]
+
+
+def _tamper(inputs: ScanInputs, studies: Sequence[str]) -> ScanInputs:
+    """The same population with other signature taxa and screen counts for ``studies``:
+    every taxon they report becomes t40, which no other study reports."""
+    taxa = inputs.taxa.copy()
+    taxa.loc[taxa["study_id"].isin(studies), "taxon_id"] = "t40"
+    screen = tuple(
+        dataclasses.replace(
+            profile,
+            guild_counts={trait: count + 3 for trait, count in profile.guild_counts.items()},
+            total=profile.total + 3 * len(profile.guild_counts),
+        )
+        if profile.study_id in studies
+        else profile
+        for profile in inputs.screen
+    )
+    return dataclasses.replace(inputs, taxa=taxa, screen=screen)
+
+
+def _keys(frame: pd.DataFrame) -> list[tuple[str, str, str, str]]:
+    columns = ["condition_a", "condition_b", "condition_c", "trait_id"]
+    return list(frame[columns].itertuples(index=False, name=None))
+
+
+def test_select_reads_only_the_training_studies() -> None:
+    """Eligibility, the trait screen, the sets and the U6 pool come from the training
+    studies alone: changing every held-out study leaves the selection unchanged."""
+    inputs, train, test = _split_corpus()
+    seed = (20261022, 0, 0)
+    chosen = select(inputs, train, permutations=300, seed=seed)
+    assert chosen.studies == frozenset(train)
+    assert chosen.conditions["stool_studies"].max() == 4
+    again = select(_tamper(inputs, test), train, permutations=300, seed=seed)
+    pd.testing.assert_frame_equal(chosen.triples, again.triples)
+    pd.testing.assert_frame_equal(chosen.traits, again.traits)
+    pd.testing.assert_frame_equal(chosen.conditions, again.conditions)
+    assert np.array_equal(chosen.result.u3_taxa, again.result.u3_taxa)
+    changed = select(_tamper(inputs, train), train, permutations=300, seed=seed)
+    assert not changed.triples.equals(chosen.triples)
+
+
+def test_evaluate_reads_only_the_held_out_studies() -> None:
+    """Hypotheses chosen on the training half are tested on the held-out half alone,
+    in the given order, and changing every training study leaves the tests unchanged."""
+    inputs, train, test = _split_corpus()
+    chosen = rank_candidates(select(inputs, train, permutations=300, seed=(1, 0, 0)).triples)
+    hypotheses = _keys(chosen.head(4))
+    tested = evaluate(inputs, test, hypotheses, permutations=300, seed=(1, 0, 1))
+    assert tested["hypothesis"].tolist() == [0, 1, 2, 3]
+    assert _keys(tested) == hypotheses
+    assert set(tested["test_status"]) <= {TESTED, NO_TAXA}
+    again = evaluate(_tamper(inputs, train), test, hypotheses, permutations=300, seed=(1, 0, 1))
+    pd.testing.assert_frame_equal(tested, again)
+    changed = evaluate(_tamper(inputs, test), test, hypotheses, permutations=300, seed=(1, 0, 1))
+    assert not changed.equals(tested)
+
+
+def test_evaluate_on_the_scan_layout_reproduces_the_scan() -> None:
+    """Listed triples are scored one at a time with the same draws and arithmetic as the
+    scan's blocks: on every study, with every eligible condition involved, the held-out
+    test of a scanned triple gives the scan's values."""
+    inputs, _, _ = _split_corpus()
+    full = select(inputs, permutations=400, seed=7)
+    rows = full.triples.iloc[::2]
+    involved = set(rows[["condition_a", "condition_b", "condition_c"]].to_numpy().ravel())
+    assert involved == set(full.result.conditions)
+    tested = evaluate(inputs, inputs.studies, _keys(rows), permutations=400, seed=7)
+    expected = rows.drop(columns=["rank_mean_distance", "rank_core"]).reset_index(drop=True)
+    for column in ("u6_p_mean_distance", "u6_p_core", "u6_draws_source", "test_status"):
+        assert tested[column].tolist() == expected[column].tolist(), column
+    pd.testing.assert_frame_equal(
+        tested.drop(columns="hypothesis"), expected, check_dtype=False, check_exact=False
+    )
+
+
+def test_evaluate_keeps_a_hypothesis_it_cannot_test() -> None:
+    """A held-out half without a study of one condition does not replace the hypothesis:
+    it is returned as untestable, beside the testable ones."""
+    inputs, _, test = _split_corpus()
+    gout = set(inputs.profiles.loc[inputs.profiles["condition"].eq("Gout"), "study_id"])
+    held_out = [study for study in test if study not in gout]
+    hypotheses = [(PD, HIV, "Gout", TRAIT_ID), (PD, HIV, CRC, TRAIT_ID)]
+    tested = evaluate(inputs, held_out, hypotheses, permutations=200, seed=3)
+    assert tested["test_status"].tolist() == [NO_UNITS, TESTED]
+    first = tested.iloc[0]
+    assert (first["condition_a"], first["condition_b"], first["condition_c"]) == ("Gout", HIV, PD)
+    assert [first["u6_units_a"], first["u6_units_b"] > 0] == [0, True]
+    assert pd.isna(first["u6_p_mean_distance"])
+    assert tested["is_lead_triple"].tolist() == [False, True]
+
+
+def test_split_inputs_are_checked() -> None:
+    inputs, _, test = _split_corpus()
+    with pytest.raises(ValueError, match="three conditions"):
+        evaluate(inputs, test, [(PD, PD, HIV, TRAIT_ID)], permutations=10, seed=1)
+    with pytest.raises(ValueError, match="not a screen candidate"):
+        evaluate(inputs, test, [(PD, HIV, CRC, "METPO:0")], permutations=10, seed=1)
+    with pytest.raises(ValueError, match="not in the population"):
+        inputs.restricted(["bsdb:999999"])
+
+
+def test_split_seeds_are_reproducible() -> None:
+    """A (seed, split, stage) seed gives the same draws every time and other draws for
+    another split or stage."""
+    inputs, train, test = _split_corpus()
+    first = select(inputs, train, permutations=300, seed=(20261022, 4, 0))
+    assert first.triples.equals(
+        select(inputs, train, permutations=300, seed=(20261022, 4, 0)).triples
+    )
+    other = select(inputs, train, permutations=300, seed=(20261022, 5, 0))
+    assert not first.triples["u6_p_mean_distance"].equals(other.triples["u6_p_mean_distance"])
+    hypotheses = _keys(rank_candidates(first.triples).head(2))
+    one = evaluate(inputs, test, hypotheses, permutations=300, seed=(20261022, 4, 1))
+    assert one.equals(evaluate(inputs, test, hypotheses, permutations=300, seed=(20261022, 4, 1)))
+
+
+def test_select_can_leave_the_trait_set_to_the_screen() -> None:
+    inputs, train, _ = _split_corpus()
+    declared = select(inputs, train, permutations=50, seed=1)
+    screened = select(inputs, train, permutations=50, seed=1, always_included=False)
+    in_top = declared.traits.loc[declared.traits["in_top_n"], "trait_id"]
+    assert screened.traits["trait_id"].tolist() == in_top.tolist()
+
+
+def test_select_without_traits_returns_an_empty_table() -> None:
+    """A training half whose screen finds no decreasing trait selects nothing."""
+    inputs, train, _ = _split_corpus()
+    flat = tuple(
+        dataclasses.replace(profile, guild_counts=dict.fromkeys(profile.guild_counts, 1), total=3)
+        for profile in inputs.screen
+    )
+    empty = select(dataclasses.replace(inputs, screen=flat), train, always_included=False)
+    assert empty.traits.empty
+    assert empty.triples.empty
+    assert list(empty.triples.columns) == list(TRIPLE_COLUMNS)
+
+
+def test_triple_table_columns_are_the_declared_list() -> None:
+    inputs, _, _ = _split_corpus()
+    assert list(select(inputs, permutations=20, seed=1).triples.columns) == list(TRIPLE_COLUMNS)
+
+
+def test_rank_candidates_orders_by_p_then_z() -> None:
+    rows = pd.DataFrame(
+        {
+            "trait_id": ["a", "b", "c", "d", "e"],
+            "condition_a": "X",
+            "condition_b": "Y",
+            "condition_c": "Z",
+            "u6_p_mean_distance": [0.2, 0.01, 0.01, 0.5, 0.001],
+            "u6_z_mean_distance": [0.0, -1.0, -3.0, 1.0, -9.0],
+            "u6_p_core": [0.3, 0.02, 0.02, 0.3, 0.001],
+            "u6_z_core": [0.0, 1.0, 3.0, 2.0, 9.0],
+            "test_status": [TESTED, TESTED, TESTED, TESTED, NO_TAXA],
+        }
+    )
+    assert rank_candidates(rows)["trait_id"].tolist() == ["c", "b", "a", "d"]
+    ranked = rank_candidates(rows, CORE)
+    assert ranked["trait_id"].tolist() == ["c", "b", "d", "a"]
+    assert ranked["candidate_rank"].tolist() == [1, 2, 3, 4]
+
+
+def test_load_core_inputs_reads_a_tier1_2_core_only(cores: dict[str, Path]) -> None:
+    _, inputs = load_core_inputs(cores["tier1_2"])
+    assert len(inputs.studies) == sum(STUDIES.values())
+    assert TRAIT_ID in inputs.columns
+    with pytest.raises(ValueError, match=TIER1_2):
+        load_core_inputs(cores["all_paired"])
