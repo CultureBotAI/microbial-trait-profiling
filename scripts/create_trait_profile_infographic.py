@@ -762,11 +762,11 @@ def manifest_path(output_dir: Path) -> Path:
 
 
 def display_path(path: Path) -> str:
-    """Return a repo-relative path when possible, otherwise the absolute path."""
+    """Return a repo-relative path or an external basename, without private prefixes."""
     try:
-        return str(path.relative_to(REPO_ROOT))
+        return str(path.resolve().relative_to(REPO_ROOT.resolve()))
     except ValueError:
-        return str(path)
+        return path.name
 
 
 def compute_stratum_trait_stats(
@@ -942,7 +942,7 @@ def write_legacy_stratified_stats(
     *,
     min_pairs: int = MIN_STRATIFIED_PAIRS,
 ) -> Path:
-    """Refresh historical site-group tables with explicit file-level provenance (#824).
+    """Refresh pooled and site-group tables with explicit file-level provenance (#824).
 
     Pair metadata must come from the heatmap producer on these exact counts and
     labels. This is a legacy input binding, not a verified core execution record.
@@ -963,6 +963,13 @@ def write_legacy_stratified_stats(
         raise ValueError("Rebuild pair metadata: no matched pairs")
     if metadata.duplicated(["study_id", "experiment_id"]).any():
         raise ValueError("Rebuild pair metadata: duplicate study/experiment pairs")
+    heatmap_selection = {}
+    for column in metadata.columns:
+        if column.startswith("heatmap_parameter_"):
+            values = metadata[column].drop_duplicates().tolist()
+            if len(values) != 1 or pd.isna(values[0]):
+                raise ValueError(f"Rebuild pair metadata: inconsistent {column}")
+            heatmap_selection[column.removeprefix("heatmap_parameter_")] = values[0]
     for row in metadata.itertuples():
         for direction, column in (
             ("inc", "increased_profile_ids"),
@@ -976,13 +983,27 @@ def write_legacy_stratified_stats(
     profiles = load_profile_matrix(profiles_path)
     labels = load_trait_labels(trait_labels_path)
     audit = pair_denominator_summary(profiles, metadata)
-    previous_tables = set(output_dir.glob("trait_profile_paired_contrast_trait_stats_*.tsv"))
+    previous_tables = set(output_dir.glob("trait_profile_paired_contrast_trait_stats*.tsv"))
     provenance = output_dir / "stratified_stats_provenance.json"
     for candidate in [*previous_tables, provenance]:
         if candidate.exists() and any(candidate.samefile(path) for path in paths.values()):
             raise ValueError("Site-statistics output overlaps an input file")
     # An interrupted/failed refresh must not leave a prior success record in place.
     provenance.unlink(missing_ok=True)
+    pooled = compute_stratum_trait_stats(
+        profiles, metadata, labels, stratum_kind="pooled", stratum="pooled"
+    )
+    for source, path in paths.items():
+        prefix = "profile" if source == "profiles" else source
+        pooled[f"{prefix}_source"] = display_path(path)
+        pooled[f"{prefix}_sha256"] = hashes[source]
+    output_dir.mkdir(parents=True, exist_ok=True)
+    pooled_paths = [
+        trait_stats_path(output_dir, "pooled"),
+        output_dir / "trait_profile_paired_contrast_trait_stats.tsv",
+    ]
+    for path in pooled_paths:
+        pooled.to_csv(path, sep="\t", index=False)
     manifest = write_stratified_trait_stats(
         profiles,
         metadata,
@@ -990,7 +1011,7 @@ def write_legacy_stratified_stats(
         output_dir=output_dir,
         min_pairs=min_pairs,
     )
-    outputs = [manifest_path(output_dir)] + [
+    outputs = [*pooled_paths, manifest_path(output_dir)] + [
         trait_stats_path(output_dir, token) for token in manifest["filename_token"]
     ]
     if hashes != {name: file_sha256(path) for name, path in paths.items()}:
@@ -998,14 +1019,14 @@ def write_legacy_stratified_stats(
 
     def inventory(path: Path) -> dict[str, object]:
         return {
-            "path": str(path.resolve()),
+            "path": display_path(path),
             "sha256": file_sha256(path),
             "size_bytes": path.stat().st_size,
         }
 
     record = {
-        "schema_version": "1.0",
-        "analysis": "legacy_native_body_site_group_composition",
+        "schema_version": "1.1",
+        "analysis": "legacy_native_pooled_and_body_site_group_composition",
         "verification_status": "legacy_inputs_hashed_not_core_verified",
         "created_at": datetime.now(UTC).isoformat(),
         "producer": inventory(Path(__file__)),
@@ -1016,12 +1037,16 @@ def write_legacy_stratified_stats(
             "min_profile_support": MIN_STRATIFIED_PROFILE_SUPPORT,
             "max_profile_support_fraction": MAX_STRATIFIED_PROFILE_SUPPORT_FRACTION,
             "site_grouping": "body_site_group from source-bound heatmap pair metadata",
+            "pooled_population": "all matched pairs in source-bound heatmap metadata",
+            "heatmap_selection": heatmap_selection,
+            "heatmap_selection_status": "recorded" if heatmap_selection else "unavailable",
+            "strain_rollup_status": "unverified; awaiting upstream scope contract (#847)",
             "multiple_testing": "BH separately within each selected stratum family",
         },
         "pair_denominator_audit": audit,
         "outputs": [inventory(path) for path in outputs],
         "not_regenerated": [
-            {**inventory(path), "reason": "outside this run's emitted site-group manifest"}
+            {**inventory(path), "reason": "outside this run's emitted pooled/site tables"}
             for path in sorted(previous_tables - set(outputs))
         ],
     }
@@ -1514,9 +1539,15 @@ def main(argv: Sequence[str] | None = None) -> None:
     mode.add_argument(
         "--stratified-stats-only",
         action="store_true",
-        help="Refresh legacy site-group stats, manifest and provenance without figures",
+        help="Refresh legacy pooled and site-group stats, manifest and provenance without figures",
     )
-    parser.add_argument("--min-stratified-pairs", type=int, default=MIN_STRATIFIED_PAIRS)
+    parser.add_argument(
+        "--min-stratified-pairs",
+        type=int,
+        help=(
+            f"Minimum site-group pairs for --stratified-stats-only (default {MIN_STRATIFIED_PAIRS})"
+        ),
+    )
     parser.add_argument("--output-dir", type=Path, default=INVESTIGATION_DIR)
     parser.add_argument("--core-run", type=Path, help="Verified core run for --stats-only")
     parser.add_argument("--profiles", dest="profile_input", type=Path)
@@ -1534,8 +1565,13 @@ def main(argv: Sequence[str] | None = None) -> None:
         parser.error("--core-run requires --stats-only")
     if args.core_run is not None and args.pair_metadata is not None:
         parser.error("--core-run derives pair metadata; omit --pair-metadata")
-    if args.min_stratified_pairs < 1:
-        parser.error("--min-stratified-pairs must be positive")
+    if args.min_stratified_pairs is not None:
+        if not args.stratified_stats_only:
+            parser.error("--min-stratified-pairs requires --stratified-stats-only")
+        if args.min_stratified_pairs < 1:
+            parser.error("--min-stratified-pairs must be positive")
+    else:
+        args.min_stratified_pairs = MIN_STRATIFIED_PAIRS
     if args.stratified_stats_only:
         provenance = write_legacy_stratified_stats(
             args.profile_input or PROFILE_MATRIX_PATH,
@@ -1544,7 +1580,7 @@ def main(argv: Sequence[str] | None = None) -> None:
             args.output_dir,
             min_pairs=args.min_stratified_pairs,
         )
-        print(f"Wrote site-group statistics and provenance: {provenance}")
+        print(f"Wrote pooled/site-group statistics and provenance: {provenance}")
         return
     bundle = bind_count_arguments(args)
     output_path = trait_stats_path(args.output_dir, "pooled")
@@ -1611,6 +1647,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         trait_stats[f"{source_name}_sha256"] = file_sha256(source_path)
     if args.stats_only:
         args.output_dir.mkdir(parents=True, exist_ok=True)
+        (args.output_dir / "stratified_stats_provenance.json").unlink(missing_ok=True)
         trait_stats.to_csv(output_path, sep="\t", index=False)
         if bundle is not None:
             write_consumer_record(
@@ -1635,6 +1672,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     )
 
     INVESTIGATION_DIR.mkdir(parents=True, exist_ok=True)
+    (INVESTIGATION_DIR / "stratified_stats_provenance.json").unlink(missing_ok=True)
     trait_stats.to_csv(TRAIT_STATS_TSV, sep="\t", index=False)
     trait_stats.to_csv(POOLED_TRAIT_STATS_TSV, sep="\t", index=False)
     condition_summary.to_csv(CONDITION_SUMMARY_TSV, sep="\t", index=False)
@@ -1643,6 +1681,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         profile_matrix,
         metadata,
         trait_labels,
+        output_dir=INVESTIGATION_DIR,
     )
 
     create_infographic(

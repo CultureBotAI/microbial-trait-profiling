@@ -1145,6 +1145,7 @@ def write_paired_outputs(
     required_trait_check_output_path: Path,
     *,
     source_hashes: dict[str, str] | None = None,
+    selection_parameters: dict[str, int | float | str] | None = None,
 ) -> None:
     """Write the paired enrichment matrix and matched-pair metadata."""
     matrix_output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -1152,6 +1153,8 @@ def write_paired_outputs(
     metadata = pair_metadata.loc[pair_matrix.index].copy()
     for source, digest in (source_hashes or {}).items():
         metadata[f"{source}_sha256"] = digest
+    for parameter, value in (selection_parameters or {}).items():
+        metadata[f"heatmap_parameter_{parameter}"] = value
     metadata.to_csv(metadata_output_path, sep="\t")
     required_trait_check.to_csv(required_trait_check_output_path, sep="\t", index=False)
     print(f"Wrote paired enrichment heatmap: {output_path}")
@@ -1430,6 +1433,20 @@ def main() -> None:
         args.paired_metadata_output,
         args.paired_required_trait_check_output,
         source_hashes=pair_source_hashes,
+        selection_parameters={
+            "max_profiles": max_profiles,
+            "max_body_site_categories": args.max_body_site_categories,
+            "max_condition_categories": args.max_condition_categories,
+            "min_traits": args.min_traits,
+            "min_total_signal": args.min_total_signal,
+            "max_traits": args.max_traits,
+            "min_profile_support": args.min_profile_support,
+            "max_profile_support_fraction": args.max_profile_support_fraction,
+            "display_max_rows": args.display_max_rows,
+            "paired_display_max_rows": args.paired_display_max_rows,
+            "host": HUMAN_HOST_SPECIES,
+            "sequencing_types": ",".join(sorted(CORPUS_SEQUENCING_TYPES)),
+        },
     )
 
 
