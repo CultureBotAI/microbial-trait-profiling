@@ -416,3 +416,53 @@ def test_an_export_without_sequencing_types_fails_instead_of_dropping_the_filter
     guild = load_script_module("create_taxa_guild_heatmap.py")
     with pytest.raises(ValueError, match="no Homo sapiens 16S or WMS taxon rows"):
         guild.load_bugsigdb_taxa_records(guild_taxa_path, full_dump_path)
+
+
+@pytest.mark.parametrize("missing", [None, "absent.csv"])
+def test_genus_heatmap_requires_dump_instead_of_falling_back_to_all_hosts(
+    tmp_path: Path,
+    missing: str | None,
+) -> None:
+    module = load_script_module("create_clustered_heatmap.py")
+    path = None if missing is None else tmp_path / missing
+    with pytest.raises((ValueError, FileNotFoundError), match=r"full_dump|absent\.csv"):
+        module.load_human_experiment_ids(path)
+
+
+def test_genus_missing_dump_fails_before_replacing_existing_outputs(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import sys
+
+    module = load_script_module("create_clustered_heatmap.py")
+    taxa = write_taxa_table(
+        tmp_path / "taxa.tsv",
+        [
+            ("study1", "1", "1", "increased", "841", "Roseburia", "genus"),
+            ("study2", "1", "1", "increased", "572511", "Blautia", "genus"),
+        ],
+    )
+    matrix = tmp_path / "existing.tsv"
+    figure = tmp_path / "existing.png"
+    matrix.write_text("existing matrix\n", encoding="utf-8")
+    figure.write_bytes(b"existing figure\n")
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "create_clustered_heatmap.py",
+            "--input",
+            str(taxa),
+            "--full-dump-input",
+            str(tmp_path / "absent.csv"),
+            "--output",
+            str(figure),
+            "--matrix-output",
+            str(matrix),
+        ],
+    )
+    with pytest.raises(FileNotFoundError, match=r"absent\.csv"):
+        module.main()
+    assert matrix.read_text(encoding="utf-8") == "existing matrix\n"
+    assert figure.read_bytes() == b"existing figure\n"

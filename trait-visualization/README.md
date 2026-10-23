@@ -120,10 +120,10 @@ uv run python scripts/create_condition_taxon_heatmap.py
 This subfolder contains earlier heatmaps based directly on BugSigDB taxa
 presence/absence and condition-by-genus prevalence. Both restrict profiles to
 `Homo sapiens` 16S and shotgun (WMS) experiments recorded in
-`data/raw/full_dump.csv`. The condition-by-genus heatmap requires that raw export
-and counts each condition's studies among the experiments in the taxa table, so a
-contrast-population run uses its own studies (#768). The genus heatmap still skips
-the filter when the raw export is missing (#787).
+`data/raw/full_dump.csv`. Both heatmaps require that raw export and fail before
+writing outputs when it is missing. The condition-by-genus heatmap counts each
+condition's studies among the experiments in the taxa table, so a
+contrast-population run uses its own studies (#768, #787).
 
 ## Interpreting Heatmap Colors
 
