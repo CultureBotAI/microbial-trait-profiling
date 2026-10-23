@@ -1745,6 +1745,10 @@ def test_spaced_pre_art_and_parenthesized_art_naive_read_as_untreated_baseline_c
         DISEASE_VS_DISEASE,
         NOT_APPLICABLE,
     )
+    assert pre_art_stages.contrast_type == DISEASE_VS_DISEASE
+    assert pre_art_stages.control_tier == NOT_APPLICABLE
+    assert "negated_treatment_term" in pre_art_stages.flags.split(",")
+    assert "treated_disease_group" not in pre_art_stages.flags.split(",")
 
     art_naive = classify(
         replace(

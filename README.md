@@ -158,11 +158,11 @@ All commands go through the Justfile. Run `just --list` to see them all.
 
 Every pipeline step is timed and logged to `logs/pipeline.log`.
 
-The audited `.secrets.baseline` records reviewed public checksums and digests
-across the repository, including pinned source revisions and data checksums.
-It marks exact values as false positives; it does not exempt their files or
-new values from detection. Review
-candidate findings before updating the baseline. The lock and secret-audit CLIs
+The `.secrets.baseline` records known detector findings across the repository,
+including public source revisions and data checksums. Entries without an
+`is_secret` verdict have not been audited; acceptance by the hook does not imply
+review. The baseline suppresses matching findings, not entire files or new values.
+Review candidate findings before updating it. The lock and secret-audit CLIs
 are declared in the QA group at the same versions as their pre-commit hooks.
 
 ### Downloading KG-Microbe for trait enrichment
