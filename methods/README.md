@@ -12,6 +12,7 @@ BugSigDB vintage the numbers came from.
 | `table1_traits_first_last_body_site_panels.png` | `src/bsdbng/table1_trait_maps.py` | `just table1-trait-maps` | [`table1_trait_condition_body_site_maps.md`](table1_trait_condition_body_site_maps.md) |
 | `table1_traits_direction_shift.png` | `src/bsdbng/table1_trait_maps.py` | `just table1-trait-maps` | [`table1_trait_condition_body_site_maps.md`](table1_trait_condition_body_site_maps.md) |
 | Matched-corpus Table 1-trait analog source contributions and genus/family influence TSVs | `src/mtp/taxon_contributions.py` | `just table1-taxon-influence` | [`table1_taxon_influence.md`](table1_taxon_influence.md); [measured results and cross-scale interpretation flags](table1_taxon_influence_results.md) |
+| Additional lineage exclusions, removed annotation mass and study omissions (no figure) | `src/mtp/influence_extension.py` | `just table1-influence-extension` | [`table1_influence_extension.md`](table1_influence_extension.md) |
 | `trait_direction_screen.tsv` (no figure) | `src/bsdbng/trait_screen.py` | `just trait-direction-screen` | [`trait_direction_screen.md`](trait_direction_screen.md) |
 | `trait_coupling_loto_matrix.tsv`, `trait_coupling_lco_summary.tsv`, `trait_coupling_report.txt` (no figure) | `src/mtp/coupling.py` | `just audit-trait-coupling` | [`trait_coupling_sensitivity.md`](trait_coupling_sensitivity.md) |
 

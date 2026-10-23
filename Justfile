@@ -171,6 +171,15 @@ rerun-compare core_run noel_run jed_run ilyas_run output *ARGS:
 rerun-verify-comparison record:
 	uv run python -m mtp.workflow.arms verify-comparison "$@"
 
+# Additive #771 lineage extension and complete six-fraction study LOSO.
+[positional-arguments]
+table1-influence-extension *ARGS:
+	uv run python -m mtp.influence_extension "$@"
+
+# Synthetic checks for the separately declared #771 sensitivity protocol.
+test-influence-extension:
+	uv run pytest tests/test_influence_extension.py tests/test_influence_extension_core.py tests/test_influence_extension_joint.py -v
+
 sync:
 	uv sync --all-extras --group dev --group qa
 
