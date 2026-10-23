@@ -854,6 +854,52 @@ def test_case_control_scenarios_build_their_overlap_on_disease_vs_healthy_contra
     assert other["mean_pairwise_jaccard_distance"]["expected"] != pytest.approx(mean["expected"])
 
 
+def test_case_control_scenarios_test_direction_and_interaction_on_disease_vs_healthy_contrasts(
+    tmp_path: Path,
+) -> None:
+    """A case-control rule selects nothing from all contrasts, so a case-control scenario's
+    feces direction and Feces-vs-GI rows there repeated the primary rows. Like its overlap
+    (#769), they are tested on disease-vs-healthy contrasts only, and the three
+    condition-definition tables share one layout (#781)."""
+    corpus = load_corpus(_input_root(tmp_path), "experiment")
+    manifest = corpus.manifest.copy()
+    # bsdb:1-1 compares PD cases named as treated with Tier 3 controls; bsdb:1-3 compares
+    # people with HIV with controls, so every condition has a set on those contrasts.
+    manifest.loc[("bsdb:1", "bsdb:1-1"), ["control_tier", "flags"]] = [
+        TIER_3_HOSPITAL_COMORBID_OR_TISSUE,
+        "treated_disease_group",
+    ]
+    manifest.loc[("bsdb:1", "bsdb:1-3"), ["contrast_class", "orientation"]] = [
+        "disease_vs_healthy",
+        "native",
+    ]
+    corpus = replace(corpus, manifest=manifest)
+
+    tables = scenario_tables(corpus, {"t1"}, permutations=20, seed=0)
+    both = (ALL_CONTRASTS, ORIENTED)
+    for table in tables:
+        populations = table.groupby("scenario", sort=False)["contrast_population"].unique()
+        assert populations.map(tuple).to_dict() == {
+            "exact_labels": both,
+            "synonyms_merged": both,
+            "named_treated_cases_excluded": (ORIENTED,),
+            "control_tiers_1_2": (ORIENTED,),
+            "paired_tissue_counted": (ORIENTED,),
+            "comorbidity_counted": (ORIENTED,),
+            "without_site_miscurations": both,
+        }
+    # PD, HIV, CRC and the pooled three, by experiment and by study, on each population.
+    direction, _, interaction = tables
+    for table in (direction, interaction):
+        assert table.groupby(["scenario", "contrast_population"]).size().eq(8).all()
+
+    # The rows dropped could only repeat the primary ones: on all contrasts the rule keeps
+    # every profile, while on disease-vs-healthy contrasts it sets bsdb:1-1 aside.
+    tiers = replace(corpus, case_control="control_tiers_1_2")
+    assert population(tiers, ALL_CONTRASTS)[0].equals(population(corpus, ALL_CONTRASTS)[0])
+    assert "bsdb:1-1" not in set(population(tiers, ORIENTED)[0]["experiment_id"])
+
+
 def test_direction_tests_ask_whether_decreased_signatures_carry_more() -> None:
     """One-sided tests point at the decreased side, and the minimum p is two-sided (#632)."""
     rows = []

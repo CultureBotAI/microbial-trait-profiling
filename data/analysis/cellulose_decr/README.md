@@ -18,6 +18,22 @@ here was reported decreased in at least one study, not consistently lost
 The trait and the three conditions were chosen as an exploratory lead from this
 same corpus, so every p-value here is nominal. Section 4 adds adjusted values.
 
+## What changed on 2026-10-22 (#781)
+
+`condition_definition_sensitivity.tsv` and `condition_definition_interaction.tsv`
+had the defect that #769 fixed in the overlap table. Over all contrasts the four
+case-control definitions select nothing, so each of their `all_contrasts` rows
+repeated an exact-label row: 32 rows in each table.
+
+- The analysis now tests these four definitions on disease-versus-healthy contrasts
+  only, as the overlap table does, so the three `condition_definition_*` tables
+  share one layout. Runs from this change on write 80 rows to each of the two
+  tables instead of 112.
+- No reported number changes. Each p range in the significant-results table is the
+  minimum and maximum over one population's definitions, and every copy repeated
+  the exact-label row, which stays. The figures read only the disease-versus-healthy
+  rows of these definitions.
+
 ## What changed on 2026-10-21 (#769)
 
 `condition_definition_overlap.tsv` built the sets, U3 and U6 of every condition
@@ -509,7 +525,7 @@ an annotated taxon: `n_studies_a` in
 | [`sensitivity_definitions_jaccard.tsv`](sensitivity_definitions_jaccard.tsv) | Overlap under eleven set definitions |
 | [`compartment_jaccard_and_direction_stats.tsv`](compartment_jaccard_and_direction_stats.tsv) | Direction tests by contrast population, compartment and condition, at experiment and study level (mean and majority vote), with power notes |
 | [`compartment_direction_interaction.tsv`](compartment_direction_interaction.tsv) | Fisher tests of direction by compartment, crude and stratified by condition |
-| [`condition_definition_sensitivity.tsv`](condition_definition_sensitivity.tsv), [`condition_definition_overlap.tsv`](condition_definition_overlap.tsv), [`condition_definition_interaction.tsv`](condition_definition_interaction.tsv) | Feces direction, cross-condition overlap (with U6) and the Feces-vs-GI test, under each condition definition: synonym labels, cases named as treated set aside, Tier 1–2 controls only, paired-tissue or comorbidity contrasts counted, and without the rectal-mucosa study. The overlap under the four case-control definitions is on disease-vs-healthy contrasts only, where those rules apply (#769) |
+| [`condition_definition_sensitivity.tsv`](condition_definition_sensitivity.tsv), [`condition_definition_overlap.tsv`](condition_definition_overlap.tsv), [`condition_definition_interaction.tsv`](condition_definition_interaction.tsv) | Feces direction, cross-condition overlap (with U6) and the Feces-vs-GI test, under each condition definition: synonym labels, cases named as treated set aside, Tier 1–2 controls only, paired-tissue or comorbidity contrasts counted, and without the rectal-mucosa study. Under the four case-control definitions all three tables are on disease-vs-healthy contrasts only, where those rules apply (#769, #781) |
 | [`condition_label_inventory.tsv`](condition_label_inventory.tsv) | Every human condition label naming PD, HIV or CRC, with its status |
 | [`cellulose_decreased_taxa_catalog.tsv`](cellulose_decreased_taxa_catalog.tsv) | The 47 taxa with study and profile counts and flags, including `has_direct_trait_edge` |
 | [`profile_and_study_pair_jaccard.tsv`](profile_and_study_pair_jaccard.tsv) | Overlap between individual profiles and studies across conditions |
