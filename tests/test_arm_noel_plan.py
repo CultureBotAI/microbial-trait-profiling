@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 import importlib
 import sys
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import replace
 from pathlib import Path
 
@@ -173,3 +173,80 @@ def test_a_ledger_step_under_another_scope_than_the_core_is_refused(context: Arm
 
     with pytest.raises(ValueError, match="strain rollup"):
         runtime._validate_plan(commands, replace(context, strain_rollup="off"))
+
+
+def _ledger_args(commands: list[Command], edit: Callable[[list[str]], list[str]]) -> list[Command]:
+    """The plan with the arguments of its Table 1 ledger step edited."""
+    return [
+        replace(command, argv=(*command.argv[:3], *edit(list(command.argv[3:]))))
+        if command.id == "taxon_contributions"
+        else command
+        for command in commands
+    ]
+
+
+def _without_scope(args: list[str]) -> list[str]:
+    index = args.index("--strain-rollup")
+    return [*args[:index], *args[index + 2 :]]
+
+
+@pytest.mark.parametrize(
+    ("edit", "message"),
+    [
+        pytest.param(
+            lambda args: [*args, "--strain-rollup", "phenotype"], "scope 'phenotype'", id="repeated"
+        ),
+        pytest.param(
+            lambda args: [*_without_scope(args), "--strain-rollup=phenotype"],
+            "scope 'phenotype'",
+            id="equals",
+        ),
+        pytest.param(
+            lambda args: [*_without_scope(args), "--strain", "phenotype"],
+            "scope 'phenotype'",
+            id="abbreviated",
+        ),
+        pytest.param(_without_scope, "does not state", id="missing"),
+        pytest.param(
+            lambda args: [*_without_scope(args), "--strain-rollup"],
+            "expected one argument",
+            id="no_value",
+        ),
+        pytest.param(
+            lambda args: [*_without_scope(args), "--strain-rollup", "strains"],
+            "invalid choice",
+            id="invalid_value",
+        ),
+    ],
+)
+def test_the_plan_check_reads_the_ledger_scope_as_the_ledger_parses_it(
+    context: ArmContext, edit: Callable[[list[str]], list[str]], message: str
+) -> None:
+    """An off core's plan cannot run the ledger under another scope by a later repeat, the
+    equals form or an abbreviation; a new plan must state the scope, well formed (#881)."""
+    commands = _ledger_args(build_commands(context), edit)
+
+    with pytest.raises(ValueError, match=message):
+        runtime._validate_plan(commands, context)
+
+
+@pytest.mark.parametrize(
+    "edit",
+    [
+        pytest.param(lambda args: [*args, "--strain-rollup", "off"], id="repeated"),
+        pytest.param(lambda args: [*_without_scope(args), "--strain-rollup=off"], id="equals"),
+    ],
+)
+def test_a_form_the_ledger_reads_as_the_core_scope_is_accepted(
+    context: ArmContext, edit: Callable[[list[str]], list[str]]
+) -> None:
+    runtime._validate_plan(_ledger_args(build_commands(context), edit), context)
+
+
+def test_only_a_plan_recorded_before_788_may_omit_the_scope(context: ArmContext) -> None:
+    """Its ledger ran under off, on a core that recorded no scope (#788, #881)."""
+    commands = _ledger_args(build_commands(context), _without_scope)
+
+    runtime._validate_plan(commands, context, absent_scope_is_off=True)
+    with pytest.raises(ValueError, match="does not state"):
+        runtime._validate_plan(commands, replace(context, strain_rollup="phenotype"))

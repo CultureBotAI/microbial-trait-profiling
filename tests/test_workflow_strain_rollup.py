@@ -6,6 +6,7 @@ import csv
 import json
 import shutil
 import sys
+from collections.abc import Sequence
 from pathlib import Path
 from typing import cast
 
@@ -21,6 +22,7 @@ from mtp.taxa_trait_matrix import (
 )
 from mtp.workflow import runtime
 from mtp.workflow.__main__ import main as workflow_main
+from mtp.workflow.arms import runtime as arms_runtime
 from mtp.workflow.arms.runtime import execute_arm, verify_arm
 from mtp.workflow.arms.types import ArmContext, Command
 from mtp.workflow.comparison import core_analysis_bases
@@ -449,6 +451,44 @@ def test_arms_inherit_their_core_scope(
     result = execute_arm("noel", core, tmp_path / "noel", plan, figures=False)
 
     assert verify_arm(Path(result.manifest_path)) == result
+
+
+def test_verification_reads_an_absent_ledger_scope_as_off_only_before_788(
+    scoped_runs: dict[StrainRollup, WorkflowRun], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A recorded plan may omit the scope only if its core recorded none, as every core
+    did before #788; a core that records its scope holds its plans to it (#881)."""
+
+    def plan(context: ArmContext) -> list[Command]:
+        source, output = context.products["count_profiles"], context.output / "observed.tsv"
+        helper = ROOT / "scripts" / "adhoc" / "issue658_arm_test_command.py"
+        argv = (sys.executable, str(helper), "--input", str(source), "--output", str(output))
+        return [Command("observe", argv, (source,), (output,))]
+
+    core = scoped_runs["off"]
+    result = execute_arm("noel", Path(core.manifest_path), tmp_path / "noel", plan, figures=False)
+    validate = arms_runtime._validate_plan
+    readings: list[bool] = []
+
+    def recorded(
+        commands: Sequence[Command], context: ArmContext, *, absent_scope_is_off: bool = False
+    ) -> None:
+        readings.append(absent_scope_is_off)
+        validate(commands, context, absent_scope_is_off=absent_scope_is_off)
+
+    monkeypatch.setattr(arms_runtime, "_validate_plan", recorded)
+    verify_arm(Path(result.manifest_path))
+    parameters = [item for item in core.parameters or [] if item.name != "strain_rollup"]
+    before_788 = core.model_copy(update={"parameters": parameters})
+
+    def verify_core_before_788(manifest: Path) -> WorkflowRun:
+        assert manifest == Path(core.manifest_path)
+        return before_788
+
+    monkeypatch.setattr(arms_runtime, "verify_core_run", verify_core_before_788)
+    verify_arm(Path(result.manifest_path))
+
+    assert readings == [False, True]
 
 
 def test_a_subset_core_recorded_before_788_is_read_as_off() -> None:
