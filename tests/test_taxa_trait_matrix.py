@@ -4,6 +4,7 @@ import pytest
 
 from bsdbng.taxa_trait_matrix import create_taxa_trait_matrix
 from mtp import taxa_trait_matrix
+from mtp.taxa_trait_matrix import StrainRollup
 
 
 def test_create_taxa_trait_matrix_counts_self_and_descendants(tmp_path: Path) -> None:
@@ -177,10 +178,27 @@ def _write_strain_fixture(directory: Path, edges: list[str]) -> tuple[Path, Path
     return taxa_path, nodes_path, edges_path
 
 
-def _matrix_lines(directory: Path, edges: list[str], **options: bool) -> list[str]:
+# Strain records for the scope rules (#788). Strain 1 also asserts a clinical class that the
+# phenotype scope excludes; strains 1 and 2 disagree on glucose fermentation; strain 3 has a
+# negated relation to a METPO object; species 102 asserts that it does not grow in a medium.
+SCOPE_EDGES = [
+    "n1\tkgmicrobe.strain:1\tbiolink:has_phenotype\tMETPO:1004004",
+    "n2\tkgmicrobe.strain:1\tMETPO:2000011\tCHEBI:17234",
+    "n3\tkgmicrobe.strain:2\tMETPO:2000037\tCHEBI:17234",
+    "n4\tkgmicrobe.strain:2\tbiolink:has_phenotype\tMETPO:1000678",
+    "n5\tkgmicrobe.strain:3\tMETPO:2000022\tMETPO:1000683",
+    "n6\tNCBITaxon:102\tMETPO:2000518\tmediadive.medium:1",
+]
+ALL_EDGES = [*TAXONOMY_AND_TAXON_EDGES, *STRAIN_EDGES, *SCOPE_EDGES]
+
+
+def _matrix_lines(
+    directory: Path, edges: list[str], strain_rollup: StrainRollup | None = None
+) -> list[str]:
     directory.mkdir()
     taxa_path, nodes_path, edges_path = _write_strain_fixture(directory, edges)
     output_path = directory / "taxa_trait_matrix.tsv"
+    options = {} if strain_rollup is None else {"strain_rollup": strain_rollup}
     taxa_trait_matrix.create_taxa_trait_matrix(
         taxa_path=taxa_path,
         kg_dir=directory,
@@ -193,9 +211,9 @@ def _matrix_lines(directory: Path, edges: list[str], **options: bool) -> list[st
     return output_path.read_text(encoding="utf-8").splitlines()
 
 
-def test_strain_edges_never_reach_the_default_matrix(tmp_path: Path) -> None:
-    """Without the rollup, strain records leave the matrix byte-identical (#774)."""
-    with_strains = _matrix_lines(tmp_path / "a", [*TAXONOMY_AND_TAXON_EDGES, *STRAIN_EDGES])
+def test_strain_edges_never_reach_the_off_matrix(tmp_path: Path) -> None:
+    """Under off, strain records leave the matrix byte-identical (#774, #788)."""
+    with_strains = _matrix_lines(tmp_path / "a", [*TAXONOMY_AND_TAXON_EDGES, *STRAIN_EDGES], "off")
     without_strains = _matrix_lines(tmp_path / "b", TAXONOMY_AND_TAXON_EDGES)
 
     assert (
@@ -211,26 +229,126 @@ def test_strain_edges_never_reach_the_default_matrix(tmp_path: Path) -> None:
     )
 
 
-def test_strain_rollup_counts_strain_traits_at_the_linked_ncbitaxon_node(tmp_path: Path) -> None:
+def test_the_matrix_builder_defaults_to_the_primary_scope(tmp_path: Path) -> None:
+    """The legacy path builds the owner's primary, as the core workflow does (#788)."""
+    assert taxa_trait_matrix.PRIMARY_STRAIN_ROLLUP == "phenotype"
+    default = _matrix_lines(tmp_path / "default", ALL_EDGES)
+
+    assert default == _matrix_lines(tmp_path / "phenotype", ALL_EDGES, "phenotype")
+    assert default != _matrix_lines(tmp_path / "off", ALL_EDGES, "off")
+
+
+@pytest.mark.parametrize(
+    ("strain_rollup", "cellulose"),
+    [("phenotype", []), ("full", ["\tMETPO:2000103|GO:0030245"])],
+)
+def test_strain_rollup_counts_strain_traits_at_the_linked_ncbitaxon_node(
+    tmp_path: Path, strain_rollup: StrainRollup, cellulose: list[str]
+) -> None:
     """A strain's traits count once at its species, then roll up like the species' own.
 
     Species a carries anaerobic itself and through strain 1, and facultatively anaerobic
     through two strains: each counts once at the species. The genus and family count
     annotated NCBITaxon nodes, so facultatively anaerobic is 2 there (species a through its
     strains, species b directly). Strains without an NCBITaxon link add nothing (#774).
+    The phenotype scope leaves out strain 3's capability edge, which has no bare METPO
+    phenotype object (#788).
     """
     lines = _matrix_lines(
-        tmp_path / "on", [*TAXONOMY_AND_TAXON_EDGES, *STRAIN_EDGES], strain_rollup=True
+        tmp_path / "on", [*TAXONOMY_AND_TAXON_EDGES, *STRAIN_EDGES], strain_rollup
     )
 
+    cell = ["\t1"] if cellulose else []
+    no_cell = ["\t0"] if cellulose else []
     assert lines == [
         "taxon_id\ttaxon_name\ttaxonomic_rank\tMETPO:1000603"
-        "\tMETPO:2000103|GO:0030245\tMETPO:1000605",
-        "NCBITaxon:900\tFamilyaceae\tfamily\t1\t1\t2",
-        "NCBITaxon:100\tGenus\tgenus\t1\t1\t2",
-        "NCBITaxon:101\tSpecies a\tspecies\t1\t0\t1",
-        "NCBITaxon:102\tSpecies b\tspecies\t0\t1\t1",
+        + "".join(cellulose)
+        + "\tMETPO:1000605",
+        "NCBITaxon:900\tFamilyaceae\tfamily\t1" + "".join(cell) + "\t2",
+        "NCBITaxon:100\tGenus\tgenus\t1" + "".join(cell) + "\t2",
+        "NCBITaxon:101\tSpecies a\tspecies\t1" + "".join(no_cell) + "\t1",
+        "NCBITaxon:102\tSpecies b\tspecies\t0" + "".join(cell) + "\t1",
     ]
+
+
+@pytest.mark.parametrize(
+    ("strain_rollup", "added", "removed"),
+    [
+        ("off", set(), set()),
+        ("phenotype", {"METPO:1000678"}, set()),
+        (
+            "full",
+            {
+                "METPO:1000678",
+                "METPO:1004004",
+                "METPO:2000011|CHEBI:17234",
+                "METPO:2000103|GO:0030245",
+            },
+            {"METPO:2000518|mediadive.medium:1"},
+        ),
+    ],
+)
+def test_each_scope_has_its_own_vocabulary(
+    tmp_path: Path, strain_rollup: StrainRollup, added: set[str], removed: set[str]
+) -> None:
+    """Off keeps the direct vocabulary, phenotype adds bare METPO phenotypes only, and
+    full adds every strain key that does not assert an absence while dropping every one
+    that does, the species' own "does not grow in" included (#788)."""
+    direct = {"METPO:1000603", "METPO:1000605", "METPO:2000518|mediadive.medium:1"}
+
+    header = _matrix_lines(tmp_path / strain_rollup, ALL_EDGES, strain_rollup)[0]
+
+    assert set(header.split("\t")[3:]) == (direct | added) - removed
+
+
+def test_phenotype_scope_excludes_handling_and_clinical_classes(tmp_path: Path) -> None:
+    """Biosafety levels and pathogen labels are not ecophysiological traits (#788)."""
+    assert set(taxa_trait_matrix.PHENOTYPE_EXCLUDED_TRAITS) == {
+        "METPO:1001102",
+        "METPO:1001103",
+        "METPO:1001104",
+        "METPO:1004002",
+        "METPO:1004003",
+        "METPO:1004004",
+    }
+    for trait in taxa_trait_matrix.PHENOTYPE_EXCLUDED_TRAITS:
+        assert not taxa_trait_matrix.strain_trait_rolls_up(trait, "phenotype")
+        assert taxa_trait_matrix.strain_trait_rolls_up(trait, "full")
+
+    header = _matrix_lines(tmp_path / "phenotype", ALL_EDGES, "phenotype")[0]
+
+    assert "METPO:1004004" not in header.split("\t")
+
+
+def test_full_scope_never_carries_an_activity_and_its_absence(tmp_path: Path) -> None:
+    """Strains 1 and 2 of species a disagree on glucose fermentation; under full only the
+    activity survives, and no node keeps any negated key (#788)."""
+    _, _, edges_path = _write_strain_fixture(tmp_path, ALL_EDGES)
+    edges = taxa_trait_matrix.read_kg_trait_edges(edges_path, strains=True)
+
+    traits = taxa_trait_matrix.scoped_taxon_traits(
+        edges.taxon_traits, edges.strain_taxa, edges.strain_traits, "full"
+    )
+
+    assert "METPO:2000037|CHEBI:17234" in edges.strain_traits["kgmicrobe.strain:2"]
+    assert "METPO:2000011|CHEBI:17234" in traits["NCBITaxon:101"]
+    assert not any(taxa_trait_matrix.is_negated(key) for keys in traits.values() for key in keys)
+
+
+def test_a_negated_relation_to_a_metpo_object_keeps_its_predicate(tmp_path: Path) -> None:
+    """The absence of a phenotype is never keyed as the phenotype itself (#788)."""
+    assert taxa_trait_matrix.make_trait_key("METPO:2000022", "METPO:1000683") == (
+        "METPO:2000022|METPO:1000683"
+    )
+    assert taxa_trait_matrix.make_trait_key("biolink:has_phenotype", "METPO:1000683") == (
+        "METPO:1000683"
+    )
+    _, _, edges_path = _write_strain_fixture(tmp_path, ALL_EDGES)
+
+    keys = taxa_trait_matrix.read_kg_trait_edges(edges_path, strains=True).strain_traits
+
+    assert "METPO:2000022|METPO:1000683" in keys["kgmicrobe.strain:3"]
+    assert "METPO:1000683" not in keys["kgmicrobe.strain:3"]
 
 
 def test_strain_links_keep_ncbitaxon_parents_only(tmp_path: Path) -> None:
@@ -247,6 +365,10 @@ def test_strain_links_keep_ncbitaxon_parents_only(tmp_path: Path) -> None:
     assert edges.strain_traits["kgmicrobe.strain:5"] == {"METPO:1000668"}
     default = taxa_trait_matrix.read_kg_trait_edges(edges_path)
     assert (default.strain_taxa, default.strain_traits) == ({}, {})
+    scoped = taxa_trait_matrix.read_kg_trait_edges(
+        edges_path, strains=True, strain_rollup="phenotype"
+    )
+    assert scoped.strain_traits["kgmicrobe.strain:3"] == set()
 
 
 def test_roll_up_strain_traits_adds_to_every_linked_node_without_mutating() -> None:
@@ -266,25 +388,40 @@ def test_roll_up_strain_traits_adds_to_every_linked_node_without_mutating() -> N
     assert taxon_traits == {"NCBITaxon:101": {"METPO:1000603"}}
 
 
-def test_strain_rollup_is_opt_in_on_the_command_line() -> None:
+def test_strain_rollup_is_the_primary_by_default_on_the_command_line(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     parser = taxa_trait_matrix.build_parser()
-    assert parser.parse_args([]).strain_rollup is False
-    assert parser.parse_args(["--strain-rollup"]).strain_rollup is True
+    assert parser.parse_args([]).strain_rollup == "phenotype"
+    for scope in ("off", "phenotype", "full"):
+        assert parser.parse_args(["--strain-rollup", scope]).strain_rollup == scope
+    with pytest.raises(SystemExit):
+        parser.parse_args(["--strain-rollup", "strains"])
+    assert "invalid choice" in capsys.readouterr().err
 
 
 @pytest.mark.parametrize("output", [[], ["--output", str(taxa_trait_matrix.DEFAULT_OUTPUT_PATH)]])
-def test_strain_rollup_refuses_the_default_matrix_path(
-    output: list[str], tmp_path: Path, capsys: pytest.CaptureFixture[str]
+@pytest.mark.parametrize("scope", ["off", "full"])
+def test_a_secondary_scope_refuses_the_default_matrix_path(
+    output: list[str], scope: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """The analyses read the default path, so a rolled-up matrix must go elsewhere (#797).
+    """The analyses read the default path as the primary, so off and full go elsewhere.
 
-    The empty --kg-dir stops a build before it writes anything if the guard is missing.
+    The empty --kg-dir stops a build before it writes anything if the guard is missing
+    (#797, #788).
     """
     with pytest.raises(SystemExit) as exited:
-        taxa_trait_matrix.main(["--strain-rollup", "--kg-dir", str(tmp_path), *output])
+        taxa_trait_matrix.main(["--strain-rollup", scope, "--kg-dir", str(tmp_path), *output])
 
     assert exited.value.code == 2
-    assert "--strain-rollup needs an --output" in capsys.readouterr().err
+    assert f"--strain-rollup {scope} needs an --output" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("scope", [[], ["--strain-rollup", "phenotype"]])
+def test_the_primary_scope_may_build_the_default_matrix(scope: list[str], tmp_path: Path) -> None:
+    """The guard lets the primary through; the empty --kg-dir then stops the build."""
+    with pytest.raises(FileNotFoundError, match="KG file not found"):
+        taxa_trait_matrix.main([*scope, "--kg-dir", str(tmp_path)])
 
 
 def test_strain_rollup_writes_an_explicit_output(tmp_path: Path) -> None:
@@ -295,7 +432,7 @@ def test_strain_rollup_writes_an_explicit_output(tmp_path: Path) -> None:
     paths = ["--taxa", taxa_path, "--nodes", nodes_path, "--edges", edges_path]
 
     exit_code = taxa_trait_matrix.main(
-        ["--strain-rollup", *map(str, paths), "--output", str(output_path)]
+        ["--strain-rollup", "phenotype", *map(str, paths), "--output", str(output_path)]
     )
 
     assert exit_code == 0

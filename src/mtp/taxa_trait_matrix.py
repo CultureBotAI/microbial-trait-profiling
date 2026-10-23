@@ -8,6 +8,7 @@ from collections import Counter, defaultdict
 from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Literal
 
 from mtp.paths import KG_MICROBE_DIR, REPO_ROOT
 
@@ -22,6 +23,67 @@ DEFAULT_KG_DIR = KG_MICROBE_DIR
 DEFAULT_OUTPUT_PATH = REPO_ROOT / "data" / "derived" / "taxa_trait_matrix.tsv"
 EDGES_FILENAME = "merged-kg_edges.tsv"
 NODES_FILENAME = "merged-kg_nodes.tsv"
+
+# Which BacDive strain trait edges count at the strains' NCBITaxon nodes (#788): none
+# (off), bare METPO phenotype classes (phenotype), or every edge that does not assert an
+# absence (full).
+StrainRollup = Literal["off", "phenotype", "full"]
+STRAIN_ROLLUPS: tuple[StrainRollup, ...] = ("off", "phenotype", "full")
+# The owner's primary scope (#788). The core workflow and the legacy matrix builder and
+# ledger default to it; off is the sensitivity scope and full the exploratory one.
+PRIMARY_STRAIN_ROLLUP: StrainRollup = "phenotype"
+
+# Handling and clinical classes that BacDive strain records assert, not ecophysiological
+# traits, so the phenotype scope never rolls them up (#788). Labels as in the pinned
+# node table; `just verify-trait-terms` checks them.
+PHENOTYPE_EXCLUDED_TRAITS = {
+    "METPO:1001102": "biosafety level 1",
+    "METPO:1001103": "biosafety level 2",
+    "METPO:1001104": "biosafety level 3",
+    "METPO:1004002": "animal pathogen",
+    "METPO:1004003": "plant pathogen",
+    "METPO:1004004": "human pathogen",
+}
+
+# Every METPO relation in the pinned node table that asserts an activity or capability
+# is absent (#788). `just verify-trait-terms` checks the labels and that none is missing.
+NEGATED_PREDICATES = {
+    "METPO:2000021": "does not use for aerobic catabolization",
+    "METPO:2000022": "does not use for aerobic growth",
+    "METPO:2000023": "does not use for anaerobic catabolization",
+    "METPO:2000024": "does not use for anaerobic growth",
+    "METPO:2000025": "does not use for anaerobic growth in the dark",
+    "METPO:2000026": "does not use for anaerobic growth with light",
+    "METPO:2000027": "does not assimilate",
+    "METPO:2000028": "does not build acid from",
+    "METPO:2000029": "does not build base from",
+    "METPO:2000030": "does not build gas from",
+    "METPO:2000031": "does not use as carbon source",
+    "METPO:2000033": "does not degrade",
+    "METPO:2000034": "does not use as electron acceptor",
+    "METPO:2000035": "does not use as electron donor",
+    "METPO:2000036": "does not use as energy source",
+    "METPO:2000037": "does not ferment",
+    "METPO:2000038": "does not use for growth",
+    "METPO:2000039": "does not hydrolyze",
+    "METPO:2000040": "does not use as nitrogen source",
+    "METPO:2000041": "does not use in other way",
+    "METPO:2000042": "does not oxidize",
+    "METPO:2000044": "does not reduce",
+    "METPO:2000045": "is not required for growth",
+    "METPO:2000046": "does not use for respiration",
+    "METPO:2000047": "does not use as sulfur source",
+    "METPO:2000220": "does not disproportionate",
+    "METPO:2000222": "does not produce",
+    "METPO:2000227": "does not transport",
+    "METPO:2000228": "does not import",
+    "METPO:2000229": "does not export",
+    "METPO:2000230": "does not accumulate",
+    "METPO:2000231": "does not sequester",
+    "METPO:2000232": "does not compartmentalize",
+    "METPO:2000303": "does not show activity of",
+    "METPO:2000518": "does not grow in",
+}
 
 
 @dataclass(frozen=True)
@@ -58,8 +120,9 @@ class KgTraitEdges:
     """Taxonomy links and trait sets read from KG edges.
 
     ``strain_taxa`` maps each BacDive strain to the NCBITaxon nodes it is a
-    ``biolink:subclass_of``, and ``strain_traits`` holds the strain's own trait keys
-    (#774). Both are empty unless strains were read.
+    ``biolink:subclass_of``, and ``strain_traits`` holds the trait keys of every strain
+    with trait edges, only those a scope admits when one was given (#774, #788). Both are
+    empty unless strains were read.
     """
 
     child_to_parents: dict[str, set[str]]
@@ -151,9 +214,21 @@ def read_node_metadata(nodes_path: Path, node_ids: set[str]) -> dict[str, NodeMe
     return node_metadata
 
 
+def parse_strain_rollup(value: object) -> StrainRollup:
+    """Return a declared strain rollup scope, refusing any other value."""
+    for scope in STRAIN_ROLLUPS:
+        if value == scope:
+            return scope
+    raise ValueError(f"strain_rollup must be one of {', '.join(STRAIN_ROLLUPS)}: {value!r}")
+
+
 def make_trait_key(predicate: str, obj: str) -> str:
-    """Create the output trait key for a KG taxon assertion."""
-    if _is_trait(obj):
+    """Create the output trait key for a KG taxon assertion.
+
+    A METPO object is its own key, except under a negated relation, which keeps its
+    predicate so that the absence of a phenotype is never keyed as the phenotype (#788).
+    """
+    if _is_trait(obj) and predicate not in NEGATED_PREDICATES:
         return obj
     return f"{predicate}{TRAIT_KEY_SEPARATOR}{obj}"
 
@@ -164,6 +239,26 @@ def split_trait_key(trait_key: str) -> tuple[str | None, str]:
         return None, trait_key
     predicate, obj = trait_key.split(TRAIT_KEY_SEPARATOR, 1)
     return predicate, obj
+
+
+def is_negated(trait_key: str) -> bool:
+    """Whether a trait key asserts that an activity or capability is absent (#788)."""
+    predicate, _ = split_trait_key(trait_key)
+    return predicate in NEGATED_PREDICATES
+
+
+def strain_trait_rolls_up(trait_key: str, strain_rollup: StrainRollup) -> bool:
+    """Whether a BacDive strain's trait key counts at its NCBITaxon node under a scope.
+
+    ``phenotype`` takes bare METPO phenotype classes, without the handling and clinical
+    classes of PHENOTYPE_EXCLUDED_TRAITS; ``full`` takes every key that does not assert
+    an absence; ``off`` takes none (#788).
+    """
+    if strain_rollup == "phenotype":
+        return TRAIT_KEY_SEPARATOR not in trait_key and trait_key not in PHENOTYPE_EXCLUDED_TRAITS
+    if strain_rollup == "full":
+        return not is_negated(trait_key)
+    return False
 
 
 def node_ids_for_trait_keys(trait_keys: set[str]) -> set[str]:
@@ -177,12 +272,15 @@ def node_ids_for_trait_keys(trait_keys: set[str]) -> set[str]:
     return node_ids
 
 
-def read_kg_trait_edges(edges_path: Path, *, strains: bool = False) -> KgTraitEdges:
+def read_kg_trait_edges(
+    edges_path: Path, *, strains: bool = False, strain_rollup: StrainRollup | None = None
+) -> KgTraitEdges:
     """Read taxonomy parent links and direct trait assertions from KG edges.
 
     Trait sets are keyed by NCBITaxon subject. With ``strains``, the trait edges of
     BacDive strain subjects (``kgmicrobe.strain:``) and the strains' NCBITaxon
-    ``subclass_of`` links are also kept, apart from the taxon sets (#774).
+    ``subclass_of`` links are also kept, apart from the taxon sets (#774); a
+    ``strain_rollup`` scope keeps only the strain keys that scope rolls up (#788).
 
     Memory: materializes the full taxonomy graph plus per-taxon trait sets in
     Python dicts. On the current ~1 GB merged-kg_edges.tsv this peaks around
@@ -213,7 +311,10 @@ def read_kg_trait_edges(edges_path: Path, *, strains: bool = False) -> KgTraitEd
                 if predicate == SUBCLASS_OF and _is_taxon(obj):
                     strain_taxa[subject].add(obj)
                 elif _is_trait(obj) or _is_trait(predicate):
-                    strain_traits[subject].add(make_trait_key(predicate, obj))
+                    key = make_trait_key(predicate, obj)
+                    keys = strain_traits[subject]
+                    if strain_rollup is None or strain_trait_rolls_up(key, strain_rollup):
+                        keys.add(key)
 
     return KgTraitEdges(
         dict(child_to_parents), dict(taxon_traits), dict(strain_taxa), dict(strain_traits)
@@ -240,21 +341,47 @@ def roll_up_strain_traits(
     return rolled
 
 
+def scoped_taxon_traits(
+    taxon_traits: dict[str, set[str]],
+    strain_taxa: dict[str, set[str]],
+    strain_traits: dict[str, set[str]],
+    strain_rollup: StrainRollup,
+) -> dict[str, set[str]]:
+    """The trait set each NCBITaxon node carries under a strain rollup scope (#788).
+
+    The strain keys the scope admits count at the strains' linked nodes, once per node
+    (roll_up_strain_traits). ``full`` also drops every negated key, the nodes' own
+    included, so no node carries both an activity and its absence. ``off`` returns the
+    direct sets unchanged. Every reader of strain records shares this rule.
+    """
+    if strain_rollup == "off":
+        return taxon_traits
+    admitted = {
+        strain: kept
+        for strain, keys in strain_traits.items()
+        if (kept := {key for key in keys if strain_trait_rolls_up(key, strain_rollup)})
+    }
+    rolled = roll_up_strain_traits(taxon_traits, strain_taxa, admitted)
+    if strain_rollup == "phenotype":
+        return rolled
+    affirmed = {node: {key for key in keys if not is_negated(key)} for node, keys in rolled.items()}
+    return {node: keys for node, keys in affirmed.items() if keys}
+
+
 def read_kg_edges(
-    edges_path: Path, *, strain_rollup: bool = False
+    edges_path: Path, *, strain_rollup: StrainRollup = "off"
 ) -> tuple[dict[str, set[str]], dict[str, set[str]]]:
     """Read taxonomy parent links and per-taxon trait sets from KG edges.
 
-    Only NCBITaxon subjects carry traits by default, so BacDive strain records never
-    reach the matrix. ``strain_rollup`` adds them at the strains' NCBITaxon nodes through
-    roll_up_strain_traits; it stays off by default because it adds traits to the
-    vocabulary of every downstream analysis (#774).
+    By default only NCBITaxon subjects carry traits, so this reader returns the direct
+    annotations. A ``strain_rollup`` scope adds the strain keys it admits at the strains'
+    NCBITaxon nodes (scoped_taxon_traits); the matrix builders pass the primary scope
+    unless told otherwise (#774, #788).
     """
-    edges = read_kg_trait_edges(edges_path, strains=strain_rollup)
-    if not strain_rollup:
-        return edges.child_to_parents, edges.taxon_traits
-    return edges.child_to_parents, roll_up_strain_traits(
-        edges.taxon_traits, edges.strain_taxa, edges.strain_traits
+    strains = strain_rollup != "off"
+    edges = read_kg_trait_edges(edges_path, strains=strains, strain_rollup=strain_rollup)
+    return edges.child_to_parents, scoped_taxon_traits(
+        edges.taxon_traits, edges.strain_taxa, edges.strain_traits, strain_rollup
     )
 
 
@@ -439,11 +566,12 @@ def create_taxa_trait_matrix(
     column_metadata_path: Path | None = None,
     edges_path: Path | None = None,
     nodes_path: Path | None = None,
-    strain_rollup: bool = False,
+    strain_rollup: StrainRollup = PRIMARY_STRAIN_ROLLUP,
 ) -> MatrixStats:
     """Create data/derived/taxa_trait_matrix.tsv from BugSigDB taxa and KG-Microbe.
 
-    ``strain_rollup`` also counts BacDive strain trait edges (read_kg_edges, #774).
+    ``strain_rollup`` also counts the BacDive strain trait edges its scope admits
+    (read_kg_edges); the default is the primary scope, as in the core workflow (#774, #788).
     """
     resolved_edges_path = resolve_kg_file(EDGES_FILENAME, kg_dir, edges_path)
     resolved_nodes_path = resolve_kg_file(NODES_FILENAME, kg_dir, nodes_path)
@@ -526,11 +654,15 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--strain-rollup",
-        action="store_true",
+        choices=STRAIN_ROLLUPS,
+        default=PRIMARY_STRAIN_ROLLUP,
         help=(
-            "Also count the trait edges of BacDive strains (kgmicrobe.strain:) at the "
-            "NCBITaxon node each strain is a subclass of. Off by default: it adds traits "
-            "to the matrix vocabulary (#774). Needs an --output other than the default."
+            "Count BacDive strain (kgmicrobe.strain:) trait edges at the NCBITaxon node "
+            "each strain is a subclass of: bare METPO phenotype classes without biosafety "
+            "and pathogen labels (phenotype, the primary and default), none (off, the "
+            "sensitivity scope) or every edge that does not assert an absence (full, "
+            "exploratory). The analyses read the default output as the primary, so off and "
+            "full need another --output (#774, #788)."
         ),
     )
     return parser
@@ -539,9 +671,14 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: Sequence[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
-    # The analyses read the default path, so a rolled-up matrix must not replace it (#797)
-    if args.strain_rollup and args.output.resolve() == DEFAULT_OUTPUT_PATH.resolve():
-        parser.error("--strain-rollup needs an --output other than the default matrix path")
+    # The analyses read the default path as the primary matrix, so another scope must not
+    # replace it (#797, #788)
+    secondary = args.strain_rollup != PRIMARY_STRAIN_ROLLUP
+    if secondary and args.output.resolve() == DEFAULT_OUTPUT_PATH.resolve():
+        parser.error(
+            f"--strain-rollup {args.strain_rollup} needs an --output other than the default "
+            f"matrix path, which holds the primary {PRIMARY_STRAIN_ROLLUP} matrix"
+        )
     stats = create_taxa_trait_matrix(
         taxa_path=args.taxa,
         kg_dir=args.kg_dir,
@@ -555,8 +692,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(f"Wrote column metadata: {stats.column_metadata_path}")
     print(f"Reported taxa rows: {stats.reported_taxa}")
     print(f"Trait columns: {stats.traits}")
-    if args.strain_rollup:
-        print("BacDive strain trait edges counted at their NCBITaxon nodes (--strain-rollup)")
+    if args.strain_rollup != "off":
+        print(f"BacDive strain trait edges counted at their NCBITaxon nodes: {args.strain_rollup}")
     print(f"KG edges: {stats.edges_path}")
     print(f"KG nodes: {stats.nodes_path}")
     return 0
