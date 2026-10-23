@@ -24,7 +24,7 @@ from mtp.contribution_inputs import (
     verify_kg,
 )
 from mtp.paths import DERIVED_DATA_DIR, REPO_ROOT
-from mtp.taxa_trait_matrix import STRAIN_ROLLUPS
+from mtp.taxa_trait_matrix import PRIMARY_STRAIN_ROLLUP, STRAIN_ROLLUPS
 
 Record = dict[str, Any]
 
@@ -245,10 +245,11 @@ def main() -> None:
     parser.add_argument(
         "--strain-rollup",
         choices=STRAIN_ROLLUPS,
-        default="off",
+        default=PRIMARY_STRAIN_ROLLUP,
         help=(
             "The BacDive strain rollup scope the input matrix was built with, so that the "
-            "ledger reconstructs its counts by the same rule (#788)."
+            "ledger reconstructs its counts by the same rule; the default is the primary "
+            "scope, which `just taxa-trait-matrix` also builds (#788)."
         ),
     )
     args = parser.parse_args()

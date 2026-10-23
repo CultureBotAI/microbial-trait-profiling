@@ -86,9 +86,11 @@ draws distinct taxa against every taxon in the trait matrix (see
 
 ### Strain rollup scope and the trait universe
 
-Which BacDive strain records reach the matrix is the core workflow's `strain_rollup`
-parameter, recorded in every run
-([#788](https://github.com/CultureBotAI/microbial-trait-profiling/issues/788)). A strain's
+Which BacDive strain records reach the matrix is the `strain_rollup` scope
+([#788](https://github.com/CultureBotAI/microbial-trait-profiling/issues/788)). The core
+workflow takes it as a parameter and records it in every run. The legacy matrix builder
+(`just taxa-trait-matrix`) and the Table 1 contribution ledger take it as an option, and
+both default to the primary scope like the workflow. A strain's
 admitted trait edges count at the NCBITaxon node it is a `biolink:subclass_of`, once per
 node, so the matrix still counts trait-bearing NCBITaxon nodes. The three scopes have
 distinct roles and distinct trait universes. Sizes below are for the pinned KG (edge md5
@@ -97,7 +99,7 @@ run at main 8b280a3.
 
 | Scope | Role | Retained traits (m) | Retained count mass, all reported taxa | What strain records add |
 | --- | --- | ---: | ---: | --- |
-| `phenotype` | Primary; the workflow default | 344 | 1,335,025 | 27 bare METPO phenotype classes, facultatively anaerobic among them; biosafety levels and pathogen labels are excluded |
+| `phenotype` | Primary; the default of the core workflow and the legacy builder | 344 | 1,335,025 | 27 bare METPO phenotype classes, facultatively anaerobic among them; biosafety levels and pathogen labels are excluded |
 | `off` | Sensitivity; continuity with every result before #788 | 317 | 1,198,119 | Nothing |
 | `full` | Exploratory; its own correction family, never headline claims | 4,224 | 3,945,417 | Every strain edge that does not assert an absence, mostly CHEBI, API-assay, EC and GO relations; every negated key is dropped |
 

@@ -254,9 +254,11 @@ def test_strain_records_count_at_their_node_under_the_declared_scope(tmp_path: P
     nodes.write_text("id\tname\nNCBITaxon:1\tSpecies one\n", encoding="utf-8")
     columns = {A, "METPO:1004004"}
 
-    off = load_graph(edges, nodes, columns, {A})
+    off = load_graph(edges, nodes, columns, {A}, strain_rollup="off")
     phenotype = load_graph(edges, nodes, columns, {A}, strain_rollup="phenotype")
     full = load_graph(edges, nodes, columns, {A}, strain_rollup="full")
+    # The ledger reconciles the legacy matrix, so it shares the builder's default (#788)
+    assert load_graph(edges, nodes, columns, {A}).traits == phenotype.traits
 
     assert (off.traits, off.assertions) == ({}, {})
     assert phenotype.traits == {SPECIES1: {A}}

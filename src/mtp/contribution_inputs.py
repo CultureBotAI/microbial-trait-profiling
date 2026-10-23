@@ -13,6 +13,7 @@ from pathlib import Path
 
 from mtp.paths import REPO_ROOT
 from mtp.taxa_trait_matrix import (
+    PRIMARY_STRAIN_ROLLUP,
     STRAIN_PREFIX,
     StrainRollup,
     make_trait_key,
@@ -221,13 +222,14 @@ def load_graph(
     nodes: Path,
     columns: set[str],
     six: set[str],
-    strain_rollup: StrainRollup = "off",
+    strain_rollup: StrainRollup = PRIMARY_STRAIN_ROLLUP,
 ) -> Graph:
     """Read the taxonomy, retained traits and six-trait edge provenance of the KG.
 
     Under the matrix's strain rollup scope, the BacDive strain records it admits count
     at the strains' linked NCBITaxon nodes by the builder's rule, and their edges are
-    assertions of those nodes (#788).
+    assertions of those nodes. The default is the primary scope, which the legacy matrix
+    builder also defaults to (#788).
     """
     parents: defaultdict[str, set[str]] = defaultdict(set)
     traits: defaultdict[str, set[str]] = defaultdict(set)

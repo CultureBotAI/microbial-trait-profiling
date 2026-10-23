@@ -211,16 +211,14 @@ def _matrix_lines(
     return output_path.read_text(encoding="utf-8").splitlines()
 
 
-def test_strain_edges_never_reach_the_default_matrix(tmp_path: Path) -> None:
-    """Without the rollup, strain records leave the matrix byte-identical (#774)."""
-    with_strains = _matrix_lines(tmp_path / "a", [*TAXONOMY_AND_TAXON_EDGES, *STRAIN_EDGES])
+def test_strain_edges_never_reach_the_off_matrix(tmp_path: Path) -> None:
+    """Under off, strain records leave the matrix byte-identical (#774, #788)."""
+    with_strains = _matrix_lines(tmp_path / "a", [*TAXONOMY_AND_TAXON_EDGES, *STRAIN_EDGES], "off")
     without_strains = _matrix_lines(tmp_path / "b", TAXONOMY_AND_TAXON_EDGES)
-    off = _matrix_lines(tmp_path / "c", [*TAXONOMY_AND_TAXON_EDGES, *STRAIN_EDGES], "off")
 
     assert (
         with_strains
         == without_strains
-        == off
         == [
             "taxon_id\ttaxon_name\ttaxonomic_rank\tMETPO:1000603\tMETPO:1000605",
             "NCBITaxon:900\tFamilyaceae\tfamily\t1\t1",
@@ -229,6 +227,15 @@ def test_strain_edges_never_reach_the_default_matrix(tmp_path: Path) -> None:
             "NCBITaxon:102\tSpecies b\tspecies\t0\t1",
         ]
     )
+
+
+def test_the_matrix_builder_defaults_to_the_primary_scope(tmp_path: Path) -> None:
+    """The legacy path builds the owner's primary, as the core workflow does (#788)."""
+    assert taxa_trait_matrix.PRIMARY_STRAIN_ROLLUP == "phenotype"
+    default = _matrix_lines(tmp_path / "default", ALL_EDGES)
+
+    assert default == _matrix_lines(tmp_path / "phenotype", ALL_EDGES, "phenotype")
+    assert default != _matrix_lines(tmp_path / "off", ALL_EDGES, "off")
 
 
 @pytest.mark.parametrize(
@@ -381,11 +388,11 @@ def test_roll_up_strain_traits_adds_to_every_linked_node_without_mutating() -> N
     assert taxon_traits == {"NCBITaxon:101": {"METPO:1000603"}}
 
 
-def test_strain_rollup_is_off_by_default_on_the_command_line(
+def test_strain_rollup_is_the_primary_by_default_on_the_command_line(
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     parser = taxa_trait_matrix.build_parser()
-    assert parser.parse_args([]).strain_rollup == "off"
+    assert parser.parse_args([]).strain_rollup == "phenotype"
     for scope in ("off", "phenotype", "full"):
         assert parser.parse_args(["--strain-rollup", scope]).strain_rollup == scope
     with pytest.raises(SystemExit):
@@ -394,19 +401,27 @@ def test_strain_rollup_is_off_by_default_on_the_command_line(
 
 
 @pytest.mark.parametrize("output", [[], ["--output", str(taxa_trait_matrix.DEFAULT_OUTPUT_PATH)]])
-@pytest.mark.parametrize("scope", ["phenotype", "full"])
-def test_strain_rollup_refuses_the_default_matrix_path(
+@pytest.mark.parametrize("scope", ["off", "full"])
+def test_a_secondary_scope_refuses_the_default_matrix_path(
     output: list[str], scope: str, tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """The analyses read the default path, so a rolled-up matrix must go elsewhere (#797).
+    """The analyses read the default path as the primary, so off and full go elsewhere.
 
-    The empty --kg-dir stops a build before it writes anything if the guard is missing.
+    The empty --kg-dir stops a build before it writes anything if the guard is missing
+    (#797, #788).
     """
     with pytest.raises(SystemExit) as exited:
         taxa_trait_matrix.main(["--strain-rollup", scope, "--kg-dir", str(tmp_path), *output])
 
     assert exited.value.code == 2
-    assert "--strain-rollup needs an --output" in capsys.readouterr().err
+    assert f"--strain-rollup {scope} needs an --output" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("scope", [[], ["--strain-rollup", "phenotype"]])
+def test_the_primary_scope_may_build_the_default_matrix(scope: list[str], tmp_path: Path) -> None:
+    """The guard lets the primary through; the empty --kg-dir then stops the build."""
+    with pytest.raises(FileNotFoundError, match="KG file not found"):
+        taxa_trait_matrix.main([*scope, "--kg-dir", str(tmp_path)])
 
 
 def test_strain_rollup_writes_an_explicit_output(tmp_path: Path) -> None:

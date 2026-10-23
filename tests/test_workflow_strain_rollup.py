@@ -11,7 +11,12 @@ from typing import cast
 import pytest
 
 from mtp.study_trait_profiles import collect_profile_taxa
-from mtp.taxa_trait_matrix import STRAIN_ROLLUPS, StrainRollup, create_taxa_trait_matrix
+from mtp.taxa_trait_matrix import (
+    PRIMARY_STRAIN_ROLLUP,
+    STRAIN_ROLLUPS,
+    StrainRollup,
+    create_taxa_trait_matrix,
+)
 from mtp.workflow.__main__ import main as workflow_main
 from mtp.workflow.comparison import core_analysis_bases
 from mtp.workflow.coverage import STRAIN_ATTRIBUTED_EVIDENCE, UNRESOLVED_EVIDENCE
@@ -112,7 +117,7 @@ def test_both_core_specs_default_to_the_phenotype_scope() -> None:
     for spec in (SPEC, ROOT / "workflows" / "bugsigdb_core_subset.yaml"):
         definition = read_definition(spec)
         defaults = {item.name: item.default for item in definition.parameters or []}
-        assert defaults["strain_rollup"] == "phenotype"
+        assert defaults["strain_rollup"] == PRIMARY_STRAIN_ROLLUP == "phenotype"
         steps = {step.id: step for step in definition.steps}
         for step_id in ("taxa_matrix", "feature_catalog"):
             assert steps[step_id].parameters == ["strain_rollup"]
@@ -181,6 +186,7 @@ def test_a_matrix_built_under_another_scope_is_rejected(
             nodes_path=inputs["kg_nodes"],
             output_path=outputs["taxa_matrix"],
             column_metadata_path=outputs["feature_metadata"],
+            strain_rollup="off",
         )
 
     with pytest.raises(WorkflowExecutionError, match="KG"):

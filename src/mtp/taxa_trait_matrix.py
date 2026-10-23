@@ -29,6 +29,9 @@ NODES_FILENAME = "merged-kg_nodes.tsv"
 # absence (full).
 StrainRollup = Literal["off", "phenotype", "full"]
 STRAIN_ROLLUPS: tuple[StrainRollup, ...] = ("off", "phenotype", "full")
+# The owner's primary scope (#788). The core workflow and the legacy matrix builder and
+# ledger default to it; off is the sensitivity scope and full the exploratory one.
+PRIMARY_STRAIN_ROLLUP: StrainRollup = "phenotype"
 
 # Handling and clinical classes that BacDive strain records assert, not ecophysiological
 # traits, so the phenotype scope never rolls them up (#788). Labels as in the pinned
@@ -370,10 +373,10 @@ def read_kg_edges(
 ) -> tuple[dict[str, set[str]], dict[str, set[str]]]:
     """Read taxonomy parent links and per-taxon trait sets from KG edges.
 
-    Only NCBITaxon subjects carry traits by default, so BacDive strain records never
-    reach the matrix. A ``strain_rollup`` scope adds the strain keys it admits at the
-    strains' NCBITaxon nodes (scoped_taxon_traits). The library default stays ``off``;
-    the core workflow declares its own default (#774, #788).
+    By default only NCBITaxon subjects carry traits, so this reader returns the direct
+    annotations. A ``strain_rollup`` scope adds the strain keys it admits at the strains'
+    NCBITaxon nodes (scoped_taxon_traits); the matrix builders pass the primary scope
+    unless told otherwise (#774, #788).
     """
     strains = strain_rollup != "off"
     edges = read_kg_trait_edges(edges_path, strains=strains, strain_rollup=strain_rollup)
@@ -563,12 +566,12 @@ def create_taxa_trait_matrix(
     column_metadata_path: Path | None = None,
     edges_path: Path | None = None,
     nodes_path: Path | None = None,
-    strain_rollup: StrainRollup = "off",
+    strain_rollup: StrainRollup = PRIMARY_STRAIN_ROLLUP,
 ) -> MatrixStats:
     """Create data/derived/taxa_trait_matrix.tsv from BugSigDB taxa and KG-Microbe.
 
     ``strain_rollup`` also counts the BacDive strain trait edges its scope admits
-    (read_kg_edges, #774, #788).
+    (read_kg_edges); the default is the primary scope, as in the core workflow (#774, #788).
     """
     resolved_edges_path = resolve_kg_file(EDGES_FILENAME, kg_dir, edges_path)
     resolved_nodes_path = resolve_kg_file(NODES_FILENAME, kg_dir, nodes_path)
@@ -652,13 +655,14 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--strain-rollup",
         choices=STRAIN_ROLLUPS,
-        default="off",
+        default=PRIMARY_STRAIN_ROLLUP,
         help=(
             "Count BacDive strain (kgmicrobe.strain:) trait edges at the NCBITaxon node "
-            "each strain is a subclass of: none (off, the default), bare METPO phenotype "
-            "classes without biosafety and pathogen labels (phenotype), or every edge that "
-            "does not assert an absence (full). Any scope but off adds traits to the matrix "
-            "vocabulary and needs an --output other than the default (#774, #788)."
+            "each strain is a subclass of: bare METPO phenotype classes without biosafety "
+            "and pathogen labels (phenotype, the primary and default), none (off, the "
+            "sensitivity scope) or every edge that does not assert an absence (full, "
+            "exploratory). The analyses read the default output as the primary, so off and "
+            "full need another --output (#774, #788)."
         ),
     )
     return parser
@@ -667,9 +671,14 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: Sequence[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
-    # The analyses read the default path, so a rolled-up matrix must not replace it (#797)
-    if args.strain_rollup != "off" and args.output.resolve() == DEFAULT_OUTPUT_PATH.resolve():
-        parser.error("--strain-rollup needs an --output other than the default matrix path")
+    # The analyses read the default path as the primary matrix, so another scope must not
+    # replace it (#797, #788)
+    secondary = args.strain_rollup != PRIMARY_STRAIN_ROLLUP
+    if secondary and args.output.resolve() == DEFAULT_OUTPUT_PATH.resolve():
+        parser.error(
+            f"--strain-rollup {args.strain_rollup} needs an --output other than the default "
+            f"matrix path, which holds the primary {PRIMARY_STRAIN_ROLLUP} matrix"
+        )
     stats = create_taxa_trait_matrix(
         taxa_path=args.taxa,
         kg_dir=args.kg_dir,

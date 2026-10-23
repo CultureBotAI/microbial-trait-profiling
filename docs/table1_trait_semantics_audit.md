@@ -48,7 +48,7 @@ The machine-readable table captures all required audit attributes across the 6 f
 - Edges are counted by `primary_knowledge_source` in the pinned edge file.
 - **NCBITaxon edges.** The matrix builder (`src/mtp/taxa_trait_matrix.py`) reads them in every strain rollup scope. Each subject carries one edge per trait here, so this column equals *Direct KG Taxa*.
 - **BacDive strain edges.** Every `infores:bacdive` edge for these traits sits on a BacDive strain node (`kgmicrobe.strain:`). Each of these strains links to an NCBITaxon node through `biolink:subclass_of`. An earlier version of this table listed these edges as a primary source; they now have their own column.
-- **When strain edges count.** They reach the matrix under the primary `phenotype` scope, the core workflow's default since #788, which counts them at the strains' NCBITaxon nodes. The NCBITaxon nodes carrying each trait then become 5,521, 186, 6,027, 388, 51 and 429. Under the `off` sensitivity scope they are not read.
+- **When strain edges count.** They reach the matrix under the primary `phenotype` scope, which counts them at the strains' NCBITaxon nodes. Since #788 it is the default of both the core workflow and the legacy matrix builder. The NCBITaxon nodes carrying each trait then become 5,521, 186, 6,027, 388, 51 and 429. Under the `off` sensitivity scope they are not read.
 - **The other columns.** *BugSigDB Matrix Taxa* and *Profile Support* describe matrices built without strain records.
 
 ---
