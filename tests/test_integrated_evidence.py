@@ -14,6 +14,7 @@ import pytest
 from mtp import guild_maps
 from mtp.guild_maps import (
     CELL_BELOW_MIN_STUDIES,
+    CELL_NO_SIGNAL,
     CELL_NOT_SAMPLED,
     CELL_VALUE,
     OTHER_LABEL,
@@ -1365,7 +1366,10 @@ def test_main_writes_every_artifact_and_its_provenance(tmp_path: Path) -> None:
 #: not four. IBS in Saliva has only zero-total studies, so nothing was sampled
 #: there once they are excluded; before #783 the figure shaded it as sampled
 #: without signal. IBS in Vagina has two studies, below the figure's three, so a
-#: looser threshold in the table would draw what the figure masks (#798).
+#: looser threshold in the table would draw what the figure masks (#798). Asthma
+#: in Lung has three annotated studies whose taxa carry no oxygen term, so its
+#: cells are sampled without signal: the dark-grey state, which only annotated
+#: profiles can now produce (#810).
 FIGURE_SITES = (
     "Feces",
     "Lung",
@@ -1385,6 +1389,7 @@ FIGURE_BLOCKS: tuple[tuple[int, str, str, str, str, tuple[str, ...]], ...] = (
     (3, "IBS", "Saliva", "Homo sapiens", "zero_total", ("inc", "dec")),
     (3, "IBS", "Feces", "Homo sapiens", "signal", ("inc", "dec")),
     (2, "IBS", "Vagina", "Homo sapiens", "signal", ("inc", "dec")),
+    (3, "Asthma", "Lung", "Homo sapiens", "no_oxygen", ("inc", "dec")),
 )
 
 #: One cell as both artifacts can state it: (condition, column), then its status
@@ -1521,13 +1526,22 @@ def test_the_cell_inventory_is_the_figures_cell_status_table(
     # The corpus reaches every way the two grids came apart, so this cannot pass
     # on a fixture where they happen to coincide. No zero-total pair reaches a
     # cell: Crohn in Feces is drawn from its three annotated studies, and IBS in
-    # Saliva, sampled only by zero-total pairs, has nothing sampled (#783).
+    # Saliva, sampled only by zero-total pairs, has nothing sampled (#783). Asthma
+    # in Lung keeps the fourth state, sampled without signal, in the comparison:
+    # each of its four cells is dark grey (#810).
     cells = dict(figure)
     assert len(cells) == len(figure)
     assert len({column.split("|", 1)[0] for _, column in cells}) == len(FIGURE_SITES) > 8
     assert cells[("Crohn", "Feces|aerobe_inc")] == (CELL_VALUE, 3)
     assert cells[("IBS", "Saliva|aerobe_inc")] == (CELL_NOT_SAMPLED, 0)
     assert cells[("IBS", "Vagina|aerobe_inc")] == (CELL_BELOW_MIN_STUDIES, 2)
+    assert cells[("Asthma", "Lung|aerobe_inc")] == (CELL_NO_SIGNAL, 3)
+    no_signal = {key for key, (status, _) in cells.items() if status == CELL_NO_SIGNAL}
+    assert no_signal == {
+        ("Asthma", f"Lung|{guild}_{direction}")
+        for guild in ("aerobe", "anaerobe")
+        for direction in ("inc", "dec")
+    }
 
     # The view names the grid it counts and its population, so it can be set
     # against the figure's.
@@ -1537,7 +1551,7 @@ def test_the_cell_inventory_is_the_figures_cell_status_table(
         f"{len(conditions)} condition rows by {len(FIGURE_SITES)} body-site blocks, "
         "each block 4 guild-direction columns wide" in view
     )
-    assert "Like the tests in this table, the figure leaves out every experiment pair" in view
+    assert "Like the tests computed here, the figure leaves out every experiment pair" in view
 
     # Every test and figure cell computed here shares the exclusion, the rows say
     # so, and the provenance record names them. The imported placeholder rows are
@@ -1575,6 +1589,13 @@ def test_the_cell_inventory_is_the_figures_cell_status_table(
         for row in relabelled
         if row["test_status"] != ZERO_ANNOTATION
     )
+    # A dark-grey cell is a finding about annotated profiles, and its row says so
+    # instead of repeating the exclusion (#810).
+    zero_signal = [row for row in relabelled if row["test_status"] == ZERO_ANNOTATION]
+    assert len(zero_signal) == len(no_signal)
+    assert {row["zero_annotation_state"] for row in zero_signal} == {
+        "sampled by annotated profiles, and no taxon in them carried an annotated term of the guild"
+    }
 
     # The figure's own McNemar and the table's are one test on one population:
     # the same studies, the same discordant studies and the same p (#783).

@@ -1,10 +1,10 @@
 {
   "version": "integrated-evidence-v2",
   "bugsigdb_vintage": "2026-04-24_00:41_UTC",
-  "code_commit": "58927fe8fde3735b3d505f09105a2941875485b3",
+  "code_commit": "29dc1bbb29200c194c9347ea675fe686d5f8a2e4",
   "profile_sha256": "519a095b09e179dc92fb51f9d892984a52dd100dece4dadf6c94b036a5323e6c",
   "experiments_sha256": "16271237a70f61c8195d9f2acdd16f71e88f65859160f95bb734626bc1328e06",
-  "analysis_source_sha256": "2e6e284b42be046fe7d3d1414716cd95720b32a1a46e5df01650f34d3c424c0d",
+  "analysis_source_sha256": "c5731d6242566d0ac4a509b94ac64aeea6fdb92c0c23500bf3a73689e6d8b423",
   "core_run_id": null,
   "core_manifest_sha256": null,
   "ora_eligibility_source": null,
@@ -162,7 +162,16 @@
       },
       "status_for_a_procedure_it_is_silent_about": "pending #183",
       "detail_rows": 58,
-      "source": {}
+      "source": {
+        "path": "/Users/marcin/Documents/VIMSS/ontology/KG-Hub/KG-Microbe/microbial-trait-profiling/.claude/worktrees/rerun-main/data/derived/table1_composition_sensitivity/sensitivity_status.json",
+        "sha256": "043a0e95c120cdc251428bd1225291fa64ebe4b195440d6e973b4093f01551f2",
+        "expected_input_sha256": {
+          "profile_sha256": "519a095b09e179dc92fb51f9d892984a52dd100dece4dadf6c94b036a5323e6c",
+          "experiments_sha256": "16271237a70f61c8195d9f2acdd16f71e88f65859160f95bb734626bc1328e06",
+          "full_dump_sha256": "af84bfca7bfe76913a20c1fedbaadbfad4e4bf78605a2cfd7d00eb0c0fdd5788"
+        },
+        "binding": "inputs_not_declared"
+      }
     },
     "taxon_influence_status": {
       "issue": "#190",
@@ -396,5 +405,80 @@
   },
   "declared_terms_without_a_matrix_column": [],
   "no_combined_guarantee": "each family is corrected on its own; a union of decisions has no false discovery rate",
-  "selection_note": "the six Table 1 traits were selected on this corpus by the composition arm; correcting within them is not independent confirmation"
+  "selection_note": "the six Table 1 traits were selected on this corpus by the composition arm; correcting within them is not independent confirmation",
+  "downstream_contracts": {
+    "analysis_specs": {
+      "historical_native_taxon_influence_experiment_weighted_v1": {
+        "id": "historical_native_taxon_influence_experiment_weighted_v1",
+        "estimand": "leave_one_taxon_out_influence_on_table1_signals",
+        "kernel": "experiment_weighted_composition_and_assertion_count_ora",
+        "transformation": "raw_experiment_fraction_difference_and_assertion_counts",
+        "sampling_unit": "experiment_contrast_and_assertion",
+        "weighting": "equal_experiment_weight",
+        "eligibility_rule": "historical_experiment_paired_contrasts",
+        "multiple_testing_policy": "descriptive_influence_delta_audit"
+      },
+      "ilyas_signature_hypergeometric_ora_v1": {
+        "id": "ilyas_signature_hypergeometric_ora_v1",
+        "estimand": "signature_trait_over_and_under_representation",
+        "kernel": "one_sided_hypergeometric_test",
+        "transformation": "binary_taxon_trait_presence_in_signature_vs_universe",
+        "sampling_unit": "directional_signature",
+        "weighting": "unweighted_unique_signature_taxa",
+        "eligibility_rule": "human_16S_WMS_signatures_with_annotated_taxa",
+        "multiple_testing_policy": "global_BH_fdr_across_signature_trait_tests"
+      },
+      "jed_composition_arcsine_sqrt_ttest_calibration_v1": {
+        "id": "jed_composition_arcsine_sqrt_ttest_calibration_v1",
+        "estimand": "paired_transformed_trait_fraction_shift",
+        "kernel": "paired_student_t_test_and_wilcoxon_signed_rank",
+        "transformation": "arcsine_sqrt_or_clr_or_alr_fraction",
+        "sampling_unit": "study_or_contrast_pair",
+        "weighting": "equal_pair_weight",
+        "eligibility_rule": "paired_human_16S_WMS_retaining_zero_total_as_zero_fraction",
+        "multiple_testing_policy": "BH_q_across_6_focal_traits"
+      },
+      "jed_pooled_contrast_fraction_diff_v1": {
+        "id": "jed_pooled_contrast_fraction_diff_v1",
+        "estimand": "pooled_contrast_trait_fraction_difference",
+        "kernel": "paired_wilcoxon_and_sign_test_and_paired_t",
+        "transformation": "signature_trait_fraction_difference_inc_minus_dec",
+        "sampling_unit": "paired_experiment_contrast",
+        "weighting": "equal_contrast_weight",
+        "eligibility_rule": "paired_human_16S_WMS_excluding_zero_total_pairs",
+        "multiple_testing_policy": "BH_q_across_retained_non_MediaDive_traits"
+      },
+      "jed_table1_paired_log_ratio_sign_test_v1": {
+        "id": "jed_table1_paired_log_ratio_sign_test_v1",
+        "estimand": "paired_study_log_ratio_direction_and_mean_shift",
+        "kernel": "two_sided_exact_binomial_sign_test_and_paired_wilcoxon",
+        "transformation": "within_signature_log_count_ratio_aggregated_to_study",
+        "sampling_unit": "study",
+        "weighting": "equal_study_weight",
+        "eligibility_rule": "paired_human_16S_WMS_positive_numerator_and_denominator_in_both_directions",
+        "multiple_testing_policy": "BH_and_BY_q_across_15_trait_pairs"
+      },
+      "noel_table1_six_trait_sign_test_v1": {
+        "id": "noel_table1_six_trait_sign_test_v1",
+        "estimand": "paired_study_majority_direction_proportion",
+        "kernel": "two_sided_exact_binomial_sign_test",
+        "transformation": "study_majority_vote_of_contrast_fraction_difference",
+        "sampling_unit": "study",
+        "weighting": "equal_study_weight_after_within_study_majority_vote",
+        "eligibility_rule": "paired_human_16S_WMS_nonzero_directional_difference_studies",
+        "multiple_testing_policy": "BH_q_across_6_focal_traits_and_full_screen_reference"
+      },
+      "noel_trait_direction_screen_sign_test_v1": {
+        "id": "noel_trait_direction_screen_sign_test_v1",
+        "estimand": "paired_study_majority_direction_proportion",
+        "kernel": "two_sided_exact_binomial_sign_test",
+        "transformation": "study_majority_vote_of_contrast_fraction_difference",
+        "sampling_unit": "study",
+        "weighting": "equal_study_weight_after_within_study_majority_vote",
+        "eligibility_rule": "paired_human_16S_WMS_nonzero_directional_difference_studies",
+        "multiple_testing_policy": "BH_and_BY_and_eigenvalue_effective_M_across_retained_non_MediaDive_traits"
+      }
+    },
+    "require_complete_sources": false
+  }
 }
