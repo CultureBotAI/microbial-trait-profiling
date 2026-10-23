@@ -1,0 +1,10 @@
+policy_id: mtp:additive-full-family-v1
+version: 1.0.0
+role: additive_native_calls_unchanged
+primary_method: by
+comparison_method: bh
+thresholds:
+  - 0.05
+  - 0.001
+missing_test_policy: reserve_internal_p_one_export_null
+family_policy: exact_declared_inventory_no_result_filter
