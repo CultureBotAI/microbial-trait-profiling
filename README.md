@@ -158,9 +158,10 @@ All commands go through the Justfile. Run `just --list` to see them all.
 
 Every pipeline step is timed and logged to `logs/pipeline.log`.
 
-The audited `.secrets.baseline` contains only the public BugSigDB source revision
-and dump checksum in `src/bsdbng/download.py`. It records those exact values as
-false positives; it does not exempt the file or new values from detection. Review
+The audited `.secrets.baseline` records reviewed public checksums and digests
+across the repository, including pinned source revisions and data checksums.
+It marks exact values as false positives; it does not exempt their files or
+new values from detection. Review
 candidate findings before updating the baseline. The lock and secret-audit CLIs
 are declared in the QA group at the same versions as their pre-commit hooks.
 
