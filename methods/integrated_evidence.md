@@ -109,14 +109,19 @@ read as a negative result.
 ## What is in it now
 
 On the committed corpus, **4,200 rows: 40 method results and 4,160 figure
-cells**. That is the run that wrote `data/derived/integrated_evidence/`, at code
-commit `58927fe8fde3735b3d505f09105a2941875485b3`. Its profiles are sha256
+cells**. That is the run that wrote `data/derived/integrated_evidence/`. Its
+profiles are sha256
 `519a095b09e179dc92fb51f9d892984a52dd100dece4dadf6c94b036a5323e6c` (the committed
 `study_trait_profiles_wide.tsv.gz`), its experiments
 `16271237a70f61c8195d9f2acdd16f71e88f65859160f95bb734626bc1328e06`, and its
 BugSigDB export `2026-04-24_00:41_UTC` (full dump
 `af84bfca7bfe76913a20c1fedbaadbfad4e4bf78605a2cfd7d00eb0c0fdd5788`). The
-provenance record carries every other input's hash.
+provenance record carries every other input's hash. Main's code at 35ece98
+(#808) writes every number in these files. #810 regenerated them on main's code
+at 68d4e27 with its own change, which reworded one sentence of the view, added
+the provenance fields #813 introduced and changed no number. The record's
+`code_commit` names the branch commit the run was made from, which a squash
+merge does not keep on main (#643).
 
 | Method | Records | Family | Tested | q <= 0.05 | q <= 0.001 |
 | --- | --- | --- | --- | --- | --- |
@@ -146,8 +151,10 @@ support and 3,508 never sampled**. The figure's own builder,
 `guild_maps.build_figure_matrix`, makes them at the figure's parameters and over
 its population. Since #783 that population is the tests' shared basis, so the 55
 zero-total pairs are left out of the cells as they are of the tests. With those
-pairs kept, the same grid counted 20 sampled-without-signal, 296 masked and
-3,504 never sampled. An earlier version rebuilt the grid here, at an 8-site cut
+pairs kept, the grid was a different one: it had rows for Hypertension and
+Non-alcoholic fatty liver disease where it now has Attention deficit-hyperactivity
+disorder and Periodontitis, and it counted 20 sampled-without-signal, 296 masked
+and 3,504 never sampled. An earlier version rebuilt the grid here, at an 8-site cut
 the figure had left for 20, so its 1,872 cells described a grid the figure never
 drew (#770). They report support and
 display, never a test, which is why they are
@@ -279,8 +286,9 @@ hashes, the corpus cascade, the assessment statuses and the per-method summary.
 `tests/test_integrated_evidence.py` covers the states the contract exists to
 preserve: an all-tied trait, a pair with no eligible experiment, a method that was
 not supplied, two methods keeping separate families and units, the four figure-cell
-support states taken from the real matrix, the cell inventory and the McNemar
-equal to the figure's own cell-status table and McNemar on one corpus, no
+support states taken from the real matrix, the cell inventory, in all four
+states, and the McNemar equal to the figure's own cell-status table and McNemar
+on one corpus, no
 zero-total pair reaching the figure's matrix or either McNemar whatever the caller
 passes, a masked cell leaving a tested result
 alone, each assessment reaching only the procedure it assessed, ten malformed
