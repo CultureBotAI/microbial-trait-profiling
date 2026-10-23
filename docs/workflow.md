@@ -240,7 +240,10 @@ just rerun-verify-comparison /absolute/path/reruns/comparison
 
 Verification derives each analysis basis again from the verified core: its recorded
 strain rollup scope, its feature catalog and the retained features of its count and ORA
-profile tables. A record whose bases differ is refused (#817, #860).
+profile tables. A record whose bases differ, in any field, number or order, is refused
+(#817, #860). A comparison recorded before #828 and #860 holds a catalog-hash
+`feature_filter_id` and fixed `off`/317 bases, so it fails; run the compare stage again
+rather than verifying it.
 
 Each `integrated_evidence` input is the file its producing step recorded in that
 arm's `arm_run.json`: Ilyas's `enrichment` and `depletion`, Noel's

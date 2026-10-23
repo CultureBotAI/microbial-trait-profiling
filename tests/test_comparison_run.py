@@ -12,6 +12,7 @@ import json
 import random
 import shutil
 import sys
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -802,20 +803,44 @@ def test_an_input_no_step_recorded_is_an_error(stage: dict[str, Path]) -> None:
         recorded_output(run, "contrast_orientation", "coverage_status.json")
 
 
-def _comparison_copy(stage: dict[str, Path], tmp_path: Path, **changes: str | int) -> Path:
-    """A copy of the verified comparison run, with fields of its count basis replaced."""
+Bases = list[dict[str, object]]
+COUNT_BASIS, ORA_BASIS = "basis:count_profiles_non_mediadive", "basis:ora_profiles_binary"
+
+
+def _comparison_copy(
+    stage: dict[str, Path], tmp_path: Path, edit: Callable[[Bases], Bases] | None = None
+) -> Path:
+    """A copy of the verified comparison run, with its recorded analysis bases edited."""
     copy = tmp_path / "comparison"
     shutil.copytree(stage["comparison"], copy)
     manifest = copy / "comparison_run.json"
     record = json.loads(manifest.read_text(encoding="utf-8"))
     record["manifest_path"] = str(manifest.resolve())
-    basis = record["analysis_bases"][0]
-    assert basis["id"] == "basis:count_profiles_non_mediadive"
-    for field, value in changes.items():
-        assert basis[field] != value
-        basis[field] = value
+    bases = record["analysis_bases"]
+    assert [basis["id"] for basis in bases] == [COUNT_BASIS, ORA_BASIS]
+    if edit is not None:
+        record["analysis_bases"] = edit(bases)
     manifest.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
     return copy
+
+
+def _replace(index: int, field: str, value: str | int) -> Callable[[Bases], Bases]:
+    """Replace one field of one recorded basis, which must change its value."""
+
+    def edit(bases: Bases) -> Bases:
+        assert bases[index][field] != value
+        return [{**basis, field: value} if at == index else basis for at, basis in enumerate(bases)]
+
+    return edit
+
+
+def _as_merged(basis: dict[str, object]) -> dict[str, object]:
+    """A basis as a bad merge of #828 and #829 could bring it back."""
+    return {
+        **basis,
+        "retained_feature_count": 317,
+        "rollup_policy": "ncbi_taxonomy_closure_rollup_off",
+    }
 
 
 def test_an_unchanged_copy_of_the_comparison_verifies(
@@ -840,6 +865,33 @@ def test_verification_rederives_the_analysis_bases_from_the_core(
 ) -> None:
     """A record whose bases its verified core does not derive fails: another trait count,
     scope, retained-feature identity or catalog (#817, #860)."""
-    copy = _comparison_copy(stage, tmp_path, **{field: value})
-    with pytest.raises(ValueError, match=f"basis:count_profiles_non_mediadive {field}"):
+    copy = _comparison_copy(stage, tmp_path, _replace(0, field, value))
+    with pytest.raises(ValueError, match=f"{COUNT_BASIS} {field}"):
+        verify_comparison_run(copy)
+
+
+@pytest.mark.parametrize(
+    ("edit", "message"),
+    [
+        pytest.param(
+            lambda bases: [_as_merged(bases[0]), _as_merged(bases[1]), *bases],
+            "records analysis bases",
+            id="both_sides_of_a_merge",
+        ),
+        pytest.param(lambda bases: [*bases, *bases], "records analysis bases", id="repeated"),
+        pytest.param(lambda bases: bases[::-1], "records analysis bases", id="swapped"),
+        pytest.param(lambda bases: bases[:1], "records analysis bases", id="missing_ora"),
+        pytest.param(
+            _replace(1, "retained_feature_count", 317),
+            f"{ORA_BASIS} retained_feature_count",
+            id="ora_field",
+        ),
+    ],
+)
+def test_verification_refuses_any_other_list_of_bases(
+    stage: dict[str, Path], tmp_path: Path, edit: Callable[[Bases], Bases], message: str
+) -> None:
+    """The recorded bases must be exactly the derived ones, in order, each once (#941)."""
+    copy = _comparison_copy(stage, tmp_path, edit)
+    with pytest.raises(ValueError, match=message):
         verify_comparison_run(copy)
