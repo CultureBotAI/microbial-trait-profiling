@@ -6,9 +6,10 @@ the older ``data/derived`` pipeline carry theirs in a record beside the table,
 records refuses a table whose record describes other content: the table was replaced
 without its record, so its scope is unknown.
 
-Tables read together must all have records or none. Core products and tables built
-without a record are not compared with each other, but a table without a record is never
-read with a recorded one, whose scope it may not share (#939).
+Tables read together must all have records or none, and in data/derived, where the older
+pipeline writes them, all must have one. Elsewhere, core products and other tables without a
+record are not compared with each other, but a table without a record is never read with a
+recorded one, whose scope it may not share (#939, #945).
 """
 
 from __future__ import annotations
@@ -103,11 +104,18 @@ def require_strain_rollup(table: Path) -> StrainRollup:
     return scope
 
 
+def _in_derived(table: Path) -> bool:
+    """Whether a table is in data/derived, where the older pipeline writes its tables."""
+    return table.resolve().is_relative_to(DERIVED_DATA_DIR.resolve())
+
+
 def shared_strain_rollup(*tables: Path) -> StrainRollup | None:
     """The scope tables read together share, or None when none of them has a record.
 
     Recorded scopes that differ are refused, and so is a table without a record read
-    with recorded ones (#847, #939).
+    with recorded ones (#847, #939). Tables in data/derived come from the older pipeline,
+    which records them, so there every table must have a record; elsewhere, such as core
+    runs and their arms, tables without one are not compared (#945).
     """
     try:
         recorded = {table: recorded_strain_rollup(table) for table in tables}
@@ -115,6 +123,12 @@ def shared_strain_rollup(*tables: Path) -> StrainRollup | None:
         raise StrainRollupRecordError(f"{error}; {REBUILD}") from error
     scopes = set(recorded.values())
     if scopes <= {None}:
+        derived = [str(table) for table in tables if _in_derived(table)]
+        if derived:
+            raise StrainRollupRecordError(
+                f"{', '.join(derived)} record no strain rollup scope, which every table of "
+                f"the older pipeline in data/derived must; {REBUILD} (#847)"
+            )
         return None
     if len(scopes) > 1:
         listed = ", ".join(f"{table} ({scope or 'no record'})" for table, scope in recorded.items())

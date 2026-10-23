@@ -93,7 +93,7 @@ workflow takes it as a parameter and records it in every run. The legacy matrix 
 both default to the primary scope like the workflow. The legacy matrix and profile tables,
 and the committed profile table, record their scope beside them, bound to the table's
 content. The ledger, ORA enrichment, its calibration and strata refuse tables read together
-that record different scopes or that are recorded only in part, and every corpus-identity
+unless they record one scope, or none outside `data/derived`, and every corpus-identity
 record names the scope
 ([#847](https://github.com/CultureBotAI/microbial-trait-profiling/issues/847)). A strain's
 admitted trait edges count at the NCBITaxon node it is a `biolink:subclass_of`, once per

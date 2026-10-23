@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from mtp import strain_rollup_record
 from mtp.strain_rollup_record import (
     StrainRollupRecordError,
     check_committed,
@@ -113,6 +114,27 @@ def test_tables_read_together_record_one_scope_or_none(tmp_path: Path) -> None:
     other.write_text(PHENOTYPE_TABLE, encoding="utf-8")
     with pytest.raises(StrainRollupRecordError, match="then just study-trait-profiles"):
         shared_strain_rollup(matrix, other)
+
+
+def test_tables_in_data_derived_must_all_have_records(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The older pipeline records its tables, so two record-less tables in data/derived,
+    whose scopes may already be mixed by the old restore hint, do not pass together;
+    elsewhere, such as in a core run, they are not compared (#945)."""
+    derived = tmp_path / "data" / "derived"
+    derived.mkdir(parents=True)
+    monkeypatch.setattr(strain_rollup_record, "DERIVED_DATA_DIR", derived)
+    matrix = _table(derived / "taxa_trait_matrix.tsv", PHENOTYPE_TABLE, None)
+    profiles = _table(derived / "study_trait_profiles_wide.tsv", OFF_TABLE, None)
+
+    with pytest.raises(StrainRollupRecordError, match="every table of the older pipeline"):
+        shared_strain_rollup(matrix, profiles)
+    for table in (matrix, profiles):
+        write_strain_rollup_record(table, "phenotype")
+    assert shared_strain_rollup(matrix, profiles) == "phenotype"
+    core = [_table(tmp_path / name, OFF_TABLE, None) for name in ("profiles.tsv", "matrix.tsv")]
+    assert shared_strain_rollup(*core) is None
 
 
 def test_a_step_refuses_recorded_tables_of_another_scope(tmp_path: Path) -> None:
