@@ -1449,6 +1449,10 @@ class AssessmentStatus:
         return self.verdicts.get(procedure, self.default)
 
 
+#: Bindings that mean a status belongs to other input bytes or names no producer.
+UNBOUND_STATUSES = frozenset({"mismatch_or_missing_identity", "missing_producer_identity"})
+
+
 def _unreadable(issue: str, why: str) -> AssessmentStatus:
     return AssessmentStatus(issue=issue, verdicts={}, default=f"unreadable {issue}: {why}")
 
@@ -2425,8 +2429,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument(
         "--require-complete-sources",
         action="store_true",
-        help="Reject missing native source tables, missing status inputs, or "
-        "source_not_supplied placeholder rows (#776, #814)",
+        help="Reject missing native source tables, missing, unreadable or unbound status "
+        "inputs, or source_not_supplied placeholder rows (#776, #814, #844)",
     )
     parser.add_argument("--code-commit", help="Source revision, supplied by the Justfile recipe")
     args = parser.parse_args(argv)
@@ -2646,6 +2650,21 @@ def main(argv: Sequence[str] | None = None) -> int:
             },
         ),
     }
+    if args.require_complete_sources:
+        # A status that cannot be read, or that belongs to other input bytes, is no more
+        # complete than a missing one (#844). A status that declares no input hashes is
+        # still accepted until #816 decides what it binds to.
+        rejected = [
+            f"{key} ({status.default})"
+            for key, status in sorted(statuses.items())
+            if status.default.startswith("unreadable")
+            or status.source.get("binding") in UNBOUND_STATUSES
+        ]
+        if rejected:
+            raise ValueError(
+                "--require-complete-sources rejected unreadable or unbound statuses: "
+                + "; ".join(rejected)
+            )
     records = apply_statuses(records, statuses)
     summary = summarize(records)
     families = family_inventory(records)

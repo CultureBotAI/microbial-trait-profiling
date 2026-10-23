@@ -283,8 +283,11 @@ exist, and `--coverage-status` and `--influence-status` take the #184 and #190
 outputs once those exist. Under `--require-complete-sources`, which the cross-arm
 comparison stage passes, a native table or a calibration, sensitivity, orientation or
 influence status that is not supplied or does not exist is an error rather than a
-pending row (#814). Nothing produces the #184 coverage status yet, so it may be left
-out and then reads as not supplied; a coverage path that is supplied must exist.
+pending row (#814). So is a supplied status that reads as unreadable or whose binding is
+`mismatch_or_missing_identity` or `missing_producer_identity` (#844). A status that
+declares no input hashes is still accepted, pending #816. Nothing produces the #184
+coverage status yet, so it may be left out and then reads as not supplied; a coverage
+path that is supplied must exist.
 The provenance record carries the code revision, input
 hashes, the corpus cascade, the assessment statuses and the per-method summary.
 

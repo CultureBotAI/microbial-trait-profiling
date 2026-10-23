@@ -23,8 +23,10 @@ from mtp.datamodel.workflow_pydantic import (
     ExecutionStatus,
     FileInventoryEntry,
     StorageKind,
+    WorkflowRun,
 )
 from mtp.paths import REPO_ROOT, file_sha256
+from mtp.trait_guilds import OXYGEN_GUILDS, TABLE1_TRAITS, drop_zero_total_pairs, load_profiles
 from mtp.workflow.arms.runtime import verify_arm
 from mtp.workflow.downstream_contracts import (
     STANDARD_ANALYSIS_SPECS,
@@ -61,22 +63,23 @@ ARM_EVIDENCE_INPUTS: tuple[tuple[str, str, str, str], ...] = (
     ("--sensitivity-status", "jed", "composition_sensitivity", "sensitivity_status.json"),
 )
 
-#: The step and file each arm records its calibration outcome in (#815).
-CALIBRATION_SOURCES = {
-    "noel": ("empirical_calibration", "calibration_status.json"),
-    "jed": ("composition_calibration", "composition_calibration_summary.json"),
-}
+#: The arm, step and file each calibration verdict is read from (#815).
+CALIBRATION_SOURCES: tuple[tuple[str, str, str], ...] = (
+    ("noel", "empirical_calibration", "calibration_status.json"),
+    ("jed", "composition_calibration", "composition_calibration_summary.json"),
+    ("jed", "composition_calibration", "composition_calibration_replicates.tsv"),
+)
 
 #: The procedure in Noel's calibration harness that evaluated each production spec (#815).
 NOEL_CALIBRATED_PROCEDURES = {"noel_table1_six_trait_sign_test_v1": "fraction_sign_test"}
 
+#: Noel's negative control, which selects traits and then tests them. It stands in for
+#: the selection of the six Table 1 traits on this same corpus (methods/calibration.md).
+NOEL_SELECTION_CONTROL = "screened_fraction_sign_test"
+
 #: Noel's criteria that judge null error. Its power criterion only checks that power
 #: is reported precisely; the protocol sets no threshold on power itself.
 NULL_CRITERIA = ("per_test_level", "family_error")
-
-#: Where the integrated-evidence exclusion block lists one sampling unit (#815): the
-#: included identifiers, their count, and how many units the exclusion removed.
-EXCLUSION_UNITS = {"study": ("study_ids_after", "studies_after", "studies_lost")}
 
 
 def compare_count_tables(
@@ -208,107 +211,162 @@ def recorded_output(run: ArmRun, step: str, name: str) -> Path:
     raise ValueError(f"{run.arm} run records no {step!r} step: {run.manifest_path}")
 
 
-def noel_calibration_verdict(path: Path, spec: AnalysisSpec) -> CalibrationVerdict:
-    """The verdict Noel's calibration reached for the procedure that evaluated ``spec`` (#815).
+def _noel_procedure(statuses: object, procedure: str, path: Path) -> tuple[str, dict[str, str]]:
+    """One procedure's overall status and criteria, checked against Noel's own rule (#844)."""
+    from mtp.calibration import calibration_status
 
-    A failed null criterion is recorded as failed at any replicate budget: the harness
-    keeps a short run's fail only when its estimate already exceeds the tolerance.
+    entry = statuses.get(procedure) if isinstance(statuses, dict) else None
+    overall = entry.get("overall") if isinstance(entry, dict) else None
+    criteria = entry.get("criteria") if isinstance(entry, dict) else None
+    if not isinstance(overall, str) or not isinstance(criteria, dict) or not criteria:
+        raise ValueError(f"{path} records no overall status and criteria for {procedure!r}")
+    verdicts = {str(name): str(value) for name, value in criteria.items()}
+    rows = [
+        {"procedure": procedure, "criterion": name, "verdict": value}
+        for name, value in verdicts.items()
+    ]
+    derived = calibration_status(rows)[procedure]["overall"]
+    if derived != overall:
+        raise ValueError(
+            f"{path} records {procedure!r} as {overall!r}, but its criteria give {derived!r}"
+        )
+    return overall, verdicts
+
+
+def noel_calibration_verdict(path: Path, spec: AnalysisSpec) -> CalibrationVerdict:
+    """Noel's verdicts for ``spec``'s procedure and its selection negative control (#815, #844).
+
+    The six Table 1 traits were selected on this corpus, so the screened control, which
+    selects and then tests, fails the Table 1 verdict when it fails, though its rates do
+    not bound the published selection's cost (#363). While it does not fail, the
+    criteria are too weak to be evidence, so a null control is never recorded as passed.
+    A failed criterion counts at any budget: Noel's harness keeps a short run's fail only
+    when its estimate already exceeds the tolerance.
     """
-    procedure = NOEL_CALIBRATED_PROCEDURES[spec.id]
     content = json.loads(path.read_text(encoding="utf-8"))
     statuses = content.get("calibration_status") if isinstance(content, dict) else None
-    entry = statuses.get(procedure) if isinstance(statuses, dict) else None
-    criteria = entry.get("criteria") if isinstance(entry, dict) else None
-    if not isinstance(entry, dict) or not isinstance(criteria, dict) or not criteria:
-        raise ValueError(f"{path} records no calibration criteria for {procedure!r}")
-    verdicts = {str(name): str(value) for name, value in criteria.items()}
-    null = [verdicts[name] for name in NULL_CRITERIA if name in verdicts]
-    # A passing sanity check is not evidence of calibration (#360); a failing one is.
-    judged = [value for value in null if not value.endswith("(sanity check)")]
-    null_control_passed: bool | None = None
-    if "fail" in null:
-        null_control_passed = False
-    elif judged and all(value == "pass" for value in judged):
-        null_control_passed = True
+    procedure = NOEL_CALIBRATED_PROCEDURES[spec.id]
+    overall, criteria = _noel_procedure(statuses, procedure, path)
+    control, control_criteria = _noel_procedure(statuses, NOEL_SELECTION_CONTROL, path)
     verdict = build_calibration_verdict(
         verdict_id=f"verdict:{spec.id}",
         production_spec=spec,
         evaluated_spec=spec,
         replicate_budget_sufficient=not any(
-            value.startswith("insufficient_budget") for value in verdicts.values()
+            value.startswith(("insufficient_budget", "not_evaluated"))
+            for value in (*criteria.values(), *control_criteria.values())
         ),
-        null_control_passed=null_control_passed,
-        power_passed=None,
+        null_control_passed=False if "fail" in (criteria.get(c) for c in NULL_CRITERIA) else None,
+        power_passed=False if criteria.get("power_reported") == "fail" else None,
+        anti_conservative_detected=control == "fail",
     )
-    listed = ", ".join(f"{name}={value}" for name, value in sorted(verdicts.items()))
+    read = "; ".join(
+        f"{name} {status} [{', '.join(f'{c}={v}' for c, v in sorted(found.items()))}]"
+        for name, status, found in (
+            (procedure, overall, criteria),
+            (NOEL_SELECTION_CONTROL, control, control_criteria),
+        )
+    )
     verdict.summary_message += (
-        f" Read from {path.name}, procedure {procedure}: overall {entry.get('overall')} "
-        f"[{listed}]; power is reported there without a threshold."
+        f" Read from {path.name}: {read}. {NOEL_SELECTION_CONTROL} is the negative control "
+        "standing in for the selection of the six traits on this corpus (#363); power is "
+        "reported there without a threshold."
     )
     return verdict
 
 
 def jed_calibration_verdict(
-    path: Path, production_spec: AnalysisSpec, evaluated_spec: AnalysisSpec
+    summary: Path,
+    replicates: Path,
+    production_spec: AnalysisSpec,
+    evaluated_spec: AnalysisSpec,
 ) -> CalibrationVerdict:
-    """The composition harness's replicate budget; it judges neither error nor power (#815)."""
+    """The composition harness's replicate budget; it judges neither error nor power (#815).
+
+    The summary always reports every requested replicate as completed, so the completed
+    count is taken from the replicate table and must agree with it (#844).
+    """
     from mtp.composition_calibration.composition import DEFAULT_REPLICATES
 
-    content = json.loads(path.read_text(encoding="utf-8"))
+    content = json.loads(summary.read_text(encoding="utf-8"))
     requested = content.get("replicates_requested") if isinstance(content, dict) else None
     completed = content.get("replicates_completed") if isinstance(content, dict) else None
-    if not isinstance(requested, int) or not isinstance(completed, int):
-        raise ValueError(f"{path} records no requested and completed replicate counts")
+    with replicates.open(encoding="utf-8", newline="") as handle:
+        reader = csv.DictReader(handle, delimiter="\t")
+        if "replicate" not in (reader.fieldnames or []):
+            raise ValueError(f"{replicates} has no replicate column")
+        recorded = len({row["replicate"] for row in reader})
+    if not isinstance(requested, int) or not isinstance(completed, int) or completed != recorded:
+        raise ValueError(
+            f"{summary} reports {requested!r} requested and {completed!r} completed replicates; "
+            f"{replicates.name} records {recorded}"
+        )
     verdict = build_calibration_verdict(
         verdict_id="verdict:jed_log_ratio_vs_transformed_t_calibration",
         production_spec=production_spec,
         evaluated_spec=evaluated_spec,
-        replicate_budget_sufficient=completed >= max(requested, DEFAULT_REPLICATES),
+        replicate_budget_sufficient=recorded >= max(requested, DEFAULT_REPLICATES),
         null_control_passed=None,
         power_passed=None,
     )
     verdict.summary_message += (
-        f" Read from {path.name}: {completed} of {requested} replicates completed against a "
-        f"default budget of {DEFAULT_REPLICATES}; it reports null error rates without a "
-        "tolerance and runs no injected-effect scenario."
+        f" Read from {summary.name} and {replicates.name}: {recorded} of {requested} "
+        f"replicates completed against a default budget of {DEFAULT_REPLICATES}; it reports "
+        "null error rates without a tolerance and runs no injected-effect scenario."
     )
     return verdict
 
 
 def shared_basis_ledger(
-    spec: AnalysisSpec,
-    provenance: Mapping[str, object],
-    contrast_population: ContrastPopulation,
+    spec: AnalysisSpec, core_run: WorkflowRun, contrast_population: ContrastPopulation
 ) -> EligibilityLedger:
-    """The units integrated_evidence kept for ``spec``, at the spec's own sampling unit (#815).
+    """The studies integrated evidence's shared basis keeps for ``spec`` (#815, #844).
 
-    A provenance record without the exclusion block is an error, never zero exclusions.
+    It loads the core's count profiles with integrated evidence's guilds and filters and
+    applies the same whole-pair zero-total exclusion, so the ledger exists before the
+    stage writes anything. ``reconcile_ledger`` then checks what integrated evidence wrote.
     """
-    exclusion = provenance.get("pair_exclusion")
-    if not isinstance(exclusion, Mapping):
-        raise ValueError("integrated_evidence provenance has no pair_exclusion block")
-    if spec.sampling_unit not in EXCLUSION_UNITS:
-        raise ValueError(f"pair_exclusion lists no {spec.sampling_unit!r} units for {spec.id}")
-    ids_key, kept_key, lost_key = EXCLUSION_UNITS[spec.sampling_unit]
-    included, kept, lost = exclusion.get(ids_key), exclusion.get(kept_key), exclusion.get(lost_key)
-    if (
-        not isinstance(included, list)
-        or any(not isinstance(unit, str) for unit in included)
-        or not isinstance(kept, int)
-        or not isinstance(lost, int)
-        or len(included) != kept
-    ):
-        raise ValueError(
-            f"pair_exclusion does not list and count its {spec.sampling_unit} units "
-            f"({ids_key}, {kept_key}, {lost_key})"
-        )
+    if spec.sampling_unit != "study":
+        raise ValueError(f"No shared-basis ledger for {spec.sampling_unit!r} units: {spec.id}")
+    profiles, _ = load_profiles(
+        artifact_path(core_run, "count_profiles"),
+        artifact_path(core_run, "experiments"),
+        {**TABLE1_TRAITS, **OXYGEN_GUILDS},
+        reject_missing_counts=True,
+    )
+    exclusion = drop_zero_total_pairs(profiles)
     return build_eligibility_ledger(
         ledger_id=f"ledger:{spec.id}",
         analysis_spec_id=spec.id,
         contrast_population=contrast_population,
-        included_ids=included,
-        exclusion_counts={"zero_retained_total": lost},
+        included_ids={profile.study_id for profile in exclusion.profiles},
+        exclusion_counts={"zero_retained_total": exclusion.studies_lost},
     )
+
+
+def reconcile_ledger(ledger: EligibilityLedger, provenance: Mapping[str, object]) -> None:
+    """Require integrated evidence's recorded exclusion to be the ledger's (#844).
+
+    A record without the exclusion block is an error, never zero exclusions.
+    """
+    exclusion = provenance.get("pair_exclusion")
+    if not isinstance(exclusion, Mapping):
+        raise ValueError("integrated_evidence provenance has no pair_exclusion block")
+    before = exclusion.get("studies_before")
+    after = exclusion.get("studies_after")
+    lost = exclusion.get("studies_lost")
+    if not (isinstance(before, int) and isinstance(after, int) and isinstance(lost, int)):
+        raise ValueError("pair_exclusion lacks its study counts")
+    if (
+        before != after + lost
+        or exclusion.get("study_ids_after") != ledger.included_ids
+        or (after, lost) != (ledger.included_count, ledger.excluded_count)
+    ):
+        raise ValueError(
+            f"pair_exclusion (studies {before} -> {after}, {lost} lost) does not reconcile "
+            f"with {ledger.id} ({ledger.included_count} included, "
+            f"{ledger.excluded_count} excluded)"
+        )
 
 
 def execute_comparison_run(
@@ -370,16 +428,27 @@ def execute_comparison_run(
     contrast_population = core_run.contrast_population or ContrastPopulation.all_paired
     direction_basis = core_run.direction_basis or DirectionBasis.group_1_vs_group_0
 
-    # Every arm input comes from what its producing step recorded, and all of them
-    # resolve before anything is computed or written (#814).
+    # Every arm input comes from what its producing step recorded, and every input the
+    # verdicts and the ledger read is parsed before the stage writes anything, so a bad
+    # input leaves no partial directory to block a rerun (#814, #844).
     arm_runs = {"noel": noel_run, "jed": jed_run, "ilyas": ilyas_run}
     evidence_inputs = [
         part
         for option, arm, step, name in ARM_EVIDENCE_INPUTS
         for part in (option, str(recorded_output(arm_runs[arm], step, name)))
     ]
-    noel_calibration = recorded_output(noel_run, *CALIBRATION_SOURCES["noel"])
-    jed_calibration = recorded_output(jed_run, *CALIBRATION_SOURCES["jed"])
+    calibration = {
+        name: recorded_output(arm_runs[arm], step, name) for arm, step, name in CALIBRATION_SOURCES
+    }
+    table1_spec = STANDARD_ANALYSIS_SPECS["noel_table1_six_trait_sign_test_v1"]
+    verdict_noel = noel_calibration_verdict(calibration["calibration_status.json"], table1_spec)
+    verdict_jed_mismatch = jed_calibration_verdict(
+        calibration["composition_calibration_summary.json"],
+        calibration["composition_calibration_replicates.tsv"],
+        STANDARD_ANALYSIS_SPECS["jed_table1_paired_log_ratio_sign_test_v1"],
+        STANDARD_ANALYSIS_SPECS["jed_composition_arcsine_sqrt_ttest_calibration_v1"],
+    )
+    ledger_fraction = shared_basis_ledger(table1_spec, core_run, contrast_population)
 
     output.mkdir(parents=True, exist_ok=False)
     if arm1_pooled_stats is not None:
@@ -418,8 +487,7 @@ def execute_comparison_run(
     provenance = json.loads(
         (integrated_dir / "integrated_evidence_provenance.json").read_text(encoding="utf-8")
     )
-    table1_spec = STANDARD_ANALYSIS_SPECS["noel_table1_six_trait_sign_test_v1"]
-    ledger_fraction = shared_basis_ledger(table1_spec, provenance, contrast_population)
+    reconcile_ledger(ledger_fraction, provenance)
     feature_catalog_path = artifact_path(core_run, "feature_catalog")
     catalog_sha = file_sha256(feature_catalog_path)
     basis_count = build_analysis_basis(
@@ -445,12 +513,6 @@ def execute_comparison_run(
         denominator_policy="distinct_matched_signature_taxa_N_gt_0",
         background_inventory_id="taxa_trait_matrix_universe",
         weighting_policy="unweighted_hypergeometric_per_signature",
-    )
-    verdict_noel = noel_calibration_verdict(noel_calibration, table1_spec)
-    verdict_jed_mismatch = jed_calibration_verdict(
-        jed_calibration,
-        STANDARD_ANALYSIS_SPECS["jed_table1_paired_log_ratio_sign_test_v1"],
-        STANDARD_ANALYSIS_SPECS["jed_composition_arcsine_sqrt_ttest_calibration_v1"],
     )
 
     inventory_entries = _inventory_directory(output, integrated_dir)

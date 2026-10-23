@@ -241,14 +241,27 @@ just rerun-verify-comparison /absolute/path/reruns/comparison
 Each `integrated_evidence` input is the file its producing step recorded in that
 arm's `arm_run.json`: Ilyas's `enrichment` and `depletion`, Noel's
 `directional_screen`, `empirical_calibration`, `contrast_orientation` and
-`native_taxon_influence`, and Jed's `composition_sensitivity`. All of them resolve
-before the stage writes anything, and `--require-complete-sources` rejects a missing
-native table or status input. No step produces the #184 coverage status yet, so it
-is left out and recorded as not supplied. The `ComparisonRun` calibration verdicts
-are read from Noel's `calibration_status.json` and Jed's
-`composition_calibration_summary.json`, so a failed criterion or a short replicate
-budget is recorded as such, and its eligibility ledger lists the studies that
-integrated evidence kept after the zero-total pair exclusion (#814, #815).
+`native_taxon_influence`, and Jed's `composition_sensitivity`.
+`--require-complete-sources` rejects a native table or status input that is missing
+or unreadable, or a status that records other input bytes. No step produces the #184
+coverage status yet, so it is left out and recorded as not supplied.
+
+The `ComparisonRun` calibration verdicts and its eligibility ledger are built before
+the stage writes anything, so a bad input leaves no partial directory behind (#844).
+
+- **Noel's verdict.** It is read from `calibration_status.json`. That file covers
+  `fraction_sign_test` and `screened_fraction_sign_test`, and each overall status must
+  agree with its criteria.
+- **The screened procedure.** It is the protocol's negative control, standing in for
+  the selection of the six traits on this corpus, so the Table 1 verdict records its
+  failure as anti-conservative. While it does not fail, the criteria are too weak to
+  be evidence, so the Table 1 null control is never recorded as passed.
+- **Jed's budget.** It counts the replicates in `composition_calibration_replicates.tsv`
+  and requires them to agree with `composition_calibration_summary.json`.
+- **The ledger.** It lists the studies that the shared basis keeps after the zero-total
+  pair exclusion, computed from the core's count profiles. After integrated evidence
+  runs, its recorded exclusion must match the ledger, with studies before equal to
+  studies after plus studies lost (#814, #815, #844).
 
 ### Contrast populations and disease-oriented inputs
 

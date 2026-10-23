@@ -1,4 +1,4 @@
-"""The compare stage reads its inputs and verdicts from verified arm runs (#814, #815).
+"""The compare stage reads its inputs and verdicts from verified arm runs (#814, #815, #844).
 
 The end-to-end fixture runs the real arm steps whose outputs the stage consumes on a
 small synthetic corpus that carries every Table 1 and oxygen-guild term. Study bsdb:10
@@ -10,14 +10,21 @@ from __future__ import annotations
 import csv
 import json
 import random
+import shutil
 import sys
 from pathlib import Path
 
 import pytest
 
-from mtp.datamodel.workflow_pydantic import ArmRun, CalibrationOutcome, ComparisonRun
+from mtp.datamodel.workflow_pydantic import (
+    ArmRun,
+    CalibrationOutcome,
+    ComparisonRun,
+    EligibilityLedger,
+)
 from mtp.integrated_evidence import main as integrated_evidence_main
 from mtp.paths import REPO_ROOT
+from mtp.workflow import comparison
 from mtp.workflow.arms import ilyas, jed, noel
 from mtp.workflow.arms.__main__ import main as arms_main
 from mtp.workflow.arms.runtime import INPUT_NAMES, Planner, execute_arm, verify_arm
@@ -25,17 +32,20 @@ from mtp.workflow.arms.types import ArmContext, Command
 from mtp.workflow.comparison import (
     ARM_EVIDENCE_INPUTS,
     CALIBRATION_SOURCES,
+    execute_comparison_run,
     jed_calibration_verdict,
     noel_calibration_verdict,
+    reconcile_ledger,
     recorded_output,
     shared_basis_ledger,
 )
-from mtp.workflow.downstream_contracts import STANDARD_ANALYSIS_SPECS
+from mtp.workflow.downstream_contracts import STANDARD_ANALYSIS_SPECS, build_eligibility_ledger
 from mtp.workflow.models import ContrastPopulation
 from mtp.workflow.operations import OPERATIONS, validate_core_product
 from mtp.workflow.runtime import execute_workflow
+from mtp.workflow.verification import verify_core_run
 
-HELPER = REPO_ROOT / "scripts" / "adhoc" / "issue658_arm_test_command.py"
+INFLUENCE_FIXTURE = REPO_ROOT / "scripts" / "adhoc" / "issue844_influence_assessment_fixture.py"
 TABLE1_SPEC = STANDARD_ANALYSIS_SPECS["noel_table1_six_trait_sign_test_v1"]
 
 #: Every Table 1 and oxygen-guild term, with the predicate that attaches it to a taxon.
@@ -179,11 +189,21 @@ def _write_inputs(root: Path) -> dict[str, Path]:
 
 
 def _influence_stand_in(context: ArmContext) -> Command:
-    """The influence protocol is pinned to the production KG bytes; its file is not."""
-    source = REPO_ROOT / "methods" / "table1_native_influence_protocol.json"
+    """The influence protocol only runs on the production KG bytes, so an explicit
+    assessment bound to this core's inputs takes the native manifest's place."""
+    profiles, experiments = context.products["count_profiles"], context.products["experiments"]
     target = context.output / "table1_taxon_influence" / "native_manifest.json"
-    argv = (sys.executable, str(HELPER), "--input", str(source), "--output", str(target))
-    return Command("native_taxon_influence", argv, (source,), (target,))
+    argv = (
+        sys.executable,
+        str(INFLUENCE_FIXTURE),
+        "--profiles",
+        str(profiles),
+        "--experiments",
+        str(experiments),
+        "--output",
+        str(target),
+    )
+    return Command("native_taxon_influence", argv, (profiles, experiments), (target,))
 
 
 def _consumed_plan(arm: str) -> Planner:
@@ -251,8 +271,7 @@ def test_every_file_the_stage_reads_is_declared_by_its_arm_plan(tmp_path: Path) 
         for path in command.outputs
     }
     read = {(arm, step, name) for _, arm, step, name in ARM_EVIDENCE_INPUTS}
-    read |= {(arm, step, name) for arm, (step, name) in CALIBRATION_SOURCES.items()}
-    assert read <= declared
+    assert read | set(CALIBRATION_SOURCES) <= declared
 
 
 def test_compare_stage_runs_on_arm_runs_and_verifies(stage: dict[str, Path]) -> None:
@@ -315,13 +334,47 @@ def test_the_verdicts_are_the_arms_own_calibration_results(stage: dict[str, Path
     assert table1.replicate_budget_sufficient is False
     assert table1.null_control_passed is None
     assert table1.power_passed is None
-    assert "family_error=insufficient_budget" in table1.summary_message
+    assert "fraction_sign_test not_certified [family_error=insufficient_budget" in (
+        table1.summary_message
+    )
+    assert "screened_fraction_sign_test not_certified" in table1.summary_message
     composition = verdicts["verdict:jed_log_ratio_vs_transformed_t_calibration"]
     assert composition.outcome == CalibrationOutcome.different_estimator_uncalibrated
     assert composition.replicate_budget_sufficient is False
     assert composition.null_control_passed is None
     assert composition.power_passed is None
     assert "2 of 2 replicates completed" in composition.summary_message
+
+
+def test_the_influence_status_is_read_and_bound(stage: dict[str, Path]) -> None:
+    statuses = _provenance(stage)["assessment_status"]
+    assert isinstance(statuses, dict)
+    influence = statuses["taxon_influence_status"]
+    assert influence["verdicts_by_procedure"] == {"fraction_sign_test": "fixture_assessment #190"}
+    assert not influence["status_for_a_procedure_it_is_silent_about"].startswith("unreadable")
+
+
+def _evidence_argv(
+    stage: dict[str, Path], output: Path, statuses: dict[str, str | None]
+) -> list[str]:
+    """The stage's own integrated_evidence arguments with some status inputs replaced."""
+    runs = {arm: verify_arm(stage[arm]) for arm in ("noel", "jed", "ilyas")}
+    inputs: dict[str, str | None] = {
+        option: str(recorded_output(runs[arm], step, name))
+        for option, arm, step, name in ARM_EVIDENCE_INPUTS
+    }
+    inputs.update(statuses)
+    pooled = stage["comparison"] / "arm1_pooled_stats"
+    return [
+        "--core-run",
+        str(stage["core"]),
+        "--output-dir",
+        str(output),
+        "--arm1-pooled-stats",
+        str(pooled / "trait_profile_paired_contrast_trait_stats_pooled.tsv"),
+        *(part for option, path in inputs.items() if path is not None for part in (option, path)),
+        "--require-complete-sources",
+    ]
 
 
 @pytest.mark.parametrize(
@@ -337,104 +390,262 @@ def test_the_verdicts_are_the_arms_own_calibration_results(stage: dict[str, Path
 def test_complete_sources_reject_a_missing_status_input(
     stage: dict[str, Path], tmp_path: Path, option: str, supplied: bool
 ) -> None:
-    runs = {arm: verify_arm(stage[arm]) for arm in ("noel", "jed", "ilyas")}
-    inputs = {
-        name: str(recorded_output(runs[arm], step, filename))
-        for name, arm, step, filename in ARM_EVIDENCE_INPUTS
-    }
-    inputs.pop(option, None)
-    if supplied:
-        inputs[option] = str(tmp_path / "no_such_status.json")
-    pooled = stage["comparison"] / "arm1_pooled_stats"
-    argv = [
-        "--core-run",
-        str(stage["core"]),
-        "--output-dir",
-        str(tmp_path / "integrated_evidence"),
-        "--arm1-pooled-stats",
-        str(pooled / "trait_profile_paired_contrast_trait_stats_pooled.tsv"),
-        *(part for pair in inputs.items() for part in pair),
-        "--require-complete-sources",
-    ]
+    missing = str(tmp_path / "no_such_status.json") if supplied else None
+    argv = _evidence_argv(stage, tmp_path / "integrated_evidence", {option: missing})
     status = option.removeprefix("--").replace("-", "_")
     with pytest.raises(ValueError, match=f"missing source files: {status}"):
         integrated_evidence_main(argv)
 
 
-def _noel_status(path: Path, criteria: dict[str, str], overall: str = "pass") -> Path:
-    entry = {"overall": overall, "criteria": criteria}
-    path.write_text(json.dumps({"calibration_status": {"fraction_sign_test": entry}}))
+def test_complete_sources_reject_an_unreadable_status(
+    stage: dict[str, Path], tmp_path: Path
+) -> None:
+    # The influence file the fixture used before #844: valid JSON, but not a status.
+    wrong = tmp_path / "native_manifest.json"
+    shutil.copyfile(REPO_ROOT / "methods" / "table1_native_influence_protocol.json", wrong)
+    argv = _evidence_argv(stage, tmp_path / "out", {"--influence-status": str(wrong)})
+    with pytest.raises(ValueError, match=r"unbound statuses: taxon_influence_status \(unreadable"):
+        integrated_evidence_main(argv)
+
+
+def test_complete_sources_reject_a_status_from_other_input_bytes(
+    stage: dict[str, Path], tmp_path: Path
+) -> None:
+    source = recorded_output(
+        verify_arm(stage["noel"]), "empirical_calibration", "calibration_status.json"
+    )
+    content = json.loads(source.read_text(encoding="utf-8"))
+    content["inputs"]["profile_sha256"] = "0" * 64
+    other = tmp_path / "calibration_status.json"
+    other.write_text(json.dumps(content), encoding="utf-8")
+    output = tmp_path / "out"
+    argv = _evidence_argv(stage, output, {"--calibration-status": str(other)})
+    with pytest.raises(ValueError, match="unbound statuses: calibration_status"):
+        integrated_evidence_main(argv)
+    # Without the flag the same status is recorded rather than rejected.
+    integrated_evidence_main([item for item in argv if item != "--require-complete-sources"])
+    recorded = json.loads((output / "integrated_evidence_provenance.json").read_text())
+    binding = recorded["assessment_status"]["calibration_status"]["source"]["binding"]
+    assert binding == "mismatch_or_missing_identity"
+
+
+@pytest.mark.parametrize(
+    ("fault", "message"),
+    [("calibration", "absent_control"), ("ledger", "unreadable count profiles")],
+)
+def test_a_bad_verdict_or_ledger_input_writes_nothing(
+    stage: dict[str, Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    fault: str,
+    message: str,
+) -> None:
+    def unreadable(*_args: object, **_kwargs: object) -> object:
+        raise ValueError("unreadable count profiles")
+
+    if fault == "calibration":
+        monkeypatch.setattr(comparison, "NOEL_SELECTION_CONTROL", "absent_control")
+    else:
+        monkeypatch.setattr(comparison, "load_profiles", unreadable)
+    output = tmp_path / "comparison"
+    with pytest.raises(ValueError, match=message):
+        execute_comparison_run(stage["core"], stage["noel"], stage["jed"], stage["ilyas"], output)
+    assert not output.exists()
+
+
+def _noel_status(path: Path, table1: dict[str, str], control: dict[str, str]) -> Path:
+    """A calibration status whose overall statuses follow Noel's rule for these criteria."""
+    from mtp.calibration import calibration_status
+
+    rows = [
+        {"procedure": procedure, "criterion": criterion, "verdict": verdict}
+        for procedure, criteria in (
+            ("fraction_sign_test", table1),
+            ("screened_fraction_sign_test", control),
+        )
+        for criterion, verdict in criteria.items()
+    ]
+    path.write_text(json.dumps({"calibration_status": calibration_status(rows)}))
     return path
 
 
-def test_a_failed_noel_null_criterion_is_recorded_whatever_the_budget(tmp_path: Path) -> None:
-    status = _noel_status(
-        tmp_path / "calibration_status.json",
-        {
-            "per_test_level": "pass (sanity check)",
-            "family_error": "fail",
-            "power_reported": "insufficient_budget",
-        },
-        overall="fail",
-    )
+#: The production procedure's criteria as Noel's harness reports a clean run of it.
+CLEAN = {"per_test_level": "pass (sanity check)", "family_error": "pass", "power_reported": "pass"}
+#: The screened control failing, as the protocol expects and as on the Tier 1+2 run.
+CONTROL_FAILS = {
+    "per_test_level": "fail",
+    "family_error": "fail",
+    "selection_inflation_measured": "reported",
+}
+CONTROL_PASSES = {
+    "per_test_level": "pass",
+    "family_error": "pass",
+    "selection_inflation_measured": "reported",
+}
+
+
+def test_a_failed_selection_control_fails_the_table1_verdict(tmp_path: Path) -> None:
+    status = _noel_status(tmp_path / "calibration_status.json", CLEAN, CONTROL_FAILS)
+    verdict = noel_calibration_verdict(status, TABLE1_SPEC)
+    assert verdict.outcome == CalibrationOutcome.anti_conservative
+    assert verdict.null_control_passed is False
+    assert verdict.replicate_budget_sufficient is True
+    assert "fraction_sign_test pass [" in verdict.summary_message
+    assert "screened_fraction_sign_test fail [family_error=fail" in verdict.summary_message
+
+
+def test_a_passing_selection_control_leaves_null_control_unshown(tmp_path: Path) -> None:
+    # A criterion the negative control passes is too weak to be evidence of anything.
+    status = _noel_status(tmp_path / "calibration_status.json", CLEAN, CONTROL_PASSES)
+    verdict = noel_calibration_verdict(status, TABLE1_SPEC)
+    assert verdict.outcome == CalibrationOutcome.partially_calibrated
+    assert verdict.null_control_passed is None
+    assert verdict.power_passed is None
+
+
+def test_a_failed_noel_criterion_is_recorded_whatever_the_budget(tmp_path: Path) -> None:
+    table1 = {**CLEAN, "family_error": "fail", "power_reported": "insufficient_budget"}
+    control = {**CONTROL_PASSES, "family_error": "insufficient_budget"}
+    status = _noel_status(tmp_path / "calibration_status.json", table1, control)
     verdict = noel_calibration_verdict(status, TABLE1_SPEC)
     assert verdict.outcome == CalibrationOutcome.anti_conservative
     assert verdict.null_control_passed is False
     assert verdict.replicate_budget_sufficient is False
 
 
-def test_noel_power_is_reported_rather_than_passed(tmp_path: Path) -> None:
+def test_a_failed_power_criterion_is_not_partial_calibration(tmp_path: Path) -> None:
     status = _noel_status(
-        tmp_path / "calibration_status.json",
-        {"per_test_level": "pass (sanity check)", "family_error": "pass", "power_reported": "pass"},
+        tmp_path / "calibration_status.json", {**CLEAN, "power_reported": "fail"}, CONTROL_FAILS
     )
     verdict = noel_calibration_verdict(status, TABLE1_SPEC)
-    assert verdict.outcome == CalibrationOutcome.partially_calibrated
-    assert verdict.null_control_passed is True
-    assert verdict.power_passed is None
-    assert verdict.replicate_budget_sufficient is True
+    assert verdict.outcome == CalibrationOutcome.anti_conservative
+    assert verdict.power_passed is False
 
 
-def test_a_passing_sanity_check_alone_does_not_pass_null_control(tmp_path: Path) -> None:
+@pytest.mark.parametrize("unevaluated", ["insufficient_budget", "not_evaluated"])
+def test_a_not_certified_procedure_is_an_insufficient_budget(
+    tmp_path: Path, unevaluated: str
+) -> None:
     status = _noel_status(
-        tmp_path / "calibration_status.json",
-        {"per_test_level": "pass (sanity check)", "family_error": "not_evaluated"},
-        overall="not_certified",
+        tmp_path / "calibration_status.json", {**CLEAN, "family_error": unevaluated}, CONTROL_FAILS
     )
-    assert noel_calibration_verdict(status, TABLE1_SPEC).null_control_passed is None
+    verdict = noel_calibration_verdict(status, TABLE1_SPEC)
+    assert "fraction_sign_test not_certified" in verdict.summary_message
+    assert verdict.replicate_budget_sufficient is False
 
 
-def test_a_status_without_the_procedure_is_an_error(tmp_path: Path) -> None:
-    path = tmp_path / "calibration_status.json"
-    path.write_text(json.dumps({"calibration_status": {"guild_mcnemar": {"overall": "pass"}}}))
-    with pytest.raises(ValueError, match="fraction_sign_test"):
+@pytest.mark.parametrize(
+    ("procedure", "overall"),
+    [("fraction_sign_test", "pass"), ("screened_fraction_sign_test", "not_certified")],
+)
+def test_an_overall_status_its_criteria_contradict_is_an_error(
+    tmp_path: Path, procedure: str, overall: str
+) -> None:
+    path = _noel_status(
+        tmp_path / "calibration_status.json", {**CLEAN, "family_error": "fail"}, CONTROL_FAILS
+    )
+    content = json.loads(path.read_text())
+    content["calibration_status"][procedure]["overall"] = overall
+    path.write_text(json.dumps(content))
+    with pytest.raises(ValueError, match=f"records '{procedure}' as '{overall}'"):
         noel_calibration_verdict(path, TABLE1_SPEC)
 
 
-def test_a_full_composition_budget_is_recorded_as_sufficient(tmp_path: Path) -> None:
-    path = tmp_path / "composition_calibration_summary.json"
-    path.write_text(json.dumps({"replicates_requested": 100, "replicates_completed": 100}))
-    verdict = jed_calibration_verdict(
-        path,
+@pytest.mark.parametrize("procedure", ["fraction_sign_test", "screened_fraction_sign_test"])
+def test_a_status_without_either_procedure_is_an_error(tmp_path: Path, procedure: str) -> None:
+    path = _noel_status(tmp_path / "calibration_status.json", CLEAN, CONTROL_FAILS)
+    content = json.loads(path.read_text())
+    del content["calibration_status"][procedure]
+    path.write_text(json.dumps(content))
+    with pytest.raises(ValueError, match=procedure):
+        noel_calibration_verdict(path, TABLE1_SPEC)
+
+
+def _composition_calibration(
+    root: Path, requested: int, completed: int, recorded: int
+) -> tuple[Path, Path]:
+    summary = root / "composition_calibration_summary.json"
+    summary.write_text(
+        json.dumps({"replicates_requested": requested, "replicates_completed": completed})
+    )
+    replicates = root / "composition_calibration_replicates.tsv"
+    rows = [
+        f"182\tcomplete_null_study_flip\tstudy\t{replicate}\tBH\t0.05\t317\t0"
+        for replicate in range(recorded)
+    ]
+    header = "seed\tstream\tunit\treplicate\tcorrection\tthreshold\tn_tests\tsignificant"
+    replicates.write_text("\n".join([header, *rows]) + "\n")
+    return summary, replicates
+
+
+@pytest.mark.parametrize(("recorded", "sufficient"), [(100, True), (99, None)])
+def test_the_composition_budget_counts_the_recorded_replicates(
+    tmp_path: Path, recorded: int, sufficient: bool | None
+) -> None:
+    files = _composition_calibration(tmp_path, 100, 100, recorded)
+    specs = (
         STANDARD_ANALYSIS_SPECS["jed_table1_paired_log_ratio_sign_test_v1"],
         STANDARD_ANALYSIS_SPECS["jed_composition_arcsine_sqrt_ttest_calibration_v1"],
     )
-    assert verdict.replicate_budget_sufficient is True
+    if sufficient is None:
+        with pytest.raises(ValueError, match="records 99"):
+            jed_calibration_verdict(*files, *specs)
+        return
+    verdict = jed_calibration_verdict(*files, *specs)
+    assert verdict.replicate_budget_sufficient is sufficient
     assert verdict.null_control_passed is None
+
+
+def _ledger(included: list[str], excluded: int) -> EligibilityLedger:
+    return build_eligibility_ledger(
+        ledger_id=f"ledger:{TABLE1_SPEC.id}",
+        analysis_spec_id=TABLE1_SPEC.id,
+        contrast_population=ContrastPopulation.all_paired,
+        included_ids=included,
+        exclusion_counts={"zero_retained_total": excluded},
+    )
 
 
 @pytest.mark.parametrize(
     "exclusion",
     [
         None,
-        {"studies_after": 2, "studies_lost": 0},
-        {"study_ids_after": ["bsdb:1"], "studies_after": 2, "studies_lost": 0},
+        {"studies_before": 3, "studies_after": 2, "studies_lost": 1},
+        {"study_ids_after": ["bsdb:1", "bsdb:2"], "studies_after": 2, "studies_lost": 1},
+        {
+            "study_ids_after": ["bsdb:1", "bsdb:2"],
+            "studies_before": 4,
+            "studies_after": 2,
+            "studies_lost": 1,
+        },
+        {
+            "study_ids_after": ["bsdb:1", "bsdb:3"],
+            "studies_before": 3,
+            "studies_after": 2,
+            "studies_lost": 1,
+        },
     ],
 )
-def test_a_ledger_needs_the_listed_and_counted_units(exclusion: dict[str, object] | None) -> None:
+def test_a_ledger_must_reconcile_with_the_recorded_exclusion(
+    exclusion: dict[str, object] | None,
+) -> None:
+    ledger = _ledger(["bsdb:1", "bsdb:2"], 1)
     provenance = {} if exclusion is None else {"pair_exclusion": exclusion}
     with pytest.raises(ValueError, match="pair_exclusion"):
-        shared_basis_ledger(TABLE1_SPEC, provenance, ContrastPopulation.all_paired)
+        reconcile_ledger(ledger, provenance)
+    complete = {
+        "study_ids_after": ["bsdb:1", "bsdb:2"],
+        "studies_before": 3,
+        "studies_after": 2,
+        "studies_lost": 1,
+    }
+    reconcile_ledger(ledger, {"pair_exclusion": complete})
+
+
+def test_a_ledger_needs_a_study_level_spec(stage: dict[str, Path]) -> None:
+    pooled = STANDARD_ANALYSIS_SPECS["jed_pooled_contrast_fraction_diff_v1"]
+    with pytest.raises(ValueError, match="paired_experiment_contrast"):
+        shared_basis_ledger(pooled, verify_core_run(stage["core"]), ContrastPopulation.all_paired)
 
 
 def test_an_input_no_step_recorded_is_an_error(stage: dict[str, Path]) -> None:
