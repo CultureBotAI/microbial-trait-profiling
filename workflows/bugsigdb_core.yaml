@@ -12,6 +12,8 @@ parameters:
     default: all
   - name: ora_host_species
     default: Homo sapiens
+  - name: strain_rollup
+    default: phenotype
 products:
   - id: raw_dump
     kind: raw_csv
@@ -205,10 +207,12 @@ steps:
     operation: taxa_matrix
     inputs: [reported_taxa, kg_edges, kg_nodes]
     outputs: [taxa_matrix, feature_metadata]
+    parameters: [strain_rollup]
   - id: feature_catalog
     operation: feature_catalog
     inputs: [feature_metadata, taxa_matrix]
     outputs: [feature_catalog]
+    parameters: [strain_rollup]
   - id: count_profiles
     operation: count_profiles
     inputs: [studies, taxa_matrix, experiments, signatures, reported_taxa, feature_catalog]

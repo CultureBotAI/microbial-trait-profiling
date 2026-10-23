@@ -17,6 +17,7 @@ import uuid
 from collections.abc import Callable, Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Protocol
 
 from git import Repo
 from git.exc import GitError
@@ -39,7 +40,19 @@ from mtp.workflow.models import (
 )
 
 Operation = Callable[[dict[str, Path], dict[str, Path], dict[str, object]], None]
-Validator = Callable[[ProductDefinition, Path, Mapping[str, Path]], Sequence[ValidationResult]]
+
+
+class Validator(Protocol):
+    """Check one product against its related products and the run's resolved parameters."""
+
+    def __call__(
+        self,
+        product: ProductDefinition,
+        path: Path,
+        context: Mapping[str, Path],
+        *,
+        parameters: Mapping[str, str],
+    ) -> Sequence[ValidationResult]: ...
 
 
 class WorkflowExecutionError(ValueError):
@@ -196,41 +209,44 @@ def _require_full_source_background(definition: WorkflowDefinition) -> None:
     # Match native operation bindings, not step IDs or filenames. Alternative
     # graph layouts may preserve the contract, but selected taxa cannot replace
     # the full-source exports that define M, K and the retained feature universe.
-    contracts: tuple[tuple[str, str, set[str], set[str], set[str]], ...] = (
+    # A subset core recorded before #788 bound no strain_rollup to the matrix producer or
+    # the feature catalog; it is read as off, as the product validators read it.
+    scoped: tuple[set[str], ...] = ({"strain_rollup"}, set())
+    contracts: tuple[tuple[str, str, set[str], set[str], tuple[set[str], ...]], ...] = (
         (
             "source_identity",
             "identify_sources",
             external,
             {"source_identity"},
-            {"source_mode"},
+            ({"source_mode"},),
         ),
         (
             "source_studies",
             "ingest_source",
             {"raw_dump"},
             {"source_studies", "ingest_log"},
-            set(),
+            (set(),),
         ),
         (
             "source_reported_taxa",
             "export_source_tables",
             {"source_studies"},
             {f"source_{name}" for name in SOURCE_EXPORTS},
-            set(),
+            (set(),),
         ),
         (
             "taxa_matrix",
             "source_taxa_matrix",
             {"source_reported_taxa", "kg_edges", "kg_nodes"},
             {"taxa_matrix", "feature_metadata"},
-            set(),
+            scoped,
         ),
         (
             "feature_catalog",
             "feature_catalog",
             {"feature_metadata", "taxa_matrix"},
             {"feature_catalog"},
-            set(),
+            scoped,
         ),
     )
     for name, operation, inputs, outputs, parameters in contracts:
@@ -240,7 +256,7 @@ def _require_full_source_background(definition: WorkflowDefinition) -> None:
             or producer.operation != operation
             or set(producer.inputs) != inputs
             or set(producer.outputs) != outputs
-            or set(producer.parameters or []) != parameters
+            or set(producer.parameters or []) not in parameters
         ):
             raise ValueError(f"{diagnostic}: invalid producer bindings for {name}")
 
@@ -338,6 +354,7 @@ def _make_artifact(
     producer: str | None,
     validator: Validator | None,
     context: Mapping[str, Path],
+    parameters: Mapping[str, str],
 ) -> ArtifactInstance:
     digest, size, members = inventory(path, str(product.storage_kind))
     validations = [
@@ -348,7 +365,7 @@ def _make_artifact(
         )
     ]
     if validator:
-        extra = list(validator(product, path, context))
+        extra = list(validator(product, path, context, parameters=parameters))
         if not extra:
             raise ValueError(f"Validator returned no results for {product.id}")
         validations.extend(ValidationResult.model_validate(item) for item in extra)
@@ -498,6 +515,7 @@ def execute_workflow(
                 None,
                 validator,
                 context,
+                resolved,
             )
             artifact.requested_path = str(Path(input_paths[product_id]).absolute())
             run.artifacts = [*(run.artifacts or []), artifact]
@@ -542,6 +560,7 @@ def execute_workflow(
                     step_run.id,
                     validator,
                     current_context,
+                    resolved,
                 )
                 for key in step.outputs
             ]
