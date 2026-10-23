@@ -989,63 +989,190 @@ def plate_one_text(metrics: dict) -> tuple[str, str]:
     return takeaway, caveat
 
 
+def _present_coverage_ranks(metrics: Mapping[str, Any]) -> dict[str, Mapping[str, str]]:
+    """Return only rank rows present in taxa_coverage_by_rank.tsv with >0 taxa (#924)."""
+    raw = metrics.get("taxa_coverage_by_rank") or {}
+    return {rank: row for rank, row in raw.items() if int(row.get("total_taxa", "0")) > 0}
+
+
+def _oxford_listing(items: list[str]) -> str:
+    """Format items as 'A', 'A and B', or 'A, B, and C'."""
+    if not items:
+        return ""
+    if len(items) == 1:
+        return items[0]
+    if len(items) == 2:
+        return f"{items[0]} and {items[1]}"
+    return f"{', '.join(items[:-1])}, and {items[-1]}"
+
+
+def _extract_alias_target(row: Mapping[str, str]) -> str | None:
+    """Extract canonical NCBITaxon target from a remediation string if present (#924)."""
+    rem = row.get("suggested_remediation", "")
+    if "NCBITaxon:" not in rem:
+        return None
+    target = rem.split("traits:")[-1].split("(")[0].strip()
+    return target or None
+
+
 def methods_plate_one_caveat(metrics: dict) -> str:
-    """Methods Plate I's caveat, read from taxa_coverage_by_rank.tsv (#864)."""
-    ranks = metrics["taxa_coverage_by_rank"]
-    sp = ranks["species"]
-    gen = ranks["genus"]
-    fam = ranks.get("family", gen)
-    gen_occ = float(gen["trait_bearing_occurrences_pct"])
-    fam_occ = float(fam["trait_bearing_occurrences_pct"])
-    gen_fam = (
-        f"{gen_occ:.1f}%"
-        if f"{gen_occ:.1f}" == f"{fam_occ:.1f}"
-        else f"{gen_occ:.1f}%/{fam_occ:.1f}%"
-    )
-    sp_occ = float(sp["trait_bearing_occurrences_pct"])
-    sp_unique = float(sp["trait_bearing_pct"])
+    """Methods Plate I's caveat, read from taxa_coverage_by_rank.tsv (#864, #924)."""
+    ranks = _present_coverage_ranks(metrics)
+    sp = ranks.get("species")
+    gen = ranks.get("genus")
+    fam = ranks.get("family")
+
+    higher_part: str | None = None
+    if gen is not None and fam is not None:
+        gen_occ = float(gen["trait_bearing_occurrences_pct"])
+        fam_occ = float(fam["trait_bearing_occurrences_pct"])
+        gen_fam = (
+            f"{gen_occ:.1f}%"
+            if f"{gen_occ:.1f}" == f"{fam_occ:.1f}"
+            else f"{gen_occ:.1f}%/{fam_occ:.1f}%"
+        )
+        higher_part = f"Genus/Family {gen_fam}"
+    elif gen is not None:
+        higher_part = f"Genus {float(gen['trait_bearing_occurrences_pct']):.1f}%"
+    elif fam is not None:
+        higher_part = f"Family {float(fam['trait_bearing_occurrences_pct']):.1f}%"
+
+    sp_part: str | None = None
+    if sp is not None:
+        sp_occ = float(sp["trait_bearing_occurrences_pct"])
+        sp_unique = float(sp["trait_bearing_pct"])
+        sp_part = f"Species {sp_occ:.1f}% occurrences / {sp_unique:.1f}% unique species"
+
+    if higher_part is not None and sp_part is not None:
+        summary = f"the rank-stratified coverage cliff ({higher_part} vs {sp_part})"
+    elif sp_part is not None:
+        summary = f"rank-stratified coverage ({sp_part}; Genus/Family absent from rank table)"
+    elif higher_part is not None:
+        summary = f"rank-stratified coverage ({higher_part}; Species absent from rank table)"
+    elif ranks:
+        other_parts = [
+            f"{r.get('display_rank', rk.capitalize())} "
+            f"{float(r['trait_bearing_occurrences_pct']):.1f}% occurrences"
+            for rk, r in ranks.items()
+        ]
+        summary = (
+            f"rank-stratified coverage ({', '.join(other_parts)}; "
+            "Species/Genus/Family absent from rank table)"
+        )
+    else:
+        summary = "rank-stratified coverage (no non-empty rank rows in taxa_coverage_by_rank.tsv)"
+
     return (
-        f"Highlights the rank-stratified coverage cliff (Genus/Family {gen_fam} vs "
-        f"Species {sp_occ:.1f}% occurrences / {sp_unique:.1f}% unique species) and defines the "
+        f"Highlights {summary} and defines the "
         "OR-rule oxygen/Gram guilds and 6 Table 1 focal traits."
     )
 
 
 def plate_six_text(metrics: dict) -> tuple[str, str]:
-    """Tufte Plate VI's takeaway and caveat, read from the coverage TSVs (#864)."""
-    ranks = metrics["taxa_coverage_by_rank"]
-    gen_occ = float(ranks["genus"]["trait_bearing_occurrences_pct"])
-    fam_occ = float(ranks["family"]["trait_bearing_occurrences_pct"])
-    sp = ranks["species"]
-    sp_zero_pct = float(sp["zero_trait_pct"])
-    sp_zero_taxa = int(sp["zero_trait_taxa"])
-    sp_total_taxa = int(sp["total_taxa"])
-    sp_zero_occ_pct = float(sp["zero_trait_occurrences_pct"])
-    sp_zero_occ = int(sp["zero_trait_occurrences"])
-    sp_total_occ = int(sp["total_occurrences"])
-    by_taxon = {r["taxon_id"]: r for r in metrics["zero_trait_rows"]}
-    osc = by_taxon["NCBITaxon:541000"]
-    rothia = by_taxon["NCBITaxon:508215"]
-    osc_occ = int(osc["signature_occurrences"])
-    osc_st = int(osc["study_count"])
-    osc_target = osc["suggested_remediation"].split("traits:")[-1].split("(")[0].strip()
-    rothia_occ = int(rothia["signature_occurrences"])
-    rothia_st = int(rothia["study_count"])
-    rothia_target = rothia["suggested_remediation"].split("traits:")[-1].split("(")[0].strip()
-    esh_occ = int(by_taxon["NCBITaxon:1940338"]["signature_occurrences"])
-    takeaway = (
-        f"Genus ({gen_occ:.1f}%) and Family ({fam_occ:.1f}%) occurrences in BugSigDB have high "
-        f"KG-Microbe coverage, whereas {sp_zero_pct:.1f}% of distinct species "
-        f"({sp_zero_taxa:,}/{sp_total_taxa:,}) and {sp_zero_occ_pct:.1f}% of species "
-        f"occurrences ({sp_zero_occ:,}/{sp_total_occ:,}) have zero traits."
+    """Tufte Plate VI's takeaway and caveat, read from the coverage TSVs (#864, #924)."""
+    ranks = _present_coverage_ranks(metrics)
+    higher_clauses = [
+        f"{label} ({float(ranks[rk]['trait_bearing_occurrences_pct']):.1f}%)"
+        for rk, label in (("genus", "Genus"), ("family", "Family"))
+        if rk in ranks
+    ]
+    sp = ranks.get("species")
+    sp_clause: str | None = None
+    if sp is not None:
+        sp_zero_pct = float(sp["zero_trait_pct"])
+        sp_zero_taxa = int(sp["zero_trait_taxa"])
+        sp_total_taxa = int(sp["total_taxa"])
+        sp_zero_occ_pct = float(sp["zero_trait_occurrences_pct"])
+        sp_zero_occ = int(sp["zero_trait_occurrences"])
+        sp_total_occ = int(sp["total_occurrences"])
+        sp_clause = (
+            f"{sp_zero_pct:.1f}% of distinct species ({sp_zero_taxa:,}/{sp_total_taxa:,}) and "
+            f"{sp_zero_occ_pct:.1f}% of species occurrences ({sp_zero_occ:,}/{sp_total_occ:,}) "
+            "have zero traits"
+        )
+
+    if higher_clauses and sp_clause is not None:
+        takeaway = (
+            f"{listing(higher_clauses)} occurrences in BugSigDB have high "
+            f"KG-Microbe coverage, whereas {sp_clause}."
+        )
+    elif sp_clause is not None:
+        takeaway = (
+            f"In BugSigDB species-level signatures, {sp_clause} "
+            "(Genus and Family ranks absent from rank table)."
+        )
+    elif higher_clauses:
+        takeaway = (
+            f"{listing(higher_clauses)} occurrences in BugSigDB have high KG-Microbe coverage "
+            "(Species rank absent from rank table)."
+        )
+    elif ranks:
+        other_clauses = [
+            f"{r.get('display_rank', rk.capitalize())} "
+            f"({float(r['trait_bearing_occurrences_pct']):.1f}%)"
+            for rk, r in ranks.items()
+        ]
+        takeaway = (
+            f"{listing(other_clauses)} occurrences in BugSigDB have recorded KG-Microbe coverage "
+            "(Species, Genus, and Family ranks absent from rank table)."
+        )
+    else:
+        takeaway = "No non-empty rank rows are present in taxa_coverage_by_rank.tsv."
+
+    zero_rows = [
+        r
+        for r in (metrics.get("zero_trait_rows") or [])
+        if int(r.get("signature_occurrences", "0")) > 0
+    ]
+    by_taxon = {r["taxon_id"]: r for r in zero_rows}
+    alias_items: list[str] = []
+    for taxon_id, fallback_name in (
+        ("NCBITaxon:541000", "Oscillospiraceae"),
+        ("NCBITaxon:508215", "Rothia"),
+    ):
+        row = by_taxon.get(taxon_id)
+        if row is None:
+            continue
+        name = row.get("taxon_name") or fallback_name
+        occ = int(row["signature_occurrences"])
+        st = int(row["study_count"])
+        target = _extract_alias_target(row)
+        arrow_part = f" → {target}" if target else ""
+        alias_items.append(f"{name} ({taxon_id}{arrow_part}, {occ} occs across {st} studies)")
+
+    esh_row = by_taxon.get("NCBITaxon:1940338")
+    esh_item = (
+        f"Escherichia/Shigella slash bins ({int(esh_row['signature_occurrences'])} occs)"
+        if esh_row is not None
+        else None
     )
-    caveat = (
-        f"Auditing the top {metrics['zero_trait_taxa']} zero-trait taxa "
-        f"({metrics['zero_trait_occurrences']:,} occurrences) identifies TaxID alias candidates "
-        f"for review: Oscillospiraceae (NCBITaxon:541000 → {osc_target}, {osc_occ} occs across "
-        f"{osc_st} studies), Rothia (NCBITaxon:508215 → {rothia_target}, {rothia_occ} occs "
-        f"across {rothia_st} studies), and Escherichia/Shigella slash bins ({esh_occ} occs)."
+
+    all_items = [*alias_items, *([esh_item] if esh_item is not None else [])]
+    zero_taxa_count = int(metrics.get("zero_trait_taxa", len(zero_rows)))
+    zero_occ_count = int(
+        metrics.get(
+            "zero_trait_occurrences",
+            sum(int(r["signature_occurrences"]) for r in zero_rows),
+        )
     )
+    if alias_items:
+        caveat = (
+            f"Auditing the top {zero_taxa_count} zero-trait taxa "
+            f"({zero_occ_count:,} occurrences) identifies TaxID alias candidates "
+            f"for review: {_oxford_listing(all_items)}."
+        )
+    elif esh_item is not None:
+        caveat = (
+            f"Auditing the top {zero_taxa_count} zero-trait taxa "
+            f"({zero_occ_count:,} occurrences) identifies {esh_item} "
+            "(no TaxID alias candidates present in top zero-trait table)."
+        )
+    else:
+        caveat = (
+            f"Auditing the top {zero_taxa_count} zero-trait taxa "
+            f"({zero_occ_count:,} occurrences) finds no TaxID alias or "
+            "Escherichia/Shigella slash-bin candidates in top_zero_trait_bugsigdb_taxa.tsv."
+        )
     return takeaway, caveat
 
 

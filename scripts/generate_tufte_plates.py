@@ -842,8 +842,13 @@ def build_methods_plate1(repo: Path, out_dir: Path) -> Path:
             INC_COLOR if rank == "species" else TEAL_ACCENT,
         )
         for rank in ("phylum", "order", "genus", "family", "species")
+        if rank in coverage and int(coverage[rank]["total_taxa"]) > 0
     ]
-    species_gap = float(coverage["species"]["zero_trait_occurrences_pct"])
+    species_gap = (
+        float(coverage["species"]["zero_trait_occurrences_pct"])
+        if "species" in coverage and int(coverage["species"]["total_taxa"]) > 0
+        else 0.0
+    )
     for idx_b, (rname, rpct, rlbl, rcol) in enumerate(rank_bars):
         by = 76.5 - idx_b * 5.2
         ax.text(71.8, by, rname, fontsize=8.2, fontweight="bold", color=INK, ha="left", va="center")
@@ -3269,23 +3274,23 @@ def plate6_remediation_label(row: Mapping[str, str]) -> str:
         return "Multi-taxon LCA resolution"
     if (
         cat == "Uncultivated / Metagenomic MAG"
+        or "Candidatus" in cat
         or "higher-rank" in rem.lower()
-        or "do not establish leaf-taxon traits" in rem
+        or "do not establish" in rem
+        or "direct trait evidence" in rem.lower()
     ):
         return "Direct trait evidence needed"
     if "FungiTraits" in rem:
         return "Fungal eukaryote (non-bacterial)"
-    if "Candidatus" in cat:
-        return "MAG metabolic model inference"
     return "Curate in BacDive / KG-Microbe"
 
 
-def _alias_target_id(row: Mapping[str, str] | None, fallback: str) -> str:
-    if not row:
-        return fallback
+def _alias_target_id(row: Mapping[str, str] | None) -> str | None:
+    if not row or int(row.get("signature_occurrences", "0")) <= 0:
+        return None
     rem = row.get("suggested_remediation", "")
     if "NCBITaxon:" not in rem:
-        return fallback
+        return None
     return rem.split("traits:")[-1].split("(")[0].strip().removeprefix("NCBITaxon:")
 
 
@@ -3295,57 +3300,133 @@ def plate6_text(
 ) -> dict[str, str]:
     """Plate VI subtitle, panel titles, and footer derived from the coverage TSVs (#864)."""
     by_rank = {r["taxonomic_rank"]: r for r in rank_rows if int(r["total_taxa"]) > 0}
-    sp = by_rank["species"]
-    gen = by_rank.get("genus", sp)
-    fam = by_rank.get("family", gen)
-    sp_unique = float(sp["trait_bearing_pct"])
-    sp_zero = float(sp["zero_trait_pct"])
-    sp_occ = float(sp["trait_bearing_occurrences_pct"])
-    sp_zero_occ = float(sp["zero_trait_occurrences_pct"])
-    gen_unique = float(gen["trait_bearing_pct"])
-    gen_occ = float(gen["trait_bearing_occurrences_pct"])
-    fam_occ = float(fam["trait_bearing_occurrences_pct"])
-    gen_fam_occ = (
-        f"{gen_occ:.1f}%"
-        if f"{gen_occ:.1f}" == f"{fam_occ:.1f}"
-        else f"{gen_occ:.1f}%/{fam_occ:.1f}%"
-    )
-    by_taxon = {r["taxon_id"]: r for r in zero_rows}
-    osc = by_taxon.get("NCBITaxon:541000")
-    rothia = by_taxon.get("NCBITaxon:508215")
-    osc_studies = int(osc["study_count"]) if osc else 0
-    osc_occ = int(osc["signature_occurrences"]) if osc else 0
-    osc_target = _alias_target_id(osc, "216572")
-    rothia_studies = int(rothia["study_count"]) if rothia else 0
-    rothia_occ = int(rothia["signature_occurrences"]) if rothia else 0
-    rothia_target = _alias_target_id(rothia, "32207")
-    return {
-        "subtitle": (
-            f"Why Genus/Family signatures achieve {gen_fam_occ} trait coverage while "
+    sp = by_rank.get("species")
+    gen = by_rank.get("genus")
+    fam = by_rank.get("family")
+
+    if gen and fam:
+        gen_occ = float(gen["trait_bearing_occurrences_pct"])
+        fam_occ = float(fam["trait_bearing_occurrences_pct"])
+        gen_fam_occ = (
+            f"{gen_occ:.1f}%"
+            if f"{gen_occ:.1f}" == f"{fam_occ:.1f}"
+            else f"{gen_occ:.1f}%/{fam_occ:.1f}%"
+        )
+        higher_clause = f"Why Genus/Family signatures achieve {gen_fam_occ} trait coverage"
+    elif gen:
+        higher_clause = (
+            f"Why Genus signatures achieve {float(gen['trait_bearing_occurrences_pct']):.1f}% "
+            "trait coverage (Family absent)"
+        )
+    elif fam:
+        higher_clause = (
+            f"Why Family signatures achieve {float(fam['trait_bearing_occurrences_pct']):.1f}% "
+            "trait coverage (Genus absent)"
+        )
+    else:
+        higher_clause = "Genus/Family ranks absent from table"
+
+    if sp:
+        sp_unique = float(sp["trait_bearing_pct"])
+        sp_zero = float(sp["zero_trait_pct"])
+        sp_occ = float(sp["trait_bearing_occurrences_pct"])
+        sp_zero_occ = float(sp["zero_trait_occurrences_pct"])
+        sp_clause = (
             f"{sp_zero:.1f}% of distinct Species ({sp_zero_occ:.1f}% of species occurrences) "
-            "have zero traits in KG-Microbe — and how TaxID alias review and LCA resolution "
-            "address them."
-        ),
-        "panel_a_title": (
-            "A. The Species-Level Coverage Cliff\n"
+            "have zero traits in KG-Microbe"
+        )
+    else:
+        sp_unique = 0.0
+        sp_occ = 0.0
+        sp_clause = "Species rank absent from table"
+
+    if (gen or fam) and sp:
+        subtitle = (
+            f"{higher_clause} while {sp_clause} — and how TaxID alias review and LCA "
+            "resolution address them."
+        )
+    else:
+        subtitle = (
+            f"{higher_clause}; {sp_clause} — and how TaxID alias review and LCA "
+            "resolution address zero-trait taxa."
+        )
+
+    if sp and gen:
+        gen_unique = float(gen["trait_bearing_pct"])
+        gen_occ = float(gen["trait_bearing_occurrences_pct"])
+        panel_a_sub = (
             f"Species: {sp_unique:.1f}% unique / {sp_occ:.1f}% occurrences vs Genus: "
             f"{gen_unique:.1f}% / {gen_occ:.1f}%"
-        ),
+        )
+    elif sp:
+        panel_a_sub = f"Species: {sp_unique:.1f}% unique / {sp_occ:.1f}% occurrences (Genus absent)"
+    elif gen:
+        gen_unique = float(gen["trait_bearing_pct"])
+        gen_occ = float(gen["trait_bearing_occurrences_pct"])
+        panel_a_sub = (
+            f"Genus: {gen_unique:.1f}% unique / {gen_occ:.1f}% occurrences (Species absent)"
+        )
+    else:
+        present = [
+            f"{r['display_rank']}: {float(r['trait_bearing_pct']):.1f}% unique / "
+            f"{float(r['trait_bearing_occurrences_pct']):.1f}% occurrences"
+            for r in by_rank.values()
+        ]
+        panel_a_sub = " · ".join(present) if present else "No rank rows with taxa > 0"
+
+    by_taxon = {r["taxon_id"]: r for r in zero_rows if int(r.get("signature_occurrences", "0")) > 0}
+    osc = by_taxon.get("NCBITaxon:541000")
+    rothia = by_taxon.get("NCBITaxon:508215")
+    osc_target = _alias_target_id(osc)
+    rothia_target = _alias_target_id(rothia)
+
+    panel_c_aliases: list[str] = []
+    footer_aliases: list[str] = []
+    if osc and osc_target:
+        osc_studies = int(osc["study_count"])
+        osc_occ = int(osc["signature_occurrences"])
+        panel_c_aliases.append(f"Oscillospiraceae ({osc_studies} st.)")
+        footer_aliases.append(
+            f"NCBITaxon:541000 → {osc_target} ({osc_studies} studies, {osc_occ} occ.)"
+        )
+    if rothia and rothia_target:
+        rothia_studies = int(rothia["study_count"])
+        rothia_occ = int(rothia["signature_occurrences"])
+        panel_c_aliases.append(f"Rothia ({rothia_studies} st.)")
+        footer_aliases.append(
+            f"NCBITaxon:508215 → {rothia_target} ({rothia_studies} studies, {rothia_occ} occ.)"
+        )
+
+    if len(panel_c_aliases) == 2:
+        panel_c_sub = (
+            f"Highlighting {panel_c_aliases[0]} & {panel_c_aliases[1]} TaxID alias candidates"
+        )
+    elif len(panel_c_aliases) == 1:
+        panel_c_sub = f"Highlighting {panel_c_aliases[0]} TaxID alias candidate"
+    else:
+        panel_c_sub = "No focal TaxID alias candidates present in table"
+
+    if footer_aliases:
+        footer_alias_clause = (
+            "Review possible alias before transferring traits: "
+            + " and ".join(footer_aliases)
+            + "."
+        )
+    else:
+        footer_alias_clause = "No focal TaxID alias candidates present in table."
+
+    return {
+        "subtitle": subtitle,
+        "panel_a_title": f"A. The Species-Level Coverage Cliff\n{panel_a_sub}",
         "panel_b_title": (
             "B. Root-Cause Taxonomy of Top 100 Zero-Trait BugSigDB Taxa\n"
             "Actionable fixes: TaxID alias review, slash-bin LCA & curation"
         ),
-        "panel_c_title": (
-            "C. Top 18 Zero-Trait BugSigDB Taxa & Remediation Path\n"
-            f"Highlighting Oscillospiraceae ({osc_studies} st.) & Rothia ({rothia_studies} st.) "
-            "TaxID alias candidates"
-        ),
+        "panel_c_title": f"C. Top 18 Zero-Trait BugSigDB Taxa & Remediation Path\n{panel_c_sub}",
         "footer": (
             f"{RERUN_SOURCE} · taxa_coverage_by_rank.tsv, "
             "top_zero_trait_bugsigdb_taxa.tsv (create_taxa_coverage_histogram.py). "
-            f"Review possible alias before transferring traits: NCBITaxon:541000 → {osc_target} "
-            f"({osc_studies} studies, {osc_occ} occ.) and NCBITaxon:508215 → {rothia_target} "
-            f"({rothia_studies} studies, {rothia_occ} occ.)."
+            f"{footer_alias_clause}"
         ),
     }
 
@@ -3404,7 +3485,7 @@ def build_plate6(repo: Path, out_dir: Path) -> Path:
         if r["taxonomic_rank"] not in {"superkingdom", "other"} and int(r["total_taxa"]) > 0
     ]
     y_rk = np.arange(len(ranks_keep))[::-1]
-    ax_rank.set_ylim(-0.5, len(ranks_keep) - 0.3)
+    ax_rank.set_ylim(-0.5, max(len(ranks_keep) - 0.3, 0.5))
     ax_rank.set_xlim(38, 132)
     ax_rank.set_xticks([40, 60, 80, 100])
 
@@ -3501,8 +3582,8 @@ def build_plate6(repo: Path, out_dir: Path) -> Path:
         "Candidatus Lineage": "Candidatus Lineage",
     }
 
-    ax_cat.set_ylim(-0.5, len(sorted_cats) - 0.3)
-    max_cat_occ = max(v for _, v in sorted_cats)
+    ax_cat.set_ylim(-0.5, max(len(sorted_cats) - 0.3, 0.5))
+    max_cat_occ = max((v for _, v in sorted_cats), default=1)
     ax_cat.set_xlim(0, max_cat_occ * 1.45)
 
     for idx_c, (cat_name, tot_occ) in enumerate(sorted_cats):
@@ -3540,7 +3621,7 @@ def build_plate6(repo: Path, out_dir: Path) -> Path:
     # --- Panel C: Top 18 Zero-Trait Taxa Diagnostic Bars (wider xlim so zero clipping) ---
     top18 = zero_rows[:18]
     y_t = np.arange(len(top18))[::-1]
-    ax_top.set_ylim(-0.6, len(top18) - 0.2)
+    ax_top.set_ylim(-0.6, max(len(top18) - 0.2, 0.5))
     ax_top.set_xlim(0, 385)
     ax_top.set_xticks([0, 50, 100, 150, 200])
 

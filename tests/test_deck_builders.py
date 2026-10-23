@@ -2116,7 +2116,11 @@ def test_plate_six_text_and_remediation_labels_read_the_coverage_tsvs(
     assert plates.plate6_remediation_label(legacy_alias) == "Review TaxID alias → NCBITaxon:216572"
     for cat, rem, expected in (
         ("Non-Bacterial / Fungal Eukaryote", "FungiTraits", "Fungal eukaryote (non-bacterial)"),
-        ("Candidatus Lineage", "metabolic model", "MAG metabolic model inference"),
+        (
+            "Candidatus Lineage",
+            "Seek direct trait evidence; neighboring taxa do not establish this lineage's traits",
+            "Direct trait evidence needed",
+        ),
         ("Rare / Novel Isolate (Lacks KG Phenotype)", "Curate", "Curate in BacDive / KG-Microbe"),
     ):
         assert (
@@ -2173,3 +2177,164 @@ def test_plate_six_text_and_remediation_labels_read_the_coverage_tsvs(
             assert t.get_window_extent().x1 <= fig.axes[2].get_window_extent().x1
     finally:
         plates.plt.close(fig)
+
+
+def test_plate_six_and_deck_handle_sparse_ranks_and_absent_alias_candidates(
+    tmp_path: Path,
+) -> None:
+    """Sparse rank tables and absent alias candidates do not crash or fabricate claims (#924)."""
+    species_only_ranks = [
+        {
+            "taxonomic_rank": "species",
+            "display_rank": "Species",
+            "total_taxa": "4",
+            "trait_bearing_taxa": "2",
+            "zero_trait_taxa": "2",
+            "trait_bearing_pct": "50.0",
+            "zero_trait_pct": "50.0",
+            "total_occurrences": "10",
+            "trait_bearing_occurrences": "6",
+            "zero_trait_occurrences": "4",
+            "trait_bearing_occurrences_pct": "60.0",
+            "zero_trait_occurrences_pct": "40.0",
+            "mean_traits_per_taxon": "1.0",
+            "median_traits_per_taxon": "1",
+        }
+    ]
+    non_alias_zero = [
+        {
+            "rank_order": "1",
+            "taxon_id": "NCBITaxon:999001",
+            "taxon_name": "Candidatus test lineage",
+            "taxonomic_rank": "species",
+            "signature_occurrences": "4",
+            "study_count": "2",
+            "diagnosis_category": "Candidatus Lineage",
+            "suggested_remediation": (
+                "Seek direct trait evidence; neighboring taxa do not establish this "
+                "lineage's traits"
+            ),
+        }
+    ]
+
+    plate_text = plates.plate6_text(species_only_ranks, non_alias_zero)
+    assert "Genus/Family 60.0%" not in plate_text["subtitle"]
+    assert "Genus/Family ranks absent from table" in plate_text["subtitle"]
+    assert "50.0% of distinct Species (40.0% of species occurrences)" in plate_text["subtitle"]
+    assert "Genus: 50.0% / 60.0%" not in plate_text["panel_a_title"]
+    assert plate_text["panel_a_title"] == (
+        "A. The Species-Level Coverage Cliff\n"
+        "Species: 50.0% unique / 60.0% occurrences (Genus absent)"
+    )
+    assert "Oscillospiraceae (0 st.)" not in plate_text["panel_c_title"]
+    assert "Rothia (0 st.)" not in plate_text["panel_c_title"]
+    assert "No focal TaxID alias candidates present in table" in plate_text["panel_c_title"]
+    assert "216572" not in plate_text["footer"]
+    assert "32207" not in plate_text["footer"]
+    assert "NCBITaxon:541000" not in plate_text["footer"]
+    assert "NCBITaxon:508215" not in plate_text["footer"]
+
+    sparse_metrics = {
+        "taxa_coverage_by_rank": {r["taxonomic_rank"]: r for r in species_only_ranks},
+        "zero_trait_rows": non_alias_zero,
+        "zero_trait_taxa": len(non_alias_zero),
+        "zero_trait_occurrences": 4,
+    }
+    caveat_one = deck.methods_plate_one_caveat(sparse_metrics)
+    assert "Species 60.0% occurrences / 50.0% unique species" in caveat_one
+    assert "Genus/Family absent" in caveat_one
+    assert "Genus/Family 60.0%" not in caveat_one
+
+    takeaway_six, caveat_six = deck.plate_six_text(sparse_metrics)
+    assert "50.0% of distinct species (2/4)" in takeaway_six
+    assert "40.0% of species occurrences (4/10)" in takeaway_six
+    assert "Genus and Family ranks absent from rank table" in takeaway_six
+    assert "finds no TaxID alias or Escherichia/Shigella slash-bin candidates" in caveat_six
+    assert "216572" not in caveat_six
+    assert "32207" not in caveat_six
+
+    # Full ranks with each candidate row omitted independently:
+    full_rank_map = {r["taxonomic_rank"]: r for r in _coverage_rank_rows()}
+    full_zero = _zero_trait_rows()
+    for omitted_id, omitted_name in (
+        ("NCBITaxon:541000", "Oscillospiraceae"),
+        ("NCBITaxon:508215", "Rothia"),
+        ("NCBITaxon:1940338", "Escherichia/Shigella"),
+    ):
+        subset_zero = [r for r in full_zero if r["taxon_id"] != omitted_id]
+        sub_metrics = {
+            "taxa_coverage_by_rank": full_rank_map,
+            "zero_trait_rows": subset_zero,
+            "zero_trait_taxa": len(subset_zero),
+            "zero_trait_occurrences": sum(int(r["signature_occurrences"]) for r in subset_zero),
+        }
+        _, sub_caveat = deck.plate_six_text(sub_metrics)
+        assert omitted_name not in sub_caveat
+        assert omitted_id not in sub_caveat
+        sub_plate = plates.plate6_text(_coverage_rank_rows(), subset_zero)
+        if omitted_id in {"NCBITaxon:541000", "NCBITaxon:508215"}:
+            assert omitted_name not in sub_plate["panel_c_title"]
+            assert omitted_id not in sub_plate["footer"]
+
+    # Genus-only and empty rank tables also succeed without borrowing ranks:
+    genus_only_row = _coverage_rank_rows()[1]
+    genus_only_metrics = {
+        "taxa_coverage_by_rank": {"genus": genus_only_row},
+        "zero_trait_rows": [],
+        "zero_trait_taxa": 0,
+        "zero_trait_occurrences": 0,
+    }
+    assert "Genus 96.4%; Species absent from rank table" in deck.methods_plate_one_caveat(
+        genus_only_metrics
+    )
+    gen_takeaway, gen_caveat = deck.plate_six_text(genus_only_metrics)
+    assert "Genus (96.4%) occurrences" in gen_takeaway
+    assert "Species rank absent from rank table" in gen_takeaway
+    assert "finds no TaxID alias" in gen_caveat
+    gen_plate = plates.plate6_text([genus_only_row], [])
+    assert "Family absent" in gen_plate["subtitle"]
+    assert "Species rank absent from table" in gen_plate["subtitle"]
+    assert "(Species absent)" in gen_plate["panel_a_title"]
+
+    # Render Plate 6 with sparse species-only table and 1 non-alias zero-trait taxon:
+    cov_dir = tmp_path / "trait-visualization" / "trait-profile-investigation" / "taxa-coverage"
+    cov_dir.mkdir(parents=True)
+    rank_cols = list(species_only_ranks[0])
+    (cov_dir / "taxa_coverage_by_rank.tsv").write_text(
+        "\t".join(rank_cols)
+        + "\n"
+        + "\n".join("\t".join(r[c] for c in rank_cols) for r in species_only_ranks)
+        + "\n",
+        encoding="utf-8",
+    )
+    zero_cols = list(non_alias_zero[0])
+    (cov_dir / "top_zero_trait_bugsigdb_taxa.tsv").write_text(
+        "\t".join(zero_cols)
+        + "\n"
+        + "\n".join("\t".join(r[c] for c in zero_cols) for r in non_alias_zero)
+        + "\n",
+        encoding="utf-8",
+    )
+    assert plates.build_plate6(tmp_path, tmp_path).exists()
+
+
+def test_plate6_candidatus_label_preserves_direct_evidence_caution() -> None:
+    """Candidatus producer diagnosis maps to direct-evidence caution, not MAG inference (#925)."""
+    producer = _load("create_taxa_coverage_histogram")
+    category, remediation = producer.diagnose_zero_trait_taxon(
+        "fixture:candidatus", "Candidatus test lineage", "species"
+    )
+    for row in (
+        {"diagnosis_category": category, "suggested_remediation": remediation},
+        {
+            "diagnosis_category": "Candidatus Lineage",
+            "suggested_remediation": (
+                "Seek direct trait evidence; neighboring taxa do not establish this "
+                "lineage's traits"
+            ),
+        },
+    ):
+        label = plates.plate6_remediation_label(row)
+        assert label == "Direct trait evidence needed"
+        assert "MAG metabolic model" not in label
+        assert "neighbor" not in label.lower()
