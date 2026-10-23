@@ -10,7 +10,8 @@ import json
 import math
 from collections import defaultdict
 from collections.abc import Iterable, Mapping, Sequence
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
+from itertools import combinations
 from pathlib import Path
 from typing import Any
 
@@ -22,8 +23,10 @@ from mtp.count_input import profile_count_reader, taxa_trait_count_reader
 from mtp.guild_maps import SIGN_TOLERANCE
 from mtp.human_host_corpus import CORPUS_SEQUENCING_TYPES, HUMAN_HOST_SPECIES
 from mtp.paths import REPO_ROOT, file_sha256
-from mtp.trait_guilds import TABLE1_TRAITS, column_term_id
-from mtp.trait_screen import step_up
+from mtp.presence_depth_families import declare_and_correct
+from mtp.trait_composition import compute_log_ratio_shifts
+from mtp.trait_guilds import TABLE1_TRAITS, Profile, column_term_id
+from mtp.trait_screen import NO_ELIGIBLE_STUDIES, run_screen
 from mtp.workflow.consumers import (
     CoreBundle,
     open_core_bundle,
@@ -33,11 +36,13 @@ from mtp.workflow.consumers import (
 )
 from mtp.workflow.coverage import feature_filter_id
 from mtp.workflow.downstream_contracts import build_analysis_basis
+from mtp.workflow.runtime import repository_state
 
 Key = tuple[str, str, str]
 Pair = tuple[str, str]
 Result = dict[str, Any]
-PROTOCOL = "presence-depth-study-v1"
+PROTOCOL = "presence-depth-study-v2"
+REPRESENTATIONS = ("raw", "presence", "prevalence")
 
 
 @dataclass(frozen=True)
@@ -54,6 +59,7 @@ class ProfileEvidence:
     depth_mean_total: float | None
     depth_primary: float | None
     depth_secondary: float | None
+    ora_taxa_count: int | None = None
 
 
 @dataclass(frozen=True)
@@ -105,10 +111,10 @@ def reconstruct_profiles(
                 tuple(taxon for taxon in taxa if taxon not in matrix),
                 sum(sum(vector) == 0 for vector in matched),
                 mean_total,
-                math.log1p(mean_total) if mean_total is not None else None,
                 sum(math.log10(1 + max(vector)) for vector in matched) / len(matched)
                 if matched
                 else None,
+                math.log1p(mean_total) if mean_total is not None else None,
             )
         )
     return result
@@ -149,10 +155,11 @@ def make_study_observations(
             raise ValueError("Positive count profile has undefined depth")
         primary = float(inc.depth_primary) - float(dec.depth_primary)
         secondary = float(inc.depth_secondary) - float(dec.depth_secondary)
-        for representation in ("raw", "presence"):
-            left, right = getattr(inc, representation), getattr(dec, representation)
-            difference = np.asarray(left, dtype=float) / sum(left)
-            difference -= np.asarray(right, dtype=float) / sum(right)
+        for representation in REPRESENTATIONS:
+            left, left_total = profile_values(inc, representation)
+            right, right_total = profile_values(dec, representation)
+            difference = np.asarray(left, dtype=float) / left_total
+            difference -= np.asarray(right, dtype=float) / right_total
             grouped[(pair[0], representation)].append((difference, primary, secondary))
     studies = []
     for (study, representation), observations in sorted(grouped.items()):
@@ -167,6 +174,62 @@ def make_study_observations(
             )
         )
     return studies, ledger
+
+
+def profile_values(profile: ProfileEvidence, representation: str) -> tuple[tuple[int, ...], int]:
+    """Separate annotation mass, breadth-normalized presence, and taxon prevalence."""
+    if representation == "raw":
+        return profile.raw, sum(profile.raw)
+    if representation == "presence":
+        return profile.presence, sum(profile.presence)
+    if representation == "prevalence":
+        denominator = profile.ora_taxa_count
+        return profile.presence, profile.matched_taxa if denominator is None else denominator
+    raise ValueError(f"Unknown representation: {representation}")
+
+
+def native_profile_inputs(
+    profiles: Sequence[ProfileEvidence],
+    metadata: Mapping[Pair, Mapping[str, str]],
+    columns: Sequence[str],
+    ledger: Sequence[Result],
+) -> dict[str, list[Profile]]:
+    """Use original paired profiles for the arms' own tests, preserving study clustering."""
+    eligible = {
+        (row["study_id"], row["experiment_id"]) for row in ledger if row["status"] == "included"
+    }
+    result: dict[str, list[Profile]] = {name: [] for name in REPRESENTATIONS}
+    for profile in profiles:
+        pair = profile.key[:2]
+        if pair not in eligible:
+            continue
+        meta = metadata[pair]
+        for representation in REPRESENTATIONS:
+            values, denominator = profile_values(profile, representation)
+            result[representation].append(
+                Profile(
+                    *profile.key,
+                    meta.get("condition", ""),
+                    meta.get("body_site", ""),
+                    dict(zip(columns, values, strict=True)),
+                    denominator,
+                )
+            )
+    return result
+
+
+def focal_feature_map(columns: Sequence[str]) -> dict[str, str]:
+    """Resolve each declared focal term exactly; absent features remain unavailable."""
+    mapped = {}
+    for slug, terms in TABLE1_TRAITS.items():
+        candidates = [
+            column for column in columns if column in terms or column_term_id(column) in terms
+        ]
+        if len(candidates) > 1:
+            raise ValueError(f"Ambiguous focal feature: {slug}")
+        if candidates:
+            mapped[slug] = candidates[0]
+    return mapped
 
 
 def estimate_hc3(y: Sequence[float], x: Sequence[float] | None = None) -> Result:
@@ -191,7 +254,7 @@ def estimate_hc3(y: Sequence[float], x: Sequence[float] | None = None) -> Result
         "design_rank": None,
         "condition_number": None,
         "maximum_leverage": None,
-        "status": "insufficient_studies",
+        "status": NO_ELIGIBLE_STUDIES if not len(values) else "insufficient_study_support",
     }
     if len(values) < 3:
         return result
@@ -251,8 +314,11 @@ def load_core_evidence(
     columns = [row["column_id"] for row in catalog if row["feature_class"] == "trait_annotation"]
     profiles = profile_count_reader(bundle.path("count_profiles"))
     all_columns = profiles.count_columns
-    if list(all_columns) != [row["column_id"] for row in catalog]:
-        raise ValueError("Core profile columns disagree with the ordered feature catalog")
+    if set(all_columns) != {row["column_id"] for row in catalog}:
+        raise ValueError("Core profile columns disagree with the feature catalog")
+    # The profile producer controls physical column order; the catalog controls membership.
+    retained = set(columns)
+    columns = [column for column in all_columns if column in retained]
     indices = [all_columns.index(column) for column in columns]
     observed: dict[Key, tuple[int, ...]] = {}
     for row in profiles:
@@ -284,16 +350,45 @@ def load_core_evidence(
         if pair in metadata:
             raise ValueError("Duplicate experiment metadata")
         metadata[pair] = experiment
-    return columns, reconstruct_profiles(observed, reported, matrix, columns), metadata
+    evidence = reconstruct_profiles(observed, reported, matrix, columns)
+    ora = profile_count_reader(bundle.path("ora_profiles"))
+    if set(ora.count_columns) != {*all_columns, "taxa_count"}:
+        raise ValueError("ORA profile vocabulary differs from the verified count vocabulary")
+    ora_indices = [ora.count_columns.index(column) for column in columns]
+    n_index = ora.count_columns.index("taxa_count")
+    ora_rows: dict[Key, tuple[tuple[int, ...], int]] = {}
+    for row in ora:
+        key = (row.key[0], row.key[1], row.key[2])
+        if key in ora_rows:
+            raise ValueError("Duplicate ORA profile key")
+        ora_rows[key] = tuple(row.counts[i] for i in ora_indices), row.counts[n_index]
+    expected = {
+        p.key for p in evidence if metadata[p.key[:2]]["host_species"] == HUMAN_HOST_SPECIES
+    }
+    if set(ora_rows) != expected:
+        raise ValueError("Binary ORA profile population differs from reconstructed human profiles")
+    verified = []
+    for profile in evidence:
+        if profile.key in ora_rows:
+            presence, denominator = ora_rows[profile.key]
+            if presence != profile.presence or denominator != profile.matched_taxa:
+                raise ValueError(
+                    "Binary ORA profile counts or taxa_count fail source reconstruction"
+                )
+            profile = replace(profile, presence=presence, ora_taxa_count=denominator)
+        verified.append(profile)
+    return columns, verified, metadata
 
 
 def build_screen(
-    studies: Sequence[StudyEvidence], columns: Sequence[str]
-) -> tuple[list[Result], list[Result]]:
-    """Keep every retained hypothesis; focal rows inherit full-family BY/BH values."""
-    results, families = [], []
-    for representation in ("raw", "presence"):
+    studies: Sequence[StudyEvidence], columns: Sequence[str], native: Mapping[str, list[Profile]]
+) -> list[Result]:
+    """Reuse the native screen, retaining exact intervals and dependence diagnostics."""
+    results = []
+    for representation in REPRESENTATIONS:
         cohort = [row for row in studies if row.representation == representation]
+        screened = run_screen(native[representation], columns)
+        native_rows = {row.trait: row for row in screened.rows}
         for test in ("sign", "mean_hc3", "adjusted_primary", "adjusted_secondary"):
             family_id = f"{PROTOCOL}:{representation}:{test}"
             family_rows = []
@@ -302,12 +397,25 @@ def build_screen(
                 positive = sum(v > SIGN_TOLERANCE for v in y)
                 negative = sum(v < -SIGN_TOLERANCE for v in y)
                 if test == "sign":
-                    n = positive + negative
+                    native_row = native_rows[column]
                     inference: Result = {
-                        "effect": positive / n if n else None,
-                        "p_value": float(stats.binomtest(positive, n).pvalue) if n else None,
-                        "status": "tested" if n else "all_ties" if y else "insufficient_studies",
+                        "effect": native_row.share_up,
+                        "p_value": native_row.p_value,
+                        "status": native_row.test_status,
+                        "ci_low": native_row.ci_low,
+                        "ci_high": native_row.ci_high,
+                        "native_bh_q_nominal": native_row.bh_q_nominal,
+                        "native_by_q_nominal": native_row.by_q_nominal,
+                        "native_by_q_effective": native_row.by_q_effective,
+                        "effective_family_size": screened.effective_family_size,
+                        "effective_family_size_used": screened.effective_family_size_used,
                     }
+                    if (positive, negative, len(y) - positive - negative) != (
+                        native_row.studies_up,
+                        native_row.studies_down,
+                        native_row.studies_tied,
+                    ):
+                        raise ValueError("Native and reconstructed study sign tallies disagree")
                 else:
                     depth = (
                         [row.depth_primary for row in cohort]
@@ -323,6 +431,8 @@ def build_screen(
                         "representation": representation,
                         "test": test,
                         "feature_id": column,
+                        "hypothesis_id": column,
+                        "feature_ids": [column],
                         "n_studies": len(cohort),
                         "n_positive": positive,
                         "n_negative": negative,
@@ -335,25 +445,97 @@ def build_screen(
                         **inference,
                     }
                 )
-            held = [row["p_value"] if row["p_value"] is not None else 1.0 for row in family_rows]
-            for method in ("by", "bh"):
-                adjusted = step_up(held, method=method, family_size=len(columns))
-                for row, q in zip(family_rows, adjusted, strict=True):
-                    row[f"q_{method}"] = q if row["p_value"] is not None else None
-            families.append(
-                {
-                    "id": family_id,
-                    "analysis_basis_id": f"{PROTOCOL}:{representation}",
-                    "family_size": len(columns),
-                    "feature_ids": list(columns),
-                    "tested": sum(p is not None for p in [r["p_value"] for r in family_rows]),
-                    "untestable_policy": "p=1 for adjustment; no reported p/q",
-                    "primary": "BY",
-                    "comparison": "BH",
+            results.extend(family_rows)
+    return results
+
+
+def focal_screen(screen: Sequence[Result], columns: Sequence[str]) -> list[Result]:
+    """A declared six-slot BH comparison beside the inherited full-family correction."""
+    mapped = focal_feature_map(columns)
+    families = {row["family_id"] for row in screen}
+    results = []
+    for family in sorted(families):
+        source = {row["feature_id"]: row for row in screen if row["family_id"] == family}
+        template = next(iter(source.values()))
+        for slug, terms in TABLE1_TRAITS.items():
+            column = mapped.get(slug)
+            row = (
+                dict(source[column])
+                if column is not None
+                else {
+                    "representation": template["representation"],
+                    "test": template["test"],
+                    "feature_id": terms[0],
+                    "feature_ids": [terms[0]],
+                    "status": "missing_feature",
+                    "p_value": None,
                 }
             )
-            results.extend(family_rows)
-    return results, families
+            row.update(
+                family_id=f"{family}:focal_six",
+                hypothesis_id=slug,
+                focal_trait=slug,
+                full_family_id=family,
+                q_by_full=row.pop("q_by", None),
+                q_bh_full=row.pop("q_bh", None),
+            )
+            results.append(row)
+    return results
+
+
+def composition_screen(
+    native: Mapping[str, list[Profile]], columns: Sequence[str]
+) -> tuple[list[Result], list[Result]]:
+    """Call Jed's native paired-ratio test and preserve all fifteen focal pair slots."""
+    mapped = focal_feature_map(columns)
+    summaries: list[Result] = []
+    studies: list[Result] = []
+    for representation in ("raw", "presence"):
+        focal_profiles = [
+            replace(
+                p, guild_counts={slug: p.guild_counts[column] for slug, column in mapped.items()}
+            )
+            for p in native[representation]
+        ]
+        result = (
+            compute_log_ratio_shifts(focal_profiles, tuple(mapped))
+            if focal_profiles and len(mapped) >= 2
+            else None
+        )
+        available = {(r.numerator, r.reference): r for r in result.summaries} if result else {}
+        if result:
+            studies.extend(
+                {"representation": representation, **asdict(row)} for row in result.studies
+            )
+        for numerator, reference in combinations(TABLE1_TRAITS, 2):
+            summary = available.get((numerator, reference))
+            row: Result = (
+                asdict(summary)
+                if summary
+                else {
+                    "numerator": numerator,
+                    "reference": reference,
+                    "status": "missing_feature"
+                    if numerator not in mapped or reference not in mapped
+                    else NO_ELIGIBLE_STUDIES,
+                    "sign_p": None,
+                    "by_q": None,
+                }
+            )
+            row.update(
+                family_id=f"{PROTOCOL}:{representation}:composition",
+                representation=representation,
+                test="paired_log2_ratio_sign",
+                hypothesis_id=f"{numerator}/{reference}",
+                feature_ids=[
+                    mapped.get(slug, TABLE1_TRAITS[slug][0]) for slug in (numerator, reference)
+                ],
+                p_value=row["sign_p"],
+                native_available_pair_by_q=row.pop("by_q"),
+                native_available_pair_family_size=result.family_size if result else 0,
+            )
+            summaries.append(row)
+    return summaries, studies
 
 
 def _write_tsv(path: Path, records: Iterable[Mapping[str, Any]], fields: Sequence[str]) -> None:
@@ -368,35 +550,39 @@ def _write_tsv(path: Path, records: Iterable[Mapping[str, Any]], fields: Sequenc
         with io.TextIOWrapper(compressed or raw, encoding="utf-8", newline="") as handle:
             writer = csv.DictWriter(handle, fieldnames=fields, delimiter="\t", lineterminator="\n")
             writer.writeheader()
-            writer.writerows(records)
+            writer.writerows(
+                {
+                    key: json.dumps(value, separators=(",", ":"), allow_nan=False)
+                    if isinstance(value, (list, tuple, dict))
+                    else value
+                    for key, value in record.items()
+                }
+                for record in records
+            )
 
 
 def run_sensitivity(core_run: Path, output_dir: Path) -> Path:
     """Publish only separately named sidecars after complete input reconstruction."""
     bundle = open_core_bundle(core_run)
+    ora_bundle = open_core_bundle(core_run, "ora_profiles")
     binding = output_dir / "core_consumption.json"
+    ora_binding = output_dir / "ora_core_consumption.json"
     preflight_consumer_outputs(bundle, binding, output_directory=output_dir)
+    preflight_consumer_outputs(ora_bundle, ora_binding, output_directory=output_dir)
     if output_dir.exists():
         raise FileExistsError("Sensitivity outputs require a new directory")
     columns, profiles, metadata = load_core_evidence(bundle)
     studies, ledger = make_study_observations(profiles, metadata)
-    screen, families = build_screen(studies, columns)
-    focal: list[Result] = []
-    missing = []
-    for slug, terms in TABLE1_TRAITS.items():
-        candidates = [column for column in columns if column_term_id(column) in terms]
-        if len(candidates) > 1:
-            raise ValueError(f"Ambiguous focal feature: {slug}")
-        if not candidates:
-            missing.append(slug)
-        else:
-            focal.extend(
-                {"focal_trait": slug, **row} for row in screen if row["feature_id"] == candidates[0]
-            )
+    native = native_profile_inputs(profiles, metadata, columns, ledger)
+    screen = build_screen(studies, columns, native)
+    composition, composition_studies = composition_screen(native, columns)
+    missing = sorted(set(TABLE1_TRAITS) - focal_feature_map(columns).keys())
     rollup = next(
         (p.value for p in bundle.run.parameters or [] if p.name == "strain_rollup"),
-        "off (pre-scope core)",
+        "off",
     )
+    if rollup not in {"off", "phenotype"}:
+        raise ValueError(f"Unknown strain-rollup scope: {rollup}")
     bases = [
         build_analysis_basis(
             basis_id=f"{PROTOCOL}:{representation}",
@@ -405,17 +591,42 @@ def run_sensitivity(core_run: Path, output_dir: Path) -> Path:
             retained_feature_count=len(columns),
             profile_unit="count_profiles" if representation == "raw" else "ora_profiles",
             aggregation_policy="distinct_reported_taxa; equal_experiment_means_then_equal_studies",
-            rollup_policy=rollup,
+            rollup_policy=f"ncbi_taxonomy_closure_rollup_{rollup}",
             denominator_policy=(
                 "sum_retained_annotation_counts"
                 if representation == "raw"
-                else "sum_retained_binary_taxon_trait_presences"
+                else "sum_retained_binary_taxon_trait_presences_breadth_weighted"
+                if representation == "presence"
+                else "ora_profiles_taxa_count_matched_reported_taxa"
             ),
             background_inventory_id="none_paired_profile_contrast",
             weighting_policy="equal_study",
         ).model_dump(mode="json")
-        for representation in ("raw", "presence")
+        for representation in REPRESENTATIONS
     ]
+    basis_map = dict(zip(REPRESENTATIONS, bases, strict=True))
+    for representation in ("raw", "presence"):
+        basis = build_analysis_basis(
+            basis_id=f"{PROTOCOL}:{representation}:composition",
+            feature_catalog_sha256=file_sha256(bundle.path("feature_catalog")),
+            feature_filter_id=feature_filter_id(columns),
+            retained_feature_count=len(columns),
+            profile_unit="count_profiles" if representation == "raw" else "ora_profiles",
+            aggregation_policy="paired_log2_ratio_difference_then_equal_study_means",
+            rollup_policy=f"ncbi_taxonomy_closure_rollup_{rollup}",
+            denominator_policy="positive_reference_trait_count_no_pseudocount",
+            background_inventory_id="none_paired_profile_contrast",
+            weighting_policy="equal_study",
+        ).model_dump(mode="json")
+        basis_map[f"{representation}:composition"] = basis
+        bases.append(basis)
+    families, corrections = declare_and_correct(screen, basis_map, bundle, ledger, rollup)
+    focal = focal_screen(screen, columns)
+    extra_families, extra_corrections = declare_and_correct(
+        [*focal, *composition], basis_map, bundle, ledger, rollup
+    )
+    families.extend(extra_families)
+    corrections.extend(extra_corrections)
     output_dir.mkdir(parents=True)
     outputs: list[Path] = []
 
@@ -424,10 +635,19 @@ def run_sensitivity(core_run: Path, output_dir: Path) -> Path:
         _write_tsv(path, records, fields)
         outputs.append(path)
 
-    fields = list(dict.fromkeys(key for row in screen for key in row))
+    def fields_for(records: Sequence[Result], fallback: Sequence[str]) -> list[str]:
+        return list(dict.fromkeys(key for row in records for key in row)) or list(fallback)
+
+    fields = fields_for(screen, ["family_id", "hypothesis_id", "status"])
     # DictWriter needs complete row keys only; missing inferential fields remain blank.
     table("trait_screen.tsv", screen, fields)
-    table("focal_traits.tsv", focal, ["focal_trait", *fields])
+    table("focal_traits.tsv", focal, fields_for(focal, ["focal_trait", *fields]))
+    table("composition_presence.tsv", composition, fields_for(composition, ["hypothesis_id"]))
+    table(
+        "composition_studies.tsv",
+        composition_studies,
+        fields_for(composition_studies, ["study_id"]),
+    )
     table("eligibility.tsv", ledger, ["study_id", "experiment_id", "status"])
     audit = [
         {
@@ -472,6 +692,7 @@ def run_sensitivity(core_run: Path, output_dir: Path) -> Path:
             "depth_secondary",
         ],
     )
+    code_commit, code_dirty = repository_state(REPO_ROOT)
     provenance = {
         "protocol": PROTOCOL,
         "core_run_id": bundle.run.run_id,
@@ -492,6 +713,7 @@ def run_sensitivity(core_run: Path, output_dir: Path) -> Path:
             name: file_sha256(bundle.path(name))
             for name in (
                 "count_profiles",
+                "ora_profiles",
                 "reported_taxa",
                 "taxa_matrix",
                 "experiments",
@@ -499,12 +721,37 @@ def run_sensitivity(core_run: Path, output_dir: Path) -> Path:
             )
         },
         "implementation_sha256": file_sha256(Path(__file__)),
+        "code_commit": code_commit,
+        "code_dirty": code_dirty,
+        "implementation_sources_sha256": {
+            name: file_sha256(REPO_ROOT / name)
+            for name in (
+                "src/mtp/presence_depth_sensitivity.py",
+                "src/mtp/presence_depth_families.py",
+                "src/mtp/trait_screen.py",
+                "src/mtp/trait_composition.py",
+                "src/mtp/table1_trait_maps.py",
+                "src/mtp/trait_guilds.py",
+                "src/mtp/guild_maps.py",
+                "src/mtp/count_input.py",
+                "src/mtp/contribution_inputs.py",
+                "src/mtp/human_host_corpus.py",
+                "src/mtp/paths.py",
+                "src/mtp/multiple_testing.py",
+                "src/mtp/workflow/consumers.py",
+                "src/mtp/workflow/coverage.py",
+                "src/mtp/workflow/downstream_contracts.py",
+                "src/mtp/workflow/runtime.py",
+                "src/mtp/datamodel/core_products_pydantic.py",
+                "src/mtp/datamodel/multiple_testing_pydantic.py",
+                "methods/multiple_testing_policy_v1.yaml",
+            )
+        },
         "methods_sha256": file_sha256(REPO_ROOT / "methods/presence_depth_sensitivity.md"),
         "dependency_lock_sha256": file_sha256(REPO_ROOT / "uv.lock"),
-        "primary_depth": "log1p(sum retained annotation counts / "
+        "secondary_depth": "log1p(sum retained annotation counts / "
         "distinct matrix-matched reported taxa)",
-        "secondary_depth": "mean log10(1 + max retained annotation count "
-        "per matched reported taxon)",
+        "primary_depth": "mean log10(1 + max retained annotation count per matched reported taxon)",
         "aggregation": "profile transform, inc-minus-dec difference, within-study mean",
         "sign_tolerance": SIGN_TOLERANCE,
         "interpretation": "conditional descriptive sensitivity; not a causal correction",
@@ -515,6 +762,7 @@ def run_sensitivity(core_run: Path, output_dir: Path) -> Path:
     for name, content in (
         ("analysis_bases.json", bases),
         ("families.json", families),
+        ("corrections.json", corrections),
         ("provenance.json", provenance),
     ):
         path = output_dir / name
@@ -528,17 +776,29 @@ def run_sensitivity(core_run: Path, output_dir: Path) -> Path:
         "Pairing alone does not remove between-list annotation-depth differences. "
         "The adjusted intercept estimates the fraction difference at zero paired depth difference; "
         "it is a conditional association, not a causal correction. Unsupported fits have no p/q. "
-        "The focal extract retains full-screen BY/BH corrections. Families remain exploratory "
+        "Presence fractions retain annotation-breadth weighting; taxon prevalence uses the "
+        "verified binary ORA profile k/taxa_count. Native sign-test intervals and effective-m "
+        "diagnostics are retained; the composition result uses the native paired-ratio test. "
+        "The focal extract retains full-screen BY/BH columns and adds an explicit six-trait BH "
+        "comparison. Families remain exploratory "
         "across representations and tests. See methods/presence_depth_sensitivity.md for "
         "the declared transforms, HC3 support guards and denominators.\n",
         encoding="utf-8",
     )
     outputs.append(readme)
     write_consumer_record(
+        ora_bundle,
+        ora_binding,
+        consumer="mtp.presence_depth_sensitivity.binary",
+        outputs=outputs,
+        additional_products=("reported_taxa",),
+    )
+    verify_consumer_record(ora_binding)
+    write_consumer_record(
         bundle,
         binding,
         consumer="mtp.presence_depth_sensitivity",
-        outputs=outputs,
+        outputs=[*outputs, ora_binding],
         additional_products=("reported_taxa",),
     )
     verify_consumer_record(binding)

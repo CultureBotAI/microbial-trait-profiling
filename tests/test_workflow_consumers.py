@@ -69,9 +69,14 @@ def test_additional_consumed_product_is_bound_and_tamper_detected(
     )
     record = verify_consumer_record(binding)
     assert record.product_ids.count("reported_taxa") == 1
-    reported = bundle.path("reported_taxa")
-    reported.write_text(reported.read_text() + "tampered\n")
-    with pytest.raises(ValueError, match="content or inventory changed"):
+    # Corrupt only the additional binding: the core and every artifact remain
+    # valid, so core re-verification cannot accidentally make this test pass.
+    original = json.loads(binding.read_text())
+    index = original["product_ids"].index("reported_taxa")
+    original["artifact_ids"][index] = original["artifact_ids"][0]
+    binding.write_text(json.dumps(original))
+    open_core_bundle(core_manifest)
+    with pytest.raises(ValueError, match="unresolved product/artifact"):
         verify_consumer_record(binding)
 
 

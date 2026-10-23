@@ -4,11 +4,14 @@ from __future__ import annotations
 
 import json
 import math
+from dataclasses import asdict, replace
 from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
 import pytest
 
+import mtp.presence_depth_sensitivity as sensitivity
 from mtp.contribution_inputs import rows
 from mtp.paths import REPO_ROOT
 from mtp.presence_depth_sensitivity import (
@@ -55,7 +58,7 @@ def test_depth_only_artifact_and_real_shift_are_distinguished() -> None:
     [
         ([1.0, 2.0, 3.0, 4.0], "zero_depth_outside_support"),
         ([1.0, 1.0, 1.0, 1.0], "constant_nonzero_depth"),
-        ([-1.0, 1.0], "insufficient_studies"),
+        ([-1.0, 1.0], "insufficient_study_support"),
     ],
 )
 def test_unsupported_adjustments_are_not_significant(x: list[float], status: str) -> None:
@@ -80,8 +83,8 @@ def test_reconstruction_deduplicates_taxa_and_audits_unmatched_zero_rows() -> No
     assert profile.unmatched_taxa == ("unmatched",)
     assert profile.unannotated_taxa == 1
     assert profile.depth_mean_total == 6
-    assert profile.depth_primary == pytest.approx(math.log1p(6))
-    assert profile.depth_secondary == pytest.approx(math.log10(11) / 2)
+    assert profile.depth_primary == pytest.approx(math.log10(11) / 2)
+    assert profile.depth_secondary == pytest.approx(math.log1p(6))
 
 
 def test_inconsistent_reconstruction_is_an_error() -> None:
@@ -149,28 +152,135 @@ def test_depth_transform_is_applied_before_pairing_and_study_averaging() -> None
         ("s", e): {"host_species": "Homo sapiens", "sequencing_type": "WMS"} for e in ("e1", "e2")
     }
     studies, _ = make_study_observations(profiles, metadata)
-    assert studies[0].depth_primary == pytest.approx(math.log(5) / 2)
-    assert studies[0].depth_primary != pytest.approx(math.log(3))
+    assert studies[0].depth_primary == pytest.approx(math.log10(5) / 2)
+    assert studies[0].depth_primary != pytest.approx(math.log10(3))
+    assert studies[0].depth_secondary == pytest.approx(math.log(5) / 2)
+
+
+def test_presence_breadth_and_taxon_prevalence_are_distinct_estimands() -> None:
+    observed = {("s", "e", "inc"): (1, 1, 1), ("s", "e", "dec"): (1, 1, 0)}
+    reported = {("s", "e", "inc"): ["broad"], ("s", "e", "dec"): ["a", "b"]}
+    profiles = reconstruct_profiles(
+        observed,
+        reported,
+        {"broad": (1, 1, 1), "a": (1, 0, 0), "b": (0, 1, 0)},
+        ("t1", "t2", "t3"),
+    )
+    studies, _ = make_study_observations(
+        profiles, {("s", "e"): {"host_species": "Homo sapiens", "sequencing_type": "16S"}}
+    )
+    by_representation = {row.representation: row for row in studies}
+    assert by_representation["presence"].mean_differences[0] == pytest.approx(-1 / 6)
+    assert by_representation["prevalence"].mean_differences[0] == pytest.approx(0.5)
+
+
+def test_focal_mapping_requires_the_actual_trait_identifiers() -> None:
+    from mtp.trait_guilds import TABLE1_TRAITS
+
+    columns = [f"METPO:relation|{terms[0]}" for terms in TABLE1_TRAITS.values()]
+    mapped = sensitivity.focal_feature_map(columns)
+    assert mapped == dict(zip(TABLE1_TRAITS, columns, strict=True))
+    assert sensitivity.focal_feature_map(columns[:1]) == {next(iter(TABLE1_TRAITS)): columns[0]}
+
+
+def test_native_screen_and_composition_are_called_with_reconstructed_inputs() -> None:
+    from mtp.trait_composition import compute_log_ratio_shifts
+    from mtp.trait_guilds import TABLE1_TRAITS
+    from mtp.trait_screen import run_screen
+
+    columns = [terms[0] for terms in TABLE1_TRAITS.values()]
+    matrix = {
+        "a": (4, 2, 0, 2, 2, 3),
+        "b": (1, 0, 3, 2, 4, 3),
+        "c": (0, 4, 2, 3, 1, 0),
+        "d": (2, 1, 4, 0, 2, 1),
+    }
+    reported = {}
+    metadata = {}
+    for study, (inc, dec) in enumerate([("ac", "bd"), ("ab", "cd"), ("ad", "bc")]):
+        metadata[(str(study), "e")] = {"host_species": "Homo sapiens", "sequencing_type": "16S"}
+        reported[(str(study), "e", "inc")] = list(inc)
+        reported[(str(study), "e", "dec")] = list(dec)
+    observed = {
+        key: tuple(sum(matrix[taxon][i] for taxon in taxa) for i in range(6))
+        for key, taxa in reported.items()
+    }
+    profiles = reconstruct_profiles(observed, reported, matrix, columns)
+    studies, ledger = make_study_observations(profiles, metadata)
+    native = sensitivity.native_profile_inputs(profiles, metadata, columns, ledger)
+    expected = run_screen(native["presence"], columns)
+    with patch.object(sensitivity, "run_screen", wraps=run_screen) as called:
+        screen = build_screen(studies, columns, native)
+        assert called.call_count == 3
+    for original in expected.rows:
+        row = next(
+            row
+            for row in screen
+            if row["representation"] == "presence"
+            and row["test"] == "sign"
+            and row["feature_id"] == original.trait
+        )
+        assert (row["p_value"], row["ci_low"], row["ci_high"]) == (
+            original.p_value,
+            original.ci_low,
+            original.ci_high,
+        )
+        assert row["native_by_q_nominal"] == original.by_q_nominal
+        assert row["native_by_q_effective"] == original.by_q_effective
+    with patch.object(
+        sensitivity, "compute_log_ratio_shifts", wraps=compute_log_ratio_shifts
+    ) as called:
+        ratios, per_study = sensitivity.composition_screen(native, columns)
+        assert called.call_count == 2
+    assert len(ratios) == 30
+    assert len(per_study) == 90
+    assert all(row["native_available_pair_family_size"] == 15 for row in ratios)
+    for representation in ("raw", "presence"):
+        mapped = sensitivity.focal_feature_map(columns)
+        inputs = [
+            replace(
+                p, guild_counts={slug: p.guild_counts[column] for slug, column in mapped.items()}
+            )
+            for p in native[representation]
+        ]
+        original_ratios = compute_log_ratio_shifts(inputs)
+        for summary in original_ratios.summaries:
+            row = next(
+                row
+                for row in ratios
+                if row["representation"] == representation
+                and row["numerator"] == summary.numerator
+                and row["reference"] == summary.reference
+            )
+            for key, value in asdict(summary).items():
+                assert row["native_available_pair_by_q" if key == "by_q" else key] == value
 
 
 def test_null_empty_and_untestable_candidates_remain_in_full_families() -> None:
     result = estimate_hc3([0.0] * 4)
     assert result["p_value"] is None
-    screen, families = build_screen([], ["METPO:1", "METPO:2"])
-    assert len(screen) == 16
-    assert all(row["p_value"] is None and row["q_by"] is None for row in screen)
-    assert all(row["family_size"] == 2 and row["tested"] == 0 for row in families)
+    screen = build_screen(
+        [], ["METPO:1", "METPO:2"], {name: [] for name in sensitivity.REPRESENTATIONS}
+    )
+    assert len(screen) == 24
+    assert all(row["p_value"] is None for row in screen)
 
 
 def test_roundoff_ties_have_no_p_values_and_keep_family_slots() -> None:
-    studies = [StudyEvidence(str(i), "presence", 1, (1e-14, 0.0), 0.0, 0.0) for i in range(5)]
-    screen, families = build_screen(studies, ["METPO:1", "METPO:2"])
+    from mtp.trait_guilds import Profile
+
+    columns = ["METPO:1", "METPO:2"]
+    studies = [StudyEvidence(str(i), "presence", 1, (1e-14, -1e-14), 0.0, 0.0) for i in range(5)]
+    native: dict[str, list[Profile]] = {name: [] for name in sensitivity.REPRESENTATIONS}
+    native["presence"] = [
+        Profile(str(i), "e", direction, "", "", dict(zip(columns, counts, strict=True)), 10**14)
+        for i in range(5)
+        for direction, counts in (("inc", (1, 10**14 - 1)), ("dec", (0, 10**14)))
+    ]
+    screen = build_screen(studies, columns, native)
     sign = [row for row in screen if row["representation"] == "presence" and row["test"] == "sign"]
     assert all(row["n_positive"] == 0 and row["n_tied"] == 5 for row in sign)
-    assert all(row["p_value"] is None and row["q_by"] is None for row in sign)
-    family = next(row for row in families if row["id"].endswith(":presence:sign"))
-    assert family["tested"] == 0
-    assert family["family_size"] == 2
+    assert all(row["p_value"] is None and row["native_by_q_nominal"] is None for row in sign)
 
 
 def _core(tmp_path: Path, subset: bool) -> Path:
@@ -227,14 +337,53 @@ def test_verified_core_run_records_actual_family_and_population(
     if subset:
         assert {row["experiment_id"] for row in audit} == {"bsdb:1-1", "bsdb:1-2"}
     full_screen = list(rows(output / "trait_screen.tsv"))
-    assert len(full_screen) == 16
+    assert len(full_screen) == 24
     for row in rows(output / "focal_traits.tsv"):
+        if row["status"] == "missing_feature":
+            assert row["p_value"] == ""
+            continue
         original = next(
             r
             for r in full_screen
-            if r["family_id"] == row["family_id"] and r["feature_id"] == row["feature_id"]
+            if r["family_id"] == row["full_family_id"] and r["feature_id"] == row["feature_id"]
         )
-        assert row["q_by"] == original["q_by"]
+        assert row["q_by_full"] == original["q_by"]
+    ora_record = verify_consumer_record(output / "ora_core_consumption.json")
+    assert "ora_profiles" in ora_record.product_ids
+    assert "count_profiles" not in ora_record.product_ids
+    families = json.loads((output / "families.json").read_text())
+    assert all(
+        row["expected_family_size"] == 6
+        for row in families
+        if row["family_id"].endswith(":focal_six")
+    )
+    assert all(
+        row["expected_family_size"] == 15
+        for row in families
+        if row["family_id"].endswith(":composition")
+    )
+    ratios = list(rows(output / "composition_presence.tsv"))
+    assert len(ratios) == 30
+    unavailable = [row for row in ratios if row["status"] == "missing_feature"]
+    assert len(unavailable) == 28
+    assert all(row["p_value"] == "" for row in unavailable)
+    assert {
+        (row["numerator"], row["reference"]) for row in ratios if row["status"] != "missing_feature"
+    } == {("facultatively_aerobic", "coccus_shaped")}
+    assert bases[-1]["denominator_policy"] == "positive_reference_trait_count_no_pseudocount"
+    assert len(provenance["code_commit"]) == 40
+    assert isinstance(provenance["code_dirty"], bool)
+    assert {
+        "src/mtp/trait_screen.py",
+        "src/mtp/workflow/consumers.py",
+        "src/mtp/guild_maps.py",
+    }.issubset(provenance["implementation_sources_sha256"])
+    eligibility = list(rows(output / "eligibility.tsv"))
+    if not subset:
+        assert (
+            next(row for row in eligibility if row["experiment_id"] == "bsdb:2-1")["status"]
+            == "non_human"
+        )
     with pytest.raises(FileExistsError):
         run_sensitivity(manifest, output)
     (output / "trait_screen.tsv").write_text("tampered\n")
@@ -256,3 +405,79 @@ def test_reversed_subset_is_consumed_once_with_taxa_aligned(tmp_path: Path) -> N
     assert subset_map[key].raw != full_map[key].raw
     with pytest.raises(ValueError, match="overlaps"):
         run_sensitivity(subset.manifest, subset.manifest.parent / "unsafe")
+
+
+def test_complete_family_keeps_untestable_slots_in_authoritative_correction(tmp_path: Path) -> None:
+    from mtp.datamodel.multiple_testing_pydantic import (
+        CorrectionRun,
+        HypothesisFamily,
+        RawHypothesis,
+    )
+    from mtp.multiple_testing import verify_correction
+    from mtp.presence_depth_families import declare_and_correct
+
+    manifest = _core(tmp_path, False)
+    output = tmp_path / "sensitivity"
+    run_sensitivity(manifest, output)
+    bundle = open_core_bundle(manifest)
+    columns, _, _ = load_core_evidence(bundle)
+    bases = json.loads((output / "analysis_bases.json").read_text())
+    basis_map = {basis["id"].removeprefix(f"{sensitivity.PROTOCOL}:"): basis for basis in bases}
+    ledger = list(rows(output / "eligibility.tsv"))
+    records: list[sensitivity.Result] = [
+        {
+            "family_id": "fixture:full",
+            "representation": "raw",
+            "test": "sign",
+            "hypothesis_id": column,
+            "feature_ids": [column],
+            "p_value": 0.01 if index == 0 else None,
+            "status": "tested" if index == 0 else "all_tied",
+        }
+        for index, column in enumerate(columns)
+    ]
+    families, corrections = declare_and_correct(records, basis_map, bundle, ledger, "off")
+    assert families[0]["expected_family_size"] == 2
+    assert records[0]["q_by"] == pytest.approx(0.03)
+    assert records[0]["q_bh"] == pytest.approx(0.02)
+    assert records[1]["q_by"] is None
+    focal = sensitivity.focal_screen(
+        [{**row, "feature_id": row["hypothesis_id"]} for row in records],
+        columns,
+    )
+    focal_families, _ = declare_and_correct(focal, basis_map, bundle, ledger, "off")
+    assert focal_families[0]["expected_family_size"] == 6
+    tested_focal = [row for row in focal if row["p_value"] is not None]
+    assert len(tested_focal) == 1
+    assert tested_focal[0]["focal_six_bh_comparison"] == pytest.approx(0.06)
+    corrected = CorrectionRun.model_validate(corrections[0])
+    family = HypothesisFamily.model_validate(families[0])
+    inputs = [
+        RawHypothesis(
+            hypothesis_id=row["hypothesis_id"],
+            p_value=row["p_value"],
+            status="tested" if row["p_value"] is not None else "untestable",
+            reason=None if row["p_value"] is not None else row["status"],
+        )
+        for row in records
+    ]
+    verify_correction(corrected, family=family, hypotheses=inputs)
+    corrected.results[0].q_by = 0.01
+    with pytest.raises(ValueError, match="verification failed"):
+        verify_correction(corrected, family=family, hypotheses=inputs)
+
+
+def test_binary_ora_product_is_read_and_reconciled(tmp_path: Path) -> None:
+    bundle = open_core_bundle(_core(tmp_path, True))
+    _, profiles, _ = load_core_evidence(bundle)
+    assert all(profile.ora_taxa_count == profile.matched_taxa for profile in profiles)
+    path = bundle.path("ora_profiles")
+    content = path.read_text().splitlines()
+    header = content[0].split("\t")
+    first = content[1].split("\t")
+    first[header.index("taxa_count")] = str(int(first[header.index("taxa_count")]) + 1)
+    content[1] = "\t".join(first)
+    path.write_text("\n".join(content) + "\n")
+    # Direct loader rechecks the consumed values, independently of opening the core again.
+    with pytest.raises(ValueError, match="taxa_count fail source reconstruction"):
+        load_core_evidence(bundle)

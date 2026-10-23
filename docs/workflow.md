@@ -442,6 +442,18 @@ reports added/removed rows and columns, and distinguishes MediaDive differences.
 Even identical values do not establish a historical baseline's producer or
 inputs. Comparison never overwrites baseline or current products.
 
+## Additive presence and depth sensitivity
+
+`just presence-depth-sensitivity --core-run RUN_JSON --output-dir OUTPUT` consumes
+the verified count and binary ORA products in a new sidecar directory. It compares
+annotation fractions, breadth-normalized binary fractions, and taxon prevalence
+using the native directional screen, and raw versus binary focal composition
+using the native paired-ratio test. Equal-study HC3 depth models, full-family
+BY/BH, a distinct six-trait BH comparison, coverage/eligibility ledgers and
+LinkML multiplicity records are emitted without changing an arm plan or output.
+See [the methods](../methods/presence_depth_sensitivity.md) for the depth metric,
+conditional estimand, denominators, missing-feature policy and provenance scope.
+
 ## Checks and maintenance
 
 `just check` includes generated-model consistency, schema lint, graph checks,
