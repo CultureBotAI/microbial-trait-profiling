@@ -62,7 +62,7 @@ The grid is the oxygen guild figure's own: 52 condition rows (51 conditions and 
 4 guild-direction columns wide. It comes from the figure's builder at its
 cut: the top 60 conditions and top 20 body sites, the rest pooled into Other,
 cells backed by fewer than 3 studies masked, and rows and blocks with nothing drawn left out.
-Like the tests in this table, the figure leaves out every experiment pair whose
+Like the tests computed here, the figure leaves out every experiment pair whose
 retained-annotation total is zero on a side.
 
 | Display | Test state | Cells |

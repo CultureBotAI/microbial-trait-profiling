@@ -4,10 +4,10 @@ Rows are conditions, columns are body sites crossed with the four
 guild-by-direction combinations, so each body site contributes the 2x2
 `{aerobe, anaerobe} x {inc, dec}` table unrolled into four adjacent columns.
 
-Cell values are mean guild trait fractions. Because 56.2% of studies contribute
-more than one experiment (issue #133; measured on the pinned v1.3.1 corpus),
-profiles are averaged within a study before being averaged across studies, and
-the companion n-matrix counts studies rather than experiments.
+Cell values are mean guild trait fractions. Because 55.4% of the figure's 922
+studies contribute more than one experiment (issue #133; measured on the
+committed corpus), profiles are averaged within a study before being averaged
+across studies, and the companion n-matrix counts studies rather than experiments.
 """
 
 from __future__ import annotations

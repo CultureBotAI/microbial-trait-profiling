@@ -2255,7 +2255,7 @@ def write_view(
             "body sites, the rest pooled into Other,",
             f"cells backed by fewer than {GUILD_MIN_STUDIES} studies masked, and rows and blocks "
             "with nothing drawn left out.",
-            "Like the tests in this table, the figure leaves out every experiment pair whose",
+            "Like the tests computed here, the figure leaves out every experiment pair whose",
             "retained-annotation total is zero on a side.",
             "",
             "| Display | Test state | Cells |",
