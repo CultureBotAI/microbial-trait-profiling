@@ -238,6 +238,10 @@ just rerun-compare /absolute/path/core-runs/run-ID/run.json \
 just rerun-verify-comparison /absolute/path/reruns/comparison
 ```
 
+Verification derives each analysis basis again from the verified core: its recorded
+strain rollup scope, its feature catalog and the retained features of its count and ORA
+profile tables. A record whose bases differ is refused (#817, #860).
+
 Each `integrated_evidence` input is the file its producing step recorded in that
 arm's `arm_run.json`: Ilyas's `enrichment` and `depletion`, Noel's
 `directional_screen`, `empirical_calibration`, `contrast_orientation` and

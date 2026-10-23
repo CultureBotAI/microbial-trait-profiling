@@ -39,6 +39,7 @@ from mtp.workflow.comparison import (
     reconcile_ledger,
     recorded_output,
     shared_basis_ledger,
+    verify_comparison_run,
 )
 from mtp.workflow.downstream_contracts import STANDARD_ANALYSIS_SPECS, build_eligibility_ledger
 from mtp.workflow.models import ContrastPopulation
@@ -799,3 +800,46 @@ def test_an_input_no_step_recorded_is_an_error(stage: dict[str, Path]) -> None:
         recorded_output(run, "taxon_influence", "taxon_influence_status.json")
     with pytest.raises(ValueError, match=r"0 files named 'coverage_status\.json'"):
         recorded_output(run, "contrast_orientation", "coverage_status.json")
+
+
+def _comparison_copy(stage: dict[str, Path], tmp_path: Path, **changes: str | int) -> Path:
+    """A copy of the verified comparison run, with fields of its count basis replaced."""
+    copy = tmp_path / "comparison"
+    shutil.copytree(stage["comparison"], copy)
+    manifest = copy / "comparison_run.json"
+    record = json.loads(manifest.read_text(encoding="utf-8"))
+    record["manifest_path"] = str(manifest.resolve())
+    basis = record["analysis_bases"][0]
+    assert basis["id"] == "basis:count_profiles_non_mediadive"
+    for field, value in changes.items():
+        assert basis[field] != value
+        basis[field] = value
+    manifest.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
+    return copy
+
+
+def test_an_unchanged_copy_of_the_comparison_verifies(
+    stage: dict[str, Path], tmp_path: Path
+) -> None:
+    """The copy the tampering tests start from is itself a valid comparison run."""
+    copy = _comparison_copy(stage, tmp_path)
+    assert verify_comparison_run(copy).analysis_bases == _comparison(stage).analysis_bases
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("retained_feature_count", 317),
+        ("rollup_policy", "ncbi_taxonomy_closure_rollup_off"),
+        ("feature_filter_id", "sha256:" + "0" * 64),
+        ("feature_catalog_sha256", "0" * 64),
+    ],
+)
+def test_verification_rederives_the_analysis_bases_from_the_core(
+    stage: dict[str, Path], tmp_path: Path, field: str, value: str | int
+) -> None:
+    """A record whose bases its verified core does not derive fails: another trait count,
+    scope, retained-feature identity or catalog (#817, #860)."""
+    copy = _comparison_copy(stage, tmp_path, **{field: value})
+    with pytest.raises(ValueError, match=f"basis:count_profiles_non_mediadive {field}"):
+        verify_comparison_run(copy)

@@ -745,6 +745,22 @@ def verify_comparison_run(path: Path) -> ComparisonRun:
         if arm_rec.direction_basis != record.direction_basis:
             raise ValueError(f"direction_basis mismatch for {arm_name} in ComparisonRun")
 
+    # The bases are derived again from the verified core: its recorded scope, its catalog
+    # and the retained features of its profile tables (#817, #860)
+    recorded = {basis.id: basis.model_dump() for basis in record.analysis_bases or []}
+    derived = {basis.id: basis.model_dump() for basis in core_analysis_bases(core_run)}
+    differences = [
+        f"{basis_id} {field}"
+        for basis_id in sorted(recorded.keys() | derived.keys())
+        for field in sorted(recorded.get(basis_id, {}).keys() | derived.get(basis_id, {}).keys())
+        if recorded.get(basis_id, {}).get(field) != derived.get(basis_id, {}).get(field)
+    ]
+    if differences or list(recorded) != list(derived):
+        raise ValueError(
+            "ComparisonRun analysis bases differ from those its core derives: "
+            + (", ".join(differences) or "basis order")
+        )
+
     root = manifest.parent
     if not record.outputs:
         raise ValueError("ComparisonRun has no recorded outputs")
