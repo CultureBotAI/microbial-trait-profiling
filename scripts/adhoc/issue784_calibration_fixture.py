@@ -2,22 +2,20 @@
 
 Input: the fixed synthetic paired profiles below and seed 1729. Output: JSON of
 the replicate ledger, criteria and guild outcomes. The baseline was captured on
-main 1ce8277 with --legacy-interface, before removing the ignored matrix argument.
-This helper runs no production-data analysis and is retained with its fixture.
+main 1ce8277 with the historical helper's --legacy-interface option, before
+removing the ignored matrix argument. Review #900 removes that obsolete capture
+path; this helper now exercises only the supported interface. No production data.
 """
 
 from __future__ import annotations
 
 import argparse
-import inspect
 import json
-from collections.abc import Callable
 from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
-from mtp.calibration import Procedure, procedures_for, run_calibration
-from mtp.guild_maps import build_matrix
+from mtp.calibration import procedures_for, run_calibration
 from mtp.trait_guilds import TABLE1_TRAITS, Profile
 
 SEED = 1729
@@ -49,19 +47,10 @@ def fixture_profiles() -> list[Profile]:
     return profiles
 
 
-def capture(*, legacy_interface: bool = False) -> dict[str, Any]:
-    """The legacy path captures the old ignored argument; normal use has no matrix."""
+def capture() -> dict[str, Any]:
+    """Capture scientific parity using the supported matrix-free interface."""
     profiles = fixture_profiles()
-    if legacy_interface:
-        # Historical capture only: this eight-site matrix influenced no result.
-        if "matrix" not in inspect.signature(procedures_for).parameters:
-            raise ValueError("Legacy capture requires the pre-#784 calibration implementation")
-        legacy_factory: Callable[..., dict[str, Procedure]] = procedures_for
-        procedures = legacy_factory(
-            build_matrix(profiles, max_conditions=60, max_body_sites=8, min_studies=3)
-        )
-    else:
-        procedures = procedures_for()
+    procedures = procedures_for()
     result = run_calibration(profiles, procedures, 4, 2, SEED)
     return {
         "seed": SEED,
@@ -79,12 +68,11 @@ def main() -> None:
     """Save a comparison snapshot; fixture size is intentionally below calibration budgets."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--legacy-interface", action="store_true")
     args = parser.parse_args()
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(
         json.dumps(
-            capture(legacy_interface=args.legacy_interface),
+            capture(),
             indent=2,
             sort_keys=True,
             allow_nan=False,
