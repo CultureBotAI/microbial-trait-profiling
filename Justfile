@@ -805,13 +805,13 @@ security:
 security-linux:
 	audit_tmp="$(mktemp -d)" && \
 	trap 'rm -rf "$audit_tmp"' EXIT && \
-	uv run --locked uv export --quiet --frozen --all-extras --group dev --group qa \
+	uv run --locked --group qa uv export --quiet --frozen --all-extras --group dev --group qa \
 	  --format requirements-txt --no-emit-project --no-emit-workspace \
 	  --output-file "$audit_tmp/requirements.txt" && \
-	uv run --locked uv pip compile "$audit_tmp/requirements.txt" \
+	uv run --locked --group qa uv pip compile "$audit_tmp/requirements.txt" \
 	  --python-platform x86_64-unknown-linux-gnu --python-version 3.11 --no-deps \
 	  --no-header --no-annotate --output-file "$audit_tmp/requirements-linux.txt" && \
-	uv run --locked pip-audit -r "$audit_tmp/requirements-linux.txt" \
+	uv run --locked --group qa pip-audit -r "$audit_tmp/requirements-linux.txt" \
 	  --disable-pip --no-deps --cache-dir "$audit_tmp/pip-audit-cache"
 
 precommit:
