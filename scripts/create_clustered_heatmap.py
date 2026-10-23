@@ -39,7 +39,7 @@ def experiment_id_from_bsdb_id(bsdb_id: str) -> str:
     return bsdb_id
 
 
-def load_human_experiment_ids(full_dump_path: Path | None) -> set[tuple[str, str]]:
+def load_human_experiment_ids(full_dump_path: Path) -> set[tuple[str, str]]:
     """Return study/experiment IDs for Homo sapiens 16S and WMS rows in full_dump.csv.
 
     The sequencing type keeps the analysis corpus's rule; a blank one is left out (#742).
@@ -73,7 +73,7 @@ def build_binary_matrix(
     taxa_path: Path,
     top_taxa: int,
     max_profiles: int,
-    full_dump_path: Path | None,
+    full_dump_path: Path,
 ) -> tuple[pd.DataFrame, pd.Series]:
     """Build a binary profile x genus matrix from taxa.tsv."""
     taxa = pd.read_csv(
