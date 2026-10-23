@@ -64,7 +64,7 @@ here; the first comparison displays every declared candidate in manifest order.
 | Base population | Human experiments with exactly one increased and one decreased profile and consistent pair metadata. Reject ambiguous keys and malformed, missing or negative counts; never silently coerce them to zero. Record all filtering and available annotation-coverage information. Unknown coverage remains flagged. |
 | Analysis scope | The initial comparison pools the full base population. A body-site or condition-by-body-site analysis is a separately identified scope using exact source labels and its own eligible-pair list. Missing labels remain explicit. Heatmap top-N cuts, masking and an Other display group never define the analysis population. |
 | Candidate families | Keep the six traits named in Table 1 and all 15 unordered pairs as separate feature types for the matched-corpus Table 1-trait analog sensitivity analysis. Freeze the source qualifiers and ID mapping in `TABLE1_TRAITS`; orient every ratio in that declared trait order, with an explicit numerator and reference. A larger trait screen requires its own candidate manifest: the directional arm's full-trait screen declares one in [`trait_screen_manifest.json`](trait_screen_manifest.json) and is corrected in its own family, separate from the six (#255). |
-| Fraction denominator | For each profile, sum every column in the declared non-MediaDive trait universe, including traits outside Table 1. That is 317 retained columns in the matrix identified below, with 2,333 MediaDive columns excluded. Selecting six traits or a ratio must not redefine this total. |
+| Fraction denominator | For each profile, sum every column in the declared non-MediaDive trait universe, including traits outside Table 1. That is 317 retained columns in the matrix identified below, built without BacDive strain records, with 2,333 MediaDive columns excluded; the strain rollup scope sets the universe (see below). Selecting six traits or a ratio must not redefine this total. |
 | ORA background | For the harmonized baseline, fix the background to all valid profiles in the full paired human base population, using that same retained-column universe. Record its trait totals, grand total and contributing profile IDs. Do not rebuild it from a displayed stratum or a ratio's positive-count subset. Alternative backgrounds are separately versioned sensitivity scenarios. |
 | Weighting | Average eligible experiment contrasts within a study, then give each eligible study equal weight within the declared scope. Pool a study's experiments directly across conditions; do not count each condition-study group as another study. Identify shared cohorts where known when assessing independence and uncertainty. |
 
@@ -83,6 +83,41 @@ This harmonized-baseline background is a proposed definition for the shared
 comparison. It is not the background of the production enrichment run, which
 draws distinct taxa against every taxon in the trait matrix (see
 [Why the p-values are not comparable](#why-the-p-values-are-not-comparable)).
+
+### Strain rollup scope and the trait universe
+
+Which BacDive strain records reach the matrix is the core workflow's `strain_rollup`
+parameter, recorded in every run
+([#788](https://github.com/CultureBotAI/microbial-trait-profiling/issues/788)). A strain's
+admitted trait edges count at the NCBITaxon node it is a `biolink:subclass_of`, once per
+node, so the matrix still counts trait-bearing NCBITaxon nodes. The three scopes have
+distinct roles and distinct trait universes. Sizes below are for the pinned KG (edge md5
+`555ecf5b…`, node md5 `dd76b465…`) and the 5,829 full-source reported taxa of the core
+run at main 8b280a3.
+
+| Scope | Role | Retained traits (m) | Retained count mass, all reported taxa | What strain records add |
+| --- | --- | ---: | ---: | --- |
+| `phenotype` | Primary; the workflow default | 344 | 1,335,025 | 27 bare METPO phenotype classes, facultatively anaerobic among them; biosafety levels and pathogen labels are excluded |
+| `off` | Sensitivity; continuity with every result before #788 | 317 | 1,198,119 | Nothing |
+| `full` | Exploratory; its own correction family, never headline claims | 4,224 | 3,945,417 | Every strain edge that does not assert an absence, mostly CHEBI, API-assay, EC and GO relations; every negated key is dropped |
+
+Moving the primary from `off` to `phenotype` changes every arm at its next rerun, not only
+the new traits:
+
+- **Multiple testing.** The full-trait screen's BY and BH families grow from m = 317 to
+  m = 344. The ORA family grows with the trait count, as profiles × traits, and the
+  calibrations are rerun at the new m.
+- **Denominators.** Every profile's fraction sums 344 retained columns. The retained count
+  mass summed over reported taxa rises by 11.4%.
+- **Existing traits.** METPO phenotypes that strain records also assert gain coverage:
+  coccus shaped goes from 721 to 815 reported taxa, facultatively aerobic from 916 to 920,
+  sphere shaped from 305 to 307 and moderately halophilic from 350 to 351. Cellulose
+  catabolic process and arsenate reduction have no strain edges and do not change.
+- **New traits.** Facultatively anaerobic enters with 712 reported taxa. The six Table 1
+  trait keys, and the Table 1 families built on them, stay the same.
+
+A result names its scope. An `off` result is comparable with earlier runs, and a `full`
+result is tested only within the `full` family.
 
 ### Common paired quantities and eligibility
 
