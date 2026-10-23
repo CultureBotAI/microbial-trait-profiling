@@ -23,8 +23,9 @@ not direct in vivo physiological or metabolic measurements.
 
 You need two tools installed. Everything else is managed automatically — with
 one exception: the figure recipes (`just guild-maps`, `just table1-trait-maps`)
-render PNG files through a headless Chrome, fetched version-pinned by
-`just get-chrome` (see `methods/README.md`).
+and the rendered-layout regression in `just check` need a local Chrome/Chromium.
+If none is installed, `just get-chrome` fetches a version-pinned copy (~170 MB;
+see `methods/README.md`).
 
 | Tool | What it does | Install |
 |------|-------------|---------|

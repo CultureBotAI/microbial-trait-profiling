@@ -4,7 +4,9 @@ from math import isnan
 from pathlib import Path
 from statistics import fmean
 
+import numpy as np
 import pytest
+from PIL import Image
 from scipy.stats import binomtest, spearmanr
 
 from bsdbng.guild_maps import (
@@ -13,8 +15,6 @@ from bsdbng.guild_maps import (
     CELL_NOT_SAMPLED,
     CELL_VALUE,
     OTHER_LABEL,
-    SUBTITLE_LINE_HEIGHT,
-    TITLE_BLOCK_HEIGHT,
     build_matrix,
     cell_status,
     compute_correlation,
@@ -585,36 +585,58 @@ def test_require_plotly_passes_when_the_extra_is_installed() -> None:
     require_plotly()
 
 
+@pytest.mark.parametrize("note", [None, "Population note.<br>A second population line."])
+@pytest.mark.parametrize("site_headers", [False, True])
 def test_the_plotting_area_starts_below_the_last_subtitle_line(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, note: str | None, site_headers: bool
 ) -> None:
-    """The top margin grows with the subtitle, and the title hangs from the top (#783).
+    """Measure actual rendered text ink, independently of the margin formula (#839).
 
-    A fixed 220-pixel margin with the title centred in it let the last subtitle
-    lines of the oxygen guild figure run over its top rows. Rendering needs a
-    browser, so each figure is captured where it would be written.
+    Diagnostic text colours identify glyphs without changing font metrics, anchors,
+    title content or layout. The lower edge of every title/subtitle glyph must precede
+    the first site header (or condition row, when there are no site headers).
     """
     import plotly.graph_objects as go
 
-    figures: list[go.Figure] = []
-    monkeypatch.setattr(go.Figure, "write_image", lambda figure, *_a, **_kw: figures.append(figure))
+    render = go.Figure.write_image
+
+    def diagnostic_render(figure: go.Figure, path: str, *, scale: int) -> None:
+        figure.update_layout(title_font_color="#ff00ff")
+        if site_headers:
+            for annotation in figure.layout.annotations:
+                annotation.font.color = "#00ffff"
+        else:
+            figure.update_yaxes(tickfont_color="#00ffff")
+        render(figure, path, scale=scale)
+
+    monkeypatch.setattr(go.Figure, "write_image", diagnostic_render)
     matrix = build_matrix(
-        [_guild_profile("1", "A", "Feces")],
+        [_guild_profile("1", "Condition A", "Small intestine terminal ileum")],
         max_conditions=10,
         max_body_sites=10,
         min_studies=1,
         guild_order=("aerobe",),
     )
-    write_figure(matrix, tmp_path / "short.png", "v1.3.1", guild_order=("aerobe",))
+    path = tmp_path / "layout.png"
     write_figure(
-        matrix, tmp_path / "long.png", "v1.3.1", guild_order=("aerobe",), note="One more line."
+        matrix,
+        path,
+        "v1.3.1",
+        guild_order=("aerobe",),
+        note=note,
+        separate_body_sites=site_headers,
     )
-
-    short, long = (figure.layout for figure in figures)
-    lines = long.title.text.split("<sub>", 1)[1].count("<br>") + 1
-    assert long.margin.t == TITLE_BLOCK_HEIGHT + SUBTITLE_LINE_HEIGHT * lines
-    assert long.margin.t - short.margin.t == SUBTITLE_LINE_HEIGHT
-    assert (long.title.yref, long.title.yanchor) == ("container", "top")
+    with Image.open(path) as image:
+        pixels = np.asarray(image.convert("RGB"))
+    red, green, blue = (pixels[:, :, channel] for channel in range(3))
+    title_rows = np.where((red > 200) & (blue > 200) & (green < 80))[0]
+    header_rows = np.where((green > 200) & (blue > 200) & (red < 80))[0]
+    assert title_rows.size, "The renderer produced no detectable title/subtitle glyphs"
+    assert header_rows.size, "The renderer produced no detectable header/row glyphs"
+    assert title_rows.max() < header_rows.min(), (
+        f"Subtitle overlaps the first header/row: title bottom={title_rows.max()} px, "
+        f"header top={header_rows.min()} px"
+    )
 
 
 def _fixed_total_profile(

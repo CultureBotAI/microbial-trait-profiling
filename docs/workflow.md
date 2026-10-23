@@ -399,6 +399,10 @@ MediaDive-only and zero-annotation taxa, missing matrix matches, incomplete
 pairs, nonhuman hosts, malformed counts, stale collections, changed inputs,
 failed publication and consumer incompatibility.
 
+The guild-layout regression renders synthetic PNGs through Kaleido and measures
+subtitle/header separation. It requires local Chrome/Chromium, available through
+`just get-chrome` if needed; it does not read production analysis tables.
+
 Change schema first, regenerate with `just gen-pydantic`, update the executable
 specification, and run `just workflow-describe` to refresh the product table.
 Change the workflow version when its scientific contract changes. Do not edit
