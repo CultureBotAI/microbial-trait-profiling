@@ -209,3 +209,45 @@ after the rule above was committed, and do not change it.
 
 The triple table is gzip-compressed with a fixed timestamp, so the same core, rule and
 seed give the same bytes.
+
+## Study splits (#854)
+
+The selection-aware lane of #835 (#854) selects on some studies and tests on the others,
+over repeated study splits. The scan exposes both steps as functions in
+`mtp.cellulose_decr.selection_scan`. The CLI runs `select` on every study, so a split's
+selection applies the declared rule above, unchanged, to its training studies. The split
+protocol itself (the number of splits, which candidates to carry forward, the
+multiplicity family and the reporting) belongs to #854.
+
+| Function | Signature | Returns |
+| --- | --- | --- |
+| `load_core_inputs` | `(core_run: Path) -> tuple[CoreBundle, ScanInputs]` | Verifies a Tier 1+2 core run and reads its population once. A core of another population is refused. `ScanInputs.studies` lists the population's studies; `ScanInputs.restricted(studies)` keeps whole studies. |
+| `select` | `(inputs, studies=None, *, protocol=None, permutations=None, seed=None, always_included=True) -> Selection` | The declared rule on `studies` only. `Selection.conditions` is the condition table, `Selection.traits` the trait set from those studies' screen, and `Selection.triples` one row per triple and trait, with the columns `TRIPLE_COLUMNS`. `Selection.result` holds the arrays and `Selection.studies` the studies used. |
+| `rank_candidates` | `(triples, statistic="mean_pairwise_jaccard_distance") -> DataFrame` | The tested rows in a fixed order, numbered `candidate_rank`: U6 p ascending, then z (more overlap first), then trait ID and the three conditions. It is an order, not a selection. |
+| `evaluate` | `(inputs, studies, hypotheses, *, protocol=None, permutations=None, seed=None) -> DataFrame` | One row per hypothesis, `(condition, condition, condition, trait ID)`, in the given order and numbered `hypothesis`, with the columns `TRIPLE_COLUMNS` except the two within-trait ranks. |
+
+- **Study subsets.** Each function reads only the studies it is given: for eligibility
+  (k = 3 within those studies), the trait screen, the observed sets and the U6 pool.
+  Studies are kept or dropped whole. A study outside the population is an error.
+- **Held-out tests.**
+  - `evaluate` applies no eligibility rule and never replaces a hypothesis.
+  - A hypothesis with a condition that no held-out study reports in a stool decreased
+    signature is returned with `test_status` `no_units`. The other statuses are
+    `tested`, `all_sets_empty` and `pool_too_small`.
+  - The involved conditions that have held-out units, in alphabetical order, are the
+    layout of the shared draws.
+- **Historical leads.**
+  - With `always_included=False`, the training screen alone chooses the traits, so
+    cellulose is not forced into a split's selection.
+  - PD, HIV and CRC are never forced in: they enter a split's triples only when they are
+    eligible in its training studies.
+- **Seeds.**
+  - `seed` is an integer, or a sequence of integers for numpy's `SeedSequence`. An
+    integer `s` gives the same draws as `[s]`.
+  - The shared draws use `default_rng(seed)`. A triple drawn on its own uses
+    `default_rng([*seed, index])`, where `index` is its row among the call's triples; for
+    `evaluate` these are its distinct triples, sorted.
+  - For split `i`, the suggested seeds are `(20261022, i, 0)` for `select` and
+    `(20261022, i, 1)` for `evaluate`. The caller assigns the splits, with its own seed.
+- **Draws.** `permutations` defaults to the protocol's 100,000; a split run may pass
+  fewer and say so.
