@@ -392,6 +392,14 @@ cellulose-decr-figures *ARGS:
 	commit="$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} data/analysis/cellulose_decr && git diff --cached --quiet -- {{code_paths}} data/analysis/cellulose_decr || echo +dirty)"
 	uv run python -m mtp.cellulose_decr.figures --code-commit "$commit" "$@"
 
+# The #835 selection scan (methods/cellulose_decr_selection_scan.md): cellulose_decr's
+# overlap and U6 null for every triple of eligible conditions and the top decreasing
+# traits, on a verified Tier 1+2 core RUN (its run.json), into a new or empty OUTPUT
+# directory. Pass --plan to print the counts and a timed estimate without running the null.
+[positional-arguments]
+cellulose-decr-selection-scan run output *ARGS:
+	uv run python -m mtp.cellulose_decr.selection_scan --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" --core-run "$1" --output-dir "$2" "${@:3}"
+
 # The two methods plates and seven Tufte plates of the selected-figure deck, drawn
 # from the rerun tables into this checkout's data/derived/tufte_plates/ (#573). Plates IV
 # and V also quote the cellulose_decr results, so run `just cellulose-decr-figures` first.
