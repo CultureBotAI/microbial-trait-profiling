@@ -140,8 +140,12 @@ just check
 This runs everything: ruff (lint + format), mypy (types), pytest (tests),
 linkml lint/validate (schema), bandit (security), deptry (dependencies),
 and pip-audit (`just security`, which exports `--all-extras --group dev --group qa`
-to audit the full synced environment including `dev` and `qa` dependency groups,
-matching the `pip-audit` pre-commit hook that gates CI).
+to audit the synced environment including `dev` and `qa` dependency groups,
+using the same extras and groups as the `pip-audit` pre-commit hook that gates CI).
+Both audits evaluate environment markers for the host running them. A local
+macOS pass can omit dependencies selected on Linux, so the Linux CI audit must
+also pass; matching dependency groups does not guarantee matching packages
+across platforms (#823).
 
 **All checks must pass.** If something fails, fix it. If you think the
 check is wrong, open an issue — don't skip the check.

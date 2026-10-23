@@ -777,6 +777,8 @@ audit-trait-density *ARGS:
 audit-trait-coupling *ARGS:
 	just timed audit-trait-coupling "uv run python scripts/audit_trait_coupling.py --code-commit \"$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)\" $*"
 
+# Audits all extras plus dev/qa, with pip-audit evaluating the host's platform markers.
+# A macOS pass can omit Linux-only dependencies; the Linux CI audit must also pass (#823).
 security:
 	uv run bandit -c pyproject.toml -r src scripts
 	uv run deptry src
