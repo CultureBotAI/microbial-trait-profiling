@@ -13,8 +13,10 @@ oxygen guilds, with all six combined into a single figure each:
 
 The corpus definition, the study-level averaging, the masking rules, and the row
 clustering are the same code path as the guild figure, so the two are directly
-comparable as a matched-corpus analog. This does not claim to reproduce the
-published Table 1 baseline. Two things necessarily differ. The six traits are
+comparable as a matched-corpus analog. That includes the population: both
+matrices come from ``build_figure_matrix``, which leaves out every experiment pair
+whose retained-annotation total is zero on a side (#783, #811). This does not
+claim to reproduce the published Table 1 baseline. Two things necessarily differ. The six traits are
 single terms rather than pooled guilds, and their corpus-wide prevalence spans
 more than an order of magnitude, so the heatmap gives each trait its own colour
 range instead of one shared range. And there is no aerobe-versus-anaerobe
@@ -37,7 +39,8 @@ from mtp.corpus_identity import corpus_identity, summary_lines, write_identity
 from mtp.guild_maps import (
     OTHER_LABEL,
     SIGN_TOLERANCE,
-    build_matrix,
+    build_figure_matrix,
+    pair_exclusion_note,
     require_plotly,
     study_direction_means,
     subset_matrix,
@@ -53,8 +56,10 @@ from mtp.trait_guilds import (
     TABLE1_TRAIT_COLORS,
     TABLE1_TRAIT_LABELS,
     TABLE1_TRAITS,
+    PairExclusion,
     Profile,
     drop_zero_total_pairs,
+    format_pair_exclusion,
     load_profiles,
     read_bugsigdb_vintage,
     write_stats_report,
@@ -141,6 +146,8 @@ class MissingConditions:
     # The panel names the pooled Other row itself, and it is not drawn.
     other_not_drawn: bool = False
     dropped_with_body_sites: tuple[str, ...] = ()
+    # In the export, but only in experiment pairs the zero-total exclusion drops.
+    excluded_zero_total: tuple[str, ...] = ()
 
 
 def missing_conditions(
@@ -152,6 +159,7 @@ def missing_conditions(
     pooled_conditions: Collection[str] = (),
     combined_conditions: Collection[str] = (),
     site_dropped_conditions: Collection[str] = (),
+    zero_total_conditions: Collection[str] = (),
 ) -> MissingConditions:
     """Split undrawn panel conditions by why they have no row of their own.
 
@@ -177,12 +185,19 @@ def missing_conditions(
     Other cell, so the note says "assigned to" and claims no more. A panel may
     name ``OTHER_LABEL`` itself; it is never a corpus condition, so it is
     reported only as drawn or not. Repeated requests are counted once.
+
+    ``corpus_conditions`` are the conditions of the matrix's population, the
+    shared comparison basis. ``zero_total_conditions`` are those the export holds
+    only in experiment pairs with a zero retained-annotation total on a side.
+    The basis leaves those pairs out, so such a condition is neither absent from
+    the export nor cut by the display, and is reported apart from both (#811).
     """
     drawn = set(drawn_conditions)
     blank = set(blank_conditions)
     pooled = set(pooled_conditions)
     combined = set(combined_conditions)
     site_dropped = set(site_dropped_conditions)
+    zero_total = set(zero_total_conditions) - set(corpus_conditions)
     requested = tuple(dict.fromkeys(requested))
     held = [name for name in requested if name in corpus_conditions and name not in drawn]
     left_out = tuple(name for name in held if name in combined)
@@ -190,7 +205,9 @@ def missing_conditions(
     pooled_missing = tuple(name for name in held if name in pooled)
     return MissingConditions(
         absent_from_corpus=tuple(
-            name for name in requested if name not in corpus_conditions and name != OTHER_LABEL
+            name
+            for name in requested
+            if name not in corpus_conditions and name not in zero_total and name != OTHER_LABEL
         ),
         blank_after_masking=tuple(
             name
@@ -209,6 +226,7 @@ def missing_conditions(
         dropped_with_body_sites=tuple(
             name for name in held if name in site_dropped and name not in pooled
         ),
+        excluded_zero_total=tuple(name for name in requested if name in zero_total),
     )
 
 
@@ -221,6 +239,12 @@ def missing_condition_note(
         parts.append(
             "Not drawn because this BugSigDB export does not contain them: "
             f"{', '.join(missing.absent_from_corpus)}."
+        )
+    if missing.excluded_zero_total:
+        parts.append(
+            "In this export, but only in experiment pairs with a zero retained-annotation "
+            "total on a side, which are excluded, so not drawn: "
+            f"{', '.join(missing.excluded_zero_total)}."
         )
     if missing.blank_after_masking:
         parts.append(
@@ -315,9 +339,10 @@ def study_trait_contrasts(
 ) -> dict[str, dict[str, float]]:
     """Per study, the increased minus decreased mean fraction for each trait.
 
-    Collapsing to one value per study first is the fix issue #133 asks for: 56.2%
-    of studies contribute more than one experiment on the pinned v1.3.1 corpus,
-    so treating experiments as independent overstates the sample size.
+    Collapsing to one value per study first is the fix issue #133 asks for: 55.4%
+    of the 922 studies left on the committed corpus after the zero-total
+    exclusion contribute more than one experiment, so treating experiments as
+    independent overstates the sample size.
 
     By default, experiments whose retained-annotation total is zero on either
     side are excluded via ``drop_zero_total_pairs`` to satisfy the shared
@@ -462,11 +487,21 @@ SHIFT_FAMILY_ID = "table1_six_fractions"
 SHIFT_CORRECTION = "Benjamini-Hochberg"
 
 
-def write_shift_table(result: ShiftResult, output_dir: Path, vintage: str | None) -> list[Path]:
+def write_shift_table(
+    result: ShiftResult,
+    output_dir: Path,
+    vintage: str | None,
+    exclusion: PairExclusion | None = None,
+) -> list[Path]:
     """Write the per-trait shift table and the trait-pair correlation table.
 
     Both are long (tidy): fixed identifier columns, then one statistic per column
     with a single atomic value per cell.
+
+    ``exclusion`` is the zero-total pair exclusion the shifts and the maps ran
+    after. Its count is written on every shift row as ``excluded_experiment_pairs``,
+    so a row read on its own states its population, as the guild figure's
+    statistics table does (#783, #811). It is blank when no exclusion is given.
     """
     output_dir.mkdir(parents=True, exist_ok=True)
     shifts_path = output_dir / f"{OUTPUT_PREFIX}_direction_shift.tsv"
@@ -491,6 +526,7 @@ def write_shift_table(result: ShiftResult, output_dir: Path, vintage: str | None
                 "family_size",
                 "correction_method",
                 "status",
+                "excluded_experiment_pairs",
                 "bugsigdb_vintage",
             ]
         )
@@ -498,6 +534,7 @@ def write_shift_table(result: ShiftResult, output_dir: Path, vintage: str | None
         def cell(value: float | None, spec: str) -> str:
             return "" if value is None else format(value, spec)
 
+        excluded = "" if exclusion is None else exclusion.zero_total_experiments
         for shift in result.shifts:
             writer.writerow(
                 [
@@ -516,6 +553,7 @@ def write_shift_table(result: ShiftResult, output_dir: Path, vintage: str | None
                     len(result.shifts),
                     SHIFT_CORRECTION,
                     shift.status,
+                    excluded,
                     vintage or "",
                 ]
             )
@@ -829,7 +867,17 @@ def main() -> int:
     )
     print("\n".join(summary_lines(identity)))
 
-    matrix = build_matrix(
+    # One population for the maps and the shift figure: the shared comparison
+    # basis, as the oxygen guild figure has it (#783). A zero-total pair's share is
+    # undefined, so it must not enter a map cell as a measured 0 (#811). The shift
+    # drops it on its own too (#228).
+    loaded_conditions = {profile.condition for profile in profiles if profile.condition}
+    exclusion = drop_zero_total_pairs(profiles)
+    print(format_pair_exclusion(exclusion))
+    profiles = exclusion.profiles
+    population_note = pair_exclusion_note(exclusion)
+
+    matrix = build_figure_matrix(
         profiles,
         max_conditions=args.max_conditions,
         max_body_sites=args.max_body_sites,
@@ -871,7 +919,7 @@ def main() -> int:
     result = compute_direction_shifts(profiles, TRAIT_ORDER)
 
     written = write_matrix_outputs(matrix, args.output_dir, OUTPUT_PREFIX)
-    written.extend(write_shift_table(result, args.output_dir, vintage))
+    written.extend(write_shift_table(result, args.output_dir, vintage, exclusion))
     written.append(
         write_figure(
             matrix,
@@ -887,6 +935,7 @@ def main() -> int:
             range_quantile=0.98,
             separate_body_sites=True,
             mark_no_signal=args.mark_no_signal,
+            note=population_note,
         )
     )
     # The combined figure squeezes every body site in, which leaves each column
@@ -930,6 +979,7 @@ def main() -> int:
             pooled_conditions=pooled_conditions,
             combined_conditions=matrix.conditions,
             site_dropped_conditions=matrix.dropped_site_conditions,
+            zero_total_conditions=loaded_conditions - corpus_conditions,
         )
         note = missing_condition_note(
             missing, max_conditions=args.max_conditions, min_studies=args.min_studies
@@ -938,6 +988,11 @@ def main() -> int:
             print(
                 f"focus panel {panel.slug}: absent from the corpus: "
                 f"{', '.join(missing.absent_from_corpus)}"
+            )
+        if missing.excluded_zero_total:
+            print(
+                f"focus panel {panel.slug}: only in excluded zero-total pairs: "
+                f"{', '.join(missing.excluded_zero_total)}"
             )
         if missing.blank_after_masking:
             print(
@@ -993,7 +1048,9 @@ def main() -> int:
                 range_quantile=0.98,
                 mark_no_signal=args.mark_no_signal,
                 scale_reference=matrix,
-                note=note,
+                # A cut is shown on its own, so it states the population on a line
+                # of its own too.
+                note="<br>".join(line for line in (note, population_note) if line),
             )
         )
     written.append(
