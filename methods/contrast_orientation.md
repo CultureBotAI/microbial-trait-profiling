@@ -8,8 +8,10 @@ corpus (`contrast_class_counts.tsv`), the historical-versus-oriented comparison
 [#188](https://github.com/CultureBotAI/microbial-trait-profiling/issues/188),
 [#291](https://github.com/CultureBotAI/microbial-trait-profiling/issues/291),
 [#554](https://github.com/CultureBotAI/microbial-trait-profiling/issues/554),
-[#569](https://github.com/CultureBotAI/microbial-trait-profiling/issues/569), and
-[#574](https://github.com/CultureBotAI/microbial-trait-profiling/issues/574).
+[#569](https://github.com/CultureBotAI/microbial-trait-profiling/issues/569),
+[#574](https://github.com/CultureBotAI/microbial-trait-profiling/issues/574),
+[#581](https://github.com/CultureBotAI/microbial-trait-profiling/issues/581), and
+[#793](https://github.com/CultureBotAI/microbial-trait-profiling/issues/793).
 
 ## The question
 
@@ -31,7 +33,7 @@ both sample sizes and the description - with the curated direction convention, t
 assigned `contrast_class`, `orientation`, `contrast_type`, and `control_tier`, the
 matched evidence, flags, whether the experiment is in the analysed corpus, its
 `validation_status` from the committed hand review, the classifier version
-(`contrast-orientation-v5`) and the BugSigDB vintage. The export holds no Group 0
+(`contrast-orientation-v6`) and the BugSigDB vintage. The export holds no Group 0
 definition, so every row carries the flag `no_group_0_definition_in_export`; a Group
 0 reading rests on its name alone.
 
@@ -317,7 +319,10 @@ MASLD+", stays `unresolved`), while `contrast-orientation-v5` resolves the two
 remaining v2/v3 cross-sectional recovered-versus-healthy rows (`33431578-2` and
 `39642873-2`, routed from `longitudinal_timepoint` to `other` with
 `contrast_type = resolved_disease`), bringing agreement on the 60 reviewed experiments
-to **60/60 (100.0%)**.
+to **60/60 (100.0%)**. `contrast-orientation-v6` (#581) moves no reviewed experiment:
+29776865-2 ("PD duration less than 5 years" against "PD duration more than 5 years")
+stays `disease_vs_disease`, flagged `age_band_not_timepoint` instead of
+`shared_timepoint`, and agreement on the pinned export stays 60/60.
 
 ## Retained, reversed, excluded and unresolved
 
@@ -345,6 +350,35 @@ reversed; 1,090 are excluded as other classes and 161 are unresolved. Within the
 | `case_vs_control_subject` | `tier_3_hospital_comorbid_or_tissue` | 26 | 15 |
 | `comorbidity_within_disease` | `tier_3_hospital_comorbid_or_tissue` | 29 | 17 |
 | `paired_tissue_autologous` | `tier_3_hospital_comorbid_or_tissue` | 16 | 11 |
+
+## Classifier versions
+
+`CLASSIFIER_VERSION` in `src/mtp/contrast_orientation.py` names the rules. Every
+manifest row, the provenance record and each workflow contrast selection carry it, so two
+records with the same version must classify every experiment alike. A rule change that
+moves any experiment's class, orientation, contrast type, control tier or flags needs a
+new version and a section below saying which experiments moved, measured by classifying
+the same pinned export under the old and the new rules. Rewording an evidence string
+alone needs no new version.
+
+`tests/test_contrast_orientation.py` checks this for a fixed set of cases only (#793).
+For each version, `tests/fixtures/contrast_orientation_guard_digests.json` pins SHA-256
+digests of the cases and of the classifier's decisions on them, and the test fails when
+the decisions change but the version does not, or when the version has no section below.
+The 116 cases are the repository's committed tables of experiment strings: the 60
+experiments of the committed review, from the condition and group names it records, the
+52 cases of the #291 and #569 regression tables, and the four experiments that the v6
+section below lists. They tell each version from the next (v3, v4, v5 and v6 give four
+different digests). The four v6 experiments are cases because the other 112 caught #739
+only through one flag on review experiment 29776865-2: on those 112, #739's pre-ART rules
+alone leave the digest where v5 had it. With the four, undoing either the duration-band
+rule or the pre-ART rules changes the digest; restoring the bare-space "pre treatment"
+reading (#805) would not. Beyond these cases the guard sees nothing. Of the 337 terms in
+the classifier's 20 term lists, deleting any one of 146 moves at least one experiment of
+the pinned export, and only 42 of those deletions move a guard case, with or without the
+four v6 experiments. A rule change can therefore still move experiments without failing
+the guard, and the comparison on the pinned export remains the measure of what a version
+changed.
 
 ## Changes from `contrast-orientation-v3` to `-v4` (#569)
 
@@ -378,7 +412,7 @@ contrast raised in the same issue, was already `paired_tissue_autologous` in Tie
 under v3 and is unchanged; what #569 adds for it is the guidance in "Selecting
 patients against controls" above.
 
-## Changes from `contrast-orientation-v4` to `-v5` (#574, #581, #626, #630, #672)
+## Changes from `contrast-orientation-v4` to `-v5` (#574, #630, #672)
 
 Compared on the same pinned inputs, `contrast-orientation-v5` keeps the
 `disease_vs_healthy` class membership, Tier 1+2 subject controls (`970` experiments,
@@ -405,20 +439,73 @@ Compared on the same pinned inputs, `contrast-orientation-v5` keeps the
   including the 4 Yachida et al. 2019 contrasts above) carry the explicit
   `hospital_or_symptomatic_control` flag in `flags` under `case_vs_control_subject`
   (`tier_3_hospital_comorbid_or_tissue`).
-- **Duration bands, spaced `pre - <therapy>`, and parenthesized `(ART) Naïve` (#581)**:
-  `DURATION_BAND` masks treatment and disease duration qualifiers ("for more than 1
-  year", "duration less than 5 years") out of `_timepoints` and records
-  `age_band_not_timepoint` (matching reviewed experiment `29776865-2` and moving
-  non-corpus experiment `29808701-1` from `treatment_exposure` to Tier 3
-  `disease_vs_healthy` with `treated_disease_group`), while `SPACED_BASELINE_PRE` and
-  `NEGATED_TREATMENT` recognise spaced `"pre - antiretroviral therapy(ART)"`
-  (`33324725-1` to Tier 1 `disease_vs_healthy`, `33324725-4` to `disease_vs_disease`,
-  both outside the analysed corpus) and `"Antiretroviral therapy (ART) Naïve at
-  baseline"` (`38310301-1` to Tier 1 `disease_vs_healthy`, outside the analysed
-  corpus).
 - **Symmetric reversed `treated_disease_group` rule and review-table validation**:
   adds the reversed `Group 0` branch of `treated_disease_group` (requiring `strong_1`)
   and enforces label and verdict consistency in `read_review` (60/60 `reviewed_agreed`).
+
+## Changes from `contrast-orientation-v5` to `-v6` (#581, #739, #793)
+
+`contrast-orientation-v6` names the rules that #739 (f52923a) introduced without bumping
+the version. From f52923a until #793 the classifier still reported
+`contrast-orientation-v5`, so a record labelled v5 can hold either set of rules. The
+classifier source it records tells them apart: `analysis_source_sha256` in the
+contrast-orientation provenance or `classifier.source_sha256` in a workflow contrast
+selection is `a0a7819ff0d202f05bd1282c75abbd0e9be129815f9fbdb7fc3861cfc1c769ff` under the
+v5 rules and `e7d5f4c9ecf37ce566f3ef763362d445d6a32e673d0ee2435d768739924df5d1` under the
+v6 rules. The tracked cellulose_decr (`data/analysis/cellulose_decr/`) and
+integrated-evidence (`data/derived/integrated_evidence/`) outputs labelled v5 were built
+from source `e7d5f4c9…`, the v6 rules. `cellulose_decr_provenance.json` records no
+classifier source hash, so there the test cannot be applied from the tracked files: its
+code commit holds that source, and its pinned contrast manifest (`a8ececf2…`) was
+written at 8b280a3 from it.
+
+- **Duration bands**: `DURATION_BAND` masks treatment and disease duration qualifiers
+  ("for more than 1 year", "duration less than 5 years") out of `_timepoints` and
+  records `age_band_not_timepoint`.
+- **Spaced `pre - <therapy>` and parenthesized `(ART) Naïve`**: `SPACED_BASELINE_PRE`
+  reads "pre - antiretroviral therapy(ART)" as a baseline before therapy, and
+  `NEGATED_TREATMENT` reads it and "Antiretroviral therapy (ART) Naïve" as untreated
+  disease.
+- **Bare-space `pre treatment` no longer reads as untreated**: rewriting
+  `NEGATED_TREATMENT` also dropped "pre treatment", "pre therapy" and "pre surgery"
+  written with a plain space, while "pre-treatment" and "pretreatment" still read as
+  untreated. "Healthy controls" against "HIV patients pre treatment" is
+  `longitudinal_timepoint` at 51bb108 (v5) and `treatment_exposure` at f52923a (v6). No
+  experiment of the pinned export moves. The phrase appears only in the group names of
+  40247863-2 ("Pre treatment of Mandibular Advancement Devices (MAD) group" against "Post
+  treatment …"), which stays `longitudinal_timepoint`, and in the Group 1 definition of
+  27171425-1, which is unchanged. Whether the narrowing was intended is #805.
+
+The effect was measured by comparing per-experiment classifications in the
+`contrast_selection.json` of two Tier 1+2 core runs on the same pinned export
+(`full_dump.csv` SHA-256 `af84bfca…`): run `443ffc89…` at 94213f5, under the v5 rules,
+and run `4a1ebaf5…` at 8b280a3, under the v6 rules. Four of the 4,435 experiments
+changed class, contrast type, control tier or orientation, all of them HIV infection
+contrasts that v5 read as treatment contrasts. Classifying all 4,457 experiments of the
+export under the two classifier sources finds the same four:
+
+| Experiment | Group 0 | Group 1 | v5 class, type, tier, orientation | v6 class, type, tier, orientation |
+| --- | --- | --- | --- | --- |
+| 29808701-1 | Age-matched HIV-uninfected women | HIV-positive women who have been taking ART for more than 1 year | `treatment_exposure`, `treatment_exposure`, `not_applicable`, `not_applicable` | `disease_vs_healthy`, `case_vs_control_subject`, `tier_3_hospital_comorbid_or_tissue`, `native`, flagged `treated_disease_group` |
+| 33324725-1 | Human immunodeficiency virus negative (HIV-)Uninfected Controls | Human immunodeficiency virus positive(HIV+) pre - antiretroviral therapy(ART) | `treatment_exposure`, `treatment_exposure`, `not_applicable`, `not_applicable` | `disease_vs_healthy`, `case_vs_control_subject`, `tier_1_healthy_normal`, `native` |
+| 33324725-4 | Human immunodeficiency virus positive(HIV+) pre- antiretroviral therapy (ART) in Fiebig stage 1-2(F1-2) | Human immunodeficiency virus positive (HIV+) pre- antiretroviral therapy(ART) in Fiebig stage 3(F3) | `treatment_exposure`, `treatment_exposure`, `not_applicable`, `not_applicable` | `disease_vs_disease`, `disease_vs_disease`, `not_applicable`, `not_applicable` |
+| 38310301-1 | Healthy controls (HC) | Antiretroviral therapy (ART) Naïve at baseline | `treatment_exposure`, `treatment_exposure`, `not_applicable`, `not_applicable` | `disease_vs_healthy`, `case_vs_control_subject`, `tier_1_healthy_normal`, `native` |
+
+Each of the four has a signature in one direction only, so none is in the analysed
+corpus, and the Tier 1+2 core selection excludes all four as `unpaired` under both
+versions; the two runs select the same experiments apart from the 35 that #742's
+sequencing-type filter removes. Five more experiments changed their flags but not their
+class, type, tier or orientation: 29776865-2 (`age_band_not_timepoint` instead of
+`shared_timepoint`), 31824239-1, -2 and -3 (`age_band_not_timepoint` added) and
+38310301-2 (`negated_treatment_term` added). Four changed their evidence string only
+(33324725-3, -5, -6 and -7, whose time word `pre` now reads `pre-therapy`). No other
+experiment changed, so the class counts, control tiers and populations reported above
+are the same under both versions. Analyses that also read single-direction signatures do
+see the change. 38310301-1 is a decreased feces signature, so under v6 it joins
+cellulose_decr's disease-versus-healthy HIV units: #780's tracked
+`condition_definition_overlap.tsv` counts 15 HIV U6 units in `disease_vs_healthy_oriented`
+with exact labels, where the v5 rules give 14 (#793). cellulose_decr's tracked
+all-contrast tables cite bsdb:38310301 in the HIV feces pair under either version.
 
 ## The oriented and control-tier subsets against the historical corpus
 
@@ -516,7 +603,7 @@ Known remaining limitations:
   (`GENERAL_COMPARISON`) is allowed to clear a multi-valued condition. Outside the
   analysed corpus, 29808701-1 ("for more than 1 year"), 33324725-1 ("pre -
   antiretroviral therapy(ART)"), and 38310301-1 ("Antiretroviral therapy (ART) Naïve at
-  baseline") are resolved in `contrast-orientation-v5` (#581), while 29411528-3 and
+  baseline") are resolved in `contrast-orientation-v6` (#581), while 29411528-3 and
   33324725-2 (untreated vs ART-treated HIV+) and 28743816-1 ("HIV seronegative" against
   "HIV seroconverted", a prospective seroconversion cohort) remain excluded. A hyphen
   followed by a word ("HIV- women") is not read as a sign; no HIV comparison group in
@@ -549,14 +636,18 @@ stratification and review-disagreement fixes ([#554](https://github.com/CultureB
 the v4 HIV-status and treated-case readings with the HIV contrasts that must stay
 `treatment_exposure` and the tumour-against-adjacent-tissue contrast that the tiers keep
 out of subject-level populations ([#569](https://github.com/CultureBotAI/microbial-trait-profiling/issues/569)),
-and the v5 symmetric treated-disease rule, cross-sectional resolved-disease routing,
-precursor-lesion control handling, `hospital_or_symptomatic_control` flag, duration and
-pre-ART baseline parsing, and review-table invariants
+the v5 symmetric treated-disease rule, cross-sectional resolved-disease routing,
+precursor-lesion control handling, `hospital_or_symptomatic_control` flag and
+review-table invariants
 ([#574](https://github.com/CultureBotAI/microbial-trait-profiling/issues/574),
-[#581](https://github.com/CultureBotAI/microbial-trait-profiling/issues/581),
-[#626](https://github.com/CultureBotAI/microbial-trait-profiling/issues/626),
 [#630](https://github.com/CultureBotAI/microbial-trait-profiling/issues/630),
-[#672](https://github.com/CultureBotAI/microbial-trait-profiling/issues/672)).
+[#672](https://github.com/CultureBotAI/microbial-trait-profiling/issues/672)), the v6
+duration and pre-ART baseline parsing
+([#581](https://github.com/CultureBotAI/microbial-trait-profiling/issues/581)) and the
+condition-scope contrasts that stay excluded
+([#626](https://github.com/CultureBotAI/microbial-trait-profiling/issues/626)). It also
+holds the classifier-version guard described under "Classifier versions"
+([#793](https://github.com/CultureBotAI/microbial-trait-profiling/issues/793)).
 
 The classifier, the reviews and this description were drafted with the assistance
 of coding agents (Claude Code and Antigravity) and require review by the author

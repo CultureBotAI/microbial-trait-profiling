@@ -26,7 +26,7 @@ dependencies = [
   # and `mtp.calibration` import it directly.
   "numpy>=2.0",
   "pandas>=3.0.6",
-  "plotly>=7.0",
+  "plotly>=7.1.0",
   "pydantic>=2.13.0",
   "pyyaml>=6.0.2",
   # scipy stays a runtime dependency on purpose (#288): the analysis modules
@@ -64,11 +64,11 @@ viz = [
   "kaleido>=1.0",
   "matplotlib>=3.10.0",
   "pillow>=12.0.0",
-  "plotly>=7.0",
+  "plotly>=7.1.0",
   "seaborn>=0.13.0",
 ]
 mongo = [
-  "linkml-store[llm,mongodb]>=0.3.0",
+  "linkml-store[llm,mongodb]>=0.3.2",
   "pymongo>=4.17.0",
   "python-dotenv>=1.2.2",
 ]
@@ -91,7 +91,7 @@ qa = [
   # Reproduce the historical Git-state audit and regression comparisons (#635).
   # Runtime provenance uses GitPython's native Git interface instead.
   "dulwich>=1.2.17",
-  "pip-audit>=2.10.0",
+  "pip-audit>=2.10.1",
   "pytest-cov>=6.0.0",
   "types-PyYAML>=6.0.12.20260408",
   "uv==0.13.4",

@@ -153,6 +153,24 @@ avoiding artificial ties (#228). Historical fraction analyses that mapped
 zero-total profiles to zero (such as scenario S0 in `mtp.log_ratio_sensitivity`)
 are retained for historical audit only and are distinct from this baseline.
 
+The oxygen guild figure uses the same basis (#783). The repository owner chose
+this on 2026-10-22, over keeping zero-total pairs in the figure and adding them
+back to the integrated McNemar. The basis covers:
+
+- the figure's condition-by-body-site cells;
+- its cell-status table;
+- its aerobe/anaerobe McNemar and rank correlations;
+- the integrated evidence table's figure-cell inventory and McNemar row.
+
+A zero-total pair's guild share is undefined, so it cannot enter a cell mean or
+a study sign as a measured 0. Scored that way, it lowered cell means. It also
+shaded cells as sampled without guild signal: on the committed corpus, 8 of the
+20 such cells were backed only by profiles with no retained annotation. And it
+gave the figure's McNemar a different population from the integrated table's
+and the calibration's (#730), so one run reported two McNemar results. On the
+committed corpus the exclusion removes 55 of 2,257 experiment pairs and leaves
+922 of 932 studies.
+
 The fraction and ratio populations also need separate names. First retain the
 full fraction-eligible analysis. For each A/B comparison, additionally calculate
 the fractions of A and B on exactly that ratio's eligible pairs. Comparing these

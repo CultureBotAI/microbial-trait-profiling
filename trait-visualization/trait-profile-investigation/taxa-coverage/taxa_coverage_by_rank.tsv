@@ -1,8 +1,8 @@
-taxonomic_rank	display_rank	total_taxa	zero_trait_taxa	zero_trait_pct	sparse_1_2_taxa	sparse_1_2_pct	rich_gte_3_taxa	rich_gte_3_pct	trait_bearing_taxa	trait_bearing_pct	total_occurrences	zero_trait_occurrences	zero_trait_occurrences_pct	sparse_occurrences	rich_occurrences	trait_bearing_occurrences	trait_bearing_occurrences_pct
-species	Species	3846	1764	45.87	265	6.89	1817	47.24	2082	54.13	19113	4205	22.0	883	14025	14908	78.0
-genus	Genus	1339	321	23.97	50	3.73	968	72.29	1018	76.03	25388	889	3.5	443	24056	24499	96.5
-family	Family	328	87	26.52	5	1.52	236	71.95	241	73.48	7538	261	3.46	30	7247	7277	96.54
-order	Order	164	46	28.05	4	2.44	114	69.51	118	71.95	2836	117	4.13	23	2696	2719	95.87
-class	Class	78	16	20.51	1	1.28	61	78.21	62	79.49	1930	44	2.28	3	1883	1886	97.72
-phylum	Phylum	72	20	27.78	8	11.11	44	61.11	52	72.22	2672	104	3.89	25	2543	2568	96.11
-superkingdom	Superkingdom	2	1	50.0	0	0.0	1	50.0	1	50.0	9	4	44.44	0	5	5	55.56
+taxonomic_rank	display_rank	total_taxa	zero_trait_taxa	zero_trait_pct	sparse_1_2_taxa	sparse_1_2_pct	rich_gte_3_taxa	rich_gte_3_pct	trait_bearing_taxa	trait_bearing_pct	total_occurrences	zero_trait_occurrences	zero_trait_occurrences_pct	sparse_occurrences	rich_occurrences	trait_bearing_occurrences	trait_bearing_occurrences_pct	profiles_with_rank	profiles_with_rank_pct_of_all	profiles_all_mapped	profiles_all_mapped_pct	profiles_mixed_mapped_zero	profiles_mixed_pct	profiles_zero_only	profiles_zero_only_pct	profiles_any_mapped	profiles_any_mapped_pct
+species	Species	3846	1764	45.87	265	6.89	1817	47.24	2082	54.13	19113	4205	22.0	883	14025	14908	78.0	3332	45.46	1934	58.04	925	27.76	473	14.2	2859	85.8
+genus	Genus	1339	321	23.97	50	3.73	968	72.29	1018	76.03	25388	889	3.5	443	24056	24499	96.5	5270	71.91	4813	91.33	353	6.7	104	1.97	5166	98.03
+family	Family	328	87	26.52	5	1.52	236	71.95	241	73.48	7538	261	3.46	30	7247	7277	96.54	2684	36.62	2498	93.07	117	4.36	69	2.57	2615	97.43
+order	Order	164	46	28.05	4	2.44	114	69.51	118	71.95	2836	117	4.13	23	2696	2719	95.87	1440	19.65	1362	94.58	20	1.39	58	4.03	1382	95.97
+class	Class	78	16	20.51	1	1.28	61	78.21	62	79.49	1930	44	2.28	3	1883	1886	97.72	1149	15.68	1124	97.82	0	0.0	25	2.18	1124	97.82
+phylum	Phylum	72	20	27.78	8	11.11	44	61.11	52	72.22	2672	104	3.89	25	2543	2568	96.11	1596	21.78	1510	94.61	40	2.51	46	2.88	1550	97.12
+superkingdom	Superkingdom	2	1	50.0	0	0.0	1	50.0	1	50.0	9	4	44.44	0	5	5	55.56	9	0.12	5	55.56	0	0.0	4	44.44	5	55.56

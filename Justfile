@@ -151,6 +151,15 @@ rerun-jed run output *ARGS:
 rerun-verify record:
 	uv run python -m mtp.workflow.arms verify "$@"
 
+# Execute complete cross-arm comparison consuming verified core, Noel, Jed, and Ilyas manifests.
+[positional-arguments]
+rerun-compare core_run noel_run jed_run ilyas_run output *ARGS:
+	uv run python -m mtp.workflow.arms compare "$@"
+
+[positional-arguments]
+rerun-verify-comparison record:
+	uv run python -m mtp.workflow.arms verify-comparison "$@"
+
 sync:
 	uv sync --all-extras --group dev --group qa
 
@@ -777,7 +786,7 @@ security:
 	tmpdir="$(mktemp -d)" && \
 	trap 'rm -rf "$tmpdir"' EXIT && \
 	reqfile="$tmpdir/requirements.txt" && \
-	uv export --quiet --frozen --no-dev --format requirements-txt \
+	uv export --quiet --frozen --all-extras --group dev --group qa --format requirements-txt \
 	  --no-emit-project --no-emit-workspace \
 	  --output-file "$reqfile" && \
 	uv run pip-audit -r "$reqfile" --disable-pip \

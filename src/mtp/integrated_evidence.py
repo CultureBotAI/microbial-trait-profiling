@@ -113,6 +113,22 @@ MASKED = "masked_below_min_studies"
 NOT_DRAWN = "not_drawn"
 NOT_APPLICABLE = "not_applicable"
 
+#: The population of a row computed on the shared comparison basis, which every
+#: test and figure cell this table computes runs on (#783). These rows used to
+#: read "human, paired experiments" and "profiles with no retained annotation
+#: score share 0", as if the pairs the basis excludes were still in them.
+SHARED_BASIS_POPULATION = (
+    "human, paired experiments; pairs with a zero retained-annotation total excluded"
+)
+
+
+def shared_basis_zero_state(feature: str) -> str:
+    """How a row on the shared basis treats zero annotation, for a trait or a guild."""
+    return (
+        "a pair with a zero retained-annotation total on a side is excluded, its share "
+        f"undefined; an annotated profile without the {feature} scores share 0"
+    )
+
 
 SELECTION_NOTE = (
     "the six Table 1 traits were selected on this corpus by the composition arm; "
@@ -374,7 +390,9 @@ def fraction_sign_records(
                 condition="",
                 body_site="",
                 direction="",
-                population="human, paired experiments",
+                population=(
+                    SHARED_BASIS_POPULATION if exclude_zero_totals else "human, paired experiments"
+                ),
                 denominator="summed non-MediaDive trait counts of the profile",
                 background="",
                 eligibility_rule="every study with a defined contrast; ties excluded from the test",
@@ -417,7 +435,11 @@ def fraction_sign_records(
                 decision=_decision(shift.q_value, q_threshold, status),
                 strict_decision=_decision(shift.q_value, strict_q_threshold, status),
                 display_status=NOT_APPLICABLE,
-                zero_annotation_state="profiles with no retained annotation score share 0",
+                zero_annotation_state=(
+                    shared_basis_zero_state("trait")
+                    if exclude_zero_totals
+                    else "profiles with no retained annotation score share 0"
+                ),
                 source=source,
             )
         )
@@ -516,11 +538,10 @@ def log_ratio_records(
 
 
 def build_guild_matrix(profiles: Sequence[Profile]) -> GuildMatrix:
-    """The oxygen guild figure's matrix, from the figure's own builder.
+    """The oxygen guild figure's matrix, from the figure's own builder (#770).
 
-    Pass the figure's population, the profiles as loaded. The figure does not
-    apply the zero-total pair exclusion the tests here run on, so a matrix built
-    after it inventories cells the figure never drew (#770).
+    The builder applies the zero-total pair exclusion that the tests here run on,
+    so the figure's cells and the tests share one population (#783).
     """
     return build_figure_matrix(profiles)
 
@@ -540,7 +561,12 @@ def guild_records(
     threshold decision in this table is a decision on a corrected value, and
     there is no corrected value here; writing the uncorrected p into ``q_value``
     made a single uncorrected test look like a one-member FDR family (#294).
+
+    The test runs on the shared comparison basis. Whatever the caller passes, an
+    experiment pair whose retained-annotation total is zero on a side is dropped
+    first, as the figure and its own McNemar drop it (#783).
     """
+    profiles = drop_zero_total_pairs(profiles).profiles
     correlation = compute_correlation(list(profiles), matrix)
     up_down, down_up = correlation.discordant
     status = TESTED if up_down + down_up else INSUFFICIENT
@@ -561,7 +587,7 @@ def guild_records(
             condition="",
             body_site="",
             direction="",
-            population="human, paired experiments",
+            population=SHARED_BASIS_POPULATION,
             denominator="summed non-MediaDive trait counts of the profile",
             background="",
             eligibility_rule="studies with a non-tied sign for both guilds",
@@ -598,7 +624,7 @@ def guild_records(
             decision=_decision(None, q_threshold, status),
             strict_decision=_decision(None, strict_q_threshold, status),
             display_status=NOT_APPLICABLE,
-            zero_annotation_state="profiles with no retained annotation score share 0",
+            zero_annotation_state=shared_basis_zero_state("guild"),
             selection_note=GUILD_SELECTION_NOTE,
             source=source,
         )
@@ -637,8 +663,9 @@ def cell_support_records(
     The classification is ``guild_maps.cell_status``, the same function the
     figure writer uses, so a cell cannot be reported as drawn by one artifact
     and masked by the other - provided ``matrix`` is the figure's own, from
-    ``build_guild_matrix`` over the profiles the figure draws. The same function
-    over another grid reported 1,148 cells for a figure of 2,016 (#770). The
+    ``build_guild_matrix``. The same function over another grid reported 1,148
+    cells for a figure of 2,016 (#770). That builder leaves out every zero-total
+    pair, so the rows state the shared basis as their population (#783). The
     inventory is complete, every cell of the matrix including the unsampled
     ones, because a partial inventory would put a reader back to guessing what
     an absent row meant.
@@ -667,7 +694,7 @@ def cell_support_records(
                     condition=condition,
                     body_site=site,
                     direction=direction,
-                    population="human, paired experiments, zero-total pairs included",
+                    population=SHARED_BASIS_POPULATION,
                     denominator="summed non-MediaDive trait counts of the profile",
                     background="",
                     eligibility_rule=(
@@ -704,9 +731,10 @@ def cell_support_records(
                     decision=UNDECIDED,
                     display_status=display_status,
                     zero_annotation_state=(
-                        "sampled, and no taxon carried any term of the guild"
+                        "sampled by annotated profiles, and no taxon in them carried an "
+                        "annotated term of the guild"
                         if test_status == ZERO_ANNOTATION
-                        else "profiles with no retained annotation score share 0"
+                        else shared_basis_zero_state("guild")
                     ),
                     selection_note=GUILD_SELECTION_NOTE,
                     source=source,
@@ -1641,14 +1669,38 @@ def read_status(
         return _unreadable(issue, f"the file holds a JSON {type(content).__name__}, not an object")
     if key in {"calibration_status", "orientation_status"}:
         return _bound_assessment(path, content, key, issue, expected_input_sha256)
+    source_meta: dict[str, object] = {
+        "path": str(path.resolve()),
+        "sha256": _sha256(path),
+        "expected_input_sha256": (
+            dict(expected_input_sha256) if expected_input_sha256 is not None else None
+        ),
+        "binding": "not_checked" if expected_input_sha256 is None else "matched",
+    }
+    claimed_inputs = content.get("inputs")
+    if expected_input_sha256 is not None and isinstance(claimed_inputs, Mapping):
+        for name, required in expected_input_sha256.items():
+            if name in claimed_inputs and required:
+                actual = claimed_inputs.get(name)
+                if not isinstance(actual, str) or actual != required:
+                    source_meta["binding"] = "mismatch_or_missing_identity"
+                    return replace(
+                        _unreadable(issue, f"assessment {name} missing or mismatched"),
+                        source=source_meta,
+                    )
+    elif expected_input_sha256 is not None:
+        source_meta["binding"] = "inputs_not_declared"
     if key == "sensitivity_status":
-        return _sensitivity_status(content, issue)
+        return replace(_sensitivity_status(content, issue), source=source_meta)
     value = content.get(key)
     if value is None:
-        return AssessmentStatus(issue, {}, f"pending {issue}")
+        return AssessmentStatus(issue, {}, f"pending {issue}", source=source_meta)
     if not isinstance(value, str):
-        return _unreadable(issue, f"{key} is a {type(value).__name__}, not a string")
-    return AssessmentStatus(issue, {}, value, (("note", key, "status", value),))
+        return replace(
+            _unreadable(issue, f"{key} is a {type(value).__name__}, not a string"),
+            source=source_meta,
+        )
+    return AssessmentStatus(issue, {}, value, (("note", key, "status", value),), source=source_meta)
 
 
 def _bound_assessment(
@@ -2030,8 +2082,9 @@ DICTIONARY: tuple[tuple[str, str], ...] = (
     (
         "experiments_eligible / experiments_excluded_zero_count",
         "experiments the method's own rule kept and removed for a zero count; the "
-        "zero-total pair exclusion the tests share is in the provenance record, with "
-        "the methods it applies to, and the figure-cell rows do not apply it",
+        "zero-total pair exclusion is in the provenance record, with the methods it "
+        "applies to: every test and figure cell computed here, but not the imported "
+        "native rows, which keep their sources' populations",
     ),
     ("effect_value / effect_units", "the estimate and what it measures; units differ by method"),
     (
@@ -2202,8 +2255,8 @@ def write_view(
             "body sites, the rest pooled into Other,",
             f"cells backed by fewer than {GUILD_MIN_STUDIES} studies masked, and rows and blocks "
             "with nothing drawn left out.",
-            "The figure draws every paired human profile, so unlike the tests in this table its",
-            "cells include the experiment pairs with a zero retained-annotation total.",
+            "Like the tests in this table, the figure leaves out every experiment pair whose",
+            "retained-annotation total is zero on a side.",
             "",
             "| Display | Test state | Cells |",
             "| --- | --- | --- |",
@@ -2369,6 +2422,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     parser.add_argument("--full-screen", type=Path, help="Compatible full-trait directional screen")
     parser.add_argument("--full-screen-provenance", type=Path)
+    parser.add_argument(
+        "--require-complete-sources",
+        action="store_true",
+        help="Reject missing native source tables or source_not_supplied placeholder rows (#776)",
+    )
     parser.add_argument("--code-commit", help="Source revision, supplied by the Justfile recipe")
     args = parser.parse_args(argv)
 
@@ -2462,18 +2520,18 @@ def main(argv: Sequence[str] | None = None) -> int:
     records: list[Record] = []
     records += fraction_sign_records(profiles, source=source, columns=columns, **thresholds)
     records += log_ratio_records(profiles, source=source, columns=columns, **thresholds)
-    # The figure draws every loaded profile. The exclusion above is the tests'
-    # comparison basis, not the figure's, so the cell inventory is built from the
-    # profiles before it (#770). The McNemar reads the profiles, never the matrix.
-    matrix = build_guild_matrix(historical_profiles)
+    # The figure's cells share the tests' population: the figure's own builder
+    # applies the exclusion above too (#783). The McNemar reads the profiles,
+    # never the matrix.
+    matrix = build_guild_matrix(profiles)
     records += guild_records(profiles, matrix=matrix, source=source, columns=columns, **thresholds)
-    # Every row so far ran on the shared comparison basis and the cell rows do not,
-    # so the provenance record names both sets rather than calling it corpus-wide.
-    shared_basis_methods = sorted({record.method for record in records})
-    cell_records = cell_support_records(
+    records += cell_support_records(
         matrix, source=source, columns=columns, min_studies=GUILD_MIN_STUDIES
     )
-    records += cell_records
+    # Every row so far was computed here on the shared comparison basis. The
+    # imported native rows below keep their sources' populations, so the
+    # provenance record names both sets.
+    shared_basis_methods = sorted({record.method for record in records})
     records += native_composition_records(
         arm1_path,
         columns=columns,
@@ -2507,6 +2565,35 @@ def main(argv: Sequence[str] | None = None) -> int:
         profile_sha256=_sha256(args.profile_input),
         experiments_sha256=_sha256(args.experiments_input),
     )
+    if args.require_complete_sources:
+        missing_files = [
+            name
+            for name, candidate in (
+                ("arm1_pooled_stats", arm1_path),
+                ("arm2_enrichment", enrichment_path),
+                ("arm2_depletion", depletion_path),
+                ("full_screen", screen_path),
+                ("full_screen_provenance", screen_provenance_path),
+            )
+            if not candidate.is_file()
+        ]
+        if missing_files:
+            raise ValueError(
+                "--require-complete-sources rejected missing source files: "
+                + ", ".join(missing_files)
+            )
+        missing_rows = sorted(
+            {
+                f"{record.method}:{record.trait}"
+                for record in records
+                if record.test_status == SOURCE_MISSING
+            }
+        )
+        if missing_rows:
+            raise ValueError(
+                "--require-complete-sources rejected source_not_supplied placeholder rows: "
+                + ", ".join(missing_rows)
+            )
 
     assessment_inputs = {
         "profile_sha256": _sha256(args.profile_input),
@@ -2522,8 +2609,18 @@ def main(argv: Sequence[str] | None = None) -> int:
             "#182",
             expected_input_sha256=assessment_inputs,
         ),
-        "sensitivity_status": read_status(args.sensitivity_status, "sensitivity_status", "#183"),
-        "coverage_status": read_status(args.coverage_status, "coverage_status", "#184"),
+        "sensitivity_status": read_status(
+            args.sensitivity_status,
+            "sensitivity_status",
+            "#183",
+            expected_input_sha256=assessment_inputs,
+        ),
+        "coverage_status": read_status(
+            args.coverage_status,
+            "coverage_status",
+            "#184",
+            expected_input_sha256=assessment_inputs,
+        ),
         "orientation_status": read_status(
             args.orientation_provenance,
             "orientation_status",
@@ -2625,10 +2722,13 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "is zero on either side; the share is undefined, not zero, and scoring "
                 "it as zero would count the pair as a tie"
             ),
-            # The tests this table runs share the exclusion. The figure-cell rows
-            # follow the oxygen guild figure, which draws those pairs (#770).
+            # Every test and figure cell this table computes shares the exclusion,
+            # including the oxygen guild figure's cells (#783). The imported native
+            # rows keep whatever their sources did.
             "applies_to": shared_basis_methods,
-            "not_applied_to": sorted({record.method for record in cell_records}),
+            "not_applied_to": sorted(
+                {record.method for record in records} - set(shared_basis_methods)
+            ),
         },
         "thresholds": {
             "q_threshold": args.q_threshold,
@@ -2656,6 +2756,18 @@ def main(argv: Sequence[str] | None = None) -> int:
             "each family is corrected on its own; a union of decisions has no false discovery rate"
         ),
         "selection_note": SELECTION_NOTE,
+        "downstream_contracts": {
+            "analysis_specs": {
+                spec_id: spec.model_dump(mode="json")
+                for spec_id, spec in sorted(
+                    __import__(
+                        "mtp.workflow.downstream_contracts",
+                        fromlist=["STANDARD_ANALYSIS_SPECS"],
+                    ).STANDARD_ANALYSIS_SPECS.items()
+                )
+            },
+            "require_complete_sources": bool(args.require_complete_sources),
+        },
     }
     provenance_path = output / "integrated_evidence_provenance.json"
     provenance_path.write_text(json.dumps(provenance, indent=2) + "\n", encoding="utf-8")

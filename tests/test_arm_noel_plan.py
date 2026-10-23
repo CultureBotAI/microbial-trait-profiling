@@ -62,7 +62,7 @@ def test_every_noel_command_has_explicit_inputs_and_outputs(context: ArmContext)
         if "--inputs" in command.argv:
             assert _option(command, "--inputs") == str(context.inputs)
     by_id = {command.id: command for command in commands}
-    for identifier in ("directional_screen", "validation_evidence"):
+    for identifier in ("directional_screen", "validation_evidence", "integrated_evidence"):
         assert _option(by_id[identifier], "--core-run") == str(context.manifest)
     assert _option(by_id["validation_evidence"], "--nodes-input") == str(
         context.products["kg_nodes"]

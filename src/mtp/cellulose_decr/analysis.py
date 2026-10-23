@@ -2603,6 +2603,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     interaction = interaction_table(corpus)
     direct = direct_trait_subjects(paths["kg_edges"], TRAIT_ID)
     catalog = catalog_table(taxa, matrix, sets, direct)
+    tier1_2_corpus = dataclasses.replace(exact_corpus, case_control="control_tiers_1_2")
+    _, tier1_2_taxa = population(tier1_2_corpus, ORIENTED)
+    tier1_2_sets = condition_sets(tier1_2_taxa, cellulose)
+    catalog_tier1_2 = catalog_table(tier1_2_taxa, matrix, tier1_2_sets, direct)
     bearing_ranks = matrix.loc[sorted(cellulose), "taxonomic_rank"]
     direct_by_rank = {
         str(rank): {
@@ -2761,6 +2765,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         "core_taxa_with_direct_trait_edge": int(
             catalog.loc[catalog["is_3way_core"], "has_direct_trait_edge"].sum()
         ),
+        "catalog_tier1_2_core_classes": catalog_tier1_2["core_class"].value_counts().to_dict(),
+        "core_taxa_with_direct_trait_edge_tier1_2": int(
+            catalog_tier1_2.loc[catalog_tier1_2["is_3way_core"], "has_direct_trait_edge"].sum()
+        ),
         "direct_trait_edges_by_rank": direct_by_rank,
         "kg_direct_trait_subjects": len(direct),
         "condition_definition_overlap": scenario_overlap.to_dict("records"),
@@ -2786,6 +2794,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "compartment_jaccard_and_direction_stats.tsv": compartments,
         "compartment_direction_interaction.tsv": interaction,
         "cellulose_decreased_taxa_catalog.tsv": catalog,
+        "cellulose_decreased_taxa_catalog_tier1_2.tsv": catalog_tier1_2,
         "profile_and_study_pair_jaccard.tsv": profile_pairs,
         "trait_convergence_benchmark.tsv": benchmark,
         "significant_results_summary.tsv": significant,
