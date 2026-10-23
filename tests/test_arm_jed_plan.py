@@ -121,6 +121,16 @@ def test_figures_are_explicitly_optional_and_scoped(context: ArmContext) -> None
                 assert not left.is_relative_to(right)
 
 
+@pytest.mark.parametrize("direction_basis", ["group_1_vs_group_0", "disease_vs_comparison"])
+def test_taxa_guild_heatmap_receives_the_core_direction_basis(
+    context: ArmContext, direction_basis: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The heatmap's direction legend names the basis of the core's directions (#795)."""
+    commands = build_commands(replace(context, direction_basis=direction_basis))
+    command = next(command for command in commands if command.id == "taxa_guild_heatmap")
+    assert _parse_command(command, monkeypatch).direction_basis == direction_basis
+
+
 def test_profiles_are_count_products_and_sensitivity_protocol_is_bound(context: ArmContext) -> None:
     commands = {command.id: command for command in build_commands(context)}
     for name in ("composition", "guild_maps", "table1_traits", "human_counts"):
