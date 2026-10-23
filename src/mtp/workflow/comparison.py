@@ -78,6 +78,24 @@ NOEL_CALIBRATED_PROCEDURES = {"noel_table1_six_trait_sign_test_v1": "fraction_si
 #: (methods/calibration.md); its failure is the expected outcome.
 NOEL_NEGATIVE_CONTROL = "screened_fraction_sign_test"
 
+#: Feature selection on the analysed corpus that a production spec's calibration leaves
+#: open, recorded beside its verdict rather than in its label (#855).
+SELECTION_UNCERTAINTY = {
+    "noel_table1_six_trait_sign_test_v1": (
+        "The six Table 1 traits were selected on this corpus before testing. The negative "
+        "control selects and then tests, but its inflation does not bound the historical "
+        "selection's cost in either direction (#363), so this verdict covers the sign test "
+        "on pre-specified traits and does not show that the post-hoc six-trait analysis is "
+        "valid."
+    )
+}
+
+#: The one label rule for selection. The declared protocol leaves the selection out of
+#: the label, so a production verdict is anti-conservative only for its own failed null
+#: criterion; True would label every selected spec anti-conservative whenever the
+#: negative control fails, an owner decision (#855).
+SELECTION_LABELS_ANTI_CONSERVATIVE = False
+
 #: Noel's criteria that judge null error. Its power criterion only checks that power
 #: is reported precisely; the protocol sets no threshold on power itself.
 NULL_CRITERIA = ("per_test_level", "family_error")
@@ -235,16 +253,17 @@ def _noel_procedure(statuses: object, procedure: str, path: Path) -> tuple[str, 
 
 
 def noel_calibration_verdict(path: Path, spec: AnalysisSpec) -> CalibrationVerdict:
-    """Noel's verdict for ``spec``'s procedure, validated by the negative control (#815, #844).
+    """Noel's verdict for ``spec``'s procedure on pre-specified traits (#815, #844, #855).
 
-    A null criterion is evidence only where the negative control failed it, as the
-    protocol declares it must; where the control passed it, the criterion is too weak,
-    so null control is not established. Noel's overall status maps explicitly: an
-    unevaluated or under-budget criterion (not_certified) is an unmet replicate budget,
-    a failed null criterion is anti-conservative at any budget (the harness keeps a short
-    run's fail only when its estimate already exceeds the tolerance), and a failed power
-    criterion is recorded as failed power. The protocol sets no threshold on power
-    itself, so power otherwise stays unassessed (#850).
+    The production procedure's own null criteria decide its error control. A failed one
+    is anti-conservative at any budget, since the harness keeps a short run's fail only
+    when its estimate already exceeds the tolerance. They count as passed only where the
+    negative control failed them as declared; where it passed them they are too weak, and
+    certification is withheld. The control's outcome and the features' selection on this
+    corpus are recorded in their own fields; whether that selection enters the label is
+    the one rule in ``SELECTION_LABELS_ANTI_CONSERVATIVE``. Noel's overall status maps
+    explicitly: not_certified is an unmet replicate budget, and a failed power criterion
+    is failed power. The protocol sets no threshold on power itself (#850).
     """
     content = json.loads(path.read_text(encoding="utf-8"))
     statuses = content.get("calibration_status") if isinstance(content, dict) else None
@@ -256,12 +275,18 @@ def noel_calibration_verdict(path: Path, spec: AnalysisSpec) -> CalibrationVerdi
         c for c in NULL_CRITERIA if c in criteria and not criteria[c].endswith("(sanity check)")
     ]
     too_weak = [c for c in judged if control_criteria.get(c) == "pass"]
-    validated = bool(judged) and all(control_criteria.get(c) == "fail" for c in judged)
+    as_expected: bool | None = False if too_weak else None
+    if judged and all(control_criteria.get(c) == "fail" for c in judged):
+        as_expected = True
     null_control_passed: bool | None = None
     if "fail" in (criteria.get(c) for c in NULL_CRITERIA):
         null_control_passed = False
-    elif validated and all(criteria[c] == "pass" for c in judged):
+    elif as_expected and all(criteria[c] == "pass" for c in judged):
         null_control_passed = True
+    selection = SELECTION_UNCERTAINTY.get(spec.id)
+    selection_labelled = (
+        SELECTION_LABELS_ANTI_CONSERVATIVE and bool(selection) and control == "fail"
+    )
     verdict = build_calibration_verdict(
         verdict_id=f"verdict:{spec.id}",
         production_spec=spec,
@@ -272,6 +297,7 @@ def noel_calibration_verdict(path: Path, spec: AnalysisSpec) -> CalibrationVerdi
         ),
         null_control_passed=null_control_passed,
         power_passed=False if criteria.get("power_reported") == "fail" else None,
+        anti_conservative_detected=selection_labelled,
     )
     read = "; ".join(
         f"{name} {status} [{', '.join(f'{c}={v}' for c, v in sorted(found.items()))}]"
@@ -280,20 +306,80 @@ def noel_calibration_verdict(path: Path, spec: AnalysisSpec) -> CalibrationVerdi
             (NOEL_NEGATIVE_CONTROL, control, control_criteria),
         )
     )
-    verdict.summary_message += f" Read from {path.name}: {read}."
-    if too_weak:
-        verdict.summary_message += (
-            f" The negative control {NOEL_NEGATIVE_CONTROL} passed {', '.join(too_weak)}, "
-            "which the protocol declares it must fail, so those criteria are too weak to be "
-            "evidence and null control is not established."
+    summary = f"{verdict.summary_message} Read from {path.name}: {read}."
+    if as_expected is False:
+        summary += (
+            f" The negative control passed {', '.join(too_weak)}, which the protocol declares "
+            "it must fail, so those criteria are too weak to be evidence and certification "
+            "is withheld."
         )
-    elif validated:
-        verdict.summary_message += (
-            f" The negative control {NOEL_NEGATIVE_CONTROL} failed {', '.join(judged)} "
-            "as the protocol declares."
+    elif as_expected:
+        summary += (
+            f" The negative control failed {', '.join(judged)} as the protocol declares: in "
+            "this harness selecting and then testing exceeds the tolerance, while "
+            f"{procedure}'s null result on pre-specified traits stands as recorded."
         )
-    verdict.summary_message += " Power is reported there without a threshold (#850)."
-    return verdict
+    if selection_labelled:
+        summary += " The label counts the selection of the features as anti-conservative."
+    if selection:
+        summary += " Feature selection on this corpus is recorded in selection_uncertainty."
+    summary += " Power is reported there without a threshold (#850)."
+    return verdict.model_copy(
+        update={
+            "summary_message": summary,
+            "negative_control_procedure": NOEL_NEGATIVE_CONTROL,
+            "negative_control_outcome": control,
+            "negative_control_as_expected": as_expected,
+            "selection_uncertainty": selection,
+        }
+    )
+
+
+def _composition_replicates(path: Path, summary: Mapping[str, object]) -> int:
+    """The complete replicates in the composition harness's replicate table (#844, #856).
+
+    Each replicate counts only with exactly one row per declared correction and threshold,
+    carrying the summary's seed, stream, unit and family size, and the replicate numbers
+    must run from 0 without gaps. The summary's per-cell counts must match the rows. A
+    truncated, duplicated or inconsistent table is an error, never a shorter count.
+    """
+    from mtp.composition_calibration.composition import CORRECTIONS, THRESHOLDS
+
+    cells = {(correction, threshold) for correction in CORRECTIONS for threshold in THRESHOLDS}
+    identity = tuple(str(summary.get(key)) for key in ("seed", "stream", "unit", "n_traits"))
+    found: dict[int, dict[tuple[str, float], int]] = {}
+    with path.open(encoding="utf-8", newline="") as handle:
+        for row in csv.DictReader(handle, delimiter="\t"):
+            try:
+                replicate, threshold = int(row["replicate"]), float(row["threshold"])
+                significant = int(row["significant"])
+                producer = (row["seed"], row["stream"], row["unit"], row["n_tests"])
+            except (KeyError, TypeError, ValueError) as error:
+                raise ValueError(f"{path} has a malformed replicate row: {row}") from error
+            cell = (row["correction"], threshold)
+            if producer != identity or cell not in cells or cell in found.get(replicate, {}):
+                raise ValueError(
+                    f"{path} has an inconsistent, undeclared or duplicate row {cell} for "
+                    f"replicate {replicate}"
+                )
+            found.setdefault(replicate, {})[cell] = significant
+    complete = len(found)
+    if sorted(found) != list(range(complete)) or any(set(row) != cells for row in found.values()):
+        raise ValueError(f"{path} is truncated or numbers its replicates outside 0..{complete - 1}")
+    groups = summary.get("summary")
+    recorded = {
+        (group.get("correction"), group.get("threshold")): group
+        for group in (groups if isinstance(groups, list) else [])
+        if isinstance(group, Mapping)
+    }
+    if set(recorded) != cells or any(
+        recorded[cell].get("replicates") != complete
+        or recorded[cell].get("replicates_with_any_call")
+        != sum(row[cell] > 0 for row in found.values())
+        for cell in cells
+    ):
+        raise ValueError(f"The summary's per-cell replicate counts disagree with {path.name}")
+    return complete
 
 
 def jed_calibration_verdict(
@@ -304,23 +390,21 @@ def jed_calibration_verdict(
 ) -> CalibrationVerdict:
     """The composition harness's replicate budget; it judges neither error nor power (#815).
 
-    The summary always reports every requested replicate as completed, so the completed
-    count is taken from the replicate table and must agree with it (#844).
+    The summary always reports every requested replicate as completed, so completion is
+    read from the validated replicate table and must agree with it (#844, #856).
     """
     from mtp.composition_calibration.composition import DEFAULT_REPLICATES
 
     content = json.loads(summary.read_text(encoding="utf-8"))
-    requested = content.get("replicates_requested") if isinstance(content, dict) else None
-    completed = content.get("replicates_completed") if isinstance(content, dict) else None
-    with replicates.open(encoding="utf-8", newline="") as handle:
-        reader = csv.DictReader(handle, delimiter="\t")
-        if "replicate" not in (reader.fieldnames or []):
-            raise ValueError(f"{replicates} has no replicate column")
-        recorded = len({row["replicate"] for row in reader})
+    if not isinstance(content, dict):
+        raise ValueError(f"{summary} is not a JSON object")
+    requested = content.get("replicates_requested")
+    completed = content.get("replicates_completed")
+    recorded = _composition_replicates(replicates, content)
     if not isinstance(requested, int) or not isinstance(completed, int) or completed != recorded:
         raise ValueError(
             f"{summary} reports {requested!r} requested and {completed!r} completed replicates; "
-            f"{replicates.name} records {recorded}"
+            f"{replicates.name} records {recorded} complete"
         )
     verdict = build_calibration_verdict(
         verdict_id="verdict:jed_log_ratio_vs_transformed_t_calibration",

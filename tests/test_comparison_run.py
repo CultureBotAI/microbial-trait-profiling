@@ -19,6 +19,7 @@ import pytest
 from mtp.datamodel.workflow_pydantic import (
     ArmRun,
     CalibrationOutcome,
+    CalibrationVerdict,
     ComparisonRun,
     EligibilityLedger,
 )
@@ -338,6 +339,11 @@ def test_the_verdicts_are_the_arms_own_calibration_results(stage: dict[str, Path
         table1.summary_message
     )
     assert "screened_fraction_sign_test not_certified" in table1.summary_message
+    assert table1.negative_control_procedure == "screened_fraction_sign_test"
+    assert table1.negative_control_outcome == "not_certified"
+    # Two replicates cannot settle whether the control fails as declared.
+    assert table1.negative_control_as_expected is None
+    assert table1.selection_uncertainty is not None
     composition = verdicts["verdict:jed_log_ratio_vs_transformed_t_calibration"]
     assert composition.outcome == CalibrationOutcome.different_estimator_uncalibrated
     assert composition.replicate_budget_sufficient is False
@@ -484,17 +490,25 @@ CONTROL_PASSES = {
 }
 
 
-def test_a_control_that_fails_as_declared_lets_the_null_criteria_count(tmp_path: Path) -> None:
+def test_clean_production_with_the_expected_control_failure(tmp_path: Path) -> None:
     status = _noel_status(tmp_path / "calibration_status.json", CLEAN, CONTROL_FAILS)
     verdict = noel_calibration_verdict(status, TABLE1_SPEC)
+    # The control failing as declared says nothing against the production procedure (#855).
+    assert verdict.outcome != CalibrationOutcome.anti_conservative
     assert verdict.null_control_passed is True
     assert verdict.replicate_budget_sufficient is True
     # Power has no threshold in Noel's protocol, so this is the best outcome there (#850).
     assert verdict.power_passed is None
     assert verdict.outcome == CalibrationOutcome.partially_calibrated
+    assert verdict.negative_control_procedure == "screened_fraction_sign_test"
+    assert verdict.negative_control_outcome == "fail"
+    assert verdict.negative_control_as_expected is True
+    assert verdict.selection_uncertainty is not None
+    assert "selected on this corpus" in verdict.selection_uncertainty
+    assert "does not show that the post-hoc" in verdict.selection_uncertainty
     assert "fraction_sign_test pass [" in verdict.summary_message
     assert "screened_fraction_sign_test fail [family_error=fail" in verdict.summary_message
-    assert "failed family_error as the protocol declares" in verdict.summary_message
+    assert "selecting and then testing exceeds the tolerance" in verdict.summary_message
 
 
 @pytest.mark.parametrize(
@@ -502,17 +516,38 @@ def test_a_control_that_fails_as_declared_lets_the_null_criteria_count(tmp_path:
     [CONTROL_PASSES, {**CONTROL_FAILS, "family_error": "pass"}],
     ids=["control_passes", "control_passes_family_error"],
 )
-def test_a_control_that_passes_makes_the_criteria_too_weak(
+def test_an_unexpected_control_pass_withholds_certification(
     tmp_path: Path, control: dict[str, str]
 ) -> None:
     status = _noel_status(tmp_path / "calibration_status.json", CLEAN, control)
     verdict = noel_calibration_verdict(status, TABLE1_SPEC)
     assert verdict.null_control_passed is None
     assert verdict.outcome != CalibrationOutcome.calibrated
+    assert verdict.negative_control_as_expected is False
     assert "passed family_error, which the protocol declares it must fail" in (
         verdict.summary_message
     )
-    assert "too weak to be evidence" in verdict.summary_message
+    assert "certification is withheld" in verdict.summary_message
+
+
+def test_an_actual_production_null_failure_is_anti_conservative(tmp_path: Path) -> None:
+    table1 = {**CLEAN, "family_error": "fail"}
+    status = _noel_status(tmp_path / "calibration_status.json", table1, CONTROL_FAILS)
+    verdict = noel_calibration_verdict(status, TABLE1_SPEC)
+    assert verdict.outcome == CalibrationOutcome.anti_conservative
+    assert verdict.null_control_passed is False
+    assert verdict.negative_control_as_expected is True
+
+
+def test_labelling_the_selection_is_one_switch(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # The owner may label the selected traits anti-conservative; that is the only change.
+    monkeypatch.setattr(comparison, "SELECTION_LABELS_ANTI_CONSERVATIVE", True)
+    status = _noel_status(tmp_path / "calibration_status.json", CLEAN, CONTROL_FAILS)
+    verdict = noel_calibration_verdict(status, TABLE1_SPEC)
+    assert verdict.outcome == CalibrationOutcome.anti_conservative
+    assert "The label counts the selection of the features" in verdict.summary_message
 
 
 def test_a_failed_noel_criterion_is_recorded_whatever_the_budget(tmp_path: Path) -> None:
@@ -552,6 +587,8 @@ def test_a_not_certified_procedure_is_an_insufficient_budget(
     assert verdict.replicate_budget_sufficient is False
     assert verdict.null_control_passed is None
     assert f"{procedure} not_certified" in verdict.summary_message
+    if procedure == "screened_fraction_sign_test":
+        assert verdict.negative_control_as_expected is None
 
 
 @pytest.mark.parametrize(
@@ -581,39 +618,115 @@ def test_a_status_without_either_procedure_is_an_error(tmp_path: Path, procedure
         noel_calibration_verdict(path, TABLE1_SPEC)
 
 
-def _composition_calibration(
-    root: Path, requested: int, completed: int, recorded: int
-) -> tuple[Path, Path]:
-    summary = root / "composition_calibration_summary.json"
-    summary.write_text(
-        json.dumps({"replicates_requested": requested, "replicates_completed": completed})
-    )
-    replicates = root / "composition_calibration_replicates.tsv"
-    rows = [
-        f"182\tcomplete_null_study_flip\tstudy\t{replicate}\tBH\t0.05\t317\t0"
-        for replicate in range(recorded)
+COMPOSITION_COLUMNS = (
+    "seed",
+    "stream",
+    "unit",
+    "replicate",
+    "correction",
+    "threshold",
+    "n_tests",
+    "significant",
+)
+
+
+def _composition_rows(replicates: int) -> list[dict[str, object]]:
+    """Rows in the producer's order: each threshold, then BH and BY, for each replicate."""
+    return [
+        {
+            "seed": 182,
+            "stream": "complete_null_study_flip",
+            "unit": "study",
+            "replicate": replicate,
+            "correction": correction,
+            "threshold": threshold,
+            "n_tests": 317,
+            "significant": int(replicate % 7 == 0 and correction == "BH"),
+        }
+        for replicate in range(replicates)
+        for threshold in (0.05, 0.01, 0.001)
+        for correction in ("BH", "BY")
     ]
-    header = "seed\tstream\tunit\treplicate\tcorrection\tthreshold\tn_tests\tsignificant"
-    replicates.write_text("\n".join([header, *rows]) + "\n")
-    return summary, replicates
 
 
-@pytest.mark.parametrize(("recorded", "sufficient"), [(100, True), (99, None)])
-def test_the_composition_budget_counts_the_recorded_replicates(
-    tmp_path: Path, recorded: int, sufficient: bool | None
-) -> None:
-    files = _composition_calibration(tmp_path, 100, 100, recorded)
-    specs = (
+def _composition_summary(replicates: int) -> dict[str, object]:
+    called = len(range(0, replicates, 7))
+    return {
+        "seed": 182,
+        "stream": "complete_null_study_flip",
+        "unit": "study",
+        "n_traits": 317,
+        "replicates_requested": replicates,
+        "replicates_completed": replicates,
+        "summary": [
+            {
+                "correction": correction,
+                "threshold": threshold,
+                "replicates": replicates,
+                "replicates_with_any_call": called if correction == "BH" else 0,
+            }
+            for correction in ("BH", "BY")
+            for threshold in (0.05, 0.01, 0.001)
+        ],
+    }
+
+
+def _composition_verdict(
+    root: Path, rows: list[dict[str, object]], summary: dict[str, object]
+) -> CalibrationVerdict:
+    summary_path = root / "composition_calibration_summary.json"
+    summary_path.write_text(json.dumps(summary))
+    table = root / "composition_calibration_replicates.tsv"
+    lines = ["\t".join(COMPOSITION_COLUMNS)]
+    lines += ["\t".join(str(row[column]) for column in COMPOSITION_COLUMNS) for row in rows]
+    table.write_text("\n".join(lines) + "\n")
+    return jed_calibration_verdict(
+        summary_path,
+        table,
         STANDARD_ANALYSIS_SPECS["jed_table1_paired_log_ratio_sign_test_v1"],
         STANDARD_ANALYSIS_SPECS["jed_composition_arcsine_sqrt_ttest_calibration_v1"],
     )
-    if sufficient is None:
-        with pytest.raises(ValueError, match="records 99"):
-            jed_calibration_verdict(*files, *specs)
-        return
-    verdict = jed_calibration_verdict(*files, *specs)
-    assert verdict.replicate_budget_sufficient is sufficient
+
+
+def test_a_complete_composition_table_meets_the_budget(tmp_path: Path) -> None:
+    verdict = _composition_verdict(tmp_path, _composition_rows(100), _composition_summary(100))
+    assert verdict.replicate_budget_sufficient is True
     assert verdict.null_control_passed is None
+    assert verdict.negative_control_procedure is None
+    assert "100 of 100 replicates completed" in verdict.summary_message
+
+
+@pytest.mark.parametrize(
+    ("case", "message"),
+    [
+        ("final_replicate_truncated", "truncated"),
+        ("duplicate_cell", "duplicate row"),
+        ("replicate_out_of_range", "outside 0..99"),
+        ("other_stream", "inconsistent"),
+        ("summary_cell_count", "per-cell replicate counts disagree"),
+        ("summary_completed", "records 100 complete"),
+    ],
+)
+def test_an_incomplete_or_inconsistent_composition_table_is_an_error(
+    tmp_path: Path, case: str, message: str
+) -> None:
+    rows, summary = _composition_rows(100), _composition_summary(100)
+    if case == "final_replicate_truncated":
+        # The producer's last five rows: replicate 99 keeps only its first cell (#856).
+        rows = rows[:-5]
+    elif case == "duplicate_cell":
+        rows = [*rows, rows[0]]
+    elif case == "replicate_out_of_range":
+        rows = [{**row, "replicate": 100} if row["replicate"] == 99 else row for row in rows]
+    elif case == "other_stream":
+        rows = [*rows[:3], {**rows[3], "stream": "complete_null_experiment_flip"}, *rows[4:]]
+    elif case == "summary_cell_count":
+        groups = [{"correction": "BH", "threshold": 0.05, "replicates": 99}]
+        summary = {**summary, "summary": groups}
+    else:
+        summary = {**summary, "replicates_completed": 99}
+    with pytest.raises(ValueError, match=message):
+        _composition_verdict(tmp_path, rows, summary)
 
 
 def _ledger(included: list[str], excluded: int) -> EligibilityLedger:

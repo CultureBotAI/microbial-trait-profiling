@@ -253,19 +253,30 @@ the stage writes anything, so a bad input leaves no partial directory behind (#8
   `fraction_sign_test` and `screened_fraction_sign_test`, and each overall status must
   agree with its criteria.
 - **The screened procedure.** It is the protocol's negative control, declared in
-  advance to fail the acceptance criteria, so its failure is the expected outcome. A
-  null criterion counts toward the Table 1 verdict only where the control failed it as
-  declared. Where the control passed it, the criterion is too weak to be evidence, and
-  the verdict says so instead of recording null control as passed.
+  advance to fail the acceptance criteria, so its failure is the expected outcome and
+  says nothing against the production procedure. A null criterion counts toward the
+  Table 1 verdict only where the control failed it as declared. Where the control
+  passed it, the criterion is too weak to be evidence, and certification is withheld.
+  The control's procedure, outcome and whether it behaved as declared are recorded in
+  their own `CalibrationVerdict` fields (#855).
+- **Selection of the six traits.** The traits were selected on this same corpus, and
+  the control's inflation does not bound that selection's cost in either direction
+  (#363). The verdict therefore records it in `selection_uncertainty` rather than in
+  its label. Labelling the selected traits anti-conservative instead is a single switch,
+  `SELECTION_LABELS_ANTI_CONSERVATIVE`, left off as the protocol declares.
 - **Noel's overall status.** It maps explicitly. `not_certified` is an unmet replicate
-  budget. `fail` is anti-conservative for a failed null criterion and failed power for
-  the power criterion. Noel's protocol sets no threshold on power itself (#850).
-- **Jed's budget.** It counts the replicates in `composition_calibration_replicates.tsv`
-  and requires them to agree with `composition_calibration_summary.json`.
+  budget. `fail` is anti-conservative for a failed production null criterion and failed
+  power for the power criterion. Noel's protocol sets no threshold on power itself
+  (#850).
+- **Jed's budget.** It counts a replicate in `composition_calibration_replicates.tsv`
+  only when it has one row for every declared correction and threshold, with the
+  summary's seed, stream, unit and family size. The table must number its replicates
+  from 0 without gaps or duplicates, and must agree with the per-cell counts in
+  `composition_calibration_summary.json`. A truncated table is an error (#856).
 - **The ledger.** It lists the studies that the shared basis keeps after the zero-total
   pair exclusion, computed from the core's count profiles. After integrated evidence
   runs, its recorded exclusion must match the ledger, with studies before equal to
-  studies after plus studies lost (#814, #815, #844).
+  studies after plus studies lost (#814, #815, #844, #855, #856).
 
 ### Contrast populations and disease-oriented inputs
 
