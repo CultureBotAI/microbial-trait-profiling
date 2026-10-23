@@ -12,12 +12,13 @@ import json
 import random
 import subprocess
 from pathlib import Path
+from typing import Any
 
 import pytest
 
 from mtp.cellulose_decr import selection_scan as scanner
 from mtp.cellulose_decr import study_split_run as runner
-from mtp.cellulose_decr.study_split import Protocol
+from mtp.cellulose_decr.study_split import Protocol, run_splits
 from mtp.datamodel.workflow_pydantic import ComparisonRun
 from mtp.multiplicity import stage as multiplicity_stage
 from mtp.multiplicity.sources import VerifiedSources, bind_analysis_basis, bind_recorded_hashes
@@ -192,6 +193,56 @@ def test_real_scoped_core_binds_features_and_replays_sidecar(
         (output / "stale_results.tsv").write_text("unrecorded\n")
     with pytest.raises(ValueError, match=r"replay differs|inventory"):
         runner.execute(comparison_path, output, protocol, verify=True)
+
+
+@pytest.mark.parametrize("kind", ["source", "code"])
+def test_change_after_analysis_reads_blocks_publication(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, kind: str
+) -> None:
+    """The final guard must reject changes after genuine analysis has completed (#997)."""
+    comparison, _verified, paths = compact_verified_sources(tmp_path, monkeypatch, "off")
+    source = paths["core:experiments"]
+    before = source.read_text(encoding="utf-8")
+    original_digest = file_sha256(source)
+    completed_analyses = 0
+    code_changed = False
+
+    def code_hash(path: Path) -> str:
+        if code_changed and path.name == "table1_trait_maps.py":
+            return "f" * 64
+        return file_sha256(path)
+
+    def run_then_change(*args: Any, **kwargs: Any) -> list[dict[str, Any]]:
+        nonlocal completed_analyses, code_changed
+        records = run_splits(*args, **kwargs)
+        completed_analyses += 1
+        assert len(records) == 2
+        if kind == "source":
+            source.write_text(before + "\n", encoding="utf-8")
+        else:
+            code_changed = True
+        return records
+
+    monkeypatch.setattr(multiplicity_stage, "file_sha256", code_hash)
+    monkeypatch.setattr(runner, "run_splits", run_then_change)
+    output = tmp_path / "rejected-sidecar"
+    message = (
+        "Source bytes differ from upstream recorded hash: core:experiments"
+        if kind == "source"
+        else "Study-split inputs or implementation changed during execution"
+    )
+    with pytest.raises(ValueError, match=message):
+        runner.execute(comparison, output, Protocol(splits=2, min_studies=1, permutations=19))
+    assert completed_analyses == 1
+    assert not output.exists()
+    if kind == "source":
+        assert file_sha256(source) != original_digest
+        assert list(csv.DictReader(source.read_text().splitlines(), delimiter="\t")) == list(
+            csv.DictReader(before.splitlines(), delimiter="\t")
+        )
+    else:
+        assert code_changed
+        assert file_sha256(source) == original_digest
 
 
 @pytest.mark.parametrize("product", ["core:experiments", "comparison:manifest"])

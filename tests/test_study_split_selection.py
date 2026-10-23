@@ -19,14 +19,18 @@ from mtp.trait_guilds import Profile
 from mtp.workflow.coverage import feature_filter_id
 
 
-def corpus() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, list[Profile]]:
+def corpus(
+    *, shared_conditions: bool = False
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, list[Profile]]:
     profile_rows = []
     taxa_rows = []
     counts = []
     for index in range(18):
         study = f"s{index:02}"
         condition = ("A", "B", "C")[index % 3]
-        for experiment in ("e1", "e2"):
+        conditions = ("A", "B", "C") if shared_conditions else (condition, condition)
+        for experiment_index, condition in enumerate(conditions, start=1):
+            experiment = f"e{experiment_index}"
             for direction in ("inc", "dec"):
                 key = f"{study}|{experiment}|{direction}"
                 row = {
@@ -243,7 +247,16 @@ def test_family_keeps_missing_tests_and_rejects_tampering() -> None:
         verify_correction(run, family=family, hypotheses=raw)
 
 
-@pytest.mark.parametrize("selection", ["selected", "high_minimum", "sparse_conditions"])
+@pytest.mark.parametrize(
+    "selection",
+    [
+        "selected",
+        "high_minimum",
+        "sparse_conditions",
+        "no_traits",
+        "no_testable_study_disjoint_triple",
+    ],
+)
 def test_repeated_split_report_has_no_aggregate_p_value(selection: str) -> None:
     from datetime import UTC, datetime
 
@@ -251,12 +264,22 @@ def test_repeated_split_report_has_no_aggregate_p_value(selection: str) -> None:
     from mtp.datamodel.multiple_testing_pydantic import SourceArtifact
     from mtp.workflow.downstream_contracts import build_analysis_basis
 
-    profiles, taxa, matrix, counts = corpus()
+    # Every training half retains three eligible conditions in the shared case, but
+    # each study contributes to all three, so no study-disjoint triple is testable (#997).
+    profiles, taxa, matrix, counts = corpus(
+        shared_conditions=selection == "no_testable_study_disjoint_triple"
+    )
     if selection == "sparse_conditions":
         profiles["condition"] = profiles["study_id"]
         taxa["condition"] = taxa["study_id"]
         counts = [replace(profile, condition=profile.study_id) for profile in counts]
-    minimum = {"selected": 1, "high_minimum": 100, "sparse_conditions": 3}[selection]
+    elif selection == "no_traits":
+        # Both directions carry identical fractions for every trait, leaving the real
+        # decreasing-trait screen empty while preserving the two-feature basis (#997).
+        counts = [
+            replace(profile, guild_counts={"trait": 1, "other": 3}, total=4) for profile in counts
+        ]
+    minimum = {"high_minimum": 100, "sparse_conditions": 3}.get(selection, 1)
     basis = build_analysis_basis(
         basis_id="fixture",
         feature_catalog_sha256="a" * 64,
@@ -287,19 +310,27 @@ def test_repeated_split_report_has_no_aggregate_p_value(selection: str) -> None:
         training = set(record["split"]["training"])
         testing = set(record["split"]["testing"])
         assert not training & testing
+        assert len(training) == len(testing) == 9
         assert len(training | testing) == 18
-        assert record["correction"]["family"]["expected_family_size"] == 2 * len(
-            record["selected_candidates"]
-        )
+        family = record["correction"]["family"]
+        assert family["expected_family_size"] == 2 * len(record["selected_candidates"])
+        assert family["retained_feature_count"] == 2
+        assert family["feature_filter_id"] == basis.feature_filter_id
     summary = summarize_stability(result)
     if selection != "selected":
         assert summary == []
-        assert all(record["selected_candidates"] == [] for record in result)
-        assert all(record["correction"]["results"] == [] for record in result)
-        assert all(
-            record["selection_status"] == "fewer_than_three_eligible_conditions"
-            for record in result
+        expected_reason = (
+            selection
+            if selection in {"no_traits", "no_testable_study_disjoint_triple"}
+            else "fewer_than_three_eligible_conditions"
         )
+        for record in result:
+            assert record["selection_status"] == expected_reason
+            assert record["selected_candidates"] == []
+            assert record["test_details"] == []
+            assert record["correction"]["family"]["members"] == []
+            assert record["correction"]["family"]["expected_family_size"] == 0
+            assert record["correction"]["results"] == []
         return
     assert summary
     assert all(record["selection_status"] == "selected" for record in result)
