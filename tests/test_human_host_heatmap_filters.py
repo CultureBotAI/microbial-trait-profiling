@@ -1,7 +1,9 @@
 import csv
 import importlib.util
+import sys
 from pathlib import Path
 from types import ModuleType
+from typing import Any
 from unittest.mock import patch
 
 import pandas as pd
@@ -224,19 +226,74 @@ def test_taxa_guild_counts_only_the_subset_profiles_in_their_own_direction(
     assert summary.loc["NCBITaxon:562", "taxon_name"] == "Escherichia coli"
 
 
-@pytest.mark.parametrize(
-    ("direction_basis", "legend_title"),
-    [
-        ("group_1_vs_group_0", "BugSigDB direction\n(Group 1 vs Group 0)"),
-        ("disease_vs_comparison", "BugSigDB direction\n(disease vs comparison)"),
-    ],
-)
+def write_guild_run(tmp_path: Path) -> list[str]:
+    """Write the taxa-guild script's inputs for the subset run and return its arguments.
+
+    The subset's two species, E. coli and B. fragilis, each carry two of three traits;
+    the selection thresholds are lowered so that both taxa and all three traits are drawn.
+    """
+    full_dump_path, taxa_path = write_subset_run(tmp_path)
+    traits = ["trait:a", "trait:b", "trait:c"]
+    pd.DataFrame(
+        {
+            "taxon_id": ["NCBITaxon:562", "NCBITaxon:817"],
+            "taxon_name": ["Escherichia coli", "Bacteroides fragilis"],
+            "taxonomic_rank": ["species", "species"],
+            "trait:a": [1, 0],
+            "trait:b": [0, 1],
+            "trait:c": [1, 1],
+        }
+    ).to_csv(tmp_path / "taxa_trait_matrix.tsv", sep="\t", index=False)
+    pd.DataFrame(
+        {
+            "column_id": traits,
+            "column_label": traits,
+            "object_name": ["Trait A", "Trait B", "Trait C"],
+            "object_category": ["biolink:Metabolism", "biolink:Shape", "biolink:Shape"],
+        }
+    ).to_csv(tmp_path / "taxa_trait_matrix_columns.tsv", sep="\t", index=False)
+    pd.DataFrame({trait: [1, 1] for trait in traits}).to_csv(
+        tmp_path / "study_trait_profiles_wide.tsv", sep="\t", index=False
+    )
+    options: dict[str, Path | str] = {
+        "--bugsigdb-taxa-input": taxa_path,
+        "--full-dump-input": full_dump_path,
+        "--taxa-trait-matrix-input": tmp_path / "taxa_trait_matrix.tsv",
+        "--taxa-trait-columns-input": tmp_path / "taxa_trait_matrix_columns.tsv",
+        "--study-trait-profiles-input": tmp_path / "study_trait_profiles_wide.tsv",
+        "--output": tmp_path / "heatmap.png",
+        "--matrix-output": tmp_path / "matrix.tsv",
+        "--taxa-metadata-output": tmp_path / "taxa_metadata.tsv",
+        "--trait-metadata-output": tmp_path / "trait_metadata.tsv",
+        "--rank": "species",
+        "--min-profiles": "1",
+        "--min-traits": "1",
+        "--min-taxa-support": "1",
+        "--min-profile-support": "1",
+    }
+    arguments = [str(part) for option in options.items() for part in option]
+    return ["create_taxa_guild_heatmap.py", *arguments]
+
+
+def legend_titles(figure: Any) -> set[str]:
+    """The titles of a drawn figure's legends."""
+    legends = [axis.get_legend() for axis in figure.axes if axis.get_legend()]
+    return {legend.get_title().get_text() for legend in legends}
+
+
+DIRECTION_LEGENDS = [
+    ("group_1_vs_group_0", "BugSigDB direction\n(Group 1 vs Group 0)"),
+    ("disease_vs_comparison", "BugSigDB direction\n(disease vs comparison)"),
+]
+
+
+@pytest.mark.parametrize(("direction_basis", "legend_title"), DIRECTION_LEGENDS)
 def test_taxa_guild_legend_names_the_run_direction_basis(
     tmp_path: Path, direction_basis: str, legend_title: str
 ) -> None:
     """The row colours follow the run's direction basis, and the legend names it (#795).
 
-    A disease-oriented subset flips its reversed experiments, so its increased and
+    A contrast-population subset flips its reversed experiments, so its increased and
     decreased are not the curated Group 1 direction that an all-paired run keeps.
     """
     module = load_script_module("create_taxa_guild_heatmap.py")
@@ -271,11 +328,45 @@ def test_taxa_guild_legend_names_the_run_direction_basis(
         )
     figure = savefig.call_args.args[0]
     try:
-        legends = [axis.get_legend() for axis in figure.axes if axis.get_legend()]
-        titles = {legend.get_title().get_text() for legend in legends}
-        assert titles == {legend_title, "Trait category"}
+        assert legend_titles(figure) == {legend_title, "Trait category"}
     finally:
         module.plt.close(figure)
+
+
+@pytest.mark.parametrize(("direction_basis", "legend_title"), DIRECTION_LEGENDS)
+def test_taxa_guild_main_names_the_direction_basis_it_is_given(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, direction_basis: str, legend_title: str
+) -> None:
+    """main() hands --direction-basis to the legend, end to end from the inputs (#840)."""
+    module = load_script_module("create_taxa_guild_heatmap.py")
+    arguments = write_guild_run(tmp_path)
+    monkeypatch.setattr(sys, "argv", [*arguments, "--direction-basis", direction_basis])
+
+    with (
+        patch.object(module.plt.Figure, "savefig", autospec=True) as savefig,
+        patch.object(module.plt, "close"),
+    ):
+        module.main()
+    figure = savefig.call_args.args[0]
+    try:
+        assert legend_titles(figure) == {legend_title, "Trait category"}
+    finally:
+        module.plt.close(figure)
+    assert (tmp_path / "matrix.tsv").exists()
+
+
+def test_taxa_guild_main_requires_the_direction_basis(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A run that leaves out --direction-basis stops, so a hand run on a subset's taxa
+    table cannot label its directions Group 1 vs Group 0 by default (#840)."""
+    module = load_script_module("create_taxa_guild_heatmap.py")
+    monkeypatch.setattr(sys, "argv", write_guild_run(tmp_path))
+
+    with pytest.raises(SystemExit):
+        module.main()
+    assert "the following arguments are required: --direction-basis" in capsys.readouterr().err
+    assert not (tmp_path / "matrix.tsv").exists()
 
 
 def test_taxa_guild_fails_without_the_full_dump(tmp_path: Path) -> None:

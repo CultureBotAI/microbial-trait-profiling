@@ -631,11 +631,13 @@ def main() -> None:
     parser.add_argument(
         "--direction-basis",
         choices=sorted(DIRECTION_LEGEND_TITLES),
-        default="group_1_vs_group_0",
+        required=True,
         help=(
             "Direction basis of the taxa TSV, the core run's direction_basis: "
             "group_1_vs_group_0 for all paired contrasts, disease_vs_comparison for a "
-            "contrast-population subset. The direction legend names it."
+            "contrast-population subset. The direction legend names it. There is no "
+            "default, so leaving it out cannot label a subset's directions Group 1 vs "
+            "Group 0 (#840)."
         ),
     )
     parser.add_argument(

@@ -59,7 +59,8 @@ least 2 and at least 1.25 times decreased profiles, `decreased` by the analogous
 and `mixed` otherwise. The direction legend names the run's direction basis: "Group 1
 vs Group 0" in the all-paired figure, "disease vs comparison" in a subset run's figure.
 The script takes the basis from `--direction-basis`, and the jed arm passes it the core
-run's `direction_basis` (#795). Column colors show trait category.
+run's `direction_basis` (#795). The option has no default; `just trait-heatmaps` passes
+`group_1_vs_group_0` (#840). Column colors show trait category.
 
 Companion files:
 
