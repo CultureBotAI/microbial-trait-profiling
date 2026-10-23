@@ -85,6 +85,10 @@ that individual cells express mutually exclusive physiological states.
 ## Sensitivity estimands
 
 For each paired experiment, each rule computes increased minus decreased.
+All seven rules use the same paired population: both sides must have positive
+total retained non-MediaDive annotation counts. The input paired count and
+excluded zero-total paired count are reported for every rule. This prevents a
+change in the eligible population from being mistaken for a support-rule effect.
 All eligible experiment differences, including zeros, are averaged within a
 study; studies then receive equal weight. The two-sided sign test uses only
 non-tied study means, with a `1e-12` absolute tie tolerance. No non-tied studies
@@ -94,7 +98,7 @@ arm families and calls remain unchanged.
 
 | Rule | Profile score and denominator |
 | --- | --- |
-| `native_annotation_fraction` | Focal count divided by all retained non-MediaDive annotation counts. A pair with a zero annotation total is excluded and counted. |
+| `native_annotation_fraction` | Focal count divided by all retained non-MediaDive annotation counts, on the common positive-total paired population. |
 | `carriers_per_reported_taxon` | Sum of focal carrier counts divided by unique reported taxa on that side. This can exceed one and is not the native fraction. |
 | `binary_presence` | Fraction of reported taxa with at least one carrier. |
 | `min_two_carriers` | Fraction of reported taxa with at least two carriers. |
@@ -104,7 +108,7 @@ arm families and calls remain unchanged.
 
 The support table audits all supplied matrix taxa; its occurrence counts identify
 which are used by this population. Sensitivity source-uncertainty counts include
-only taxa bound to the supplied profiles, even when the matrix covers a larger
+only taxa in the common positive-total paired population, even when the matrix covers a larger
 population. Unmapped reported taxa remain in the reported-taxon denominator with zero
 mapped support; they are counted explicitly in provenance. Missing profile
 sides are never replaced by zero. These different denominators answer different
@@ -115,3 +119,16 @@ Hashes and exact count reconciliation bind this sidecar's inputs and outputs.
 They do not constitute a verified core execution record or independently prove
 the original corpus selection. No primary result or talk-ready number is
 regenerated merely by adding this implementation.
+
+The KG edge reader is the workflow's versioned `iter_kg_edges` contract. It
+reconstructs the known bare-carriage-return header and agent-field encodings;
+unknown malformed records fail. The sidecar records repair counts and hashes
+the parser and shared trait-definition code. Pipe-joined primary sources are
+split before Madin lookup, preserving each source and its resolution status.
+Table 1 trait membership and the oxygen guild pair use `trait_guilds` definitions.
+
+The broader node-level co-assertion census, mesophilic/psychrophilic and
+facultative-anaerobe/obligate-aerobe pairs, and the off/phenotype/full scope
+comparison belong to #846. This implementation continues to support off and
+phenotype only. Feature-catalog and canonical semantics-audit integration remain
+open under #773; these sidecars do not complete those items.

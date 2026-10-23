@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import ast
+import importlib
 import json
 from pathlib import Path
 
@@ -18,7 +20,7 @@ from mtp.label_support_audit import (
     main,
     metadata_source_status,
 )
-from mtp.paths import file_sha256
+from mtp.paths import REPO_ROOT, file_sha256
 
 CELL = "METPO:2000103|GO:0030245"
 ANA = "METPO:1000603"
@@ -56,9 +58,11 @@ def inputs(tmp_path: Path) -> dict[str, Path]:
             ("kgmicrobe.strain:fixture", "biolink:has_phenotype", COCCUS, "infores:bacdive"),
         ]
     )
-    pd.DataFrame(
+    edges = pd.DataFrame(
         records, columns=["subject", "predicate", "object", "primary_knowledge_source"]
-    ).to_csv(paths["edges"], sep="\t", index=False)
+    )
+    edges.insert(0, "id", [f"edge-{index}" for index in range(len(edges))])
+    edges.to_csv(paths["edges"], sep="\t", index=False)
     pd.DataFrame(
         {
             "id": [f"NCBITaxon:{i}" for i in (10, 11, 12, 20, 21, 22)],
@@ -188,7 +192,17 @@ def test_optional_madin_is_unknown_not_negative(inputs: dict[str, Path], tmp_pat
         load_madin_subsources(tmp_path / "absent.csv")
     assert metadata_source_status({MADIN_SOURCE}, set(), 1) == "unknown"
     assert metadata_source_status({MADIN_SOURCE}, {"gold"}, 0) == "gold_patric_only"
+    assert metadata_source_status({MADIN_SOURCE}, {"gold"}, 1) == "unknown"
     assert metadata_source_status({MADIN_SOURCE}, {"faprotax"}, 0) == "includes_other_sources"
+    sensitivity = pd.read_csv(tmp_path / "audit" / "support_threshold_sensitivity.tsv", sep="\t")
+    cell = sensitivity.loc[sensitivity["trait_key"] == CELL].set_index("rule_id")
+    assert cell.loc[
+        "exclude_known_gold_patric_only", "study_mean_increased_minus_decreased"
+    ] == pytest.approx(0.75)
+    assert (
+        cell.loc["exclude_known_gold_patric_only", "study_mean_increased_minus_decreased"]
+        == (cell.loc["carriers_per_reported_taxon", "study_mean_increased_minus_decreased"])
+    )
 
 
 def test_empty_profile_columns_may_be_dropped(inputs: dict[str, Path], tmp_path: Path) -> None:
@@ -213,11 +227,15 @@ def test_sensitivity_source_counts_use_only_bound_reported_taxa(
     sensitivity = pd.read_csv(output / "support_threshold_sensitivity.tsv", sep="\t")
     rows = sensitivity.loc[sensitivity["trait_key"] == CELL]
     assert rows["source_unknown_taxa"].eq(2).all()
+    census = pd.read_csv(output / "coasserted_label_census.tsv", sep="\t")
+    assert census.loc[census["rank"] == "ALL", "unique_reported_taxa"].eq(2).all()
+    assert census.loc[census["rank"] == "species", "unique_reported_taxa"].eq(0).all()
 
 
 def test_named_kg_columns_and_explicit_scope_dependency(inputs: dict[str, Path]) -> None:
     edges = pd.read_csv(inputs["edges"], sep="\t")
-    edges[list(reversed(edges.columns))].to_csv(inputs["edges"], sep="\t", index=False)
+    edges.insert(4, "unused_evidence_field", "ignored")
+    edges.to_csv(inputs["edges"], sep="\t", index=False)
     graph = load_kg_provenance_graph(inputs["edges"], inputs["nodes"])
     assert graph["sources"][CELL]["NCBITaxon:11"] == {MADIN_SOURCE}
     assert COCCUS not in graph["traits"]["NCBITaxon:11"]
@@ -230,6 +248,142 @@ def test_named_kg_columns_and_explicit_scope_dependency(inputs: dict[str, Path])
     else:
         with pytest.raises(ValueError, match="PR #828"):
             load_kg_provenance_graph(inputs["edges"], inputs["nodes"], strain_rollup="phenotype")
+
+
+def test_known_bare_cr_kg_header_and_agent_record_are_reconstructed(
+    inputs: dict[str, Path], tmp_path: Path
+) -> None:
+    records = pd.read_csv(inputs["edges"], sep="\t").to_dict("records")
+    header = (
+        "id\tsubject\tpredicate\tobject\trelation\tagent_type\tagent_type\r"
+        "\tknowledge_level\tknowledge_source\tmeta\tprimary_knowledge_source\n"
+    )
+    lines = []
+    for index, row in enumerate(records):
+        agent = "manual_validation_of_automated_agent\r" if index == 4 else "manual_agent"
+        lines.append(
+            "\t".join(
+                [
+                    row["id"],
+                    row["subject"],
+                    row["predicate"],
+                    row["object"],
+                    "",
+                    "automated_agent",
+                    agent,
+                    "knowledge_assertion",
+                    "",
+                    "",
+                    row["primary_knowledge_source"],
+                ]
+            )
+            + "\n"
+        )
+    inputs["edges"].write_bytes((header + "".join(lines)).encode())
+    output = tmp_path / "audit"
+    run_audit(inputs, output)
+    provenance = json.loads((output / "provenance.json").read_text())
+    serialization = provenance["kg_edge_serialization"]
+    assert serialization["records"] == len(records)
+    assert serialization["header_continuations_reconstructed"] == 1
+    assert serialization["agent_field_continuations_reconstructed"] == 1
+    evidence = pd.read_csv(output / "carrier_source_evidence.tsv", sep="\t")
+    assert evidence.loc[evidence["trait_key"] == CELL, "madin_resolution"].eq("resolved").all()
+
+
+def test_pipe_joined_primary_sources_resolve_madin(inputs: dict[str, Path], tmp_path: Path) -> None:
+    edges = pd.read_csv(inputs["edges"], sep="\t")
+    selected = (edges["subject"] == "NCBITaxon:11") & (edges["object"] == "GO:0030245")
+    edges.loc[selected, "primary_knowledge_source"] = f"{MADIN_SOURCE}|infores:bactotraits"
+    edges.to_csv(inputs["edges"], sep="\t", index=False)
+    output = tmp_path / "audit"
+    run_audit(inputs, output)
+    evidence = pd.read_csv(output / "carrier_source_evidence.tsv", sep="\t")
+    row = evidence.loc[
+        (evidence["reported_taxon_id"] == "NCBITaxon:10") & (evidence["trait_key"] == CELL)
+    ].iloc[0]
+    assert row["madin_resolution"] == "resolved"
+    assert row["madin_subsources"] == "gold"
+    assert set(row["primary_sources"].split(";")) == {MADIN_SOURCE, "infores:bactotraits"}
+
+
+def test_all_support_rules_share_zero_total_filtered_pairs(
+    inputs: dict[str, Path], tmp_path: Path
+) -> None:
+    matrix = pd.read_csv(inputs["matrix"], sep="\t")
+    unannotated = matrix.iloc[0].copy()
+    unannotated["taxon_id"] = "NCBITaxon:99"
+    unannotated["taxon_name"] = "Unannotated fixture taxon"
+    unannotated.loc[list(AUDIT_TRAITS)] = 0
+    pd.concat([matrix, unannotated.to_frame().T]).to_csv(inputs["matrix"], sep="\t", index=False)
+    profiles = pd.read_csv(inputs["profiles"], sep="\t")
+    occurrences = pd.read_csv(inputs["taxa"], sep="\t")
+    profile_rows, occurrence_rows = [], []
+    for study, experiment, both_zero in (("s3", "e1", True), ("s1", "e3", False)):
+        for direction in ("inc", "dec"):
+            zero = both_zero or direction == "dec"
+            row = profiles.iloc[0].copy()
+            row.loc[["study_id", "experiment_id", "inc_dec"]] = [study, experiment, direction]
+            if zero:
+                row.loc[list(AUDIT_TRAITS)] = 0
+            profile_rows.append(row)
+            occurrence_rows.append(
+                {
+                    "study_id": study,
+                    "experiment_id": experiment,
+                    "direction": "increased" if direction == "inc" else "decreased",
+                    "taxon_id": "NCBITaxon:99" if zero else "NCBITaxon:20",
+                }
+            )
+    pd.concat([profiles, pd.DataFrame(profile_rows)]).to_csv(
+        inputs["profiles"], sep="\t", index=False
+    )
+    pd.concat([occurrences, pd.DataFrame(occurrence_rows)]).to_csv(
+        inputs["taxa"], sep="\t", index=False
+    )
+    output = tmp_path / "audit"
+    run_audit(inputs, output)
+    sensitivity = pd.read_csv(output / "support_threshold_sensitivity.tsv", sep="\t")
+    assert sensitivity["n_experiments"].eq(3).all()
+    assert sensitivity["n_studies"].eq(2).all()
+    assert sensitivity["n_excluded_zero_annotation_pairs"].eq(2).all()
+    assert sensitivity["n_input_paired_experiments"].eq(5).all()
+    cell = sensitivity.loc[sensitivity["trait_key"] == CELL].set_index("rule_id")
+    assert cell.loc["carriers_per_reported_taxon", "study_mean_increased_minus_decreased"] == (
+        pytest.approx(0.75)
+    )
+
+
+def test_legacy_label_support_module_is_canonical_alias() -> None:
+    assert importlib.import_module("bsdbng.label_support_audit") is importlib.import_module(
+        "mtp.label_support_audit"
+    )
+    canonical = ast.parse((REPO_ROOT / "src/mtp/label_support_audit.py").read_text())
+    shim = ast.parse((REPO_ROOT / "src/bsdbng/label_support_audit.py").read_text())
+    declarations: set[str] = set()
+    for node in canonical.body:
+        names: list[str] = []
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            names = [node.name]
+        elif isinstance(node, ast.Assign):
+            names = [target.id for target in node.targets if isinstance(target, ast.Name)]
+        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+            names = [node.target.id]
+        declarations.update(name for name in names if not name.startswith("_"))
+    exports = next(
+        ast.literal_eval(node.value)
+        for node in shim.body
+        if isinstance(node, ast.Assign)
+        and any(isinstance(target, ast.Name) and target.id == "__all__" for target in node.targets)
+    )
+    imported = {
+        name.asname or name.name
+        for node in shim.body
+        if isinstance(node, ast.ImportFrom) and node.module == "mtp.label_support_audit"
+        for name in node.names
+    }
+    assert declarations <= set(exports) <= imported
+    assert len(exports) == len(set(exports))
 
 
 @pytest.mark.parametrize(

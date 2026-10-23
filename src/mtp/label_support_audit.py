@@ -16,6 +16,7 @@ import pandas as pd
 from scipy.stats import binomtest
 
 from mtp import taxa_trait_matrix as matrix_api
+from mtp import trait_guilds
 from mtp.count_input import CountTableReader, profile_count_reader, taxa_trait_count_reader
 from mtp.paths import KG_MICROBE_DIR, REPO_ROOT, file_sha256
 from mtp.taxa_trait_matrix import (
@@ -28,30 +29,34 @@ from mtp.taxa_trait_matrix import (
     make_trait_key,
     resolve_kg_file,
 )
-from mtp.trait_guilds import MEDIADIVE_MARKER
+from mtp.trait_guilds import MEDIADIVE_MARKER, OXYGEN_GUILDS, TABLE1_TRAIT_LABELS, TABLE1_TRAITS
+from mtp.workflow import kg_inputs
 
 Scope = Literal["off", "phenotype"]
 Row = dict[str, Any]
 MADIN_SOURCE = "infores:madin_etal"
 METADATA_ONLY_MADIN_SOURCES = frozenset({"gold", "patric"})
 AUDIT_TRAITS = {
-    "METPO:1000608": "facultatively aerobic",
-    "METPO:2000103|GO:0030245": "cellulose catabolic process",
-    "METPO:1000668": "coccus shaped",
-    "METPO:1000683": "sphere shaped",
-    "METPO:2000103|pathways:arsenate_reduction": "arsenate reduction",
-    "METPO:1000623": "moderately halophilic",
-    "METPO:1000612": "facultative oxygen preference",
-    "METPO:1000602": "aerobic",
-    "METPO:1000603": "anaerobic",
-    "METPO:1000607": "obligately anaerobic",
-    "METPO:1000611": "strictly anaerobic",
-    "METPO:1000606": "obligately aerobic",
-    "METPO:1000604": "microaerophilic",
-    "METPO:1000681": "rod shaped",
-    "METPO:1000667": "bacillus shaped",
+    term
+    if term.startswith(TRAIT_PREFIX)
+    else make_trait_key("METPO:2000103", term): TABLE1_TRAIT_LABELS[name].rsplit(" (", 1)[0]
+    for name, terms in TABLE1_TRAITS.items()
+    for term in terms
 }
-FOCAL_TRAITS = tuple(AUDIT_TRAITS)[:6]
+FOCAL_TRAITS = tuple(AUDIT_TRAITS)
+AUDIT_TRAITS.update(
+    {
+        "METPO:1000612": "facultative oxygen preference",
+        "METPO:1000602": "aerobic",
+        "METPO:1000603": "anaerobic",
+        "METPO:1000607": "obligately anaerobic",
+        "METPO:1000611": "strictly anaerobic",
+        "METPO:1000606": "obligately aerobic",
+        "METPO:1000604": "microaerophilic",
+        "METPO:1000681": "rod shaped",
+        "METPO:1000667": "bacillus shaped",
+    }
+)
 FOCAL_TAXA = {
     "Faecalibacterium": "NCBITaxon:216851",
     "Roseburia": "NCBITaxon:841",
@@ -68,8 +73,8 @@ FOCAL_TAXA = {
 COASSERTION_PAIRS = (
     (
         "aerobe_guild_and_anaerobe_guild",
-        ("METPO:1000602", "METPO:1000604", "METPO:1000608"),
-        ("METPO:1000603", "METPO:1000607"),
+        OXYGEN_GUILDS["aerobe"],
+        OXYGEN_GUILDS["anaerobe"],
     ),
     (
         "aerobic_and_anaerobic",
@@ -119,35 +124,33 @@ def load_kg_provenance_graph(
     strain_sources: defaultdict[str, defaultdict[str, set[str]]] = defaultdict(
         lambda: defaultdict(set)
     )
-    with edges_path.open(encoding="utf-8", newline="") as handle:
-        reader = csv.DictReader(handle, delimiter="\t")
-        _require_columns(
-            reader, {"subject", "predicate", "object", "primary_knowledge_source"}, edges_path
-        )
-        for row in reader:
-            subject, predicate, obj = (
-                (row.get(key) or "").strip() for key in ("subject", "predicate", "object")
-            )
-            if not all((subject, predicate, obj)):
-                raise ValueError(f"Malformed KG edge at line {reader.line_num}")
-            if predicate == SUBCLASS_OF and obj.startswith(TAXON_PREFIX):
-                if subject.startswith(TAXON_PREFIX):
-                    parents[subject].add(obj)
-                elif strain_rollup == "phenotype" and subject.startswith(STRAIN_PREFIX):
-                    strain_taxa[subject].add(obj)
-                continue
-            if not (obj.startswith(TRAIT_PREFIX) or predicate.startswith(TRAIT_PREFIX)):
-                continue
-            key = make_trait_key(predicate, obj)
-            if MEDIADIVE_MARKER in key.lower():
-                continue
-            source = (row.get("primary_knowledge_source") or "").strip() or "unknown"
+    serialization: dict[str, object] = {}
+    for row in kg_inputs.iter_kg_edges(edges_path, serialization):
+        if "primary_knowledge_source" not in row:
+            raise ValueError(f"{edges_path.name}: missing required column primary_knowledge_source")
+        subject, predicate, obj = (row[key].strip() for key in ("subject", "predicate", "object"))
+        if predicate == SUBCLASS_OF and obj.startswith(TAXON_PREFIX):
             if subject.startswith(TAXON_PREFIX):
-                traits.setdefault(subject, set()).add(key)
-                sources[key][subject].add(source)
+                parents[subject].add(obj)
             elif strain_rollup == "phenotype" and subject.startswith(STRAIN_PREFIX):
-                strain_traits[subject].add(key)
-                strain_sources[key][subject].add(source)
+                strain_taxa[subject].add(obj)
+            continue
+        if not (obj.startswith(TRAIT_PREFIX) or predicate.startswith(TRAIT_PREFIX)):
+            continue
+        key = make_trait_key(predicate, obj)
+        if MEDIADIVE_MARKER in key.lower():
+            continue
+        primary = {
+            value.strip() for value in row["primary_knowledge_source"].split("|") if value.strip()
+        } or {"unknown"}
+        if subject.startswith(TAXON_PREFIX):
+            traits.setdefault(subject, set()).add(key)
+            sources[key][subject].update(primary)
+        elif strain_rollup == "phenotype" and subject.startswith(STRAIN_PREFIX):
+            strain_traits[subject].add(key)
+            strain_sources[key][subject].update(primary)
+    if not serialization["records"]:
+        raise ValueError(f"{edges_path.name}: empty KG edge export")
     if strain_rollup not in ("off", "phenotype"):
         raise ValueError(f"Unsupported strain scope: {strain_rollup}")
     if strain_rollup == "phenotype":
@@ -172,7 +175,13 @@ def load_kg_provenance_graph(
         for row in reader:
             if row["id"] in traits or row["id"] in FOCAL_TAXA.values():
                 names[row["id"]] = row["name"]
-    return {"traits": traits, "sources": dict(sources), "children": dict(children), "names": names}
+    return {
+        "traits": traits,
+        "sources": dict(sources),
+        "children": dict(children),
+        "names": names,
+        "edge_serialization": serialization,
+    }
 
 
 def load_madin_subsources(path: Path | None) -> dict[str, dict[str, set[str]]]:
@@ -388,7 +397,12 @@ def build_support_threshold_sensitivity(
     native = profiles.set_index(PROFILE_KEYS)
     retained = [key for key in native.columns if MEDIADIVE_MARKER not in key.lower()]
     total_annotations = native[retained].sum(axis=1)
-    bound_taxa = set(occurrences["taxon_id"])
+    input_pairs = len(paired)
+    positive_totals = total_annotations.unstack("inc_dec").reindex(paired)
+    paired = paired[positive_totals[["inc", "dec"]].gt(0).all(axis=1)]
+    excluded_zero_pairs = input_pairs - len(paired)
+    pair_keys = pd.MultiIndex.from_frame(occurrences[PROFILE_KEYS[:2]])
+    bound_taxa = set(occurrences.loc[pair_keys.isin(paired), "taxon_id"])
     results = []
     rules = (
         "native_annotation_fraction",
@@ -452,7 +466,9 @@ def build_support_threshold_sensitivity(
                     "rule_id": rule,
                     "effect_units": units,
                     "n_experiments": len(deltas),
-                    "n_excluded_zero_annotation_pairs": int((~eligible).sum()),
+                    "n_input_paired_experiments": input_pairs,
+                    "n_excluded_zero_annotation_pairs": excluded_zero_pairs,
+                    "comparison_basis": "paired_positive_total_retained_annotation_profiles",
                     "n_studies": len(study_means),
                     "n_positive_studies": positive,
                     "n_negative_studies": negative,
@@ -601,11 +617,14 @@ def run_label_support_audit(
         "madin_rules": MADIN_RULES,
         "producer": _inventory(Path(__file__)),
         "matrix_policy_code": _inventory(Path(matrix_api.__file__)),
+        "kg_parser_code": _inventory(Path(kg_inputs.__file__)),
+        "trait_definitions_code": _inventory(Path(trait_guilds.__file__)),
+        "kg_edge_serialization": graph["edge_serialization"],
         "environment_lock": _inventory(REPO_ROOT / "uv.lock"),
         "verification_status": "hashes_and_counts_reconciled_not_core_execution_verified",
         "support_cells": len(support),
         "support_table_population": "all_supplied_matrix_taxa",
-        "sensitivity_population": "reported_taxa_bound_to_supplied_profiles",
+        "sensitivity_population": "paired_positive_total_retained_annotation_profiles",
         "source_status_counts": dict(Counter(row["source_status"] for row in support)),
         "sensitivity_family": {
             "traits": [key for key in FOCAL_TRAITS if key in profiles],
