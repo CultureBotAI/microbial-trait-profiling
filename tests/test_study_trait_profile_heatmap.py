@@ -1,10 +1,13 @@
 import importlib.util
+import runpy
 import sys
 from pathlib import Path
 from unittest.mock import patch
 
+import numpy as np
 import pandas as pd
 import pytest
+from matplotlib.collections import QuadMesh
 
 MODULE_PATH = (
     Path(__file__).resolve().parents[1] / "scripts" / "create_study_trait_profile_heatmap.py"
@@ -14,6 +17,77 @@ assert SPEC is not None
 assert SPEC.loader is not None
 heatmap = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(heatmap)
+
+
+def test_main_preserves_direction_basis_in_figures_and_drawn_values(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Exercise both real main() plotting calls and compare their drawn cells (#955)."""
+    fixture = runpy.run_path(
+        str(MODULE_PATH.parent / "adhoc/issue842_render_direction_fixtures.py")
+    )
+    inputs = fixture["write_inputs"](tmp_path / "inputs")
+    products = {
+        "--output": "profiles.png",
+        "--matrix-output": "matrix.tsv",
+        "--study-metadata-output": "profiles.tsv",
+        "--trait-metadata-output": "traits.tsv",
+        "--paired-output": "paired.png",
+        "--paired-matrix-output": "paired_matrix.tsv",
+        "--paired-metadata-output": "paired_metadata.tsv",
+        "--paired-required-trait-check-output": "required_traits.tsv",
+    }
+    drawn = {}
+    for basis, label in (
+        ("group_1_vs_group_0", "Group 1 vs Group 0"),
+        ("disease_vs_comparison", "disease vs comparison"),
+    ):
+        target = tmp_path / basis
+        target.mkdir()
+        options = {**inputs, **{flag: target / name for flag, name in products.items()}}
+        argv = [str(MODULE_PATH), *(str(part) for item in options.items() for part in item)]
+        monkeypatch.setattr(
+            sys, "argv", [*argv, "--direction-basis", basis, "--min-profile-support", "1"]
+        )
+        with (
+            patch.object(heatmap.plt.Figure, "savefig", autospec=True) as savefig,
+            patch.object(heatmap.plt, "close"),
+        ):
+            heatmap.main()
+        figures = {Path(call.args[1]).name: call.args[0] for call in savefig.call_args_list}
+        try:
+            assert set(figures) == {"profiles.png", "paired.png"}
+            titles = {
+                axis.get_legend().get_title().get_text()
+                for axis in figures["profiles.png"].axes
+                if axis.get_legend()
+            }
+            assert f"BugSigDB direction\n({label})" in titles, (
+                "CLI basis did not reach profile legend"
+            )
+            labels = {axis.get_ylabel() for axis in figures["paired.png"].axes}
+            assert any(f"BugSigDB direction: {label}" in text for text in labels), (
+                "CLI basis did not reach paired colorbar"
+            )
+            for name, figure in figures.items():
+                arrays = [
+                    np.asarray(mesh.get_array()).copy()
+                    for axis in figure.axes
+                    if axis.get_xlabel() == "Trait"
+                    for mesh in axis.collections
+                    if isinstance(mesh, QuadMesh)
+                ]
+                assert len(arrays) == 1
+                assert arrays[0].size == (18 if name == "profiles.png" else 9)
+                assert np.ptp(arrays[0]) > 0
+                drawn[basis, name] = arrays[0]
+        finally:
+            for figure in figures.values():
+                heatmap.plt.close(figure)
+    for name in ("profiles.png", "paired.png"):
+        np.testing.assert_array_equal(
+            drawn["group_1_vs_group_0", name], drawn["disease_vs_comparison", name]
+        )
 
 
 @pytest.mark.parametrize(
