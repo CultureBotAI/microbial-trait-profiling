@@ -2095,7 +2095,8 @@ def _mock_rerun_repo_for_deck(
     ]
 
     def fake_read_tsv(path: Path, quoted: bool = True) -> list[dict[str, str]]:
-        _ = quoted
+        if quoted:
+            deck.TABLES_READ.add(path)
         name = path.name
         if name == "taxa_coverage_by_rank.tsv":
             return rank_rows
@@ -2204,6 +2205,7 @@ def _mock_rerun_repo_for_deck(
                     "trait_label": f"{tid} {tid}",
                     "pair_count": "2335",
                     "study_count": "594" if "feces" in name else "959",
+                    "retained_trait_count": str(trait_count),
                     "study_q_value": "0.01",
                     "study_p_value": "0.001",
                     "study_t_statistic": "3.0",
@@ -2213,6 +2215,8 @@ def _mock_rerun_repo_for_deck(
                 }
                 for tid in (*deck.TABLE1_TRAIT_IDS, NITRATE)
             ]
+        if name == "condition_trait_module_trait_metadata.tsv":
+            return [{"trait_id": f"T{i}"} for i in range(60)]
         if name == "condition_oxygen_switch_scores.tsv":
             return _oxygen_rows()
         if name == "studies.tsv":
@@ -2327,7 +2331,7 @@ def test_deck_coverage_text_reads_the_coverage_tsvs(
         "High-level visual overview of the data ingestion funnel: 932 BugSigDB v1.3.1 human "
         "studies (5,629 retained profiles, 46,865 all-profile taxon occurrences across "
         "4,750 unique NCBI TaxIDs; 2,335 paired experiments / 4,670 paired profiles) "
-        "joined to 5,829 BugSigDB taxa (3,574 with a KG-Microbe trait) "
+        "joined to 5,829 BugSigDB taxa (3,574 with any KG-Microbe annotation, incl. MediaDive) "
         "\N{MULTIPLICATION SIGN} 317 normalized traits via NCBI Taxonomy subtree rollup."
     )
     assert "41,279" not in mp1_takeaway
@@ -2558,14 +2562,14 @@ def test_plate_six_text_and_remediation_labels_read_the_coverage_tsvs(
         assert mp1_labels["taxa_subtitle"] in mp1_all_text
         assert mp1_labels["species_gap_note"] in mp1_all_text
         assert (
-            "5,829 BugSigDB Taxa (3,574 with a KG-Microbe trait) "
+            "5,829 BugSigDB Taxa (3,574 with any\nKG-Microbe annotation, incl. MediaDive) "
             "\N{MULTIPLICATION SIGN} 317 Traits" in mp1_all_text
         )
         assert (
             "Filtered from 2,650 raw features by excluding\n"
             "2,333 MediaDive growth-media recipes" in mp1_all_text
         )
-        assert "over M = 5,829 distinct organisms" in mp1_all_text
+        assert "over M = 5,829 distinct BugSigDB taxa" in mp1_all_text
         assert "5,829 Trait-Bearing Taxa" not in mp1_all_text
         assert "5,829 KG-Microbe Taxa" not in mp1_all_text
         for stale_mp1 in ("41,279", "4,569"):
@@ -3047,9 +3051,16 @@ def test_deck_and_plates_derive_corpus_and_trait_counts_from_tables(
     assert metrics["raw_trait_count"] == 2677
     assert metrics["mediadive_trait_count"] == 2333
     tables_read = {p.name for p in deck.TABLES_READ}
-    assert {"taxa_trait_matrix.tsv", "taxa_trait_matrix_columns.tsv"} <= tables_read
+    assert "taxa_trait_matrix.tsv" in tables_read
+    assert "taxa_trait_matrix_columns.tsv" in tables_read
+    assert "condition_trait_module_trait_metadata.tsv" in tables_read
 
-    # Verify record_problems enforces matrix_taxa and trait_count agreement (#988):
+    # Verify record_problems enforces matrix_taxa and trait_count presence & agreement (#988, #998):
+    for missing_key in ("matrix_taxa", "trait_count"):
+        reduced_counts = {k: v for k, v in metrics["plate_counts"].items() if k != missing_key}
+        assert deck.record_problems(reduced_counts, "v2.0", "v2.0") == [
+            f'the plates record no {missing_key} count, so its slides would print "?" (#682)'
+        ]
     assert (
         deck.record_problems(
             metrics["plate_counts"],
@@ -3071,6 +3082,129 @@ def test_deck_and_plates_derive_corpus_and_trait_counts_from_tables(
         "the plates record trait_count=317 and the deck reads 344 (#988)",
     ]
 
+    # Verify load_rerun_metrics guards on missing/zero retained_studies/retained_profiles,
+    # mismatched retained_trait_count, and empty condition_trait_module_trait_metadata.tsv (#998):
+    from mtp.quoted_results import CoverageRunInfo
+
+    real_cov_info = deck.read_coverage_run_info
+    for bad_studies, bad_profiles, err_match in (
+        (None, 5629, "missing retained_studies"),
+        (0, 5629, "missing retained_studies"),
+        (932, None, "missing retained_profiles"),
+        (932, 0, "missing retained_profiles"),
+    ):
+        monkeypatch.setattr(
+            deck,
+            "read_coverage_run_info",
+            lambda *_a, _s=bad_studies, _p=bad_profiles, **_kw: CoverageRunInfo(
+                strain_rollup="off",
+                population=None,
+                selected_profiles=_p,
+                retained_profiles=_p,
+                retained_studies=_s,
+            ),
+        )
+        with pytest.raises(ValueError, match=err_match):
+            deck.load_rerun_metrics(tmp_path)
+    monkeypatch.setattr(deck, "read_coverage_run_info", real_cov_info)
+
+    base_read_tsv = deck.read_tsv
+    monkeypatch.setattr(
+        deck,
+        "read_tsv",
+        lambda p: (
+            [{**r, "retained_trait_count": "317"} for r in base_read_tsv(p)]
+            if p.name == "trait_profile_paired_contrast_trait_stats_pooled.tsv"
+            else base_read_tsv(p)
+        ),
+    )
+    with pytest.raises(ValueError, match="retained_trait_count"):
+        deck.load_rerun_metrics(tmp_path)
+    monkeypatch.setattr(
+        deck,
+        "read_tsv",
+        lambda p: [] if p.name == "condition_trait_module_trait_metadata.tsv" else base_read_tsv(p),
+    )
+    with pytest.raises(ValueError, match="0 displayed trait rows"):
+        deck.load_rerun_metrics(tmp_path)
+    monkeypatch.setattr(deck, "read_tsv", base_read_tsv)
+
+    # Verify build_deck stops when plates_provenance.json records stale matrix_taxa or trait_count:
+    monkeypatch.setattr(deck, "load_rerun_metrics", lambda _r: dict(metrics))
+    monkeypatch.setattr(
+        deck,
+        "load_cellulose_captions",
+        lambda _r: {"statements": {"fragile": ""}},
+    )
+    monkeypatch.setattr(deck, "cellulose_revision", lambda _r: "deadbeef")
+    monkeypatch.setattr(deck, "REPO_ROOT", tmp_path)
+    plates_prov = tmp_path / deck.PLATES_DIR / "plates_provenance.json"
+    plates_prov.parent.mkdir(parents=True, exist_ok=True)
+    plates_prov.write_text(
+        json.dumps(
+            {
+                "counts": {
+                    **metrics["plate_counts"],
+                    "matrix_taxa": 5829,
+                    "trait_count": 317,
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+    cell_fig_prov = tmp_path / deck.CELLULOSE_DIR / "figures" / "figures_provenance.json"
+    cell_fig_prov.parent.mkdir(parents=True, exist_ok=True)
+    cell_fig_prov.write_text("{}", encoding="utf-8")
+    cell_prov = tmp_path / deck.CELLULOSE_DIR / "cellulose_decr_provenance.json"
+    cell_prov.write_text(
+        json.dumps({"contrast_classifier_version": metrics["contrast_classifier"]}),
+        encoding="utf-8",
+    )
+    with pytest.raises(
+        SystemExit,
+        match=(
+            r"matrix_taxa=5829 and the deck reads 6120"
+            r"[\s\S]*trait_count=317 and the deck reads 344"
+        ),
+    ):
+        deck.build_deck(
+            tmp_path,
+            tmp_path / "slides",
+            tmp_path / "prov",
+            trees={},
+        )
+
+    # Verify build_deck calls check_coverage_table_sync with require_enrichment_infographic=True:
+    plates_prov.write_text(json.dumps({"counts": metrics["plate_counts"]}), encoding="utf-8")
+    monkeypatch.setattr(deck, "extract_committed_figures", lambda _p: None)
+    monkeypatch.setattr(deck, "plate_revision", lambda _r: "deadbeef")
+    monkeypatch.setattr(
+        deck,
+        "placed_slides",
+        lambda items, _r, inc, _w: [
+            dict(it) for it in items if not inc.add(it["figure_file_path"])
+        ],
+    )
+    monkeypatch.setattr(deck, "cellulose_decr_slides", lambda *_a, **_kw: [])
+    monkeypatch.setattr(deck, "get_remaining_appendix_slides", lambda *_a, **_kw: [])
+    prev_slides_dir = tmp_path / deck.DECK_DIR / "slides"
+    prev_slides_dir.mkdir(parents=True, exist_ok=True)
+    for m_name in ("slide_manifest_v1.tsv", "slide_manifest_v2.tsv"):
+        (prev_slides_dir / m_name).write_text(
+            "slide\tfigure_file_path\tdeck_section\tcode_path\n",
+            encoding="utf-8",
+        )
+    with pytest.raises(
+        ValueError,
+        match=r"Missing data/derived/enrichment_infographic\.png slide in deck",
+    ):
+        deck.build_deck(
+            tmp_path,
+            tmp_path / "slides",
+            tmp_path / "prov",
+            trees={},
+        )
+
     # Verify Methods Plate I takeaway guards on missing/zero corpus or trait-bearing counts:
     for bad_key, bad_val in (
         ("retained_studies", None),
@@ -3087,7 +3221,7 @@ def test_deck_and_plates_derive_corpus_and_trait_counts_from_tables(
     new_slides = deck.get_new_slides_metadata(metrics)
     by_analysis = {s["analysis"]: s for s in new_slides}
     assert (
-        "6,120 BugSigDB taxa (3,680 with a KG-Microbe trait) "
+        "6,120 BugSigDB taxa (3,680 with any KG-Microbe annotation, incl. MediaDive) "
         "\N{MULTIPLICATION SIGN} 344 normalized traits"
         in (by_analysis["methods_plate_1"]["takeaway"])
     )
@@ -3313,7 +3447,29 @@ def test_deck_and_plates_derive_corpus_and_trait_counts_from_tables(
     assert "data/derived/taxa_trait_matrix_columns.tsv" in recorded_inputs
     mp1_fig = closed.pop()
     try:
-        mp1_fig.canvas.draw()
+        for check_dpi in (100, 220):
+            mp1_fig.set_dpi(check_dpi)
+            mp1_fig.canvas.draw()
+            ax0 = mp1_fig.axes[0]
+            kg_patch = next(
+                p
+                for p in ax0.patches
+                if isinstance(p, plates.mpatches.FancyBboxPatch)
+                and abs(p.get_x() - 36.8) < 1e-3
+                and abs(p.get_y() - 71.5) < 1e-3
+            )
+            kg_bbox = kg_patch.get_window_extent()
+            kg_title = next(t for t in ax0.texts if "BugSigDB Taxa (" in t.get_text())
+            kg_sub = next(t for t in ax0.texts if "Filtered from " in t.get_text())
+            t_bbox = kg_title.get_window_extent()
+            s_bbox = kg_sub.get_window_extent()
+            assert t_bbox.x0 >= kg_bbox.x0
+            assert t_bbox.x1 <= kg_bbox.x1
+            assert s_bbox.x0 >= kg_bbox.x0
+            assert s_bbox.x1 <= kg_bbox.x1
+            assert t_bbox.y1 <= kg_bbox.y1
+            assert s_bbox.y0 >= kg_bbox.y0
+            assert t_bbox.y0 > s_bbox.y1
         mp1_text = "\n".join(
             [
                 *(t.get_text() for t in mp1_fig.texts),
@@ -3321,14 +3477,14 @@ def test_deck_and_plates_derive_corpus_and_trait_counts_from_tables(
             ]
         )
         assert (
-            "6,120 BugSigDB Taxa (3,680 with a KG-Microbe trait) "
+            "6,120 BugSigDB Taxa (3,680 with any\nKG-Microbe annotation, incl. MediaDive) "
             "\N{MULTIPLICATION SIGN} 344 Traits" in mp1_text
         )
         assert (
             "Filtered from 2,677 raw features by excluding\n"
             "2,333 MediaDive growth-media recipes" in mp1_text
         )
-        assert "over M = 6,120 distinct organisms" in mp1_text
+        assert "over M = 6,120 distinct BugSigDB taxa" in mp1_text
         assert "2,226 Paired Experiments" in mp1_text
         assert "4,452 Paired Directional Signatures" in mp1_text
         assert "5,829" not in mp1_text
@@ -3337,6 +3493,54 @@ def test_deck_and_plates_derive_corpus_and_trait_counts_from_tables(
     finally:
         real_close(mp1_fig)
 
+    # Verify build_methods_plate1 guards on missing/zero retained_studies/retained_profiles
+    # and mismatched retained_trait_count (#998):
+    real_plate_cov_info = plates.read_coverage_run_info
+    for bad_studies, bad_profiles, err_match in (
+        (None, 5629, "missing retained_studies"),
+        (0, 5629, "missing retained_studies"),
+        (932, None, "missing retained_profiles"),
+        (932, 0, "missing retained_profiles"),
+    ):
+        monkeypatch.setattr(
+            plates,
+            "read_coverage_run_info",
+            lambda *_a, _s=bad_studies, _p=bad_profiles, **_kw: CoverageRunInfo(
+                strain_rollup="phenotype",
+                population=None,
+                selected_profiles=_p,
+                retained_profiles=_p,
+                retained_studies=_s,
+            ),
+        )
+        with pytest.raises(ValueError, match=err_match):
+            plates.build_methods_plate1(plate_repo, plate_repo)
+    monkeypatch.setattr(plates, "read_coverage_run_info", real_plate_cov_info)
+
+    pooled_stats_path = paired_dir / "trait_profile_paired_contrast_trait_stats_pooled.tsv"
+    good_pooled = pooled_stats_path.read_text(encoding="utf-8")
+    pooled_stats_path.write_text(
+        "trait\ttrait_label\tpair_count\tstudy_count\tretained_trait_count\tstudy_q_value\t"
+        "study_mean_increased_minus_decreased\n"
+        "T0\ttrait_0\t2226\t908\t317\t0.01\t0.2\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="retained_trait_count"):
+        plates.build_methods_plate1(plate_repo, plate_repo)
+    pooled_stats_path.write_text(good_pooled, encoding="utf-8")
+
+    # Verify build_methods_plate2 uses background_taxa_m from ORA header when present (#998):
+    monkeypatch.setattr(
+        plates,
+        "ora_calls",
+        lambda _p: plates.OraCalls(
+            calls=62205,
+            tests=2172718,
+            p_threshold=0.001,
+            fold=1.5,
+            background_taxa_m=5999,
+        ),
+    )
     assert plates.build_methods_plate2(plate_repo, plate_repo).exists()
     mp2_fig = closed.pop()
     try:
@@ -3348,6 +3552,11 @@ def test_deck_and_plates_derive_corpus_and_trait_counts_from_tables(
             ]
         )
         assert "1. Dual Normalization (4,452 \N{MULTIPLICATION SIGN} 344)" in mp2_text
+        assert (
+            "2\N{MULTIPLICATION SIGN}2 Hypergeometric Over-Representation (M = 5,999 Taxa)"
+            in mp2_text
+        )
+        assert "Pass conservative 344-trait\nBenjamini\N{EN DASH}Yekutieli q ≤ 0.05" in mp2_text
         assert "Aggregated across N = 908 unique studies" in mp2_text
         assert "344-trait BH/BY screen (fixes 0.354 screening bias)" in mp2_text
         assert "344 traits pass BH₃₄₄ ≤ 0.05" in mp2_text

@@ -666,6 +666,15 @@ def build_methods_plate1(repo: Path, out_dir: Path) -> Path:
     retained_profiles = run_info.retained_profiles
     coverage_scope = run_info.strain_rollup
     m_counts = matrix_counts(repo)
+    pooled_retained_traits = {
+        int(r["retained_trait_count"]) for r in pooled if has_value(r.get("retained_trait_count"))
+    }
+    if pooled_retained_traits and pooled_retained_traits != {m_counts.trait_count}:
+        raise ValueError(
+            "trait_profile_paired_contrast_trait_stats_pooled.tsv retained_trait_count "
+            f"{sorted(pooled_retained_traits)} disagrees with taxa_trait_matrix_columns.tsv "
+            f"retained trait count ({m_counts.trait_count})"
+        )
     PLATE_COUNTS.update(
         {
             "matrix_taxa": m_counts.matrix_taxa,
@@ -797,26 +806,28 @@ def build_methods_plate1(repo: Path, out_dir: Path) -> Path:
     ax.add_patch(kg_top)
     ax.text(
         50.0,
-        80.8,
-        f"{m_counts.matrix_taxa:,} BugSigDB Taxa "
-        f"({m_counts.trait_bearing_taxa:,} with a KG-Microbe trait) "
+        81.1,
+        f"{m_counts.matrix_taxa:,} BugSigDB Taxa ({m_counts.trait_bearing_taxa:,} with any\n"
+        f"KG-Microbe annotation, incl. MediaDive) "
         f"\N{MULTIPLICATION SIGN} {m_counts.trait_count:,} Traits",
-        fontsize=8.3,
+        fontsize=7.6,
         fontweight="bold",
         color=INK,
         ha="center",
         va="center",
+        linespacing=1.22,
         zorder=4,
     )
     ax.text(
         50.0,
-        75.2,
+        74.5,
         f"Filtered from {m_counts.raw_trait_count:,} raw features by excluding\n"
         f"{m_counts.mediadive_trait_count:,} MediaDive growth-media recipes",
-        fontsize=8.1,
+        fontsize=7.6,
         color=MUTED,
         ha="center",
         va="center",
+        linespacing=1.22,
         zorder=4,
     )
 
@@ -921,7 +932,7 @@ def build_methods_plate1(repo: Path, out_dir: Path) -> Path:
         19.8,
         "• Arm 1 & Arm 3: Continuous / Sign profile matrix\n  weighted by descendant trait "
         "assertion fractions\n• Arm 2 (Taxon ORA): Binary presence/absence\n"
-        f"  over M = {m_counts.matrix_taxa:,} distinct organisms",
+        f"  over M = {m_counts.matrix_taxa:,} distinct BugSigDB taxa",
         fontsize=7.8,
         color=INK,
         ha="center",

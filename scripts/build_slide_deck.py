@@ -484,12 +484,21 @@ def load_rerun_metrics(repo: Path) -> dict:
     metrics["raw_trait_count"] = m_counts.raw_trait_count
     metrics["mediadive_trait_count"] = m_counts.mediadive_trait_count
     metrics["trait_count"] = m_counts.trait_count
-    hm_meta_path = repo / "trait-visualization/condition_trait_module_trait_metadata.tsv"
-    if hm_meta_path.exists():
-        with hm_meta_path.open("r", encoding="utf-8", newline="") as f:
-            metrics["heatmap_displayed_traits"] = sum(1 for _ in csv.DictReader(f, delimiter="\t"))
-    else:
-        metrics["heatmap_displayed_traits"] = 60
+    pooled_retained_traits = {
+        int(r["retained_trait_count"])
+        for r in paired["pooled"]
+        if (r.get("retained_trait_count") or "").strip()
+    }
+    if pooled_retained_traits and pooled_retained_traits != {m_counts.trait_count}:
+        raise ValueError(
+            "trait_profile_paired_contrast_trait_stats_pooled.tsv retained_trait_count "
+            f"{sorted(pooled_retained_traits)} disagrees with taxa_trait_matrix_columns.tsv "
+            f"retained trait count ({m_counts.trait_count})"
+        )
+    hm_meta_rows = read_tsv(repo / "trait-visualization/condition_trait_module_trait_metadata.tsv")
+    if not hm_meta_rows:
+        raise ValueError("condition_trait_module_trait_metadata.tsv has 0 displayed trait rows")
+    metrics["heatmap_displayed_traits"] = len(hm_meta_rows)
     metrics["ind_conditions"] = len({r["condition"] for r in ind_rows})
     metrics["ind_sites"] = len({r["body_site_group"] for r in ind_rows})
     metrics["ind_median_studies"] = median(int(r["study_count"]) for r in ind_rows)
@@ -1119,7 +1128,8 @@ def methods_plate_one_takeaway(metrics: Mapping[str, Any]) -> str:
         f"v1.3.1 human studies ({retained_profiles:,} retained profiles, {total_occ:,} all-profile "
         f"taxon occurrences across {total_taxa:,} unique NCBI TaxIDs; "
         f"{pooled:,} paired experiments / {2 * pooled:,} paired profiles) joined to "
-        f"{matrix_taxa:,} BugSigDB taxa ({trait_bearing_taxa:,} with a KG-Microbe trait) "
+        f"{matrix_taxa:,} BugSigDB taxa "
+        f"({trait_bearing_taxa:,} with any KG-Microbe annotation, incl. MediaDive) "
         f"\N{MULTIPLICATION SIGN} {trait_count:,} normalized traits via NCBI Taxonomy subtree "
         "rollup."
     )
@@ -2225,7 +2235,7 @@ def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
         {
             "owner": "Jed",
             "title": "Global condition \N{MULTIPLICATION SIGN} trait module clustered heatmap "
-            f"(top {int(metrics.get('heatmap_displayed_traits', 60)):,} of "
+            f"(top {int(metrics['heatmap_displayed_traits']):,} of "
             f"{int(metrics['trait_count']):,} traits)",
             "tag": "Jed · Global trait-module atlas",
             "figure_file_path": "trait-visualization/condition_trait_module_clustered_heatmap.png",
@@ -2488,7 +2498,7 @@ def check_coverage_table_sync(
     hm = by_analysis.get("condition_trait_module_clustered_heatmap")
     if hm is None:
         raise ValueError("Missing condition_trait_module_clustered_heatmap slide in metadata")
-    displayed_traits = int(metrics.get("heatmap_displayed_traits", 60))
+    displayed_traits = int(metrics["heatmap_displayed_traits"])
     expected_hm_traits = f"(top {displayed_traits:,} of {trait_count:,} traits)"
     if expected_hm_traits not in hm.get("title", ""):
         raise ValueError(
