@@ -22,6 +22,7 @@ from mtp.datamodel.workflow_pydantic import (
 )
 from mtp.paths import REPO_ROOT, file_sha256
 from mtp.workflow.arms.runtime import verify_arm
+from mtp.workflow.coverage import feature_class, feature_filter_id
 from mtp.workflow.downstream_contracts import (
     STANDARD_ANALYSIS_SPECS,
     build_analysis_basis,
@@ -149,25 +150,51 @@ async def _exec_command(cmd: list[str], cwd: Path) -> None:
         raise RuntimeError(f"Command failed with exit code {returncode}: {cmd}")
 
 
+def retained_profile_features(catalog: Path, profiles: Path, *, ora: bool) -> tuple[str, ...]:
+    """A profile table's retained (non-MediaDive) trait features, in its column order.
+
+    They must be the feature catalog's trait_annotation features in the catalog's order,
+    so a basis identifies the family its profiles actually hold (#860).
+    """
+    columns = profile_count_reader(profiles).count_columns
+    if ora:
+        if columns[0] != "taxa_count":
+            raise ValueError(f"{profiles} lacks the ORA taxa_count denominator column")
+        columns = columns[1:]
+    retained = tuple(column for column in columns if feature_class(column) == "trait_annotation")
+    with catalog.open(encoding="utf-8", newline="") as handle:
+        catalogued = tuple(
+            row["column_id"]
+            for row in csv.DictReader(handle, delimiter="\t")
+            if row["feature_class"] == "trait_annotation"
+        )
+    if retained != catalogued:
+        raise ValueError(
+            f"The retained features of {profiles} are not the feature catalog's "
+            "trait_annotation features in catalog order"
+        )
+    return retained
+
+
 def core_analysis_bases(core_run: WorkflowRun) -> list[AnalysisBasis]:
     """The count and ORA analysis bases of a verified core run.
 
-    Each basis records the core's feature catalog, its retained (non-MediaDive) trait
-    count and the strain rollup scope the core declared, so a comparison built on the
+    Each basis records the core's feature catalog by its bytes, the identity and number of
+    the retained (non-MediaDive) trait features its profile table holds, in column order
+    (#860), and the strain rollup scope the core declared, so a comparison built on the
     phenotype primary or the off sensitivity core says which it is (#788).
     """
     catalog = artifact_path(core_run, "feature_catalog")
     catalog_sha = file_sha256(catalog)
-    with catalog.open(encoding="utf-8", newline="") as handle:
-        rows = csv.DictReader(handle, delimiter="\t")
-        retained = sum(row["feature_class"] == "trait_annotation" for row in rows)
+    count = retained_profile_features(catalog, artifact_path(core_run, "count_profiles"), ora=False)
+    ora = retained_profile_features(catalog, artifact_path(core_run, "ora_profiles"), ora=True)
     rollup_policy = f"ncbi_taxonomy_closure_rollup_{run_strain_rollup(core_run)}"
     return [
         build_analysis_basis(
             basis_id="basis:count_profiles_non_mediadive",
             feature_catalog_sha256=catalog_sha,
-            feature_filter_id=f"sha256:{catalog_sha}",
-            retained_feature_count=retained,
+            feature_filter_id=feature_filter_id(count),
+            retained_feature_count=len(count),
             profile_unit="count_profiles",
             aggregation_policy="sum_taxon_trait_assertions_per_signature",
             rollup_policy=rollup_policy,
@@ -178,8 +205,8 @@ def core_analysis_bases(core_run: WorkflowRun) -> list[AnalysisBasis]:
         build_analysis_basis(
             basis_id="basis:ora_profiles_binary",
             feature_catalog_sha256=catalog_sha,
-            feature_filter_id=f"sha256:{catalog_sha}",
-            retained_feature_count=retained,
+            feature_filter_id=feature_filter_id(ora),
+            retained_feature_count=len(ora),
             profile_unit="ora_profiles",
             aggregation_policy="distinct_matched_taxa_per_signature",
             rollup_policy=rollup_policy,

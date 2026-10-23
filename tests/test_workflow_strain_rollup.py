@@ -11,6 +11,7 @@ from typing import cast
 
 import pytest
 
+from mtp.paths import file_sha256
 from mtp.study_trait_profiles import collect_profile_taxa
 from mtp.taxa_trait_matrix import (
     PRIMARY_STRAIN_ROLLUP,
@@ -23,7 +24,12 @@ from mtp.workflow.__main__ import main as workflow_main
 from mtp.workflow.arms.runtime import execute_arm, verify_arm
 from mtp.workflow.arms.types import ArmContext, Command
 from mtp.workflow.comparison import core_analysis_bases
-from mtp.workflow.coverage import STRAIN_ATTRIBUTED_EVIDENCE, UNRESOLVED_EVIDENCE
+from mtp.workflow.coverage import (
+    STRAIN_ATTRIBUTED_EVIDENCE,
+    UNRESOLVED_EVIDENCE,
+    feature_class,
+    feature_filter_id,
+)
 from mtp.workflow.definition import read_definition
 from mtp.workflow.models import WorkflowRun
 from mtp.workflow.operations import (
@@ -321,6 +327,108 @@ def test_comparison_bases_record_the_core_scope_and_trait_count(
     assert [basis.profile_unit for basis in bases] == ["count_profiles", "ora_profiles"]
     assert {basis.rollup_policy for basis in bases} == {f"ncbi_taxonomy_closure_rollup_{scope}"}
     assert {basis.retained_feature_count for basis in bases} == {retained}
+
+
+NEW_TRAIT = "METPO:1000999"
+NEW_MEDIUM = "METPO:2000510|mediadive.medium:2"
+
+
+def _write(path: Path, header: list[str], rows: list[list[str]]) -> None:
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        csv.writer(handle, delimiter="\t", lineterminator="\n").writerows([header, *rows])
+
+
+def _with_features(
+    run: WorkflowRun,
+    root: Path,
+    order: list[str],
+    *,
+    profile_order: list[str] | None = None,
+    relabel: bool = False,
+) -> WorkflowRun:
+    """A copy of a core run whose feature catalog lists ``order`` and whose count and ORA
+    profiles hold ``profile_order`` (by default the same); an added feature counts zero."""
+    root.mkdir()
+    source = artifact_path(run, "feature_catalog")
+    header = _header(source)
+    catalog = {row["column_id"]: row for row in _rows(source)}
+    template = next(iter(catalog.values()))
+    rows = [
+        catalog.get(
+            feature, {**template, "column_id": feature, "feature_class": feature_class(feature)}
+        )
+        for feature in order
+    ]
+    if relabel:
+        rows = [{**row, "column_label": f"{row['column_label']} (renamed)"} for row in rows]
+    paths = {"feature_catalog": root / source.name}
+    _write(paths["feature_catalog"], header, [[row[column] for column in header] for row in rows])
+    for product, leading in (("count_profiles", 3), ("ora_profiles", 4)):
+        source = artifact_path(run, product)
+        columns = [*_header(source)[:leading], *(order if profile_order is None else profile_order)]
+        paths[product] = root / source.name
+        _write(
+            paths[product],
+            columns,
+            [[row.get(column, "0") for column in columns] for row in _rows(source)],
+        )
+    artifacts = [
+        item.model_copy(update={"path": str(paths[item.product_id])})
+        if item.product_id in paths
+        else item
+        for item in run.artifacts or []
+    ]
+    return run.model_copy(update={"artifacts": artifacts})
+
+
+@pytest.mark.parametrize("scope", STRAIN_ROLLUPS)
+def test_each_basis_identifies_its_retained_features_in_profile_order(
+    scoped_runs: dict[StrainRollup, WorkflowRun], tmp_path: Path, scope: StrainRollup
+) -> None:
+    """feature_filter_id identifies the retained features a basis analyses, in its profile
+    table's column order; the catalog's bytes are only its feature_catalog_sha256 (#860)."""
+    run = scoped_runs[scope]
+    features = _header(artifact_path(run, "count_profiles"))[3:]
+    retained = [feature for feature in features if feature_class(feature) == "trait_annotation"]
+
+    def identities(name: str, order: list[str], *, relabel: bool = False) -> list[str]:
+        copy = _with_features(run, tmp_path / name, order, relabel=relabel)
+        bases = core_analysis_bases(copy)
+        assert {basis.feature_catalog_sha256 for basis in bases} == {
+            file_sha256(artifact_path(copy, "feature_catalog"))
+        }
+        return [basis.feature_filter_id for basis in bases]
+
+    bases = core_analysis_bases(run)
+    assert [basis.profile_unit for basis in bases] == ["count_profiles", "ora_profiles"]
+    unchanged = [feature_filter_id(retained)] * 2
+    assert [basis.feature_filter_id for basis in bases] == unchanged
+    # Relabelling the catalog, or dropping or adding a MediaDive medium, keeps the family.
+    assert identities("relabelled", features, relabel=True) == unchanged
+    assert identities("without_media", retained) == unchanged
+    assert identities("more_media", [*features, NEW_MEDIUM]) == unchanged
+    # Adding, dropping or moving a retained feature makes another family.
+    for name, order, family in (
+        ("added", [*features, NEW_TRAIT], [*retained, NEW_TRAIT]),
+        ("moved", [NEW_TRAIT, *features], [NEW_TRAIT, *retained]),
+        ("dropped", [f for f in features if f != retained[0]], retained[1:]),
+    ):
+        observed = identities(name, order)
+        assert observed == [feature_filter_id(family)] * 2, name
+        assert observed != unchanged, name
+
+
+@pytest.mark.parametrize("change", ["membership", "order"])
+def test_a_basis_whose_profiles_disagree_with_the_catalog_is_refused(
+    scoped_runs: dict[StrainRollup, WorkflowRun], tmp_path: Path, change: str
+) -> None:
+    """Each profile table's retained features must be the catalog's, in its order (#860)."""
+    run = scoped_runs[PRIMARY_STRAIN_ROLLUP]
+    features = _header(artifact_path(run, "count_profiles"))[3:]
+    profiles = [*features, NEW_TRAIT] if change == "membership" else features[::-1]
+    copy = _with_features(run, tmp_path / change, features, profile_order=profiles)
+    with pytest.raises(ValueError, match="feature catalog"):
+        core_analysis_bases(copy)
 
 
 @pytest.mark.parametrize("scope", STRAIN_ROLLUPS)
