@@ -24,7 +24,7 @@ from mtp.presence_depth_sensitivity import (
     reconstruct_profiles,
     run_sensitivity,
 )
-from mtp.workflow.consumers import open_core_bundle, verify_consumer_record
+from mtp.workflow.consumers import CoreBundle, open_core_bundle, verify_consumer_record
 from mtp.workflow.operations import OPERATIONS, validate_core_product
 from mtp.workflow.runtime import execute_workflow
 
@@ -223,21 +223,30 @@ def test_native_sign_tally_mismatch_is_rejected() -> None:
     from mtp.trait_screen import run_screen
 
     columns = ["METPO:1", "METPO:2"]
-    studies = [StudyEvidence("s", "raw", 1, (0.5, -0.5), 0.0, 0.0)]
-    native: dict[str, list[Profile]] = {name: [] for name in sensitivity.REPRESENTATIONS}
-    native["raw"] = [
-        Profile("s", "e", direction, "", "", dict(zip(columns, counts, strict=True)), 4)
-        for direction, counts in (("inc", (3, 1)), ("dec", (1, 3)))
+    studies = [
+        StudyEvidence("s", name, 1, (0.5, -0.5), 0.0, 0.0) for name in sensitivity.REPRESENTATIONS
     ]
-    screened = run_screen(native["raw"], columns)
+    native = {
+        name: [
+            Profile("s", "e", direction, "", "", dict(zip(columns, counts, strict=True)), 4)
+            for direction, counts in (("inc", (3, 1)), ("dec", (1, 3)))
+        ]
+        for name in sensitivity.REPRESENTATIONS
+    }
+    # Every representation has a consistent nonempty cohort before corruption.
+    baseline = build_screen(studies, columns, native)
+    assert {row["representation"] for row in baseline} == set(sensitivity.REPRESENTATIONS)
+    screened = [run_screen(native[name], columns) for name in sensitivity.REPRESENTATIONS]
+    target = next(row for row in screened[0].rows if row.trait == "METPO:1")
+    assert (target.studies_up, target.studies_down, target.studies_tied) == (1, 0, 0)
     # Keep sample size fixed but reverse a native sign: a count-only check is insufficient.
-    bad = replace(screened.rows[0], studies_up=0, studies_down=1)
+    bad = replace(target, studies_up=0, studies_down=1)
+    assert bad.studies_up + bad.studies_down + bad.studies_tied == 1
+    screened[0] = replace(
+        screened[0], rows=[bad if row.trait == target.trait else row for row in screened[0].rows]
+    )
     with (
-        patch.object(
-            sensitivity,
-            "run_screen",
-            return_value=replace(screened, rows=[bad, *screened.rows[1:]]),
-        ),
+        patch.object(sensitivity, "run_screen", side_effect=screened),
         pytest.raises(ValueError, match="study sign tallies disagree"),
     ):
         build_screen(studies, columns, native)
@@ -425,6 +434,8 @@ def test_verified_core_run_records_actual_family_and_population(
     assert "ora_profiles" in ora_record.product_ids
     assert "count_profiles" not in ora_record.product_ids
     families = json.loads((output / "families.json").read_text())
+    assert families
+    assert {family["strain_rollup"] for family in families} == {scope}
     assert all(
         row["expected_family_size"] == 6
         for row in families
@@ -452,6 +463,7 @@ def test_verified_core_run_records_actual_family_and_population(
         "src/mtp/guild_maps.py",
         "src/mtp/workflow/verification.py",
         "src/mtp/study_trait_profiles.py",
+        "methods/multiple_testing_policy_v1.yaml",
     }.issubset(provenance["implementation_sources_sha256"])
     assert all(
         file_sha256(REPO_ROOT / path) == digest
@@ -597,15 +609,17 @@ def test_full_rollup_is_explicitly_unsupported_before_analysis(tmp_path: Path) -
 
 def test_source_inventory_tracks_additionally_loaded_mtp_module() -> None:
     import mtp.coupling
+    from mtp.multiple_testing import POLICY_PATH
 
     sources = sensitivity.implementation_sources()
     assert sources["src/mtp/coupling.py"] == file_sha256(Path(mtp.coupling.__file__))
     assert sources["src/mtp/workflow/verification.py"] == file_sha256(
         REPO_ROOT / "src/mtp/workflow/verification.py"
     )
+    assert sources[POLICY_PATH.relative_to(REPO_ROOT).as_posix()] == file_sha256(POLICY_PATH)
 
 
-@pytest.mark.parametrize("change", ["code", "policy", "lazy_code", "missing_loaded"])
+@pytest.mark.parametrize("change", ["code", "policy", "lazy_code", "missing_loaded", "core_open"])
 def test_changed_execution_identity_is_rejected_before_publication(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, change: str
 ) -> None:
@@ -617,10 +631,17 @@ def test_changed_execution_identity_is_rejected_before_publication(
         "policy": "methods/multiple_testing_policy_v1.yaml",
         "lazy_code": "src/mtp/coupling.py",
         "missing_loaded": "src/mtp/presence_depth_sensitivity.py",
+        "core_open": "src/mtp/presence_depth_sensitivity.py",
     }[change]
     if change == "lazy_code":
         hashes.pop(target, None)
     original = sensitivity.build_screen
+    original_open = open_core_bundle
+
+    def changed_open(*args: Any, **kwargs: Any) -> CoreBundle:
+        bundle = original_open(*args, **kwargs)
+        hashes[target] = "f" * 64
+        return bundle
 
     def changed_analysis(*args: Any, **kwargs: Any) -> list[sensitivity.Result]:
         result = original(*args, **kwargs)
@@ -632,7 +653,10 @@ def test_changed_execution_identity_is_rejected_before_publication(
         return result
 
     monkeypatch.setattr(sensitivity, "implementation_sources", lambda: dict(hashes))
-    monkeypatch.setattr(sensitivity, "build_screen", changed_analysis)
+    if change == "core_open":
+        monkeypatch.setattr(sensitivity, "open_core_bundle", changed_open)
+    else:
+        monkeypatch.setattr(sensitivity, "build_screen", changed_analysis)
     # Before the fix, even real final consumer verification accepts these outputs.
     with pytest.raises(ValueError, match="implementation or policy changed during analysis"):
         verify_consumer_record(run_sensitivity(manifest, output))

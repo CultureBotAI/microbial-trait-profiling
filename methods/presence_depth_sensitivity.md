@@ -112,14 +112,18 @@ includes Git commit and dirty state, consumed product hashes, all canonical
 artifact, and dependency lock. This inventory includes indirect verification and
 aggregation imports; in a long-lived process it can also include modules loaded
 by earlier operations. It describes source coverage, not line-level execution.
-Before core consumption or scientific computation, the producer snapshots all
-canonical Python source files and the shared policy. Before creating the output
+At entry to `run_sensitivity`, before core consumption or scientific computation,
+the producer snapshots all canonical Python source files and the shared policy.
+Before creating the output
 directory, it compares the actually loaded source inventory with those original
 bytes, including modules imported lazily during analysis. Changes or removal of
 previously loaded source records abort publication. Unused source files are not
-added to the reported loaded-module inventory. This guard prevents final source
-hashes from silently relabelling an analysis performed under an earlier identity
-(#953).
+added to the reported loaded-module inventory. This guard rejects relevant source
+or policy changes between run entry and publication (#953). It does not compare
+against the bytes used at module import: edits after import but before run entry
+are outside its detection window, especially in a long-lived Python process.
+The `just` recipe starts a fresh process; its source inventory is not an attestation
+of the interpreter's already-loaded bytecode (#964).
 The lock captures package versions. Scope is read with the shared
 `run_strain_rollup` API, and rollup vocabulary is
 `ncbi_taxonomy_closure_rollup_<scope>` as in #828. The sensitivity supports `off`

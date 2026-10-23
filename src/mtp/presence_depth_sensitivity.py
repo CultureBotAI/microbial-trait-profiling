@@ -23,6 +23,7 @@ from mtp.contribution_inputs import rows
 from mtp.count_input import profile_count_reader, taxa_trait_count_reader
 from mtp.guild_maps import SIGN_TOLERANCE
 from mtp.human_host_corpus import CORPUS_SEQUENCING_TYPES, HUMAN_HOST_SPECIES
+from mtp.multiple_testing import POLICY_PATH
 from mtp.paths import REPO_ROOT, file_sha256
 from mtp.presence_depth_families import declare_and_correct
 from mtp.trait_composition import compute_log_ratio_shifts
@@ -583,7 +584,7 @@ def implementation_sources() -> dict[str, str]:
         if not path.is_relative_to(package_root) or path.suffix != ".py":
             raise ValueError(f"Loaded mtp module is outside canonical Python sources: {name}")
         paths.add(path)
-    paths.add(REPO_ROOT / "methods/multiple_testing_policy_v1.yaml")
+    paths.add(POLICY_PATH)
     return {path.relative_to(REPO_ROOT).as_posix(): file_sha256(path) for path in sorted(paths)}
 
 
