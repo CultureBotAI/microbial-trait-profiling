@@ -354,10 +354,16 @@ def test_scientific_validator_is_required_and_failed_results_prevent_publication
         harness.execute()
 
     def reject(
-        product: ProductDefinition, path: Path, context: Mapping[str, Path]
+        product: ProductDefinition,
+        path: Path,
+        context: Mapping[str, Path],
+        *,
+        parameters: Mapping[str, str],
     ) -> list[ValidationResult]:
         assert path.exists()
         assert context["raw"].exists()
+        # Validators see the run's resolved parameters (#788)
+        assert parameters == {"host": "all", "suffix": "!"}
         return [
             ValidationResult(
                 validator="fixture_science",
@@ -430,9 +436,14 @@ def test_output_validator_receives_only_declared_inputs_and_sibling_outputs(
     seen: dict[str, set[str]] = {}
 
     def check(
-        product: ProductDefinition, path: Path, context: Mapping[str, Path]
+        product: ProductDefinition,
+        path: Path,
+        context: Mapping[str, Path],
+        *,
+        parameters: Mapping[str, str],
     ) -> list[ValidationResult]:
         assert path.exists()
+        assert set(parameters) == {"host", "suffix"}
         seen[product.id] = set(context)
         return [
             ValidationResult(

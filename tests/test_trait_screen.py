@@ -394,9 +394,16 @@ def test_the_pinned_corpus_screens_every_retained_trait_and_reproduces_the_quote
     slots = candidate_slots(columns)
     paired, stats = load_profiles(guilds=slots)
     unpaired, _ = load_profiles(guilds=slots, paired_only=False)
-    assert len(columns) == stats.trait_columns_used == 317
+    # The family is every retained trait column of the table, so its size is read from the
+    # data: 317 under the off strain rollup scope, 344 under phenotype (#788, #847).
+    assert stats.trait_columns_used == len(columns)
     result = run_screen(paired, columns, dependence_profiles=unpaired)
-    assert result.family_size == 317
+    assert result.family_size == len(columns)
+    # Every figure below was computed on the committed table, built under the off scope.
+    assert len(columns) == 317, (
+        f"{len(columns)} retained traits: the figures below are pinned to the off-scope "
+        "table of 317 and must be repinned for a table built under another scope (#847)"
+    )
     contrast = result.contrast_dependence
     assert contrast is not None
     assert contrast.li_ji == pytest.approx(112.0, abs=0.05)
