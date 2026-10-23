@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import argparse
+import json
 import math
 import re
 from collections.abc import Sequence
+from datetime import UTC, datetime
 from pathlib import Path
 from textwrap import fill, shorten
 
@@ -915,9 +917,116 @@ def write_stratified_trait_stats(
             }
         )
 
-    manifest = pd.DataFrame.from_records(manifest_rows)
+    manifest = pd.DataFrame.from_records(
+        manifest_rows,
+        columns=[
+            "stratum_kind",
+            "stratum",
+            "filename_token",
+            "analysis_role",
+            "pair_count",
+            "study_count",
+            "selected_trait_count",
+            "path",
+        ],
+    )
     manifest.to_csv(manifest_path(output_dir), sep="\t", index=False)
     return manifest
+
+
+def write_legacy_stratified_stats(
+    profiles_path: Path,
+    pair_metadata_path: Path,
+    trait_labels_path: Path,
+    output_dir: Path,
+    *,
+    min_pairs: int = MIN_STRATIFIED_PAIRS,
+) -> Path:
+    """Refresh historical site-group tables with explicit file-level provenance (#824).
+
+    Pair metadata must come from the heatmap producer on these exact counts and
+    labels. This is a legacy input binding, not a verified core execution record.
+    """
+    paths = {
+        "profiles": profiles_path,
+        "pair_metadata": pair_metadata_path,
+        "trait_labels": trait_labels_path,
+    }
+    hashes = {name: file_sha256(path) for name, path in paths.items()}
+    metadata = pd.read_csv(pair_metadata_path, sep="\t", index_col=0)
+    for source, column in (("profiles", "profile_sha256"), ("trait_labels", "trait_labels_sha256")):
+        if column not in metadata or not metadata[column].eq(hashes[source]).all():
+            raise ValueError(
+                f"Rebuild pair metadata with just trait-heatmaps: missing or mismatched {column}"
+            )
+    if metadata.empty:
+        raise ValueError("Rebuild pair metadata: no matched pairs")
+    if metadata.duplicated(["study_id", "experiment_id"]).any():
+        raise ValueError("Rebuild pair metadata: duplicate study/experiment pairs")
+    for row in metadata.itertuples():
+        for direction, column in (
+            ("inc", "increased_profile_ids"),
+            ("dec", "decreased_profile_ids"),
+        ):
+            expected = f"{row.study_id}|{row.experiment_id}|{direction}"
+            if split_profile_ids(getattr(row, column)) != [expected]:
+                raise ValueError(
+                    f"Pair metadata contains mismatched profile identities: {row.Index}"
+                )
+    profiles = load_profile_matrix(profiles_path)
+    labels = load_trait_labels(trait_labels_path)
+    audit = pair_denominator_summary(profiles, metadata)
+    previous_tables = set(output_dir.glob("trait_profile_paired_contrast_trait_stats_*.tsv"))
+    provenance = output_dir / "stratified_stats_provenance.json"
+    for candidate in [*previous_tables, provenance]:
+        if candidate.exists() and any(candidate.samefile(path) for path in paths.values()):
+            raise ValueError("Site-statistics output overlaps an input file")
+    # An interrupted/failed refresh must not leave a prior success record in place.
+    provenance.unlink(missing_ok=True)
+    manifest = write_stratified_trait_stats(
+        profiles,
+        metadata,
+        labels,
+        output_dir=output_dir,
+        min_pairs=min_pairs,
+    )
+    outputs = [manifest_path(output_dir)] + [
+        trait_stats_path(output_dir, token) for token in manifest["filename_token"]
+    ]
+    if hashes != {name: file_sha256(path) for name, path in paths.items()}:
+        raise ValueError("Inputs changed during stratified export; rerun before using outputs")
+
+    def inventory(path: Path) -> dict[str, object]:
+        return {
+            "path": str(path.resolve()),
+            "sha256": file_sha256(path),
+            "size_bytes": path.stat().st_size,
+        }
+
+    record = {
+        "schema_version": "1.0",
+        "analysis": "legacy_native_body_site_group_composition",
+        "verification_status": "legacy_inputs_hashed_not_core_verified",
+        "created_at": datetime.now(UTC).isoformat(),
+        "producer": inventory(Path(__file__)),
+        "inputs": {name: inventory(path) for name, path in paths.items()},
+        "parameters": {
+            "min_pairs": min_pairs,
+            "max_traits": STRATIFIED_TRAIT_COUNT,
+            "min_profile_support": MIN_STRATIFIED_PROFILE_SUPPORT,
+            "max_profile_support_fraction": MAX_STRATIFIED_PROFILE_SUPPORT_FRACTION,
+            "site_grouping": "body_site_group from source-bound heatmap pair metadata",
+            "multiple_testing": "BH separately within each selected stratum family",
+        },
+        "pair_denominator_audit": audit,
+        "outputs": [inventory(path) for path in outputs],
+        "not_regenerated": [
+            {**inventory(path), "reason": "outside this run's emitted site-group manifest"}
+            for path in sorted(previous_tables - set(outputs))
+        ],
+    }
+    provenance.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
+    return provenance
 
 
 def add_anatomical_outline(ax: plt.Axes) -> None:
@@ -1400,7 +1509,14 @@ def main(argv: Sequence[str] | None = None) -> None:
     )
 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--stats-only", action="store_true", help="Write only the pooled stats TSV")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--stats-only", action="store_true", help="Write only the pooled stats TSV")
+    mode.add_argument(
+        "--stratified-stats-only",
+        action="store_true",
+        help="Refresh legacy site-group stats, manifest and provenance without figures",
+    )
+    parser.add_argument("--min-stratified-pairs", type=int, default=MIN_STRATIFIED_PAIRS)
     parser.add_argument("--output-dir", type=Path, default=INVESTIGATION_DIR)
     parser.add_argument("--core-run", type=Path, help="Verified core run for --stats-only")
     parser.add_argument("--profiles", dest="profile_input", type=Path)
@@ -1408,12 +1524,28 @@ def main(argv: Sequence[str] | None = None) -> None:
     parser.add_argument("--trait-labels", dest="column_labels", type=Path)
     parser.set_defaults(experiments_input=None, full_dump_input=None)
     args = parser.parse_args(argv)
-    if not args.stats_only and args.output_dir != INVESTIGATION_DIR:
-        parser.error("--output-dir is supported only with --stats-only")
+    if (
+        not args.stats_only
+        and not args.stratified_stats_only
+        and args.output_dir != INVESTIGATION_DIR
+    ):
+        parser.error("--output-dir requires --stats-only or --stratified-stats-only")
     if args.core_run is not None and not args.stats_only:
         parser.error("--core-run requires --stats-only")
     if args.core_run is not None and args.pair_metadata is not None:
         parser.error("--core-run derives pair metadata; omit --pair-metadata")
+    if args.min_stratified_pairs < 1:
+        parser.error("--min-stratified-pairs must be positive")
+    if args.stratified_stats_only:
+        provenance = write_legacy_stratified_stats(
+            args.profile_input or PROFILE_MATRIX_PATH,
+            args.pair_metadata or PAIRED_METADATA_PATH,
+            args.column_labels or TRAIT_COLUMNS_PATH,
+            args.output_dir,
+            min_pairs=args.min_stratified_pairs,
+        )
+        print(f"Wrote site-group statistics and provenance: {provenance}")
+        return
     bundle = bind_count_arguments(args)
     output_path = trait_stats_path(args.output_dir, "pooled")
     record_path = args.output_dir / "core_consumption.json"

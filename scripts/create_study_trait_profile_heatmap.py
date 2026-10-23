@@ -21,6 +21,7 @@ from mtp.composition_denominators import (
     trait_fractions,
 )
 from mtp.human_host_corpus import CORPUS_SEQUENCING_TYPES
+from mtp.paths import file_sha256
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = REPO_ROOT / "trait-visualization"
@@ -1142,11 +1143,16 @@ def write_paired_outputs(
     matrix_output_path: Path,
     metadata_output_path: Path,
     required_trait_check_output_path: Path,
+    *,
+    source_hashes: dict[str, str] | None = None,
 ) -> None:
     """Write the paired enrichment matrix and matched-pair metadata."""
     matrix_output_path.parent.mkdir(parents=True, exist_ok=True)
     pair_display_matrix.to_csv(matrix_output_path, sep="\t")
-    pair_metadata.loc[pair_matrix.index].to_csv(metadata_output_path, sep="\t")
+    metadata = pair_metadata.loc[pair_matrix.index].copy()
+    for source, digest in (source_hashes or {}).items():
+        metadata[f"{source}_sha256"] = digest
+    metadata.to_csv(metadata_output_path, sep="\t")
     required_trait_check.to_csv(required_trait_check_output_path, sep="\t", index=False)
     print(f"Wrote paired enrichment heatmap: {output_path}")
     print(f"Wrote paired enrichment matrix: {matrix_output_path}")
@@ -1298,6 +1304,13 @@ def main() -> None:
     if args.include_media_traits:
         parser.error("MediaDive is excluded before composition normalization (#174).")
 
+    pair_source_inputs = {
+        "profile": args.study_trait_profiles_input,
+        "trait_labels": args.trait_columns_input,
+        "raw_dump": args.full_dump_input,
+        "studies": args.studies_input,
+    }
+    pair_source_hashes = {name: file_sha256(path) for name, path in pair_source_inputs.items()}
     profile_matrix, profile_metadata, _trait_columns = load_profile_matrix(
         args.study_trait_profiles_input
     )
@@ -1404,6 +1417,8 @@ def main() -> None:
         full_study_count=pair_metadata["study_id"].nunique(),
     )
     required_trait_check = summarize_required_paired_traits(pair_matrix, trait_metadata)
+    if pair_source_hashes != {name: file_sha256(path) for name, path in pair_source_inputs.items()}:
+        raise ValueError("Heatmap source inputs changed during execution; rebuild before export")
     write_paired_outputs(
         pair_matrix,
         pair_display_matrix,
@@ -1414,6 +1429,7 @@ def main() -> None:
         args.paired_matrix_output,
         args.paired_metadata_output,
         args.paired_required_trait_check_output,
+        source_hashes=pair_source_hashes,
     )
 
 

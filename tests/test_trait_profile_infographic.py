@@ -1,4 +1,5 @@
 import importlib.util
+import json
 import math
 from itertools import combinations
 from pathlib import Path
@@ -24,6 +25,136 @@ assert SPEC is not None
 assert SPEC.loader is not None
 infographic = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(infographic)
+
+
+@pytest.fixture
+def stratified_inputs(tmp_path: Path) -> tuple[Path, Path, Path]:
+    """Synthetic rebuilt counts and heatmap-selected pairs for #824."""
+    profiles = tmp_path / "profiles.tsv"
+    labels = tmp_path / "labels.tsv"
+    pairs = tmp_path / "pairs.tsv"
+    rows = [
+        {
+            "study_id": f"s{i}",
+            "experiment_id": "e1",
+            "inc_dec": direction,
+            "METPO:1": i + 1 if direction == "inc" else 0,
+            "METPO:2": i + 1 if direction == "dec" else 0,
+        }
+        for i in range(16)
+        for direction in ("inc", "dec")
+    ]
+    pd.DataFrame(rows).to_csv(profiles, sep="\t", index=False)
+    pd.DataFrame(
+        {
+            "column_id": ["METPO:1", "METPO:2"],
+            "column_label": ["oxygen", "motility"],
+            "object_name": ["oxygen", "motility"],
+            "object_category": ["biolink:OntologyClass"] * 2,
+        }
+    ).to_csv(labels, sep="\t", index=False)
+    pd.DataFrame(
+        {
+            "study_id": [f"s{i}" for i in range(16)],
+            "experiment_id": ["e1"] * 16,
+            "body_site_group": ["Feces"] * 8 + ["Mouth"] * 8,
+            "increased_profile_ids": [f"s{i}|e1|inc" for i in range(16)],
+            "decreased_profile_ids": [f"s{i}|e1|dec" for i in range(16)],
+            "profile_sha256": file_sha256(profiles),
+            "trait_labels_sha256": file_sha256(labels),
+        }
+    ).to_csv(pairs, sep="\t")
+    return profiles, pairs, labels
+
+
+def test_stratified_stats_only_records_outputs_and_stale_files(
+    stratified_inputs: tuple[Path, Path, Path], tmp_path: Path
+) -> None:
+    profiles, pairs, labels = stratified_inputs
+    output = tmp_path / "analysis"
+    output.mkdir()
+    stale = output / "trait_profile_paired_contrast_trait_stats_saliva.tsv"
+    stale.write_text("historical table\n")
+    infographic.main(
+        [
+            "--stratified-stats-only",
+            "--profiles",
+            str(profiles),
+            "--pair-metadata",
+            str(pairs),
+            "--trait-labels",
+            str(labels),
+            "--output-dir",
+            str(output),
+            "--min-stratified-pairs",
+            "2",
+        ]
+    )
+    manifest = pd.read_csv(infographic.manifest_path(output), sep="\t")
+    assert set(manifest["filename_token"]) == {"feces", "feces_excluded", "mouth"}
+    assert manifest["pair_count"].eq(8).all()
+    record = json.loads((output / "stratified_stats_provenance.json").read_text())
+    assert record["verification_status"] == "legacy_inputs_hashed_not_core_verified"
+    assert record["inputs"]["profiles"]["sha256"] == file_sha256(profiles)
+    assert record["inputs"]["pair_metadata"]["sha256"] == file_sha256(pairs)
+    assert record["inputs"]["trait_labels"]["sha256"] == file_sha256(labels)
+    assert len(record["outputs"]) == 4
+    for item in record["outputs"]:
+        assert item["sha256"] == file_sha256(Path(item["path"]))
+    assert [Path(item["path"]).name for item in record["not_regenerated"]] == [stale.name]
+    assert stale.read_text() == "historical table\n"
+    assert not list(output.glob("*.png"))
+    assert not infographic.trait_stats_path(output, "pooled").exists()
+
+
+@pytest.mark.parametrize(
+    "problem", ["changed_counts", "changed_labels", "unbound_pairs", "wrong_pair", "duplicate_pair"]
+)
+def test_stratified_stats_rejects_stale_or_mismatched_pair_metadata(
+    stratified_inputs: tuple[Path, Path, Path], tmp_path: Path, problem: str
+) -> None:
+    profiles, pairs, labels = stratified_inputs
+    metadata = pd.read_csv(pairs, sep="\t", index_col=0)
+    if problem == "changed_counts":
+        profiles.write_text(profiles.read_text().replace("\t1\t0", "\t2\t0"))
+    elif problem == "changed_labels":
+        labels.write_text(labels.read_text().replace("oxygen", "other label"))
+    elif problem == "unbound_pairs":
+        metadata = metadata.drop(columns="profile_sha256")
+    elif problem == "duplicate_pair":
+        metadata.loc[1] = metadata.loc[0]
+    else:
+        metadata.loc[0, "increased_profile_ids"] = "s1|e1|inc"
+    metadata.to_csv(pairs, sep="\t")
+    output = tmp_path / "analysis"
+    with pytest.raises(ValueError, match=r"Rebuild|mismatched"):
+        infographic.main(
+            [
+                "--stratified-stats-only",
+                "--profiles",
+                str(profiles),
+                "--pair-metadata",
+                str(pairs),
+                "--trait-labels",
+                str(labels),
+                "--output-dir",
+                str(output),
+                "--min-stratified-pairs",
+                "2",
+            ]
+        )
+    assert not output.exists()
+
+
+def test_stratified_stats_no_eligible_sites_has_readable_empty_manifest(
+    stratified_inputs: tuple[Path, Path, Path], tmp_path: Path
+) -> None:
+    profiles, pairs, labels = stratified_inputs
+    output = tmp_path / "analysis"
+    infographic.write_legacy_stratified_stats(profiles, pairs, labels, output)
+    assert pd.read_csv(infographic.manifest_path(output), sep="\t").empty
+    record = json.loads((output / "stratified_stats_provenance.json").read_text())
+    assert len(record["outputs"]) == 1
 
 
 @pytest.mark.parametrize(
