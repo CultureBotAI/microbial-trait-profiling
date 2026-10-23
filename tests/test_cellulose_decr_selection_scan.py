@@ -31,6 +31,7 @@ from mtp.cellulose_decr.selection_scan import (
     DISJOINT,
     MEAN_DISTANCE,
     NO_TAXA,
+    NO_TRAITS,
     NO_UNITS,
     NOT_DRAWN,
     OUTCOME_COLUMNS,
@@ -39,9 +40,11 @@ from mtp.cellulose_decr.selection_scan import (
     POOL_TOO_SMALL,
     PRIMARY,
     PROTOCOL_PATH,
+    SELECTED,
     SENSITIVITY,
     SHARED,
     TIER1_2,
+    TOO_FEW_CONDITIONS,
     TRIPLE_COLUMNS,
     ScanInputs,
     bin_counts,
@@ -56,6 +59,7 @@ from mtp.cellulose_decr.selection_scan import (
     load_core_inputs,
     load_protocol,
     main,
+    plan,
     prepare,
     rank_candidates,
     rollup_scope,
@@ -1320,3 +1324,77 @@ def test_build_population_takes_in_memory_tables_for_some_studies() -> None:
     unpaired = keyed[~(keyed["experiment_id"].eq(records[0][1]) & keyed["inc_dec"].eq("inc"))]
     with pytest.raises(ValueError, match="paired"):
         build_population(experiments, unpaired, reported, matrix_taxa)
+
+
+# --------------------------------------------------------------------------- empty families (#901)
+
+
+def _sparse_corpus() -> ScanInputs:
+    """Nine conditions of two studies each, so none has three; every decreased signature
+    carries cellulose-annotated taxa and every increased one does not."""
+    records: list[Signature] = []
+    for number in range(1, 19):
+        study = f"bsdb:{number}"
+        decreased = ["t0", "t1", f"t{number % 10}"]
+        records.append((study, f"{study}-1", f"C{(number - 1) // 2}", FECES, decreased, ["t10"]))
+    return _inputs(records, _matrix(20, {TRAIT_ID: range(10), OTHER_TRAIT: range(10, 20)}))
+
+
+def test_select_without_eligible_conditions_returns_an_empty_family() -> None:
+    """Sparse labels under the default minimum: the screen selects a trait, no condition
+    is eligible, and the selection is an empty family with a status, not an error (#901)."""
+    inputs = _sparse_corpus()
+    ordered = sorted(inputs.studies, key=lambda study: int(study.split(":")[1]))
+    for studies in (ordered[::2], ordered):
+        chosen = select(
+            inputs, studies, permutations=19, seed=(20261022, 0, 0), always_included=False
+        )
+        assert chosen.traits["trait_id"].tolist() == [TRAIT_ID]
+        assert not chosen.conditions["eligible"].any()
+        assert chosen.triples.empty
+        assert list(chosen.triples.columns) == list(TRIPLE_COLUMNS)
+        assert chosen.status == TOO_FEW_CONDITIONS
+        assert closest_disjoint_triples(chosen.triples).empty
+        lead, histogram, _ = lead_and_distribution(chosen.triples, [TRAIT_ID], 20)
+        assert lead["lead_in_scan"].tolist() == [False]
+        assert histogram["triples"].sum() == 0
+
+
+def test_select_with_a_minimum_no_condition_meets_returns_an_empty_family() -> None:
+    """The same with a minimum no condition can meet (#901)."""
+    inputs, train, _ = _split_corpus()
+    protocol = dataclasses.replace(load_protocol(), min_studies=100)
+    chosen = select(inputs, train, protocol=protocol, permutations=19, seed=1)
+    assert not chosen.traits.empty
+    assert chosen.conditions["eligible"].sum() == 0
+    assert chosen.triples.empty
+    assert chosen.status == TOO_FEW_CONDITIONS
+    prepared = prepare(inputs.profiles, inputs.taxa, inputs.matrix, [TRAIT_ID], [])
+    report = plan(chosen.conditions, chosen.traits, prepared, protocol, 100)
+    assert (report["triples"], report["estimated_null_minutes"]) == (0, 0)
+
+
+def test_evaluate_with_no_drawable_condition_keeps_every_hypothesis() -> None:
+    """When no condition of any hypothesis has a held-out study, each hypothesis is still
+    returned as untestable (#901)."""
+    inputs, _, test = _split_corpus()
+    asthma = set(inputs.profiles.loc[inputs.profiles["condition"].eq("Asthma"), "study_id"])
+    held_out = [study for study in test if study in asthma]
+    hypotheses = [(PD, HIV, CRC, TRAIT_ID), (PD, "Gout", "Lupus", OTHER_TRAIT)]
+    tested = evaluate(inputs, held_out, hypotheses, permutations=19, seed=1)
+    assert tested["test_status"].tolist() == [NO_UNITS, NO_UNITS]
+    assert tested["missing_condition"].all()
+    assert tested["null_undefined"].all()
+
+
+def test_selection_status_names_why_a_family_is_empty() -> None:
+    inputs, train, _ = _split_corpus()
+    assert select(inputs, train, permutations=19, seed=1).status == SELECTED
+    flat = tuple(
+        dataclasses.replace(profile, guild_counts=dict.fromkeys(profile.guild_counts, 1), total=3)
+        for profile in inputs.screen
+    )
+    empty = select(
+        dataclasses.replace(inputs, screen=flat), train, permutations=19, always_included=False
+    )
+    assert empty.status == NO_TRAITS

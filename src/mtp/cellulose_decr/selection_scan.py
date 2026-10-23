@@ -97,6 +97,10 @@ NO_TAXA = "all_sets_empty"
 POOL_TOO_SMALL = "pool_too_small"
 # A held-out hypothesis with a condition that no held-out study reports (``evaluate``).
 NO_UNITS = "no_units"
+# Why a selection's family has triples or none (``Selection.status``, #901).
+SELECTED = "selected"
+NO_TRAITS = "no_traits"
+TOO_FEW_CONDITIONS = "fewer_than_three_eligible_conditions"
 # Where a triple's U6 draws come from.
 SHARED = "shared"
 OWN = "own"
@@ -662,12 +666,13 @@ def prepare(
     observed = np.zeros((1, len(conditions), unit_bits.shape[1]), dtype=np.uint64)
     for column, member in enumerate(members):
         observed[0, column] = np.bitwise_or.reduce(unit_bits[member], axis=0)
+    # Filled row by row, so no eligible condition gives empty sets, not an error (#901).
     sets = [
-        np.stack([matrix_bits[member].any(axis=0) for member in members]).reshape(
-            len(conditions), matrix_bits.shape[1]
-        )
-        for matrix_bits, *_ in built
+        np.zeros((len(conditions), matrix_bits.shape[1]), dtype=bool) for matrix_bits, *_ in built
     ]
+    for (matrix_bits, *_), condition_sets in zip(built, sets, strict=True):
+        for column, member in enumerate(members):
+            condition_sets[column] = matrix_bits[member].any(axis=0)
     n_studies = int(unit_study.max()) + 1 if unit_study.size else 0
     incidence = np.zeros((n_studies, len(conditions)), dtype=bool)
     for column, member in enumerate(members):
@@ -1352,6 +1357,20 @@ class Selection:
     traits: pd.DataFrame
     triples: pd.DataFrame
     result: ScanResult
+
+    @property
+    def status(self) -> str:
+        """Whether the family has triples: ``selected``, or why not.
+
+        ``no_traits`` when the screen of these studies selects no trait, else
+        ``fewer_than_three_eligible_conditions`` when no triple can be formed. An empty
+        family is a result of the declared rule, not a failed run (#901).
+        """
+        if self.traits.empty:
+            return NO_TRAITS
+        if len(self.result.conditions) < 3:
+            return TOO_FEW_CONDITIONS
+        return SELECTED
 
 
 def select(
