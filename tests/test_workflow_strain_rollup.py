@@ -13,6 +13,7 @@ import pytest
 from mtp.study_trait_profiles import collect_profile_taxa
 from mtp.taxa_trait_matrix import STRAIN_ROLLUPS, StrainRollup, create_taxa_trait_matrix
 from mtp.workflow.__main__ import main as workflow_main
+from mtp.workflow.comparison import core_analysis_bases
 from mtp.workflow.coverage import STRAIN_ATTRIBUTED_EVIDENCE, UNRESOLVED_EVIDENCE
 from mtp.workflow.definition import read_definition
 from mtp.workflow.models import WorkflowRun
@@ -270,3 +271,15 @@ def test_the_fixture_and_run_commands_take_a_scope(
             ]
         )
     assert "--strain-rollup conflicts" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize(("scope", "retained"), [("off", 1), ("phenotype", 2), ("full", 4)])
+def test_comparison_bases_record_the_core_scope_and_trait_count(
+    scoped_runs: dict[StrainRollup, WorkflowRun], scope: StrainRollup, retained: int
+) -> None:
+    """A ComparisonRun names the scope its core declared and that core's own m (#788)."""
+    bases = core_analysis_bases(scoped_runs[scope])
+
+    assert [basis.profile_unit for basis in bases] == ["count_profiles", "ora_profiles"]
+    assert {basis.rollup_policy for basis in bases} == {f"ncbi_taxonomy_closure_rollup_{scope}"}
+    assert {basis.retained_feature_count for basis in bases} == {retained}

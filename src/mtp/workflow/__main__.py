@@ -7,13 +7,18 @@ import json
 from pathlib import Path
 
 from mtp.paths import REPO_ROOT
-from mtp.taxa_trait_matrix import STRAIN_ROLLUPS, parse_strain_rollup
+from mtp.taxa_trait_matrix import STRAIN_ROLLUPS
 from mtp.workflow.archive import ArchiveResolver, create_archive, verify_archive
 from mtp.workflow.comparison import compare_legacy_bundle
 from mtp.workflow.consumers import import_legacy_provenance, verify_consumer_record
 from mtp.workflow.definition import read_definition
 from mtp.workflow.models import ContrastPopulation
-from mtp.workflow.operations import OPERATIONS, trace_profile_feature, validate_core_product
+from mtp.workflow.operations import (
+    OPERATIONS,
+    run_strain_rollup,
+    trace_profile_feature,
+    validate_core_product,
+)
 from mtp.workflow.runtime import artifact_path, execute_workflow
 from mtp.workflow.verification import verify_core_run
 
@@ -201,8 +206,6 @@ def main(argv: list[str] | None = None) -> int:
                 for artifact in run.artifacts or []
                 if artifact.product_id == args.product
             )
-            # The cell is traced under the scope the run recorded, off before #788
-            recorded = {item.name: item.value for item in run.parameters or []}
             result = trace_profile_feature(
                 paths["studies"],
                 paths["taxa_matrix"],
@@ -211,7 +214,8 @@ def main(argv: list[str] | None = None) -> int:
                 (args.profile[0], args.profile[1], args.profile[2]),
                 args.feature,
                 host_species=None if cohort == "all" else cohort,
-                strain_rollup=parse_strain_rollup(recorded.get("strain_rollup", "off")),
+                # The cell is traced under the scope the run recorded (#788)
+                strain_rollup=run_strain_rollup(run),
             )
             print(json.dumps(result, indent=2))
         else:

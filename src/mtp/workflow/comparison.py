@@ -12,11 +12,13 @@ from pathlib import Path
 
 from mtp.count_input import profile_count_reader, taxa_trait_count_reader
 from mtp.datamodel.workflow_pydantic import (
+    AnalysisBasis,
     ComparisonRun,
     ContrastPopulation,
     DirectionBasis,
     ExecutionStatus,
     FileInventoryEntry,
+    WorkflowRun,
 )
 from mtp.paths import REPO_ROOT, file_sha256
 from mtp.workflow.arms.runtime import verify_arm
@@ -26,6 +28,7 @@ from mtp.workflow.downstream_contracts import (
     build_calibration_verdict,
     build_eligibility_ledger,
 )
+from mtp.workflow.operations import run_strain_rollup
 from mtp.workflow.runtime import artifact_path, repository_state
 from mtp.workflow.verification import verify_core_run
 
@@ -144,6 +147,47 @@ async def _exec_command(cmd: list[str], cwd: Path) -> None:
     returncode = await process.wait()
     if returncode != 0:
         raise RuntimeError(f"Command failed with exit code {returncode}: {cmd}")
+
+
+def core_analysis_bases(core_run: WorkflowRun) -> list[AnalysisBasis]:
+    """The count and ORA analysis bases of a verified core run.
+
+    Each basis records the core's feature catalog, its retained (non-MediaDive) trait
+    count and the strain rollup scope the core declared, so a comparison built on the
+    phenotype primary or the off sensitivity core says which it is (#788).
+    """
+    catalog = artifact_path(core_run, "feature_catalog")
+    catalog_sha = file_sha256(catalog)
+    with catalog.open(encoding="utf-8", newline="") as handle:
+        rows = csv.DictReader(handle, delimiter="\t")
+        retained = sum(row["feature_class"] == "trait_annotation" for row in rows)
+    rollup_policy = f"ncbi_taxonomy_closure_rollup_{run_strain_rollup(core_run)}"
+    return [
+        build_analysis_basis(
+            basis_id="basis:count_profiles_non_mediadive",
+            feature_catalog_sha256=catalog_sha,
+            feature_filter_id=f"sha256:{catalog_sha}",
+            retained_feature_count=retained,
+            profile_unit="count_profiles",
+            aggregation_policy="sum_taxon_trait_assertions_per_signature",
+            rollup_policy=rollup_policy,
+            denominator_policy="sum_retained_non_mediadive_trait_assertions",
+            background_inventory_id="human_host_retained_profiles",
+            weighting_policy="equal_experiment_or_study_weight",
+        ),
+        build_analysis_basis(
+            basis_id="basis:ora_profiles_binary",
+            feature_catalog_sha256=catalog_sha,
+            feature_filter_id=f"sha256:{catalog_sha}",
+            retained_feature_count=retained,
+            profile_unit="ora_profiles",
+            aggregation_policy="distinct_matched_taxa_per_signature",
+            rollup_policy=rollup_policy,
+            denominator_policy="distinct_matched_signature_taxa_N_gt_0",
+            background_inventory_id="taxa_trait_matrix_universe",
+            weighting_policy="unweighted_hypergeometric_per_signature",
+        ),
+    ]
 
 
 def execute_comparison_run(
@@ -280,32 +324,6 @@ def execute_comparison_run(
         included_ids=synthetic_kept,
         exclusion_counts={"zero_retained_total": n_dropped},
     )
-    feature_catalog_path = artifact_path(core_run, "feature_catalog")
-    catalog_sha = file_sha256(feature_catalog_path)
-    basis_count = build_analysis_basis(
-        basis_id="basis:count_profiles_non_mediadive",
-        feature_catalog_sha256=catalog_sha,
-        feature_filter_id=f"sha256:{catalog_sha}",
-        retained_feature_count=317,
-        profile_unit="count_profiles",
-        aggregation_policy="sum_taxon_trait_assertions_per_signature",
-        rollup_policy="ncbi_taxonomy_closure_rollup_off",
-        denominator_policy="sum_retained_non_mediadive_trait_assertions",
-        background_inventory_id="human_host_retained_profiles",
-        weighting_policy="equal_experiment_or_study_weight",
-    )
-    basis_ora = build_analysis_basis(
-        basis_id="basis:ora_profiles_binary",
-        feature_catalog_sha256=catalog_sha,
-        feature_filter_id=f"sha256:{catalog_sha}",
-        retained_feature_count=317,
-        profile_unit="ora_profiles",
-        aggregation_policy="distinct_matched_taxa_per_signature",
-        rollup_policy="ncbi_taxonomy_closure_rollup_off",
-        denominator_policy="distinct_matched_signature_taxa_N_gt_0",
-        background_inventory_id="taxa_trait_matrix_universe",
-        weighting_policy="unweighted_hypergeometric_per_signature",
-    )
     verdict_noel = build_calibration_verdict(
         verdict_id="verdict:noel_table1_six_trait_sign_test_v1",
         production_spec=STANDARD_ANALYSIS_SPECS["noel_table1_six_trait_sign_test_v1"],
@@ -350,7 +368,7 @@ def execute_comparison_run(
         git_dirty=git_dirty,
         analysis_specs=[STANDARD_ANALYSIS_SPECS[k] for k in sorted(STANDARD_ANALYSIS_SPECS)],
         eligibility_ledgers=[ledger_fraction],
-        analysis_bases=[basis_count, basis_ora],
+        analysis_bases=core_analysis_bases(core_run),
         calibration_verdicts=[verdict_noel, verdict_jed_mismatch],
         outputs=inventory_entries,
     )

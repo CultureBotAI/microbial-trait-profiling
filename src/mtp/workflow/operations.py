@@ -51,7 +51,12 @@ from mtp.workflow.coverage import (
     write_profile_coverage,
 )
 from mtp.workflow.kg_inputs import audit_kg_edges, iter_kg_edges
-from mtp.workflow.models import ProductDefinition, ValidationResult, ValidationStatus
+from mtp.workflow.models import (
+    ProductDefinition,
+    ValidationResult,
+    ValidationStatus,
+    WorkflowRun,
+)
 from mtp.workflow.population import select_contrasts, validate_population
 from mtp.workflow.source_contracts import validate_export_sources, validate_study_sources
 from mtp.workflow.source_identity import validate_source_identity
@@ -426,6 +431,12 @@ def _validate_delimited(path: Path, required: tuple[str, ...], *, raw_csv: bool 
     if not rows:
         raise ValueError(f"{path}: empty input table")
     return rows
+
+
+def run_strain_rollup(run: WorkflowRun) -> StrainRollup:
+    """The strain rollup scope a core run recorded, ``off`` for a run that predates it (#788)."""
+    recorded = {item.name: item.value for item in run.parameters or []}
+    return parse_strain_rollup(recorded.get("strain_rollup", "off"))
 
 
 def validate_core_product(
