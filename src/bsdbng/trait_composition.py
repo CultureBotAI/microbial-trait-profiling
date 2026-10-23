@@ -16,6 +16,7 @@ from mtp.trait_composition import (
     compute_log_ratio_shifts,
     file_sha256,
     main,
+    paired_log2_ratio_change,
     write_log_ratio_outputs,
 )
 
@@ -32,6 +33,7 @@ __all__ = [
     "compute_log_ratio_shifts",
     "file_sha256",
     "main",
+    "paired_log2_ratio_change",
     "write_log_ratio_outputs",
 ]
 

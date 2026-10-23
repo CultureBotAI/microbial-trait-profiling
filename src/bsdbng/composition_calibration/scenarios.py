@@ -13,12 +13,14 @@ from mtp.composition_calibration.scenarios import (
     generate_study_flip_null_profiles,
     replicate_rng,
     stream_key,
+    study_flip_draw_order,
 )
 
 __all__ = [
     "generate_study_flip_null_profiles",
     "replicate_rng",
     "stream_key",
+    "study_flip_draw_order",
 ]
 
 import mtp.composition_calibration.scenarios as _target

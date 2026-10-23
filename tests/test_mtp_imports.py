@@ -46,68 +46,28 @@ def test_mtp_modules_can_be_imported_directly() -> None:
         assert mod is not None
 
 
-@pytest.mark.parametrize(
-    "submodule",
-    [
-        "calibration",
-        "contrast_orientation",
-        "contribution_inputs",
-        "composition_calibration",
-        "composition_calibration.adapters",
-        "composition_calibration.adapters.jed_composition",
-        "composition_calibration.composition",
-        "composition_calibration.protocol",
-        "composition_calibration.scenarios",
-        "corpus_identity",
-        "coupling",
-        "datamodel",
-        "deck_visualizations",
-        "density_adjustment",
-        "download",
-        "enrichment_results",
-        "enrichment_stats",
-        "guild_maps",
-        "ingest",
-        "integrated_evidence",
-        "log_ratio_sensitivity",
-        "native_influence_publication",
-        "native_taxon_influence",
-        "ontology_audit",
-        "ora_calibration",
-        "ora_calibration.adapters",
-        "ora_calibration.adapters.ilyas_ora",
-        "ora_calibration.harness",
-        "ora_calibration.metrics",
-        "ora_calibration.protocol",
-        "ora_calibration.scenarios",
-        "paths",
-        "stats",
-        "stratification",
-        "study_trait_profiles",
-        "study_tsv",
-        "table1_trait_maps",
-        "taxa_trait_matrix",
-        "taxon_contributions",
-        "taxon_influence",
-        "trait_composition",
-        "trait_guilds",
-        "trait_screen",
-        "trait_terms",
-        "validate",
-        "validation_evidence",
-    ],
-)
+def _shim_sources(root: Path = REPO_ROOT / "src/bsdbng") -> dict[str, Path]:
+    """Discover source shims, including packages; generated models belong to #886."""
+    paths = {}
+    for path in sorted(root.rglob("*.py")):
+        if path.name.endswith("_pydantic.py"):
+            continue
+        relative = path.relative_to(root).with_suffix("")
+        parts = relative.parts[:-1] if relative.name == "__init__" else relative.parts
+        paths[".".join(parts)] = path
+    return paths
+
+
+@pytest.mark.parametrize("submodule", _shim_sources())
 def test_bsdbng_shim_mirrors_mtp_exports(submodule: str) -> None:
     """The bsdbng compatibility shim must re-export all symbols defined in mtp."""
-    mtp_mod = importlib.import_module(f"mtp.{submodule}")
-    bsdbng_mod = importlib.import_module(f"bsdbng.{submodule}")
+    suffix = f".{submodule}" if submodule else ""
+    mtp_mod = importlib.import_module(f"mtp{suffix}")
+    bsdbng_mod = importlib.import_module(f"bsdbng{suffix}")
     _assert_mirror_exports(mtp_mod, bsdbng_mod, submodule)
     # import_module resolves sys.modules replacement, so the imported object can
     # be mtp itself. Check the source's explicit export declarations as well.
-    location = REPO_ROOT / "src" / "bsdbng" / submodule.replace(".", "/")
-    source_path = location.with_suffix(".py")
-    if not source_path.is_file():
-        source_path = location / "__init__.py"
+    source_path = _shim_sources()[submodule]
     _assert_declared_shim_imports(source_path.read_text(encoding="utf-8"), submodule)
 
 
@@ -122,6 +82,33 @@ def _assert_mirror_exports(mtp_mod: ModuleType, bsdbng_mod: ModuleType, submodul
         assert getattr(mtp_mod, name) is getattr(bsdbng_mod, name), (
             f"Export {name} identity mismatch in {submodule}"
         )
+
+
+def _canonical_declarations(module: ModuleType) -> set[str]:
+    """Explicit __all__, or public definitions/assignments, excluding incidental imports.
+
+    Runtime identity checks still cover all public runtime names. This separate
+    source contract checks handwritten shim lists against what the implementation
+    actually defines, so sys.modules aliases cannot make it vacuous.
+    """
+    explicit = getattr(module, "__all__", None)
+    if explicit is not None:
+        return set(explicit)
+    assert module.__file__ is not None
+    tree = ast.parse(Path(module.__file__).read_text(encoding="utf-8"))
+    names = set()
+    for node in tree.body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            names.add(node.name)
+        elif isinstance(node, (ast.Assign, ast.AnnAssign)):
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            names.update(
+                child.id
+                for target in targets
+                for child in ast.walk(target)
+                if isinstance(child, ast.Name)
+            )
+    return {name for name in names if not name.startswith("_")}
 
 
 def _assert_declared_shim_imports(source: str, submodule: str) -> None:
@@ -142,6 +129,10 @@ def _assert_declared_shim_imports(source: str, submodule: str) -> None:
     assert isinstance(exported, (list, tuple))
     assert all(isinstance(name, str) for name in exported)
     assert len(set(exported)) == len(exported), f"Duplicate shim exports in {submodule}"
+    suffix = f".{submodule}" if submodule else ""
+    canonical = importlib.import_module(f"mtp{suffix}")
+    absent = sorted(_canonical_declarations(canonical) - set(exported))
+    assert not absent, f"bsdbng.{submodule} omits canonical declarations: {absent}"
     imported = {
         alias.asname or alias.name
         for node in tree.body
@@ -191,6 +182,49 @@ def test_removing_a_real_shim_import_is_detected_despite_module_alias() -> None:
     assert mutation != source
     with pytest.raises(AssertionError, match="CELL_NO_SIGNAL"):
         _assert_declared_shim_imports(mutation, "guild_maps")
+
+
+def test_removing_both_shim_lists_cannot_hide_canonical_drift() -> None:
+    source = _shim_sources()["guild_maps"].read_text(encoding="utf-8")
+    mutation = source.replace("    CELL_NO_SIGNAL,\n", "").replace('    "CELL_NO_SIGNAL",\n', "")
+    assert mutation != source
+    with pytest.raises(AssertionError, match=r"omits canonical.*CELL_NO_SIGNAL"):
+        _assert_declared_shim_imports(mutation, "guild_maps")
+
+
+def _assert_star_import_surface(canonical: ModuleType, legacy: ModuleType) -> None:
+    """Python's import-star contract is __all__ plus the identity of those attributes."""
+    expected = set(canonical.__all__)
+    actual = set(legacy.__all__)
+    assert actual == expected, f"Star-import export drift: {expected ^ actual}"
+    for name in expected:
+        assert getattr(legacy, name) is getattr(canonical, name)
+
+
+def test_ora_star_import_surface_includes_power_exports() -> None:
+    canonical = importlib.import_module("mtp.ora_calibration")
+    legacy = importlib.import_module("bsdbng.ora_calibration")
+    _assert_star_import_surface(canonical, legacy)
+    mutation = ModuleType("bsdbng.ora_calibration")
+    mutation.__dict__.update(vars(legacy))
+    mutation.__dict__["__all__"] = [
+        name for name in legacy.__all__ if name not in {"PowerMetric", "compute_empirical_power"}
+    ]
+    with pytest.raises(AssertionError, match=r"Star-import export drift.*PowerMetric"):
+        _assert_star_import_surface(canonical, mutation)
+    source = _shim_sources()["ora_calibration"].read_text(encoding="utf-8")
+    for name in ("PowerMetric", "compute_empirical_power"):
+        source = source.replace(f"    {name},\n", "").replace(f'    "{name}",\n', "")
+    with pytest.raises(AssertionError, match=r"omits canonical.*PowerMetric"):
+        _assert_declared_shim_imports(source, "ora_calibration")
+
+
+def test_shim_discovery_includes_new_modules_without_a_handwritten_list(tmp_path: Path) -> None:
+    assert "screen_calibration" in _shim_sources()
+    (tmp_path / "new_package").mkdir()
+    for filename in ("__init__.py", "new_package/__init__.py", "new_package/new_module.py"):
+        (tmp_path / filename).write_text('"""A newly added shim."""\n')
+    assert set(_shim_sources(tmp_path)) == {"", "new_package", "new_package.new_module"}
 
 
 def _check_isolated_ora_imports(first_namespace: str) -> None:
