@@ -72,9 +72,10 @@ the number of pairs excluded, writes it as `excluded_experiment_pairs` on every
 row of `table1_traits_direction_shift.tsv`, and states it in the subtitle of the
 combined figure and of each cut. A cut names a requested condition that only
 such pairs carried. It does not report that condition as absent from the export
-or as cut by width. The map counts quoted below predate #811: they were measured
-on every paired profile of an earlier, 959-study build of the corpus, and the
-next regeneration replaces them.
+or as cut by width. The map counts quoted below were measured with this
+exclusion, but on an earlier, 959-study build of the corpus, where it removes 94
+pairs and leaves 939 studies; the next regeneration replaces them with the
+committed corpus's.
 
 
 ## Resolving the six traits to columns
@@ -108,14 +109,14 @@ into an Other row**. Such a row mixes hundreds of unrelated conditions, so no ce
 in it reads as one condition, and at twelve columns per body site it is expensive
 to draw something that cannot be interpreted. Excluding them keeps every drawn row
 a single label at the cost of showing only part of the corpus, and the cost is
-reported on every run: the condition axis keeps the top 60 labels and drops 391
-labels carrying 41.1 per cent of profiles. Passing `--include-other-conditions`
+reported on every run: the condition axis keeps the top 60 labels and drops 382
+labels carrying 41.0 per cent of profiles. Passing `--include-other-conditions`
 restores the pooled row. Note that BugSigDB records study variables such as Diet,
 Age, and Extraction protocol in the same Condition field as diseases, so the
 condition axis is not purely a disease axis.
 
 The body-site axis is treated differently and **does keep its Other block**, which
-pools 144 labels carrying 21.8 per cent of profiles. A pooled body site still
+pools 141 labels carrying 21.2 per cent of profiles. A pooled body site still
 reads as a coherent quantity, everywhere the corpus sampled outside the eight
 commonest sites, in a way a pooled condition does not, and keeping it means the
 figure accounts for the whole corpus along that axis. `--drop-other-body-sites`
@@ -124,8 +125,10 @@ removes it.
 Second, a body site whose column block carries fewer than two drawn conditions is
 dropped, because twelve columns to show a single row is not worth the width;
 `--min-site-conditions` sets the threshold. On this run that removed Mouth, Oral
-cavity, Subgingival dental plaque, and Throat, leaving Feces, Saliva, Uterine
-cervix, Vagina, and Other.
+cavity, and Throat, leaving Feces, Saliva, Subgingival dental plaque, Uterine
+cervix, Vagina, and Other. Before the zero-total exclusion it removed Subgingival
+dental plaque too: periodontitis, which joins rheumatoid arthritis there, was
+outside the condition cut (see the oral cut below).
 
 Third, cells where a site was sampled for a condition but no taxon carried the
 trait are **left blank by default rather than shaded dark grey**. The guild figure
@@ -139,12 +142,14 @@ dropped (Atopic asthma, Cervical cancer, Head and neck squamous cell carcinoma,
 Helminthiasis, Metabolic toxicity, Phenylketonuria, Population, Psoriasis
 vulgaris, Smoking behaviour measurement).
 
-On this run the grid is 51 conditions by 60 columns; of 3,060 cells, 806 carry a
-value, 387 fall below the study threshold, 163 are sampled with no signal for that
-trait, and 1,704 were never sampled. Condition rows are ordered by hierarchical
-clustering of their value vectors under Euclidean distance with Ward linkage, cut
-into six groups separated by blank rows, with masked cells treated as zero for the
-distance calculation only — the same procedure as the guild figure.
+On this run the grid is 51 conditions by 72 columns; of 3,672 cells, 814 carry a
+value, 419 fall below the study threshold, 147 are sampled with no signal for that
+trait, and 2,292 were never sampled. Before the exclusion it was 51 by 60, with
+806, 387, 163 and 1,704 of 3,060 cells in those states. Condition rows are
+ordered by hierarchical clustering of their value vectors under Euclidean
+distance with Ward linkage, cut into six groups separated by blank rows, with
+masked cells treated as zero for the distance calculation only — the same
+procedure as the guild figure.
 
 The guild figure draws its two guilds on one shared colour range, because a
 guild's share is directly comparable to the other guild's share. The six Table 1
@@ -159,46 +164,55 @@ and cells above the cut saturate at the top colour.
 
 ## Second set of figures: four cuts of the same matrix
 
-Sixty columns across one figure leaves each column too narrow to label legibly,
-and the Feces block, which carries 43 of the 51 drawn conditions, sets the eye's
+Seventy-two columns across one figure leave each column too narrow to label legibly,
+and the Feces block, which carries 42 of the 51 drawn conditions, sets the eye's
 scale so that every other block reads as empty beside it. The combined heatmap
 therefore answers what was measured where rather than showing a result. The same
 matrix is cut into four smaller heatmaps, each holding conditions that were
 sampled in the same places:
 
-- `focus_feces`, the 43 conditions drawn in Feces, on that block alone.
+- `focus_feces`, the 42 conditions drawn in Feces, on that block alone.
 - `focus_feces_other`, the same conditions plus those drawn only in the pooled
-  Other block, 49 in total, over the two blocks. That is 49 of the combined
-  figure's 51 conditions: cervical glandular intraepithelial neoplasia and oral
-  squamous cell carcinoma carry no Feces or Other cell, so neither appears here.
+  Other block, 48 in total, over the two blocks. That is 48 of the combined
+  figure's 51 conditions: cervical glandular intraepithelial neoplasia, oral
+  squamous cell carcinoma, and periodontitis carry no drawn Feces or Other cell,
+  so none of them appears here.
 - `focus_cervical`, cervical glandular intraepithelial neoplasia and human
   papilloma virus infection, over Uterine cervix, Vagina, and Other.
 - `focus_oral`, asked for as the cluster of gingivitis, periodontitis, smoking
-  behavior, and rheumatoid arthritis. On this corpus it draws two of those four.
-  Gingivitis and periodontitis are both in the pinned v1.3.1 export — 2 and 7
-  human paired studies respectively, 9 studies in all under those exact condition
-  labels — but neither reaches the drawn matrix, for two different reasons given
-  below. The figure names each with its own reason rather than drawing a smaller
-  group under the same title.
+  behavior, and rheumatoid arthritis. On this corpus it draws three of those
+  four, over Feces, Saliva, Subgingival dental plaque, and Other; before the
+  zero-total exclusion it drew two, without periodontitis. Gingivitis is in the
+  pinned v1.3.1 export — 2 human paired studies under that exact condition label
+  — but does not reach the drawn matrix. The figure names it as outside the
+  top-60 cut rather than drawing a smaller group under the same title, and the
+  reason no width would draw it is given below.
 
 That last cut is worth stating plainly, because it was proposed from a figure
 built on the unpinned devel export. There, gingivitis, periodontitis, smoking
 behavior, and rheumatoid arthritis clustered together, and rheumatoid arthritis
 grouping with three oral conditions rather than with the other systemic diseases
 was the observation the cut was meant to show. That observation cannot be checked
-here, but the reason is the display rules, not the vintage, and the two conditions
-fail different rules:
+in full here, because gingivitis is not drawn. The reason is the display rules,
+not the vintage, and the two conditions meet different rules:
 
-- **Periodontitis is cut by width.** Of 451 distinct conditions it ranks 62nd on
-  20 profiles — the same profile count as the 60th-ranked condition, losing its
-  place only to the deterministic alphabetical tiebreak in `_top_labels`. Raising
-  `--max-conditions` to 62 draws it, which is measured, not inferred.
-- **Gingivitis is cut by support, so no width draws it.** It ranks 212nd on 4
-  profiles, and its two studies sit in different body sites, leaving at most one
-  study per cell against `--min-studies 3`. Widening the cut to 250 or beyond
-  admits the row and then drops it again as entirely blank. Only lowering
-  `--min-studies`, which would weaken every other cell in the figure, would draw
-  it.
+- **Periodontitis sits at the edge of the width cut.** Of 442 distinct conditions
+  it ranks 58th on 20 profiles, so it is drawn, and it joins rheumatoid arthritis
+  in Subgingival dental plaque, which keeps that block under
+  `--min-site-conditions 2`. The zero-total exclusion keeps all 20 of its
+  profiles but takes four conditions ranked above it down to its count or below:
+  health study participation, hypertension, and non-alcoholic fatty liver
+  disease to 18 profiles, and response to transplant to 20, which then loses the
+  deterministic alphabetical tiebreak in `_top_labels`. Before the exclusion it
+  ranked 62nd of 451 on the same 20 profiles, level with the 60th-ranked
+  condition and behind it only on that tiebreak, and raising `--max-conditions`
+  to 62 drew it and the same Subgingival dental plaque block.
+- **Gingivitis is cut by support, so no width draws it.** It ranks 211th on 4
+  profiles (212th before the exclusion), and its two studies sit in different
+  body sites, leaving at most one study per cell against `--min-studies 3`.
+  Widening the cut to admit it only drops the row again as entirely blank. Only
+  lowering `--min-studies`, which would weaken every other cell in the figure,
+  would draw it.
 
 So drawing all four together is not a matter of widening the cut. It needs a
 corpus where gingivitis carries at least three studies in one body site.
@@ -221,8 +235,8 @@ in a site where it was not, and never renders a blank band.
 
 Every cell is the same size in every figure, the combined one included. A cut
 holding only a few conditions is padded with blank rows rather than stretched to
-fill the panel, so a cell in the two-row oral cut is the same square as a cell in
-the 43-row Feces cut and the two can be compared by eye. The six colour bars lie
+fill the panel, so a cell in the three-row oral cut is the same square as a cell
+in the 42-row Feces cut and the two can be compared by eye. The six colour bars lie
 flat in a band under each cut rather than stacked down its side: stacked, their
 height would set the figure's height, and a two-row cut would have to be padded
 out with empty rows to give them room or let them collapse into hairlines.
