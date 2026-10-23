@@ -882,6 +882,11 @@ def test_verification_rederives_the_analysis_bases_from_the_core(
         pytest.param(lambda bases: bases[::-1], "records analysis bases", id="swapped"),
         pytest.param(lambda bases: bases[:1], "records analysis bases", id="missing_ora"),
         pytest.param(
+            lambda bases: [*bases, {**bases[1], "id": "basis:extra"}],
+            "records analysis bases",
+            id="extra",
+        ),
+        pytest.param(
             _replace(1, "retained_feature_count", 317),
             f"{ORA_BASIS} retained_feature_count",
             id="ora_field",
@@ -891,7 +896,7 @@ def test_verification_rederives_the_analysis_bases_from_the_core(
 def test_verification_refuses_any_other_list_of_bases(
     stage: dict[str, Path], tmp_path: Path, edit: Callable[[Bases], Bases], message: str
 ) -> None:
-    """The recorded bases must be exactly the derived ones, in order, each once (#941)."""
+    """The recorded bases must be exactly the derived ones, in order, each once (#941, #942)."""
     copy = _comparison_copy(stage, tmp_path, edit)
     with pytest.raises(ValueError, match=message):
         verify_comparison_run(copy)
