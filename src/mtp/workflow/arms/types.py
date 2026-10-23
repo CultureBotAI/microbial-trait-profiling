@@ -22,6 +22,7 @@ class ArmContext:
     seed: int | None
     figures: bool
     contrast_population: str = "all_paired"
+    direction_basis: str = "group_1_vs_group_0"
     # The core's recorded BacDive strain rollup scope; a core from before #788 is off
     strain_rollup: StrainRollup = "off"
 
