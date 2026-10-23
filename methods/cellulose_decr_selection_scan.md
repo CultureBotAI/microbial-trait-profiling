@@ -73,7 +73,8 @@ with its date and what was known when it was made, rather than edited in here.
   [`trait_screen_manifest.json`](trait_screen_manifest.json)).
 - **The screen** runs on the same core's count profiles, with the screen's own code
   (`mtp.trait_screen`): its candidate rule, one vote per study, and a two-sided exact
-  binomial test.
+  binomial test. It votes over every body site of the population, while the sets
+  below are stool-only. (Clarified on 2026-10-22, #872; nothing computed changes.)
 - **A decreasing trait** is one the screen tested in which more studies shift down
   than up (share up below 0.5). Its annotations make up a larger share of the
   decreased signatures than of the increased ones.
@@ -142,8 +143,10 @@ For each trait and each triple of eligible conditions:
 - **The null-calibrated distribution.** For each trait and statistic, the distribution
   of U6 p-values over all tested triples is given as quantiles and as counts in twenty
   bins of width 0.05. If overlap were no larger than U6 expects between any three
-  conditions, these p-values would be roughly uniform. Mass near 0 shows how common
-  overlap beyond U6 is between arbitrary conditions.
+  conditions, the mean-distance p-values would be roughly uniform. The core's would not:
+  a triple with no taxon in all three sets has p = 1, so its p-values pile up at 1.
+  Mass near 0 shows how common overlap beyond U6 is between arbitrary conditions.
+  (Corrected on 2026-10-22, #872: this said "roughly uniform" for both statistics.)
 - **Cellulose in context.** For each trait, the table gives PD/HIV/CRC's U6 p-values and
   ranks among triples, and cellulose's rank among the traits by those p-values.
 - **Study-disjoint triples (declared sensitivity).** U6 draws distinct studies, so it
@@ -155,6 +158,33 @@ For each trait and each triple of eligible conditions:
 - **No multiplicity correction.** Every p-value is nominal. Selection-aware inference
   for the leads (a split-sample replication, or Benjamini–Bogomolov) belongs to the
   unified multiple-testing layer, which reads the per-triple rows.
+
+## Amendments
+
+Both amendments were made on 2026-10-22, after the review of PR #861 (#872) and before
+any run on real data. They are recorded in the protocol file's `amendments`, and the
+declared rule above is left as it was committed. When they were made, no scan result on
+real data existed. The eligible counts on the pinned export and timings on synthetic
+fixtures were known.
+
+1. **The strain-rollup scope is pinned.**
+   - The rule did not name the scope of the core run. After #828 the default core is
+     `phenotype`, and choosing between `off` and `phenotype` after seeing both would
+     reopen the forking path this scan exists to close.
+   - The primary scope is `off`: the annotation the leads were chosen from, and the
+     scope of the talk's numbers. `phenotype` is a declared sensitivity.
+   - A core of any other scope is refused. A core that records no `strain_rollup`
+     parameter, built before #828, is read as `off`.
+   - The summary, the provenance and `--plan` report the scope and its role.
+2. **Triples are also ranked by U6 z.**
+   - PD is the largest condition, so its triples have tighter nulls, and smaller p for
+     the same excess overlap. A rank by z separates large from unusual.
+   - The z rank sits beside the p rank, over the same two reference sets, with ties
+     as a range. It ranks the mean pairwise distance by ascending z and the core by
+     descending z, so more overlap comes first.
+   - A triple whose null has no spread has no z and no z rank.
+   - The trait table also ranks the traits by the share of triples whose z is at least
+     as extreme as the lead's.
 
 ## How the scan runs
 

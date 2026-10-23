@@ -44,5 +44,34 @@
   "reference_sets": ["all_tested_triples", "study_disjoint_triples"],
   "distribution_bins": 20,
   "multiplicity": "none; every p-value is nominal, and selection-aware inference belongs to the unified multiple-testing layer",
-  "amendments": []
+  "amendments": [
+    {
+      "date": "2026-10-22",
+      "change": "Pin the strain-rollup scope of the core run. Primary: off. Declared sensitivity: phenotype. A core of any other scope is refused, and a core that records no strain_rollup parameter (built before #828) is read as off. The summary, the provenance and --plan report the scope and its role.",
+      "reason": "Review of PR #861 (#872). After #828 the default core is phenotype, and choosing between off and phenotype after seeing both would reopen the forking path this scan exists to close. off is the annotation the leads were chosen from, and the scope of the talk's numbers.",
+      "known_when_amended": "No scan result on real data. Known: the counts on the pinned export (34 eligible conditions, 5,984 triples, a 355-study pool, 257 eligible units) and timings on synthetic fixtures.",
+      "sets": {
+        "strain_rollup": {
+          "parameter": "strain_rollup",
+          "primary": "off",
+          "sensitivity": ["phenotype"],
+          "absent_means": "off"
+        }
+      }
+    },
+    {
+      "date": "2026-10-22",
+      "change": "Add a secondary rank of triples by U6 z beside the p rank, over the same two reference sets, with ties as a range. z ranks the mean pairwise distance ascending and the core descending, so more overlap comes first. A triple whose null has no spread has no z and no z rank. The trait table also ranks the traits by the share of triples whose z is at least as extreme as the lead's.",
+      "reason": "Review of PR #861 (#872). PD is the largest condition, so its triples have tighter nulls and smaller p for the same excess overlap. A z rank separates large from unusual.",
+      "known_when_amended": "As for the first amendment: no scan result on real data.",
+      "sets": {
+        "secondary_rank": {
+          "by": "u6_z",
+          "mean_pairwise_jaccard_distance": "ascending",
+          "three_way_core": "descending",
+          "ties": "range"
+        }
+      }
+    }
+  ]
 }
