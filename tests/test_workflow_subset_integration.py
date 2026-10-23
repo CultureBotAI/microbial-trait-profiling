@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import json
 import sys
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -13,6 +14,7 @@ import yaml
 from mtp.datamodel.workflow_pydantic import WorkflowRun
 from mtp.paths import REPO_ROOT, file_sha256
 from mtp.workflow.__main__ import build_parser, main
+from mtp.workflow.arms import jed
 from mtp.workflow.arms.noel import build_commands
 from mtp.workflow.arms.runtime import execute_arm, verify_arm
 from mtp.workflow.arms.types import ArmContext, Command
@@ -264,6 +266,7 @@ def test_each_arm_inherits_and_verifies_subset_identity(
 
     def plan(context: ArmContext) -> list[Command]:
         assert context.contrast_population == POPULATION
+        assert context.direction_basis == "disease_vs_comparison"
         source, output = context.products[product], context.output / "observed.tsv"
         return [
             Command(
@@ -290,6 +293,48 @@ def test_each_arm_inherits_and_verifies_subset_identity(
     Path(result.manifest_path).write_text(json.dumps(changed))
     with pytest.raises(ValueError, match="Arm contrast population"):
         verify_arm(Path(result.manifest_path))
+
+
+@pytest.mark.parametrize(
+    ("core_name", "direction_basis"),
+    [("default", "group_1_vs_group_0"), ("subset", "disease_vs_comparison")],
+)
+def test_jed_taxa_guild_heatmap_gets_its_core_direction_basis(
+    cores: dict[str, WorkflowRun], tmp_path: Path, core_name: str, direction_basis: str
+) -> None:
+    """The arm runtime reads the basis from the core and the jed plan passes it to the
+    taxa-guild heatmap, so an all-paired core's figure says Group 1 vs Group 0 and a
+    subset's says disease vs comparison (#795, #840)."""
+    core = cores[core_name]
+    passed: list[str] = []
+
+    def plan(context: ArmContext) -> list[Command]:
+        heatmap = next(
+            command
+            for command in jed.build_commands(replace(context, figures=True))
+            if command.id == "taxa_guild_heatmap"
+        )
+        passed.append(heatmap.argv[heatmap.argv.index("--direction-basis") + 1])
+        source, output = context.products["count_profiles"], context.output / "observed.tsv"
+        return [
+            Command(
+                "observe_core",
+                (
+                    sys.executable,
+                    str(REPO_ROOT / "scripts/adhoc/issue658_arm_test_command.py"),
+                    "--input",
+                    str(source),
+                    "--output",
+                    str(output),
+                ),
+                (source,),
+                (output,),
+            )
+        ]
+
+    result = execute_arm("jed", Path(core.manifest_path), tmp_path / "jed", plan, figures=False)
+    assert passed == [direction_basis]
+    assert result.direction_basis == direction_basis
 
 
 def test_noel_plan_consumes_selection_evidence_for_already_oriented_core(
