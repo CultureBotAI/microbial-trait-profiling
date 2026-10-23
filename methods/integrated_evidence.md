@@ -271,7 +271,7 @@ written by `table1_trait_maps.write_shift_table` now carries the same
 source-export half of that requirement that #236 deferred here. The run fails if a declared
 size and the rows exported for that family disagree, because a q corrected over
 a different set of tests than the table shows cannot be read. The provenance
-record carries the zero-total pair exclusion as counts and a rule, both decision
+record carries the zero-total pair exclusion as counts, the kept study IDs and a rule, both decision
 thresholds with their sources, the resolved feature columns, and any declared
 term that matched no column.
 
@@ -280,7 +280,15 @@ It reads
 `data/derived/table1_composition_sensitivity/sensitivity_status.json` and
 `data/derived/contrast_orientation/contrast_orientation_provenance.json` when they
 exist, and `--coverage-status` and `--influence-status` take the #184 and #190
-outputs once those exist. The provenance record carries the code revision, input
+outputs once those exist. Under `--require-complete-sources`, which the cross-arm
+comparison stage passes, a native table or a calibration, sensitivity, orientation or
+influence status that is not supplied or does not exist is an error rather than a
+pending row (#814). So is a supplied status that reads as unreadable or whose binding is
+`mismatch_or_missing_identity` or `missing_producer_identity` (#844). A status that
+declares no input hashes is still accepted, pending #816. Nothing produces the #184
+coverage status yet, so it may be left out and then reads as not supplied; a coverage
+path that is supplied must exist.
+The provenance record carries the code revision, input
 hashes, the corpus cascade, the assessment statuses and the per-method summary.
 
 `tests/test_integrated_evidence.py` covers the states the contract exists to
