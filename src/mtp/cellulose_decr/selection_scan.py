@@ -321,6 +321,9 @@ def build_population(
     keys = ["study_id", "experiment_id"]
     if studies is not None:
         keep = frozenset(studies)
+        unknown = sorted(keep - set(experiments["study_id"]))
+        if unknown:
+            raise ValueError(f"{len(unknown)} studies are not in the population: {unknown[:3]}")
         experiments = experiments[experiments["study_id"].isin(keep)]
         keyed = keyed[keyed["study_id"].isin(keep)]
         reported = reported[reported["study_id"].isin(keep)]
@@ -1241,8 +1244,10 @@ class ScanInputs:
     ``profiles`` and ``taxa`` are every selected experiment's profiles and signature taxa
     (``build_population``). ``matrix`` holds every screen candidate trait. ``screen``
     holds the paired human profiles the directional screen votes on, over ``columns``,
-    and ``labels`` name the traits. ``strain_rollup`` is the core's scope and
-    ``strain_rollup_role`` its declared role (``scope_role``).
+    and ``labels`` name the traits. ``contrast_population`` must be the Tier 1+2
+    population; ``strain_rollup`` is the core's scope and ``strain_rollup_role`` its
+    declared role (``scope_role``), which ``select`` and ``evaluate`` check against the
+    protocol (#907).
     """
 
     profiles: pd.DataFrame
@@ -1251,8 +1256,17 @@ class ScanInputs:
     screen: tuple[Profile, ...]
     columns: tuple[str, ...]
     labels: Mapping[str, ColumnLabel]
-    strain_rollup: str = "off"
-    strain_rollup_role: str = PRIMARY
+    contrast_population: str
+    strain_rollup: str
+    strain_rollup_role: str
+
+    def __post_init__(self) -> None:
+        if self.contrast_population != TIER1_2:
+            raise ValueError(
+                f"the scan's population is {TIER1_2}, not {self.contrast_population!r}"
+            )
+        if self.strain_rollup_role not in (PRIMARY, SENSITIVITY):
+            raise ValueError(f"unknown strain-rollup role {self.strain_rollup_role!r}")
 
     @property
     def studies(self) -> frozenset[str]:
@@ -1277,8 +1291,22 @@ class ScanInputs:
         )
 
 
-def load_inputs(paths: Mapping[str, Path]) -> ScanInputs:
-    """Read a core run's ``CORE_PRODUCTS`` once, for the scan and for any study split."""
+def load_inputs(
+    paths: Mapping[str, Path],
+    *,
+    contrast_population: str,
+    strain_rollup: str,
+    protocol: Protocol | None = None,
+) -> ScanInputs:
+    """Read a core run's ``CORE_PRODUCTS`` once, for the scan and for any study split.
+
+    The core's population and strain-rollup scope must be stated; a population other
+    than Tier 1+2 or an undeclared scope is refused. ``load_core_inputs`` reads both
+    from the verified run.
+    """
+    role = scope_role(strain_rollup, protocol or load_protocol())
+    if contrast_population != TIER1_2:
+        raise ValueError(f"the scan's population is {TIER1_2}, not {contrast_population!r}")
     columns = screen_candidates(paths["count_profiles"])
     screen, _ = load_profiles(
         paths["count_profiles"],
@@ -1291,7 +1319,27 @@ def load_inputs(paths: Mapping[str, Path]) -> ScanInputs:
         paths["experiments"], paths["reported_taxa"], paths["count_profiles"], matrix.index
     )
     labels = load_column_labels(paths["feature_metadata"])
-    return ScanInputs(profiles, taxa, matrix, tuple(screen), tuple(columns), labels)
+    return ScanInputs(
+        profiles,
+        taxa,
+        matrix,
+        tuple(screen),
+        tuple(columns),
+        labels,
+        contrast_population=contrast_population,
+        strain_rollup=strain_rollup,
+        strain_rollup_role=role,
+    )
+
+
+def require_scope(inputs: ScanInputs, protocol: Protocol) -> None:
+    """Refuse inputs of an undeclared scope, or whose role is not the protocol's (#907)."""
+    role = scope_role(inputs.strain_rollup, protocol)
+    if role != inputs.strain_rollup_role:
+        raise ValueError(
+            f"strain_rollup {inputs.strain_rollup!r} is the protocol's {role}, "
+            f"not {inputs.strain_rollup_role}"
+        )
 
 
 def open_tier1_2(core_run: Path, protocol: Protocol | None = None) -> tuple[CoreBundle, str, str]:
@@ -1320,9 +1368,15 @@ def load_core_inputs(
     core_run: Path, protocol: Protocol | None = None
 ) -> tuple[CoreBundle, ScanInputs]:
     """Verify a Tier 1+2 core run (its ``run.json``) of a declared scope; read it once."""
-    bundle, scope, role = open_tier1_2(core_run, protocol)
-    inputs = load_inputs({product: bundle.path(product) for product in CORE_PRODUCTS})
-    return bundle, dataclasses.replace(inputs, strain_rollup=scope, strain_rollup_role=role)
+    bundle, scope, _ = open_tier1_2(core_run, protocol)
+    paths = {product: bundle.path(product) for product in CORE_PRODUCTS}
+    inputs = load_inputs(
+        paths,
+        contrast_population=str(bundle.run.contrast_population),
+        strain_rollup=scope,
+        protocol=protocol,
+    )
+    return bundle, inputs
 
 
 def declared_sets(
@@ -1391,6 +1445,7 @@ def select(
     protocol's.
     """
     protocol = protocol or load_protocol()
+    require_scope(inputs, protocol)
     chosen = inputs if studies is None else inputs.restricted(studies)
     traits, conditions, eligible = declared_sets(chosen, protocol, always_included)
     result = scan(
@@ -1444,6 +1499,7 @@ def evaluate(
     involved conditions, sorted, are the layout of the shared draws.
     """
     protocol = protocol or load_protocol()
+    require_scope(inputs, protocol)
     held_out = inputs.restricted(studies)
     asked: list[dict[str, Any]] = []
     for number, hypothesis in enumerate(hypotheses):
@@ -1529,14 +1585,15 @@ def evaluate(
     return merged[["hypothesis", *table.columns, *OUTCOME_COLUMNS]]
 
 
-def closest_disjoint_triples(triples: pd.DataFrame, tolerance: float = 1e-12) -> pd.DataFrame:
+def closest_disjoint_triples(triples: pd.DataFrame, tolerance: float = 0.0) -> pd.DataFrame:
     """#854's selection rule: per trait, the closest study-disjoint triple.
 
     Among the tested triples whose conditions share no study (``shared_studies`` 0),
-    the one with the smallest observed mean pairwise Jaccard distance. Distances within
-    ``tolerance`` count as tied, and a tie goes to the first in lexical order of the
-    three (sorted) conditions. A trait without such a triple selects nothing. U6 is not
-    used, so ``select(..., permutations=0)`` is enough for it.
+    the one with the smallest observed mean pairwise Jaccard distance. A tie goes to the
+    first in lexical order of the three (sorted) conditions. Ties are exact by default,
+    as #854 declares; a positive ``tolerance`` also ties distances that close. A trait
+    without such a triple selects nothing. U6 is not used, so
+    ``select(..., permutations=0)`` is enough for it.
     """
     usable = triples[triples["test_status"].eq(TESTED) & triples["shared_studies"].eq(0)]
     rows = []
@@ -1598,7 +1655,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         for product, path in paths.items()
     }
 
-    inputs = dataclasses.replace(load_inputs(paths), strain_rollup=scope, strain_rollup_role=role)
+    inputs = load_inputs(
+        paths,
+        contrast_population=str(bundle.run.contrast_population),
+        strain_rollup=scope,
+        protocol=protocol,
+    )
     if args.plan:
         chosen, conditions, eligible = declared_sets(inputs, protocol)
         traits = chosen["trait_id"].tolist()
