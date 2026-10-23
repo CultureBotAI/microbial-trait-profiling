@@ -4,7 +4,7 @@ This is the canonical consolidated methods file for figures in `trait-visualizat
 
 Terminology convention: traits are described as enriched or depleted. BugSigDB profile directions are described as increased and decreased profiles. Backward-compatible filenames, folder names, TSV columns, and raw BugSigDB source labels may still contain `guild`, `depletion`, `inc`, or `dec` when those strings are part of an existing artifact or source identifier.
 
-The figures were generated from BugSigDB-derived taxa and study-profile tables plus KG-Microbe trait annotations. Direction labels come from BugSigDB curation, specifically the `Abundance in Group 1` signature direction; the visualization scripts group, filter, aggregate, and cluster those curated directions rather than recalculating differential abundance.
+The figures were generated from BugSigDB-derived taxa and study-profile tables plus KG-Microbe trait annotations. Direction labels come from BugSigDB curation, specifically the `Abundance in Group 1` signature direction; the visualization scripts group, filter, aggregate, and cluster those curated directions rather than recalculating differential abundance. That is the `group_1_vs_group_0` direction basis of the all-paired run that the tracked figures come from. Figures drawn in a contrast-population subset run read that run's own tables, on the run's `direction_basis`, `disease_vs_comparison`: the curated direction of each reversed experiment is flipped, so increased means higher in the disease group than in its comparison (#768, #795).
 
 ## Consolidated Source Files
 
@@ -56,7 +56,10 @@ Jaccard distance on the binary matrix. Teal cells indicate trait presence and wh
 cells indicate absence/no annotation. Row colors summarize each taxon's overall
 BugSigDB direction tendency across profiles: `increased` if increased profiles are at
 least 2 and at least 1.25 times decreased profiles, `decreased` by the analogous rule,
-and `mixed` otherwise. Column colors show trait category.
+and `mixed` otherwise. The direction legend names the run's direction basis: "Group 1
+vs Group 0" in the all-paired figure, "disease vs comparison" in a subset run's figure.
+The script takes the basis from `--direction-basis`, and the jed arm passes it the core
+run's `direction_basis` (#795). Column colors show trait category.
 
 Companion files:
 

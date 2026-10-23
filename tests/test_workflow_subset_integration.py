@@ -264,6 +264,7 @@ def test_each_arm_inherits_and_verifies_subset_identity(
 
     def plan(context: ArmContext) -> list[Command]:
         assert context.contrast_population == POPULATION
+        assert context.direction_basis == "disease_vs_comparison"
         source, output = context.products[product], context.output / "observed.tsv"
         return [
             Command(

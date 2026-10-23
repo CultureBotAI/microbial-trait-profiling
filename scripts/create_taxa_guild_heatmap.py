@@ -28,6 +28,13 @@ METAPHLAN_RANK_MAP = {
     "s__": "species",
     "t__": "strain",
 }
+# The direction legend's title for each run direction_basis (#795). An all-paired run
+# keeps the curated Abundance in Group 1 direction; a contrast-population subset flips
+# its reversed experiments so that increased means higher in the disease group.
+DIRECTION_LEGEND_TITLES = {
+    "group_1_vs_group_0": "BugSigDB direction\n(Group 1 vs Group 0)",
+    "disease_vs_comparison": "BugSigDB direction\n(disease vs comparison)",
+}
 
 
 def clean_value(value: object) -> str:
@@ -446,8 +453,9 @@ def save_heatmap(
     requested_rank: str,
     studies_analyzed: int,
     profiles_analyzed: int,
+    direction_basis: str,
 ) -> None:
-    """Render and save the clustered heatmap."""
+    """Render and save the clustered heatmap, naming the taxa table's direction basis."""
     sns.set_theme(style="white")
 
     direction_palette = {
@@ -521,7 +529,7 @@ def save_heatmap(
     ]
     cluster.ax_row_dendrogram.legend(
         handles=direction_handles,
-        title="BugSigDB direction",
+        title=DIRECTION_LEGEND_TITLES[direction_basis],
         loc="center",
         bbox_to_anchor=(-0.05, 0.5),
         frameon=False,
@@ -619,6 +627,16 @@ def main() -> None:
         type=Path,
         default=REPO_ROOT / "data/derived/study_trait_profiles_wide.tsv",
         help="Input wide study trait profiles TSV path.",
+    )
+    parser.add_argument(
+        "--direction-basis",
+        choices=sorted(DIRECTION_LEGEND_TITLES),
+        default="group_1_vs_group_0",
+        help=(
+            "Direction basis of the taxa TSV, the core run's direction_basis: "
+            "group_1_vs_group_0 for all paired contrasts, disease_vs_comparison for a "
+            "contrast-population subset. The direction legend names it."
+        ),
     )
     parser.add_argument(
         "--output",
@@ -738,6 +756,7 @@ def main() -> None:
         args.rank,
         studies_analyzed,
         profiles_analyzed,
+        args.direction_basis,
     )
     write_outputs(
         selected_matrix,

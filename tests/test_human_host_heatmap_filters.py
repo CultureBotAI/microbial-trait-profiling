@@ -2,7 +2,9 @@ import csv
 import importlib.util
 from pathlib import Path
 from types import ModuleType
+from unittest.mock import patch
 
+import pandas as pd
 import pytest
 
 DUMP_FIELDS = [
@@ -220,6 +222,60 @@ def test_taxa_guild_counts_only_the_subset_profiles_in_their_own_direction(
     assert summary.loc["NCBITaxon:562", counts].tolist() == [2, 2, 1, 1]
     assert summary.loc["NCBITaxon:817", counts].tolist() == [2, 2, 1, 1]
     assert summary.loc["NCBITaxon:562", "taxon_name"] == "Escherichia coli"
+
+
+@pytest.mark.parametrize(
+    ("direction_basis", "legend_title"),
+    [
+        ("group_1_vs_group_0", "BugSigDB direction\n(Group 1 vs Group 0)"),
+        ("disease_vs_comparison", "BugSigDB direction\n(disease vs comparison)"),
+    ],
+)
+def test_taxa_guild_legend_names_the_run_direction_basis(
+    tmp_path: Path, direction_basis: str, legend_title: str
+) -> None:
+    """The row colours follow the run's direction basis, and the legend names it (#795).
+
+    A disease-oriented subset flips its reversed experiments, so its increased and
+    decreased are not the curated Group 1 direction that an all-paired run keeps.
+    """
+    module = load_script_module("create_taxa_guild_heatmap.py")
+    taxa = ["NCBITaxon:562", "NCBITaxon:817", "NCBITaxon:841"]
+    traits = ["Trait A", "Trait B", "Trait C"]
+    display = pd.DataFrame(
+        [[1, 0, 1], [0, 1, 1], [1, 1, 0]],
+        index=[f"Taxon {taxon} ({taxon})" for taxon in taxa],
+        columns=traits,
+    )
+    taxa_metadata = pd.DataFrame(
+        {"dominant_direction": ["increased", "decreased", "mixed"]}, index=taxa
+    )
+    trait_metadata = pd.DataFrame(
+        {"display_label": traits, "display_category": ["Metabolism", "Metabolism", "Shape"]}
+    )
+
+    with (
+        patch.object(module.plt.Figure, "savefig", autospec=True) as savefig,
+        patch.object(module.plt, "close"),
+    ):
+        module.save_heatmap(
+            display,
+            taxa_metadata,
+            trait_metadata,
+            tmp_path / "heatmap.png",
+            "species",
+            "species",
+            3,
+            6,
+            direction_basis,
+        )
+    figure = savefig.call_args.args[0]
+    try:
+        legends = [axis.get_legend() for axis in figure.axes if axis.get_legend()]
+        titles = {legend.get_title().get_text() for legend in legends}
+        assert titles == {legend_title, "Trait category"}
+    finally:
+        module.plt.close(figure)
 
 
 def test_taxa_guild_fails_without_the_full_dump(tmp_path: Path) -> None:

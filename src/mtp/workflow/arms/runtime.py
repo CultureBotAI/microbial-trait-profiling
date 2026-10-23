@@ -20,6 +20,7 @@ from mtp.datamodel.workflow_pydantic import (
     ArmCommandExecution,
     ArmRun,
     ContrastPopulation,
+    DirectionBasis,
     ExecutionStatus,
     FileInventoryEntry,
     ParameterValue,
@@ -342,6 +343,7 @@ def execute_arm(
         seed=seed,
         figures=figures,
         contrast_population=ContrastPopulation(bundle.run.contrast_population).value,
+        direction_basis=DirectionBasis(bundle.run.direction_basis).value,
     )
     commands = planner(context)
     _validate_plan(commands, context)
@@ -502,6 +504,7 @@ def verify_arm(path: Path) -> ArmRun:
         seed=None,
         figures=True,
         contrast_population=ContrastPopulation(record.contrast_population).value,
+        direction_basis=DirectionBasis(record.direction_basis).value,
     )
     commands = [
         Command(
