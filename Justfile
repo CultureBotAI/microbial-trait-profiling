@@ -277,7 +277,7 @@ trait-heatmaps:
 	uv run python scripts/create_clustered_heatmap.py
 	uv run python scripts/create_condition_taxon_heatmap.py
 	uv run python scripts/create_taxa_guild_heatmap.py --direction-basis group_1_vs_group_0
-	uv run python scripts/create_study_trait_profile_heatmap.py
+	uv run python scripts/create_study_trait_profile_heatmap.py --direction-basis group_1_vs_group_0
 	uv run python scripts/create_condition_trait_module_heatmap.py
 
 trait-visualization:

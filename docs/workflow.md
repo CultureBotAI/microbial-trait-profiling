@@ -93,7 +93,7 @@ including A, and the reported sequence is G, G, A. Deduplicating reported IDs
 gives a count-profile value of 4 and an ORA value of 2 with N=2. These are
 annotation representation units, not four organisms or independent observations.
 
-The core's increased/decreased direction is the curated report for Group 1
+The default `all_paired` core's increased/decreased direction is the curated report for Group 1
 relative to Group 0. It does not by itself establish disease-case versus
 healthy-control orientation; downstream contrast classification must make that
 determination explicitly.
@@ -346,6 +346,13 @@ records inclusion/exclusion decisions, reversed IDs, source and output inventori
 raw-input fingerprint and classifier version/source fingerprint. Its validator
 reconstructs the permitted projection and rejects missing, added or altered
 records, taxa, metadata, directions and audit values.
+
+Jed passes the core's `direction_basis` to the taxa-guild and profile heatmap
+commands. The profile direction legend and paired increased-minus-decreased
+colorbar name that basis explicitly (#842). The standalone profile command
+requires `--direction-basis`; it labels the supplied profiles without reorienting
+their values. `just trait-heatmaps` names the canonical Group 1 versus Group 0
+basis, while verified subset arm plans use disease versus comparison.
 
 Noel's non-default workflow route uses an assessment adapter that requires a
 verified core manifest and consumes its already oriented profiles directly.

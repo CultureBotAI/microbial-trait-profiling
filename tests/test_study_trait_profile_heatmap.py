@@ -1,5 +1,7 @@
 import importlib.util
+import sys
 from pathlib import Path
+from unittest.mock import patch
 
 import pandas as pd
 import pytest
@@ -12,6 +14,74 @@ assert SPEC is not None
 assert SPEC.loader is not None
 heatmap = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(heatmap)
+
+
+@pytest.mark.parametrize(
+    ("direction_basis", "label"),
+    [
+        ("group_1_vs_group_0", "Group 1 vs Group 0"),
+        ("disease_vs_comparison", "disease vs comparison"),
+    ],
+)
+@pytest.mark.parametrize("paired", [False, True])
+def test_rendered_legends_name_the_profile_direction_basis(
+    tmp_path: Path, direction_basis: str, label: str, paired: bool
+) -> None:
+    """Both real plotting paths name the supplied basis without changing values (#842)."""
+    matrix = pd.DataFrame(
+        [[0.7, -0.3, 0.1], [-0.2, 0.8, -0.4], [0.3, -0.6, 0.9]],
+        index=["a", "b", "c"],
+        columns=["Trait A", "Trait B", "Trait C"],
+    )
+    metadata = pd.DataFrame(
+        {
+            "inc_dec": ["inc", "dec", "dec"],
+            "body_site_group": ["Feces"] * 3,
+            "condition_group": ["Condition A", "Condition B", "Condition C"],
+        },
+        index=matrix.index,
+    )
+    traits = pd.DataFrame(
+        {"display_category": ["Shape", "Shape", "Metabolism"]},
+        index=["METPO:1", "METPO:2", "METPO:3"],
+    )
+    before = matrix.copy(deep=True)
+    with (
+        patch.object(heatmap.plt.Figure, "savefig", autospec=True) as savefig,
+        patch.object(heatmap.plt, "close"),
+    ):
+        draw = heatmap.save_paired_enrichment_heatmap if paired else heatmap.save_heatmap
+        draw(matrix, metadata, traits, tmp_path / "heatmap.png", 3, 3, direction_basis)
+    figure = savefig.call_args.args[0]
+    try:
+        figure.canvas.draw()
+        if paired:
+            labels = [axis.get_ylabel() for axis in figure.axes]
+            assert any(f"BugSigDB direction: {label}" in text for text in labels)
+            assert any("increased minus decreased" in text for text in labels)
+        else:
+            legends = [axis.get_legend() for axis in figure.axes if axis.get_legend()]
+            assert f"BugSigDB direction\n({label})" in {
+                legend.get_title().get_text() for legend in legends
+            }
+        pd.testing.assert_frame_equal(matrix, before)
+    finally:
+        heatmap.plt.close(figure)
+
+
+@pytest.mark.parametrize("arguments", [[], ["--direction-basis", "unknown"]])
+def test_cli_requires_a_known_direction_basis_before_reading_inputs(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], arguments: list[str]
+) -> None:
+    def reject_input_read(*_args: object) -> None:
+        raise AssertionError("CLI must reject an absent/invalid basis before reading inputs")
+
+    monkeypatch.setattr(heatmap, "load_profile_matrix", reject_input_read)
+    monkeypatch.setattr(sys, "argv", ["heatmap", *arguments])
+    with pytest.raises(SystemExit) as error:
+        heatmap.main()
+    assert error.value.code == 2
+    assert "--direction-basis" in capsys.readouterr().err
 
 
 def test_filter_human_host_profiles_keeps_only_homo_sapiens() -> None:
