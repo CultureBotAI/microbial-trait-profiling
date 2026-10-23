@@ -10,9 +10,17 @@ import pytest
 
 from mtp.datamodel.multiple_testing_pydantic import HypothesisCoordinates, HypothesisFamilyMetadata
 from mtp.datamodel.workflow_pydantic import AnalysisBasis
-from mtp.multiple_testing import canonical_sha256, correct_family
+from mtp.multiple_testing import canonical_sha256, correct_family, load_policy
 from mtp.multiplicity import sources as source_module
-from mtp.multiplicity.families import FamilyInput, jed_family, noel_family, observation, rows
+from mtp.multiplicity import stage as stage_module
+from mtp.multiplicity.families import (
+    FamilyInput,
+    jed_family,
+    metadata,
+    noel_family,
+    observation,
+    rows,
+)
 from mtp.multiplicity.inventory import correct_inventory, read_corrected_inventory
 from mtp.multiplicity.native import native_family
 from mtp.multiplicity.ora import ora_family
@@ -25,9 +33,73 @@ from mtp.multiplicity.sources import (
 )
 from mtp.multiplicity.stage import run_post_arm, verify_post_arm
 from mtp.paths import file_sha256
+from mtp.workflow import runtime as workflow_runtime
 from mtp.workflow.coverage import feature_filter_id
 from multiplicity_fixture import fixture_sources, write_table
 from test_multiple_testing import family, raw
+
+
+def test_adapter_code_identity_binds_the_shared_serializer(monkeypatch: pytest.MonkeyPatch) -> None:
+    before = stage_module.code_sha256()
+    serializer = Path(workflow_runtime.__file__)
+
+    def changed_digest(path: Path) -> str:
+        return "f" * 64 if path == serializer else file_sha256(path)
+
+    monkeypatch.setattr(stage_module, "file_sha256", changed_digest)
+    assert stage_module.code_sha256() != before
+
+
+@pytest.mark.parametrize("kind", ["code", "policy"])
+def test_post_arm_refuses_identity_changes_during_execution(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, kind: str
+) -> None:
+    """The final manifest cannot name new disk code after running cached old code."""
+    sources = fixture_sources(tmp_path / "inputs", monkeypatch)
+    fingerprint = "a" * 64
+    policy = load_policy()
+    monkeypatch.setattr(stage_module, "code_sha256", lambda: fingerprint)
+    monkeypatch.setattr(stage_module, "load_policy", lambda: policy)
+    original_report = stage_module.migration_report
+
+    def report_then_edit_code(
+        family: FamilyInput, corrected: Path, destination: Path
+    ) -> dict[str, int]:
+        nonlocal fingerprint
+        counts = original_report(family, corrected, destination)
+        if kind == "code":
+            fingerprint = "b" * 64
+        else:
+            policy.thresholds.append(0.02)
+        return counts
+
+    monkeypatch.setattr(stage_module, "migration_report", report_then_edit_code)
+    destination = tmp_path / "sidecars"
+    with pytest.raises(ValueError, match=rf"{kind}.*changed"):
+        run_post_arm(Path(sources.comparison.manifest_path), destination)
+    assert not (destination / "multiplicity_run.json").exists()
+
+
+@pytest.mark.parametrize("value", [float("nan"), float("inf"), -float("inf")])
+def test_adapter_membership_hash_rejects_nonfinite_numbers(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, value: float
+) -> None:
+    sources = fixture_sources(tmp_path, monkeypatch)
+    with pytest.raises(ValueError, match="Out of range float"):
+        metadata(
+            sources,
+            family_id="fixture",
+            analysis_id="fixture",
+            product="count_profiles",
+            count=1,
+            membership={"eligibility": [{"invalid_number": value}]},
+            unit="trait",
+            inference="study",
+            estimand="fixture",
+            selection="all fixture traits",
+            history=["fixture"],
+            paths=[],
+        )
 
 
 def test_disk_correction_matches_foundation_without_changing_family(tmp_path: Path) -> None:

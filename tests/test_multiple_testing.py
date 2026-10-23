@@ -22,6 +22,14 @@ STAMP = datetime(2026, 10, 22, tzinfo=UTC)
 DIGEST = "1" * 64
 
 
+@pytest.mark.parametrize("value", [nan, inf, -inf])
+@pytest.mark.parametrize("nested", [False, True])
+def test_canonical_hash_rejects_nonfinite_numbers(value: float, nested: bool) -> None:
+    payload = {"membership": [value]} if nested else value
+    with pytest.raises(ValueError, match="Out of range float"):
+        canonical_sha256(payload)
+
+
 def family(size: int) -> HypothesisFamily:
     return HypothesisFamily(
         family_id="fixture:study-sign",
