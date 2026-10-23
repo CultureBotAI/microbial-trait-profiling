@@ -162,10 +162,18 @@ For each trait and each triple of eligible conditions:
 ## Amendments
 
 Both amendments were made on 2026-10-22, after the review of PR #861 (#872) and before
-any run on real data. They are recorded in the protocol file's `amendments`, and the
-declared rule above is left as it was committed. When they were made, no scan result on
-real data existed. The eligible counts on the pinned export and timings on synthetic
-fixtures were known.
+any run on real data. They are recorded in the protocol file's `amendments`. The
+declared rule above is as committed, except for two marked clarifications made with
+them, which change nothing computed:
+
+- in *Traits*, that the screen votes over every body site while the sets are
+  stool-only;
+- in *What is reported*, that the core's p-values pile up at 1 rather than being
+  roughly uniform.
+
+(This paragraph was corrected on 2026-10-22, #907; it had said the declared rule was
+left as committed.) When the amendments were made, no scan result on real data existed.
+The eligible counts on the pinned export and timings on synthetic fixtures were known.
 
 1. **The strain-rollup scope is pinned.**
    - The rule did not name the scope of the core run. After #828 the default core is
@@ -262,16 +270,21 @@ multiplicity family and the reporting) belongs to #854.
 
 | Function | Signature | Returns |
 | --- | --- | --- |
-| `load_core_inputs` | `(core_run: Path, protocol=None) -> tuple[CoreBundle, ScanInputs]` | Verifies a Tier 1+2 core run of a declared scope and reads its population once. A core of another population or scope is refused. `ScanInputs.studies` lists the population's studies; `ScanInputs.restricted(studies)` keeps whole studies; `ScanInputs.strain_rollup` and `strain_rollup_role` give the scope. |
+| `load_core_inputs` | `(core_run: Path, protocol=None) -> tuple[CoreBundle, ScanInputs]` | Verifies a Tier 1+2 core run of a declared scope and reads its population once. A core of another population or scope is refused. `ScanInputs.studies` lists the population's studies; `ScanInputs.restricted(studies)` keeps whole studies; `ScanInputs.contrast_population`, `strain_rollup` and `strain_rollup_role` give the population and scope. |
+| `load_inputs` | `(paths, *, contrast_population, strain_rollup, protocol=None) -> ScanInputs` | The same from product paths, with the population and scope stated and checked. |
 | `build_population`, `screen_table` | `(experiments, keyed, reported, matrix_taxa, studies=None)`; `(profiles, columns, labels, studies=None)` | The population's profiles and taxa, and the directional screen, from in-memory tables, optionally for some studies only. `load_core_inputs` uses them. |
 | `select` | `(inputs, studies=None, *, protocol=None, permutations=None, seed=None, always_included=True) -> Selection` | The declared rule on `studies` only. `Selection.conditions` is the condition table, `Selection.traits` the trait set from those studies' screen, and `Selection.triples` one row per triple and trait, with the columns `TRIPLE_COLUMNS`. `Selection.result` holds the arrays and `Selection.studies` the studies used. `Selection.status` is `selected`, `no_traits` or `fewer_than_three_eligible_conditions`. |
 | `rank_candidates` | `(triples, statistic="mean_pairwise_jaccard_distance") -> DataFrame` | The tested rows in a fixed order, numbered `candidate_rank`: U6 p ascending, then z (more overlap first), then trait ID and the three conditions. It is an order, not a selection. |
-| `closest_disjoint_triples` | `(triples, tolerance=1e-12) -> DataFrame` | #854's selection rule: per trait, the tested study-disjoint triple with the smallest observed mean pairwise distance, distances within `tolerance` tied and ties going to the conditions first in lexical order. A trait without such a triple selects nothing. |
+| `closest_disjoint_triples` | `(triples, tolerance=0.0) -> DataFrame` | #854's selection rule: per trait, the tested study-disjoint triple with the smallest observed mean pairwise distance, ties going to the conditions first in lexical order. Ties are exact by default, as #854 declares; a positive `tolerance` also ties distances that close. A trait without such a triple selects nothing. |
 | `evaluate` | `(inputs, studies, hypotheses, *, protocol=None, permutations=None, seed=None) -> DataFrame` | One row per hypothesis, `(condition, condition, condition, trait ID)`, in the given order and numbered `hypothesis`, with the columns `TRIPLE_COLUMNS` except the within-trait ranks, then the flags `OUTCOME_COLUMNS`. |
 
 - **Study subsets.** Each function reads only the studies it is given: for eligibility
   (k = 3 within those studies), the trait screen, the observed sets and the U6 pool.
-  Studies are kept or dropped whole. A study outside the population is an error.
+  Studies are kept or dropped whole. A study outside the population is an error, in
+  `ScanInputs.restricted` and in `build_population`.
+- **Population and scope checks.** `ScanInputs` requires the Tier 1+2 population and a
+  scope with its role. `select` and `evaluate` refuse inputs whose scope is undeclared,
+  or whose role is not the protocol's for that scope (#907).
 - **Empty families.** A training split can select traits yet have no eligible condition,
   for example when its conditions have few studies. `select` then returns the trait
   set, the condition table and an empty triple table with the declared columns, with

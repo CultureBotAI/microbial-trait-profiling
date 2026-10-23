@@ -57,6 +57,7 @@ from mtp.cellulose_decr.selection_scan import (
     lead_and_distribution,
     lead_rank,
     load_core_inputs,
+    load_inputs,
     load_protocol,
     main,
     plan,
@@ -65,6 +66,7 @@ from mtp.cellulose_decr.selection_scan import (
     scan,
     scope_role,
     select,
+    trait_table,
     triple_table,
 )
 from mtp.paths import file_sha256
@@ -915,7 +917,17 @@ def _inputs(records: Sequence[Signature], matrix: pd.DataFrame) -> ScanInputs:
                 sum(counts.values()),
             )
         )
-    return ScanInputs(profiles, taxa, matrix, tuple(screen), columns, {})
+    return ScanInputs(
+        profiles,
+        taxa,
+        matrix,
+        tuple(screen),
+        columns,
+        {},
+        contrast_population=TIER1_2,
+        strain_rollup="off",
+        strain_rollup_role=PRIMARY,
+    )
 
 
 def _split_corpus() -> tuple[ScanInputs, list[str], list[str]]:
@@ -1191,6 +1203,11 @@ def test_a_lead_that_shares_a_study_is_placed_among_the_disjoint_triples() -> No
     assert row[f"{MEAN_DISTANCE}_{DISJOINT}_triples"] == len(disjoint) + 1
     at_most = int((disjoint["u6_p_mean_distance"] <= p).sum()) + 1
     assert row[f"{MEAN_DISTANCE}_{DISJOINT}_rank_max"] == at_most
+    # The z rank places it the same way, among the disjoint triples with a z (#907).
+    z = disjoint["u6_z_mean_distance"].dropna()
+    lead_z = lead_row["u6_z_mean_distance"]
+    assert row[f"{MEAN_DISTANCE}_{DISJOINT}_z_triples"] == len(z) + 1
+    assert row[f"{MEAN_DISTANCE}_{DISJOINT}_z_rank_max"] == int((z <= lead_z).sum()) + 1
 
 
 def test_z_ranks_put_more_overlap_first() -> None:
@@ -1263,7 +1280,10 @@ def test_closest_disjoint_triples_is_the_854_rule() -> None:
             "test_status": [TESTED] * 6 + [TESTED],
         }
     )
-    chosen = closest_disjoint_triples(rows)
+    # Exact ties by default, as #854 declares: 0.3 is smaller than 0.3 + 1e-13 (#907).
+    assert _keys(closest_disjoint_triples(rows)) == [("B", "C", "D", "x"), ("A", "B", "C", "y")]
+    # With a tolerance the two tie, and the lexically first conditions win.
+    chosen = closest_disjoint_triples(rows, tolerance=1e-12)
     assert _keys(chosen) == [("A", "C", "D", "x"), ("A", "B", "C", "y")]
 
 
@@ -1331,6 +1351,9 @@ def test_build_population_takes_in_memory_tables_for_some_studies() -> None:
     unpaired = keyed[~(keyed["experiment_id"].eq(records[0][1]) & keyed["inc_dec"].eq("inc"))]
     with pytest.raises(ValueError, match="paired"):
         build_population(experiments, unpaired, reported, matrix_taxa)
+    # An unknown study is refused rather than dropped (#907).
+    with pytest.raises(ValueError, match="not in the population"):
+        build_population(experiments, keyed, reported, matrix_taxa, [*keep, "bsdb:999999"])
 
 
 # --------------------------------------------------------------------------- empty families (#901)
@@ -1405,3 +1428,111 @@ def test_selection_status_names_why_a_family_is_empty() -> None:
         dataclasses.replace(inputs, screen=flat), train, permutations=19, always_included=False
     )
     assert empty.status == NO_TRAITS
+
+
+# --------------------------------------------------------------------------- delta review (#907)
+
+
+def test_select_equals_select_on_a_population_of_those_studies() -> None:
+    """``select`` on a subset equals ``select`` on a population holding only that subset,
+    so nothing outside it reaches the selection, the U6 pool included (#907)."""
+    inputs, train, _ = _split_corpus()
+    seed = (20261022, 3, 0)
+    chosen = select(inputs, train, permutations=300, seed=seed)
+    alone = select(inputs.restricted(train), permutations=300, seed=seed)
+    assert chosen.studies == alone.studies
+    pd.testing.assert_frame_equal(chosen.triples, alone.triples)
+    pd.testing.assert_frame_equal(chosen.traits, alone.traits)
+    pd.testing.assert_frame_equal(chosen.conditions, alone.conditions)
+
+
+def test_evaluate_equals_evaluate_on_a_population_of_those_studies() -> None:
+    """The same for the held-out test (#907)."""
+    inputs, train, test = _split_corpus()
+    ranked = rank_candidates(select(inputs, train, permutations=200, seed=1).triples)
+    hypotheses = _keys(ranked.head(3))
+    seed = (20261022, 3, 1)
+    tested = evaluate(inputs, test, hypotheses, permutations=300, seed=seed)
+    alone = evaluate(inputs.restricted(test), test, hypotheses, permutations=300, seed=seed)
+    pd.testing.assert_frame_equal(tested, alone)
+
+
+def test_traits_rank_by_the_lead_z_share_ascending_apart_from_the_p_share() -> None:
+    """The traits rank by the share of triples at least as extreme in z as the lead's,
+    smallest first, separately from the p share (#907)."""
+    inputs, _, _ = _split_corpus()
+    traits = [TRAIT_ID, OTHER_TRAIT, "METPO:1000623"]
+    eligible = sorted(condition_table(inputs.profiles, 3).query("eligible")["condition"])
+    result = scan(
+        inputs.profiles,
+        inputs.taxa,
+        inputs.matrix,
+        traits,
+        eligible,
+        permutations=10,
+        seed=1,
+        tolerance=0,
+    )
+    lead = pd.DataFrame(
+        {
+            "trait_id": traits,
+            "lead_u6_p_mean_distance": [0.2, 0.4, 0.6],
+            "lead_u6_p_core": [0.6, 0.4, 0.2],
+            f"{MEAN_DISTANCE}_{ALL_TRIPLES}_share_at_most": [0.1, 0.5, 0.9],
+            f"{MEAN_DISTANCE}_{ALL_TRIPLES}_z_share_at_most": [0.5, 0.9, 0.1],
+            f"{CORE}_{ALL_TRIPLES}_share_at_most": [0.9, 0.5, 0.1],
+            f"{CORE}_{ALL_TRIPLES}_z_share_at_most": [0.5, 0.1, 0.9],
+        }
+    )
+    chosen = pd.DataFrame({"trait_id": traits})
+    frame = trait_table(chosen, lead, result, TRAIT_ID)
+    ranks = {
+        basis: frame[f"rank_among_traits_by_{basis}"].tolist()
+        for basis in (
+            f"lead_share_{MEAN_DISTANCE}",
+            f"lead_z_share_{MEAN_DISTANCE}",
+            f"lead_p_{CORE}",
+            f"lead_z_share_{CORE}",
+        )
+    }
+    assert ranks == {
+        f"lead_share_{MEAN_DISTANCE}": [1, 2, 3],
+        f"lead_z_share_{MEAN_DISTANCE}": [2, 3, 1],
+        f"lead_p_{CORE}": [3, 2, 1],
+        f"lead_z_share_{CORE}": [2, 1, 3],
+    }
+
+
+def test_scan_inputs_require_the_population_and_a_declared_scope() -> None:
+    """Inputs name their population and scope, and select and evaluate check the scope's
+    role against the protocol (#907)."""
+    inputs, train, test = _split_corpus()
+    with pytest.raises(ValueError, match="population is"):
+        dataclasses.replace(inputs, contrast_population="all_paired")
+    with pytest.raises(ValueError, match="unknown strain-rollup role"):
+        dataclasses.replace(inputs, strain_rollup_role="exploratory")
+    full = dataclasses.replace(inputs, strain_rollup="full")
+    mislabelled = dataclasses.replace(inputs, strain_rollup="phenotype")
+    for wrong, message in (
+        (full, "neither the declared primary"),
+        (mislabelled, "the protocol's declared_sensitivity"),
+    ):
+        with pytest.raises(ValueError, match=message):
+            select(wrong, train, permutations=10, seed=1)
+        with pytest.raises(ValueError, match=message):
+            evaluate(wrong, test, [(PD, HIV, CRC, TRAIT_ID)], permutations=10, seed=1)
+    sensitivity = dataclasses.replace(
+        inputs, strain_rollup="phenotype", strain_rollup_role=SENSITIVITY
+    )
+    assert select(sensitivity, train, permutations=10, seed=1).status == SELECTED
+
+
+def test_load_inputs_checks_the_stated_population_and_scope(cores: dict[str, Path]) -> None:
+    bundle, _ = load_core_inputs(cores["tier1_2"])
+    paths = {product: bundle.path(product) for product in CORE_PRODUCTS}
+    with pytest.raises(ValueError, match="population is"):
+        load_inputs(paths, contrast_population="all_paired", strain_rollup="off")
+    with pytest.raises(ValueError, match="neither the declared primary"):
+        load_inputs(paths, contrast_population=TIER1_2, strain_rollup="full")
+    inputs = load_inputs(paths, contrast_population=TIER1_2, strain_rollup="phenotype")
+    assert inputs.strain_rollup_role == SENSITIVITY
