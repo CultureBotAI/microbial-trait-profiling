@@ -4,13 +4,17 @@ from __future__ import annotations
 
 import csv
 import json
+import sys
 from pathlib import Path
 
 import pytest
 
+from mtp import influence_extension as extension
 from mtp.influence_extension import run_extension
 from mtp.paths import REPO_ROOT, file_sha256
 from mtp.trait_guilds import TABLE1_TRAITS
+from mtp.workflow.arms.runtime import execute_arm, verify_arm
+from mtp.workflow.arms.types import ArmContext, Command
 from mtp.workflow.consumers import open_core_bundle, verify_consumer_record
 from mtp.workflow.operations import OPERATIONS, validate_core_product
 from mtp.workflow.runtime import execute_workflow
@@ -122,6 +126,14 @@ def test_verified_extension_reconciles_scope_subset_and_orientation(
     provenance_path = run_extension(manifest, output)
     provenance = json.loads(provenance_path.read_text())
     record = verify_consumer_record(output / "core_consumption.json")
+    assert {
+        "count_profiles",
+        "experiments",
+        "reported_taxa",
+        "taxa_matrix",
+        "kg_edges",
+        "kg_nodes",
+    } <= set(record.product_ids)
     assert provenance["core_run_id"] == record.run_id
     assert provenance["strain_rollup"] == scope
     assert provenance["contrast_population"] == population
@@ -141,7 +153,11 @@ def test_verified_extension_reconciles_scope_subset_and_orientation(
     )
     for name, digest in originals.items():
         assert file_sha256(bundle.path(name)) == digest
-    assert "Native baseline was not supplied" in (output / "native_summary.md").read_text()
+    assert (
+        "Native baseline was not supplied"
+        in (output / "influence_extension_summary.md").read_text()
+    )
+    assert not (output / "native_summary.md").exists()
     with pytest.raises(FileExistsError):
         run_extension(manifest, output)
     altered = bundle.path("taxa_matrix")
@@ -149,3 +165,101 @@ def test_verified_extension_reconciles_scope_subset_and_orientation(
     with pytest.raises(ValueError, match="changed"):
         run_extension(manifest, tmp_path / "must-not-write")
     assert not (tmp_path / "must-not-write").exists()
+
+
+def extension_core(root: Path) -> Path:
+    """One real fixture core for protocol and verified-Noel integration checks."""
+    inputs = source_inputs(root / "inputs")
+    core = execute_workflow(
+        REPO_ROOT / "workflows/bugsigdb_core.yaml",
+        inputs,
+        root / "core",
+        OPERATIONS,
+        parameter_overrides={"source_mode": "fixture", "strain_rollup": "off"},
+        validator=validate_core_product,
+        repository_root=REPO_ROOT,
+    )
+    return Path(core.manifest_path)
+
+
+def test_protocol_rule_tampering_is_rejected_before_output_creation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    core = extension_core(tmp_path)
+    changed = json.loads(extension.PROTOCOL.read_text())
+    assert changed["version"] == "771-extension-v1"
+    changed["top_per_trait_direction_rank_scope"] = 1
+    tampered = tmp_path / "same-version-changed-rule.json"
+    tampered.write_text(json.dumps(changed))
+    monkeypatch.setattr(extension, "PROTOCOL", tampered)
+    output = tmp_path / "must-not-write"
+    with pytest.raises(ValueError, match=r"[Pp]rotocol"):
+        run_extension(core, output)
+    assert not output.exists()
+
+
+def test_cli_includes_a_real_verified_same_core_noel_summary(tmp_path: Path) -> None:
+    """Exercise immutable arm binding with a minimal fixture producer, no verifier stub."""
+    core = extension_core(tmp_path)
+
+    def plan(context: ArmContext) -> list[Command]:
+        source = context.products["count_profiles"]
+        report = context.output / "native_summary.md"
+        return [
+            Command(
+                "native_taxon_influence",
+                (
+                    sys.executable,
+                    str(REPO_ROOT / "scripts/adhoc/issue658_arm_test_command.py"),
+                    "--input",
+                    str(source),
+                    "--output",
+                    str(report),
+                    "--payload",
+                    "\n# Synthetic native baseline\nVerified fixture binding marker.\n",
+                ),
+                (source,),
+                (report,),
+            )
+        ]
+
+    produced = execute_arm("noel", core, tmp_path / "noel", plan, figures=False)
+    noel_manifest = Path(produced.manifest_path)
+    verified = verify_arm(noel_manifest)
+    assert verified.steps
+    assert verified.steps[0].id == "native_taxon_influence"
+    assert verified.steps[0].outputs
+    assert len(verified.steps[0].outputs) == 1
+    native_path = Path(verified.steps[0].outputs[0].path)
+    assert native_path.name == "native_summary.md"
+    native_text, native_hash = native_path.read_text(), file_sha256(native_path)
+    output = tmp_path / "with-noel"
+    assert (
+        extension.main(
+            [
+                "--core-run",
+                str(core),
+                "--output-dir",
+                str(output),
+                "--noel-run",
+                str(noel_manifest),
+            ]
+        )
+        == 0
+    )
+    assert native_text in (output / "influence_extension_summary.md").read_text()
+    assert not (output / "native_summary.md").exists()
+    provenance = json.loads((output / "extension_provenance.json").read_text())
+    assert provenance["input_sha256"]["native_summary"] == native_hash
+    assert provenance["input_sha256"]["noel_manifest"] == file_sha256(noel_manifest)
+    record = verify_consumer_record(output / "core_consumption.json")
+    assert {
+        "count_profiles",
+        "experiments",
+        "reported_taxa",
+        "taxa_matrix",
+        "kg_edges",
+        "kg_nodes",
+    } <= set(record.product_ids)
+    assert file_sha256(native_path) == native_hash
+    assert verify_arm(noel_manifest) == verified

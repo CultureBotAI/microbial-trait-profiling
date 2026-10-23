@@ -7,8 +7,9 @@ explicit. None of these exploratory sensitivities changes the native arm plan.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
-from collections import defaultdict
+from collections import Counter, defaultdict
 from collections.abc import Mapping
 from datetime import UTC, datetime
 from pathlib import Path
@@ -33,8 +34,19 @@ from mtp.workflow.consumers import (
 )
 
 PROTOCOL = REPO_ROOT / "methods/table1_influence_extension_protocol.json"
-PANEL_FIELDS = ["scope", "rank", "lineage", "name", "scenario", "selection_reasons"]
+PROTOCOL_SHA256 = "366857b28d00228c52323fc6c7ed68848c037d09fa06ed15c8f453f553aebfd6"
+PANEL_FIELDS = [
+    "scope",
+    "rank",
+    "lineage",
+    "lineages",
+    "name",
+    "scenario",
+    "selection_kind",
+    "selection_reasons",
+]
 FRACTION_FIELDS = ["trait_key", "family_size", *describe({}), "q_bh_six", "q_by_six"]
+BASELINE_FIELDS = ["baseline_effect", "baseline_q_bh_six", "baseline_q_by_six"]
 IMPLEMENTATIONS = (
     "influence_extension.py",
     "contribution_inputs.py",
@@ -51,6 +63,17 @@ IMPLEMENTATIONS = (
 def implementation_hashes() -> dict[str, str]:
     """Hash the declared analysis producers before and after execution."""
     return {name: file_sha256(Path(__file__).parent / name) for name in IMPLEMENTATIONS}
+
+
+def load_protocol() -> Record:
+    """Require the reviewed rule bytes before any analysis or output publication."""
+    raw = PROTOCOL.read_bytes()
+    if hashlib.sha256(raw).hexdigest() != PROTOCOL_SHA256:
+        raise ValueError("Lineage-extension protocol hash differs from the declared rule")
+    protocol: Record = json.loads(raw)
+    if protocol["version"] != "771-extension-v1":
+        raise ValueError("Unknown lineage-extension protocol version")
+    return protocol
 
 
 def _focal_traits(base: Base) -> list[str]:
@@ -94,8 +117,16 @@ def study_loso(base: Base, keys: list[Key]) -> list[Record]:
     _focal_traits(base)
     eligible = eligible_keys(base.profiles, keys)
     studies = sorted({key[0] for key in eligible})
+    baseline = {row["trait_key"]: row for row in fraction_family(base, base.profiles, eligible)}
     return [
-        {"omitted_study": study, **row}
+        {
+            "omitted_study": study,
+            **row,
+            **{
+                f"baseline_{field}": baseline[row["trait_key"]][field]
+                for field in ("effect", "q_bh_six", "q_by_six")
+            },
+        }
         for study in studies
         for row in fraction_family(
             base, base.profiles, [key for key in eligible if key[0] != study]
@@ -122,7 +153,8 @@ def lineage_panel(
     if len(set(scope_ids)) != len(scope_ids):
         raise ValueError("Duplicate extension scope")
     for scope in protocol["scopes"]:
-        keys = eligible_keys(base.profiles, scope_keys(base, scope))
+        # Match the declared contributing_universe; effect eligibility is separate.
+        keys = scope_keys(base, scope)
         _, records = taxonomic_counts(base, graph, ledger, keys)
         reasons: defaultdict[tuple[str, str], list[str]] = defaultdict(list)
         for trait in traits:
@@ -167,12 +199,58 @@ def lineage_panel(
                     "scope": scope["id"],
                     "rank": rank,
                     "lineage": lineage,
+                    "lineages": encoded([lineage]),
                     "name": graph.names.get(lineage, base.names.get(lineage, "")),
                     "scenario": f"extension_exclude_{rank}_{lineage}",
+                    "selection_kind": "ranked",
                     "selection_reasons": encoded(sorted(why)),
                 }
             )
+        for joint in protocol["joint_exclusions"]:
+            lineages = sorted(set(joint["lineages"]))
+            selected.append(
+                {
+                    "scope": scope["id"],
+                    "rank": "family",
+                    "lineage": "+".join(lineages),
+                    "lineages": encoded(lineages),
+                    "name": " + ".join(joint["names"]),
+                    "scenario": f"extension_exclude_joint_{joint['id']}",
+                    "selection_kind": "declared_joint",
+                    "selection_reasons": encoded([joint["reason"]]),
+                }
+            )
     return candidates, selected
+
+
+def joint_removal(
+    base: Base, graph: Graph, ledger: Ledger, lineages: list[str]
+) -> tuple[dict[Key, dict[str, int]], dict[str, set[str]]]:
+    """Remove the union of source units once, including under multiple ancestry paths."""
+    excluded = set(lineages)
+    if not excluded:
+        raise ValueError("Joint removal requires at least one lineage")
+    above = set().union(*(graph.ancestors(lineage) - {lineage} for lineage in excluded))
+    removed: dict[str, Counter[str]] = {}
+    ambiguous: dict[str, set[str]] = {}
+    for target, sources in ledger.sources.items():
+        vector: Counter[str] = Counter()
+        for source in sources:
+            if excluded.intersection(graph.ancestors(source)):
+                vector.update(graph.traits[source])
+            elif source in above:
+                ambiguous.setdefault(target, set()).add(source)
+        removed[target] = vector
+    remaining = {}
+    for key, baseline in base.profiles.items():
+        subtract: Counter[str] = Counter()
+        for target in base.reported[key]:
+            subtract.update(removed[target])
+        vector_dict = {trait: value - subtract[trait] for trait, value in baseline.items()}
+        if any(value < 0 for value in vector_dict.values()):
+            raise ValueError(f"Negative remainder for {key}; joint reconstruction is inconsistent")
+        remaining[key] = vector_dict
+    return remaining, ambiguous
 
 
 def lineage_effects(
@@ -184,7 +262,12 @@ def lineage_effects(
     ambiguities: list[Record] = []
     for scenario in selected:
         keys = eligible_keys(base.profiles, scope_keys(base, scopes[scenario["scope"]]))
-        remaining, _, ambiguous = removal(base, graph, ledger, scenario["lineage"])
+        if scenario["selection_kind"] == "declared_joint":
+            remaining, ambiguous = joint_removal(
+                base, graph, ledger, json.loads(scenario["lineages"])
+            )
+        else:
+            remaining, _, ambiguous = removal(base, graph, ledger, scenario["lineage"])
         family = []
         for trait in _focal_traits(base):
             before = pair_values(base.profiles, keys, trait)
@@ -228,20 +311,26 @@ def loso_summary(baseline: list[Record], omissions: list[Record]) -> list[Record
         ]
         effects = [float(r["effect"]) for r in rows if r["effect"] != ""]
         qvalues = [float(r["q_by_six"]) for r in rows if r["q_by_six"] != ""]
+        bh_values = [float(r["q_bh_six"]) for r in rows if r["q_bh_six"] != ""]
         original_effect = original["effect"]
         result.append(
             {
                 "scope": original["scope"],
                 "trait_key": original["trait_key"],
                 "baseline_effect": original_effect,
+                "baseline_q_bh_six": original["q_bh_six"],
                 "baseline_q_by_six": original["q_by_six"],
                 "omissions": len(rows),
                 "testable_omissions": len(qvalues),
                 "minimum_effect": min(effects) if effects else "",
                 "maximum_effect": max(effects) if effects else "",
+                "minimum_q_bh_six": min(bh_values) if bh_values else "",
+                "maximum_q_bh_six": max(bh_values) if bh_values else "",
                 "minimum_q_by_six": min(qvalues) if qvalues else "",
                 "maximum_q_by_six": max(qvalues) if qvalues else "",
-                "mean_sign_reversals": sum(value * float(original_effect) < 0 for value in effects)
+                "mean_shift_sign_reversal_count": sum(
+                    value * float(original_effect) < 0 for value in effects
+                )
                 if original_effect != ""
                 else "",
                 "interpretation": "descriptive_dependent_omission_range",
@@ -267,7 +356,12 @@ def native_summary_source(core_manifest: Path, noel_manifest: Path) -> Path:
     return paths[0]
 
 
-def combined_summary(native_text: str | None, panel: list[Record], summaries: list[Record]) -> str:
+def combined_summary(
+    native_text: str | None,
+    panel: list[Record],
+    summaries: list[Record],
+    effects: list[Record] | None = None,
+) -> str:
     """Show baseline text and clearly separate the additive dependent diagnostics."""
     baseline = (
         native_text
@@ -289,14 +383,38 @@ def combined_summary(native_text: str | None, panel: list[Record], summaries: li
         )
     text += "\nSee lineage_fraction_effects.tsv for every effect, matched-support comparison "
     text += "and six-family diagnostic q-value. No exclusion is hidden by its result.\n\n"
-    text += "## Six-fraction study omissions\n\n"
-    text += "| Scope | Trait | Omissions | Mean shift range | BY-six q range |\n"
-    text += "|---|---|---:|---|---|\n"
+    text += "The shared-fraction baseline below uses the declared panel's estimator and "
+    text += "BH-six correction, recomputed on this same core and scope. BY-six is an "
+    text += "additional correction sensitivity; native all-trait composition q-values "
+    text += "refer to a different family.\n\n"
+    text += "| Scope | Exclusion | Trait | Baseline shift | After shift | "
+    text += "Matched shift change | Lost pairs | BH-six before / after | BY-six before / after |\n"
+    text += "|---|---|---|---:|---:|---:|---:|---|---|\n"
+    for row in effects or []:
+        fields = (
+            row["scope"],
+            row["scenario"],
+            row["trait_key"],
+            row["before_effect"],
+            row["after_effect"],
+            row["matched_change_effect"],
+            row["lost_pairs"],
+            f"{row['before_q_bh_six']} / {row['after_q_bh_six']}",
+            f"{row['before_q_by_six']} / {row['after_q_by_six']}",
+        )
+        text += "| " + " | ".join(str(value).replace("|", "\\|") for value in fields) + " |\n"
+    text += "\n## Six-fraction study omissions\n\n"
+    text += "| Scope | Trait | Omissions | Baseline shift | Baseline BH-six / BY-six | "
+    text += "Mean shift range | BH-six q range | BY-six q range |\n"
+    text += "|---|---|---:|---:|---|---|---|---|\n"
     for row in summaries:
         label = str(row["trait_key"]).replace("|", "\\|")
         text += (
             f"| {row['scope']} | {label} | {row['omissions']} | "
+            f"{row['baseline_effect']} | "
+            f"{row['baseline_q_bh_six']} / {row['baseline_q_by_six']} | "
             f"{row['minimum_effect']} to {row['maximum_effect']} | "
+            f"{row['minimum_q_bh_six']} to {row['maximum_q_bh_six']} | "
             f"{row['minimum_q_by_six']} to {row['maximum_q_by_six']} |\n"
         )
     text += "\nRanges summarize dependent omissions; they are not independent replications "
@@ -318,9 +436,7 @@ def run_extension(core_manifest: Path, output: Path, noel_manifest: Path | None 
     bundle = open_core_bundle(core_manifest)
     record = output / "core_consumption.json"
     preflight_consumer_outputs(bundle, record, output_directory=output)
-    protocol = json.loads(PROTOCOL.read_text(encoding="utf-8"))
-    if protocol["version"] != "771-extension-v1":
-        raise ValueError("Unknown lineage-extension protocol version")
+    protocol = load_protocol()
     inputs = {
         name: bundle.path(name)
         for name in (
@@ -343,7 +459,7 @@ def run_extension(core_manifest: Path, output: Path, noel_manifest: Path | None 
     native_text = (
         inputs["native_summary"].read_text(encoding="utf-8") if "native_summary" in inputs else None
     )
-    protocol_sha = file_sha256(PROTOCOL)
+    protocol_sha = PROTOCOL_SHA256
     producer_hashes = implementation_hashes()
     lock_sha = file_sha256(REPO_ROOT / "uv.lock")
     started_at = datetime.now(UTC).isoformat()
@@ -442,7 +558,10 @@ def run_extension(core_manifest: Path, output: Path, noel_manifest: Path | None 
             ambiguities,
         ),
         "baseline_fractions.tsv": (["scope", *FRACTION_FIELDS], baseline),
-        "fraction_study_loso.tsv.gz": (["scope", "omitted_study", *FRACTION_FIELDS], omissions),
+        "fraction_study_loso.tsv.gz": (
+            ["scope", "omitted_study", *FRACTION_FIELDS, *BASELINE_FIELDS],
+            omissions,
+        ),
         "fraction_loso_summary.tsv": (list(summaries[0]), summaries),
         "input_eligibility.tsv": (
             ["study_id", "experiment_id", "direction", "status", "orientation_status"],
@@ -472,9 +591,9 @@ def run_extension(core_manifest: Path, output: Path, noel_manifest: Path | None 
         encoding="utf-8",
     )
     outputs = [*(output / name for name in tables), readme]
-    combined = output / "native_summary.md"
+    combined = output / "influence_extension_summary.md"
     combined.write_text(
-        combined_summary(native_text, panel, summaries),
+        combined_summary(native_text, panel, summaries, effects),
         encoding="utf-8",
     )
     outputs.append(combined)
@@ -508,7 +627,11 @@ def run_extension(core_manifest: Path, output: Path, noel_manifest: Path | None 
         encoding="utf-8",
     )
     write_consumer_record(
-        bundle, record, consumer="table1-influence-extension-v1", outputs=[*outputs, manifest]
+        bundle,
+        record,
+        consumer="table1-influence-extension-v1",
+        outputs=[*outputs, manifest],
+        additional_products=("reported_taxa", "kg_edges", "kg_nodes"),
     )
     return manifest
 
