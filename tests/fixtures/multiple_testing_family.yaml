@@ -3,10 +3,12 @@ analysis_id: fixture:screen
 analysis_basis_sha256: '1111111111111111111111111111111111111111111111111111111111111111'
 source_membership_sha256: '1111111111111111111111111111111111111111111111111111111111111111'
 retained_feature_count: 17
+strain_rollup: 'off'
+feature_filter_id: sha256:1111111111111111111111111111111111111111111111111111111111111111
 expected_family_size: 2
 population: fixture_paired_human
 direction_basis: curated_group1_vs_group0
-profile_unit: rolled_up_source_taxon_count
+profile_unit: count_profiles
 inference_unit: study
 hypothesis_unit: trait
 estimand: study-level sign of increased-minus-decreased annotation fraction
@@ -19,9 +21,11 @@ sources:
 members:
   - hypothesis_id: h0
     feature_ids: [fixture:trait0]
+    coordinates: {}
     test: binomial_sign
     tail: two_sided
   - hypothesis_id: h1
     feature_ids: [fixture:trait1]
+    coordinates: {}
     test: binomial_sign
     tail: two_sided

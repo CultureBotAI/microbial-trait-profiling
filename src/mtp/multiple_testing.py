@@ -8,14 +8,13 @@ it cannot establish study independence or repair post-selection inference.
 from __future__ import annotations
 
 import hashlib
-import json
 import math
 import re
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
 
+import numpy as np
 import scipy
 import yaml
 from scipy.stats import false_discovery_control
@@ -24,31 +23,20 @@ from mtp.datamodel import multiple_testing_pydantic as models
 from mtp.datamodel.multiple_testing_pydantic import (
     AdjustedHypothesis,
     CorrectionRun,
+    HypothesisDefinition,
     HypothesisFamily,
     MultipleTestingPolicy,
     RawHypothesis,
 )
+from mtp.workflow.runtime import content_hash
 
-ENGINE_VERSION = "1.0.0"
+# Public compatibility name for adapters; use the shared canonical hashing implementation.
+canonical_sha256 = content_hash
+
+ENGINE_VERSION = "1.1.0"
 POLICY_PATH = Path(__file__).resolve().parents[2] / "methods" / "multiple_testing_policy_v1.yaml"
-_SUPPORTED_POLICY: dict[str, Any] = {
-    "policy_id": "mtp:additive-full-family-v1",
-    "version": "1.0.0",
-    "role": "additive_native_calls_unchanged",
-    "primary_method": "by",
-    "comparison_method": "bh",
-    "thresholds": [0.05, 0.001],
-    "missing_test_policy": "reserve_internal_p_one_export_null",
-    "family_policy": "exact_declared_inventory_no_result_filter",
-}
-
-
-def canonical_sha256(value: Any) -> str:
-    """Hash JSON-compatible scientific records without depending on mapping order."""
-    data = json.dumps(
-        value, sort_keys=True, ensure_ascii=False, allow_nan=False, separators=(",", ":")
-    )
-    return hashlib.sha256(data.encode("utf-8")).hexdigest()
+# Pin the authoritative versioned artifact, without duplicating its policy values.
+_POLICY_FILE_SHA256 = "d1d504783871b1847fb91bc2cb96cea707400708180e7b75ca98ceba1b92b1ba"
 
 
 def load_policy(path: Path = POLICY_PATH) -> MultipleTestingPolicy:
@@ -59,7 +47,11 @@ def load_policy(path: Path = POLICY_PATH) -> MultipleTestingPolicy:
 
 
 def _check_policy(policy: MultipleTestingPolicy) -> None:
-    if policy.model_dump(mode="json") != _SUPPORTED_POLICY:
+    policy_bytes = POLICY_PATH.read_bytes()
+    if hashlib.sha256(policy_bytes).hexdigest() != _POLICY_FILE_SHA256:
+        raise ValueError("unsupported or changed multiple-testing policy file")
+    supported = MultipleTestingPolicy.model_validate(yaml.safe_load(policy_bytes))
+    if policy.model_dump(mode="json") != supported.model_dump(mode="json"):
         raise ValueError("unsupported or changed multiple-testing policy")
 
 
@@ -77,6 +69,13 @@ def _unique(values: Sequence[str], label: str) -> None:
         raise ValueError(f"blank {label}")
     if len(values) != len(set(values)):
         raise ValueError(f"duplicate {label}")
+
+
+def scientific_hypothesis_sha256(member: HypothesisDefinition) -> str:
+    """Identity of a scientific test; row aliases and eligibility hashes cannot split it."""
+    return canonical_sha256(
+        member.model_dump(mode="json", exclude={"hypothesis_id", "eligibility_sha256"})
+    )
 
 
 def _family(family: HypothesisFamily) -> HypothesisFamily:
@@ -101,6 +100,10 @@ def _family(family: HypothesisFamily) -> HypothesisFamily:
         raise ValueError("family must identify its upstream sources")
     _unique([s.identity for s in declared.sources], "source identity")
     _unique([m.hypothesis_id for m in declared.members], "declared hypothesis identity")
+    if declared.strain_rollup not in {"off", "phenotype"}:
+        raise ValueError("unsupported strain rollup scope")
+    if re.fullmatch(r"sha256:[0-9a-f]{64}", declared.feature_filter_id) is None:
+        raise ValueError("feature filter identity must be a complete SHA256 identifier")
     digests = [declared.analysis_basis_sha256, declared.source_membership_sha256]
     digests.extend(source.sha256 for source in declared.sources)
     digests.extend(
@@ -115,6 +118,18 @@ def _family(family: HypothesisFamily) -> HypothesisFamily:
             raise ValueError("hypothesis feature identities must be nonempty")
         if not member.test.strip() or not member.tail.strip():
             raise ValueError("hypothesis test and tail must be nonempty")
+        coordinates = member.coordinates
+        for key in ("profile_id", "stratum_id", "split_id"):
+            value = getattr(coordinates, key)
+            if value is not None and not value.strip():
+                raise ValueError(f"blank hypothesis coordinate: {key}")
+        conditions = coordinates.condition_ids or []
+        _unique(conditions, "condition coordinate")
+        coordinates.condition_ids = sorted(conditions)
+    _unique(
+        [scientific_hypothesis_sha256(member) for member in declared.members],
+        "scientific hypothesis",
+    )
     declared.members.sort(key=lambda m: m.hypothesis_id)
     declared.sources.sort(key=lambda s: s.identity)
     return declared
@@ -133,6 +148,7 @@ def _raw(family: HypothesisFamily, hypotheses: Sequence[RawHypothesis]) -> list[
                 row.p_value is None
                 or not math.isfinite(row.p_value)
                 or not 0 <= row.p_value <= 1
+                or math.copysign(1, row.p_value) < 0
                 or row.reason is not None
             ):
                 raise ValueError(
@@ -143,21 +159,22 @@ def _raw(family: HypothesisFamily, hypotheses: Sequence[RawHypothesis]) -> list[
     return sorted(rows, key=lambda row: row.hypothesis_id)
 
 
-def _results(rows: list[RawHypothesis]) -> list[AdjustedHypothesis]:
+def _results(rows: list[RawHypothesis], policy: MultipleTestingPolicy) -> list[AdjustedHypothesis]:
     if not rows:
         return []
     p_values = [row.p_value if row.p_value is not None else 1.0 for row in rows]
-    by = false_discovery_control(p_values, method="by")
-    bh = false_discovery_control(p_values, method="bh")
+    by = false_discovery_control(p_values, method=policy.primary_method)
+    bh = false_discovery_control(p_values, method=policy.comparison_method)
+    nominal, stringent = policy.thresholds
     results = []
     for row, q_by, q_bh in zip(rows, by, bh, strict=True):
         result = AdjustedHypothesis(**row.model_dump())
         if row.status == "tested":
             result.q_by, result.q_bh = float(q_by), float(q_bh)
-            result.reject_by_005 = q_by <= 0.05
-            result.reject_by_0001 = q_by <= 0.001
-            result.reject_bh_005 = q_bh <= 0.05
-            result.reject_bh_0001 = q_bh <= 0.001
+            result.reject_by_005 = q_by <= nominal
+            result.reject_by_0001 = q_by <= stringent
+            result.reject_bh_005 = q_bh <= nominal
+            result.reject_bh_0001 = q_bh <= stringent
         results.append(result)
     return results
 
@@ -179,7 +196,7 @@ def correct_family(
     _check_policy(active_policy)
     declared = _family(family)
     rows = _raw(declared, hypotheses)
-    results = _results(rows)
+    results = _results(rows, active_policy)
     timestamp = recorded_at if recorded_at is not None else datetime.now(UTC)
     offset = timestamp.utcoffset()
     if offset is None or offset.total_seconds() != 0:
@@ -188,6 +205,7 @@ def correct_family(
         "recorded_at": timestamp.astimezone(UTC).isoformat(),
         "engine_version": ENGINE_VERSION,
         "scipy_version": scipy.__version__,
+        "numpy_version": np.__version__,
         "code_sha256": _code_sha256(),
         "policy_sha256": canonical_sha256(active_policy.model_dump(mode="json")),
         "family_sha256": canonical_sha256(declared.model_dump(mode="json")),
@@ -213,7 +231,7 @@ def verify_correction(
 ) -> None:
     """Replay against externally trusted inputs; self-reported hashes do not suffice.
 
-    Verification requires the same recorded engine/model and SciPy versions.
+    Verification requires the same recorded engine/model, NumPy and SciPy versions.
     Preserve that execution environment for archival verification after upgrades.
     No adjusted p-value, rejection, source identity or scientific metadata is
     trusted merely because its envelope is internally consistent.
@@ -225,6 +243,11 @@ def verify_correction(
     actual.hypotheses = _raw(actual.family, actual.hypotheses)
     _unique([r.hypothesis_id for r in actual.results], "adjusted hypothesis identity")
     actual.results.sort(key=lambda row: row.hypothesis_id)
+    recorded_output = canonical_sha256([row.model_dump(mode="json") for row in actual.results])
+    if recorded_output != actual.output_sha256:
+        raise ValueError(
+            "correction verification failed: output_sha256 differs from recorded results"
+        )
     for field in CorrectionRun.model_fields:
         if getattr(actual, field) != getattr(expected, field):
             raise ValueError(f"correction verification failed: {field} differs from replay")

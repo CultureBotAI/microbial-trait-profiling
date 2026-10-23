@@ -4,7 +4,7 @@ title: Additive full-family multiple-testing contracts
 description: >-
   Scientific family inventories and replayable corrections. These records do not
   change native arm calls or certify the validity of their input p-values.
-version: 1.0.0
+version: 1.1.0
 license: MIT
 prefixes:
   linkml: https://w3id.org/linkml/
@@ -65,6 +65,29 @@ classes:
         description: Lowercase SHA256 of the referenced source bytes.
         required: true
         pattern: ^[0-9a-f]{64}$
+  HypothesisCoordinates:
+    title: Hypothesis coordinates
+    description: >-
+      Explicit non-feature coordinates. Empty coordinates identify a pooled test.
+      Coordinates identify scientific tests independently of arbitrary row IDs
+      and eligibility ledger hashes.
+    attributes:
+      profile_id:
+        title: Profile id
+        description: Stable source profile identity, for example study, experiment and direction.
+      stratum_id:
+        title: Stratum id
+        description: Source stratum identity or label, for example an anatomical site.
+      condition_ids:
+        title: Condition ids
+        description: >-
+          Distinct source condition identifiers or exact labels, canonicalized in
+          sorted order. These need not be ontology-mapped identifiers. Adapters
+          must verify the expected cardinality, for example three for a triple.
+        multivalued: true
+      split_id:
+        title: Split id
+        description: Declared training or held-out split identity, where applicable.
   HypothesisDefinition:
     title: Hypothesis definition
     description: A declared member of a scientific family, before its observed p-value is read.
@@ -77,6 +100,12 @@ classes:
         title: Feature ids
         description: Ordered qualified feature identities; ratios retain numerator then denominator.
         multivalued: true
+        required: true
+      coordinates:
+        title: Coordinates
+        description: Explicit profile, stratum, condition-set and split coordinates; empty for pooled tests.
+        range: HypothesisCoordinates
+        inlined: true
         required: true
       test:
         title: Test
@@ -121,6 +150,16 @@ classes:
         range: integer
         minimum_value: 0
         required: true
+      strain_rollup:
+        title: Strain rollup
+        description: Verified annotation scope; full rollup is not supported by this contract.
+        pattern: ^(off|phenotype)$
+        required: true
+      feature_filter_id:
+        title: Feature filter id
+        description: Ordered retained-feature identity copied from the verified AnalysisBasis.
+        pattern: ^sha256:[0-9a-f]{64}$
+        required: true
       expected_family_size:
         title: Expected family size
         description: Complete hypothesis count including explicitly untestable members.
@@ -137,7 +176,7 @@ classes:
         required: true
       profile_unit:
         title: Profile unit
-        description: Source profile counting unit, distinguishing annotation counts from distinct taxa.
+        description: Source profile representation copied verbatim from AnalysisBasis, such as count_profiles or ora_profiles.
         required: true
       inference_unit:
         title: Inference unit
@@ -276,6 +315,10 @@ classes:
       scipy_version:
         title: Scipy version
         description: Version of the established numerical implementation used.
+        required: true
+      numpy_version:
+        title: Numpy version
+        description: Version of the array implementation used by SciPy.
         required: true
       code_sha256:
         title: Code sha256

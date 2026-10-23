@@ -30,7 +30,7 @@ from pydantic import (
 
 
 metamodel_version = "1.7.0"
-version = "1.0.0"
+version = "1.1.0"
 
 
 class ConfiguredBaseModel(BaseModel):
@@ -124,6 +124,19 @@ class SourceArtifact(ConfiguredBaseModel):
         return v
 
 
+class HypothesisCoordinates(ConfiguredBaseModel):
+    """
+    Explicit non-feature coordinates. Empty coordinates identify a pooled test. Coordinates identify scientific tests independently of arbitrary row IDs and eligibility ledger hashes.
+    """
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/mtp/multiple-testing',
+         'title': 'Hypothesis coordinates'})
+
+    profile_id: Optional[str] = Field(default=None, title="Profile id", description="""Stable source profile identity, for example study, experiment and direction.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisCoordinates']} })
+    stratum_id: Optional[str] = Field(default=None, title="Stratum id", description="""Source stratum identity or label, for example an anatomical site.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisCoordinates']} })
+    condition_ids: Optional[list[str]] = Field(default=None, title="Condition ids", description="""Distinct source condition identifiers or exact labels, canonicalized in sorted order. These need not be ontology-mapped identifiers. Adapters must verify the expected cardinality, for example three for a triple.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisCoordinates']} })
+    split_id: Optional[str] = Field(default=None, title="Split id", description="""Declared training or held-out split identity, where applicable.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisCoordinates']} })
+
+
 class HypothesisDefinition(ConfiguredBaseModel):
     """
     A declared member of a scientific family, before its observed p-value is read.
@@ -133,6 +146,7 @@ class HypothesisDefinition(ConfiguredBaseModel):
 
     hypothesis_id: str = Field(default=..., title="Hypothesis id", description="""Unique stable hypothesis identifier within a family.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisDefinition', 'RawHypothesis']} })
     feature_ids: list[str] = Field(default=..., title="Feature ids", description="""Ordered qualified feature identities; ratios retain numerator then denominator.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisDefinition']} })
+    coordinates: HypothesisCoordinates = Field(default=..., title="Coordinates", description="""Explicit profile, stratum, condition-set and split coordinates; empty for pooled tests.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisDefinition']} })
     test: str = Field(default=..., title="Test", description="""Statistical test that produced this hypothesis p-value.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisDefinition']} })
     tail: str = Field(default=..., title="Tail", description="""Test alternative; independent of a curated abundance direction.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisDefinition']} })
     eligibility_sha256: Optional[str] = Field(default=None, title="Eligibility sha256", description="""Optional identity of this hypothesis-specific eligibility ledger.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisDefinition']} })
@@ -163,10 +177,12 @@ class HypothesisFamily(ConfiguredBaseModel):
     analysis_basis_sha256: str = Field(default=..., title="Analysis basis sha256", description="""Canonical identity of the verified upstream AnalysisBasis.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamily']} })
     source_membership_sha256: str = Field(default=..., title="Source membership sha256", description="""Exact cohort or eligibility membership identity supplied by the verified adapter.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamily']} })
     retained_feature_count: int = Field(default=..., title="Retained feature count", description="""Feature count from AnalysisBasis; distinct from the number of hypotheses.""", ge=0, json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamily']} })
+    strain_rollup: str = Field(default=..., title="Strain rollup", description="""Verified annotation scope; full rollup is not supported by this contract.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamily']} })
+    feature_filter_id: str = Field(default=..., title="Feature filter id", description="""Ordered retained-feature identity copied from the verified AnalysisBasis.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamily']} })
     expected_family_size: int = Field(default=..., title="Expected family size", description="""Complete hypothesis count including explicitly untestable members.""", ge=0, json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamily']} })
     population: str = Field(default=..., title="Population", description="""Verified contrast population and any anatomical or condition stratum.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamily']} })
     direction_basis: str = Field(default=..., title="Direction basis", description="""Curated group direction or verified disease-control orientation.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamily']} })
-    profile_unit: str = Field(default=..., title="Profile unit", description="""Source profile counting unit, distinguishing annotation counts from distinct taxa.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamily']} })
+    profile_unit: str = Field(default=..., title="Profile unit", description="""Source profile representation copied verbatim from AnalysisBasis, such as count_profiles or ora_profiles.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamily']} })
     inference_unit: str = Field(default=..., title="Inference unit", description="""Independent unit assumed by the source test, for example study or taxon.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamily']} })
     hypothesis_unit: str = Field(default=..., title="Hypothesis unit", description="""Family coordinate, for example trait, ordered ratio, or profile by trait by tail.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamily']} })
     estimand: str = Field(default=..., title="Estimand", description="""Scientific quantity tested, preserving annotation versus physiological measurement.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamily']} })
@@ -198,6 +214,32 @@ class HypothesisFamily(ConfiguredBaseModel):
                     raise ValueError(err_msg)
         elif isinstance(v, str) and not pattern.match(v):
             err_msg = f"Invalid source_membership_sha256 format: {v}"
+            raise ValueError(err_msg)
+        return v
+
+    @field_validator('strain_rollup')
+    def pattern_strain_rollup(cls, v):
+        pattern=re.compile(r"^(off|phenotype)$")
+        if isinstance(v, list):
+            for element in v:
+                if isinstance(element, str) and not pattern.match(element):
+                    err_msg = f"Invalid strain_rollup format: {element}"
+                    raise ValueError(err_msg)
+        elif isinstance(v, str) and not pattern.match(v):
+            err_msg = f"Invalid strain_rollup format: {v}"
+            raise ValueError(err_msg)
+        return v
+
+    @field_validator('feature_filter_id')
+    def pattern_feature_filter_id(cls, v):
+        pattern=re.compile(r"^sha256:[0-9a-f]{64}$")
+        if isinstance(v, list):
+            for element in v:
+                if isinstance(element, str) and not pattern.match(element):
+                    err_msg = f"Invalid feature_filter_id format: {element}"
+                    raise ValueError(err_msg)
+        elif isinstance(v, str) and not pattern.match(v):
+            err_msg = f"Invalid feature_filter_id format: {v}"
             raise ValueError(err_msg)
         return v
 
@@ -275,6 +317,7 @@ class CorrectionRun(ConfiguredBaseModel):
     recorded_at: datetime  = Field(default=..., title="Recorded at", description="""UTC execution timestamp, timezone required by the runtime verifier.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CorrectionRun']} })
     engine_version: str = Field(default=..., title="Engine version", description="""Version of the correction engine contract.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CorrectionRun']} })
     scipy_version: str = Field(default=..., title="Scipy version", description="""Version of the established numerical implementation used.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CorrectionRun']} })
+    numpy_version: str = Field(default=..., title="Numpy version", description="""Version of the array implementation used by SciPy.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CorrectionRun']} })
     code_sha256: str = Field(default=..., title="Code sha256", description="""Digest of engine and generated model source bytes.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CorrectionRun']} })
     policy_sha256: str = Field(default=..., title="Policy sha256", description="""Canonical executed policy digest.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CorrectionRun']} })
     family_sha256: str = Field(default=..., title="Family sha256", description="""Canonical declared inventory and scientific metadata digest.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CorrectionRun']} })
@@ -365,6 +408,7 @@ class CorrectionRun(ConfiguredBaseModel):
 # see https://pydantic-docs.helpmanual.io/usage/models/#rebuilding-a-model
 MultipleTestingPolicy.model_rebuild()
 SourceArtifact.model_rebuild()
+HypothesisCoordinates.model_rebuild()
 HypothesisDefinition.model_rebuild()
 HypothesisFamily.model_rebuild()
 RawHypothesis.model_rebuild()
