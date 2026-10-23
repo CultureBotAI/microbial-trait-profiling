@@ -25,8 +25,9 @@ given trait is the same colour in both arms' figures.
 
 ## Input corpus
 
-Inputs and corpus filters are the same code path as the guild figure and are not
-re-derived here. BugSigDB differential-abundance signatures were ingested from
+Inputs, corpus filters and population are the same code path as the guild figure
+and are not re-derived here; the population rule ends this section.
+BugSigDB differential-abundance signatures were ingested from
 the full_dump.csv of the **pinned BugSigDBExports v1.3.1 release** (Zenodo
 10.5281/zenodo.19740674; the dump's internal timestamp, 2026-04-24_00:41_UTC, is
 stamped on every output row) into per-study YAML records, flattened to
@@ -50,6 +51,24 @@ rows, joined from BugSigDB `2026-04-24_00:41_UTC` and a KG-Microbe build whose
 nodes are md5 `dd76b4656f9341db25a7c4afa96cd58e` and which records no release
 tag. Naming the dump does not identify the matrix, so the run writes this
 record to `corpus_identity.json` beside its outputs (#222).
+
+Every figure here then runs on the shared comparison basis of
+[`three_arm_statistics.md`](three_arm_statistics.md), as the guild figure does
+(#783): an experiment pair whose retained-annotation total is zero on a side is
+left out, both directions together. A profile with no retained annotation has
+an undefined trait share, not a share of 0. Scored as 0, it lowered a cell's
+mean, added a study to the cell's count, and could mark the cell as sampled
+without signal. The paired directional shift has left these pairs out since
+#228. The maps did not until #811: they now build their matrix with the guild
+figure's `build_figure_matrix`, which drops the pairs whatever its caller passes.
+Because the top-N cuts rank conditions and body sites by profile counts, the
+exclusion can also change which rows and site blocks are drawn. The run prints
+the number of pairs excluded, writes it as `excluded_experiment_pairs` on every
+row of `table1_traits_direction_shift.tsv`, and states it in the subtitle of the
+combined figure and of each cut. A cut names a requested condition that only
+such pairs carried. It does not report that condition as absent from the export
+or as cut by width. The map counts quoted below were measured on every paired
+profile, before #811, and the next regeneration replaces them.
 
 
 ## Resolving the six traits to columns
@@ -239,16 +258,17 @@ two-sided exact binomial test against a half-and-half null with an exact
 binomial 95 per cent interval, and the six p-values are Benjamini-Hochberg
 corrected together as one family.
 
-One boundary case is scored rather than dropped: a profile whose taxa carry none
-of the retained traits enters with fraction 0 instead of as missing. 35
-experiments have such an empty decreased side against 20 with an empty increased
-side, a small net push toward "up". A sensitivity run dropping every experiment
-with an empty side (2,202 experiments, 922 studies) changes no conclusion — the
-largest movement is facultatively aerobic's share, 0.580 to 0.580.
+One boundary case is dropped rather than scored: a profile with no retained
+annotation has no defined fraction, so its whole experiment pair is left out
+(#228), as it is from the maps. 35 experiments have such an empty decreased side
+against 20 with an empty increased side; scored as 0 they would be a small net
+push toward "up". Dropping them leaves 2,202 experiments and 922 studies.
+Scoring them as 0 instead, as this test did before #228, changes no conclusion —
+the largest movement is facultatively aerobic's share, 0.580 to 0.580.
 
 This figure reads the profile table directly rather than the heatmap matrix, so
-it is unaffected by the axis cuts above: every study in the corpus contributes,
-not only those on a drawn row.
+it is unaffected by the axis cuts above: every study on the shared basis
+contributes, not only those on a drawn row.
 
 Over 932 studies, five of the six traits sit on the increased side and one on
 the decreased side. Facultatively aerobic shifts up in 521 of 898 scored studies
@@ -319,10 +339,11 @@ paragraph should name it and the requirement closes.
 All statistics use scipy (binomtest, false_discovery_control, spearmanr) rather
 than hand-rolled implementations. The six figures and their six backing tables
 are produced by `src/bsdbng/table1_trait_maps.py`, driven deterministically by
-`just table1-trait-maps`, which shares its matrix construction, masking, row
-clustering, and table writing with `src/bsdbng/guild_maps.py` rather than
-duplicating them. The BugSigDB export timestamp is read from the dump's leading
-comment line and recorded in every output table. PNG export runs through kaleido
+`just table1-trait-maps`, which shares its zero-total pair exclusion, matrix
+construction, masking, row clustering, and table writing with
+`src/bsdbng/guild_maps.py` rather than duplicating them. The BugSigDB export
+timestamp is read from the dump's leading comment line and recorded in every
+output table. PNG export runs through kaleido
 1.x, which drives a headless Chrome. For a reproducible figure run, run
 `just get-chrome` once first: it downloads (~170 MB) a version-pinned Chrome for
 Testing build that kaleido then prefers over any system Chrome, which would
