@@ -9,6 +9,10 @@ table with the expected label. It does not check that a grouping is biologically
 right: placing microaerophilic and facultatively aerobic in the aerobe guild is an
 a priori decision recorded in the guild methods text, not something a label can
 confirm.
+
+The strain rollup rule names identifiers too (#788): the handling and clinical classes
+the phenotype scope excludes, and every negated METPO relation. Their labels are
+checked the same way, and a negated relation the rule does not list fails the check.
 """
 
 from __future__ import annotations
@@ -23,6 +27,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from mtp.paths import KG_MICROBE_DIR
+from mtp.taxa_trait_matrix import NEGATED_PREDICATES, PHENOTYPE_EXCLUDED_TRAITS
 from mtp.trait_guilds import GRAM_GUILDS, OXYGEN_GUILDS, TABLE1_TRAITS
 
 DEFAULT_NODES_PATH = KG_MICROBE_DIR / "merged-kg_nodes.tsv"
@@ -30,7 +35,8 @@ DEFAULT_PROVENANCE_PATH = KG_MICROBE_DIR / "provenance.json"
 #: Read in blocks so a 200 MB node table is not held in memory to be hashed.
 _HASH_BLOCK_BYTES = 1 << 20
 
-#: The label each grouped identifier carries in the pinned node table.
+#: The label each grouped identifier, and each one the strain rollup rule names (#788),
+#: carries in the pinned node table.
 EXPECTED_LABELS: dict[str, str] = {
     "METPO:1000602": "aerobic",
     "METPO:1000604": "microaerophilic",
@@ -44,7 +50,11 @@ EXPECTED_LABELS: dict[str, str] = {
     "METPO:1000623": "moderately halophilic",
     "GO:0030245": "cellulose catabolic process",
     "pathways:arsenate_reduction": "arsenate_reduction",
+    **PHENOTYPE_EXCLUDED_TRAITS,
+    **NEGATED_PREDICATES,
 }
+#: How the node table labels a relation that asserts an absence.
+NEGATION_PREFIXES = ("does not ", "is not ")
 
 
 def grouped_identifiers() -> set[str]:
@@ -139,6 +149,18 @@ def check_term_labels(nodes_path: Path, expected: Mapping[str, str]) -> list[Ter
     return [TermCheck(term, label, found.get(term)) for term, label in sorted(wanted.items())]
 
 
+def unlisted_negations(nodes_path: Path) -> list[str]:
+    """METPO relations the node table labels as an absence that the rule does not list."""
+    with nodes_path.open(encoding="utf-8", newline="") as handle:
+        return sorted(
+            row["id"]
+            for row in csv.DictReader(handle, delimiter="\t")
+            if row["id"].startswith("METPO:")
+            and row["name"].startswith(NEGATION_PREFIXES)
+            and row["id"] not in NEGATED_PREDICATES
+        )
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--nodes", type=Path, default=DEFAULT_NODES_PATH)
@@ -180,6 +202,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(
             f"{len(failed)} of {len(checks)} identifiers do not match {args.nodes}", file=sys.stderr
         )
+        return 1
+    unlisted = unlisted_negations(args.nodes)
+    if unlisted:
+        print(f"negated relations the strain rollup rule does not list: {', '.join(unlisted)}")
         return 1
     print(f"all {len(checks)} identifiers match {args.nodes}")
     return 0

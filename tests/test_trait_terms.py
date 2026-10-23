@@ -3,6 +3,9 @@
 import json
 from pathlib import Path
 
+import pytest
+
+from mtp.taxa_trait_matrix import NEGATED_PREDICATES, PHENOTYPE_EXCLUDED_TRAITS
 from mtp.trait_terms import (
     EXPECTED_LABELS,
     check_term_labels,
@@ -103,3 +106,20 @@ def test_the_pinned_md5_is_read_from_the_sidecar_by_filename(tmp_path: Path) -> 
 
     assert identity.declared_md5 is None
     assert identity.actual_md5 == file_md5(nodes)
+
+
+def test_the_strain_rollup_rule_identifiers_are_label_checked() -> None:
+    assert set(PHENOTYPE_EXCLUDED_TRAITS) | set(NEGATED_PREDICATES) <= set(EXPECTED_LABELS)
+
+
+def test_a_negated_relation_missing_from_the_rule_fails(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A KG that adds a "does not" relation must not slip past the full scope (#788)."""
+    nodes = _nodes(
+        tmp_path / "nodes.tsv", [*EXPECTED_LABELS.items(), ("METPO:2999999", "does not swim")]
+    )
+    provenance = _provenance(tmp_path / "provenance.json", nodes)
+
+    assert main(["--nodes", str(nodes), "--provenance", str(provenance)]) == 1
+    assert "METPO:2999999" in capsys.readouterr().out
