@@ -38,13 +38,16 @@ from mtp.datamodel.core_products_pydantic import (
 )
 from mtp.human_host_corpus import CORPUS_SEQUENCING_TYPES
 from mtp.study_trait_profiles import ProfileKey, direction_to_inc_dec, read_taxa_trait_matrix
+from mtp.taxa_trait_matrix import StrainRollup
 from mtp.workflow.coverage import (
     FEATURE_CATALOG_COLUMNS,
     FEATURE_METADATA_COLUMNS,
-    UNRESOLVED_EVIDENCE,
+    STRAIN_ATTRIBUTED_EVIDENCE,
+    annotation_evidence,
     build_profile_coverage,
     feature_class,
     feature_filter_id,
+    product_evidence,
 )
 from mtp.workflow.matrix_contracts import validate_feature_node_metadata, validate_matrix_sources
 
@@ -205,7 +208,9 @@ def _table_contract(path: Path, kind: str, context: Mapping[str, object]) -> dic
     }
 
 
-def _feature_contract(path: Path, kind: str, context: Mapping[str, object]) -> dict[str, object]:
+def _feature_contract(
+    path: Path, kind: str, context: Mapping[str, object], strain_rollup: StrainRollup
+) -> dict[str, object]:
     required = FEATURE_CATALOG_COLUMNS if kind == "feature_catalog" else FEATURE_METADATA_COLUMNS
     _, rows = read_table(path, required=required, keys=("column_id",))
     for row in rows:
@@ -220,9 +225,10 @@ def _feature_contract(path: Path, kind: str, context: Mapping[str, object]) -> d
             FeatureDefinition.model_validate(row)
             if row["feature_class"] != feature_class(feature):
                 raise ValueError(f"Incorrect MediaDive classification for {feature!r}")
-            if row["annotation_evidence"] != UNRESOLVED_EVIDENCE:
+            if row["annotation_evidence"] != annotation_evidence(feature, strain_rollup):
                 raise ValueError(
-                    "Aggregate feature catalog cannot assert resolved source-edge evidence"
+                    "Aggregate feature catalog evidence must be the unresolved origins the "
+                    f"strain rollup scope {strain_rollup!r} admits for {feature!r}"
                 )
     features = tuple(row["column_id"] for row in rows)
     matrix = _path(context, "taxa_matrix", "taxon_trait_matrix")
@@ -246,13 +252,20 @@ def _feature_contract(path: Path, kind: str, context: Mapping[str, object]) -> d
         "culture_medium_features": sum(
             feature_class(feature) == "culture_medium" for feature in features
         ),
-        "annotation_evidence": UNRESOLVED_EVIDENCE,
+        "annotation_evidence": product_evidence(features, strain_rollup),
+        "strain_attributed_features": sum(
+            annotation_evidence(feature, strain_rollup) == STRAIN_ATTRIBUTED_EVIDENCE
+            for feature in features
+        ),
+        "strain_rollup": strain_rollup,
         "kg_node_metadata_checked": nodes is not None,
         "source_metadata_checked": kind == "feature_catalog" and metadata is not None,
     }
 
 
-def _matrix_contract(path: Path, context: Mapping[str, object]) -> dict[str, object]:
+def _matrix_contract(
+    path: Path, context: Mapping[str, object], strain_rollup: StrainRollup
+) -> dict[str, object]:
     reader = taxa_trait_count_reader(path)
     for feature in reader.count_columns:
         _feature_id(feature)
@@ -286,7 +299,12 @@ def _matrix_contract(path: Path, context: Mapping[str, object]) -> dict[str, obj
         if reported is None or nodes is None:
             raise ValueError("KG matrix reconciliation requires reported taxa and KG nodes")
         source_facts = validate_matrix_sources(
-            path, reported, edges, nodes, _path(context, "feature_metadata")
+            path,
+            reported,
+            edges,
+            nodes,
+            _path(context, "feature_metadata"),
+            strain_rollup=strain_rollup,
         )
     return {
         "rows": reader.summary.rows,
@@ -294,7 +312,8 @@ def _matrix_contract(path: Path, context: Mapping[str, object]) -> dict[str, obj
         "all_zero_rows": zero_rows,
         "feature_filter_id": feature_filter_id(reader.count_columns),
         "unit": "distinct_annotated_source_taxa_at_or_below_reported_taxon",
-        "annotation_evidence": UNRESOLVED_EVIDENCE,
+        "annotation_evidence": product_evidence(reader.count_columns, strain_rollup),
+        "strain_rollup": strain_rollup,
         **source_facts,
     }
 
@@ -531,6 +550,7 @@ def validate_product(
     *,
     context: Mapping[str, object] | None = None,
     cohort: str | None = None,
+    strain_rollup: StrainRollup = "off",
 ) -> dict[str, object]:
     """Validate a scientific product, raising ValueError before publication on failure.
 
@@ -540,6 +560,8 @@ def validate_product(
     was available. ``cohort='all'`` means no host filter; other values match the
     experiments' host_species field exactly. Either way the cohort keeps only
     experiments whose sequencing_type is one of ``CORPUS_SEQUENCING_TYPES`` (#742).
+    ``strain_rollup`` is the scope the producing run declared: the matrix and its feature
+    catalog are checked against the BacDive strain records that scope admits (#788).
     """
     kind = _ALIASES.get(kind, kind)
     related = context or {}
@@ -550,9 +572,9 @@ def validate_product(
     if kind in _TABLE_KEYS:
         facts = _table_contract(path, kind, related)
     elif kind in {"feature_metadata", "feature_catalog"}:
-        facts = _feature_contract(path, kind, related)
+        facts = _feature_contract(path, kind, related, strain_rollup)
     elif kind == "taxa_matrix":
-        facts = _matrix_contract(path, related)
+        facts = _matrix_contract(path, related, strain_rollup)
     elif kind in {"count_profiles", "ora_profiles"}:
         effective_cohort = cohort or ("Homo sapiens" if kind == "ora_profiles" else "all")
         facts = _profile_contract(path, kind, related, effective_cohort)

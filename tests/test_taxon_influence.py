@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 
 from mtp.contribution_inputs import Base, Graph, count, load_graph, rows
+from mtp.taxa_trait_matrix import StrainRollup
 from mtp.taxon_contributions import export_ledger, reconcile
 from mtp.taxon_influence import (
     adjust,
@@ -239,6 +240,83 @@ def test_pinned_header_and_agent_continuations_preserve_edge_identity(tmp_path: 
     assert graph.assertions[(SPECIES1, A)][1].source_row == 4
     assert graph.header_repaired
     assert graph.continued_records == 1
+
+
+def test_strain_records_count_at_their_node_under_the_declared_scope(tmp_path: Path) -> None:
+    """The ledger reads BacDive strain records by the matrix builder's rule (#788)."""
+    edges, nodes = tmp_path / "edges.tsv", tmp_path / "nodes.tsv"
+    edges.write_text(
+        "id\tsubject\tpredicate\tobject\tprimary_knowledge_source\n"
+        "s1\tkgmicrobe.strain:1\tbiolink:subclass_of\tNCBITaxon:1\tinfores:bacdive\n"
+        "s2\tkgmicrobe.strain:1\tbiolink:has_phenotype\tMETPO:1000608\tinfores:bacdive\n"
+        "s3\tkgmicrobe.strain:1\tbiolink:has_phenotype\tMETPO:1004004\tinfores:bacdive\n",
+        encoding="utf-8",
+    )
+    nodes.write_text("id\tname\nNCBITaxon:1\tSpecies one\n", encoding="utf-8")
+    columns = {A, "METPO:1004004"}
+
+    off = load_graph(edges, nodes, columns, {A}, strain_rollup="off")
+    phenotype = load_graph(edges, nodes, columns, {A}, strain_rollup="phenotype")
+    full = load_graph(edges, nodes, columns, {A}, strain_rollup="full")
+    # The ledger reconciles the legacy matrix, so it shares the builder's default (#788)
+    assert load_graph(edges, nodes, columns, {A}).traits == phenotype.traits
+
+    assert (off.traits, off.assertions) == ({}, {})
+    assert phenotype.traits == {SPECIES1: {A}}
+    assert full.traits == {SPECIES1: {A, "METPO:1004004"}}
+    evidence = phenotype.assertions[(SPECIES1, A)]
+    assert [(item.edge_id, item.primary_source) for item in evidence] == [("s2", "infores:bacdive")]
+
+
+# Counts a matrix built under each scope holds for species 1 (only a strain of it asserts A
+# and B), species 2 (asserts both itself) and their genus (#788).
+SCOPED_COUNTS = {
+    "off": {SPECIES1: {}, SPECIES2: {A: 1, B: 1}, GENUS: {A: 1, B: 1}},
+    "phenotype": {SPECIES1: {A: 1}, SPECIES2: {A: 1, B: 1}, GENUS: {A: 2, B: 1}},
+    "full": {SPECIES1: {A: 1, B: 1}, SPECIES2: {A: 1, B: 1}, GENUS: {A: 2, B: 2}},
+}
+
+
+@pytest.mark.parametrize("declared", sorted(SCOPED_COUNTS))
+@pytest.mark.parametrize("built", sorted(SCOPED_COUNTS))
+def test_the_ledger_reconciles_a_matrix_only_under_its_own_scope(
+    tmp_path: Path, built: StrainRollup, declared: StrainRollup
+) -> None:
+    """A ledger run under another scope than its matrix's is blocked, never silent (#788)."""
+    edges, nodes = tmp_path / "edges.tsv", tmp_path / "nodes.tsv"
+    edges.write_text(
+        "id\tsubject\tpredicate\tobject\n"
+        f"t1\t{SPECIES1}\tbiolink:subclass_of\t{GENUS}\n"
+        f"t2\t{SPECIES2}\tbiolink:subclass_of\t{GENUS}\n"
+        f"d1\t{SPECIES2}\tbiolink:has_phenotype\t{A}\n"
+        f"d2\t{SPECIES2}\tMETPO:2000103\tGO:0030245\n"
+        f"s1\tkgmicrobe.strain:1\tbiolink:subclass_of\t{SPECIES1}\n"
+        f"s2\tkgmicrobe.strain:1\tbiolink:has_phenotype\t{A}\n"
+        "s3\tkgmicrobe.strain:1\tMETPO:2000103\tGO:0030245\n",
+        encoding="utf-8",
+    )
+    nodes.write_text("id\tname\n", encoding="utf-8")
+    taxa = SCOPED_COUNTS[built]
+    key = ("study", "experiment", "inc")
+    base = Base(
+        [A, B],
+        {"a": A, "b": B},
+        {key: {A: taxa[GENUS][A], B: taxa[GENUS][B]}},
+        {key[:2]: {"condition": "condition", "body_site": "site"}},
+        {key: {GENUS: {"sig1"}}},
+        taxa,
+        {},
+        {SPECIES1: "species", SPECIES2: "species", GENUS: "genus"},
+        [],
+    )
+
+    graph = load_graph(edges, nodes, {A, B}, {A, B}, strain_rollup=declared)
+    mismatches = reconcile(base, graph).mismatches
+
+    if built == declared:
+        assert mismatches == []
+    else:
+        assert mismatches
 
 
 @pytest.mark.parametrize("invalid", ["", "-1", "1.5", "NaN", " 1", "\u0661"])

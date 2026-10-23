@@ -12,6 +12,8 @@ from pathlib import Path
 import pytest
 
 from mtp.paths import REPO_ROOT
+from mtp.taxa_trait_matrix import StrainRollup
+from mtp.workflow.arms import runtime
 from mtp.workflow.arms.noel import build_commands
 from mtp.workflow.arms.types import ArmContext, Command
 
@@ -150,3 +152,24 @@ def test_overrides_are_explicit_without_changing_fixed_shared_flip_protocol(
 
 def test_figures_flag_does_not_invoke_historical_branch_figures(context: ArmContext) -> None:
     assert build_commands(context) == build_commands(replace(context, figures=False))
+
+
+@pytest.mark.parametrize("scope", ["off", "phenotype", "full"])
+def test_the_ledger_step_reconciles_under_the_core_scope(
+    context: ArmContext, monkeypatch: pytest.MonkeyPatch, scope: StrainRollup
+) -> None:
+    """Noel's Table 1 ledger rebuilds the matrix under its core's strain rollup scope (#788)."""
+    context = replace(context, strain_rollup=scope)
+    commands = build_commands(context)
+    ledger = next(command for command in commands if command.id == "taxon_contributions")
+
+    assert _option(ledger, "--strain-rollup") == scope
+    assert _parse_command(ledger, monkeypatch).strain_rollup == scope
+    runtime._validate_plan(commands, context)
+
+
+def test_a_ledger_step_under_another_scope_than_the_core_is_refused(context: ArmContext) -> None:
+    commands = build_commands(replace(context, strain_rollup="phenotype"))
+
+    with pytest.raises(ValueError, match="strain rollup"):
+        runtime._validate_plan(commands, replace(context, strain_rollup="off"))

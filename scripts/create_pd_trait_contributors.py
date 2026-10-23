@@ -38,6 +38,7 @@ from create_pd_six_trait_taxon_heatmap import (
 )
 from lookup_pd_trait_taxa import SUMMARY_NAME, pd_feces_profile_ids, trait_directions
 from mtp.contribution_inputs import Base, Graph, Key, load_base, load_graph, verify_kg
+from mtp.taxa_trait_matrix import PRIMARY_STRAIN_ROLLUP, StrainRollup
 from mtp.taxon_contributions import Ledger, reconcile
 from mtp.trait_guilds import TABLE1_TRAIT_LABELS
 
@@ -46,6 +47,8 @@ SCOPE = "parkinsons_feces"
 KG_DIR = REPO_ROOT / "data/kg-microbe"
 DERIVED_DIR = REPO_ROOT / "data/derived"
 KG_PROTOCOL_PATH = REPO_ROOT / "methods/table1_taxon_influence_protocol.json"
+# data/derived is built under the primary scope; the ledger reconciles and records it (#788).
+STRAIN_ROLLUP: StrainRollup = PRIMARY_STRAIN_ROLLUP
 LEDGER_INPUTS = (
     "study_trait_profiles_wide.tsv",
     "experiments.tsv",
@@ -103,11 +106,13 @@ def load_contribution_ledger(
     kg_dir: Path,
     derived_dir: Path,
     protocol_path: Path,
+    strain_rollup: StrainRollup,
 ) -> tuple[Base, Graph, Ledger]:
     """Load the pinned KG and the profile inputs and reconcile them, as `mtp.taxon_contributions`.
 
-    The reconciliation rebuilds every taxa-trait matrix and profile count from the KG, so a
-    KG that does not reproduce the matrix stops the analysis here.
+    The reconciliation rebuilds every taxa-trait matrix and profile count from the KG under
+    the strain rollup scope, so a KG or scope that does not reproduce the matrix stops the
+    analysis here.
     """
     protocol = json.loads(protocol_path.read_text(encoding="utf-8"))
     verify_kg(kg_dir, protocol["kg_md5"])
@@ -117,12 +122,14 @@ def load_contribution_ledger(
         kg_dir / "merged-kg_nodes.tsv",
         set(base.columns),
         set(base.traits.values()),
+        strain_rollup,
     )
     ledger = reconcile(base, graph)
     if ledger.mismatches:
         msg = (
             f"{len(ledger.mismatches)} taxa-trait matrix or profile counts differ from the KG "
-            "rebuild; check the KG and data/derived inputs with `just table1-taxon-influence`."
+            f"rebuild under the {strain_rollup} strain rollup scope; check the KG and "
+            "data/derived inputs with `just table1-taxon-influence`."
         )
         raise ValueError(msg)
     return base, graph, ledger
@@ -1344,7 +1351,9 @@ def main() -> None:
     directions = trait_directions(read_tsv(OUTPUT_DIR / SUMMARY_NAME))
     trait_intervals = read_tsv(OUTPUT_DIR / TRAIT_INTERVALS_NAME)
     check_trait_intervals(trait_intervals, directions)
-    base, graph, ledger = load_contribution_ledger(KG_DIR, DERIVED_DIR, KG_PROTOCOL_PATH)
+    base, graph, ledger = load_contribution_ledger(
+        KG_DIR, DERIVED_DIR, KG_PROTOCOL_PATH, STRAIN_ROLLUP
+    )
     keys = pd_contribution_profiles(base, metadata)
     counts, coverage_counts = count_contributions(base, graph, ledger, keys)
     traits = trait_frame(base, directions)
@@ -1412,6 +1421,7 @@ def main() -> None:
     manifest = {
         "method": "Table 1 contribution ledger (#190) restricted to PD fecal profiles",
         "profile_scope": "human PD fecal profiles in experiments with both directions",
+        "strain_rollup": STRAIN_ROLLUP,
         **scope,
         "ranks": list(CONTRIBUTOR_RANKS),
         "rank_statuses": [RESOLVED_STATUS, "unresolved_rank", "ambiguous_rank"],
