@@ -9,7 +9,13 @@ import pytest
 from scipy.stats import false_discovery_control
 
 from bsdbng.table1_trait_maps import compute_direction_shifts
-from bsdbng.trait_guilds import TABLE1_TRAITS, Profile, load_profiles, retained_trait_columns
+from bsdbng.trait_guilds import (
+    DEFAULT_PROFILE_PATH,
+    TABLE1_TRAITS,
+    Profile,
+    load_profiles,
+    retained_trait_columns,
+)
 from bsdbng.trait_screen import (
     ALL_TIED,
     NO_ELIGIBLE_STUDIES,
@@ -26,6 +32,7 @@ from bsdbng.trait_screen import (
     step_up,
     table1_slug,
 )
+from mtp.strain_rollup_record import recorded_strain_rollup
 
 
 def _profile(
@@ -399,11 +406,14 @@ def test_the_pinned_corpus_screens_every_retained_trait_and_reproduces_the_quote
     assert stats.trait_columns_used == len(columns)
     result = run_screen(paired, columns, dependence_profiles=unpaired)
     assert result.family_size == len(columns)
-    # Every figure below was computed on the committed table, built under the off scope.
-    assert len(columns) == 317, (
-        f"{len(columns)} retained traits: the figures below are pinned to the off-scope "
-        "table of 317 and must be repinned for a table built under another scope (#847)"
+    # Every figure below was computed on the committed table, which records the off
+    # scope; a table built under another scope needs them repinned (#847).
+    scope = recorded_strain_rollup(DEFAULT_PROFILE_PATH)
+    assert scope == "off", (
+        f"the profile table records strain rollup scope {scope!r}, but the figures below "
+        "are pinned to the committed off table; repin them for this table (#847)"
     )
+    assert len(columns) == 317
     contrast = result.contrast_dependence
     assert contrast is not None
     assert contrast.li_ji == pytest.approx(112.0, abs=0.05)
