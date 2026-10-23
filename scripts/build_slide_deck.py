@@ -456,6 +456,7 @@ def load_rerun_metrics(repo: Path) -> dict:
     metrics["taxa_coverage_by_rank"] = {r["taxonomic_rank"]: r for r in coverage_ranks}
     metrics["coverage_total_occurrences"] = sum(int(r["total_occurrences"]) for r in coverage_ranks)
     metrics["coverage_total_taxa"] = sum(int(r["total_taxa"]) for r in coverage_ranks)
+    metrics["coverage_strain_rollup"] = _read_coverage_strain_rollup(paired_dir / "taxa-coverage")
     zero_trait = read_tsv(paired_dir / "taxa-coverage" / "top_zero_trait_bugsigdb_taxa.tsv")
     metrics["zero_trait_rows"] = zero_trait
     metrics["zero_trait_taxa"] = len(zero_trait)
@@ -991,6 +992,25 @@ def plate_one_text(metrics: dict) -> tuple[str, str]:
     return takeaway, caveat
 
 
+COVERAGE_TRAIT_BEARING_PCT_COL = "trait_bearing_pct"
+COVERAGE_ZERO_TRAIT_PCT_COL = "zero_trait_pct"
+COVERAGE_TRAIT_BEARING_OCC_PCT_COL = "trait_bearing_occurrences_pct"
+COVERAGE_ZERO_TRAIT_OCC_PCT_COL = "zero_trait_occurrences_pct"
+COVERAGE_ANNOTATION_BASIS = "any annotation (incl. MediaDive)"
+
+
+def _read_coverage_strain_rollup(coverage_dir: Path) -> str:
+    """Read strain_rollup from taxa-coverage provenance JSON when present (#858, #956)."""
+    for fname in ("provenance.json", "taxa_coverage_run.json"):
+        path = coverage_dir / fname
+        if path.exists():
+            data = json.loads(path.read_text(encoding="utf-8"))
+            scope = data.get("strain_rollup")
+            if isinstance(scope, str) and scope:
+                return scope
+    return "off"
+
+
 def _present_coverage_ranks(metrics: Mapping[str, Any]) -> dict[str, Mapping[str, str]]:
     """Return only rank rows present in taxa_coverage_by_rank.tsv with >0 taxa (#924)."""
     raw = metrics.get("taxa_coverage_by_rank") or {}
@@ -1036,32 +1056,39 @@ def _coverage_totals(metrics: Mapping[str, Any]) -> tuple[int, int]:
 
 
 def methods_plate_one_takeaway(metrics: Mapping[str, Any]) -> str:
-    """Methods Plate I's takeaway, read from the corpus and coverage tables (#864, #930)."""
+    """Methods Plate I's takeaway, read from the corpus and coverage tables (#864, #930, #956)."""
     total_occ, total_taxa = _coverage_totals(metrics)
     retained = int(metrics["retained_studies"])
+    retained_profiles = metrics.get("retained_profiles")
     pooled = int(metrics["pooled_pairs"])
+    profiles_clause = (
+        f"{int(retained_profiles):,} retained profiles, "
+        if retained_profiles is not None
+        else "all retained profiles, "
+    )
     return (
         "High-level visual overview of the data ingestion funnel: "
         f"{retained:,} BugSigDB "
-        f"v1.3.1 human studies ({pooled:,} paired experiments, "
-        f"{2 * pooled:,} profiles, {total_occ:,} "
-        f"taxon occurrences across {total_taxa:,} unique NCBI TaxIDs) joined to 5,829 "
+        f"v1.3.1 human studies ({profiles_clause}{total_occ:,} all-profile "
+        f"taxon occurrences across {total_taxa:,} unique NCBI TaxIDs; "
+        f"{pooled:,} paired experiments / {2 * pooled:,} paired profiles) joined to 5,829 "
         "KG-Microbe organisms \N{MULTIPLICATION SIGN} 317 normalized traits via NCBI "
         "Taxonomy subtree rollup."
     )
 
 
 def methods_plate_one_caveat(metrics: Mapping[str, Any]) -> str:
-    """Methods Plate I's caveat, read from taxa_coverage_by_rank.tsv (#864, #924)."""
+    """Methods Plate I's caveat, read from taxa_coverage_by_rank.tsv (#864, #924, #956)."""
     ranks = _present_coverage_ranks(metrics)
+    scope = str(metrics.get("coverage_strain_rollup") or "off")
     sp = ranks.get("species")
     gen = ranks.get("genus")
     fam = ranks.get("family")
 
     higher_part: str | None = None
     if gen is not None and fam is not None:
-        gen_occ = float(gen["trait_bearing_occurrences_pct"])
-        fam_occ = float(fam["trait_bearing_occurrences_pct"])
+        gen_occ = float(gen[COVERAGE_TRAIT_BEARING_OCC_PCT_COL])
+        fam_occ = float(fam[COVERAGE_TRAIT_BEARING_OCC_PCT_COL])
         gen_fam = (
             f"{gen_occ:.1f}%"
             if f"{gen_occ:.1f}" == f"{fam_occ:.1f}"
@@ -1069,31 +1096,41 @@ def methods_plate_one_caveat(metrics: Mapping[str, Any]) -> str:
         )
         higher_part = f"Genus/Family {gen_fam}"
     elif gen is not None:
-        higher_part = f"Genus {float(gen['trait_bearing_occurrences_pct']):.1f}%"
+        higher_part = f"Genus {float(gen[COVERAGE_TRAIT_BEARING_OCC_PCT_COL]):.1f}%"
     elif fam is not None:
-        higher_part = f"Family {float(fam['trait_bearing_occurrences_pct']):.1f}%"
+        higher_part = f"Family {float(fam[COVERAGE_TRAIT_BEARING_OCC_PCT_COL]):.1f}%"
 
     sp_part: str | None = None
     if sp is not None:
-        sp_occ = float(sp["trait_bearing_occurrences_pct"])
-        sp_unique = float(sp["trait_bearing_pct"])
+        sp_occ = float(sp[COVERAGE_TRAIT_BEARING_OCC_PCT_COL])
+        sp_unique = float(sp[COVERAGE_TRAIT_BEARING_PCT_COL])
         sp_part = f"Species {sp_occ:.1f}% occurrences / {sp_unique:.1f}% unique species"
 
     if higher_part is not None and sp_part is not None:
-        summary = f"the rank-stratified coverage cliff ({higher_part} vs {sp_part})"
+        summary = (
+            f"the rank-stratified coverage cliff ({higher_part} vs {sp_part}; "
+            f"{COVERAGE_ANNOTATION_BASIS}, strain_rollup={scope})"
+        )
     elif sp_part is not None:
-        summary = f"rank-stratified coverage ({sp_part}; Genus/Family absent from rank table)"
+        summary = (
+            f"rank-stratified coverage ({sp_part}; Genus/Family absent from rank table; "
+            f"{COVERAGE_ANNOTATION_BASIS}, strain_rollup={scope})"
+        )
     elif higher_part is not None:
-        summary = f"rank-stratified coverage ({higher_part}; Species absent from rank table)"
+        summary = (
+            f"rank-stratified coverage ({higher_part}; Species absent from rank table; "
+            f"{COVERAGE_ANNOTATION_BASIS}, strain_rollup={scope})"
+        )
     elif ranks:
         other_parts = [
             f"{r.get('display_rank', rk.capitalize())} "
-            f"{float(r['trait_bearing_occurrences_pct']):.1f}% occurrences"
+            f"{float(r[COVERAGE_TRAIT_BEARING_OCC_PCT_COL]):.1f}% occurrences"
             for rk, r in ranks.items()
         ]
         summary = (
             f"rank-stratified coverage ({', '.join(other_parts)}; "
-            "Species/Genus/Family absent from rank table)"
+            f"Species/Genus/Family absent from rank table; {COVERAGE_ANNOTATION_BASIS}, "
+            f"strain_rollup={scope})"
         )
     else:
         summary = "rank-stratified coverage (no non-empty rank rows in taxa_coverage_by_rank.tsv)"
@@ -1105,26 +1142,27 @@ def methods_plate_one_caveat(metrics: Mapping[str, Any]) -> str:
 
 
 def plate_six_text(metrics: Mapping[str, Any]) -> tuple[str, str]:
-    """Tufte Plate VI's takeaway and caveat, read from the coverage TSVs (#864, #924, #930)."""
+    """Tufte Plate VI takeaway and caveat, read from the coverage TSVs (#864, #924, #930, #956)."""
     ranks = _present_coverage_ranks(metrics)
+    scope = str(metrics.get("coverage_strain_rollup") or "off")
     higher_clauses = [
-        f"{label} ({float(ranks[rk]['trait_bearing_occurrences_pct']):.1f}%)"
+        f"{label} ({float(ranks[rk][COVERAGE_TRAIT_BEARING_OCC_PCT_COL]):.1f}%)"
         for rk, label in (("genus", "Genus"), ("family", "Family"))
         if rk in ranks
     ]
     sp = ranks.get("species")
     sp_clause: str | None = None
     if sp is not None:
-        sp_zero_pct = float(sp["zero_trait_pct"])
+        sp_zero_pct = float(sp[COVERAGE_ZERO_TRAIT_PCT_COL])
         sp_zero_taxa = int(sp["zero_trait_taxa"])
         sp_total_taxa = int(sp["total_taxa"])
-        sp_zero_occ_pct = float(sp["zero_trait_occurrences_pct"])
+        sp_zero_occ_pct = float(sp[COVERAGE_ZERO_TRAIT_OCC_PCT_COL])
         sp_zero_occ = int(sp["zero_trait_occurrences"])
         sp_total_occ = int(sp["total_occurrences"])
         sp_clause = (
             f"{sp_zero_pct:.1f}% of distinct species ({sp_zero_taxa:,}/{sp_total_taxa:,}) and "
             f"{sp_zero_occ_pct:.1f}% of species occurrences ({sp_zero_occ:,}/{sp_total_occ:,}) "
-            "have zero traits"
+            f"have zero traits ({COVERAGE_ANNOTATION_BASIS}, strain_rollup={scope})"
         )
 
     if higher_clauses and sp_clause is not None:
@@ -1140,17 +1178,19 @@ def plate_six_text(metrics: Mapping[str, Any]) -> tuple[str, str]:
     elif higher_clauses:
         takeaway = (
             f"{listing(higher_clauses)} occurrences in BugSigDB have high KG-Microbe coverage "
-            "(Species rank absent from rank table)."
+            f"({COVERAGE_ANNOTATION_BASIS}, strain_rollup={scope}; "
+            "Species rank absent from rank table)."
         )
     elif ranks:
         other_clauses = [
             f"{r.get('display_rank', rk.capitalize())} "
-            f"({float(r['trait_bearing_occurrences_pct']):.1f}%)"
+            f"({float(r[COVERAGE_TRAIT_BEARING_OCC_PCT_COL]):.1f}%)"
             for rk, r in ranks.items()
         ]
         takeaway = (
             f"{listing(other_clauses)} occurrences in BugSigDB have recorded KG-Microbe coverage "
-            "(Species, Genus, and Family ranks absent from rank table)."
+            f"({COVERAGE_ANNOTATION_BASIS}, strain_rollup={scope}; "
+            "Species, Genus, and Family ranks absent from rank table)."
         )
     else:
         takeaway = "No non-empty rank rows are present in taxa_coverage_by_rank.tsv."
@@ -1165,13 +1205,14 @@ def plate_six_text(metrics: Mapping[str, Any]) -> tuple[str, str]:
     for row in zero_rows:
         if row.get("diagnosis_category") != "NCBI TaxID Desynchronization":
             continue
+        target = _extract_alias_target(row)
+        if not target:
+            continue
         taxon_id = row["taxon_id"]
         name = row.get("taxon_name") or taxon_id
         occ = int(row["signature_occurrences"])
         st = int(row["study_count"])
-        target = _extract_alias_target(row)
-        arrow_part = f" → {target}" if target else ""
-        alias_items.append(f"{name} ({taxon_id}{arrow_part}, {occ} occs across {st} studies)")
+        alias_items.append(f"{name} ({taxon_id} → {target}, {occ} occs across {st} studies)")
 
     esh_row = by_taxon.get("NCBITaxon:1940338")
     esh_item = (
@@ -1180,35 +1221,43 @@ def plate_six_text(metrics: Mapping[str, Any]) -> tuple[str, str]:
         else None
     )
 
-    zero_taxa_count = int(metrics.get("zero_trait_taxa", len(zero_rows)))
-    zero_occ_count = int(
-        metrics.get(
-            "zero_trait_occurrences",
-            sum(int(r["signature_occurrences"]) for r in zero_rows),
+    if "zero_trait_rows" in metrics:
+        zero_taxa_count = len(zero_rows)
+        zero_occ_count = sum(int(r["signature_occurrences"]) for r in zero_rows)
+    else:
+        zero_taxa_count = int(metrics.get("zero_trait_taxa", 0))
+        zero_occ_count = int(metrics.get("zero_trait_occurrences", 0))
+
+    if zero_taxa_count == 1:
+        occ_noun = "occurrence" if zero_occ_count == 1 else "occurrences"
+        audit_prefix = f"Auditing the 1 zero-trait taxon ({zero_occ_count:,} {occ_noun})"
+    elif zero_taxa_count == 0:
+        audit_prefix = "Auditing the zero-trait table (0 zero-trait taxa, 0 occurrences)"
+    else:
+        audit_prefix = (
+            f"Auditing the top {zero_taxa_count} zero-trait taxa ({zero_occ_count:,} occurrences)"
         )
+
+    cand_phrase = (
+        "a TaxID alias candidate for review"
+        if len(alias_items) == 1
+        else "TaxID alias candidates for review"
     )
     if alias_items and esh_item is not None:
         caveat = (
-            f"Auditing the top {zero_taxa_count} zero-trait taxa "
-            f"({zero_occ_count:,} occurrences) identifies TaxID alias candidates "
-            f"for review ({_oxford_listing(alias_items)}) alongside {esh_item}."
+            f"{audit_prefix} identifies {cand_phrase} "
+            f"({_oxford_listing(alias_items)}) alongside {esh_item}."
         )
     elif alias_items:
-        caveat = (
-            f"Auditing the top {zero_taxa_count} zero-trait taxa "
-            f"({zero_occ_count:,} occurrences) identifies TaxID alias candidates "
-            f"for review: {_oxford_listing(alias_items)}."
-        )
+        caveat = f"{audit_prefix} identifies {cand_phrase}: {_oxford_listing(alias_items)}."
     elif esh_item is not None:
         caveat = (
-            f"Auditing the top {zero_taxa_count} zero-trait taxa "
-            f"({zero_occ_count:,} occurrences) identifies {esh_item} "
+            f"{audit_prefix} identifies {esh_item} "
             "(no TaxID alias candidates present in top zero-trait table)."
         )
     else:
         caveat = (
-            f"Auditing the top {zero_taxa_count} zero-trait taxa "
-            f"({zero_occ_count:,} occurrences) finds no TaxID alias or "
+            f"{audit_prefix} finds no TaxID alias or "
             "Escherichia/Shigella slash-bin candidates in top_zero_trait_bugsigdb_taxa.tsv."
         )
     return takeaway, caveat
@@ -2285,7 +2334,7 @@ def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
 def check_coverage_table_sync(
     metrics: Mapping[str, Any], slides: Sequence[Mapping[str, str]]
 ) -> None:
-    """Assert Methods Plate I and Plate VI slide text match the coverage tables (#864, #930)."""
+    """Assert Methods Plate I and Plate VI slide text match coverage tables (#864, #930, #956)."""
     by_analysis = {s["analysis"]: s for s in slides if "analysis" in s}
     mp1 = by_analysis.get("methods_plate_1")
     if mp1 is None:
@@ -2302,6 +2351,18 @@ def check_coverage_table_sync(
             f"methods_plate_1 caveat out of sync with coverage tables: "
             f"got {mp1.get('caveat')!r}, expected {expected_mp1_caveat!r}"
         )
+    ranks = _present_coverage_ranks(metrics)
+    if ranks:
+        table_occ = sum(int(r["total_occurrences"]) for r in ranks.values())
+        table_taxa = sum(int(r["total_taxa"]) for r in ranks.values())
+        if f"{table_occ:,}" not in mp1.get("takeaway", "") or f"{table_taxa:,}" not in mp1.get(
+            "takeaway", ""
+        ):
+            raise ValueError(
+                f"methods_plate_1 takeaway out of sync with coverage tables: "
+                f"expected {table_occ:,} occurrences and {table_taxa:,} taxa in "
+                f"{mp1.get('takeaway')!r}"
+            )
 
     tp6 = by_analysis.get("tufte_plate_6")
     if tp6 is None:

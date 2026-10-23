@@ -439,40 +439,72 @@ def guild_text(labels: dict[str, str]) -> str:
     return "\n".join(lines)
 
 
+COVERAGE_TRAIT_BEARING_PCT_COL = "trait_bearing_pct"
+COVERAGE_ZERO_TRAIT_PCT_COL = "zero_trait_pct"
+COVERAGE_TRAIT_BEARING_OCC_PCT_COL = "trait_bearing_occurrences_pct"
+COVERAGE_ZERO_TRAIT_OCC_PCT_COL = "zero_trait_occurrences_pct"
+COVERAGE_ANNOTATION_BASIS = "any annotation (incl. MediaDive)"
+
+
+def _read_coverage_strain_rollup(coverage_dir: Path) -> str:
+    """Read strain_rollup from taxa-coverage provenance JSON when present (#858, #956)."""
+    for fname in ("provenance.json", "taxa_coverage_run.json"):
+        path = coverage_dir / fname
+        if path.exists():
+            data = json.loads(path.read_text(encoding="utf-8"))
+            scope = data.get("strain_rollup")
+            if isinstance(scope, str) and scope:
+                return scope
+    return "off"
+
+
 def methods_plate1_coverage_labels(
     coverage_rows: Sequence[Mapping[str, str]],
     zero_rows: Sequence[Mapping[str, str]],
+    *,
+    retained_profiles: int | None = None,
 ) -> dict[str, str]:
-    """Derive Methods Plate I occurrence/TaxID counts and desync note from TSVs (#930)."""
+    """Derive Methods Plate I occurrence/TaxID counts and desync note (#930, #951, #956)."""
     present_rows = [r for r in coverage_rows if int(r.get("total_taxa", "0")) > 0]
     total_occurrences = sum(int(r.get("total_occurrences", "0")) for r in present_rows)
     total_taxa = sum(int(r.get("total_taxa", "0")) for r in present_rows)
     by_rank = {r["taxonomic_rank"]: r for r in present_rows}
-    species_gap = (
-        float(by_rank["species"]["zero_trait_occurrences_pct"]) if "species" in by_rank else 0.0
-    )
+    if "species" in by_rank:
+        species_gap = float(by_rank["species"][COVERAGE_ZERO_TRAIT_OCC_PCT_COL])
+        species_clause = (
+            f"Species gap ({species_gap:.0f}% of species occurrences): "
+            "uncultivated MAGs & slash-bins"
+        )
+    else:
+        species_clause = "Species coverage unavailable (species rank absent from table)"
     alias_rows = [
         r
         for r in zero_rows
         if r.get("diagnosis_category") == "NCBI TaxID Desynchronization"
-        and int(r.get("signature_occurrences", "0")) > 0
+        and _alias_target_id(r) is not None
     ]
     if alias_rows:
-        names = ", ".join(r.get("taxon_name") or r["taxon_id"] for r in alias_rows)
+        names = ", ".join((r.get("taxon_name") or r["taxon_id"]).split()[0] for r in alias_rows)
         noun = "desync" if len(alias_rows) == 1 else "desyncs"
-        desync_clause = f"{len(alias_rows)} NCBI TaxID {noun} ({names})"
+        desync_clause = f"All-rank {len(alias_rows)} NCBI TaxID {noun} ({names})"
     else:
-        desync_clause = "no NCBI TaxID desyncs in top zero-trait table"
+        desync_clause = "All-rank: no focal NCBI TaxID desyncs in table"
+    if present_rows:
+        prof_part = (
+            f"{retained_profiles:,} retained profiles"
+            if retained_profiles is not None
+            else "all retained profiles"
+        )
+        taxa_subtitle = (
+            f"{total_taxa:,} unique NCBI TaxIDs across {prof_part}\n"
+            "(all human 16S/WMS signatures in rank table)"
+        )
+    else:
+        taxa_subtitle = f"{total_taxa:,} unique NCBI TaxIDs (no rank rows in table)"
     return {
-        "occurrences_title": f"{total_occurrences:,} Taxon Occurrences",
-        "taxa_subtitle": (
-            f"{total_taxa:,} unique NCBI TaxIDs across all ranks\n"
-            "Median signature size: 5 taxa (IQR 2\N{EN DASH}11)"
-        ),
-        "species_gap_note": (
-            f"Species gap ({species_gap:.0f}% of occurrences): uncultivated MAGs, slash-bins &\n"
-            f"{desync_clause}"
-        ),
+        "occurrences_title": f"{total_occurrences:,} All-Profile Taxon Occurrences",
+        "taxa_subtitle": taxa_subtitle,
+        "species_gap_note": f"{species_clause};\n{desync_clause}",
     }
 
 
@@ -579,32 +611,34 @@ def build_methods_plate1(repo: Path, out_dir: Path) -> Path:
     ]
     cond_count = len({r["condition"] for r in ind_cells})
     site_count = len({r["body_site_group"] for r in ind_cells})
-    retained_studies = len(
-        {
-            r["study_id"]
-            for r in read_tsv(repo / "trait-visualization/study_trait_profile_study_metadata.tsv")
-        }
+    study_meta = read_tsv(repo / "trait-visualization/study_trait_profile_study_metadata.tsv")
+    retained_studies = len({r["study_id"] for r in study_meta})
+    retained_profiles = len(study_meta)
+    coverage_dir = repo / "trait-visualization/trait-profile-investigation/taxa-coverage"
+    coverage_scope = _read_coverage_strain_rollup(coverage_dir)
+    coverage_rows = read_tsv(coverage_dir / "taxa_coverage_by_rank.tsv")
+    zero_rows = read_tsv(coverage_dir / "top_zero_trait_bugsigdb_taxa.tsv")
+    mp1_labels = methods_plate1_coverage_labels(
+        coverage_rows, zero_rows, retained_profiles=retained_profiles
     )
-    coverage_rows = read_tsv(
-        repo
-        / "trait-visualization/trait-profile-investigation/taxa-coverage/taxa_coverage_by_rank.tsv"
-    )
-    zero_rows = read_tsv(
-        repo / "trait-visualization/trait-profile-investigation/taxa-coverage/"
-        "top_zero_trait_bugsigdb_taxa.tsv"
-    )
-    mp1_labels = methods_plate1_coverage_labels(coverage_rows, zero_rows)
 
     funnel_steps = [
         (
             74.0,
-            f"{retained_studies:,} Curated Studies",
-            "Published human microbiome case\N{EN DASH}control studies",
+            f"{retained_studies:,} Curated Studies ({retained_profiles:,} Profiles)",
+            "Published human microbiome 16S & WMS signatures",
             "#eef5fb",
             DEC_COLOR,
         ),
         (
             56.0,
+            mp1_labels["occurrences_title"],
+            mp1_labels["taxa_subtitle"],
+            "#f5d7d4",
+            INC_COLOR,
+        ),
+        (
+            37.0,
             f"{pairs:,} Paired Experiments",
             f"{studies:,} unique studies with both INC & DEC taxon sets\n"
             f"{feces_studies:,} Feces studies  ·  {non_feces_studies:,} Non-Feces studies",
@@ -612,20 +646,13 @@ def build_methods_plate1(repo: Path, out_dir: Path) -> Path:
             DEC_COLOR,
         ),
         (
-            37.0,
-            f"{2 * pairs:,} Directional Signatures",
+            18.0,
+            f"{2 * pairs:,} Paired Directional Signatures",
             f"{pairs:,} Increased (↑) + {pairs:,} Decreased (↓) profiles\n"
             f"Spanning {cond_count:,} conditions \N{MULTIPLICATION SIGN} {site_count:,} anatomical "
             "sites",
             "#d4e6f4",
             DEC_COLOR,
-        ),
-        (
-            18.0,
-            mp1_labels["occurrences_title"],
-            mp1_labels["taxa_subtitle"],
-            "#f5d7d4",
-            INC_COLOR,
         ),
     ]
     for idx_f, (fy, ftitle, fsub, fbg, fcol) in enumerate(funnel_steps):
@@ -864,7 +891,7 @@ def build_methods_plate1(repo: Path, out_dir: Path) -> Path:
     ax.text(
         84.25,
         82.5,
-        "Signature Occurrence Coverage by Rank",
+        "All-Profile Occurrence Coverage by Rank",
         fontsize=9.5,
         fontweight="bold",
         color=INK,
@@ -875,7 +902,7 @@ def build_methods_plate1(repo: Path, out_dir: Path) -> Path:
     rank_bars = [
         (
             rank.capitalize(),
-            float(coverage[rank]["trait_bearing_occurrences_pct"]),
+            float(coverage[rank][COVERAGE_TRAIT_BEARING_OCC_PCT_COL]),
             f"{int(coverage[rank]['trait_bearing_occurrences']):,} / "
             f"{int(coverage[rank]['total_occurrences']):,} occ.",
             INC_COLOR if rank == "species" else TEAL_ACCENT,
@@ -1000,9 +1027,10 @@ def build_methods_plate1(repo: Path, out_dir: Path) -> Path:
         0.03,
         0.025,
         f"{RERUN_SOURCE} · BugSigDB v1.3.1 (Zenodo 10627578) "
-        "\N{MULTIPLICATION SIGN} KG-Microbe 20260120 · taxa_coverage_by_rank.tsv, "
+        "\N{MULTIPLICATION SIGN} KG-Microbe 20260120 · taxa_coverage_by_rank.tsv "
+        f"({COVERAGE_ANNOTATION_BASIS}, strain_rollup={coverage_scope}), "
         "condition_trait_module_guild_definition_table.tsv.",
-        fontsize=8.0,
+        fontsize=7.6,
         color=MUTED,
     )
 
@@ -3335,16 +3363,18 @@ def _alias_target_id(row: Mapping[str, str] | None) -> str | None:
 def plate6_text(
     rank_rows: Sequence[Mapping[str, str]],
     zero_rows: Sequence[Mapping[str, str]],
+    *,
+    strain_rollup: str = "off",
 ) -> dict[str, str]:
-    """Plate VI subtitle, panel titles, and footer derived from the coverage TSVs (#864)."""
+    """Plate VI subtitle, panel titles, and footer derived from the coverage TSVs (#864, #956)."""
     by_rank = {r["taxonomic_rank"]: r for r in rank_rows if int(r["total_taxa"]) > 0}
     sp = by_rank.get("species")
     gen = by_rank.get("genus")
     fam = by_rank.get("family")
 
     if gen and fam:
-        gen_occ = float(gen["trait_bearing_occurrences_pct"])
-        fam_occ = float(fam["trait_bearing_occurrences_pct"])
+        gen_occ = float(gen[COVERAGE_TRAIT_BEARING_OCC_PCT_COL])
+        fam_occ = float(fam[COVERAGE_TRAIT_BEARING_OCC_PCT_COL])
         gen_fam_occ = (
             f"{gen_occ:.1f}%"
             if f"{gen_occ:.1f}" == f"{fam_occ:.1f}"
@@ -3353,22 +3383,22 @@ def plate6_text(
         higher_clause = f"Why Genus/Family signatures achieve {gen_fam_occ} trait coverage"
     elif gen:
         higher_clause = (
-            f"Why Genus signatures achieve {float(gen['trait_bearing_occurrences_pct']):.1f}% "
+            f"Why Genus signatures achieve {float(gen[COVERAGE_TRAIT_BEARING_OCC_PCT_COL]):.1f}% "
             "trait coverage (Family absent)"
         )
     elif fam:
         higher_clause = (
-            f"Why Family signatures achieve {float(fam['trait_bearing_occurrences_pct']):.1f}% "
+            f"Why Family signatures achieve {float(fam[COVERAGE_TRAIT_BEARING_OCC_PCT_COL]):.1f}% "
             "trait coverage (Genus absent)"
         )
     else:
         higher_clause = "Genus/Family ranks absent from table"
 
     if sp:
-        sp_unique = float(sp["trait_bearing_pct"])
-        sp_zero = float(sp["zero_trait_pct"])
-        sp_occ = float(sp["trait_bearing_occurrences_pct"])
-        sp_zero_occ = float(sp["zero_trait_occurrences_pct"])
+        sp_unique = float(sp[COVERAGE_TRAIT_BEARING_PCT_COL])
+        sp_zero = float(sp[COVERAGE_ZERO_TRAIT_PCT_COL])
+        sp_occ = float(sp[COVERAGE_TRAIT_BEARING_OCC_PCT_COL])
+        sp_zero_occ = float(sp[COVERAGE_ZERO_TRAIT_OCC_PCT_COL])
         sp_clause = (
             f"{sp_zero:.1f}% of distinct Species ({sp_zero_occ:.1f}% of species occurrences) "
             "have zero traits in KG-Microbe"
@@ -3390,8 +3420,8 @@ def plate6_text(
         )
 
     if sp and gen:
-        gen_unique = float(gen["trait_bearing_pct"])
-        gen_occ = float(gen["trait_bearing_occurrences_pct"])
+        gen_unique = float(gen[COVERAGE_TRAIT_BEARING_PCT_COL])
+        gen_occ = float(gen[COVERAGE_TRAIT_BEARING_OCC_PCT_COL])
         panel_a_sub = (
             f"Species: {sp_unique:.1f}% unique / {sp_occ:.1f}% occurrences vs Genus: "
             f"{gen_unique:.1f}% / {gen_occ:.1f}%"
@@ -3399,24 +3429,24 @@ def plate6_text(
     elif sp:
         panel_a_sub = f"Species: {sp_unique:.1f}% unique / {sp_occ:.1f}% occurrences (Genus absent)"
     elif gen:
-        gen_unique = float(gen["trait_bearing_pct"])
-        gen_occ = float(gen["trait_bearing_occurrences_pct"])
+        gen_unique = float(gen[COVERAGE_TRAIT_BEARING_PCT_COL])
+        gen_occ = float(gen[COVERAGE_TRAIT_BEARING_OCC_PCT_COL])
         panel_a_sub = (
             f"Genus: {gen_unique:.1f}% unique / {gen_occ:.1f}% occurrences (Species absent)"
         )
     else:
         present = [
-            f"{r['display_rank']}: {float(r['trait_bearing_pct']):.1f}% unique / "
-            f"{float(r['trait_bearing_occurrences_pct']):.1f}% occurrences"
+            f"{r['display_rank']}: {float(r[COVERAGE_TRAIT_BEARING_PCT_COL]):.1f}% unique / "
+            f"{float(r[COVERAGE_TRAIT_BEARING_OCC_PCT_COL]):.1f}% occurrences"
             for r in by_rank.values()
         ]
         panel_a_sub = " · ".join(present) if present else "No rank rows with taxa > 0"
 
+    active_zero_rows = [r for r in zero_rows if int(r.get("signature_occurrences", "0")) > 0]
+    n_zero = len(active_zero_rows)
+    n_top = len(active_zero_rows[:18])
     alias_rows = [
-        r
-        for r in zero_rows
-        if r.get("diagnosis_category") == "NCBI TaxID Desynchronization"
-        and int(r.get("signature_occurrences", "0")) > 0
+        r for r in active_zero_rows if r.get("diagnosis_category") == "NCBI TaxID Desynchronization"
     ]
 
     panel_c_aliases: list[str] = []
@@ -3449,32 +3479,46 @@ def plate6_text(
     else:
         footer_alias_clause = "No focal TaxID alias candidates present in table."
 
+    if n_zero == 1:
+        panel_b_head = "B. Root-Cause Taxonomy of 1 Zero-Trait BugSigDB Taxon"
+        panel_b_xlabel = "Zero-Trait Signature Occurrences (1 Zero-Trait Taxon)"
+    elif n_zero == 0:
+        panel_b_head = "B. Root-Cause Taxonomy of Zero-Trait BugSigDB Taxa (0 Taxa)"
+        panel_b_xlabel = "Zero-Trait Signature Occurrences (0 Zero-Trait Taxa)"
+    else:
+        panel_b_head = f"B. Root-Cause Taxonomy of Top {n_zero} Zero-Trait BugSigDB Taxa"
+        panel_b_xlabel = f"Zero-Trait Signature Occurrences (Top {n_zero} Zero-Trait Taxa)"
+
+    if n_top == 1:
+        panel_c_head = "C. 1 Zero-Trait BugSigDB Taxon & Remediation Path"
+    elif n_top == 0:
+        panel_c_head = "C. Zero-Trait BugSigDB Taxa & Remediation Path (0 Taxa)"
+    else:
+        panel_c_head = f"C. Top {n_top} Zero-Trait BugSigDB Taxa & Remediation Path"
+
     return {
         "subtitle": subtitle,
         "panel_a_title": f"A. The Species-Level Coverage Cliff\n{panel_a_sub}",
         "panel_b_title": (
-            "B. Root-Cause Taxonomy of Top 100 Zero-Trait BugSigDB Taxa\n"
-            "Actionable fixes: TaxID alias review, slash-bin LCA & curation"
+            f"{panel_b_head}\nActionable fixes: TaxID alias review, slash-bin LCA & curation"
         ),
-        "panel_c_title": f"C. Top 18 Zero-Trait BugSigDB Taxa & Remediation Path\n{panel_c_sub}",
+        "panel_b_xlabel": panel_b_xlabel,
+        "panel_c_title": f"{panel_c_head}\n{panel_c_sub}",
         "footer": (
             f"{RERUN_SOURCE} · taxa_coverage_by_rank.tsv, "
-            "top_zero_trait_bugsigdb_taxa.tsv (create_taxa_coverage_histogram.py).\n"
+            "top_zero_trait_bugsigdb_taxa.tsv (create_taxa_coverage_histogram.py; "
+            f"{COVERAGE_ANNOTATION_BASIS}, strain_rollup={strain_rollup}).\n"
             f"{footer_alias_clause}"
         ),
     }
 
 
 def build_plate6(repo: Path, out_dir: Path) -> Path:
-    rank_rows = read_tsv(
-        repo
-        / "trait-visualization/trait-profile-investigation/taxa-coverage/taxa_coverage_by_rank.tsv"
-    )
-    zero_rows = read_tsv(
-        repo / "trait-visualization/trait-profile-investigation/taxa-coverage/"
-        "top_zero_trait_bugsigdb_taxa.tsv"
-    )
-    text = plate6_text(rank_rows, zero_rows)
+    coverage_dir = repo / "trait-visualization/trait-profile-investigation/taxa-coverage"
+    rank_rows = read_tsv(coverage_dir / "taxa_coverage_by_rank.tsv")
+    zero_rows = read_tsv(coverage_dir / "top_zero_trait_bugsigdb_taxa.tsv")
+    strain_rollup = _read_coverage_strain_rollup(coverage_dir)
+    text = plate6_text(rank_rows, zero_rows, strain_rollup=strain_rollup)
 
     fig = plt.figure(figsize=(16.0, 9.0), facecolor=BG_COLOR)
     gs = fig.add_gridspec(
@@ -3525,8 +3569,8 @@ def build_plate6(repo: Path, out_dir: Path) -> Path:
 
     for idx_r, r in enumerate(ranks_keep):
         yp = y_rk[idx_r]
-        u_cov = float(r["trait_bearing_pct"])
-        o_cov = float(r["trait_bearing_occurrences_pct"])
+        u_cov = float(r[COVERAGE_TRAIT_BEARING_PCT_COL])
+        o_cov = float(r[COVERAGE_TRAIT_BEARING_OCC_PCT_COL])
 
         ax_rank.plot([u_cov, o_cov], [yp, yp], color=INK, lw=2.0, zorder=2)
         ax_rank.scatter(
@@ -3588,10 +3632,11 @@ def build_plate6(repo: Path, out_dir: Path) -> Path:
     )
     despine(ax_rank)
 
-    # --- Panel B: Root-Cause Pareto Breakdown of Top 100 Zero-Trait BugSigDB Taxa ---
+    # --- Panel B: Root-Cause Pareto Breakdown of Zero-Trait BugSigDB Taxa ---
     cat_totals: dict[str, int] = {}
     cat_taxa_cnt: dict[str, int] = {}
     for r in zero_rows:
+        plate6_remediation_label(r)
         cat = r["diagnosis_category"]
         occ = int(r["signature_occurrences"])
         cat_totals[cat] = cat_totals.get(cat, 0) + occ
@@ -3622,7 +3667,7 @@ def build_plate6(repo: Path, out_dir: Path) -> Path:
 
     for idx_c, (cat_name, tot_occ) in enumerate(sorted_cats):
         yp = y_c[idx_c]
-        col = cat_colors.get(cat_name, TEAL_ACCENT)
+        col = cat_colors[cat_name]
         ax_cat.barh(yp, tot_occ, height=0.58, color=col, alpha=0.88)
         ax_cat.text(
             tot_occ + 10,
@@ -3635,11 +3680,9 @@ def build_plate6(repo: Path, out_dir: Path) -> Path:
         )
 
     ax_cat.set_yticks(y_c)
-    ax_cat.set_yticklabels(
-        [cat_short.get(c[0], c[0]) for c in sorted_cats], fontsize=8.0, fontweight="bold"
-    )
+    ax_cat.set_yticklabels([cat_short[c[0]] for c in sorted_cats], fontsize=8.0, fontweight="bold")
     ax_cat.set_xlabel(
-        "Zero-Trait Signature Occurrences (Top 100 Zero-Trait Taxa)",
+        text["panel_b_xlabel"],
         fontsize=8.2,
         fontweight="bold",
     )
@@ -3664,7 +3707,7 @@ def build_plate6(repo: Path, out_dir: Path) -> Path:
         occ = int(r["signature_occurrences"])
         st = int(r["study_count"])
         cat = r["diagnosis_category"]
-        col = cat_colors.get(cat, INK)
+        col = cat_colors[cat]
         rem_short = plate6_remediation_label(r)
 
         ax_top.barh(yp, occ, height=0.58, color=col, alpha=0.88)
@@ -3691,7 +3734,7 @@ def build_plate6(repo: Path, out_dir: Path) -> Path:
     )
     ax_top.set_title(
         text["panel_c_title"],
-        fontsize=8.6,
+        fontsize=7.4,
         fontweight="bold",
         loc="left",
         pad=10,
