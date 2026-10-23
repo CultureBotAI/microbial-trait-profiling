@@ -10,8 +10,11 @@ import argparse
 from pathlib import Path
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
+def build_parser(
+    parser_class: type[argparse.ArgumentParser] = argparse.ArgumentParser,
+) -> argparse.ArgumentParser:
+    """Supply the same fixture CLI contract to the runtime's targeted tests."""
+    parser = parser_class(description=__doc__)
     parser.add_argument("--input", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument(
@@ -19,7 +22,11 @@ def main() -> None:
         choices=("group_1_vs_group_0", "disease_vs_comparison"),
         required=True,
     )
-    args = parser.parse_args()
+    return parser
+
+
+def main() -> None:
+    args = build_parser().parse_args()
     args.output.write_bytes(args.input.read_bytes())
 
 

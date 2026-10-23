@@ -9,6 +9,7 @@ import json
 import os
 import platform
 import re
+import runpy
 import shutil
 import sys
 import uuid
@@ -205,6 +206,10 @@ class _StepArguments(argparse.ArgumentParser):
         raise ValueError(message or f"argument parsing stopped with status {status}")
 
 
+class _MissingDirectionBasis(ValueError):
+    """A required figure basis is absent; historical replay needs its recorded code."""
+
+
 def _step_strain_rollup(command: Command, *, absent_scope_is_off: bool) -> str:
     """The strain rollup scope a scoped step runs under, read by its module's own parser.
 
@@ -230,29 +235,40 @@ def _step_strain_rollup(command: Command, *, absent_scope_is_off: bool) -> str:
 
 
 def _step_direction_basis(command: Command, repository: Path) -> str | None:
-    """Read an optional recorded direction flag with standard argparse semantics.
-
-    Other step arguments belong to their entrypoints. Registered direction-aware
-    scripts support their unambiguous abbreviations. Elsewhere only the exact
-    option is interpreted, preserving unrelated flags such as --direction.
-    Equal-sign and repeated options retain their effective execution value.
-    """
-    required = command.argv[1] != "-m" and Path(command.argv[1]) in {
-        repository / name for name in DIRECTION_REQUIRED_SCRIPTS
-    }
-    parser = _StepArguments(add_help=False, allow_abbrev=required)
-    parser.add_argument(
-        "--direction-basis",
-        choices=[basis.value for basis in DirectionBasis],
-        required=required,
+    """Use registered figures' complete execution parsers, including rejection rules."""
+    script = Path(command.argv[1])
+    relative = (
+        script.relative_to(repository).as_posix() if script.is_relative_to(repository) else ""
     )
-    if Path(command.argv[1]) == repository / "scripts/create_study_trait_profile_heatmap.py":
-        # Its full parser rejects --d/--di as ambiguous with --display-max-rows.
-        parser.add_argument("--display-max-rows", type=int)
+    registered = next(
+        (name for name in DIRECTION_REQUIRED_SCRIPTS if name.casefold() == relative.casefold()),
+        None,
+    )
+    if registered is not None and relative != registered:
+        raise ValueError(f"{command.id} must use canonical script path {registered!r}")
+    if registered is not None:
+        # Load only this verifier's canonical registered implementation, never code
+        # selected by an arbitrary recorded repository path. main() uses this builder.
+        namespace = runpy.run_path(str(REPO_ROOT / registered))
+        parser = namespace["build_parser"](_StepArguments)
+        if not isinstance(parser, argparse.ArgumentParser):
+            raise TypeError(f"{registered} did not supply an argument parser")
+    else:
+        # Unrelated entrypoints retain their own options (e.g. --direction inc).
+        parser = _StepArguments(add_help=False, allow_abbrev=False)
+        parser.add_argument("--direction-basis", choices=[basis.value for basis in DirectionBasis])
     arguments = command.argv[3:] if command.argv[1] == "-m" else command.argv[2:]
     try:
-        parsed, _ = parser.parse_known_args(arguments)
+        parsed = (
+            parser.parse_args(arguments) if registered else parser.parse_known_args(arguments)[0]
+        )
     except ValueError as error:
+        if str(error).startswith(
+            "the following arguments are required:"
+        ) and "--direction-basis" in str(error):
+            raise _MissingDirectionBasis(
+                f"{command.id} has invalid direction-basis arguments: {error}"
+            ) from error
         raise ValueError(f"{command.id} has invalid direction-basis arguments: {error}") from error
     return str(parsed.direction_basis) if parsed.direction_basis is not None else None
 
@@ -620,7 +636,15 @@ def verify_arm(path: Path) -> ArmRun:
     # Pre-#949 plans use their recorded implementation for historical verification;
     # the current verifier does not infer missing direction arguments (#955).
     declared = {item.name for item in core.parameters or []}
-    _validate_plan(commands, context, absent_scope_is_off="strain_rollup" not in declared)
+    try:
+        _validate_plan(commands, context, absent_scope_is_off="strain_rollup" not in declared)
+    except _MissingDirectionBasis as error:
+        raise ValueError(
+            f"{error}. For a historical record, verify with its recorded commit "
+            f"{record.git_commit} and locked environment; retain the original checkout "
+            "and input/output paths. See docs/workflow.md for historical arm and "
+            "comparison verification. The current verifier does not infer a missing basis."
+        ) from error
     runtime = json.loads(record.runtime_json)
     if not isinstance(runtime, dict) or any(
         command.argv[0] != runtime.get("executable") for command in commands

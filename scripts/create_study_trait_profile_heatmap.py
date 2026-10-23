@@ -1166,8 +1166,11 @@ def write_paired_outputs(
     print(f"Studies represented by matched pairs: {pair_metadata['study_id'].nunique()}")
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(
+def build_parser(
+    parser_class: type[argparse.ArgumentParser] = argparse.ArgumentParser,
+) -> argparse.ArgumentParser:
+    """Expose the execution parser to verified arm planning and replay."""
+    parser = parser_class(
         description=(
             "Cluster studies by aggregate trait profiles to inspect whether similar "
             "conditions or body sites converge on similar microbial traits."
@@ -1313,6 +1316,11 @@ def main() -> None:
         action="store_true",
         help="Rejected: MediaDive growth-medium traits are excluded before normalization.",
     )
+    return parser
+
+
+def main() -> None:
+    parser = build_parser()
     args = parser.parse_args()
     if args.include_media_traits:
         parser.error("MediaDive is excluded before composition normalization (#174).")

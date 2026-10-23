@@ -38,7 +38,7 @@ def _rows(path: Path) -> list[dict[str, str]]:
         return list(csv.DictReader(stream, delimiter="\t"))
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture
 def fixture_direction_contract(monkeypatch: pytest.MonkeyPatch) -> None:
     """Exercise a declared direction-aware CLI with real fixture subprocesses."""
     monkeypatch.setattr(
@@ -384,6 +384,7 @@ def direction_arms(
 @pytest.mark.parametrize("core_name", ["default", "subset"])
 @pytest.mark.parametrize("form", ["split", "equals", "abbreviated", "repeated"])
 @pytest.mark.parametrize("matches_core", [False, True])
+@pytest.mark.usefixtures("fixture_direction_contract")
 def test_verify_arm_checks_effective_recorded_direction_basis(
     direction_arms: dict[str, ArmRun], core_name: str, form: str, matches_core: bool
 ) -> None:
@@ -483,8 +484,11 @@ def test_verify_arm_rejects_missing_required_heatmap_direction(
     changed["plan_sha256"] = content_hash(changed["plan"])
     path.write_text(json.dumps(changed))
     try:
-        with pytest.raises(ValueError, match=r"required.*--direction-basis"):
+        with pytest.raises(ValueError, match=r"required.*--direction-basis") as rejected:
             verify_arm(path)
+        assert direction_arms[core_name].git_commit in str(rejected.value)
+        assert "docs/workflow.md" in str(rejected.value)
+        assert "original checkout" in str(rejected.value)
     finally:
         path.write_bytes(original)
 
@@ -517,19 +521,48 @@ def test_profile_direction_verification_preserves_full_parser_ambiguity(
         path.write_bytes(original)
 
 
-@pytest.mark.parametrize("direction", ["all", "inc", "dec"])
-@pytest.mark.parametrize("with_basis", [False, True])
-def test_direction_projection_preserves_other_entrypoint_options(
-    direction: str, with_basis: bool
+@pytest.mark.parametrize("core_name", ["default", "subset"])
+@pytest.mark.parametrize(
+    "script", ["create_taxa_guild_heatmap.py", "create_study_trait_profile_heatmap.py"]
+)
+@pytest.mark.parametrize("tamper", ["unknown", "terminator", "case_missing", "case_abbreviated"])
+def test_rehashed_record_cannot_hide_non_executable_heatmap_arguments(
+    direction_arms: dict[str, ArmRun], core_name: str, script: str, tamper: str
 ) -> None:
+    record = direction_arms[core_name]
+    path = Path(record.manifest_path)
+    original = path.read_bytes()
+    changed = json.loads(original)
+    basis = str(record.direction_basis)
+    opposite = "disease_vs_comparison" if basis == "group_1_vs_group_0" else "group_1_vs_group_0"
+    argv = [sys.executable, str(REPO_ROOT / "scripts" / script), "--direction-basis", basis]
+    if tamper == "unknown":
+        argv.append("--bogus-option")
+    elif tamper == "terminator":
+        argv.extend(["--", "--direction-basis", opposite])
+    else:
+        argv[1] = str(REPO_ROOT / "scripts" / script.replace("create_", "Create_", 1))
+        argv[2:] = [] if tamper == "case_missing" else ["--direction-b", opposite]
+    changed["plan"][0]["argv"] = argv
+    changed["plan_sha256"] = content_hash(changed["plan"])
+    path.write_text(json.dumps(changed))
+    try:
+        message = (
+            "canonical script path" if tamper.startswith("case_") else "unrecognized arguments"
+        )
+        with pytest.raises(ValueError, match=message):
+            verify_arm(path)
+    finally:
+        path.write_bytes(original)
+    assert verify_arm(path).direction_basis == record.direction_basis
+
+
+@pytest.mark.parametrize("direction", ["all", "inc", "dec"])
+def test_direction_projection_preserves_other_entrypoint_options(direction: str) -> None:
     script = REPO_ROOT / "scripts/create_condition_trait_module_heatmap.py"
     arguments = [sys.executable, str(script), "--direction", direction]
-    if with_basis:
-        arguments.extend(["--direction-basis", "disease_vs_comparison"])
     command = Command("condition_modules", tuple(arguments), (), ())
-    assert arm_runtime._step_direction_basis(command, REPO_ROOT) == (
-        "disease_vs_comparison" if with_basis else None
-    )
+    assert arm_runtime._step_direction_basis(command, REPO_ROOT) is None
 
 
 def test_noel_plan_consumes_selection_evidence_for_already_oriented_core(

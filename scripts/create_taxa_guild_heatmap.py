@@ -585,8 +585,11 @@ def write_outputs(
     print(f"Traits plotted: {len(selected_matrix.columns)}")
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(
+def build_parser(
+    parser_class: type[argparse.ArgumentParser] = argparse.ArgumentParser,
+) -> argparse.ArgumentParser:
+    """Expose the execution parser to verified arm planning and replay."""
+    parser = parser_class(
         description=(
             "Create a taxa guild discovery clustered heatmap by clustering BugSigDB taxa "
             "from the taxa-trait matrix and filtering traits with study-profile support."
@@ -717,6 +720,11 @@ def main() -> None:
         action="store_true",
         help="Include MediaDive growth-medium traits in the selected traits.",
     )
+    return parser
+
+
+def main() -> None:
+    parser = build_parser()
     args = parser.parse_args()
 
     taxa_summary, selected_rank, studies_analyzed, profiles_analyzed = load_bugsigdb_taxa_summary(
