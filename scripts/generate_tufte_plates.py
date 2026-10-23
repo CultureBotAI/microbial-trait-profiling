@@ -473,8 +473,13 @@ _SPECIES_GAP_CAUSE_LABELS: dict[str, str] = {
 
 
 def _species_gap_cause_phrase(zero_rows: Sequence[Mapping[str, str]]) -> str:
-    """Derive short cause summary for Methods Plate I from zero-trait rows (#982)."""
-    active = [r for r in zero_rows if int(r.get("signature_occurrences", "0")) > 0]
+    """Derive short cause summary for Methods Plate I from species zero-trait rows (#982, #985)."""
+    active = [
+        r
+        for r in zero_rows
+        if int(r.get("signature_occurrences", "0")) > 0
+        and (r.get("taxonomic_rank") or "species").lower() == "species"
+    ]
     if not active:
         return ""
     cat_occ: dict[str, int] = {}
@@ -485,11 +490,6 @@ def _species_gap_cause_phrase(zero_rows: Sequence[Mapping[str, str]]) -> str:
         label = _SPECIES_GAP_CAUSE_LABELS.get(cat)
         if label is not None:
             cat_occ[label] = cat_occ.get(label, 0) + int(r.get("signature_occurrences", "0"))
-    if not cat_occ:
-        for r in active:
-            label = _SPECIES_GAP_CAUSE_LABELS.get(r.get("diagnosis_category", ""))
-            if label is not None:
-                cat_occ[label] = cat_occ.get(label, 0) + int(r.get("signature_occurrences", "0"))
     top_labels = [lbl for lbl, _ in sorted(cat_occ.items(), key=lambda x: -x[1])[:2]]
     if not top_labels:
         return ""
@@ -527,6 +527,8 @@ def methods_plate1_coverage_labels(
         )
         noun = "desync" if len(alias_rows) == 1 else "desyncs"
         desync_clause = f"All-rank NCBI TaxID {noun}: {len(alias_rows)} ({names})"
+        if len(desync_clause) > 76:
+            desync_clause = textwrap.fill(desync_clause, width=48)
     else:
         desync_clause = "All-rank: no focal NCBI TaxID desyncs in table"
     if present_rows:
@@ -657,6 +659,7 @@ def build_methods_plate1(repo: Path, out_dir: Path) -> Path:
         coverage_dir,
         profile_summary_rows=prof_summary_rows,
         study_meta_rows=study_meta,
+        require_counts=True,
     )
     if run_info.retained_studies is None or run_info.retained_studies <= 0:
         raise ValueError("missing retained_studies count in coverage run info")
@@ -665,6 +668,7 @@ def build_methods_plate1(repo: Path, out_dir: Path) -> Path:
     retained_studies = run_info.retained_studies
     retained_profiles = run_info.retained_profiles
     coverage_scope = run_info.strain_rollup
+    coverage_pop = format_coverage_population(run_info.population)
     m_counts = matrix_counts(repo)
     pooled_retained_traits = {
         int(r["retained_trait_count"]) for r in pooled if has_value(r.get("retained_trait_count"))
@@ -1025,7 +1029,7 @@ def build_methods_plate1(repo: Path, out_dir: Path) -> Path:
         84.25,
         50.8,
         mp1_labels["species_gap_note"],
-        fontsize=7.4,
+        fontsize=7.0 if mp1_labels["species_gap_note"].count("\n") >= 2 else 7.4,
         color=INC_COLOR,
         ha="center",
         va="center",
@@ -1101,9 +1105,9 @@ def build_methods_plate1(repo: Path, out_dir: Path) -> Path:
         0.025,
         f"{RERUN_SOURCE} · BugSigDB v1.3.1 (Zenodo 10627578) "
         "\N{MULTIPLICATION SIGN} KG-Microbe 20260120 · taxa_coverage_by_rank.tsv "
-        f"({COVERAGE_ANNOTATION_BASIS}, strain_rollup={coverage_scope}), "
+        f"({COVERAGE_ANNOTATION_BASIS}, strain_rollup={coverage_scope}, {coverage_pop}), "
         "condition_trait_module_guild_definition_table.tsv.",
-        fontsize=7.6,
+        fontsize=6.9,
         color=MUTED,
     )
 
@@ -3453,19 +3457,35 @@ def _plate6_remedy_clauses(
         for r in active_zero_rows
         if r.get("diagnosis_category") == "NCBI TaxID Desynchronization"
     )
+    has_slash = "Ambiguous Taxon / Bin Slash" in cats_present
+    has_rare = "Rare / Novel Isolate (Lacks KG Phenotype)" in cats_present
+    has_mag_cand = (
+        "Uncultivated / Metagenomic MAG" in cats_present or "Candidatus Lineage" in cats_present
+    )
+    has_euk = "Non-Bacterial / Fungal Eukaryote" in cats_present
 
     sub_items: list[str] = []
+    b_items: list[str] = []
     if has_alias:
         sub_items.append("TaxID alias review")
-    if "Ambiguous Taxon / Bin Slash" in cats_present:
+        b_items.append("TaxID alias review")
+    if has_slash:
         sub_items.append("LCA resolution")
-    if not sub_items:
-        if "Rare / Novel Isolate (Lacks KG Phenotype)" in cats_present:
+        b_items.append("slash-bin LCA")
+    if has_rare and (has_alias or has_slash):
+        b_items.append("curation")
+    if not (has_alias or has_slash):
+        if has_rare:
             sub_items.append("trait curation")
-        if "Uncultivated / Metagenomic MAG" in cats_present or "Candidatus Lineage" in cats_present:
+            b_items.append("curation")
+        if has_mag_cand:
             sub_items.append("direct trait evidence")
-        if "Non-Bacterial / Fungal Eukaryote" in cats_present and not sub_items:
-            sub_items.append("eukaryote filtering")
+            b_items.append("direct trait evidence")
+        if has_euk and not sub_items:
+            sub_items.append("host/diet filtering review")
+            b_items.append("host/diet filtering review")
+        if not sub_items:
+            sub_items.append("taxonomy review")
 
     if len(sub_items) >= 2:
         sub_joined = ", ".join(sub_items[:-1]) + f" and {sub_items[-1]}"
@@ -3477,25 +3497,12 @@ def _plate6_remedy_clauses(
         sub_joined = ""
         sub_verb = ""
 
-    b_items: list[str] = []
-    if has_alias:
-        b_items.append("TaxID alias review")
-    if "Ambiguous Taxon / Bin Slash" in cats_present:
-        b_items.append("slash-bin LCA")
-    if "Rare / Novel Isolate (Lacks KG Phenotype)" in cats_present:
-        b_items.append("curation")
-    if not b_items:
-        if "Uncultivated / Metagenomic MAG" in cats_present or "Candidatus Lineage" in cats_present:
-            b_items.append("direct trait evidence")
-        if "Non-Bacterial / Fungal Eukaryote" in cats_present:
-            b_items.append("eukaryote filtering")
-
     if len(b_items) >= 2:
         b_joined = ", ".join(b_items[:-1]) + f" & {b_items[-1]}"
     elif len(b_items) == 1:
         b_joined = b_items[0]
     else:
-        b_joined = "direct trait evidence"
+        b_joined = "taxonomy review"
 
     sub_suffix = f" — and how {sub_joined} {sub_verb}" if sub_joined else ""
     return sub_suffix, f"Actionable fixes: {b_joined}"
@@ -3506,8 +3513,10 @@ def plate6_text(
     zero_rows: Sequence[Mapping[str, str]],
     *,
     strain_rollup: str = "unrecorded",
+    population: Mapping[str, Any] | str | None = None,
 ) -> dict[str, str]:
     """Plate VI subtitle, panel titles, and footer derived from the coverage TSVs (#864, #982)."""
+    pop_label = format_coverage_population(population)
     by_rank = {r["taxonomic_rank"]: r for r in rank_rows if int(r[COVERAGE_TOTAL_TAXA_COL]) > 0}
     sp = by_rank.get("species")
     gen = by_rank.get("genus")
@@ -3654,7 +3663,7 @@ def plate6_text(
         "footer": (
             f"{RERUN_SOURCE} · taxa_coverage_by_rank.tsv, "
             "top_zero_trait_bugsigdb_taxa.tsv (create_taxa_coverage_histogram.py; "
-            f"{COVERAGE_ANNOTATION_BASIS}, strain_rollup={strain_rollup}).\n"
+            f"{COVERAGE_ANNOTATION_BASIS}, strain_rollup={strain_rollup}, {pop_label}).\n"
             f"{footer_alias_clause}"
         ),
     }
@@ -3664,8 +3673,13 @@ def build_plate6(repo: Path, out_dir: Path) -> Path:
     coverage_dir = repo / "trait-visualization/trait-profile-investigation/taxa-coverage"
     rank_rows = read_tsv(coverage_dir / "taxa_coverage_by_rank.tsv")
     zero_rows = read_tsv(coverage_dir / "top_zero_trait_bugsigdb_taxa.tsv")
-    strain_rollup = read_coverage_run_info(coverage_dir).strain_rollup
-    text = plate6_text(rank_rows, zero_rows, strain_rollup=strain_rollup)
+    cov_info = read_coverage_run_info(coverage_dir)
+    text = plate6_text(
+        rank_rows,
+        zero_rows,
+        strain_rollup=cov_info.strain_rollup,
+        population=cov_info.population,
+    )
 
     fig = plt.figure(figsize=(16.0, 9.0), facecolor=BG_COLOR)
     gs = fig.add_gridspec(
