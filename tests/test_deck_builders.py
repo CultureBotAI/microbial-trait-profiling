@@ -1907,3 +1907,269 @@ def test_plate_seven_uses_study_mean_for_arm_one_direction() -> None:
     assert trait["a1_diff"] == pytest.approx(-0.12)
     assert trait["paired_dir"] == "dec"
     assert trait["all3_concordant"] is True
+
+
+# --------------------------------------------------------------- Plate 6 & deck coverage (#864)
+
+
+def _coverage_rank_rows(family_occ_pct: str = "96.4") -> list[dict[str, str]]:
+    return [
+        {
+            "taxonomic_rank": "species",
+            "display_rank": "Species",
+            "total_taxa": "3343",
+            "trait_bearing_taxa": "1942",
+            "zero_trait_taxa": "1401",
+            "trait_bearing_pct": "58.1",
+            "zero_trait_pct": "41.9",
+            "total_occurrences": "15970",
+            "trait_bearing_occurrences": "12399",
+            "zero_trait_occurrences": "3571",
+            "trait_bearing_occurrences_pct": "77.6",
+            "zero_trait_occurrences_pct": "22.4",
+            "mean_traits_per_taxon": "29.0",
+            "median_traits_per_taxon": "18",
+        },
+        {
+            "taxonomic_rank": "genus",
+            "display_rank": "Genus",
+            "total_taxa": "1353",
+            "trait_bearing_taxa": "1048",
+            "zero_trait_taxa": "305",
+            "trait_bearing_pct": "77.5",
+            "zero_trait_pct": "22.5",
+            "total_occurrences": "17972",
+            "trait_bearing_occurrences": "17331",
+            "zero_trait_occurrences": "641",
+            "trait_bearing_occurrences_pct": "96.4",
+            "zero_trait_occurrences_pct": "3.6",
+            "mean_traits_per_taxon": "57.2",
+            "median_traits_per_taxon": "47",
+        },
+        {
+            "taxonomic_rank": "family",
+            "display_rank": "Family",
+            "total_taxa": "345",
+            "trait_bearing_taxa": "262",
+            "zero_trait_taxa": "83",
+            "trait_bearing_pct": "75.9",
+            "zero_trait_pct": "24.1",
+            "total_occurrences": "4685",
+            "trait_bearing_occurrences": "4516",
+            "zero_trait_occurrences": "169",
+            "trait_bearing_occurrences_pct": family_occ_pct,
+            "zero_trait_occurrences_pct": "3.6",
+            "mean_traits_per_taxon": "91.4",
+            "median_traits_per_taxon": "98",
+        },
+        {
+            "taxonomic_rank": "other",
+            "display_rank": "Other / unrecorded",
+            "total_taxa": "0",
+            "trait_bearing_taxa": "0",
+            "zero_trait_taxa": "0",
+            "trait_bearing_pct": "0.0",
+            "zero_trait_pct": "0.0",
+            "total_occurrences": "0",
+            "trait_bearing_occurrences": "0",
+            "zero_trait_occurrences": "0",
+            "trait_bearing_occurrences_pct": "0.0",
+            "zero_trait_occurrences_pct": "0.0",
+            "mean_traits_per_taxon": "0.0",
+            "median_traits_per_taxon": "0",
+        },
+    ]
+
+
+def _zero_trait_rows() -> list[dict[str, str]]:
+    return [
+        {
+            "rank_order": "1",
+            "taxon_id": "NCBITaxon:1898205",
+            "taxon_name": "Clostridiales bacterium",
+            "taxonomic_rank": "species",
+            "signature_occurrences": "195",
+            "study_count": "100",
+            "diagnosis_category": "Uncultivated / Metagenomic MAG",
+            "suggested_remediation": (
+                "Higher-rank trait rollups exist, but do not establish leaf-taxon traits; "
+                "direct isolate/MAG evidence needed"
+            ),
+        },
+        {
+            "rank_order": "2",
+            "taxon_id": "NCBITaxon:1940338",
+            "taxon_name": "Escherichia/Shigella",
+            "taxonomic_rank": "genus",
+            "signature_occurrences": "111",
+            "study_count": "75",
+            "diagnosis_category": "Ambiguous Taxon / Bin Slash",
+            "suggested_remediation": (
+                "Resolve multi-taxon 16S bin to lowest common ancestor or split constituent taxa"
+            ),
+        },
+        {
+            "rank_order": "3",
+            "taxon_id": "NCBITaxon:541000",
+            "taxon_name": "Oscillospiraceae",
+            "taxonomic_rank": "family",
+            "signature_occurrences": "69",
+            "study_count": "53",
+            "diagnosis_category": "NCBI TaxID Desynchronization",
+            "suggested_remediation": (
+                "Review possible alias before transferring traits: NCBITaxon:216572"
+            ),
+        },
+        {
+            "rank_order": "4",
+            "taxon_id": "NCBITaxon:508215",
+            "taxon_name": "Rothia",
+            "taxonomic_rank": "genus",
+            "signature_occurrences": "24",
+            "study_count": "21",
+            "diagnosis_category": "NCBI TaxID Desynchronization",
+            "suggested_remediation": (
+                "Review possible alias before transferring traits: NCBITaxon:32207"
+            ),
+        },
+    ]
+
+
+def test_deck_coverage_text_reads_the_coverage_tsvs() -> None:
+    """Methods Plate I and Tufte Plate VI slide text derive from the coverage TSVs (#864)."""
+    rank_rows = _coverage_rank_rows()
+    zero_rows = _zero_trait_rows()
+    metrics = {
+        "taxa_coverage_by_rank": {r["taxonomic_rank"]: r for r in rank_rows},
+        "zero_trait_rows": zero_rows,
+        "zero_trait_taxa": len(zero_rows),
+        "zero_trait_occurrences": sum(int(r["signature_occurrences"]) for r in zero_rows),
+    }
+    assert deck.methods_plate_one_caveat(metrics) == (
+        "Highlights the rank-stratified coverage cliff (Genus/Family 96.4% vs Species 77.6% "
+        "occurrences / 58.1% unique species) and defines the OR-rule oxygen/Gram guilds and "
+        "6 Table 1 focal traits."
+    )
+    distinct_fam = {
+        **metrics,
+        "taxa_coverage_by_rank": {
+            r["taxonomic_rank"]: r for r in _coverage_rank_rows(family_occ_pct="95.2")
+        },
+    }
+    assert "Genus/Family 96.4%/95.2% vs Species 77.6%" in deck.methods_plate_one_caveat(
+        distinct_fam
+    )
+
+    takeaway, caveat = deck.plate_six_text(metrics)
+    assert takeaway == (
+        "Genus (96.4%) and Family (96.4%) occurrences in BugSigDB have high KG-Microbe coverage, "
+        "whereas 41.9% of distinct species (1,401/3,343) and 22.4% of species occurrences "
+        "(3,571/15,970) have zero traits."
+    )
+    assert caveat == (
+        "Auditing the top 4 zero-trait taxa (399 occurrences) identifies TaxID alias candidates "
+        "for review: Oscillospiraceae (NCBITaxon:541000 → NCBITaxon:216572, 69 occs across 53 "
+        "studies), Rothia (NCBITaxon:508215 → NCBITaxon:32207, 24 occs across 21 studies), and "
+        "Escherichia/Shigella slash bins (111 occs)."
+    )
+    assert "162 traits" not in caveat
+
+
+def test_plate_six_text_and_remediation_labels_read_the_coverage_tsvs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Plate VI derives its titles, subtitle, footer, and compact labels from the TSVs (#864)."""
+    rank_rows = _coverage_rank_rows()
+    zero_rows = _zero_trait_rows()
+    text = plates.plate6_text(rank_rows, zero_rows)
+    assert text["subtitle"] == (
+        "Why Genus/Family signatures achieve 96.4% trait coverage while 41.9% of distinct "
+        "Species (22.4% of species occurrences) have zero traits in KG-Microbe — and how "
+        "TaxID alias review and LCA resolution address them."
+    )
+    assert text["panel_a_title"] == (
+        "A. The Species-Level Coverage Cliff\n"
+        "Species: 58.1% unique / 77.6% occurrences vs Genus: 77.5% / 96.4%"
+    )
+    assert text["panel_b_title"] == (
+        "B. Root-Cause Taxonomy of Top 100 Zero-Trait BugSigDB Taxa\n"
+        "Actionable fixes: TaxID alias review, slash-bin LCA & curation"
+    )
+    assert text["panel_c_title"] == (
+        "C. Top 18 Zero-Trait BugSigDB Taxa & Remediation Path\n"
+        "Highlighting Oscillospiraceae (53 st.) & Rothia (21 st.) TaxID alias candidates"
+    )
+    assert "Review possible alias before transferring traits" in text["footer"]
+    assert "NCBITaxon:541000 → 216572 (53 studies, 69 occ.)" in text["footer"]
+    assert "NCBITaxon:508215 → 32207 (21 studies, 24 occ.)" in text["footer"]
+
+    assert plates.plate6_remediation_label(zero_rows[0]) == "Direct trait evidence needed"
+    assert plates.plate6_remediation_label(zero_rows[1]) == "Multi-taxon LCA resolution"
+    assert plates.plate6_remediation_label(zero_rows[2]) == "Review TaxID alias → NCBITaxon:216572"
+    legacy_alias = {
+        "diagnosis_category": "NCBI TaxID Desynchronization",
+        "suggested_remediation": (
+            "Remap to canonical KG-Microbe TaxID with traits: "
+            "NCBITaxon:216572 (Oscillospiraceae; 162 traits in KG-Microbe)"
+        ),
+    }
+    assert plates.plate6_remediation_label(legacy_alias) == "Review TaxID alias → NCBITaxon:216572"
+    for cat, rem, expected in (
+        ("Non-Bacterial / Fungal Eukaryote", "FungiTraits", "Fungal eukaryote (non-bacterial)"),
+        ("Candidatus Lineage", "metabolic model", "MAG metabolic model inference"),
+        ("Rare / Novel Isolate (Lacks KG Phenotype)", "Curate", "Curate in BacDive / KG-Microbe"),
+    ):
+        assert (
+            plates.plate6_remediation_label(
+                {"diagnosis_category": cat, "suggested_remediation": rem}
+            )
+            == expected
+        )
+
+    cov_dir = tmp_path / "trait-visualization" / "trait-profile-investigation" / "taxa-coverage"
+    cov_dir.mkdir(parents=True)
+    rank_cols = list(rank_rows[0])
+    (cov_dir / "taxa_coverage_by_rank.tsv").write_text(
+        "\t".join(rank_cols)
+        + "\n"
+        + "\n".join("\t".join(r[c] for c in rank_cols) for r in rank_rows)
+        + "\n",
+        encoding="utf-8",
+    )
+    zero_cols = list(zero_rows[0])
+    (cov_dir / "top_zero_trait_bugsigdb_taxa.tsv").write_text(
+        "\t".join(zero_cols)
+        + "\n"
+        + "\n".join("\t".join(r[c] for c in zero_cols) for r in zero_rows)
+        + "\n",
+        encoding="utf-8",
+    )
+    closed: list[Any] = []
+    monkeypatch.setattr(plates.plt, "close", lambda fig: closed.append(fig))
+    out = tmp_path / "tufte_plate6_taxonomic_coverage_blindspots.png"
+    assert plates.build_plate6(tmp_path, tmp_path) == out
+    assert len(closed) == 1
+    fig = closed[0]
+    try:
+        fig.canvas.draw()
+        rank_labels = [label.get_text() for label in fig.axes[0].get_yticklabels()]
+        assert all("Other / unrecorded" not in lbl and "0/0" not in lbl for lbl in rank_labels)
+        panel_c_texts = [t.get_text() for t in fig.axes[2].texts]
+        assert all(
+            forbidden not in t
+            for t in panel_c_texts
+            for forbidden in ("Propagate", "Review possible", "Remap", "Curate in BacDive")
+        )
+        all_fig_text = "\n".join(
+            [
+                *(t.get_text() for t in fig.texts),
+                *(ax.get_title() for ax in fig.axes),
+                *panel_c_texts,
+            ]
+        )
+        for stale in ("54.1%", "60 st.", "60 studies", "162 traits", "family rollup", "Remap"):
+            assert stale not in all_fig_text
+        for t in fig.axes[2].texts:
+            assert t.get_window_extent().x1 <= fig.axes[2].get_window_extent().x1
+    finally:
+        plates.plt.close(fig)

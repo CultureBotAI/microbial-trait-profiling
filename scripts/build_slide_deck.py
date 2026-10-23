@@ -452,7 +452,10 @@ def load_rerun_metrics(repo: Path) -> dict:
     metrics["ind_conditions"] = len({r["condition"] for r in ind_rows})
     metrics["ind_sites"] = len({r["body_site_group"] for r in ind_rows})
     metrics["ind_median_studies"] = median(int(r["study_count"]) for r in ind_rows)
+    coverage_ranks = read_tsv(paired_dir / "taxa-coverage" / "taxa_coverage_by_rank.tsv")
+    metrics["taxa_coverage_by_rank"] = {r["taxonomic_rank"]: r for r in coverage_ranks}
     zero_trait = read_tsv(paired_dir / "taxa-coverage" / "top_zero_trait_bugsigdb_taxa.tsv")
+    metrics["zero_trait_rows"] = zero_trait
     metrics["zero_trait_taxa"] = len(zero_trait)
     metrics["zero_trait_occurrences"] = sum(int(r["signature_occurrences"]) for r in zero_trait)
     # 8. Corpus studies, to say when a slide's prior-result link is one of them (#641)
@@ -986,6 +989,66 @@ def plate_one_text(metrics: dict) -> tuple[str, str]:
     return takeaway, caveat
 
 
+def methods_plate_one_caveat(metrics: dict) -> str:
+    """Methods Plate I's caveat, read from taxa_coverage_by_rank.tsv (#864)."""
+    ranks = metrics["taxa_coverage_by_rank"]
+    sp = ranks["species"]
+    gen = ranks["genus"]
+    fam = ranks.get("family", gen)
+    gen_occ = float(gen["trait_bearing_occurrences_pct"])
+    fam_occ = float(fam["trait_bearing_occurrences_pct"])
+    gen_fam = (
+        f"{gen_occ:.1f}%"
+        if f"{gen_occ:.1f}" == f"{fam_occ:.1f}"
+        else f"{gen_occ:.1f}%/{fam_occ:.1f}%"
+    )
+    sp_occ = float(sp["trait_bearing_occurrences_pct"])
+    sp_unique = float(sp["trait_bearing_pct"])
+    return (
+        f"Highlights the rank-stratified coverage cliff (Genus/Family {gen_fam} vs "
+        f"Species {sp_occ:.1f}% occurrences / {sp_unique:.1f}% unique species) and defines the "
+        "OR-rule oxygen/Gram guilds and 6 Table 1 focal traits."
+    )
+
+
+def plate_six_text(metrics: dict) -> tuple[str, str]:
+    """Tufte Plate VI's takeaway and caveat, read from the coverage TSVs (#864)."""
+    ranks = metrics["taxa_coverage_by_rank"]
+    gen_occ = float(ranks["genus"]["trait_bearing_occurrences_pct"])
+    fam_occ = float(ranks["family"]["trait_bearing_occurrences_pct"])
+    sp = ranks["species"]
+    sp_zero_pct = float(sp["zero_trait_pct"])
+    sp_zero_taxa = int(sp["zero_trait_taxa"])
+    sp_total_taxa = int(sp["total_taxa"])
+    sp_zero_occ_pct = float(sp["zero_trait_occurrences_pct"])
+    sp_zero_occ = int(sp["zero_trait_occurrences"])
+    sp_total_occ = int(sp["total_occurrences"])
+    by_taxon = {r["taxon_id"]: r for r in metrics["zero_trait_rows"]}
+    osc = by_taxon["NCBITaxon:541000"]
+    rothia = by_taxon["NCBITaxon:508215"]
+    osc_occ = int(osc["signature_occurrences"])
+    osc_st = int(osc["study_count"])
+    osc_target = osc["suggested_remediation"].split("traits:")[-1].split("(")[0].strip()
+    rothia_occ = int(rothia["signature_occurrences"])
+    rothia_st = int(rothia["study_count"])
+    rothia_target = rothia["suggested_remediation"].split("traits:")[-1].split("(")[0].strip()
+    esh_occ = int(by_taxon["NCBITaxon:1940338"]["signature_occurrences"])
+    takeaway = (
+        f"Genus ({gen_occ:.1f}%) and Family ({fam_occ:.1f}%) occurrences in BugSigDB have high "
+        f"KG-Microbe coverage, whereas {sp_zero_pct:.1f}% of distinct species "
+        f"({sp_zero_taxa:,}/{sp_total_taxa:,}) and {sp_zero_occ_pct:.1f}% of species "
+        f"occurrences ({sp_zero_occ:,}/{sp_total_occ:,}) have zero traits."
+    )
+    caveat = (
+        f"Auditing the top {metrics['zero_trait_taxa']} zero-trait taxa "
+        f"({metrics['zero_trait_occurrences']:,} occurrences) identifies TaxID alias candidates "
+        f"for review: Oscillospiraceae (NCBITaxon:541000 → {osc_target}, {osc_occ} occs across "
+        f"{osc_st} studies), Rothia (NCBITaxon:508215 → {rothia_target}, {rothia_occ} occs "
+        f"across {rothia_st} studies), and Escherichia/Shigella slash bins ({esh_occ} occs)."
+    )
+    return takeaway, caveat
+
+
 def crc_oxygen_text(rows: list[dict[str, str]]) -> str:
     """'Colorectal cancer splits ... (Feces +0.68 vs Lower GI tract -0.79). ', from the
     oxygen-switch table, or '' when either stratum is missing (#641)."""
@@ -1493,9 +1556,7 @@ def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
             "taxon occurrences) joined to 5,829 KG-Microbe organisms "
             "\N{MULTIPLICATION SIGN} 317 normalized traits via NCBI Taxonomy subtree "
             "rollup.",
-            "caveat": "Highlights the rank-stratified coverage cliff (Genus/Family 96.5% vs "
-            "Species 78.0% occurrences / 54.1% unique species) and defines the OR-rule "
-            "oxygen/Gram guilds and 6 Table 1 focal traits.",
+            "caveat": methods_plate_one_caveat(metrics),
             "methods_path": "methods/README.md",
             "evidence_path": "trait-visualization/trait-profile-investigation/taxa-coverage/"
             "taxa_coverage_by_rank.tsv",
@@ -1653,14 +1714,8 @@ def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
             "figure_file_path": "data/derived/tufte_plates/"
             "tufte_plate6_taxonomic_coverage_blindspots.png",
             "code_path": "scripts/generate_tufte_plates.py",
-            "takeaway": "Genus (96.5%) and Family (96.5%) occurrences in BugSigDB have high "
-            "KG-Microbe coverage, whereas 45.9% of distinct species (1,764/3,846) and "
-            "22.0% of species occurrences (4,205/19,113) have zero traits.",
-            "caveat": f"Auditing the top {metrics['zero_trait_taxa']} zero-trait taxa "
-            f"({metrics['zero_trait_occurrences']:,} occurrences) reveals actionable TaxID "
-            "synonyms: Oscillospiraceae (NCBITaxon:541000, 82 occs, 0 traits vs "
-            "canonical 216572 with 162 traits), Rothia (508215 vs 32207), and "
-            "Escherichia/Shigella slash bins (139 occs).",
+            "takeaway": plate_six_text(metrics)[0],
+            "caveat": plate_six_text(metrics)[1],
             "methods_path": "trait-visualization/trait-profile-investigation/taxa-coverage/"
             "README.md",
             "evidence_path": "trait-visualization/trait-profile-investigation/taxa-coverage/"

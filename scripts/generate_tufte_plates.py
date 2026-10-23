@@ -3258,6 +3258,98 @@ def build_plate5(repo: Path, out_dir: Path) -> Path:
 # ==============================================================================
 # PLATE 6: Taxonomic Resolution vs Trait Coverage & Root-Cause Diagnostic
 # ==============================================================================
+def plate6_remediation_label(row: Mapping[str, str]) -> str:
+    """Compact Panel C remediation label read from top_zero_trait_bugsigdb_taxa.tsv (#864)."""
+    cat = row["diagnosis_category"]
+    rem = row["suggested_remediation"]
+    if "NCBITaxon:" in rem:
+        target = rem.split("traits:")[-1].split("(")[0].strip()
+        return f"Review TaxID alias → {target}"
+    if "lowest common ancestor" in rem:
+        return "Multi-taxon LCA resolution"
+    if (
+        cat == "Uncultivated / Metagenomic MAG"
+        or "higher-rank" in rem.lower()
+        or "do not establish leaf-taxon traits" in rem
+    ):
+        return "Direct trait evidence needed"
+    if "FungiTraits" in rem:
+        return "Fungal eukaryote (non-bacterial)"
+    if "Candidatus" in cat:
+        return "MAG metabolic model inference"
+    return "Curate in BacDive / KG-Microbe"
+
+
+def _alias_target_id(row: Mapping[str, str] | None, fallback: str) -> str:
+    if not row:
+        return fallback
+    rem = row.get("suggested_remediation", "")
+    if "NCBITaxon:" not in rem:
+        return fallback
+    return rem.split("traits:")[-1].split("(")[0].strip().removeprefix("NCBITaxon:")
+
+
+def plate6_text(
+    rank_rows: Sequence[Mapping[str, str]],
+    zero_rows: Sequence[Mapping[str, str]],
+) -> dict[str, str]:
+    """Plate VI subtitle, panel titles, and footer derived from the coverage TSVs (#864)."""
+    by_rank = {r["taxonomic_rank"]: r for r in rank_rows if int(r["total_taxa"]) > 0}
+    sp = by_rank["species"]
+    gen = by_rank.get("genus", sp)
+    fam = by_rank.get("family", gen)
+    sp_unique = float(sp["trait_bearing_pct"])
+    sp_zero = float(sp["zero_trait_pct"])
+    sp_occ = float(sp["trait_bearing_occurrences_pct"])
+    sp_zero_occ = float(sp["zero_trait_occurrences_pct"])
+    gen_unique = float(gen["trait_bearing_pct"])
+    gen_occ = float(gen["trait_bearing_occurrences_pct"])
+    fam_occ = float(fam["trait_bearing_occurrences_pct"])
+    gen_fam_occ = (
+        f"{gen_occ:.1f}%"
+        if f"{gen_occ:.1f}" == f"{fam_occ:.1f}"
+        else f"{gen_occ:.1f}%/{fam_occ:.1f}%"
+    )
+    by_taxon = {r["taxon_id"]: r for r in zero_rows}
+    osc = by_taxon.get("NCBITaxon:541000")
+    rothia = by_taxon.get("NCBITaxon:508215")
+    osc_studies = int(osc["study_count"]) if osc else 0
+    osc_occ = int(osc["signature_occurrences"]) if osc else 0
+    osc_target = _alias_target_id(osc, "216572")
+    rothia_studies = int(rothia["study_count"]) if rothia else 0
+    rothia_occ = int(rothia["signature_occurrences"]) if rothia else 0
+    rothia_target = _alias_target_id(rothia, "32207")
+    return {
+        "subtitle": (
+            f"Why Genus/Family signatures achieve {gen_fam_occ} trait coverage while "
+            f"{sp_zero:.1f}% of distinct Species ({sp_zero_occ:.1f}% of species occurrences) "
+            "have zero traits in KG-Microbe — and how TaxID alias review and LCA resolution "
+            "address them."
+        ),
+        "panel_a_title": (
+            "A. The Species-Level Coverage Cliff\n"
+            f"Species: {sp_unique:.1f}% unique / {sp_occ:.1f}% occurrences vs Genus: "
+            f"{gen_unique:.1f}% / {gen_occ:.1f}%"
+        ),
+        "panel_b_title": (
+            "B. Root-Cause Taxonomy of Top 100 Zero-Trait BugSigDB Taxa\n"
+            "Actionable fixes: TaxID alias review, slash-bin LCA & curation"
+        ),
+        "panel_c_title": (
+            "C. Top 18 Zero-Trait BugSigDB Taxa & Remediation Path\n"
+            f"Highlighting Oscillospiraceae ({osc_studies} st.) & Rothia ({rothia_studies} st.) "
+            "TaxID alias candidates"
+        ),
+        "footer": (
+            f"{RERUN_SOURCE} · taxa_coverage_by_rank.tsv, "
+            "top_zero_trait_bugsigdb_taxa.tsv (create_taxa_coverage_histogram.py). "
+            f"Review possible alias before transferring traits: NCBITaxon:541000 → {osc_target} "
+            f"({osc_studies} studies, {osc_occ} occ.) and NCBITaxon:508215 → {rothia_target} "
+            f"({rothia_studies} studies, {rothia_occ} occ.)."
+        ),
+    }
+
+
 def build_plate6(repo: Path, out_dir: Path) -> Path:
     rank_rows = read_tsv(
         repo
@@ -3267,6 +3359,7 @@ def build_plate6(repo: Path, out_dir: Path) -> Path:
         repo / "trait-visualization/trait-profile-investigation/taxa-coverage/"
         "top_zero_trait_bugsigdb_taxa.tsv"
     )
+    text = plate6_text(rank_rows, zero_rows)
 
     fig = plt.figure(figsize=(16.0, 9.0), facecolor=BG_COLOR)
     gs = fig.add_gridspec(
@@ -3299,15 +3392,17 @@ def build_plate6(repo: Path, out_dir: Path) -> Path:
     fig.text(
         0.04,
         0.922,
-        "Why Genus/Family signatures achieve 96.5% trait coverage while 45.9% of distinct Species "
-        "(22.0% of species occurrences) have zero traits in KG-Microbe — and how TaxID remapping "
-        "and LCA propagation recover them.",
+        text["subtitle"],
         fontsize=8.7,
         color=MUTED,
     )
 
     # --- Panel A: Rank-Stratified Coverage Cliff ---
-    ranks_keep = [r for r in rank_rows if r["taxonomic_rank"] != "superkingdom"]
+    ranks_keep = [
+        r
+        for r in rank_rows
+        if r["taxonomic_rank"] not in {"superkingdom", "other"} and int(r["total_taxa"]) > 0
+    ]
     y_rk = np.arange(len(ranks_keep))[::-1]
     ax_rank.set_ylim(-0.5, len(ranks_keep) - 0.3)
     ax_rank.set_xlim(38, 132)
@@ -3367,8 +3462,7 @@ def build_plate6(repo: Path, out_dir: Path) -> Path:
     )
     ax_rank.set_xlabel("% with ≥1 KG-Microbe Trait Annotation", fontsize=8.2, fontweight="bold")
     ax_rank.set_title(
-        "A. The Species-Level Coverage Cliff\nSpecies: 54.1% unique / 78.0% occurrences vs Genus: "
-        "76.0% / 96.5%",
+        text["panel_a_title"],
         fontsize=9.4,
         fontweight="bold",
         loc="left",
@@ -3435,8 +3529,7 @@ def build_plate6(repo: Path, out_dir: Path) -> Path:
         fontweight="bold",
     )
     ax_cat.set_title(
-        "B. Root-Cause Taxonomy of Top 100 Zero-Trait BugSigDB Taxa\nActionable fixes: TaxID "
-        "remapping, slash-bin LCA & family rollup",
+        text["panel_b_title"],
         fontsize=9.3,
         fontweight="bold",
         loc="left",
@@ -3457,19 +3550,7 @@ def build_plate6(repo: Path, out_dir: Path) -> Path:
         st = int(r["study_count"])
         cat = r["diagnosis_category"]
         col = cat_colors.get(cat, INK)
-        rem = r["suggested_remediation"]
-        if "NCBITaxon:" in rem:
-            rem_short = "Remap → " + rem.split("traits:")[-1].strip()
-        elif "lowest common ancestor" in rem:
-            rem_short = "Multi-taxon LCA resolution"
-        elif "Propagate higher-rank" in rem:
-            rem_short = "Propagate family/order traits"
-        elif "FungiTraits" in rem:
-            rem_short = "Fungal eukaryote (non-bacterial)"
-        elif "Candidatus" in cat:
-            rem_short = "MAG metabolic model inference"
-        else:
-            rem_short = "Curate in BacDive / KG-Microbe"
+        rem_short = plate6_remediation_label(r)
 
         ax_top.barh(yp, occ, height=0.58, color=col, alpha=0.88)
         ax_top.text(
@@ -3494,8 +3575,7 @@ def build_plate6(repo: Path, out_dir: Path) -> Path:
         fontweight="bold",
     )
     ax_top.set_title(
-        "C. Top 18 Zero-Trait BugSigDB Taxa & Remediation Path\nHighlighting Oscillospiraceae (60 "
-        "st.) & Rothia (23 st.) TaxID desyncs",
+        text["panel_c_title"],
         fontsize=9.3,
         fontweight="bold",
         loc="left",
@@ -3506,10 +3586,7 @@ def build_plate6(repo: Path, out_dir: Path) -> Path:
     fig.text(
         0.04,
         0.025,
-        f"{RERUN_SOURCE} · taxa_coverage_by_rank.tsv, "
-        "top_zero_trait_bugsigdb_taxa.tsv (create_taxa_coverage_histogram.py). Remapping "
-        "NCBITaxon:541000 → 216572 recovers 162 traits across 60 studies; NCBITaxon:508215 → 32207 "
-        "recovers 87 traits across 23 studies.",
+        text["footer"],
         fontsize=7.7,
         color=MUTED,
     )
