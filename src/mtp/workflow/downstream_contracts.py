@@ -305,6 +305,23 @@ def build_calibration_verdict(
                 "uncalibrated by this harness."
             ),
         )
+    # A failed null control is evidence at any budget, so a short run cannot hide it
+    # behind insufficient_budget (#815).
+    if anti_conservative_detected or null_control_passed is False:
+        return CalibrationVerdict(
+            id=verdict_id,
+            production_analysis_spec_id=production_spec.id,
+            evaluated_analysis_spec_id=evaluated_spec.id,
+            estimator_match=True,
+            outcome=CalibrationOutcome.anti_conservative,
+            null_control_passed=False,
+            power_passed=power_passed,
+            replicate_budget_sufficient=replicate_budget_sufficient,
+            summary_message=(
+                f"Empirical type-I error or null FDR for {production_spec.id!r} exceeded "
+                "declared tolerance."
+            ),
+        )
     if not replicate_budget_sufficient:
         return CalibrationVerdict(
             id=verdict_id,
@@ -318,21 +335,6 @@ def build_calibration_verdict(
             summary_message=(
                 f"Calibration harness for {production_spec.id!r} ran below the protocol "
                 "minimum replicate budget."
-            ),
-        )
-    if anti_conservative_detected or null_control_passed is False:
-        return CalibrationVerdict(
-            id=verdict_id,
-            production_analysis_spec_id=production_spec.id,
-            evaluated_analysis_spec_id=evaluated_spec.id,
-            estimator_match=True,
-            outcome=CalibrationOutcome.anti_conservative,
-            null_control_passed=False,
-            power_passed=power_passed,
-            replicate_budget_sufficient=True,
-            summary_message=(
-                f"Empirical type-I error or null FDR for {production_spec.id!r} exceeded "
-                "declared tolerance."
             ),
         )
     if null_control_passed is True and power_passed is True:

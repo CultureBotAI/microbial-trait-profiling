@@ -1103,6 +1103,19 @@ classes:
         required: true
         title: Summary message
         description: Human-readable explanation of the calibration verdict and any estimator mismatch.
+      negative_control_procedure:
+        title: Negative control procedure
+        description: Harness procedure declared in advance to fail the acceptance criteria, recorded apart from the production procedure's own error control.
+      negative_control_outcome:
+        title: Negative control outcome
+        description: Overall status the calibration harness reported for the negative control procedure.
+      negative_control_as_expected:
+        range: boolean
+        title: Negative control as expected
+        description: Whether the negative control failed, as declared, every criterion the production verdict relies on. False means it passed one, which is then too weak to certify the production procedure; unset means its run did not settle it.
+      selection_uncertainty:
+        title: Selection uncertainty
+        description: Uncertainty from selecting the analysed features on the same corpus, which calibrating the fixed-feature procedure does not resolve in either direction.
   ScientificResultRecord:
     description: Standardized scientific result row bound to explicit analysis specification, eligibility ledger, and basis contracts.
     title: Scientific Result Record
