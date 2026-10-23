@@ -24,6 +24,7 @@ from mtp.contribution_inputs import (
     verify_kg,
 )
 from mtp.paths import DERIVED_DATA_DIR, REPO_ROOT
+from mtp.taxa_trait_matrix import STRAIN_ROLLUPS
 
 Record = dict[str, Any]
 
@@ -241,6 +242,15 @@ def main() -> None:
     parser.add_argument(
         "--protocol", type=Path, default=REPO_ROOT / "methods/table1_taxon_influence_protocol.json"
     )
+    parser.add_argument(
+        "--strain-rollup",
+        choices=STRAIN_ROLLUPS,
+        default="off",
+        help=(
+            "The BacDive strain rollup scope the input matrix was built with, so that the "
+            "ledger reconstructs its counts by the same rule (#788)."
+        ),
+    )
     args = parser.parse_args()
     protocol = json.loads(args.protocol.read_text(encoding="utf-8"))
     output: Path = args.output
@@ -265,6 +275,7 @@ def main() -> None:
         args.kg_dir / "merged-kg_nodes.tsv",
         set(base.columns),
         set(base.traits.values()),
+        strain_rollup=args.strain_rollup,
     )
     print("Reconciling all matrix and profile counts", flush=True)
     ledger = reconcile(base, graph)
@@ -284,6 +295,7 @@ def main() -> None:
         "protocol": protocol,
         "traits": base.traits,
         "denominator_columns": base.columns,
+        "strain_rollup": args.strain_rollup,
         "profiles": len(base.profiles),
         "studies": len({k[0] for k in base.profiles}),
         "header_continuation_repaired": graph.header_repaired,

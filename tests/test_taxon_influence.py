@@ -241,6 +241,30 @@ def test_pinned_header_and_agent_continuations_preserve_edge_identity(tmp_path: 
     assert graph.continued_records == 1
 
 
+def test_strain_records_count_at_their_node_under_the_declared_scope(tmp_path: Path) -> None:
+    """The ledger reads BacDive strain records by the matrix builder's rule (#788)."""
+    edges, nodes = tmp_path / "edges.tsv", tmp_path / "nodes.tsv"
+    edges.write_text(
+        "id\tsubject\tpredicate\tobject\tprimary_knowledge_source\n"
+        "s1\tkgmicrobe.strain:1\tbiolink:subclass_of\tNCBITaxon:1\tinfores:bacdive\n"
+        "s2\tkgmicrobe.strain:1\tbiolink:has_phenotype\tMETPO:1000608\tinfores:bacdive\n"
+        "s3\tkgmicrobe.strain:1\tbiolink:has_phenotype\tMETPO:1004004\tinfores:bacdive\n",
+        encoding="utf-8",
+    )
+    nodes.write_text("id\tname\nNCBITaxon:1\tSpecies one\n", encoding="utf-8")
+    columns = {A, "METPO:1004004"}
+
+    off = load_graph(edges, nodes, columns, {A})
+    phenotype = load_graph(edges, nodes, columns, {A}, strain_rollup="phenotype")
+    full = load_graph(edges, nodes, columns, {A}, strain_rollup="full")
+
+    assert (off.traits, off.assertions) == ({}, {})
+    assert phenotype.traits == {SPECIES1: {A}}
+    assert full.traits == {SPECIES1: {A, "METPO:1004004"}}
+    evidence = phenotype.assertions[(SPECIES1, A)]
+    assert [(item.edge_id, item.primary_source) for item in evidence] == [("s2", "infores:bacdive")]
+
+
 @pytest.mark.parametrize("invalid", ["", "-1", "1.5", "NaN", " 1", "\u0661"])
 def test_invalid_counts_are_errors(invalid: str) -> None:
     with pytest.raises(ValueError, match="nonnegative integer"):
