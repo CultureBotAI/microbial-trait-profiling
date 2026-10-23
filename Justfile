@@ -125,6 +125,8 @@ evidence-verify archive:
 evidence-resolve archive original:
 	uv run python -m mtp.workflow archive-resolve "{{archive}}" "{{original}}"
 
+# Its strain rollup scope is the primary phenotype unless --strain-rollup off or full asks
+# for the sensitivity or exploratory core (#788).
 # Build one shared raw-to-core execution before rerunning any owner analysis.
 [positional-arguments]
 rerun-core output raw edges nodes *ARGS:

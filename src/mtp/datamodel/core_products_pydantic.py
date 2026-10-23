@@ -978,11 +978,11 @@ class FeatureDefinition(ConfiguredBaseModel):
     object_name: str = Field(default=..., title="Object name", description="""Human-readable trait or medium name.""", json_schema_extra = { "linkml_meta": {'domain_of': ['KgTraitAssertion', 'FeatureDefinition']} })
     object_category: str = Field(default=..., title="Object category", description="""KG category of the assertion object.""", json_schema_extra = { "linkml_meta": {'domain_of': ['KgTraitAssertion', 'FeatureDefinition']} })
     feature_class: FeatureClass = Field(default=..., title="Feature class", description="""Whether the feature is a trait annotation or a culture-medium relation.""", json_schema_extra = { "linkml_meta": {'domain_of': ['FeatureDefinition']} })
-    annotation_evidence: str = Field(default=..., title="Annotation evidence", description="""Direct versus descendant-derived evidence remains unresolved by this matrix.""", json_schema_extra = { "linkml_meta": {'domain_of': ['FeatureDefinition']} })
+    annotation_evidence: str = Field(default=..., title="Annotation evidence", description="""The assertion origins the feature's counts may combine, unresolved by this matrix; direct or descendant, and BacDive strain records when the run's strain rollup scope admits the feature.""", json_schema_extra = { "linkml_meta": {'domain_of': ['FeatureDefinition']} })
 
     @field_validator('annotation_evidence')
     def pattern_annotation_evidence(cls, v):
-        pattern=re.compile(r"^direct_or_descendant_unresolved$")
+        pattern=re.compile(r"^(direct_or_descendant_unresolved|direct_descendant_or_strain_unresolved)$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.match(element):

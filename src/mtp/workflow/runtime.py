@@ -17,6 +17,7 @@ import uuid
 from collections.abc import Callable, Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Protocol
 
 from git import Repo
 from git.exc import GitError
@@ -39,7 +40,19 @@ from mtp.workflow.models import (
 )
 
 Operation = Callable[[dict[str, Path], dict[str, Path], dict[str, object]], None]
-Validator = Callable[[ProductDefinition, Path, Mapping[str, Path]], Sequence[ValidationResult]]
+
+
+class Validator(Protocol):
+    """Check one product against its related products and the run's resolved parameters."""
+
+    def __call__(
+        self,
+        product: ProductDefinition,
+        path: Path,
+        context: Mapping[str, Path],
+        *,
+        parameters: Mapping[str, str],
+    ) -> Sequence[ValidationResult]: ...
 
 
 class WorkflowExecutionError(ValueError):
@@ -223,14 +236,14 @@ def _require_full_source_background(definition: WorkflowDefinition) -> None:
             "source_taxa_matrix",
             {"source_reported_taxa", "kg_edges", "kg_nodes"},
             {"taxa_matrix", "feature_metadata"},
-            set(),
+            {"strain_rollup"},
         ),
         (
             "feature_catalog",
             "feature_catalog",
             {"feature_metadata", "taxa_matrix"},
             {"feature_catalog"},
-            set(),
+            {"strain_rollup"},
         ),
     )
     for name, operation, inputs, outputs, parameters in contracts:
@@ -338,6 +351,7 @@ def _make_artifact(
     producer: str | None,
     validator: Validator | None,
     context: Mapping[str, Path],
+    parameters: Mapping[str, str],
 ) -> ArtifactInstance:
     digest, size, members = inventory(path, str(product.storage_kind))
     validations = [
@@ -348,7 +362,7 @@ def _make_artifact(
         )
     ]
     if validator:
-        extra = list(validator(product, path, context))
+        extra = list(validator(product, path, context, parameters=parameters))
         if not extra:
             raise ValueError(f"Validator returned no results for {product.id}")
         validations.extend(ValidationResult.model_validate(item) for item in extra)
@@ -498,6 +512,7 @@ def execute_workflow(
                 None,
                 validator,
                 context,
+                resolved,
             )
             artifact.requested_path = str(Path(input_paths[product_id]).absolute())
             run.artifacts = [*(run.artifacts or []), artifact]
@@ -542,6 +557,7 @@ def execute_workflow(
                     step_run.id,
                     validator,
                     current_context,
+                    resolved,
                 )
                 for key in step.outputs
             ]

@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 from mtp.paths import REPO_ROOT
+from mtp.taxa_trait_matrix import STRAIN_ROLLUPS, parse_strain_rollup
 from mtp.workflow.archive import ArchiveResolver, create_archive, verify_archive
 from mtp.workflow.comparison import compare_legacy_bundle
 from mtp.workflow.consumers import import_legacy_provenance, verify_consumer_record
@@ -68,6 +69,7 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--parameter", action="append", default=[], metavar="NAME=VALUE")
     run.add_argument("--output-root", type=Path, required=True)
     run.add_argument("--contrast-population", choices=[item.value for item in ContrastPopulation])
+    run.add_argument("--strain-rollup", choices=STRAIN_ROLLUPS)
     prepare = sub.add_parser("prepare-core", help="Prepare the shared verified owner-rerun core")
     prepare.add_argument("output_root", type=Path)
     prepare.add_argument("raw", type=Path)
@@ -81,11 +83,15 @@ def build_parser() -> argparse.ArgumentParser:
         choices=[item.value for item in ContrastPopulation],
         default="all_paired",
     )
+    # The specification's default is the primary phenotype scope; off and full are the
+    # sensitivity and exploratory runs (#788)
+    prepare.add_argument("--strain-rollup", choices=STRAIN_ROLLUPS)
     fixture = sub.add_parser("fixture", help="Run the small offline fixture from raw inputs")
     fixture.add_argument("--output-root", type=Path, required=True)
     fixture.add_argument(
         "--contrast-population", choices=[item.value for item in ContrastPopulation]
     )
+    fixture.add_argument("--strain-rollup", choices=STRAIN_ROLLUPS)
     validate = sub.add_parser("validate", help="Recheck execution records and actual artifacts")
     validate.add_argument("manifest", type=Path)
     lineage = sub.add_parser("lineage", help="Trace a product, optionally a profile/trait cell")
@@ -155,6 +161,11 @@ def main(argv: list[str] | None = None) -> int:
             if prior is not None and prior != args.contrast_population:
                 parser.error("--contrast-population conflicts with --parameter contrast_population")
             parameters["contrast_population"] = args.contrast_population
+        if args.strain_rollup is not None:
+            prior = parameters.get("strain_rollup")
+            if prior is not None and prior != args.strain_rollup:
+                parser.error("--strain-rollup conflicts with --parameter strain_rollup")
+            parameters["strain_rollup"] = args.strain_rollup
         population = parameters.get("contrast_population", "all_paired")
         if population != "all_paired" and spec_path.resolve() == DEFAULT_SPEC.resolve():
             spec_path = SUBSET_SPEC
@@ -190,6 +201,8 @@ def main(argv: list[str] | None = None) -> int:
                 for artifact in run.artifacts or []
                 if artifact.product_id == args.product
             )
+            # The cell is traced under the scope the run recorded, off before #788
+            recorded = {item.name: item.value for item in run.parameters or []}
             result = trace_profile_feature(
                 paths["studies"],
                 paths["taxa_matrix"],
@@ -198,6 +211,7 @@ def main(argv: list[str] | None = None) -> int:
                 (args.profile[0], args.profile[1], args.profile[2]),
                 args.feature,
                 host_species=None if cohort == "all" else cohort,
+                strain_rollup=parse_strain_rollup(recorded.get("strain_rollup", "off")),
             )
             print(json.dumps(result, indent=2))
         else:
