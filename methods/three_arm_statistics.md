@@ -16,6 +16,12 @@ that trait in that profile — one reported taxon can contribute many counts via
 its descendant nodes, so cells are not taxon counts (the sampling-unit inflation
 that #131 recorded for the earlier, assertion-level enrichment urn).
 
+Pairing alone does not remove between-list annotation-depth differences. The
+standalone [presence and depth sensitivity](presence_depth_sensitivity.md) compares
+0/1 taxon-by-trait representation and estimates a conditional paired fraction
+difference at zero annotation-depth difference, with equal study weights. It is
+an exploratory sensitivity, not a causal correction or a replacement arm result.
+
 ## What each arm asks
 
 **Composition arm.** Within one experiment, is a trait's share of the signal
