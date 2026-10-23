@@ -35,7 +35,7 @@ All evidence in this audit is evaluated against the pinned KG-Microbe snapshot r
 
 The machine-readable table captures all required audit attributes across the 6 features:
 
-| Trait Key | Feature Name | Ontology ID & Label | Primary KG Source (Edges Reaching the Matrix) | BacDive Strain Edges Not Read | Direct KG Taxa | BugSigDB Matrix Taxa | Profile Support ($N=5,629$) | Evidence Status | Decision |
+| Trait Key | Feature Name | Ontology ID & Label | Primary KG Source (NCBITaxon Edges, Every Scope) | BacDive Strain Edges (Read Under `phenotype`, Not `off`) | Direct KG Taxa | BugSigDB Matrix Taxa | Profile Support ($N=5,629$) | Evidence Status | Decision |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | `METPO:1000608` | Facultatively aerobic | `METPO:1000608` (facultatively aerobic) | `infores:madin_etal` (5,496) | 53 | 5,496 | 861 (16.6%) | 4,411 (78.4%) | measured + propagated | **keep_separate** |
 | `METPO:2000103\|GO:0030245` | Cellulose catabolic process | `GO:0030245` (cellulose catabolic process) | `infores:madin_etal` (186) | 0 | 186 | 164 (3.2%) | 2,922 (51.9%) | measured + propagated | **keep_separate** |
@@ -44,7 +44,12 @@ The machine-readable table captures all required audit attributes across the 6 f
 | `METPO:2000103\|pathways:arsenate_reduction` | Arsenate reduction | `pathways:arsenate_reduction` (arsenate_reduction) | `infores:madin_etal` (51) | 0 | 51 | 58 (1.1%) | 1,739 (30.9%) | unresolved mechanism + propagated | **unresolved / keep_separate** |
 | `METPO:1000623` | Moderately halophilic | `METPO:1000623` (moderately halophilic) | `infores:madin_etal` (426) | 4 | 426 | 337 (6.5%) | 3,364 (59.8%) | measured (discrete) + unresolved (quant) + propagated | **keep_separate** |
 
-**Source columns ([#774](https://github.com/CultureBotAI/microbial-trait-profiling/issues/774)).** Edges are counted by `primary_knowledge_source` in the pinned edge file. The matrix builder (`src/mtp/taxa_trait_matrix.py`) reads trait edges only on `NCBITaxon:` subjects, so the source column counts those edges alone; each subject carries one edge per trait here, so it equals *Direct KG Taxa*. Every `infores:bacdive` edge for these traits sits on a BacDive strain node (`kgmicrobe.strain:`), which the matrix does not read. An earlier version of this table listed those edges as a primary source; they now have their own column. Each of these strains links to an NCBITaxon node through `biolink:subclass_of`. The opt-in `--strain-rollup` of `taxa_trait_matrix` would count them at that node, but it also adds about 8,000 traits to the vocabulary, so it is off by default. [#788](https://github.com/CultureBotAI/microbial-trait-profiling/issues/788) records what it would change and the decision on its scope.
+**Source columns ([#774](https://github.com/CultureBotAI/microbial-trait-profiling/issues/774), [#788](https://github.com/CultureBotAI/microbial-trait-profiling/issues/788)).**
+- Edges are counted by `primary_knowledge_source` in the pinned edge file.
+- **NCBITaxon edges.** The matrix builder (`src/mtp/taxa_trait_matrix.py`) reads them in every strain rollup scope. Each subject carries one edge per trait here, so this column equals *Direct KG Taxa*.
+- **BacDive strain edges.** Every `infores:bacdive` edge for these traits sits on a BacDive strain node (`kgmicrobe.strain:`). Each of these strains links to an NCBITaxon node through `biolink:subclass_of`. An earlier version of this table listed these edges as a primary source; they now have their own column.
+- **When strain edges count.** They reach the matrix under the primary `phenotype` scope, which counts them at the strains' NCBITaxon nodes. Since #788 it is the default of both the core workflow and the legacy matrix builder. The NCBITaxon nodes carrying each trait then become 5,521, 186, 6,027, 388, 51 and 429. Under the `off` sensitivity scope they are not read.
+- **The other columns.** *BugSigDB Matrix Taxa* and *Profile Support* describe matrices built without strain records.
 
 ---
 
@@ -62,7 +67,7 @@ The machine-readable table captures all required audit attributes across the 6 f
 The existence of two sibling terms in METPO is an artifact of upstream multi-source extract-transform-load (ETL) harmonization:
 - `METPO:1000668` originates from **Madin et al. (2020)** (`infores:madin_etal`), where the primary column `cell_shape` was annotated with `"coccus"`.
 - `METPO:1000683` originates from **Bactotraits / BacDive** (`infores:bactotraits`), which utilizes the shape code `S_sphere`.
-- BacDive strain records (`infores:bacdive`) also assert both terms (1,476 coccus, 11 sphere), but on strain nodes, which the matrix does not read ([#774](https://github.com/CultureBotAI/microbial-trait-profiling/issues/774)). The matrix evidence is Madin et al. for coccus and BactoTraits for sphere.
+- BacDive strain records (`infores:bacdive`) also assert both terms (1,476 coccus, 11 sphere), on strain nodes. The primary `phenotype` scope counts them at the strains' NCBITaxon nodes, adding 413 coccus and 7 sphere nodes ([#788](https://github.com/CultureBotAI/microbial-trait-profiling/issues/788)); the `off` matrix does not read them ([#774](https://github.com/CultureBotAI/microbial-trait-profiling/issues/774)). The evidence of the NCBITaxon edges themselves is Madin et al. for coccus and BactoTraits for sphere.
 
 #### Quantified Overlap & Statistical Dependence
 1. **Direct KG Taxa Assertions:**
@@ -131,7 +136,7 @@ Microbial reduction of arsenate ($As^{5+}$) to arsenite ($As^{3+}$) proceeds via
 - METPO defines an explicit **requirement** ($>0.2$ M NaCl, $\approx 1.2\%$ w/v).
 
 #### Missing Quantitative Parameters
-- Direct KG edges: 426 taxa from `infores:madin_etal` (qualitative column `range_salinity == "moderate-halophilic"`). Four BacDive strain records (`infores:bacdive`) also assert the term, on strain nodes the matrix does not read ([#774](https://github.com/CultureBotAI/microbial-trait-profiling/issues/774)).
+- Direct KG edges: 426 taxa from `infores:madin_etal` (qualitative column `range_salinity == "moderate-halophilic"`). Four BacDive strain records (`infores:bacdive`) also assert the term, on strain nodes. The primary `phenotype` scope counts them at the strains' NCBITaxon nodes, adding 3 nodes ([#788](https://github.com/CultureBotAI/microbial-trait-profiling/issues/788)); the `off` matrix does not read them ([#774](https://github.com/CultureBotAI/microbial-trait-profiling/issues/774)).
 - Quantitative continuous parameters in KG edges: **None**. The KG records zero values for salt concentration optimum, min/max ranges, ionic composition, or specific growth media.
 - **Decision:** Retain original label **"moderately halophilic"**. Reading this trait as "halotolerant" is unsupported by METPO semantics. Missing quantitative culture parameters are classified as **unresolved**.
 
@@ -159,7 +164,7 @@ Microbial reduction of arsenate ($As^{5+}$) to arsenite ($As^{3+}$) proceeds via
 | `METPO:1000608` | **Keep separate** | "Taxa annotated as facultatively aerobic (capable of growth in both the presence and absence of oxygen)." | Do not infer anaerobic nitrate/tetrathionate respiration, *nar*/*nap*/*ttr* expression, or host mucosal inflammation. |
 | `METPO:2000103\|GO:0030245` | **Keep separate** | "Taxa annotated with pathway capability for cellulose catabolic processes." | Do not infer active in vivo cellulose breakdown in patients. Do not equate cellulose catabolism with butyrate or SCFA production. |
 | `METPO:1000668` | **Keep separate** | "Taxa annotated with coccus-shaped cell morphology (primarily derived from Madin et al. isolate compilation)." | Do not merge with sphere-shaped by naive string replacement. Do not claim biological non-equivalence without noting source database divergence. |
-| `METPO:1000683` | **Keep separate** | "Taxa annotated with sphere-shaped cell morphology (derived from Bactotraits and BacDive morphology records)." | Do not treat as biologically distinct morphology from coccus. Do not sum profile counts without deduplicating shared taxa. |
+| `METPO:1000683` | **Keep separate** | "Taxa annotated with sphere-shaped cell morphology (derived from BactoTraits records and, under the primary `phenotype` scope, BacDive strain records)." | Do not treat as biologically distinct morphology from coccus. Do not sum profile counts without deduplicating shared taxa. |
 | `METPO:2000103\|pathways:arsenate_reduction` | **Unresolved mechanism / Keep separate label** | "Taxa annotated with pathway capability for arsenate reduction (derived from Madin et al. compilation; mechanism unresolved between dissimilatory respiration and cytoplasmic detoxification)." | Do not classify as *arsC* detoxification. Do not classify as *arrAB* respiration. Do not infer gene presence, plasmid carriage, arsenic exposure, or co-selection. |
 | `METPO:1000623` | **Keep separate label / Unresolved quantitative conditions** | "Taxa annotated as moderately halophilic (defined in METPO as requiring high levels of sodium chloride, typically $\ge 0.2$ M NaCl)." | Do not read as "halotolerant" (halophily requires salt; halotolerance does not). Do not infer continuous salt optima, ranges, or media. |
 
