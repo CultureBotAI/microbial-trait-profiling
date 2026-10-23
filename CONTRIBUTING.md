@@ -22,7 +22,7 @@ just install-hooks    # install pre-commit hooks
 just check            # verify everything works
 ```
 
-`just check` renders a synthetic guild-layout fixture through Kaleido. It needs a
+`just check` renders synthetic guild and Table 1 layout fixtures through Kaleido. It needs a
 local Chrome/Chromium; run `just get-chrome` first if one is not installed (~170 MB).
 
 ### Windows

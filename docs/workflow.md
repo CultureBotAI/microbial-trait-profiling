@@ -451,9 +451,13 @@ MediaDive-only and zero-annotation taxa, missing matrix matches, incomplete
 pairs, nonhuman hosts, malformed counts, stale collections, changed inputs,
 failed publication and consumer incompatibility.
 
-The guild-layout regression renders synthetic PNGs through Kaleido and measures
-subtitle/header separation. It requires local Chrome/Chromium, available through
-`just get-chrome` if needed; it does not read production analysis tables.
+The guild and Table 1 layout regressions render synthetic PNGs through Kaleido
+and measure subtitle/header ink clearance. The fixture acceptance limits are
+30 layout pixels for the guild maps and 70 for the roomier Table 1 layouts;
+adding a two-line note may change clearance by at most 4 layout pixels. These
+bounds are independent of the renderer's margin constants. This checks vertical
+spacing, not overall figure design. It requires local Chrome/Chromium, available
+through `just get-chrome` if needed; it does not read production analysis tables.
 
 Change schema first, regenerate with `just gen-pydantic`, update the executable
 specification, and run `just workflow-describe` to refresh the product table.

@@ -14,9 +14,6 @@ from bsdbng import table1_trait_maps
 from bsdbng.guild_maps import (
     OTHER_LABEL,
     SIGN_TOLERANCE,
-    SITE_HEADER_HEIGHT,
-    SUBTITLE_LINE_HEIGHT,
-    TITLE_BLOCK_HEIGHT,
     GuildMatrix,
     build_figure_matrix,
     build_matrix,
@@ -549,21 +546,11 @@ def test_the_maps_builder_drops_zero_total_pairs_whatever_the_caller_passes() ->
     assert build(build_matrix, annotated + zero_total) != build(build_matrix, annotated)
 
 
+@pytest.mark.parametrize("panel", [False, True])
 def test_the_site_names_sit_below_the_last_subtitle_line(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, rendered_title_clearance: Callable[[Path], float], panel: bool
 ) -> None:
-    """Both map figures size their top margin from the subtitle and the site names (#811).
-
-    Fixed margins with the title centred in them let the population line the maps
-    now state run into a two-line site header, and a panel's last subtitle lines
-    into its site titles and top row. The note here is two lines in one entry, as
-    a focus cut's is: counting entries sized that margin a line short (#849).
-    Rendering needs a browser, so each figure is captured where it would be written.
-    """
-    import plotly.graph_objects as go
-
-    figures: list[go.Figure] = []
-    monkeypatch.setattr(go.Figure, "write_image", lambda figure, *_a, **_kw: figures.append(figure))
+    """Both real Table 1 layouts preserve measured clearance, including two-line notes."""
     matrix = build_matrix(
         [
             _paired_profile(f"bsdb:{index}", f"bsdb:{index}-1", direction, count)
@@ -577,38 +564,39 @@ def test_the_site_names_sit_below_the_last_subtitle_line(
     )
     scales: dict[str, object] = {trait: trait_colorscale(trait) for trait in TRAIT_ORDER}
 
-    def combined(note: str | None) -> Path:
-        return write_figure(
-            matrix,
-            tmp_path / "combined.png",
-            "v1.3.1",
-            guild_order=TRAIT_ORDER,
-            colorscales=scales,
-            separate_body_sites=True,
-            note=note,
-        )
-
-    def panel(note: str | None) -> Path:
-        return write_body_site_panels(
-            matrix,
-            tmp_path / "panel.png",
-            "v1.3.1",
-            sites=("Feces",),
-            guild_order=TRAIT_ORDER,
-            colorscales=scales,
-            note=note,
-        )
-
-    for draw in (combined, panel):
-        figures.clear()
-        draw(None)
-        draw("A missing-condition note.<br>A population line.")
-        short, long = (figure.layout for figure in figures)
-        lines = long.title.text.split("<sub>", 1)[1].count("<br>") + 1
-        subtitle = TITLE_BLOCK_HEIGHT + SUBTITLE_LINE_HEIGHT * lines
-        assert long.margin.t == subtitle + SITE_HEADER_HEIGHT
-        assert long.margin.t - short.margin.t == 2 * SUBTITLE_LINE_HEIGHT
-        assert (long.title.yref, long.title.yanchor) == ("container", "top")
+    clearances = []
+    for name, note in (
+        ("short", None),
+        ("long", "A missing-condition note.<br>A population line."),
+    ):
+        path = tmp_path / f"{name}.png"
+        if panel:
+            write_body_site_panels(
+                matrix,
+                path,
+                "v1.3.1",
+                sites=("Feces",),
+                guild_order=TRAIT_ORDER,
+                colorscales=scales,
+                note=note,
+            )
+        else:
+            write_figure(
+                matrix,
+                path,
+                "v1.3.1",
+                guild_order=TRAIT_ORDER,
+                colorscales=scales,
+                separate_body_sites=True,
+                note=note,
+            )
+        clearances.append(rendered_title_clearance(path))
+    # The six-trait layouts retain a larger title/header gap than the narrow guild
+    # fixture. Pin its visual minimum, independently of the renderer's margin math.
+    assert min(clearances) >= 70, f"Title/header clearance below 70 layout px: {clearances}"
+    assert abs(clearances[1] - clearances[0]) <= 4, (
+        f"A two-line note changed title/header clearance by more than 4 layout px: {clearances}"
+    )
 
 
 def test_a_condition_only_in_zero_total_pairs_is_named_as_excluded() -> None:
