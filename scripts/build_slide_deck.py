@@ -454,6 +454,8 @@ def load_rerun_metrics(repo: Path) -> dict:
     metrics["ind_median_studies"] = median(int(r["study_count"]) for r in ind_rows)
     coverage_ranks = read_tsv(paired_dir / "taxa-coverage" / "taxa_coverage_by_rank.tsv")
     metrics["taxa_coverage_by_rank"] = {r["taxonomic_rank"]: r for r in coverage_ranks}
+    metrics["coverage_total_occurrences"] = sum(int(r["total_occurrences"]) for r in coverage_ranks)
+    metrics["coverage_total_taxa"] = sum(int(r["total_taxa"]) for r in coverage_ranks)
     zero_trait = read_tsv(paired_dir / "taxa-coverage" / "top_zero_trait_bugsigdb_taxa.tsv")
     metrics["zero_trait_rows"] = zero_trait
     metrics["zero_trait_taxa"] = len(zero_trait)
@@ -1015,7 +1017,41 @@ def _extract_alias_target(row: Mapping[str, str]) -> str | None:
     return target or None
 
 
-def methods_plate_one_caveat(metrics: dict) -> str:
+def _coverage_totals(metrics: Mapping[str, Any]) -> tuple[int, int]:
+    """Total taxon occurrences and unique TaxIDs from taxa_coverage_by_rank.tsv (#864, #930)."""
+    ranks = _present_coverage_ranks(metrics)
+    total_occ = int(
+        metrics.get(
+            "coverage_total_occurrences",
+            sum(int(r.get("total_occurrences", "0")) for r in ranks.values()),
+        )
+    )
+    total_taxa = int(
+        metrics.get(
+            "coverage_total_taxa",
+            sum(int(r.get("total_taxa", "0")) for r in ranks.values()),
+        )
+    )
+    return total_occ, total_taxa
+
+
+def methods_plate_one_takeaway(metrics: Mapping[str, Any]) -> str:
+    """Methods Plate I's takeaway, read from the corpus and coverage tables (#864, #930)."""
+    total_occ, total_taxa = _coverage_totals(metrics)
+    retained = int(metrics["retained_studies"])
+    pooled = int(metrics["pooled_pairs"])
+    return (
+        "High-level visual overview of the data ingestion funnel: "
+        f"{retained:,} BugSigDB "
+        f"v1.3.1 human studies ({pooled:,} paired experiments, "
+        f"{2 * pooled:,} profiles, {total_occ:,} "
+        f"taxon occurrences across {total_taxa:,} unique NCBI TaxIDs) joined to 5,829 "
+        "KG-Microbe organisms \N{MULTIPLICATION SIGN} 317 normalized traits via NCBI "
+        "Taxonomy subtree rollup."
+    )
+
+
+def methods_plate_one_caveat(metrics: Mapping[str, Any]) -> str:
     """Methods Plate I's caveat, read from taxa_coverage_by_rank.tsv (#864, #924)."""
     ranks = _present_coverage_ranks(metrics)
     sp = ranks.get("species")
@@ -1068,8 +1104,8 @@ def methods_plate_one_caveat(metrics: dict) -> str:
     )
 
 
-def plate_six_text(metrics: dict) -> tuple[str, str]:
-    """Tufte Plate VI's takeaway and caveat, read from the coverage TSVs (#864, #924)."""
+def plate_six_text(metrics: Mapping[str, Any]) -> tuple[str, str]:
+    """Tufte Plate VI's takeaway and caveat, read from the coverage TSVs (#864, #924, #930)."""
     ranks = _present_coverage_ranks(metrics)
     higher_clauses = [
         f"{label} ({float(ranks[rk]['trait_bearing_occurrences_pct']):.1f}%)"
@@ -1126,14 +1162,11 @@ def plate_six_text(metrics: dict) -> tuple[str, str]:
     ]
     by_taxon = {r["taxon_id"]: r for r in zero_rows}
     alias_items: list[str] = []
-    for taxon_id, fallback_name in (
-        ("NCBITaxon:541000", "Oscillospiraceae"),
-        ("NCBITaxon:508215", "Rothia"),
-    ):
-        row = by_taxon.get(taxon_id)
-        if row is None:
+    for row in zero_rows:
+        if row.get("diagnosis_category") != "NCBI TaxID Desynchronization":
             continue
-        name = row.get("taxon_name") or fallback_name
+        taxon_id = row["taxon_id"]
+        name = row.get("taxon_name") or taxon_id
         occ = int(row["signature_occurrences"])
         st = int(row["study_count"])
         target = _extract_alias_target(row)
@@ -1147,7 +1180,6 @@ def plate_six_text(metrics: dict) -> tuple[str, str]:
         else None
     )
 
-    all_items = [*alias_items, *([esh_item] if esh_item is not None else [])]
     zero_taxa_count = int(metrics.get("zero_trait_taxa", len(zero_rows)))
     zero_occ_count = int(
         metrics.get(
@@ -1155,11 +1187,17 @@ def plate_six_text(metrics: dict) -> tuple[str, str]:
             sum(int(r["signature_occurrences"]) for r in zero_rows),
         )
     )
-    if alias_items:
+    if alias_items and esh_item is not None:
         caveat = (
             f"Auditing the top {zero_taxa_count} zero-trait taxa "
             f"({zero_occ_count:,} occurrences) identifies TaxID alias candidates "
-            f"for review: {_oxford_listing(all_items)}."
+            f"for review ({_oxford_listing(alias_items)}) alongside {esh_item}."
+        )
+    elif alias_items:
+        caveat = (
+            f"Auditing the top {zero_taxa_count} zero-trait taxa "
+            f"({zero_occ_count:,} occurrences) identifies TaxID alias candidates "
+            f"for review: {_oxford_listing(alias_items)}."
         )
     elif esh_item is not None:
         caveat = (
@@ -1676,13 +1714,7 @@ def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
             "figure_file_path": "data/derived/tufte_plates/"
             "methods_plate1_data_architecture_funnel.png",
             "code_path": "scripts/generate_tufte_plates.py",
-            "takeaway": f"High-level visual overview of the data ingestion funnel: "
-            f"{metrics['retained_studies']:,} BugSigDB "
-            f"v1.3.1 human studies ({metrics['pooled_pairs']:,} paired experiments, "
-            f"{2 * metrics['pooled_pairs']:,} profiles, 41,279 "
-            "taxon occurrences) joined to 5,829 KG-Microbe organisms "
-            "\N{MULTIPLICATION SIGN} 317 normalized traits via NCBI Taxonomy subtree "
-            "rollup.",
+            "takeaway": methods_plate_one_takeaway(metrics),
             "caveat": methods_plate_one_caveat(metrics),
             "methods_path": "methods/README.md",
             "evidence_path": "trait-visualization/trait-profile-investigation/taxa-coverage/"
@@ -2246,7 +2278,45 @@ def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
             "oral-six-trait-heatmap.",
         },
     ]
+    check_coverage_table_sync(metrics, new_slides)
     return new_slides
+
+
+def check_coverage_table_sync(
+    metrics: Mapping[str, Any], slides: Sequence[Mapping[str, str]]
+) -> None:
+    """Assert Methods Plate I and Plate VI slide text match the coverage tables (#864, #930)."""
+    by_analysis = {s["analysis"]: s for s in slides if "analysis" in s}
+    mp1 = by_analysis.get("methods_plate_1")
+    if mp1 is None:
+        raise ValueError("Missing methods_plate_1 slide in metadata")
+    expected_mp1_takeaway = methods_plate_one_takeaway(metrics)
+    expected_mp1_caveat = methods_plate_one_caveat(metrics)
+    if mp1.get("takeaway") != expected_mp1_takeaway:
+        raise ValueError(
+            f"methods_plate_1 takeaway out of sync with coverage tables: "
+            f"got {mp1.get('takeaway')!r}, expected {expected_mp1_takeaway!r}"
+        )
+    if mp1.get("caveat") != expected_mp1_caveat:
+        raise ValueError(
+            f"methods_plate_1 caveat out of sync with coverage tables: "
+            f"got {mp1.get('caveat')!r}, expected {expected_mp1_caveat!r}"
+        )
+
+    tp6 = by_analysis.get("tufte_plate_6")
+    if tp6 is None:
+        raise ValueError("Missing tufte_plate_6 slide in metadata")
+    expected_tp6_takeaway, expected_tp6_caveat = plate_six_text(metrics)
+    if tp6.get("takeaway") != expected_tp6_takeaway:
+        raise ValueError(
+            f"tufte_plate_6 takeaway out of sync with coverage tables: "
+            f"got {tp6.get('takeaway')!r}, expected {expected_tp6_takeaway!r}"
+        )
+    if tp6.get("caveat") != expected_tp6_caveat:
+        raise ValueError(
+            f"tufte_plate_6 caveat out of sync with coverage tables: "
+            f"got {tp6.get('caveat')!r}, expected {expected_tp6_caveat!r}"
+        )
 
 
 # The appendix histograms PR #315's scripts/plot_enrichment_histograms.py drew (checked at

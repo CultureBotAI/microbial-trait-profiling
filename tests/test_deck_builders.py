@@ -1917,9 +1917,9 @@ def _coverage_rank_rows(family_occ_pct: str = "96.4") -> list[dict[str, str]]:
         {
             "taxonomic_rank": "species",
             "display_rank": "Species",
-            "total_taxa": "3343",
-            "trait_bearing_taxa": "1942",
-            "zero_trait_taxa": "1401",
+            "total_taxa": "2937",
+            "trait_bearing_taxa": "1706",
+            "zero_trait_taxa": "1231",
             "trait_bearing_pct": "58.1",
             "zero_trait_pct": "41.9",
             "total_occurrences": "15970",
@@ -1933,9 +1933,9 @@ def _coverage_rank_rows(family_occ_pct: str = "96.4") -> list[dict[str, str]]:
         {
             "taxonomic_rank": "genus",
             "display_rank": "Genus",
-            "total_taxa": "1353",
-            "trait_bearing_taxa": "1048",
-            "zero_trait_taxa": "305",
+            "total_taxa": "1260",
+            "trait_bearing_taxa": "976",
+            "zero_trait_taxa": "284",
             "trait_bearing_pct": "77.5",
             "zero_trait_pct": "22.5",
             "total_occurrences": "17972",
@@ -1949,9 +1949,9 @@ def _coverage_rank_rows(family_occ_pct: str = "96.4") -> list[dict[str, str]]:
         {
             "taxonomic_rank": "family",
             "display_rank": "Family",
-            "total_taxa": "345",
-            "trait_bearing_taxa": "262",
-            "zero_trait_taxa": "83",
+            "total_taxa": "315",
+            "trait_bearing_taxa": "239",
+            "zero_trait_taxa": "76",
             "trait_bearing_pct": "75.9",
             "zero_trait_pct": "24.1",
             "total_occurrences": "4685",
@@ -1961,6 +1961,54 @@ def _coverage_rank_rows(family_occ_pct: str = "96.4") -> list[dict[str, str]]:
             "zero_trait_occurrences_pct": "3.6",
             "mean_traits_per_taxon": "91.4",
             "median_traits_per_taxon": "98",
+        },
+        {
+            "taxonomic_rank": "order",
+            "display_rank": "Order",
+            "total_taxa": "133",
+            "trait_bearing_taxa": "109",
+            "zero_trait_taxa": "24",
+            "trait_bearing_pct": "82.0",
+            "zero_trait_pct": "18.0",
+            "total_occurrences": "2340",
+            "trait_bearing_occurrences": "2294",
+            "zero_trait_occurrences": "46",
+            "trait_bearing_occurrences_pct": "98.0",
+            "zero_trait_occurrences_pct": "2.0",
+            "mean_traits_per_taxon": "116.5",
+            "median_traits_per_taxon": "133",
+        },
+        {
+            "taxonomic_rank": "class",
+            "display_rank": "Class",
+            "total_taxa": "60",
+            "trait_bearing_taxa": "57",
+            "zero_trait_taxa": "3",
+            "trait_bearing_pct": "95.0",
+            "zero_trait_pct": "5.0",
+            "total_occurrences": "1535",
+            "trait_bearing_occurrences": "1527",
+            "zero_trait_occurrences": "8",
+            "trait_bearing_occurrences_pct": "99.5",
+            "zero_trait_occurrences_pct": "0.5",
+            "mean_traits_per_taxon": "154.0",
+            "median_traits_per_taxon": "167",
+        },
+        {
+            "taxonomic_rank": "phylum",
+            "display_rank": "Phylum",
+            "total_taxa": "45",
+            "trait_bearing_taxa": "43",
+            "zero_trait_taxa": "2",
+            "trait_bearing_pct": "95.6",
+            "zero_trait_pct": "4.4",
+            "total_occurrences": "4363",
+            "trait_bearing_occurrences": "4347",
+            "zero_trait_occurrences": "16",
+            "trait_bearing_occurrences_pct": "99.6",
+            "zero_trait_occurrences_pct": "0.4",
+            "mean_traits_per_taxon": "173.4",
+            "median_traits_per_taxon": "195",
         },
         {
             "taxonomic_rank": "other",
@@ -2032,19 +2080,95 @@ def _zero_trait_rows() -> list[dict[str, str]]:
                 "Review possible alias before transferring traits: NCBITaxon:32207"
             ),
         },
+        {
+            "rank_order": "5",
+            "taxon_id": "NCBITaxon:5476",
+            "taxon_name": "Candida albicans",
+            "taxonomic_rank": "species",
+            "signature_occurrences": "23",
+            "study_count": "19",
+            "diagnosis_category": "Non-Bacterial / Fungal Eukaryote",
+            "suggested_remediation": (
+                "Out of scope for bacterial KG-Microbe (integrate FungiTraits if needed)"
+            ),
+        },
+        {
+            "rank_order": "6",
+            "taxon_id": "NCBITaxon:95818",
+            "taxon_name": "Candidatus Saccharibacteria",
+            "taxonomic_rank": "phylum",
+            "signature_occurrences": "18",
+            "study_count": "16",
+            "diagnosis_category": "Candidatus Lineage",
+            "suggested_remediation": (
+                "Seek direct trait evidence; neighboring taxa do not establish this "
+                "lineage's traits"
+            ),
+        },
+        {
+            "rank_order": "7",
+            "taxon_id": "NCBITaxon:649746",
+            "taxon_name": "Enterorhabdus",
+            "taxonomic_rank": "genus",
+            "signature_occurrences": "16",
+            "study_count": "15",
+            "diagnosis_category": "Rare / Novel Isolate (Lacks KG Phenotype)",
+            "suggested_remediation": (
+                "Curate isolate physiology in BacDive / Madin et al. or genome-scale model"
+            ),
+        },
+        {
+            "rank_order": "8",
+            "taxon_id": "NCBITaxon:35493",
+            "taxon_name": "Streptophyta",
+            "taxonomic_rank": "phylum",
+            "signature_occurrences": "14",
+            "study_count": "11",
+            "diagnosis_category": "Non-Bacterial / Fungal Eukaryote",
+            "suggested_remediation": (
+                "Out of scope for bacterial KG-Microbe (integrate FungiTraits if needed)"
+            ),
+        },
+        {
+            "rank_order": "9",
+            "taxon_id": "NCBITaxon:81850",
+            "taxon_name": "Lactobacillaceae",
+            "taxonomic_rank": "family",
+            "signature_occurrences": "12",
+            "study_count": "12",
+            "diagnosis_category": "NCBI TaxID Desynchronization",
+            "suggested_remediation": (
+                "Review possible alias before transferring traits: NCBITaxon:33958"
+            ),
+        },
     ]
 
 
 def test_deck_coverage_text_reads_the_coverage_tsvs() -> None:
-    """Methods Plate I and Tufte Plate VI slide text derive from the coverage TSVs (#864)."""
+    """Methods Plate I and Tufte Plate VI slide text derive from the coverage TSVs (#864, #930)."""
     rank_rows = _coverage_rank_rows()
     zero_rows = _zero_trait_rows()
+    present_rows = [r for r in rank_rows if int(r["total_taxa"]) > 0]
     metrics = {
+        "retained_studies": 1029,
+        "pooled_pairs": 2335,
         "taxa_coverage_by_rank": {r["taxonomic_rank"]: r for r in rank_rows},
+        "coverage_total_occurrences": sum(int(r["total_occurrences"]) for r in present_rows),
+        "coverage_total_taxa": sum(int(r["total_taxa"]) for r in present_rows),
         "zero_trait_rows": zero_rows,
         "zero_trait_taxa": len(zero_rows),
         "zero_trait_occurrences": sum(int(r["signature_occurrences"]) for r in zero_rows),
     }
+    mp1_takeaway = deck.methods_plate_one_takeaway(metrics)
+    assert mp1_takeaway == (
+        "High-level visual overview of the data ingestion funnel: 1,029 BugSigDB v1.3.1 human "
+        "studies (2,335 paired experiments, 4,670 profiles, 46,865 taxon occurrences across "
+        "4,750 unique NCBI TaxIDs) joined to 5,829 KG-Microbe organisms \N{MULTIPLICATION SIGN} "
+        "317 normalized traits via NCBI Taxonomy subtree rollup."
+    )
+    assert "41,279" not in mp1_takeaway
+    assert "4,569" not in mp1_takeaway
+
     assert deck.methods_plate_one_caveat(metrics) == (
         "Highlights the rank-stratified coverage cliff (Genus/Family 96.4% vs Species 77.6% "
         "occurrences / 58.1% unique species) and defines the OR-rule oxygen/Gram guilds and "
@@ -2063,24 +2187,57 @@ def test_deck_coverage_text_reads_the_coverage_tsvs() -> None:
     takeaway, caveat = deck.plate_six_text(metrics)
     assert takeaway == (
         "Genus (96.4%) and Family (96.4%) occurrences in BugSigDB have high KG-Microbe coverage, "
-        "whereas 41.9% of distinct species (1,401/3,343) and 22.4% of species occurrences "
+        "whereas 41.9% of distinct species (1,231/2,937) and 22.4% of species occurrences "
         "(3,571/15,970) have zero traits."
     )
     assert caveat == (
-        "Auditing the top 4 zero-trait taxa (399 occurrences) identifies TaxID alias candidates "
-        "for review: Oscillospiraceae (NCBITaxon:541000 → NCBITaxon:216572, 69 occs across 53 "
+        "Auditing the top 9 zero-trait taxa (482 occurrences) identifies TaxID alias candidates "
+        "for review (Oscillospiraceae (NCBITaxon:541000 → NCBITaxon:216572, 69 occs across 53 "
         "studies), Rothia (NCBITaxon:508215 → NCBITaxon:32207, 24 occs across 21 studies), and "
-        "Escherichia/Shigella slash bins (111 occs)."
+        "Lactobacillaceae (NCBITaxon:81850 → NCBITaxon:33958, 12 occs across 12 studies)) "
+        "alongside Escherichia/Shigella slash bins (111 occs)."
     )
     assert "162 traits" not in caveat
+
+    slides = [
+        {
+            "analysis": "methods_plate_1",
+            "takeaway": mp1_takeaway,
+            "caveat": deck.methods_plate_one_caveat(metrics),
+        },
+        {
+            "analysis": "tufte_plate_6",
+            "takeaway": takeaway,
+            "caveat": caveat,
+        },
+    ]
+    deck.check_coverage_table_sync(metrics, slides)
+    for bad_slide in (
+        {**slides[0], "takeaway": slides[0]["takeaway"].replace("46,865", "41,279")},
+        {**slides[0], "caveat": slides[0]["caveat"].replace("96.4%", "96.5%")},
+        {**slides[1], "takeaway": slides[1]["takeaway"].replace("41.9%", "54.1%")},
+        {**slides[1], "caveat": slides[1]["caveat"].replace("53 studies", "60 studies")},
+    ):
+        mutated = [bad_slide if s["analysis"] == bad_slide["analysis"] else s for s in slides]
+        with pytest.raises(ValueError, match="out of sync with coverage tables"):
+            deck.check_coverage_table_sync(metrics, mutated)
 
 
 def test_plate_six_text_and_remediation_labels_read_the_coverage_tsvs(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Plate VI derives its titles, subtitle, footer, and compact labels from the TSVs (#864)."""
+    """Plate VI and Methods Plate I derive coverage labels from the TSVs (#864, #930)."""
     rank_rows = _coverage_rank_rows()
     zero_rows = _zero_trait_rows()
+
+    mp1_labels = plates.methods_plate1_coverage_labels(rank_rows, zero_rows)
+    assert mp1_labels["occurrences_title"] == "46,865 Taxon Occurrences"
+    assert mp1_labels["taxa_subtitle"].startswith("4,750 unique NCBI TaxIDs across all ranks\n")
+    assert mp1_labels["species_gap_note"] == (
+        "Species gap (22% of occurrences): uncultivated MAGs, slash-bins &\n"
+        "3 NCBI TaxID desyncs (Oscillospiraceae, Rothia, Lactobacillaceae)"
+    )
+
     text = plates.plate6_text(rank_rows, zero_rows)
     assert text["subtitle"] == (
         "Why Genus/Family signatures achieve 96.4% trait coverage while 41.9% of distinct "
@@ -2097,15 +2254,22 @@ def test_plate_six_text_and_remediation_labels_read_the_coverage_tsvs(
     )
     assert text["panel_c_title"] == (
         "C. Top 18 Zero-Trait BugSigDB Taxa & Remediation Path\n"
-        "Highlighting Oscillospiraceae (53 st.) & Rothia (21 st.) TaxID alias candidates"
+        "Highlighting Oscillospiraceae (53 st.), Rothia (21 st.) & Lactobacillaceae (12 st.) "
+        "TaxID alias candidates"
     )
     assert "Review possible alias before transferring traits" in text["footer"]
     assert "NCBITaxon:541000 → 216572 (53 studies, 69 occ.)" in text["footer"]
     assert "NCBITaxon:508215 → 32207 (21 studies, 24 occ.)" in text["footer"]
+    assert "NCBITaxon:81850 → 33958 (12 studies, 12 occ.)" in text["footer"]
 
     assert plates.plate6_remediation_label(zero_rows[0]) == "Direct trait evidence needed"
     assert plates.plate6_remediation_label(zero_rows[1]) == "Multi-taxon LCA resolution"
     assert plates.plate6_remediation_label(zero_rows[2]) == "Review TaxID alias → NCBITaxon:216572"
+    assert plates.plate6_remediation_label(zero_rows[4]) == "Fungal eukaryote (non-bacterial)"
+    assert plates.plate6_remediation_label(zero_rows[5]) == "Direct trait evidence needed"
+    assert plates.plate6_remediation_label(zero_rows[6]) == "Curate in BacDive / KG-Microbe"
+    assert plates.plate6_remediation_label(zero_rows[7]) == "Non-bacterial eukaryote (plant)"
+    assert plates.plate6_remediation_label(zero_rows[8]) == "Review TaxID alias → NCBITaxon:33958"
     legacy_alias = {
         "diagnosis_category": "NCBI TaxID Desynchronization",
         "suggested_remediation": (
@@ -2114,20 +2278,12 @@ def test_plate_six_text_and_remediation_labels_read_the_coverage_tsvs(
         ),
     }
     assert plates.plate6_remediation_label(legacy_alias) == "Review TaxID alias → NCBITaxon:216572"
-    for cat, rem, expected in (
-        ("Non-Bacterial / Fungal Eukaryote", "FungiTraits", "Fungal eukaryote (non-bacterial)"),
-        (
-            "Candidatus Lineage",
-            "Seek direct trait evidence; neighboring taxa do not establish this lineage's traits",
-            "Direct trait evidence needed",
-        ),
-        ("Rare / Novel Isolate (Lacks KG Phenotype)", "Curate", "Curate in BacDive / KG-Microbe"),
-    ):
-        assert (
-            plates.plate6_remediation_label(
-                {"diagnosis_category": cat, "suggested_remediation": rem}
-            )
-            == expected
+    with pytest.raises(ValueError, match="Unknown zero-trait diagnosis_category"):
+        plates.plate6_remediation_label(
+            {
+                "diagnosis_category": "Unexpected New Category",
+                "suggested_remediation": "Some new remediation text",
+            }
         )
 
     cov_dir = tmp_path / "trait-visualization" / "trait-profile-investigation" / "taxa-coverage"
@@ -2158,11 +2314,16 @@ def test_plate_six_text_and_remediation_labels_read_the_coverage_tsvs(
         fig.canvas.draw()
         rank_labels = [label.get_text() for label in fig.axes[0].get_yticklabels()]
         assert all("Other / unrecorded" not in lbl and "0/0" not in lbl for lbl in rank_labels)
+        panel_b_labels = [label.get_text() for label in fig.axes[1].get_yticklabels()]
+        assert "Non-Bacterial Eukaryote" in panel_b_labels
+        assert "Fungal Eukaryote" not in panel_b_labels
         panel_c_texts = [t.get_text() for t in fig.axes[2].texts]
+        assert any("Non-bacterial eukaryote (plant)" in t for t in panel_c_texts)
+        assert any("Curate in BacDive / KG-Microbe" in t for t in panel_c_texts)
         assert all(
             forbidden not in t
             for t in panel_c_texts
-            for forbidden in ("Propagate", "Review possible", "Remap", "Curate in BacDive")
+            for forbidden in ("Propagate", "Review possible", "Remap")
         )
         all_fig_text = "\n".join(
             [
@@ -2175,6 +2336,8 @@ def test_plate_six_text_and_remediation_labels_read_the_coverage_tsvs(
             assert stale not in all_fig_text
         for t in fig.axes[2].texts:
             assert t.get_window_extent().x1 <= fig.axes[2].get_window_extent().x1
+        for t in fig.texts:
+            assert t.get_window_extent().x1 <= fig.bbox.x1 * 0.99
     finally:
         plates.plt.close(fig)
 
@@ -2259,6 +2422,7 @@ def test_plate_six_and_deck_handle_sparse_ranks_and_absent_alias_candidates(
     for omitted_id, omitted_name in (
         ("NCBITaxon:541000", "Oscillospiraceae"),
         ("NCBITaxon:508215", "Rothia"),
+        ("NCBITaxon:81850", "Lactobacillaceae"),
         ("NCBITaxon:1940338", "Escherichia/Shigella"),
     ):
         subset_zero = [r for r in full_zero if r["taxon_id"] != omitted_id]
@@ -2272,7 +2436,7 @@ def test_plate_six_and_deck_handle_sparse_ranks_and_absent_alias_candidates(
         assert omitted_name not in sub_caveat
         assert omitted_id not in sub_caveat
         sub_plate = plates.plate6_text(_coverage_rank_rows(), subset_zero)
-        if omitted_id in {"NCBITaxon:541000", "NCBITaxon:508215"}:
+        if omitted_id in {"NCBITaxon:541000", "NCBITaxon:508215", "NCBITaxon:81850"}:
             assert omitted_name not in sub_plate["panel_c_title"]
             assert omitted_id not in sub_plate["footer"]
 
