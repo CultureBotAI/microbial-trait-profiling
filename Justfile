@@ -31,6 +31,7 @@ gen-pydantic:
 	uv run gen-pydantic {{legacy_schema}} > src/bsdbng/datamodel/bsdbng_pydantic.py
 	uv run gen-pydantic schema/workflow.yaml > src/mtp/datamodel/workflow_pydantic.py
 	uv run gen-pydantic schema/core_products.yaml > src/mtp/datamodel/core_products_pydantic.py
+	uv run gen-pydantic schema/multiple_testing.yaml > src/mtp/datamodel/multiple_testing_pydantic.py
 
 gen-derived: gen-pydantic
 
@@ -44,7 +45,9 @@ check-generated:
 	uv run gen-pydantic schema/workflow.yaml > "$tmpfile" && \
 	diff -u src/mtp/datamodel/workflow_pydantic.py "$tmpfile" && \
 	uv run gen-pydantic schema/core_products.yaml > "$tmpfile" && \
-	diff -u src/mtp/datamodel/core_products_pydantic.py "$tmpfile"
+	diff -u src/mtp/datamodel/core_products_pydantic.py "$tmpfile" && \
+	uv run gen-pydantic schema/multiple_testing.yaml > "$tmpfile" && \
+	diff -u src/mtp/datamodel/multiple_testing_pydantic.py "$tmpfile"
 
 # Validate the executable specification and its graph without reading large inputs.
 workflow-check spec="workflows/bugsigdb_core.yaml":
@@ -52,6 +55,9 @@ workflow-check spec="workflows/bugsigdb_core.yaml":
 	uv run linkml validate -s schema/workflow.yaml -C WorkflowDefinition "{{spec}}"
 	uv run linkml lint --config {{lintconfig}} --ignore-warnings schema/workflow.yaml
 	uv run linkml lint --config {{lintconfig}} --ignore-warnings schema/core_products.yaml
+	uv run linkml lint --config {{lintconfig}} --ignore-warnings schema/multiple_testing.yaml
+	uv run linkml validate -s schema/multiple_testing.yaml -C MultipleTestingPolicy methods/multiple_testing_policy_v1.yaml
+	uv run linkml validate -s schema/multiple_testing.yaml -C HypothesisFamily tests/fixtures/multiple_testing_family.yaml
 
 workflow-describe:
 	uv run python -m mtp.workflow describe workflows/bugsigdb_core.yaml > docs/workflow-products.md
@@ -294,6 +300,10 @@ typecheck:
 
 test:
 	uv run pytest
+
+# Additive policy and full-family BH/BY contract; no scientific rerun inputs.
+test-multiple-testing:
+	uv run pytest tests/test_multiple_testing.py
 
 # Analyzer, ranking exporter, and complete-universe density regression checks (#664).
 test-stratification:

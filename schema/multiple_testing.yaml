@@ -1,0 +1,309 @@
+id: https://w3id.org/mtp/multiple-testing
+name: mtp_multiple_testing
+title: Additive full-family multiple-testing contracts
+description: >-
+  Scientific family inventories and replayable corrections. These records do not
+  change native arm calls or certify the validity of their input p-values.
+version: 1.0.0
+license: MIT
+prefixes:
+  linkml: https://w3id.org/linkml/
+  mtpmt: https://w3id.org/mtp/multiple-testing/
+default_prefix: mtpmt
+default_range: string
+imports:
+  - linkml:types
+classes:
+  MultipleTestingPolicy:
+    title: Multiple testing policy
+    description: Versioned immutable correction policy checked against the supported policy file.
+    attributes:
+      policy_id:
+        title: Policy id
+        description: Stable versioned policy identifier.
+        required: true
+      version:
+        title: Version
+        description: Semantic policy version.
+        required: true
+      role:
+        title: Role
+        description: Additive status; native arm calls remain unchanged.
+        required: true
+      primary_method:
+        title: Primary method
+        description: Correction used as primary within this additive sidecar.
+        required: true
+      comparison_method:
+        title: Comparison method
+        description: Companion correction for comparison only.
+        required: true
+      thresholds:
+        title: Thresholds
+        description: Inclusive adjusted-p thresholds reported by the policy.
+        range: float
+        multivalued: true
+        required: true
+      missing_test_policy:
+        title: Missing test policy
+        description: Explicit untestable members reserve internal p one and export undefined p and q.
+        required: true
+      family_policy:
+        title: Family policy
+        description: Full declared membership is mandatory, without significance or effect filtering.
+        required: true
+  SourceArtifact:
+    title: Source artifact
+    description: Logical identity and byte hash of an upstream source, verified by the calling adapter.
+    attributes:
+      identity:
+        title: Identity
+        description: Stable upstream product or execution identifier, not a machine-specific path.
+        required: true
+      sha256:
+        title: Sha256
+        description: Lowercase SHA256 of the referenced source bytes.
+        required: true
+        pattern: ^[0-9a-f]{64}$
+  HypothesisDefinition:
+    title: Hypothesis definition
+    description: A declared member of a scientific family, before its observed p-value is read.
+    attributes:
+      hypothesis_id:
+        title: Hypothesis id
+        description: Unique stable hypothesis identifier within a family.
+        required: true
+      feature_ids:
+        title: Feature ids
+        description: Ordered qualified feature identities; ratios retain numerator then denominator.
+        multivalued: true
+        required: true
+      test:
+        title: Test
+        description: Statistical test that produced this hypothesis p-value.
+        required: true
+      tail:
+        title: Tail
+        description: Test alternative; independent of a curated abundance direction.
+        required: true
+      eligibility_sha256:
+        title: Eligibility sha256
+        description: Optional identity of this hypothesis-specific eligibility ledger.
+        pattern: ^[0-9a-f]{64}$
+  HypothesisFamily:
+    title: Hypothesis family
+    description: >-
+      Complete declared inventory and scientific scope. Expected size is supplied
+      from verified execution by an adapter; the engine does not infer it from
+      observed results or use a fixed retained feature count.
+    attributes:
+      family_id:
+        title: Family id
+        description: Stable scientific family identifier.
+        required: true
+      analysis_id:
+        title: Analysis id
+        description: Analysis or source arm execution identifier.
+        required: true
+      analysis_basis_sha256:
+        title: Analysis basis sha256
+        description: Canonical identity of the verified upstream AnalysisBasis.
+        required: true
+        pattern: ^[0-9a-f]{64}$
+      source_membership_sha256:
+        title: Source membership sha256
+        description: Exact cohort or eligibility membership identity supplied by the verified adapter.
+        required: true
+        pattern: ^[0-9a-f]{64}$
+      retained_feature_count:
+        title: Retained feature count
+        description: Feature count from AnalysisBasis; distinct from the number of hypotheses.
+        range: integer
+        minimum_value: 0
+        required: true
+      expected_family_size:
+        title: Expected family size
+        description: Complete hypothesis count including explicitly untestable members.
+        range: integer
+        minimum_value: 0
+        required: true
+      population:
+        title: Population
+        description: Verified contrast population and any anatomical or condition stratum.
+        required: true
+      direction_basis:
+        title: Direction basis
+        description: Curated group direction or verified disease-control orientation.
+        required: true
+      profile_unit:
+        title: Profile unit
+        description: Source profile counting unit, distinguishing annotation counts from distinct taxa.
+        required: true
+      inference_unit:
+        title: Inference unit
+        description: Independent unit assumed by the source test, for example study or taxon.
+        required: true
+      hypothesis_unit:
+        title: Hypothesis unit
+        description: Family coordinate, for example trait, ordered ratio, or profile by trait by tail.
+        required: true
+      estimand:
+        title: Estimand
+        description: Scientific quantity tested, preserving annotation versus physiological measurement.
+        required: true
+      selection_rule:
+        title: Selection rule
+        description: Declared membership rule, independent of display and effect-size filters.
+        required: true
+      selection_history:
+        title: Selection history
+        description: Chronological disclosures of data-driven selection; correction alone does not remove selection bias.
+        multivalued: true
+        required: true
+      sources:
+        title: Sources
+        description: Verified upstream artifacts; identities must be unique.
+        range: SourceArtifact
+        multivalued: true
+        inlined_as_list: true
+        required: true
+      members:
+        title: Members
+        description: Complete declared hypothesis inventory; empty is allowed only with expected size zero.
+        range: HypothesisDefinition
+        multivalued: true
+        inlined_as_list: true
+        required: true
+  RawHypothesis:
+    title: Raw hypothesis
+    description: One executed test or an explicitly untestable reserved member.
+    attributes:
+      hypothesis_id:
+        title: Hypothesis id
+        description: Identifier matching exactly one declared family member.
+        required: true
+      status:
+        title: Status
+        description: Tested or explicitly untestable, never an inferred missing row.
+        pattern: ^(tested|untestable)$
+        required: true
+      p_value:
+        title: P value
+        description: Finite probability for a tested member; undefined for an untestable member.
+        range: float
+        minimum_value: 0
+        maximum_value: 1
+      reason:
+        title: Reason
+        description: Nonempty explanation required only for an untestable member.
+  AdjustedHypothesis:
+    title: Adjusted hypothesis
+    description: Recomputed full-family corrections and threshold decisions; no effect filter is applied.
+    is_a: RawHypothesis
+    attributes:
+      q_by:
+        title: Q by
+        description: BY adjusted p-value; undefined for untestable members.
+        range: float
+        minimum_value: 0
+        maximum_value: 1
+      q_bh:
+        title: Q bh
+        description: BH adjusted p-value; undefined for untestable members.
+        range: float
+        minimum_value: 0
+        maximum_value: 1
+      reject_by_005:
+        title: Reject by 005
+        description: BY adjusted p at most 0.05; undefined for untestable members.
+        range: boolean
+      reject_by_0001:
+        title: Reject by 0001
+        description: BY adjusted p at most 0.001; undefined for untestable members.
+        range: boolean
+      reject_bh_005:
+        title: Reject bh 005
+        description: BH adjusted p at most 0.05; undefined for untestable members.
+        range: boolean
+      reject_bh_0001:
+        title: Reject bh 0001
+        description: BH adjusted p at most 0.001; undefined for untestable members.
+        range: boolean
+  CorrectionRun:
+    tree_root: true
+    title: Correction run
+    description: >-
+      In-memory replayable execution with all input and result identities.
+      Large callers should store inventories and result tables as separate hashed
+      artifacts rather than copying them into a compact provenance summary.
+      Verification requires external trusted family and raw inputs.
+    attributes:
+      policy:
+        title: Policy
+        description: Immutable supported policy executed.
+        range: MultipleTestingPolicy
+        inlined: true
+        required: true
+      family:
+        title: Family
+        description: Complete canonical declaration executed.
+        range: HypothesisFamily
+        inlined: true
+        required: true
+      hypotheses:
+        title: Hypotheses
+        description: Complete raw result inventory, canonicalized by hypothesis identity.
+        range: RawHypothesis
+        multivalued: true
+        inlined_as_list: true
+        required: true
+      results:
+        title: Results
+        description: Complete adjusted result inventory, canonicalized by hypothesis identity.
+        range: AdjustedHypothesis
+        multivalued: true
+        inlined_as_list: true
+        required: true
+      recorded_at:
+        title: Recorded at
+        description: UTC execution timestamp, timezone required by the runtime verifier.
+        range: datetime
+        required: true
+      engine_version:
+        title: Engine version
+        description: Version of the correction engine contract.
+        required: true
+      scipy_version:
+        title: Scipy version
+        description: Version of the established numerical implementation used.
+        required: true
+      code_sha256:
+        title: Code sha256
+        description: Digest of engine and generated model source bytes.
+        required: true
+        pattern: ^[0-9a-f]{64}$
+      policy_sha256:
+        title: Policy sha256
+        description: Canonical executed policy digest.
+        required: true
+        pattern: ^[0-9a-f]{64}$
+      family_sha256:
+        title: Family sha256
+        description: Canonical declared inventory and scientific metadata digest.
+        required: true
+        pattern: ^[0-9a-f]{64}$
+      input_sha256:
+        title: Input sha256
+        description: Canonical raw hypothesis digest; includes test status and undefined reasons.
+        required: true
+        pattern: ^[0-9a-f]{64}$
+      output_sha256:
+        title: Output sha256
+        description: Canonical adjusted hypothesis digest.
+        required: true
+        pattern: ^[0-9a-f]{64}$
+      run_sha256:
+        title: Run sha256
+        description: Execution envelope digest including scientific hashes, software and timestamp.
+        required: true
+        pattern: ^[0-9a-f]{64}$

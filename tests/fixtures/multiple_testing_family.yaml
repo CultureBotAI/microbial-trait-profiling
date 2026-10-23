@@ -1,0 +1,27 @@
+family_id: fixture:study-sign
+analysis_id: fixture:screen
+analysis_basis_sha256: '1111111111111111111111111111111111111111111111111111111111111111'
+source_membership_sha256: '1111111111111111111111111111111111111111111111111111111111111111'
+retained_feature_count: 17
+expected_family_size: 2
+population: fixture_paired_human
+direction_basis: curated_group1_vs_group0
+profile_unit: rolled_up_source_taxon_count
+inference_unit: study
+hypothesis_unit: trait
+estimand: study-level sign of increased-minus-decreased annotation fraction
+selection_rule: two explicitly declared fixture traits from seventeen retained features
+selection_history:
+  - fixture declared before outcomes
+sources:
+  - identity: fixture:raw-table
+    sha256: '1111111111111111111111111111111111111111111111111111111111111111'
+members:
+  - hypothesis_id: h0
+    feature_ids: [fixture:trait0]
+    test: binomial_sign
+    tail: two_sided
+  - hypothesis_id: h1
+    feature_ids: [fixture:trait1]
+    test: binomial_sign
+    tail: two_sided
