@@ -24,6 +24,11 @@ def inputs(tmp_path: Path) -> tuple[Path, Path]:
         ("NCBITaxon:1", "biolink:has_phenotype", "METPO:1000602", "one|two"),
         ("NCBITaxon:1", "biolink:has_phenotype", "METPO:1000602", "one"),
         ("NCBITaxon:1", "biolink:has_phenotype", "METPO:1000603", "one"),
+        # A directly co-asserting taxon also has a supporting strain. The off
+        # census must retain the taxon while excluding every strain attribution.
+        ("kgmicrobe.strain:s", "biolink:subclass_of", "NCBITaxon:1", "bacdive"),
+        ("kgmicrobe.strain:s", "biolink:has_phenotype", "METPO:1000602", "bacdive"),
+        ("kgmicrobe.strain:s", "biolink:has_phenotype", "METPO:1000603", "bacdive"),
         # Different strains of taxon2 supply different classes.
         ("kgmicrobe.strain:a", "biolink:subclass_of", "NCBITaxon:2", "bacdive"),
         ("kgmicrobe.strain:b", "biolink:subclass_of", "NCBITaxon:2", "bacdive"),
@@ -84,7 +89,10 @@ def test_scope_counts_preserve_sources_and_do_not_propagate_to_ancestors(
     }
     assert len(summary) == len(audit.PAIRS) * 3
     for scope, expected in [("off", 1), ("phenotype", 2), ("full", 2)]:
-        assert int(summary[scope, "aerobic_and_anaerobic"]["coasserted_taxon_nodes"]) == expected
+        assert (
+            int(summary[scope, "aerobic_class_and_anaerobic_class"]["coasserted_taxon_nodes"])
+            == expected
+        )
     assert summary["phenotype", "mesophilic_and_psychrophilic"]["coasserted_taxon_nodes"] == "2"
     assert summary["phenotype", "obligately_aerobic_and_anaerobic"]["coasserted_taxon_nodes"] == "1"
     assert (
@@ -96,14 +104,25 @@ def test_scope_counts_preserve_sources_and_do_not_propagate_to_ancestors(
     records = table(output / "coasserted_taxon_nodes.tsv")
     assert not {"NCBITaxon:6", "NCBITaxon:9"} & {row["taxon_id"] for row in records}
     by_node = {(row["scope"], row["pair_id"], row["taxon_id"]): row for row in records}
-    direct = by_node["off", "aerobic_and_anaerobic", "NCBITaxon:1"]
+    direct = by_node["off", "aerobic_class_and_anaerobic_class", "NCBITaxon:1"]
     assert direct["direct_taxon_has_both"] == "True"
-    mixed = by_node["phenotype", "aerobic_and_anaerobic", "NCBITaxon:2"]
+    assert direct["same_strain_has_both"] == "False"
+    assert direct["requires_union_across_subjects"] == "False"
+    for field in ("left_strain_ids", "right_strain_ids", "same_strain_ids"):
+        assert json.loads(direct[field]) == []
+    supported_direct = by_node["phenotype", "aerobic_class_and_anaerobic_class", "NCBITaxon:1"]
+    assert supported_direct["direct_taxon_has_both"] == "True"
+    assert supported_direct["same_strain_has_both"] == "True"
+    assert supported_direct["requires_union_across_subjects"] == "False"
+    mixed = by_node["phenotype", "aerobic_class_and_anaerobic_class", "NCBITaxon:2"]
     assert mixed["requires_union_across_subjects"] == "True"
     assert mixed["same_strain_has_both"] == "False"
     same = by_node["phenotype", "mesophilic_and_psychrophilic", "NCBITaxon:3"]
     assert same["same_strain_has_both"] == "True"
+    assert same["direct_taxon_has_both"] == "False"
+    assert same["requires_union_across_subjects"] == "False"
     strains = table(output / "coasserted_strain_nodes.tsv")
+    assert not [row for row in strains if row["scope"] == "off"]
     unlinked = next(
         row
         for row in strains
@@ -111,6 +130,10 @@ def test_scope_counts_preserve_sources_and_do_not_propagate_to_ancestors(
     )
     assert unlinked["mapped_taxon_count"] == "0"
     evidence = table(output / "coassertion_evidence.tsv")
+    off_evidence = [row for row in evidence if row["scope"] == "off"]
+    assert off_evidence
+    assert all(row["origin"] == "direct_taxon" for row in off_evidence)
+    assert all(row["assertion_subject"].startswith("NCBITaxon:") for row in off_evidence)
     assert {"one", "two"} <= {row["primary_source"] for row in evidence}
     assert any(row["assertion_subject"] == "kgmicrobe.strain:b" for row in evidence)
     unmapped_evidence = [
@@ -133,7 +156,7 @@ def test_scope_counts_preserve_sources_and_do_not_propagate_to_ancestors(
     report = (output / "README.md").read_text()
     assert "counts of annotations" in report
     assert "not a measurement" in report
-    assert "aerobic_and_anaerobic | phenotype | 2" in report
+    assert "aerobic_class_and_anaerobic_class | phenotype | 2" in report
 
 
 def test_canonical_guild_definition_and_shared_scope_policy(
@@ -157,6 +180,31 @@ def test_canonical_guild_definition_and_shared_scope_policy(
     monkeypatch.setattr(matrix_api, "scoped_taxon_traits", observed)
     audit.run_audit(*inputs, tmp_path / "audit")
     assert called == ["off", "phenotype", "full"]
+
+
+@pytest.mark.parametrize("scope", matrix_api.STRAIN_ROLLUPS)
+def test_target_carriers_match_canonical_edge_reader_before_ancestor_closure(
+    inputs: tuple[Path, Path], scope: matrix_api.StrainRollup
+) -> None:
+    edges, _ = inputs
+    with edges.open("a", encoding="utf-8") as handle:
+        handle.write(
+            "off_target\tNCBITaxon:7\tbiolink:has_phenotype\tMETPO:1000668\tfixture\n"
+            "activity\tNCBITaxon:7\tMETPO:2000001\tCHEBI:123\tfixture\n"
+            "non_taxon\texample:organism\tbiolink:has_phenotype\tMETPO:1000602\tfixture\n"
+            "other_predicate\tNCBITaxon:8\tbiolink:related_to\tMETPO:1000602\tfixture\n"
+        )
+    graph = audit.read_graph(edges)
+    observed = matrix_api.scoped_taxon_traits(
+        graph.taxon_traits, graph.strain_taxa, graph.strain_traits, scope
+    )
+    _, canonical = matrix_api.read_kg_edges(edges, strain_rollup=scope)
+    expected = {
+        node: target_keys
+        for node, keys in canonical.items()
+        if (target_keys := keys & audit.TARGET_KEYS)
+    }
+    assert observed == expected
 
 
 def test_no_target_labels_yields_explicit_zero_rows(

@@ -13,8 +13,9 @@ just audit-coassertions --edges KG/merged-kg_edges.tsv \
 Run this only on the exact KG used by the final verified cores. The generated
 `README.md` is the count-bearing methods supplement; its table is constructed
 from `coassertion_summary.tsv`, never copied from historical issue numbers.
-The lead's final rerun supplies these counts. No numerical result is asserted
-by adding the audit code.
+The lead independently verified the pinned-KG counts below during review #948.
+The final rerun still requires its own hashed audit products; a methods table
+does not replace the run-specific provenance record.
 
 | Pair | Left class | Right class |
 | --- | --- | --- |
@@ -28,6 +29,34 @@ These are literal class or guild memberships, without added ontology ancestry.
 The four exact-class pairs are separate from the broader canonical guild pair.
 The audit records the actual KG labels for every class and fails if their
 metadata are missing. A missing taxon name remains explicitly missing.
+
+The exact-class pair has the ID `aerobic_class_and_anaerobic_class`. It differs
+from the label-support sidecar's `aerobic_and_anaerobic`, which compares
+{`METPO:1000602`, `METPO:1000606`} with
+{`METPO:1000603`, `METPO:1000607`, `METPO:1000611`}. These are different annotation
+sets and their counts must not be treated as the same measure.
+
+## Pinned-KG review counts
+
+The lead's [independent review and recount](https://github.com/CultureBotAI/microbial-trait-profiling/issues/948)
+used KG edges with SHA-256
+`d13812a436bd0b1c51cfe20c97076912a131f72b2b8e8ca3bb2db15095ab9ebb`,
+also recorded in `methods/table1-native-results/contribution_manifest.json`.
+The counts below are distinct NCBITaxon carrier nodes before ancestor closure.
+
+| Pair | off | phenotype | virtual full |
+| --- | ---: | ---: | ---: |
+| Aerobic class and anaerobic class | 141 | 222 | 222 |
+| Obligately aerobic and anaerobic | 9 | 44 | 44 |
+| Mesophilic and psychrophilic | 5 | 210 | 210 |
+| Facultatively anaerobic and obligately aerobic | 0 | 74 | 74 |
+| Aerobe guild and anaerobe guild | 420 | 613 | 613 |
+
+No individual strain subject co-asserted both sides of any audited pair in that
+snapshot. Every additional co-asserting taxon under `phenotype` therefore required
+annotations from different original subjects. This is annotation union evidence,
+not evidence of incompatible physiology in an individual organism. These are
+lead-reviewed counts from the pinned KG, not a new analysis run by this PR.
 
 `coassertion_summary.tsv` counts distinct NCBITaxon carrier nodes before
 taxonomic ancestor closure. Each node contributes once to a pair, independent
@@ -49,6 +78,8 @@ node co-asserts them. Nor do they count BugSigDB signatures, studies or
 patients. They complement the reported-taxon census in the #773 label-support
 audit. Input and implementation hashes, parser repair counts, class/pair
 definitions and exact output hashes are recorded in `provenance.json`.
+Its `code_dirty_at_execution` flag records whole-repository Git status, including
+modified data or documentation; the implementation hashes identify the code bytes.
 
 ## Biological meaning
 
@@ -90,5 +121,5 @@ owner decision, not automatic corrections.
 
 The audit neither executes these sensitivities nor changes the matrix, feature
 catalog, arm plans or primary calls. Issue #846 remains open until the lead
-publishes the final counts and oxygen sensitivity, or the owner records a
-resolution decision. Historical counts in the issue are review evidence only.
+publishes the run-bound audit and oxygen sensitivity, or the owner records a
+resolution decision. The reviewed counts above do not settle that sensitivity.
