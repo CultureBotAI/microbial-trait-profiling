@@ -580,6 +580,11 @@ taxa-trait-matrix: download-kg study-tsvs
 audit-strain-rollup *ARGS:
 	uv run python scripts/adhoc/issue774_strain_rollup_coverage.py "$@"
 
+# Sidecar carrier/source audit; explicit matching inputs, no primary output changes (#773).
+[positional-arguments]
+audit-label-support *ARGS:
+	uv run python -m mtp.label_support_audit "$@"
+
 # The analyses read human hosts only, without the trait columns that are zero in every
 # human profile, as committed in data/derived/study_trait_profiles_wide.tsv.gz (#656).
 # They also read 16S and shotgun (WMS) experiments only, the values of
