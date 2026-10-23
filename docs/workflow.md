@@ -392,6 +392,36 @@ inputs. Comparison never overwrites baseline or current products.
 
 ## Checks and maintenance
 
+After a full-corpus rebuild of `data/derived`, run `just taxa-coverage` to
+regenerate `trait-visualization/trait-profile-investigation/taxa-coverage/`
+before rebuilding decks or plates that cite its tables and README (#820/#821).
+The recipe consumes `bugsigdb_taxa.tsv`, `taxa_trait_matrix.tsv`,
+`study_trait_profiles_wide.tsv` and `experiments.tsv`. It filters profiles and
+taxon occurrences to recorded `Homo sapiens` hosts sequenced by `16S` or `WMS`,
+using the same constants as the canonical profile builder. It applies no
+contrast-tier, pairing or orientation restriction. This is coverage of the
+full canonical corpus, not coverage of a disease-vs-healthy subset.
+
+The audit reconciles profile counts with distinct signature taxa and the matrix;
+missing experiment metadata, missing canonical profiles, missing matrix taxa,
+duplicate keys and count disagreements fail before publication. Only reported
+taxa from the selected corpus enter taxon totals. Trait vocabulary comes from
+the profile table. Zero-trait profiles remain in audit tables; selected figure
+panels explicitly show mapped profiles only. No mapped annotation is not
+evidence of biological absence.
+
+The recipe generates five TSVs, six PNG/SVG figure pairs, a data-derived README,
+and `provenance.json` with input/output SHA-256 hashes, producer and lockfile
+hashes, explicit population rules and exclusion counts. These are standalone
+execution provenance records, not verified core or arm manifests. Rerun them
+after changing the profile population, matrix or strain-rollup scope; keep
+different scope outputs in separate directories. Explicit `--taxa`, `--matrix`,
+`--profiles`, `--experiments` and `--output-dir` arguments are supported.
+`--tables-only --output-dir PATH` supports an isolated table audit; it refuses a
+directory with existing figures so those cannot silently remain stale. The
+profile-rank denominator column is now `pct_of_mapped_profiles`; the columns in
+the rank and taxon-detail tables read by existing deck builders are preserved.
+
 `just check` includes generated-model consistency, schema lint, graph checks,
 and the offline pytest fixtures. CI also executes `just core-fixture` and saves
 its run evidence. Tests cover mixed ranks, duplicate observations/source edges,
