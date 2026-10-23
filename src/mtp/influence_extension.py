@@ -47,6 +47,26 @@ PANEL_FIELDS = [
 ]
 FRACTION_FIELDS = ["trait_key", "family_size", *describe({}), "q_bh_six", "q_by_six"]
 BASELINE_FIELDS = ["baseline_effect", "baseline_q_bh_six", "baseline_q_by_six"]
+REMOVAL_FIELDS = ["removed_annotation_mass", "removed_trait_annotation_mass", "removal_status"]
+REDUCTION_FIELDS = [
+    f"{prefix}effect_reduction_{field}"
+    for prefix in ("", "matched_")
+    for field in ("fraction", "percent", "status")
+]
+MASS_FIELDS = [
+    "direction",
+    "trait_key",
+    "population",
+    "unit",
+    "profile_count",
+    "before_annotation_mass",
+    "after_annotation_mass",
+    "removed_annotation_mass",
+    "before_trait_annotation_mass",
+    "after_trait_annotation_mass",
+    "removed_trait_annotation_mass",
+    "removal_status",
+]
 IMPLEMENTATIONS = (
     "influence_extension.py",
     "contribution_inputs.py",
@@ -208,13 +228,17 @@ def lineage_panel(
             )
         for joint in protocol["joint_exclusions"]:
             lineages = sorted(set(joint["lineages"]))
+            names = dict(zip(joint["lineages"], joint["names"], strict=True))
+            known_ranks = {base.ranks[lineage] for lineage in lineages if base.ranks.get(lineage)}
+            if known_ranks - {"family"}:
+                raise ValueError("Declared joint family exclusion contains a non-family lineage")
             selected.append(
                 {
                     "scope": scope["id"],
                     "rank": "family",
                     "lineage": "+".join(lineages),
                     "lineages": encoded(lineages),
-                    "name": " + ".join(joint["names"]),
+                    "name": " + ".join(names[lineage] for lineage in lineages),
                     "scenario": f"extension_exclude_joint_{joint['id']}",
                     "selection_kind": "declared_joint",
                     "selection_reasons": encoded([joint["reason"]]),
@@ -254,7 +278,13 @@ def joint_removal(
 
 
 def lineage_effects(
-    base: Base, graph: Graph, ledger: Ledger, selected: list[Record], protocol: Record
+    base: Base,
+    graph: Graph,
+    ledger: Ledger,
+    selected: list[Record],
+    protocol: Record,
+    *,
+    removed_mass_rows: list[Record] | None = None,
 ) -> tuple[list[Record], list[Record]]:
     """Recompute denominator and eligibility; compare identical support separately."""
     scopes = {scope["id"]: scope for scope in protocol["scopes"]}
@@ -268,12 +298,71 @@ def lineage_effects(
             )
         else:
             remaining, _, ambiguous = removal(base, graph, ledger, scenario["lineage"])
+        traits = _focal_traits(base)
+        removed_total = 0
+        removed_focal: Counter[str] = Counter()
+        for direction in ("inc", "dec"):
+            directional_keys = [key for key in keys if key[2] == direction]
+            before_counts: Counter[str] = Counter()
+            after_counts: Counter[str] = Counter()
+            for key in directional_keys:
+                before_counts.update(base.profiles[key])
+                after_counts.update(remaining[key])
+            before_mass = sum(before_counts.values())
+            after_mass = sum(after_counts.values())
+            removed_mass = before_mass - after_mass
+            if removed_mass < 0:
+                raise ValueError("Lineage exclusion increased annotation mass")
+            removed_total += removed_mass
+            for trait in base.columns:
+                before_trait = before_counts[trait]
+                after_trait = after_counts[trait]
+                if after_trait > before_trait:
+                    raise ValueError("Lineage exclusion increased a trait annotation count")
+                removed_focal[trait] += before_trait - after_trait
+                if removed_mass_rows is not None:
+                    removed_mass_rows.append(
+                        {
+                            **scenario,
+                            "direction": direction,
+                            "trait_key": trait,
+                            "population": "eligible_baseline_pairs",
+                            "unit": "retained_trait_annotation_count",
+                            "profile_count": len(directional_keys),
+                            "before_annotation_mass": before_mass,
+                            "after_annotation_mass": after_mass,
+                            "removed_annotation_mass": removed_mass,
+                            "before_trait_annotation_mass": before_trait,
+                            "after_trait_annotation_mass": after_trait,
+                            "removed_trait_annotation_mass": before_trait - after_trait,
+                            "removal_status": "removed_annotation_mass"
+                            if removed_mass
+                            else "no_removed_annotation_mass",
+                        }
+                    )
         family = []
-        for trait in _focal_traits(base):
+        for trait in traits:
             before = pair_values(base.profiles, keys, trait)
             after = pair_values(remaining, keys, trait)
+            contrasts = comparison(before, after)
             family.append(
-                {**scenario, "trait_key": trait, "family_size": 6, **comparison(before, after)}
+                {
+                    **scenario,
+                    "trait_key": trait,
+                    "family_size": 6,
+                    **contrasts,
+                    "removed_annotation_mass": removed_total,
+                    "removed_trait_annotation_mass": removed_focal[trait],
+                    "removal_status": "removed_annotation_mass"
+                    if removed_total
+                    else "no_removed_annotation_mass",
+                    **effect_reduction(contrasts["before_effect"], contrasts["after_effect"]),
+                    **effect_reduction(
+                        contrasts["before_matched_effect"],
+                        contrasts["after_matched_effect"],
+                        prefix="matched_",
+                    ),
+                }
             )
         for population in ("before", "after", "before_matched", "after_matched", "matched_change"):
             values = [
@@ -298,6 +387,25 @@ def lineage_effects(
             for source in sorted(sources)
         )
     return effects, ambiguities
+
+
+def effect_reduction(before: float | str, after: float | str, *, prefix: str = "") -> Record:
+    """Describe 1-after/before without clipping or substituting zero for undefined data."""
+    fraction: float | str = ""
+    if before == "":
+        status = "no_before_effect"
+    elif float(before) == 0:
+        status = "zero_before_effect"
+    elif after == "":
+        status = "no_after_effect"
+    else:
+        status = "defined"
+        fraction = 1 - float(after) / float(before)
+    return {
+        f"{prefix}effect_reduction_fraction": fraction,
+        f"{prefix}effect_reduction_percent": 100 * fraction if isinstance(fraction, float) else "",
+        f"{prefix}effect_reduction_status": status,
+    }
 
 
 def loso_summary(baseline: list[Record], omissions: list[Record]) -> list[Record]:
@@ -356,6 +464,14 @@ def native_summary_source(core_manifest: Path, noel_manifest: Path) -> Path:
     return paths[0]
 
 
+def _display_row(row: Record) -> Record:
+    """Keep TSV precision intact while making report cells readable."""
+    return {
+        key: format(value, ".6g") if isinstance(value, float) else value
+        for key, value in row.items()
+    }
+
+
 def combined_summary(
     native_text: str | None,
     panel: list[Record],
@@ -368,8 +484,8 @@ def combined_summary(
         if native_text is not None
         else ("Native baseline was not supplied. Pass --noel-run to include its verified report.\n")
     )
-    text = "# Declared baseline and additive sensitivity\n\n"
-    text += "The following baseline text is copied from the verified native report when supplied. "
+    text = "# Native report and additive sensitivity\n\n"
+    text += "The following text is copied from the verified native report when supplied. "
     text += "Its estimators remain distinct from the study-mean fraction diagnostics below.\n\n"
     text += baseline + "\n\n## Additional lineage exclusions\n\n"
     text += "| Scope | Rank | Lineage | Name |\n|---|---|---|---|\n"
@@ -383,14 +499,20 @@ def combined_summary(
         )
     text += "\nSee lineage_fraction_effects.tsv for every effect, matched-support comparison "
     text += "and six-family diagnostic q-value. No exclusion is hidden by its result.\n\n"
-    text += "The shared-fraction baseline below uses the declared panel's estimator and "
-    text += "BH-six correction, recomputed on this same core and scope. BY-six is an "
+    text += "The full-data shared-fraction baseline below uses the 190-native-v2 "
+    text += "shared_fraction BH6 family in effects.tsv.gz (pooled_fraction_effects.tsv "
+    text += "for pooled rows), recomputed on this same core and scope. BY-six is an "
     text += "additional correction sensitivity; native all-trait composition q-values "
-    text += "refer to a different family.\n\n"
+    text += "refer to a different family. Every baseline column below means this full-data "
+    text += "shared-fraction calculation. Report numbers use six significant digits; the "
+    text += "TSV retains full precision.\n\n"
     text += "| Scope | Exclusion | Trait | Baseline shift | After shift | "
-    text += "Matched shift change | Lost pairs | BH-six before / after | BY-six before / after |\n"
-    text += "|---|---|---|---:|---:|---:|---:|---|---|\n"
-    for row in effects or []:
+    text += "Matched shift change | Lost pairs | BH-six before / after | BY-six before / after | "
+    text += "Removed annotation mass | Removed focal mass | Removal status | "
+    text += "Effect reduction (%) | Matched effect reduction (%) |\n"
+    text += "|---|---|---|---:|---:|---:|---:|---|---|---:|---:|---|---:|---:|\n"
+    for original in effects or []:
+        row = _display_row(original)
         fields = (
             row["scope"],
             row["scenario"],
@@ -401,13 +523,26 @@ def combined_summary(
             row["lost_pairs"],
             f"{row['before_q_bh_six']} / {row['after_q_bh_six']}",
             f"{row['before_q_by_six']} / {row['after_q_by_six']}",
+            row["removed_annotation_mass"],
+            row["removed_trait_annotation_mass"],
+            row["removal_status"],
+            row["effect_reduction_percent"],
+            row["matched_effect_reduction_percent"],
         )
         text += "| " + " | ".join(str(value).replace("|", "\\|") for value in fields) + " |\n"
+    text += "\nReduction is 100 times (1 - after / before), using full-data study-mean "
+    text += "shared-fraction effects; matched reduction uses only common eligible experiments. "
+    text += "Undefined ratios are blank with a status in the TSV. Values are not clipped: "
+    text += "above 100% means a sign reversal, not stronger evidence. Removed mass counts "
+    text += "retained trait annotations over eligible pre-exclusion profiles, not cells or "
+    text += "distinct taxa. Every retained feature is audited by direction in "
+    text += "lineage_removed_annotation_mass.tsv.\n"
     text += "\n## Six-fraction study omissions\n\n"
     text += "| Scope | Trait | Omissions | Baseline shift | Baseline BH-six / BY-six | "
     text += "Mean shift range | BH-six q range | BY-six q range |\n"
     text += "|---|---|---:|---:|---|---|---|---|\n"
-    for row in summaries:
+    for original in summaries:
+        row = _display_row(original)
         label = str(row["trait_key"]).replace("|", "\\|")
         text += (
             f"| {row['scope']} | {label} | {row['omissions']} | "
@@ -426,7 +561,7 @@ def combined_summary(
 def run_extension(core_manifest: Path, output: Path, noel_manifest: Path | None = None) -> Path:
     """Execute the fixed sidecar protocol on one verified core in a fresh directory.
 
-    The scope API is supplied by #828. Scope is read from actual core execution,
+    Scope is read from actual core execution through the public workflow API,
     never guessed from matrix dimensions or from the current primary default.
     """
     from mtp.workflow.operations import run_strain_rollup
@@ -483,7 +618,10 @@ def run_extension(core_manifest: Path, output: Path, noel_manifest: Path | None 
             f"{len(ledger.mismatches)} source/profile reconciliation mismatches; no sidecar written"
         )
     candidates, panel = lineage_panel(base, graph, ledger, protocol)
-    effects, ambiguities = lineage_effects(base, graph, ledger, panel, protocol)
+    removed_mass: list[Record] = []
+    effects, ambiguities = lineage_effects(
+        base, graph, ledger, panel, protocol, removed_mass_rows=removed_mass
+    )
     baseline: list[Record] = []
     omissions: list[Record] = []
     for analysis_scope in protocol["scopes"]:
@@ -539,6 +677,8 @@ def run_extension(core_manifest: Path, output: Path, noel_manifest: Path | None 
                 "trait_key",
                 "family_size",
                 *comparison({}, {}),
+                *REMOVAL_FIELDS,
+                *REDUCTION_FIELDS,
                 *(
                     f"{population}_{method}"
                     for population in (
@@ -553,6 +693,7 @@ def run_extension(core_manifest: Path, output: Path, noel_manifest: Path | None 
             ],
             effects,
         ),
+        "lineage_removed_annotation_mass.tsv": ([*PANEL_FIELDS, *MASS_FIELDS], removed_mass),
         "ambiguous_retained_sources.tsv": (
             ["scope", "scenario", "reported_taxon", "retained_source_taxon", "reason"],
             ambiguities,

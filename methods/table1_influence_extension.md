@@ -47,6 +47,32 @@ Pairs with a zero retained-annotation total on either side are excluded as whole
 pairs. Eligibility is recomputed after exclusion. The output separates changes
 on common experiment support from changes in which pairs remain eligible.
 
+`lineage_removed_annotation_mass.tsv` reports each scenario, direction and retained
+trait on the eligible pre-exclusion profile pairs used by the effect calculation.
+It records total retained annotation mass before and after removal and the removed
+mass for each retained trait and full denominator. These are annotation counts summed
+over reported profile occurrences, not distinct taxa, cell counts or abundance.
+Denominator totals repeat for each trait row; within a scenario and direction,
+sum the per-trait removed counts to reconcile that total, not the repeated totals.
+The effects table repeats the removed mass summed across directions and explicitly
+labels `no_removed_annotation_mass`, including a declared lineage absent from the
+source graph. A supported removal with unchanged fraction effects can therefore
+be distinguished from an exclusion that removed no annotations.
+
+The effect reduction is `1 - effect_after / effect_before`, exported as both
+`effect_reduction_fraction` and `effect_reduction_percent` (100 times that ratio).
+The effects are the full-data study-mean increased-minus-decreased shared fractions
+in the same scope, with eligibility recomputed after removal. Separate `matched_`
+fields use only experiments eligible both before and after exclusion; these isolate
+the denominator/removal change from eligibility changes. A zero or missing
+before-effect, or missing after-effect, has an explicit status and undefined ratio.
+The ratio is not clipped: negative values indicate a larger shift in the original
+direction, values between zero and one indicate attenuation, and values above one
+indicate reversal. It is a descriptive change, not a confidence level or a causal
+fraction attributable to a lineage. Historical percentages must be reproduced on
+the same scope, cohort and estimator before citation; pooled raw count pairs alone
+do not determine this equal-study-weight effect ratio.
+
 The study-omission table removes all experiments from one eligible study at a
 time. Each trait's contrast is the increased-minus-decreased annotation fraction,
 averaged equally over experiments within study. Every omission recomputes all
@@ -65,8 +91,10 @@ The declared
 `lineage_fraction_effects.tsv` compares the additional exclusions against the
 baseline on total and matched support, and its effects are also included in
 the report. Each LOSO row includes the full-data shared-fraction baseline,
-BH-six and BY-six. The shared-fraction baseline and BH-six use the declared
-panel's estimator and correction on this same core and scope; all-trait native
+BH-six and BY-six. The full-data shared-fraction baseline and BH-six use the
+`190-native-v2` panel's `shared_fraction` family in `effects.tsv.gz`
+(`pooled_fraction_effects.tsv` for pooled rows),
+recomputed on this same core and scope; all-trait native
 composition q-values are a different family. `fraction_loso_summary.tsv` gives
 descriptive ranges across the dependent study omissions. These conditional
 six-test adjusted values do not control selection of the six traits or searching

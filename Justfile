@@ -167,7 +167,7 @@ table1-influence-extension *ARGS:
 
 # Synthetic checks for the separately declared #771 sensitivity protocol.
 test-influence-extension:
-	uv run pytest tests/test_influence_extension.py tests/test_influence_extension_core.py -v
+	uv run pytest tests/test_influence_extension.py tests/test_influence_extension_core.py tests/test_influence_extension_joint.py -v
 
 sync:
 	uv sync --all-extras --group dev --group qa

@@ -444,3 +444,34 @@ def test_combined_summary_includes_exclusion_effects_baseline_and_both_q_ranges(
         "0.2",
     ):
         assert number in text
+
+
+@pytest.mark.parametrize(("before", "after"), [(0.1, 0.3), (-0.1, -0.3)])
+def test_effect_reduction_preserves_negative_values_for_larger_same_direction_shifts(
+    before: float, after: float
+) -> None:
+    row = extension.effect_reduction(before, after)
+    assert row["effect_reduction_status"] == "defined"
+    assert row["effect_reduction_fraction"] == pytest.approx(-2.0)
+    assert row["effect_reduction_percent"] == pytest.approx(-200.0)
+
+
+def test_joint_names_follow_sorted_ids_and_declared_families_are_checked(
+    corpus: tuple[Base, Graph],
+) -> None:
+    base, graph = corpus
+    spec = protocol()
+    joints = spec["joint_exclusions"]
+    assert isinstance(joints, list)
+    joint = joints[0]
+    assert isinstance(joint, dict)
+    joint["lineages"] = list(reversed(joint["lineages"]))
+    joint["names"] = list(reversed(joint["names"]))
+    ledger = reconcile(base, graph)
+    _, panel = lineage_panel(base, graph, ledger, spec)
+    row = next(row for row in panel if row["selection_kind"] == "declared_joint")
+    assert row["lineage"] == "NCBITaxon:186803+NCBITaxon:216572"
+    assert row["name"] == "Lachnospiraceae + Oscillospiraceae"
+    base.ranks["NCBITaxon:186803"] = "genus"
+    with pytest.raises(ValueError, match="non-family lineage"):
+        lineage_panel(base, graph, ledger, spec)

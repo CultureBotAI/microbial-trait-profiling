@@ -158,6 +158,48 @@ def test_verified_extension_reconciles_scope_subset_and_orientation(
         in (output / "influence_extension_summary.md").read_text()
     )
     assert not (output / "native_summary.md").exists()
+    with (output / "lineage_fraction_effects.tsv").open() as handle:
+        effects = list(csv.DictReader(handle, delimiter="\t"))
+    joint = [
+        row
+        for row in effects
+        if row["selection_kind"] == "declared_joint" and row["scope"] == "pooled"
+    ]
+    assert len(joint) == 6
+    # Neither declared family is in this synthetic graph: distinguish no removed
+    # annotation mass from a supported removal that happens to leave an effect unchanged.
+    assert {row["removal_status"] for row in joint} == {"no_removed_annotation_mass"}
+    assert {int(row["removed_annotation_mass"]) for row in joint} == {0}
+    assert {int(row["removed_trait_annotation_mass"]) for row in joint} == {0}
+    for row in joint:
+        if float(row["before_effect"]) != 0:
+            assert float(row["effect_reduction_fraction"]) == pytest.approx(0.0)
+            assert float(row["effect_reduction_percent"]) == pytest.approx(0.0)
+            assert row["effect_reduction_status"] == "defined"
+        else:
+            assert row["effect_reduction_fraction"] == ""
+            assert row["effect_reduction_percent"] == ""
+            assert row["effect_reduction_status"] == "zero_before_effect"
+    mass_path = output / "lineage_removed_annotation_mass.tsv"
+    with mass_path.open() as handle:
+        mass = list(csv.DictReader(handle, delimiter="\t"))
+    pooled_mass = [
+        row
+        for row in mass
+        if row["scope"] == "pooled" and row["selection_kind"] == "declared_joint"
+    ]
+    assert len(pooled_mass) == 2 * len(provenance["retained_features"])
+    assert {row["trait_key"] for row in pooled_mass} == set(provenance["retained_features"])
+    assert {row["direction"] for row in pooled_mass} == {"inc", "dec"}
+    assert {int(row["removed_annotation_mass"]) for row in pooled_mass} == {0}
+    assert all(int(row["before_annotation_mass"]) > 0 for row in pooled_mass)
+    for direction in ("inc", "dec"):
+        directional = [row for row in pooled_mass if row["direction"] == direction]
+        assert sum(int(row["before_trait_annotation_mass"]) for row in directional) == int(
+            directional[0]["before_annotation_mass"]
+        )
+    assert provenance["outputs"][mass_path.name] == file_sha256(mass_path)
+    assert str(mass_path.resolve()) in {item.path for item in record.outputs}
     with pytest.raises(FileExistsError):
         run_extension(manifest, output)
     altered = bundle.path("taxa_matrix")
@@ -192,8 +234,13 @@ def test_protocol_rule_tampering_is_rejected_before_output_creation(
     tampered = tmp_path / "same-version-changed-rule.json"
     tampered.write_text(json.dumps(changed))
     monkeypatch.setattr(extension, "PROTOCOL", tampered)
+
+    def unexpected_analysis(*_args: object, **_kwargs: object) -> None:
+        raise AssertionError("Analysis started before the protocol pin was validated")
+
+    monkeypatch.setattr(extension, "load_base", unexpected_analysis)
     output = tmp_path / "must-not-write"
-    with pytest.raises(ValueError, match=r"[Pp]rotocol"):
+    with pytest.raises(ValueError, match="protocol hash differs from the declared rule"):
         run_extension(core, output)
     assert not output.exists()
 
