@@ -50,9 +50,10 @@ committed `study_trait_profiles_wide.tsv.gz` decompressed: 2,610 header columns
 (3 identifier, 2,290 MediaDive, 317 retained) over 5,629 profile rows, joined
 from BugSigDB `2026-04-24_00:41_UTC` and KG-Microbe release 20260120 (nodes md5
 `dd76b4656f9341db25a7c4afa96cd58e`), as the download sidecar
-`data/kg-microbe/provenance.json` declares it. These are the guild figure's
-inputs, and its note records the experiment metadata table and the full dump
-they were read with
+`data/kg-microbe/provenance.json` declares it. The experiment metadata table is
+sha256 `16271237a70f61c8195d9f2acdd16f71e88f65859160f95bb734626bc1328e06` and the
+full dump sha256 `af84bfca7bfe76913a20c1fedbaadbfad4e4bf78605a2cfd7d00eb0c0fdd5788`.
+These are the guild figure's inputs too
 ([`guild_condition_body_site_heatmap.md`](guild_condition_body_site_heatmap.md)).
 Naming the dump does not identify the matrix, so the run writes this record to
 `corpus_identity.json` beside its outputs (#222).
@@ -73,9 +74,9 @@ row of `table1_traits_direction_shift.tsv`, and states it in the subtitle of the
 combined figure and of each cut. A cut names a requested condition that only
 such pairs carried. It does not report that condition as absent from the export
 or as cut by width. The map counts quoted below were measured with this
-exclusion, but on an earlier, 959-study build of the corpus, where it removes 94
-pairs and leaves 939 studies; the next regeneration replaces them with the
-committed corpus's.
+exclusion on the inputs identified above (matrix `519a095b…`, experiment table
+`16271237…`), where it removes 55 pairs and leaves 922 studies. The final rerun
+re-derives them from its own outputs (#908).
 
 
 ## Resolving the six traits to columns
@@ -109,14 +110,14 @@ into an Other row**. Such a row mixes hundreds of unrelated conditions, so no ce
 in it reads as one condition, and at twelve columns per body site it is expensive
 to draw something that cannot be interpreted. Excluding them keeps every drawn row
 a single label at the cost of showing only part of the corpus, and the cost is
-reported on every run: the condition axis keeps the top 60 labels and drops 382
-labels carrying 41.0 per cent of profiles. Passing `--include-other-conditions`
+reported on every run: the condition axis keeps the top 60 labels and drops 369
+labels carrying 40.4 per cent of profiles. Passing `--include-other-conditions`
 restores the pooled row. Note that BugSigDB records study variables such as Diet,
 Age, and Extraction protocol in the same Condition field as diseases, so the
 condition axis is not purely a disease axis.
 
 The body-site axis is treated differently and **does keep its Other block**, which
-pools 141 labels carrying 21.2 per cent of profiles. A pooled body site still
+pools 139 labels carrying 21.1 per cent of profiles. A pooled body site still
 reads as a coherent quantity, everywhere the corpus sampled outside the eight
 commonest sites, in a way a pooled condition does not, and keeping it means the
 figure accounts for the whole corpus along that axis. `--drop-other-body-sites`
@@ -145,7 +146,7 @@ vulgaris, Smoking behaviour measurement).
 On this run the grid is 51 conditions by 72 columns; of 3,672 cells, 814 carry a
 value, 419 fall below the study threshold, 147 are sampled with no signal for that
 trait, and 2,292 were never sampled. Before the exclusion it was 51 by 60, with
-806, 387, 163 and 1,704 of 3,060 cells in those states. Condition rows are
+806, 399, 151 and 1,704 of 3,060 cells in those states. Condition rows are
 ordered by hierarchical clustering of their value vectors under Euclidean
 distance with Ward linkage, cut into six groups separated by blank rows, with
 masked cells treated as zero for the distance calculation only — the same
@@ -196,19 +197,19 @@ was the observation the cut was meant to show. That observation cannot be checke
 in full here, because gingivitis is not drawn. The reason is the display rules,
 not the vintage, and the two conditions meet different rules:
 
-- **Periodontitis sits at the edge of the width cut.** Of 442 distinct conditions
+- **Periodontitis sits at the edge of the width cut.** Of 429 distinct conditions
   it ranks 58th on 20 profiles, so it is drawn, and it joins rheumatoid arthritis
   in Subgingival dental plaque, which keeps that block under
   `--min-site-conditions 2`. The zero-total exclusion keeps all 20 of its
-  profiles but takes four conditions ranked above it down to its count or below:
-  health study participation, hypertension, and non-alcoholic fatty liver
-  disease to 18 profiles, and response to transplant to 20, which then loses the
-  deterministic alphabetical tiebreak in `_top_labels`. Before the exclusion it
-  ranked 62nd of 451 on the same 20 profiles, level with the 60th-ranked
-  condition and behind it only on that tiebreak, and raising `--max-conditions`
-  to 62 drew it and the same Subgingival dental plaque block.
-- **Gingivitis is cut by support, so no width draws it.** It ranks 211th on 4
-  profiles (212th before the exclusion), and its two studies sit in different
+  profiles but takes three conditions ranked above it down to its count or
+  below: hypertension to 18 profiles, non-alcoholic fatty liver disease to 16,
+  and response to transplant to 20, which then loses the deterministic
+  alphabetical tiebreak in `_top_labels`. Before the exclusion it ranked 61st of
+  437 on the same 20 profiles, level with the 60th-ranked condition and behind it
+  only on that tiebreak, and raising `--max-conditions` to 61 drew it and the
+  same Subgingival dental plaque block.
+- **Gingivitis is cut by support, so no width draws it.** It ranks 205th on 4
+  profiles (206th before the exclusion), and its two studies sit in different
   body sites, leaving at most one study per cell against `--min-studies 3`.
   Widening the cut to admit it only drops the row again as entirely blank. Only
   lowering `--min-studies`, which would weaken every other cell in the figure,
@@ -217,11 +218,12 @@ not the vintage, and the two conditions meet different rules:
 So drawing all four together is not a matter of widening the cut. It needs a
 corpus where gingivitis carries at least three studies in one body site.
 
-**Flagged for the rerun (#836).** This account, like the other map counts in
-this note, is from the 959-study build. The next regeneration must re-check it
-on the committed corpus rather than carry it over. Periodontitis sits close
-enough to the width cut that another corpus can move it back out, and the
-Subgingival dental plaque block and the cuts' contents above would move with it.
+**Flagged for the rerun (#908).** This account, like the other map counts in
+this note, was measured on the committed corpus before the final rerun. The
+rerun must re-derive it from its own outputs rather than carry it over: it builds
+its matrix under #828's strain rollup default, and periodontitis sits close
+enough to the width cut that another matrix can move it back out, taking the
+Subgingival dental plaque block and the cuts' contents above with it.
 
 With `--include-other-conditions`, conditions outside the width cut are
 assigned to a pooled Other row. The panel note uses the build's recorded
