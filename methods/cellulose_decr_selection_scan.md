@@ -155,3 +155,57 @@ For each trait and each triple of eligible conditions:
 - **No multiplicity correction.** Every p-value is nominal. Selection-aware inference
   for the leads (a split-sample replication, or Benjamini–Bogomolov) belongs to the
   unified multiple-testing layer, which reads the per-triple rows.
+
+## How the scan runs
+
+This section and the next describe the implementation. They were written with the code,
+after the rule above was committed, and do not change it.
+
+- **Command.** `just cellulose-decr-selection-scan RUN OUTPUT` runs
+  `mtp.cellulose_decr.selection_scan` (`src/mtp/cellulose_decr/selection_scan.py`) on a
+  core run's `run.json`. It writes to a new or empty directory and refuses any other.
+- **Dry run.** `--plan` verifies the core and prints the eligible conditions, the trait
+  set, the number of triples and a timed estimate of the run. It writes nothing and runs
+  no null.
+- **Off-protocol runs.** `--permutations` and `--seed` exist for dry runs and tests. A
+  run with values other than the protocol's records `follows_protocol: false`.
+- **Verification.** The core run is verified before the scan reads it, and again before
+  the scan writes its consumer record (`core_consumption.json`), as for the other core
+  consumers. `just core-verify-consumer` checks that record later. A core of another
+  population or direction basis is refused.
+- **Shared draws.** Each U6 draw is one call to cellulose_decr's draw function
+  (`signature_draws`, which `signature_null` also uses). It gives a random order of the
+  pool's studies and one random unit for each study.
+  - The eligible conditions, in alphabetical order, take consecutive blocks of that
+    order, one block per condition, as large as its number of units.
+  - A triple's three blocks hold distinct studies, so its draws are U6 draws. The
+    synthetic sets of every condition are built once per draw, and every triple and
+    trait is scored from them.
+  - When the eligible conditions together have more units than the pool has studies,
+    the blocks wrap around the order. A triple whose blocks then overlap is drawn on its
+    own, with the same code and the seed (seed, triple index).
+- **Agreement with cellulose_decr.** Laid out as (PD, HIV, CRC), the scan gives
+  cellulose_decr's sets, statistics and U6 p-values exactly, for the same seed and
+  number of draws (`tests/test_cellulose_decr_selection_scan.py`).
+- **Expected values.** The scan's U6 expected distance and SD are taken over the draws
+  that have a distance. cellulose_decr takes them over every draw, so its expected value
+  is missing when a draw has none. The number of draws without a distance is reported.
+- **Runtime.** The null takes time in proportion to the number of triples. On a
+  synthetic corpus of 34 eligible conditions (5,984 triples), 11 traits and 100,000
+  draws, it took about 4.5 minutes on one core of an Apple-silicon laptop. Verifying a
+  Tier 1+2 core run takes a few more minutes, and happens twice.
+
+## Outputs
+
+| File | Contents |
+| --- | --- |
+| `selection_scan_triples.tsv.gz` | One row per trait and triple: the three conditions, set sizes, union, core and mean pairwise distance; U6 units; the studies the conditions share; U6 expected value, SD, z and p for both statistics; the number of draws and where they came from; the test status; whether it is the lead triple; and the triple's rank within its trait |
+| `selection_scan_traits.tsv` | The trait set with its screen statistics and U3 size; PD/HIV/CRC's results and ranks over all tested triples and over study-disjoint triples; and each trait's rank among the traits by PD/HIV/CRC's p and by the share of triples at most as large |
+| `selection_scan_conditions.tsv` | Every named condition with a stool comparison: comparisons, studies, U6 units, eligibility and layout position |
+| `selection_scan_distribution.tsv` | U6 p-values over triples in twenty bins, per trait, statistic and reference set |
+| `selection_scan_summary.json` | The rule as run, the counts, the trait table, and quantiles of p and z per trait, statistic and reference set |
+| `selection_scan_provenance.json` | Code commit, script hashes, protocol and methods hashes; the core run's ID, manifest hash and parameters; each input's path within the core run, with its hash; permutations, seed and package versions |
+| `core_consumption.json`, `core_consumption.coverage.tsv` | The binding to the verified core run |
+
+The triple table is gzip-compressed with a fixed timestamp, so the same core, rule and
+seed give the same bytes.
