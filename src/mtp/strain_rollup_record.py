@@ -2,13 +2,13 @@
 
 The core workflow records its scope in each run (#788). The matrix and profile tables of
 the older ``data/derived`` pipeline carry theirs in a record beside the table,
-``<table name>.strain_rollup.json``, bound to the table's content. A table replaced
-without its record, such as the committed profile table decompressed over a local one,
-is therefore refused rather than read under the scope of the table it replaced.
+``<table name>.strain_rollup.json``, bound to the table's content. A reader that checks
+records refuses a table whose record describes other content: the table was replaced
+without its record, so its scope is unknown.
 
-A table without a record, such as a core product, a stratum subset or a table built
-before #847, has no recorded scope to check. Readers that combine tables refuse only
-recorded scopes that disagree.
+Tables read together must all have records or none. Core products and tables built
+without a record are not compared with each other, but a table without a record is never
+read with a recorded one, whose scope it may not share (#939).
 """
 
 from __future__ import annotations
@@ -18,20 +18,21 @@ import gzip
 import hashlib
 import json
 import os
-import shutil
 import sys
 import zlib
 from collections.abc import Sequence
 from pathlib import Path
 
 from mtp.paths import DERIVED_DATA_DIR
-from mtp.taxa_trait_matrix import StrainRollup, parse_strain_rollup
+from mtp.taxa_trait_matrix import PRIMARY_STRAIN_ROLLUP, StrainRollup, parse_strain_rollup
 
 RECORD_SUFFIX = ".strain_rollup.json"
 DEFAULT_MATRIX_PATH = DERIVED_DATA_DIR / "taxa_trait_matrix.tsv"
 DEFAULT_PROFILE_PATH = DERIVED_DATA_DIR / "study_trait_profiles_wide.tsv"
-# What a provenance record says for a table built without a record
-UNRECORDED = "unrecorded: the table has no strain rollup record (#847)"
+REBUILD = (
+    "rebuild them with the recipes that write them, just taxa-trait-matrix and then "
+    "just study-trait-profiles"
+)
 
 
 class StrainRollupRecordError(ValueError):
@@ -60,28 +61,34 @@ def write_strain_rollup_record(table: Path, strain_rollup: StrainRollup) -> Path
     return path
 
 
+def _read_record(table: Path) -> tuple[StrainRollup, str] | None:
+    """The scope and content checksum a table's record states, or None without a record."""
+    path = record_path(table)
+    if not path.is_file():
+        return None
+    try:
+        record = json.loads(path.read_text(encoding="utf-8"))
+        return parse_strain_rollup(record["strain_rollup"]), str(record["content_sha256"])
+    except (ValueError, KeyError, TypeError) as error:
+        raise StrainRollupRecordError(
+            f"{path} is not a valid strain rollup record: {error}"
+        ) from error
+
+
 def recorded_strain_rollup(table: Path) -> StrainRollup | None:
     """The scope a table's record states, or None when the table has no record.
 
     A record that is unreadable, names no valid scope or describes other content is
     refused: the table was replaced without its record.
     """
-    path = record_path(table)
-    if not path.is_file():
+    record = _read_record(table)
+    if record is None:
         return None
-    try:
-        record = json.loads(path.read_text(encoding="utf-8"))
-        scope = parse_strain_rollup(record["strain_rollup"])
-        recorded_sha = record["content_sha256"]
-    except (ValueError, KeyError, TypeError) as error:
-        raise StrainRollupRecordError(
-            f"{path} is not a valid strain rollup record: {error}"
-        ) from error
+    scope, recorded_sha = record
     if recorded_sha != content_sha256(table):
         raise StrainRollupRecordError(
-            f"{table} is not the table its record {path.name} describes, so its strain "
-            "rollup scope is unknown; rebuild it, or restore the committed profile table "
-            "with `just study-trait-profiles-restore` (#847)"
+            f"{table} is not the table its record {record_path(table).name} describes, so "
+            "its strain rollup scope is unknown (#847)"
         )
     return scope
 
@@ -91,26 +98,31 @@ def require_strain_rollup(table: Path) -> StrainRollup:
     scope = recorded_strain_rollup(table)
     if scope is None:
         raise StrainRollupRecordError(
-            f"{table} records no strain rollup scope ({record_path(table).name} is missing); "
-            "rebuild it with the recipe that writes it, such as `just taxa-trait-matrix` "
-            "(#847)"
+            f"{table} records no strain rollup scope ({record_path(table).name} is missing) (#847)"
         )
     return scope
 
 
 def shared_strain_rollup(*tables: Path) -> StrainRollup | None:
-    """The scope the recorded tables share, or None when none has a record.
+    """The scope tables read together share, or None when none of them has a record.
 
-    Tables without a record are not compared; two recorded scopes that differ are refused.
+    Recorded scopes that differ are refused, and so is a table without a record read
+    with recorded ones (#847, #939).
     """
-    recorded = {table: recorded_strain_rollup(table) for table in tables}
-    scopes = {scope for scope in recorded.values() if scope is not None}
+    try:
+        recorded = {table: recorded_strain_rollup(table) for table in tables}
+    except StrainRollupRecordError as error:
+        raise StrainRollupRecordError(f"{error}; {REBUILD}") from error
+    scopes = set(recorded.values())
+    if scopes <= {None}:
+        return None
     if len(scopes) > 1:
-        listed = ", ".join(f"{table} {scope}" for table, scope in recorded.items() if scope)
+        listed = ", ".join(f"{table} ({scope or 'no record'})" for table, scope in recorded.items())
         raise StrainRollupRecordError(
-            f"These tables were built under different strain rollup scopes: {listed} (#847)"
+            f"Tables read together record different strain rollup scopes: {listed}; "
+            f"{REBUILD} (#847)"
         )
-    return next(iter(scopes), None)
+    return next(scope for scope in scopes if scope is not None)
 
 
 def require_declared_strain_rollup(tables: Sequence[Path], declared: StrainRollup) -> None:
@@ -119,8 +131,8 @@ def require_declared_strain_rollup(tables: Sequence[Path], declared: StrainRollu
     if recorded is not None and recorded != declared:
         names = ", ".join(str(table) for table in tables)
         raise StrainRollupRecordError(
-            f"{names} were built under the {recorded} strain rollup scope, not the "
-            f"declared {declared} (#847)"
+            f"{names} record the {recorded} strain rollup scope, not the declared "
+            f"{declared}; declare {recorded}, or rebuild them under {declared} (#847)"
         )
 
 
@@ -151,49 +163,70 @@ def check_committed(table: Path, matrix: Path) -> list[str]:
     """Why ``table`` is not the committed canonical table; empty when it is (#656, #847)."""
     committed = committed_path(table)
     committed_record = record_path(committed)
+    checkout = f"git checkout -- {committed} {committed_record}"
+    if not committed.is_file() or committed.stat().st_size == 0:
+        return [f"{committed} is missing or empty; restore it: {checkout} (#667)"]
     try:
         committed_sha = content_sha256(committed)
     except (OSError, EOFError, zlib.error) as error:
-        return [
-            f"{committed} is missing, empty or not gzip ({error}); restore it: "
-            f"git checkout -- {committed} {committed_record} (#667)"
-        ]
+        return [f"{committed} is not gzip ({error}); restore it: {checkout} (#667)"]
     try:
         committed_scope = require_strain_rollup(committed)
     except StrainRollupRecordError as error:
-        return [f"{error}", f"  Restore it: git checkout -- {committed} {committed_record}"]
+        return [f"{error}", f"  Restore both: {checkout}"]
     blocked = _restore_blocked(committed_scope, matrix)
-    rebuild = "run just study-trait-profiles" + (
-        "" if blocked else ", or just study-trait-profiles-restore"
-    )
+    offer = "" if blocked else ", or just study-trait-profiles-restore"
     unrestorable = [f"  Not offering the committed table: {blocked}."] if blocked else []
     if not table.is_file() or table.stat().st_size == 0:
-        return [f"{table} is missing or empty; {rebuild}", *unrestorable]
-    try:
-        scope = require_strain_rollup(table)
-    except StrainRollupRecordError as error:
-        return [f"{error}", f"  Unintended: {rebuild}", *unrestorable]
+        return [f"{table} is missing or empty; run just study-trait-profiles{offer}", *unrestorable]
     same_content = content_sha256(table) == committed_sha
+    try:
+        scope = recorded_strain_rollup(table)
+    except StrainRollupRecordError:
+        scope = None
+        missing = f"its record {record_path(table).name} is invalid or describes other content"
+    else:
+        missing = f"it has no strain rollup record {record_path(table).name}"
+    if scope is None:
+        if same_content and not blocked:
+            return [
+                f"{table} has the committed content, but {missing}; restore it with its "
+                "record: run just study-trait-profiles-restore (#847)"
+            ]
+        lead = "has the committed content, but" if same_content else "is not the committed table:"
+        return [f"{table} {lead} {missing}; run just study-trait-profiles (#847)", *unrestorable]
     if same_content and scope == committed_scope:
         return []
     if same_content:
         return [
             f"{table} has the committed content but records the {scope} strain rollup "
-            f"scope, the committed record {committed_scope}; rebuild it (#847)"
+            f"scope, where the committed record states {committed_scope}; rebuild it: "
+            "run just study-trait-profiles (#847)"
         ]
+    refresh = (
+        f"just study-trait-profiles-refresh-gz, then commit {committed} and {committed_record}"
+    )
     messages = [f"{table} differs from the committed {committed} (#656)."]
-    if scope != committed_scope:
-        messages.append(
-            f"  It was built under the {scope} strain rollup scope, the committed table "
-            f"under {committed_scope} (#788, #847)."
-        )
+    if scope == committed_scope:
+        return [
+            *messages,
+            f"  Unintended: run just study-trait-profiles{offer}",
+            *unrestorable,
+            f"  After an intended input change: {refresh}",
+        ]
+    rebuilds = (
+        f"a rebuild gives a {scope} table again, because data/derived holds only the primary "
+        f"{PRIMARY_STRAIN_ROLLUP} matrix"
+        if scope == PRIMARY_STRAIN_ROLLUP
+        else "run just study-trait-profiles to rebuild it from the primary matrix"
+    )
     return [
         *messages,
-        f"  Unintended: {rebuild}",
-        *unrestorable,
-        "  After an intended input change, including a new strain rollup scope: "
-        f"just study-trait-profiles-refresh-gz, then commit {committed} and "
-        f"{committed_record}",
+        f"  It was built under the {scope} strain rollup scope, the committed table under "
+        f"{committed_scope} (#788, #847); {rebuilds}.",
+        f"  If the {scope} table is intended: {refresh}",
+        f"  To rebuild the committed {committed_scope} table instead, outside data/derived: "
+        "just study-trait-profiles-reproduce-committed <directory>",
     ]
 
 
@@ -201,19 +234,37 @@ def restore_committed(table: Path, matrix: Path) -> StrainRollup:
     """Decompress the committed table over ``table`` and give it the committed record.
 
     Refused when the local matrix records another scope or none, so a restore never puts
-    a profile table next to a matrix of another scope (#847).
+    a profile table next to a matrix of another scope (#847). The restored bytes must be
+    the content the committed record describes (#939).
     """
     committed = committed_path(table)
-    scope = require_strain_rollup(committed)
+    record = _read_record(committed)
+    if record is None:
+        raise StrainRollupRecordError(
+            f"{committed} records no strain rollup scope; restore it: git checkout -- "
+            f"{committed} {record_path(committed)} (#847)"
+        )
+    scope, recorded_sha = record
     blocked = _restore_blocked(scope, matrix)
     if blocked:
         raise StrainRollupRecordError(
             f"Not restoring {committed}: {blocked}; run just study-trait-profiles (#847)"
         )
     partial = table.with_name(f".{table.name}.restoring")
-    with gzip.open(committed, "rb") as source, partial.open("wb") as target:
-        shutil.copyfileobj(source, target)
-    os.replace(partial, table)
+    digest = hashlib.sha256()
+    try:
+        with gzip.open(committed, "rb") as source, partial.open("wb") as target:
+            while chunk := source.read(1 << 20):
+                digest.update(chunk)
+                target.write(chunk)
+        if digest.hexdigest() != recorded_sha:
+            raise StrainRollupRecordError(
+                f"{committed} is not the table its record describes; restore both: git "
+                f"checkout -- {committed} {record_path(committed)} (#847)"
+            )
+        os.replace(partial, table)
+    finally:
+        partial.unlink(missing_ok=True)
     write_strain_rollup_record(table, scope)
     return scope
 

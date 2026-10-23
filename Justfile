@@ -12,6 +12,8 @@ logdir := "logs"
 p_threshold := "0.001"
 min_fold := "1.5"
 code_paths := "src scripts methods schema Justfile pyproject.toml uv.lock"
+# The canonical profile table's flags: human hosts, 16S and WMS, non-empty trait columns
+profile_flags := '--host-species "Homo sapiens" --sequencing-types 16S WMS --drop-empty-traits'
 
 default: check
 
@@ -566,7 +568,7 @@ audit-strain-rollup *ARGS:
 # Build the canonical study trait profile table (human hosts, 16S and WMS experiments,
 # non-empty trait columns).
 study-trait-profiles: taxa-trait-matrix
-	uv run python scripts/create_study_trait_profiles.py --host-species "Homo sapiens" --sequencing-types 16S WMS --drop-empty-traits
+	uv run python scripts/create_study_trait_profiles.py {{profile_flags}}
 
 # After an intended input change, such as a BugSigDB release, a new KG pin or a new strain
 # rollup scope, refresh the committed copy with `just study-trait-profiles-refresh-gz` and
@@ -579,6 +581,25 @@ study-trait-profiles-check:
 # Restore the committed canonical profile table and its strain rollup record.
 study-trait-profiles-restore:
 	uv run python -m mtp.strain_rollup_record restore
+
+# data/derived holds only the primary scope's matrix, so a table under another scope is
+# built in a directory outside it, from data/derived/bugsigdb_taxa.tsv, data/kg-microbe and
+# data/studies (#847).
+# Rebuild the committed profile table under the scope its record states and compare them.
+study-trait-profiles-reproduce-committed directory:
+	#!/usr/bin/env bash
+	set -euo pipefail
+	committed=data/derived/study_trait_profiles_wide.tsv.gz
+	scope="$(uv run python -m mtp.strain_rollup_record show "$committed")"
+	mkdir -p "{{directory}}"
+	uv run python scripts/create_taxa_trait_matrix.py --strain-rollup "$scope" --output "{{directory}}/taxa_trait_matrix.tsv"
+	uv run python scripts/create_study_trait_profiles.py --taxa-trait-matrix "{{directory}}/taxa_trait_matrix.tsv" --output "{{directory}}/study_trait_profiles_wide.tsv" {{profile_flags}}
+	if gzip -dc "$committed" | cmp -s - "{{directory}}/study_trait_profiles_wide.tsv"; then
+		echo "{{directory}}/study_trait_profiles_wide.tsv reproduces the committed $scope table"
+	else
+		echo "{{directory}}/study_trait_profiles_wide.tsv differs from the committed $scope table $committed" >&2
+		exit 1
+	fi
 
 # Commit both files afterwards (#667, #847).
 # Replace the committed canonical profile table and its record with the current ones.

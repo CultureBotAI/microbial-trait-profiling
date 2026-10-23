@@ -13,6 +13,7 @@ from mtp.corpus_identity import (
     DEFAULT_KG_PROVENANCE_PATH,
     PINNED_KG_MICROBE_RELEASE,
     UNKNOWN_RELEASE,
+    CorpusIdentity,
     corpus_identity,
     measure_matrix,
     read_kg_inputs,
@@ -23,11 +24,7 @@ from mtp.corpus_identity import (
 from mtp.download import BUGSIGDB_EXPORTS_VERSION, PINNED_FULL_DUMP_MD5
 from mtp.human_host_corpus import CORPUS_SEQUENCING_TYPES
 from mtp.paths import file_sha256
-from mtp.strain_rollup_record import (
-    UNRECORDED,
-    StrainRollupRecordError,
-    write_strain_rollup_record,
-)
+from mtp.strain_rollup_record import StrainRollupRecordError, write_strain_rollup_record
 from mtp.trait_composition import (
     LogRatioResult,
     LogRatioSummary,
@@ -49,12 +46,16 @@ def _matrix(path: Path, *, mediadive: int, retained: int, rows: int) -> Path:
 
 
 def test_the_identity_states_the_scope_the_table_records(tmp_path: Path) -> None:
-    """A provenance record names the profile table's strain rollup scope, says when the
-    table records none, and refuses a table replaced without its record (#847)."""
+    """A provenance record names the profile table's strain rollup scope, is null when
+    the table records none, and refuses a table replaced without its record (#847, #939)."""
     table = _matrix(tmp_path / "m.tsv", mediadive=1, retained=2, rows=1)
-    assert measure_matrix(table).strain_rollup == UNRECORDED
+    assert measure_matrix(table).strain_rollup is None
     write_strain_rollup_record(table, "phenotype")
-    assert measure_matrix(table).strain_rollup == "phenotype"
+    identity = measure_matrix(table)
+    assert identity.strain_rollup == "phenotype"
+    assert "  strain rollup    phenotype" in summary_lines(
+        CorpusIdentity(identity, None, None, "provenance.json")
+    )
     _matrix(table, mediadive=1, retained=2, rows=2)
     with pytest.raises(StrainRollupRecordError, match="not the table its record"):
         measure_matrix(table)
@@ -422,13 +423,19 @@ def test_rerun_recipe_hygiene_invariants() -> None:
         encoding="utf-8"
     )
     # The standalone canonical recipe keeps its human-only contract (#656), on 16S and
-    # shotgun experiments only (#742).
+    # shotgun experiments only (#742); reproducing the committed table uses the same
+    # flags (#847).
     assert (
-        "study-trait-profiles: taxa-trait-matrix\n"
-        '\tuv run python scripts/create_study_trait_profiles.py --host-species "Homo sapiens" '
-        f"--sequencing-types {' '.join(CORPUS_SEQUENCING_TYPES)} --drop-empty-traits\n"
+        'profile_flags := \'--host-species "Homo sapiens" '
+        f"--sequencing-types {' '.join(CORPUS_SEQUENCING_TYPES)} --drop-empty-traits'\n"
         in justfile_text
     )
+    assert (
+        "study-trait-profiles: taxa-trait-matrix\n"
+        "\tuv run python scripts/create_study_trait_profiles.py {{profile_flags}}\n"
+        in justfile_text
+    )
+    assert justfile_text.count("{{profile_flags}}") == 2
     assert (
         "study-trait-profiles-ora:\n"
         "\tuv run python scripts/create_study_trait_profiles.py --binary --include-taxa-count "

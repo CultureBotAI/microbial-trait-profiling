@@ -32,7 +32,7 @@ from bsdbng.trait_screen import (
     step_up,
     table1_slug,
 )
-from mtp.strain_rollup_record import recorded_strain_rollup
+from mtp.strain_rollup_record import committed_path, content_sha256, require_strain_rollup
 
 
 def _profile(
@@ -406,12 +406,17 @@ def test_the_pinned_corpus_screens_every_retained_trait_and_reproduces_the_quote
     assert stats.trait_columns_used == len(columns)
     result = run_screen(paired, columns, dependence_profiles=unpaired)
     assert result.family_size == len(columns)
-    # Every figure below was computed on the committed table, which records the off
-    # scope; a table built under another scope needs them repinned (#847).
-    scope = recorded_strain_rollup(DEFAULT_PROFILE_PATH)
+    # Every figure below was computed on the committed table, built under the off scope
+    # its record states, so the profile table must be that table (#847, #939).
+    committed = committed_path(DEFAULT_PROFILE_PATH)
+    scope = require_strain_rollup(committed)
+    assert content_sha256(DEFAULT_PROFILE_PATH) == content_sha256(committed), (
+        "the figures below are pinned to the committed table, and the profile table is "
+        "another one; restore the committed table or repin them (#847)"
+    )
     assert scope == "off", (
-        f"the profile table records strain rollup scope {scope!r}, but the figures below "
-        "are pinned to the committed off table; repin them for this table (#847)"
+        f"the committed table records strain rollup scope {scope!r}, but the figures below "
+        "were computed on the off table; repin them for this table (#847)"
     )
     assert len(columns) == 317
     contrast = result.contrast_dependence

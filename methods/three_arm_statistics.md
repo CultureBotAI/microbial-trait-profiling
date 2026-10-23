@@ -90,10 +90,11 @@ Which BacDive strain records reach the matrix is the `strain_rollup` scope
 ([#788](https://github.com/CultureBotAI/microbial-trait-profiling/issues/788)). The core
 workflow takes it as a parameter and records it in every run. The legacy matrix builder
 (`just taxa-trait-matrix`) and the Table 1 contribution ledger take it as an option, and
-both default to the primary scope like the workflow. The legacy matrix and profile tables
-record their scope beside them, bound to the table's content, and the committed profile
-table records `off`. The ledger, ORA enrichment, its calibration and strata refuse tables
-recorded under different scopes, and every corpus-identity record names the scope
+both default to the primary scope like the workflow. The legacy matrix and profile tables,
+and the committed profile table, record their scope beside them, bound to the table's
+content. The ledger, ORA enrichment, its calibration and strata refuse tables read together
+that record different scopes or that are recorded only in part, and every corpus-identity
+record names the scope
 ([#847](https://github.com/CultureBotAI/microbial-trait-profiling/issues/847)). A strain's
 admitted trait edges count at the NCBITaxon node it is a `biolink:subclass_of`, once per
 node, so the matrix still counts trait-bearing NCBITaxon nodes. The three scopes have
