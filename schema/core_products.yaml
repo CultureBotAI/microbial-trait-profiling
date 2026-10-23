@@ -466,9 +466,9 @@ classes:
         description: Whether the feature is a trait annotation or a culture-medium relation.
       annotation_evidence:
         required: true
-        pattern: ^direct_or_descendant_unresolved$
+        pattern: ^(direct_or_descendant_unresolved|direct_descendant_or_strain_unresolved)$
         title: Annotation evidence
-        description: Direct versus descendant-derived evidence remains unresolved by this matrix.
+        description: The assertion origins the feature's counts may combine, unresolved by this matrix; direct or descendant, and BacDive strain records when the run's strain rollup scope admits the feature.
     title: Feature Definition
   ProfileCoverageRecord:
     description: Reconciled membership and exclusion accounting for a signature profile.
