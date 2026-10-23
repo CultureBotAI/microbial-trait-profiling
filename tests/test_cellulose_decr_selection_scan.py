@@ -62,8 +62,8 @@ from mtp.cellulose_decr.selection_scan import (
     plan,
     prepare,
     rank_candidates,
-    rollup_scope,
     scan,
+    scope_role,
     select,
     triple_table,
 )
@@ -210,25 +210,13 @@ def test_protocol_is_refused_when_it_says_what_the_code_does_not_do(
         load_protocol(_edited(tmp_path, edit))
 
 
-@pytest.mark.parametrize(
-    ("parameters", "expected"),
-    [
-        ({}, ("off", PRIMARY)),
-        ({"strain_rollup": "off"}, ("off", PRIMARY)),
-        ({"strain_rollup": "phenotype"}, ("phenotype", SENSITIVITY)),
-        ({"strain_rollup": "phenotype", "source_mode": "pinned"}, ("phenotype", SENSITIVITY)),
-    ],
-)
-def test_rollup_scope_reads_the_declared_scopes(
-    parameters: dict[str, str], expected: tuple[str, str]
-) -> None:
-    """A core without the parameter predates #828 and is off (#872)."""
-    assert rollup_scope(parameters, load_protocol()) == expected
-
-
-def test_rollup_scope_refuses_an_undeclared_scope() -> None:
+def test_scope_roles_follow_the_amendment() -> None:
+    """off is primary, phenotype the declared sensitivity, and full is refused (#872)."""
+    protocol = load_protocol()
+    assert scope_role("off", protocol) == PRIMARY
+    assert scope_role("phenotype", protocol) == SENSITIVITY
     with pytest.raises(ValueError, match="neither the declared primary"):
-        rollup_scope({"strain_rollup": "full"}, load_protocol())
+        scope_role("full", protocol)
 
 
 def test_eligibility_counts_studies_with_a_stool_comparison() -> None:
@@ -773,7 +761,8 @@ def _write_core_inputs(root: Path) -> dict[str, Path]:
 
 @pytest.fixture(scope="module")
 def cores(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Path]:
-    """A Tier 1+2 core and an all-paired core of the same synthetic inputs."""
+    """Tier 1+2 cores of each strain-rollup scope, and an all-paired core, of the same
+    synthetic inputs. ``tier1_2`` is the declared primary scope, off."""
     from mtp.paths import REPO_ROOT
     from mtp.workflow.operations import OPERATIONS, validate_core_product
     from mtp.workflow.runtime import execute_workflow
@@ -781,19 +770,30 @@ def cores(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Path]:
     root = tmp_path_factory.mktemp("selection-scan-core")
     inputs = _write_core_inputs(root)
     runs = {}
-    for name, spec, population in (
-        ("tier1_2", "bugsigdb_core_subset.yaml", TIER1_2),
-        ("all_paired", "bugsigdb_core.yaml", None),
+    for name, spec, parameters in (
+        (
+            "tier1_2",
+            "bugsigdb_core_subset.yaml",
+            {"contrast_population": TIER1_2, "strain_rollup": "off"},
+        ),
+        (
+            "tier1_2_phenotype",
+            "bugsigdb_core_subset.yaml",
+            {"contrast_population": TIER1_2, "strain_rollup": "phenotype"},
+        ),
+        (
+            "tier1_2_full",
+            "bugsigdb_core_subset.yaml",
+            {"contrast_population": TIER1_2, "strain_rollup": "full"},
+        ),
+        ("all_paired", "bugsigdb_core.yaml", {"strain_rollup": "off"}),
     ):
         run = execute_workflow(
             REPO_ROOT / "workflows" / spec,
             inputs,
             root / name,
             OPERATIONS,
-            parameter_overrides={
-                "source_mode": "fixture",
-                **({"contrast_population": population} if population else {}),
-            },
+            parameter_overrides={"source_mode": "fixture", **parameters},
             validator=validate_core_product,
             repository_root=REPO_ROOT,
         )
@@ -830,7 +830,7 @@ def test_main_writes_every_output_bound_to_the_core(cores: dict[str, Path], tmp_
 
     summary = json.loads((out / OUTPUTS["summary"]).read_text(encoding="utf-8"))
     assert summary["follows_protocol"] is False
-    # The fixture core predates #828, so it records no scope and reads as off (#872).
+    # The core was built with the declared primary scope (#872).
     assert summary["strain_rollup"]["scope"] == "off"
     assert summary["strain_rollup"]["role"] == PRIMARY
     assert summary["counts"]["eligible_conditions"] == 5
@@ -868,6 +868,8 @@ def test_main_refuses_another_population_or_a_used_directory(
 ) -> None:
     with pytest.raises(ValueError, match=TIER1_2):
         main(["--core-run", str(cores["all_paired"]), "--output-dir", str(tmp_path / "a")])
+    with pytest.raises(ValueError, match="neither the declared primary"):
+        main(["--core-run", str(cores["tier1_2_full"]), "--output-dir", str(tmp_path / "b")])
     used = tmp_path / "used"
     used.mkdir()
     (used / "old.tsv").write_text("x\n", encoding="utf-8")
@@ -1104,6 +1106,11 @@ def test_load_core_inputs_reads_a_tier1_2_core_only(cores: dict[str, Path]) -> N
     _, inputs = load_core_inputs(cores["tier1_2"])
     assert len(inputs.studies) == sum(STUDIES.values())
     assert TRAIT_ID in inputs.columns
+    assert (inputs.strain_rollup, inputs.strain_rollup_role) == ("off", PRIMARY)
+    _, phenotype = load_core_inputs(cores["tier1_2_phenotype"])
+    assert (phenotype.strain_rollup, phenotype.strain_rollup_role) == ("phenotype", SENSITIVITY)
+    with pytest.raises(ValueError, match="neither the declared primary"):
+        load_core_inputs(cores["tier1_2_full"])
     with pytest.raises(ValueError, match=TIER1_2):
         load_core_inputs(cores["all_paired"])
 

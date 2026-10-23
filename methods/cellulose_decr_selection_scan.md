@@ -205,8 +205,10 @@ after the rule above was committed, and do not change it.
   population or direction basis is refused.
 - **Scope.** The core's `strain_rollup` parameter must be `off` (primary) or
   `phenotype` (declared sensitivity); a core without it, built before #828, is read as
-  `off`. Any other scope is refused. The summary, the provenance and `--plan` record
-  the scope and its role (first amendment).
+  `off`. Any other scope is refused. The scope is read with `mtp.workflow`'s own
+  `run_strain_rollup`. The summary, the provenance and `--plan` record the scope and
+  its role (first amendment). The workflow's default scope since #828 is `phenotype`, so
+  build the primary core with `--strain-rollup off`.
 - **Protocol checks.** The code reads the protocol file and applies its amendments in
   date order. It refuses a protocol whose fields say something the code does not do
   (the population, stool body site, core products, statistics, reference sets, lead,

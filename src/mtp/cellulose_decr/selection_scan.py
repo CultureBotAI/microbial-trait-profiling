@@ -234,17 +234,16 @@ def load_protocol(path: Path = PROTOCOL_PATH) -> Protocol:
     )
 
 
-def rollup_scope(parameters: Mapping[str, str], protocol: Protocol) -> tuple[str, str]:
-    """A core's strain-rollup scope and its declared role; another scope is refused.
+def scope_role(scope: str, protocol: Protocol) -> str:
+    """A strain-rollup scope's declared role, primary or sensitivity; another is refused.
 
-    A core built before #828 records no ``strain_rollup`` parameter and is read as the
-    protocol's ``absent_means`` (``off``), as ``mtp.workflow`` reads it.
+    The scope is the core's, as ``mtp.workflow.operations.run_strain_rollup`` reads it: a
+    core built before #828 records none and is ``off``, the protocol's ``absent_means``.
     """
-    scope = parameters.get(STRAIN_ROLLUP, protocol.scope_absent)
     if scope == protocol.scope_primary:
-        return scope, PRIMARY
+        return PRIMARY
     if scope in protocol.scope_sensitivity:
-        return scope, SENSITIVITY
+        return SENSITIVITY
     raise ValueError(
         f"strain_rollup {scope!r} is neither the declared primary scope "
         f"{protocol.scope_primary!r} nor a declared sensitivity {list(protocol.scope_sensitivity)}"
@@ -1243,7 +1242,7 @@ class ScanInputs:
     (``build_population``). ``matrix`` holds every screen candidate trait. ``screen``
     holds the paired human profiles the directional screen votes on, over ``columns``,
     and ``labels`` name the traits. ``strain_rollup`` is the core's scope and
-    ``strain_rollup_role`` its declared role (``rollup_scope``).
+    ``strain_rollup_role`` its declared role (``scope_role``).
     """
 
     profiles: pd.DataFrame
@@ -1301,6 +1300,7 @@ def open_tier1_2(core_run: Path, protocol: Protocol | None = None) -> tuple[Core
     A core of another population, direction basis or undeclared scope is refused.
     """
     from mtp.workflow.consumers import open_core_bundle
+    from mtp.workflow.operations import run_strain_rollup
     from mtp.workflow.population import ORIENTED_DIRECTION_BASIS
 
     bundle = open_core_bundle(core_run)
@@ -1312,9 +1312,8 @@ def open_tier1_2(core_run: Path, protocol: Protocol | None = None) -> tuple[Core
             f"the scan reads a {TIER1_2} core oriented {ORIENTED_DIRECTION_BASIS}; "
             f"{core_run} is {bundle.run.contrast_population}, {bundle.run.direction_basis}"
         )
-    parameters = {item.name: item.value for item in bundle.run.parameters or []}
-    scope, role = rollup_scope(parameters, protocol or load_protocol())
-    return bundle, scope, role
+    scope = run_strain_rollup(bundle.run)
+    return bundle, scope, scope_role(scope, protocol or load_protocol())
 
 
 def load_core_inputs(
