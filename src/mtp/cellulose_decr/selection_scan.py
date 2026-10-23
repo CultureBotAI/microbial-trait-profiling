@@ -97,6 +97,10 @@ NO_TAXA = "all_sets_empty"
 POOL_TOO_SMALL = "pool_too_small"
 # A held-out hypothesis with a condition that no held-out study reports (``evaluate``).
 NO_UNITS = "no_units"
+# Why a selection's family has triples or none (``Selection.status``, #901).
+SELECTED = "selected"
+NO_TRAITS = "no_traits"
+TOO_FEW_CONDITIONS = "fewer_than_three_eligible_conditions"
 # Where a triple's U6 draws come from.
 SHARED = "shared"
 OWN = "own"
@@ -230,17 +234,16 @@ def load_protocol(path: Path = PROTOCOL_PATH) -> Protocol:
     )
 
 
-def rollup_scope(parameters: Mapping[str, str], protocol: Protocol) -> tuple[str, str]:
-    """A core's strain-rollup scope and its declared role; another scope is refused.
+def scope_role(scope: str, protocol: Protocol) -> str:
+    """A strain-rollup scope's declared role, primary or sensitivity; another is refused.
 
-    A core built before #828 records no ``strain_rollup`` parameter and is read as the
-    protocol's ``absent_means`` (``off``), as ``mtp.workflow`` reads it.
+    The scope is the core's, as ``mtp.workflow.operations.run_strain_rollup`` reads it: a
+    core built before #828 records none and is ``off``, the protocol's ``absent_means``.
     """
-    scope = parameters.get(STRAIN_ROLLUP, protocol.scope_absent)
     if scope == protocol.scope_primary:
-        return scope, PRIMARY
+        return PRIMARY
     if scope in protocol.scope_sensitivity:
-        return scope, SENSITIVITY
+        return SENSITIVITY
     raise ValueError(
         f"strain_rollup {scope!r} is neither the declared primary scope "
         f"{protocol.scope_primary!r} nor a declared sensitivity {list(protocol.scope_sensitivity)}"
@@ -662,12 +665,13 @@ def prepare(
     observed = np.zeros((1, len(conditions), unit_bits.shape[1]), dtype=np.uint64)
     for column, member in enumerate(members):
         observed[0, column] = np.bitwise_or.reduce(unit_bits[member], axis=0)
+    # Filled row by row, so no eligible condition gives empty sets, not an error (#901).
     sets = [
-        np.stack([matrix_bits[member].any(axis=0) for member in members]).reshape(
-            len(conditions), matrix_bits.shape[1]
-        )
-        for matrix_bits, *_ in built
+        np.zeros((len(conditions), matrix_bits.shape[1]), dtype=bool) for matrix_bits, *_ in built
     ]
+    for (matrix_bits, *_), condition_sets in zip(built, sets, strict=True):
+        for column, member in enumerate(members):
+            condition_sets[column] = matrix_bits[member].any(axis=0)
     n_studies = int(unit_study.max()) + 1 if unit_study.size else 0
     incidence = np.zeros((n_studies, len(conditions)), dtype=bool)
     for column, member in enumerate(members):
@@ -1238,7 +1242,7 @@ class ScanInputs:
     (``build_population``). ``matrix`` holds every screen candidate trait. ``screen``
     holds the paired human profiles the directional screen votes on, over ``columns``,
     and ``labels`` name the traits. ``strain_rollup`` is the core's scope and
-    ``strain_rollup_role`` its declared role (``rollup_scope``).
+    ``strain_rollup_role`` its declared role (``scope_role``).
     """
 
     profiles: pd.DataFrame
@@ -1296,6 +1300,7 @@ def open_tier1_2(core_run: Path, protocol: Protocol | None = None) -> tuple[Core
     A core of another population, direction basis or undeclared scope is refused.
     """
     from mtp.workflow.consumers import open_core_bundle
+    from mtp.workflow.operations import run_strain_rollup
     from mtp.workflow.population import ORIENTED_DIRECTION_BASIS
 
     bundle = open_core_bundle(core_run)
@@ -1307,9 +1312,8 @@ def open_tier1_2(core_run: Path, protocol: Protocol | None = None) -> tuple[Core
             f"the scan reads a {TIER1_2} core oriented {ORIENTED_DIRECTION_BASIS}; "
             f"{core_run} is {bundle.run.contrast_population}, {bundle.run.direction_basis}"
         )
-    parameters = {item.name: item.value for item in bundle.run.parameters or []}
-    scope, role = rollup_scope(parameters, protocol or load_protocol())
-    return bundle, scope, role
+    scope = run_strain_rollup(bundle.run)
+    return bundle, scope, scope_role(scope, protocol or load_protocol())
 
 
 def load_core_inputs(
@@ -1352,6 +1356,20 @@ class Selection:
     traits: pd.DataFrame
     triples: pd.DataFrame
     result: ScanResult
+
+    @property
+    def status(self) -> str:
+        """Whether the family has triples: ``selected``, or why not.
+
+        ``no_traits`` when the screen of these studies selects no trait, else
+        ``fewer_than_three_eligible_conditions`` when no triple can be formed. An empty
+        family is a result of the declared rule, not a failed run (#901).
+        """
+        if self.traits.empty:
+            return NO_TRAITS
+        if len(self.result.conditions) < 3:
+            return TOO_FEW_CONDITIONS
+        return SELECTED
 
 
 def select(

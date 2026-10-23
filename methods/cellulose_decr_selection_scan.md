@@ -205,8 +205,10 @@ after the rule above was committed, and do not change it.
   population or direction basis is refused.
 - **Scope.** The core's `strain_rollup` parameter must be `off` (primary) or
   `phenotype` (declared sensitivity); a core without it, built before #828, is read as
-  `off`. Any other scope is refused. The summary, the provenance and `--plan` record
-  the scope and its role (first amendment).
+  `off`. Any other scope is refused. The scope is read with `mtp.workflow`'s own
+  `run_strain_rollup`. The summary, the provenance and `--plan` record the scope and
+  its role (first amendment). The workflow's default scope since #828 is `phenotype`, so
+  build the primary core with `--strain-rollup off`.
 - **Protocol checks.** The code reads the protocol file and applies its amendments in
   date order. It refuses a protocol whose fields say something the code does not do
   (the population, stool body site, core products, statistics, reference sets, lead,
@@ -262,7 +264,7 @@ multiplicity family and the reporting) belongs to #854.
 | --- | --- | --- |
 | `load_core_inputs` | `(core_run: Path, protocol=None) -> tuple[CoreBundle, ScanInputs]` | Verifies a Tier 1+2 core run of a declared scope and reads its population once. A core of another population or scope is refused. `ScanInputs.studies` lists the population's studies; `ScanInputs.restricted(studies)` keeps whole studies; `ScanInputs.strain_rollup` and `strain_rollup_role` give the scope. |
 | `build_population`, `screen_table` | `(experiments, keyed, reported, matrix_taxa, studies=None)`; `(profiles, columns, labels, studies=None)` | The population's profiles and taxa, and the directional screen, from in-memory tables, optionally for some studies only. `load_core_inputs` uses them. |
-| `select` | `(inputs, studies=None, *, protocol=None, permutations=None, seed=None, always_included=True) -> Selection` | The declared rule on `studies` only. `Selection.conditions` is the condition table, `Selection.traits` the trait set from those studies' screen, and `Selection.triples` one row per triple and trait, with the columns `TRIPLE_COLUMNS`. `Selection.result` holds the arrays and `Selection.studies` the studies used. |
+| `select` | `(inputs, studies=None, *, protocol=None, permutations=None, seed=None, always_included=True) -> Selection` | The declared rule on `studies` only. `Selection.conditions` is the condition table, `Selection.traits` the trait set from those studies' screen, and `Selection.triples` one row per triple and trait, with the columns `TRIPLE_COLUMNS`. `Selection.result` holds the arrays and `Selection.studies` the studies used. `Selection.status` is `selected`, `no_traits` or `fewer_than_three_eligible_conditions`. |
 | `rank_candidates` | `(triples, statistic="mean_pairwise_jaccard_distance") -> DataFrame` | The tested rows in a fixed order, numbered `candidate_rank`: U6 p ascending, then z (more overlap first), then trait ID and the three conditions. It is an order, not a selection. |
 | `closest_disjoint_triples` | `(triples, tolerance=1e-12) -> DataFrame` | #854's selection rule: per trait, the tested study-disjoint triple with the smallest observed mean pairwise distance, distances within `tolerance` tied and ties going to the conditions first in lexical order. A trait without such a triple selects nothing. |
 | `evaluate` | `(inputs, studies, hypotheses, *, protocol=None, permutations=None, seed=None) -> DataFrame` | One row per hypothesis, `(condition, condition, condition, trait ID)`, in the given order and numbered `hypothesis`, with the columns `TRIPLE_COLUMNS` except the within-trait ranks, then the flags `OUTCOME_COLUMNS`. |
@@ -270,6 +272,12 @@ multiplicity family and the reporting) belongs to #854.
 - **Study subsets.** Each function reads only the studies it is given: for eligibility
   (k = 3 within those studies), the trait screen, the observed sets and the U6 pool.
   Studies are kept or dropped whole. A study outside the population is an error.
+- **Empty families.** A training split can select traits yet have no eligible condition,
+  for example when its conditions have few studies. `select` then returns the trait
+  set, the condition table and an empty triple table with the declared columns, with
+  `status` `fewer_than_three_eligible_conditions`; with no trait, `no_traits`. Both are
+  results of the declared rule, not failed runs. `evaluate` likewise returns every
+  hypothesis when none of their conditions has a held-out study (#901).
 - **Held-out tests.**
   - `evaluate` applies no eligibility rule and never replaces a hypothesis.
   - A hypothesis with a condition that no held-out study reports in a stool decreased

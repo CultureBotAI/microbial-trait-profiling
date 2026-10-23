@@ -31,6 +31,7 @@ from mtp.cellulose_decr.selection_scan import (
     DISJOINT,
     MEAN_DISTANCE,
     NO_TAXA,
+    NO_TRAITS,
     NO_UNITS,
     NOT_DRAWN,
     OUTCOME_COLUMNS,
@@ -39,9 +40,11 @@ from mtp.cellulose_decr.selection_scan import (
     POOL_TOO_SMALL,
     PRIMARY,
     PROTOCOL_PATH,
+    SELECTED,
     SENSITIVITY,
     SHARED,
     TIER1_2,
+    TOO_FEW_CONDITIONS,
     TRIPLE_COLUMNS,
     ScanInputs,
     bin_counts,
@@ -56,10 +59,11 @@ from mtp.cellulose_decr.selection_scan import (
     load_core_inputs,
     load_protocol,
     main,
+    plan,
     prepare,
     rank_candidates,
-    rollup_scope,
     scan,
+    scope_role,
     select,
     triple_table,
 )
@@ -206,25 +210,13 @@ def test_protocol_is_refused_when_it_says_what_the_code_does_not_do(
         load_protocol(_edited(tmp_path, edit))
 
 
-@pytest.mark.parametrize(
-    ("parameters", "expected"),
-    [
-        ({}, ("off", PRIMARY)),
-        ({"strain_rollup": "off"}, ("off", PRIMARY)),
-        ({"strain_rollup": "phenotype"}, ("phenotype", SENSITIVITY)),
-        ({"strain_rollup": "phenotype", "source_mode": "pinned"}, ("phenotype", SENSITIVITY)),
-    ],
-)
-def test_rollup_scope_reads_the_declared_scopes(
-    parameters: dict[str, str], expected: tuple[str, str]
-) -> None:
-    """A core without the parameter predates #828 and is off (#872)."""
-    assert rollup_scope(parameters, load_protocol()) == expected
-
-
-def test_rollup_scope_refuses_an_undeclared_scope() -> None:
+def test_scope_roles_follow_the_amendment() -> None:
+    """off is primary, phenotype the declared sensitivity, and full is refused (#872)."""
+    protocol = load_protocol()
+    assert scope_role("off", protocol) == PRIMARY
+    assert scope_role("phenotype", protocol) == SENSITIVITY
     with pytest.raises(ValueError, match="neither the declared primary"):
-        rollup_scope({"strain_rollup": "full"}, load_protocol())
+        scope_role("full", protocol)
 
 
 def test_eligibility_counts_studies_with_a_stool_comparison() -> None:
@@ -769,7 +761,8 @@ def _write_core_inputs(root: Path) -> dict[str, Path]:
 
 @pytest.fixture(scope="module")
 def cores(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Path]:
-    """A Tier 1+2 core and an all-paired core of the same synthetic inputs."""
+    """Tier 1+2 cores of each strain-rollup scope, and an all-paired core, of the same
+    synthetic inputs. ``tier1_2`` is the declared primary scope, off."""
     from mtp.paths import REPO_ROOT
     from mtp.workflow.operations import OPERATIONS, validate_core_product
     from mtp.workflow.runtime import execute_workflow
@@ -777,19 +770,30 @@ def cores(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Path]:
     root = tmp_path_factory.mktemp("selection-scan-core")
     inputs = _write_core_inputs(root)
     runs = {}
-    for name, spec, population in (
-        ("tier1_2", "bugsigdb_core_subset.yaml", TIER1_2),
-        ("all_paired", "bugsigdb_core.yaml", None),
+    for name, spec, parameters in (
+        (
+            "tier1_2",
+            "bugsigdb_core_subset.yaml",
+            {"contrast_population": TIER1_2, "strain_rollup": "off"},
+        ),
+        (
+            "tier1_2_phenotype",
+            "bugsigdb_core_subset.yaml",
+            {"contrast_population": TIER1_2, "strain_rollup": "phenotype"},
+        ),
+        (
+            "tier1_2_full",
+            "bugsigdb_core_subset.yaml",
+            {"contrast_population": TIER1_2, "strain_rollup": "full"},
+        ),
+        ("all_paired", "bugsigdb_core.yaml", {"strain_rollup": "off"}),
     ):
         run = execute_workflow(
             REPO_ROOT / "workflows" / spec,
             inputs,
             root / name,
             OPERATIONS,
-            parameter_overrides={
-                "source_mode": "fixture",
-                **({"contrast_population": population} if population else {}),
-            },
+            parameter_overrides={"source_mode": "fixture", **parameters},
             validator=validate_core_product,
             repository_root=REPO_ROOT,
         )
@@ -826,7 +830,7 @@ def test_main_writes_every_output_bound_to_the_core(cores: dict[str, Path], tmp_
 
     summary = json.loads((out / OUTPUTS["summary"]).read_text(encoding="utf-8"))
     assert summary["follows_protocol"] is False
-    # The fixture core predates #828, so it records no scope and reads as off (#872).
+    # The core was built with the declared primary scope (#872).
     assert summary["strain_rollup"]["scope"] == "off"
     assert summary["strain_rollup"]["role"] == PRIMARY
     assert summary["counts"]["eligible_conditions"] == 5
@@ -864,6 +868,8 @@ def test_main_refuses_another_population_or_a_used_directory(
 ) -> None:
     with pytest.raises(ValueError, match=TIER1_2):
         main(["--core-run", str(cores["all_paired"]), "--output-dir", str(tmp_path / "a")])
+    with pytest.raises(ValueError, match="neither the declared primary"):
+        main(["--core-run", str(cores["tier1_2_full"]), "--output-dir", str(tmp_path / "b")])
     used = tmp_path / "used"
     used.mkdir()
     (used / "old.tsv").write_text("x\n", encoding="utf-8")
@@ -1100,6 +1106,11 @@ def test_load_core_inputs_reads_a_tier1_2_core_only(cores: dict[str, Path]) -> N
     _, inputs = load_core_inputs(cores["tier1_2"])
     assert len(inputs.studies) == sum(STUDIES.values())
     assert TRAIT_ID in inputs.columns
+    assert (inputs.strain_rollup, inputs.strain_rollup_role) == ("off", PRIMARY)
+    _, phenotype = load_core_inputs(cores["tier1_2_phenotype"])
+    assert (phenotype.strain_rollup, phenotype.strain_rollup_role) == ("phenotype", SENSITIVITY)
+    with pytest.raises(ValueError, match="neither the declared primary"):
+        load_core_inputs(cores["tier1_2_full"])
     with pytest.raises(ValueError, match=TIER1_2):
         load_core_inputs(cores["all_paired"])
 
@@ -1320,3 +1331,77 @@ def test_build_population_takes_in_memory_tables_for_some_studies() -> None:
     unpaired = keyed[~(keyed["experiment_id"].eq(records[0][1]) & keyed["inc_dec"].eq("inc"))]
     with pytest.raises(ValueError, match="paired"):
         build_population(experiments, unpaired, reported, matrix_taxa)
+
+
+# --------------------------------------------------------------------------- empty families (#901)
+
+
+def _sparse_corpus() -> ScanInputs:
+    """Nine conditions of two studies each, so none has three; every decreased signature
+    carries cellulose-annotated taxa and every increased one does not."""
+    records: list[Signature] = []
+    for number in range(1, 19):
+        study = f"bsdb:{number}"
+        decreased = ["t0", "t1", f"t{number % 10}"]
+        records.append((study, f"{study}-1", f"C{(number - 1) // 2}", FECES, decreased, ["t10"]))
+    return _inputs(records, _matrix(20, {TRAIT_ID: range(10), OTHER_TRAIT: range(10, 20)}))
+
+
+def test_select_without_eligible_conditions_returns_an_empty_family() -> None:
+    """Sparse labels under the default minimum: the screen selects a trait, no condition
+    is eligible, and the selection is an empty family with a status, not an error (#901)."""
+    inputs = _sparse_corpus()
+    ordered = sorted(inputs.studies, key=lambda study: int(study.split(":")[1]))
+    for studies in (ordered[::2], ordered):
+        chosen = select(
+            inputs, studies, permutations=19, seed=(20261022, 0, 0), always_included=False
+        )
+        assert chosen.traits["trait_id"].tolist() == [TRAIT_ID]
+        assert not chosen.conditions["eligible"].any()
+        assert chosen.triples.empty
+        assert list(chosen.triples.columns) == list(TRIPLE_COLUMNS)
+        assert chosen.status == TOO_FEW_CONDITIONS
+        assert closest_disjoint_triples(chosen.triples).empty
+        lead, histogram, _ = lead_and_distribution(chosen.triples, [TRAIT_ID], 20)
+        assert lead["lead_in_scan"].tolist() == [False]
+        assert histogram["triples"].sum() == 0
+
+
+def test_select_with_a_minimum_no_condition_meets_returns_an_empty_family() -> None:
+    """The same with a minimum no condition can meet (#901)."""
+    inputs, train, _ = _split_corpus()
+    protocol = dataclasses.replace(load_protocol(), min_studies=100)
+    chosen = select(inputs, train, protocol=protocol, permutations=19, seed=1)
+    assert not chosen.traits.empty
+    assert chosen.conditions["eligible"].sum() == 0
+    assert chosen.triples.empty
+    assert chosen.status == TOO_FEW_CONDITIONS
+    prepared = prepare(inputs.profiles, inputs.taxa, inputs.matrix, [TRAIT_ID], [])
+    report = plan(chosen.conditions, chosen.traits, prepared, protocol, 100)
+    assert (report["triples"], report["estimated_null_minutes"]) == (0, 0)
+
+
+def test_evaluate_with_no_drawable_condition_keeps_every_hypothesis() -> None:
+    """When no condition of any hypothesis has a held-out study, each hypothesis is still
+    returned as untestable (#901)."""
+    inputs, _, test = _split_corpus()
+    asthma = set(inputs.profiles.loc[inputs.profiles["condition"].eq("Asthma"), "study_id"])
+    held_out = [study for study in test if study in asthma]
+    hypotheses = [(PD, HIV, CRC, TRAIT_ID), (PD, "Gout", "Lupus", OTHER_TRAIT)]
+    tested = evaluate(inputs, held_out, hypotheses, permutations=19, seed=1)
+    assert tested["test_status"].tolist() == [NO_UNITS, NO_UNITS]
+    assert tested["missing_condition"].all()
+    assert tested["null_undefined"].all()
+
+
+def test_selection_status_names_why_a_family_is_empty() -> None:
+    inputs, train, _ = _split_corpus()
+    assert select(inputs, train, permutations=19, seed=1).status == SELECTED
+    flat = tuple(
+        dataclasses.replace(profile, guild_counts=dict.fromkeys(profile.guild_counts, 1), total=3)
+        for profile in inputs.screen
+    )
+    empty = select(
+        dataclasses.replace(inputs, screen=flat), train, permutations=19, always_included=False
+    )
+    assert empty.status == NO_TRAITS
