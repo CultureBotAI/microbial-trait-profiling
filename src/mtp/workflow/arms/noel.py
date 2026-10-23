@@ -199,6 +199,9 @@ def build_commands(context: ArmContext) -> list[Command]:
                 str(influence),
                 "--protocol",
                 str(contribution_protocol),
+                # The ledger rebuilds the matrix, so it must use the core's scope (#788)
+                "--strain-rollup",
+                context.strain_rollup,
             ),
             (
                 *source_inputs,

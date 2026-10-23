@@ -24,6 +24,7 @@ from mtp.contribution_inputs import (
     verify_kg,
 )
 from mtp.paths import DERIVED_DATA_DIR, REPO_ROOT
+from mtp.taxa_trait_matrix import PRIMARY_STRAIN_ROLLUP, STRAIN_ROLLUPS
 
 Record = dict[str, Any]
 
@@ -233,15 +234,32 @@ def assertion_fields() -> list[str]:
     ]
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
+def argument_parser(
+    parser_class: type[argparse.ArgumentParser] = argparse.ArgumentParser,
+) -> argparse.ArgumentParser:
+    """The ledger's command line; arm plan checks parse its steps with it (#881)."""
+    parser = parser_class(description=__doc__)
     parser.add_argument("--kg-dir", type=Path, default=REPO_ROOT / "data/kg-microbe")
     parser.add_argument("--inputs", type=Path, default=DERIVED_DATA_DIR)
     parser.add_argument("--output", type=Path, default=DERIVED_DATA_DIR / "table1_taxon_influence")
     parser.add_argument(
         "--protocol", type=Path, default=REPO_ROOT / "methods/table1_taxon_influence_protocol.json"
     )
-    args = parser.parse_args()
+    parser.add_argument(
+        "--strain-rollup",
+        choices=STRAIN_ROLLUPS,
+        default=PRIMARY_STRAIN_ROLLUP,
+        help=(
+            "The BacDive strain rollup scope the input matrix was built with, so that the "
+            "ledger reconstructs its counts by the same rule; the default is the primary "
+            "scope, which `just taxa-trait-matrix` also builds (#788)."
+        ),
+    )
+    return parser
+
+
+def main() -> None:
+    args = argument_parser().parse_args()
     protocol = json.loads(args.protocol.read_text(encoding="utf-8"))
     output: Path = args.output
     output.mkdir(parents=True, exist_ok=True)
@@ -265,6 +283,7 @@ def main() -> None:
         args.kg_dir / "merged-kg_nodes.tsv",
         set(base.columns),
         set(base.traits.values()),
+        strain_rollup=args.strain_rollup,
     )
     print("Reconciling all matrix and profile counts", flush=True)
     ledger = reconcile(base, graph)
@@ -284,6 +303,7 @@ def main() -> None:
         "protocol": protocol,
         "traits": base.traits,
         "denominator_columns": base.columns,
+        "strain_rollup": args.strain_rollup,
         "profiles": len(base.profiles),
         "studies": len({k[0] for k in base.profiles}),
         "header_continuation_repaired": graph.header_repaired,

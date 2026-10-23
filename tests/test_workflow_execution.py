@@ -172,7 +172,10 @@ def test_source_identity_and_catalog_do_not_claim_unverified_pin_or_physiology(
     }
     assert catalog[MEDIUM]["feature_class"] == "culture_medium"
     assert catalog[TRAIT]["feature_class"] == "trait_annotation"
-    assert catalog[TRAIT]["annotation_evidence"] == "direct_or_descendant_unresolved"
+    # The default phenotype scope may count strain records for a METPO phenotype, never
+    # for a medium; either way the origin stays unresolved (#788)
+    assert catalog[TRAIT]["annotation_evidence"] == "direct_descendant_or_strain_unresolved"
+    assert catalog[MEDIUM]["annotation_evidence"] == "direct_or_descendant_unresolved"
 
 
 def test_coverage_separates_matrix_match_from_zero_annotations(
