@@ -32,13 +32,15 @@ from mtp.datamodel.multiple_testing_pydantic import (
 )
 from mtp.workflow.runtime import content_hash
 
-# Public compatibility name for adapters; use the shared canonical hashing implementation.
-canonical_sha256 = content_hash
-
 ENGINE_VERSION = "1.1.0"
 POLICY_PATH = Path(__file__).resolve().parents[2] / "methods" / "multiple_testing_policy_v1.yaml"
 # Pin the authoritative versioned artifact, without duplicating its policy values.
 _POLICY_FILE_SHA256 = "d1d504783871b1847fb91bc2cb96cea707400708180e7b75ca98ceba1b92b1ba"
+
+
+def canonical_sha256(value: object) -> str:
+    """Hash strict JSON through the shared serializer; nonfinite numbers are invalid."""
+    return content_hash(value, allow_nan=False)
 
 
 def load_policy(path: Path = POLICY_PATH) -> MultipleTestingPolicy:

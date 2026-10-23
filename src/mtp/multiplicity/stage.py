@@ -13,8 +13,6 @@ from pathlib import Path
 import numpy as np
 import scipy
 
-from mtp import multiple_testing
-from mtp.datamodel import multiple_testing_pydantic
 from mtp.datamodel.multiple_testing_pydantic import (
     ExternalFamilyCorrection,
     PostArmMultiplicityRun,
@@ -30,13 +28,14 @@ from mtp.paths import file_sha256
 
 
 def code_sha256() -> str:
-    """Bind the complete adapter implementation, engine and generated contract."""
-    paths = [
-        *Path(__file__).parent.glob("*.py"),
-        Path(multiple_testing.__file__),
-        Path(multiple_testing_pydantic.__file__),
-    ]
-    return canonical_sha256({path.name: file_sha256(path) for path in sorted(paths)})
+    """Bind every canonical module, including scientific helpers and shared serializers."""
+    package = Path(__file__).resolve().parents[1]
+    return canonical_sha256(
+        {
+            path.relative_to(package).as_posix(): file_sha256(path)
+            for path in sorted(package.rglob("*.py"))
+        }
+    )
 
 
 def migration_report(family: FamilyInput, corrected: Path, destination: Path) -> dict[str, int]:
@@ -136,6 +135,8 @@ def run_post_arm(
     comparison: Path, output: Path, *, recorded_at: datetime | None = None
 ) -> PostArmMultiplicityRun:
     """Import unchanged native p-values and emit independently verifiable sidecars."""
+    implementation = code_sha256()
+    policy = load_policy().model_copy(deep=True)
     sources = open_verified_sources(comparison)
     instant = recorded_at if recorded_at is not None else datetime.now(UTC)
     _protect_sources(
@@ -219,6 +220,10 @@ def run_post_arm(
     for path, digest in observed_files.items():
         if file_sha256(path) != digest or source(path).identity not in consumed:
             raise ValueError("Source changed while multiplicity sidecars were being written")
+    if code_sha256() != implementation:
+        raise ValueError("Multiplicity implementation code changed during execution")
+    if load_policy() != policy:
+        raise ValueError("Multiplicity policy changed during execution")
     record = PostArmMultiplicityRun(
         version="1.1.0",
         recorded_at=instant,
@@ -228,8 +233,8 @@ def run_post_arm(
         contrast_population=sources.comparison.contrast_population,
         direction_basis=sources.comparison.direction_basis,
         strain_rollup=sources.scope,
-        policy=load_policy(),
-        code_sha256=code_sha256(),
+        policy=policy,
+        code_sha256=implementation,
         scipy_version=scipy.__version__,
         numpy_version=np.__version__,
         sources=sorted(consumed.values(), key=lambda artifact: artifact.identity),

@@ -53,6 +53,8 @@ Untestable members count conservatively as p=1 and export null p, q and rejectio
 flags. Invalid numeric values, negative zero and status/p mismatches fail.
 Effects and native row contents are bound
 by source hashes and row hashes, and are never rewritten.
+The shared canonical serializer uses strict JSON for these identities: numeric
+NaN and infinity are rejected even inside nested basis or membership records.
 
 Version 1.1 records typed hypothesis coordinates. ORA identifies the exact
 study/experiment/direction profile; pooled screen, ratio and composition tests
@@ -74,6 +76,13 @@ It records policy, input and output identities, code, NumPy/SciPy versions, time
 population, direction, strain scope, and family summaries. Family source IDs are
 content-addressed product names, not machine-specific paths. The explicit local
 ComparisonRun path permits verification against the original execution records.
+The code identity covers every Python module under canonical `src/mtp`, keyed
+by its relative path, so shared loaders, scientific helpers and serializers are
+included without filename collisions. Changes to any canonical module require
+a new sidecar execution. Implementation and policy identities are captured before
+source verification and family construction, then rechecked before the final
+manifest is published. A change during execution refuses publication; the manifest
+cannot claim a new disk implementation for calculations performed by cached code.
 
 `migration.json` and the per-family migration tables distinguish three changes:
 
