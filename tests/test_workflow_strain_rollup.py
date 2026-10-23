@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import json
 import shutil
+import sys
 from pathlib import Path
 from typing import cast
 
@@ -17,7 +18,10 @@ from mtp.taxa_trait_matrix import (
     StrainRollup,
     create_taxa_trait_matrix,
 )
+from mtp.workflow import runtime
 from mtp.workflow.__main__ import main as workflow_main
+from mtp.workflow.arms.runtime import execute_arm, verify_arm
+from mtp.workflow.arms.types import ArmContext, Command
 from mtp.workflow.comparison import core_analysis_bases
 from mtp.workflow.coverage import STRAIN_ATTRIBUTED_EVIDENCE, UNRESOLVED_EVIDENCE
 from mtp.workflow.definition import read_definition
@@ -289,3 +293,39 @@ def test_comparison_bases_record_the_core_scope_and_trait_count(
     assert [basis.profile_unit for basis in bases] == ["count_profiles", "ora_profiles"]
     assert {basis.rollup_policy for basis in bases} == {f"ncbi_taxonomy_closure_rollup_{scope}"}
     assert {basis.retained_feature_count for basis in bases} == {retained}
+
+
+@pytest.mark.parametrize("scope", STRAIN_ROLLUPS)
+def test_arms_inherit_their_core_scope(
+    scoped_runs: dict[StrainRollup, WorkflowRun], tmp_path: Path, scope: StrainRollup
+) -> None:
+    """Every arm plans under the scope its core recorded, at execution and on
+    verification, so Noel's ledger reconciles each scope's matrix (#788)."""
+
+    def plan(context: ArmContext) -> list[Command]:
+        assert context.strain_rollup == scope
+        source, output = context.products["count_profiles"], context.output / "observed.tsv"
+        helper = ROOT / "scripts" / "adhoc" / "issue658_arm_test_command.py"
+        argv = (sys.executable, str(helper), "--input", str(source), "--output", str(output))
+        return [Command("observe", argv, (source,), (output,))]
+
+    core = Path(scoped_runs[scope].manifest_path)
+    result = execute_arm("noel", core, tmp_path / "noel", plan, figures=False)
+
+    assert verify_arm(Path(result.manifest_path)) == result
+
+
+def test_a_subset_core_recorded_before_788_is_read_as_off() -> None:
+    """Its producers declared no strain_rollup; any other parameter set still fails."""
+    subset = read_definition(ROOT / "workflows" / "bugsigdb_core_subset.yaml")
+    legacy = subset.model_copy(deep=True)
+    legacy.parameters = [item for item in legacy.parameters or [] if item.name != "strain_rollup"]
+    for step in legacy.steps:
+        if step.id in {"taxa_matrix", "feature_catalog"}:
+            step.parameters = []
+
+    runtime._require_full_source_background(legacy)
+    runtime._require_full_source_background(subset)
+    next(step for step in legacy.steps if step.id == "taxa_matrix").parameters = ["source_mode"]
+    with pytest.raises(ValueError, match="invalid producer bindings for taxa_matrix"):
+        runtime._require_full_source_background(legacy)

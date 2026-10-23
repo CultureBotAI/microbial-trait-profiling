@@ -591,14 +591,18 @@ study-trait-profiles-check:
 study-trait-profiles-refresh-gz:
 	gzip -9 -n -c data/derived/study_trait_profiles_wide.tsv > data/derived/study_trait_profiles_wide.tsv.gz
 
+# The chain builds data/derived under the primary phenotype strain rollup scope, so the
+# ledger reconciles that scope (#788).
 # Source-count reconciliation and rule-declared genus/family influence (#190).
 # The default entry point declares the complete clean-clone input chain.
 table1-taxon-influence: study-trait-profiles
-	just table1-taxon-influence-from "data/kg-microbe" "data/derived" "data/derived/table1_taxon_influence"
+	just table1-taxon-influence-from "data/kg-microbe" "data/derived" "data/derived/table1_taxon_influence" phenotype
 
+# strain_rollup must be the scope the inputs' matrix was built with: off, phenotype or full.
+# A core's derived products carry the scope its run recorded (#788).
 # Use already-materialized, independently pinned inputs without rebuilding the defaults.
-table1-taxon-influence-from kg_dir inputs="data/derived" output="data/derived/table1_taxon_influence":
-	uv run python -m mtp.taxon_contributions --kg-dir "{{kg_dir}}" --inputs "{{inputs}}" --output "{{output}}"
+table1-taxon-influence-from kg_dir inputs="data/derived" output="data/derived/table1_taxon_influence" strain_rollup="phenotype":
+	uv run python -m mtp.taxon_contributions --kg-dir "{{kg_dir}}" --inputs "{{inputs}}" --output "{{output}}" --strain-rollup "{{strain_rollup}}"
 	just table1-native-influence "{{inputs}}" "{{output}}"
 
 # Requires an unchanged, completed contribution ledger; no KG reload is needed.

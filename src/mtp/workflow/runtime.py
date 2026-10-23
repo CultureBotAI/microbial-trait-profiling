@@ -209,41 +209,44 @@ def _require_full_source_background(definition: WorkflowDefinition) -> None:
     # Match native operation bindings, not step IDs or filenames. Alternative
     # graph layouts may preserve the contract, but selected taxa cannot replace
     # the full-source exports that define M, K and the retained feature universe.
-    contracts: tuple[tuple[str, str, set[str], set[str], set[str]], ...] = (
+    # A subset core recorded before #788 bound no strain_rollup to the matrix producer or
+    # the feature catalog; it is read as off, as the product validators read it.
+    scoped: tuple[set[str], ...] = ({"strain_rollup"}, set())
+    contracts: tuple[tuple[str, str, set[str], set[str], tuple[set[str], ...]], ...] = (
         (
             "source_identity",
             "identify_sources",
             external,
             {"source_identity"},
-            {"source_mode"},
+            ({"source_mode"},),
         ),
         (
             "source_studies",
             "ingest_source",
             {"raw_dump"},
             {"source_studies", "ingest_log"},
-            set(),
+            (set(),),
         ),
         (
             "source_reported_taxa",
             "export_source_tables",
             {"source_studies"},
             {f"source_{name}" for name in SOURCE_EXPORTS},
-            set(),
+            (set(),),
         ),
         (
             "taxa_matrix",
             "source_taxa_matrix",
             {"source_reported_taxa", "kg_edges", "kg_nodes"},
             {"taxa_matrix", "feature_metadata"},
-            {"strain_rollup"},
+            scoped,
         ),
         (
             "feature_catalog",
             "feature_catalog",
             {"feature_metadata", "taxa_matrix"},
             {"feature_catalog"},
-            {"strain_rollup"},
+            scoped,
         ),
     )
     for name, operation, inputs, outputs, parameters in contracts:
@@ -253,7 +256,7 @@ def _require_full_source_background(definition: WorkflowDefinition) -> None:
             or producer.operation != operation
             or set(producer.inputs) != inputs
             or set(producer.outputs) != outputs
-            or set(producer.parameters or []) != parameters
+            or set(producer.parameters or []) not in parameters
         ):
             raise ValueError(f"{diagnostic}: invalid producer bindings for {name}")
 
