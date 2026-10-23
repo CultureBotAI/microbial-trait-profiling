@@ -1,0 +1,31 @@
+{
+  "version": "771-extension-v1",
+  "selection_history": "Added after inspection of historical focal results and omissions in 190-native-v2; exploratory sensitivity, not preregistration or independent validation.",
+  "declared_panel": "190-native-v2 remains unchanged; this is a separately named sidecar.",
+  "top_per_trait_direction_rank_scope": 3,
+  "minimum_lineage_studies": 3,
+  "ranks": ["family", "genus"],
+  "directions": ["inc", "dec"],
+  "joint_exclusions": [
+    {
+      "id": "cellulose_lachnospiraceae_oscillospiraceae",
+      "lineages": ["NCBITaxon:186803", "NCBITaxon:216572"],
+      "names": ["Lachnospiraceae", "Oscillospiraceae"],
+      "reason": "Declared joint sensitivity for the historically observed cellulose carriers; run in every scope, including zero-support scopes, without effect-based selection."
+    }
+  ],
+  "scopes": [
+    {"id": "pooled", "condition": "*", "body_site": "*"},
+    {"id": "feces", "condition": "*", "body_site": "Feces"},
+    {"id": "saliva", "condition": "*", "body_site": "Saliva"},
+    {"id": "parkinsons_feces", "condition": "Parkinson's disease", "body_site": "Feces"}
+  ],
+  "selection_rule": "Within each scope, focal trait, direction and rank, use the declared contributing_universe population before zero-total-pair exclusions. Rank resolved lineages with at least three supporting studies by descending propagated annotation count contribution, then taxon ID. Select the first three; take their union separately for each scope, alongside the fixed joint exclusions. Retain all candidate rankings and unresolved contributions. No p-value or effect selection.",
+  "eligibility": "Paired human 16S/WMS profiles in the verified core; drop the whole pair when either retained non-MediaDive annotation total is zero. After a lineage removal, re-evaluate this same rule and report lost pairs and matched-support effects.",
+  "lineage_removal": "Subtract the union of the excluded lineages' source-taxon contributions from every reported ancestor across the full retained denominator, counting a source only once even with multiple ancestry paths. Retain and flag ambiguous direct assertions above the excluded lineages.",
+  "study_loso": "Omit every experiment of one study at a time. Recompute all six study sign tests and their complete six-member BH and BY families for each omission, separately by scope. Report the declared shared_fraction full-data baseline and BH-six beside every omission, with BY-six as an additional sensitivity. No other trait's full-data p-value is held fixed.",
+  "fraction": "trait annotation count divided by the full retained annotation-count total, increased minus decreased; equal experiment weight within study and equal study weight.",
+  "ties": "Absolute study mean no greater than 1e-12 is tied and excluded from the exact two-sided sign test.",
+  "multiplicity": "BH-six and BY-six are conditional diagnostic values per scope/removal, not selected-trait, across-scenario or full-screen error control. Keep untestable members in family size with internal p=1 and undefined exported p/q.",
+  "interpretation": "Changes in alignment between reported taxon directions and trait annotations; no physiological, causal, clinical or independent-replication claim. Search across lineages and LOSO omissions is descriptive."
+}

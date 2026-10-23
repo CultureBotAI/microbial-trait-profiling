@@ -63,6 +63,7 @@ def test_mtp_modules_can_be_imported_directly() -> None:
         "guild_maps",
         "ingest",
         "integrated_evidence",
+        "label_support_audit",
         "log_ratio_sensitivity",
         "native_influence_publication",
         "native_taxon_influence",

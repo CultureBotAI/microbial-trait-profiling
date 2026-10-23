@@ -1705,9 +1705,10 @@ def test_known_miss_a_treated_group_named_by_time_keeps_the_treatment_reading() 
 
 
 def test_spaced_pre_art_and_parenthesized_art_naive_read_as_untreated_baseline_cases() -> None:
-    """33324725-1, 33324725-4, and 38310301-1: spaced "pre - antiretroviral therapy(ART)"
-    and "Antiretroviral therapy (ART) Na\u00efve at baseline" read as untreated baseline
-    disease rather than treatment trials (#581).
+    """Untreated baseline cases versus controls, and two untreated Fiebig stages.
+
+    33324725-1 and 38310301-1 compare baseline cases with controls; 33324725-4
+    compares two HIV-positive groups before treatment (#581, #806).
     """
     pre_art = classify(
         replace(
@@ -1725,25 +1726,29 @@ def test_spaced_pre_art_and_parenthesized_art_naive_read_as_untreated_baseline_c
     assert "negated_treatment_term" in pre_art.flags.split(",")
     assert "disease_sample_dated_at_baseline" in pre_art.flags.split(",")
 
-    # 33324725-4: two untreated HIV+ subcohorts (non-frail vs frail) at pre-ART baseline
-    pre_art_frail = classify(
+    # 33324725-4: verbatim export labels compare Fiebig stages, not frailty.
+    pre_art_stages = classify(
         replace(
             BASE,
             condition="HIV infection",
             group_0_name=(
-                "Non- frail Human immunodeficiency virus positive (HIV+) "
-                "pre - antiretroviral therapy(ART)"
+                "Human immunodeficiency virus positive(HIV+) pre- antiretroviral therapy (ART) "
+                "in Fiebig stage 1-2(F1-2)"
             ),
             group_1_name=(
-                "Frail Human immunodeficiency virus positive (HIV+) "
-                "pre - antiretroviral therapy(ART)"
+                "Human immunodeficiency virus positive (HIV+) pre- antiretroviral therapy(ART) "
+                "in Fiebig stage 3(F3)"
             ),
         )
     )
-    assert (pre_art_frail.contrast_class, pre_art_frail.orientation) == (
+    assert (pre_art_stages.contrast_class, pre_art_stages.orientation) == (
         DISEASE_VS_DISEASE,
         NOT_APPLICABLE,
     )
+    assert pre_art_stages.contrast_type == DISEASE_VS_DISEASE
+    assert pre_art_stages.control_tier == NOT_APPLICABLE
+    assert "negated_treatment_term" in pre_art_stages.flags.split(",")
+    assert "treated_disease_group" not in pre_art_stages.flags.split(",")
 
     art_naive = classify(
         replace(

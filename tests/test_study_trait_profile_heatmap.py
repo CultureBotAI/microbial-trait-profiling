@@ -1,8 +1,15 @@
 import importlib.util
+import runpy
+import sys
 from pathlib import Path
+from unittest.mock import patch
 
+import numpy as np
 import pandas as pd
 import pytest
+from matplotlib.collections import QuadMesh
+
+from mtp.paths import file_sha256
 
 MODULE_PATH = (
     Path(__file__).resolve().parents[1] / "scripts" / "create_study_trait_profile_heatmap.py"
@@ -12,6 +19,170 @@ assert SPEC is not None
 assert SPEC.loader is not None
 heatmap = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(heatmap)
+
+
+def test_main_preserves_direction_basis_in_figures_and_drawn_values(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Exercise both real main() plotting calls and compare their drawn cells (#955)."""
+    fixture = runpy.run_path(
+        str(MODULE_PATH.parent / "adhoc/issue842_render_direction_fixtures.py")
+    )
+    inputs = fixture["write_inputs"](tmp_path / "inputs")
+    products = {
+        "--output": "profiles.png",
+        "--matrix-output": "matrix.tsv",
+        "--study-metadata-output": "profiles.tsv",
+        "--trait-metadata-output": "traits.tsv",
+        "--paired-output": "paired.png",
+        "--paired-matrix-output": "paired_matrix.tsv",
+        "--paired-metadata-output": "paired_metadata.tsv",
+        "--paired-required-trait-check-output": "required_traits.tsv",
+    }
+    drawn = {}
+    for basis, label in (
+        ("group_1_vs_group_0", "Group 1 vs Group 0"),
+        ("disease_vs_comparison", "disease vs comparison"),
+    ):
+        target = tmp_path / basis
+        target.mkdir()
+        options = {**inputs, **{flag: target / name for flag, name in products.items()}}
+        argv = [str(MODULE_PATH), *(str(part) for item in options.items() for part in item)]
+        monkeypatch.setattr(
+            sys, "argv", [*argv, "--direction-basis", basis, "--min-profile-support", "1"]
+        )
+        with (
+            patch.object(heatmap.plt.Figure, "savefig", autospec=True) as savefig,
+            patch.object(heatmap.plt, "close"),
+        ):
+            heatmap.main()
+        figures = {Path(call.args[1]).name: call.args[0] for call in savefig.call_args_list}
+        try:
+            assert set(figures) == {"profiles.png", "paired.png"}
+            titles = {
+                axis.get_legend().get_title().get_text()
+                for axis in figures["profiles.png"].axes
+                if axis.get_legend()
+            }
+            assert f"BugSigDB direction\n({label})" in titles, (
+                "CLI basis did not reach profile legend"
+            )
+            labels = {axis.get_ylabel() for axis in figures["paired.png"].axes}
+            assert any(f"BugSigDB direction: {label}" in text for text in labels), (
+                "CLI basis did not reach paired colorbar"
+            )
+            for name, figure in figures.items():
+                arrays = [
+                    np.asarray(mesh.get_array()).copy()
+                    for axis in figure.axes
+                    if axis.get_xlabel() == "Trait"
+                    for mesh in axis.collections
+                    if isinstance(mesh, QuadMesh)
+                ]
+                assert len(arrays) == 1
+                assert arrays[0].size == (18 if name == "profiles.png" else 9)
+                assert np.ptp(arrays[0]) > 0
+                drawn[basis, name] = arrays[0]
+        finally:
+            for figure in figures.values():
+                heatmap.plt.close(figure)
+    for name in ("profiles.png", "paired.png"):
+        np.testing.assert_array_equal(
+            drawn["group_1_vs_group_0", name], drawn["disease_vs_comparison", name]
+        )
+
+
+@pytest.mark.parametrize(
+    ("direction_basis", "label"),
+    [
+        ("group_1_vs_group_0", "Group 1 vs Group 0"),
+        ("disease_vs_comparison", "disease vs comparison"),
+    ],
+)
+@pytest.mark.parametrize("paired", [False, True])
+def test_rendered_legends_name_the_profile_direction_basis(
+    tmp_path: Path, direction_basis: str, label: str, paired: bool
+) -> None:
+    """Both real plotting paths name the supplied basis without changing values (#842)."""
+    matrix = pd.DataFrame(
+        [[0.7, -0.3, 0.1], [-0.2, 0.8, -0.4], [0.3, -0.6, 0.9]],
+        index=["a", "b", "c"],
+        columns=["Trait A", "Trait B", "Trait C"],
+    )
+    metadata = pd.DataFrame(
+        {
+            "inc_dec": ["inc", "dec", "dec"],
+            "body_site_group": ["Feces"] * 3,
+            "condition_group": ["Condition A", "Condition B", "Condition C"],
+        },
+        index=matrix.index,
+    )
+    traits = pd.DataFrame(
+        {"display_category": ["Shape", "Shape", "Metabolism"]},
+        index=["METPO:1", "METPO:2", "METPO:3"],
+    )
+    before = matrix.copy(deep=True)
+    with (
+        patch.object(heatmap.plt.Figure, "savefig", autospec=True) as savefig,
+        patch.object(heatmap.plt, "close"),
+    ):
+        draw = heatmap.save_paired_enrichment_heatmap if paired else heatmap.save_heatmap
+        draw(matrix, metadata, traits, tmp_path / "heatmap.png", 3, 3, direction_basis)
+    figure = savefig.call_args.args[0]
+    try:
+        figure.canvas.draw()
+        if paired:
+            labels = [axis.get_ylabel() for axis in figure.axes]
+            assert any(f"BugSigDB direction: {label}" in text for text in labels)
+            assert any("increased minus decreased" in text for text in labels)
+        else:
+            legends = [axis.get_legend() for axis in figure.axes if axis.get_legend()]
+            assert f"BugSigDB direction\n({label})" in {
+                legend.get_title().get_text() for legend in legends
+            }
+        pd.testing.assert_frame_equal(matrix, before)
+    finally:
+        heatmap.plt.close(figure)
+
+
+@pytest.mark.parametrize("arguments", [[], ["--direction-basis", "unknown"]])
+def test_cli_requires_a_known_direction_basis_before_reading_inputs(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], arguments: list[str]
+) -> None:
+    def reject_input_read(*_args: object) -> None:
+        raise AssertionError("CLI must reject an absent/invalid basis before reading inputs")
+
+    monkeypatch.setattr(heatmap, "load_profile_matrix", reject_input_read)
+    monkeypatch.setattr(sys, "argv", ["heatmap", *arguments])
+    with pytest.raises(SystemExit) as error:
+        heatmap.main()
+    assert error.value.code == 2
+    assert "--direction-basis" in capsys.readouterr().err
+
+
+def test_paired_export_preserves_the_count_input_identity(tmp_path: Path) -> None:
+    """The actual pair export carries identities checked by site-stat regeneration (#824)."""
+    profiles = tmp_path / "profiles.tsv"
+    profiles.write_text("synthetic counts\n")
+    source_hashes = {"profile": file_sha256(profiles)}
+    matrix = pd.DataFrame({"METPO:1": [1.0]}, index=["pair1"])
+    metadata = pd.DataFrame({"study_id": ["study1"]}, index=matrix.index)
+    output = tmp_path / "pairs.tsv"
+    heatmap.write_paired_outputs(
+        matrix,
+        matrix,
+        metadata,
+        pd.DataFrame({"present": [True]}),
+        1,
+        tmp_path / "figure.png",
+        tmp_path / "matrix.tsv",
+        output,
+        tmp_path / "required.tsv",
+        source_hashes=source_hashes,
+    )
+    observed = pd.read_csv(output, sep="\t", index_col=0)
+    assert observed["profile_sha256"].eq(source_hashes["profile"]).all()
+    assert "profile_sha256" not in metadata
 
 
 def test_filter_human_host_profiles_keeps_only_homo_sapiens() -> None:

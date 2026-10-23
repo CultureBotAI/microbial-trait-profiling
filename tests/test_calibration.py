@@ -48,7 +48,7 @@ from bsdbng.guild_maps import study_direction_means
 from bsdbng.table1_trait_maps import compute_direction_shifts
 from bsdbng.trait_guilds import TABLE1_TRAITS, Profile
 from mtp.calibration import guild_mcnemar_with
-from mtp.guild_maps import build_matrix, compute_correlation
+from mtp.guild_maps import compute_correlation
 from mtp.trait_guilds import drop_zero_total_pairs
 
 TRAITS = tuple(TABLE1_TRAITS)
@@ -185,11 +185,10 @@ def test_guild_calibration_uses_production_whole_pair_eligibility() -> None:
         ]
     )
     exclusion = drop_zero_total_pairs(profiles)
-    matrix = build_matrix(profiles, max_conditions=60, max_body_sites=8, min_studies=3)
-    production = compute_correlation(exclusion.profiles, matrix)
-    raw = compute_correlation(profiles, matrix)
+    production = compute_correlation(exclusion.profiles)
+    raw = compute_correlation(profiles)
     assert raw.discordant != production.discordant
-    outcome = guild_mcnemar_with(matrix)(profiles)[0]
+    outcome = guild_mcnemar_with()(profiles)[0]
     assert outcome.p_value == production.mcnemar_p
     assert outcome.scored == sum(production.discordant)
     for unit in ("study", "experiment"):
@@ -200,8 +199,8 @@ def test_guild_calibration_uses_production_whole_pair_eligibility() -> None:
             (p.study_id, p.experiment_id) for p in exclusion.profiles
         }
         assert (
-            guild_mcnemar_with(matrix)(flipped)[0].p_value
-            == compute_correlation(retained.profiles, matrix).mcnemar_p
+            guild_mcnemar_with()(flipped)[0].p_value
+            == compute_correlation(retained.profiles).mcnemar_p
         )
 
 
