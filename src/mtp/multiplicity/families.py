@@ -5,6 +5,7 @@ from __future__ import annotations
 import csv
 import json
 import math
+from collections import Counter
 from collections.abc import Callable, Iterator
 from dataclasses import dataclass
 from itertools import combinations
@@ -12,6 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from mtp.datamodel.multiple_testing_pydantic import (
+    HypothesisCoordinates,
     HypothesisDefinition,
     HypothesisFamilyMetadata,
     RawHypothesis,
@@ -65,9 +67,33 @@ def probability(value: str) -> float | None:
     if not value:
         return None
     number = float(value)
-    if not math.isfinite(number) or not 0 <= number <= 1:
+    if not math.isfinite(number) or not 0 <= number <= 1 or math.copysign(1, number) < 0:
         raise ValueError("Source probability must be finite and in [0,1]")
     return number
+
+
+def support_count(row: dict[str, str], key: str) -> int:
+    """Read the producer's nonnegative integer support, without rounding or coercion."""
+    value = int(row[key])
+    if value < 0:
+        raise ValueError(f"Invalid producer support: {key}")
+    return value
+
+
+def validate_sign_status(row: dict[str, str], *, status: str, empty: str) -> None:
+    """Check a sign-test reason against exported tallies, without recomputing p."""
+    up, down, tied = (support_count(row, f"studies_{kind}") for kind in ("up", "down", "tied"))
+    if support_count(row, "studies_scored") != up + down:
+        raise ValueError("Producer sign-test support counts disagree")
+    expected = "tested" if up + down else "all_tied" if tied else empty
+    if row[status] != expected:
+        raise ValueError("Producer sign-test status/reason disagrees with support")
+    if "studies_eligible" in row:
+        eligible = support_count(row, "studies_eligible")
+        if eligible != up + down + tied:
+            raise ValueError("Producer eligible-study support disagrees with sign tallies")
+        if support_count(row, "studies_total") != eligible + support_count(row, "studies_excluded"):
+            raise ValueError("Producer total-study support disagrees with exclusions")
 
 
 def observation(
@@ -81,6 +107,7 @@ def observation(
     method: str,
     native_family: str,
     threshold: float = 0.05,
+    untestable_q: float | None = None,
 ) -> NativeObservation:
     test_status = row[status]
     if test_status != "tested" and test_status not in undefined:
@@ -91,6 +118,8 @@ def observation(
     native_q = probability(row[q])
     if test_status == "tested" and native_q is None:
         raise ValueError("Tested native row lacks its corrected probability")
+    if test_status != "tested" and native_q != untestable_q:
+        raise ValueError("Native undefined status disagrees with corrected probability convention")
     return NativeObservation(
         RawHypothesis(
             hypothesis_id=identity,
@@ -142,6 +171,8 @@ def metadata(
         expected_family_size=count,
         population=sources.comparison.contrast_population,
         direction_basis=sources.comparison.direction_basis,
+        strain_rollup=sources.scope,
+        feature_filter_id=basis.feature_filter_id,
         profile_unit=basis.profile_unit,
         inference_unit=inference,
         hypothesis_unit=unit,
@@ -185,6 +216,7 @@ def noel_family(sources: VerifiedSources) -> FamilyInput:
         (row.study_id, row.experiment_id, row.inc_dec)
         for row in drop_zero_total_pairs(paired).profiles
     )
+    eligible_studies = len({key[0] for key in eligible_keys})
     family = metadata(
         sources,
         family_id="noel-full-screen",
@@ -207,7 +239,11 @@ def noel_family(sources: VerifiedSources) -> FamilyInput:
     def declarations() -> Iterator[HypothesisDefinition]:
         for feature in features:
             yield HypothesisDefinition(
-                hypothesis_id=feature, feature_ids=[feature], test="binomial_sign", tail="two_sided"
+                hypothesis_id=feature,
+                feature_ids=[feature],
+                test="binomial_sign",
+                tail="two_sided",
+                coordinates=HypothesisCoordinates(),
             )
 
     def observations() -> Iterator[NativeObservation]:
@@ -219,6 +255,12 @@ def noel_family(sources: VerifiedSources) -> FamilyInput:
                     "family_id": "trait-direction-screen-v1",
                 },
             )
+            validate_sign_status(row, status="test_status", empty="no_eligible_studies")
+            if (
+                sum(support_count(row, f"studies_{kind}") for kind in ("up", "down", "tied"))
+                != eligible_studies
+            ):
+                raise ValueError("Screen support differs from independently loaded core cohort")
             yield observation(
                 row["trait"],
                 row,
@@ -256,6 +298,13 @@ def jed_family(sources: VerifiedSources) -> FamilyInput:
     pairs = list(combinations(TABLE1_TRAITS, 2))
     definitions = []
     study_rows = list(rows(studies))
+    paired, _ = load_profiles(
+        sources.product("count_profiles"),
+        sources.product("experiments"),
+        {},
+        reject_missing_counts=True,
+    )
+    paired_by_study = Counter(row.study_id for row in paired if row.inc_dec == "inc")
     for numerator, reference in pairs:
         groups = {
             slug: [
@@ -273,14 +322,28 @@ def jed_family(sources: VerifiedSources) -> FamilyInput:
             for row in study_rows
             if row["numerator"] == numerator and row["reference"] == reference
         ]
-        if not eligibility or len({row["study_id"] for row in eligibility}) != len(eligibility):
+        if (
+            not eligibility
+            or len({row["study_id"] for row in eligibility}) != len(eligibility)
+            or {row["study_id"] for row in eligibility} != set(paired_by_study)
+        ):
             raise ValueError("Missing or duplicate ratio eligibility records")
+        for row in eligibility:
+            expected = paired_by_study[row["study_id"]]
+            if (
+                support_count(row, "paired_experiments") != expected
+                or support_count(row, "eligible_experiments")
+                + support_count(row, "excluded_zero_experiments")
+                != expected
+            ):
+                raise ValueError("Ratio eligibility support disagrees with core paired cohort")
         definitions.append(
             HypothesisDefinition(
                 hypothesis_id=f"{numerator}/{reference}",
                 feature_ids=identifiers,
                 test="binomial_sign_log2_ratio",
                 tail="two_sided",
+                coordinates=HypothesisCoordinates(),
                 eligibility_sha256=canonical_sha256(
                     sorted(eligibility, key=lambda row: row["study_id"])
                 ),
@@ -319,6 +382,9 @@ def jed_family(sources: VerifiedSources) -> FamilyInput:
                     "family_size": "15",
                 },
             )
+            validate_sign_status(row, status="status", empty="no_positive_pairs")
+            if support_count(row, "studies_total") != len(paired_by_study):
+                raise ValueError("Ratio summary support disagrees with core paired cohort")
             yield observation(
                 f"{row['numerator']}/{row['reference']}",
                 row,

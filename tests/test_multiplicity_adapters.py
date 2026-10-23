@@ -1,25 +1,32 @@
 """Issue #853: independent inventories and disk-backed full-family corrections."""
 
 import json
+import runpy
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 
-from mtp.datamodel.multiple_testing_pydantic import HypothesisFamilyMetadata
+from mtp.datamodel.multiple_testing_pydantic import HypothesisCoordinates, HypothesisFamilyMetadata
 from mtp.datamodel.workflow_pydantic import AnalysisBasis
 from mtp.multiple_testing import canonical_sha256, correct_family
 from mtp.multiplicity import sources as source_module
-from mtp.multiplicity.families import FamilyInput, jed_family, noel_family, observation
+from mtp.multiplicity.families import FamilyInput, jed_family, noel_family, observation, rows
 from mtp.multiplicity.inventory import correct_inventory, read_corrected_inventory
 from mtp.multiplicity.native import native_family
 from mtp.multiplicity.ora import ora_family
-from mtp.multiplicity.sources import VerifiedSources, retained_features, validate_basis
+from mtp.multiplicity.sources import (
+    VerifiedSources,
+    recorded_arm_output,
+    recorded_comparison_output,
+    retained_features,
+    validate_basis,
+)
 from mtp.multiplicity.stage import run_post_arm, verify_post_arm
 from mtp.paths import file_sha256
 from mtp.workflow.coverage import feature_filter_id
-from multiplicity_fixture import fixture_sources
+from multiplicity_fixture import fixture_sources, write_table
 from test_multiple_testing import family, raw
 
 
@@ -48,6 +55,38 @@ def test_disk_inventory_rejects_missing_and_duplicate_rows(tmp_path: Path) -> No
         correct_inventory(
             metadata, iter(declared.members), iter([values[0], values[0]]), tmp_path / "duplicate"
         )
+
+
+def test_disk_inventory_rejects_renamed_scientific_duplicates(tmp_path: Path) -> None:
+    declared = family(2)
+    declared.members[1] = declared.members[0].model_copy(
+        update={"hypothesis_id": "h1", "eligibility_sha256": "2" * 64}
+    )
+    metadata = HypothesisFamilyMetadata.model_validate(declared.model_dump(exclude={"members"}))
+    with pytest.raises(ValueError, match="duplicate scientific hypothesis"):
+        correct_inventory(metadata, iter(declared.members), iter(raw([0.1, 0.1])), tmp_path)
+
+
+def test_disk_inventory_rejects_negative_zero(tmp_path: Path) -> None:
+    declared = family(1)
+    metadata = HypothesisFamilyMetadata.model_validate(declared.model_dump(exclude={"members"}))
+    with pytest.raises(ValueError, match="finite probability"):
+        correct_inventory(metadata, iter(declared.members), iter(raw([-0.0])), tmp_path)
+
+
+def test_disk_inventory_distinguishes_profiles_and_canonicalizes_conditions(tmp_path: Path) -> None:
+    declared = family(2)
+    for index, member in enumerate(declared.members):
+        member.feature_ids = ["same-feature"]
+        member.coordinates = HypothesisCoordinates(
+            profile_id=f"profile-{index}", condition_ids=["condition-b", "condition-a"]
+        )
+    metadata = HypothesisFamilyMetadata.model_validate(declared.model_dump(exclude={"members"}))
+    values = raw([0.1, 0.2])
+    actual = correct_inventory(metadata, iter(declared.members), iter(values), tmp_path)
+    expected = correct_family(declared, values, recorded_at=actual.recorded_at)
+    assert actual.family_sha256 == expected.family_sha256
+    assert actual.output_sha256 == expected.output_sha256
 
 
 def test_two_tails_are_one_family_not_two_rescaled_exports(tmp_path: Path) -> None:
@@ -152,7 +191,8 @@ def test_basis_uses_profile_order_and_excludes_ora_metadata(tmp_path: Path) -> N
 
 
 @pytest.mark.parametrize(
-    ("status", "p"), [("tested", ""), ("all_tied", ".1"), ("tested", "nan"), ("made_up", "")]
+    ("status", "p"),
+    [("tested", ""), ("all_tied", ".1"), ("tested", "nan"), ("tested", "-0.0"), ("made_up", "")],
 )
 def test_adapter_never_coerces_undefined_or_invalid_tests(status: str, p: str) -> None:
     with pytest.raises(ValueError, match=r"status|probability"):
@@ -166,6 +206,85 @@ def test_adapter_never_coerces_undefined_or_invalid_tests(status: str, p: str) -
             method="BH",
             native_family="fixture",
         )
+
+
+@pytest.mark.parametrize("arm", ["noel", "jed", "native"])
+def test_untestable_reasons_must_match_producer_support(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, arm: str
+) -> None:
+    sources = fixture_sources(tmp_path / "inputs", monkeypatch)
+    if arm == "native":
+        path = recorded_comparison_output(
+            sources.comparison, "trait_profile_paired_contrast_trait_stats_pooled.tsv"
+        )
+        status, p, q = "study_test_status", "study_p_value", "study_q_value"
+        family_input = native_family(sources)
+    else:
+        step, filename, status, p, q = {
+            "noel": (
+                "directional_screen",
+                "trait_direction_screen.tsv",
+                "test_status",
+                "binomial_p",
+                "by_q_nominal",
+            ),
+            "jed": ("composition", "trait_log_ratio_stats.tsv", "status", "sign_p", "by_q"),
+        }[arm]
+        path = recorded_arm_output(sources.arms[arm], step, filename)
+        family_input = noel_family(sources) if arm == "noel" else jed_family(sources)
+    records = list(rows(path))
+    if arm == "jed":
+        selected = records[0]
+        reason = "no_positive_pairs" if int(selected["studies_eligible"]) else "all_tied"
+    else:
+        selected = next(row for row in records if row[status] == "tested")
+        reason = "all_tied"
+    selected[status], selected[p], selected[q] = reason, "", "1" if arm == "native" else ""
+    write_table(path, records)
+    with pytest.raises(ValueError, match=r"status|support|reason"):
+        list(family_input.observations())
+
+
+def test_undefined_native_q_must_follow_producer_convention() -> None:
+    with pytest.raises(ValueError, match="status"):
+        observation(
+            "h",
+            {"p": "", "q": ".2", "status": "all_tied"},
+            p="p",
+            q="q",
+            status="status",
+            undefined={"all_tied"},
+            method="BY",
+            native_family="noel-full-screen",
+        )
+
+
+def test_ratio_eligibility_cannot_drop_a_core_study(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    sources = fixture_sources(tmp_path / "inputs", monkeypatch)
+    path = recorded_arm_output(sources.arms["jed"], "composition", "trait_log_ratio_studies.tsv")
+    records = list(rows(path))
+    write_table(path, records[1:])
+    with pytest.raises(ValueError, match="eligibility"):
+        jed_family(sources)
+
+
+def test_screen_support_must_match_independently_loaded_core_cohort(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    sources = fixture_sources(tmp_path / "inputs", monkeypatch)
+    family_input = noel_family(sources)
+    path = recorded_arm_output(
+        sources.arms["noel"], "directional_screen", "trait_direction_screen.tsv"
+    )
+    records = list(rows(path))
+    selected = next(row for row in records if row["test_status"] == "tested")
+    for key in ("studies_up", "studies_scored"):
+        selected[key] = str(int(selected[key]) + 1)
+    write_table(path, records)
+    with pytest.raises(ValueError, match="cohort"):
+        list(family_input.observations())
 
 
 @pytest.mark.parametrize("subset", [False, True])
@@ -184,6 +303,11 @@ def test_all_adapters_replay_full_and_oriented_subset_fixture(
     result = run_post_arm(Path(sources.comparison.manifest_path), tmp_path / "sidecars")
     assert verify_post_arm(tmp_path / "sidecars") == result
     assert result.strain_rollup == ("phenotype" if subset else "off")
+    for family_record in result.families:
+        family_metadata = family_record.metadata
+        basis = sources.bases[family_metadata.profile_unit]
+        assert family_metadata.strain_rollup == sources.scope
+        assert family_metadata.feature_filter_id == basis.feature_filter_id
     assert result.families[0].metadata.retained_feature_count == (6 if subset else 7)
     assert result.families[0].metadata.source_membership_sha256 == canonical_sha256(
         {
@@ -195,6 +319,10 @@ def test_all_adapters_replay_full_and_oriented_subset_fixture(
     )
     assert result.families[1].metadata.expected_family_size == 15
     ratio_definitions = list(jed_family(sources).declarations())
+    assert {row.raw.status for row in jed_family(sources).observations()} == {
+        "tested",
+        "untestable",
+    }
     assert all(len(row.feature_ids) == 2 for row in ratio_definitions)
     assert all(
         feature in sources.features["count_profiles"]
@@ -203,6 +331,10 @@ def test_all_adapters_replay_full_and_oriented_subset_fixture(
     )
     assert result.families[2].metadata.expected_family_size == 6
     assert result.families[3].metadata.expected_family_size == 2 * 16 * (6 if subset else 7)
+    assert {
+        tuple(json.loads(member.coordinates.profile_id or "null"))
+        for member in ora_family(sources).declarations()
+    } == {(f"s{i}", "e1", direction) for i in range(8) for direction in ("inc", "dec")}
     assert all(
         not Path(artifact.identity).is_absolute()
         for family in result.families
@@ -214,7 +346,9 @@ def test_all_adapters_replay_full_and_oriented_subset_fixture(
     assert {row.q_bh for row in rows} == {0.2, 0.9}
 
 
-@pytest.mark.parametrize("kind", ["q", "metadata", "policy", "source", "extra"])
+@pytest.mark.parametrize(
+    "kind", ["q", "metadata", "policy", "source", "extra", "numpy", "scope", "filter"]
+)
 def test_strict_post_arm_verifier_rejects_tampering(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, kind: str
 ) -> None:
@@ -236,6 +370,12 @@ def test_strict_post_arm_verifier_rejects_tampering(
     elif kind == "source":
         path = sources.product("count_profiles")
         path.write_text(path.read_text() + "\n")
+    elif kind == "numpy":
+        document["numpy_version"] = "unsupported-array-implementation"
+    elif kind == "scope":
+        document["families"][0]["metadata"]["strain_rollup"] = "phenotype"
+    elif kind == "filter":
+        document["families"][0]["metadata"]["feature_filter_id"] = "sha256:" + "1" * 64
     else:
         (destination / "unrecorded.txt").write_text("unexpected")
     manifest.write_text(json.dumps(document))
@@ -260,6 +400,53 @@ def test_each_adapter_rejects_truncated_family(
             iter(observation.raw for observation in values[1:]),
             tmp_path / "truncated",
         )
+
+
+def test_ora_adapter_consumes_actual_both_tail_producer_exports(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    sources = fixture_sources(tmp_path / "inputs", monkeypatch)
+    profiles = sources.product("ora_profiles")
+    records = list(rows(profiles))
+    for record in records:
+        # Both fixture background taxa are drawn; exactly one has each trait.
+        for feature in sources.features["ora_profiles"]:
+            record[feature] = "1"
+    write_table(profiles, records)
+    producer = runpy.run_path(str(Path(__file__).parents[1] / "scripts/trait_enrichment.py"))[
+        "main"
+    ]
+    for tail, stage_name in (("upper", "enrichment"), ("lower", "depletion")):
+        export = recorded_arm_output(
+            sources.arms["ilyas"], stage_name, f"trait_{stage_name}_all_results.tsv"
+        )
+        producer(
+            [
+                "--input",
+                str(profiles),
+                "--taxa-matrix",
+                str(sources.product("taxa_matrix")),
+                "--output",
+                str(export.with_suffix(".txt")),
+                "--all-results-output",
+                str(export),
+                "--tail",
+                tail,
+                "--max-fold",
+                "0.5",
+            ]
+        )
+    declared = ora_family(sources)
+    corrected = correct_inventory(
+        declared.metadata,
+        declared.declarations(),
+        (observation.raw for observation in declared.observations()),
+        tmp_path / "corrected",
+    )
+    assert corrected.tested == 2 * 16 * len(sources.features["ora_profiles"])
+    assert {
+        row.p_value for row in read_corrected_inventory(tmp_path / "corrected/adjusted.jsonl")
+    } == {1.0}
 
 
 def test_source_loader_checks_actual_basis_after_upstream_verification(
@@ -295,6 +482,27 @@ def test_source_loader_rejects_mixed_arm_core(
     )
     fixture.arms["jed"].core_manifest_sha256 = "b" * 64
     with pytest.raises(ValueError, match="core binding"):
+        source_module.open_verified_sources(Path(fixture.comparison.manifest_path))
+
+
+@pytest.mark.parametrize("product", ["count_profiles", "ora_profiles"])
+@pytest.mark.parametrize(
+    "field",
+    ["aggregation_policy", "denominator_policy", "background_inventory_id", "weighting_policy"],
+)
+def test_source_loader_rejects_changed_producer_semantics(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, product: str, field: str
+) -> None:
+    fixture = fixture_sources(tmp_path / "inputs", monkeypatch)
+    monkeypatch.setattr(source_module, "verify_comparison_run", lambda _path: fixture.comparison)
+    monkeypatch.setattr(source_module, "verify_core_run", lambda _path: fixture.core)
+    monkeypatch.setattr(
+        source_module,
+        "verify_arm",
+        lambda path: next(arm for arm in fixture.arms.values() if Path(arm.manifest_path) == path),
+    )
+    setattr(fixture.bases[product], field, "different-scientific-basis")
+    with pytest.raises(ValueError, match="producer contract"):
         source_module.open_verified_sources(Path(fixture.comparison.manifest_path))
 
 

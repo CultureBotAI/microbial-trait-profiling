@@ -10,7 +10,6 @@ from typing import Any
 import pytest
 
 from mtp.datamodel.workflow_pydantic import (
-    AnalysisBasis,
     ArmCommandExecution,
     ArmRun,
     ComparisonRun,
@@ -29,23 +28,8 @@ from mtp.paths import file_sha256
 from mtp.trait_composition import compute_log_ratio_shifts, write_log_ratio_outputs
 from mtp.trait_guilds import TABLE1_TRAITS, load_profiles
 from mtp.trait_screen import candidate_slots, run_screen, write_screen_outputs
-from mtp.workflow.coverage import feature_filter_id
+from mtp.workflow import comparison as workflow_comparison
 from mtp.workflow.runtime import inventory
-
-
-def make_basis(catalog: Path, features: tuple[str, ...], product: str, scope: str) -> AnalysisBasis:
-    return AnalysisBasis(
-        id=f"basis:{product}",
-        feature_catalog_sha256=file_sha256(catalog),
-        feature_filter_id=feature_filter_id(features),
-        retained_feature_count=len(features),
-        profile_unit=product,
-        aggregation_policy="fixture",
-        denominator_policy="fixture",
-        background_inventory_id="fixture",
-        weighting_policy="fixture",
-        rollup_policy=f"ncbi_taxonomy_closure_rollup_{scope}",
-    )
 
 
 def write_table(
@@ -124,6 +108,8 @@ def fixture_sources(
                 )
                 for column, feature in enumerate(features)
             }
+            if direction == "inc" and counts[features[0]] > 0:
+                counts[features[0]] += 1  # Five ratios can be tested; other pairs remain tied.
             if "qualified|extra" in counts:
                 counts["qualified|extra"] = 1  # Ubiquitous: excluded by native support filter.
             records.append(
@@ -166,7 +152,7 @@ def fixture_sources(
     write_table(products["feature_metadata"], labels)
     write_table(
         products["feature_catalog"],
-        [{**row, "feature_class": "trait_annotation"} for row in labels],
+        [{**row, "feature_class": "trait_annotation"} for row in reversed(labels)],
     )
     write_table(
         products["taxa_matrix"],
@@ -239,7 +225,7 @@ def fixture_sources(
                 "Testable-Profiles": "16",
                 "Background-Taxa-Universe-M": "2",
                 "Total-Tests-Performed": str(len(ora_records)),
-                "Background-Mode": "TaxaMatrix(fixture)",
+                "Background-Mode": f"TaxaMatrix ({products['taxa_matrix'].name})",
                 "Min-Fold" if tail == "upper" else "Max-Fold": "1.5" if tail == "upper" else "0.5",
             },
         )
@@ -277,6 +263,9 @@ def fixture_sources(
                 "study_p_value": ".01",
                 "study_q_value": ".01",
                 "study_test_status": "tested",
+                "study_count": 8,
+                "study_mean_increased_minus_decreased": 0.2,
+                "study_std_increased_minus_decreased": 1.0,
                 "stratum_kind": "pooled",
                 "stratum": "pooled",
                 "test_method": "two_sided_one_sample_t_test",
@@ -339,12 +328,8 @@ def fixture_sources(
             ],
             core_manifest_sha256=file_sha256(core_manifest),
         )
-    bases = {
-        product: make_basis(
-            products["feature_catalog"], features, product, "phenotype" if subset else "off"
-        )
-        for product in ("count_profiles", "ora_profiles")
-    }
+    monkeypatch.setattr(workflow_comparison, "artifact_path", lambda _run, name: products[name])
+    bases = {basis.profile_unit: basis for basis in workflow_comparison.core_analysis_bases(core)}
     comparison_manifest = comparison_dir / "comparison_run.json"
     comparison_manifest.write_text("{}\n")
     comparison = ComparisonRun.model_construct(
