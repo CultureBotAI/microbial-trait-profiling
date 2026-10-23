@@ -239,6 +239,8 @@ pd-trait-taxa-heatmap:
 	uv run python scripts/create_pd_six_trait_taxon_heatmap.py
 	uv run python scripts/create_pd_exploratory_taxa_influence_heatmap.py
 
+# The ledger reconciles data/derived under the primary phenotype strain rollup scope and
+# records it in the manifest (#788).
 # Build PD trait contributor tables from the Table 1 contribution ledger (#190) on the pinned
 # KG in data/kg-microbe, then draw the dot heatmap and co-carriage network (#584).
 pd-trait-contributors:
