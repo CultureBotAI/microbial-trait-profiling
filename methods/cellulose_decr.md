@@ -148,7 +148,15 @@ the larger share. Ties are excluded.
 
   `condition_definition_interaction.tsv` repeats the Feces-vs-GI test under each
   of these definitions, and the significant-results table gives each Feces-vs-GI
-  row's p range across them (#673). Since classifier v3 tumour-vs-adjacent tissue is
+  row's p range across them (#673). The four case-control definitions (cases named
+  as treated set aside, Tier 1–2 controls only, paired-tissue or comorbidity
+  contrasts counted) choose among disease-versus-healthy contrasts, so both tables
+  test them on the oriented disease-versus-healthy population only. The
+  all-contrasts population does not apply these rules and keeps every profile, so
+  until #781 their rows there repeated the exact-label rows. The other definitions
+  are tested on both populations, so a p range on all contrasts spans the
+  exact-label, synonym and rectal-mucosa definitions. Since classifier v3
+  tumour-vs-adjacent tissue is
   `paired_tissue_autologous` (#554). Since v4 the HIV– versus HIV+ and ART-treated
   HIV+ versus uninfected experiments are disease vs healthy (#569). Since v5 the
   Yachida et al. 2019 CRC experiments with polyp-bearing controls are
@@ -222,8 +230,9 @@ sets, U3 and U6 from one population, named in `contrast_population`:
 - The four case-control definitions (cases named as treated set aside, Tier 1–2
   controls only, paired-tissue or comorbidity contrasts counted) choose among
   disease-versus-healthy contrasts. Their rows use the oriented
-  disease-versus-healthy population only. Over all contrasts these rules select
-  nothing, and until #769 their rows repeated the primary row.
+  disease-versus-healthy population only, as in the direction and Feces-vs-GI
+  tables. The all-contrasts population does not apply these rules and keeps every
+  profile, so until #769 their rows repeated the primary row.
 - The exact-label, synonym and rectal-mucosa definitions have a row for each
   population. Read a case-control row against the exact-label row on
   disease-versus-healthy contrasts.
@@ -260,9 +269,9 @@ are not a test; traits share taxa.
 | `sensitivity_definitions_jaccard.tsv` | Overlap under eleven set definitions |
 | `compartment_jaccard_and_direction_stats.tsv` | Direction tests by population, compartment and condition, at experiment and study level |
 | `compartment_direction_interaction.tsv` | Fisher tests of direction by compartment, crude and stratified |
-| `condition_definition_sensitivity.tsv` | Feces direction tests under each condition definition |
+| `condition_definition_sensitivity.tsv` | Feces direction tests under each condition definition and contrast population; the case-control definitions on disease-vs-healthy contrasts only |
 | `condition_definition_overlap.tsv` | Overlap and U6 under each condition definition and contrast population; the case-control definitions on disease-vs-healthy contrasts only |
-| `condition_definition_interaction.tsv` | Feces-vs-GI tests under each condition definition |
+| `condition_definition_interaction.tsv` | Feces-vs-GI tests under each condition definition and contrast population; the case-control definitions on disease-vs-healthy contrasts only |
 | `condition_label_inventory.tsv` | Every human condition label naming the three diseases, with its status |
 | `cellulose_decreased_taxa_catalog.tsv` | The taxa in any condition's set, with counts and flags |
 | `profile_and_study_pair_jaccard.tsv` | Overlap between individual profiles and studies |
