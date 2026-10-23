@@ -27,6 +27,11 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = REPO_ROOT / "trait-visualization"
 PROFILE_METADATA_COLUMNS = ["study_id", "experiment_id", "inc_dec"]
 DIRECTION_LABELS = {"inc": "increased", "dec": "decreased"}
+# These name the already oriented input; plotting never swaps the data (#842).
+DIRECTION_BASIS_LABELS = {
+    "group_1_vs_group_0": "Group 1 vs Group 0",
+    "disease_vs_comparison": "disease vs comparison",
+}
 PAIR_DIRECTION_LABEL = "increased - decreased"
 HUMAN_HOST_SPECIES = "Homo sapiens"
 EXPERIMENT_LABEL_COLUMNS = {
@@ -856,6 +861,7 @@ def save_heatmap(
     output_path: Path,
     full_profile_count: int,
     full_study_count: int,
+    direction_basis: str,
 ) -> None:
     """Render and save the clustered study profile heatmap."""
     sns.set_theme(style="white")
@@ -941,7 +947,7 @@ def save_heatmap(
 
     cluster.ax_row_dendrogram.legend(
         handles=legend_handles(direction_palette, display_metadata["inc_dec"]),
-        title="Direction",
+        title=f"BugSigDB direction\n({DIRECTION_BASIS_LABELS[direction_basis]})",
         loc="center",
         bbox_to_anchor=(-0.25, 0.65),
         frameon=False,
@@ -989,6 +995,7 @@ def save_paired_enrichment_heatmap(
     output_path: Path,
     full_pair_count: int,
     full_study_count: int,
+    direction_basis: str,
 ) -> None:
     """Render and save the paired increased-minus-decreased enrichment heatmap."""
     sns.set_theme(style="white")
@@ -1041,8 +1048,9 @@ def save_paired_enrichment_heatmap(
         colors_ratio=(0.03, 0.03),
         cbar_kws={
             "label": (
-                "Paired enrichment statistic: increased minus decreased non-MediaDive "
-                "profile z-score; display capped at +/-1"
+                "Paired enrichment statistic: increased minus decreased\n"
+                "non-MediaDive profile z-score; display capped at +/-1\n"
+                f"BugSigDB direction: {DIRECTION_BASIS_LABELS[direction_basis]}"
             )
         },
     )
@@ -1173,6 +1181,17 @@ def main() -> None:
             "Cluster studies by aggregate trait profiles to inspect whether similar "
             "conditions or body sites converge on similar microbial traits."
         )
+    )
+    parser.add_argument(
+        "--direction-basis",
+        choices=sorted(DIRECTION_BASIS_LABELS),
+        required=True,
+        help=(
+            "Direction basis of the input profiles, as recorded by the core: "
+            "group_1_vs_group_0 for all paired contrasts or disease_vs_comparison "
+            "for an oriented subset. Both heatmap legends name this basis; the "
+            "script does not reorient input values."
+        ),
     )
     parser.add_argument(
         "--study-trait-profiles-input",
@@ -1383,6 +1402,7 @@ def main() -> None:
         args.output,
         full_profile_count=len(plot_matrix),
         full_study_count=profile_metadata["study_id"].nunique(),
+        direction_basis=args.direction_basis,
     )
     write_outputs(
         plot_matrix,
@@ -1418,6 +1438,7 @@ def main() -> None:
         args.paired_output,
         full_pair_count=len(pair_matrix),
         full_study_count=pair_metadata["study_id"].nunique(),
+        direction_basis=args.direction_basis,
     )
     required_trait_check = summarize_required_paired_traits(pair_matrix, trait_metadata)
     if pair_source_hashes != {name: file_sha256(path) for name, path in pair_source_inputs.items()}:

@@ -194,6 +194,7 @@ def build_commands(context: ArmContext) -> list[Command]:
                     "--paired-metadata-output": "paired_metadata.tsv",
                     "--paired-required-trait-check-output": "paired_required_traits.tsv",
                 },
+                {"--direction-basis": context.direction_basis},
             ),
             _heatmap_command(
                 context,

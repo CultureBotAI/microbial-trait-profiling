@@ -342,6 +342,8 @@ def test_heatmap_main_to_site_stats_binds_hashes_and_selection_parameters(
     ).to_csv(dump, index=False)
     argv = [
         "heatmap",
+        "--direction-basis",
+        "group_1_vs_group_0",
         "--study-trait-profiles-input",
         str(profiles),
         "--trait-columns-input",
