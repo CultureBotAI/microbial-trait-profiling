@@ -4,11 +4,15 @@ from __future__ import annotations
 
 import gzip
 import json
+import os
+import shlex
+import subprocess
 from pathlib import Path
 
 import pytest
 
 from mtp import strain_rollup_record
+from mtp.paths import REPO_ROOT
 from mtp.strain_rollup_record import (
     StrainRollupRecordError,
     check_committed,
@@ -24,6 +28,7 @@ from mtp.strain_rollup_record import (
     write_strain_rollup_record,
 )
 from mtp.taxa_trait_matrix import StrainRollup
+from mtp.workflow.arms.runtime import INPUT_NAMES
 
 OFF_TABLE = "study_id\texperiment_id\tinc_dec\tMETPO:1\nbsdb:1\tbsdb:1-1\tinc\t2\n"
 PHENOTYPE_TABLE = (
@@ -112,29 +117,74 @@ def test_tables_read_together_record_one_scope_or_none(tmp_path: Path) -> None:
     with pytest.raises(StrainRollupRecordError, match="record different strain rollup scopes"):
         shared_strain_rollup(matrix, other)
     other.write_text(PHENOTYPE_TABLE, encoding="utf-8")
-    with pytest.raises(StrainRollupRecordError, match="then just study-trait-profiles"):
+    with pytest.raises(StrainRollupRecordError, match="rebuild them with the steps that wrote"):
         shared_strain_rollup(matrix, other)
 
 
 def test_tables_in_data_derived_must_all_have_records(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The older pipeline records its tables, so two record-less tables in data/derived,
-    whose scopes may already be mixed by the old restore hint, do not pass together;
-    elsewhere, such as in a core run, they are not compared (#945)."""
+    """The older pipeline records its tables, so two of them without records at their
+    paths in data/derived, whose scopes the old restore hint may have mixed, do not pass
+    together; elsewhere, such as in a core run, they are not compared (#945)."""
     derived = tmp_path / "data" / "derived"
     derived.mkdir(parents=True)
     monkeypatch.setattr(strain_rollup_record, "DERIVED_DATA_DIR", derived)
     matrix = _table(derived / "taxa_trait_matrix.tsv", PHENOTYPE_TABLE, None)
     profiles = _table(derived / "study_trait_profiles_wide.tsv", OFF_TABLE, None)
 
-    with pytest.raises(StrainRollupRecordError, match="every table of the older pipeline"):
+    with pytest.raises(
+        StrainRollupRecordError,
+        match="older pipeline's tables in data/derived must; rebuild them: just "
+        "taxa-trait-matrix, then just study-trait-profiles",
+    ):
         shared_strain_rollup(matrix, profiles)
     for table in (matrix, profiles):
         write_strain_rollup_record(table, "phenotype")
     assert shared_strain_rollup(matrix, profiles) == "phenotype"
     core = [_table(tmp_path / name, OFF_TABLE, None) for name in ("profiles.tsv", "matrix.tsv")]
     assert shared_strain_rollup(*core) is None
+
+
+def test_subsets_and_arm_inputs_in_data_derived_are_not_the_pipeline_tables(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A core consumer's subsets and an arm's prepared inputs may lie in data/derived;
+    only the older pipeline's own tables there must have records (#978)."""
+    derived = tmp_path / "data" / "derived"
+    monkeypatch.setattr(strain_rollup_record, "DERIVED_DATA_DIR", derived)
+    inputs = derived / "rerun" / "inputs"
+    inputs.mkdir(parents=True)
+    arm = [
+        _table(inputs / INPUT_NAMES[product], OFF_TABLE, None)
+        for product in ("ora_profiles", "taxa_matrix")
+    ]
+    subset = _table(derived / "rerun" / "study_trait_profiles_pooled.tsv", OFF_TABLE, None)
+
+    assert shared_strain_rollup(*arm) is None
+    assert shared_strain_rollup(subset, arm[1]) is None
+
+
+def test_the_rebuild_advice_names_the_recipe_of_each_table(tmp_path: Path) -> None:
+    """The ORA table is written by its own recipe, not by just study-trait-profiles (#978)."""
+    ora = _table(tmp_path / "study_trait_profiles_ora_wide.tsv", OFF_TABLE, None)
+    matrix = _table(tmp_path / "taxa_trait_matrix.tsv", PHENOTYPE_TABLE, "phenotype")
+
+    with pytest.raises(
+        StrainRollupRecordError,
+        match="rebuild them: just taxa-trait-matrix, then just study-trait-profiles-ora",
+    ):
+        shared_strain_rollup(ora, matrix)
+
+
+def test_a_link_to_a_recorded_table_reads_its_record(tmp_path: Path) -> None:
+    table = _table(tmp_path / "taxa_trait_matrix.tsv", PHENOTYPE_TABLE, "phenotype")
+    link = tmp_path / "elsewhere" / "matrix.tsv"
+    link.parent.mkdir()
+    link.symlink_to(table)
+
+    assert record_path(link) == record_path(table)
+    assert recorded_strain_rollup(link) == "phenotype"
 
 
 def test_a_step_refuses_recorded_tables_of_another_scope(tmp_path: Path) -> None:
@@ -295,3 +345,72 @@ def test_the_cli_exit_codes(tmp_path: Path, capsys: pytest.CaptureFixture[str]) 
     assert main(["show", str(table)]) == 0
     assert capsys.readouterr().out.splitlines()[-1] == "off"
     assert main(["show", str(matrix)]) == 1
+
+
+def test_a_stale_committed_record_offers_the_refresh(tmp_path: Path) -> None:
+    """When the committed table was regenerated without its record, as in the rerun
+    PR's merge order, refreshing records it; a checkout restores the stale pair (#978)."""
+    table = _committed(tmp_path / "derived")
+    committed = table.with_name(table.name + ".gz")
+    committed.write_bytes(gzip.compress(PHENOTYPE_TABLE.encode("utf-8"), mtime=0))
+
+    messages = check_committed(table, table.with_name("taxa_trait_matrix.tsv"))
+    assert "not the table its record" in messages[0]
+    assert messages[2] == (
+        "  Or, if the committed table was regenerated from the local one, record it: "
+        "just study-trait-profiles-refresh-gz"
+    )
+
+
+def test_an_off_table_after_a_phenotype_commit_is_rebuilt_in_data_derived(
+    tmp_path: Path,
+) -> None:
+    """Once the committed table is phenotype, an off local table is rebuilt with the
+    canonical recipe, not reproduced elsewhere (#978)."""
+    table = _committed(tmp_path / "derived", PHENOTYPE_TABLE, "phenotype")
+    matrix = _table(table.with_name("taxa_trait_matrix.tsv"), PHENOTYPE_TABLE, "phenotype")
+    _table(table, OFF_TABLE, "off")
+
+    assert check_committed(table, matrix)[1:] == [
+        "  It was built under the off strain rollup scope, the committed table under "
+        "phenotype (#788, #847).",
+        "  Unintended: run just study-trait-profiles, which builds the primary phenotype "
+        "table, or just study-trait-profiles-restore",
+    ]
+
+
+@pytest.mark.parametrize("name", ["out dir", 'quoted "dir', "dollar $HOME", "tick `id`"])
+def test_reproduce_committed_keeps_its_directory_argument_literal(
+    tmp_path: Path, name: str
+) -> None:
+    """The recipe passes its directory through unexpanded (#975). A stub uv records the
+    builds instead of running them, so the final comparison fails as expected."""
+    stubs = tmp_path / "bin"
+    stubs.mkdir()
+    calls = tmp_path / "uv_calls.txt"
+    stub = stubs / "uv"
+    stub.write_text(
+        "#!/usr/bin/env bash\n"
+        f"printf '%s\\n' \"$@\" >> {shlex.quote(str(calls))}\n"
+        'if [ "$5" = show ]; then echo off; fi\n',
+        encoding="utf-8",
+    )
+    stub.chmod(0o755)
+    directory = tmp_path / name
+    environment = {**os.environ, "PATH": f"{stubs}{os.pathsep}{os.environ['PATH']}"}
+
+    completed = subprocess.run(
+        ["just", "study-trait-profiles-reproduce-committed", str(directory)],
+        cwd=REPO_ROOT,
+        env=environment,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert completed.returncode == 1, completed.stderr
+    assert directory.is_dir()
+    assert f"{directory}/taxa_trait_matrix.tsv" in calls.read_text(encoding="utf-8").splitlines()
+    assert f"{directory}/study_trait_profiles_wide.tsv differs from the committed off" in (
+        completed.stderr
+    )

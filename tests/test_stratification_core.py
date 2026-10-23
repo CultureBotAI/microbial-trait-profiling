@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from mtp import stratification
+from mtp import strain_rollup_record, stratification
 from mtp.paths import REPO_ROOT, file_sha256
 from mtp.workflow.consumers import CoreBundle, open_core_bundle, verify_consumer_record
 from mtp.workflow.operations import OPERATIONS, validate_core_product
@@ -74,6 +74,20 @@ def test_core_strata_records_every_actual_product_and_source(
         partition = output / f"study_trait_profiles_{stratum}.tsv"
         complete = output / f"trait_enrichment_all_results_{stratum}.tsv"
         assert f"# Profiles-SHA256: {file_sha256(partition)}" in complete.read_text()
+
+
+def test_core_strata_may_write_into_data_derived(
+    core_bundle: CoreBundle, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The strata's subsets and the core's matrix are not the older pipeline's tables, so
+    they need no strain rollup record in data/derived (#978)."""
+    derived = tmp_path / "data" / "derived"
+    monkeypatch.setattr(strain_rollup_record, "DERIVED_DATA_DIR", derived)
+    output = derived / "strata"
+
+    arguments = ["--core-run", str(core_bundle.manifest), "--output-dir", str(output)]
+    assert stratification.main([*arguments, "--strata", "pooled"]) == 0
+    assert (output / "trait_enrichment_all_results_pooled.tsv").is_file()
 
 
 @pytest.mark.parametrize("argument", ["profiles", "experiments", "taxa-matrix"])

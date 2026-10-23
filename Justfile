@@ -586,18 +586,20 @@ study-trait-profiles-restore:
 # built in a directory outside it, from data/derived/bugsigdb_taxa.tsv, data/kg-microbe and
 # data/studies (#847).
 # Rebuild the committed profile table under the scope its record states and compare them.
+[positional-arguments]
 study-trait-profiles-reproduce-committed directory:
 	#!/usr/bin/env bash
 	set -euo pipefail
+	directory="$1"
 	committed=data/derived/study_trait_profiles_wide.tsv.gz
 	scope="$(uv run python -m mtp.strain_rollup_record show "$committed")"
-	mkdir -p "{{directory}}"
-	uv run python scripts/create_taxa_trait_matrix.py --strain-rollup "$scope" --output "{{directory}}/taxa_trait_matrix.tsv"
-	uv run python scripts/create_study_trait_profiles.py --taxa-trait-matrix "{{directory}}/taxa_trait_matrix.tsv" --output "{{directory}}/study_trait_profiles_wide.tsv" {{profile_flags}}
-	if gzip -dc "$committed" | cmp -s - "{{directory}}/study_trait_profiles_wide.tsv"; then
-		echo "{{directory}}/study_trait_profiles_wide.tsv reproduces the committed $scope table"
+	mkdir -p "$directory"
+	uv run python scripts/create_taxa_trait_matrix.py --strain-rollup "$scope" --output "$directory/taxa_trait_matrix.tsv"
+	uv run python scripts/create_study_trait_profiles.py --taxa-trait-matrix "$directory/taxa_trait_matrix.tsv" --output "$directory/study_trait_profiles_wide.tsv" {{profile_flags}}
+	if gzip -dc "$committed" | cmp -s - "$directory/study_trait_profiles_wide.tsv"; then
+		echo "$directory/study_trait_profiles_wide.tsv reproduces the committed $scope table"
 	else
-		echo "{{directory}}/study_trait_profiles_wide.tsv differs from the committed $scope table $committed" >&2
+		echo "$directory/study_trait_profiles_wide.tsv differs from the committed $scope table $committed" >&2
 		exit 1
 	fi
 

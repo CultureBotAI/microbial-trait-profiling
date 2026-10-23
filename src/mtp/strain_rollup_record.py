@@ -6,10 +6,11 @@ the older ``data/derived`` pipeline carry theirs in a record beside the table,
 records refuses a table whose record describes other content: the table was replaced
 without its record, so its scope is unknown.
 
-Tables read together must all have records or none, and in data/derived, where the older
-pipeline writes them, all must have one. Elsewhere, core products and other tables without a
-record are not compared with each other, but a table without a record is never read with a
-recorded one, whose scope it may not share (#939, #945).
+Tables read together must all have records or none, and when one of them is a table of
+the older pipeline at its path in data/derived, all must have one. Elsewhere, core products,
+the subsets and inputs that consumers and arms write and other tables without a record are
+not compared with each other, but a table without a record is never read with a recorded one,
+whose scope it may not share (#939, #945, #978).
 """
 
 from __future__ import annotations
@@ -30,10 +31,13 @@ from mtp.taxa_trait_matrix import PRIMARY_STRAIN_ROLLUP, StrainRollup, parse_str
 RECORD_SUFFIX = ".strain_rollup.json"
 DEFAULT_MATRIX_PATH = DERIVED_DATA_DIR / "taxa_trait_matrix.tsv"
 DEFAULT_PROFILE_PATH = DERIVED_DATA_DIR / "study_trait_profiles_wide.tsv"
-REBUILD = (
-    "rebuild them with the recipes that write them, just taxa-trait-matrix and then "
-    "just study-trait-profiles"
-)
+# The older pipeline's tables in data/derived, by the recipe that writes each; the profile
+# tables are built from the matrix (#978)
+RECIPES = {
+    "taxa_trait_matrix.tsv": "just taxa-trait-matrix",
+    "study_trait_profiles_wide.tsv": "just study-trait-profiles",
+    "study_trait_profiles_ora_wide.tsv": "just study-trait-profiles-ora",
+}
 
 
 class StrainRollupRecordError(ValueError):
@@ -41,8 +45,10 @@ class StrainRollupRecordError(ValueError):
 
 
 def record_path(table: Path) -> Path:
-    """The record beside a table, named after its whole file name."""
-    return table.with_name(table.name + RECORD_SUFFIX)
+    """The record beside a table, named after its whole file name; a symbolic link's record
+    is the one beside the table it points to (#978)."""
+    resolved = table.resolve()
+    return resolved.with_name(resolved.name + RECORD_SUFFIX)
 
 
 def content_sha256(table: Path) -> str:
@@ -104,37 +110,47 @@ def require_strain_rollup(table: Path) -> StrainRollup:
     return scope
 
 
-def _in_derived(table: Path) -> bool:
-    """Whether a table is in data/derived, where the older pipeline writes its tables."""
-    return table.resolve().is_relative_to(DERIVED_DATA_DIR.resolve())
+def _canonical(table: Path) -> bool:
+    """Whether a table is one of the older pipeline's tables at its path in data/derived."""
+    return table.resolve() in {(DERIVED_DATA_DIR / name).resolve() for name in RECIPES}
+
+
+def _rebuild(tables: Sequence[Path]) -> str:
+    """How to rebuild tables read together: the matrix, then each profile table's recipe."""
+    names = {table.resolve().name for table in tables}
+    recipes = [recipe for name, recipe in RECIPES.items() if name in names]
+    if not recipes:
+        return "rebuild them with the steps that wrote them"
+    if RECIPES["taxa_trait_matrix.tsv"] not in recipes:
+        recipes.insert(0, RECIPES["taxa_trait_matrix.tsv"])
+    return "rebuild them: " + ", then ".join(recipes)
 
 
 def shared_strain_rollup(*tables: Path) -> StrainRollup | None:
     """The scope tables read together share, or None when none of them has a record.
 
     Recorded scopes that differ are refused, and so is a table without a record read
-    with recorded ones (#847, #939). Tables in data/derived come from the older pipeline,
-    which records them, so there every table must have a record; elsewhere, such as core
-    runs and their arms, tables without one are not compared (#945).
+    with recorded ones (#847, #939). The older pipeline records its tables, so when one of
+    them is read from its path in data/derived, every table must have a record (#945, #978).
     """
     try:
         recorded = {table: recorded_strain_rollup(table) for table in tables}
     except StrainRollupRecordError as error:
-        raise StrainRollupRecordError(f"{error}; {REBUILD}") from error
+        raise StrainRollupRecordError(f"{error}; {_rebuild(tables)}") from error
     scopes = set(recorded.values())
     if scopes <= {None}:
-        derived = [str(table) for table in tables if _in_derived(table)]
-        if derived:
+        canonical = [str(table) for table in tables if _canonical(table)]
+        if canonical:
             raise StrainRollupRecordError(
-                f"{', '.join(derived)} record no strain rollup scope, which every table of "
-                f"the older pipeline in data/derived must; {REBUILD} (#847)"
+                f"{', '.join(canonical)} record no strain rollup scope, which the older "
+                f"pipeline's tables in data/derived must; {_rebuild(tables)} (#847)"
             )
         return None
     if len(scopes) > 1:
         listed = ", ".join(f"{table} ({scope or 'no record'})" for table, scope in recorded.items())
         raise StrainRollupRecordError(
             f"Tables read together record different strain rollup scopes: {listed}; "
-            f"{REBUILD} (#847)"
+            f"{_rebuild(tables)} (#847)"
         )
     return next(scope for scope in scopes if scope is not None)
 
@@ -187,7 +203,12 @@ def check_committed(table: Path, matrix: Path) -> list[str]:
     try:
         committed_scope = require_strain_rollup(committed)
     except StrainRollupRecordError as error:
-        return [f"{error}", f"  Restore both: {checkout}"]
+        return [
+            f"{error}",
+            f"  Restore both: {checkout}",
+            "  Or, if the committed table was regenerated from the local one, record it: "
+            "just study-trait-profiles-refresh-gz",
+        ]
     blocked = _restore_blocked(committed_scope, matrix)
     offer = "" if blocked else ", or just study-trait-profiles-restore"
     unrestorable = [f"  Not offering the committed table: {blocked}."] if blocked else []
@@ -228,19 +249,30 @@ def check_committed(table: Path, matrix: Path) -> list[str]:
             *unrestorable,
             f"  After an intended input change: {refresh}",
         ]
-    rebuilds = (
-        f"a rebuild gives a {scope} table again, because data/derived holds only the primary "
-        f"{PRIMARY_STRAIN_ROLLUP} matrix"
-        if scope == PRIMARY_STRAIN_ROLLUP
-        else "run just study-trait-profiles to rebuild it from the primary matrix"
+    built = (
+        f"  It was built under the {scope} strain rollup scope, the committed table under "
+        f"{committed_scope} (#788, #847)"
     )
+    reproduce = (
+        f"  To rebuild the committed {committed_scope} table instead, outside data/derived: "
+        "just study-trait-profiles-reproduce-committed <directory>"
+    )
+    if scope != PRIMARY_STRAIN_ROLLUP:
+        # data/derived builds the primary scope, so a rebuild gives that (#978)
+        return [
+            *messages,
+            f"{built}.",
+            "  Unintended: run just study-trait-profiles, which builds the primary "
+            f"{PRIMARY_STRAIN_ROLLUP} table{offer}",
+            *unrestorable,
+            *([reproduce] if committed_scope != PRIMARY_STRAIN_ROLLUP else []),
+        ]
     return [
         *messages,
-        f"  It was built under the {scope} strain rollup scope, the committed table under "
-        f"{committed_scope} (#788, #847); {rebuilds}.",
+        f"{built}; a rebuild gives a {scope} table again, because data/derived holds only the "
+        f"primary {PRIMARY_STRAIN_ROLLUP} matrix.",
         f"  If the {scope} table is intended: {refresh}",
-        f"  To rebuild the committed {committed_scope} table instead, outside data/derived: "
-        "just study-trait-profiles-reproduce-committed <directory>",
+        reproduce,
     ]
 
 
