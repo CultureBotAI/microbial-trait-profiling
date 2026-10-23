@@ -165,6 +165,14 @@ def test_mirror_uses_canonical_all_instead_of_a_truncated_shim_all() -> None:
         _assert_mirror_exports(target, broken, "fixture")
 
 
+def test_shared_ledger_argument_parser_is_an_explicit_public_export() -> None:
+    """The arm verifier consumes this public parser; both export lists must include it."""
+    target = importlib.import_module("mtp.taxon_contributions")
+    assert "argument_parser" in target.__all__
+    source = _shim_sources()["taxon_contributions"].read_text(encoding="utf-8")
+    _assert_declared_shim_imports(source, "taxon_contributions")
+
+
 def test_mirror_rejects_wrong_export_identity() -> None:
     target = ModuleType("mtp.fixture")
     target.__dict__["constant"] = object()
