@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import json
 import math
 from collections import Counter
@@ -19,7 +20,7 @@ from mtp.datamodel.multiple_testing_pydantic import (
     RawHypothesis,
 )
 from mtp.multiple_testing import canonical_sha256
-from mtp.multiplicity.sources import VerifiedSources, recorded_arm_output, source
+from mtp.multiplicity.sources import VerifiedSources, recorded_arm_output
 from mtp.paths import file_sha256
 from mtp.trait_guilds import TABLE1_TRAITS, drop_zero_total_pairs, load_profiles
 
@@ -44,17 +45,27 @@ class FamilyInput:
     source_paths: tuple[Path, ...]
 
 
-def rows(path: Path) -> Iterator[dict[str, str]]:
-    with path.open(encoding="utf-8", newline="") as handle:
-        reader = csv.DictReader(
-            (line for line in handle if not line.startswith("#")), delimiter="\t"
-        )
+def rows(path: Path, expected_sha256: str | None = None) -> Iterator[dict[str, str]]:
+    """Hash exactly the consumed bytes, including comments and original line endings."""
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+
+        def lines() -> Iterator[str]:
+            for raw_line in handle:
+                digest.update(raw_line)
+                line = raw_line.decode("utf-8")
+                if not line.startswith("#"):
+                    yield line
+
+        reader = csv.DictReader(lines(), delimiter="\t")
         if not reader.fieldnames or len(set(reader.fieldnames)) != len(reader.fieldnames):
             raise ValueError("Missing or duplicate source columns")
         for row in reader:
             if None in row or any(value is None for value in row.values()):
                 raise ValueError("Malformed source table row")
             yield row
+    if expected_sha256 is not None and digest.hexdigest() != expected_sha256:
+        raise ValueError(f"Source consumed bytes differ from upstream recorded hash: {path.name}")
 
 
 def require_fields(row: dict[str, Any], expected: dict[str, Any]) -> None:
@@ -183,7 +194,7 @@ def metadata(
             {
                 artifact.identity: artifact
                 for path in input_paths(sources, product, paths)
-                for artifact in [source(path)]
+                for artifact in [sources.artifact(path)]
             }.values(),
             key=lambda artifact: artifact.identity,
         ),
@@ -247,7 +258,7 @@ def noel_family(sources: VerifiedSources) -> FamilyInput:
             )
 
     def observations() -> Iterator[NativeObservation]:
-        for row in rows(table):
+        for row in rows(table, sources.expected_digest(table)):
             require_fields(
                 row,
                 {
@@ -297,7 +308,7 @@ def jed_family(sources: VerifiedSources) -> FamilyInput:
     )
     pairs = list(combinations(TABLE1_TRAITS, 2))
     definitions = []
-    study_rows = list(rows(studies))
+    study_rows = list(rows(studies, sources.expected_digest(studies)))
     paired, _ = load_profiles(
         sources.product("count_profiles"),
         sources.product("experiments"),
@@ -372,7 +383,7 @@ def jed_family(sources: VerifiedSources) -> FamilyInput:
     )
 
     def observations() -> Iterator[NativeObservation]:
-        for row in rows(table):
+        for row in rows(table, sources.expected_digest(table)):
             require_fields(
                 row,
                 {

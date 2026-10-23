@@ -134,7 +134,7 @@ def ora_family(sources: VerifiedSources) -> FamilyInput:
     def observations() -> Iterator[NativeObservation]:
         for tail, path in exports.items():
             count = 0
-            for row in rows(path):
+            for row in rows(path, sources.expected_digest(path)):
                 count += 1
                 feature = row["trait"]
                 require_fields(

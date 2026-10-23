@@ -53,6 +53,12 @@ Untestable members count conservatively as p=1 and export null p, q and rejectio
 flags. Invalid numeric values, negative zero and status/p mismatches fail.
 Effects and native row contents are bound
 by source hashes and row hashes, and are never rewritten.
+Cross-product reconciliation beyond these checks is tracked in #976: independently
+reconciling every untestable status against source study effects, verifying native
+ORA q-values against each complete tail, and versioning the free-text reason
+vocabulary. Standalone adapters with upstream verification bypassed do not provide
+that stronger scientific contract. Publishing always requires the recorded-byte
+binding described below.
 The shared canonical serializer uses strict JSON for these identities: numeric
 NaN and infinity are rejected even inside nested basis or membership records.
 
@@ -76,13 +82,29 @@ It records policy, input and output identities, code, NumPy/SciPy versions, time
 population, direction, strain scope, and family summaries. Family source IDs are
 content-addressed product names, not machine-specific paths. The explicit local
 ComparisonRun path permits verification against the original execution records.
-The code identity covers every Python module under canonical `src/mtp`, keyed
+The code identity covers every Git-tracked Python module under canonical `src/mtp`, keyed
 by its relative path, so shared loaders, scientific helpers and serializers are
-included without filename collisions. Changes to any canonical module require
-a new sidecar execution. Implementation and policy identities are captured before
+included without filename collisions. Untracked scratch files and editor lock
+symlinks are excluded. Changes to a tracked canonical module require
+a new sidecar execution. Unresolved canonical Python entries in the Git index
+are rejected until the merge conflict is resolved (#977).
+Implementation and policy identities are captured before
 source verification and family construction, then rechecked before the final
 manifest is published. A change during execution refuses publication; the manifest
-cannot claim a new disk implementation for calculations performed by cached code.
+cannot claim a new disk implementation after detecting changed tracked bytes.
+This contract starts at run entry; it does not attest bytecode imported before
+entry. Fresh CLI execution is the supported reproducible invocation.
+
+Source identities come from the verified parent inventories. Each native result
+or support TSV pass read through the adapters hashes its exact raw bytes,
+including comments and line endings, before CSV decoding; exhausting the pass
+must match the recorded upstream hash.
+This catches a changed export even if it is restored after correction and
+migration. Other consumed inputs, including core profiles and experiments, are
+checked at metadata and final-source boundaries against those recorded identities.
+A rejected run has no final `multiplicity_run.json`;
+partial diagnostic files may remain. These checks cover the recorded inputs and
+consumed export streams, not arbitrary filesystem mutation or pre-entry imports.
 
 `migration.json` and the per-family migration tables distinguish three changes:
 
@@ -112,3 +134,5 @@ integration tests execute actual off/phenotype/full core fixtures and bind the
 committed AnalysisBasis producer's outputs to verified count/ORA bundles; full
 scope is rejected. The four-arm adapter fixture stubs the upstream comparison
 execution-verification boundary, which the existing workflow tests cover.
+Its native pooled statistics come from the actual infographic producer's
+selection, transformations and statistical functions, independently of the adapter.

@@ -291,7 +291,7 @@ six-shared-trait-high-support-sankeys:
 trait-heatmaps:
 	uv run python scripts/create_clustered_heatmap.py
 	uv run python scripts/create_condition_taxon_heatmap.py
-	uv run python scripts/create_taxa_guild_heatmap.py
+	uv run python scripts/create_taxa_guild_heatmap.py --direction-basis group_1_vs_group_0
 	uv run python scripts/create_study_trait_profile_heatmap.py
 	uv run python scripts/create_condition_trait_module_heatmap.py
 
@@ -319,7 +319,7 @@ test-multiple-testing:
 	uv run pytest tests/test_multiple_testing.py
 
 test-multiplicity-adapters:
-	uv run pytest tests/test_multiplicity_adapters.py tests/test_multiplicity_basis_integration.py
+	uv run pytest tests/test_multiplicity_adapters.py tests/test_multiplicity_basis_integration.py tests/test_multiplicity_regression_guards.py
 
 # Analyzer, ranking exporter, and complete-universe density regression checks (#664).
 test-stratification:
