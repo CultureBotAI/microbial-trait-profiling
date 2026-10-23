@@ -1,4 +1,3 @@
-# ruff: noqa: E501
 """Generate human 16S/WMS taxa coverage figures, tables and provenance (#820/#821).
 
 Inputs are the rebuilt profile table, taxon matrix, taxon occurrences and experiment
@@ -24,6 +23,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib.figure import Figure
 from matplotlib.patches import Patch
 
 from mtp.human_host_corpus import CORPUS_SEQUENCING_TYPES, HUMAN_HOST_SPECIES
@@ -55,6 +55,7 @@ RANK_DISPLAY = {
 # Colorblind-safe palette (Okabe-Ito & Viridis inspired)
 COLOR_RICH = "#0072b2"  # Deep Blue: >= 3 traits / All-mapped
 COLOR_SPARSE = "#56b4e9"  # Sky Blue: 1-2 traits / Mixed mapped+zero
+COLOR_MIXED_PROFILE = "#475569"  # Dark slate separates profile status from taxonomic ranks.
 COLOR_ZERO = "#d55e00"  # Vermilion: 0 traits / Zero-only
 COLOR_ACCENT = "#009e73"  # Bluish Green for highlights
 COLOR_PURPLE = "#cc79a7"  # Reddish Purple
@@ -81,7 +82,8 @@ plt.rcParams["svg.hashsalt"] = "taxa-coverage-histogram-v2"
 
 def read_tsv(path: Path, **kwargs: Any) -> pd.DataFrame:
     """Read a local TSV file."""
-    return pd.read_csv(path, sep="\t", **kwargs)
+    frame: pd.DataFrame = pd.read_csv(path, sep="\t", **kwargs)
+    return frame
 
 
 def write_tsv(frame: pd.DataFrame, output_path: Path) -> None:
@@ -90,11 +92,16 @@ def write_tsv(frame: pd.DataFrame, output_path: Path) -> None:
     frame.to_csv(output_path, sep="\t", index=False)
 
 
-def save_figure(fig: plt.Figure, output_path: Path) -> None:
+def save_figure(fig: Figure, output_path: Path) -> None:
     """Save a figure as both 300 DPI PNG and clean SVG."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output_path, dpi=300, bbox_inches="tight", facecolor="white")
-    fig.savefig(output_path.with_suffix(".svg"), bbox_inches="tight", facecolor="white")
+    fig.savefig(
+        output_path.with_suffix(".svg"),
+        bbox_inches="tight",
+        facecolor="white",
+        metadata={"Date": None},
+    )
     plt.close(fig)
 
 
@@ -111,7 +118,8 @@ def diagnose_zero_trait_taxon(taxon_id: str, name: str, rank: str) -> tuple[str,
         twin = canonical_map.get(taxon_id, "canonical TaxID")
         return (
             "NCBI TaxID Desynchronization",
-            f"Review possible alias against the pinned taxonomy: {twin}; do not remap automatically",
+            f"Review possible alias against the pinned taxonomy: {twin}; "
+            "do not remap automatically",
         )
 
     if "/" in name or re.search(r"\b(unidentified|uncultured organism|unknown)\b", lower_name):
@@ -132,7 +140,8 @@ def diagnose_zero_trait_taxon(taxon_id: str, name: str, rank: str) -> tuple[str,
     ) or (rank in {"kingdom", "superkingdom", "phylum"} and "fung" in lower_name):
         return (
             "Non-Bacterial / Fungal Eukaryote",
-            "Integrate specialized microeukaryotic trait ontologies (e.g. FungiTraits) into KG-Microbe",
+            "Integrate specialized microeukaryotic trait ontologies "
+            "(e.g. FungiTraits) into KG-Microbe",
         )
 
     if (
@@ -251,7 +260,7 @@ def load_and_process_data(
     profiles: Path = PROFILES_WIDE_PATH,
     experiments: Path = EXPERIMENTS_PATH,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Load taxa.tsv, taxa_trait_matrix.tsv, and study_trait_profiles_wide.tsv and compute statistics."""
+    """Load occurrences, matrix, profiles and metadata to compute coverage statistics."""
     print(f"Reading taxa occurrences from {taxa}...")
     taxa_df = read_tsv(taxa)
 
@@ -270,7 +279,8 @@ def load_and_process_data(
     trait_cols = [c for c in matrix_df.columns if c not in meta_cols]
     non_mediadive_cols = [c for c in trait_cols if not c.startswith("mediadive.medium:")]
     print(
-        f"  Loaded {len(matrix_df)} unique taxa and {len(trait_cols)} trait columns ({len(non_mediadive_cols)} core non-MediaDive)."
+        f"  Loaded {len(matrix_df)} unique taxa and {len(trait_cols)} trait columns "
+        f"({len(non_mediadive_cols)} core non-MediaDive)."
     )
 
     # Vectorized trait counts per taxon
@@ -549,13 +559,13 @@ def load_and_process_data(
     )
 
     top_zero_records: list[dict[str, Any]] = []
-    for rank_idx, row in zero_taxa_df.head(100).iterrows():
+    for rank_idx, (_, row) in enumerate(zero_taxa_df.head(100).iterrows(), start=1):
         cat, rec = diagnose_zero_trait_taxon(
             str(row["taxon_id"]), str(row["taxon_name"]), str(row["taxonomic_rank"])
         )
         top_zero_records.append(
             {
-                "zero_trait_rank": rank_idx + 1,
+                "zero_trait_rank": rank_idx,
                 "taxon_id": row["taxon_id"],
                 "taxon_name": row["taxon_name"],
                 "taxonomic_rank": row["taxonomic_rank"],
@@ -596,7 +606,7 @@ def load_and_process_data(
 def plot_rank_stratified_histogram(
     rank_df: pd.DataFrame, output_path: Path, prof_summary: pd.DataFrame
 ) -> None:
-    """Generate Figure 1: 3-Panel Rank-Stratified Coverage (Unique Taxa Counts, Taxa %, & Profile Distribution by Rank)."""
+    """Plot unique-taxon counts, mapped percentages and profile distributions by rank."""
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(22, 7.2), gridspec_kw={"wspace": 0.25})
 
     ranks = [RANK_DISPLAY[r] for r in RANK_ORDER]
@@ -670,8 +680,11 @@ def plot_rank_stratified_histogram(
         0.32,
         0.95,
         f"Total catalog: N = {int(rank_df.total_taxa.sum()):,} unique taxa\n"
-        f"• Trait-bearing (≥1 trait): {int(rank_df.trait_bearing_taxa.sum()):,} ({percent(rank_df.trait_bearing_taxa.sum(), rank_df.total_taxa.sum()):.1f}%)\n"
-        f"• Zero traits: {int(rank_df.zero_trait_taxa.sum()):,} ({percent(rank_df.zero_trait_taxa.sum(), rank_df.total_taxa.sum()):.1f}%)\n(Top label shows total N & % mapped)",
+        f"• Trait-bearing (≥1 trait): {int(rank_df.trait_bearing_taxa.sum()):,} "
+        f"({percent(rank_df.trait_bearing_taxa.sum(), rank_df.total_taxa.sum()):.1f}%)\n"
+        f"• Zero traits: {int(rank_df.zero_trait_taxa.sum()):,} "
+        f"({percent(rank_df.zero_trait_taxa.sum(), rank_df.total_taxa.sum()):.1f}%)\n"
+        "(Top label shows total N & % mapped)",
         transform=ax1.transAxes,
         fontsize=8.8,
         verticalalignment="top",
@@ -837,10 +850,13 @@ def plot_rank_stratified_histogram(
         0.37,
         0.96,
         f"Across N = {len(prof_summary):,} Study Profiles:\n"
-        f"• {int(prof_summary.has_mapped_traits.sum()):,} ({100 * prof_summary.has_mapped_traits.mean():.1f}%) map to ≥1 trait\n"
-        f"• {int((~prof_summary.has_mapped_traits).sum()):,} ({100 * (~prof_summary.has_mapped_traits).mean():.1f}%) have 0 traits\n"
+        f"• {int(prof_summary.has_mapped_traits.sum()):,} "
+        f"({100 * prof_summary.has_mapped_traits.mean():.1f}%) map to ≥1 trait\n"
+        f"• {int((~prof_summary.has_mapped_traits).sum()):,} "
+        f"({100 * (~prof_summary.has_mapped_traits).mean():.1f}%) have 0 traits\n"
         + "\n".join(
-            f"• {row.display_rank}: {row.profiles_with_rank:,} profiles ({row.profiles_any_mapped_pct:.1f}% mapped)"
+            f"• {row.display_rank}: {row.profiles_with_rank:,} profiles "
+            f"({row.profiles_any_mapped_pct:.1f}% mapped)"
             for row in rank_df.loc[rank_df.taxonomic_rank.isin(["genus", "species"])].itertuples()
         ),
         transform=ax3.transAxes,
@@ -979,7 +995,8 @@ def plot_occurrences_vs_unique(
     ax.text(
         zero_pcts[0] + mid_pcts[0] + top_pcts[0] / 2,
         y_pos[0],
-        f"Trait-Bearing Taxa: {mid_pcts[0] + top_pcts[0]:.1f}% ({sparse_taxa + rich_taxa:,} / {total_taxa:,})",
+        f"Trait-Bearing Taxa: {mid_pcts[0] + top_pcts[0]:.1f}% "
+        f"({sparse_taxa + rich_taxa:,} / {total_taxa:,})",
         ha="center",
         va="center",
         color="white",
@@ -1001,7 +1018,8 @@ def plot_occurrences_vs_unique(
     ax.text(
         zero_pcts[1] + mid_pcts[1] + top_pcts[1] / 2,
         y_pos[1],
-        f"Trait-Bearing Occurrences: {mid_pcts[1] + top_pcts[1]:.2f}% ({sparse_occ + rich_occ:,} / {total_occ:,})",
+        f"Trait-Bearing Occurrences: {mid_pcts[1] + top_pcts[1]:.2f}% "
+        f"({sparse_occ + rich_occ:,} / {total_occ:,})",
         ha="center",
         va="center",
         color="white",
@@ -1033,7 +1051,9 @@ def plot_occurrences_vs_unique(
     ax.text(
         zero_pcts[2] + mid_pcts[2] + top_pcts[2] / 2,
         y_pos[2],
-        f"All Taxa Mapped: {top_pcts[2]:.1f}% ({all_mapped_prof:,})\nTotal Trait-Mapped Profiles: {mid_pcts[2] + top_pcts[2]:.1f}% ({mixed_prof + all_mapped_prof:,} / {total_prof:,})",
+        f"All Taxa Mapped: {top_pcts[2]:.1f}% ({all_mapped_prof:,})\n"
+        f"Total Trait-Mapped Profiles: {mid_pcts[2] + top_pcts[2]:.1f}% "
+        f"({mixed_prof + all_mapped_prof:,} / {total_prof:,})",
         ha="center",
         va="center",
         color="white",
@@ -1090,14 +1110,14 @@ def plot_occurrences_vs_unique(
 def plot_profile_distribution_by_rank(
     prof_rank_df: pd.DataFrame, prof_summary: pd.DataFrame, output_path: Path
 ) -> None:
-    """Generate Figure 3: Distribution of Profiles for Each Type of Taxa (Rank) Based on Trait Mapping."""
+    """Plot profile distributions by taxonomic rank and annotation coverage."""
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16.5, 6.8), gridspec_kw={"wspace": 0.26})
 
     ranks = [RANK_DISPLAY[r] for r in RANK_ORDER]
     x = np.arange(len(ranks))
     width = 0.62
 
-    # Panel A: 100% Stacked Bar of Profile Trait Mapping Status for Each Taxonomic Rank (with counts & %)
+    # Panel A: Profile trait-mapping status by rank, with counts and percentages.
     all_map_pct = prof_rank_df["pct_all_taxa_mapped_within_rank"].to_numpy()
     mixed_pct = prof_rank_df["pct_mixed_within_rank"].to_numpy()
     zero_pct = prof_rank_df["pct_zero_only_within_rank"].to_numpy()
@@ -1277,7 +1297,8 @@ def plot_profile_distribution_by_rank(
         "Mapped Traits per Profile (Log10 Scale)", fontsize=11, fontweight="bold", labelpad=8
     )
     ax2.set_title(
-        f"B. Mapped Trait Richness of Profiles by Taxa Rank (N = {int(prof_summary.has_mapped_traits.sum()):,})",
+        "B. Mapped Trait Richness of Profiles by Taxa Rank "
+        f"(N = {int(prof_summary.has_mapped_traits.sum()):,})",
         fontsize=12,
         fontweight="bold",
         pad=16,
@@ -1388,7 +1409,8 @@ def plot_histogram1_mapped_profiles(prof_summary: pd.DataFrame, output_path: Pat
     if n_mapped:
         ax1.axvline(median_trait_bin, color=COLOR_ACCENT, linestyle="--", linewidth=1.8)
     ax1.annotate(
-        f"Median: {med_traits:g} traits\n(IQR: {q25_traits:g}-{q75_traits:g})\nMean: {mean_traits:.1f} traits"
+        f"Median: {med_traits:g} traits\n(IQR: {q25_traits:g}-{q75_traits:g})\n"
+        f"Mean: {mean_traits:.1f} traits"
         if n_mapped
         else "No mapped profiles",
         xy=(median_trait_bin, max(bin_counts_a) * 0.82),
@@ -1434,7 +1456,11 @@ def plot_histogram1_mapped_profiles(prof_summary: pd.DataFrame, output_path: Pat
     ax1.text(
         0.02,
         0.96,
-        f"This histogram shows mapped profiles:\n• Included (≥1 trait): {n_mapped:,} / {n_total:,} ({percent(n_mapped, n_total):.1f}%)\n• Not shown (0 traits): {n_excluded:,} / {n_total:,} ({percent(n_excluded, n_total):.1f}%)",
+        "This histogram shows mapped profiles:\n"
+        f"• Included (≥1 trait): {n_mapped:,} / {n_total:,} "
+        f"({percent(n_mapped, n_total):.1f}%)\n"
+        f"• Not shown (0 traits): {n_excluded:,} / {n_total:,} "
+        f"({percent(n_excluded, n_total):.1f}%)",
         transform=ax1.transAxes,
         fontsize=8.6,
         verticalalignment="top",
@@ -1461,7 +1487,7 @@ def plot_histogram1_mapped_profiles(prof_summary: pd.DataFrame, output_path: Pat
     bin_counts_b = [int(b[1].sum()) for b in taxa_bins]
     bin_pcts_b = [percent(c, n_mapped) for c in bin_counts_b]
 
-    # Compute fractional rank contribution to profiles in each bin so stack heights sum exactly to profile count!
+    # Fractional rank contributions make each stack sum to its profile count.
     rank_stack = {r: np.zeros(len(taxa_bins)) for r in RANK_ORDER}
     for b_idx, (_, mask) in enumerate(taxa_bins):
         sub_p = mapped_df[mask]
@@ -1505,7 +1531,9 @@ def plot_histogram1_mapped_profiles(prof_summary: pd.DataFrame, output_path: Pat
     if n_mapped:
         ax2.axvline(median_taxon_bin, color=COLOR_SLATE_DARK, linestyle="--", linewidth=1.8)
     ax2.annotate(
-        f"Mapped Taxa / Profile:\n• Median: {med_taxa:g} taxa (IQR: {q25_taxa:g}-{q75_taxa:g})\n• Mean: {mean_taxa:.1f} mapped taxa\n• Stacked by rank composition"
+        f"Mapped Taxa / Profile:\n• Median: {med_taxa:g} taxa "
+        f"(IQR: {q25_taxa:g}-{q75_taxa:g})\n• Mean: {mean_taxa:.1f} mapped taxa\n"
+        "• Stacked by rank composition"
         if n_mapped
         else "No mapped profiles",
         xy=(median_taxon_bin, max(bin_counts_b) * 0.82),
@@ -1577,7 +1605,7 @@ def plot_histogram2_taxa_traits_and_zero_frequency(
     output_path: Path,
     legacy_path: Path | None = None,
 ) -> None:
-    """Generate Histogram 2: Number of Traits from Taxa Profiles & Frequency of Zero-Trait Taxa Across Profiles."""
+    """Plot annotation counts per taxon and zero-trait taxon recurrence across profiles."""
     fig, (ax1, ax2, ax3) = plt.subplots(1, 3, figsize=(22.5, 7.2), gridspec_kw={"wspace": 0.25})
 
     n_all_taxa = len(taxa_master)
@@ -1637,10 +1665,12 @@ def plot_histogram2_taxa_traits_and_zero_frequency(
     ax1.annotate(
         f"Zero-Trait Taxa:\n{n_zero_taxa:,} taxa ({percent(n_zero_taxa, n_all_taxa):.1f}%)\n"
         + "\n".join(
-            f"• {RANK_DISPLAY[r]}: {int(zero_taxa_df.taxonomic_rank.eq(r).sum()):,} ({percent(zero_taxa_df.taxonomic_rank.eq(r).sum(), n_zero_taxa):.1f}%)"
+            f"• {RANK_DISPLAY[r]}: {int(zero_taxa_df.taxonomic_rank.eq(r).sum()):,} "
+            f"({percent(zero_taxa_df.taxonomic_rank.eq(r).sum(), n_zero_taxa):.1f}%)"
             for r in ("species", "genus")
         )
-        + f"\n• Other ranks: {int((~zero_taxa_df.taxonomic_rank.isin(['species', 'genus'])).sum()):,}",
+        + "\n• Other ranks: "
+        + f"{int((~zero_taxa_df.taxonomic_rank.isin(['species', 'genus'])).sum()):,}",
         xy=(x_a[0], totals_a[0] * 0.85),
         xytext=(x_a[0] + 1.35, totals_a[0] * 0.76),
         arrowprops={"arrowstyle": "->", "color": COLOR_ZERO, "lw": 1.6},
@@ -1702,8 +1732,8 @@ def plot_histogram2_taxa_traits_and_zero_frequency(
     )
 
     x_b = np.arange(len(labels_b))
-    # For bin 0 ("0 zero-trait taxa"), color in Rich Blue; for bins >=1, retained is Sky Blue (Mixed) and excluded is Vermilion
-    bar_colors_ret = [COLOR_RICH] + [COLOR_SPARSE] * (len(labels_b) - 1)
+    # Separate profile status from the rank palette used in the other two panels.
+    bar_colors_ret = [COLOR_RICH] + [COLOR_MIXED_PROFILE] * (len(labels_b) - 1)
     ax2.bar(
         x_b,
         retained_counts,
@@ -1830,7 +1860,10 @@ def plot_histogram2_taxa_traits_and_zero_frequency(
     ax3.text(
         0.24,
         0.95,
-        f"Recurrence of Zero-Trait Taxa (N = {n_zero_taxa:,}):\n• {totals_c[0]:,} ({pcts_c[0]:.1f}%) appear in 1 profile\n• {totals_c[0] + totals_c[1]:,} ({pcts_c[0] + pcts_c[1]:.1f}%) appear in ≤2 profiles\n• Most recurring zero-trait taxa:\n"
+        f"Recurrence of Zero-Trait Taxa (N = {n_zero_taxa:,}):\n"
+        f"• {totals_c[0]:,} ({pcts_c[0]:.1f}%) appear in 1 profile\n"
+        f"• {totals_c[0] + totals_c[1]:,} ({pcts_c[0] + pcts_c[1]:.1f}%) "
+        "appear in ≤2 profiles\n• Most recurring zero-trait taxa:\n"
         + "\n".join(
             f"  - {row.taxon_name} ({row.profile_count:,} profiles)"
             for row in zero_taxa_df.sort_values(
@@ -1880,7 +1913,7 @@ def plot_histogram2_taxa_traits_and_zero_frequency(
         for r in RANK_ORDER
     ]
     handles_prof = [
-        Patch(facecolor=COLOR_SPARSE, edgecolor="white", label="Mixed Profile (≥1 Trait)"),
+        Patch(facecolor=COLOR_MIXED_PROFILE, edgecolor="white", label="Mixed Profile (≥1 Trait)"),
         Patch(facecolor=COLOR_ZERO, edgecolor="white", label="0-Trait Profile"),
     ]
     fig.legend(
@@ -1895,7 +1928,8 @@ def plot_histogram2_taxa_traits_and_zero_frequency(
     )
 
     fig.suptitle(
-        "Histogram 2: Number of Traits from Taxa Profiles & Frequency of Zero-Trait Taxa Across Profiles",
+        "Histogram 2: Number of Traits from Taxa Profiles "
+        "& Frequency of Zero-Trait Taxa Across Profiles",
         fontsize=13.5,
         fontweight="bold",
         y=1.08,
@@ -1972,7 +2006,8 @@ def plot_legacy_trait_count_distribution(taxa_master: pd.DataFrame, output_path:
     ax1.set_axisbelow(True)
 
     ax1.annotate(
-        f"Zero-Trait Taxa:\n{zero_count:,} taxa ({percent(zero_count, n_total):.1f}%)\nhave no recorded KG traits",
+        f"Zero-Trait Taxa:\n{zero_count:,} taxa ({percent(zero_count, n_total):.1f}%)\n"
+        "have no recorded KG traits",
         xy=(x_b[0], zero_count),
         xytext=(x_b[0] + 1.2, zero_count * 0.85),
         arrowprops={"arrowstyle": "->", "color": COLOR_ZERO, "lw": 1.5},
@@ -2046,14 +2081,18 @@ def plot_legacy_trait_count_distribution(taxa_master: pd.DataFrame, output_path:
     ax2.grid(axis="y", linestyle="--", alpha=0.35, color=COLOR_SLATE_LIGHT)
     ax2.set_axisbelow(True)
 
+    mapped_rank_medians = (
+        taxa_master[taxa_master.trait_count > 0].groupby("taxonomic_rank").trait_count.median()
+    )
     ax2.text(
         0.03,
         0.96,
-        "Trait Rollup in KG-Microbe:\nHigher ranks aggregate annotations\nfrom their classified descendants.\nMedian traits among trait-bearing taxa:\n"
+        "Trait Rollup in KG-Microbe:\nHigher ranks aggregate annotations\n"
+        "from their classified descendants.\nMedian traits among trait-bearing taxa:\n"
         + "; ".join(
-            f"{RANK_DISPLAY[r]}={taxa_master.loc[(taxa_master.taxonomic_rank == r) & (taxa_master.trait_count > 0), 'trait_count'].median():g}"
+            f"{RANK_DISPLAY[r]}={mapped_rank_medians[r]:g}"
             for r in ("species", "genus", "phylum")
-            if ((taxa_master.taxonomic_rank == r) & (taxa_master.trait_count > 0)).any()
+            if r in mapped_rank_medians.index
         ),
         transform=ax2.transAxes,
         fontsize=9,
@@ -2104,8 +2143,10 @@ def write_readme(
         f"Population: {HUMAN_HOST_SPECIES}; sequencing types {', '.join(CORPUS_SEQUENCING_TYPES)}.",
         "No contrast-class, control-tier, pairing or direction-orientation restriction is applied.",
         "Profiles are study / experiment / curated direction; taxa and signature mentions",
-        "are restricted to those same profiles. The matrix is restricted to the profile vocabulary,",
-        "including MediaDive columns if present. Source hashes and exclusions are in `provenance.json`.",
+        "are restricted to those same profiles. The matrix is restricted to the profile "
+        "vocabulary,",
+        "including MediaDive columns if present. Source hashes and exclusions are in "
+        "`provenance.json`.",
         "",
         "| Metric | Count |",
         "| --- | ---: |",
@@ -2115,12 +2156,14 @@ def write_readme(
         "and mapped-profile richness boxplot omit them; this audit does not declare eligibility",
         "for downstream statistical tests. No recorded annotation is not biological absence.",
         "",
-        "| Rank | Unique taxa | Zero-trait taxa | Trait-bearing (%) | Signature mentions | Profiles with rank |",
+        "| Rank | Unique taxa | Zero-trait taxa | Trait-bearing (%) | Signature mentions "
+        "| Profiles with rank |",
         "| --- | ---: | ---: | ---: | ---: | ---: |",
     ]
     for row in ranks.itertuples():
         lines.append(
-            f"| {row.display_rank} | {row.total_taxa} | {row.zero_trait_taxa} | {row.trait_bearing_pct:.2f} | {row.total_occurrences} | {row.profiles_with_rank} |"
+            f"| {row.display_rank} | {row.total_taxa} | {row.zero_trait_taxa} | "
+            f"{row.trait_bearing_pct:.2f} | {row.total_occurrences} | {row.profiles_with_rank} |"
         )
     lines.extend(
         ["", "| Distribution | Median | Q1 | Q3 | Mean |", "| --- | ---: | ---: | ---: | ---: |"]
@@ -2140,13 +2183,17 @@ def write_readme(
             "",
             "Annotation counts can include traits aggregated from descendants; they do not measure",
             "physiology, patient-level abundance or activity. Suggested zero-trait diagnoses are",
-            "heuristics for review, not verified causes or permission to propagate annotations downward.",
+            "heuristics for review, not verified causes or permission to propagate "
+            "annotations downward.",
             "",
             "Regenerate after rebuilding `data/derived`: `just taxa-coverage`.",
-            "The five TSVs, this README, and generated figures are inventoried by SHA-256 in `provenance.json`.",
-            "`profile_coverage_by_rank.tsv` uses `pct_of_mapped_profiles`, whose denominator is the",
+            "The five TSVs, this README, and generated figures are inventoried by SHA-256 "
+            "in `provenance.json`.",
+            "`profile_coverage_by_rank.tsv` uses `pct_of_mapped_profiles`, whose denominator "
+            "is the",
             "observed count of mapped profiles. Rank totals include an other/unrecorded category.",
-            "The columns consumed by the slide and plate builders remain available in the rank and taxon detail TSVs.",
+            "The columns consumed by the slide and plate builders remain available in the "
+            "rank and taxon detail TSVs.",
         ]
     )
     output.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -2196,7 +2243,8 @@ def run_coverage(
     prof_summary_tsv_path = out_dir / "profile_trait_mapping_summary.tsv"
     write_tsv(prof_summary, prof_summary_tsv_path)
     print(
-        f"  Written profile-level trait mapping summary ({len(prof_summary)} profiles): {prof_summary_tsv_path}"
+        f"  Written profile-level trait mapping summary ({len(prof_summary)} profiles): "
+        f"{prof_summary_tsv_path}"
     )
 
     details_tsv_path = out_dir / "taxa_kgmicrobe_coverage_details.tsv"
@@ -2307,7 +2355,8 @@ def main() -> None:
     parser.add_argument(
         "--tables-only",
         action="store_true",
-        help="Write tables, README and provenance without rendering figures (use a separate directory)",
+        help="Write tables, README and provenance without rendering figures "
+        "(use a separate directory)",
     )
     run_coverage(**vars(parser.parse_args()))
 

@@ -245,3 +245,28 @@ def test_dynamic_figure_labels_and_median_positions(
     assert captured[1].axes[1].lines[0].get_xdata()[0] == 0
     for fig in captured:
         coverage.plt.close(fig)
+
+
+def test_svg_export_strips_date_metadata(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    fig = coverage.plt.figure()
+    calls = []
+    monkeypatch.setattr(fig, "savefig", lambda path, **kwargs: calls.append((path, kwargs)))
+    coverage.save_figure(fig, tmp_path / "figure.png")
+    svg_calls = [kwargs for path, kwargs in calls if path.suffix == ".svg"]
+    assert svg_calls == [{"bbox_inches": "tight", "facecolor": "white", "metadata": {"Date": None}}]
+
+
+def test_histogram2_family_and_mixed_legend_colors_are_distinct(
+    inputs: dict[str, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    taxa, _, _, profiles, _, _ = coverage.load_and_process_data(**inputs)
+    captured = []
+    monkeypatch.setattr(coverage, "save_figure", lambda fig, _path: captured.append(fig))
+    coverage.plot_histogram2_taxa_traits_and_zero_frequency(taxa, profiles, tmp_path / "zero.png")
+    legend = captured[0].legends[0]
+    colors = {
+        label.get_text(): tuple(handle.get_facecolor())
+        for label, handle in zip(legend.get_texts(), legend.legend_handles, strict=True)
+    }
+    assert colors["Family"] != colors["Mixed Profile (≥1 Trait)"]
+    coverage.plt.close(captured[0])
