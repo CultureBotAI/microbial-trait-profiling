@@ -556,8 +556,9 @@ def test_the_site_names_sit_below_the_last_subtitle_line(
 
     Fixed margins with the title centred in them let the population line the maps
     now state run into a two-line site header, and a panel's last subtitle lines
-    into its site titles and top row. Rendering needs a browser, so each figure is
-    captured where it would be written.
+    into its site titles and top row. The note here is two lines in one entry, as
+    a focus cut's is: counting entries sized that margin a line short (#849).
+    Rendering needs a browser, so each figure is captured where it would be written.
     """
     import plotly.graph_objects as go
 
@@ -601,12 +602,12 @@ def test_the_site_names_sit_below_the_last_subtitle_line(
     for draw in (combined, panel):
         figures.clear()
         draw(None)
-        draw("One more line.")
+        draw("A missing-condition note.<br>A population line.")
         short, long = (figure.layout for figure in figures)
         lines = long.title.text.split("<sub>", 1)[1].count("<br>") + 1
         subtitle = TITLE_BLOCK_HEIGHT + SUBTITLE_LINE_HEIGHT * lines
         assert long.margin.t == subtitle + SITE_HEADER_HEIGHT
-        assert long.margin.t - short.margin.t == SUBTITLE_LINE_HEIGHT
+        assert long.margin.t - short.margin.t == 2 * SUBTITLE_LINE_HEIGHT
         assert (long.title.yref, long.title.yanchor) == ("container", "top")
 
 

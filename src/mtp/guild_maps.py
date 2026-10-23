@@ -813,6 +813,17 @@ SUBTITLE_LINE_HEIGHT = 22
 SITE_HEADER_HEIGHT = 60
 
 
+def _title_block_height(lines: Sequence[str]) -> int:
+    """Room for the title and every subtitle line it renders.
+
+    An entry can hold more than one line: a focus cut's note puts its population
+    under the missing-condition note, joined by ``<br>``. Counting entries instead
+    sized that cut's margin one line short (#849).
+    """
+    rendered = sum(line.count("<br>") + 1 for line in lines)
+    return TITLE_BLOCK_HEIGHT + SUBTITLE_LINE_HEIGHT * rendered
+
+
 def _guild_of_column(column: str) -> str:
     """Return the guild encoded in a `site|guild_direction` column label."""
     return column.split("|", 1)[1].rsplit("_", 1)[0]
@@ -1141,7 +1152,7 @@ def write_figure(
     # 220-pixel margin with the title centred in it let the last subtitle lines run
     # over the top rows (#783). A fixed 420 pixels with site headers let the
     # Table 1-trait maps' population line run into a two-line header (#811).
-    top = TITLE_BLOCK_HEIGHT + SUBTITLE_LINE_HEIGHT * len(lines)
+    top = _title_block_height(lines)
     if separate_body_sites:
         top += SITE_HEADER_HEIGHT
     height = ROW_HEIGHT * len(row_labels) + 300 + top
@@ -1360,7 +1371,7 @@ def write_body_site_panels(
     # Sized from the subtitle and the site titles under it, as in ``write_figure``.
     # A fixed 400 pixels with the title centred in it let a panel's last subtitle
     # lines run into its site titles and top row (#811).
-    top = TITLE_BLOCK_HEIGHT + SUBTITLE_LINE_HEIGHT * len(lines) + SITE_HEADER_HEIGHT
+    top = _title_block_height(lines) + SITE_HEADER_HEIGHT
 
     count = len(guild_order)
     # All six bars on one line. Plotly places a horizontal bar's title a fixed
