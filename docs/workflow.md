@@ -229,6 +229,27 @@ is biologically true. Noel's integrated-evidence output retains its existing
 explicit placeholders for unavailable native cross-arm results; running that
 command does not imply that it imported Ilyas's or Jed's separate result tables.
 
+The cross-arm comparison imports them from the three verified arm runs:
+
+```bash
+just rerun-compare /absolute/path/core-runs/run-ID/run.json \
+  /absolute/path/reruns/noel/arm_run.json /absolute/path/reruns/jed/arm_run.json \
+  /absolute/path/reruns/ilyas/arm_run.json /absolute/path/reruns/comparison
+just rerun-verify-comparison /absolute/path/reruns/comparison
+```
+
+Each `integrated_evidence` input is the file its producing step recorded in that
+arm's `arm_run.json`: Ilyas's `enrichment` and `depletion`, Noel's
+`directional_screen`, `empirical_calibration`, `contrast_orientation` and
+`native_taxon_influence`, and Jed's `composition_sensitivity`. All of them resolve
+before the stage writes anything, and `--require-complete-sources` rejects a missing
+native table or status input. No step produces the #184 coverage status yet, so it
+is left out and recorded as not supplied. The `ComparisonRun` calibration verdicts
+are read from Noel's `calibration_status.json` and Jed's
+`composition_calibration_summary.json`, so a failed criterion or a short replicate
+budget is recorded as such, and its eligibility ledger lists the studies that
+integrated evidence kept after the zero-total pair exclusion (#814, #815).
+
 ### Contrast populations and disease-oriented inputs
 
 Select a population once when preparing the core. Use fresh destinations for the

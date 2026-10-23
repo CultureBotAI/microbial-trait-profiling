@@ -7,16 +7,22 @@ import csv
 import json
 import sys
 import uuid
+from collections.abc import Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 
 from mtp.count_input import profile_count_reader, taxa_trait_count_reader
 from mtp.datamodel.workflow_pydantic import (
+    AnalysisSpec,
+    ArmRun,
+    CalibrationVerdict,
     ComparisonRun,
     ContrastPopulation,
     DirectionBasis,
+    EligibilityLedger,
     ExecutionStatus,
     FileInventoryEntry,
+    StorageKind,
 )
 from mtp.paths import REPO_ROOT, file_sha256
 from mtp.workflow.arms.runtime import verify_arm
@@ -34,6 +40,37 @@ BASELINE_FILES = {
     "count_profiles": "study_trait_profiles_wide.tsv",
     "ora_profiles": "study_trait_profiles_ora_wide.tsv",
 }
+
+#: Each integrated_evidence input an arm produces: the option, then the arm, step and
+#: file name that arm's arm_run.json records (#814). No arm produces the pooled Arm 1
+#: statistics, so the stage computes them; nothing produces the #184 coverage status,
+#: so it is left out and integrated_evidence records it as not supplied.
+ARM_EVIDENCE_INPUTS: tuple[tuple[str, str, str, str], ...] = (
+    ("--arm2-enrichment-results", "ilyas", "enrichment", "trait_enrichment_all_results.tsv"),
+    ("--arm2-depletion-results", "ilyas", "depletion", "trait_depletion_all_results.tsv"),
+    ("--full-screen", "noel", "directional_screen", "trait_direction_screen.tsv"),
+    ("--full-screen-provenance", "noel", "directional_screen", "trait_screen_provenance.json"),
+    ("--calibration-status", "noel", "empirical_calibration", "calibration_status.json"),
+    (
+        "--orientation-provenance",
+        "noel",
+        "contrast_orientation",
+        "contrast_orientation_provenance.json",
+    ),
+    ("--influence-status", "noel", "native_taxon_influence", "native_manifest.json"),
+    ("--sensitivity-status", "jed", "composition_sensitivity", "sensitivity_status.json"),
+)
+
+#: The procedure in Noel's calibration harness that evaluated each production spec (#815).
+NOEL_CALIBRATED_PROCEDURES = {"noel_table1_six_trait_sign_test_v1": "fraction_sign_test"}
+
+#: Noel's criteria that judge null error. Its power criterion only checks that power
+#: is reported precisely; the protocol sets no threshold on power itself.
+NULL_CRITERIA = ("per_test_level", "family_error")
+
+#: Where the integrated-evidence exclusion block lists one sampling unit (#815): the
+#: included identifiers, their count, and how many units the exclusion removed.
+EXCLUSION_UNITS = {"study": ("study_ids_after", "studies_after", "studies_lost")}
 
 
 def compare_count_tables(
@@ -146,6 +183,128 @@ async def _exec_command(cmd: list[str], cwd: Path) -> None:
         raise RuntimeError(f"Command failed with exit code {returncode}: {cmd}")
 
 
+def recorded_output(run: ArmRun, step: str, name: str) -> Path:
+    """The file named ``name`` that ``step`` of a verified arm run recorded (#814)."""
+    for item in run.steps or []:
+        if item.id != step:
+            continue
+        matches = [
+            Path(output.path)
+            for output in item.outputs or []
+            if output.storage_kind == StorageKind.file and Path(output.path).name == name
+        ]
+        if len(matches) != 1:
+            raise ValueError(
+                f"{run.arm} step {step!r} recorded {len(matches)} files named {name!r}: "
+                f"{run.manifest_path}"
+            )
+        return matches[0]
+    raise ValueError(f"{run.arm} run records no {step!r} step: {run.manifest_path}")
+
+
+def noel_calibration_verdict(path: Path, spec: AnalysisSpec) -> CalibrationVerdict:
+    """The verdict Noel's calibration reached for the procedure that evaluated ``spec`` (#815).
+
+    A failed null criterion is recorded as failed at any replicate budget: the harness
+    keeps a short run's fail only when its estimate already exceeds the tolerance.
+    """
+    procedure = NOEL_CALIBRATED_PROCEDURES[spec.id]
+    content = json.loads(path.read_text(encoding="utf-8"))
+    statuses = content.get("calibration_status") if isinstance(content, dict) else None
+    entry = statuses.get(procedure) if isinstance(statuses, dict) else None
+    criteria = entry.get("criteria") if isinstance(entry, dict) else None
+    if not isinstance(entry, dict) or not isinstance(criteria, dict) or not criteria:
+        raise ValueError(f"{path} records no calibration criteria for {procedure!r}")
+    verdicts = {str(name): str(value) for name, value in criteria.items()}
+    null = [verdicts[name] for name in NULL_CRITERIA if name in verdicts]
+    # A passing sanity check is not evidence of calibration (#360); a failing one is.
+    judged = [value for value in null if not value.endswith("(sanity check)")]
+    null_control_passed: bool | None = None
+    if "fail" in null:
+        null_control_passed = False
+    elif judged and all(value == "pass" for value in judged):
+        null_control_passed = True
+    verdict = build_calibration_verdict(
+        verdict_id=f"verdict:{spec.id}",
+        production_spec=spec,
+        evaluated_spec=spec,
+        replicate_budget_sufficient=not any(
+            value.startswith("insufficient_budget") for value in verdicts.values()
+        ),
+        null_control_passed=null_control_passed,
+        power_passed=None,
+    )
+    listed = ", ".join(f"{name}={value}" for name, value in sorted(verdicts.items()))
+    verdict.summary_message += (
+        f" Read from {path.name}, procedure {procedure}: overall {entry.get('overall')} "
+        f"[{listed}]; power is reported there without a threshold."
+    )
+    return verdict
+
+
+def jed_calibration_verdict(
+    path: Path, production_spec: AnalysisSpec, evaluated_spec: AnalysisSpec
+) -> CalibrationVerdict:
+    """The composition harness's replicate budget; it judges neither error nor power (#815)."""
+    from mtp.composition_calibration.composition import DEFAULT_REPLICATES
+
+    content = json.loads(path.read_text(encoding="utf-8"))
+    requested = content.get("replicates_requested") if isinstance(content, dict) else None
+    completed = content.get("replicates_completed") if isinstance(content, dict) else None
+    if not isinstance(requested, int) or not isinstance(completed, int):
+        raise ValueError(f"{path} records no requested and completed replicate counts")
+    verdict = build_calibration_verdict(
+        verdict_id="verdict:jed_log_ratio_vs_transformed_t_calibration",
+        production_spec=production_spec,
+        evaluated_spec=evaluated_spec,
+        replicate_budget_sufficient=completed >= max(requested, DEFAULT_REPLICATES),
+        null_control_passed=None,
+        power_passed=None,
+    )
+    verdict.summary_message += (
+        f" Read from {path.name}: {completed} of {requested} replicates completed against a "
+        f"default budget of {DEFAULT_REPLICATES}; it reports null error rates without a "
+        "tolerance and runs no injected-effect scenario."
+    )
+    return verdict
+
+
+def shared_basis_ledger(
+    spec: AnalysisSpec,
+    provenance: Mapping[str, object],
+    contrast_population: ContrastPopulation,
+) -> EligibilityLedger:
+    """The units integrated_evidence kept for ``spec``, at the spec's own sampling unit (#815).
+
+    A provenance record without the exclusion block is an error, never zero exclusions.
+    """
+    exclusion = provenance.get("pair_exclusion")
+    if not isinstance(exclusion, Mapping):
+        raise ValueError("integrated_evidence provenance has no pair_exclusion block")
+    if spec.sampling_unit not in EXCLUSION_UNITS:
+        raise ValueError(f"pair_exclusion lists no {spec.sampling_unit!r} units for {spec.id}")
+    ids_key, kept_key, lost_key = EXCLUSION_UNITS[spec.sampling_unit]
+    included, kept, lost = exclusion.get(ids_key), exclusion.get(kept_key), exclusion.get(lost_key)
+    if (
+        not isinstance(included, list)
+        or any(not isinstance(unit, str) for unit in included)
+        or not isinstance(kept, int)
+        or not isinstance(lost, int)
+        or len(included) != kept
+    ):
+        raise ValueError(
+            f"pair_exclusion does not list and count its {spec.sampling_unit} units "
+            f"({ids_key}, {kept_key}, {lost_key})"
+        )
+    return build_eligibility_ledger(
+        ledger_id=f"ledger:{spec.id}",
+        analysis_spec_id=spec.id,
+        contrast_population=contrast_population,
+        included_ids=included,
+        exclusion_counts={"zero_retained_total": lost},
+    )
+
+
 def execute_comparison_run(
     core_manifest: Path,
     noel_manifest: Path,
@@ -205,32 +364,35 @@ def execute_comparison_run(
     contrast_population = core_run.contrast_population or ContrastPopulation.all_paired
     direction_basis = core_run.direction_basis or DirectionBasis.group_1_vs_group_0
 
-    noel_dir = Path(noel_run.manifest_path).parent
-    jed_dir = Path(jed_run.manifest_path).parent
-    ilyas_dir = Path(ilyas_run.manifest_path).parent
+    # Every arm input comes from what its producing step recorded, and all of them
+    # resolve before anything is computed or written (#814).
+    arm_runs = {"noel": noel_run, "jed": jed_run, "ilyas": ilyas_run}
+    evidence_inputs = [
+        part
+        for option, arm, step, name in ARM_EVIDENCE_INPUTS
+        for part in (option, str(recorded_output(arm_runs[arm], step, name)))
+    ]
+    noel_calibration = recorded_output(noel_run, "empirical_calibration", "calibration_status.json")
+    jed_calibration = recorded_output(
+        jed_run, "composition_calibration", "composition_calibration_summary.json"
+    )
 
     output.mkdir(parents=True, exist_ok=False)
     if arm1_pooled_stats is not None:
         pooled_stats_path = arm1_pooled_stats.resolve()
     else:
-        candidate = (
-            jed_dir / "arm1_pooled_stats" / "trait_profile_paired_contrast_trait_stats_pooled.tsv"
-        )
-        if candidate.is_file():
-            pooled_stats_path = candidate
-        else:
-            stats_dir = output / "arm1_pooled_stats"
-            cmd = [
-                sys.executable,
-                str(REPO_ROOT / "scripts" / "create_trait_profile_infographic.py"),
-                "--stats-only",
-                "--core-run",
-                str(core_manifest),
-                "--output-dir",
-                str(stats_dir),
-            ]
-            asyncio.run(_exec_command(cmd, REPO_ROOT))
-            pooled_stats_path = stats_dir / "trait_profile_paired_contrast_trait_stats_pooled.tsv"
+        stats_dir = output / "arm1_pooled_stats"
+        cmd = [
+            sys.executable,
+            str(REPO_ROOT / "scripts" / "create_trait_profile_infographic.py"),
+            "--stats-only",
+            "--core-run",
+            str(core_manifest),
+            "--output-dir",
+            str(stats_dir),
+        ]
+        asyncio.run(_exec_command(cmd, REPO_ROOT))
+        pooled_stats_path = stats_dir / "trait_profile_paired_contrast_trait_stats_pooled.tsv"
 
     integrated_dir = output / "integrated_evidence"
     from mtp.integrated_evidence import main as integrated_evidence_main
@@ -242,24 +404,7 @@ def execute_comparison_run(
         str(integrated_dir),
         "--arm1-pooled-stats",
         str(pooled_stats_path),
-        "--arm2-enrichment-results",
-        str(ilyas_dir / "ora" / "trait_enrichment_all_results.tsv"),
-        "--arm2-depletion-results",
-        str(ilyas_dir / "ora" / "trait_depletion_all_results.tsv"),
-        "--full-screen",
-        str(noel_dir / "directional_screen" / "trait_direction_screen.tsv"),
-        "--full-screen-provenance",
-        str(noel_dir / "directional_screen" / "trait_screen_provenance.json"),
-        "--calibration-status",
-        str(noel_dir / "calibration" / "calibration_status.json"),
-        "--sensitivity-status",
-        str(noel_dir / "composition_sensitivity" / "sensitivity_status.json"),
-        "--orientation-provenance",
-        str(noel_dir / "contrast_orientation" / "contrast_orientation_provenance.json"),
-        "--coverage-status",
-        str(noel_dir / "coverage_audit" / "coverage_status.json"),
-        "--influence-status",
-        str(noel_dir / "taxon_influence" / "taxon_influence_status.json"),
+        *evidence_inputs,
         "--code-commit",
         effective_commit,
         "--require-complete-sources",
@@ -269,17 +414,8 @@ def execute_comparison_run(
     provenance = json.loads(
         (integrated_dir / "integrated_evidence_provenance.json").read_text(encoding="utf-8")
     )
-    pair_excl = provenance.get("pair_exclusion", {})
-    n_kept = int(pair_excl.get("experiments_kept", 0))
-    n_dropped = int(pair_excl.get("zero_total_experiments", 0))
-    synthetic_kept = [f"pair_{i:04d}" for i in range(n_kept)]
-    ledger_fraction = build_eligibility_ledger(
-        ledger_id="ledger:noel_table1_six_trait_sign_test_v1",
-        analysis_spec_id="noel_table1_six_trait_sign_test_v1",
-        contrast_population=contrast_population,
-        included_ids=synthetic_kept,
-        exclusion_counts={"zero_retained_total": n_dropped},
-    )
+    table1_spec = STANDARD_ANALYSIS_SPECS["noel_table1_six_trait_sign_test_v1"]
+    ledger_fraction = shared_basis_ledger(table1_spec, provenance, contrast_population)
     feature_catalog_path = artifact_path(core_run, "feature_catalog")
     catalog_sha = file_sha256(feature_catalog_path)
     basis_count = build_analysis_basis(
@@ -306,21 +442,11 @@ def execute_comparison_run(
         background_inventory_id="taxa_trait_matrix_universe",
         weighting_policy="unweighted_hypergeometric_per_signature",
     )
-    verdict_noel = build_calibration_verdict(
-        verdict_id="verdict:noel_table1_six_trait_sign_test_v1",
-        production_spec=STANDARD_ANALYSIS_SPECS["noel_table1_six_trait_sign_test_v1"],
-        evaluated_spec=STANDARD_ANALYSIS_SPECS["noel_table1_six_trait_sign_test_v1"],
-        replicate_budget_sufficient=True,
-        null_control_passed=True,
-        power_passed=True,
-    )
-    verdict_jed_mismatch = build_calibration_verdict(
-        verdict_id="verdict:jed_log_ratio_vs_transformed_t_calibration",
-        production_spec=STANDARD_ANALYSIS_SPECS["jed_table1_paired_log_ratio_sign_test_v1"],
-        evaluated_spec=STANDARD_ANALYSIS_SPECS["jed_composition_arcsine_sqrt_ttest_calibration_v1"],
-        replicate_budget_sufficient=True,
-        null_control_passed=True,
-        power_passed=True,
+    verdict_noel = noel_calibration_verdict(noel_calibration, table1_spec)
+    verdict_jed_mismatch = jed_calibration_verdict(
+        jed_calibration,
+        STANDARD_ANALYSIS_SPECS["jed_table1_paired_log_ratio_sign_test_v1"],
+        STANDARD_ANALYSIS_SPECS["jed_composition_arcsine_sqrt_ttest_calibration_v1"],
     )
 
     inventory_entries = _inventory_directory(output, integrated_dir)
