@@ -73,9 +73,10 @@ CALIBRATION_SOURCES: tuple[tuple[str, str, str], ...] = (
 #: The procedure in Noel's calibration harness that evaluated each production spec (#815).
 NOEL_CALIBRATED_PROCEDURES = {"noel_table1_six_trait_sign_test_v1": "fraction_sign_test"}
 
-#: Noel's negative control, which selects traits and then tests them. It stands in for
-#: the selection of the six Table 1 traits on this same corpus (methods/calibration.md).
-NOEL_SELECTION_CONTROL = "screened_fraction_sign_test"
+#: The protocol's negative control. It is declared in advance to fail the acceptance
+#: criteria, since a criterion it passes is too weak to be evidence about any procedure
+#: (methods/calibration.md); its failure is the expected outcome.
+NOEL_NEGATIVE_CONTROL = "screened_fraction_sign_test"
 
 #: Noel's criteria that judge null error. Its power criterion only checks that power
 #: is reported precisely; the protocol sets no threshold on power itself.
@@ -234,20 +235,33 @@ def _noel_procedure(statuses: object, procedure: str, path: Path) -> tuple[str, 
 
 
 def noel_calibration_verdict(path: Path, spec: AnalysisSpec) -> CalibrationVerdict:
-    """Noel's verdicts for ``spec``'s procedure and its selection negative control (#815, #844).
+    """Noel's verdict for ``spec``'s procedure, validated by the negative control (#815, #844).
 
-    The six Table 1 traits were selected on this corpus, so the screened control, which
-    selects and then tests, fails the Table 1 verdict when it fails, though its rates do
-    not bound the published selection's cost (#363). While it does not fail, the
-    criteria are too weak to be evidence, so a null control is never recorded as passed.
-    A failed criterion counts at any budget: Noel's harness keeps a short run's fail only
-    when its estimate already exceeds the tolerance.
+    A null criterion is evidence only where the negative control failed it, as the
+    protocol declares it must; where the control passed it, the criterion is too weak,
+    so null control is not established. Noel's overall status maps explicitly: an
+    unevaluated or under-budget criterion (not_certified) is an unmet replicate budget,
+    a failed null criterion is anti-conservative at any budget (the harness keeps a short
+    run's fail only when its estimate already exceeds the tolerance), and a failed power
+    criterion is recorded as failed power. The protocol sets no threshold on power
+    itself, so power otherwise stays unassessed (#850).
     """
     content = json.loads(path.read_text(encoding="utf-8"))
     statuses = content.get("calibration_status") if isinstance(content, dict) else None
     procedure = NOEL_CALIBRATED_PROCEDURES[spec.id]
     overall, criteria = _noel_procedure(statuses, procedure, path)
-    control, control_criteria = _noel_procedure(statuses, NOEL_SELECTION_CONTROL, path)
+    control, control_criteria = _noel_procedure(statuses, NOEL_NEGATIVE_CONTROL, path)
+    # A passing sanity check is not evidence of calibration (#360); a failing one is.
+    judged = [
+        c for c in NULL_CRITERIA if c in criteria and not criteria[c].endswith("(sanity check)")
+    ]
+    too_weak = [c for c in judged if control_criteria.get(c) == "pass"]
+    validated = bool(judged) and all(control_criteria.get(c) == "fail" for c in judged)
+    null_control_passed: bool | None = None
+    if "fail" in (criteria.get(c) for c in NULL_CRITERIA):
+        null_control_passed = False
+    elif validated and all(criteria[c] == "pass" for c in judged):
+        null_control_passed = True
     verdict = build_calibration_verdict(
         verdict_id=f"verdict:{spec.id}",
         production_spec=spec,
@@ -256,22 +270,29 @@ def noel_calibration_verdict(path: Path, spec: AnalysisSpec) -> CalibrationVerdi
             value.startswith(("insufficient_budget", "not_evaluated"))
             for value in (*criteria.values(), *control_criteria.values())
         ),
-        null_control_passed=False if "fail" in (criteria.get(c) for c in NULL_CRITERIA) else None,
+        null_control_passed=null_control_passed,
         power_passed=False if criteria.get("power_reported") == "fail" else None,
-        anti_conservative_detected=control == "fail",
     )
     read = "; ".join(
         f"{name} {status} [{', '.join(f'{c}={v}' for c, v in sorted(found.items()))}]"
         for name, status, found in (
             (procedure, overall, criteria),
-            (NOEL_SELECTION_CONTROL, control, control_criteria),
+            (NOEL_NEGATIVE_CONTROL, control, control_criteria),
         )
     )
-    verdict.summary_message += (
-        f" Read from {path.name}: {read}. {NOEL_SELECTION_CONTROL} is the negative control "
-        "standing in for the selection of the six traits on this corpus (#363); power is "
-        "reported there without a threshold."
-    )
+    verdict.summary_message += f" Read from {path.name}: {read}."
+    if too_weak:
+        verdict.summary_message += (
+            f" The negative control {NOEL_NEGATIVE_CONTROL} passed {', '.join(too_weak)}, "
+            "which the protocol declares it must fail, so those criteria are too weak to be "
+            "evidence and null control is not established."
+        )
+    elif validated:
+        verdict.summary_message += (
+            f" The negative control {NOEL_NEGATIVE_CONTROL} failed {', '.join(judged)} "
+            "as the protocol declares."
+        )
+    verdict.summary_message += " Power is reported there without a threshold (#850)."
     return verdict
 
 

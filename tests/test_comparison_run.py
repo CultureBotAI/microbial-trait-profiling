@@ -444,7 +444,7 @@ def test_a_bad_verdict_or_ledger_input_writes_nothing(
         raise ValueError("unreadable count profiles")
 
     if fault == "calibration":
-        monkeypatch.setattr(comparison, "NOEL_SELECTION_CONTROL", "absent_control")
+        monkeypatch.setattr(comparison, "NOEL_NEGATIVE_CONTROL", "absent_control")
     else:
         monkeypatch.setattr(comparison, "load_profiles", unreadable)
     output = tmp_path / "comparison"
@@ -471,7 +471,7 @@ def _noel_status(path: Path, table1: dict[str, str], control: dict[str, str]) ->
 
 #: The production procedure's criteria as Noel's harness reports a clean run of it.
 CLEAN = {"per_test_level": "pass (sanity check)", "family_error": "pass", "power_reported": "pass"}
-#: The screened control failing, as the protocol expects and as on the Tier 1+2 run.
+#: The negative control failing, as the protocol declares and as on the Tier 1+2 run.
 CONTROL_FAILS = {
     "per_test_level": "fail",
     "family_error": "fail",
@@ -484,28 +484,40 @@ CONTROL_PASSES = {
 }
 
 
-def test_a_failed_selection_control_fails_the_table1_verdict(tmp_path: Path) -> None:
+def test_a_control_that_fails_as_declared_lets_the_null_criteria_count(tmp_path: Path) -> None:
     status = _noel_status(tmp_path / "calibration_status.json", CLEAN, CONTROL_FAILS)
     verdict = noel_calibration_verdict(status, TABLE1_SPEC)
-    assert verdict.outcome == CalibrationOutcome.anti_conservative
-    assert verdict.null_control_passed is False
+    assert verdict.null_control_passed is True
     assert verdict.replicate_budget_sufficient is True
+    # Power has no threshold in Noel's protocol, so this is the best outcome there (#850).
+    assert verdict.power_passed is None
+    assert verdict.outcome == CalibrationOutcome.partially_calibrated
     assert "fraction_sign_test pass [" in verdict.summary_message
     assert "screened_fraction_sign_test fail [family_error=fail" in verdict.summary_message
+    assert "failed family_error as the protocol declares" in verdict.summary_message
 
 
-def test_a_passing_selection_control_leaves_null_control_unshown(tmp_path: Path) -> None:
-    # A criterion the negative control passes is too weak to be evidence of anything.
-    status = _noel_status(tmp_path / "calibration_status.json", CLEAN, CONTROL_PASSES)
+@pytest.mark.parametrize(
+    "control",
+    [CONTROL_PASSES, {**CONTROL_FAILS, "family_error": "pass"}],
+    ids=["control_passes", "control_passes_family_error"],
+)
+def test_a_control_that_passes_makes_the_criteria_too_weak(
+    tmp_path: Path, control: dict[str, str]
+) -> None:
+    status = _noel_status(tmp_path / "calibration_status.json", CLEAN, control)
     verdict = noel_calibration_verdict(status, TABLE1_SPEC)
-    assert verdict.outcome == CalibrationOutcome.partially_calibrated
     assert verdict.null_control_passed is None
-    assert verdict.power_passed is None
+    assert verdict.outcome != CalibrationOutcome.calibrated
+    assert "passed family_error, which the protocol declares it must fail" in (
+        verdict.summary_message
+    )
+    assert "too weak to be evidence" in verdict.summary_message
 
 
 def test_a_failed_noel_criterion_is_recorded_whatever_the_budget(tmp_path: Path) -> None:
     table1 = {**CLEAN, "family_error": "fail", "power_reported": "insufficient_budget"}
-    control = {**CONTROL_PASSES, "family_error": "insufficient_budget"}
+    control = {**CONTROL_FAILS, "family_error": "insufficient_budget"}
     status = _noel_status(tmp_path / "calibration_status.json", table1, control)
     verdict = noel_calibration_verdict(status, TABLE1_SPEC)
     assert verdict.outcome == CalibrationOutcome.anti_conservative
@@ -513,25 +525,33 @@ def test_a_failed_noel_criterion_is_recorded_whatever_the_budget(tmp_path: Path)
     assert verdict.replicate_budget_sufficient is False
 
 
-def test_a_failed_power_criterion_is_not_partial_calibration(tmp_path: Path) -> None:
+def test_a_failed_power_criterion_is_failed_power(tmp_path: Path) -> None:
     status = _noel_status(
         tmp_path / "calibration_status.json", {**CLEAN, "power_reported": "fail"}, CONTROL_FAILS
     )
     verdict = noel_calibration_verdict(status, TABLE1_SPEC)
-    assert verdict.outcome == CalibrationOutcome.anti_conservative
+    assert verdict.outcome == CalibrationOutcome.null_controlled_low_power
+    assert verdict.null_control_passed is True
     assert verdict.power_passed is False
+    assert "fraction_sign_test fail [" in verdict.summary_message
 
 
 @pytest.mark.parametrize("unevaluated", ["insufficient_budget", "not_evaluated"])
+@pytest.mark.parametrize("procedure", ["fraction_sign_test", "screened_fraction_sign_test"])
 def test_a_not_certified_procedure_is_an_insufficient_budget(
-    tmp_path: Path, unevaluated: str
+    tmp_path: Path, procedure: str, unevaluated: str
 ) -> None:
-    status = _noel_status(
-        tmp_path / "calibration_status.json", {**CLEAN, "family_error": unevaluated}, CONTROL_FAILS
-    )
+    table1, control = CLEAN, CONTROL_FAILS
+    if procedure == "fraction_sign_test":
+        table1 = {**CLEAN, "family_error": unevaluated}
+    else:
+        control = {**CONTROL_FAILS, "per_test_level": unevaluated, "family_error": unevaluated}
+    status = _noel_status(tmp_path / "calibration_status.json", table1, control)
     verdict = noel_calibration_verdict(status, TABLE1_SPEC)
-    assert "fraction_sign_test not_certified" in verdict.summary_message
+    assert verdict.outcome == CalibrationOutcome.insufficient_budget
     assert verdict.replicate_budget_sufficient is False
+    assert verdict.null_control_passed is None
+    assert f"{procedure} not_certified" in verdict.summary_message
 
 
 @pytest.mark.parametrize(

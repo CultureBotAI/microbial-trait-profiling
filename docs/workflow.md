@@ -252,10 +252,14 @@ the stage writes anything, so a bad input leaves no partial directory behind (#8
 - **Noel's verdict.** It is read from `calibration_status.json`. That file covers
   `fraction_sign_test` and `screened_fraction_sign_test`, and each overall status must
   agree with its criteria.
-- **The screened procedure.** It is the protocol's negative control, standing in for
-  the selection of the six traits on this corpus, so the Table 1 verdict records its
-  failure as anti-conservative. While it does not fail, the criteria are too weak to
-  be evidence, so the Table 1 null control is never recorded as passed.
+- **The screened procedure.** It is the protocol's negative control, declared in
+  advance to fail the acceptance criteria, so its failure is the expected outcome. A
+  null criterion counts toward the Table 1 verdict only where the control failed it as
+  declared. Where the control passed it, the criterion is too weak to be evidence, and
+  the verdict says so instead of recording null control as passed.
+- **Noel's overall status.** It maps explicitly. `not_certified` is an unmet replicate
+  budget. `fail` is anti-conservative for a failed null criterion and failed power for
+  the power criterion. Noel's protocol sets no threshold on power itself (#850).
 - **Jed's budget.** It counts the replicates in `composition_calibration_replicates.tsv`
   and requires them to agree with `composition_calibration_summary.json`.
 - **The ledger.** It lists the studies that the shared basis keeps after the zero-total
