@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import csv
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 from mtp.count_input import profile_count_reader
@@ -131,9 +131,59 @@ class VerifiedSources:
     bases: dict[str, AnalysisBasis]
     features: dict[str, tuple[str, ...]]
     scope: str
+    recorded_hashes: dict[Path, str] = field(default_factory=dict)
 
     def product(self, name: str) -> Path:
         return artifact_path(self.core, name)
+
+    def expected_digest(self, path: Path) -> str | None:
+        """Strict recorded identity in publishing runs; standalone adapters may be probed."""
+        if not self.recorded_hashes:
+            return None
+        try:
+            return self.recorded_hashes[path.resolve()]
+        except KeyError as error:
+            raise ValueError(f"Source lacks an upstream recorded hash: {path.name}") from error
+
+    def artifact(self, path: Path) -> SourceArtifact:
+        artifact = source(path)
+        expected = self.expected_digest(path)
+        if expected is not None and artifact.sha256 != expected:
+            raise ValueError(f"Source bytes differ from upstream recorded hash: {path.name}")
+        return artifact
+
+
+def bind_recorded_hashes(sources: VerifiedSources, comparison_sha256: str) -> VerifiedSources:
+    """Bind publication to verified parent inventories, never a later disk snapshot."""
+    comparison = sources.comparison
+    hashes: dict[Path, str] = {}
+
+    def add(path: Path, digest: str) -> None:
+        path = path.resolve()
+        if path in hashes and hashes[path] != digest:
+            raise ValueError("Source has conflicting upstream recorded hashes")
+        hashes[path] = digest
+
+    add(Path(comparison.manifest_path), comparison_sha256)
+    add(Path(sources.core.manifest_path), comparison.core_manifest_sha256)
+    for artifact in sources.core.artifacts or []:
+        path = sources.product(artifact.product_id)
+        if path.is_file():
+            add(path, artifact.sha256)
+    root = Path(comparison.manifest_path).parent
+    for entry in comparison.outputs:
+        add(root / entry.path, entry.sha256)
+    for name, arm in sources.arms.items():
+        add(Path(arm.manifest_path), getattr(comparison, f"{name}_manifest_sha256"))
+        for step in arm.steps or []:
+            for recorded in step.outputs or []:
+                path = Path(recorded.path)
+                if recorded.storage_kind == "file":
+                    add(path, recorded.sha256)
+                else:
+                    for entry in recorded.inventory:
+                        add(path / entry.path, entry.sha256)
+    return replace(sources, recorded_hashes=hashes)
 
 
 def open_verified_sources(path: Path) -> VerifiedSources:

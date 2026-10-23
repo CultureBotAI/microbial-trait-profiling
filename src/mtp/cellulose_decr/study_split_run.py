@@ -21,6 +21,7 @@ import scipy
 from mtp.cellulose_decr import selection_scan as scanner
 from mtp.cellulose_decr.study_split import Protocol, run_splits, summarize_stability
 from mtp.datamodel.multiple_testing_pydantic import SourceArtifact
+from mtp.multiplicity.stage import code_sha256
 from mtp.paths import REPO_ROOT, file_sha256
 from mtp.trait_guilds import load_profiles
 from mtp.trait_screen import candidate_slots
@@ -71,8 +72,12 @@ def _json(value: Any) -> str:
 def _inputs(comparison_path: Path) -> tuple[VerifiedSources, dict[str, Path]]:
     # #853 supplies the single authoritative AnalysisBasis binder. Do not infer
     # a replacement basis from whatever filenames happen to be present.
-    from mtp.multiplicity.sources import open_verified_sources
+    from mtp.multiplicity.sources import bind_recorded_hashes, open_verified_sources
 
+    manifest = (
+        comparison_path / "comparison_run.json" if comparison_path.is_dir() else comparison_path
+    )
+    comparison_digest = file_sha256(manifest)
     verified = open_verified_sources(comparison_path)
     if (
         verified.core.contrast_population != scanner.TIER1_2
@@ -81,6 +86,7 @@ def _inputs(comparison_path: Path) -> tuple[VerifiedSources, dict[str, Path]]:
         raise ValueError("Study splits require the verified, disease-oriented Tier 1+2 population")
     if verified.scope not in {"off", "phenotype"}:
         raise ValueError("Study splits declare off primary and phenotype sensitivity only")
+    verified = bind_recorded_hashes(verified, comparison_digest)
     paths = {f"core:{name}": verified.product(name) for name in PRODUCTS}
     paths["comparison:manifest"] = Path(verified.comparison.manifest_path).resolve()
     paths["core:manifest"] = Path(verified.comparison.core_manifest_path)
@@ -89,7 +95,7 @@ def _inputs(comparison_path: Path) -> tuple[VerifiedSources, dict[str, Path]]:
     return verified, paths
 
 
-def _provenance(paths: dict[str, Path], protocol: Protocol) -> dict[str, Any]:
+def _execution_identity(protocol: Protocol) -> dict[str, Any]:
     declared = json.loads(PROTOCOL_FILE.read_text(encoding="utf-8"))
     defaults = Protocol()
     numeric = {
@@ -109,18 +115,14 @@ def _provenance(paths: dict[str, Path], protocol: Protocol) -> dict[str, Any]:
         "phenotype",
     ):
         raise ValueError("Committed protocol strain-rollup roles mismatch")
-    # Selection and verification use transitive helpers in the canonical package.
-    # Bind the complete package so a new helper cannot silently escape provenance.
-    implementation = set(IMPLEMENTATIONS)
-    implementation.update(
-        path.relative_to(REPO_ROOT).as_posix() for path in (REPO_ROOT / "src" / "mtp").rglob("*.py")
-    )
     return {
         "protocol": declared,
         "parameters": asdict(protocol),
         "follows_protocol": protocol == defaults,
-        "inputs": {name: file_sha256(path) for name, path in sorted(paths.items())},
-        "implementation": {name: file_sha256(REPO_ROOT / name) for name in sorted(implementation)},
+        # The shared collector includes transitive helpers while rejecting empty
+        # inventories and unresolved index stages, without following editor locks.
+        "code_sha256": code_sha256(),
+        "implementation": {name: file_sha256(REPO_ROOT / name) for name in IMPLEMENTATIONS},
         "environment": {
             "python": platform.python_version(),
             "numpy": np.__version__,
@@ -128,6 +130,25 @@ def _provenance(paths: dict[str, Path], protocol: Protocol) -> dict[str, Any]:
             "scipy": scipy.__version__,
         },
     }
+
+
+def _recorded_inputs(paths: dict[str, Path], verified: VerifiedSources | None) -> dict[str, str]:
+    """Require upstream identities for publishing, rather than adopting disk edits."""
+    digests = {}
+    for name, path in sorted(paths.items()):
+        expected = verified.expected_digest(path) if verified is not None else None
+        if expected is None:
+            raise ValueError(f"Source lacks an upstream recorded hash: {name}")
+        if file_sha256(path) != expected:
+            raise ValueError(f"Source bytes differ from upstream recorded hash: {name}")
+        digests[name] = expected
+    return digests
+
+
+def _provenance(
+    paths: dict[str, Path], protocol: Protocol, verified: VerifiedSources | None = None
+) -> dict[str, Any]:
+    return {**_execution_identity(protocol), "inputs": _recorded_inputs(paths, verified)}
 
 
 def _documents(
@@ -151,8 +172,8 @@ def _documents(
         reject_missing_counts=True,
     )
     sources = [
-        SourceArtifact(identity=name, sha256=file_sha256(path))
-        for name, path in sorted(paths.items())
+        SourceArtifact(identity=name, sha256=digest)
+        for name, digest in _recorded_inputs(paths, verified).items()
     ]
     sources.append(
         SourceArtifact(
@@ -222,6 +243,7 @@ def execute(
     verify: bool = False,
 ) -> Path:
     """Write new sidecars, or verify every result by replaying from verified source inputs."""
+    execution_identity = _execution_identity(protocol)
     manifest_path = output_dir / "study_split_run.json"
     saved = None
     if verify:
@@ -237,7 +259,9 @@ def execute(
     preflight_bundle_roots(output_dir, paths)
     bundle = open_core_bundle(paths["core:manifest"])
     preflight_consumer_outputs(bundle, manifest_path, output_directory=output_dir)
-    provenance = _provenance(paths, protocol)
+    provenance = _provenance(paths, protocol, verified)
+    if any(provenance[key] != value for key, value in execution_identity.items()):
+        raise ValueError("Study-split implementation changed during verification")
     if saved is not None and saved["provenance"] != provenance:
         raise ValueError("Study-split sources, protocol, code or environment changed")
     if saved is None:
@@ -249,7 +273,7 @@ def execute(
         # the provenance inventory above is the replay identity (#906).
         repository_context = saved["repository_context"]
     documents = _documents(verified, paths, protocol, timestamp)
-    if _provenance(paths, protocol) != provenance:
+    if _provenance(paths, protocol, verified) != provenance:
         raise ValueError("Study-split inputs or implementation changed during execution")
     output_hashes = {
         name: hashlib.sha256(content.encode("utf-8")).hexdigest()

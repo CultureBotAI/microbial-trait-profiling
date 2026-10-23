@@ -2,13 +2,19 @@
 
 import json
 import runpy
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 
-from mtp.datamodel.multiple_testing_pydantic import HypothesisCoordinates, HypothesisFamilyMetadata
+from mtp.datamodel.multiple_testing_pydantic import (
+    ExternalFamilyCorrection,
+    HypothesisCoordinates,
+    HypothesisDefinition,
+    HypothesisFamilyMetadata,
+    RawHypothesis,
+)
 from mtp.datamodel.workflow_pydantic import AnalysisBasis
 from mtp.multiple_testing import canonical_sha256, correct_family, load_policy
 from mtp.multiplicity import sources as source_module
@@ -47,6 +53,134 @@ def test_adapter_code_identity_binds_the_shared_serializer(monkeypatch: pytest.M
         return "f" * 64 if path == serializer else file_sha256(path)
 
     monkeypatch.setattr(stage_module, "file_sha256", changed_digest)
+    assert stage_module.code_sha256() != before
+
+
+@pytest.mark.parametrize("timing", ["after_verify", "during_correction_restored"])
+def test_post_arm_rejects_consumed_bytes_that_differ_from_upstream(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, timing: str
+) -> None:
+    sources = fixture_sources(tmp_path / "inputs", monkeypatch)
+    table = recorded_arm_output(
+        sources.arms["noel"], "directional_screen", "trait_direction_screen.tsv"
+    )
+    original = table.read_bytes()
+    records = list(rows(table))
+    next(row for row in records if row["test_status"] == "tested")["binomial_p"] = "0.000001"
+
+    if timing == "after_verify":
+        write_table(table, records)
+    else:
+        report = stage_module.migration_report
+
+        def change_before_correction(
+            metadata: HypothesisFamilyMetadata,
+            declarations: Iterable[HypothesisDefinition],
+            observations: Iterable[RawHypothesis],
+            output: Path,
+            *,
+            recorded_at: datetime | None = None,
+        ) -> ExternalFamilyCorrection:
+            if metadata.family_id == "noel-full-screen":
+                write_table(table, records)
+            return correct_inventory(
+                metadata, declarations, observations, output, recorded_at=recorded_at
+            )
+
+        def restore_after_both_reads(
+            family: FamilyInput, corrected: Path, destination: Path
+        ) -> dict[str, int]:
+            result = report(family, corrected, destination)
+            table.write_bytes(original)
+            return result
+
+        monkeypatch.setattr(stage_module, "correct_inventory", change_before_correction)
+        monkeypatch.setattr(stage_module, "migration_report", restore_after_both_reads)
+    output = tmp_path / "sidecars"
+    with pytest.raises(ValueError, match=r"Source.*(record|hash|bytes)"):
+        run_post_arm(Path(sources.comparison.manifest_path), output)
+    assert not (output / "multiplicity_run.json").exists()
+
+
+def test_code_identity_ignores_untracked_editor_artifacts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from git import Repo
+
+    checkout = tmp_path / "checkout"
+    package = checkout / "src" / "mtp"
+    module = package / "multiplicity" / "stage.py"
+    module.parent.mkdir(parents=True)
+    module.write_text("# tracked execution source\n")
+    repository = Repo.init(checkout)
+    repository.index.add([str(module)])
+    monkeypatch.setattr(stage_module, "__file__", str(module))
+    initial = stage_module.code_sha256()
+    (package / "untracked.py").write_text("# unrelated scratch\n")
+    (package / ".#editor.py").symlink_to(package / "missing")
+    assert stage_module.code_sha256() == initial
+    module.write_text("# edited tracked execution source\n")
+    assert stage_module.code_sha256() != initial
+
+
+def test_code_identity_rejects_unresolved_canonical_index_entries(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from git import BaseIndexEntry, IndexEntry, Repo
+
+    package = tmp_path / "src" / "mtp"
+    module = package / "multiplicity" / "stage.py"
+    module.parent.mkdir(parents=True)
+    module.write_text("# unresolved tracked execution source\n")
+    relative = module.relative_to(tmp_path).as_posix()
+    with Repo.init(tmp_path) as repository:
+        index = repository.index
+        index.add([relative])
+        entry = index.entries.pop((relative, 0))
+        index.entries[(relative, 1)] = IndexEntry.from_base(
+            BaseIndexEntry((entry.mode, entry.binsha, 1 << 12, relative))
+        )
+        index.write()
+    monkeypatch.setattr(stage_module, "__file__", str(module))
+    with pytest.raises(ValueError, match=r"Resolve.*merge.*src/mtp/multiplicity/stage.py"):
+        stage_module.code_sha256()
+
+
+@pytest.mark.parametrize("tracked_sibling", [False, True])
+def test_code_identity_requires_its_own_tracked_module(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, tracked_sibling: bool
+) -> None:
+    from git import Repo
+
+    package = tmp_path / "nested" / "checkout" / "src" / "mtp"
+    module = package / "multiplicity" / "stage.py"
+    module.parent.mkdir(parents=True)
+    module.write_text("# untracked copied implementation\n")
+    tracked = package / "multiplicity" / "ora.py" if tracked_sibling else tmp_path / "README.md"
+    tracked.write_text("# tracked sibling\n")
+    with Repo.init(tmp_path) as repository:
+        repository.index.add([str(tracked)])
+    monkeypatch.setattr(stage_module, "__file__", str(module))
+    with pytest.raises(ValueError, match=r"Tracked code inventory.*stage.py"):
+        stage_module.code_sha256()
+
+
+def test_code_identity_tracks_the_actual_nested_package_prefix(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from git import Repo
+
+    package = tmp_path / "nested" / "checkout" / "src" / "mtp"
+    module = package / "multiplicity" / "stage.py"
+    sibling = module.with_name("ora.py")
+    module.parent.mkdir(parents=True)
+    module.write_text("# tracked entrypoint\n")
+    sibling.write_text("# tracked adapter\n")
+    with Repo.init(tmp_path) as repository:
+        repository.index.add([str(module), str(sibling)])
+    monkeypatch.setattr(stage_module, "__file__", str(module))
+    before = stage_module.code_sha256()
+    sibling.write_text("# changed tracked adapter\n")
     assert stage_module.code_sha256() != before
 
 

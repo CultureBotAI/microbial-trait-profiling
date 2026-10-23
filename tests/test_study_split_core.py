@@ -19,10 +19,11 @@ from mtp.cellulose_decr import selection_scan as scanner
 from mtp.cellulose_decr import study_split_run as runner
 from mtp.cellulose_decr.study_split import Protocol
 from mtp.datamodel.workflow_pydantic import ComparisonRun
-from mtp.multiplicity.sources import VerifiedSources, bind_analysis_basis
+from mtp.multiplicity import stage as multiplicity_stage
+from mtp.multiplicity.sources import VerifiedSources, bind_analysis_basis, bind_recorded_hashes
 from mtp.paths import REPO_ROOT, file_sha256
 from mtp.workflow.comparison import core_analysis_bases
-from mtp.workflow.consumers import open_core_bundle
+from mtp.workflow.consumers import CoreBundle, open_core_bundle
 from mtp.workflow.operations import OPERATIONS, validate_core_product
 from mtp.workflow.runtime import execute_workflow
 
@@ -74,14 +75,10 @@ def sources(root: Path) -> dict[str, Path]:
     return paths
 
 
-@pytest.mark.parametrize("scope", ["off", "phenotype"])
-@pytest.mark.parametrize(
-    "tampering",
-    ["contents", "line_endings", "extra_file", "host_newlines", "helper_source", "git_context"],
-)
-def test_real_scoped_core_binds_features_and_replays_sidecar(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, scope: str, tampering: str
-) -> None:
+def compact_verified_sources(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, scope: str
+) -> tuple[Path, VerifiedSources, dict[str, Path]]:
+    """Bind original real core inventories before any controlled fixture mutation."""
     core = execute_workflow(
         REPO_ROOT / "workflows/bugsigdb_core_subset.yaml",
         sources(tmp_path / "inputs"),
@@ -103,11 +100,32 @@ def test_real_scoped_core_binds_features_and_replays_sidecar(
     comparison_path = tmp_path / "comparison" / "comparison_run.json"
     comparison_path.parent.mkdir()
     comparison_path.write_text('{"fixture_boundary": "comparison verifier stub"}\n')
-    comparison = ComparisonRun.model_construct(id="fixture-comparison")
+    comparison = ComparisonRun.model_construct(
+        id="fixture-comparison",
+        manifest_path=str(comparison_path),
+        core_manifest_path=str(core_path),
+        core_manifest_sha256=file_sha256(core_path),
+        outputs=[],
+    )
     verified = VerifiedSources(comparison, core, {}, bases, {"count_profiles": features}, scope)
+    verified = bind_recorded_hashes(verified, file_sha256(comparison_path))
     paths = {f"core:{name}": bundle.path(name) for name in runner.PRODUCTS}
     paths.update({"comparison:manifest": comparison_path, "core:manifest": core_path})
     monkeypatch.setattr(runner, "_inputs", lambda _path: (verified, paths))
+    return comparison_path, verified, paths
+
+
+@pytest.mark.parametrize("scope", ["off", "phenotype"])
+@pytest.mark.parametrize(
+    "tampering",
+    ["contents", "line_endings", "extra_file", "host_newlines", "helper_source", "git_context"],
+)
+def test_real_scoped_core_binds_features_and_replays_sidecar(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, scope: str, tampering: str
+) -> None:
+    comparison_path, verified, paths = compact_verified_sources(tmp_path, monkeypatch, scope)
+    features = verified.features["count_profiles"]
+    bases = verified.bases
     originals = {name: file_sha256(path) for name, path in paths.items()}
     protocol = Protocol(splits=2, min_studies=1, permutations=19)
     output = tmp_path / "split-sidecar"
@@ -161,7 +179,7 @@ def test_real_scoped_core_binds_features_and_replays_sidecar(
         def changed_helper(path: Path) -> str:
             return "f" * 64 if path.name == "table1_trait_maps.py" else original_hash(path)
 
-        monkeypatch.setattr(runner, "file_sha256", changed_helper)
+        monkeypatch.setattr(multiplicity_stage, "file_sha256", changed_helper)
         with pytest.raises(ValueError, match="sources, protocol, code or environment changed"):
             runner.execute(comparison_path, output, protocol, verify=True)
         return
@@ -174,6 +192,70 @@ def test_real_scoped_core_binds_features_and_replays_sidecar(
         (output / "stale_results.tsv").write_text("unrecorded\n")
     with pytest.raises(ValueError, match=r"replay differs|inventory"):
         runner.execute(comparison_path, output, protocol, verify=True)
+
+
+@pytest.mark.parametrize("product", ["core:experiments", "comparison:manifest"])
+def test_post_verification_source_edit_uses_original_recorded_hash(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, product: str
+) -> None:
+    comparison, verified, paths = compact_verified_sources(tmp_path, monkeypatch, "off")
+    path = paths[product]
+    before = path.read_text()
+    original_digest = file_sha256(path)
+    assert verified.expected_digest(path) == original_digest
+    original_open = open_core_bundle
+    verified_calls = 0
+
+    def verify_then_change(source: Path) -> CoreBundle:
+        nonlocal verified_calls
+        # This is a genuine second core verification after fixture preparation;
+        # only after it succeeds do the unchanged scientific contents gain bytes.
+        bundle = original_open(source)
+        verified_calls += 1
+        path.write_text(before + "\n", encoding="utf-8")
+        assert file_sha256(path) != original_digest
+        if product == "comparison:manifest":
+            assert json.loads(path.read_text()) == json.loads(before)
+        else:
+            assert list(csv.DictReader(path.read_text().splitlines(), delimiter="\t")) == list(
+                csv.DictReader(before.splitlines(), delimiter="\t")
+            )
+        return bundle
+
+    monkeypatch.setattr(runner, "open_core_bundle", verify_then_change)
+    output = tmp_path / "rejected-sidecar"
+    with pytest.raises(ValueError, match="upstream recorded hash"):
+        runner.execute(comparison, output, Protocol(splits=2, min_studies=1, permutations=19))
+    assert verified_calls == 1
+    assert not output.exists()
+
+
+def test_execution_identity_is_captured_before_second_core_verification(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    comparison, _verified, _paths = compact_verified_sources(tmp_path, monkeypatch, "off")
+    original_open = open_core_bundle
+    original_hash = file_sha256
+    changed = False
+
+    def code_hash(path: Path) -> str:
+        if changed and path.name == "table1_trait_maps.py":
+            return "f" * 64
+        return original_hash(path)
+
+    def verify_then_change_code(source: Path) -> CoreBundle:
+        nonlocal changed
+        bundle = original_open(source)
+        changed = True
+        return bundle
+
+    monkeypatch.setattr(multiplicity_stage, "file_sha256", code_hash)
+    monkeypatch.setattr(runner, "open_core_bundle", verify_then_change_code)
+    output = tmp_path / "rejected-sidecar"
+    with pytest.raises(ValueError, match="implementation changed during verification"):
+        runner.execute(comparison, output, Protocol(splits=2, min_studies=1, permutations=19))
+    assert changed
+    assert not output.exists()
 
 
 @pytest.mark.parametrize("scope", ["off", "phenotype"])

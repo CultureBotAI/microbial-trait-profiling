@@ -12,6 +12,7 @@ from pathlib import Path
 
 import numpy as np
 import scipy
+from git import Repo
 
 from mtp.datamodel.multiple_testing_pydantic import (
     ExternalFamilyCorrection,
@@ -23,18 +24,35 @@ from mtp.multiplicity.families import FamilyInput, jed_family, noel_family
 from mtp.multiplicity.inventory import correct_inventory, json_text, read_corrected_inventory
 from mtp.multiplicity.native import native_family
 from mtp.multiplicity.ora import ora_family
-from mtp.multiplicity.sources import open_verified_sources, source
+from mtp.multiplicity.sources import bind_recorded_hashes, open_verified_sources, source
 from mtp.paths import file_sha256
 
 
 def code_sha256() -> str:
-    """Bind every canonical module, including scientific helpers and shared serializers."""
+    """Bind tracked canonical modules; ignore untracked scratch and editor lock files.
+
+    Entry/final disk identity does not attest bytecode imported before run entry.
+    """
     package = Path(__file__).resolve().parents[1]
+    with Repo(package, search_parent_directories=True) as repository:
+        if repository.working_tree_dir is None:
+            raise ValueError("Multiplicity execution requires a Git working tree")
+        root = Path(repository.working_tree_dir).resolve()
+        relative_package = package.relative_to(root).as_posix()
+        prefix = "" if relative_package == "." else relative_package + "/"
+        paths = []
+        for name, stage in repository.index.entries:
+            if not (str(name).startswith(prefix) and str(name).endswith(".py")):
+                continue
+            if stage != 0:
+                raise ValueError(
+                    f"Resolve the tracked Python merge conflict before execution: {name}"
+                )
+            paths.append(root / name)
+        if Path(__file__).resolve() not in paths:
+            raise ValueError("Tracked code inventory must include the executing stage.py module")
     return canonical_sha256(
-        {
-            path.relative_to(package).as_posix(): file_sha256(path)
-            for path in sorted(package.rglob("*.py"))
-        }
+        {path.relative_to(package).as_posix(): file_sha256(path) for path in sorted(paths)}
     )
 
 
@@ -137,7 +155,9 @@ def run_post_arm(
     """Import unchanged native p-values and emit independently verifiable sidecars."""
     implementation = code_sha256()
     policy = load_policy().model_copy(deep=True)
-    sources = open_verified_sources(comparison)
+    comparison_manifest = comparison / "comparison_run.json" if comparison.is_dir() else comparison
+    comparison_digest = file_sha256(comparison_manifest)
+    sources = bind_recorded_hashes(open_verified_sources(comparison), comparison_digest)
     instant = recorded_at if recorded_at is not None else datetime.now(UTC)
     _protect_sources(
         output,
@@ -160,7 +180,9 @@ def run_post_arm(
     consumed = {
         artifact.identity: artifact for family in inputs for artifact in family.metadata.sources
     }
-    observed_files = {path: file_sha256(path) for family in inputs for path in family.source_paths}
+    observed_files = {
+        path: sources.expected_digest(path) for family in inputs for path in family.source_paths
+    }
     for family in inputs:
         relative = family.metadata.family_id
         destination = output / relative
@@ -219,7 +241,7 @@ def run_post_arm(
     reports.append(SourceArtifact(identity=summary_path.name, sha256=file_sha256(summary_path)))
     for path, digest in observed_files.items():
         if file_sha256(path) != digest or source(path).identity not in consumed:
-            raise ValueError("Source changed while multiplicity sidecars were being written")
+            raise ValueError("Source changed from recorded hash while sidecars were being written")
     if code_sha256() != implementation:
         raise ValueError("Multiplicity implementation code changed during execution")
     if load_policy() != policy:
@@ -228,7 +250,7 @@ def run_post_arm(
         version="1.1.0",
         recorded_at=instant,
         comparison_manifest_path=sources.comparison.manifest_path,
-        comparison_manifest_sha256=file_sha256(Path(sources.comparison.manifest_path)),
+        comparison_manifest_sha256=comparison_digest,
         core_run_id=sources.core.run_id,
         contrast_population=sources.comparison.contrast_population,
         direction_basis=sources.comparison.direction_basis,

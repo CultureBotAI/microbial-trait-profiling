@@ -8,6 +8,7 @@ import pytest
 from mtp.cellulose_decr import study_split_run as runner
 from mtp.cellulose_decr.study_split import Protocol
 from mtp.multiplicity import sources
+from mtp.multiplicity import stage as multiplicity_stage
 from mtp.paths import file_sha256
 
 
@@ -24,7 +25,7 @@ def test_active_scientific_helper_changes_provenance(monkeypatch: pytest.MonkeyP
             return "f" * 64
         return original_hash(path)
 
-    monkeypatch.setattr(runner, "file_sha256", changed_helper)
+    monkeypatch.setattr(multiplicity_stage, "file_sha256", changed_helper)
     assert runner._provenance({}, Protocol()) != before
 
 
@@ -64,7 +65,10 @@ def test_directory_input_uses_the_verified_manifest_path(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     comparison_dir = tmp_path / "comparison"
+    comparison_dir.mkdir()
     manifest = comparison_dir / "comparison_run.json"
+    manifest.write_text('{"routing_fixture": true}\n')
+    original_digest = file_sha256(manifest)
     upstream = SimpleNamespace(
         core=SimpleNamespace(
             contrast_population="disease_vs_healthy_tier1_2_subject_controls",
@@ -80,9 +84,24 @@ def test_directory_input_uses_the_verified_manifest_path(
         ),
         product=lambda name: tmp_path / "core" / name,
     )
-    monkeypatch.setattr(sources, "open_verified_sources", lambda _path: upstream)
+
+    def open_then_change_comparison(_path: Path) -> SimpleNamespace:
+        manifest.write_text(manifest.read_text() + "\n", encoding="utf-8")
+        assert file_sha256(manifest) != original_digest
+        return upstream
+
+    monkeypatch.setattr(sources, "open_verified_sources", open_then_change_comparison)
+    bindings: list[str] = []
+
+    def bind(verified: SimpleNamespace, comparison_sha256: str) -> SimpleNamespace:
+        assert verified is upstream
+        bindings.append(comparison_sha256)
+        return verified
+
+    monkeypatch.setattr(sources, "bind_recorded_hashes", bind)
     _, paths = runner._inputs(comparison_dir)
     assert paths["comparison:manifest"] == manifest
+    assert bindings == [original_digest]
     runner.preflight_bundle_roots(tmp_path / "sidecar", paths)
 
 
@@ -106,6 +125,8 @@ def test_source_boundary_refuses_other_populations_directions_and_scopes(
         scope=scope,
     )
     monkeypatch.setattr(sources, "open_verified_sources", lambda _path: upstream)
+    comparison = tmp_path / "comparison_run.json"
+    comparison.write_text('{"invalid_population_fixture": true}\n')
     with pytest.raises(ValueError, match=r"Tier 1\+2|phenotype sensitivity"):
-        runner.execute(tmp_path / "comparison_run.json", tmp_path / "out", Protocol())
+        runner.execute(comparison, tmp_path / "out", Protocol())
     assert not (tmp_path / "out").exists()

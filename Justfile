@@ -319,7 +319,7 @@ test-multiple-testing:
 	uv run pytest tests/test_multiple_testing.py
 
 test-multiplicity-adapters:
-	uv run pytest tests/test_multiplicity_adapters.py tests/test_multiplicity_basis_integration.py
+	uv run pytest tests/test_multiplicity_adapters.py tests/test_multiplicity_basis_integration.py tests/test_multiplicity_regression_guards.py
 
 # Analyzer, ranking exporter, and complete-universe density regression checks (#664).
 test-stratification:

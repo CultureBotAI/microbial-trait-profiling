@@ -53,6 +53,12 @@ Untestable members count conservatively as p=1 and export null p, q and rejectio
 flags. Invalid numeric values, negative zero and status/p mismatches fail.
 Effects and native row contents are bound
 by source hashes and row hashes, and are never rewritten.
+Cross-product reconciliation beyond these checks is tracked in #976: independently
+reconciling every untestable status against source study effects, verifying native
+ORA q-values against each complete tail, and versioning the free-text reason
+vocabulary. Standalone adapters with upstream verification bypassed do not provide
+that stronger scientific contract. Publishing always requires the recorded-byte
+binding described below.
 The shared canonical serializer uses strict JSON for these identities: numeric
 NaN and infinity are rejected even inside nested basis or membership records.
 
@@ -76,13 +82,36 @@ It records policy, input and output identities, code, NumPy/SciPy versions, time
 population, direction, strain scope, and family summaries. Family source IDs are
 content-addressed product names, not machine-specific paths. The explicit local
 ComparisonRun path permits verification against the original execution records.
-The code identity covers every Python module under canonical `src/mtp`, keyed
+The code identity covers every Git-tracked Python module under canonical `src/mtp`, keyed
 by its relative path, so shared loaders, scientific helpers and serializers are
-included without filename collisions. Changes to any canonical module require
-a new sidecar execution. Implementation and policy identities are captured before
+included without filename collisions. Untracked scratch files and editor lock
+symlinks are excluded. Changes to a tracked canonical module require
+a new sidecar execution. Unresolved canonical Python entries in the Git index
+are rejected until the merge conflict is resolved (#977).
+The inventory prefix is derived from the actual package location inside its
+repository; it must include the executing `stage.py`. An unrelated outer
+repository or an incomplete copied package cannot produce an empty fingerprint.
+Implementation and policy identities are captured before
 source verification and family construction, then rechecked before the final
 manifest is published. A change during execution refuses publication; the manifest
-cannot claim a new disk implementation for calculations performed by cached code.
+cannot claim a new disk implementation after detecting changed tracked bytes.
+This contract starts at run entry; it does not attest bytecode imported before
+entry. Fresh CLI execution is the supported reproducible invocation.
+
+Source identities come from the verified parent inventories. Each native result
+or support TSV pass read through the adapters hashes its exact raw bytes,
+including comments and line endings, before CSV decoding; exhausting the pass
+must match the recorded upstream hash.
+This catches a changed export even if it is restored after correction and
+migration. Other consumed inputs, including core profiles and experiments, are
+checked at metadata and final-source boundaries against those recorded identities.
+A rejected run has no final `multiplicity_run.json`;
+partial diagnostic files may remain. These checks cover the recorded inputs and
+consumed export streams, not arbitrary filesystem mutation or pre-entry imports.
+In particular, a transient edit to a core table, label table or JSON input can
+escape boundary checks when restored before them; closing that consumed-byte
+gap is tracked in #983. The shared recorded-arm-output resolver consolidation is
+tracked in #984. Neither deferred item is implied complete by these guards.
 
 `migration.json` and the per-family migration tables distinguish three changes:
 
@@ -92,7 +121,9 @@ cannot claim a new disk implementation for calculations performed by cached code
 3. Compare BY q <= 0.05 with BY q <= 0.001 without changing family or method.
 
 Native ORA hit flags also use fold cutoffs; these are separate from multiplicity
-rejection. No full-screen q-value is attached to focal rows by trait slug. The
+rejection. The native bounds are inclusive: enrichment accepts fold 1.5 and
+depletion accepts fold 0.5 when the native q threshold also passes.
+No full-screen q-value is attached to focal rows by trait slug. The
 historical focal selection and the native support/variance filter remain
 selection limitations. The sidecars make no global FDR claim across different
 arms/families and do not measure physiological activity.
@@ -112,3 +143,33 @@ integration tests execute actual off/phenotype/full core fixtures and bind the
 committed AnalysisBasis producer's outputs to verified count/ORA bundles; full
 scope is rejected. The four-arm adapter fixture stubs the upstream comparison
 execution-verification boundary, which the existing workflow tests cover.
+Its native pooled statistics come from the actual infographic producer's
+selection, transformations and statistical functions, independently of the adapter.
+
+## Updating the author branch after a base merge
+
+Merge `origin/main` into this branch; **never rebase it**. Important implementation
+and regression changes live inside merge commits, including `c492273` and
+`d8845cb`. A rebase can drop those changes together with their tests while leaving
+a superficially passing suite (#979). Resolve the known foundation conflicts by
+retaining both the accepted base and the sidecar fixes.
+
+Before publishing the updated author branch, require the retained fix commit
+and explicitly named regression/probe files, then run the complete focused and
+required gates:
+
+```bash
+git merge origin/main
+git merge-base --is-ancestor d8845cb HEAD
+git ls-files --error-unmatch src/mtp/multiplicity/sources.py \
+  tests/test_multiplicity_regression_guards.py \
+  scripts/adhoc/issue979_probe_multiplicity_boundaries.py
+just test-multiplicity-adapters
+just precommit
+just check
+just core-fixture
+```
+
+The ancestry check applies to this author branch before its PR is merged, not to
+the owner's eventual squash commit on main. The explicit file checks ensure a
+missing test file is a failure rather than a smaller silently passing test suite.

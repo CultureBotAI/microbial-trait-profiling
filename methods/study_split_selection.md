@@ -54,11 +54,34 @@ declared sensitivity runs. Add `--verify` with the original parameter overrides
 to replay the full analysis from verified sources and compare every output.
 The native arm calls and outputs remain unchanged.
 
-The sidecar binds every canonical `src/mtp` Python file, the consumed protocols
-and methods, and the dependency lock. It records the repository commit and dirty
-state as historical execution context, preserved during replay. Output publication
+The sidecar binds every Git-tracked canonical `src/mtp` Python file through the
+shared multiplicity code inventory, the consumed protocols and methods, and the
+dependency lock. Untracked scratch files and editor locks do not change that
+inventory. Unresolved tracked Python conflicts, a missing tracked module, or an
+inventory that excludes the executing stage are rejected. It records the repository
+commit and dirty state as historical execution context, preserved during replay. Output publication
 or a documentation-only commit may change that context without changing the
 scientific identity checked by replay.
 This includes transitive helpers for pairing and sign tallies, even when a helper
 change happens to leave a particular fixture's numbers unchanged. Publication
 writes the exact UTF-8 bytes that are hashed, independently of host newline rules.
+
+Input hashes come from the verified upstream inventories, including the comparison
+manifest digest captured before verification. They are checked before reading the
+analysis inputs, when constructing their source records, and before publication.
+The runner requires a recorded digest for every consumed source; a later disk
+snapshot cannot replace the upstream identity. Code and protocol identity are
+captured before upstream verification and checked again before analysis and
+publication. The comparison-bound invocation does not consume a multiplicity
+sidecar manifest; it shares the verified-source and correction implementation.
+
+These entry and final checks do not attest Python bytecode imported before run
+entry, so use a fresh CLI process. They also do not bind every non-streamed read
+to its consumed bytes against transient edit-and-restore races; that shared
+limitation is tracked in #983. The recorded results remain an internal exploratory
+assessment under the statistical limitations above.
+
+Update this author branch by merging the final #883 head and later `origin/main`,
+never by rebasing. The #974/#977/#979 fixes and tests include merge-carried changes
+that a rebase can silently drop. Preserve their ancestry and explicit regression
+files, then repeat the required checks after integration.

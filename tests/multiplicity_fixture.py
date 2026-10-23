@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import json
+import runpy
 from pathlib import Path
 from typing import Any
 
@@ -12,6 +13,7 @@ import pytest
 from mtp.datamodel.workflow_pydantic import (
     ArmCommandExecution,
     ArmRun,
+    ArtifactInstance,
     ComparisonRun,
     ConsumerRecord,
     ContrastPopulation,
@@ -239,45 +241,25 @@ def fixture_sources(
             ("trait_labels", "feature_metadata"),
         )
     }
-    write_table(
-        pair_path,
-        [
-            {
-                "study_id": f"s{index}",
-                "experiment_id": "e1",
-                "zero_total_policy": "included_in_historical_native_composition",
-                **hashes,
-            }
-            for index in range(8)
-        ],
+    producer = runpy.run_path(
+        str(Path(__file__).resolve().parents[1] / "scripts/create_trait_profile_infographic.py")
     )
-    selected, _ = native.native_candidates(
-        profile, experiments, features, products["feature_metadata"]
-    )
+    pairs = producer["core_pair_metadata"](profile, experiments)
+    for key, digest in hashes.items():
+        pairs[key] = digest
+    native_dir.mkdir(parents=True)
+    pairs.to_csv(pair_path, sep="\t")
     stats = native_dir / "trait_profile_paired_contrast_trait_stats_pooled.tsv"
-    write_table(
-        stats,
-        [
-            {
-                "trait": feature,
-                "study_p_value": ".01",
-                "study_q_value": ".01",
-                "study_test_status": "tested",
-                "study_count": 8,
-                "study_mean_increased_minus_decreased": 0.2,
-                "study_std_increased_minus_decreased": 1.0,
-                "stratum_kind": "pooled",
-                "stratum": "pooled",
-                "test_method": "two_sided_one_sample_t_test",
-                "correction_method": "BH",
-                "correction_family_size": len(selected),
-                "retained_trait_count": len(features),
-                "pair_metadata_sha256": file_sha256(pair_path),
-                **hashes,
-            }
-            for feature in selected
-        ],
+    native_stats = producer["compute_stratum_trait_stats"](
+        producer["load_profile_matrix"](profile),
+        pairs,
+        producer["load_trait_labels"](products["feature_metadata"]),
+        stratum_kind="pooled",
+        stratum="pooled",
     )
+    for key, digest in {**hashes, "pair_metadata_sha256": file_sha256(pair_path)}.items():
+        native_stats[key] = digest
+    native_stats.to_csv(stats, sep="\t", index=False)
     consumer_path = native_dir / "core_consumption.json"
     consumer_path.write_text("{}\n")
     population = (
@@ -299,6 +281,10 @@ def fixture_sources(
             ParameterValue(
                 name="strain_rollup", value="phenotype" if subset else "off", source="override"
             )
+        ],
+        artifacts=[
+            ArtifactInstance.model_construct(product_id=name, sha256=file_sha256(path))
+            for name, path in products.items()
         ],
     )
     arms = {}
@@ -344,6 +330,9 @@ def fixture_sources(
         noel_manifest_path=arms["noel"].manifest_path,
         jed_manifest_path=arms["jed"].manifest_path,
         ilyas_manifest_path=arms["ilyas"].manifest_path,
+        noel_manifest_sha256=file_sha256(Path(arms["noel"].manifest_path)),
+        jed_manifest_sha256=file_sha256(Path(arms["jed"].manifest_path)),
+        ilyas_manifest_sha256=file_sha256(Path(arms["ilyas"].manifest_path)),
     )
     verified = VerifiedSources(
         comparison,

@@ -131,7 +131,7 @@ def native_family(sources: VerifiedSources) -> FamilyInput:
         "trait_labels_sha256": file_sha256(sources.product("feature_metadata")),
     }
     pair_keys = []
-    for row in rows(pairs):
+    for row in rows(pairs, sources.expected_digest(pairs)):
         require_fields(
             row,
             {**expected_hashes, "zero_total_policy": "included_in_historical_native_composition"},
@@ -177,7 +177,7 @@ def native_family(sources: VerifiedSources) -> FamilyInput:
             )
 
     def observations() -> Iterator[NativeObservation]:
-        for row in rows(table):
+        for row in rows(table, sources.expected_digest(table)):
             require_fields(
                 row,
                 {
