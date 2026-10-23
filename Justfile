@@ -90,6 +90,11 @@ core-screen run output:
 core-composition run output:
 	uv run python -m mtp.trait_composition --core-run "{{run}}" --output-dir "{{output}}"
 
+# After study-trait-profiles and trait-heatmaps: pooled/site tables with hashed provenance.
+[positional-arguments]
+trait-profile-site-stats *ARGS:
+	uv run python scripts/create_trait_profile_infographic.py --stratified-stats-only "$@"
+
 # Complete exports carry the verified input fingerprints needed for integration.
 [positional-arguments]
 core-ora run output tail="upper":

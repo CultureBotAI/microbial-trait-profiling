@@ -206,6 +206,11 @@ PPTX replacement, and branch-only directional scripts are outside this standard
 suite. Their previous command lists remain in Git history; they must not be
 represented as rerun by an `arm_run.json` from this suite.
 
+The historical deck's pooled and per-site composition tables require the
+separate [body-site regeneration step](#regenerate-historical-body-site-composition-tables-824).
+Run it after rebuilding the legacy profiles and heatmap pair metadata; the owner
+arm commands alone do not refresh those checkout tables.
+
 Each attempt records its complete command plan before execution, actual command
 exit status, logs, input/output checksums, code/configuration inventory, runtime,
 and the upstream core manifest checksum in `arm_run.json`. The tracked LinkML
@@ -415,6 +420,75 @@ still belongs to `feces_excluded`, which means "not identified as feces", not
 feces-excluded partitions are disjoint and together retain the pooled profiles.
 Direct-path commands remain available without verified core provenance. This
 standalone binding complements the owner rerun orchestration in #658 / PR #660.
+
+### Regenerate historical body-site composition tables (#824)
+
+The core-bound Jed arm and comparison stage write pooled statistics. They do
+not regenerate the historical `trait_profile_paired_contrast_trait_stats_<site>.tsv`
+tables. The rerun operator must run the following steps in order on the rebuilt
+legacy full-corpus inputs:
+
+```bash
+just study-trait-profiles
+just trait-heatmaps
+just trait-profile-site-stats
+```
+
+The final step uses `data/derived/study_trait_profiles_wide.tsv`,
+`data/derived/taxa_trait_matrix_columns.tsv`, and the heatmap producer's
+`trait-visualization/study_trait_profile_paired_enrichment_metadata.tsv`.
+It writes both pooled aliases (`trait_profile_paired_contrast_trait_stats.tsv`
+and `trait_profile_paired_contrast_trait_stats_pooled.tsv`), the eligible site
+tables, their manifest, and
+`trait-visualization/trait-profile-investigation/stratified_stats_provenance.json`,
+without rendering figures. Pooled and site tables are refreshed from the same
+inputs in one invocation. Input overrides
+(`--profiles`, `--pair-metadata`, `--trait-labels`, `--output-dir`) follow the
+recipe name. For a separate population, rebuild its heatmap metadata from its
+own profiles and use a separate output directory; do not mix full and subset
+files.
+
+The new heatmap metadata records SHA-256 identities for its profile and label
+inputs (and its raw dump and studies inputs). The site-statistics step rejects
+missing or mismatched profile/label bindings, absent profiles, and mismatched
+study/experiment/direction identities. Metadata from before this change must
+be rebuilt, even when its filenames match. The JSON inventories every consumed
+file, the producer code, parameters, emitted tables, and the manifest. It is
+explicitly `legacy_inputs_hashed_not_core_verified`: it does not establish a
+verified core lineage or independently certify the strain-rollup scope.
+Paths inside the checkout are repository-relative; external inputs are named
+by basename and SHA-256, without publishing local directory prefixes. Selection
+parameters from the heatmap producer, including the effective `--max-profiles`
+and `--max-body-site-categories`, are copied into the record. Older bound metadata
+without those columns is explicitly marked as unavailable. Scope remains
+unverified until the upstream scope-record contract in #847 is available; a
+retained-trait count is not evidence of scope.
+
+These populations retain the historical heatmap's profile filters and grouped
+`body_site_group` labels, including `Other`; they are not the pooled core cohort
+or necessarily exact anatomical sites. The pooled tables use all matched pairs
+selected by that heatmap metadata, while site tables use its eligible groups.
+Default eligibility requires 50 matched
+pairs per group, at least six annotated profiles per trait, at most 95% profile
+support, and variable annotation fractions. Feces and feces-excluded partitions
+retain their existing definitions. Native standardization, study averaging,
+zero-total handling, and within-stratum BH correction remain unchanged.
+`--min-stratified-pairs` overrides the site eligibility threshold only for this
+recipe; it is rejected outside `--stratified-stats-only` rather than ignored.
+
+The number and names of emitted site tables depend on eligibility. The manifest
+is authoritative for the site groups in this invocation; the JSON also inventories
+both refreshed pooled aliases. Existing historical statistics tables outside the
+emitted output set, the condition and body-site summaries, and the infographic PNG
+are listed with hashes under `not_regenerated` in the JSON. These pooled summaries
+and figure are not refreshed by the site-statistics step. They remain historical
+and must not be cited as fresh results. The rerun PR must either regenerate each
+intended table or figure or list these omissions explicitly; this implementation
+PR does not regenerate tracked data.
+The full infographic mode and pooled-only mode remove any previous site-stat
+JSON before overwriting its bound tables, so that a later invocation cannot leave
+an old success record beside newly computed tables. Regenerate the JSON with
+`just trait-profile-site-stats` after those modes when a complete inventory is needed.
 
 The shared `verify_consumer_record` API is the integration boundary for deck
 builders such as PR #575: verify the input analysis binding before accepting
