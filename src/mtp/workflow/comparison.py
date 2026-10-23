@@ -85,11 +85,11 @@ NOEL_NEGATIVE_CONTROL = "screened_fraction_sign_test"
 #: open, recorded beside its verdict rather than in its label (#855).
 SELECTION_UNCERTAINTY = {
     "noel_table1_six_trait_sign_test_v1": (
-        "The six Table 1 traits were selected on this corpus before testing. The negative "
-        "control selects and then tests, but its inflation does not bound the historical "
-        "selection's cost in either direction (#363), so this verdict covers the sign test "
-        "on pre-specified traits and does not show that the post-hoc six-trait analysis is "
-        "valid."
+        "The six Table 1 traits were selected on this corpus before testing, so their "
+        "p-values are exploratory. The negative control selects and then tests, but its "
+        "inflation does not bound the historical selection's cost in either direction "
+        "(#363). This verdict covers the sign test on pre-specified traits and does not "
+        "validate the post-hoc six-trait analysis."
     )
 }
 
@@ -392,7 +392,7 @@ def noel_calibration_verdict(path: Path, spec: AnalysisSpec) -> CalibrationVerdi
     if selection_labelled:
         summary += " The label counts the selection of the features as anti-conservative."
     if selection:
-        summary += " Feature selection on this corpus is recorded in selection_uncertainty."
+        summary += f" {selection}"
     summary += " Power is reported there without a threshold (#850)."
     return verdict.model_copy(
         update={

@@ -344,7 +344,10 @@ def test_the_verdicts_are_the_arms_own_calibration_results(stage: dict[str, Path
     # Two replicates cannot settle whether the control fails as declared.
     assert table1.negative_control_as_expected is None
     assert table1.selection_uncertainty is not None
+    assert "p-values are exploratory" in table1.selection_uncertainty
+    assert table1.selection_uncertainty in table1.summary_message
     composition = verdicts["verdict:jed_log_ratio_vs_transformed_t_calibration"]
+    assert composition.selection_uncertainty is None
     assert composition.outcome == CalibrationOutcome.different_estimator_uncalibrated
     assert composition.replicate_budget_sufficient is False
     assert composition.null_control_passed is None
@@ -505,7 +508,10 @@ def test_clean_production_with_the_expected_control_failure(tmp_path: Path) -> N
     assert verdict.negative_control_as_expected is True
     assert verdict.selection_uncertainty is not None
     assert "selected on this corpus" in verdict.selection_uncertainty
-    assert "does not show that the post-hoc" in verdict.selection_uncertainty
+    assert "p-values are exploratory" in verdict.selection_uncertainty
+    assert "does not validate the post-hoc six-trait analysis" in verdict.selection_uncertainty
+    # The qualifier travels with the summary too, so no reader sees the label without it.
+    assert verdict.selection_uncertainty in verdict.summary_message
     assert "fraction_sign_test pass [" in verdict.summary_message
     assert "screened_fraction_sign_test fail [family_error=fail" in verdict.summary_message
     assert "selecting and then testing exceeds the tolerance" in verdict.summary_message

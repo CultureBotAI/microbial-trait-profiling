@@ -259,11 +259,14 @@ the stage writes anything, so a bad input leaves no partial directory behind (#8
   passed it, the criterion is too weak to be evidence, and certification is withheld.
   The control's procedure, outcome and whether it behaved as declared are recorded in
   their own `CalibrationVerdict` fields (#855).
-- **Selection of the six traits.** The traits were selected on this same corpus, and
-  the control's inflation does not bound that selection's cost in either direction
-  (#363). The verdict therefore records it in `selection_uncertainty` rather than in
-  its label. Labelling the selected traits anti-conservative instead is a single switch,
-  `SELECTION_LABELS_ANTI_CONSERVATIVE`, left off as the protocol declares.
+- **Selection of the six traits.** The traits were selected on this same corpus, so
+  their p-values are exploratory. The control's inflation does not bound that
+  selection's cost in either direction (#363). The verdict records the qualifier in
+  `selection_uncertainty` and repeats it in `summary_message` instead of putting it in
+  the label. A `partially_calibrated` Table 1 label is therefore not a validation of the
+  post-hoc six-trait analysis. Labelling the selected traits anti-conservative instead is
+  a single switch, `SELECTION_LABELS_ANTI_CONSERVATIVE`, left off as the protocol
+  declares.
 - **Noel's overall status.** It maps explicitly. `not_certified` is an unmet replicate
   budget. `fail` is anti-conservative for a failed production null criterion and failed
   power for the power criterion. Noel's protocol sets no threshold on power itself
