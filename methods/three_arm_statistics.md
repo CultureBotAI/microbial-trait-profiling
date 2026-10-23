@@ -112,7 +112,8 @@ the new traits:
 - **Denominators.** Every profile's fraction sums 344 retained columns. The retained count
   mass summed over reported taxa rises by 11.4% (136,906). The 27 new traits add only 6.8%
   of that rise. Most of it comes from existing traits that strain records also assert:
-  mesophilic adds 50.3% (27,509 to 96,358), rod shaped 15.9% and aerobic 10.4%.
+  mesophilic, whose count mass goes from 27,509 to 96,358, adds 50.3% of the rise, rod
+  shaped 15.9% and aerobic 10.4%.
 - **Existing traits.** METPO phenotypes that strain records also assert gain coverage:
   coccus shaped goes from 721 to 815 reported taxa, facultatively aerobic from 916 to 920,
   sphere shaped from 305 to 307 and moderately halophilic from 350 to 351. Cellulose
