@@ -34,6 +34,7 @@ from mtp.workflow.consumers import (
     open_core_bundle,
     preflight_consumer_outputs,
 )
+from mtp.workflow.operations import run_strain_rollup
 from mtp.workflow.runtime import (
     artifact_path,
     content_hash,
@@ -44,6 +45,9 @@ from mtp.workflow.runtime import (
 from mtp.workflow.verification import verify_core_run
 
 Planner = Callable[[ArmContext], list[Command]]
+# Steps that rebuild matrix counts from the KG, and so must apply the core's strain rollup
+# scope; a recorded step without the option ran before #788 and is off (#788)
+SCOPED_MODULES = frozenset({"mtp.taxon_contributions"})
 INPUT_NAMES = {
     "raw_dump": "full_dump.csv",
     "kg_edges": "merged-kg_edges.tsv",
@@ -206,6 +210,15 @@ def _validate_plan(commands: Sequence[Command], context: ArmContext) -> None:
                 or script.resolve() != script
             ):
                 raise ValueError(f"Command must execute a tracked Python entrypoint: {command.id}")
+        if command.argv[1] == "-m" and command.argv[2] in SCOPED_MODULES:
+            argv = list(command.argv)
+            option = "--strain-rollup"
+            scope = argv[argv.index(option) + 1] if option in argv else "off"
+            if scope != context.strain_rollup:
+                raise ValueError(
+                    f"{command.id} uses strain rollup scope {scope!r}, but its core "
+                    f"recorded {context.strain_rollup!r}"
+                )
         seen.add(command.id)
         if not command.outputs:
             raise ValueError(f"No declared outputs: {command.id}")
@@ -342,6 +355,7 @@ def execute_arm(
         seed=seed,
         figures=figures,
         contrast_population=ContrastPopulation(bundle.run.contrast_population).value,
+        strain_rollup=run_strain_rollup(bundle.run),
     )
     commands = planner(context)
     _validate_plan(commands, context)
@@ -502,6 +516,7 @@ def verify_arm(path: Path) -> ArmRun:
         seed=None,
         figures=True,
         contrast_population=ContrastPopulation(record.contrast_population).value,
+        strain_rollup=run_strain_rollup(core),
     )
     commands = [
         Command(
