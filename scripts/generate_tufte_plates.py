@@ -31,11 +31,21 @@ import numpy as np
 from mtp.paths import file_sha256
 from mtp.quoted_results import (
     CALIBRATION_CRITERIA,
+    COVERAGE_ANNOTATION_BASIS,
+    COVERAGE_TOTAL_OCC_COL,
+    COVERAGE_TOTAL_TAXA_COL,
+    COVERAGE_TRAIT_BEARING_OCC_COL,
+    COVERAGE_TRAIT_BEARING_OCC_PCT_COL,
+    COVERAGE_TRAIT_BEARING_PCT_COL,
+    COVERAGE_ZERO_TRAIT_OCC_PCT_COL,
+    COVERAGE_ZERO_TRAIT_PCT_COL,
     GUILD_CORRELATION,
     ORA_DEPLETION,
     ORA_ENRICHMENT,
     McNemar,
     OraCalls,
+    format_coverage_population,
+    read_coverage_run_info,
     screened_rejection_rate,
 )
 from mtp.table1_directions import (
@@ -439,23 +449,38 @@ def guild_text(labels: dict[str, str]) -> str:
     return "\n".join(lines)
 
 
-COVERAGE_TRAIT_BEARING_PCT_COL = "trait_bearing_pct"
-COVERAGE_ZERO_TRAIT_PCT_COL = "zero_trait_pct"
-COVERAGE_TRAIT_BEARING_OCC_PCT_COL = "trait_bearing_occurrences_pct"
-COVERAGE_ZERO_TRAIT_OCC_PCT_COL = "zero_trait_occurrences_pct"
-COVERAGE_ANNOTATION_BASIS = "any annotation (incl. MediaDive)"
+_SPECIES_GAP_CAUSE_LABELS: dict[str, str] = {
+    "Uncultivated / Metagenomic MAG": "uncultivated MAGs",
+    "Ambiguous Taxon / Bin Slash": "slash-bins",
+    "Candidatus Lineage": "Candidatus lineages",
+    "Rare / Novel Isolate (Lacks KG Phenotype)": "rare/novel isolates",
+    "Non-Bacterial / Fungal Eukaryote": "non-bacterial eukaryotes",
+    "NCBI TaxID Desynchronization": "TaxID desyncs",
+}
 
 
-def _read_coverage_strain_rollup(coverage_dir: Path) -> str:
-    """Read strain_rollup from taxa-coverage provenance JSON when present (#858, #956)."""
-    for fname in ("provenance.json", "taxa_coverage_run.json"):
-        path = coverage_dir / fname
-        if path.exists():
-            data = json.loads(path.read_text(encoding="utf-8"))
-            scope = data.get("strain_rollup")
-            if isinstance(scope, str) and scope:
-                return scope
-    return "off"
+def _species_gap_cause_phrase(zero_rows: Sequence[Mapping[str, str]]) -> str:
+    """Derive short cause summary for Methods Plate I from zero-trait rows (#982)."""
+    active = [r for r in zero_rows if int(r.get("signature_occurrences", "0")) > 0]
+    if not active:
+        return ""
+    cat_occ: dict[str, int] = {}
+    for r in active:
+        cat = r.get("diagnosis_category", "")
+        if cat == "NCBI TaxID Desynchronization":
+            continue
+        label = _SPECIES_GAP_CAUSE_LABELS.get(cat)
+        if label is not None:
+            cat_occ[label] = cat_occ.get(label, 0) + int(r.get("signature_occurrences", "0"))
+    if not cat_occ:
+        for r in active:
+            label = _SPECIES_GAP_CAUSE_LABELS.get(r.get("diagnosis_category", ""))
+            if label is not None:
+                cat_occ[label] = cat_occ.get(label, 0) + int(r.get("signature_occurrences", "0"))
+    top_labels = [lbl for lbl, _ in sorted(cat_occ.items(), key=lambda x: -x[1])[:2]]
+    if not top_labels:
+        return ""
+    return ": " + " & ".join(top_labels)
 
 
 def methods_plate1_coverage_labels(
@@ -463,18 +488,17 @@ def methods_plate1_coverage_labels(
     zero_rows: Sequence[Mapping[str, str]],
     *,
     retained_profiles: int | None = None,
+    population: Mapping[str, Any] | None = None,
 ) -> dict[str, str]:
-    """Derive Methods Plate I occurrence/TaxID counts and desync note (#930, #951, #956)."""
-    present_rows = [r for r in coverage_rows if int(r.get("total_taxa", "0")) > 0]
-    total_occurrences = sum(int(r.get("total_occurrences", "0")) for r in present_rows)
-    total_taxa = sum(int(r.get("total_taxa", "0")) for r in present_rows)
+    """Derive Methods Plate I occurrence/TaxID counts and desync note (#930, #951, #956, #982)."""
+    present_rows = [r for r in coverage_rows if int(r.get(COVERAGE_TOTAL_TAXA_COL, "0")) > 0]
+    total_occurrences = sum(int(r.get(COVERAGE_TOTAL_OCC_COL, "0")) for r in present_rows)
+    total_taxa = sum(int(r.get(COVERAGE_TOTAL_TAXA_COL, "0")) for r in present_rows)
     by_rank = {r["taxonomic_rank"]: r for r in present_rows}
     if "species" in by_rank:
         species_gap = float(by_rank["species"][COVERAGE_ZERO_TRAIT_OCC_PCT_COL])
-        species_clause = (
-            f"Species gap ({species_gap:.0f}% of species occurrences): "
-            "uncultivated MAGs & slash-bins"
-        )
+        cause_phrase = _species_gap_cause_phrase(zero_rows)
+        species_clause = f"Species gap ({species_gap:.0f}% of species occurrences){cause_phrase}"
     else:
         species_clause = "Species coverage unavailable (species rank absent from table)"
     alias_rows = [
@@ -484,9 +508,12 @@ def methods_plate1_coverage_labels(
         and _alias_target_id(r) is not None
     ]
     if alias_rows:
-        names = ", ".join((r.get("taxon_name") or r["taxon_id"]).split()[0] for r in alias_rows)
+        names = ", ".join(
+            re.sub(r"\s*\([^)]*\)", "", (r.get("taxon_name") or r["taxon_id"])).strip()
+            for r in alias_rows
+        )
         noun = "desync" if len(alias_rows) == 1 else "desyncs"
-        desync_clause = f"All-rank {len(alias_rows)} NCBI TaxID {noun} ({names})"
+        desync_clause = f"All-rank NCBI TaxID {noun}: {len(alias_rows)} ({names})"
     else:
         desync_clause = "All-rank: no focal NCBI TaxID desyncs in table"
     if present_rows:
@@ -495,14 +522,14 @@ def methods_plate1_coverage_labels(
             if retained_profiles is not None
             else "all retained profiles"
         )
-        taxa_subtitle = (
-            f"{total_taxa:,} unique NCBI TaxIDs across {prof_part}\n"
-            "(all human 16S/WMS signatures in rank table)"
-        )
+        pop_label = format_coverage_population(population)
+        occurrences_title = f"{total_occurrences:,} All-Profile Taxon Occurrences"
+        taxa_subtitle = f"{total_taxa:,} unique NCBI TaxIDs across {prof_part}\n({pop_label})"
     else:
-        taxa_subtitle = f"{total_taxa:,} unique NCBI TaxIDs (no rank rows in table)"
+        occurrences_title = "All-Profile Taxon Occurrences Unavailable"
+        taxa_subtitle = "Unique NCBI TaxIDs unavailable (no rank rows in table)"
     return {
-        "occurrences_title": f"{total_occurrences:,} All-Profile Taxon Occurrences",
+        "occurrences_title": occurrences_title,
         "taxa_subtitle": taxa_subtitle,
         "species_gap_note": f"{species_clause};\n{desync_clause}",
     }
@@ -612,14 +639,24 @@ def build_methods_plate1(repo: Path, out_dir: Path) -> Path:
     cond_count = len({r["condition"] for r in ind_cells})
     site_count = len({r["body_site_group"] for r in ind_cells})
     study_meta = read_tsv(repo / "trait-visualization/study_trait_profile_study_metadata.tsv")
-    retained_studies = len({r["study_id"] for r in study_meta})
-    retained_profiles = len(study_meta)
     coverage_dir = repo / "trait-visualization/trait-profile-investigation/taxa-coverage"
-    coverage_scope = _read_coverage_strain_rollup(coverage_dir)
+    prof_summary_path = coverage_dir / "profile_trait_mapping_summary.tsv"
+    prof_summary_rows = read_tsv(prof_summary_path) if prof_summary_path.exists() else None
+    run_info = read_coverage_run_info(
+        coverage_dir,
+        profile_summary_rows=prof_summary_rows,
+        study_meta_rows=study_meta,
+    )
+    retained_studies = run_info.retained_studies or 0
+    retained_profiles = run_info.retained_profiles
+    coverage_scope = run_info.strain_rollup
     coverage_rows = read_tsv(coverage_dir / "taxa_coverage_by_rank.tsv")
     zero_rows = read_tsv(coverage_dir / "top_zero_trait_bugsigdb_taxa.tsv")
     mp1_labels = methods_plate1_coverage_labels(
-        coverage_rows, zero_rows, retained_profiles=retained_profiles
+        coverage_rows,
+        zero_rows,
+        retained_profiles=retained_profiles,
+        population=run_info.population,
     )
 
     funnel_steps = [
@@ -903,12 +940,12 @@ def build_methods_plate1(repo: Path, out_dir: Path) -> Path:
         (
             rank.capitalize(),
             float(coverage[rank][COVERAGE_TRAIT_BEARING_OCC_PCT_COL]),
-            f"{int(coverage[rank]['trait_bearing_occurrences']):,} / "
-            f"{int(coverage[rank]['total_occurrences']):,} occ.",
+            f"{int(coverage[rank][COVERAGE_TRAIT_BEARING_OCC_COL]):,} / "
+            f"{int(coverage[rank][COVERAGE_TOTAL_OCC_COL]):,} occ.",
             INC_COLOR if rank == "species" else TEAL_ACCENT,
         )
         for rank in ("phylum", "order", "genus", "family", "species")
-        if rank in coverage and int(coverage[rank]["total_taxa"]) > 0
+        if rank in coverage and int(coverage[rank][COVERAGE_TOTAL_TAXA_COL]) > 0
     ]
     for idx_b, (rname, rpct, rlbl, rcol) in enumerate(rank_bars):
         by = 76.5 - idx_b * 5.2
@@ -3360,14 +3397,74 @@ def _alias_target_id(row: Mapping[str, str] | None) -> str | None:
     return rem.split("traits:")[-1].split("(")[0].strip().removeprefix("NCBITaxon:")
 
 
+def _plate6_remedy_clauses(
+    active_zero_rows: Sequence[Mapping[str, str]],
+) -> tuple[str, str]:
+    """Derive subtitle remedy phrase and Panel B second-line fixes from active zero rows (#982)."""
+    if not active_zero_rows:
+        return "", "No zero-trait taxa present in table"
+    cats_present = {r.get("diagnosis_category", "") for r in active_zero_rows}
+    has_alias = any(
+        _alias_target_id(r) is not None
+        for r in active_zero_rows
+        if r.get("diagnosis_category") == "NCBI TaxID Desynchronization"
+    )
+
+    sub_items: list[str] = []
+    if has_alias:
+        sub_items.append("TaxID alias review")
+    if "Ambiguous Taxon / Bin Slash" in cats_present:
+        sub_items.append("LCA resolution")
+    if not sub_items:
+        if "Rare / Novel Isolate (Lacks KG Phenotype)" in cats_present:
+            sub_items.append("trait curation")
+        if "Uncultivated / Metagenomic MAG" in cats_present or "Candidatus Lineage" in cats_present:
+            sub_items.append("direct trait evidence")
+        if "Non-Bacterial / Fungal Eukaryote" in cats_present and not sub_items:
+            sub_items.append("eukaryote filtering")
+
+    if len(sub_items) >= 2:
+        sub_joined = ", ".join(sub_items[:-1]) + f" and {sub_items[-1]}"
+        sub_verb = "address"
+    elif len(sub_items) == 1:
+        sub_joined = sub_items[0]
+        sub_verb = "addresses"
+    else:
+        sub_joined = ""
+        sub_verb = ""
+
+    b_items: list[str] = []
+    if has_alias:
+        b_items.append("TaxID alias review")
+    if "Ambiguous Taxon / Bin Slash" in cats_present:
+        b_items.append("slash-bin LCA")
+    if "Rare / Novel Isolate (Lacks KG Phenotype)" in cats_present:
+        b_items.append("curation")
+    if not b_items:
+        if "Uncultivated / Metagenomic MAG" in cats_present or "Candidatus Lineage" in cats_present:
+            b_items.append("direct trait evidence")
+        if "Non-Bacterial / Fungal Eukaryote" in cats_present:
+            b_items.append("eukaryote filtering")
+
+    if len(b_items) >= 2:
+        b_joined = ", ".join(b_items[:-1]) + f" & {b_items[-1]}"
+    elif len(b_items) == 1:
+        b_joined = b_items[0]
+    else:
+        b_joined = "direct trait evidence"
+
+    sub_suffix = f" — and how {sub_joined} {sub_verb}" if sub_joined else ""
+    return sub_suffix, f"Actionable fixes: {b_joined}"
+
+
 def plate6_text(
     rank_rows: Sequence[Mapping[str, str]],
     zero_rows: Sequence[Mapping[str, str]],
     *,
-    strain_rollup: str = "off",
+    strain_rollup: str = "unrecorded",
 ) -> dict[str, str]:
-    """Plate VI subtitle, panel titles, and footer derived from the coverage TSVs (#864, #956)."""
-    by_rank = {r["taxonomic_rank"]: r for r in rank_rows if int(r["total_taxa"]) > 0}
+    """Plate VI subtitle, panel titles, and footer derived from the coverage TSVs (#864, #982)."""
+    by_rank = {r["taxonomic_rank"]: r for r in rank_rows if int(r[COVERAGE_TOTAL_TAXA_COL]) > 0}
     sp = by_rank.get("species")
     gen = by_rank.get("genus")
     fam = by_rank.get("family")
@@ -3408,16 +3505,15 @@ def plate6_text(
         sp_occ = 0.0
         sp_clause = "Species rank absent from table"
 
+    active_zero_rows = [r for r in zero_rows if int(r.get("signature_occurrences", "0")) > 0]
+    sub_remedy, panel_b_fixes = _plate6_remedy_clauses(active_zero_rows)
+
     if (gen or fam) and sp:
-        subtitle = (
-            f"{higher_clause} while {sp_clause} — and how TaxID alias review and LCA "
-            "resolution address them."
-        )
+        tail = f"{sub_remedy} them." if sub_remedy else "."
+        subtitle = f"{higher_clause} while {sp_clause}{tail}"
     else:
-        subtitle = (
-            f"{higher_clause}; {sp_clause} — and how TaxID alias review and LCA "
-            "resolution address zero-trait taxa."
-        )
+        tail = f"{sub_remedy} zero-trait taxa." if sub_remedy else "."
+        subtitle = f"{higher_clause}; {sp_clause}{tail}"
 
     if sp and gen:
         gen_unique = float(gen[COVERAGE_TRAIT_BEARING_PCT_COL])
@@ -3442,23 +3538,32 @@ def plate6_text(
         ]
         panel_a_sub = " · ".join(present) if present else "No rank rows with taxa > 0"
 
-    active_zero_rows = [r for r in zero_rows if int(r.get("signature_occurrences", "0")) > 0]
     n_zero = len(active_zero_rows)
-    n_top = len(active_zero_rows[:18])
+    top_zero_rows = active_zero_rows[:18]
+    n_top = len(top_zero_rows)
     alias_rows = [
         r for r in active_zero_rows if r.get("diagnosis_category") == "NCBI TaxID Desynchronization"
     ]
+    top_alias_rows = [
+        r for r in top_zero_rows if r.get("diagnosis_category") == "NCBI TaxID Desynchronization"
+    ]
 
     panel_c_aliases: list[str] = []
-    footer_aliases: list[str] = []
-    for row in alias_rows:
+    for row in top_alias_rows:
         target = _alias_target_id(row)
         if not target:
             continue
         name = row.get("taxon_name") or row["taxon_id"]
         st = int(row["study_count"])
-        occ = int(row["signature_occurrences"])
         panel_c_aliases.append(f"{name} ({st} st.)")
+
+    footer_aliases: list[str] = []
+    for row in alias_rows:
+        target = _alias_target_id(row)
+        if not target:
+            continue
+        st = int(row["study_count"])
+        occ = int(row["signature_occurrences"])
         footer_aliases.append(f"{row['taxon_id']} → {target} ({st} studies, {occ} occ.)")
 
     if len(panel_c_aliases) >= 2:
@@ -3499,9 +3604,7 @@ def plate6_text(
     return {
         "subtitle": subtitle,
         "panel_a_title": f"A. The Species-Level Coverage Cliff\n{panel_a_sub}",
-        "panel_b_title": (
-            f"{panel_b_head}\nActionable fixes: TaxID alias review, slash-bin LCA & curation"
-        ),
+        "panel_b_title": f"{panel_b_head}\n{panel_b_fixes}",
         "panel_b_xlabel": panel_b_xlabel,
         "panel_c_title": f"{panel_c_head}\n{panel_c_sub}",
         "footer": (
@@ -3517,7 +3620,7 @@ def build_plate6(repo: Path, out_dir: Path) -> Path:
     coverage_dir = repo / "trait-visualization/trait-profile-investigation/taxa-coverage"
     rank_rows = read_tsv(coverage_dir / "taxa_coverage_by_rank.tsv")
     zero_rows = read_tsv(coverage_dir / "top_zero_trait_bugsigdb_taxa.tsv")
-    strain_rollup = _read_coverage_strain_rollup(coverage_dir)
+    strain_rollup = read_coverage_run_info(coverage_dir).strain_rollup
     text = plate6_text(rank_rows, zero_rows, strain_rollup=strain_rollup)
 
     fig = plt.figure(figsize=(16.0, 9.0), facecolor=BG_COLOR)
@@ -3560,7 +3663,8 @@ def build_plate6(repo: Path, out_dir: Path) -> Path:
     ranks_keep = [
         r
         for r in rank_rows
-        if r["taxonomic_rank"] not in {"superkingdom", "other"} and int(r["total_taxa"]) > 0
+        if r["taxonomic_rank"] not in {"superkingdom", "other"}
+        and int(r[COVERAGE_TOTAL_TAXA_COL]) > 0
     ]
     y_rk = np.arange(len(ranks_keep))[::-1]
     ax_rank.set_ylim(-0.5, max(len(ranks_keep) - 0.3, 0.5))
@@ -3605,7 +3709,7 @@ def build_plate6(repo: Path, out_dir: Path) -> Path:
             o_cov + 1.5,
             yp,
             f"{o_cov:.1f}% "
-            f"({int(r['trait_bearing_occurrences']):,}/{int(r['total_occurrences']):,})",
+            f"({int(r[COVERAGE_TRAIT_BEARING_OCC_COL]):,}/{int(r[COVERAGE_TOTAL_OCC_COL]):,})",
             fontsize=7.4,
             fontweight="bold",
             color=TEAL_ACCENT,
@@ -3615,7 +3719,7 @@ def build_plate6(repo: Path, out_dir: Path) -> Path:
 
     ax_rank.set_yticks(y_rk)
     ax_rank.set_yticklabels(
-        [f"{r['display_rank']}\n({int(r['total_taxa']):,} taxa)" for r in ranks_keep],
+        [f"{r['display_rank']}\n({int(r[COVERAGE_TOTAL_TAXA_COL]):,} taxa)" for r in ranks_keep],
         fontsize=8.0,
         fontweight="bold",
     )
@@ -3734,7 +3838,7 @@ def build_plate6(repo: Path, out_dir: Path) -> Path:
     )
     ax_top.set_title(
         text["panel_c_title"],
-        fontsize=7.4,
+        fontsize=6.8,
         fontweight="bold",
         loc="left",
         pad=10,

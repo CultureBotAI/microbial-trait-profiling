@@ -42,11 +42,21 @@ from git.exc import GitError
 
 from mtp.quoted_results import (
     CALIBRATION_CRITERIA,
+    COVERAGE_ANNOTATION_BASIS,
+    COVERAGE_TOTAL_OCC_COL,
+    COVERAGE_TOTAL_TAXA_COL,
+    COVERAGE_TRAIT_BEARING_OCC_PCT_COL,
+    COVERAGE_TRAIT_BEARING_PCT_COL,
+    COVERAGE_ZERO_TRAIT_OCC_COL,
+    COVERAGE_ZERO_TRAIT_OCC_PCT_COL,
+    COVERAGE_ZERO_TRAIT_PCT_COL,
+    COVERAGE_ZERO_TRAIT_TAXA_COL,
     GUILD_CORRELATION,
     ORA_DEPLETION,
     ORA_ENRICHMENT,
     McNemar,
     OraCalls,
+    read_coverage_run_info,
     screened_rejection_rate,
 )
 from mtp.table1_directions import (
@@ -447,17 +457,28 @@ def load_rerun_metrics(repo: Path) -> dict:
     metrics["pooled_studies"] = max(int(float(r["study_count"])) for r in paired["pooled"])
     metrics["feces_studies"] = max(int(float(r["study_count"])) for r in paired["feces"])
     study_meta = read_tsv(repo / "trait-visualization/study_trait_profile_study_metadata.tsv")
-    metrics["retained_profiles"] = len(study_meta)
-    metrics["retained_studies"] = len({r["study_id"] for r in study_meta})
+    cov_dir = paired_dir / "taxa-coverage"
+    prof_summary_path = cov_dir / "profile_trait_mapping_summary.tsv"
+    prof_summary_rows = read_tsv(prof_summary_path) if prof_summary_path.exists() else None
+    cov_info = read_coverage_run_info(
+        cov_dir,
+        profile_summary_rows=prof_summary_rows,
+        study_meta_rows=study_meta,
+    )
+    metrics["retained_profiles"] = cov_info.retained_profiles
+    metrics["retained_studies"] = cov_info.retained_studies
+    metrics["coverage_strain_rollup"] = cov_info.strain_rollup
+    metrics["coverage_population"] = cov_info.population
     metrics["ind_conditions"] = len({r["condition"] for r in ind_rows})
     metrics["ind_sites"] = len({r["body_site_group"] for r in ind_rows})
     metrics["ind_median_studies"] = median(int(r["study_count"]) for r in ind_rows)
-    coverage_ranks = read_tsv(paired_dir / "taxa-coverage" / "taxa_coverage_by_rank.tsv")
+    coverage_ranks = read_tsv(cov_dir / "taxa_coverage_by_rank.tsv")
     metrics["taxa_coverage_by_rank"] = {r["taxonomic_rank"]: r for r in coverage_ranks}
-    metrics["coverage_total_occurrences"] = sum(int(r["total_occurrences"]) for r in coverage_ranks)
-    metrics["coverage_total_taxa"] = sum(int(r["total_taxa"]) for r in coverage_ranks)
-    metrics["coverage_strain_rollup"] = _read_coverage_strain_rollup(paired_dir / "taxa-coverage")
-    zero_trait = read_tsv(paired_dir / "taxa-coverage" / "top_zero_trait_bugsigdb_taxa.tsv")
+    metrics["coverage_total_occurrences"] = sum(
+        int(r[COVERAGE_TOTAL_OCC_COL]) for r in coverage_ranks
+    )
+    metrics["coverage_total_taxa"] = sum(int(r[COVERAGE_TOTAL_TAXA_COL]) for r in coverage_ranks)
+    zero_trait = read_tsv(cov_dir / "top_zero_trait_bugsigdb_taxa.tsv")
     metrics["zero_trait_rows"] = zero_trait
     metrics["zero_trait_taxa"] = len(zero_trait)
     metrics["zero_trait_occurrences"] = sum(int(r["signature_occurrences"]) for r in zero_trait)
@@ -992,29 +1013,12 @@ def plate_one_text(metrics: dict) -> tuple[str, str]:
     return takeaway, caveat
 
 
-COVERAGE_TRAIT_BEARING_PCT_COL = "trait_bearing_pct"
-COVERAGE_ZERO_TRAIT_PCT_COL = "zero_trait_pct"
-COVERAGE_TRAIT_BEARING_OCC_PCT_COL = "trait_bearing_occurrences_pct"
-COVERAGE_ZERO_TRAIT_OCC_PCT_COL = "zero_trait_occurrences_pct"
-COVERAGE_ANNOTATION_BASIS = "any annotation (incl. MediaDive)"
-
-
-def _read_coverage_strain_rollup(coverage_dir: Path) -> str:
-    """Read strain_rollup from taxa-coverage provenance JSON when present (#858, #956)."""
-    for fname in ("provenance.json", "taxa_coverage_run.json"):
-        path = coverage_dir / fname
-        if path.exists():
-            data = json.loads(path.read_text(encoding="utf-8"))
-            scope = data.get("strain_rollup")
-            if isinstance(scope, str) and scope:
-                return scope
-    return "off"
-
-
 def _present_coverage_ranks(metrics: Mapping[str, Any]) -> dict[str, Mapping[str, str]]:
     """Return only rank rows present in taxa_coverage_by_rank.tsv with >0 taxa (#924)."""
     raw = metrics.get("taxa_coverage_by_rank") or {}
-    return {rank: row for rank, row in raw.items() if int(row.get("total_taxa", "0")) > 0}
+    return {
+        rank: row for rank, row in raw.items() if int(row.get(COVERAGE_TOTAL_TAXA_COL, "0")) > 0
+    }
 
 
 def _oxford_listing(items: list[str]) -> str:
@@ -1043,13 +1047,13 @@ def _coverage_totals(metrics: Mapping[str, Any]) -> tuple[int, int]:
     total_occ = int(
         metrics.get(
             "coverage_total_occurrences",
-            sum(int(r.get("total_occurrences", "0")) for r in ranks.values()),
+            sum(int(r.get(COVERAGE_TOTAL_OCC_COL, "0")) for r in ranks.values()),
         )
     )
     total_taxa = int(
         metrics.get(
             "coverage_total_taxa",
-            sum(int(r.get("total_taxa", "0")) for r in ranks.values()),
+            sum(int(r.get(COVERAGE_TOTAL_TAXA_COL, "0")) for r in ranks.values()),
         )
     )
     return total_occ, total_taxa
@@ -1078,9 +1082,9 @@ def methods_plate_one_takeaway(metrics: Mapping[str, Any]) -> str:
 
 
 def methods_plate_one_caveat(metrics: Mapping[str, Any]) -> str:
-    """Methods Plate I's caveat, read from taxa_coverage_by_rank.tsv (#864, #924, #956)."""
+    """Methods Plate I's caveat, read from taxa_coverage_by_rank.tsv (#864, #924, #956, #982)."""
     ranks = _present_coverage_ranks(metrics)
-    scope = str(metrics.get("coverage_strain_rollup") or "off")
+    scope = str(metrics.get("coverage_strain_rollup") or "unrecorded")
     sp = ranks.get("species")
     gen = ranks.get("genus")
     fam = ranks.get("family")
@@ -1142,9 +1146,9 @@ def methods_plate_one_caveat(metrics: Mapping[str, Any]) -> str:
 
 
 def plate_six_text(metrics: Mapping[str, Any]) -> tuple[str, str]:
-    """Tufte Plate VI takeaway and caveat, read from the coverage TSVs (#864, #924, #930, #956)."""
+    """Tufte Plate VI takeaway and caveat, read from the coverage TSVs (#864, #924, #930, #982)."""
     ranks = _present_coverage_ranks(metrics)
-    scope = str(metrics.get("coverage_strain_rollup") or "off")
+    scope = str(metrics.get("coverage_strain_rollup") or "unrecorded")
     higher_clauses = [
         f"{label} ({float(ranks[rk][COVERAGE_TRAIT_BEARING_OCC_PCT_COL]):.1f}%)"
         for rk, label in (("genus", "Genus"), ("family", "Family"))
@@ -1154,11 +1158,11 @@ def plate_six_text(metrics: Mapping[str, Any]) -> tuple[str, str]:
     sp_clause: str | None = None
     if sp is not None:
         sp_zero_pct = float(sp[COVERAGE_ZERO_TRAIT_PCT_COL])
-        sp_zero_taxa = int(sp["zero_trait_taxa"])
-        sp_total_taxa = int(sp["total_taxa"])
+        sp_zero_taxa = int(sp[COVERAGE_ZERO_TRAIT_TAXA_COL])
+        sp_total_taxa = int(sp[COVERAGE_TOTAL_TAXA_COL])
         sp_zero_occ_pct = float(sp[COVERAGE_ZERO_TRAIT_OCC_PCT_COL])
-        sp_zero_occ = int(sp["zero_trait_occurrences"])
-        sp_total_occ = int(sp["total_occurrences"])
+        sp_zero_occ = int(sp[COVERAGE_ZERO_TRAIT_OCC_COL])
+        sp_total_occ = int(sp[COVERAGE_TOTAL_OCC_COL])
         sp_clause = (
             f"{sp_zero_pct:.1f}% of distinct species ({sp_zero_taxa:,}/{sp_total_taxa:,}) and "
             f"{sp_zero_occ_pct:.1f}% of species occurrences ({sp_zero_occ:,}/{sp_total_occ:,}) "

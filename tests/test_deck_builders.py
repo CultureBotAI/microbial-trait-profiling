@@ -2079,8 +2079,10 @@ def _mock_rerun_repo_for_deck(
             return rank_rows
         if name == "top_zero_trait_bugsigdb_taxa.tsv":
             return zero_rows
+        if name == "profile_trait_mapping_summary.tsv":
+            return [{"study_id": f"S{i % 932}", "experiment_id": f"E{i}"} for i in range(5629)]
         if name == "study_trait_profile_study_metadata.tsv":
-            return [{"study_id": f"S{i % 1029}"} for i in range(6854)]
+            return [{"study_id": f"S{i % 932}"} for i in range(5629)]
         if name == "six_shared_trait_condition_body_site_direction_contrasts.tsv":
             return [
                 {
@@ -2237,6 +2239,25 @@ def _mock_rerun_repo_for_deck(
             ]
         return []
 
+    cov_dir = tmp_path / "trait-visualization" / "trait-profile-investigation" / "taxa-coverage"
+    cov_dir.mkdir(parents=True, exist_ok=True)
+    (cov_dir / "profile_trait_mapping_summary.tsv").write_text(
+        "study_id\texperiment_id\nS0\tE0\n",
+        encoding="utf-8",
+    )
+    (cov_dir / "provenance.json").write_text(
+        json.dumps(
+            {
+                "strain_rollup": "off",
+                "population": {
+                    "host_species": "Homo sapiens",
+                    "sequencing_types": ["16S", "WMS"],
+                },
+                "counts": {"selected_profiles": 5629},
+            }
+        ),
+        encoding="utf-8",
+    )
     monkeypatch.setattr(deck, "read_tsv", fake_read_tsv)
     monkeypatch.setattr(
         deck,
@@ -2265,19 +2286,20 @@ def test_deck_coverage_text_reads_the_coverage_tsvs(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Methods Plate I and Plate VI slide text derive from coverage TSVs (#864, #930, #956)."""
+    """Methods Plate I and Plate VI slide text derive from coverage TSVs (#864, #930, #982)."""
     rank_rows = _coverage_rank_rows()
     zero_rows = _zero_trait_rows()
     metrics = _mock_rerun_repo_for_deck(tmp_path, monkeypatch, rank_rows, zero_rows)
     assert metrics["coverage_total_occurrences"] == 46865
     assert metrics["coverage_total_taxa"] == 4750
-    assert metrics["retained_profiles"] == 6854
-    assert metrics["retained_studies"] == 1029
+    assert metrics["retained_profiles"] == 5629
+    assert metrics["retained_studies"] == 932
+    assert metrics["coverage_strain_rollup"] == "off"
 
     mp1_takeaway = deck.methods_plate_one_takeaway(metrics)
     assert mp1_takeaway == (
-        "High-level visual overview of the data ingestion funnel: 1,029 BugSigDB v1.3.1 human "
-        "studies (6,854 retained profiles, 46,865 all-profile taxon occurrences across "
+        "High-level visual overview of the data ingestion funnel: 932 BugSigDB v1.3.1 human "
+        "studies (5,629 retained profiles, 46,865 all-profile taxon occurrences across "
         "4,750 unique NCBI TaxIDs; 2,335 paired experiments / 4,670 paired profiles) "
         "joined to 5,829 KG-Microbe organisms \N{MULTIPLICATION SIGN} "
         "317 normalized traits via NCBI Taxonomy subtree rollup."
@@ -2287,7 +2309,7 @@ def test_deck_coverage_text_reads_the_coverage_tsvs(
 
     assert deck.methods_plate_one_caveat(metrics) == (
         "Highlights the rank-stratified coverage cliff (Genus/Family 96.4% vs Species 77.6% "
-        "occurrences / 58.1% unique species; any annotation (incl. MediaDive), "
+        "occurrences / 58.1% unique species; any annotation [incl. MediaDive], "
         "strain_rollup=off) and defines the OR-rule oxygen/Gram guilds and "
         "6 Table 1 focal traits."
     )
@@ -2305,7 +2327,7 @@ def test_deck_coverage_text_reads_the_coverage_tsvs(
     assert takeaway == (
         "Genus (96.4%) and Family (96.4%) occurrences in BugSigDB have high KG-Microbe coverage, "
         "whereas 41.9% of distinct species (1,231/2,937) and 22.4% of species occurrences "
-        "(3,571/15,970) have zero traits (any annotation (incl. MediaDive), strain_rollup=off)."
+        "(3,571/15,970) have zero traits (any annotation [incl. MediaDive], strain_rollup=off)."
     )
     assert caveat == (
         "Auditing the top 9 zero-trait taxa (482 occurrences) identifies TaxID alias candidates "
@@ -2345,29 +2367,33 @@ def test_deck_coverage_text_reads_the_coverage_tsvs(
 def test_plate_six_text_and_remediation_labels_read_the_coverage_tsvs(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Plate VI and Methods Plate I derive coverage labels from TSVs (#864, #930, #951, #956)."""
+    """Plate VI and Methods Plate I derive coverage labels from TSVs (#864, #930, #951, #982)."""
     rank_rows = _coverage_rank_rows()
     zero_rows = _zero_trait_rows()
 
-    mp1_labels = plates.methods_plate1_coverage_labels(rank_rows, zero_rows, retained_profiles=6854)
+    mp1_labels = plates.methods_plate1_coverage_labels(
+        rank_rows,
+        zero_rows,
+        retained_profiles=5629,
+        population={"host_species": "Homo sapiens", "sequencing_types": ["16S", "WMS"]},
+    )
     assert mp1_labels["occurrences_title"] == "46,865 All-Profile Taxon Occurrences"
     assert mp1_labels["taxa_subtitle"] == (
-        "4,750 unique NCBI TaxIDs across 6,854 retained profiles\n"
+        "4,750 unique NCBI TaxIDs across 5,629 retained profiles\n"
         "(all human 16S/WMS signatures in rank table)"
     )
-    assert "median 5 taxa" not in mp1_labels["taxa_subtitle"]
     assert mp1_labels["species_gap_note"] == (
         "Species gap (22% of species occurrences): uncultivated MAGs & slash-bins;\n"
-        "All-rank 3 NCBI TaxID desyncs (Oscillospiraceae, Rothia, Lactobacillaceae)"
+        "All-rank NCBI TaxID desyncs: 3 (Oscillospiraceae, Rothia, Lactobacillaceae)"
     )
 
-    text = plates.plate6_text(rank_rows, zero_rows)
+    text = plates.plate6_text(rank_rows, zero_rows, strain_rollup="off")
     assert text["subtitle"] == (
         "Why Genus/Family signatures achieve 96.4% trait coverage while 41.9% of distinct "
         "Species (22.4% of species occurrences) have zero traits in KG-Microbe — and how "
         "TaxID alias review and LCA resolution address them."
     )
-    assert "any annotation (incl. MediaDive), strain_rollup=off" in text["footer"]
+    assert "any annotation [incl. MediaDive], strain_rollup=off" in text["footer"]
     assert text["panel_a_title"] == (
         "A. The Species-Level Coverage Cliff\n"
         "Species: 58.1% unique / 77.6% occurrences vs Genus: 77.5% / 96.4%"
@@ -2428,11 +2454,28 @@ def test_plate_six_text_and_remediation_labels_read_the_coverage_tsvs(
         + "\n",
         encoding="utf-8",
     )
+    (cov_dir / "profile_trait_mapping_summary.tsv").write_text(
+        "study_id\texperiment_id\n" + "".join(f"S{i % 932}\tE{i}\n" for i in range(5629)),
+        encoding="utf-8",
+    )
+    (cov_dir / "provenance.json").write_text(
+        json.dumps(
+            {
+                "strain_rollup": "off",
+                "population": {
+                    "host_species": "Homo sapiens",
+                    "sequencing_types": ["16S", "WMS"],
+                },
+                "counts": {"selected_profiles": 5629},
+            }
+        ),
+        encoding="utf-8",
+    )
     # Also write minimal inputs for build_methods_plate1 so both Plate VI and Methods Plate I
     # are verified end-to-end against the coverage TSVs:
     meta_path = tmp_path / "trait-visualization" / "study_trait_profile_study_metadata.tsv"
     meta_path.write_text(
-        "study_id\tprofile_id\n" + "".join(f"S{i % 1029}\tP{i}\n" for i in range(6854)),
+        "study_id\tprofile_id\n" + "".join(f"S{i % 932}\tP{i}\n" for i in range(5629)),
         encoding="utf-8",
     )
     paired_dir = tmp_path / "trait-visualization" / "trait-profile-investigation"
@@ -2450,12 +2493,6 @@ def test_plate_six_text_and_remediation_labels_read_the_coverage_tsvs(
     (six_dir / "six_shared_trait_condition_body_site_direction_contrasts.tsv").write_text(
         "view_key\tcondition\tbody_site_group\n"
         "individual_conditions_direction_contrast\tParkinson's disease\tFeces\n",
-        encoding="utf-8",
-    )
-    matrix_stats_path = tmp_path / "data" / "derived" / "taxa_trait_matrix_stats.json"
-    matrix_stats_path.parent.mkdir(parents=True)
-    matrix_stats_path.write_text(
-        json.dumps({"total_organisms": 5829, "total_traits": 317}),
         encoding="utf-8",
     )
 
@@ -2480,8 +2517,17 @@ def test_plate_six_text_and_remediation_labels_read_the_coverage_tsvs(
         assert mp1_labels["occurrences_title"] in mp1_all_text
         assert mp1_labels["taxa_subtitle"] in mp1_all_text
         assert mp1_labels["species_gap_note"] in mp1_all_text
-        for stale_mp1 in ("41,279", "4,569", "median 5 taxa"):
+        for stale_mp1 in ("41,279", "4,569"):
             assert stale_mp1 not in mp1_all_text
+        # Verify the 4 funnel steps appear in top-to-bottom y order (#951, #982):
+        ax_texts_by_str = {t.get_text(): t.get_position()[1] for t in mp1_fig.axes[0].texts}
+        funnel_ys = [
+            ax_texts_by_str["932 Curated Studies (5,629 Profiles)"],
+            ax_texts_by_str["46,865 All-Profile Taxon Occurrences"],
+            ax_texts_by_str["2,335 Paired Experiments"],
+            ax_texts_by_str["4,670 Paired Directional Signatures"],
+        ]
+        assert funnel_ys == sorted(funnel_ys, reverse=True)
     finally:
         real_close(mp1_fig)
 
@@ -2490,7 +2536,17 @@ def test_plate_six_text_and_remediation_labels_read_the_coverage_tsvs(
     assert len(closed) == 1
     fig = closed.pop()
     try:
-        fig.canvas.draw()
+        for check_dpi in (100, 220):
+            fig.set_dpi(check_dpi)
+            fig.canvas.draw()
+            for t in fig.axes[2].texts:
+                assert t.get_window_extent().x1 <= fig.axes[2].get_window_extent().x1
+            for ax in fig.axes:
+                for title_artist in (ax.title, ax._left_title, ax._right_title):
+                    if title_artist.get_text():
+                        assert title_artist.get_window_extent().x1 <= fig.bbox.x1 * 0.99
+            for t in fig.texts:
+                assert t.get_window_extent().x1 <= fig.bbox.x1 * 0.99
         rank_labels = [label.get_text() for label in fig.axes[0].get_yticklabels()]
         assert all("Other / unrecorded" not in lbl and "0/0" not in lbl for lbl in rank_labels)
         panel_b_labels = [label.get_text() for label in fig.axes[1].get_yticklabels()]
@@ -2526,14 +2582,6 @@ def test_plate_six_text_and_remediation_labels_read_the_coverage_tsvs(
             "Remap",
         ):
             assert stale not in all_fig_text
-        for t in fig.axes[2].texts:
-            assert t.get_window_extent().x1 <= fig.axes[2].get_window_extent().x1
-        for ax in fig.axes:
-            for title_artist in (ax.title, ax._left_title, ax._right_title):
-                if title_artist.get_text():
-                    assert title_artist.get_window_extent().x1 <= fig.bbox.x1 * 0.995
-        for t in fig.texts:
-            assert t.get_window_extent().x1 <= fig.bbox.x1 * 0.995
     finally:
         real_close(fig)
 
@@ -2581,6 +2629,9 @@ def test_plate_six_and_deck_handle_sparse_ranks_and_absent_alias_candidates(
     assert "Genus/Family 60.0%" not in plate_text["subtitle"]
     assert "Genus/Family ranks absent from table" in plate_text["subtitle"]
     assert "50.0% of distinct Species (40.0% of species occurrences)" in plate_text["subtitle"]
+    assert "TaxID alias review" not in plate_text["subtitle"]
+    assert "LCA resolution" not in plate_text["subtitle"]
+    assert "how direct trait evidence addresses zero-trait taxa." in plate_text["subtitle"]
     assert "Genus: 50.0% / 60.0%" not in plate_text["panel_a_title"]
     assert plate_text["panel_a_title"] == (
         "A. The Species-Level Coverage Cliff\n"
@@ -2588,8 +2639,12 @@ def test_plate_six_and_deck_handle_sparse_ranks_and_absent_alias_candidates(
     )
     assert plate_text["panel_b_title"] == (
         "B. Root-Cause Taxonomy of 1 Zero-Trait BugSigDB Taxon\n"
-        "Actionable fixes: TaxID alias review, slash-bin LCA & curation"
+        "Actionable fixes: direct trait evidence"
     )
+    assert "TaxID alias review" not in plate_text["panel_b_title"]
+    assert "slash-bin LCA" not in plate_text["panel_b_title"]
+    assert "curation" not in plate_text["panel_b_title"]
+    assert "strain_rollup=unrecorded" in plate_text["footer"]
     assert "Oscillospiraceae (0 st.)" not in plate_text["panel_c_title"]
     assert "Rothia (0 st.)" not in plate_text["panel_c_title"]
     assert "C. 1 Zero-Trait BugSigDB Taxon & Remediation Path" in plate_text["panel_c_title"]
@@ -2598,6 +2653,12 @@ def test_plate_six_and_deck_handle_sparse_ranks_and_absent_alias_candidates(
     assert "32207" not in plate_text["footer"]
     assert "NCBITaxon:541000" not in plate_text["footer"]
     assert "NCBITaxon:508215" not in plate_text["footer"]
+
+    sparse_mp1 = plates.methods_plate1_coverage_labels(species_only_ranks, non_alias_zero)
+    assert sparse_mp1["species_gap_note"] == (
+        "Species gap (40% of species occurrences): Candidatus lineages;\n"
+        "All-rank: no focal NCBI TaxID desyncs in table"
+    )
 
     sparse_metrics = {
         "taxa_coverage_by_rank": {r["taxonomic_rank"]: r for r in species_only_ranks},
@@ -2608,11 +2669,13 @@ def test_plate_six_and_deck_handle_sparse_ranks_and_absent_alias_candidates(
     caveat_one = deck.methods_plate_one_caveat(sparse_metrics)
     assert "Species 60.0% occurrences / 50.0% unique species" in caveat_one
     assert "Genus/Family absent" in caveat_one
+    assert "strain_rollup=unrecorded" in caveat_one
     assert "Genus/Family 60.0%" not in caveat_one
 
     takeaway_six, caveat_six = deck.plate_six_text(sparse_metrics)
     assert "50.0% of distinct species (2/4)" in takeaway_six
     assert "40.0% of species occurrences (4/10)" in takeaway_six
+    assert "strain_rollup=unrecorded" in takeaway_six
     assert "Genus and Family ranks absent from rank table" in takeaway_six
     assert "Auditing the 1 zero-trait taxon (4 occurrences)" in caveat_six
     assert "finds no TaxID alias or Escherichia/Shigella slash-bin candidates" in caveat_six
@@ -2629,6 +2692,9 @@ def test_plate_six_and_deck_handle_sparse_ranks_and_absent_alias_candidates(
             "suggested_remediation": "Investigate taxonomy without target ID",
         }
     ]
+    t_mp1 = plates.methods_plate1_coverage_labels(species_only_ranks, targetless_desync)
+    assert "All-rank: no focal NCBI TaxID desyncs in table" in t_mp1["species_gap_note"]
+    assert "Targetless taxon" not in t_mp1["species_gap_note"]
     t_plate = plates.plate6_text(species_only_ranks, targetless_desync)
     assert "No focal TaxID alias candidates present in table" in t_plate["panel_c_title"]
     assert "Targetless taxon" not in t_plate["footer"]
@@ -2639,6 +2705,36 @@ def test_plate_six_and_deck_handle_sparse_ranks_and_absent_alias_candidates(
         }
     )
     assert "Targetless taxon" not in t_caveat
+
+    # Multi-word desync taxon name with parenthetical keeps full name without parenthetical (#982):
+    multiword_desync = [
+        {
+            **non_alias_zero[0],
+            "taxon_id": "NCBITaxon:888888",
+            "taxon_name": "Ruminococcus gnavus group (misassigned)",
+            "diagnosis_category": "NCBI TaxID Desynchronization",
+            "suggested_remediation": (
+                "Review possible TaxID alias before transferring traits: "
+                "NCBITaxon:33038 (Ruminococcus gnavus)"
+            ),
+        }
+    ]
+    mw_mp1 = plates.methods_plate1_coverage_labels(species_only_ranks, multiword_desync)
+    assert "All-rank NCBI TaxID desync: 1 (Ruminococcus gnavus group)" in mw_mp1["species_gap_note"]
+
+    # An alias candidate at row 19 (index 18) is outside Panel C's top-18 bars (#982):
+    nineteen_rows = [
+        {**non_alias_zero[0], "zero_trait_rank": str(i), "taxon_id": f"NCBITaxon:{990000 + i}"}
+        for i in range(1, 20)
+    ]
+    nineteen_rows[18] = {
+        **multiword_desync[0],
+        "zero_trait_rank": "19",
+    }
+    row19_plate = plates.plate6_text(species_only_ranks, nineteen_rows)
+    assert "Ruminococcus gnavus" not in row19_plate["panel_c_title"]
+    assert "No focal TaxID alias candidates present in table" in row19_plate["panel_c_title"]
+    assert "NCBITaxon:888888 → 33038" in row19_plate["footer"]
 
     # Full ranks with each candidate row omitted independently:
     full_rank_map = {r["taxonomic_rank"]: r for r in _coverage_rank_rows()}
@@ -2664,7 +2760,7 @@ def test_plate_six_and_deck_handle_sparse_ranks_and_absent_alias_candidates(
             assert omitted_name not in sub_plate["panel_c_title"]
             assert omitted_id not in sub_plate["footer"]
 
-    # Genus-only and empty rank tables also succeed without borrowing ranks (#951):
+    # Genus-only and empty rank tables also succeed without borrowing ranks (#951, #982):
     genus_only_row = _coverage_rank_rows()[1]
     genus_only_metrics = {
         "taxa_coverage_by_rank": {"genus": genus_only_row},
@@ -2682,9 +2778,11 @@ def test_plate_six_and_deck_handle_sparse_ranks_and_absent_alias_candidates(
     assert "finds no TaxID alias" in gen_caveat
     gen_plate = plates.plate6_text([genus_only_row], [])
     assert "Family absent" in gen_plate["subtitle"]
-    assert "Species rank absent from table" in gen_plate["subtitle"]
+    assert "Species rank absent from table." in gen_plate["subtitle"]
+    assert "how " not in gen_plate["subtitle"]
     assert "(Species absent)" in gen_plate["panel_a_title"]
     assert "Zero-Trait BugSigDB Taxa (0 Taxa)" in gen_plate["panel_b_title"]
+    assert "No zero-trait taxa present in table" in gen_plate["panel_b_title"]
     assert "Zero-Trait BugSigDB Taxa & Remediation Path (0 Taxa)" in gen_plate["panel_c_title"]
 
     gen_mp1 = plates.methods_plate1_coverage_labels([genus_only_row], full_zero)
@@ -2694,8 +2792,11 @@ def test_plate_six_and_deck_handle_sparse_ranks_and_absent_alias_candidates(
     )
     assert "Species gap (0%" not in gen_mp1["species_gap_note"]
     empty_mp1 = plates.methods_plate1_coverage_labels([], [])
+    assert empty_mp1["occurrences_title"] == "All-Profile Taxon Occurrences Unavailable"
+    assert empty_mp1["taxa_subtitle"] == "Unique NCBI TaxIDs unavailable (no rank rows in table)"
+    assert "0 All-Profile" not in empty_mp1["occurrences_title"]
+    assert "0 unique NCBI TaxIDs" not in empty_mp1["taxa_subtitle"]
     assert "Species coverage unavailable" in empty_mp1["species_gap_note"]
-    assert "median 5 taxa" not in empty_mp1["taxa_subtitle"]
 
     # Render Plate 6 with sparse species-only table and 1 non-alias zero-trait taxon:
     cov_dir = tmp_path / "trait-visualization" / "trait-profile-investigation" / "taxa-coverage"
@@ -2755,3 +2856,76 @@ def test_plate6_candidatus_label_preserves_direct_evidence_caution() -> None:
         assert label == "Direct trait evidence needed"
         assert "MAG metabolic model" not in label
         assert "neighbor" not in label.lower()
+
+
+def test_coverage_run_info_validates_strain_rollup_and_profile_count_agreement(
+    tmp_path: Path,
+) -> None:
+    """Coverage population helper validates strain_rollup and table profile counts (#982)."""
+    from mtp.quoted_results import format_coverage_population, read_coverage_run_info
+
+    summary_path = tmp_path / "profile_trait_mapping_summary.tsv"
+    summary_path.write_text(
+        "study_id\texperiment_id\n" + "".join(f"S{i % 932}\tE{i}\n" for i in range(5629)),
+        encoding="utf-8",
+    )
+    meta_rows = [{"study_id": f"S{i % 932}", "profile_id": f"P{i}"} for i in range(5629)]
+    prov_path = tmp_path / "provenance.json"
+    prov_path.write_text(
+        json.dumps(
+            {
+                "strain_rollup": "phenotype",
+                "population": {
+                    "host_species": "Homo sapiens",
+                    "sequencing_types": ["16S", "WMS"],
+                },
+                "counts": {"selected_profiles": 5629},
+            }
+        ),
+        encoding="utf-8",
+    )
+    info = read_coverage_run_info(tmp_path, study_meta_rows=meta_rows)
+    assert info.retained_profiles == 5629
+    assert info.retained_studies == 932
+    assert info.strain_rollup == "phenotype"
+    assert format_coverage_population(info.population) == (
+        "all human 16S/WMS signatures in rank table"
+    )
+    assert format_coverage_population(None) == "population unrecorded in rank table"
+
+    prov_path.write_text("{}", encoding="utf-8")
+    info_unrecorded = read_coverage_run_info(tmp_path, study_meta_rows=meta_rows)
+    assert info_unrecorded.strain_rollup == "unrecorded"
+
+    prov_path.write_text(
+        json.dumps({"strain_rollup": "bogus"}),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="Unknown strain_rollup"):
+        read_coverage_run_info(tmp_path, study_meta_rows=meta_rows)
+
+    prov_path.write_text(
+        json.dumps(
+            {
+                "strain_rollup": "off",
+                "counts": {"selected_profiles": 9999},
+            }
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="selected_profiles"):
+        read_coverage_run_info(tmp_path, study_meta_rows=meta_rows)
+
+    prov_path.write_text(
+        json.dumps({"strain_rollup": "off"}),
+        encoding="utf-8",
+    )
+    summary_path.write_text(
+        "study_id\texperiment_id\nS0\tE0\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(
+        ValueError,
+        match=r"profile_trait_mapping_summary\.tsv \(1 profiles across 1 studies\) disagrees",
+    ):
+        read_coverage_run_info(tmp_path, study_meta_rows=meta_rows)

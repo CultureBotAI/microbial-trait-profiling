@@ -14,14 +14,168 @@ text in step with the tables:
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping
+import csv
+import json
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
+
+from mtp.taxa_trait_matrix import STRAIN_ROLLUPS
 
 ORA_ENRICHMENT = Path("data/derived/trait_enrichment_results.tsv")
 ORA_DEPLETION = Path("data/derived/trait_depletion_results.tsv")
 GUILD_CORRELATION = Path("data/derived/guild_maps/guild_aerobe_anaerobe_correlation.tsv")
 CALIBRATION_CRITERIA = Path("data/derived/calibration/calibration_criteria.tsv")
+
+# Shared column and basis definitions for taxa-coverage tables (#858, #864, #956, #982).
+COVERAGE_TOTAL_TAXA_COL = "total_taxa"
+COVERAGE_TRAIT_BEARING_TAXA_COL = "trait_bearing_taxa"
+COVERAGE_ZERO_TRAIT_TAXA_COL = "zero_trait_taxa"
+COVERAGE_TRAIT_BEARING_PCT_COL = "trait_bearing_pct"
+COVERAGE_ZERO_TRAIT_PCT_COL = "zero_trait_pct"
+COVERAGE_TOTAL_OCC_COL = "total_occurrences"
+COVERAGE_TRAIT_BEARING_OCC_COL = "trait_bearing_occurrences"
+COVERAGE_ZERO_TRAIT_OCC_COL = "zero_trait_occurrences"
+COVERAGE_TRAIT_BEARING_OCC_PCT_COL = "trait_bearing_occurrences_pct"
+COVERAGE_ZERO_TRAIT_OCC_PCT_COL = "zero_trait_occurrences_pct"
+COVERAGE_ANNOTATION_BASIS = "any annotation [incl. MediaDive]"
+
+
+@dataclass(frozen=True)
+class CoverageRunInfo:
+    """Provenance and profile/study counts for a taxa-coverage run (#858, #956, #982)."""
+
+    strain_rollup: str
+    population: Mapping[str, Any] | None
+    selected_profiles: int | None
+    retained_profiles: int
+    retained_studies: int
+
+
+def format_coverage_population(population: Mapping[str, Any] | str | None) -> str:
+    """Format the rank-table population label from provenance.json (#982)."""
+    if isinstance(population, str) and population.strip():
+        return population.strip()
+    if not isinstance(population, Mapping):
+        return "population unrecorded in rank table"
+    host_raw = str(population.get("host_species") or "").strip()
+    host_label = "human" if host_raw.lower() == "homo sapiens" else host_raw
+    seq_types = population.get("sequencing_types")
+    if isinstance(seq_types, Sequence) and not isinstance(seq_types, (str, bytes)):
+        seq_label = "/".join(str(s) for s in seq_types if str(s).strip())
+    else:
+        seq_label = ""
+    parts = [p for p in ("all", host_label, seq_label, "signatures in rank table") if p]
+    return " ".join(parts) if (host_label or seq_label) else "population unrecorded in rank table"
+
+
+def read_coverage_run_info(
+    coverage_dir: Path,
+    *,
+    profile_summary_rows: Sequence[Mapping[str, str]] | None = None,
+    study_meta_rows: Sequence[Mapping[str, str]] | None = None,
+    require_counts: bool = False,
+) -> CoverageRunInfo:
+    """Read and cross-check taxa-coverage provenance and profile counts (#858, #956, #982)."""
+    prov_path = coverage_dir / "provenance.json"
+    strain_rollup = "unrecorded"
+    population: Mapping[str, Any] | None = None
+    selected_profiles: int | None = None
+    if prov_path.exists():
+        data = json.loads(prov_path.read_text(encoding="utf-8"))
+        raw_scope = data.get("strain_rollup")
+        if raw_scope is None and isinstance(data.get("parameters"), Mapping):
+            raw_scope = data["parameters"].get("strain_rollup")
+        if raw_scope is not None and raw_scope != "":
+            if not isinstance(raw_scope, str) or raw_scope not in STRAIN_ROLLUPS:
+                raise ValueError(
+                    f"Unknown strain_rollup in {prov_path}: {raw_scope!r} "
+                    f"(expected one of {STRAIN_ROLLUPS})"
+                )
+            strain_rollup = raw_scope
+        raw_pop = data.get("population")
+        if isinstance(raw_pop, Mapping):
+            population = raw_pop
+        raw_counts = data.get("counts")
+        if isinstance(raw_counts, Mapping) and "selected_profiles" in raw_counts:
+            selected_profiles = int(raw_counts["selected_profiles"])
+
+    if profile_summary_rows is None:
+        summary_path = coverage_dir / "profile_trait_mapping_summary.tsv"
+        if summary_path.exists():
+            with summary_path.open(newline="", encoding="utf-8") as handle:
+                lines = [line for line in handle if not line.startswith("#")]
+                profile_summary_rows = list(csv.DictReader(lines, delimiter="\t"))
+
+    summary_profiles = len(profile_summary_rows) if profile_summary_rows else None
+    summary_studies = (
+        len({r["study_id"] for r in profile_summary_rows if "study_id" in r})
+        if profile_summary_rows
+        else None
+    )
+    meta_profiles = len(study_meta_rows) if study_meta_rows else None
+    meta_studies = (
+        len({r["study_id"] for r in study_meta_rows if "study_id" in r})
+        if study_meta_rows
+        else None
+    )
+
+    if (
+        selected_profiles is not None
+        and summary_profiles is not None
+        and selected_profiles != summary_profiles
+    ):
+        raise ValueError(
+            f"taxa-coverage provenance.json selected_profiles ({selected_profiles}) "
+            f"disagrees with profile_trait_mapping_summary.tsv ({summary_profiles} rows)"
+        )
+    if summary_profiles is not None and meta_profiles is not None:
+        studies_disagree = (
+            bool(summary_studies) and bool(meta_studies) and summary_studies != meta_studies
+        )
+        if summary_profiles != meta_profiles or studies_disagree:
+            raise ValueError(
+                f"taxa-coverage profile_trait_mapping_summary.tsv ({summary_profiles} profiles "
+                f"across {summary_studies} studies) disagrees with "
+                f"study_trait_profile_study_metadata.tsv ({meta_profiles} profiles across "
+                f"{meta_studies} studies)"
+            )
+    if (
+        selected_profiles is not None
+        and meta_profiles is not None
+        and selected_profiles != meta_profiles
+    ):
+        raise ValueError(
+            f"taxa-coverage provenance.json selected_profiles ({selected_profiles}) "
+            f"disagrees with study_trait_profile_study_metadata.tsv ({meta_profiles} rows)"
+        )
+
+    if summary_profiles is not None and summary_studies is not None:
+        retained_profiles = summary_profiles
+        retained_studies = summary_studies or (meta_studies or 0)
+    elif selected_profiles is not None:
+        retained_profiles = selected_profiles
+        retained_studies = meta_studies or 0
+    elif meta_profiles is not None and meta_studies is not None:
+        retained_profiles = meta_profiles
+        retained_studies = meta_studies
+    elif require_counts:
+        raise ValueError(
+            "Cannot determine coverage profile count: provide profile_trait_mapping_summary.tsv "
+            "or provenance.json"
+        )
+    else:
+        retained_profiles = 0
+        retained_studies = 0
+
+    return CoverageRunInfo(
+        strain_rollup=strain_rollup,
+        population=population,
+        selected_profiles=selected_profiles,
+        retained_profiles=retained_profiles,
+        retained_studies=retained_studies,
+    )
 
 
 @dataclass(frozen=True)
