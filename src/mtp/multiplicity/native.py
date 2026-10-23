@@ -6,10 +6,11 @@ import math
 from collections.abc import Iterator
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from mtp.count_input import profile_count_reader
-from mtp.datamodel.multiple_testing_pydantic import HypothesisDefinition
+from mtp.datamodel.multiple_testing_pydantic import HypothesisCoordinates, HypothesisDefinition
 from mtp.multiple_testing import canonical_sha256
 from mtp.multiplicity.families import (
     FamilyInput,
@@ -19,11 +20,29 @@ from mtp.multiplicity.families import (
     observation,
     require_fields,
     rows,
+    support_count,
 )
 from mtp.multiplicity.sources import VerifiedSources, recorded_comparison_output
 from mtp.paths import file_sha256
 from mtp.trait_guilds import load_profiles
 from mtp.workflow.consumers import verify_consumer_record
+
+
+def validate_study_status(row: dict[str, str], *, expected_studies: int) -> None:
+    """Check producer support/dispersion and undefined reason without retesting p."""
+    count = support_count(row, "study_count")
+    mean = float(row["study_mean_increased_minus_decreased"])
+    std = float(row["study_std_increased_minus_decreased"])
+    if count != expected_studies or not math.isfinite(mean) or not math.isfinite(std) or std < 0:
+        raise ValueError("Native study support or dispersion disagrees with its producer contract")
+    if count < 2:
+        expected = "insufficient_support"
+    elif np.isclose(std, 0.0):
+        expected = "all_tied" if std == 0 and mean == 0 else "insufficient_variance"
+    else:
+        expected = "tested"
+    if row["study_test_status"] != expected:
+        raise ValueError("Native study status/reason disagrees with support and dispersion")
 
 
 def native_candidates(
@@ -144,6 +163,7 @@ def native_family(sources: VerifiedSources) -> FamilyInput:
         paths=[table, pairs, consumer_path, sources.product("feature_metadata")],
     )
     eligibility_hash = canonical_sha256(keys)
+    expected_studies = len({key[0] for key in keys})
 
     def declarations() -> Iterator[HypothesisDefinition]:
         for feature in features:
@@ -152,6 +172,7 @@ def native_family(sources: VerifiedSources) -> FamilyInput:
                 feature_ids=[feature],
                 test="two_sided_one_sample_t_test",
                 tail="two_sided",
+                coordinates=HypothesisCoordinates(),
                 eligibility_sha256=eligibility_hash,
             )
 
@@ -172,6 +193,7 @@ def native_family(sources: VerifiedSources) -> FamilyInput:
                     ),
                 },
             )
+            validate_study_status(row, expected_studies=expected_studies)
             yield observation(
                 row["trait"],
                 row,
@@ -181,6 +203,7 @@ def native_family(sources: VerifiedSources) -> FamilyInput:
                 undefined={"all_tied", "insufficient_support", "insufficient_variance"},
                 method="BH",
                 native_family="native-pooled-composition",
+                untestable_q=1.0,
             )
 
     return FamilyInput(

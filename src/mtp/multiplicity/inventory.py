@@ -27,6 +27,7 @@ from mtp.multiple_testing import (
     adjusted_probabilities,
     canonical_sha256,
     load_policy,
+    scientific_hypothesis_sha256,
     validate_family_metadata,
     validate_hypothesis_definition,
     validate_raw_hypothesis,
@@ -104,6 +105,7 @@ def correct_inventory(
     inventories and their canonical identities match the small-family contract.
     """
     metadata = validate_family_metadata(metadata)
+    policy = load_policy()
     instant = recorded_at if recorded_at is not None else datetime.now(UTC)
     offset = instant.utcoffset()
     if offset is None or offset.total_seconds() != 0:
@@ -117,17 +119,22 @@ def correct_inventory(
         db,
     ):
         db.execute(
-            "CREATE TABLE tests (id TEXT PRIMARY KEY, declaration TEXT NOT NULL, raw TEXT, p REAL)"
+            "CREATE TABLE tests (id TEXT PRIMARY KEY, scientific_id TEXT NOT NULL UNIQUE, "
+            "declaration TEXT NOT NULL, raw TEXT, p REAL)"
         )
         for declared in declarations:
             member = validate_hypothesis_definition(declared)
             try:
                 db.execute(
-                    "INSERT INTO tests(id, declaration) VALUES (?, ?)",
-                    (member.hypothesis_id, json_text(member.model_dump(mode="json"))),
+                    "INSERT INTO tests(id, scientific_id, declaration) VALUES (?, ?, ?)",
+                    (
+                        member.hypothesis_id,
+                        scientific_hypothesis_sha256(member),
+                        json_text(member.model_dump(mode="json")),
+                    ),
                 )
             except sqlite3.IntegrityError as error:
-                raise ValueError("duplicate declared hypothesis identity") from error
+                raise ValueError("duplicate scientific hypothesis or declared identity") from error
         count = db.execute("SELECT COUNT(*) FROM tests").fetchone()[0]
         if count != metadata.expected_family_size:
             raise ValueError("expected family size differs from declared inventory")
@@ -150,7 +157,7 @@ def correct_inventory(
             dtype=np.float64,
             count=count,
         )
-        by, bh = adjusted_probabilities(probabilities)
+        by, bh = adjusted_probabilities(probabilities, policy=policy)
         del probabilities
         family_hash = _family_hash(metadata, db)
         raw_hash = _array_hash(row[0] for row in db.execute("SELECT raw FROM tests ORDER BY id"))
@@ -170,7 +177,7 @@ def correct_inventory(
             ):
                 raw_row = RawHypothesis.model_validate_json(raw_record)
                 counts[raw_row.status] += 1
-                result = adjusted_hypothesis(raw_row, float(q_by), float(q_bh))
+                result = adjusted_hypothesis(raw_row, float(q_by), float(q_bh), policy=policy)
                 yield json_text(result.model_dump(mode="json"))
 
         corrected_artifact = _write_lines(output / "adjusted.jsonl", corrected_records())
@@ -182,7 +189,7 @@ def correct_inventory(
         raw=raw_artifact,
         corrected=corrected_artifact,
         recorded_at=instant,
-        policy_sha256=canonical_sha256(load_policy().model_dump(mode="json")),
+        policy_sha256=canonical_sha256(policy.model_dump(mode="json")),
         family_sha256=family_hash,
         input_sha256=raw_hash,
         output_sha256=output_hash,

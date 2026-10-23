@@ -11,7 +11,7 @@ from mtp.datamodel.multiple_testing_pydantic import SourceArtifact
 from mtp.datamodel.workflow_pydantic import AnalysisBasis, ArmRun, ComparisonRun, WorkflowRun
 from mtp.paths import file_sha256
 from mtp.workflow.arms.runtime import verify_arm
-from mtp.workflow.comparison import verify_comparison_run
+from mtp.workflow.comparison import core_analysis_bases, verify_comparison_run
 from mtp.workflow.consumers import CoreBundle
 from mtp.workflow.coverage import feature_filter_id
 from mtp.workflow.runtime import artifact_path
@@ -110,7 +110,15 @@ def bind_analysis_basis(
     validate_basis(
         basis, product=bundle.profile_product, features=features, catalog=catalog, scope=scope
     )
+    _match_producer_basis(basis, core_analysis_bases(bundle.run))
     return basis, features
+
+
+def _match_producer_basis(basis: AnalysisBasis, expected: list[AnalysisBasis]) -> None:
+    """Check the entire upstream contract without inventing corrected scientific labels."""
+    matches = [candidate for candidate in expected if candidate.profile_unit == basis.profile_unit]
+    if len(matches) != 1 or basis != matches[0]:
+        raise ValueError("AnalysisBasis differs from the core-derived producer contract")
 
 
 @dataclass(frozen=True)
@@ -158,4 +166,7 @@ def open_verified_sources(path: Path) -> VerifiedSources:
             matches[0], product=product, features=features[product], catalog=catalog, scope=scope
         )
         bases[product] = matches[0]
+    expected_bases = core_analysis_bases(core)
+    for basis in bases.values():
+        _match_producer_basis(basis, expected_bases)
     return VerifiedSources(comparison, core, arms, bases, features, scope)

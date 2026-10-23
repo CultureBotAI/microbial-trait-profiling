@@ -8,7 +8,11 @@ from collections.abc import Iterator
 from pathlib import Path
 
 from mtp.count_input import taxa_trait_count_reader
-from mtp.datamodel.multiple_testing_pydantic import HypothesisDefinition, RawHypothesis
+from mtp.datamodel.multiple_testing_pydantic import (
+    HypothesisCoordinates,
+    HypothesisDefinition,
+    RawHypothesis,
+)
 from mtp.integrated_evidence import ora_testable_profile_keys
 from mtp.multiple_testing import canonical_sha256
 from mtp.multiplicity.families import (
@@ -75,13 +79,12 @@ def ora_family(sources: VerifiedSources) -> FamilyInput:
         "P-Threshold": "0.001",
         "Testable-Profiles": str(len(keys)),
         "Background-Taxa-Universe-M": str(universe),
+        "Background-Mode": f"TaxaMatrix ({matrix.name})",
         "Total-Tests-Performed": str(tests_per_tail),
     }
     for tail, path in exports.items():
         comments = ora_comments(path)
         require_fields(comments, {**expected, "Tail": tail})
-        if not comments.get("Background-Mode", "").startswith("TaxaMatrix("):
-            raise ValueError("Unsupported ORA background mode")
         fold_key = "Min-Fold" if tail == "upper" else "Max-Fold"
         if float(comments[fold_key]) != (1.5 if tail == "upper" else 0.5):
             raise ValueError("Unsupported native ORA fold threshold")
@@ -120,6 +123,11 @@ def ora_family(sources: VerifiedSources) -> FamilyInput:
                         feature_ids=[feature],
                         test="hypergeometric",
                         tail=tail,
+                        coordinates=HypothesisCoordinates(
+                            profile_id=json.dumps(
+                                list(key), ensure_ascii=False, separators=(",", ":")
+                            )
+                        ),
                         eligibility_sha256=eligibility_hash,
                     )
 

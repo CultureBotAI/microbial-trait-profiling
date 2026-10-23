@@ -10,6 +10,7 @@ from contextlib import closing
 from datetime import UTC, datetime
 from pathlib import Path
 
+import numpy as np
 import scipy
 
 from mtp import multiple_testing
@@ -219,7 +220,7 @@ def run_post_arm(
         if file_sha256(path) != digest or source(path).identity not in consumed:
             raise ValueError("Source changed while multiplicity sidecars were being written")
     record = PostArmMultiplicityRun(
-        version="1.0.0",
+        version="1.1.0",
         recorded_at=instant,
         comparison_manifest_path=sources.comparison.manifest_path,
         comparison_manifest_sha256=file_sha256(Path(sources.comparison.manifest_path)),
@@ -230,6 +231,7 @@ def run_post_arm(
         policy=load_policy(),
         code_sha256=code_sha256(),
         scipy_version=scipy.__version__,
+        numpy_version=np.__version__,
         sources=sorted(consumed.values(), key=lambda artifact: artifact.identity),
         families=corrections,
         reports=reports,
@@ -245,7 +247,7 @@ def verify_post_arm(path: Path) -> PostArmMultiplicityRun:
     manifest = path / "multiplicity_run.json" if path.is_dir() else path
     root = manifest.parent.resolve()
     record = PostArmMultiplicityRun.model_validate_json(manifest.read_text(encoding="utf-8"))
-    if record.version != "1.0.0" or record.policy != load_policy():
+    if record.version != "1.1.0" or record.policy != load_policy():
         raise ValueError("Unsupported multiplicity policy or stage version")
     artifacts = [
         *record.reports,

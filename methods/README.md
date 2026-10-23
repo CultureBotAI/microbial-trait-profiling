@@ -34,6 +34,11 @@ and defines the shared corpus, paired quantities and evidence levels required
 before choosing comparison thresholds or ranking scores. It also explains why
 the native p-values are not on comparable scales.
 
+[`multiple_testing.md`](multiple_testing.md) documents the additive full-family
+BY/BH policy, explicit hypothesis inventories and v1.1 scientific coordinates,
+reserved untestable members, and provenance replay. It leaves native arm calls
+unchanged and does not remove data-driven selection bias.
+
 [`contrast_orientation.md`](contrast_orientation.md) documents
 `just contrast-orientation`: what each BugSigDB experiment compares, which way its
 direction points, the disease-versus-healthy population with its review, and the
