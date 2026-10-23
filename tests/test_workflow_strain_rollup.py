@@ -174,6 +174,34 @@ def test_the_catalog_marks_features_whose_counts_may_include_strain_records(
     assert set(catalog) == set(_header(artifact_path(scoped_runs[scope], "taxa_matrix"))[3:])
 
 
+@pytest.mark.parametrize(
+    ("scope", "evidence", "attributed"),
+    [
+        ("off", UNRESOLVED_EVIDENCE, 0),
+        ("phenotype", STRAIN_ATTRIBUTED_EVIDENCE, 2),
+        ("full", STRAIN_ATTRIBUTED_EVIDENCE, 5),
+    ],
+)
+def test_the_recorded_contract_facts_name_the_evidence_the_scope_admits(
+    scoped_runs: dict[StrainRollup, WorkflowRun],
+    scope: StrainRollup,
+    evidence: str,
+    attributed: int,
+) -> None:
+    """A phenotype or full run's validation facts must not describe its counts as only
+    direct or descendant assertions, as an off run's do."""
+    artifacts = {item.product_id: item for item in scoped_runs[scope].artifacts or []}
+    for product_id in ("feature_metadata", "feature_catalog", "taxa_matrix"):
+        (facts,) = (
+            json.loads(item.details_json or "{}")
+            for item in artifacts[product_id].validations or []
+            if item.validator.startswith("core:")
+        )
+        assert (facts["strain_rollup"], facts["annotation_evidence"]) == (scope, evidence)
+        if product_id != "taxa_matrix":
+            assert facts["strain_attributed_features"] == attributed
+
+
 def test_a_matrix_built_under_another_scope_is_rejected(
     strain_inputs: dict[str, Path], tmp_path: Path
 ) -> None:

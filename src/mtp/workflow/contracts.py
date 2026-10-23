@@ -43,11 +43,11 @@ from mtp.workflow.coverage import (
     FEATURE_CATALOG_COLUMNS,
     FEATURE_METADATA_COLUMNS,
     STRAIN_ATTRIBUTED_EVIDENCE,
-    UNRESOLVED_EVIDENCE,
     annotation_evidence,
     build_profile_coverage,
     feature_class,
     feature_filter_id,
+    product_evidence,
 )
 from mtp.workflow.matrix_contracts import validate_feature_node_metadata, validate_matrix_sources
 
@@ -252,7 +252,7 @@ def _feature_contract(
         "culture_medium_features": sum(
             feature_class(feature) == "culture_medium" for feature in features
         ),
-        "annotation_evidence": UNRESOLVED_EVIDENCE,
+        "annotation_evidence": product_evidence(features, strain_rollup),
         "strain_attributed_features": sum(
             annotation_evidence(feature, strain_rollup) == STRAIN_ATTRIBUTED_EVIDENCE
             for feature in features
@@ -312,7 +312,7 @@ def _matrix_contract(
         "all_zero_rows": zero_rows,
         "feature_filter_id": feature_filter_id(reader.count_columns),
         "unit": "distinct_annotated_source_taxa_at_or_below_reported_taxon",
-        "annotation_evidence": UNRESOLVED_EVIDENCE,
+        "annotation_evidence": product_evidence(reader.count_columns, strain_rollup),
         "strain_rollup": strain_rollup,
         **source_facts,
     }

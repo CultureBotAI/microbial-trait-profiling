@@ -12,7 +12,7 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import asdict
 from pathlib import Path
 
@@ -49,6 +49,16 @@ def annotation_evidence(feature_id: str, strain_rollup: StrainRollup) -> str:
     linked NCBITaxon nodes as well as direct and descendant assertions (#788).
     """
     if strain_trait_rolls_up(feature_id, strain_rollup):
+        return STRAIN_ATTRIBUTED_EVIDENCE
+    return UNRESOLVED_EVIDENCE
+
+
+def product_evidence(feature_ids: Iterable[str], strain_rollup: StrainRollup) -> str:
+    """The origins any count in a product over these features may combine (#788)."""
+    if any(
+        annotation_evidence(feature, strain_rollup) == STRAIN_ATTRIBUTED_EVIDENCE
+        for feature in feature_ids
+    ):
         return STRAIN_ATTRIBUTED_EVIDENCE
     return UNRESOLVED_EVIDENCE
 
