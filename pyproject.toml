@@ -46,7 +46,7 @@ dev = [
   "types-PyYAML>=6.0.12.20260408",
 ]
 kg = [
-  "gdown>=6.0.0",
+  "gdown>=6.4.2",
 ]
 # Figure rendering only (#288). Installing the package for the ingest and schema
 # side should not pull a headless-Chrome driver, and plotly is imported lazily
