@@ -1,6 +1,7 @@
 """Canonical population, data-derived labels and provenance regressions (#820/#821)."""
 
 import importlib.util
+import inspect
 import json
 import subprocess
 import sys
@@ -269,4 +270,227 @@ def test_histogram2_family_and_mixed_legend_colors_are_distinct(
         for label, handle in zip(legend.get_texts(), legend.legend_handles, strict=True)
     }
     assert colors["Family"] != colors["Mixed Profile (≥1 Trait)"]
+    assert colors["All-mapped Profile"] != colors["Species"]
+    assert coverage.RANK_COLORS["family"] != coverage.COLOR_SPARSE
+    # Rank and status appear in the same legend: avoid two near-identical slates.
+    distance = (
+        sum(
+            (first - second) ** 2
+            for first, second in zip(
+                colors["Superkingdom"][:3], colors["Mixed Profile (≥1 Trait)"][:3], strict=True
+            )
+        )
+        ** 0.5
+    )
+    assert distance > 0.3
     coverage.plt.close(captured[0])
+
+
+def test_export_omits_empty_ranks_and_records_corpus_identity(
+    inputs: dict[str, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    output = tmp_path / "identity"
+    sidecar = tmp_path / "kg.json"
+    sidecar.write_text(json.dumps({"release": "fixture-release", "files": {}}))
+    monkeypatch.setattr(coverage, "repository_state", lambda _root: ("a" * 40, True))
+    coverage.run_coverage(
+        output_dir=output,
+        tables_only=True,
+        kg_provenance=sidecar,
+        bugsigdb_vintage="fixture-vintage",
+        **inputs,
+    )
+    ranks = pd.read_csv(output / "taxa_coverage_by_rank.tsv", sep="\t")
+    assert ranks.total_taxa.gt(0).all()
+    record = json.loads((output / "provenance.json").read_text())
+    assert record["producer"]["code_commit"].endswith("+dirty")
+    assert record["corpus_identity"]["bugsigdb_vintage"] == "fixture-vintage"
+    assert record["corpus_identity"]["kg_microbe"]["release_tag"] == "fixture-release"
+    assert record["corpus_identity"]["matrix"]["sha256"] == coverage.file_sha256(inputs["profiles"])
+    assert record["inputs"]["kg_provenance"]["sha256"] == coverage.file_sha256(sidecar)
+    assert record["corpus_identity"]["matrix"]["path"] == "external/profiles.tsv"
+    assert str(tmp_path) not in json.dumps(record)
+
+
+def test_plate6_reads_compact_remediation_and_nonempty_rank_rows(
+    inputs: dict[str, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Check the unchanged consumer's rendered artists, not just TSV column names."""
+    for name in ("taxa", "matrix"):
+        frame = pd.read_csv(inputs[name], sep="\t")
+        frame.loc[frame.taxon_id.eq("t2"), "taxon_id"] = "NCBITaxon:541000"
+        frame.to_csv(inputs[name], sep="\t", index=False)
+    output = tmp_path / "trait-visualization/trait-profile-investigation/taxa-coverage"
+    coverage.run_coverage(output_dir=output, tables_only=True, **inputs)
+    spec = importlib.util.spec_from_file_location(
+        "coverage_plate_contract", SCRIPT.with_name("generate_tufte_plates.py")
+    )
+    assert spec is not None
+    assert spec.loader is not None
+    plate = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(plate)
+    captured = []
+    monkeypatch.setattr(
+        plate.plt.Figure, "savefig", lambda fig, *_args, **_kwargs: captured.append(fig)
+    )
+    plate.build_plate6(tmp_path, tmp_path)
+    fig = captured[0]
+    fig.canvas.draw()
+    text = "\n".join(t.get_text() for ax in fig.axes for t in ax.texts)
+    assert "0/0" not in text
+    assert "Other / unrecorded (0 taxa)" not in text
+    alias = [t for t in fig.axes[2].texts if "NCBITaxon:216572" in t.get_text()]
+    assert len(alias) == 1
+    assert "Review possible" not in alias[0].get_text()
+    assert alias[0].get_window_extent().x1 <= fig.axes[2].get_window_extent().x1
+    # Downward propagation is deliberately not restored; #864 owns that consumer label.
+    _, remediation = coverage.diagnose_zero_trait_taxon("t6", "uncultured bacterium", "species")
+    assert "do not establish leaf-taxon traits" in remediation
+    coverage.plt.close(fig)
+
+
+@pytest.mark.parametrize("all_zero", [False, True])
+def test_every_readme_table_cell_matches_the_exported_tables(
+    inputs: dict[str, Path], tmp_path: Path, all_zero: bool
+) -> None:
+    if all_zero:
+        for name in ("profiles", "matrix"):
+            frame = pd.read_csv(inputs[name], sep="\t")
+            frame["METPO:1"] = 0
+            frame.to_csv(inputs[name], sep="\t", index=False)
+    output = tmp_path / "readme"
+    coverage.run_coverage(output_dir=output, tables_only=True, **inputs)
+    profiles = pd.read_csv(output / "profile_trait_mapping_summary.tsv", sep="\t")
+    taxa = pd.read_csv(output / "taxa_kgmicrobe_coverage_details.tsv", sep="\t")
+    ranks = pd.read_csv(output / "taxa_coverage_by_rank.tsv", sep="\t")
+    mapped = profiles.loc[profiles.has_mapped_traits]
+    zero = taxa.loc[taxa.trait_count.eq(0)]
+    expected = {
+        "Total profiles": [str(len(profiles))],
+        "Profiles with mapped traits": [str(len(mapped))],
+        "Zero-trait profiles": [str(len(profiles) - len(mapped))],
+        "Unique taxa": [str(len(taxa))],
+        "Trait-bearing taxa": [str(taxa.has_traits.sum())],
+        "Zero-trait taxa": [str(len(zero))],
+        "Taxon signature mentions": [str(taxa.signature_occurrences.sum())],
+        "Zero-trait taxa recurring in ≥20 profiles": [str(zero.profile_count.ge(20).sum())],
+    }
+    for row in ranks.itertuples():
+        expected[str(row.display_rank)] = [
+            str(row.total_taxa),
+            str(row.zero_trait_taxa),
+            f"{row.trait_bearing_pct:.2f}",
+            str(row.total_occurrences),
+            str(row.profiles_with_rank),
+        ]
+    for label, values in {
+        "Traits per mapped profile": mapped.mapped_trait_count,
+        "Mapped taxa per mapped profile": mapped.mapped_trait_taxa,
+        "Traits per reported taxon": taxa.trait_count,
+        "Traits per trait-bearing taxon": taxa.loc[taxa.has_traits, "trait_count"],
+    }.items():
+        expected[label] = (
+            [
+                f"{value:g}"
+                for value in [
+                    values.median(),
+                    values.quantile(0.25),
+                    values.quantile(0.75),
+                    values.mean(),
+                ]
+            ]
+            if len(values)
+            else ["not estimable"] * 4
+        )
+    actual = {}
+    for line in (output / "README.md").read_text().splitlines():
+        if not line.startswith("| "):
+            continue
+        cells = [cell.strip() for cell in line.strip("|").split("|")]
+        if cells[0] in {"Metric", "Rank", "Distribution", "---"}:
+            continue
+        actual[cells[0]] = cells[1:]
+    assert actual == expected
+
+
+def test_two_fixture_runs_have_identical_tables_readme_and_svgs(
+    inputs: dict[str, Path], tmp_path: Path
+) -> None:
+    first, second = tmp_path / "first", tmp_path / "second"
+    # Serialize real SVGs, including their IDs and metadata; do not mock savefig.
+    with coverage.plt.rc_context(
+        {"svg.hashsalt": "coverage-fixture", "font.family": "DejaVu Sans"}
+    ):
+        coverage.run_coverage(output_dir=first, **inputs)
+        coverage.run_coverage(output_dir=second, **inputs)
+    compared = []
+    for path in first.iterdir():
+        if path.suffix in {".tsv", ".svg"} or path.name == "README.md":
+            assert path.read_bytes() == (second / path.name).read_bytes(), path.name
+            compared.append(path.name)
+    assert len(compared) == 12  # Five TSVs, README, six SVGs.
+
+
+def test_pre_742_experiment_metadata_has_actionable_error(
+    inputs: dict[str, Path], tmp_path: Path
+) -> None:
+    frame = pd.read_csv(inputs["experiments"], sep="\t").drop(columns="sequencing_type")
+    frame.to_csv(inputs["experiments"], sep="\t", index=False)
+    with pytest.raises(ValueError, match=r"#742.*sequencing_type"):
+        coverage.run_coverage(output_dir=tmp_path / "old", tables_only=True, **inputs)
+    assert not (tmp_path / "old").exists()
+
+
+def test_coverage_and_builder_use_the_same_population_predicate(
+    inputs: dict[str, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from mtp import study_trait_profiles
+    from mtp.human_host_corpus import experiment_in_profile_population
+
+    assert coverage.experiment_in_profile_population is experiment_in_profile_population
+    builder_globals = inspect.getclosurevars(study_trait_profiles.collect_profile_taxa).globals
+    assert builder_globals["experiment_in_profile_population"] is experiment_in_profile_population
+    assert experiment_in_profile_population(
+        " Homo sapiens ", " WMS ", host_species="Homo sapiens", sequencing_types=("16S", "WMS")
+    )
+    assert not experiment_in_profile_population(
+        "Homo sapiens", None, host_species="Homo sapiens", sequencing_types=("16S", "WMS")
+    )
+    monkeypatch.setattr(
+        coverage, "experiment_in_profile_population", lambda *_args, **_kwargs: False
+    )
+    with pytest.raises(ValueError, match="No profiles"):
+        coverage.load_and_process_data(**inputs)
+
+
+def test_unrecognized_directions_and_empty_taxon_ids_are_skipped_like_builder(
+    inputs: dict[str, Path],
+) -> None:
+    taxa = pd.read_csv(inputs["taxa"], sep="\t")
+    invalid = taxa.iloc[:2].copy()
+    invalid.loc[invalid.index[0], "direction"] = "no difference"
+    invalid.loc[invalid.index[1], "taxon_id"] = " "
+    pd.concat([taxa, invalid]).to_csv(inputs["taxa"], sep="\t", index=False)
+    selected, _, _, profiles, _, _ = coverage.load_and_process_data(**inputs)
+    assert selected.signature_occurrences.sum() == 5
+    assert len(profiles) == 3
+
+
+def test_histogram2_summary_boxes_do_not_cover_bar_labels(
+    inputs: dict[str, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    taxa, _, _, profiles, _, _ = coverage.load_and_process_data(**inputs)
+    captured = []
+    monkeypatch.setattr(coverage, "save_figure", lambda fig, _path: captured.append(fig))
+    coverage.plot_histogram2_taxa_traits_and_zero_frequency(taxa, profiles, tmp_path / "labels.png")
+    fig = captured[0]
+    fig.canvas.draw()
+    for axis in fig.axes[1:]:
+        summary = next(text for text in axis.texts if text.get_bbox_patch() is not None)
+        bounds = summary.get_bbox_patch().get_window_extent()
+        assert all(
+            not bounds.overlaps(text.get_window_extent())
+            for text in axis.texts
+            if text is not summary
+        )
+    coverage.plt.close(fig)

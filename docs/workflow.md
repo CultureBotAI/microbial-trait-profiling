@@ -398,7 +398,10 @@ before rebuilding decks or plates that cite its tables and README (#820/#821).
 The recipe consumes `bugsigdb_taxa.tsv`, `taxa_trait_matrix.tsv`,
 `study_trait_profiles_wide.tsv` and `experiments.tsv`. It filters profiles and
 taxon occurrences to recorded `Homo sapiens` hosts sequenced by `16S` or `WMS`,
-using the same constants as the canonical profile builder. It applies no
+using the same experiment-selection function as the canonical profile builder.
+Unrecognized signature directions and empty taxon IDs are skipped by the same
+normalization rules. Pre-#742 metadata receives an explicit regeneration error.
+The audit applies no
 contrast-tier, pairing or orientation restriction. This is coverage of the
 full canonical corpus, not coverage of a disease-vs-healthy subset.
 
@@ -412,7 +415,13 @@ evidence of biological absence.
 
 The recipe generates five TSVs, six PNG/SVG figure pairs, a data-derived README,
 and `provenance.json` with input/output SHA-256 hashes, producer and lockfile
-hashes, explicit population rules and exclusion counts. These are standalone
+hashes, Git revision (`+dirty` when applicable), corpus/KG identity, explicit
+population rules and exclusion counts. Paths are repository-relative, or
+`external/<basename>` for supplied external inputs; content hashes identify the
+bytes. `--bugsigdb-vintage` supplies a declared vintage (unknown if omitted), and
+`--kg-provenance` supplies the KG download sidecar. Its release and source-file
+claims are declared evidence, not proof of which KG built the matrix; the
+consumed sidecar itself is hashed. These are standalone
 execution provenance records, not verified core or arm manifests. Rerun them
 after changing the profile population, matrix or strain-rollup scope; keep
 different scope outputs in separate directories. Explicit `--taxa`, `--matrix`,
@@ -421,6 +430,12 @@ different scope outputs in separate directories. Explicit `--taxa`, `--matrix`,
 directory with existing figures so those cannot silently remain stale. The
 profile-rank denominator column is now `pct_of_mapped_profiles`; the columns in
 the rank and taxon-detail tables read by existing deck builders are preserved.
+Empty rank rows are omitted from the exported rank table and README, avoiding
+undefined `0/0` percentages in the plate consumer. Nonempty unrecognized ranks
+remain in `other`. TaxID alias candidates require review, and higher-rank
+annotations do not establish leaf-taxon traits; the companion Plate 6 update
+(#864) must preserve those cautions. #820/#821 remain open until the coordinated
+rerun regenerates and reviews the tracked outputs.
 
 `just check` includes generated-model consistency, schema lint, graph checks,
 and the offline pytest fixtures. CI also executes `just core-fixture` and saves

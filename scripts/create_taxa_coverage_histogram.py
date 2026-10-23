@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -26,8 +27,15 @@ import pandas as pd
 from matplotlib.figure import Figure
 from matplotlib.patches import Patch
 
-from mtp.human_host_corpus import CORPUS_SEQUENCING_TYPES, HUMAN_HOST_SPECIES
+from mtp.corpus_identity import DEFAULT_KG_PROVENANCE_PATH, corpus_identity
+from mtp.human_host_corpus import (
+    CORPUS_SEQUENCING_TYPES,
+    HUMAN_HOST_SPECIES,
+    experiment_in_profile_population,
+)
 from mtp.paths import file_sha256
+from mtp.study_trait_profiles import direction_to_inc_dec
+from mtp.workflow.runtime import repository_state
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VIS_DIR = REPO_ROOT / "trait-visualization"
@@ -54,8 +62,9 @@ RANK_DISPLAY = {
 
 # Colorblind-safe palette (Okabe-Ito & Viridis inspired)
 COLOR_RICH = "#0072b2"  # Deep Blue: >= 3 traits / All-mapped
-COLOR_SPARSE = "#56b4e9"  # Sky Blue: 1-2 traits / Mixed mapped+zero
+COLOR_SPARSE = "#475569"  # Slate: 1-2 traits / Mixed mapped+zero
 COLOR_MIXED_PROFILE = "#475569"  # Dark slate separates profile status from taxonomic ranks.
+COLOR_ALL_MAPPED_PROFILE = "#111827"  # Charcoal: a profile status, distinct from rank colors.
 COLOR_ZERO = "#d55e00"  # Vermilion: 0 traits / Zero-only
 COLOR_ACCENT = "#009e73"  # Bluish Green for highlights
 COLOR_PURPLE = "#cc79a7"  # Reddish Purple
@@ -72,7 +81,7 @@ RANK_COLORS = {
     "order": "#e69f00",  # Amber
     "class": "#cc79a7",  # Purple
     "phylum": "#f0e442",  # Yellow
-    "superkingdom": "#64748b",  # Slate
+    "superkingdom": "#6b3d19",  # Brown, distinct from slate mixed-profile status.
     "other": "#94a3b8",
 }
 
@@ -118,8 +127,7 @@ def diagnose_zero_trait_taxon(taxon_id: str, name: str, rank: str) -> tuple[str,
         twin = canonical_map.get(taxon_id, "canonical TaxID")
         return (
             "NCBI TaxID Desynchronization",
-            f"Review possible alias against the pinned taxonomy: {twin}; "
-            "do not remap automatically",
+            "Review possible alias before transferring traits: " + twin.split(" (")[0],
         )
 
     if "/" in name or re.search(r"\b(unidentified|uncultured organism|unknown)\b", lower_name):
@@ -181,6 +189,13 @@ def select_corpus(
     metadata, taxa, profiles, or disagreeing aggregate counts are errors.
     """
     keys = ["study_id", "experiment_id"]
+    required_metadata = {*keys, "host_species", "sequencing_type"}
+    missing = sorted(required_metadata - set(experiments))
+    if missing:
+        raise ValueError(
+            "Regenerate experiments.tsv using the #742 corpus workflow; "
+            f"missing metadata columns: {', '.join(missing)}"
+        )
     if experiments.duplicated(keys).any():
         raise ValueError("Duplicate experiment metadata")
     metadata = experiments[[*keys, "host_species", "sequencing_type"]].copy()
@@ -191,21 +206,29 @@ def select_corpus(
         joined = frame.merge(metadata, on=keys, how="left", validate="many_to_one", indicator=True)
         if joined["_merge"].eq("left_only").any():
             raise ValueError("Input has an experiment without host/sequencing metadata")
-        keep = joined.host_species.eq(HUMAN_HOST_SPECIES) & joined.sequencing_type.isin(
-            CORPUS_SEQUENCING_TYPES
+        keep = pd.Series(
+            [
+                experiment_in_profile_population(
+                    host,
+                    method,
+                    host_species=HUMAN_HOST_SPECIES,
+                    sequencing_types=CORPUS_SEQUENCING_TYPES,
+                )
+                for host, method in zip(joined.host_species, joined.sequencing_type, strict=True)
+            ],
+            index=joined.index,
+            dtype=bool,
         )
         selected.append(joined.loc[keep, frame.columns].copy())
     taxa, profiles = selected
+    taxa["inc_dec"] = taxa.direction.fillna("").map(direction_to_inc_dec)
+    taxa["taxon_id"] = taxa.taxon_id.fillna("").astype(str).str.strip()
+    taxa = taxa.loc[taxa.inc_dec.notna() & taxa.taxon_id.ne("")].copy()
     if profiles.empty:
         raise ValueError("No profiles in the human 16S/WMS population")
     if taxa.empty:
         raise ValueError("No reported taxa in the human 16S/WMS population")
-    taxa["inc_dec"] = (
-        taxa.direction.str.strip()
-        .str.lower()
-        .map({"increased": "inc", "inc": "inc", "decreased": "dec", "dec": "dec"})
-    )
-    if taxa.inc_dec.isna().any() or not profiles.inc_dec.isin(["inc", "dec"]).all():
+    if not profiles.inc_dec.isin(["inc", "dec"]).all():
         raise ValueError("Unrecognized profile direction")
     profile_ids = profile_keys(profiles)
     if profile_ids.duplicated().any():
@@ -297,12 +320,7 @@ def load_and_process_data(
         frame["taxonomic_rank"] = frame.taxonomic_rank.where(
             frame.taxonomic_rank.isin(RANK_ORDER), "other"
         )
-    taxa_df["inc_dec"] = (
-        taxa_df["direction"]
-        .str.lower()
-        .str.strip()
-        .map({"increased": "inc", "inc": "inc", "decreased": "dec", "dec": "dec"})
-    )
+    taxa_df["inc_dec"] = taxa_df.direction.map(direction_to_inc_dec)
     taxa_df["profile_key"] = (
         taxa_df["study_id"].astype(str)
         + "|"
@@ -664,7 +682,9 @@ def plot_rank_stratified_histogram(
 
     ax1.set_xticks(x)
     ax1.set_xticklabels(ranks, fontsize=10, rotation=20, ha="right")
-    ax1.set_ylabel("Number of Unique Taxa in BugSigDB", fontsize=11, fontweight="bold", labelpad=8)
+    ax1.set_ylabel(
+        "Unique Taxa in the Human 16S/WMS Corpus", fontsize=11, fontweight="bold", labelpad=8
+    )
     ax1.set_title(
         "A. Unique Taxa Counts & Mapped % by Rank",
         fontsize=12,
@@ -1733,7 +1753,7 @@ def plot_histogram2_taxa_traits_and_zero_frequency(
 
     x_b = np.arange(len(labels_b))
     # Separate profile status from the rank palette used in the other two panels.
-    bar_colors_ret = [COLOR_RICH] + [COLOR_MIXED_PROFILE] * (len(labels_b) - 1)
+    bar_colors_ret = [COLOR_ALL_MAPPED_PROFILE] + [COLOR_MIXED_PROFILE] * (len(labels_b) - 1)
     ax2.bar(
         x_b,
         retained_counts,
@@ -1801,7 +1821,8 @@ def plot_histogram2_taxa_traits_and_zero_frequency(
         pad=12,
         loc="left",
     )
-    ax2.set_ylim(0, max(totals_b) * 1.18)
+    # Reserve an annotation band above all bars and their multiline count labels.
+    ax2.set_ylim(0, max(totals_b) * 1.5)
     ax2.grid(axis="y", linestyle="--", alpha=0.35, color=COLOR_SLATE_LIGHT)
     ax2.set_axisbelow(True)
 
@@ -1904,7 +1925,7 @@ def plot_histogram2_taxa_traits_and_zero_frequency(
         pad=12,
         loc="left",
     )
-    ax3.set_ylim(0, max(1, max(totals_c)) * 1.18)
+    ax3.set_ylim(0, max(1, max(totals_c)) * 1.5)
     ax3.grid(axis="y", linestyle="--", alpha=0.35, color=COLOR_SLATE_LIGHT)
     ax3.set_axisbelow(True)
 
@@ -1913,6 +1934,7 @@ def plot_histogram2_taxa_traits_and_zero_frequency(
         for r in RANK_ORDER
     ]
     handles_prof = [
+        Patch(facecolor=COLOR_ALL_MAPPED_PROFILE, edgecolor="white", label="All-mapped Profile"),
         Patch(facecolor=COLOR_MIXED_PROFILE, edgecolor="white", label="Mixed Profile (≥1 Trait)"),
         Patch(facecolor=COLOR_ZERO, edgecolor="white", label="0-Trait Profile"),
     ]
@@ -2191,12 +2213,21 @@ def write_readme(
             "in `provenance.json`.",
             "`profile_coverage_by_rank.tsv` uses `pct_of_mapped_profiles`, whose denominator "
             "is the",
-            "observed count of mapped profiles. Rank totals include an other/unrecorded category.",
+            "observed count of mapped profiles. Rank tables omit empty ranks and include",
+            "an other/unrecorded category when present in the selected corpus.",
             "The columns consumed by the slide and plate builders remain available in the "
             "rank and taxon detail TSVs.",
         ]
     )
     output.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+
+def provenance_path(path: Path) -> str:
+    """Portable repo-relative identifiers; hashes disambiguate external basenames."""
+    resolved = path.resolve()
+    if resolved.is_relative_to(REPO_ROOT):
+        return resolved.relative_to(REPO_ROOT).as_posix()
+    return f"external/{path.name}"
 
 
 def run_coverage(
@@ -2207,13 +2238,34 @@ def run_coverage(
     profiles: Path = PROFILES_WIDE_PATH,
     experiments: Path = EXPERIMENTS_PATH,
     tables_only: bool = False,
+    kg_provenance: Path = DEFAULT_KG_PROVENANCE_PATH,
+    bugsigdb_vintage: str | None = None,
 ) -> None:
     """Validate first, then write data-derived outputs and a consumed-byte manifest."""
     inputs = {"taxa": taxa, "matrix": matrix, "profiles": profiles, "experiments": experiments}
+    consumed = {**inputs}
+    if kg_provenance.is_file():
+        consumed["kg_provenance"] = kg_provenance
     input_records = {
-        name: {"file": path.name, "sha256": file_sha256(path), "size_bytes": path.stat().st_size}
-        for name, path in inputs.items()
+        name: {
+            "file": provenance_path(path),
+            "sha256": file_sha256(path),
+            "size_bytes": path.stat().st_size,
+        }
+        for name, path in consumed.items()
     }
+    identity = corpus_identity(
+        profiles, bugsigdb_vintage=bugsigdb_vintage, kg_provenance_path=kg_provenance
+    )
+    identity = replace(
+        identity,
+        matrix=replace(identity.matrix, path=provenance_path(profiles)),
+        kg_provenance_path=provenance_path(kg_provenance),
+        kg_release_tag=(identity.kg_release_tag or "unknown").replace(
+            str(kg_provenance), provenance_path(kg_provenance)
+        ),
+    )
+    commit, dirty = repository_state(REPO_ROOT)
 
     # 1. Load data and compute statistics
     taxa_master, rank_df, prof_rank_df, prof_summary, _prof_taxa, top_zero_df = (
@@ -2233,7 +2285,8 @@ def run_coverage(
 
     # 2. Save TSV Audit Tables
     rank_tsv_path = out_dir / "taxa_coverage_by_rank.tsv"
-    write_tsv(rank_df, rank_tsv_path)
+    exported_ranks = rank_df.loc[rank_df.total_taxa.gt(0)]
+    write_tsv(exported_ranks, rank_tsv_path)
     print(f"  Written rank coverage summary: {rank_tsv_path}")
 
     prof_rank_tsv_path = out_dir / "profile_coverage_by_rank.tsv"
@@ -2255,12 +2308,12 @@ def run_coverage(
     write_tsv(top_zero_df, top_zero_tsv_path)
     print(f"  Written top 100 zero-trait diagnosis table: {top_zero_tsv_path}")
 
-    write_readme(taxa_master, rank_df, prof_summary, out_dir / "README.md")
+    write_readme(taxa_master, exported_ranks, prof_summary, out_dir / "README.md")
 
     # 3. Generate visualizations unless explicitly testing/exporting tables only.
     if not tables_only:
         render_figures(taxa_master, rank_df, prof_rank_df, prof_summary, out_dir)
-    for name, path in inputs.items():
+    for name, path in consumed.items():
         if file_sha256(path) != input_records[name]["sha256"]:
             raise ValueError(f"Input changed during coverage generation: {name}")
     output_names = [
@@ -2289,9 +2342,13 @@ def run_coverage(
         },
         "counts": prof_summary.attrs["population_counts"],
         "inputs": input_records,
+        "corpus_identity": identity.as_record(),
         "producer": {
+            "code_commit": commit + ("+dirty" if dirty else ""),
             "script_sha256": file_sha256(Path(__file__)),
             "corpus_policy_sha256": file_sha256(REPO_ROOT / "src/mtp/human_host_corpus.py"),
+            "profile_builder_sha256": file_sha256(REPO_ROOT / "src/mtp/study_trait_profiles.py"),
+            "corpus_identity_sha256": file_sha256(REPO_ROOT / "src/mtp/corpus_identity.py"),
             "uv_lock_sha256": file_sha256(REPO_ROOT / "uv.lock"),
         },
         "outputs": {
@@ -2352,6 +2409,8 @@ def main() -> None:
     parser.add_argument("--matrix", type=Path, default=TAXA_TRAIT_MATRIX_PATH)
     parser.add_argument("--profiles", type=Path, default=PROFILES_WIDE_PATH)
     parser.add_argument("--experiments", type=Path, default=EXPERIMENTS_PATH)
+    parser.add_argument("--kg-provenance", type=Path, default=DEFAULT_KG_PROVENANCE_PATH)
+    parser.add_argument("--bugsigdb-vintage", help="Declared dump vintage; unknown when omitted")
     parser.add_argument(
         "--tables-only",
         action="store_true",
