@@ -123,6 +123,27 @@ tracked in #984. Neither deferred item is implied complete by these guards.
 Native ORA hit flags also use fold cutoffs; these are separate from multiplicity
 rejection. The native bounds are inclusive: enrichment accepts fold 1.5 and
 depletion accepts fold 0.5 when the native q threshold also passes.
+
+`native_reject_005` counts tested members with native q <= 0.05.
+`native_reported_hits` separately counts explicit native `is_significant=true`
+flags, and is available only when every member exports a nonblank boolean flag.
+Its companion `native_reported_hits_status` is:
+
+- `exported`: all members supply true/false flags; the count is an integer,
+  including zero when every flag is false.
+- `not_exported`: no member supplies a flag, or the family is empty; the count
+  is JSON `null`.
+- `partially_exported`: some members supply flags and others are absent or blank;
+  the count is JSON `null`, rather than an incomplete total.
+
+Missing/blank flags are never inferred from q-values, and invalid nonblank
+boolean tokens are rejected. Migration TSVs preserve the original flag text
+and source-row hashes. Currently the non-ORA producers do not export these hit
+flags, while ORA exports its combined q/fold decision. Older summaries that show
+zero without availability metadata cannot establish that no native hits existed.
+The report is hash-bound and reconstructed during verification; existing records
+remain tied to their original implementation identity.
+
 No full-screen q-value is attached to focal rows by trait slug. The
 historical focal selection and the native support/variance filter remain
 selection limitations. The sidecars make no global FDR claim across different

@@ -9,6 +9,7 @@ import tempfile
 from contextlib import closing
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Literal, TypedDict
 
 import numpy as np
 import scipy
@@ -56,15 +57,40 @@ def code_sha256() -> str:
     )
 
 
-def migration_report(family: FamilyInput, corrected: Path, destination: Path) -> dict[str, int]:
+class MigrationSummary(TypedDict):
+    """Keep unavailable producer hit flags distinct from an exported zero count."""
+
+    native_reject_005: int
+    joint_bh_reject_005: int
+    by_reject_005: int
+    by_reject_0001: int
+    native_reported_hits: int | None
+    native_reported_hits_status: Literal["exported", "not_exported", "partially_exported"]
+
+
+def _native_hit_flag(value: str | None) -> bool | None:
+    """Read a producer flag without substituting its q-value or filling missingness."""
+    flag = value.strip().lower() if value is not None else ""
+    if not flag:
+        return None
+    if flag not in {"true", "false"}:
+        raise ValueError("Native hit flag must be true, false or unavailable")
+    return flag == "true"
+
+
+def migration_report(family: FamilyInput, corrected: Path, destination: Path) -> MigrationSummary:
     """Join native rows on disk; separate family, method, threshold and effect filters."""
-    counts = {
+    counts: MigrationSummary = {
         "native_reject_005": 0,
         "joint_bh_reject_005": 0,
         "by_reject_005": 0,
         "by_reject_0001": 0,
-        "native_reported_hits": 0,
+        "native_reported_hits": None,
+        "native_reported_hits_status": "not_exported",
     }
+    total_rows = 0
+    available_flags = 0
+    reported_hits = 0
     with (
         tempfile.TemporaryDirectory(prefix="mtp-migration-") as scratch,
         closing(sqlite3.connect(Path(scratch) / "native.sqlite")) as db,
@@ -122,9 +148,10 @@ def migration_report(family: FamilyInput, corrected: Path, destination: Path) ->
                 counts["joint_bh_reject_005"] += result.reject_bh_005 is True
                 counts["by_reject_005"] += result.reject_by_005 is True
                 counts["by_reject_0001"] += result.reject_by_0001 is True
-                counts["native_reported_hits"] += (
-                    native_row["native_reported_hit"].lower() == "true"
-                )
+                flag = _native_hit_flag(native_row["native_reported_hit"])
+                total_rows += 1
+                available_flags += flag is not None
+                reported_hits += flag is True
                 writer.writerow(
                     {
                         "hypothesis_id": identity,
@@ -136,6 +163,11 @@ def migration_report(family: FamilyInput, corrected: Path, destination: Path) ->
                         "family_changed": family.metadata.family_id == "ilyas-joint-ora",
                     }
                 )
+    if total_rows and available_flags == total_rows:
+        counts["native_reported_hits"] = reported_hits
+        counts["native_reported_hits_status"] = "exported"
+    elif available_flags:
+        counts["native_reported_hits_status"] = "partially_exported"
     return counts
 
 

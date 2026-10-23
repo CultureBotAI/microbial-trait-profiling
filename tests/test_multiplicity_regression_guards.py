@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from mtp.datamodel.multiple_testing_pydantic import HypothesisFamilyMetadata, SourceArtifact
+from mtp.multiple_testing import canonical_sha256
 from mtp.multiplicity import native, ora, stage
 from mtp.multiplicity import sources as source_module
 from mtp.multiplicity.families import FamilyInput, NativeObservation, rows, validate_sign_status
@@ -184,6 +185,67 @@ def test_migration_native_q005_is_not_native_reported_threshold(tmp_path: Path) 
     assert {row["native_threshold"] for row in rows(tmp_path / "migration.tsv")} == {"0.001"}
 
 
+def migration_input(tmp_path: Path, flags: tuple[str | None, ...]) -> tuple[FamilyInput, Path]:
+    """Use real correction artifacts and independently declared native flags (#996)."""
+    declared = family(len(flags))
+    metadata = HypothesisFamilyMetadata.model_validate(declared.model_dump(exclude={"members"}))
+    observations = [
+        NativeObservation(
+            value,
+            0.04,
+            "BH",
+            "fixture-native-family",
+            0.05,
+            {} if flag is None else {"is_significant": flag},
+        )
+        for value, flag in zip(raw([0.04] * len(flags)), flags, strict=True)
+    ]
+    imported = FamilyInput(metadata, lambda: iter(declared.members), lambda: iter(observations), ())
+    correction = correct_inventory(
+        metadata, declared.members, [item.raw for item in observations], tmp_path / "corrected"
+    )
+    return imported, tmp_path / "corrected" / correction.corrected.identity
+
+
+@pytest.mark.parametrize(
+    ("flags", "expected_hits", "availability"),
+    [
+        pytest.param((None, None), None, "not_exported", id="absent"),
+        pytest.param(("", " "), None, "not_exported", id="blank"),
+        pytest.param((), None, "not_exported", id="empty-family"),
+        pytest.param(("False", "false"), 0, "exported", id="all-false"),
+        pytest.param(("True", "false", "TRUE"), 2, "exported", id="true-flags"),
+        pytest.param(("True", None), None, "partially_exported", id="partly-absent"),
+        pytest.param(("False", ""), None, "partially_exported", id="partly-blank"),
+    ],
+)
+def test_migration_native_hit_availability(
+    tmp_path: Path,
+    flags: tuple[str | None, ...],
+    expected_hits: int | None,
+    availability: str,
+) -> None:
+    imported, corrected = migration_input(tmp_path, flags)
+    destination = tmp_path / "migration.tsv"
+    summary = stage.migration_report(imported, corrected, destination)
+    assert summary["native_reported_hits"] == expected_hits
+    assert summary["native_reported_hits_status"] == availability
+    assert summary["native_reject_005"] == len(flags), "Native q counts must stay independent"
+    exported = {row["hypothesis_id"]: row for row in rows(destination)}
+    assert len(exported) == len(flags)
+    for observation in imported.observations():
+        row = exported[observation.raw.hypothesis_id]
+        assert row["native_reported_hit"] == observation.row.get("is_significant", "")
+        assert row["source_row_sha256"] == canonical_sha256(observation.row)
+
+
+@pytest.mark.parametrize("flag", ["yes", "1", "unknown"])
+def test_migration_rejects_invalid_native_hit_flags(tmp_path: Path, flag: str) -> None:
+    imported, corrected = migration_input(tmp_path, (flag,))
+    with pytest.raises(ValueError, match="Native hit flag must be true, false or unavailable"):
+        stage.migration_report(imported, corrected, tmp_path / "migration.tsv")
+
+
 def test_final_source_recheck_blocks_published_manifest(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -193,7 +255,7 @@ def test_final_source_recheck_blocks_published_manifest(
 
     def report_then_change_source(
         imported: FamilyInput, corrected: Path, destination: Path
-    ) -> dict[str, int]:
+    ) -> stage.MigrationSummary:
         nonlocal count
         result = original(imported, corrected, destination)
         count += 1
