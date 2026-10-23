@@ -518,6 +518,84 @@ inputs. Comparison never overwrites baseline or current products.
 
 ## Checks and maintenance
 
+After a full-corpus rebuild of `data/derived` with phenotype strain rollup, run
+`just taxa-coverage --strain-rollup phenotype` to
+regenerate `trait-visualization/trait-profile-investigation/taxa-coverage/`
+before rebuilding decks or plates that cite its tables and README (#820/#821).
+The recipe consumes `bugsigdb_taxa.tsv`, `taxa_trait_matrix.tsv`,
+`study_trait_profiles_wide.tsv` and `experiments.tsv`. It filters profiles and
+taxon occurrences to recorded `Homo sapiens` hosts sequenced by `16S` or `WMS`,
+using the same experiment-selection function as the canonical profile builder.
+Unrecognized signature directions and empty taxon IDs are skipped by the same
+normalization rules. Pre-#742 metadata receives an explicit regeneration error.
+The audit applies no
+contrast-tier, pairing or orientation restriction. This is coverage of the
+full canonical corpus, not coverage of a disease-vs-healthy subset.
+
+`--strain-rollup` is required and accepts `off`, `phenotype` or `full`. Supply the
+scope actually used upstream; identical paths or feature counts do not identify
+it. For example, use `just taxa-coverage --strain-rollup off --matrix PATH
+--profiles PATH --output-dir DIR` for an off-scope bundle (also supply its matching
+taxa and experiment paths when different). The README and provenance record this
+as `declared_unverified`: input hashes and count reconciliation bind the supplied
+tables but do not verify the upstream rollup scope. Keep distinct scopes in
+separate output directories; accepting `full` here does not authorize a full-scope
+production rerun.
+
+The generated README includes a shell-quoted regeneration command naming the
+four consumed tables, declared scope, output directory and rendering mode. It
+also preserves the KG sidecar path, any consumed raw-dump path and any explicit
+vintage override; inferred header vintages remain inferred when replayed.
+Run it from the repository root. Repo-local paths keep their lexical spelling,
+including symlinks into shared data; external inputs retain their actual absolute
+paths. This command reuses paths, so compare the provenance hashes if their
+contents may have changed. Decompress committed profile archives before this
+coverage command; direct gzip input remains the pre-existing limitation noted
+in #970.
+
+The audit reconciles profile counts with distinct signature taxa and the matrix;
+missing experiment metadata, missing canonical profiles, missing matrix taxa,
+duplicate keys and count disagreements fail before publication. Only reported
+taxa from the selected corpus enter taxon totals. Trait vocabulary comes from
+the profile table. Zero-trait profiles remain in audit tables; selected figure
+panels explicitly show mapped profiles only. No mapped annotation is not
+evidence of biological absence.
+
+The recipe generates five TSVs, six PNG/SVG figure pairs, a data-derived README,
+and `provenance.json` with input/output SHA-256 hashes, producer and lockfile
+hashes, Git revision (`+dirty` when applicable), corpus/KG identity, explicit
+population rules and exclusion counts. Paths are repository-relative, or
+`external/<basename>` for supplied external inputs; content hashes identify the
+bytes. `--bugsigdb-vintage` supplies a declared vintage; when omitted, the producer
+reads the header of `--raw-dump`, whose default is the repository's
+`data/raw/full_dump.csv`. Explicit derived inputs from another corpus do not
+change that default: supply their matching raw dump or an explicit vintage to
+avoid attributing the repository dump's date to them. The consumed raw dump is
+hashed; the recorded vintage alone does not verify that it produced the derived
+tables. Without a declaration or a readable vintage header, the provenance source
+is `unavailable`; a missing default dump is not evidence of a vintage.
+`--kg-provenance` supplies the KG download sidecar. Its release and source-file
+claims are declared evidence, not proof of which KG built the matrix; the
+consumed sidecar itself is hashed. These are standalone
+execution provenance records, not verified core or arm manifests. Rerun them
+after changing the profile population, matrix or strain-rollup scope; keep
+different scope outputs in separate directories. Explicit `--taxa`, `--matrix`,
+`--profiles`, `--experiments` and `--output-dir` arguments are supported.
+`--tables-only --output-dir PATH` supports an isolated table audit; it refuses a
+directory with existing figures so those cannot silently remain stale. The
+profile-rank denominator column is now `pct_of_mapped_profiles`; the columns in
+the rank and taxon-detail tables read by existing deck builders are preserved.
+The README reports both all-annotation coverage (including MediaDive) and
+non-MediaDive coverage, plus the numbers of taxa and profiles with MediaDive
+annotations only. These are distinct quantities; a deck must name the one it
+cites rather than treating them as interchangeable.
+Empty rank rows are omitted from the exported rank table and README, avoiding
+undefined `0/0` percentages in the plate consumer. Nonempty unrecognized ranks
+remain in `other`. TaxID alias candidates require review, and higher-rank
+annotations do not establish leaf-taxon traits; the companion Plate 6 update
+(#864) must preserve those cautions. #820/#821 remain open until the coordinated
+rerun regenerates and reviews the tracked outputs.
+
 `just check` includes generated-model consistency, schema lint, graph checks,
 and the offline pytest fixtures. CI also executes `just core-fixture` and saves
 its run evidence. Tests cover mixed ranks, duplicate observations/source edges,
