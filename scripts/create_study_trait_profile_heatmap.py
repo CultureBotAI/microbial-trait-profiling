@@ -21,6 +21,7 @@ from mtp.composition_denominators import (
     trait_fractions,
 )
 from mtp.human_host_corpus import CORPUS_SEQUENCING_TYPES
+from mtp.paths import file_sha256
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = REPO_ROOT / "trait-visualization"
@@ -1150,11 +1151,19 @@ def write_paired_outputs(
     matrix_output_path: Path,
     metadata_output_path: Path,
     required_trait_check_output_path: Path,
+    *,
+    source_hashes: dict[str, str] | None = None,
+    selection_parameters: dict[str, int | float | str] | None = None,
 ) -> None:
     """Write the paired enrichment matrix and matched-pair metadata."""
     matrix_output_path.parent.mkdir(parents=True, exist_ok=True)
     pair_display_matrix.to_csv(matrix_output_path, sep="\t")
-    pair_metadata.loc[pair_matrix.index].to_csv(metadata_output_path, sep="\t")
+    metadata = pair_metadata.loc[pair_matrix.index].copy()
+    for source, digest in (source_hashes or {}).items():
+        metadata[f"{source}_sha256"] = digest
+    for parameter, value in (selection_parameters or {}).items():
+        metadata[f"heatmap_parameter_{parameter}"] = value
+    metadata.to_csv(metadata_output_path, sep="\t")
     required_trait_check.to_csv(required_trait_check_output_path, sep="\t", index=False)
     print(f"Wrote paired enrichment heatmap: {output_path}")
     print(f"Wrote paired enrichment matrix: {matrix_output_path}")
@@ -1325,6 +1334,13 @@ def main() -> None:
     if args.include_media_traits:
         parser.error("MediaDive is excluded before composition normalization (#174).")
 
+    pair_source_inputs = {
+        "profile": args.study_trait_profiles_input,
+        "trait_labels": args.trait_columns_input,
+        "raw_dump": args.full_dump_input,
+        "studies": args.studies_input,
+    }
+    pair_source_hashes = {name: file_sha256(path) for name, path in pair_source_inputs.items()}
     profile_matrix, profile_metadata, _trait_columns = load_profile_matrix(
         args.study_trait_profiles_input
     )
@@ -1433,6 +1449,8 @@ def main() -> None:
         direction_basis=args.direction_basis,
     )
     required_trait_check = summarize_required_paired_traits(pair_matrix, trait_metadata)
+    if pair_source_hashes != {name: file_sha256(path) for name, path in pair_source_inputs.items()}:
+        raise ValueError("Heatmap source inputs changed during execution; rebuild before export")
     write_paired_outputs(
         pair_matrix,
         pair_display_matrix,
@@ -1443,6 +1461,21 @@ def main() -> None:
         args.paired_matrix_output,
         args.paired_metadata_output,
         args.paired_required_trait_check_output,
+        source_hashes=pair_source_hashes,
+        selection_parameters={
+            "max_profiles": max_profiles,
+            "max_body_site_categories": args.max_body_site_categories,
+            "max_condition_categories": args.max_condition_categories,
+            "min_traits": args.min_traits,
+            "min_total_signal": args.min_total_signal,
+            "max_traits": args.max_traits,
+            "min_profile_support": args.min_profile_support,
+            "max_profile_support_fraction": args.max_profile_support_fraction,
+            "display_max_rows": args.display_max_rows,
+            "paired_display_max_rows": args.paired_display_max_rows,
+            "host": HUMAN_HOST_SPECIES,
+            "sequencing_types": ",".join(sorted(CORPUS_SEQUENCING_TYPES)),
+        },
     )
 
 

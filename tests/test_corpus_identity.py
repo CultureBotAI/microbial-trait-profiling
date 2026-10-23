@@ -53,6 +53,15 @@ def test_the_three_column_groups_account_for_the_whole_header(tmp_path: Path) ->
     assert identity.profile_rows == 3
 
 
+def test_optional_profile_metadata_is_not_counted_as_a_trait(tmp_path: Path) -> None:
+    path = tmp_path / "with_taxa_count.tsv"
+    path.write_text("study_id\texperiment_id\tinc_dec\ttaxa_count\tMETPO:1\ns1\te1\tinc\t2\t1\n")
+    identity = measure_matrix(path)
+    assert identity.retained_trait_columns == 1
+    assert identity.metadata_columns == 1
+    assert identity.header_columns == 5
+
+
 def test_two_matrices_differing_only_in_mediadive_columns_are_distinguishable(
     tmp_path: Path,
 ) -> None:

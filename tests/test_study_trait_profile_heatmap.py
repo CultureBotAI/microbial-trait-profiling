@@ -9,6 +9,8 @@ import pandas as pd
 import pytest
 from matplotlib.collections import QuadMesh
 
+from mtp.paths import file_sha256
+
 MODULE_PATH = (
     Path(__file__).resolve().parents[1] / "scripts" / "create_study_trait_profile_heatmap.py"
 )
@@ -156,6 +158,31 @@ def test_cli_requires_a_known_direction_basis_before_reading_inputs(
         heatmap.main()
     assert error.value.code == 2
     assert "--direction-basis" in capsys.readouterr().err
+
+
+def test_paired_export_preserves_the_count_input_identity(tmp_path: Path) -> None:
+    """The actual pair export carries identities checked by site-stat regeneration (#824)."""
+    profiles = tmp_path / "profiles.tsv"
+    profiles.write_text("synthetic counts\n")
+    source_hashes = {"profile": file_sha256(profiles)}
+    matrix = pd.DataFrame({"METPO:1": [1.0]}, index=["pair1"])
+    metadata = pd.DataFrame({"study_id": ["study1"]}, index=matrix.index)
+    output = tmp_path / "pairs.tsv"
+    heatmap.write_paired_outputs(
+        matrix,
+        matrix,
+        metadata,
+        pd.DataFrame({"present": [True]}),
+        1,
+        tmp_path / "figure.png",
+        tmp_path / "matrix.tsv",
+        output,
+        tmp_path / "required.tsv",
+        source_hashes=source_hashes,
+    )
+    observed = pd.read_csv(output, sep="\t", index_col=0)
+    assert observed["profile_sha256"].eq(source_hashes["profile"]).all()
+    assert "profile_sha256" not in metadata
 
 
 def test_filter_human_host_profiles_keeps_only_homo_sapiens() -> None:

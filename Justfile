@@ -90,6 +90,11 @@ core-screen run output:
 core-composition run output:
 	uv run python -m mtp.trait_composition --core-run "{{run}}" --output-dir "{{output}}"
 
+# After study-trait-profiles and trait-heatmaps: pooled/site tables with hashed provenance.
+[positional-arguments]
+trait-profile-site-stats *ARGS:
+	uv run python scripts/create_trait_profile_infographic.py --stratified-stats-only "$@"
+
 # Complete exports carry the verified input fingerprints needed for integration.
 [positional-arguments]
 core-ora run output tail="upper":
@@ -565,6 +570,13 @@ audit-strain-rollup *ARGS:
 # non-empty trait columns).
 study-trait-profiles: taxa-trait-matrix
 	uv run python scripts/create_study_trait_profiles.py --host-species "Homo sapiens" --sequencing-types 16S WMS --drop-empty-traits
+
+# Run after rebuilding data/derived: canonical human 16S/WMS coverage, README and hashes.
+# Explicit paths are supported; this recipe never rebuilds upstream tables (#820/#821).
+# Declare the upstream scope explicitly, e.g. just taxa-coverage --strain-rollup phenotype.
+[positional-arguments]
+taxa-coverage *ARGS:
+	uv run python scripts/create_taxa_coverage_histogram.py "$@"
 
 # After an intended input change, such as a BugSigDB release or a new KG pin, refresh the
 # committed copy with `just study-trait-profiles-refresh-gz` and commit it (#667).

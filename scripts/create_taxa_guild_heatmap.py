@@ -162,7 +162,8 @@ def load_bugsigdb_taxa_records(
     The rows and their directions come from the run's taxa table, so a contrast
     population summarizes only its own signatures, on its own direction basis (#768).
     The full dump keeps the table's corpus signatures and supplies the raw names and
-    ranks, joined on signature and taxon ID.
+    ranks, joined on signature and taxon ID. The stdout row audit is retained in
+    the verified arm's command log; loss reasons are disjoint and include zeros.
     """
     corpus_taxa = load_corpus_taxon_names(full_dump_path)
     taxa = pd.read_csv(
@@ -179,10 +180,21 @@ def load_bugsigdb_taxa_records(
         ],
         dtype=str,
     )
-    taxa = taxa[
-        taxa["signature_id"].isin(corpus_taxa.keys())
-        & taxa["direction"].isin(["increased", "decreased"])
-    ].reset_index(drop=True)
+    input_rows = len(taxa)
+    in_corpus = taxa["signature_id"].isin(corpus_taxa.keys())
+    valid_direction = taxa["direction"].isin(["increased", "decreased"])
+    outside_corpus = int((~in_corpus).sum())
+    invalid_direction = int((in_corpus & ~valid_direction).sum())
+    taxa = taxa[in_corpus & valid_direction].reset_index(drop=True)
+    fallback_rows = sum(
+        taxon_id not in corpus_taxa[signature_id]
+        for signature_id, taxon_id in zip(taxa["signature_id"], taxa["taxon_id"], strict=True)
+    )
+    print(
+        f"BugSigDB taxon-row audit: input={input_rows} retained={len(taxa)} "
+        f"dropped_outside_corpus={outside_corpus} dropped_invalid_direction={invalid_direction} "
+        f"name_rank_fallback={fallback_rows}"
+    )
     if taxa.empty:
         msg = (
             f"{bugsigdb_taxa_path} has no increased or decreased taxon rows in the "
