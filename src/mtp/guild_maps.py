@@ -525,9 +525,7 @@ def _sign(value: float) -> int:
     return 1 if value > 0 else -1
 
 
-def compute_correlation(
-    profiles: list[Profile], _matrix: GuildMatrix | None = None
-) -> CorrelationResult:
+def compute_correlation(profiles: list[Profile]) -> CorrelationResult:
     """Test whether aerobes shift toward the increased side more often than anaerobes.
 
     Scoring counts studies, not experiments or trait assertions. A study is
