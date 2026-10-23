@@ -388,6 +388,41 @@ def test_taxa_guild_main_requires_the_direction_basis(
     assert not (tmp_path / "matrix.tsv").exists()
 
 
+def test_taxa_guild_reports_disjoint_row_losses_and_name_fallback(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    module = load_script_module("create_taxa_guild_heatmap.py")
+    full_dump, _ = write_all_host_run(tmp_path)
+    taxa = write_taxa_table(
+        tmp_path / "audited.tsv",
+        [
+            ("study1", "1", "1", "decreased", "562", "old name", "genus"),
+            ("study1", "1", "1", "increased", "841", "Roseburia", "genus"),
+            ("study1", "1", "1", "unchanged", "562", "old name", "genus"),
+            ("study2", "1", "1", "increased", "573", "Klebsiella pneumoniae", "species"),
+            ("study3", "1", "1", "unchanged", "817", "Bacteroides fragilis", "species"),
+        ],
+    )
+    records = module.load_bugsigdb_taxa_records(taxa, full_dump)
+    audit = capsys.readouterr().out
+    assert "input=5 retained=2 dropped_outside_corpus=2 dropped_invalid_direction=1" in audit
+    assert "name_rank_fallback=1" in audit
+    assert records["direction"].tolist() == ["decreased", "increased"]
+    assert records["taxon_name"].tolist() == ["Escherichia coli", "Roseburia"]
+    assert records["taxonomic_rank"].tolist() == ["species", "genus"]
+
+
+def test_taxa_guild_reports_zero_fallback_and_nonzero_filter_loss(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    module = load_script_module("create_taxa_guild_heatmap.py")
+    full_dump, taxa = write_all_host_run(tmp_path)
+    module.load_bugsigdb_taxa_records(taxa, full_dump)
+    audit = capsys.readouterr().out
+    assert "input=3 retained=1 dropped_outside_corpus=2 dropped_invalid_direction=0" in audit
+    assert "name_rank_fallback=0" in audit
+
+
 def test_taxa_guild_fails_without_the_full_dump(tmp_path: Path) -> None:
     """Without the dump no corpus rule applies, so nothing falls back to every host (#747)."""
     module = load_script_module("create_taxa_guild_heatmap.py")
@@ -582,3 +617,53 @@ def test_an_export_without_sequencing_types_fails_instead_of_dropping_the_filter
     guild = load_script_module("create_taxa_guild_heatmap.py")
     with pytest.raises(ValueError, match="no Homo sapiens 16S or WMS taxon rows"):
         guild.load_bugsigdb_taxa_records(guild_taxa_path, full_dump_path)
+
+
+@pytest.mark.parametrize("missing", [None, "absent.csv"])
+def test_genus_heatmap_requires_dump_instead_of_falling_back_to_all_hosts(
+    tmp_path: Path,
+    missing: str | None,
+) -> None:
+    module = load_script_module("create_clustered_heatmap.py")
+    path = None if missing is None else tmp_path / missing
+    with pytest.raises((ValueError, FileNotFoundError), match=r"full_dump|absent\.csv"):
+        module.load_human_experiment_ids(path)
+
+
+def test_genus_missing_dump_fails_before_replacing_existing_outputs(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import sys
+
+    module = load_script_module("create_clustered_heatmap.py")
+    taxa = write_taxa_table(
+        tmp_path / "taxa.tsv",
+        [
+            ("study1", "1", "1", "increased", "841", "Roseburia", "genus"),
+            ("study2", "1", "1", "increased", "572511", "Blautia", "genus"),
+        ],
+    )
+    matrix = tmp_path / "existing.tsv"
+    figure = tmp_path / "existing.png"
+    matrix.write_text("existing matrix\n", encoding="utf-8")
+    figure.write_bytes(b"existing figure\n")
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "create_clustered_heatmap.py",
+            "--input",
+            str(taxa),
+            "--full-dump-input",
+            str(tmp_path / "absent.csv"),
+            "--output",
+            str(figure),
+            "--matrix-output",
+            str(matrix),
+        ],
+    )
+    with pytest.raises(FileNotFoundError, match=r"absent\.csv"):
+        module.main()
+    assert matrix.read_text(encoding="utf-8") == "existing matrix\n"
+    assert figure.read_bytes() == b"existing figure\n"

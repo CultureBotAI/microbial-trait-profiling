@@ -41,7 +41,7 @@ import math
 import re
 import sys
 from collections import Counter, defaultdict
-from collections.abc import Callable, Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -818,6 +818,31 @@ def subset_null(
     return draws
 
 
+def signature_draws(
+    rng: np.random.Generator, unit_study: IntArray, total: int
+) -> Iterator[tuple[IntArray, IntArray]]:
+    """U6's random draws, in batches: each study's unit and a random order of the studies.
+
+    Row ``i`` of the first array gives each study's unit in iteration ``i``, chosen at
+    random among that study's units; row ``i`` of the second lists the studies in a
+    random order. ``signature_null`` gives each synthetic condition its own block of
+    that order, and the selection scan (#835) does the same for every eligible condition.
+    """
+    # Units of one study must be contiguous and the studies numbered 0..n-1, which the
+    # searchsorted below relies on (#632).
+    if np.any(np.diff(unit_study) < 0) or not np.array_equal(
+        np.unique(unit_study), np.arange(int(unit_study.max()) + 1)
+    ):
+        raise ValueError("unit_study must be sorted and number the studies 0..n-1")
+    n_studies = int(unit_study.max()) + 1
+    first = np.searchsorted(unit_study, np.arange(n_studies))
+    per_study = np.bincount(unit_study, minlength=n_studies)
+    for size in batches(total):
+        unit_of_study = first + (rng.random((size, n_studies)) * per_study).astype(np.int64)
+        order = np.argsort(rng.random((size, n_studies)), axis=1)
+        yield unit_of_study, order
+
+
 def signature_null(
     rng: np.random.Generator,
     units: BoolArray,
@@ -831,19 +856,8 @@ def signature_null(
     condition-level units at random, and splits them among the three synthetic
     conditions. As in the observed data, no study contributes to two conditions.
     """
-    # Units of one study must be contiguous and the studies numbered 0..n-1, which the
-    # searchsorted below relies on (#632).
-    if np.any(np.diff(unit_study) < 0) or not np.array_equal(
-        np.unique(unit_study), np.arange(int(unit_study.max()) + 1)
-    ):
-        raise ValueError("unit_study must be sorted and number the studies 0..n-1")
     draws = NullDraws.empty()
-    n_studies = int(unit_study.max()) + 1
-    first = np.searchsorted(unit_study, np.arange(n_studies))
-    per_study = np.bincount(unit_study, minlength=n_studies)
-    for size in batches(total):
-        unit_of_study = first + (rng.random((size, n_studies)) * per_study).astype(np.int64)
-        order = np.argsort(rng.random((size, n_studies)), axis=1)
+    for unit_of_study, order in signature_draws(rng, unit_study, total):
         start = 0
         masks: dict[str, BoolArray] = {}
         for short in SHORT:

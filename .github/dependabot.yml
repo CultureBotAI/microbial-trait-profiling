@@ -14,10 +14,10 @@ updates:
       # Both are pinned to match a hook rev in .pre-commit-config.yaml, which
       # the uv ecosystem does not bump. Bump them by hand, together with the
       # hook rev (tests/test_tool_pins.py checks they agree). Deliberately, this
-      # also suppresses their Dependabot security PRs. Their only remaining
-      # vulnerability check is the pre-commit `pip-audit` hook, which audits the
-      # environment CI syncs with `--group qa`; `just security` exports without
-      # the qa group and does not see them.
+      # also suppresses their Dependabot security PRs. Both the pre-commit
+      # `pip-audit` hook and `just security` include the qa group and audit these
+      # packages. Platform markers follow the host, so the Linux CI audit must
+      # also pass when local checks run on another platform (#823).
       - dependency-name: "uv"
       - dependency-name: "detect-secrets"
     # ruff and bandit are not ignored, but their hook revs must equal the

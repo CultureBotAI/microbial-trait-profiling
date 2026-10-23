@@ -549,7 +549,6 @@ def build_guild_matrix(profiles: Sequence[Profile]) -> GuildMatrix:
 def guild_records(
     profiles: Sequence[Profile],
     *,
-    matrix: GuildMatrix,
     source: str,
     columns: FeatureColumns,
     q_threshold: float | None,
@@ -567,7 +566,7 @@ def guild_records(
     first, as the figure and its own McNemar drop it (#783).
     """
     profiles = drop_zero_total_pairs(profiles).profiles
-    correlation = compute_correlation(list(profiles), matrix)
+    correlation = compute_correlation(list(profiles))
     up_down, down_up = correlation.discordant
     status = TESTED if up_down + down_up else INSUFFICIENT
     records = [
@@ -2529,7 +2528,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     # applies the exclusion above too (#783). The McNemar reads the profiles,
     # never the matrix.
     matrix = build_guild_matrix(profiles)
-    records += guild_records(profiles, matrix=matrix, source=source, columns=columns, **thresholds)
+    records += guild_records(profiles, source=source, columns=columns, **thresholds)
     records += cell_support_records(
         matrix, source=source, columns=columns, min_studies=GUILD_MIN_STUDIES
     )
