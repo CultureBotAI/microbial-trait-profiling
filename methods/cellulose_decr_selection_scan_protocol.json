@@ -1,0 +1,48 @@
+{
+  "protocol": "cellulose-decr-selection-scan-v1",
+  "issue": "https://github.com/CultureBotAI/microbial-trait-profiling/issues/835",
+  "methods": "methods/cellulose_decr_selection_scan.md",
+  "declared": "2026-10-22, committed with the methods note before the scan's code and before any run on real data",
+  "drafted_by": "a coding agent (Claude Code); the rule follows the acceptance list of #835 and the lead's brief",
+  "population": {
+    "core_contrast_population": "disease_vs_healthy_tier1_2_subject_controls",
+    "core_products": ["experiments", "reported_taxa", "count_profiles", "taxa_matrix", "feature_metadata"],
+    "stool_body_site": "Feces",
+    "condition_labels": "exact BugSigDB label of the experiment; no synonym merging; a multi-condition label is its own condition; a blank label is not a condition"
+  },
+  "eligibility": {
+    "min_studies": 3,
+    "counted": "distinct studies contributing at least one stool disease-vs-healthy comparison to the condition",
+    "source": "FIGURE_MIN_STUDIES in src/mtp/guild_maps.py and --min-studies in src/mtp/table1_trait_maps.py: the minimum studies behind a condition x body-site cell"
+  },
+  "traits": {
+    "ranking": "the Noel arm's directional screen (mtp.trait_screen) on the same core's count profiles; the ranking that originally chose cellulose is not recorded in the repository",
+    "decreasing": "tested, and more studies shift down than up",
+    "order": "p-value ascending, then more scored studies, then trait ID",
+    "top_n": 10,
+    "always_included": "METPO:2000103|GO:0030245",
+    "always_included_note": "cellulose catabolic process joins the set, flagged, when it is not among the top N"
+  },
+  "statistics": {
+    "primary": "mean_pairwise_jaccard_distance",
+    "secondary": "three_way_core",
+    "set": "matrix taxa bearing the trait that at least one stool decreased signature of the condition reports, at any rank",
+    "undefined_pairs": "a pair whose union is empty has no distance; the mean is over the pairs that have one; a triple whose three sets are all empty is not tested"
+  },
+  "null": {
+    "model": "U6, cellulose_decr's whole-study-signature null (u6_units and signature_null's draws)",
+    "pool": "every study in the population with a stool decreased signature, in any condition",
+    "permutations": 100000,
+    "seed": 20261022,
+    "p_value": "(1 + draws at least as extreme) / (1 + draws)",
+    "distance_tolerance": 1e-12,
+    "shared_draws": "one sequence of U6 draws serves every triple and trait; each eligible condition takes its own block of each draw's studies; a triple whose blocks would overlap gets its own U6 draws"
+  },
+  "lead_triple": ["Parkinson's disease", "HIV infection", "Colorectal cancer"],
+  "lead_trait": "METPO:2000103|GO:0030245",
+  "ranking_of_triples": "U6 p ascending over tested triples; ties reported as a range of ranks with the share of triples at most as large",
+  "reference_sets": ["all_tested_triples", "study_disjoint_triples"],
+  "distribution_bins": 20,
+  "multiplicity": "none; every p-value is nominal, and selection-aware inference belongs to the unified multiple-testing layer",
+  "amendments": []
+}

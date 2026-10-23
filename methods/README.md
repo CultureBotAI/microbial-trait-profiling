@@ -86,6 +86,12 @@ in Parkinson's disease, HIV infection and colorectal cancer:
 Its tables are committed and its figures are regenerated. The code is the
 `mtp.cellulose_decr` package (`src/mtp/cellulose_decr/`).
 
+[`cellulose_decr_selection_scan.md`](cellulose_decr_selection_scan.md) declares the
+selection scan of #835: the same overlap statistics and U6 null for every triple of
+eligible conditions and the top decreasing traits, with the rule fixed in
+[`cellulose_decr_selection_scan_protocol.json`](cellulose_decr_selection_scan_protocol.json)
+before any run on real data.
+
 The selected-figure slide deck in `data/derived/figure_review_2026-09-21/` is built
 by `scripts/build_slide_deck.py` (`just figure-review-deck`), which places the
 methods and Tufte plates drawn by `scripts/generate_tufte_plates.py`
