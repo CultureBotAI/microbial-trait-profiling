@@ -36,7 +36,7 @@ import sys
 import time
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -131,7 +131,7 @@ def seed_entropy(seed: SeedLike) -> list[int]:
 
 @dataclass(frozen=True)
 class Protocol:
-    """The declared rule's parameters, read from the protocol file."""
+    """The declared rule's parameters, read from the protocol file with its amendments."""
 
     min_studies: int
     top_n: int
@@ -142,17 +142,78 @@ class Protocol:
     lead_triple: tuple[str, ...]
     lead_trait: str
     bins: int
+    scope_primary: str
+    scope_sensitivity: tuple[str, ...]
+    scope_absent: str
+
+
+STRAIN_ROLLUP = "strain_rollup"
+PRIMARY = "primary"
+SENSITIVITY = "declared_sensitivity"
+# What this code implements for each field the protocol fixes. load_protocol refuses a
+# protocol that says otherwise, so an edited field cannot pass as followed (#872).
+FIXED_FIELDS: dict[tuple[str, ...], object] = {
+    ("population", "core_contrast_population"): TIER1_2,
+    ("population", "stool_body_site"): FECES,
+    ("population", "core_products"): list(CORE_PRODUCTS),
+    ("statistics", "primary"): MEAN_DISTANCE,
+    ("statistics", "secondary"): CORE,
+    ("reference_sets",): list(REFERENCE_SETS),
+    ("lead_triple",): list(CONDITIONS.values()),
+    ("lead_trait",): TRAIT_ID,
+}
+# The fields the amendments of 2026-10-22 set (#872), as this code implements them.
+AMENDED_FIELDS: dict[str, dict[str, object]] = {
+    STRAIN_ROLLUP: {
+        "parameter": STRAIN_ROLLUP,
+        "primary": "off",
+        "sensitivity": ["phenotype"],
+        "absent_means": "off",
+    },
+    "secondary_rank": {
+        "by": "u6_z",
+        MEAN_DISTANCE: "ascending",
+        CORE: "descending",
+        "ties": "range",
+    },
+}
+AMENDMENT_KEYS = {"date", "change", "reason", "known_when_amended", "sets"}
 
 
 def load_protocol(path: Path = PROTOCOL_PATH) -> Protocol:
-    """The declared parameters; a protocol of another version is refused."""
+    """The declared parameters, with the amendments applied in date order.
+
+    A protocol of another version is refused, and so is one whose fields say something
+    this code does not do (``FIXED_FIELDS``, ``AMENDED_FIELDS``) or whose amendments are
+    malformed, out of date order or set an unknown field.
+    """
     data = json.loads(path.read_text(encoding="utf-8"))
     if data["protocol"] != VERSION:
         raise ValueError(f"{path} declares {data['protocol']!r}, but this code is {VERSION!r}")
-    if data["population"]["core_contrast_population"] != TIER1_2:
-        raise ValueError(f"{path} declares another population than {TIER1_2}")
-    if tuple(data["lead_triple"]) != tuple(CONDITIONS.values()) or data["lead_trait"] != TRAIT_ID:
-        raise ValueError(f"{path} names another lead than cellulose_decr's conditions and trait")
+    effective = dict(data)
+    dates = []
+    for number, amendment in enumerate(data["amendments"]):
+        if set(amendment) != AMENDMENT_KEYS:
+            raise ValueError(f"{path}: amendment {number} needs exactly {sorted(AMENDMENT_KEYS)}")
+        dates.append(date.fromisoformat(amendment["date"]))
+        unknown = sorted(set(amendment["sets"]) - set(AMENDED_FIELDS))
+        if unknown:
+            raise ValueError(f"{path}: amendment {number} sets unknown fields {unknown}")
+        effective.update(amendment["sets"])
+    if dates != sorted(dates):
+        raise ValueError(f"{path}: amendments must be in date order")
+    for keys, expected in FIXED_FIELDS.items():
+        value: Any = effective
+        for key in keys:
+            value = value[key]
+        if value != expected:
+            raise ValueError(f"{path}: {'.'.join(keys)} is {value!r}; this code does {expected!r}")
+    for field, expected in AMENDED_FIELDS.items():
+        if effective.get(field) != expected:
+            raise ValueError(
+                f"{path}: {field} is {effective.get(field)!r}; this code does {expected!r}"
+            )
+    rollup = effective[STRAIN_ROLLUP]
     return Protocol(
         min_studies=int(data["eligibility"]["min_studies"]),
         top_n=int(data["traits"]["top_n"]),
@@ -163,6 +224,26 @@ def load_protocol(path: Path = PROTOCOL_PATH) -> Protocol:
         lead_triple=tuple(data["lead_triple"]),
         lead_trait=str(data["lead_trait"]),
         bins=int(data["distribution_bins"]),
+        scope_primary=str(rollup["primary"]),
+        scope_sensitivity=tuple(rollup["sensitivity"]),
+        scope_absent=str(rollup["absent_means"]),
+    )
+
+
+def rollup_scope(parameters: Mapping[str, str], protocol: Protocol) -> tuple[str, str]:
+    """A core's strain-rollup scope and its declared role; another scope is refused.
+
+    A core built before #828 records no ``strain_rollup`` parameter and is read as the
+    protocol's ``absent_means`` (``off``), as ``mtp.workflow`` reads it.
+    """
+    scope = parameters.get(STRAIN_ROLLUP, protocol.scope_absent)
+    if scope == protocol.scope_primary:
+        return scope, PRIMARY
+    if scope in protocol.scope_sensitivity:
+        return scope, SENSITIVITY
+    raise ValueError(
+        f"strain_rollup {scope!r} is neither the declared primary scope "
+        f"{protocol.scope_primary!r} nor a declared sensitivity {list(protocol.scope_sensitivity)}"
     )
 
 
@@ -211,22 +292,41 @@ def load_population(
     profile_path: Path,
     matrix_taxa: pd.Index,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Profiles and signature taxa of a core run's population, as cellulose_decr frames them.
-
-    The core has already selected and oriented the experiments, so a profile's own
-    direction is the used one: ``dec`` means lower in the disease group. The selected
-    population is human and paired, which is checked rather than assumed.
-    """
+    """Read a core run's experiments, profile keys and signature taxa (``build_population``)."""
     keys = ["study_id", "experiment_id"]
-    experiments = read_tsv(experiments_path)[[*keys, "condition", "body_site", "host_species"]]
-    if experiments.duplicated(keys).any():
-        raise ValueError(f"{experiments_path} repeats an experiment")
-    hosts = set(experiments["host_species"])
-    if hosts != {"Homo sapiens"}:
-        raise ValueError(f"expected human experiments only, found hosts {sorted(hosts)}")
     keyed = pd.read_csv(
         profile_path, sep="\t", usecols=[*keys, "inc_dec"], dtype=str, keep_default_na=False
     )
+    return build_population(read_tsv(experiments_path), keyed, read_tsv(taxa_path), matrix_taxa)
+
+
+def build_population(
+    experiments: pd.DataFrame,
+    keyed: pd.DataFrame,
+    reported: pd.DataFrame,
+    matrix_taxa: pd.Index,
+    studies: Iterable[str] | None = None,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Profiles and signature taxa of a core's population, as cellulose_decr frames them.
+
+    ``experiments``, ``keyed`` (the profiles' study, experiment and ``inc_dec``) and
+    ``reported`` (the signature taxa) are the core's tables in memory; ``studies``, when
+    given, keeps only those studies, whole. The core has already selected and oriented
+    the experiments, so a profile's own direction is the used one: ``dec`` means lower
+    in the disease group. The population is human and paired, which is checked.
+    """
+    keys = ["study_id", "experiment_id"]
+    if studies is not None:
+        keep = frozenset(studies)
+        experiments = experiments[experiments["study_id"].isin(keep)]
+        keyed = keyed[keyed["study_id"].isin(keep)]
+        reported = reported[reported["study_id"].isin(keep)]
+    experiments = experiments[[*keys, "condition", "body_site", "host_species"]]
+    if experiments.duplicated(keys).any():
+        raise ValueError("the experiments table repeats an experiment")
+    hosts = set(experiments["host_species"])
+    if hosts - {"Homo sapiens"}:
+        raise ValueError(f"expected human experiments only, found hosts {sorted(hosts)}")
     if not set(keyed["inc_dec"]) <= {"inc", "dec"}:
         raise ValueError(f"unexpected profile directions {sorted(set(keyed['inc_dec']))}")
     profiled = set(keyed[keys].itertuples(index=False, name=None))
@@ -237,7 +337,7 @@ def load_population(
             "profiles have no experiment"
         )
     if keyed.duplicated([*keys, "inc_dec"]).any():
-        raise ValueError(f"{profile_path} repeats a profile")
+        raise ValueError("the profiles repeat a profile")
     if not keyed.groupby(keys)["inc_dec"].nunique().eq(2).all():
         raise ValueError("the population must be paired: every experiment needs both directions")
     merged = keyed.merge(experiments, on=keys, how="left", validate="many_to_one")
@@ -249,7 +349,7 @@ def load_population(
         compartment=merged["body_site"].map(compartment_of), dir=merged["inc_dec"]
     )[[*keys, "condition", "body_site", "compartment", "dir"]]
 
-    taxa = read_tsv(taxa_path)
+    taxa = reported.copy()
     direction = taxa["direction"].map({"increased": "inc", "decreased": "dec"})
     if direction.isna().any():
         raise ValueError(
@@ -290,9 +390,19 @@ def condition_table(profiles: pd.DataFrame, min_studies: int) -> pd.DataFrame:
 
 
 def screen_table(
-    profiles: Sequence[Profile], columns: Sequence[str], labels: Mapping[str, ColumnLabel]
+    profiles: Sequence[Profile],
+    columns: Sequence[str],
+    labels: Mapping[str, ColumnLabel],
+    studies: Iterable[str] | None = None,
 ) -> pd.DataFrame:
-    """The Noel arm's directional screen on these profiles, one row per candidate trait."""
+    """The Noel arm's directional screen on these profiles, one row per candidate trait.
+
+    ``studies``, when given, keeps only the profiles of those studies. The screen votes
+    over every body site; the scan's sets are stool-only.
+    """
+    if studies is not None:
+        keep = frozenset(studies)
+        profiles = [profile for profile in profiles if profile.study_id in keep]
     result = run_screen(list(profiles), columns, labels=dict(labels))
     return pd.DataFrame(
         [
@@ -755,8 +865,9 @@ def null_summary(result: ScanResult) -> dict[str, FloatArray]:
         )
         z_mean = np.where(sd_mean > 0, (result.observed_mean - expected_mean) / sd_mean, np.nan)
         z_core = np.where(sd_core > 0, (result.observed_core - expected_core) / sd_core, np.nan)
-        p_mean = (1 + totals.distance_at_most) / (1 + draws)
-        p_core = (1 + totals.core_at_least) / (1 + draws)
+        # No draws (permutations=0) means no null, not p = 1.
+        p_mean = np.where(draws > 0, (1 + totals.distance_at_most) / (1 + draws), np.nan)
+        p_core = np.where(draws > 0, (1 + totals.core_at_least) / (1 + draws), np.nan)
     return {
         "u6_expected_mean_distance": expected_mean,
         "u6_sd_mean_distance": sd_mean,
@@ -770,7 +881,12 @@ def null_summary(result: ScanResult) -> dict[str, FloatArray]:
 
 
 P_COLUMNS = {MEAN_DISTANCE: "u6_p_mean_distance", CORE: "u6_p_core"}
+Z_COLUMNS = {MEAN_DISTANCE: "u6_z_mean_distance", CORE: "u6_z_core"}
 RANK_COLUMNS = {MEAN_DISTANCE: "rank_mean_distance", CORE: "rank_core"}
+# The secondary rank by U6 z (amendment of 2026-10-22): more overlap first, which is
+# ascending z for the mean distance and descending z for the core.
+Z_RANK_COLUMNS = {MEAN_DISTANCE: "z_rank_mean_distance", CORE: "z_rank_core"}
+Z_ASCENDING = {MEAN_DISTANCE: True, CORE: False}
 # The columns of ``triple_table``, in order; a test keeps them in step with it.
 TRIPLE_COLUMNS = (
     "trait_id",
@@ -801,6 +917,7 @@ TRIPLE_COLUMNS = (
     "test_status",
     "is_lead_triple",
     *RANK_COLUMNS.values(),
+    *Z_RANK_COLUMNS.values(),
 )
 
 
@@ -856,6 +973,10 @@ def triple_table(result: ScanResult, lead: Sequence[str]) -> pd.DataFrame:
         for statistic, p_column in P_COLUMNS.items():
             ranks = frame.loc[tested, p_column].rank(method="min")
             frame[RANK_COLUMNS[statistic]] = ranks.reindex(frame.index).astype("Int64")
+        for statistic, z_column in Z_COLUMNS.items():
+            z = frame.loc[tested, z_column].dropna()
+            z_ranks = z.rank(method="min", ascending=Z_ASCENDING[statistic])
+            frame[Z_RANK_COLUMNS[statistic]] = z_ranks.reindex(frame.index).astype("Int64")
         frames.append(frame)
     if not frames:
         return pd.DataFrame(columns=TRIPLE_COLUMNS)
@@ -937,7 +1058,6 @@ LEAD_COLUMNS = (
     "u6_p_core",
     "test_status",
 )
-Z_COLUMNS = {MEAN_DISTANCE: "u6_z_mean_distance", CORE: "u6_z_core"}
 
 
 def lead_and_distribution(
@@ -946,7 +1066,9 @@ def lead_and_distribution(
     """Per trait: the lead triple's results and ranks, the binned p-values, and quantiles.
 
     Each statistic is ranked over two reference sets: every tested triple, and the
-    tested triples whose conditions share no study (the declared sensitivity).
+    tested triples whose conditions share no study (the declared sensitivity). The lead
+    is ranked by U6 p and, by the amendment of 2026-10-22, by U6 z (``*_z_*`` fields),
+    among the triples whose z is defined.
     """
     rows: list[dict[str, Any]] = []
     histogram: list[dict[str, Any]] = []
@@ -973,6 +1095,23 @@ def lead_and_distribution(
                     row.update(
                         {f"{statistic}_{name}_{key}": value for key, value in ranked.items()}
                     )
+                    z_column = Z_COLUMNS[statistic]
+                    lead_z = float(lead[z_column].iloc[0])
+                    if not np.isnan(lead_z):
+                        # lead_rank ranks small values first; flip z where large is first.
+                        sign = 1.0 if Z_ASCENDING[statistic] else -1.0
+                        defined = chosen[chosen[z_column].notna()]
+                        z_ranked = lead_rank(
+                            sign * defined[z_column],
+                            sign * lead_z,
+                            counted=bool(defined["is_lead_triple"].any()),
+                        )
+                        row.update(
+                            {
+                                f"{statistic}_{name}_z_{key}": value
+                                for key, value in z_ranked.items()
+                            }
+                        )
                 for index, count in enumerate(bin_counts(chosen[p_column], bins)):
                     histogram.append(
                         {
@@ -996,9 +1135,10 @@ def trait_table(
 ) -> pd.DataFrame:
     """The trait set with its screen statistics, U3 size and the lead triple's results.
 
-    ``rank_among_traits_*`` ranks the traits by the lead triple's U6 p (smallest first)
-    and by the share of tested triples whose p is at most the lead's, so cellulose can
-    be read against the other top decreasing traits.
+    ``rank_among_traits_*`` ranks the traits by the lead triple's U6 p (smallest first),
+    by the share of tested triples whose p is at most the lead's, and by the share whose
+    z is at least as extreme, so cellulose can be read against the other top decreasing
+    traits.
     """
     u3 = dict(zip(result.traits, result.u3_taxa.tolist(), strict=True))
     frame = chosen.assign(
@@ -1008,6 +1148,7 @@ def trait_table(
         for basis, column in (
             ("lead_p", f"lead_{p_column}"),
             ("lead_share", f"{statistic}_{ALL_TRIPLES}_share_at_most"),
+            ("lead_z_share", f"{statistic}_{ALL_TRIPLES}_z_share_at_most"),
         ):
             values = frame[column] if column in frame else pd.Series(np.nan, index=frame.index)
             frame[f"rank_among_traits_by_{basis}_{statistic}"] = values.rank(method="min").astype(
@@ -1094,9 +1235,10 @@ class ScanInputs:
     """One core population, read once and restricted to any set of its studies.
 
     ``profiles`` and ``taxa`` are every selected experiment's profiles and signature taxa
-    (``load_population``). ``matrix`` holds every screen candidate trait. ``screen`` holds
-    the paired human profiles the directional screen votes on, over ``columns``, and
-    ``labels`` name the traits.
+    (``build_population``). ``matrix`` holds every screen candidate trait. ``screen``
+    holds the paired human profiles the directional screen votes on, over ``columns``,
+    and ``labels`` name the traits. ``strain_rollup`` is the core's scope and
+    ``strain_rollup_role`` its declared role (``rollup_scope``).
     """
 
     profiles: pd.DataFrame
@@ -1105,6 +1247,8 @@ class ScanInputs:
     screen: tuple[Profile, ...]
     columns: tuple[str, ...]
     labels: Mapping[str, ColumnLabel]
+    strain_rollup: str = "off"
+    strain_rollup_role: str = PRIMARY
 
     @property
     def studies(self) -> frozenset[str]:
@@ -1146,8 +1290,11 @@ def load_inputs(paths: Mapping[str, Path]) -> ScanInputs:
     return ScanInputs(profiles, taxa, matrix, tuple(screen), tuple(columns), labels)
 
 
-def open_tier1_2(core_run: Path) -> CoreBundle:
-    """Verify a core run, refusing one of another population or direction basis."""
+def open_tier1_2(core_run: Path, protocol: Protocol | None = None) -> tuple[CoreBundle, str, str]:
+    """Verify a core run; return it with its strain-rollup scope and that scope's role.
+
+    A core of another population, direction basis or undeclared scope is refused.
+    """
     from mtp.workflow.consumers import open_core_bundle
     from mtp.workflow.population import ORIENTED_DIRECTION_BASIS
 
@@ -1160,13 +1307,18 @@ def open_tier1_2(core_run: Path) -> CoreBundle:
             f"the scan reads a {TIER1_2} core oriented {ORIENTED_DIRECTION_BASIS}; "
             f"{core_run} is {bundle.run.contrast_population}, {bundle.run.direction_basis}"
         )
-    return bundle
+    parameters = {item.name: item.value for item in bundle.run.parameters or []}
+    scope, role = rollup_scope(parameters, protocol or load_protocol())
+    return bundle, scope, role
 
 
-def load_core_inputs(core_run: Path) -> tuple[CoreBundle, ScanInputs]:
-    """Verify a Tier 1+2 core run (its ``run.json``) and read its population once."""
-    bundle = open_tier1_2(core_run)
-    return bundle, load_inputs({product: bundle.path(product) for product in CORE_PRODUCTS})
+def load_core_inputs(
+    core_run: Path, protocol: Protocol | None = None
+) -> tuple[CoreBundle, ScanInputs]:
+    """Verify a Tier 1+2 core run (its ``run.json``) of a declared scope; read it once."""
+    bundle, scope, role = open_tier1_2(core_run, protocol)
+    inputs = load_inputs({product: bundle.path(product) for product in CORE_PRODUCTS})
+    return bundle, dataclasses.replace(inputs, strain_rollup=scope, strain_rollup_role=role)
 
 
 def declared_sets(
@@ -1238,6 +1390,8 @@ def select(
 
 
 KEY_COLUMNS = ["trait_id", "condition_a", "condition_b", "condition_c"]
+# Explicit held-out outcomes (#854), beside ``test_status``.
+OUTCOME_COLUMNS = ("missing_condition", "shares_studies", "empty_set", "null_undefined")
 
 
 def evaluate(
@@ -1259,7 +1413,17 @@ def evaluate(
 
     Returns one row per hypothesis in the given order, numbered by ``hypothesis``, with
     the conditions sorted and the columns of ``triple_table`` except the within-trait
-    ranks. The involved conditions, sorted, are the layout of the shared draws.
+    ranks, then four outcome flags (``OUTCOME_COLUMNS``):
+
+    - ``missing_condition``: a condition has no held-out stool decreased signature
+      (``test_status`` ``no_units``);
+    - ``shares_studies``: a held-out study reports two of the conditions, which U6's
+      distinct studies cannot reproduce;
+    - ``empty_set``: a condition's held-out set has no taxon bearing the trait;
+    - ``null_undefined``: no U6 draw gave a distance (not drawn, or every draw empty).
+
+    Set sizes and shared studies are given for every hypothesis, drawn or not. The
+    involved conditions, sorted, are the layout of the shared draws.
     """
     protocol = protocol or load_protocol()
     held_out = inputs.restricted(studies)
@@ -1298,7 +1462,8 @@ def evaluate(
         triples=np.array(triples, dtype=np.int64).reshape(-1, 3),
     )
     table = triple_table(result, protocol.lead_triple)
-    table = table.drop(columns=[*RANK_COLUMNS.values()], errors="ignore")
+    ranks = [*RANK_COLUMNS.values(), *Z_RANK_COLUMNS.values()]
+    table = table.drop(columns=ranks, errors="ignore")
     merged = frame.merge(table, on=KEY_COLUMNS, how="left", validate="many_to_one")
     # A hypothesis the scan did not draw has a condition without held-out units.
     drawn = merged["test_status"].notna()
@@ -1311,10 +1476,57 @@ def evaluate(
     merged["is_lead_triple"] = [
         set(labels) == lead for labels in merged[KEY_COLUMNS[1:]].itertuples(index=False, name=None)
     ]
+    # Sizes and shared studies straight from the held-out studies, for every hypothesis;
+    # for a drawn one they are the scan's own.
+    stool = held_out.taxa[held_out.taxa["compartment"].eq(FECES) & held_out.taxa["dir"].eq("dec")]
+    reported = stool.groupby("condition")["taxon_id"].agg(set).to_dict()
+    decreased = held_out.profiles[
+        held_out.profiles["compartment"].eq(FECES) & held_out.profiles["dir"].eq("dec")
+    ]
+    studies_of = decreased.groupby("condition")["study_id"].agg(set).to_dict()
+    bearing = {
+        trait: trait_taxa(held_out.matrix, trait) for trait in dict.fromkeys(frame["trait_id"])
+    }
+    for letter in "abc":
+        merged[f"n_{letter}"] = [
+            len(reported.get(label, set()) & bearing[trait])
+            for label, trait in zip(merged[f"condition_{letter}"], merged["trait_id"], strict=True)
+        ]
+    merged["shared_studies"] = [
+        sum(
+            sum(study in studies_of.get(label, set()) for label in labels) >= 2
+            for study in set().union(*(studies_of.get(label, set()) for label in labels))
+        )
+        for labels in merged[KEY_COLUMNS[1:]].itertuples(index=False, name=None)
+    ]
     counts = ["n_a", "n_b", "n_c", "u6_units_a", "u6_units_b", "u6_units_c", "shared_studies"]
     counts += ["three_way_core", "three_way_union", "u6_draws", "u6_draws_without_distance"]
     merged[counts] = merged[counts].astype("Int64")
-    return merged[["hypothesis", *table.columns]]
+    merged["missing_condition"] = merged["test_status"].eq(NO_UNITS)
+    merged["shares_studies"] = merged["shared_studies"].gt(0)
+    merged["empty_set"] = merged[["n_a", "n_b", "n_c"]].eq(0).any(axis=1)
+    with_distance = merged["u6_draws"].fillna(0) - merged["u6_draws_without_distance"].fillna(0)
+    merged["null_undefined"] = with_distance.le(0)
+    merged[list(OUTCOME_COLUMNS)] = merged[list(OUTCOME_COLUMNS)].astype(bool)
+    return merged[["hypothesis", *table.columns, *OUTCOME_COLUMNS]]
+
+
+def closest_disjoint_triples(triples: pd.DataFrame, tolerance: float = 1e-12) -> pd.DataFrame:
+    """#854's selection rule: per trait, the closest study-disjoint triple.
+
+    Among the tested triples whose conditions share no study (``shared_studies`` 0),
+    the one with the smallest observed mean pairwise Jaccard distance. Distances within
+    ``tolerance`` count as tied, and a tie goes to the first in lexical order of the
+    three (sorted) conditions. A trait without such a triple selects nothing. U6 is not
+    used, so ``select(..., permutations=0)`` is enough for it.
+    """
+    usable = triples[triples["test_status"].eq(TESTED) & triples["shared_studies"].eq(0)]
+    rows = []
+    for _, group in usable.groupby("trait_id", sort=False):
+        tied = group[group[MEAN_DISTANCE] <= group[MEAN_DISTANCE].min() + tolerance]
+        rows.append(tied.sort_values(KEY_COLUMNS[1:], kind="mergesort").iloc[:1])
+    chosen: pd.DataFrame = pd.concat(rows, ignore_index=True) if rows else triples.iloc[:0]
+    return chosen
 
 
 def rank_candidates(triples: pd.DataFrame, statistic: str = MEAN_DISTANCE) -> pd.DataFrame:
@@ -1346,7 +1558,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     out = args.output_dir
     if not args.plan and out.exists() and (not out.is_dir() or any(out.iterdir())):
         raise ValueError(f"{out} must be a new or empty directory")
-    bundle = open_tier1_2(args.core_run)
+    bundle, scope, role = open_tier1_2(args.core_run, protocol)
+    rollup = {
+        "scope": scope,
+        "role": role,
+        "declared_primary": protocol.scope_primary,
+        "declared_sensitivity": list(protocol.scope_sensitivity),
+    }
     outputs = [out / name for name in OUTPUTS.values()]
     if not args.plan:
         out.mkdir(parents=True, exist_ok=True)
@@ -1362,12 +1580,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         for product, path in paths.items()
     }
 
-    inputs = load_inputs(paths)
+    inputs = dataclasses.replace(load_inputs(paths), strain_rollup=scope, strain_rollup_role=role)
     if args.plan:
         chosen, conditions, eligible = declared_sets(inputs, protocol)
         traits = chosen["trait_id"].tolist()
         prepared = prepare(inputs.profiles, inputs.taxa, inputs.matrix, traits, eligible)
-        report = plan(conditions, chosen, prepared, protocol, permutations)
+        report = {
+            STRAIN_ROLLUP: rollup,
+            **plan(conditions, chosen, prepared, protocol, permutations),
+        }
         print(json.dumps(clean(report), indent=1, ensure_ascii=False))
         return 0
 
@@ -1396,12 +1617,14 @@ def main(argv: Sequence[str] | None = None) -> int:
             "distance_tolerance": protocol.tolerance,
             "primary_statistic": MEAN_DISTANCE,
             "secondary_statistic": CORE,
+            "secondary_rank": "u6_z",
         },
         "core_run": {
             "run_id": bundle.run.run_id,
             "contrast_population": TIER1_2,
             "direction_basis": ORIENTED_DIRECTION_BASIS,
         },
+        STRAIN_ROLLUP: rollup,
         "counts": {
             "conditions_with_stool_comparisons": len(conditions),
             "eligible_conditions": len(eligible),
@@ -1463,6 +1686,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             "direction_basis": ORIENTED_DIRECTION_BASIS,
             "parameters": {item.name: item.value for item in bundle.run.parameters or []},
         },
+        STRAIN_ROLLUP: rollup,
         "inputs": hashes,
         "permutations": permutations,
         "seed": seed,

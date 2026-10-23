@@ -5,8 +5,9 @@ from __future__ import annotations
 import dataclasses
 import itertools
 import json
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -31,17 +32,23 @@ from mtp.cellulose_decr.selection_scan import (
     MEAN_DISTANCE,
     NO_TAXA,
     NO_UNITS,
+    NOT_DRAWN,
+    OUTCOME_COLUMNS,
     OUTPUTS,
     OWN,
     POOL_TOO_SMALL,
+    PRIMARY,
     PROTOCOL_PATH,
+    SENSITIVITY,
     SHARED,
     TIER1_2,
     TRIPLE_COLUMNS,
     ScanInputs,
     bin_counts,
     block_positions,
+    build_population,
     choose_traits,
+    closest_disjoint_triples,
     condition_table,
     evaluate,
     lead_and_distribution,
@@ -51,6 +58,7 @@ from mtp.cellulose_decr.selection_scan import (
     main,
     prepare,
     rank_candidates,
+    rollup_scope,
     scan,
     select,
     triple_table,
@@ -132,7 +140,8 @@ def _random_corpus(
 
 
 def test_protocol_holds_the_declared_rule() -> None:
-    """The parameters the code reads are the ones methods/ declares (#835)."""
+    """The parameters the code reads are the ones methods/ declares (#835), with the
+    amendments of 2026-10-22 applied (#872)."""
     protocol = load_protocol()
     assert protocol.min_studies == 3
     assert protocol.top_n == 10
@@ -142,25 +151,80 @@ def test_protocol_holds_the_declared_rule() -> None:
     assert protocol.bins == 20
     assert protocol.lead_triple == LEAD
     assert protocol.lead_trait == TRAIT_ID == protocol.always_included
+    assert (protocol.scope_primary, protocol.scope_sensitivity) == ("off", ("phenotype",))
+    assert protocol.scope_absent == "off"
+    data = json.loads(PROTOCOL_PATH.read_text(encoding="utf-8"))
+    # The original declaration stays as committed; the amendments carry the changes.
+    assert "strain_rollup" not in data
+    assert "secondary_rank" not in data
+    assert [amendment["date"] for amendment in data["amendments"]] == ["2026-10-22"] * 2
+
+
+def _edited(tmp_path: Path, edit: Callable[[dict[str, Any]], None]) -> Path:
+    data = json.loads(PROTOCOL_PATH.read_text(encoding="utf-8"))
+    edit(data)
+    path = tmp_path / "protocol.json"
+    path.write_text(json.dumps(data), encoding="utf-8")
+    return path
+
+
+def _set(keys: tuple[str | int, ...], value: object) -> Callable[[dict[str, Any]], None]:
+    def edit(data: dict[str, Any]) -> None:
+        target: Any = data
+        for key in keys[:-1]:
+            target = target[key]
+        target[keys[-1]] = value
+
+    return edit
 
 
 @pytest.mark.parametrize(
-    ("section", "key", "value", "message"),
+    ("edit", "message"),
     [
-        (None, "protocol", "cellulose-decr-selection-scan-v0", "but this code is"),
-        ("population", "core_contrast_population", "all_paired", "another population"),
-        (None, "lead_triple", [PD, HIV, "Asthma"], "another lead"),
+        (_set(("protocol",), "cellulose-decr-selection-scan-v0"), "but this code is"),
+        (_set(("population", "core_contrast_population"), "all_paired"), "this code does"),
+        (_set(("population", "stool_body_site"), "Saliva"), "stool_body_site"),
+        (_set(("population", "core_products"), ["experiments"]), "core_products"),
+        (_set(("statistics", "primary"), "three_way_core"), "statistics.primary"),
+        (_set(("statistics", "secondary"), "pairwise"), "statistics.secondary"),
+        (_set(("reference_sets",), ["all_tested_triples"]), "reference_sets"),
+        (_set(("lead_triple",), [PD, HIV, "Asthma"]), "lead_triple"),
+        (_set(("lead_trait",), "METPO:1000623"), "lead_trait"),
+        (_set(("amendments",), []), "strain_rollup is None"),
+        (_set(("amendments", 0, "sets", "strain_rollup", "primary"), "phenotype"), "strain_rollup"),
+        (_set(("amendments", 1, "sets", "secondary_rank", "by"), "u6_p"), "secondary_rank"),
+        (_set(("amendments", 0, "sets", "seed"), 1), "unknown fields"),
+        (_set(("amendments", 1, "date"), "2026-10-21"), "date order"),
+        (lambda data: data["amendments"][0].pop("reason"), "needs exactly"),
     ],
 )
-def test_protocol_is_refused_when_it_changes_what_the_code_assumes(
-    tmp_path: Path, section: str | None, key: str, value: object, message: str
+def test_protocol_is_refused_when_it_says_what_the_code_does_not_do(
+    tmp_path: Path, edit: Callable[[dict[str, Any]], None], message: str
 ) -> None:
-    data = json.loads(PROTOCOL_PATH.read_text(encoding="utf-8"))
-    (data if section is None else data[section])[key] = value
-    path = tmp_path / "protocol.json"
-    path.write_text(json.dumps(data), encoding="utf-8")
+    """Every field the code relies on is checked, so an edit cannot pass as followed (#872)."""
     with pytest.raises(ValueError, match=message):
-        load_protocol(path)
+        load_protocol(_edited(tmp_path, edit))
+
+
+@pytest.mark.parametrize(
+    ("parameters", "expected"),
+    [
+        ({}, ("off", PRIMARY)),
+        ({"strain_rollup": "off"}, ("off", PRIMARY)),
+        ({"strain_rollup": "phenotype"}, ("phenotype", SENSITIVITY)),
+        ({"strain_rollup": "phenotype", "source_mode": "pinned"}, ("phenotype", SENSITIVITY)),
+    ],
+)
+def test_rollup_scope_reads_the_declared_scopes(
+    parameters: dict[str, str], expected: tuple[str, str]
+) -> None:
+    """A core without the parameter predates #828 and is off (#872)."""
+    assert rollup_scope(parameters, load_protocol()) == expected
+
+
+def test_rollup_scope_refuses_an_undeclared_scope() -> None:
+    with pytest.raises(ValueError, match="neither the declared primary"):
+        rollup_scope({"strain_rollup": "full"}, load_protocol())
 
 
 def test_eligibility_counts_studies_with_a_stool_comparison() -> None:
@@ -187,6 +251,7 @@ def test_trait_set_is_the_top_decreasing_traits_and_cellulose() -> None:
     rows = [
         # trait, up, down, tied, p, status
         ("up_strong", 30, 2, 0, 1e-8, TESTED),
+        ("even_votes", 15, 15, 0, 1.0, TESTED),
         ("down_a", 2, 30, 0, 1e-6, TESTED),
         ("down_b", 3, 29, 0, 1e-5, TESTED),
         ("down_c_more_scored", 5, 40, 0, 1e-5, TESTED),
@@ -218,6 +283,8 @@ def test_trait_set_is_the_top_decreasing_traits_and_cellulose() -> None:
     assert choose_traits(screen, 5, TRAIT_ID)["trait_id"].tolist().count(TRAIT_ID) == 1
     # Without an always-included trait, the screen alone chooses (#854).
     assert TRAIT_ID not in set(choose_traits(screen, 3, None)["trait_id"])
+    # As many studies down as up is not decreasing, however many traits are taken (#872).
+    assert "even_votes" not in set(choose_traits(screen, 10, None)["trait_id"])
 
 
 # --------------------------------------------------------------------------- U6 reuse
@@ -625,7 +692,10 @@ def _write_core_inputs(root: Path) -> dict[str, Path]:
     """A raw dump of paired stool case-control experiments, and a KG annotating its taxa.
 
     Species NCBITaxon:2001-2030 sit under one genus. Cellulose catabolism is asserted on
-    the first fifteen and facultative anaerobiosis on the last twenty.
+    the first fifteen and facultative anaerobiosis on the last twenty. Increased
+    signatures report cellulose-only species and decreased ones mostly facultative
+    species, so the screen selects facultative anaerobiosis (every study shifts down)
+    while cellulose, shifting up, joins only as the always-included trait.
     """
     rng = np.random.default_rng(835)
     rows = []
@@ -634,7 +704,16 @@ def _write_core_inputs(root: Path) -> dict[str, Path]:
         for _ in range(count):
             number += 1
             for signature, direction in ((1, "increased"), (2, "decreased")):
-                species = sorted(rng.choice(np.arange(2001, 2031), 4, replace=False).tolist())
+                if direction == "increased":
+                    picked = rng.choice(np.arange(2001, 2011), 4, replace=False)
+                else:
+                    picked = np.concatenate(
+                        [
+                            rng.choice(np.arange(2016, 2031), 3, replace=False),
+                            rng.choice(np.arange(2001, 2016), 1),
+                        ]
+                    )
+                species = sorted(picked.tolist())
                 rows.append(
                     {
                         "BSDB ID": f"bsdb:{number}/1/{signature}",
@@ -738,13 +817,18 @@ def test_main_writes_every_output_bound_to_the_core(cores: dict[str, Path], tmp_
     assert eligible["stool_studies"].ge(3).all()
     triples = pd.read_csv(out / OUTPUTS["triples"], sep="\t")
     traits = pd.read_csv(out / OUTPUTS["traits"], sep="\t")
-    assert TRAIT_ID in set(traits["trait_id"])
+    # The screen selects facultative anaerobiosis; cellulose joins as always included.
+    in_top = dict(zip(traits["trait_id"], traits["in_top_n"].astype(bool), strict=True))
+    assert in_top == {OTHER_TRAIT: True, TRAIT_ID: False}
     assert len(triples) == 10 * len(traits)
     assert triples["is_lead_triple"].sum() == len(traits)
     assert set(triples["u6_draws"]) <= {0, 400}
 
     summary = json.loads((out / OUTPUTS["summary"]).read_text(encoding="utf-8"))
     assert summary["follows_protocol"] is False
+    # The fixture core predates #828, so it records no scope and reads as off (#872).
+    assert summary["strain_rollup"]["scope"] == "off"
+    assert summary["strain_rollup"]["role"] == PRIMARY
     assert summary["counts"]["eligible_conditions"] == 5
     assert summary["lead_triple"]["eligible"] == dict.fromkeys(LEAD, True)
     provenance = json.loads((out / OUTPUTS["provenance"]).read_text(encoding="utf-8"))
@@ -793,6 +877,7 @@ def test_plan_reports_counts_without_writing(
     out = tmp_path / "plan"
     assert main(["--core-run", str(cores["tier1_2"]), "--output-dir", str(out), "--plan"]) == 0
     report = json.loads(capsys.readouterr().out)
+    assert report["strain_rollup"]["scope"] == "off"
     assert report["eligible_conditions"] == 5
     assert report["triples"] == 10
     assert report["permutations"] == 100_000
@@ -862,9 +947,11 @@ def _tamper(inputs: ScanInputs, studies: Sequence[str]) -> ScanInputs:
     return dataclasses.replace(inputs, taxa=taxa, screen=screen)
 
 
+KEYS = ["condition_a", "condition_b", "condition_c", "trait_id"]
+
+
 def _keys(frame: pd.DataFrame) -> list[tuple[str, str, str, str]]:
-    columns = ["condition_a", "condition_b", "condition_c", "trait_id"]
-    return list(frame[columns].itertuples(index=False, name=None))
+    return list(frame[KEYS].itertuples(index=False, name=None))
 
 
 def test_select_reads_only_the_training_studies() -> None:
@@ -910,11 +997,15 @@ def test_evaluate_on_the_scan_layout_reproduces_the_scan() -> None:
     involved = set(rows[["condition_a", "condition_b", "condition_c"]].to_numpy().ravel())
     assert involved == set(full.result.conditions)
     tested = evaluate(inputs, inputs.studies, _keys(rows), permutations=400, seed=7)
-    expected = rows.drop(columns=["rank_mean_distance", "rank_core"]).reset_index(drop=True)
+    ranks = ["rank_mean_distance", "rank_core", "z_rank_mean_distance", "z_rank_core"]
+    expected = rows.drop(columns=ranks).reset_index(drop=True)
     for column in ("u6_p_mean_distance", "u6_p_core", "u6_draws_source", "test_status"):
         assert tested[column].tolist() == expected[column].tolist(), column
     pd.testing.assert_frame_equal(
-        tested.drop(columns="hypothesis"), expected, check_dtype=False, check_exact=False
+        tested.drop(columns=["hypothesis", *OUTCOME_COLUMNS]),
+        expected,
+        check_dtype=False,
+        check_exact=False,
     )
 
 
@@ -1011,3 +1102,221 @@ def test_load_core_inputs_reads_a_tier1_2_core_only(cores: dict[str, Path]) -> N
     assert TRAIT_ID in inputs.columns
     with pytest.raises(ValueError, match=TIER1_2):
         load_core_inputs(cores["all_paired"])
+
+
+# --------------------------------------------------------------------------- review (#872)
+
+
+def _wrapped_layout() -> tuple[pd.DataFrame, pd.DataFrame, list[str]]:
+    """Five conditions with 4 units each in 15 studies, so the blocks wrap and overlap."""
+    labels = ["A", "B", "C", "D", "E"]
+    records = _random_corpus(7, dict.fromkeys(labels, 3), n_taxa=30, size=5)
+    nexts = dict(zip(labels, labels[1:] + labels[:1], strict=True))
+    records += [
+        (study, f"{study}-2", nexts[condition], site, dec, inc)
+        for study, _, condition, site, dec, inc in records[::3]
+    ]
+    profiles, taxa = _frames(records)
+    return profiles, taxa, labels
+
+
+def test_every_triple_is_drawn_on_its_own_exactly_when_its_blocks_overlap() -> None:
+    """On a wrapped layout, a triple gets its own draws exactly when any pair of its
+    blocks overlaps, the a-c pair included (#873)."""
+    profiles, taxa, labels = _wrapped_layout()
+    prepared = prepare(profiles, taxa, _matrix(30, {TRAIT_ID: range(30)}), [TRAIT_ID], labels)
+    n_studies = int(prepared.unit_study.max()) + 1
+    blocks = [set(block.tolist()) for block in prepared.positions]
+    expected = []
+    for a, b, c in prepared.triples:
+        if prepared.units[[a, b, c]].sum() > n_studies:
+            expected.append(NOT_DRAWN)
+        elif blocks[a] & blocks[b] or blocks[a] & blocks[c] or blocks[b] & blocks[c]:
+            expected.append(OWN)
+        else:
+            expected.append(SHARED)
+    assert prepared.source.tolist() == expected
+    assert {OWN, SHARED} <= set(expected)
+    # (A, B, D) overlaps only in its a-c pair, A with D.
+    index = [tuple(row) for row in prepared.triples.tolist()].index((0, 1, 3))
+    assert not blocks[0] & blocks[1]
+    assert not blocks[1] & blocks[3]
+    assert blocks[0] & blocks[3]
+    assert prepared.source[index] == OWN
+
+
+def test_a_triple_that_fills_the_pool_is_drawn() -> None:
+    """Units adding up to exactly the pool's studies still fit without overlap (#872)."""
+    records = _random_corpus(2, dict.fromkeys(("A", "B", "C"), 3), n_taxa=12, size=3)
+    profiles, taxa = _frames(records)
+    matrix = _matrix(12, {TRAIT_ID: range(12)})
+    result = scan(
+        profiles, taxa, matrix, [TRAIT_ID], ["A", "B", "C"], permutations=50, seed=1, tolerance=0
+    )
+    table = triple_table(result, LEAD)
+    assert result.pool_studies == int(result.units.sum()) == 9
+    assert table["u6_draws_source"].tolist() == [SHARED]
+    assert table["test_status"].tolist() == [TESTED]
+
+
+def test_a_lead_that_shares_a_study_is_placed_among_the_disjoint_triples() -> None:
+    """When PD and HIV share a study, the study-disjoint reference leaves the lead out,
+    and its rank there counts it as one more triple (#872)."""
+    studies = {PD: 4, HIV: 3, CRC: 3, "Asthma": 3, "Obesity": 3}
+    records = _random_corpus(17, studies, n_taxa=30, size=5)
+    study, _, _, site, dec, inc = records[0]
+    records.append((study, f"{study}-2", HIV, site, dec, inc))
+    profiles, taxa = _frames(records)
+    matrix = _matrix(30, {TRAIT_ID: range(0, 30, 2)})
+    result = scan(
+        profiles, taxa, matrix, [TRAIT_ID], sorted(studies), permutations=300, seed=2, tolerance=0
+    )
+    triples = triple_table(result, LEAD)
+    lead_row = triples[triples["is_lead_triple"]].iloc[0]
+    assert lead_row["shared_studies"] == 1
+    row = lead_and_distribution(triples, [TRAIT_ID], 20)[0].iloc[0]
+    disjoint = triples[triples["test_status"].eq(TESTED) & triples["shared_studies"].eq(0)]
+    p = lead_row["u6_p_mean_distance"]
+    assert row[f"{MEAN_DISTANCE}_{DISJOINT}_triples"] == len(disjoint) + 1
+    at_most = int((disjoint["u6_p_mean_distance"] <= p).sum()) + 1
+    assert row[f"{MEAN_DISTANCE}_{DISJOINT}_rank_max"] == at_most
+
+
+def test_z_ranks_put_more_overlap_first() -> None:
+    """The amendment's secondary rank: ascending z for the mean distance and descending z
+    for the core, among the tested triples whose z is defined (#872)."""
+    profiles, taxa, matrix = _lead_corpus()
+    conditions = sorted(condition_table(profiles, 3).query("eligible")["condition"])
+    result = scan(
+        profiles, taxa, matrix, [TRAIT_ID], conditions, permutations=500, seed=3, tolerance=0
+    )
+    triples = triple_table(result, LEAD)
+    tested = triples[triples["test_status"].eq(TESTED)]
+    for column, rank, ascending in (
+        ("u6_z_mean_distance", "z_rank_mean_distance", True),
+        ("u6_z_core", "z_rank_core", False),
+    ):
+        defined = tested[tested[column].notna()]
+        expected = defined[column].rank(method="min", ascending=ascending).astype(int)
+        assert defined[rank].astype(int).tolist() == expected.tolist()
+        assert tested.loc[tested[column].isna(), rank].isna().all()
+    row = lead_and_distribution(triples, [TRAIT_ID], 20)[0].iloc[0]
+    z = tested["u6_z_mean_distance"].dropna()
+    lead_z = tested.loc[tested["is_lead_triple"], "u6_z_mean_distance"].iloc[0]
+    assert row[f"{MEAN_DISTANCE}_{ALL_TRIPLES}_z_rank_min"] == int((z < lead_z).sum()) + 1
+    core_z = tested["u6_z_core"].dropna()
+    lead_core = tested.loc[tested["is_lead_triple"], "u6_z_core"].iloc[0]
+    assert row[f"{CORE}_{ALL_TRIPLES}_z_rank_min"] == int((core_z > lead_core).sum()) + 1
+
+
+def test_evaluate_flags_explicit_outcomes() -> None:
+    """A missing condition, shared studies, an empty set and an undefined null are each
+    flagged on the held-out side (#854)."""
+    labels = (PD, HIV, CRC, "Asthma")
+    records = _random_corpus(41, dict.fromkeys(labels, 4), n_taxa=20, size=4)
+    study, _, _, site, dec, inc = records[0]
+    records.append((study, f"{study}-2", HIV, site, dec, inc))
+    sparse = "METPO:1000623"
+    records = [
+        (s, e, c, site, [*dec, "t30"] if c == CRC else dec, inc)
+        for s, e, c, site, dec, inc in records
+    ]
+    inputs = _inputs(records, _matrix(31, {TRAIT_ID: range(0, 20, 2), sparse: [30]}))
+    hypotheses = [
+        (PD, HIV, CRC, TRAIT_ID),
+        (PD, "Asthma", CRC, TRAIT_ID),
+        (PD, HIV, "Gout", TRAIT_ID),
+        (PD, "Asthma", CRC, sparse),
+    ]
+    tested = evaluate(inputs, inputs.studies, hypotheses, permutations=200, seed=5)
+    assert tested["test_status"].tolist() == [TESTED, TESTED, NO_UNITS, TESTED]
+    assert tested["missing_condition"].tolist() == [False, False, True, False]
+    assert tested["shares_studies"].tolist() == [True, False, True, False]
+    assert tested["empty_set"].tolist() == [False, False, True, True]
+    assert tested["null_undefined"].tolist() == [False, False, True, False]
+    assert tested["shared_studies"].tolist() == [1, 0, 1, 0]
+    assert [tested.loc[3, f"n_{x}"] for x in "abc"] == [0, 1, 0]
+
+
+def test_closest_disjoint_triples_is_the_854_rule() -> None:
+    """Per trait, the study-disjoint tested triple with the least observed distance, ties
+    within the tolerance going to the first conditions in lexical order."""
+    rows = pd.DataFrame(
+        {
+            "trait_id": ["x", "x", "x", "x", "y", "y", "z"],
+            "condition_a": ["B", "A", "A", "A", "A", "A", "A"],
+            "condition_b": ["C", "C", "B", "B", "B", "C", "B"],
+            "condition_c": ["D", "D", "C", "D", "C", "D", "C"],
+            MEAN_DISTANCE: [0.3, 0.3 + 1e-13, 0.1, 0.31, 0.5, 0.5, 0.2],
+            "shared_studies": [0, 0, 2, 0, 0, 0, 1],
+            "test_status": [TESTED] * 6 + [TESTED],
+        }
+    )
+    chosen = closest_disjoint_triples(rows)
+    assert _keys(chosen) == [("A", "C", "D", "x"), ("A", "B", "C", "y")]
+
+
+def test_select_without_draws_gives_observed_statistics_only() -> None:
+    """``permutations=0`` skips U6: the observed statistics are those of a drawn run and
+    the U6 columns are empty, which is all #854's selection rule needs."""
+    inputs, train, _ = _split_corpus()
+    observed = select(inputs, train, permutations=0, seed=1, always_included=False)
+    drawn = select(inputs, train, permutations=200, seed=1, always_included=False)
+    same = [*KEYS, "three_way_core", "three_way_union", MEAN_DISTANCE, "shared_studies"]
+    pd.testing.assert_frame_equal(observed.triples[same], drawn.triples[same])
+    tested = observed.triples[observed.triples["test_status"].eq(TESTED)]
+    assert tested["u6_p_mean_distance"].isna().all()
+    assert tested["u6_draws"].eq(0).all()
+    picked = closest_disjoint_triples(observed.triples)
+    assert _keys(picked) == _keys(closest_disjoint_triples(drawn.triples))
+    assert len(picked) == len(observed.traits)
+
+
+def _core_tables(records: Sequence[Signature]) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """The core's experiments, profile keys and signature taxa for these signatures."""
+    experiments = pd.DataFrame(
+        [
+            {
+                "study_id": s,
+                "experiment_id": e,
+                "condition": c,
+                "body_site": b,
+                "host_species": "Homo sapiens",
+            }
+            for s, e, c, b, _, _ in records
+        ]
+    )
+    keyed = pd.DataFrame(
+        [
+            {"study_id": s, "experiment_id": e, "inc_dec": d}
+            for s, e, *_ in records
+            for d in ("inc", "dec")
+        ]
+    )
+    reported = pd.DataFrame(
+        [
+            {"study_id": s, "experiment_id": e, "direction": direction, "taxon_id": taxon}
+            for s, e, _, _, dec, inc in records
+            for direction, members in (("decreased", dec), ("increased", inc))
+            for taxon in members
+        ]
+    )
+    return experiments, keyed, reported
+
+
+def test_build_population_takes_in_memory_tables_for_some_studies() -> None:
+    """The population builds from in-memory tables and keeps whole studies when given a
+    subset, as if the other studies were never there (#872, #854)."""
+    records = _random_corpus(5, {PD: 4, HIV: 4, CRC: 4}, n_taxa=20, size=4)
+    experiments, keyed, reported = _core_tables(records)
+    matrix_taxa = pd.Index([f"t{i}" for i in range(20)])
+    keep = sorted({record[0] for record in records})[::2]
+    profiles, taxa = build_population(experiments, keyed, reported, matrix_taxa, keep)
+    whole_profiles, whole_taxa = build_population(experiments, keyed, reported, matrix_taxa)
+    assert set(profiles["study_id"]) == set(keep)
+    pd.testing.assert_frame_equal(profiles, whole_profiles[whole_profiles["study_id"].isin(keep)])
+    kept = whole_taxa[whole_taxa["study_id"].isin(keep)].reset_index(drop=True)
+    pd.testing.assert_frame_equal(taxa.reset_index(drop=True), kept)
+    unpaired = keyed[~(keyed["experiment_id"].eq(records[0][1]) & keyed["inc_dec"].eq("inc"))]
+    with pytest.raises(ValueError, match="paired"):
+        build_population(experiments, unpaired, reported, matrix_taxa)

@@ -203,6 +203,15 @@ after the rule above was committed, and do not change it.
   the scan writes its consumer record (`core_consumption.json`), as for the other core
   consumers. `just core-verify-consumer` checks that record later. A core of another
   population or direction basis is refused.
+- **Scope.** The core's `strain_rollup` parameter must be `off` (primary) or
+  `phenotype` (declared sensitivity); a core without it, built before #828, is read as
+  `off`. Any other scope is refused. The summary, the provenance and `--plan` record
+  the scope and its role (first amendment).
+- **Protocol checks.** The code reads the protocol file and applies its amendments in
+  date order. It refuses a protocol whose fields say something the code does not do
+  (the population, stool body site, core products, statistics, reference sets, lead,
+  scope and secondary rank) and an amendment that is malformed, out of date order or
+  sets an unknown field. An edited protocol therefore cannot pass as followed.
 - **Shared draws.** Each U6 draw is one call to cellulose_decr's draw function
   (`signature_draws`, which `signature_null` also uses). It gives a random order of the
   pool's studies and one random unit for each study.
@@ -229,11 +238,11 @@ after the rule above was committed, and do not change it.
 
 | File | Contents |
 | --- | --- |
-| `selection_scan_triples.tsv.gz` | One row per trait and triple: the three conditions, set sizes, union, core and mean pairwise distance; U6 units; the studies the conditions share; U6 expected value, SD, z and p for both statistics; the number of draws and where they came from; the test status; whether it is the lead triple; and the triple's rank within its trait |
-| `selection_scan_traits.tsv` | The trait set with its screen statistics and U3 size; PD/HIV/CRC's results and ranks over all tested triples and over study-disjoint triples; and each trait's rank among the traits by PD/HIV/CRC's p and by the share of triples at most as large |
+| `selection_scan_triples.tsv.gz` | One row per trait and triple: the three conditions, set sizes, union, core and mean pairwise distance; U6 units; the studies the conditions share; U6 expected value, SD, z and p for both statistics; the number of draws and where they came from; the test status; whether it is the lead triple; and the triple's p rank and z rank within its trait |
+| `selection_scan_traits.tsv` | The trait set with its screen statistics and U3 size; PD/HIV/CRC's results, p ranks and z ranks (`*_z_*`) over all tested triples and over study-disjoint triples; and each trait's rank among the traits by PD/HIV/CRC's p, by the share of triples whose p is at most as large, and by the share whose z is at least as extreme |
 | `selection_scan_conditions.tsv` | Every named condition with a stool comparison: comparisons, studies, U6 units, eligibility and layout position |
 | `selection_scan_distribution.tsv` | U6 p-values over triples in twenty bins, per trait, statistic and reference set |
-| `selection_scan_summary.json` | The rule as run, the counts, the trait table, and quantiles of p and z per trait, statistic and reference set |
+| `selection_scan_summary.json` | The rule as run, the core's scope and its role, the counts, the trait table, and quantiles of p and z per trait, statistic and reference set |
 | `selection_scan_provenance.json` | Code commit, script hashes, protocol and methods hashes; the core run's ID, manifest hash and parameters; each input's path within the core run, with its hash; permutations, seed and package versions |
 | `core_consumption.json`, `core_consumption.coverage.tsv` | The binding to the verified core run |
 
@@ -251,10 +260,12 @@ multiplicity family and the reporting) belongs to #854.
 
 | Function | Signature | Returns |
 | --- | --- | --- |
-| `load_core_inputs` | `(core_run: Path) -> tuple[CoreBundle, ScanInputs]` | Verifies a Tier 1+2 core run and reads its population once. A core of another population is refused. `ScanInputs.studies` lists the population's studies; `ScanInputs.restricted(studies)` keeps whole studies. |
+| `load_core_inputs` | `(core_run: Path, protocol=None) -> tuple[CoreBundle, ScanInputs]` | Verifies a Tier 1+2 core run of a declared scope and reads its population once. A core of another population or scope is refused. `ScanInputs.studies` lists the population's studies; `ScanInputs.restricted(studies)` keeps whole studies; `ScanInputs.strain_rollup` and `strain_rollup_role` give the scope. |
+| `build_population`, `screen_table` | `(experiments, keyed, reported, matrix_taxa, studies=None)`; `(profiles, columns, labels, studies=None)` | The population's profiles and taxa, and the directional screen, from in-memory tables, optionally for some studies only. `load_core_inputs` uses them. |
 | `select` | `(inputs, studies=None, *, protocol=None, permutations=None, seed=None, always_included=True) -> Selection` | The declared rule on `studies` only. `Selection.conditions` is the condition table, `Selection.traits` the trait set from those studies' screen, and `Selection.triples` one row per triple and trait, with the columns `TRIPLE_COLUMNS`. `Selection.result` holds the arrays and `Selection.studies` the studies used. |
 | `rank_candidates` | `(triples, statistic="mean_pairwise_jaccard_distance") -> DataFrame` | The tested rows in a fixed order, numbered `candidate_rank`: U6 p ascending, then z (more overlap first), then trait ID and the three conditions. It is an order, not a selection. |
-| `evaluate` | `(inputs, studies, hypotheses, *, protocol=None, permutations=None, seed=None) -> DataFrame` | One row per hypothesis, `(condition, condition, condition, trait ID)`, in the given order and numbered `hypothesis`, with the columns `TRIPLE_COLUMNS` except the two within-trait ranks. |
+| `closest_disjoint_triples` | `(triples, tolerance=1e-12) -> DataFrame` | #854's selection rule: per trait, the tested study-disjoint triple with the smallest observed mean pairwise distance, distances within `tolerance` tied and ties going to the conditions first in lexical order. A trait without such a triple selects nothing. |
+| `evaluate` | `(inputs, studies, hypotheses, *, protocol=None, permutations=None, seed=None) -> DataFrame` | One row per hypothesis, `(condition, condition, condition, trait ID)`, in the given order and numbered `hypothesis`, with the columns `TRIPLE_COLUMNS` except the within-trait ranks, then the flags `OUTCOME_COLUMNS`. |
 
 - **Study subsets.** Each function reads only the studies it is given: for eligibility
   (k = 3 within those studies), the trait screen, the observed sets and the U6 pool.
@@ -264,6 +275,11 @@ multiplicity family and the reporting) belongs to #854.
   - A hypothesis with a condition that no held-out study reports in a stool decreased
     signature is returned with `test_status` `no_units`. The other statuses are
     `tested`, `all_sets_empty` and `pool_too_small`.
+  - Four flags make each outcome explicit: `missing_condition` (status `no_units`),
+    `shares_studies` (a held-out study reports two of the conditions, which U6's
+    distinct studies cannot reproduce), `empty_set` (a held-out set has no taxon bearing
+    the trait) and `null_undefined` (no U6 draw gave a distance: not drawn, or every
+    draw empty). Set sizes and shared studies are given for every hypothesis.
   - The involved conditions that have held-out units, in alphabetical order, are the
     layout of the shared draws.
 - **Historical leads.**
@@ -280,4 +296,8 @@ multiplicity family and the reporting) belongs to #854.
   - For split `i`, the suggested seeds are `(20261022, i, 0)` for `select` and
     `(20261022, i, 1)` for `evaluate`. The caller assigns the splits, with its own seed.
 - **Draws.** `permutations` defaults to the protocol's 100,000; a split run may pass
-  fewer and say so.
+  fewer and say so. `permutations=0` skips U6: the observed statistics are computed and
+  the U6 columns are empty (`u6_draws` 0, p missing). That is enough for
+  `closest_disjoint_triples`, which uses no null.
+- **Study-disjoint** means `shared_studies` is 0: no study among those given reports
+  stool decreased signatures in two of the triple's conditions.
