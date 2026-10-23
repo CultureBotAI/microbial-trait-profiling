@@ -234,8 +234,11 @@ def assertion_fields() -> list[str]:
     ]
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description=__doc__)
+def argument_parser(
+    parser_class: type[argparse.ArgumentParser] = argparse.ArgumentParser,
+) -> argparse.ArgumentParser:
+    """The ledger's command line; arm plan checks parse its steps with it (#881)."""
+    parser = parser_class(description=__doc__)
     parser.add_argument("--kg-dir", type=Path, default=REPO_ROOT / "data/kg-microbe")
     parser.add_argument("--inputs", type=Path, default=DERIVED_DATA_DIR)
     parser.add_argument("--output", type=Path, default=DERIVED_DATA_DIR / "table1_taxon_influence")
@@ -252,7 +255,11 @@ def main() -> None:
             "scope, which `just taxa-trait-matrix` also builds (#788)."
         ),
     )
-    args = parser.parse_args()
+    return parser
+
+
+def main() -> None:
+    args = argument_parser().parse_args()
     protocol = json.loads(args.protocol.read_text(encoding="utf-8"))
     output: Path = args.output
     output.mkdir(parents=True, exist_ok=True)
