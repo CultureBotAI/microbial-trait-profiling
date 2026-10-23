@@ -154,13 +154,11 @@ def load_kg_provenance_graph(
     if strain_rollup not in ("off", "phenotype"):
         raise ValueError(f"Unsupported strain scope: {strain_rollup}")
     if strain_rollup == "phenotype":
-        scoped = getattr(matrix_api, "scoped_taxon_traits", None)
-        admits = getattr(matrix_api, "strain_trait_rolls_up", None)
-        if not callable(scoped) or not callable(admits):
-            raise ValueError("phenotype requires the shared strain scope API from PR #828")
-        traits = scoped(traits, dict(strain_taxa), dict(strain_traits), strain_rollup)
+        traits = matrix_api.scoped_taxon_traits(
+            traits, dict(strain_taxa), dict(strain_traits), strain_rollup
+        )
         for key, carriers in strain_sources.items():
-            if admits(key, strain_rollup):
+            if matrix_api.strain_trait_rolls_up(key, strain_rollup):
                 for strain, provenance in carriers.items():
                     for taxon in strain_taxa.get(strain, ()):
                         sources[key][taxon].update(provenance)

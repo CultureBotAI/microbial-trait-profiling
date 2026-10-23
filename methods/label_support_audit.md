@@ -29,10 +29,9 @@ Omitting it leaves Madin subsources unknown. A supplied but unreadable or
 malformed table fails instead of silently falling back to unknown.
 
 The `phenotype` scope uses the public `scoped_taxon_traits` and
-`strain_trait_rolls_up` functions introduced by PR #828. Until that dependency
-is present, `--strain-rollup phenotype` fails explicitly; no private duplicate
-of the strain admission rules is used. `off` works independently. `full` is not
-offered by this sidecar.
+`strain_trait_rolls_up` functions introduced by PR #828. Both `off` and
+`phenotype` use the merged matrix scope policy. `full` is not offered by this
+sidecar.
 
 The profile keys select the audit population. Extra occurrence rows are
 excluded; each supplied profile side must have reported taxa, and summing the

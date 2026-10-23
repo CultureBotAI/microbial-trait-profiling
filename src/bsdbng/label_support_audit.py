@@ -57,4 +57,6 @@ def __getattr__(name: str) -> Any:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    import runpy
+
+    runpy.run_module("mtp.label_support_audit", run_name="__main__")

@@ -10,7 +10,6 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from mtp import taxa_trait_matrix as matrix_api
 from mtp.label_support_audit import (
     AUDIT_TRAITS,
     MADIN_SOURCE,
@@ -153,6 +152,17 @@ def test_sidecar_records_sources_reconciliations_and_study_means(
     assert focal["annotated_subtree_fraction"] == pytest.approx(0.5)
     assert focal["source_status"] == "gold_patric_only"
     sensitivity = pd.read_csv(output / "support_threshold_sensitivity.tsv", sep="\t")
+    expected_focal = {
+        CELL,
+        FAC,
+        COCCUS,
+        "METPO:1000683",
+        "METPO:1000623",
+        "METPO:2000103|pathways:arsenate_reduction",
+    }
+    assert set(sensitivity["trait_key"]) == expected_focal
+    assert len(sensitivity) == 42
+    assert sensitivity.groupby("trait_key")["rule_id"].nunique().eq(7).all()
     row = sensitivity[
         (sensitivity["trait_key"] == CELL)
         & (sensitivity["rule_id"] == "carriers_per_reported_taxon")
@@ -232,22 +242,18 @@ def test_sensitivity_source_counts_use_only_bound_reported_taxa(
     assert census.loc[census["rank"] == "species", "unique_reported_taxa"].eq(0).all()
 
 
-def test_named_kg_columns_and_explicit_scope_dependency(inputs: dict[str, Path]) -> None:
+def test_named_kg_columns_and_shared_phenotype_scope(inputs: dict[str, Path]) -> None:
     edges = pd.read_csv(inputs["edges"], sep="\t")
     edges.insert(4, "unused_evidence_field", "ignored")
     edges.to_csv(inputs["edges"], sep="\t", index=False)
     graph = load_kg_provenance_graph(inputs["edges"], inputs["nodes"])
     assert graph["sources"][CELL]["NCBITaxon:11"] == {MADIN_SOURCE}
     assert COCCUS not in graph["traits"]["NCBITaxon:11"]
-    if hasattr(matrix_api, "scoped_taxon_traits"):
-        phenotype = load_kg_provenance_graph(
-            inputs["edges"], inputs["nodes"], strain_rollup="phenotype"
-        )
-        assert COCCUS in phenotype["traits"]["NCBITaxon:11"]
-        assert phenotype["sources"][COCCUS]["NCBITaxon:11"] == {"infores:bacdive"}
-    else:
-        with pytest.raises(ValueError, match="PR #828"):
-            load_kg_provenance_graph(inputs["edges"], inputs["nodes"], strain_rollup="phenotype")
+    phenotype = load_kg_provenance_graph(
+        inputs["edges"], inputs["nodes"], strain_rollup="phenotype"
+    )
+    assert COCCUS in phenotype["traits"]["NCBITaxon:11"]
+    assert phenotype["sources"][COCCUS]["NCBITaxon:11"] == {"infores:bacdive"}
 
 
 def test_known_bare_cr_kg_header_and_agent_record_are_reconstructed(
@@ -315,7 +321,17 @@ def test_all_support_rules_share_zero_total_filtered_pairs(
     unannotated["taxon_id"] = "NCBITaxon:99"
     unannotated["taxon_name"] = "Unannotated fixture taxon"
     unannotated.loc[list(AUDIT_TRAITS)] = 0
-    pd.concat([matrix, unannotated.to_frame().T]).to_csv(inputs["matrix"], sep="\t", index=False)
+    excluded_only = unannotated.copy()
+    excluded_only["taxon_id"] = "NCBITaxon:30"
+    excluded_only["taxon_name"] = "Excluded-pair fixture taxon"
+    excluded_only[CELL] = 1
+    pd.concat([matrix, unannotated.to_frame().T, excluded_only.to_frame().T]).to_csv(
+        inputs["matrix"], sep="\t", index=False
+    )
+    with inputs["edges"].open("a", encoding="utf-8") as handle:
+        handle.write("excluded-only\tNCBITaxon:30\tMETPO:2000103\tGO:0030245\t\n")
+    with inputs["nodes"].open("a", encoding="utf-8") as handle:
+        handle.write("NCBITaxon:30\tExcluded-pair fixture taxon\n")
     profiles = pd.read_csv(inputs["profiles"], sep="\t")
     occurrences = pd.read_csv(inputs["taxa"], sep="\t")
     profile_rows, occurrence_rows = [], []
@@ -324,15 +340,16 @@ def test_all_support_rules_share_zero_total_filtered_pairs(
             zero = both_zero or direction == "dec"
             row = profiles.iloc[0].copy()
             row.loc[["study_id", "experiment_id", "inc_dec"]] = [study, experiment, direction]
-            if zero:
-                row.loc[list(AUDIT_TRAITS)] = 0
+            row.loc[list(AUDIT_TRAITS)] = 0
+            if not zero:
+                row[CELL] = 1
             profile_rows.append(row)
             occurrence_rows.append(
                 {
                     "study_id": study,
                     "experiment_id": experiment,
                     "direction": "increased" if direction == "inc" else "decreased",
-                    "taxon_id": "NCBITaxon:99" if zero else "NCBITaxon:20",
+                    "taxon_id": "NCBITaxon:99" if zero else "NCBITaxon:30",
                 }
             )
     pd.concat([profiles, pd.DataFrame(profile_rows)]).to_csv(
@@ -349,6 +366,7 @@ def test_all_support_rules_share_zero_total_filtered_pairs(
     assert sensitivity["n_excluded_zero_annotation_pairs"].eq(2).all()
     assert sensitivity["n_input_paired_experiments"].eq(5).all()
     cell = sensitivity.loc[sensitivity["trait_key"] == CELL].set_index("rule_id")
+    assert cell["source_unknown_taxa"].eq(0).all()
     assert cell.loc["carriers_per_reported_taxon", "study_mean_increased_minus_decreased"] == (
         pytest.approx(0.75)
     )
