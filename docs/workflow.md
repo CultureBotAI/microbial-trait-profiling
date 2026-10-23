@@ -452,10 +452,13 @@ pairs, nonhuman hosts, malformed counts, stale collections, changed inputs,
 failed publication and consumer incompatibility.
 
 The guild and Table 1 layout regressions render synthetic PNGs through Kaleido
-and measure subtitle/header ink clearance. The fixture acceptance limits are
-30 layout pixels for the guild maps and 70 for the roomier Table 1 layouts;
-adding a two-line note may change clearance by at most 4 layout pixels. These
-bounds are independent of the renderer's margin constants. This checks vertical
+and measure subtitle/header ink clearance. Their regression bounds are specific
+to the single-condition fixtures: 30 layout pixels for the guild fixtures and
+70 for the Table 1 fixtures. The Table 1 fixture's single-line `Feces` header
+accounts for its larger measured gap; the guild header wraps onto two lines.
+The 70-pixel bound is tied to that site-name geometry. Adding a two-line note
+within one entry may change clearance by at most 4 layout pixels. These bounds
+are independent of the renderer's margin constants. This checks vertical
 spacing, not overall figure design. It requires local Chrome/Chromium, available
 through `just get-chrome` if needed; it does not read production analysis tables.
 

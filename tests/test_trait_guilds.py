@@ -591,6 +591,7 @@ def test_the_plotting_area_starts_below_the_last_subtitle_line(
     site_headers: bool,
 ) -> None:
     """Require breathing room and stable clearance after a two-line note (#839, #929)."""
+    # The wrapped site name makes this fixture sensitive to reduced header spacing.
     matrix = build_matrix(
         [_guild_profile("1", "Condition A", "Small intestine terminal ileum")],
         max_conditions=10,
@@ -599,6 +600,7 @@ def test_the_plotting_area_starts_below_the_last_subtitle_line(
         guild_order=("aerobe",),
     )
     clearances = []
+    # A <br> inside one note entry reproduces the #849 line-counting regression.
     for name, note in (("short", None), ("long", "Population note.<br>A second population line.")):
         path = tmp_path / f"{name}.png"
         write_figure(

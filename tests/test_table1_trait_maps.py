@@ -565,6 +565,7 @@ def test_the_site_names_sit_below_the_last_subtitle_line(
     scales: dict[str, object] = {trait: trait_colorscale(trait) for trait in TRAIT_ORDER}
 
     clearances = []
+    # A <br> inside one note entry reproduces the #849 line-counting regression.
     for name, note in (
         ("short", None),
         ("long", "A missing-condition note.<br>A population line."),
@@ -591,8 +592,8 @@ def test_the_site_names_sit_below_the_last_subtitle_line(
                 note=note,
             )
         clearances.append(rendered_title_clearance(path))
-    # The six-trait layouts retain a larger title/header gap than the narrow guild
-    # fixture. Pin its visual minimum, independently of the renderer's margin math.
+    # The single-line Feces header accounts for this fixture's larger measured gap.
+    # This 70-pixel bound is specific to that fixture, independent of margin math.
     assert min(clearances) >= 70, f"Title/header clearance below 70 layout px: {clearances}"
     assert abs(clearances[1] - clearances[0]) <= 4, (
         f"A two-line note changed title/header clearance by more than 4 layout px: {clearances}"
