@@ -2250,23 +2250,27 @@ def scenario_tables(
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Feces direction, overlap and the Feces-vs-GI interaction under each scenario.
 
-    The case-control rules choose among disease-vs-healthy contrasts and select nothing
-    from all contrasts. Each scenario changes one definition (``scenario_corpora``), so a
-    scenario whose rule is not the primary one would repeat the primary all-contrasts
-    overlap. Its overlap is built on the disease-vs-healthy contrasts alone; the other
-    scenarios have it on both (#769).
+    The case-control rules choose among disease-vs-healthy contrasts; the all-contrasts
+    population does not apply them and keeps every profile. Each scenario changes one
+    definition (``scenario_corpora``), so a scenario whose rule is not the primary one
+    would repeat the primary all-contrasts rows. Its direction, overlap and interaction
+    rows are built on the disease-vs-healthy contrasts alone; the other scenarios have
+    them on both (#769, #781).
     """
     direction_rows: list[dict[str, Any]] = []
     overlap_rows: list[dict[str, Any]] = []
     interaction_frames: list[pd.DataFrame] = []
     for slug, label, scenario in scenario_corpora(corpus):
+        changes_rule = scenario.case_control != SUBJECT_CONTROLS
+        populations = (ORIENTED,) if changes_rule else (ALL_CONTRASTS, ORIENTED)
         interaction = interaction_table(scenario)
         interaction = interaction[
-            interaction["compartment_b"].eq(NON_FECAL_GI)
+            interaction["contrast_population"].isin(populations)
+            & interaction["compartment_b"].eq(NON_FECAL_GI)
             & interaction["short_condition"].isin([*SHORT, POOLED_STRATIFIED])
         ]
         interaction_frames.append(interaction.assign(scenario=slug, scenario_label=label))
-        for name in (ALL_CONTRASTS, ORIENTED):
+        for name in populations:
             profiles, _ = population(scenario, name)
             feces = profiles[profiles["compartment"].eq(FECES)]
             strata = [(short, [full]) for short, full in CONDITIONS.items()]
@@ -2290,8 +2294,7 @@ def scenario_tables(
                             "wilcoxon_p_two_sided": tests["wilcoxon_p_two_sided"],
                         }
                     )
-        changes_rule = scenario.case_control != SUBJECT_CONTROLS
-        for name in (ORIENTED,) if changes_rule else (ALL_CONTRASTS, ORIENTED):
+        for name in populations:
             profiles, taxa = population(scenario, name)
             sets = condition_sets(taxa, cellulose)
             summary = set_summary(sets)
