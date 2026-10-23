@@ -22,9 +22,14 @@ def verify_core_run(manifest: Path, *, resolver: LocationResolver | None = None)
         if resolver is not None
         else None
     )
+    parameters = {item.name: item.value for item in run.parameters or []}
     for product in run.definition.products:
         effective = product.model_copy(update={"cohort": artifacts[product.id].cohort})
         validate_core_product(
-            effective, paths[product.id], paths, recorded_sources=recorded_sources
+            effective,
+            paths[product.id],
+            paths,
+            recorded_sources=recorded_sources,
+            parameters=parameters,
         )
     return run

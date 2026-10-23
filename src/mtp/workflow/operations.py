@@ -35,10 +35,15 @@ from mtp.study_trait_profiles import (
 )
 from mtp.study_tsv import GeneratedTables, generate_tables
 from mtp.taxa_trait_matrix import (
+    STRAIN_PREFIX,
     SUBCLASS_OF,
+    StrainRollup,
     create_taxa_trait_matrix,
     make_trait_key,
+    parse_strain_rollup,
     read_node_metadata,
+    scoped_taxon_traits,
+    strain_trait_rolls_up,
 )
 from mtp.workflow.coverage import (
     build_profile_coverage,
@@ -46,7 +51,12 @@ from mtp.workflow.coverage import (
     write_profile_coverage,
 )
 from mtp.workflow.kg_inputs import audit_kg_edges, iter_kg_edges
-from mtp.workflow.models import ProductDefinition, ValidationResult, ValidationStatus
+from mtp.workflow.models import (
+    ProductDefinition,
+    ValidationResult,
+    ValidationStatus,
+    WorkflowRun,
+)
 from mtp.workflow.population import select_contrasts, validate_population
 from mtp.workflow.source_contracts import validate_export_sources, validate_study_sources
 from mtp.workflow.source_identity import validate_source_identity
@@ -312,26 +322,39 @@ def source_taxa_matrix_operation(
 def taxa_matrix_operation(
     inputs: dict[str, Path], outputs: dict[str, Path], parameters: dict[str, object]
 ) -> None:
-    """Use native direct-or-descendant source-taxon counting without feature filtering."""
-    if parameters:
-        raise ValueError("taxa_matrix has no configurable scientific parameters")
+    """Use native direct-or-descendant source-taxon counting without feature filtering.
+
+    BacDive strain records count at their linked NCBITaxon nodes as far as the declared
+    strain_rollup scope admits (#788).
+    """
+    if set(parameters) != {"strain_rollup"}:
+        raise ValueError("taxa_matrix requires exactly the strain_rollup parameter")
     create_taxa_trait_matrix(
         taxa_path=inputs["reported_taxa"],
         edges_path=inputs["kg_edges"],
         nodes_path=inputs["kg_nodes"],
         output_path=outputs["taxa_matrix"],
         column_metadata_path=outputs["feature_metadata"],
+        strain_rollup=parse_strain_rollup(parameters["strain_rollup"]),
     )
 
 
 def feature_catalog_operation(
     inputs: dict[str, Path], outputs: dict[str, Path], parameters: dict[str, object]
 ) -> None:
-    """Classify medium annotations explicitly while preserving every matrix feature."""
-    if parameters:
-        raise ValueError("feature_catalog has no configurable scientific parameters")
+    """Classify medium annotations explicitly while preserving every matrix feature.
+
+    The evidence column marks the features whose counts the declared strain_rollup scope
+    lets strain records enter (#788).
+    """
+    if set(parameters) != {"strain_rollup"}:
+        raise ValueError("feature_catalog requires exactly the strain_rollup parameter")
     outputs["feature_catalog"].parent.mkdir(parents=True, exist_ok=True)
-    write_feature_catalog(inputs["feature_metadata"], outputs["feature_catalog"])
+    write_feature_catalog(
+        inputs["feature_metadata"],
+        outputs["feature_catalog"],
+        strain_rollup=parse_strain_rollup(parameters["strain_rollup"]),
+    )
 
 
 def _profiles_operation(
@@ -410,15 +433,29 @@ def _validate_delimited(path: Path, required: tuple[str, ...], *, raw_csv: bool 
     return rows
 
 
+def run_strain_rollup(run: WorkflowRun) -> StrainRollup:
+    """The strain rollup scope a core run recorded, ``off`` for a run that predates it (#788)."""
+    recorded = {item.name: item.value for item in run.parameters or []}
+    return parse_strain_rollup(recorded.get("strain_rollup", "off"))
+
+
 def validate_core_product(
     product: ProductDefinition,
     path: Path,
     context: Mapping[str, Path],
     *,
     recorded_sources: Mapping[str, Path] | None = None,
+    parameters: Mapping[str, str] | None = None,
 ) -> list[ValidationResult]:
-    """Validate one scientific product using the execution's declared related products."""
+    """Validate one scientific product using the execution's declared related products.
+
+    ``parameters`` are the run's resolved parameters. The matrix and its feature catalog
+    are checked under the declared strain_rollup scope, ``off`` for a run that predates
+    the parameter (#788).
+    """
     from mtp.workflow.contracts import validate_product
+
+    strain_rollup = parse_strain_rollup((parameters or {}).get("strain_rollup", "off"))
 
     _validate_semantic_descriptor(product)
     kind = product.kind
@@ -455,7 +492,9 @@ def validate_core_product(
             product.cohort or "",
         )
     else:
-        details = validate_product(path, kind, context=context, cohort=product.cohort)
+        details = validate_product(
+            path, kind, context=context, cohort=product.cohort, strain_rollup=strain_rollup
+        )
         if kind == "study_table":
             details.update(validate_export_sources(context["studies"], context))
     return [
@@ -477,12 +516,15 @@ def trace_profile_feature(
     feature_id: str,
     *,
     host_species: str | None = None,
+    strain_rollup: StrainRollup = "off",
 ) -> dict[str, object]:
     """Trace a chosen profile feature to distinct KG source taxa and original edges.
 
     Only the selected feature's evidence edges are retained. Taxonomy links are
     traversed upward with cycle detection. Duplicate evidence edges do not add
     source taxa, and genus/species overlap remains visible rather than corrected.
+    Under the matrix's strain_rollup scope, the BacDive strain edges it admits are
+    evidence for the strains' linked NCBITaxon nodes, by the builder's rule (#788).
     """
     matrix = read_taxa_trait_matrix(matrix_path)
     if feature_id not in matrix.trait_columns:
@@ -495,23 +537,39 @@ def trace_profile_feature(
     reported = set(profiles[profile_key])
     matched = reported.intersection(matrix.counts_by_taxon)
     parents: defaultdict[str, set[str]] = defaultdict(set)
-    evidence: defaultdict[str, list[dict[str, str]]] = defaultdict(list)
+    direct: defaultdict[str, list[dict[str, str]]] = defaultdict(list)
+    strain_taxa: defaultdict[str, set[str]] = defaultdict(set)
+    strain_evidence: defaultdict[str, list[dict[str, str]]] = defaultdict(list)
     kg_taxa: set[str] = set()
     for row in iter_kg_edges(edges_path):
         subject, predicate, obj = (row[name].strip() for name in ("subject", "predicate", "object"))
         kg_taxa.update(item for item in (subject, obj) if item.startswith("NCBITaxon:"))
-        if (
-            predicate == SUBCLASS_OF
-            and subject.startswith("NCBITaxon:")
-            and obj.startswith("NCBITaxon:")
-        ):
-            parents[subject].add(obj)
-        elif (
-            subject.startswith("NCBITaxon:")
-            and (obj.startswith("METPO:") or predicate.startswith("METPO:"))
-            and make_trait_key(predicate, obj) == feature_id
-        ):
-            evidence[subject].append(row)
+        is_link = predicate == SUBCLASS_OF and obj.startswith("NCBITaxon:")
+        is_evidence = (obj.startswith("METPO:") or predicate.startswith("METPO:")) and (
+            make_trait_key(predicate, obj) == feature_id
+        )
+        if subject.startswith("NCBITaxon:"):
+            if is_link:
+                parents[subject].add(obj)
+            elif is_evidence:
+                direct[subject].append(row)
+        elif strain_rollup != "off" and subject.startswith(STRAIN_PREFIX):
+            if is_link:
+                strain_taxa[subject].add(obj)
+            elif is_evidence:
+                strain_evidence[subject].append(row)
+    sources = scoped_taxon_traits(
+        {source: {feature_id} for source in direct},
+        dict(strain_taxa),
+        {strain: {feature_id} for strain in strain_evidence},
+        strain_rollup,
+    )
+    linked: defaultdict[str, list[dict[str, str]]] = defaultdict(list)
+    if strain_trait_rolls_up(feature_id, strain_rollup):
+        for strain, rows in sorted(strain_evidence.items()):
+            for source in sorted(strain_taxa.get(strain, ())):
+                linked[source].extend(rows)
+    evidence = {source: [*direct.get(source, []), *linked.get(source, [])] for source in sources}
     needed = reported | set(evidence)
     metadata = read_node_metadata(nodes_path, needed)
     kg_taxa.update(metadata)
