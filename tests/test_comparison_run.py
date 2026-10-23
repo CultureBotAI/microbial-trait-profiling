@@ -440,9 +440,13 @@ def test_complete_sources_reject_a_status_from_other_input_bytes(
 
 @pytest.mark.parametrize(
     ("fault", "message"),
-    [("calibration", "absent_control"), ("ledger", "unreadable count profiles")],
+    [
+        ("calibration", "absent_control"),
+        ("ledger", "unreadable count profiles"),
+        ("bases", "unreadable count profiles"),
+    ],
 )
-def test_a_bad_verdict_or_ledger_input_writes_nothing(
+def test_a_bad_verdict_ledger_or_basis_input_writes_nothing(
     stage: dict[str, Path],
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -454,8 +458,10 @@ def test_a_bad_verdict_or_ledger_input_writes_nothing(
 
     if fault == "calibration":
         monkeypatch.setattr(comparison, "NOEL_NEGATIVE_CONTROL", "absent_control")
-    else:
+    elif fault == "ledger":
         monkeypatch.setattr(comparison, "load_profiles", unreadable)
+    else:
+        monkeypatch.setattr(comparison, "retained_profile_features", unreadable)
     output = tmp_path / "comparison"
     with pytest.raises(ValueError, match=message):
         execute_comparison_run(stage["core"], stage["noel"], stage["jed"], stage["ilyas"], output)
