@@ -3,6 +3,8 @@
 Validation traverses the canonical edge records independently of the matrix
 writer. Each annotated source taxon contributes once per feature to itself and
 its reported ancestors; duplicate edges and multiple taxonomy paths add nothing.
+Under a strain rollup scope, the BacDive strain records it admits count at their
+linked NCBITaxon nodes by the matrix builder's own rule, scoped_taxon_traits (#788).
 """
 
 from __future__ import annotations
@@ -13,32 +15,49 @@ from pathlib import Path
 
 from mtp.count_input import taxa_trait_count_reader
 from mtp.taxa_trait_matrix import (
+    STRAIN_PREFIX,
     SUBCLASS_OF,
     ReportedTaxon,
+    StrainRollup,
     column_metadata_rows,
     make_trait_key,
     node_ids_for_trait_keys,
     read_node_metadata,
     read_reported_taxa,
+    scoped_taxon_traits,
+    strain_trait_rolls_up,
 )
 from mtp.workflow.kg_inputs import iter_kg_edges
 
 
-def _source_counts(edges_path: Path, reported: list[ReportedTaxon]) -> dict[str, Counter[str]]:
+def _source_counts(
+    edges_path: Path, reported: list[ReportedTaxon], strain_rollup: StrainRollup
+) -> dict[str, Counter[str]]:
     parents: defaultdict[str, set[str]] = defaultdict(set)
     annotations: defaultdict[str, set[str]] = defaultdict(set)
+    strain_taxa: defaultdict[str, set[str]] = defaultdict(set)
+    strain_traits: defaultdict[str, set[str]] = defaultdict(set)
     for record in iter_kg_edges(edges_path):
         subject, predicate, obj = (
             record[column].strip() for column in ("subject", "predicate", "object")
         )
-        if not subject.startswith("NCBITaxon:"):
-            continue
-        if predicate == SUBCLASS_OF and obj.startswith("NCBITaxon:"):
-            parents[subject].add(obj)
-        elif obj.startswith("METPO:") or predicate.startswith("METPO:"):
-            annotations[subject].add(make_trait_key(predicate, obj))
+        if subject.startswith("NCBITaxon:"):
+            if predicate == SUBCLASS_OF and obj.startswith("NCBITaxon:"):
+                parents[subject].add(obj)
+            elif obj.startswith("METPO:") or predicate.startswith("METPO:"):
+                annotations[subject].add(make_trait_key(predicate, obj))
+        elif strain_rollup != "off" and subject.startswith(STRAIN_PREFIX):
+            if predicate == SUBCLASS_OF and obj.startswith("NCBITaxon:"):
+                strain_taxa[subject].add(obj)
+            elif obj.startswith("METPO:") or predicate.startswith("METPO:"):
+                key = make_trait_key(predicate, obj)
+                if strain_trait_rolls_up(key, strain_rollup):
+                    strain_traits[subject].add(key)
+    scoped = scoped_taxon_traits(
+        dict(annotations), dict(strain_taxa), dict(strain_traits), strain_rollup
+    )
     counts = {taxon.taxon_id: Counter[str]() for taxon in reported}
-    for source, features in annotations.items():
+    for source, features in scoped.items():
         pending = [source]
         visited: set[str] = set()
         while pending:
@@ -66,11 +85,16 @@ def validate_matrix_sources(
     edges_path: Path,
     nodes_path: Path,
     metadata_path: Path | None,
+    *,
+    strain_rollup: StrainRollup = "off",
 ) -> dict[str, object]:
-    """Check all matrix cells, biological row identities and KG feature metadata."""
+    """Check all matrix cells, biological row identities and KG feature metadata.
+
+    The expected cells apply the strain rollup scope the producing run declared (#788).
+    """
     reported = read_reported_taxa(reported_path)
     reported_by_id = {taxon.taxon_id: taxon for taxon in reported}
-    counts = _source_counts(edges_path, reported)
+    counts = _source_counts(edges_path, reported, strain_rollup)
     metadata_header, metadata_rows = _expected_metadata(counts, nodes_path)
     features = tuple(row[0] for row in metadata_rows)
     reader = taxa_trait_count_reader(path)
