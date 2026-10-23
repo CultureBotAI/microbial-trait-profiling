@@ -378,6 +378,11 @@ def build_figure_matrix(
     max_body_sites: int = FIGURE_MAX_BODY_SITES,
     min_studies: int = FIGURE_MIN_STUDIES,
     n_clusters: int = FIGURE_ROW_CLUSTERS,
+    guild_order: Sequence[str] = GUILD_ORDER,
+    include_other_conditions: bool = True,
+    include_other_body_sites: bool = True,
+    mark_no_signal: bool = True,
+    min_site_conditions: int = 1,
 ) -> GuildMatrix:
     """The matrix the oxygen guild figure draws, at the figure's parameters by default.
 
@@ -388,6 +393,10 @@ def build_figure_matrix(
     on a side is excluded here, whatever the caller passes. Its share is
     undefined, not zero, and would otherwise be averaged into a cell as a measured
     0 or shade one as sampled without signal (#783).
+
+    The Table 1-trait maps build their matrix here too, passing their own traits
+    and display options, so both condition-by-body-site figures share one
+    population (#811).
     """
     return build_matrix(
         drop_zero_total_pairs(profiles).profiles,
@@ -395,6 +404,11 @@ def build_figure_matrix(
         max_body_sites=max_body_sites,
         min_studies=min_studies,
         n_clusters=n_clusters,
+        guild_order=guild_order,
+        include_other_conditions=include_other_conditions,
+        include_other_body_sites=include_other_body_sites,
+        mark_no_signal=mark_no_signal,
+        min_site_conditions=min_site_conditions,
     )
 
 
@@ -770,8 +784,8 @@ GUILD_COLORSCALES = {"aerobe": "OrRd", "anaerobe": "YlGn"}
 # Colour-bar ticks as percentages with trailing zeros trimmed, so 0.0004 reads
 # "0.04%" rather than plotly's default SI-prefixed "400u".
 PERCENT_TICKS = ".3~%"
-# Room for the title block above a panel figure and its rotated column labels below.
-PANEL_TOP_MARGIN = 400
+# Room for a panel figure's rotated column labels below it. The room above it is
+# sized from its subtitle, as the combined figure's is.
 PANEL_BOTTOM_MARGIN = 260
 # A panel's colour bars lie flat under the figure, three across and two deep, in
 # the band this reserves below the column labels. Stacking them vertically ties
@@ -793,6 +807,21 @@ CLUSTER_GAP_ROWS = 1
 # in pixels at plotly's default fonts. The top margin is sized from them.
 TITLE_BLOCK_HEIGHT = 80
 SUBTITLE_LINE_HEIGHT = 22
+# The body-site names above the plotting area: a combined figure's block headers,
+# at most two lines of 18-pixel bold text (``_wrapped``) lifted 12 pixels, or a
+# panel figure's one-line subplot titles.
+SITE_HEADER_HEIGHT = 60
+
+
+def _title_block_height(lines: Sequence[str]) -> int:
+    """Room for the title and every subtitle line it renders.
+
+    An entry can hold more than one line: a focus cut's note puts its population
+    under the missing-condition note, joined by ``<br>``. Counting entries instead
+    sized that cut's margin one line short (#849).
+    """
+    rendered = sum(line.count("<br>") + 1 for line in lines)
+    return TITLE_BLOCK_HEIGHT + SUBTITLE_LINE_HEIGHT * rendered
 
 
 def _guild_of_column(column: str) -> str:
@@ -916,6 +945,20 @@ def _coverage_note(matrix: GuildMatrix) -> list[str]:
             "anatomical site."
         )
     return lines
+
+
+def pair_exclusion_note(exclusion: PairExclusion) -> str:
+    """The subtitle line that states a figure's population (#783).
+
+    The oxygen guild figure and the Table 1-trait maps both draw from
+    ``build_figure_matrix``, so both state the exclusion in these words (#811).
+    """
+    return (
+        f"{exclusion.zero_total_experiments} experiment pairs with a zero "
+        "retained-annotation total on a side are excluded (studies "
+        f"{exclusion.studies_before} to {exclusion.studies_after}): their share is "
+        "undefined, not zero."
+    )
 
 
 def write_figure(
@@ -1104,15 +1147,16 @@ def write_figure(
         f"BugSigDB {vintage or 'vintage unknown'}.",
     ]
     title_layout: dict[str, object] = {"text": f"{title}<br><sub>{'<br>'.join(lines)}</sub>"}
-    # With site headers above the plotting area, the subtitle block plus a two-line
-    # header need a fixed 420 pixels. Otherwise the title block hangs from the top
-    # of the figure and the plotting area starts below its last line: a fixed
+    # The title block hangs from the top of the figure, and the plotting area starts
+    # below its last line and below the site headers when they sit above it. A fixed
     # 220-pixel margin with the title centred in it let the last subtitle lines run
-    # over the top rows (#783).
-    top = 420 if separate_body_sites else TITLE_BLOCK_HEIGHT + SUBTITLE_LINE_HEIGHT * len(lines)
+    # over the top rows (#783). A fixed 420 pixels with site headers let the
+    # Table 1-trait maps' population line run into a two-line header (#811).
+    top = _title_block_height(lines)
+    if separate_body_sites:
+        top += SITE_HEADER_HEIGHT
     height = ROW_HEIGHT * len(row_labels) + 300 + top
-    if not separate_body_sites:
-        title_layout.update({"yref": "container", "yanchor": "top", "y": 1 - 20 / height})
+    title_layout.update({"yref": "container", "yanchor": "top", "y": 1 - 20 / height})
     figure.update_layout(
         title=title_layout,
         xaxis={"title": f"body site | {group_noun} _ direction", "tickangle": -60},
@@ -1305,6 +1349,30 @@ def write_body_site_panels(
         subplot_titles=[f"<b>{site}</b>" for site in sites],
     )
 
+    range_note = f"Each {group_noun} is on its own scale, the same one the combined figure uses"
+    if range_quantile < 1.0:
+        range_note += f", cut at the {range_quantile:.0%} quantile of observed cells"
+    grey_note = (
+        f" Dark grey = site sampled for that condition but no taxon carried the {group_noun}."
+        if mark_no_signal
+        else ""
+    )
+    lines = [
+        f"Mean {value_phrase}, averaged within study then across studies, shown as a "
+        "percentage of the profile's summed trait-assertion counts (taxonomic "
+        "rollups can count one reported taxon many times), not of its taxa.",
+        f"{range_note}.",
+        "Rows are the conditions of the combined figure in the same clustered order, so a "
+        f"blank row here was drawn in another body site.{grey_note}",
+        *_coverage_note(matrix),
+        *([note] if note else []),
+        f"BugSigDB {vintage or 'vintage unknown'}.",
+    ]
+    # Sized from the subtitle and the site titles under it, as in ``write_figure``.
+    # A fixed 400 pixels with the title centred in it let a panel's last subtitle
+    # lines run into its site titles and top row (#811).
+    top = _title_block_height(lines) + SITE_HEADER_HEIGHT
+
     count = len(guild_order)
     # All six bars on one line. Plotly places a horizontal bar's title a fixed
     # distance below it that does not track the row spacing set here, so a second
@@ -1315,7 +1383,7 @@ def write_body_site_panels(
     legend_depth = -(-count // legend_columns)
     legend_height = 50 + legend_depth * LEGEND_ROW_PITCH
     bottom = PANEL_BOTTOM_MARGIN + legend_height
-    height = PANEL_TOP_MARGIN + bottom + ROW_HEIGHT * len(row_labels)
+    height = top + bottom + ROW_HEIGHT * len(row_labels)
     # Bar rows measured up from the foot of the figure, top row first.
     legend_rows = [
         (legend_height - 80.0 - row * LEGEND_ROW_PITCH) / height for row in range(legend_depth)
@@ -1390,38 +1458,21 @@ def write_body_site_panels(
                 if flags[i]
             )
 
-    range_note = f"Each {group_noun} is on its own scale, the same one the combined figure uses"
-    if range_quantile < 1.0:
-        range_note += f", cut at the {range_quantile:.0%} quantile of observed cells"
-    grey_note = (
-        f" Dark grey = site sampled for that condition but no taxon carried the {group_noun}."
-        if mark_no_signal
-        else ""
-    )
-    subtitle = "<br>".join(
-        [
-            f"Mean {value_phrase}, averaged within study then across studies, shown as a "
-            "percentage of the profile's summed trait-assertion counts (taxonomic "
-            "rollups can count one reported taxon many times), not of its taxa.",
-            f"{range_note}.",
-            "Rows are the conditions of the combined figure in the same clustered order, so a "
-            f"blank row here was drawn in another body site.{grey_note}",
-            *_coverage_note(matrix),
-            *([note] if note else []),
-            f"BugSigDB {vintage or 'vintage unknown'}.",
-        ]
-    )
-
     figure.update_layout(
-        title={"text": f"{title}<br><sub>{subtitle}</sub>"},
+        title={
+            "text": f"{title}<br><sub>{'<br>'.join(lines)}</sub>",
+            "yref": "container",
+            "yanchor": "top",
+            "y": 1 - 20 / height,
+        },
         shapes=shapes,
         width=width,
-        # The margins are fixed text - six subtitle lines above, rotated column
+        # The margins are text - the subtitle and site titles above, rotated column
         # labels below - so the plotting area has to be sized on top of them, not
         # carved out of a fixed total. A four-row cut would otherwise render as a
         # sliver with the colour bars stacked on each other.
         height=height,
-        margin={"l": 300, "b": bottom, "t": PANEL_TOP_MARGIN},
+        margin={"l": 300, "b": bottom, "t": top},
         plot_bgcolor="white",
     )
     figure.update_xaxes(tickangle=-60)
@@ -1539,12 +1590,7 @@ def main() -> int:
             matrix,
             args.output_dir / "guild_condition_body_site_heatmap.png",
             vintage,
-            note=(
-                f"{exclusion.zero_total_experiments} experiment pairs with a zero "
-                "retained-annotation total on a side are excluded (studies "
-                f"{exclusion.studies_before} to {exclusion.studies_after}): their share is "
-                "undefined, not zero."
-            ),
+            note=pair_exclusion_note(exclusion),
         )
     )
 
