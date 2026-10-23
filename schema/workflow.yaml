@@ -54,6 +54,22 @@ enums:
       failed: null
     title: Validation Status
     description: Permitted validation status values.
+  CalibrationOutcome:
+    title: Calibration Outcome
+    description: Standardized empirical calibration classification across analytical arms.
+    permissible_values:
+      calibrated:
+        description: Null type-I error and FDR meet declared tolerances and power meets minimum on the exact production AnalysisSpec.
+      partially_calibrated:
+        description: Some calibration criteria pass while others fail or remain unassessed on the evaluated AnalysisSpec.
+      anti_conservative:
+        description: Empirical type-I error or null FDR exceeds the declared tolerance upper bound.
+      null_controlled_low_power:
+        description: Empirical null control passes, but power under the declared injected effect falls below minimum.
+      insufficient_budget:
+        description: Replicate budget is below the protocol minimum required to certify calibration.
+      different_estimator_uncalibrated:
+        description: Calibration harness evaluated a different AnalysisSpec than the production estimator.
 classes:
   ProductDefinition:
     description: A stable scientific product contract, independent of its location.
@@ -909,3 +925,392 @@ classes:
       error:
         title: Error
         description: Failure diagnostic; no failed attempt can verify as completed.
+  AnalysisSpec:
+    description: Shared executable specification of estimand, kernel, transformation, sampling unit, weighting, and eligibility.
+    title: Analysis Spec
+    attributes:
+      id:
+        identifier: true
+        required: true
+        pattern: ^[A-Za-z][A-Za-z0-9_:.-]*$
+        title: Id
+        description: Stable analysis specification identifier shared by production, calibration, and sensitivity evaluations.
+      estimand:
+        required: true
+        title: Estimand
+        description: Scientific quantity estimated by the analysis.
+      kernel:
+        required: true
+        title: Kernel
+        description: Statistical test or summary kernel applied to observations.
+      transformation:
+        required: true
+        title: Transformation
+        description: Scale transformation applied before aggregation or testing.
+      sampling_unit:
+        required: true
+        title: Sampling unit
+        description: Observational unit at which independent or paired records are evaluated.
+      weighting:
+        required: true
+        title: Weighting
+        description: Observation or study weighting rule.
+      eligibility_rule:
+        required: true
+        title: Eligibility rule
+        description: Rule determining which contrasts, studies, or signatures enter the denominator.
+      multiple_testing_policy:
+        required: true
+        title: Multiple testing policy
+        description: Multiplicity correction procedure and family scope.
+  EligibilityLedger:
+    description: Explicit accounting of included sampling units, exclusion reasons, and common-support counts.
+    title: Eligibility Ledger
+    attributes:
+      id:
+        identifier: true
+        required: true
+        title: Id
+        description: Unique eligibility ledger identifier.
+      analysis_spec_id:
+        range: AnalysisSpec
+        required: true
+        title: Analysis spec id
+        description: Analysis specification whose eligibility rules produced this ledger.
+      contrast_population:
+        range: ContrastPopulation
+        required: true
+        title: Contrast population
+        description: Upstream contrast population before analysis-specific eligibility filtering.
+      included_count:
+        range: integer
+        minimum_value: 0
+        required: true
+        title: Included count
+        description: Number of sampling units retained after eligibility filtering.
+      excluded_count:
+        range: integer
+        minimum_value: 0
+        required: true
+        title: Excluded count
+        description: Number of candidate sampling units excluded by the eligibility rule.
+      included_ids:
+        multivalued: true
+        title: Included ids
+        description: Deterministic sorted identifiers of included sampling units.
+      exclusion_counts_json:
+        required: true
+        title: Exclusion counts json
+        description: Canonical JSON mapping each exclusion reason code to its count.
+      common_support_count:
+        range: integer
+        minimum_value: 0
+        title: Common support count
+        description: Number of sampling units shared with a paired comparator specification when evaluated on common support.
+  AnalysisBasis:
+    description: Feature catalog, vocabulary filter, rollup policy, denominator, background universe, and weighting basis.
+    title: Analysis Basis
+    attributes:
+      id:
+        identifier: true
+        required: true
+        title: Id
+        description: Unique analysis basis identifier.
+      feature_catalog_sha256:
+        required: true
+        pattern: ^[0-9a-f]{64}$
+        title: Feature catalog sha256
+        description: SHA-256 of the authoritative trait feature catalog.
+      feature_filter_id:
+        required: true
+        pattern: '^sha256:[0-9a-f]{64}$'
+        title: Feature filter id
+        description: SHA-256 identity of the exact ordered retained analysis features.
+      retained_feature_count:
+        range: integer
+        minimum_value: 0
+        required: true
+        title: Retained feature count
+        description: Number of retained qualified trait features in the analysis family.
+      profile_unit:
+        required: true
+        pattern: ^(count_profiles|ora_profiles)$
+        title: Profile unit
+        description: Underlying profile representation unit.
+      aggregation_policy:
+        required: true
+        title: Aggregation policy
+        description: How taxon-level annotations are aggregated into signature, contrast, or study summaries.
+      rollup_policy:
+        required: true
+        title: Rollup policy
+        description: Taxonomic trait inheritance and strain rollup policy.
+      denominator_policy:
+        required: true
+        title: Denominator policy
+        description: Denominator definition for fractions, ratios, or hypergeometric backgrounds.
+      background_inventory_id:
+        required: true
+        title: Background inventory id
+        description: Identifier or digest of the background taxon universe when applicable.
+      weighting_policy:
+        required: true
+        title: Weighting policy
+        description: Study, contrast, or taxon weighting policy.
+  CalibrationVerdict:
+    description: Standardized calibration assessment binding the evaluated harness specification to the production estimator.
+    title: Calibration Verdict
+    attributes:
+      id:
+        identifier: true
+        required: true
+        title: Id
+        description: Unique calibration verdict identifier.
+      production_analysis_spec_id:
+        range: AnalysisSpec
+        required: true
+        title: Production analysis spec id
+        description: Analysis specification of the production estimator being assessed.
+      evaluated_analysis_spec_id:
+        range: AnalysisSpec
+        required: true
+        title: Evaluated analysis spec id
+        description: Analysis specification actually executed by the calibration harness.
+      estimator_match:
+        range: boolean
+        required: true
+        title: Estimator match
+        description: Whether the calibration harness evaluated the exact production AnalysisSpec.
+      outcome:
+        range: CalibrationOutcome
+        required: true
+        title: Outcome
+        description: Standardized calibration classification across arms.
+      null_control_passed:
+        range: boolean
+        title: Null control passed
+        description: Whether empirical type-I error and null FDR stayed within declared tolerances.
+      power_passed:
+        range: boolean
+        title: Power passed
+        description: Whether empirical power under the declared injected effect met the minimum threshold.
+      replicate_budget_sufficient:
+        range: boolean
+        required: true
+        title: Replicate budget sufficient
+        description: Whether the executed replicate count met the protocol minimum.
+      summary_message:
+        required: true
+        title: Summary message
+        description: Human-readable explanation of the calibration verdict and any estimator mismatch.
+  ScientificResultRecord:
+    description: Standardized scientific result row bound to explicit analysis specification, eligibility ledger, and basis contracts.
+    title: Scientific Result Record
+    attributes:
+      id:
+        identifier: true
+        required: true
+        title: Id
+        description: Unique scientific result record identifier.
+      contrast_population:
+        range: ContrastPopulation
+        required: true
+        title: Contrast population
+        description: Executed experiment selection policy.
+      direction_basis:
+        range: DirectionBasis
+        required: true
+        title: Direction basis
+        description: Meaning of increased and decreased in the consumed core products.
+      analysis_spec_id:
+        range: AnalysisSpec
+        required: true
+        title: Analysis spec id
+        description: Reference to the exact AnalysisSpec used to compute this result.
+      eligibility_ledger_id:
+        range: EligibilityLedger
+        required: true
+        title: Eligibility ledger id
+        description: Reference to the EligibilityLedger recording included and excluded units.
+      analysis_basis_id:
+        range: AnalysisBasis
+        required: true
+        title: Analysis basis id
+        description: Reference to the AnalysisBasis recording feature vocabulary, rollup, and denominator rules.
+      calibration_verdict_id:
+        range: CalibrationVerdict
+        title: Calibration verdict id
+        description: Reference to the CalibrationVerdict for this estimator, if assessed.
+      feature_id:
+        required: true
+        title: Feature id
+        description: Qualified trait identifier or pair identifier, never a bare display label.
+      feature_label:
+        required: true
+        title: Feature label
+        description: Human-readable display label associated with the qualified feature identifier.
+      effect_estimate:
+        range: float
+        title: Effect estimate
+        description: Primary point estimate on the scale declared by the AnalysisSpec.
+      effect_scale:
+        required: true
+        title: Effect scale
+        description: Scale and orientation of the point estimate.
+      p_value:
+        range: float
+        title: P value
+        description: Raw two-sided or one-sided p-value as declared by the AnalysisSpec.
+      q_value:
+        range: float
+        title: Q value
+        description: Multiplicity-adjusted q-value within the declared family scope.
+      effective_q_value:
+        range: float
+        title: Effective q value
+        description: Eigenvalue-effective family-size adjusted q-value when applicable.
+      n_eligible:
+        range: integer
+        minimum_value: 0
+        required: true
+        title: N eligible
+        description: Number of eligible sampling units contributing to this test.
+      positive_count:
+        range: integer
+        minimum_value: 0
+        title: Positive count
+        description: Count of positive shifts or enriched signatures.
+      negative_count:
+        range: integer
+        minimum_value: 0
+        title: Negative count
+        description: Count of negative shifts or depleted signatures.
+      tie_or_zero_count:
+        range: integer
+        minimum_value: 0
+        title: Tie or zero count
+        description: Count of exact ties or zero-total excluded units.
+  ComparisonRun:
+    description: Complete cross-arm integration record consuming verified core, Noel, Jed, and Ilyas arm manifests without missing-source placeholders.
+    title: Comparison Run
+    attributes:
+      id:
+        identifier: true
+        required: true
+        title: Id
+        description: Unique cross-arm comparison attempt identifier.
+      contrast_population:
+        range: ContrastPopulation
+        required: true
+        title: Contrast population
+        description: Shared contrast population verified across core and all three arms.
+      direction_basis:
+        range: DirectionBasis
+        required: true
+        title: Direction basis
+        description: Shared direction basis verified across core and all three arms.
+      status:
+        range: ExecutionStatus
+        required: true
+        title: Status
+        description: Explicit lifecycle outcome of the cross-arm comparison run.
+      started_at:
+        range: datetime
+        required: true
+        title: Started at
+        description: UTC timestamp when the cross-arm integration began.
+      ended_at:
+        range: datetime
+        title: Ended at
+        description: UTC timestamp when the cross-arm integration finished or failed.
+      manifest_path:
+        required: true
+        title: Manifest path
+        description: Absolute location of this ComparisonRun manifest.
+      core_manifest_path:
+        required: true
+        title: Core manifest path
+        description: Verified upstream core run manifest path.
+      core_manifest_sha256:
+        required: true
+        pattern: ^[0-9a-f]{64}$
+        title: Core manifest sha256
+        description: SHA-256 of the verified upstream core run manifest.
+      core_run_id:
+        required: true
+        title: Core run id
+        description: Verified upstream core run identifier shared by all three arms.
+      noel_manifest_path:
+        required: true
+        title: Noel manifest path
+        description: Verified Noel ArmRun manifest path.
+      noel_manifest_sha256:
+        required: true
+        pattern: ^[0-9a-f]{64}$
+        title: Noel manifest sha256
+        description: SHA-256 of the verified Noel ArmRun manifest.
+      jed_manifest_path:
+        required: true
+        title: Jed manifest path
+        description: Verified Jed ArmRun manifest path.
+      jed_manifest_sha256:
+        required: true
+        pattern: ^[0-9a-f]{64}$
+        title: Jed manifest sha256
+        description: SHA-256 of the verified Jed ArmRun manifest.
+      ilyas_manifest_path:
+        required: true
+        title: Ilyas manifest path
+        description: Verified Ilyas ArmRun manifest path.
+      ilyas_manifest_sha256:
+        required: true
+        pattern: ^[0-9a-f]{64}$
+        title: Ilyas manifest sha256
+        description: SHA-256 of the verified Ilyas ArmRun manifest.
+      git_commit:
+        required: true
+        title: Git commit
+        description: Repository commit at execution start.
+      git_dirty:
+        range: boolean
+        required: true
+        title: Git dirty
+        description: Whether tracked or untracked changes existed at execution start.
+      analysis_specs:
+        range: AnalysisSpec
+        multivalued: true
+        inlined_as_list: true
+        required: true
+        title: Analysis specs
+        description: Declared AnalysisSpec contracts evaluated or compared in this run.
+      eligibility_ledgers:
+        range: EligibilityLedger
+        multivalued: true
+        inlined_as_list: true
+        required: true
+        title: Eligibility ledgers
+        description: Eligibility ledgers for each evaluated analysis specification.
+      analysis_bases:
+        range: AnalysisBasis
+        multivalued: true
+        inlined_as_list: true
+        required: true
+        title: Analysis bases
+        description: Feature, rollup, denominator, and background bases for each arm.
+      calibration_verdicts:
+        range: CalibrationVerdict
+        multivalued: true
+        inlined_as_list: true
+        required: true
+        title: Calibration verdicts
+        description: Standardized calibration verdicts with explicit estimator-match checks.
+      outputs:
+        range: FileInventoryEntry
+        multivalued: true
+        inlined_as_list: true
+        required: true
+        title: Outputs
+        description: Complete output file inventory produced by the cross-arm comparison stage.
+      error:
+        title: Error
+        description: Failure diagnostic if the comparison run failed.

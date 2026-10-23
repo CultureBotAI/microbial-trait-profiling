@@ -1,30 +1,33 @@
-# Taxa Coverage & Trait Harmonization Analysis (BugSigDB vs. KG-Microbe)
+# Taxa Coverage & Profile Trait Mapping Analysis (BugSigDB vs. KG-Microbe)
 
-This investigation implements **Approach A** ("Rank-Stratified Stacked Histogram") and in-depth informatics auditing to quantify the coverage of BugSigDB taxa in KG-Microbe METPO traits.
-
----
-
-## 1. Executive Summary & Key Findings
-
-| Metric | Total Unique Taxa (BugSigDB) | Total Literature Occurrences (BugSigDB Signatures) |
-| :--- | :--- | :--- |
-| **Total Cohort** | **5,829** unique taxa | **59,486** signature mentions |
-| **Mapped, Rich ($\ge 3$ traits)** | **3,241** (55.60%) | **52,455** (88.18%) |
-| **Mapped, Sparse ($1\text{–}2$ traits)** | **333** (5.71%) | **1,407** (2.37%) |
-| **Total Trait-Bearing ($\ge 1$ traits)** | **3,574** (61.31%) | **53,862** (**90.55%**) |
-| **Mapped, 0 Traits (No KG traits)** | **2,255** (**38.69%**) | **5,624** (**9.45%**) |
-| **Unmapped (Raw BugSigDB Signatures)** | < 1% of raw signature rows (60/7,425) | 0% in curated `taxa.tsv` (all 5,829 have NCBI TaxIDs) |
-
-### The "Long-Tail" Coverage Paradox:
-1. **At the Catalog Level**: 38.69% of unique taxa in BugSigDB have zero traits in KG-Microbe.
-2. **At the Real-World Literature Level**: **90.55% of all BugSigDB signature mentions ARE trait-bearing**! Only 9.45% of published literature findings lack phenotypic traits.
-3. **Scientific Explanation**: Published microbiome studies repeatedly identify common, well-characterized gut and clinical microbes (*Bacteroides*, *Prevotella*, *Faecalibacterium*, *Bifidobacterium*, *Clostridium*, *Escherichia*), which have dozens to hundreds of phenotypic annotations in KG-Microbe. The 2,255 zero-trait taxa reside predominantly in the "long tail" of uncultivated, rare, or study-specific metagenomic bins.
+This investigation quantifies the coverage of BugSigDB taxa and study profiles across KG-Microbe METPO traits, stratified by taxonomic rank and profile mapping status.
 
 ---
 
-## 2. Approach A: Rank-Stratified Coverage Breakdown
+## 1. Executive Summary across All Three Analytical Tiers
 
-Taxonomic coverage exhibits a steep drop-off at the **Species** rank, while higher taxonomic ranks maintain robust coverage (>72% to >79% trait-bearing for taxa, and >96% for literature occurrences).
+| Metric | Unique Taxa (`taxa.tsv`) | Literature Signature Mentions (`taxa.tsv`) | Study Trait Profiles (`study_trait_profiles_wide.tsv`) |
+| :--- | :---: | :---: | :---: |
+| **Total Cohort** | **5,829** unique taxa | **59,486** signature mentions | **7,329** study profiles `(study, exp, dir)` |
+| **Mapped, Rich** | **3,241** (55.60%) [$\ge 3$ traits] | **52,455** (88.18%) [$\ge 3$ traits] | **6,477** (88.38%) [$\ge 20$ traits] |
+| **Mapped, Sparse** | **333** (5.71%) [$1\text{–}2$ traits] | **1,407** (2.37%) [$1\text{–}2$ traits] | **625** (8.53%) [$1\text{–}19$ traits] |
+| **Total Trait-Mapped ($\ge 1$ trait)** | **3,574** (**61.31%**) | **53,862** (**90.55%**) | **7,102** (**96.90%**) |
+| **Zero-Trait (0 KG-Microbe traits)** | **2,255** (**38.69%**) | **5,624** (**9.45%**) | **227** (**3.10%**) |
+
+### Confirmation on Zero-Trait Profiles in the Pipeline
+- Out of **7,329** total BugSigDB study profiles `(study_id, experiment_id, inc_dec)` in `data/derived/study_trait_profiles_wide.tsv`:
+  - **7,102 profiles (96.90%)** map to $\ge 1$ KG-Microbe trait (and contain $\ge 1$ trait-mapped taxon).
+  - **227 profiles (3.10%)** have **0 mapped traits** (every taxon reported in those 227 profiles has 0 traits in `taxa_trait_matrix.tsv`).
+- **Downstream pipeline handling:**
+  - **Guild & compositional shift analyses (`src/mtp/trait_guilds.py` `drop_zero_total_pairs` and `src/mtp/trait_composition.py` `compute_log_ratio_shifts`)**: Explicitly filter out zero-trait profiles prior to statistical testing.
+  - **Hypergeometric trait enrichment (`scripts/trait_enrichment.py`)**: Zero-trait profiles yield 0 observed counts for all traits and never produce positive enrichments, though `n_taxa` (`taxa_count`) includes all matrix taxa in the signature.
+  - **Clustered study-profile heatmaps (`scripts/create_study_trait_profile_heatmap.py`)**: Defaults to `--min-traits 0` unless `--min-traits 1` is passed on the CLI to exclude the 227 zero-trait profiles.
+
+---
+
+## 2. Taxonomic Rank Breakdown: Unique Taxa, Literature Mentions, and Study Profiles
+
+### 2A. Unique Taxa & Literature Occurrences by Rank (`taxa_coverage_by_rank.tsv`)
 
 | Rank | Total Unique Taxa | Zero-Trait Taxa (%) | Sparse 1–2 (%) | Rich $\ge 3$ (%) | Total Trait-Bearing (%) | Total Occurrences | Trait-Bearing Occurrences (%) |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -37,89 +40,97 @@ Taxonomic coverage exhibits a steep drop-off at the **Species** rank, while high
 | **Superkingdom** | 2 | 1 (50.00%) | 0 (0.00%) | 1 (50.00%) | 1 (**50.00%**) | 9 | 5 (55.56%) |
 | **Total / Pooled** | **5,829** | **2,255 (38.69%)** | **333 (5.71%)** | **3,241 (55.60%)** | **3,574 (61.31%)** | **59,486** | **53,862 (90.55%)** |
 
+### 2B. Study Profile Distribution by Taxonomic Rank (`profile_coverage_by_rank.tsv`)
+
+Each study profile (`N = 7,329` total) can contain taxa from one or multiple taxonomic ranks. For profiles containing at least one taxon of a given rank, the table below shows the breakdown by trait-mapping status of the rank's taxa within that profile:
+
+| Rank | Profiles with Rank (% of 7,329) | All Rank Taxa Mapped (%) | Mixed: Mapped + Zero-Trait (%) | Total Mapped at Rank ($\ge 1$ Mapped) | Only Zero-Trait Taxa at Rank (%) | Median Mapped Traits / Profile (IQR) |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Species** | 3,332 (45.46%) | 1,934 (58.04%) | 925 (27.76%) | **2,859 (85.80%)** | 473 (**14.20%**) | 109 (43–290) |
+| **Genus** | 5,270 (71.91%) | 4,813 (91.33%) | 353 (6.70%) | **5,166 (98.03%)** | 104 (1.97%) | 164 (70–353) |
+| **Family** | 2,684 (36.62%) | 2,498 (93.07%) | 117 (4.36%) | **2,615 (97.43%)** | 69 (2.57%) | 280 (135–601) |
+| **Order** | 1,440 (19.65%) | 1,362 (94.58%) | 20 (1.39%) | **1,382 (95.97%)** | 58 (4.03%) | 396 (190–762) |
+| **Class** | 1,149 (15.68%) | 1,124 (97.82%) | 0 (0.00%) | **1,124 (97.82%)** | 25 (2.18%) | 479 (229–862) |
+| **Phylum** | 1,596 (21.78%) | 1,510 (94.61%) | 40 (2.51%) | **1,550 (97.12%)** | 46 (2.88%) | 636 (250–930) |
+| **Superkingdom** | 9 (0.12%) | 5 (55.56%) | 0 (0.00%) | **5 (55.56%)** | 4 (44.44%) | 619 (346–866) |
+
 ---
 
-## 3. Informatics Root-Cause Diagnosis of Zero-Trait Taxa
+## 3. Histogram 1 & Histogram 2 Key Metrics
 
-Systematic classification of the 2,255 zero-trait taxa (and specifically the top 100 most frequent in BugSigDB signatures) revealed 5 distinct causes:
+### Histogram 1: Frequency of Mapped Traits & Mapped Taxa Across Profiles (`N = 7,102` Mapped Profiles; 227 Zero-Trait Profiles Excluded)
+- **Panel A (Frequency of Mapped Traits per Profile):**
+  - **Median:** **158 unique mapped traits** per profile (IQR: **60–380**, Mean: **288.7**).
+  - **Distribution across 7,102 mapped profiles:**
+    - `1–19 traits`: 625 profiles (8.8%)
+    - `20–49 traits`: 886 profiles (12.5%)
+    - `50–99 traits`: 1,035 profiles (14.6%)
+    - `100–199 traits`: 1,755 profiles (24.7%) — modal bin
+    - `200–399 traits`: 1,174 profiles (16.5%)
+    - `400–799 traits`: 763 profiles (10.7%)
+    - `800–1,199 traits`: 672 profiles (9.5%)
+    - `>=1,200 traits`: 192 profiles (2.7%)
+- **Panel B (Mapped Taxa per Profile, Stacked by Taxonomic Rank):**
+  - **Median:** **4 trait-mapped taxa** per profile (IQR: **2–9**, Mean: **7.5**).
+  - **Distribution across 7,102 mapped profiles:**
+    - `1 mapped taxon`: 1,432 profiles (20.2%)
+    - `2 mapped taxa`: 944 profiles (13.3%)
+    - `3–4 mapped taxa`: 1,282 profiles (18.1%)
+    - `5–7 mapped taxa`: 1,171 profiles (16.5%)
+    - `8–11 mapped taxa`: 909 profiles (12.8%)
+    - `12–19 mapped taxa`: 771 profiles (10.9%)
+    - `20–34 mapped taxa`: 442 profiles (6.2%)
+    - `>=35 mapped taxa`: 151 profiles (2.1%)
 
-```
-┌────────────────────────────────────────────────────────────────────────┐
-│             Informatics Causes of Zero-Trait Taxa in BugSigDB          │
-├────────────────────────────────┬───────────────────┬──────────────────┤
-│ Category                       │ Top Examples      │ Remediation Path │
-├────────────────────────────────┼───────────────────┼──────────────────┤
-│ 1. NCBI TaxID Desynchronization│ Oscillospiraceae  │ Remap alias to   │
-│    (Canonical twin has traits; │ (541000 vs 216572)│ canonical TaxID  │
-│     BugSigDB used alias)       │ Lactobacillaceae  │ (Immediate win!) │
-│                                │ (81850 vs 33958)  │                  │
-│                                │ Rothia            │                  │
-│                                │ (508215 vs 32207) │                  │
-├────────────────────────────────┼───────────────────┼──────────────────┤
-│ 2. Ambiguous Bins / Slashes    │ Escherichia/      │ Resolve to LCA   │
-│    (Multi-genus composite)     │ Shigella sp.      │ or composite     │
-│                                │ (139 occurrences) │ trait vector     │
-├────────────────────────────────┼───────────────────┼──────────────────┤
-│ 3. Uncultivated MAGs / Bins    │ Clostridiales sp.,│ Impute / roll up │
-│    (~60% of zero-trait taxa)   │ UCG-005, CAG:352, │ higher-rank      │
-│                                │ UBA1819           │ family traits    │
-├────────────────────────────────┼───────────────────┼──────────────────┤
-│ 4. Non-Bacterial / Eukaryotes  │ Ascomycota,       │ Integrate fungal │
-│    (BacDive lacks micro-       │ Candida albicans, │ trait ontologies │
-│     eukaryotic phenotypes)     │ Malassezia        │ (e.g. FungiTraits)│
-├────────────────────────────────┼───────────────────┼──────────────────┤
-│ 5. Candidatus Lineages         │ Ca. Gastranaero-  │ Metabolic model  │
-│    (Candidate uncultured taxa) │ philales, Ca.     │ inference from   │
-│                                │ Altimarinota      │ GTDB / GEMs      │
-└────────────────────────────────┴───────────────────┴──────────────────┘
-```
+### Histogram 2: Number of Traits from Taxa Profiles & Frequency of Zero-Trait Taxa Across Profiles
+- **Panel A (Number of Traits per Taxon, Stacked by Rank, `N = 5,829` Unique Taxa):**
+  - **2,255 taxa (38.7%)** have **0 traits** (1,764 Species [78.2% of zero-trait taxa], 321 Genus [14.2%], 170 Family+ [7.5%]).
+  - **3,574 taxa (61.3%)** have $\ge 1$ trait: median across all 5,829 taxa is **14 traits** (IQR: 0–42); median among the 3,574 trait-mapped taxa is **32 traits** (IQR: 18–60).
+- **Panel B (Frequency of Zero-Trait Taxa per Profile Across All `N = 7,329` Profiles):**
+  - **5,494 profiles (75.0%)** contain **0 zero-trait taxa** (100% of their reported taxa map to KG-Microbe traits).
+  - **1,835 profiles (25.0%)** contain $\ge 1$ zero-trait taxon:
+    - **1,608 profiles (21.9%)** are **mixed profiles** that also contain mapped taxa and are **retained** in trait analyses.
+    - **227 profiles (3.1%)** contain **only zero-trait taxa** and are **excluded** when filtering to trait-mapped profiles (`1 zero-trait taxon`: 143 excluded; `2`: 40 excluded; `3–4`: 27 excluded; `5–9`: 12 excluded; `>=10`: 5 excluded).
+- **Panel C (Profile Recurrence of the `N = 2,255` Zero-Trait Taxa, Stacked by Rank):**
+  - **1,281 zero-trait taxa (56.8%)** appear in **only 1 profile** (singletons).
+  - **457 zero-trait taxa (20.3%)** appear in **2 profiles** (77.1% appear in $\le 2$ profiles).
+  - Only **26 zero-trait taxa (1.2%)** recur in $\ge 20$ profiles (diagnosable via `top_zero_trait_bugsigdb_taxa.tsv`, led by `Escherichia/Shigella sp.`, `Oscillospiraceae` secondary TaxID `541000`, and `Candida albicans`).
 
 ---
 
 ## 4. Generated Artifacts & Manifest
 
-### Figures:
+### Figures (`.png` at 300 DPI and vector `.svg`):
 1. `taxa_coverage_histogram_rank_stratified.png` / `.svg`:
-   - Two-panel Approach A figure.
-   - **Panel A**: Absolute taxa counts per taxonomic rank stacked by trait richness tier (Rich $\ge 3$, Sparse 1–2, Zero traits). Total $N$ labeled above bars.
-   - **Panel B**: 100% normalized proportions per rank with inline percentage labels, parity reference line at 50%, and annotations highlighting the species drop-off (45.9% zero) vs. genus/family stability (~75% trait-bearing).
+   - **Panel A**: Unique taxa counts per taxonomic rank stacked by trait richness tier with both counts and mapped percentages annotated above each bar.
+   - **Panel B**: 100% normalized taxa coverage proportions per rank with counts and percentages.
+   - **Panel C**: Distribution of study profiles (`N = 7,329`) containing each taxonomic rank, stacked by mapping status (All Rank Taxa Mapped, Mixed Mapped + Zero-Trait, Only Zero-Trait Taxa).
 2. `taxa_coverage_occurrences_vs_unique.png` / `.svg`:
-   - Two-bar comparative chart directly contrasting Unique Taxa (61.3% trait-bearing) vs. Literature Signature Occurrences (90.55% trait-bearing), illustrating the real-world coverage of microbiome literature.
-3. `taxa_trait_count_distribution.png` / `.svg`:
-   - **Panel A**: Binned trait count distribution per taxon showing the prominent spike at zero traits (2,255 taxa) alongside the continuous distribution of trait counts for trait-bearing taxa ($1\text{–}1,196$).
-   - **Panel B**: Log-scale boxplot of trait counts across taxonomic ranks showing the trait rollup effect in the KG taxonomy.
+   - Three-tier comparison across Unique Taxa (`N = 5,829`, 61.3% mapped), Literature Signature Mentions (`N = 59,486`, 90.6% mapped), and Study Trait Profiles (`N = 7,329`, 96.9% mapped).
+3. `taxa_profile_distribution_by_rank.png` / `.svg`:
+   - **Panel A**: 100% stacked composition of study profiles within each taxonomic rank showing exact profile counts and percentages for All-Mapped, Mixed, and Zero-Trait-Only profiles.
+   - **Panel B**: Log-scale boxplot + strip distribution of mapped trait richness across `N = 7,102` mapped study profiles stratified by taxonomic rank present.
+4. `histogram1_mapped_traits_and_taxa_per_profile.png` / `.svg`:
+   - Filtered strictly to mapped profiles (`N = 7,102`, excluding 227 zero-trait profiles):
+   - **Panel A**: Frequency of mapped traits across profiles (counts + percentages + median/IQR callout).
+   - **Panel B**: Frequency of trait-mapped taxa per profile stacked by taxonomic rank composition.
+5. `histogram2_taxa_trait_counts_and_zero_trait_frequency.png` / `.svg`:
+   - **Panel A**: Number of traits from taxa profiles (`N = 5,829` unique taxa) stacked by rank, with the 0-trait spike (`2,255 taxa, 38.7%`) highlighted.
+   - **Panel B**: Frequency of zero-trait taxa per profile across all `N = 7,329` study profiles, distinguishing retained mixed profiles (`1,608`) from excluded zero-trait-only profiles (`227`).
+   - **Panel C**: Profile recurrence distribution of the `2,255` zero-trait taxa across the study cohort, stacked by taxonomic rank.
+6. `taxa_trait_count_distribution.png` / `.svg`:
+   - Two-panel summary of taxon-level trait counts (with counts and percentages) and rank-stratified log10 trait count boxplots.
 
 ### Data Tables (TSVs):
-1. `taxa_coverage_by_rank.tsv`:
-   - Quantitative summary table by rank with counts, percentages, and occurrence weights.
-2. `taxa_kgmicrobe_coverage_details.tsv`:
-   - Complete audit table for all 5,829 unique taxa with taxon ID, name, rank, trait count, occurrence count, study count, and coverage category.
-3. `top_zero_trait_bugsigdb_taxa.tsv`:
-   - Top 100 zero-trait BugSigDB taxa ranked by signature occurrences, enriched with diagnosed informatics category and concrete remediation recommendation.
+1. `taxa_coverage_by_rank.tsv`: Rank-stratified summary of unique taxa and signature occurrences.
+2. `profile_coverage_by_rank.tsv`: Rank-stratified summary of study profile distributions, mapping status counts/percentages, and profile trait richness quantiles.
+3. `profile_trait_mapping_summary.tsv`: Profile-level table for all 7,329 study profiles (`study_id`, `experiment_id`, `inc_dec`, total taxa, mapped taxa, zero-trait taxa, mapped trait count, and per-rank taxon breakdowns).
+4. `taxa_kgmicrobe_coverage_details.tsv`: Complete audit table for all 5,829 unique taxa.
+5. `top_zero_trait_bugsigdb_taxa.tsv`: Top 100 zero-trait BugSigDB taxa ranked by signature occurrences with root-cause category and remediation path.
 
 ---
 
-## 5. Strategic Recommendations for BugSigDB & KG-Microbe Harmonization
-
-1. **Immediate Quick Win (NCBI Secondary TaxID Remapping)**:
-   - Remap `NCBITaxon:541000 Oscillospiraceae` $\rightarrow$ `NCBITaxon:216572` (instantly gains 162 traits across 82 signature occurrences).
-   - Remap `NCBITaxon:81850 Lactobacillaceae` $\rightarrow$ `NCBITaxon:33958` (instantly gains 166 traits across 19 signature occurrences).
-   - Remap `NCBITaxon:508215 Rothia` $\rightarrow$ `NCBITaxon:32207` (instantly gains 87 traits across 41 signature occurrences).
-   - *Total immediate gain*: 142 literature signature occurrences re-connected to rich trait profiles without altering experimental data.
-
-2. **Lowest Common Ancestor (LCA) Mapping for Slashes**:
-   - `NCBITaxon:1940338 Escherichia/Shigella sp.` (139 occurrences across 87 studies) cannot map cleanly to a single species in BacDive.
-   - Map to family `Enterobacteriaceae` or compute the union of traits shared by *Escherichia* and *Shigella*.
-
-3. **Parental Trait Imputation for Uncultured Metagenomic Taxa**:
-   - For taxa like `uncultured Oscillospiraceae bacterium` or `Ruminococcaceae bacterium UCG-005`, propagate essential high-confidence family-level traits (e.g., Gram-stain, oxygen tolerance, endospore formation).
-
-4. **Fungal Trait Integration**:
-   - Integrate fungal phenotypic trait databases (e.g. FungiTraits) into KG-Microbe to provide coverage for clinically relevant mycobiome taxa (*Candida albicans*, *Malassezia restricta*, *Ascomycota*).
-
----
-
-## 6. How to Reproduce
+## 5. How to Reproduce
 
 Execute the standalone generator script:
 

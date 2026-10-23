@@ -1066,3 +1066,27 @@ def test_benchmark_table_filters_to_ten_per_condition_and_ranks_non_media() -> N
     assert bench.loc[bench["trait_id"].eq("trait_low"), "percentile_excluding_growth_media"].iloc[
         0
     ] == pytest.approx(0.5)
+
+
+def test_tier1_2_catalog_scopes_taxa_to_tier1_2_oriented_contrasts(tmp_path: Path) -> None:
+    """The Tier 1-2 catalog includes only taxa from Tier 1-2 disease-vs-healthy contrasts."""
+    corpus = load_corpus(_input_root(tmp_path), "experiment")
+    manifest = corpus.manifest.copy()
+    manifest.loc[("bsdb:1", "bsdb:1-1"), "control_tier"] = TIER_3_HOSPITAL_COMORBID_OR_TISSUE
+    manifest.loc[("bsdb:1", "bsdb:1-3"), ["contrast_class", "orientation"]] = [
+        "disease_vs_healthy",
+        "native",
+    ]
+    taxa = corpus.taxa
+    t3 = taxa[taxa["profile_id"].eq("bsdb:1|bsdb:1-1|dec") & taxa["taxon_id"].eq("t1")]
+    taxa = pd.concat([taxa, t3.assign(taxon_id="t3")], ignore_index=True)
+    corpus = replace(corpus, manifest=manifest, taxa=taxa)
+
+    _all_p, all_taxa = population(corpus, ALL_CONTRASTS)
+    all_sets = condition_sets(all_taxa, {"t1", "t3"})
+    tier12_corpus = replace(corpus, case_control="control_tiers_1_2")
+    _t12_p, t12_taxa = population(tier12_corpus, ORIENTED)
+    t12_sets = condition_sets(t12_taxa, {"t1", "t3"})
+
+    assert "t3" in all_sets["PD"]
+    assert "t3" not in t12_sets["PD"]
