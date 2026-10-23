@@ -214,6 +214,22 @@ and stops later stages; a failed attempt cannot pass `rerun-verify`. Outputs go
 to the selected fresh directory, with verified core files copied into `inputs/`.
 The source bundle and existing analysis outputs are preserved.
 
+The strain-rollup compatibility rule permits a missing `--strain-rollup` only
+when the verified core recorded no strain-rollup parameter; that historical
+scope is `off` (#881). A core that declares a scope requires its scoped commands
+to name the same scope.
+
+Verification checks each recorded direction basis against its core. The profile
+and taxa-guild heatmap commands must explicitly name `--direction-basis`; a new
+record cannot acquire that meaning by inference after execution (#843, #944).
+Legacy Jed plans recorded before these options were required do not satisfy this
+current contract. Verify a historical fallback run in a detached worktree at the
+run's recorded Git commit, using that implementation and its locked environment.
+Keep the recorded inputs and output paths accessible, and retain its original
+execution record. A pass under that historical verifier describes that execution;
+it does not establish a new run under the current workflow. This also avoids
+applying newer core-verification contracts to unsupported older records (#955).
+
 With the default population, count profiles retain all hosts in the core. Legacy
 commands whose numerical algorithms assume human-only input receive an execution-recorded human subset
 derived from `experiments.tsv`; no pairing, zero-count, or feature filtering is

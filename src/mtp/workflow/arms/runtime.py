@@ -54,6 +54,13 @@ Planner = Callable[[ArmContext], list[Command]]
 SCOPED_MODULES: dict[str, Callable[[type[argparse.ArgumentParser]], argparse.ArgumentParser]] = {
     "mtp.taxon_contributions": taxon_contributions.argument_parser
 }
+# These entrypoints require an explicit basis rather than choosing a default.
+DIRECTION_REQUIRED_SCRIPTS = frozenset(
+    {
+        "scripts/create_taxa_guild_heatmap.py",
+        "scripts/create_study_trait_profile_heatmap.py",
+    }
+)
 INPUT_NAMES = {
     "raw_dump": "full_dump.csv",
     "kg_edges": "merged-kg_edges.tsv",
@@ -222,6 +229,34 @@ def _step_strain_rollup(command: Command, *, absent_scope_is_off: bool) -> str:
     return "off"
 
 
+def _step_direction_basis(command: Command, repository: Path) -> str | None:
+    """Read an optional recorded direction flag with standard argparse semantics.
+
+    Other step arguments belong to their entrypoints. Registered direction-aware
+    scripts support their unambiguous abbreviations. Elsewhere only the exact
+    option is interpreted, preserving unrelated flags such as --direction.
+    Equal-sign and repeated options retain their effective execution value.
+    """
+    required = command.argv[1] != "-m" and Path(command.argv[1]) in {
+        repository / name for name in DIRECTION_REQUIRED_SCRIPTS
+    }
+    parser = _StepArguments(add_help=False, allow_abbrev=required)
+    parser.add_argument(
+        "--direction-basis",
+        choices=[basis.value for basis in DirectionBasis],
+        required=required,
+    )
+    if Path(command.argv[1]) == repository / "scripts/create_study_trait_profile_heatmap.py":
+        # Its full parser rejects --d/--di as ambiguous with --display-max-rows.
+        parser.add_argument("--display-max-rows", type=int)
+    arguments = command.argv[3:] if command.argv[1] == "-m" else command.argv[2:]
+    try:
+        parsed, _ = parser.parse_known_args(arguments)
+    except ValueError as error:
+        raise ValueError(f"{command.id} has invalid direction-basis arguments: {error}") from error
+    return str(parsed.direction_basis) if parsed.direction_basis is not None else None
+
+
 def _validate_plan(
     commands: Sequence[Command], context: ArmContext, *, absent_scope_is_off: bool = False
 ) -> None:
@@ -264,6 +299,12 @@ def _validate_plan(
                     f"{command.id} uses strain rollup scope {scope!r}, but its core "
                     f"recorded {context.strain_rollup!r}"
                 )
+        direction_basis = _step_direction_basis(command, context.repository)
+        if direction_basis is not None and direction_basis != context.direction_basis:
+            raise ValueError(
+                f"{command.id} uses direction basis {direction_basis!r}, but its core "
+                f"recorded {context.direction_basis!r}"
+            )
         seen.add(command.id)
         if not command.outputs:
             raise ValueError(f"No declared outputs: {command.id}")
@@ -575,6 +616,9 @@ def verify_arm(path: Path) -> ArmRun:
         for item in record.plan
     ]
     # Only a core from before #788 recorded no scope, and only its plans may omit it (#881)
+    # Known heatmap entrypoints always require an explicit direction basis (#843/#944).
+    # Pre-#949 plans use their recorded implementation for historical verification;
+    # the current verifier does not infer missing direction arguments (#955).
     declared = {item.name for item in core.parameters or []}
     _validate_plan(commands, context, absent_scope_is_off="strain_rollup" not in declared)
     runtime = json.loads(record.runtime_json)
