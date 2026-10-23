@@ -821,6 +821,8 @@ audit-trait-density *ARGS:
 audit-trait-coupling *ARGS:
 	just timed audit-trait-coupling "uv run python scripts/audit_trait_coupling.py --code-commit \"$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)\" $*"
 
+# Host marker evaluation can omit greenlet on arm64; see security-linux and CONTRIBUTING.md (#888).
+# Audit source, dependencies, secrets, and host-selected locked packages.
 security:
 	uv run bandit -c pyproject.toml -r src scripts
 	uv run deptry src
@@ -833,6 +835,19 @@ security:
 	  --output-file "$reqfile" && \
 	uv run pip-audit -r "$reqfile" --disable-pip \
 	  --cache-dir "$tmpdir/pip-audit-cache"
+
+# Audit locked packages selected for Linux x86_64 / Python 3.11, on any host.
+security-linux:
+	audit_tmp="$(mktemp -d)" && \
+	trap 'rm -rf "$audit_tmp"' EXIT && \
+	uv run --locked --group qa uv export --quiet --frozen --all-extras --group dev --group qa \
+	  --format requirements-txt --no-emit-project --no-emit-workspace \
+	  --output-file "$audit_tmp/requirements.txt" && \
+	uv run --locked --group qa uv pip compile "$audit_tmp/requirements.txt" \
+	  --python-platform x86_64-unknown-linux-gnu --python-version 3.11 --no-deps \
+	  --no-header --no-annotate --output-file "$audit_tmp/requirements-linux.txt" && \
+	uv run --locked --group qa pip-audit -r "$audit_tmp/requirements-linux.txt" \
+	  --disable-pip --no-deps --cache-dir "$audit_tmp/pip-audit-cache"
 
 precommit:
 	uv run pre-commit run --all-files
