@@ -12,7 +12,14 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from mtp.paths import REPO_ROOT
-from mtp.taxa_trait_matrix import make_trait_key
+from mtp.taxa_trait_matrix import (
+    PRIMARY_STRAIN_ROLLUP,
+    STRAIN_PREFIX,
+    StrainRollup,
+    make_trait_key,
+    scoped_taxon_traits,
+    strain_trait_rolls_up,
+)
 from mtp.trait_guilds import MEDIADIVE_MARKER, TABLE1_TRAITS, column_term_id
 
 Key = tuple[str, str, str]
@@ -210,10 +217,26 @@ class Graph:
         return "", "ambiguous_rank" if found else "unresolved_rank"
 
 
-def load_graph(edges: Path, nodes: Path, columns: set[str], six: set[str]) -> Graph:
+def load_graph(
+    edges: Path,
+    nodes: Path,
+    columns: set[str],
+    six: set[str],
+    strain_rollup: StrainRollup = PRIMARY_STRAIN_ROLLUP,
+) -> Graph:
+    """Read the taxonomy, retained traits and six-trait edge provenance of the KG.
+
+    Under the matrix's strain rollup scope, the BacDive strain records it admits count
+    at the strains' linked NCBITaxon nodes by the builder's rule, and their edges are
+    assertions of those nodes. The default is the primary scope, which the legacy matrix
+    builder also defaults to (#788).
+    """
     parents: defaultdict[str, set[str]] = defaultdict(set)
     traits: defaultdict[str, set[str]] = defaultdict(set)
     assertions: defaultdict[tuple[str, str], list[Assertion]] = defaultdict(list)
+    strain_taxa: defaultdict[str, set[str]] = defaultdict(set)
+    strain_traits: defaultdict[str, set[str]] = defaultdict(set)
+    strain_assertions: defaultdict[tuple[str, str], list[Assertion]] = defaultdict(list)
     repaired = False
     continued = 0
     with edges.open(encoding="utf-8", newline="") as handle:
@@ -239,18 +262,19 @@ def load_graph(edges: Path, nodes: Path, columns: set[str], six: set[str]) -> Gr
             if len(row) != len(header):
                 raise ValueError(f"Malformed KG record at line {reader.line_num}")
             edge, subject, predicate, obj = row[:4]
-            if not subject.startswith("NCBITaxon:"):
+            strain = strain_rollup != "off" and subject.startswith(STRAIN_PREFIX)
+            if not (strain or subject.startswith("NCBITaxon:")):
                 continue
             if predicate == "biolink:subclass_of" and obj.startswith("NCBITaxon:"):
-                parents[subject].add(obj)
+                (strain_taxa if strain else parents)[subject].add(obj)
             elif predicate.startswith("METPO:") or obj.startswith("METPO:"):
                 key = make_trait_key(predicate, obj)
-                if key not in columns:
+                if key not in columns or (strain and not strain_trait_rolls_up(key, strain_rollup)):
                     continue
-                traits[subject].add(key)
+                (strain_traits if strain else traits)[subject].add(key)
                 if key in six:
                     meta = dict(zip(header, row, strict=True))
-                    assertions[(subject, key)].append(
+                    (strain_assertions if strain else assertions)[(subject, key)].append(
                         Assertion(
                             edge,
                             predicate,
@@ -261,8 +285,14 @@ def load_graph(edges: Path, nodes: Path, columns: set[str], six: set[str]) -> Gr
                             source_row,
                         )
                     )
+    for (source, key), evidence in strain_assertions.items():
+        for taxon in sorted(strain_taxa.get(source, ())):
+            assertions[(taxon, key)].extend(evidence)
+    scoped = scoped_taxon_traits(
+        dict(traits), dict(strain_taxa), dict(strain_traits), strain_rollup
+    )
     names = {r["id"]: r["name"] for r in rows(nodes) if r["id"].startswith("NCBITaxon:")}
-    return Graph(dict(parents), dict(traits), dict(assertions), names, repaired, continued)
+    return Graph(dict(parents), scoped, dict(assertions), names, repaired, continued)
 
 
 def verify_kg(kg_dir: Path, expected: dict[str, str]) -> dict[str, str]:
