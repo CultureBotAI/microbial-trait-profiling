@@ -16,6 +16,13 @@ The following previously tracked methods files were consolidated here:
 
 ## Clustered Heatmaps
 
+The tracked taxa-guild, profile and paired heatmap PNGs at frozen commit
+`511c891` predate their required direction-basis labels. The label descriptions
+below describe the current generators, not those historical images. Refreshing
+these three tracked figures belongs to the verified rerun (#841, #962); this
+code follow-up does not regenerate them. Assess the rerun's figures and execution
+records together before reusing them in a deck.
+
 ### `taxa_guild_discovery_clustered_heatmap.png`
 
 This figure is a taxa-by-trait clustered heatmap for discovering groups of
@@ -147,6 +154,10 @@ The colorbar also names the direction basis for this subtraction: "Group 1 vs
 Group 0" or "disease vs comparison". The same required `--direction-basis`
 option, with no default, controls both this label and the profile legend. A
 subset's inputs have already been oriented before plotting (#842, #955).
+The paired metadata now records the supplied option as
+`heatmap_parameter_direction_basis`; the site-statistics provenance preserves it
+under `parameters.heatmap_selection.direction_basis` (#962). This is the declared
+meaning of the supplied profiles, not an independent check of their orientation.
 
 On a per-row (per-pair) basis, this matched subtraction eliminates study- and
 experiment-specific baseline differences (such as extraction protocols, sequencing

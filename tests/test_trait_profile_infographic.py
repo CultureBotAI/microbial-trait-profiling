@@ -287,8 +287,12 @@ def test_other_modes_invalidate_old_site_provenance(
     assert infographic.trait_stats_path(output, "pooled").exists()
 
 
+@pytest.mark.parametrize("direction_basis", ["group_1_vs_group_0", "disease_vs_comparison"])
 def test_heatmap_main_to_site_stats_binds_hashes_and_selection_parameters(
-    stratified_inputs: tuple[Path, Path, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    stratified_inputs: tuple[Path, Path, Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    direction_basis: str,
 ) -> None:
     """Exercise the producer mapping instead of hand-writing hash columns (#875)."""
     heatmap_path = MODULE_PATH.with_name("create_study_trait_profile_heatmap.py")
@@ -343,7 +347,7 @@ def test_heatmap_main_to_site_stats_binds_hashes_and_selection_parameters(
     argv = [
         "heatmap",
         "--direction-basis",
-        "group_1_vs_group_0",
+        direction_basis,
         "--study-trait-profiles-input",
         str(profiles),
         "--trait-columns-input",
@@ -379,6 +383,10 @@ def test_heatmap_main_to_site_stats_binds_hashes_and_selection_parameters(
     assert record["inputs"]["profiles"]["sha256"] == file_sha256(profiles)
     assert record["parameters"]["heatmap_selection"]["max_profiles"] == 24
     assert record["parameters"]["heatmap_selection"]["max_body_site_categories"] == 1
+    assert "direction_basis" in record["parameters"]["heatmap_selection"], (
+        "Paired metadata did not preserve the basis in site-stat provenance"
+    )
+    assert record["parameters"]["heatmap_selection"]["direction_basis"] == direction_basis
     assert 0 < record["pair_denominator_audit"]["n_experiments"] < 16
 
 

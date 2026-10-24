@@ -20,6 +20,7 @@ from mtp.composition_denominators import (
     retained_trait_counts,
     trait_fractions,
 )
+from mtp.direction_labels import DIRECTION_BASIS_LABELS
 from mtp.human_host_corpus import CORPUS_SEQUENCING_TYPES
 from mtp.paths import file_sha256
 
@@ -27,11 +28,6 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = REPO_ROOT / "trait-visualization"
 PROFILE_METADATA_COLUMNS = ["study_id", "experiment_id", "inc_dec"]
 DIRECTION_LABELS = {"inc": "increased", "dec": "decreased"}
-# These name the already oriented input; plotting never swaps the data (#842).
-DIRECTION_BASIS_LABELS = {
-    "group_1_vs_group_0": "Group 1 vs Group 0",
-    "disease_vs_comparison": "disease vs comparison",
-}
 PAIR_DIRECTION_LABEL = "increased - decreased"
 HUMAN_HOST_SPECIES = "Homo sapiens"
 EXPERIMENT_LABEL_COLUMNS = {
@@ -1463,6 +1459,7 @@ def main() -> None:
         args.paired_required_trait_check_output,
         source_hashes=pair_source_hashes,
         selection_parameters={
+            "direction_basis": args.direction_basis,
             "max_profiles": max_profiles,
             "max_body_site_categories": args.max_body_site_categories,
             "max_condition_categories": args.max_condition_categories,
