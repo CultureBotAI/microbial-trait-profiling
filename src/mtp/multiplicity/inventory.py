@@ -87,7 +87,13 @@ def read_corrected_inventory(path: Path) -> Iterator[AdjustedHypothesis]:
     """Read one validated corrected record at a time, without materializing a table."""
     with path.open(encoding="utf-8") as handle:
         for line in handle:
-            yield AdjustedHypothesis.model_validate_json(line)
+            row = AdjustedHypothesis.model_validate_json(line)
+            validate_raw_hypothesis(
+                RawHypothesis.model_validate(
+                    {name: getattr(row, name) for name in RawHypothesis.model_fields}
+                )
+            )
+            yield row
 
 
 def correct_inventory(

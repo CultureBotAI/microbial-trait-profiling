@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from mtp.datamodel.multiple_testing_pydantic import HypothesisFamilyMetadata, SourceArtifact
+from mtp.enrichment_stats import benjamini_hochberg
 from mtp.multiple_testing import canonical_sha256
 from mtp.multiplicity import native, ora, stage
 from mtp.multiplicity import sources as source_module
@@ -53,7 +54,18 @@ def test_native_selection_guards_are_independent(tmp_path: Path, guard: str) -> 
             for i in range(8)
         ],
     )
-    write_table(labels, [{"column_id": feature, "object_name": feature} for feature in features])
+    write_table(
+        labels,
+        [
+            {
+                "column_id": feature,
+                "object_name": feature,
+                "column_label": feature,
+                "object_category": "biolink:PhenotypicQuality",
+            }
+            for feature in features
+        ],
+    )
     selected, keys = native.native_candidates(profile, experiments, features, labels)
     assert len(keys) == 16
     assert set(selected) == set(features[:2]), f"Native {guard} admitted an excluded candidate"
@@ -76,6 +88,16 @@ def test_ora_background_prevalence_is_checked(
         list(imported.observations())
 
 
+def set_native_boundary_probability(records: list[dict[str, str]]) -> None:
+    """Make only the focal row significant under the complete native BH family."""
+    probabilities = [0.001 / len(records), *([0.9] * (len(records) - 1))]
+    adjusted = benjamini_hochberg(probabilities)
+    assert adjusted[0] == 0.001
+    assert all(value > 0.001 for value in adjusted[1:])
+    for record, p, q in zip(records, probabilities, adjusted, strict=True):
+        record.update(p_value=str(p), fdr_q=str(q))
+
+
 @pytest.mark.parametrize(("tail", "fold"), [("upper", "1.0"), ("lower", "1.0")])
 def test_ora_native_hit_needs_fold_as_well_as_q(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, tail: str, fold: str
@@ -85,7 +107,8 @@ def test_ora_native_hit_needs_fold_as_well_as_q(
     path = recorded_arm_output(sources.arms["ilyas"], prefix, f"trait_{prefix}_all_results.tsv")
     imported = ora.ora_family(sources)
     records = list(rows(path))
-    records[0].update(p_value="0.0001", fdr_q="0.0001", fold=fold, is_significant="True")
+    set_native_boundary_probability(records)
+    records[0].update(fold=fold, is_significant="True")
     write_table(path, records, ora.ora_comments(path))
     with pytest.raises(ValueError, match="ORA native hit flag disagrees with q/effect thresholds"):
         list(imported.observations())
@@ -100,13 +123,15 @@ def test_ora_native_hit_includes_exact_fold_boundary(
     path = recorded_arm_output(sources.arms["ilyas"], prefix, f"trait_{prefix}_all_results.tsv")
     imported = ora.ora_family(sources)
     records = list(rows(path))
-    records[0].update(p_value="0.0001", fdr_q="0.0001", fold=fold, is_significant="True")
+    set_native_boundary_probability(records)
+    records[0].update(fold=fold, is_significant="True")
     write_table(path, records, ora.ora_comments(path))
     observed = list(imported.observations())
     boundary = [item for item in observed if item.row["is_significant"] == "True"]
     assert len(boundary) == 1
     assert boundary[0].row["fold"] == fold
-    assert boundary[0].raw.p_value == 0.0001
+    assert boundary[0].raw.p_value == 0.001 / len(records)
+    assert boundary[0].native_q == 0.001
 
 
 @pytest.mark.parametrize("checkpoint", ["metadata", "final"])

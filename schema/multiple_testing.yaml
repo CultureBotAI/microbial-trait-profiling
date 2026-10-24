@@ -4,7 +4,7 @@ title: Additive full-family multiple-testing contracts
 description: >-
   Scientific family inventories and replayable corrections. These records do not
   change native arm calls or certify the validity of their input p-values.
-version: 1.1.0
+version: 1.2.0
 license: MIT
 prefixes:
   linkml: https://w3id.org/linkml/
@@ -13,6 +13,41 @@ default_prefix: mtpmt
 default_range: string
 imports:
   - linkml:types
+enums:
+  ReasonVocabulary:
+    title: Reason vocabulary
+    description: Versioned interpretation of a raw hypothesis's undefined reason.
+    permissible_values:
+      legacy_free_text_v1:
+        description: Historical foundation contract accepting any nonblank explanation.
+      analysis_reason_v1:
+        description: Exact analysis reason codes declared by AnalysisReasonV1.
+  AnalysisReasonV1:
+    title: Analysis reason version 1
+    description: Supported untestable outcomes; selection-family statuses are separate.
+    permissible_values:
+      all_tied:
+        description: All eligible directional values are tied under the native rule.
+      no_eligible_studies:
+        description: No study survives the directional screen's eligibility rule.
+      no_positive_pairs:
+        description: No ratio study has an eligible positive-count experiment pair.
+      insufficient_support:
+        description: Too few observations for the declared native test.
+      insufficient_variance:
+        description: Native dispersion is too small to estimate a test statistic.
+      condition_below_minimum_studies:
+        description: A held-out condition has fewer studies than the frozen minimum.
+      shared_study_between_conditions:
+        description: Held-out conditions share studies contrary to the null's partition.
+      undefined_distance_in_null:
+        description: At least one null draw has an undefined distance.
+      all_sets_empty:
+        description: All condition taxon sets are empty for the selected annotation.
+      pool_too_small:
+        description: The sampling pool cannot satisfy the declared null draw.
+      no_units:
+        description: A held-out condition has no eligible stool-decreased signatures.
 classes:
   MultipleTestingPolicy:
     title: Multiple testing policy
@@ -240,6 +275,15 @@ classes:
       reason:
         title: Reason
         description: Nonempty explanation required only for an untestable member.
+      reason_vocabulary:
+        title: Reason vocabulary
+        description: >-
+          Missing fields preserve legacy caller semantics. analysis_reason_v1
+          requires exact AnalysisReasonV1 membership in the shared runtime validator;
+          tested records require no reason under either vocabulary.
+        range: ReasonVocabulary
+        required: true
+        ifabsent: string(legacy_free_text_v1)
   AdjustedHypothesis:
     title: Adjusted hypothesis
     description: Recomputed full-family corrections and threshold decisions; no effect filter is applied.
@@ -427,7 +471,7 @@ classes:
       version:
         title: Version
         description: Supported sidecar execution format.
-        pattern: ^1\.1\.0$
+        pattern: ^1\.2\.0$
         required: true
       recorded_at:
         title: Recorded at

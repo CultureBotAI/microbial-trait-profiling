@@ -44,21 +44,45 @@ are rejected rather than filled in from selected tables.
 
 Noel exports p-values to six significant digits. Corrections use those exported
 values unchanged, so tiny differences from its native q-values may reflect
-rounding. Missing tests require an explicit recognized untestable status, checked
-against exported study sign tallies or native study support and dispersion.
-Screen tallies and ratio eligibility ledgers must reconcile to the independently
-loaded core cohort. Undefined native q-values must follow their producer's
+rounding. Missing tests require an explicit recognized untestable status. Noel's
+up/down/tied counts are reconstructed from core profiles using the producer's
+shared study-contrast and sign-tally functions. Jed's summary support and sign
+tallies must match eligible/excluded experiments and signs derived from recorded
+study means, through the same support helper used by its native producer. The ledger
+must also cover the independently loaded core study/experiment cohort.
+Native composition selection, all-retained fractions, log1p transformation,
+profile standardization (ddof=0), pair contrasts and equal-study moments use a
+shared interface with the infographic producer. Its exported study mean, median,
+dispersion (ddof=1), count, status and profile support must match those core-derived
+quantities. The native `np.isclose` variance rule and historical zero-total
+inclusion remain unchanged. These checks do not recompute or replace native
+binomial/t-test p-values. Undefined native q-values must follow their producer's
 convention: null for Noel/Jed and internal p=1 correction for native composition.
 Untestable members count conservatively as p=1 and export null p, q and rejection
 flags. Invalid numeric values, negative zero and status/p mismatches fail.
 Effects and native row contents are bound
 by source hashes and row hashes, and are never rewritten.
-Cross-product reconciliation beyond these checks is tracked in #976: independently
-reconciling every untestable status against source study effects, verifying native
-ORA q-values against each complete tail, and versioning the free-text reason
-vocabulary. Standalone adapters with upstream verification bypassed do not provide
-that stronger scientific contract. Publishing always requires the recorded-byte
-binding described below.
+Version 1.2 adds these cross-product checks (#976), including complete native
+per-tail ORA BH reconstruction. Each tail's Cartesian profile/feature membership
+is checked independently on disk before rows are yielded. The shared native
+step-up kernel preserves the existing floating-point operation order, explicit
+family size, raw-p floor and unit ceiling. Machine ORA exports contain round-trip
+float values; the imported q must equal the reconstructed native value exactly.
+No missing p/q is accepted for a declared testable ORA member. Neither rounded
+text-report values nor selected-hit tables can replace the all-results export.
+The upper/lower native families remain separate for this consistency check;
+the additive sidecar's declared correction family still joins both tails.
+Publishing always requires the recorded-byte binding described below.
+
+All post-arm raw and adjusted rows explicitly carry
+`reason_vocabulary=analysis_reason_v1`, including tested rows with null reasons.
+The authoritative LinkML enum contains the existing sign/composition reasons
+and the study-split/scanner reasons; empty-selection-family statuses are not
+individual hypothesis reasons. The foundation's default `legacy_free_text_v1`
+preserves historical free-text callers. See [the foundation contract](../methods/multiple_testing.md)
+for version and migration details. Engine/schema/stage format 1.2 changes
+serialized identities: verify old sidecars using their original code and
+environment, rather than relabeling their records or updating their hashes.
 The shared canonical serializer uses strict JSON for these identities: numeric
 NaN and infinity are rejected even inside nested basis or membership records.
 
@@ -74,8 +98,19 @@ disk. SciPy corrects one complete family using numeric arrays: ORA is never
 split into arbitrary batches or rescaled from already adjusted q-values.
 Correction memory therefore scales with numeric vectors, rather than millions
 of Python hypothesis objects. Disk space scales with the full declared inventory.
+The native ORA consistency pass likewise retains its rows in a temporary SQLite
+database and constructs correction arrays for only one tail at a time. It checks
+the complete consumed stream hash before yielding the stored original rows;
+it does not reread an export after validation. Temporary disk usage includes
+that native tail alongside the sidecar's declared inventory.
 Issue #871 requires a measured memory/runtime check on a real complete ORA family
 before final production use; synthetic fixtures do not establish that measurement.
+`scripts/adhoc/issue976_measure_ora_validation.py` provides separate fresh-process
+synthetic generation, parsing and validation phases. The parsing baseline covers
+streamed probability/coordinate checks, not an old whole-adapter execution;
+reported process peak RSS is not an incremental-allocation estimate. Large
+measurements must use the shared heavy-run slot and remain separate from any
+authorized production-use measurement coordinated through #871.
 
 `multiplicity_run.json` conforms to the separate LinkML multiple-testing schema.
 It records policy, input and output identities, code, NumPy/SciPy versions, timestamp,
@@ -147,7 +182,11 @@ remain tied to their original implementation identity.
 No full-screen q-value is attached to focal rows by trait slug. The
 historical focal selection and the native support/variance filter remain
 selection limitations. The sidecars make no global FDR claim across different
-arms/families and do not measure physiological activity.
+arms/families and do not measure physiological activity. Matching support,
+moments, reasons or native corrections establishes consistency with the declared
+producer, not p-value calibration, independent observations, post-selection
+validity or biological causality. Jed's recorded ledger remains upstream evidence;
+the adapter does not independently replace its underlying per-study estimator.
 
 Verification checks the exact output inventory and reconstructs every family,
 raw table, corrected result, migration report and manifest from verified native

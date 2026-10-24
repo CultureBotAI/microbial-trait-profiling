@@ -8,7 +8,7 @@ import json
 import math
 from collections import Counter
 from collections.abc import Callable, Iterator
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from itertools import combinations
 from pathlib import Path
 from typing import Any
@@ -18,11 +18,15 @@ from mtp.datamodel.multiple_testing_pydantic import (
     HypothesisDefinition,
     HypothesisFamilyMetadata,
     RawHypothesis,
+    ReasonVocabulary,
 )
 from mtp.multiple_testing import canonical_sha256
 from mtp.multiplicity.sources import VerifiedSources, recorded_arm_output
 from mtp.paths import file_sha256
+from mtp.table1_trait_maps import study_trait_contrasts, tally_direction_signs
+from mtp.trait_composition import StudyLogRatio, log_ratio_support
 from mtp.trait_guilds import TABLE1_TRAITS, drop_zero_total_pairs, load_profiles
+from mtp.trait_screen import candidate_slots
 
 
 @dataclass(frozen=True)
@@ -137,6 +141,7 @@ def observation(
             status="tested" if value is not None else "untestable",
             p_value=value,
             reason=None if value is not None else test_status,
+            reason_vocabulary=ReasonVocabulary.analysis_reason_v1,
         ),
         native_q,
         method,
@@ -220,9 +225,10 @@ def noel_family(sources: VerifiedSources) -> FamilyInput:
     paired, _ = load_profiles(
         sources.product("count_profiles"),
         sources.product("experiments"),
-        {},
+        candidate_slots(features),
         reject_missing_counts=True,
     )
+    tallies = tally_direction_signs(study_trait_contrasts(paired, features), features)
     eligible_keys = sorted(
         (row.study_id, row.experiment_id, row.inc_dec)
         for row in drop_zero_total_pairs(paired).profiles
@@ -272,6 +278,9 @@ def noel_family(sources: VerifiedSources) -> FamilyInput:
                 != eligible_studies
             ):
                 raise ValueError("Screen support differs from independently loaded core cohort")
+            actual = tuple(support_count(row, f"studies_{kind}") for kind in ("up", "down", "tied"))
+            if row["trait"] not in tallies or actual != tallies[row["trait"]]:
+                raise ValueError("Screen sign tallies disagree with core study contrasts")
             yield observation(
                 row["trait"],
                 row,
@@ -308,6 +317,7 @@ def jed_family(sources: VerifiedSources) -> FamilyInput:
     )
     pairs = list(combinations(TABLE1_TRAITS, 2))
     definitions = []
+    ledger_support = {}
     study_rows = list(rows(studies, sources.expected_digest(studies)))
     paired, _ = load_profiles(
         sources.product("count_profiles"),
@@ -348,6 +358,22 @@ def jed_family(sources: VerifiedSources) -> FamilyInput:
                 != expected
             ):
                 raise ValueError("Ratio eligibility support disagrees with core paired cohort")
+        ledger_support[f"{numerator}/{reference}"] = log_ratio_support(
+            [
+                StudyLogRatio(
+                    numerator=numerator,
+                    reference=reference,
+                    study_id=row["study_id"],
+                    paired_experiments=support_count(row, "paired_experiments"),
+                    eligible_experiments=support_count(row, "eligible_experiments"),
+                    excluded_zero_experiments=support_count(row, "excluded_zero_experiments"),
+                    mean_log2_ratio_change=float(row["mean_log2_ratio_change"])
+                    if row["mean_log2_ratio_change"]
+                    else None,
+                )
+                for row in eligibility
+            ]
+        )
         definitions.append(
             HypothesisDefinition(
                 hypothesis_id=f"{numerator}/{reference}",
@@ -394,10 +420,19 @@ def jed_family(sources: VerifiedSources) -> FamilyInput:
                 },
             )
             validate_sign_status(row, status="status", empty="no_positive_pairs")
+            identity = f"{row['numerator']}/{row['reference']}"
+            if identity not in ledger_support:
+                raise ValueError("Ratio summary is absent from the recorded study ledger")
+            expected_support = asdict(ledger_support[identity])
+            if any(
+                (row[key] if key == "status" else support_count(row, key)) != value
+                for key, value in expected_support.items()
+            ):
+                raise ValueError("Ratio summary support/signs disagree with recorded study ledger")
             if support_count(row, "studies_total") != len(paired_by_study):
                 raise ValueError("Ratio summary support disagrees with core paired cohort")
             yield observation(
-                f"{row['numerator']}/{row['reference']}",
+                identity,
                 row,
                 p="sign_p",
                 q="by_q",

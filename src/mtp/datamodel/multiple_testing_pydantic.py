@@ -30,7 +30,7 @@ from pydantic import (
 
 
 metamodel_version = "1.7.0"
-version = "1.1.0"
+version = "1.2.0"
 
 
 class ConfiguredBaseModel(BaseModel):
@@ -81,6 +81,70 @@ linkml_meta = LinkMLMeta({'default_prefix': 'mtpmt',
                             'prefix_reference': 'https://w3id.org/mtp/multiple-testing/'}},
      'source_file': 'schema/multiple_testing.yaml',
      'title': 'Additive full-family multiple-testing contracts'} )
+
+class ReasonVocabulary(str, Enum):
+    """
+    Versioned interpretation of a raw hypothesis's undefined reason.
+    """
+    legacy_free_text_v1 = "legacy_free_text_v1"
+    """
+    Historical foundation contract accepting any nonblank explanation.
+    """
+    analysis_reason_v1 = "analysis_reason_v1"
+    """
+    Exact analysis reason codes declared by AnalysisReasonV1.
+    """
+
+
+class AnalysisReasonV1(str, Enum):
+    """
+    Supported untestable outcomes; selection-family statuses are separate.
+    """
+    all_tied = "all_tied"
+    """
+    All eligible directional values are tied under the native rule.
+    """
+    no_eligible_studies = "no_eligible_studies"
+    """
+    No study survives the directional screen's eligibility rule.
+    """
+    no_positive_pairs = "no_positive_pairs"
+    """
+    No ratio study has an eligible positive-count experiment pair.
+    """
+    insufficient_support = "insufficient_support"
+    """
+    Too few observations for the declared native test.
+    """
+    insufficient_variance = "insufficient_variance"
+    """
+    Native dispersion is too small to estimate a test statistic.
+    """
+    condition_below_minimum_studies = "condition_below_minimum_studies"
+    """
+    A held-out condition has fewer studies than the frozen minimum.
+    """
+    shared_study_between_conditions = "shared_study_between_conditions"
+    """
+    Held-out conditions share studies contrary to the null's partition.
+    """
+    undefined_distance_in_null = "undefined_distance_in_null"
+    """
+    At least one null draw has an undefined distance.
+    """
+    all_sets_empty = "all_sets_empty"
+    """
+    All condition taxon sets are empty for the selected annotation.
+    """
+    pool_too_small = "pool_too_small"
+    """
+    The sampling pool cannot satisfy the declared null draw.
+    """
+    no_units = "no_units"
+    """
+    A held-out condition has no eligible stool-decreased signatures.
+    """
+
 
 
 class MultipleTestingPolicy(ConfiguredBaseModel):
@@ -333,6 +397,7 @@ class RawHypothesis(ConfiguredBaseModel):
     status: str = Field(default=..., title="Status", description="""Tested or explicitly untestable, never an inferred missing row.""", json_schema_extra = { "linkml_meta": {'domain_of': ['RawHypothesis']} })
     p_value: Optional[float] = Field(default=None, title="P value", description="""Finite probability for a tested member; undefined for an untestable member.""", ge=0, le=1, json_schema_extra = { "linkml_meta": {'domain_of': ['RawHypothesis']} })
     reason: Optional[str] = Field(default=None, title="Reason", description="""Nonempty explanation required only for an untestable member.""", json_schema_extra = { "linkml_meta": {'domain_of': ['RawHypothesis']} })
+    reason_vocabulary: ReasonVocabulary = Field(default=ReasonVocabulary.legacy_free_text_v1, title="Reason vocabulary", description="""Missing fields preserve legacy caller semantics. analysis_reason_v1 requires exact AnalysisReasonV1 membership in the shared runtime validator; tested records require no reason under either vocabulary.""", json_schema_extra = { "linkml_meta": {'domain_of': ['RawHypothesis'], 'ifabsent': 'string(legacy_free_text_v1)'} })
 
     @field_validator('status')
     def pattern_status(cls, v):
@@ -365,6 +430,7 @@ class AdjustedHypothesis(RawHypothesis):
     status: str = Field(default=..., title="Status", description="""Tested or explicitly untestable, never an inferred missing row.""", json_schema_extra = { "linkml_meta": {'domain_of': ['RawHypothesis']} })
     p_value: Optional[float] = Field(default=None, title="P value", description="""Finite probability for a tested member; undefined for an untestable member.""", ge=0, le=1, json_schema_extra = { "linkml_meta": {'domain_of': ['RawHypothesis']} })
     reason: Optional[str] = Field(default=None, title="Reason", description="""Nonempty explanation required only for an untestable member.""", json_schema_extra = { "linkml_meta": {'domain_of': ['RawHypothesis']} })
+    reason_vocabulary: ReasonVocabulary = Field(default=ReasonVocabulary.legacy_free_text_v1, title="Reason vocabulary", description="""Missing fields preserve legacy caller semantics. analysis_reason_v1 requires exact AnalysisReasonV1 membership in the shared runtime validator; tested records require no reason under either vocabulary.""", json_schema_extra = { "linkml_meta": {'domain_of': ['RawHypothesis'], 'ifabsent': 'string(legacy_free_text_v1)'} })
 
     @field_validator('status')
     def pattern_status(cls, v):
@@ -585,7 +651,7 @@ class PostArmMultiplicityRun(ConfiguredBaseModel):
 
     @field_validator('version')
     def pattern_version(cls, v):
-        pattern=re.compile(r"^1\.1\.0$")
+        pattern=re.compile(r"^1\.2\.0$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.match(element):

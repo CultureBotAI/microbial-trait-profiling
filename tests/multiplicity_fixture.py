@@ -24,6 +24,7 @@ from mtp.datamodel.workflow_pydantic import (
     StorageKind,
     WorkflowRun,
 )
+from mtp.enrichment_stats import benjamini_hochberg
 from mtp.multiplicity import native, sources, stage
 from mtp.multiplicity.sources import VerifiedSources
 from mtp.paths import file_sha256
@@ -213,6 +214,14 @@ def fixture_sources(
             for row in records
             for feature in features
         ]
+        # Preserve the native kernel's exact floating-point export, even when
+        # a constant family differs from its common p by one representable step.
+        for record, adjusted in zip(
+            ora_records,
+            benjamini_hochberg([float(row["p_value"]) for row in ora_records]),
+            strict=True,
+        ):
+            record["fdr_q"] = adjusted
         write_table(
             ilyas_dir / f"trait_{prefix}_all_results.tsv",
             ora_records,

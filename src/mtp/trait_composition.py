@@ -88,6 +88,67 @@ class LogRatioResult:
     family_size: int
 
 
+@dataclass(frozen=True)
+class LogRatioSupport:
+    """Ledger-derived support and sign state, without evaluating a probability."""
+
+    studies_total: int
+    studies_eligible: int
+    studies_excluded: int
+    studies_partially_observed: int
+    studies_up: int
+    studies_down: int
+    studies_tied: int
+    studies_scored: int
+    paired_experiments: int
+    eligible_experiments: int
+    excluded_zero_experiments: int
+    status: str
+
+
+def log_ratio_support(studies: Sequence[StudyLogRatio]) -> LogRatioSupport:
+    """Summarize the same eligible study means used by the native sign test."""
+    if not studies or len({row.study_id for row in studies}) != len(studies):
+        raise ValueError("Ratio ledger needs distinct, nonempty study membership")
+    if len({(row.numerator, row.reference) for row in studies}) != 1:
+        raise ValueError("Ratio ledger mixes hypotheses")
+    for row in studies:
+        if (
+            row.paired_experiments < 1
+            or row.eligible_experiments < 0
+            or row.excluded_zero_experiments < 0
+            or row.eligible_experiments + row.excluded_zero_experiments != row.paired_experiments
+            or (row.mean_log2_ratio_change is None) != (row.eligible_experiments == 0)
+            or (
+                row.mean_log2_ratio_change is not None
+                and not math.isfinite(row.mean_log2_ratio_change)
+            )
+        ):
+            raise ValueError("Ratio ledger mean and experiment eligibility disagree")
+    values = [
+        row.mean_log2_ratio_change for row in studies if row.mean_log2_ratio_change is not None
+    ]
+    up = sum(value > LOG_RATIO_TIE_TOLERANCE for value in values)
+    down = sum(value < -LOG_RATIO_TIE_TOLERANCE for value in values)
+    scored = up + down
+    return LogRatioSupport(
+        studies_total=len(studies),
+        studies_eligible=len(values),
+        studies_excluded=len(studies) - len(values),
+        studies_partially_observed=sum(
+            0 < row.eligible_experiments < row.paired_experiments for row in studies
+        ),
+        studies_up=up,
+        studies_down=down,
+        studies_tied=len(values) - scored,
+        studies_scored=scored,
+        paired_experiments=sum(row.paired_experiments for row in studies),
+        eligible_experiments=sum(row.eligible_experiments for row in studies),
+        excluded_zero_experiments=sum(row.excluded_zero_experiments for row in studies),
+        status="tested" if scored else "all_tied" if values else "no_positive_pairs",
+    )
+
+
 def _matched_profiles(
     profiles: Sequence[Profile], traits: Sequence[str]
 ) -> list[tuple[Profile, Profile]]:
@@ -117,10 +178,9 @@ def _matched_profiles(
 
 
 def _summarize(studies: list[StudyLogRatio]) -> LogRatioSummary:
+    support = log_ratio_support(studies)
     values = [s.mean_log2_ratio_change for s in studies if s.mean_log2_ratio_change is not None]
-    up = sum(v > LOG_RATIO_TIE_TOLERANCE for v in values)
-    down = sum(v < -LOG_RATIO_TIE_TOLERANCE for v in values)
-    scored = up + down
+    up, scored = support.studies_up, support.studies_scored
     share: float | None = None
     low: float | None = None
     high: float | None = None
@@ -134,24 +194,11 @@ def _summarize(studies: list[StudyLogRatio]) -> LogRatioSummary:
             float(interval.high),
             float(test.pvalue),
         )
-    status = "tested" if scored else "all_tied" if values else "no_positive_pairs"
     first = studies[0]
     return LogRatioSummary(
         numerator=first.numerator,
         reference=first.reference,
-        studies_total=len(studies),
-        studies_eligible=len(values),
-        studies_excluded=len(studies) - len(values),
-        studies_partially_observed=sum(
-            0 < s.eligible_experiments < s.paired_experiments for s in studies
-        ),
-        studies_up=up,
-        studies_down=down,
-        studies_tied=len(values) - scored,
-        studies_scored=scored,
-        paired_experiments=sum(s.paired_experiments for s in studies),
-        eligible_experiments=sum(s.eligible_experiments for s in studies),
-        excluded_zero_experiments=sum(s.excluded_zero_experiments for s in studies),
+        **asdict(support),
         mean_log2_ratio_change=fmean(values) if values else None,
         median_log2_ratio_change=median(values) if values else None,
         share_ratio_up=share,
@@ -159,7 +206,6 @@ def _summarize(studies: list[StudyLogRatio]) -> LogRatioSummary:
         share_ci_high=high,
         sign_p=p_value,
         by_q=None,
-        status=status,
     )
 
 

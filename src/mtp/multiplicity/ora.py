@@ -4,15 +4,22 @@ from __future__ import annotations
 
 import json
 import math
+import sqlite3
+import tempfile
 from collections.abc import Iterator
+from contextlib import closing
 from pathlib import Path
+
+import numpy as np
 
 from mtp.count_input import taxa_trait_count_reader
 from mtp.datamodel.multiple_testing_pydantic import (
     HypothesisCoordinates,
     HypothesisDefinition,
     RawHypothesis,
+    ReasonVocabulary,
 )
+from mtp.enrichment_stats import benjamini_hochberg
 from mtp.integrated_evidence import ora_testable_profile_keys
 from mtp.multiple_testing import canonical_sha256
 from mtp.multiplicity.families import (
@@ -45,6 +52,71 @@ def ora_comments(path: Path) -> dict[str, str]:
                     raise ValueError("Duplicate ORA metadata")
                 comments[key.strip()] = value.strip()
     return comments
+
+
+def native_bh_rows(
+    path: Path,
+    *,
+    expected_sha256: str | None,
+    profile_keys: set[tuple[str, str, str]],
+    features: set[str],
+) -> Iterator[dict[str, str]]:
+    """Check one complete native tail on disk before yielding its original rows.
+
+    Unique declared profile/feature coordinates plus the exact Cartesian size
+    establish membership. Only numeric correction arrays reside in memory;
+    source rows stay in SQLite and are never reread after their stream hash is
+    checked. Native probabilities are compared, never substituted.
+    """
+    expected_count = len(profile_keys) * len(features)
+    with (
+        tempfile.TemporaryDirectory(prefix="mtp-native-ora-") as scratch,
+        closing(sqlite3.connect(Path(scratch) / "native.sqlite")) as db,
+        db,
+    ):
+        db.execute(
+            "CREATE TABLE native (ordinal INTEGER PRIMARY KEY, identity TEXT UNIQUE NOT NULL, "
+            "record TEXT NOT NULL, p REAL NOT NULL, q REAL NOT NULL)"
+        )
+        count = 0
+        for row in rows(path, expected_sha256):
+            key = (row["study_id"], row["experiment_id"], row["inc_dec"])
+            if key not in profile_keys or row["trait"] not in features:
+                raise ValueError("ORA native BH family has an undeclared coordinate")
+            p, q = probability(row["p_value"]), probability(row["fdr_q"])
+            if p is None or q is None:
+                raise ValueError("ORA testable member lacks raw or adjusted probability")
+            try:
+                db.execute(
+                    "INSERT INTO native VALUES (?, ?, ?, ?, ?)",
+                    (
+                        count,
+                        json.dumps([*key, row["trait"]], separators=(",", ":")),
+                        json.dumps(row, ensure_ascii=False, separators=(",", ":")),
+                        p,
+                        q,
+                    ),
+                )
+            except sqlite3.IntegrityError as error:
+                raise ValueError("ORA native BH family has duplicate coordinates") from error
+            count += 1
+        if count != expected_count:
+            raise ValueError("ORA all-results export is truncated or has unexpected members")
+        if count:
+            p_values = np.fromiter(
+                (entry[0] for entry in db.execute("SELECT p FROM native ORDER BY ordinal")),
+                dtype=float,
+                count=count,
+            )
+            adjusted = benjamini_hochberg(p_values, family_size=count)
+            for (exported,), expected in zip(
+                db.execute("SELECT q FROM native ORDER BY ordinal"), adjusted, strict=True
+            ):
+                if exported != expected:
+                    raise ValueError("ORA native per-tail BH disagrees with complete raw-p family")
+            del p_values, adjusted
+        for (record,) in db.execute("SELECT record FROM native ORDER BY ordinal"):
+            yield json.loads(record)
 
 
 def ora_family(sources: VerifiedSources) -> FamilyInput:
@@ -134,7 +206,12 @@ def ora_family(sources: VerifiedSources) -> FamilyInput:
     def observations() -> Iterator[NativeObservation]:
         for tail, path in exports.items():
             count = 0
-            for row in rows(path, sources.expected_digest(path)):
+            for row in native_bh_rows(
+                path,
+                expected_sha256=sources.expected_digest(path),
+                profile_keys=set(keys),
+                features=candidate_set,
+            ):
                 count += 1
                 feature = row["trait"]
                 require_fields(
@@ -160,7 +237,10 @@ def ora_family(sources: VerifiedSources) -> FamilyInput:
                     raise ValueError("ORA native hit flag disagrees with q/effect thresholds")
                 yield NativeObservation(
                     RawHypothesis(
-                        hypothesis_id=ora_identity(key, feature, tail), status="tested", p_value=p
+                        hypothesis_id=ora_identity(key, feature, tail),
+                        status="tested",
+                        p_value=p,
+                        reason_vocabulary=ReasonVocabulary.analysis_reason_v1,
                     ),
                     q,
                     "BH",

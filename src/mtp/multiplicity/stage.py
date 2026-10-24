@@ -279,7 +279,7 @@ def run_post_arm(
     if load_policy() != policy:
         raise ValueError("Multiplicity policy changed during execution")
     record = PostArmMultiplicityRun(
-        version="1.1.0",
+        version="1.2.0",
         recorded_at=instant,
         comparison_manifest_path=sources.comparison.manifest_path,
         comparison_manifest_sha256=comparison_digest,
@@ -306,7 +306,7 @@ def verify_post_arm(path: Path) -> PostArmMultiplicityRun:
     manifest = path / "multiplicity_run.json" if path.is_dir() else path
     root = manifest.parent.resolve()
     record = PostArmMultiplicityRun.model_validate_json(manifest.read_text(encoding="utf-8"))
-    if record.version != "1.1.0" or record.policy != load_policy():
+    if record.version != "1.2.0" or record.policy != load_policy():
         raise ValueError("Unsupported multiplicity policy or stage version")
     artifacts = [
         *record.reports,
