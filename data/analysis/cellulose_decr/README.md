@@ -415,9 +415,9 @@ A separate analysis points the same way:
 `data/derived/contrast_orientation/disease_control_comparison.tsv` pools all
 conditions and is not an input to this analysis. In it, the decreased signature
 has the larger cellulose annotation share in 432 of 763 untied studies, with 160
-tied (p = 2.9e-4). That file is an untracked output, which `just
-contrast-orientation` regenerates; these values are from the final rerun's copy
-(manifest `3532cb5d…`).
+tied (p = 2.9e-4). That file is an untracked output, which
+`just contrast-orientation` regenerates; these values are from the final rerun's
+copy (manifest `3532cb5d…`).
 The pooling takes the historical human paired population, which does not depend
 on the contrast classifier. The oriented disease-versus-healthy subset of that
 file does depend on the classifier version, so it is not quoted here.
