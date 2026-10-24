@@ -3185,7 +3185,7 @@ def test_plate6_new_diagnosis_categories_map_to_distinct_labels_and_remedy_claus
         text = plates.plate6_text(rank_rows, [row])
         assert expected_clause in text["subtitle"]
         assert expected_clause in text["panel_b_title"]
-        mp1 = plates.methods_plate1_coverage_labels(rank_rows, [row])
+        mp1 = plates.methods_plate1_coverage_labels(rank_rows, [row], retained_profiles=5629)
         assert f": {expected_mp1_cause};" in mp1["species_gap_note"]
 
     # A 2-occurrence unresolved-label species plus a 1-occurrence rare isolate ranks unresolved
@@ -3214,7 +3214,9 @@ def test_plate6_new_diagnosis_categories_map_to_distinct_labels_and_remedy_claus
             "suggested_remediation": "Curate in BacDive / KG-Microbe",
         },
     ]
-    mixed_mp1 = plates.methods_plate1_coverage_labels(rank_rows, mixed_species_rows)
+    mixed_mp1 = plates.methods_plate1_coverage_labels(
+        rank_rows, mixed_species_rows, retained_profiles=5629
+    )
     assert ": unresolved taxon labels & rare/novel isolates;" in mixed_mp1["species_gap_note"]
 
     # Unknown category in methods_plate1_coverage_labels raises ValueError (#1034):
@@ -3222,6 +3224,7 @@ def test_plate6_new_diagnosis_categories_map_to_distinct_labels_and_remedy_claus
         plates.methods_plate1_coverage_labels(
             rank_rows,
             [{**mixed_species_rows[0], "diagnosis_category": "Unknown Future Category"}],
+            retained_profiles=5629,
         )
 
     # Non-plant eukaryotes (Blastocystis, Trichomonas, Homo sapiens, Candida) use a
