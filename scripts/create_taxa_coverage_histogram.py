@@ -145,10 +145,17 @@ class CoverageTaxonomy:
         self.nodes: set[str] = set()
         self.audit: dict[str, object] = {}
         accepted = 0
+        rank_class_records = 0
         for row in iter_kg_edges(path, self.audit):
             if row["predicate"] != "biolink:subclass_of":
                 continue
             subject, parent = row["subject"], row["object"]
+            # These are ontology rank classes, not organism ancestry (#1008).
+            if parent == "OBO:NCBITaxon#_taxonomic_rank" and re.fullmatch(
+                r"NCBITaxon:[A-Za-z_][A-Za-z0-9_]*", subject
+            ):
+                rank_class_records += 1
+                continue
             for identifier in (subject, parent):
                 if identifier.startswith("NCBITaxon:") and not re.fullmatch(
                     r"NCBITaxon:[1-9][0-9]*", identifier
@@ -165,6 +172,7 @@ class CoverageTaxonomy:
             raise ValueError("Taxonomy input has no NCBITaxon subclass_of edges")
         self.audit.update(
             taxonomy_edge_records=accepted,
+            taxonomy_rank_class_edge_records_skipped=rank_class_records,
             unique_taxonomy_edges=sum(len(values) for values in parents.values()),
             taxonomy_node_count=len(self.nodes),
         )
@@ -2411,6 +2419,8 @@ def write_readme(
             "matrix's producing KG is not verified. The top-zero table records taxonomy_group,",
             "taxonomy_status and JSON taxonomy_root_ids. Missing paths are explicit; conflicting",
             "recognized roots or reachable cycles reject the run before outputs are written.",
+            "Ontology rank-class edges are excluded from organism ancestry and counted in",
+            "the provenance audit as taxonomy_rank_class_edge_records_skipped.",
             "Explicit unresolved labels and slash composites retain their distinct diagnoses.",
             "Eukaryotic and viral ancestry precedes Candidatus/cultivation heuristics;",
             "alias suggestions do not transfer ancestry or traits.",

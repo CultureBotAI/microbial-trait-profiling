@@ -289,11 +289,68 @@ def test_strict_parser_preserves_known_export_repairs_and_deduplicates_edges(
     assert taxonomy.audit["unique_taxonomy_edges"] == 1
 
 
+@pytest.mark.parametrize("rank_records", [1, 2])
+def test_rank_class_export_records_are_counted_without_becoming_taxa(
+    tmp_path: Path, rank_records: int
+) -> None:
+    # The record line (including empty trailing fields) is copied verbatim from
+    # KG-Microbe 20260120, edges MD5 555ecf5ba5d89288cdc44e368375374f (#1008).
+    # The native header also retains its duplicate agent field and embedded CR.
+    fixture = Path(__file__).parent / "fixtures/coverage/taxonomy_rank_class.tsv"
+    header, rank_line = fixture.read_bytes().split(b"\n", 1)
+    edges = tmp_path / "rank-and-taxon.tsv"
+    edges.write_bytes(
+        header
+        + b"\n"
+        + rank_line * rank_records
+        + b"taxon\tNCBITaxon:91626\tbiolink:subclass_of\tNCBITaxon:2759"
+        b"\t\t\t\t\t\t\t\n"
+    )
+
+    taxonomy = coverage.CoverageTaxonomy(edges)
+
+    assert taxonomy.classify("NCBITaxon:91626").group == "eukaryota"
+    assert taxonomy.nodes == {"NCBITaxon:91626", "NCBITaxon:2759"}
+    assert taxonomy.audit["records"] == rank_records + 1
+    assert taxonomy.audit["header_continuations_reconstructed"] == 1
+    assert taxonomy.audit["duplicate_agent_fields_preserved"] == 1
+    assert taxonomy.audit["taxonomy_rank_class_edge_records_skipped"] == rank_records
+    assert taxonomy.audit["taxonomy_edge_records"] == 1
+    assert taxonomy.audit["unique_taxonomy_edges"] == 1
+
+
+def test_rank_class_skip_count_is_emitted_in_coverage_provenance(
+    taxonomic_inputs: dict[str, Path], tmp_path: Path
+) -> None:
+    fixture = Path(__file__).parent / "fixtures/coverage/taxonomy_rank_class.tsv"
+    edges = tmp_path / "taxonomy.tsv"
+    edges.write_bytes(
+        fixture.read_bytes() + b"taxon\tNCBITaxon:91626\tbiolink:subclass_of\tNCBITaxon:2759"
+        b"\t\t\t\t\t\t\t\n"
+    )
+    output = tmp_path / "coverage"
+    coverage.run_coverage(
+        output_dir=output,
+        strain_rollup="off",
+        tables_only=True,
+        taxonomy_edges=edges,
+        **taxonomic_inputs,
+    )
+
+    provenance = json.loads((output / "provenance.json").read_text())
+    audit = provenance["taxonomy_diagnosis"]["parser_audit"]
+    assert audit["taxonomy_rank_class_edge_records_skipped"] == 1
+    assert audit["records"] == 2
+    assert audit["taxonomy_edge_records"] == 1
+
+
 @pytest.mark.parametrize(
     "content",
     [
         "subject\tpredicate\tobject\nNCBITaxon:10\tbiolink:subclass_of\tNCBITaxon:2\n",
         "id\tsubject\tpredicate\tobject\ne1\tNCBITaxon:nope\tbiolink:subclass_of\tNCBITaxon:2\n",
+        "id\tsubject\tpredicate\tobject\ne1\tNCBITaxon:biotype\tbiolink:subclass_of\tOBO:NCBITaxon#_taxonomic_rank_extra\n",
+        "id\tsubject\tpredicate\tobject\ne1\tNCBITaxon:10\tbiolink:subclass_of\tNCBITaxon:biotype\n",
         "id\tsubject\tpredicate\tobject\ne1\tNCBITaxon:10\tbiolink:subclass_of\n",
         "id\tsubject\tpredicate\tobject\ne1\tNCBITaxon:10\tbiolink:capable_of\tNCBITaxon:2\n",
     ],
