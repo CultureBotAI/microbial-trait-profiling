@@ -640,14 +640,23 @@ pairs, nonhuman hosts, malformed counts, stale collections, changed inputs,
 failed publication and consumer incompatibility.
 
 The guild and Table 1 layout regressions render synthetic PNGs through Kaleido
-and measure subtitle/header ink clearance. Their regression bounds are specific
-to the single-condition fixtures: 30 layout pixels for the guild fixtures and
+and measure subtitle/header ink clearance. Each fixture asserts at least eight
+distinct condition rows, avoiding Plotly's minimum plot-height behavior in a
+one-row diagnostic. Their regression bounds are specific to these fixtures:
+30 layout pixels for the guild fixtures and
 70 for the Table 1 fixtures. The Table 1 fixture's single-line `Feces` header
 accounts for its larger measured gap; the guild header wraps onto two lines.
 The 70-pixel bound is tied to that site-name geometry. Adding a two-line note
 within one entry may change clearance by at most 4 layout pixels. These bounds
 are independent of the renderer's margin constants. This checks vertical
-spacing, not overall figure design. It requires local Chrome/Chromium, available
+spacing, not overall figure design. Diagnostic recoloring includes both the
+main title and Plotly's native `title.subtitle`, with a rendered two-line native
+subtitle control. The retained `issue839_probe_guild_layout_mutants.py` records
+each parameterized case separately: only call-phase failures of the named
+clearance assertions count as detected mutations. Crashes, unrelated assertions,
+setup/collection errors and missing cases invalidate the probe. Its inner pytest
+runs disable the cache provider so deliberate failures do not change `--lf` or
+`--ff` selections. It requires local Chrome/Chromium, available
 through `just get-chrome` if needed; it does not read production analysis tables.
 
 Change schema first, regenerate with `just gen-pydantic`, update the executable
