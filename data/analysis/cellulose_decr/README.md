@@ -44,7 +44,10 @@ had not been updated since. Among them, the PD disease-vs-healthy study-level ro
 has had q = 0.054 since #767; this README quoted 0.037 from the tables before it
 (section 4).
 
-The numbers in the dated sections below record each change as it was made.
+`scripts/adhoc/recount_cellulose_readme_numbers_799.py` recomputes each number this
+refresh changed and checks that this README, `SIGNIFICANT_RESULTS_SUMMARY.md` and
+`FOUR_HIGHLIGHTED_PAIRS_LITERATURE_SUPPORT.md` quote it. The numbers in the dated
+sections below record each change as it was made.
 
 ## What changed on 2026-10-22 (#781)
 
