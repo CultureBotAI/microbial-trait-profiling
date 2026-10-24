@@ -516,9 +516,12 @@ The number and names of emitted site tables depend on eligibility. The manifest
 is authoritative for the site groups in this invocation; the JSON also inventories
 both refreshed pooled aliases. Existing historical statistics tables outside the
 emitted output set, the condition and body-site summaries, and the infographic PNG
-are listed with hashes under `not_regenerated` in the JSON. These pooled summaries
-and figure are not refreshed by the site-statistics step. They remain historical
-and must not be cited as fresh results. The rerun PR must either regenerate each
+are listed with hashes under `not_regenerated` in the JSON. Schema version 1.2
+distinguishes `existing_stratum_table_not_refreshed` from
+`not_produced_by_site_stats_mode` (the summaries and figure). These files are not
+covered by this record; their freshness depends on their own producing execution.
+In particular, running full mode immediately before this step can produce fresh
+summaries and a figure. The rerun PR must either regenerate each
 intended table or figure or list these omissions explicitly; this implementation
 PR does not regenerate tracked data.
 The full infographic mode and pooled-only mode remove any previous site-stat

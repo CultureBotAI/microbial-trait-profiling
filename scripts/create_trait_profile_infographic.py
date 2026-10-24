@@ -1031,7 +1031,7 @@ def write_legacy_stratified_stats(
         }
 
     record = {
-        "schema_version": "1.1",
+        "schema_version": "1.2",
         "analysis": "legacy_native_pooled_and_body_site_group_composition",
         "verification_status": "legacy_inputs_hashed_not_core_verified",
         "created_at": datetime.now(UTC).isoformat(),
@@ -1052,7 +1052,14 @@ def write_legacy_stratified_stats(
         "pair_denominator_audit": audit,
         "outputs": [inventory(path) for path in outputs],
         "not_regenerated": [
-            {**inventory(path), "reason": "not refreshed by pooled/site statistics mode"}
+            {
+                **inventory(path),
+                "reason": (
+                    "not_produced_by_site_stats_mode"
+                    if path in pooled_summaries_and_figure
+                    else "existing_stratum_table_not_refreshed"
+                ),
+            }
             for path in sorted(previous_outputs - set(outputs))
         ],
     }
