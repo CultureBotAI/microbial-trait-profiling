@@ -17,7 +17,7 @@ This records the final rerun before the NCASM talk: the runs made, the commit an
 
 ## Verified core-bound runs
 
-Each completed unit ran these steps, and every step exited 0. The full corpus × off unit is still running; its rows below say so.
+Each of the four units ran these steps, and every step exited 0. The last, full corpus × off, finished at 18:49 PDT.
 1. `just rerun-core`;
 2. the three arms (ilyas, jed, noel) in parallel;
 3. `just rerun-verify` on each arm;
@@ -31,7 +31,7 @@ Beyond the exit codes, the side effects were checked: the core's profile, experi
 | Tier 1+2 × off (the talk's primary unit; canary) | `disease_vs_healthy_tier1_2_subject_controls` | off | 1,870 | 935 | 548 | 317 |
 | Tier 1+2 × phenotype | `disease_vs_healthy_tier1_2_subject_controls` | phenotype | 1,870 | 935 | 548 | 344 |
 | Full corpus × phenotype | `all_paired` | phenotype | 7,111 | 4,299 | 1,212 | 344 |
-| Full corpus × off (still running) | `all_paired` | off | pending | pending | pending | pending |
+| Full corpus × off | `all_paired` | off | 7,111 | 4,299 | 1,212 | 317 |
 
 Notes on the counts:
 - **What is counted:** the profiles, experiments and studies represented in each core's count-profile product. A profile merges one experiment's signatures in one direction, increased or decreased.
@@ -44,9 +44,9 @@ Notes on the counts:
 | Tier 1+2 × off | `run-09f23bbe33cb42988413bec7caae8623` | `arm-edf15610afce44e3a6e593b6d541c90d`, `arm-114909a09cee4a7095a78afc1aad219b`, `arm-2afce27ed61c4814b737984dd5b93aa8` | `comparison-disease_vs_healthy_tier1_2_subject_controls-f68bdcc0405d` |
 | Tier 1+2 × phenotype | `run-ec26436944744c4cbb7f653c16a19287` | `arm-16d11bd4c4b2464daf07bfe6c75ab783`, `arm-1e5709177a3c4dd2940b709176267748`, `arm-b3a766ad095147c0b6c837411096cd3d` | `comparison-disease_vs_healthy_tier1_2_subject_controls-4e1ff7b17579` |
 | Full corpus × phenotype | `run-bae7645a0d1243b6aa1da31228f5f014` | `arm-3b3cf87b84464be38712b28bc5ca5c6f`, `arm-27edba337abb4c60917b896bd2ca92b1`, `arm-7ffddf6556d04acfbe43709da6a0f624` | `comparison-all_paired-09666a6843f5` |
-| Full corpus × off | `run-a7cf841adbc34221a5673b75f6e2ec3f` | pending | pending |
+| Full corpus × off | `run-a7cf841adbc34221a5673b75f6e2ec3f` | `arm-c458ef1659354ad88d66deb458c91d87`, `arm-8f6a921d76b646c9a59e1bf9026a1715`, `arm-c01764d0e9184cfab3970ba1a112a2e2` | `comparison-all_paired-79968d18fa2e` |
 
-**Calibration verdicts.** The verified units report the same two verdicts:
+**Calibration verdicts.** All four units report the same two verdicts:
 - `noel_table1_six_trait_sign_test_v1`: partially calibrated. The null-control criterion passed. Power was reported (its `power_reported` criterion passed), but no target-power criterion was declared, so the comparison does not certify power. The verdict also records two things: the six Table 1 traits were selected on this corpus before testing, so their p-values are exploratory; and the select-then-test negative control fails, as the protocol declares it will.
 - `jed_log_ratio_vs_transformed_t_calibration`: different estimator, uncalibrated.
 
