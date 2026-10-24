@@ -101,6 +101,11 @@ core-composition run output:
 trait-profile-site-stats *ARGS:
 	uv run python scripts/create_trait_profile_infographic.py --stratified-stats-only "$@"
 
+# Synthetic argument-guard probe using a copied producer (#950).
+[positional-arguments]
+probe-site-stats-guard *ARGS:
+	uv run python scripts/adhoc/issue928_guard_isolation.py "$@"
+
 # Complete exports carry the verified input fingerprints needed for integration.
 [positional-arguments]
 core-ora run output tail="upper":
