@@ -1,6 +1,7 @@
 """Independent weakening-guard regressions for additive multiplicity (#974)."""
 
 import json
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -14,7 +15,7 @@ from mtp.multiplicity.families import FamilyInput, NativeObservation, rows, vali
 from mtp.multiplicity.inventory import correct_inventory
 from mtp.multiplicity.sources import recorded_arm_output
 from mtp.paths import file_sha256
-from multiplicity_fixture import fixture_sources, write_table
+from multiplicity_fixture import file_snapshot, fixture_sources, write_table
 from test_multiple_testing import family, raw
 
 
@@ -172,6 +173,86 @@ def test_non_rows_recorded_hash_checks(
     assert not (output / "multiplicity_run.json").exists()
     if checkpoint == "metadata":
         assert not output.exists()
+
+
+@pytest.mark.parametrize(
+    ("bound", "path_kind"),
+    [
+        pytest.param(False, "known", id="empty-known"),
+        pytest.param(False, "unrecorded", id="empty-unrecorded"),
+        pytest.param(True, "known", id="bound-known"),
+        pytest.param(True, "alias", id="bound-alias"),
+        pytest.param(True, "unrecorded", id="bound-unrecorded"),
+    ],
+)
+def test_expected_digest_requires_recorded_path(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, bound: bool, path_kind: str
+) -> None:
+    sources = fixture_sources(tmp_path / "inputs", monkeypatch)
+    known = recorded_arm_output(
+        sources.arms["noel"], "directional_screen", "trait_screen_provenance.json"
+    )
+    digest = file_sha256(known)
+    sources = replace(sources, recorded_hashes={known.resolve(): digest} if bound else {})
+    path = known
+    if path_kind == "alias":
+        directory = known.parent / "existing-alias-directory"
+        directory.mkdir()
+        path = directory / ".." / known.name
+        assert path.resolve() == known.resolve()
+    elif path_kind == "unrecorded":
+        path = known.with_name("unrecorded-provenance.json")
+        # Even identical bytes cannot register a new source path implicitly.
+        path.write_bytes(known.read_bytes())
+        assert path.is_file()
+        assert file_sha256(path) == digest
+    if bound and path_kind == "unrecorded":
+        with pytest.raises(ValueError, match="Source lacks an upstream recorded hash"):
+            sources.expected_digest(path)
+    else:
+        assert sources.expected_digest(path) == (digest if bound else None)
+
+
+@pytest.mark.parametrize(
+    ("alias", "conflicting"),
+    [
+        pytest.param(False, False, id="identical-direct"),
+        pytest.param(True, False, id="identical-alias"),
+        pytest.param(False, True, id="conflicting-direct"),
+        pytest.param(True, True, id="conflicting-alias"),
+    ],
+)
+def test_duplicate_recorded_hashes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, alias: bool, conflicting: bool
+) -> None:
+    sources = fixture_sources(tmp_path / "inputs", monkeypatch)
+    known = recorded_arm_output(
+        sources.arms["noel"], "directional_screen", "trait_screen_provenance.json"
+    )
+    comparison_digest = file_sha256(Path(sources.comparison.manifest_path))
+    baseline = source_module.bind_recorded_hashes(sources, comparison_digest)
+    path = known
+    if alias:
+        directory = known.parent / "existing-alias-directory"
+        directory.mkdir()
+        path = directory / ".." / known.name
+        assert path.resolve() == known.resolve()
+    snapshot = file_snapshot(known)
+    digest = snapshot.sha256
+    if conflicting:
+        digest = ("0" if digest[0] != "0" else "1") + digest[1:]
+    duplicate = snapshot.model_copy(update={"path": str(path), "sha256": digest})
+    arm = sources.arms["noel"].model_copy(deep=True)
+    assert arm.steps
+    arm.steps[0].outputs = [*(arm.steps[0].outputs or []), duplicate]
+    changed = replace(sources, arms={**sources.arms, "noel": arm})
+    if conflicting:
+        with pytest.raises(ValueError, match="Source has conflicting upstream recorded hashes"):
+            source_module.bind_recorded_hashes(changed, comparison_digest)
+    else:
+        rebound = source_module.bind_recorded_hashes(changed, comparison_digest)
+        assert rebound.recorded_hashes == baseline.recorded_hashes
+        assert rebound.expected_digest(known) == file_sha256(known)
 
 
 def test_sign_eligible_count_reconciles_with_tallies() -> None:

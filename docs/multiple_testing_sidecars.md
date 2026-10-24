@@ -223,6 +223,8 @@ git merge origin/main
 git merge-base --is-ancestor d8845cb HEAD
 git ls-files --error-unmatch src/mtp/multiplicity/sources.py \
   tests/test_multiplicity_regression_guards.py \
+  tests/test_multiplicity_basis_integration.py \
+  scripts/adhoc/issue974_probe_multiplicity_mutants.py \
   scripts/adhoc/issue979_probe_multiplicity_boundaries.py
 just test-multiplicity-adapters
 just precommit
@@ -233,3 +235,12 @@ just core-fixture
 The ancestry check applies to this author branch before its PR is merged, not to
 the owner's eventual squash commit on main. The explicit file checks ensure a
 missing test file is a failure rather than a smaller silently passing test suite.
+
+Direct recorded-source regressions also cover the strict binding boundary
+(#986). A nonempty binding rejects an unrecorded path even when its bytes match
+a known source; a known path's lexical alias resolves to the same digest. An
+empty binding remains available for standalone adapter probes. Repeated parent
+records for the same resolved path agree on their digest or fail: identical
+duplicates are accepted, conflicting ones are rejected. The retained #979/#986
+probe independently weakens both guards and requires their exact failing test
+nodes, with unchanged canonical source bytes and passing positive controls.
