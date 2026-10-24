@@ -1096,6 +1096,11 @@ clean-all: clean-raw clean-studies clean-derived clean-logs
 calibration-screen *ARGS:
 	uv run python -m mtp.screen_calibration --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" "$@"
 
+# Additive training/held-out study splits; native arm outputs remain unchanged (#854).
+[positional-arguments]
+selection-study-splits COMPARISON_RUN OUTPUT *ARGS:
+	uv run python -m mtp.cellulose_decr.study_split_run --comparison-run "$1" --output-dir "$2" "${@:3}"
+
 # Audit literal phenotype co-assertions for all strain scopes without rerunning arms (#846).
 [positional-arguments]
 audit-coassertions *ARGS:

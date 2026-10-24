@@ -99,6 +99,12 @@ eligible conditions and the top decreasing traits, with the rule fixed in
 [`cellulose_decr_selection_scan_protocol.json`](cellulose_decr_selection_scan_protocol.json)
 before any run on real data.
 
+[`study_split_selection.md`](study_split_selection.md) documents the additive
+whole-study training/held-out assessment of those exploratory selections. Its
+[`protocol`](study_split_selection_protocol.json) reserves both overlap statistics
+in a full BY/BH family per split, retains untestable and empty selections, and
+reports repeated-split stability descriptively rather than as independent replication.
+
 The selected-figure slide deck in `data/derived/figure_review_2026-09-21/` is built
 by `scripts/build_slide_deck.py` (`just figure-review-deck`), which places the
 methods and Tufte plates drawn by `scripts/generate_tufte_plates.py`
