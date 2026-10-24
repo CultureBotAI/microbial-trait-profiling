@@ -82,10 +82,10 @@ internally at p=1 but retain undefined exported p/q values. Other traits' origin
 p-values are never held fixed. Tied study means have absolute value at most
 1e-12 and do not enter the sign-test denominator.
 
-The sidecar's `influence_extension_summary.md` includes the verified same-core Noel baseline
+The sidecar's `influence_extension_summary.md` includes the verified same-core Noel report
 when `--noel-run` is supplied, followed by the full additional lineage list and
 the six-fraction LOSO ranges. The source report is not edited. Omitting the Noel
-manifest leaves an explicit missing-baseline notice in that combined report.
+manifest leaves an explicit missing-report notice in that combined report.
 The declared
 `190-native-v2` panel, its native outputs and all three arm plans remain unchanged.
 `lineage_fraction_effects.tsv` compares the additional exclusions against the
@@ -100,6 +100,29 @@ descriptive ranges across the dependent study omissions. These conditional
 six-test adjusted values do not control selection of the six traits or searching
 across lineages, scopes and omissions. They supplement the full-family
 multiple-testing sidecar; they do not replace it.
+
+Effect-reduction ratios are undefined when the absolute before-effect is at most
+the shared `1e-12` tie tolerance, including floating-point cancellation residue.
+The effect itself is retained; this rule prevents an effectively zero denominator
+from becoming a huge percentage. Values outside that tolerance remain unclipped.
+
+Each fraction-effect row records JSON `lineage_accounting`: the graph presence,
+removed annotation mass and removed focal-trait mass for every declared lineage.
+These independent exclusions use the same eligible pre-exclusion profiles as the
+joint mass audit. Individual masses can overlap through shared descendants and
+must not be summed to recover the joint union, which remains deduplicated.
+`absent_from_graph` is distinct from `present_in_graph` with zero removed mass
+in a scope. Presence uses recorded nodes, annotation subjects and taxonomy edges;
+ancestor traversal's inclusion of the requested ID alone is not evidence of presence.
+The combined report displays the individual accounting alongside the union totals.
+
+`just probe-influence-extension-guards baseline OUTPUT` checks the relevant synthetic
+controls. Repeat with `loso_bh_by`, `total_matched_percent`, `fraction_as_percent`,
+`annotation_focal_mass`, `exact_zero_only`, `post_protocol_check`,
+`assumed_graph_presence` and `summed_union_mass`, each with a fresh output directory.
+The retained helper loads one isolated weakened module per process, requires the
+intended test assertion rather than a setup error, and records canonical source
+hashes before and after. These probes verify guards, not biological calibration.
 
 `just test-influence-extension` covers both unit and executed-core integration
 tests. Core consumption explicitly binds the reported-taxon table and both KG

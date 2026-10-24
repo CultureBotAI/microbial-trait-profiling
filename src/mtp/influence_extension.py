@@ -18,6 +18,7 @@ from mtp.contribution_inputs import Base, Graph, Key, encoded, load_base, load_g
 from mtp.paths import REPO_ROOT, file_sha256
 from mtp.taxon_contributions import Ledger, Record, reconcile, write_table
 from mtp.taxon_influence import (
+    TIE,
     adjust,
     comparison,
     describe,
@@ -47,7 +48,12 @@ PANEL_FIELDS = [
 ]
 FRACTION_FIELDS = ["trait_key", "family_size", *describe({}), "q_bh_six", "q_by_six"]
 BASELINE_FIELDS = ["baseline_effect", "baseline_q_bh_six", "baseline_q_by_six"]
-REMOVAL_FIELDS = ["removed_annotation_mass", "removed_trait_annotation_mass", "removal_status"]
+REMOVAL_FIELDS = [
+    "removed_annotation_mass",
+    "removed_trait_annotation_mass",
+    "removal_status",
+    "lineage_accounting",
+]
 REDUCTION_FIELDS = [
     f"{prefix}effect_reduction_{field}"
     for prefix in ("", "matched_")
@@ -277,6 +283,45 @@ def joint_removal(
     return remaining, ambiguous
 
 
+def _present_lineages(graph: Graph, wanted: set[str]) -> set[str]:
+    """Check actual node/edge inventories; ancestor self-inclusion is not presence."""
+    present = {
+        lineage
+        for lineage in wanted
+        if lineage in graph.names or lineage in graph.parents or lineage in graph.traits
+    }
+    if present != wanted:
+        for parents in graph.parents.values():
+            present.update(wanted.intersection(parents))
+            if present == wanted:
+                break
+    return present
+
+
+def _individual_lineage_mass(
+    base: Base,
+    graph: Graph,
+    ledger: Ledger,
+    keys: list[Key],
+    lineages: list[str],
+    remaining: dict[Key, dict[str, int]],
+) -> dict[str, Counter[str]]:
+    """Audit each exclusion independently on baseline support; overlaps may be counted twice."""
+    masses = {}
+    for lineage in lineages:
+        individual = remaining if len(lineages) == 1 else removal(base, graph, ledger, lineage)[0]
+        counts: Counter[str] = Counter()
+        for key in keys:
+            counts.update(
+                {
+                    trait: base.profiles[key][trait] - individual[key][trait]
+                    for trait in base.columns
+                }
+            )
+        masses[lineage] = counts
+    return masses
+
+
 def lineage_effects(
     base: Base,
     graph: Graph,
@@ -288,9 +333,13 @@ def lineage_effects(
 ) -> tuple[list[Record], list[Record]]:
     """Recompute denominator and eligibility; compare identical support separately."""
     scopes = {scope["id"]: scope for scope in protocol["scopes"]}
+    present = _present_lineages(
+        graph, {lineage for scenario in selected for lineage in json.loads(scenario["lineages"])}
+    )
     effects: list[Record] = []
     ambiguities: list[Record] = []
     for scenario in selected:
+        lineages = sorted(set(json.loads(scenario["lineages"])))
         keys = eligible_keys(base.profiles, scope_keys(base, scopes[scenario["scope"]]))
         if scenario["selection_kind"] == "declared_joint":
             remaining, ambiguous = joint_removal(
@@ -298,6 +347,7 @@ def lineage_effects(
             )
         else:
             remaining, _, ambiguous = removal(base, graph, ledger, scenario["lineage"])
+        individual_mass = _individual_lineage_mass(base, graph, ledger, keys, lineages, remaining)
         traits = _focal_traits(base)
         removed_total = 0
         removed_focal: Counter[str] = Counter()
@@ -356,6 +406,18 @@ def lineage_effects(
                     "removal_status": "removed_annotation_mass"
                     if removed_total
                     else "no_removed_annotation_mass",
+                    "lineage_accounting": encoded(
+                        {
+                            lineage: {
+                                "graph_status": "present_in_graph"
+                                if lineage in present
+                                else "absent_from_graph",
+                                "removed_annotation_mass": sum(counts.values()),
+                                "removed_trait_annotation_mass": counts[trait],
+                            }
+                            for lineage, counts in individual_mass.items()
+                        }
+                    ),
                     **effect_reduction(contrasts["before_effect"], contrasts["after_effect"]),
                     **effect_reduction(
                         contrasts["before_matched_effect"],
@@ -394,7 +456,7 @@ def effect_reduction(before: float | str, after: float | str, *, prefix: str = "
     fraction: float | str = ""
     if before == "":
         status = "no_before_effect"
-    elif float(before) == 0:
+    elif abs(float(before)) <= TIE:
         status = "zero_before_effect"
     elif after == "":
         status = "no_after_effect"
@@ -478,11 +540,11 @@ def combined_summary(
     summaries: list[Record],
     effects: list[Record] | None = None,
 ) -> str:
-    """Show baseline text and clearly separate the additive dependent diagnostics."""
+    """Show the native report and clearly separate the additive dependent diagnostics."""
     baseline = (
         native_text
         if native_text is not None
-        else ("Native baseline was not supplied. Pass --noel-run to include its verified report.\n")
+        else ("Native report was not supplied. Pass --noel-run to include its verified report.\n")
     )
     text = "# Native report and additive sensitivity\n\n"
     text += "The following text is copied from the verified native report when supplied. "
@@ -509,8 +571,9 @@ def combined_summary(
     text += "| Scope | Exclusion | Trait | Baseline shift | After shift | "
     text += "Matched shift change | Lost pairs | BH-six before / after | BY-six before / after | "
     text += "Removed annotation mass | Removed focal mass | Removal status | "
-    text += "Effect reduction (%) | Matched effect reduction (%) |\n"
-    text += "|---|---|---|---:|---:|---:|---:|---|---|---:|---:|---|---:|---:|\n"
+    text += "Effect reduction (%) | Matched effect reduction (%) | "
+    text += "Per-lineage mass (annotation / focal; graph status) |\n"
+    text += "|---|---|---|---:|---:|---:|---:|---|---|---:|---:|---|---:|---:|---|\n"
     for original in effects or []:
         row = _display_row(original)
         fields = (
@@ -528,6 +591,11 @@ def combined_summary(
             row["removal_status"],
             row["effect_reduction_percent"],
             row["matched_effect_reduction_percent"],
+            "; ".join(
+                f"{lineage}: {entry['removed_annotation_mass']} / "
+                f"{entry['removed_trait_annotation_mass']} ({entry['graph_status']})"
+                for lineage, entry in sorted(json.loads(row["lineage_accounting"]).items())
+            ),
         )
         text += "| " + " | ".join(str(value).replace("|", "\\|") for value in fields) + " |\n"
     text += "\nReduction is 100 times (1 - after / before), using full-data study-mean "
@@ -537,6 +605,10 @@ def combined_summary(
     text += "retained trait annotations over eligible pre-exclusion profiles, not cells or "
     text += "distinct taxa. Every retained feature is audited by direction in "
     text += "lineage_removed_annotation_mass.tsv.\n"
+    text += "Individual lineage masses may overlap and must not be summed to obtain the "
+    text += "joint union mass. Graph presence is separate from removed mass in this scope; "
+    text += "a present lineage can have no retained annotation mass here. "
+    text += "Before-effects within the 1e-12 tie tolerance have undefined reduction ratios.\n"
     text += "\n## Six-fraction study omissions\n\n"
     text += "| Scope | Trait | Omissions | Baseline shift | Baseline BH-six / BY-six | "
     text += "Mean shift range | BH-six q range | BY-six q range |\n"
@@ -717,7 +789,7 @@ def run_extension(core_manifest: Path, output: Path, noel_manifest: Path | None 
         "# Additive lineage and study-omission sensitivity\n\n"
         f"Protocol `{protocol['version']}`; population `{bundle.run.contrast_population}`; "
         f"direction `{bundle.run.direction_basis}`; strain rollup `{scope}`.\n\n"
-        "The declared 190-native-v2 panel and native_summary.md remain the baseline panel. "
+        "The native analysis uses the declared 190-native-v2 panel and native_summary.md. "
         "Read this sidecar alongside that run's declared-panel results. "
         "lineage_extension_panel.tsv lists the additional rule-selected exclusions; "
         "lineage_candidate_ranking.tsv retains the ranking and unresolved support.\n\n"

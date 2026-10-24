@@ -176,7 +176,7 @@ def test_combined_summary_retains_native_text_and_labels_dependent_diagnostics()
     assert "Six-fraction study omissions" in text
     assert "dependent omissions" in text
     assert "not measurements of physiological activity" in text
-    assert "Native baseline was not supplied" in combined_summary(None, [], [])
+    assert "Native report was not supplied" in combined_summary(None, [], [])
 
 
 def test_native_summary_binding_rejects_an_arm_from_another_core(
