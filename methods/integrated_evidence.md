@@ -123,6 +123,11 @@ the provenance fields #813 introduced and changed no number. The record's
 `code_commit` names the branch commit the run was made from, which a squash
 merge does not keep on main (#643).
 
+The final rerun at 511c891 did not regenerate these files: their assessment and
+arm inputs were not rebuilt there, so they still describe the `off`-scope profiles
+above, with 317 retained traits rather than the 344 of the primary `phenotype` scope.
+Regenerating them with every input is #1003.
+
 | Method | Records | Family | Tested | q <= 0.05 | q <= 0.001 |
 | --- | --- | --- | --- | --- | --- |
 | directional consistency, fraction sign test | 6 | BH over six traits | 6 | 6 | **3** |
@@ -193,7 +198,8 @@ an inventory of what each arm reports: the composition arm's family covers 313
 traits, and the enrichment arm covers every retained trait in the matrix. The
 corpus-wide directional screen (#255, PR #276) is attached to the six
 fraction rows only, as their `full_screen_*` columns from its own 317-trait
-family, with BY as its primary correction.
+family (the `off` scope of these files; 344 traits under `phenotype`), with BY as
+its primary correction.
 
 At q <= 0.05, six of the six fraction results and three of the fifteen ratio
 results are significant in their own families; at q <= 0.001 it is three and
@@ -204,51 +210,71 @@ that a reader cannot silently add them up.
 
 ## Standing of the results in it
 
-Every row carries the same caveats as fields rather than as prose. **On `main`,
-every one of the five status columns reads `pending`**, because none of the five
-assessments has landed. The findings below come from open pull requests and are
-reported here as what those branches currently say, not as settled properties of
-these results; an earlier version of this note stated them as established
-(#294).
+Every row carries the same caveats as fields rather than as prose. The statuses
+below are those of the committed rows (`integrated_evidence_method_results.tsv`
+and `integrated_evidence_assessments.tsv`), written by the run named under "What is
+in it now" on profiles `519a095b…`, experiments `16271237…` and BugSigDB export
+`2026-04-24_00:41_UTC`. Each status reports one assessment's state for the row's own
+procedure. None of them is a verdict on a trait, and none makes a selected result
+confirmatory ([`biological_interpretation.md`](biological_interpretation.md)). An
+earlier version of this note said every status column read `pending` (#800), and
+one before that stated the assessments' branch findings as established (#294).
 
 - **Selection.** The six Table 1 traits were chosen on this corpus by the composition
   arm, which every row records in `selection_note` regardless of any assessment.
   These results are exploratory on that ground alone.
-- **Calibration (#182, open as PR #240).** Its branch measures what selecting on
-  the data and then testing the selection costs - a per-test error of roughly 0.08
-  against a nominal 0.05, a lower bound - and reports the procedures this
-  repository owns as holding their nominal rates under the paired null. The same
-  output names the enrichment arm's urn, the composition arm's native test and the
-  aggregated support rule as `not_calibrated_here`, and those rows say so rather
-  than carrying any verdict. Each procedure's row carries #240's overall status with
-  the criteria it was judged on - for example
-  `not_certified #182 [per_test_level=insufficient_budget, ...]` - and the
-  assessment side-car keeps every criterion and the completed replicate counts. A
-  status file that gives one verdict string per procedure is refused as unreadable:
-  that was the contract under which a five-replicate run with a failed family
-  criterion reached this table as a pass (#240 review, 2026-10-03). Until #240
-  merges, every `calibration_status` on `main` is `pending #182`.
-- **Population (#183 as PR #237, #188 as PR #238).** #237's branch reports that
-  most fraction directions do not survive restriction to a ratio's eligible
-  population, and #238's gives a disease-versus-healthy subset in which the
-  directions do hold. Both are populations rather than corrections, and #237
-  reports per scenario without reaching a verdict at all. #237's counts are read
-  from its `family_status` records, one per correction family with its scenario,
-  size and correction, because its `scenario_status` pools the two S4 families
-  (6 fractions under BH, 15 ratios under BY) into tested=21. #238's contrast classes
-  keep their orientation (native, reversed, not applicable) and study and
-  experiment counts, and its hand-review summary travels as the validation status;
-  at #238's head 17 of 60 reviewed experiments disagree with the classifier, so
-  every row reads `hand_review_disagreements_unresolved`. #238's own
-  `disease_control_comparison.tsv` holds the verified-subset comparison of #188;
-  it is not imported here. Neither PR is on `main`.
-- **Validation data (#191, PR #239).** Whether measured inflammation or SCFA data
-  could validate the trait directions independently is assessed in
-  [`validation_feasibility.md`](validation_feasibility.md) on #239's branch. It
-  identifies evidence pointers, not validation: an independent check would need
-  sample-level data, so no row here carries a validation status from it.
-- **Coverage and influence.** #184 and #190 remain pending; until they land, no row
-  should be read as accounting for annotation coverage or taxonomic concentration.
+- **Calibration (#182).** The status file is `calibration-v3` at code commit
+  8b280a3, sha256 `3007e1f1…`, bound to this table's corpus (`matched`).
+  - It reads `pass #182` on 22 rows: the six fraction sign tests, the 15 log-ratio
+    sign tests and the McNemar test. The criteria are the per-test level (a sanity
+    check), the family error and, except for the McNemar, the reported power. The
+    side-car keeps each criterion and the completed replicates: 1,400 for each
+    complete-null stream and 400 for each injected effect.
+  - It names the enrichment arm's urn, the composition arm's native test and the
+    aggregated support rule as `not_calibrated_here`, so those 18 rows carry no
+    verdict.
+  - What it does not settle: a pass says these procedures hold their error rates
+    on traits fixed in advance. The same file reports a screened fraction sign test,
+    which selects traits on the data it then tests, as `fail` on both criteria, with
+    the selection inflation measured. No row here is that procedure, but the six
+    traits were selected on this corpus.
+  - A status file that gives one verdict string per procedure is refused as
+    unreadable. That was the contract under which a five-replicate run with a failed
+    family criterion reached this table as a pass (#240 review, 2026-10-03).
+- **Sensitivity (#183).** The status file, sha256 `043a0e95…`, declares no input
+  hashes, so its binding reads `inputs_not_declared` and is accepted pending #816.
+  - It gives a verdict string for the log-ratio sign test only: `scenarios reported,
+    no verdict #183`, on the 15 ratio rows. The other 25 rows read `pending #183`.
+  - The side-car keeps one record per correction family, with its scenario, size
+    and correction. These are read from #237's `family_status` records because its
+    `scenario_status` pools the two S4 families (6 fractions under BH, 15 ratios under
+    BY) into tested=21. For example, all six fractions reach q <= 0.05 in the
+    baseline scenarios (S0, S1) but two do on the six traits' common support (S4).
+    Three of the 15 ratios do on complete cases (S2) and four on common support (S4).
+  - What it does not settle: it reports counts per scenario and reaches no verdict,
+    so no row is assessed as robust or fragile to these population choices.
+- **Orientation (#188).** The status file is `contrast-orientation-v5` at code commit
+  8b280a3, sha256 `12de1b52…`, bound to this table's corpus (`matched`).
+  - All 40 rows read `contrast population described, hand_review_agreed, no verdict
+    #188`: the 60 hand-reviewed experiments all agree with the classifier.
+  - The side-car keeps the contrast classes with their orientation and counts. For
+    example, 1,005 experiments in 574 studies are natively oriented disease vs
+    healthy, and one is reversed.
+  - What it does not settle: it describes the population and gives no verdict. These
+    rows run on the historical paired population, not on the disease-vs-healthy
+    subset, so none of them is a disease-versus-control result. The verified-subset
+    comparison is `disease_control_comparison.tsv` in
+    `data/derived/contrast_orientation/`, which is not imported here.
+- **Coverage (#184).** Nothing produces this assessment yet, so all 40 rows read
+  `pending #184`. No row should be read as accounting for annotation coverage.
+- **Influence (#190).** All 40 rows read `pending #190: influence evidence not
+  supplied`, because no influence output was given to this run. No row should be read
+  as accounting for taxonomic concentration.
+- **Validation data (#191).** Whether measured inflammation or SCFA data could
+  validate the trait directions independently is assessed in
+  [`validation_feasibility.md`](validation_feasibility.md). It identifies evidence
+  pointers, not validation: an independent check would need sample-level data, so
+  no row here carries a validation status from it.
 - **Guild grouping.** The guild rows previously claimed the oxygen guilds were
   fixed a priori. Nothing in this repository records where or when they were
   declared, and the aerobe guild contains METPO:1000608, which is also one of the
