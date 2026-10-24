@@ -1,101 +1,101 @@
 zero_trait_rank	taxon_id	taxon_name	taxonomic_rank	signature_occurrences	profile_count	study_count	diagnosis_category	suggested_remediation
-1	NCBITaxon:1940338	Escherichia/Shigella sp.	species	139	139	87	Ambiguous Taxon / Bin Slash	Resolve to lowest common ancestor (LCA) or treat as composite multi-taxon marker
-2	NCBITaxon:541000	Oscillospiraceae	family	82	82	60	NCBI TaxID Desynchronization	Remap BugSigDB alias to canonical TaxID with traits: NCBITaxon:216572 (Oscillospiraceae, 162 traits)
-3	NCBITaxon:580024	Enterorhabdus	genus	69	67	26	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
-4	NCBITaxon:1898207	Clostridiales bacterium	species	60	60	47	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-5	NCBITaxon:1980681	Colidextribacter	genus	57	55	25	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
-6	NCBITaxon:707003	uncultured Oscillospiraceae bacterium	species	46	46	27	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-7	NCBITaxon:77133	uncultured bacterium	species	43	43	22	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-8	NCBITaxon:508215	Rothia	genus	41	41	23	NCBI TaxID Desynchronization	Remap BugSigDB alias to canonical TaxID with traits: NCBITaxon:32207 (Rothia, 87 traits)
-9	NCBITaxon:3068309	Ruminococcaceae bacterium UCG-005	species	34	34	24	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-10	NCBITaxon:297314	uncultured Lachnospiraceae bacterium	species	33	33	21	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-11	NCBITaxon:1906119	Candidatus Gastranaerophilales	order	31	30	16	Candidatus Lineage	Infer phenotypic traits from MAG-derived metabolic models or phylogenetic neighbors
-12	NCBITaxon:51514	Dehalobacterium	genus	28	28	17	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
-13	NCBITaxon:2485925	Oscillospiraceae bacterium	species	24	24	19	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-14	NCBITaxon:59620	uncultured Clostridium sp.	species	24	24	16	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-15	NCBITaxon:331630	uncultured Erysipelotrichaceae bacterium	species	24	24	15	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-16	NCBITaxon:1946507	Faecalibacterium sp. UBA1819	species	24	24	14	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-17	NCBITaxon:4890	Ascomycota	phylum	24	24	13	Non-Bacterial / Fungal Eukaryote	Integrate specialized microeukaryotic trait ontologies (e.g. FungiTraits) into KG-Microbe
-18	NCBITaxon:5476	Candida albicans	species	24	24	11	Non-Bacterial / Fungal Eukaryote	Integrate specialized microeukaryotic trait ontologies (e.g. FungiTraits) into KG-Microbe
-19	NCBITaxon:155900	uncultured organism	species	23	23	10	Ambiguous Taxon / Bin Slash	Resolve to lowest common ancestor (LCA) or treat as composite multi-taxon marker
-20	NCBITaxon:32644	unidentified	species	23	23	10	Ambiguous Taxon / Bin Slash	Resolve to lowest common ancestor (LCA) or treat as composite multi-taxon marker
-21	NCBITaxon:35493	Streptophyta	phylum	21	20	15	Non-Bacterial / Fungal Eukaryote	Integrate specialized microeukaryotic trait ontologies (e.g. FungiTraits) into KG-Microbe
-22	NCBITaxon:1262798	Clostridium sp. CAG:352	species	20	20	16	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-23	NCBITaxon:76775	Malassezia restricta	species	20	20	10	Non-Bacterial / Fungal Eukaryote	Integrate specialized microeukaryotic trait ontologies (e.g. FungiTraits) into KG-Microbe
-24	NCBITaxon:81850	Lactobacillaceae	family	19	19	16	NCBI TaxID Desynchronization	Remap BugSigDB alias to canonical TaxID with traits: NCBITaxon:33958 (Lactobacillaceae, 166 traits)
-25	NCBITaxon:363464	Candidatus Altimarinota	phylum	19	19	13	Candidatus Lineage	Infer phenotypic traits from MAG-derived metabolic models or phylogenetic neighbors
-26	NCBITaxon:5475	Candida	genus	19	19	11	Non-Bacterial / Fungal Eukaryote	Integrate specialized microeukaryotic trait ontologies (e.g. FungiTraits) into KG-Microbe
-27	NCBITaxon:2044939	Clostridia bacterium	species	18	18	8	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-28	NCBITaxon:423410	Enterococcaceae bacterium RF39	species	17	17	11	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-29	NCBITaxon:553372	Asaccharobacter	genus	17	17	9	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
-30	NCBITaxon:1776391	Romboutsia timonensis	species	17	17	9	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
-31	NCBITaxon:1871022	Parolsenella massiliensis	species	17	17	3	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
-32	NCBITaxon:1505663	Thomasclavelia	genus	16	16	13	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
-33	NCBITaxon:55193	Malassezia	genus	16	16	9	Non-Bacterial / Fungal Eukaryote	Integrate specialized microeukaryotic trait ontologies (e.g. FungiTraits) into KG-Microbe
-34	NCBITaxon:136703	uncultured rumen bacterium	species	16	16	7	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-35	NCBITaxon:2137877	Eubacteriales Family XIII. Incertae Sedis bacterium	species	15	15	12	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-36	NCBITaxon:1262936	Prevotella sp. CAG:873	species	15	15	9	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-37	NCBITaxon:59892	Treponema amylovorum	species	15	15	7	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
-38	NCBITaxon:3030910	Anaerovoracaceae	family	15	15	5	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
-39	NCBITaxon:1583331	Porphyromonas pasteri	species	14	14	10	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
-40	NCBITaxon:877428	rumen bacterium NK4A214	species	14	14	10	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-41	NCBITaxon:76773	Malassezia globosa	species	14	14	8	Non-Bacterial / Fungal Eukaryote	Integrate specialized microeukaryotic trait ontologies (e.g. FungiTraits) into KG-Microbe
-42	NCBITaxon:5052	Aspergillus	genus	13	13	10	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
-43	NCBITaxon:4932	Saccharomyces cerevisiae	species	13	13	7	Non-Bacterial / Fungal Eukaryote	Integrate specialized microeukaryotic trait ontologies (e.g. FungiTraits) into KG-Microbe
-44	NCBITaxon:2518605	Segatella hominis	species	13	13	5	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
-45	NCBITaxon:5506	Fusarium	genus	12	12	6	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
-46	NCBITaxon:1759399	Streptococcus sp. A12	species	12	12	5	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
-47	NCBITaxon:1965604	Anaeromassilibacillus sp. An250	species	12	12	4	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
-48	NCBITaxon:3062497	Ruminococcus bicirculans (ex Liu et al. 2021)	species	11	11	10	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
-49	NCBITaxon:424536	Christensenellaceae	family	11	11	8	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
-50	NCBITaxon:1263031	Firmicutes bacterium CAG:56	species	11	11	8	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-51	NCBITaxon:1945593	Oscillibacter sp.	species	11	11	8	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-52	NCBITaxon:1470349	Candidatus Stoquefichus	genus	11	11	7	Candidatus Lineage	Infer phenotypic traits from MAG-derived metabolic models or phylogenetic neighbors
-53	NCBITaxon:1262882	Eubacterium sp. CAG:180	species	11	11	6	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-54	NCBITaxon:1262739	Bacteroides sp. CAG:443	species	11	11	5	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-55	NCBITaxon:1966354	Gemella sp.	species	11	11	4	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-56	NCBITaxon:1834196	Lachnoclostridium sp. YL32	species	11	11	4	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
-57	NCBITaxon:4930	Saccharomyces	genus	11	10	7	Non-Bacterial / Fungal Eukaryote	Integrate specialized microeukaryotic trait ontologies (e.g. FungiTraits) into KG-Microbe
-58	NCBITaxon:1926307	Veillonella sp.	species	10	10	9	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-59	NCBITaxon:2030927	Bacteroidales bacterium	species	10	10	8	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-60	NCBITaxon:5204	Basidiomycota	phylum	10	10	7	Non-Bacterial / Fungal Eukaryote	Integrate specialized microeukaryotic trait ontologies (e.g. FungiTraits) into KG-Microbe
-61	NCBITaxon:1519439	Oscillibacter sp. ER4	species	10	10	7	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
-62	NCBITaxon:1924944	Porphyromonas sp.	species	10	10	7	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-63	NCBITaxon:1898204	Clostridiaceae bacterium	species	10	10	6	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-64	NCBITaxon:1944660	Parvimonas sp.	species	10	10	6	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-65	NCBITaxon:244328	uncultured Clostridia bacterium	species	10	10	6	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-66	NCBITaxon:397291	Lachnospiraceae bacterium A4	species	10	10	5	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-67	NCBITaxon:2293024	Clostridium sp. AM22-11AC	species	10	10	2	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
-68	NCBITaxon:162156	uncultured Bacteroides sp.	species	9	9	8	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-69	NCBITaxon:92860	Pleosporales	order	9	9	5	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
-70	NCBITaxon:194843	uncultured Bacteroidales bacterium	species	9	9	5	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-71	NCBITaxon:91626	Mucor ambiguus	species	9	9	2	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
-72	NCBITaxon:5206	Cryptococcus	genus	9	8	5	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
-73	NCBITaxon:3028852	Merdimmobilis	genus	8	8	7	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
-74	NCBITaxon:165185	uncultured Eubacterium sp.	species	8	8	7	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-75	NCBITaxon:1872515	Anaerococcus sp.	species	8	8	6	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-76	NCBITaxon:2293011	Clostridium sp. AF34-10BH	species	8	8	6	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
-77	NCBITaxon:209265	rumen bacterium YS2	species	8	8	6	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-78	NCBITaxon:152509	uncultured Bacteroidota bacterium	species	8	8	6	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-79	NCBITaxon:1879010	Bacillota bacterium	species	8	8	5	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-80	NCBITaxon:2049028	Granulicatella sp.	species	8	8	5	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-81	NCBITaxon:1262911	Oscillibacter sp. CAG:241	species	8	8	5	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-82	NCBITaxon:159272	uncultured Prevotella sp.	species	8	8	5	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-83	NCBITaxon:755172	Aedoeadaptatus coxii	species	8	8	4	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
-84	NCBITaxon:1729795	bacterium AF12	species	8	8	4	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
-85	NCBITaxon:2049043	Desulfovibrionaceae bacterium	species	8	8	4	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-86	NCBITaxon:1378168	Firmicutes bacterium ASF500	species	8	8	4	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-87	NCBITaxon:1263000	Firmicutes bacterium CAG:110	species	8	8	4	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-88	NCBITaxon:2137880	Candidatus Gastranaerophilales bacterium	species	8	8	3	Candidatus Lineage	Infer phenotypic traits from MAG-derived metabolic models or phylogenetic neighbors
-89	NCBITaxon:749906	gut metagenome	species	8	8	3	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-90	NCBITaxon:2022527	Prevotella sp. 885	species	8	8	2	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
-91	NCBITaxon:1739381	Streptococcus sp. HMSC072D03	species	8	8	1	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
-92	NCBITaxon:1124673	Rickenellaceae	family	8	7	5	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
-93	NCBITaxon:1935176	Angelakisella	genus	8	6	4	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
-94	NCBITaxon:155619	Agaricomycetes	class	7	7	6	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
-95	NCBITaxon:2093824	Candidatus Nanosynbacter lyticus	species	7	7	6	Candidatus Lineage	Infer phenotypic traits from MAG-derived metabolic models or phylogenetic neighbors
-96	NCBITaxon:2109691	Lachnospiraceae bacterium GAM79	species	7	7	6	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-97	NCBITaxon:1969407	Oribacterium sp.	species	7	7	6	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-98	NCBITaxon:1262927	Prevotella sp. CAG:485	species	7	7	6	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-99	NCBITaxon:1262756	Blautia sp. CAG:257	species	7	7	5	Uncultivated / Metagenomic MAG	Propagate higher-rank family/order phenotypic traits to uncultivated leaf nodes in KG
-100	NCBITaxon:2211183	Evtepia gabavorous	species	7	7	5	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
+1	NCBITaxon:1940338	Escherichia/Shigella sp.	species	111	111	71	Ambiguous Taxon / Bin Slash	Resolve to lowest common ancestor (LCA) or treat as composite multi-taxon marker
+2	NCBITaxon:541000	Oscillospiraceae	family	74	74	53	NCBI TaxID Desynchronization	Review possible alias before transferring traits: NCBITaxon:216572
+3	NCBITaxon:1898207	Clostridiales bacterium	species	50	50	42	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+4	NCBITaxon:1980681	Colidextribacter	genus	45	45	18	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
+5	NCBITaxon:707003	uncultured Oscillospiraceae bacterium	species	39	39	21	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+6	NCBITaxon:580024	Enterorhabdus	genus	38	38	12	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
+7	NCBITaxon:508215	Rothia	genus	32	32	19	NCBI TaxID Desynchronization	Review possible alias before transferring traits: NCBITaxon:32207
+8	NCBITaxon:77133	uncultured bacterium	species	25	25	17	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+9	NCBITaxon:297314	uncultured Lachnospiraceae bacterium	species	24	24	15	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+10	NCBITaxon:3068309	Ruminococcaceae bacterium UCG-005	species	23	23	16	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+11	NCBITaxon:2485925	Oscillospiraceae bacterium	species	22	22	17	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+12	NCBITaxon:331630	uncultured Erysipelotrichaceae bacterium	species	22	22	14	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+13	NCBITaxon:1946507	Faecalibacterium sp. UBA1819	species	19	19	11	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+14	NCBITaxon:1906119	Candidatus Gastranaerophilales	order	18	18	8	Candidatus Lineage	Seek direct trait evidence; neighboring taxa do not establish this lineage's traits
+15	NCBITaxon:2044939	Clostridia bacterium	species	18	18	8	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+16	NCBITaxon:35493	Streptophyta	phylum	18	17	12	Non-Bacterial / Fungal Eukaryote	Integrate specialized microeukaryotic trait ontologies (e.g. FungiTraits) into KG-Microbe
+17	NCBITaxon:1262798	Clostridium sp. CAG:352	species	17	17	14	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+18	NCBITaxon:81850	Lactobacillaceae	family	17	17	14	NCBI TaxID Desynchronization	Review possible alias before transferring traits: NCBITaxon:33958
+19	NCBITaxon:155900	uncultured organism	species	17	17	8	Ambiguous Taxon / Bin Slash	Resolve to lowest common ancestor (LCA) or treat as composite multi-taxon marker
+20	NCBITaxon:51514	Dehalobacterium	genus	15	15	11	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
+21	NCBITaxon:1776391	Romboutsia timonensis	species	15	15	8	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
+22	NCBITaxon:59892	Treponema amylovorum	species	15	15	7	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
+23	NCBITaxon:1505663	Thomasclavelia	genus	14	14	11	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
+24	NCBITaxon:363464	Candidatus Altimarinota	phylum	14	14	10	Candidatus Lineage	Seek direct trait evidence; neighboring taxa do not establish this lineage's traits
+25	NCBITaxon:3030910	Anaerovoracaceae	family	14	14	4	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
+26	NCBITaxon:877428	rumen bacterium NK4A214	species	12	12	8	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+27	NCBITaxon:59620	uncultured Clostridium sp.	species	12	12	8	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+28	NCBITaxon:1759399	Streptococcus sp. A12	species	12	12	5	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
+29	NCBITaxon:1965604	Anaeromassilibacillus sp. An250	species	12	12	4	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
+30	NCBITaxon:2137877	Eubacteriales Family XIII. Incertae Sedis bacterium	species	11	11	10	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+31	NCBITaxon:76773	Malassezia globosa	species	11	11	5	Non-Bacterial / Fungal Eukaryote	Integrate specialized microeukaryotic trait ontologies (e.g. FungiTraits) into KG-Microbe
+32	NCBITaxon:4932	Saccharomyces cerevisiae	species	11	11	5	Non-Bacterial / Fungal Eukaryote	Integrate specialized microeukaryotic trait ontologies (e.g. FungiTraits) into KG-Microbe
+33	NCBITaxon:1966354	Gemella sp.	species	11	11	4	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+34	NCBITaxon:424536	Christensenellaceae	family	10	10	7	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
+35	NCBITaxon:1263031	Firmicutes bacterium CAG:56	species	10	10	7	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+36	NCBITaxon:1519439	Oscillibacter sp. ER4	species	10	10	7	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
+37	NCBITaxon:1898204	Clostridiaceae bacterium	species	10	10	6	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+38	NCBITaxon:2293024	Clostridium sp. AM22-11AC	species	10	10	2	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
+39	NCBITaxon:553372	Asaccharobacter	genus	9	9	8	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
+40	NCBITaxon:423410	Enterococcaceae bacterium RF39	species	9	9	6	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+41	NCBITaxon:1262739	Bacteroides sp. CAG:443	species	9	9	3	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+42	NCBITaxon:91626	Mucor ambiguus	species	9	9	2	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
+43	NCBITaxon:3062497	Ruminococcus bicirculans (ex Liu et al. 2021)	species	8	8	8	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
+44	NCBITaxon:2293011	Clostridium sp. AF34-10BH	species	8	8	6	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
+45	NCBITaxon:152509	uncultured Bacteroidota bacterium	species	8	8	6	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+46	NCBITaxon:2049028	Granulicatella sp.	species	8	8	5	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+47	NCBITaxon:244328	uncultured Clostridia bacterium	species	8	8	5	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+48	NCBITaxon:2049043	Desulfovibrionaceae bacterium	species	8	8	4	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+49	NCBITaxon:1263000	Firmicutes bacterium CAG:110	species	8	8	4	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+50	NCBITaxon:749906	gut metagenome	species	8	8	3	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+51	NCBITaxon:2022527	Prevotella sp. 885	species	8	8	2	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
+52	NCBITaxon:1739381	Streptococcus sp. HMSC072D03	species	8	8	1	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
+53	NCBITaxon:2093824	Candidatus Nanosynbacter lyticus	species	7	7	6	Candidatus Lineage	Seek direct trait evidence; neighboring taxa do not establish this lineage's traits
+54	NCBITaxon:1262952	Ruminococcus sp. CAG:177	species	7	7	5	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+55	NCBITaxon:1879010	Bacillota bacterium	species	7	7	4	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+56	NCBITaxon:1262911	Oscillibacter sp. CAG:241	species	7	7	4	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+57	NCBITaxon:159272	uncultured Prevotella sp.	species	7	7	4	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+58	NCBITaxon:1889813	Anaerolineaceae bacterium oral taxon 439	species	7	7	3	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+59	NCBITaxon:1608898	Haemophilus sp. HMSC71H05	species	7	7	3	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
+60	NCBITaxon:1885016	Rothia sp. (in: high G+C Gram-positive bacteria)	species	7	7	3	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
+61	NCBITaxon:32644	unidentified	species	7	7	3	Ambiguous Taxon / Bin Slash	Resolve to lowest common ancestor (LCA) or treat as composite multi-taxon marker
+62	NCBITaxon:2024228	Prevotella sp. P4-51	species	7	7	2	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
+63	NCBITaxon:4896	Schizosaccharomyces pombe	species	7	7	1	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
+64	NCBITaxon:1904861	Peptostreptococcaceae bacterium	species	6	6	6	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+65	NCBITaxon:5476	Candida albicans	species	6	6	5	Non-Bacterial / Fungal Eukaryote	Integrate specialized microeukaryotic trait ontologies (e.g. FungiTraits) into KG-Microbe
+66	NCBITaxon:1969407	Oribacterium sp.	species	6	6	5	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+67	NCBITaxon:1262756	Blautia sp. CAG:257	species	6	6	4	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+68	NCBITaxon:55193	Malassezia	genus	6	6	4	Non-Bacterial / Fungal Eukaryote	Integrate specialized microeukaryotic trait ontologies (e.g. FungiTraits) into KG-Microbe
+69	NCBITaxon:1262953	Ruminococcus sp. CAG:254	species	6	6	4	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+70	NCBITaxon:712118	Actinomyces sp. oral taxon 172	species	6	6	3	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
+71	NCBITaxon:1650661	Clostridium phoceensis	species	6	6	3	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
+72	NCBITaxon:1262781	Clostridium sp. CAG:226	species	6	6	3	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+73	NCBITaxon:1262882	Eubacterium sp. CAG:180	species	6	6	3	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+74	NCBITaxon:1262988	Firmicutes bacterium CAG:95	species	6	6	3	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+75	NCBITaxon:136703	uncultured rumen bacterium	species	6	6	3	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+76	NCBITaxon:2500537	Candidatus Cibiobacter qucibialis	species	6	6	2	Candidatus Lineage	Seek direct trait evidence; neighboring taxa do not establish this lineage's traits
+77	NCBITaxon:2137880	Candidatus Gastranaerophilales bacterium	species	6	6	2	Candidatus Lineage	Seek direct trait evidence; neighboring taxa do not establish this lineage's traits
+78	NCBITaxon:1894999	Enhydrobacter sp.	species	6	6	2	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+79	NCBITaxon:278064	uncultured Dialister sp.	species	6	6	2	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+80	NCBITaxon:2292991	Catenibacterium sp. AM22-15	species	6	6	1	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
+81	NCBITaxon:3062493	Intestinimonas massiliensis (ex Liu et al. 2021)	species	6	6	1	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
+82	NCBITaxon:2079531	Prevotella merdae	species	6	6	1	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
+83	NCBITaxon:27291	Saccharomyces paradoxus	species	6	6	1	Non-Bacterial / Fungal Eukaryote	Integrate specialized microeukaryotic trait ontologies (e.g. FungiTraits) into KG-Microbe
+84	NCBITaxon:1715176	Streptococcus sp. HMSC064D12	species	6	6	1	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
+85	NCBITaxon:1935176	Angelakisella	genus	6	4	3	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
+86	NCBITaxon:4890	Ascomycota	phylum	5	5	5	Non-Bacterial / Fungal Eukaryote	Integrate specialized microeukaryotic trait ontologies (e.g. FungiTraits) into KG-Microbe
+87	NCBITaxon:2030927	Bacteroidales bacterium	species	5	5	5	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+88	NCBITaxon:3062492	Blautia massiliensis (ex Liu et al. 2021)	species	5	5	5	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
+89	NCBITaxon:1262824	Clostridium sp. CAG:58	species	5	5	5	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+90	NCBITaxon:1926283	Lachnoclostridium edouardi	species	5	5	5	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
+91	NCBITaxon:2109691	Lachnospiraceae bacterium GAM79	species	5	5	5	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+92	NCBITaxon:712357	Leptotrichia sp. oral taxon 212	species	5	5	5	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
+93	NCBITaxon:2023260	Megasphaera sp.	species	5	5	5	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+94	NCBITaxon:3028852	Merdimmobilis	genus	5	5	5	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
+95	NCBITaxon:1872471	Alloprevotella sp.	species	5	5	4	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+96	NCBITaxon:712187	Bergeyella sp. oral taxon 322	species	5	5	4	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
+97	NCBITaxon:2049044	Erysipelotrichaceae bacterium	species	5	5	4	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+98	NCBITaxon:2211183	Evtepia gabavorous	species	5	5	4	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
+99	NCBITaxon:1263010	Firmicutes bacterium CAG:227	species	5	5	4	Uncultivated / Metagenomic MAG	Seek direct evidence; higher-rank annotations do not establish leaf-taxon traits
+100	NCBITaxon:652722	Prevotella sp. oral taxon 313	species	5	5	4	Rare / Novel Isolate (Lacks KG Phenotype)	Target for literature curation in BacDive / KG-Microbe phenotypic assertions
