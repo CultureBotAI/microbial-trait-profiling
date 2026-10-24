@@ -36,8 +36,8 @@ The run's `cellulose_decr_provenance.json` records:
 - the contrast-classifier version;
 - the code commit, seeds and package versions.
 
-Numbers in this note come from BugSigDB vintage `2026-04-24_00:41_UTC` and
-classifier `contrast-orientation-v5`.
+Numbers in this note come from BugSigDB vintage `2026-04-24_00:41_UTC`,
+classifier `contrast-orientation-v6` and the primary `phenotype` trait scope (#788).
 
 **Pinned inputs.** The inputs are gitignored, and other work rebuilds them in
 place. The provenance therefore keeps the reference hashes in `pinned_inputs`,
@@ -56,8 +56,9 @@ Two options change this:
   old pins forward, so the next ordinary run still refuses them.
 - `--repin` adopts the current inputs as the pins.
 
-See #562 and #571. The pins describe the v5 contrast manifest and the profile metadata
-table with each experiment's own labels (#555, #580). The committed tables reproduce
+See #562 and #571. The pins describe the v6 contrast manifest, the `phenotype`-scope
+profile counts and the profile metadata table with each experiment's own labels (#555,
+#580), adopted with `--repin` in the final rerun at 511c891. The committed tables reproduce
 from the pinned inputs at the provenance's `code_commit` (#642). A commit made before
 a re-pin still carries the old pins, so there, pass `--pinned-provenance` with the
 committed provenance file, or check out the commit that adds it; its analysis code is
