@@ -3851,3 +3851,78 @@ def test_deck_and_plates_derive_corpus_and_trait_counts_from_tables(
     )
     with pytest.raises(ValueError, match=r"trait_direction_screen\.tsv has 1 rows"):
         plates.build_methods_plate2(plate_repo, plate_repo)
+
+
+def test_committed_phenotype_coverage_tables_drive_deck_and_plate6(tmp_path: Path) -> None:
+    """Committed phenotype coverage tables drive Plate VI and deck text (#1015, #1009)."""
+    cov_dir = REPO / "trait-visualization" / "trait-profile-investigation" / "taxa-coverage"
+    rank_rows = deck.read_tsv(cov_dir / "taxa_coverage_by_rank.tsv")
+    zero_rows = deck.read_tsv(cov_dir / "top_zero_trait_bugsigdb_taxa.tsv")
+    summary_rows = deck.read_tsv(cov_dir / "profile_trait_mapping_summary.tsv")
+    meta_rows = deck.read_tsv(
+        REPO / "trait-visualization" / "study_trait_profile_study_metadata.tsv"
+    )
+    cov_info = deck.read_coverage_run_info(
+        cov_dir,
+        profile_summary_rows=summary_rows,
+        study_meta_rows=meta_rows,
+        require_counts=True,
+    )
+    assert cov_info.strain_rollup == "phenotype"
+    assert cov_info.retained_profiles == 5629
+    assert cov_info.retained_studies == 1047
+
+    p6 = plates.plate6_text(rank_rows, zero_rows)
+    assert "98.2%/97.3% trait coverage" in p6["subtitle"]
+    assert "39.4% of distinct Species (18.2% of species occurrences)" in p6["subtitle"]
+    assert (
+        "Species: 60.6% unique / 81.8% occurrences vs Genus: 86.5% / 98.2%" in p6["panel_a_title"]
+    )
+    mp1_cov = plates.methods_plate1_coverage_labels(
+        rank_rows,
+        zero_rows,
+        retained_profiles=cov_info.retained_profiles,
+        population=cov_info.population,
+    )
+    assert mp1_cov["occurrences_title"] == "46,865 All-Profile Taxon Occurrences"
+    assert mp1_cov["taxa_subtitle"].startswith(
+        "4,750 unique NCBI TaxIDs across 5,629 retained profiles"
+    )
+    assert "Species gap (18% of species occurrences)" in mp1_cov["species_gap_note"]
+
+    metrics = {
+        "taxa_coverage_by_rank": {r["taxonomic_rank"]: r for r in rank_rows},
+        "zero_trait_rows": zero_rows,
+        "coverage_strain_rollup": cov_info.strain_rollup,
+        "coverage_population": cov_info.population,
+    }
+    caveat = deck.methods_plate_one_caveat(metrics)
+    assert "Genus/Family 98.2%/97.3% vs Species 81.8% occurrences / 60.6% unique species" in caveat
+    assert "strain_rollup=phenotype" in caveat
+    p6_takeaway, p6_caveat = deck.plate_six_text(metrics)
+    assert "Genus (98.2%) and Family (97.3%) occurrences" in p6_takeaway
+    assert (
+        "39.4% of distinct species (1,246/3,165) and 18.2% of species occurrences (2,816/15,507)"
+        in p6_takeaway
+    )
+    assert "strain_rollup=phenotype" in p6_takeaway
+    assert "Auditing the top 100 zero-trait taxa (1,258 occurrences)" in p6_caveat
+    assert (
+        "Oscillospiraceae (NCBITaxon:541000 → NCBITaxon:216572, 74 occs across 53 studies)"
+        in p6_caveat
+    )
+    assert plates.build_plate6(REPO, tmp_path).exists()
+
+    # Committed trait metadata and pooled stats reflect the 344-trait phenotype rerun (#1015):
+    mod_traits = deck.read_tsv(
+        REPO / "trait-visualization" / "condition_trait_module_trait_metadata.tsv"
+    )
+    pooled_stats = deck.read_tsv(
+        REPO
+        / "trait-visualization"
+        / "trait-profile-investigation"
+        / "trait_profile_paired_contrast_trait_stats_pooled.tsv"
+    )
+    assert len(mod_traits) == 60
+    assert len(pooled_stats) == 340
+    assert {r["retained_trait_count"] for r in pooled_stats} == {"344"}
