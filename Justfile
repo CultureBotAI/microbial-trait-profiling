@@ -384,9 +384,11 @@ contrast-review-sample SAMPLE="methods/contrast_orientation_review_sample.tsv" S
 # Rebuild the data/analysis/cellulose_decr/ tables (methods/cellulose_decr.md). Stops when
 # an input's hash differs from the committed provenance or the contrast manifest came from
 # another classifier version; --input-root points at a checkout holding the pinned inputs,
-# and --allow-input-drift regenerates every table from changed ones (#562). The pins are a
-# v2 manifest and the metadata table before #555, so until #580 re-pins them a checkout
-# with a newer classifier refuses; the tables reproduce at the provenance's code_commit.
+# and --allow-input-drift regenerates every table from changed ones (#562). The pins are
+# the v6 manifest and the phenotype-scope inputs, adopted with --repin in the final rerun
+# at 511c891. A checkout with another classifier version refuses until it reruns
+# `just contrast-orientation` and then --repin; the tables reproduce at the provenance's
+# code_commit.
 [positional-arguments]
 cellulose-decr *ARGS:
 	uv run python -m mtp.cellulose_decr.analysis --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" "$@"
