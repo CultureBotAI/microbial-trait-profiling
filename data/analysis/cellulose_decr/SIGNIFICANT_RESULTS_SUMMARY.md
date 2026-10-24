@@ -13,7 +13,9 @@ annotations. None of them measures cellulose degradation or any other physiology
 ([`methods/biological_interpretation.md`](../../../methods/biological_interpretation.md)).
 The trait and conditions were picked as exploratory leads from this corpus, so
 no result here is confirmatory. The p-values are nominal; the TSV adds
-Benjamini-Hochberg q-values over its 29 tests (`bh_q_within_table`).
+Benjamini-Hochberg q-values over its 29 tests (`bh_q_within_table`). The numbers
+are those of the tables regenerated in the final rerun at code commit 511c891
+(#799).
 
 ## What holds up
 
@@ -24,17 +26,18 @@ Benjamini-Hochberg q-values over its 29 tests (`bh_q_within_table`).
    annotations than of the increased signature's. The share counts annotations,
    not taxa.
    - **CRC:** 19 of 21 untied studies (p = 2.2e-4). Among disease-versus-healthy
-     contrasts it is 15 of 18 (p = 0.0075, q = 0.016), and 17 of 21 with synonym
-     labels counted (p = 0.0072). Keeping only Tier 1–2 controls sets aside the
-     Yachida 2019 study, whose controls had "a few polyps" (#672), giving 14 of 17
-     (p = 0.013).
-   - **PD, disease vs healthy:** 24 of 34 studies (p = 0.024, q = 0.037).
-   - **PD, all contrasts:** the study-level sign test gives 27 of 41 (p = 0.060).
-     The study-level Wilcoxon test gives p = 0.0093, and a majority vote of
-     experiment signs gives 28 of 40 (p = 0.017).
-   - **Pooled:** 58 of 78 untied studies (p = 2.0e-5) and 49 of 64 among
-     disease-versus-healthy contrasts (p = 2.4e-5). The pooled result stays at
-     p ≤ 8.8e-5 under every label and contrast definition tried
+     contrasts it is 16 of 18 (p = 0.0013, q = 0.0035), and 18 of 21 with synonym
+     labels counted (p = 0.0015). Keeping only Tier 1–2 controls sets aside the
+     Yachida 2019 study, whose controls had "a few polyps" (#672), giving 15 of 17
+     (p = 0.0023).
+   - **PD, disease vs healthy:** 23 of 33 studies (p = 0.035, q = 0.054). This q
+     is just above 0.05; before the final rerun it was 0.037.
+   - **PD, all contrasts:** the study-level sign test gives 26 of 40 (p = 0.081).
+     The study-level Wilcoxon test gives p = 0.013, and a majority vote of
+     experiment signs gives 27 of 39 (p = 0.024).
+   - **Pooled:** 56 of 77 untied studies (p = 8.2e-5) and 49 of 63 among
+     disease-versus-healthy contrasts (p = 1.1e-5). The pooled result stays at
+     p ≤ 1.3e-4 under every label and contrast definition tried
      ([`condition_definition_sensitivity.tsv`](condition_definition_sensitivity.tsv)).
 
 ## What is fragile
@@ -65,11 +68,11 @@ Benjamini-Hochberg q-values over its 29 tests (`bh_q_within_table`).
    - Only 11 of the 31 paired mucosa and lumen experiments compare patients with
      controls (`contrast_type` `case_vs_control_subject`). The rest compare tumour
      with adjacent tissue, cancer subgroups or treatments.
-   - Among disease-versus-healthy studies, the test gives odds ratio 10.9
-     (95% CI 1.15–169, p = 0.017). Counting the tumour-vs-adjacent-tissue contrast
-     `bsdb:25699023-2` gives 6.05 (0.66–69.7, p = 0.066). Keeping only Tier 1–2
-     controls gives 10.2 (1.07–158, p = 0.021). The result rests on that one
-     experiment either way (#569, #580, #672, #673).
+   - Among disease-versus-healthy studies, the test gives odds ratio 16.6
+     (95% CI 1.57–302, p = 0.0069). Counting the tumour-vs-adjacent-tissue contrast
+     `bsdb:25699023-2` gives 9.35 (0.90–151, p = 0.032). Keeping only Tier 1–2
+     controls gives 15.5 (1.46–284, p = 0.0086). The p stays below 0.05 either
+     way, on 7 untied GI studies (#569, #580, #672, #673).
 
 ## What does not hold
 
@@ -79,10 +82,10 @@ Benjamini-Hochberg q-values over its 29 tests (`bh_q_within_table`).
      distance of 0.527, against 0.479 observed. That is slightly more overlap
      than expected, but not significantly (p = 0.19).
    - U6's larger expected core (18.3 taxa) comes from its larger simulated sets.
-     With set sizes matched it is 16.9 against 17 observed (p = 0.58).
+     With set sizes matched it is 16.9 against 17 observed (p = 0.59).
    - The very small p-values under U1–U4 come from treating co-reported taxa as
      independent draws. Weighting taxa by how often other studies report them
-     (U5) already weakens them to p = 0.0097 (mean) and 0.076 (core).
+     (U5) already weakens them to p = 0.0086 (mean) and 0.072 (core).
 2. **The overlap is not a "same bacteria lost" result.** A taxon enters a set
    once any study reports it decreased. The 17 taxa in all three sets have these
    features:
@@ -96,9 +99,9 @@ Benjamini-Hochberg q-values over its 29 tests (`bh_q_within_table`).
    - Outside feces, single conditions have at most five untied pairs, too few for
      p < 0.05, except CRC mucosa and lumen.
    - The CRC contrasts there are mostly not patient-versus-control, and the
-     disease-vs-healthy comparison rests on one experiment (fragile #2).
+     disease-vs-healthy comparison has 7 untied GI studies (fragile #2).
 4. **The trait ranking is descriptive.** Cellulose catabolic process ranks second
-   of 142 non-MediaDive traits by cross-condition distance, after Acetogenesis
+   of 146 non-MediaDive traits by cross-condition distance, after Acetogenesis
    (`METPO:1000845`). The ranking is not a test, and traits share taxa.
 
 ## Table A. Direction in feces
@@ -110,14 +113,14 @@ of the TSV) are for the study sign test.
 
 | Condition | Contrasts | Experiments | p | Studies | p | q | Study Wilcoxon p |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| PD | all | 58 : 24 : 17 | 2.2e-4 | 27 : 14 : 4 | 0.060 | 0.075 | 0.0093 |
-| PD | disease vs healthy | 47 : 15 : 12 | 5.8e-5 | 24 : 10 : 4 | 0.024 | 0.037 | 0.015 |
-| HIV | all | 18 : 7 : 3 | 0.043 | 12 : 4 : 2 | 0.077 | 0.093 | 0.30 |
+| PD | all | 57 : 24 : 16 | 3.2e-4 | 26 : 14 : 3 | 0.081 | 0.10 | 0.013 |
+| PD | disease vs healthy | 46 : 15 : 11 | 8.8e-5 | 23 : 10 : 3 | 0.035 | 0.054 | 0.019 |
+| HIV | all | 18 : 7 : 3 | 0.043 | 11 : 5 : 2 | 0.21 | 0.23 | 0.32 |
 | HIV | disease vs healthy | 13 : 3 : 3 | 0.021 | 10 : 2 : 2 | 0.039 | 0.056 | 0.18 |
-| CRC | all | 32 : 6 : 11 | 2.4e-5 | 19 : 2 : 7 | 2.2e-4 | 7.2e-4 | 2.0e-4 |
-| CRC | disease vs healthy | 22 : 5 : 8 | 0.0015 | 15 : 3 : 7 | 0.0075 | 0.016 | 0.0013 |
-| All three | all | 108 : 37 : 31 | 3.0e-9 | 58 : 20 : 13 | 2.0e-5 | 1.4e-4 | 4.1e-5 |
-| All three | disease vs healthy | 82 : 23 : 23 | 6.0e-9 | 49 : 15 : 13 | 2.4e-5 | 1.4e-4 | 7.3e-5 |
+| CRC | all | 32 : 6 : 11 | 2.4e-5 | 19 : 2 : 7 | 2.2e-4 | 8.0e-4 | 2.0e-4 |
+| CRC | disease vs healthy | 22 : 5 : 8 | 0.0015 | 16 : 2 : 7 | 0.0013 | 0.0035 | 0.0010 |
+| All three | all | 107 : 37 : 30 | 4.4e-9 | 56 : 21 : 12 | 8.2e-5 | 4.3e-4 | 5.6e-5 |
+| All three | disease vs healthy | 81 : 23 : 22 | 9.3e-9 | 49 : 14 : 12 | 1.1e-5 | 1.1e-4 | 8.8e-5 |
 
 Experiment-level p-values treat experiments from one study as independent, so
 they are optimistic. The majority-vote study counts are in
@@ -139,16 +142,16 @@ they are optimistic. The majority-vote study counts are in
 
 The table gives p-values for the two summary endpoints. For the 3-way core,
 U1–U3 give exact hypergeometric tails. All other p-values are Monte Carlo with
-100,000 draws; the size-matched U6 keeps 5,284 of them.
+100,000 draws; the size-matched U6 keeps 5,557 of them.
 
 | Null | Mean pairwise d_J (0.479) | Taxa in all three (17) |
 | --- | --- | --- |
 | U1–U3: uniform draws of taxa | ≤ 1e-5 | 4.8e-23 to 2.3e-14 |
 | U4: random trait on the decreased feces taxa | ≤ 1e-5 | ≤ 1e-5 |
-| U5: U3 taxa weighted by reporting prevalence | 0.0097 | 0.076 |
+| U5: U3 taxa weighted by reporting prevalence | 0.0086 | 0.072 |
 | U6: whole study signatures | 0.19 | 0.73 |
-| U6, draws with matching set sizes | 0.24 | 0.58 |
-| U6 with synonym labels counted (sets 38 / 27 / 37, core 20) | 0.15 | 0.54 |
+| U6, draws with matching set sizes | 0.23 | 0.59 |
+| U6 with synonym labels counted (sets 38 / 27 / 37, core 20) | 0.14 | 0.54 |
 
 ## Table C. The 17 taxa in all three sets
 
@@ -174,11 +177,10 @@ The flags are `has_direct_trait_edge`, `is_direct_or_genus_species`,
 | --- | --- | --- | --- | --- | --- |
 | CRC | experiments | 32 : 6 | 4 : 11 | 13.6 (2.9–81.0) | 1.2e-4 |
 | CRC | studies | 19 : 2 | 3 : 8 | 21.6 (2.7–309) | 5.6e-4 |
-| CRC, disease vs healthy | studies | 15 : 3 | 2 : 5 | 10.9 (1.15–169) | 0.017 |
-| CRC, disease vs healthy, paired-tissue contrasts counted | studies | 15 : 3 | 3 : 4 | 6.05 (0.66–69.7) | 0.066 |
-| All three, stratified by condition | experiments | 108 : 37 | 9 : 12 | 4.79 (1.52–15.8) | 0.0049 |
-
-| All three, stratified by condition | studies | 58 : 20 | 5 : 9 | 8.46 (1.79–49.9) | 0.0021 |
+| CRC, disease vs healthy | studies | 16 : 2 | 2 : 5 | 16.6 (1.57–302) | 0.0069 |
+| CRC, disease vs healthy, paired-tissue contrasts counted | studies | 16 : 2 | 3 : 4 | 9.35 (0.90–151) | 0.032 |
+| All three, stratified by condition | experiments | 107 : 37 | 9 : 12 | 4.79 (1.52–15.8) | 0.0049 |
+| All three, stratified by condition | studies | 56 : 21 | 5 : 9 | 7.87 (1.67–46.8) | 0.0047 |
 
 The stratified rows test a common odds ratio across PD, HIV and CRC. Crude
 pooling mixes condition with compartment, because pooled stool pairs are mostly
