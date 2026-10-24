@@ -194,6 +194,11 @@ table1-influence-extension *ARGS:
 test-influence-extension:
 	uv run pytest tests/test_influence_extension.py tests/test_influence_extension_core.py tests/test_influence_extension_joint.py -v
 
+# Isolated logical-guard probes; each invocation requires a fresh output directory (#969).
+[positional-arguments]
+probe-influence-extension-guards mutation output:
+	uv run python scripts/adhoc/issue969_probe_influence_guards.py "$1" --output-dir "$2"
+
 # Isolated original/current arm-parser regression evidence (#973).
 [positional-arguments]
 probe-arm-parser-guards *ARGS:
