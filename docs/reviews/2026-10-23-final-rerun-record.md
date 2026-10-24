@@ -126,7 +126,7 @@ What changed:
 
   `trait-visualization/trait-profile-investigation/stratified_stats_provenance.json` lists both groups, with hashes.
 - **Other tracked investigation outputs:** recipes this pass didn't run leave their tracked outputs at their committed versions. Examples are `just trait-profile-investigation` and the six-shared-trait recipes. This PR changes 29 of the 487 tracked files under `trait-visualization/trait-profile-investigation/`: 27 regenerated outputs and 2 refreshed notes.
-- **Outputs still built from the off profile table** (`519a095b…`, mostly at 8b280a3, #766). Don't combine them with the phenotype outputs above:
+- **Outputs still built from the off profile table or matrix** (`519a095b…` / `f6de0576…`, mostly at 8b280a3, #766). Don't combine them with the phenotype outputs above:
   - the composition calibration summary;
   - `data/derived/trait_coupling_report.txt` and its companion TSVs;
   - the density-adjustment redundancy summary;
