@@ -50,6 +50,8 @@ Notes on the counts:
 - `noel_table1_six_trait_sign_test_v1`: partially calibrated. The null-control criterion passed. Power was reported (its `power_reported` criterion passed), but no target-power criterion was declared, so the comparison does not certify power. The verdict also records two things: the six Table 1 traits were selected on this corpus before testing, so their p-values are exploratory; and the select-then-test negative control fails, as the protocol declares it will.
 - `jed_log_ratio_vs_transformed_t_calibration`: different estimator, uncalibrated.
 
+**Reproducing these values.** `scripts/adhoc/extract_final_rerun_record_values.py --runs-root <runs> --additive-root <Tier 1+2 × off additive dir>` reads the run directories and prints every ID, count, scope, verdict and additive figure quoted in this record as JSON.
+
 **Run directories.** They take 4.8 to 6.5 GB each and aren't committed; they're kept outside the repository. To keep them, make a relocatable copy with `just evidence-archive` (see [Retaining execution evidence](../evidence-archives.md)).
 
 ## Additive analyses on Tier 1+2 × off
