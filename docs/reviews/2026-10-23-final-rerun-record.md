@@ -50,7 +50,7 @@ Notes on the counts:
 - `noel_table1_six_trait_sign_test_v1`: partially calibrated. The null-control criterion passed. Power was reported (its `power_reported` criterion passed), but no target-power criterion was declared, so the comparison does not certify power. The verdict also records two things: the six Table 1 traits were selected on this corpus before testing, so their p-values are exploratory; and the select-then-test negative control fails, as the protocol declares it will.
 - `jed_log_ratio_vs_transformed_t_calibration`: different estimator, uncalibrated.
 
-**Reproducing these values.** `scripts/adhoc/extract_final_rerun_record_values.py --runs-root <runs> --additive-root <Tier 1+2 × off additive dir>` reads the run directories and prints every ID, count, scope, verdict and additive figure quoted in this record as JSON.
+**Reproducing these values.** `scripts/adhoc/extract_final_rerun_record_values.py --runs-root <runs> --additive-root <Tier 1+2 × off additive dir>` reads the already-verified run directories and prints, as JSON, the run IDs, core counts, scopes, verdict outcomes and the scan, lineage and label-support figures quoted here. It extracts selected values; it isn't an independent verifier. The experiments-table totals and the detailed calibration criteria come from the run records directly.
 
 **Run directories.** They take 4.8 to 6.5 GB each and aren't committed; they're kept outside the repository. To keep them, make a relocatable copy with `just evidence-archive` (see [Retaining execution evidence](../evidence-archives.md)).
 
@@ -125,7 +125,7 @@ What changed:
   - the infographic PNG.
 
   `trait-visualization/trait-profile-investigation/stratified_stats_provenance.json` lists both groups, with hashes.
-- **Other tracked investigation outputs:** recipes this pass didn't run leave their tracked outputs at their committed versions. Examples are `just trait-profile-investigation` and the six-shared-trait recipes. This PR changes 27 of the 487 tracked files under `trait-visualization/trait-profile-investigation/`.
+- **Other tracked investigation outputs:** recipes this pass didn't run leave their tracked outputs at their committed versions. Examples are `just trait-profile-investigation` and the six-shared-trait recipes. This PR changes 29 of the 487 tracked files under `trait-visualization/trait-profile-investigation/`: 27 regenerated outputs and 2 refreshed notes.
 - **Outputs still built from the off profile table** (`519a095b…`, mostly at 8b280a3, #766). Don't combine them with the phenotype outputs above:
   - the composition calibration summary;
   - `data/derived/trait_coupling_report.txt` and its companion TSVs;

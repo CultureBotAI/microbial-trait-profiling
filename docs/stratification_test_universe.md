@@ -73,8 +73,8 @@ zero-draw profiles, unpaired profiles, and an unavailable stratum.
 
 Only the deterministic stratification stage was rerun against the preserved,
 verified Ilyas inputs from core run `run-49a0c712ad3d4fc59d10804951fe511a`.
-Fresh output is in `/private/tmp/mtp-issue664/.tmp/issue664-strata`.
-The comparison can be reproduced with
+The fresh output was written to a local scratch directory and is not retained
+in the repository. The comparison can be reproduced with
 `just audit-stratification-universe BEFORE_STRATA_DIR AFTER_STRATA_DIR`; its
 implementation is tracked in
 `scripts/adhoc/issue664_compare_stratification.py`.
