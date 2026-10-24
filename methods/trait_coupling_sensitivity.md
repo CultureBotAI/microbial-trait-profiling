@@ -63,7 +63,7 @@ In the ORA framework across $N_{\text{profiles}}$ paired profiles:
 
 ## 3. Leave-One-Trait-Out (LOTO) Results
 
-Evaluated on the 317 non-MediaDive traits across $N = 5,629$ study trait profiles, $2,257$ paired experiments, and $932$ paired studies in the `count_input_16s_wms_v1` corpus (full count-profile LOTO/LCO matrices in `data/derived/trait_coupling_loto_matrix.tsv`, `data/derived/trait_coupling_lco_summary.tsv`, and `data/derived/trait_coupling_report.txt`; the display tables below show the historical binarized-profile evaluation).
+Evaluated on the 317 non-MediaDive traits of the `off` scope (344 under `phenotype`) across $N = 5,629$ study trait profiles, $2,257$ paired experiments, and $932$ paired studies in the `count_input_16s_wms_v1` corpus (full count-profile LOTO/LCO matrices in `data/derived/trait_coupling_loto_matrix.tsv`, `data/derived/trait_coupling_lco_summary.tsv`, and `data/derived/trait_coupling_report.txt`; the display tables below show the historical binarized-profile evaluation).
 
 ### Composition Arm: $6 \times 6$ Delta Effect Matrix ($\Delta \text{effect}$)
 Rows represent the dropped trait; columns represent the evaluated trait:
@@ -80,7 +80,7 @@ Rows represent the dropped trait; columns represent the evaluated trait:
 ### Composition Arm: $6 \times 6$ Delta $q$-Value Matrix ($\Delta q$, Focal-Set BH Sensitivity Check)
 
 > [!NOTE]
-> **Focal-Set BH Sensitivity Check vs. Full-Family Table 1 $q$-Values ([#478](https://github.com/CultureBotAI/microbial-trait-profiling/issues/478)):** Within `src/mtp/coupling.py`, arm-level $q$-values are computed via Benjamini-Hochberg over the evaluated focal trait set ($m = 6$ in baseline, $m = 5$ in LOTO, $m = 4$ in LCO) on all-profile experiment contrasts ($N = 5,629$ profiles, $2,257$ paired experiments in the `count_input_16s_wms_v1` corpus), rather than the full 317-trait (or 2,607-column) Table 1 BH family (see [`methods/table1-native-results/README.md`](table1-native-results/README.md), where study-level *facultatively aerobic* has effect $+0.186$ and full-family $q = 1.69 \times 10^{-9}$). Because the focal BH family shrinks from $m = 6$ to $m = 5$ in LOTO (and $m = 4$ in LCO), $\Delta q = q_{\text{perturbed}} - q_{\text{base}}$ reflects both the denominator perturbation and the focal family-size step.
+> **Focal-Set BH Sensitivity Check vs. Full-Family Table 1 $q$-Values ([#478](https://github.com/CultureBotAI/microbial-trait-profiling/issues/478)):** Within `src/mtp/coupling.py`, arm-level $q$-values are computed via Benjamini-Hochberg over the evaluated focal trait set ($m = 6$ in baseline, $m = 5$ in LOTO, $m = 4$ in LCO) on all-profile experiment contrasts ($N = 5,629$ profiles, $2,257$ paired experiments in the `count_input_16s_wms_v1` corpus), rather than the full 317-trait `off` (or 2,607-column) Table 1 BH family (see [`methods/table1-native-results/README.md`](table1-native-results/README.md), where study-level *facultatively aerobic* has effect $+0.186$ and full-family $q = 1.69 \times 10^{-9}$). Because the focal BH family shrinks from $m = 6$ to $m = 5$ in LOTO (and $m = 4$ in LCO), $\Delta q = q_{\text{perturbed}} - q_{\text{base}}$ reflects both the denominator perturbation and the focal family-size step.
 
 | Dropped Trait | Facultatively aerobic | Cellulose catabolism | Coccus shaped | Sphere shaped | Arsenate reduction | Moderately halophilic |
 | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -162,7 +162,7 @@ flowchart TD
 ```
 
 1. **Denominator Coupling is Structurally Robust:**
-   Because total non-MediaDive counts are distributed across $317$ columns ($415,436$ total profile annotations), removing any single trait—even a high-annotation trait like *coccus shaped* ($14,689$ counts across $3,004$ nonzero profiles)—shrinks the profile denominator smoothly without tilting the relative composition of remaining traits. The effect sizes and rankings in Table 1 are not artifacts of denominator closure.
+   Because total non-MediaDive counts are distributed across $317$ `off`-scope columns ($415,436$ total profile annotations), removing any single trait—even a high-annotation trait like *coccus shaped* ($14,689$ counts across $3,004$ nonzero profiles)—shrinks the profile denominator smoothly without tilting the relative composition of remaining traits. The effect sizes and rankings in Table 1 are not artifacts of denominator closure.
 
 2. **Semantic Redundancy Remains the Binding Constraint:**
    While *coccus* and *sphere* are stable under denominator coupling, they remain **semantically redundant** in METPO ontology mappings ($r = +0.911$, VIF = $5.88$). Curators assign both labels to spherical cells. Therefore, *coccus* and *sphere* cannot be claimed as independent biological mechanisms in the narrative, but this is due to **ontological overlap** ([#189](https://github.com/CultureBotAI/microbial-trait-profiling/issues/189), [#264](https://github.com/CultureBotAI/microbial-trait-profiling/issues/264)), **not denominator distortion** ([#260](https://github.com/CultureBotAI/microbial-trait-profiling/issues/260)).

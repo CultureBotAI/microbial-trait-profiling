@@ -21,13 +21,13 @@ Both recipes used the same pinned profile and experiment files: 7,329 profile ro
 read, 1,500 dropped as non-human and 1,159 experiments dropped as unpaired, leaving
 4,670 retained profiles, 2,335 matched experiments and 959 unique studies. The
 retained corpus is human and paired. The fraction denominator sums the 317
-non-MediaDive columns; 2,333 MediaDive columns are excluded. The log-ratio
+non-MediaDive columns of the `off` scope (344 under `phenotype`); 2,333 MediaDive columns are excluded. The log-ratio
 contrast uses only its named numerator and reference counts.
 
 The matrix these counts were measured on is
 `data/derived/study_trait_profiles_wide.tsv`, sha256
 `6e70724ee807cf24e9c1f371a51421fa5b09d6283fa7f3abcd6620e5492c6a73`: 2,653
-header columns (3 identifier, 2,333 MediaDive, 317 retained) over 7,329 profile
+header columns (3 identifier, 2,333 MediaDive, 317 retained under `off`) over 7,329 profile
 rows, joined from BugSigDB `2026-04-24_00:41_UTC` and a KG-Microbe build whose
 nodes are md5 `dd76b4656f9341db25a7c4afa96cd58e` and which records no release
 tag. Naming the dump does not identify the matrix, so the run writes this

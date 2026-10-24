@@ -40,14 +40,16 @@ trait space before any total was computed. Of 5,629 profile rows read under the
 `count_input_16s_wms_v1` profile policy, from 1,047 studies, none was dropped as
 non-human, because the matrix holds human profiles only (#656), and 1,115
 experiments were dropped as unpaired; 2,290 trait columns were MediaDive,
-leaving 317 traits, 2,257 experiments, 4,514 profiles, and 932 studies — the
+leaving 317 traits (the `off` scope; 344 under `phenotype`), 2,257 experiments,
+4,514 profiles, and 932 studies — the
 same corpus as the composition arm's 2,257 pairs.
 
 The matrix these counts were measured on is
 `data/derived/study_trait_profiles_wide.tsv`, sha256
-`519a095b09e179dc92fb51f9d892984a52dd100dece4dadf6c94b036a5323e6c`, the
-committed `study_trait_profiles_wide.tsv.gz` decompressed: 2,610 header columns
-(3 identifier, 2,290 MediaDive, 317 retained) over 5,629 profile rows, joined
+`519a095b09e179dc92fb51f9d892984a52dd100dece4dadf6c94b036a5323e6c`, the `off`-scope
+`study_trait_profiles_wide.tsv.gz` committed until the final rerun at 511c891 replaced
+it with the `phenotype` table (`43b2e230…`, 344 retained), decompressed: 2,610 header
+columns (3 identifier, 2,290 MediaDive, 317 retained) over 5,629 profile rows, joined
 from BugSigDB `2026-04-24_00:41_UTC` and KG-Microbe release 20260120 (nodes md5
 `dd76b4656f9341db25a7c4afa96cd58e`), as the download sidecar
 `data/kg-microbe/provenance.json` declares it. The experiment metadata table is

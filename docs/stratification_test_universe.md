@@ -82,7 +82,7 @@ implementation is tracked in
 | Quantity | Pooled | Feces | Feces excluded |
 | --- | ---: | ---: | ---: |
 | Eligible tests | 1,480,390 | 935,150 | 545,240 |
-| Eligible traits | 317 | 317 | 317 |
+| Eligible traits (`off` scope) | 317 | 317 | 317 |
 | Traits with no discoveries | 11 | 14 | 17 |
 | Traits with one discovery | 8 | 14 | 11 |
 | Traits in the selected ranking | 298 | 289 | 289 |
@@ -92,7 +92,7 @@ Previously the example prevalence was 100% in every stratum because its selected
 profile count was also used as its denominator. Its reference K is 394 in all
 strata; the old profile-count substitutions were 9,835, 5,657, and 4,178.
 
-The pooled diagnostic now includes all 317 eligible traits, including the 11
+The pooled diagnostic now includes all 317 eligible `off`-scope traits, including the 11
 with no discoveries and eight with only one discovery. Its lowest-K decile has
 21 of 32 traits with discoveries (65.625%); the other nine deciles remain 100%.
 Those high descriptive discovery rates do not demonstrate calibrated inference
