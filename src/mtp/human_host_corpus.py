@@ -14,6 +14,8 @@ The corpus also keeps only bacterial community profiles: experiments sequenced b
 
 from __future__ import annotations
 
+from collections.abc import Collection
+
 import pandas as pd
 
 __all__ = [
@@ -25,6 +27,7 @@ __all__ = [
     "UNRECORDED_SEQUENCING_TYPE",
     "excluded_host_note",
     "excluded_host_summary",
+    "experiment_in_profile_population",
     "join_human_host_profiles",
 ]
 
@@ -43,6 +46,21 @@ EXPERIMENT_KEY = ["study_id", "experiment_id"]
 EXCLUDED_BY_HOST = "host"
 EXCLUDED_BY_SEQUENCING_TYPE = "sequencing_type"
 CORPUS_DESCRIPTION = "Human-host 16S and shotgun profiles only"
+
+
+def experiment_in_profile_population(
+    host: object,
+    sequencing_type: object,
+    *,
+    host_species: str | None,
+    sequencing_types: Collection[str] | None,
+) -> bool:
+    """Shared experiment selection for the canonical builder and coverage audit (#865)."""
+    recorded_host = "" if host is None else str(host).strip()
+    recorded_method = "" if sequencing_type is None else str(sequencing_type).strip()
+    return (host_species is None or recorded_host == host_species.strip()) and (
+        sequencing_types is None or recorded_method in {value.strip() for value in sequencing_types}
+    )
 
 
 def _recorded(values: pd.Series, unrecorded: str) -> pd.Series:

@@ -58,7 +58,7 @@ repos:
             |trait-visualization/trait-profile-investigation/
             six-shared-traits/oral/oral_six_trait_provenance\.json
           )$
-        # Only reviewed public checksum values are baselined; new values still fail.
+        # Matching findings are baselined; hook acceptance does not establish audit.
         args: [--baseline, .secrets.baseline]
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.17.0

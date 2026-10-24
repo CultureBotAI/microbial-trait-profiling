@@ -7,7 +7,7 @@ import csv
 import json
 import sys
 import uuid
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -703,8 +703,33 @@ def execute_comparison_run(
     return comparison_record
 
 
+def _require_derived_bases(
+    recorded: Sequence[AnalysisBasis], derived: Sequence[AnalysisBasis]
+) -> None:
+    """Refuse recorded bases other than the derived ones, each once and in order (#941)."""
+    recorded_ids = [basis.id for basis in recorded]
+    derived_ids = [basis.id for basis in derived]
+    if recorded_ids != derived_ids:
+        raise ValueError(
+            f"ComparisonRun records analysis bases {recorded_ids}, but its core derives "
+            f"{derived_ids}"
+        )
+    differences = [
+        f"{basis.id} {field}"
+        for basis, expected in zip(recorded, derived, strict=True)
+        for field, value in basis.model_dump().items()
+        if value != expected.model_dump()[field]
+    ]
+    if differences:
+        raise ValueError(
+            "ComparisonRun analysis bases differ from those its core derives: "
+            + ", ".join(differences)
+        )
+
+
 def verify_comparison_run(path: Path) -> ComparisonRun:
-    """Verify a completed ComparisonRun manifest, upstream runs, and complete outputs (#776)."""
+    """Verify a completed ComparisonRun manifest, upstream runs, its analysis bases and
+    complete outputs (#776, #817)."""
     manifest = (path / "comparison_run.json" if path.is_dir() else path).resolve()
     if not manifest.is_file():
         raise FileNotFoundError(f"ComparisonRun manifest not found: {manifest}")
@@ -744,6 +769,10 @@ def verify_comparison_run(path: Path) -> ComparisonRun:
             raise ValueError(f"contrast_population mismatch for {arm_name} in ComparisonRun")
         if arm_rec.direction_basis != record.direction_basis:
             raise ValueError(f"direction_basis mismatch for {arm_name} in ComparisonRun")
+
+    # The bases are derived again from the verified core: its recorded scope, its catalog
+    # and the retained features of its profile tables (#817, #860)
+    _require_derived_bases(record.analysis_bases, core_analysis_bases(core_run))
 
     root = manifest.parent
     if not record.outputs:

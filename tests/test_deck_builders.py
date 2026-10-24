@@ -3108,6 +3108,58 @@ def test_plate6_candidatus_label_preserves_direct_evidence_caution() -> None:
         assert "neighbor" not in label.lower()
 
 
+def test_plate6_new_diagnosis_categories_map_to_distinct_labels_and_remedy_clauses() -> None:
+    """Three new #957/#1009 diagnosis categories map to distinct Plate VI labels."""
+    cases = [
+        (
+            "Unresolved Taxonomic Label",
+            (
+                "Review the reported taxonomic label and source assignment before trait "
+                "matching; an unresolved label does not establish a multi-taxon composite"
+            ),
+            "Review taxonomic label / source",
+            "taxonomic label review",
+        ),
+        (
+            "Taxonomy Unresolved",
+            (
+                "Review placement in the supplied taxonomy; missing lineage does not "
+                "establish rarity, novelty or a bacterial isolate"
+            ),
+            "Review taxonomy placement",
+            "taxonomy placement review",
+        ),
+        (
+            "Non-Bacterial / Viral Taxon",
+            (
+                "Review viral annotation resources; missing retained annotations do not "
+                "establish biological absence"
+            ),
+            "Review viral annotation resources",
+            "viral annotation review",
+        ),
+    ]
+    rank_rows = _coverage_rank_rows()
+    for cat, rem, expected_label, expected_clause in cases:
+        row = {
+            "zero_trait_rank": "1",
+            "taxon_id": "NCBITaxon:155900",
+            "taxon_name": "fixture taxon",
+            "taxonomic_rank": "species",
+            "signature_occurrences": "17",
+            "profile_count": "17",
+            "study_count": "8",
+            "diagnosis_category": cat,
+            "suggested_remediation": rem,
+        }
+        label = plates.plate6_remediation_label(row)
+        assert label == expected_label
+        assert "BacDive" not in label
+        text = plates.plate6_text(rank_rows, [row])
+        assert expected_clause in text["subtitle"]
+        assert expected_clause in text["panel_b_title"]
+
+
 def test_coverage_run_info_validates_strain_rollup_and_profile_count_agreement(
     tmp_path: Path,
 ) -> None:
