@@ -13,6 +13,7 @@ from typing import Any, Literal
 import yaml
 
 from mtp.count_input import COMPLETE_COUNT_MODE, CountInputMode, taxa_trait_count_reader
+from mtp.human_host_corpus import experiment_in_profile_population
 from mtp.paths import DERIVED_DATA_DIR, STUDY_DATA_DIR
 from mtp.trait_guilds import MEDIADIVE_MARKER
 
@@ -111,7 +112,6 @@ def collect_profile_taxa(
     ``sequencing_types`` keeps only the experiments whose recorded sequencing type is
     one of them; an experiment with no recorded type is left out (#742).
     """
-    kept_types = None if sequencing_types is None else {t.strip() for t in sequencing_types}
     profile_taxa: dict[ProfileKey, list[str]] = {}
     seen_taxa: defaultdict[ProfileKey, set[str]] = defaultdict(set)
     taxon_observations = 0
@@ -126,13 +126,12 @@ def collect_profile_taxa(
             if not isinstance(experiment, dict):
                 continue
 
-            if host_species is not None:
-                host = _as_text(experiment.get("host_species")).strip()
-                if host != host_species.strip():
-                    continue
-
-            sequencing_type = _as_text(experiment.get("sequencing_type")).strip()
-            if kept_types is not None and sequencing_type not in kept_types:
+            if not experiment_in_profile_population(
+                experiment.get("host_species"),
+                experiment.get("sequencing_type"),
+                host_species=host_species,
+                sequencing_types=sequencing_types,
+            ):
                 continue
 
             experiment_id = _as_text(experiment.get("id")).strip()

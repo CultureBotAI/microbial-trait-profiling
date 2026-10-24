@@ -1,40 +1,42 @@
 	trait_id	bugsigdb_taxa_support	study_profile_support	display_label	column_label	object_name	object_category	display_category	selection_score
-METPO:1000872	METPO:1000872	77	5442	"non-spore forming
-METPO:1000872"	non-spore forming METPO:1000872	non-spore forming	biolink:PhenotypicQuality	PhenotypicQuality	662.3605956994335
-METPO:1000603	METPO:1000603	76	5345	"anaerobic
-METPO:1000603"	anaerobic METPO:1000603	anaerobic	biolink:PhenotypicQuality	PhenotypicQuality	652.3918961491136
-METPO:1000615	METPO:1000615	70	5374	"mesophilic
-METPO:1000615"	mesophilic METPO:1000615	mesophilic	biolink:PhenotypicQuality	PhenotypicQuality	601.2659697097105
-METPO:1000703	METPO:1000703	65	5314	"non motile
-METPO:1000703"	non motile METPO:1000703	non motile	biolink:PhenotypicQuality	PhenotypicQuality	557.5887389004432
+METPO:1000615	METPO:1000615	80	5513	"mesophilic
+METPO:1000615"	mesophilic METPO:1000615	mesophilic	biolink:PhenotypicQuality	PhenotypicQuality	689.2036473266994
+METPO:1000872	METPO:1000872	76	5442	"non-spore forming
+METPO:1000872"	non-spore forming METPO:1000872	non-spore forming	biolink:PhenotypicQuality	PhenotypicQuality	653.7585100409992
+METPO:1000603	METPO:1000603	76	5402	"anaerobic
+METPO:1000603"	anaerobic METPO:1000603	anaerobic	biolink:PhenotypicQuality	PhenotypicQuality	653.197932172149
+METPO:1000703	METPO:1000703	64	5314	"non motile
+METPO:1000703"	non motile METPO:1000703	non motile	biolink:PhenotypicQuality	PhenotypicQuality	549.0104506096671
 METPO:1000667	METPO:1000667	58	5307	"bacillus shaped
 METPO:1000667"	bacillus shaped METPO:1000667	bacillus shaped	biolink:PhenotypicQuality	PhenotypicQuality	497.4642829362217
-METPO:1000698	METPO:1000698	53	5203	"gram positive
-METPO:1000698"	gram positive METPO:1000698	gram positive	biolink:PhenotypicQuality	PhenotypicQuality	453.53069050051704
-METPO:1000699	METPO:1000699	43	5124	"gram negative
-METPO:1000699"	gram negative METPO:1000699	gram negative	biolink:PhenotypicQuality	PhenotypicQuality	367.3010895722842
-METPO:1000429	METPO:1000429	28	4826	"GC low
-METPO:1000429"	GC low METPO:1000429	GC low	biolink:PhenotypicQuality	PhenotypicQuality	237.4954521984938
-METPO:1000668	METPO:1000668	25	4338	"coccus shaped
-METPO:1000668"	coccus shaped METPO:1000668	coccus shaped	biolink:PhenotypicQuality	PhenotypicQuality	209.38497964495878
+METPO:1000698	METPO:1000698	52	5203	"gram positive
+METPO:1000698"	gram positive METPO:1000698	gram positive	biolink:PhenotypicQuality	PhenotypicQuality	444.9735076608846
+METPO:1000699	METPO:1000699	42	5124	"gram negative
+METPO:1000699"	gram negative METPO:1000699	gram negative	biolink:PhenotypicQuality	PhenotypicQuality	358.7592037682776
+METPO:1000681	METPO:1000681	32	5067	"rod shaped
+METPO:1000681"	rod shaped METPO:1000681	rod shaped	biolink:PhenotypicQuality	PhenotypicQuality	272.98244932611294
+METPO:1000429	METPO:1000429	27	4826	"GC low
+METPO:1000429"	GC low METPO:1000429	GC low	biolink:PhenotypicQuality	PhenotypicQuality	229.0134717628333
 METPO:1000432	METPO:1000432	24	4679	"GC high
 METPO:1000432"	GC high METPO:1000432	GC high	biolink:PhenotypicQuality	PhenotypicQuality	202.8252813338806
-METPO:1000607	METPO:1000607	21	3959	"obligately anaerobic
-METPO:1000607"	obligately anaerobic METPO:1000607	obligately anaerobic	biolink:PhenotypicQuality	PhenotypicQuality	173.96398538921906
-METPO:1000604	METPO:1000604	19	4415	"microaerophilic
-METPO:1000604"	microaerophilic METPO:1000604	microaerophilic	biolink:PhenotypicQuality	PhenotypicQuality	159.46680217118168
-METPO:1000608	METPO:1000608	17	4411	"facultatively aerobic
-METPO:1000608"	facultatively aerobic METPO:1000608	facultatively aerobic	biolink:PhenotypicQuality	PhenotypicQuality	142.66541746634766
+METPO:1000668	METPO:1000668	24	4386	"coccus shaped
+METPO:1000668"	coccus shaped METPO:1000668	coccus shaped	biolink:PhenotypicQuality	PhenotypicQuality	201.27362162798914
+METPO:1000607	METPO:1000607	23	4246	"obligately anaerobic
+METPO:1000607"	obligately anaerobic METPO:1000607	obligately anaerobic	biolink:PhenotypicQuality	PhenotypicQuality	192.14126699720524
+METPO:1000604	METPO:1000604	19	4433	"microaerophilic
+METPO:1000604"	microaerophilic METPO:1000604	microaerophilic	biolink:PhenotypicQuality	PhenotypicQuality	159.54409041334887
+METPO:1000608	METPO:1000608	17	4412	"facultatively aerobic
+METPO:1000608"	facultatively aerobic METPO:1000608	facultatively aerobic	biolink:PhenotypicQuality	PhenotypicQuality	142.6692701575823
 METPO:1002005	METPO:1002005	15	4486	"Fermentation
 METPO:1002005"	Fermentation METPO:1002005	Fermentation	biolink:OntologyClass	OntologyClass	126.13409408963976
-METPO:1000624	METPO:1000624	13	4126	"non halophilic
-METPO:1000624"	non halophilic METPO:1000624	non halophilic	biolink:PhenotypicQuality	PhenotypicQuality	108.22897838678357
+METPO:1000602	METPO:1000602	13	4357	"aerobic
+METPO:1000602"	aerobic METPO:1000602	aerobic	biolink:PhenotypicQuality	PhenotypicQuality	108.93699070155935
+METPO:1000624	METPO:1000624	13	4127	"non halophilic
+METPO:1000624"	non halophilic METPO:1000624	non halophilic	biolink:PhenotypicQuality	PhenotypicQuality	108.23212799309817
+METPO:1000605	METPO:1000605	13	4076	"facultatively anaerobic
+METPO:1000605"	facultatively anaerobic METPO:1000605	facultatively anaerobic	biolink:PhenotypicQuality	PhenotypicQuality	108.07051713665028
 METPO:1000702	METPO:1000702	12	4516	"motile
 METPO:1000702"	motile METPO:1000702	motile	biolink:PhenotypicQuality	PhenotypicQuality	100.98724002785525
-METPO:1000681	METPO:1000681	12	4473	"rod shaped
-METPO:1000681"	rod shaped METPO:1000681	rod shaped	biolink:PhenotypicQuality	PhenotypicQuality	100.8724577046009
-METPO:1000602	METPO:1000602	11	4208	"aerobic
-METPO:1000602"	aerobic METPO:1000602	aerobic	biolink:PhenotypicQuality	PhenotypicQuality	91.79478405647629
 METPO:1000431	METPO:1000431	10	3801	"GC mid2
 METPO:1000431"	GC mid2 METPO:1000431	GC mid2	biolink:PhenotypicQuality	PhenotypicQuality	82.43282523048376
 METPO:1000446	METPO:1000446	9	4460	"temperature optimum mid4
@@ -77,8 +79,12 @@ METPO:1000887	METPO:1000887	5	3991	"cell width very small
 METPO:1000887"	cell width very small METPO:1000887	cell width very small	biolink:PhenotypicQuality	PhenotypicQuality	41.46023818715677
 METPO:2000006|CHEBI:27082	METPO:2000006|CHEBI:27082	5	3914	"trehalose
 CHEBI:27082"	uses as carbon source: trehalose CHEBI:27082 [METPO:2000006]	trehalose	biolink:SmallMolecule	SmallMolecule	41.36285304212451
-METPO:1000871	METPO:1000871	5	3721	"spore forming
-METPO:1000871"	spore forming METPO:1000871	spore forming	biolink:PhenotypicQuality	PhenotypicQuality	41.110082186010985
+METPO:1000677	METPO:1000677	5	3839	"ovoid shaped
+METPO:1000677"	ovoid shaped METPO:1000677	ovoid shaped	biolink:PhenotypicQuality	PhenotypicQuality	41.26613822790886
+METPO:1000871	METPO:1000871	5	3728	"spore forming
+METPO:1000871"	spore forming METPO:1000871	spore forming	biolink:PhenotypicQuality	PhenotypicQuality	41.1194769008941
+METPO:1000616	METPO:1000616	5	3481	"thermophilic
+METPO:1000616"	thermophilic METPO:1000616	thermophilic	biolink:PhenotypicQuality	PhenotypicQuality	40.776810601640676
 METPO:2000103|GO:0030245	METPO:2000103|GO:0030245	5	2922	"cellulose catabolic process
 GO:0030245"	capable of: cellulose catabolic process GO:0030245 [METPO:2000103]	cellulose catabolic process	biolink:BiologicalProcess	BiologicalProcess	39.90182882555623
 METPO:1000453	METPO:1000453	4	4390	"temperature range mid4
@@ -87,5 +93,7 @@ METPO:1000688	METPO:1000688	4	3871	"coccobacillus shaped
 METPO:1000688"	coccobacillus shaped METPO:1000688	coccobacillus shaped	biolink:PhenotypicQuality	PhenotypicQuality	33.04610579358587
 METPO:2000006|CHEBI:29864	METPO:2000006|CHEBI:29864	4	3797	"mannitol
 CHEBI:29864"	uses as carbon source: mannitol CHEBI:29864 [METPO:2000006]	mannitol	biolink:SmallMolecule	SmallMolecule	32.968919565488925
-METPO:1000644	METPO:1000644	4	3248	"heterotrophic
-METPO:1000644"	heterotrophic METPO:1000644	heterotrophic	biolink:PhenotypicQuality	PhenotypicQuality	32.3444101426764
+METPO:1000678	METPO:1000678	4	3511	"oval shaped
+METPO:1000678"	oval shaped METPO:1000678	oval shaped	biolink:PhenotypicQuality	PhenotypicQuality	32.65576381902003
+METPO:1000644	METPO:1000644	4	3264	"heterotrophic
+METPO:1000644"	heterotrophic METPO:1000644	heterotrophic	biolink:PhenotypicQuality	PhenotypicQuality	32.36406016684212

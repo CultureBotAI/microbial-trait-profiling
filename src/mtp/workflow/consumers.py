@@ -224,23 +224,11 @@ def write_consumer_record(
     consumer: str,
     outputs: Sequence[Path],
     feature_policy: str = "exclude_mediadive",
+    additional_products: Sequence[str] = (),
 ) -> Path:
-    """Bind actual analysis outputs to a checked core run; do not assert physiological evidence."""
+    """Bind outputs and optional extra scientific inputs to one checked core execution."""
     if not outputs:
         raise ValueError("Consumer outputs must be a nonempty set of distinct files")
-    preflight_consumer_outputs(bundle, path, outputs)
-    current = verify_core_run(bundle.manifest)
-    if (
-        current.run_id != bundle.run.run_id
-        or current.execution_fingerprint != bundle.run.execution_fingerprint
-        or current.artifacts != bundle.run.artifacts
-    ):
-        raise ValueError("Core inputs or execution identity changed during downstream analysis")
-    path.parent.mkdir(parents=True, exist_ok=True)
-    coverage_path = build_consumer_coverage(
-        bundle, path.with_suffix(".coverage.tsv"), feature_policy
-    )
-    coverage_facts = validate_consumer_coverage(bundle, coverage_path, feature_policy)
     coverage_id = "count_coverage" if bundle.profile_product == "count_profiles" else "ora_coverage"
     product_ids = [
         bundle.profile_product,
@@ -254,6 +242,29 @@ def write_consumer_record(
         "source_identity",
     ]
     artifacts = {artifact.product_id: artifact for artifact in bundle.run.artifacts or []}
+    products = {product.id: product for product in bundle.run.definition.products}
+    for product_id in additional_products:
+        if product_id in product_ids:
+            raise ValueError(f"Additional consumed product is duplicated: {product_id}")
+        if product_id not in products or product_id not in artifacts:
+            raise ValueError(f"Additional consumed product is unresolved: {product_id}")
+        if products[product_id].kind in PROFILE_UNITS:
+            raise ValueError("Additional profile products require a separate consumer record")
+        bundle.path(product_id)
+        product_ids.append(product_id)
+    preflight_consumer_outputs(bundle, path, outputs)
+    current = verify_core_run(bundle.manifest)
+    if (
+        current.run_id != bundle.run.run_id
+        or current.execution_fingerprint != bundle.run.execution_fingerprint
+        or current.artifacts != bundle.run.artifacts
+    ):
+        raise ValueError("Core inputs or execution identity changed during downstream analysis")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    coverage_path = build_consumer_coverage(
+        bundle, path.with_suffix(".coverage.tsv"), feature_policy
+    )
+    coverage_facts = validate_consumer_coverage(bundle, coverage_path, feature_policy)
     record = ConsumerRecord(
         id=f"consumer:{uuid.uuid4()}",
         run_id=bundle.run.run_id,

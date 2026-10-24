@@ -621,7 +621,7 @@ def test_a_masked_cell_does_not_change_a_tested_result() -> None:
     """
     profiles = _support_profiles()
     matrix = build_guild_matrix(profiles)
-    (tested,) = guild_records(profiles, matrix=matrix, source="x", columns={}, **THRESHOLDS)
+    (tested,) = guild_records(profiles, source="x", columns={}, **THRESHOLDS)
     cells = _cells_by_stratum(
         cell_support_records(matrix, source="x", columns={}, min_studies=GUILD_MIN_STUDIES)
     )
@@ -940,9 +940,7 @@ def test_no_zero_total_pair_reaches_the_figure_or_either_mcnemar() -> None:
     expected = compute_correlation(excluded)
     assert compute_correlation(profiles).discordant != expected.discordant
 
-    (row,) = guild_records(
-        profiles, matrix=build_guild_matrix(profiles), source="x", columns={}, **THRESHOLDS
-    )
+    (row,) = guild_records(profiles, source="x", columns={}, **THRESHOLDS)
     assert row.p_value == expected.mcnemar_p
     assert row.testable_units == sum(expected.discordant)
     assert row.paired_experiments == len({(p.study_id, p.experiment_id) for p in excluded})
@@ -1144,9 +1142,8 @@ def test_the_mcnemar_row_keeps_its_p_and_leaves_q_blank() -> None:
     correction had been applied to it (#294).
     """
     profiles = _guild_profiles()
-    matrix = build_guild_matrix(profiles)
-    (record,) = guild_records(profiles, matrix=matrix, source="x", columns={}, **THRESHOLDS)
-    correlation = compute_correlation(profiles, matrix)
+    (record,) = guild_records(profiles, source="x", columns={}, **THRESHOLDS)
+    correlation = compute_correlation(profiles)
     up_down, down_up = correlation.discordant
 
     assert record.test_status == TESTED
@@ -1173,9 +1170,8 @@ def test_an_undefined_odds_ratio_is_missing_rather_than_infinite() -> None:
     fail here too.
     """
     undefined = _guild_profiles(reverse=0)
-    matrix = build_guild_matrix(undefined)
-    (blank,) = guild_records(undefined, matrix=matrix, source="x", columns={}, **THRESHOLDS)
-    correlation = compute_correlation(undefined, matrix)
+    (blank,) = guild_records(undefined, source="x", columns={}, **THRESHOLDS)
+    correlation = compute_correlation(undefined)
 
     assert correlation.discordant == (12, 0)
     assert correlation.odds_ratio is None
@@ -1184,9 +1180,8 @@ def test_an_undefined_odds_ratio_is_missing_rather_than_infinite() -> None:
     assert blank.test_status == TESTED, "the test ran; only the ratio is undefined"
 
     defined = _guild_profiles(reverse=3)
-    defined_matrix = build_guild_matrix(defined)
-    (ratio,) = guild_records(defined, matrix=defined_matrix, source="x", columns={}, **THRESHOLDS)
-    defined_correlation = compute_correlation(defined, defined_matrix)
+    (ratio,) = guild_records(defined, source="x", columns={}, **THRESHOLDS)
+    defined_correlation = compute_correlation(defined)
 
     assert defined_correlation.discordant == (9, 3)
     assert defined_correlation.odds_ratio == 3.0

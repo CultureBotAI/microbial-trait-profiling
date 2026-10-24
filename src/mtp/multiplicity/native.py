@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from mtp.count_input import profile_count_reader
+from mtp import native_composition as native_support
 from mtp.datamodel.multiple_testing_pydantic import HypothesisCoordinates, HypothesisDefinition
 from mtp.multiple_testing import canonical_sha256
 from mtp.multiplicity.families import (
@@ -24,7 +24,6 @@ from mtp.multiplicity.families import (
 )
 from mtp.multiplicity.sources import VerifiedSources, recorded_comparison_output
 from mtp.paths import file_sha256
-from mtp.trait_guilds import load_profiles
 from mtp.workflow.consumers import verify_consumer_record
 
 
@@ -52,49 +51,38 @@ def native_candidates(
 
     Support 6..floor(.95*n), nonzero fraction variance, no maximum trait count.
     Fractions use all retained traits, and historical zero-total pairs remain.
-    The scientific tests and transformed effects are never recomputed here.
+    Shared transformed moments are reconstructed; test probabilities are never recomputed.
     """
-    profiles, _ = load_profiles(profile, experiments, {}, reject_missing_counts=True)
-    keys = sorted((row.study_id, row.experiment_id, row.inc_dec) for row in profiles)
-    if not keys:
-        raise ValueError("Native composition has no paired human profiles")
-    included = set(keys)
-    reader = profile_count_reader(profile)
-    indices = [reader.count_columns.index(feature) for feature in features]
-    counts = pd.DataFrame(
-        [[row.counts[index] for index in indices] for row in reader if row.key in included],
-        columns=list(features),
-        dtype=float,
+    selected, keys, _ = native_core_support(profile, experiments, features, labels)
+    return tuple(str(feature) for feature in selected.index), keys
+
+
+def native_core_support(
+    profile: Path, experiments: Path, features: tuple[str, ...], labels: Path
+) -> tuple[pd.DataFrame, list[tuple[str, str, str]], dict[str, native_support.StudyMoments]]:
+    """Use the actual producer's selection, transforms and equal-study moments."""
+    pairs = native_support.core_pair_metadata(profile, experiments)
+    counts = native_support.load_profile_matrix(profile)
+    if tuple(counts.columns) != features:
+        raise ValueError("Native composition retained feature inventory mismatch")
+    counts = counts.loc[native_support.profile_ids_for_pairs(pairs)]
+    selected = native_support.select_stratum_traits(
+        counts, native_support.load_trait_labels(labels)
     )
-    if len(counts) != len(keys):
-        raise ValueError("Native composition profile inventory mismatch")
-    fractions = counts.div(counts.sum(axis=1).replace(0, float("nan")), axis=0).fillna(0)
-    support, signal, variance = counts.gt(0).sum(), counts.sum(), fractions.var()
-    label_rows = {row["column_id"]: row for row in rows(labels)}
-    candidates = []
-    for feature in features:
-        label = label_rows.get(feature, {})
-        name = label.get("object_name", "").strip().replace("_", " ")
-        if not name or name == "unknown":
-            name = label.get("column_label", "").strip().replace("_", " ")
-        trait_label = f"{name} {feature.rsplit('|', 1)[-1]}"
-        if (
-            6 <= support[feature] <= max(2, int(len(counts) * 0.95))
-            and variance[feature] > 0
-            and "mediadive.medium" not in trait_label
-        ):
-            candidates.append(feature)
-    candidates.sort(
-        key=lambda feature: (
-            -variance[feature] * math.log1p(signal[feature]),
-            -variance[feature],
-            -support[feature],
-            feature,
-        )
+    matrix = native_support.build_pair_matrix_from_profiles(
+        native_support.build_zscore_matrix(counts, selected.index), pairs
     )
-    if len(candidates) < 2:
-        raise ValueError("Fewer than two native traits satisfy the declared filter")
-    return tuple(candidates), keys
+    studies = native_support.study_contrasts(matrix, pairs.loc[matrix.index, "study_id"])
+    moments = {
+        str(feature): native_support.study_moments(studies[feature].to_numpy(dtype=float))
+        for feature in selected.index
+    }
+    keys = sorted(
+        (str(row.study_id), str(row.experiment_id), direction)
+        for row in pairs.itertuples()
+        for direction in ("inc", "dec")
+    )
+    return selected, keys, moments
 
 
 def native_family(sources: VerifiedSources) -> FamilyInput:
@@ -119,12 +107,19 @@ def native_family(sources: VerifiedSources) -> FamilyInput:
         or not {str(table), str(pairs)}.issubset({entry.path for entry in consumer.outputs})
     ):
         raise ValueError("Native composition consumer provenance mismatch")
-    features, keys = native_candidates(
+    selection, keys, moments = native_core_support(
         sources.product("count_profiles"),
         sources.product("experiments"),
         sources.features["count_profiles"],
         sources.product("feature_metadata"),
     )
+    features = tuple(str(feature) for feature in selection.index)
+    selected_support = {
+        str(feature): int(value)
+        for feature, value in zip(
+            selection.index, selection["profile_support"].to_numpy(dtype=np.int64), strict=True
+        )
+    }
     expected_hashes = {
         "profile_sha256": file_sha256(sources.product("count_profiles")),
         "experiments_sha256": file_sha256(sources.product("experiments")),
@@ -194,6 +189,21 @@ def native_family(sources: VerifiedSources) -> FamilyInput:
                 },
             )
             validate_study_status(row, expected_studies=expected_studies)
+            trait = row["trait"]
+            if trait not in moments:
+                raise ValueError("Native summary is absent from core selected moments")
+            expected = moments[trait]
+            if (
+                row["study_test_status"] != expected.status
+                or support_count(row, "study_count") != expected.count
+                or float(row["study_mean_increased_minus_decreased"]) != expected.mean
+                or float(row["study_std_increased_minus_decreased"]) != expected.std
+                or float(row["study_median_increased_minus_decreased"]) != expected.median
+                or support_count(row, "profile_support") != selected_support[trait]
+            ):
+                raise ValueError(
+                    "Native support/transformed moments disagree with core producer interface"
+                )
             yield observation(
                 row["trait"],
                 row,

@@ -89,7 +89,7 @@ def test_post_arm_rejects_consumed_bytes_that_differ_from_upstream(
 
         def restore_after_both_reads(
             family: FamilyInput, corrected: Path, destination: Path
-        ) -> dict[str, int]:
+        ) -> stage_module.MigrationSummary:
             result = report(family, corrected, destination)
             table.write_bytes(original)
             return result
@@ -198,7 +198,7 @@ def test_post_arm_refuses_identity_changes_during_execution(
 
     def report_then_edit_code(
         family: FamilyInput, corrected: Path, destination: Path
-    ) -> dict[str, int]:
+    ) -> stage_module.MigrationSummary:
         nonlocal fingerprint
         counts = original_report(family, corrected, destination)
         if kind == "code":
@@ -508,6 +508,25 @@ def test_all_adapters_replay_full_and_oriented_subset_fixture(
         )
     result = run_post_arm(Path(sources.comparison.manifest_path), tmp_path / "sidecars")
     assert verify_post_arm(tmp_path / "sidecars") == result
+    summaries = {
+        item["family"]: item
+        for item in json.loads((tmp_path / "sidecars/migration.json").read_text())["families"]
+    }
+    assert set(summaries) == {record.metadata.family_id for record in result.families}
+    for identity, summary in summaries.items():
+        flags = {
+            row["native_reported_hit"]
+            for row in rows(tmp_path / "sidecars" / identity / "migration.tsv")
+        }
+        if identity == "ilyas-joint-ora":
+            # Both complete fixture tails have p >= 0.1: exported flags are all false.
+            assert {flag.lower() for flag in flags} == {"false"}
+            assert summary["native_reported_hits"] == 0
+            assert summary["native_reported_hits_status"] == "exported"
+        else:
+            assert flags == {""}
+            assert summary["native_reported_hits"] is None
+            assert summary["native_reported_hits_status"] == "not_exported"
     assert result.strain_rollup == ("phenotype" if subset else "off")
     for family_record in result.families:
         family_metadata = family_record.metadata
@@ -547,13 +566,25 @@ def test_all_adapters_replay_full_and_oriented_subset_fixture(
         for artifact in family.metadata.sources
     )
     rows_path = tmp_path / "sidecars" / result.families[3].corrected.identity
-    rows = list(read_corrected_inventory(rows_path))
-    assert {row.p_value for row in rows} == {0.1, 0.9}
-    assert {row.q_bh for row in rows} == {0.2, 0.9}
+    corrected_rows = list(read_corrected_inventory(rows_path))
+    assert {row.p_value for row in corrected_rows} == {0.1, 0.9}
+    assert {row.q_bh for row in corrected_rows} == {0.2, 0.9}
 
 
 @pytest.mark.parametrize(
-    "kind", ["q", "metadata", "policy", "source", "extra", "numpy", "scope", "filter"]
+    "kind",
+    [
+        "q",
+        "metadata",
+        "policy",
+        "source",
+        "extra",
+        "numpy",
+        "scope",
+        "filter",
+        "migration_hits",
+        "migration_hits_status",
+    ],
 )
 def test_strict_post_arm_verifier_rejects_tampering(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, kind: str
@@ -569,6 +600,19 @@ def test_strict_post_arm_verifier_rejects_tampering(
         records[0]["q_by"] = 0.0001
         path.write_text("".join(json.dumps(record) + "\n" for record in records))
         document["families"][0]["corrected"]["sha256"] = file_sha256(path)
+    elif kind in {"migration_hits", "migration_hits_status"}:
+        path = destination / "migration.json"
+        summary = json.loads(path.read_text())
+        native = next(item for item in summary["families"] if item["family"] == "noel-full-screen")
+        if kind == "migration_hits":
+            native["native_reported_hits"] = 0
+        else:
+            native["native_reported_hits_status"] = "exported"
+        # Preserve the producer's serialization: a legacy zero must not fail merely
+        # because this test changed whitespace instead of missingness semantics.
+        path.write_text(json.dumps(summary, indent=2) + "\n")
+        artifact = next(item for item in document["reports"] if item["identity"] == path.name)
+        artifact["sha256"] = file_sha256(path)
     elif kind == "metadata":
         document["families"][0]["metadata"]["estimand"] = "different biological claim"
     elif kind == "policy":

@@ -1,4 +1,4 @@
-"""Probe issue #979 in isolated copies; 2026-10-23.
+"""Probe issues #979 and #986 in isolated copies; 2026-10-23.
 
 Inputs: canonical multiplicity modules and synthetic regression tests. Outputs:
 pytest.log and evidence.json under --output-dir. No canonical bytes are edited.
@@ -68,6 +68,22 @@ MUTATIONS = {
         "tracks_the_actual_nested_package_prefix",
         "Tracked code inventory must include",
     ),
+    "unrecorded_digest": (
+        [
+            (
+                "sources",
+                "return self.recorded_hashes[path.resolve()]",
+                "return self.recorded_hashes.get(path.resolve())",
+            )
+        ],
+        "expected_digest_requires_recorded_path",
+        "DID NOT RAISE ValueError",
+    ),
+    "conflicting_recorded_hash": (
+        [("sources", "if path in hashes and hashes[path] != digest:", "if False:")],
+        "duplicate_recorded_hashes",
+        "DID NOT RAISE ValueError",
+    ),
 }
 BOUNDARY_NODE = f"{GUARDS.relative_to(ROOT)}::test_ora_native_hit_includes_exact_fold_boundary"
 HASH_NODE = f"{GUARDS.relative_to(ROOT)}::test_non_rows_recorded_hash_checks"
@@ -82,6 +98,13 @@ EXPECTED_FAILURES = {
     "missing_stage": [f"{INVENTORY_NODE}[False]", f"{INVENTORY_NODE}[True]"],
     "hardcoded_prefix": [
         f"{ADAPTERS.relative_to(ROOT)}::test_code_identity_tracks_the_actual_nested_package_prefix"
+    ],
+    "unrecorded_digest": [
+        f"{GUARDS.relative_to(ROOT)}::test_expected_digest_requires_recorded_path[bound-unrecorded]"
+    ],
+    "conflicting_recorded_hash": [
+        f"{GUARDS.relative_to(ROOT)}::test_duplicate_recorded_hashes[conflicting-direct]",
+        f"{GUARDS.relative_to(ROOT)}::test_duplicate_recorded_hashes[conflicting-alias]",
     ],
 }
 
@@ -105,7 +128,10 @@ def main() -> int:
     before = {str(path.relative_to(ROOT)): file_sha256(path) for path in canonical}
     originals: dict[str, ModuleType] = {}
     origins: dict[str, dict[str, str]] = {}
-    expression = "fold_boundary or non_rows_recorded_hash_checks or code_identity"
+    expression = (
+        "fold_boundary or non_rows_recorded_hash_checks or code_identity "
+        "or expected_digest_requires_recorded_path or duplicate_recorded_hashes"
+    )
     marker = ""
     captured = io.StringIO()
     try:

@@ -34,6 +34,7 @@ from mtp.composition_calibration import (
     run_composition_calibration,
     save_composition_calibration_artifacts,
     stream_key,
+    study_flip_draw_order,
 )
 
 __all__ = [
@@ -65,6 +66,7 @@ __all__ = [
     "run_composition_calibration",
     "save_composition_calibration_artifacts",
     "stream_key",
+    "study_flip_draw_order",
 ]
 
 import mtp.composition_calibration as _target

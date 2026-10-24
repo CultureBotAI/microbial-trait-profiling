@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 import argparse
-import math
+import json
 import re
 from collections.abc import Sequence
+from datetime import UTC, datetime
 from pathlib import Path
 from textwrap import fill, shorten
 
@@ -17,6 +18,7 @@ from matplotlib.patches import Circle, FancyBboxPatch, PathPatch
 from matplotlib.path import Path as MplPath
 from scipy import stats
 
+from mtp import native_composition as native_support
 from mtp.body_site_diagram import (
     anatomical_site_base,
     bubble_radius,
@@ -26,10 +28,8 @@ from mtp.body_site_diagram import (
 from mtp.composition_denominators import (
     DENOMINATOR_DEFINITION,
     retained_trait_counts,
-    trait_fractions,
 )
 from mtp.paths import file_sha256
-from mtp.trait_guilds import load_profiles
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VIS_DIR = REPO_ROOT / "trait-visualization"
@@ -138,15 +138,7 @@ def format_trait_label(column_id: str, row: pd.Series) -> str:
 
 def load_trait_labels(path: Path = TRAIT_COLUMNS_PATH) -> pd.DataFrame:
     """Load trait labels for every raw study-trait profile column."""
-    labels = pd.read_csv(path, sep="\t", dtype=str).fillna("")
-    labels = labels.set_index("column_id", drop=False)
-    labels["display_label"] = [
-        format_trait_label(column_id, row) for column_id, row in labels.iterrows()
-    ]
-    labels["trait_label"] = labels["display_label"].map(full_trait_label)
-    labels["display_category"] = labels["object_category"].str.removeprefix("biolink:")
-    labels.loc[labels["display_category"] == "", "display_category"] = "unknown"
-    return labels
+    return native_support.load_trait_labels(path)
 
 
 def load_selected_trait_metadata(path: Path = SELECTED_TRAIT_METADATA_PATH) -> pd.DataFrame:
@@ -180,20 +172,7 @@ def metadata_from_trait_ids(trait_ids: pd.Index) -> pd.DataFrame:
 
 def load_profile_matrix(path: Path = PROFILE_MATRIX_PATH) -> pd.DataFrame:
     """Load the full raw study/experiment/direction trait-count matrix."""
-    profiles = pd.read_csv(path, sep="\t")
-    trait_columns = [
-        column for column in profiles.columns if column not in PROFILE_METADATA_COLUMNS
-    ]
-    values = profiles[trait_columns].apply(pd.to_numeric, errors="coerce").fillna(0.0)
-    profile_ids = [
-        f"{study_id}|{experiment_id}|{inc_dec}"
-        for study_id, experiment_id, inc_dec in profiles[PROFILE_METADATA_COLUMNS].itertuples(
-            index=False,
-            name=None,
-        )
-    ]
-    values.index = profile_ids
-    return retained_trait_counts(values.groupby(level=0, sort=False).sum())
+    return native_support.load_profile_matrix(path)
 
 
 def split_profile_ids(value: object) -> list[str]:
@@ -217,38 +196,7 @@ def core_pair_metadata(profiles_path: Path, experiments_path: Path) -> pd.DataFr
     Neither a heatmap selection nor an old paired-metadata file defines this
     cohort. Repeated direction rows refer to the same summed raw profile.
     """
-    profiles, corpus = load_profiles(
-        profiles_path, experiments_path, {}, reject_missing_counts=True
-    )
-    if not profiles:
-        raise ValueError("No human paired profiles in the verified core inputs")
-    groups: dict[tuple[str, str], dict[str, object]] = {}
-    for profile in profiles:
-        key = (profile.study_id, profile.experiment_id)
-        if key not in groups:
-            groups[key] = {
-                "pair_id": f"{profile.study_id}|{profile.experiment_id}|paired_inc_minus_dec",
-                "study_id": profile.study_id,
-                "experiment_id": profile.experiment_id,
-                "condition": profile.condition,
-                "body_site": profile.body_site,
-                "host_species": "Homo sapiens",
-                "zero_total_policy": "included_in_historical_native_composition",
-            }
-        direction = "increased" if profile.inc_dec == "inc" else "decreased"
-        groups[key][f"{direction}_profile_ids"] = (
-            f"{profile.study_id}|{profile.experiment_id}|{profile.inc_dec}"
-        )
-        groups[key][f"{direction}_profile_count"] = 1
-    metadata = pd.DataFrame.from_records(list(groups.values())).set_index("pair_id")
-    for name, value in (
-        ("input_profile_rows", corpus.profile_rows),
-        ("nonhuman_profile_rows_excluded", corpus.dropped_non_human),
-        ("unpaired_profile_rows_excluded", corpus.dropped_unpaired),
-        ("missing_metadata_profile_rows_excluded", corpus.unmatched_experiments),
-    ):
-        metadata[name] = value
-    return metadata
+    return native_support.core_pair_metadata(profiles_path, experiments_path)
 
 
 def pair_denominator_summary(
@@ -307,74 +255,18 @@ def select_stratum_traits(
     max_profile_support_fraction: float = MAX_STRATIFIED_PROFILE_SUPPORT_FRACTION,
 ) -> pd.DataFrame:
     """Select supported variable traits within a stratum's profile-count matrix."""
-    profile_matrix = retained_trait_counts(profile_matrix)
-    composition = trait_fractions(profile_matrix)
-    profile_support = profile_matrix.gt(0).sum(axis=0).astype(int)
-    total_signal = profile_matrix.sum(axis=0).astype(float)
-    composition_variance = composition.var(axis=0)
-
-    trait_metadata = pd.DataFrame(
-        {
-            "trait_id": composition.columns,
-            "profile_support": profile_support,
-            "total_signal": total_signal,
-            "composition_variance": composition_variance,
-        },
-        index=composition.columns,
-    ).join(
-        trait_labels[
-            [
-                "trait_label",
-                "display_label",
-                "column_label",
-                "object_name",
-                "object_category",
-                "display_category",
-            ]
-        ],
-        how="left",
+    return native_support.select_stratum_traits(
+        profile_matrix,
+        trait_labels,
+        max_traits=max_traits,
+        min_profile_support=min_profile_support,
+        max_profile_support_fraction=max_profile_support_fraction,
     )
-    trait_metadata["trait_label"] = trait_metadata["trait_label"].fillna(
-        pd.Series(trait_metadata.index, index=trait_metadata.index)
-    )
-    trait_metadata["selection_score"] = [
-        variance * math.log1p(signal)
-        for variance, signal in zip(
-            trait_metadata["composition_variance"],
-            trait_metadata["total_signal"],
-            strict=True,
-        )
-    ]
-
-    max_support = max(2, int(len(profile_matrix) * max_profile_support_fraction))
-    eligible = trait_metadata[
-        (trait_metadata["profile_support"] >= min_profile_support)
-        & (trait_metadata["profile_support"] <= max_support)
-        & (trait_metadata["composition_variance"] > 0)
-    ].copy()
-    eligible = eligible[
-        ~eligible.index.to_series().str.contains("mediadive.medium", regex=False)
-        & ~eligible["trait_label"].str.contains("mediadive.medium", regex=False)
-    ].copy()
-    eligible = eligible.sort_values(
-        ["selection_score", "composition_variance", "profile_support", "trait_id"],
-        ascending=[False, False, False, True],
-    )
-    if max_traits is not None:
-        eligible = eligible.head(max_traits)
-    eligible["selected_trait_rank"] = np.arange(1, len(eligible) + 1)
-    if len(eligible) < 2:
-        msg = "Fewer than two traits passed the stratum selection filters."
-        raise ValueError(msg)
-    return eligible
 
 
 def build_zscore_matrix(profile_matrix: pd.DataFrame, selected_traits: pd.Index) -> pd.DataFrame:
     """Create column z-scores from log-scaled trait fractions."""
-    composition = trait_fractions(profile_matrix).loc[:, selected_traits]
-    scaled = (composition * 1000).apply(lambda column: column.map(math.log1p))
-    zscores = (scaled - scaled.mean(axis=0)) / scaled.std(axis=0, ddof=0).replace(0, float("nan"))
-    return zscores.fillna(0.0)
+    return native_support.build_zscore_matrix(profile_matrix, selected_traits)
 
 
 def annotation_counts_for_traits(profile_matrix: pd.DataFrame, traits: pd.Index) -> pd.Series:
@@ -391,25 +283,7 @@ def build_pair_matrix_from_profiles(
     pair_metadata: pd.DataFrame,
 ) -> pd.DataFrame:
     """Build matched increased-minus-decreased rows from profile-level z-scores."""
-    rows: list[pd.Series] = []
-    for pair_id, row in pair_metadata.iterrows():
-        inc_ids = pd.Index(split_profile_ids(row["increased_profile_ids"])).intersection(
-            profile_zscores.index
-        )
-        dec_ids = pd.Index(split_profile_ids(row["decreased_profile_ids"])).intersection(
-            profile_zscores.index
-        )
-        if len(inc_ids) == 0 or len(dec_ids) == 0:
-            continue
-        pair_values = profile_zscores.loc[inc_ids].mean(axis=0) - profile_zscores.loc[dec_ids].mean(
-            axis=0
-        )
-        pair_values.name = pair_id
-        rows.append(pair_values)
-    if not rows:
-        msg = "No matched increased/decreased pairs were available for this stratum."
-        raise ValueError(msg)
-    return pd.DataFrame(rows)
+    return native_support.build_pair_matrix_from_profiles(profile_zscores, pair_metadata)
 
 
 def is_excluded_condition_label(value: object) -> bool:
@@ -491,20 +365,7 @@ def compute_trait_stats(
         annotation_counts = pd.Series(pd.NA, index=matrix.columns)
     annotation_counts = annotation_counts.reindex(matrix.columns)
 
-    if study_ids is None:
-        study_series = pd.Series(matrix.index, index=matrix.index)
-    elif isinstance(study_ids, pd.Series):
-        if study_ids.index.equals(matrix.index):
-            study_series = study_ids.copy()
-        elif matrix.index.isin(study_ids.index).all():
-            study_series = study_ids.loc[matrix.index].copy()
-        else:
-            study_series = study_ids.reindex(matrix.index).copy()
-    else:
-        study_series = pd.Series(list(study_ids), index=matrix.index)
-
-    study_series = study_series.fillna(pd.Series(matrix.index, index=matrix.index))
-    study_matrix = matrix.groupby(study_series, sort=False).mean()
+    study_matrix = native_support.study_contrasts(matrix, study_ids)
     study_count = len(study_matrix)
     denominator_columns = [
         "n_experiments",
@@ -557,23 +418,21 @@ def compute_trait_stats(
             ci95_upper = mean_contrast + t_crit * se
 
         study_values = study_matrix[column].to_numpy(dtype=float)
-        study_n = len(study_values)
-        study_mean = float(study_values.mean())
-        study_median = float(np.median(study_values))
-        study_std = float(study_values.std(ddof=1)) if study_n >= 2 else 0.0
+        moments = native_support.study_moments(study_values)
+        study_n, study_mean, study_median, study_std = (
+            moments.count,
+            moments.mean,
+            moments.median,
+            moments.std,
+        )
+        study_test_status = moments.status
 
-        if study_n < 2 or np.isclose(study_std, 0.0):
-            study_test_status = (
-                "insufficient_support"
-                if study_n < 2
-                else ("all_tied" if study_std == 0 and study_mean == 0 else "insufficient_variance")
-            )
+        if study_test_status != "tested":
             study_t_stat = float("nan")
             study_p_value = float("nan")
             study_ci95_lower = float("nan")
             study_ci95_upper = float("nan")
         else:
-            study_test_status = "tested"
             study_result = stats.ttest_1samp(study_values, 0.0)
             study_t_stat = float(study_result.statistic)
             study_p_value = float(study_result.pvalue)
@@ -760,11 +619,11 @@ def manifest_path(output_dir: Path) -> Path:
 
 
 def display_path(path: Path) -> str:
-    """Return a repo-relative path when possible, otherwise the absolute path."""
+    """Return a repo-relative path or an external basename, without private prefixes."""
     try:
-        return str(path.relative_to(REPO_ROOT))
+        return str(path.resolve().relative_to(REPO_ROOT.resolve()))
     except ValueError:
-        return str(path)
+        return path.name
 
 
 def compute_stratum_trait_stats(
@@ -915,9 +774,154 @@ def write_stratified_trait_stats(
             }
         )
 
-    manifest = pd.DataFrame.from_records(manifest_rows)
+    manifest = pd.DataFrame.from_records(
+        manifest_rows,
+        columns=[
+            "stratum_kind",
+            "stratum",
+            "filename_token",
+            "analysis_role",
+            "pair_count",
+            "study_count",
+            "selected_trait_count",
+            "path",
+        ],
+    )
     manifest.to_csv(manifest_path(output_dir), sep="\t", index=False)
     return manifest
+
+
+def write_legacy_stratified_stats(
+    profiles_path: Path,
+    pair_metadata_path: Path,
+    trait_labels_path: Path,
+    output_dir: Path,
+    *,
+    min_pairs: int = MIN_STRATIFIED_PAIRS,
+) -> Path:
+    """Refresh pooled and site-group tables with explicit file-level provenance (#824).
+
+    Pair metadata must come from the heatmap producer on these exact counts and
+    labels. This is a legacy input binding, not a verified core execution record.
+    """
+    paths = {
+        "profiles": profiles_path,
+        "pair_metadata": pair_metadata_path,
+        "trait_labels": trait_labels_path,
+    }
+    hashes = {name: file_sha256(path) for name, path in paths.items()}
+    metadata = pd.read_csv(pair_metadata_path, sep="\t", index_col=0)
+    for source, column in (("profiles", "profile_sha256"), ("trait_labels", "trait_labels_sha256")):
+        if column not in metadata or not metadata[column].eq(hashes[source]).all():
+            raise ValueError(
+                f"Rebuild pair metadata with just trait-heatmaps: missing or mismatched {column}"
+            )
+    if metadata.empty:
+        raise ValueError("Rebuild pair metadata: no matched pairs")
+    if metadata.duplicated(["study_id", "experiment_id"]).any():
+        raise ValueError("Rebuild pair metadata: duplicate study/experiment pairs")
+    heatmap_selection = {}
+    for column in metadata.columns:
+        if column.startswith("heatmap_parameter_"):
+            values = metadata[column].drop_duplicates().tolist()
+            if len(values) != 1 or pd.isna(values[0]):
+                raise ValueError(f"Rebuild pair metadata: inconsistent {column}")
+            heatmap_selection[column.removeprefix("heatmap_parameter_")] = values[0]
+    for row in metadata.itertuples():
+        for direction, column in (
+            ("inc", "increased_profile_ids"),
+            ("dec", "decreased_profile_ids"),
+        ):
+            expected = f"{row.study_id}|{row.experiment_id}|{direction}"
+            if split_profile_ids(getattr(row, column)) != [expected]:
+                raise ValueError(
+                    f"Pair metadata contains mismatched profile identities: {row.Index}"
+                )
+    profiles = load_profile_matrix(profiles_path)
+    labels = load_trait_labels(trait_labels_path)
+    audit = pair_denominator_summary(profiles, metadata)
+    pooled_summaries_and_figure = {
+        output_dir / path.name
+        for path in (CONDITION_SUMMARY_TSV, BODY_SITE_SUMMARY_TSV, OUTPUT_PNG)
+    }
+    previous_outputs = set(output_dir.glob("trait_profile_paired_contrast_trait_stats*.tsv")) | {
+        path for path in pooled_summaries_and_figure if path.is_file()
+    }
+    provenance = output_dir / "stratified_stats_provenance.json"
+    for candidate in [*previous_outputs, provenance]:
+        if candidate.exists() and any(candidate.samefile(path) for path in paths.values()):
+            raise ValueError("Site-statistics output overlaps an input file")
+    # An interrupted/failed refresh must not leave a prior success record in place.
+    provenance.unlink(missing_ok=True)
+    pooled = compute_stratum_trait_stats(
+        profiles, metadata, labels, stratum_kind="pooled", stratum="pooled"
+    )
+    for source, path in paths.items():
+        prefix = "profile" if source == "profiles" else source
+        pooled[f"{prefix}_source"] = display_path(path)
+        pooled[f"{prefix}_sha256"] = hashes[source]
+    output_dir.mkdir(parents=True, exist_ok=True)
+    pooled_paths = [
+        trait_stats_path(output_dir, "pooled"),
+        output_dir / "trait_profile_paired_contrast_trait_stats.tsv",
+    ]
+    for path in pooled_paths:
+        pooled.to_csv(path, sep="\t", index=False)
+    manifest = write_stratified_trait_stats(
+        profiles,
+        metadata,
+        labels,
+        output_dir=output_dir,
+        min_pairs=min_pairs,
+    )
+    outputs = [*pooled_paths, manifest_path(output_dir)] + [
+        trait_stats_path(output_dir, token) for token in manifest["filename_token"]
+    ]
+    if hashes != {name: file_sha256(path) for name, path in paths.items()}:
+        raise ValueError("Inputs changed during stratified export; rerun before using outputs")
+
+    def inventory(path: Path) -> dict[str, object]:
+        return {
+            "path": display_path(path),
+            "sha256": file_sha256(path),
+            "size_bytes": path.stat().st_size,
+        }
+
+    record = {
+        "schema_version": "1.2",
+        "analysis": "legacy_native_pooled_and_body_site_group_composition",
+        "verification_status": "legacy_inputs_hashed_not_core_verified",
+        "created_at": datetime.now(UTC).isoformat(),
+        "producer": inventory(Path(__file__)),
+        "inputs": {name: inventory(path) for name, path in paths.items()},
+        "parameters": {
+            "min_pairs": min_pairs,
+            "max_traits": STRATIFIED_TRAIT_COUNT,
+            "min_profile_support": MIN_STRATIFIED_PROFILE_SUPPORT,
+            "max_profile_support_fraction": MAX_STRATIFIED_PROFILE_SUPPORT_FRACTION,
+            "site_grouping": "body_site_group from source-bound heatmap pair metadata",
+            "pooled_population": "all matched pairs in source-bound heatmap metadata",
+            "heatmap_selection": heatmap_selection,
+            "heatmap_selection_status": "recorded" if heatmap_selection else "unavailable",
+            "strain_rollup_status": "unverified; awaiting upstream scope contract (#847)",
+            "multiple_testing": "BH separately within each selected stratum family",
+        },
+        "pair_denominator_audit": audit,
+        "outputs": [inventory(path) for path in outputs],
+        "not_regenerated": [
+            {
+                **inventory(path),
+                "reason": (
+                    "not_produced_by_site_stats_mode"
+                    if path in pooled_summaries_and_figure
+                    else "existing_stratum_table_not_refreshed"
+                ),
+            }
+            for path in sorted(previous_outputs - set(outputs))
+        ],
+    }
+    provenance.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
+    return provenance
 
 
 def add_anatomical_outline(ax: plt.Axes) -> None:
@@ -1400,7 +1404,20 @@ def main(argv: Sequence[str] | None = None) -> None:
     )
 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--stats-only", action="store_true", help="Write only the pooled stats TSV")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--stats-only", action="store_true", help="Write only the pooled stats TSV")
+    mode.add_argument(
+        "--stratified-stats-only",
+        action="store_true",
+        help="Refresh legacy pooled and site-group stats, manifest and provenance without figures",
+    )
+    parser.add_argument(
+        "--min-stratified-pairs",
+        type=int,
+        help=(
+            f"Minimum site-group pairs for --stratified-stats-only (default {MIN_STRATIFIED_PAIRS})"
+        ),
+    )
     parser.add_argument("--output-dir", type=Path, default=INVESTIGATION_DIR)
     parser.add_argument("--core-run", type=Path, help="Verified core run for --stats-only")
     parser.add_argument("--profiles", dest="profile_input", type=Path)
@@ -1408,12 +1425,33 @@ def main(argv: Sequence[str] | None = None) -> None:
     parser.add_argument("--trait-labels", dest="column_labels", type=Path)
     parser.set_defaults(experiments_input=None, full_dump_input=None)
     args = parser.parse_args(argv)
-    if not args.stats_only and args.output_dir != INVESTIGATION_DIR:
-        parser.error("--output-dir is supported only with --stats-only")
+    if (
+        not args.stats_only
+        and not args.stratified_stats_only
+        and args.output_dir != INVESTIGATION_DIR
+    ):
+        parser.error("--output-dir requires --stats-only or --stratified-stats-only")
     if args.core_run is not None and not args.stats_only:
         parser.error("--core-run requires --stats-only")
     if args.core_run is not None and args.pair_metadata is not None:
         parser.error("--core-run derives pair metadata; omit --pair-metadata")
+    if args.min_stratified_pairs is not None:
+        if not args.stratified_stats_only:
+            parser.error("--min-stratified-pairs requires --stratified-stats-only")
+        if args.min_stratified_pairs < 1:
+            parser.error("--min-stratified-pairs must be positive")
+    else:
+        args.min_stratified_pairs = MIN_STRATIFIED_PAIRS
+    if args.stratified_stats_only:
+        provenance = write_legacy_stratified_stats(
+            args.profile_input or PROFILE_MATRIX_PATH,
+            args.pair_metadata or PAIRED_METADATA_PATH,
+            args.column_labels or TRAIT_COLUMNS_PATH,
+            args.output_dir,
+            min_pairs=args.min_stratified_pairs,
+        )
+        print(f"Wrote pooled/site-group statistics and provenance: {provenance}")
+        return
     bundle = bind_count_arguments(args)
     output_path = trait_stats_path(args.output_dir, "pooled")
     record_path = args.output_dir / "core_consumption.json"
@@ -1479,6 +1517,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         trait_stats[f"{source_name}_sha256"] = file_sha256(source_path)
     if args.stats_only:
         args.output_dir.mkdir(parents=True, exist_ok=True)
+        (args.output_dir / "stratified_stats_provenance.json").unlink(missing_ok=True)
         trait_stats.to_csv(output_path, sep="\t", index=False)
         if bundle is not None:
             write_consumer_record(
@@ -1503,6 +1542,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     )
 
     INVESTIGATION_DIR.mkdir(parents=True, exist_ok=True)
+    (INVESTIGATION_DIR / "stratified_stats_provenance.json").unlink(missing_ok=True)
     trait_stats.to_csv(TRAIT_STATS_TSV, sep="\t", index=False)
     trait_stats.to_csv(POOLED_TRAIT_STATS_TSV, sep="\t", index=False)
     condition_summary.to_csv(CONDITION_SUMMARY_TSV, sep="\t", index=False)
@@ -1511,6 +1551,7 @@ def main(argv: Sequence[str] | None = None) -> None:
         profile_matrix,
         metadata,
         trait_labels,
+        output_dir=INVESTIGATION_DIR,
     )
 
     create_infographic(

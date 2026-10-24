@@ -23,6 +23,7 @@ from scipy.stats import false_discovery_control
 from mtp.datamodel import multiple_testing_pydantic as models
 from mtp.datamodel.multiple_testing_pydantic import (
     AdjustedHypothesis,
+    AnalysisReasonV1,
     CorrectionRun,
     HypothesisDefinition,
     HypothesisFamily,
@@ -32,7 +33,7 @@ from mtp.datamodel.multiple_testing_pydantic import (
 )
 from mtp.workflow.runtime import content_hash
 
-ENGINE_VERSION = "1.1.0"
+ENGINE_VERSION = "1.2.0"
 POLICY_PATH = Path(__file__).resolve().parents[2] / "methods" / "multiple_testing_policy_v1.yaml"
 # Pin the authoritative versioned artifact, without duplicating its policy values.
 _POLICY_FILE_SHA256 = "d1d504783871b1847fb91bc2cb96cea707400708180e7b75ca98ceba1b92b1ba"
@@ -172,6 +173,12 @@ def validate_raw_hypothesis(row: RawHypothesis) -> RawHypothesis:
             raise ValueError("tested hypothesis needs a finite probability and no undefined reason")
     elif row.p_value is not None or row.reason is None or not row.reason.strip():
         raise ValueError("untestable hypothesis needs null p-value and an explicit reason")
+    if (
+        row.reason_vocabulary == "analysis_reason_v1"
+        and row.reason is not None
+        and row.reason not in {reason.value for reason in AnalysisReasonV1}
+    ):
+        raise ValueError("Unsupported analysis_reason_v1 reason code")
     return row
 
 

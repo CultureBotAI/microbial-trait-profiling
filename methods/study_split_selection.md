@@ -27,9 +27,15 @@ family size is the number of selected triples times two. These are different
 quantities and both are recorded. Changing the strain scope changes the core
 vocabulary, rather than a hard-coded family size.
 
-The v1.1 family record copies the verified strain scope, ordered feature-filter
+The shared v1.2 family record copies the verified strain scope, ordered feature-filter
 identity and source profile representation. Each member names its exact three
 condition labels, Feces stratum and split ID as explicit scientific coordinates.
+Study-split raw hypotheses retain the foundation's compatible
+`legacy_free_text_v1` reason vocabulary; the selected statistical rules and
+untestable reasons are unchanged. Corrections record the v1.2 engine and include
+the reason-vocabulary field in their serialized identity. Replay historical
+outputs with their recorded implementation and locked environment; unchanged
+numerical rules do not imply byte-identical records across contract versions.
 
 A held-out triple with shared studies is untestable because U6 allocates distinct
 studies to its condition blocks. If any null draw has undefined mean distance,
@@ -58,10 +64,13 @@ The sidecar binds every Git-tracked canonical `src/mtp` Python file through the
 shared multiplicity code inventory, the consumed protocols and methods, and the
 dependency lock. Untracked scratch files and editor locks do not change that
 inventory. Unresolved tracked Python conflicts, a missing tracked module, or an
-inventory that excludes the executing stage are rejected. It records the repository
-commit and dirty state as historical execution context, preserved during replay. Output publication
-or a documentation-only commit may change that context without changing the
-scientific identity checked by replay.
+inventory that excludes the shared `mtp.multiplicity.stage` module are rejected.
+The runner also explicitly hashes both study-split modules and the other paths
+in its `IMPLEMENTATIONS` inventory. It records the repository commit and dirty
+state as historical execution context, preserved during replay. Output publication
+or a commit changing only unbound documentation may change that context without
+changing the scientific identity checked by replay. This methods file is explicitly
+bound, so edits to it do change the recorded identity.
 This includes transitive helpers for pairing and sign tallies, even when a helper
 change happens to leave a particular fixture's numbers unchanged. Publication
 writes the exact UTF-8 bytes that are hashed, independently of host newline rules.
@@ -81,7 +90,8 @@ to its consumed bytes against transient edit-and-restore races; that shared
 limitation is tracked in #983. The recorded results remain an internal exploratory
 assessment under the statistical limitations above.
 
-Update this author branch by merging the final #883 head and later `origin/main`,
-never by rebasing. The #974/#977/#979 fixes and tests include merge-carried changes
+The #883 implementation is merged into main. Update this author branch by
+merging `origin/main`, never by rebasing. The #974/#977/#979 fixes and tests include
+merge-carried changes
 that a rebase can silently drop. Preserve their ancestry and explicit regression
 files, then repeat the required checks after integration.

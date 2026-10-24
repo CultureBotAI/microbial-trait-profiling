@@ -3,6 +3,10 @@
 Inputs: explicit count-profile and experiment TSVs. Output: JSON with observed
 zero-total exclusions, raw and production guild tests, and calibration parity.
 Historical source files are read only. Retain this script with its results.
+
+The unused eight-body-site display matrix was removed for #784 on 2026-10-22.
+The original audit's McNemar and rank correlations never read that matrix;
+their scientific outputs are unchanged (producer source hashes change).
 """
 
 from __future__ import annotations
@@ -13,7 +17,7 @@ from dataclasses import asdict
 from pathlib import Path
 
 from mtp.calibration import guild_mcnemar_with
-from mtp.guild_maps import build_matrix, compute_correlation
+from mtp.guild_maps import compute_correlation
 from mtp.paths import file_sha256
 from mtp.trait_guilds import OXYGEN_GUILDS, TABLE1_TRAITS, drop_zero_total_pairs, load_profiles
 
@@ -28,8 +32,7 @@ def audit(profiles_path: Path, experiments_path: Path) -> dict[str, object]:
     exclusion = drop_zero_total_pairs(profiles)
     raw = compute_correlation(profiles)
     production = compute_correlation(exclusion.profiles)
-    matrix = build_matrix(profiles, max_conditions=60, max_body_sites=8, min_studies=3)
-    calibrated = guild_mcnemar_with(matrix)(profiles)[0]
+    calibrated = guild_mcnemar_with()(profiles)[0]
     return {
         "issue": 730,
         "inputs": {

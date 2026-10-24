@@ -16,6 +16,12 @@ that trait in that profile — one reported taxon can contribute many counts via
 its descendant nodes, so cells are not taxon counts (the sampling-unit inflation
 that #131 recorded for the earlier, assertion-level enrichment urn).
 
+Pairing alone does not remove between-list annotation-depth differences. The
+standalone [presence and depth sensitivity](presence_depth_sensitivity.md) compares
+0/1 taxon-by-trait representation and estimates a conditional paired fraction
+difference at zero annotation-depth difference, with equal study weights. It is
+an exploratory sensitivity, not a causal correction or a replacement arm result.
+
 ## What each arm asks
 
 **Composition arm.** Within one experiment, is a trait's share of the signal
@@ -64,7 +70,7 @@ here; the first comparison displays every declared candidate in manifest order.
 | Base population | Human experiments with exactly one increased and one decreased profile and consistent pair metadata. Reject ambiguous keys and malformed, missing or negative counts; never silently coerce them to zero. Record all filtering and available annotation-coverage information. Unknown coverage remains flagged. |
 | Analysis scope | The initial comparison pools the full base population. A body-site or condition-by-body-site analysis is a separately identified scope using exact source labels and its own eligible-pair list. Missing labels remain explicit. Heatmap top-N cuts, masking and an Other display group never define the analysis population. |
 | Candidate families | Keep the six traits named in Table 1 and all 15 unordered pairs as separate feature types for the matched-corpus Table 1-trait analog sensitivity analysis. Freeze the source qualifiers and ID mapping in `TABLE1_TRAITS`; orient every ratio in that declared trait order, with an explicit numerator and reference. A larger trait screen requires its own candidate manifest: the directional arm's full-trait screen declares one in [`trait_screen_manifest.json`](trait_screen_manifest.json) and is corrected in its own family, separate from the six (#255). |
-| Fraction denominator | For each profile, sum every column in the declared non-MediaDive trait universe, including traits outside Table 1. That is 317 retained columns in the matrix identified below, built without BacDive strain records, with 2,333 MediaDive columns excluded; the strain rollup scope sets the universe (see below). Selecting six traits or a ratio must not redefine this total. |
+| Fraction denominator | For each profile, sum every column in the declared non-MediaDive trait universe, including traits outside Table 1. That is 317 retained columns in the matrix identified below, built without BacDive strain records (`off`), with 2,333 MediaDive columns excluded; under the primary `phenotype` scope it is 344, as the strain rollup scope sets the universe (see below). Selecting six traits or a ratio must not redefine this total. |
 | ORA background | For the harmonized baseline, fix the background to all valid profiles in the full paired human base population, using that same retained-column universe. Record its trait totals, grand total and contributing profile IDs. Do not rebuild it from a displayed stratum or a ratio's positive-count subset. Alternative backgrounds are separately versioned sensitivity scenarios. |
 | Weighting | Average eligible experiment contrasts within a study, then give each eligible study equal weight within the declared scope. Pool a study's experiments directly across conditions; do not count each condition-study group as another study. Identify shared cohorts where known when assessing independence and uncertainty. |
 
@@ -246,11 +252,11 @@ framework, described under [Compositionality](#compositionality).
 | Transformation | fractions, x1000, log1p, per-trait z-score | none; each taxon counts once per trait it bears | fractions, study mean per direction, sign of the difference |
 | Test | one-sample t against 0, two-sided | hypergeometric upper tail, one-tailed | exact binomial against 0.5, two-sided |
 | Paired | yes, by construction | no; increased and decreased tested separately | yes, then reduced to one sign per study |
-| Native multiple testing | Benjamini-Hochberg within each output table | Benjamini-Hochberg across every test in the inspected run | Benjamini-Yekutieli across all 317 retained traits, reported at the nominal and the effective family size (#255, #265); the six-trait Benjamini-Hochberg family is retained separately for the published Table 1 numbers |
+| Native multiple testing | Benjamini-Hochberg within each output table | Benjamini-Hochberg across every test in the inspected run | Benjamini-Yekutieli across all retained traits (317 under `off`, 344 under `phenotype`), reported at the nominal and the effective family size (#255, #265); the six-trait Benjamini-Hochberg family is retained separately for the published Table 1 numbers |
 | Historical selection/display rule | no significance cutoff; the figure takes the top ten by p | q at most 0.001 and fold at least 1.5 | no display cutoff; q reported per trait |
-| Typical n per test | 2,257 pairs, identical for every trait | a mean of 9.05 taxa per profile against 5,829 background taxa in the production run; tens of thousands of assertions per profile in the Table 1 native reruns | 2 to 905 of the 922 nonzero studies (932 total) across the 317 candidates, 606 to 898 for the six of Table 1 (ties excluded) |
+| Typical n per test | 2,257 pairs, identical for every trait | a mean of 9.05 taxa per profile against 5,829 background taxa in the production run; tens of thousands of assertions per profile in the Table 1 native reruns | 2 to 905 of the 922 nonzero studies (932 total) across the 317 `off`-scope candidates, 606 to 898 for the six of Table 1 (ties excluded) |
 | Strength | Uses matched contrasts and their magnitudes; screens many traits | Locates profile-specific excess relative to a declared corpus background | Gives each study one directional vote; exact test without a normality assumption for magnitudes |
-| Main limitations | Repeated experiments within studies are not independent; denominator and transformation affect the estimand | Nested taxa inherit the same annotations, so draws are not independent; coverage and background composition affect calls | Discards magnitude, excludes ties, and remains denominator-dependent; support varies by orders of magnitude across the 317 candidates, so a lopsided share on few studies is not a finding |
+| Main limitations | Repeated experiments within studies are not independent; denominator and transformation affect the estimand | Nested taxa inherit the same annotations, so draws are not independent; coverage and background composition affect calls | Discards magnitude, excludes ties, and remains denominator-dependent; support varies by orders of magnitude across the 317 `off`-scope candidates, so a lopsided share on few studies is not a finding |
 | Contribution to the shared comparison | Supply matched source counts and native transformed effects; reconcile the denominator, then report the common study-weighted fraction/ratio quantities | Supply profile counts, fixed-background folds and native profile evidence; provide separate descriptive increased/decreased study summaries | Supply study-level direction and coverage for the shared fraction quantities and all 15 explicitly referenced ratios |
 | Meaning of disagreement | A mean contrast can be large despite inconsistent study signs | Background enrichment can occur on both sides without a paired shift | Consistent small shifts can coexist with a small mean; ratio directions also depend on the named reference |
 
@@ -309,7 +315,7 @@ The enrichment arm's production urn is built from taxa. Each of the 4,514
 testable paired human profiles is a draw of its distinct reported taxa (mean 9.05
 per profile) from the 5,829 BugSigDB-reported taxa of `taxa_trait_matrix.tsv`; a
 taxon counts as trait-bearing if the matrix marks it so, including positivity
-inherited from descendants at any rank. Over the 317 non-MediaDive traits that is
+inherited from descendants at any rank. Over the 317 non-MediaDive traits of that run (`off`) that is
 1,430,938 tests, which at Benjamini-Hochberg q at most 0.001 and fold at least 1.5
 call 66,064 enrichments; the lower-tail run at fold at most 0.5 calls 3
 depletions (`data/derived/trait_enrichment_all_results.tsv` and
@@ -447,7 +453,7 @@ this note reported 2,290 MediaDive columns, and the run below measures 2,333.
 |---|---|
 | matrix | `data/derived/study_trait_profiles_wide.tsv` |
 | sha256 | `4c99aa8b4e386d42cc7938ab15c452ad4278b143b7779c4eb1635f71d386f21a` |
-| header columns | 2,610 = 3 identifier + **2,290 MediaDive** + **317 retained** |
+| header columns | 2,610 = 3 identifier + **2,290 MediaDive** + **317 retained** (`off`) |
 | profile rows | 5,629 (`count_input_16s_wms_v1` human 16S/WMS profiles; pre-#742 run had 7,329 rows before host filtering) |
 | BugSigDB vintage | `2026-04-24_00:41_UTC` (v1.3.1) |
 | KG-Microbe nodes | declared md5 `dd76b4656f9341db25a7c4afa96cd58e` (declared by `data/kg-microbe/provenance.json` sidecar) |
@@ -464,9 +470,11 @@ number can be traced to the file it came from rather than to a vintage string.
 
 Two further points, because matching one field does not establish the rest:
 
-- The 317 **retained column names** are identical between this matrix and the
-  committed `study_trait_profiles_wide.tsv.gz`. That does **not** make them the
-  same corpus. The `.gz` holds 12,108 rows to this matrix's 7,329, the 7,329 are a
+- The 317 **retained column names** (`off`) are identical between this matrix and the
+  `study_trait_profiles_wide.tsv.gz` committed when this comparison was made, an
+  `off` table. (The `.gz` committed since the final rerun at 511c891 is the
+  `phenotype` table: 5,629 rows, 344 retained columns.) That does **not** make them
+  the same corpus. The `.gz` then held 12,108 rows to this matrix's 7,329, the 7,329 are a
   strict subset of them, and of those shared rows **one differs**:
   `bsdb:25487798-1 inc` disagrees on 81 of the 317 retained columns, its retained
   total 12,587 here against 12,931 there. So the populations differ by design and

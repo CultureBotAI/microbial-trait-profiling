@@ -9,13 +9,16 @@ from mtp.trait_composition import (
     LOG_RATIO_TIE_TOLERANCE,
     LogRatioResult,
     LogRatioSummary,
+    LogRatioSupport,
     StudyLogRatio,
     _display,
     _matched_profiles,
     _summarize,
     compute_log_ratio_shifts,
     file_sha256,
+    log_ratio_support,
     main,
+    paired_log2_ratio_change,
     write_log_ratio_outputs,
 )
 
@@ -25,13 +28,16 @@ __all__ = [
     "LOG_RATIO_TIE_TOLERANCE",
     "LogRatioResult",
     "LogRatioSummary",
+    "LogRatioSupport",
     "StudyLogRatio",
     "_display",
     "_matched_profiles",
     "_summarize",
     "compute_log_ratio_shifts",
     "file_sha256",
+    "log_ratio_support",
     "main",
+    "paired_log2_ratio_change",
     "write_log_ratio_outputs",
 ]
 

@@ -15,6 +15,7 @@ from mtp.contribution_inputs import (
     encoded,
     load_base,
     load_graph,
+    main,
     rows,
     verify_kg,
 )
@@ -31,6 +32,7 @@ __all__ = [
     "encoded",
     "load_base",
     "load_graph",
+    "main",
     "rows",
     "verify_kg",
 ]

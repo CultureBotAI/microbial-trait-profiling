@@ -96,6 +96,16 @@ core-screen run output:
 core-composition run output:
 	uv run python -m mtp.trait_composition --core-run "{{run}}" --output-dir "{{output}}"
 
+# After study-trait-profiles and trait-heatmaps: pooled/site tables with hashed provenance.
+[positional-arguments]
+trait-profile-site-stats *ARGS:
+	uv run python scripts/create_trait_profile_infographic.py --stratified-stats-only "$@"
+
+# Synthetic argument-guard probe using a copied producer (#950).
+[positional-arguments]
+probe-site-stats-guard *ARGS:
+	uv run python scripts/adhoc/issue928_guard_isolation.py "$@"
+
 # Complete exports carry the verified input fingerprints needed for integration.
 [positional-arguments]
 core-ora run output tail="upper":
@@ -175,8 +185,27 @@ rerun-multiplicity comparison output:
 rerun-verify-multiplicity record:
 	uv run python -m mtp.multiplicity verify --run "$1"
 
+# Additive #771 lineage extension and complete six-fraction study LOSO.
+[positional-arguments]
+table1-influence-extension *ARGS:
+	uv run python -m mtp.influence_extension "$@"
+
+# Synthetic checks for the separately declared #771 sensitivity protocol.
+test-influence-extension:
+	uv run pytest tests/test_influence_extension.py tests/test_influence_extension_core.py tests/test_influence_extension_joint.py -v
+
+# Isolated original/current arm-parser regression evidence (#973).
+[positional-arguments]
+probe-arm-parser-guards *ARGS:
+	uv run python scripts/adhoc/issue973_probe_parser_guards.py "$@"
+
 sync:
 	uv sync --all-extras --group dev --group qa
+
+# Isolated copies prove actual plotted-label and metadata propagation (#955, #962).
+[positional-arguments]
+probe-direction-forwarding *ARGS:
+	uv run python scripts/adhoc/issue955_probe_direction_forwarding.py "$@"
 
 # Use the same declared uv version as the lock hook; run `just sync` first.
 [positional-arguments]
@@ -292,7 +321,7 @@ trait-heatmaps:
 	uv run python scripts/create_clustered_heatmap.py
 	uv run python scripts/create_condition_taxon_heatmap.py
 	uv run python scripts/create_taxa_guild_heatmap.py --direction-basis group_1_vs_group_0
-	uv run python scripts/create_study_trait_profile_heatmap.py
+	uv run python scripts/create_study_trait_profile_heatmap.py --direction-basis group_1_vs_group_0
 	uv run python scripts/create_condition_trait_module_heatmap.py
 
 trait-visualization:
@@ -319,7 +348,7 @@ test-multiple-testing:
 	uv run pytest tests/test_multiple_testing.py
 
 test-multiplicity-adapters:
-	uv run pytest tests/test_multiplicity_adapters.py tests/test_multiplicity_basis_integration.py tests/test_multiplicity_regression_guards.py
+	uv run pytest tests/test_multiplicity_adapters.py tests/test_multiplicity_basis_integration.py tests/test_multiplicity_regression_guards.py tests/test_multiplicity_cross_product.py tests/test_multiplicity_reason_vocabulary.py
 
 # Analyzer, ranking exporter, and complete-universe density regression checks (#664).
 test-stratification:
@@ -382,9 +411,11 @@ contrast-review-sample SAMPLE="methods/contrast_orientation_review_sample.tsv" S
 # Rebuild the data/analysis/cellulose_decr/ tables (methods/cellulose_decr.md). Stops when
 # an input's hash differs from the committed provenance or the contrast manifest came from
 # another classifier version; --input-root points at a checkout holding the pinned inputs,
-# and --allow-input-drift regenerates every table from changed ones (#562). The pins are a
-# v2 manifest and the metadata table before #555, so until #580 re-pins them a checkout
-# with a newer classifier refuses; the tables reproduce at the provenance's code_commit.
+# and --allow-input-drift regenerates every table from changed ones (#562). The pins are
+# the v6 manifest and the phenotype-scope inputs, adopted with --repin in the final rerun
+# at 511c891. A checkout with another classifier version refuses until it reruns
+# `just contrast-orientation` and then --repin; the tables reproduce at the provenance's
+# code_commit.
 [positional-arguments]
 cellulose-decr *ARGS:
 	uv run python -m mtp.cellulose_decr.analysis --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" "$@"
@@ -587,6 +618,11 @@ taxa-trait-matrix: download-kg study-tsvs
 audit-strain-rollup *ARGS:
 	uv run python scripts/adhoc/issue774_strain_rollup_coverage.py "$@"
 
+# Sidecar carrier/source audit; explicit matching inputs, no primary output changes (#773).
+[positional-arguments]
+audit-label-support *ARGS:
+	uv run python -m mtp.label_support_audit "$@"
+
 # The analyses read human hosts only, without the trait columns that are zero in every
 # human profile, as committed in data/derived/study_trait_profiles_wide.tsv.gz (#656).
 # They also read 16S and shotgun (WMS) experiments only, the values of
@@ -595,6 +631,13 @@ audit-strain-rollup *ARGS:
 # non-empty trait columns).
 study-trait-profiles: taxa-trait-matrix
 	uv run python scripts/create_study_trait_profiles.py --host-species "Homo sapiens" --sequencing-types 16S WMS --drop-empty-traits
+
+# Run after rebuilding data/derived: canonical human 16S/WMS coverage, README and hashes.
+# Explicit paths are supported; this recipe never rebuilds upstream tables (#820/#821).
+# Declare the upstream scope explicitly, e.g. just taxa-coverage --strain-rollup phenotype.
+[positional-arguments]
+taxa-coverage *ARGS:
+	uv run python scripts/create_taxa_coverage_histogram.py "$@"
 
 # After an intended input change, such as a BugSigDB release or a new KG pin, refresh the
 # committed copy with `just study-trait-profiles-refresh-gz` and commit it (#667).
@@ -816,6 +859,8 @@ audit-trait-density *ARGS:
 audit-trait-coupling *ARGS:
 	just timed audit-trait-coupling "uv run python scripts/audit_trait_coupling.py --code-commit \"$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)\" $*"
 
+# Host marker evaluation can omit greenlet on arm64; see security-linux and CONTRIBUTING.md (#888).
+# Audit source, dependencies, secrets, and host-selected locked packages.
 security:
 	uv run bandit -c pyproject.toml -r src scripts
 	uv run deptry src
@@ -828,6 +873,19 @@ security:
 	  --output-file "$reqfile" && \
 	uv run pip-audit -r "$reqfile" --disable-pip \
 	  --cache-dir "$tmpdir/pip-audit-cache"
+
+# Audit locked packages selected for Linux x86_64 / Python 3.11, on any host.
+security-linux:
+	audit_tmp="$(mktemp -d)" && \
+	trap 'rm -rf "$audit_tmp"' EXIT && \
+	uv run --locked --group qa uv export --quiet --frozen --all-extras --group dev --group qa \
+	  --format requirements-txt --no-emit-project --no-emit-workspace \
+	  --output-file "$audit_tmp/requirements.txt" && \
+	uv run --locked --group qa uv pip compile "$audit_tmp/requirements.txt" \
+	  --python-platform x86_64-unknown-linux-gnu --python-version 3.11 --no-deps \
+	  --no-header --no-annotate --output-file "$audit_tmp/requirements-linux.txt" && \
+	uv run --locked --group qa pip-audit -r "$audit_tmp/requirements-linux.txt" \
+	  --disable-pip --no-deps --cache-dir "$audit_tmp/pip-audit-cache"
 
 precommit:
 	uv run pre-commit run --all-files
@@ -905,6 +963,11 @@ calibration-flip-assignments *ARGS:
 	uv run python -m mtp.calibration --flip-assignments-only --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" "$@"
 
 pipeline: download ingest
+
+# Additive binary-presence and equal-study depth sensitivity of a verified core (#772).
+[positional-arguments]
+presence-depth-sensitivity *ARGS:
+	uv run python -m mtp.presence_depth_sensitivity "$@"
 
 # The integrated evidence table (#178): one row per method result, each keeping its
 # own family, units and states. Reads the other analyses' status files from
@@ -1024,3 +1087,8 @@ calibration-screen *ARGS:
 [positional-arguments]
 selection-study-splits COMPARISON_RUN OUTPUT *ARGS:
 	uv run python -m mtp.cellulose_decr.study_split_run --comparison-run "$1" --output-dir "$2" "${@:3}"
+
+# Audit literal phenotype co-assertions for all strain scopes without rerunning arms (#846).
+[positional-arguments]
+audit-coassertions *ARGS:
+	uv run python -m mtp.coassertion_audit "$@"
