@@ -23,8 +23,9 @@ not direct in vivo physiological or metabolic measurements.
 
 You need two tools installed. Everything else is managed automatically — with
 one exception: the figure recipes (`just guild-maps`, `just table1-trait-maps`)
-render PNG files through a headless Chrome, fetched version-pinned by
-`just get-chrome` (see `methods/README.md`).
+and the rendered-layout regression in `just check` need a local Chrome/Chromium.
+If none is installed, `just get-chrome` fetches a version-pinned copy (~170 MB;
+see `methods/README.md`).
 
 | Tool | What it does | Install |
 |------|-------------|---------|
@@ -158,10 +159,11 @@ All commands go through the Justfile. Run `just --list` to see them all.
 
 Every pipeline step is timed and logged to `logs/pipeline.log`.
 
-The audited `.secrets.baseline` contains only the public BugSigDB source revision
-and dump checksum in `src/bsdbng/download.py`. It records those exact values as
-false positives; it does not exempt the file or new values from detection. Review
-candidate findings before updating the baseline. The lock and secret-audit CLIs
+The `.secrets.baseline` records known detector findings across the repository,
+including public source revisions and data checksums. Entries without an
+`is_secret` verdict have not been audited; acceptance by the hook does not imply
+review. The baseline suppresses matching findings, not entire files or new values.
+Review candidate findings before updating it. The lock and secret-audit CLIs
 are declared in the QA group at the same versions as their pre-commit hooks.
 
 ### Downloading KG-Microbe for trait enrichment

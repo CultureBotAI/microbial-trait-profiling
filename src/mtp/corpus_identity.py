@@ -27,7 +27,12 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from mtp.paths import KG_MICROBE_DIR, file_sha256
-from mtp.trait_guilds import MEDIADIVE_MARKER, PROFILE_ID_COLUMNS, retained_trait_columns
+from mtp.trait_guilds import (
+    MEDIADIVE_MARKER,
+    PROFILE_ID_COLUMNS,
+    PROFILE_METADATA_COLUMNS,
+    retained_trait_columns,
+)
 
 DEFAULT_KG_PROVENANCE_PATH = KG_MICROBE_DIR / "provenance.json"
 #: Pinned KG-Microbe build folder used by scripts/download_kg_microbe.py (#336).
@@ -74,13 +79,20 @@ class MatrixIdentity:
     mediadive_columns: int
     retained_trait_columns: int
     profile_rows: int
+    metadata_columns: int = 0
 
     def check(self) -> None:
-        """The three column groups must account for the whole header."""
-        total = self.identifier_columns + self.mediadive_columns + self.retained_trait_columns
+        """Identifiers, optional metadata and trait groups account for the whole header."""
+        total = (
+            self.identifier_columns
+            + self.metadata_columns
+            + self.mediadive_columns
+            + self.retained_trait_columns
+        )
         if total != self.header_columns:
             msg = (
                 f"{self.path}: {self.identifier_columns} identifier + "
+                f"{self.metadata_columns} metadata + "
                 f"{self.mediadive_columns} MediaDive + {self.retained_trait_columns} retained "
                 f"= {total}, not the {self.header_columns} columns in the header"
             )
@@ -163,6 +175,9 @@ def measure_matrix(profile_path: Path) -> MatrixIdentity:
         mediadive_columns=mediadive,
         retained_trait_columns=retained,
         profile_rows=rows,
+        metadata_columns=len(
+            unique_header & (set(PROFILE_METADATA_COLUMNS) - set(PROFILE_ID_COLUMNS))
+        ),
     )
     identity.check()
     return identity
@@ -270,7 +285,8 @@ def summary_lines(identity: CorpusIdentity) -> list[str]:
         f"Matrix:            {matrix.path}",
         f"  sha256           {matrix.sha256}",
         f"  columns          {matrix.header_columns} "
-        f"({matrix.identifier_columns} identifier, {matrix.mediadive_columns} MediaDive, "
+        f"({matrix.identifier_columns} identifier, {matrix.metadata_columns} optional metadata, "
+        f"{matrix.mediadive_columns} MediaDive, "
         f"{matrix.retained_trait_columns} retained)",
         f"  profile rows     {matrix.profile_rows}",
         f"BugSigDB vintage:  {identity.bugsigdb_vintage or 'unknown'}",

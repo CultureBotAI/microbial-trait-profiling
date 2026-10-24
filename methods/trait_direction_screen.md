@@ -40,7 +40,9 @@ never redefines that total.
 
 Every retained column of `data/derived/study_trait_profiles_wide.tsv` — all columns
 except the three identifier columns and every MediaDive growth-medium column. On the
-pinned v1.3.1 corpus that is **317 candidates**, with 2,333 MediaDive columns excluded,
+pinned v1.3.1 corpus, under the `off` scope, that is **317 candidates** (the primary
+`phenotype` scope's 344 were counted on the later 5,629-profile table), with 2,333
+MediaDive columns excluded,
 tested over 4,670 paired human profiles from 2,335 experiments and 959 studies.
 
 The set is read from the matrix at run time and never written down, so a corpus change
@@ -65,7 +67,8 @@ Candidates that could not be tested are held at p = 1 inside every correction an
 blank in the output, the convention PR #181 set for the ratio family. Dropping them
 would shrink the family they were declared into.
 
-Correcting across 317 traits implies 317 independent opportunities to be wrong. It is
+Correcting across m traits (317 under `off`, 344 under `phenotype`) implies m
+independent opportunities to be wrong. It is
 not obvious that the data contain that many, so the significant set is reported twice:
 once at the nominal family size, and once with the same procedure run as though the
 family held its effective number of tests. `step_up` in `src/bsdbng/trait_screen.py`
@@ -94,9 +97,9 @@ swapped, and the family table reports both the overlap and its size.
 
 ### Which set is the reported result
 
-The reported significant set is **BY at the nominal m = 317**, with BH at m = 317
-beside it for comparison with the other arms. On the pinned corpus that is 18 traits
-at BY q <= 0.05. The effective-size run (m = 112 by Li & Ji on the study-contrast
+The reported significant set is **BY at the nominal m = 317** (the `off` scope; m = 344
+under `phenotype`), with BH at m = 317 beside it for comparison with the other arms.
+On the pinned corpus that is 18 traits at BY q <= 0.05. The effective-size run (m = 112 by Li & Ji on the study-contrast
 basis, 56 traits) is a sensitivity bound only, and carries **no FDR guarantee**: Li & Ji
 and Galwey were derived to set per-test thresholds for familywise error, so putting
 their m into a BH or BY step-up is a heuristic, and BY at the nominal m already
@@ -148,7 +151,7 @@ Three states are kept distinct and never collapsed into a number:
 | `no_eligible_studies` | no study contributed a contrast for this candidate |
 
 An untested candidate has no share, no interval, no p and no q. It does not have a share
-of 0.0 or a p-value of 1.0. On the pinned corpus all 317 candidates are testable.
+of 0.0 or a p-value of 1.0. On the pinned `off` corpus all 317 candidates are testable.
 
 Every paired study contributes a contrast for every candidate, so the two untested states
 arise differently. A candidate that is zero, or otherwise equal, on both sides of every

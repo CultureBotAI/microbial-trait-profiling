@@ -82,7 +82,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "verify-comparison":
         cmp_record = verify_comparison_run(args.record)
-        print(f"Verified {cmp_record.id}: cross-arm bindings and complete outputs")
+        print(f"Verified {cmp_record.id}: cross-arm bindings, analysis bases and complete outputs")
         return 0
     if args.replicates is not None and args.replicates < 1:
         parser.error("--replicates must be positive")
