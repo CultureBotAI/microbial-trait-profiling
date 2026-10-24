@@ -348,6 +348,14 @@ typecheck:
 test:
 	uv run pytest
 
+# Canonical exports and legacy import-star contracts (#937); no scientific inputs.
+test-shim-exports:
+	uv run pytest tests/test_mtp_imports.py
+
+[positional-arguments]
+audit-shim-exports *ARGS:
+	uv run python scripts/adhoc/issue937_audit_exports.py "$@"
+
 # Additive policy and full-family BH/BY contract; no scientific rerun inputs.
 test-multiple-testing:
 	uv run pytest tests/test_multiple_testing.py

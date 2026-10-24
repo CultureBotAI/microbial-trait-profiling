@@ -332,6 +332,7 @@ class JedCompositionAdapter:
 
 __all__ = [
     "DEFAULT_PSEUDOCOUNT_SCALE",
+    "PROFILE_NONTRAIT_COLUMNS",
     "RESULT_COLUMNS",
     "CompositionContrastData",
     "JedCompositionAdapter",
