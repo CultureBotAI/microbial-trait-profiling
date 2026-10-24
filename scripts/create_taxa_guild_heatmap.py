@@ -12,6 +12,7 @@ import pandas as pd
 import seaborn as sns
 from matplotlib.patches import Patch
 
+from mtp.direction_labels import DIRECTION_BASIS_LABELS
 from mtp.human_host_corpus import CORPUS_SEQUENCING_TYPES
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -27,13 +28,6 @@ METAPHLAN_RANK_MAP = {
     "g__": "genus",
     "s__": "species",
     "t__": "strain",
-}
-# The direction legend's title for each run direction_basis (#795). An all-paired run
-# keeps the curated Abundance in Group 1 direction; a contrast-population subset flips
-# its reversed experiments so that increased means higher in the disease group.
-DIRECTION_LEGEND_TITLES = {
-    "group_1_vs_group_0": "BugSigDB direction\n(Group 1 vs Group 0)",
-    "disease_vs_comparison": "BugSigDB direction\n(disease vs comparison)",
 }
 
 
@@ -542,7 +536,7 @@ def save_heatmap(
     # Left of the row dendrogram, whose root line the two-line title crossed (#896)
     cluster.ax_row_dendrogram.legend(
         handles=direction_handles,
-        title=DIRECTION_LEGEND_TITLES[direction_basis],
+        title=f"BugSigDB direction\n({DIRECTION_BASIS_LABELS[direction_basis]})",
         loc="center right",
         bbox_to_anchor=(-0.02, 0.5),
         frameon=False,
@@ -646,7 +640,7 @@ def build_parser(
     )
     parser.add_argument(
         "--direction-basis",
-        choices=sorted(DIRECTION_LEGEND_TITLES),
+        choices=sorted(DIRECTION_BASIS_LABELS),
         required=True,
         help=(
             "Direction basis of the taxa TSV, the core run's direction_basis: "
