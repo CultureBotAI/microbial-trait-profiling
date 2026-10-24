@@ -559,7 +559,8 @@ After a full-corpus rebuild of `data/derived` with phenotype strain rollup, run
 regenerate `trait-visualization/trait-profile-investigation/taxa-coverage/`
 before rebuilding decks or plates that cite its tables and README (#820/#821).
 The recipe consumes `bugsigdb_taxa.tsv`, `taxa_trait_matrix.tsv`,
-`study_trait_profiles_wide.tsv` and `experiments.tsv`. It filters profiles and
+`study_trait_profiles_wide.tsv` and `experiments.tsv`, plus the explicit taxonomy
+edge input (default `data/kg-microbe/merged-kg_edges.tsv`). It filters profiles and
 taxon occurrences to recorded `Homo sapiens` hosts sequenced by `16S` or `WMS`,
 using the same experiment-selection function as the canonical profile builder.
 Unrecognized signature directions and empty taxon IDs are skipped by the same
@@ -579,7 +580,7 @@ separate output directories; accepting `full` here does not authorize a full-sco
 production rerun.
 
 The generated README includes a shell-quoted regeneration command naming the
-four consumed tables, declared scope, output directory and rendering mode. It
+four consumed tables, taxonomy edges, declared scope, output directory and rendering mode. It
 also preserves the KG sidecar path, any consumed raw-dump path and any explicit
 vintage override; inferred header vintages remain inferred when replayed.
 Run it from the repository root. Repo-local paths keep their lexical spelling,
@@ -596,6 +597,49 @@ taxa from the selected corpus enter taxon totals. Trait vocabulary comes from
 the profile table. Zero-trait profiles remain in audit tables; selected figure
 panels explicitly show mapped profiles only. No mapped annotation is not
 evidence of biological absence.
+
+Zero-trait diagnoses use `--taxonomy-edges PATH` (#957), with the shared strict
+KG edge parser and cycle-checking ancestor traversal. Only exact
+`biolink:subclass_of` edges between valid NCBITaxon identifiers establish placement.
+The complete file is parsed, including the known split-header and agent-field
+encodings; the graph retains taxonomy edges only. Duplicate edges are counted
+but deduplicated for traversal. Subclass edges from named NCBITaxon rank classes
+(such as `NCBITaxon:biotype`) to `OBO:NCBITaxon#_taxonomic_rank` describe rank
+vocabulary, not organism ancestry. They are skipped and counted separately as
+`taxonomy_rank_class_edge_records_skipped` in the provenance parser audit (#1008).
+Malformed NCBITaxon identifiers in organism ancestry edges still fail. An input
+without usable taxonomy edges fails, including a file containing only rank classes.
+All selected reported taxa are checked before output publication: reachable
+cycles and ancestry spanning multiple recognized roots fail; multiple paths to
+one root are allowed. This is not a cycle audit of unrelated parts of the KG.
+
+The top-zero table adds `taxonomy_group` (`bacteria`, `archaea`, `eukaryota`,
+`viruses`, `unresolved`), `taxonomy_status` (`resolved_root`,
+`not_in_taxonomy_edges`, `no_recognized_root_path`, `non_ncbi_identifier`) and
+JSON `taxonomy_root_ids`. Roots are NCBITaxon:2, 2157, 2759 and 10239 respectively.
+Missing edges do not establish a deleted/invalid taxon or bacterial placement.
+Explicit unresolved labels and slash composites keep their distinct diagnosis
+even when a domain is known; the placement fields preserve that domain evidence.
+Eukaryotic and viral ancestry precedes Candidatus/cultivation name heuristics; the existing
+`Non-Bacterial / Fungal Eukaryote` category is retained for consumer compatibility
+and also includes non-fungal eukaryotes. `Non-Bacterial / Viral Taxon` is separate.
+Generic labels `uncultured organism`, `unidentified`, `unclassified` and `unknown`
+(case/whitespace normalized) receive `Unresolved Taxonomic Label`; actual slash
+composites retain `Ambiguous Taxon / Bin Slash`. Missing placement receives
+`Taxonomy Unresolved`, except for explicit unresolved labels/composites and
+existing alias-review suggestions. Those suggestions never transfer ancestry
+or annotations from a proposed alias. Candidatus and cultivation-related labels
+remain review heuristics for resolved bacterial/archaeal taxa; missing annotations
+alone do not prove rarity, novelty, cultivation status or biological absence.
+
+Provenance records the taxonomy input hash, parser audit, classification policy,
+recognized roots and parser/Graph implementation hashes. Its identity as the
+matrix's producing KG is explicitly **not verified**. The input is rehashed before
+the provenance record is published; this boundary check does not promise immunity
+to transient edits restored between checks. Changing taxonomy can change diagnoses
+without changing any population, matrix, profile or coverage count. Deck consumers
+must accept the three exact new categories before adopting regenerated tables;
+this change does not regenerate scientific outputs or edit deck builders.
 
 The recipe generates five TSVs, six PNG/SVG figure pairs, a data-derived README,
 and `provenance.json` with input/output SHA-256 hashes, producer and lockfile
@@ -616,7 +660,7 @@ consumed sidecar itself is hashed. These are standalone
 execution provenance records, not verified core or arm manifests. Rerun them
 after changing the profile population, matrix or strain-rollup scope; keep
 different scope outputs in separate directories. Explicit `--taxa`, `--matrix`,
-`--profiles`, `--experiments` and `--output-dir` arguments are supported.
+`--profiles`, `--experiments`, `--taxonomy-edges` and `--output-dir` arguments are supported.
 `--tables-only --output-dir PATH` supports an isolated table audit; it refuses a
 directory with existing figures so those cannot silently remain stale. The
 profile-rank denominator column is now `pct_of_mapped_profiles`; the columns in
