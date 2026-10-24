@@ -593,11 +593,17 @@ def test_the_plotting_area_starts_below_the_last_subtitle_line(
     """Require breathing room and stable clearance after a two-line note (#839, #929)."""
     # The wrapped site name makes this fixture sensitive to reduced header spacing.
     matrix = build_matrix(
-        [_guild_profile("1", "Condition A", "Small intestine terminal ileum")],
+        [
+            _guild_profile(str(index), f"Condition {index}", "Small intestine terminal ileum")
+            for index in range(8)
+        ],
         max_conditions=10,
         max_body_sites=10,
         min_studies=1,
         guild_order=("aerobe",),
+    )
+    assert len(matrix.conditions) >= 8, (
+        "Rendered layout fixture needs at least eight condition rows"
     )
     clearances = []
     # A <br> inside one note entry reproduces the #849 line-counting regression.

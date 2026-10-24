@@ -4,7 +4,7 @@ title: Additive full-family multiple-testing contracts
 description: >-
   Scientific family inventories and replayable corrections. These records do not
   change native arm calls or certify the validity of their input p-values.
-version: 1.1.0
+version: 1.2.0
 license: MIT
 prefixes:
   linkml: https://w3id.org/linkml/
@@ -13,6 +13,41 @@ default_prefix: mtpmt
 default_range: string
 imports:
   - linkml:types
+enums:
+  ReasonVocabulary:
+    title: Reason vocabulary
+    description: Versioned interpretation of a raw hypothesis's undefined reason.
+    permissible_values:
+      legacy_free_text_v1:
+        description: Historical foundation contract accepting any nonblank explanation.
+      analysis_reason_v1:
+        description: Exact analysis reason codes declared by AnalysisReasonV1.
+  AnalysisReasonV1:
+    title: Analysis reason version 1
+    description: Supported untestable outcomes; selection-family statuses are separate.
+    permissible_values:
+      all_tied:
+        description: All eligible directional values are tied under the native rule.
+      no_eligible_studies:
+        description: No study survives the directional screen's eligibility rule.
+      no_positive_pairs:
+        description: No ratio study has an eligible positive-count experiment pair.
+      insufficient_support:
+        description: Too few observations for the declared native test.
+      insufficient_variance:
+        description: Native dispersion is too small to estimate a test statistic.
+      condition_below_minimum_studies:
+        description: A held-out condition has fewer studies than the frozen minimum.
+      shared_study_between_conditions:
+        description: Held-out conditions share studies contrary to the null's partition.
+      undefined_distance_in_null:
+        description: At least one null draw has an undefined distance.
+      all_sets_empty:
+        description: All condition taxon sets are empty for the selected annotation.
+      pool_too_small:
+        description: The sampling pool cannot satisfy the declared null draw.
+      no_units:
+        description: A held-out condition has no eligible stool-decreased signatures.
 classes:
   MultipleTestingPolicy:
     title: Multiple testing policy
@@ -119,8 +154,8 @@ classes:
         title: Eligibility sha256
         description: Optional identity of this hypothesis-specific eligibility ledger.
         pattern: ^[0-9a-f]{64}$
-  HypothesisFamily:
-    title: Hypothesis family
+  HypothesisFamilyMetadata:
+    title: Hypothesis family metadata
     description: >-
       Complete declared inventory and scientific scope. Expected size is supplied
       from verified execution by an adapter; the engine does not infer it from
@@ -206,6 +241,11 @@ classes:
         multivalued: true
         inlined_as_list: true
         required: true
+  HypothesisFamily:
+    title: Hypothesis family
+    description: Complete in-memory declaration used for small scientific families.
+    is_a: HypothesisFamilyMetadata
+    attributes:
       members:
         title: Members
         description: Complete declared hypothesis inventory; empty is allowed only with expected size zero.
@@ -235,6 +275,15 @@ classes:
       reason:
         title: Reason
         description: Nonempty explanation required only for an untestable member.
+      reason_vocabulary:
+        title: Reason vocabulary
+        description: >-
+          Missing fields preserve legacy caller semantics. analysis_reason_v1
+          requires exact AnalysisReasonV1 membership in the shared runtime validator;
+          tested records require no reason under either vocabulary.
+        range: ReasonVocabulary
+        required: true
+        ifabsent: string(legacy_free_text_v1)
   AdjustedHypothesis:
     title: Adjusted hypothesis
     description: Recomputed full-family corrections and threshold decisions; no effect filter is applied.
@@ -350,3 +399,148 @@ classes:
         description: Execution envelope digest including scientific hashes, software and timestamp.
         required: true
         pattern: ^[0-9a-f]{64}$
+  ExternalFamilyCorrection:
+    title: External family correction
+    description: A complete correction with inventories stored once as canonical JSON Lines artifacts.
+    attributes:
+      metadata:
+        title: Metadata
+        description: Scientific family metadata independent of observed p-values.
+        range: HypothesisFamilyMetadata
+        inlined: true
+        required: true
+      declared:
+        title: Declared
+        description: Sorted complete HypothesisDefinition inventory with one record per line.
+        range: SourceArtifact
+        inlined: true
+        required: true
+      raw:
+        title: Raw
+        description: Sorted complete RawHypothesis inventory with one record per line.
+        range: SourceArtifact
+        inlined: true
+        required: true
+      corrected:
+        title: Corrected
+        description: Sorted complete AdjustedHypothesis inventory with one record per line.
+        range: SourceArtifact
+        inlined: true
+        required: true
+      recorded_at:
+        title: Recorded at
+        description: UTC correction timestamp.
+        range: datetime
+        required: true
+      policy_sha256:
+        title: Policy sha256
+        description: Canonical policy identity.
+        required: true
+        pattern: ^[0-9a-f]{64}$
+      family_sha256:
+        title: Family sha256
+        description: Canonical full family identity, equal to the in-memory contract digest.
+        required: true
+        pattern: ^[0-9a-f]{64}$
+      input_sha256:
+        title: Input sha256
+        description: Canonical raw hypothesis identity, equal to the in-memory contract digest.
+        required: true
+        pattern: ^[0-9a-f]{64}$
+      output_sha256:
+        title: Output sha256
+        description: Canonical adjusted hypothesis identity, equal to the in-memory contract digest.
+        required: true
+        pattern: ^[0-9a-f]{64}$
+      tested:
+        title: Tested
+        description: Number of members with defined tests.
+        range: integer
+        minimum_value: 0
+        required: true
+      untestable:
+        title: Untestable
+        description: Number of declared members reserving internal p one.
+        range: integer
+        minimum_value: 0
+        required: true
+  PostArmMultiplicityRun:
+    title: Post arm multiplicity run
+    description: Verified additive stage consuming one shared core and completed three-arm comparison.
+    attributes:
+      version:
+        title: Version
+        description: Supported sidecar execution format.
+        pattern: ^1\.2\.0$
+        required: true
+      recorded_at:
+        title: Recorded at
+        description: Time the additive stage executed, in UTC.
+        range: datetime
+        required: true
+      comparison_manifest_path:
+        title: Comparison manifest path
+        description: Actual verified upstream comparison record.
+        required: true
+      comparison_manifest_sha256:
+        title: Comparison manifest sha256
+        description: Exact consumed comparison record bytes.
+        required: true
+        pattern: ^[0-9a-f]{64}$
+      core_run_id:
+        title: Core run id
+        description: Shared verified core execution identity.
+        required: true
+      contrast_population:
+        title: Contrast population
+        description: Shared verified population.
+        required: true
+      direction_basis:
+        title: Direction basis
+        description: Shared verified orientation; never reapplied by this stage.
+        required: true
+      strain_rollup:
+        title: Strain rollup
+        description: Verified source core strain scope.
+        pattern: ^(off|phenotype)$
+        required: true
+      policy:
+        title: Policy
+        description: Exact supported additive policy.
+        range: MultipleTestingPolicy
+        inlined: true
+        required: true
+      code_sha256:
+        title: Code sha256
+        description: Correction, adapter and generated model source identity.
+        required: true
+        pattern: ^[0-9a-f]{64}$
+      scipy_version:
+        title: Scipy version
+        description: Numerical implementation version used by the stage.
+        required: true
+      numpy_version:
+        title: Numpy version
+        description: Array implementation version used by the stage.
+        required: true
+      sources:
+        title: Sources
+        description: Consumed source artifact identities and hashes, independently checked during replay.
+        range: SourceArtifact
+        multivalued: true
+        inlined_as_list: true
+        required: true
+      families:
+        title: Families
+        description: Complete external corrections; each family remains a distinct scientific unit.
+        range: ExternalFamilyCorrection
+        multivalued: true
+        inlined_as_list: true
+        required: true
+      reports:
+        title: Reports
+        description: Hashed migration and interpretation reports.
+        range: SourceArtifact
+        multivalued: true
+        inlined_as_list: true
+        required: true

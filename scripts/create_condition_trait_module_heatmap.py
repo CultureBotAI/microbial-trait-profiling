@@ -13,7 +13,6 @@ import pandas as pd
 import seaborn as sns
 from matplotlib.patches import FancyBboxPatch, Patch, Rectangle
 
-from create_study_trait_profile_heatmap import load_raw_experiment_metadata
 from mtp.composition_denominators import (
     DENOMINATOR_DEFINITION,
     retained_trait_counts,
@@ -755,8 +754,11 @@ def write_outputs(
     print(f"Traits plotted: {len(plot_matrix.columns)}")
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(
+def build_parser(
+    parser_class: type[argparse.ArgumentParser] = argparse.ArgumentParser,
+) -> argparse.ArgumentParser:
+    """Build the execution parser shared with arm-plan verification (#973)."""
+    parser = parser_class(
         description=(
             "Group BugSigDB studies by condition, body site, or other metadata, "
             "then cluster aggregate trait profiles to reveal condition-specific signatures."
@@ -856,9 +858,18 @@ def main() -> None:
         action="store_true",
         help="Rejected: MediaDive growth-medium traits are excluded before normalization.",
     )
+    return parser
+
+
+def main() -> None:
+    parser = build_parser()
     args = parser.parse_args()
     if args.include_media_traits:
         parser.error("MediaDive is excluded before composition normalization (#174).")
+
+    # This sibling-script import belongs to execution. The shared parser must be
+    # loadable without a script directory on sys.path or any scientific data access.
+    from create_study_trait_profile_heatmap import load_raw_experiment_metadata
 
     group_by = normalize_group_fields(args.group_by)
     experiment_metadata = load_raw_experiment_metadata(args.full_dump_input)

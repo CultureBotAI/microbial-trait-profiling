@@ -468,16 +468,18 @@ def test_arm_execution_rejects_wrong_direction_before_publishing_outputs(
 
 
 @pytest.mark.parametrize("core_name", ["default", "subset"])
+@pytest.mark.parametrize("git_dirty", [False, True])
 @pytest.mark.parametrize(
     "script", ["create_taxa_guild_heatmap.py", "create_study_trait_profile_heatmap.py"]
 )
 def test_verify_arm_rejects_missing_required_heatmap_direction(
-    direction_arms: dict[str, ArmRun], core_name: str, script: str
+    direction_arms: dict[str, ArmRun], core_name: str, script: str, git_dirty: bool
 ) -> None:
     """Deleting an entrypoint's required option is not an option-free historical step."""
     path = Path(direction_arms[core_name].manifest_path)
     original = path.read_bytes()
     changed = json.loads(original)
+    changed["git_dirty"] = git_dirty
     argv = changed["plan"][0]["argv"][:-2]
     argv[1] = str(REPO_ROOT / "scripts" / script)
     changed["plan"][0]["argv"] = argv
@@ -489,6 +491,10 @@ def test_verify_arm_rejects_missing_required_heatmap_direction(
         assert direction_arms[core_name].git_commit in str(rejected.value)
         assert "docs/workflow.md" in str(rejected.value)
         assert "original checkout" in str(rejected.value)
+        assert f"git_dirty={git_dirty}" in str(rejected.value)
+        if git_dirty:
+            assert "commit alone cannot reproduce" in str(rejected.value)
+            assert "original modified code" in str(rejected.value)
     finally:
         path.write_bytes(original)
 
