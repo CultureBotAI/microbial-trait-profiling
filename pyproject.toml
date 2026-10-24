@@ -113,6 +113,7 @@ exclude = [
   "src/mtp/datamodel/mtp_pydantic.py",
   "src/mtp/datamodel/workflow_pydantic.py",
   "src/mtp/datamodel/core_products_pydantic.py",
+  "src/mtp/datamodel/multiple_testing_pydantic.py",
 ]
 
 [tool.ruff.lint]
@@ -159,6 +160,7 @@ module = [
   "mtp.datamodel.mtp_pydantic",
   "mtp.datamodel.workflow_pydantic",
   "mtp.datamodel.core_products_pydantic",
+  "mtp.datamodel.multiple_testing_pydantic",
 ]
 ignore_errors = true
 
@@ -182,6 +184,7 @@ omit = [
   "src/mtp/datamodel/mtp_pydantic.py",
   "src/mtp/datamodel/workflow_pydantic.py",
   "src/mtp/datamodel/core_products_pydantic.py",
+  "src/mtp/datamodel/multiple_testing_pydantic.py",
 ]
 
 [tool.coverage.report]

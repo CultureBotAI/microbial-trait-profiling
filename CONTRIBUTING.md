@@ -22,6 +22,9 @@ just install-hooks    # install pre-commit hooks
 just check            # verify everything works
 ```
 
+`just check` renders synthetic guild and Table 1 layout fixtures through Kaleido. It needs a
+local Chrome/Chromium; run `just get-chrome` first if one is not installed (~170 MB).
+
 ### Windows
 
 If you have nothing installed, follow these steps in order.
@@ -140,8 +143,30 @@ just check
 This runs everything: ruff (lint + format), mypy (types), pytest (tests),
 linkml lint/validate (schema), bandit (security), deptry (dependencies),
 and pip-audit (`just security`, which exports `--all-extras --group dev --group qa`
-to audit the full synced environment including `dev` and `qa` dependency groups,
-matching the `pip-audit` pre-commit hook that gates CI).
+to audit the synced environment including `dev` and `qa` dependency groups,
+using the same extras and groups as the `pip-audit` pre-commit hook that gates CI).
+Both audits evaluate environment markers for the host running them. For example,
+the locked SQLAlchemy dependency marker selects greenlet for `x86_64` and
+`aarch64`, but not the `arm64` machine value reported on Apple Silicon. This is
+an architecture-marker gap, not a Linux-only dependency: Intel macOS also
+selects greenlet. Matching dependency groups does not guarantee matching
+packages across hosts (#823, #888).
+
+To audit the packages selected for Linux x86_64 / Python 3.11 locally, run:
+
+```bash
+just security-linux
+```
+
+This uses the repository's locked `uv` and `pip-audit` tools via `uv run --locked`.
+It exports all extras plus `dev` and `qa` from the frozen lock, then applies
+`uv pip compile --python-platform x86_64-unknown-linux-gnu --python-version 3.11
+--no-deps` to that export. Compilation selects the target's pinned packages and
+strips their environment markers, so the host does not filter them again during
+`pip-audit --disable-pip --no-deps`. It does not update dependencies or install
+the Linux packages; temporary requirements and audit caches are removed on exit.
+The audit targets that platform and Python version only. The normal Linux CI
+checks must still pass.
 
 **All checks must pass.** If something fails, fix it. If you think the
 check is wrong, open an issue — don't skip the check.

@@ -50,7 +50,7 @@ from typing import Any
 import numpy as np
 from scipy.stats import beta, binom, binomtest, false_discovery_control, norm
 
-from mtp.guild_maps import GuildMatrix, build_matrix, compute_correlation
+from mtp.guild_maps import compute_correlation
 from mtp.paths import DERIVED_DATA_DIR, REPO_ROOT, file_sha256
 from mtp.table1_trait_maps import compute_direction_shifts
 from mtp.trait_composition import compute_log_ratio_shifts
@@ -206,17 +206,16 @@ def log_ratio_sign_test(profiles: Sequence[Profile]) -> list[Outcome]:
     ]
 
 
-def guild_mcnemar_with(matrix: GuildMatrix) -> Procedure:
+def guild_mcnemar_with() -> Procedure:
     """The single exact McNemar on paired aerobe and anaerobe study signs.
 
-    ``compute_correlation`` also returns rank correlations, which need a matrix it
-    does not otherwise use for the McNemar; one built from the untransformed corpus
-    is passed and those correlations are ignored here.
+    Both McNemar and the accompanying rank correlations use per-study profile
+    means. No figure matrix or body-site display cut enters these statistics.
     """
 
     def procedure(profiles: Sequence[Profile]) -> list[Outcome]:
         eligible = drop_zero_total_pairs(profiles).profiles
-        correlation = compute_correlation(eligible, matrix)
+        correlation = compute_correlation(eligible)
         return [
             Outcome(
                 "guild_mcnemar",
@@ -230,12 +229,12 @@ def guild_mcnemar_with(matrix: GuildMatrix) -> Procedure:
     return procedure
 
 
-def procedures_for(matrix: GuildMatrix) -> dict[str, Procedure]:
+def procedures_for() -> dict[str, Procedure]:
     """Every procedure this module calibrates."""
     return {
         "fraction_sign_test": fraction_sign_test,
         "log_ratio_sign_test": log_ratio_sign_test,
-        "guild_mcnemar": guild_mcnemar_with(matrix),
+        "guild_mcnemar": guild_mcnemar_with(),
         "screened_fraction_sign_test": screened_fraction_sign_test,
     }
 
@@ -1421,9 +1420,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(flip_manifest_path)
         return 0
 
-    matrix = build_matrix(profiles, max_conditions=60, max_body_sites=8, min_studies=3)
     result = run_calibration(
-        profiles, procedures_for(matrix), args.replicates, power_replicates, args.seed, protocol
+        profiles, procedures_for(), args.replicates, power_replicates, args.seed, protocol
     )
     rows, ledger, injection_rows = result.rows, result.ledger, result.injection_rows
     completed, criteria = result.completed, result.criteria

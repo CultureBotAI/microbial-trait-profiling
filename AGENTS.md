@@ -64,7 +64,7 @@ Every change requires an issue, a linked branch, and a linked PR:
    sidebar. Do not create branches manually with `git checkout -b`.
 3. **Push and open a PR** after the first commit. The PR body must
    include `Closes #<number>` to formally link the PR to the issue.
-4. **Run `just check`** — all checks must pass before requesting review (`just security` exports `--all-extras --group dev --group qa` to `pip-audit` so it audits the same full dependency environment as CI's `pip-audit` pre-commit hook).
+4. **Run `just check`** — all checks must pass before requesting review (`just security` exports `--all-extras --group dev --group qa`, matching CI's extras and dependency groups; host-specific environment markers can select different packages, so the Linux CI audit must also pass).
 5. **Wait for CI and Copilot review.** Address all review comments.
 6. **Do not merge your own PR** unless you are the repo owner.
 

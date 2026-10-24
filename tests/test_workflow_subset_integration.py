@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import json
+import subprocess
 import sys
 from dataclasses import replace
 from pathlib import Path
@@ -11,10 +12,11 @@ from pathlib import Path
 import pytest
 import yaml
 
-from mtp.datamodel.workflow_pydantic import WorkflowRun
+from mtp.datamodel.workflow_pydantic import ArmRun, WorkflowRun
 from mtp.paths import REPO_ROOT, file_sha256
 from mtp.workflow.__main__ import build_parser, main
 from mtp.workflow.arms import jed
+from mtp.workflow.arms import runtime as arm_runtime
 from mtp.workflow.arms.noel import build_commands
 from mtp.workflow.arms.runtime import execute_arm, verify_arm
 from mtp.workflow.arms.types import ArmContext, Command
@@ -34,6 +36,17 @@ INPUTS = {
 def _rows(path: Path) -> list[dict[str, str]]:
     with path.open() as stream:
         return list(csv.DictReader(stream, delimiter="\t"))
+
+
+@pytest.fixture
+def fixture_direction_contract(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Exercise a declared direction-aware CLI with real fixture subprocesses."""
+    monkeypatch.setattr(
+        arm_runtime,
+        "DIRECTION_REQUIRED_SCRIPTS",
+        arm_runtime.DIRECTION_REQUIRED_SCRIPTS
+        | {"scripts/adhoc/issue843_direction_test_command.py"},
+    )
 
 
 @pytest.fixture(scope="module")
@@ -335,6 +348,221 @@ def test_jed_taxa_guild_heatmap_gets_its_core_direction_basis(
     result = execute_arm("jed", Path(core.manifest_path), tmp_path / "jed", plan, figures=False)
     assert passed == [direction_basis]
     assert result.direction_basis == direction_basis
+
+
+@pytest.fixture(scope="module")
+def direction_arms(
+    cores: dict[str, WorkflowRun], tmp_path_factory: pytest.TempPathFactory
+) -> dict[str, ArmRun]:
+    def plan(context: ArmContext) -> list[Command]:
+        source, output = context.products["count_profiles"], context.output / "observed.tsv"
+        return [
+            Command(
+                "observe_direction",
+                (
+                    sys.executable,
+                    str(REPO_ROOT / "scripts/adhoc/issue843_direction_test_command.py"),
+                    "--input",
+                    str(source),
+                    "--output",
+                    str(output),
+                    "--direction-basis",
+                    context.direction_basis,
+                ),
+                (source,),
+                (output,),
+            )
+        ]
+
+    root = tmp_path_factory.mktemp("direction-arms")
+    return {
+        name: execute_arm("jed", Path(core.manifest_path), root / name, plan, figures=False)
+        for name, core in cores.items()
+    }
+
+
+@pytest.mark.parametrize("core_name", ["default", "subset"])
+@pytest.mark.parametrize("form", ["split", "equals", "abbreviated", "repeated"])
+@pytest.mark.parametrize("matches_core", [False, True])
+@pytest.mark.usefixtures("fixture_direction_contract")
+def test_verify_arm_checks_effective_recorded_direction_basis(
+    direction_arms: dict[str, ArmRun], core_name: str, form: str, matches_core: bool
+) -> None:
+    """A recomputed plan hash cannot legitimize a direction inconsistent with the core."""
+    record = direction_arms[core_name]
+    path = Path(record.manifest_path)
+    original = path.read_bytes()
+    changed = json.loads(original)
+    basis = str(record.direction_basis)
+    opposite = "disease_vs_comparison" if basis == "group_1_vs_group_0" else "group_1_vs_group_0"
+    effective = basis if matches_core else opposite
+    options = {
+        "split": ["--direction-basis", effective],
+        "equals": [f"--direction-basis={effective}"],
+        "abbreviated": ["--direction-b", effective],
+        "repeated": ["--direction-basis", opposite, "--direction-basis", effective],
+    }[form]
+    changed["plan"][0]["argv"] = changed["plan"][0]["argv"][:-2] + options
+    changed["plan_sha256"] = content_hash(changed["plan"])
+    path.write_text(json.dumps(changed))
+    try:
+        if matches_core:
+            assert verify_arm(path).direction_basis == basis
+        else:
+            with pytest.raises(ValueError, match=r"direction basis.*core"):
+                verify_arm(path)
+    finally:
+        path.write_bytes(original)
+
+
+@pytest.mark.parametrize("options", [["--direction-basis"], ["--direction-basis=invalid"]])
+def test_verify_arm_rejects_malformed_recorded_direction_basis(
+    direction_arms: dict[str, ArmRun], options: list[str]
+) -> None:
+    path = Path(direction_arms["subset"].manifest_path)
+    original = path.read_bytes()
+    changed = json.loads(original)
+    changed["plan"][0]["argv"] = changed["plan"][0]["argv"][:-2] + options
+    changed["plan_sha256"] = content_hash(changed["plan"])
+    path.write_text(json.dumps(changed))
+    try:
+        with pytest.raises(ValueError, match="invalid direction-basis arguments"):
+            verify_arm(path)
+    finally:
+        path.write_bytes(original)
+
+
+@pytest.mark.parametrize("core_name", ["default", "subset"])
+def test_arm_execution_rejects_wrong_direction_before_publishing_outputs(
+    cores: dict[str, WorkflowRun], tmp_path: Path, core_name: str
+) -> None:
+    def plan(context: ArmContext) -> list[Command]:
+        source, output = context.products["count_profiles"], context.output / "observed.tsv"
+        wrong = (
+            "disease_vs_comparison"
+            if context.direction_basis == "group_1_vs_group_0"
+            else "group_1_vs_group_0"
+        )
+        return [
+            Command(
+                "wrong_direction",
+                (
+                    sys.executable,
+                    str(REPO_ROOT / "scripts/adhoc/issue843_direction_test_command.py"),
+                    "--input",
+                    str(source),
+                    "--output",
+                    str(output),
+                    "--direction-basis",
+                    wrong,
+                ),
+                (source,),
+                (output,),
+            )
+        ]
+
+    output = tmp_path / "rejected-arm"
+    with pytest.raises(ValueError, match=r"direction basis.*core"):
+        execute_arm("jed", Path(cores[core_name].manifest_path), output, plan, figures=False)
+    assert not output.exists()
+
+
+@pytest.mark.parametrize("core_name", ["default", "subset"])
+@pytest.mark.parametrize(
+    "script", ["create_taxa_guild_heatmap.py", "create_study_trait_profile_heatmap.py"]
+)
+def test_verify_arm_rejects_missing_required_heatmap_direction(
+    direction_arms: dict[str, ArmRun], core_name: str, script: str
+) -> None:
+    """Deleting an entrypoint's required option is not an option-free historical step."""
+    path = Path(direction_arms[core_name].manifest_path)
+    original = path.read_bytes()
+    changed = json.loads(original)
+    argv = changed["plan"][0]["argv"][:-2]
+    argv[1] = str(REPO_ROOT / "scripts" / script)
+    changed["plan"][0]["argv"] = argv
+    changed["plan_sha256"] = content_hash(changed["plan"])
+    path.write_text(json.dumps(changed))
+    try:
+        with pytest.raises(ValueError, match=r"required.*--direction-basis") as rejected:
+            verify_arm(path)
+        assert direction_arms[core_name].git_commit in str(rejected.value)
+        assert "docs/workflow.md" in str(rejected.value)
+        assert "original checkout" in str(rejected.value)
+    finally:
+        path.write_bytes(original)
+
+
+@pytest.mark.parametrize("option", ["--d", "--di"])
+def test_profile_direction_verification_preserves_full_parser_ambiguity(
+    direction_arms: dict[str, ArmRun], option: str
+) -> None:
+    record = direction_arms["subset"]
+    path = Path(record.manifest_path)
+    original = path.read_bytes()
+    script = REPO_ROOT / "scripts/create_study_trait_profile_heatmap.py"
+    actual = subprocess.run(
+        [sys.executable, str(script), option, str(record.direction_basis)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert actual.returncode == 2
+    assert "ambiguous option" in actual.stderr
+    changed = json.loads(original)
+    argv = changed["plan"][0]["argv"]
+    argv[1], argv[-2] = str(script), option
+    changed["plan_sha256"] = content_hash(changed["plan"])
+    path.write_text(json.dumps(changed))
+    try:
+        with pytest.raises(ValueError, match="ambiguous option"):
+            verify_arm(path)
+    finally:
+        path.write_bytes(original)
+
+
+@pytest.mark.parametrize("core_name", ["default", "subset"])
+@pytest.mark.parametrize(
+    "script", ["create_taxa_guild_heatmap.py", "create_study_trait_profile_heatmap.py"]
+)
+@pytest.mark.parametrize("tamper", ["unknown", "terminator", "case_missing", "case_abbreviated"])
+def test_rehashed_record_cannot_hide_non_executable_heatmap_arguments(
+    direction_arms: dict[str, ArmRun], core_name: str, script: str, tamper: str
+) -> None:
+    record = direction_arms[core_name]
+    path = Path(record.manifest_path)
+    original = path.read_bytes()
+    changed = json.loads(original)
+    basis = str(record.direction_basis)
+    opposite = "disease_vs_comparison" if basis == "group_1_vs_group_0" else "group_1_vs_group_0"
+    argv = [sys.executable, str(REPO_ROOT / "scripts" / script), "--direction-basis", basis]
+    if tamper == "unknown":
+        argv.append("--bogus-option")
+    elif tamper == "terminator":
+        argv.extend(["--", "--direction-basis", opposite])
+    else:
+        argv[1] = str(REPO_ROOT / "scripts" / script.replace("create_", "Create_", 1))
+        argv[2:] = [] if tamper == "case_missing" else ["--direction-b", opposite]
+    changed["plan"][0]["argv"] = argv
+    changed["plan_sha256"] = content_hash(changed["plan"])
+    path.write_text(json.dumps(changed))
+    try:
+        message = (
+            "canonical script path" if tamper.startswith("case_") else "unrecognized arguments"
+        )
+        with pytest.raises(ValueError, match=message):
+            verify_arm(path)
+    finally:
+        path.write_bytes(original)
+    assert verify_arm(path).direction_basis == record.direction_basis
+
+
+@pytest.mark.parametrize("direction", ["all", "inc", "dec"])
+def test_direction_projection_preserves_other_entrypoint_options(direction: str) -> None:
+    script = REPO_ROOT / "scripts/create_condition_trait_module_heatmap.py"
+    arguments = [sys.executable, str(script), "--direction", direction]
+    command = Command("condition_modules", tuple(arguments), (), ())
+    assert arm_runtime._step_direction_basis(command, REPO_ROOT) is None
 
 
 def test_noel_plan_consumes_selection_evidence_for_already_oriented_core(
