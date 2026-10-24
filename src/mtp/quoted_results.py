@@ -91,7 +91,6 @@ def read_matrix_counts(matrix_path: Path, columns_path: Path) -> MatrixCounts:
     )
 
 
-
 @dataclass(frozen=True)
 class CoverageBasis:
     """Column names and label for a taxa-coverage annotation basis (#858, #956, #982, #985)."""
