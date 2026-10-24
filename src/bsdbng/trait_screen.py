@@ -39,6 +39,7 @@ from mtp.trait_screen import (
     screen_candidates,
     significant,
     step_up,
+    step_up_array,
     table1_slug,
     write_screen_outputs,
 )
@@ -79,6 +80,7 @@ __all__ = [
     "screen_candidates",
     "significant",
     "step_up",
+    "step_up_array",
     "table1_slug",
     "write_screen_outputs",
 ]

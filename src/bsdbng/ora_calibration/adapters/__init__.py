@@ -4,7 +4,6 @@ Forwards bsdbng.ora_calibration.adapters
 to mtp.ora_calibration.adapters.
 """
 
-import sys
 from typing import Any
 
 from mtp.ora_calibration.adapters import (
@@ -25,7 +24,7 @@ __all__ = [
 
 import mtp.ora_calibration.adapters as _target
 
-sys.modules[__name__] = _target
+# Preserve the shim package path so its child module aliases the canonical one.
 
 
 def __getattr__(name: str) -> Any:

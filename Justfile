@@ -101,6 +101,11 @@ core-composition run output:
 trait-profile-site-stats *ARGS:
 	uv run python scripts/create_trait_profile_infographic.py --stratified-stats-only "$@"
 
+# Synthetic argument-guard probe using a copied producer (#950).
+[positional-arguments]
+probe-site-stats-guard *ARGS:
+	uv run python scripts/adhoc/issue928_guard_isolation.py "$@"
+
 # Complete exports carry the verified input fingerprints needed for integration.
 [positional-arguments]
 core-ora run output tail="upper":
@@ -171,6 +176,15 @@ rerun-compare core_run noel_run jed_run ilyas_run output *ARGS:
 rerun-verify-comparison record:
 	uv run python -m mtp.workflow.arms verify-comparison "$@"
 
+# Additive BY/BH sidecars from a verified completed comparison; native tables unchanged.
+[positional-arguments]
+rerun-multiplicity comparison output:
+	uv run python -m mtp.multiplicity run --comparison-run "$1" --output "$2"
+
+[positional-arguments]
+rerun-verify-multiplicity record:
+	uv run python -m mtp.multiplicity verify --run "$1"
+
 # Additive #771 lineage extension and complete six-fraction study LOSO.
 [positional-arguments]
 table1-influence-extension *ARGS:
@@ -185,8 +199,18 @@ test-influence-extension:
 probe-influence-extension-guards mutation output:
 	uv run python scripts/adhoc/issue969_probe_influence_guards.py "$1" --output-dir "$2"
 
+# Isolated original/current arm-parser regression evidence (#973).
+[positional-arguments]
+probe-arm-parser-guards *ARGS:
+	uv run python scripts/adhoc/issue973_probe_parser_guards.py "$@"
+
 sync:
 	uv sync --all-extras --group dev --group qa
+
+# Isolated copies prove actual plotted-label and metadata propagation (#955, #962).
+[positional-arguments]
+probe-direction-forwarding *ARGS:
+	uv run python scripts/adhoc/issue955_probe_direction_forwarding.py "$@"
 
 # Use the same declared uv version as the lock hook; run `just sync` first.
 [positional-arguments]
@@ -327,6 +351,9 @@ test:
 # Additive policy and full-family BH/BY contract; no scientific rerun inputs.
 test-multiple-testing:
 	uv run pytest tests/test_multiple_testing.py
+
+test-multiplicity-adapters:
+	uv run pytest tests/test_multiplicity_adapters.py tests/test_multiplicity_basis_integration.py tests/test_multiplicity_regression_guards.py tests/test_multiplicity_cross_product.py tests/test_multiplicity_reason_vocabulary.py
 
 # Analyzer, ranking exporter, and complete-universe density regression checks (#664).
 test-stratification:
@@ -941,6 +968,11 @@ calibration-flip-assignments *ARGS:
 	uv run python -m mtp.calibration --flip-assignments-only --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" "$@"
 
 pipeline: download ingest
+
+# Additive binary-presence and equal-study depth sensitivity of a verified core (#772).
+[positional-arguments]
+presence-depth-sensitivity *ARGS:
+	uv run python -m mtp.presence_depth_sensitivity "$@"
 
 # The integrated evidence table (#178): one row per method result, each keeping its
 # own family, units and states. Reads the other analyses' status files from

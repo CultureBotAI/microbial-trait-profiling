@@ -9,17 +9,21 @@ from typing import Any
 
 from mtp.ora_calibration.metrics import (
     FDRMetric,
+    PowerMetric,
     TypeIErrorMetric,
     compute_discrete_ecdf,
     compute_empirical_fdr,
+    compute_empirical_power,
     compute_type_i_error,
 )
 
 __all__ = [
     "FDRMetric",
+    "PowerMetric",
     "TypeIErrorMetric",
     "compute_discrete_ecdf",
     "compute_empirical_fdr",
+    "compute_empirical_power",
     "compute_type_i_error",
 ]
 
