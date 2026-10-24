@@ -24,8 +24,8 @@ All evidence in this audit is evaluated against the pinned KG-Microbe snapshot r
 
 | File Name | MD5 Checksum | Size (bytes) | Google Drive File ID | Fetch Timestamp |
 | :--- | :--- | :--- | :--- | :--- |
-| `merged-kg_edges.tsv` | `555ecf5ba5d89288cdc44e368375374f` | 1,034,256,091 | `1iIVd-FEleeRIv7CPS0l1F732p3J9JO5d` | 2026-08-30T18:06:23+00:00 |
-| `merged-kg_nodes.tsv` | `dd76b4656f9341db25a7c4afa96cd58e` | 209,545,218 | `1lDVjE67E82LMUdNtqWGvyczrHvNu3BdY` | 2026-08-30T18:05:46+00:00 |
+| `merged-kg_edges.tsv` | `555ecf5ba5d89288cdc44e368375374f` | 1,034,256,091 | `1iIVd-FEleeRIv7CPS0l1F732p3J9JO5d` | 2026-04-21T00:21:25+00:00 |
+| `merged-kg_nodes.tsv` | `dd76b4656f9341db25a7c4afa96cd58e` | 209,545,218 | `1lDVjE67E82LMUdNtqWGvyczrHvNu3BdY` | 2026-04-21T00:21:08+00:00 |
 
 *Provenance rule: Pinned KG inputs must be recovered via the standard provenance workflow; substitute snapshots must be declared as separate scenarios.*
 
@@ -35,21 +35,24 @@ All evidence in this audit is evaluated against the pinned KG-Microbe snapshot r
 
 The machine-readable table captures all required audit attributes across the 6 features:
 
-| Trait Key | Feature Name | Ontology ID & Label | Primary KG Source (NCBITaxon Edges, Every Scope) | BacDive Strain Edges (Read Under `phenotype`, Not `off`) | Direct KG Taxa | BugSigDB Matrix Taxa | Profile Support ($N=5,629$) | Evidence Status | Decision |
+| Trait Key | Feature Name | Ontology ID & Label | Primary KG Source (NCBITaxon Edges, Every Scope) | BacDive Strain Edges (Read Under `phenotype`, Not `off`) | Direct KG Taxa | BugSigDB Matrix Taxa (`phenotype`, of 5,829) | Profile Support (`phenotype`, $N=5,629$) | Evidence Status | Decision |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| `METPO:1000608` | Facultatively aerobic | `METPO:1000608` (facultatively aerobic) | `infores:madin_etal` (5,496) | 53 | 5,496 | 861 (16.6%) | 4,411 (78.4%) | measured + propagated | **keep_separate** |
-| `METPO:2000103\|GO:0030245` | Cellulose catabolic process | `GO:0030245` (cellulose catabolic process) | `infores:madin_etal` (186) | 0 | 186 | 164 (3.2%) | 2,922 (51.9%) | measured + propagated | **keep_separate** |
-| `METPO:1000668` | Coccus shaped | `METPO:1000668` (coccus shaped) | `infores:madin_etal` (5,614) | 1,476 | 5,614 | 675 (13.0%) | 4,338 (77.1%) | measured + propagated | **keep_separate** |
-| `METPO:1000683` | Sphere shaped | `METPO:1000683` (sphere shaped) | `infores:bactotraits` (381) | 11 | 381 | 283 (5.5%) | 3,490 (62.0%) | measured + propagated | **keep_separate** |
-| `METPO:2000103\|pathways:arsenate_reduction` | Arsenate reduction | `pathways:arsenate_reduction` (arsenate_reduction) | `infores:madin_etal` (51) | 0 | 51 | 58 (1.1%) | 1,739 (30.9%) | unresolved mechanism + propagated | **unresolved / keep_separate** |
-| `METPO:1000623` | Moderately halophilic | `METPO:1000623` (moderately halophilic) | `infores:madin_etal` (426) | 4 | 426 | 337 (6.5%) | 3,364 (59.8%) | measured (discrete) + unresolved (quant) + propagated | **keep_separate** |
+| `METPO:1000608` | Facultatively aerobic | `METPO:1000608` (facultatively aerobic) | `infores:madin_etal` (5,496) | 53 | 5,496 | 920 (15.8%) | 4,412 (78.4%) | measured + propagated | **keep_separate** |
+| `METPO:2000103\|GO:0030245` | Cellulose catabolic process | `GO:0030245` (cellulose catabolic process) | `infores:madin_etal` (186) | 0 | 186 | 189 (3.2%) | 2,922 (51.9%) | measured + propagated | **keep_separate** |
+| `METPO:1000668` | Coccus shaped | `METPO:1000668` (coccus shaped) | `infores:madin_etal` (5,614) | 1,476 | 5,614 | 815 (14.0%) | 4,386 (77.9%) | measured + propagated | **keep_separate** |
+| `METPO:1000683` | Sphere shaped | `METPO:1000683` (sphere shaped) | `infores:bactotraits` (381) | 11 | 381 | 307 (5.3%) | 3,490 (62.0%) | measured + propagated | **keep_separate** |
+| `METPO:2000103\|pathways:arsenate_reduction` | Arsenate reduction | `pathways:arsenate_reduction` (arsenate_reduction) | `infores:madin_etal` (51) | 0 | 51 | 61 (1.0%) | 1,739 (30.9%) | unresolved mechanism + propagated | **unresolved / keep_separate** |
+| `METPO:1000623` | Moderately halophilic | `METPO:1000623` (moderately halophilic) | `infores:madin_etal` (426) | 4 | 426 | 351 (6.0%) | 3,364 (59.8%) | measured (discrete) + unresolved (quant) + propagated | **keep_separate** |
 
 **Source columns ([#774](https://github.com/CultureBotAI/microbial-trait-profiling/issues/774), [#788](https://github.com/CultureBotAI/microbial-trait-profiling/issues/788)).**
 - Edges are counted by `primary_knowledge_source` in the pinned edge file.
 - **NCBITaxon edges.** The matrix builder (`src/mtp/taxa_trait_matrix.py`) reads them in every strain rollup scope. Each subject carries one edge per trait here, so this column equals *Direct KG Taxa*.
 - **BacDive strain edges.** Every `infores:bacdive` edge for these traits sits on a BacDive strain node (`kgmicrobe.strain:`). Each of these strains links to an NCBITaxon node through `biolink:subclass_of`. An earlier version of this table listed these edges as a primary source; they now have their own column.
 - **When strain edges count.** They reach the matrix under the primary `phenotype` scope, which counts them at the strains' NCBITaxon nodes. Since #788 it is the default of both the core workflow and the legacy matrix builder. The NCBITaxon nodes carrying each trait then become 5,521, 186, 6,027, 388, 51 and 429. Under the `off` sensitivity scope they are not read.
-- **The other columns.** *BugSigDB Matrix Taxa* and *Profile Support* describe matrices built without strain records.
+- **Which corpus each column comes from ([#807](https://github.com/CultureBotAI/microbial-trait-profiling/issues/807)).** Every count was recounted for the final rerun at code commit 511c891, with `scripts/adhoc/recount_table1_audit_columns_807.py` (matrix and profile columns) and `scripts/adhoc/recount_table1_audit_kg_columns_807.py` (KG columns and the `off`/`phenotype` matrix counts):
+  - *Primary KG Source*, *BacDive Strain Edges*, *Direct KG Taxa* and the node counts above come from the pinned KG edge file (§2), which the rerun did not change. They were recounted on that file, the node counts with the matrix builder's own edge reader.
+  - *BugSigDB Matrix Taxa* counts, among the 5,829 reported taxa of the taxa-trait matrix that the final rerun built under `phenotype`, those that bear the trait themselves or through a descendant; the percentage is of the 5,829. That matrix is not committed. Its sha256 `45df0fe7…` is the pin in `data/analysis/cellulose_decr/cellulose_decr_provenance.json`, and five of the six counts are also its `matrix_taxon_count` in the committed `data/analysis/cellulose_decr/trait_convergence_benchmark.tsv` (arsenate reduction has too few decreased feces taxa to enter that benchmark). Under `off` the six counts are 916, 189, 721, 305, 61 and 350.
+  - *Profile Support* counts, among the 5,629 human 16S/WMS profiles with no Tier 1+2, pairing or disease-orientation filter, those with a nonzero count in the committed `data/derived/study_trait_profiles_wide.tsv.gz`, which the final rerun rebuilt under `phenotype` (decompressed sha256 `43b2e230…`). The `off` table it replaced (`519a095b…`) gave 4,411, 2,922, 4,338, 3,490, 1,739 and 3,364.
 
 ---
 
@@ -75,22 +78,22 @@ The existence of two sibling terms in METPO is an artifact of upstream multi-sou
    - Sphere direct taxa: **381**
    - Intersection: **266 taxa** (69.8% of Sphere direct taxa are in Coccus; only 4.7% of Coccus direct taxa are in Sphere).
    - Jaccard similarity: **0.0464** (4.6%).
-2. **BugSigDB Matrix Taxa (after taxonomic hierarchy rollup):**
-   - Coccus taxa in matrix ($K_{\text{coccus}}$): **675**
-   - Sphere taxa in matrix ($K_{\text{sphere}}$): **283**
-   - Intersection: **262 taxa** (92.6% of Sphere matrix taxa are in Coccus; 38.8% of Coccus matrix taxa are in Sphere).
-   - Jaccard similarity: **0.3764** (37.6%).
-3. **Profile-Level Nonzero Support & Correlation ($N=5,629$ profiles):**
-   - Coccus nonzero profiles: **4,338** (77.1%)
+2. **BugSigDB Matrix Taxa (after taxonomic hierarchy rollup; the final rerun's `phenotype` matrix, §3):**
+   - Coccus taxa in matrix ($K_{\text{coccus}}$): **815**
+   - Sphere taxa in matrix ($K_{\text{sphere}}$): **307**
+   - Intersection: **296 taxa** (96.4% of Sphere matrix taxa are in Coccus; 36.3% of Coccus matrix taxa are in Sphere).
+   - Jaccard similarity: **0.3584** (35.8%).
+3. **Profile-Level Nonzero Support & Correlation ($N=5,629$ human 16S/WMS profiles, with no Tier 1+2, pairing or disease-orientation filter, of the committed `phenotype` table, §3):**
+   - Coccus nonzero profiles: **4,386** (77.9%)
    - Sphere nonzero profiles: **3,490** (62.0%)
-   - Pearson correlation across profile counts: $r = 0.911$ ($p < 10^{-300}$).
-   - Spearman rank correlation: $\rho = 0.847$ ($p < 10^{-300}$).
+   - Pearson correlation across the raw profile counts of all 5,629 profiles: $r = 0.807$ ($p < 10^{-300}$).
+   - Spearman rank correlation, same counts: $\rho = 0.915$ ($p < 10^{-300}$).
 
 #### Explicit Grouping Decision: Keep Separate
 - **Decision:** **Do NOT merge `METPO:1000668` and `METPO:1000683` in the primary analysis.**
 - **Rationale:** While biologically both refer to spherical cell morphology, merging them by naive string collapse or summing profile counts without deduplication would distort the feature space:
-  - If summed, the 262 shared BugSigDB taxa would be double-counted in profile vectors, artificially inflating the weight of dual-annotated taxa.
-  - Sibling terms in METPO do not carry transitive equivalence. Merging requires constructing a deduplicated union universe ($K_{\text{union}} = 696$ taxa) and formally versioning a new hypothesis family under [#182](https://github.com/CultureBotAI/bsdbng/issues/182).
+  - If summed, the 296 shared BugSigDB taxa would be double-counted in profile vectors, artificially inflating the weight of dual-annotated taxa.
+  - Sibling terms in METPO do not carry transitive equivalence. Merging requires constructing a deduplicated union universe ($K_{\text{union}} = 826$ taxa) and formally versioning a new hypothesis family under [#182](https://github.com/CultureBotAI/bsdbng/issues/182).
   - Preserving them separately honors historical hypotheses while explicitly documenting the multi-source annotation artifact.
 
 ---
@@ -176,7 +179,7 @@ Microbial reduction of arsenate ($As^{5+}$) to arsenite ($As^{3+}$) proceeds via
 Issue [#178](https://github.com/CultureBotAI/bsdbng/issues/178) defines the shared result contract for multi-arm enrichment integration. This audit supplies the following metadata requirements for Table 1 features:
 - **Raw trait identifiers:** Must preserve qualified keys (`METPO:1000608`, `METPO:2000103|GO:0030245`, `METPO:1000668`, `METPO:1000683`, `METPO:2000103|pathways:arsenate_reduction`, `METPO:1000623`).
 - **Input fingerprinting:** Pinned MD5 checksums for nodes (`dd76b4656f9341db25a7c4afa96cd58e`) and edges (`555ecf5ba5d89288cdc44e368375374f`).
-- **Feature universe denominators ($K$):** Coccus ($K=675$) and Sphere ($K=283$) must be evaluated as separate testing units unless a deduplicated union universe is formally constructed.
+- **Feature universe denominators ($K$):** Coccus ($K=815$) and Sphere ($K=307$) in the `phenotype` matrix (721 and 305 under `off`) must be evaluated as separate testing units unless a deduplicated union universe is formally constructed.
 - **Evidence status encoding:** Carry `measured`, `propagated`, and `unresolved` flags into result tables to distinguish direct isolate assertions from taxonomic rollups.
 
 ### 6.2 Handoff to Issue #179 (Project-Wide Biological Interpretation)

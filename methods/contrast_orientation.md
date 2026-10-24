@@ -452,12 +452,14 @@ classifier source it records tells them apart: `analysis_source_sha256` in the
 contrast-orientation provenance or `classifier.source_sha256` in a workflow contrast
 selection is `a0a7819ff0d202f05bd1282c75abbd0e9be129815f9fbdb7fc3861cfc1c769ff` under the
 v5 rules and `e7d5f4c9ecf37ce566f3ef763362d445d6a32e673d0ee2435d768739924df5d1` under the
-v6 rules. The tracked cellulose_decr (`data/analysis/cellulose_decr/`) and
-integrated-evidence (`data/derived/integrated_evidence/`) outputs labelled v5 were built
-from source `e7d5f4c9…`, the v6 rules. `cellulose_decr_provenance.json` records no
-classifier source hash, so there the test cannot be applied from the tracked files: its
-code commit holds that source, and its pinned contrast manifest (`a8ececf2…`) was
-written at 8b280a3 from it.
+v6 rules. The tracked integrated-evidence outputs (`data/derived/integrated_evidence/`),
+labelled v5, were built from source `e7d5f4c9…`, the v6 rules. The tracked
+cellulose_decr outputs (`data/analysis/cellulose_decr/`) were labelled v5 the same way
+until the final rerun at 511c891 regenerated them under `contrast-orientation-v6`,
+pinned to manifest `3532cb5d…`; the v5-labelled manifest they pinned before
+(`a8ececf2…`) was written at 8b280a3 from source `e7d5f4c9…`.
+`cellulose_decr_provenance.json` records no classifier source hash, so there the test
+cannot be applied from the tracked files: its code commit holds that source.
 
 - **Duration bands**: `DURATION_BAND` masks treatment and disease duration qualifiers
   ("for more than 1 year", "duration less than 5 years") out of `_timepoints` and

@@ -72,9 +72,10 @@ assignments be handed to another arm (see **The shared null** below).
 
 Power is measured by raising one trait's counts (coccus shaped) on the increased side
 of half the studies by a declared multiplier. The added counts come **from the
-complement**: a profile's total sums all 317 trait columns, the eight the procedures
-read are disjoint subsets of them, and the raise moves annotations in from the 309
-columns no procedure reads. The total is held fixed, so every other tracked trait's
+complement**: a profile's total sums all retained trait columns (317 under `off`, 344
+under `phenotype`), the eight the procedures read are disjoint subsets of them, and
+the raise moves annotations in from the other 309 (336 under `phenotype`), which no
+procedure reads. The total is held fixed, so every other tracked trait's
 share is unchanged *exactly* - which is the only thing that makes the "untouched"
 truth labels, and therefore the false-discovery proportion, mean anything. An earlier
 version added the injected counts to the total, which lowered every other trait's
