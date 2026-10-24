@@ -7,9 +7,11 @@ from dataclasses import replace
 import pandas as pd
 import pytest
 
+from mtp.cellulose_decr import selection_scan as scanner
 from mtp.cellulose_decr.study_split import (
     Candidate,
     Protocol,
+    StudySplit,
     evaluate_candidates,
     make_splits,
     partition_frames,
@@ -111,6 +113,84 @@ def test_training_selection_does_not_force_historical_lead_or_use_heldout() -> N
         ("trait", "other"),
         split,
         Protocol(min_studies=1, permutations=19),
+    )
+
+
+def test_training_selection_rejects_the_heldout_only_trait_and_triple() -> None:
+    """Held-out evidence would replace both selections if the study filter vanished."""
+    profiles, _, _, original_counts = corpus()
+    split = StudySplit(
+        0,
+        tuple(f"s{index:02}" for index in range(9)),
+        tuple(f"s{index:02}" for index in range(9, 18)),
+    )
+    heldout = profiles.study_id.isin(split.testing)
+    profiles.loc[heldout, "condition"] = profiles.loc[heldout, "condition"].map(
+        {"A": "D", "B": "E", "C": "F"}
+    )
+    columns = ("training_trait", "heldout_trait", "other")
+    taxon_traits = {f"{trait}_{index}": trait for trait in columns for index in range(3)}
+    matrix = pd.DataFrame(
+        {trait: [int(value == trait) for value in taxon_traits.values()] for trait in columns},
+        index=list(taxon_traits),
+    )
+    counts = []
+    taxa_rows = []
+    for profile in original_counts:
+        key = f"{profile.study_id}|{profile.experiment_id}|{profile.inc_dec}"
+        row = profiles.loc[key].to_dict()
+        if profile.study_id in split.training:
+            values = (1, 0, 3) if profile.inc_dec == "inc" else (3, 0, 1)
+        else:
+            values = (3, 1, 0) if profile.inc_dec == "inc" else (1, 3, 0)
+        trait_counts = dict(zip(columns, values, strict=True))
+        counts.append(
+            replace(
+                profile,
+                condition=str(row["condition"]),
+                guild_counts=trait_counts,
+                total=sum(values),
+            )
+        )
+        # Every count is backed by an actual distinct carrier in the signature.
+        for trait, count in trait_counts.items():
+            for index in range(count):
+                taxa_rows.append(dict(profile_id=key, taxon_id=f"{trait}_{index}", **row))
+    taxa = pd.DataFrame(taxa_rows)
+    protocol = Protocol(min_studies=3, top_traits=1, permutations=19)
+
+    # Establish that this fixture is sensitive to leakage, using the actual
+    # unrestricted scanner as a counterfactual, not as the expected split result.
+    inputs = scanner.ScanInputs(
+        profiles,
+        taxa,
+        matrix,
+        tuple(counts),
+        columns,
+        {},
+        contrast_population=scanner.TIER1_2,
+        strain_rollup="off",
+        strain_rollup_role=scanner.PRIMARY,
+    )
+    pooled = scanner.select(
+        inputs,
+        None,
+        protocol=replace(scanner.load_protocol(), min_studies=3, top_n=1),
+        permutations=0,
+        always_included=False,
+    )
+    pooled_best = scanner.closest_disjoint_triples(pooled.triples, tolerance=0.0)
+    assert pooled_best.trait_id.tolist() == ["heldout_trait"]
+    assert list(
+        pooled_best[["condition_a", "condition_b", "condition_c"]].itertuples(
+            index=False, name=None
+        )
+    ) == [("D", "E", "F")]
+
+    # Exercise the production split-to-scanner call boundary on the full input.
+    selected = select_candidates(profiles, taxa, matrix, counts, columns, split, protocol)
+    assert selected == [Candidate("training_trait", ("A", "B", "C"), 0.0)], (
+        "Training selection must exclude the held-out-only trait and triple"
     )
 
 

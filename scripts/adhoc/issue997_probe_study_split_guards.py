@@ -25,11 +25,18 @@ CORE_TESTS = ROOT / "tests/test_study_split_core.py"
 SELECTION_TESTS = ROOT / "tests/test_study_split_selection.py"
 GUARD_TEST = "test_change_after_analysis_reads_blocks_publication"
 SELECTION_TEST = "test_repeated_split_report_has_no_aggregate_p_value"
+TRAINING_TEST = "test_training_selection_rejects_the_heldout_only_trait_and_triple"
 FINAL_GUARD = (
     "    if _provenance(paths, protocol, verified) != provenance:\n"
     '        raise ValueError("Study-split inputs or implementation changed during execution")\n'
 )
 MUTATIONS = {
+    "training_selection_unrestricted": (
+        "study_split",
+        "        inputs,\n        split.training,\n        protocol=scan_protocol,\n",
+        "        inputs,\n        None,\n        protocol=scan_protocol,\n",
+        TRAINING_TEST,
+    ),
     "final_recheck": ("study_split_run", FINAL_GUARD, "", GUARD_TEST),
     "no_traits": (
         "study_split",
@@ -48,6 +55,7 @@ MUTATIONS = {
 GUARD_NODE = f"{CORE_TESTS.relative_to(ROOT)}::{GUARD_TEST}"
 SELECTION_NODE = f"{SELECTION_TESTS.relative_to(ROOT)}::{SELECTION_TEST}"
 EXPECTED_FAILURES = {
+    "training_selection_unrestricted": [f"{SELECTION_TESTS.relative_to(ROOT)}::{TRAINING_TEST}"],
     "final_recheck": [f"{GUARD_NODE}[source]", f"{GUARD_NODE}[code]"],
     "no_traits": [f"{SELECTION_NODE}[no_traits]"],
     "no_disjoint_triple": [f"{SELECTION_NODE}[no_testable_study_disjoint_triple]"],
@@ -70,7 +78,7 @@ def main() -> int:
         Path(__file__).resolve(),
     ]
     before = {str(path.relative_to(ROOT)): file_sha256(path) for path in canonical}
-    expression = f"{GUARD_TEST} or {SELECTION_TEST}"
+    expression = f"{GUARD_TEST} or {SELECTION_TEST} or {TRAINING_TEST}"
     original = None
     module_name = ""
     name = ""
@@ -126,6 +134,8 @@ def main() -> int:
     failed_nodes = [line.split()[1] for line in log.splitlines() if line.startswith("FAILED ")]
     expected_nodes = EXPECTED_FAILURES.get(args.mutation, [])
     marker = "DID NOT RAISE" if args.mutation == "final_recheck" else "AssertionError"
+    if args.mutation == "training_selection_unrestricted":
+        marker = "Training selection must exclude the held-out-only trait and triple"
     verified = (
         code == expected
         and before == after
