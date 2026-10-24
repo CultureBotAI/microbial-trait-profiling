@@ -149,7 +149,13 @@ The shift induced by dropping *sphere* ($0.000237$) is **8.6-fold smaller** than
 
 ## 6. Methodological Synthesis: Coupling vs. Semantic Redundancy
 
-A critical conceptual distinction emerges from the coupling audit:
+A critical conceptual distinction emerges from the coupling audit. The correlation
+and counts quoted in this section (r = +0.911, VIF 5.88, 415,436 annotations, 14,689
+coccus counts in 3,004 profiles) come from the historical binarized-profile
+evaluation and were not recomputed on the current tables. Across raw profile counts,
+the coccus–sphere Pearson r is 0.797 on the `off` table (`519a095b…`) and 0.807 on
+the `phenotype` table now committed (`43b2e230…`;
+[`docs/table1_trait_semantics_audit.md`](../docs/table1_trait_semantics_audit.md)).
 
 ```mermaid
 flowchart TD

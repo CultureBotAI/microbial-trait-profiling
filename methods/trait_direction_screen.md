@@ -40,8 +40,9 @@ never redefines that total.
 
 Every retained column of `data/derived/study_trait_profiles_wide.tsv` — all columns
 except the three identifier columns and every MediaDive growth-medium column. On the
-pinned v1.3.1 corpus, under the `off` scope, that is **317 candidates** (344 under the
-primary `phenotype` scope), with 2,333 MediaDive columns excluded,
+pinned v1.3.1 corpus, under the `off` scope, that is **317 candidates** (the primary
+`phenotype` scope's 344 were counted on the later 5,629-profile table), with 2,333
+MediaDive columns excluded,
 tested over 4,670 paired human profiles from 2,335 experiments and 959 studies.
 
 The set is read from the matrix at run time and never written down, so a corpus change

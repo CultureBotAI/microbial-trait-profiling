@@ -465,8 +465,10 @@ number can be traced to the file it came from rather than to a vintage string.
 Two further points, because matching one field does not establish the rest:
 
 - The 317 **retained column names** (`off`) are identical between this matrix and the
-  committed `study_trait_profiles_wide.tsv.gz`. That does **not** make them the
-  same corpus. The `.gz` holds 12,108 rows to this matrix's 7,329, the 7,329 are a
+  `study_trait_profiles_wide.tsv.gz` committed when this comparison was made, an
+  `off` table. (The `.gz` committed since the final rerun at 511c891 is the
+  `phenotype` table: 5,629 rows, 344 retained columns.) That does **not** make them
+  the same corpus. The `.gz` then held 12,108 rows to this matrix's 7,329, the 7,329 are a
   strict subset of them, and of those shared rows **one differs**:
   `bsdb:25487798-1 inc` disagrees on 81 of the 317 retained columns, its retained
   total 12,587 here against 12,931 there. So the populations differ by design and

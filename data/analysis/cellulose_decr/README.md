@@ -30,17 +30,19 @@ with `--repin`. Against the previous pins:
 - the taxa-trait matrix, its column table and the profile metadata table were
   rebuilt.
 
-Sections 1–9 now quote these tables. Some of their numbers had not been updated
-since #767 regenerated the tables. Three readings changed:
+Sections 1–9 now quote these tables. Two readings changed in this rerun:
 
-- **CRC Feces-vs-GI test.** On disease-vs-healthy contrasts its study-level p is
-  0.0069, and 0.032 with `bsdb:25699023-2` counted, so it no longer turns on that
-  experiment (section 5).
-- **PD study-level q.** The PD disease-vs-healthy study-level row has q = 0.054,
-  against 0.037 before (section 4).
-- **Benchmark.** It ranks 186 traits, 146 of them not MediaDive media. Cellulose
-  catabolic process is still second; thermophilic left the top 10 and filament
-  shaped entered it (section 7).
+- **CRC Feces-vs-GI test.** On disease-vs-healthy contrasts its study-level p goes
+  from 0.017 to 0.0069, and from 0.066 to 0.032 with `bsdb:25699023-2` counted, so
+  it no longer turns on that experiment (section 5).
+- **Benchmark.** It ranks 186 traits instead of 182, 146 of them not MediaDive
+  media instead of 142. Cellulose catabolic process is still second; thermophilic
+  fell from 6th to 27th and filament shaped entered the top 10 (section 7).
+
+Other numbers had moved earlier, when #767 regenerated the tables, and this README
+had not been updated since. Among them, the PD disease-vs-healthy study-level row
+has had q = 0.054 since #767; this README quoted 0.037 from the tables before it
+(section 4).
 
 The numbers in the dated sections below record each change as it was made.
 
@@ -386,7 +388,7 @@ synonyms:
   (p = 1.6e-4);
 - disease vs healthy: 18 : 3 : 7 studies (p = 0.0015).
 
-The pooled study-level result stays at p ≤ 1.3e-4 in every scenario.
+The pooled study-level sign test stays at p ≤ 1.21e-4 in every scenario.
 
 Since classifier v4 the primary reading counts the HIV– vs HIV+ experiment
 (`bsdb:33102244-1`) and the ART-treated HIV+ vs uninfected experiments as disease vs
@@ -412,7 +414,10 @@ behaviour. Two studies bear on this:
 A separate analysis points the same way:
 `data/derived/contrast_orientation/disease_control_comparison.tsv` pools all
 conditions and is not an input to this analysis. In it, the decreased signature
-has the larger cellulose annotation share in 441 of 774 untied studies (p = 1.2e-4).
+has the larger cellulose annotation share in 432 of 763 untied studies, with 160
+tied (p = 2.9e-4). That file is an untracked output, which `just
+contrast-orientation` regenerates; these values are from the final rerun's copy
+(manifest `3532cb5d…`).
 The pooling takes the historical human paired population, which does not depend
 on the contrast classifier. The oriented disease-versus-healthy subset of that
 file does depend on the classifier version, so it is not quoted here.
@@ -442,7 +447,7 @@ The table below gives Fisher's exact test of direction by compartment
 | All three, stratified by condition | studies | 56 : 21 | 5 : 9 | 7.87 (1.67–46.8) | 0.0047 |
 | CRC, disease vs healthy | experiments | 22 : 5 | 2 : 5 | 10.0 (1.23–134) | 0.014 |
 | CRC, disease vs healthy | studies | 16 : 2 | 2 : 5 | 16.6 (1.57–302) | 0.0069 |
-| CRC, disease vs healthy, paired-tissue contrasts counted | studies | 16 : 2 | 3 : 4 | 9.35 (0.90–151) | 0.032 |
+| CRC, disease vs healthy, paired-tissue contrasts counted | studies | 16 : 2 | 3 : 4 | 9.35 (0.899–151) | 0.032 |
 | All three, stratified, disease vs healthy | studies | 49 : 14 | 4 : 6 | 7.60 (1.31–52.2) | 0.010 |
 
 **How to read these odds ratios:**
@@ -554,7 +559,7 @@ an annotated taxon: `n_studies_a` in
 | [`condition_definition_sensitivity.tsv`](condition_definition_sensitivity.tsv), [`condition_definition_overlap.tsv`](condition_definition_overlap.tsv), [`condition_definition_interaction.tsv`](condition_definition_interaction.tsv) | Feces direction, cross-condition overlap (with U6) and the Feces-vs-GI test, under each condition definition: synonym labels, cases named as treated set aside, Tier 1–2 controls only, paired-tissue or comorbidity contrasts counted, and without the rectal-mucosa study. Under the four case-control definitions all three tables are on disease-vs-healthy contrasts only, where those rules apply (#769, #781) |
 | [`condition_label_inventory.tsv`](condition_label_inventory.tsv) | Every human condition label naming PD, HIV or CRC, with its status |
 | [`cellulose_decreased_taxa_catalog.tsv`](cellulose_decreased_taxa_catalog.tsv) | The 47 taxa with study and profile counts and flags, including `has_direct_trait_edge` |
-| [`cellulose_decreased_taxa_catalog_tier1_2.tsv`](cellulose_decreased_taxa_catalog_tier1_2.tsv) | The same catalog on disease-vs-healthy contrasts with Tier 1–2 controls only (#813): 41 taxa, 14 of them in all three sets, none with an edge of its own |
+| [`cellulose_decreased_taxa_catalog_tier1_2.tsv`](cellulose_decreased_taxa_catalog_tier1_2.tsv) | The same catalog on disease-vs-healthy contrasts with Tier 1–2 controls only (#813): 41 taxa, 14 of them in all three sets; none of the 14 has an edge of its own |
 | [`profile_and_study_pair_jaccard.tsv`](profile_and_study_pair_jaccard.tsv) | Overlap between individual profiles and studies across conditions |
 | [`trait_convergence_benchmark.tsv`](trait_convergence_benchmark.tsv) | All 186 benchmarked traits with `trait_label` and `trait_predicate` |
 | [`significant_results_summary.tsv`](significant_results_summary.tsv) | Headline tests with unit, population, p and BH q ([`SIGNIFICANT_RESULTS_SUMMARY.md`](SIGNIFICANT_RESULTS_SUMMARY.md)) |

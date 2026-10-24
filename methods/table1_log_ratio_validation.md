@@ -21,7 +21,7 @@ Both recipes used the same pinned profile and experiment files: 7,329 profile ro
 read, 1,500 dropped as non-human and 1,159 experiments dropped as unpaired, leaving
 4,670 retained profiles, 2,335 matched experiments and 959 unique studies. The
 retained corpus is human and paired. The fraction denominator sums the 317
-non-MediaDive columns of the `off` scope (344 under `phenotype`); 2,333 MediaDive columns are excluded. The log-ratio
+non-MediaDive columns of the `off` scope; 2,333 MediaDive columns are excluded. The log-ratio
 contrast uses only its named numerator and reference counts.
 
 The matrix these counts were measured on is

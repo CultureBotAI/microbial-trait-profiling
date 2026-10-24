@@ -52,7 +52,7 @@ The machine-readable table captures all required audit attributes across the 6 f
 - **Which corpus each column comes from ([#807](https://github.com/CultureBotAI/microbial-trait-profiling/issues/807)).** Every count was recounted for the final rerun at code commit 511c891:
   - *Primary KG Source*, *BacDive Strain Edges*, *Direct KG Taxa* and the node counts above come from the pinned KG edge file (§2), which the rerun did not change. They were recounted on that file, the node counts with the matrix builder's own edge reader.
   - *BugSigDB Matrix Taxa* counts, among the 5,829 reported taxa of the taxa-trait matrix that the final rerun built under `phenotype`, those that bear the trait themselves or through a descendant; the percentage is of the 5,829. That matrix is not committed. Its sha256 `45df0fe7…` is the pin in `data/analysis/cellulose_decr/cellulose_decr_provenance.json`, and five of the six counts are also its `matrix_taxon_count` in the committed `data/analysis/cellulose_decr/trait_convergence_benchmark.tsv` (arsenate reduction has too few decreased feces taxa to enter that benchmark). Under `off` the six counts are 916, 189, 721, 305, 61 and 350.
-  - *Profile Support* counts the profiles with a nonzero count in the committed `data/derived/study_trait_profiles_wide.tsv.gz`, which the final rerun rebuilt under `phenotype` (decompressed sha256 `43b2e230…`). The `off` table it replaced (`519a095b…`) gave 4,411, 2,922, 4,338, 3,490, 1,739 and 3,364.
+  - *Profile Support* counts, among the 5,629 human 16S/WMS profiles with no Tier 1+2, pairing or disease-orientation filter, those with a nonzero count in the committed `data/derived/study_trait_profiles_wide.tsv.gz`, which the final rerun rebuilt under `phenotype` (decompressed sha256 `43b2e230…`). The `off` table it replaced (`519a095b…`) gave 4,411, 2,922, 4,338, 3,490, 1,739 and 3,364.
 
 ---
 
@@ -83,7 +83,7 @@ The existence of two sibling terms in METPO is an artifact of upstream multi-sou
    - Sphere taxa in matrix ($K_{\text{sphere}}$): **307**
    - Intersection: **296 taxa** (96.4% of Sphere matrix taxa are in Coccus; 36.3% of Coccus matrix taxa are in Sphere).
    - Jaccard similarity: **0.3584** (35.8%).
-3. **Profile-Level Nonzero Support & Correlation ($N=5,629$ profiles of the committed `phenotype` table, §3):**
+3. **Profile-Level Nonzero Support & Correlation ($N=5,629$ human 16S/WMS profiles, with no Tier 1+2, pairing or disease-orientation filter, of the committed `phenotype` table, §3):**
    - Coccus nonzero profiles: **4,386** (77.9%)
    - Sphere nonzero profiles: **3,490** (62.0%)
    - Pearson correlation across the raw profile counts of all 5,629 profiles: $r = 0.807$ ($p < 10^{-300}$).

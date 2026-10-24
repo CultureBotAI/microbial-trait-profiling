@@ -13,9 +13,11 @@ total is zero on either side, and this table's own tests now do (#294). `Profile
 returns 0.0 for a zero total, so such a pair would otherwise enter the contrast
 as a measured share of nothing, produce a contrast of exactly zero, and be
 counted by the sign test as a tie - merging zero-annotation studies into the
-all-tied count, which is the collapse the basis forbids. On the committed corpus
-(identified under "What is in it now") this removes **55 of 2,257 experiments**
-and takes the study count from **932 to 922**. It changes the tie counts rather
+all-tied count, which is the collapse the basis forbids. On the corpus of these
+outputs (the `off` table identified under "What is in it now") this removes **55 of
+2,257 experiments** and takes the study count from **932 to 922**; on the
+`phenotype` table now committed it removes 43 and leaves 923
+(`trait-visualization/trait-profile-investigation/stratified_stats_provenance.json`). It changes the tie counts rather
 than the directions: facultatively aerobic 32 to 24, arsenate reduction 324 to
 316, moderately halophilic 101 to 93. All six fraction traits remain significant
 at q <= 0.05. Since #783 the oxygen guild figure, and with it the figure-cell
@@ -111,8 +113,10 @@ read as a negative result.
 On the committed corpus, **4,200 rows: 40 method results and 4,160 figure
 cells**. That is the run that wrote `data/derived/integrated_evidence/`. Its
 profiles are sha256
-`519a095b09e179dc92fb51f9d892984a52dd100dece4dadf6c94b036a5323e6c` (the committed
-`study_trait_profiles_wide.tsv.gz`), its experiments
+`519a095b09e179dc92fb51f9d892984a52dd100dece4dadf6c94b036a5323e6c` (the `off`
+profile table these outputs were built from, the committed
+`study_trait_profiles_wide.tsv.gz` until the final rerun at 511c891 replaced it with
+the `phenotype` table, `43b2e230…`), its experiments
 `16271237a70f61c8195d9f2acdd16f71e88f65859160f95bb734626bc1328e06`, and its
 BugSigDB export `2026-04-24_00:41_UTC` (full dump
 `af84bfca7bfe76913a20c1fedbaadbfad4e4bf78605a2cfd7d00eb0c0fdd5788`). The
@@ -123,10 +127,12 @@ the provenance fields #813 introduced and changed no number. The record's
 `code_commit` names the branch commit the run was made from, which a squash
 merge does not keep on main (#643).
 
-The final rerun at 511c891 did not regenerate these files: their assessment and
-arm inputs were not rebuilt there, so they still describe the `off`-scope profiles
-above, with 317 retained traits rather than the 344 of the primary `phenotype` scope.
-Regenerating them with every input is #1003.
+The final rerun at 511c891 did not regenerate these files, so they still describe
+the `off`-scope profiles above, with 317 retained traits rather than the 344 of the
+primary `phenotype` scope. The rerun rebuilt one of their inputs, the composition arm's
+pooled table (now `46dfce6b…`, `phenotype`), but these files still read the one they
+were built from (`3f89fca8…`). The status files, the enrichment arm's exports and the
+full screen were not regenerated. Regenerating these files with every input is #1003.
 
 | Method | Records | Family | Tested | q <= 0.05 | q <= 0.001 |
 | --- | --- | --- | --- | --- | --- |
@@ -283,12 +289,13 @@ one before that stated the assessments' branch findings as established (#294).
 
 ## Reproducing
 
-`just integrated-evidence` on the pinned inputs writes six files into
+`just integrated-evidence` on the pinned inputs writes seven files into
 `data/derived/integrated_evidence/`: the table (`integrated_evidence.tsv`), the
 feature-to-column map (`integrated_evidence_features.tsv`), the correction
 families with their declared sizes (`integrated_evidence_families.tsv`), each
 assessment against the procedure and scenario it assessed
-(`integrated_evidence_assessments.tsv`), the generated view
+(`integrated_evidence_assessments.tsv`), the non-cell rows kept for version control
+(`integrated_evidence_method_results.tsv`), the generated view
 (`integrated_evidence.md`) and the provenance record. The family
 export is the #236/#289 requirement that no exported q appears without the
 family it was corrected in and that family's size. The Table 1 direction-shift TSV

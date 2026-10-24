@@ -19,7 +19,7 @@ are those of the tables regenerated in the final rerun at code commit 511c891
 
 ## What holds up
 
-1. **In PD and CRC, the decreased feces signature carries a larger cellulose
+1. **In CRC, the decreased feces signature carries a larger cellulose
    annotation share than the paired increased signature.** The same holds
    across the three conditions pooled. In most studies, taxa annotated with
    cellulose catabolic process form a larger share of the decreased signature's
@@ -30,15 +30,21 @@ are those of the tables regenerated in the final rerun at code commit 511c891
      labels counted (p = 0.0015). Keeping only Tier 1–2 controls sets aside the
      Yachida 2019 study, whose controls had "a few polyps" (#672), giving 15 of 17
      (p = 0.0023).
-   - **PD, disease vs healthy:** 23 of 33 studies (p = 0.035, q = 0.054). This q
-     is just above 0.05; before the final rerun it was 0.037.
-   - **PD, all contrasts:** the study-level sign test gives 26 of 40 (p = 0.081).
-     The study-level Wilcoxon test gives p = 0.013, and a majority vote of
-     experiment signs gives 27 of 39 (p = 0.024).
    - **Pooled:** 56 of 77 untied studies (p = 8.2e-5) and 49 of 63 among
-     disease-versus-healthy contrasts (p = 1.1e-5). The pooled result stays at
-     p ≤ 1.3e-4 under every label and contrast definition tried
+     disease-versus-healthy contrasts (p = 1.1e-5). The pooled sign test stays at
+     p ≤ 1.21e-4 under every label and contrast definition tried
      ([`condition_definition_sensitivity.tsv`](condition_definition_sensitivity.tsv)).
+
+## Borderline: PD at the study level
+
+1. **PD points the same way, but its study-level tests do not pass BH q ≤ 0.05.**
+   Experiments point down in 46 of 61 untied disease-versus-healthy pairs
+   (p = 8.8e-5) and 57 of 81 over all contrasts (p = 3.2e-4). At the study level:
+   - **disease vs healthy:** 23 of 33 studies (p = 0.035, q = 0.054). The table has
+     given q = 0.054 since #767; this note quoted 0.037 from the tables before it.
+   - **all contrasts:** the sign test gives 26 of 40 (p = 0.081, q = 0.10). The
+     study-level Wilcoxon test gives p = 0.013, and a majority vote of experiment
+     signs gives 27 of 39 (p = 0.024).
 
 ## What is fragile
 
@@ -70,7 +76,7 @@ are those of the tables regenerated in the final rerun at code commit 511c891
      with adjacent tissue, cancer subgroups or treatments.
    - Among disease-versus-healthy studies, the test gives odds ratio 16.6
      (95% CI 1.57–302, p = 0.0069). Counting the tumour-vs-adjacent-tissue contrast
-     `bsdb:25699023-2` gives 9.35 (0.90–151, p = 0.032). Keeping only Tier 1–2
+     `bsdb:25699023-2` gives 9.35 (0.899–151, p = 0.032). Keeping only Tier 1–2
      controls gives 15.5 (1.46–284, p = 0.0086). The p stays below 0.05 either
      way, on 7 untied GI studies (#569, #580, #672, #673).
 
@@ -178,7 +184,7 @@ The flags are `has_direct_trait_edge`, `is_direct_or_genus_species`,
 | CRC | experiments | 32 : 6 | 4 : 11 | 13.6 (2.9–81.0) | 1.2e-4 |
 | CRC | studies | 19 : 2 | 3 : 8 | 21.6 (2.7–309) | 5.6e-4 |
 | CRC, disease vs healthy | studies | 16 : 2 | 2 : 5 | 16.6 (1.57–302) | 0.0069 |
-| CRC, disease vs healthy, paired-tissue contrasts counted | studies | 16 : 2 | 3 : 4 | 9.35 (0.90–151) | 0.032 |
+| CRC, disease vs healthy, paired-tissue contrasts counted | studies | 16 : 2 | 3 : 4 | 9.35 (0.899–151) | 0.032 |
 | All three, stratified by condition | experiments | 107 : 37 | 9 : 12 | 4.79 (1.52–15.8) | 0.0049 |
 | All three, stratified by condition | studies | 56 : 21 | 5 : 9 | 7.87 (1.67–46.8) | 0.0047 |
 
