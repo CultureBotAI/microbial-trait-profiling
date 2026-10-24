@@ -230,6 +230,9 @@ record cannot acquire that meaning by inference after execution (#843, #944).
 Legacy Jed plans recorded before these options were required do not satisfy this
 current contract. Verify a historical fallback run in a detached worktree at the
 run's recorded Git commit, using that implementation and its locked environment.
+If `git_dirty=true`, the commit alone cannot reproduce the implementation: retain
+the original modified code and check it against the recorded code inventory. A
+clean checkout at that commit does not establish the bytes of a dirty execution.
 Keep the original checkout as well as the recorded inputs, output paths and
 execution record. Recorded step inputs can live inside that checkout, including
 `data/raw/full_dump.csv` and protocol JSONs; a new detached worktree at the recorded
@@ -240,6 +243,16 @@ and preserve its original paths for historical verification.
 A pass under that historical verifier describes that execution;
 it does not establish a new run under the current workflow. This also avoids
 applying newer core-verification contracts to unsupported older records (#955).
+
+Plan validation uses the complete execution parsers for the profile, taxa-guild,
+and condition-module heatmaps. It rejects `--help` without printing help text.
+The condition-module command accepts `--direction` but not `--direction-basis`.
+Other entrypoints still receive an exact-option direction-basis check rather than
+complete parser validation. Registering every planned CLI is deferred until its
+parser interface can be shared explicitly; verification never executes an
+arbitrary recorded script to discover its parser. Parser acceptance does not
+establish that data-independent post-parse checks or input-dependent execution
+would succeed; sharing post-parse validation is tracked separately in #968.
 
 With the default population, count profiles retain all hosts in the core. Legacy
 commands whose numerical algorithms assume human-only input receive an execution-recorded human subset
@@ -270,7 +283,8 @@ strain rollup scope, its feature catalog and the retained features of its count 
 profile tables. A record whose bases differ, in any field, number or order, is refused
 (#817, #860). A comparison recorded before #828 and #860 holds a catalog-hash
 `feature_filter_id` and fixed `off`/317 bases, so it fails; run the compare stage again
-rather than verifying it.
+rather than verifying it with the current verifier. Historical verification uses
+the recorded implementation and preserved paths under the rule above.
 
 Each `integrated_evidence` input is the file its producing step recorded in that
 arm's `arm_run.json`: Ilyas's `enrichment` and `depletion`, Noel's
