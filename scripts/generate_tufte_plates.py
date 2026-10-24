@@ -3366,7 +3366,8 @@ def build_plate5(repo: Path, out_dir: Path) -> Path:
 # PLATE 6: Taxonomic Resolution vs Trait Coverage & Root-Cause Diagnostic
 # ==============================================================================
 def plate6_remediation_label(row: Mapping[str, str]) -> str:
-    """Compact Panel C remediation label read from top_zero_trait_bugsigdb_taxa.tsv (#864, #930)."""
+    """Compact Panel C remediation label read from top_zero_trait_bugsigdb_taxa.tsv
+    (#864, #930, #1009)."""
     cat = row.get("diagnosis_category", "")
     rem = row.get("suggested_remediation", "")
     if cat == "NCBI TaxID Desynchronization":
@@ -3376,6 +3377,8 @@ def plate6_remediation_label(row: Mapping[str, str]) -> str:
         return "Review TaxID alias"
     if cat == "Ambiguous Taxon / Bin Slash":
         return "Multi-taxon LCA resolution"
+    if cat == "Unresolved Taxonomic Label":
+        return "Review taxonomic label / source"
     if cat in ("Uncultivated / Metagenomic MAG", "Candidatus Lineage"):
         return "Direct trait evidence needed"
     if cat == "Non-Bacterial / Fungal Eukaryote":
@@ -3387,6 +3390,10 @@ def plate6_remediation_label(row: Mapping[str, str]) -> str:
         ):
             return "Non-bacterial eukaryote (plant)"
         return "Fungal eukaryote (non-bacterial)"
+    if cat == "Non-Bacterial / Viral Taxon":
+        return "Review viral annotation resources"
+    if cat == "Taxonomy Unresolved":
+        return "Review taxonomy placement"
     if cat == "Rare / Novel Isolate (Lacks KG Phenotype)":
         return "Curate in BacDive / KG-Microbe"
     raise ValueError(f"Unknown zero-trait diagnosis_category: {cat!r}")
@@ -3404,7 +3411,8 @@ def _alias_target_id(row: Mapping[str, str] | None) -> str | None:
 def _plate6_remedy_clauses(
     active_zero_rows: Sequence[Mapping[str, str]],
 ) -> tuple[str, str]:
-    """Derive subtitle remedy phrase and Panel B second-line fixes from active zero rows (#982)."""
+    """Derive subtitle remedy phrase and Panel B second-line fixes from active zero rows
+    (#982, #1009)."""
     if not active_zero_rows:
         return "", "No zero-trait taxa present in table"
     cats_present = {r.get("diagnosis_category", "") for r in active_zero_rows}
@@ -3414,11 +3422,14 @@ def _plate6_remedy_clauses(
         if r.get("diagnosis_category") == "NCBI TaxID Desynchronization"
     )
     has_slash = "Ambiguous Taxon / Bin Slash" in cats_present
+    has_unresolved_label = "Unresolved Taxonomic Label" in cats_present
     has_rare = "Rare / Novel Isolate (Lacks KG Phenotype)" in cats_present
+    has_tax_unresolved = "Taxonomy Unresolved" in cats_present
     has_mag_cand = (
         "Uncultivated / Metagenomic MAG" in cats_present or "Candidatus Lineage" in cats_present
     )
     has_euk = "Non-Bacterial / Fungal Eukaryote" in cats_present
+    has_viral = "Non-Bacterial / Viral Taxon" in cats_present
 
     sub_items: list[str] = []
     b_items: list[str] = []
@@ -3434,12 +3445,21 @@ def _plate6_remedy_clauses(
         if has_rare:
             sub_items.append("trait curation")
             b_items.append("curation")
+        if has_unresolved_label:
+            sub_items.append("taxonomic label review")
+            b_items.append("taxonomic label review")
+        if has_tax_unresolved:
+            sub_items.append("taxonomy placement review")
+            b_items.append("taxonomy placement review")
         if has_mag_cand:
             sub_items.append("direct trait evidence")
             b_items.append("direct trait evidence")
         if has_euk and not sub_items:
             sub_items.append("host/diet filtering review")
             b_items.append("host/diet filtering review")
+        if has_viral and not sub_items:
+            sub_items.append("viral annotation review")
+            b_items.append("viral annotation review")
         if not sub_items:
             sub_items.append("taxonomy review")
 
@@ -3769,6 +3789,9 @@ def build_plate6(repo: Path, out_dir: Path) -> Path:
         "Non-Bacterial / Fungal Eukaryote": "#7b4f9d",
         "NCBI TaxID Desynchronization": "#b8332a",
         "Candidatus Lineage": "#157a6e",
+        "Unresolved Taxonomic Label": "#8c5a32",
+        "Taxonomy Unresolved": "#9a6e14",
+        "Non-Bacterial / Viral Taxon": "#3f6b4e",
     }
     cat_short = {
         "Uncultivated / Metagenomic MAG": "Uncultivated / MAG",
@@ -3777,11 +3800,16 @@ def build_plate6(repo: Path, out_dir: Path) -> Path:
         "Non-Bacterial / Fungal Eukaryote": "Non-Bacterial Eukaryote",
         "NCBI TaxID Desynchronization": "NCBI TaxID Desync",
         "Candidatus Lineage": "Candidatus Lineage",
+        "Unresolved Taxonomic Label": "Unresolved Taxon Label",
+        "Taxonomy Unresolved": "Taxonomy Unresolved",
+        "Non-Bacterial / Viral Taxon": "Viral Taxon (Non-Bacterial)",
     }
 
     ax_cat.set_ylim(-0.5, max(len(sorted_cats) - 0.3, 0.5))
     max_cat_occ = max((v for _, v in sorted_cats), default=1)
     ax_cat.set_xlim(0, max_cat_occ * 1.45)
+    cat_bar_fs = 7.1 if len(sorted_cats) >= 7 else 7.7
+    cat_ytick_fs = 7.3 if len(sorted_cats) >= 7 else 8.0
 
     for idx_c, (cat_name, tot_occ) in enumerate(sorted_cats):
         yp = y_c[idx_c]
@@ -3791,14 +3819,16 @@ def build_plate6(repo: Path, out_dir: Path) -> Path:
             tot_occ + 10,
             yp,
             f"{tot_occ:,} occ. ({cat_taxa_cnt[cat_name]} taxa)",
-            fontsize=7.7,
+            fontsize=cat_bar_fs,
             fontweight="bold",
             color=col,
             va="center",
         )
 
     ax_cat.set_yticks(y_c)
-    ax_cat.set_yticklabels([cat_short[c[0]] for c in sorted_cats], fontsize=8.0, fontweight="bold")
+    ax_cat.set_yticklabels(
+        [cat_short[c[0]] for c in sorted_cats], fontsize=cat_ytick_fs, fontweight="bold"
+    )
     ax_cat.set_xlabel(
         text["panel_b_xlabel"],
         fontsize=8.2,

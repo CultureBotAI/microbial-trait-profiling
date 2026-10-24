@@ -867,6 +867,74 @@ def test_plate6_reads_compact_remediation_and_nonempty_rank_rows(
     assert "do not establish leaf-taxon traits" in remediation
     coverage.plt.close(fig)
 
+    # Also verify that the three new #957 / #1009 diagnosis categories render with distinct
+    # Panel B short names, distinct bar colors, and Panel C remediation labels (#1009):
+    zero_path = output / "top_zero_trait_bugsigdb_taxa.tsv"
+    zero_df = pd.read_csv(zero_path, sep="\t")
+    extra_rows = pd.DataFrame(
+        [
+            {
+                **zero_df.iloc[0].to_dict(),
+                "zero_trait_rank": len(zero_df) + 1,
+                "taxon_id": "NCBITaxon:155900",
+                "taxon_name": "uncultured organism",
+                "taxonomic_rank": "species",
+                "signature_occurrences": 17,
+                "profile_count": 17,
+                "study_count": 8,
+                "diagnosis_category": "Unresolved Taxonomic Label",
+                "suggested_remediation": (
+                    "Review the reported taxonomic label and source assignment before trait "
+                    "matching; an unresolved label does not establish a multi-taxon composite"
+                ),
+            },
+            {
+                **zero_df.iloc[0].to_dict(),
+                "zero_trait_rank": len(zero_df) + 2,
+                "taxon_id": "NCBITaxon:1505663",
+                "taxon_name": "Thomasclavelia",
+                "taxonomic_rank": "genus",
+                "signature_occurrences": 14,
+                "profile_count": 14,
+                "study_count": 11,
+                "diagnosis_category": "Taxonomy Unresolved",
+                "suggested_remediation": (
+                    "Review placement in the supplied taxonomy; missing lineage does not "
+                    "establish rarity, novelty or a bacterial isolate"
+                ),
+            },
+            {
+                **zero_df.iloc[0].to_dict(),
+                "zero_trait_rank": len(zero_df) + 3,
+                "taxon_id": "NCBITaxon:10239",
+                "taxon_name": "Caudoviricetes sp.",
+                "taxonomic_rank": "species",
+                "signature_occurrences": 11,
+                "profile_count": 11,
+                "study_count": 5,
+                "diagnosis_category": "Non-Bacterial / Viral Taxon",
+                "suggested_remediation": (
+                    "Review viral annotation resources; missing retained annotations do not "
+                    "establish biological absence"
+                ),
+            },
+        ]
+    )
+    pd.concat([zero_df, extra_rows], ignore_index=True).to_csv(zero_path, sep="\t", index=False)
+    captured.clear()
+    plate.build_plate6(tmp_path, tmp_path)
+    fig_new = captured[0]
+    fig_new.canvas.draw()
+    panel_b_yticks = [t.get_text() for t in fig_new.axes[1].get_yticklabels()]
+    assert "Unresolved Taxon Label" in panel_b_yticks
+    assert "Taxonomy Unresolved" in panel_b_yticks
+    assert "Viral Taxon (Non-Bacterial)" in panel_b_yticks
+    panel_c_texts = "\n".join(t.get_text() for t in fig_new.axes[2].texts)
+    assert "Review taxonomic label / source" in panel_c_texts
+    assert "Review taxonomy placement" in panel_c_texts
+    assert "Review viral annotation resources" in panel_c_texts
+    coverage.plt.close(fig_new)
+
 
 @pytest.mark.parametrize("all_zero", [False, True])
 def test_every_readme_table_cell_matches_the_exported_tables(
