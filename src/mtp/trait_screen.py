@@ -40,6 +40,8 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from statistics import fmean, median
 
+import numpy as np
+from numpy.typing import NDArray
 from scipy.linalg import eigvalsh
 from scipy.stats import binomtest, spearmanr
 
@@ -212,21 +214,40 @@ def step_up(p_values: Sequence[float], *, method: str, family_size: int) -> list
     sensitivity run, where the substitution would otherwise deflate a large-rank
     p-value below itself.
     """
+    return [
+        float(value)
+        for value in step_up_array(
+            np.asarray(p_values, dtype=float), method=method, family_size=family_size
+        )
+    ]
+
+
+def step_up_array(
+    p_values: NDArray[np.float64], *, method: str, family_size: int
+) -> NDArray[np.float64]:
+    """The shared step-up arithmetic on numeric vectors, without Python row lists.
+
+    Preserve the historical multiplication-then-division order, stable sorting,
+    reverse cumulative minimum, raw-p floor and unit ceiling for explicit m.
+    """
     if method not in ("bh", "by"):
         msg = f"unknown correction method {method!r}"
         raise ValueError(msg)
     if family_size < 1:
         msg = "family_size must be at least 1"
         raise ValueError(msg)
-    if not p_values:
-        return []
+    values = np.asarray(p_values, dtype=float)
+    if values.ndim != 1:
+        raise ValueError("p-values must be one-dimensional")
+    if values.size == 0:
+        return np.empty(0, dtype=float)
     factor = family_size * (harmonic(family_size) if method == "by" else 1.0)
-    order = sorted(range(len(p_values)), key=lambda index: p_values[index])
-    adjusted = [0.0] * len(p_values)
-    running = math.inf
-    for rank, index in reversed(list(enumerate(order, start=1))):
-        running = min(running, factor * p_values[index] / rank)
-        adjusted[index] = min(1.0, max(running, p_values[index]))
+    order = np.argsort(values, kind="stable")
+    ordered = values[order]
+    scaled = factor * ordered / np.arange(1, len(values) + 1, dtype=float)
+    running = np.minimum.accumulate(scaled[::-1])[::-1]
+    adjusted = np.empty_like(values)
+    adjusted[order] = np.minimum(1.0, np.maximum(running, ordered))
     return adjusted
 
 

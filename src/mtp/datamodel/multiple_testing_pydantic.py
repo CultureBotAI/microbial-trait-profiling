@@ -30,7 +30,7 @@ from pydantic import (
 
 
 metamodel_version = "1.7.0"
-version = "1.1.0"
+version = "1.2.0"
 
 
 class ConfiguredBaseModel(BaseModel):
@@ -82,6 +82,70 @@ linkml_meta = LinkMLMeta({'default_prefix': 'mtpmt',
      'source_file': 'schema/multiple_testing.yaml',
      'title': 'Additive full-family multiple-testing contracts'} )
 
+class ReasonVocabulary(str, Enum):
+    """
+    Versioned interpretation of a raw hypothesis's undefined reason.
+    """
+    legacy_free_text_v1 = "legacy_free_text_v1"
+    """
+    Historical foundation contract accepting any nonblank explanation.
+    """
+    analysis_reason_v1 = "analysis_reason_v1"
+    """
+    Exact analysis reason codes declared by AnalysisReasonV1.
+    """
+
+
+class AnalysisReasonV1(str, Enum):
+    """
+    Supported untestable outcomes; selection-family statuses are separate.
+    """
+    all_tied = "all_tied"
+    """
+    All eligible directional values are tied under the native rule.
+    """
+    no_eligible_studies = "no_eligible_studies"
+    """
+    No study survives the directional screen's eligibility rule.
+    """
+    no_positive_pairs = "no_positive_pairs"
+    """
+    No ratio study has an eligible positive-count experiment pair.
+    """
+    insufficient_support = "insufficient_support"
+    """
+    Too few observations for the declared native test.
+    """
+    insufficient_variance = "insufficient_variance"
+    """
+    Native dispersion is too small to estimate a test statistic.
+    """
+    condition_below_minimum_studies = "condition_below_minimum_studies"
+    """
+    A held-out condition has fewer studies than the frozen minimum.
+    """
+    shared_study_between_conditions = "shared_study_between_conditions"
+    """
+    Held-out conditions share studies contrary to the null's partition.
+    """
+    undefined_distance_in_null = "undefined_distance_in_null"
+    """
+    At least one null draw has an undefined distance.
+    """
+    all_sets_empty = "all_sets_empty"
+    """
+    All condition taxon sets are empty for the selected annotation.
+    """
+    pool_too_small = "pool_too_small"
+    """
+    The sampling pool cannot satisfy the declared null draw.
+    """
+    no_units = "no_units"
+    """
+    A held-out condition has no eligible stool-decreased signatures.
+    """
+
+
 
 class MultipleTestingPolicy(ConfiguredBaseModel):
     """
@@ -91,7 +155,7 @@ class MultipleTestingPolicy(ConfiguredBaseModel):
          'title': 'Multiple testing policy'})
 
     policy_id: str = Field(default=..., title="Policy id", description="""Stable versioned policy identifier.""", json_schema_extra = { "linkml_meta": {'domain_of': ['MultipleTestingPolicy']} })
-    version: str = Field(default=..., title="Version", description="""Semantic policy version.""", json_schema_extra = { "linkml_meta": {'domain_of': ['MultipleTestingPolicy']} })
+    version: str = Field(default=..., title="Version", description="""Semantic policy version.""", json_schema_extra = { "linkml_meta": {'domain_of': ['MultipleTestingPolicy', 'PostArmMultiplicityRun']} })
     role: str = Field(default=..., title="Role", description="""Additive status; native arm calls remain unchanged.""", json_schema_extra = { "linkml_meta": {'domain_of': ['MultipleTestingPolicy']} })
     primary_method: str = Field(default=..., title="Primary method", description="""Correction used as primary within this additive sidecar.""", json_schema_extra = { "linkml_meta": {'domain_of': ['MultipleTestingPolicy']} })
     comparison_method: str = Field(default=..., title="Comparison method", description="""Companion correction for comparison only.""", json_schema_extra = { "linkml_meta": {'domain_of': ['MultipleTestingPolicy']} })
@@ -165,31 +229,109 @@ class HypothesisDefinition(ConfiguredBaseModel):
         return v
 
 
-class HypothesisFamily(ConfiguredBaseModel):
+class HypothesisFamilyMetadata(ConfiguredBaseModel):
     """
     Complete declared inventory and scientific scope. Expected size is supplied from verified execution by an adapter; the engine does not infer it from observed results or use a fixed retained feature count.
     """
     linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/mtp/multiple-testing',
+         'title': 'Hypothesis family metadata'})
+
+    family_id: str = Field(default=..., title="Family id", description="""Stable scientific family identifier.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamilyMetadata']} })
+    analysis_id: str = Field(default=..., title="Analysis id", description="""Analysis or source arm execution identifier.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamilyMetadata']} })
+    analysis_basis_sha256: str = Field(default=..., title="Analysis basis sha256", description="""Canonical identity of the verified upstream AnalysisBasis.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamilyMetadata']} })
+    source_membership_sha256: str = Field(default=..., title="Source membership sha256", description="""Exact cohort or eligibility membership identity supplied by the verified adapter.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamilyMetadata']} })
+    retained_feature_count: int = Field(default=..., title="Retained feature count", description="""Feature count from AnalysisBasis; distinct from the number of hypotheses.""", ge=0, json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamilyMetadata']} })
+    strain_rollup: str = Field(default=..., title="Strain rollup", description="""Verified annotation scope; full rollup is not supported by this contract.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamilyMetadata', 'PostArmMultiplicityRun']} })
+    feature_filter_id: str = Field(default=..., title="Feature filter id", description="""Ordered retained-feature identity copied from the verified AnalysisBasis.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamilyMetadata']} })
+    expected_family_size: int = Field(default=..., title="Expected family size", description="""Complete hypothesis count including explicitly untestable members.""", ge=0, json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamilyMetadata']} })
+    population: str = Field(default=..., title="Population", description="""Verified contrast population and any anatomical or condition stratum.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamilyMetadata']} })
+    direction_basis: str = Field(default=..., title="Direction basis", description="""Curated group direction or verified disease-control orientation.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamilyMetadata', 'PostArmMultiplicityRun']} })
+    profile_unit: str = Field(default=..., title="Profile unit", description="""Source profile representation copied verbatim from AnalysisBasis, such as count_profiles or ora_profiles.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamilyMetadata']} })
+    inference_unit: str = Field(default=..., title="Inference unit", description="""Independent unit assumed by the source test, for example study or taxon.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamilyMetadata']} })
+    hypothesis_unit: str = Field(default=..., title="Hypothesis unit", description="""Family coordinate, for example trait, ordered ratio, or profile by trait by tail.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamilyMetadata']} })
+    estimand: str = Field(default=..., title="Estimand", description="""Scientific quantity tested, preserving annotation versus physiological measurement.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamilyMetadata']} })
+    selection_rule: str = Field(default=..., title="Selection rule", description="""Declared membership rule, independent of display and effect-size filters.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamilyMetadata']} })
+    selection_history: list[str] = Field(default=..., title="Selection history", description="""Chronological disclosures of data-driven selection; correction alone does not remove selection bias.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamilyMetadata']} })
+    sources: list[SourceArtifact] = Field(default=..., title="Sources", description="""Verified upstream artifacts; identities must be unique.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamilyMetadata', 'PostArmMultiplicityRun']} })
+
+    @field_validator('analysis_basis_sha256')
+    def pattern_analysis_basis_sha256(cls, v):
+        pattern=re.compile(r"^[0-9a-f]{64}$")
+        if isinstance(v, list):
+            for element in v:
+                if isinstance(element, str) and not pattern.match(element):
+                    err_msg = f"Invalid analysis_basis_sha256 format: {element}"
+                    raise ValueError(err_msg)
+        elif isinstance(v, str) and not pattern.match(v):
+            err_msg = f"Invalid analysis_basis_sha256 format: {v}"
+            raise ValueError(err_msg)
+        return v
+
+    @field_validator('source_membership_sha256')
+    def pattern_source_membership_sha256(cls, v):
+        pattern=re.compile(r"^[0-9a-f]{64}$")
+        if isinstance(v, list):
+            for element in v:
+                if isinstance(element, str) and not pattern.match(element):
+                    err_msg = f"Invalid source_membership_sha256 format: {element}"
+                    raise ValueError(err_msg)
+        elif isinstance(v, str) and not pattern.match(v):
+            err_msg = f"Invalid source_membership_sha256 format: {v}"
+            raise ValueError(err_msg)
+        return v
+
+    @field_validator('strain_rollup')
+    def pattern_strain_rollup(cls, v):
+        pattern=re.compile(r"^(off|phenotype)$")
+        if isinstance(v, list):
+            for element in v:
+                if isinstance(element, str) and not pattern.match(element):
+                    err_msg = f"Invalid strain_rollup format: {element}"
+                    raise ValueError(err_msg)
+        elif isinstance(v, str) and not pattern.match(v):
+            err_msg = f"Invalid strain_rollup format: {v}"
+            raise ValueError(err_msg)
+        return v
+
+    @field_validator('feature_filter_id')
+    def pattern_feature_filter_id(cls, v):
+        pattern=re.compile(r"^sha256:[0-9a-f]{64}$")
+        if isinstance(v, list):
+            for element in v:
+                if isinstance(element, str) and not pattern.match(element):
+                    err_msg = f"Invalid feature_filter_id format: {element}"
+                    raise ValueError(err_msg)
+        elif isinstance(v, str) and not pattern.match(v):
+            err_msg = f"Invalid feature_filter_id format: {v}"
+            raise ValueError(err_msg)
+        return v
+
+
+class HypothesisFamily(HypothesisFamilyMetadata):
+    """
+    Complete in-memory declaration used for small scientific families.
+    """
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/mtp/multiple-testing',
          'title': 'Hypothesis family'})
 
-    family_id: str = Field(default=..., title="Family id", description="""Stable scientific family identifier.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamily']} })
-    analysis_id: str = Field(default=..., title="Analysis id", description="""Analysis or source arm execution identifier.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamily']} })
-    analysis_basis_sha256: str = Field(default=..., title="Analysis basis sha256", description="""Canonical identity of the verified upstream AnalysisBasis.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamily']} })
-    source_membership_sha256: str = Field(default=..., title="Source membership sha256", description="""Exact cohort or eligibility membership identity supplied by the verified adapter.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamily']} })
-    retained_feature_count: int = Field(default=..., title="Retained feature count", description="""Feature count from AnalysisBasis; distinct from the number of hypotheses.""", ge=0, json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamily']} })
-    strain_rollup: str = Field(default=..., title="Strain rollup", description="""Verified annotation scope; full rollup is not supported by this contract.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamily']} })
-    feature_filter_id: str = Field(default=..., title="Feature filter id", description="""Ordered retained-feature identity copied from the verified AnalysisBasis.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamily']} })
-    expected_family_size: int = Field(default=..., title="Expected family size", description="""Complete hypothesis count including explicitly untestable members.""", ge=0, json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamily']} })
-    population: str = Field(default=..., title="Population", description="""Verified contrast population and any anatomical or condition stratum.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamily']} })
-    direction_basis: str = Field(default=..., title="Direction basis", description="""Curated group direction or verified disease-control orientation.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamily']} })
-    profile_unit: str = Field(default=..., title="Profile unit", description="""Source profile representation copied verbatim from AnalysisBasis, such as count_profiles or ora_profiles.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamily']} })
-    inference_unit: str = Field(default=..., title="Inference unit", description="""Independent unit assumed by the source test, for example study or taxon.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamily']} })
-    hypothesis_unit: str = Field(default=..., title="Hypothesis unit", description="""Family coordinate, for example trait, ordered ratio, or profile by trait by tail.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamily']} })
-    estimand: str = Field(default=..., title="Estimand", description="""Scientific quantity tested, preserving annotation versus physiological measurement.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamily']} })
-    selection_rule: str = Field(default=..., title="Selection rule", description="""Declared membership rule, independent of display and effect-size filters.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamily']} })
-    selection_history: list[str] = Field(default=..., title="Selection history", description="""Chronological disclosures of data-driven selection; correction alone does not remove selection bias.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamily']} })
-    sources: list[SourceArtifact] = Field(default=..., title="Sources", description="""Verified upstream artifacts; identities must be unique.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamily']} })
     members: list[HypothesisDefinition] = Field(default=..., title="Members", description="""Complete declared hypothesis inventory; empty is allowed only with expected size zero.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamily']} })
+    family_id: str = Field(default=..., title="Family id", description="""Stable scientific family identifier.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamilyMetadata']} })
+    analysis_id: str = Field(default=..., title="Analysis id", description="""Analysis or source arm execution identifier.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamilyMetadata']} })
+    analysis_basis_sha256: str = Field(default=..., title="Analysis basis sha256", description="""Canonical identity of the verified upstream AnalysisBasis.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamilyMetadata']} })
+    source_membership_sha256: str = Field(default=..., title="Source membership sha256", description="""Exact cohort or eligibility membership identity supplied by the verified adapter.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamilyMetadata']} })
+    retained_feature_count: int = Field(default=..., title="Retained feature count", description="""Feature count from AnalysisBasis; distinct from the number of hypotheses.""", ge=0, json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamilyMetadata']} })
+    strain_rollup: str = Field(default=..., title="Strain rollup", description="""Verified annotation scope; full rollup is not supported by this contract.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamilyMetadata', 'PostArmMultiplicityRun']} })
+    feature_filter_id: str = Field(default=..., title="Feature filter id", description="""Ordered retained-feature identity copied from the verified AnalysisBasis.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamilyMetadata']} })
+    expected_family_size: int = Field(default=..., title="Expected family size", description="""Complete hypothesis count including explicitly untestable members.""", ge=0, json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamilyMetadata']} })
+    population: str = Field(default=..., title="Population", description="""Verified contrast population and any anatomical or condition stratum.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamilyMetadata']} })
+    direction_basis: str = Field(default=..., title="Direction basis", description="""Curated group direction or verified disease-control orientation.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamilyMetadata', 'PostArmMultiplicityRun']} })
+    profile_unit: str = Field(default=..., title="Profile unit", description="""Source profile representation copied verbatim from AnalysisBasis, such as count_profiles or ora_profiles.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamilyMetadata']} })
+    inference_unit: str = Field(default=..., title="Inference unit", description="""Independent unit assumed by the source test, for example study or taxon.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamilyMetadata']} })
+    hypothesis_unit: str = Field(default=..., title="Hypothesis unit", description="""Family coordinate, for example trait, ordered ratio, or profile by trait by tail.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamilyMetadata']} })
+    estimand: str = Field(default=..., title="Estimand", description="""Scientific quantity tested, preserving annotation versus physiological measurement.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamilyMetadata']} })
+    selection_rule: str = Field(default=..., title="Selection rule", description="""Declared membership rule, independent of display and effect-size filters.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamilyMetadata']} })
+    selection_history: list[str] = Field(default=..., title="Selection history", description="""Chronological disclosures of data-driven selection; correction alone does not remove selection bias.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamilyMetadata']} })
+    sources: list[SourceArtifact] = Field(default=..., title="Sources", description="""Verified upstream artifacts; identities must be unique.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamilyMetadata', 'PostArmMultiplicityRun']} })
 
     @field_validator('analysis_basis_sha256')
     def pattern_analysis_basis_sha256(cls, v):
@@ -255,6 +397,7 @@ class RawHypothesis(ConfiguredBaseModel):
     status: str = Field(default=..., title="Status", description="""Tested or explicitly untestable, never an inferred missing row.""", json_schema_extra = { "linkml_meta": {'domain_of': ['RawHypothesis']} })
     p_value: Optional[float] = Field(default=None, title="P value", description="""Finite probability for a tested member; undefined for an untestable member.""", ge=0, le=1, json_schema_extra = { "linkml_meta": {'domain_of': ['RawHypothesis']} })
     reason: Optional[str] = Field(default=None, title="Reason", description="""Nonempty explanation required only for an untestable member.""", json_schema_extra = { "linkml_meta": {'domain_of': ['RawHypothesis']} })
+    reason_vocabulary: ReasonVocabulary = Field(default=ReasonVocabulary.legacy_free_text_v1, title="Reason vocabulary", description="""Missing fields preserve legacy caller semantics. analysis_reason_v1 requires exact AnalysisReasonV1 membership in the shared runtime validator; tested records require no reason under either vocabulary.""", json_schema_extra = { "linkml_meta": {'domain_of': ['RawHypothesis'], 'ifabsent': 'string(legacy_free_text_v1)'} })
 
     @field_validator('status')
     def pattern_status(cls, v):
@@ -287,6 +430,7 @@ class AdjustedHypothesis(RawHypothesis):
     status: str = Field(default=..., title="Status", description="""Tested or explicitly untestable, never an inferred missing row.""", json_schema_extra = { "linkml_meta": {'domain_of': ['RawHypothesis']} })
     p_value: Optional[float] = Field(default=None, title="P value", description="""Finite probability for a tested member; undefined for an untestable member.""", ge=0, le=1, json_schema_extra = { "linkml_meta": {'domain_of': ['RawHypothesis']} })
     reason: Optional[str] = Field(default=None, title="Reason", description="""Nonempty explanation required only for an untestable member.""", json_schema_extra = { "linkml_meta": {'domain_of': ['RawHypothesis']} })
+    reason_vocabulary: ReasonVocabulary = Field(default=ReasonVocabulary.legacy_free_text_v1, title="Reason vocabulary", description="""Missing fields preserve legacy caller semantics. analysis_reason_v1 requires exact AnalysisReasonV1 membership in the shared runtime validator; tested records require no reason under either vocabulary.""", json_schema_extra = { "linkml_meta": {'domain_of': ['RawHypothesis'], 'ifabsent': 'string(legacy_free_text_v1)'} })
 
     @field_validator('status')
     def pattern_status(cls, v):
@@ -310,19 +454,21 @@ class CorrectionRun(ConfiguredBaseModel):
          'title': 'Correction run',
          'tree_root': True})
 
-    policy: MultipleTestingPolicy = Field(default=..., title="Policy", description="""Immutable supported policy executed.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CorrectionRun']} })
+    policy: MultipleTestingPolicy = Field(default=..., title="Policy", description="""Immutable supported policy executed.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CorrectionRun', 'PostArmMultiplicityRun']} })
     family: HypothesisFamily = Field(default=..., title="Family", description="""Complete canonical declaration executed.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CorrectionRun']} })
     hypotheses: list[RawHypothesis] = Field(default=..., title="Hypotheses", description="""Complete raw result inventory, canonicalized by hypothesis identity.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CorrectionRun']} })
     results: list[AdjustedHypothesis] = Field(default=..., title="Results", description="""Complete adjusted result inventory, canonicalized by hypothesis identity.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CorrectionRun']} })
-    recorded_at: datetime  = Field(default=..., title="Recorded at", description="""UTC execution timestamp, timezone required by the runtime verifier.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CorrectionRun']} })
+    recorded_at: datetime  = Field(default=..., title="Recorded at", description="""UTC execution timestamp, timezone required by the runtime verifier.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CorrectionRun',
+                       'ExternalFamilyCorrection',
+                       'PostArmMultiplicityRun']} })
     engine_version: str = Field(default=..., title="Engine version", description="""Version of the correction engine contract.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CorrectionRun']} })
-    scipy_version: str = Field(default=..., title="Scipy version", description="""Version of the established numerical implementation used.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CorrectionRun']} })
-    numpy_version: str = Field(default=..., title="Numpy version", description="""Version of the array implementation used by SciPy.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CorrectionRun']} })
-    code_sha256: str = Field(default=..., title="Code sha256", description="""Digest of engine and generated model source bytes.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CorrectionRun']} })
-    policy_sha256: str = Field(default=..., title="Policy sha256", description="""Canonical executed policy digest.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CorrectionRun']} })
-    family_sha256: str = Field(default=..., title="Family sha256", description="""Canonical declared inventory and scientific metadata digest.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CorrectionRun']} })
-    input_sha256: str = Field(default=..., title="Input sha256", description="""Canonical raw hypothesis digest; includes test status and undefined reasons.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CorrectionRun']} })
-    output_sha256: str = Field(default=..., title="Output sha256", description="""Canonical adjusted hypothesis digest.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CorrectionRun']} })
+    scipy_version: str = Field(default=..., title="Scipy version", description="""Version of the established numerical implementation used.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CorrectionRun', 'PostArmMultiplicityRun']} })
+    numpy_version: str = Field(default=..., title="Numpy version", description="""Version of the array implementation used by SciPy.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CorrectionRun', 'PostArmMultiplicityRun']} })
+    code_sha256: str = Field(default=..., title="Code sha256", description="""Digest of engine and generated model source bytes.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CorrectionRun', 'PostArmMultiplicityRun']} })
+    policy_sha256: str = Field(default=..., title="Policy sha256", description="""Canonical executed policy digest.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CorrectionRun', 'ExternalFamilyCorrection']} })
+    family_sha256: str = Field(default=..., title="Family sha256", description="""Canonical declared inventory and scientific metadata digest.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CorrectionRun', 'ExternalFamilyCorrection']} })
+    input_sha256: str = Field(default=..., title="Input sha256", description="""Canonical raw hypothesis digest; includes test status and undefined reasons.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CorrectionRun', 'ExternalFamilyCorrection']} })
+    output_sha256: str = Field(default=..., title="Output sha256", description="""Canonical adjusted hypothesis digest.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CorrectionRun', 'ExternalFamilyCorrection']} })
     run_sha256: str = Field(default=..., title="Run sha256", description="""Execution envelope digest including scientific hashes, software and timestamp.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CorrectionRun']} })
 
     @field_validator('code_sha256')
@@ -404,13 +550,168 @@ class CorrectionRun(ConfiguredBaseModel):
         return v
 
 
+class ExternalFamilyCorrection(ConfiguredBaseModel):
+    """
+    A complete correction with inventories stored once as canonical JSON Lines artifacts.
+    """
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/mtp/multiple-testing',
+         'title': 'External family correction'})
+
+    metadata: HypothesisFamilyMetadata = Field(default=..., title="Metadata", description="""Scientific family metadata independent of observed p-values.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ExternalFamilyCorrection']} })
+    declared: SourceArtifact = Field(default=..., title="Declared", description="""Sorted complete HypothesisDefinition inventory with one record per line.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ExternalFamilyCorrection']} })
+    raw: SourceArtifact = Field(default=..., title="Raw", description="""Sorted complete RawHypothesis inventory with one record per line.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ExternalFamilyCorrection']} })
+    corrected: SourceArtifact = Field(default=..., title="Corrected", description="""Sorted complete AdjustedHypothesis inventory with one record per line.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ExternalFamilyCorrection']} })
+    recorded_at: datetime  = Field(default=..., title="Recorded at", description="""UTC correction timestamp.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CorrectionRun',
+                       'ExternalFamilyCorrection',
+                       'PostArmMultiplicityRun']} })
+    policy_sha256: str = Field(default=..., title="Policy sha256", description="""Canonical policy identity.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CorrectionRun', 'ExternalFamilyCorrection']} })
+    family_sha256: str = Field(default=..., title="Family sha256", description="""Canonical full family identity, equal to the in-memory contract digest.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CorrectionRun', 'ExternalFamilyCorrection']} })
+    input_sha256: str = Field(default=..., title="Input sha256", description="""Canonical raw hypothesis identity, equal to the in-memory contract digest.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CorrectionRun', 'ExternalFamilyCorrection']} })
+    output_sha256: str = Field(default=..., title="Output sha256", description="""Canonical adjusted hypothesis identity, equal to the in-memory contract digest.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CorrectionRun', 'ExternalFamilyCorrection']} })
+    tested: int = Field(default=..., title="Tested", description="""Number of members with defined tests.""", ge=0, json_schema_extra = { "linkml_meta": {'domain_of': ['ExternalFamilyCorrection']} })
+    untestable: int = Field(default=..., title="Untestable", description="""Number of declared members reserving internal p one.""", ge=0, json_schema_extra = { "linkml_meta": {'domain_of': ['ExternalFamilyCorrection']} })
+
+    @field_validator('policy_sha256')
+    def pattern_policy_sha256(cls, v):
+        pattern=re.compile(r"^[0-9a-f]{64}$")
+        if isinstance(v, list):
+            for element in v:
+                if isinstance(element, str) and not pattern.match(element):
+                    err_msg = f"Invalid policy_sha256 format: {element}"
+                    raise ValueError(err_msg)
+        elif isinstance(v, str) and not pattern.match(v):
+            err_msg = f"Invalid policy_sha256 format: {v}"
+            raise ValueError(err_msg)
+        return v
+
+    @field_validator('family_sha256')
+    def pattern_family_sha256(cls, v):
+        pattern=re.compile(r"^[0-9a-f]{64}$")
+        if isinstance(v, list):
+            for element in v:
+                if isinstance(element, str) and not pattern.match(element):
+                    err_msg = f"Invalid family_sha256 format: {element}"
+                    raise ValueError(err_msg)
+        elif isinstance(v, str) and not pattern.match(v):
+            err_msg = f"Invalid family_sha256 format: {v}"
+            raise ValueError(err_msg)
+        return v
+
+    @field_validator('input_sha256')
+    def pattern_input_sha256(cls, v):
+        pattern=re.compile(r"^[0-9a-f]{64}$")
+        if isinstance(v, list):
+            for element in v:
+                if isinstance(element, str) and not pattern.match(element):
+                    err_msg = f"Invalid input_sha256 format: {element}"
+                    raise ValueError(err_msg)
+        elif isinstance(v, str) and not pattern.match(v):
+            err_msg = f"Invalid input_sha256 format: {v}"
+            raise ValueError(err_msg)
+        return v
+
+    @field_validator('output_sha256')
+    def pattern_output_sha256(cls, v):
+        pattern=re.compile(r"^[0-9a-f]{64}$")
+        if isinstance(v, list):
+            for element in v:
+                if isinstance(element, str) and not pattern.match(element):
+                    err_msg = f"Invalid output_sha256 format: {element}"
+                    raise ValueError(err_msg)
+        elif isinstance(v, str) and not pattern.match(v):
+            err_msg = f"Invalid output_sha256 format: {v}"
+            raise ValueError(err_msg)
+        return v
+
+
+class PostArmMultiplicityRun(ConfiguredBaseModel):
+    """
+    Verified additive stage consuming one shared core and completed three-arm comparison.
+    """
+    linkml_meta: ClassVar[LinkMLMeta] = LinkMLMeta({'from_schema': 'https://w3id.org/mtp/multiple-testing',
+         'title': 'Post arm multiplicity run'})
+
+    version: str = Field(default=..., title="Version", description="""Supported sidecar execution format.""", json_schema_extra = { "linkml_meta": {'domain_of': ['MultipleTestingPolicy', 'PostArmMultiplicityRun']} })
+    recorded_at: datetime  = Field(default=..., title="Recorded at", description="""Time the additive stage executed, in UTC.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CorrectionRun',
+                       'ExternalFamilyCorrection',
+                       'PostArmMultiplicityRun']} })
+    comparison_manifest_path: str = Field(default=..., title="Comparison manifest path", description="""Actual verified upstream comparison record.""", json_schema_extra = { "linkml_meta": {'domain_of': ['PostArmMultiplicityRun']} })
+    comparison_manifest_sha256: str = Field(default=..., title="Comparison manifest sha256", description="""Exact consumed comparison record bytes.""", json_schema_extra = { "linkml_meta": {'domain_of': ['PostArmMultiplicityRun']} })
+    core_run_id: str = Field(default=..., title="Core run id", description="""Shared verified core execution identity.""", json_schema_extra = { "linkml_meta": {'domain_of': ['PostArmMultiplicityRun']} })
+    contrast_population: str = Field(default=..., title="Contrast population", description="""Shared verified population.""", json_schema_extra = { "linkml_meta": {'domain_of': ['PostArmMultiplicityRun']} })
+    direction_basis: str = Field(default=..., title="Direction basis", description="""Shared verified orientation; never reapplied by this stage.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamilyMetadata', 'PostArmMultiplicityRun']} })
+    strain_rollup: str = Field(default=..., title="Strain rollup", description="""Verified source core strain scope.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamilyMetadata', 'PostArmMultiplicityRun']} })
+    policy: MultipleTestingPolicy = Field(default=..., title="Policy", description="""Exact supported additive policy.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CorrectionRun', 'PostArmMultiplicityRun']} })
+    code_sha256: str = Field(default=..., title="Code sha256", description="""Correction, adapter and generated model source identity.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CorrectionRun', 'PostArmMultiplicityRun']} })
+    scipy_version: str = Field(default=..., title="Scipy version", description="""Numerical implementation version used by the stage.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CorrectionRun', 'PostArmMultiplicityRun']} })
+    numpy_version: str = Field(default=..., title="Numpy version", description="""Array implementation version used by the stage.""", json_schema_extra = { "linkml_meta": {'domain_of': ['CorrectionRun', 'PostArmMultiplicityRun']} })
+    sources: list[SourceArtifact] = Field(default=..., title="Sources", description="""Consumed source artifact identities and hashes, independently checked during replay.""", json_schema_extra = { "linkml_meta": {'domain_of': ['HypothesisFamilyMetadata', 'PostArmMultiplicityRun']} })
+    families: list[ExternalFamilyCorrection] = Field(default=..., title="Families", description="""Complete external corrections; each family remains a distinct scientific unit.""", json_schema_extra = { "linkml_meta": {'domain_of': ['PostArmMultiplicityRun']} })
+    reports: list[SourceArtifact] = Field(default=..., title="Reports", description="""Hashed migration and interpretation reports.""", json_schema_extra = { "linkml_meta": {'domain_of': ['PostArmMultiplicityRun']} })
+
+    @field_validator('version')
+    def pattern_version(cls, v):
+        pattern=re.compile(r"^1\.2\.0$")
+        if isinstance(v, list):
+            for element in v:
+                if isinstance(element, str) and not pattern.match(element):
+                    err_msg = f"Invalid version format: {element}"
+                    raise ValueError(err_msg)
+        elif isinstance(v, str) and not pattern.match(v):
+            err_msg = f"Invalid version format: {v}"
+            raise ValueError(err_msg)
+        return v
+
+    @field_validator('comparison_manifest_sha256')
+    def pattern_comparison_manifest_sha256(cls, v):
+        pattern=re.compile(r"^[0-9a-f]{64}$")
+        if isinstance(v, list):
+            for element in v:
+                if isinstance(element, str) and not pattern.match(element):
+                    err_msg = f"Invalid comparison_manifest_sha256 format: {element}"
+                    raise ValueError(err_msg)
+        elif isinstance(v, str) and not pattern.match(v):
+            err_msg = f"Invalid comparison_manifest_sha256 format: {v}"
+            raise ValueError(err_msg)
+        return v
+
+    @field_validator('strain_rollup')
+    def pattern_strain_rollup(cls, v):
+        pattern=re.compile(r"^(off|phenotype)$")
+        if isinstance(v, list):
+            for element in v:
+                if isinstance(element, str) and not pattern.match(element):
+                    err_msg = f"Invalid strain_rollup format: {element}"
+                    raise ValueError(err_msg)
+        elif isinstance(v, str) and not pattern.match(v):
+            err_msg = f"Invalid strain_rollup format: {v}"
+            raise ValueError(err_msg)
+        return v
+
+    @field_validator('code_sha256')
+    def pattern_code_sha256(cls, v):
+        pattern=re.compile(r"^[0-9a-f]{64}$")
+        if isinstance(v, list):
+            for element in v:
+                if isinstance(element, str) and not pattern.match(element):
+                    err_msg = f"Invalid code_sha256 format: {element}"
+                    raise ValueError(err_msg)
+        elif isinstance(v, str) and not pattern.match(v):
+            err_msg = f"Invalid code_sha256 format: {v}"
+            raise ValueError(err_msg)
+        return v
+
+
 # Model rebuild
 # see https://pydantic-docs.helpmanual.io/usage/models/#rebuilding-a-model
 MultipleTestingPolicy.model_rebuild()
 SourceArtifact.model_rebuild()
 HypothesisCoordinates.model_rebuild()
 HypothesisDefinition.model_rebuild()
+HypothesisFamilyMetadata.model_rebuild()
 HypothesisFamily.model_rebuild()
 RawHypothesis.model_rebuild()
 AdjustedHypothesis.model_rebuild()
 CorrectionRun.model_rebuild()
+ExternalFamilyCorrection.model_rebuild()
+PostArmMultiplicityRun.model_rebuild()

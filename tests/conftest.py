@@ -62,7 +62,7 @@ def rendered_title_clearance(monkeypatch: pytest.MonkeyPatch) -> Callable[[Path]
     scales: dict[Path, int] = {}
 
     def diagnostic_render(figure: go.Figure, path: str, *, scale: int) -> None:
-        figure.update_layout(title_font_color="#ff00ff")
+        figure.update_layout(title_font_color="#ff00ff", title_subtitle_font_color="#ff00ff")
         if figure.layout.annotations:
             for annotation in figure.layout.annotations:
                 annotation.font.color = "#00ffff"

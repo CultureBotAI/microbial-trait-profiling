@@ -230,6 +230,9 @@ record cannot acquire that meaning by inference after execution (#843, #944).
 Legacy Jed plans recorded before these options were required do not satisfy this
 current contract. Verify a historical fallback run in a detached worktree at the
 run's recorded Git commit, using that implementation and its locked environment.
+If `git_dirty=true`, the commit alone cannot reproduce the implementation: retain
+the original modified code and check it against the recorded code inventory. A
+clean checkout at that commit does not establish the bytes of a dirty execution.
 Keep the original checkout as well as the recorded inputs, output paths and
 execution record. Recorded step inputs can live inside that checkout, including
 `data/raw/full_dump.csv` and protocol JSONs; a new detached worktree at the recorded
@@ -240,6 +243,16 @@ and preserve its original paths for historical verification.
 A pass under that historical verifier describes that execution;
 it does not establish a new run under the current workflow. This also avoids
 applying newer core-verification contracts to unsupported older records (#955).
+
+Plan validation uses the complete execution parsers for the profile, taxa-guild,
+and condition-module heatmaps. It rejects `--help` without printing help text.
+The condition-module command accepts `--direction` but not `--direction-basis`.
+Other entrypoints still receive an exact-option direction-basis check rather than
+complete parser validation. Registering every planned CLI is deferred until its
+parser interface can be shared explicitly; verification never executes an
+arbitrary recorded script to discover its parser. Parser acceptance does not
+establish that data-independent post-parse checks or input-dependent execution
+would succeed; sharing post-parse validation is tracked separately in #968.
 
 With the default population, count profiles retain all hosts in the core. Legacy
 commands whose numerical algorithms assume human-only input receive an execution-recorded human subset
@@ -270,7 +283,8 @@ strain rollup scope, its feature catalog and the retained features of its count 
 profile tables. A record whose bases differ, in any field, number or order, is refused
 (#817, #860). A comparison recorded before #828 and #860 holds a catalog-hash
 `feature_filter_id` and fixed `off`/317 bases, so it fails; run the compare stage again
-rather than verifying it.
+rather than verifying it with the current verifier. Historical verification uses
+the recorded implementation and preserved paths under the rule above.
 
 Each `integrated_evidence` input is the file its producing step recorded in that
 arm's `arm_run.json`: Ilyas's `enrichment` and `depletion`, Noel's
@@ -516,9 +530,12 @@ The number and names of emitted site tables depend on eligibility. The manifest
 is authoritative for the site groups in this invocation; the JSON also inventories
 both refreshed pooled aliases. Existing historical statistics tables outside the
 emitted output set, the condition and body-site summaries, and the infographic PNG
-are listed with hashes under `not_regenerated` in the JSON. These pooled summaries
-and figure are not refreshed by the site-statistics step. They remain historical
-and must not be cited as fresh results. The rerun PR must either regenerate each
+are listed with hashes under `not_regenerated` in the JSON. Schema version 1.2
+distinguishes `existing_stratum_table_not_refreshed` from
+`not_produced_by_site_stats_mode` (the summaries and figure). These files are not
+covered by this record; their freshness depends on their own producing execution.
+In particular, running full mode immediately before this step can produce fresh
+summaries and a figure. The rerun PR must either regenerate each
 intended table or figure or list these omissions explicitly; this implementation
 PR does not regenerate tracked data.
 The full infographic mode and pooled-only mode remove any previous site-stat
@@ -551,6 +568,18 @@ The comparison matches typed numerical cells by IDs and qualified features,
 reports added/removed rows and columns, and distinguishes MediaDive differences.
 Even identical values do not establish a historical baseline's producer or
 inputs. Comparison never overwrites baseline or current products.
+
+## Additive presence and depth sensitivity
+
+`just presence-depth-sensitivity --core-run RUN_JSON --output-dir OUTPUT` consumes
+the verified count and binary ORA products in a new sidecar directory. It compares
+annotation fractions, breadth-normalized binary fractions, and taxon prevalence
+using the native directional screen, and raw versus binary focal composition
+using the native paired-ratio test. Equal-study HC3 depth models, full-family
+BY/BH, a distinct six-trait BH comparison, coverage/eligibility ledgers and
+LinkML multiplicity records are emitted without changing an arm plan or output.
+See [the methods](../methods/presence_depth_sensitivity.md) for the depth metric,
+conditional estimand, denominators, missing-feature policy and provenance scope.
 
 ## Checks and maintenance
 
@@ -640,14 +669,23 @@ pairs, nonhuman hosts, malformed counts, stale collections, changed inputs,
 failed publication and consumer incompatibility.
 
 The guild and Table 1 layout regressions render synthetic PNGs through Kaleido
-and measure subtitle/header ink clearance. Their regression bounds are specific
-to the single-condition fixtures: 30 layout pixels for the guild fixtures and
+and measure subtitle/header ink clearance. Each fixture asserts at least eight
+distinct condition rows, avoiding Plotly's minimum plot-height behavior in a
+one-row diagnostic. Their regression bounds are specific to these fixtures:
+30 layout pixels for the guild fixtures and
 70 for the Table 1 fixtures. The Table 1 fixture's single-line `Feces` header
 accounts for its larger measured gap; the guild header wraps onto two lines.
 The 70-pixel bound is tied to that site-name geometry. Adding a two-line note
 within one entry may change clearance by at most 4 layout pixels. These bounds
 are independent of the renderer's margin constants. This checks vertical
-spacing, not overall figure design. It requires local Chrome/Chromium, available
+spacing, not overall figure design. Diagnostic recoloring includes both the
+main title and Plotly's native `title.subtitle`, with a rendered two-line native
+subtitle control. The retained `issue839_probe_guild_layout_mutants.py` records
+each parameterized case separately: only call-phase failures of the named
+clearance assertions count as detected mutations. Crashes, unrelated assertions,
+setup/collection errors and missing cases invalidate the probe. Its inner pytest
+runs disable the cache provider so deliberate failures do not change `--lf` or
+`--ff` selections. It requires local Chrome/Chromium, available
 through `just get-chrome` if needed; it does not read production analysis tables.
 
 Change schema first, regenerate with `just gen-pydantic`, update the executable

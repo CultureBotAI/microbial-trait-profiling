@@ -217,6 +217,8 @@ def test_main_builds_modules_from_each_experiments_own_labels(
     for flag, value in arguments.items():
         argv.extend([flag, str(value)])
     monkeypatch.setattr(sys, "argv", argv)
+    # Match the import path of the standalone CLI; main owns execution-only imports.
+    monkeypatch.syspath_prepend(str(MODULE_PATH.parent))
 
     heatmap.main()
 

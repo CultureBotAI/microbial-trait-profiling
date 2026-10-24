@@ -2,7 +2,8 @@
 
 Inputs: synthetic three-study, three-trait profiles created here; no real data.
 Outputs: isolated input TSV/CSV files and both PNG/PDF heatmaps for each basis.
-Also checks that the basis changes labels, never the numerical matrix exports.
+Drawn-value and label validation belongs to the main()-level regression in
+tests/test_study_trait_profile_heatmap.py, not to the basis-independent exports.
 """
 
 from __future__ import annotations
@@ -113,9 +114,6 @@ def main() -> int:
         argv += ["--direction-basis", basis, "--min-profile-support", "1"]
         with patch.object(sys, "argv", argv), patch.object(Figure, "savefig", save_both):
             module.main()
-    for name in ("matrix.tsv", "paired_matrix.tsv"):
-        if (output / bases[0] / name).read_bytes() != (output / bases[1] / name).read_bytes():
-            raise AssertionError(f"Direction label changed numerical output: {name}")
     return 0
 
 

@@ -50,6 +50,25 @@ using conservative p=1 padding internally; its exported p, adjusted p and
 decisions remain undefined.
 Omitted, duplicated and unexpected members fail validation. Tested members must
 have finite p in [0,1] with no undefined reason; negative zero is rejected.
+Schema and engine version 1.2 add a per-record `reason_vocabulary`. Its default,
+`legacy_free_text_v1`, preserves the foundation API's nonblank free-text reasons,
+including existing callers that omit the field. Explicit null and unknown
+vocabularies are rejected. `analysis_reason_v1` requires exact membership in the
+authoritative LinkML `AnalysisReasonV1` enum; spelling, whitespace and case are
+not normalized. Tested rows require no reason under either vocabulary.
+The shared semantic validator applies this rule in both correction paths and
+when reading corrected JSONL records. Adjusted records inherit the discriminator;
+raw/output hashes and replay bind it. Per-row versions may coexist in a family
+without changing its declared membership or correction arithmetic.
+
+This preserves caller compatibility, not the hashes of historical records.
+Newly serialized legacy rows explicitly include their vocabulary, changing
+canonical raw/output identities. Persisted version-1.1 records must be replayed
+with their original implementation and environment; they are not silently
+upgraded. The statistical policy remains version 1 and its immutable bytes are
+unchanged. The post-arm adapters explicitly emit `analysis_reason_v1`; other
+foundation callers retain the legacy contract until they deliberately opt in.
+
 An empty family is permitted only
 with explicit size zero and empty raw membership. Significance, effect-size and
 presentation filters never reduce the correction family.
