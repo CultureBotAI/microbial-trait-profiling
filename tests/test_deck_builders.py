@@ -2095,6 +2095,10 @@ def _mock_rerun_repo_for_deck(
                 csv.DictReader(path.read_text(encoding="utf-8").splitlines(), delimiter="\t")
             )
         if name == "study_trait_profile_study_metadata.tsv":
+            if path.exists():
+                return list(
+                    csv.DictReader(path.read_text(encoding="utf-8").splitlines(), delimiter="\t")
+                )
             return [{"study_id": f"S{i % n_studies}"} for i in range(n_profiles)]
         if name == "six_shared_trait_condition_body_site_direction_contrasts.tsv":
             return [
@@ -2399,14 +2403,34 @@ def test_deck_coverage_text_reads_the_coverage_tsvs(
     nondef_slides = deck.get_new_slides_metadata(nondef_metrics)
     deck.check_coverage_table_sync(nondef_metrics, nondef_slides)
 
-    # Builder-level rejection in deck.load_rerun_metrics on count mismatch
-    # or missing count files (#985):
+    # Builder-level rejection in deck.load_rerun_metrics on metadata/coverage mismatch,
+    # provenance/summary mismatch, or missing count files (#985):
     nondef_cov_dir = (
         tmp_path
         / "nondef"
         / "trait-visualization"
         / "trait-profile-investigation"
         / "taxa-coverage"
+    )
+    nondef_meta_path = (
+        tmp_path / "nondef" / "trait-visualization" / "study_trait_profile_study_metadata.tsv"
+    )
+    nondef_meta_path.write_text(
+        "study_id\tprofile_id\n" + "".join(f"S{i % 932}\tP{i}\n" for i in range(7329)),
+        encoding="utf-8",
+    )
+    with pytest.raises(
+        ValueError,
+        match=(
+            r"profile_trait_mapping_summary\.tsv \(4321 profiles across 777 studies\) "
+            r"disagrees with study_trait_profile_study_metadata\.tsv "
+            r"\(7329 profiles across 932 studies\); rerun `just taxa-coverage`"
+        ),
+    ):
+        deck.load_rerun_metrics(tmp_path / "nondef")
+    nondef_meta_path.write_text(
+        "study_id\tprofile_id\n" + "".join(f"S{i % 777}\tP{i}\n" for i in range(4321)),
+        encoding="utf-8",
     )
     (nondef_cov_dir / "provenance.json").write_text(
         json.dumps({"strain_rollup": "phenotype", "counts": {"selected_profiles": 7329}}),
@@ -2488,7 +2512,7 @@ def test_plate_six_text_and_remediation_labels_read_the_coverage_tsvs(
     assert plates.plate6_remediation_label(zero_rows[0]) == "Direct trait evidence needed"
     assert plates.plate6_remediation_label(zero_rows[1]) == "Multi-taxon LCA resolution"
     assert plates.plate6_remediation_label(zero_rows[2]) == "Review TaxID alias → NCBITaxon:216572"
-    assert plates.plate6_remediation_label(zero_rows[4]) == "Fungal eukaryote (non-bacterial)"
+    assert plates.plate6_remediation_label(zero_rows[4]) == "Non-bacterial eukaryote"
     assert plates.plate6_remediation_label(zero_rows[5]) == "Direct trait evidence needed"
     assert plates.plate6_remediation_label(zero_rows[6]) == "Curate in BacDive / KG-Microbe"
     assert plates.plate6_remediation_label(zero_rows[7]) == "Non-bacterial eukaryote (plant)"
@@ -3031,7 +3055,7 @@ def test_plate6_candidatus_label_preserves_direct_evidence_caution() -> None:
 
 
 def test_plate6_new_diagnosis_categories_map_to_distinct_labels_and_remedy_clauses() -> None:
-    """Three new #957/#1009 diagnosis categories map to distinct Plate VI labels."""
+    """Three new #957/#1009/#1034 diagnosis categories map to distinct Plate I/VI labels."""
     cases = [
         (
             "Unresolved Taxonomic Label",
@@ -3041,6 +3065,7 @@ def test_plate6_new_diagnosis_categories_map_to_distinct_labels_and_remedy_claus
             ),
             "Review taxonomic label / source",
             "taxonomic label review",
+            "unresolved taxon labels",
         ),
         (
             "Taxonomy Unresolved",
@@ -3050,6 +3075,7 @@ def test_plate6_new_diagnosis_categories_map_to_distinct_labels_and_remedy_claus
             ),
             "Review taxonomy placement",
             "taxonomy placement review",
+            "taxonomy-unresolved taxa",
         ),
         (
             "Non-Bacterial / Viral Taxon",
@@ -3059,10 +3085,11 @@ def test_plate6_new_diagnosis_categories_map_to_distinct_labels_and_remedy_claus
             ),
             "Review viral annotation resources",
             "viral annotation review",
+            "viral taxa",
         ),
     ]
     rank_rows = _coverage_rank_rows()
-    for cat, rem, expected_label, expected_clause in cases:
+    for cat, rem, expected_label, expected_clause, expected_mp1_cause in cases:
         row = {
             "zero_trait_rank": "1",
             "taxon_id": "NCBITaxon:155900",
@@ -3080,6 +3107,65 @@ def test_plate6_new_diagnosis_categories_map_to_distinct_labels_and_remedy_claus
         text = plates.plate6_text(rank_rows, [row])
         assert expected_clause in text["subtitle"]
         assert expected_clause in text["panel_b_title"]
+        mp1 = plates.methods_plate1_coverage_labels(rank_rows, [row])
+        assert f": {expected_mp1_cause};" in mp1["species_gap_note"]
+
+    # A 2-occurrence unresolved-label species plus a 1-occurrence rare isolate ranks unresolved
+    # first and includes both (#1034):
+    mixed_species_rows = [
+        {
+            "zero_trait_rank": "1",
+            "taxon_id": "NCBITaxon:155900",
+            "taxon_name": "uncultured organism",
+            "taxonomic_rank": "species",
+            "signature_occurrences": "2",
+            "profile_count": "2",
+            "study_count": "2",
+            "diagnosis_category": "Unresolved Taxonomic Label",
+            "suggested_remediation": "Review taxonomic label / source",
+        },
+        {
+            "zero_trait_rank": "2",
+            "taxon_id": "NCBITaxon:649746",
+            "taxon_name": "Novel isolate sp.",
+            "taxonomic_rank": "species",
+            "signature_occurrences": "1",
+            "profile_count": "1",
+            "study_count": "1",
+            "diagnosis_category": "Rare / Novel Isolate (Lacks KG Phenotype)",
+            "suggested_remediation": "Curate in BacDive / KG-Microbe",
+        },
+    ]
+    mixed_mp1 = plates.methods_plate1_coverage_labels(rank_rows, mixed_species_rows)
+    assert ": unresolved taxon labels & rare/novel isolates;" in mixed_mp1["species_gap_note"]
+
+    # Unknown category in methods_plate1_coverage_labels raises ValueError (#1034):
+    with pytest.raises(ValueError, match="Unknown zero-trait diagnosis_category"):
+        plates.methods_plate1_coverage_labels(
+            rank_rows,
+            [{**mixed_species_rows[0], "diagnosis_category": "Unknown Future Category"}],
+        )
+
+    # Non-plant eukaryotes (Blastocystis, Trichomonas, Homo sapiens, Candida) use a
+    # lineage-neutral eukaryote label rather than calling every eukaryote fungal (#1034):
+    for taxon_id, taxon_name in (
+        ("NCBITaxon:12967", "Blastocystis"),
+        ("NCBITaxon:5721", "Trichomonas"),
+        ("NCBITaxon:9606", "Homo sapiens"),
+        ("NCBITaxon:5476", "Candida albicans"),
+    ):
+        euk_label = plates.plate6_remediation_label(
+            {
+                "taxon_id": taxon_id,
+                "taxon_name": taxon_name,
+                "diagnosis_category": "Non-Bacterial / Fungal Eukaryote",
+                "suggested_remediation": (
+                    "Integrate specialized microeukaryotic trait ontologies into KG-Microbe"
+                ),
+            }
+        )
+        assert euk_label == "Non-bacterial eukaryote"
+        assert "fungal" not in euk_label.lower()
 
 
 def test_coverage_run_info_validates_strain_rollup_and_profile_count_agreement(

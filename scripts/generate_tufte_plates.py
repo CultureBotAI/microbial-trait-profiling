@@ -452,15 +452,23 @@ def guild_text(labels: dict[str, str]) -> str:
 _SPECIES_GAP_CAUSE_LABELS: dict[str, str] = {
     "Uncultivated / Metagenomic MAG": "uncultivated MAGs",
     "Ambiguous Taxon / Bin Slash": "slash-bins",
+    "Unresolved Taxonomic Label": "unresolved taxon labels",
     "Candidatus Lineage": "Candidatus lineages",
     "Rare / Novel Isolate (Lacks KG Phenotype)": "rare/novel isolates",
+    "Taxonomy Unresolved": "taxonomy-unresolved taxa",
     "Non-Bacterial / Fungal Eukaryote": "non-bacterial eukaryotes",
+    "Non-Bacterial / Viral Taxon": "viral taxa",
     "NCBI TaxID Desynchronization": "TaxID desyncs",
 }
 
 
 def _species_gap_cause_phrase(zero_rows: Sequence[Mapping[str, str]]) -> str:
-    """Derive short cause summary for Methods Plate I from species zero-trait rows (#982, #985)."""
+    """Derive short cause summary for Methods Plate I from species zero-trait rows
+    (#982, #985, #1034)."""
+    for r in zero_rows:
+        cat = r.get("diagnosis_category", "")
+        if cat not in _SPECIES_GAP_CAUSE_LABELS:
+            raise ValueError(f"Unknown zero-trait diagnosis_category: {cat!r}")
     active = [
         r
         for r in zero_rows
@@ -474,9 +482,8 @@ def _species_gap_cause_phrase(zero_rows: Sequence[Mapping[str, str]]) -> str:
         cat = r.get("diagnosis_category", "")
         if cat == "NCBI TaxID Desynchronization":
             continue
-        label = _SPECIES_GAP_CAUSE_LABELS.get(cat)
-        if label is not None:
-            cat_occ[label] = cat_occ.get(label, 0) + int(r.get("signature_occurrences", "0"))
+        label = _SPECIES_GAP_CAUSE_LABELS[cat]
+        cat_occ[label] = cat_occ.get(label, 0) + int(r.get("signature_occurrences", "0"))
     top_labels = [lbl for lbl, _ in sorted(cat_occ.items(), key=lambda x: -x[1])[:2]]
     if not top_labels:
         return ""
@@ -491,13 +498,13 @@ def methods_plate1_coverage_labels(
     population: Mapping[str, Any] | None = None,
 ) -> dict[str, str]:
     """Derive Methods Plate I occurrence/TaxID counts and desync note (#930, #951, #956, #982)."""
+    cause_phrase = _species_gap_cause_phrase(zero_rows)
     present_rows = [r for r in coverage_rows if int(r.get(COVERAGE_TOTAL_TAXA_COL, "0")) > 0]
     total_occurrences = sum(int(r.get(COVERAGE_TOTAL_OCC_COL, "0")) for r in present_rows)
     total_taxa = sum(int(r.get(COVERAGE_TOTAL_TAXA_COL, "0")) for r in present_rows)
     by_rank = {r["taxonomic_rank"]: r for r in present_rows}
     if "species" in by_rank:
         species_gap = float(by_rank["species"][COVERAGE_ZERO_TRAIT_OCC_PCT_COL])
-        cause_phrase = _species_gap_cause_phrase(zero_rows)
         species_clause = f"Species gap ({species_gap:.0f}% of species occurrences){cause_phrase}"
     else:
         species_clause = "Species coverage unavailable (species rank absent from table)"
@@ -3389,7 +3396,7 @@ def plate6_remediation_label(row: Mapping[str, str]) -> str:
             or "viridiplantae" in name_lower
         ):
             return "Non-bacterial eukaryote (plant)"
-        return "Fungal eukaryote (non-bacterial)"
+        return "Non-bacterial eukaryote"
     if cat == "Non-Bacterial / Viral Taxon":
         return "Review viral annotation resources"
     if cat == "Taxonomy Unresolved":
