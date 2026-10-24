@@ -15,16 +15,16 @@ This records the final rerun before the NCASM talk: the runs made, the commit an
 
 ## Verified core-bound runs
 
-Each unit ran these steps, and every step exited 0:
+Each completed unit ran these steps, and every step exited 0. The full corpus × off unit is still verifying; its rows below say so.
 1. `just rerun-core`;
 2. the three arms (ilyas, jed, noel) in parallel;
 3. `just rerun-verify` on each arm;
 4. `just rerun-compare`;
 5. `just rerun-verify-comparison`.
 
-Beyond the exit codes, the side effects were checked: the core's profile, contrast and study counts; the trait count and rollup that each analysis basis records; and non-empty outputs.
+Beyond the exit codes, the side effects were checked: the core's profile, experiment and study counts; the trait count and rollup that each analysis basis records; and non-empty outputs.
 
-| Unit | Contrast population | Rollup | Profiles | Contrasts | Studies | Traits |
+| Unit | Contrast population | Rollup | Profiles | Experiments | Studies | Traits |
 |---|---|---|---|---|---|---|
 | Tier 1+2 × off (primary; canary) | `disease_vs_healthy_tier1_2_subject_controls` | off | 1,870 | 935 | 548 | 317 |
 | Tier 1+2 × phenotype | `disease_vs_healthy_tier1_2_subject_controls` | phenotype | 1,870 | 935 | 548 | 344 |
@@ -32,8 +32,10 @@ Beyond the exit codes, the side effects were checked: the core's profile, contra
 | Full corpus × off (verification in progress) | `all_paired` | off | pending | pending | pending | pending |
 
 Notes on the counts:
-- The full-corpus core counts span all host species (`count_host_species: all`, the default).
-- Over-representation analysis uses *Homo sapiens* (`ora_host_species`).
+- **What is counted:** the profiles, experiments and studies represented in each core's count-profile product. A profile is one experiment's increased or decreased signature.
+- **Tier 1+2:** every one of the 935 experiments has both profiles, so they are 935 paired contrasts.
+- **Full corpus:** the 7,111 profiles come from 4,299 experiments, and some experiments have a signature in one direction only. So 4,299 is not a count of paired contrasts. The full experiments table is larger, with 4,435 rows in 1,245 studies.
+- **Hosts:** the full-corpus core counts span all host species (`count_host_species: all`, the default). Over-representation analysis uses *Homo sapiens* (`ora_host_species`).
 
 | Unit | Core run | Arm runs (ilyas, jed, noel) | Comparison |
 |---|---|---|---|
@@ -43,7 +45,7 @@ Notes on the counts:
 | Full corpus × off | `run-a7cf841adbc34221a5673b75f6e2ec3f` | pending | pending |
 
 **Calibration verdicts.** The verified units report the same two verdicts:
-- `noel_table1_six_trait_sign_test_v1`: partially calibrated. The null control passed; power was not assessed.
+- `noel_table1_six_trait_sign_test_v1`: partially calibrated. The null-control criterion passed. Power was reported (its `power_reported` criterion passed), but no target-power criterion was declared, so the comparison does not certify power.
 - `jed_log_ratio_vs_transformed_t_calibration`: different estimator, uncalibrated.
 
 **Run directories.** They take 4.8 to 6.5 GB each and aren't committed; they're kept outside the repository. To keep them, make a relocatable copy with `just evidence-archive` (see [Retaining execution evidence](../evidence-archives.md)).
@@ -54,11 +56,12 @@ These ran at F on core run `run-09f23bbe33cb42988413bec7caae8623`. Their outputs
 
 ### Condition-triple selection scan (#861; for #835)
 - **Setup:** protocol `cellulose-decr-selection-scan-v1`, 100,000 U6 study-shuffle permutations, seed 20261022; 34 eligible conditions (at least 3 stool studies), 5,984 triples and 10 traits.
-- **PD + HIV + colorectal cancer** (cellulose catabolism): rank 1,368 of 5,984 by mean pairwise Jaccard distance.
+- **How triples are ranked:** each rank below is the triple's rank among the 5,984 by its U6 p-value for the named statistic, not by the observed statistic itself. For example, the rule-chosen triple has the smaller observed distance (0.538 against 0.542), yet it ranks lower because its p-value is larger.
+- **PD + HIV + colorectal cancer** (cellulose catabolism): rank 1,368 of 5,984 by U6 p-value for mean pairwise Jaccard distance.
   - Observed sharing is 45.8%, against 43.5% expected under U6 (p = 0.35).
-  - By three-way core, it ranks 3,446 (p = 0.82).
+  - By U6 p-value for the three-way core, it ranks 3,446 (p = 0.82).
 - **The triple chosen by rule** (the three conditions with the most stool studies: PD 36, obesity 25, colorectal cancer 24): rank 3,873, p = 0.73.
-- **The scan's top triple** (chronic kidney disease + gastric cancer + HIV): p = 0.00024. Gastric cancer has 3 stool studies.
+- **The lowest-p triple for cellulose catabolism** (chronic kidney disease + gastric cancer + HIV): p = 0.00024. Gastric cancer has 3 stool studies. This is within the cellulose trait, not across all ten traits in the scan.
 
 ### Lineage extension and study leave-one-out (#891)
 - **Status:** protocol `771-extension-v1`, an exploratory sensitivity that leaves the declared `190-native-v2` panel unchanged. Reconciliation mismatches: 0.
@@ -81,7 +84,7 @@ These ran at F on core run `run-09f23bbe33cb42988413bec7caae8623`. Their outputs
 
 ## Outputs regenerated in this PR
 
-A downstream pass ran at F on the full corpus with the phenotype rollup, the primary scope for tracked outputs. The steps, in order:
+A downstream pass ran at F with the phenotype rollup, the primary scope for tracked outputs. Its population is the canonical analysis corpus: 5,629 human 16S and shotgun (WMS) profiles, with no Tier 1+2, pairing or disease-orientation filter. This is a different denominator from the cores' counts above, and the two must not be mixed. The steps, in order:
 1. ingest and the study TSVs;
 2. `just study-trait-profiles`, then `just study-trait-profiles-refresh-gz`;
 3. `just trait-heatmaps`;
@@ -105,6 +108,13 @@ What changed:
   - Its legacy inputs weren't regenerated in this pass: the calibration status, the composition sensitivity, the Arm 2 enrichment and depletion tables, and the full trait screen.
   - Without them the producer writes every row as pending (#1003).
   - It also writes absolute paths (#1001).
+- **Eight per-body-site artifacts:** `just trait-profile-site-stats` refreshed seven artifacts at F. It leaves eight from an earlier run, because its pooled/site statistics mode doesn't write them:
+  - the caecum, colon, mouth, subgingival dental plaque and vagina statistics;
+  - the condition and body-site summaries;
+  - the infographic PNG.
+
+  `trait-visualization/trait-profile-investigation/stratified_stats_provenance.json` lists both groups, with hashes.
+- **Other tracked investigation outputs:** recipes this pass didn't run leave their tracked outputs at their committed versions. Examples are `just trait-profile-investigation` and the six-shared-trait recipes.
 - **The Tufte plates and deck figures:** the talk's figures come from the slide pipeline and cite the runs above.
 
 ## Known issues
