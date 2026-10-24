@@ -1,7 +1,8 @@
 # The widened directional screen under the complete null (#263)
 
-This describes `just calibration-screen`. It runs the 317-trait directional
-screen of `just trait-direction-screen` (#255, #265) on copies of the corpus in
+This describes `just calibration-screen`. It runs the full-trait directional
+screen of `just trait-direction-screen` (#255, #265), over 317 traits in the
+`off`-scope run below and 344 under `phenotype`, on copies of the corpus in
 which no trait differs between the increased and decreased signatures, and
 counts how many traits each correction calls. It is the directional arm's share
 of the calibration battery in #263, stacked on PR #240 (the calibration harness
@@ -21,8 +22,8 @@ artefact, so replicate *i* here flips exactly the studies that row *i* of
 
 Each replicate runs the production screen unchanged: one vote per study per trait,
 a two-sided exact binomial test against 0.5, and Benjamini-Yekutieli (BY) and
-Benjamini-Hochberg (BH) across all 317 traits, plus BY at the effective family size
-re-estimated from that replicate's study contrasts. Under this null every call is a
+Benjamini-Hochberg (BH) across all 317 traits of that run, plus BY at the effective
+family size re-estimated from that replicate's study contrasts. Under this null every call is a
 false call. The per-replicate count is therefore the number of false discoveries,
 and the share of replicates with any call is the family error of the whole screen,
 reported with an exact binomial interval over independent replicates.
@@ -55,8 +56,8 @@ That is a statement about the complete null only. It does not show that the 18
 traits are true effects, and it does not measure the false-discovery proportion
 when some traits really do shift, because a partial null - some traits shifted,
 others not - is not simulated here. It also says nothing about the selection that
-chose the six Table 1 traits; this screen tests all 317 and selects nothing. One
-hundred replicates bound the family error at 0.036 when no replicate calls
+chose the six Table 1 traits; this screen tests every retained trait (317 here)
+and selects nothing. One hundred replicates bound the family error at 0.036 when no replicate calls
 anything, which is below the 0.065 tolerance of
 [`calibration_protocol.json`](calibration_protocol.json), but this screen is not
 one of that protocol's declared procedures and no verdict is issued against it.

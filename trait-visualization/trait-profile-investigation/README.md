@@ -90,10 +90,21 @@ Feces-only and Feces-excluded analyses, and one file per body-site group with at
 least 50 matched pairs. The manifest lists the emitted strata, pair counts, and
 file paths. Pooled and per-stratum TSVs include every trait that passes the
 analysis-set support and variance filters; they are not capped to the top 60
-variable traits. The committed `trait_profile_paired_contrast_trait_stats*.tsv`
-tables in this directory (and `data/derived/trait_profile_paired_contrast_trait_stats_pooled.tsv`)
-were regenerated from `main` at commit `42300e0` via
-`scripts/rerun_directional_consistency_arm_noel.sh` and `just trait-profile-pooled-stats`.
+variable traits. The committed paired-contrast files in this directory come from
+more than one run. [`stratified_stats_provenance.json`](stratified_stats_provenance.json)
+lists each with its sha256:
+
+- **Refreshed in the final rerun at 511c891** (`outputs`), on the `phenotype`-scope
+  profiles (344 retained traits): the pooled table and its copy
+  `trait_profile_paired_contrast_trait_stats.tsv`, the manifest, and the Feces,
+  Feces-excluded, Other and Saliva tables.
+  `data/derived/trait_profile_paired_contrast_trait_stats_pooled.tsv` is the same
+  pooled table.
+- **Retained from earlier runs** (`not_regenerated`), because the pooled and site
+  statistics mode does not rewrite them: the caecum, colon, mouth, subgingival
+  dental plaque and vagina tables, last written in #516, and the condition and
+  body-site summaries and the infographic PNG, last written in #766 (the rerun at
+  8b280a3).
 
 `all-bugsigdb-condition-body-site-maps/` contains increased-profile and
 decreased-profile condition/body-site maps generated from all human-host
