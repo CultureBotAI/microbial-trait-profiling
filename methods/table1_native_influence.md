@@ -9,7 +9,7 @@ The committed bundle is a measured matched-corpus Table 1-trait analog sensitivi
 not a reproduction of the published Table 1 baseline (tracked in #210).
 The source ledger is unchanged. The
 [native protocol](table1_native_influence_protocol.json) applies the same rule-declared
-exclusions as the shared-fraction rerun, with four exact scopes, 317 retained columns
+exclusions as the shared-fraction rerun, with four exact scopes, 317 retained columns (the `off` strain-rollup scope)
 and 4,670 human paired profiles from 959 studies. Nothing is selected by the new effects,
 directions or p-values. See the generated
 [native summary and review tables](table1-native-results/README.md) for results.
@@ -134,7 +134,7 @@ ORA cells alone is not an explanation of the signal.
 
 | File | Contents |
 | --- | --- |
-| `native_composition.tsv.gz` | All 317 traits, native selection, effects, t-test p/q, intervals, directional support and native family sizes for every scope/scenario. |
+| `native_composition.tsv.gz` | All 317 `off`-scope traits, native selection, effects, t-test p/q, intervals, directional support and native family sizes for every scope/scenario. |
 | `native_composition_comparison.tsv` | All six traits; native before/after fields prefixed `native_`; separate study-weighted comparisons and two reference policies. |
 | `<scenario>/native_ora_profiles.tsv.gz` | All six traits and both directions; observed/expected counts, folds, both tails' p/q/status/membership and null count intervals, separately by scope/background. Join baseline and scenario rows by study/experiment/direction/trait/scope/background. |
 | `native_ora_families.tsv` | Complete native family sizes, active profile counts and population totals. |

@@ -57,6 +57,10 @@ repos:
             data/.*provenance\.json
             |trait-visualization/trait-profile-investigation/
             six-shared-traits/oral/oral_six_trait_provenance\.json
+            |trait-visualization/trait-profile-investigation/
+            stratified_stats_provenance\.json
+            |trait-visualization/trait-profile-investigation/
+            taxa-coverage/provenance\.json
           )$
         # Matching findings are baselined; hook acceptance does not establish audit.
         args: [--baseline, .secrets.baseline]
