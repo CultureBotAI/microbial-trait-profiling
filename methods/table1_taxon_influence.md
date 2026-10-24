@@ -123,7 +123,7 @@ remain explicitly recorded.
 
 For each lineage, removal deletes all known source-taxon/trait units whose source
 falls within that lineage, wherever they propagate, including into higher-rank
-reported records. Both arms are reconstructed. Every one of the 317 retained columns
+reported records. Both arms are reconstructed. Every one of the retained columns (317 under `off`, 344 under `phenotype`)
 contributes to the new denominator; removing only the six selected columns would
 answer a different and incorrect question. Direct annotations to ancestors of the
 excluded lineage cannot be allocated to a descendant confidently: retain them and

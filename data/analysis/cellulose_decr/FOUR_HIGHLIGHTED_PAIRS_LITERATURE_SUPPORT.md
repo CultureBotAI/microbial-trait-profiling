@@ -45,20 +45,20 @@ are studies reporting each taxon in the stated and the opposite direction
 
 | Pair | Studies | Annotated taxa | Most reported taxa (stated / opposite direction studies) |
 | --- | --- | --- | --- |
-| 1. PD, cellulose, decreased | 40 | 38 | Lachnospiraceae 20 / 7, *Roseburia* 20 / 4, *Blautia* 13 / 2, Bacillota 8 / 5, Clostridiaceae 8 / 2, Oscillospiraceae 8 / 13, *Clostridium* 7 / 3 |
+| 1. PD, cellulose, decreased | 39 | 38 | Lachnospiraceae 20 / 7, *Roseburia* 20 / 4, *Blautia* 13 / 2, Bacillota 8 / 5, Clostridiaceae 8 / 2, Oscillospiraceae 8 / 13, *Clostridium* 7 / 3 |
 | 2. HIV, cellulose, decreased | 16 | 24 | *Bacteroides* 8 / 0, *Clostridium* 5 / 2, Bacteroidaceae 5 / 0, Lachnospiraceae 5 / 3, Clostridia 4 / 0, Eubacteriales 4 / 1, *Ruminococcus* 4 / 0 |
 | 3. CRC, cellulose, decreased | 22 | 34 | Lachnospiraceae 9 / 5, Clostridia 7 / 1, *Clostridium* 6 / 3, *Blautia* 6 / 1, *Lachnospira* 6 / 1, *Roseburia* 6 / 0 |
-| 4. PD, moderately halophilic, increased | 43 | 79 | *Lactobacillus* 12 / 5, Enterobacteriaceae 9 / 2, Pseudomonadota 9 / 1, Bifidobacteriaceae 9 / 0, *Streptococcus* 9 / 5, *Alistipes* 8 / 0 |
+| 4. PD, moderately halophilic, increased | 42 | 79 | *Lactobacillus* 12 / 5, Pseudomonadota 9 / 1, Bifidobacteriaceae 9 / 0, *Streptococcus* 9 / 5, Enterobacteriaceae 8 / 2, Lactobacillaceae 8 / 4, *Alistipes* 8 / 0 |
 
 For the three cellulose pairs, the paired direction tests in
 [`README.md`](README.md#4-direction-within-each-condition) give, at the study
 level among disease-versus-healthy contrasts:
 
-- PD: 24 of 34 untied studies down (p = 0.024).
+- PD: 23 of 33 untied studies down (p = 0.035).
 - HIV: 10 of 12 (p = 0.039) with the exact label. Counting two studies filed as
   "Human immunodeficiency virus" gives 10 of 14 (p = 0.18), so the HIV result
   is fragile (#561, #580).
-- CRC: 14 of 17 (p = 0.013).
+- CRC: 16 of 18 (p = 0.0013).
 
 Taxon overlap between the three conditions is not detectably larger than among
 random sets of feces studies (U6 p = 0.19;
@@ -75,7 +75,7 @@ table. These studies are part of the result, not support for it.
 | Study | Citation | Annotated taxa reported decreased |
 | --- | --- | --- |
 | `bsdb:26179554` | Keshavarzian et al. 2015, *Mov Disord*, PMID 26179554 | Bacillota, *Blautia*, Lachnospiraceae, *Roseburia* |
-| `bsdb:27591074` | Unger et al. 2016, *Parkinsonism Relat Disord*, PMID 27591074 | Bacteroidia only |
+| `bsdb:27591074` | Unger et al. 2016, *Parkinsonism Relat Disord*, PMID 27591074 | not in the evidence table: its experiments are PCR, outside the 16S and WMS corpus (#742); it reported Bacteroidia only |
 | `bsdb:28195358` | Hill-Burns et al. 2017, *Mov Disord*, PMID 28195358 | *Blautia*, Lachnospiraceae, *Roseburia* |
 | `bsdb:28843021` | Heintz-Buschart et al. 2018, *Mov Disord*, PMID 28843021 | Bacillota, *Bacteroides*, Eubacteriales, Lachnospiraceae, Oscillospiraceae, Pseudomonadota, *Roseburia*, *Ruminococcus* |
 | `bsdb:31221587` | Aho et al. 2019, *EBioMedicine*, PMID 31221587 | ten taxa, among them *Roseburia*, *Blautia*, *Clostridium* and Lachnospiraceae |
@@ -136,7 +136,7 @@ Lachnospiraceae and Ruminococcaceae depletion.
 
 | Study | Citation | Annotated taxa reported increased |
 | --- | --- | --- |
-| `bsdb:27591074` | Unger et al. 2016, *Parkinsonism Relat Disord*, PMID 27591074 | Enterobacteriaceae |
+| `bsdb:27591074` | Unger et al. 2016, *Parkinsonism Relat Disord*, PMID 27591074 | not in the evidence table: its experiments are PCR, outside the 16S and WMS corpus (#742); it reported Enterobacteriaceae |
 | `bsdb:28195358` | Hill-Burns et al. 2017, *Mov Disord*, PMID 28195358 | Bifidobacteriaceae, Lactobacillaceae, *Lactobacillus* |
 | `bsdb:28449715` | Bedarf et al. 2017, *Genome Med*, PMID 28449715 | Bacillota, Clostridia |
 | `bsdb:29501802` | Qian et al. 2018, *Brain Behav Immun*, PMID 29501802 | many taxa, among them *Alistipes*, *Klebsiella* and *Acinetobacter* |
@@ -144,7 +144,7 @@ Lachnospiraceae and Ruminococcaceae depletion.
 | `bsdb:31248424` | Lin et al. 2019, *J Neuroinflammation*, PMID 31248424 | many taxa, among them *Enterococcus*, *Lactobacillus* and Rikenellaceae |
 | `bsdb:32934117` | Vascellari et al. 2020, *mSystems*, PMID 32934117 | ten taxa, among them Bifidobacteriaceae, *Escherichia* and *Streptococcus* |
 
-Several taxa here, such as Pseudomonadota (211 annotated taxa beneath it), carry
+Several taxa here, such as Pseudomonadota (212 annotated taxa beneath it), carry
 the annotation only through rollup from descendants.
 
 The full list of supporting studies, with every taxon in both directions, is in

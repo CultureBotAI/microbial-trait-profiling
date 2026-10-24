@@ -1,5 +1,5 @@
 stratum_kind	stratum	filename_token	analysis_role	pair_count	study_count	selected_trait_count	path
-body_site_group	Feces	feces	primary-analysis	1418	588	312	trait-visualization/trait-profile-investigation/trait_profile_paired_contrast_trait_stats_feces.tsv
-body_site_group_excluded	Feces excluded	feces_excluded	robustness-feces-excluded	839	368	297	trait-visualization/trait-profile-investigation/trait_profile_paired_contrast_trait_stats_feces_excluded.tsv
-body_site_group	Other	other	body-site	480	227	297	trait-visualization/trait-profile-investigation/trait_profile_paired_contrast_trait_stats_other.tsv
-body_site_group	Saliva	saliva	body-site	156	65	287	trait-visualization/trait-profile-investigation/trait_profile_paired_contrast_trait_stats_saliva.tsv
+body_site_group	Feces	feces	primary-analysis	1418	588	339	trait-visualization/trait-profile-investigation/trait_profile_paired_contrast_trait_stats_feces.tsv
+body_site_group_excluded	Feces excluded	feces_excluded	robustness-feces-excluded	839	368	323	trait-visualization/trait-profile-investigation/trait_profile_paired_contrast_trait_stats_feces_excluded.tsv
+body_site_group	Other	other	body-site	480	227	322	trait-visualization/trait-profile-investigation/trait_profile_paired_contrast_trait_stats_other.tsv
+body_site_group	Saliva	saliva	body-site	156	65	310	trait-visualization/trait-profile-investigation/trait_profile_paired_contrast_trait_stats_saliva.tsv
