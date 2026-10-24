@@ -959,6 +959,11 @@ calibration-flip-assignments *ARGS:
 
 pipeline: download ingest
 
+# Additive binary-presence and equal-study depth sensitivity of a verified core (#772).
+[positional-arguments]
+presence-depth-sensitivity *ARGS:
+	uv run python -m mtp.presence_depth_sensitivity "$@"
+
 # The integrated evidence table (#178): one row per method result, each keeping its
 # own family, units and states. Reads the other analyses' status files from
 # data/derived/ when they exist; anything absent is recorded as pending, never as a
