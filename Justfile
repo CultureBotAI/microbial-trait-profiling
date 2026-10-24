@@ -31,6 +31,7 @@ gen-pydantic:
 	uv run gen-pydantic {{legacy_schema}} > src/bsdbng/datamodel/bsdbng_pydantic.py
 	uv run gen-pydantic schema/workflow.yaml > src/mtp/datamodel/workflow_pydantic.py
 	uv run gen-pydantic schema/core_products.yaml > src/mtp/datamodel/core_products_pydantic.py
+	uv run gen-pydantic schema/multiple_testing.yaml > src/mtp/datamodel/multiple_testing_pydantic.py
 
 gen-derived: gen-pydantic
 
@@ -44,7 +45,9 @@ check-generated:
 	uv run gen-pydantic schema/workflow.yaml > "$tmpfile" && \
 	diff -u src/mtp/datamodel/workflow_pydantic.py "$tmpfile" && \
 	uv run gen-pydantic schema/core_products.yaml > "$tmpfile" && \
-	diff -u src/mtp/datamodel/core_products_pydantic.py "$tmpfile"
+	diff -u src/mtp/datamodel/core_products_pydantic.py "$tmpfile" && \
+	uv run gen-pydantic schema/multiple_testing.yaml > "$tmpfile" && \
+	diff -u src/mtp/datamodel/multiple_testing_pydantic.py "$tmpfile"
 
 # Validate the executable specification and its graph without reading large inputs.
 workflow-check spec="workflows/bugsigdb_core.yaml":
@@ -52,6 +55,9 @@ workflow-check spec="workflows/bugsigdb_core.yaml":
 	uv run linkml validate -s schema/workflow.yaml -C WorkflowDefinition "{{spec}}"
 	uv run linkml lint --config {{lintconfig}} --ignore-warnings schema/workflow.yaml
 	uv run linkml lint --config {{lintconfig}} --ignore-warnings schema/core_products.yaml
+	uv run linkml lint --config {{lintconfig}} --ignore-warnings schema/multiple_testing.yaml
+	uv run linkml validate -s schema/multiple_testing.yaml -C MultipleTestingPolicy methods/multiple_testing_policy_v1.yaml
+	uv run linkml validate -s schema/multiple_testing.yaml -C HypothesisFamily tests/fixtures/multiple_testing_family.yaml
 
 workflow-describe:
 	uv run python -m mtp.workflow describe workflows/bugsigdb_core.yaml > docs/workflow-products.md
@@ -89,6 +95,11 @@ core-screen run output:
 
 core-composition run output:
 	uv run python -m mtp.trait_composition --core-run "{{run}}" --output-dir "{{output}}"
+
+# After study-trait-profiles and trait-heatmaps: pooled/site tables with hashed provenance.
+[positional-arguments]
+trait-profile-site-stats *ARGS:
+	uv run python scripts/create_trait_profile_infographic.py --stratified-stats-only "$@"
 
 # Complete exports carry the verified input fingerprints needed for integration.
 [positional-arguments]
@@ -159,6 +170,15 @@ rerun-compare core_run noel_run jed_run ilyas_run output *ARGS:
 [positional-arguments]
 rerun-verify-comparison record:
 	uv run python -m mtp.workflow.arms verify-comparison "$@"
+
+# Additive #771 lineage extension and complete six-fraction study LOSO.
+[positional-arguments]
+table1-influence-extension *ARGS:
+	uv run python -m mtp.influence_extension "$@"
+
+# Synthetic checks for the separately declared #771 sensitivity protocol.
+test-influence-extension:
+	uv run pytest tests/test_influence_extension.py tests/test_influence_extension_core.py tests/test_influence_extension_joint.py -v
 
 sync:
 	uv sync --all-extras --group dev --group qa
@@ -276,8 +296,8 @@ six-shared-trait-high-support-sankeys:
 trait-heatmaps:
 	uv run python scripts/create_clustered_heatmap.py
 	uv run python scripts/create_condition_taxon_heatmap.py
-	uv run python scripts/create_taxa_guild_heatmap.py
-	uv run python scripts/create_study_trait_profile_heatmap.py
+	uv run python scripts/create_taxa_guild_heatmap.py --direction-basis group_1_vs_group_0
+	uv run python scripts/create_study_trait_profile_heatmap.py --direction-basis group_1_vs_group_0
 	uv run python scripts/create_condition_trait_module_heatmap.py
 
 trait-visualization:
@@ -298,6 +318,10 @@ typecheck:
 
 test:
 	uv run pytest
+
+# Additive policy and full-family BH/BY contract; no scientific rerun inputs.
+test-multiple-testing:
+	uv run pytest tests/test_multiple_testing.py
 
 # Analyzer, ranking exporter, and complete-universe density regression checks (#664).
 test-stratification:
@@ -360,9 +384,11 @@ contrast-review-sample SAMPLE="methods/contrast_orientation_review_sample.tsv" S
 # Rebuild the data/analysis/cellulose_decr/ tables (methods/cellulose_decr.md). Stops when
 # an input's hash differs from the committed provenance or the contrast manifest came from
 # another classifier version; --input-root points at a checkout holding the pinned inputs,
-# and --allow-input-drift regenerates every table from changed ones (#562). The pins are a
-# v2 manifest and the metadata table before #555, so until #580 re-pins them a checkout
-# with a newer classifier refuses; the tables reproduce at the provenance's code_commit.
+# and --allow-input-drift regenerates every table from changed ones (#562). The pins are
+# the v6 manifest and the phenotype-scope inputs, adopted with --repin in the final rerun
+# at 511c891. A checkout with another classifier version refuses until it reruns
+# `just contrast-orientation` and then --repin; the tables reproduce at the provenance's
+# code_commit.
 [positional-arguments]
 cellulose-decr *ARGS:
 	uv run python -m mtp.cellulose_decr.analysis --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" "$@"
@@ -386,6 +412,14 @@ cellulose-decr-figures *ARGS:
 	done
 	commit="$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} data/analysis/cellulose_decr && git diff --cached --quiet -- {{code_paths}} data/analysis/cellulose_decr || echo +dirty)"
 	uv run python -m mtp.cellulose_decr.figures --code-commit "$commit" "$@"
+
+# The #835 selection scan (methods/cellulose_decr_selection_scan.md): cellulose_decr's
+# overlap and U6 null for every triple of eligible conditions and the top decreasing
+# traits, on a verified Tier 1+2 core RUN (its run.json), into a new or empty OUTPUT
+# directory. Pass --plan to print the counts and a timed estimate without running the null.
+[positional-arguments]
+cellulose-decr-selection-scan run output *ARGS:
+	uv run python -m mtp.cellulose_decr.selection_scan --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" --core-run "$1" --output-dir "$2" "${@:3}"
 
 # The two methods plates and seven Tufte plates of the selected-figure deck, drawn
 # from the rerun tables into this checkout's data/derived/tufte_plates/ (#573). Plates IV
@@ -557,6 +591,11 @@ taxa-trait-matrix: download-kg study-tsvs
 audit-strain-rollup *ARGS:
 	uv run python scripts/adhoc/issue774_strain_rollup_coverage.py "$@"
 
+# Sidecar carrier/source audit; explicit matching inputs, no primary output changes (#773).
+[positional-arguments]
+audit-label-support *ARGS:
+	uv run python -m mtp.label_support_audit "$@"
+
 # The analyses read human hosts only, without the trait columns that are zero in every
 # human profile, as committed in data/derived/study_trait_profiles_wide.tsv.gz (#656).
 # They also read 16S and shotgun (WMS) experiments only, the values of
@@ -565,6 +604,13 @@ audit-strain-rollup *ARGS:
 # non-empty trait columns).
 study-trait-profiles: taxa-trait-matrix
 	uv run python scripts/create_study_trait_profiles.py --host-species "Homo sapiens" --sequencing-types 16S WMS --drop-empty-traits
+
+# Run after rebuilding data/derived: canonical human 16S/WMS coverage, README and hashes.
+# Explicit paths are supported; this recipe never rebuilds upstream tables (#820/#821).
+# Declare the upstream scope explicitly, e.g. just taxa-coverage --strain-rollup phenotype.
+[positional-arguments]
+taxa-coverage *ARGS:
+	uv run python scripts/create_taxa_coverage_histogram.py "$@"
 
 # After an intended input change, such as a BugSigDB release or a new KG pin, refresh the
 # committed copy with `just study-trait-profiles-refresh-gz` and commit it (#667).
@@ -786,6 +832,8 @@ audit-trait-density *ARGS:
 audit-trait-coupling *ARGS:
 	just timed audit-trait-coupling "uv run python scripts/audit_trait_coupling.py --code-commit \"$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)\" $*"
 
+# Host marker evaluation can omit greenlet on arm64; see security-linux and CONTRIBUTING.md (#888).
+# Audit source, dependencies, secrets, and host-selected locked packages.
 security:
 	uv run bandit -c pyproject.toml -r src scripts
 	uv run deptry src
@@ -798,6 +846,19 @@ security:
 	  --output-file "$reqfile" && \
 	uv run pip-audit -r "$reqfile" --disable-pip \
 	  --cache-dir "$tmpdir/pip-audit-cache"
+
+# Audit locked packages selected for Linux x86_64 / Python 3.11, on any host.
+security-linux:
+	audit_tmp="$(mktemp -d)" && \
+	trap 'rm -rf "$audit_tmp"' EXIT && \
+	uv run --locked --group qa uv export --quiet --frozen --all-extras --group dev --group qa \
+	  --format requirements-txt --no-emit-project --no-emit-workspace \
+	  --output-file "$audit_tmp/requirements.txt" && \
+	uv run --locked --group qa uv pip compile "$audit_tmp/requirements.txt" \
+	  --python-platform x86_64-unknown-linux-gnu --python-version 3.11 --no-deps \
+	  --no-header --no-annotate --output-file "$audit_tmp/requirements-linux.txt" && \
+	uv run --locked --group qa pip-audit -r "$audit_tmp/requirements-linux.txt" \
+	  --disable-pip --no-deps --cache-dir "$audit_tmp/pip-audit-cache"
 
 precommit:
 	uv run pre-commit run --all-files
@@ -989,3 +1050,8 @@ clean-all: clean-raw clean-studies clean-derived clean-logs
 [positional-arguments]
 calibration-screen *ARGS:
 	uv run python -m mtp.screen_calibration --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" "$@"
+
+# Audit literal phenotype co-assertions for all strain scopes without rerunning arms (#846).
+[positional-arguments]
+audit-coassertions *ARGS:
+	uv run python -m mtp.coassertion_audit "$@"

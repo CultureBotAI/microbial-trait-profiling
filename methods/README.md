@@ -12,6 +12,7 @@ BugSigDB vintage the numbers came from.
 | `table1_traits_first_last_body_site_panels.png` | `src/bsdbng/table1_trait_maps.py` | `just table1-trait-maps` | [`table1_trait_condition_body_site_maps.md`](table1_trait_condition_body_site_maps.md) |
 | `table1_traits_direction_shift.png` | `src/bsdbng/table1_trait_maps.py` | `just table1-trait-maps` | [`table1_trait_condition_body_site_maps.md`](table1_trait_condition_body_site_maps.md) |
 | Matched-corpus Table 1-trait analog source contributions and genus/family influence TSVs | `src/mtp/taxon_contributions.py` | `just table1-taxon-influence` | [`table1_taxon_influence.md`](table1_taxon_influence.md); [measured results and cross-scale interpretation flags](table1_taxon_influence_results.md) |
+| Additional lineage exclusions, removed annotation mass and study omissions (no figure) | `src/mtp/influence_extension.py` | `just table1-influence-extension` | [`table1_influence_extension.md`](table1_influence_extension.md) |
 | `trait_direction_screen.tsv` (no figure) | `src/bsdbng/trait_screen.py` | `just trait-direction-screen` | [`trait_direction_screen.md`](trait_direction_screen.md) |
 | `trait_coupling_loto_matrix.tsv`, `trait_coupling_lco_summary.tsv`, `trait_coupling_report.txt` (no figure) | `src/mtp/coupling.py` | `just audit-trait-coupling` | [`trait_coupling_sensitivity.md`](trait_coupling_sensitivity.md) |
 
@@ -34,6 +35,11 @@ and defines the shared corpus, paired quantities and evidence levels required
 before choosing comparison thresholds or ranking scores. It also explains why
 the native p-values are not on comparable scales.
 
+[`multiple_testing.md`](multiple_testing.md) documents the additive full-family
+BY/BH policy, explicit hypothesis inventories and v1.1 scientific coordinates,
+reserved untestable members, and provenance replay. It leaves native arm calls
+unchanged and does not remove data-driven selection bias.
+
 [`contrast_orientation.md`](contrast_orientation.md) documents
 `just contrast-orientation`: what each BugSigDB experiment compares, which way its
 direction points, the disease-versus-healthy population with its review, and the
@@ -54,7 +60,8 @@ was made are recorded in its `amendments` array rather than edited in quietly.
 `just calibration-flip-assignments` writes only the shared flip-assignment table the
 other two arms would need to be measured on the same null (#263).
 [`calibration_screen.md`](calibration_screen.md) documents
-`just calibration-screen`: the 317-trait directional screen run under that same
+`just calibration-screen`: the full-trait directional screen (317 traits under `off`
+in the run it documents; 344 under `phenotype`) run under that same
 study-flip null, counting the traits each correction calls when nothing is there.
 
 [`calibration_composition.md`](calibration_composition.md) documents
@@ -85,6 +92,12 @@ in Parkinson's disease, HIV infection and colorectal cancer:
 
 Its tables are committed and its figures are regenerated. The code is the
 `mtp.cellulose_decr` package (`src/mtp/cellulose_decr/`).
+
+[`cellulose_decr_selection_scan.md`](cellulose_decr_selection_scan.md) declares the
+selection scan of #835: the same overlap statistics and U6 null for every triple of
+eligible conditions and the top decreasing traits, with the rule fixed in
+[`cellulose_decr_selection_scan_protocol.json`](cellulose_decr_selection_scan_protocol.json)
+before any run on real data.
 
 The selected-figure slide deck in `data/derived/figure_review_2026-09-21/` is built
 by `scripts/build_slide_deck.py` (`just figure-review-deck`), which places the
@@ -164,6 +177,12 @@ C01–C11, P01–P10, R01–R09, G01–G13), recording resolution status for eac
 [`table1_trait_semantics_audit.md`](../docs/table1_trait_semantics_audit.md) documents
 the semantic scope, source ontology mappings, approved vocabulary, and unverified
 inferences for each of the six Table 1 traits.
+
+[`coassertion_audit.md`](coassertion_audit.md) defines the scope-specific KG
+node and strain co-assertion census, the generated count-bearing methods table,
+and the proposed oxygen-guild carrier-exclusion sensitivity. It distinguishes
+annotation unions from physiological contradiction; final counts and the
+resolution decision remain pending under #846.
 
 The gram-stain directional Sankey diagrams live on the
 `147-add-gram-stain-directional-sankey-gram-positive-gram-negative-x-increased-decreased`

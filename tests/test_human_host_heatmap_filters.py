@@ -1,8 +1,12 @@
 import csv
 import importlib.util
+import sys
 from pathlib import Path
 from types import ModuleType
+from typing import Any
+from unittest.mock import patch
 
+import pandas as pd
 import pytest
 
 DUMP_FIELDS = [
@@ -222,6 +226,203 @@ def test_taxa_guild_counts_only_the_subset_profiles_in_their_own_direction(
     assert summary.loc["NCBITaxon:562", "taxon_name"] == "Escherichia coli"
 
 
+def write_guild_run(tmp_path: Path) -> list[str]:
+    """Write the taxa-guild script's inputs for the subset run and return its arguments.
+
+    The subset's two species, E. coli and B. fragilis, each carry two of three traits;
+    the selection thresholds are lowered so that both taxa and all three traits are drawn.
+    """
+    full_dump_path, taxa_path = write_subset_run(tmp_path)
+    traits = ["trait:a", "trait:b", "trait:c"]
+    pd.DataFrame(
+        {
+            "taxon_id": ["NCBITaxon:562", "NCBITaxon:817"],
+            "taxon_name": ["Escherichia coli", "Bacteroides fragilis"],
+            "taxonomic_rank": ["species", "species"],
+            "trait:a": [1, 0],
+            "trait:b": [0, 1],
+            "trait:c": [1, 1],
+        }
+    ).to_csv(tmp_path / "taxa_trait_matrix.tsv", sep="\t", index=False)
+    pd.DataFrame(
+        {
+            "column_id": traits,
+            "column_label": traits,
+            "object_name": ["Trait A", "Trait B", "Trait C"],
+            "object_category": ["biolink:Metabolism", "biolink:Shape", "biolink:Shape"],
+        }
+    ).to_csv(tmp_path / "taxa_trait_matrix_columns.tsv", sep="\t", index=False)
+    pd.DataFrame({trait: [1, 1] for trait in traits}).to_csv(
+        tmp_path / "study_trait_profiles_wide.tsv", sep="\t", index=False
+    )
+    options: dict[str, Path | str] = {
+        "--bugsigdb-taxa-input": taxa_path,
+        "--full-dump-input": full_dump_path,
+        "--taxa-trait-matrix-input": tmp_path / "taxa_trait_matrix.tsv",
+        "--taxa-trait-columns-input": tmp_path / "taxa_trait_matrix_columns.tsv",
+        "--study-trait-profiles-input": tmp_path / "study_trait_profiles_wide.tsv",
+        "--output": tmp_path / "heatmap.png",
+        "--matrix-output": tmp_path / "matrix.tsv",
+        "--taxa-metadata-output": tmp_path / "taxa_metadata.tsv",
+        "--trait-metadata-output": tmp_path / "trait_metadata.tsv",
+        "--rank": "species",
+        "--min-profiles": "1",
+        "--min-traits": "1",
+        "--min-taxa-support": "1",
+        "--min-profile-support": "1",
+    }
+    arguments = [str(part) for option in options.items() for part in option]
+    return ["create_taxa_guild_heatmap.py", *arguments]
+
+
+def legend_titles(figure: Any) -> set[str]:
+    """The titles of a drawn figure's legends."""
+    legends = [axis.get_legend() for axis in figure.axes if axis.get_legend()]
+    return {legend.get_title().get_text() for legend in legends}
+
+
+DIRECTION_LEGENDS = [
+    ("group_1_vs_group_0", "BugSigDB direction\n(Group 1 vs Group 0)"),
+    ("disease_vs_comparison", "BugSigDB direction\n(disease vs comparison)"),
+]
+
+
+@pytest.mark.parametrize(("direction_basis", "legend_title"), DIRECTION_LEGENDS)
+def test_taxa_guild_legend_names_the_run_direction_basis(
+    tmp_path: Path, direction_basis: str, legend_title: str
+) -> None:
+    """The row colours follow the run's direction basis, and the legend names it (#795),
+    left of the row dendrogram, whose root line crossed the two-line title (#896).
+
+    A contrast-population subset flips its reversed experiments, so its increased and
+    decreased are not the curated Group 1 direction that an all-paired run keeps.
+    """
+    from matplotlib.collections import LineCollection
+
+    module = load_script_module("create_taxa_guild_heatmap.py")
+    taxa = ["NCBITaxon:562", "NCBITaxon:817", "NCBITaxon:841"]
+    traits = ["Trait A", "Trait B", "Trait C"]
+    display = pd.DataFrame(
+        [[1, 0, 1], [0, 1, 1], [1, 1, 0]],
+        index=[f"Taxon {taxon} ({taxon})" for taxon in taxa],
+        columns=traits,
+    )
+    taxa_metadata = pd.DataFrame(
+        {"dominant_direction": ["increased", "decreased", "mixed"]}, index=taxa
+    )
+    trait_metadata = pd.DataFrame(
+        {"display_label": traits, "display_category": ["Metabolism", "Metabolism", "Shape"]}
+    )
+
+    with (
+        patch.object(module.plt.Figure, "savefig", autospec=True) as savefig,
+        patch.object(module.plt, "close"),
+    ):
+        module.save_heatmap(
+            display,
+            taxa_metadata,
+            trait_metadata,
+            tmp_path / "heatmap.png",
+            "species",
+            "species",
+            3,
+            6,
+            direction_basis,
+        )
+    figure = savefig.call_args.args[0]
+    try:
+        assert legend_titles(figure) == {legend_title, "Trait category"}
+        # Seaborn puts the root line at the same place whatever the data
+        figure.canvas.draw()
+        dendrogram = next(
+            axis
+            for axis in figure.axes
+            if axis.get_legend() and axis.get_legend().get_title().get_text() == legend_title
+        )
+        legend = dendrogram.get_legend().get_window_extent(figure.canvas.get_renderer())
+        lines_x = [
+            dendrogram.transData.transform(segment)[:, 0].min()
+            for lines in dendrogram.collections
+            if isinstance(lines, LineCollection)
+            for segment in lines.get_segments()
+        ]
+        assert lines_x
+        assert legend.x1 < min(lines_x)
+    finally:
+        module.plt.close(figure)
+
+
+@pytest.mark.parametrize(("direction_basis", "legend_title"), DIRECTION_LEGENDS)
+def test_taxa_guild_main_names_the_direction_basis_it_is_given(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, direction_basis: str, legend_title: str
+) -> None:
+    """main() hands --direction-basis to the legend, end to end from the inputs (#840)."""
+    module = load_script_module("create_taxa_guild_heatmap.py")
+    arguments = write_guild_run(tmp_path)
+    monkeypatch.setattr(sys, "argv", [*arguments, "--direction-basis", direction_basis])
+
+    with (
+        patch.object(module.plt.Figure, "savefig", autospec=True) as savefig,
+        patch.object(module.plt, "close"),
+    ):
+        module.main()
+    figure = savefig.call_args.args[0]
+    try:
+        assert legend_titles(figure) == {legend_title, "Trait category"}
+    finally:
+        module.plt.close(figure)
+    assert (tmp_path / "matrix.tsv").exists()
+
+
+def test_taxa_guild_main_requires_the_direction_basis(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A run that leaves out --direction-basis stops, so a hand run on a subset's taxa
+    table cannot label its directions Group 1 vs Group 0 by default (#840)."""
+    module = load_script_module("create_taxa_guild_heatmap.py")
+    monkeypatch.setattr(sys, "argv", write_guild_run(tmp_path))
+
+    with pytest.raises(SystemExit):
+        module.main()
+    assert "the following arguments are required: --direction-basis" in capsys.readouterr().err
+    assert not (tmp_path / "matrix.tsv").exists()
+
+
+def test_taxa_guild_reports_disjoint_row_losses_and_name_fallback(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    module = load_script_module("create_taxa_guild_heatmap.py")
+    full_dump, _ = write_all_host_run(tmp_path)
+    taxa = write_taxa_table(
+        tmp_path / "audited.tsv",
+        [
+            ("study1", "1", "1", "decreased", "562", "old name", "genus"),
+            ("study1", "1", "1", "increased", "841", "Roseburia", "genus"),
+            ("study1", "1", "1", "unchanged", "562", "old name", "genus"),
+            ("study2", "1", "1", "increased", "573", "Klebsiella pneumoniae", "species"),
+            ("study3", "1", "1", "unchanged", "817", "Bacteroides fragilis", "species"),
+        ],
+    )
+    records = module.load_bugsigdb_taxa_records(taxa, full_dump)
+    audit = capsys.readouterr().out
+    assert "input=5 retained=2 dropped_outside_corpus=2 dropped_invalid_direction=1" in audit
+    assert "name_rank_fallback=1" in audit
+    assert records["direction"].tolist() == ["decreased", "increased"]
+    assert records["taxon_name"].tolist() == ["Escherichia coli", "Roseburia"]
+    assert records["taxonomic_rank"].tolist() == ["species", "genus"]
+
+
+def test_taxa_guild_reports_zero_fallback_and_nonzero_filter_loss(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    module = load_script_module("create_taxa_guild_heatmap.py")
+    full_dump, taxa = write_all_host_run(tmp_path)
+    module.load_bugsigdb_taxa_records(taxa, full_dump)
+    audit = capsys.readouterr().out
+    assert "input=3 retained=1 dropped_outside_corpus=2 dropped_invalid_direction=0" in audit
+    assert "name_rank_fallback=0" in audit
+
+
 def test_taxa_guild_fails_without_the_full_dump(tmp_path: Path) -> None:
     """Without the dump no corpus rule applies, so nothing falls back to every host (#747)."""
     module = load_script_module("create_taxa_guild_heatmap.py")
@@ -416,3 +617,53 @@ def test_an_export_without_sequencing_types_fails_instead_of_dropping_the_filter
     guild = load_script_module("create_taxa_guild_heatmap.py")
     with pytest.raises(ValueError, match="no Homo sapiens 16S or WMS taxon rows"):
         guild.load_bugsigdb_taxa_records(guild_taxa_path, full_dump_path)
+
+
+@pytest.mark.parametrize("missing", [None, "absent.csv"])
+def test_genus_heatmap_requires_dump_instead_of_falling_back_to_all_hosts(
+    tmp_path: Path,
+    missing: str | None,
+) -> None:
+    module = load_script_module("create_clustered_heatmap.py")
+    path = None if missing is None else tmp_path / missing
+    with pytest.raises((ValueError, FileNotFoundError), match=r"full_dump|absent\.csv"):
+        module.load_human_experiment_ids(path)
+
+
+def test_genus_missing_dump_fails_before_replacing_existing_outputs(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import sys
+
+    module = load_script_module("create_clustered_heatmap.py")
+    taxa = write_taxa_table(
+        tmp_path / "taxa.tsv",
+        [
+            ("study1", "1", "1", "increased", "841", "Roseburia", "genus"),
+            ("study2", "1", "1", "increased", "572511", "Blautia", "genus"),
+        ],
+    )
+    matrix = tmp_path / "existing.tsv"
+    figure = tmp_path / "existing.png"
+    matrix.write_text("existing matrix\n", encoding="utf-8")
+    figure.write_bytes(b"existing figure\n")
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "create_clustered_heatmap.py",
+            "--input",
+            str(taxa),
+            "--full-dump-input",
+            str(tmp_path / "absent.csv"),
+            "--output",
+            str(figure),
+            "--matrix-output",
+            str(matrix),
+        ],
+    )
+    with pytest.raises(FileNotFoundError, match=r"absent\.csv"):
+        module.main()
+    assert matrix.read_text(encoding="utf-8") == "existing matrix\n"
+    assert figure.read_bytes() == b"existing figure\n"

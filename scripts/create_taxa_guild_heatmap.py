@@ -28,6 +28,13 @@ METAPHLAN_RANK_MAP = {
     "s__": "species",
     "t__": "strain",
 }
+# The direction legend's title for each run direction_basis (#795). An all-paired run
+# keeps the curated Abundance in Group 1 direction; a contrast-population subset flips
+# its reversed experiments so that increased means higher in the disease group.
+DIRECTION_LEGEND_TITLES = {
+    "group_1_vs_group_0": "BugSigDB direction\n(Group 1 vs Group 0)",
+    "disease_vs_comparison": "BugSigDB direction\n(disease vs comparison)",
+}
 
 
 def clean_value(value: object) -> str:
@@ -155,7 +162,8 @@ def load_bugsigdb_taxa_records(
     The rows and their directions come from the run's taxa table, so a contrast
     population summarizes only its own signatures, on its own direction basis (#768).
     The full dump keeps the table's corpus signatures and supplies the raw names and
-    ranks, joined on signature and taxon ID.
+    ranks, joined on signature and taxon ID. The stdout row audit is retained in
+    the verified arm's command log; loss reasons are disjoint and include zeros.
     """
     corpus_taxa = load_corpus_taxon_names(full_dump_path)
     taxa = pd.read_csv(
@@ -172,10 +180,21 @@ def load_bugsigdb_taxa_records(
         ],
         dtype=str,
     )
-    taxa = taxa[
-        taxa["signature_id"].isin(corpus_taxa.keys())
-        & taxa["direction"].isin(["increased", "decreased"])
-    ].reset_index(drop=True)
+    input_rows = len(taxa)
+    in_corpus = taxa["signature_id"].isin(corpus_taxa.keys())
+    valid_direction = taxa["direction"].isin(["increased", "decreased"])
+    outside_corpus = int((~in_corpus).sum())
+    invalid_direction = int((in_corpus & ~valid_direction).sum())
+    taxa = taxa[in_corpus & valid_direction].reset_index(drop=True)
+    fallback_rows = sum(
+        taxon_id not in corpus_taxa[signature_id]
+        for signature_id, taxon_id in zip(taxa["signature_id"], taxa["taxon_id"], strict=True)
+    )
+    print(
+        f"BugSigDB taxon-row audit: input={input_rows} retained={len(taxa)} "
+        f"dropped_outside_corpus={outside_corpus} dropped_invalid_direction={invalid_direction} "
+        f"name_rank_fallback={fallback_rows}"
+    )
     if taxa.empty:
         msg = (
             f"{bugsigdb_taxa_path} has no increased or decreased taxon rows in the "
@@ -446,8 +465,9 @@ def save_heatmap(
     requested_rank: str,
     studies_analyzed: int,
     profiles_analyzed: int,
+    direction_basis: str,
 ) -> None:
-    """Render and save the clustered heatmap."""
+    """Render and save the clustered heatmap, naming the taxa table's direction basis."""
     sns.set_theme(style="white")
 
     direction_palette = {
@@ -519,11 +539,12 @@ def save_heatmap(
     category_handles = [
         Patch(color=color, label=label) for label, color in category_palette.items()
     ]
+    # Left of the row dendrogram, whose root line the two-line title crossed (#896)
     cluster.ax_row_dendrogram.legend(
         handles=direction_handles,
-        title="BugSigDB direction",
-        loc="center",
-        bbox_to_anchor=(-0.05, 0.5),
+        title=DIRECTION_LEGEND_TITLES[direction_basis],
+        loc="center right",
+        bbox_to_anchor=(-0.02, 0.5),
         frameon=False,
     )
     cluster.ax_col_dendrogram.legend(
@@ -576,8 +597,11 @@ def write_outputs(
     print(f"Traits plotted: {len(selected_matrix.columns)}")
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(
+def build_parser(
+    parser_class: type[argparse.ArgumentParser] = argparse.ArgumentParser,
+) -> argparse.ArgumentParser:
+    """Expose the execution parser to verified arm planning and replay."""
+    parser = parser_class(
         description=(
             "Create a taxa guild discovery clustered heatmap by clustering BugSigDB taxa "
             "from the taxa-trait matrix and filtering traits with study-profile support."
@@ -619,6 +643,18 @@ def main() -> None:
         type=Path,
         default=REPO_ROOT / "data/derived/study_trait_profiles_wide.tsv",
         help="Input wide study trait profiles TSV path.",
+    )
+    parser.add_argument(
+        "--direction-basis",
+        choices=sorted(DIRECTION_LEGEND_TITLES),
+        required=True,
+        help=(
+            "Direction basis of the taxa TSV, the core run's direction_basis: "
+            "group_1_vs_group_0 for all paired contrasts, disease_vs_comparison for a "
+            "contrast-population subset. The direction legend names it. There is no "
+            "default, so leaving it out cannot label a subset's directions Group 1 vs "
+            "Group 0 (#840)."
+        ),
     )
     parser.add_argument(
         "--output",
@@ -696,6 +732,11 @@ def main() -> None:
         action="store_true",
         help="Include MediaDive growth-medium traits in the selected traits.",
     )
+    return parser
+
+
+def main() -> None:
+    parser = build_parser()
     args = parser.parse_args()
 
     taxa_summary, selected_rank, studies_analyzed, profiles_analyzed = load_bugsigdb_taxa_summary(
@@ -738,6 +779,7 @@ def main() -> None:
         args.rank,
         studies_analyzed,
         profiles_analyzed,
+        args.direction_basis,
     )
     write_outputs(
         selected_matrix,

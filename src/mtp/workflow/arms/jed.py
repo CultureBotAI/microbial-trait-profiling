@@ -45,12 +45,18 @@ def _heatmap_command(
     script: str,
     inputs: Mapping[str, Path],
     outputs: Mapping[str, str],
+    options: Mapping[str, str] | None = None,
 ) -> Command:
     output = context.output / identifier
     files = {option: output / filename for option, filename in outputs.items()}
     return Command(
         identifier,
-        (*_script(context, script), *_arguments(inputs), *_arguments(files)),
+        (
+            *_script(context, script),
+            *_arguments(inputs),
+            *_arguments(options or {}),
+            *_arguments(files),
+        ),
         tuple(inputs.values()),
         (output, *files.values()),
     )
@@ -165,6 +171,8 @@ def build_commands(context: ArmContext) -> list[Command]:
                     "--taxa-metadata-output": "taxa_metadata.tsv",
                     "--trait-metadata-output": "trait_metadata.tsv",
                 },
+                # The legend names the basis of the core's directions (#795)
+                {"--direction-basis": context.direction_basis},
             ),
             _heatmap_command(
                 context,
@@ -186,6 +194,7 @@ def build_commands(context: ArmContext) -> list[Command]:
                     "--paired-metadata-output": "paired_metadata.tsv",
                     "--paired-required-trait-check-output": "paired_required_traits.tsv",
                 },
+                {"--direction-basis": context.direction_basis},
             ),
             _heatmap_command(
                 context,

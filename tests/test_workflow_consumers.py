@@ -54,6 +54,56 @@ def test_verified_consumption_and_changed_output(core_manifest: Path, tmp_path: 
         verify_consumer_record(provenance)
 
 
+def test_additional_consumed_product_is_bound_and_tamper_detected(
+    core_manifest: Path, tmp_path: Path
+) -> None:
+    bundle = open_core_bundle(core_manifest)
+    result = tmp_path / "result.tsv"
+    result.write_text("value\n1\n")
+    binding = write_consumer_record(
+        bundle,
+        tmp_path / "binding.json",
+        consumer="reported-taxon-audit",
+        outputs=[result],
+        additional_products=("reported_taxa",),
+    )
+    record = verify_consumer_record(binding)
+    assert record.product_ids.count("reported_taxa") == 1
+    # Corrupt only the additional binding: the core and every artifact remain
+    # valid, so core re-verification cannot accidentally make this test pass.
+    original = json.loads(binding.read_text())
+    index = original["product_ids"].index("reported_taxa")
+    original["artifact_ids"][index] = original["artifact_ids"][0]
+    binding.write_text(json.dumps(original))
+    open_core_bundle(core_manifest)
+    with pytest.raises(ValueError, match="unresolved product/artifact"):
+        verify_consumer_record(binding)
+
+
+@pytest.mark.parametrize(
+    "extras",
+    [
+        ("reported_taxa", "reported_taxa"),
+        ("count_profiles",),
+        ("missing",),
+        ("ora_profiles",),
+    ],
+)
+def test_additional_product_errors_precede_sidecar_writes(
+    core_manifest: Path, tmp_path: Path, extras: tuple[str, ...]
+) -> None:
+    bundle = open_core_bundle(core_manifest)
+    result = tmp_path / "result.tsv"
+    result.write_text("value\n1\n")
+    binding = tmp_path / "binding.json"
+    with pytest.raises(ValueError, match="Additional"):
+        write_consumer_record(
+            bundle, binding, consumer="audit", outputs=[result], additional_products=extras
+        )
+    assert not binding.exists()
+    assert not binding.with_suffix(".coverage.tsv").exists()
+
+
 def test_units_cohorts_and_changed_same_name_file(core_manifest: Path) -> None:
     count = open_core_bundle(core_manifest)
     ora = open_core_bundle(core_manifest, "ora_profiles")
