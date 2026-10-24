@@ -17,26 +17,31 @@ from pathlib import Path
 import numpy as np
 import scipy
 import yaml
+from numpy.typing import NDArray
 from scipy.stats import false_discovery_control
 
 from mtp.datamodel import multiple_testing_pydantic as models
 from mtp.datamodel.multiple_testing_pydantic import (
     AdjustedHypothesis,
+    AnalysisReasonV1,
     CorrectionRun,
     HypothesisDefinition,
     HypothesisFamily,
+    HypothesisFamilyMetadata,
     MultipleTestingPolicy,
     RawHypothesis,
 )
 from mtp.workflow.runtime import content_hash
 
-# Public compatibility name for adapters; use the shared canonical hashing implementation.
-canonical_sha256 = content_hash
-
-ENGINE_VERSION = "1.1.0"
+ENGINE_VERSION = "1.2.0"
 POLICY_PATH = Path(__file__).resolve().parents[2] / "methods" / "multiple_testing_policy_v1.yaml"
 # Pin the authoritative versioned artifact, without duplicating its policy values.
 _POLICY_FILE_SHA256 = "d1d504783871b1847fb91bc2cb96cea707400708180e7b75ca98ceba1b92b1ba"
+
+
+def canonical_sha256(value: object) -> str:
+    """Hash strict JSON through the shared serializer; nonfinite numbers are invalid."""
+    return content_hash(value, allow_nan=False)
 
 
 def load_policy(path: Path = POLICY_PATH) -> MultipleTestingPolicy:
@@ -78,9 +83,9 @@ def scientific_hypothesis_sha256(member: HypothesisDefinition) -> str:
     )
 
 
-def _family(family: HypothesisFamily) -> HypothesisFamily:
-    # Revalidate after model_copy/construct, mutable list edits or caller mutation.
-    declared = HypothesisFamily.model_validate(family.model_dump(mode="json"))
+def validate_family_metadata(metadata: HypothesisFamilyMetadata) -> HypothesisFamilyMetadata:
+    """Validate scientific scope without materializing a large member inventory."""
+    declared = HypothesisFamilyMetadata.model_validate(metadata.model_dump(mode="json"))
     for key in (
         "family_id",
         "analysis_id",
@@ -99,84 +104,138 @@ def _family(family: HypothesisFamily) -> HypothesisFamily:
     if not declared.sources:
         raise ValueError("family must identify its upstream sources")
     _unique([s.identity for s in declared.sources], "source identity")
-    _unique([m.hypothesis_id for m in declared.members], "declared hypothesis identity")
     if declared.strain_rollup not in {"off", "phenotype"}:
         raise ValueError("unsupported strain rollup scope")
     if re.fullmatch(r"sha256:[0-9a-f]{64}", declared.feature_filter_id) is None:
         raise ValueError("feature filter identity must be a complete SHA256 identifier")
     digests = [declared.analysis_basis_sha256, declared.source_membership_sha256]
     digests.extend(source.sha256 for source in declared.sources)
-    digests.extend(
-        m.eligibility_sha256 for m in declared.members if m.eligibility_sha256 is not None
-    )
     if any(re.fullmatch(r"[0-9a-f]{64}", digest) is None for digest in digests):
         raise ValueError("family identity must be a complete lowercase SHA256 digest")
-    if declared.expected_family_size != len(declared.members):
-        raise ValueError("expected family size differs from declared inventory")
-    for member in declared.members:
-        if not member.feature_ids or any(not f.strip() for f in member.feature_ids):
-            raise ValueError("hypothesis feature identities must be nonempty")
-        if not member.test.strip() or not member.tail.strip():
-            raise ValueError("hypothesis test and tail must be nonempty")
-        coordinates = member.coordinates
-        for key in ("profile_id", "stratum_id", "split_id"):
-            value = getattr(coordinates, key)
-            if value is not None and not value.strip():
-                raise ValueError(f"blank hypothesis coordinate: {key}")
-        conditions = coordinates.condition_ids or []
-        _unique(conditions, "condition coordinate")
-        coordinates.condition_ids = sorted(conditions)
-    _unique(
-        [scientific_hypothesis_sha256(member) for member in declared.members],
-        "scientific hypothesis",
-    )
-    declared.members.sort(key=lambda m: m.hypothesis_id)
     declared.sources.sort(key=lambda s: s.identity)
     return declared
 
 
+def validate_hypothesis_definition(member: HypothesisDefinition) -> HypothesisDefinition:
+    """Validate one declared coordinate without changing its identity or order."""
+    member = HypothesisDefinition.model_validate(member.model_dump(mode="json"))
+    if not member.hypothesis_id.strip():
+        raise ValueError("blank declared hypothesis identity")
+    if not member.feature_ids or any(not f.strip() for f in member.feature_ids):
+        raise ValueError("hypothesis feature identities must be nonempty")
+    if not member.test.strip() or not member.tail.strip():
+        raise ValueError("hypothesis test and tail must be nonempty")
+    coordinates = member.coordinates
+    for key in ("profile_id", "stratum_id", "split_id"):
+        value = getattr(coordinates, key)
+        if value is not None and not value.strip():
+            raise ValueError(f"blank hypothesis coordinate: {key}")
+    conditions = coordinates.condition_ids or []
+    _unique(conditions, "condition coordinate")
+    coordinates.condition_ids = sorted(conditions)
+    if (
+        member.eligibility_sha256 is not None
+        and re.fullmatch(r"[0-9a-f]{64}", member.eligibility_sha256) is None
+    ):
+        raise ValueError("hypothesis eligibility must be a complete SHA256 digest")
+    return member
+
+
+def _family(family: HypothesisFamily) -> HypothesisFamily:
+    declared = HypothesisFamily.model_validate(family.model_dump(mode="json"))
+    metadata = HypothesisFamilyMetadata.model_validate(declared.model_dump(exclude={"members"}))
+    metadata = validate_family_metadata(metadata)
+    _unique([m.hypothesis_id for m in declared.members], "declared hypothesis identity")
+    if declared.expected_family_size != len(declared.members):
+        raise ValueError("expected family size differs from declared inventory")
+    members = [validate_hypothesis_definition(member) for member in declared.members]
+    _unique([scientific_hypothesis_sha256(member) for member in members], "scientific hypothesis")
+    return HypothesisFamily(
+        **metadata.model_dump(), members=sorted(members, key=lambda m: m.hypothesis_id)
+    )
+
+
+def validate_raw_hypothesis(row: RawHypothesis) -> RawHypothesis:
+    """Validate one raw test using the same rules in memory and disk-backed inventories."""
+    row = RawHypothesis.model_validate(row.model_dump(mode="json"))
+    if not row.hypothesis_id.strip():
+        raise ValueError("blank raw hypothesis identity")
+    if row.status not in {"tested", "untestable"}:
+        raise ValueError("unsupported hypothesis test status")
+    if row.status == "tested":
+        if (
+            row.p_value is None
+            or not math.isfinite(row.p_value)
+            or not 0 <= row.p_value <= 1
+            or math.copysign(1, row.p_value) < 0
+            or row.reason is not None
+        ):
+            raise ValueError("tested hypothesis needs a finite probability and no undefined reason")
+    elif row.p_value is not None or row.reason is None or not row.reason.strip():
+        raise ValueError("untestable hypothesis needs null p-value and an explicit reason")
+    if (
+        row.reason_vocabulary == "analysis_reason_v1"
+        and row.reason is not None
+        and row.reason not in {reason.value for reason in AnalysisReasonV1}
+    ):
+        raise ValueError("Unsupported analysis_reason_v1 reason code")
+    return row
+
+
 def _raw(family: HypothesisFamily, hypotheses: Sequence[RawHypothesis]) -> list[RawHypothesis]:
-    rows = [RawHypothesis.model_validate(row.model_dump(mode="json")) for row in hypotheses]
+    rows = [validate_raw_hypothesis(row) for row in hypotheses]
     _unique([row.hypothesis_id for row in rows], "raw hypothesis identity")
     if {row.hypothesis_id for row in rows} != {m.hypothesis_id for m in family.members}:
         raise ValueError("raw hypothesis membership differs from declared inventory")
-    for row in rows:
-        if row.status not in {"tested", "untestable"}:
-            raise ValueError("unsupported hypothesis test status")
-        if row.status == "tested":
-            if (
-                row.p_value is None
-                or not math.isfinite(row.p_value)
-                or not 0 <= row.p_value <= 1
-                or math.copysign(1, row.p_value) < 0
-                or row.reason is not None
-            ):
-                raise ValueError(
-                    "tested hypothesis needs a finite probability and no undefined reason"
-                )
-        elif row.p_value is not None or row.reason is None or not row.reason.strip():
-            raise ValueError("untestable hypothesis needs null p-value and an explicit reason")
     return sorted(rows, key=lambda row: row.hypothesis_id)
+
+
+def adjusted_probabilities(
+    values: Sequence[float] | NDArray[np.float64],
+    *,
+    policy: MultipleTestingPolicy,
+) -> tuple[NDArray[np.float64], NDArray[np.float64]]:
+    """Use one full-family numeric vector, without allocating per-member Python models."""
+    probabilities = np.asarray(values, dtype=np.float64)
+    _check_policy(policy)
+    if (
+        probabilities.ndim != 1
+        or not np.all(np.isfinite(probabilities))
+        or np.any((probabilities < 0) | (probabilities > 1))
+        or np.any(np.signbit(probabilities))
+    ):
+        raise ValueError("probabilities must be a finite one-dimensional vector in [0, 1]")
+    if not probabilities.size:
+        return probabilities.copy(), probabilities.copy()
+    return np.asarray(
+        false_discovery_control(probabilities, method=policy.primary_method)
+    ), np.asarray(false_discovery_control(probabilities, method=policy.comparison_method))
+
+
+def adjusted_hypothesis(
+    row: RawHypothesis, q_by: float, q_bh: float, *, policy: MultipleTestingPolicy
+) -> AdjustedHypothesis:
+    """Export one member using the policy validated by the correction entry point."""
+    nominal, stringent = policy.thresholds
+    result = AdjustedHypothesis(**row.model_dump())
+    if row.status == "tested":
+        result.q_by, result.q_bh = float(q_by), float(q_bh)
+        result.reject_by_005 = q_by <= nominal
+        result.reject_by_0001 = q_by <= stringent
+        result.reject_bh_005 = q_bh <= nominal
+        result.reject_bh_0001 = q_bh <= stringent
+    return result
 
 
 def _results(rows: list[RawHypothesis], policy: MultipleTestingPolicy) -> list[AdjustedHypothesis]:
     if not rows:
         return []
     p_values = [row.p_value if row.p_value is not None else 1.0 for row in rows]
-    by = false_discovery_control(p_values, method=policy.primary_method)
-    bh = false_discovery_control(p_values, method=policy.comparison_method)
-    nominal, stringent = policy.thresholds
-    results = []
-    for row, q_by, q_bh in zip(rows, by, bh, strict=True):
-        result = AdjustedHypothesis(**row.model_dump())
-        if row.status == "tested":
-            result.q_by, result.q_bh = float(q_by), float(q_bh)
-            result.reject_by_005 = q_by <= nominal
-            result.reject_by_0001 = q_by <= stringent
-            result.reject_bh_005 = q_bh <= nominal
-            result.reject_bh_0001 = q_bh <= stringent
-        results.append(result)
-    return results
+    by, bh = adjusted_probabilities(p_values, policy=policy)
+    return [
+        adjusted_hypothesis(row, q_by, q_bh, policy=policy)
+        for row, q_by, q_bh in zip(rows, by, bh, strict=True)
+    ]
 
 
 def correct_family(

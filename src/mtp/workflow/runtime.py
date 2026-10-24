@@ -63,12 +63,14 @@ class WorkflowExecutionError(ValueError):
         self.run = run
 
 
-def canonical_json(value: object) -> str:
-    return json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+def canonical_json(value: object, *, allow_nan: bool = True) -> str:
+    return json.dumps(
+        value, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=allow_nan
+    )
 
 
-def content_hash(value: object) -> str:
-    return hashlib.sha256(canonical_json(value).encode("utf-8")).hexdigest()
+def content_hash(value: object, *, allow_nan: bool = True) -> str:
+    return hashlib.sha256(canonical_json(value, allow_nan=allow_nan).encode("utf-8")).hexdigest()
 
 
 def sha256_file(path: Path) -> str:
