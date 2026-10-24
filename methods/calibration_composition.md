@@ -17,13 +17,13 @@
 Issue [#263](https://github.com/CultureBotAI/microbial-trait-profiling/issues/263) posed the central calibration question for the paired composition arm:
 > *"Does the paired composition arm control the empirical false discovery rate under a complete null, or does it suffer from permutation runaway? If permuted runs produce dozens of $q \le 0.001$ traits, calibration is settled."*
 
-To resolve this question conclusively, we benchmarked the complete direction-label permutation null (`complete_null_study_flip` stream, seed 182, 100 Monte Carlo replicates) across the full corpus of 959 paired BugSigDB studies, 2,335 paired experiments, and 317 non-MediaDive traits (31,700 total hypothesis tests under the null):
+To resolve this question conclusively, we benchmarked the complete direction-label permutation null (`complete_null_study_flip` stream, seed 182, 100 Monte Carlo replicates) across the full corpus of 959 paired BugSigDB studies, 2,335 paired experiments, and 317 non-MediaDive traits under the `off` scope (31,700 total hypothesis tests under the null):
 
 1. **Zero Runaway at $q \le 0.001$:**  
    Across all 100 null replicates, the mean number of false discoveries at Benjamini-Hochberg $q \le 0.001$ was **0.00** (max: 0; 0/100 replicates produced any call; empirical family-wise error = **0.0%**, 95% Clopper-Pearson CI: 0.0%–3.6%). Within the 100-replicate empirical null benchmark, no permutation runaway was observed at stringent discovery thresholds.
 
 2. **Conservative Control at $q \le 0.05$:**  
-   At the standard Benjamini-Hochberg $q \le 0.05$ threshold, the mean number of false discoveries was **0.09** out of 317 tests (max: 7 in a single replicate; 97 out of 100 replicates produced exactly zero false calls; empirical family-wise error = **3.0%**, 95% CI: 0.6%–8.5%). With Benjamini-Yekutieli (BY) correction, the mean false call count fell to **0.02** (family-wise error = **1.0%**). None of the 100 null replicates reached or approached the 132 calls observed in unpermuted data.
+   At the standard Benjamini-Hochberg $q \le 0.05$ threshold, the mean number of false discoveries was **0.09** out of 317 `off`-scope tests (max: 7 in a single replicate; 97 out of 100 replicates produced exactly zero false calls; empirical family-wise error = **3.0%**, 95% CI: 0.6%–8.5%). With Benjamini-Yekutieli (BY) correction, the mean false call count fell to **0.02** (family-wise error = **1.0%**). None of the 100 null replicates reached or approached the 132 calls observed in unpermuted data.
 
 3. **Nominal Type I Error Rate:**  
    Across all 31,700 null tests, the empirical Type I error rate matched or stayed strictly below nominal rates:
@@ -70,7 +70,7 @@ The paired composition arm evaluates systematic directional shifts in trait comp
    $$t_j = \frac{\frac{1}{S} \sum_{s=1}^S \bar{\Delta}_{sj}}{\hat{s}_{\bar{\Delta}, j} / \sqrt{S}}, \quad p_j = 2 \cdot \left(1 - F_t(|t_j|, S - 1)\right)$$
 
 7. **Multiple Testing Correction:**  
-   Control FDR across the $P = 317$ trait tests using Benjamini-Hochberg (BH) and Benjamini-Yekutieli (BY).
+   Control FDR across the $P$ trait tests ($P = 317$ under `off`, 344 under `phenotype`) using Benjamini-Hochberg (BH) and Benjamini-Yekutieli (BY).
 
 ---
 
@@ -94,7 +94,7 @@ The complete direction-label permutation null (`complete_null_study_flip`) tests
 
 ## 4. Quantitative Calibration Benchmark Results
 
-Across 100 Monte Carlo replicates (`stream_key: complete_null_study_flip`, `seed: 182`), 959 studies, and 317 traits:
+Across 100 Monte Carlo replicates (`stream_key: complete_null_study_flip`, `seed: 182`), 959 studies, and 317 traits (`off`):
 
 | Correction | Threshold | Observed Calls | Null Mean Calls | Null Max Calls | Replicates With $\ge 1$ Call | Family-Wise Error (95% CI) | Replicates Reaching Observed |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |

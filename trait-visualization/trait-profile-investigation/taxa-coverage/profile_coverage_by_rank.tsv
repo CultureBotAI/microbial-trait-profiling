@@ -1,8 +1,8 @@
-taxonomic_rank	display_rank	total_profiles_in_cohort	profiles_containing_rank	pct_of_all_profiles	profiles_all_taxa_mapped	pct_all_taxa_mapped_within_rank	profiles_mixed_mapped_and_zero	pct_mixed_within_rank	profiles_zero_traits_only_for_rank	pct_zero_only_within_rank	profiles_with_at_least_1_mapped_taxon	pct_any_mapped_within_rank	pct_of_7102_mapped_profiles	median_mapped_taxa_when_present	mean_mapped_taxa_when_present	median_profile_mapped_traits_when_rank_mapped
-species	Species	7329	3332	45.46	1934	58.04	925	27.76	473	14.2	2859	85.8	40.26	3.0	5.18	103.0
-genus	Genus	7329	5270	71.91	4813	91.33	353	6.7	104	1.97	5166	98.03	72.74	3.0	4.71	176.0
-family	Family	7329	2684	36.62	2498	93.07	117	4.36	69	2.57	2615	97.43	36.82	2.0	2.72	293.0
-order	Order	7329	1440	19.65	1362	94.58	20	1.39	58	4.03	1382	95.97	19.46	1.0	1.94	521.5
-class	Class	7329	1149	15.68	1124	97.82	0	0.0	25	2.18	1124	97.82	15.83	1.0	1.66	614.0
-phylum	Phylum	7329	1596	21.78	1510	94.61	40	2.51	46	2.88	1550	97.12	21.82	1.0	1.63	902.0
-superkingdom	Superkingdom	7329	9	0.12	5	55.56	0	0.0	4	44.44	5	55.56	0.07	1.0	1.0	1291.0
+taxonomic_rank	display_rank	total_profiles_in_cohort	profiles_containing_rank	pct_of_all_profiles	profiles_all_taxa_mapped	pct_all_taxa_mapped_within_rank	profiles_mixed_mapped_and_zero	pct_mixed_within_rank	profiles_zero_traits_only_for_rank	pct_zero_only_within_rank	profiles_with_at_least_1_mapped_taxon	pct_any_mapped_within_rank	pct_of_mapped_profiles	median_mapped_taxa_when_present	mean_mapped_taxa_when_present	median_profile_mapped_traits_when_rank_mapped
+species	Species	5629	2546	45.23	1590	62.45	675	26.51	281	11.04	2265	88.96	40.9	3.0	5.57	112.0
+genus	Genus	5629	4158	73.87	3884	93.41	242	5.82	32	0.77	4126	99.23	74.5	3.0	4.73	174.0
+family	Family	5629	2024	35.96	1885	93.13	100	4.94	39	1.93	1985	98.07	35.84	2.0	2.8	308.0
+order	Order	5629	1062	18.87	1026	96.61	11	1.04	25	2.35	1037	97.65	18.73	1.0	1.97	561.0
+class	Class	5629	872	15.49	863	98.97	0	0.0	9	1.03	863	98.97	15.58	1.0	1.67	639.0
+phylum	Phylum	5629	1159	20.59	1118	96.46	29	2.5	12	1.04	1147	98.96	20.71	1.0	1.59	913.0
+superkingdom	Superkingdom	5629	1	0.02	1	100.0	0	0.0	0	0.0	1	100.0	0.02	1.0	1.0	1237.0

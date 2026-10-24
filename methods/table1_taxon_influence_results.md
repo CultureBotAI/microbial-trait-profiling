@@ -9,7 +9,7 @@ This summary reports the extended 190-v2 contribution/shared-effect run and its
 are unchanged from 190-v1; the rule-declared exclusion panel and all scenario-dependent
 shared and native outputs were rerun.
 
-Reconciled 4,514 human paired profiles from 932 studies across all 317 non-MediaDive traits (`count_input_16s_wms_v1`). Enumerated 1,218 resolved genus/family lineages; 24 entered the rule-declared panel with at least three supporting studies. The per-trait leading-genus extension was [recorded on #190](https://github.com/CultureBotAI/microbial-trait-profiling/issues/190#issuecomment-5703892447) before this run. See manifest.json for hashes, exact scopes and protocol.
+Reconciled 4,514 human paired profiles from 932 studies across all 317 non-MediaDive traits of the `off` scope (`count_input_16s_wms_v1`). Enumerated 1,218 resolved genus/family lineages; 24 entered the rule-declared panel with at least three supporting studies. The per-trait leading-genus extension was [recorded on #190](https://github.com/CultureBotAI/microbial-trait-profiling/issues/190#issuecomment-5703892447) before this run. See manifest.json for hashes, exact scopes and protocol.
 
 The full contributing universe, concentration and all 15 cross-trait overlaps precede any display cutoff. Effects include all six raw annotation keys, both curated directions, shared fractions, all 15 log ratios and Noel's native zero-total convention. Each scenario preserves matched-pair changes and eligibility changes separately.
 
