@@ -5,6 +5,7 @@ from __future__ import annotations
 import ast
 import importlib
 import pkgutil
+import runpy
 import subprocess
 import sys
 from pathlib import Path
@@ -15,6 +16,13 @@ import pytest
 import bsdbng
 import mtp
 from mtp.paths import REPO_ROOT
+
+_EXPORT_AUDIT = runpy.run_path(str(REPO_ROOT / "scripts/adhoc/issue937_audit_exports.py"))
+cross_module_uses = _EXPORT_AUDIT["cross_module_uses"]
+export_omissions = _EXPORT_AUDIT["export_omissions"]
+public_definitions = _EXPORT_AUDIT["public_definitions"]
+source_inventory = _EXPORT_AUDIT["source_inventory"]
+declared_exports = _EXPORT_AUDIT["declared_exports"]
 
 
 def _get_submodule_names(package_name: str) -> list[str]:
@@ -82,6 +90,8 @@ def _assert_mirror_exports(mtp_mod: ModuleType, bsdbng_mod: ModuleType, submodul
         assert getattr(mtp_mod, name) is getattr(bsdbng_mod, name), (
             f"Export {name} identity mismatch in {submodule}"
         )
+    if mtp_mod is not bsdbng_mod:
+        _assert_star_import_surface(mtp_mod, bsdbng_mod)
 
 
 def _canonical_declarations(module: ModuleType) -> set[str]:
@@ -96,39 +106,17 @@ def _canonical_declarations(module: ModuleType) -> set[str]:
         return set(explicit)
     assert module.__file__ is not None
     tree = ast.parse(Path(module.__file__).read_text(encoding="utf-8"))
-    names = set()
-    for node in tree.body:
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-            names.add(node.name)
-        elif isinstance(node, (ast.Assign, ast.AnnAssign)):
-            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
-            names.update(
-                child.id
-                for target in targets
-                for child in ast.walk(target)
-                if isinstance(child, ast.Name)
-            )
-    return {name for name in names if not name.startswith("_")}
+    return set(public_definitions(tree))
 
 
 def _assert_declared_shim_imports(source: str, submodule: str) -> None:
     """An alias or __getattr__ fallback must not hide a broken explicit import list."""
     tree = ast.parse(source)
-    declarations = [
-        node.value
-        for node in tree.body
-        if isinstance(node, ast.Assign)
-        and any(isinstance(target, ast.Name) and target.id == "__all__" for target in node.targets)
-    ]
+    exported = declared_exports(tree, f"bsdbng.{submodule}")
     # Pure forwarding shims have no explicit export list. Their actual public
     # surface is still checked above against the canonical module.
-    if not declarations:
+    if exported is None:
         return
-    assert len(declarations) == 1, f"bsdbng.{submodule} repeats its export declaration"
-    exported = ast.literal_eval(declarations[0])
-    assert isinstance(exported, (list, tuple))
-    assert all(isinstance(name, str) for name in exported)
-    assert len(set(exported)) == len(exported), f"Duplicate shim exports in {submodule}"
     suffix = f".{submodule}" if submodule else ""
     canonical = importlib.import_module(f"mtp{suffix}")
     absent = sorted(_canonical_declarations(canonical) - set(exported))
@@ -201,12 +189,23 @@ def test_removing_both_shim_lists_cannot_hide_canonical_drift() -> None:
 
 
 def _assert_star_import_surface(canonical: ModuleType, legacy: ModuleType) -> None:
-    """Python's import-star contract is __all__ plus the identity of those attributes."""
-    expected = set(canonical.__all__)
-    actual = set(legacy.__all__)
+    """Import-star uses __all__, otherwise public module-dictionary names, never dir()."""
+
+    def names(module: ModuleType) -> set[str]:
+        explicit = getattr(module, "__all__", None)
+        return (
+            set(explicit)
+            if explicit is not None
+            else {n for n in vars(module) if not n.startswith("_")}
+        )
+
+    expected = names(canonical)
+    actual = names(legacy)
     assert actual == expected, f"Star-import export drift: {expected ^ actual}"
     for name in expected:
-        assert getattr(legacy, name) is getattr(canonical, name)
+        assert getattr(legacy, name) is getattr(canonical, name), (
+            f"Star-import identity drift: {name}"
+        )
 
 
 def test_ora_star_import_surface_includes_power_exports() -> None:
@@ -225,6 +224,291 @@ def test_ora_star_import_surface_includes_power_exports() -> None:
         source = source.replace(f"    {name},\n", "").replace(f'    "{name}",\n', "")
     with pytest.raises(AssertionError, match=r"omits canonical.*PowerMetric"):
         _assert_declared_shim_imports(source, "ora_calibration")
+
+
+def test_annotated_shim_exports_cannot_hide_missing_import_or_export() -> None:
+    submodule = "ora_calibration.adapters"
+    source = _shim_sources()[submodule].read_text(encoding="utf-8")
+    annotated = source.replace("__all__ = [", "__all__: list[str] = [")
+    assert annotated != source
+    _assert_declared_shim_imports(annotated, submodule)
+    for mutation in (
+        annotated.replace('    "IlyasORAAdapter",\n', ""),
+        annotated.replace("    IlyasORAAdapter,\n", ""),
+    ):
+        with pytest.raises(AssertionError, match="IlyasORAAdapter"):
+            _assert_declared_shim_imports(mutation, submodule)
+
+
+@pytest.mark.parametrize(
+    ("declaration", "message"),
+    [
+        ("__all__: list[str]", "uninitialized"),
+        ("__all__: list[str] = build_exports()", "nonliteral"),
+        ("__all__: list[str] = 'IlyasORAAdapter'", "list or tuple"),
+        ("__all__: list[str] = [1]", "must be names"),
+        ("__all__: list[str] = ['x', 'x']", "Duplicate"),
+        ("__all__: list[str] = []\n__all__ = []", "repeats"),
+    ],
+)
+def test_annotated_shim_declaration_rejects_malformed_values(
+    declaration: str, message: str
+) -> None:
+    with pytest.raises(AssertionError, match=message):
+        _assert_declared_shim_imports(declaration, "ora_calibration.adapters")
+
+
+def test_non_alias_star_omission_is_detected_despite_getattr(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """Mutate every discovered non-alias shim, and demonstrate actual import-star loss."""
+    importer = tmp_path / "star_import.py"
+    exercised = set()
+    for submodule in _shim_sources():
+        suffix = f".{submodule}" if submodule else ""
+        canonical = importlib.import_module(f"mtp{suffix}")
+        legacy = importlib.import_module(f"bsdbng{suffix}")
+        if canonical is legacy:
+            continue
+        importer.write_text(f"from bsdbng{suffix} import *\n", encoding="utf-8")
+        imported = runpy.run_path(str(importer))
+        exports = getattr(canonical, "__all__", None)
+        if exports is None:
+            exports = [name for name in vars(canonical) if not name.startswith("_")]
+        assert exports, f"Non-alias shim {submodule} needs a nonempty control"
+        name = sorted(exports)[0]
+        assert imported[name] is getattr(canonical, name)
+        with monkeypatch.context() as patch:
+            patch.setattr(legacy, "__all__", [n for n in exports if n != name], raising=False)
+            assert getattr(legacy, name) is getattr(canonical, name)
+            assert name not in runpy.run_path(str(importer))
+            with pytest.raises(AssertionError, match=f"Star-import export drift.*{name}"):
+                _assert_mirror_exports(canonical, legacy, submodule)
+        exercised.add(submodule)
+    assert {"ora_calibration", "ora_calibration.adapters"} <= exercised
+
+
+def test_star_surface_without_all_uses_module_dictionary() -> None:
+    canonical = ModuleType("mtp.fixture")
+    canonical.__dict__.update(shared=object(), _private=object())
+    canonical.__dict__["__dir__"] = lambda: ["shared", "invented"]
+    legacy = ModuleType("bsdbng.fixture")
+    legacy.__dict__["shared"] = canonical.shared
+    _assert_star_import_surface(canonical, legacy)
+    legacy.__dict__["accidental"] = object()
+    with pytest.raises(AssertionError, match=r"Star-import export drift.*accidental"):
+        _assert_star_import_surface(canonical, legacy)
+    del legacy.__dict__["accidental"]
+    del legacy.__dict__["shared"]
+    legacy.__dict__["__getattr__"] = lambda name: getattr(canonical, name)
+    assert legacy.shared is canonical.shared
+    with pytest.raises(AssertionError, match=r"Star-import export drift.*shared"):
+        _assert_star_import_surface(canonical, legacy)
+
+
+def test_canonical_export_lists_cover_cross_module_public_use() -> None:
+    sources, packages, _ = source_inventory(REPO_ROOT)
+    assert not export_omissions(sources, packages)
+
+
+def test_jed_constant_is_public_even_if_both_export_lists_omit_it() -> None:
+    canonical = importlib.import_module("mtp.composition_calibration.adapters.jed_composition")
+    assert "PROFILE_NONTRAIT_COLUMNS" in canonical.__all__
+    sources, packages, _ = source_inventory(REPO_ROOT)
+    module = canonical.__name__
+    sources[module] = sources[module].replace('    "PROFILE_NONTRAIT_COLUMNS",\n', "")
+    assert export_omissions(sources, packages)[module] == ["PROFILE_NONTRAIT_COLUMNS"]
+    shim = _shim_sources()["composition_calibration.adapters.jed_composition"]
+    source = shim.read_text(encoding="utf-8")
+    _assert_declared_shim_imports(source, "composition_calibration.adapters.jed_composition")
+    source = source.replace('    "PROFILE_NONTRAIT_COLUMNS",\n', "").replace(
+        "    PROFILE_NONTRAIT_COLUMNS,\n", ""
+    )
+    with pytest.raises(AssertionError, match="PROFILE_NONTRAIT_COLUMNS"):
+        _assert_declared_shim_imports(source, "composition_calibration.adapters.jed_composition")
+
+
+@pytest.mark.parametrize(
+    "consumer",
+    [
+        "from mtp.fixture import shared as renamed",
+        "from .fixture import shared",
+        "import mtp.fixture as alias\nvalue = alias.shared",
+        "import mtp.fixture\nvalue = mtp.fixture.shared",
+        "from mtp import fixture as alias\nvalue = alias.shared",
+    ],
+)
+def test_cross_module_audit_recognizes_import_forms(consumer: str) -> None:
+    sources = {"mtp.fixture": "shared = 1\n__all__ = []", "mtp.consumer": consumer}
+    assert export_omissions(sources, set()) == {"mtp.fixture": ["shared"]}
+    assert cross_module_uses(sources, set())[("mtp.fixture", "shared")] == {"mtp.consumer"}
+    sources["mtp.fixture"] = "shared = 1\n__all__: list[str] = ['shared']"
+    assert export_omissions(sources, set()) == {}
+
+
+def test_cross_module_audit_distinguishes_canonical_reexports_from_dependencies() -> None:
+    sources = {
+        "mtp.fixture": (
+            "import json\nfrom typing import Any\nfrom .origin import shared as public\n"
+            "_private = 1\n__all__ = []"
+        ),
+        "mtp.origin": "shared = 1",
+        "mtp.consumer": "from mtp.fixture import json, Any, _private, public",
+    }
+    assert export_omissions(sources, set()) == {"mtp.fixture": ["public"]}
+    sources["mtp.fixture"] += "\n__all__ = ['public']"
+    with pytest.raises(AssertionError, match="repeats"):
+        export_omissions(sources, set())
+
+
+def test_canonical_module_reexports_are_audited_without_third_party_imports() -> None:
+    sources = {
+        "mtp.origin": "shared = 1",
+        "mtp.facade": "import mtp.origin as public\nimport json as incidental\n__all__ = []",
+        "mtp.consumer": "from mtp.facade import public, incidental",
+    }
+    assert export_omissions(sources, set()) == {"mtp.facade": ["public"]}
+    sources["mtp.facade"] = sources["mtp.facade"].replace("__all__ = []", "__all__ = ['public']")
+    assert export_omissions(sources, set()) == {}
+
+
+def test_cross_module_aliases_are_scoped_to_their_functions() -> None:
+    sources = {
+        "mtp.first": "first = 1\n__all__ = []",
+        "mtp.second": "second = 2\n__all__ = []",
+        "mtp.consumer": (
+            "def one():\n    import mtp.first as module\n    return module.first\n"
+            "def two():\n    import mtp.second as module\n    return module.second\n"
+        ),
+    }
+    assert export_omissions(sources, set()) == {
+        "mtp.first": ["first"],
+        "mtp.second": ["second"],
+    }
+
+
+def test_public_definitions_include_only_bound_assignment_names() -> None:
+    tree = ast.parse(
+        "scalar = 1\nfirst, [second, third] = values\nannotated: str = ''\n"
+        "cache[key] = 1\nmodule.attribute = 1\n_private = 1\n"
+    )
+    assert public_definitions(tree) == {"scalar", "first", "second", "third", "annotated"}
+
+
+def test_cross_module_audit_handles_package_relative_import_and_parameter_shadow() -> None:
+    sources = {
+        "mtp.package": "from .origin import public as renamed",
+        "mtp.package.origin": "public = 1\n__all__ = []",
+        "mtp.consumer": (
+            "import mtp.package.origin as module\n"
+            "def unrelated(module):\n    return module.incidental\n"
+        ),
+    }
+    uses = cross_module_uses(sources, {"mtp.package"})
+    assert uses == {("mtp.package.origin", "public"): {"mtp.package"}}
+    assert export_omissions(sources, {"mtp.package"}) == {"mtp.package.origin": ["public"]}
+
+
+def test_class_local_alias_does_not_replace_method_global_binding() -> None:
+    sources = {
+        "mtp.first": "first = 1\n__all__ = []",
+        "mtp.second": "second = 2\n__all__ = []",
+        "mtp.consumer": (
+            "import mtp.first as module\n"
+            "class Example:\n    import mtp.second as module\n    value = module.second\n"
+            "    def method(self):\n        return module.first\n"
+        ),
+    }
+    assert export_omissions(sources, set()) == {
+        "mtp.first": ["first"],
+        "mtp.second": ["second"],
+    }
+
+
+@pytest.mark.parametrize(
+    "class_body",
+    [
+        "    callback = lambda value=module.second: module.first\n",
+        "    values = [module.first for item in module.second]\n",
+        "    class Nested(module.second):\n        value = module.first\n",
+    ],
+)
+def test_class_expression_bodies_use_non_class_lexical_parent(class_body: str) -> None:
+    sources = {
+        "mtp.first": "first = 1\n__all__ = []",
+        "mtp.second": "second = 2\n__all__ = []",
+        "mtp.consumer": (
+            "import mtp.first as module\n"
+            "class Example:\n    import mtp.second as module\n" + class_body
+        ),
+    }
+    assert cross_module_uses(sources, set()) == {
+        ("mtp.first", "first"): {"mtp.consumer"},
+        ("mtp.second", "second"): {"mtp.consumer"},
+    }
+    assert export_omissions(sources, set()) == {
+        "mtp.first": ["first"],
+        "mtp.second": ["second"],
+    }
+
+
+@pytest.mark.parametrize(
+    ("class_body", "uses_class_member"),
+    [
+        ("    def f(self, x=lambda: module.first):\n        pass\n", False),
+        ("    def f(self, x=(module.second, lambda: module.first)):\n        pass\n", True),
+        ("    class Nested(factory(module.second, lambda: module.first)):\n        pass\n", True),
+        ("    callback = lambda x=(module.second, lambda: module.first): x\n", True),
+        ("    values = [item for item in (module.second, lambda: module.first)]\n", True),
+    ],
+)
+def test_class_defining_expressions_preserve_nested_body_context(
+    class_body: str, uses_class_member: bool
+) -> None:
+    sources = {
+        "mtp.first": "first = 1\n__all__ = []",
+        "mtp.second": "second = 2\n__all__ = []",
+        "mtp.consumer": (
+            "import mtp.first as module\n"
+            "class Example:\n    import mtp.second as module\n" + class_body
+        ),
+    }
+    expected = {("mtp.first", "first"): {"mtp.consumer"}}
+    if uses_class_member:
+        expected[("mtp.second", "second")] = {"mtp.consumer"}
+    assert cross_module_uses(sources, set()) == expected
+
+
+@pytest.mark.parametrize(
+    "consumer",
+    [
+        "import mtp.fixture as module\ndef f(x=module.public):\n    pass",
+        "import mtp.fixture as module\n@module.public\ndef f():\n    pass",
+        "import mtp.fixture as module\nclass C(module.public):\n    pass",
+        "import mtp.fixture as module\nvalue = lambda: module.public",
+        "import mtp.fixture as module\nvalue = [module.public for item in values]",
+        "import mtp.fixture as module\nvalue = [item for module in module.public]",
+        "import mtp.fixture as module\ndef f(x: module.public):\n    pass",
+        "import mtp.fixture as module\ndef f() -> module.public:\n    pass",
+        "import mtp.fixture as module\ndef f(x=lambda module: module.public):\n"
+        "    return module.public",
+    ],
+)
+def test_qualified_uses_in_deferred_or_nested_expressions(consumer: str) -> None:
+    sources = {"mtp.fixture": "public = 1\n__all__ = []", "mtp.consumer": consumer}
+    assert export_omissions(sources, set()) == {"mtp.fixture": ["public"]}
+
+
+@pytest.mark.parametrize(
+    "expression",
+    ["lambda module: module.public", "[module.public for module in values]"],
+)
+def test_nested_expression_bindings_do_not_inherit_shadowed_module_alias(expression: str) -> None:
+    sources = {
+        "mtp.fixture": "public = 1\n__all__ = []",
+        "mtp.consumer": f"import mtp.fixture as module\nvalue = {expression}",
+    }
+    assert export_omissions(sources, set()) == {}
 
 
 def test_shim_discovery_includes_new_modules_without_a_handwritten_list(tmp_path: Path) -> None:

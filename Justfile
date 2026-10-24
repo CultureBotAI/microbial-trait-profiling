@@ -194,6 +194,11 @@ table1-influence-extension *ARGS:
 test-influence-extension:
 	uv run pytest tests/test_influence_extension.py tests/test_influence_extension_core.py tests/test_influence_extension_joint.py -v
 
+# Isolated logical-guard probes; each invocation requires a fresh output directory (#969).
+[positional-arguments]
+probe-influence-extension-guards mutation output:
+	uv run python scripts/adhoc/issue969_probe_influence_guards.py "$1" --output-dir "$2"
+
 # Isolated original/current arm-parser regression evidence (#973).
 [positional-arguments]
 probe-arm-parser-guards *ARGS:
@@ -342,6 +347,14 @@ typecheck:
 
 test:
 	uv run pytest
+
+# Canonical exports and legacy import-star contracts (#937); no scientific inputs.
+test-shim-exports:
+	uv run pytest tests/test_mtp_imports.py
+
+[positional-arguments]
+audit-shim-exports *ARGS:
+	uv run python scripts/adhoc/issue937_audit_exports.py "$@"
 
 # Additive policy and full-family BH/BY contract; no scientific rerun inputs.
 test-multiple-testing:
@@ -1082,6 +1095,11 @@ clean-all: clean-raw clean-studies clean-derived clean-logs
 [positional-arguments]
 calibration-screen *ARGS:
 	uv run python -m mtp.screen_calibration --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" "$@"
+
+# Additive training/held-out study splits; native arm outputs remain unchanged (#854).
+[positional-arguments]
+selection-study-splits COMPARISON_RUN OUTPUT *ARGS:
+	uv run python -m mtp.cellulose_decr.study_split_run --comparison-run "$1" --output-dir "$2" "${@:3}"
 
 # Audit literal phenotype co-assertions for all strain scopes without rerunning arms (#846).
 [positional-arguments]

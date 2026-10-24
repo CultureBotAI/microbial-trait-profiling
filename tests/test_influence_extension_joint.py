@@ -10,6 +10,7 @@ from __future__ import annotations
 import json
 from collections import defaultdict
 from fractions import Fraction
+from statistics import fmean
 
 import pytest
 from scipy.stats import false_discovery_control
@@ -395,6 +396,12 @@ def test_summary_bh_by_cells_are_in_exact_columns(joint_corpus: tuple[Base, Grap
         after_q_bh_six=0.047,
         before_q_by_six=0.076,
         after_q_by_six=0.115,
+        removed_annotation_mass=321,
+        removed_trait_annotation_mass=17,
+        effect_reduction_fraction=0.375,
+        effect_reduction_percent=37.5,
+        matched_effect_reduction_fraction=0.625,
+        matched_effect_reduction_percent=62.5,
     )
     summaries = [
         {
@@ -417,7 +424,93 @@ def test_summary_bh_by_cells_are_in_exact_columns(joint_corpus: tuple[Base, Grap
     focal = next(row for row in effect_rows if row["Trait"] == TRAITS[0])
     assert [float(value) for value in focal["BH-six before / after"].split(" / ")] == [0.031, 0.047]
     assert [float(value) for value in focal["BY-six before / after"].split(" / ")] == [0.076, 0.115]
+    assert focal["Removed annotation mass"] == "321"
+    assert focal["Removed focal mass"] == "17"
+    assert focal["Effect reduction (%)"] == "37.5"
+    assert focal["Matched effect reduction (%)"] == "62.5"
     loso = _markdown_rows(text, {"BH-six q range", "BY-six q range"})
     assert len(loso) == 1
+    assert [float(value) for value in loso[0]["Baseline BH-six / BY-six"].split(" / ")] == [
+        0.031,
+        0.076,
+    ]
     assert [float(value) for value in loso[0]["BH-six q range"].split(" to ")] == [0.02, 0.07]
     assert [float(value) for value in loso[0]["BY-six q range"].split(" to ")] == [0.05, 0.2]
+
+
+@pytest.mark.parametrize("before", [0.0, 1e-12, -1e-12, fmean([0.1, 0.2, -0.3])])
+@pytest.mark.parametrize("prefix", ["", "matched_"])
+def test_reduction_uses_protocol_tolerance_for_before_effect(before: float, prefix: str) -> None:
+    row = extension.effect_reduction(before, 0.01, prefix=prefix)
+    assert row[f"{prefix}effect_reduction_status"] == "zero_before_effect"
+    assert row[f"{prefix}effect_reduction_fraction"] == ""
+    assert row[f"{prefix}effect_reduction_percent"] == ""
+
+
+@pytest.mark.parametrize("before", [1.000001e-12, -1.000001e-12])
+def test_reduction_remains_defined_above_protocol_tolerance(before: float) -> None:
+    row = extension.effect_reduction(before, 2 * before)
+    assert row["effect_reduction_status"] == "defined"
+    assert row["effect_reduction_fraction"] == -1
+    assert row["effect_reduction_percent"] == -100
+
+
+def test_joint_reports_individual_lineage_mass_without_summing_overlap(
+    joint_corpus: tuple[Base, Graph],
+) -> None:
+    base, graph = joint_corpus
+    cell = _joint_effects(base, graph)[0]
+    accounting = json.loads(cell["lineage_accounting"])
+    # Four L-only + three shared source occurrences; five O-only + three shared.
+    assert accounting == {
+        LACHNO: {
+            "graph_status": "present_in_graph",
+            "removed_annotation_mass": 14,
+            "removed_trait_annotation_mass": 7,
+        },
+        OSCILLO: {
+            "graph_status": "present_in_graph",
+            "removed_annotation_mass": 21,
+            "removed_trait_annotation_mass": 8,
+        },
+    }
+    assert cell["removed_annotation_mass"] == 29
+    assert cell["removed_trait_annotation_mass"] == 12
+    assert sum(row["removed_annotation_mass"] for row in accounting.values()) == 35
+    text = extension.combined_summary(None, [], [], [cell])
+    rendered = _markdown_rows(text, {"Per-lineage mass (annotation / focal; graph status)"})[0]
+    assert rendered["Per-lineage mass (annotation / focal; graph status)"] == (
+        f"{LACHNO}: 14 / 7 (present_in_graph); {OSCILLO}: 21 / 8 (present_in_graph)"
+    )
+    assert "Individual lineage masses may overlap" in text
+
+
+def test_joint_distinguishes_absent_lineage_from_present_without_scope_mass(
+    joint_corpus: tuple[Base, Graph],
+) -> None:
+    base, graph = joint_corpus
+    absent, empty = "NCBITaxon:99998", "NCBITaxon:99999"
+    graph.names[empty] = "Present without retained carriers"
+    # ancestors() includes self for even the absent ID; it cannot prove presence.
+    assert graph.ancestors(absent) == frozenset({absent})
+    scenario = {
+        **POOLED_JOINT,
+        "lineages": json.dumps([LACHNO, absent, empty]),
+        "lineage": "+".join([LACHNO, absent, empty]),
+    }
+    effects, _ = extension.lineage_effects(
+        base, graph, reconcile(base, graph), [scenario], extension.load_protocol()
+    )
+    accounting = json.loads(effects[0]["lineage_accounting"])
+    assert accounting[LACHNO]["removed_annotation_mass"] == 14
+    assert accounting[absent] == {
+        "graph_status": "absent_from_graph",
+        "removed_annotation_mass": 0,
+        "removed_trait_annotation_mass": 0,
+    }
+    assert accounting[empty] == {
+        "graph_status": "present_in_graph",
+        "removed_annotation_mass": 0,
+        "removed_trait_annotation_mass": 0,
+    }
+    assert effects[0]["removed_annotation_mass"] == 14
