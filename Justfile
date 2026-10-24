@@ -180,6 +180,11 @@ table1-influence-extension *ARGS:
 test-influence-extension:
 	uv run pytest tests/test_influence_extension.py tests/test_influence_extension_core.py tests/test_influence_extension_joint.py -v
 
+# Isolated original/current arm-parser regression evidence (#973).
+[positional-arguments]
+probe-arm-parser-guards *ARGS:
+	uv run python scripts/adhoc/issue973_probe_parser_guards.py "$@"
+
 sync:
 	uv sync --all-extras --group dev --group qa
 

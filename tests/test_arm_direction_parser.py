@@ -67,6 +67,8 @@ def _actual_arguments(command: Command, monkeypatch: pytest.MonkeyPatch) -> argp
         raise _Parsed
 
     with monkeypatch.context() as temporary:
+        # A real `python path/to/script.py` puts that directory first on sys.path.
+        temporary.syspath_prepend(str(Path(command.argv[1]).parent))
         temporary.setattr(argparse.ArgumentParser, "parse_args", capture)
         temporary.setattr(sys, "argv", list(command.argv[1:]))
         with pytest.raises(_Parsed):
@@ -139,3 +141,45 @@ def test_case_changed_registered_script_cannot_bypass_direction_validation(
     )
     with pytest.raises(ValueError, match="canonical script path"):
         runtime._step_direction_basis(replace(command, argv=tuple(argv)), REPO_ROOT)
+
+
+@pytest.mark.parametrize("index", [0, 1])
+def test_verifier_rejects_help_without_printing(
+    figure_commands: list[Command], index: int, capsys: pytest.CaptureFixture[str]
+) -> None:
+    command = figure_commands[index]
+    changed = replace(command, argv=(*command.argv, "--help"))
+    with pytest.raises(ValueError, match="argument parsing stopped with status 0"):
+        runtime._step_direction_basis(changed, REPO_ROOT)
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err == ""
+
+
+@pytest.mark.parametrize("direction", ["all", "inc", "dec"])
+def test_condition_module_uses_its_execution_parser(
+    direction: str, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    command = Command(
+        "condition_module",
+        (
+            sys.executable,
+            str(REPO_ROOT / "scripts/create_condition_trait_module_heatmap.py"),
+            "--direction",
+            direction,
+        ),
+        (),
+        (),
+    )
+    assert _actual_arguments(command, monkeypatch).direction == direction
+    assert runtime._step_direction_basis(command, REPO_ROOT) is None
+    invalid = replace(command, argv=(*command.argv, "--direction-basis", BASES[0]))
+    with pytest.raises(SystemExit) as actual:
+        _actual_arguments(invalid, monkeypatch)
+    assert actual.value.code == 2
+    capsys.readouterr()
+    with pytest.raises(ValueError, match="unrecognized arguments"):
+        runtime._step_direction_basis(invalid, REPO_ROOT)
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err == ""

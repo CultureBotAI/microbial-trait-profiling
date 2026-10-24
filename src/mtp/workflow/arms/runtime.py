@@ -62,6 +62,8 @@ DIRECTION_REQUIRED_SCRIPTS = frozenset(
         "scripts/create_study_trait_profile_heatmap.py",
     }
 )
+# These additional scripts expose their execution parser but do not accept a basis.
+FULL_PARSER_SCRIPTS = frozenset({"scripts/create_condition_trait_module_heatmap.py"})
 INPUT_NAMES = {
     "raw_dump": "full_dump.csv",
     "kg_edges": "merged-kg_edges.tsv",
@@ -199,6 +201,9 @@ def _definition(command: Command) -> ArmCommandDefinition:
 class _StepArguments(argparse.ArgumentParser):
     """Parse a planned step's arguments as its module does, raising instead of exiting."""
 
+    def _print_message(self, message: str | None, file: object | None = None) -> None:
+        """Keep help and diagnostics out of verification's stdout/stderr."""
+
     def error(self, message: str) -> NoReturn:
         raise ValueError(message)
 
@@ -241,7 +246,11 @@ def _step_direction_basis(command: Command, repository: Path) -> str | None:
         script.relative_to(repository).as_posix() if script.is_relative_to(repository) else ""
     )
     registered = next(
-        (name for name in DIRECTION_REQUIRED_SCRIPTS if name.casefold() == relative.casefold()),
+        (
+            name
+            for name in DIRECTION_REQUIRED_SCRIPTS | FULL_PARSER_SCRIPTS
+            if name.casefold() == relative.casefold()
+        ),
         None,
     )
     if registered is not None and relative != registered:
@@ -270,7 +279,8 @@ def _step_direction_basis(command: Command, repository: Path) -> str | None:
                 f"{command.id} has invalid direction-basis arguments: {error}"
             ) from error
         raise ValueError(f"{command.id} has invalid direction-basis arguments: {error}") from error
-    return str(parsed.direction_basis) if parsed.direction_basis is not None else None
+    basis = getattr(parsed, "direction_basis", None)
+    return str(basis) if basis is not None else None
 
 
 def _validate_plan(
@@ -639,10 +649,17 @@ def verify_arm(path: Path) -> ArmRun:
     try:
         _validate_plan(commands, context, absent_scope_is_off="strain_rollup" not in declared)
     except _MissingDirectionBasis as error:
+        dirty_note = (
+            " The commit alone cannot reproduce this dirty execution; retain the "
+            "original modified code and check it against the recorded code inventory."
+            if record.git_dirty
+            else ""
+        )
         raise ValueError(
             f"{error}. For a historical record, verify with its recorded commit "
-            f"{record.git_commit} and locked environment; retain the original checkout "
-            "and input/output paths. See docs/workflow.md for historical arm and "
+            f"{record.git_commit} (git_dirty={record.git_dirty}) and locked environment; "
+            f"retain the original checkout and input/output paths.{dirty_note} "
+            "See docs/workflow.md for historical arm and "
             "comparison verification. The current verifier does not infer a missing basis."
         ) from error
     runtime = json.loads(record.runtime_json)
