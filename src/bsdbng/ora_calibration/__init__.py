@@ -1,6 +1,5 @@
 """Compatibility shim forwarding bsdbng.ora_calibration to mtp.ora_calibration."""
 
-import sys
 from typing import Any
 
 from mtp.ora_calibration import (
@@ -13,9 +12,11 @@ from mtp.ora_calibration import (
     IlyasORAAdapter,
     MethodAdapter,
     MethodInferenceResult,
+    PowerMetric,
     TypeIErrorMetric,
     compute_discrete_ecdf,
     compute_empirical_fdr,
+    compute_empirical_power,
     compute_type_i_error,
     flip_profile_dataframe,
     generate_complete_null_ora_profiles,
@@ -35,9 +36,11 @@ __all__ = [
     "IlyasORAAdapter",
     "MethodAdapter",
     "MethodInferenceResult",
+    "PowerMetric",
     "TypeIErrorMetric",
     "compute_discrete_ecdf",
     "compute_empirical_fdr",
+    "compute_empirical_power",
     "compute_type_i_error",
     "flip_profile_dataframe",
     "generate_complete_null_ora_profiles",
@@ -49,7 +52,8 @@ __all__ = [
 
 import mtp.ora_calibration as _target
 
-sys.modules[__name__] = _target
+# Keep this package's search path: child imports must load the legacy shims,
+# which alias canonical modules, rather than re-executing their implementations.
 
 
 def __getattr__(name: str) -> Any:

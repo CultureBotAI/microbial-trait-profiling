@@ -11,6 +11,7 @@ from typing import Any
 
 from mtp.composition_calibration.adapters.jed_composition import (
     DEFAULT_PSEUDOCOUNT_SCALE,
+    RESULT_COLUMNS,
     CompositionContrastData,
     JedCompositionAdapter,
     compute_composition_contrasts,
@@ -20,6 +21,7 @@ from mtp.composition_calibration.adapters.jed_composition import (
 
 __all__ = [
     "DEFAULT_PSEUDOCOUNT_SCALE",
+    "RESULT_COLUMNS",
     "CompositionContrastData",
     "JedCompositionAdapter",
     "compute_composition_contrasts",

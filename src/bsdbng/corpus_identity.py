@@ -5,6 +5,7 @@ from typing import Any
 
 from mtp.corpus_identity import (
     DEFAULT_KG_PROVENANCE_PATH,
+    PINNED_KG_MICROBE_RELEASE,
     UNKNOWN_RELEASE,
     CorpusIdentity,
     KgInput,
@@ -19,6 +20,7 @@ from mtp.corpus_identity import (
 
 __all__ = [
     "DEFAULT_KG_PROVENANCE_PATH",
+    "PINNED_KG_MICROBE_RELEASE",
     "UNKNOWN_RELEASE",
     "CorpusIdentity",
     "KgInput",

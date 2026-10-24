@@ -339,6 +339,7 @@ __all__ = [
     "PROFILE_FIELDS",
     "Ledger",
     "Record",
+    "argument_parser",
     "assertion_fields",
     "export_ledger",
     "main",
