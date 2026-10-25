@@ -131,6 +131,7 @@ core-verify-consumer record:
 	uv run python -m mtp.workflow verify-consumer "{{record}}"
 
 # Retain original records and declared dependencies; --retain adds explicit supporting evidence.
+# A destination under the system temporary directory needs --allow-temporary-output (#1049).
 [positional-arguments]
 evidence-archive output *ARGS:
 	uv run python -m mtp.workflow archive --output "$1" "${@:2}"
@@ -144,6 +145,8 @@ evidence-resolve archive original:
 # Its strain rollup scope is the primary phenotype unless --strain-rollup off or full asks
 # for the sensitivity or exploratory core (#788).
 # Build one shared raw-to-core execution before rerunning any owner analysis.
+# The rerun recipes refuse an output root under the system temporary directory unless
+# --allow-temporary-output marks a throwaway run (#1049).
 [positional-arguments]
 rerun-core output raw edges nodes *ARGS:
 	uv run python -m mtp.workflow prepare-core "$@"
@@ -178,8 +181,8 @@ rerun-verify-comparison record:
 
 # Additive BY/BH sidecars from a verified completed comparison; native tables unchanged.
 [positional-arguments]
-rerun-multiplicity comparison output:
-	uv run python -m mtp.multiplicity run --comparison-run "$1" --output "$2"
+rerun-multiplicity comparison output *ARGS:
+	uv run python -m mtp.multiplicity run --comparison-run "$1" --output "$2" "${@:3}"
 
 [positional-arguments]
 rerun-verify-multiplicity record:

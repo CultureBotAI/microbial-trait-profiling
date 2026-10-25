@@ -143,7 +143,9 @@ def test_cli_infers_core_from_consumer_and_preserves_record_bytes(
     _, core, consumer, _ = evidence
     checksum = file_sha256(consumer)
     destination = tmp_path / "archive"
-    assert main(["archive", "--output", str(destination), "--consumer", str(consumer)]) == 0
+    # tmp_path is temporary storage, which the archive command refuses without the opt-in
+    argv = ["archive", "--output", str(destination), "--consumer", str(consumer)]
+    assert main([*argv, "--allow-temporary-output"]) == 0
     record = verify_archive(destination / "archive.json")
     assert record.core_manifests == [str(core)]
     assert file_sha256(consumer) == checksum

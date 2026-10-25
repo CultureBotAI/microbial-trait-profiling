@@ -19,6 +19,7 @@ from mtp.workflow.operations import (
     trace_profile_feature,
     validate_core_product,
 )
+from mtp.workflow.output_roots import add_temporary_output_option, require_durable_output
 from mtp.workflow.runtime import artifact_path, execute_workflow
 from mtp.workflow.verification import verify_core_run
 
@@ -75,6 +76,7 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--output-root", type=Path, required=True)
     run.add_argument("--contrast-population", choices=[item.value for item in ContrastPopulation])
     run.add_argument("--strain-rollup", choices=STRAIN_ROLLUPS)
+    add_temporary_output_option(run)
     prepare = sub.add_parser("prepare-core", help="Prepare the shared verified owner-rerun core")
     prepare.add_argument("output_root", type=Path)
     prepare.add_argument("raw", type=Path)
@@ -91,6 +93,7 @@ def build_parser() -> argparse.ArgumentParser:
     # The specification's default is the primary phenotype scope; off and full are the
     # sensitivity and exploratory runs (#788)
     prepare.add_argument("--strain-rollup", choices=STRAIN_ROLLUPS)
+    add_temporary_output_option(prepare)
     fixture = sub.add_parser("fixture", help="Run the small offline fixture from raw inputs")
     fixture.add_argument("--output-root", type=Path, required=True)
     fixture.add_argument(
@@ -122,6 +125,7 @@ def build_parser() -> argparse.ArgumentParser:
     archive.add_argument("--core-run", type=Path, action="append", default=[])
     archive.add_argument("--consumer", type=Path, action="append", default=[])
     archive.add_argument("--retain", type=Path, action="append", default=[])
+    add_temporary_output_option(archive)
     archived = sub.add_parser("verify-archive", help="Verify retained bytes without original paths")
     archived.add_argument("manifest", type=Path)
     resolve = sub.add_parser("archive-resolve", help="Locate a declared retained input")
@@ -178,6 +182,9 @@ def main(argv: list[str] | None = None) -> int:
             # The original graph has no selection step. Its explicit manifest
             # policy is identity; preserve its historical parameter contract.
             parameters.pop("contrast_population", None)
+        # The offline fixture is synthetic and never cited; a production core is (#1049)
+        if args.command != "fixture":
+            require_durable_output(parser, args.output_root, allowed=args.allow_temporary_output)
         run = execute_workflow(
             spec_path,
             inputs,
@@ -252,6 +259,7 @@ def main(argv: list[str] | None = None) -> int:
     elif args.command == "compare-legacy":
         print(compare_legacy_bundle(args.manifest, args.baseline_dir, args.output))
     elif args.command == "archive":
+        require_durable_output(parser, args.output, allowed=args.allow_temporary_output)
         print(
             create_archive(
                 args.output,

@@ -8,6 +8,7 @@ from pathlib import Path
 from mtp.workflow.arms import ilyas, jed, noel
 from mtp.workflow.arms.runtime import execute_arm, verify_arm
 from mtp.workflow.comparison import execute_comparison_run, verify_comparison_run
+from mtp.workflow.output_roots import add_temporary_output_option, require_durable_output
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -36,6 +37,7 @@ def build_parser() -> argparse.ArgumentParser:
             action="store_true",
             help="Run analysis and calibration without optional figure rendering",
         )
+        add_temporary_output_option(arm)
     verify = commands.add_parser(
         "verify", help="Verify a completed arm execution and its core bindings"
     )
@@ -54,6 +56,7 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         help="Optional precomputed trait_profile_paired_contrast_trait_stats_pooled.tsv",
     )
+    add_temporary_output_option(compare)
     verify_cmp = commands.add_parser(
         "verify-comparison",
         help="Verify a completed ComparisonRun manifest and its complete cross-arm outputs",
@@ -70,6 +73,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Verified {record.id}: executed stages, core binding and output bytes")
         return 0
     if args.command == "compare":
+        require_durable_output(parser, args.output, allowed=args.allow_temporary_output)
         cmp_record = execute_comparison_run(
             args.core_run,
             args.noel_run,
@@ -86,6 +90,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.replicates is not None and args.replicates < 1:
         parser.error("--replicates must be positive")
+    require_durable_output(parser, args.output, allowed=args.allow_temporary_output)
     planners = {
         "ilyas": ilyas.build_commands,
         "noel": noel.build_commands,
