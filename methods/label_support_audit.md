@@ -24,7 +24,8 @@ just audit-label-support \
 
 Replace these example paths with the actual products. The destination must be
 empty or new. No other pipeline step is triggered. Optionally supply
-`--madin-csv SOURCES/madin.csv`; it is hashed but not downloaded or pinned.
+`--madin-csv MADIN/condensed_traits_NCBI.csv`, the pinned Madin et al. table
+described below; a file with any other bytes fails before outputs are written.
 Omitting it leaves Madin subsources unknown. A supplied but unreadable or
 malformed table fails instead of silently falling back to unknown.
 
@@ -45,6 +46,68 @@ oriented occurrence directions; the audit does not independently classify
 contrasts or certify a host/population selection. Counts alone cannot resolve
 an orientation mismatch when both sides happen to have identical counts.
 
+## Pinned Madin et al. table
+
+KG-Microbe attributes every trait it takes from the Madin et al. (2020)
+compilation to one source, `infores:madin_etal`. To resolve that source to the
+compiled datasets, the audit reads the compilation's record-level table, pinned
+in `mtp.madin_source` (#1048):
+
+| Field | Value |
+| --- | --- |
+| Repository | `bacteria-archaea-traits/bacteria-archaea-traits` on GitHub |
+| Commit | `396dcd4d98ca20b613ba280f5514611651b6fb91` (2020-10-16) |
+| File | `output/condensed_traits_NCBI.csv` |
+| URL | `https://raw.githubusercontent.com/bacteria-archaea-traits/bacteria-archaea-traits/396dcd4d98ca20b613ba280f5514611651b6fb91/output/condensed_traits_NCBI.csv` |
+| SHA256 | `6100fc11679cd9facae65cad37a2969978bc64c3e57984d896f8147f78db6440` |
+| Size | 46,362,149 bytes |
+
+```bash
+just download-madin MADIN
+```
+
+This fetches the table anonymously into `MADIN`, a durable data directory
+outside the repository (not a temporary directory), and records the fetch in
+`MADIN/download_provenance.json`. A response whose size or SHA256 differs from
+the pin is discarded and the recipe fails. An existing copy is checked and
+reused, never overwritten. Passing the file as `--madin-csv` records
+`madin_status: pinned_verified` and the pin in `provenance.json`. Without
+`--madin-csv`, the status stays `not_supplied_source_support_unknown`, the pin
+is still recorded, and Madin carriers keep `unknown` source status.
+
+The pinned file has one row per source record, with the NCBI `tax_id` and
+`data_source` columns the audit needs. The species-level
+`condensed_species_NCBI.csv` merges records and has neither column, so it
+cannot resolve subsources. KG-Microbe's own Madin download also fetches
+`condensed_traits_NCBI.csv`, from the default branch.
+
+How the pin was confirmed: the #773 tracing used a local copy of this table
+dated 2021-02-24. That is the date of the download, not of an upstream release;
+the repository's only release is v1.0.0 (2019-09-26). The repository's commit
+history shows `396dcd4` as the last commit to change the file, and the default
+branch has pointed at it since 2020-10-16. The local copy's git blob hash,
+`05a10e84ea015f9ee2b99ea16aae6d26c557ce3b`, equals the file's blob at that
+commit. The file fetched from the pinned URL has the SHA256 above, and so does
+a 2026 copy of KG-Microbe's Madin download. The v1.0.0 table and the
+`jmadin/bacteria-archaea-traits` fork, whose last commit is from 2020-02-18,
+carry earlier tables with other bytes, so neither can substitute for the pin.
+
+Limits of the pin:
+
+- Madin labels do not establish experimental validation. `data_source` names
+  the compiled dataset a record came from. Those datasets range from
+  genome-project metadata to curated literature assignments and predictions.
+  A verified pin fixes which bytes were read, not whether, how or in which
+  strain a trait was measured.
+- The KG export does not record which Madin bytes it ingested. Because the
+  default branch has not changed the file since the pinned commit, a KG build
+  that fetched it afterwards read these bytes. That is inferred from the
+  repository history, not checked against the KG.
+- Records reach carriers by `tax_id` alone. A Madin carrier with no row
+  matching the trait's declared field and value stays `unknown`.
+- The pin changes only the subsource columns of these sidecars. The KG, matrix,
+  profiles and arm calls are unchanged.
+
 ## Products and interpretation
 
 | Product | Meaning |
@@ -54,7 +117,7 @@ an orientation mismatch when both sides happen to have identical counts.
 | `carrier_source_evidence.tsv` | Named KG source fields and optional Madin subsources for each carrier supporting an audited matrix cell. |
 | `support_threshold_sensitivity.tsv` | Six focal traits under seven declared support rules, with effect units, paired/study counts, ties, and nominal study sign tests. |
 | `coasserted_label_census.tsv` | Co-assertion by species, genus, family and other/unknown rank, among bound reported taxa and their occurrences; missing features remain unavailable. |
-| `provenance.json` | SHA256 and size of all inputs, all five output tables, producer and matrix policy code, environment lock, scope reconciliation, source rules, and limitations. |
+| `provenance.json` | SHA256 and size of all inputs, all five output tables, producer and matrix policy code, environment lock, scope reconciliation, source rules, the Madin pin and status, and limitations. |
 
 A carrier is a distinct NCBITaxon node at or below the reported taxon, including
 the reported taxon itself when it carries an annotation under the selected scope.

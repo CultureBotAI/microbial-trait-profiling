@@ -5,11 +5,14 @@ from __future__ import annotations
 import ast
 import importlib
 import json
+from collections.abc import Callable
+from dataclasses import replace
 from pathlib import Path
 
 import pandas as pd
 import pytest
 
+from mtp import madin_source
 from mtp.label_support_audit import (
     AUDIT_TRAITS,
     MADIN_SOURCE,
@@ -28,8 +31,12 @@ COCCUS = "METPO:1000668"
 
 
 @pytest.fixture
-def inputs(tmp_path: Path) -> dict[str, Path]:
-    """Two synthetic genera with known carrier sources; three pairs in two studies."""
+def inputs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Path]:
+    """Two synthetic genera with known carrier sources; three pairs in two studies.
+
+    The synthetic Madin table stands in for the pinned release: the pin takes its size and
+    sha256, so a later edit to the table is a mismatch.
+    """
     paths = {
         name: tmp_path / f"{name}.tsv" for name in ("taxa", "matrix", "profiles", "edges", "nodes")
     }
@@ -123,6 +130,15 @@ def inputs(tmp_path: Path) -> dict[str, Path]:
             {"tax_id": 22, "data_source": "patric", "pathways": "cellulose_degradation"},
         ]
     ).to_csv(paths["madin"], index=False)
+    monkeypatch.setattr(
+        madin_source,
+        "MADIN_PIN",
+        replace(
+            madin_source.MADIN_PIN,
+            sha256=file_sha256(paths["madin"]),
+            size_bytes=paths["madin"].stat().st_size,
+        ),
+    )
     return paths
 
 
@@ -213,6 +229,48 @@ def test_optional_madin_is_unknown_not_negative(inputs: dict[str, Path], tmp_pat
         cell.loc["exclude_known_gold_patric_only", "study_mean_increased_minus_decreased"]
         == (cell.loc["carriers_per_reported_taxon", "study_mean_increased_minus_decreased"])
     )
+
+
+def test_pinned_madin_table_is_verified(inputs: dict[str, Path], tmp_path: Path) -> None:
+    output = tmp_path / "audit"
+    run_audit(inputs, output)
+    provenance = json.loads((output / "provenance.json").read_text())
+    assert provenance["madin_status"] == "pinned_verified"
+    assert provenance["madin_pin"] == madin_source.MADIN_PIN.descriptor()
+    assert provenance["madin_pin"]["sha256"] == provenance["inputs"]["madin"]["sha256"]
+
+
+@pytest.mark.parametrize(
+    ("edit", "message"),
+    [
+        (lambda text: text + "23,patric,,,\n", "bytes, expected"),
+        # The same size, and the loader lower-cases sources, but the bytes are not the pin's.
+        (lambda text: text.replace("gold", "GOLD"), "has sha256 .*, expected"),
+    ],
+    ids=["size", "sha256"],
+)
+def test_madin_table_that_differs_from_the_pin_fails_closed(
+    inputs: dict[str, Path], tmp_path: Path, edit: Callable[[str], str], message: str
+) -> None:
+    inputs["madin"].write_text(edit(inputs["madin"].read_text(encoding="utf-8")), encoding="utf-8")
+    output = tmp_path / "audit"
+    with pytest.raises(madin_source.MadinPinError, match=message):
+        run_audit(inputs, output)
+    assert not output.exists()
+
+
+def test_absent_madin_table_stays_unknown_and_names_the_pin(
+    inputs: dict[str, Path], tmp_path: Path
+) -> None:
+    output = tmp_path / "audit"
+    run_audit(inputs, output, madin=False)
+    provenance = json.loads((output / "provenance.json").read_text())
+    assert provenance["madin_status"] == "not_supplied_source_support_unknown"
+    assert "madin" not in provenance["inputs"]
+    assert provenance["madin_pin"] == madin_source.MADIN_PIN.descriptor()
+    assert provenance["madin_pin"]["path"] == "output/condensed_traits_NCBI.csv"
+    support = pd.read_csv(output / "taxon_trait_label_support.tsv", sep="\t")
+    assert support.loc[support["trait_key"] == CELL, "source_status"].eq("unknown").all()
 
 
 def test_empty_profile_columns_may_be_dropped(inputs: dict[str, Path], tmp_path: Path) -> None:

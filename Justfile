@@ -636,6 +636,13 @@ audit-strain-rollup *ARGS:
 audit-label-support *ARGS:
 	uv run python -m mtp.label_support_audit "$@"
 
+# dest is a durable data directory, not a temporary one. The request is anonymous, and a file
+# whose size or sha256 differs from the pin is refused. Pass the file to
+# `just audit-label-support --madin-csv`.
+# Download the Madin et al. condensed trait table pinned in mtp.madin_source (#1048).
+download-madin dest:
+	uv run python -m mtp.madin_source --dest-dir "{{dest}}"
+
 # The analyses read human hosts only, without the trait columns that are zero in every
 # human profile, as committed in data/derived/study_trait_profiles_wide.tsv.gz (#656).
 # They also read 16S and shotgun (WMS) experiments only, the values of
