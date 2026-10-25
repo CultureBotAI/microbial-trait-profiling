@@ -13,7 +13,9 @@ from mtp.paths import file_sha256
 
 
 def test_consumed_scanner_protocol_is_bound_in_provenance() -> None:
+    # The scanner reads v2, which amends v1 by its hash (#1050); both are bound.
     assert "methods/cellulose_decr_selection_scan_protocol.json" in runner.IMPLEMENTATIONS
+    assert "methods/cellulose_decr_selection_scan_protocol_v2.json" in runner.IMPLEMENTATIONS
 
 
 def test_active_scientific_helper_changes_provenance(monkeypatch: pytest.MonkeyPatch) -> None:
