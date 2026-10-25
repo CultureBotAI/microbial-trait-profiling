@@ -208,6 +208,20 @@ execution-verification boundary, which the existing workflow tests cover.
 Its native pooled statistics come from the actual infographic producer's
 selection, transformations and statistical functions, independently of the adapter.
 
+## Per-trait evidence
+
+The related `three-test-table` stage produces a per-trait table and reusable
+experiment/study delta-z ledgers from the same verified comparison sources.
+Its full-retained-family study t-test and secondary Wilcoxon are separate from
+the native selected-family composition results above. Its ORA column summarizes
+enrichment preference and remains explicitly uncalibrated. It preserves native
+votes, reports eligibility and profile support, and checks overlapping native
+and full-family effect estimates without comparing their differently corrected
+q values. See [the declared methods and commands](../methods/three_test_table.md).
+Use `three-test-verify` to replay that stage from its recorded producer checkout
+and environment. An optional verified multiplicity input binds the same
+comparison; it does not replace either stage's declared test families.
+
 ## Updating the author branch after a base merge
 
 Merge `origin/main` into this branch; **never rebase it**. Important implementation

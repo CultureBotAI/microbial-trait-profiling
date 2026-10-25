@@ -1140,3 +1140,26 @@ selection-study-splits COMPARISON_RUN OUTPUT *ARGS:
 [positional-arguments]
 audit-coassertions *ARGS:
 	uv run python -m mtp.coassertion_audit "$@"
+
+# Declared additive per-trait evidence; completed native runs stay read-only (#1044).
+[positional-arguments]
+three-test-table *ARGS:
+	uv run python -m mtp.three_test_table run "$@"
+
+[positional-arguments]
+three-test-verify *ARGS:
+	uv run python -m mtp.three_test_table verify "$@"
+
+# Synthetic provenance/statistics contracts; never starts an owner arm rerun.
+test-three-test-table:
+	uv run pytest tests/test_three_test_*.py -v
+
+# Repeatable isolated carrier/ORA guard probes; fresh durable output/scratch are required.
+[positional-arguments]
+probe-three-test-guards *ARGS:
+	uv run python scripts/adhoc/issue1077_probe_sidecar_guards.py "$@"
+
+# Explicit historical F check: verifies and replays the additive table, never owner arms.
+[positional-arguments]
+test-three-test-off-reproduction comparison output scratch basis="511c891" multiplicity="" label_support="":
+	MTP_THREE_TEST_COMPARISON="$1" MTP_THREE_TEST_OUTPUT="$2" MTP_THREE_TEST_SCRATCH="$3" MTP_THREE_TEST_BASIS="$4" MTP_THREE_TEST_MULTIPLICITY="$5" MTP_THREE_TEST_LABEL_SUPPORT="$6" uv run pytest tests/test_three_test_reproduction.py -m integration -v

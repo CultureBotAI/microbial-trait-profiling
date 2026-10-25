@@ -576,6 +576,25 @@ reports added/removed rows and columns, and distinguishes MediaDive differences.
 Even identical values do not establish a historical baseline's producer or
 inputs. Comparison never overwrites baseline or current products.
 
+## Additive per-trait evidence
+
+`just three-test-table --comparison-run COMPARISON --output OUTPUT --scratch-dir SCRATCH`
+reads a completed, verified comparison and its core and three arms. It exports
+one row per retained trait, full-family study t/BY/BH and secondary signed-rank
+results, native study votes, ORA enrichment preference, and the experiment/study
+delta-z ledgers. Each test retains its own correction family; ORA is explicitly
+uncalibrated and never determines a headline call.
+
+Use fresh durable output and scratch directories, disjoint from the source
+bundles and each other. Verify the complete record and replay the results with
+`just three-test-verify --comparison-run COMPARISON --output OUTPUT --scratch-dir SCRATCH`.
+Optional `--multiplicity-run` and `--label-support` inputs must be supplied again
+on replay. Preserve the recorded producer commit and environment for verification.
+See [the per-trait methods and output contract](../methods/three_test_table.md)
+for weighting, support, native-estimate checks and the separate historical
+reproduction command. Generated tables remain dependent on the chosen execution
+basis; adding this code does not establish a completed historical reproduction.
+
 ## Additive presence and depth sensitivity
 
 `just presence-depth-sensitivity --core-run RUN_JSON --output-dir OUTPUT` consumes
