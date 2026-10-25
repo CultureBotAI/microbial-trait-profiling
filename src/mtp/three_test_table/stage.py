@@ -6,6 +6,7 @@ import ctypes
 import json
 import os
 import platform
+import shutil
 import sys
 import tempfile
 import uuid
@@ -33,7 +34,6 @@ from mtp.three_test_table.carriers import carrier_table
 from mtp.three_test_table.composition import composition_table
 from mtp.three_test_table.native import native_tables, validate_native_overlap
 from mtp.three_test_table.ora import ora_table
-from mtp.three_test_table.publication import directory_mode
 
 VERSION = "three-test-per-trait-v1"
 MANIFEST = "three_test_run.json"
@@ -423,7 +423,6 @@ def run_table(
     _disjoint(output, declared_roots)
     _disjoint(scratch, declared_roots)
     _probe_publication(output, [scratch, *declared_roots])
-    mode = directory_mode()
     comparison_hash = file_sha256(comparison_path)
     sources = bind_recorded_hashes(open_verified_sources(comparison_path), comparison_hash)
     roots = _source_roots(sources, multiplicity=multiplicity, label_support=label_support)
@@ -520,11 +519,15 @@ def run_table(
         "inputs": consumed,
     }
     output.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(
-        prefix=f".{output.name}-staging-", dir=output.parent
-    ) as temporary:
-        staging = require_durable(Path(temporary))
-        _disjoint(staging, [scratch, *roots])
+    staging = output.parent / f".{output.name}-staging-{uuid.uuid4().hex}"
+    require_durable(staging)
+    _disjoint(staging, [scratch, *roots])
+    # Keep the lexical name: resolving a dangling symlink before mkdir would
+    # create its target instead of refusing the existing staging-path collision.
+    # Plain mkdir applies the inherited umask without querying or changing it.
+    staging.mkdir()
+    published = False
+    try:
         table.to_csv(staging / "per_trait_evidence.tsv", sep="\t", index=False, lineterminator="\n")
         composition.pair_contrasts.to_csv(staging / "composition_pair_delta_z.tsv", sep="\t")
         composition.study_contrasts.to_csv(staging / "composition_study_delta_z.tsv", sep="\t")
@@ -536,10 +539,15 @@ def run_table(
         (staging / MANIFEST).write_text(
             json.dumps(record, indent=2, sort_keys=True, allow_nan=False) + "\n", encoding="utf-8"
         )
-        staging.chmod(mode)
         # The completed bundle becomes visible in one no-replace rename. Any
         # preceding failure removes staging and leaves this destination retryable.
         _publish_directory(staging, output)
+        published = True
+    finally:
+        # Own staging only after exclusive creation and until publication. A
+        # replacement at its former name after a successful rename is not ours.
+        if not published:
+            shutil.rmtree(staging)
     return record
 
 

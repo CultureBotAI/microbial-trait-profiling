@@ -9,6 +9,7 @@ import os
 import stat
 import sys
 import tempfile
+import uuid
 from collections.abc import Iterator
 from dataclasses import replace
 from datetime import UTC, datetime
@@ -147,31 +148,22 @@ def test_successful_probe_uses_only_private_siblings_and_cleans_before_verificat
     assert not (tmp_path / "output").exists()
 
 
-@pytest.mark.parametrize("mask", [0o002, 0o022, 0o027, 0o077])
-def test_published_directory_respects_requested_umask(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mask: int
-) -> None:
-    sources = sources_for_stage(tmp_path, monkeypatch)
-    monkeypatch.setattr(stage, "directory_mode", lambda: 0o777 & ~mask, raising=False)
-    output = tmp_path / "output"
-    stage.run_table(Path(sources.comparison.manifest_path), output, scratch=tmp_path / "scratch")
-    assert stat.S_IMODE(output.stat().st_mode) == 0o777 & ~mask
-
-
-def test_chmod_failure_does_not_publish_and_cleans_staging(
+def test_staging_mkdir_failure_does_not_publish_or_remove_unowned_paths(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     sources = sources_for_stage(tmp_path, monkeypatch)
     output = tmp_path / "output"
-    original = Path.chmod
+    original = Path.mkdir
 
-    def reject_staging(path: Path, mode: int, *, follow_symlinks: bool = True) -> None:
+    def reject_staging(
+        path: Path, mode: int = 0o777, parents: bool = False, exist_ok: bool = False
+    ) -> None:
         if path.name.startswith(".output-staging-"):
-            raise PermissionError("injected staging chmod failure")
-        original(path, mode, follow_symlinks=follow_symlinks)
+            raise PermissionError("injected staging mkdir failure")
+        original(path, mode, parents, exist_ok)
 
-    monkeypatch.setattr(Path, "chmod", reject_staging)
-    with pytest.raises(PermissionError, match="injected staging chmod failure"):
+    monkeypatch.setattr(Path, "mkdir", reject_staging)
+    with pytest.raises(PermissionError, match="injected staging mkdir failure"):
         stage.run_table(
             Path(sources.comparison.manifest_path), output, scratch=tmp_path / "scratch"
         )
@@ -179,23 +171,66 @@ def test_chmod_failure_does_not_publish_and_cleans_staging(
     assert not list(tmp_path.glob(".output-staging-*"))
 
 
-def test_mask_query_failure_precedes_source_verification(
+@pytest.mark.parametrize("collision", ["directory", "symlink", "dangling_symlink"])
+def test_staging_mkdir_collision_preserves_existing_directory_or_symlink(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, collision: str
+) -> None:
+    sources = sources_for_stage(tmp_path, monkeypatch)
+    output = tmp_path / "output"
+    staging = tmp_path / ".output-staging-collision"
+    target = staging if collision == "directory" else tmp_path / "other-directory"
+    if collision != "dangling_symlink":
+        target.mkdir()
+        (target / "keep.txt").write_text("unowned sentinel", encoding="utf-8")
+    if collision != "directory":
+        staging.symlink_to(target, target_is_directory=True)
+    original = staging.lstat()
+    monkeypatch.setattr(uuid, "uuid4", lambda: SimpleNamespace(hex="collision"))
+    with pytest.raises(FileExistsError):
+        stage.run_table(
+            Path(sources.comparison.manifest_path), output, scratch=tmp_path / "scratch"
+        )
+    assert not output.exists()
+    after = staging.lstat()
+    assert (after.st_dev, after.st_ino, after.st_mode) == (
+        original.st_dev,
+        original.st_ino,
+        original.st_mode,
+    )
+    assert staging.is_symlink() == (collision != "directory")
+    if collision == "dangling_symlink":
+        assert not target.exists()
+    else:
+        assert (target / "keep.txt").read_text(encoding="utf-8") == "unowned sentinel"
+    assert not list(tmp_path.glob(".output-probe-*"))
+
+
+def test_successful_publication_does_not_cleanup_recreated_staging_path(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     sources = sources_for_stage(tmp_path, monkeypatch)
-    forbidden = Mock(side_effect=AssertionError("source verification ran before permission query"))
-    monkeypatch.setattr(stage, "open_verified_sources", forbidden)
-    monkeypatch.setattr(
-        stage, "directory_mode", Mock(side_effect=RuntimeError("umask query failed"))
+    output = tmp_path / "output"
+    publish = stage._publish_directory
+    replacement: list[Path] = []
+
+    def publish_then_replace(staging: Path, destination: Path) -> None:
+        publish(staging, destination)
+        if destination == output:
+            staging.mkdir()
+            (staging / "keep.txt").write_text(
+                "replacement owned by another process", encoding="utf-8"
+            )
+            replacement.append(staging)
+
+    monkeypatch.setattr(stage, "_publish_directory", publish_then_replace)
+    record = stage.run_table(
+        Path(sources.comparison.manifest_path), output, scratch=tmp_path / "scratch"
     )
-    with pytest.raises(RuntimeError, match="umask query failed"):
-        stage.run_table(
-            Path(sources.comparison.manifest_path),
-            tmp_path / "output",
-            scratch=tmp_path / "scratch",
-        )
-    forbidden.assert_not_called()
-    assert not (tmp_path / "output").exists()
+    assert len(replacement) == 1
+    assert (replacement[0] / "keep.txt").read_text(
+        encoding="utf-8"
+    ) == "replacement owned by another process"
+    assert {path.name for path in output.iterdir()} == {stage.MANIFEST, *record["outputs"]}
     assert not list(tmp_path.glob(".output-probe-*"))
 
 

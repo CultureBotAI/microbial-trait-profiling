@@ -208,9 +208,12 @@ Before expensive source verification, a private probe in the output parent
 directory checks that exclusive rename both rejects an existing destination and
 can publish to an absent one. The probe follows checks that keep output and scratch
 separate from declared source directories; it never targets the requested output. Final
-publication still uses exclusive rename. Staging stays private while files are
-written; its directory permissions are set to `0777 & ~umask` using the captured
-inherited mask before publication, without changing the parent process's umask.
+publication still uses exclusive rename. Staging is created with an exclusive
+plain `mkdir`, so the filesystem applies `0777 & ~umask` without a worker or a
+query that changes the process's mask. Its hidden directory can be readable under
+that mask, but only the final destination names a published bundle. A failure
+before publication removes this run's staging; a creation collision or a path
+created by another process after publication is preserved.
 Optional count columns use nullable
 integers: populated counts serialize as integers, and unavailable counts stay blank.
 
