@@ -92,10 +92,11 @@ release"; no such release exists:
   (2020-10-16). The repository's commit history shows `396dcd4` as the last
   commit to change the file, and the default branch (`master`) has pointed at
   it since.
-- The file fetched from the pinned URL has the SHA256 above. So does
-  KG-Microbe's raw Madin download, `data/raw/madin_etal.csv` in
-  `Knowledge-Graph-Hub/kg-microbe`, which that repository's `download.yaml`
-  fetches from the default branch.
+- The file fetched from the pinned URL has the SHA256 above. So does a 2026
+  local copy of KG-Microbe's raw Madin download. The `download.yaml` of
+  `Knowledge-Graph-Hub/kg-microbe` writes that download, from the default
+  branch, to `data/raw/madin_etal.csv`, which the repository gitignores; it is
+  not a file in the repository.
 
 Two earlier tables have other bytes, so neither can substitute for the pin:
 
@@ -119,8 +120,16 @@ Limits of the pin:
   repository history, not checked against the KG.
 - Records reach carriers by `tax_id` alone. A Madin carrier with no row
   matching the trait's declared field and value stays `unknown`.
-- The pin changes only the subsource columns of these sidecars. The KG, matrix,
-  profiles and arm calls are unchanged.
+- Supplying the table changes only the Madin-derived fields of these sidecars:
+  - `carrier_source_evidence.tsv`: `madin_subsources` and `madin_resolution`;
+  - the two support tables: `madin_subsources`, `unresolved_madin_carriers` and
+    `source_status`;
+  - `support_threshold_sensitivity.tsv`: the `exclude_known_gold_patric_only`
+    rows and the `source_unknown_taxa` column;
+  - `provenance.json`: `madin_status`, `source_status_counts` and the Madin
+    input record.
+
+  The KG, matrix, profiles and arm calls are unchanged.
 
 ## Products and interpretation
 

@@ -49,7 +49,8 @@ def serve(
 
 def test_pin_is_fixed_to_a_commit() -> None:
     assert re.fullmatch(r"[0-9a-f]{40}", MADIN_PIN.commit)
-    assert re.fullmatch(r"[0-9a-f]{64}", MADIN_PIN.sha256)
+    # A typo in the pinned hash must fail here, not only when a real download is refused.
+    assert MADIN_PIN.sha256 == "6100fc11679cd9facae65cad37a2969978bc64c3e57984d896f8147f78db6440"
     assert MADIN_PIN.url == (
         "https://raw.githubusercontent.com/bacteria-archaea-traits/bacteria-archaea-traits/"
         "396dcd4d98ca20b613ba280f5514611651b6fb91/output/condensed_traits_NCBI.csv"

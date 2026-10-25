@@ -82,6 +82,12 @@ def verify_madin_table(path: Path) -> dict[str, object]:
     return MADIN_PIN.descriptor()
 
 
+def verify_madin_record(label: str, size_bytes: int, sha256: str) -> dict[str, object]:
+    """Return the pin's descriptor if a recorded size and sha256 are the pin's; refuse them."""
+    _check(label, size_bytes, sha256)
+    return MADIN_PIN.descriptor()
+
+
 def download_madin_table(dest_dir: Path) -> Path:
     """Fetch the pinned table into *dest_dir*, anonymously; never keep bytes that fail the pin.
 
@@ -155,6 +161,7 @@ __all__ = [
     "SourcePin",
     "download_madin_table",
     "main",
+    "verify_madin_record",
     "verify_madin_table",
 ]
 

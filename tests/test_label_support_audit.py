@@ -259,6 +259,24 @@ def test_madin_table_that_differs_from_the_pin_fails_closed(
     assert not output.exists()
 
 
+def test_madin_table_swapped_after_verification_fails_closed(
+    inputs: dict[str, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The status rests on the inventoried hash, not on an earlier read of the file (#1067)."""
+    verify = madin_source.verify_madin_table
+
+    def verify_then_swap(path: Path) -> dict[str, object]:
+        descriptor = verify(path)
+        path.write_text(path.read_text(encoding="utf-8").replace("gold", "GOLD"), encoding="utf-8")
+        return descriptor
+
+    monkeypatch.setattr(madin_source, "verify_madin_table", verify_then_swap)
+    output = tmp_path / "audit"
+    with pytest.raises(madin_source.MadinPinError, match=r"has sha256 .*, expected"):
+        run_audit(inputs, output)
+    assert not output.exists()
+
+
 def test_absent_madin_table_stays_unknown_and_names_the_pin(
     inputs: dict[str, Path], tmp_path: Path
 ) -> None:

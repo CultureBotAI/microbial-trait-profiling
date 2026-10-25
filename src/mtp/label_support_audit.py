@@ -577,6 +577,13 @@ def run_label_support_audit(
         madin_source.verify_madin_table(madin_csv)
         inputs["madin"] = madin_csv
     provenance_inputs = {name: _inventory(path) for name, path in inputs.items()}
+    madin_status = "not_supplied_source_support_unknown"
+    if madin_csv is not None:
+        # The status rests on the recorded hash, so a file replaced after the check above
+        # is refused instead of being recorded as pinned_verified (#1067).
+        record = provenance_inputs["madin"]
+        madin_source.verify_madin_record(madin_csv.name, record["size_bytes"], record["sha256"])
+        madin_status = "pinned_verified"
     matrix = _read_counts(taxa_trait_count_reader(matrix_path))
     profiles = _read_counts(profile_count_reader(profiles_path))
     occurrences, scope_facts = bind_occurrences(taxa_path, matrix, profiles)
@@ -612,9 +619,7 @@ def run_label_support_audit(
         "strain_rollup": strain_rollup,
         "inputs": provenance_inputs,
         "scope": scope_facts,
-        "madin_status": "pinned_verified"
-        if madin_csv is not None
-        else "not_supplied_source_support_unknown",
+        "madin_status": madin_status,
         "madin_pin": madin_source.MADIN_PIN.descriptor(),
         "madin_rules": MADIN_RULES,
         "producer": _inventory(Path(__file__)),
