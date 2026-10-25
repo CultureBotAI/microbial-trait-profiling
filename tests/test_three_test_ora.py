@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import io
 from dataclasses import replace
 from pathlib import Path
 from typing import Any
@@ -316,10 +317,11 @@ def test_ora_empty_native_family_is_explicitly_untestable(tmp_path: Path) -> Non
 def test_ora_reports_list_size_balance_for_only_direction_eligible_pairs(tmp_path: Path) -> None:
     sources = ora_sources(
         tmp_path / "source",
-        {"A": [(1, 0)], "B": [(0, 1)], "C": [(0, 0)], "D": [(1, None)]},
+        {"A": [(1, 0), (1, 0)], "B": [(0, 1)], "C": [(0, 0)], "D": [(1, None)]},
         unpaired=True,
         draw_sizes={
             ("A", "e0", "inc"): 8,
+            ("A", "e1", "inc"): 8,
             ("B", "e0", "dec"): 8,
             ("C", "e0", "inc"): 5,
             ("C", "e0", "dec"): 5,
@@ -334,9 +336,32 @@ def test_ora_reports_list_size_balance_for_only_direction_eligible_pairs(tmp_pat
         "ora_direction_pairs_n_inc_eq_dec",
     ]
     for trait in ("trait-a", "trait-b", "trait-c"):
-        assert [indexed.at[trait, column] for column in columns] == [1, 1, 1]
-        assert indexed.at[trait, "ora_direction_pairs_eligible"] == 3
+        assert [indexed.at[trait, column] for column in columns] == [2, 1, 1], (
+            "List-size balance must retain increased/decreased ordering"
+        )
+        assert indexed.at[trait, "ora_direction_pairs_eligible"] == 4
+        assert indexed.at[trait, "ora_direction_pairs_total"] == 5
+        assert indexed.at[trait, "ora_direction_pairs_excluded"] == 1
     assert [indexed.at["trait-empty", column] for column in columns] == [0, 0, 0]
+
+
+def test_ora_nullable_counts_preserve_integer_text_and_missing_background(tmp_path: Path) -> None:
+    sources = ora_sources(tmp_path / "source", {f"S{i}": [(1, 0)] for i in range(3)})
+    table, _ = ora_table(sources)
+    columns = ("ora_enriched_inc", "ora_enriched_dec", "ora_depleted_inc", "ora_depleted_dec")
+    assert all(str(table[column].dtype) == "Int64" for column in columns), (
+        "ORA call counts must use nullable integers"
+    )
+    exported = {
+        row["trait"]: row
+        for row in csv.DictReader(io.StringIO(table.to_csv(sep="\t", index=False)), delimiter="\t")
+    }
+    assert exported["trait-a"]["ora_enriched_inc"] == "3"
+    assert exported["trait-a"]["ora_enriched_dec"] == "0"
+    assert exported["trait-c"]["ora_enriched_dec"] == "3"
+    assert exported["trait-a"]["ora_depleted_inc"] == "0"
+    assert exported["trait-a"]["ora_depleted_dec"] == "0"
+    assert all(exported["trait-empty"][column] == "" for column in columns)
 
 
 def test_ora_balanced_opposing_votes_are_mixed_not_none(tmp_path: Path) -> None:

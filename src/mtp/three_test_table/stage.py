@@ -23,7 +23,7 @@ from git import Repo
 
 from mtp.count_input import parse_nonnegative_integer
 from mtp.datamodel.multiple_testing_pydantic import PostArmMultiplicityRun
-from mtp.datamodel.workflow_pydantic import ContrastPopulation, DirectionBasis
+from mtp.datamodel.workflow_pydantic import ComparisonRun, ContrastPopulation, DirectionBasis
 from mtp.multiple_testing import canonical_sha256
 from mtp.multiplicity.families import rows
 from mtp.multiplicity.sources import VerifiedSources, bind_recorded_hashes, open_verified_sources
@@ -33,6 +33,7 @@ from mtp.three_test_table.carriers import carrier_table
 from mtp.three_test_table.composition import composition_table
 from mtp.three_test_table.native import native_tables, validate_native_overlap
 from mtp.three_test_table.ora import ora_table
+from mtp.three_test_table.publication import directory_mode
 
 VERSION = "three-test-per-trait-v1"
 MANIFEST = "three_test_run.json"
@@ -79,18 +80,37 @@ def _disjoint(path: Path, roots: list[Path]) -> None:
             raise ValueError("Sidecar outputs and scratch must be disjoint from source bundles")
 
 
+def _manifest_roots(
+    manifests: list[Path], *, multiplicity: Path | None, label_support: Path | None
+) -> list[Path]:
+    """Protect file aliases and their targets; directory inputs protect only themselves."""
+    files = list(manifests)
+    roots: list[Path] = []
+    for optional in (multiplicity, label_support):
+        if optional is not None:
+            if optional.is_dir():
+                roots.append(optional)
+            else:
+                files.append(optional)
+    for manifest in files:
+        # Resolve the file before taking its parent: a file symlink can point
+        # outside its alias directory, and both locations need write protection.
+        roots.extend((manifest.parent, manifest.resolve().parent))
+    return roots
+
+
 def _source_roots(
     sources: VerifiedSources, *, multiplicity: Path | None, label_support: Path | None
 ) -> list[Path]:
-    roots = [
-        Path(sources.core.manifest_path).parent,
-        Path(sources.comparison.manifest_path).parent,
-        *(Path(arm.manifest_path).parent for arm in sources.arms.values()),
-    ]
-    for optional in (multiplicity, label_support):
-        if optional is not None:
-            roots.append(optional if optional.is_dir() else optional.parent)
-    return roots
+    return _manifest_roots(
+        [
+            Path(sources.core.manifest_path),
+            Path(sources.comparison.manifest_path),
+            *(Path(arm.manifest_path) for arm in sources.arms.values()),
+        ],
+        multiplicity=multiplicity,
+        label_support=label_support,
+    )
 
 
 @contextmanager
@@ -187,6 +207,72 @@ def _publish_directory(staging: Path, destination: Path) -> None:
     if result != 0:
         error_number = ctypes.get_errno()
         raise OSError(error_number, os.strerror(error_number), str(destination))
+
+
+def _declared_source_roots(
+    comparison: Path, *, multiplicity: Path | None, label_support: Path | None
+) -> list[Path]:
+    """Read only declared locations for early write protection, never source verification."""
+    record = ComparisonRun.model_validate_json(comparison.read_text(encoding="utf-8"))
+    return _manifest_roots(
+        [
+            comparison,
+            Path(record.manifest_path),
+            Path(record.core_manifest_path),
+            Path(record.noel_manifest_path),
+            Path(record.jed_manifest_path),
+            Path(record.ilyas_manifest_path),
+        ],
+        multiplicity=multiplicity,
+        label_support=label_support,
+    )
+
+
+def _probe_publication(output: Path, protected: list[Path]) -> None:
+    """Probe both no-replace refusal and a real directory move on the output filesystem."""
+    output.parent.mkdir(parents=True, exist_ok=True)
+    probe = require_durable(output.parent / f".{output.name}-probe-{uuid.uuid4().hex}")
+    _disjoint(probe, protected)
+    # An exclusive mkdir reserves only our private probe; the requested output
+    # and any existing user directory are never used as a disposable target.
+    probe.mkdir(mode=0o700)
+    try:
+        source, target = probe / "source", probe / "target"
+        source.mkdir()
+        target.mkdir()
+        original_source, original_target = source.stat(), target.stat()
+        try:
+            _publish_directory(source, target)
+        except FileExistsError:
+            pass
+        else:
+            raise RuntimeError("Filesystem probe did not enforce exclusive rename")
+        if (
+            not source.is_dir()
+            or not target.is_dir()
+            or (source.stat().st_dev, source.stat().st_ino)
+            != (original_source.st_dev, original_source.st_ino)
+            or (target.stat().st_dev, target.stat().st_ino)
+            != (original_target.st_dev, original_target.st_ino)
+        ):
+            raise RuntimeError("Filesystem probe changed an existing rename target")
+        target.rmdir()
+        _publish_directory(source, target)
+        if (
+            source.exists()
+            or not target.is_dir()
+            or (target.stat().st_dev, target.stat().st_ino)
+            != (original_source.st_dev, original_source.st_ino)
+        ):
+            raise RuntimeError("Filesystem probe did not complete the exclusive rename")
+    finally:
+        # All paths are private, empty directories created above. No recursive
+        # deletion can reach a pre-existing directory or a source bundle.
+        for name in ("source", "target"):
+            member = probe / name
+            if member.exists():
+                member.rmdir()
+        probe.rmdir()
 
 
 def _inputs(paths: set[Path], sources: VerifiedSources) -> dict[str, dict[str, Any]]:
@@ -331,6 +417,13 @@ def run_table(
     _disjoint(output, [scratch])
     producer = _producer(code_commit)
     comparison_path = comparison / "comparison_run.json" if comparison.is_dir() else comparison
+    declared_roots = _declared_source_roots(
+        comparison_path, multiplicity=multiplicity, label_support=label_support
+    )
+    _disjoint(output, declared_roots)
+    _disjoint(scratch, declared_roots)
+    _probe_publication(output, [scratch, *declared_roots])
+    mode = directory_mode()
     comparison_hash = file_sha256(comparison_path)
     sources = bind_recorded_hashes(open_verified_sources(comparison_path), comparison_hash)
     roots = _source_roots(sources, multiplicity=multiplicity, label_support=label_support)
@@ -443,6 +536,7 @@ def run_table(
         (staging / MANIFEST).write_text(
             json.dumps(record, indent=2, sort_keys=True, allow_nan=False) + "\n", encoding="utf-8"
         )
+        staging.chmod(mode)
         # The completed bundle becomes visible in one no-replace rename. Any
         # preceding failure removes staging and leaves this destination retryable.
         _publish_directory(staging, output)
@@ -461,11 +555,19 @@ def verify_table(
     manifest = output / MANIFEST if output.is_dir() else output
     root = manifest.parent
     scratch = require_durable(scratch)
-    _disjoint(scratch, [root])
+    _disjoint(scratch, _manifest_roots([manifest], multiplicity=None, label_support=None))
     sources = open_verified_sources(comparison)
+    # Verified models may use canonical paths; retain the caller's file alias
+    # and the comparison's declared aliases before creating any replay scratch.
+    comparison_path = comparison / "comparison_run.json" if comparison.is_dir() else comparison
     _disjoint(
         scratch,
-        _source_roots(sources, multiplicity=multiplicity, label_support=label_support),
+        [
+            *_declared_source_roots(
+                comparison_path, multiplicity=multiplicity, label_support=label_support
+            ),
+            *_source_roots(sources, multiplicity=multiplicity, label_support=label_support),
+        ],
     )
     record: dict[str, Any] = json.loads(manifest.read_text(encoding="utf-8"))
     if record.get("version") != VERSION:

@@ -1,5 +1,7 @@
 """Issue #1044: import complete native families without changing their estimands."""
 
+import csv
+import io
 from dataclasses import replace
 from pathlib import Path
 
@@ -31,6 +33,31 @@ def _noel_path(sources: VerifiedSources) -> Path:
     return recorded_arm_output(
         sources.arms["noel"], "directional_screen", "trait_direction_screen.tsv"
     )
+
+
+@pytest.mark.parametrize("subset", [False, True])
+def test_native_nullable_counts_preserve_producer_integers_and_unselected_blanks(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, subset: bool
+) -> None:
+    sources = fixture_sources(tmp_path, monkeypatch, subset=subset)
+    table, _ = native_tables(sources)
+    fields = {
+        "native_selected_study_count": "study_count",
+        "native_selected_experiment_count": "pair_count",
+        "native_selected_profile_support": "profile_support",
+    }
+    assert all(str(table[column].dtype) == "Int64" for column in fields), (
+        "Native selected counts must use nullable integers"
+    )
+    exported = {
+        row["trait"]: row
+        for row in csv.DictReader(io.StringIO(table.to_csv(sep="\t", index=False)), delimiter="\t")
+    }
+    for original in rows(_native_path(sources)):
+        for target, source in fields.items():
+            assert exported[original["trait"]][target] == original[source]
+    if not subset:
+        assert all(exported["qualified|extra"][column] == "" for column in fields)
 
 
 @pytest.mark.parametrize("subset", [False, True])

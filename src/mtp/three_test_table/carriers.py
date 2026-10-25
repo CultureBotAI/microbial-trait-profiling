@@ -24,6 +24,12 @@ from mtp.paths import file_sha256
 CARRIER_POPULATION = "reported_taxa_observed_in_supplied_count_profiles"
 SCOPE_DESCRIPTION = "exact supplied profile keys; no independent host or orientation claim"
 Cell = tuple[str, str]
+_NULLABLE_COUNTS = (
+    "carrier_direct_reported_taxa",
+    "carrier_inherited_reported_taxa",
+    "carrier_unique_taxa",
+    "carrier_source_record_count",
+)
 
 
 def _empty(traits: tuple[str, ...], status: str) -> pd.DataFrame:
@@ -41,7 +47,7 @@ def _empty(traits: tuple[str, ...], status: str) -> pd.DataFrame:
             "carrier_source_record_status": "unresolved_original_record_identifiers_unavailable",
             "carrier_madin_status": "not_supplied",
         }
-    )
+    ).astype(dict.fromkeys(_NULLABLE_COUNTS, "Int64"))
 
 
 def _mapping(value: Any, label: str) -> dict[str, Any]:

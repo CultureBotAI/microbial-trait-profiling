@@ -50,8 +50,10 @@ fails before publication. The native profile standardization also treats exact
 zero SD differently from the adapter's 1e-12 threshold, so resulting mismatches
 are rejected rather than silently reconciled.
 
-The secondary Wilcoxon test uses the study-level mean delta-z: two-sided signed
-rank, `zero_method="wilcox"`, `method="approx"`, continuity correction disabled.
+The secondary Wilcoxon test was declared at the study level before computation:
+each study contributes one mean delta-z, regardless of its number of experiments.
+It uses two-sided signed rank, `zero_method="wilcox"`, `method="approx"`,
+continuity correction disabled.
 Zero differences are removed from ranking. All-zero or absent contrasts are
 untestable. Correct across the full retained catalog with BY and companion BH,
 holding untestable traits at internal p=1. It is secondary and never a headline.
@@ -201,6 +203,22 @@ bind the implementation. Untracked logs or scratch files do not change that flag
 Exclusive publication uses Darwin `renamex_np` or Linux `renameat2`. An
 unsupported platform, C library or filesystem operation fails closed; it never
 falls back to a rename that could replace an existing destination.
+
+Before expensive source verification, a private probe in the output parent
+directory checks that exclusive rename both rejects an existing destination and
+can publish to an absent one. The probe follows checks that keep output and scratch
+separate from declared source directories; it never targets the requested output. Final
+publication still uses exclusive rename. Staging stays private while files are
+written; its directory permissions are set to `0777 & ~umask` using the captured
+inherited mask before publication, without changing the parent process's umask.
+Optional count columns use nullable
+integers: populated counts serialize as integers, and unavailable counts stay blank.
+
+An uncatchable termination such as SIGKILL can leave hidden
+`.<name>-staging-*` or `.<name>-probe-*` directories in the output parent. They are
+unpublished intermediates, even if they contain a manifest. After confirming that
+their producer has stopped, they may be removed; do not remove an active staging
+directory. Only the final requested output directory is a published bundle.
 
 Verification checks the exact output inventory and regenerates results from the
 verified source bundles. It compares the complete record, including numerical

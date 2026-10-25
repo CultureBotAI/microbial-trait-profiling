@@ -23,6 +23,11 @@ from mtp.multiplicity.sources import VerifiedSources
 __all__ = ["native_tables", "validate_native_overlap"]
 
 _NOEL_COUNTS = ("studies_up", "studies_down", "studies_tied", "studies_scored")
+_NULLABLE_COUNTS = (
+    "native_selected_study_count",
+    "native_selected_experiment_count",
+    "native_selected_profile_support",
+)
 _NOEL_PROBABILITIES = {
     "share_up": "share_up",
     "ci_low": "ci_low",
@@ -152,7 +157,8 @@ def native_tables(sources: VerifiedSources) -> tuple[pd.DataFrame, tuple[Path, .
                 raise ValueError("Tested native trait lacks an exported statistic or interval")
         records.append(record)
     consumed = tuple(sorted(set(noel_input.source_paths) | set(native_input.source_paths)))
-    return pd.DataFrame.from_records(records), consumed
+    table = pd.DataFrame.from_records(records).astype(dict.fromkeys(_NULLABLE_COUNTS, "Int64"))
+    return table, consumed
 
 
 def _overlap_number(row: pd.Series, column: str, trait: str) -> float:

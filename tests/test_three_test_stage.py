@@ -6,6 +6,7 @@ import ctypes
 import errno
 import json
 import os
+import stat
 import sys
 import tempfile
 from collections.abc import Iterator
@@ -22,10 +23,12 @@ from git import Actor, Repo
 
 from mtp.datamodel.multiple_testing_pydantic import PostArmMultiplicityRun
 from mtp.datamodel.workflow_pydantic import (
+    ArmRun,
     ComparisonRun,
     ContrastPopulation,
     DirectionBasis,
     ExecutionStatus,
+    WorkflowRun,
 )
 from mtp.multiplicity.sources import VerifiedSources
 from mtp.multiplicity.stage import run_post_arm, verify_post_arm
@@ -52,6 +55,14 @@ def sources_for_stage(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Verifi
     sources.core.git_commit = "a" * 40
     sources.comparison.id = "fixture-comparison"
     sources.comparison.git_commit = "b" * 40
+    sources.comparison.status = ExecutionStatus.completed
+    sources.comparison.started_at = datetime(2026, 10, 25, tzinfo=UTC)
+    sources.comparison.git_dirty = False
+    sources.comparison.analysis_specs = []
+    sources.comparison.eligibility_ledgers = []
+    sources.comparison.calibration_verdicts = []
+    checked = ComparisonRun.model_validate(sources.comparison.model_dump())
+    Path(checked.manifest_path).write_text(checked.model_dump_json())
     for name, arm in sources.arms.items():
         arm.id = f"fixture-{name}"
         arm.git_commit = "c" * 40
@@ -59,8 +70,317 @@ def sources_for_stage(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Verifi
     return sources
 
 
-def test_real_verification_rejects_an_uncompleted_comparison_before_writes(tmp_path: Path) -> None:
-    comparison = tmp_path / "comparison_run.json"
+@pytest.mark.parametrize("error_number", [errno.ENOTSUP, errno.ENOSYS])
+def test_rename_capability_failure_precedes_source_verification(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, error_number: int
+) -> None:
+    sources = sources_for_stage(tmp_path, monkeypatch)
+    forbidden = Mock(side_effect=AssertionError("source verification ran before capability check"))
+    monkeypatch.setattr(stage, "open_verified_sources", forbidden)
+    monkeypatch.setattr(
+        stage, "_publish_directory", Mock(side_effect=OSError(error_number, "unsupported rename"))
+    )
+    with pytest.raises(OSError, match="unsupported rename"):
+        stage.run_table(
+            Path(sources.comparison.manifest_path),
+            tmp_path / "output",
+            scratch=tmp_path / "scratch",
+        )
+    forbidden.assert_not_called()
+    assert not (tmp_path / "output").exists()
+    assert not list(tmp_path.glob(".output-probe-*"))
+
+
+@pytest.mark.parametrize("mutation", ["overwrite", "no_op", "always_exists"])
+def test_capability_probe_checks_no_overwrite_and_real_move(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mutation: str
+) -> None:
+    sources = sources_for_stage(tmp_path, monkeypatch)
+    forbidden = Mock(side_effect=AssertionError("source verification ran before capability check"))
+    monkeypatch.setattr(stage, "open_verified_sources", forbidden)
+
+    def wrong_rename(source: Path, destination: Path) -> None:
+        if mutation == "overwrite":
+            source.rename(destination)
+        elif mutation == "always_exists" or destination.exists():
+            raise FileExistsError(errno.EEXIST, "probe always exists")
+
+    monkeypatch.setattr(stage, "_publish_directory", wrong_rename)
+    with pytest.raises((OSError, RuntimeError), match=r"(probe|exclusive rename)"):
+        stage.run_table(
+            Path(sources.comparison.manifest_path),
+            tmp_path / "output",
+            scratch=tmp_path / "scratch",
+        )
+    forbidden.assert_not_called()
+    assert not (tmp_path / "output").exists()
+    assert not list(tmp_path.glob(".output-probe-*"))
+
+
+def test_successful_probe_uses_only_private_siblings_and_cleans_before_verification(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    sources = sources_for_stage(tmp_path, monkeypatch)
+    original = stage._publish_directory
+    calls: list[tuple[Path, Path]] = []
+
+    def inspect(source: Path, destination: Path) -> None:
+        assert source.parent == destination.parent
+        assert source.parent.parent == tmp_path
+        assert stat.S_IMODE(source.parent.stat().st_mode) == 0o700
+        calls.append((source, destination))
+        original(source, destination)
+
+    def stop_after_probe(_comparison: Path) -> VerifiedSources:
+        assert len(calls) == 2
+        assert not list(tmp_path.glob(".output-probe-*"))
+        raise ValueError("reached verification after successful probe")
+
+    monkeypatch.setattr(stage, "_publish_directory", inspect)
+    monkeypatch.setattr(stage, "open_verified_sources", stop_after_probe)
+    with pytest.raises(ValueError, match="reached verification after successful probe"):
+        stage.run_table(
+            Path(sources.comparison.manifest_path),
+            tmp_path / "output",
+            scratch=tmp_path / "scratch",
+        )
+    assert not (tmp_path / "output").exists()
+
+
+@pytest.mark.parametrize("mask", [0o002, 0o022, 0o027, 0o077])
+def test_published_directory_respects_requested_umask(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mask: int
+) -> None:
+    sources = sources_for_stage(tmp_path, monkeypatch)
+    monkeypatch.setattr(stage, "directory_mode", lambda: 0o777 & ~mask, raising=False)
+    output = tmp_path / "output"
+    stage.run_table(Path(sources.comparison.manifest_path), output, scratch=tmp_path / "scratch")
+    assert stat.S_IMODE(output.stat().st_mode) == 0o777 & ~mask
+
+
+def test_chmod_failure_does_not_publish_and_cleans_staging(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    sources = sources_for_stage(tmp_path, monkeypatch)
+    output = tmp_path / "output"
+    original = Path.chmod
+
+    def reject_staging(path: Path, mode: int, *, follow_symlinks: bool = True) -> None:
+        if path.name.startswith(".output-staging-"):
+            raise PermissionError("injected staging chmod failure")
+        original(path, mode, follow_symlinks=follow_symlinks)
+
+    monkeypatch.setattr(Path, "chmod", reject_staging)
+    with pytest.raises(PermissionError, match="injected staging chmod failure"):
+        stage.run_table(
+            Path(sources.comparison.manifest_path), output, scratch=tmp_path / "scratch"
+        )
+    assert not output.exists()
+    assert not list(tmp_path.glob(".output-staging-*"))
+
+
+def test_mask_query_failure_precedes_source_verification(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    sources = sources_for_stage(tmp_path, monkeypatch)
+    forbidden = Mock(side_effect=AssertionError("source verification ran before permission query"))
+    monkeypatch.setattr(stage, "open_verified_sources", forbidden)
+    monkeypatch.setattr(
+        stage, "directory_mode", Mock(side_effect=RuntimeError("umask query failed"))
+    )
+    with pytest.raises(RuntimeError, match="umask query failed"):
+        stage.run_table(
+            Path(sources.comparison.manifest_path),
+            tmp_path / "output",
+            scratch=tmp_path / "scratch",
+        )
+    forbidden.assert_not_called()
+    assert not (tmp_path / "output").exists()
+    assert not list(tmp_path.glob(".output-probe-*"))
+
+
+@pytest.mark.parametrize("location", ["core", "comparison", "noel", "jed", "ilyas"])
+def test_output_source_overlap_is_rejected_before_any_probe_or_verification(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, location: str
+) -> None:
+    sources = sources_for_stage(tmp_path, monkeypatch)
+    comparison = Path(sources.comparison.manifest_path)
+    protected = (
+        Path(sources.core.manifest_path).parent
+        if location == "core"
+        else comparison.parent
+        if location == "comparison"
+        else Path(sources.arms[location].manifest_path).parent
+    )
+    before = set(protected.rglob("*"))
+    probe = Mock(side_effect=AssertionError("probe ran before source overlap checks"))
+    verification = Mock(side_effect=AssertionError("verification ran before source overlap checks"))
+    monkeypatch.setattr(stage, "_probe_publication", probe)
+    monkeypatch.setattr(stage, "open_verified_sources", verification)
+    with pytest.raises(ValueError, match="disjoint"):
+        stage.run_table(comparison, protected / "output", scratch=tmp_path / "scratch")
+    probe.assert_not_called()
+    verification.assert_not_called()
+    assert set(protected.rglob("*")) == before
+
+
+@pytest.mark.parametrize(
+    "role", ["comparison", "core", "noel", "jed", "ilyas", "multiplicity", "label_support"]
+)
+@pytest.mark.parametrize("destination", ["output", "scratch"])
+@pytest.mark.parametrize("protected_spelling", ["target", "alias"])
+def test_manifest_file_aliases_protect_both_locations_before_any_write(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    role: str,
+    destination: str,
+    protected_spelling: str,
+) -> None:
+    sources = sources_for_stage(tmp_path, monkeypatch)
+    comparison = Path(sources.comparison.manifest_path)
+    record = json.loads(comparison.read_text())
+    options: dict[str, Path] = {}
+    if role == "comparison":
+        original = comparison
+    elif role == "core":
+        original = Path(sources.core.manifest_path)
+    elif role in sources.arms:
+        original = Path(sources.arms[role].manifest_path)
+    else:
+        original = tmp_path / "optional-evidence" / role / "manifest.json"
+        original.parent.mkdir(parents=True)
+        original.write_text("{}\n")
+    alias = tmp_path / "manifest-aliases" / f"{role}.json"
+    alias.parent.mkdir()
+    alias.symlink_to(original)
+    if role == "comparison":
+        comparison = alias
+    elif role in {"core", "noel", "jed", "ilyas"}:
+        record[f"{role}_manifest_path"] = str(alias)
+        comparison.write_text(json.dumps(record))
+    else:
+        options[role] = alias
+    protected = original.parent if protected_spelling == "target" else alias.parent
+    before = set(protected.rglob("*"))
+    nested = protected / "must-not-be-created" / destination
+    output = nested if destination == "output" else tmp_path / "output"
+    scratch = nested if destination == "scratch" else tmp_path / "scratch"
+    probe = Mock(side_effect=AssertionError("probe ran before alias overlap checks"))
+    verification = Mock(side_effect=AssertionError("verification ran before alias overlap checks"))
+    monkeypatch.setattr(stage, "_probe_publication", probe)
+    monkeypatch.setattr(stage, "open_verified_sources", verification)
+    with pytest.raises(ValueError, match="disjoint"):
+        stage.run_table(
+            comparison,
+            output,
+            scratch=scratch,
+            multiplicity=options.get("multiplicity"),
+            label_support=options.get("label_support"),
+        )
+    probe.assert_not_called()
+    verification.assert_not_called()
+    assert not nested.parent.exists()
+    assert set(protected.rglob("*")) == before
+
+
+@pytest.mark.parametrize("role", ["multiplicity", "label_support"])
+def test_optional_directory_alias_keeps_disjoint_siblings_available(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, role: str
+) -> None:
+    sources = sources_for_stage(tmp_path, monkeypatch)
+    comparison = Path(sources.comparison.manifest_path)
+    target = tmp_path / "optional-evidence" / role
+    target.mkdir(parents=True)
+    alias = tmp_path / "directory-aliases" / role
+    alias.parent.mkdir()
+    alias.symlink_to(target, target_is_directory=True)
+    options = {role: alias}
+    for roots in (
+        stage._declared_source_roots(
+            comparison,
+            multiplicity=options.get("multiplicity"),
+            label_support=options.get("label_support"),
+        ),
+        stage._source_roots(
+            sources,
+            multiplicity=options.get("multiplicity"),
+            label_support=options.get("label_support"),
+        ),
+    ):
+        with pytest.raises(ValueError, match="disjoint"):
+            stage._disjoint(target / "nested", roots)
+        stage._disjoint(alias.parent / "disjoint-output", roots)
+
+
+@pytest.mark.parametrize("destination", ["output", "scratch"])
+def test_self_declared_comparison_location_is_protected_before_any_write(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, destination: str
+) -> None:
+    sources = sources_for_stage(tmp_path, monkeypatch)
+    original = Path(sources.comparison.manifest_path)
+    relocated = tmp_path / "relocated-comparison" / original.name
+    relocated.parent.mkdir()
+    relocated.write_bytes(original.read_bytes())
+    protected = original.parent
+    before = set(protected.rglob("*"))
+    nested = protected / "must-not-be-created" / destination
+    output = nested if destination == "output" else tmp_path / "output"
+    scratch = nested if destination == "scratch" else tmp_path / "scratch"
+    probe = Mock(side_effect=AssertionError("probe ran before self-declared source preflight"))
+    verifier = Mock(side_effect=AssertionError("verification ran before source preflight"))
+    monkeypatch.setattr(stage, "_probe_publication", probe)
+    monkeypatch.setattr(stage, "open_verified_sources", verifier)
+    with pytest.raises(ValueError, match="disjoint"):
+        stage.run_table(relocated, output, scratch=scratch)
+    probe.assert_not_called()
+    verifier.assert_not_called()
+    assert not nested.parent.exists()
+    assert set(protected.rglob("*")) == before
+
+
+@pytest.mark.parametrize(
+    "role", ["comparison", "core", "noel", "jed", "ilyas", "multiplicity", "label_support"]
+)
+@pytest.mark.parametrize("protected_spelling", ["target", "alias"])
+def test_verified_manifest_file_aliases_protect_both_locations(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, role: str, protected_spelling: str
+) -> None:
+    sources = sources_for_stage(tmp_path, monkeypatch)
+    records: dict[str, ComparisonRun | WorkflowRun | ArmRun] = {
+        "comparison": sources.comparison,
+        "core": sources.core,
+        **sources.arms,
+    }
+    options: dict[str, Path] = {}
+    if role in records:
+        original = Path(records[role].manifest_path)
+    else:
+        original = tmp_path / "optional-evidence" / role / "manifest.json"
+        original.parent.mkdir(parents=True)
+        original.write_text("{}\n")
+    alias = tmp_path / "manifest-aliases" / f"{role}.json"
+    alias.parent.mkdir()
+    alias.symlink_to(original)
+    if role in records:
+        records[role].manifest_path = str(alias)
+    else:
+        options[role] = alias
+    roots = stage._source_roots(
+        sources,
+        multiplicity=options.get("multiplicity"),
+        label_support=options.get("label_support"),
+    )
+    protected = original.parent if protected_spelling == "target" else alias.parent
+    with pytest.raises(ValueError, match="disjoint"):
+        stage._disjoint(protected / "output", roots)
+
+
+def test_real_verification_rejects_an_uncompleted_comparison_before_publication(
+    tmp_path: Path,
+) -> None:
+    inputs = tmp_path / "inputs"
+    inputs.mkdir()
+    comparison = inputs / "comparison_run.json"
     failed = ComparisonRun(
         id="uncompleted-fixture",
         contrast_population=ContrastPopulation.all_paired,
@@ -68,14 +388,14 @@ def test_real_verification_rejects_an_uncompleted_comparison_before_writes(tmp_p
         status=ExecutionStatus.failed,
         started_at=datetime(2026, 10, 25, tzinfo=UTC),
         manifest_path=str(comparison),
-        core_manifest_path=str(tmp_path / "absent-core.json"),
+        core_manifest_path=str(inputs / "absent-core.json"),
         core_manifest_sha256="a" * 64,
         core_run_id="absent-core",
-        noel_manifest_path=str(tmp_path / "absent-noel.json"),
+        noel_manifest_path=str(inputs / "absent-noel.json"),
         noel_manifest_sha256="b" * 64,
-        jed_manifest_path=str(tmp_path / "absent-jed.json"),
+        jed_manifest_path=str(inputs / "absent-jed.json"),
         jed_manifest_sha256="c" * 64,
-        ilyas_manifest_path=str(tmp_path / "absent-ilyas.json"),
+        ilyas_manifest_path=str(inputs / "absent-ilyas.json"),
         ilyas_manifest_sha256="d" * 64,
         git_commit="e" * 40,
         git_dirty=False,
@@ -203,6 +523,9 @@ def test_concurrent_destination_is_never_overwritten(
     publish = stage._publish_directory
 
     def create_competitor(staging: Path, destination: Path) -> None:
+        if destination != output:
+            publish(staging, destination)
+            return
         if competitor in {"empty_directory", "directory"}:
             destination.mkdir()
             if competitor == "directory":
@@ -297,6 +620,10 @@ def test_run_rejects_scratch_inside_a_source_before_creating_it(
         options["multiplicity" if location == "multiplicity" else "label_support"] = protected
     before = set(protected.rglob("*"))
     scratch = protected / "must-not-be-created"
+    probe = Mock(side_effect=AssertionError("probe ran before source overlap checks"))
+    monkeypatch.setattr(stage, "_probe_publication", probe, raising=False)
+    verification = Mock(side_effect=AssertionError("verification ran before source overlap checks"))
+    monkeypatch.setattr(stage, "open_verified_sources", verification)
     with pytest.raises(ValueError, match="disjoint"):
         stage.run_table(
             comparison,
@@ -307,6 +634,8 @@ def test_run_rejects_scratch_inside_a_source_before_creating_it(
         )
     assert set(protected.rglob("*")) == before
     assert not (tmp_path / "output").exists()
+    probe.assert_not_called()
+    verification.assert_not_called()
 
 
 @pytest.mark.parametrize("traits", [["a", "a"], ["a"], ["a", "b", "extra"]])
@@ -545,6 +874,81 @@ def test_verify_rejects_overlapping_scratch_before_creating_any_directory(
     after = {path.relative_to(protected): path.is_dir() for path in protected.rglob("*")}
     assert after == before
     assert not scratch.exists()
+
+
+@pytest.mark.parametrize(
+    "role", ["comparison_file", "comparison_directory", "core", "noel", "jed", "ilyas"]
+)
+@pytest.mark.parametrize("protected_spelling", ["target", "alias"])
+def test_verify_preserves_declared_alias_roots_when_verified_records_are_canonical(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, role: str, protected_spelling: str
+) -> None:
+    sources = sources_for_stage(tmp_path, monkeypatch)
+    comparison = Path(sources.comparison.manifest_path)
+    if role.startswith("comparison_"):
+        original = comparison
+    elif role == "core":
+        original = Path(sources.core.manifest_path)
+    else:
+        original = Path(sources.arms[role].manifest_path)
+    alias = tmp_path / "declared-aliases" / original.name
+    alias.parent.mkdir()
+    alias.symlink_to(original)
+    if role.startswith("comparison_"):
+        comparison = alias.parent if role == "comparison_directory" else alias
+    else:
+        declared = json.loads(comparison.read_text())
+        declared[f"{role}_manifest_path"] = str(alias)
+        comparison.write_text(json.dumps(declared))
+    # The source fixture returns canonical model paths, as upstream verification
+    # can do even though the caller or the comparison record used a file alias.
+    output = tmp_path / "output"
+    stage.run_table(comparison, output, scratch=tmp_path / "initial-scratch")
+    verified = Mock(return_value=sources)
+    monkeypatch.setattr(stage, "open_verified_sources", verified)
+    replay = Mock(side_effect=AssertionError("replay ran before alias scratch preflight"))
+    monkeypatch.setattr(stage, "run_table", replay)
+    protected = original.parent if protected_spelling == "target" else alias.parent
+    before = set(protected.rglob("*"))
+    scratch = protected / "must-not-be-created" / "scratch"
+    with pytest.raises(ValueError, match="disjoint"):
+        stage.verify_table(output, comparison, scratch=scratch)
+    verified.assert_called_once_with(comparison)
+    replay.assert_not_called()
+    assert not scratch.parent.exists()
+    assert set(protected.rglob("*")) == before
+
+
+@pytest.mark.parametrize("protected_spelling", ["target", "alias"])
+def test_verify_output_manifest_file_alias_protects_both_bundle_locations(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, protected_spelling: str
+) -> None:
+    sources = sources_for_stage(tmp_path, monkeypatch)
+    comparison = Path(sources.comparison.manifest_path)
+    original = tmp_path / "output"
+    record = stage.run_table(comparison, original, scratch=tmp_path / "initial-scratch")
+    alias_root = tmp_path / "output-alias"
+    alias_root.mkdir()
+    for name in record["outputs"]:
+        (alias_root / name).write_bytes((original / name).read_bytes())
+    alias = alias_root / stage.MANIFEST
+    alias.symlink_to(original / stage.MANIFEST)
+    # A manifest file alias with matching sibling tables is an accepted bundle;
+    # replay must keep this inventory lookup behavior for a disjoint scratch.
+    assert stage.verify_table(alias, comparison, scratch=tmp_path / "valid-replay") == record
+    verifier = Mock(side_effect=AssertionError("source verification ran before output preflight"))
+    replay = Mock(side_effect=AssertionError("replay ran before output scratch preflight"))
+    monkeypatch.setattr(stage, "open_verified_sources", verifier)
+    monkeypatch.setattr(stage, "run_table", replay)
+    protected = original if protected_spelling == "target" else alias_root
+    before = set(protected.rglob("*"))
+    scratch = protected / "must-not-be-created" / "scratch"
+    with pytest.raises(ValueError, match="disjoint"):
+        stage.verify_table(alias, comparison, scratch=scratch)
+    verifier.assert_not_called()
+    replay.assert_not_called()
+    assert not scratch.parent.exists()
+    assert set(protected.rglob("*")) == before
 
 
 @pytest.mark.parametrize("mutation", ["artifact", "manifest", "extra", "remove", "symlink"])

@@ -1,4 +1,4 @@
-"""Probe carrier and ORA guards using isolated source copies (#1077; 2026-10-25).
+"""Probe sidecar guards using isolated source copies (#1077, #1081; 2026-10-25).
 
 Inputs: this checkout's sidecar modules and regression tests. Outputs: a mutant
 module, pytest.log and evidence.json in a fresh --output-dir; pytest and SQLite
@@ -24,6 +24,46 @@ from mtp.three_test_table.stage import durable_scratch, require_durable
 
 ROOT = Path(__file__).resolve().parents[2]
 MUTATIONS = {
+    "ora_list_size_direction": (
+        "ora",
+        '"ora_direction_pairs_n_inc_gt_dec": population.inc_larger_pairs if background_k else 0,\n'
+        '        "ora_direction_pairs_n_inc_lt_dec": '
+        "population.dec_larger_pairs if background_k else 0,",
+        '"ora_direction_pairs_n_inc_gt_dec": population.dec_larger_pairs if background_k else 0,\n'
+        '        "ora_direction_pairs_n_inc_lt_dec": '
+        "population.inc_larger_pairs if background_k else 0,",
+        "test_ora_reports_list_size_balance_for_only_direction_eligible_pairs",
+        "test_ora_reports_list_size_balance_for_only_direction_eligible_pairs",
+        "List-size balance must retain increased/decreased ordering",
+        1,
+    ),
+    "ora_nullable_counts": (
+        "ora",
+        '.astype(dict.fromkeys(_NULLABLE_COUNTS, "Int64"))',
+        "",
+        "test_ora_nullable_counts_preserve_integer_text_and_missing_background",
+        "test_ora_nullable_counts_preserve_integer_text_and_missing_background",
+        "ORA call counts must use nullable integers",
+        1,
+    ),
+    "native_nullable_counts": (
+        "native",
+        '.astype(dict.fromkeys(_NULLABLE_COUNTS, "Int64"))',
+        "",
+        "test_native_nullable_counts_preserve_producer_integers_and_unselected_blanks",
+        "test_native_nullable_counts_preserve_producer_integers_and_unselected_blanks",
+        "Native selected counts must use nullable integers",
+        2,
+    ),
+    "carrier_nullable_counts": (
+        "carriers",
+        '.astype(dict.fromkeys(_NULLABLE_COUNTS, "Int64"))',
+        "",
+        "test_carrier_nullable_counts_preserve_unresolved_and_observed_values",
+        "test_carrier_nullable_counts_preserve_unresolved_and_observed_values",
+        "Carrier counts must use nullable integers",
+        2,
+    ),
     "carrier_evidence_count": (
         "carriers",
         "if count != expected[key] or bool(direct) != support[key][0]:",
@@ -86,10 +126,11 @@ def main() -> int:
         raise ValueError("Probe output and scratch must be separate directories")
     output.mkdir(parents=True, exist_ok=False)
     scratch.mkdir(parents=True, exist_ok=False)
-    tests = [ROOT / f"tests/test_three_test_{name}.py" for name in ("carriers", "ora")]
+    modules = ("carriers", "ora", "native")
+    tests = [ROOT / f"tests/test_three_test_{name}.py" for name in modules]
     canonical = [
         *tests,
-        *(ROOT / f"src/mtp/three_test_table/{name}.py" for name in ("carriers", "ora")),
+        *(ROOT / f"src/mtp/three_test_table/{name}.py" for name in modules),
         Path(__file__).resolve(),
     ]
     before = {str(path.relative_to(ROOT)): file_sha256(path) for path in canonical}

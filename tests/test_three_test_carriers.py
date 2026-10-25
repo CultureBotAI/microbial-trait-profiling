@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import csv
+import io
 import json
 from dataclasses import replace
 from pathlib import Path
@@ -159,6 +161,34 @@ def test_carrier_positive_audit_counts_unique_carriers_not_source_records(tmp_pa
     assert pd.isna(result.loc[OUTSIDE, "carrier_unique_taxa"])
     assert audit / "provenance.json" in paths
     assert audit / "carrier_source_evidence.tsv" in paths
+
+
+@pytest.mark.parametrize("supplied", [False, True])
+def test_carrier_nullable_counts_preserve_unresolved_and_observed_values(
+    tmp_path: Path, supplied: bool
+) -> None:
+    sources, audit = audit_fixture(tmp_path / "inputs")
+    table, _ = carrier_table(sources, audit if supplied else None)
+    columns = (
+        "carrier_direct_reported_taxa",
+        "carrier_inherited_reported_taxa",
+        "carrier_unique_taxa",
+        "carrier_source_record_count",
+    )
+    assert all(str(table[column].dtype) == "Int64" for column in columns), (
+        "Carrier counts must use nullable integers"
+    )
+    exported = {
+        row["trait"]: row
+        for row in csv.DictReader(io.StringIO(table.to_csv(sep="\t", index=False)), delimiter="\t")
+    }
+    assert all(row["carrier_source_record_count"] == "" for row in exported.values())
+    if supplied:
+        assert [exported[CELL][column] for column in columns[:3]] == ["1", "1", "2"]
+        assert [exported[ANAEROBIC][column] for column in columns[:3]] == ["0", "0", "0"]
+        assert all(exported[OUTSIDE][column] == "" for column in columns)
+    else:
+        assert all(row[column] == "" for row in exported.values() for column in columns)
 
 
 @pytest.mark.parametrize(

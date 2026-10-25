@@ -36,6 +36,7 @@ DIRECTION_FAMILY = "ora-study-enrichment-direction-v1"
 CALIBRATION_STATUS = "uncalibrated (methods/calibration.md excludes native ORA)"
 ProfileKey = tuple[str, str, str]
 PairKey = tuple[str, str]
+_NULLABLE_COUNTS = ("ora_enriched_inc", "ora_enriched_dec", "ora_depleted_inc", "ora_depleted_dec")
 
 
 @dataclass(frozen=True)
@@ -243,4 +244,5 @@ def ora_table(sources: VerifiedSources) -> tuple[pd.DataFrame, tuple[Path, ...]]
             record[f"ora_direction_{method}_q"] = (
                 q if record["ora_direction_status"] == "tested" else None
             )
-    return pd.DataFrame(records), family.source_paths
+    table = pd.DataFrame(records).astype(dict.fromkeys(_NULLABLE_COUNTS, "Int64"))
+    return table, family.source_paths
