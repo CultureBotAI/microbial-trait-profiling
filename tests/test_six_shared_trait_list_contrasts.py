@@ -232,10 +232,16 @@ def test_trait_list_provenance_records_the_list_inputs_and_table(
     assert list(provenance["cells_per_trait"]) == declared_ids
     assert sum(provenance["cells_per_trait"].values()) == len(contrasts)
     assert sum(provenance["cells_per_mode"].values()) == len(contrasts)
+    declared_ranks = {trait_id: rank for rank, trait_id in enumerate(declared_ids)}
     for mode in heatmaps.CONTRAST_MODES:
-        for view_key in (mode.increased_view_key, mode.decreased_view_key):
+        for direction, view_key in (
+            ("increased", mode.increased_view_key),
+            ("decreased", mode.decreased_view_key),
+        ):
             edges = pd.read_csv(output / heatmaps.trait_list_edges_filename(view_key), sep="\t")
-            assert set(edges["trait_id"]) <= set(declared_ids)
+            assert set(edges["trait_id"]) == set(declared_ids)
+            assert edges["focus_direction"].eq(direction).all()
+            assert edges["trait_rank"].tolist() == edges["trait_id"].map(declared_ranks).tolist()
     assert not any(output.glob("*.png"))
 
 
@@ -320,15 +326,33 @@ def test_cli_writes_trait_list_contrasts_and_requires_an_output_dir(
     assert provenance["code_commit"] == "abc1234"
 
 
+@pytest.mark.parametrize(
+    "argv",
+    [
+        ["--profiles", "profiles.tsv"],
+        ["--output-dir", "output"],
+        ["--code-commit", ""],
+    ],
+)
 def test_trait_list_inputs_never_reach_the_six_trait_run(
-    tmp_path: Path, run_inputs: dict[str, Path], capsys: pytest.CaptureFixture[str]
+    argv: list[str], capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """The six-trait maps read fixed paths, so a stray input flag must stop, not be ignored."""
+    """Trait-list inputs are rejected without --trait-list, an empty commit included (#1083)."""
     with patch.object(sankeys, "main") as six_trait_main, pytest.raises(SystemExit):
-        sankeys.cli(["--profiles", str(run_inputs["profiles"])])
+        sankeys.cli(argv)
     six_trait_main.assert_not_called()
     assert "apply only with --trait-list" in capsys.readouterr().err
 
+
+@pytest.mark.parametrize("relative", [".", "nested", "nested/deeper"])
+def test_trait_list_refuses_the_six_trait_directory_and_anything_inside_it(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, relative: str
+) -> None:
+    """The six-trait run clears its directory and stops on nested ones (#1083)."""
+    six_trait_dir = tmp_path / "six-shared-traits"
+    six_trait_dir.mkdir()
+    monkeypatch.setattr(sankeys, "OUTPUT_DIR", six_trait_dir)
     list_path = declare(tmp_path / "traits.txt", SIX)
-    with pytest.raises(ValueError, match="not the six-trait one"):
-        sankeys.write_trait_list_contrasts(load_trait_list(list_path), sankeys.OUTPUT_DIR)
+    with pytest.raises(ValueError, match="outside the six-trait one"):
+        sankeys.write_trait_list_contrasts(load_trait_list(list_path), six_trait_dir / relative)
+    assert list(six_trait_dir.iterdir()) == []

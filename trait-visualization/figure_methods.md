@@ -1804,7 +1804,12 @@ cannot score stops the run. The recipe writes the per-direction edge tables,
 hashes and the cell counts per trait. It draws no figure and leaves
 `six-shared-traits/` untouched; the six-trait run without a list is unchanged.
 The disease-group stool comparison of #1045 is the `grouped_direction_contrast`
-rows with body-site group `Feces`. Declared lists live in `methods/trait_lists/`.
+rows whose body-site label is `Feces`. That is the grouped (v3) body-site label,
+given to every profile whose raw body site or body-site group mentions feces,
+faeces or stool. It therefore includes multi-site profiles such as `Feces,Blood`,
+whose metadata `body_site_group` is `Other`. The list counts of a few condition
+groups differ from a selection on metadata `body_site_group == "Feces"`
+(#1084). Declared lists live in `methods/trait_lists/`.
 
 ### Focused Oral Six-Trait Contrast Heatmap
 

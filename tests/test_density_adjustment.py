@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+import mtp.density_adjustment as density_module
 from bsdbng.density_adjustment import (
     DEFAULT_COLUMNS_PATH,
     DEFAULT_PROFILES_PATH,
@@ -855,3 +856,32 @@ def test_audit_script_reports_a_trait_list_without_fixed_conclusions(tmp_path: P
     assert "retain clear significance" in default
     assert "Trait list:" not in default
     assert not (tmp_path / "default" / TRAIT_LIST_PROVENANCE_FILENAME).exists()
+
+
+def test_trait_list_runs_never_write_the_six_trait_density_directory(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Deck figures read the default table, so a list run needs its own directory (#1083)."""
+    profiles, columns = _write_density_fixture(tmp_path)
+    list_path = _write_trait_list(tmp_path / "traits.txt", list(EXTRA_TRAITS))
+    default_dir = tmp_path / "derived" / "density_adjustment"
+    monkeypatch.setattr(density_module, "DEFAULT_OUTPUT_DIR", default_dir)
+    for output in (default_dir, default_dir / "nested"):
+        with pytest.raises(ValueError, match="needs its own --output-dir"):
+            run_density_audit(profiles, columns, output, trait_list=load_trait_list(list_path))
+
+    inputs = ["--profiles", str(profiles), "--columns", str(columns)]
+    argv = ["density_adjustment", *inputs, "--trait-list", str(list_path)]
+    with patch.object(sys, "argv", argv), pytest.raises(ValueError, match="own --output-dir"):
+        main()
+
+    audit = _audit_script()
+    monkeypatch.setattr(audit, "DEFAULT_OUTPUT_DIR", default_dir)
+    with patch.object(sys, "argv", ["audit", *inputs, "--trait-list", str(list_path)]):
+        assert audit.main() == 1
+    assert "needs its own --output-dir" in capsys.readouterr().err
+    assert not default_dir.exists()
+
+    run_density_audit(profiles, columns, default_dir)
+    effects = pd.read_csv(default_dir / "table1_density_adjusted_effects.tsv", sep="\t")
+    assert effects["trait_id"].tolist() == list(TABLE_1_TRAITS)

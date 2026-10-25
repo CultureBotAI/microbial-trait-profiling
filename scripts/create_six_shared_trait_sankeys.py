@@ -2892,8 +2892,9 @@ def write_trait_list_contrasts(
     six-trait maps use, and each cell from the heatmap module's contrast code. Only
     the edge tables, the contrast table and provenance are written; no figures.
     """
-    if output_dir.resolve() == OUTPUT_DIR.resolve():
-        raise ValueError("Trait-list contrasts need their own directory, not the six-trait one")
+    # The six-trait run clears its directory and refuses nested ones (#1083).
+    if output_dir.resolve().is_relative_to(OUTPUT_DIR.resolve()):
+        raise ValueError("Trait-list contrasts need a directory outside the six-trait one")
     output_dir.mkdir(parents=True, exist_ok=True)
     traits = declared_shared_traits(trait_list, columns_path)
     metadata = load_profile_metadata(metadata_path)
@@ -3054,7 +3055,9 @@ def cli(argv: Sequence[str] | None = None) -> None:
     parser.add_argument("--code-commit", help="With --trait-list: code commit for provenance")
     args = parser.parse_args(argv)
     trait_list_options = ("output_dir", "profiles", "profile_metadata", "columns", "code_commit")
-    if args.trait_list is None and any(getattr(args, name) for name in trait_list_options):
+    if args.trait_list is None and any(
+        getattr(args, name) is not None for name in trait_list_options
+    ):
         parser.error(
             "--output-dir, --profiles, --profile-metadata, --columns and --code-commit "
             "apply only with --trait-list"
@@ -3068,7 +3071,7 @@ def cli(argv: Sequence[str] | None = None) -> None:
             profiles_path=args.profiles or PROFILE_MATRIX_PATH,
             metadata_path=args.profile_metadata or PROFILE_METADATA_PATH,
             columns_path=args.columns or TRAIT_COLUMNS_PATH,
-            code_commit=args.code_commit or "",
+            code_commit="" if args.code_commit is None else args.code_commit,
         )
         print(f"Wrote {len(contrasts)} trait-list contrast cells to {args.output_dir}")
     elif args.high_support_layouts_only:

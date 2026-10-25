@@ -719,7 +719,14 @@ def run_density_audit(
 
     With a declared ``trait_list`` the effects table reports those traits instead of
     the six Table 1 traits, and ``trait_list_provenance.json`` records the list (#1054).
+    A list run never writes into the default directory, whose six-trait table the
+    deck figures read (#1083).
     """
+    if trait_list is not None and output_dir.resolve().is_relative_to(DEFAULT_OUTPUT_DIR.resolve()):
+        raise ValueError(
+            f"A trait-list run needs its own --output-dir, not {DEFAULT_OUTPUT_DIR.name}/ "
+            "(the six-trait density outputs)"
+        )
     output_dir.mkdir(parents=True, exist_ok=True)
     profiles_df, non_media_cols = load_non_media_profile_matrix(profiles_path, columns_path)
     reported_traits = (
