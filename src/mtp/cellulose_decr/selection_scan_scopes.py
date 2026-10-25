@@ -10,7 +10,9 @@ A scan (``mtp.cellulose_decr.selection_scan``) reads one verified core, so one s
 its summary names the other scope as the one it must be reported beside. This module reads
 the two scans' output directories, verifies each against its core
 (``verify_consumer_record``) and against the protocol it names (``recorded_protocol``),
-checks that they differ in nothing but the scope, and writes them together:
+checks that each scan's scope is the one its bound core records (``check_bound_core``) and
+that the two read different cores and differ in nothing but the scope, and writes them
+together:
 
 - ``selection_scan_scopes.tsv``: each scan's trait table as written, primary scope first,
   with the scope and its role in front;
@@ -26,13 +28,14 @@ signature taxa, not measurements of patients, cells or pathway activity
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pandas as pd
 
@@ -44,6 +47,7 @@ from mtp.cellulose_decr.selection_scan import (
     SIDE_BY_SIDE,
     STRAIN_ROLLUP,
     Protocol,
+    core_scope,
     load_protocol,
     protocol_record,
     recorded_protocol,
@@ -51,6 +55,9 @@ from mtp.cellulose_decr.selection_scan import (
 )
 from mtp.cellulose_decr.selection_scan import OUTPUTS as SCAN_OUTPUTS
 from mtp.paths import file_sha256
+
+if TYPE_CHECKING:
+    from mtp.datamodel.workflow_pydantic import WorkflowRun
 
 OUTPUTS = {"table": "selection_scan_scopes.tsv", "summary": "selection_scan_scopes.json"}
 # The scan outputs the report reads. Each must be one the scan bound to its core.
@@ -62,7 +69,7 @@ class ScanRun:
     """One scan's outputs, verified against its core and the protocol it names.
 
     ``traits`` is the trait table as written (every value as text); ``files`` holds the
-    SHA-256 of each file read.
+    SHA-256 of each file read; ``core_run_id`` is the core run its consumer record binds.
     """
 
     directory: Path
@@ -71,6 +78,7 @@ class ScanRun:
     traits: pd.DataFrame
     protocol: Protocol
     files: dict[str, str]
+    core_run_id: str
 
     @property
     def scope(self) -> str:
@@ -81,13 +89,52 @@ class ScanRun:
         return str(self.summary[STRAIN_ROLLUP]["role"])
 
 
+def check_bound_core(
+    directory: Path,
+    summary: Mapping[str, Any],
+    provenance: Mapping[str, Any],
+    run: WorkflowRun,
+    manifest_sha256: str,
+    protocol: Protocol,
+) -> None:
+    """Refuse a scan whose records do not describe the core its consumer record binds.
+
+    The summary and provenance must name that core run and its manifest hash, and the
+    recorded scope, with where it came from, must be what ``core_scope`` reads from that
+    core under the recorded protocol. A scan's own summary is not trusted for its scope
+    (#1079).
+    """
+    named = (
+        summary["core_run"]["run_id"],
+        provenance["core_run"]["run_id"],
+        provenance["core_run"]["manifest_sha256"],
+    )
+    if named != (run.run_id, run.run_id, manifest_sha256):
+        raise ValueError(
+            f"{directory}: the records name core run {named[0]!r} and {named[1]!r} with "
+            f"manifest {named[2]!r}, but its consumer record binds {run.run_id!r} with "
+            f"manifest {manifest_sha256!r}"
+        )
+    scope, source = core_scope(run, protocol)
+    rollup = summary[STRAIN_ROLLUP]
+    recorded = (rollup["scope"], rollup.get("scope_source"))
+    expected = (scope, source if protocol.side_by_side else None)
+    if recorded != expected:
+        raise ValueError(
+            f"{directory}: the records give strain_rollup and its source as {recorded}, but "
+            f"the bound core's are {expected}"
+        )
+
+
 def load_run(directory: Path) -> ScanRun:
-    """Read a scan's outputs once its consumer record and its protocol verify.
+    """Read a scan's outputs once its consumer record, its core and its protocol verify.
 
     The consumer record is verified end to end (the core run, and the hash of every
-    output), every file read must be one of its outputs, and the summary and provenance
-    must agree with the protocol version they name.
+    output), every file read must be one of its outputs, the summary and provenance must
+    agree with the protocol version they name, and they must describe the bound core and
+    its scope (``check_bound_core``).
     """
+    from mtp.datamodel.workflow_pydantic import WorkflowRun
     from mtp.workflow.consumers import verify_consumer_record
 
     record = verify_consumer_record(directory / CONSUMER_RECORD)
@@ -105,7 +152,15 @@ def load_run(directory: Path) -> ScanRun:
         path.name: file_sha256(path) for path in [*paths.values(), directory / CONSUMER_RECORD]
     }
     protocol = recorded_protocol(summary, provenance)
-    return ScanRun(directory, summary, provenance, traits, protocol, files)
+    # The bound core, from the manifest bytes whose hash the record holds.
+    manifest = Path(record.run_manifest_path).read_bytes()
+    if hashlib.sha256(manifest).hexdigest() != record.run_manifest_sha256:
+        raise ValueError(f"{directory}: the bound core's manifest changed after verification")
+    run = WorkflowRun.model_validate_json(manifest)
+    if run.run_id != record.run_id:
+        raise ValueError(f"{directory}: the bound manifest is of {run.run_id}, not {record.run_id}")
+    check_bound_core(directory, summary, provenance, run, record.run_manifest_sha256, protocol)
+    return ScanRun(directory, summary, provenance, traits, protocol, files, record.run_id)
 
 
 def comparable(run: ScanRun) -> dict[str, Any]:
@@ -128,9 +183,9 @@ def comparable(run: ScanRun) -> dict[str, Any]:
 def pair_scopes(runs: Sequence[ScanRun], protocol: Protocol | None = None) -> list[ScanRun]:
     """The scans in declared order, primary first, once they can stand side by side.
 
-    There must be exactly one scan of each declared scope, all under the current protocol,
-    with the same protocol file, code, rule, core population, core commit, core sources
-    and core parameters other than the scope.
+    There must be exactly one scan of each declared scope, each of its own core run, all
+    under the current protocol, with the same protocol file, code, rule, core population,
+    core commit, core sources and core parameters other than the scope.
     """
     protocol = protocol or load_protocol()
     declared = [protocol.scope_primary, *protocol.scope_sensitivity]
@@ -138,6 +193,11 @@ def pair_scopes(runs: Sequence[ScanRun], protocol: Protocol | None = None) -> li
         raise ValueError(
             f"the scopes report needs one scan of each declared scope {declared}, "
             f"not {[run.scope for run in runs]}"
+        )
+    if len({run.core_run_id for run in runs}) != len(runs):
+        raise ValueError(
+            f"the scans read the same core run {[run.core_run_id for run in runs]}; each "
+            "scope needs its own core"
         )
     for run in runs:
         if run.protocol.version != protocol.version:
@@ -181,7 +241,7 @@ def side_by_side(
                 "role": run.role,
                 "scope_source": run.summary[STRAIN_ROLLUP]["scope_source"],
                 "directory": run.directory.name,
-                "core_run_id": run.summary["core_run"]["run_id"],
+                "core_run_id": run.core_run_id,
                 "follows_protocol": run.summary["follows_protocol"],
                 "counts": run.summary["counts"],
                 "lead_triple": run.summary["lead_triple"],

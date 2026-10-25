@@ -26,6 +26,8 @@ from mtp.cellulose_decr.analysis import (
 )
 from mtp.cellulose_decr.selection_scan import (
     ALL_TRIPLES,
+    CONSUMER,
+    CONSUMER_RECORD,
     CORE,
     CORE_PRODUCTS,
     DISJOINT,
@@ -44,6 +46,7 @@ from mtp.cellulose_decr.selection_scan import (
     SELECTED,
     SENSITIVITY,
     SHARED,
+    STRAIN_ROLLUP,
     TIER1_2,
     TOO_FEW_CONDITIONS,
     TRIPLE_COLUMNS,
@@ -76,7 +79,7 @@ from mtp.cellulose_decr.selection_scan import (
     triple_table,
 )
 from mtp.cellulose_decr.selection_scan_scopes import OUTPUTS as SCOPES_OUTPUTS
-from mtp.cellulose_decr.selection_scan_scopes import load_run, pair_scopes
+from mtp.cellulose_decr.selection_scan_scopes import ScanRun, load_run, pair_scopes, side_by_side
 from mtp.cellulose_decr.selection_scan_scopes import main as scopes_main
 from mtp.paths import file_sha256
 from mtp.trait_guilds import Profile
@@ -213,6 +216,10 @@ def test_v2_amends_v1_after_both_scopes_results_and_leaves_v1_as_recorded() -> N
         "outside the repository's recorded evidence",
     ):
         assert seen in known
+    # Symmetric with off: the phenotype core, by its run-ID prefix, and its lead row.
+    phenotype = known[known.index("Phenotype:") :]
+    for seen in ("run-ec264369", "1,368 of 5,984", "p = 0.3515", "3,446", "p = 0.822"):
+        assert seen in phenotype
     assert "no scan result on a phenotype core" not in known
     assert "post-results choice of primary scope" in amendment["change"]
     for issue in ("#788", "#1050"):
@@ -293,6 +300,7 @@ def test_protocol_is_refused_when_it_says_what_the_code_does_not_do(
             "strain_rollup",
         ),
         (_set(("amendments", 0, "sets", "seed"), 1), "unknown fields"),
+        (_set(("null",), {"permutations": 10}), "only by amendment"),
         (_set(("amendments", 0, "date"), "2026-10-21"), "date order"),
         (lambda data: data["amendments"][0].pop("known_when_amended"), "needs exactly"),
     ],
@@ -1232,9 +1240,177 @@ def test_records_verify_against_the_protocol_version_they_name(scans: dict[str, 
             {**provenance, "strain_rollup": {**summary["strain_rollup"], "role": PRIMARY}},
             "role",
         ),
+        # The right role but v1's declaration.
+        (
+            {**summary, "strain_rollup": {**summary["strain_rollup"], "declared_primary": "off"}},
+            {
+                **provenance,
+                "strain_rollup": {**summary["strain_rollup"], "declared_primary": "off"},
+            },
+            "declares",
+        ),
+        # v2's own file and hash, but another v1 hash in its amends block.
+        (
+            summary,
+            {
+                **provenance,
+                "protocol": {
+                    **provenance["protocol"],
+                    "amends": {**provenance["protocol"]["amends"], "sha256": "0" * 64},
+                },
+            },
+            "do not match",
+        ),
     ):
         with pytest.raises(ValueError, match=message):
             recorded_protocol(record_summary, record_provenance)
+
+
+def _rebind(
+    scan_dir: Path,
+    core: Path,
+    edit: Callable[[dict[str, Any], dict[str, Any]], None] | None = None,
+    consumer: str = CONSUMER,
+) -> Path:
+    """Edit a scan's summary and provenance, then bind them anew to ``core`` with a fresh
+    consumer record, as a forger with write access would."""
+    from mtp.workflow.consumers import open_core_bundle, write_consumer_record
+
+    paths = {name: scan_dir / OUTPUTS[name] for name in ("summary", "provenance")}
+    records = {name: json.loads(path.read_text(encoding="utf-8")) for name, path in paths.items()}
+    if edit is not None:
+        edit(records["summary"], records["provenance"])
+    for name, path in paths.items():
+        path.write_text(json.dumps(records[name], indent=1) + "\n", encoding="utf-8")
+    outputs = [scan_dir / name for name in OUTPUTS.values()]
+    write_consumer_record(
+        open_core_bundle(core), scan_dir / CONSUMER_RECORD, consumer=consumer, outputs=outputs
+    )
+    return scan_dir
+
+
+def test_scopes_report_checks_each_scope_against_its_bound_core(
+    cores: dict[str, Path], scans: dict[str, Path], tmp_path: Path
+) -> None:
+    """A scan of the off core relabelled phenotype, with its consumer record rewritten, is
+    refused: the scope must be the bound core's, the records must name that core, the
+    record must be the scan's, and a pair needs two cores (#1079)."""
+    protocol = load_protocol()
+
+    def relabel(summary: dict[str, Any], provenance: dict[str, Any]) -> None:
+        summary[STRAIN_ROLLUP] = provenance[STRAIN_ROLLUP] = scope_record(
+            "phenotype", "recorded", protocol
+        )
+
+    forged = _rebind(
+        _scan(cores["tier1_2_off"], tmp_path / "forged"), cores["tier1_2_off"], relabel
+    )
+    with pytest.raises(ValueError, match="bound core"):
+        _scopes(tmp_path / "a", scans["off"], forged)
+    with pytest.raises(ValueError, match="bound core"):
+        load_run(forged)
+
+    phenotype_run = json.loads(
+        (scans["phenotype"] / OUTPUTS["summary"]).read_text(encoding="utf-8")
+    )["core_run"]["run_id"]
+
+    def renamed(summary: dict[str, Any], provenance: dict[str, Any]) -> None:
+        summary["core_run"]["run_id"] = provenance["core_run"]["run_id"] = phenotype_run
+
+    misnamed = _rebind(
+        _scan(cores["tier1_2_off"], tmp_path / "misnamed"), cores["tier1_2_off"], renamed
+    )
+    with pytest.raises(ValueError, match="consumer record binds"):
+        load_run(misnamed)
+
+    def rehashed(_summary: dict[str, Any], provenance: dict[str, Any]) -> None:
+        provenance["core_run"]["manifest_sha256"] = "0" * 64
+
+    unhashed = _rebind(
+        _scan(cores["tier1_2_off"], tmp_path / "unhashed"), cores["tier1_2_off"], rehashed
+    )
+    with pytest.raises(ValueError, match="consumer record binds"):
+        load_run(unhashed)
+
+    other = _rebind(
+        _scan(cores["tier1_2_off"], tmp_path / "other"), cores["tier1_2_off"], consumer="mtp.other"
+    )
+    with pytest.raises(ValueError, match=f"not of {CONSUMER}"):
+        load_run(other)
+
+    phenotype, off = load_run(scans["phenotype"]), load_run(scans["off"])
+    assert (phenotype.core_run_id, off.core_run_id) == (
+        phenotype.summary["core_run"]["run_id"],
+        off.summary["core_run"]["run_id"],
+    )
+    with pytest.raises(ValueError, match="same core run"):
+        pair_scopes([dataclasses.replace(phenotype, core_run_id=off.core_run_id), off])
+
+
+def test_main_records_an_absent_scope_end_to_end(
+    cores: dict[str, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A core that records no strain_rollup runs as the protocol's absent_means, and the
+    summary and provenance say so. The scopes report checks that against the core itself,
+    which here records off, so the run is refused there (#927, #1079)."""
+    from mtp.workflow import consumers
+
+    opened = consumers.open_core_bundle
+
+    def legacy(manifest: Path, *args: Any, **kwargs: Any) -> Any:
+        bundle = opened(manifest, *args, **kwargs)
+        parameters = [item for item in bundle.run.parameters or [] if item.name != STRAIN_ROLLUP]
+        run = bundle.run.model_copy(update={"parameters": parameters})
+        return dataclasses.replace(bundle, run=run)
+
+    monkeypatch.setattr(consumers, "open_core_bundle", legacy)
+    out = _scan(cores["tier1_2_off"], tmp_path / "legacy")
+    monkeypatch.undo()
+    for name in ("summary", "provenance"):
+        record = json.loads((out / OUTPUTS[name]).read_text(encoding="utf-8"))
+        assert record[STRAIN_ROLLUP] == scope_record("off", "absent_means", load_protocol())
+    with pytest.raises(ValueError, match="bound core"):
+        load_run(out)
+
+
+def _tagged_run(scope: str, role: str, tag: str) -> ScanRun:
+    """A scan whose every reported value carries ``tag``, to show where each row came from."""
+    traits = pd.DataFrame({"trait_id": [TRAIT_ID, OTHER_TRAIT], "tag": [f"{tag}-1", f"{tag}-2"]})
+    summary = {
+        STRAIN_ROLLUP: {"scope": scope, "role": role, "scope_source": "recorded"},
+        "core_run": {"run_id": f"run-{tag}"},
+        "follows_protocol": True,
+        "counts": {"tag": tag},
+        "lead_triple": {"tag": tag},
+        "traits": [
+            {"trait_id": OTHER_TRAIT, "tag": f"{tag}-other"},
+            {"trait_id": TRAIT_ID, "tag": tag},
+        ],
+        "rule": {"seed": 1},
+    }
+    return ScanRun(
+        Path(tag), summary, {}, traits, load_protocol(), {"file": tag}, core_run_id=f"run-{tag}"
+    )
+
+
+def test_side_by_side_keeps_each_scope_to_its_own_scan() -> None:
+    """Each scope's rows, lead-trait row, counts, core and hashes are its own scan's (#1079)."""
+    ordered = [_tagged_run("phenotype", PRIMARY, "ph"), _tagged_run("off", SENSITIVITY, "of")]
+    table, report = side_by_side(ordered, load_protocol(), "abc")
+    assert table.to_dict("records") == [
+        {"strain_rollup": "phenotype", "role": PRIMARY, "trait_id": TRAIT_ID, "tag": "ph-1"},
+        {"strain_rollup": "phenotype", "role": PRIMARY, "trait_id": OTHER_TRAIT, "tag": "ph-2"},
+        {"strain_rollup": "off", "role": SENSITIVITY, "trait_id": TRAIT_ID, "tag": "of-1"},
+        {"strain_rollup": "off", "role": SENSITIVITY, "trait_id": OTHER_TRAIT, "tag": "of-2"},
+    ]
+    for entry, tag in zip(report["scopes"], ("ph", "of"), strict=True):
+        assert entry["lead_trait"] == {"trait_id": TRAIT_ID, "tag": tag}
+        assert (entry["counts"], entry["lead_triple"], entry["files"]) == (
+            {"tag": tag},
+            {"tag": tag},
+            {"file": tag},
+        )
+        assert (entry["core_run_id"], entry["directory"]) == (f"run-{tag}", tag)
 
 
 # --------------------------------------------------------------------------- study splits (#854)

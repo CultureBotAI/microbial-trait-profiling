@@ -211,11 +211,15 @@ The eligible counts on the pinned export and timings on synthetic fixtures were 
        reported in the
        [rerun record of 2026-10-23](../docs/reviews/2026-10-23-final-rerun-record.md).
        There, PD/HIV/CRC with cellulose catabolic process ranked 1,368 of 5,984 triples
-       by U6 p for the mean pairwise distance (p = 0.35).
-     - **phenotype:** a run of the same recipe on the final rerun's Tier 1+2 × phenotype
-       core at the same commit, on 2026-10-24, under v1, where phenotype was the declared
-       sensitivity. Its result was used in a presentation. It is outside the
-       repository's recorded evidence.
+       by U6 p for the mean pairwise distance (p = 0.35) and 3,446 for the three-way
+       core (p = 0.82).
+     - **phenotype:** a run of the same recipe on 2026-10-24, under v1 (where phenotype
+       was the declared sensitivity), on the final rerun's Tier 1+2 × phenotype core at
+       the same commit (core run `run-ec264369`). There, PD/HIV/CRC with cellulose
+       catabolic process ranked 1,368 of 5,984 triples by U6 p for the mean pairwise
+       distance (p = 0.3515) and 3,446 for the three-way core (p = 0.822): the same
+       ranks and p-values as off. Its result was used in a presentation. It is outside
+       the repository's recorded evidence.
    - **A post-results choice.** The amendment is therefore a choice of primary scope
      made after both scopes' results were known. The phenotype result is not a
      pre-declared primary analysis; off was the primary that v1 declared before any run.
@@ -332,10 +336,14 @@ summary names the other scope as the one they must be reported beside.
     outputs it binds.
   - Each scan's summary and provenance must agree with the protocol version they name
     (`recorded_protocol`).
-  - The two scans must be one of each declared scope, both under v2, with the same
-    protocol file, code commit and module hashes, rule (draws and seed included), core
-    population, core commit, core parameters other than the scope, and core sources.
-    Anything else is refused.
+  - A scan's own summary is not trusted for its scope (#1079). Its summary and
+    provenance must name the core run its consumer record binds, with that core's
+    manifest hash, and its scope and where the scope came from must be what
+    `core_scope` reads from that core (`check_bound_core`).
+  - The two scans must be one of each declared scope, read two different core runs, and
+    both follow v2. They must share the protocol file, code commit and module hashes,
+    rule (draws and seed included), core population, core commit, core parameters other
+    than the scope, and core sources. Anything else is refused.
 - **Outputs.**
 
 | File | Contents |
