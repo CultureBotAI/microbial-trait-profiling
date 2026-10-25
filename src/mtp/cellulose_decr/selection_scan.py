@@ -10,10 +10,11 @@ fall among the triples, and where cellulose falls among the traits.
 The rule is declared in ``methods/cellulose_decr_selection_scan.md`` and fixed in
 ``methods/cellulose_decr_selection_scan_protocol.json`` (v1), both committed before this
 code. Protocol v2 (``methods/cellulose_decr_selection_scan_protocol_v2.json``) amends v1
-once, on 2026-10-25 and after the off results had been seen: phenotype becomes the primary
-strain-rollup scope, off the declared sensitivity, and the two are always reported side
-by side (#1050; ``mtp.cellulose_decr.selection_scan_scopes``). A run follows v2. v1 stays
-byte-identical and readable, so the records written under it still verify.
+once, on 2026-10-25, after the results of both scopes had been seen: phenotype becomes the
+primary strain-rollup scope and off the declared sensitivity. As a post-results choice of
+primary scope, it reports the two side by side, always (#1050;
+``mtp.cellulose_decr.selection_scan_scopes``). A run follows v2. v1 stays byte-identical
+and readable, so the records written under it still verify.
 The population is a verified Tier 1+2 core run rather than cellulose_decr's own
 ``data/derived`` inputs, which give different set sizes (#818).
 
@@ -210,7 +211,8 @@ FIXED_FIELDS: dict[tuple[str, ...], object] = {
 }
 # The strain-rollup scope each version declares, as this code implements it: v1's
 # amendment of 2026-10-22 (#872) made off primary; v2's of 2026-10-25, made after the
-# off results had been seen, makes phenotype primary and both scopes reported (#1050).
+# results of both scopes had been seen, makes phenotype primary and both scopes
+# reported (#1050).
 SCOPE_DECLARATIONS: dict[str, dict[str, object]] = {
     VERSION_V1: {
         "parameter": STRAIN_ROLLUP,
@@ -224,7 +226,7 @@ SCOPE_DECLARATIONS: dict[str, dict[str, object]] = {
         "sensitivity": ["off"],
         "absent_means": "off",
         "reported": SIDE_BY_SIDE,
-        "declared_after_results": ["off"],
+        "declared_after_results": ["off", "phenotype"],
     },
 }
 # The secondary rank the amendment of 2026-10-22 declares (#872), in force in both versions.
@@ -1880,11 +1882,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         "Counts describe curated signature taxa and their annotations, not physiology.",
     ]
     if protocol.side_by_side:
+        seen = " and ".join(protocol.results_seen)
         notes.append(
-            f"The strain-rollup roles were declared after the {', '.join(protocol.results_seen)} "
-            f"results had been seen ({protocol.version}). Report this {scope} scan only beside "
-            f"the {', '.join(rollup['report_beside'])} scan of the same protocol "
-            "(just cellulose-decr-selection-scan-scopes)."
+            f"The strain-rollup roles were declared after the {seen} results had been seen "
+            f"({protocol.version}), a post-results choice of primary scope. Report this "
+            f"{scope} scan only beside the {', '.join(rollup['report_beside'])} scan of the "
+            "same protocol (just cellulose-decr-selection-scan-scopes)."
         )
     summary = {
         "protocol": protocol.version,

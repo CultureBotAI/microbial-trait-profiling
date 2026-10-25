@@ -99,8 +99,9 @@ eligible conditions and the top decreasing traits, with the rule fixed in
 [`cellulose_decr_selection_scan_protocol.json`](cellulose_decr_selection_scan_protocol.json)
 before any run on real data. Protocol v2,
 [`cellulose_decr_selection_scan_protocol_v2.json`](cellulose_decr_selection_scan_protocol_v2.json),
-amends it after the off results had been seen: phenotype is the primary strain-rollup
-scope, off the declared sensitivity, and the two are always reported side by side (#1050).
+amends it after the results of both scopes had been seen: phenotype is the primary
+strain-rollup scope and off the declared sensitivity. Because that is a post-results choice
+of primary scope, the two are always reported side by side (#1050).
 
 [`study_split_selection.md`](study_split_selection.md) documents the additive
 whole-study training/held-out assessment of those exploratory selections. Its

@@ -24,9 +24,9 @@ code and before any run on real data. Its parameters are in
 which the code reads. A later change to the rule is added to that file's `amendments`,
 with its date and what was known when it was made, rather than edited in here.
 
-(Added on 2026-10-25, #1050.) The third amendment was made after the off results had been
-seen, when records that hash the v1 file existed. It is therefore protocol v2, in its own
-file,
+(Added on 2026-10-25, #1050.) The third amendment was made after the results of both
+scopes had been seen, when records that hash the v1 file existed. It is therefore protocol
+v2, in its own file,
 [`cellulose_decr_selection_scan_protocol_v2.json`](cellulose_decr_selection_scan_protocol_v2.json),
 which names the v1 file by its hash and leaves it unchanged. A run follows v2. See
 [Amendments](#amendments).
@@ -170,8 +170,8 @@ For each trait and each triple of eligible conditions:
 
 The first two amendments were made on 2026-10-22, after the review of PR #861 (#872) and
 before any run on real data. They are recorded in the v1 protocol file's `amendments`.
-The third was made on 2026-10-25, after the off results had been seen, and is protocol
-v2 (#1050). The declared rule above is as committed, except for two marked clarifications
+The third was made on 2026-10-25, after the results of both scopes had been seen, and is
+protocol v2 (#1050). The declared rule above is as committed, except for two marked clarifications
 made with the first two, which change nothing computed, and the marked pointer to v2:
 
 - in *Traits*, that the screen votes over every body site while the sets are
@@ -204,14 +204,21 @@ The eligible counts on the pinned export and timings on synthetic fixtures were 
    - The trait table also ranks the traits by the share of triples whose z is at least
      as extreme as the lead's.
 3. **Phenotype becomes the primary scope (2026-10-25; protocol v2; made after results).**
-   - **Made after results.** The owner decided on 2026-10-25 that phenotype is the
-     primary strain-rollup scope everywhere, the scan included (#1050). By then the
-     scan's off results had been seen. Its only real-data run, protocol v1 on the final
-     rerun's Tier 1+2 × off core at commit 511c891, is reported in the
-     [rerun record of 2026-10-23](../docs/reviews/2026-10-23-final-rerun-record.md):
-     PD/HIV/CRC with cellulose catabolic process ranked 1,368 of 5,984 triples by U6 p
-     for the mean pairwise distance (p = 0.35). That record has no scan result on a
-     phenotype core.
+   - **Made after results of both scopes.** The owner decided on 2026-10-25 that
+     phenotype is the primary strain-rollup scope everywhere, the scan included (#1050).
+     By then the scan's results on both scopes had been seen:
+     - **off:** protocol v1 on the final rerun's Tier 1+2 × off core at commit 511c891,
+       reported in the
+       [rerun record of 2026-10-23](../docs/reviews/2026-10-23-final-rerun-record.md).
+       There, PD/HIV/CRC with cellulose catabolic process ranked 1,368 of 5,984 triples
+       by U6 p for the mean pairwise distance (p = 0.35).
+     - **phenotype:** a run of the same recipe on the final rerun's Tier 1+2 × phenotype
+       core at the same commit, on 2026-10-24, under v1, where phenotype was the declared
+       sensitivity. Its result was used in a presentation. It is outside the
+       repository's recorded evidence.
+   - **A post-results choice.** The amendment is therefore a choice of primary scope
+     made after both scopes' results were known. The phenotype result is not a
+     pre-declared primary analysis; off was the primary that v1 declared before any run.
    - **Why.** Phenotype is the repository's primary scope (#788) and the scope of the
      other analyses' primary results, such as the tracked outputs regenerated from the
      final rerun. The scan's primary scope now agrees with them.
@@ -220,10 +227,10 @@ The eligible counts on the pinned export and timings on synthetic fixtures were 
      before #828, is still read as `off`, now the sensitivity. Nothing a scan computes on
      a given core changes; only the role it reports does.
    - **Both scopes, side by side.** The first amendment warned that choosing between the
-     scopes after seeing results would reopen the forking path this scan exists to
-     close. This change was made after the off results were seen, so neither scope is
-     reported alone. Each scan names the other scope as the one it must be reported
-     beside, and `just cellulose-decr-selection-scan-scopes` writes the two together
+     scopes after seeing both would reopen the forking path this scan exists to close.
+     That is what this amendment does, so neither scope is ever reported alone. Each
+     scan names the other scope as the one it must be reported beside, and
+     `just cellulose-decr-selection-scan-scopes` writes the two together
      ([Both scopes side by side](#both-scopes-side-by-side-1050)).
    - **v1 kept as recorded.** v2 names the v1 file by path and SHA-256 and adds only
      this amendment. The v1 file stays byte-identical, so the records written under it,

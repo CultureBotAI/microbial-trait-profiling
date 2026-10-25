@@ -7,14 +7,14 @@
     "path": "methods/cellulose_decr_selection_scan_protocol.json",
     "sha256": "d4a1d618484c127a8ae540fa788c81d8fddfd535e459085a29a57820ca007702"
   },
-  "declared": "2026-10-25, after the off results of the scan had been seen (docs/reviews/2026-10-23-final-rerun-record.md). v1, with its two amendments of 2026-10-22, is kept byte-identical in its own file, and everything it declares stays in force except what the amendment below sets.",
+  "declared": "2026-10-25, after the scan's off and phenotype results had both been seen. v1, with its two amendments of 2026-10-22, is kept byte-identical in its own file, and everything it declares stays in force except what the amendment below sets.",
   "drafted_by": "a coding agent (Claude Code), from the owner's decision recorded in #1050",
   "amendments": [
     {
       "date": "2026-10-25",
-      "change": "Phenotype becomes the primary strain-rollup scope, and off the declared sensitivity. A core of any other scope is still refused, and a core that records no strain_rollup parameter (built before #828) is still read as off, now the sensitivity. Both scopes are always reported side by side, never one alone: a scan names the other scope as the one it must be reported beside, and the scopes report writes the two together. Nothing a scan computes on a given core changes.",
+      "change": "Phenotype becomes the primary strain-rollup scope, and off the declared sensitivity. Results of both scopes had been seen, so this is a post-results choice of primary scope, and both scopes are always reported side by side, never one alone: a scan names the other scope as the one it must be reported beside, and the scopes report writes the two together. A core of any other scope is still refused, and a core that records no strain_rollup parameter (built before #828) is still read as off, now the sensitivity. Nothing a scan computes on a given core changes.",
       "reason": "The owner decided on 2026-10-25 that phenotype is the primary strain-rollup scope everywhere, the scan included (#1050). Phenotype is the repository's primary scope (#788) and the scope of the other analyses' primary results, such as the tracked outputs regenerated from the final rerun; the scan's primary scope now agrees with them.",
-      "known_when_amended": "Made after results. The off results of the scan's only real-data run had been seen: protocol v1 on the final rerun's Tier 1+2 x off core at commit 511c891, reported in docs/reviews/2026-10-23-final-rerun-record.md. There, PD/HIV/CRC with cellulose catabolic process ranked 1,368 of 5,984 triples by U6 p for the mean pairwise Jaccard distance (p = 0.35) and 3,446 for the three-way core (p = 0.82), and the lowest U6 p for the mean distance among the 59,820 tested triple-trait rows was 0.00024. That record has no scan result on a phenotype core.",
+      "known_when_amended": "Made after results. The scan's results on both scopes had been seen. Off: protocol v1 on the final rerun's Tier 1+2 x off core at commit 511c891, reported in docs/reviews/2026-10-23-final-rerun-record.md, where PD/HIV/CRC with cellulose catabolic process ranked 1,368 of 5,984 triples by U6 p for the mean pairwise Jaccard distance (p = 0.35) and 3,446 for the three-way core (p = 0.82), and the lowest U6 p for the mean distance among the 59,820 tested triple-trait rows was 0.00024. Phenotype: a run of the same recipe (protocol v1, where phenotype was the declared sensitivity) on the final rerun's Tier 1+2 x phenotype core at commit 511c891, on 2026-10-24. Its result was used in a presentation; it is outside the repository's recorded evidence.",
       "sets": {
         "strain_rollup": {
           "parameter": "strain_rollup",
@@ -22,7 +22,7 @@
           "sensitivity": ["off"],
           "absent_means": "off",
           "reported": "side_by_side",
-          "declared_after_results": ["off"]
+          "declared_after_results": ["off", "phenotype"]
         }
       }
     }

@@ -173,12 +173,13 @@ def test_protocol_holds_the_declared_rule() -> None:
     assert protocol.lead_trait == TRAIT_ID == protocol.always_included
     assert (protocol.scope_primary, protocol.scope_sensitivity) == ("phenotype", ("off",))
     assert protocol.scope_absent == "off"
-    # Declared after the off results had been seen, so both scopes are always reported.
-    assert protocol.results_seen == ("off",)
+    # Declared after the off and phenotype results had been seen: a post-results choice of
+    # primary scope, so both scopes are always reported.
+    assert protocol.results_seen == ("off", "phenotype")
     assert protocol.side_by_side
 
 
-def test_v2_amends_v1_after_the_off_results_and_leaves_v1_as_recorded() -> None:
+def test_v2_amends_v1_after_both_scopes_results_and_leaves_v1_as_recorded() -> None:
     """v2 is one amendment on top of v1 (#1050). The v1 file stays byte-identical, so the
     records written under it on 2026-10-23 still verify against it, and it still reads as
     it declared: off primary, phenotype the sensitivity, no results seen."""
@@ -201,8 +202,19 @@ def test_v2_amends_v1_after_the_off_results_and_leaves_v1_as_recorded() -> None:
     [amendment] = data["amendments"]
     assert amendment["date"] == "2026-10-25"
     assert set(amendment["sets"]) == {"strain_rollup"}
-    assert amendment["known_when_amended"].startswith("Made after results.")
-    assert "docs/reviews/2026-10-23-final-rerun-record.md" in amendment["known_when_amended"]
+    known = amendment["known_when_amended"]
+    assert known.startswith("Made after results.")
+    # Both scopes' results had been seen: off in the rerun record, phenotype in a run of the
+    # same recipe on 2026-10-24 that the repository does not record.
+    assert "docs/reviews/2026-10-23-final-rerun-record.md" in known
+    for seen in (
+        "2026-10-24",
+        "Tier 1+2 x phenotype",
+        "outside the repository's recorded evidence",
+    ):
+        assert seen in known
+    assert "no scan result on a phenotype core" not in known
+    assert "post-results choice of primary scope" in amendment["change"]
     for issue in ("#788", "#1050"):
         assert issue in amendment["reason"]
     # The original declaration stays as committed; the amendments carry the changes.
@@ -276,6 +288,10 @@ def test_protocol_is_refused_when_it_says_what_the_code_does_not_do(
             _set(("amendments", 0, "sets", "strain_rollup", "declared_after_results"), []),
             "strain_rollup",
         ),
+        (
+            _set(("amendments", 0, "sets", "strain_rollup", "declared_after_results"), ["off"]),
+            "strain_rollup",
+        ),
         (_set(("amendments", 0, "sets", "seed"), 1), "unknown fields"),
         (_set(("amendments", 0, "date"), "2026-10-21"), "date order"),
         (lambda data: data["amendments"][0].pop("known_when_amended"), "needs exactly"),
@@ -286,7 +302,7 @@ def test_v2_is_refused_unless_it_amends_v1_as_declared(
 ) -> None:
     """v2 must name v1 by its committed path and hash, come after v1's amendments, and set
     the scope declaration this code implements: phenotype primary, off the sensitivity,
-    reported side by side, declared after the off results (#1050)."""
+    reported side by side, declared after the off and phenotype results (#1050)."""
     with pytest.raises(ValueError, match=message):
         load_protocol(_edited(tmp_path, edit, PROTOCOL_PATH))
 
@@ -306,7 +322,7 @@ def test_scope_roles_follow_the_declaring_version() -> None:
 
 def test_a_scope_names_the_scope_it_must_be_reported_beside() -> None:
     """Each scope's record names the other declared scope, so neither is read alone, and
-    says that its role was declared after the off results (#1050)."""
+    says that its role was declared after both scopes' results (#1050)."""
     protocol = load_protocol()
     phenotype = scope_record("phenotype", "recorded", protocol)
     assert phenotype == {
@@ -316,7 +332,7 @@ def test_a_scope_names_the_scope_it_must_be_reported_beside() -> None:
         "declared_primary": "phenotype",
         "declared_sensitivity": ["off"],
         "declared_by": VERSION,
-        "declared_after_results": ["off"],
+        "declared_after_results": ["off", "phenotype"],
         "reported": "side_by_side",
         "report_beside": ["off"],
     }
@@ -946,7 +962,7 @@ def test_main_writes_every_output_bound_to_the_core(cores: dict[str, Path], tmp_
     protocol = load_protocol()
     assert summary["strain_rollup"] == scope_record("phenotype", "recorded", protocol)
     assert summary["strain_rollup"]["report_beside"] == ["off"]
-    assert any("declared after the off results" in note for note in summary["notes"])
+    assert any("declared after the off and phenotype results" in note for note in summary["notes"])
     assert summary["counts"]["eligible_conditions"] == 5
     assert summary["lead_triple"]["eligible"] == dict.fromkeys(LEAD, True)
     provenance = json.loads((out / OUTPUTS["provenance"]).read_text(encoding="utf-8"))
@@ -1072,7 +1088,7 @@ def test_scopes_report_puts_phenotype_and_off_side_by_side(
     scans: dict[str, Path], tmp_path: Path
 ) -> None:
     """The report holds both scopes' trait tables as written, primary first whatever the
-    order given, and names the amendment that declared the roles after the off results."""
+    order given, and names the amendment that declared the roles after both scopes' results."""
     out = tmp_path / "scopes"
     assert _scopes(out, scans["off"], scans["phenotype"]) == 0
     assert sorted(path.name for path in out.iterdir()) == sorted(SCOPES_OUTPUTS.values())
@@ -1100,7 +1116,7 @@ def test_scopes_report_puts_phenotype_and_off_side_by_side(
         "phenotype",
         ["off"],
     )
-    assert declaration["declared_after_results"] == ["off"]
+    assert declaration["declared_after_results"] == ["off", "phenotype"]
     assert declaration["amendment"]["date"] == "2026-10-25"
     assert declaration["amendment"]["known_when_amended"].startswith("Made after results.")
     for entry in report["scopes"]:

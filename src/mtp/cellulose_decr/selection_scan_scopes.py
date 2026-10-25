@@ -2,8 +2,9 @@
 
 Protocol v2 (``methods/cellulose_decr_selection_scan_protocol_v2.json``) makes phenotype
 the scan's primary scope and off its declared sensitivity, by an amendment made on
-2026-10-25 after the off results had been seen. Because the change came after results, v2
-also requires the two scopes to be reported side by side, never one alone.
+2026-10-25 after the results of both scopes had been seen. It is a post-results choice of
+primary scope, so v2 also requires the two scopes to be reported side by side, never one
+alone.
 
 A scan (``mtp.cellulose_decr.selection_scan``) reads one verified core, so one scope, and
 its summary names the other scope as the one it must be reported beside. This module reads
@@ -188,7 +189,7 @@ def side_by_side(
                 "files": run.files,
             }
         )
-    seen = ", ".join(protocol.results_seen)
+    seen = " and ".join(protocol.results_seen)
     report = {
         "protocol": protocol.version,
         "follows_protocol": all(run.summary["follows_protocol"] for run in ordered),
@@ -205,7 +206,8 @@ def side_by_side(
             f"{protocol.scope_primary} is the primary scope and "
             f"{', '.join(protocol.scope_sensitivity)} the declared sensitivity "
             f"({protocol.version}). The roles were declared after the {seen} results had "
-            "been seen, so the scopes are reported together and neither alone.",
+            "been seen, a post-results choice of primary scope, so the scopes are reported "
+            "together and neither alone.",
             "Each scope's rows are its scan's trait table as written; nothing is recomputed.",
             "Every p-value is nominal; no multiplicity correction is applied here.",
             "Counts describe curated signature taxa and their annotations, not physiology.",
