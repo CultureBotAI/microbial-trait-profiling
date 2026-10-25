@@ -97,7 +97,10 @@ Its tables are committed and its figures are regenerated. The code is the
 selection scan of #835: the same overlap statistics and U6 null for every triple of
 eligible conditions and the top decreasing traits, with the rule fixed in
 [`cellulose_decr_selection_scan_protocol.json`](cellulose_decr_selection_scan_protocol.json)
-before any run on real data.
+before any run on real data. Protocol v2,
+[`cellulose_decr_selection_scan_protocol_v2.json`](cellulose_decr_selection_scan_protocol_v2.json),
+amends it after the off results had been seen: phenotype is the primary strain-rollup
+scope, off the declared sensitivity, and the two are always reported side by side (#1050).
 
 [`study_split_selection.md`](study_split_selection.md) documents the additive
 whole-study training/held-out assessment of those exploratory selections. Its

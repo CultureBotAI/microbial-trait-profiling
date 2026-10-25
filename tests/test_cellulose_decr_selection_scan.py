@@ -40,12 +40,15 @@ from mtp.cellulose_decr.selection_scan import (
     POOL_TOO_SMALL,
     PRIMARY,
     PROTOCOL_PATH,
+    PROTOCOL_V1_PATH,
     SELECTED,
     SENSITIVITY,
     SHARED,
     TIER1_2,
     TOO_FEW_CONDITIONS,
     TRIPLE_COLUMNS,
+    VERSION,
+    VERSION_V1,
     ScanInputs,
     bin_counts,
     block_positions,
@@ -53,6 +56,7 @@ from mtp.cellulose_decr.selection_scan import (
     choose_traits,
     closest_disjoint_triples,
     condition_table,
+    core_scope,
     evaluate,
     lead_and_distribution,
     lead_rank,
@@ -63,12 +67,17 @@ from mtp.cellulose_decr.selection_scan import (
     plan,
     prepare,
     rank_candidates,
+    recorded_protocol,
     scan,
+    scope_record,
     scope_role,
     select,
     trait_table,
     triple_table,
 )
+from mtp.cellulose_decr.selection_scan_scopes import OUTPUTS as SCOPES_OUTPUTS
+from mtp.cellulose_decr.selection_scan_scopes import load_run, pair_scopes
+from mtp.cellulose_decr.selection_scan_scopes import main as scopes_main
 from mtp.paths import file_sha256
 from mtp.trait_guilds import Profile
 from mtp.trait_screen import ALL_TIED, TESTED
@@ -76,6 +85,10 @@ from mtp.trait_screen import ALL_TIED, TESTED
 PD, HIV, CRC = (CONDITIONS[short] for short in ("PD", "HIV", "CRC"))
 LEAD = (PD, HIV, CRC)
 OTHER_TRAIT = "METPO:1000608"
+# The v1 protocol file's hash as v2 pins it, which is the hash the records of 2026-10-23
+# give; the file must stay byte-identical so that they still verify against it (#1050).
+V1_SHA256 = json.loads(PROTOCOL_PATH.read_text(encoding="utf-8"))["amends"]["sha256"]
+V1_PATH = "methods/cellulose_decr_selection_scan_protocol.json"
 
 Signature = tuple[str, str, str, str, Sequence[str], Sequence[str]]
 
@@ -147,8 +160,9 @@ def _random_corpus(
 
 def test_protocol_holds_the_declared_rule() -> None:
     """The parameters the code reads are the ones methods/ declares (#835), with the
-    amendments of 2026-10-22 applied (#872)."""
+    amendments of 2026-10-22 (#872) and the v2 amendment of 2026-10-25 (#1050) applied."""
     protocol = load_protocol()
+    assert protocol.version == VERSION == "cellulose-decr-selection-scan-v2"
     assert protocol.min_studies == 3
     assert protocol.top_n == 10
     assert protocol.permutations == 100_000
@@ -157,17 +171,51 @@ def test_protocol_holds_the_declared_rule() -> None:
     assert protocol.bins == 20
     assert protocol.lead_triple == LEAD
     assert protocol.lead_trait == TRAIT_ID == protocol.always_included
-    assert (protocol.scope_primary, protocol.scope_sensitivity) == ("off", ("phenotype",))
+    assert (protocol.scope_primary, protocol.scope_sensitivity) == ("phenotype", ("off",))
     assert protocol.scope_absent == "off"
+    # Declared after the off results had been seen, so both scopes are always reported.
+    assert protocol.results_seen == ("off",)
+    assert protocol.side_by_side
+
+
+def test_v2_amends_v1_after_the_off_results_and_leaves_v1_as_recorded() -> None:
+    """v2 is one amendment on top of v1 (#1050). The v1 file stays byte-identical, so the
+    records written under it on 2026-10-23 still verify against it, and it still reads as
+    it declared: off primary, phenotype the sensitivity, no results seen."""
+    assert file_sha256(PROTOCOL_V1_PATH) == V1_SHA256
+    v1 = load_protocol(PROTOCOL_V1_PATH)
+    assert v1.version == VERSION_V1
+    assert (v1.scope_primary, v1.scope_sensitivity, v1.scope_absent) == (
+        "off",
+        ("phenotype",),
+        "off",
+    )
+    assert (v1.results_seen, v1.side_by_side) == ((), False)
+    # Only the scope declaration differs.
+    v2 = load_protocol()
+    scope_fields = ("version", "scope_primary", "scope_sensitivity", "results_seen", "side_by_side")
+    assert dataclasses.replace(v2, **{name: getattr(v1, name) for name in scope_fields}) == v1
+
     data = json.loads(PROTOCOL_PATH.read_text(encoding="utf-8"))
+    assert data["amends"] == {"protocol": VERSION_V1, "path": V1_PATH, "sha256": V1_SHA256}
+    [amendment] = data["amendments"]
+    assert amendment["date"] == "2026-10-25"
+    assert set(amendment["sets"]) == {"strain_rollup"}
+    assert amendment["known_when_amended"].startswith("Made after results.")
+    assert "docs/reviews/2026-10-23-final-rerun-record.md" in amendment["known_when_amended"]
+    for issue in ("#788", "#1050"):
+        assert issue in amendment["reason"]
     # The original declaration stays as committed; the amendments carry the changes.
-    assert "strain_rollup" not in data
-    assert "secondary_rank" not in data
-    assert [amendment["date"] for amendment in data["amendments"]] == ["2026-10-22"] * 2
+    original = json.loads(PROTOCOL_V1_PATH.read_text(encoding="utf-8"))
+    assert "strain_rollup" not in original
+    assert "secondary_rank" not in original
+    assert [amendment["date"] for amendment in original["amendments"]] == ["2026-10-22"] * 2
 
 
-def _edited(tmp_path: Path, edit: Callable[[dict[str, Any]], None]) -> Path:
-    data = json.loads(PROTOCOL_PATH.read_text(encoding="utf-8"))
+def _edited(
+    tmp_path: Path, edit: Callable[[dict[str, Any]], None], source: Path = PROTOCOL_V1_PATH
+) -> Path:
+    data = json.loads(source.read_text(encoding="utf-8"))
     edit(data)
     path = tmp_path / "protocol.json"
     path.write_text(json.dumps(data), encoding="utf-8")
@@ -187,7 +235,7 @@ def _set(keys: tuple[str | int, ...], value: object) -> Callable[[dict[str, Any]
 @pytest.mark.parametrize(
     ("edit", "message"),
     [
-        (_set(("protocol",), "cellulose-decr-selection-scan-v0"), "but this code is"),
+        (_set(("protocol",), "cellulose-decr-selection-scan-v0"), "this code reads"),
         (_set(("population", "core_contrast_population"), "all_paired"), "this code does"),
         (_set(("population", "stool_body_site"), "Saliva"), "stool_body_site"),
         (_set(("population", "core_products"), ["experiments"]), "core_products"),
@@ -202,23 +250,82 @@ def _set(keys: tuple[str | int, ...], value: object) -> Callable[[dict[str, Any]
         (_set(("amendments", 0, "sets", "seed"), 1), "unknown fields"),
         (_set(("amendments", 1, "date"), "2026-10-21"), "date order"),
         (lambda data: data["amendments"][0].pop("reason"), "needs exactly"),
+        (_set(("amends",), {"protocol": VERSION}), "amends no earlier version"),
     ],
 )
 def test_protocol_is_refused_when_it_says_what_the_code_does_not_do(
     tmp_path: Path, edit: Callable[[dict[str, Any]], None], message: str
 ) -> None:
-    """Every field the code relies on is checked, so an edit cannot pass as followed (#872)."""
+    """Every field of v1 the code relies on is checked, so an edit cannot pass as followed
+    (#872)."""
     with pytest.raises(ValueError, match=message):
         load_protocol(_edited(tmp_path, edit))
 
 
-def test_scope_roles_follow_the_amendment() -> None:
-    """off is primary, phenotype the declared sensitivity, and full is refused (#872)."""
+@pytest.mark.parametrize(
+    ("edit", "message"),
+    [
+        (_set(("amends", "sha256"), "0" * 64), "changed since"),
+        (_set(("amends", "protocol"), "cellulose-decr-selection-scan-v0"), "must amend"),
+        (_set(("amends", "path"), "methods/cellulose_decr_selection_scan.md"), "must amend"),
+        (lambda data: data.pop("amends"), "must amend"),
+        (_set(("amendments",), []), "strain_rollup is"),
+        (_set(("amendments", 0, "sets", "strain_rollup", "primary"), "off"), "strain_rollup"),
+        (_set(("amendments", 0, "sets", "strain_rollup", "reported"), "alone"), "strain_rollup"),
+        (
+            _set(("amendments", 0, "sets", "strain_rollup", "declared_after_results"), []),
+            "strain_rollup",
+        ),
+        (_set(("amendments", 0, "sets", "seed"), 1), "unknown fields"),
+        (_set(("amendments", 0, "date"), "2026-10-21"), "date order"),
+        (lambda data: data["amendments"][0].pop("known_when_amended"), "needs exactly"),
+    ],
+)
+def test_v2_is_refused_unless_it_amends_v1_as_declared(
+    tmp_path: Path, edit: Callable[[dict[str, Any]], None], message: str
+) -> None:
+    """v2 must name v1 by its committed path and hash, come after v1's amendments, and set
+    the scope declaration this code implements: phenotype primary, off the sensitivity,
+    reported side by side, declared after the off results (#1050)."""
+    with pytest.raises(ValueError, match=message):
+        load_protocol(_edited(tmp_path, edit, PROTOCOL_PATH))
+
+
+def test_scope_roles_follow_the_declaring_version() -> None:
+    """v2: phenotype is primary and off the declared sensitivity (#1050). v1 declared the
+    reverse (#872). Both refuse full."""
+    for protocol, primary, sensitivity in (
+        (load_protocol(), "phenotype", "off"),
+        (load_protocol(PROTOCOL_V1_PATH), "off", "phenotype"),
+    ):
+        assert scope_role(primary, protocol) == PRIMARY
+        assert scope_role(sensitivity, protocol) == SENSITIVITY
+        with pytest.raises(ValueError, match="neither the declared primary"):
+            scope_role("full", protocol)
+
+
+def test_a_scope_names_the_scope_it_must_be_reported_beside() -> None:
+    """Each scope's record names the other declared scope, so neither is read alone, and
+    says that its role was declared after the off results (#1050)."""
     protocol = load_protocol()
-    assert scope_role("off", protocol) == PRIMARY
-    assert scope_role("phenotype", protocol) == SENSITIVITY
-    with pytest.raises(ValueError, match="neither the declared primary"):
-        scope_role("full", protocol)
+    phenotype = scope_record("phenotype", "recorded", protocol)
+    assert phenotype == {
+        "scope": "phenotype",
+        "scope_source": "recorded",
+        "role": PRIMARY,
+        "declared_primary": "phenotype",
+        "declared_sensitivity": ["off"],
+        "declared_by": VERSION,
+        "declared_after_results": ["off"],
+        "reported": "side_by_side",
+        "report_beside": ["off"],
+    }
+    off = scope_record("off", "absent_means", protocol)
+    assert (off["role"], off["scope_source"], off["report_beside"]) == (
+        SENSITIVITY,
+        "absent_means",
+        ["phenotype"],
+    )
 
 
 def test_eligibility_counts_studies_with_a_stool_comparison() -> None:
@@ -764,7 +871,8 @@ def _write_core_inputs(root: Path) -> dict[str, Path]:
 @pytest.fixture(scope="module")
 def cores(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Path]:
     """Tier 1+2 cores of each strain-rollup scope, and an all-paired core, of the same
-    synthetic inputs. ``tier1_2`` is the declared primary scope, off."""
+    synthetic inputs. ``tier1_2_phenotype`` is the declared primary scope and
+    ``tier1_2_off`` the declared sensitivity (#1050)."""
     from mtp.paths import REPO_ROOT
     from mtp.workflow.operations import OPERATIONS, validate_core_product
     from mtp.workflow.runtime import execute_workflow
@@ -774,7 +882,7 @@ def cores(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Path]:
     runs = {}
     for name, spec, parameters in (
         (
-            "tier1_2",
+            "tier1_2_off",
             "bugsigdb_core_subset.yaml",
             {"contrast_population": TIER1_2, "strain_rollup": "off"},
         ),
@@ -804,12 +912,12 @@ def cores(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Path]:
 
 
 def test_main_writes_every_output_bound_to_the_core(cores: dict[str, Path], tmp_path: Path) -> None:
-    """A run on a Tier 1+2 core writes the declared outputs, a provenance naming its inputs
-    and rule, and a consumer record that verifies against the core."""
+    """A run on a Tier 1+2 core writes the declared outputs, a provenance naming its inputs,
+    rule, protocol version and scope, and a consumer record that verifies against the core."""
     from mtp.workflow.consumers import verify_consumer_record
 
     out = tmp_path / "scan"
-    argv = ["--core-run", str(cores["tier1_2"]), "--output-dir", str(out)]
+    argv = ["--core-run", str(cores["tier1_2_phenotype"]), "--output-dir", str(out)]
     assert main([*argv, "--permutations", "400", "--seed", "3", "--code-commit", "abc"]) == 0
     assert sorted(path.name for path in out.iterdir()) == sorted(
         [*OUTPUTS.values(), "core_consumption.json", "core_consumption.coverage.tsv"]
@@ -831,18 +939,31 @@ def test_main_writes_every_output_bound_to_the_core(cores: dict[str, Path], tmp_
     assert set(triples["u6_draws"]) <= {0, 400}
 
     summary = json.loads((out / OUTPUTS["summary"]).read_text(encoding="utf-8"))
+    assert summary["protocol"] == VERSION
     assert summary["follows_protocol"] is False
-    # The core was built with the declared primary scope (#872).
-    assert summary["strain_rollup"]["scope"] == "off"
-    assert summary["strain_rollup"]["role"] == PRIMARY
+    # The core was built with the declared primary scope, phenotype since v2 (#1050), and
+    # the summary names off as the scope it must be reported beside.
+    protocol = load_protocol()
+    assert summary["strain_rollup"] == scope_record("phenotype", "recorded", protocol)
+    assert summary["strain_rollup"]["report_beside"] == ["off"]
+    assert any("declared after the off results" in note for note in summary["notes"])
     assert summary["counts"]["eligible_conditions"] == 5
     assert summary["lead_triple"]["eligible"] == dict.fromkeys(LEAD, True)
     provenance = json.loads((out / OUTPUTS["provenance"]).read_text(encoding="utf-8"))
     assert provenance["code_commit"] == "abc"
     assert provenance["core_run"]["contrast_population"] == TIER1_2
+    assert provenance["core_run"]["parameters"]["strain_rollup"] == "phenotype"
+    assert set(provenance["core_run"]["sources"]) == {"raw_dump", "kg_edges", "kg_nodes"}
     assert set(provenance["inputs"]) == set(CORE_PRODUCTS)
-    assert provenance["protocol"]["sha256"] == file_sha256(PROTOCOL_PATH)
+    assert provenance["protocol"] == {
+        "path": "methods/cellulose_decr_selection_scan_protocol_v2.json",
+        "sha256": file_sha256(PROTOCOL_PATH),
+        "version": VERSION,
+        "amends": {"protocol": VERSION_V1, "path": V1_PATH, "sha256": V1_SHA256},
+    }
+    assert provenance["strain_rollup"] == summary["strain_rollup"]
     assert (provenance["permutations"], provenance["seed"]) == (400, 3)
+    assert recorded_protocol(summary, provenance) == protocol
 
     # The same core, rule and seed give the same tables.
     again = tmp_path / "again"
@@ -850,7 +971,7 @@ def test_main_writes_every_output_bound_to_the_core(cores: dict[str, Path], tmp_
         main(
             [
                 "--core-run",
-                str(cores["tier1_2"]),
+                str(cores["tier1_2_phenotype"]),
                 "--output-dir",
                 str(again),
                 "--permutations",
@@ -876,21 +997,228 @@ def test_main_refuses_another_population_or_a_used_directory(
     used.mkdir()
     (used / "old.tsv").write_text("x\n", encoding="utf-8")
     with pytest.raises(ValueError, match="new or empty"):
-        main(["--core-run", str(cores["tier1_2"]), "--output-dir", str(used)])
+        main(["--core-run", str(cores["tier1_2_off"]), "--output-dir", str(used)])
 
 
 def test_plan_reports_counts_without_writing(
     cores: dict[str, Path], tmp_path: Path, capsys: pytest.CaptureFixture[str]
 ) -> None:
     out = tmp_path / "plan"
-    assert main(["--core-run", str(cores["tier1_2"]), "--output-dir", str(out), "--plan"]) == 0
+    assert main(["--core-run", str(cores["tier1_2_off"]), "--output-dir", str(out), "--plan"]) == 0
     report = json.loads(capsys.readouterr().out)
-    assert report["strain_rollup"]["scope"] == "off"
+    # off is the declared sensitivity since v2, to be reported beside phenotype (#1050).
+    assert report["protocol"] == VERSION
+    assert report["strain_rollup"] == scope_record("off", "recorded", load_protocol())
+    assert report["strain_rollup"]["role"] == SENSITIVITY
     assert report["eligible_conditions"] == 5
     assert report["triples"] == 10
     assert report["permutations"] == 100_000
     assert report["estimated_null_minutes"] > 0
     assert not out.exists()
+
+
+def test_a_core_without_a_scope_follows_the_declared_absent_means(cores: dict[str, Path]) -> None:
+    """A core built before #828 records no strain_rollup. The scan reads it as the
+    protocol's absent_means, off, which v2 makes the sensitivity, and records that the
+    scope came from the declaration; no default elsewhere decides it (#927, #1050)."""
+    from mtp.datamodel.workflow_pydantic import WorkflowRun
+
+    run = WorkflowRun.model_validate_json(cores["tier1_2_off"].read_text(encoding="utf-8"))
+    legacy = run.model_copy(
+        update={
+            "parameters": [item for item in run.parameters or [] if item.name != "strain_rollup"]
+        }
+    )
+    protocol = load_protocol()
+    assert core_scope(run, protocol) == ("off", "recorded")
+    assert core_scope(legacy, protocol) == ("off", "absent_means")
+    assert scope_record("off", "absent_means", protocol)["role"] == SENSITIVITY
+    # The protocol's declaration is what is followed.
+    declared = dataclasses.replace(protocol, scope_absent="phenotype")
+    assert core_scope(legacy, declared) == ("phenotype", "absent_means")
+    assert core_scope(run, declared) == ("off", "recorded")
+
+
+# --------------------------------------------------------------------------- both scopes (#1050)
+
+
+def _scan(core: Path, out: Path, seed: int = 3) -> Path:
+    argv = ["--core-run", str(core), "--output-dir", str(out), "--code-commit", "abc"]
+    assert main([*argv, "--permutations", "200", "--seed", str(seed)]) == 0
+    return out
+
+
+@pytest.fixture(scope="module")
+def scans(cores: dict[str, Path], tmp_path_factory: pytest.TempPathFactory) -> dict[str, Path]:
+    """A scan of each declared scope, under the same rule and code. Tests leave them as
+    written; a test that changes a scan makes its own."""
+    root = tmp_path_factory.mktemp("selection-scan-scopes")
+    return {
+        "phenotype": _scan(cores["tier1_2_phenotype"], root / "phenotype"),
+        "off": _scan(cores["tier1_2_off"], root / "off"),
+    }
+
+
+def _scopes(out: Path, *scans: Path) -> int:
+    argv = [part for scan_dir in scans for part in ("--scan", str(scan_dir))]
+    return scopes_main([*argv, "--output-dir", str(out), "--code-commit", "abc"])
+
+
+def _read_text_table(path: Path) -> pd.DataFrame:
+    return pd.read_csv(path, sep="\t", dtype=str, keep_default_na=False)
+
+
+def test_scopes_report_puts_phenotype_and_off_side_by_side(
+    scans: dict[str, Path], tmp_path: Path
+) -> None:
+    """The report holds both scopes' trait tables as written, primary first whatever the
+    order given, and names the amendment that declared the roles after the off results."""
+    out = tmp_path / "scopes"
+    assert _scopes(out, scans["off"], scans["phenotype"]) == 0
+    assert sorted(path.name for path in out.iterdir()) == sorted(SCOPES_OUTPUTS.values())
+
+    table = _read_text_table(out / SCOPES_OUTPUTS["table"])
+    assert list(table.columns[:2]) == ["strain_rollup", "role"]
+    assert table["strain_rollup"].drop_duplicates().tolist() == ["phenotype", "off"]
+    for scope, role in (("phenotype", PRIMARY), ("off", SENSITIVITY)):
+        mine = table[table["strain_rollup"].eq(scope)]
+        assert set(mine["role"]) == {role}
+        own = _read_text_table(scans[scope] / OUTPUTS["traits"])
+        pd.testing.assert_frame_equal(
+            mine.drop(columns=["strain_rollup", "role"]).reset_index(drop=True), own
+        )
+
+    report = json.loads((out / SCOPES_OUTPUTS["summary"]).read_text(encoding="utf-8"))
+    assert report["protocol"] == VERSION
+    assert report["follows_protocol"] is False
+    assert [(entry["scope"], entry["role"]) for entry in report["scopes"]] == [
+        ("phenotype", PRIMARY),
+        ("off", SENSITIVITY),
+    ]
+    declaration = report["strain_rollup"]
+    assert (declaration["declared_primary"], declaration["declared_sensitivity"]) == (
+        "phenotype",
+        ["off"],
+    )
+    assert declaration["declared_after_results"] == ["off"]
+    assert declaration["amendment"]["date"] == "2026-10-25"
+    assert declaration["amendment"]["known_when_amended"].startswith("Made after results.")
+    for entry in report["scopes"]:
+        scan_dir = scans[entry["scope"]]
+        for name in (OUTPUTS["summary"], OUTPUTS["provenance"], OUTPUTS["traits"]):
+            assert entry["files"][name] == file_sha256(scan_dir / name)
+        summary = json.loads((scan_dir / OUTPUTS["summary"]).read_text(encoding="utf-8"))
+        assert entry["core_run_id"] == summary["core_run"]["run_id"]
+        assert entry["lead_trait"]["trait_id"] == TRAIT_ID
+    assert report["provenance"]["code_commit"] == "abc"
+
+
+def test_scopes_report_never_reports_one_scope_alone(
+    scans: dict[str, Path], tmp_path: Path
+) -> None:
+    """One scan, or two of the same scope, is refused, and nothing is written."""
+    for given in ((scans["phenotype"],), (scans["off"], scans["off"])):
+        out = tmp_path / "refused"
+        with pytest.raises(ValueError, match="one scan of each declared scope"):
+            _scopes(out, *given)
+        assert not out.exists()
+    used = tmp_path / "used"
+    used.mkdir()
+    (used / "old.tsv").write_text("x\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="new or empty"):
+        _scopes(used, scans["phenotype"], scans["off"])
+
+
+def test_scopes_report_refuses_scans_that_differ_in_more_than_scope(
+    cores: dict[str, Path], scans: dict[str, Path], tmp_path: Path
+) -> None:
+    """The two scans must share the rule, code, protocol file and core sources, and every
+    file read must be one the scan bound to its core."""
+    reseeded = _scan(cores["tier1_2_off"], tmp_path / "off-seed-4", seed=4)
+    with pytest.raises(ValueError, match="differ in rule"):
+        _scopes(tmp_path / "a", scans["phenotype"], reseeded)
+
+    tampered = _scan(cores["tier1_2_off"], tmp_path / "off-tampered")
+    traits = tampered / OUTPUTS["traits"]
+    traits.write_text(traits.read_text(encoding="utf-8") + "\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="Consumer output changed"):
+        _scopes(tmp_path / "b", scans["phenotype"], tampered)
+
+    copied = tmp_path / "off-copied"
+    copied.mkdir()
+    for path in scans["off"].iterdir():
+        (copied / path.name).write_bytes(path.read_bytes())
+    with pytest.raises(ValueError, match="not bound"):
+        load_run(copied)
+
+    phenotype, off = load_run(scans["phenotype"]), load_run(scans["off"])
+    assert [run.scope for run in pair_scopes([off, phenotype])] == ["phenotype", "off"]
+    v1_run = dataclasses.replace(off, protocol=load_protocol(PROTOCOL_V1_PATH))
+    with pytest.raises(ValueError, match=f"needs both under {VERSION}"):
+        pair_scopes([phenotype, v1_run])
+    for section, key, value in (
+        ("core_run", "sources", {"raw_dump": "0" * 64}),
+        ("core_run", "git_commit", "0" * 40),
+        ("core_run", "parameters", {"strain_rollup": "off", "source_mode": "pinned"}),
+        (None, "scripts", {}),
+        (None, "code_commit", "def"),
+    ):
+        provenance = json.loads(json.dumps(off.provenance))
+        (provenance[section] if section else provenance)[key] = value
+        with pytest.raises(ValueError, match="differ in"):
+            pair_scopes([phenotype, dataclasses.replace(off, provenance=provenance)])
+
+
+def test_records_verify_against_the_protocol_version_they_name(scans: dict[str, Path]) -> None:
+    """A v2 record verifies against v2. A record written under v1, as on 2026-10-23, still
+    verifies against the unchanged v1 file (#1050). A record whose version, file hash or
+    scope role disagrees with the protocol it names is refused."""
+    summary = json.loads((scans["off"] / OUTPUTS["summary"]).read_text(encoding="utf-8"))
+    provenance = json.loads((scans["off"] / OUTPUTS["provenance"]).read_text(encoding="utf-8"))
+    assert recorded_protocol(summary, provenance).version == VERSION
+
+    # The fields v1's code wrote for a run on an off core.
+    v1_rollup = {
+        "scope": "off",
+        "role": PRIMARY,
+        "declared_primary": "off",
+        "declared_sensitivity": ["phenotype"],
+    }
+    v1_protocol = {"path": V1_PATH, "sha256": V1_SHA256, "version": VERSION_V1}
+    v1_summary = {**summary, "protocol": VERSION_V1, "strain_rollup": v1_rollup}
+    v1_provenance = {**provenance, "protocol": v1_protocol, "strain_rollup": v1_rollup}
+    assert recorded_protocol(v1_summary, v1_provenance) == load_protocol(PROTOCOL_V1_PATH)
+
+    sensitivity = {**v1_rollup, "role": SENSITIVITY}
+    for record_summary, record_provenance, message in (
+        (
+            {**v1_summary, "strain_rollup": sensitivity},
+            {**v1_provenance, "strain_rollup": sensitivity},
+            "role",
+        ),
+        (v1_summary, {**v1_provenance, "strain_rollup": sensitivity}, "differ"),
+        (v1_summary, {**v1_provenance, "protocol": {**v1_protocol, "sha256": "0" * 64}}, "hash"),
+        (v1_summary, {**v1_provenance, "protocol": {**v1_protocol, "path": "x.json"}}, "path"),
+        ({**v1_summary, "protocol": VERSION}, v1_provenance, "names"),
+        (
+            {**summary, "protocol": "cellulose-decr-selection-scan-v0"},
+            {
+                **provenance,
+                "protocol": {
+                    **provenance["protocol"],
+                    "version": "cellulose-decr-selection-scan-v0",
+                },
+            },
+            "unknown",
+        ),
+        (
+            {**summary, "strain_rollup": {**summary["strain_rollup"], "role": PRIMARY}},
+            {**provenance, "strain_rollup": {**summary["strain_rollup"], "role": PRIMARY}},
+            "role",
+        ),
+    ):
+        with pytest.raises(ValueError, match=message):
+            recorded_protocol(record_summary, record_provenance)
 
 
 # --------------------------------------------------------------------------- study splits (#854)
@@ -925,7 +1253,7 @@ def _inputs(records: Sequence[Signature], matrix: pd.DataFrame) -> ScanInputs:
         columns,
         {},
         contrast_population=TIER1_2,
-        strain_rollup="off",
+        strain_rollup="phenotype",
         strain_rollup_role=PRIMARY,
     )
 
@@ -1115,12 +1443,12 @@ def test_rank_candidates_orders_by_p_then_z() -> None:
 
 
 def test_load_core_inputs_reads_a_tier1_2_core_only(cores: dict[str, Path]) -> None:
-    _, inputs = load_core_inputs(cores["tier1_2"])
+    _, inputs = load_core_inputs(cores["tier1_2_off"])
     assert len(inputs.studies) == sum(STUDIES.values())
     assert TRAIT_ID in inputs.columns
-    assert (inputs.strain_rollup, inputs.strain_rollup_role) == ("off", PRIMARY)
+    assert (inputs.strain_rollup, inputs.strain_rollup_role) == ("off", SENSITIVITY)
     _, phenotype = load_core_inputs(cores["tier1_2_phenotype"])
-    assert (phenotype.strain_rollup, phenotype.strain_rollup_role) == ("phenotype", SENSITIVITY)
+    assert (phenotype.strain_rollup, phenotype.strain_rollup_role) == ("phenotype", PRIMARY)
     with pytest.raises(ValueError, match="neither the declared primary"):
         load_core_inputs(cores["tier1_2_full"])
     with pytest.raises(ValueError, match=TIER1_2):
@@ -1512,7 +1840,7 @@ def test_scan_inputs_require_the_population_and_a_declared_scope() -> None:
     with pytest.raises(ValueError, match="unknown strain-rollup role"):
         dataclasses.replace(inputs, strain_rollup_role="exploratory")
     full = dataclasses.replace(inputs, strain_rollup="full")
-    mislabelled = dataclasses.replace(inputs, strain_rollup="phenotype")
+    mislabelled = dataclasses.replace(inputs, strain_rollup="off")
     for wrong, message in (
         (full, "neither the declared primary"),
         (mislabelled, "the protocol's declared_sensitivity"),
@@ -1521,18 +1849,27 @@ def test_scan_inputs_require_the_population_and_a_declared_scope() -> None:
             select(wrong, train, permutations=10, seed=1)
         with pytest.raises(ValueError, match=message):
             evaluate(wrong, test, [(PD, HIV, CRC, TRAIT_ID)], permutations=10, seed=1)
-    sensitivity = dataclasses.replace(
-        inputs, strain_rollup="phenotype", strain_rollup_role=SENSITIVITY
-    )
+    sensitivity = dataclasses.replace(inputs, strain_rollup="off", strain_rollup_role=SENSITIVITY)
     assert select(sensitivity, train, permutations=10, seed=1).status == SELECTED
 
 
+def test_scan_inputs_have_no_default_population_or_scope() -> None:
+    """Inputs cannot be built without their population, scope and role, so a default
+    scope cannot come back unnoticed (#927)."""
+    required = {
+        field.name
+        for field in dataclasses.fields(ScanInputs)
+        if field.default is dataclasses.MISSING and field.default_factory is dataclasses.MISSING
+    }
+    assert {"contrast_population", "strain_rollup", "strain_rollup_role"} <= required
+
+
 def test_load_inputs_checks_the_stated_population_and_scope(cores: dict[str, Path]) -> None:
-    bundle, _ = load_core_inputs(cores["tier1_2"])
+    bundle, _ = load_core_inputs(cores["tier1_2_off"])
     paths = {product: bundle.path(product) for product in CORE_PRODUCTS}
     with pytest.raises(ValueError, match="population is"):
         load_inputs(paths, contrast_population="all_paired", strain_rollup="off")
     with pytest.raises(ValueError, match="neither the declared primary"):
         load_inputs(paths, contrast_population=TIER1_2, strain_rollup="full")
     inputs = load_inputs(paths, contrast_population=TIER1_2, strain_rollup="phenotype")
-    assert inputs.strain_rollup_role == SENSITIVITY
+    assert inputs.strain_rollup_role == PRIMARY

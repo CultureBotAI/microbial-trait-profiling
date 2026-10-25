@@ -170,7 +170,7 @@ def test_training_selection_rejects_the_heldout_only_trait_and_triple() -> None:
         {},
         contrast_population=scanner.TIER1_2,
         strain_rollup="off",
-        strain_rollup_role=scanner.PRIMARY,
+        strain_rollup_role=scanner.SENSITIVITY,
     )
     pooled = scanner.select(
         inputs,
