@@ -81,16 +81,30 @@ The pinned file has one row per source record, with the NCBI `tax_id` and
 cannot resolve subsources. KG-Microbe's own Madin download also fetches
 `condensed_traits_NCBI.csv`, from the default branch.
 
-How the pin was confirmed: the #773 tracing used a local copy of this table
-dated 2021-02-24. That is the date of the download, not of an upstream release;
-the repository's only release is v1.0.0 (2019-09-26). The repository's commit
-history shows `396dcd4` as the last commit to change the file, and the default
-branch has pointed at it since 2020-10-16. The local copy's git blob hash,
-`05a10e84ea015f9ee2b99ea16aae6d26c557ce3b`, equals the file's blob at that
-commit. The file fetched from the pinned URL has the SHA256 above, and so does
-a 2026 copy of KG-Microbe's Madin download. The v1.0.0 table and the
-`jmadin/bacteria-archaea-traits` fork, whose last commit is from 2020-02-18,
-carry earlier tables with other bytes, so neither can substitute for the pin.
+How the pin was confirmed. #773 calls the table it traced the "2021-02-24
+release"; no such release exists:
+
+- The upstream repository has one release and one tag, v1.0.0 (2019-09-26).
+  "2021-02-24" is the file modification time of the local copy the #773
+  tracing read, that is, when it was downloaded.
+- That copy's git blob hash, `05a10e84ea015f9ee2b99ea16aae6d26c557ce3b`, equals
+  the blob of `output/condensed_traits_NCBI.csv` at commit `396dcd4`
+  (2020-10-16). The repository's commit history shows `396dcd4` as the last
+  commit to change the file, and the default branch (`master`) has pointed at
+  it since.
+- The file fetched from the pinned URL has the SHA256 above. So does
+  KG-Microbe's raw Madin download, `data/raw/madin_etal.csv` in
+  `Knowledge-Graph-Hub/kg-microbe`, which that repository's `download.yaml`
+  fetches from the default branch.
+
+Two earlier tables have other bytes, so neither can substitute for the pin:
+
+| Table | Size | SHA256 |
+| --- | --- | --- |
+| v1.0.0 (tag commit `86dbbbcea2cfd7a3be7003fc556a3ec21b969186`) | 41,870,010 bytes | `92edd6e59687cdb832dfc926bf1e9263978b43120ccea664e42347890e0b6b20` |
+| `jmadin/bacteria-archaea-traits` fork head (`e9304397f430b2966834b979769da5491da22a69`, 2020-02-18) | 45,677,024 bytes | `196421061bb2e15f43a39799e9cbf2701cec36bac8b237718aa91832d1baeb24` |
+
+Both predate the pinned commit; neither is a newer version to upgrade to.
 
 Limits of the pin:
 
