@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import argparse
 import math
+import re
+from collections.abc import Sequence
 from dataclasses import dataclass, replace
 from pathlib import Path
 from textwrap import wrap
@@ -38,7 +40,10 @@ from create_condition_body_site_guild_maps import (
     wrap_label,
 )
 from create_six_shared_trait_cytoscape_heatmaps import (
+    CONTRAST_MODES,
+    trait_list_edges_filename,
     write_six_shared_trait_cytoscape_heatmaps,
+    write_trait_list_direction_contrasts,
 )
 from create_six_shared_trait_graphs import HTML_FILENAME, write_six_shared_trait_graphs
 from create_six_shared_trait_static_graphs import write_six_shared_trait_static_graphs
@@ -47,6 +52,7 @@ from mtp.composition_denominators import (
     trait_fractions,
     validate_cached_totals,
 )
+from mtp.trait_lists import DeclaredTraitList, file_sha256, load_trait_list, trait_labels
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VIS_DIR = REPO_ROOT / "trait-visualization"
@@ -54,6 +60,7 @@ INVESTIGATION_DIR = VIS_DIR / "trait-profile-investigation"
 OUTPUT_DIR = INVESTIGATION_DIR / "six-shared-traits"
 
 PROFILE_MATRIX_PATH = REPO_ROOT / "data/derived/study_trait_profiles_wide.tsv"
+TRAIT_COLUMNS_PATH = REPO_ROOT / "data/derived/taxa_trait_matrix_columns.tsv"
 PROFILE_METADATA_PATH = VIS_DIR / "study_trait_profile_study_metadata.tsv"
 TRAIT_STATS_PATH = INVESTIGATION_DIR / "trait_profile_paired_contrast_trait_stats.tsv"
 
@@ -134,7 +141,6 @@ SHARED_TRAITS = (
     ),
 )
 
-TRAIT_RANK_BY_ID = {trait.trait_id: index for index, trait in enumerate(SHARED_TRAITS)}
 TRAIT_SORT_COLUMNS = ["focus_enriched_profile_count", "rank_score", "trait_rank"]
 
 
@@ -167,9 +173,9 @@ def reset_output_dir() -> None:
             raise RuntimeError(msg)
 
 
-def load_profile_metadata() -> pd.DataFrame:
+def load_profile_metadata(path: Path | None = None) -> pd.DataFrame:
     """Load the human-host profile metadata used by the current Sankey maps."""
-    metadata = read_tsv(PROFILE_METADATA_PATH, index_col=0)
+    metadata = read_tsv(PROFILE_METADATA_PATH if path is None else path, index_col=0)
     metadata = metadata.copy()
     metadata["profile_id"] = metadata.index
     for column in ["study_id", "experiment_id", "inc_dec", "condition", "body_site_group"]:
@@ -185,19 +191,31 @@ def load_profile_metadata() -> pd.DataFrame:
     return metadata[metadata["inc_dec"].isin(DIRECTION_LABELS)].copy()
 
 
-def load_raw_trait_counts(traits: tuple[SharedTrait, ...], metadata: pd.DataFrame) -> pd.DataFrame:
+def load_raw_trait_counts(
+    traits: tuple[SharedTrait, ...],
+    metadata: pd.DataFrame,
+    path: Path | None = None,
+) -> pd.DataFrame:
     """Load every retained trait so the six displayed traits never define the total."""
     trait_ids = [trait.trait_id for trait in traits]
-    values = load_retained_profiles(PROFILE_MATRIX_PATH, metadata)
+    values = load_retained_profiles(PROFILE_MATRIX_PATH if path is None else path, metadata)
     if not set(trait_ids).issubset(values.columns):
         raise ValueError("Shared trait columns missing from the full raw matrix")
     return values
 
 
-def build_zscore_matrix(raw_trait_counts: pd.DataFrame, metadata: pd.DataFrame) -> pd.DataFrame:
-    """Create z-scores from log-scaled trait fractions using all-trait row totals."""
+def build_zscore_matrix(
+    raw_trait_counts: pd.DataFrame,
+    metadata: pd.DataFrame,
+    traits: tuple[SharedTrait, ...] = SHARED_TRAITS,
+) -> pd.DataFrame:
+    """Create z-scores from log-scaled trait fractions using all-trait row totals.
+
+    Each trait is standardized on its own column, so its z-scores do not depend on
+    which other traits are selected (#1054).
+    """
     validate_cached_totals(raw_trait_counts, metadata)
-    trait_ids = [trait.trait_id for trait in SHARED_TRAITS]
+    trait_ids = [trait.trait_id for trait in traits]
     composition = trait_fractions(raw_trait_counts.loc[metadata.index]).loc[:, trait_ids]
     scaled = (composition * 1000).apply(lambda column: column.map(math.log1p))
     zscores = (scaled - scaled.mean(axis=0)) / scaled.std(axis=0, ddof=0).replace(0, float("nan"))
@@ -260,7 +278,12 @@ def output_stem(trait: SharedTrait, focus_direction: str) -> str:
     return f"{trait.slug}_{DIRECTION_LABELS[focus_direction]}_profile_sankey"
 
 
-def add_trait_fields(frame: pd.DataFrame, trait: SharedTrait, analysis_key: str) -> pd.DataFrame:
+def add_trait_fields(
+    frame: pd.DataFrame,
+    trait: SharedTrait,
+    analysis_key: str,
+    trait_rank: int,
+) -> pd.DataFrame:
     """Attach trait metadata to one edge or rollup table."""
     output = frame.copy()
     output["analysis"] = analysis_key
@@ -268,7 +291,7 @@ def add_trait_fields(frame: pd.DataFrame, trait: SharedTrait, analysis_key: str)
     output.insert(2, "trait_label", trait.label)
     output.insert(3, "trait_slug", trait.slug)
     output.insert(4, "trait_color", trait.base_color)
-    output.insert(5, "trait_rank", TRAIT_RANK_BY_ID[trait.trait_id])
+    output.insert(5, "trait_rank", trait_rank)
     return output
 
 
@@ -473,6 +496,7 @@ def individual_condition_grouped_body_source(
 def build_trait_direction_tables(
     metadata: pd.DataFrame,
     zscores: pd.DataFrame,
+    traits: tuple[SharedTrait, ...] = SHARED_TRAITS,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Build all trait-direction edge, display, and rollup tables."""
     all_edges: list[pd.DataFrame] = []
@@ -480,7 +504,7 @@ def build_trait_direction_tables(
     all_condition_rollups: list[pd.DataFrame] = []
     all_body_site_rollups: list[pd.DataFrame] = []
 
-    for trait in SHARED_TRAITS:
+    for trait_rank, trait in enumerate(traits):
         scored = score_profiles(metadata, zscores, trait)
         for focus_direction in ["inc", "dec"]:
             focus_label = DIRECTION_LABELS[focus_direction]
@@ -497,7 +521,7 @@ def build_trait_direction_tables(
                 config,
                 display_mode=V3_GROUPED_MODE,
             )
-            edges = add_trait_fields(edges, trait, analysis_key)
+            edges = add_trait_fields(edges, trait, analysis_key, trait_rank)
             display_edges = select_v3_display_edges(edges)
             edge_output = add_displayed_flag_by_trait(edges, display_edges)
 
@@ -530,6 +554,7 @@ def build_trait_direction_tables(
 def build_individual_condition_direction_tables(
     metadata: pd.DataFrame,
     zscores: pd.DataFrame,
+    traits: tuple[SharedTrait, ...] = SHARED_TRAITS,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Build six-trait tables with individual conditions and grouped body sites."""
     all_edges: list[pd.DataFrame] = []
@@ -537,7 +562,7 @@ def build_individual_condition_direction_tables(
     all_condition_rollups: list[pd.DataFrame] = []
     all_body_site_rollups: list[pd.DataFrame] = []
 
-    for trait in SHARED_TRAITS:
+    for trait_rank, trait in enumerate(traits):
         scored = score_profiles(metadata, zscores, trait)
         for focus_direction in ["inc", "dec"]:
             focus_label = DIRECTION_LABELS[focus_direction]
@@ -548,7 +573,7 @@ def build_individual_condition_direction_tables(
                 scored, config
             )
             edges = summarize_edges_from_source(source, config)
-            edges = add_trait_fields(edges, trait, analysis_key)
+            edges = add_trait_fields(edges, trait, analysis_key, trait_rank)
             display_edges = select_v3_display_edges(edges)
             edge_output = add_displayed_flag_by_trait(edges, display_edges)
 
@@ -2835,6 +2860,88 @@ def write_readme(summary: pd.DataFrame, output_manifest: pd.DataFrame) -> None:
     (OUTPUT_DIR / "README.md").write_text("\n".join(lines), encoding="utf-8")
 
 
+def declared_shared_traits(
+    trait_list: DeclaredTraitList,
+    columns_path: Path,
+) -> tuple[SharedTrait, ...]:
+    """Name declared traits from the trait columns table; no per-trait colours (#1054)."""
+    labels = trait_labels(read_tsv(columns_path), trait_list.trait_ids)
+    return tuple(
+        SharedTrait(
+            trait_id=trait_id,
+            label=labels[trait_id],
+            slug=re.sub(r"[^a-z0-9]+", "_", labels[trait_id].lower()).strip("_"),
+            base_color=NODE_EDGE,
+        )
+        for trait_id in trait_list.trait_ids
+    )
+
+
+def write_trait_list_contrasts(
+    trait_list: DeclaredTraitList,
+    output_dir: Path,
+    *,
+    profiles_path: Path = PROFILE_MATRIX_PATH,
+    metadata_path: Path = PROFILE_METADATA_PATH,
+    columns_path: Path = TRAIT_COLUMNS_PATH,
+    code_commit: str = "",
+) -> pd.DataFrame:
+    """Write signed direction contrasts for a declared trait list (#1054).
+
+    Z-scores, condition/body-site rollups and edge tables come from the functions the
+    six-trait maps use, and each cell from the heatmap module's contrast code. Only
+    the edge tables, the contrast table and provenance are written; no figures.
+    """
+    if output_dir.resolve() == OUTPUT_DIR.resolve():
+        raise ValueError("Trait-list contrasts need their own directory, not the six-trait one")
+    output_dir.mkdir(parents=True, exist_ok=True)
+    traits = declared_shared_traits(trait_list, columns_path)
+    metadata = load_profile_metadata(metadata_path)
+    zscores = build_zscore_matrix(
+        load_raw_trait_counts(traits, metadata, profiles_path), metadata, traits
+    )
+    edges_by_mode = {
+        "grouped": build_trait_direction_tables(metadata, zscores, traits)[0],
+        "individual_conditions": build_individual_condition_direction_tables(
+            metadata, zscores, traits
+        )[0],
+    }
+    for mode in CONTRAST_MODES:
+        edges = edges_by_mode[mode.key]
+        for focus_label, view_key in (
+            ("increased", mode.increased_view_key),
+            ("decreased", mode.decreased_view_key),
+        ):
+            edges[edges["focus_direction"] == focus_label].to_csv(
+                output_dir / trait_list_edges_filename(view_key), sep="\t", index=False
+            )
+    trait_order = pd.DataFrame(
+        {
+            "trait_id": [trait.trait_id for trait in traits],
+            "trait_label": [trait.label for trait in traits],
+            "slug": [trait.slug for trait in traits],
+            "base_color": [trait.base_color for trait in traits],
+            "trait_rank": range(len(traits)),
+        }
+    )
+    inputs = {
+        "profiles_file": profiles_path.name,
+        "profiles_sha256": file_sha256(profiles_path),
+        "profile_metadata_file": metadata_path.name,
+        "profile_metadata_sha256": file_sha256(metadata_path),
+        "trait_columns_file": columns_path.name,
+        "trait_columns_sha256": file_sha256(columns_path),
+        "profile_count": len(metadata),
+        "trait_z": (
+            "log1p(1000 x fraction of all retained non-MediaDive trait counts), "
+            "standardized per trait over every profile (ddof=0); positive z is above "
+            "the corpus average"
+        ),
+        "code_commit": code_commit,
+    }
+    return write_trait_list_direction_contrasts(output_dir, trait_order, trait_list, inputs)
+
+
 def main() -> None:
     reset_output_dir()
     metadata = load_profile_metadata()
@@ -2916,7 +3023,8 @@ def main() -> None:
     print(f"Wrote Cytoscape heatmaps: {len(cytoscape_heatmap_manifest)}")
 
 
-if __name__ == "__main__":
+def cli(argv: Sequence[str] | None = None) -> None:
+    """Parse the command line and run the six-trait maps or one of their partial modes."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--high-support-layouts-only",
@@ -2928,10 +3036,48 @@ if __name__ == "__main__":
         action="store_true",
         help="Combine directions from saved grouped tables without regenerating other figures.",
     )
-    args = parser.parse_args()
-    if args.high_support_layouts_only:
+    parser.add_argument(
+        "--trait-list",
+        type=Path,
+        help=(
+            "Trait-identifier file (one per line); write only the signed direction "
+            "contrast tables for those traits to --output-dir (#1054)"
+        ),
+    )
+    # The six-trait figures read fixed repository paths; these inputs bind a trait-list run.
+    parser.add_argument("--output-dir", type=Path, help="Output directory for --trait-list")
+    parser.add_argument("--profiles", type=Path, help=f"With --trait-list ({PROFILE_MATRIX_PATH})")
+    parser.add_argument(
+        "--profile-metadata", type=Path, help=f"With --trait-list ({PROFILE_METADATA_PATH})"
+    )
+    parser.add_argument("--columns", type=Path, help=f"With --trait-list ({TRAIT_COLUMNS_PATH})")
+    parser.add_argument("--code-commit", help="With --trait-list: code commit for provenance")
+    args = parser.parse_args(argv)
+    trait_list_options = ("output_dir", "profiles", "profile_metadata", "columns", "code_commit")
+    if args.trait_list is None and any(getattr(args, name) for name in trait_list_options):
+        parser.error(
+            "--output-dir, --profiles, --profile-metadata, --columns and --code-commit "
+            "apply only with --trait-list"
+        )
+    if args.trait_list is not None:
+        if args.output_dir is None:
+            parser.error("--trait-list requires --output-dir")
+        contrasts = write_trait_list_contrasts(
+            load_trait_list(args.trait_list),
+            args.output_dir,
+            profiles_path=args.profiles or PROFILE_MATRIX_PATH,
+            metadata_path=args.profile_metadata or PROFILE_METADATA_PATH,
+            columns_path=args.columns or TRAIT_COLUMNS_PATH,
+            code_commit=args.code_commit or "",
+        )
+        print(f"Wrote {len(contrasts)} trait-list contrast cells to {args.output_dir}")
+    elif args.high_support_layouts_only:
         regenerate_high_support_layouts()
     elif args.combined_high_support_only:
         regenerate_bidirectional_high_support()
     else:
         main()
+
+
+if __name__ == "__main__":
+    cli()

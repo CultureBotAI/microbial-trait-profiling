@@ -245,6 +245,14 @@ trait-profile-pooled-stats *ARGS:
 six-shared-trait-heatmaps:
 	uv run python scripts/create_six_shared_trait_cytoscape_heatmaps.py
 
+# Signed increased-vs-decreased contrasts, as in the six-trait heatmaps, for a declared
+# TRAIT_LIST on one run's PROFILES, profile METADATA (its total_trait_signal must match the
+# profiles) and trait COLUMNS, into OUTPUT. Writes edge tables, the contrast table and
+# trait_list_provenance.json only; no figures, and the six-trait directory is untouched (#1054).
+[positional-arguments]
+trait-list-direction-contrasts trait_list profiles metadata columns output *ARGS:
+	uv run python scripts/create_six_shared_trait_sankeys.py --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" --trait-list "$1" --profiles "$2" --profile-metadata "$3" --columns "$4" --output-dir "$5" "${@:6}"
+
 # Check regenerated clustering and oral exports against a saved contrast table.
 audit-six-trait-diagnostics baseline:
 	uv run python scripts/adhoc/audit_clustering_stack.py --baseline-contrasts "{{baseline}}"
@@ -866,6 +874,13 @@ trait-direction-screen *ARGS:
 [positional-arguments]
 audit-trait-density *ARGS:
 	just timed audit-trait-density "uv run python scripts/audit_trait_density_correlation.py --code-commit \"$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)\" $*"
+
+# Density-adjusted paired effects for a declared TRAIT_LIST (one identifier per line) on one
+# run's PROFILES and COLUMNS, into OUTPUT; PC1 is still fit on every non-MediaDive trait and
+# trait_list_provenance.json records the list's SHA-256 (#1054). Without a list: audit-trait-density.
+[positional-arguments]
+density-adjustment-trait-list trait_list profiles columns output *ARGS:
+	uv run python -m mtp.density_adjustment --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" --trait-list "$1" --profiles "$2" --columns "$3" --output-dir "$4" "${@:5}"
 
 # Audit trait coupling sensitivity via LOTO, LCO, and three-arm evaluation (#260).
 [positional-arguments]

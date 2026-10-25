@@ -1786,6 +1786,26 @@ The Fisher contingency tables count profiles rather than independent studies;
 BH-bordered cells are profile-level diagnostics and do not establish
 study-level replication.
 
+#### Declared Trait Lists
+
+`just trait-list-direction-contrasts` computes the same signed direction cells
+for a declared list of trait identifiers on one run's profile matrix, profile
+metadata and trait columns table (#1054). It calls the functions the six-trait
+maps use: z-scores from all retained trait counts, standardized per trait, so a
+trait's z-scores do not depend on which other traits are listed; the grouped and
+individual-condition edge tables; and the same two-sided Fisher test per cell.
+Each cell's fractions and Fisher p-value are therefore those of the six-trait run
+for a shared trait. BH q-values are not: the BH family is every cell of one
+condition-label mode across all listed traits, so it grows with the list. Labels
+come from the trait columns table's `object_name`; a listed trait that the run
+cannot score stops the run. The recipe writes the per-direction edge tables,
+`trait_list_condition_body_site_direction_contrasts.tsv` and
+`trait_list_provenance.json`, which records the list file's SHA-256, the input
+hashes and the cell counts per trait. It draws no figure and leaves
+`six-shared-traits/` untouched; the six-trait run without a list is unchanged.
+The disease-group stool comparison of #1045 is the `grouped_direction_contrast`
+rows with body-site group `Feces`. Declared lists live in `methods/trait_lists/`.
+
 ### Focused Oral Six-Trait Contrast Heatmap
 
 The focused oral analysis in `trait-profile-investigation/six-shared-traits/oral/`
