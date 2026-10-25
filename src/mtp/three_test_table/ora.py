@@ -45,6 +45,9 @@ class _Population:
     testable: tuple[ProfileKey, ...]
     paired: tuple[PairKey, ...]
     common: tuple[PairKey, ...]
+    inc_larger_pairs: int
+    dec_larger_pairs: int
+    equal_size_pairs: int
 
 
 def _population(sources: VerifiedSources) -> _Population:
@@ -63,7 +66,14 @@ def _population(sources: VerifiedSources) -> _Population:
     paired_set = set(paired)
     testable = tuple(sorted(key for key, value in draws.items() if key[:2] in paired_set and value))
     common = tuple(key for key in paired if draws[(*key, "inc")] > 0 and draws[(*key, "dec")] > 0)
-    return _Population(testable, paired, common)
+    return _Population(
+        testable,
+        paired,
+        common,
+        sum(draws[(*key, "inc")] > draws[(*key, "dec")] for key in common),
+        sum(draws[(*key, "inc")] < draws[(*key, "dec")] for key in common),
+        sum(draws[(*key, "inc")] == draws[(*key, "dec")] for key in common),
+    )
 
 
 def _background(sources: VerifiedSources, features: tuple[str, ...]) -> tuple[int, np.ndarray]:
@@ -122,7 +132,13 @@ def _direction_row(
         status = "tested" if up + down else "all_tied"
     test = binomtest(up, up + down, p=0.5, alternative="two-sided") if up + down else None
     interval = test.proportion_ci(confidence_level=0.95, method="exact") if test else None
-    preference = "positive" if up > down else "negative" if down > up else "mixed"
+    preference = "none"
+    if up > down:
+        preference = "positive"
+    elif down > up:
+        preference = "negative"
+    elif up:
+        preference = "mixed"
     return {
         "ora_direction_status": status,
         "ora_direction_vote_preference": preference if eligible else "unavailable",
@@ -134,6 +150,9 @@ def _direction_row(
         "ora_direction_studies_excluded": len({key[0] for key in population.paired}) - eligible,
         "ora_direction_studies_total": len({key[0] for key in population.paired}),
         "ora_direction_pairs_eligible": eligible_pairs,
+        "ora_direction_pairs_n_inc_gt_dec": population.inc_larger_pairs if background_k else 0,
+        "ora_direction_pairs_n_inc_lt_dec": population.dec_larger_pairs if background_k else 0,
+        "ora_direction_pairs_n_inc_eq_dec": population.equal_size_pairs if background_k else 0,
         "ora_direction_pairs_excluded": len(population.paired) - eligible_pairs,
         "ora_direction_pairs_total": len(population.paired),
         "ora_direction_mean_study_delta": float(np.mean(numerator / denominators))
@@ -187,10 +206,10 @@ def ora_table(sources: VerifiedSources) -> tuple[pd.DataFrame, tuple[Path, ...]]
         records.append(
             {
                 "trait": feature,
-                "ora_enriched_inc": int(counts[0, 0, index]),
-                "ora_enriched_dec": int(counts[0, 1, index]),
-                "ora_depleted_inc": int(counts[1, 0, index]),
-                "ora_depleted_dec": int(counts[1, 1, index]),
+                "ora_enriched_inc": int(counts[0, 0, index]) if background_k else None,
+                "ora_enriched_dec": int(counts[0, 1, index]) if background_k else None,
+                "ora_depleted_inc": int(counts[1, 0, index]) if background_k else None,
+                "ora_depleted_dec": int(counts[1, 1, index]) if background_k else None,
                 "ora_native_testable_inc_profiles": testable_directions["inc"]
                 if background_k
                 else 0,

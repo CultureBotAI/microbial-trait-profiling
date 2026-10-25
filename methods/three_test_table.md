@@ -29,12 +29,37 @@ t/p/q/interval blank and record the reason; retain p=1 inside the correction.
 Do not replace the selected native pooled-composition BH/BY family with the full
 family. Keep its original results in separately named columns.
 
+`study_t_primary_correction` records BY. For every trait, record the number and
+fraction of paired input profiles with a positive annotation count. The native
+selected family excludes traits present in fewer than six profiles or more than
+95% of profiles, among other eligibility rules. Full-family results retain those
+traits. Because fractions sum to one, even a constant positive annotation count
+can produce a contrast when the retained totals differ; this closure effect is
+especially relevant to near-ubiquitous traits.
+
+For overlapping native-selected traits, check profile support, experiment/study
+counts, both means and study SD against the full-family calculation. Where both
+study t-tests are estimable, also require agreement of raw t, p and the study
+95% interval; the differently sized families' q values are not compared.
+Use the native whitespace-stripped human-host rule and require canonical `inc`
+and `dec` directions, rejecting aliases that the native population would omit.
+Keep the declared full-family SD threshold of 1e-12. A native study test excluded
+by its broader `np.isclose(SD, 0)` rule is explicitly identified in
+`native_selected_overlap_status`; any unexplained population or estimate mismatch
+fails before publication. The native profile standardization also treats exact
+zero SD differently from the adapter's 1e-12 threshold, so resulting mismatches
+are rejected rather than silently reconciled.
+
 The secondary Wilcoxon test uses the study-level mean delta-z: two-sided signed
 rank, `zero_method="wilcox"`, `method="approx"`, continuity correction disabled.
 Zero differences are removed from ranking. All-zero or absent contrasts are
 untestable. Correct across the full retained catalog with BY and companion BH,
 holding untestable traits at internal p=1. It is secondary and never a headline.
 It does not reuse the six-trait raw-count density-adjustment Wilcoxon results.
+Study means give one observation per study, so additional experiments from a
+study do not contribute additional signed-rank observations.
+`study_wilcoxon_statistic` is the two-sided minimum of the
+positive- and negative-rank sums, min(W+, W−); it carries no sign.
 
 ## ORA declaration: ora-study-enrichment-direction-v1
 
@@ -42,6 +67,8 @@ Declared before computation; accepted through the coordination review on 2026-10
 Use only the complete native upper-tail export's `is_significant` flag: global
 separate-tail BH q <=0.001 and fold >=1.5. Count increased and decreased enriched
 lists separately, retaining explicit zeros after family completeness validation.
+For K=0, enrichment and depletion counts are blank because no native test exists;
+these are not observed zero-hit counts.
 Lower-tail depletion counts (native q <=0.001 and fold <=0.5) are separate columns;
 enrichment among decreased lists is not depletion.
 
@@ -58,7 +85,9 @@ Apply a two-sided exact binomial sign test to non-tied studies under probability
 catalog separately per rollup/population. All-tied, no-eligible and no-background
 traits stay in the family at internal p=1, with blank reported p/q and explicit
 status. Missing rows must fail completeness checks; they are never imputed as
-non-hits. Positive/negative/mixed describes enrichment preference only. There is
+non-hits. The preference label is the raw, unadjusted majority of non-tied study
+votes: positive, negative, mixed for equal opposing votes, or none when every
+eligible study ties. With no eligible studies it is unavailable. There is
 no depletion-direction test and this column never decides a headline call.
 
 Every row records:
@@ -69,6 +98,15 @@ and lists, so hits are not independent across traits; it describes enrichment
 preference only. BY does not establish the validity of the underlying sign-test
 or taxon-sampling model. Repeated experiments are reduced within study; shared
 cohorts and cross-study dependence remain possible.
+
+Thresholded calls also depend on list size N: the same trait-bearing share can
+produce a hit in a larger list and no hit in a smaller list. The directional
+summary does not adjust for this difference in detection power. Columns
+`ora_direction_pairs_n_inc_gt_dec`, `ora_direction_pairs_n_inc_lt_dec` and
+`ora_direction_pairs_n_inc_eq_dec` count the eligible pairs with larger increased,
+larger decreased and equal-sized lists, respectively. These scope-level counts
+are repeated for each K>0 trait; their sum is its eligible-pair count. For K=0
+all three are zero because the trait has no eligible directional pairs.
 
 The native urn counts distinct matched taxa against all rows of the taxon-by-trait
 matrix, including unannotated rows. It is not host-filtered or subset-filtered.
@@ -154,6 +192,16 @@ population. Carrier and source-record counts are distinct.
 | `composition_study_delta_z.tsv` | All retained traits by `study_id`; equal mean of that study's eligible experiment contrasts. |
 | `three_test_run.json` | Completed provenance: producer commit/dirty state/code inventory, dependency lock and numerical library versions, input hashes, original run IDs/commits, analysis bases, ordered trait family and output hashes. Contains no machine-local input/output paths. |
 
+Publication stages all tables and the completed manifest in a fresh durable
+sibling directory, rechecks input and producer identities, then publishes the
+directory by an exclusive atomic rename. A failed late check leaves no final
+output directory; a competing output destination is never overwritten. The
+dirty-state flag covers tracked changes, while source-file hashes continue to
+bind the implementation. Untracked logs or scratch files do not change that flag.
+Exclusive publication uses Darwin `renamex_np` or Linux `renameat2`. An
+unsupported platform, C library or filesystem operation fails closed; it never
+falls back to a rename that could replace an existing destination.
+
 Verification checks the exact output inventory and regenerates results from the
 verified source bundles. It compares the complete record, including numerical
 environment and implementation identity. Editing both a table and its local
@@ -164,6 +212,12 @@ output checksum therefore does not make an altered result pass replay.
 off sidecar and its original comparison; it checks the rounded cellulose target
 and the 317-trait/548-study/935-pair scope. This data-dependent check does not run
 any owner arm or reconstruct missing source data.
+
+`just probe-three-test-guards baseline --output-dir OUTPUT --scratch-dir SCRATCH`
+runs the carrier/ORA positive control. The same recipe accepts named guard
+mutations listed by `--help`, loading isolated source copies and requiring the
+intended regression failures. Each invocation needs fresh durable directories;
+its logs and canonical before/after hashes show that source files were unchanged.
 
 ```bash
 just test-three-test-off-reproduction "$COMPARISON" "$OUTPUT" "$SCRATCH" \

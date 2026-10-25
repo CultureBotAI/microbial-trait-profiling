@@ -26,6 +26,7 @@ from mtp.multiplicity.families import rows
 from mtp.multiplicity.ora import ora_comments
 from mtp.multiplicity.sources import VerifiedSources, recorded_arm_output
 from mtp.paths import file_sha256
+from mtp.three_test_table import ora
 from mtp.three_test_table.ora import CALIBRATION_STATUS, ora_table
 from mtp.workflow.coverage import feature_filter_id
 from multiplicity_fixture import file_snapshot, write_table
@@ -39,6 +40,7 @@ def ora_sources(
     *,
     depleted: frozenset[tuple[str, str, str]] = frozenset(),
     unpaired: bool = False,
+    draw_sizes: dict[tuple[str, str, str], int] | None = None,
 ) -> VerifiedSources:
     """Construct genuine hypergeometric exports; stub execution records, not statistics."""
     root.mkdir()
@@ -68,6 +70,8 @@ def ora_sources(
                 if (study, experiment, direction) in depleted:
                     # This list draws the four all-zero matrix taxa, retaining N=4.
                     profiles[-1].update(dict.fromkeys(FEATURES, 0))
+                if draw_sizes is not None and (study, experiment, direction) in draw_sizes:
+                    profiles[-1]["taxa_count"] = draw_sizes[(study, experiment, direction)]
     if unpaired:
         profiles.append({**profiles[0], "study_id": "unpaired-study"})
     write_table(products["ora_profiles"], profiles)
@@ -105,12 +109,13 @@ def ora_sources(
         for profile in eligible:
             for feature, carriers in background.items():
                 observed = profile[feature]
+                draws = profile["taxa_count"]
                 p = float(
-                    hypergeom.sf(observed - 1, 100, carriers, 4)
+                    hypergeom.sf(observed - 1, 100, carriers, draws)
                     if tail == "upper"
-                    else hypergeom.cdf(observed, 100, carriers, 4)
+                    else hypergeom.cdf(observed, 100, carriers, draws)
                 )
-                expected = 4 * carriers / 100
+                expected = draws * carriers / 100
                 records.append(
                     {
                         **{key: profile[key] for key in ("study_id", "experiment_id", "inc_dec")},
@@ -263,13 +268,38 @@ def test_ora_full_family_holds_untestable_slots_and_reports_exact_interval(tmp_p
     assert row.ora_direction_share_up_ci95_high == 1.0
     assert row.ora_direction_family_size == 4
     assert indexed.loc["trait-b", "ora_direction_status"] == "all_tied"
+    assert indexed.loc["trait-b", "ora_direction_vote_preference"] == "none"
     assert indexed.loc["trait-empty", "ora_direction_status"] == "no_background_taxa"
     for feature in ("trait-b", "trait-empty"):
         for column in ("ora_direction_p", "ora_direction_bh_q", "ora_direction_by_q"):
             assert pd.isna(indexed.loc[feature, column])
-    assert indexed.loc["trait-empty", "ora_enriched_inc"] == 0
-    assert indexed.loc["trait-empty", "ora_enriched_dec"] == 0
+    assert pd.isna(indexed.loc["trait-empty", "ora_enriched_inc"])
+    assert pd.isna(indexed.loc["trait-empty", "ora_enriched_dec"])
     assert indexed.loc["trait-empty", "ora_background_k"] == 0
+
+
+def test_ora_correction_receives_literal_one_for_each_untestable_trait(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Check the complete correction input, before downstream handling of missing p (#1077)."""
+    sources = ora_sources(tmp_path / "source", {f"S{i}": [(1, 0)] for i in range(9)})
+    seen: dict[str, tuple[list[float], int | None]] = {}
+
+    def record_correction(
+        values: list[float], *, family_size: int | None = None, method: str = "bh"
+    ) -> list[float]:
+        assert method not in seen
+        seen[method] = (list(values), family_size)
+        return benjamini_hochberg(values, family_size=family_size, method=method)
+
+    monkeypatch.setattr(ora, "benjamini_hochberg", record_correction)
+    ora_table(sources)
+    assert set(seen) == {"bh", "by"}
+    for probabilities, family_size in seen.values():
+        assert family_size == len(FEATURES)
+        assert probabilities == [1 / 256, 1.0, 1 / 256, 1.0], (
+            "Untestable ORA hypotheses must enter corrections at p=1"
+        )
 
 
 def test_ora_empty_native_family_is_explicitly_untestable(tmp_path: Path) -> None:
@@ -281,6 +311,49 @@ def test_ora_empty_native_family_is_explicitly_untestable(tmp_path: Path) -> Non
     assert row.ora_direction_pairs_excluded == 1
     assert pd.isna(row.ora_direction_p)
     assert pd.isna(row.ora_direction_mean_study_delta)
+
+
+def test_ora_reports_list_size_balance_for_only_direction_eligible_pairs(tmp_path: Path) -> None:
+    sources = ora_sources(
+        tmp_path / "source",
+        {"A": [(1, 0)], "B": [(0, 1)], "C": [(0, 0)], "D": [(1, None)]},
+        unpaired=True,
+        draw_sizes={
+            ("A", "e0", "inc"): 8,
+            ("B", "e0", "dec"): 8,
+            ("C", "e0", "inc"): 5,
+            ("C", "e0", "dec"): 5,
+            ("D", "e0", "inc"): 8,
+        },
+    )
+    table, _ = ora_table(sources)
+    indexed = table.set_index("trait")
+    columns = [
+        "ora_direction_pairs_n_inc_gt_dec",
+        "ora_direction_pairs_n_inc_lt_dec",
+        "ora_direction_pairs_n_inc_eq_dec",
+    ]
+    for trait in ("trait-a", "trait-b", "trait-c"):
+        assert [indexed.at[trait, column] for column in columns] == [1, 1, 1]
+        assert indexed.at[trait, "ora_direction_pairs_eligible"] == 3
+    assert [indexed.at["trait-empty", column] for column in columns] == [0, 0, 0]
+
+
+def test_ora_balanced_opposing_votes_are_mixed_not_none(tmp_path: Path) -> None:
+    sources = ora_sources(tmp_path / "source", {"A": [(1, 0)], "B": [(0, 1)]})
+    table, _ = ora_table(sources)
+    row = table.set_index("trait").loc["trait-a"]
+    assert row.ora_direction_vote_preference == "mixed"
+    assert (row.ora_direction_studies_up, row.ora_direction_studies_down) == (1, 1)
+
+
+def test_ora_missing_background_counts_are_blank_not_observed_zero(tmp_path: Path) -> None:
+    sources = ora_sources(tmp_path / "source", {"A": [(1, 0)]})
+    table, _ = ora_table(sources)
+    row = table.set_index("trait").loc["trait-empty"]
+    for column in ("ora_enriched_inc", "ora_enriched_dec", "ora_depleted_inc", "ora_depleted_dec"):
+        assert pd.isna(row[column])
+    assert row.ora_direction_vote_preference == "unavailable"
 
 
 def test_ora_lower_tail_is_separate_from_enrichment_preference(tmp_path: Path) -> None:

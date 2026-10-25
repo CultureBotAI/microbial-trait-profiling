@@ -13,6 +13,7 @@ from mtp.datamodel.workflow_pydantic import ArtifactInstance, ComparisonRun, Wor
 from mtp.label_support_audit import AUDIT_TRAITS, run_label_support_audit
 from mtp.multiplicity.sources import VerifiedSources
 from mtp.paths import file_sha256
+from mtp.three_test_table import carriers
 from mtp.three_test_table.carriers import carrier_table
 from multiplicity_fixture import fixture_sources, write_table
 
@@ -161,25 +162,42 @@ def test_carrier_positive_audit_counts_unique_carriers_not_source_records(tmp_pa
 
 
 @pytest.mark.parametrize(
-    "damage",
+    ("damage", "expected_error"),
     [
-        "missing_support",
-        "missing_evidence",
-        "duplicate_evidence",
-        "orphan_evidence",
-        "wrong_carrier_total",
-        "wrong_inherited_count",
-        "false_direct",
-        "scope_occurrence",
-        "negative_occurrence",
-        "fractional_count",
-        "blank_carrier",
-        "wrong_scope_facts",
-        "missing_carrier_column",
+        ("missing_support", "^Label-support audit is missing positive core matrix cells$"),
+        (
+            "missing_evidence",
+            "^Label-support carrier evidence disagrees with support counts$",
+        ),
+        ("duplicate_evidence", "^Duplicate label-support carrier evidence$"),
+        ("orphan_evidence", "^Orphan or malformed label-support carrier evidence$"),
+        ("wrong_carrier_total", "^Label-support carrier counts differ from the core matrix$"),
+        ("wrong_inherited_count", "^Label-support carrier counts differ from the core matrix$"),
+        ("false_direct", "^Label-support carrier counts differ from the core matrix$"),
+        (
+            "scope_occurrence",
+            "^Label-support signature occurrence count differs from bound scope$",
+        ),
+        (
+            "negative_occurrence",
+            r"^Expected a finite nonnegative integer count in .*taxon_trait_label_support\.tsv:0, "
+            r"column 'signature_occurrences'; got '-1'$",
+        ),
+        (
+            "fractional_count",
+            r"^Expected a finite nonnegative integer count in .*taxon_trait_label_support\.tsv:0, "
+            r"column 'inherited_carrier_count'; got '0\.5'$",
+        ),
+        ("blank_carrier", "^Orphan or malformed label-support carrier evidence$"),
+        ("wrong_scope_facts", "^Label-support audit scope facts differ from core inputs$"),
+        (
+            "missing_carrier_column",
+            r"^Label-support carrier_source_evidence\.tsv lacks required columns$",
+        ),
     ],
 )
 def test_carrier_rejects_self_rehashed_incomplete_or_false_evidence(
-    tmp_path: Path, damage: str
+    tmp_path: Path, damage: str, expected_error: str
 ) -> None:
     sources, audit = audit_fixture(tmp_path / "inputs")
     support_name = "taxon_trait_label_support.tsv"
@@ -219,10 +237,56 @@ def test_carrier_rejects_self_rehashed_incomplete_or_false_evidence(
         }[damage]
         support.loc[parent, column] = value
         rewrite_output(audit, support_name, support)
+    with pytest.raises(ValueError, match=expected_error):
+        carrier_table(sources, audit)
+
+
+@pytest.mark.parametrize(
+    ("taxon", "direct", "inherited"),
+    [("NCBITaxon:10", "True", "1"), ("NCBITaxon:11", "False", "1")],
+)
+def test_carrier_rejects_count_preserving_direct_carrier_conflict(
+    tmp_path: Path, taxon: str, direct: str, inherited: str
+) -> None:
+    """Evidence must reconcile direct identity even when all carrier totals agree (#1077)."""
+    sources, audit = audit_fixture(tmp_path / "inputs")
+    name = "taxon_trait_label_support.tsv"
+    support = pd.read_csv(audit / name, sep="\t", dtype=str, keep_default_na=False)
+    index = support.index[(support.taxon_id == taxon) & (support.trait_key == CELL)][0]
+    assert support.loc[index, "carrier_at_reported_taxon"] != direct
+    support.loc[index, "carrier_at_reported_taxon"] = direct
+    support.loc[index, "inherited_carrier_count"] = inherited
+    assert int(support.loc[index, "carrier_count"]) == int(inherited) + int(direct == "True")
+    rewrite_output(audit, name, support)
     with pytest.raises(
-        ValueError, match=r"(carrier|Carrier|support|Support|scope|Scope|count|integer|columns)"
+        ValueError, match=r"^Label-support carrier evidence disagrees with support counts$"
     ):
         carrier_table(sources, audit)
+
+
+def test_carrier_rejects_provenance_changed_during_read(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A valid inventory does not authorize a later replacement of its manifest (#1077)."""
+    sources, audit = audit_fixture(tmp_path / "inputs")
+    manifest = audit / "provenance.json"
+    evidence = audit / "carrier_source_evidence.tsv"
+    changed = False
+
+    def hash_then_change_manifest(path: Path) -> str:
+        nonlocal changed
+        digest = file_sha256(path)
+        if path == evidence and not changed:
+            manifest.write_bytes(manifest.read_bytes() + b"\n")
+            changed = True
+        return digest
+
+    monkeypatch.setattr(carriers, "file_sha256", hash_then_change_manifest)
+    with pytest.raises(
+        ValueError, match=r"^Label-support provenance changed while reading the audit$"
+    ):
+        carrier_table(sources, audit)
+    assert changed
 
 
 @pytest.mark.parametrize("role", ["profiles", "matrix", "taxa", "kg_edges", "kg_nodes"])

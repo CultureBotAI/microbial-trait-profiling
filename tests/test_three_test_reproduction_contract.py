@@ -133,7 +133,7 @@ def test_direct_integration_without_inputs_remains_an_explicit_skip(
 ) -> None:
     for variable in _ENVIRONMENT:
         monkeypatch.delenv(variable, raising=False)
-    with pytest.raises(pytest.skip.Exception, match="lead-verified"):
+    with pytest.raises(pytest.skip.Exception, match="verified archived off comparison"):
         reproduction.test_verified_off_cellulose_target()
 
 

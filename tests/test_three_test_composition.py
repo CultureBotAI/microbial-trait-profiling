@@ -222,3 +222,78 @@ def test_unsafe_count_total_is_rejected(profiles: pd.DataFrame) -> None:
     profiles.loc[0, ["trait_A", "trait_B"]] = 2**52
     with pytest.raises(ValueError, match="count"):
         composition_table(profiles, ["trait_A", "trait_B", "trait_zero"])
+
+
+def test_all_trait_paired_profile_support_and_primary_correction_are_explicit(
+    profiles: pd.DataFrame,
+) -> None:
+    profiles["trait_ubiquitous"] = 1
+    profiles["trait_rare"] = 0
+    profiles.loc[0, "trait_rare"] = 1
+    unpaired = profiles.iloc[[0]].assign(study_id="unpaired", experiment_id="unpaired")
+    traits = ["trait_A", "trait_B", "trait_zero", "trait_ubiquitous", "trait_rare"]
+    result = composition_table(pd.concat([profiles, unpaired], ignore_index=True), traits)
+    table = result.table.set_index("trait")
+    assert set(table.study_t_primary_correction) == {"BY"}
+    assert table.composition_profile_support.to_dict() == {
+        "trait_A": 10,
+        "trait_B": 10,
+        "trait_zero": 0,
+        "trait_ubiquitous": 12,
+        "trait_rare": 1,
+    }
+    np.testing.assert_array_equal(
+        table.composition_profile_support_fraction, [10 / 12, 10 / 12, 0, 1, 1 / 12]
+    )
+    assert set(table.composition_profiles) == {12}
+    assert set(table.composition_family_size) == {5}
+
+
+def test_no_pair_support_fraction_is_undefined(profiles: pd.DataFrame) -> None:
+    result = composition_table(
+        profiles.loc[profiles.inc_dec == "inc"], ["trait_A", "trait_B", "trait_zero"]
+    )
+    assert result.table.composition_profile_support.eq(0).all()
+    assert result.table.composition_profile_support_fraction.isna().all()
+
+
+def test_full_family_by_is_distinct_from_bh_and_keeps_untestable_member() -> None:
+    """Strong synthetic contrasts distinguish both corrections and the family size (#1077)."""
+    records: list[dict[str, object]] = []
+    for index in range(12):
+        for direction, first, second in (
+            ("inc", 55 + index % 5, 25 + (3 * index) % 7),
+            ("dec", 10 + (2 * index) % 5, 10 + index % 4),
+        ):
+            records.append(
+                {
+                    "study_id": f"study{index}",
+                    "experiment_id": "experiment",
+                    "inc_dec": direction,
+                    "trait_A": first,
+                    "trait_B": second,
+                    "trait_C": 100 - first - second,
+                    "trait_zero": 0,
+                }
+            )
+    tested = ["trait_A", "trait_B", "trait_C"]
+    result = composition_table(pd.DataFrame.from_records(records), [*tested, "trait_zero"])
+    table = result.table.set_index("trait")
+    raw = [float(stats.ttest_1samp(result.study_contrasts[trait], 0.0).pvalue) for trait in tested]
+    assert all(0 < value < 0.01 for value in raw)
+    probabilities = np.array([*raw, 1.0])
+    expected_by = stats.false_discovery_control(probabilities, method="by")
+    expected_bh = stats.false_discovery_control(probabilities, method="bh")
+    np.testing.assert_allclose(table.loc[tested, "study_t_p"], raw, rtol=1e-12, atol=0)
+    np.testing.assert_allclose(
+        table.loc[tested, "study_t_q_by"], expected_by[:-1], rtol=1e-12, atol=0
+    )
+    np.testing.assert_allclose(
+        table.loc[tested, "study_t_q_bh"], expected_bh[:-1], rtol=1e-12, atol=0
+    )
+    assert np.all(expected_by[:-1] > expected_bh[:-1])
+    assert np.all(expected_by[:-1] > stats.false_discovery_control(raw, method="by"))
+    assert set(table.composition_family_size) == {4}
+    assert table.loc["trait_zero", "study_t_status"] == "untestable"
+    assert table.loc["trait_zero", "study_t_reason"] == "all_tied"
+    assert table.loc["trait_zero", ["study_t_p", "study_t_q_by", "study_t_q_bh"]].isna().all()

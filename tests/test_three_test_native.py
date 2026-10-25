@@ -16,7 +16,8 @@ from mtp.multiplicity.sources import (
     recorded_comparison_output,
 )
 from mtp.paths import file_sha256
-from mtp.three_test_table.native import native_tables
+from mtp.three_test_table.composition import composition_table
+from mtp.three_test_table.native import native_tables, validate_native_overlap
 from multiplicity_fixture import fixture_sources, write_table
 
 
@@ -163,3 +164,155 @@ def test_native_import_checks_upstream_recorded_table_bytes(
     write_table(table, records)
     with pytest.raises(ValueError, match=r"Source.*(record|hash|bytes)"):
         native_tables(bound)
+
+
+def _overlap_inputs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, subset: bool = False
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    sources = fixture_sources(tmp_path, monkeypatch, subset=subset)
+    profiles = pd.read_csv(sources.product("count_profiles"), sep="\t")
+    composition = composition_table(profiles, sources.features["count_profiles"]).table
+    native, _ = native_tables(sources)
+    return composition, native
+
+
+@pytest.mark.parametrize("subset", [False, True])
+def test_native_overlap_matches_actual_producer_exports(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, subset: bool
+) -> None:
+    composition, native = _overlap_inputs(tmp_path, monkeypatch, subset=subset)
+    checked = validate_native_overlap(composition, native)
+    selected = checked.native_selected_status != "not_selected"
+    assert selected.any()
+    assert checked.loc[selected, "native_selected_overlap_status"].eq("tested_match").all()
+    assert checked.loc[~selected, "native_selected_overlap_status"].eq("not_selected").all()
+    assert "native_selected_overlap_status" not in native
+
+
+@pytest.mark.parametrize(
+    "column",
+    [
+        "native_selected_study_t_statistic",
+        "native_selected_study_p_value",
+        "native_selected_study_mean_dz",
+        "native_selected_study_ci95_lower",
+        "native_selected_study_ci95_upper",
+        "native_selected_experiment_mean_dz",
+        "native_selected_study_sd",
+        "native_selected_study_count",
+        "native_selected_experiment_count",
+        "native_selected_profile_support",
+    ],
+)
+def test_native_overlap_rejects_changed_raw_statistics_or_population(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, column: str
+) -> None:
+    composition, native = _overlap_inputs(tmp_path, monkeypatch)
+    index = native.index[native.native_selected_status == "tested"][0]
+    native.loc[index, column] += 1
+    with pytest.raises(ValueError, match="Native overlap"):
+        validate_native_overlap(composition, native)
+
+
+def test_native_overlap_never_compares_q_values_from_different_families(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    composition, native = _overlap_inputs(tmp_path, monkeypatch)
+    native["native_selected_study_q_bh"] = 0.123
+    native["native_selected_study_q_by"] = 0.987
+    checked = validate_native_overlap(composition.iloc[::-1], native)
+    assert checked.trait.tolist() == native.trait.tolist()
+    assert checked.native_selected_study_q_bh.eq(0.123).all()
+    assert checked.native_selected_study_q_by.eq(0.987).all()
+
+
+def test_native_overlap_preserves_relative_precision_for_tiny_p_values(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    composition, native = _overlap_inputs(tmp_path, monkeypatch)
+    index = native.index[native.native_selected_status == "tested"][0]
+    trait = native.loc[index, "trait"]
+    composition.loc[composition.trait == trait, "study_t_p"] = 1e-100
+    native.loc[index, "native_selected_study_p_value"] = 1e-100
+    validate_native_overlap(composition, native)
+    native.loc[index, "native_selected_study_p_value"] = 1e-101
+    with pytest.raises(ValueError, match="Native overlap"):
+        validate_native_overlap(composition, native)
+
+
+def test_native_overlap_exposes_legitimate_dispersion_threshold_difference(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    composition, native = _overlap_inputs(tmp_path, monkeypatch)
+    index = native.index[native.native_selected_status == "tested"][0]
+    trait = native.loc[index, "trait"]
+    composition.loc[composition.trait == trait, "study_delta_z_sd"] = 5e-9
+    native.loc[index, "native_selected_study_sd"] = 5e-9
+    native.loc[index, "native_selected_status"] = "insufficient_variance"
+    for column in ("study_t_statistic", "study_p_value", "study_ci95_lower", "study_ci95_upper"):
+        native.loc[index, f"native_selected_{column}"] = np.nan
+    checked = validate_native_overlap(composition, native)
+    assert checked.loc[index, "native_selected_overlap_status"] == "native_sd_threshold_difference"
+    assert "1e-12" in checked.loc[index, "native_selected_overlap_reason"]
+    assert "1e-8" in checked.loc[index, "native_selected_overlap_reason"]
+    assert composition.loc[composition.trait == trait, "study_t_status"].item() == "tested"
+
+
+def test_native_overlap_rejects_unexplained_status_difference(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    composition, native = _overlap_inputs(tmp_path, monkeypatch)
+    index = native.index[native.native_selected_status == "tested"][0]
+    native.loc[index, "native_selected_status"] = "insufficient_variance"
+    with pytest.raises(ValueError, match="Native overlap"):
+        validate_native_overlap(composition, native)
+
+
+@pytest.mark.parametrize("reason", ["all_tied", "insufficient_variance", "insufficient_support"])
+def test_native_overlap_preserves_matching_untestable_descriptions(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, reason: str
+) -> None:
+    composition, native = _overlap_inputs(tmp_path, monkeypatch)
+    index = native.index[native.native_selected_status == "tested"][0]
+    selected = composition.trait == native.loc[index, "trait"]
+    composition.loc[selected, "study_t_status"] = "untestable"
+    composition.loc[selected, "study_t_reason"] = reason
+    composition.loc[selected, "study_delta_z_sd"] = 0.0
+    native.loc[index, "native_selected_status"] = reason
+    native.loc[index, "native_selected_study_sd"] = 0.0
+    if reason == "all_tied":
+        composition.loc[selected, ["study_mean_delta_z", "experiment_mean_delta_z"]] = 0.0
+        native.loc[
+            index, ["native_selected_study_mean_dz", "native_selected_experiment_mean_dz"]
+        ] = 0.0
+    elif reason == "insufficient_support":
+        composition.loc[selected, "composition_studies"] = 1
+        composition.loc[selected, "study_delta_z_sd"] = np.nan
+        native.loc[index, "native_selected_study_count"] = 1
+    for full_column, native_column in (
+        ("study_t_statistic", "study_t_statistic"),
+        ("study_t_p", "study_p_value"),
+        ("study_mean_delta_z_ci95_low", "study_ci95_lower"),
+        ("study_mean_delta_z_ci95_high", "study_ci95_upper"),
+    ):
+        composition.loc[selected, full_column] = np.nan
+        native.loc[index, f"native_selected_{native_column}"] = np.nan
+    checked = validate_native_overlap(composition, native)
+    assert checked.loc[index, "native_selected_overlap_status"] == "untestable_match"
+    assert checked.loc[index, "native_selected_overlap_reason"] == reason
+    assert pd.isna(checked.loc[index, "native_selected_study_p_value"])
+
+
+@pytest.mark.parametrize("mutation", ["duplicate", "missing", "unexpected"])
+def test_native_overlap_rejects_ambiguous_trait_membership(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mutation: str
+) -> None:
+    composition, native = _overlap_inputs(tmp_path, monkeypatch)
+    if mutation == "duplicate":
+        native = pd.concat([native, native.iloc[[0]]], ignore_index=True)
+    elif mutation == "missing":
+        native = native.iloc[:-1]
+    else:
+        native.loc[0, "trait"] = "unexpected|trait"
+    with pytest.raises(ValueError, match="Native overlap"):
+        validate_native_overlap(composition, native)

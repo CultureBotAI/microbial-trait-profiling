@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import ctypes
 import json
 import os
 import platform
+import sys
 import tempfile
 import uuid
 from collections.abc import Iterator
@@ -29,7 +31,7 @@ from mtp.multiplicity.stage import verify_post_arm
 from mtp.paths import file_sha256
 from mtp.three_test_table.carriers import carrier_table
 from mtp.three_test_table.composition import composition_table
-from mtp.three_test_table.native import native_tables
+from mtp.three_test_table.native import native_tables, validate_native_overlap
 from mtp.three_test_table.ora import ora_table
 
 VERSION = "three-test-per-trait-v1"
@@ -130,7 +132,7 @@ def _producer(requested_commit: str | None) -> dict[str, Any]:
         inventory = {path.relative_to(root).as_posix(): file_sha256(path) for path in sorted(paths)}
         return {
             "code_commit": commit,
-            "code_dirty": repository.is_dirty(untracked_files=True),
+            "code_dirty": repository.is_dirty(untracked_files=False),
             "implementation_sha256": canonical_sha256(inventory),
             "code_inventory": inventory,
             "lock_sha256": file_sha256(root / "uv.lock"),
@@ -146,6 +148,45 @@ def _producer(requested_commit: str | None) -> dict[str, Any]:
 
 def _inventory(path: Path) -> dict[str, Any]:
     return {"sha256": file_sha256(path), "size_bytes": path.stat().st_size}
+
+
+def _publish_directory(staging: Path, destination: Path) -> None:
+    """Atomically publish without replacing even an empty competing directory.
+
+    Darwin renamex_np(RENAME_EXCL) and Linux renameat2(RENAME_NOREPLACE)
+    provide this guarantee; ordinary POSIX rename does not. An unavailable
+    platform, libc symbol or filesystem operation fails closed, with no
+    nonexclusive fallback. Staging and destination must share a filesystem.
+    """
+    library = ctypes.CDLL(None, use_errno=True)
+    try:
+        if sys.platform == "darwin":
+            rename = library.renamex_np
+            rename.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_uint]
+            rename.restype = ctypes.c_int
+            # Darwin sys/stdio.h: RENAME_EXCL = 0x00000004.
+            result = rename(os.fsencode(staging), os.fsencode(destination), 4)
+        elif sys.platform == "linux":
+            rename = library.renameat2
+            rename.argtypes = [
+                ctypes.c_int,
+                ctypes.c_char_p,
+                ctypes.c_int,
+                ctypes.c_char_p,
+                ctypes.c_uint,
+            ]
+            rename.restype = ctypes.c_int
+            # Linux uapi/linux/{fcntl,fs}.h: AT_FDCWD = -100; RENAME_NOREPLACE = 1.
+            result = rename(-100, os.fsencode(staging), -100, os.fsencode(destination), 1)
+        else:
+            raise NotImplementedError("Atomic exclusive directory rename requires Darwin or Linux")
+    except AttributeError as error:
+        raise NotImplementedError(
+            "Atomic exclusive directory rename is unavailable in libc"
+        ) from error
+    if result != 0:
+        error_number = ctypes.get_errno()
+        raise OSError(error_number, os.strerror(error_number), str(destination))
 
 
 def _inputs(paths: set[Path], sources: VerifiedSources) -> dict[str, dict[str, Any]]:
@@ -226,7 +267,9 @@ def composition_profiles(sources: VerifiedSources) -> pd.DataFrame:
         key = row["study_id"], row["experiment_id"]
         if key not in hosts:
             raise ValueError("Count profile lacks experiment host metadata")
-        if hosts[key] != "Homo sapiens":
+        if row["inc_dec"] not in {"inc", "dec"}:
+            raise ValueError("Count profile has a noncanonical native population direction")
+        if hosts[key].strip() != "Homo sapiens":
             continue
         record: dict[str, Any] = {name: row[name] for name in identifiers}
         for feature in features:
@@ -330,6 +373,7 @@ def run_table(
         paths.update((*native_paths, *ora_paths, *carrier_paths))
         consumed = _inputs(paths, sources)
         composition = composition_table(composition_profiles(sources), features)
+        native = validate_native_overlap(composition.table, native)
         table = _merge_tables(
             features, [_labels(sources), composition.table, native, ora, carriers]
         )
@@ -347,10 +391,6 @@ def run_table(
     table["core_run_id"] = sources.core.run_id
     table["primary_ranking"] = "undecided"
     table["ora_calibration_status"] = CALIBRATION_STATUS
-    output.mkdir(parents=True)
-    table.to_csv(output / "per_trait_evidence.tsv", sep="\t", index=False, lineterminator="\n")
-    composition.pair_contrasts.to_csv(output / "composition_pair_delta_z.tsv", sep="\t")
-    composition.study_contrasts.to_csv(output / "composition_study_delta_z.tsv", sep="\t")
     record: dict[str, Any] = {
         "version": VERSION,
         "run_id": run_id or f"three-test-{uuid.uuid4().hex}",
@@ -385,16 +425,27 @@ def run_table(
             "native-selected-pooled-composition",
         ],
         "inputs": consumed,
-        "outputs": {path.name: _inventory(path) for path in sorted(output.iterdir())},
     }
-    # Publication is the final operation: failures never leave a success record.
-    if _inputs(paths, sources) != consumed or _producer(code_commit) != producer:
-        raise ValueError("Source or producer changed before provenance publication")
-    if multiplicity_inputs is not None:
-        _check_multiplicity_inputs(*multiplicity_inputs)
-    (output / MANIFEST).write_text(
-        json.dumps(record, indent=2, sort_keys=True, allow_nan=False) + "\n", encoding="utf-8"
-    )
+    output.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(
+        prefix=f".{output.name}-staging-", dir=output.parent
+    ) as temporary:
+        staging = require_durable(Path(temporary))
+        _disjoint(staging, [scratch, *roots])
+        table.to_csv(staging / "per_trait_evidence.tsv", sep="\t", index=False, lineterminator="\n")
+        composition.pair_contrasts.to_csv(staging / "composition_pair_delta_z.tsv", sep="\t")
+        composition.study_contrasts.to_csv(staging / "composition_study_delta_z.tsv", sep="\t")
+        record["outputs"] = {path.name: _inventory(path) for path in sorted(staging.iterdir())}
+        if _inputs(paths, sources) != consumed or _producer(code_commit) != producer:
+            raise ValueError("Source or producer changed before provenance publication")
+        if multiplicity_inputs is not None:
+            _check_multiplicity_inputs(*multiplicity_inputs)
+        (staging / MANIFEST).write_text(
+            json.dumps(record, indent=2, sort_keys=True, allow_nan=False) + "\n", encoding="utf-8"
+        )
+        # The completed bundle becomes visible in one no-replace rename. Any
+        # preceding failure removes staging and leaves this destination retryable.
+        _publish_directory(staging, output)
     return record
 
 

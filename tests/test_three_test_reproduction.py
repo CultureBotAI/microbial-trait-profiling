@@ -17,7 +17,7 @@ def test_verified_off_cellulose_target() -> None:
     required = ("MTP_THREE_TEST_COMPARISON", "MTP_THREE_TEST_OUTPUT", "MTP_THREE_TEST_SCRATCH")
     optional = ("MTP_THREE_TEST_MULTIPLICITY", "MTP_THREE_TEST_LABEL_SUPPORT")
     if not any(name in os.environ for name in (*required, *optional, "MTP_THREE_TEST_BASIS")):
-        pytest.skip("Requires the lead-verified archived off comparison and completed sidecar")
+        pytest.skip("Requires a verified archived off comparison and completed sidecar")
     missing = [name for name in required if not os.environ.get(name, "").strip()]
     if missing:
         raise ValueError(f"Missing reproduction inputs: {', '.join(missing)}")

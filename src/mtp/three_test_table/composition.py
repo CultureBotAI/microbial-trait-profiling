@@ -154,6 +154,7 @@ def composition_table(profiles: pd.DataFrame, traits: Sequence[str]) -> Composit
     ]
     paired_profiles = data.loc[in_pair]
     zero_profiles = int(paired_profiles[list(traits)].sum(axis=1).eq(0).sum())
+    support = paired_profiles[list(traits)].gt(0).sum(axis=0)
     rows: list[dict[str, object]] = []
     wilcoxon_probabilities: list[float] = []
     for trait in traits:
@@ -171,6 +172,10 @@ def composition_table(profiles: pd.DataFrame, traits: Sequence[str]) -> Composit
             "composition_family_size": len(traits),
             "composition_input_profiles": len(data),
             "composition_profiles": len(paired_profiles),
+            "composition_profile_support": int(support[trait]),
+            "composition_profile_support_fraction": (
+                int(support[trait]) / len(paired_profiles) if len(paired_profiles) else np.nan
+            ),
             "composition_unpaired_profiles_excluded": len(data) - len(paired_profiles),
             "composition_zero_total_profiles": zero_profiles,
             "composition_pairs": len(pairs),
@@ -183,6 +188,7 @@ def composition_table(profiles: pd.DataFrame, traits: Sequence[str]) -> Composit
             "study_delta_z_sd": float(np.std(values, ddof=1)) if len(values) >= 2 else np.nan,
             "study_t_status": "untestable" if reason else "tested",
             "study_t_reason": reason,
+            "study_t_primary_correction": "BY",
             "study_wilcoxon_contract": WILCOXON_CONTRACT,
             "study_wilcoxon_status": "untestable" if wilcoxon_reason else "tested",
             "study_wilcoxon_reason": wilcoxon_reason,

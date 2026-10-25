@@ -2,24 +2,37 @@
 
 from __future__ import annotations
 
+import ctypes
+import errno
 import json
 import os
 import sys
 import tempfile
 from collections.abc import Iterator
 from dataclasses import replace
+from datetime import UTC, datetime
 from pathlib import Path
+from types import SimpleNamespace
+from typing import Any
+from unittest.mock import Mock
 
 import pandas as pd
 import pytest
+from git import Actor, Repo
 
 from mtp.datamodel.multiple_testing_pydantic import PostArmMultiplicityRun
-from mtp.datamodel.workflow_pydantic import ContrastPopulation, DirectionBasis
+from mtp.datamodel.workflow_pydantic import (
+    ComparisonRun,
+    ContrastPopulation,
+    DirectionBasis,
+    ExecutionStatus,
+)
 from mtp.multiplicity.sources import VerifiedSources
 from mtp.multiplicity.stage import run_post_arm, verify_post_arm
 from mtp.paths import file_sha256
 from mtp.three_test_table import stage
 from mtp.three_test_table.carriers import carrier_table as carrier_reader
+from mtp.three_test_table.native import native_tables as native_reader
 from multiplicity_fixture import fixture_sources, write_table
 
 
@@ -44,6 +57,310 @@ def sources_for_stage(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Verifi
         arm.git_commit = "c" * 40
     monkeypatch.setattr(stage, "open_verified_sources", lambda _path: sources)
     return sources
+
+
+def test_real_verification_rejects_an_uncompleted_comparison_before_writes(tmp_path: Path) -> None:
+    comparison = tmp_path / "comparison_run.json"
+    failed = ComparisonRun(
+        id="uncompleted-fixture",
+        contrast_population=ContrastPopulation.all_paired,
+        direction_basis=DirectionBasis.group_1_vs_group_0,
+        status=ExecutionStatus.failed,
+        started_at=datetime(2026, 10, 25, tzinfo=UTC),
+        manifest_path=str(comparison),
+        core_manifest_path=str(tmp_path / "absent-core.json"),
+        core_manifest_sha256="a" * 64,
+        core_run_id="absent-core",
+        noel_manifest_path=str(tmp_path / "absent-noel.json"),
+        noel_manifest_sha256="b" * 64,
+        jed_manifest_path=str(tmp_path / "absent-jed.json"),
+        jed_manifest_sha256="c" * 64,
+        ilyas_manifest_path=str(tmp_path / "absent-ilyas.json"),
+        ilyas_manifest_sha256="d" * 64,
+        git_commit="e" * 40,
+        git_dirty=False,
+        analysis_specs=[],
+        eligibility_ledgers=[],
+        analysis_bases=[],
+        calibration_verdicts=[],
+        outputs=[],
+    )
+    comparison.write_text(failed.model_dump_json())
+    with pytest.raises(ValueError, match="has status failed, expected completed"):
+        stage.run_table(comparison, tmp_path / "output", scratch=tmp_path / "scratch")
+    assert not (tmp_path / "output").exists()
+    assert not (tmp_path / "scratch").exists()
+
+
+def test_producer_ignores_untracked_files_but_binds_tracked_changes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    repository_root = tmp_path / "producer"
+    with Repo.init(repository_root) as repository:
+        module = repository_root / "src/mtp/three_test_table/stage.py"
+        module.parent.mkdir(parents=True)
+        for name in (
+            "src/mtp/three_test_table/stage.py",
+            stage.METHODS,
+            "uv.lock",
+            "pyproject.toml",
+            "Justfile",
+        ):
+            path = repository_root / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("fixture\n")
+        repository.index.add(
+            [
+                str(path.relative_to(repository_root))
+                for path in repository_root.rglob("*")
+                if path.is_file() and ".git" not in path.parts
+            ]
+        )
+        actor = Actor("fixture", "fixture@example.invalid")
+        repository.index.commit("Synthetic producer inventory", author=actor, committer=actor)
+        monkeypatch.setattr(stage, "__file__", str(module))
+        before = stage._producer(None)
+        assert before["code_dirty"] is False
+        (repository_root / "untracked-note.txt").write_text("unrelated\n")
+        assert stage._producer(None) == before
+        module.write_text("changed tracked source\n")
+        changed = stage._producer(None)
+        assert changed["code_dirty"] is True
+        assert changed["implementation_sha256"] != before["implementation_sha256"]
+
+
+@pytest.mark.parametrize("failure", ["write", "late_producer"])
+def test_failed_publication_leaves_destination_absent_and_allows_retry(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, failure: str
+) -> None:
+    sources = sources_for_stage(tmp_path, monkeypatch)
+    comparison = Path(sources.comparison.manifest_path)
+    output = tmp_path / "output"
+    original_writer = pd.DataFrame.to_csv
+    original_producer = stage._producer
+    calls = 0
+
+    def fail_write(frame: pd.DataFrame, *args: Any, **kwargs: Any) -> Any:
+        nonlocal calls
+        calls += 1
+        if calls == 2:
+            raise OSError("injected publication write failure")
+        return original_writer(frame, *args, **kwargs)
+
+    def change_late(commit: str | None) -> dict[str, Any]:
+        nonlocal calls
+        calls += 1
+        result = original_producer(commit)
+        if calls == 3:
+            result["implementation_sha256"] = "changed-during-write"
+        return result
+
+    expected: type[Exception]
+    with monkeypatch.context() as failure_patch:
+        if failure == "write":
+            failure_patch.setattr(pd.DataFrame, "to_csv", fail_write)
+            expected, message = OSError, "injected publication write failure"
+        else:
+            failure_patch.setattr(stage, "_producer", change_late)
+            expected, message = ValueError, "changed before provenance publication"
+        with pytest.raises(expected, match=message):
+            stage.run_table(comparison, output, scratch=tmp_path / "scratch")
+    assert not output.exists()
+    assert not list(tmp_path.glob(".output-staging-*"))
+    record = stage.run_table(comparison, output, scratch=tmp_path / "scratch")
+    assert stage.verify_table(output, comparison, scratch=tmp_path / "scratch") == record
+
+
+def test_destination_is_invisible_until_all_artifacts_are_ready(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    sources = sources_for_stage(tmp_path, monkeypatch)
+    output = tmp_path / "output"
+    writer = pd.DataFrame.to_csv
+    written: list[Path] = []
+
+    def inspect_write(frame: pd.DataFrame, path: Path, *args: Any, **kwargs: Any) -> Any:
+        assert not output.exists(), "Partial output must not be visible at the destination"
+        assert Path(path).parent.parent == output.parent
+        written.append(Path(path))
+        return writer(frame, path, *args, **kwargs)
+
+    monkeypatch.setattr(pd.DataFrame, "to_csv", inspect_write)
+    record = stage.run_table(
+        Path(sources.comparison.manifest_path), output, scratch=tmp_path / "scratch"
+    )
+    assert len(written) == 3
+    assert {path.name for path in output.iterdir()} == {stage.MANIFEST, *record["outputs"]}
+    assert not list(tmp_path.glob(".output-staging-*"))
+
+
+@pytest.mark.parametrize("competitor", ["empty_directory", "directory", "file", "symlink"])
+def test_concurrent_destination_is_never_overwritten(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, competitor: str
+) -> None:
+    sources = sources_for_stage(tmp_path, monkeypatch)
+    output = tmp_path / "output"
+    publish = stage._publish_directory
+
+    def create_competitor(staging: Path, destination: Path) -> None:
+        if competitor in {"empty_directory", "directory"}:
+            destination.mkdir()
+            if competitor == "directory":
+                (destination / "keep.txt").write_text("preserved")
+        elif competitor == "file":
+            destination.write_text("preserved")
+        else:
+            target = tmp_path / "other-output"
+            target.mkdir()
+            (target / "keep.txt").write_text("preserved")
+            destination.symlink_to(target, target_is_directory=True)
+        publish(staging, destination)
+
+    monkeypatch.setattr(stage, "_publish_directory", create_competitor)
+    with pytest.raises(FileExistsError):
+        stage.run_table(
+            Path(sources.comparison.manifest_path), output, scratch=tmp_path / "scratch"
+        )
+    if competitor == "empty_directory":
+        assert output.is_dir()
+        assert not list(output.iterdir())
+    elif competitor == "file":
+        assert output.read_text() == "preserved"
+    else:
+        assert (output / "keep.txt").read_text() == "preserved"
+        assert output.is_symlink() == (competitor == "symlink")
+    assert not list(tmp_path.glob(".output-staging-*"))
+
+
+@pytest.mark.parametrize("system", ["darwin", "linux"])
+@pytest.mark.parametrize("error_number", [errno.EEXIST, errno.EACCES, errno.EINVAL, errno.ENOSYS])
+def test_exclusive_publication_preserves_syscall_errors_without_fallback(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, system: str, error_number: int
+) -> None:
+    source, destination = tmp_path / "staging", tmp_path / "output"
+    source.mkdir()
+    (source / "keep.txt").write_text("staged")
+
+    def fail(*_args: Any) -> int:
+        ctypes.set_errno(error_number)
+        return -1
+
+    function = Mock(side_effect=fail)
+    library = SimpleNamespace(renamex_np=function, renameat2=function)
+    monkeypatch.setattr(sys, "platform", system)
+    monkeypatch.setattr(ctypes, "CDLL", Mock(return_value=library))
+    with pytest.raises(OSError, match=rf"\[Errno {error_number}\]") as caught:
+        stage._publish_directory(source, destination)
+    assert caught.value.errno == error_number
+    assert (source / "keep.txt").read_text() == "staged"
+    assert not destination.exists()
+    if system == "darwin":
+        function.assert_called_once_with(os.fsencode(source), os.fsencode(destination), 4)
+    else:
+        function.assert_called_once_with(
+            -100, os.fsencode(source), -100, os.fsencode(destination), 1
+        )
+
+
+@pytest.mark.parametrize("system", ["unsupported", "darwin", "linux"])
+def test_exclusive_publication_fails_closed_when_unavailable(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, system: str
+) -> None:
+    source, destination = tmp_path / "staging", tmp_path / "output"
+    source.mkdir()
+    monkeypatch.setattr(sys, "platform", system)
+    monkeypatch.setattr(ctypes, "CDLL", Mock(return_value=SimpleNamespace()))
+    with pytest.raises(NotImplementedError, match=r"exclusive.*rename"):
+        stage._publish_directory(source, destination)
+    assert source.is_dir()
+    assert not destination.exists()
+
+
+@pytest.mark.parametrize(
+    "location", ["core", "comparison", "noel", "jed", "ilyas", "multiplicity", "label"]
+)
+def test_run_rejects_scratch_inside_a_source_before_creating_it(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, location: str
+) -> None:
+    sources = sources_for_stage(tmp_path, monkeypatch)
+    comparison = Path(sources.comparison.manifest_path)
+    options: dict[str, Path] = {}
+    if location == "core":
+        protected = Path(sources.core.manifest_path).parent
+    elif location == "comparison":
+        protected = comparison.parent
+    elif location in sources.arms:
+        protected = Path(sources.arms[location].manifest_path).parent
+    else:
+        protected = tmp_path / location
+        protected.mkdir()
+        options["multiplicity" if location == "multiplicity" else "label_support"] = protected
+    before = set(protected.rglob("*"))
+    scratch = protected / "must-not-be-created"
+    with pytest.raises(ValueError, match="disjoint"):
+        stage.run_table(
+            comparison,
+            tmp_path / "output",
+            scratch=scratch,
+            multiplicity=options.get("multiplicity"),
+            label_support=options.get("label_support"),
+        )
+    assert set(protected.rglob("*")) == before
+    assert not (tmp_path / "output").exists()
+
+
+@pytest.mark.parametrize("traits", [["a", "a"], ["a"], ["a", "b", "extra"]])
+def test_component_merge_rejects_duplicate_missing_or_extra_traits(traits: list[str]) -> None:
+    component = pd.DataFrame({"trait": traits, "value": range(len(traits))})
+    with pytest.raises(ValueError, match="complete catalog exactly once"):
+        stage._merge_tables(("a", "b"), [component])
+
+
+def test_composition_host_selection_strips_whitespace_like_native(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    sources = sources_for_stage(tmp_path, monkeypatch)
+    expected = stage.composition_profiles(sources)
+    experiments = sources.product("experiments")
+    metadata = pd.read_csv(experiments, sep="\t")
+    metadata["host_species"] = "  Homo sapiens  "
+    metadata.to_csv(experiments, sep="\t", index=False)
+    selected = replace(sources, recorded_hashes={})
+    pd.testing.assert_frame_equal(stage.composition_profiles(selected), expected)
+
+
+@pytest.mark.parametrize("direction", ["increased", "INC"])
+def test_composition_rejects_aliases_the_native_population_excludes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, direction: str
+) -> None:
+    sources = sources_for_stage(tmp_path, monkeypatch)
+    path = sources.product("count_profiles")
+    profiles = pd.read_csv(path, sep="\t")
+    profiles.loc[0, "inc_dec"] = direction
+    profiles.to_csv(path, sep="\t", index=False)
+    with pytest.raises(ValueError, match=r"native.*direction"):
+        stage.composition_profiles(replace(sources, recorded_hashes={}))
+
+
+def test_run_rejects_native_overlap_mismatch_before_publication(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    sources = sources_for_stage(tmp_path, monkeypatch)
+
+    def altered_native(selected: VerifiedSources) -> tuple[pd.DataFrame, tuple[Path, ...]]:
+        table, paths = native_reader(selected)
+        tested = table.index[table.native_selected_status.eq("tested")]
+        assert len(tested) > 0
+        table.loc[tested[0], "native_selected_study_t_statistic"] += 1
+        return table, paths
+
+    monkeypatch.setattr(stage, "native_tables", altered_native)
+    output = tmp_path / "output"
+    with pytest.raises(ValueError, match="overlap"):
+        stage.run_table(
+            Path(sources.comparison.manifest_path), output, scratch=tmp_path / "scratch"
+        )
+    assert not (output / "three_test_run.json").exists()
 
 
 def test_run_persists_complete_table_and_replays_without_machine_paths(
