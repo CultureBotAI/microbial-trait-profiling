@@ -2,19 +2,26 @@
 
 from __future__ import annotations
 
+import hashlib
+import importlib.util
+import json
+import sys
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
+from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
 import pytest
 
+import mtp.density_adjustment as density_module
 from bsdbng.density_adjustment import (
     DEFAULT_COLUMNS_PATH,
     DEFAULT_PROFILES_PATH,
     TABLE_1_TRAITS,
     TEST_PAIR_A,
+    TRAIT_LIST_PROVENANCE_FILENAME,
     TWIN_A,
     TWIN_B,
     compute_correlation_metrics,
@@ -23,10 +30,12 @@ from bsdbng.density_adjustment import (
     evaluate_table1_paired_effects,
     get_non_media_trait_columns,
     load_non_media_profile_matrix,
+    main,
     normalize_traits_by_profile_composition,
     regress_out_pc1,
     run_density_audit,
 )
+from mtp.trait_lists import load_trait_list
 
 
 def test_effective_tests_identity_and_collinear() -> None:
@@ -640,3 +649,239 @@ def test_evaluate_table1_and_twins_duplicate_experiments() -> None:
 
     twin_summary = evaluate_conditional_twin_test(df_dup, TWIN_A, TWIN_B)
     assert twin_summary.n_paired_experiments == 1
+
+
+EXTRA_TRAITS = {
+    "METPO:1000605": "facultatively anaerobic",
+    "METPO:1000607": "facultatively anaerobic, extra",
+    "METPO:2000103|GO:0045493": "xylan catabolic process",
+}
+MEDIA_TRAIT = "METPO:2000517|mediadive.medium:1"
+
+
+def _write_density_fixture(tmp_path: Path) -> tuple[Path, Path]:
+    """Paired profiles over the six Table 1 traits, three more traits and a medium."""
+    rng = np.random.default_rng(1054)
+    traits = [*TABLE_1_TRAITS, *EXTRA_TRAITS]
+    rows = []
+    for experiment in range(40):
+        for inc_dec in ("inc", "dec"):
+            counts = rng.poisson(rng.uniform(2, 30, size=len(traits)))
+            rows.append(
+                {
+                    "study_id": f"s{experiment // 2}",
+                    "experiment_id": f"e{experiment}",
+                    "inc_dec": inc_dec,
+                    **dict(zip(traits, counts.tolist(), strict=True)),
+                    MEDIA_TRAIT: int(rng.poisson(40)),
+                }
+            )
+    profiles = tmp_path / "profiles.tsv"
+    pd.DataFrame(rows).to_csv(profiles, sep="\t", index=False)
+    labels = {**TABLE_1_TRAITS, **EXTRA_TRAITS}
+    columns = tmp_path / "columns.tsv"
+    pd.DataFrame(
+        {
+            "column_id": [*traits, MEDIA_TRAIT],
+            "column_label": [*(f"{labels[trait]} {trait}" for trait in traits), "medium 1"],
+            "object_name": [*(labels[trait] for trait in traits), "medium 1"],
+            "object_category": ["biolink:PhenotypicQuality"] * len(traits) + ["METPO:1004005"],
+        }
+    ).to_csv(columns, sep="\t", index=False)
+    return profiles, columns
+
+
+def _write_trait_list(path: Path, trait_ids: Sequence[str]) -> Path:
+    path.write_text("# declared for the test\n" + "\n".join(trait_ids) + "\n", encoding="utf-8")
+    return path
+
+
+def test_density_audit_reports_a_declared_trait_list_without_changing_shared_rows(
+    tmp_path: Path,
+) -> None:
+    """A declared list changes which rows are reported, never a row's values (#1054)."""
+    profiles, columns = _write_density_fixture(tmp_path)
+    declared_ids = ["METPO:1000605", *TABLE_1_TRAITS, "METPO:2000103|GO:0045493"]
+    list_path = _write_trait_list(tmp_path / "traits.txt", declared_ids)
+
+    run_density_audit(profiles, columns, tmp_path / "default", code_commit="abc")
+    results = run_density_audit(
+        profiles,
+        columns,
+        tmp_path / "declared",
+        code_commit="abc",
+        trait_list=load_trait_list(list_path),
+    )
+
+    default = pd.read_csv(tmp_path / "default/table1_density_adjusted_effects.tsv", sep="\t")
+    declared = pd.read_csv(tmp_path / "declared/table1_density_adjusted_effects.tsv", sep="\t")
+    assert declared["trait_id"].tolist() == declared_ids
+    assert declared.loc[0, "trait_label"] == "facultatively anaerobic"
+    shared = declared.set_index("trait_id").loc[list(TABLE_1_TRAITS)].reset_index()
+    pd.testing.assert_frame_equal(shared, default)
+    for name in ("density_adjustment_summary.tsv",):
+        assert (tmp_path / "default" / name).read_bytes() == (
+            tmp_path / "declared" / name
+        ).read_bytes()
+
+    report = (tmp_path / "declared/density_adjustment_report.txt").read_text(encoding="utf-8")
+    assert "3. DECLARED TRAIT LIST SIGNALS (8 TRAITS)" in report
+    digest = hashlib.sha256(list_path.read_bytes()).hexdigest()
+    assert f"Trait list: traits.txt (sha256 {digest}, 8 traits)" in report
+    default_report = (tmp_path / "default/density_adjustment_report.txt").read_text(
+        encoding="utf-8"
+    )
+    assert "3. SURVIVAL OF CONVERGENT SIX TRAIT SIGNALS" in default_report
+    assert "Trait list:" not in default_report
+
+    provenance = json.loads(
+        (tmp_path / "declared" / TRAIT_LIST_PROVENANCE_FILENAME).read_text(encoding="utf-8")
+    )
+    assert provenance["trait_list_file"] == "traits.txt"
+    assert provenance["trait_list_sha256"] == digest
+    assert provenance["trait_ids"] == declared_ids
+    assert provenance["profiles_sha256"] == hashlib.sha256(profiles.read_bytes()).hexdigest()
+    assert provenance["columns_sha256"] == hashlib.sha256(columns.read_bytes()).hexdigest()
+    assert provenance["code_commit"] == "abc"
+    provenance_path = tmp_path / "declared" / TRAIT_LIST_PROVENANCE_FILENAME
+    assert results["trait_list_provenance"] == provenance_path
+    assert not (tmp_path / "default" / TRAIT_LIST_PROVENANCE_FILENAME).exists()
+
+
+def test_default_density_rerun_drops_a_stale_trait_list_record(tmp_path: Path) -> None:
+    profiles, columns = _write_density_fixture(tmp_path)
+    list_path = _write_trait_list(tmp_path / "traits.txt", ["METPO:1000605"])
+    output = tmp_path / "output"
+    run_density_audit(profiles, columns, output, trait_list=load_trait_list(list_path))
+    assert (output / TRAIT_LIST_PROVENANCE_FILENAME).exists()
+
+    results = run_density_audit(profiles, columns, output)
+
+    assert results["trait_list_provenance"] is None
+    assert not (output / TRAIT_LIST_PROVENANCE_FILENAME).exists()
+    effects = pd.read_csv(output / "table1_density_adjusted_effects.tsv", sep="\t")
+    assert effects["trait_id"].tolist() == list(TABLE_1_TRAITS)
+
+
+@pytest.mark.parametrize(
+    ("trait_id", "message"),
+    [
+        ("METPO:9999999", r"not non-MediaDive trait columns: \['METPO:9999999'\]"),
+        (MEDIA_TRAIT, "not non-MediaDive trait columns"),
+    ],
+)
+def test_declared_density_traits_must_be_non_mediadive_columns(
+    tmp_path: Path, trait_id: str, message: str
+) -> None:
+    profiles, columns = _write_density_fixture(tmp_path)
+    list_path = _write_trait_list(tmp_path / "traits.txt", ["METPO:1000605", trait_id])
+    with pytest.raises(ValueError, match=message):
+        run_density_audit(
+            profiles, columns, tmp_path / "output", trait_list=load_trait_list(list_path)
+        )
+    assert not (tmp_path / "output" / "table1_density_adjusted_effects.tsv").exists()
+
+
+def test_density_cli_accepts_a_trait_list(tmp_path: Path) -> None:
+    profiles, columns = _write_density_fixture(tmp_path)
+    list_path = _write_trait_list(tmp_path / "traits.txt", list(EXTRA_TRAITS))
+    argv = [
+        "density_adjustment",
+        "--profiles",
+        str(profiles),
+        "--columns",
+        str(columns),
+        "--output-dir",
+        str(tmp_path / "output"),
+        "--trait-list",
+        str(list_path),
+    ]
+    with patch.object(sys, "argv", argv):
+        main()
+    effects = pd.read_csv(tmp_path / "output/table1_density_adjusted_effects.tsv", sep="\t")
+    assert effects["trait_id"].tolist() == list(EXTRA_TRAITS)
+    assert effects["trait_label"].tolist() == list(EXTRA_TRAITS.values())
+    assert (tmp_path / "output" / TRAIT_LIST_PROVENANCE_FILENAME).exists()
+
+
+def _audit_script() -> Any:
+    """Load the jed arm's density step, scripts/audit_trait_density_correlation.py."""
+    path = Path(__file__).resolve().parents[1] / "scripts" / "audit_trait_density_correlation.py"
+    spec = importlib.util.spec_from_file_location("audit_trait_density_correlation", path)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_audit_script_reports_a_trait_list_without_fixed_conclusions(tmp_path: Path) -> None:
+    """The arm's audit script takes the list; its six-trait narrative is not printed (#1054)."""
+    profiles, columns = _write_density_fixture(tmp_path)
+    list_path = _write_trait_list(tmp_path / "traits.txt", list(EXTRA_TRAITS))
+    audit = _audit_script()
+    reports = {}
+    for name, extra in (("default", []), ("declared", ["--trait-list", str(list_path)])):
+        argv = [
+            "audit_trait_density_correlation.py",
+            "--profiles",
+            str(profiles),
+            "--columns",
+            str(columns),
+            "--output-dir",
+            str(tmp_path / name),
+            *extra,
+        ]
+        with patch.object(sys, "argv", argv):
+            assert audit.main() == 0
+        reports[name] = (tmp_path / name / "density_adjustment_report.txt").read_text(
+            encoding="utf-8"
+        )
+
+    declared = reports["declared"]
+    digest = hashlib.sha256(list_path.read_bytes()).hexdigest()
+    assert f"Trait list: traits.txt (sha256 {digest}, 3 traits)" in declared
+    assert "3. DECLARED TRAIT LIST SIGNALS (3 TRAITS)" in declared
+    assert "Not written for a declared trait list" in declared
+    for fixed_text in ("p=2.6e-5", "p=0.26", "p=1.8e-11", "retain clear significance"):
+        assert fixed_text not in declared
+    for label in EXTRA_TRAITS.values():
+        assert label in declared
+    effects = pd.read_csv(tmp_path / "declared/table1_density_adjusted_effects.tsv", sep="\t")
+    assert effects["trait_id"].tolist() == list(EXTRA_TRAITS)
+    assert (tmp_path / "declared" / TRAIT_LIST_PROVENANCE_FILENAME).exists()
+
+    default = reports["default"]
+    assert "3. SURVIVAL OF CONVERGENT SIX TRAIT SIGNALS" in default
+    assert "retain clear significance" in default
+    assert "Trait list:" not in default
+    assert not (tmp_path / "default" / TRAIT_LIST_PROVENANCE_FILENAME).exists()
+
+
+def test_trait_list_runs_never_write_the_six_trait_density_directory(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Deck figures read the default table, so a list run needs its own directory (#1083)."""
+    profiles, columns = _write_density_fixture(tmp_path)
+    list_path = _write_trait_list(tmp_path / "traits.txt", list(EXTRA_TRAITS))
+    default_dir = tmp_path / "derived" / "density_adjustment"
+    monkeypatch.setattr(density_module, "DEFAULT_OUTPUT_DIR", default_dir)
+    for output in (default_dir, default_dir / "nested"):
+        with pytest.raises(ValueError, match="needs its own --output-dir"):
+            run_density_audit(profiles, columns, output, trait_list=load_trait_list(list_path))
+
+    inputs = ["--profiles", str(profiles), "--columns", str(columns)]
+    argv = ["density_adjustment", *inputs, "--trait-list", str(list_path)]
+    with patch.object(sys, "argv", argv), pytest.raises(ValueError, match="own --output-dir"):
+        main()
+
+    audit = _audit_script()
+    monkeypatch.setattr(audit, "DEFAULT_OUTPUT_DIR", default_dir)
+    with patch.object(sys, "argv", ["audit", *inputs, "--trait-list", str(list_path)]):
+        assert audit.main() == 1
+    assert "needs its own --output-dir" in capsys.readouterr().err
+    assert not default_dir.exists()
+
+    run_density_audit(profiles, columns, default_dir)
+    effects = pd.read_csv(default_dir / "table1_density_adjusted_effects.tsv", sep="\t")
+    assert effects["trait_id"].tolist() == list(TABLE_1_TRAITS)

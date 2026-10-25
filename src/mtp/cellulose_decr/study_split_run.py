@@ -47,6 +47,7 @@ IMPLEMENTATIONS = (
     "src/mtp/datamodel/multiple_testing_pydantic.py",
     "methods/multiple_testing_policy_v1.yaml",
     "methods/cellulose_decr_selection_scan_protocol.json",
+    "methods/cellulose_decr_selection_scan_protocol_v2.json",
     "methods/study_split_selection_protocol.json",
     "methods/study_split_selection.md",
     "uv.lock",

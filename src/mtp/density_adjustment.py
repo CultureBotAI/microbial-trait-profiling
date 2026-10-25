@@ -21,8 +21,9 @@ Addresses Issue #264, Issue #352, and follow-ups #375-#383:
 from __future__ import annotations
 
 import argparse
+import json
 import math
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Literal
@@ -33,11 +34,13 @@ from scipy import stats
 
 from mtp.composition_denominators import MEDIADIVE_MARKER, trait_fractions
 from mtp.paths import DERIVED_DATA_DIR
+from mtp.trait_lists import DeclaredTraitList, file_sha256, load_trait_list, trait_labels
 from mtp.trait_screen import effective_family_size
 
 DEFAULT_PROFILES_PATH = DERIVED_DATA_DIR / "study_trait_profiles_wide.tsv"
 DEFAULT_COLUMNS_PATH = DERIVED_DATA_DIR / "taxa_trait_matrix_columns.tsv"
 DEFAULT_OUTPUT_DIR = DERIVED_DATA_DIR / "density_adjustment"
+TRAIT_LIST_PROVENANCE_FILENAME = "trait_list_provenance.json"
 
 # The six canonical Table 1 traits
 TABLE_1_TRAITS: dict[str, str] = {
@@ -112,8 +115,8 @@ class Table1TraitEffect:
     status: str
 
 
-def get_non_media_trait_columns(columns_path: Path) -> list[str]:
-    """Return ordered list of non-MediaDive trait column identifiers.
+def read_non_media_trait_columns(columns_path: Path) -> pd.DataFrame:
+    """Return the columns-table rows of the non-MediaDive traits, in table order.
 
     Non-MediaDive traits are defined as columns where object_category != 'METPO:1004005'.
     """
@@ -127,11 +130,15 @@ def get_non_media_trait_columns(columns_path: Path) -> list[str]:
     df = pd.read_csv(columns_path, sep="\t")
     if "object_category" not in df.columns or "column_id" not in df.columns:
         raise ValueError(f"Columns file missing required columns: {columns_path}")
-    filtered = df[
+    return df[
         (df["object_category"] != "METPO:1004005")
         & (~df["column_id"].astype(str).str.lower().str.contains(MEDIADIVE_MARKER, regex=False))
     ]
-    return [str(c) for c in filtered["column_id"].tolist()]
+
+
+def get_non_media_trait_columns(columns_path: Path) -> list[str]:
+    """Return ordered list of non-MediaDive trait column identifiers."""
+    return [str(c) for c in read_non_media_trait_columns(columns_path)["column_id"].tolist()]
 
 
 def load_non_media_profile_matrix(
@@ -386,9 +393,15 @@ def evaluate_table1_paired_effects(
     profiles_df: pd.DataFrame,
     adj_matrix: np.ndarray,
     non_media_cols: list[str],
+    traits: Mapping[str, str] = TABLE_1_TRAITS,
 ) -> list[Table1TraitEffect]:
-    """Evaluate paired experiment contrasts (inc - dec) before and after PC1 adjustment."""
-    t1_keys = [k for k in TABLE_1_TRAITS if k in non_media_cols]
+    """Evaluate paired experiment contrasts (inc - dec) before and after PC1 adjustment.
+
+    ``traits`` maps the reported trait identifiers to labels, in report order. PC1 is
+    fit on every non-MediaDive trait whatever is reported, so a trait's row does not
+    depend on which other traits are listed (#1054).
+    """
+    t1_keys = [k for k in traits if k in non_media_cols]
     has_paired_directions = (
         not profiles_df.empty
         and "study_id" in profiles_df.columns
@@ -427,7 +440,7 @@ def evaluate_table1_paired_effects(
 
     results: list[Table1TraitEffect] = []
     for trait_id in t1_keys:
-        label = TABLE_1_TRAITS[trait_id]
+        label = traits[trait_id]
 
         can_eval = (
             has_paired_directions
@@ -641,11 +654,61 @@ def evaluate_conditional_twin_test(
     )
 
 
+def declared_density_traits(
+    columns_path: Path,
+    trait_list: DeclaredTraitList,
+) -> dict[str, str]:
+    """Label a declared list; every trait must be a non-MediaDive column (#1054)."""
+    non_media = read_non_media_trait_columns(columns_path)
+    non_media_ids = set(non_media["column_id"].astype(str))
+    excluded = [trait_id for trait_id in trait_list.trait_ids if trait_id not in non_media_ids]
+    if excluded:
+        raise ValueError(f"Declared traits are not non-MediaDive trait columns: {excluded}")
+    return trait_labels(non_media, trait_list.trait_ids)
+
+
+def write_trait_list_provenance(
+    output_dir: Path,
+    trait_list: DeclaredTraitList,
+    *,
+    profiles_path: Path,
+    columns_path: Path,
+    code_commit: str,
+) -> Path:
+    """Record the declared list, its hash and the inputs it was evaluated on."""
+    # The loaders above fall back to a .gz sibling; hash the file they actually read.
+    resolved_profiles, resolved_columns = (
+        path if path.exists() else path.with_name(f"{path.name}.gz")
+        for path in (profiles_path, columns_path)
+    )
+    provenance = {
+        **trait_list.provenance(),
+        "reported_table": "table1_density_adjusted_effects.tsv",
+        "pc1_fit_traits": "every non-MediaDive trait column, independent of the list",
+        "profiles_file": resolved_profiles.name,
+        "profiles_sha256": file_sha256(resolved_profiles),
+        "columns_file": resolved_columns.name,
+        "columns_sha256": file_sha256(resolved_columns),
+        "code_commit": code_commit,
+    }
+    path = output_dir / TRAIT_LIST_PROVENANCE_FILENAME
+    path.write_text(json.dumps(provenance, indent=2) + "\n", encoding="utf-8")
+    return path
+
+
+def reported_traits_heading(trait_list: DeclaredTraitList | None) -> str:
+    """Name the reported trait set in report headings; the default text is unchanged."""
+    if trait_list is None:
+        return "SURVIVAL OF CONVERGENT SIX TRAIT SIGNALS"
+    return f"DECLARED TRAIT LIST SIGNALS ({len(trait_list.trait_ids)} TRAITS)"
+
+
 def run_density_audit(
     profiles_path: Path = DEFAULT_PROFILES_PATH,
     columns_path: Path = DEFAULT_COLUMNS_PATH,
     output_dir: Path = DEFAULT_OUTPUT_DIR,
     code_commit: str = "",
+    trait_list: DeclaredTraitList | None = None,
 ) -> dict[str, Any]:
     """Execute the complete trait density adjustment and near-twin audit.
 
@@ -653,9 +716,22 @@ def run_density_audit(
       output_dir / 'density_adjustment_summary.tsv'
       output_dir / 'table1_density_adjusted_effects.tsv'
       output_dir / 'density_adjustment_report.txt'
+
+    With a declared ``trait_list`` the effects table reports those traits instead of
+    the six Table 1 traits, and ``trait_list_provenance.json`` records the list (#1054).
+    A list run never writes into the default directory, whose six-trait table the
+    deck figures read (#1083).
     """
+    if trait_list is not None and output_dir.resolve().is_relative_to(DEFAULT_OUTPUT_DIR.resolve()):
+        raise ValueError(
+            f"A trait-list run needs its own --output-dir, not {DEFAULT_OUTPUT_DIR.name}/ "
+            "(the six-trait density outputs)"
+        )
     output_dir.mkdir(parents=True, exist_ok=True)
     profiles_df, non_media_cols = load_non_media_profile_matrix(profiles_path, columns_path)
+    reported_traits = (
+        TABLE_1_TRAITS if trait_list is None else declared_density_traits(columns_path, trait_list)
+    )
     raw_matrix = np.nan_to_num(profiles_df[non_media_cols].to_numpy(dtype=float), nan=0.0)
 
     # 1. Baseline metrics (Pearson & Spearman)
@@ -671,7 +747,9 @@ def run_density_audit(
     adj_comp_pearson = compute_correlation_metrics(comp_matrix, non_media_cols, method="pearson")
 
     # 4. Table 1 Trait Effects under PC1 adjustment
-    t1_effects = evaluate_table1_paired_effects(profiles_df, adj_matrix_pc1, non_media_cols)
+    t1_effects = evaluate_table1_paired_effects(
+        profiles_df, adj_matrix_pc1, non_media_cols, reported_traits
+    )
 
     # 5. Near-twin conditional test
     twin_summary = evaluate_conditional_twin_test(
@@ -707,6 +785,15 @@ def run_density_audit(
         [
             f"Profiles source: {profiles_path}",
             f"Columns source: {columns_path}",
+        ]
+    )
+    if trait_list is not None:
+        report_lines.append(
+            f"Trait list: {trait_list.source_name} (sha256 {trait_list.sha256}, "
+            f"{len(trait_list.trait_ids)} traits)"
+        )
+    report_lines.extend(
+        [
             "",
             "1. BASELINE DIMENSIONALITY AND CORRELATION STRUCTURE",
             "-" * 80,
@@ -744,7 +831,7 @@ def run_density_audit(
             f"  Mean pairwise r: {adj_pc1_pearson.mean_pairwise_r:+.4f}",
             f"  Pairs > 0.5: {adj_pc1_pearson.pct_pairs_gt_05:.1f}%",
             "",
-            f"3. SURVIVAL OF CONVERGENT SIX TRAIT SIGNALS "
+            f"3. {reported_traits_heading(trait_list)} "
             f"(PAIRED EXPERIMENTS N={twin_summary.n_paired_experiments:,})",
             "-" * 80,
         ]
@@ -798,6 +885,19 @@ def run_density_audit(
     report_text = "\n".join(report_lines) + "\n"
     report_out.write_text(report_text, encoding="utf-8")
 
+    provenance_out = None
+    if trait_list is None:
+        # A default rerun into a reused directory must not keep a list it did not use.
+        (output_dir / TRAIT_LIST_PROVENANCE_FILENAME).unlink(missing_ok=True)
+    else:
+        provenance_out = write_trait_list_provenance(
+            output_dir,
+            trait_list,
+            profiles_path=profiles_path,
+            columns_path=columns_path,
+            code_commit=code_commit,
+        )
+
     return {
         "raw_pearson": raw_pearson,
         "raw_spearman": raw_spearman,
@@ -808,7 +908,21 @@ def run_density_audit(
         "summary_tsv": summary_out,
         "table1_tsv": t1_out,
         "report_txt": report_out,
+        "trait_list_provenance": provenance_out,
     }
+
+
+def add_trait_list_argument(parser: argparse.ArgumentParser) -> None:
+    """Declare the optional trait list on each density command line (#1054)."""
+    parser.add_argument(
+        "--trait-list",
+        type=Path,
+        default=None,
+        help=(
+            "File of trait identifiers (one per line) to report instead of the six "
+            "Table 1 traits; its SHA-256 is recorded in trait_list_provenance.json"
+        ),
+    )
 
 
 def main() -> None:
@@ -840,6 +954,7 @@ def main() -> None:
         default="",
         help="Code commit hash for provenance tracking",
     )
+    add_trait_list_argument(parser)
 
     args = parser.parse_args()
     results = run_density_audit(
@@ -847,6 +962,7 @@ def main() -> None:
         columns_path=args.columns,
         output_dir=args.output_dir,
         code_commit=args.code_commit,
+        trait_list=None if args.trait_list is None else load_trait_list(args.trait_list),
     )
     print(f"Density adjustment audit completed successfully. Outputs written to {args.output_dir}")
     print(f"Summary TSV: {results['summary_tsv']}")

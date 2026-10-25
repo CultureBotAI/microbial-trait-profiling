@@ -248,6 +248,14 @@ trait-profile-pooled-stats *ARGS:
 six-shared-trait-heatmaps:
 	uv run python scripts/create_six_shared_trait_cytoscape_heatmaps.py
 
+# Signed increased-vs-decreased contrasts, as in the six-trait heatmaps, for a declared
+# TRAIT_LIST on one run's PROFILES, profile METADATA (its total_trait_signal must match the
+# profiles) and trait COLUMNS, into OUTPUT. Writes edge tables, the contrast table and
+# trait_list_provenance.json only; no figures, and the six-trait directory is untouched (#1054).
+[positional-arguments]
+trait-list-direction-contrasts trait_list profiles metadata columns output *ARGS:
+	uv run python scripts/create_six_shared_trait_sankeys.py --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" --trait-list "$1" --profiles "$2" --profile-metadata "$3" --columns "$4" --output-dir "$5" "${@:6}"
+
 # Check regenerated clustering and oral exports against a saved contrast table.
 audit-six-trait-diagnostics baseline:
 	uv run python scripts/adhoc/audit_clustering_stack.py --baseline-contrasts "{{baseline}}"
@@ -460,9 +468,19 @@ cellulose-decr-figures *ARGS:
 # overlap and U6 null for every triple of eligible conditions and the top decreasing
 # traits, on a verified Tier 1+2 core RUN (its run.json), into a new or empty OUTPUT
 # directory. Pass --plan to print the counts and a timed estimate without running the null.
+# Protocol v2 (#1050) makes phenotype primary and off the declared sensitivity.
+# Scan a core of each scope, then report both with cellulose-decr-selection-scan-scopes.
 [positional-arguments]
 cellulose-decr-selection-scan run output *ARGS:
 	uv run python -m mtp.cellulose_decr.selection_scan --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" --core-run "$1" --output-dir "$2" "${@:3}"
+
+# The selection scan's two strain-rollup scopes side by side (#1050): give the output
+# directories of `just cellulose-decr-selection-scan` on a Tier 1+2 x phenotype core and
+# on a Tier 1+2 x off core, in either order, and a new or empty OUTPUT directory.
+# Both scans are verified and written together, so neither scope is reported alone.
+[positional-arguments]
+cellulose-decr-selection-scan-scopes scan_a scan_b output:
+	uv run python -m mtp.cellulose_decr.selection_scan_scopes --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" --scan "$1" --scan "$2" --output-dir "$3"
 
 # The two methods plates and seven Tufte plates of the selected-figure deck, drawn
 # from the rerun tables into this checkout's data/derived/tufte_plates/ (#573). Plates IV
@@ -638,6 +656,13 @@ audit-strain-rollup *ARGS:
 [positional-arguments]
 audit-label-support *ARGS:
 	uv run python -m mtp.label_support_audit "$@"
+
+# dest is a durable data directory, not a temporary one. The request is anonymous, and a file
+# whose size or sha256 differs from the pin is refused. Pass the file to
+# `just audit-label-support --madin-csv`.
+# Download the Madin et al. condensed trait table pinned in mtp.madin_source (#1048).
+download-madin dest:
+	uv run python -m mtp.madin_source --dest-dir "{{dest}}"
 
 # The analyses read human hosts only, without the trait columns that are zero in every
 # human profile, as committed in data/derived/study_trait_profiles_wide.tsv.gz (#656).
@@ -869,6 +894,13 @@ trait-direction-screen *ARGS:
 [positional-arguments]
 audit-trait-density *ARGS:
 	just timed audit-trait-density "uv run python scripts/audit_trait_density_correlation.py --code-commit \"$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)\" $*"
+
+# Density-adjusted paired effects for a declared TRAIT_LIST (one identifier per line) on one
+# run's PROFILES and COLUMNS, into OUTPUT; PC1 is still fit on every non-MediaDive trait and
+# trait_list_provenance.json records the list's SHA-256 (#1054). Without a list: audit-trait-density.
+[positional-arguments]
+density-adjustment-trait-list trait_list profiles columns output *ARGS:
+	uv run python -m mtp.density_adjustment --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" --trait-list "$1" --profiles "$2" --columns "$3" --output-dir "$4" "${@:5}"
 
 # Audit trait coupling sensitivity via LOTO, LCO, and three-arm evaluation (#260).
 [positional-arguments]
