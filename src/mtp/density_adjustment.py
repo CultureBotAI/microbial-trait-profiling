@@ -34,7 +34,13 @@ from scipy import stats
 
 from mtp.composition_denominators import MEDIADIVE_MARKER, trait_fractions
 from mtp.paths import DERIVED_DATA_DIR
-from mtp.trait_lists import DeclaredTraitList, file_sha256, load_trait_list, trait_labels
+from mtp.trait_lists import (
+    DeclaredTraitList,
+    file_sha256,
+    load_trait_list,
+    output_dir_argument,
+    trait_labels,
+)
 from mtp.trait_screen import effective_family_size
 
 DEFAULT_PROFILES_PATH = DERIVED_DATA_DIR / "study_trait_profiles_wide.tsv"
@@ -103,7 +109,14 @@ class ConditionalTwinSummary:
 
 @dataclass(frozen=True)
 class Table1TraitEffect:
-    """Paired contrast effect for one Table 1 trait before and after density adjustment."""
+    """Paired contrast effect for one Table 1 trait before and after density adjustment.
+
+    ``relative_change_pct`` is the signed change (adj - raw) / |raw| x 100, kept for
+    continuity. It reads as attenuation only for a positive raw mean: for a negative
+    one, a negative value means the effect grew. ``magnitude_change_pct`` is
+    (|adj| - |raw|) / |raw| x 100, negative exactly when the effect shrank, and
+    ``sign_flipped`` marks an adjusted mean of the opposite sign (#1084).
+    """
 
     trait_id: str
     trait_label: str
@@ -113,6 +126,37 @@ class Table1TraitEffect:
     adj_wilcoxon_p: float
     relative_change_pct: float
     status: str
+    magnitude_change_pct: float
+    sign_flipped: bool
+
+
+# Statuses whose adjusted paired contrast is significant (Wilcoxon p <= 0.05).
+SIGNIFICANT_POST_ADJUSTMENT_STATUSES = frozenset(
+    {"enhanced (significant, larger magnitude)", "survived (significant post-adjustment)"}
+)
+
+
+def adjustment_status(raw_mean: float, raw_p: float, adj_mean: float, adj_p: float) -> str:
+    """Classify a trait by adjusted significance and by the change in effect magnitude.
+
+    Significance comes from the Wilcoxon p-values; "enhanced" and "attenuated" compare
+    |adj| with |raw|, whatever the sign of either mean (#1084). A sign change is
+    recorded separately, in ``sign_flipped``.
+    """
+    if math.isnan(adj_p):
+        return "insufficient non-zero pairs"
+    larger = abs(adj_mean) > abs(raw_mean)
+    if adj_p <= 0.05:
+        if larger:
+            return "enhanced (significant, larger magnitude)"
+        return "survived (significant post-adjustment)"
+    if not math.isnan(raw_p) and raw_p <= 0.05:
+        if larger:
+            return "collapsed (nonsignificant post-adjustment, larger magnitude)"
+        return "collapsed (attenuated to nonsignificant)"
+    if larger:
+        return "enhanced magnitude (nonsignificant post-adjustment)"
+    return "attenuated (nonsignificant post-adjustment)"
 
 
 def read_non_media_trait_columns(columns_path: Path) -> pd.DataFrame:
@@ -483,18 +527,11 @@ def evaluate_table1_paired_effects(
             adj_p = float("nan")
             rel_change = 0.0
 
-        # Classify status using general statistical criteria rather than hardcoded trait IDs (#383)
-        if math.isnan(adj_p):
-            status = "insufficient non-zero pairs"
-        elif not math.isnan(raw_p) and raw_p <= 0.05 and adj_p > 0.05:
-            status = "collapsed (attenuated to nonsignificant)"
-        elif not math.isnan(raw_p) and adj_p <= 0.05:
-            if abs(adj_mean) > abs(raw_mean) and np.sign(adj_mean) == np.sign(raw_mean):
-                status = "enhanced (significant, larger magnitude)"
-            else:
-                status = "survived (significant post-adjustment)"
-        else:
-            status = "attenuated (nonsignificant post-adjustment)"
+        magnitude_change = (
+            float((abs(adj_mean) - abs(raw_mean)) / abs(raw_mean) * 100.0)
+            if abs(raw_mean) > 1e-9
+            else float("nan")
+        )
 
         results.append(
             Table1TraitEffect(
@@ -505,7 +542,10 @@ def evaluate_table1_paired_effects(
                 adj_mean_diff=adj_mean,
                 adj_wilcoxon_p=adj_p,
                 relative_change_pct=rel_change,
-                status=status,
+                # General statistical criteria rather than hardcoded trait IDs (#383)
+                status=adjustment_status(raw_mean, raw_p, adj_mean, adj_p),
+                magnitude_change_pct=magnitude_change,
+                sign_flipped=bool(np.sign(raw_mean) * np.sign(adj_mean) < 0),
             )
         )
 
@@ -944,7 +984,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--output-dir",
-        type=Path,
+        type=output_dir_argument,
         default=DEFAULT_OUTPUT_DIR,
         help="Directory to write output TSVs and reports",
     )

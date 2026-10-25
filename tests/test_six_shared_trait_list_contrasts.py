@@ -31,6 +31,13 @@ EXTRA = {
     "METPO:1000603": "anaerobic",
     "METPO:2000103|GO:0045493": "xylan catabolic process",
 }
+# The columns table's object_name, as in a real run: arsenate reduction is
+# "arsenate_reduction" there, while the six-trait maps label it "arsenate reduction".
+OBJECT_NAMES = (
+    {trait.trait_id: trait.label for trait in sankeys.SHARED_TRAITS}
+    | {"METPO:2000103|pathways:arsenate_reduction": "arsenate_reduction"}
+    | EXTRA
+)
 ABSENT_FROM_PROFILES = "METPO:1000447"
 MEDIA = "METPO:2000517|mediadive.medium:1"
 CONDITIONS = ["Parkinson's disease", "Obesity", "Colorectal cancer", "HIV infection"]
@@ -99,11 +106,10 @@ def run_inputs(tmp_path: Path) -> dict[str, Path]:
     }
     pd.DataFrame(profiles).to_csv(paths["profiles"], sep="\t", index=False)
     pd.DataFrame(metadata).set_index("profile_id").to_csv(paths["metadata"], sep="\t")
-    labels = {trait.trait_id: trait.label for trait in sankeys.SHARED_TRAITS} | EXTRA
     pd.DataFrame(
         {
             "column_id": [*traits, ABSENT_FROM_PROFILES, MEDIA],
-            "object_name": [*(labels[trait] for trait in traits), "thermophilic", "medium"],
+            "object_name": [*(OBJECT_NAMES[trait] for trait in traits), "thermophilic", "medium"],
             "object_category": ["biolink:PhenotypicQuality"] * (len(traits) + 1)
             + ["METPO:1004005"],
         }
@@ -165,16 +171,25 @@ def six_trait_path_contrasts(run_inputs: dict[str, Path], output: Path) -> pd.Da
 def test_six_trait_list_reproduces_the_six_trait_contrast_cells(
     tmp_path: Path, run_inputs: dict[str, Path]
 ) -> None:
-    """Declaring the default six in default order gives the default cells, BH included."""
+    """Declaring the default six in default order gives the default cells, BH included.
+
+    Only the labels differ: the six-trait maps keep their fixed labels, a list run uses
+    the columns table's ``object_name`` (#1084).
+    """
     declared = run_trait_list(run_inputs, tmp_path / "declared", declare(tmp_path / "six.txt", SIX))
     expected = six_trait_path_contrasts(run_inputs, tmp_path / "default")
 
     assert len(declared) == len(expected) > 0
     key = ["view_key", "condition_body_site_pair", "trait_id"]
+    declared = declared.sort_values(key).reset_index(drop=True)
+    expected = expected.sort_values(key).reset_index(drop=True)
     pd.testing.assert_frame_equal(
-        declared.sort_values(key).reset_index(drop=True),
-        expected.sort_values(key).reset_index(drop=True),
+        declared.drop(columns="trait_label"), expected.drop(columns="trait_label")
     )
+    fixed = {trait.trait_id: trait.label for trait in sankeys.SHARED_TRAITS}
+    assert expected["trait_label"].tolist() == expected["trait_id"].map(fixed).tolist()
+    assert declared["trait_label"].tolist() == declared["trait_id"].map(OBJECT_NAMES).tolist()
+    assert "arsenate_reduction" in set(declared["trait_label"])
     written = pd.read_csv(
         tmp_path / "declared" / heatmaps.TRAIT_LIST_CONTRAST_TABLE_FILENAME, sep="\t"
     )
@@ -243,6 +258,50 @@ def test_trait_list_provenance_records_the_list_inputs_and_table(
             assert edges["focus_direction"].eq(direction).all()
             assert edges["trait_rank"].tolist() == edges["trait_id"].map(declared_ranks).tolist()
     assert not any(output.glob("*.png"))
+
+
+def test_bh_family_leaves_out_cells_without_a_positive_profile(
+    tmp_path: Path, run_inputs: dict[str, Path]
+) -> None:
+    """A cell with no positive-z profile in either direction has no edge row (#1084).
+
+    It is neither tested nor counted in the BH family, and the provenance says so.
+    """
+    silent_trait = "METPO:1000603"
+    metadata = pd.read_csv(run_inputs["metadata"], sep="\t", index_col="profile_id")
+    silent = metadata.index[
+        metadata["condition"].eq("HIV infection") & metadata["body_site"].eq("Saliva")
+    ]
+    profiles = pd.read_csv(run_inputs["profiles"], sep="\t")
+    profile_ids = profiles[["study_id", "experiment_id", "inc_dec"]].agg("|".join, axis=1)
+    silent_rows = profile_ids.isin(silent)
+    removed = pd.Series(
+        profiles.loc[silent_rows, silent_trait].to_numpy(), index=profile_ids[silent_rows]
+    )
+    profiles.loc[silent_rows, silent_trait] = 0
+    metadata.loc[removed.index, "total_trait_signal"] -= removed
+    profiles.to_csv(run_inputs["profiles"], sep="\t", index=False)
+    metadata.to_csv(run_inputs["metadata"], sep="\t")
+    output = tmp_path / "output"
+
+    contrasts = run_trait_list(
+        run_inputs, output, declare(tmp_path / "traits.txt", [SIX[0], silent_trait])
+    )
+
+    for mode in heatmaps.CONTRAST_MODES:
+        cells = contrasts[contrasts["view_key"].eq(f"{mode.key}_direction_contrast")]
+        pairs = {
+            trait_id: set(group["condition_body_site_pair"])
+            for trait_id, group in cells.groupby("trait_id")
+        }
+        assert pairs[silent_trait] < pairs[SIX[0]]
+        assert len(pairs[SIX[0]] - pairs[silent_trait]) == 1
+        family_q = heatmaps.benjamini_hochberg(cells["fisher_p_value"].fillna(1.0))
+        np.testing.assert_allclose(cells["fisher_q_value"], family_q)
+    provenance = json.loads((output / heatmaps.TRAIT_LIST_PROVENANCE_FILENAME).read_text())
+    assert "at least one positive-z profile" in provenance["bh_family"]
+    assert "not in the family" in provenance["bh_family"]
+    assert sum(provenance["cells_per_mode"].values()) == len(contrasts)
 
 
 @pytest.mark.parametrize(
@@ -324,6 +383,35 @@ def test_cli_writes_trait_list_contrasts_and_requires_an_output_dir(
     assert set(contrasts["trait_id"]) == set(EXTRA)
     provenance = json.loads((output / heatmaps.TRAIT_LIST_PROVENANCE_FILENAME).read_text())
     assert provenance["code_commit"] == "abc1234"
+
+
+def test_cli_rejects_an_empty_output_dir(
+    tmp_path: Path,
+    run_inputs: dict[str, Path],
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """``--output-dir=`` would otherwise write the six files to the current directory (#1084)."""
+    list_path = declare(tmp_path / "traits.txt", list(EXTRA))
+    workdir = tmp_path / "cwd"
+    workdir.mkdir()
+    monkeypatch.chdir(workdir)
+    argv = [
+        "--trait-list",
+        str(list_path),
+        "--profiles",
+        str(run_inputs["profiles"]),
+        "--profile-metadata",
+        str(run_inputs["metadata"]),
+        "--columns",
+        str(run_inputs["columns"]),
+        "--output-dir=",
+    ]
+    with patch.object(sankeys, "main") as six_trait_main, pytest.raises(SystemExit):
+        sankeys.cli(argv)
+    six_trait_main.assert_not_called()
+    assert "--output-dir: must not be empty" in capsys.readouterr().err
+    assert list(workdir.iterdir()) == []
 
 
 @pytest.mark.parametrize(

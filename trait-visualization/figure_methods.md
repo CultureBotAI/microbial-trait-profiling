@@ -1796,9 +1796,15 @@ trait's z-scores do not depend on which other traits are listed; the grouped and
 individual-condition edge tables; and the same two-sided Fisher test per cell.
 Each cell's fractions and Fisher p-value are therefore those of the six-trait run
 for a shared trait. BH q-values are not: the BH family is every cell of one
-condition-label mode across all listed traits, so it grows with the list. Labels
-come from the trait columns table's `object_name`; a listed trait that the run
-cannot score stops the run. The recipe writes the per-direction edge tables,
+condition-label mode across all listed traits, so it grows with the list. A cell
+is a condition, body site and trait with at least one positive-z profile among the
+increased or decreased profiles; one with none in either direction has no edge row
+and is not in the family (#1084). Labels come from the trait columns table's
+`object_name`, while the six-trait maps keep their fixed labels, so a shared trait
+can carry a different label (arsenate reduction is `arsenate_reduction` in the
+current columns table) with identical values. A listed trait that the run cannot
+score stops the run, and an empty `--output-dir` is rejected. The recipe writes
+the per-direction edge tables,
 `trait_list_condition_body_site_direction_contrasts.tsv` and
 `trait_list_provenance.json`, which records the list file's SHA-256, the input
 hashes and the cell counts per trait. It draws no figure and leaves

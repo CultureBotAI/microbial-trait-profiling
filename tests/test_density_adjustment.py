@@ -330,6 +330,135 @@ def test_evaluate_table1_paired_effects_nan_fallback() -> None:
     assert test_pair_eff.status == "insufficient non-zero pairs"
 
 
+ANAEROBIC = "METPO:1000603"
+
+
+def _paired_differences(mean: float, *, significant: bool) -> np.ndarray:
+    """Thirty paired differences averaging ``mean``.
+
+    Significant differences all share one sign, so their Wilcoxon p is tiny; the others
+    straddle zero symmetrically, so theirs is far above 0.05.
+    """
+    steps = np.arange(1.0, 16.0)
+    if significant:
+        spread = np.concatenate([steps, -steps]) * abs(mean) / 100.0
+    else:
+        spread = np.concatenate([steps, -steps]) * 2.0 * max(abs(mean), 1.0)
+    return mean + spread
+
+
+def _single_trait_effect(raw_diffs: np.ndarray, adj_diffs: np.ndarray) -> Any:
+    """Evaluate one trait whose raw and adjusted paired differences are given."""
+    rows = []
+    adjusted = []
+    for index, (raw_diff, adj_diff) in enumerate(zip(raw_diffs, adj_diffs, strict=True)):
+        for inc_dec, raw_value, adj_value in (
+            ("inc", 1000.0 + raw_diff, adj_diff),
+            ("dec", 1000.0, 0.0),
+        ):
+            rows.append(
+                {
+                    "study_id": f"s{index}",
+                    "experiment_id": f"e{index}",
+                    "inc_dec": inc_dec,
+                    ANAEROBIC: raw_value,
+                }
+            )
+            adjusted.append([adj_value])
+    (effect,) = evaluate_table1_paired_effects(
+        pd.DataFrame(rows), np.array(adjusted), [ANAEROBIC], {ANAEROBIC: "anaerobic"}
+    )
+    return effect
+
+
+def test_negative_raw_mean_that_grows_reads_as_enhanced_magnitude() -> None:
+    """Raw -6.95 to adjusted -187.8 grew 27-fold; it was labelled attenuated (#1084)."""
+    raw_diffs = _paired_differences(-6.95, significant=False)
+    effect = _single_trait_effect(raw_diffs, raw_diffs * (187.8 / 6.95))
+
+    assert effect.raw_mean_diff == pytest.approx(-6.95)
+    assert effect.adj_mean_diff == pytest.approx(-187.8)
+    assert effect.raw_wilcoxon_p > 0.05
+    assert effect.adj_wilcoxon_p > 0.05
+    assert effect.status == "enhanced magnitude (nonsignificant post-adjustment)"
+    # The signed column keeps its formula: negative although the magnitude grew.
+    assert effect.relative_change_pct == pytest.approx(-100.0 * (187.8 - 6.95) / 6.95)
+    assert effect.magnitude_change_pct == pytest.approx(100.0 * (187.8 - 6.95) / 6.95)
+    assert effect.sign_flipped is False
+
+
+def test_positive_raw_mean_rows_keep_the_signed_relative_change() -> None:
+    """For a positive raw mean the old column is unchanged and equals the magnitude change."""
+    raw_diffs = _paired_differences(12.0, significant=True)
+    effect = _single_trait_effect(raw_diffs, raw_diffs * 0.25)
+
+    assert effect.relative_change_pct == pytest.approx(-75.0)
+    assert effect.relative_change_pct == (
+        (effect.adj_mean_diff - effect.raw_mean_diff) / abs(effect.raw_mean_diff) * 100.0
+    )
+    assert effect.magnitude_change_pct == pytest.approx(effect.relative_change_pct)
+    assert effect.sign_flipped is False
+    assert effect.status == "survived (significant post-adjustment)"
+
+
+def test_sign_flip_is_flagged_and_measured_by_magnitude() -> None:
+    effect = _single_trait_effect(
+        _paired_differences(4.0, significant=False), _paired_differences(-6.0, significant=False)
+    )
+
+    assert effect.sign_flipped is True
+    assert effect.relative_change_pct == pytest.approx(-250.0)
+    assert effect.magnitude_change_pct == pytest.approx(50.0)
+    assert effect.status == "enhanced magnitude (nonsignificant post-adjustment)"
+
+
+@pytest.mark.parametrize(
+    ("raw_mean", "raw_significant", "adj_mean", "adj_significant", "status"),
+    [
+        # Unchanged labels.
+        (12.0, True, 3.0, True, "survived (significant post-adjustment)"),
+        (-5.2, True, -9.7, True, "enhanced (significant, larger magnitude)"),
+        (12.0, True, 3.0, False, "collapsed (attenuated to nonsignificant)"),
+        (6.95, False, 3.0, False, "attenuated (nonsignificant post-adjustment)"),
+        (-6.95, False, -3.0, False, "attenuated (nonsignificant post-adjustment)"),
+        # Labels that ignored magnitude or the sign of a larger effect (#1084).
+        (-6.95, False, -187.8, False, "enhanced magnitude (nonsignificant post-adjustment)"),
+        (6.95, False, 187.8, False, "enhanced magnitude (nonsignificant post-adjustment)"),
+        (-5.0, True, -9.0, False, "collapsed (nonsignificant post-adjustment, larger magnitude)"),
+        (4.0, True, -6.0, True, "enhanced (significant, larger magnitude)"),
+    ],
+)
+def test_status_follows_significance_and_magnitude(
+    raw_mean: float, raw_significant: bool, adj_mean: float, adj_significant: bool, status: str
+) -> None:
+    effect = _single_trait_effect(
+        _paired_differences(raw_mean, significant=raw_significant),
+        _paired_differences(adj_mean, significant=adj_significant),
+    )
+
+    assert (effect.raw_wilcoxon_p <= 0.05) is raw_significant
+    assert (effect.adj_wilcoxon_p <= 0.05) is adj_significant
+    assert effect.status == status
+
+
+def test_untestable_raw_contrast_with_a_significant_adjusted_one_is_not_nonsignificant() -> None:
+    """Ten or fewer non-zero raw pairs give raw p = NaN; adj p still decides (#1084)."""
+    raw_diffs = np.array([1.0] * 10 + [0.0] * 20)
+    effect = _single_trait_effect(raw_diffs, _paired_differences(5.0, significant=True))
+
+    assert np.isnan(effect.raw_wilcoxon_p)
+    assert effect.adj_wilcoxon_p <= 0.05
+    assert effect.status == "enhanced (significant, larger magnitude)"
+
+
+def test_undefined_magnitude_change_is_nan_not_zero() -> None:
+    effect = _single_trait_effect(np.zeros(30), _paired_differences(5.0, significant=True))
+
+    assert effect.relative_change_pct == 0.0
+    assert np.isnan(effect.magnitude_change_pct)
+    assert effect.sign_flipped is False
+
+
 @pytest.mark.skipif(
     not (
         (DEFAULT_PROFILES_PATH.exists() or Path(f"{DEFAULT_PROFILES_PATH}.gz").exists())
@@ -392,6 +521,8 @@ def test_full_density_audit_integration(tmp_path: Path) -> None:
             "enhanced (significant, larger magnitude)",
             "survived (significant post-adjustment)",
             "attenuated (nonsignificant post-adjustment)",
+            "collapsed (nonsignificant post-adjustment, larger magnitude)",
+            "enhanced magnitude (nonsignificant post-adjustment)",
         }
 
 
@@ -657,6 +788,13 @@ EXTRA_TRAITS = {
     "METPO:2000103|GO:0045493": "xylan catabolic process",
 }
 MEDIA_TRAIT = "METPO:2000517|mediadive.medium:1"
+# The columns table's object_name, as in a real run: arsenate reduction is
+# "arsenate_reduction" there, while the six-trait default labels it "arsenate reduction".
+OBJECT_NAMES = {
+    **TABLE_1_TRAITS,
+    "METPO:2000103|pathways:arsenate_reduction": "arsenate_reduction",
+    **EXTRA_TRAITS,
+}
 
 
 def _write_density_fixture(tmp_path: Path) -> tuple[Path, Path]:
@@ -678,13 +816,12 @@ def _write_density_fixture(tmp_path: Path) -> tuple[Path, Path]:
             )
     profiles = tmp_path / "profiles.tsv"
     pd.DataFrame(rows).to_csv(profiles, sep="\t", index=False)
-    labels = {**TABLE_1_TRAITS, **EXTRA_TRAITS}
     columns = tmp_path / "columns.tsv"
     pd.DataFrame(
         {
             "column_id": [*traits, MEDIA_TRAIT],
-            "column_label": [*(f"{labels[trait]} {trait}" for trait in traits), "medium 1"],
-            "object_name": [*(labels[trait] for trait in traits), "medium 1"],
+            "column_label": [*(f"{OBJECT_NAMES[trait]} {trait}" for trait in traits), "medium 1"],
+            "object_name": [*(OBJECT_NAMES[trait] for trait in traits), "medium 1"],
             "object_category": ["biolink:PhenotypicQuality"] * len(traits) + ["METPO:1004005"],
         }
     ).to_csv(columns, sep="\t", index=False)
@@ -699,7 +836,11 @@ def _write_trait_list(path: Path, trait_ids: Sequence[str]) -> Path:
 def test_density_audit_reports_a_declared_trait_list_without_changing_shared_rows(
     tmp_path: Path,
 ) -> None:
-    """A declared list changes which rows are reported, never a row's values (#1054)."""
+    """A declared list changes which rows are reported, never a row's values (#1054).
+
+    Labels differ by design: the default keeps its fixed labels, a list run uses the
+    columns table's ``object_name`` (#1084).
+    """
     profiles, columns = _write_density_fixture(tmp_path)
     declared_ids = ["METPO:1000605", *TABLE_1_TRAITS, "METPO:2000103|GO:0045493"]
     list_path = _write_trait_list(tmp_path / "traits.txt", declared_ids)
@@ -718,7 +859,12 @@ def test_density_audit_reports_a_declared_trait_list_without_changing_shared_row
     assert declared["trait_id"].tolist() == declared_ids
     assert declared.loc[0, "trait_label"] == "facultatively anaerobic"
     shared = declared.set_index("trait_id").loc[list(TABLE_1_TRAITS)].reset_index()
-    pd.testing.assert_frame_equal(shared, default)
+    pd.testing.assert_frame_equal(
+        shared.drop(columns="trait_label"), default.drop(columns="trait_label")
+    )
+    assert default["trait_label"].tolist() == list(TABLE_1_TRAITS.values())
+    assert shared["trait_label"].tolist() == [OBJECT_NAMES[trait] for trait in TABLE_1_TRAITS]
+    assert "arsenate_reduction" in shared["trait_label"].tolist()
     for name in ("density_adjustment_summary.tsv",):
         assert (tmp_path / "default" / name).read_bytes() == (
             tmp_path / "declared" / name
@@ -885,3 +1031,26 @@ def test_trait_list_runs_never_write_the_six_trait_density_directory(
     run_density_audit(profiles, columns, default_dir)
     effects = pd.read_csv(default_dir / "table1_density_adjusted_effects.tsv", sep="\t")
     assert effects["trait_id"].tolist() == list(TABLE_1_TRAITS)
+
+
+def test_trait_list_runs_reject_an_empty_output_dir(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """``--output-dir=`` would otherwise mean the current directory (#1084)."""
+    profiles, columns = _write_density_fixture(tmp_path)
+    list_path = _write_trait_list(tmp_path / "traits.txt", list(EXTRA_TRAITS))
+    workdir = tmp_path / "cwd"
+    workdir.mkdir()
+    monkeypatch.chdir(workdir)
+    inputs = ["--profiles", str(profiles), "--columns", str(columns)]
+    argv = [*inputs, "--output-dir=", "--trait-list", str(list_path)]
+
+    with patch.object(sys, "argv", ["density_adjustment", *argv]), pytest.raises(SystemExit):
+        main()
+    assert "--output-dir: must not be empty" in capsys.readouterr().err
+
+    audit = _audit_script()
+    with patch.object(sys, "argv", ["audit", *argv]), pytest.raises(SystemExit):
+        audit.main()
+    assert "--output-dir: must not be empty" in capsys.readouterr().err
+    assert list(workdir.iterdir()) == []

@@ -20,6 +20,7 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
+from mtp.density_adjustment import SIGNIFICANT_POST_ADJUSTMENT_STATUSES
 from mtp.paths import DERIVED_DATA_DIR
 
 # Table 1 canonical traits and display metadata
@@ -968,7 +969,9 @@ def generate_figure4_annotation_density_pc1_landscape(
     for y, r_diff, a_diff, (_, r) in zip(
         y_pos, raw_diffs, adj_diffs, t1_df.iterrows(), strict=True
     ):
-        survived = "survived" in r["status"] or "enhanced" in r["status"]
+        # Green only when the adjusted contrast is significant; a nonsignificant status
+        # can also say "enhanced magnitude" (#1084).
+        survived = r["status"] in SIGNIFICANT_POST_ADJUSTMENT_STATUSES
         color = "#27ae60" if survived else "#e74c3c"
         fig.add_trace(
             go.Scatter(
@@ -997,7 +1000,8 @@ def generate_figure4_annotation_density_pc1_landscape(
     )
     # Adjusted difference markers
     colors = [
-        "#27ae60" if ("survived" in s or "enhanced" in s) else "#e74c3c" for s in t1_df["status"]
+        "#27ae60" if s in SIGNIFICANT_POST_ADJUSTMENT_STATUSES else "#e74c3c"
+        for s in t1_df["status"]
     ]
     fig.add_trace(
         go.Scatter(

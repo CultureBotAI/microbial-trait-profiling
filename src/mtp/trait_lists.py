@@ -8,6 +8,7 @@ SHA-256, so each result names the exact list it was computed for.
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import re
 from collections.abc import Sequence
@@ -70,7 +71,10 @@ def trait_labels(columns: pd.DataFrame, trait_ids: Sequence[str]) -> dict[str, s
     """Label declared traits from a taxa_trait_matrix_columns table's ``object_name``.
 
     Every declared trait must be a column of the table and carry a label; a declared
-    list never falls back to an identifier or a placeholder.
+    list never falls back to an identifier or a placeholder. The six-trait default
+    runs keep their fixed labels instead, so a shared trait can be labelled
+    differently there ("arsenate reduction" against ``object_name``
+    "arsenate_reduction"); its values are the same (#1084).
     """
     if not {"column_id", "object_name"} <= set(columns.columns):
         raise ValueError("Trait columns table needs column_id and object_name")
@@ -87,6 +91,13 @@ def trait_labels(columns: pd.DataFrame, trait_ids: Sequence[str]) -> dict[str, s
     if unlabeled:
         raise ValueError(f"Declared traits without an object_name label: {unlabeled}")
     return {trait_id: str(label).strip() for trait_id, label in labels.items()}
+
+
+def output_dir_argument(value: str) -> Path:
+    """Parse ``--output-dir``; an empty value would mean the current directory (#1084)."""
+    if not value.strip():
+        raise argparse.ArgumentTypeError("must not be empty")
+    return Path(value)
 
 
 def file_sha256(path: Path) -> str:

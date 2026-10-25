@@ -52,7 +52,13 @@ from mtp.composition_denominators import (
     trait_fractions,
     validate_cached_totals,
 )
-from mtp.trait_lists import DeclaredTraitList, file_sha256, load_trait_list, trait_labels
+from mtp.trait_lists import (
+    DeclaredTraitList,
+    file_sha256,
+    load_trait_list,
+    output_dir_argument,
+    trait_labels,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VIS_DIR = REPO_ROOT / "trait-visualization"
@@ -3046,7 +3052,9 @@ def cli(argv: Sequence[str] | None = None) -> None:
         ),
     )
     # The six-trait figures read fixed repository paths; these inputs bind a trait-list run.
-    parser.add_argument("--output-dir", type=Path, help="Output directory for --trait-list")
+    parser.add_argument(
+        "--output-dir", type=output_dir_argument, help="Output directory for --trait-list"
+    )
     parser.add_argument("--profiles", type=Path, help=f"With --trait-list ({PROFILE_MATRIX_PATH})")
     parser.add_argument(
         "--profile-metadata", type=Path, help=f"With --trait-list ({PROFILE_METADATA_PATH})"
