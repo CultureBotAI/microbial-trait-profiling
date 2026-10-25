@@ -24,18 +24,21 @@ temporary storage is refused. They also check the path as written. The commands
 resolve their output before recording it, so this second check is a conservative
 over-refusal. The refusal happens before anything is written.
 
-This guard does not check the run-bound sidecars, including those #1040 lost: the
-selection scan and its scopes, the lineage extension, label support, study splits,
-presence-depth sensitivity and the `core-*` sidecars
+This guard does not check the sidecars that consume a core, including those #1040
+lost: the run-bound selection scan and its scopes, lineage extension, study splits,
+presence-depth sensitivity, `trait-list-direction-contrasts`,
+`density-adjustment-trait-list` and `core-*` sidecars, and the label-support audit,
+which is matched by hash to a core's inputs
 ([#1087](https://github.com/CultureBotAI/microbial-trait-profiling/issues/1087)).
 
 `/tmp` is not on the fixed list, because Bandit's B108 check rejects that literal
 in the source
 ([#1051](https://github.com/CultureBotAI/microbial-trait-profiling/issues/1051)).
-On macOS, `/tmp` links to `/private/tmp` and is refused. On Linux, `/tmp` is
-refused only when it is the process temporary directory, which is the default.
-If `$TMPDIR` points somewhere else, a Linux `/tmp` output root is **not** refused,
-so do not use one.
+On macOS, `/tmp` links to `/private/tmp` and is refused. A macOS
+`/tmp/<link to durable>` path is accepted, though, because `/tmp` is not a root in
+its written form. On Linux, `/tmp` is refused only when it is the process temporary
+directory, which is the default. If `$TMPDIR` points somewhere else, a Linux `/tmp`
+output root is **not** refused, so do not use one.
 
 Pass `--allow-temporary-output` only for a test or a throwaway run whose outputs no
 record will cite. The offline `just core-fixture` run is synthetic and is not checked.

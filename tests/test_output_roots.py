@@ -44,7 +44,7 @@ def test_macos_tmp_is_refused_through_its_link() -> None:
 @MACOS
 def test_a_symlink_to_tmp_is_refused_on_macos(tmp_path: Path) -> None:
     if tmp_path.resolve().is_relative_to("/private/tmp"):
-        # Without $TMPDIR, pytest's scratch is under /private/tmp itself (#1086)
+        # When $TMPDIR is unset or under /private/tmp, pytest's scratch is too (#1086)
         pytest.skip("the link's own location would explain the refusal")
     link = tmp_path / "link"
     link.symlink_to("/tmp", target_is_directory=True)
