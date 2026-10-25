@@ -9,9 +9,11 @@ just rerun-multiplicity /path/to/comparison_run.json /path/to/new-sidecars
 just rerun-verify-multiplicity /path/to/new-sidecars
 ```
 
-The output directory must be new and disjoint from all source bundles. This is
-an additive diagnostic command, not part of an owner arm rerun. Running it does
-not authorize a publication change or establish validity of the native p-values.
+The output directory must be new, disjoint from all source bundles and outside
+the system temporary directory; `--allow-temporary-output` admits a throwaway run
+(#1049). This is an additive diagnostic command, not part of an owner arm rerun.
+Running it does not authorize a publication change or establish validity of the
+native p-values.
 
 The stage requires AnalysisBasis records whose catalog hash, retained feature
 count, ordered profile-header filter identity, profile unit and strain scope
@@ -205,6 +207,20 @@ scope is rejected. The four-arm adapter fixture stubs the upstream comparison
 execution-verification boundary, which the existing workflow tests cover.
 Its native pooled statistics come from the actual infographic producer's
 selection, transformations and statistical functions, independently of the adapter.
+
+## Per-trait evidence
+
+The related `three-test-table` stage produces a per-trait table and reusable
+experiment/study delta-z ledgers from the same verified comparison sources.
+Its full-retained-family study t-test and secondary Wilcoxon are separate from
+the native selected-family composition results above. Its ORA column summarizes
+enrichment preference and remains explicitly uncalibrated. It preserves native
+votes, reports eligibility and profile support, and checks overlapping native
+and full-family effect estimates without comparing their differently corrected
+q values. See [the declared methods and commands](../methods/three_test_table.md).
+Use `three-test-verify` to replay that stage from its recorded producer checkout
+and environment. An optional verified multiplicity input binds the same
+comparison; it does not replace either stage's declared test families.
 
 ## Updating the author branch after a base merge
 

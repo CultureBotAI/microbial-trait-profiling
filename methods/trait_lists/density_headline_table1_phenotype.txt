@@ -1,0 +1,17 @@
+# Density adjustment for #1045 (row 8): the ten headline traits, the six Table 1
+# traits not already among them, and METPO:1000607. Phenotype rollup.
+# One trait identifier per line; see mtp.trait_lists.
+METPO:1000605
+METPO:1000608
+METPO:2000103|pathways:arsenate_reduction
+METPO:2000103|GO:0046274
+METPO:2000103|pathways:thiosulfate_oxidation
+METPO:1000447
+METPO:1000845
+METPO:1000603
+METPO:2000103|GO:0030245
+METPO:2000103|GO:0045493
+METPO:1000668
+METPO:1000683
+METPO:1000623
+METPO:1000607

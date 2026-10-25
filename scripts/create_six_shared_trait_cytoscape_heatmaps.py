@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import json
 import math
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from textwrap import wrap
@@ -20,6 +21,8 @@ from scipy.cluster.hierarchy import dendrogram, leaves_list, linkage
 from scipy.spatial.distance import squareform
 from scipy.stats import fisher_exact
 
+from mtp.trait_lists import DeclaredTraitList
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = REPO_ROOT / "trait-visualization" / "trait-profile-investigation" / "six-shared-traits"
 
@@ -33,6 +36,8 @@ CONTRAST_PAGES_FILENAME = "six_shared_trait_signed_direction_heatmap_pages.tsv"
 CLUSTER_TREE_NODES_FILENAME = "six_shared_trait_signed_direction_cluster_tree_nodes.tsv"
 CLUSTER_TREE_LEAVES_FILENAME = "six_shared_trait_signed_direction_cluster_tree_leaves.tsv"
 CLUSTER_COMPARISON_FILENAME = "six_shared_trait_signed_direction_cluster_comparison.tsv"
+TRAIT_LIST_CONTRAST_TABLE_FILENAME = "trait_list_condition_body_site_direction_contrasts.tsv"
+TRAIT_LIST_PROVENANCE_FILENAME = "trait_list_provenance.json"
 CONTRAST_ROWS_PER_PAGE = 24
 EXPORT_FLOAT_SIGNIFICANT_DIGITS = 12
 
@@ -2347,6 +2352,73 @@ def write_six_shared_trait_cytoscape_heatmaps(
     )
     append_readme_section(output_dir, manifest)
     return manifest
+
+
+def trait_list_edges_filename(view_key: str) -> str:
+    """Name the full edge table one trait-list view is read from (#1054)."""
+    return f"trait_list_{view_key}_edges.tsv"
+
+
+def write_trait_list_direction_contrasts(
+    output_dir: Path,
+    trait_order: pd.DataFrame,
+    trait_list: DeclaredTraitList,
+    input_provenance: Mapping[str, object],
+) -> pd.DataFrame:
+    """Write signed direction contrasts for a declared trait list (#1054).
+
+    Each cell comes from ``prepare_contrast_cells``, as in the six-trait heatmaps: the
+    increased minus decreased fraction of profiles with positive trait z, a two-sided
+    Fisher test, and BH over all cells of one condition mode. The BH family therefore
+    grows with the list; the fractions and Fisher p-values of a trait do not.
+    """
+    if trait_order["trait_id"].tolist() != list(trait_list.trait_ids):
+        raise ValueError("Trait order must be the declared trait list, in declared order")
+    tables: list[pd.DataFrame] = []
+    sources: dict[str, str] = {}
+    for mode in CONTRAST_MODES:
+        increased_name = trait_list_edges_filename(mode.increased_view_key)
+        decreased_name = trait_list_edges_filename(mode.decreased_view_key)
+        sources[mode.key] = f"{increased_name}, {decreased_name}"
+        tables.append(
+            prepare_contrast_cells(
+                read_tsv(output_dir / increased_name),
+                read_tsv(output_dir / decreased_name),
+                mode,
+                trait_order,
+            )
+        )
+    contrasts = pd.concat(tables, ignore_index=True)
+    undeclared = sorted(set(contrasts["trait_id"]) - set(trait_list.trait_ids))
+    if undeclared:
+        raise ValueError(f"Edge tables contain undeclared traits: {undeclared}")
+    cell_counts = contrasts["trait_id"].value_counts()
+    absent = [trait_id for trait_id in trait_list.trait_ids if trait_id not in cell_counts]
+    if absent:
+        raise ValueError(f"Declared traits have no contrast cell: {absent}")
+    write_tsv(contrasts, output_dir / TRAIT_LIST_CONTRAST_TABLE_FILENAME)
+    provenance = {
+        **trait_list.provenance(),
+        **input_provenance,
+        "contrast_table": TRAIT_LIST_CONTRAST_TABLE_FILENAME,
+        "contrast_table_sha256": hashlib.sha256(
+            (output_dir / TRAIT_LIST_CONTRAST_TABLE_FILENAME).read_bytes()
+        ).hexdigest(),
+        "edge_tables": sources,
+        "cell_value": "increased_minus_decreased_positive_fraction",
+        "fisher_test": "two-sided Fisher exact test on positive-z profile counts",
+        "bh_family": "all cells of one condition mode across every declared trait",
+        "cells_per_mode": {
+            str(key): int(value) for key, value in contrasts["view_key"].value_counts().items()
+        },
+        "cells_per_trait": {
+            trait_id: int(cell_counts[trait_id]) for trait_id in trait_list.trait_ids
+        },
+    }
+    (output_dir / TRAIT_LIST_PROVENANCE_FILENAME).write_text(
+        json.dumps(provenance, indent=2) + "\n", encoding="utf-8"
+    )
+    return contrasts
 
 
 def select_oral_contrast_cells(cells: pd.DataFrame) -> pd.DataFrame:

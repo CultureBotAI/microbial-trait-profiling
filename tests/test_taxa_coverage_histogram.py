@@ -827,8 +827,52 @@ def test_export_omits_empty_ranks_and_records_corpus_identity(
     assert record["corpus_identity"]["kg_microbe"]["release_tag"] == "fixture-release"
     assert record["corpus_identity"]["matrix"]["sha256"] == coverage.file_sha256(inputs["profiles"])
     assert record["inputs"]["kg_provenance"]["sha256"] == coverage.file_sha256(sidecar)
-    assert record["corpus_identity"]["matrix"]["path"] == "external/profiles.tsv"
+    recorded_path = Path(record["corpus_identity"]["matrix"]["path"])
+    assert not recorded_path.is_absolute()
+    assert ".." not in recorded_path.parts
+    profile_path = inputs["profiles"].resolve()
+    root = coverage.REPO_ROOT.resolve()
+    if profile_path.is_relative_to(root):
+        assert (root / recorded_path).resolve() == profile_path
+    else:
+        assert recorded_path.parts == ("external", inputs["profiles"].name)
     assert str(tmp_path) not in json.dumps(record)
+
+
+@pytest.mark.parametrize(
+    ("location", "expected"),
+    [
+        ("inside", "data/profiles.tsv"),
+        ("outside", "external/profiles.tsv"),
+        ("inside_link_to_outside", "external/profiles.tsv"),
+        ("outside_link_to_inside", "data/profiles.tsv"),
+    ],
+)
+def test_provenance_paths_follow_resolved_checkout_membership(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, location: str, expected: str
+) -> None:
+    """Check both path categories regardless of pytest's scratch location (#972)."""
+    root = tmp_path / "checkout"
+    inside = root / "data/profiles.tsv"
+    outside = tmp_path / "external-inputs/profiles.tsv"
+    inside.parent.mkdir(parents=True)
+    outside.parent.mkdir(parents=True)
+    inside.write_text("checkout fixture\n")
+    outside.write_text("external fixture\n")
+    inside_link = root / "linked/profiles.tsv"
+    outside_link = tmp_path / "linked/profiles.tsv"
+    inside_link.parent.mkdir()
+    outside_link.parent.mkdir()
+    inside_link.symlink_to(outside)
+    outside_link.symlink_to(inside)
+    paths = {
+        "inside": inside,
+        "outside": outside,
+        "inside_link_to_outside": inside_link,
+        "outside_link_to_inside": outside_link,
+    }
+    monkeypatch.setattr(coverage, "REPO_ROOT", root.resolve())
+    assert coverage.provenance_path(paths[location]) == expected
 
 
 def test_plate6_reads_compact_remediation_and_nonempty_rank_rows(
