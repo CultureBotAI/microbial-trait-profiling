@@ -237,7 +237,8 @@ def stage(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Path]:
         )
         paths[arm] = Path(record.manifest_path)
     arguments = [str(paths[name]) for name in ("core", "noel", "jed", "ilyas", "comparison")]
-    assert arms_main(["compare", *arguments]) == 0
+    # The stage lives in temporary storage, which compare refuses without the opt-in
+    assert arms_main(["compare", *arguments, "--allow-temporary-output"]) == 0
     return paths
 
 

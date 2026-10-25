@@ -5,6 +5,50 @@ adds a relocatable archive for already completed core executions and their
 consumer records. This addresses the temporary-path dependency identified in
 the [ORA refresh review](reviews/2026-10-19-ora-refresh-adversarial-review.md).
 
+## Keep cited outputs out of temporary storage
+
+Run outputs that a record cites must not live under a temporary directory, and must
+be archived with `just evidence-archive`, then checked with `just evidence-verify`,
+before the record merges. The system can empty its temporary directories at any
+time, including on restart. Run F's verified run directories were lost this way
+before anyone archived them ([#1040](https://github.com/CultureBotAI/microbial-trait-profiling/issues/1040)).
+
+`just rerun-core`, `just core-run`, `just rerun-ilyas`, `just rerun-noel`,
+`just rerun-jed`, `just rerun-compare`, `just rerun-multiplicity` and
+`just evidence-archive` therefore refuse an output root under `/private/tmp`,
+`/var/folders`, `/private/var/folders`, `$TMPDIR` or Python's
+`tempfile.gettempdir()`
+([#1049](https://github.com/CultureBotAI/microbial-trait-profiling/issues/1049)).
+They check the path with every symlink resolved, so a durable-looking link into
+temporary storage is refused. They also check the path as written. The commands
+resolve their output before recording it, so this second check is a conservative
+over-refusal. The refusal happens before anything is written.
+
+This guard does not check the sidecars that consume a core, including those #1040
+lost: the run-bound selection scan and its scopes, lineage extension, study splits,
+presence-depth sensitivity, `trait-list-direction-contrasts`,
+`density-adjustment-trait-list` and `core-*` sidecars, and the label-support audit,
+which is matched by hash to a core's inputs
+([#1087](https://github.com/CultureBotAI/microbial-trait-profiling/issues/1087)).
+
+`/tmp` is not on the fixed list, because Bandit's B108 check rejects that literal
+in the source
+([#1051](https://github.com/CultureBotAI/microbial-trait-profiling/issues/1051)).
+On macOS, `/tmp` links to `/private/tmp` and is refused. A macOS
+`/tmp/<link to durable>` path is accepted, though, because `/tmp` is not a root in
+its written form. On Linux, `/tmp` is refused only when it is the process temporary
+directory, which is the default. If `$TMPDIR` points somewhere else, a Linux `/tmp`
+output root is **not** refused, so do not use one.
+
+Pass `--allow-temporary-output` only for a test or a throwaway run whose outputs no
+record will cite. The offline `just core-fixture` run is synthetic and is not checked.
+
+The check applies to an archive's destination, not to the runs it retains. A run
+written to temporary storage can still be archived to a durable location while it
+exists.
+
+## Create and verify an archive
+
 Use a fresh destination outside every retained input directory:
 
 ```bash

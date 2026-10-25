@@ -9,9 +9,11 @@ just rerun-multiplicity /path/to/comparison_run.json /path/to/new-sidecars
 just rerun-verify-multiplicity /path/to/new-sidecars
 ```
 
-The output directory must be new and disjoint from all source bundles. This is
-an additive diagnostic command, not part of an owner arm rerun. Running it does
-not authorize a publication change or establish validity of the native p-values.
+The output directory must be new, disjoint from all source bundles and outside
+the system temporary directory; `--allow-temporary-output` admits a throwaway run
+(#1049). This is an additive diagnostic command, not part of an owner arm rerun.
+Running it does not authorize a publication change or establish validity of the
+native p-values.
 
 The stage requires AnalysisBasis records whose catalog hash, retained feature
 count, ordered profile-header filter identity, profile unit and strain scope
