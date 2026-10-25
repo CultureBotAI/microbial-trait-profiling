@@ -42,8 +42,9 @@ def _spellings(path: Path) -> set[Path]:
 def temporary_root(path: Path, directories: Iterable[Path] | None = None) -> Path | None:
     """The temporary directory holding ``path`` in either spelling, or None.
 
-    The written spelling matters too: a record keeps the path it was given, and a link
-    out of temporary storage would leave that path dangling after a restart.
+    The resolved spelling refuses a durable-looking link into temporary storage. The
+    executors resolve their output before recording it, so also checking the written
+    spelling is a conservative over-refusal, not protection against a dangling record.
     """
     roots = sorted(
         {

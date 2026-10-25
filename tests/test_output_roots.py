@@ -43,6 +43,9 @@ def test_macos_tmp_is_refused_through_its_link() -> None:
 
 @MACOS
 def test_a_symlink_to_tmp_is_refused_on_macos(tmp_path: Path) -> None:
+    if tmp_path.resolve().is_relative_to("/private/tmp"):
+        # Without $TMPDIR, pytest's scratch is under /private/tmp itself (#1086)
+        pytest.skip("the link's own location would explain the refusal")
     link = tmp_path / "link"
     link.symlink_to("/tmp", target_is_directory=True)
     # With only the fixed /private/tmp root, the link's own location cannot be the reason
@@ -95,7 +98,10 @@ def test_a_symlinked_temporary_root_still_holds_its_target(tmp_path: Path) -> No
 def test_a_path_written_under_temporary_storage_is_refused_wherever_it_leads(
     tmp_path: Path,
 ) -> None:
-    """A record keeps the path as given; a link out of temporary storage would dangle."""
+    """The written spelling is checked too, a conservative over-refusal.
+
+    On macOS /tmp is not a written root (#1051), so /tmp/<link to durable> is accepted.
+    """
     volatile, durable = tmp_path / "volatile", tmp_path / "durable"
     volatile.mkdir()
     durable.mkdir()

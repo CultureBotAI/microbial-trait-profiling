@@ -19,10 +19,15 @@ before anyone archived them ([#1040](https://github.com/CultureBotAI/microbial-t
 `/var/folders`, `/private/var/folders`, `$TMPDIR` or Python's
 `tempfile.gettempdir()`
 ([#1049](https://github.com/CultureBotAI/microbial-trait-profiling/issues/1049)).
-They check the path as written and with every symlink resolved. A durable-looking
-link into temporary storage is refused, and so is a temporary path that links
-somewhere durable, because the record keeps the path it was given. The refusal
-happens before anything is written.
+They check the path with every symlink resolved, so a durable-looking link into
+temporary storage is refused. They also check the path as written. The commands
+resolve their output before recording it, so this second check is a conservative
+over-refusal. The refusal happens before anything is written.
+
+This guard does not check the run-bound sidecars, including those #1040 lost: the
+selection scan and its scopes, the lineage extension, label support, study splits,
+presence-depth sensitivity and the `core-*` sidecars
+([#1087](https://github.com/CultureBotAI/microbial-trait-profiling/issues/1087)).
 
 `/tmp` is not on the fixed list, because Bandit's B108 check rejects that literal
 in the source
