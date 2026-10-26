@@ -6,22 +6,21 @@ This note documents the definitions, data sources, and exact denominator semanti
 
 ## 1. Pairwise Trait Overlap in the Taxon × Trait Matrix (`matrix_trait_overlap.tsv`)
 
-For any declared pair of retained (non-MediaDive) trait columns $(a, b)$ in `taxa_trait_matrix.tsv` (with $N_{\text{matrix}} = 5,829$ taxon rows in the `tier12-phenotype` core run):
+`mtp.matrix_overlap_coverage` requires an explicit newline-delimited trait list via `--trait-list` (parsed and validated by [`src/mtp/trait_lists.py`](../src/mtp/trait_lists.py)). For any declared pair of retained (non-MediaDive) trait columns $(a, b)$ in `taxa_trait_matrix.tsv` (with $N_{\text{matrix}} = 5,829$ taxon rows in the `tier12-phenotype` core run):
 
 - Let $T_a = \{i : M_{i,a} > 0\}$ and $T_b = \{i : M_{i,b} > 0\}$ denote the sets of matrix taxa carrying a positive annotation count for traits $a$ and $b$.
 - The pairwise Jaccard overlap is:
   $$J(a, b) = \frac{|T_a \cap T_b|}{|T_a \cup T_b|}$$
 
-### Reference Pairs (`tier12-phenotype`, $N_{\text{matrix}} = 5,829$)
+### Focal Pairs in `matrix_trait_overlap.tsv` (`tier12-phenotype`, `methods/trait_lists/headline_ten_phenotype.txt`, $N_{\text{matrix}} = 5,829$)
 
 | Trait A | Trait B | $|T_a|$ | $|T_b|$ | $|T_a \cap T_b|$ | $|T_a \cup T_b|$ | Jaccard (%) |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
-| `METPO:1000608` (`facultative`) | `METPO:1000605` (`facultatively anaerobic`) | 920 | 712 | 535 | 1,097 | 48.77% (48.8%) |
+| `METPO:1000605` (`facultatively anaerobic`) | `METPO:1000608` (`facultatively aerobic`) | 712 | 920 | 535 | 1,097 | 48.77% (48.8%) |
 | `METPO:2000103\|GO:0030245` (`cellulose catabolic process`) | `METPO:2000103\|GO:0045493` (`xylan catabolic process`) | 189 | 210 | 109 | 290 | 37.59% (37.6%) |
-| `METPO:1000608` (`facultative`) | `METPO:1000603` (`anaerobic`) | 920 | 1,884 | 493 | 2,311 | 21.33% (21.3%) |
-| `METPO:1000608` (`facultative`) | `METPO:1000607` (`obligately anaerobic`) | 920 | 414 | 96 | 1,238 | 7.75% (7.8%) |
+| `METPO:1000603` (`anaerobic`) | `METPO:1000608` (`facultatively aerobic`) | 1,884 | 920 | 493 | 2,311 | 21.33% (21.3%) |
 
-Both `METPO:1000603` (`anaerobic`, broad parent term with $1,884$ matrix taxa) and `METPO:1000607` (`obligately anaerobic`, strict term with $414$ matrix taxa) are included in `DEFAULT_MATRIX_OVERLAP_TRAITS` so downstream consumers can distinguish general anaerobic annotations from strict obligate anaerobe annotations without ambiguity.
+Full 45-pair output for the 10-trait list [`methods/trait_lists/headline_ten_phenotype.txt`](trait_lists/headline_ten_phenotype.txt) is written to `matrix_trait_overlap.tsv`.
 
 ---
 
@@ -29,23 +28,23 @@ Both `METPO:1000603` (`anaerobic`, broad parent term with $1,884$ matrix taxa) a
 
 ### Why `just taxa-coverage` (`scripts/create_taxa_coverage_histogram.py`) Computes a Different Quantity
 
-[`scripts/create_taxa_coverage_histogram.py`](../scripts/create_taxa_coverage_histogram.py) (`just taxa-coverage`) summarizes the static `taxa_trait_matrix.tsv` table directly:
+[`scripts/create_taxa_coverage_histogram.py`](../scripts/create_taxa_coverage_histogram.py) (`just taxa-coverage`) computes a different upstream table (`taxa_coverage.tsv`):
 
-1. **Taxon universe**: It iterates over all $5,829$ rows in `taxa_trait_matrix.tsv` (which spans all BugSigDB reported taxa across hosts and experimental designs), rather than the $3,221$ unique NCBI taxa reported in the $1,870$ active Tier 1+2 signatures (`disease_vs_healthy_tier1_2_subject_controls`).
-2. **Trait universe**: Unless MediaDive columns are explicitly excluded, `taxa_trait_matrix.tsv` includes $2,333$ `METPO:2000517|mediadive.medium:*` growth-medium columns alongside the $344$ retained biological trait columns. A taxon with only MediaDive medium annotations is unannotated under the $344$-trait biological analysis set.
-3. **Mention and study-frequency granularity**: `scripts/create_taxa_coverage_histogram.py` does not join `bugsigdb_taxa.tsv` to the active Tier 1+2 signature keys (`count_profiles`), does not compute signature-level mention coverage, and does not stratify labeled versus unlabeled taxa by the number of studies ($n_{\text{studies}} = 1$, $n_{\text{studies}} \le 2$, median $n_{\text{studies}}$) in which each taxon appears.
+1. **Corpus scope**: `load_corpus_taxa` filters `bugsigdb_experiments.tsv` to the canonical human 16S/WMS corpus (`Host species == "Homo sapiens"` and `Sequencing type in {"16S", "WMS"}`, $1,047$ studies and $3,372$ experiments) and counts taxon mentions in `bugsigdb_taxa.tsv` across that full human 16S/WMS corpus, rather than restricting to the $1,870$ active Tier 1+2 paired signatures (`disease_vs_healthy_tier1_2_subject_controls`, $548$ studies, $935$ experiments, $3,221$ unique NCBI taxa).
+2. **Trait universe**: `load_matrix_coverage` counts positive entries across all $2,677$ trait columns in `taxa_trait_matrix.tsv` — including the $2,333$ `METPO:2000517|mediadive.medium:*` growth-medium columns — rather than restricting to the $344$ retained non-MediaDive trait columns. A taxon annotated only with MediaDive growth media has `trait_count > 0` in `taxa_coverage.tsv` but is unlabeled under the $344$-trait biological analysis set.
+3. **Rank and study-rarity breakdown**: `scripts/create_taxa_coverage_histogram.py` emits per-taxon `(study_mentions, trait_count)` rows and a histogram/scatter figure, whereas `mtp.matrix_overlap_coverage` deduplicates `(study_id, experiment_id, inc_dec, taxon_id)` profile mentions and tabulates rank-stratified taxon/mention coverage and distinct study-count rarity ($n_{\text{studies}} = 1$, $n_{\text{studies}} \le 2$, median $n_{\text{studies}}$) for labeled versus unlabeled taxa in `tier12_coverage_by_rank.tsv`.
 
 ### Exact Tier 1+2 Coverage Definitions (`mtp.matrix_overlap_coverage`)
 
-In `mtp.matrix_overlap_coverage`:
+In `mtp.matrix_overlap_coverage` (`tier12_coverage_by_rank.tsv` and `summary.json`):
 
 - **Retained trait set ($344$ columns)**: All columns in `taxa_trait_matrix_columns.tsv` (`feature_metadata`) present in `taxa_trait_matrix.tsv` except `METPO:2000517|mediadive.medium:*` growth-medium terms. A taxon is **labeled** if and only if it has a positive value in at least one of those $344$ retained columns.
 - **Active Tier 1+2 mentions ($19,388$ distinct `(profile, taxon_id)` mentions)**: `steps/export_tables/derived/bugsigdb_taxa.tsv` (`reported_taxa`) preserves repeated within-signature occurrences (`coverage_policy: preserve_repeated_occurrences`, $19,566$ raw rows across the $1,870$ active Tier 1+2 profiles). Deduplicating by `(study_id, experiment_id, inc_dec, taxon_id)` yields $19,388$ distinct `(profile, taxon_id)` mentions across $3,221$ unique NCBI taxa.
-- **Key Tier 1+2 `tier12-phenotype` figures**:
-  - **All ranks ($3,221$ unique taxa, $19,388$ mentions)**: $2,363$ labeled taxa ($73.36\%$) and $858$ unlabeled taxa ($26.64\%$); $16,743$ labeled mentions ($86.36\%$) and $2,645$ unlabeled mentions ($13.64\%$).
-  - **Genus rank ($842$ unique genera, $8,495$ mentions)**: $739$ labeled genera ($87.77\%$) and $103$ unlabeled genera ($12.23\%$); $8,324$ of $8,495$ genus mentions ($97.99\%$, i.e. $98.0\%$) carry at least one retained trait annotation.
-  - **Species rank ($1,983$ unique species, $7,952$ mentions)**: $1,287$ labeled species ($64.90\%$) and $696$ unlabeled species ($35.10\%$, i.e. $35.1\%$).
-  - **Single-study rarity by labeling status**: Among the $858$ unlabeled taxa, $717$ ($83.57\%$, i.e. $84\%$) appear in only $1$ study and $805$ ($93.82\%$, i.e. $94\%$) appear in $\le 2$ studies (median $1$ study). Among the $2,363$ labeled taxa, $1,124$ ($47.57\%$, i.e. $48\%$) appear in $1$ study and $1,465$ ($62.00\%$, i.e. $62\%$) appear in $\le 2$ studies (median $2$ studies).
+- **Key Tier 1+2 `tier12-phenotype` figures (`tier12_coverage_by_rank.tsv`)**:
+  - **All ranks (`rank == "all"`, $3,221$ unique taxa, $19,388$ mentions)**: $2,363$ labeled taxa ($73.36\%$) and $858$ unlabeled taxa ($26.64\%$); $17,913$ labeled mentions ($92.39\%$) and $1,475$ unlabeled mentions ($7.61\%$).
+  - **Genus rank (`rank == "genus"`, $842$ unique genera, $8,495$ mentions)**: $739$ labeled genera ($87.77\%$) and $103$ unlabeled genera ($12.23\%$); $8,324$ of $8,495$ genus mentions ($97.99\%$, i.e. $98.0\%$) carry at least one retained trait annotation ($171$ unlabeled mentions, $2.01\%$).
+  - **Species rank (`rank == "species"`, $1,983$ unique species, $6,040$ mentions)**: $1,287$ labeled species ($64.90\%$) and $696$ unlabeled species ($35.10\%$, i.e. $35.1\%$); $4,858$ labeled mentions ($80.43\%$) and $1,182$ unlabeled mentions ($19.57\%$).
+  - **Single-study rarity by labeling status (`rank == "all"`)**: Among the $858$ unlabeled taxa, $717$ ($83.57\%$, i.e. $84\%$) appear in only $1$ study and $805$ ($93.82\%$, i.e. $94\%$) appear in $\le 2$ studies (median $1$ study). Among the $2,363$ labeled taxa, $1,124$ ($47.57\%$, i.e. $48\%$) appear in $1$ study and $1,465$ ($62.00\%$, i.e. $62\%$) appear in $\le 2$ studies (median $2$ studies).
 
 ---
 
@@ -53,21 +52,21 @@ In `mtp.matrix_overlap_coverage`:
 
 ### Trait Axis
 
-1. **KG-Microbe trait catalog (`kg_trait_catalog`)**: $2,677$ total trait columns in `feature_catalog.tsv` and `taxa_trait_matrix_columns.tsv` ($2,636$ of which have positive counts in the Tier 1+2 profile table after $41$ canary-0 columns with zero hits on the subset).
+1. **KG-Microbe trait catalog (`kg_trait_catalog`)**: $2,677$ total trait columns in `feature_catalog.tsv` (`feature_catalog`) and `taxa_trait_matrix_columns.tsv` (`feature_metadata`), of which $2,612$ have positive counts in the Tier 1+2 `count_profiles` table (`study_trait_profiles_wide.tsv`) after `--drop-empty-traits` drops $65$ zero-sum columns on the Tier 1+2 subset.
 2. **Retained non-MediaDive traits (`retained_non_mediadive_traits`)**: $344$ traits retained after dropping $2,333$ `METPO:2000517|mediadive.medium:*` growth-medium columns:
    - $162$ METPO phenotypes (`METPO:*` without compound predicate pipes)
    - $102$ carbon-source traits (`METPO:2000006|*`, comprising $101$ `CHEBI:*` substrates plus `METPO:2000006|carbon_substrates:N-acetylgulcosamine`)
    - $68$ pathway traits (`METPO:2000103|pathways:*`)
    - $12$ GO biological process traits (`METPO:2000103|GO:*`)
 
-### Study and Signature Axis (Distinguishing the Three "Full Corpus" Populations)
+### Study and Signature Axis (Distinguishing the Upstream Populations in `filter_cascade.tsv`)
 
-Across the workflow, three distinct upstream populations exist and must not be conflated:
+Across the workflow, four nested study/signature steps are recorded in `filter_cascade.tsv`:
 
-- **All-hosts BugSigDB export (`all_hosts_bugsigdb_export`)**: $1,245$ studies and $4,435$ experiments in `bugsigdb_experiments.tsv` (`source_experiments`), spanning all host species and sequencing types. (By comparison, the `full-phenotype` / `full-off` core workflow runs retain $1,212$ studies, $4,299$ experiments, and $7,111$ non-empty directional profiles across all hosts.)
-- **Canonical human 16S/WMS profile corpus (`full_human_16s_wms`)**: $1,047$ studies, $3,221$ experiments, and $5,629$ non-empty directional taxon lists (`Host species == "Homo sapiens"` and `Sequencing type in {"16S", "WMS"}`).
-- **Paired human 16S/WMS corpus (`paired_human_16s_wms`)**: $932$ studies, $2,257$ paired experiments, and $4,514$ directional lists ($115$ studies and $1,115$ unpaired lists dropped).
-- **Tier 1+2 disease vs healthy subject controls (`tier12_subject_controls`)**: $548$ studies, $935$ paired comparisons, and $1,870$ directional lists across $211$ conditions ($384$ studies and $2,644$ lists dropped; includes $355$ stool studies and $595$ stool comparisons where `Body site == "Feces"`).
+- **All-hosts BugSigDB export (`all_hosts_bugsigdb_export`)**: $1,245$ studies, $4,435$ experiments, and $7,329$ non-empty directional signatures in `steps/source_export_tables/source/derived/experiments.tsv` (`source_experiments`), spanning all host species and sequencing types.
+- **Canonical human 16S/WMS profile corpus (`full_human_16s_wms`)**: $1,047$ studies ($198$ dropped), $3,372$ experiments, and $5,629$ non-empty directional signatures ($1,700$ dropped) matching `Host species == "Homo sapiens"` and `Sequencing type in {"16S", "WMS"}`.
+- **Paired human 16S/WMS corpus (`paired_human_16s_wms`)**: $932$ studies ($115$ dropped), $2,257$ paired experiments, and $4,514$ directional signatures ($1,115$ unpaired signatures dropped).
+- **Tier 1+2 disease vs healthy subject controls (`tier12_subject_controls`)**: $548$ studies ($384$ dropped), $935$ paired comparisons, and $1,870$ directional signatures ($2,644$ dropped) across $211$ conditions, including $355$ stool studies and $595$ stool comparisons (`Body site == "Feces"`).
 
 ---
 
@@ -79,10 +78,10 @@ $$J(s_1, s_2) = \frac{|U_{s_1} \cap U_{s_2}|}{|U_{s_1} \cup U_{s_2}|}$$
 
 Four explicit scopes are emitted in `parkinsons_stool_study_overlap_summary.tsv` and `parkinsons_stool_study_pairs.tsv`:
 
-- **Tier 1+2 paired (`tier12_paired`)**: $K = 36$ studies ($70$ comparisons, $\binom{36}{2} = 630$ pairs), mean pairwise taxon Jaccard $= 0.053302$ ($5.33\%$, i.e. $5.3\%$), median $= 0.038099$ ($3.81\%$, i.e. $3.8\%$).
-- **Full export (`full_export`, comma-separated token match across all hosts in `source_experiments`)**: $K = 59$ studies ($157$ comparisons, $\binom{59}{2} = 1,711$ pairs), mean pairwise taxon Jaccard $= 0.041030$ ($4.10\%$, i.e. $4.1\%$), median $= 0.024390$ ($2.44\%$, i.e. $2.4\%$).
-- **Human-host export (`export_human_hosts`, `Host species == "Homo sapiens"` in `source_experiments`)**: $K = 56$ studies ($146$ comparisons, $\binom{56}{2} = 1,540$ pairs), mean pairwise taxon Jaccard $= 0.041781$ ($4.18\%$), median $= 0.024390$ ($2.44\%$).
-- **Full export exact condition (`full_export_exact_condition`, `Condition == "Parkinson's disease"` in `source_experiments`)**: $K = 58$ studies ($156$ comparisons, $\binom{58}{2} = 1,653$ pairs), mean pairwise taxon Jaccard $= 0.041186$ ($4.12\%$), median $= 0.024390$ ($2.44\%$).
+- **Tier 1+2 paired (`tier12_paired`)**: $K = 36$ studies ($70$ comparisons, $\binom{36}{2} = 630$ pairs; $388$ nonzero, $242$ zero), mean pairwise taxon Jaccard $= 0.053302$ ($5.33\%$, i.e. $5.3\%$), median $= 0.038099$ ($3.81\%$, i.e. $3.8\%$).
+- **Full export (`full_export`, comma-separated token match across all hosts in `source_experiments`)**: $K = 59$ studies ($157$ comparisons, $\binom{59}{2} = 1,711$ pairs; $947$ nonzero, $764$ zero), mean pairwise taxon Jaccard $= 0.041030$ ($4.10\%$, i.e. $4.1\%$), median $= 0.024390$ ($2.44\%$, i.e. $2.4\%$).
+- **Human-host export (`export_human_hosts`, `Host species == "Homo sapiens"` in `source_experiments`)**: $K = 56$ studies ($149$ comparisons, $\binom{56}{2} = 1,540$ pairs; $860$ nonzero, $680$ zero), mean pairwise taxon Jaccard $= 0.041823$ ($4.18\%$), median $= 0.024390$ ($2.44\%$).
+- **Full export exact condition (`full_export_exact_condition`, `Condition == "Parkinson's disease"` in `source_experiments`)**: $K = 58$ studies ($156$ comparisons, $\binom{58}{2} = 1,653$ pairs; $918$ nonzero, $735$ zero), mean pairwise taxon Jaccard $= 0.041188$ ($4.12\%$), median $= 0.024390$ ($2.44\%$).
 
 ---
 
@@ -91,6 +90,6 @@ Four explicit scopes are emitted in `parkinsons_stool_study_overlap_summary.tsv`
 `mtp.matrix_overlap_coverage` enforces four provenance invariants before writing any output files:
 
 1. **Tier 1+2 population guard**: `--core-run` must be a verified core bundle with `contrast_population == "disease_vs_healthy_tier1_2_subject_controls"` and `direction_basis == "disease_vs_comparison"`. Passing an `all_paired` core run or a tampered manifest raises `ValueError`.
-2. **Durable output root guard (`#1049`, `#1051`)**: Temporary output directories (`/tmp`, `$TMPDIR`, `/var/folders`, `.pytest_cache`) are refused unless `--allow-temporary-output` is explicitly passed for ephemeral test runs.
+2. **Durable output root guard (`#1049`, `#1051`)**: Temporary output directories matched by [`src/mtp/workflow/output_roots.py`](../src/mtp/workflow/output_roots.py) (`/tmp`, `/private/tmp`, `/var/tmp`, `/private/var/tmp`, `/var/folders`, `/private/var/folders`, and `$TMPDIR` / `tempfile.gettempdir()`) are refused unless `--allow-temporary-output` is explicitly passed for ephemeral test runs.
 3. **Clean output directory guard**: `--output-dir` must be a new or empty directory so stale tables from earlier runs cannot survive alongside newly emitted tables.
-4. **Core-bundle non-overlap preflight**: `preflight_consumer_outputs` runs before `output_dir.mkdir(...)` so an output path inside the core run bundle is rejected without mutating the core run directory.
+4. **Core-bundle non-overlap preflight and bound provenance**: `preflight_consumer_outputs` runs before `output_dir.mkdir(...)` so an output path inside the core run bundle is rejected without mutating the core run directory. `provenance.json` records the sidecar's own `code_commit`, `script_sha256` (`src/mtp/matrix_overlap_coverage.py` and `src/mtp/trait_lists.py`), `methods_sha256` (`methods/matrix_coverage_and_pd_overlap.md`), `core_git_commit_sha`, and run-relative `steps/...` paths for all consumed core products, and is bound alongside the six primary outputs inside `core_consumption.json`.

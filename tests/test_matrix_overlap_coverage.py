@@ -10,7 +10,9 @@ import pandas as pd
 import pytest
 
 from mtp.matrix_overlap_coverage import (
-    DEFAULT_MATRIX_OVERLAP_TRAITS,
+    METHODS_NOTE_RELATIVE_PATH,
+    SCRIPT_RELATIVE_PATH,
+    TRAIT_LISTS_RELATIVE_PATH,
     compute_matrix_trait_overlap,
     compute_parkinsons_stool_overlap,
     compute_tier12_coverage_and_cascade,
@@ -22,6 +24,7 @@ from mtp.matrix_overlap_coverage import (
 from mtp.paths import REPO_ROOT, file_sha256
 
 SUBSET_POPULATION = "disease_vs_healthy_tier1_2_subject_controls"
+HEADLINE_TRAIT_LIST = REPO_ROOT / "methods" / "trait_lists" / "headline_ten_phenotype.txt"
 FAC_AER = "METPO:1000608"
 FAC_ANA = "METPO:1000605"
 ANA = "METPO:1000603"
@@ -169,7 +172,7 @@ def test_matrix_trait_overlap_computes_exact_pairwise_jaccard_and_counts(tmp_pat
     # Custom trait list file parsing and validation
     list_file = tmp_path / "traits.txt"
     list_file.write_text(f"# Declared traits\n{FAC_AER}\n{FAC_ANA}\n", encoding="utf-8")
-    loaded = load_declared_traits(trait_list_path=list_file)
+    loaded = load_declared_traits(list_file)
     assert loaded.trait_ids == (FAC_AER, FAC_ANA)
     assert loaded.source_name == "traits.txt"
 
@@ -660,7 +663,8 @@ def _build_subset_fixture_inputs(root: Path) -> dict[str, Path]:
     edges = (source / "merged-kg_edges.tsv").read_text(encoding="utf-8")
     nodes = (source / "merged-kg_nodes.tsv").read_text(encoding="utf-8")
     nodes += "METPO:2000103\tbiolink:OntologyClass\tcapable of\n"
-    for idx, term in enumerate(DEFAULT_MATRIX_OVERLAP_TRAITS):
+    headline_traits = load_declared_traits(HEADLINE_TRAIT_LIST).trait_ids
+    for idx, term in enumerate(headline_traits):
         if term == "METPO:1000608":
             continue
         if "|" in term:
@@ -754,7 +758,23 @@ def test_end_to_end_core_subset_consumer_provenance_and_temp_guard(
 
     # Without --allow-temporary-output, writing under tmp_path must be refused (#1049)
     with pytest.raises(ValueError, match="temporary directory"):
-        run_matrix_overlap_coverage(manifest, output_dir)
+        run_matrix_overlap_coverage(
+            manifest,
+            output_dir,
+            trait_list_path=HEADLINE_TRAIT_LIST,
+        )
+
+    # --trait-list is required on the CLI (#1116)
+    with pytest.raises(SystemExit):
+        main(
+            [
+                "--core-run",
+                str(manifest),
+                "--output-dir",
+                str(output_dir),
+                "--allow-temporary-output",
+            ]
+        )
 
     assert (
         main(
@@ -763,6 +783,10 @@ def test_end_to_end_core_subset_consumer_provenance_and_temp_guard(
                 str(manifest),
                 "--output-dir",
                 str(output_dir),
+                "--trait-list",
+                str(HEADLINE_TRAIT_LIST),
+                "--code-commit",
+                "abc1234fixture",
                 "--allow-temporary-output",
             ]
         )
@@ -781,6 +805,9 @@ def test_end_to_end_core_subset_consumer_provenance_and_temp_guard(
         "source_reported_taxa",
         "contrast_selection",
     } <= set(binding.product_ids)
+    # provenance.json must be bound inside core_consumption.json outputs (#1116)
+    bound_output_paths = {Path(item.path).name for item in binding.outputs}
+    assert "provenance.json" in bound_output_paths
 
     provenance_text = (output_dir / "provenance.json").read_text(encoding="utf-8")
     assert "/Users/" not in provenance_text
@@ -789,8 +816,44 @@ def test_end_to_end_core_subset_consumer_provenance_and_temp_guard(
     assert provenance["core_run_id"] == core.run_id
     assert provenance["contrast_population"] == SUBSET_POPULATION
     assert provenance["strain_rollup"] == "phenotype"
+    assert provenance["code_commit"] == "abc1234fixture"
+    assert provenance["core_git_commit_sha"] == core.git_commit
+    assert "git_commit_sha" not in provenance
+    assert provenance["script_sha256"] == file_sha256(REPO_ROOT / SCRIPT_RELATIVE_PATH)
+    assert provenance["methods_sha256"] == file_sha256(REPO_ROOT / METHODS_NOTE_RELATIVE_PATH)
+    assert provenance["scripts"][SCRIPT_RELATIVE_PATH]["sha256"] == file_sha256(
+        REPO_ROOT / SCRIPT_RELATIVE_PATH
+    )
+    assert provenance["scripts"][TRAIT_LISTS_RELATIVE_PATH]["sha256"] == file_sha256(
+        REPO_ROOT / TRAIT_LISTS_RELATIVE_PATH
+    )
+    assert provenance["methods"][METHODS_NOTE_RELATIVE_PATH]["sha256"] == file_sha256(
+        REPO_ROOT / METHODS_NOTE_RELATIVE_PATH
+    )
+    assert (
+        provenance["consumed_products"]["experiments"]["relative_path"]
+        == "steps/export_tables/derived/experiments.tsv"
+    )
+    assert (
+        provenance["consumed_products"]["source_experiments"]["relative_path"]
+        == "steps/source_export_tables/source/derived/experiments.tsv"
+    )
+    assert (
+        provenance["consumed_products"]["reported_taxa"]["relative_path"]
+        == "steps/export_tables/derived/bugsigdb_taxa.tsv"
+    )
+    assert (
+        provenance["consumed_products"]["source_reported_taxa"]["relative_path"]
+        == "steps/source_export_tables/source/derived/bugsigdb_taxa.tsv"
+    )
     for name, entry in provenance["outputs"].items():
         assert entry["sha256"] == file_sha256(output_dir / name)
+
+    # Tampering with provenance.json must fail verify_consumer_record (#1116)
+    (output_dir / "provenance.json").write_text(provenance_text + "\n", encoding="utf-8")
+    with pytest.raises(ValueError, match=r"Consumer output changed: .*provenance\.json"):
+        verify_consumer_record(output_dir / "core_consumption.json")
+    (output_dir / "provenance.json").write_text(provenance_text, encoding="utf-8")
 
     summary_payload = json.loads((output_dir / "summary.json").read_text(encoding="utf-8"))
     assert summary_payload["coverage_and_cascade"]["tier12_studies"] == 2
@@ -802,6 +865,10 @@ def test_end_to_end_core_subset_consumer_provenance_and_temp_guard(
 
     cascade_df = pd.read_csv(output_dir / "filter_cascade.tsv", sep="\t")
     cascade_by_step = {str(row["step_id"]): row for _, row in cascade_df.iterrows()}
+    assert (
+        str(cascade_by_step["all_hosts_bugsigdb_export"]["step_label"])
+        == "All-hosts BugSigDB export table (experiments.tsv)"
+    )
     assert int(cascade_by_step["all_hosts_bugsigdb_export"]["retained_count"]) == 3
     assert int(cascade_by_step["all_hosts_bugsigdb_export"]["signatures_count"]) == 5
     assert int(cascade_by_step["full_human_16s_wms"]["retained_count"]) == 3
@@ -811,12 +878,22 @@ def test_end_to_end_core_subset_consumer_provenance_and_temp_guard(
 
     # P2: refusing a non-empty output directory prevents stale files from surviving
     with pytest.raises(ValueError, match="new or empty directory"):
-        run_matrix_overlap_coverage(manifest, output_dir, allow_temporary_output=True)
+        run_matrix_overlap_coverage(
+            manifest,
+            output_dir,
+            trait_list_path=HEADLINE_TRAIT_LIST,
+            allow_temporary_output=True,
+        )
 
     # P3: refusing an output path inside the core run without creating directories inside it
     inside_core = manifest.parent / "steps" / "inside_core_probe"
     with pytest.raises(ValueError, match="overlaps verified core inputs or run bundle"):
-        run_matrix_overlap_coverage(manifest, inside_core, allow_temporary_output=True)
+        run_matrix_overlap_coverage(
+            manifest,
+            inside_core,
+            trait_list_path=HEADLINE_TRAIT_LIST,
+            allow_temporary_output=True,
+        )
     assert not inside_core.exists()
 
     # P1: refusing a non-Tier 1+2 core run (e.g. all_paired)
@@ -836,6 +913,7 @@ def test_end_to_end_core_subset_consumer_provenance_and_temp_guard(
         run_matrix_overlap_coverage(
             Path(all_paired_core.manifest_path),
             tmp_path / "out_bad_pop",
+            trait_list_path=HEADLINE_TRAIT_LIST,
             allow_temporary_output=True,
         )
 
@@ -849,6 +927,7 @@ def test_end_to_end_core_subset_consumer_provenance_and_temp_guard(
         run_matrix_overlap_coverage(
             tampered_manifest,
             tmp_path / "out_tampered",
+            trait_list_path=HEADLINE_TRAIT_LIST,
             allow_temporary_output=True,
         )
     assert not (tmp_path / "out_tampered").exists()
@@ -864,18 +943,24 @@ def test_declared_trait_list_validation_and_file_loading(tmp_path: Path) -> None
     matrix, columns = _synthetic_matrix_and_columns()
     trait_file = tmp_path / "traits.txt"
     trait_file.write_text(f"# comment\n\n{FAC_AER}\n{FAC_ANA}\n", encoding="utf-8")
-    loaded = load_declared_traits(trait_list_path=trait_file)
+    loaded = load_declared_traits(trait_file)
     assert loaded.trait_ids == (FAC_AER, FAC_ANA)
     assert loaded.source_name == "traits.txt"
 
-    with pytest.raises(ValueError, match="Specify at most one of"):
-        load_declared_traits(traits=[FAC_AER, FAC_ANA], trait_list_path=trait_file)
-
+    single_file = tmp_path / "single.txt"
+    single_file.write_text(f"{FAC_AER}\n", encoding="utf-8")
     with pytest.raises(ValueError, match="At least two trait IDs"):
-        load_declared_traits(traits=[FAC_AER])
+        load_declared_traits(single_file)
 
-    with pytest.raises(ValueError, match="Duplicate"):
-        load_declared_traits(traits=[FAC_AER, FAC_AER])
+    dup_file = tmp_path / "dup.txt"
+    dup_file.write_text(f"{FAC_AER}\n{FAC_AER}\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="repeats"):
+        load_declared_traits(dup_file)
+
+    md_file = tmp_path / "md.txt"
+    md_file.write_text(f"{FAC_AER}\n{MEDIADIVE}\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="MediaDive"):
+        load_declared_traits(md_file)
 
     with pytest.raises(ValueError, match="MediaDive"):
         compute_matrix_trait_overlap(matrix, columns, [FAC_AER, MEDIADIVE])

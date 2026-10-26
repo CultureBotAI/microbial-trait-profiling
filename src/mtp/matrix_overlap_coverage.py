@@ -19,47 +19,25 @@ Consumes a verified core workflow run (``run.json``) and emits five TSV tables p
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import statistics
 from collections.abc import Sequence
-from dataclasses import dataclass
 from itertools import combinations
 from pathlib import Path
 from typing import Any
 
 import pandas as pd
 
-from mtp.paths import file_sha256
+from mtp.paths import REPO_ROOT, file_sha256
+from mtp.trait_lists import DeclaredTraitList, load_trait_list, trait_labels
 from mtp.workflow.output_roots import add_temporary_output_option, temporary_root
-
-DEFAULT_MATRIX_OVERLAP_TRAITS: tuple[str, ...] = (
-    "METPO:1000608",
-    "METPO:1000605",
-    "METPO:1000603",
-    "METPO:1000607",
-    "METPO:2000103|GO:0030245",
-    "METPO:2000103|GO:0045493",
-    "METPO:1000447",
-    "METPO:1000668",
-    "METPO:1000683",
-    "METPO:1000623",
-    "METPO:2000103|pathways:arsenate_reduction",
-    "METPO:1000602",
-)
 
 MEDIADIVE_PREFIX = "METPO:2000517|"
 MEDIADIVE_CURIE_PREFIX = "mediadive.medium:"
 CARBON_SUBSTRATE_PREFIX = "METPO:2000006|"
-
-
-@dataclass(frozen=True)
-class DeclaredTraitList:
-    """Declared list of matrix trait column identifiers and its provenance."""
-
-    trait_ids: tuple[str, ...]
-    source_name: str
-    sha256: str
+SCRIPT_RELATIVE_PATH = "src/mtp/matrix_overlap_coverage.py"
+TRAIT_LISTS_RELATIVE_PATH = "src/mtp/trait_lists.py"
+METHODS_NOTE_RELATIVE_PATH = "methods/matrix_coverage_and_pd_overlap.md"
 
 
 def validate_durable_output_dir(
@@ -100,53 +78,23 @@ def _classify_retained_trait(column_id: str) -> str:
     return "metpo_phenotype_traits"
 
 
-def load_declared_traits(
-    *,
-    traits: Sequence[str] | None = None,
-    trait_list_path: Path | None = None,
-) -> DeclaredTraitList:
-    """Load and deduplicate-check a declared list of matrix trait column IDs."""
-    if traits is not None and trait_list_path is not None:
-        raise ValueError("Specify at most one of traits or trait_list_path")
-
-    if trait_list_path is not None:
-        raw_text = trait_list_path.read_text(encoding="utf-8")
-        parsed = [
-            line.strip()
-            for line in raw_text.splitlines()
-            if line.strip() and not line.strip().startswith("#")
-        ]
-        source_name = trait_list_path.name
-        digest = file_sha256(trait_list_path)
-    elif traits is not None:
-        parsed = [item.strip() for item in traits if item and item.strip()]
-        source_name = "cli_declared_traits"
-        digest = hashlib.sha256(("\n".join(parsed) + "\n").encode("utf-8")).hexdigest()
-    else:
-        parsed = list(DEFAULT_MATRIX_OVERLAP_TRAITS)
-        source_name = "default_declared_traits"
-        digest = hashlib.sha256(("\n".join(parsed) + "\n").encode("utf-8")).hexdigest()
-
-    if len(parsed) < 2:
+def load_declared_traits(trait_list_path: Path) -> DeclaredTraitList:
+    """Load a declared trait list via ``mtp.trait_lists`` and require at least two traits."""
+    declared = load_trait_list(trait_list_path)
+    if len(declared.trait_ids) < 2:
         raise ValueError("At least two trait IDs are required to compute pairwise overlap")
-    seen: set[str] = set()
-    ordered: list[str] = []
-    for item in parsed:
-        if item in seen:
-            raise ValueError(f"Duplicate trait ID in declared trait list: {item!r}")
-        seen.add(item)
-        ordered.append(item)
-    return DeclaredTraitList(
-        trait_ids=tuple(ordered),
-        source_name=source_name,
-        sha256=digest,
-    )
+    mediadive = [trait_id for trait_id in declared.trait_ids if _is_mediadive_column(trait_id)]
+    if mediadive:
+        raise ValueError(
+            f"MediaDive growth-medium columns are excluded from trait overlap: {mediadive}"
+        )
+    return declared
 
 
 def compute_matrix_trait_overlap(
     matrix: pd.DataFrame,
     columns: pd.DataFrame,
-    trait_ids: Sequence[str] = DEFAULT_MATRIX_OVERLAP_TRAITS,
+    trait_ids: Sequence[str],
 ) -> list[dict[str, Any]]:
     """Compute pairwise Jaccard overlap and taxon counts for declared matrix traits."""
     if "taxon_id" not in matrix.columns:
@@ -154,23 +102,21 @@ def compute_matrix_trait_overlap(
     if len(trait_ids) < 2:
         raise ValueError("At least two trait IDs are required for pairwise matrix overlap")
 
-    label_by_id = {
-        str(row["column_id"]): str(row["object_name"])
-        for _, row in columns[["column_id", "object_name"]].iterrows()
-    }
     matrix_cols = set(matrix.columns.astype(str))
-
-    masks: dict[str, pd.Series] = {}
     for trait_id in trait_ids:
         if _is_mediadive_column(trait_id):
             raise ValueError(
                 f"Declared trait {trait_id!r} is a MediaDive growth-medium column; "
                 "only retained non-MediaDive traits are valid"
             )
-        if trait_id not in matrix_cols or trait_id not in label_by_id:
+        if trait_id not in matrix_cols:
             raise ValueError(
                 f"Declared trait {trait_id!r} is absent from taxa_trait_matrix.tsv columns"
             )
+    label_by_id = trait_labels(columns, trait_ids)
+
+    masks: dict[str, pd.Series] = {}
+    for trait_id in trait_ids:
         numeric_col = pd.to_numeric(matrix[trait_id], errors="coerce")
         if numeric_col.isna().any() or (numeric_col < 0.0).any():
             raise ValueError(
@@ -516,7 +462,7 @@ def compute_tier12_coverage_and_cascade(
             "dimension": "studies",
             "step_order": 1,
             "step_id": "all_hosts_bugsigdb_export",
-            "step_label": "All-hosts BugSigDB export table (bugsigdb_experiments.tsv)",
+            "step_label": "All-hosts BugSigDB export table (experiments.tsv)",
             "retained_count": all_hosts_studies,
             "dropped_from_previous": 0,
             "matrix_columns_count": pd.NA,
@@ -820,8 +766,8 @@ def run_matrix_overlap_coverage(
     core_run: Path,
     output_dir: Path,
     *,
-    traits: Sequence[str] | None = None,
-    trait_list_path: Path | None = None,
+    trait_list_path: Path,
+    code_commit: str | None = None,
     allow_temporary_output: bool = False,
 ) -> dict[str, Any]:
     """Run the #1053 matrix overlap, Tier 1+2 coverage cascade, and PD overlap consumer."""
@@ -830,11 +776,12 @@ def run_matrix_overlap_coverage(
         preflight_consumer_outputs,
         write_consumer_record,
     )
+    from mtp.workflow.runtime import repository_state
 
     validate_durable_output_dir(output_dir, allow_temporary_output=allow_temporary_output)
     if output_dir.exists() and (not output_dir.is_dir() or any(output_dir.iterdir())):
         raise ValueError(f"--output-dir must be a new or empty directory: {output_dir}")
-    declared = load_declared_traits(traits=traits, trait_list_path=trait_list_path)
+    declared = load_declared_traits(trait_list_path)
     manifest_path = core_run / "run.json" if core_run.is_dir() else core_run
     bundle = open_core_bundle(manifest_path)
 
@@ -960,6 +907,11 @@ def run_matrix_overlap_coverage(
     )
     pd.DataFrame(pd_pair_rows).to_csv(pd_pairs_tsv, sep="\t", index=False, float_format="%.12g")
 
+    declared_provenance = {
+        **declared.provenance(),
+        "source_name": declared.source_name,
+        "sha256": declared.sha256,
+    }
     summary_payload: dict[str, Any] = {
         "schema_version": "1.0.0",
         "consumer": "matrix-overlap-coverage",
@@ -968,9 +920,7 @@ def run_matrix_overlap_coverage(
         "strain_rollup": strain_rollup,
         "contrast_population": contrast_population,
         "declared_traits": {
-            "source_name": declared.source_name,
-            "sha256": declared.sha256,
-            "trait_ids": list(declared.trait_ids),
+            **declared_provenance,
             "pair_count": len(overlap_rows),
         },
         "coverage_and_cascade": coverage_summary,
@@ -991,24 +941,6 @@ def run_matrix_overlap_coverage(
         )
         if pid in available_products
     )
-    primary_outputs = (
-        overlap_tsv,
-        coverage_tsv,
-        cascade_tsv,
-        pd_summary_tsv,
-        pd_pairs_tsv,
-        summary_json,
-    )
-    binding_path = write_consumer_record(
-        bundle,
-        output_dir / "core_consumption.json",
-        consumer="matrix-overlap-coverage",
-        outputs=primary_outputs,
-        feature_policy="exclude_mediadive",
-        additional_products=extra_products,
-    )
-
-    emitted_files = (*primary_outputs, binding_path)
     consumed_ids = sorted(
         {
             "count_profiles",
@@ -1020,6 +952,20 @@ def run_matrix_overlap_coverage(
         }
         & available_products
     )
+
+    resolved_code_commit = (
+        code_commit.strip()
+        if code_commit is not None and code_commit.strip()
+        else repository_state(REPO_ROOT)
+    )
+    script_path = REPO_ROOT / SCRIPT_RELATIVE_PATH
+    trait_lists_path = REPO_ROOT / TRAIT_LISTS_RELATIVE_PATH
+    methods_path = REPO_ROOT / METHODS_NOTE_RELATIVE_PATH
+    script_sha256 = file_sha256(script_path)
+    trait_lists_sha256 = file_sha256(trait_lists_path)
+    methods_sha256 = file_sha256(methods_path)
+    run_root = bundle.manifest.parent.resolve()
+
     provenance_payload: dict[str, Any] = {
         "schema_version": "1.0.0",
         "consumer": "matrix-overlap-coverage",
@@ -1027,15 +973,21 @@ def run_matrix_overlap_coverage(
         "workflow_id": bundle.run.definition.id,
         "strain_rollup": strain_rollup,
         "contrast_population": contrast_population,
-        "git_commit_sha": bundle.run.git_commit,
-        "declared_traits": {
-            "source_name": declared.source_name,
-            "sha256": declared.sha256,
-            "trait_ids": list(declared.trait_ids),
+        "code_commit": resolved_code_commit,
+        "core_git_commit_sha": bundle.run.git_commit,
+        "script_sha256": script_sha256,
+        "methods_sha256": methods_sha256,
+        "scripts": {
+            SCRIPT_RELATIVE_PATH: {"sha256": script_sha256},
+            TRAIT_LISTS_RELATIVE_PATH: {"sha256": trait_lists_sha256},
         },
+        "methods": {
+            METHODS_NOTE_RELATIVE_PATH: {"sha256": methods_sha256},
+        },
+        "declared_traits": declared_provenance,
         "consumed_products": {
             pid: {
-                "relative_path": bundle.path(pid).name,
+                "relative_path": bundle.path(pid).resolve().relative_to(run_root).as_posix(),
                 "sha256": file_sha256(bundle.path(pid)),
             }
             for pid in consumed_ids
@@ -1045,13 +997,21 @@ def run_matrix_overlap_coverage(
                 "relative_path": path.name,
                 "sha256": file_sha256(path),
             }
-            for path in emitted_files
+            for path in primary_outputs
         },
     }
-    provenance_path = output_dir / "provenance.json"
     provenance_path.write_text(
         json.dumps(provenance_payload, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
+    )
+
+    write_consumer_record(
+        bundle,
+        output_dir / "core_consumption.json",
+        consumer="matrix-overlap-coverage",
+        outputs=(*primary_outputs, provenance_path),
+        feature_policy="exclude_mediadive",
+        additional_products=extra_products,
     )
     return summary_payload
 
@@ -1077,16 +1037,20 @@ def build_parser() -> argparse.ArgumentParser:
         required=True,
         help="Durable directory where TSV and JSON outputs will be written.",
     )
-    trait_group = parser.add_mutually_exclusive_group()
-    trait_group.add_argument(
-        "--traits",
-        nargs="+",
-        help="Explicit list of retained non-MediaDive trait column IDs for pairwise overlap.",
-    )
-    trait_group.add_argument(
+    parser.add_argument(
         "--trait-list",
         type=Path,
+        required=True,
         help="Path to a newline-delimited file of trait column IDs (# comments allowed).",
+    )
+    parser.add_argument(
+        "--code-commit",
+        type=str,
+        default=None,
+        help=(
+            "Git commit SHA (with optional +dirty suffix) of the sidecar code. "
+            "Computed from the local repository when omitted."
+        ),
     )
     add_temporary_output_option(parser)
     return parser
@@ -1099,8 +1063,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     run_matrix_overlap_coverage(
         args.core_run,
         args.output_dir,
-        traits=args.traits,
         trait_list_path=args.trait_list,
+        code_commit=args.code_commit,
         allow_temporary_output=bool(args.allow_temporary_output),
     )
     return 0
