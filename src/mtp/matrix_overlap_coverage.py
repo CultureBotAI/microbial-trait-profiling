@@ -21,9 +21,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import os
 import statistics
-import tempfile
 from collections.abc import Sequence
 from dataclasses import dataclass
 from itertools import combinations
@@ -33,6 +31,7 @@ from typing import Any
 import pandas as pd
 
 from mtp.paths import file_sha256
+from mtp.workflow.output_roots import add_temporary_output_option, temporary_root
 
 DEFAULT_MATRIX_OVERLAP_TRAITS: tuple[str, ...] = (
     "METPO:1000608",
@@ -53,15 +52,6 @@ MEDIADIVE_PREFIX = "METPO:2000517|"
 MEDIADIVE_TOKEN = "mediadive.medium:"
 CARBON_SUBSTRATE_PREFIX = "METPO:2000006|"
 
-# Bandit B108 forbids literal temporary root strings in source (#1051); macOS links
-# /tmp -> /private/tmp and /var -> /private/var, while Linux /tmp is covered via
-# tempfile.gettempdir() unless $TMPDIR is overridden.
-_TEMP_ROOT_PREFIXES: tuple[Path, ...] = (
-    Path("/private/tmp"),
-    Path("/var/folders"),
-    Path("/private/var/folders"),
-)
-
 
 @dataclass(frozen=True)
 class DeclaredTraitList:
@@ -72,43 +62,23 @@ class DeclaredTraitList:
     sha256: str
 
 
-def _is_under_root(candidate: Path, root: Path) -> bool:
-    try:
-        candidate.relative_to(root)
-    except ValueError:
-        return False
-    return True
-
-
-def _path_spellings(path: Path) -> tuple[Path, Path]:
-    expanded = path.expanduser()
-    return (Path(os.path.abspath(expanded)), expanded.resolve())
-
-
 def validate_durable_output_dir(
     output_dir: Path,
     *,
     allow_temporary_output: bool = False,
 ) -> Path:
     """Reject temporary output directories unless explicitly opted in (#1049, #1051)."""
-    _, resolved = _path_spellings(output_dir)
+    resolved = output_dir.expanduser().resolve()
     if allow_temporary_output:
         return resolved
 
-    raw_roots = [*_TEMP_ROOT_PREFIXES, Path(tempfile.gettempdir())]
-    if env_tmpdir := os.environ.get("TMPDIR"):
-        raw_roots.append(Path(env_tmpdir))
-
-    temp_roots = sorted({spelling for root in raw_roots for spelling in _path_spellings(root)})
-
-    for candidate in sorted(set(_path_spellings(output_dir))):
-        for root in temp_roots:
-            if _is_under_root(candidate, root):
-                raise ValueError(
-                    f"Refusing to write outputs under temporary directory {output_dir} "
-                    f"(matches temporary root {root}); choose a durable output path or pass "
-                    "--allow-temporary-output for ephemeral test runs."
-                )
+    root = temporary_root(output_dir.expanduser())
+    if root is not None:
+        raise ValueError(
+            f"Refusing to write outputs under temporary directory {output_dir} "
+            f"(matches temporary root {root}); choose a durable output path or pass "
+            "--allow-temporary-output for ephemeral test runs."
+        )
     return resolved
 
 
@@ -1043,11 +1013,7 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         help="Path to a newline-delimited file of trait column IDs (# comments allowed).",
     )
-    parser.add_argument(
-        "--allow-temporary-output",
-        action="store_true",
-        help="Allow writing under a temporary directory for ephemeral test runs.",
-    )
+    add_temporary_output_option(parser)
     return parser
 
 
