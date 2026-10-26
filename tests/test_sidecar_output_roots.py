@@ -8,6 +8,7 @@ the root through scripts/guard_output_root.sh and the modules stay unguarded (#1
 from __future__ import annotations
 
 import importlib
+import os
 import subprocess
 import sys
 from collections.abc import Callable
@@ -256,6 +257,34 @@ def test_an_arm_module_recipe_passes_on_everything_but_the_opt_in(
     assert REFUSAL not in completed.stderr
     assert "unrecognized arguments" not in completed.stderr
     assert "/in/" in completed.stderr
+
+
+def test_core_ora_defaults_to_the_upper_tail(tmp_path: Path) -> None:
+    """Without a tail, `just core-ora` runs enrichment, not depletion (#1111).
+
+    A stub `uv` first on PATH prints each command the recipe would run, one argument per line.
+    """
+    stub = tmp_path / "bin" / "uv"
+    stub.parent.mkdir()
+    stub.write_text('#!/usr/bin/env bash\nprintf "%s\\n" "$@"\n', encoding="utf-8")
+    stub.chmod(0o755)
+    environment = {**os.environ, "PATH": f"{stub.parent}{os.pathsep}{os.environ['PATH']}"}
+
+    def tail(*extra: str) -> str:
+        completed = subprocess.run(
+            ["just", "core-ora", "/in/run.json", str(DURABLE), *extra],
+            cwd=REPO_ROOT,
+            env=environment,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        arguments = completed.stdout.splitlines()
+        assert "scripts/trait_enrichment.py" in arguments
+        return arguments[arguments.index("--tail") + 1]
+
+    assert tail() == "upper"
+    assert tail("lower") == "lower"
 
 
 class _Products(dict[str, Path]):
