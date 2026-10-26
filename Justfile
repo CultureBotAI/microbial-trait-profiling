@@ -113,10 +113,10 @@ probe-site-stats-guard *ARGS:
 # Complete exports carry the verified input fingerprints needed for integration.
 # Give the tail before --allow-temporary-output, e.g. `just core-ora RUN OUT upper --allow-temporary-output`.
 [positional-arguments]
-core-ora run output tail="upper" *ARGS:
+core-ora run output *ARGS:
 	bash scripts/guard_output_root.sh "$2" uv run python scripts/trait_enrichment.py --core-run "$1" \
 	  --output "$2/report.txt" --tsv-output "$2/results.tsv" \
-	  --all-results-output "$2/all_results.tsv" --tail "$3" \
+	  --all-results-output "$2/all_results.tsv" --tail "${3:-upper}" \
 	  --p-threshold 0.001 --min-fold 1.5 --max-fold 0.5 --fdr-scope global "${@:4}"
 
 [positional-arguments]
