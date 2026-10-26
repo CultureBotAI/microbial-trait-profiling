@@ -6,14 +6,14 @@ This record supersedes the evidence locations in [the 2026-10-23 final rerun rec
 
 - **Same:** the commit, the pinned inputs, the locked environment, the recipes, the populations and scopes, every count, both calibration verdicts, and every value checked below.
 - **New by construction:** every core, arm and comparison run ID.
-- **New:** four verified evidence archives (`just evidence-archive`, then `just evidence-verify`), kept in a durable location outside the repository and outside temporary storage. This record names that location symbolically as `<F-rebuild root>`.
+- **New:** four verified evidence archives (`just evidence-archive`, then `just evidence-verify`), kept in a durable location outside the repository and outside temporary storage. This record names that location `<F-rebuild root>`. Under it are `runs/<unit>/` (core, arms, comparison), `additive/<unit>/` (scan, lineage extension, label support) and `archives/<unit>/archive.json`, where `<unit>` is `tier12-off`, `tier12-phenotype`, `full-phenotype` or `full-off`.
 
-No value in the 2026-10-23 record differs from the rebuild.
+No count, verdict or additive value quoted in the 2026-10-23 record differs from the rebuild. This record didn't re-derive that record's downstream-pass and tracked-output facts.
 
 ## Code and inputs
 
 - **Commit:** F = `511c891229b659e207cfe0f4281a97c3fc039a80`, a detached worktree. Every core, arm and comparison record reports `git_commit` F and `git_dirty: false`.
-- **Environment:** `uv sync --locked` at F; F's `uv.lock`, unchanged.
+- **Environment:** `uv sync --locked` at F. Every core records `lock_sha256` `1d3b9654…`, the sha256 of F's `uv.lock`.
 - **Pinned inputs:**
   - the BugSigDB v1.3.1 export, `full_dump.csv`, sha256 `af84bfca7bfe7691…`;
   - KG-Microbe `merged-kg_edges.tsv`, sha256 `d13812a436bd0b1c…`;
@@ -23,8 +23,8 @@ No value in the 2026-10-23 record differs from the rebuild.
 
 ### Canary 0: the corpus rebuilt from the pinned dump
 
-Ingest and `mtp.study_tsv` at F reproduce the original tables byte for byte:
-- `data/derived/experiments.tsv`: sha256 `16271237a70f61c8…`, the same as the 2026-10-23 record;
+At F, ingest and `mtp.study_tsv` rebuild the experiments table, and the `study-trait-profiles` step and the off matrix and profile steps rebuild the two profile tables. All three match the originals byte for byte:
+- `data/derived/experiments.tsv`: sha256 `16271237a70f61c8195d9f2acdd16f71e88f65859160f95bb734626bc1328e06`, the full hash recorded in the 2026-10-23 record and in the tracked taxa-coverage and cellulose_decr provenance;
 - the phenotype profile table, `study_trait_profiles_wide.tsv`: sha256 `43b2e2302b0edf48…`, 2,637 columns and 5,629 rows, the table #1004 tracked as `data/derived/study_trait_profiles_wide.tsv.gz`;
 - the off profile table: sha256 `519a095b09e179dc…`, the table tracked before #1004.
 
@@ -37,7 +37,7 @@ Each unit ran the same steps as on 2026-10-23, and every step exited 0:
 4. `just rerun-compare`;
 5. `just rerun-verify-comparison`.
 
-Tier 1+2 × off ran first, as the canary; the other units ran only after its counts and values matched.
+Tier 1+2 × off ran first, as the canary. Tier 1+2 × phenotype started once the canary's counts and verdicts had matched the record, before its scan, lineage and label-support values were checked. The two full-corpus units started only after all of the canary's values had matched.
 
 | Unit | Rollup | Profiles | Experiments | Studies | Traits |
 |---|---|---|---|---|---|
@@ -75,7 +75,7 @@ They ran at F against the rebuilt Tier 1+2 cores. Every p-value is nominal.
 ### Tier 1+2 × phenotype
 
 These outputs are new. The 2026-10-23 record had none for this unit.
-- **Selection scan:** the lead row is the same as off: rank 1,368, p = 0.3515; core rank 3,446, p = 0.822. A phenotype scan of the same recipe on the original Tier 1+2 × phenotype core was seen on 2026-10-24, outside the recorded evidence; protocol v2 (#1050) records this.
+- **Selection scan:** the lead row is the same as off: rank 1,368, p = 0.3515; core rank 3,446, p = 0.822. Both rebuilt scans are protocol v1 outputs, run at F. The phenotype scan's summary records `role: declared_sensitivity` and `declared_primary: off`, so it is not a protocol v2 primary result. A phenotype scan of the same recipe on the original Tier 1+2 × phenotype core was seen on 2026-10-24, outside the recorded evidence; protocol v2 (#1050) records this.
   - The rebuilt scan's condition, trait, triple and distribution tables are byte-identical to that run's.
   - Its summary differs only in the core run ID.
 - **Lineage extension**, pooled (matched): Lachnospiraceae 56.3% (53.4%), Oscillospiraceae 28.0% (32.9%), both 91.0% (90.5%); 0 reconciliation mismatches.
@@ -88,7 +88,7 @@ Since the 2026-10-23 record, the selection scan's declared primary scope has cha
 Each unit's archive retains:
 - the core run, with its raw and KG inputs;
 - every consumer record and its outputs: the arms' and comparison's consumer records, and, for the Tier 1+2 units, the scan and the lineage extension;
-- the arm, comparison, label-support and log directories, retained explicitly.
+- the arm, comparison and log directories, plus label support for the Tier 1+2 units, retained explicitly.
 
 `just evidence-verify` re-checked the retained bytes, the core contracts and every consumer chain for each archive.
 
@@ -104,10 +104,10 @@ To use a retained input, resolve it through the archive (`just evidence-resolve 
 ## Notes for anyone citing these runs
 
 - **Escherichia leave-out for arsenate reduction, Tier 1+2:** two outputs report it, with different transforms.
-  - `native_composition_comparison.tsv` (the sign of the study-mean log1p z-contrast) gives 204:143 → 160:160 under off.
+  - `native_composition_comparison.tsv`, scope `pooled`, study-level columns `before_*`/`after_*` (the sign of the study-mean log1p z-contrast), gives 204:143 → 160:160 under off. Its experiment-level `native_*` columns give 282:210 → 224:230.
   - `effects.tsv.gz`, representation `shared_fraction` (raw fraction difference), gives 204:143 → 161:159 under off and 203:144 → 162:158 under phenotype.
 
-  Name the file and representation whenever you cite it.
+  Name the file, scope, columns and representation whenever you cite it.
 - **"Full corpus":** this names three populations.
   - The full-corpus cores above: 7,111 profiles from 1,212 studies.
   - The full experiments table: 4,435 rows from 1,245 studies.
