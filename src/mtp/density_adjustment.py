@@ -115,7 +115,8 @@ class Table1TraitEffect:
     continuity. It reads as attenuation only for a positive raw mean: for a negative
     one, a negative value means the effect grew. ``magnitude_change_pct`` is
     (|adj| - |raw|) / |raw| x 100, negative exactly when the effect shrank, and
-    ``sign_flipped`` marks an adjusted mean of the opposite sign (#1084).
+    ``sign_flipped`` marks an adjusted mean of the opposite sign (#1084). A mean
+    within 1e-9 of zero has no sign, and a raw one leaves the magnitude change NaN.
     """
 
     trait_id: str
@@ -130,21 +131,38 @@ class Table1TraitEffect:
     sign_flipped: bool
 
 
-# Statuses whose adjusted paired contrast is significant (Wilcoxon p <= 0.05).
+# Statuses whose adjusted paired contrast is significant (Wilcoxon p <= 0.05) and keeps
+# the raw sign; deck figure 4 draws only these as surviving.
 SIGNIFICANT_POST_ADJUSTMENT_STATUSES = frozenset(
     {"enhanced (significant, larger magnitude)", "survived (significant post-adjustment)"}
 )
+
+# A paired mean difference within this of zero has no sign (#1097).
+_ZERO_MEAN = 1e-9
+
+
+def _sign_flipped(raw_mean: float, adj_mean: float) -> bool:
+    """Whether two means clearly away from zero have opposite signs."""
+    return min(abs(raw_mean), abs(adj_mean)) > _ZERO_MEAN and raw_mean * adj_mean < 0
 
 
 def adjustment_status(raw_mean: float, raw_p: float, adj_mean: float, adj_p: float) -> str:
     """Classify a trait by adjusted significance and by the change in effect magnitude.
 
     Significance comes from the Wilcoxon p-values; "enhanced" and "attenuated" compare
-    |adj| with |raw|, whatever the sign of either mean (#1084). A sign change is
-    recorded separately, in ``sign_flipped``.
+    |adj| with |raw| (#1084). A reversed sign and a raw mean of zero, where the
+    magnitude change is undefined, each get their own status instead (#1097).
     """
     if math.isnan(adj_p):
         return "insufficient non-zero pairs"
+    if abs(raw_mean) <= _ZERO_MEAN:
+        if adj_p <= 0.05:
+            return "undefined magnitude change (raw mean zero, significant post-adjustment)"
+        return "undefined magnitude change (raw mean zero, nonsignificant post-adjustment)"
+    if _sign_flipped(raw_mean, adj_mean):
+        if adj_p <= 0.05:
+            return "reversed (significant post-adjustment)"
+        return "reversed (nonsignificant post-adjustment)"
     larger = abs(adj_mean) > abs(raw_mean)
     if adj_p <= 0.05:
         if larger:
@@ -529,7 +547,7 @@ def evaluate_table1_paired_effects(
 
         magnitude_change = (
             float((abs(adj_mean) - abs(raw_mean)) / abs(raw_mean) * 100.0)
-            if abs(raw_mean) > 1e-9
+            if abs(raw_mean) > _ZERO_MEAN
             else float("nan")
         )
 
@@ -545,7 +563,7 @@ def evaluate_table1_paired_effects(
                 # General statistical criteria rather than hardcoded trait IDs (#383)
                 status=adjustment_status(raw_mean, raw_p, adj_mean, adj_p),
                 magnitude_change_pct=magnitude_change,
-                sign_flipped=bool(np.sign(raw_mean) * np.sign(adj_mean) < 0),
+                sign_flipped=_sign_flipped(raw_mean, adj_mean),
             )
         )
 

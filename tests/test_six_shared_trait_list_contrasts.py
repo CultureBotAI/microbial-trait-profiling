@@ -385,13 +385,15 @@ def test_cli_writes_trait_list_contrasts_and_requires_an_output_dir(
     assert provenance["code_commit"] == "abc1234"
 
 
+@pytest.mark.parametrize("output_dir", ["", "   "])
 def test_cli_rejects_an_empty_output_dir(
     tmp_path: Path,
     run_inputs: dict[str, Path],
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
+    output_dir: str,
 ) -> None:
-    """``--output-dir=`` would otherwise write the six files to the current directory (#1084)."""
+    """An empty or blank ``--output-dir`` would otherwise write into a cwd path (#1084)."""
     list_path = declare(tmp_path / "traits.txt", list(EXTRA))
     workdir = tmp_path / "cwd"
     workdir.mkdir()
@@ -405,7 +407,7 @@ def test_cli_rejects_an_empty_output_dir(
         str(run_inputs["metadata"]),
         "--columns",
         str(run_inputs["columns"]),
-        "--output-dir=",
+        f"--output-dir={output_dir}",
     ]
     with patch.object(sankeys, "main") as six_trait_main, pytest.raises(SystemExit):
         sankeys.cli(argv)

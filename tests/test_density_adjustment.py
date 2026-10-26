@@ -24,6 +24,7 @@ from bsdbng.density_adjustment import (
     TRAIT_LIST_PROVENANCE_FILENAME,
     TWIN_A,
     TWIN_B,
+    adjustment_status,
     compute_correlation_metrics,
     compute_effective_tests,
     evaluate_conditional_twin_test,
@@ -401,7 +402,8 @@ def test_positive_raw_mean_rows_keep_the_signed_relative_change() -> None:
     assert effect.status == "survived (significant post-adjustment)"
 
 
-def test_sign_flip_is_flagged_and_measured_by_magnitude() -> None:
+def test_sign_flip_is_flagged_measured_by_magnitude_and_labelled_reversed() -> None:
+    """A reversal is neither "enhanced" nor "survived", whatever its magnitude (#1097)."""
     effect = _single_trait_effect(
         _paired_differences(4.0, significant=False), _paired_differences(-6.0, significant=False)
     )
@@ -409,7 +411,7 @@ def test_sign_flip_is_flagged_and_measured_by_magnitude() -> None:
     assert effect.sign_flipped is True
     assert effect.relative_change_pct == pytest.approx(-250.0)
     assert effect.magnitude_change_pct == pytest.approx(50.0)
-    assert effect.status == "enhanced magnitude (nonsignificant post-adjustment)"
+    assert effect.status == "reversed (nonsignificant post-adjustment)"
 
 
 @pytest.mark.parametrize(
@@ -425,7 +427,11 @@ def test_sign_flip_is_flagged_and_measured_by_magnitude() -> None:
         (-6.95, False, -187.8, False, "enhanced magnitude (nonsignificant post-adjustment)"),
         (6.95, False, 187.8, False, "enhanced magnitude (nonsignificant post-adjustment)"),
         (-5.0, True, -9.0, False, "collapsed (nonsignificant post-adjustment, larger magnitude)"),
-        (4.0, True, -6.0, True, "enhanced (significant, larger magnitude)"),
+        # Sign reversals, larger or smaller (#1097).
+        (4.0, True, -6.0, True, "reversed (significant post-adjustment)"),
+        (0.158, False, -3.734, True, "reversed (significant post-adjustment)"),
+        (62.0, False, -58.9, False, "reversed (nonsignificant post-adjustment)"),
+        (-5.0, True, 2.0, False, "reversed (nonsignificant post-adjustment)"),
     ],
 )
 def test_status_follows_significance_and_magnitude(
@@ -451,12 +457,79 @@ def test_untestable_raw_contrast_with_a_significant_adjusted_one_is_not_nonsigni
     assert effect.status == "enhanced (significant, larger magnitude)"
 
 
-def test_undefined_magnitude_change_is_nan_not_zero() -> None:
+def test_undefined_magnitude_change_is_nan_not_zero_and_says_so() -> None:
     effect = _single_trait_effect(np.zeros(30), _paired_differences(5.0, significant=True))
 
     assert effect.relative_change_pct == 0.0
     assert np.isnan(effect.magnitude_change_pct)
     assert effect.sign_flipped is False
+    assert effect.status == (
+        "undefined magnitude change (raw mean zero, significant post-adjustment)"
+    )
+
+
+@pytest.mark.parametrize(("raw_mean", "beyond_tolerance"), [(5e-10, False), (2e-9, True)])
+def test_a_raw_mean_within_1e9_of_zero_has_no_magnitude_change_or_sign(
+    raw_mean: float, beyond_tolerance: bool
+) -> None:
+    """The magnitude change, the sign flag and the status share one tolerance (#1097)."""
+    effect = _single_trait_effect(
+        np.full(30, raw_mean), _paired_differences(-5.0, significant=True)
+    )
+
+    assert abs(effect.raw_mean_diff) == pytest.approx(raw_mean, rel=1e-3)
+    assert bool(np.isnan(effect.magnitude_change_pct)) is not beyond_tolerance
+    assert effect.sign_flipped is beyond_tolerance
+    assert effect.status == (
+        "reversed (significant post-adjustment)"
+        if beyond_tolerance
+        else "undefined magnitude change (raw mean zero, significant post-adjustment)"
+    )
+
+
+def test_an_adjusted_mean_within_1e9_of_zero_is_not_a_reversal() -> None:
+    effect = _single_trait_effect(
+        _paired_differences(5.0, significant=False), _paired_differences(-5e-10, significant=False)
+    )
+
+    assert effect.sign_flipped is False
+    assert effect.status == "attenuated (nonsignificant post-adjustment)"
+
+
+@pytest.mark.parametrize(
+    ("raw_mean", "raw_p", "adj_mean", "adj_p", "status"),
+    [
+        # F, full corpus x phenotype, 14-trait list: temperature optimum high and anaerobic.
+        (0.157732, 0.698116, -3.734108, 0.023218, "reversed (significant post-adjustment)"),
+        (62.024369, 0.113137, -58.934577, 0.729661, "reversed (nonsignificant post-adjustment)"),
+        # F, Tier 1+2 x phenotype, 14-trait list: anaerobic (#1084).
+        (
+            -6.951872,
+            0.470923,
+            -187.825017,
+            0.222672,
+            "enhanced magnitude (nonsignificant post-adjustment)",
+        ),
+        # p = 0.05 is significant, for the adjusted and for the raw p.
+        (12.0, 0.01, 3.0, 0.05, "survived (significant post-adjustment)"),
+        (-5.0, 0.30, -9.0, 0.05, "enhanced (significant, larger magnitude)"),
+        (4.0, 0.30, -6.0, 0.05, "reversed (significant post-adjustment)"),
+        (
+            0.0,
+            0.30,
+            6.0,
+            0.05,
+            "undefined magnitude change (raw mean zero, significant post-adjustment)",
+        ),
+        (12.0, 0.05, 3.0, 0.06, "collapsed (attenuated to nonsignificant)"),
+        (-5.0, 0.05, -9.0, 0.06, "collapsed (nonsignificant post-adjustment, larger magnitude)"),
+        (12.0, 0.06, 3.0, 0.06, "attenuated (nonsignificant post-adjustment)"),
+    ],
+)
+def test_adjustment_status_on_real_rows_and_at_the_significance_boundary(
+    raw_mean: float, raw_p: float, adj_mean: float, adj_p: float, status: str
+) -> None:
+    assert adjustment_status(raw_mean, raw_p, adj_mean, adj_p) == status
 
 
 @pytest.mark.skipif(
@@ -523,6 +596,10 @@ def test_full_density_audit_integration(tmp_path: Path) -> None:
             "attenuated (nonsignificant post-adjustment)",
             "collapsed (nonsignificant post-adjustment, larger magnitude)",
             "enhanced magnitude (nonsignificant post-adjustment)",
+            "reversed (significant post-adjustment)",
+            "reversed (nonsignificant post-adjustment)",
+            "undefined magnitude change (raw mean zero, significant post-adjustment)",
+            "undefined magnitude change (raw mean zero, nonsignificant post-adjustment)",
         }
 
 
@@ -894,6 +971,26 @@ def test_density_audit_reports_a_declared_trait_list_without_changing_shared_row
     assert not (tmp_path / "default" / TRAIT_LIST_PROVENANCE_FILENAME).exists()
 
 
+def test_effects_table_appends_the_new_columns_after_status(tmp_path: Path) -> None:
+    """Existing column positions do not move (#1084, #1097)."""
+    profiles, columns = _write_density_fixture(tmp_path)
+    run_density_audit(profiles, columns, tmp_path / "output")
+
+    header = (tmp_path / "output/table1_density_adjusted_effects.tsv").read_text().split("\n")[0]
+    assert header.split("\t") == [
+        "trait_id",
+        "trait_label",
+        "raw_mean_diff",
+        "raw_wilcoxon_p",
+        "adj_mean_diff",
+        "adj_wilcoxon_p",
+        "relative_change_pct",
+        "status",
+        "magnitude_change_pct",
+        "sign_flipped",
+    ]
+
+
 def test_default_density_rerun_drops_a_stale_trait_list_record(tmp_path: Path) -> None:
     profiles, columns = _write_density_fixture(tmp_path)
     list_path = _write_trait_list(tmp_path / "traits.txt", ["METPO:1000605"])
@@ -1033,17 +1130,21 @@ def test_trait_list_runs_never_write_the_six_trait_density_directory(
     assert effects["trait_id"].tolist() == list(TABLE_1_TRAITS)
 
 
+@pytest.mark.parametrize("output_dir", ["", "   "])
 def test_trait_list_runs_reject_an_empty_output_dir(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    output_dir: str,
 ) -> None:
-    """``--output-dir=`` would otherwise mean the current directory (#1084)."""
+    """An empty or blank ``--output-dir`` would otherwise mean a cwd path (#1084, #1097)."""
     profiles, columns = _write_density_fixture(tmp_path)
     list_path = _write_trait_list(tmp_path / "traits.txt", list(EXTRA_TRAITS))
     workdir = tmp_path / "cwd"
     workdir.mkdir()
     monkeypatch.chdir(workdir)
     inputs = ["--profiles", str(profiles), "--columns", str(columns)]
-    argv = [*inputs, "--output-dir=", "--trait-list", str(list_path)]
+    argv = [*inputs, f"--output-dir={output_dir}", "--trait-list", str(list_path)]
 
     with patch.object(sys, "argv", ["density_adjustment", *argv]), pytest.raises(SystemExit):
         main()

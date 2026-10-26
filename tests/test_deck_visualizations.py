@@ -279,7 +279,7 @@ def test_cli_main(mock_pipeline_data: dict[str, Path], tmp_path: Path) -> None:
 def test_figure4_draws_only_significant_adjusted_effects_as_surviving(
     mock_pipeline_data: dict[str, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A nonsignificant effect whose magnitude grew is not drawn as surviving (#1084)."""
+    """Only significant effects that keep the raw sign are drawn as surviving (#1084, #1097)."""
     import plotly.graph_objects as go
 
     effects_path = mock_pipeline_data["table1_effects"]
@@ -289,8 +289,8 @@ def test_figure4_draws_only_significant_adjusted_effects_as_surviving(
         "enhanced (significant, larger magnitude)",
         "enhanced magnitude (nonsignificant post-adjustment)",
         "collapsed (nonsignificant post-adjustment, larger magnitude)",
-        "attenuated (nonsignificant post-adjustment)",
-        "collapsed (attenuated to nonsignificant)",
+        "reversed (significant post-adjustment)",
+        "undefined magnitude change (raw mean zero, significant post-adjustment)",
     ]
     effects.to_csv(effects_path, sep="\t", index=False)
     figures: list[Any] = []
