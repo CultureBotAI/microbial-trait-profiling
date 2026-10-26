@@ -6,7 +6,7 @@ This record supersedes the evidence locations in [the 2026-10-23 final rerun rec
 
 - **Same:** the commit, the pinned inputs, the locked environment, the recipes, the populations and scopes, every count, both calibration verdicts, and every value checked below.
 - **New by construction:** every core, arm and comparison run ID.
-- **New:** four verified evidence archives (`just evidence-archive`, then `just evidence-verify`), kept in a durable location outside the repository and outside temporary storage. This record names that location `<F-rebuild root>`. Under it are `runs/<unit>/` (core, arms, comparison), `additive/<unit>/` (scan, lineage extension, label support) and `archives/<unit>/archive.json`, where `<unit>` is `tier12-off`, `tier12-phenotype`, `full-phenotype` or `full-off`.
+- **New:** four verified evidence archives (`just evidence-archive`, then `just evidence-verify`), kept in a durable location outside the repository and outside temporary storage. This record names that location `<F-rebuild root>`. Under it are `runs/<unit>/` (core, arms, comparison) and `archives/<unit>/archive.json`, where `<unit>` is `tier12-off`, `tier12-phenotype`, `full-phenotype` or `full-off`. The two Tier 1+2 units also have `additive/<unit>/` (scan, lineage extension, label support).
 
 No count, verdict or additive value quoted in the 2026-10-23 record differs from the rebuild. This record didn't re-derive that record's downstream-pass and tracked-output facts.
 
@@ -24,7 +24,7 @@ No count, verdict or additive value quoted in the 2026-10-23 record differs from
 ### Canary 0: the corpus rebuilt from the pinned dump
 
 At F, ingest and `mtp.study_tsv` rebuild the experiments table, and the `study-trait-profiles` step and the off matrix and profile steps rebuild the two profile tables. All three match the originals byte for byte:
-- `data/derived/experiments.tsv`: sha256 `16271237a70f61c8195d9f2acdd16f71e88f65859160f95bb734626bc1328e06`, the full hash recorded in the 2026-10-23 record and in the tracked taxa-coverage and cellulose_decr provenance;
+- `data/derived/experiments.tsv`: sha256 `16271237a70f61c8195d9f2acdd16f71e88f65859160f95bb734626bc1328e06`, matching the 2026-10-23 record's prefix (`16271237a70f61c8…`) and the full hash in the tracked taxa-coverage and cellulose_decr provenance;
 - the phenotype profile table, `study_trait_profiles_wide.tsv`: sha256 `43b2e2302b0edf48…`, 2,637 columns and 5,629 rows, the table #1004 tracked as `data/derived/study_trait_profiles_wide.tsv.gz`;
 - the off profile table: sha256 `519a095b09e179dc…`, the table tracked before #1004.
 
@@ -105,7 +105,7 @@ To use a retained input, resolve it through the archive (`just evidence-resolve 
 
 - **Escherichia leave-out for arsenate reduction, Tier 1+2:** two outputs report it, with different transforms.
   - `native_composition_comparison.tsv`, scope `pooled`, study-level columns `before_*`/`after_*` (the sign of the study-mean log1p z-contrast), gives 204:143 → 160:160 under off. Its experiment-level `native_*` columns give 282:210 → 224:230.
-  - `effects.tsv.gz`, representation `shared_fraction` (raw fraction difference), gives 204:143 → 161:159 under off and 203:144 → 162:158 under phenotype.
+  - `effects.tsv.gz`, scope `pooled`, representation `shared_fraction` (raw fraction difference), gives 204:143 → 161:159 under off and 203:144 → 162:158 under phenotype.
 
   Name the file, scope, columns and representation whenever you cite it.
 - **"Full corpus":** this names three populations.
