@@ -80,7 +80,8 @@ def record(root: Path, scope: str, producer: str) -> dict[str, Any]:
 def test_active_study_references(inputs: Inputs) -> None:
     off, phenotype, _, producer, _, _ = inputs
     for root, scope, traits, active in (
-        (off, "off", 317, 289),
+        # Historical F sources and persisted ledgers give 291; the brief's 289 was stale (#1101).
+        (off, "off", 317, 291),
         (phenotype, "phenotype", 344, 316),
     ):
         result = record(root, scope, producer)
@@ -192,7 +193,12 @@ def test_seventy_stool_cells_against_historical_numbers(inputs: Inputs) -> None:
     result = record(phenotype, "phenotype", producer)
     declared = committed_headline_traits(result, producer)
     historical_rows = pinned_historical_reference(historical, historical_sha256)["s14_tier12"]
-    reference = {row["name"]: row for row in historical_rows}
+    # Historical display aliases only (#1102); preserve exact core condition identities.
+    aliases = {
+        "Irritable bowel": "Irritable bowel syndrome",
+        "Polycystic ovary": "Polycystic ovary syndrome",
+    }
+    reference = {aliases.get(row["name"], row["name"]): row for row in historical_rows}
     assert len(reference) == len(historical_rows)
     rows = table(phenotype / "stool_disease_shifts.tsv")
     assert len(rows) == 70
@@ -200,6 +206,7 @@ def test_seventy_stool_cells_against_historical_numbers(inputs: Inputs) -> None:
     for row in rows:
         groups[row["condition"]].append(row)
     assert len(groups) == 7
+    assert set(groups) == set(reference), "Historical labels differ from exact core conditions"
     assert sorted((int(group[0]["n_comparisons"]) for group in groups.values()), reverse=True) == [
         70,
         45,

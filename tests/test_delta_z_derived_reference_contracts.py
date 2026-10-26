@@ -26,6 +26,10 @@ REPOSITORY = Path(__file__).resolve().parents[1]
 TRAIT_LIST = "methods/trait_lists/headline_ten_phenotype.txt"
 EXTRA_TRAIT = "METPO:2000103|pathways:trithionate_oxidation"
 F_COMMIT = "511c891229b659e207cfe0f4281a97c3fc039a80"
+HISTORICAL_DISPLAY_LABELS = {
+    "Irritable bowel syndrome": "Irritable bowel",
+    "Polycystic ovary syndrome": "Polycystic ovary",
+}
 
 
 @pytest.fixture
@@ -156,6 +160,31 @@ def stool_fixture(tmp_path: Path, change: str = "") -> QualificationFixture:
     return fixture
 
 
+def named_stool_fixture(tmp_path: Path, *, display_labels: bool) -> QualificationFixture:
+    """Use exact consumer condition names and optional historical aliases (#1102)."""
+    fixture = stool_fixture(tmp_path)
+    names = dict(zip(["Condition 0", "Condition 1"], HISTORICAL_DISPLAY_LABELS, strict=True))
+    rows = qualification.table(fixture.root / "stool_disease_shifts.tsv")
+    for row in rows:
+        row["condition"] = names.get(row["condition"], row["condition"])
+    write_table(fixture.root / "stool_disease_shifts.tsv", rows)
+    reference = json.loads(fixture.historical.read_text(encoding="utf-8"))
+    for original in reference["s14_tier12"]:
+        canonical = names.get(original["name"], original["name"])
+        original["name"] = (
+            HISTORICAL_DISPLAY_LABELS.get(canonical, canonical) if display_labels else canonical
+        )
+    save_reference(fixture, reference)
+    return fixture
+
+
+def save_reference(fixture: QualificationFixture, reference: dict[str, Any]) -> None:
+    """Pin each synthetic reference after deliberate fixture construction, before validation."""
+    fixture.historical.write_text(json.dumps(reference), encoding="utf-8")
+    fixture.historical_sha256 = file_sha256(fixture.historical)
+    fixture.save()
+
+
 def site_fixture(tmp_path: Path, change: str = "") -> QualificationFixture:
     fixture = base_fixture(tmp_path)
     traits = ["TEST:a", "TEST:b"]
@@ -239,6 +268,49 @@ def test_qualification_rejects_changed_historical_reference_bytes(tmp_path: Path
     reference = json.loads(fixture.historical.read_text(encoding="utf-8"))
     reference["changed_after_pin"] = True
     fixture.historical.write_text(json.dumps(reference), encoding="utf-8")
+    with pytest.raises(AssertionError):
+        qualification.test_seventy_stool_cells_against_historical_numbers(fixture.inputs())
+
+
+def test_historical_condition_display_labels_match_exact_consumer_names(tmp_path: Path) -> None:
+    fixture = named_stool_fixture(tmp_path, display_labels=True)
+    qualification.test_seventy_stool_cells_against_historical_numbers(fixture.inputs())
+
+
+@pytest.mark.parametrize("canonical", HISTORICAL_DISPLAY_LABELS)
+def test_historical_condition_alias_collision_is_rejected(tmp_path: Path, canonical: str) -> None:
+    fixture = named_stool_fixture(tmp_path, display_labels=False)
+    reference = json.loads(fixture.historical.read_text(encoding="utf-8"))
+    original = next(row for row in reference["s14_tier12"] if row["name"] == canonical)
+    reference["s14_tier12"].append({**original, "name": HISTORICAL_DISPLAY_LABELS[canonical]})
+    save_reference(fixture, reference)
+    with pytest.raises(AssertionError):
+        qualification.test_seventy_stool_cells_against_historical_numbers(fixture.inputs())
+
+
+@pytest.mark.parametrize("replace_existing", [False, True])
+def test_unknown_historical_condition_alias_is_rejected(
+    tmp_path: Path, replace_existing: bool
+) -> None:
+    fixture = named_stool_fixture(tmp_path, display_labels=False)
+    reference = json.loads(fixture.historical.read_text(encoding="utf-8"))
+    unknown = {**reference["s14_tier12"][0], "name": "Irritable bowel syndrome (IBS)"}
+    if replace_existing:
+        reference["s14_tier12"][0] = unknown
+    else:
+        reference["s14_tier12"].append(unknown)
+    save_reference(fixture, reference)
+    with pytest.raises(AssertionError):
+        qualification.test_seventy_stool_cells_against_historical_numbers(fixture.inputs())
+
+
+def test_historical_condition_aliases_do_not_normalize_consumer_output(tmp_path: Path) -> None:
+    fixture = named_stool_fixture(tmp_path, display_labels=True)
+    rows = qualification.table(fixture.root / "stool_disease_shifts.tsv")
+    for row in rows:
+        row["condition"] = HISTORICAL_DISPLAY_LABELS.get(row["condition"], row["condition"])
+    write_table(fixture.root / "stool_disease_shifts.tsv", rows)
+    fixture.save()
     with pytest.raises(AssertionError):
         qualification.test_seventy_stool_cells_against_historical_numbers(fixture.inputs())
 
