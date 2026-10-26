@@ -1147,6 +1147,7 @@ three-test-table *ARGS:
 	uv run python -m mtp.three_test_table run "$@"
 
 # Read pinned completed Delta-z ledgers; derive votes, oxygen quadrants and site/disease cells.
+[positional-arguments]
 delta-z-derived *ARGS:
 	uv run python -m mtp.delta_z_derived "$@"
 
@@ -1154,6 +1155,7 @@ test-delta-z-derived:
 	uv run pytest tests/test_delta_z_derived_*.py tests/test_three_test_reader.py -v
 
 # Read completed F-derived tables against fixed numerical references; never replay Delta-z.
+[positional-arguments]
 test-delta-z-reproduction off phenotype reference commit experiments reference_sha256:
 	MTP_DZ_DERIVED_OFF="$1" MTP_DZ_DERIVED_PHENOTYPE="$2" MTP_DZ_HISTORICAL_STATS="$3" MTP_DZ_DERIVED_COMMIT="$4" MTP_DZ_CORE_EXPERIMENTS="$5" MTP_DZ_HISTORICAL_SHA256="$6" uv run pytest tests/test_delta_z_derived_reproduction.py -m integration -v
 
