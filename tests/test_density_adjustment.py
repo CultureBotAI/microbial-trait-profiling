@@ -468,6 +468,17 @@ def test_undefined_magnitude_change_is_nan_not_zero_and_says_so() -> None:
     )
 
 
+def test_undefined_magnitude_change_with_a_nonsignificant_adjusted_contrast() -> None:
+    effect = _single_trait_effect(np.zeros(30), _paired_differences(5.0, significant=False))
+
+    assert effect.adj_wilcoxon_p > 0.05
+    assert np.isnan(effect.magnitude_change_pct)
+    assert effect.sign_flipped is False
+    assert effect.status == (
+        "undefined magnitude change (raw mean zero, nonsignificant post-adjustment)"
+    )
+
+
 @pytest.mark.parametrize(("raw_mean", "beyond_tolerance"), [(5e-10, False), (2e-9, True)])
 def test_a_raw_mean_within_1e9_of_zero_has_no_magnitude_change_or_sign(
     raw_mean: float, beyond_tolerance: bool
