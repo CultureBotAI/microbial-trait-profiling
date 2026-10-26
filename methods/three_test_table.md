@@ -151,10 +151,24 @@ Verification retains upstream execution identities and hashes, population,
 direction basis, catalog and rollup scope. A newer sidecar may consume supported
 historical runs; it does not rewrite their producer identity. A supplied
 multiplicity sidecar must pass its own verification and bind the same comparison.
+Its role is verified co-presence: its inventory and replay are checked, but its
+adjusted values are not imported into, or cross-checked against, this table.
+`native_selected_study_q_by` is reconstructed from the native selected-family
+raw p values. The manifest records `multiplicity_binding` as
+`verified_co_presence_only` or `not_supplied`. Optional-sidecar replay retains
+the multiplicity stage's existing producer-code and policy identity requirements.
 Record the new producer Git commit, dirty state, implementation hash, dependency
 lock hash, input hashes/run IDs and declared methods. Native values remain
 separately named; each new test has its own family. Never compare p-values across
 tests or treat agreement on shared data as independent replication.
+
+Each generation or complete table replay verifies the core and each arm once.
+The comparison and optional multiplicity replay reuse those verified records;
+all existing execution, binding, policy, inventory and output checks still apply.
+The input inventory explicitly includes regular-file core artifacts consumed
+during verification, including external KG nodes/edges and reported taxa, along
+with the native and optional evidence files. File hashes are rechecked before
+publication to detect changes during adaptation.
 
 All generated outputs and temporary scratch must use durable directories outside
 system temporary roots and remain disjoint from source bundles. Historical
@@ -162,7 +176,7 @@ cellulose t=-5.24 and full-family BY q=0.00047 are reproduction targets for the
 off Tier1+2 unit, not values to tune the implementation toward. Report a mismatch
 with its source and cause before producing downstream claims.
 
-The temporary-root guard follows the shared workflow policy: it checks fixed
+The temporary-root guard calls `mtp.workflow.output_roots.temporary_root`: it checks fixed
 macOS temporary roots, the process temporary directory and `TMPDIR`, both as
 written and after resolving symlinks. Unlisted roots can escape detection (#1051),
 including `/tmp` on Linux when the process temporary directory is redirected
@@ -170,6 +184,8 @@ elsewhere, and `/var/tmp` when neither dynamic root identifies it. This limitati
 not authorize temporary storage for these runs. Choose the explicit durable
 scratch directory outside the current process temporary directory; the sidecar
 then routes internal temporary files into that validated scratch directory.
+An explicit `--scratch-dir` underneath inherited `TMPDIR` is refused before any
+verification or write, even when that temporary directory has a durable-looking name.
 
 ## Commands and output contract
 
@@ -204,10 +220,13 @@ Exclusive publication uses Darwin `renamex_np` or Linux `renameat2`. An
 unsupported platform, C library or filesystem operation fails closed; it never
 falls back to a rename that could replace an existing destination.
 
-Before expensive source verification, a private probe in the output parent
-directory checks that exclusive rename both rejects an existing destination and
+Before expensive source verification, a private probe in the nearest existing
+output ancestor checks that exclusive rename both rejects an existing destination and
 can publish to an absent one. The probe follows checks that keep output and scratch
-separate from declared source directories; it never targets the requested output. Final
+separate from declared source directories, external core files and every symlink
+hop. These declaration-only checks also precede the first replay verification.
+The probe never creates missing output parents or targets the requested output.
+Output parents are created only when staging the verified result for publication. Final
 publication still uses exclusive rename. Staging is created with an exclusive
 plain `mkdir`, so the filesystem applies `0777 & ~umask` without a worker or a
 query that changes the process's mask. Its hidden directory can be readable under
@@ -218,7 +237,8 @@ Optional count columns use nullable
 integers: populated counts serialize as integers, and unavailable counts stay blank.
 
 An uncatchable termination such as SIGKILL can leave hidden
-`.<name>-staging-*` or `.<name>-probe-*` directories in the output parent. They are
+`.<name>-staging-*` directories in the output parent or private `.<name>-probe-*`
+directories in its nearest existing ancestor. They are
 unpublished intermediates, even if they contain a manifest. After confirming that
 their producer has stopped, they may be removed; do not remove an active staging
 directory. Only the final requested output directory is a published bundle.

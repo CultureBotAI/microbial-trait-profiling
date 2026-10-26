@@ -10,12 +10,10 @@ from mtp.count_input import profile_count_reader
 from mtp.datamodel.multiple_testing_pydantic import SourceArtifact
 from mtp.datamodel.workflow_pydantic import AnalysisBasis, ArmRun, ComparisonRun, WorkflowRun
 from mtp.paths import file_sha256
-from mtp.workflow.arms.runtime import verify_arm
-from mtp.workflow.comparison import core_analysis_bases, verify_comparison_run
+from mtp.workflow.comparison import core_analysis_bases, verify_comparison_sources
 from mtp.workflow.consumers import CoreBundle
 from mtp.workflow.coverage import feature_filter_id
 from mtp.workflow.runtime import artifact_path
-from mtp.workflow.verification import verify_core_run
 
 
 def source(path: Path) -> SourceArtifact:
@@ -188,12 +186,7 @@ def bind_recorded_hashes(sources: VerifiedSources, comparison_sha256: str) -> Ve
 
 def open_verified_sources(path: Path) -> VerifiedSources:
     """Verify one completed comparison and each core/arm source before adaptation."""
-    comparison = verify_comparison_run(path)
-    core = verify_core_run(Path(comparison.core_manifest_path))
-    arms = {
-        name: verify_arm(Path(getattr(comparison, f"{name}_manifest_path")))
-        for name in ("noel", "jed", "ilyas")
-    }
+    comparison, core, arms = verify_comparison_sources(path)
     if (
         comparison.contrast_population != core.contrast_population
         or comparison.direction_basis != core.direction_basis

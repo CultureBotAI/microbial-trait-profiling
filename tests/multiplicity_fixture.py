@@ -355,8 +355,8 @@ def fixture_sources(
     monkeypatch.setattr(stage, "open_verified_sources", lambda _path: verified)
     monkeypatch.setattr(
         native,
-        "verify_consumer_record",
-        lambda _path: ConsumerRecord.model_construct(
+        "_verify_consumer_record_with_core",
+        lambda _path, _core: ConsumerRecord.model_construct(
             consumer="native-pooled-composition-stats",
             run_id=core.run_id,
             run_manifest_sha256=file_sha256(core_manifest),

@@ -297,11 +297,33 @@ def verify_consumer_record(
     path: Path, *, resolver: LocationResolver | None = None
 ) -> ConsumerRecord:
     """Check a deck/figure input's entire recorded chain before accepting its outputs."""
+    record = _read_consumer_record(path, resolver)
+    manifest = locate(Path(record.run_manifest_path), resolver)
+    run = verify_core_run(manifest, resolver=resolver)
+    return _verify_consumer_with_core(record, run, resolver)
+
+
+def _verify_consumer_record_with_core(
+    path: Path, run: WorkflowRun, *, resolver: LocationResolver | None = None
+) -> ConsumerRecord:
+    """Reuse the verified comparison core, retaining every consumer evidence check."""
+    return _verify_consumer_with_core(_read_consumer_record(path, resolver), run, resolver)
+
+
+def _read_consumer_record(path: Path, resolver: LocationResolver | None) -> ConsumerRecord:
     record = ConsumerRecord.model_validate_json(locate(path, resolver).read_text(encoding="utf-8"))
     manifest = locate(Path(record.run_manifest_path), resolver)
     if file_sha256(manifest) != record.run_manifest_sha256:
         raise ValueError("Consumer's core manifest changed")
-    run = verify_core_run(manifest, resolver=resolver)
+    return record
+
+
+def _verify_consumer_with_core(
+    record: ConsumerRecord, run: WorkflowRun, resolver: LocationResolver | None
+) -> ConsumerRecord:
+    manifest = locate(Path(record.run_manifest_path), resolver)
+    if manifest.resolve() != Path(run.manifest_path).resolve():
+        raise ValueError("Consumer core manifest differs from the verified core")
     if run.run_id != record.run_id:
         raise ValueError("Consumer references a different execution")
     artifacts = {artifact.id: artifact for artifact in run.artifacts or []}

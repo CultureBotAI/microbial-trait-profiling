@@ -7,6 +7,7 @@ import json
 import sqlite3
 import tempfile
 from contextlib import closing
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Literal, TypedDict
@@ -17,6 +18,7 @@ from git import Repo
 
 from mtp.datamodel.multiple_testing_pydantic import (
     ExternalFamilyCorrection,
+    MultipleTestingPolicy,
     PostArmMultiplicityRun,
     SourceArtifact,
 )
@@ -25,7 +27,12 @@ from mtp.multiplicity.families import FamilyInput, jed_family, noel_family
 from mtp.multiplicity.inventory import correct_inventory, json_text, read_corrected_inventory
 from mtp.multiplicity.native import native_family
 from mtp.multiplicity.ora import ora_family
-from mtp.multiplicity.sources import bind_recorded_hashes, open_verified_sources, source
+from mtp.multiplicity.sources import (
+    VerifiedSources,
+    bind_recorded_hashes,
+    open_verified_sources,
+    source,
+)
 from mtp.paths import file_sha256
 
 
@@ -181,15 +188,41 @@ def _protect_sources(output: Path, roots: list[Path]) -> None:
             raise ValueError("Multiplicity sidecars must be disjoint from verified source bundles")
 
 
+@dataclass(frozen=True)
+class _StageDefinition:
+    """Capture producer identity before verification or replay reads begin."""
+
+    implementation: str
+    policy: MultipleTestingPolicy
+
+
+def _stage_definition() -> _StageDefinition:
+    return _StageDefinition(code_sha256(), load_policy().model_copy(deep=True))
+
+
 def run_post_arm(
     comparison: Path, output: Path, *, recorded_at: datetime | None = None
 ) -> PostArmMultiplicityRun:
     """Import unchanged native p-values and emit independently verifiable sidecars."""
-    implementation = code_sha256()
-    policy = load_policy().model_copy(deep=True)
+    definition = _stage_definition()
     comparison_manifest = comparison / "comparison_run.json" if comparison.is_dir() else comparison
     comparison_digest = file_sha256(comparison_manifest)
     sources = bind_recorded_hashes(open_verified_sources(comparison), comparison_digest)
+    return _run_post_arm_from_sources(
+        sources, comparison_digest, output, definition=definition, recorded_at=recorded_at
+    )
+
+
+def _run_post_arm_from_sources(
+    sources: VerifiedSources,
+    comparison_digest: str,
+    output: Path,
+    *,
+    definition: _StageDefinition,
+    recorded_at: datetime | None = None,
+) -> PostArmMultiplicityRun:
+    """Adapt one verified source graph, retaining its original producer snapshot."""
+    implementation, policy = definition.implementation, definition.policy
     instant = recorded_at if recorded_at is not None else datetime.now(UTC)
     _protect_sources(
         output,
@@ -303,10 +336,39 @@ def run_post_arm(
 
 def verify_post_arm(path: Path) -> PostArmMultiplicityRun:
     """Rebuild from externally verified native sources and compare every record/hash."""
+    definition = _stage_definition()
     manifest = path / "multiplicity_run.json" if path.is_dir() else path
-    root = manifest.parent.resolve()
     record = PostArmMultiplicityRun.model_validate_json(manifest.read_text(encoding="utf-8"))
-    if record.version != "1.2.0" or record.policy != load_policy():
+    comparison = Path(record.comparison_manifest_path)
+    comparison_digest = file_sha256(comparison)
+    sources = bind_recorded_hashes(open_verified_sources(comparison), comparison_digest)
+    return _verify_post_arm_record(manifest, record, sources, definition)
+
+
+def _verify_post_arm_from_sources(path: Path, sources: VerifiedSources) -> PostArmMultiplicityRun:
+    """Replay using the caller's verified graph, without reopening public verifiers."""
+    definition = _stage_definition()
+    manifest = path / "multiplicity_run.json" if path.is_dir() else path
+    record = PostArmMultiplicityRun.model_validate_json(manifest.read_text(encoding="utf-8"))
+    return _verify_post_arm_record(manifest, record, sources, definition)
+
+
+def _verify_post_arm_record(
+    manifest: Path,
+    record: PostArmMultiplicityRun,
+    sources: VerifiedSources,
+    definition: _StageDefinition,
+) -> PostArmMultiplicityRun:
+    root = manifest.parent.resolve()
+    comparison = Path(record.comparison_manifest_path)
+    if comparison.resolve() != Path(sources.comparison.manifest_path).resolve():
+        raise ValueError("Multiplicity comparison differs from the verified source graph")
+    if (
+        sources.expected_digest(comparison) != record.comparison_manifest_sha256
+        or file_sha256(comparison) != record.comparison_manifest_sha256
+    ):
+        raise ValueError("Multiplicity comparison differs from the upstream recorded hash")
+    if record.version != "1.2.0" or record.policy != definition.policy:
         raise ValueError("Unsupported multiplicity policy or stage version")
     artifacts = [
         *record.reports,
@@ -327,9 +389,11 @@ def verify_post_arm(path: Path) -> PostArmMultiplicityRun:
         if not target.resolve().is_relative_to(root) or file_sha256(target) != artifact.sha256:
             raise ValueError("Multiplicity artifact hash mismatch")
     with tempfile.TemporaryDirectory(prefix="mtp-verify-multiplicity-") as scratch:
-        replay = run_post_arm(
-            Path(record.comparison_manifest_path),
+        replay = _run_post_arm_from_sources(
+            sources,
+            record.comparison_manifest_sha256,
             Path(scratch) / "replay",
+            definition=definition,
             recorded_at=record.recorded_at,
         )
     if record != replay:

@@ -24,16 +24,18 @@ from git import Repo
 
 from mtp.count_input import parse_nonnegative_integer
 from mtp.datamodel.multiple_testing_pydantic import PostArmMultiplicityRun
-from mtp.datamodel.workflow_pydantic import ComparisonRun, ContrastPopulation, DirectionBasis
+from mtp.datamodel.workflow_pydantic import ContrastPopulation, DirectionBasis
 from mtp.multiple_testing import canonical_sha256
 from mtp.multiplicity.families import rows
 from mtp.multiplicity.sources import VerifiedSources, bind_recorded_hashes, open_verified_sources
-from mtp.multiplicity.stage import verify_post_arm
+from mtp.multiplicity.stage import _verify_post_arm_from_sources
 from mtp.paths import file_sha256
+from mtp.three_test_table import source_paths
 from mtp.three_test_table.carriers import carrier_table
 from mtp.three_test_table.composition import composition_table
 from mtp.three_test_table.native import native_tables, validate_native_overlap
 from mtp.three_test_table.ora import ora_table
+from mtp.workflow import output_roots
 
 VERSION = "three-test-per-trait-v1"
 MANIFEST = "three_test_run.json"
@@ -42,74 +44,38 @@ CALIBRATION_STATUS = "uncalibrated (methods/calibration.md excludes native ORA)"
 
 
 def require_durable(path: Path) -> Path:
-    """Reject declared temporary roots and aliases under the #1049 contract.
-
-    This matches the shared guard proposed in #1063 until it can be imported.
-    Bandit B108 prevents some fixed POSIX temporary-root literals (#1051).
-    An unlisted root is not refused unless gettempdir() or TMPDIR identifies it.
-    Explicit scratch must also be outside those inherited temporary roots.
-    """
-    resolved = path.resolve()
-    directories = [
-        Path("/private/tmp"),
-        Path("/var/folders"),
-        Path("/private/var/folders"),
-        Path(tempfile.gettempdir()),
-    ]
-    if environment := os.environ.get("TMPDIR"):
-        directories.append(Path(environment))
-    roots = {
-        spelling
-        for directory in directories
-        for spelling in (Path(os.path.abspath(directory)), directory.resolve())
-    }
-    if any(
-        spelling.is_relative_to(root)
-        for spelling in (Path(os.path.abspath(path)), resolved)
-        for root in roots
-    ):
+    """Use the shared temporary-root policy for both output and explicit scratch."""
+    if output_roots.temporary_root(path) is not None:
         raise ValueError("Use a durable directory for outputs and scratch")
-    return resolved
+    return path.resolve()
 
 
 def _disjoint(path: Path, roots: list[Path]) -> None:
-    resolved = path.resolve()
+    spellings = {path.absolute(), path.resolve()}
     for root in roots:
-        root = root.resolve()
-        if resolved.is_relative_to(root) or root.is_relative_to(resolved):
+        protected = {root.absolute(), root.resolve()}
+        if any(
+            candidate.is_relative_to(source) or source.is_relative_to(candidate)
+            for candidate in spellings
+            for source in protected
+        ):
             raise ValueError("Sidecar outputs and scratch must be disjoint from source bundles")
 
 
 def _manifest_roots(
     manifests: list[Path], *, multiplicity: Path | None, label_support: Path | None
 ) -> list[Path]:
-    """Protect file aliases and their targets; directory inputs protect only themselves."""
-    files = list(manifests)
-    roots: list[Path] = []
-    for optional in (multiplicity, label_support):
-        if optional is not None:
-            if optional.is_dir():
-                roots.append(optional)
-            else:
-                files.append(optional)
-    for manifest in files:
-        # Resolve the file before taking its parent: a file symlink can point
-        # outside its alias directory, and both locations need write protection.
-        roots.extend((manifest.parent, manifest.resolve().parent))
-    return roots
+    """Protect all source alias hops while preserving directory-input siblings."""
+    return source_paths.manifest_roots(
+        manifests, multiplicity=multiplicity, label_support=label_support
+    )
 
 
 def _source_roots(
     sources: VerifiedSources, *, multiplicity: Path | None, label_support: Path | None
 ) -> list[Path]:
-    return _manifest_roots(
-        [
-            Path(sources.core.manifest_path),
-            Path(sources.comparison.manifest_path),
-            *(Path(arm.manifest_path) for arm in sources.arms.values()),
-        ],
-        multiplicity=multiplicity,
-        label_support=label_support,
+    return source_paths.source_roots(
+        sources, multiplicity=multiplicity, label_support=label_support
     )
 
 
@@ -213,25 +179,19 @@ def _declared_source_roots(
     comparison: Path, *, multiplicity: Path | None, label_support: Path | None
 ) -> list[Path]:
     """Read only declared locations for early write protection, never source verification."""
-    record = ComparisonRun.model_validate_json(comparison.read_text(encoding="utf-8"))
-    return _manifest_roots(
-        [
-            comparison,
-            Path(record.manifest_path),
-            Path(record.core_manifest_path),
-            Path(record.noel_manifest_path),
-            Path(record.jed_manifest_path),
-            Path(record.ilyas_manifest_path),
-        ],
-        multiplicity=multiplicity,
-        label_support=label_support,
+    return source_paths.declared_source_roots(
+        comparison, multiplicity=multiplicity, label_support=label_support
     )
 
 
 def _probe_publication(output: Path, protected: list[Path]) -> None:
-    """Probe both no-replace refusal and a real directory move on the output filesystem."""
-    output.parent.mkdir(parents=True, exist_ok=True)
-    probe = require_durable(output.parent / f".{output.name}-probe-{uuid.uuid4().hex}")
+    """Probe the existing destination filesystem without creating output ancestors."""
+    parent = output.parent
+    while not parent.exists() and not parent.is_symlink():
+        parent = parent.parent
+    if not parent.is_dir():
+        raise NotADirectoryError(f"Output ancestor is not a directory: {parent}")
+    probe = require_durable(parent / f".{output.name}-probe-{uuid.uuid4().hex}")
     _disjoint(probe, protected)
     # An exclusive mkdir reserves only our private probe; the requested output
     # and any existing user directory are never used as a disposable target.
@@ -299,11 +259,13 @@ def _check_multiplicity_inputs(root: Path, bindings: dict[Path, str]) -> None:
             raise ValueError("Multiplicity input hash changed after verification")
 
 
-def _bind_multiplicity_inputs(path: Path, comparison_sha256: str) -> tuple[Path, dict[Path, str]]:
+def _bind_multiplicity_inputs(
+    path: Path, comparison_sha256: str, sources: VerifiedSources
+) -> tuple[Path, dict[Path, str]]:
     """Bind the verified record's hashes, never a later unverified disk snapshot (#1059)."""
     manifest = (path / "multiplicity_run.json" if path.is_dir() else path).resolve()
     digest = file_sha256(manifest)
-    record = verify_post_arm(path)
+    record = _verify_post_arm_from_sources(path, sources)
     if file_sha256(manifest) != digest:
         raise ValueError("Multiplicity manifest changed during verification")
     if PostArmMultiplicityRun.model_validate_json(manifest.read_text(encoding="utf-8")) != record:
@@ -425,7 +387,10 @@ def run_table(
     _probe_publication(output, [scratch, *declared_roots])
     comparison_hash = file_sha256(comparison_path)
     sources = bind_recorded_hashes(open_verified_sources(comparison_path), comparison_hash)
-    roots = _source_roots(sources, multiplicity=multiplicity, label_support=label_support)
+    roots = [
+        *declared_roots,
+        *_source_roots(sources, multiplicity=multiplicity, label_support=label_support),
+    ]
     _disjoint(output, roots)
     _disjoint(scratch, roots)
     features = sources.features["count_profiles"]
@@ -447,11 +412,17 @@ def run_table(
             )
         ),
     }
+    # Core verification and optional carrier reconciliation consume these files,
+    # including external KG files and reported-taxon occurrences.
+    for artifact in sources.core.artifacts or []:
+        path = sources.product(artifact.product_id)
+        if path.is_file():
+            paths.add(path)
     baseline = _inputs(paths, sources)
     multiplicity_inputs: tuple[Path, dict[Path, str]] | None = None
     with durable_scratch(scratch):
         if multiplicity is not None:
-            multiplicity_inputs = _bind_multiplicity_inputs(multiplicity, comparison_hash)
+            multiplicity_inputs = _bind_multiplicity_inputs(multiplicity, comparison_hash, sources)
             _, bindings = multiplicity_inputs
             for path, expected in bindings.items():
                 previous = sources.recorded_hashes.get(path)
@@ -509,6 +480,9 @@ def run_table(
         "primary_ranking": "undecided",
         "ora_declaration": "ora-study-enrichment-direction-v1",
         "ora_calibration_status": CALIBRATION_STATUS,
+        "multiplicity_binding": (
+            "verified_co_presence_only" if multiplicity is not None else "not_supplied"
+        ),
         "test_families": [
             "full-retained-study-t",
             "secondary-full-retained-study-wilcoxon",
@@ -518,6 +492,7 @@ def run_table(
         ],
         "inputs": consumed,
     }
+    _disjoint(output, [scratch, *roots])
     output.parent.mkdir(parents=True, exist_ok=True)
     staging = output.parent / f".{output.name}-staging-{uuid.uuid4().hex}"
     require_durable(staging)
@@ -564,9 +539,8 @@ def verify_table(
     root = manifest.parent
     scratch = require_durable(scratch)
     _disjoint(scratch, _manifest_roots([manifest], multiplicity=None, label_support=None))
-    sources = open_verified_sources(comparison)
-    # Verified models may use canonical paths; retain the caller's file alias
-    # and the comparison's declared aliases before creating any replay scratch.
+    # Location declarations are sufficient for preflight. The nested generation
+    # performs the one authoritative core/arm verification for this replay.
     comparison_path = comparison / "comparison_run.json" if comparison.is_dir() else comparison
     _disjoint(
         scratch,
@@ -574,7 +548,6 @@ def verify_table(
             *_declared_source_roots(
                 comparison_path, multiplicity=multiplicity, label_support=label_support
             ),
-            *_source_roots(sources, multiplicity=multiplicity, label_support=label_support),
         ],
     )
     record: dict[str, Any] = json.loads(manifest.read_text(encoding="utf-8"))
