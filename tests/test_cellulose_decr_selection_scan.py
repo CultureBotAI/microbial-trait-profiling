@@ -87,6 +87,8 @@ from mtp.trait_screen import ALL_TIED, TESTED
 
 PD, HIV, CRC = (CONDITIONS[short] for short in ("PD", "HIV", "CRC"))
 LEAD = (PD, HIV, CRC)
+# Tests write to temporary storage, which the scan and scopes refuse without the opt-in (#1087)
+THROWAWAY = "--allow-temporary-output"
 OTHER_TRAIT = "METPO:1000608"
 # The v1 protocol file's hash as v2 pins it, which is the hash the records of 2026-10-23
 # give; the file must stay byte-identical so that they still verify against it (#1050).
@@ -941,7 +943,7 @@ def test_main_writes_every_output_bound_to_the_core(cores: dict[str, Path], tmp_
     from mtp.workflow.consumers import verify_consumer_record
 
     out = tmp_path / "scan"
-    argv = ["--core-run", str(cores["tier1_2_phenotype"]), "--output-dir", str(out)]
+    argv = ["--core-run", str(cores["tier1_2_phenotype"]), "--output-dir", str(out), THROWAWAY]
     assert main([*argv, "--permutations", "400", "--seed", "3", "--code-commit", "abc"]) == 0
     assert sorted(path.name for path in out.iterdir()) == sorted(
         [*OUTPUTS.values(), "core_consumption.json", "core_consumption.coverage.tsv"]
@@ -1002,6 +1004,7 @@ def test_main_writes_every_output_bound_to_the_core(cores: dict[str, Path], tmp_
                 "400",
                 "--seed",
                 "3",
+                THROWAWAY,
             ]
         )
         == 0
@@ -1014,14 +1017,24 @@ def test_main_refuses_another_population_or_a_used_directory(
     cores: dict[str, Path], tmp_path: Path
 ) -> None:
     with pytest.raises(ValueError, match=TIER1_2):
-        main(["--core-run", str(cores["all_paired"]), "--output-dir", str(tmp_path / "a")])
+        main(
+            ["--core-run", str(cores["all_paired"]), "--output-dir", str(tmp_path / "a"), THROWAWAY]
+        )
     with pytest.raises(ValueError, match="neither the declared primary"):
-        main(["--core-run", str(cores["tier1_2_full"]), "--output-dir", str(tmp_path / "b")])
+        main(
+            [
+                "--core-run",
+                str(cores["tier1_2_full"]),
+                "--output-dir",
+                str(tmp_path / "b"),
+                THROWAWAY,
+            ]
+        )
     used = tmp_path / "used"
     used.mkdir()
     (used / "old.tsv").write_text("x\n", encoding="utf-8")
     with pytest.raises(ValueError, match="new or empty"):
-        main(["--core-run", str(cores["tier1_2_off"]), "--output-dir", str(used)])
+        main(["--core-run", str(cores["tier1_2_off"]), "--output-dir", str(used), THROWAWAY])
 
 
 def test_plan_reports_counts_without_writing(
@@ -1067,7 +1080,7 @@ def test_a_core_without_a_scope_follows_the_declared_absent_means(cores: dict[st
 
 
 def _scan(core: Path, out: Path, seed: int = 3) -> Path:
-    argv = ["--core-run", str(core), "--output-dir", str(out), "--code-commit", "abc"]
+    argv = ["--core-run", str(core), "--output-dir", str(out), "--code-commit", "abc", THROWAWAY]
     assert main([*argv, "--permutations", "200", "--seed", str(seed)]) == 0
     return out
 
@@ -1085,7 +1098,7 @@ def scans(cores: dict[str, Path], tmp_path_factory: pytest.TempPathFactory) -> d
 
 def _scopes(out: Path, *scans: Path) -> int:
     argv = [part for scan_dir in scans for part in ("--scan", str(scan_dir))]
-    return scopes_main([*argv, "--output-dir", str(out), "--code-commit", "abc"])
+    return scopes_main([*argv, "--output-dir", str(out), "--code-commit", "abc", THROWAWAY])
 
 
 def _read_text_table(path: Path) -> pd.DataFrame:

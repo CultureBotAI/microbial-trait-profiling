@@ -26,6 +26,7 @@ from mtp.paths import REPO_ROOT, file_sha256
 from mtp.trait_guilds import load_profiles
 from mtp.trait_screen import candidate_slots
 from mtp.workflow.consumers import open_core_bundle, preflight_consumer_outputs
+from mtp.workflow.output_roots import add_temporary_output_option, require_durable_output
 from mtp.workflow.population import ORIENTED_DIRECTION_BASIS
 from mtp.workflow.runtime import repository_state
 
@@ -320,7 +321,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument(
         "--verify", action="store_true", help="Replay all splits and nulls; no writes"
     )
+    add_temporary_output_option(parser)
     args = parser.parse_args(argv)
+    # Verification writes nothing; an execution's outputs are cited (#1087)
+    if not args.verify:
+        require_durable_output(parser, args.output_dir, allowed=args.allow_temporary_output)
     result = execute(
         args.comparison_run,
         args.output_dir,

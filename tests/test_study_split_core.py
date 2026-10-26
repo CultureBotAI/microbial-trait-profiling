@@ -410,6 +410,8 @@ def test_real_arm_comparison_and_split_source_verification(tmp_path: Path, scope
         "2",
         "--permutations",
         "19",
+        # tmp_path is temporary storage, which the sidecar refuses without the opt-in
+        "--allow-temporary-output",
     ]
     subprocess.run(command, cwd=REPO_ROOT, check=True, capture_output=True, text=True)
     recorded = json.loads((cli_output / "study_split_run.json").read_text())

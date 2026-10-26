@@ -24,12 +24,23 @@ temporary storage is refused. They also check the path as written. The commands
 resolve their output before recording it, so this second check is a conservative
 over-refusal. The refusal happens before anything is written.
 
-This guard does not check the sidecars that consume a core, including those #1040
-lost: the run-bound selection scan and its scopes, lineage extension, study splits,
-presence-depth sensitivity, `trait-list-direction-contrasts`,
-`density-adjustment-trait-list` and `core-*` sidecars, and the label-support audit,
-which is matched by hash to a core's inputs
-([#1087](https://github.com/CultureBotAI/microbial-trait-profiling/issues/1087)).
+The sidecars that consume a core refuse a temporary output root in the same way,
+including those #1040 lost
+([#1087](https://github.com/CultureBotAI/microbial-trait-profiling/issues/1087)):
+`cellulose-decr-selection-scan`, `cellulose-decr-selection-scan-scopes`,
+`table1-influence-extension`, `audit-label-support`, `selection-study-splits`,
+`presence-depth-sensitivity`, `trait-list-direction-contrasts`,
+`density-adjustment-trait-list`, `core-screen`, `core-composition`, `core-ora` and
+`core-strata`. A selection scan's `--plan` and the study splits' `--verify` write
+nothing and are not checked. For `core-ora`, give the tail before the opt-in.
+
+The arms also run the modules behind the last five of those recipes, as subprocesses
+that write into the arm's own directory. Those modules do not check their output
+root themselves. Their recipes check it through `scripts/guard_output_root.sh`
+before the module starts, so the arms' recorded command plans are unchanged. Running
+one of those modules directly with `python` is not checked. `just three-test-table`
+keeps its own equivalent check
+([#1078](https://github.com/CultureBotAI/microbial-trait-profiling/issues/1078)).
 
 `/tmp` is not on the fixed list, because Bandit's B108 check rejects that literal
 in the source

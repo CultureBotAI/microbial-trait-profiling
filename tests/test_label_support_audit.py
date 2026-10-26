@@ -150,6 +150,8 @@ def run_audit(inputs: dict[str, Path], output: Path, *, madin: bool = True) -> N
     ]
     if madin:
         arguments.extend(["--madin-csv", str(inputs["madin"])])
+    # Tests write to temporary storage, which the sidecar refuses without the opt-in
+    arguments.append("--allow-temporary-output")
     assert main([*arguments, "--output-dir", str(output), "--strain-rollup", "off"]) == 0
 
 
