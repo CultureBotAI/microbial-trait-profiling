@@ -1,7 +1,8 @@
 """Read-only qualification of completed F rollup comparisons (#1041, 2026-10-25).
 
 Explicit environment inputs identify both parent manifests, the completed result,
-its clean producer commit and the archived source commit. No pipeline is replayed,
+its clean producer commit, archived source commit and two independent parent SHA-256
+pins. No pipeline is replayed,
 no Delta-z is transformed, and no significance test or correction is recomputed.
 """
 
@@ -12,6 +13,7 @@ import hashlib
 import json
 import os
 import re
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -21,6 +23,7 @@ from git import Blob, Repo
 
 from mtp.paths import file_sha256
 
+REPOSITORY = Path(__file__).resolve().parents[1]
 SCOPES = ("off", "phenotype")
 ENVIRONMENT = (
     "MTP_ROLLUP_OFF_PARENT",
@@ -28,6 +31,8 @@ ENVIRONMENT = (
     "MTP_ROLLUP_RESULT",
     "MTP_ROLLUP_COMMIT",
     "MTP_ROLLUP_SOURCE_COMMIT",
+    "MTP_ROLLUP_OFF_SHA256",
+    "MTP_ROLLUP_PHENOTYPE_SHA256",
 )
 RANKS = tuple(
     f"{effect}_rank_{order}"
@@ -44,6 +49,8 @@ class Inputs:
     result: Path
     commit: str
     source_commit: str
+    off_sha256: str
+    phenotype_sha256: str
 
 
 @dataclass(frozen=True)
@@ -89,28 +96,143 @@ def nullable_boolean(value: str) -> bool | None:
     return None if value == "" else value == "True"
 
 
-@pytest.fixture(scope="module")
-def inputs() -> Inputs:
-    if not any(name in os.environ for name in ENVIRONMENT):
-        pytest.skip("Requires completed F rollup result, both parents and explicit commit pins")
-    missing = [name for name in ENVIRONMENT if not os.environ.get(name, "").strip()]
+def assert_scope_selection(result: dict[str, Any]) -> None:
+    """Check the recorded scope choice independently of artifact qualification."""
+    assert result["primary_scope"] == "phenotype"
+    assert result["sensitivity_scope"] == "off"
+    assert result["scope_selection"] == (
+        "phenotype_primary_selected_after_off_and_phenotype_results_were_seen"
+    )
+
+
+def verify_producer_inventory(
+    result: dict[str, Any],
+    producer: str,
+    repository_root: Path = REPOSITORY,
+) -> None:
+    """Derive the complete producer inventory from the caller-pinned Git tree."""
+    assert result["code_commit"] == producer
+    assert result["code_dirty"] is False
+    required = {
+        "Justfile",
+        "pyproject.toml",
+        "uv.lock",
+        "methods/three_test_table.md",
+        "methods/off_phenotype_comparison.md",
+    }
+    with Repo(repository_root) as repository:
+        tree = repository.commit(producer).tree
+        required.update(
+            str(item.path)
+            for item in tree.traverse()
+            if isinstance(item, Blob)
+            and str(item.path).startswith("src/mtp/")
+            and str(item.path).endswith(".py")
+        )
+        assert any(name.startswith("src/mtp/") for name in required)
+        expected = {}
+        for name in sorted(required):
+            blob = tree / name
+            assert isinstance(blob, Blob)
+            assert blob.mode in {0o100644, 0o100755}
+            expected[name] = hashlib.sha256(blob.data_stream.read()).hexdigest()
+    assert result["code_inventory"] == expected
+    encoded = json.dumps(
+        expected, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False
+    ).encode("utf-8")
+    assert result["implementation_sha256"] == hashlib.sha256(encoded).hexdigest()
+    assert result["methods_sha256"] == expected["methods/off_phenotype_comparison.md"]
+    assert result["lock_sha256"] == expected["uv.lock"]
+
+
+def pinned_parent_manifest(
+    path: Path, expected_sha256: str, declared_sha256: str
+) -> dict[str, Any]:
+    """Read parent bytes once, then check their declared identity before parsing."""
+    assert re.fullmatch(r"[0-9a-f]{64}", expected_sha256)
+    raw = path.read_bytes()
+    assert hashlib.sha256(raw).hexdigest() == expected_sha256
+    assert declared_sha256 == expected_sha256
+    result: dict[str, Any] = json.loads(raw)
+    assert isinstance(result, dict)
+    return result
+
+
+def assert_native_noel_reference(counts: dict[str, int]) -> None:
+    """Keep the native Noel nominal-BY reference distinct from study-t counts."""
+    # Native F trait_screen_report.md reports four at nominal BY <= 0.05 per scope.
+    assert counts == {"off": 4, "phenotype": 4}
+
+
+def parse_inputs(environment: Mapping[str, str]) -> Inputs | None:
+    """Parse explicit qualification inputs without consulting source metadata."""
+    if not any(name in environment for name in ENVIRONMENT):
+        return None
+    missing = [name for name in ENVIRONMENT if not environment.get(name, "").strip()]
     if missing:
         raise ValueError(f"Missing rollup qualification inputs: {missing}")
-    values = [os.environ[name] for name in ENVIRONMENT]
+    values = [environment[name] for name in ENVIRONMENT]
     assert re.fullmatch(r"[0-9a-f]{40}", values[3])
     assert re.fullmatch(r"[0-9a-f]{40}", values[4])
-    return Inputs(Path(values[0]), Path(values[1]), Path(values[2]), values[3], values[4])
+    for name, value in zip(ENVIRONMENT[5:], values[5:], strict=True):
+        if not re.fullmatch(r"[0-9a-f]{64}", value):
+            raise ValueError(f"Expected a lowercase SHA-256 pin for {name}")
+    return Inputs(
+        Path(values[0]),
+        Path(values[1]),
+        Path(values[2]),
+        values[3],
+        values[4],
+        values[5],
+        values[6],
+    )
+
+
+@pytest.fixture(scope="module")
+def inputs() -> Inputs:
+    parsed = parse_inputs(os.environ)
+    if parsed is None:
+        pytest.skip("Requires completed F rollup result, both parents and explicit commit pins")
+    return parsed
+
+
+def verify_parent_binding(
+    declared: dict[str, Any], parent: dict[str, Any], consumed_inputs: dict[str, Any]
+) -> None:
+    """Bind every copied parent claim and exact consumed-table identity (#1109)."""
+    fields = (
+        "run_id",
+        "code_commit",
+        "code_dirty",
+        "implementation_sha256",
+        "environment",
+        "strain_rollup",
+        "scope_role",
+        "contrast_population",
+        "direction_basis",
+        "family_size",
+        "retained_traits",
+        "source_commits",
+        "core_run_id",
+        "comparison_run_id",
+        "source_run_ids",
+        "analysis_bases",
+    )
+    # The independently supplied manifest SHA was already checked against parsed bytes.
+    assert set(declared) == {"manifest_sha256", "input_inventory", *fields}
+    for name in fields:
+        assert declared[name] == parent[name]
+    assert declared["input_inventory"] == parent["inputs"]
+    for name in ("per_trait_evidence.tsv", "composition_study_delta_z.tsv"):
+        identity = parent["outputs"][name]
+        assert consumed_inputs.get(f"{name}@sha256:{identity['sha256']}") == identity
 
 
 @pytest.fixture(scope="module")
 def completed(inputs: Inputs) -> tuple[dict[str, Any], dict[str, Parent]]:
     result: dict[str, Any] = json.loads((inputs.result / "rollup_comparison_run.json").read_text())
     assert result["version"] == "off-phenotype-comparison-v1"
-    assert result["code_commit"] == inputs.commit
-    assert result["code_dirty"] is False
-    assert result["primary_scope"] == "phenotype"
-    assert result["sensitivity_scope"] == "off"
-    assert result["scope_selection"] == "phenotype_primary_selected_after_off_results_were_seen"
+    assert_scope_selection(result)
     assert set(result["outputs"]) == {
         "shared_traits.tsv",
         "trait_catalog.tsv",
@@ -127,33 +249,29 @@ def completed(inputs: Inputs) -> tuple[dict[str, Any], dict[str, Parent]]:
         assert not path.is_symlink()
         assert file_sha256(path) == identity["sha256"]
         assert path.stat().st_size == identity["size_bytes"]
-    with Repo(Path(__file__).resolve().parents[1]) as repository:
-        tree = repository.commit(inputs.commit).tree
-        for name, digest in result["code_inventory"].items():
-            blob = tree / name
-            assert isinstance(blob, Blob)
-            assert hashlib.sha256(blob.data_stream.read()).hexdigest() == digest
+    verify_producer_inventory(result, inputs.commit)
     parents = {}
-    for scope, supplied in zip(SCOPES, (inputs.off, inputs.phenotype), strict=True):
+    for scope, supplied, expected_sha256 in zip(
+        SCOPES,
+        (inputs.off, inputs.phenotype),
+        (inputs.off_sha256, inputs.phenotype_sha256),
+        strict=True,
+    ):
         manifest = supplied / "three_test_run.json" if supplied.is_dir() else supplied
-        raw = manifest.read_bytes()
-        parent: dict[str, Any] = json.loads(raw)
         declared = result["parents"][scope]
-        assert declared["manifest_sha256"] == hashlib.sha256(raw).hexdigest()
+        parent = pinned_parent_manifest(manifest, expected_sha256, declared["manifest_sha256"])
         assert parent["code_dirty"] is False
         assert parent["strain_rollup"] == scope
         assert parent["contrast_population"] == "disease_vs_healthy_tier1_2_subject_controls"
         assert parent["direction_basis"] == "disease_vs_comparison"
         assert set(parent["source_commits"]) == {"comparison", "core", "noel", "jed", "ilyas"}
         assert set(parent["source_commits"].values()) == {inputs.source_commit}
-        for name in ("run_id", "code_commit", "family_size", "retained_traits", "source_commits"):
-            assert declared[name] == parent[name]
+        verify_parent_binding(declared, parent, result["inputs"][scope])
         for name in ("per_trait_evidence.tsv", "composition_study_delta_z.tsv"):
             identity = parent["outputs"][name]
             path = manifest.parent / name
             assert file_sha256(path) == identity["sha256"]
             assert path.stat().st_size == identity["size_bytes"]
-            assert identity in result["inputs"][scope].values()
         evidence = keyed(read_table(manifest.parent / "per_trait_evidence.tsv"), "trait")
         assert list(evidence) == parent["retained_traits"]
         studies = read_table(manifest.parent / "composition_study_delta_z.tsv")
@@ -318,7 +436,7 @@ def test_all_transitions_against_independent_full_scope_selections(
             for scope, members in expected.items()
         }
         if name == "noel_by_0_05":
-            assert counts == {"off": 9, "phenotype": 10}
+            assert_native_noel_reference(counts)
         if not top:
             print(json.dumps({"view": name, "selected": counts}, sort_keys=True))
         for trait in union:

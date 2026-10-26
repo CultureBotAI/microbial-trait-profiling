@@ -105,7 +105,7 @@ def test_actual_just_recipe_preserves_all_arguments(tmp_path: Path) -> None:
     assert observed == ["run", "python", "-m", "mtp.rollup_comparison", *arguments()]
 
 
-def test_actual_qualification_recipe_forwards_all_five_inputs(tmp_path: Path) -> None:
+def test_actual_qualification_recipe_forwards_all_seven_inputs(tmp_path: Path) -> None:
     """Use the real recipe/shell with explicit input captures rather than a dry run."""
     tools = tmp_path / "intercepted qualification tools"
     tools.mkdir()
@@ -130,6 +130,8 @@ def test_actual_qualification_recipe_forwards_all_five_inputs(tmp_path: Path) ->
         "MTP_ROLLUP_RESULT",
         "MTP_ROLLUP_COMMIT",
         "MTP_ROLLUP_SOURCE_COMMIT",
+        "MTP_ROLLUP_OFF_SHA256",
+        "MTP_ROLLUP_PHENOTYPE_SHA256",
     ]
     values = [
         "off parent/file.json",
@@ -137,6 +139,8 @@ def test_actual_qualification_recipe_forwards_all_five_inputs(tmp_path: Path) ->
         "result $(printf literal); dir",
         "a" * 40,
         "b" * 40,
+        "c" * 64,
+        "d" * 64,
     ]
     result = subprocess.run(
         ["just", "--justfile", str(ROOT / "Justfile"), "test-rollup-reproduction", *values],

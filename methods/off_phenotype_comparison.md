@@ -106,8 +106,9 @@ selected new main basis P. No core/arm run or Delta-z transformation is executed
 by this consumer.
 
 `just test-rollup-reproduction OFF_PARENT PHENOTYPE_PARENT RESULT_DIRECTORY
-CONSUMER_COMMIT SOURCE_COMMIT` checks completed development outputs read-only.
-It requires both full commit pins, verifies copied parent bytes and every
+CONSUMER_COMMIT SOURCE_COMMIT OFF_SHA256 PHENOTYPE_SHA256` checks completed
+development outputs read-only. It requires both full commit pins and independent
+SHA-256 pins for both parent manifests, verifies copied parent bytes and every
 imported shared-trait field, and independently derives each selection view from
 the full parent tables. Its study-t selection counts are derived rather than
 fixed to a historical claim. It does not replay either parent or any arm.
