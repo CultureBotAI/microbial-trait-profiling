@@ -73,9 +73,24 @@ Across the workflow, three distinct upstream populations exist and must not be c
 
 ## 4. Parkinson's Disease Stool Study Taxon Overlap (`parkinsons_stool_study_overlap_summary.tsv`)
 
-For each scope (`tier12_paired` and `full_export`), experiments matching `Condition` containing `Parkinson` (case-insensitive) and `Body site == "Feces"` are grouped by `study_id` (using the active Tier 1+2 paired subset for `tier12_paired` and `source_experiments` (`steps/source_export_tables/source/derived/experiments.tsv`) for `full_export`). Each study $s$ is represented by the union of all reported NCBI taxon IDs $U_s$ across its active experiments in that scope. Across all $\binom{K}{2}$ unordered study pairs $(s_1, s_2)$:
+Experiments are matched when `Body site == "Feces"` (exact compartment match; multi-site strings such as `"Feces,Rectum"` are excluded) and `Condition` lists `"Parkinson's disease"` as an exact comma-separated condition token (`any(tok == "parkinson's disease" for tok in cond_tokens)`, which retains multi-condition curated rows such as `"Constipation,Parkinson's disease"` while excluding unrelated substrings such as `"Atypical parkinsonism"`). Within each scope, only the selected Parkinson's stool experiments of study $s$ contribute to its reported NCBI taxon set $U_s$. Across all $\binom{K}{2}$ unordered study pairs $(s_1, s_2)$:
 
 $$J(s_1, s_2) = \frac{|U_{s_1} \cap U_{s_2}|}{|U_{s_1} \cup U_{s_2}|}$$
 
+Four explicit scopes are emitted in `parkinsons_stool_study_overlap_summary.tsv` and `parkinsons_stool_study_pairs.tsv`:
+
 - **Tier 1+2 paired (`tier12_paired`)**: $K = 36$ studies ($70$ comparisons, $\binom{36}{2} = 630$ pairs), mean pairwise taxon Jaccard $= 0.053302$ ($5.33\%$, i.e. $5.3\%$), median $= 0.038099$ ($3.81\%$, i.e. $3.8\%$).
-- **Full export (`full_export`)**: $K = 59$ studies ($157$ comparisons, $\binom{59}{2} = 1,711$ pairs), mean pairwise taxon Jaccard $= 0.041030$ ($4.10\%$, i.e. $4.1\%$), median $= 0.024390$ ($2.44\%$, i.e. $2.4\%$).
+- **Full export (`full_export`, comma-separated token match across all hosts in `source_experiments`)**: $K = 59$ studies ($157$ comparisons, $\binom{59}{2} = 1,711$ pairs), mean pairwise taxon Jaccard $= 0.041030$ ($4.10\%$, i.e. $4.1\%$), median $= 0.024390$ ($2.44\%$, i.e. $2.4\%$).
+- **Human-host export (`export_human_hosts`, `Host species == "Homo sapiens"` in `source_experiments`)**: $K = 56$ studies ($146$ comparisons, $\binom{56}{2} = 1,540$ pairs), mean pairwise taxon Jaccard $= 0.041781$ ($4.18\%$), median $= 0.024390$ ($2.44\%$).
+- **Full export exact condition (`full_export_exact_condition`, `Condition == "Parkinson's disease"` in `source_experiments`)**: $K = 58$ studies ($156$ comparisons, $\binom{58}{2} = 1,653$ pairs), mean pairwise taxon Jaccard $= 0.041186$ ($4.12\%$), median $= 0.024390$ ($2.44\%$).
+
+---
+
+## 5. Provenance and Core-Run Guards
+
+`mtp.matrix_overlap_coverage` enforces four provenance invariants before writing any output files:
+
+1. **Tier 1+2 population guard**: `--core-run` must be a verified core bundle with `contrast_population == "disease_vs_healthy_tier1_2_subject_controls"` and `direction_basis == "disease_vs_comparison"`. Passing an `all_paired` core run or a tampered manifest raises `ValueError`.
+2. **Durable output root guard (`#1049`, `#1051`)**: Temporary output directories (`/tmp`, `$TMPDIR`, `/var/folders`, `.pytest_cache`) are refused unless `--allow-temporary-output` is explicitly passed for ephemeral test runs.
+3. **Clean output directory guard**: `--output-dir` must be a new or empty directory so stale tables from earlier runs cannot survive alongside newly emitted tables.
+4. **Core-bundle non-overlap preflight**: `preflight_consumer_outputs` runs before `output_dir.mkdir(...)` so an output path inside the core run bundle is rejected without mutating the core run directory.

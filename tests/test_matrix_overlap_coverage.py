@@ -341,7 +341,34 @@ def test_tier12_coverage_by_rank_and_filter_cascade() -> None:
     tier12_experiments = source_experiments[
         source_experiments["experiment_id"].isin(["bsdb:1-1", "bsdb:2-1"])
     ].copy()
-    tier12_taxa = source_taxa[source_taxa["experiment_id"].isin(["bsdb:1-1", "bsdb:2-1"])].copy()
+    tier12_taxa = pd.concat(
+        [
+            source_taxa[source_taxa["experiment_id"].isin(["bsdb:1-1", "bsdb:2-1"])].copy(),
+            pd.DataFrame(
+                [
+                    # Repeated within-signature occurrence of NCBITaxon:10 in bsdb:1-1 inc
+                    {
+                        "study_id": "bsdb:1",
+                        "experiment_id": "bsdb:1-1",
+                        "direction": "increased",
+                        "taxon_id": "NCBITaxon:10",
+                        "taxon_name": "GenusA",
+                        "taxonomic_rank": "genus",
+                    },
+                    # Unprofiled experiment row that must be excluded by tier12_profile_keys join
+                    {
+                        "study_id": "bsdb:9",
+                        "experiment_id": "bsdb:9-9",
+                        "direction": "increased",
+                        "taxon_id": "NCBITaxon:99",
+                        "taxon_name": "UnprofiledTaxon",
+                        "taxonomic_rank": "species",
+                    },
+                ]
+            ),
+        ],
+        ignore_index=True,
+    )
     tier12_profile_keys = pd.DataFrame(
         [
             {"study_id": "bsdb:1", "experiment_id": "bsdb:1-1", "inc_dec": "inc"},
@@ -365,6 +392,7 @@ def test_tier12_coverage_by_rank_and_filter_cascade() -> None:
     by_rank = {row["taxonomic_rank"]: row for row in coverage_rows}
     # Across Tier 1+2 (bsdb:1-1 and bsdb:2-1):
     # Unique taxa = 6 (10, 11, 12, 13 labeled; 14, 15 unlabeled because 14 is MediaDive-only!)
+    assert summary["tier12_raw_occurrence_rows"] == 8
     assert by_rank["all"]["total_taxa"] == 6
     assert by_rank["all"]["labeled_taxa"] == 4
     assert by_rank["all"]["unlabeled_taxa"] == 2
@@ -424,7 +452,15 @@ def test_tier12_coverage_by_rank_and_filter_cascade() -> None:
 
 
 def test_parkinsons_stool_study_overlap_tier12_and_full_export() -> None:
-    # 3 PD Feces studies in full export (bsdb:1, bsdb:2, bsdb:3); 2 in Tier 1+2 (bsdb:1, bsdb:2)
+    # Full export PD Feces studies:
+    # - bsdb:1: Homo sapiens, exact condition "Parkinson's disease", Feces (also in Tier 1+2)
+    # - bsdb:2: Homo sapiens, exact condition "Parkinson's disease", Feces (also in Tier 1+2)
+    #   plus bsdb:2-2: Colorectal cancer, Saliva (must NOT leak into bsdb:2 PD stool taxa)
+    # - bsdb:3: Homo sapiens, multi-condition "Constipation,Parkinson's disease", Feces (unpaired)
+    # - bsdb:4: Mus musculus, exact condition "Parkinson's disease", Feces (mouse host)
+    # Excluded rows:
+    # - bsdb:5: "Atypical parkinsonism", Feces (not Parkinson's disease)
+    # - bsdb:6: "Parkinson's disease", "Feces,Rectum" (multi-site, not exact Feces)
     source_experiments = pd.DataFrame(
         [
             {
@@ -444,12 +480,44 @@ def test_parkinsons_stool_study_overlap_tier12_and_full_export() -> None:
                 "body_site": "Feces",
             },
             {
+                "study_id": "bsdb:2",
+                "experiment_id": "bsdb:2-2",
+                "host_species": "Homo sapiens",
+                "sequencing_type": "16S",
+                "condition": "Colorectal cancer",
+                "body_site": "Saliva",
+            },
+            {
                 "study_id": "bsdb:3",
                 "experiment_id": "bsdb:3-1",
                 "host_species": "Homo sapiens",
                 "sequencing_type": "16S",
+                "condition": "Constipation,Parkinson's disease",
+                "body_site": "Feces",
+            },
+            {
+                "study_id": "bsdb:4",
+                "experiment_id": "bsdb:4-1",
+                "host_species": "Mus musculus",
+                "sequencing_type": "16S",
                 "condition": "Parkinson's disease",
                 "body_site": "Feces",
+            },
+            {
+                "study_id": "bsdb:5",
+                "experiment_id": "bsdb:5-1",
+                "host_species": "Homo sapiens",
+                "sequencing_type": "16S",
+                "condition": "Atypical parkinsonism",
+                "body_site": "Feces",
+            },
+            {
+                "study_id": "bsdb:6",
+                "experiment_id": "bsdb:6-1",
+                "host_species": "Homo sapiens",
+                "sequencing_type": "16S",
+                "condition": "Parkinson's disease",
+                "body_site": "Feces,Rectum",
             },
         ]
     )
@@ -472,7 +540,7 @@ def test_parkinsons_stool_study_overlap_tier12_and_full_export() -> None:
                 "taxon_name": "GenusA sp1",
                 "taxonomic_rank": "species",
             },
-            # bsdb:2 has {10, 12} -> Jaccard(1, 2) = 1/3
+            # bsdb:2-1 has {10, 12} -> Jaccard(1, 2) = 1/3
             {
                 "study_id": "bsdb:2",
                 "experiment_id": "bsdb:2-1",
@@ -489,7 +557,16 @@ def test_parkinsons_stool_study_overlap_tier12_and_full_export() -> None:
                 "taxon_name": "GenusB sp2",
                 "taxonomic_rank": "species",
             },
-            # bsdb:3 has {12} -> Jaccard(1, 3) = 0/3 = 0; Jaccard(2, 3) = 1/2 = 0.5
+            # bsdb:2-2 (non-PD saliva experiment in study bsdb:2; must NOT leak NCBITaxon:99)
+            {
+                "study_id": "bsdb:2",
+                "experiment_id": "bsdb:2-2",
+                "direction": "increased",
+                "taxon_id": "NCBITaxon:99",
+                "taxon_name": "SalivaTaxon",
+                "taxonomic_rank": "species",
+            },
+            # bsdb:3 has {12} -> Jaccard(1, 3) = 0; Jaccard(2, 3) = 1/2
             {
                 "study_id": "bsdb:3",
                 "experiment_id": "bsdb:3-1",
@@ -498,18 +575,49 @@ def test_parkinsons_stool_study_overlap_tier12_and_full_export() -> None:
                 "taxon_name": "GenusB sp2",
                 "taxonomic_rank": "species",
             },
+            # bsdb:4 (mouse PD Feces) has {10} -> J(1,4)=1/2, J(2,4)=1/2, J(3,4)=0
+            {
+                "study_id": "bsdb:4",
+                "experiment_id": "bsdb:4-1",
+                "direction": "increased",
+                "taxon_id": "NCBITaxon:10",
+                "taxon_name": "GenusA",
+                "taxonomic_rank": "genus",
+            },
+            # bsdb:5 (Atypical parkinsonism; must be excluded)
+            {
+                "study_id": "bsdb:5",
+                "experiment_id": "bsdb:5-1",
+                "direction": "increased",
+                "taxon_id": "NCBITaxon:10",
+                "taxon_name": "GenusA",
+                "taxonomic_rank": "genus",
+            },
+            # bsdb:6 (Feces,Rectum; must be excluded)
+            {
+                "study_id": "bsdb:6",
+                "experiment_id": "bsdb:6-1",
+                "direction": "increased",
+                "taxon_id": "NCBITaxon:10",
+                "taxon_name": "GenusA",
+                "taxonomic_rank": "genus",
+            },
         ]
     )
     tier12_experiments = source_experiments[
-        source_experiments["experiment_id"].isin(["bsdb:1-1", "bsdb:2-1"])
+        source_experiments["experiment_id"].isin(["bsdb:1-1", "bsdb:2-1", "bsdb:2-2"])
     ].copy()
-    tier12_taxa = source_taxa[source_taxa["experiment_id"].isin(["bsdb:1-1", "bsdb:2-1"])].copy()
+    tier12_taxa = source_taxa[
+        source_taxa["experiment_id"].isin(["bsdb:1-1", "bsdb:2-1", "bsdb:2-2"])
+    ].copy()
     tier12_profile_keys = pd.DataFrame(
         [
             {"study_id": "bsdb:1", "experiment_id": "bsdb:1-1", "inc_dec": "inc"},
             {"study_id": "bsdb:1", "experiment_id": "bsdb:1-1", "inc_dec": "dec"},
             {"study_id": "bsdb:2", "experiment_id": "bsdb:2-1", "inc_dec": "inc"},
             {"study_id": "bsdb:2", "experiment_id": "bsdb:2-1", "inc_dec": "dec"},
+            {"study_id": "bsdb:2", "experiment_id": "bsdb:2-2", "inc_dec": "inc"},
+            {"study_id": "bsdb:2", "experiment_id": "bsdb:2-2", "inc_dec": "dec"},
         ]
     )
 
@@ -526,12 +634,24 @@ def test_parkinsons_stool_study_overlap_tier12_and_full_export() -> None:
     assert by_scope["tier12_paired"]["mean_jaccard"] == pytest.approx(1.0 / 3.0)
     assert by_scope["tier12_paired"]["median_jaccard"] == pytest.approx(1.0 / 3.0)
 
-    assert by_scope["full_export"]["n_studies"] == 3
-    assert by_scope["full_export"]["n_study_pairs"] == 3
-    # Jaccards are 1/3, 0, 1/2 -> mean = 5/18, median = 1/3
-    assert by_scope["full_export"]["mean_jaccard"] == pytest.approx(5.0 / 18.0)
-    assert by_scope["full_export"]["median_jaccard"] == pytest.approx(1.0 / 3.0)
-    assert len(pair_rows) == 4
+    # export_human_hosts includes {bsdb:1, bsdb:2, bsdb:3}: Jaccards 1/3, 0, 1/2
+    assert by_scope["export_human_hosts"]["n_studies"] == 3
+    assert by_scope["export_human_hosts"]["n_study_pairs"] == 3
+    assert by_scope["export_human_hosts"]["mean_jaccard"] == pytest.approx(5.0 / 18.0)
+    assert by_scope["export_human_hosts"]["median_jaccard"] == pytest.approx(1.0 / 3.0)
+
+    # full_export_exact_condition includes {bsdb:1, bsdb:2, bsdb:4}: Jaccards 1/3, 1/2, 1/2
+    assert by_scope["full_export_exact_condition"]["n_studies"] == 3
+    assert by_scope["full_export_exact_condition"]["n_study_pairs"] == 3
+    assert by_scope["full_export_exact_condition"]["mean_jaccard"] == pytest.approx(4.0 / 9.0)
+    assert by_scope["full_export_exact_condition"]["median_jaccard"] == pytest.approx(0.5)
+
+    # full_export includes {bsdb:1, bsdb:2, bsdb:3, bsdb:4}: 6 pairs (1/3, 0, 1/2, 1/2, 1/2, 0)
+    assert by_scope["full_export"]["n_studies"] == 4
+    assert by_scope["full_export"]["n_study_pairs"] == 6
+    assert by_scope["full_export"]["mean_jaccard"] == pytest.approx(11.0 / 36.0)
+    assert by_scope["full_export"]["median_jaccard"] == pytest.approx(5.0 / 12.0)
+    assert len(pair_rows) == 13
 
 
 def _build_subset_fixture_inputs(root: Path) -> dict[str, Path]:
@@ -671,6 +791,67 @@ def test_end_to_end_core_subset_consumer_provenance_and_temp_guard(
     assert provenance["strain_rollup"] == "phenotype"
     for name, entry in provenance["outputs"].items():
         assert entry["sha256"] == file_sha256(output_dir / name)
+
+    summary_payload = json.loads((output_dir / "summary.json").read_text(encoding="utf-8"))
+    assert summary_payload["coverage_and_cascade"]["tier12_studies"] == 2
+    pd_by_scope = {row["scope"]: row for row in summary_payload["parkinsons_stool_overlap"]}
+    assert pd_by_scope["tier12_paired"]["n_studies"] == 2
+    assert pd_by_scope["full_export"]["n_studies"] == 3
+    assert pd_by_scope["export_human_hosts"]["n_studies"] == 3
+    assert pd_by_scope["full_export_exact_condition"]["n_studies"] == 3
+
+    cascade_df = pd.read_csv(output_dir / "filter_cascade.tsv", sep="\t")
+    cascade_by_step = {str(row["step_id"]): row for _, row in cascade_df.iterrows()}
+    assert int(cascade_by_step["all_hosts_bugsigdb_export"]["retained_count"]) == 3
+    assert int(cascade_by_step["all_hosts_bugsigdb_export"]["signatures_count"]) == 5
+    assert int(cascade_by_step["full_human_16s_wms"]["retained_count"]) == 3
+    assert int(cascade_by_step["full_human_16s_wms"]["signatures_count"]) == 5
+    assert int(cascade_by_step["paired_human_16s_wms"]["retained_count"]) == 2
+    assert int(cascade_by_step["paired_human_16s_wms"]["signatures_count"]) == 4
+
+    # P2: refusing a non-empty output directory prevents stale files from surviving
+    with pytest.raises(ValueError, match="new or empty directory"):
+        run_matrix_overlap_coverage(manifest, output_dir, allow_temporary_output=True)
+
+    # P3: refusing an output path inside the core run without creating directories inside it
+    inside_core = manifest.parent / "steps" / "inside_core_probe"
+    with pytest.raises(ValueError, match="overlaps verified core inputs or run bundle"):
+        run_matrix_overlap_coverage(manifest, inside_core, allow_temporary_output=True)
+    assert not inside_core.exists()
+
+    # P1: refusing a non-Tier 1+2 core run (e.g. all_paired)
+    all_paired_core = execute_workflow(
+        REPO_ROOT / "workflows" / "bugsigdb_core.yaml",
+        inputs,
+        tmp_path / "all_paired_core",
+        OPERATIONS,
+        parameter_overrides={
+            "source_mode": "fixture",
+            "strain_rollup": "phenotype",
+        },
+        validator=validate_core_product,
+        repository_root=REPO_ROOT,
+    )
+    with pytest.raises(ValueError, match=r"requires a Tier 1\+2"):
+        run_matrix_overlap_coverage(
+            Path(all_paired_core.manifest_path),
+            tmp_path / "out_bad_pop",
+            allow_temporary_output=True,
+        )
+
+    # M8: refusing a core run with a tampered artifact digest
+    raw_manifest = json.loads(manifest.read_text(encoding="utf-8"))
+    tampered_data = json.loads(json.dumps(raw_manifest))
+    tampered_data["artifacts"][0]["sha256"] = "0" * 64
+    tampered_manifest = manifest.parent / "tampered_run.json"
+    tampered_manifest.write_text(json.dumps(tampered_data), encoding="utf-8")
+    with pytest.raises(ValueError, match="Artifact content or inventory changed"):
+        run_matrix_overlap_coverage(
+            tampered_manifest,
+            tmp_path / "out_tampered",
+            allow_temporary_output=True,
+        )
+    assert not (tmp_path / "out_tampered").exists()
 
     methods_note = REPO_ROOT / "methods" / "matrix_coverage_and_pd_overlap.md"
     assert methods_note.is_file()

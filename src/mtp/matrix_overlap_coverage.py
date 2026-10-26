@@ -49,7 +49,7 @@ DEFAULT_MATRIX_OVERLAP_TRAITS: tuple[str, ...] = (
 )
 
 MEDIADIVE_PREFIX = "METPO:2000517|"
-MEDIADIVE_TOKEN = "mediadive.medium:"
+MEDIADIVE_CURIE_PREFIX = "mediadive.medium:"
 CARBON_SUBSTRATE_PREFIX = "METPO:2000006|"
 
 
@@ -83,7 +83,7 @@ def validate_durable_output_dir(
 
 
 def _is_mediadive_column(column_id: str) -> bool:
-    return column_id.startswith(MEDIADIVE_PREFIX) or MEDIADIVE_TOKEN in column_id
+    return column_id.startswith(MEDIADIVE_PREFIX) or MEDIADIVE_CURIE_PREFIX in column_id
 
 
 def _classify_retained_trait(column_id: str) -> str:
@@ -623,9 +623,17 @@ def compute_tier12_coverage_and_cascade(
     return coverage_rows, cascade_rows, summary
 
 
-def _is_parkinsons_stool_row(condition: object, body_site: object) -> bool:
-    cond_tokens = [part.strip().lower() for part in str(condition).split(",") if part.strip()]
-    has_pd = any("parkinson" in tok for tok in cond_tokens)
+def _is_parkinsons_stool_row(
+    condition: object,
+    body_site: object,
+    *,
+    exact_condition: bool = False,
+) -> bool:
+    if exact_condition:
+        has_pd = str(condition).strip().lower() == "parkinson's disease"
+    else:
+        cond_tokens = [part.strip().lower() for part in str(condition).split(",") if part.strip()]
+        has_pd = any(tok == "parkinson's disease" for tok in cond_tokens)
     is_feces = str(body_site).strip().lower() == "feces"
     return has_pd and is_feces
 
@@ -636,6 +644,7 @@ def _compute_scope_study_overlap(
     scope_label: str,
     experiments_df: pd.DataFrame,
     taxa_df: pd.DataFrame,
+    exact_condition: bool = False,
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     if experiments_df.empty or taxa_df.empty:
         return (
@@ -661,7 +670,11 @@ def _compute_scope_study_overlap(
 
     exp_sub = experiments_df[
         experiments_df.apply(
-            lambda r: _is_parkinsons_stool_row(r.get("condition", ""), r.get("body_site", "")),
+            lambda r: _is_parkinsons_stool_row(
+                r.get("condition", ""),
+                r.get("body_site", ""),
+                exact_condition=exact_condition,
+            ),
             axis=1,
         )
     ].copy()
@@ -778,7 +791,29 @@ def compute_parkinsons_stool_overlap(
         experiments_df=source_experiments.copy(),
         taxa_df=source_taxa,
     )
-    return [tier12_summary, full_summary], tier12_pairs + full_pairs
+
+    human_source_exp = source_experiments[
+        source_experiments["host_species"].fillna("").astype(str).str.strip().str.lower()
+        == "homo sapiens"
+    ].copy()
+    human_summary, human_pairs = _compute_scope_study_overlap(
+        scope="export_human_hosts",
+        scope_label="Human-host BugSigDB export studies (host_species == Homo sapiens)",
+        experiments_df=human_source_exp,
+        taxa_df=source_taxa,
+    )
+
+    exact_summary, exact_pairs = _compute_scope_study_overlap(
+        scope="full_export_exact_condition",
+        scope_label="Full BugSigDB export studies (exact condition == Parkinson's disease)",
+        experiments_df=source_experiments.copy(),
+        taxa_df=source_taxa,
+        exact_condition=True,
+    )
+    return (
+        [tier12_summary, full_summary, human_summary, exact_summary],
+        tier12_pairs + full_pairs + human_pairs + exact_pairs,
+    )
 
 
 def run_matrix_overlap_coverage(
@@ -790,12 +825,68 @@ def run_matrix_overlap_coverage(
     allow_temporary_output: bool = False,
 ) -> dict[str, Any]:
     """Run the #1053 matrix overlap, Tier 1+2 coverage cascade, and PD overlap consumer."""
-    from mtp.workflow.consumers import open_core_bundle, write_consumer_record
+    from mtp.workflow.consumers import (
+        open_core_bundle,
+        preflight_consumer_outputs,
+        write_consumer_record,
+    )
 
     validate_durable_output_dir(output_dir, allow_temporary_output=allow_temporary_output)
+    if output_dir.exists() and (not output_dir.is_dir() or any(output_dir.iterdir())):
+        raise ValueError(f"--output-dir must be a new or empty directory: {output_dir}")
     declared = load_declared_traits(traits=traits, trait_list_path=trait_list_path)
     manifest_path = core_run / "run.json" if core_run.is_dir() else core_run
     bundle = open_core_bundle(manifest_path)
+
+    params_by_name = {param.name: param.value for param in (bundle.run.parameters or [])}
+    strain_rollup = params_by_name.get("strain_rollup", "")
+    raw_contrast_pop = bundle.run.contrast_population
+    default_contrast_pop = (
+        str(getattr(raw_contrast_pop, "value", raw_contrast_pop))
+        if raw_contrast_pop is not None
+        else ""
+    )
+    contrast_population = params_by_name.get("contrast_population", default_contrast_pop)
+    if contrast_population != "disease_vs_healthy_tier1_2_subject_controls":
+        raise ValueError(
+            "matrix-overlap-coverage requires a Tier 1+2 disease vs healthy subject-control "
+            f"core run (contrast_population='disease_vs_healthy_tier1_2_subject_controls'); "
+            f"got {contrast_population!r}"
+        )
+    raw_direction_basis = bundle.run.direction_basis
+    default_direction_basis = (
+        str(getattr(raw_direction_basis, "value", raw_direction_basis))
+        if raw_direction_basis is not None
+        else ""
+    )
+    direction_basis = params_by_name.get("direction_basis", default_direction_basis)
+    if direction_basis != "disease_vs_comparison":
+        raise ValueError(
+            "matrix-overlap-coverage requires direction_basis='disease_vs_comparison'; "
+            f"got {direction_basis!r}"
+        )
+
+    overlap_tsv = output_dir / "matrix_trait_overlap.tsv"
+    coverage_tsv = output_dir / "tier12_coverage_by_rank.tsv"
+    cascade_tsv = output_dir / "filter_cascade.tsv"
+    pd_summary_tsv = output_dir / "parkinsons_stool_study_overlap_summary.tsv"
+    pd_pairs_tsv = output_dir / "parkinsons_stool_study_pairs.tsv"
+    summary_json = output_dir / "summary.json"
+    provenance_path = output_dir / "provenance.json"
+    primary_outputs = (
+        overlap_tsv,
+        coverage_tsv,
+        cascade_tsv,
+        pd_summary_tsv,
+        pd_pairs_tsv,
+        summary_json,
+    )
+    preflight_consumer_outputs(
+        bundle,
+        output_dir / "core_consumption.json",
+        outputs=(*primary_outputs, provenance_path),
+        output_directory=output_dir,
+    )
 
     available_products = {product.id for product in bundle.run.definition.products}
     matrix_path = bundle.path("taxa_matrix")
@@ -860,12 +951,6 @@ def run_matrix_overlap_coverage(
     )
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    overlap_tsv = output_dir / "matrix_trait_overlap.tsv"
-    coverage_tsv = output_dir / "tier12_coverage_by_rank.tsv"
-    cascade_tsv = output_dir / "filter_cascade.tsv"
-    pd_summary_tsv = output_dir / "parkinsons_stool_study_overlap_summary.tsv"
-    pd_pairs_tsv = output_dir / "parkinsons_stool_study_pairs.tsv"
-    summary_json = output_dir / "summary.json"
 
     pd.DataFrame(overlap_rows).to_csv(overlap_tsv, sep="\t", index=False, float_format="%.12g")
     pd.DataFrame(coverage_rows).to_csv(coverage_tsv, sep="\t", index=False, float_format="%.12g")
@@ -874,16 +959,6 @@ def run_matrix_overlap_coverage(
         pd_summary_tsv, sep="\t", index=False, float_format="%.12g"
     )
     pd.DataFrame(pd_pair_rows).to_csv(pd_pairs_tsv, sep="\t", index=False, float_format="%.12g")
-
-    params_by_name = {param.name: param.value for param in (bundle.run.parameters or [])}
-    strain_rollup = params_by_name.get("strain_rollup", "")
-    raw_contrast_pop = bundle.run.contrast_population
-    default_contrast_pop = (
-        str(getattr(raw_contrast_pop, "value", raw_contrast_pop))
-        if raw_contrast_pop is not None
-        else ""
-    )
-    contrast_population = params_by_name.get("contrast_population", default_contrast_pop)
 
     summary_payload: dict[str, Any] = {
         "schema_version": "1.0.0",
