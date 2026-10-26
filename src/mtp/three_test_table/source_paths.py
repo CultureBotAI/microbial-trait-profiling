@@ -15,6 +15,7 @@ from collections import deque
 from pathlib import Path
 from typing import Any
 
+from mtp.datamodel.workflow_pydantic import StorageKind
 from mtp.multiplicity.sources import VerifiedSources
 
 _COMPARISON_LOCATIONS = (
@@ -97,6 +98,33 @@ def _record(path: Path) -> dict[str, Any]:
     return record
 
 
+def _declared_storage(core: dict[str, Any]) -> dict[str, bool]:
+    """Read only declared file/collection locations, not a workflow validity check."""
+    if "definition" not in core:
+        if core.get("artifacts"):
+            raise ValueError("Core artifacts require declared product storage kinds")
+        # Minimal location-only preflights may have no artifacts to classify.
+        return {}
+    definition = core["definition"]
+    if not isinstance(definition, dict) or not isinstance(definition.get("products"), list):
+        raise ValueError("Core definition must declare product storage kinds")
+    kinds: dict[str, bool] = {}
+    for product in definition["products"]:
+        if not isinstance(product, dict):
+            raise ValueError("Core product storage declaration must be an object")
+        identity, kind = product.get("id"), product.get("storage_kind")
+        if (
+            not isinstance(identity, str)
+            or not identity.strip()
+            or identity in kinds
+            or not isinstance(kind, str)
+            or kind not in {"file", "collection"}
+        ):
+            raise ValueError("Core product storage declaration is missing, duplicate, or invalid")
+        kinds[identity] = kind == StorageKind.collection.value
+    return kinds
+
+
 def manifest_roots(
     manifests: list[Path], *, multiplicity: Path | None, label_support: Path | None
 ) -> list[Path]:
@@ -133,6 +161,7 @@ def declared_source_roots(
             _path_roots(_location(core["manifest_path"], "core manifest_path"), directory=False)
         )
     core_parent = _spellings(core_path)[-1].parent
+    kinds = _declared_storage(core)
     artifacts = core.get("artifacts")
     if artifacts is None:
         artifacts = []
@@ -141,14 +170,20 @@ def declared_source_roots(
     for artifact in artifacts:
         if not isinstance(artifact, dict):
             raise ValueError("Core artifact location declaration must be an object")
+        identity = artifact.get("product_id")
+        if not isinstance(identity, str) or identity not in kinds:
+            raise ValueError("Core artifact lacks a declared product storage kind")
+        directory = kinds[identity]
         path = _location(artifact.get("path"), "core artifact path")
         roots.extend(
-            _path_roots(path if path.is_absolute() else core_parent / path, directory=None)
+            _path_roots(path if path.is_absolute() else core_parent / path, directory=directory)
         )
         requested = artifact.get("requested_path")
         if requested is not None and requested != "":
             roots.extend(
-                _path_roots(_location(requested, "core artifact requested_path"), directory=None)
+                _path_roots(
+                    _location(requested, "core artifact requested_path"), directory=directory
+                )
             )
     return list(dict.fromkeys(roots))
 
@@ -168,20 +203,22 @@ def source_roots(
         if value is not None:
             manifests.append(_location(value, field))
     roots = manifest_roots(manifests, multiplicity=multiplicity, label_support=label_support)
+    kinds = {product.id: product.storage_kind for product in sources.core.definition.products}
     for artifact in sources.core.artifacts or []:
-        roots.extend(_path_roots(sources.product(artifact.product_id), directory=None))
-        # Some synthetic adapter fixtures expose products through product() only.
-        # Real verified ArtifactInstance records always carry their declared path.
-        raw = getattr(artifact, "path", None)
-        if raw is not None:
-            path = _location(raw, "core artifact path")
-            roots.extend(
-                _path_roots(path if path.is_absolute() else core_path.parent / path, directory=None)
+        directory = kinds[artifact.product_id] == StorageKind.collection
+        roots.extend(_path_roots(sources.product(artifact.product_id), directory=directory))
+        path = _location(artifact.path, "core artifact path")
+        roots.extend(
+            _path_roots(
+                path if path.is_absolute() else core_path.parent / path, directory=directory
             )
-        requested = getattr(artifact, "requested_path", None)
+        )
+        requested = artifact.requested_path
         if requested is not None and requested != "":
             roots.extend(
-                _path_roots(_location(requested, "core artifact requested_path"), directory=None)
+                _path_roots(
+                    _location(requested, "core artifact requested_path"), directory=directory
+                )
             )
     return list(dict.fromkeys(roots))
 

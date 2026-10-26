@@ -414,10 +414,7 @@ def run_table(
     }
     # Core verification and optional carrier reconciliation consume these files,
     # including external KG files and reported-taxon occurrences.
-    for artifact in sources.core.artifacts or []:
-        path = sources.product(artifact.product_id)
-        if path.is_file():
-            paths.add(path)
+    paths.update(path for path, _ in sources.core_file_artifacts())
     baseline = _inputs(paths, sources)
     multiplicity_inputs: tuple[Path, dict[Path, str]] | None = None
     with durable_scratch(scratch):

@@ -8,13 +8,14 @@ from unittest.mock import Mock
 
 import pytest
 
-from mtp.datamodel.workflow_pydantic import ArtifactInstance
+from mtp.datamodel.workflow_pydantic import ArtifactInstance, ProductDefinition, StorageKind
 from mtp.multiplicity import sources as source_module
 from mtp.multiplicity import stage as multiplicity_stage
 from mtp.multiplicity.sources import VerifiedSources
 from mtp.paths import file_sha256
 from mtp.three_test_table import stage
 from mtp.workflow import output_roots
+from mtp.workflow.runtime import inventory
 from test_three_test_stage import sources_for_stage
 from test_three_test_stage import tmp_path as tmp_path
 
@@ -36,14 +37,31 @@ def add_external_inputs(
         path.parent.mkdir(parents=True)
         path.write_text("synthetic bound source\n", encoding="utf-8")
         paths[name] = path
-        item = ArtifactInstance.model_construct(
+        digest, size, entries = inventory(path, "file")
+        item = ArtifactInstance(
+            id=f"fixture-{name}",
+            run_id=sources.core.run_id,
             product_id=name,
             path=str(path),
             requested_path=str(path),
-            sha256=file_sha256(path),
+            sha256=digest,
+            size_bytes=size,
+            inventory=entries,
+            validations=[],
         )
         sources.core.artifacts.append(item)
         artifacts.append(item.model_dump())
+        sources.core.definition.products.append(
+            ProductDefinition(
+                id=name,
+                kind=name,
+                storage_kind=StorageKind.file,
+                format="tsv",
+                filename=path.name,
+                external=True,
+            )
+        )
+    declared["definition"] = sources.core.definition.model_dump(mode="json")
     core_path.write_text(json.dumps(declared), encoding="utf-8")
     sources.comparison.core_manifest_sha256 = file_sha256(core_path)
     for arm in sources.arms.values():
@@ -168,6 +186,132 @@ def test_all_consumed_core_files_are_explicitly_hash_bound(
             "sha256": digest,
             "size_bytes": path.stat().st_size,
         }
+
+
+def test_missing_storage_declarations_reject_before_probe_or_verification(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    sources = sources_for_stage(tmp_path, monkeypatch)
+    path = add_external_inputs(sources, tmp_path / "external", monkeypatch)["kg_edges"]
+    path.unlink()
+    path.mkdir()
+    manifest = Path(sources.core.manifest_path)
+    document = json.loads(manifest.read_text())
+    del document["definition"]
+    manifest.write_text(json.dumps(document))
+    probe = Mock(side_effect=AssertionError("probe ran without source storage declarations"))
+    verify = Mock(side_effect=AssertionError("verification ran before source preflight"))
+    monkeypatch.setattr(stage, "_probe_publication", probe)
+    monkeypatch.setattr(stage, "open_verified_sources", verify)
+    output = path.parent / "new" / "output"
+    with pytest.raises(ValueError, match="storage"):
+        stage.run_table(
+            Path(sources.comparison.manifest_path), output, scratch=tmp_path / "scratch"
+        )
+    probe.assert_not_called()
+    verify.assert_not_called()
+    assert not output.parent.exists()
+
+
+@pytest.mark.parametrize("role", ["kg_edges", "kg_nodes", "reported_taxa"])
+@pytest.mark.parametrize("mutation", ["delete", "directory"])
+def test_binding_keeps_declared_file_hash_after_live_type_changes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, role: str, mutation: str
+) -> None:
+    sources = sources_for_stage(tmp_path, monkeypatch)
+    path = add_external_inputs(sources, tmp_path / "external", monkeypatch)[role]
+    expected = file_sha256(path)
+    path.unlink()
+    if mutation == "directory":
+        path.mkdir()
+    bound = source_module.bind_recorded_hashes(
+        sources, file_sha256(Path(sources.comparison.manifest_path))
+    )
+    assert bound.recorded_hashes.get(path.resolve()) == expected
+
+
+def test_declared_collection_remains_outside_regular_file_hash_bindings(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    sources = sources_for_stage(tmp_path, monkeypatch)
+    collection = Path(sources.core.manifest_path).parent / "studies"
+    collection.mkdir()
+    (collection / "study.yaml").write_text("study_id: synthetic-study\n", encoding="utf-8")
+    digest, size, entries = inventory(collection, "collection")
+    assert sources.core.artifacts is not None
+    original = {
+        artifact.product_id: sources.product(artifact.product_id)
+        for artifact in sources.core.artifacts
+    }
+    sources.core.definition.products.append(
+        ProductDefinition(
+            id="studies",
+            kind="study_collection",
+            storage_kind=StorageKind.collection,
+            format="yaml",
+            filename="studies",
+        )
+    )
+    artifact = ArtifactInstance(
+        id="synthetic-studies",
+        product_id="studies",
+        run_id=sources.core.run_id,
+        path=str(collection),
+        sha256=digest,
+        size_bytes=size,
+        inventory=entries,
+        validations=[],
+    )
+    sources.core.artifacts.append(artifact)
+    monkeypatch.setattr(
+        source_module,
+        "artifact_path",
+        lambda _run, name: collection if name == "studies" else original[name],
+    )
+    bound = source_module.bind_recorded_hashes(
+        sources, file_sha256(Path(sources.comparison.manifest_path))
+    )
+    assert collection.resolve() not in bound.recorded_hashes
+    for path in original.values():
+        assert bound.expected_digest(path) == file_sha256(path)
+
+
+@pytest.mark.parametrize("role", ["kg_edges", "kg_nodes", "reported_taxa"])
+@pytest.mark.parametrize("mutation", ["delete", "directory"])
+@pytest.mark.parametrize("timing", ["after_open", "after_bind"])
+def test_declared_core_file_cannot_disappear_from_publication_inputs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, role: str, mutation: str, timing: str
+) -> None:
+    sources = sources_for_stage(tmp_path, monkeypatch)
+    path = add_external_inputs(sources, tmp_path / "external", monkeypatch)[role]
+    original_bind = source_module.bind_recorded_hashes
+
+    def change_type() -> None:
+        path.unlink()
+        if mutation == "directory":
+            path.mkdir()
+
+    def opened(_path: Path) -> VerifiedSources:
+        if timing == "after_open":
+            change_type()
+        return sources
+
+    def bound(verified: VerifiedSources, digest: str) -> VerifiedSources:
+        result = original_bind(verified, digest)
+        if timing == "after_bind":
+            change_type()
+        return result
+
+    checked = Mock(side_effect=opened)
+    monkeypatch.setattr(stage, "open_verified_sources", checked)
+    monkeypatch.setattr(stage, "bind_recorded_hashes", bound)
+    output = tmp_path / "uncreated" / "output"
+    scratch = tmp_path / "scratch"
+    with pytest.raises((FileNotFoundError, IsADirectoryError)):
+        stage.run_table(Path(sources.comparison.manifest_path), output, scratch=scratch)
+    checked.assert_called_once()
+    assert not output.parent.exists()
+    assert not scratch.exists()
 
 
 def test_optional_multiplicity_reuses_verified_sources_and_declares_co_presence(

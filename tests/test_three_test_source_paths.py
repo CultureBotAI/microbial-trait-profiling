@@ -9,7 +9,15 @@ from unittest.mock import Mock
 
 import pytest
 
-from mtp.datamodel.workflow_pydantic import ArmRun, ArtifactInstance, ComparisonRun, WorkflowRun
+from mtp.datamodel.workflow_pydantic import (
+    ArmRun,
+    ArtifactInstance,
+    ComparisonRun,
+    ProductDefinition,
+    StorageKind,
+    WorkflowDefinition,
+    WorkflowRun,
+)
 from mtp.multiplicity.sources import VerifiedSources
 from mtp.three_test_table.source_paths import (
     declared_source_roots,
@@ -39,7 +47,29 @@ def comparison(tmp_path: Path, core_record: dict[str, Any]) -> tuple[Path, Path]
     return path, core
 
 
-def verified(core_path: Path, artifacts: list[ArtifactInstance]) -> VerifiedSources:
+def file_definition(product: str) -> dict[str, Any]:
+    return WorkflowDefinition(
+        id="synthetic-core",
+        version="1",
+        steps=[],
+        products=[
+            ProductDefinition(
+                id=product,
+                kind=product,
+                storage_kind=StorageKind.file,
+                format="tsv",
+                filename=f"{product}.tsv",
+            )
+        ],
+    ).model_dump(mode="json")
+
+
+def verified(
+    core_path: Path,
+    artifacts: list[ArtifactInstance],
+    *,
+    storage: StorageKind = StorageKind.file,
+) -> VerifiedSources:
     root = core_path.parent.parent
     manifests = {name: root / name / "arm_run.json" for name in ("noel", "jed", "ilyas")}
     record = ComparisonRun.model_construct(
@@ -51,7 +81,25 @@ def verified(core_path: Path, artifacts: list[ArtifactInstance]) -> VerifiedSour
     )
     return VerifiedSources(
         comparison=record,
-        core=WorkflowRun.model_construct(manifest_path=str(core_path), artifacts=artifacts),
+        core=WorkflowRun.model_construct(
+            manifest_path=str(core_path),
+            artifacts=artifacts,
+            definition=WorkflowDefinition(
+                id="synthetic-core",
+                version="1",
+                steps=[],
+                products=[
+                    ProductDefinition(
+                        id=artifact.product_id,
+                        kind=artifact.product_id,
+                        storage_kind=storage,
+                        format="tsv",
+                        filename=Path(artifact.path).name,
+                    )
+                    for artifact in artifacts
+                ],
+            ),
+        ),
         arms={
             name: ArmRun.model_construct(manifest_path=str(path))
             for name, path in manifests.items()
@@ -162,7 +210,14 @@ def test_preflight_protects_self_declared_core_location_and_relative_artifacts(
         tmp_path,
         {
             "manifest_path": str(self_declared),
-            "artifacts": [{"path": "relative/edges.tsv", "requested_path": str(requested)}],
+            "definition": file_definition("kg_edges"),
+            "artifacts": [
+                {
+                    "product_id": "kg_edges",
+                    "path": "relative/edges.tsv",
+                    "requested_path": str(requested),
+                }
+            ],
         },
     )
     roots = declared_source_roots(path, multiplicity=None, label_support=None)
@@ -174,7 +229,13 @@ def test_preflight_protects_self_declared_core_location_and_relative_artifacts(
 
 
 def test_preflight_relative_artifact_uses_resolved_core_manifest_parent(tmp_path: Path) -> None:
-    path, core = comparison(tmp_path, {"artifacts": [{"path": "products/edges.tsv"}]})
+    path, core = comparison(
+        tmp_path,
+        {
+            "definition": file_definition("kg_edges"),
+            "artifacts": [{"product_id": "kg_edges", "path": "products/edges.tsv"}],
+        },
+    )
     alias = tmp_path / "core-alias" / "run.json"
     alias.parent.mkdir()
     alias.symlink_to(core)
@@ -210,7 +271,13 @@ def test_both_helpers_protect_every_external_core_file_and_requested_alias(
     requested.parent.mkdir(parents=True)
     requested.symlink_to(middle)
     declaration = {"product_id": product, "path": str(target), "requested_path": str(requested)}
-    path, core = comparison(tmp_path, {"artifacts": [declaration]})
+    path, core = comparison(
+        tmp_path,
+        {
+            "definition": file_definition(product),
+            "artifacts": [declaration],
+        },
+    )
     sources = verified(
         core,
         [
@@ -262,9 +329,146 @@ def test_missing_core_retains_declared_roots_and_defers_execution_validation(
 
 @pytest.mark.parametrize(
     "artifacts",
-    ["invalid", ["invalid"], [{"path": " "}], [{"path": "data.tsv", "requested_path": 7}]],
+    [
+        "invalid",
+        ["invalid"],
+        [{"product_id": "kg_edges", "path": " "}],
+        [{"product_id": "kg_edges", "path": "data.tsv", "requested_path": 7}],
+    ],
 )
 def test_malformed_location_declarations_fail_closed(tmp_path: Path, artifacts: Any) -> None:
-    path, _ = comparison(tmp_path, {"artifacts": artifacts})
+    path, _ = comparison(
+        tmp_path,
+        {
+            "definition": file_definition("kg_edges"),
+            "artifacts": artifacts,
+        },
+    )
     with pytest.raises(ValueError, match=r"[Ll]ocation|[Aa]rtifact|[Pp]ath"):
+        declared_source_roots(path, multiplicity=None, label_support=None)
+
+
+@pytest.mark.parametrize("reader", ["declared", "verified"])
+@pytest.mark.parametrize("actual", ["directory", "missing"])
+def test_declared_file_kind_protects_every_alias_parent_when_live_type_changes(
+    tmp_path: Path,
+    reader: str,
+    actual: str,
+) -> None:
+    target = tmp_path / "external-file" / "edges.tsv"
+    if actual == "directory":
+        target.mkdir(parents=True)
+    middle = tmp_path / "middle-file" / "edges.tsv"
+    requested = tmp_path / "requested-file" / "edges.tsv"
+    middle.parent.mkdir()
+    requested.parent.mkdir()
+    middle.symlink_to(target)
+    requested.symlink_to(middle)
+    artifact = ArtifactInstance.model_construct(
+        product_id="kg_edges",
+        path=str(target),
+        requested_path=str(requested),
+    )
+    path, core = comparison(tmp_path, {})
+    sources = verified(core, [artifact])
+    core.write_text(
+        json.dumps(
+            {
+                "definition": sources.core.definition.model_dump(mode="json"),
+                "artifacts": [artifact.model_dump(mode="json")],
+            }
+        ),
+        encoding="utf-8",
+    )
+    roots = (
+        declared_source_roots(path, multiplicity=None, label_support=None)
+        if reader == "declared"
+        else source_roots(sources, multiplicity=None, label_support=None)
+    )
+    assert {target.parent, middle.parent, requested.parent}.issubset(roots)
+    assert target not in roots
+    if actual == "missing":
+        assert not target.parent.exists()
+
+
+@pytest.mark.parametrize("reader", ["declared", "verified"])
+@pytest.mark.parametrize("actual", ["directory", "missing", "file"])
+def test_declared_collection_kind_protects_only_its_tree_despite_live_type(
+    tmp_path: Path,
+    reader: str,
+    actual: str,
+) -> None:
+    target = tmp_path / "external-collection" / "studies"
+    if actual == "directory":
+        target.mkdir(parents=True)
+    elif actual == "file":
+        file(target)
+    requested = tmp_path / "requested-collection" / "studies"
+    requested.parent.mkdir()
+    requested.symlink_to(target)
+    artifact = ArtifactInstance.model_construct(
+        product_id="studies",
+        path=str(target),
+        requested_path=str(requested),
+    )
+    path, core = comparison(tmp_path, {})
+    sources = verified(core, [artifact], storage=StorageKind.collection)
+    core.write_text(
+        json.dumps(
+            {
+                "definition": sources.core.definition.model_dump(mode="json"),
+                "artifacts": [artifact.model_dump(mode="json")],
+            }
+        ),
+        encoding="utf-8",
+    )
+    roots = (
+        declared_source_roots(path, multiplicity=None, label_support=None)
+        if reader == "declared"
+        else source_roots(sources, multiplicity=None, label_support=None)
+    )
+    assert {target, requested}.issubset(roots)
+    assert target.parent not in roots
+    assert requested.parent not in roots
+
+
+@pytest.mark.parametrize(
+    "definition",
+    [
+        None,
+        "bad",
+        {},
+        {"products": "bad"},
+        {"products": ["bad"]},
+        {"products": [{"id": "kg_edges"}]},
+        {"products": [{"id": "kg_edges", "storage_kind": "unknown"}]},
+        {"products": [{"id": "kg_edges", "storage_kind": "file"}] * 2},
+        {"products": [{"id": "other", "storage_kind": "file"}]},
+    ],
+)
+def test_present_malformed_storage_declarations_fail_closed(
+    tmp_path: Path,
+    definition: Any,
+) -> None:
+    path, _ = comparison(
+        tmp_path,
+        {
+            "definition": definition,
+            "artifacts": [{"product_id": "kg_edges", "path": "external/edges.tsv"}],
+        },
+    )
+    with pytest.raises(ValueError, match=r"(?i)definition|storage|product"):
+        declared_source_roots(path, multiplicity=None, label_support=None)
+
+
+def test_artifacts_without_storage_declarations_fail_closed(tmp_path: Path) -> None:
+    target = tmp_path / "external" / "edges.tsv"
+    target.mkdir(parents=True)
+    path, _ = comparison(
+        tmp_path,
+        {
+            "artifacts": [{"product_id": "kg_edges", "path": str(target)}],
+        },
+    )
+    with pytest.raises(ValueError, match="storage"):
         declared_source_roots(path, multiplicity=None, label_support=None)

@@ -165,10 +165,13 @@ tests or treat agreement on shared data as independent replication.
 Each generation or complete table replay verifies the core and each arm once.
 The comparison and optional multiplicity replay reuse those verified records;
 all existing execution, binding, policy, inventory and output checks still apply.
-The input inventory explicitly includes regular-file core artifacts consumed
+The input inventory explicitly includes declared file core artifacts consumed
 during verification, including external KG nodes/edges and reported taxa, along
 with the native and optional evidence files. File hashes are rechecked before
-publication to detect changes during adaptation.
+publication to detect changes during adaptation. A declared file remains a
+required input if it disappears or changes filesystem type; it is never silently
+removed from the inventory. The same declared storage kind controls source-root
+protection before verification.
 
 All generated outputs and temporary scratch must use durable directories outside
 system temporary roots and remain disjoint from source bundles. Historical

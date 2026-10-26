@@ -20,8 +20,10 @@ from mtp.datamodel.workflow_pydantic import (
     DirectionBasis,
     FileInventoryEntry,
     ParameterValue,
+    ProductDefinition,
     RecordedPath,
     StorageKind,
+    WorkflowDefinition,
     WorkflowRun,
 )
 from mtp.enrichment_stats import benjamini_hochberg
@@ -279,22 +281,59 @@ def fixture_sources(
     direction_basis = (
         DirectionBasis.disease_vs_comparison if subset else DirectionBasis.group_1_vs_group_0
     )
+    definition = WorkflowDefinition(
+        id="synthetic-core",
+        version="1",
+        steps=[],
+        products=[
+            ProductDefinition(
+                id=name,
+                kind=name,
+                storage_kind=StorageKind.file,
+                format="tsv",
+                filename=path.name,
+            )
+            for name, path in products.items()
+        ],
+    )
+    artifacts = []
+    for name, path in products.items():
+        digest, size, entries = inventory(path, "file")
+        artifacts.append(
+            ArtifactInstance(
+                id=f"fixture-{name}",
+                product_id=name,
+                run_id="fixture-core",
+                path=str(path),
+                sha256=digest,
+                size_bytes=size,
+                inventory=entries,
+                validations=[],
+            )
+        )
     core_manifest = core_dir / "run.json"
-    core_manifest.write_text(json.dumps({"synthetic": True, "population": population}))
+    core_manifest.write_text(
+        json.dumps(
+            {
+                "synthetic": True,
+                "population": population,
+                "definition": definition.model_dump(mode="json"),
+                "artifacts": [artifact.model_dump(mode="json") for artifact in artifacts],
+            }
+        )
+    )
     core = WorkflowRun.model_construct(
         run_id="fixture-core",
         manifest_path=str(core_manifest),
         contrast_population=population,
         direction_basis=direction_basis,
+        definition=definition,
         parameters=[
             ParameterValue(
                 name="strain_rollup", value="phenotype" if subset else "off", source="override"
             )
         ],
-        artifacts=[
-            ArtifactInstance.model_construct(product_id=name, sha256=file_sha256(path))
-            for name, path in products.items()
-        ],
+        artifacts=artifacts,
     )
     arms = {}
     for name, directory, steps in (
