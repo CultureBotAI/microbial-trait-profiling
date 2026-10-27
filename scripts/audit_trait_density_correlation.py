@@ -26,7 +26,7 @@ from mtp.density_adjustment import (
     run_density_audit,
 )
 from mtp.ontology_audit import run_ontology_redundancy_audit
-from mtp.trait_lists import DeclaredTraitList, load_trait_list
+from mtp.trait_lists import DeclaredTraitList, load_trait_list, output_dir_argument
 
 
 def parse_args() -> argparse.Namespace:
@@ -50,7 +50,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--output-dir",
-        type=Path,
+        type=output_dir_argument,
         default=DEFAULT_OUTPUT_DIR,
         help=f"Directory to write summary TSVs and reports (default: {DEFAULT_OUTPUT_DIR})",
     )

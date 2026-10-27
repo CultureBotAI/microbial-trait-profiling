@@ -52,16 +52,43 @@ are rejected rather than silently reconciled.
 
 The secondary Wilcoxon test was declared at the study level before computation:
 each study contributes one mean delta-z, regardless of its number of experiments.
-It uses two-sided signed rank, `zero_method="wilcox"`, `method="approx"`,
-continuity correction disabled.
-Zero differences are removed from ranking. All-zero or absent contrasts are
-untestable. Correct across the full retained catalog with BY and companion BH,
-holding untestable traits at internal p=1. It is secondary and never a headline.
-It does not reuse the six-trait raw-count density-adjustment Wilcoxon results.
-Study means give one observation per study, so additional experiments from a
-study do not contribute additional signed-rank observations.
+The current `study-mean-delta-z-wilcoxon-v2` contract uses two-sided signed rank
+with `zero_method="wilcox"` and no continuity correction. In a private test vector,
+exclude study means with absolute value <=1e-12, using the same zero tolerance as
+Noel's study votes. Do not round remaining values or modify stored experiment or
+study contrasts, descriptive means, ranks, t-tests or confidence intervals.
+
+Method selection uses the number of remaining studies and exact equality of
+absolute magnitudes. With no tied magnitudes, use SciPy's exact signed-rank
+distribution through 50 active studies. With ties and at most 13 active studies,
+use `PermutationMethod(n_resamples=np.inf)` to enumerate every sign assignment;
+the untied signed-rank distribution is not exact for ties. Otherwise use the
+asymptotic normal approximation with tie correction and no continuity correction.
+These explicit thresholds make the policy independent of SciPy's automatic
+method selection. Exact sign enumeration is deterministic and uses no random
+sample. These p-values retain the signed-rank test's symmetry and independence
+assumptions; exact computation alone does not establish biological calibration.
+The 50/13 cutoffs follow the documented SciPy 1.17 policy, applied explicitly
+after tolerance filtering: [SciPy 1.17.0 Wilcoxon notes](https://docs.scipy.org/doc/scipy-1.17.0/reference/generated/scipy.stats.wilcoxon.html#notes).
+The implementation and tests use locked SciPy 1.17.1; its version is also recorded
+in each run's numerical environment.
+
+Record the selected method, zero tolerance, both cutoffs and active/zero study
+counts in each trait row. Nonempty vectors with no active studies have reason
+`all_tied`; absent vectors have reason `insufficient_support`; both have method
+`not_tested`. Leave their reported statistic/p/q blank and retain internal p=1.
+Correct across the full retained catalog with BY and companion BH. The test is
+secondary and never a headline; it does not reuse the six-trait raw-count
+density-adjustment Wilcoxon results. Study means give one observation per study,
+so additional experiments do not add signed-rank observations.
 `study_wilcoxon_statistic` is the two-sided minimum of the
 positive- and negative-rank sums, min(W+, W−); it carries no sign.
+
+The legacy `study-mean-delta-z-wilcoxon-v1` contract used exact-zero removal and a
+normal approximation for every nonempty, nonzero sample. Historical v1 evidence
+must retain that identity. Compare v1 and v2 on the same stored study vectors and
+full retained families; do not rewrite historical p/q fields or infer independent
+replication from the two calculations.
 
 ## ORA declaration: ora-study-enrichment-direction-v1
 
@@ -151,10 +178,27 @@ Verification retains upstream execution identities and hashes, population,
 direction basis, catalog and rollup scope. A newer sidecar may consume supported
 historical runs; it does not rewrite their producer identity. A supplied
 multiplicity sidecar must pass its own verification and bind the same comparison.
+Its role is verified co-presence: its inventory and replay are checked, but its
+adjusted values are not imported into, or cross-checked against, this table.
+`native_selected_study_q_by` is reconstructed from the native selected-family
+raw p values. The manifest records `multiplicity_binding` as
+`verified_co_presence_only` or `not_supplied`. Optional-sidecar replay retains
+the multiplicity stage's existing producer-code and policy identity requirements.
 Record the new producer Git commit, dirty state, implementation hash, dependency
 lock hash, input hashes/run IDs and declared methods. Native values remain
 separately named; each new test has its own family. Never compare p-values across
 tests or treat agreement on shared data as independent replication.
+
+Each generation or complete table replay verifies the core and each arm once.
+The comparison and optional multiplicity replay reuse those verified records;
+all existing execution, binding, policy, inventory and output checks still apply.
+The input inventory explicitly includes declared file core artifacts consumed
+during verification, including external KG nodes/edges and reported taxa, along
+with the native and optional evidence files. File hashes are rechecked before
+publication to detect changes during adaptation. A declared file remains a
+required input if it disappears or changes filesystem type; it is never silently
+removed from the inventory. The same declared storage kind controls source-root
+protection before verification.
 
 All generated outputs and temporary scratch must use durable directories outside
 system temporary roots and remain disjoint from source bundles. Historical
@@ -162,7 +206,7 @@ cellulose t=-5.24 and full-family BY q=0.00047 are reproduction targets for the
 off Tier1+2 unit, not values to tune the implementation toward. Report a mismatch
 with its source and cause before producing downstream claims.
 
-The temporary-root guard follows the shared workflow policy: it checks fixed
+The temporary-root guard calls `mtp.workflow.output_roots.temporary_root`: it checks fixed
 macOS temporary roots, the process temporary directory and `TMPDIR`, both as
 written and after resolving symlinks. Unlisted roots can escape detection (#1051),
 including `/tmp` on Linux when the process temporary directory is redirected
@@ -170,6 +214,8 @@ elsewhere, and `/var/tmp` when neither dynamic root identifies it. This limitati
 not authorize temporary storage for these runs. Choose the explicit durable
 scratch directory outside the current process temporary directory; the sidecar
 then routes internal temporary files into that validated scratch directory.
+An explicit `--scratch-dir` underneath inherited `TMPDIR` is refused before any
+verification or write, even when that temporary directory has a durable-looking name.
 
 ## Commands and output contract
 
@@ -204,10 +250,13 @@ Exclusive publication uses Darwin `renamex_np` or Linux `renameat2`. An
 unsupported platform, C library or filesystem operation fails closed; it never
 falls back to a rename that could replace an existing destination.
 
-Before expensive source verification, a private probe in the output parent
-directory checks that exclusive rename both rejects an existing destination and
+Before expensive source verification, a private probe in the nearest existing
+output ancestor checks that exclusive rename both rejects an existing destination and
 can publish to an absent one. The probe follows checks that keep output and scratch
-separate from declared source directories; it never targets the requested output. Final
+separate from declared source directories, external core files and every symlink
+hop. These declaration-only checks also precede the first replay verification.
+The probe never creates missing output parents or targets the requested output.
+Output parents are created only when staging the verified result for publication. Final
 publication still uses exclusive rename. Staging is created with an exclusive
 plain `mkdir`, so the filesystem applies `0777 & ~umask` without a worker or a
 query that changes the process's mask. Its hidden directory can be readable under
@@ -218,7 +267,8 @@ Optional count columns use nullable
 integers: populated counts serialize as integers, and unavailable counts stay blank.
 
 An uncatchable termination such as SIGKILL can leave hidden
-`.<name>-staging-*` or `.<name>-probe-*` directories in the output parent. They are
+`.<name>-staging-*` directories in the output parent or private `.<name>-probe-*`
+directories in its nearest existing ancestor. They are
 unpublished intermediates, even if they contain a manifest. After confirming that
 their producer has stopped, they may be removed; do not remove an active staging
 directory. Only the final requested output directory is a published bundle.

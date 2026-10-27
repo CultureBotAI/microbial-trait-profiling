@@ -1155,6 +1155,11 @@ three-test-table *ARGS:
 three-test-verify *ARGS:
 	uv run python -m mtp.three_test_table verify "$@"
 
+# Pin and audit historical study Wilcoxon columns without rerunning any source (#1073).
+[positional-arguments]
+three-test-wilcoxon-audit *ARGS:
+	uv run python -m mtp.three_test_table.wilcoxon_audit_cli "$@"
+
 # Synthetic provenance/statistics contracts; never starts an owner arm rerun.
 test-three-test-table:
 	uv run pytest tests/test_three_test_*.py -v

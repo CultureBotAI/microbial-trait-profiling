@@ -2369,8 +2369,10 @@ def write_trait_list_direction_contrasts(
 
     Each cell comes from ``prepare_contrast_cells``, as in the six-trait heatmaps: the
     increased minus decreased fraction of profiles with positive trait z, a two-sided
-    Fisher test, and BH over all cells of one condition mode. The BH family therefore
-    grows with the list; the fractions and Fisher p-values of a trait do not.
+    Fisher test, and BH over the cells of one condition mode. A condition, body site
+    and trait with no positive-z profile in either direction has no edge row, so it is
+    not a cell and not in the BH family (#1084). The BH family therefore grows with the
+    list; the fractions and Fisher p-values of a trait do not.
     """
     if trait_order["trait_id"].tolist() != list(trait_list.trait_ids):
         raise ValueError("Trait order must be the declared trait list, in declared order")
@@ -2407,7 +2409,12 @@ def write_trait_list_direction_contrasts(
         "edge_tables": sources,
         "cell_value": "increased_minus_decreased_positive_fraction",
         "fisher_test": "two-sided Fisher exact test on positive-z profile counts",
-        "bh_family": "all cells of one condition mode across every declared trait",
+        "bh_family": (
+            "the cells of one condition mode across every declared trait; a cell is a "
+            "condition, body site and trait with at least one positive-z profile among "
+            "the increased or decreased profiles. One with none in either direction has "
+            "no edge row and is not in the family."
+        ),
         "cells_per_mode": {
             str(key): int(value) for key, value in contrasts["view_key"].value_counts().items()
         },
