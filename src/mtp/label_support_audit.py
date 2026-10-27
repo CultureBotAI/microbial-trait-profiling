@@ -47,7 +47,6 @@ AUDIT_TRAITS = {
 FOCAL_TRAITS = tuple(AUDIT_TRAITS)
 AUDIT_TRAITS.update(
     {
-        "METPO:1000612": "facultative oxygen preference",
         "METPO:1000602": "aerobic",
         "METPO:1000603": "anaerobic",
         "METPO:1000607": "obligately anaerobic",

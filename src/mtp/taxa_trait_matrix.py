@@ -222,12 +222,24 @@ def parse_strain_rollup(value: object) -> StrainRollup:
     raise ValueError(f"strain_rollup must be one of {', '.join(STRAIN_ROLLUPS)}: {value!r}")
 
 
+# Redundant facultative oxygen-preference classes unified into a single nonredundant
+# feature (#1123; upstream kg-microbe#1678).
+FACULTATIVE_TRAIT_ID = "METPO:1000608"
+FACULTATIVE_SYNONYM_TRAIT_IDS: dict[str, str] = {
+    "METPO:1000605": FACULTATIVE_TRAIT_ID,
+    "METPO:1000612": FACULTATIVE_TRAIT_ID,
+}
+
+
 def make_trait_key(predicate: str, obj: str) -> str:
     """Create the output trait key for a KG taxon assertion.
 
     A METPO object is its own key, except under a negated relation, which keeps its
     predicate so that the absence of a phenotype is never keyed as the phenotype (#788).
+    Redundant facultative oxygen-preference terms (METPO:1000605, METPO:1000612)
+    canonicalize to METPO:1000608 (#1123).
     """
+    obj = FACULTATIVE_SYNONYM_TRAIT_IDS.get(obj, obj)
     if _is_trait(obj) and predicate not in NEGATED_PREDICATES:
         return obj
     return f"{predicate}{TRAIT_KEY_SEPARATOR}{obj}"

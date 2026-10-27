@@ -34,7 +34,7 @@ PAIRS = (
     Pair("aerobic_class_and_anaerobic_class", ("METPO:1000602",), ("METPO:1000603",)),
     Pair("obligately_aerobic_and_anaerobic", ("METPO:1000606",), ("METPO:1000603",)),
     Pair("mesophilic_and_psychrophilic", ("METPO:1000615",), ("METPO:1000614",)),
-    Pair("facultatively_anaerobic_and_obligately_aerobic", ("METPO:1000605",), ("METPO:1000606",)),
+    Pair("facultatively_anaerobic_and_obligately_aerobic", ("METPO:1000608",), ("METPO:1000606",)),
     Pair(
         "aerobe_guild_and_anaerobe_guild",
         trait_guilds.OXYGEN_GUILDS["aerobe"],
