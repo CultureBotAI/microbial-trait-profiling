@@ -59,6 +59,7 @@ from mtp.trait_lists import (
     output_dir_argument,
     trait_labels,
 )
+from mtp.workflow.output_roots import add_temporary_output_option, require_durable_output
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VIS_DIR = REPO_ROOT / "trait-visualization"
@@ -3061,18 +3062,22 @@ def cli(argv: Sequence[str] | None = None) -> None:
     )
     parser.add_argument("--columns", type=Path, help=f"With --trait-list ({TRAIT_COLUMNS_PATH})")
     parser.add_argument("--code-commit", help="With --trait-list: code commit for provenance")
+    add_temporary_output_option(parser)
     args = parser.parse_args(argv)
     trait_list_options = ("output_dir", "profiles", "profile_metadata", "columns", "code_commit")
-    if args.trait_list is None and any(
-        getattr(args, name) is not None for name in trait_list_options
+    if args.trait_list is None and (
+        args.allow_temporary_output
+        or any(getattr(args, name) is not None for name in trait_list_options)
     ):
         parser.error(
-            "--output-dir, --profiles, --profile-metadata, --columns and --code-commit "
-            "apply only with --trait-list"
+            "--output-dir, --profiles, --profile-metadata, --columns, --code-commit and "
+            "--allow-temporary-output apply only with --trait-list"
         )
     if args.trait_list is not None:
         if args.output_dir is None:
             parser.error("--trait-list requires --output-dir")
+        # A trait-list run's contrast tables are cited, so they must outlive a restart (#1087)
+        require_durable_output(parser, args.output_dir, allowed=args.allow_temporary_output)
         contrasts = write_trait_list_contrasts(
             load_trait_list(args.trait_list),
             args.output_dir,

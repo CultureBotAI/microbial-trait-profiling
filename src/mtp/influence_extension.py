@@ -33,6 +33,7 @@ from mtp.workflow.consumers import (
     preflight_consumer_outputs,
     write_consumer_record,
 )
+from mtp.workflow.output_roots import add_temporary_output_option, require_durable_output
 
 PROTOCOL = REPO_ROOT / "methods/table1_influence_extension_protocol.json"
 PROTOCOL_SHA256 = "366857b28d00228c52323fc6c7ed68848c037d09fa06ed15c8f453f553aebfd6"
@@ -856,7 +857,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--noel-run", type=Path, help="Include the verified same-core native report"
     )
+    add_temporary_output_option(parser)
     args = parser.parse_args(argv)
+    require_durable_output(parser, args.output_dir, allowed=args.allow_temporary_output)
     print(run_extension(args.core_run, args.output_dir, args.noel_run))
     return 0
 

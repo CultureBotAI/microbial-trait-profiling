@@ -311,6 +311,8 @@ def test_cli_includes_a_real_verified_same_core_noel_summary(tmp_path: Path) -> 
                 str(output),
                 "--noel-run",
                 str(noel_manifest),
+                # tmp_path is temporary storage, which the sidecar refuses without the opt-in
+                "--allow-temporary-output",
             ]
         )
         == 0

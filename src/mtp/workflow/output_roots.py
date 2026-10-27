@@ -81,3 +81,20 @@ def require_durable_output(parser: argparse.ArgumentParser, output: Path, *, all
             "system can empty on restart (#1049). Write outputs that a record will cite "
             f"to a durable location, or pass {ALLOW_TEMPORARY_OUTPUT} for a throwaway run."
         )
+
+
+def main(argv: list[str] | None = None) -> None:
+    """Check one output root for a recipe whose module the arms also run (#1087).
+
+    Guarding such a module itself would refuse arm runs made with the opt-in, and adding
+    the flag to its argv would change the arms' recorded plans, so the recipe checks first.
+    """
+    parser = argparse.ArgumentParser(description=main.__doc__)
+    parser.add_argument("output", type=Path)
+    add_temporary_output_option(parser)
+    args = parser.parse_args(argv)
+    require_durable_output(parser, args.output, allowed=args.allow_temporary_output)
+
+
+if __name__ == "__main__":
+    main()

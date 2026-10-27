@@ -55,6 +55,7 @@ from mtp.cellulose_decr.selection_scan import (
 )
 from mtp.cellulose_decr.selection_scan import OUTPUTS as SCAN_OUTPUTS
 from mtp.paths import file_sha256
+from mtp.workflow.output_roots import add_temporary_output_option, require_durable_output
 
 if TYPE_CHECKING:
     from mtp.datamodel.workflow_pydantic import WorkflowRun
@@ -303,7 +304,10 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         default="unrecorded",
         help="Revision of this script, e.g. $(git rev-parse HEAD) with +dirty when modified.",
     )
-    return parser.parse_args(argv)
+    add_temporary_output_option(parser)
+    args = parser.parse_args(argv)
+    require_durable_output(parser, args.output_dir, allowed=args.allow_temporary_output)
+    return args
 
 
 def main(argv: Sequence[str] | None = None) -> int:

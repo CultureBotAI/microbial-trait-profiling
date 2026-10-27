@@ -31,6 +31,7 @@ from mtp.taxa_trait_matrix import (
 )
 from mtp.trait_guilds import MEDIADIVE_MARKER, OXYGEN_GUILDS, TABLE1_TRAIT_LABELS, TABLE1_TRAITS
 from mtp.workflow import kg_inputs
+from mtp.workflow.output_roots import add_temporary_output_option, require_durable_output
 
 Scope = Literal["off", "phenotype"]
 Row = dict[str, Any]
@@ -664,7 +665,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--madin-csv", type=Path)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--strain-rollup", choices=("off", "phenotype"), required=True)
+    add_temporary_output_option(parser)
     args = parser.parse_args(argv)
+    require_durable_output(parser, args.output_dir, allowed=args.allow_temporary_output)
     run_label_support_audit(
         taxa_path=args.taxa,
         matrix_path=args.matrix,
