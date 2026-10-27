@@ -1192,3 +1192,16 @@ probe-three-test-guards *ARGS:
 [positional-arguments]
 test-three-test-off-reproduction comparison output scratch basis="511c891" multiplicity="" label_support="":
 	MTP_THREE_TEST_COMPARISON="$1" MTP_THREE_TEST_OUTPUT="$2" MTP_THREE_TEST_SCRATCH="$3" MTP_THREE_TEST_BASIS="$4" MTP_THREE_TEST_MULTIPLICITY="$5" MTP_THREE_TEST_LABEL_SUPPORT="$6" uv run pytest tests/test_three_test_reproduction.py -m integration -v
+
+# Compare completed off and phenotype parents on an identical cohort (#1041).
+[positional-arguments]
+rollup-comparison *ARGS:
+	uv run python -m mtp.rollup_comparison "$@"
+
+test-rollup-comparison:
+	uv run pytest tests/test_rollup_comparison_tables.py tests/test_rollup_comparison_validation.py tests/test_rollup_comparison_stage.py tests/test_rollup_comparison_cli.py tests/test_rollup_comparison_reference_contracts.py
+
+# Read-only checks of completed F comparison products; never replay a pipeline.
+[positional-arguments]
+test-rollup-reproduction off phenotype output commit source_commit off_sha256 phenotype_sha256:
+	MTP_ROLLUP_OFF_PARENT="$1" MTP_ROLLUP_PHENOTYPE_PARENT="$2" MTP_ROLLUP_RESULT="$3" MTP_ROLLUP_COMMIT="$4" MTP_ROLLUP_SOURCE_COMMIT="$5" MTP_ROLLUP_OFF_SHA256="$6" MTP_ROLLUP_PHENOTYPE_SHA256="$7" uv run pytest tests/test_rollup_comparison_reproduction.py -m integration -s

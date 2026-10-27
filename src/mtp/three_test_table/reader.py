@@ -597,4 +597,9 @@ def load_completed_table(
     return bundle
 
 
-__all__ = ["CompletedTable", "load_completed_table", "recheck_completed_table"]
+__all__ = [
+    "SUPPORTED_WILCOXON_CONTRACTS",
+    "CompletedTable",
+    "load_completed_table",
+    "recheck_completed_table",
+]
