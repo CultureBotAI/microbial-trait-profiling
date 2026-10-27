@@ -43,7 +43,7 @@ def write_inputs(root: Path) -> dict[str, Path]:
         "s5\tkgmicrobe.strain:2\tbiolink:has_phenotype\tMETPO:1000678\n"
         "s6\tkgmicrobe.strain:2\tMETPO:2000302\tEC:3.2.1.21\n"
         "s7\tkgmicrobe.strain:2\tMETPO:2000303\tEC:3.2.1.21\n"
-        "s8\tkgmicrobe.strain:3\tbiolink:has_phenotype\tMETPO:1000608\n"
+        "s8\tkgmicrobe.strain:3\tbiolink:has_phenotype\tMETPO:1000606\n"
         "s9\tkgmicrobe.strain:4\tbiolink:subclass_of\tNCBITaxon:999\n"
         "s10\tkgmicrobe.strain:4\tbiolink:has_phenotype\tMETPO:1000668\n",
         encoding="utf-8",
@@ -52,6 +52,7 @@ def write_inputs(root: Path) -> dict[str, Path]:
         "id\tcategory\tname\n"
         "METPO:1000603\tbiolink:PhenotypicQuality\tanaerobic\n"
         "METPO:1000605\tbiolink:PhenotypicQuality\tfacultatively anaerobic\n"
+        "METPO:1000606\tbiolink:PhenotypicQuality\tobligately aerobic\n"
         "METPO:1000608\tbiolink:PhenotypicQuality\tfacultatively aerobic\n"
         "METPO:1000668\tbiolink:PhenotypicQuality\tcoccus shaped\n"
         "METPO:1000678\tbiolink:PhenotypicQuality\toval shaped\n"
@@ -112,9 +113,9 @@ def test_audit_reports_what_each_scope_adds(tmp_path: Path) -> None:
         "phenotype (METPO object)": 2,
         "shows activity of": 1,
     }
-    anaerobic = {scope: scopes[scope]["focal_traits"]["METPO:1000605"] for scope in scopes}
-    assert [anaerobic[s]["ncbitaxon_nodes"] for s in ("off", "phenotype", "full")] == [1, 2, 2]
-    assert [anaerobic[s]["reported_taxa"] for s in ("off", "phenotype", "full")] == [2, 3, 3]
+    facultative = {scope: scopes[scope]["focal_traits"]["METPO:1000608"] for scope in scopes}
+    assert [facultative[s]["ncbitaxon_nodes"] for s in ("off", "phenotype", "full")] == [1, 2, 2]
+    assert [facultative[s]["reported_taxa"] for s in ("off", "phenotype", "full")] == [2, 3, 3]
     human = summary["signature_taxa"]["cohorts"][1]
     assert human["phenotype"]["host_species"] == "Homo sapiens"
     assert [human[s]["gaining_a_trait_label"] for s in ("off", "phenotype", "full")] == [0, 2, 2]
@@ -127,5 +128,5 @@ def test_audit_reports_what_each_scope_adds(tmp_path: Path) -> None:
     clinical = rows["METPO:1004004"]
     assert (clinical["excluded_phenotype"], clinical["vocabulary_phenotype"]) == ("True", "False")
     assert clinical["vocabulary_full"] == "True"
-    unlinked = rows["METPO:1000608"]
+    unlinked = rows["METPO:1000606"]
     assert (unlinked["unlinked_strains"], unlinked["vocabulary_full"]) == ("1", "False")

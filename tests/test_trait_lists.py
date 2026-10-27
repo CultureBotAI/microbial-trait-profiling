@@ -73,11 +73,13 @@ def test_trait_labels_come_from_object_name_and_never_from_identifiers() -> None
 
 
 def test_committed_trait_lists_parse_and_nest() -> None:
-    """The #1045 lists: ten headline traits, and those plus Table 1 and METPO:1000607."""
+    """The #1045/#1123 lists: nonredundant headline traits, plus Table 1 and METPO:1000607."""
     lists = Path(__file__).resolve().parents[1] / "methods" / "trait_lists"
     headline = load_trait_list(lists / "headline_ten_phenotype.txt").trait_ids
     density = load_trait_list(lists / "density_headline_table1_phenotype.txt").trait_ids
 
-    assert len(headline) == 10
+    assert len(headline) == 9
+    assert "METPO:1000608" in headline
+    assert "METPO:1000605" not in headline
     assert density[: len(headline)] == headline
     assert set(density) == set(headline) | set(TABLE_1_TRAITS) | {"METPO:1000607"}

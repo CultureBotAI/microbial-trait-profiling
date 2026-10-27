@@ -220,7 +220,7 @@ def test_strain_edges_never_reach_the_off_matrix(tmp_path: Path) -> None:
         with_strains
         == without_strains
         == [
-            "taxon_id\ttaxon_name\ttaxonomic_rank\tMETPO:1000603\tMETPO:1000605",
+            "taxon_id\ttaxon_name\ttaxonomic_rank\tMETPO:1000603\tMETPO:1000608",
             "NCBITaxon:900\tFamilyaceae\tfamily\t1\t1",
             "NCBITaxon:100\tGenus\tgenus\t1\t1",
             "NCBITaxon:101\tSpecies a\tspecies\t1\t0",
@@ -247,12 +247,12 @@ def test_strain_rollup_counts_strain_traits_at_the_linked_ncbitaxon_node(
 ) -> None:
     """A strain's traits count once at its species, then roll up like the species' own.
 
-    Species a carries anaerobic itself and through strain 1, and facultatively anaerobic
-    through two strains: each counts once at the species. The genus and family count
-    annotated NCBITaxon nodes, so facultatively anaerobic is 2 there (species a through its
-    strains, species b directly). Strains without an NCBITaxon link add nothing (#774).
-    The phenotype scope leaves out strain 3's capability edge, which has no bare METPO
-    phenotype object (#788).
+    Species a carries anaerobic itself and through strain 1, and facultative oxygen
+    preference through two strains: each counts once at the species. The genus and family
+    count annotated NCBITaxon nodes, so facultative oxygen preference is 2 there (species a
+    through its strains, species b directly). Strains without an NCBITaxon link add nothing
+    (#774). The phenotype scope leaves out strain 3's capability edge, which has no bare
+    METPO phenotype object (#788).
     """
     lines = _matrix_lines(
         tmp_path / "on", [*TAXONOMY_AND_TAXON_EDGES, *STRAIN_EDGES], strain_rollup
@@ -263,7 +263,7 @@ def test_strain_rollup_counts_strain_traits_at_the_linked_ncbitaxon_node(
     assert lines == [
         "taxon_id\ttaxon_name\ttaxonomic_rank\tMETPO:1000603"
         + "".join(cellulose)
-        + "\tMETPO:1000605",
+        + "\tMETPO:1000608",
         "NCBITaxon:900\tFamilyaceae\tfamily\t1" + "".join(cell) + "\t2",
         "NCBITaxon:100\tGenus\tgenus\t1" + "".join(cell) + "\t2",
         "NCBITaxon:101\tSpecies a\tspecies\t1" + "".join(no_cell) + "\t1",
@@ -294,7 +294,7 @@ def test_each_scope_has_its_own_vocabulary(
     """Off keeps the direct vocabulary, phenotype adds bare METPO phenotypes only, and
     full adds every strain key that does not assert an absence while dropping every one
     that does, the species' own "does not grow in" included (#788)."""
-    direct = {"METPO:1000603", "METPO:1000605", "METPO:2000518|mediadive.medium:1"}
+    direct = {"METPO:1000603", "METPO:1000608", "METPO:2000518|mediadive.medium:1"}
 
     header = _matrix_lines(tmp_path / strain_rollup, ALL_EDGES, strain_rollup)[0]
 
@@ -436,4 +436,76 @@ def test_strain_rollup_writes_an_explicit_output(tmp_path: Path) -> None:
     )
 
     assert exit_code == 0
-    assert output_path.read_text(encoding="utf-8").splitlines()[0].endswith("\tMETPO:1000605")
+    assert output_path.read_text(encoding="utf-8").splitlines()[0].endswith("\tMETPO:1000608")
+
+
+def test_facultative_synonyms_unify_into_single_nonredundant_feature(tmp_path: Path) -> None:
+    """METPO:1000605, METPO:1000608, and METPO:1000612 collapse to METPO:1000608 (#1123)."""
+    for synonym in ("METPO:1000605", "METPO:1000608", "METPO:1000612"):
+        assert (
+            taxa_trait_matrix.make_trait_key("biolink:has_phenotype", synonym)
+            == taxa_trait_matrix.FACULTATIVE_TRAIT_ID
+            == "METPO:1000608"
+        )
+    assert (
+        taxa_trait_matrix.make_trait_key("METPO:2000022", "METPO:1000605")
+        == "METPO:2000022|METPO:1000608"
+    )
+
+    taxa_path = tmp_path / "bugsigdb_taxa.tsv"
+    nodes_path = tmp_path / "nodes.tsv"
+    edges_path = tmp_path / "edges.tsv"
+    output_path = tmp_path / "taxa_trait_matrix.tsv"
+    column_metadata_path = tmp_path / "taxa_trait_matrix_columns.tsv"
+
+    taxa_path.write_text(
+        "direction\ttaxon_id\ttaxon_name\ttaxonomic_rank\n"
+        "increased\tNCBITaxon:100\tGenus\tgenus\n"
+        "increased\tNCBITaxon:101\tSpecies a\tspecies\n",
+        encoding="utf-8",
+    )
+    nodes_path.write_text(
+        "id\tcategory\tname\n"
+        "METPO:1000605\tbiolink:PhenotypicQuality\tfacultatively anaerobic\n"
+        "METPO:1000608\tbiolink:PhenotypicQuality\tfacultatively aerobic\n"
+        "METPO:1000612\tbiolink:PhenotypicQuality\tfacultative\n",
+        encoding="utf-8",
+    )
+    edges_path.write_text(
+        "id\tsubject\tpredicate\tobject\n"
+        "e1\tNCBITaxon:101\tbiolink:subclass_of\tNCBITaxon:100\n"
+        "e2\tNCBITaxon:101\tbiolink:has_phenotype\tMETPO:1000605\n"
+        "e3\tNCBITaxon:101\tbiolink:has_phenotype\tMETPO:1000608\n"
+        "e4\tNCBITaxon:101\tbiolink:has_phenotype\tMETPO:1000612\n"
+        "s1\tkgmicrobe.strain:1\tbiolink:subclass_of\tNCBITaxon:101\n"
+        "s2\tkgmicrobe.strain:1\tbiolink:has_phenotype\tMETPO:1000605\n"
+        "s3\tkgmicrobe.strain:1\tbiolink:has_phenotype\tMETPO:1000612\n",
+        encoding="utf-8",
+    )
+
+    stats = taxa_trait_matrix.create_taxa_trait_matrix(
+        taxa_path=taxa_path,
+        kg_dir=tmp_path,
+        output_path=output_path,
+        column_metadata_path=column_metadata_path,
+        edges_path=edges_path,
+        nodes_path=nodes_path,
+        strain_rollup="phenotype",
+    )
+
+    assert stats.traits == 1
+    assert output_path.read_text(encoding="utf-8").splitlines() == [
+        "taxon_id\ttaxon_name\ttaxonomic_rank\tMETPO:1000608",
+        "NCBITaxon:100\tGenus\tgenus\t1",
+        "NCBITaxon:101\tSpecies a\tspecies\t1",
+    ]
+    assert column_metadata_path.read_text(encoding="utf-8").splitlines() == [
+        (
+            "column_id\tcolumn_label\tpredicate_id\tpredicate_name\tobject_id"
+            "\tobject_name\tobject_category"
+        ),
+        (
+            "METPO:1000608\tfacultatively aerobic METPO:1000608\t\t\tMETPO:1000608"
+            "\tfacultatively aerobic\tbiolink:PhenotypicQuality"
+        ),
+    ]
