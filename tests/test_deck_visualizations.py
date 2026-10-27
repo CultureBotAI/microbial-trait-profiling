@@ -274,3 +274,48 @@ def test_cli_main(mock_pipeline_data: dict[str, Path], tmp_path: Path) -> None:
     assert exit_code == 0
     assert (out_dir / "figure1_condition_anatomy_ora_heatmap.png").exists()
     assert (out_dir / "figure4_annotation_density_pc1_landscape.png").exists()
+
+
+def test_figure4_draws_only_significant_adjusted_effects_as_surviving(
+    mock_pipeline_data: dict[str, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Only significant effects that keep the raw sign are drawn as surviving (#1084, #1097)."""
+    import plotly.graph_objects as go
+
+    effects_path = mock_pipeline_data["table1_effects"]
+    effects = pd.read_csv(effects_path, sep="\t")
+    effects["status"] = [
+        "survived (significant post-adjustment)",
+        "enhanced (significant, larger magnitude)",
+        "enhanced magnitude (nonsignificant post-adjustment)",
+        "collapsed (nonsignificant post-adjustment, larger magnitude)",
+        "reversed (significant post-adjustment)",
+        "undefined magnitude change (raw mean zero, significant post-adjustment)",
+    ]
+    effects.to_csv(effects_path, sep="\t", index=False)
+    figures: list[Any] = []
+
+    def capture(figure: Any, path: str, **_kwargs: Any) -> None:
+        figures.append(figure)
+        Path(path).write_bytes(b"")
+
+    monkeypatch.setattr(go.Figure, "write_image", capture)
+    generate_figure4_annotation_density_pc1_landscape(
+        taxa_matrix_path=mock_pipeline_data["taxa_matrix"],
+        columns_path=mock_pipeline_data["columns"],
+        profiles_path=mock_pipeline_data["profiles"],
+        table1_effects_path=effects_path,
+        output_path=tmp_path / "fig4.png",
+    )
+
+    (figure,) = figures
+    green, red = "#27ae60", "#e74c3c"
+    expected = [green, green, red, red, red, red]
+    adjusted = next(trace for trace in figure.data if trace.name == "PC1-Adjusted")
+    assert list(adjusted.marker.color) == expected
+    dumbbells = [
+        trace.line.color
+        for trace in figure.data
+        if trace.type == "scatter" and trace.mode == "lines" and len(trace.x) == 2
+    ]
+    assert dumbbells == expected
