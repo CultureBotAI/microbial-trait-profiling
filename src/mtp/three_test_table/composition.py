@@ -6,10 +6,11 @@ then equal-weight study means. Zero-total profiles remain zero fractions. Adapte
 SD thresholds of 1e-12 remain unchanged; its untestable p=1 placeholders enter
 full-family correction, while this export leaves their inferential fields blank.
 
-The secondary test is two-sided Wilcoxon signed rank on those study means,
-zero_method='wilcox', method='approx', correction=False. Exact zero study means
-are excluded from its ranks. All-zero or empty vectors are untestable, held at
-p=1 for correction over the full catalog. This test never decides a headline.
+The secondary test is two-sided Wilcoxon signed rank on those study means. Its
+versioned helper uses the shared 1e-12 zero tolerance and exact small-sample
+inference, including exhaustive signs for small tied samples. Empty or all-zero
+vectors retain internal p=1 for full-catalog correction. This secondary test never
+decides a headline.
 No ranks choose an estimand: both signed means and their absolute magnitudes have
 explicit competition ranks (minimum rank for ties). Inputs must already carry
 the verified arm's human corpus scope; this function does not infer host species.
@@ -23,7 +24,6 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
-from scipy.stats import wilcoxon
 
 from mtp.composition_calibration.adapters.jed_composition import (
     PROFILE_NONTRAIT_COLUMNS,
@@ -32,10 +32,16 @@ from mtp.composition_calibration.adapters.jed_composition import (
 )
 from mtp.multiple_testing import adjusted_probabilities, load_policy
 from mtp.study_trait_profiles import direction_to_inc_dec
+from mtp.three_test_table.signed_rank import (
+    EXACT_MAX_N,
+    PERMUTATION_MAX_N,
+    ZERO_TOLERANCE,
+    study_wilcoxon,
+)
+from mtp.three_test_table.signed_rank import WILCOXON_CONTRACT as WILCOXON_CONTRACT
 from mtp.trait_guilds import MEDIADIVE_MARKER
 
 COMPOSITION_CONTRACT = "full-catalog-study-delta-z-v1"
-WILCOXON_CONTRACT = "study-mean-delta-z-wilcoxon-v1"
 PROFILE_KEYS = ["study_id", "experiment_id", "inc_dec"]
 MAX_EXACT_FLOAT_COUNT = 2**53 - 1
 
@@ -160,10 +166,7 @@ def composition_table(profiles: pd.DataFrame, traits: Sequence[str]) -> Composit
     for trait in traits:
         values = studies[trait].to_numpy(dtype=float)
         reason = _t_reason(values)
-        nonzero = int(np.count_nonzero(values))
-        wilcoxon_reason = (
-            "insufficient_support" if not len(values) else "all_tied" if not nonzero else ""
-        )
+        signed_rank = study_wilcoxon(values)
         if not reason and (trait not in native["bh"].index or trait not in native["by"].index):
             raise ValueError("Native adapter omitted a testable full-catalog trait")
         row: dict[str, object] = {
@@ -190,10 +193,14 @@ def composition_table(profiles: pd.DataFrame, traits: Sequence[str]) -> Composit
             "study_t_reason": reason,
             "study_t_primary_correction": "BY",
             "study_wilcoxon_contract": WILCOXON_CONTRACT,
-            "study_wilcoxon_status": "untestable" if wilcoxon_reason else "tested",
-            "study_wilcoxon_reason": wilcoxon_reason,
-            "study_wilcoxon_nonzero_studies": nonzero,
-            "study_wilcoxon_zero_studies": len(values) - nonzero,
+            "study_wilcoxon_status": "untestable" if signed_rank.reason else "tested",
+            "study_wilcoxon_reason": signed_rank.reason,
+            "study_wilcoxon_nonzero_studies": signed_rank.nonzero_studies,
+            "study_wilcoxon_zero_studies": signed_rank.zero_studies,
+            "study_wilcoxon_method": signed_rank.method,
+            "study_wilcoxon_zero_tolerance": ZERO_TOLERANCE,
+            "study_wilcoxon_exact_max_n": EXACT_MAX_N,
+            "study_wilcoxon_permutation_max_n": PERMUTATION_MAX_N,
         }
         for output, column in (
             ("study_t_statistic", "t_statistic"),
@@ -206,20 +213,9 @@ def composition_table(profiles: pd.DataFrame, traits: Sequence[str]) -> Composit
         row["study_t_q_by"] = (
             _native_number(native["by"], trait, "q_value") if not reason else np.nan
         )
-        if wilcoxon_reason:
-            row["study_wilcoxon_statistic"] = row["study_wilcoxon_p"] = np.nan
-            wilcoxon_probabilities.append(1.0)
-        else:
-            signed_rank = wilcoxon(
-                values,
-                alternative="two-sided",
-                zero_method="wilcox",
-                method="approx",
-                correction=False,
-            )
-            row["study_wilcoxon_statistic"] = float(signed_rank.statistic)
-            row["study_wilcoxon_p"] = float(signed_rank.pvalue)
-            wilcoxon_probabilities.append(float(signed_rank.pvalue))
+        row["study_wilcoxon_statistic"] = signed_rank.statistic
+        row["study_wilcoxon_p"] = signed_rank.pvalue if not signed_rank.reason else np.nan
+        wilcoxon_probabilities.append(signed_rank.pvalue)
         rows.append(row)
     by, bh = adjusted_probabilities(wilcoxon_probabilities, policy=load_policy())
     for row, q_by, q_bh in zip(rows, by, bh, strict=True):

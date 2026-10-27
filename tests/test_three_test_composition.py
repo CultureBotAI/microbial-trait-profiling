@@ -99,7 +99,11 @@ def test_secondary_wilcoxon_counts_studies_and_uses_full_catalog(profiles: pd.Da
     for trait in ("trait_A", "trait_B"):
         values = result.study_contrasts[trait]
         expected = stats.wilcoxon(
-            values, zero_method="wilcox", correction=False, alternative="two-sided", method="approx"
+            values[values.abs() > 1e-12],
+            zero_method="wilcox",
+            correction=False,
+            alternative="two-sided",
+            method=stats.PermutationMethod(n_resamples=np.inf),
         )
         raw.append(expected.pvalue)
         assert table.loc[trait, "study_wilcoxon_statistic"] == expected.statistic
@@ -297,3 +301,63 @@ def test_full_family_by_is_distinct_from_bh_and_keeps_untestable_member() -> Non
     assert table.loc["trait_zero", "study_t_status"] == "untestable"
     assert table.loc["trait_zero", "study_t_reason"] == "all_tied"
     assert table.loc["trait_zero", ["study_t_p", "study_t_q_by", "study_t_q_bh"]].isna().all()
+
+
+@pytest.mark.parametrize(("studies", "expected_p"), [(1, 1.0), (5, 0.0625)])
+def test_small_one_sign_study_samples_use_exact_wilcoxon(studies: int, expected_p: float) -> None:
+    records = []
+    for index in range(studies):
+        for direction, count in (("inc", 9 - index), ("dec", 1)):
+            records.append(
+                {
+                    "study_id": f"study{index}",
+                    "experiment_id": "pair",
+                    "inc_dec": direction,
+                    "trait_A": count,
+                    "trait_B": 10 - count,
+                    "trait_zero": 0,
+                }
+            )
+    result = composition_table(pd.DataFrame(records), ["trait_A", "trait_B", "trait_zero"])
+    assert result.study_contrasts.trait_A.gt(0).all()
+    row = result.table.set_index("trait").loc["trait_A"]
+    assert row.study_wilcoxon_statistic == 0
+    assert row.study_wilcoxon_p == expected_p
+    table = result.table.set_index("trait")
+    for correction in ("bh", "by"):
+        expected = stats.false_discovery_control([expected_p, expected_p, 1.0], method=correction)
+        assert row[f"study_wilcoxon_q_{correction}"] == expected[0]
+        assert table.loc["trait_B", f"study_wilcoxon_q_{correction}"] == expected[1]
+    assert table.loc["trait_zero", "study_wilcoxon_status"] == "untestable"
+    assert pd.isna(table.loc["trait_zero", "study_wilcoxon_q_by"])
+
+
+def test_signed_rank_declares_policy_and_keeps_all_traits_in_both_families(
+    profiles: pd.DataFrame,
+) -> None:
+    result = composition_table(profiles, ["trait_A", "trait_B", "trait_zero"])
+    table = result.table.set_index("trait")
+    assert set(table.study_wilcoxon_contract) == {"study-mean-delta-z-wilcoxon-v2"}
+    assert set(table.study_wilcoxon_zero_tolerance) == {1e-12}
+    assert set(table.study_wilcoxon_exact_max_n) == {50}
+    assert set(table.study_wilcoxon_permutation_max_n) == {13}
+    assert table.loc["trait_zero", "study_wilcoxon_method"] == "not_tested"
+    assert (
+        table.loc["trait_zero", ["study_wilcoxon_p", "study_wilcoxon_q_bh", "study_wilcoxon_q_by"]]
+        .isna()
+        .all()
+    )
+    probabilities = [*table.loc[["trait_A", "trait_B"], "study_wilcoxon_p"], 1.0]
+    for correction in ("bh", "by"):
+        expected = stats.false_discovery_control(probabilities, method=correction)
+        np.testing.assert_allclose(
+            table.loc[["trait_A", "trait_B"], f"study_wilcoxon_q_{correction}"],
+            expected[:2],
+            rtol=1e-14,
+            atol=0,
+        )
+    for trait in table.index:
+        values = result.study_contrasts[trait]
+        assert table.loc[trait, "study_mean_delta_z"] == values.mean()
+        assert table.loc[trait, "study_delta_z_sd"] == values.std(ddof=1)
+        assert table.loc[trait, "experiment_mean_delta_z"] == result.pair_contrasts[trait].mean()

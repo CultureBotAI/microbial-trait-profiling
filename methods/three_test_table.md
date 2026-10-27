@@ -52,16 +52,43 @@ are rejected rather than silently reconciled.
 
 The secondary Wilcoxon test was declared at the study level before computation:
 each study contributes one mean delta-z, regardless of its number of experiments.
-It uses two-sided signed rank, `zero_method="wilcox"`, `method="approx"`,
-continuity correction disabled.
-Zero differences are removed from ranking. All-zero or absent contrasts are
-untestable. Correct across the full retained catalog with BY and companion BH,
-holding untestable traits at internal p=1. It is secondary and never a headline.
-It does not reuse the six-trait raw-count density-adjustment Wilcoxon results.
-Study means give one observation per study, so additional experiments from a
-study do not contribute additional signed-rank observations.
+The current `study-mean-delta-z-wilcoxon-v2` contract uses two-sided signed rank
+with `zero_method="wilcox"` and no continuity correction. In a private test vector,
+exclude study means with absolute value <=1e-12, using the same zero tolerance as
+Noel's study votes. Do not round remaining values or modify stored experiment or
+study contrasts, descriptive means, ranks, t-tests or confidence intervals.
+
+Method selection uses the number of remaining studies and exact equality of
+absolute magnitudes. With no tied magnitudes, use SciPy's exact signed-rank
+distribution through 50 active studies. With ties and at most 13 active studies,
+use `PermutationMethod(n_resamples=np.inf)` to enumerate every sign assignment;
+the untied signed-rank distribution is not exact for ties. Otherwise use the
+asymptotic normal approximation with tie correction and no continuity correction.
+These explicit thresholds make the policy independent of SciPy's automatic
+method selection. Exact sign enumeration is deterministic and uses no random
+sample. These p-values retain the signed-rank test's symmetry and independence
+assumptions; exact computation alone does not establish biological calibration.
+The 50/13 cutoffs follow the documented SciPy 1.17 policy, applied explicitly
+after tolerance filtering: [SciPy 1.17.0 Wilcoxon notes](https://docs.scipy.org/doc/scipy-1.17.0/reference/generated/scipy.stats.wilcoxon.html#notes).
+The implementation and tests use locked SciPy 1.17.1; its version is also recorded
+in each run's numerical environment.
+
+Record the selected method, zero tolerance, both cutoffs and active/zero study
+counts in each trait row. Nonempty vectors with no active studies have reason
+`all_tied`; absent vectors have reason `insufficient_support`; both have method
+`not_tested`. Leave their reported statistic/p/q blank and retain internal p=1.
+Correct across the full retained catalog with BY and companion BH. The test is
+secondary and never a headline; it does not reuse the six-trait raw-count
+density-adjustment Wilcoxon results. Study means give one observation per study,
+so additional experiments do not add signed-rank observations.
 `study_wilcoxon_statistic` is the two-sided minimum of the
 positive- and negative-rank sums, min(W+, W−); it carries no sign.
+
+The legacy `study-mean-delta-z-wilcoxon-v1` contract used exact-zero removal and a
+normal approximation for every nonempty, nonzero sample. Historical v1 evidence
+must retain that identity. Compare v1 and v2 on the same stored study vectors and
+full retained families; do not rewrite historical p/q fields or infer independent
+replication from the two calculations.
 
 ## ORA declaration: ora-study-enrichment-direction-v1
 
