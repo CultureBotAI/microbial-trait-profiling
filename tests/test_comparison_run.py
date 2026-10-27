@@ -23,11 +23,17 @@ from mtp.datamodel.workflow_pydantic import (
     CalibrationVerdict,
     ComparisonRun,
     EligibilityLedger,
+    WorkflowRun,
 )
 from mtp.integrated_evidence import main as integrated_evidence_main
+from mtp.multiplicity import sources as multiplicity_sources
+from mtp.multiplicity.stage import run_post_arm
 from mtp.paths import REPO_ROOT
+from mtp.three_test_table import stage as three_test_stage
 from mtp.workflow import comparison
+from mtp.workflow import consumers as workflow_consumers
 from mtp.workflow.arms import ilyas, jed, noel
+from mtp.workflow.arms import runtime as arm_runtime
 from mtp.workflow.arms.__main__ import main as arms_main
 from mtp.workflow.arms.runtime import INPUT_NAMES, Planner, execute_arm, verify_arm
 from mtp.workflow.arms.types import ArmContext, Command
@@ -43,6 +49,7 @@ from mtp.workflow.comparison import (
     verify_comparison_run,
 )
 from mtp.workflow.downstream_contracts import STANDARD_ANALYSIS_SPECS, build_eligibility_ledger
+from mtp.workflow.locations import LocationResolver
 from mtp.workflow.models import ContrastPopulation
 from mtp.workflow.operations import OPERATIONS, validate_core_product
 from mtp.workflow.runtime import execute_workflow
@@ -91,10 +98,10 @@ DUMP_HEADER = [
     "Description",
 ]
 
-#: The real arm steps whose outputs the compare stage reads, and their prerequisites.
+#: Real comparison inputs, their prerequisites, and the optional multiplicity inputs.
 CONSUMED_STEPS = {
     "noel": {"directional_screen", "empirical_calibration", "contrast_orientation"},
-    "jed": {"human_counts", "composition_sensitivity", "composition_calibration"},
+    "jed": {"human_counts", "composition", "composition_sensitivity", "composition_calibration"},
     "ilyas": {"enrichment", "depletion"},
 }
 PLANNERS: dict[str, Planner] = {
@@ -127,7 +134,8 @@ def _write_inputs(root: Path) -> dict[str, Path]:
         nodes.append([taxon, "biolink:OrganismTaxon", name])
         edges.append([f"t{taxon}", taxon, "biolink:subclass_of", genus, "fixture"])
         edges += [[f"a{taxon}{term}", taxon, TRAITS[term], term, "fixture"] for term in traits]
-    nodes += [[term, "biolink:PhenotypicQuality", term] for term in TRAITS]
+    oxygen_labels = {"METPO:1000603": "anaerobic", "METPO:1000607": "obligately anaerobic"}
+    nodes += [[term, "biolink:PhenotypicQuality", oxygen_labels.get(term, term)] for term in TRAITS]
     nodes += [["METPO:2000102", "biolink:OntologyClass", "has pathway"]]
     nodes += [["METPO:2000103", "biolink:OntologyClass", "capable of"]]
     paths = {"kg_edges": root / "merged-kg_edges.tsv", "kg_nodes": root / "merged-kg_nodes.tsv"}
@@ -280,6 +288,95 @@ def test_every_file_the_stage_reads_is_declared_by_its_arm_plan(tmp_path: Path) 
 
 def test_compare_stage_runs_on_arm_runs_and_verifies(stage: dict[str, Path]) -> None:
     assert arms_main(["verify-comparison", str(stage["comparison"])]) == 0
+
+
+@pytest.mark.parametrize("entrypoint", ["sources", "comparison", "arm"])
+def test_upstream_graph_verifies_each_execution_once(
+    stage: dict[str, Path], monkeypatch: pytest.MonkeyPatch, entrypoint: str
+) -> None:
+    """Spy the actual verifiers on real completed runs, without bypassing their checks."""
+    core_calls: list[Path] = []
+    arm_calls: list[Path] = []
+    verify_core = verify_core_run
+    validate_plan = arm_runtime._validate_plan
+
+    def counted_core(path: Path) -> WorkflowRun:
+        core_calls.append(path.resolve())
+        return verify_core(path)
+
+    def counted_plan(
+        commands: list[Command], context: ArmContext, *, absent_scope_is_off: bool = False
+    ) -> None:
+        arm_calls.append(context.output)
+        validate_plan(commands, context, absent_scope_is_off=absent_scope_is_off)
+
+    for module in (comparison, arm_runtime, multiplicity_sources):
+        if hasattr(module, "verify_core_run"):
+            monkeypatch.setattr(module, "verify_core_run", counted_core)
+    monkeypatch.setattr(arm_runtime, "_validate_plan", counted_plan)
+    if entrypoint == "sources":
+        loaded = multiplicity_sources.open_verified_sources(stage["comparison"])
+        assert loaded.core.run_id == _comparison(stage).core_run_id
+    elif entrypoint == "comparison":
+        assert comparison.verify_comparison_run(stage["comparison"]) == _comparison(stage)
+    else:
+        assert verify_arm(stage["jed"]).arm == "jed"
+    assert core_calls == [stage["core"].resolve()]
+    expected = (
+        [stage["jed"].parent]
+        if entrypoint == "arm"
+        else [stage[name].parent for name in ("noel", "jed", "ilyas")]
+    )
+    assert arm_calls == expected
+
+
+def test_reused_core_must_be_the_arms_recorded_manifest(stage: dict[str, Path]) -> None:
+    core = verify_core_run(stage["core"])
+    core.manifest_path = str(stage["core"].parent / "different-run.json")
+    with pytest.raises(ValueError, match=r"Core manifest.*verified core"):
+        arm_runtime._verify_arm_with_core(stage["jed"], core)
+
+
+@pytest.mark.parametrize("with_multiplicity", [False, True])
+def test_table_generation_verifies_full_graph_once_including_native_consumer(
+    stage: dict[str, Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    with_multiplicity: bool,
+) -> None:
+    """Exercise native_family and its real consumer record, not the adapter mock."""
+    sidecar = tmp_path / "multiplicity" if with_multiplicity else None
+    if sidecar is not None:
+        run_post_arm(stage["comparison"], sidecar)
+    core_calls: list[Path] = []
+    arm_calls: list[Path] = []
+    validate_plan = arm_runtime._validate_plan
+
+    def counted_core(path: Path, *, resolver: LocationResolver | None = None) -> WorkflowRun:
+        core_calls.append(path.resolve())
+        return verify_core_run(path, resolver=resolver)
+
+    def counted_plan(
+        commands: list[Command], context: ArmContext, *, absent_scope_is_off: bool = False
+    ) -> None:
+        arm_calls.append(context.output)
+        validate_plan(commands, context, absent_scope_is_off=absent_scope_is_off)
+
+    for module in (comparison, arm_runtime, workflow_consumers):
+        monkeypatch.setattr(module, "verify_core_run", counted_core)
+    monkeypatch.setattr(arm_runtime, "_validate_plan", counted_plan)
+    # This deliberately small test run may use the external pytest scratch root.
+    monkeypatch.setattr(three_test_stage, "require_durable", lambda path: path.resolve())
+    result = three_test_stage.run_table(
+        stage["comparison"],
+        tmp_path / "table",
+        scratch=tmp_path / "scratch",
+        multiplicity=sidecar,
+    )
+    assert result["core_run_id"] == _comparison(stage).core_run_id
+    assert (tmp_path / "table" / "per_trait_evidence.tsv").is_file()
+    assert core_calls == [stage["core"].resolve()]
+    assert arm_calls == [stage[name].parent for name in ("noel", "jed", "ilyas")]
 
 
 def test_every_evidence_input_is_the_file_its_arm_step_recorded(stage: dict[str, Path]) -> None:
