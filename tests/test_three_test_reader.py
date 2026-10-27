@@ -409,9 +409,7 @@ def test_rejects_unknown_or_mixed_wilcoxon_contracts(
     frame = pd.read_csv(path, sep="\t", keep_default_na=False)
     frame["study_wilcoxon_contract"] = WILCOXON_CONTRACT
     frame.loc[0, "study_wilcoxon_contract"] = (
-        "study-mean-delta-z-wilcoxon-v99"
-        if mutation == "unknown"
-        else LEGACY_WILCOXON_CONTRACT
+        "study-mean-delta-z-wilcoxon-v99" if mutation == "unknown" else LEGACY_WILCOXON_CONTRACT
     )
     frame.to_csv(path, sep="\t", index=False)
     parent_bundle.refresh(path.name)
