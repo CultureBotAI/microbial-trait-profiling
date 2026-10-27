@@ -32,7 +32,7 @@ from mtp.datamodel.workflow_pydantic import (
     WorkflowRun,
 )
 from mtp.multiplicity.sources import VerifiedSources
-from mtp.multiplicity.stage import run_post_arm, verify_post_arm
+from mtp.multiplicity.stage import _verify_post_arm_from_sources, run_post_arm
 from mtp.paths import file_sha256
 from mtp.three_test_table import stage
 from mtp.three_test_table.carriers import carrier_table as carrier_reader
@@ -948,7 +948,7 @@ def test_verify_preserves_declared_alias_roots_when_verified_records_are_canonic
     scratch = protected / "must-not-be-created" / "scratch"
     with pytest.raises(ValueError, match="disjoint"):
         stage.verify_table(output, comparison, scratch=scratch)
-    verified.assert_called_once_with(comparison)
+    verified.assert_not_called()
     replay.assert_not_called()
     assert not scratch.parent.exists()
     assert set(protected.rglob("*")) == before
@@ -995,9 +995,10 @@ def test_optional_multiplicity_change_after_verification_is_rejected(
     sidecar = tmp_path / "multiplicity"
     original = run_post_arm(comparison, sidecar)
     target = sidecar / original.families[0].corrected.identity
+    verify_optional = _verify_post_arm_from_sources
 
-    def verified_then_changed(path: Path) -> PostArmMultiplicityRun:
-        record = verify_post_arm(path)
+    def verified_then_changed(path: Path, bound: VerifiedSources) -> PostArmMultiplicityRun:
+        record = verify_optional(path, bound)
         if mutation == "artifact":
             target.write_bytes(target.read_bytes() + b"\n")
         elif mutation == "manifest":
@@ -1011,7 +1012,7 @@ def test_optional_multiplicity_change_after_verification_is_rejected(
             (sidecar / "unexpected-link").symlink_to(target)
         return record
 
-    monkeypatch.setattr(stage, "verify_post_arm", verified_then_changed)
+    monkeypatch.setattr(stage, "_verify_post_arm_from_sources", verified_then_changed)
     output = tmp_path / "output"
     with pytest.raises(ValueError, match="Multiplicity"):
         stage.run_table(comparison, output, scratch=tmp_path / "scratch", multiplicity=sidecar)

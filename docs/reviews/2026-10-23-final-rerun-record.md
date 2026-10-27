@@ -1,5 +1,7 @@
 # Final rerun record: commit 511c891 (2026-10-23)
 
+> **Evidence location (2026-10-25):** the run directories this record names were lost from temporary storage on 2026-10-24 (#1040). All four units were rebuilt at the same commit with identical counts, verdicts and values, and archived; see [the rebuild record](2026-10-25-rebuild-of-F-record.md) for the new run and archive IDs.
+
 This records the final rerun before the NCASM talk: the runs made, the commit and inputs they used, their population and strain-rollup scope, what was verified, and which tracked outputs this PR regenerates. A number cited as a core-bound result must come from one of the verified runs below. The tracked outputs this PR regenerates are built from hashed legacy inputs and aren't core-verified, as their own provenance says. Cite them by file, together with the verification status their provenance records. Whichever source a number comes from, state its population and scope with it.
 
 ## Code and inputs

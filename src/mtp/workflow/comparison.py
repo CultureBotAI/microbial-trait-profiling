@@ -28,7 +28,7 @@ from mtp.datamodel.workflow_pydantic import (
 )
 from mtp.paths import REPO_ROOT, file_sha256
 from mtp.trait_guilds import OXYGEN_GUILDS, TABLE1_TRAITS, drop_zero_total_pairs, load_profiles
-from mtp.workflow.arms.runtime import verify_arm
+from mtp.workflow.arms.runtime import _verify_arm_with_core, verify_arm
 from mtp.workflow.coverage import feature_class, feature_filter_id
 from mtp.workflow.downstream_contracts import (
     STANDARD_ANALYSIS_SPECS,
@@ -730,6 +730,14 @@ def _require_derived_bases(
 def verify_comparison_run(path: Path) -> ComparisonRun:
     """Verify a completed ComparisonRun manifest, upstream runs, its analysis bases and
     complete outputs (#776, #817)."""
+    record, _, _ = verify_comparison_sources(path)
+    return record
+
+
+def verify_comparison_sources(
+    path: Path,
+) -> tuple[ComparisonRun, WorkflowRun, dict[str, ArmRun]]:
+    """Verify the comparison DAG once and return its verified core and three arms."""
     manifest = (path / "comparison_run.json" if path.is_dir() else path).resolve()
     if not manifest.is_file():
         raise FileNotFoundError(f"ComparisonRun manifest not found: {manifest}")
@@ -749,9 +757,9 @@ def verify_comparison_run(path: Path) -> ComparisonRun:
     ilyas_path = Path(record.ilyas_manifest_path)
 
     core_run = verify_core_run(core_path)
-    noel_run = verify_arm(noel_path)
-    jed_run = verify_arm(jed_path)
-    ilyas_run = verify_arm(ilyas_path)
+    noel_run = _verify_arm_with_core(noel_path, core_run)
+    jed_run = _verify_arm_with_core(jed_path, core_run)
+    ilyas_run = _verify_arm_with_core(ilyas_path, core_run)
 
     if file_sha256(core_path) != record.core_manifest_sha256:
         raise ValueError("core_manifest_sha256 mismatch in ComparisonRun")
@@ -802,4 +810,4 @@ def verify_comparison_run(path: Path) -> ComparisonRun:
         raise ValueError(
             "ComparisonRun contains source_not_supplied placeholder rows: " + ", ".join(missing)
         )
-    return record
+    return record, core_run, {"noel": noel_run, "jed": jed_run, "ilyas": ilyas_run}

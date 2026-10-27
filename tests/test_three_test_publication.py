@@ -23,7 +23,7 @@ def test_cli_publication_inherits_umask_without_main_reimport(mask: int) -> None
         process = subprocess.run(
             [
                 sys.executable,
-                str(root / "scripts/adhoc/issue1088_cli_publication.py"),
+                str(root / "tests/helpers/three_test_cli_publication.py"),
                 "--output-root",
                 str(output_root),
             ],

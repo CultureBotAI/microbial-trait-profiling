@@ -103,7 +103,11 @@ def synthetic_parent(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
         path: {"sha256": file_sha256(path), "size_bytes": path.stat().st_size} for path in paths
     }
     sources = SimpleNamespace(
-        core=SimpleNamespace(manifest_path=str(records["core"])),
+        core=SimpleNamespace(
+            manifest_path=str(records["core"]),
+            definition=SimpleNamespace(products=[]),
+            artifacts=[],
+        ),
         comparison=SimpleNamespace(manifest_path=str(records["comparison"])),
         arms={
             name: SimpleNamespace(manifest_path=str(records[name]))
