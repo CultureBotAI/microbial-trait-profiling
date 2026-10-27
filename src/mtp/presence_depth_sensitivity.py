@@ -39,6 +39,7 @@ from mtp.workflow.consumers import (
 from mtp.workflow.coverage import feature_filter_id
 from mtp.workflow.downstream_contracts import build_analysis_basis
 from mtp.workflow.operations import run_strain_rollup
+from mtp.workflow.output_roots import add_temporary_output_option, require_durable_output
 from mtp.workflow.runtime import repository_state
 
 Key = tuple[str, str, str]
@@ -834,7 +835,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--core-run", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
+    add_temporary_output_option(parser)
     args = parser.parse_args(argv)
+    require_durable_output(parser, args.output_dir, allowed=args.allow_temporary_output)
     print(run_sensitivity(args.core_run, args.output_dir))
     return 0
 

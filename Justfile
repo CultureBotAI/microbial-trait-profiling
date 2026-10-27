@@ -90,11 +90,15 @@ core-import-legacy source output:
 core-compare run baseline_dir output:
 	uv run python -m mtp.workflow compare-legacy "{{run}}" "{{baseline_dir}}" "{{output}}"
 
-core-screen run output:
-	uv run python -m mtp.trait_screen --core-run "{{run}}" --output-dir "{{output}}"
+# The arms run these core-* modules too, so the recipe, not the module, refuses an output
+# root under the system temporary directory; --allow-temporary-output admits a throwaway run (#1087).
+[positional-arguments]
+core-screen run output *ARGS:
+	bash scripts/guard_output_root.sh "$2" uv run python -m mtp.trait_screen --core-run "$1" --output-dir "$2" "${@:3}"
 
-core-composition run output:
-	uv run python -m mtp.trait_composition --core-run "{{run}}" --output-dir "{{output}}"
+[positional-arguments]
+core-composition run output *ARGS:
+	bash scripts/guard_output_root.sh "$2" uv run python -m mtp.trait_composition --core-run "$1" --output-dir "$2" "${@:3}"
 
 # After study-trait-profiles and trait-heatmaps: pooled/site tables with hashed provenance.
 [positional-arguments]
@@ -107,12 +111,13 @@ probe-site-stats-guard *ARGS:
 	uv run python scripts/adhoc/issue928_guard_isolation.py "$@"
 
 # Complete exports carry the verified input fingerprints needed for integration.
+# Give the tail before --allow-temporary-output, e.g. `just core-ora RUN OUT upper --allow-temporary-output`.
 [positional-arguments]
-core-ora run output tail="upper":
-	uv run python scripts/trait_enrichment.py --core-run "$1" \
+core-ora run output *ARGS:
+	bash scripts/guard_output_root.sh "$2" uv run python scripts/trait_enrichment.py --core-run "$1" \
 	  --output "$2/report.txt" --tsv-output "$2/results.tsv" \
-	  --all-results-output "$2/all_results.tsv" --tail "$3" \
-	  --p-threshold 0.001 --min-fold 1.5 --max-fold 0.5 --fdr-scope global
+	  --all-results-output "$2/all_results.tsv" --tail "${3:-upper}" \
+	  --p-threshold 0.001 --min-fold 1.5 --max-fold 0.5 --fdr-scope global "${@:4}"
 
 [positional-arguments]
 audit-ora-refresh manifest output:
@@ -121,7 +126,7 @@ audit-ora-refresh manifest output:
 # Bind all anatomical partitions and summaries to the same verified ORA core.
 [positional-arguments]
 core-strata run output *ARGS:
-	uv run python scripts/run_stratified_enrichment.py --core-run "$1" --output-dir "$2" "${@:3}"
+	bash scripts/guard_output_root.sh "$2" uv run python scripts/run_stratified_enrichment.py --core-run "$1" --output-dir "$2" "${@:3}"
 
 [positional-arguments]
 audit-core-strata historical current:
@@ -906,7 +911,7 @@ audit-trait-density *ARGS:
 # trait_list_provenance.json records the list's SHA-256 (#1054). Without a list: audit-trait-density.
 [positional-arguments]
 density-adjustment-trait-list trait_list profiles columns output *ARGS:
-	uv run python -m mtp.density_adjustment --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" --trait-list "$1" --profiles "$2" --columns "$3" --output-dir "$4" "${@:5}"
+	bash scripts/guard_output_root.sh "$4" uv run python -m mtp.density_adjustment --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" --trait-list "$1" --profiles "$2" --columns "$3" --output-dir "$4" "${@:5}"
 
 # Audit trait coupling sensitivity via LOTO, LCO, and three-arm evaluation (#260).
 [positional-arguments]

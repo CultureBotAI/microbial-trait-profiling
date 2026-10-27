@@ -377,7 +377,7 @@ def test_cli_writes_trait_list_contrasts_and_requires_an_output_dir(
 
     output = tmp_path / "output"
     with patch.object(sankeys, "main") as six_trait_main:
-        sankeys.cli([*argv, "--output-dir", str(output)])
+        sankeys.cli([*argv, "--output-dir", str(output), "--allow-temporary-output"])
     six_trait_main.assert_not_called()
     contrasts = pd.read_csv(output / heatmaps.TRAIT_LIST_CONTRAST_TABLE_FILENAME, sep="\t")
     assert set(contrasts["trait_id"]) == set(EXTRA)
