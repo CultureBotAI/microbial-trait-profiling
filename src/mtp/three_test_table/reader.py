@@ -598,8 +598,8 @@ def load_completed_table(
 
 
 __all__ = [
-    "CompletedTable",
     "SUPPORTED_WILCOXON_CONTRACTS",
+    "CompletedTable",
     "load_completed_table",
     "recheck_completed_table",
 ]
