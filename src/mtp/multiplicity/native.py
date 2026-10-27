@@ -24,7 +24,7 @@ from mtp.multiplicity.families import (
 )
 from mtp.multiplicity.sources import VerifiedSources, recorded_comparison_output
 from mtp.paths import file_sha256
-from mtp.workflow.consumers import verify_consumer_record
+from mtp.workflow.consumers import _verify_consumer_record_with_core
 
 
 def validate_study_status(row: dict[str, str], *, expected_studies: int) -> None:
@@ -99,7 +99,7 @@ def native_family(sources: VerifiedSources) -> FamilyInput:
     }
     if consumer_path.resolve() not in recorded:
         raise ValueError("Native composition lacks a comparison-bound consumer record")
-    consumer = verify_consumer_record(consumer_path)
+    consumer = _verify_consumer_record_with_core(consumer_path, sources.core)
     if (
         consumer.consumer != "native-pooled-composition-stats"
         or consumer.run_id != sources.core.run_id

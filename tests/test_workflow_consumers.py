@@ -10,6 +10,7 @@ from pathlib import Path
 import pytest
 
 from mtp.paths import REPO_ROOT
+from mtp.workflow import consumers
 from mtp.workflow.__main__ import describe, main
 from mtp.workflow.consumers import (
     import_legacy_provenance,
@@ -52,6 +53,38 @@ def test_verified_consumption_and_changed_output(core_manifest: Path, tmp_path: 
     result.write_text("statistic\tvalue\nexample\t2\n")
     with pytest.raises(ValueError, match="Consumer output changed"):
         verify_consumer_record(provenance)
+
+
+@pytest.mark.parametrize(
+    "mutation", ["core_path", "core_hash", "run_id", "output", "product", "coverage"]
+)
+def test_reused_core_keeps_consumer_binding_and_evidence_checks(
+    core_manifest: Path, tmp_path: Path, mutation: str
+) -> None:
+    bundle = open_core_bundle(core_manifest)
+    output = tmp_path / "result.tsv"
+    output.write_text("value\n1\n", encoding="utf-8")
+    binding = write_consumer_record(
+        bundle, tmp_path / "consumer.json", consumer="test-analysis", outputs=[output]
+    )
+    document = json.loads(binding.read_text(encoding="utf-8"))
+    if mutation == "core_path":
+        copied = tmp_path / "different-core.json"
+        copied.write_bytes(core_manifest.read_bytes())
+        document["run_manifest_path"] = str(copied)
+    elif mutation == "core_hash":
+        document["run_manifest_sha256"] = "0" * 64
+    elif mutation == "run_id":
+        document["run_id"] = "different-execution"
+    elif mutation == "output":
+        output.write_text("value\n2\n", encoding="utf-8")
+    elif mutation == "product":
+        document["artifact_ids"][0] = "unresolved-artifact"
+    else:
+        document["feature_filter_id"] = "different-coverage-policy"
+    binding.write_text(json.dumps(document), encoding="utf-8")
+    with pytest.raises(ValueError, match=r"(?i)core|consumer|execution"):
+        consumers._verify_consumer_record_with_core(binding, bundle.run)
 
 
 def test_additional_consumed_product_is_bound_and_tamper_detected(

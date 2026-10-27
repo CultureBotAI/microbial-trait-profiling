@@ -32,6 +32,7 @@ from mtp.multiplicity.native import native_family
 from mtp.multiplicity.ora import ora_family
 from mtp.multiplicity.sources import (
     VerifiedSources,
+    bind_recorded_hashes,
     recorded_arm_output,
     recorded_comparison_output,
     retained_features,
@@ -43,6 +44,44 @@ from mtp.workflow import runtime as workflow_runtime
 from mtp.workflow.coverage import feature_filter_id
 from multiplicity_fixture import fixture_sources, write_table
 from test_multiple_testing import family, raw
+
+
+def test_private_replay_reuses_verified_sources_without_opening_again(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    sources = fixture_sources(tmp_path / "inputs", monkeypatch)
+    comparison_path = Path(sources.comparison.manifest_path)
+    expected = run_post_arm(comparison_path, tmp_path / "sidecars")
+    bound = bind_recorded_hashes(sources, file_sha256(comparison_path))
+
+    def reopen_forbidden(path: Path) -> VerifiedSources:
+        raise AssertionError(f"Source graph was unnecessarily verified again: {path}")
+
+    monkeypatch.setattr(stage_module, "open_verified_sources", reopen_forbidden)
+    assert stage_module._verify_post_arm_from_sources(tmp_path / "sidecars", bound) == expected
+
+
+@pytest.mark.parametrize("mutation", ["comparison", "native", "wrong_comparison"])
+def test_private_replay_rejects_mutated_or_mismatched_verified_sources(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, mutation: str
+) -> None:
+    sources = fixture_sources(tmp_path / "inputs", monkeypatch)
+    comparison_path = Path(sources.comparison.manifest_path)
+    run_post_arm(comparison_path, tmp_path / "sidecars")
+    bound = bind_recorded_hashes(sources, file_sha256(comparison_path))
+    if mutation == "comparison":
+        comparison_path.write_text('{"changed": true}\n', encoding="utf-8")
+    elif mutation == "native":
+        path = recorded_arm_output(
+            sources.arms["noel"], "directional_screen", "trait_direction_screen.tsv"
+        )
+        path.write_bytes(path.read_bytes() + b"\n")
+    else:
+        different = tmp_path / "other-comparison.json"
+        different.write_bytes(comparison_path.read_bytes())
+        bound.comparison.manifest_path = str(different)
+    with pytest.raises(ValueError, match=r"(?i)comparison|source|recorded hash"):
+        stage_module._verify_post_arm_from_sources(tmp_path / "sidecars", bound)
 
 
 def test_adapter_code_identity_binds_the_shared_serializer(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -185,8 +224,9 @@ def test_code_identity_tracks_the_actual_nested_package_prefix(
 
 
 @pytest.mark.parametrize("kind", ["code", "policy"])
+@pytest.mark.parametrize("timing", ["source_load", "migration"])
 def test_post_arm_refuses_identity_changes_during_execution(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, kind: str
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, kind: str, timing: str
 ) -> None:
     """The final manifest cannot name new disk code after running cached old code."""
     sources = fixture_sources(tmp_path / "inputs", monkeypatch)
@@ -196,18 +236,28 @@ def test_post_arm_refuses_identity_changes_during_execution(
     monkeypatch.setattr(stage_module, "load_policy", lambda: policy)
     original_report = stage_module.migration_report
 
-    def report_then_edit_code(
-        family: FamilyInput, corrected: Path, destination: Path
-    ) -> stage_module.MigrationSummary:
+    def change_definition() -> None:
         nonlocal fingerprint
-        counts = original_report(family, corrected, destination)
         if kind == "code":
             fingerprint = "b" * 64
         else:
             policy.thresholds.append(0.02)
+
+    def report_then_edit_code(
+        family: FamilyInput, corrected: Path, destination: Path
+    ) -> stage_module.MigrationSummary:
+        counts = original_report(family, corrected, destination)
+        change_definition()
         return counts
 
-    monkeypatch.setattr(stage_module, "migration_report", report_then_edit_code)
+    def load_then_edit_code(_path: Path) -> VerifiedSources:
+        change_definition()
+        return sources
+
+    if timing == "source_load":
+        monkeypatch.setattr(stage_module, "open_verified_sources", load_then_edit_code)
+    else:
+        monkeypatch.setattr(stage_module, "migration_report", report_then_edit_code)
     destination = tmp_path / "sidecars"
     with pytest.raises(ValueError, match=rf"{kind}.*changed"):
         run_post_arm(Path(sources.comparison.manifest_path), destination)
@@ -703,12 +753,10 @@ def test_source_loader_checks_actual_basis_after_upstream_verification(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     fixture = fixture_sources(tmp_path / "inputs", monkeypatch)
-    monkeypatch.setattr(source_module, "verify_comparison_run", lambda _path: fixture.comparison)
-    monkeypatch.setattr(source_module, "verify_core_run", lambda _path: fixture.core)
     monkeypatch.setattr(
         source_module,
-        "verify_arm",
-        lambda path: next(arm for arm in fixture.arms.values() if Path(arm.manifest_path) == path),
+        "verify_comparison_sources",
+        lambda _path: (fixture.comparison, fixture.core, fixture.arms),
     )
     opened = source_module.open_verified_sources(Path(fixture.comparison.manifest_path))
     assert opened.features == fixture.features
@@ -723,12 +771,10 @@ def test_source_loader_rejects_mixed_arm_core(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     fixture = fixture_sources(tmp_path / "inputs", monkeypatch)
-    monkeypatch.setattr(source_module, "verify_comparison_run", lambda _path: fixture.comparison)
-    monkeypatch.setattr(source_module, "verify_core_run", lambda _path: fixture.core)
     monkeypatch.setattr(
         source_module,
-        "verify_arm",
-        lambda path: next(arm for arm in fixture.arms.values() if Path(arm.manifest_path) == path),
+        "verify_comparison_sources",
+        lambda _path: (fixture.comparison, fixture.core, fixture.arms),
     )
     fixture.arms["jed"].core_manifest_sha256 = "b" * 64
     with pytest.raises(ValueError, match="core binding"):
@@ -744,12 +790,10 @@ def test_source_loader_rejects_changed_producer_semantics(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, product: str, field: str
 ) -> None:
     fixture = fixture_sources(tmp_path / "inputs", monkeypatch)
-    monkeypatch.setattr(source_module, "verify_comparison_run", lambda _path: fixture.comparison)
-    monkeypatch.setattr(source_module, "verify_core_run", lambda _path: fixture.core)
     monkeypatch.setattr(
         source_module,
-        "verify_arm",
-        lambda path: next(arm for arm in fixture.arms.values() if Path(arm.manifest_path) == path),
+        "verify_comparison_sources",
+        lambda _path: (fixture.comparison, fixture.core, fixture.arms),
     )
     setattr(fixture.bases[product], field, "different-scientific-basis")
     with pytest.raises(ValueError, match="producer contract"):

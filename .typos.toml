@@ -1,6 +1,8 @@
 [default]
 # Figure acronym, statistical term, Cytoscape layout, and quoted study arm code.
-extend-ignore-re = ['\bPNGs\b', '\bnonsignificant\b', '\bcose\b', '\bBA\b']
+# The last pattern skips hex runs that contain a digit (commit IDs, sha256 prefixes): typos splits
+# them at digits and rewrote "16a0804caf056760" to "16a0804calf056760" in a review record (#1040).
+extend-ignore-re = ['\bPNGs\b', '\bnonsignificant\b', '\bcose\b', '\bBA\b', '\b[0-9a-f]*[0-9][0-9a-f]*\b']
 
 [default.extend-identifiers]
 PNGs = "PNGs"
