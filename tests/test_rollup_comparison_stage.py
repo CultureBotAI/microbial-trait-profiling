@@ -78,7 +78,11 @@ def parents(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
         manifest.write_text(json.dumps(record), encoding="utf-8")
         snapshots = {path: _inventory(path) for path in (manifest, evidence, *records.values())}
         sources = SimpleNamespace(
-            core=SimpleNamespace(manifest_path=str(records["core"])),
+            core=SimpleNamespace(
+                manifest_path=str(records["core"]),
+                definition=SimpleNamespace(products=[]),
+                artifacts=[],
+            ),
             comparison=SimpleNamespace(manifest_path=str(records["comparison"])),
             arms={
                 name: SimpleNamespace(manifest_path=str(records[name]))

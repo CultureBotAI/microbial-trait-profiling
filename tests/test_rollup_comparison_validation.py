@@ -28,6 +28,10 @@ from mtp.multiplicity.sources import VerifiedSources
 from mtp.rollup_comparison.validation import validate_evidence, verify_comparable
 from mtp.three_test_table import reader
 from mtp.three_test_table.reader import CompletedTable
+from mtp.three_test_table.signed_rank import (
+    LEGACY_WILCOXON_CONTRACT,
+    WILCOXON_CONTRACT,
+)
 
 POPULATION = "disease_vs_healthy_tier1_2_subject_controls"
 DIRECTION = "disease_vs_comparison"
@@ -102,6 +106,7 @@ def completed(scope: str, root: Path) -> CompletedTable:
                 "study_t_status": "untestable" if reason else "tested",
                 "study_t_reason": reason,
                 "study_t_primary_correction": "BY",
+                "study_wilcoxon_contract": WILCOXON_CONTRACT,
                 "study_t_statistic": "" if reason else 0.38,
                 "study_t_p": "" if reason else 0.74,
                 "study_t_q_bh": "" if reason else 0.8,
@@ -312,6 +317,26 @@ def test_rejects_swapped_scope_arguments(parents: tuple[CompletedTable, Complete
         verify_comparable(*reversed(parents))
 
 
+@pytest.mark.parametrize("contract", [LEGACY_WILCOXON_CONTRACT, WILCOXON_CONTRACT])
+def test_accepts_matching_v1_or_v2_wilcoxon_contracts(
+    parents: tuple[CompletedTable, CompletedTable], contract: str
+) -> None:
+    off, phenotype = parents
+    off.evidence["study_wilcoxon_contract"] = contract
+    phenotype.evidence["study_wilcoxon_contract"] = contract
+    verify_comparable(off, phenotype)
+
+
+def test_rejects_mismatched_parent_wilcoxon_contracts(
+    parents: tuple[CompletedTable, CompletedTable],
+) -> None:
+    off, phenotype = parents
+    off.evidence["study_wilcoxon_contract"] = LEGACY_WILCOXON_CONTRACT
+    phenotype.evidence["study_wilcoxon_contract"] = WILCOXON_CONTRACT
+    with pytest.raises(ValueError, match="study_wilcoxon_contract"):
+        verify_comparable(off, phenotype)
+
+
 @pytest.mark.parametrize("ledger", ["pair_delta_z", "study_delta_z"])
 def test_equal_counts_do_not_establish_same_cohort(
     parents: tuple[CompletedTable, CompletedTable], ledger: str
@@ -434,6 +459,8 @@ def test_rejects_changed_analysis_basis_semantics(
         ("noel_status", "unknown"),
         ("noel_q_by_nominal", 1.2),
         ("noel_studies_scored", 4),
+        ("study_wilcoxon_contract", "study-mean-delta-z-wilcoxon-v99"),
+        ("study_wilcoxon_contract", LEGACY_WILCOXON_CONTRACT),
     ],
 )
 def test_rejects_invalid_persisted_evidence(tmp_path: Path, column: str, value: Any) -> None:

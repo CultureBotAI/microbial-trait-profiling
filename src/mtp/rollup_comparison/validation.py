@@ -18,7 +18,11 @@ from typing import Any
 import numpy as np
 
 from mtp.datamodel.workflow_pydantic import ArtifactInstance, ParameterValue
-from mtp.three_test_table.reader import CompletedTable, _remember_path
+from mtp.three_test_table.reader import (
+    SUPPORTED_WILCOXON_CONTRACTS,
+    CompletedTable,
+    _remember_path,
+)
 
 _SCOPE_PRODUCTS = frozenset(
     {
@@ -171,6 +175,7 @@ def validate_evidence(parent: CompletedTable) -> None:
         "study_t_status",
         "study_t_reason",
         "study_t_primary_correction",
+        "study_wilcoxon_contract",
         "noel_status",
         *_T_INFERENCE,
         *_NOEL_INFERENCE,
@@ -180,6 +185,9 @@ def validate_evidence(parent: CompletedTable) -> None:
     }
     if not required.issubset(evidence.columns) or not evidence.columns.is_unique:
         raise ValueError("Inherited evidence lacks required unique columns")
+    wilcoxon_contracts = set(evidence["study_wilcoxon_contract"])
+    if len(wilcoxon_contracts) != 1 or not wilcoxon_contracts <= SUPPORTED_WILCOXON_CONTRACTS:
+        raise ValueError("Inherited Wilcoxon contract is invalid or mixed")
     if (
         evidence.trait.tolist() != traits
         or len(traits) != len(set(traits))
@@ -358,6 +366,10 @@ def verify_comparable(off: CompletedTable, phenotype: CompletedTable) -> None:
     ):
         if off.record[name] != phenotype.record[name]:
             raise ValueError(f"Completed parent contract differs: {name}")
+    if set(off.evidence["study_wilcoxon_contract"]) != set(
+        phenotype.evidence["study_wilcoxon_contract"]
+    ):
+        raise ValueError("Completed parent contract differs: study_wilcoxon_contract")
     for ledger in ("pair_delta_z", "study_delta_z"):
         first, second = getattr(off, ledger), getattr(phenotype, ledger)
         if first.index.names != second.index.names or set(first.index) != set(second.index):
