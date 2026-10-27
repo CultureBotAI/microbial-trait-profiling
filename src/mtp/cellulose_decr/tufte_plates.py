@@ -323,7 +323,7 @@ def _draw_specification_card(
     title: str,
     question: str,
     rows: Sequence[tuple[str, str]],
-    label_x_offset: float = 0.19,
+    label_x_offset: float = 0.225,
     pad: float = 0.01,
 ) -> None:
     """Draw a structured specification card with a left accent bar and key-value rows."""
@@ -381,7 +381,7 @@ def _draw_specification_card(
             x + label_x_offset,
             ry,
             val,
-            fontsize=7.7,
+            fontsize=7.4,
             color=INK,
             va="top",
         )
@@ -1033,7 +1033,7 @@ def build_plate3_why_only_stool() -> Figure:
         subtitle_size=8.6,
     )
 
-    ax_left.axvline(50.0, color=MUTED, linestyle="--", linewidth=0.9, zorder=2)
+    ax_left.axvline(50.0, ymin=0.0, ymax=0.84, color=MUTED, linestyle="--", linewidth=0.9, zorder=2)
 
     direction_rows = [
         (
@@ -1110,9 +1110,9 @@ def build_plate3_why_only_stool() -> Figure:
 
     for label, pct, ci_lo, ci_hi, stats_str, y_pos, is_bold, col in direction_rows:
         fw = "bold" if is_bold else "normal"
-        fs = 8.9 if is_bold else 8.4
+        fs = 8.4 if is_bold else 8.0
         ax_left.text(
-            0.0,
+            -40.0,
             y_pos,
             label,
             fontsize=fs,
@@ -1122,18 +1122,17 @@ def build_plate3_why_only_stool() -> Figure:
         )
         ax_left.plot([ci_lo, ci_hi], [y_pos, y_pos], color=col, linewidth=1.6, zorder=3)
         ax_left.scatter([pct], [y_pos], s=42 if is_bold else 30, color=col, zorder=4)
-        text_x = max(pct + 3.5, 52.5) if col == CRIMSON else 52.0
         ax_left.text(
-            text_x,
+            94.0,
             y_pos,
             f"{pct:.1f}%  ({stats_str})",
-            fontsize=8.1,
+            fontsize=7.9,
             fontweight=fw if col == CRIMSON else "normal",
             color=col,
             va="center",
         )
 
-    ax_left.set_xlim(0.0, 115.0)
+    ax_left.set_xlim(-40.0, 152.0)
     ax_left.set_ylim(-0.04, 1.0)
     ax_left.set_yticks([])
     ax_left.set_xticks([35.0, 50.0, 68.7, 81.1])
@@ -1375,7 +1374,7 @@ def build_plate4_trait_landscape_and_four_pairs() -> Figure:
     ax_top.scatter(xs, ys, s=22, color=WARM_GRAY, alpha=0.55, zorder=2)
     _draw_tufte_quartile_rule(ax_top, xs, 0.16, color=INK, median_size=34.0)
 
-    ax_top.axvline(20.1, color=SLATE, linestyle="--", linewidth=1.0, zorder=3)
+    ax_top.axvline(20.1, ymin=0.0, ymax=0.78, color=SLATE, linestyle="--", linewidth=1.0, zorder=3)
     ax_top.text(
         20.6,
         0.72,
@@ -1391,7 +1390,7 @@ def build_plate4_trait_landscape_and_four_pairs() -> Figure:
             0.46,
             CRIMSON,
             "Cellulose breakdown (#1 Metabolic Pathway): 50.4% shared",
-            (50.43, 0.84),
+            (50.43, 0.77),
             "center",
         ),
         (
@@ -1399,7 +1398,7 @@ def build_plate4_trait_landscape_and_four_pairs() -> Figure:
             0.46,
             INK,
             "Spore-forming (#1 Physical Trait):\n67.0% shared (same Clostridia)",
-            (65.5, 0.68),
+            (66.8, 0.60),
             "right",
         ),
         (
@@ -1407,7 +1406,7 @@ def build_plate4_trait_landscape_and_four_pairs() -> Figure:
             0.46,
             OCHRE,
             "Xylan breakdown (#2 Metabolic Pathway): 46.6% shared",
-            (45.2, 0.72),
+            (45.2, 0.68),
             "right",
         ),
         (
@@ -1415,7 +1414,7 @@ def build_plate4_trait_landscape_and_four_pairs() -> Figure:
             0.46,
             SLATE,
             "Chitin breakdown (#3 Metabolic Pathway): 45.8% shared",
-            (43.8, 0.59),
+            (43.8, 0.56),
             "right",
         ),
     ]
@@ -1455,7 +1454,7 @@ def build_plate4_trait_landscape_and_four_pairs() -> Figure:
         subtitle_size=8.8,
     )
 
-    ax_bot.axvline(0.0, color=MUTED, linestyle="--", linewidth=0.9, zorder=2)
+    ax_bot.axvline(0.0, ymin=0.0, ymax=0.82, color=MUTED, linestyle="--", linewidth=0.9, zorder=2)
 
     # Item 3 (#550): Cite Nishiwaki 2020 (Mov Disord, PMID 32472608), matching Slide 15 & audit doc.
     four_pairs = [
@@ -1501,7 +1500,7 @@ def build_plate4_trait_landscape_and_four_pairs() -> Figure:
     ]
 
     for title_str, delta_pp, stats_line, lit_line, y_pos, col in four_pairs:
-        ax_bot.text(-52.0, y_pos + 0.055, title_str, fontsize=8.8, fontweight="bold", color=INK)
+        ax_bot.text(-55.5, y_pos + 0.055, title_str, fontsize=8.4, fontweight="bold", color=INK)
         ax_bot.plot(
             [0.0, delta_pp], [y_pos, y_pos], color=col, linewidth=3.0, solid_capstyle="butt"
         )
@@ -1511,7 +1510,7 @@ def build_plate4_trait_landscape_and_four_pairs() -> Figure:
         )
         ax_bot.text(28.0, y_pos - 0.038, lit_line, fontsize=7.8, color=MUTED, va="center")
 
-    ax_bot.set_xlim(-56.0, 118.0)
+    ax_bot.set_xlim(-58.0, 108.0)
     ax_bot.set_ylim(-0.02, 1.0)
     ax_bot.set_yticks([])
     ax_bot.set_xticks([-53.7, -36.9, -27.4, 0.0, 24.4])
@@ -1806,7 +1805,7 @@ def build_plate5_three_statistical_arms() -> Figure:
         title_size=10.6,
         subtitle_size=8.2,
     )
-    ax_d.axvline(50.0, color=MUTED, linestyle="--", linewidth=0.8)
+    ax_d.axvline(50.0, ymin=0.0, ymax=0.82, color=MUTED, linestyle="--", linewidth=0.8)
     ax_d.text(
         2.0,
         0.85,
