@@ -32,8 +32,14 @@ from mtp.multiplicity.sources import (
     recorded_arm_output,
 )
 from mtp.paths import file_sha256
-from mtp.three_test_table.composition import COMPOSITION_CONTRACT, WILCOXON_CONTRACT
+from mtp.three_test_table.composition import COMPOSITION_CONTRACT
+from mtp.three_test_table.signed_rank import (
+    LEGACY_WILCOXON_CONTRACT,
+    WILCOXON_CONTRACT,
+)
 from mtp.three_test_table.stage import CALIBRATION_STATUS, MANIFEST, METHODS, VERSION
+
+SUPPORTED_WILCOXON_CONTRACTS = frozenset({LEGACY_WILCOXON_CONTRACT, WILCOXON_CONTRACT})
 
 _OUTPUTS = (
     "composition_pair_delta_z.tsv",
@@ -427,7 +433,6 @@ def _check_summary(
         "composition_test_unit": "study",
         "composition_zero_total_policy": "retained_as_zero_fraction",
         "study_t_primary_correction": "BY",
-        "study_wilcoxon_contract": WILCOXON_CONTRACT,
         "noel_family_id": "noel-full-screen",
         "noel_family_size": len(traits),
         "strain_rollup": sources.scope,
@@ -441,12 +446,16 @@ def _check_summary(
         "trait_label",
         "experiment_mean_delta_z",
         "study_mean_delta_z",
+        "study_wilcoxon_contract",
         "noel_status",
         *contracts,
         *(f"noel_{name}" for name in _NOEL_FIELDS),
     }
     if not required.issubset(evidence.columns):
         raise ValueError("Completed-table summary contract columns are missing")
+    wilcoxon_contracts = set(evidence["study_wilcoxon_contract"])
+    if len(wilcoxon_contracts) != 1 or not wilcoxon_contracts <= SUPPORTED_WILCOXON_CONTRACTS:
+        raise ValueError("Completed-table summary contract differs: study_wilcoxon_contract")
     for summary in evidence.to_dict(orient="records"):
         trait = summary["trait"]
         if summary["trait_label"] != labels.get(trait):

@@ -22,6 +22,10 @@ from mtp.multiplicity import sources as source_module
 from mtp.multiplicity.sources import VerifiedSources
 from mtp.paths import file_sha256
 from mtp.three_test_table import reader, stage
+from mtp.three_test_table.signed_rank import (
+    LEGACY_WILCOXON_CONTRACT,
+    WILCOXON_CONTRACT,
+)
 from mtp.workflow.runtime import artifact_path
 from multiplicity_fixture import fixture_sources
 
@@ -362,8 +366,57 @@ def external_experiments_alias(
         artifact.path = str(products[artifact.product_id])
         if artifact.product_id == "experiments":
             artifact.requested_path = str(alias)
+    core_manifest = Path(parent.sources.core.manifest_path)
+    core_payload = json.loads(core_manifest.read_text(encoding="utf-8"))
+    core_payload["artifacts"] = [
+        artifact.model_dump(mode="json") for artifact in parent.sources.core.artifacts or []
+    ]
+    core_manifest.write_text(json.dumps(core_payload), encoding="utf-8")
+    core_sha = file_sha256(core_manifest)
+    parent.sources.comparison.core_manifest_sha256 = core_sha
+    for arm in parent.sources.arms.values():
+        arm.core_manifest_sha256 = core_sha
+    for key in list(parent.record["inputs"]):
+        if key.startswith(f"{core_manifest.name}@sha256:"):
+            del parent.record["inputs"][key]
+    parent.record["inputs"][f"{core_manifest.name}@sha256:{core_sha}"] = {
+        "sha256": core_sha,
+        "size_bytes": core_manifest.stat().st_size,
+    }
+    parent.save()
     monkeypatch.setattr(source_module, "artifact_path", artifact_path)
     return alias, target
+
+
+@pytest.mark.parametrize("contract", [LEGACY_WILCOXON_CONTRACT, WILCOXON_CONTRACT])
+def test_accepts_pinned_v1_and_v2_wilcoxon_contracts(
+    parent_bundle: ParentBundle, contract: str
+) -> None:
+    path = parent_bundle.root / "per_trait_evidence.tsv"
+    frame = pd.read_csv(path, sep="\t", keep_default_na=False)
+    frame["study_wilcoxon_contract"] = contract
+    frame.to_csv(path, sep="\t", index=False)
+    parent_bundle.refresh(path.name)
+    loaded = parent_bundle.load()
+    assert set(loaded.evidence["study_wilcoxon_contract"]) == {contract}
+
+
+@pytest.mark.parametrize("mutation", ["unknown", "mixed"])
+def test_rejects_unknown_or_mixed_wilcoxon_contracts(
+    parent_bundle: ParentBundle, mutation: str
+) -> None:
+    path = parent_bundle.root / "per_trait_evidence.tsv"
+    frame = pd.read_csv(path, sep="\t", keep_default_na=False)
+    frame["study_wilcoxon_contract"] = WILCOXON_CONTRACT
+    frame.loc[0, "study_wilcoxon_contract"] = (
+        "study-mean-delta-z-wilcoxon-v99"
+        if mutation == "unknown"
+        else LEGACY_WILCOXON_CONTRACT
+    )
+    frame.to_csv(path, sep="\t", index=False)
+    parent_bundle.refresh(path.name)
+    with pytest.raises(ValueError, match="study_wilcoxon_contract"):
+        parent_bundle.load()
 
 
 @pytest.mark.parametrize("location", ["alias", "target"])
