@@ -680,6 +680,12 @@ study-trait-profiles: taxa-trait-matrix
 taxa-coverage *ARGS:
 	uv run python scripts/create_taxa_coverage_histogram.py "$@"
 
+# Compute matrix trait overlap, Tier 1+2 coverage by rank and filter cascade, and Parkinson's
+# stool study overlap from a verified core run (#1053).
+[positional-arguments]
+matrix-overlap-coverage *ARGS:
+	PYTHONPATH=src uv run python -m mtp.matrix_overlap_coverage --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" "$@"
+
 # After an intended input change, such as a BugSigDB release or a new KG pin, refresh the
 # committed copy with `just study-trait-profiles-refresh-gz` and commit it (#667).
 # Check that the profile table is the committed canonical one (#656).
