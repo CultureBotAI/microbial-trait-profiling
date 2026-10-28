@@ -432,6 +432,11 @@ def test_sign_flip_is_flagged_measured_by_magnitude_and_labelled_reversed() -> N
         (0.158, False, -3.734, True, "reversed (significant post-adjustment)"),
         (62.0, False, -58.9, False, "reversed (nonsignificant post-adjustment)"),
         (-5.0, True, 2.0, False, "reversed (nonsignificant post-adjustment)"),
+        # Significant only after adjustment when raw contrast was nonsignificant (#1098).
+        (12.0, False, 3.0, True, "significant only post-adjustment"),
+        (-12.0, False, -3.0, True, "significant only post-adjustment"),
+        (-5.2, False, -9.7, True, "significant only post-adjustment"),
+        (5.2, False, 9.7, True, "significant only post-adjustment"),
     ],
 )
 def test_status_follows_significance_and_magnitude(
@@ -447,14 +452,17 @@ def test_status_follows_significance_and_magnitude(
     assert effect.status == status
 
 
-def test_untestable_raw_contrast_with_a_significant_adjusted_one_is_not_nonsignificant() -> None:
-    """Ten or fewer non-zero raw pairs give raw p = NaN; adj p still decides (#1084)."""
+@pytest.mark.parametrize("adj_mean", [5.0, 0.1])
+def test_untestable_raw_contrast_with_a_significant_adjusted_one_is_not_nonsignificant(
+    adj_mean: float,
+) -> None:
+    """<= 10 non-zero raw pairs give raw p = NaN; adj p <= 0.05 is post-adj only (#1084, #1098)."""
     raw_diffs = np.array([1.0] * 10 + [0.0] * 20)
-    effect = _single_trait_effect(raw_diffs, _paired_differences(5.0, significant=True))
+    effect = _single_trait_effect(raw_diffs, _paired_differences(adj_mean, significant=True))
 
     assert np.isnan(effect.raw_wilcoxon_p)
     assert effect.adj_wilcoxon_p <= 0.05
-    assert effect.status == "enhanced (significant, larger magnitude)"
+    assert effect.status == "significant only post-adjustment"
 
 
 def test_undefined_magnitude_change_is_nan_not_zero_and_says_so() -> None:
@@ -521,9 +529,23 @@ def test_an_adjusted_mean_within_1e9_of_zero_is_not_a_reversal() -> None:
             0.222672,
             "enhanced magnitude (nonsignificant post-adjustment)",
         ),
+        # F, Tier 1+2 x phenotype, 14-trait list: temp opt. high, xylan, oblig. anaerobic (#1098).
+        (-3.314439, 0.487196, -9.061745, 0.000015, "significant only post-adjustment"),
+        (-2.181818, 0.208697, -5.834487, 0.000029, "significant only post-adjustment"),
+        (-10.726203, 0.175583, -19.444352, 0.014961, "significant only post-adjustment"),
+        # F, full corpus x phenotype, 14-trait list: Acetogenesis, xylan, oblig. anaerobic (#1098).
+        (-1.253434, 0.051001, -2.012255, 0.002051, "significant only post-adjustment"),
+        (-0.455029, 0.345410, -2.964282, 0.000081, "significant only post-adjustment"),
+        (-4.565352, 0.326122, -10.513785, 0.006857, "significant only post-adjustment"),
         # p = 0.05 is significant, for the adjusted and for the raw p.
         (12.0, 0.01, 3.0, 0.05, "survived (significant post-adjustment)"),
-        (-5.0, 0.30, -9.0, 0.05, "enhanced (significant, larger magnitude)"),
+        (12.0, 0.05, 3.0, 0.05, "survived (significant post-adjustment)"),
+        (-5.0, 0.05, -9.0, 0.05, "enhanced (significant, larger magnitude)"),
+        (12.0, 0.06, 3.0, 0.05, "significant only post-adjustment"),
+        (-5.0, 0.06, -9.0, 0.05, "significant only post-adjustment"),
+        (-5.0, 0.30, -9.0, 0.05, "significant only post-adjustment"),
+        (12.0, float("nan"), 3.0, 0.05, "significant only post-adjustment"),
+        (-5.0, float("nan"), -9.0, 0.05, "significant only post-adjustment"),
         (4.0, 0.30, -6.0, 0.05, "reversed (significant post-adjustment)"),
         (
             0.0,
@@ -604,6 +626,7 @@ def test_full_density_audit_integration(tmp_path: Path) -> None:
             "collapsed (attenuated to nonsignificant)",
             "enhanced (significant, larger magnitude)",
             "survived (significant post-adjustment)",
+            "significant only post-adjustment",
             "attenuated (nonsignificant post-adjustment)",
             "collapsed (nonsignificant post-adjustment, larger magnitude)",
             "enhanced magnitude (nonsignificant post-adjustment)",

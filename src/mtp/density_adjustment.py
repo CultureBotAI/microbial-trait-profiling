@@ -131,8 +131,8 @@ class Table1TraitEffect:
     sign_flipped: bool
 
 
-# Statuses whose adjusted paired contrast is significant (Wilcoxon p <= 0.05) and keeps
-# the raw sign; deck figure 4 draws only these as surviving.
+# Statuses whose raw and adjusted paired contrasts are both significant (Wilcoxon p <= 0.05)
+# in the same direction (#1084, #1097, #1098); deck figure 4 draws only these as surviving.
 SIGNIFICANT_POST_ADJUSTMENT_STATUSES = frozenset(
     {"enhanced (significant, larger magnitude)", "survived (significant post-adjustment)"}
 )
@@ -147,11 +147,14 @@ def _sign_flipped(raw_mean: float, adj_mean: float) -> bool:
 
 
 def adjustment_status(raw_mean: float, raw_p: float, adj_mean: float, adj_p: float) -> str:
-    """Classify a trait by adjusted significance and by the change in effect magnitude.
+    """Classify a trait by raw and adjusted significance and by the change in effect magnitude.
 
     Significance comes from the Wilcoxon p-values; "enhanced" and "attenuated" compare
     |adj| with |raw| (#1084). A reversed sign and a raw mean of zero, where the
-    magnitude change is undefined, each get their own status instead (#1097).
+    magnitude change is undefined, each get their own status (#1097), and a significant
+    adjusted contrast whose raw contrast was nonsignificant (or had <= 10 non-zero pairs)
+    is classified as "significant only post-adjustment" rather than "survived" or
+    "enhanced" (#1098).
     """
     if math.isnan(adj_p):
         return "insufficient non-zero pairs"
@@ -163,12 +166,15 @@ def adjustment_status(raw_mean: float, raw_p: float, adj_mean: float, adj_p: flo
         if adj_p <= 0.05:
             return "reversed (significant post-adjustment)"
         return "reversed (nonsignificant post-adjustment)"
+    raw_significant = not math.isnan(raw_p) and raw_p <= 0.05
     larger = abs(adj_mean) > abs(raw_mean)
     if adj_p <= 0.05:
+        if not raw_significant:
+            return "significant only post-adjustment"
         if larger:
             return "enhanced (significant, larger magnitude)"
         return "survived (significant post-adjustment)"
-    if not math.isnan(raw_p) and raw_p <= 0.05:
+    if raw_significant:
         if larger:
             return "collapsed (nonsignificant post-adjustment, larger magnitude)"
         return "collapsed (attenuated to nonsignificant)"
