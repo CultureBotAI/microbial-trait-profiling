@@ -152,7 +152,10 @@ Ties use its native tolerance 1e-12. Noel excludes a complete experiment pair if
 one retained annotation total is zero; preserve this eligibility difference from
 historical transformed composition. Effective-family BY is not the nominal result.
 
-Label-support imports retain the existing audit's focal/oxygen coverage. A carrier
+Label-support imports retain the existing audit's focal/oxygen coverage by
+default, and extend to any declared `--trait-list` recorded in the audit's
+`provenance.json` (`trait_list`, #1132) with `carrier_catalog_coverage` naming
+`selected_focal_and_oxygen_traits_plus_trait_list:<name>@<sha256[:12]>`. A carrier
 is not a source record. Report direct-at-reported-taxon and inherited support
 only for supported, reconciled audit traits; mark unsupported traits explicitly.
 Direct and inherited reported-taxon counts can overlap. Unique carrier IDs are

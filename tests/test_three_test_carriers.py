@@ -22,6 +22,7 @@ from multiplicity_fixture import fixture_sources, write_table
 CELL = "METPO:2000103|GO:0030245"
 ANAEROBIC = "METPO:1000603"
 OUTSIDE = "METPO:1000429"
+LIGNIN = "METPO:2000103|GO:0046274"
 
 
 def audit_fixture(root: Path) -> tuple[VerifiedSources, Path]:
@@ -360,4 +361,81 @@ def test_incomplete_audit_fails_instead_of_supplying_zero_carriers(
     audit.mkdir()
     (audit / "provenance.json").write_text('{"analysis": "label_support_sidecar"}')
     with pytest.raises(ValueError, match=r"(scope|provenance|audit)"):
+        carrier_table(sources, audit)
+
+
+def _declared_list_audit_fixture(root: Path) -> tuple[VerifiedSources, Path, Path]:
+    """Generate an audit with a declared trait list including inherited-only LIGNIN."""
+    sources, _ = audit_fixture(root)
+    products = {
+        pid: sources.product(pid)
+        for pid in ("taxa_matrix", "count_profiles", "reported_taxa", "kg_edges", "kg_nodes")
+    }
+    matrix_df = pd.read_csv(products["taxa_matrix"], sep="\t")
+    matrix_df[LIGNIN] = [1 if tid == "NCBITaxon:10" else 0 for tid in matrix_df["taxon_id"]]
+    matrix_df.to_csv(products["taxa_matrix"], sep="\t", index=False)
+
+    profiles_df = pd.read_csv(products["count_profiles"], sep="\t")
+    profiles_df[LIGNIN] = [1 if d == "inc" else 0 for d in profiles_df["inc_dec"]]
+    profiles_df.to_csv(products["count_profiles"], sep="\t", index=False)
+
+    with products["kg_edges"].open("a", encoding="utf-8") as handle:
+        handle.write("edge-lig-12\tNCBITaxon:12\tMETPO:2000103\tGO:0046274\tinfores:madin_etal\n")
+    with products["kg_nodes"].open("a", encoding="utf-8") as handle:
+        handle.write("GO:0046274\tlignin catabolic process\n")
+
+    trait_list_path = root / "headline_ten_phenotype.txt"
+    trait_list_path.write_text(f"{CELL}\n{LIGNIN}\n", encoding="utf-8")
+    audit_declared = root / "audit_declared"
+    run_label_support_audit(
+        taxa_path=products["reported_taxa"],
+        matrix_path=products["taxa_matrix"],
+        profiles_path=products["count_profiles"],
+        edges_path=products["kg_edges"],
+        nodes_path=products["kg_nodes"],
+        output_dir=audit_declared,
+        strain_rollup="off",
+        trait_list=trait_list_path,
+    )
+    updated_sources = VerifiedSources(
+        sources.comparison,
+        sources.core,
+        {},
+        {},
+        {"count_profiles": (*AUDIT_TRAITS, OUTSIDE, LIGNIN)},
+        "off",
+        {path.resolve(): file_sha256(path) for path in products.values()},
+    )
+    return updated_sources, audit_declared, trait_list_path
+
+
+def test_carrier_table_imports_declared_trait_list_and_strain_rollup_carriers(
+    tmp_path: Path,
+) -> None:
+    sources, audit, trait_list_path = _declared_list_audit_fixture(tmp_path / "inputs")
+    table, _ = carrier_table(sources, audit)
+    result = table.set_index("trait")
+    expected_coverage = f"focal_and_selected_oxygen_traits_plus_{trait_list_path.name}"
+    assert result["carrier_catalog_coverage"].eq(expected_coverage).all()
+
+    lignin = result.loc[LIGNIN]
+    assert lignin.carrier_status == "audit_hash_bound_focal_coverage"
+    assert lignin.carrier_direct_reported_taxa == 0
+    assert lignin.carrier_inherited_reported_taxa == 1
+    assert lignin.carrier_unique_taxa == 1
+    assert pd.isna(lignin.carrier_source_record_count)
+    assert lignin.carrier_madin_status == "not_supplied_source_support_unknown"
+
+    outside = result.loc[OUTSIDE]
+    assert outside.carrier_status == "not_in_focal_audit"
+    assert pd.isna(outside.carrier_unique_taxa)
+
+
+def test_carrier_table_rejects_tampered_trait_list_provenance(tmp_path: Path) -> None:
+    sources, audit, _ = _declared_list_audit_fixture(tmp_path / "inputs")
+    manifest = audit / "provenance.json"
+    record = json.loads(manifest.read_text(encoding="utf-8"))
+    record["trait_list"]["sha256"] = "0" * 64
+    manifest.write_text(json.dumps(record), encoding="utf-8")
+    with pytest.raises(ValueError, match="trait_list"):
         carrier_table(sources, audit)

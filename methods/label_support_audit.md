@@ -29,6 +29,22 @@ described below; a file with any other bytes fails before outputs are written.
 Omitting it leaves Madin subsources unknown. A supplied but unreadable or
 malformed table fails instead of silently falling back to unknown.
 
+Optionally supply `--trait-list LIST/traits.txt` (`mtp.trait_lists.load_trait_list`,
+#1132) to audit additional declared traits (such as non-focal headline traits
+whose carriers arrive through strain rollup) alongside the default eight focal
+and oxygen traits (`FOCAL_TRAITS` plus `OXYGEN_TRAITS`). Without `--trait-list`,
+the audited trait set is the default eight traits and all five output TSVs and
+`provenance.json` keep their default structure. With `--trait-list`, every
+listed identifier must be a valid CURIE or rollup composite present as a column
+in `taxa_trait_matrix.tsv`; malformed, duplicated, or absent trait identifiers
+fail before any output is written. `taxon_trait_label_support.tsv`,
+`focal_taxa_trait_support.tsv`, and `carrier_source_evidence.tsv` include the
+declared traits (deduplicated in declaration order after the default eight),
+and `provenance.json` records `inputs.trait_list` plus `trait_list` (`path`,
+`name`, `sha256`, `trait_count`, and `trait_ids`).
+`support_threshold_sensitivity.tsv` and `coasserted_label_census.tsv` retain
+their fixed six-trait sensitivity family and label-pair definitions.
+
 The `phenotype` scope uses the public `scoped_taxon_traits` and
 `strain_trait_rolls_up` functions introduced by PR #828. Both `off` and
 `phenotype` use the merged matrix scope policy. `full` is not offered by this
