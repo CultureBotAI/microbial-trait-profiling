@@ -49,10 +49,13 @@ declared traits (deduplicated in declaration order after the default 14
 their fixed six-trait sensitivity family and label-pair definitions.
 `MADIN_RULES` does not yet define field/value mappings for `ligninolysis`
 (`METPO:2000103|GO:0046274`), `thiosulfate_oxidation`
-(`METPO:2000103|pathways:thiosulfate_oxidation`), or `xylan_degradation`
-(`METPO:2000103|GO:0045493`), so Madin-sourced carriers for those declared
-traits remain `unresolved` (`source_status=unknown`) when `--madin-csv` is
-supplied (#1151).
+(`METPO:2000103|pathways:thiosulfate_oxidation`), `xylan_degradation`
+(`METPO:2000103|GO:0045493`), or `acetogenesis` (`METPO:1000845`,
+`pathways: acetogenesis`), so Madin-sourced carriers for those declared traits
+record `madin_resolution=unknown` in `carrier_source_evidence.tsv` and
+increment `unresolved_madin_carriers` in `taxon_trait_label_support.tsv`
+(leaving `source_status=unknown` on Madin-only cells) when `--madin-csv` is
+supplied (#1151, #1155).
 
 The `phenotype` scope uses the public `scoped_taxon_traits` and
 `strain_trait_rolls_up` functions introduced by PR #828. Both `off` and
