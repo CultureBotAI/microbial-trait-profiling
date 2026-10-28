@@ -1,7 +1,7 @@
 """Compare #1117 output to a pinned archived numerical reference (2026-10-28).
 
 Inputs: explicit old/new consumer and core pins, a declared trait list and
-trial/parent Git SHAs. Outputs: durable parity JSON with same-buffer identities.
+trial/parent/helper Git SHAs. Outputs: durable parity JSON with same-buffer identities.
 The old reference proves archived table bytes, not a clean historical producer.
 """
 
@@ -46,6 +46,16 @@ SCRIPTS = (
     "src/mtp/workflow/output_roots.py",
 )
 METHOD = "methods/matrix_coverage_and_pd_overlap.md"
+HELPER_PATH = "scripts/adhoc/issue1117_compare_archived_output.py"
+LABEL_ADAPTER: dict[str, Any] = {
+    "file": "filter_cascade.tsv",
+    "row": {"dimension": "studies", "step_id": "all_hosts_bugsigdb_export"},
+    "column": "step_label",
+    "old": "All-hosts BugSigDB export table (bugsigdb_experiments.tsv)",
+    "new": "All-hosts BugSigDB export table (experiments.tsv)",
+    "cause_commit": "8832c67ee6022a1eb181cbf95c87f516bc9f20e3",
+    "integration_commit": "c1e374e99517caf473df01cec4dcb2db5d29ff4a",
+}
 
 
 def identity(raw: bytes) -> dict[str, Any]:
@@ -97,6 +107,33 @@ def bundle(
 
 def without(row: dict[str, Any], names: tuple[str, ...]) -> dict[str, Any]:
     return {key: value for key, value in row.items() if key not in names}
+
+
+def adapt_historical_label(
+    before: list[dict[str, str]], after: list[dict[str, str]]
+) -> tuple[list[dict[str, str]], list[dict[str, Any]]]:
+    """Project only the one documented filename-label change from #1116/#1172."""
+    old_matches = [
+        index
+        for index, row in enumerate(before)
+        if all(row.get(key) == value for key, value in LABEL_ADAPTER["row"].items())
+    ]
+    new_matches = [
+        row
+        for row in after
+        if all(row.get(key) == value for key, value in LABEL_ADAPTER["row"].items())
+    ]
+    column = LABEL_ADAPTER["column"]
+    if (
+        len(old_matches) != 1
+        or len(new_matches) != 1
+        or before[old_matches[0]].get(column) != LABEL_ADAPTER["old"]
+        or new_matches[0].get(column) != LABEL_ADAPTER["new"]
+    ):
+        return before, []
+    expected = [dict(row) for row in before]
+    expected[old_matches[0]][column] = LABEL_ADAPTER["new"]
+    return expected, [LABEL_ADAPTER]
 
 
 def pinned_core(path: Path, expected: str, snapshots: dict[Path, bytes]) -> dict[str, Any]:
@@ -170,17 +207,22 @@ def compare(args: argparse.Namespace) -> dict[str, Any]:
             raise ValueError("Parity output must be disjoint from consumer and core bundles")
     if output.exists():
         raise ValueError("Parity output must be fresh")
-    repo = Repo(Path(__file__).resolve().parents[2])
+    helper = Path(__file__).resolve()
+    repo = Repo(helper.parents[2])
     trial = repo.commit(args.trial_commit)
+    helper_commit = repo.commit(args.helper_commit)
     expected_parents = [
         repo.commit(args.issue_commit).hexsha,
         repo.commit(args.compatibility_commit).hexsha,
     ]
     if [parent.hexsha for parent in trial.parents] != expected_parents:
         raise ValueError("Trial does not have the declared ordered parents")
-    if repo.head.commit != trial or repo.is_dirty(untracked_files=True):
-        raise ValueError("Run this helper from the clean, pinned trial checkout")
-    snapshots: dict[Path, bytes] = {}
+    if repo.head.commit != helper_commit or repo.is_dirty(untracked_files=True):
+        raise ValueError("Run this helper from the clean, pinned helper checkout")
+    helper_bytes = helper.read_bytes()
+    if identity(helper_bytes)["sha256"] != git_digest(helper_commit, HELPER_PATH):
+        raise ValueError("Executing helper bytes differ from the pinned helper Git blob")
+    snapshots: dict[Path, bytes] = {helper: helper_bytes}
     core = pinned_core(core_manifest, args.core_sha256, snapshots)
     old, old_inputs = bundle(old_manifest, args.reference_sha256, snapshots)
     new, new_inputs = bundle(new_manifest, args.current_sha256, snapshots)
@@ -213,6 +255,7 @@ def compare(args: argparse.Namespace) -> dict[str, Any]:
     if not set(traits) <= set(old_traits):
         raise ValueError("New traits have no archived matrix reference")
     results = []
+    reference_adapters: list[dict[str, Any]] = []
     for name in TABLES:
         before, after = table(old[name]), table(new[name])
         expected = before
@@ -225,6 +268,8 @@ def compare(args: argparse.Namespace) -> dict[str, Any]:
                 raise ValueError("Declared trait pair count differs from the matrix overlap rows")
         elif name == "parkinsons_stool_study_overlap_summary.tsv":
             checked = [without(row, PD_ADDITIONS) for row in after]
+        elif name == "filter_cascade.tsv":
+            expected, reference_adapters = adapt_historical_label(before, after)
         if checked != expected:
             raise ValueError(f"Unexpected numerical, label, key or ordering difference: {name}")
         results.append(
@@ -264,8 +309,6 @@ def compare(args: argparse.Namespace) -> dict[str, Any]:
             "Current provenance declared trait metadata differs from the supplied list"
         )
     bind_producer(provenance, trial)
-    helper = Path(__file__).resolve()
-    snapshots[helper] = helper.read_bytes()
     payload = {
         "issue": 1117,
         "producer": {"trial": trial.hexsha, "parents": expected_parents, "tree": trial.tree.hexsha},
@@ -284,7 +327,12 @@ def compare(args: argparse.Namespace) -> dict[str, Any]:
             "requested_path": str(args.trait_list),
             **identity(trait_bytes),
         },
-        "helper": identity(snapshots[helper]),
+        "helper": {
+            "commit": helper_commit.hexsha,
+            "tree": helper_commit.tree.hexsha,
+            **identity(snapshots[helper]),
+        },
+        "reference_adapters": reference_adapters,
         "removed_traits": [trait for trait in old_traits if trait not in traits],
         "tables": results,
         "summary_unchanged_after_declared_additions": True,
@@ -301,8 +349,8 @@ def compare(args: argparse.Namespace) -> dict[str, Any]:
     for path, raw in snapshots.items():
         if path.read_bytes() != raw:
             raise ValueError(f"Input changed during comparison: {path}")
-    if repo.head.commit != trial or repo.is_dirty(untracked_files=True):
-        raise ValueError("Pinned trial checkout changed or became dirty during comparison")
+    if repo.head.commit != helper_commit or repo.is_dirty(untracked_files=True):
+        raise ValueError("Pinned helper checkout changed or became dirty during comparison")
     output.mkdir(parents=True, exist_ok=False)
     report = (json.dumps(payload, indent=2, sort_keys=True, allow_nan=False) + "\n").encode()
     (output / "parity.json").write_bytes(report)
@@ -326,6 +374,7 @@ def main() -> None:
         "trial-commit",
         "issue-commit",
         "compatibility-commit",
+        "helper-commit",
     ):
         parser.add_argument(f"--{name}", required=True)
     print(json.dumps(compare(parser.parse_args()), indent=2, sort_keys=True))

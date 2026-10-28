@@ -20,6 +20,7 @@ from git import Repo
 from mtp.workflow import output_roots
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts/adhoc/issue1117_compare_archived_output.py"
+HELPER_PATH = "scripts/adhoc/issue1117_compare_archived_output.py"
 SPEC = importlib.util.spec_from_file_location("issue1117_parity_under_test", SCRIPT)
 if SPEC is None or SPEC.loader is None:
     raise RuntimeError("Cannot load the archived parity helper")
@@ -35,6 +36,17 @@ SCRIPTS = (
     "src/mtp/workflow/output_roots.py",
 )
 METHOD = "methods/matrix_coverage_and_pd_overlap.md"
+OLD_EXPORT_LABEL = "All-hosts BugSigDB export table (bugsigdb_experiments.tsv)"
+CURRENT_EXPORT_LABEL = "All-hosts BugSigDB export table (experiments.tsv)"
+LABEL_ADAPTER = {
+    "file": "filter_cascade.tsv",
+    "row": {"dimension": "studies", "step_id": "all_hosts_bugsigdb_export"},
+    "column": "step_label",
+    "old": OLD_EXPORT_LABEL,
+    "new": CURRENT_EXPORT_LABEL,
+    "cause_commit": "8832c67ee6022a1eb181cbf95c87f516bc9f20e3",
+    "integration_commit": "c1e374e99517caf473df01cec4dcb2db5d29ff4a",
+}
 CURRENT_TRAITS = tuple(f"METPO:2000{number:03d}" for number in range(9))
 REMOVED_TRAIT = "METPO:1000605"
 OLD_TRAITS = (*CURRENT_TRAITS, REMOVED_TRAIT)
@@ -124,7 +136,10 @@ def archive_case(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Ar
         path = producer / relative
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(f"Synthetic public producer bytes for {relative}\n", encoding="utf-8")
-    repo.index.add([*SCRIPTS, METHOD])
+    helper_path = producer / HELPER_PATH
+    helper_path.parent.mkdir(parents=True)
+    helper_path.write_bytes(SCRIPT.read_bytes())
+    repo.index.add([*SCRIPTS, METHOD, HELPER_PATH])
     base = repo.index.commit("Base producer")
     (producer / SCRIPTS[0]).write_text("Synthetic issue implementation\n", encoding="utf-8")
     repo.index.add([SCRIPTS[0]])
@@ -135,6 +150,7 @@ def archive_case(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Ar
     assert not repo.is_dirty(untracked_files=True)
 
     monkeypatch.setattr(HELPER, "Repo", lambda _path: repo)
+    monkeypatch.setattr(HELPER, "__file__", str(helper_path))
     monkeypatch.setattr(
         output_roots, "system_temporary_directories", lambda: [tmp_path / "volatile"]
     )
@@ -183,7 +199,18 @@ def archive_case(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Ar
         ]
         write_rows(root / TABLES[0], chosen)
         write_rows(root / TABLES[1], [{"rank": "genus", "taxa": 11, "matched_taxa": 7}])
-        write_rows(root / TABLES[2], [{"stage": "included", "studies": 3, "experiments": 4}])
+        write_rows(
+            root / TABLES[2],
+            [
+                {
+                    "dimension": "studies",
+                    "step_id": "all_hosts_bugsigdb_export",
+                    "step_label": CURRENT_EXPORT_LABEL,
+                    "studies": 3,
+                    "experiments": 4,
+                }
+            ],
+        )
         pd_row = dict(pd_summary)
         cover = dict(coverage)
         if root == current:
@@ -253,6 +280,7 @@ def archive_case(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Ar
         trial_commit=trial.hexsha,
         issue_commit=issue.hexsha,
         compatibility_commit=compatibility.hexsha,
+        helper_commit=trial.hexsha,
         core_manifest=core,
         core_sha256=sha256(core.read_bytes()),
     )
@@ -298,7 +326,18 @@ def test_bound_but_undeclared_table_change_is_refused(archive_case: ArchiveCase,
         key
         for key in changed[0]
         if key
-        not in {"trait_a_id", "trait_b_id", "rank", "stage", "scope", "study_a_id", "study_b_id"}
+        not in {
+            "trait_a_id",
+            "trait_b_id",
+            "rank",
+            "stage",
+            "scope",
+            "study_a_id",
+            "study_b_id",
+            "dimension",
+            "step_id",
+            "step_label",
+        }
     )
     changed[0][column] = "999"
     write_rows(path, changed)
@@ -426,5 +465,110 @@ def test_current_provenance_must_match_the_pinned_core(
 def test_core_pin_is_checked_against_actual_bytes(archive_case: ArchiveCase) -> None:
     archive_case.core.write_bytes(archive_case.core.read_bytes() + b"\n")
     with pytest.raises(ValueError, match=r"(?i)core|pin"):
+        archive_case.compare()
+    assert not archive_case.args.output_dir.parent.exists()
+
+
+def historical_cascade(case: ArchiveCase) -> None:
+    path = case.reference / "filter_cascade.tsv"
+    entries = rows(path)
+    entries[0]["step_label"] = OLD_EXPORT_LABEL
+    write_rows(path, entries)
+    case.reseal("reference")
+
+
+def test_exact_historical_filename_label_adapter_is_declared(archive_case: ArchiveCase) -> None:
+    historical_cascade(archive_case)
+    archive_case.compare()
+    report = read_json(archive_case.args.output_dir / "parity.json")
+    assert report["reference_adapters"] == [LABEL_ADAPTER]
+    assert report["unexpected_changes"] == []
+    assert rows(archive_case.reference / "filter_cascade.tsv")[0]["step_label"] == OLD_EXPORT_LABEL
+    assert (
+        rows(archive_case.current / "filter_cascade.tsv")[0]["step_label"] == CURRENT_EXPORT_LABEL
+    )
+
+
+@pytest.mark.parametrize("fault", ["new_label", "old_label", "dimension", "step_id", "numerical"])
+def test_reference_adapter_cannot_hide_other_changes(archive_case: ArchiveCase, fault: str) -> None:
+    historical_cascade(archive_case)
+    old_path = archive_case.reference / "filter_cascade.tsv"
+    new_path = archive_case.current / "filter_cascade.tsv"
+    before, after = rows(old_path), rows(new_path)
+    if fault == "new_label":
+        after[0]["step_label"] = "A different current label"
+    elif fault == "old_label":
+        before[0]["step_label"] = "A different historical label"
+    elif fault in {"dimension", "step_id"}:
+        before[0][fault] = after[0][fault] = "unrelated-row"
+    else:
+        after[0]["studies"] = "999"
+    write_rows(old_path, before)
+    write_rows(new_path, after)
+    archive_case.reseal("reference")
+    archive_case.reseal()
+    with pytest.raises(ValueError, match="Unexpected numerical"):
+        archive_case.compare()
+    assert not archive_case.args.output_dir.parent.exists()
+
+
+def test_helper_commit_is_explicit_and_distinct_from_output_producer(
+    archive_case: ArchiveCase,
+) -> None:
+    archive_case.compare()
+    report = read_json(archive_case.args.output_dir / "parity.json")
+    assert HELPER.__file__ is not None
+    assert report["helper"] == {
+        "commit": archive_case.args.helper_commit,
+        "tree": archive_case.repo.head.commit.tree.hexsha,
+        "sha256": sha256(Path(HELPER.__file__).read_bytes()),
+        "size_bytes": len(Path(HELPER.__file__).read_bytes()),
+    }
+    assert report["producer"]["trial"] == archive_case.args.trial_commit
+    assert report["reference_adapters"] == []
+
+
+def test_later_clean_helper_only_commit_can_check_unchanged_trial_outputs(
+    archive_case: ArchiveCase,
+) -> None:
+    assert HELPER.__file__ is not None
+    helper = Path(HELPER.__file__)
+    helper.write_bytes(helper.read_bytes() + b"\n# Helper-only qualification revision.\n")
+    archive_case.repo.index.add([HELPER_PATH])
+    helper_commit = archive_case.repo.index.commit("Qualification helper only")
+    archive_case.args.helper_commit = helper_commit.hexsha
+    assert helper_commit.parents[0].hexsha == archive_case.args.trial_commit
+    assert not archive_case.repo.is_dirty(untracked_files=True)
+    archive_case.compare()
+    report = read_json(archive_case.args.output_dir / "parity.json")
+    assert report["helper"]["commit"] == helper_commit.hexsha
+    assert report["helper"]["sha256"] == sha256(helper.read_bytes())
+    assert report["producer"]["trial"] == archive_case.args.trial_commit
+    assert report["helper"]["commit"] != report["producer"]["trial"]
+    assert report["unexpected_changes"] == []
+
+
+@pytest.mark.parametrize("fault", ["wrong_pin", "dirty_helper", "uncommitted_helper", "bytes"])
+def test_helper_commit_and_actual_execution_bytes_fail_closed(
+    archive_case: ArchiveCase, monkeypatch: pytest.MonkeyPatch, tmp_path: Path, fault: str
+) -> None:
+    assert HELPER.__file__ is not None
+    helper = Path(HELPER.__file__)
+    if fault == "wrong_pin":
+        archive_case.args.helper_commit = archive_case.args.issue_commit
+    elif fault == "dirty_helper":
+        helper.write_bytes(helper.read_bytes() + b"\n# Uncommitted revision.\n")
+    elif fault == "uncommitted_helper":
+        archive_case.repo.index.remove([HELPER_PATH])
+        commit = archive_case.repo.index.commit("Remove tracked qualification helper")
+        archive_case.args.helper_commit = commit.hexsha
+        assert helper.exists()
+    else:
+        executable = tmp_path / "different-execution" / HELPER_PATH
+        executable.parent.mkdir(parents=True)
+        executable.write_bytes(helper.read_bytes() + b"\n# Different loaded helper bytes.\n")
+        monkeypatch.setattr(HELPER, "__file__", str(executable))
+        assert not archive_case.repo.is_dirty(untracked_files=True)
+    with pytest.raises(ValueError, match=r"(?i)helper|clean|blob|commit"):
         archive_case.compare()
     assert not archive_case.args.output_dir.parent.exists()
