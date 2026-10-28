@@ -450,6 +450,16 @@ def test_contradictory_direction_parameter_is_refused_independently(bundle: Any)
     assert not bundle.output.exists()
 
 
+def test_contradictory_population_parameter_is_refused_independently(bundle: Any) -> None:
+    assert bundle.value.run.contrast_population == POPULATION
+    bundle.value.run.parameters.append(
+        SimpleNamespace(name="contrast_population", value="all_paired")
+    )
+    with pytest.raises(ValueError, match="contrast_population parameter contradicts"):
+        run_bundle(bundle)
+    assert not bundle.output.exists()
+
+
 @pytest.mark.parametrize(
     ("field", "bad"), [("contrast_population", "all_paired"), ("direction_basis", "as_reported")]
 )

@@ -700,6 +700,11 @@ study-trait-profiles: taxa-trait-matrix
 taxa-coverage *ARGS:
 	uv run python scripts/create_taxa_coverage_histogram.py "$@"
 
+# Isolate one synthetic population-guard mutation; canonical source stays untouched (#1176).
+[positional-arguments]
+probe-matrix-population-guard case output:
+	uv run python scripts/adhoc/issue1176_probe_population_guard.py "$1" --output-dir "$2"
+
 # Compute matrix trait overlap, Tier 1+2 coverage by rank and filter cascade, and Parkinson's
 # stool study overlap from a verified core run (#1053).
 [positional-arguments]
