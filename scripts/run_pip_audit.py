@@ -112,14 +112,14 @@ def _normalize_exit_code(code: object) -> int:
 
 def _invoke_pip_audit_cli(argv: Sequence[str]) -> None:
     cli_mod: Any = importlib.import_module("pip_audit._cli")
+    pip_audit_interface: Any = importlib.import_module("pip_audit._service.interface")
     saved_argv = sys.argv[:]
-    saved_conn_cls = cli_mod.VulnServiceConnectionError
     sys.argv = ["pip-audit", *argv]
     cli_mod.VulnServiceConnectionError = _UnmatchedVulnServiceConnectionError
     try:
-        cli_mod.audit()
+        raise SystemExit(cli_mod.audit())
     finally:
-        cli_mod.VulnServiceConnectionError = saved_conn_cls
+        cli_mod.VulnServiceConnectionError = pip_audit_interface.ConnectionError
         sys.argv = saved_argv
 
 
@@ -148,7 +148,7 @@ def run_pip_audit(
     max_attempts: int = DEFAULT_MAX_ATTEMPTS,
     initial_backoff: float = DEFAULT_INITIAL_BACKOFF_SECONDS,
     backoff_factor: float = DEFAULT_BACKOFF_FACTOR,
-    audit_fn: Callable[[Sequence[str]], None] | None = None,
+    audit_fn: Callable[[Sequence[str]], int | str | None] | None = None,
     sleep_fn: Callable[[float], None] = time.sleep,
     stdout: TextIO | None = None,
     stderr: TextIO | None = None,
@@ -168,7 +168,9 @@ def run_pip_audit(
     for attempt in range(1, max_attempts + 1):
         try:
             with _capture_attempt_streams() as (attempt_out, attempt_err):
-                runner(argv)
+                result = runner(argv)
+                if result is not None:
+                    raise SystemExit(result)
         except SystemExit as exit_exc:
             code = _normalize_exit_code(exit_exc.code)
             out_text = attempt_out.getvalue()

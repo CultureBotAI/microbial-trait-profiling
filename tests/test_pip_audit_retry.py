@@ -110,6 +110,7 @@ def test_retries_transient_http_5xx_service_error_then_succeeds(
     run_pip_audit = _load_script("run_pip_audit")
     requests_mod, pypi_service_cls, _, service_error_cls, _ = _pip_audit_types()
     req_file = _write_pinned_requirements(tmp_path)
+    cache_dir = tmp_path / "cache"
     attempts = 0
     sleeps: list[float] = []
 
@@ -137,6 +138,8 @@ def test_retries_transient_http_5xx_service_error_then_succeeds(
             "--no-deps",
             "--progress-spinner",
             "off",
+            "--cache-dir",
+            str(cache_dir),
         ],
         max_attempts=3,
         initial_backoff=1.5,
@@ -158,6 +161,7 @@ def test_fails_immediately_on_vulnerability_finding_without_retry(
     run_pip_audit = _load_script("run_pip_audit")
     _, pypi_service_cls, _, _, vuln_result_cls = _pip_audit_types()
     req_file = _write_pinned_requirements(tmp_path)
+    cache_dir = tmp_path / "cache"
     attempts = 0
     sleeps: list[float] = []
 
@@ -188,6 +192,8 @@ def test_fails_immediately_on_vulnerability_finding_without_retry(
             "--no-deps",
             "--progress-spinner",
             "off",
+            "--cache-dir",
+            str(cache_dir),
         ],
         max_attempts=4,
         initial_backoff=2.0,
@@ -214,6 +220,7 @@ def test_reports_persistent_network_failure_distinctly_from_vulnerability_findin
     run_pip_audit = _load_script("run_pip_audit")
     requests_mod, pypi_service_cls, _, _, _ = _pip_audit_types()
     req_file = _write_pinned_requirements(tmp_path)
+    cache_dir = tmp_path / "cache"
     attempts = 0
     sleeps: list[float] = []
 
@@ -237,6 +244,8 @@ def test_reports_persistent_network_failure_distinctly_from_vulnerability_findin
             "--no-deps",
             "--progress-spinner",
             "off",
+            "--cache-dir",
+            str(cache_dir),
         ],
         max_attempts=3,
         initial_backoff=2.0,
@@ -264,6 +273,7 @@ def test_does_not_retry_non_network_service_or_source_errors(
     run_pip_audit = _load_script("run_pip_audit")
     requests_mod, pypi_service_cls, _, service_error_cls, _ = _pip_audit_types()
     req_file = _write_pinned_requirements(tmp_path)
+    cache_dir = tmp_path / "cache"
     attempts = 0
     sleeps: list[float] = []
 
@@ -289,6 +299,8 @@ def test_does_not_retry_non_network_service_or_source_errors(
                 "--no-deps",
                 "--progress-spinner",
                 "off",
+                "--cache-dir",
+                str(cache_dir),
             ],
             max_attempts=4,
             sleep_fn=sleeps.append,
@@ -319,6 +331,8 @@ def test_does_not_retry_non_network_service_or_source_errors(
                 "--no-deps",
                 "--progress-spinner",
                 "off",
+                "--cache-dir",
+                str(cache_dir),
             ],
             max_attempts=4,
             sleep_fn=sleeps.append,
@@ -332,7 +346,7 @@ def test_does_not_retry_non_network_service_or_source_errors(
     missing_stdout = io.StringIO()
     missing_stderr = io.StringIO()
     exit_code = run_pip_audit.run_pip_audit(
-        ["-r", str(missing_req), "--progress-spinner", "off"],
+        ["-r", str(missing_req), "--progress-spinner", "off", "--cache-dir", str(cache_dir)],
         max_attempts=4,
         sleep_fn=sleeps.append,
         stdout=missing_stdout,
@@ -342,6 +356,120 @@ def test_does_not_retry_non_network_service_or_source_errors(
     assert sleeps == []
     assert "NETWORK FAILURE" not in missing_stderr.getvalue()
     assert "VULNERABILITY FINDING" not in missing_stderr.getvalue()
+
+
+def test_nonzero_return_from_audit_function_gives_nonzero_exit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    run_pip_audit = _load_script("run_pip_audit")
+    cli_mod: Any = importlib.import_module("pip_audit._cli")
+    cache_dir = tmp_path / "cache"
+
+    stub_attempts = 0
+    sleeps: list[float] = []
+
+    def returning_audit_fn(_argv: Any) -> int:
+        nonlocal stub_attempts
+        stub_attempts += 1
+        return 1
+
+    stub_exit = run_pip_audit.run_pip_audit(
+        ["--progress-spinner", "off", "--cache-dir", str(cache_dir)],
+        max_attempts=4,
+        audit_fn=returning_audit_fn,
+        sleep_fn=sleeps.append,
+        stdout=io.StringIO(),
+        stderr=io.StringIO(),
+    )
+    assert stub_exit == 1
+    assert stub_attempts == 1
+    assert sleeps == []
+
+    cli_attempts = 0
+
+    def cli_audit_returning_one() -> int:
+        nonlocal cli_attempts
+        cli_attempts += 1
+        return 1
+
+    monkeypatch.setattr(cli_mod, "audit", cli_audit_returning_one)
+    cli_exit = run_pip_audit.run_pip_audit(
+        ["--progress-spinner", "off", "--cache-dir", str(cache_dir)],
+        max_attempts=4,
+        sleep_fn=sleeps.append,
+        stdout=io.StringIO(),
+        stderr=io.StringIO(),
+    )
+    assert cli_exit == 1
+    assert cli_attempts == 1
+    assert sleeps == []
+
+
+def test_restores_vuln_service_connection_error_after_normal_and_exception_runs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    run_pip_audit = _load_script("run_pip_audit")
+    _, pypi_service_cls, vuln_conn_error_cls, service_error_cls, _ = _pip_audit_types()
+    cli_mod: Any = importlib.import_module("pip_audit._cli")
+    interface_mod: Any = importlib.import_module("pip_audit._service.interface")
+    req_file = _write_pinned_requirements(tmp_path)
+    cache_dir = tmp_path / "cache"
+    argv = [
+        "-r",
+        str(req_file),
+        "--disable-pip",
+        "--no-deps",
+        "--progress-spinner",
+        "off",
+        "--cache-dir",
+        str(cache_dir),
+    ]
+
+    observed_during_run: list[Any] = []
+
+    def clean_query(_self: Any, spec: Any) -> tuple[Any, list[Any]]:
+        observed_during_run.append(cli_mod.VulnServiceConnectionError)
+        return spec, []
+
+    monkeypatch.setattr(pypi_service_cls, "query", clean_query)
+    cli_mod.VulnServiceConnectionError = interface_mod.ConnectionError
+    exit_code = run_pip_audit.run_pip_audit(
+        argv,
+        max_attempts=2,
+        stdout=io.StringIO(),
+        stderr=io.StringIO(),
+    )
+    assert exit_code == 0
+    assert observed_during_run == [run_pip_audit._UnmatchedVulnServiceConnectionError]
+    assert cli_mod.VulnServiceConnectionError is interface_mod.ConnectionError
+    assert cli_mod.VulnServiceConnectionError is vuln_conn_error_cls
+
+    def exploding_query(_self: Any, _spec: Any) -> tuple[Any, list[Any]]:
+        observed_during_run.append(cli_mod.VulnServiceConnectionError)
+        raise service_error_cls("Non-network failure")
+
+    monkeypatch.setattr(pypi_service_cls, "query", exploding_query)
+    cli_mod.VulnServiceConnectionError = interface_mod.ConnectionError
+    with pytest.raises(service_error_cls, match="Non-network failure"):
+        run_pip_audit.run_pip_audit(
+            argv,
+            max_attempts=2,
+            stdout=io.StringIO(),
+            stderr=io.StringIO(),
+        )
+    assert cli_mod.VulnServiceConnectionError is interface_mod.ConnectionError
+    assert cli_mod.VulnServiceConnectionError is vuln_conn_error_cls
+
+    # Also verify recovery when VulnServiceConnectionError was dirty prior to invocation.
+    cli_mod.VulnServiceConnectionError = Exception
+    with pytest.raises(service_error_cls, match="Non-network failure"):
+        run_pip_audit.run_pip_audit(
+            argv,
+            max_attempts=2,
+            stdout=io.StringIO(),
+            stderr=io.StringIO(),
+        )
+    assert cli_mod.VulnServiceConnectionError is interface_mod.ConnectionError
 
 
 @pytest.mark.parametrize(
