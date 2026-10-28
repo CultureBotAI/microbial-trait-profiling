@@ -44,7 +44,7 @@ from collections.abc import Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, NamedTuple
 
 import numpy as np
 import numpy.typing as npt
@@ -1543,7 +1543,15 @@ def require_scope(inputs: ScanInputs, protocol: Protocol) -> None:
         )
 
 
-def open_tier1_2(core_run: Path, protocol: Protocol | None = None) -> tuple[CoreBundle, str, str]:
+class OpenTier12(NamedTuple):
+    """A verified core, its scope and the origin of that scope (never a scope role)."""
+
+    bundle: CoreBundle
+    scope: str
+    scope_source: str
+
+
+def open_tier1_2(core_run: Path, protocol: Protocol | None = None) -> OpenTier12:
     """Verify a core run; return it with its strain-rollup scope and where the scope came
     from (``core_scope``).
 
@@ -1564,19 +1572,20 @@ def open_tier1_2(core_run: Path, protocol: Protocol | None = None) -> tuple[Core
     protocol = protocol or load_protocol()
     scope, source = core_scope(bundle.run, protocol)
     scope_role(scope, protocol)  # refuses an undeclared scope
-    return bundle, scope, source
+    return OpenTier12(bundle, scope, source)
 
 
 def load_core_inputs(
     core_run: Path, protocol: Protocol | None = None
 ) -> tuple[CoreBundle, ScanInputs]:
     """Verify a Tier 1+2 core run (its ``run.json``) of a declared scope; read it once."""
-    bundle, scope, _ = open_tier1_2(core_run, protocol)
+    opened = open_tier1_2(core_run, protocol)
+    bundle = opened.bundle
     paths = {product: bundle.path(product) for product in CORE_PRODUCTS}
     inputs = load_inputs(
         paths,
         contrast_population=str(bundle.run.contrast_population),
-        strain_rollup=scope,
+        strain_rollup=opened.scope,
         protocol=protocol,
     )
     return bundle, inputs
@@ -1836,8 +1845,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     out = args.output_dir
     if not args.plan and out.exists() and (not out.is_dir() or any(out.iterdir())):
         raise ValueError(f"{out} must be a new or empty directory")
-    bundle, scope, source = open_tier1_2(args.core_run, protocol)
-    rollup = scope_record(scope, source, protocol)
+    opened = open_tier1_2(args.core_run, protocol)
+    bundle, scope = opened.bundle, opened.scope
+    rollup = scope_record(scope, opened.scope_source, protocol)
     outputs = [out / name for name in OUTPUTS.values()]
     if not args.plan:
         out.mkdir(parents=True, exist_ok=True)
