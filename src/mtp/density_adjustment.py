@@ -768,7 +768,7 @@ def _has_density_directory_component(path: Path) -> bool:
     seen: set[tuple[Path, tuple[str, ...]]] = set()
     while pending:
         component = pending.pop(0)
-        if component == "density_adjustment":
+        if component.casefold() == "density_adjustment":
             return True
         if component == "..":
             current = current.parent
@@ -797,7 +797,7 @@ def _validate_declared_density_output(output_dir: Path) -> None:
     resolved = output_dir.resolve()
     if (
         resolved.is_relative_to(DEFAULT_OUTPUT_DIR.resolve())
-        or "density_adjustment" in resolved.parts
+        or any(component.casefold() == "density_adjustment" for component in resolved.parts)
         or _has_density_directory_component(output_dir)
     ):
         raise ValueError(

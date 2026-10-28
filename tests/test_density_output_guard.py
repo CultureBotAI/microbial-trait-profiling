@@ -80,6 +80,44 @@ def test_declared_list_refuses_arm_and_default_paths_before_any_io(
 
 
 @pytest.mark.parametrize("entrypoint", ["api", "cli"])
+@pytest.mark.parametrize("spelling", ["Density_Adjustment", "DENSITY_ADJUSTMENT"])
+@pytest.mark.parametrize("location", ["arm", "default", "chained_alias_outward"])
+def test_declared_list_refuses_case_variants_before_any_io(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    entrypoint: str,
+    spelling: str,
+    location: str,
+) -> None:
+    """Reserve case variants portably and exercise real aliases on insensitive volumes."""
+    if location == "chained_alias_outward":
+        target = tmp_path / "external_storage"
+        target.mkdir()
+        variant = tmp_path / spelling
+        variant.symlink_to(target, target_is_directory=True)
+        indirect = tmp_path / "innocent_alias"
+        indirect.symlink_to(variant, target_is_directory=True)
+        output = indirect / "declared" / "nested"
+    else:
+        canonical = tmp_path / "arm" / "density_adjustment"
+        canonical.mkdir(parents=True)
+        variant = canonical.parent / spelling
+        if variant.exists():
+            # On case-insensitive APFS this is the real reserved directory.
+            assert variant.samefile(canonical)
+        if location == "default":
+            monkeypatch.setattr(density, "DEFAULT_OUTPUT_DIR", canonical)
+        output = variant / "declared" / "nested"
+    assert not output.exists()
+    monkeypatch.setattr(density, "load_non_media_profile_matrix", _forbidden_io)
+    monkeypatch.setattr(density, "load_trait_list", _forbidden_io)
+    monkeypatch.setattr(Path, "mkdir", _forbidden_io)
+    with pytest.raises(ValueError, match="own --output-dir"):
+        _invoke(entrypoint, output, monkeypatch)
+    assert not output.exists()
+
+
+@pytest.mark.parametrize("entrypoint", ["api", "cli"])
 @pytest.mark.parametrize(
     "prior", ["six_traits", "malformed", "empty", "symlink", "dangling", "directory"]
 )

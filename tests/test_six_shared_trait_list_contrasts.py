@@ -452,13 +452,100 @@ def test_stool_group_selection_is_additive_and_uses_exact_site_after_corpus_zsco
     run_inputs: dict[str, Path],
     tmp_path: Path,
 ) -> None:
-    """Row 4 excludes multi-site lists without changing the corpus reference (#1093)."""
+    """Pin the exact-stool population, study ranking and every cell's counts (#1142)."""
     metadata = pd.read_csv(run_inputs["metadata"], sep="\t", index_col=0)
     metadata.loc[metadata["study_id"] == "bsdb:1", "body_site"] = "Feces,Blood"
     metadata.loc[metadata["study_id"] == "bsdb:4", "body_site"] = " Feces "
     # A grouped alias must not turn a saliva profile into a stool profile.
     metadata.loc[metadata["body_site"] == "Saliva", "body_site_group"] = "Feces"
+    profiles = pd.read_csv(run_inputs["profiles"], sep="\t")
+    extra_metadata = []
+    extra_profiles = []
+    # Neurologic has only two exact-stool studies, but many repeated experiments.
+    # A profile-count ranking must disagree with the declared study-count ranking.
+    for experiment in range(3, 9):
+        experiment_id = f"bsdb:2-{experiment}"
+        metadata_copy = metadata.loc[metadata["experiment_id"].eq("bsdb:2-1")].copy()
+        metadata_copy["experiment_id"] = experiment_id
+        metadata_copy.index = pd.Index(
+            [f"bsdb:2|{experiment_id}|{direction}" for direction in metadata_copy["inc_dec"]],
+            name=metadata.index.name,
+        )
+        extra_metadata.append(metadata_copy)
+        profiles_copy = profiles.loc[profiles["experiment_id"].eq("bsdb:2-1")].copy()
+        profiles_copy["experiment_id"] = experiment_id
+        extra_profiles.append(profiles_copy)
+    metadata = pd.concat([metadata, *extra_metadata])
+    profiles = pd.concat([profiles, *extra_profiles], ignore_index=True)
     metadata.to_csv(run_inputs["metadata"], sep="\t")
+    profiles.to_csv(run_inputs["profiles"], sep="\t", index=False)
+
+    # Independent fixture oracle: literal metadata values and raw inc/dec rows.
+    # Do not call the production stool selector, condition grouper or count helpers.
+    labels = {
+        "Parkinson's disease": "Neurologic / cognitive disease",
+        "Obesity": "Metabolic / endocrine",
+        "Colorectal cancer": "Colorectal neoplasia",
+        "HIV infection": "Infectious disease",
+    }
+    stool = metadata.loc[metadata["body_site"].eq("Feces")].copy()
+    stool["expected_group"] = stool["condition"].map(labels)
+    assert stool["expected_group"].notna().all()
+    expected_groups = {
+        group: {
+            "stool_study_count": len(set(rows["study_id"])),
+            "increased_profile_count": int(rows["inc_dec"].eq("inc").sum()),
+            "decreased_profile_count": int(rows["inc_dec"].eq("dec").sum()),
+        }
+        for group, rows in stool.groupby("expected_group")
+    }
+    expected_order = sorted(
+        expected_groups,
+        key=lambda group: (-expected_groups[group]["stool_study_count"], group),
+    )
+    profile_order = sorted(
+        expected_groups,
+        key=lambda group: (
+            -expected_groups[group]["increased_profile_count"]
+            - expected_groups[group]["decreased_profile_count"],
+            group,
+        ),
+    )
+    assert expected_order[0] == "Colorectal neoplasia"
+    assert profile_order[0] == "Neurologic / cognitive disease"
+    assert expected_order != profile_order
+    assert expected_groups["Neurologic / cognitive disease"] == {
+        "stool_study_count": 2,
+        "increased_profile_count": 10,
+        "decreased_profile_count": 10,
+    }
+
+    # Reconstruct positive-z membership directly: positive standard deviation
+    # leaves the sign determined by log-fraction minus its full-corpus mean.
+    keys = ["study_id", "experiment_id", "inc_dec"]
+    raw_counts = profiles.drop(columns=[*keys, MEDIA])
+    raw_counts.index = profiles[keys].astype(str).agg("|".join, axis=1)
+    transformed = pd.DataFrame(
+        np.log1p(1000 * raw_counts.div(raw_counts.sum(axis=1), axis=0).to_numpy()),
+        index=raw_counts.index,
+        columns=raw_counts.columns,
+    )
+    positive = transformed.gt(transformed.mean(axis=0), axis=1)
+    expected_positive: dict[tuple[str, str], tuple[int, int]] = {}
+    for group, rows in stool.groupby("expected_group"):
+        for trait in SIX:
+            counts = tuple(
+                int(positive.loc[rows.index[rows["inc_dec"].eq(direction)], trait].sum())
+                for direction in ("inc", "dec")
+            )
+            if counts[0] or counts[1]:
+                expected_positive[(str(group), trait)] = (counts[0], counts[1])
+        assert expected_groups[group]["stool_study_count"] >= 2
+        assert any(
+            max(counts) >= 3
+            for (condition, _), counts in expected_positive.items()
+            if condition == group
+        )
     list_path = declare(tmp_path / "traits.txt", SIX)
     declared = load_trait_list(list_path)
     outputs = [tmp_path / "one", tmp_path / "six"]
@@ -476,22 +563,58 @@ def test_stool_group_selection_is_additive_and_uses_exact_site_after_corpus_zsco
                 stool_group_count=count,
             )
         standardize.assert_called_once()
-        assert len(standardize.call_args.args[1]) == 96
+        assert len(standardize.call_args.args[1]) == len(metadata) == 108
         provenance = json.loads((output / heatmaps.TRAIT_LIST_PROVENANCE_FILENAME).read_text())
         assert provenance["stool_definition"] == {
             "field": "body_site",
             "operator": "exact_equals",
             "value": "Feces",
         }
-        assert provenance["stool_profile_count"] == 44
-        assert provenance["stool_study_count"] == 11
+        assert provenance["stool_profile_count"] == len(stool) == 56
+        assert provenance["stool_study_count"] == len(set(stool["study_id"])) == 11
         assert provenance["stool_group_selection"]["group_count_requested"] == count
-        assert len(provenance["stool_group_selection"]["chosen_groups"]) == min(count, 4)
+        chosen_groups = expected_order[:count]
+        assert provenance["stool_group_selection"]["chosen_groups"] == [
+            {"condition": group, "stool_study_count": expected_groups[group]["stool_study_count"]}
+            for group in chosen_groups
+        ]
         assert provenance["trait_list_sha256"] == declared.sha256
         assert provenance["input_annotation_state"] == "pre-union"
         selected = pd.read_csv(output / heatmaps.TRAIT_LIST_STOOL_CONTRAST_TABLE_FILENAME, sep="\t")
-        assert selected["condition"].nunique() == min(count, 4)
+        all_stool = pd.read_csv(
+            output / heatmaps.TRAIT_LIST_STOOL_ALL_CONTRAST_TABLE_FILENAME, sep="\t"
+        )
+        selection = pd.read_csv(output / heatmaps.TRAIT_LIST_STOOL_SELECTION_FILENAME, sep="\t")
+        assert selection["condition"].tolist() == expected_order
+        assert selection["stool_study_count"].tolist() == [
+            expected_groups[group]["stool_study_count"] for group in expected_order
+        ]
+        assert selection["eligible"].all()
+        assert selection["rank"].tolist() == list(range(1, len(expected_order) + 1))
+        assert selection.loc[selection["chosen"], "condition"].tolist() == chosen_groups
+        assert set(selected["condition"]) == set(chosen_groups)
         assert set(selected["body_site_group"]) == {"Feces"}
+        assert set(zip(all_stool["condition"], all_stool["trait_id"], strict=True)) == set(
+            expected_positive
+        )
+        assert set(zip(selected["condition"], selected["trait_id"], strict=True)) == {
+            key for key in expected_positive if key[0] in chosen_groups
+        }
+        for table in (selected, all_stool):
+            for row in table.itertuples(index=False):
+                expected = expected_groups[row.condition]
+                assert row.study_count == expected["stool_study_count"]
+                assert row.increased_profile_count == expected["increased_profile_count"]
+                assert row.decreased_profile_count == expected["decreased_profile_count"]
+                increased, decreased = expected_positive[(str(row.condition), str(row.trait_id))]
+                assert row.increased_positive_profile_count == increased
+                assert row.decreased_positive_profile_count == decreased
+                assert row.increased_positive_fraction == pytest.approx(
+                    increased / expected["increased_profile_count"]
+                )
+                assert row.decreased_positive_fraction == pytest.approx(
+                    decreased / expected["decreased_profile_count"]
+                )
         assert np.allclose(
             selected["increased_minus_decreased_positive_percentage_points"],
             100 * selected["increased_minus_decreased_positive_fraction"],

@@ -101,9 +101,10 @@ the historical reference and are not P results.
 ## Protecting density outputs
 
 Declared-list density runs refuse a destination inside any `density_adjustment/`
-path, including symlink aliases, or a directory already holding
+path, including case variants and symlink aliases, or a directory already holding
 `table1_density_adjusted_effects.tsv`. That filename is reserved regardless of
 its current contents or file type, so partial or malformed earlier results are
-also protected. Use a fresh destination for a declared-list rerun. The audit API checks the destination before reading profile inputs or creating
+also protected. Use a fresh destination for a declared-list rerun. The audit API
+checks the destination before reading profile inputs or creating
 output directories; the module CLI also checks before loading the declared trait
 list. The default six-trait density command is unchanged.

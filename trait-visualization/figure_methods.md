@@ -1809,13 +1809,36 @@ the per-direction edge tables,
 `trait_list_provenance.json`, which records the list file's SHA-256, the input
 hashes and the cell counts per trait. It draws no figure and leaves
 `six-shared-traits/` untouched; the six-trait run without a list is unchanged.
-The disease-group stool comparison of #1045 is the `grouped_direction_contrast`
-rows whose body-site label is `Feces`. That is the grouped (v3) body-site label,
-given to every profile whose raw body site or body-site group mentions feces,
-faeces or stool. It therefore includes multi-site profiles such as `Feces,Blood`,
-whose metadata `body_site_group` is `Other`. The list counts of a few condition
-groups differ from a selection on metadata `body_site_group == "Feces"`
-(#1084). Declared lists live in `methods/trait_lists/`.
+The row 4 disease-group stool comparison (#1045, #1093) uses **literal raw
+metadata `body_site == "Feces"`**, after z-scores are standardized over the full
+consumed profile corpus. Multi-site strings such as `Feces,Blood`, whitespace
+variants, and metadata `body_site_group` aliases do not qualify. The exact-stool
+edges are rebuilt from that filtered population; the full-corpus grouped Feces
+rows are not used as a substitute.
+
+`--stool-group-count` declares how many groups to retain (default 6). A group is
+eligible when at least one declared-trait cell passes native support: at least
+three positive-z profiles in either direction and at least two distinct studies.
+Eligible groups rank by distinct stool-study count descending, then group name
+ascending. The selected cells retain their support flags and report increased
+minus decreased positive-profile percentage points with nominal two-sided Fisher
+inference. Neither p nor q determines group selection; native BH values cover
+the complete stool-cell family before selecting groups.
+
+Four additional stool edge/contrast tables are written:
+
+- `trait_list_stool_increased_grouped_edges.tsv`
+- `trait_list_stool_decreased_grouped_edges.tsv`
+- `trait_list_stool_all_group_direction_contrasts.tsv`
+- `trait_list_stool_group_direction_contrasts.tsv`
+
+`trait_list_stool_group_selection.tsv` also records every represented group, its
+distinct stool-study count, eligibility, rank and selection status. The provenance
+JSON records the exact stool definition, group-count parameter, support/ranking
+rules, chosen groups/counts, and hashes of these additional outputs. The methods
+note [Declared stool condition-group contrasts](../methods/stool_group_direction_contrasts.md)
+documents the pre-union development inputs and the input regeneration required at
+P (#1133). Declared lists live in `methods/trait_lists/`.
 
 ### Focused Oral Six-Trait Contrast Heatmap
 
