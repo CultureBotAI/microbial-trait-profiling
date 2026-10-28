@@ -761,6 +761,58 @@ def reported_traits_heading(trait_list: DeclaredTraitList | None) -> str:
     return f"DECLARED TRAIT LIST SIGNALS ({len(trait_list.trait_ids)} TRAITS)"
 
 
+def _has_density_directory_component(path: Path) -> bool:
+    """Inspect every symlink target, including reserved names hidden between aliases."""
+    pending = list(path.absolute().parts)
+    current = Path(pending.pop(0))
+    seen: set[tuple[Path, tuple[str, ...]]] = set()
+    while pending:
+        component = pending.pop(0)
+        if component == "density_adjustment":
+            return True
+        if component == "..":
+            current = current.parent
+            continue
+        current /= component
+        if current.is_symlink():
+            state = (current, tuple(pending))
+            if state in seen:
+                raise ValueError("Cyclic alias in declared-list --output-dir")
+            seen.add(state)
+            target = current.readlink()
+            expanded = target if target.is_absolute() else current.parent / target
+            current = Path(expanded.anchor)
+            pending = [*expanded.parts[1:], *pending]
+    return False
+
+
+def _validate_declared_density_output(output_dir: Path) -> None:
+    """Protect six-trait tables before declared-list input reads or writes (#1093).
+
+    Reserve arm directory names in both requested and resolved paths, including
+    nested destinations and aliases. An existing canonical table name is reserved
+    regardless of its contents: partial files and dangling links must not be
+    replaced. Declared-list reruns therefore need a fresh output directory.
+    """
+    resolved = output_dir.resolve()
+    if (
+        resolved.is_relative_to(DEFAULT_OUTPUT_DIR.resolve())
+        or "density_adjustment" in resolved.parts
+        or _has_density_directory_component(output_dir)
+    ):
+        raise ValueError(
+            "A trait-list run needs its own --output-dir outside the six-trait "
+            "density_adjustment/ directories, including their nested paths and aliases"
+        )
+    table = output_dir / "table1_density_adjusted_effects.tsv"
+    if table.exists() or table.is_symlink():
+        raise ValueError(
+            "A trait-list run needs a fresh --output-dir: the reserved "
+            "table1_density_adjusted_effects.tsv already exists. "
+            "Use a new directory for each declared-list run."
+        )
+
+
 def run_density_audit(
     profiles_path: Path = DEFAULT_PROFILES_PATH,
     columns_path: Path = DEFAULT_COLUMNS_PATH,
@@ -777,14 +829,12 @@ def run_density_audit(
 
     With a declared ``trait_list`` the effects table reports those traits instead of
     the six Table 1 traits, and ``trait_list_provenance.json`` records the list (#1054).
-    A list run never writes into the default directory, whose six-trait table the
-    deck figures read (#1083).
+    A list run never writes into default or arm density directories, or replaces
+    an existing canonical density table. Its destination is checked before any
+    input reads or directory creation (#1083, #1093).
     """
-    if trait_list is not None and output_dir.resolve().is_relative_to(DEFAULT_OUTPUT_DIR.resolve()):
-        raise ValueError(
-            f"A trait-list run needs its own --output-dir, not {DEFAULT_OUTPUT_DIR.name}/ "
-            "(the six-trait density outputs)"
-        )
+    if trait_list is not None:
+        _validate_declared_density_output(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     profiles_df, non_media_cols = load_non_media_profile_matrix(profiles_path, columns_path)
     reported_traits = (
@@ -1015,6 +1065,8 @@ def main() -> None:
     add_trait_list_argument(parser)
 
     args = parser.parse_args()
+    if args.trait_list is not None:
+        _validate_declared_density_output(args.output_dir)
     results = run_density_audit(
         profiles_path=args.profiles,
         columns_path=args.columns,
