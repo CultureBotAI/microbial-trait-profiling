@@ -282,18 +282,22 @@ are not a test; traits share taxa.
 | `four_highlighted_pairs_taxon_drivers.tsv`, `four_highlighted_pairs_study_evidence.tsv`, `four_highlighted_pairs_summary.json` | Taxa and studies behind the four exploratory leads |
 
 `just cellulose-decr-figures` runs `mtp.cellulose_decr.figures`
-(`src/mtp/cellulose_decr/figures.py`), which draws the figures from those tables
-only. The figures are written beside the tables and are gitignored, as
-CONTRIBUTING.md requires for images outside `trait-visualization/` (#560).
-Reruns on the same inputs give identical tables and figures; only the provenance
-timestamp changes. Figure provenance is in `figures/figures_provenance.json`,
-with the commit that drew the figures (`+dirty` when the code or tables were
-modified), and `figures/figure_captions.json` holds the slide text for each
-figure, worded from the same tables (#556).
+(`src/mtp/cellulose_decr/figures.py`) and `mtp.cellulose_decr.tufte_plates`
+(`src/mtp/cellulose_decr/tufte_plates.py`, also runnable alone via
+`just cellulose-decr-tufte`), which draw the figures, Tufte analytical plates
+(`figures_tufte/`) and 16-slide deck (`cellulose_decr_slide_deck.html`) from
+those tables only (#550). The figures are written beside the tables and are
+gitignored, as CONTRIBUTING.md requires for images outside `trait-visualization/`
+(#560). Reruns on the same inputs give identical tables and figures; only the
+provenance timestamp changes. Figure provenance is in
+`figures/figures_provenance.json`, with the commit that drew the figures (`+dirty`
+when the code or tables were modified), and `figures/figure_captions.json` holds
+the slide text for each figure, worded from the same tables (#556).
 
 ```bash
 just cellulose-decr
 just cellulose-decr-figures
+just cellulose-decr-tufte
 ```
 
 The recipe records `git rev-parse HEAD` as the code commit, with `+dirty` when

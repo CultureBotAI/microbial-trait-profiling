@@ -468,6 +468,13 @@ cellulose-decr-figures *ARGS:
 	done
 	commit="$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} data/analysis/cellulose_decr && git diff --cached --quiet -- {{code_paths}} data/analysis/cellulose_decr || echo +dirty)"
 	uv run python -m mtp.cellulose_decr.figures --code-commit "$commit" "$@"
+	uv run python -m mtp.cellulose_decr.tufte_plates
+
+# Draw the Tufte plates (figures_tufte/) and 16-slide deck (cellulose_decr_slide_deck.html)
+# in data/analysis/cellulose_decr/ (#550). Also invoked by `just cellulose-decr-figures`.
+[positional-arguments]
+cellulose-decr-tufte *ARGS:
+	uv run python -m mtp.cellulose_decr.tufte_plates "$@"
 
 # The #835 selection scan (methods/cellulose_decr_selection_scan.md): cellulose_decr's
 # overlap and U6 null for every triple of eligible conditions and the top decreasing
