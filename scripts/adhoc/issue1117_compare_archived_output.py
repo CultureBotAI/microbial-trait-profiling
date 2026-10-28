@@ -31,11 +31,19 @@ ADDITIONS = (
     "tier12_input_occurrence_rows",
     "tier12_excluded_occurrence_rows",
     "tier12_excluded_profile_keys",
+    "tier12_input_experiments",
+    "tier12_excluded_experiments_without_active_profiles",
+    "source_host_case_variant_experiments",
+    "source_host_case_variant_profile_keys",
 )
 PD_ADDITIONS = (
     "input_occurrence_rows",
     "excluded_outside_active_profile_rows",
     "excluded_outside_active_profile_keys",
+    "input_experiments",
+    "excluded_experiments_without_active_profiles",
+    "source_host_case_variant_experiments",
+    "source_host_case_variant_profile_keys",
 )
 SCRIPTS = (
     "src/mtp/matrix_overlap_coverage.py",

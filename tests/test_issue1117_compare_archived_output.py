@@ -218,11 +218,19 @@ def archive_case(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Ar
                 input_occurrence_rows=17,
                 excluded_outside_active_profile_rows=6,
                 excluded_outside_active_profile_keys=2,
+                input_experiments=4,
+                excluded_experiments_without_active_profiles=0,
+                source_host_case_variant_experiments=0,
+                source_host_case_variant_profile_keys=0,
             )
             cover.update(
                 tier12_input_occurrence_rows=17,
                 tier12_excluded_occurrence_rows=6,
                 tier12_excluded_profile_keys=2,
+                tier12_input_experiments=4,
+                tier12_excluded_experiments_without_active_profiles=0,
+                source_host_case_variant_experiments=0,
+                source_host_case_variant_profile_keys=0,
             )
         write_rows(root / TABLES[3], [pd_row])
         write_rows(
@@ -311,6 +319,10 @@ def test_only_nine_of_ten_trait_projection_and_declared_counters_are_allowed(
         "tier12_input_occurrence_rows": 17,
         "tier12_excluded_occurrence_rows": 6,
         "tier12_excluded_profile_keys": 2,
+        "tier12_input_experiments": 4,
+        "tier12_excluded_experiments_without_active_profiles": 0,
+        "source_host_case_variant_experiments": 0,
+        "source_host_case_variant_profile_keys": 0,
     }
     matrix = next(row for row in result["tables"] if row["table"] == TABLES[0])
     assert (matrix["reference_rows"], matrix["current_rows"]) == (45, 36)
@@ -426,6 +438,71 @@ def test_declared_metadata_cannot_be_hidden_by_summary_projection(
     value: object = 999 if field.endswith("count") else "incorrect"
     archive_case.change_json("summary.json", "declared_traits", field, value)
     with pytest.raises(ValueError, match=r"(?i)trait|declared|pair"):
+        archive_case.compare()
+    assert not archive_case.args.output_dir.parent.exists()
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        (None, None),
+        ("trait_ids", [REMOVED_TRAIT]),
+        ("trait_count", 999),
+        ("trait_list_sha256", "0" * 64),
+    ],
+)
+def test_provenance_declared_traits_are_checked_independently(
+    archive_case: ArchiveCase, field: str | None, value: object
+) -> None:
+    summary_before = (archive_case.current / "summary.json").read_bytes()
+    path = archive_case.current / "provenance.json"
+    provenance = read_json(path)
+    if field is None:
+        provenance.pop("declared_traits")
+    else:
+        provenance["declared_traits"][field] = value
+    write_json(path, provenance)
+    archive_case.reseal()
+    assert (archive_case.current / "summary.json").read_bytes() == summary_before
+    with pytest.raises(ValueError, match="Current provenance declared trait metadata differs"):
+        archive_case.compare()
+    assert not archive_case.args.output_dir.parent.exists()
+
+
+def test_new_exclusion_diagnostics_have_explicit_parity_allowances(
+    archive_case: ArchiveCase,
+) -> None:
+    coverage = {
+        "tier12_input_experiments": 7,
+        "tier12_excluded_experiments_without_active_profiles": 3,
+        "source_host_case_variant_experiments": 2,
+        "source_host_case_variant_profile_keys": 4,
+    }
+    pd_diagnostics = {
+        "input_experiments": 7,
+        "excluded_experiments_without_active_profiles": 3,
+        "source_host_case_variant_experiments": 2,
+        "source_host_case_variant_profile_keys": 4,
+    }
+    summary_path = archive_case.current / "summary.json"
+    summary = read_json(summary_path)
+    summary["coverage_and_cascade"].update(coverage)
+    summary["parkinsons_stool_overlap"][0].update(pd_diagnostics)
+    write_json(summary_path, summary)
+    table_path = archive_case.current / "parkinsons_stool_study_overlap_summary.tsv"
+    pd_rows = rows(table_path)
+    pd_rows[0].update({key: str(value) for key, value in pd_diagnostics.items()})
+    write_rows(table_path, pd_rows)
+    archive_case.reseal()
+    archive_case.compare()
+    report = read_json(archive_case.args.output_dir / "parity.json")
+    assert {key: report["new_exclusion_counters"][key] for key in coverage} == coverage
+    assert report["unexpected_changes"] == []
+
+
+def test_unreviewed_summary_counter_is_not_discarded(archive_case: ArchiveCase) -> None:
+    archive_case.change_json("summary.json", "coverage_and_cascade", "unreviewed_counter", 42)
+    with pytest.raises(ValueError, match="Unexpected summary difference"):
         archive_case.compare()
     assert not archive_case.args.output_dir.parent.exists()
 
