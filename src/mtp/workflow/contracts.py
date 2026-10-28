@@ -39,14 +39,22 @@ from mtp.datamodel.core_products_pydantic import (
 from mtp.human_host_corpus import CORPUS_SEQUENCING_TYPES
 from mtp.study_trait_profiles import ProfileKey, direction_to_inc_dec, read_taxa_trait_matrix
 from mtp.taxa_trait_matrix import StrainRollup
+from mtp.trait_key_policy import (
+    DEFAULT_TRAIT_KEY_POLICY,
+    TRAIT_POLICY_METADATA_COLUMNS,
+    TraitKeyPolicy,
+    canonical_object,
+    parse_trait_key_policy,
+    policy_metadata,
+)
 from mtp.workflow.coverage import (
-    FEATURE_CATALOG_COLUMNS,
-    FEATURE_METADATA_COLUMNS,
     STRAIN_ATTRIBUTED_EVIDENCE,
     annotation_evidence,
     build_profile_coverage,
+    feature_catalog_columns,
     feature_class,
     feature_filter_id,
+    feature_metadata_columns,
     product_evidence,
 )
 from mtp.workflow.matrix_contracts import validate_feature_node_metadata, validate_matrix_sources
@@ -209,10 +217,23 @@ def _table_contract(path: Path, kind: str, context: Mapping[str, object]) -> dic
 
 
 def _feature_contract(
-    path: Path, kind: str, context: Mapping[str, object], strain_rollup: StrainRollup
+    path: Path,
+    kind: str,
+    context: Mapping[str, object],
+    strain_rollup: StrainRollup,
+    *,
+    trait_key_policy: TraitKeyPolicy,
+    include_policy_metadata: bool,
 ) -> dict[str, object]:
-    required = FEATURE_CATALOG_COLUMNS if kind == "feature_catalog" else FEATURE_METADATA_COLUMNS
-    _, rows = read_table(path, required=required, keys=("column_id",))
+    metadata_columns = feature_metadata_columns(include_policy_metadata=include_policy_metadata)
+    required = (
+        feature_catalog_columns(include_policy_metadata=include_policy_metadata)
+        if kind == "feature_catalog"
+        else metadata_columns
+    )
+    header, rows = read_table(path, required=required, keys=("column_id",))
+    if header != required:
+        raise ValueError("Feature metadata columns differ from the declared metadata format")
     for row in rows:
         feature = row["column_id"]
         _feature_id(feature)
@@ -221,6 +242,20 @@ def _feature_contract(
         )
         if feature != expected:
             raise ValueError(f"Feature ID does not match predicate/object: {feature!r}")
+        if (
+            canonical_object(row["object_id"], trait_key_policy=trait_key_policy)
+            != row["object_id"]
+        ):
+            raise ValueError(
+                f"Feature metadata object conflicts with trait_key_policy: {feature!r}"
+            )
+        if include_policy_metadata:
+            declared = tuple(row[column] for column in TRAIT_POLICY_METADATA_COLUMNS)
+            if declared != policy_metadata(row["object_id"], trait_key_policy=trait_key_policy):
+                raise ValueError(
+                    "Feature policy metadata differs from declared member/source vocabulary: "
+                    f"{feature!r}"
+                )
         if kind == "feature_catalog":
             FeatureDefinition.model_validate(row)
             if row["feature_class"] != feature_class(feature):
@@ -236,13 +271,22 @@ def _feature_contract(
         raise ValueError("Feature catalog vocabulary/order does not match matrix columns")
     nodes = _path(context, "kg_nodes")
     if nodes is not None:
-        validate_feature_node_metadata(path, nodes)
+        validate_feature_node_metadata(
+            path,
+            nodes,
+            trait_key_policy=trait_key_policy,
+            include_policy_metadata=include_policy_metadata,
+        )
     metadata = _path(context, "feature_metadata")
     if kind == "feature_catalog" and metadata is not None:
-        _, source_rows = read_table(metadata, required=FEATURE_METADATA_COLUMNS)
-        observed = [tuple(row[column] for column in FEATURE_METADATA_COLUMNS) for row in rows]
+        source_header, source_rows = read_table(metadata, required=metadata_columns)
+        if source_header != metadata_columns:
+            raise ValueError(
+                "Source feature metadata columns differ from the declared metadata format"
+            )
+        observed = [tuple(row[column] for column in metadata_columns) for row in rows]
         expected_metadata = [
-            tuple(row[column] for column in FEATURE_METADATA_COLUMNS) for row in source_rows
+            tuple(row[column] for column in metadata_columns) for row in source_rows
         ]
         if observed != expected_metadata:
             raise ValueError("Feature catalog metadata differs from its source feature metadata")
@@ -264,7 +308,12 @@ def _feature_contract(
 
 
 def _matrix_contract(
-    path: Path, context: Mapping[str, object], strain_rollup: StrainRollup
+    path: Path,
+    context: Mapping[str, object],
+    strain_rollup: StrainRollup,
+    *,
+    trait_key_policy: TraitKeyPolicy,
+    include_policy_metadata: bool,
 ) -> dict[str, object]:
     reader = taxa_trait_count_reader(path)
     for feature in reader.count_columns:
@@ -305,6 +354,8 @@ def _matrix_contract(
             nodes,
             _path(context, "feature_metadata"),
             strain_rollup=strain_rollup,
+            trait_key_policy=trait_key_policy,
+            include_policy_metadata=include_policy_metadata,
         )
     return {
         "rows": reader.summary.rows,
@@ -551,6 +602,8 @@ def validate_product(
     context: Mapping[str, object] | None = None,
     cohort: str | None = None,
     strain_rollup: StrainRollup = "off",
+    trait_key_policy: TraitKeyPolicy = DEFAULT_TRAIT_KEY_POLICY,
+    include_policy_metadata: bool = True,
 ) -> dict[str, object]:
     """Validate a scientific product, raising ValueError before publication on failure.
 
@@ -563,6 +616,7 @@ def validate_product(
     ``strain_rollup`` is the scope the producing run declared: the matrix and its feature
     catalog are checked against the BacDive strain records that scope admits (#788).
     """
+    trait_key_policy = parse_trait_key_policy(trait_key_policy)
     kind = _ALIASES.get(kind, kind)
     related = context or {}
     if cohort is not None:
@@ -572,9 +626,22 @@ def validate_product(
     if kind in _TABLE_KEYS:
         facts = _table_contract(path, kind, related)
     elif kind in {"feature_metadata", "feature_catalog"}:
-        facts = _feature_contract(path, kind, related, strain_rollup)
+        facts = _feature_contract(
+            path,
+            kind,
+            related,
+            strain_rollup,
+            trait_key_policy=trait_key_policy,
+            include_policy_metadata=include_policy_metadata,
+        )
     elif kind == "taxa_matrix":
-        facts = _matrix_contract(path, related, strain_rollup)
+        facts = _matrix_contract(
+            path,
+            related,
+            strain_rollup,
+            trait_key_policy=trait_key_policy,
+            include_policy_metadata=include_policy_metadata,
+        )
     elif kind in {"count_profiles", "ora_profiles"}:
         effective_cohort = cohort or ("Homo sapiens" if kind == "ora_profiles" else "all")
         facts = _profile_contract(path, kind, related, effective_cohort)
@@ -586,4 +653,10 @@ def validate_product(
         raise ValueError(f"Unknown scientific product contract: {kind!r}")
     with path.open("rb") as handle:
         digest = hashlib.file_digest(handle, "sha256").hexdigest()
-    return {"contract_version": CONTRACT_VERSION, "kind": kind, "sha256": digest, **facts}
+    return {
+        "contract_version": CONTRACT_VERSION,
+        "kind": kind,
+        "sha256": digest,
+        "trait_key_policy": trait_key_policy,
+        **facts,
+    }

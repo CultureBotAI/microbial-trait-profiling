@@ -73,8 +73,11 @@ vector have explicit untestable status and missing inferential values.
 The trait list is an explicit hashed input. The standard phenotype list is
 [`trait_lists/headline_ten_phenotype.txt`](trait_lists/headline_ten_phenotype.txt).
 Preserve its order; do not select traits using these results. Missing declared
-traits cause an error. In particular, the phenotype list contains
-`METPO:1000605`, which is absent under off.
+traits cause an error. Despite its historical filename, the current list contains
+nine traits: its facultative entry is the `METPO:1000608` union under
+[`facultative_union_v1`](trait_key_policy.md). The historical F list had ten entries,
+including a separate `METPO:1000605` entry absent under off. Historical reproduction
+must use that producer's hashed list and raw-object policy, not the current list.
 
 Among the supplied stool comparisons, rank exact `condition` strings by
 comparison count descending, then condition name ascending for ties. Select

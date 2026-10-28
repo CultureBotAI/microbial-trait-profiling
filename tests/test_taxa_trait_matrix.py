@@ -1,10 +1,37 @@
+import csv
+import json
 from pathlib import Path
+from typing import TypedDict
 
 import pytest
 
 from bsdbng.taxa_trait_matrix import create_taxa_trait_matrix
 from mtp import taxa_trait_matrix
 from mtp.taxa_trait_matrix import StrainRollup
+
+
+class MatrixOptions(TypedDict, total=False):
+    strain_rollup: StrainRollup
+
+
+def _metadata_rows(path: Path) -> list[list[str]]:
+    with path.open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.reader(handle, delimiter="\t"))
+    assert rows[0] == [
+        "column_id",
+        "column_label",
+        "predicate_id",
+        "predicate_name",
+        "object_id",
+        "object_name",
+        "object_category",
+        "trait_key_policy",
+        "trait_member_ids_json",
+        "trait_source_vocabularies_json",
+    ]
+    assert all(len(row) == 10 for row in rows)
+    assert {row[7] for row in rows[1:]} == {"facultative_union_v1"}
+    return rows
 
 
 def test_create_taxa_trait_matrix_counts_self_and_descendants(tmp_path: Path) -> None:
@@ -96,7 +123,8 @@ def test_create_taxa_trait_matrix_counts_self_and_descendants(tmp_path: Path) ->
         "NCBITaxon:100\tGenus\tgenus\t1\t1\t1\t2\t1",
         "NCBITaxon:101\tSpecies a\tspecies\t1\t1\t1\t0\t1",
     ]
-    assert column_metadata_path.read_text(encoding="utf-8").splitlines() == [
+    metadata = _metadata_rows(column_metadata_path)
+    assert ["\t".join(row[:7]) for row in metadata] == [
         (
             "column_id\tcolumn_label\tpredicate_id\tpredicate_name\tobject_id"
             "\tobject_name\tobject_category"
@@ -123,6 +151,14 @@ def test_create_taxa_trait_matrix_counts_self_and_descendants(tmp_path: Path) ->
             "\tacetate\tbiolink:SmallMolecule"
         ),
     ]
+    assert [json.loads(row[8]) for row in metadata[1:]] == [
+        ["METPO:1000603"],
+        ["GO:0008150"],
+        ["METPO:1000636"],
+        ["METPO:1000615"],
+        ["CHEBI:123"],
+    ]
+    assert [json.loads(row[9]) for row in metadata[1:]] == [[], [], [], [], []]
 
 
 TAXONOMY_AND_TAXON_EDGES = [
@@ -198,7 +234,7 @@ def _matrix_lines(
     directory.mkdir()
     taxa_path, nodes_path, edges_path = _write_strain_fixture(directory, edges)
     output_path = directory / "taxa_trait_matrix.tsv"
-    options = {} if strain_rollup is None else {"strain_rollup": strain_rollup}
+    options: MatrixOptions = {} if strain_rollup is None else {"strain_rollup": strain_rollup}
     taxa_trait_matrix.create_taxa_trait_matrix(
         taxa_path=taxa_path,
         kg_dir=directory,
@@ -499,7 +535,8 @@ def test_facultative_synonyms_unify_into_single_nonredundant_feature(tmp_path: P
         "NCBITaxon:100\tGenus\tgenus\t1",
         "NCBITaxon:101\tSpecies a\tspecies\t1",
     ]
-    assert column_metadata_path.read_text(encoding="utf-8").splitlines() == [
+    metadata = _metadata_rows(column_metadata_path)
+    assert ["\t".join(row[:7]) for row in metadata] == [
         (
             "column_id\tcolumn_label\tpredicate_id\tpredicate_name\tobject_id"
             "\tobject_name\tobject_category"
@@ -508,4 +545,32 @@ def test_facultative_synonyms_unify_into_single_nonredundant_feature(tmp_path: P
             "METPO:1000608\tfacultatively aerobic METPO:1000608\t\t\tMETPO:1000608"
             "\tfacultatively aerobic\tbiolink:PhenotypicQuality"
         ),
+    ]
+    assert json.loads(metadata[1][8]) == ["METPO:1000605", "METPO:1000608", "METPO:1000612"]
+    assert json.loads(metadata[1][9]) == [
+        {
+            "object_id": "METPO:1000605",
+            "source_id": "infores:bacdive",
+            "source_label": "facultative anaerobe",
+        },
+        {
+            "object_id": "METPO:1000605",
+            "source_id": "infores:madin_etal",
+            "source_label": "facultative",
+        },
+        {
+            "object_id": "METPO:1000608",
+            "source_id": "infores:bacdive",
+            "source_label": "facultative aerobe",
+        },
+        {
+            "object_id": "METPO:1000608",
+            "source_id": "infores:madin_etal",
+            "source_label": "facultative",
+        },
+        {
+            "object_id": "METPO:1000612",
+            "source_id": "infores:bactotraits",
+            "source_label": "Ox_facultative_aerobe_anaerobe",
+        },
     ]

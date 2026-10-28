@@ -27,11 +27,20 @@ from mtp.taxa_trait_matrix import (
     scoped_taxon_traits,
     strain_trait_rolls_up,
 )
+from mtp.trait_key_policy import (
+    DEFAULT_TRAIT_KEY_POLICY,
+    TraitKeyPolicy,
+    parse_trait_key_policy,
+)
 from mtp.workflow.kg_inputs import iter_kg_edges
 
 
 def _source_counts(
-    edges_path: Path, reported: list[ReportedTaxon], strain_rollup: StrainRollup
+    edges_path: Path,
+    reported: list[ReportedTaxon],
+    strain_rollup: StrainRollup,
+    *,
+    trait_key_policy: TraitKeyPolicy,
 ) -> dict[str, Counter[str]]:
     parents: defaultdict[str, set[str]] = defaultdict(set)
     annotations: defaultdict[str, set[str]] = defaultdict(set)
@@ -45,12 +54,14 @@ def _source_counts(
             if predicate == SUBCLASS_OF and obj.startswith("NCBITaxon:"):
                 parents[subject].add(obj)
             elif obj.startswith("METPO:") or predicate.startswith("METPO:"):
-                annotations[subject].add(make_trait_key(predicate, obj))
+                annotations[subject].add(
+                    make_trait_key(predicate, obj, trait_key_policy=trait_key_policy)
+                )
         elif strain_rollup != "off" and subject.startswith(STRAIN_PREFIX):
             if predicate == SUBCLASS_OF and obj.startswith("NCBITaxon:"):
                 strain_taxa[subject].add(obj)
             elif obj.startswith("METPO:") or predicate.startswith("METPO:"):
-                key = make_trait_key(predicate, obj)
+                key = make_trait_key(predicate, obj, trait_key_policy=trait_key_policy)
                 if strain_trait_rolls_up(key, strain_rollup):
                     strain_traits[subject].add(key)
     scoped = scoped_taxon_traits(
@@ -72,11 +83,20 @@ def _source_counts(
 
 
 def _expected_metadata(
-    counts: dict[str, Counter[str]], nodes_path: Path
+    counts: dict[str, Counter[str]],
+    nodes_path: Path,
+    *,
+    trait_key_policy: TraitKeyPolicy,
+    include_policy_metadata: bool,
 ) -> tuple[list[str], list[list[str]]]:
     features = {feature for values in counts.values() for feature, count in values.items() if count}
     nodes = read_node_metadata(nodes_path, node_ids_for_trait_keys(features))
-    return column_metadata_rows(counts, nodes)
+    return column_metadata_rows(
+        counts,
+        nodes,
+        trait_key_policy=trait_key_policy,
+        include_policy_metadata=include_policy_metadata,
+    )
 
 
 def validate_matrix_sources(
@@ -87,15 +107,23 @@ def validate_matrix_sources(
     metadata_path: Path | None,
     *,
     strain_rollup: StrainRollup = "off",
+    trait_key_policy: TraitKeyPolicy = DEFAULT_TRAIT_KEY_POLICY,
+    include_policy_metadata: bool = True,
 ) -> dict[str, object]:
     """Check all matrix cells, biological row identities and KG feature metadata.
 
     The expected cells apply the strain rollup scope the producing run declared (#788).
     """
+    trait_key_policy = parse_trait_key_policy(trait_key_policy)
     reported = read_reported_taxa(reported_path)
     reported_by_id = {taxon.taxon_id: taxon for taxon in reported}
-    counts = _source_counts(edges_path, reported, strain_rollup)
-    metadata_header, metadata_rows = _expected_metadata(counts, nodes_path)
+    counts = _source_counts(edges_path, reported, strain_rollup, trait_key_policy=trait_key_policy)
+    metadata_header, metadata_rows = _expected_metadata(
+        counts,
+        nodes_path,
+        trait_key_policy=trait_key_policy,
+        include_policy_metadata=include_policy_metadata,
+    )
     features = tuple(row[0] for row in metadata_rows)
     reader = taxa_trait_count_reader(path)
     if reader.count_columns != features:
@@ -120,6 +148,8 @@ def validate_matrix_sources(
         if observed != [metadata_header, *metadata_rows]:
             raise ValueError("Feature metadata differs from consumed KG evidence and nodes")
     return {
+        "trait_key_policy": trait_key_policy,
+        "policy_metadata_included": include_policy_metadata,
         "kg_source_aggregation_checked": True,
         "kg_source_cells_checked": reader.summary.rows * len(features),
         "reported_taxon_identity_checked": True,
@@ -127,13 +157,33 @@ def validate_matrix_sources(
     }
 
 
-def validate_feature_node_metadata(path: Path, nodes_path: Path) -> None:
+def validate_feature_node_metadata(
+    path: Path,
+    nodes_path: Path,
+    *,
+    trait_key_policy: TraitKeyPolicy = DEFAULT_TRAIT_KEY_POLICY,
+    include_policy_metadata: bool = True,
+) -> None:
     """Check feature descriptions against the supplied node snapshot, without a graph rebuild."""
+    trait_key_policy = parse_trait_key_policy(trait_key_policy)
     with path.open(encoding="utf-8", newline="") as handle:
         reader = csv.DictReader(handle, delimiter="\t")
+        observed_header = tuple(reader.fieldnames or ())
         rows = list(reader)
     counts = {"features": Counter({row["column_id"]: 1 for row in rows})}
-    header, expected = _expected_metadata(counts, nodes_path)
+    header, expected = _expected_metadata(
+        counts,
+        nodes_path,
+        trait_key_policy=trait_key_policy,
+        include_policy_metadata=include_policy_metadata,
+    )
+    metadata_header = tuple(
+        column
+        for column in observed_header
+        if column not in {"feature_class", "annotation_evidence"}
+    )
+    if metadata_header != tuple(header):
+        raise ValueError("Feature metadata columns differ from the declared metadata format")
     observed = [[row[column] for column in header] for row in rows]
     if observed != expected:
         raise ValueError("Feature metadata differs from consumed KG nodes")

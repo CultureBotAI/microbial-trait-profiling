@@ -39,6 +39,12 @@ def harness(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Harness:
     repository = tmp_path / "source"
     (repository / "src").mkdir(parents=True)
     (repository / "src" / "version.py").write_text("VERSION = 1\n", encoding="utf-8")
+    # The core uses the real imported operations. Retain their matrix/policy source
+    # bytes under the expected inventory paths instead of inventing a producer (#1129).
+    for name in ("taxa_trait_matrix.py", "trait_key_policy.py"):
+        relative = Path("src/mtp") / name
+        (repository / relative).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(REPO_ROOT / relative, repository / relative)
     for name in ("Justfile", "pyproject.toml", "uv.lock"):
         (repository / name).write_text("# test fixture\n", encoding="utf-8")
     (repository / HELPER).parent.mkdir(parents=True)

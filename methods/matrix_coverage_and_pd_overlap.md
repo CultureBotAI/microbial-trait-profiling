@@ -2,6 +2,11 @@
 
 This note documents the definitions, data sources, and exact denominator semantics implemented in [`src/mtp/matrix_overlap_coverage.py`](../src/mtp/matrix_overlap_coverage.py) (`just matrix-overlap-coverage`, issue `#1053`). All interpretations follow [`methods/biological_interpretation.md`](biological_interpretation.md): KG-Microbe trait columns represent curated organism-level annotations rather than direct in vivo physiological measurements, and BugSigDB signatures record reported taxon abundance shifts across published comparisons.
 
+All numerical counts below describe the archived F `tier12-phenotype` run under
+`raw_object_v1`, before facultative unification. They are historical reference
+values, not regenerated basis P results. Current runs default to
+[`facultative_union_v1`](trait_key_policy.md) and require fresh tables.
+
 ---
 
 ## 1. Pairwise Trait Overlap in the Taxon × Trait Matrix (`matrix_trait_overlap.tsv`)
@@ -12,7 +17,7 @@ This note documents the definitions, data sources, and exact denominator semanti
 - The pairwise Jaccard overlap is:
   $$J(a, b) = \frac{|T_a \cap T_b|}{|T_a \cup T_b|}$$
 
-### Focal Pairs in `matrix_trait_overlap.tsv` (`tier12-phenotype`, `methods/trait_lists/headline_ten_phenotype.txt`, $N_{\text{matrix}} = 5,829$)
+### Historical F focal pairs in `matrix_trait_overlap.tsv` (ten-trait phenotype list, $N_{\text{matrix}} = 5,829$)
 
 | Trait A | Trait B | $|T_a|$ | $|T_b|$ | $|T_a \cap T_b|$ | $|T_a \cup T_b|$ | Jaccard (%) |
 | --- | --- | ---: | ---: | ---: | ---: | ---: |
@@ -20,7 +25,11 @@ This note documents the definitions, data sources, and exact denominator semanti
 | `METPO:2000103\|GO:0030245` (`cellulose catabolic process`) | `METPO:2000103\|GO:0045493` (`xylan catabolic process`) | 189 | 210 | 109 | 290 | 37.59% (37.6%) |
 | `METPO:1000603` (`anaerobic`) | `METPO:1000608` (`facultatively aerobic`) | 1,884 | 920 | 493 | 2,311 | 21.33% (21.3%) |
 
-Full 45-pair output for the 10-trait list [`methods/trait_lists/headline_ten_phenotype.txt`](trait_lists/headline_ten_phenotype.txt) is written to `matrix_trait_overlap.tsv`.
+The historical ten-trait list produced 45 pairs in `matrix_trait_overlap.tsv`.
+The current [`headline_ten_phenotype.txt`](trait_lists/headline_ten_phenotype.txt)
+retains its filename but contains nine traits and therefore produces 36 pairs.
+Its single facultative union entry cannot be compared with a separate
+`METPO:1000605` entry; the first historical row above has no current counterpart.
 
 ---
 

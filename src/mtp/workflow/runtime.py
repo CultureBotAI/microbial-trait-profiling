@@ -22,6 +22,7 @@ from typing import Protocol
 from git import Repo
 from git.exc import GitError
 
+from mtp.trait_key_policy import parse_trait_key_policy
 from mtp.workflow.definition import read_definition, safe_relative_path, unique, validate_definition
 from mtp.workflow.locations import LocationResolver, locate
 from mtp.workflow.models import (
@@ -213,7 +214,7 @@ def _require_full_source_background(definition: WorkflowDefinition) -> None:
     # the full-source exports that define M, K and the retained feature universe.
     # A subset core recorded before #788 bound no strain_rollup to the matrix producer or
     # the feature catalog; it is read as off, as the product validators read it.
-    scoped: tuple[set[str], ...] = ({"strain_rollup"}, set())
+    scoped: tuple[set[str], ...] = ({"strain_rollup", "trait_key_policy"}, {"strain_rollup"}, set())
     contracts: tuple[tuple[str, str, set[str], set[str], tuple[set[str], ...]], ...] = (
         (
             "source_identity",
@@ -460,6 +461,11 @@ def execute_workflow(
     parameters = _resolve_parameters(definition, parameter_overrides or {})
     resolved = {item.name: item.value for item in parameters}
     population, direction_basis = _population_policy(definition, resolved)
+    trait_key_policy = (
+        parse_trait_key_policy(resolved["trait_key_policy"])
+        if "trait_key_policy" in resolved
+        else None
+    )
     root = (repository_root or Path(__file__).resolve().parents[3]).resolve()
     code_hash, code_entries = _code_identity(root, registry)
     lock_hash = sha256_file(root / "uv.lock")
@@ -473,6 +479,7 @@ def execute_workflow(
         run_id=run_id,
         contrast_population=population,
         direction_basis=direction_basis,
+        trait_key_policy=trait_key_policy,
         definition=definition,
         status=ExecutionStatus.running,
         started_at=datetime.now(UTC),
@@ -665,6 +672,10 @@ def _validate_run_record(
         raise ValueError("Code inventory checksum mismatch")
     unique([item.path for item in run.code_inventory], "code inventory paths")
     unique([item.name for item in run.parameters or []], "resolved parameter names")
+    if any(p.kind in {"taxa_matrix", "feature_catalog"} for p in run.definition.products):
+        from mtp.workflow.trait_policy import resolve_trait_policy
+
+        resolve_trait_policy(run)
     parameters = {item.name: item.value for item in run.parameters or []}
     population, direction_basis = _population_policy(run.definition, parameters)
     if run.contrast_population != population or run.direction_basis != direction_basis:

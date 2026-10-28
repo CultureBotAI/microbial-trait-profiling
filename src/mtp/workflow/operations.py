@@ -45,6 +45,7 @@ from mtp.taxa_trait_matrix import (
     scoped_taxon_traits,
     strain_trait_rolls_up,
 )
+from mtp.trait_key_policy import DEFAULT_TRAIT_KEY_POLICY, TraitKeyPolicy, parse_trait_key_policy
 from mtp.workflow.coverage import (
     build_profile_coverage,
     write_feature_catalog,
@@ -327,8 +328,10 @@ def taxa_matrix_operation(
     BacDive strain records count at their linked NCBITaxon nodes as far as the declared
     strain_rollup scope admits (#788).
     """
-    if set(parameters) != {"strain_rollup"}:
-        raise ValueError("taxa_matrix requires exactly the strain_rollup parameter")
+    if set(parameters) != {"strain_rollup", "trait_key_policy"}:
+        raise ValueError(
+            "taxa_matrix requires exactly strain_rollup and trait_key_policy parameters"
+        )
     create_taxa_trait_matrix(
         taxa_path=inputs["reported_taxa"],
         edges_path=inputs["kg_edges"],
@@ -336,6 +339,7 @@ def taxa_matrix_operation(
         output_path=outputs["taxa_matrix"],
         column_metadata_path=outputs["feature_metadata"],
         strain_rollup=parse_strain_rollup(parameters["strain_rollup"]),
+        trait_key_policy=parse_trait_key_policy(parameters["trait_key_policy"]),
     )
 
 
@@ -347,13 +351,16 @@ def feature_catalog_operation(
     The evidence column marks the features whose counts the declared strain_rollup scope
     lets strain records enter (#788).
     """
-    if set(parameters) != {"strain_rollup"}:
-        raise ValueError("feature_catalog requires exactly the strain_rollup parameter")
+    if set(parameters) != {"strain_rollup", "trait_key_policy"}:
+        raise ValueError(
+            "feature_catalog requires exactly strain_rollup and trait_key_policy parameters"
+        )
     outputs["feature_catalog"].parent.mkdir(parents=True, exist_ok=True)
     write_feature_catalog(
         inputs["feature_metadata"],
         outputs["feature_catalog"],
         strain_rollup=parse_strain_rollup(parameters["strain_rollup"]),
+        trait_key_policy=parse_trait_key_policy(parameters["trait_key_policy"]),
     )
 
 
@@ -446,6 +453,8 @@ def validate_core_product(
     *,
     recorded_sources: Mapping[str, Path] | None = None,
     parameters: Mapping[str, str] | None = None,
+    trait_key_policy: TraitKeyPolicy | None = None,
+    include_policy_metadata: bool = True,
 ) -> list[ValidationResult]:
     """Validate one scientific product using the execution's declared related products.
 
@@ -456,6 +465,9 @@ def validate_core_product(
     from mtp.workflow.contracts import validate_product
 
     strain_rollup = parse_strain_rollup((parameters or {}).get("strain_rollup", "off"))
+    trait_key_policy = trait_key_policy or parse_trait_key_policy(
+        (parameters or {}).get("trait_key_policy", DEFAULT_TRAIT_KEY_POLICY)
+    )
 
     _validate_semantic_descriptor(product)
     kind = product.kind
@@ -493,7 +505,13 @@ def validate_core_product(
         )
     else:
         details = validate_product(
-            path, kind, context=context, cohort=product.cohort, strain_rollup=strain_rollup
+            path,
+            kind,
+            context=context,
+            cohort=product.cohort,
+            strain_rollup=strain_rollup,
+            trait_key_policy=trait_key_policy,
+            include_policy_metadata=include_policy_metadata,
         )
         if kind == "study_table":
             details.update(validate_export_sources(context["studies"], context))
@@ -517,6 +535,7 @@ def trace_profile_feature(
     *,
     host_species: str | None = None,
     strain_rollup: StrainRollup = "off",
+    trait_key_policy: TraitKeyPolicy = DEFAULT_TRAIT_KEY_POLICY,
 ) -> dict[str, object]:
     """Trace a chosen profile feature to distinct KG source taxa and original edges.
 
@@ -546,7 +565,7 @@ def trace_profile_feature(
         kg_taxa.update(item for item in (subject, obj) if item.startswith("NCBITaxon:"))
         is_link = predicate == SUBCLASS_OF and obj.startswith("NCBITaxon:")
         is_evidence = (obj.startswith("METPO:") or predicate.startswith("METPO:")) and (
-            make_trait_key(predicate, obj) == feature_id
+            make_trait_key(predicate, obj, trait_key_policy=trait_key_policy) == feature_id
         )
         if subject.startswith("NCBITaxon:"):
             if is_link:

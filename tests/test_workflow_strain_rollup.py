@@ -132,7 +132,7 @@ def test_both_core_specs_default_to_the_phenotype_scope() -> None:
         assert defaults["strain_rollup"] == PRIMARY_STRAIN_ROLLUP == "phenotype"
         steps = {step.id: step for step in definition.steps}
         for step_id in ("taxa_matrix", "feature_catalog"):
-            assert steps[step_id].parameters == ["strain_rollup"]
+            assert steps[step_id].parameters == ["strain_rollup", "trait_key_policy"]
 
 
 @pytest.mark.parametrize("scope", ["off", "phenotype", "full"])
@@ -147,7 +147,8 @@ def test_each_scope_publishes_a_matrix_its_contracts_accept(
     steps = {step.step_id: step for step in run.steps or []}
     for step_id in ("taxa_matrix", "feature_catalog"):
         assert [(p.name, p.value) for p in steps[step_id].parameters or []] == [
-            ("strain_rollup", scope)
+            ("strain_rollup", scope),
+            ("trait_key_policy", "facultative_union_v1"),
         ]
     verify_core_run(Path(run.manifest_path))
 
@@ -219,7 +220,10 @@ def test_a_matrix_built_under_another_scope_is_rejected(
     def off_matrix(
         inputs: dict[str, Path], outputs: dict[str, Path], parameters: dict[str, object]
     ) -> None:
-        assert parameters == {"strain_rollup": "phenotype"}
+        assert parameters == {
+            "strain_rollup": "phenotype",
+            "trait_key_policy": "facultative_union_v1",
+        }
         create_taxa_trait_matrix(
             taxa_path=inputs["reported_taxa"],
             edges_path=inputs["kg_edges"],
@@ -241,8 +245,11 @@ def test_a_catalog_written_under_another_scope_is_rejected(
     def off_catalog(
         inputs: dict[str, Path], outputs: dict[str, Path], parameters: dict[str, object]
     ) -> None:
-        assert parameters == {"strain_rollup": "phenotype"}
-        feature_catalog_operation(inputs, outputs, {"strain_rollup": "off"})
+        assert parameters == {
+            "strain_rollup": "phenotype",
+            "trait_key_policy": "facultative_union_v1",
+        }
+        feature_catalog_operation(inputs, outputs, {**parameters, "strain_rollup": "off"})
 
     with pytest.raises(WorkflowExecutionError, match="evidence"):
         _run(

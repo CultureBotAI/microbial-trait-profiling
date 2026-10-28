@@ -312,16 +312,19 @@ def test_feature_catalog_preserves_qualified_ids_media_and_unresolved_origin(
         ],
     )
     catalog = tmp_path / "catalog.tsv"
-    write_feature_catalog(metadata, catalog)
+    write_feature_catalog(metadata, catalog, include_policy_metadata=False)
     report = validate_product(
-        catalog, "feature_catalog", context={"taxa_matrix": _matrix(tmp_path)}
+        catalog,
+        "feature_catalog",
+        context={"taxa_matrix": _matrix(tmp_path)},
+        include_policy_metadata=False,
     )
     assert report["culture_medium_features"] == 1
     assert report["annotation_evidence"] == "direct_or_descendant_unresolved"
     assert report["feature_filter_id"] == feature_filter_id([TRAIT, MEDIUM])
     catalog.write_text(catalog.read_text().replace("culture_medium", "trait_annotation"))
     with pytest.raises(ValueError, match="MediaDive classification"):
-        validate_product(catalog, "feature_catalog")
+        validate_product(catalog, "feature_catalog", include_policy_metadata=False)
 
 
 def test_table_foreign_keys_and_duplicate_observations(tmp_path: Path) -> None:

@@ -459,6 +459,16 @@ classes:
         required: true
         title: Object category
         description: KG category of the assertion object.
+      trait_key_policy:
+        pattern: ^(raw_object_v1|facultative_union_v1)$
+        title: Trait key policy
+        description: Versioned trait identity rule; required by the current scientific contract and absent only in verified historical formats.
+      trait_member_ids_json:
+        title: Trait member identifiers JSON
+        description: Canonical JSON array of declared raw object CURIEs represented by this feature, not an inventory of observed contributors.
+      trait_source_vocabularies_json:
+        title: Trait source vocabularies JSON
+        description: Canonical JSON array of declared object_id, source_id and source_label mappings; does not imply those sources contributed to every matrix cell.
       feature_class:
         range: FeatureClass
         required: true

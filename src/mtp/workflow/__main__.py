@@ -21,6 +21,7 @@ from mtp.workflow.operations import (
 )
 from mtp.workflow.output_roots import add_temporary_output_option, require_durable_output
 from mtp.workflow.runtime import artifact_path, execute_workflow
+from mtp.workflow.trait_policy import resolve_trait_policy
 from mtp.workflow.verification import verify_core_run
 
 DEFAULT_SPEC = REPO_ROOT / "workflows" / "bugsigdb_core.yaml"
@@ -223,6 +224,7 @@ def main(argv: list[str] | None = None) -> int:
                 host_species=None if cohort == "all" else cohort,
                 # The cell is traced under the scope the run recorded (#788)
                 strain_rollup=run_strain_rollup(run),
+                trait_key_policy=resolve_trait_policy(run).policy,
             )
             print(json.dumps(result, indent=2))
         else:
