@@ -28,12 +28,23 @@ from typing import Any
 
 import pandas as pd
 
+from mtp.human_host_corpus import CORPUS_SEQUENCING_TYPES, experiment_in_profile_population
+from mtp.matrix_overlap_inputs import (
+    EXPERIMENT_KEYS,
+    PROFILE_KEYS,
+    population_inputs,
+    select_experiments,
+    validated_matrix,
+)
 from mtp.paths import REPO_ROOT, file_sha256
 from mtp.trait_lists import DeclaredTraitList, load_trait_list, trait_labels
-from mtp.workflow.output_roots import add_temporary_output_option, temporary_root
+from mtp.workflow.coverage import feature_class
+from mtp.workflow.output_roots import (
+    add_temporary_output_option,
+    require_durable_output,
+    require_durable_output_path,
+)
 
-MEDIADIVE_PREFIX = "METPO:2000517|"
-MEDIADIVE_CURIE_PREFIX = "mediadive.medium:"
 CARBON_SUBSTRATE_PREFIX = "METPO:2000006|"
 SCRIPT_RELATIVE_PATH = "src/mtp/matrix_overlap_coverage.py"
 TRAIT_LISTS_RELATIVE_PATH = "src/mtp/trait_lists.py"
@@ -46,22 +57,11 @@ def validate_durable_output_dir(
     allow_temporary_output: bool = False,
 ) -> Path:
     """Reject temporary output directories unless explicitly opted in (#1049, #1051)."""
-    resolved = output_dir.expanduser().resolve()
-    if allow_temporary_output:
-        return resolved
-
-    root = temporary_root(output_dir.expanduser())
-    if root is not None:
-        raise ValueError(
-            f"Refusing to write outputs under temporary directory {output_dir} "
-            f"(matches temporary root {root}); choose a durable output path or pass "
-            "--allow-temporary-output for ephemeral test runs."
-        )
-    return resolved
+    return require_durable_output_path(output_dir.expanduser(), allowed=allow_temporary_output)
 
 
 def _is_mediadive_column(column_id: str) -> bool:
-    return column_id.startswith(MEDIADIVE_PREFIX) or MEDIADIVE_CURIE_PREFIX in column_id
+    return feature_class(column_id) == "culture_medium"
 
 
 def _classify_retained_trait(column_id: str) -> str:
@@ -101,6 +101,7 @@ def compute_matrix_trait_overlap(
         raise ValueError("taxa_trait_matrix.tsv must contain a taxon_id column")
     if len(trait_ids) < 2:
         raise ValueError("At least two trait IDs are required for pairwise matrix overlap")
+    matrix = validated_matrix(matrix, columns)
 
     matrix_cols = set(matrix.columns.astype(str))
     for trait_id in trait_ids:
@@ -117,13 +118,7 @@ def compute_matrix_trait_overlap(
 
     masks: dict[str, pd.Series] = {}
     for trait_id in trait_ids:
-        numeric_col = pd.to_numeric(matrix[trait_id], errors="coerce")
-        if numeric_col.isna().any() or (numeric_col < 0.0).any():
-            raise ValueError(
-                f"Declared trait {trait_id!r} contains negative or non-numeric values "
-                "in taxa_trait_matrix.tsv"
-            )
-        masks[trait_id] = numeric_col > 0.0
+        masks[trait_id] = matrix[trait_id] > 0.0
 
     matrix_taxa_total = len(matrix)
     rows: list[dict[str, Any]] = []
@@ -134,7 +129,7 @@ def compute_matrix_trait_overlap(
         trait_b_taxa = int(mask_b.sum())
         intersection_taxa = int((mask_a & mask_b).sum())
         union_taxa = int((mask_a | mask_b).sum())
-        jaccard_fraction = float(intersection_taxa / union_taxa) if union_taxa > 0 else 0.0
+        jaccard_fraction = float(intersection_taxa / union_taxa) if union_taxa > 0 else None
         rows.append(
             {
                 "trait_a_id": trait_a,
@@ -147,27 +142,22 @@ def compute_matrix_trait_overlap(
                 "intersection_taxa": intersection_taxa,
                 "union_taxa": union_taxa,
                 "jaccard_fraction": jaccard_fraction,
-                "jaccard_pct": jaccard_fraction * 100.0,
+                "jaccard_pct": _percentage(jaccard_fraction),
             }
         )
     return rows
 
 
-def _normalize_direction(value: object) -> str:
-    raw = str(value).strip().lower()
-    if raw in {"inc", "increased", "up"}:
-        return "inc"
-    if raw in {"dec", "decreased", "down"}:
-        return "dec"
-    return raw
+def _percentage(value: float | None) -> float | None:
+    return value * 100.0 if value is not None else None
 
 
-def _pct(numerator: int, denominator: int) -> float:
-    return float(numerator * 100.0 / denominator) if denominator > 0 else 0.0
+def _pct(numerator: int, denominator: int) -> float | None:
+    return float(numerator * 100.0 / denominator) if denominator > 0 else None
 
 
-def _median_or_zero(values: Sequence[int | float]) -> float:
-    return float(statistics.median(values)) if values else 0.0
+def _median_or_none(values: Sequence[int | float]) -> float | None:
+    return float(statistics.median(values)) if values else None
 
 
 def compute_tier12_coverage_and_cascade(
@@ -182,16 +172,16 @@ def compute_tier12_coverage_and_cascade(
     kg_catalog_traits_total: int | None = None,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
     """Compute Tier 1+2 rank coverage, single-study frequencies, and the filter cascade."""
-    all_column_ids = [
-        str(col) for col in columns["column_id"].astype(str) if str(col) in matrix.columns
-    ]
+    matrix = validated_matrix(matrix, columns)
+    population = population_inputs(
+        tier12_experiments, tier12_taxa, tier12_profile_keys, source_experiments, source_taxa
+    )
+    all_column_ids = list(columns["column_id"])
     retained_trait_cols = [col for col in all_column_ids if not _is_mediadive_column(col)]
     mediadive_matrix_cols = [col for col in all_column_ids if _is_mediadive_column(col)]
 
     if retained_trait_cols:
-        numeric_retained = (
-            matrix[retained_trait_cols].apply(pd.to_numeric, errors="coerce").fillna(0.0)
-        )
+        numeric_retained = matrix[retained_trait_cols]
         has_retained_trait = (numeric_retained > 0.0).any(axis=1)
     else:
         has_retained_trait = pd.Series(False, index=matrix.index)
@@ -205,16 +195,8 @@ def compute_tier12_coverage_and_cascade(
     }
     matrix_labeled_taxa_count = len(labeled_taxon_ids)
 
-    active_keys = tier12_profile_keys[["study_id", "experiment_id", "inc_dec"]].copy()
-    active_keys["study_id"] = active_keys["study_id"].astype(str)
-    active_keys["experiment_id"] = active_keys["experiment_id"].astype(str)
-    active_keys["inc_dec"] = active_keys["inc_dec"].map(_normalize_direction)
-    active_keys = active_keys.drop_duplicates().reset_index(drop=True)
-
-    taxa_df = tier12_taxa.copy()
-    taxa_df["study_id"] = taxa_df["study_id"].astype(str)
-    taxa_df["experiment_id"] = taxa_df["experiment_id"].astype(str)
-    taxa_df["taxon_id"] = taxa_df["taxon_id"].astype(str)
+    active_keys = population.active_keys
+    taxa_df = population.active_taxa.copy()
     taxa_df["taxonomic_rank"] = (
         taxa_df["taxonomic_rank"]
         .fillna("unknown")
@@ -222,12 +204,6 @@ def compute_tier12_coverage_and_cascade(
         .str.strip()
         .str.lower()
         .replace({"": "unknown"})
-    )
-    taxa_df["inc_dec"] = taxa_df["direction"].map(_normalize_direction)
-    taxa_df = taxa_df.merge(
-        active_keys,
-        on=["study_id", "experiment_id", "inc_dec"],
-        how="inner",
     )
     raw_occurrence_rows = len(taxa_df)
 
@@ -251,7 +227,10 @@ def compute_tier12_coverage_and_cascade(
                 "n_mentions": n_mentions,
             }
         )
-    taxon_summary_df = pd.DataFrame(taxon_summary_rows)
+    taxon_summary_df = pd.DataFrame(
+        taxon_summary_rows,
+        columns=["taxon_id", "taxonomic_rank", "is_labeled", "n_studies", "n_mentions"],
+    )
 
     def _build_rank_row(
         rank_label: str, sub_taxa: pd.DataFrame, sub_mentions: pd.DataFrame
@@ -299,12 +278,12 @@ def compute_tier12_coverage_and_cascade(
             "labeled_1_study_pct": _pct(lab_1, labeled_taxa),
             "labeled_le2_study_taxa": lab_le2,
             "labeled_le2_study_pct": _pct(lab_le2, labeled_taxa),
-            "labeled_median_studies": _median_or_zero(lab_studies),
+            "labeled_median_studies": _median_or_none(lab_studies),
             "unlabeled_1_study_taxa": unlab_1,
             "unlabeled_1_study_pct": _pct(unlab_1, unlabeled_taxa),
             "unlabeled_le2_study_taxa": unlab_le2,
             "unlabeled_le2_study_pct": _pct(unlab_le2, unlabeled_taxa),
-            "unlabeled_median_studies": _median_or_zero(unlab_studies),
+            "unlabeled_median_studies": _median_or_none(unlab_studies),
         }
 
     coverage_rows: list[dict[str, Any]] = [_build_rank_row("all", taxon_summary_df, mentions_df)]
@@ -347,60 +326,40 @@ def compute_tier12_coverage_and_cascade(
     matrix_dropped = len(mediadive_matrix_cols)
 
     # Study cascade counts
-    src_exp = source_experiments.copy()
-    src_exp["study_id"] = src_exp["study_id"].astype(str)
-    src_exp["experiment_id"] = src_exp["experiment_id"].astype(str)
-    src_taxa = source_taxa.copy()
-    src_taxa["study_id"] = src_taxa["study_id"].astype(str)
-    src_taxa["experiment_id"] = src_taxa["experiment_id"].astype(str)
-    src_taxa["inc_dec"] = src_taxa["direction"].map(_normalize_direction)
-    src_sig_keys = (
-        src_taxa[["study_id", "experiment_id", "inc_dec"]]
-        .drop_duplicates()
-        .merge(
-            src_exp[["study_id", "experiment_id"]].drop_duplicates(),
-            on=["study_id", "experiment_id"],
-            how="inner",
-        )
-    )
+    src_exp, src_taxa = population.source_experiments, population.source_taxa
+    src_sig_keys = src_taxa[PROFILE_KEYS].drop_duplicates()
 
     all_hosts_studies = int(src_exp["study_id"].nunique())
-    all_hosts_experiments = int(src_exp["experiment_id"].nunique())
+    all_hosts_experiments = len(src_exp)
     all_hosts_signatures = len(src_sig_keys)
 
-    human_mask = (
-        src_exp["host_species"].fillna("").astype(str).str.strip().str.lower() == "homo sapiens"
-    ) & (
-        src_exp["sequencing_type"]
-        .fillna("")
-        .astype(str)
-        .str.strip()
-        .str.lower()
-        .isin({"16s", "wms"})
+    if "sequencing_type" not in src_exp:
+        raise ValueError("Source experiment metadata lacks sequencing_type")
+    human_mask = src_exp.apply(
+        lambda row: experiment_in_profile_population(
+            row["host_species"],
+            row["sequencing_type"],
+            host_species="Homo sapiens",
+            sequencing_types=CORPUS_SEQUENCING_TYPES,
+        ),
+        axis=1,
     )
-    human_exp_ids = set(src_exp.loc[human_mask, "experiment_id"].astype(str))
-    human_sig_keys = src_sig_keys[src_sig_keys["experiment_id"].isin(human_exp_ids)].copy()
+    human_sig_keys = select_experiments(src_sig_keys, src_exp.loc[human_mask])
     full_human_studies = int(human_sig_keys["study_id"].nunique())
-    full_human_experiments = int(human_sig_keys["experiment_id"].nunique())
+    full_human_experiments = len(human_sig_keys[EXPERIMENT_KEYS].drop_duplicates())
     full_human_signatures = len(human_sig_keys)
 
-    dirs_per_exp = human_sig_keys.groupby("experiment_id")["inc_dec"].nunique()
-    paired_exp_ids = set(dirs_per_exp[dirs_per_exp >= 2].index.astype(str))
-    paired_sig_keys = human_sig_keys[human_sig_keys["experiment_id"].isin(paired_exp_ids)].copy()
+    dirs_per_exp = human_sig_keys.groupby(EXPERIMENT_KEYS)["inc_dec"].nunique()
+    paired_experiments = dirs_per_exp[dirs_per_exp == 2].reset_index()[EXPERIMENT_KEYS]
+    paired_sig_keys = select_experiments(human_sig_keys, paired_experiments)
     paired_human_studies = int(paired_sig_keys["study_id"].nunique())
-    paired_human_experiments = int(paired_sig_keys["experiment_id"].nunique())
+    paired_human_experiments = len(paired_experiments)
     paired_human_signatures = len(paired_sig_keys)
 
-    active_exp_ids = set(active_keys["experiment_id"].astype(str))
-    t12_exp = tier12_experiments.copy()
-    t12_exp["study_id"] = t12_exp["study_id"].astype(str)
-    t12_exp["experiment_id"] = t12_exp["experiment_id"].astype(str)
-    t12_exp = t12_exp[t12_exp["experiment_id"].isin(active_exp_ids)].drop_duplicates(
-        subset=["experiment_id"]
-    )
+    t12_exp = population.active_experiments
 
     tier12_studies = int(active_keys["study_id"].nunique())
-    tier12_experiments_count = int(active_keys["experiment_id"].nunique())
+    tier12_experiments_count = len(t12_exp)
     tier12_signatures = len(active_keys)
     tier12_conditions = int(
         t12_exp["condition"]
@@ -411,9 +370,9 @@ def compute_tier12_coverage_and_cascade(
         .dropna()
         .nunique()
     )
-    stool_mask = t12_exp["body_site"].fillna("").astype(str).str.strip().str.lower() == "feces"
+    stool_mask = t12_exp["body_site"].eq("Feces")
     tier12_stool_studies = int(t12_exp.loc[stool_mask, "study_id"].nunique())
-    tier12_stool_experiments = int(t12_exp.loc[stool_mask, "experiment_id"].nunique())
+    tier12_stool_experiments = int(stool_mask.sum())
 
     cascade_rows: list[dict[str, Any]] = [
         {
@@ -555,10 +514,13 @@ def compute_tier12_coverage_and_cascade(
         "tier12_unique_taxa": int(all_row["total_taxa"]),
         "tier12_labeled_taxa": int(all_row["labeled_taxa"]),
         "tier12_unlabeled_taxa": int(all_row["unlabeled_taxa"]),
-        "tier12_labeled_taxa_pct": float(all_row["labeled_taxa_pct"]),
-        "tier12_unlabeled_taxa_pct": float(all_row["unlabeled_taxa_pct"]),
+        "tier12_labeled_taxa_pct": all_row["labeled_taxa_pct"],
+        "tier12_unlabeled_taxa_pct": all_row["unlabeled_taxa_pct"],
         "tier12_distinct_profile_taxon_mentions": int(all_row["total_mentions"]),
         "tier12_raw_occurrence_rows": raw_occurrence_rows,
+        "tier12_input_occurrence_rows": population.input_occurrence_rows,
+        "tier12_excluded_occurrence_rows": population.excluded_occurrence_rows,
+        "tier12_excluded_profile_keys": population.excluded_profile_keys,
         "tier12_studies": tier12_studies,
         "tier12_experiments": tier12_experiments_count,
         "tier12_signatures": tier12_signatures,
@@ -580,7 +542,7 @@ def _is_parkinsons_stool_row(
     else:
         cond_tokens = [part.strip().lower() for part in str(condition).split(",") if part.strip()]
         has_pd = any(tok == "parkinson's disease" for tok in cond_tokens)
-    is_feces = str(body_site).strip().lower() == "feces"
+    is_feces = isinstance(body_site, str) and body_site == "Feces"
     return has_pd and is_feces
 
 
@@ -602,12 +564,12 @@ def _compute_scope_study_overlap(
                 "n_studies": 0,
                 "n_experiments": 0,
                 "n_study_pairs": 0,
-                "mean_jaccard": 0.0,
-                "mean_jaccard_pct": 0.0,
-                "median_jaccard": 0.0,
-                "median_jaccard_pct": 0.0,
-                "min_jaccard": 0.0,
-                "max_jaccard": 0.0,
+                "mean_jaccard": None,
+                "mean_jaccard_pct": None,
+                "median_jaccard": None,
+                "median_jaccard_pct": None,
+                "min_jaccard": None,
+                "max_jaccard": None,
                 "nonzero_pairs": 0,
                 "zero_pairs": 0,
             },
@@ -624,12 +586,11 @@ def _compute_scope_study_overlap(
             axis=1,
         )
     ].copy()
-    exp_ids = set(exp_sub["experiment_id"].astype(str))
-    taxa_sub = taxa_df[taxa_df["experiment_id"].astype(str).isin(exp_ids)].copy()
+    taxa_sub = select_experiments(taxa_df, exp_sub)
 
     study_taxa: dict[str, set[str]] = {}
     for study_id, group in taxa_sub.groupby(taxa_sub["study_id"].astype(str), sort=True):
-        taxa_set = {str(t) for t in group["taxon_id"].astype(str) if str(t).strip()}
+        taxa_set = set(group["taxon_id"])
         if taxa_set:
             study_taxa[str(study_id)] = taxa_set
 
@@ -640,11 +601,7 @@ def _compute_scope_study_overlap(
         return (1, study_id)
 
     ordered_studies = sorted(study_taxa, key=_study_sort_key)
-    active_exp_count = int(
-        taxa_sub[taxa_sub["study_id"].astype(str).isin(set(ordered_studies))][
-            "experiment_id"
-        ].nunique()
-    )
+    active_exp_count = len(taxa_sub[EXPERIMENT_KEYS].drop_duplicates())
 
     pair_rows: list[dict[str, Any]] = []
     jaccards: list[float] = []
@@ -653,7 +610,7 @@ def _compute_scope_study_overlap(
         set_b = study_taxa[study_b]
         inter = len(set_a & set_b)
         union = len(set_a | set_b)
-        jaccard = float(inter / union) if union > 0 else 0.0
+        jaccard = float(inter / union)  # both study sets are nonempty
         jaccards.append(jaccard)
         pair_rows.append(
             {
@@ -669,10 +626,10 @@ def _compute_scope_study_overlap(
             }
         )
 
-    mean_j = float(statistics.fmean(jaccards)) if jaccards else 0.0
-    median_j = float(statistics.median(jaccards)) if jaccards else 0.0
-    min_j = float(min(jaccards)) if jaccards else 0.0
-    max_j = float(max(jaccards)) if jaccards else 0.0
+    mean_j = float(statistics.fmean(jaccards)) if jaccards else None
+    median_j = float(statistics.median(jaccards)) if jaccards else None
+    min_j = float(min(jaccards)) if jaccards else None
+    max_j = float(max(jaccards)) if jaccards else None
     nonzero_pairs = sum(1 for v in jaccards if v > 0.0)
 
     summary_row = {
@@ -684,9 +641,9 @@ def _compute_scope_study_overlap(
         "n_experiments": active_exp_count,
         "n_study_pairs": len(pair_rows),
         "mean_jaccard": mean_j,
-        "mean_jaccard_pct": mean_j * 100.0,
+        "mean_jaccard_pct": _percentage(mean_j),
         "median_jaccard": median_j,
-        "median_jaccard_pct": median_j * 100.0,
+        "median_jaccard_pct": _percentage(median_j),
         "min_jaccard": min_j,
         "max_jaccard": max_j,
         "nonzero_pairs": nonzero_pairs,
@@ -704,31 +661,24 @@ def compute_parkinsons_stool_overlap(
     source_taxa: pd.DataFrame,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """Compute pairwise study taxon Jaccard across Parkinson's stool studies."""
-    active_keys = tier12_profile_keys[["study_id", "experiment_id", "inc_dec"]].copy()
-    active_keys["study_id"] = active_keys["study_id"].astype(str)
-    active_keys["experiment_id"] = active_keys["experiment_id"].astype(str)
-    active_keys["inc_dec"] = active_keys["inc_dec"].map(_normalize_direction)
-    active_keys = active_keys.drop_duplicates()
-
-    t12_taxa = tier12_taxa.copy()
-    t12_taxa["study_id"] = t12_taxa["study_id"].astype(str)
-    t12_taxa["experiment_id"] = t12_taxa["experiment_id"].astype(str)
-    t12_taxa["inc_dec"] = t12_taxa["direction"].map(_normalize_direction)
-    t12_taxa = t12_taxa.merge(
-        active_keys,
-        on=["study_id", "experiment_id", "inc_dec"],
-        how="inner",
+    population = population_inputs(
+        tier12_experiments, tier12_taxa, tier12_profile_keys, source_experiments, source_taxa
     )
-    t12_exp_ids = set(active_keys["experiment_id"].astype(str))
-    t12_exp = tier12_experiments[
-        tier12_experiments["experiment_id"].astype(str).isin(t12_exp_ids)
-    ].copy()
+    t12_exp, t12_taxa = population.active_experiments, population.active_taxa
+    source_experiments, source_taxa = population.source_experiments, population.source_taxa
 
     tier12_summary, tier12_pairs = _compute_scope_study_overlap(
         scope="tier12_paired",
         scope_label="Tier 1+2 paired disease vs healthy subject-control studies",
         experiments_df=t12_exp,
         taxa_df=t12_taxa,
+    )
+    tier12_summary.update(
+        {
+            "input_occurrence_rows": population.input_occurrence_rows,
+            "excluded_outside_active_profile_rows": population.excluded_occurrence_rows,
+            "excluded_outside_active_profile_keys": population.excluded_profile_keys,
+        }
     )
 
     full_summary, full_pairs = _compute_scope_study_overlap(
@@ -738,10 +688,16 @@ def compute_parkinsons_stool_overlap(
         taxa_df=source_taxa,
     )
 
-    human_source_exp = source_experiments[
-        source_experiments["host_species"].fillna("").astype(str).str.strip().str.lower()
-        == "homo sapiens"
-    ].copy()
+    human_mask = source_experiments.apply(
+        lambda row: experiment_in_profile_population(
+            row["host_species"],
+            row.get("sequencing_type"),
+            host_species="Homo sapiens",
+            sequencing_types=None,
+        ),
+        axis=1,
+    )
+    human_source_exp = source_experiments.loc[human_mask].copy()
     human_summary, human_pairs = _compute_scope_study_overlap(
         scope="export_human_hosts",
         scope_label="Human-host BugSigDB export studies (host_species == Homo sapiens)",
@@ -778,14 +734,19 @@ def run_matrix_overlap_coverage(
     )
     from mtp.workflow.runtime import repository_state
 
-    validate_durable_output_dir(output_dir, allow_temporary_output=allow_temporary_output)
+    output_dir = validate_durable_output_dir(
+        output_dir, allow_temporary_output=allow_temporary_output
+    )
     if output_dir.exists() and (not output_dir.is_dir() or any(output_dir.iterdir())):
         raise ValueError(f"--output-dir must be a new or empty directory: {output_dir}")
     declared = load_declared_traits(trait_list_path)
     manifest_path = core_run / "run.json" if core_run.is_dir() else core_run
     bundle = open_core_bundle(manifest_path)
 
-    params_by_name = {param.name: param.value for param in (bundle.run.parameters or [])}
+    params = bundle.run.parameters or []
+    params_by_name = {param.name: param.value for param in params}
+    if len(params_by_name) != len(params):
+        raise ValueError("Duplicate core run parameter names")
     strain_rollup = params_by_name.get("strain_rollup", "")
     raw_contrast_pop = bundle.run.contrast_population
     default_contrast_pop = (
@@ -793,7 +754,12 @@ def run_matrix_overlap_coverage(
         if raw_contrast_pop is not None
         else ""
     )
-    contrast_population = params_by_name.get("contrast_population", default_contrast_pop)
+    contrast_population = default_contrast_pop
+    if (
+        "contrast_population" in params_by_name
+        and params_by_name["contrast_population"] != contrast_population
+    ):
+        raise ValueError("Core contrast_population parameter contradicts the run field")
     if contrast_population != "disease_vs_healthy_tier1_2_subject_controls":
         raise ValueError(
             "matrix-overlap-coverage requires a Tier 1+2 disease vs healthy subject-control "
@@ -806,7 +772,9 @@ def run_matrix_overlap_coverage(
         if raw_direction_basis is not None
         else ""
     )
-    direction_basis = params_by_name.get("direction_basis", default_direction_basis)
+    direction_basis = default_direction_basis
+    if "direction_basis" in params_by_name and params_by_name["direction_basis"] != direction_basis:
+        raise ValueError("Core direction_basis parameter contradicts the run field")
     if direction_basis != "disease_vs_comparison":
         raise ValueError(
             "matrix-overlap-coverage requires direction_basis='disease_vs_comparison'; "
@@ -836,37 +804,40 @@ def run_matrix_overlap_coverage(
     )
 
     available_products = {product.id for product in bundle.run.definition.products}
+    required_sources = {"source_experiments", "source_reported_taxa"}
+    if not required_sources.issubset(available_products):
+        raise ValueError(
+            "Full-export comparison requires source_experiments and source_reported_taxa; "
+            f"missing {sorted(required_sources - available_products)}"
+        )
     matrix_path = bundle.path("taxa_matrix")
     columns_path = bundle.path("feature_metadata")
     count_profiles_path = bundle.path("count_profiles")
     experiments_path = bundle.path("experiments")
     reported_taxa_path = bundle.path("reported_taxa")
-    source_experiments_path = (
-        bundle.path("source_experiments")
-        if "source_experiments" in available_products
-        else experiments_path
-    )
-    source_taxa_path = (
-        bundle.path("source_reported_taxa")
-        if "source_reported_taxa" in available_products
-        else reported_taxa_path
-    )
+    source_experiments_path = bundle.path("source_experiments")
+    source_taxa_path = bundle.path("source_reported_taxa")
     feature_catalog_path = (
         bundle.path("feature_catalog") if "feature_catalog" in available_products else None
     )
 
-    matrix_df = pd.read_csv(matrix_path, sep="\t", low_memory=False)
-    columns_df = pd.read_csv(columns_path, sep="\t", low_memory=False)
+    matrix_df = pd.read_csv(matrix_path, sep="\t", dtype=str, keep_default_na=False)
+    columns_df = pd.read_csv(columns_path, sep="\t", dtype=str, keep_default_na=False)
     profile_keys_df = pd.read_csv(
         count_profiles_path,
         sep="\t",
         usecols=["study_id", "experiment_id", "inc_dec"],
-        low_memory=False,
+        dtype=str,
+        keep_default_na=False,
     )
-    tier12_experiments_df = pd.read_csv(experiments_path, sep="\t", low_memory=False)
-    tier12_taxa_df = pd.read_csv(reported_taxa_path, sep="\t", low_memory=False)
-    source_experiments_df = pd.read_csv(source_experiments_path, sep="\t", low_memory=False)
-    source_taxa_df = pd.read_csv(source_taxa_path, sep="\t", low_memory=False)
+    tier12_experiments_df = pd.read_csv(
+        experiments_path, sep="\t", dtype=str, keep_default_na=False
+    )
+    tier12_taxa_df = pd.read_csv(reported_taxa_path, sep="\t", dtype=str, keep_default_na=False)
+    source_experiments_df = pd.read_csv(
+        source_experiments_path, sep="\t", dtype=str, keep_default_na=False
+    )
+    source_taxa_df = pd.read_csv(source_taxa_path, sep="\t", dtype=str, keep_default_na=False)
 
     kg_catalog_traits_total: int | None = None
     if feature_catalog_path is not None and feature_catalog_path.is_file():
@@ -905,7 +876,20 @@ def run_matrix_overlap_coverage(
     pd.DataFrame(pd_summary_rows).to_csv(
         pd_summary_tsv, sep="\t", index=False, float_format="%.12g"
     )
-    pd.DataFrame(pd_pair_rows).to_csv(pd_pairs_tsv, sep="\t", index=False, float_format="%.12g")
+    pd.DataFrame(
+        pd_pair_rows,
+        columns=[
+            "scope",
+            "study_a_id",
+            "study_b_id",
+            "study_a_taxa",
+            "study_b_taxa",
+            "intersection_taxa",
+            "union_taxa",
+            "jaccard_fraction",
+            "jaccard_pct",
+        ],
+    ).to_csv(pd_pairs_tsv, sep="\t", index=False, float_format="%.12g")
 
     declared_provenance = {
         **declared.provenance(),
@@ -927,7 +911,7 @@ def run_matrix_overlap_coverage(
         "parkinsons_stool_overlap": pd_summary_rows,
     }
     summary_json.write_text(
-        json.dumps(summary_payload, indent=2, sort_keys=True) + "\n",
+        json.dumps(summary_payload, indent=2, sort_keys=True, allow_nan=False) + "\n",
         encoding="utf-8",
     )
 
@@ -937,7 +921,6 @@ def run_matrix_overlap_coverage(
             "reported_taxa",
             "source_experiments",
             "source_reported_taxa",
-            "contrast_selection",
         )
         if pid in available_products
     )
@@ -953,16 +936,14 @@ def run_matrix_overlap_coverage(
         & available_products
     )
 
-    resolved_code_commit = (
-        code_commit.strip()
-        if code_commit is not None and code_commit.strip()
-        else repository_state(REPO_ROOT)
-    )
+    if code_commit is not None and code_commit.strip():
+        resolved_code_commit = code_commit.strip()
+    else:
+        producer_commit, producer_dirty = repository_state(REPO_ROOT)
+        resolved_code_commit = producer_commit + ("+dirty" if producer_dirty else "")
     script_path = REPO_ROOT / SCRIPT_RELATIVE_PATH
-    trait_lists_path = REPO_ROOT / TRAIT_LISTS_RELATIVE_PATH
     methods_path = REPO_ROOT / METHODS_NOTE_RELATIVE_PATH
     script_sha256 = file_sha256(script_path)
-    trait_lists_sha256 = file_sha256(trait_lists_path)
     methods_sha256 = file_sha256(methods_path)
     run_root = bundle.manifest.parent.resolve()
 
@@ -978,8 +959,15 @@ def run_matrix_overlap_coverage(
         "script_sha256": script_sha256,
         "methods_sha256": methods_sha256,
         "scripts": {
-            SCRIPT_RELATIVE_PATH: {"sha256": script_sha256},
-            TRAIT_LISTS_RELATIVE_PATH: {"sha256": trait_lists_sha256},
+            name: {"sha256": file_sha256(REPO_ROOT / name)}
+            for name in (
+                SCRIPT_RELATIVE_PATH,
+                TRAIT_LISTS_RELATIVE_PATH,
+                "src/mtp/matrix_overlap_inputs.py",
+                "src/mtp/human_host_corpus.py",
+                "src/mtp/workflow/coverage.py",
+                "src/mtp/workflow/output_roots.py",
+            )
         },
         "methods": {
             METHODS_NOTE_RELATIVE_PATH: {"sha256": methods_sha256},
@@ -1060,6 +1048,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     """CLI entry point for ``mtp.matrix_overlap_coverage``."""
     parser = build_parser()
     args = parser.parse_args(list(argv) if argv is not None else None)
+    args.output_dir = args.output_dir.expanduser()
+    require_durable_output(parser, args.output_dir, allowed=bool(args.allow_temporary_output))
     run_matrix_overlap_coverage(
         args.core_run,
         args.output_dir,

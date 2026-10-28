@@ -72,15 +72,24 @@ def add_temporary_output_option(parser: argparse.ArgumentParser) -> None:
     )
 
 
-def require_durable_output(parser: argparse.ArgumentParser, output: Path, *, allowed: bool) -> None:
-    """Exit with a usage error, before anything is written, if a restart could erase it."""
+def require_durable_output_path(output: Path, *, allowed: bool) -> Path:
+    """Check the literal destination without writing; callers expand a home explicitly."""
     root = None if allowed else temporary_root(output)
     if root is not None:
-        parser.error(
+        raise ValueError(
             f"output root {output} is under the temporary directory {root}, which the "
             "system can empty on restart (#1049). Write outputs that a record will cite "
             f"to a durable location, or pass {ALLOW_TEMPORARY_OUTPUT} for a throwaway run."
         )
+    return output.resolve()
+
+
+def require_durable_output(parser: argparse.ArgumentParser, output: Path, *, allowed: bool) -> None:
+    """Exit with a usage error, before anything is written, if a restart could erase it."""
+    try:
+        require_durable_output_path(output, allowed=allowed)
+    except ValueError as error:
+        parser.error(str(error))
 
 
 def main(argv: list[str] | None = None) -> None:

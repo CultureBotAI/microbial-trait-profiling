@@ -358,10 +358,10 @@ def test_tier12_coverage_by_rank_and_filter_cascade() -> None:
                         "taxon_name": "GenusA",
                         "taxonomic_rank": "genus",
                     },
-                    # Unprofiled experiment row that must be excluded by tier12_profile_keys join
+                    # Valid source experiment absent from the active Tier 1+2 profiles.
                     {
-                        "study_id": "bsdb:9",
-                        "experiment_id": "bsdb:9-9",
+                        "study_id": "bsdb:2",
+                        "experiment_id": "bsdb:2-2",
                         "direction": "increased",
                         "taxon_id": "NCBITaxon:99",
                         "taxon_name": "UnprofiledTaxon",
@@ -803,8 +803,8 @@ def test_end_to_end_core_subset_consumer_provenance_and_temp_guard(
         "feature_catalog",
         "source_experiments",
         "source_reported_taxa",
-        "contrast_selection",
     } <= set(binding.product_ids)
+    assert "contrast_selection" not in binding.product_ids
     # provenance.json must be bound inside core_consumption.json outputs (#1116)
     bound_output_paths = {Path(item.path).name for item in binding.outputs}
     assert "provenance.json" in bound_output_paths
@@ -974,7 +974,13 @@ def test_declared_trait_list_validation_and_file_loading(tmp_path: Path) -> None
         compute_matrix_trait_overlap(bad_matrix, columns, [FAC_AER, FAC_ANA])
 
 
-def test_validate_durable_output_dir_refuses_temporary_paths(tmp_path: Path) -> None:
+def test_validate_durable_output_dir_refuses_temporary_paths(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from mtp.workflow import output_roots
+
+    # Exercise a durable location independently of where the checkout/test runner lives.
+    monkeypatch.setattr(output_roots, "system_temporary_directories", lambda: [tmp_path.resolve()])
     with pytest.raises(ValueError, match="temporary directory"):
         validate_durable_output_dir(tmp_path / "out")
 

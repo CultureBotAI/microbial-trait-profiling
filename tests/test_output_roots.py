@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import argparse
 import sys
 import tempfile
 from pathlib import Path
 
 import pytest
 
+from mtp.workflow import output_roots
 from mtp.workflow.output_roots import temporary_root
 
 MACOS = pytest.mark.skipif(sys.platform != "darwin", reason="macOS links /tmp to /private/tmp")
@@ -119,3 +121,88 @@ def test_a_relative_path_is_judged_where_it_resolves(
 
     assert temporary_root(Path("core"), [volatile]) is not None
     assert temporary_root(Path("../durable/core"), [volatile]) is None
+
+
+@pytest.mark.parametrize("allowed", [False, True])
+@pytest.mark.parametrize("alias", [False, True])
+def test_shared_path_validator_retains_temporary_policy_without_writing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, allowed: bool, alias: bool
+) -> None:
+    """The library API shares CLI policy without requiring an argument parser (#1117)."""
+    volatile = tmp_path / "volatile"
+    volatile.mkdir()
+    durable = tmp_path / "durable"
+    durable.mkdir()
+    link = durable / "link"
+    link.symlink_to(volatile, target_is_directory=True)
+    monkeypatch.setattr(output_roots, "system_temporary_directories", lambda: [volatile])
+    output = (link if alias else volatile) / "uncreated" / "bundle"
+    if allowed:
+        assert output_roots.require_durable_output_path(output, allowed=True) == output.resolve()
+    else:
+        with pytest.raises(ValueError, match="temporary directory"):
+            output_roots.require_durable_output_path(output, allowed=False)
+    assert not (volatile / "uncreated").exists()
+
+
+def test_shared_path_validator_resolves_durable_relative_paths_without_writing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(
+        output_roots, "system_temporary_directories", lambda: [tmp_path / "volatile"]
+    )
+    output = Path("durable") / "bundle"
+    assert output_roots.require_durable_output_path(output, allowed=False) == tmp_path / output
+    assert not output.parent.exists()
+
+
+@pytest.mark.parametrize("allowed", [False, True])
+def test_cli_durable_guard_delegates_to_shared_library_validator(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    allowed: bool,
+) -> None:
+    calls: list[tuple[Path, bool]] = []
+
+    def reject(output: Path, *, allowed: bool) -> Path:
+        calls.append((output, allowed))
+        raise ValueError("shared validator rejected this output")
+
+    monkeypatch.setattr(output_roots, "require_durable_output_path", reject, raising=False)
+    monkeypatch.setattr(output_roots, "system_temporary_directories", list)
+    parser = argparse.ArgumentParser(prog="guard-test")
+    output = tmp_path / "uncreated"
+    with pytest.raises(SystemExit) as error:
+        output_roots.require_durable_output(parser, output, allowed=allowed)
+    assert error.value.code == 2
+    assert calls == [(output, allowed)]
+    assert "shared validator rejected this output" in capsys.readouterr().err
+    assert not output.exists()
+
+
+@pytest.mark.parametrize("allowed", [False, True])
+def test_literal_tilde_is_judged_at_the_destination_used_by_cli_consumers(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, allowed: bool
+) -> None:
+    """A quoted tilde is literal for callers that only resolve paths (#1166)."""
+    volatile, durable = tmp_path / "volatile", tmp_path / "durable"
+    volatile.mkdir()
+    durable.mkdir()
+    monkeypatch.chdir(volatile)
+    monkeypatch.setattr(Path, "expanduser", lambda _self: durable / "bundle")
+    monkeypatch.setattr(output_roots, "system_temporary_directories", lambda: [volatile])
+    output = Path("~/bundle")
+    parser = argparse.ArgumentParser()
+    if allowed:
+        assert output_roots.require_durable_output_path(output, allowed=True) == volatile / output
+        output_roots.require_durable_output(parser, output, allowed=True)
+    else:
+        with pytest.raises(ValueError, match="temporary directory"):
+            output_roots.require_durable_output_path(output, allowed=False)
+        with pytest.raises(SystemExit) as error:
+            output_roots.require_durable_output(parser, output, allowed=False)
+        assert error.value.code == 2
+    assert not (volatile / "~").exists()
+    assert not (durable / "bundle").exists()
