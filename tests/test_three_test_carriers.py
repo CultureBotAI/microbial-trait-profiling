@@ -22,6 +22,8 @@ from multiplicity_fixture import fixture_sources, write_table
 CELL = "METPO:2000103|GO:0030245"
 ANAEROBIC = "METPO:1000603"
 OUTSIDE = "METPO:1000429"
+LIGNIN = "METPO:2000103|GO:0046274"
+HIGH_TEMP = "METPO:1000447"
 
 
 def audit_fixture(root: Path) -> tuple[VerifiedSources, Path]:
@@ -361,3 +363,175 @@ def test_incomplete_audit_fails_instead_of_supplying_zero_carriers(
     (audit / "provenance.json").write_text('{"analysis": "label_support_sidecar"}')
     with pytest.raises(ValueError, match=r"(scope|provenance|audit)"):
         carrier_table(sources, audit)
+
+
+def _declared_list_audit_fixture(root: Path) -> tuple[VerifiedSources, Path, Path]:
+    """Generate an audit with declared traits from taxonomic inheritance and strain rollup."""
+    sources, _ = audit_fixture(root)
+    products = {
+        pid: sources.product(pid)
+        for pid in ("taxa_matrix", "count_profiles", "reported_taxa", "kg_edges", "kg_nodes")
+    }
+    matrix_df = pd.read_csv(products["taxa_matrix"], sep="\t")
+    matrix_df[LIGNIN] = [1 if tid == "NCBITaxon:10" else 0 for tid in matrix_df["taxon_id"]]
+    matrix_df[HIGH_TEMP] = [
+        1 if tid in ("NCBITaxon:10", "NCBITaxon:11") else 0 for tid in matrix_df["taxon_id"]
+    ]
+    matrix_df.to_csv(products["taxa_matrix"], sep="\t", index=False)
+
+    profiles_df = pd.read_csv(products["count_profiles"], sep="\t")
+    profiles_df[LIGNIN] = [1 if d == "inc" else 0 for d in profiles_df["inc_dec"]]
+    profiles_df[HIGH_TEMP] = [1 for _ in profiles_df["inc_dec"]]
+    profiles_df.to_csv(products["count_profiles"], sep="\t", index=False)
+
+    with products["kg_edges"].open("a", encoding="utf-8") as handle:
+        handle.write("edge-lig-12\tNCBITaxon:12\tMETPO:2000103\tGO:0046274\tinfores:madin_etal\n")
+        handle.write(
+            "edge-strain-sub\tkgmicrobe.strain:thermo\tbiolink:subclass_of\t"
+            "NCBITaxon:11\tinfores:bacdive\n"
+        )
+        handle.write(
+            f"edge-strain-temp\tkgmicrobe.strain:thermo\tbiolink:has_phenotype\t"
+            f"{HIGH_TEMP}\tinfores:bacdive\n"
+        )
+    with products["kg_nodes"].open("a", encoding="utf-8") as handle:
+        handle.write("GO:0046274\tlignin catabolic process\n")
+        handle.write(f"{HIGH_TEMP}\ttemperature optimum high\n")
+
+    trait_list_path = root / "headline_ten_phenotype.txt"
+    trait_list_path.write_text(f"{CELL}\n{LIGNIN}\n{HIGH_TEMP}\n", encoding="utf-8")
+    audit_declared = root / "audit_declared"
+    run_label_support_audit(
+        taxa_path=products["reported_taxa"],
+        matrix_path=products["taxa_matrix"],
+        profiles_path=products["count_profiles"],
+        edges_path=products["kg_edges"],
+        nodes_path=products["kg_nodes"],
+        output_dir=audit_declared,
+        strain_rollup="phenotype",
+        trait_list=trait_list_path,
+    )
+    updated_sources = VerifiedSources(
+        sources.comparison,
+        sources.core,
+        {},
+        {},
+        {"count_profiles": (*AUDIT_TRAITS, OUTSIDE, LIGNIN, HIGH_TEMP)},
+        "phenotype",
+        {path.resolve(): file_sha256(path) for path in products.values()},
+    )
+    return updated_sources, audit_declared, trait_list_path
+
+
+def test_carrier_table_imports_declared_trait_list_taxonomic_inheritance_and_strain_rollup(
+    tmp_path: Path,
+) -> None:
+    sources, audit, trait_list_path = _declared_list_audit_fixture(tmp_path / "inputs")
+    table, _ = carrier_table(sources, audit)
+    result = table.set_index("trait")
+    expected_coverage = f"focal_and_selected_oxygen_traits_plus_{trait_list_path.name}"
+    assert result["carrier_catalog_coverage"].eq(expected_coverage).all()
+
+    lignin = result.loc[LIGNIN]
+    assert lignin.carrier_status == "audit_hash_bound_focal_coverage"
+    assert lignin.carrier_direct_reported_taxa == 0
+    assert lignin.carrier_inherited_reported_taxa == 1
+    assert lignin.carrier_unique_taxa == 1
+    assert pd.isna(lignin.carrier_source_record_count)
+    assert lignin.carrier_madin_status == "not_supplied_source_support_unknown"
+
+    high_temp = result.loc[HIGH_TEMP]
+    assert high_temp.carrier_status == "audit_hash_bound_focal_coverage"
+    assert high_temp.carrier_direct_reported_taxa == 1
+    assert high_temp.carrier_inherited_reported_taxa == 1
+    assert high_temp.carrier_unique_taxa == 1
+    assert pd.isna(high_temp.carrier_source_record_count)
+    assert high_temp.carrier_madin_status == "not_supplied_source_support_unknown"
+
+    outside = result.loc[OUTSIDE]
+    assert outside.carrier_status == "not_in_focal_audit"
+    assert pd.isna(outside.carrier_unique_taxa)
+
+
+def test_carrier_table_rejects_tampered_trait_list_provenance(tmp_path: Path) -> None:
+    sources, audit, _ = _declared_list_audit_fixture(tmp_path / "inputs")
+    manifest = audit / "provenance.json"
+    record = json.loads(manifest.read_text(encoding="utf-8"))
+    record["trait_list"]["sha256"] = "0" * 64
+    manifest.write_text(json.dumps(record), encoding="utf-8")
+    with pytest.raises(
+        ValueError, match=r"^Malformed or mismatched label-support trait_list provenance$"
+    ):
+        carrier_table(sources, audit)
+
+
+@pytest.mark.parametrize("missing_side", ["record", "inputs"])
+def test_carrier_table_rejects_incomplete_trait_list_provenance(
+    tmp_path: Path, missing_side: str
+) -> None:
+    sources, audit, _ = _declared_list_audit_fixture(tmp_path / "inputs")
+    manifest = audit / "provenance.json"
+    record = json.loads(manifest.read_text(encoding="utf-8"))
+    if missing_side == "record":
+        del record["trait_list"]
+    else:
+        del record["inputs"]["trait_list"]
+    manifest.write_text(json.dumps(record), encoding="utf-8")
+    with pytest.raises(
+        ValueError, match=r"^Label-support audit trait_list provenance is incomplete$"
+    ):
+        carrier_table(sources, audit)
+
+
+def test_carrier_table_rejects_trait_list_path_mismatch_against_inputs(tmp_path: Path) -> None:
+    sources, audit, trait_list_path = _declared_list_audit_fixture(tmp_path / "inputs")
+    manifest = audit / "provenance.json"
+    record = json.loads(manifest.read_text(encoding="utf-8"))
+    record["trait_list"]["path"] = f"other_dir/{trait_list_path.name}"
+    manifest.write_text(json.dumps(record), encoding="utf-8")
+    with pytest.raises(
+        ValueError, match=r"^Malformed or mismatched label-support trait_list provenance$"
+    ):
+        carrier_table(sources, audit)
+
+
+def test_carrier_table_rejects_trait_list_name_mismatch_against_path(tmp_path: Path) -> None:
+    sources, audit, _ = _declared_list_audit_fixture(tmp_path / "inputs")
+    manifest = audit / "provenance.json"
+    record = json.loads(manifest.read_text(encoding="utf-8"))
+    record["trait_list"]["name"] = "wrong_name.txt"
+    manifest.write_text(json.dumps(record), encoding="utf-8")
+    with pytest.raises(
+        ValueError, match=r"^Malformed or mismatched label-support trait_list provenance$"
+    ):
+        carrier_table(sources, audit)
+
+
+@pytest.mark.parametrize("mutation", ["wrong_count", "unstripped_id"])
+def test_carrier_table_rejects_trait_list_ids_or_count_mismatch(
+    tmp_path: Path, mutation: str
+) -> None:
+    sources, audit, _ = _declared_list_audit_fixture(tmp_path / "inputs")
+    manifest = audit / "provenance.json"
+    record = json.loads(manifest.read_text(encoding="utf-8"))
+    if mutation == "wrong_count":
+        record["trait_list"]["trait_count"] = 99
+    else:
+        record["trait_list"]["trait_ids"] = [f" {CELL} ", LIGNIN, HIGH_TEMP]
+    manifest.write_text(json.dumps(record), encoding="utf-8")
+    with pytest.raises(
+        ValueError, match=r"^Label-support trait_list identifiers or count mismatch$"
+    ):
+        carrier_table(sources, audit)
+
+
+def test_carrier_table_rejects_trait_list_outside_core_profile_features(tmp_path: Path) -> None:
+    sources, audit, _ = _declared_list_audit_fixture(tmp_path / "inputs")
+    truncated_sources = replace(
+        sources,
+        features={"count_profiles": (*AUDIT_TRAITS, OUTSIDE, LIGNIN)},
+    )
+    with pytest.raises(
+        ValueError, match=r"^Label-support trait_list contains traits outside core profiles$"
+    ):
+        carrier_table(truncated_sources, audit)
