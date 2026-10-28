@@ -242,6 +242,21 @@ def test_pinned_madin_table_is_verified(inputs: dict[str, Path], tmp_path: Path)
     assert provenance["madin_pin"]["sha256"] == provenance["inputs"]["madin"]["sha256"]
 
 
+@pytest.mark.parametrize("madin", [True, False])
+def test_audit_inventories_madin_verification_code(
+    inputs: dict[str, Path], tmp_path: Path, madin: bool
+) -> None:
+    output = tmp_path / "audit"
+    run_audit(inputs, output, madin=madin)
+    provenance = json.loads((output / "provenance.json").read_text())
+    source = Path(madin_source.__file__)
+    assert provenance["madin_verification_code"] == {
+        "path": "src/mtp/madin_source.py",
+        "sha256": file_sha256(source),
+        "size_bytes": source.stat().st_size,
+    }
+
+
 @pytest.mark.parametrize(
     ("edit", "message"),
     [

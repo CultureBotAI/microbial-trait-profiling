@@ -63,14 +63,26 @@ in `mtp.madin_source` (#1048):
 | Size | 46,362,149 bytes |
 
 ```bash
-just download-madin MADIN
+just download-madin ../mtp-data/madin
 ```
 
-This fetches the table anonymously into `MADIN`, a durable data directory
-outside the repository (not a temporary directory), and records the fetch in
-`MADIN/download_provenance.json`. A response whose size or SHA256 differs from
-the pin is discarded and the recipe fails. An existing copy is checked and
-reused, never overwritten. Passing the file as `--madin-csv` records
+This fetches the table anonymously into a durable data directory outside the
+working tree. Choose an absolute path or an outside-checkout relative path,
+such as the sibling directory in this example. Temporary destinations and
+paths inside the working tree are refused before a request or write; the
+checks include resolved symlink destinations. The downloader records the
+operation in `download_provenance.json` beside the table.
+
+A response whose size or SHA256 differs from the pin is discarded and the
+recipe fails. The stream stops before writing bytes beyond the pinned size;
+local copies are checked for regular-file type and size before hashing.
+An existing verified copy is reused without a request or overwrite, and
+reuse also writes a verification record. A corrupt existing provenance
+record is refused before any download or placement. Provenance is written
+atomically, preserving unrelated entries. Reuse records verification time
+without inventing a download time for a copy supplied by hand.
+
+Passing the file as `--madin-csv` records
 `madin_status: pinned_verified` and the pin in `provenance.json`. Without
 `--madin-csv`, the status stays `not_supplied_source_support_unknown`, the pin
 is still recorded, and Madin carriers keep `unknown` source status.
@@ -140,7 +152,7 @@ Limits of the pin:
 | `carrier_source_evidence.tsv` | Named KG source fields and optional Madin subsources for each carrier supporting an audited matrix cell. |
 | `support_threshold_sensitivity.tsv` | Six focal traits under seven declared support rules, with effect units, paired/study counts, ties, and nominal study sign tests. |
 | `coasserted_label_census.tsv` | Co-assertion by species, genus, family and other/unknown rank, among bound reported taxa and their occurrences; missing features remain unavailable. |
-| `provenance.json` | SHA256 and size of all inputs, all five output tables, producer and matrix policy code, environment lock, scope reconciliation, source rules, the Madin pin and status, and limitations. |
+| `provenance.json` | SHA256 and size of all inputs, all five output tables, producer, matrix policy and Madin verification code, environment lock, scope reconciliation, source rules, the Madin pin and status, and limitations. |
 
 A carrier is a distinct NCBITaxon node at or below the reported taxon, including
 the reported taxon itself when it carries an annotation under the selected scope.

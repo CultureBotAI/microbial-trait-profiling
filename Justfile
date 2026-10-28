@@ -675,8 +675,9 @@ audit-strain-rollup *ARGS:
 audit-label-support *ARGS:
 	uv run python -m mtp.label_support_audit "$@"
 
-# dest is a durable data directory, not a temporary one. The request is anonymous, and a file
-# whose size or sha256 differs from the pin is refused. Pass the file to
+# dest must be durable and outside the working tree. The request is anonymous, and a file
+# whose size or sha256 differs from the pin is refused. Verified reuse records provenance.
+# Pass the file to
 # `just audit-label-support --madin-csv`.
 # Download the Madin et al. condensed trait table pinned in mtp.madin_source (#1048).
 download-madin dest:

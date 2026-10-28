@@ -626,6 +626,7 @@ def run_label_support_audit(
         "matrix_policy_code": _inventory(Path(matrix_api.__file__)),
         "kg_parser_code": _inventory(Path(kg_inputs.__file__)),
         "trait_definitions_code": _inventory(Path(trait_guilds.__file__)),
+        "madin_verification_code": _inventory(Path(madin_source.__file__)),
         "kg_edge_serialization": graph["edge_serialization"],
         "environment_lock": _inventory(REPO_ROOT / "uv.lock"),
         "verification_status": "hashes_and_counts_reconciled_not_core_execution_verified",
