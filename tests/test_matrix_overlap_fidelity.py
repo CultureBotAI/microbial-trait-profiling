@@ -170,6 +170,65 @@ def test_legitimate_inactive_rows_are_counted_and_repeated_occurrences_deduplica
     assert rows[0]["total_taxa"] == 3
 
 
+@pytest.fixture
+def asymmetric_population(corpus: dict[str, pd.DataFrame]) -> dict[str, pd.DataFrame]:
+    """Keep e1 increased active while its decreased-only taxon remains in the input."""
+    keys = corpus["tier12_profile_keys"]
+    inactive_direction = (
+        keys.study_id.eq("s1") & keys.experiment_id.eq("e1") & keys.inc_dec.eq("dec")
+    )
+    corpus["tier12_profile_keys"] = keys.loc[~inactive_direction].copy()
+    return corpus
+
+
+def test_inactive_direction_is_excluded_from_coverage(
+    asymmetric_population: dict[str, pd.DataFrame],
+) -> None:
+    keys = asymmetric_population["tier12_profile_keys"]
+    assert set(keys.itertuples(index=False, name=None)) == {
+        ("s1", "e1", "inc"),
+        ("s2", "e2", "inc"),
+        ("s2", "e2", "dec"),
+    }
+    rows, _, summary = coverage(asymmetric_population)
+    assert summary["tier12_input_occurrence_rows"] == 6
+    assert summary["tier12_excluded_occurrence_rows"] == 2
+    assert summary["tier12_excluded_profile_keys"] == 2
+    assert summary["tier12_raw_occurrence_rows"] == 4
+    assert summary["tier12_signatures"] == 3
+    assert summary["tier12_studies"] == 2
+    assert summary["tier12_experiments"] == 2
+    # Only taxa 10 and 12 contribute: dec-only taxon 11 and inactive-study 13 do not.
+    assert rows[0]["total_taxa"] == rows[0]["labeled_taxa"] == 2
+    assert rows[0]["total_mentions"] == rows[0]["labeled_mentions"] == 3
+
+
+def test_inactive_direction_is_excluded_from_tier12_pd_overlap(
+    asymmetric_population: dict[str, pd.DataFrame],
+) -> None:
+    summaries, pairs = overlap(asymmetric_population)
+    tier12 = next(row for row in summaries if row["scope"] == "tier12_paired")
+    assert tier12["mean_jaccard"] == tier12["median_jaccard"] == 0.5
+    assert tier12["excluded_outside_active_profile_rows"] == 2
+    assert tier12["excluded_outside_active_profile_keys"] == 2
+    assert (tier12["n_studies"], tier12["n_experiments"], tier12["n_study_pairs"]) == (2, 2, 1)
+    tier12_pairs = [row for row in pairs if row["scope"] == "tier12_paired"]
+    assert [(row["study_a_id"], row["study_b_id"]) for row in tier12_pairs] == [("s1", "s2")]
+    [pair] = tier12_pairs
+    assert (pair["study_a_taxa"], pair["study_b_taxa"]) == (1, 2)
+    assert (pair["intersection_taxa"], pair["union_taxa"]) == (1, 2)
+    # Full-export evidence retains the decreased row; only the active population excludes it.
+    full = next(row for row in summaries if row["scope"] == "full_export")
+    assert full["n_studies"] == 3
+    full_pair = next(
+        row
+        for row in pairs
+        if row["scope"] == "full_export" and (row["study_a_id"], row["study_b_id"]) == ("s1", "s2")
+    )
+    assert (full_pair["study_a_taxa"], full_pair["study_b_taxa"]) == (2, 2)
+    assert (full_pair["intersection_taxa"], full_pair["union_taxa"]) == (1, 3)
+
+
 def test_pd_profile_keys_exclude_a_decoy_taxon_that_changes_the_overlap(
     corpus: dict[str, pd.DataFrame],
 ) -> None:
@@ -379,6 +438,14 @@ def test_matrix_api_and_cli_guard_share_the_expanded_home_destination(
 def test_wrong_direction_basis_is_refused_before_publication(bundle: Any) -> None:
     bundle.value.run.direction_basis = "as_reported"
     with pytest.raises(ValueError, match="direction_basis"):
+        run_bundle(bundle)
+    assert not bundle.output.exists()
+
+
+def test_contradictory_direction_parameter_is_refused_independently(bundle: Any) -> None:
+    assert bundle.value.run.direction_basis == "disease_vs_comparison"
+    bundle.value.run.parameters.append(SimpleNamespace(name="direction_basis", value="as_reported"))
+    with pytest.raises(ValueError, match="direction_basis parameter contradicts"):
         run_bundle(bundle)
     assert not bundle.output.exists()
 
