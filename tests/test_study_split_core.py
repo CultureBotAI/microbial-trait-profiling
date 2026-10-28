@@ -25,7 +25,7 @@ from mtp.multiplicity.sources import VerifiedSources, bind_analysis_basis, bind_
 from mtp.paths import REPO_ROOT, file_sha256
 from mtp.workflow.comparison import core_analysis_bases
 from mtp.workflow.consumers import CoreBundle, open_core_bundle
-from mtp.workflow.operations import OPERATIONS, validate_core_product
+from mtp.workflow.operations import OPERATIONS, validate_execution_product
 from mtp.workflow.runtime import execute_workflow
 
 
@@ -90,7 +90,7 @@ def compact_verified_sources(
             "strain_rollup": scope,
             "contrast_population": scanner.TIER1_2,
         },
-        validator=validate_core_product,
+        validator=validate_execution_product,
         repository_root=REPO_ROOT,
     )
     core_path = Path(core.manifest_path)
@@ -370,7 +370,7 @@ def test_real_arm_comparison_and_split_source_verification(tmp_path: Path, scope
             "strain_rollup": scope,
             "contrast_population": scanner.TIER1_2,
         },
-        validator=validate_core_product,
+        validator=validate_execution_product,
         repository_root=REPO_ROOT,
     )
     core_path = Path(core.manifest_path)

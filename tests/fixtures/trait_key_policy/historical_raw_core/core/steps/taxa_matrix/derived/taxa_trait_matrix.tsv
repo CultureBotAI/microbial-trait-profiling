@@ -1,0 +1,8 @@
+taxon_id	taxon_name	taxonomic_rank	METPO:1000612	METPO:1000605	METPO:1000608	METPO:2000510|mediadive.medium:1
+NCBITaxon:900	Examplefamily	family	1	1	1	0
+NCBITaxon:100	Examplegenus	genus	1	1	1	0
+NCBITaxon:101	Examplegenus_alpha	species	0	0	1	0
+NCBITaxon:103	Examplegenus_gamma	species	0	1	0	0
+NCBITaxon:200	Mediaonly_bacterium	species	0	0	0	1
+NCBITaxon:999	Missingkg_bacterium	species	0	0	0	0
+NCBITaxon:300	Unannotated_bacterium	species	0	0	0	0

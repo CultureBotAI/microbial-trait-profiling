@@ -1,0 +1,108 @@
+{
+  "fixture_kind": "location-normalized copy, not byte-identical execution record",
+  "helper_sha256": "9ab89f779734d3b9bb87b7bba220f32c936298fab1fcc5d9af0a0f109ad0d7be",
+  "issue": 1134,
+  "location_transformations": [
+    {
+      "field": "run.manifest_path",
+      "original_value_sha256": "3c9d0fc1b1c49f978e1bc5c5520e4fb37b11a1a9eca51acb6936d783ebb33235",
+      "replacement": "/fixture/trait-policy-511c891/core/run.json"
+    },
+    {
+      "field": "run.spec_path",
+      "original_value_sha256": "098f2131d6260ea4398d228e772dda79467e3a1fc04ec0f2e51a0e195dbdd836",
+      "replacement": "/fixture/trait-policy-511c891/producer/workflows/bugsigdb_core.yaml"
+    },
+    {
+      "field": "runtime.executable",
+      "original_value_sha256": "767d3b9d2bc4e02a34da72d1124c58fdd665aea4b9ae2be81783cde61e46c0ca",
+      "replacement": "/fixture/trait-policy-511c891/runtime/python"
+    },
+    {
+      "field": "artifact.kg_edges.path",
+      "original_value_sha256": "0059e53dc70df2a13e9785ba36e9c7f2a44cd2f5596c015847733cd5f34ce14b",
+      "replacement": "/fixture/trait-policy-511c891/inputs/merged-kg_edges.tsv"
+    },
+    {
+      "field": "artifact.kg_edges.requested_path",
+      "original_value_sha256": "0059e53dc70df2a13e9785ba36e9c7f2a44cd2f5596c015847733cd5f34ce14b",
+      "replacement": "/fixture/trait-policy-511c891/inputs/merged-kg_edges.tsv"
+    },
+    {
+      "field": "artifact.kg_nodes.path",
+      "original_value_sha256": "b9ecf7ecf31e0c298db83b9aaf8598a5c963756366abae2e518d281a9609ccfc",
+      "replacement": "/fixture/trait-policy-511c891/inputs/merged-kg_nodes.tsv"
+    },
+    {
+      "field": "artifact.kg_nodes.requested_path",
+      "original_value_sha256": "b9ecf7ecf31e0c298db83b9aaf8598a5c963756366abae2e518d281a9609ccfc",
+      "replacement": "/fixture/trait-policy-511c891/inputs/merged-kg_nodes.tsv"
+    },
+    {
+      "field": "artifact.raw_dump.path",
+      "original_value_sha256": "db1c79e329b1a2e2ea9d18bd07fec0c2a525d015fbc798d7664cde8a242b4597",
+      "replacement": "/fixture/trait-policy-511c891/inputs/full_dump.csv"
+    },
+    {
+      "field": "artifact.raw_dump.requested_path",
+      "original_value_sha256": "db1c79e329b1a2e2ea9d18bd07fec0c2a525d015fbc798d7664cde8a242b4597",
+      "replacement": "/fixture/trait-policy-511c891/inputs/full_dump.csv"
+    },
+    {
+      "field": "source_identity.kg_edges.path",
+      "original_value_sha256": "0059e53dc70df2a13e9785ba36e9c7f2a44cd2f5596c015847733cd5f34ce14b",
+      "replacement": "/fixture/trait-policy-511c891/inputs/merged-kg_edges.tsv"
+    },
+    {
+      "field": "source_identity.kg_nodes.path",
+      "original_value_sha256": "b9ecf7ecf31e0c298db83b9aaf8598a5c963756366abae2e518d281a9609ccfc",
+      "replacement": "/fixture/trait-policy-511c891/inputs/merged-kg_nodes.tsv"
+    },
+    {
+      "field": "source_identity.raw_dump.path",
+      "original_value_sha256": "db1c79e329b1a2e2ea9d18bd07fec0c2a525d015fbc798d7664cde8a242b4597",
+      "replacement": "/fixture/trait-policy-511c891/inputs/full_dump.csv"
+    }
+  ],
+  "normalized_historical_verification": true,
+  "normalized_manifest_sha256": "03acef4810f3c6f9aa57b497fb30432b49706aec1a4185838cb09fb676be0d76",
+  "original_generation_verified": true,
+  "original_manifest_sha256": "2b7824e9507cf8c3e163bf9c49099f399613399eadde1745d589b20feeca5825",
+  "producer_commit": "511c891229b659e207cfe0f4281a97c3fc039a80",
+  "producer_matrix_inventory": {
+    "path": "src/mtp/taxa_trait_matrix.py",
+    "sha256": "e7208fbc26c505cb5b7ad3e35b515b9ec1bd4976307d06046e27788f2ac8402f",
+    "size_bytes": 26364
+  },
+  "source_identity_inventory_rebinding": {
+    "after_sha256": "004b964bf2c1c8a5c1fb95a63a50203bb9e4db0b064de56e177c57bafb77967d",
+    "before_sha256": "78643ebdf7795ab4a16a2e006412f0b299c79aeb6c7347bdbf184b0f94901ec7"
+  },
+  "unchanged_scientific_files": [
+    "steps/count_profiles/_step.json",
+    "steps/count_profiles/derived/study_trait_profiles_coverage.tsv",
+    "steps/count_profiles/derived/study_trait_profiles_wide.tsv",
+    "steps/export_tables/_step.json",
+    "steps/export_tables/derived/bugsigdb_taxa.tsv",
+    "steps/export_tables/derived/experiment_ontology_terms.tsv",
+    "steps/export_tables/derived/experiments.tsv",
+    "steps/export_tables/derived/signatures.tsv",
+    "steps/export_tables/derived/studies.tsv",
+    "steps/export_tables/derived/taxon_profiles_long.tsv",
+    "steps/export_tables/derived/taxon_profiles_wide.tsv",
+    "steps/feature_catalog/_step.json",
+    "steps/feature_catalog/derived/feature_catalog.tsv",
+    "steps/identify_sources/_step.json",
+    "steps/ingest/_step.json",
+    "steps/ingest/derived/ingest_log.json",
+    "steps/ingest/studies/bsdb_1.yaml",
+    "steps/ingest/studies/bsdb_2.yaml",
+    "steps/ingest/studies/bsdb_3.yaml",
+    "steps/ora_profiles/_step.json",
+    "steps/ora_profiles/derived/study_trait_profiles_ora_coverage.tsv",
+    "steps/ora_profiles/derived/study_trait_profiles_ora_wide.tsv",
+    "steps/taxa_matrix/_step.json",
+    "steps/taxa_matrix/derived/taxa_trait_matrix.tsv",
+    "steps/taxa_matrix/derived/taxa_trait_matrix_columns.tsv"
+  ]
+}

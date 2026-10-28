@@ -51,7 +51,7 @@ from mtp.workflow.comparison import (
 from mtp.workflow.downstream_contracts import STANDARD_ANALYSIS_SPECS, build_eligibility_ledger
 from mtp.workflow.locations import LocationResolver
 from mtp.workflow.models import ContrastPopulation
-from mtp.workflow.operations import OPERATIONS, validate_core_product
+from mtp.workflow.operations import OPERATIONS, validate_execution_product
 from mtp.workflow.runtime import execute_workflow
 from mtp.workflow.verification import verify_core_run
 
@@ -235,7 +235,7 @@ def stage(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Path]:
         root / "core",
         OPERATIONS,
         parameter_overrides={"source_mode": "fixture"},
-        validator=validate_core_product,
+        validator=validate_execution_product,
         repository_root=REPO_ROOT,
     )
     paths = {"core": Path(core.manifest_path), "comparison": root / "comparison"}

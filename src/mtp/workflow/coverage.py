@@ -19,6 +19,11 @@ from pathlib import Path
 from mtp.count_input import COVERAGE_COLUMNS, ProfileCoverage, annotation_coverage_status
 from mtp.study_trait_profiles import ProfileKey, TaxaTraitMatrix
 from mtp.taxa_trait_matrix import StrainRollup, strain_trait_rolls_up
+from mtp.trait_key_policy import (
+    TRAIT_POLICY_METADATA_COLUMNS,
+    TraitKeyPolicy,
+    parse_trait_key_policy,
+)
 
 FEATURE_METADATA_COLUMNS = (
     "column_id",
@@ -29,9 +34,26 @@ FEATURE_METADATA_COLUMNS = (
     "object_name",
     "object_category",
 )
-FEATURE_CATALOG_COLUMNS = (*FEATURE_METADATA_COLUMNS, "feature_class", "annotation_evidence")
 UNRESOLVED_EVIDENCE = "direct_or_descendant_unresolved"
 STRAIN_ATTRIBUTED_EVIDENCE = "direct_descendant_or_strain_unresolved"
+
+
+def feature_metadata_columns(*, include_policy_metadata: bool) -> tuple[str, ...]:
+    """Select an explicit serialization contract independently of scientific policy."""
+    return (
+        (*FEATURE_METADATA_COLUMNS, *TRAIT_POLICY_METADATA_COLUMNS)
+        if include_policy_metadata
+        else FEATURE_METADATA_COLUMNS
+    )
+
+
+def feature_catalog_columns(*, include_policy_metadata: bool) -> tuple[str, ...]:
+    """The catalog retains every field of its source metadata format."""
+    return (
+        *feature_metadata_columns(include_policy_metadata=include_policy_metadata),
+        "feature_class",
+        "annotation_evidence",
+    )
 
 
 def feature_filter_id(feature_columns: Sequence[str]) -> str:
@@ -140,23 +162,38 @@ def write_profile_coverage(path: Path, coverage: Mapping[ProfileKey, ProfileCove
 
 
 def write_feature_catalog(
-    metadata_path: Path, output_path: Path, *, strain_rollup: StrainRollup = "off"
+    metadata_path: Path,
+    output_path: Path,
+    *,
+    strain_rollup: StrainRollup = "off",
+    trait_key_policy: TraitKeyPolicy,
+    include_policy_metadata: bool,
 ) -> None:
     """Extend native feature metadata with explicit culture-medium and origin semantics."""
     # Local import avoids a module cycle while sharing strict TSV validation.
     from mtp.workflow.contracts import read_table, validate_product
 
-    validate_product(metadata_path, "feature_metadata")
-    _, records = read_table(metadata_path, required=FEATURE_METADATA_COLUMNS, keys=("column_id",))
+    trait_key_policy = parse_trait_key_policy(trait_key_policy)
+    columns = feature_metadata_columns(include_policy_metadata=include_policy_metadata)
+    validate_product(
+        metadata_path,
+        "feature_metadata",
+        trait_key_policy=trait_key_policy,
+        include_policy_metadata=include_policy_metadata,
+    )
+    _, records = read_table(metadata_path, required=columns, keys=("column_id",))
     with output_path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(
-            handle, fieldnames=FEATURE_CATALOG_COLUMNS, delimiter="\t", lineterminator="\n"
+            handle,
+            fieldnames=feature_catalog_columns(include_policy_metadata=include_policy_metadata),
+            delimiter="\t",
+            lineterminator="\n",
         )
         writer.writeheader()
         for record in records:
             writer.writerow(
                 {
-                    **{column: record[column] for column in FEATURE_METADATA_COLUMNS},
+                    **{column: record[column] for column in columns},
                     "feature_class": feature_class(record["column_id"]),
                     "annotation_evidence": annotation_evidence(record["column_id"], strain_rollup),
                 }

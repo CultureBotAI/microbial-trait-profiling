@@ -1,0 +1,14 @@
+id	category	name
+NCBITaxon:900	biolink:OrganismTaxon	Examplefamily
+NCBITaxon:100	biolink:OrganismTaxon	Examplegenus
+NCBITaxon:101	biolink:OrganismTaxon	Examplegenus alpha
+NCBITaxon:102	biolink:OrganismTaxon	Examplegenus beta
+NCBITaxon:103	biolink:OrganismTaxon	Examplegenus gamma
+NCBITaxon:200	biolink:OrganismTaxon	Mediaonly bacterium
+NCBITaxon:300	biolink:OrganismTaxon	Unannotated bacterium
+METPO:1000608	biolink:PhenotypicQuality	facultatively anaerobic
+METPO:2000510	biolink:OntologyClass	grows in
+mediadive.medium:1	biolink:ChemicalMixture	Fixture medium
+METPO:1000605	biolink:PhenotypicQuality	facultatively anaerobic
+METPO:1000612	biolink:PhenotypicQuality	facultative
+kgmicrobe.strain:fixture	biolink:OrganismTaxon	Synthetic BacDive strain

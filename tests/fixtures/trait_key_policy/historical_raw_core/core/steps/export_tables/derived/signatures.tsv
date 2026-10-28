@@ -1,0 +1,10 @@
+study_id	experiment_id	signature_id	direction	taxon_count
+bsdb:1	bsdb:1-1	bsdb:1-1-1	increased	3
+bsdb:1	bsdb:1-1	bsdb:1-1-2	decreased	1
+bsdb:1	bsdb:1-2	bsdb:1-2-1	increased	1
+bsdb:1	bsdb:1-2	bsdb:1-2-2	decreased	1
+bsdb:1	bsdb:1-3	bsdb:1-3-1	increased	1
+bsdb:2	bsdb:2-1	bsdb:2-1-1	increased	1
+bsdb:2	bsdb:2-1	bsdb:2-1-2	decreased	1
+bsdb:3	bsdb:3-1	bsdb:3-1-1	increased	1
+bsdb:3	bsdb:3-1	bsdb:3-1-2	decreased	1

@@ -1,0 +1,8 @@
+study_id	experiment_id	inc_dec	reported_distinct_taxa	lookup_matched_taxa	lookup_unmatched_taxa	matched_taxa_with_annotations	matched_taxa_without_annotations	coverage_status	unmatched_taxon_ids	matched_without_annotation_taxon_ids	trait_filter_id	lineage_resolution
+bsdb:1	bsdb:1-1	dec	1	1	0	0	1	matched_without_annotations	[]	"[""NCBITaxon:300""]"	sha256:9396400687b335d948d3fe906dfac02fcdbeafbab16489ed39da4d02111382ce	unresolved
+bsdb:1	bsdb:1-1	inc	2	2	0	2	0	complete_annotation_coverage	[]	[]	sha256:9396400687b335d948d3fe906dfac02fcdbeafbab16489ed39da4d02111382ce	unresolved
+bsdb:1	bsdb:1-2	dec	1	1	0	0	1	matched_without_annotations	[]	"[""NCBITaxon:999""]"	sha256:9396400687b335d948d3fe906dfac02fcdbeafbab16489ed39da4d02111382ce	unresolved
+bsdb:1	bsdb:1-2	inc	1	1	0	1	0	complete_annotation_coverage	[]	[]	sha256:9396400687b335d948d3fe906dfac02fcdbeafbab16489ed39da4d02111382ce	unresolved
+bsdb:1	bsdb:1-3	inc	1	1	0	1	0	complete_annotation_coverage	[]	[]	sha256:9396400687b335d948d3fe906dfac02fcdbeafbab16489ed39da4d02111382ce	unresolved
+bsdb:3	bsdb:3-1	dec	1	1	0	1	0	complete_annotation_coverage	[]	[]	sha256:9396400687b335d948d3fe906dfac02fcdbeafbab16489ed39da4d02111382ce	unresolved
+bsdb:3	bsdb:3-1	inc	1	1	0	1	0	complete_annotation_coverage	[]	[]	sha256:9396400687b335d948d3fe906dfac02fcdbeafbab16489ed39da4d02111382ce	unresolved

@@ -13,7 +13,7 @@ from mtp.paths import REPO_ROOT
 from mtp.trait_guilds import TABLE1_TRAITS
 from mtp.validation_evidence import NODES_CORE_VERIFIED, main
 from mtp.workflow.consumers import open_core_bundle, verify_consumer_record
-from mtp.workflow.operations import OPERATIONS, validate_core_product
+from mtp.workflow.operations import OPERATIONS, validate_execution_product
 from mtp.workflow.runtime import execute_workflow
 
 
@@ -61,7 +61,7 @@ def core_manifest(tmp_path: Path) -> Path:
         {key: inputs / filename for key, filename in filenames.items()},
         tmp_path / "core",
         OPERATIONS,
-        validator=validate_core_product,
+        validator=validate_execution_product,
         repository_root=REPO_ROOT,
     )
     return Path(run.manifest_path)

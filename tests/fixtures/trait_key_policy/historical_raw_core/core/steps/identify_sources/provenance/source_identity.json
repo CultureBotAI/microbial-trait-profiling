@@ -1,0 +1,28 @@
+{
+  "consumed_files": {
+    "kg_edges": {
+      "path": "/fixture/trait-policy-511c891/inputs/merged-kg_edges.tsv",
+      "product_id": "kg_edges",
+      "sha256": "825db219e7331d5d9e1447e7ea77b050d9b3588da97d64de2ad1b5978fb73d9b",
+      "size_bytes": 723
+    },
+    "kg_nodes": {
+      "path": "/fixture/trait-policy-511c891/inputs/merged-kg_nodes.tsv",
+      "product_id": "kg_nodes",
+      "sha256": "a6cb44064d389cec4b7710694f231b38a70119b17ec2619d0f9376aacf36057c",
+      "size_bytes": 749
+    },
+    "raw_dump": {
+      "path": "/fixture/trait-policy-511c891/inputs/full_dump.csv",
+      "product_id": "raw_dump",
+      "sha256": "75bc1c9258950521d4d58cc4eb31fc08502a63ec91f62aabb5f9f9f69f672bcd",
+      "size_bytes": 1732
+    }
+  },
+  "declared_source_mode": "fixture",
+  "interpretation": "Taxon reports and organism annotations; no physiological measurement.",
+  "pinned_verified": false,
+  "recorded_at_utc": "2026-10-28T05:36:07.526856+00:00",
+  "snapshot_header": "# BugSigDB fixture-629, License: CC0 synthetic test data",
+  "verification_status": "origin_unverified"
+}

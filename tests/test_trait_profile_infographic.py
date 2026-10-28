@@ -17,7 +17,7 @@ from mtp.integrated_evidence import native_composition_records
 from mtp.paths import REPO_ROOT, file_sha256
 from mtp.trait_guilds import TABLE1_TRAITS
 from mtp.workflow.consumers import CoreBundle, open_core_bundle, verify_consumer_record
-from mtp.workflow.operations import OPERATIONS, validate_core_product
+from mtp.workflow.operations import OPERATIONS, validate_execution_product
 from mtp.workflow.runtime import execute_workflow
 
 MODULE_PATH = (
@@ -971,7 +971,7 @@ def pooled_core(tmp_path: Path) -> CoreBundle:
         {"raw_dump": dump, "kg_edges": edges, "kg_nodes": nodes},
         tmp_path / "runs",
         OPERATIONS,
-        validator=validate_core_product,
+        validator=validate_execution_product,
         repository_root=REPO_ROOT,
     )
     return open_core_bundle(Path(run.manifest_path))

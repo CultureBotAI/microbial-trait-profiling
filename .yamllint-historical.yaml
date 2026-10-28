@@ -1,0 +1,7 @@
+# Preserve the native YAML bytes in the verified historical fixture (#1134).
+# The dedicated pre-commit hook retains every other repository YAML rule.
+extends: .yamllint.yaml
+
+rules:
+  indentation:
+    indent-sequences: false

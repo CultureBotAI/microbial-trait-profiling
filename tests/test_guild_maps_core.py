@@ -12,7 +12,7 @@ from mtp import guild_maps
 from mtp.corpus_identity import CorpusIdentity
 from mtp.paths import REPO_ROOT
 from mtp.workflow.consumers import CoreBundle, open_core_bundle, verify_consumer_record
-from mtp.workflow.operations import OPERATIONS, validate_core_product
+from mtp.workflow.operations import OPERATIONS, validate_execution_product
 from mtp.workflow.runtime import execute_workflow
 
 
@@ -38,7 +38,7 @@ def bundle(tmp_path: Path) -> CoreBundle:
         },
         tmp_path / "core",
         OPERATIONS,
-        validator=validate_core_product,
+        validator=validate_execution_product,
         repository_root=REPO_ROOT,
     )
     return open_core_bundle(Path(run.manifest_path))
