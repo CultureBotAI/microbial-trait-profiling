@@ -142,6 +142,7 @@ def test_native_matrix_preserves_each_sole_source_and_deduplicates_overlap(
         column_metadata_path=metadata,
         strain_rollup=scope,
         trait_key_policy=POLICY,
+        include_policy_metadata=True,
     )
     rows = {row["taxon_id"]: row for row in _table(matrix)}
     assert stats.traits == 2
@@ -172,6 +173,7 @@ def test_native_matrix_preserves_each_sole_source_and_deduplicates_overlap(
         metadata,
         strain_rollup=scope,
         trait_key_policy=POLICY,
+        include_policy_metadata=True,
     )
     assert facts["kg_source_aggregation_checked"] is True
     assert facts["kg_source_cells_checked"] == 18
@@ -197,6 +199,7 @@ def test_core_count_and_ora_operations_preserve_asymmetric_canonical_carriers(
         matrix["feature_metadata"],
         strain_rollup=scope,
         trait_key_policy=POLICY,
+        include_policy_metadata=True,
     )
     profile_inputs = {"studies": inputs.studies, "taxa_matrix": matrix["taxa_matrix"]}
     count_outputs = {

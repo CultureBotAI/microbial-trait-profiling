@@ -17,7 +17,7 @@ from mtp.trait_guilds import TABLE1_TRAITS
 from mtp.workflow.arms.runtime import execute_arm, verify_arm
 from mtp.workflow.arms.types import ArmContext, Command
 from mtp.workflow.consumers import open_core_bundle, verify_consumer_record
-from mtp.workflow.operations import OPERATIONS, validate_core_product
+from mtp.workflow.operations import OPERATIONS, validate_execution_product
 from mtp.workflow.runtime import execute_workflow
 
 SUBSET = "disease_vs_healthy_tier1_2_subject_controls"
@@ -114,7 +114,7 @@ def test_verified_extension_reconciles_scope_subset_and_orientation(
         tmp_path / "core",
         OPERATIONS,
         parameter_overrides=parameters,
-        validator=validate_core_product,
+        validator=validate_execution_product,
         repository_root=REPO_ROOT,
     )
     manifest = Path(core.manifest_path)
@@ -218,7 +218,7 @@ def extension_core(root: Path) -> Path:
         root / "core",
         OPERATIONS,
         parameter_overrides={"source_mode": "fixture", "strain_rollup": "off"},
-        validator=validate_core_product,
+        validator=validate_execution_product,
         repository_root=REPO_ROOT,
     )
     return Path(core.manifest_path)

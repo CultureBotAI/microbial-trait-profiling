@@ -11,7 +11,7 @@ from mtp.workflow.operations import (
     OPERATIONS,
     feature_catalog_operation,
     taxa_matrix_operation,
-    validate_core_product,
+    validate_execution_product,
 )
 from mtp.workflow.runtime import WorkflowExecutionError, artifact_path, execute_workflow
 from mtp.workflow.verification import verify_core_run
@@ -86,7 +86,7 @@ def test_matrix_source_corruption_fails_before_publication(tmp_path: Path, damag
             tmp_path / "runs",
             operations,
             parameter_overrides={"source_mode": "fixture"},
-            validator=validate_core_product,
+            validator=validate_execution_product,
             repository_root=ROOT,
         )
     assert "taxa_matrix" not in {
@@ -114,7 +114,7 @@ def test_catalog_cannot_change_source_feature_meaning(tmp_path: Path) -> None:
             },
             tmp_path / "runs",
             {**OPERATIONS, "feature_catalog": faulty_catalog},
-            validator=validate_core_product,
+            validator=validate_execution_product,
             repository_root=ROOT,
         )
 
@@ -137,7 +137,7 @@ def test_direct_higher_rank_evidence_and_multiple_paths_reconcile(tmp_path: Path
         },
         tmp_path / "runs",
         OPERATIONS,
-        validator=validate_core_product,
+        validator=validate_execution_product,
         repository_root=ROOT,
     )
     verify_core_run(Path(run.manifest_path))

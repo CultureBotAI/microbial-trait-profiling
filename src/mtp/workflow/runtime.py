@@ -39,6 +39,7 @@ from mtp.workflow.models import (
     WorkflowDefinition,
     WorkflowRun,
 )
+from mtp.workflow.trait_policy import resolve_trait_policy
 
 Operation = Callable[[dict[str, Path], dict[str, Path], dict[str, object]], None]
 
@@ -212,8 +213,8 @@ def _require_full_source_background(definition: WorkflowDefinition) -> None:
     # Match native operation bindings, not step IDs or filenames. Alternative
     # graph layouts may preserve the contract, but selected taxa cannot replace
     # the full-source exports that define M, K and the retained feature universe.
-    # A subset core recorded before #788 bound no strain_rollup to the matrix producer or
-    # the feature catalog; it is read as off, as the product validators read it.
+    # Older subset cores omit the trait-policy binding; the audited producer
+    # determines that policy. Before #788 they also omit strain_rollup, read as off.
     scoped: tuple[set[str], ...] = ({"strain_rollup", "trait_key_policy"}, {"strain_rollup"}, set())
     contracts: tuple[tuple[str, str, set[str], set[str], tuple[set[str], ...]], ...] = (
         (
@@ -673,8 +674,6 @@ def _validate_run_record(
     unique([item.path for item in run.code_inventory], "code inventory paths")
     unique([item.name for item in run.parameters or []], "resolved parameter names")
     if any(p.kind in {"taxa_matrix", "feature_catalog"} for p in run.definition.products):
-        from mtp.workflow.trait_policy import resolve_trait_policy
-
         resolve_trait_policy(run)
     parameters = {item.name: item.value for item in run.parameters or []}
     population, direction_basis = _population_policy(run.definition, parameters)

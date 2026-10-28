@@ -1,0 +1,4 @@
+study_id	source_record_id	pmid	title	publication_year	doi	url	experiment_count	signature_count	taxon_count	input_file
+bsdb:1	Study 1		Synthetic overlap and coverage	2026			3	5	7	bsdb_1.yaml
+bsdb:2	Study 2		Synthetic mouse contrast	2026			1	2	2	bsdb_2.yaml
+bsdb:3	Study 3		Synthetic family contrast	2026			1	2	2	bsdb_3.yaml

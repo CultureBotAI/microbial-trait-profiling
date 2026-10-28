@@ -20,7 +20,6 @@ from mtp.count_input import COVERAGE_COLUMNS, ProfileCoverage, annotation_covera
 from mtp.study_trait_profiles import ProfileKey, TaxaTraitMatrix
 from mtp.taxa_trait_matrix import StrainRollup, strain_trait_rolls_up
 from mtp.trait_key_policy import (
-    DEFAULT_TRAIT_KEY_POLICY,
     TRAIT_POLICY_METADATA_COLUMNS,
     TraitKeyPolicy,
     parse_trait_key_policy,
@@ -35,7 +34,6 @@ FEATURE_METADATA_COLUMNS = (
     "object_name",
     "object_category",
 )
-FEATURE_CATALOG_COLUMNS = (*FEATURE_METADATA_COLUMNS, "feature_class", "annotation_evidence")
 UNRESOLVED_EVIDENCE = "direct_or_descendant_unresolved"
 STRAIN_ATTRIBUTED_EVIDENCE = "direct_descendant_or_strain_unresolved"
 
@@ -168,8 +166,8 @@ def write_feature_catalog(
     output_path: Path,
     *,
     strain_rollup: StrainRollup = "off",
-    trait_key_policy: TraitKeyPolicy = DEFAULT_TRAIT_KEY_POLICY,
-    include_policy_metadata: bool = True,
+    trait_key_policy: TraitKeyPolicy,
+    include_policy_metadata: bool,
 ) -> None:
     """Extend native feature metadata with explicit culture-medium and origin semantics."""
     # Local import avoids a module cycle while sharing strict TSV validation.

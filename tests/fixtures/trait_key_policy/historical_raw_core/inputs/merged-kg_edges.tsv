@@ -1,0 +1,10 @@
+id	subject	predicate	object	primary_knowledge_source
+tax1	NCBITaxon:100	biolink:subclass_of	NCBITaxon:900	fixture:taxonomy
+tax2	NCBITaxon:101	biolink:subclass_of	NCBITaxon:100	fixture:taxonomy
+tax3	NCBITaxon:102	biolink:subclass_of	NCBITaxon:100	fixture:taxonomy
+tax4	NCBITaxon:103	biolink:subclass_of	NCBITaxon:100	fixture:taxonomy
+medium1	NCBITaxon:200	METPO:2000510	mediadive.medium:1	fixture:medium_annotation
+direct608	NCBITaxon:101	biolink:has_phenotype	METPO:1000608	fixture:annotation
+direct612	NCBITaxon:102	biolink:has_phenotype	METPO:1000612	BactoTraits
+strain_link	kgmicrobe.strain:fixture	biolink:subclass_of	NCBITaxon:103	BacDive
+strain605	kgmicrobe.strain:fixture	biolink:has_phenotype	METPO:1000605	BacDive

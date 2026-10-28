@@ -28,7 +28,6 @@ from mtp.taxa_trait_matrix import (
     strain_trait_rolls_up,
 )
 from mtp.trait_key_policy import (
-    DEFAULT_TRAIT_KEY_POLICY,
     TraitKeyPolicy,
     parse_trait_key_policy,
 )
@@ -107,8 +106,8 @@ def validate_matrix_sources(
     metadata_path: Path | None,
     *,
     strain_rollup: StrainRollup = "off",
-    trait_key_policy: TraitKeyPolicy = DEFAULT_TRAIT_KEY_POLICY,
-    include_policy_metadata: bool = True,
+    trait_key_policy: TraitKeyPolicy,
+    include_policy_metadata: bool,
 ) -> dict[str, object]:
     """Check all matrix cells, biological row identities and KG feature metadata.
 
@@ -161,8 +160,8 @@ def validate_feature_node_metadata(
     path: Path,
     nodes_path: Path,
     *,
-    trait_key_policy: TraitKeyPolicy = DEFAULT_TRAIT_KEY_POLICY,
-    include_policy_metadata: bool = True,
+    trait_key_policy: TraitKeyPolicy,
+    include_policy_metadata: bool,
 ) -> None:
     """Check feature descriptions against the supplied node snapshot, without a graph rebuild."""
     trait_key_policy = parse_trait_key_policy(trait_key_policy)

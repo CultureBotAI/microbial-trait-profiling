@@ -39,7 +39,7 @@ from mtp.workflow.operations import (
     Operation,
     feature_catalog_operation,
     trace_profile_feature,
-    validate_core_product,
+    validate_execution_product,
 )
 from mtp.workflow.runtime import WorkflowExecutionError, artifact_path, execute_workflow
 from mtp.workflow.verification import verify_core_run
@@ -109,7 +109,7 @@ def _run(
         root,
         operations,
         parameter_overrides={"source_mode": "fixture", "strain_rollup": scope},
-        validator=validate_core_product,
+        validator=validate_execution_product,
         repository_root=ROOT,
     )
 
@@ -279,7 +279,9 @@ def test_the_trace_reconciles_strain_attributed_counts(
         SHAPE,
     )
 
-    result = trace_profile_feature(*arguments, strain_rollup="phenotype")
+    result = trace_profile_feature(
+        *arguments, strain_rollup="phenotype", trait_key_policy="facultative_union_v1"
+    )
 
     assert result["count_profile_value"] == 1
     ledger = cast(list[dict[str, object]], result["ledger"])
@@ -287,7 +289,7 @@ def test_the_trace_reconciles_strain_attributed_counts(
     edges = cast(list[dict[str, str]], ledger[0]["evidence_edges"])
     assert [edge["id"] for edge in edges] == ["strain1_shape"]
     with pytest.raises(ValueError, match="does not reconcile"):
-        trace_profile_feature(*arguments)
+        trace_profile_feature(*arguments, trait_key_policy="facultative_union_v1")
 
 
 def test_cell_lineage_traces_under_the_recorded_scope(

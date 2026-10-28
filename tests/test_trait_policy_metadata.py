@@ -252,7 +252,12 @@ def test_new_metadata_cannot_drop_or_forge_policy_disclosure(
         edited = list(OLD_COLUMNS)
     _write(metadata, edited, [[row[column] for column in edited] for row in rows])
     with pytest.raises(ValueError, match=r"(metadata|policy|columns|vocabular|member)"):
-        validate_product(metadata, "feature_metadata", trait_key_policy=UNION)
+        validate_product(
+            metadata,
+            "feature_metadata",
+            trait_key_policy=UNION,
+            include_policy_metadata=True,
+        )
 
 
 def test_unknown_policy_is_rejected() -> None:

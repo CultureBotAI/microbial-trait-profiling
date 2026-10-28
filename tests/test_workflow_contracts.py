@@ -135,8 +135,20 @@ def test_count_and_ora_units_with_mixed_ranks_duplicates_and_unmatched(tmp_path:
             ["bsdb:1", "bsdb:1-1", "dec", 0, 0, 0],
         ],
     )
-    count_report = validate_product(counts, "count_profiles", context=context)
-    ora_report = validate_product(ora, "ora_profiles", context=context)
+    count_report = validate_product(
+        counts,
+        "count_profiles",
+        context=context,
+        trait_key_policy="raw_object_v1",
+        include_policy_metadata=False,
+    )
+    ora_report = validate_product(
+        ora,
+        "ora_profiles",
+        context=context,
+        trait_key_policy="raw_object_v1",
+        include_policy_metadata=False,
+    )
     assert count_report["rows"] == 3
     assert count_report["source_aggregation_checked"] is True
     assert ora_report["rows"] == 2
@@ -168,7 +180,13 @@ def test_ora_rejects_annotation_counts_or_annotated_only_denominator(
         [[*KEY, n, trait, 1]],
     )
     with pytest.raises(ValueError, match=message):
-        validate_product(path, "ora_profiles", context=context)
+        validate_product(
+            path,
+            "ora_profiles",
+            context=context,
+            trait_key_policy="raw_object_v1",
+            include_policy_metadata=False,
+        )
 
 
 def test_profile_cohort_membership_is_checked_not_inferred_from_rows(tmp_path: Path) -> None:
@@ -179,7 +197,13 @@ def test_profile_cohort_membership_is_checked_not_inferred_from_rows(tmp_path: P
         [[*KEY, 4, 2, 1]],
     )
     with pytest.raises(ValueError, match="membership differs"):
-        validate_product(path, "ora_profiles", context=context)
+        validate_product(
+            path,
+            "ora_profiles",
+            context=context,
+            trait_key_policy="raw_object_v1",
+            include_policy_metadata=False,
+        )
 
 
 def test_profile_cohort_keeps_16s_and_shotgun_experiments_only(tmp_path: Path) -> None:
@@ -194,9 +218,24 @@ def test_profile_cohort_keeps_16s_and_shotgun_experiments_only(tmp_path: Path) -
         tmp_path / "with_pcr.tsv", header, [*rows, ["bsdb:1", "bsdb:1-2", "inc", 1, 0]]
     )
     with pytest.raises(ValueError, match="outside declared cohort"):
-        validate_product(with_pcr, "count_profiles", context=context)
+        validate_product(
+            with_pcr,
+            "count_profiles",
+            context=context,
+            trait_key_policy="raw_object_v1",
+            include_policy_metadata=False,
+        )
     without_pcr = _write(tmp_path / "without_pcr.tsv", header, rows)
-    assert validate_product(without_pcr, "count_profiles", context=context)["rows"] == 2
+    assert (
+        validate_product(
+            without_pcr,
+            "count_profiles",
+            context=context,
+            trait_key_policy="raw_object_v1",
+            include_policy_metadata=False,
+        )["rows"]
+        == 2
+    )
 
 
 def test_experiments_from_before_the_sequencing_rule_are_named(tmp_path: Path) -> None:
@@ -215,7 +254,13 @@ def test_experiments_from_before_the_sequencing_rule_are_named(tmp_path: Path) -
         [[*KEY, 4, 1]],
     )
     with pytest.raises(ValueError, match="before #742"):
-        validate_product(counts, "count_profiles", context=context)
+        validate_product(
+            counts,
+            "count_profiles",
+            context=context,
+            trait_key_policy="raw_object_v1",
+            include_policy_metadata=False,
+        )
 
 
 def test_policy_label_names_the_corpus_sequencing_types() -> None:
@@ -247,7 +292,15 @@ def test_coverage_keeps_lookup_zero_and_media_only_distinct(tmp_path: Path) -> N
     path = tmp_path / "coverage.tsv"
     write_profile_coverage(path, all_features)
     assert read_profile_coverage(path) == all_features
-    assert validate_product(path, "profile_coverage")["rows"] == 1
+    assert (
+        validate_product(
+            path,
+            "profile_coverage",
+            trait_key_policy="raw_object_v1",
+            include_policy_metadata=False,
+        )["rows"]
+        == 1
+    )
 
 
 @pytest.mark.parametrize(
@@ -312,11 +365,17 @@ def test_feature_catalog_preserves_qualified_ids_media_and_unresolved_origin(
         ],
     )
     catalog = tmp_path / "catalog.tsv"
-    write_feature_catalog(metadata, catalog, include_policy_metadata=False)
+    write_feature_catalog(
+        metadata,
+        catalog,
+        trait_key_policy="raw_object_v1",
+        include_policy_metadata=False,
+    )
     report = validate_product(
         catalog,
         "feature_catalog",
         context={"taxa_matrix": _matrix(tmp_path)},
+        trait_key_policy="raw_object_v1",
         include_policy_metadata=False,
     )
     assert report["culture_medium_features"] == 1
@@ -324,27 +383,61 @@ def test_feature_catalog_preserves_qualified_ids_media_and_unresolved_origin(
     assert report["feature_filter_id"] == feature_filter_id([TRAIT, MEDIUM])
     catalog.write_text(catalog.read_text().replace("culture_medium", "trait_annotation"))
     with pytest.raises(ValueError, match="MediaDive classification"):
-        validate_product(catalog, "feature_catalog", include_policy_metadata=False)
+        validate_product(
+            catalog,
+            "feature_catalog",
+            trait_key_policy="raw_object_v1",
+            include_policy_metadata=False,
+        )
 
 
 def test_table_foreign_keys_and_duplicate_observations(tmp_path: Path) -> None:
     context = _sources(tmp_path)
-    facts = validate_product(context["reported_taxa"], "reported_taxa", context=context)
+    facts = validate_product(
+        context["reported_taxa"],
+        "reported_taxa",
+        context=context,
+        trait_key_policy="raw_object_v1",
+        include_policy_metadata=False,
+    )
     assert facts["rows"] == 7
     assert facts["duplicate_observations_retained"] is True
-    validate_product(context["signatures"], "signature_table", context=context)
+    validate_product(
+        context["signatures"],
+        "signature_table",
+        context=context,
+        trait_key_policy="raw_object_v1",
+        include_policy_metadata=False,
+    )
     path = context["reported_taxa"]
     path.write_text(path.read_text().replace("bsdb:1-1-1", "bsdb:1-1-unknown", 1))
     with pytest.raises(ValueError, match="missing parent"):
-        validate_product(path, "reported_taxa", context=context)
+        validate_product(
+            path,
+            "reported_taxa",
+            context=context,
+            trait_key_policy="raw_object_v1",
+            include_policy_metadata=False,
+        )
 
 
 def test_matrix_cross_product_vocabulary_and_zero_rows(tmp_path: Path) -> None:
     context = _sources(tmp_path)
-    report = validate_product(context["taxa_matrix"], "taxa_matrix")
+    report = validate_product(
+        context["taxa_matrix"],
+        "taxa_matrix",
+        trait_key_policy="raw_object_v1",
+        include_policy_metadata=False,
+    )
     assert report["all_zero_rows"] == 1
     with pytest.raises(ValueError, match="taxon vocabulary"):
-        validate_product(context["taxa_matrix"], "taxa_matrix", context=context)
+        validate_product(
+            context["taxa_matrix"],
+            "taxa_matrix",
+            context=context,
+            trait_key_policy="raw_object_v1",
+            include_policy_metadata=False,
+        )
 
 
 def test_long_taxon_profiles_are_checked_as_transposes(tmp_path: Path) -> None:
@@ -355,14 +448,24 @@ def test_long_taxon_profiles_are_checked_as_transposes(tmp_path: Path) -> None:
     )
     long = _write(tmp_path / "long.tsv", ["taxon", "_".join(KEY)], [["Taxon A", 2], ["Taxon B", 0]])
     assert (
-        validate_product(long, "taxon_profile_long", context={"taxon_profiles_wide": wide})[
-            "layout"
-        ]
+        validate_product(
+            long,
+            "taxon_profile_long",
+            context={"taxon_profiles_wide": wide},
+            trait_key_policy="raw_object_v1",
+            include_policy_metadata=False,
+        )["layout"]
         == "transpose_of_wide_not_tidy_long"
     )
     long.write_text(long.read_text().replace("Taxon B\t0", "Taxon B\t1"))
     with pytest.raises(ValueError, match="values differ"):
-        validate_product(long, "taxon_profile_long", context={"taxon_profiles_wide": wide})
+        validate_product(
+            long,
+            "taxon_profile_long",
+            context={"taxon_profiles_wide": wide},
+            trait_key_policy="raw_object_v1",
+            include_policy_metadata=False,
+        )
 
 
 def test_rectangular_table_and_unique_identifiers(tmp_path: Path) -> None:
@@ -385,12 +488,24 @@ def test_taxon_profiles_count_observations_before_distinct_id_trait_aggregation(
         [[*KEY, 0, 6], ["bsdb:1", "bsdb:1-2", "inc", 1, 0]],
     )
     assert (
-        validate_product(path, "taxon_profile_wide", context=context)["source_aggregation_checked"]
+        validate_product(
+            path,
+            "taxon_profile_wide",
+            context=context,
+            trait_key_policy="raw_object_v1",
+            include_policy_metadata=False,
+        )["source_aggregation_checked"]
         is True
     )
     path.write_text(path.read_text().replace("inc\t0\t6", "inc\t0\t5"))
     with pytest.raises(ValueError, match="counts differ from reported observations"):
-        validate_product(path, "taxon_profile_wide", context=context)
+        validate_product(
+            path,
+            "taxon_profile_wide",
+            context=context,
+            trait_key_policy="raw_object_v1",
+            include_policy_metadata=False,
+        )
 
 
 def test_coverage_schema_rejects_non_digest_filter_identity(tmp_path: Path) -> None:
@@ -399,4 +514,9 @@ def test_coverage_schema_rejects_non_digest_filter_identity(tmp_path: Path) -> N
     path = tmp_path / "coverage.tsv"
     write_profile_coverage(path, {KEY: replace(coverage[KEY], trait_filter_id="unknown")})
     with pytest.raises(ValueError, match="trait_filter_id"):
-        validate_product(path, "profile_coverage")
+        validate_product(
+            path,
+            "profile_coverage",
+            trait_key_policy="raw_object_v1",
+            include_policy_metadata=False,
+        )

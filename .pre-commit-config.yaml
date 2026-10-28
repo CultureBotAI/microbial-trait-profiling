@@ -32,6 +32,11 @@ repos:
     hooks:
       - id: yamllint
         args: [-c=.yamllint.yaml]
+        exclude: ^tests/fixtures/trait_key_policy/historical_raw_core/.*\.yaml$
+      - id: yamllint
+        name: lint historical native YAML (original list indentation)
+        files: ^tests/fixtures/trait_key_policy/historical_raw_core/.*\.yaml$
+        args: [-c=.yamllint-historical.yaml]
   - repo: https://github.com/codespell-project/codespell
     rev: v2.4.1
     hooks:

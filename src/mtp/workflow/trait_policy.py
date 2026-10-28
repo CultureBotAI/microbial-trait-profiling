@@ -16,7 +16,7 @@ from mtp.trait_key_policy import TraitKeyPolicy, parse_trait_key_policy
 POLICY_PARAMETER = "trait_key_policy"
 MATRIX_SOURCE = "src/mtp/taxa_trait_matrix.py"
 
-# Audited Git blobs: F 511c891 (raw IDs), then #1124 0e49e87 (union IDs).
+# Audited file-byte SHA-256s: F 511c891 (raw IDs), then #1124 0e49e87 (union IDs).
 # Match both the complete file digest and size; unfamiliar historical producers
 # require an explicit compatibility review, never an inferred default.
 HISTORICAL_MATRIX_POLICIES: dict[tuple[str, int], TraitKeyPolicy] = {

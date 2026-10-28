@@ -1,0 +1,2154 @@
+{
+  "run_id": "run-dc8d53eae34f4d6aa2e62abc5b417b96",
+  "contrast_population": "all_paired",
+  "direction_basis": "group_1_vs_group_0",
+  "definition": {
+    "id": "bugsigdb-core",
+    "version": "1",
+    "description": "Offline BugSigDB full-dump to raw core products. The core preserves all annotation features including culture-media annotations and incomplete pairs. Count and ORA profiles have distinct, explicit units and host policies, and both keep 16S and shotgun (WMS) experiments only (count_input_16s_wms_v1, #742).",
+    "products": [
+      {
+        "id": "raw_dump",
+        "description": null,
+        "kind": "raw_csv",
+        "storage_kind": "file",
+        "format": "csv",
+        "filename": "full_dump.csv",
+        "external": true,
+        "schema_ref": null,
+        "unit": "literature_signature_record",
+        "cohort": "as_supplied",
+        "cohort_parameter": null,
+        "feature_policy": null,
+        "coverage_policy": null
+      },
+      {
+        "id": "kg_edges",
+        "description": null,
+        "kind": "kg_edges",
+        "storage_kind": "file",
+        "format": "tsv",
+        "filename": "merged-kg_edges.tsv",
+        "external": true,
+        "schema_ref": null,
+        "unit": "knowledge_graph_edge",
+        "cohort": "as_supplied",
+        "cohort_parameter": null,
+        "feature_policy": null,
+        "coverage_policy": null
+      },
+      {
+        "id": "kg_nodes",
+        "description": null,
+        "kind": "kg_nodes",
+        "storage_kind": "file",
+        "format": "tsv",
+        "filename": "merged-kg_nodes.tsv",
+        "external": true,
+        "schema_ref": null,
+        "unit": "knowledge_graph_node",
+        "cohort": "as_supplied",
+        "cohort_parameter": null,
+        "feature_policy": null,
+        "coverage_policy": null
+      },
+      {
+        "id": "source_identity",
+        "description": null,
+        "kind": "source_identity",
+        "storage_kind": "file",
+        "format": "json",
+        "filename": "provenance/source_identity.json",
+        "external": false,
+        "schema_ref": "schema/core_products.yaml#SourceIdentity",
+        "unit": "consumed_source_file",
+        "cohort": "as_supplied",
+        "cohort_parameter": null,
+        "feature_policy": null,
+        "coverage_policy": null
+      },
+      {
+        "id": "studies",
+        "description": null,
+        "kind": "study_collection",
+        "storage_kind": "collection",
+        "format": "yaml",
+        "filename": "studies",
+        "external": false,
+        "schema_ref": "schema/mtp.yaml#Study",
+        "unit": "study",
+        "cohort": "all_hosts",
+        "cohort_parameter": null,
+        "feature_policy": null,
+        "coverage_policy": "exact_current_ingest_collection"
+      },
+      {
+        "id": "ingest_log",
+        "description": null,
+        "kind": "ingest_log",
+        "storage_kind": "file",
+        "format": "json",
+        "filename": "derived/ingest_log.json",
+        "external": false,
+        "schema_ref": null,
+        "unit": "ingest_event",
+        "cohort": "all_hosts",
+        "cohort_parameter": null,
+        "feature_policy": null,
+        "coverage_policy": null
+      },
+      {
+        "id": "study_table",
+        "description": null,
+        "kind": "study_table",
+        "storage_kind": "file",
+        "format": "tsv",
+        "filename": "derived/studies.tsv",
+        "external": false,
+        "schema_ref": "schema/core_products.yaml#StudyTableRow",
+        "unit": "study",
+        "cohort": "all_hosts",
+        "cohort_parameter": null,
+        "feature_policy": null,
+        "coverage_policy": null
+      },
+      {
+        "id": "experiments",
+        "description": null,
+        "kind": "experiment_table",
+        "storage_kind": "file",
+        "format": "tsv",
+        "filename": "derived/experiments.tsv",
+        "external": false,
+        "schema_ref": "schema/core_products.yaml#ExperimentTableRow",
+        "unit": "experiment",
+        "cohort": "all_hosts",
+        "cohort_parameter": null,
+        "feature_policy": null,
+        "coverage_policy": null
+      },
+      {
+        "id": "experiment_ontology_terms",
+        "description": null,
+        "kind": "ontology_term_table",
+        "storage_kind": "file",
+        "format": "tsv",
+        "filename": "derived/experiment_ontology_terms.tsv",
+        "external": false,
+        "schema_ref": "schema/core_products.yaml#ExperimentOntologyTermRow",
+        "unit": "experiment_ontology_annotation",
+        "cohort": "all_hosts",
+        "cohort_parameter": null,
+        "feature_policy": null,
+        "coverage_policy": null
+      },
+      {
+        "id": "signatures",
+        "description": null,
+        "kind": "signature_table",
+        "storage_kind": "file",
+        "format": "tsv",
+        "filename": "derived/signatures.tsv",
+        "external": false,
+        "schema_ref": "schema/core_products.yaml#SignatureTableRow",
+        "unit": "literature_signature",
+        "cohort": "all_hosts",
+        "cohort_parameter": null,
+        "feature_policy": null,
+        "coverage_policy": null
+      },
+      {
+        "id": "reported_taxa",
+        "description": null,
+        "kind": "reported_taxa",
+        "storage_kind": "file",
+        "format": "tsv",
+        "filename": "derived/bugsigdb_taxa.tsv",
+        "external": false,
+        "schema_ref": "schema/core_products.yaml#TaxonOccurrenceRow",
+        "unit": "reported_taxon_occurrence",
+        "cohort": "all_hosts",
+        "cohort_parameter": null,
+        "feature_policy": null,
+        "coverage_policy": "preserve_repeated_occurrences"
+      },
+      {
+        "id": "taxon_profiles_wide",
+        "description": null,
+        "kind": "taxon_profile_wide",
+        "storage_kind": "file",
+        "format": "tsv",
+        "filename": "derived/taxon_profiles_wide.tsv",
+        "external": false,
+        "schema_ref": null,
+        "unit": "taxon_name_occurrence",
+        "cohort": "all_hosts",
+        "cohort_parameter": null,
+        "feature_policy": null,
+        "coverage_policy": null
+      },
+      {
+        "id": "taxon_profiles_long",
+        "description": null,
+        "kind": "taxon_profile_long",
+        "storage_kind": "file",
+        "format": "tsv",
+        "filename": "derived/taxon_profiles_long.tsv",
+        "external": false,
+        "schema_ref": null,
+        "unit": "taxon_name_occurrence",
+        "cohort": "all_hosts",
+        "cohort_parameter": null,
+        "feature_policy": null,
+        "coverage_policy": null
+      },
+      {
+        "id": "taxa_matrix",
+        "description": null,
+        "kind": "taxa_matrix",
+        "storage_kind": "file",
+        "format": "tsv",
+        "filename": "derived/taxa_trait_matrix.tsv",
+        "external": false,
+        "schema_ref": null,
+        "unit": "trait_bearing_source_taxa_at_or_below_reported_taxon",
+        "cohort": "all_reported_taxa",
+        "cohort_parameter": null,
+        "feature_policy": "include_mediadive",
+        "coverage_policy": "all_reported_taxa_including_zero_annotation_rows"
+      },
+      {
+        "id": "feature_metadata",
+        "description": null,
+        "kind": "feature_metadata",
+        "storage_kind": "file",
+        "format": "tsv",
+        "filename": "derived/taxa_trait_matrix_columns.tsv",
+        "external": false,
+        "schema_ref": null,
+        "unit": "annotation_feature",
+        "cohort": "all_reported_taxa",
+        "cohort_parameter": null,
+        "feature_policy": "include_mediadive",
+        "coverage_policy": null
+      },
+      {
+        "id": "feature_catalog",
+        "description": null,
+        "kind": "feature_catalog",
+        "storage_kind": "file",
+        "format": "tsv",
+        "filename": "derived/feature_catalog.tsv",
+        "external": false,
+        "schema_ref": "schema/core_products.yaml#FeatureDefinition",
+        "unit": "annotation_feature",
+        "cohort": "all_reported_taxa",
+        "cohort_parameter": null,
+        "feature_policy": "include_mediadive",
+        "coverage_policy": null
+      },
+      {
+        "id": "count_profiles",
+        "description": null,
+        "kind": "count_profiles",
+        "storage_kind": "file",
+        "format": "tsv",
+        "filename": "derived/study_trait_profiles_wide.tsv",
+        "external": false,
+        "schema_ref": "schema/core_products.yaml#CountProfileRow",
+        "unit": "rolled_up_source_taxon_count",
+        "cohort": "all",
+        "cohort_parameter": "count_host_species",
+        "feature_policy": "include_mediadive",
+        "coverage_policy": "count_input_16s_wms_v1"
+      },
+      {
+        "id": "count_coverage",
+        "description": null,
+        "kind": "profile_coverage",
+        "storage_kind": "file",
+        "format": "tsv",
+        "filename": "derived/study_trait_profiles_coverage.tsv",
+        "external": false,
+        "schema_ref": "schema/core_products.yaml#ProfileCoverageRecord",
+        "unit": "distinct_reported_taxon_lookup",
+        "cohort": "all",
+        "cohort_parameter": "count_host_species",
+        "feature_policy": "include_mediadive",
+        "coverage_policy": "count_input_16s_wms_v1"
+      },
+      {
+        "id": "ora_profiles",
+        "description": null,
+        "kind": "ora_profiles",
+        "storage_kind": "file",
+        "format": "tsv",
+        "filename": "derived/study_trait_profiles_ora_wide.tsv",
+        "external": false,
+        "schema_ref": "schema/core_products.yaml#ORAProfileRow",
+        "unit": "distinct_matched_reported_taxon_count",
+        "cohort": "Homo sapiens",
+        "cohort_parameter": "ora_host_species",
+        "feature_policy": "include_mediadive",
+        "coverage_policy": "count_input_16s_wms_v1"
+      },
+      {
+        "id": "ora_coverage",
+        "description": null,
+        "kind": "profile_coverage",
+        "storage_kind": "file",
+        "format": "tsv",
+        "filename": "derived/study_trait_profiles_ora_coverage.tsv",
+        "external": false,
+        "schema_ref": "schema/core_products.yaml#ProfileCoverageRecord",
+        "unit": "distinct_reported_taxon_lookup",
+        "cohort": "Homo sapiens",
+        "cohort_parameter": "ora_host_species",
+        "feature_policy": "include_mediadive",
+        "coverage_policy": "count_input_16s_wms_v1"
+      }
+    ],
+    "steps": [
+      {
+        "id": "identify_sources",
+        "operation": "identify_sources",
+        "description": null,
+        "inputs": [
+          "raw_dump",
+          "kg_edges",
+          "kg_nodes"
+        ],
+        "outputs": [
+          "source_identity"
+        ],
+        "depends_on": null,
+        "parameters": [
+          "source_mode"
+        ]
+      },
+      {
+        "id": "ingest",
+        "operation": "ingest",
+        "description": null,
+        "inputs": [
+          "raw_dump"
+        ],
+        "outputs": [
+          "studies",
+          "ingest_log"
+        ],
+        "depends_on": [
+          "identify_sources"
+        ],
+        "parameters": null
+      },
+      {
+        "id": "export_tables",
+        "operation": "export_tables",
+        "description": null,
+        "inputs": [
+          "studies"
+        ],
+        "outputs": [
+          "study_table",
+          "experiments",
+          "experiment_ontology_terms",
+          "signatures",
+          "reported_taxa",
+          "taxon_profiles_wide",
+          "taxon_profiles_long"
+        ],
+        "depends_on": null,
+        "parameters": null
+      },
+      {
+        "id": "taxa_matrix",
+        "operation": "taxa_matrix",
+        "description": null,
+        "inputs": [
+          "reported_taxa",
+          "kg_edges",
+          "kg_nodes"
+        ],
+        "outputs": [
+          "taxa_matrix",
+          "feature_metadata"
+        ],
+        "depends_on": null,
+        "parameters": [
+          "strain_rollup"
+        ]
+      },
+      {
+        "id": "feature_catalog",
+        "operation": "feature_catalog",
+        "description": null,
+        "inputs": [
+          "feature_metadata",
+          "taxa_matrix"
+        ],
+        "outputs": [
+          "feature_catalog"
+        ],
+        "depends_on": null,
+        "parameters": [
+          "strain_rollup"
+        ]
+      },
+      {
+        "id": "count_profiles",
+        "operation": "count_profiles",
+        "description": null,
+        "inputs": [
+          "studies",
+          "taxa_matrix",
+          "experiments",
+          "signatures",
+          "reported_taxa",
+          "feature_catalog"
+        ],
+        "outputs": [
+          "count_profiles",
+          "count_coverage"
+        ],
+        "depends_on": null,
+        "parameters": [
+          "count_host_species"
+        ]
+      },
+      {
+        "id": "ora_profiles",
+        "operation": "ora_profiles",
+        "description": null,
+        "inputs": [
+          "studies",
+          "taxa_matrix",
+          "experiments",
+          "signatures",
+          "reported_taxa",
+          "feature_catalog"
+        ],
+        "outputs": [
+          "ora_profiles",
+          "ora_coverage"
+        ],
+        "depends_on": null,
+        "parameters": [
+          "ora_host_species"
+        ]
+      }
+    ],
+    "parameters": [
+      {
+        "name": "source_mode",
+        "default": "unknown",
+        "environment": null,
+        "required": false
+      },
+      {
+        "name": "count_host_species",
+        "default": "all",
+        "environment": null,
+        "required": false
+      },
+      {
+        "name": "ora_host_species",
+        "default": "Homo sapiens",
+        "environment": null,
+        "required": false
+      },
+      {
+        "name": "strain_rollup",
+        "default": "phenotype",
+        "environment": null,
+        "required": false
+      }
+    ]
+  },
+  "status": "completed",
+  "started_at": "2026-10-28T05:36:07.366497Z",
+  "finished_at": "2026-10-28T05:36:07.847537Z",
+  "manifest_path": "/fixture/trait-policy-511c891/core/run.json",
+  "spec_path": "/fixture/trait-policy-511c891/producer/workflows/bugsigdb_core.yaml",
+  "spec_sha256": "198066cfc8cc43bf8f0fd0e2fbf08a0f3ff8d26f9533501e108667182ec4008c",
+  "definition_sha256": "5e41338072ebebe1e2ad0d842d0d3a276e05f871fb0a8210481baeff6c8bbdf1",
+  "execution_fingerprint": "41d020a8df24ec2a8c1e3d219e2010ff874d037fe9aa9bc92f21ce3a070dd3fb",
+  "code_sha256": "dad6dc31ca39e776e3508aa4d2af30643c2184d9c805e04f1504d6ce050883fa",
+  "code_inventory": [
+    {
+      "path": "schema/.linkmllint.yaml",
+      "sha256": "84d6ab093071e3d92bfe3b446779f7c842625d95a461fe520beeffa87738cc56",
+      "size_bytes": 617
+    },
+    {
+      "path": "schema/bsdbng.yaml",
+      "sha256": "82eb9252ca50060a854f3a4ead8c41858d4223a1a96c9e8126a06abda56b3ed0",
+      "size_bytes": 19488
+    },
+    {
+      "path": "schema/core_products.yaml",
+      "sha256": "2a76184a477f92a9bd8c714c0cb1cbb9b94c525b0519547a383514e51cdd78e3",
+      "size_bytes": 19891
+    },
+    {
+      "path": "schema/mtp.yaml",
+      "sha256": "1ea58763a478e2e1d493fe3ce21cc84dbe6c6b8d49eb790b25560043e6b6e8aa",
+      "size_bytes": 19508
+    },
+    {
+      "path": "schema/multiple_testing.yaml",
+      "sha256": "d3ac3688a36bb9844f2506e9e5a96fb492c215db389106297e50661c3f9d2733",
+      "size_bytes": 13314
+    },
+    {
+      "path": "schema/workflow.yaml",
+      "sha256": "8273be206647234826f697071135cead775e65573b92bbe51bca4fa8a5585114",
+      "size_bytes": 49696
+    },
+    {
+      "path": "src/bsdbng/__init__.py",
+      "sha256": "cf4790ded3337fd1a4386ae729a68a1d7154c41e4463b977e958d1a92a98e258",
+      "size_bytes": 341
+    },
+    {
+      "path": "src/bsdbng/calibration.py",
+      "sha256": "2343bdfb2b34a6509d222b3e89fb63eeabd90e48e9e39247f922feaf7bf6ed79",
+      "size_bytes": 3597
+    },
+    {
+      "path": "src/bsdbng/composition_calibration/__init__.py",
+      "sha256": "3744a4d2fee5cc10a092b2fca20e5a9ba03b0ddec5339172cdb8def9014dabfd",
+      "size_bytes": 2488
+    },
+    {
+      "path": "src/bsdbng/composition_calibration/adapters/__init__.py",
+      "sha256": "cc2d7c05feb99da2c0bcc739d5408da74756f6e04c3bdfe6abf28a51bda703b2",
+      "size_bytes": 1059
+    },
+    {
+      "path": "src/bsdbng/composition_calibration/adapters/jed_composition.py",
+      "sha256": "840c6b479b0a198015f4d00b45e24c0dd8ae333fb6575b1988d26c836fc64e10",
+      "size_bytes": 997
+    },
+    {
+      "path": "src/bsdbng/composition_calibration/composition.py",
+      "sha256": "5e79ec86de917d2673c00e039f303e88f34bf9d728acbc5f743839609f487869",
+      "size_bytes": 1342
+    },
+    {
+      "path": "src/bsdbng/composition_calibration/protocol.py",
+      "sha256": "1ba7ec1fc77878369ee273de509d92fd7eada54684f0c72255d29b0472594856",
+      "size_bytes": 643
+    },
+    {
+      "path": "src/bsdbng/composition_calibration/scenarios.py",
+      "sha256": "b064fc322c5c62906d6afa2487586841341524a25e356ddddaaa26926bb0cbe2",
+      "size_bytes": 706
+    },
+    {
+      "path": "src/bsdbng/contrast_orientation.py",
+      "sha256": "e0849241e641d43426dd8ac5634de0f9c199830161995b12d0d5dfc3acb160fe",
+      "size_bytes": 4926
+    },
+    {
+      "path": "src/bsdbng/contribution_inputs.py",
+      "sha256": "b949547549b624db6345844be3dd505789e87dcbaee024401b149a72584fa5d2",
+      "size_bytes": 787
+    },
+    {
+      "path": "src/bsdbng/corpus_identity.py",
+      "sha256": "42fa43e58a5402c66693917204eedd700f056408286de61bc18e31bef7992af8",
+      "size_bytes": 933
+    },
+    {
+      "path": "src/bsdbng/coupling.py",
+      "sha256": "5d1cd18e40e43d29d674ed4c6ed05c09d1d4cacf160939c36494dfe2083962e1",
+      "size_bytes": 1021
+    },
+    {
+      "path": "src/bsdbng/datamodel/__init__.py",
+      "sha256": "42f0fa0b0da824a48b6ef275a9874554347a8aca7490f877e2efaeaf56821025",
+      "size_bytes": 877
+    },
+    {
+      "path": "src/bsdbng/datamodel/bsdbng_pydantic.py",
+      "sha256": "5ed0e46b36790f1c35de2bde8b684cf6fd16612fd82ac551c51703a764016a93",
+      "size_bytes": 34927
+    },
+    {
+      "path": "src/bsdbng/deck_visualizations.py",
+      "sha256": "bf1d7b72c1967e982ab16644c5a60525a5635b8155b114c31fb0cfb7b244ed23",
+      "size_bytes": 1244
+    },
+    {
+      "path": "src/bsdbng/density_adjustment.py",
+      "sha256": "24924c6b174fbaaeb8d042c29ca53730b23b6d23794946bc1948e795e1a58184",
+      "size_bytes": 1544
+    },
+    {
+      "path": "src/bsdbng/download.py",
+      "sha256": "becb37a2055ada9f48895c8ca3020a57ea1452919470f5378064b655b9166519",
+      "size_bytes": 1698
+    },
+    {
+      "path": "src/bsdbng/enrichment_results.py",
+      "sha256": "7eedb77410dd7bccd52b7171c370fcf32a08706ade6810bca17ad12a5f625033",
+      "size_bytes": 1430
+    },
+    {
+      "path": "src/bsdbng/enrichment_stats.py",
+      "sha256": "b09dde343dbc9dc23c657238fce2936445e882a233170fadc3261babb1c3e093",
+      "size_bytes": 1066
+    },
+    {
+      "path": "src/bsdbng/guild_maps.py",
+      "sha256": "439a51e66a4518c415eba74149f977581f9bbf34d8bfbd43c39b7ad7bf31aef4",
+      "size_bytes": 2746
+    },
+    {
+      "path": "src/bsdbng/ingest.py",
+      "sha256": "67cb9e4e5df93e87efd22ccd61631fbf92e6dc8245d102de05aed993d6a30590",
+      "size_bytes": 1148
+    },
+    {
+      "path": "src/bsdbng/integrated_evidence.py",
+      "sha256": "4305ef40791ca5ec547628bfa16c759002b671254ddac157ad6e9dae132138b2",
+      "size_bytes": 3367
+    },
+    {
+      "path": "src/bsdbng/label_support_audit.py",
+      "sha256": "d4de1df21190dcf2f0d51bd880b5c135b04549752b7e2f6992d518ece37449e9",
+      "size_bytes": 1343
+    },
+    {
+      "path": "src/bsdbng/log_ratio_sensitivity.py",
+      "sha256": "496cbbbcef76eb2f080bd7c24aacf6348224278f17b4c2e9a1e8845d64508b42",
+      "size_bytes": 2985
+    },
+    {
+      "path": "src/bsdbng/native_influence_publication.py",
+      "sha256": "38a78c89155fe176d5e762695dadf75c975a2518d4f3589b72ad7cc63492e555",
+      "size_bytes": 677
+    },
+    {
+      "path": "src/bsdbng/native_taxon_influence.py",
+      "sha256": "47ec3064883b942210b2554c194bc0e97127205b1842361507b59a335637f227",
+      "size_bytes": 1056
+    },
+    {
+      "path": "src/bsdbng/ontology_audit.py",
+      "sha256": "db5ff3b51123abaad5753638e3d6d86c4d300f3dc455f7ee255d468bb672cb51",
+      "size_bytes": 1058
+    },
+    {
+      "path": "src/bsdbng/ora_calibration/__init__.py",
+      "sha256": "a1b3688feacf32810c7e2f56ab69ee27161f916368f315eaf096c400ac00208f",
+      "size_bytes": 1523
+    },
+    {
+      "path": "src/bsdbng/ora_calibration/adapters/__init__.py",
+      "sha256": "6e65b0e97736ab9db8106525d08a87664cbc9635eca1795b901a9265e7040c29",
+      "size_bytes": 717
+    },
+    {
+      "path": "src/bsdbng/ora_calibration/adapters/ilyas_ora.py",
+      "sha256": "725d06c6bfc634ebad6021316f2270de4e2b9fcf4ca8c373c7d34a7ec2e91ab9",
+      "size_bytes": 871
+    },
+    {
+      "path": "src/bsdbng/ora_calibration/harness.py",
+      "sha256": "028f9bd4c8023a6085fa7755d9b4fecc1fc6d9c3991bb212c3bfe2e55d1c7585",
+      "size_bytes": 1656
+    },
+    {
+      "path": "src/bsdbng/ora_calibration/metrics.py",
+      "sha256": "1c73d224604207790ccabccca9bd9b2fbf472ad825e146330e193f3a20093c0b",
+      "size_bytes": 710
+    },
+    {
+      "path": "src/bsdbng/ora_calibration/protocol.py",
+      "sha256": "0b77c0fcfc78c2ea0f958b78400414c33bb35e29a76dc954d39b09781d111e4e",
+      "size_bytes": 567
+    },
+    {
+      "path": "src/bsdbng/ora_calibration/scenarios.py",
+      "sha256": "f8b478617d7e11f288464da26eb6d4b8d8d73b1150f99a8556a79ce9b445b568",
+      "size_bytes": 1294
+    },
+    {
+      "path": "src/bsdbng/paths.py",
+      "sha256": "61634cfa96bfa4048a369949cce1ce2f8397f8c37dcb378810b6a3339d82caaf",
+      "size_bytes": 647
+    },
+    {
+      "path": "src/bsdbng/screen_calibration.py",
+      "sha256": "b1b5df341e571bd92a16517098b2bf5a830e96f0775ca1721434e17d3ff76977",
+      "size_bytes": 880
+    },
+    {
+      "path": "src/bsdbng/stats.py",
+      "sha256": "c27ed5a359e7b96ea9106a34a294c8b0d73a4b7c58a410187670b7c649ccda55",
+      "size_bytes": 411
+    },
+    {
+      "path": "src/bsdbng/stratification.py",
+      "sha256": "d7b7085b4a8770fe895411eca8d7edc70f599029d7bcee9ec31c35d2fd38e120",
+      "size_bytes": 1400
+    },
+    {
+      "path": "src/bsdbng/study_trait_profiles.py",
+      "sha256": "7e6b72c48bca154231aec0eca499318b15ae3742d4e98c73a5dcb603c13232a2",
+      "size_bytes": 393
+    },
+    {
+      "path": "src/bsdbng/study_tsv.py",
+      "sha256": "1116fb0d49a93891a40f26d674d98282504a75a620b479623f995f39e05e7314",
+      "size_bytes": 349
+    },
+    {
+      "path": "src/bsdbng/table1_trait_maps.py",
+      "sha256": "ddd884cffe8bed16103320d426d98946543184af78b9755682b0fa4a1ffe19a2",
+      "size_bytes": 1507
+    },
+    {
+      "path": "src/bsdbng/taxa_trait_matrix.py",
+      "sha256": "60845ca675bc9e5c522384c07eadf676ef64fdf253c2aefebdc80e00a526a00a",
+      "size_bytes": 381
+    },
+    {
+      "path": "src/bsdbng/taxon_contributions.py",
+      "sha256": "50681af8ea60b507c7efff96f21bf3f71e6cc2d12341874cbddb826cba750717",
+      "size_bytes": 757
+    },
+    {
+      "path": "src/bsdbng/taxon_influence.py",
+      "sha256": "070085f05bbab83fd9f3f3ed2b05913d14845ec6c7af39e3f0f5227b3ad360b4",
+      "size_bytes": 1165
+    },
+    {
+      "path": "src/bsdbng/trait_composition.py",
+      "sha256": "5bac7e229eaa8d1ff0d546d84058e1eda2e5e359e05bf9ae472ccb9ad0059ae1",
+      "size_bytes": 1005
+    },
+    {
+      "path": "src/bsdbng/trait_guilds.py",
+      "sha256": "e1bad12012293fabe791648363e49e193745a988d51eee470e0d81d6cbb46318",
+      "size_bytes": 1880
+    },
+    {
+      "path": "src/bsdbng/trait_screen.py",
+      "sha256": "6bbcc88d43bfb3396390e25a20bd80b4fc831af9938dc254b65d69c505739e8c",
+      "size_bytes": 1904
+    },
+    {
+      "path": "src/bsdbng/trait_terms.py",
+      "sha256": "e3b0e31ec5d668d44ee2c87a2c58a6340cb9ac410120154ad4fc21ec5fa43545",
+      "size_bytes": 939
+    },
+    {
+      "path": "src/bsdbng/validate.py",
+      "sha256": "0da40a796302f53fd5d9a9d6493376928dbbb0019089dfbf2f4456346c8cfa50",
+      "size_bytes": 444
+    },
+    {
+      "path": "src/bsdbng/validation_evidence.py",
+      "sha256": "6a23bf47acd6d72be512192bc956f3dc16974c909d11d68ed5d512d1ad984e74",
+      "size_bytes": 3507
+    },
+    {
+      "path": "src/mtp/__init__.py",
+      "sha256": "9e9425f0a554b4cb9533e064c96c28a57261186f223446e521fe17bae55bebfa",
+      "size_bytes": 69
+    },
+    {
+      "path": "src/mtp/body_site_diagram.py",
+      "sha256": "63c66fcfe82be1a43024bc2822b22579f04a331ca333286834d19db2760f1a26",
+      "size_bytes": 7439
+    },
+    {
+      "path": "src/mtp/calibration.py",
+      "sha256": "5519240a66662bb62613b77116f4733a8e6d6a7b658f6380f4d1d179dd3f42d5",
+      "size_bytes": 58614
+    },
+    {
+      "path": "src/mtp/cellulose_decr/__init__.py",
+      "sha256": "907a8db757a96e48d0a04ff342c7f4391e5a7e7ae2c691a67390f1e26a13fe20",
+      "size_bytes": 382
+    },
+    {
+      "path": "src/mtp/cellulose_decr/analysis.py",
+      "sha256": "e22ab9b8104d86112df3b73f41249d2f9ef947d5851eb1057d7ab80bc6df500d",
+      "size_bytes": 126502
+    },
+    {
+      "path": "src/mtp/cellulose_decr/figures.py",
+      "sha256": "7891d20b77a123a4a15f2bf05708b8586f53d06a1bae7be38dc4c4b7ec74ef8a",
+      "size_bytes": 90877
+    },
+    {
+      "path": "src/mtp/cellulose_decr/selection_scan.py",
+      "sha256": "98f90a157250851f85af4adc3f058de635b3b9c4fd469662670b8f9d353e7a45",
+      "size_bytes": 75333
+    },
+    {
+      "path": "src/mtp/coassertion_audit.py",
+      "sha256": "bf08291973b57b57eec9b145f48b75ac30ca793d20c2abfcffc709c17615b763",
+      "size_bytes": 18163
+    },
+    {
+      "path": "src/mtp/composition_calibration/__init__.py",
+      "sha256": "c43fd677c46b48745d1b3a6e137b62c79896cfc17f5c60e07bc37d5cae1cd053",
+      "size_bytes": 1784
+    },
+    {
+      "path": "src/mtp/composition_calibration/adapters/__init__.py",
+      "sha256": "e22fdb325c03e169f9121b2d0571992e4c2efa91fbf22a096d5274654a15c210",
+      "size_bytes": 517
+    },
+    {
+      "path": "src/mtp/composition_calibration/adapters/jed_composition.py",
+      "sha256": "64dd2fc16c60e1d73bb1451d85e5ee1655b6ddff7c88535dd0a0bc656981b42f",
+      "size_bytes": 12680
+    },
+    {
+      "path": "src/mtp/composition_calibration/composition.py",
+      "sha256": "632fab4c7b756217432921a12c958bc8a630ae7d7e936b988b433e97a4b1900e",
+      "size_bytes": 20383
+    },
+    {
+      "path": "src/mtp/composition_calibration/protocol.py",
+      "sha256": "b2ce8c8daa7cd7d066cd2a210e87d2331997347a5cc41c6e455d65909d7640f0",
+      "size_bytes": 1026
+    },
+    {
+      "path": "src/mtp/composition_calibration/scenarios.py",
+      "sha256": "40f730356f469cc7c06eb183701dce788e00a1980b39c15dca09bead36f0488a",
+      "size_bytes": 4839
+    },
+    {
+      "path": "src/mtp/composition_denominators.py",
+      "sha256": "f12f3364ad837853cf04a99a050ed9cf71c99a8bce5a970207dcd06fec1b2f92",
+      "size_bytes": 3161
+    },
+    {
+      "path": "src/mtp/contrast_orientation.py",
+      "sha256": "fdd0045211817503d4a29abef9602be015b308649abdbdf699ad04a379a7536a",
+      "size_bytes": 77504
+    },
+    {
+      "path": "src/mtp/contribution_inputs.py",
+      "sha256": "f40af4b6ff9899ce6c28c0da3da400829ab26306f2dc246fdf1d3c91a792c40e",
+      "size_bytes": 14028
+    },
+    {
+      "path": "src/mtp/corpus_identity.py",
+      "sha256": "900fbcee740cbc8021994173711f02e7206580203c9cf6725fb66e22f1bcf99e",
+      "size_bytes": 12884
+    },
+    {
+      "path": "src/mtp/count_input.py",
+      "sha256": "18769fdbb4d2a5c5985dba294b9f098141d8de2174368a495d6bb9b43348590d",
+      "size_bytes": 16620
+    },
+    {
+      "path": "src/mtp/coupling.py",
+      "sha256": "5c660dc37d95cd8e466bd8b4f1d43ba64eb4b11a3ab888aa1b0700845c9242c9",
+      "size_bytes": 33143
+    },
+    {
+      "path": "src/mtp/datamodel/__init__.py",
+      "sha256": "f1afbc462b771b21d24b6f641c1c5df76082e2e50be0e8acdd6d78bf90ea6665",
+      "size_bytes": 565
+    },
+    {
+      "path": "src/mtp/datamodel/core_products_pydantic.py",
+      "sha256": "45c658dc0962bee324c217b55150731bc3d3c97c9fa8e51c5f8fef5cd4b53de0",
+      "size_bytes": 74780
+    },
+    {
+      "path": "src/mtp/datamodel/mtp_pydantic.py",
+      "sha256": "4e76f64c4a754a31e68df77ab36025b37f2a2000c68dc5c5e148ae5a1203ec8b",
+      "size_bytes": 35007
+    },
+    {
+      "path": "src/mtp/datamodel/multiple_testing_pydantic.py",
+      "sha256": "0134fe9c270b4269bba999f442b58354b92ebcc5eb69abe15cf52529ca942c92",
+      "size_bytes": 28330
+    },
+    {
+      "path": "src/mtp/datamodel/workflow_pydantic.py",
+      "sha256": "43555409988b3927deecd603daecdf7220b449f12058a2bb7836094b9b71c8c0",
+      "size_bytes": 107160
+    },
+    {
+      "path": "src/mtp/deck_visualizations.py",
+      "sha256": "46f99526fa9d0a68d017f818724f2009b82939378494b0bb0980b9435dcbdfad",
+      "size_bytes": 48160
+    },
+    {
+      "path": "src/mtp/density_adjustment.py",
+      "sha256": "ff5601b56735cdcc83a0853a671d52d703aa4e36ca464f0303b31d1a92b04ec0",
+      "size_bytes": 33238
+    },
+    {
+      "path": "src/mtp/download.py",
+      "sha256": "aecfb181306e435ec65b532733a38aaffe4f5c00fd73a0b19bd77d1d8152646d",
+      "size_bytes": 14732
+    },
+    {
+      "path": "src/mtp/enrichment_results.py",
+      "sha256": "aa50467b625b277d4a7a327c8718f38e34a0458be4408a77012008c1c5f40075",
+      "size_bytes": 8860
+    },
+    {
+      "path": "src/mtp/enrichment_stats.py",
+      "sha256": "6a6b04c26091340c6d878e6ce363fad6b02b68a40e409a7228a8bdba436ae99d",
+      "size_bytes": 13813
+    },
+    {
+      "path": "src/mtp/guild_maps.py",
+      "sha256": "69aeac77a2cc7cad40048373bdd62d207e80baa94f7162ff54cb31d3b331a10b",
+      "size_bytes": 68554
+    },
+    {
+      "path": "src/mtp/human_host_corpus.py",
+      "sha256": "8f5d8e4371834f2039510f754d9a6397a0f3bd93b849afb40e9b9cfcc22e74b8",
+      "size_bytes": 10622
+    },
+    {
+      "path": "src/mtp/influence_assessment.py",
+      "sha256": "6938c6f9de8dbcf5a7014a5354653a2a31615c81c77a6b88b25214c812dbd439",
+      "size_bytes": 17212
+    },
+    {
+      "path": "src/mtp/influence_extension.py",
+      "sha256": "961c851127559ff1121a994df620f25e52a1ec26282947b3bc3ebe21118534e5",
+      "size_bytes": 34522
+    },
+    {
+      "path": "src/mtp/ingest.py",
+      "sha256": "d9ffbc9277e5d08c625ba7bef1de30ae09ad8d53735210d6e01c027e0d05a8ae",
+      "size_bytes": 18865
+    },
+    {
+      "path": "src/mtp/integrated_evidence.py",
+      "sha256": "9996481fe6cfbad43ae69bb4ab312f4039ba657afdc1132221423eb187fd6c55",
+      "size_bytes": 126219
+    },
+    {
+      "path": "src/mtp/label_support_audit.py",
+      "sha256": "9b862e69e5eda5b3f8cc77379f010dc9722086d5aba3db1fe97300504e0185d7",
+      "size_bytes": 30426
+    },
+    {
+      "path": "src/mtp/log_ratio_sensitivity.py",
+      "sha256": "8119afeeddd59eb7e5b9a1ed4db60cb36b46d81d806665ffe5b7e08416bf574e",
+      "size_bytes": 49262
+    },
+    {
+      "path": "src/mtp/multiple_testing.py",
+      "sha256": "7c303602e4266dae87bb702348e4d73ebfe063305e729b805c852149afa53d8c",
+      "size_bytes": 11244
+    },
+    {
+      "path": "src/mtp/native_influence_publication.py",
+      "sha256": "5fc3328590f61bb6331d86e14214e441ef328d23156dbe19ed4f888cccba44ce",
+      "size_bytes": 17341
+    },
+    {
+      "path": "src/mtp/native_taxon_influence.py",
+      "sha256": "68b98f2be51adb4f5e5b36d9d36eceb998c645fe94932c65201e6ae23243749a",
+      "size_bytes": 35751
+    },
+    {
+      "path": "src/mtp/ontology_audit.py",
+      "sha256": "983a7e2a89181a3b4e08778a1e3349678aaf12f1631d0d4406b2a0c62e7ca99c",
+      "size_bytes": 21773
+    },
+    {
+      "path": "src/mtp/ora_calibration/__init__.py",
+      "sha256": "6b4ea34766e3e78219267d5ec79760e87fbba51e2c10c862ac936b4a921c91bd",
+      "size_bytes": 2193
+    },
+    {
+      "path": "src/mtp/ora_calibration/adapters/__init__.py",
+      "sha256": "79d4fe1cda79216033f04995101a099174b9b6145b6ddaff2e9a7d3637cc410c",
+      "size_bytes": 384
+    },
+    {
+      "path": "src/mtp/ora_calibration/adapters/ilyas_ora.py",
+      "sha256": "89269415ffb718d0cc78a809975902057c542ffa9a6aeeb271be70f4099ff259",
+      "size_bytes": 8282
+    },
+    {
+      "path": "src/mtp/ora_calibration/harness.py",
+      "sha256": "1a880cee5efdf2754031b18d68e92049da6d9d779965d960f398253cc470dda8",
+      "size_bytes": 34280
+    },
+    {
+      "path": "src/mtp/ora_calibration/metrics.py",
+      "sha256": "5119e684e8702f9b7654761cbbe52d3f0c384a5d5dbfe5c9b5ea3b0a8954a694",
+      "size_bytes": 7379
+    },
+    {
+      "path": "src/mtp/ora_calibration/protocol.py",
+      "sha256": "b638d6af7fe421bf55a5d884b1c05d3f3070c827f19f186d8bfc62b1e0d398be",
+      "size_bytes": 915
+    },
+    {
+      "path": "src/mtp/ora_calibration/scenarios.py",
+      "sha256": "3f26d183ffd73eceac61cdb7b6120396c1f66944ed5dff363a9c2d17257f8702",
+      "size_bytes": 16391
+    },
+    {
+      "path": "src/mtp/paths.py",
+      "sha256": "b7ce90f257db4284f10a12d7e05cca730cf5e169ca8d1d8821ab9394003bf9a7",
+      "size_bytes": 783
+    },
+    {
+      "path": "src/mtp/quoted_results.py",
+      "sha256": "806867d6f7460407c1113911014ce336ce3ad6c485a76e1fb96e550b3e63da86",
+      "size_bytes": 5005
+    },
+    {
+      "path": "src/mtp/screen_calibration.py",
+      "sha256": "3e5cdcc3f410f0de3a7963d348951939e9cfa8dfceac623ed09f71ee5ecd073d",
+      "size_bytes": 12419
+    },
+    {
+      "path": "src/mtp/stats.py",
+      "sha256": "505045d01853eccbba7992a11340f7a31c78e8075a020bdf0cff46ac8e66614a",
+      "size_bytes": 3712
+    },
+    {
+      "path": "src/mtp/stratification.py",
+      "sha256": "5fb27dfc086630d4f8fbd787f61b5a0cc073cd1dfc545267140f6f7cdea89c3a",
+      "size_bytes": 31750
+    },
+    {
+      "path": "src/mtp/study_trait_profiles.py",
+      "sha256": "f90a77e5f68498d3e734088524c9fc5ea667c43d7a25b9923b4f8ae4921fd9d2",
+      "size_bytes": 17324
+    },
+    {
+      "path": "src/mtp/study_tsv.py",
+      "sha256": "a848d40e78c04be80c34ddfca3a6bdcfb4d937e38561c32848ffcf58d231d7e7",
+      "size_bytes": 12686
+    },
+    {
+      "path": "src/mtp/table1_directions.py",
+      "sha256": "da9c11c993f13120985a81fe9704962e60f50e6fc7b248201d17a42cc18f4160",
+      "size_bytes": 6455
+    },
+    {
+      "path": "src/mtp/table1_trait_maps.py",
+      "sha256": "9399e23d1cb19f45e0122add67d4c6919ba4969627c24a8b828bb4df7da3fab1",
+      "size_bytes": 44112
+    },
+    {
+      "path": "src/mtp/taxa_trait_matrix.py",
+      "sha256": "e7208fbc26c505cb5b7ad3e35b515b9ec1bd4976307d06046e27788f2ac8402f",
+      "size_bytes": 26364
+    },
+    {
+      "path": "src/mtp/taxon_contributions.py",
+      "sha256": "e57f89a05dda06eaecc227d9537f3219103639d5f2159c1b5395ed5c5e38183b",
+      "size_bytes": 13069
+    },
+    {
+      "path": "src/mtp/taxon_influence.py",
+      "sha256": "ccd7eccb6e2402d46cd751105caace09139f53bff3d99ec980fb5f4ed52b3e07",
+      "size_bytes": 35440
+    },
+    {
+      "path": "src/mtp/trait_composition.py",
+      "sha256": "cb29a91cd132f4420bcd15839fded37029a984c34abcbb969cd463939345fbfa",
+      "size_bytes": 17481
+    },
+    {
+      "path": "src/mtp/trait_guilds.py",
+      "sha256": "8945fb5c8f6928f5edabc2d162d2755825e923d0a7f9f2b78913ed550ecec89c",
+      "size_bytes": 19523
+    },
+    {
+      "path": "src/mtp/trait_screen.py",
+      "sha256": "ace9b83319900eb2afb9d3973526e9856049e0ce9323b0096c66c85930acb36c",
+      "size_bytes": 39770
+    },
+    {
+      "path": "src/mtp/trait_terms.py",
+      "sha256": "2d5a37374bd2e3f03824d9225f1534246d7b21af7e6891300ab12eb170fd40e1",
+      "size_bytes": 8552
+    },
+    {
+      "path": "src/mtp/validate.py",
+      "sha256": "90d525e821b60675f20d09cc5afc21e4cfc1b0acf924bf83caec516e8e7dfafe",
+      "size_bytes": 1072
+    },
+    {
+      "path": "src/mtp/validation_evidence.py",
+      "sha256": "28c3ed92d0b2cfa475665eb12b427f8a260264d2ca9e48fff936e9dd90908a13",
+      "size_bytes": 57294
+    },
+    {
+      "path": "src/mtp/workflow/__init__.py",
+      "sha256": "caf807305813c8b82ca797b50dcc92b2a4edbd7a2e440a07a8d3eeda06ce8481",
+      "size_bytes": 74
+    },
+    {
+      "path": "src/mtp/workflow/__main__.py",
+      "sha256": "8adacc7c4fd3d3fd6ff97f66090c651ef5e834107e1a90ab62236b22e42d09e2",
+      "size_bytes": 12918
+    },
+    {
+      "path": "src/mtp/workflow/archive.py",
+      "sha256": "28598ced8674a5aebf9d0ab052e394df60ff2487eef0c0eef623f9c4ab073ffc",
+      "size_bytes": 11334
+    },
+    {
+      "path": "src/mtp/workflow/arms/__init__.py",
+      "sha256": "bac145fb59253900ed52319a7fb891f99984ed2cead9bfb1be61a8458a360285",
+      "size_bytes": 59
+    },
+    {
+      "path": "src/mtp/workflow/arms/__main__.py",
+      "sha256": "4ded5c51b49ae7b94f95c5fb8acfe04c450255f61732680bdb75b93d7b8ba521",
+      "size_bytes": 4026
+    },
+    {
+      "path": "src/mtp/workflow/arms/ilyas.py",
+      "sha256": "d9d53781f251133a2f847b2b11a711d01af3483ceca744feb5b97fa7edf683af",
+      "size_bytes": 11367
+    },
+    {
+      "path": "src/mtp/workflow/arms/jed.py",
+      "sha256": "87dc5d9c2dbc43ecb9f8f1cea653e49a366db565792416880df127752a631cfe",
+      "size_bytes": 9305
+    },
+    {
+      "path": "src/mtp/workflow/arms/noel.py",
+      "sha256": "d1b58f1caf391e3a056a664aecbc1e4a7c2f0ced9236ee222858798297429869",
+      "size_bytes": 11195
+    },
+    {
+      "path": "src/mtp/workflow/arms/runtime.py",
+      "sha256": "27553ce7eb5750267fd14e6a84964855cfdb2703d89520a881ae27daa78303b8",
+      "size_bytes": 30034
+    },
+    {
+      "path": "src/mtp/workflow/arms/shared.py",
+      "sha256": "18c297d4f20e545af7e2f44cf89608d0ea8e81def290f9623870f826af840599",
+      "size_bytes": 5806
+    },
+    {
+      "path": "src/mtp/workflow/arms/types.py",
+      "sha256": "9ca2dd36eede726303cfdd22d0591bcafec407cc9a8d3beda02ee7ac37d24918",
+      "size_bytes": 961
+    },
+    {
+      "path": "src/mtp/workflow/comparison.py",
+      "sha256": "716e611c8750d2788b636c1a33028311f4f8f383388f7e280eebb8ed1e91531f",
+      "size_bytes": 36818
+    },
+    {
+      "path": "src/mtp/workflow/consumers.py",
+      "sha256": "c222fb76f8de0601623a65e3fccc829b279a807c4d01c4a5c86fe455a5438a65",
+      "size_bytes": 19510
+    },
+    {
+      "path": "src/mtp/workflow/contracts.py",
+      "sha256": "a113f954df450045268552f99f825079b589eb1e2902e02611de838381d02544",
+      "size_bytes": 26709
+    },
+    {
+      "path": "src/mtp/workflow/coverage.py",
+      "sha256": "256b01bd20f318986187f6d5f684a21555a0df6a81255215b2eacdd585594351",
+      "size_bytes": 7079
+    },
+    {
+      "path": "src/mtp/workflow/definition.py",
+      "sha256": "351380191b2aedb7e4cc72358bb0f167331c56f407c3b123bf5cd89e59b2d5d4",
+      "size_bytes": 5567
+    },
+    {
+      "path": "src/mtp/workflow/downstream_contracts.py",
+      "sha256": "162f885b284e4a685dc9c634603d7b600e27b455fc14a300105409f99fd1f642",
+      "size_bytes": 17475
+    },
+    {
+      "path": "src/mtp/workflow/kg_inputs.py",
+      "sha256": "afc295cf0f09aae3d36db48a47dc408628ebe35b34dafabe594d2969e6ccd49c",
+      "size_bytes": 4237
+    },
+    {
+      "path": "src/mtp/workflow/locations.py",
+      "sha256": "a68501001c30a17e5d1a165a7caa75f65a6dc791b6d0a2f3de7185a4267b56bc",
+      "size_bytes": 420
+    },
+    {
+      "path": "src/mtp/workflow/matrix_contracts.py",
+      "sha256": "a76e2a208b27cc59afc76ea9b09c14a3fed45c6dd3b6639467c4018643d88c38",
+      "size_bytes": 6114
+    },
+    {
+      "path": "src/mtp/workflow/models.py",
+      "sha256": "81ecdf231f6929bd62e134585d3339dac384f4293c665d861e0694ef89e6cce7",
+      "size_bytes": 1447
+    },
+    {
+      "path": "src/mtp/workflow/operations.py",
+      "sha256": "c012b66accaee5947e4282691555e518ea8764eb72c6b7920a93cf6c84ede32f",
+      "size_bytes": 25730
+    },
+    {
+      "path": "src/mtp/workflow/orientation_assessment.py",
+      "sha256": "0b6628eb8d62e592902aa1e3a84e669016a684320787b9e843ec0692ad83185f",
+      "size_bytes": 10122
+    },
+    {
+      "path": "src/mtp/workflow/population.py",
+      "sha256": "14fbc4726c542b9a8fd998a4a691e879b4d2f5a3c23bb9f4725d65a7beaa1c6e",
+      "size_bytes": 15208
+    },
+    {
+      "path": "src/mtp/workflow/runtime.py",
+      "sha256": "c773dd1f0d4dcc54160d43b9a58026effc8916aa6a0d8193c6a35d087f067912",
+      "size_bytes": 32871
+    },
+    {
+      "path": "src/mtp/workflow/source_contracts.py",
+      "sha256": "1e2a95b51f776b2984a445fc1f741d52ab324193bdaa1e8cdca91dad55249e0e",
+      "size_bytes": 16610
+    },
+    {
+      "path": "src/mtp/workflow/source_identity.py",
+      "sha256": "01dd1cb19421612b7006ae220d5f231dc385fb78f59a3bc01a70f12e4b43eefc",
+      "size_bytes": 2923
+    },
+    {
+      "path": "src/mtp/workflow/verification.py",
+      "sha256": "6699cc6dfa8002ce4859cf830e16a80ff09fa532680910344ce176111e1ae933",
+      "size_bytes": 1399
+    }
+  ],
+  "lock_sha256": "1d3b96547698627125de773066562912773097dc47d981b898d117af4663267c",
+  "git_commit": "511c891229b659e207cfe0f4281a97c3fc039a80",
+  "git_dirty": false,
+  "runtime_json": "{\"executable\": \"/fixture/trait-policy-511c891/runtime/python\", \"operations\": {\"count_profiles\": \"mtp.workflow.operations.count_profiles_operation\", \"export_tables\": \"mtp.workflow.operations.export_tables_operation\", \"feature_catalog\": \"mtp.workflow.operations.feature_catalog_operation\", \"identify_sources\": \"mtp.workflow.operations.identify_sources\", \"ingest\": \"mtp.workflow.operations.ingest_operation\", \"ora_profiles\": \"mtp.workflow.operations.ora_profiles_operation\", \"taxa_matrix\": \"mtp.workflow.operations.taxa_matrix_operation\"}, \"packages\": [[\"CFGraph\", \"0.2.1\"], [\"CacheControl\", \"0.14.4\"], [\"Deprecated\", \"1.3.1\"], [\"GitPython\", \"3.2.1\"], [\"Jinja2\", \"3.1.6\"], [\"MarkupSafe\", \"3.0.3\"], [\"PyJSG\", \"0.12.3\"], [\"PyShEx\", \"0.8.1\"], [\"PyShExC\", \"0.9.1\"], [\"PySocks\", \"1.7.1\"], [\"PyYAML\", \"6.0.3\"], [\"Pygments\", \"2.20.0\"], [\"SPARQLWrapper\", \"2.0.0\"], [\"SQLAlchemy\", \"2.0.49\"], [\"ShExJSG\", \"0.8.2\"], [\"Sphinx\", \"9.0.4\"], [\"alabaster\", \"1.0.0\"], [\"annotated-types\", \"0.7.0\"], [\"antlr4-python3-runtime\", \"4.9.3\"], [\"anyio\", \"4.14.2\"], [\"arrow\", \"1.4.0\"], [\"attrs\", \"26.1.0\"], [\"babel\", \"2.18.0\"], [\"bandit\", \"1.9.4\"], [\"beautifulsoup4\", \"4.14.3\"], [\"boolean.py\", \"5.0\"], [\"certifi\", \"2026.10.19\"], [\"cffi\", \"2.0.0\"], [\"cfgv\", \"3.5.0\"], [\"chardet\", \"7.4.2\"], [\"charset-normalizer\", \"3.4.7\"], [\"choreographer\", \"1.3.0\"], [\"click\", \"8.5.0\"], [\"click-default-group\", \"1.2.4\"], [\"condense-json\", \"0.1.3\"], [\"contourpy\", \"1.3.3\"], [\"coverage\", \"7.13.5\"], [\"cryptography\", \"50.0.1\"], [\"curies\", \"0.13.3\"], [\"cycler\", \"0.12.1\"], [\"cyclonedx-python-lib\", \"11.7.0\"], [\"defusedxml\", \"0.7.1\"], [\"deptry\", \"0.25.1\"], [\"detect-secrets\", \"1.5.0\"], [\"distlib\", \"0.4.4\"], [\"distro\", \"1.9.0\"], [\"dnspython\", \"2.9.0\"], [\"docutils\", \"0.22.4\"], [\"duckdb\", \"1.5.2\"], [\"duckdb_engine\", \"0.17.0\"], [\"dulwich\", \"1.2.17\"], [\"et_xmlfile\", \"2.0.0\"], [\"filelock\", \"4.2.1\"], [\"fonttools\", \"4.67.0\"], [\"fqdn\", \"1.5.1\"], [\"gdown\", \"6.0.0\"], [\"gitdb\", \"4.0.12\"], [\"google-api-core\", \"2.30.3\"], [\"google-auth\", \"2.49.2\"], [\"google-cloud-bigquery\", \"3.41.0\"], [\"google-cloud-core\", \"2.5.1\"], [\"google-crc32c\", \"1.8.0\"], [\"google-resumable-media\", \"2.8.2\"], [\"googleapis-common-protos\", \"1.74.0\"], [\"graphviz\", \"0.21\"], [\"grpcio\", \"1.80.0\"], [\"grpcio-status\", \"1.80.0\"], [\"h11\", \"0.16.0\"], [\"hbreader\", \"0.9.1\"], [\"httpcore\", \"1.0.9\"], [\"httpx\", \"0.28.1\"], [\"identify\", \"2.6.18\"], [\"idna\", \"3.19\"], [\"imagesize\", \"2.0.0\"], [\"iniconfig\", \"2.3.0\"], [\"isodate\", \"0.7.2\"], [\"isoduration\", \"20.11.0\"], [\"jiter\", \"0.14.0\"], [\"json-flattener\", \"0.1.9\"], [\"jsonasobj\", \"1.3.1\"], [\"jsonasobj2\", \"1.0.4\"], [\"jsonlines\", \"4.0.0\"], [\"jsonpatch\", \"1.33\"], [\"jsonpath-ng\", \"1.8.0\"], [\"jsonpointer\", \"3.1.1\"], [\"jsonschema\", \"4.26.0\"], [\"jsonschema-specifications\", \"2025.9.1\"], [\"kaleido\", \"1.3.0\"], [\"kiwisolver\", \"1.5.1\"], [\"librt\", \"0.9.0\"], [\"license-expression\", \"30.4.4\"], [\"linkml\", \"1.11.1\"], [\"linkml-runtime\", \"1.10.0\"], [\"linkml-store\", \"0.3.2\"], [\"llm\", \"0.30\"], [\"logistro\", \"2.0.1\"], [\"markdown-it-py\", \"4.0.0\"], [\"matplotlib\", \"3.11.2\"], [\"mdurl\", \"0.1.2\"], [\"msgpack\", \"1.2.4\"], [\"mtp\", \"0.1.0\"], [\"mtp\", \"0.1.0\"], [\"mtp\", \"0.1.0\"], [\"multipledispatch\", \"1.0.0\"], [\"mypy\", \"1.20.1\"], [\"mypy_extensions\", \"1.1.0\"], [\"narwhals\", \"2.25.0\"], [\"nodeenv\", \"1.10.0\"], [\"numpy\", \"2.4.4\"], [\"openai\", \"2.32.0\"], [\"openpyxl\", \"3.1.5\"], [\"orjson\", \"3.12.0\"], [\"packageurl-python\", \"0.17.6\"], [\"packaging\", \"26.3\"], [\"pandas\", \"3.0.6\"], [\"pandas-stubs\", \"3.0.5.260914\"], [\"parse\", \"1.21.1\"], [\"pathspec\", \"1.0.4\"], [\"pillow\", \"13.0.0\"], [\"pip\", \"26.2.1\"], [\"pip-api\", \"0.0.34\"], [\"pip-requirements-parser\", \"32.0.1\"], [\"pip_audit\", \"2.10.1\"], [\"platformdirs\", \"4.9.6\"], [\"plotly\", \"7.1.0\"], [\"pluggy\", \"1.6.0\"], [\"pre_commit\", \"4.6.2\"], [\"prefixcommons\", \"0.1.12\"], [\"prefixmaps\", \"0.2.6\"], [\"proto-plus\", \"1.27.2\"], [\"protobuf\", \"6.33.6\"], [\"puremagic\", \"1.30\"], [\"py-serializable\", \"2.1.0\"], [\"pyasn1\", \"0.6.4\"], [\"pyasn1_modules\", \"0.4.2\"], [\"pycparser\", \"3.0\"], [\"pydantic\", \"2.13.0\"], [\"pydantic_core\", \"2.46.0\"], [\"pymongo\", \"4.18.3\"], [\"pyparsing\", \"3.3.2\"], [\"pystow\", \"0.8.3\"], [\"pytest\", \"9.1.1\"], [\"pytest-cov\", \"7.1.0\"], [\"pytest-logging\", \"2015.11.4\"], [\"python-dateutil\", \"2.9.0.post0\"], [\"python-discovery\", \"1.6.1\"], [\"python-dotenv\", \"1.2.2\"], [\"python-ulid\", \"3.1.0\"], [\"rdflib\", \"7.6.0\"], [\"rdflib-jsonld\", \"0.6.1\"], [\"rdflib-shim\", \"1.0.3\"], [\"referencing\", \"0.37.0\"], [\"regex\", \"2026.4.4\"], [\"requests\", \"2.33.1\"], [\"requirements-parser\", \"0.13.0\"], [\"rfc3339-validator\", \"0.1.4\"], [\"rfc3987\", \"1.3.8\"], [\"rich\", \"15.0.0\"], [\"roman-numerals\", \"4.1.0\"], [\"rpds-py\", \"0.30.0\"], [\"ruff\", \"0.17.0\"], [\"scipy\", \"1.17.1\"], [\"seaborn\", \"0.13.2\"], [\"setuptools\", \"84.1.0\"], [\"simplejson\", \"4.1.2\"], [\"six\", \"1.17.0\"], [\"smmap\", \"5.0.3\"], [\"sniffio\", \"1.3.1\"], [\"snowballstemmer\", \"3.0.1\"], [\"sortedcontainers\", \"2.4.0\"], [\"soupsieve\", \"2.9.2\"], [\"sparqlslurper\", \"0.5.1\"], [\"sphinx-click\", \"6.2.0\"], [\"sphinxcontrib-applehelp\", \"2.0.0\"], [\"sphinxcontrib-devhelp\", \"2.0.0\"], [\"sphinxcontrib-htmlhelp\", \"2.1.0\"], [\"sphinxcontrib-jsmath\", \"1.0.1\"], [\"sphinxcontrib-qthelp\", \"2.0.0\"], [\"sphinxcontrib-serializinghtml\", \"2.0.0\"], [\"sqlite-fts4\", \"1.0.3\"], [\"sqlite-migrate\", \"0.1b0\"], [\"sqlite-utils\", \"3.38\"], [\"stevedore\", \"5.7.0\"], [\"tabulate\", \"0.10.0\"], [\"tiktoken\", \"0.12.0\"], [\"tomli\", \"2.4.1\"], [\"tomli_w\", \"1.2.0\"], [\"tqdm\", \"4.67.3\"], [\"types-PyYAML\", \"6.0.12.20260408\"], [\"typing-inspection\", \"0.4.2\"], [\"typing_extensions\", \"4.15.0\"], [\"tzdata\", \"2026.1\"], [\"uri-template\", \"1.3.0\"], [\"urllib3\", \"2.8.0\"], [\"uv\", \"0.13.4\"], [\"virtualenv\", \"21.14.13\"], [\"watchdog\", \"6.0.0\"], [\"webcolors\", \"25.10.0\"], [\"wrapt\", \"2.1.2\"], [\"xmltodict\", \"1.0.4\"]], \"platform\": \"macOS-26.5.1-arm64-arm-64bit\", \"python\": \"3.11.5 (main, Aug 25 2023, 02:32:06) [Clang 14.0.3 (clang-1403.0.22.14.1)]\"}",
+  "parameters": [
+    {
+      "name": "count_host_species",
+      "value": "all",
+      "source": "default"
+    },
+    {
+      "name": "ora_host_species",
+      "value": "Homo sapiens",
+      "source": "default"
+    },
+    {
+      "name": "source_mode",
+      "value": "fixture",
+      "source": "override"
+    },
+    {
+      "name": "strain_rollup",
+      "value": "phenotype",
+      "source": "override"
+    }
+  ],
+  "steps": [
+    {
+      "id": "run-dc8d53eae34f4d6aa2e62abc5b417b96:step:identify_sources",
+      "step_id": "identify_sources",
+      "status": "completed",
+      "started_at": "2026-10-28T05:36:07.524937Z",
+      "finished_at": "2026-10-28T05:36:07.546301Z",
+      "input_artifacts": [
+        "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:kg_edges",
+        "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:kg_nodes",
+        "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:raw_dump"
+      ],
+      "output_artifacts": [
+        "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:source_identity"
+      ],
+      "parameters": [
+        {
+          "name": "source_mode",
+          "value": "fixture",
+          "source": "override"
+        }
+      ],
+      "error": null
+    },
+    {
+      "id": "run-dc8d53eae34f4d6aa2e62abc5b417b96:step:ingest",
+      "step_id": "ingest",
+      "status": "completed",
+      "started_at": "2026-10-28T05:36:07.548235Z",
+      "finished_at": "2026-10-28T05:36:07.587670Z",
+      "input_artifacts": [
+        "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:raw_dump"
+      ],
+      "output_artifacts": [
+        "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:studies",
+        "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:ingest_log"
+      ],
+      "parameters": [],
+      "error": null
+    },
+    {
+      "id": "run-dc8d53eae34f4d6aa2e62abc5b417b96:step:export_tables",
+      "step_id": "export_tables",
+      "status": "completed",
+      "started_at": "2026-10-28T05:36:07.589644Z",
+      "finished_at": "2026-10-28T05:36:07.639575Z",
+      "input_artifacts": [
+        "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:studies"
+      ],
+      "output_artifacts": [
+        "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:study_table",
+        "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:experiments",
+        "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:experiment_ontology_terms",
+        "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:signatures",
+        "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:reported_taxa",
+        "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:taxon_profiles_wide",
+        "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:taxon_profiles_long"
+      ],
+      "parameters": [],
+      "error": null
+    },
+    {
+      "id": "run-dc8d53eae34f4d6aa2e62abc5b417b96:step:taxa_matrix",
+      "step_id": "taxa_matrix",
+      "status": "completed",
+      "started_at": "2026-10-28T05:36:07.641887Z",
+      "finished_at": "2026-10-28T05:36:07.671582Z",
+      "input_artifacts": [
+        "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:kg_edges",
+        "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:kg_nodes",
+        "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:reported_taxa"
+      ],
+      "output_artifacts": [
+        "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:taxa_matrix",
+        "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:feature_metadata"
+      ],
+      "parameters": [
+        {
+          "name": "strain_rollup",
+          "value": "phenotype",
+          "source": "override"
+        }
+      ],
+      "error": null
+    },
+    {
+      "id": "run-dc8d53eae34f4d6aa2e62abc5b417b96:step:feature_catalog",
+      "step_id": "feature_catalog",
+      "status": "completed",
+      "started_at": "2026-10-28T05:36:07.673571Z",
+      "finished_at": "2026-10-28T05:36:07.727601Z",
+      "input_artifacts": [
+        "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:taxa_matrix",
+        "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:feature_metadata"
+      ],
+      "output_artifacts": [
+        "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:feature_catalog"
+      ],
+      "parameters": [
+        {
+          "name": "strain_rollup",
+          "value": "phenotype",
+          "source": "override"
+        }
+      ],
+      "error": null
+    },
+    {
+      "id": "run-dc8d53eae34f4d6aa2e62abc5b417b96:step:count_profiles",
+      "step_id": "count_profiles",
+      "status": "completed",
+      "started_at": "2026-10-28T05:36:07.729811Z",
+      "finished_at": "2026-10-28T05:36:07.785819Z",
+      "input_artifacts": [
+        "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:studies",
+        "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:experiments",
+        "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:signatures",
+        "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:reported_taxa",
+        "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:taxa_matrix",
+        "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:feature_catalog"
+      ],
+      "output_artifacts": [
+        "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:count_profiles",
+        "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:count_coverage"
+      ],
+      "parameters": [
+        {
+          "name": "count_host_species",
+          "value": "all",
+          "source": "default"
+        }
+      ],
+      "error": null
+    },
+    {
+      "id": "run-dc8d53eae34f4d6aa2e62abc5b417b96:step:ora_profiles",
+      "step_id": "ora_profiles",
+      "status": "completed",
+      "started_at": "2026-10-28T05:36:07.788466Z",
+      "finished_at": "2026-10-28T05:36:07.845070Z",
+      "input_artifacts": [
+        "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:studies",
+        "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:experiments",
+        "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:signatures",
+        "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:reported_taxa",
+        "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:taxa_matrix",
+        "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:feature_catalog"
+      ],
+      "output_artifacts": [
+        "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:ora_profiles",
+        "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:ora_coverage"
+      ],
+      "parameters": [
+        {
+          "name": "ora_host_species",
+          "value": "Homo sapiens",
+          "source": "default"
+        }
+      ],
+      "error": null
+    }
+  ],
+  "artifacts": [
+    {
+      "id": "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:kg_edges",
+      "product_id": "kg_edges",
+      "run_id": "run-dc8d53eae34f4d6aa2e62abc5b417b96",
+      "producer_step": null,
+      "path": "/fixture/trait-policy-511c891/inputs/merged-kg_edges.tsv",
+      "requested_path": "/fixture/trait-policy-511c891/inputs/merged-kg_edges.tsv",
+      "sha256": "825db219e7331d5d9e1447e7ea77b050d9b3588da97d64de2ad1b5978fb73d9b",
+      "size_bytes": 723,
+      "inventory": [
+        {
+          "path": "merged-kg_edges.tsv",
+          "sha256": "825db219e7331d5d9e1447e7ea77b050d9b3588da97d64de2ad1b5978fb73d9b",
+          "size_bytes": 723
+        }
+      ],
+      "validations": [
+        {
+          "validator": "artifact_inventory_v1",
+          "status": "passed",
+          "message": "All regular files inventoried and hashed; no symlinks or special files.",
+          "details_json": null
+        },
+        {
+          "validator": "core:kg_edges:v1",
+          "status": "passed",
+          "message": "Scientific product contract passed",
+          "details_json": "{\"agent_field_continuations_reconstructed\": 0, \"duplicate_agent_fields_preserved\": 0, \"excluded_records\": 0, \"header_continuations_reconstructed\": 0, \"native_count_columns\": [\"subject\", \"predicate\", \"object\"], \"parser_contract\": \"kg-edge-export-v1\", \"records\": 9}"
+        }
+      ],
+      "unit": "knowledge_graph_edge",
+      "cohort": "as_supplied",
+      "feature_policy": null,
+      "coverage_policy": null
+    },
+    {
+      "id": "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:kg_nodes",
+      "product_id": "kg_nodes",
+      "run_id": "run-dc8d53eae34f4d6aa2e62abc5b417b96",
+      "producer_step": null,
+      "path": "/fixture/trait-policy-511c891/inputs/merged-kg_nodes.tsv",
+      "requested_path": "/fixture/trait-policy-511c891/inputs/merged-kg_nodes.tsv",
+      "sha256": "a6cb44064d389cec4b7710694f231b38a70119b17ec2619d0f9376aacf36057c",
+      "size_bytes": 749,
+      "inventory": [
+        {
+          "path": "merged-kg_nodes.tsv",
+          "sha256": "a6cb44064d389cec4b7710694f231b38a70119b17ec2619d0f9376aacf36057c",
+          "size_bytes": 749
+        }
+      ],
+      "validations": [
+        {
+          "validator": "artifact_inventory_v1",
+          "status": "passed",
+          "message": "All regular files inventoried and hashed; no symlinks or special files.",
+          "details_json": null
+        },
+        {
+          "validator": "core:kg_nodes:v1",
+          "status": "passed",
+          "message": "Scientific product contract passed",
+          "details_json": "{\"rows\": 13}"
+        }
+      ],
+      "unit": "knowledge_graph_node",
+      "cohort": "as_supplied",
+      "feature_policy": null,
+      "coverage_policy": null
+    },
+    {
+      "id": "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:raw_dump",
+      "product_id": "raw_dump",
+      "run_id": "run-dc8d53eae34f4d6aa2e62abc5b417b96",
+      "producer_step": null,
+      "path": "/fixture/trait-policy-511c891/inputs/full_dump.csv",
+      "requested_path": "/fixture/trait-policy-511c891/inputs/full_dump.csv",
+      "sha256": "75bc1c9258950521d4d58cc4eb31fc08502a63ec91f62aabb5f9f9f69f672bcd",
+      "size_bytes": 1732,
+      "inventory": [
+        {
+          "path": "full_dump.csv",
+          "sha256": "75bc1c9258950521d4d58cc4eb31fc08502a63ec91f62aabb5f9f9f69f672bcd",
+          "size_bytes": 1732
+        }
+      ],
+      "validations": [
+        {
+          "validator": "artifact_inventory_v1",
+          "status": "passed",
+          "message": "All regular files inventoried and hashed; no symlinks or special files.",
+          "details_json": null
+        },
+        {
+          "validator": "core:raw_csv:v1",
+          "status": "passed",
+          "message": "Scientific product contract passed",
+          "details_json": "{\"rows\": 9}"
+        }
+      ],
+      "unit": "literature_signature_record",
+      "cohort": "as_supplied",
+      "feature_policy": null,
+      "coverage_policy": null
+    },
+    {
+      "id": "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:source_identity",
+      "product_id": "source_identity",
+      "run_id": "run-dc8d53eae34f4d6aa2e62abc5b417b96",
+      "producer_step": "run-dc8d53eae34f4d6aa2e62abc5b417b96:step:identify_sources",
+      "path": "steps/identify_sources/provenance/source_identity.json",
+      "requested_path": null,
+      "sha256": "004b964bf2c1c8a5c1fb95a63a50203bb9e4db0b064de56e177c57bafb77967d",
+      "size_bytes": 1083,
+      "inventory": [
+        {
+          "path": "source_identity.json",
+          "sha256": "004b964bf2c1c8a5c1fb95a63a50203bb9e4db0b064de56e177c57bafb77967d",
+          "size_bytes": 1083
+        }
+      ],
+      "validations": [
+        {
+          "validator": "artifact_inventory_v1",
+          "status": "passed",
+          "message": "All regular files inventoried and hashed; no symlinks or special files.",
+          "details_json": null
+        },
+        {
+          "validator": "core:source_identity:v1",
+          "status": "passed",
+          "message": "Scientific product contract passed",
+          "details_json": "{\"pinned_verified\": false, \"source_claims_reconciled\": true}"
+        }
+      ],
+      "unit": "consumed_source_file",
+      "cohort": "as_supplied",
+      "feature_policy": null,
+      "coverage_policy": null
+    },
+    {
+      "id": "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:studies",
+      "product_id": "studies",
+      "run_id": "run-dc8d53eae34f4d6aa2e62abc5b417b96",
+      "producer_step": "run-dc8d53eae34f4d6aa2e62abc5b417b96:step:ingest",
+      "path": "steps/ingest/studies",
+      "requested_path": null,
+      "sha256": "cbfba63d14949b9c41250d33ab432a1ca7c31ab632491f2ab6424642339b4e88",
+      "size_bytes": 6355,
+      "inventory": [
+        {
+          "path": "bsdb_1.yaml",
+          "sha256": "e1d91c33d6abbe973452857b2bde3323ad424713f11d1e497fcb7880a2b9b62d",
+          "size_bytes": 3641
+        },
+        {
+          "path": "bsdb_2.yaml",
+          "sha256": "20524b397606800aa3b1aad232e93baf5e5a5145ef25e1354506698781990cb8",
+          "size_bytes": 1361
+        },
+        {
+          "path": "bsdb_3.yaml",
+          "sha256": "f110693d002e42863a15613ba710690013690fc80a004c1e0f90176e8aec09ba",
+          "size_bytes": 1353
+        }
+      ],
+      "validations": [
+        {
+          "validator": "artifact_inventory_v1",
+          "status": "passed",
+          "message": "All regular files inventoried and hashed; no symlinks or special files.",
+          "details_json": null
+        },
+        {
+          "validator": "core:study_collection:v1",
+          "status": "passed",
+          "message": "Scientific product contract passed",
+          "details_json": "{\"raw_rows\": 9, \"reconciled_skip_events\": 0, \"studies\": 3}"
+        }
+      ],
+      "unit": "study",
+      "cohort": "all_hosts",
+      "feature_policy": null,
+      "coverage_policy": "exact_current_ingest_collection"
+    },
+    {
+      "id": "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:ingest_log",
+      "product_id": "ingest_log",
+      "run_id": "run-dc8d53eae34f4d6aa2e62abc5b417b96",
+      "producer_step": "run-dc8d53eae34f4d6aa2e62abc5b417b96:step:ingest",
+      "path": "steps/ingest/derived/ingest_log.json",
+      "requested_path": null,
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+      "size_bytes": 3,
+      "inventory": [
+        {
+          "path": "ingest_log.json",
+          "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+          "size_bytes": 3
+        }
+      ],
+      "validations": [
+        {
+          "validator": "artifact_inventory_v1",
+          "status": "passed",
+          "message": "All regular files inventoried and hashed; no symlinks or special files.",
+          "details_json": null
+        },
+        {
+          "validator": "core:ingest_log:v1",
+          "status": "passed",
+          "message": "Scientific product contract passed",
+          "details_json": "{\"events\": 0}"
+        }
+      ],
+      "unit": "ingest_event",
+      "cohort": "all_hosts",
+      "feature_policy": null,
+      "coverage_policy": null
+    },
+    {
+      "id": "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:study_table",
+      "product_id": "study_table",
+      "run_id": "run-dc8d53eae34f4d6aa2e62abc5b417b96",
+      "producer_step": "run-dc8d53eae34f4d6aa2e62abc5b417b96:step:export_tables",
+      "path": "steps/export_tables/derived/studies.tsv",
+      "requested_path": null,
+      "sha256": "9b3370a5a58fcb80d34a6524e99b7fb6612d9162cfa30a4e624ee9be31b1d87b",
+      "size_bytes": 323,
+      "inventory": [
+        {
+          "path": "studies.tsv",
+          "sha256": "9b3370a5a58fcb80d34a6524e99b7fb6612d9162cfa30a4e624ee9be31b1d87b",
+          "size_bytes": 323
+        }
+      ],
+      "validations": [
+        {
+          "validator": "artifact_inventory_v1",
+          "status": "passed",
+          "message": "All regular files inventoried and hashed; no symlinks or special files.",
+          "details_json": null
+        },
+        {
+          "validator": "core:study_table:v1",
+          "status": "passed",
+          "message": "Scientific product contract passed",
+          "details_json": "{\"columns\": 11, \"contract_version\": \"core-products-v1\", \"duplicate_observations_retained\": false, \"kind\": \"study_table\", \"rows\": 3, \"sha256\": \"9b3370a5a58fcb80d34a6524e99b7fb6612d9162cfa30a4e624ee9be31b1d87b\", \"source_reconciled_exports\": 7, \"source_taxon_occurrences\": 11}"
+        }
+      ],
+      "unit": "study",
+      "cohort": "all_hosts",
+      "feature_policy": null,
+      "coverage_policy": null
+    },
+    {
+      "id": "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:experiments",
+      "product_id": "experiments",
+      "run_id": "run-dc8d53eae34f4d6aa2e62abc5b417b96",
+      "producer_step": "run-dc8d53eae34f4d6aa2e62abc5b417b96:step:export_tables",
+      "path": "steps/export_tables/derived/experiments.tsv",
+      "requested_path": null,
+      "sha256": "47576d5fb6f60aee72aeeca488476df48630e56c80acad6a181cc256458befa6",
+      "size_bytes": 553,
+      "inventory": [
+        {
+          "path": "experiments.tsv",
+          "sha256": "47576d5fb6f60aee72aeeca488476df48630e56c80acad6a181cc256458befa6",
+          "size_bytes": 553
+        }
+      ],
+      "validations": [
+        {
+          "validator": "artifact_inventory_v1",
+          "status": "passed",
+          "message": "All regular files inventoried and hashed; no symlinks or special files.",
+          "details_json": null
+        },
+        {
+          "validator": "core:experiment_table:v1",
+          "status": "passed",
+          "message": "Scientific product contract passed",
+          "details_json": "{\"columns\": 12, \"contract_version\": \"core-products-v1\", \"duplicate_observations_retained\": false, \"kind\": \"experiment_table\", \"rows\": 5, \"sha256\": \"47576d5fb6f60aee72aeeca488476df48630e56c80acad6a181cc256458befa6\"}"
+        }
+      ],
+      "unit": "experiment",
+      "cohort": "all_hosts",
+      "feature_policy": null,
+      "coverage_policy": null
+    },
+    {
+      "id": "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:experiment_ontology_terms",
+      "product_id": "experiment_ontology_terms",
+      "run_id": "run-dc8d53eae34f4d6aa2e62abc5b417b96",
+      "producer_step": "run-dc8d53eae34f4d6aa2e62abc5b417b96:step:export_tables",
+      "path": "steps/export_tables/derived/experiment_ontology_terms.tsv",
+      "requested_path": null,
+      "sha256": "16964566afa676f07bbe888170476698156e2ec456b2ce99af4326c36350010f",
+      "size_bytes": 36,
+      "inventory": [
+        {
+          "path": "experiment_ontology_terms.tsv",
+          "sha256": "16964566afa676f07bbe888170476698156e2ec456b2ce99af4326c36350010f",
+          "size_bytes": 36
+        }
+      ],
+      "validations": [
+        {
+          "validator": "artifact_inventory_v1",
+          "status": "passed",
+          "message": "All regular files inventoried and hashed; no symlinks or special files.",
+          "details_json": null
+        },
+        {
+          "validator": "core:ontology_term_table:v1",
+          "status": "passed",
+          "message": "Scientific product contract passed",
+          "details_json": "{\"columns\": 4, \"contract_version\": \"core-products-v1\", \"duplicate_observations_retained\": false, \"kind\": \"ontology_term_table\", \"rows\": 0, \"sha256\": \"16964566afa676f07bbe888170476698156e2ec456b2ce99af4326c36350010f\"}"
+        }
+      ],
+      "unit": "experiment_ontology_annotation",
+      "cohort": "all_hosts",
+      "feature_policy": null,
+      "coverage_policy": null
+    },
+    {
+      "id": "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:signatures",
+      "product_id": "signatures",
+      "run_id": "run-dc8d53eae34f4d6aa2e62abc5b417b96",
+      "producer_step": "run-dc8d53eae34f4d6aa2e62abc5b417b96:step:export_tables",
+      "path": "steps/export_tables/derived/signatures.tsv",
+      "requested_path": null,
+      "sha256": "af0939ffaf4cd74da64c606f08b9fdcad9e961e1db52ceb11e0ab25e22acfec4",
+      "size_bytes": 409,
+      "inventory": [
+        {
+          "path": "signatures.tsv",
+          "sha256": "af0939ffaf4cd74da64c606f08b9fdcad9e961e1db52ceb11e0ab25e22acfec4",
+          "size_bytes": 409
+        }
+      ],
+      "validations": [
+        {
+          "validator": "artifact_inventory_v1",
+          "status": "passed",
+          "message": "All regular files inventoried and hashed; no symlinks or special files.",
+          "details_json": null
+        },
+        {
+          "validator": "core:signature_table:v1",
+          "status": "passed",
+          "message": "Scientific product contract passed",
+          "details_json": "{\"columns\": 5, \"contract_version\": \"core-products-v1\", \"duplicate_observations_retained\": false, \"kind\": \"signature_table\", \"rows\": 9, \"sha256\": \"af0939ffaf4cd74da64c606f08b9fdcad9e961e1db52ceb11e0ab25e22acfec4\"}"
+        }
+      ],
+      "unit": "literature_signature",
+      "cohort": "all_hosts",
+      "feature_policy": null,
+      "coverage_policy": null
+    },
+    {
+      "id": "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:reported_taxa",
+      "product_id": "reported_taxa",
+      "run_id": "run-dc8d53eae34f4d6aa2e62abc5b417b96",
+      "producer_step": "run-dc8d53eae34f4d6aa2e62abc5b417b96:step:export_tables",
+      "path": "steps/export_tables/derived/bugsigdb_taxa.tsv",
+      "requested_path": null,
+      "sha256": "2d9323d7ef9b507a2cfdef9b5aa2e9cc6abf6796247a5bf7c551ebdbeb25a934",
+      "size_bytes": 925,
+      "inventory": [
+        {
+          "path": "bugsigdb_taxa.tsv",
+          "sha256": "2d9323d7ef9b507a2cfdef9b5aa2e9cc6abf6796247a5bf7c551ebdbeb25a934",
+          "size_bytes": 925
+        }
+      ],
+      "validations": [
+        {
+          "validator": "artifact_inventory_v1",
+          "status": "passed",
+          "message": "All regular files inventoried and hashed; no symlinks or special files.",
+          "details_json": null
+        },
+        {
+          "validator": "core:reported_taxa:v1",
+          "status": "passed",
+          "message": "Scientific product contract passed",
+          "details_json": "{\"columns\": 7, \"contract_version\": \"core-products-v1\", \"duplicate_observations_retained\": true, \"kind\": \"reported_taxa\", \"rows\": 11, \"sha256\": \"2d9323d7ef9b507a2cfdef9b5aa2e9cc6abf6796247a5bf7c551ebdbeb25a934\"}"
+        }
+      ],
+      "unit": "reported_taxon_occurrence",
+      "cohort": "all_hosts",
+      "feature_policy": null,
+      "coverage_policy": "preserve_repeated_occurrences"
+    },
+    {
+      "id": "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:taxon_profiles_wide",
+      "product_id": "taxon_profiles_wide",
+      "run_id": "run-dc8d53eae34f4d6aa2e62abc5b417b96",
+      "producer_step": "run-dc8d53eae34f4d6aa2e62abc5b417b96:step:export_tables",
+      "path": "steps/export_tables/derived/taxon_profiles_wide.tsv",
+      "requested_path": null,
+      "sha256": "290e2826329df9a59e519aae969726cc23eafe5898f5c4d9fb3a34a4d292b25c",
+      "size_bytes": 464,
+      "inventory": [
+        {
+          "path": "taxon_profiles_wide.tsv",
+          "sha256": "290e2826329df9a59e519aae969726cc23eafe5898f5c4d9fb3a34a4d292b25c",
+          "size_bytes": 464
+        }
+      ],
+      "validations": [
+        {
+          "validator": "artifact_inventory_v1",
+          "status": "passed",
+          "message": "All regular files inventoried and hashed; no symlinks or special files.",
+          "details_json": null
+        },
+        {
+          "validator": "core:taxon_profile_wide:v1",
+          "status": "passed",
+          "message": "Scientific product contract passed",
+          "details_json": "{\"contract_version\": \"core-products-v1\", \"features\": 7, \"kind\": \"taxon_profile_wide\", \"rows\": 9, \"sha256\": \"290e2826329df9a59e519aae969726cc23eafe5898f5c4d9fb3a34a4d292b25c\", \"source_aggregation_checked\": true, \"unit\": \"reported_taxon_observations\"}"
+        }
+      ],
+      "unit": "taxon_name_occurrence",
+      "cohort": "all_hosts",
+      "feature_policy": null,
+      "coverage_policy": null
+    },
+    {
+      "id": "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:taxon_profiles_long",
+      "product_id": "taxon_profiles_long",
+      "run_id": "run-dc8d53eae34f4d6aa2e62abc5b417b96",
+      "producer_step": "run-dc8d53eae34f4d6aa2e62abc5b417b96:step:export_tables",
+      "path": "steps/export_tables/derived/taxon_profiles_long.tsv",
+      "requested_path": null,
+      "sha256": "638dddf83255068f899971cc5c910e81d95764491f8522785fcc04a3b9df0e90",
+      "size_bytes": 439,
+      "inventory": [
+        {
+          "path": "taxon_profiles_long.tsv",
+          "sha256": "638dddf83255068f899971cc5c910e81d95764491f8522785fcc04a3b9df0e90",
+          "size_bytes": 439
+        }
+      ],
+      "validations": [
+        {
+          "validator": "artifact_inventory_v1",
+          "status": "passed",
+          "message": "All regular files inventoried and hashed; no symlinks or special files.",
+          "details_json": null
+        },
+        {
+          "validator": "core:taxon_profile_long:v1",
+          "status": "passed",
+          "message": "Scientific product contract passed",
+          "details_json": "{\"contract_version\": \"core-products-v1\", \"kind\": \"taxon_profile_long\", \"layout\": \"transpose_of_wide_not_tidy_long\", \"profiles\": 9, \"rows\": 7, \"sha256\": \"638dddf83255068f899971cc5c910e81d95764491f8522785fcc04a3b9df0e90\"}"
+        }
+      ],
+      "unit": "taxon_name_occurrence",
+      "cohort": "all_hosts",
+      "feature_policy": null,
+      "coverage_policy": null
+    },
+    {
+      "id": "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:taxa_matrix",
+      "product_id": "taxa_matrix",
+      "run_id": "run-dc8d53eae34f4d6aa2e62abc5b417b96",
+      "producer_step": "run-dc8d53eae34f4d6aa2e62abc5b417b96:step:taxa_matrix",
+      "path": "steps/taxa_matrix/derived/taxa_trait_matrix.tsv",
+      "requested_path": null,
+      "sha256": "7bd745c754bddb888e97bf881392afac864c906b515bd6717efb0b49c33645d5",
+      "size_bytes": 444,
+      "inventory": [
+        {
+          "path": "taxa_trait_matrix.tsv",
+          "sha256": "7bd745c754bddb888e97bf881392afac864c906b515bd6717efb0b49c33645d5",
+          "size_bytes": 444
+        }
+      ],
+      "validations": [
+        {
+          "validator": "artifact_inventory_v1",
+          "status": "passed",
+          "message": "All regular files inventoried and hashed; no symlinks or special files.",
+          "details_json": null
+        },
+        {
+          "validator": "core:taxa_matrix:v1",
+          "status": "passed",
+          "message": "Scientific product contract passed",
+          "details_json": "{\"all_zero_rows\": 2, \"annotation_evidence\": \"direct_descendant_or_strain_unresolved\", \"contract_version\": \"core-products-v1\", \"feature_filter_id\": \"sha256:9396400687b335d948d3fe906dfac02fcdbeafbab16489ed39da4d02111382ce\", \"features\": 4, \"kg_feature_metadata_checked\": true, \"kg_source_aggregation_checked\": true, \"kg_source_cells_checked\": 28, \"kind\": \"taxa_matrix\", \"reported_taxon_identity_checked\": true, \"rows\": 7, \"sha256\": \"7bd745c754bddb888e97bf881392afac864c906b515bd6717efb0b49c33645d5\", \"strain_rollup\": \"phenotype\", \"unit\": \"distinct_annotated_source_taxa_at_or_below_reported_taxon\"}"
+        }
+      ],
+      "unit": "trait_bearing_source_taxa_at_or_below_reported_taxon",
+      "cohort": "all_reported_taxa",
+      "feature_policy": "include_mediadive",
+      "coverage_policy": "all_reported_taxa_including_zero_annotation_rows"
+    },
+    {
+      "id": "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:feature_metadata",
+      "product_id": "feature_metadata",
+      "run_id": "run-dc8d53eae34f4d6aa2e62abc5b417b96",
+      "producer_step": "run-dc8d53eae34f4d6aa2e62abc5b417b96:step:taxa_matrix",
+      "path": "steps/taxa_matrix/derived/taxa_trait_matrix_columns.tsv",
+      "requested_path": null,
+      "sha256": "65dd223eb0f917b04f30aba4b630b39f0dc7295d037b4c62aad7dcfc6dfc5f89",
+      "size_bytes": 593,
+      "inventory": [
+        {
+          "path": "taxa_trait_matrix_columns.tsv",
+          "sha256": "65dd223eb0f917b04f30aba4b630b39f0dc7295d037b4c62aad7dcfc6dfc5f89",
+          "size_bytes": 593
+        }
+      ],
+      "validations": [
+        {
+          "validator": "artifact_inventory_v1",
+          "status": "passed",
+          "message": "All regular files inventoried and hashed; no symlinks or special files.",
+          "details_json": null
+        },
+        {
+          "validator": "core:feature_metadata:v1",
+          "status": "passed",
+          "message": "Scientific product contract passed",
+          "details_json": "{\"annotation_evidence\": \"direct_descendant_or_strain_unresolved\", \"contract_version\": \"core-products-v1\", \"culture_medium_features\": 1, \"feature_filter_id\": \"sha256:9396400687b335d948d3fe906dfac02fcdbeafbab16489ed39da4d02111382ce\", \"kg_node_metadata_checked\": true, \"kind\": \"feature_metadata\", \"rows\": 4, \"sha256\": \"65dd223eb0f917b04f30aba4b630b39f0dc7295d037b4c62aad7dcfc6dfc5f89\", \"source_metadata_checked\": false, \"strain_attributed_features\": 3, \"strain_rollup\": \"phenotype\"}"
+        }
+      ],
+      "unit": "annotation_feature",
+      "cohort": "all_reported_taxa",
+      "feature_policy": "include_mediadive",
+      "coverage_policy": null
+    },
+    {
+      "id": "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:feature_catalog",
+      "product_id": "feature_catalog",
+      "run_id": "run-dc8d53eae34f4d6aa2e62abc5b417b96",
+      "producer_step": "run-dc8d53eae34f4d6aa2e62abc5b417b96:step:feature_catalog",
+      "path": "steps/feature_catalog/derived/feature_catalog.tsv",
+      "requested_path": null,
+      "sha256": "976804ad9ee5a81f9bdf87e2da713473703d8700072882c48346fabcfacd7348",
+      "size_bytes": 842,
+      "inventory": [
+        {
+          "path": "feature_catalog.tsv",
+          "sha256": "976804ad9ee5a81f9bdf87e2da713473703d8700072882c48346fabcfacd7348",
+          "size_bytes": 842
+        }
+      ],
+      "validations": [
+        {
+          "validator": "artifact_inventory_v1",
+          "status": "passed",
+          "message": "All regular files inventoried and hashed; no symlinks or special files.",
+          "details_json": null
+        },
+        {
+          "validator": "core:feature_catalog:v1",
+          "status": "passed",
+          "message": "Scientific product contract passed",
+          "details_json": "{\"annotation_evidence\": \"direct_descendant_or_strain_unresolved\", \"contract_version\": \"core-products-v1\", \"culture_medium_features\": 1, \"feature_filter_id\": \"sha256:9396400687b335d948d3fe906dfac02fcdbeafbab16489ed39da4d02111382ce\", \"kg_node_metadata_checked\": false, \"kind\": \"feature_catalog\", \"rows\": 4, \"sha256\": \"976804ad9ee5a81f9bdf87e2da713473703d8700072882c48346fabcfacd7348\", \"source_metadata_checked\": true, \"strain_attributed_features\": 3, \"strain_rollup\": \"phenotype\"}"
+        }
+      ],
+      "unit": "annotation_feature",
+      "cohort": "all_reported_taxa",
+      "feature_policy": "include_mediadive",
+      "coverage_policy": null
+    },
+    {
+      "id": "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:count_profiles",
+      "product_id": "count_profiles",
+      "run_id": "run-dc8d53eae34f4d6aa2e62abc5b417b96",
+      "producer_step": "run-dc8d53eae34f4d6aa2e62abc5b417b96:step:count_profiles",
+      "path": "steps/count_profiles/derived/study_trait_profiles_wide.tsv",
+      "requested_path": null,
+      "sha256": "18883c652cc8b7ee4fb351d8f0a84aac1ccb3a4e56d21e471d49ca02214f7cf9",
+      "size_bytes": 358,
+      "inventory": [
+        {
+          "path": "study_trait_profiles_wide.tsv",
+          "sha256": "18883c652cc8b7ee4fb351d8f0a84aac1ccb3a4e56d21e471d49ca02214f7cf9",
+          "size_bytes": 358
+        }
+      ],
+      "validations": [
+        {
+          "validator": "artifact_inventory_v1",
+          "status": "passed",
+          "message": "All regular files inventoried and hashed; no symlinks or special files.",
+          "details_json": null
+        },
+        {
+          "validator": "core:count_profiles:v1",
+          "status": "passed",
+          "message": "Scientific product contract passed",
+          "details_json": "{\"cohort\": \"all\", \"contract_version\": \"core-products-v1\", \"denominator\": \"none\", \"feature_filter_id\": \"sha256:9396400687b335d948d3fe906dfac02fcdbeafbab16489ed39da4d02111382ce\", \"features\": 4, \"kind\": \"count_profiles\", \"mixed_rank_overlap_policy\": \"retain_distinct_reported_ids\", \"rows\": 9, \"sha256\": \"18883c652cc8b7ee4fb351d8f0a84aac1ccb3a4e56d21e471d49ca02214f7cf9\", \"source_aggregation_checked\": true, \"unit\": \"summed_annotation_counts\"}"
+        }
+      ],
+      "unit": "rolled_up_source_taxon_count",
+      "cohort": "all",
+      "feature_policy": "include_mediadive",
+      "coverage_policy": "count_input_16s_wms_v1"
+    },
+    {
+      "id": "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:count_coverage",
+      "product_id": "count_coverage",
+      "run_id": "run-dc8d53eae34f4d6aa2e62abc5b417b96",
+      "producer_step": "run-dc8d53eae34f4d6aa2e62abc5b417b96:step:count_profiles",
+      "path": "steps/count_profiles/derived/study_trait_profiles_coverage.tsv",
+      "requested_path": null,
+      "sha256": "86f124362e1ed45337c90b1d5892977add55132950bc74d7d481c92a5b6e0177",
+      "size_bytes": 1653,
+      "inventory": [
+        {
+          "path": "study_trait_profiles_coverage.tsv",
+          "sha256": "86f124362e1ed45337c90b1d5892977add55132950bc74d7d481c92a5b6e0177",
+          "size_bytes": 1653
+        }
+      ],
+      "validations": [
+        {
+          "validator": "artifact_inventory_v1",
+          "status": "passed",
+          "message": "All regular files inventoried and hashed; no symlinks or special files.",
+          "details_json": null
+        },
+        {
+          "validator": "core:profile_coverage:v1",
+          "status": "passed",
+          "message": "Scientific product contract passed",
+          "details_json": "{\"cohort\": \"all\", \"contract_version\": \"core-products-v1\", \"feature_filter_ids\": [\"sha256:9396400687b335d948d3fe906dfac02fcdbeafbab16489ed39da4d02111382ce\"], \"kind\": \"profile_coverage\", \"rows\": 9, \"sha256\": \"86f124362e1ed45337c90b1d5892977add55132950bc74d7d481c92a5b6e0177\"}"
+        }
+      ],
+      "unit": "distinct_reported_taxon_lookup",
+      "cohort": "all",
+      "feature_policy": "include_mediadive",
+      "coverage_policy": "count_input_16s_wms_v1"
+    },
+    {
+      "id": "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:ora_profiles",
+      "product_id": "ora_profiles",
+      "run_id": "run-dc8d53eae34f4d6aa2e62abc5b417b96",
+      "producer_step": "run-dc8d53eae34f4d6aa2e62abc5b417b96:step:ora_profiles",
+      "path": "steps/ora_profiles/derived/study_trait_profiles_ora_wide.tsv",
+      "requested_path": null,
+      "sha256": "243ac440ceb2c639f76e003539821e150659eec1405db8b57bd52d52a84cbf95",
+      "size_bytes": 327,
+      "inventory": [
+        {
+          "path": "study_trait_profiles_ora_wide.tsv",
+          "sha256": "243ac440ceb2c639f76e003539821e150659eec1405db8b57bd52d52a84cbf95",
+          "size_bytes": 327
+        }
+      ],
+      "validations": [
+        {
+          "validator": "artifact_inventory_v1",
+          "status": "passed",
+          "message": "All regular files inventoried and hashed; no symlinks or special files.",
+          "details_json": null
+        },
+        {
+          "validator": "core:ora_profiles:v1",
+          "status": "passed",
+          "message": "Scientific product contract passed",
+          "details_json": "{\"cohort\": \"Homo sapiens\", \"contract_version\": \"core-products-v1\", \"denominator\": \"distinct_lookup_matched_reported_taxa_including_unannotated\", \"feature_filter_id\": \"sha256:9396400687b335d948d3fe906dfac02fcdbeafbab16489ed39da4d02111382ce\", \"features\": 4, \"kind\": \"ora_profiles\", \"mixed_rank_overlap_policy\": \"retain_distinct_reported_ids\", \"rows\": 7, \"sha256\": \"243ac440ceb2c639f76e003539821e150659eec1405db8b57bd52d52a84cbf95\", \"source_aggregation_checked\": true, \"unit\": \"distinct_lookup_matched_reported_taxa_with_feature\"}"
+        }
+      ],
+      "unit": "distinct_matched_reported_taxon_count",
+      "cohort": "Homo sapiens",
+      "feature_policy": "include_mediadive",
+      "coverage_policy": "count_input_16s_wms_v1"
+    },
+    {
+      "id": "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:ora_coverage",
+      "product_id": "ora_coverage",
+      "run_id": "run-dc8d53eae34f4d6aa2e62abc5b417b96",
+      "producer_step": "run-dc8d53eae34f4d6aa2e62abc5b417b96:step:ora_profiles",
+      "path": "steps/ora_profiles/derived/study_trait_profiles_ora_coverage.tsv",
+      "requested_path": null,
+      "sha256": "3c7c38f2d1e0b5e11ec28df13f69f551b0c547f9bb0c63eac1d2ebb06956af27",
+      "size_bytes": 1339,
+      "inventory": [
+        {
+          "path": "study_trait_profiles_ora_coverage.tsv",
+          "sha256": "3c7c38f2d1e0b5e11ec28df13f69f551b0c547f9bb0c63eac1d2ebb06956af27",
+          "size_bytes": 1339
+        }
+      ],
+      "validations": [
+        {
+          "validator": "artifact_inventory_v1",
+          "status": "passed",
+          "message": "All regular files inventoried and hashed; no symlinks or special files.",
+          "details_json": null
+        },
+        {
+          "validator": "core:profile_coverage:v1",
+          "status": "passed",
+          "message": "Scientific product contract passed",
+          "details_json": "{\"cohort\": \"Homo sapiens\", \"contract_version\": \"core-products-v1\", \"feature_filter_ids\": [\"sha256:9396400687b335d948d3fe906dfac02fcdbeafbab16489ed39da4d02111382ce\"], \"kind\": \"profile_coverage\", \"rows\": 7, \"sha256\": \"3c7c38f2d1e0b5e11ec28df13f69f551b0c547f9bb0c63eac1d2ebb06956af27\"}"
+        }
+      ],
+      "unit": "distinct_reported_taxon_lookup",
+      "cohort": "Homo sapiens",
+      "feature_policy": "include_mediadive",
+      "coverage_policy": "count_input_16s_wms_v1"
+    }
+  ],
+  "outputs": [
+    "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:source_identity",
+    "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:studies",
+    "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:ingest_log",
+    "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:study_table",
+    "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:experiments",
+    "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:experiment_ontology_terms",
+    "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:signatures",
+    "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:reported_taxa",
+    "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:taxon_profiles_wide",
+    "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:taxon_profiles_long",
+    "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:taxa_matrix",
+    "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:feature_metadata",
+    "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:feature_catalog",
+    "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:count_profiles",
+    "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:count_coverage",
+    "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:ora_profiles",
+    "run-dc8d53eae34f4d6aa2e62abc5b417b96:artifact:ora_coverage"
+  ],
+  "error": null
+}

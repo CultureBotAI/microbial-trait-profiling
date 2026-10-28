@@ -17,7 +17,7 @@ from mtp.workflow import runtime as core_runtime
 from mtp.workflow.arms import runtime
 from mtp.workflow.arms.runtime import ArmExecutionError, Planner, execute_arm, verify_arm
 from mtp.workflow.arms.types import ArmContext, Command
-from mtp.workflow.operations import OPERATIONS, validate_core_product
+from mtp.workflow.operations import OPERATIONS, validate_execution_product
 
 HELPER = Path("scripts/adhoc/issue658_arm_test_command.py")
 
@@ -67,7 +67,7 @@ def harness(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Harness:
         tmp_path / "core",
         OPERATIONS,
         parameter_overrides={"source_mode": "fixture"},
-        validator=validate_core_product,
+        validator=validate_execution_product,
         repository_root=repository,
     )
     return Harness(repository, Path(core.manifest_path), tmp_path / "arm outputs")

@@ -17,7 +17,7 @@ from mtp.workflow.operations import (
     OPERATIONS,
     run_strain_rollup,
     trace_profile_feature,
-    validate_core_product,
+    validate_execution_product,
 )
 from mtp.workflow.output_roots import add_temporary_output_option, require_durable_output
 from mtp.workflow.runtime import artifact_path, execute_workflow
@@ -192,7 +192,7 @@ def main(argv: list[str] | None = None) -> int:
             args.output_root,
             OPERATIONS,
             parameter_overrides=parameters,
-            validator=validate_core_product,
+            validator=validate_execution_product,
             repository_root=REPO_ROOT,
         )
         print(run.manifest_path)

@@ -40,9 +40,14 @@ counts retain their definitions and remain linked to this catalog by the core ru
 
 Historical F manifests lack an explicit policy. The verifier recognizes only
 audited matrix-implementation SHA-256 and byte-size pairs from their recorded code
-inventory: F (`511c891`) selects `raw_object_v1`; the implicit union producer
-introduced in #1124 (`0e49e87`) selects `facultative_union_v1`. Both retain their
-historical metadata layouts. Unknown producer bytes, partial declarations, and
+inventory. The raw producer bytes cover the development interval
+`f8a57e2..0e49e87`: from `f8a57e2` (2026-10-22, inclusive), including F
+(`511c891`), until just before `0e49e87`. These select `raw_object_v1`.
+At `0e49e87`, #1124 introduces the distinct implicit union producer, which
+selects `facultative_union_v1`. Earlier cores whose matrix implementation
+predates `f8a57e2` are outside this audited range and are refused as unknown
+historical implementations. Both recognized producers retain their historical
+metadata layouts. Unknown producer bytes, partial declarations, and
 contradictory step bindings fail closed. The compatibility resolver neither edits
 old records nor executes historical code, and it skips no inventory or scientific
 checks. Adding another historical producer requires an explicit compatibility review.

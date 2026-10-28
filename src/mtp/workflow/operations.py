@@ -45,7 +45,7 @@ from mtp.taxa_trait_matrix import (
     scoped_taxon_traits,
     strain_trait_rolls_up,
 )
-from mtp.trait_key_policy import DEFAULT_TRAIT_KEY_POLICY, TraitKeyPolicy, parse_trait_key_policy
+from mtp.trait_key_policy import TraitKeyPolicy, parse_trait_key_policy
 from mtp.workflow.coverage import (
     build_profile_coverage,
     write_feature_catalog,
@@ -361,6 +361,7 @@ def feature_catalog_operation(
         outputs["feature_catalog"],
         strain_rollup=parse_strain_rollup(parameters["strain_rollup"]),
         trait_key_policy=parse_trait_key_policy(parameters["trait_key_policy"]),
+        include_policy_metadata=True,
     )
 
 
@@ -453,21 +454,20 @@ def validate_core_product(
     *,
     recorded_sources: Mapping[str, Path] | None = None,
     parameters: Mapping[str, str] | None = None,
-    trait_key_policy: TraitKeyPolicy | None = None,
-    include_policy_metadata: bool = True,
+    trait_key_policy: TraitKeyPolicy,
+    include_policy_metadata: bool,
 ) -> list[ValidationResult]:
     """Validate one scientific product using the execution's declared related products.
 
     ``parameters`` are the run's resolved parameters. The matrix and its feature catalog
     are checked under the declared strain_rollup scope, ``off`` for a run that predates
-    the parameter (#788).
+    the parameter (#788). Policy and metadata format must be resolved from the
+    producing run and supplied explicitly; parameters alone do not choose them.
     """
     from mtp.workflow.contracts import validate_product
 
     strain_rollup = parse_strain_rollup((parameters or {}).get("strain_rollup", "off"))
-    trait_key_policy = trait_key_policy or parse_trait_key_policy(
-        (parameters or {}).get("trait_key_policy", DEFAULT_TRAIT_KEY_POLICY)
-    )
+    trait_key_policy = parse_trait_key_policy(trait_key_policy)
 
     _validate_semantic_descriptor(product)
     kind = product.kind
@@ -525,6 +525,29 @@ def validate_core_product(
     ]
 
 
+def validate_execution_product(
+    product: ProductDefinition,
+    path: Path,
+    context: Mapping[str, Path],
+    *,
+    parameters: Mapping[str, str],
+) -> list[ValidationResult]:
+    """Validate a new execution using its resolved policy and current metadata format.
+
+    Historical verification calls ``validate_core_product`` with the producing
+    run's resolved policy and format instead. A missing execution parameter is
+    an error; this adapter never substitutes the current policy.
+    """
+    return validate_core_product(
+        product,
+        path,
+        context,
+        parameters=parameters,
+        trait_key_policy=parse_trait_key_policy(parameters["trait_key_policy"]),
+        include_policy_metadata=True,
+    )
+
+
 def trace_profile_feature(
     study_dir: Path,
     matrix_path: Path,
@@ -535,7 +558,7 @@ def trace_profile_feature(
     *,
     host_species: str | None = None,
     strain_rollup: StrainRollup = "off",
-    trait_key_policy: TraitKeyPolicy = DEFAULT_TRAIT_KEY_POLICY,
+    trait_key_policy: TraitKeyPolicy,
 ) -> dict[str, object]:
     """Trace a chosen profile feature to distinct KG source taxa and original edges.
 

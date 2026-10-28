@@ -40,7 +40,6 @@ from mtp.human_host_corpus import CORPUS_SEQUENCING_TYPES
 from mtp.study_trait_profiles import ProfileKey, direction_to_inc_dec, read_taxa_trait_matrix
 from mtp.taxa_trait_matrix import StrainRollup
 from mtp.trait_key_policy import (
-    DEFAULT_TRAIT_KEY_POLICY,
     TRAIT_POLICY_METADATA_COLUMNS,
     TraitKeyPolicy,
     canonical_object,
@@ -602,8 +601,8 @@ def validate_product(
     context: Mapping[str, object] | None = None,
     cohort: str | None = None,
     strain_rollup: StrainRollup = "off",
-    trait_key_policy: TraitKeyPolicy = DEFAULT_TRAIT_KEY_POLICY,
-    include_policy_metadata: bool = True,
+    trait_key_policy: TraitKeyPolicy,
+    include_policy_metadata: bool,
 ) -> dict[str, object]:
     """Validate a scientific product, raising ValueError before publication on failure.
 

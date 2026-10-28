@@ -16,6 +16,7 @@ from mtp.workflow.operations import (
     export_tables_operation,
     ingest_operation,
     validate_core_product,
+    validate_execution_product,
 )
 from mtp.workflow.runtime import WorkflowExecutionError, artifact_path, execute_workflow, inventory
 from mtp.workflow.verification import verify_core_run
@@ -55,11 +56,23 @@ def source_bundle(tmp_path: Path) -> dict[str, Path]:
 
 
 def _validate_ingest(paths: dict[str, Path]) -> None:
-    validate_core_product(PRODUCTS["studies"], paths["studies"], paths)
+    validate_core_product(
+        PRODUCTS["studies"],
+        paths["studies"],
+        paths,
+        trait_key_policy="raw_object_v1",
+        include_policy_metadata=False,
+    )
 
 
 def _validate_exports(paths: dict[str, Path]) -> None:
-    validate_core_product(PRODUCTS["study_table"], paths["study_table"], paths)
+    validate_core_product(
+        PRODUCTS["study_table"],
+        paths["study_table"],
+        paths,
+        trait_key_policy="raw_object_v1",
+        include_policy_metadata=False,
+    )
 
 
 @pytest.mark.parametrize(
@@ -139,7 +152,7 @@ def test_ingest_source_failure_prevents_stage_publication(tmp_path: Path) -> Non
             },
             tmp_path / "runs",
             {**OPERATIONS, "ingest": _drop_study},
-            validator=validate_core_product,
+            validator=validate_execution_product,
             repository_root=ROOT,
         )
     run = failure.value.run
@@ -220,7 +233,7 @@ def test_revalidation_checks_raw_source_even_with_updated_artifact_inventory(
         },
         tmp_path / "runs",
         OPERATIONS,
-        validator=validate_core_product,
+        validator=validate_execution_product,
         repository_root=ROOT,
     )
     studies = artifact_path(run, "studies")
