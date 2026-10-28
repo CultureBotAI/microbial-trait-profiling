@@ -258,6 +258,43 @@ def test_summary_only_uses_study_table_without_headline_or_full_analysis(
     assert set(record["outputs"]) == {PAIR_FILE, STUDY_FILE, "trait_summary.tsv"}
 
 
+@pytest.mark.parametrize("summary_only", [False, True])
+def test_fresh_nested_output_creates_parents_after_validation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, summary_only: bool
+) -> None:
+    """Publication accepts durable destinations with missing ancestors (#1158)."""
+    parent = synthetic_parent(tmp_path, monkeypatch)
+    output = tmp_path / "new" / "nested" / "output"
+    assert not (tmp_path / "new").exists()
+    options = {"summary_only": True, "trait_list": None} if summary_only else {}
+    record = run(parent, output, **options)
+    assert json.loads((output / "delta_z_derived_run.json").read_text()) == record
+    assert {path.name for path in output.parent.iterdir()} == {"output"}
+    for name, expected in record["outputs"].items():
+        assert file_sha256(output / name) == expected["sha256"]
+
+
+@pytest.mark.parametrize("failure_point", ["load", "late_source_recheck"])
+def test_source_failure_leaves_missing_output_ancestors_absent(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, failure_point: str
+) -> None:
+    parent = synthetic_parent(tmp_path, monkeypatch)
+    output = tmp_path / "new" / "nested" / "output"
+    if failure_point == "load":
+        parent.loader.side_effect = ValueError("source verification failed")
+    else:
+
+        def change_source(*_args: Any, **_kwargs: Any) -> Any:
+            parent.experiments.write_text(parent.experiments.read_text() + "\n")
+            return parent.derived
+
+        parent.builder.side_effect = change_source
+    with pytest.raises(ValueError, match=r"source|identity"):
+        run(parent, output)
+    assert not (tmp_path / "new").exists()
+    assert not list(tmp_path.glob(".output-*"))
+
+
 def test_full_run_requires_declared_trait_list_before_writing(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

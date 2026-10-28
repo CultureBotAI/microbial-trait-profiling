@@ -257,6 +257,7 @@ def run_derived(
     staging = output.parent / f".{output.name}-staging-{uuid.uuid4().hex}"
     _durable(staging)
     _disjoint(staging, roots)
+    output.parent.mkdir(parents=True, exist_ok=True)
     # Preserve the lexical name so a dangling symlink is an exclusive-mkdir collision.
     staging.mkdir()
     published = False
