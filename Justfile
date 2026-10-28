@@ -256,7 +256,8 @@ six-shared-trait-heatmaps:
 # Signed increased-vs-decreased contrasts, as in the six-trait heatmaps, for a declared
 # TRAIT_LIST on one run's PROFILES, profile METADATA (its total_trait_signal must match the
 # profiles) and trait COLUMNS, into OUTPUT. Writes edge tables, the contrast table and
-# trait_list_provenance.json only; no figures, and the six-trait directory is untouched (#1054).
+# trait_list_provenance.json plus exact-Feces top-group tables (--stool-group-count, default 6).
+# No figures; the default six-trait path is unchanged (#1054, #1093).
 [positional-arguments]
 trait-list-direction-contrasts trait_list profiles metadata columns output *ARGS:
 	uv run python scripts/create_six_shared_trait_sankeys.py --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" --trait-list "$1" --profiles "$2" --profile-metadata "$3" --columns "$4" --output-dir "$5" "${@:6}"
@@ -675,8 +676,9 @@ audit-strain-rollup *ARGS:
 audit-label-support *ARGS:
 	uv run python -m mtp.label_support_audit "$@"
 
-# dest is a durable data directory, not a temporary one. The request is anonymous, and a file
-# whose size or sha256 differs from the pin is refused. Pass the file to
+# dest must be durable and outside the working tree. The request is anonymous, and a file
+# whose size or sha256 differs from the pin is refused. Verified reuse records provenance.
+# Pass the file to
 # `just audit-label-support --madin-csv`.
 # Download the Madin et al. condensed trait table pinned in mtp.madin_source (#1048).
 download-madin dest:

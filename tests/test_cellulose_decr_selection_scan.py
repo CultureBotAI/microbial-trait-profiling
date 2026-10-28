@@ -900,7 +900,7 @@ def cores(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Path]:
     synthetic inputs. ``tier1_2_phenotype`` is the declared primary scope and
     ``tier1_2_off`` the declared sensitivity (#1050)."""
     from mtp.paths import REPO_ROOT
-    from mtp.workflow.operations import OPERATIONS, validate_core_product
+    from mtp.workflow.operations import OPERATIONS, validate_execution_product
     from mtp.workflow.runtime import execute_workflow
 
     root = tmp_path_factory.mktemp("selection-scan-core")
@@ -930,7 +930,7 @@ def cores(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Path]:
             root / name,
             OPERATIONS,
             parameter_overrides={"source_mode": "fixture", **parameters},
-            validator=validate_core_product,
+            validator=validate_execution_product,
             repository_root=REPO_ROOT,
         )
         runs[name] = Path(run.manifest_path)

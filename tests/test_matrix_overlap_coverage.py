@@ -736,7 +736,7 @@ def test_end_to_end_core_subset_consumer_provenance_and_temp_guard(
     monkeypatch.setenv("GIT_CONFIG_GLOBAL", "/dev/null")
     monkeypatch.setenv("GIT_CONFIG_NOSYSTEM", "1")
     from mtp.workflow.consumers import verify_consumer_record
-    from mtp.workflow.operations import OPERATIONS, validate_core_product
+    from mtp.workflow.operations import OPERATIONS, validate_execution_product
     from mtp.workflow.runtime import execute_workflow
 
     inputs = _build_subset_fixture_inputs(tmp_path / "inputs")
@@ -750,7 +750,7 @@ def test_end_to_end_core_subset_consumer_provenance_and_temp_guard(
             "strain_rollup": "phenotype",
             "contrast_population": SUBSET_POPULATION,
         },
-        validator=validate_core_product,
+        validator=validate_execution_product,
         repository_root=REPO_ROOT,
     )
     manifest = Path(core.manifest_path)
@@ -906,7 +906,7 @@ def test_end_to_end_core_subset_consumer_provenance_and_temp_guard(
             "source_mode": "fixture",
             "strain_rollup": "phenotype",
         },
-        validator=validate_core_product,
+        validator=validate_execution_product,
         repository_root=REPO_ROOT,
     )
     with pytest.raises(ValueError, match=r"requires a Tier 1\+2"):

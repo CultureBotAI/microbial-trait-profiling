@@ -29,6 +29,34 @@ described below; a file with any other bytes fails before outputs are written.
 Omitting it leaves Madin subsources unknown. A supplied but unreadable or
 malformed table fails instead of silently falling back to unknown.
 
+Optionally supply `--trait-list LIST/traits.txt` (`mtp.trait_lists.load_trait_list`,
+#1132) to audit additional declared traits (such as non-focal headline traits
+whose carriers arrive through taxonomic inheritance or strain rollup) alongside
+the default 14 traits in `AUDIT_TRAITS` (the six `FOCAL_TRAITS` plus eight
+oxygen and cell-shape traits). Without `--trait-list`, the audited trait set is
+the default 14 traits in `AUDIT_TRAITS`, all five output TSVs stay
+byte-identical, and `provenance.json` omits `inputs.trait_list` and
+`trait_list` (differing across runs only in `created_at` and the producer file
+digest/size when code changes). With `--trait-list`, every listed identifier
+must be a valid CURIE or rollup composite present as a column in
+`taxa_trait_matrix.tsv`; malformed, duplicated, or absent trait identifiers
+fail before any output is written. `taxon_trait_label_support.tsv`,
+`focal_taxa_trait_support.tsv`, and `carrier_source_evidence.tsv` include the
+declared traits (deduplicated in declaration order after the default 14
+`AUDIT_TRAITS` entries), and `provenance.json` records `inputs.trait_list` plus
+`trait_list` (`path`, `name`, `sha256`, `trait_count`, and `trait_ids`).
+`support_threshold_sensitivity.tsv` and `coasserted_label_census.tsv` retain
+their fixed six-trait sensitivity family and label-pair definitions.
+`MADIN_RULES` does not yet define field/value mappings for `ligninolysis`
+(`METPO:2000103|GO:0046274`), `thiosulfate_oxidation`
+(`METPO:2000103|pathways:thiosulfate_oxidation`), `xylan_degradation`
+(`METPO:2000103|GO:0045493`), or `acetogenesis` (`METPO:1000845`,
+`pathways: acetogenesis`), so Madin-sourced carriers for those declared traits
+record `madin_resolution=unknown` in `carrier_source_evidence.tsv` and
+increment `unresolved_madin_carriers` in `taxon_trait_label_support.tsv`
+(leaving `source_status=unknown` on Madin-only cells) when `--madin-csv` is
+supplied (#1151, #1155).
+
 The `phenotype` scope uses the public `scoped_taxon_traits` and
 `strain_trait_rolls_up` functions introduced by PR #828. Both `off` and
 `phenotype` use the merged matrix scope policy. `full` is not offered by this
@@ -63,14 +91,26 @@ in `mtp.madin_source` (#1048):
 | Size | 46,362,149 bytes |
 
 ```bash
-just download-madin MADIN
+just download-madin ../mtp-data/madin
 ```
 
-This fetches the table anonymously into `MADIN`, a durable data directory
-outside the repository (not a temporary directory), and records the fetch in
-`MADIN/download_provenance.json`. A response whose size or SHA256 differs from
-the pin is discarded and the recipe fails. An existing copy is checked and
-reused, never overwritten. Passing the file as `--madin-csv` records
+This fetches the table anonymously into a durable data directory outside the
+working tree. Choose an absolute path or an outside-checkout relative path,
+such as the sibling directory in this example. Temporary destinations and
+paths inside the working tree are refused before a request or write; the
+checks include resolved symlink destinations. The downloader records the
+operation in `download_provenance.json` beside the table.
+
+A response whose size or SHA256 differs from the pin is discarded and the
+recipe fails. The stream stops before writing bytes beyond the pinned size;
+local copies are checked for regular-file type and size before hashing.
+An existing verified copy is reused without a request or overwrite, and
+reuse also writes a verification record. A corrupt existing provenance
+record is refused before any download or placement. Provenance is written
+atomically, preserving unrelated entries. Reuse records verification time
+without inventing a download time for a copy supplied by hand.
+
+Passing the file as `--madin-csv` records
 `madin_status: pinned_verified` and the pin in `provenance.json`. Without
 `--madin-csv`, the status stays `not_supplied_source_support_unknown`, the pin
 is still recorded, and Madin carriers keep `unknown` source status.
@@ -140,7 +180,7 @@ Limits of the pin:
 | `carrier_source_evidence.tsv` | Named KG source fields and optional Madin subsources for each carrier supporting an audited matrix cell. |
 | `support_threshold_sensitivity.tsv` | Six focal traits under seven declared support rules, with effect units, paired/study counts, ties, and nominal study sign tests. |
 | `coasserted_label_census.tsv` | Co-assertion by species, genus, family and other/unknown rank, among bound reported taxa and their occurrences; missing features remain unavailable. |
-| `provenance.json` | SHA256 and size of all inputs, all five output tables, producer and matrix policy code, environment lock, scope reconciliation, source rules, the Madin pin and status, and limitations. |
+| `provenance.json` | SHA256 and size of all inputs, all five output tables, producer, matrix policy and Madin verification code, environment lock, scope reconciliation, source rules, the Madin pin and status, and limitations. |
 
 A carrier is a distinct NCBITaxon node at or below the reported taxon, including
 the reported taxon itself when it carries an annotation under the selected scope.

@@ -1,0 +1,8 @@
+study_id	experiment_id	inc_dec	taxa_count	METPO:1000612	METPO:1000605	METPO:1000608	METPO:2000510|mediadive.medium:1
+bsdb:1	bsdb:1-1	dec	1	0	0	0	0
+bsdb:1	bsdb:1-1	inc	2	1	1	2	0
+bsdb:1	bsdb:1-2	dec	1	0	0	0	0
+bsdb:1	bsdb:1-2	inc	1	0	0	0	1
+bsdb:1	bsdb:1-3	inc	1	0	0	1	0
+bsdb:3	bsdb:3-1	dec	1	0	1	0	0
+bsdb:3	bsdb:3-1	inc	1	1	1	1	0

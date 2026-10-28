@@ -20,9 +20,11 @@ from mtp.label_support_audit import AUDIT_TRAITS
 from mtp.multiplicity.families import rows
 from mtp.multiplicity.sources import VerifiedSources
 from mtp.paths import file_sha256
+from mtp.trait_lists import parse_trait_list
 
 CARRIER_POPULATION = "reported_taxa_observed_in_supplied_count_profiles"
 SCOPE_DESCRIPTION = "exact supplied profile keys; no independent host or orientation claim"
+_DEFAULT_CATALOG_COVERAGE = "focal_and_selected_oxygen_traits_only"
 Cell = tuple[str, str]
 _NULLABLE_COUNTS = (
     "carrier_direct_reported_taxa",
@@ -32,14 +34,18 @@ _NULLABLE_COUNTS = (
 )
 
 
-def _empty(traits: tuple[str, ...], status: str) -> pd.DataFrame:
+def _empty(
+    traits: tuple[str, ...],
+    status: str,
+    coverage: str = _DEFAULT_CATALOG_COVERAGE,
+) -> pd.DataFrame:
     return pd.DataFrame(
         {
             "trait": traits,
             "carrier_status": status,
             "carrier_population": CARRIER_POPULATION,
             "carrier_population_note": SCOPE_DESCRIPTION,
-            "carrier_catalog_coverage": "focal_and_selected_oxygen_traits_only",
+            "carrier_catalog_coverage": coverage,
             "carrier_direct_reported_taxa": None,
             "carrier_inherited_reported_taxa": None,
             "carrier_unique_taxa": None,
@@ -75,8 +81,50 @@ def _valid_taxon(value: str) -> bool:
     return prefix == "NCBITaxon" and bool(separator) and suffix.isascii() and suffix.isdecimal()
 
 
+def _audited_trait_catalog(
+    record: dict[str, Any], inputs: dict[str, Any], features: tuple[str, ...]
+) -> tuple[frozenset[str], str]:
+    has_record = "trait_list" in record
+    has_input = "trait_list" in inputs
+    if not has_record and not has_input:
+        return frozenset(AUDIT_TRAITS), _DEFAULT_CATALOG_COVERAGE
+    if not (has_record and has_input):
+        raise ValueError("Label-support audit trait_list provenance is incomplete")
+    declared = _mapping(record.get("trait_list"), "trait_list")
+    inventoried = _mapping(inputs.get("trait_list"), "input trait_list")
+    path = declared.get("path")
+    name = declared.get("name")
+    sha256 = declared.get("sha256")
+    raw_ids = declared.get("trait_ids")
+    if (
+        not isinstance(path, str)
+        or not path
+        or path != inventoried.get("path")
+        or not isinstance(name, str)
+        or not name
+        or Path(path).name != name
+        or not isinstance(sha256, str)
+        or len(sha256) != 64
+        or sha256 != inventoried.get("sha256")
+        or not isinstance(raw_ids, list)
+        or not raw_ids
+        or any(not isinstance(item, str) for item in raw_ids)
+    ):
+        raise ValueError("Malformed or mismatched label-support trait_list provenance")
+    parsed_ids = parse_trait_list("\n".join(raw_ids))
+    if list(parsed_ids) != raw_ids or declared.get("trait_count") != len(parsed_ids):
+        raise ValueError("Label-support trait_list identifiers or count mismatch")
+    if not set(parsed_ids) <= set(features):
+        raise ValueError("Label-support trait_list contains traits outside core profiles")
+    return (
+        frozenset(AUDIT_TRAITS) | frozenset(parsed_ids),
+        f"focal_and_selected_oxygen_traits_plus_{name}",
+    )
+
+
 def _core_inventory(
     sources: VerifiedSources,
+    audited_traits: frozenset[str] = frozenset(AUDIT_TRAITS),
 ) -> tuple[dict[Cell, int], Counter[str], dict[str, Any]]:
     """Derive positive audit cells and the exact supplied-profile occurrence population."""
     matrix = sources.product("taxa_matrix")
@@ -89,7 +137,7 @@ def _core_inventory(
         if not _valid_taxon(taxon) or taxon in matrix_taxa:
             raise ValueError("Invalid or duplicate label-support matrix taxon")
         matrix_taxa.add(taxon)
-        for trait in AUDIT_TRAITS.keys() & row.keys():
+        for trait in audited_traits & row.keys():
             value = _count(row, trait, matrix)
             if value:
                 expected[(taxon, trait)] = value
@@ -259,7 +307,8 @@ def carrier_table(
         ):
             raise ValueError("Label-support audit output inventory mismatch")
         paths.append(path)
-    expected, occurrences, scope = _core_inventory(sources)
+    audited_traits, coverage = _audited_trait_catalog(record, inputs, features)
+    expected, occurrences, scope = _core_inventory(sources, audited_traits)
     if record.get("scope") != scope:
         raise ValueError("Label-support audit scope facts differ from core inputs")
     support_path = root / "taxon_trait_label_support.tsv"
@@ -272,9 +321,9 @@ def carrier_table(
     carriers = _validate_evidence(
         evidence_path, outputs[evidence_path.name]["sha256"], expected, support, occurrences
     )
-    table = _empty(features, "not_in_focal_audit")
+    table = _empty(features, "not_in_focal_audit", coverage)
     for index, feature in enumerate(features):
-        if feature not in AUDIT_TRAITS:
+        if feature not in audited_traits:
             continue
         cells = [
             value

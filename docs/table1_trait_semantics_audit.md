@@ -1,5 +1,15 @@
 # Table 1 Trait Semantics, Ontology Overlap, and Source Evidence Audit
 
+**Historical policy boundary (#1129):** The counts and source inventories below
+describe the original Table 1 features before facultative unification. In
+particular, its `METPO:1000608` inventory is the single original term, not the
+current union. Current core runs default to the versioned local mapping of
+`METPO:1000605`, `METPO:1000608` and `METPO:1000612` documented in
+[`methods/trait_key_policy.md`](../methods/trait_key_policy.md), with member CURIEs
+and source vocabularies exported in matrix metadata and the feature catalog.
+The historical recommendations about separating Table 1 traits do not prohibit
+this declared facultative union. Current counts require a new run.
+
 **Issue Reference:** [#189](https://github.com/CultureBotAI/bsdbng/issues/189)  
 **Leads:** Ilyas Abdolcader, Jed Dongjin Kim-Ozaeta  
 **Related Issues:** [#178](https://github.com/CultureBotAI/bsdbng/issues/178), [#179](https://github.com/CultureBotAI/bsdbng/issues/179), [#182](https://github.com/CultureBotAI/bsdbng/issues/182), [#187](https://github.com/CultureBotAI/bsdbng/issues/187)  

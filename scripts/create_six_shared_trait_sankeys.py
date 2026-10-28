@@ -42,6 +42,7 @@ from create_condition_body_site_guild_maps import (
 from create_six_shared_trait_cytoscape_heatmaps import (
     CONTRAST_MODES,
     trait_list_edges_filename,
+    trait_list_stool_edges_filename,
     write_six_shared_trait_cytoscape_heatmaps,
     write_trait_list_direction_contrasts,
 )
@@ -52,6 +53,7 @@ from mtp.composition_denominators import (
     trait_fractions,
     validate_cached_totals,
 )
+from mtp.stool_group_contrasts import exact_stool_profiles
 from mtp.trait_lists import (
     DeclaredTraitList,
     file_sha256,
@@ -180,7 +182,9 @@ def reset_output_dir() -> None:
             raise RuntimeError(msg)
 
 
-def load_profile_metadata(path: Path | None = None) -> pd.DataFrame:
+def load_profile_metadata(
+    path: Path | None = None, *, preserve_exact_body_site: bool = False
+) -> pd.DataFrame:
     """Load the human-host profile metadata used by the current Sankey maps."""
     metadata = read_tsv(PROFILE_METADATA_PATH if path is None else path, index_col=0)
     metadata = metadata.copy()
@@ -188,7 +192,10 @@ def load_profile_metadata(path: Path | None = None) -> pd.DataFrame:
     for column in ["study_id", "experiment_id", "inc_dec", "condition", "body_site_group"]:
         metadata[column] = metadata[column].map(clean_text)
     if "body_site" in metadata:
-        metadata["body_site"] = metadata["body_site"].map(clean_text)
+        if not preserve_exact_body_site:
+            metadata["body_site"] = metadata["body_site"].map(clean_text)
+    elif preserve_exact_body_site:
+        raise ValueError("Exact stool selection requires the raw body_site metadata column")
     else:
         metadata["body_site"] = "unknown"
     metadata["total_trait_signal"] = pd.to_numeric(
@@ -2892,6 +2899,7 @@ def write_trait_list_contrasts(
     metadata_path: Path = PROFILE_METADATA_PATH,
     columns_path: Path = TRAIT_COLUMNS_PATH,
     code_commit: str = "",
+    stool_group_count: int = 6,
 ) -> pd.DataFrame:
     """Write signed direction contrasts for a declared trait list (#1054).
 
@@ -2902,12 +2910,17 @@ def write_trait_list_contrasts(
     # The six-trait run clears its directory and refuses nested ones (#1083).
     if output_dir.resolve().is_relative_to(OUTPUT_DIR.resolve()):
         raise ValueError("Trait-list contrasts need a directory outside the six-trait one")
+    if (
+        isinstance(stool_group_count, bool)
+        or not isinstance(stool_group_count, int)
+        or stool_group_count < 1
+    ):
+        raise ValueError("stool_group_count must be a positive integer")
     output_dir.mkdir(parents=True, exist_ok=True)
     traits = declared_shared_traits(trait_list, columns_path)
-    metadata = load_profile_metadata(metadata_path)
-    zscores = build_zscore_matrix(
-        load_raw_trait_counts(traits, metadata, profiles_path), metadata, traits
-    )
+    metadata = load_profile_metadata(metadata_path, preserve_exact_body_site=True)
+    raw_counts = load_raw_trait_counts(traits, metadata, profiles_path)
+    zscores = build_zscore_matrix(raw_counts, metadata, traits)
     edges_by_mode = {
         "grouped": build_trait_direction_tables(metadata, zscores, traits)[0],
         "individual_conditions": build_individual_condition_direction_tables(
@@ -2923,6 +2936,19 @@ def write_trait_list_contrasts(
             edges[edges["focus_direction"] == focus_label].to_csv(
                 output_dir / trait_list_edges_filename(view_key), sep="\t", index=False
             )
+    # Keep the corpus-wide z reference; only the grouping population becomes stool.
+    stool_metadata = exact_stool_profiles(metadata)
+    stool_edges = (
+        build_trait_direction_tables(stool_metadata, zscores.loc[stool_metadata.index], traits)[0]
+        if not stool_metadata.empty
+        else edges_by_mode["grouped"].iloc[:0].copy()
+    )
+    if stool_edges.empty:
+        stool_edges = edges_by_mode["grouped"].iloc[:0].copy()
+    for direction in ("increased", "decreased"):
+        stool_edges.loc[stool_edges["focus_direction"] == direction].to_csv(
+            output_dir / trait_list_stool_edges_filename(direction), sep="\t", index=False
+        )
     trait_order = pd.DataFrame(
         {
             "trait_id": [trait.trait_id for trait in traits],
@@ -2940,6 +2966,22 @@ def write_trait_list_contrasts(
         "trait_columns_file": columns_path.name,
         "trait_columns_sha256": file_sha256(columns_path),
         "profile_count": len(metadata),
+        "stool_definition": {"field": "body_site", "operator": "exact_equals", "value": "Feces"},
+        "stool_profile_count": len(stool_metadata),
+        "stool_study_count": int(stool_metadata["study_id"].nunique()),
+        "stool_standardization_population": (
+            "all consumed metadata profiles; exact stool filter after standardization"
+        ),
+        "input_annotation_state": (
+            "pre-union"
+            if {"METPO:1000605", "METPO:1000612"}.intersection(raw_counts.columns)
+            else "undetermined"
+        ),
+        "facultative_feature_columns": [
+            trait
+            for trait in ("METPO:1000605", "METPO:1000608", "METPO:1000612")
+            if trait in raw_counts.columns
+        ],
         "trait_z": (
             "log1p(1000 x fraction of all retained non-MediaDive trait counts), "
             "standardized per trait over every profile (ddof=0); positive z is above "
@@ -2947,7 +2989,9 @@ def write_trait_list_contrasts(
         ),
         "code_commit": code_commit,
     }
-    return write_trait_list_direction_contrasts(output_dir, trait_order, trait_list, inputs)
+    return write_trait_list_direction_contrasts(
+        output_dir, trait_order, trait_list, inputs, stool_group_count=stool_group_count
+    )
 
 
 def main() -> None:
@@ -3062,18 +3106,36 @@ def cli(argv: Sequence[str] | None = None) -> None:
     )
     parser.add_argument("--columns", type=Path, help=f"With --trait-list ({TRAIT_COLUMNS_PATH})")
     parser.add_argument("--code-commit", help="With --trait-list: code commit for provenance")
+    parser.add_argument(
+        "--stool-group-count",
+        type=int,
+        help=(
+            "With --trait-list: number of supported stool condition groups, "
+            "ranked by studies then name (default 6)"
+        ),
+    )
     add_temporary_output_option(parser)
     args = parser.parse_args(argv)
-    trait_list_options = ("output_dir", "profiles", "profile_metadata", "columns", "code_commit")
+    trait_list_options = (
+        "output_dir",
+        "profiles",
+        "profile_metadata",
+        "columns",
+        "code_commit",
+        "stool_group_count",
+    )
     if args.trait_list is None and (
         args.allow_temporary_output
         or any(getattr(args, name) is not None for name in trait_list_options)
     ):
         parser.error(
-            "--output-dir, --profiles, --profile-metadata, --columns, --code-commit and "
+            "--output-dir, --profiles, --profile-metadata, --columns, --code-commit, "
+            "--stool-group-count and "
             "--allow-temporary-output apply only with --trait-list"
         )
     if args.trait_list is not None:
+        if args.stool_group_count is not None and args.stool_group_count < 1:
+            parser.error("--stool-group-count must be positive")
         if args.output_dir is None:
             parser.error("--trait-list requires --output-dir")
         # A trait-list run's contrast tables are cited, so they must outlive a restart (#1087)
@@ -3085,6 +3147,7 @@ def cli(argv: Sequence[str] | None = None) -> None:
             metadata_path=args.profile_metadata or PROFILE_METADATA_PATH,
             columns_path=args.columns or TRAIT_COLUMNS_PATH,
             code_commit="" if args.code_commit is None else args.code_commit,
+            stool_group_count=6 if args.stool_group_count is None else args.stool_group_count,
         )
         print(f"Wrote {len(contrasts)} trait-list contrast cells to {args.output_dir}")
     elif args.high_support_layouts_only:

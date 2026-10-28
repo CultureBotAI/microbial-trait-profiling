@@ -1,0 +1,8 @@
+taxon	bsdb:1_bsdb:1-1_dec	bsdb:1_bsdb:1-1_inc	bsdb:1_bsdb:1-2_dec	bsdb:1_bsdb:1-2_inc	bsdb:1_bsdb:1-3_inc	bsdb:2_bsdb:2-1_dec	bsdb:2_bsdb:2-1_inc	bsdb:3_bsdb:3-1_dec	bsdb:3_bsdb:3-1_inc
+Examplefamily	0	0	0	0	0	0	0	0	1
+Examplegenus	0	2	0	0	0	0	0	0	0
+Examplegenus_alpha	0	1	0	0	1	0	1	0	0
+Examplegenus_gamma	0	0	0	0	0	0	0	1	0
+Mediaonly_bacterium	0	0	0	1	0	0	0	0	0
+Missingkg_bacterium	0	0	1	0	0	0	0	0	0
+Unannotated_bacterium	1	0	0	0	0	1	0	0	0

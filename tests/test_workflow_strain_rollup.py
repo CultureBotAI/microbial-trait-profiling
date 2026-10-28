@@ -39,7 +39,7 @@ from mtp.workflow.operations import (
     Operation,
     feature_catalog_operation,
     trace_profile_feature,
-    validate_core_product,
+    validate_execution_product,
 )
 from mtp.workflow.runtime import WorkflowExecutionError, artifact_path, execute_workflow
 from mtp.workflow.verification import verify_core_run
@@ -109,7 +109,7 @@ def _run(
         root,
         operations,
         parameter_overrides={"source_mode": "fixture", "strain_rollup": scope},
-        validator=validate_core_product,
+        validator=validate_execution_product,
         repository_root=ROOT,
     )
 
@@ -132,7 +132,7 @@ def test_both_core_specs_default_to_the_phenotype_scope() -> None:
         assert defaults["strain_rollup"] == PRIMARY_STRAIN_ROLLUP == "phenotype"
         steps = {step.id: step for step in definition.steps}
         for step_id in ("taxa_matrix", "feature_catalog"):
-            assert steps[step_id].parameters == ["strain_rollup"]
+            assert steps[step_id].parameters == ["strain_rollup", "trait_key_policy"]
 
 
 @pytest.mark.parametrize("scope", ["off", "phenotype", "full"])
@@ -147,7 +147,8 @@ def test_each_scope_publishes_a_matrix_its_contracts_accept(
     steps = {step.step_id: step for step in run.steps or []}
     for step_id in ("taxa_matrix", "feature_catalog"):
         assert [(p.name, p.value) for p in steps[step_id].parameters or []] == [
-            ("strain_rollup", scope)
+            ("strain_rollup", scope),
+            ("trait_key_policy", "facultative_union_v1"),
         ]
     verify_core_run(Path(run.manifest_path))
 
@@ -219,7 +220,10 @@ def test_a_matrix_built_under_another_scope_is_rejected(
     def off_matrix(
         inputs: dict[str, Path], outputs: dict[str, Path], parameters: dict[str, object]
     ) -> None:
-        assert parameters == {"strain_rollup": "phenotype"}
+        assert parameters == {
+            "strain_rollup": "phenotype",
+            "trait_key_policy": "facultative_union_v1",
+        }
         create_taxa_trait_matrix(
             taxa_path=inputs["reported_taxa"],
             edges_path=inputs["kg_edges"],
@@ -241,8 +245,11 @@ def test_a_catalog_written_under_another_scope_is_rejected(
     def off_catalog(
         inputs: dict[str, Path], outputs: dict[str, Path], parameters: dict[str, object]
     ) -> None:
-        assert parameters == {"strain_rollup": "phenotype"}
-        feature_catalog_operation(inputs, outputs, {"strain_rollup": "off"})
+        assert parameters == {
+            "strain_rollup": "phenotype",
+            "trait_key_policy": "facultative_union_v1",
+        }
+        feature_catalog_operation(inputs, outputs, {**parameters, "strain_rollup": "off"})
 
     with pytest.raises(WorkflowExecutionError, match="evidence"):
         _run(
@@ -272,7 +279,9 @@ def test_the_trace_reconciles_strain_attributed_counts(
         SHAPE,
     )
 
-    result = trace_profile_feature(*arguments, strain_rollup="phenotype")
+    result = trace_profile_feature(
+        *arguments, strain_rollup="phenotype", trait_key_policy="facultative_union_v1"
+    )
 
     assert result["count_profile_value"] == 1
     ledger = cast(list[dict[str, object]], result["ledger"])
@@ -280,7 +289,7 @@ def test_the_trace_reconciles_strain_attributed_counts(
     edges = cast(list[dict[str, str]], ledger[0]["evidence_edges"])
     assert [edge["id"] for edge in edges] == ["strain1_shape"]
     with pytest.raises(ValueError, match="does not reconcile"):
-        trace_profile_feature(*arguments)
+        trace_profile_feature(*arguments, trait_key_policy="facultative_union_v1")
 
 
 def test_cell_lineage_traces_under_the_recorded_scope(

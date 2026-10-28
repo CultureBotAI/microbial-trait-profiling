@@ -99,12 +99,18 @@ Exact Feces remains the rule, consistent with the
 The trait list is an explicit hashed input. The standard phenotype list is
 [`trait_lists/headline_ten_phenotype.txt`](trait_lists/headline_ten_phenotype.txt).
 Preserve its order; do not select traits using these results. Missing declared
-traits cause an error. Despite its historical filename, the list contains nine
-traits after #1123: `METPO:1000608` is retained and `METPO:1000605` is removed.
-All nine declared traits and both quadrant traits occur in the archived F off
-catalog, so this list no longer prevents an off quadrant run. Every parent must
-still pass complete source verification; catalog membership alone is not a
-successful execution or verification result.
+traits cause an error. Despite its historical filename, the current list contains
+nine traits: its facultative entry is the `METPO:1000608` union under
+[`facultative_union_v1`](trait_key_policy.md). The historical F list had ten entries,
+including a separate `METPO:1000605` entry absent under off. Historical reproduction
+must use that producer's hashed list and raw-object policy, not the current list.
+
+All nine currently declared traits and both quadrant traits occur in the archived
+F off catalog, so this list no longer prevents an off quadrant run. Every parent
+must still pass complete source verification; catalog membership alone is not a
+successful execution or verification result. A current-list qualification on F
+retains its verified raw-object semantics and reports the removed historical
+trait explicitly; it does not reproduce the full historical ten-trait list.
 
 Among the supplied stool comparisons, rank exact `condition` strings by
 comparison count descending, then condition name ascending for ties. Select

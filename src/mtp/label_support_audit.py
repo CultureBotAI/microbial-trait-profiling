@@ -7,6 +7,7 @@ import csv
 import json
 import re
 from collections import Counter, defaultdict, deque
+from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal
@@ -30,6 +31,7 @@ from mtp.taxa_trait_matrix import (
     resolve_kg_file,
 )
 from mtp.trait_guilds import MEDIADIVE_MARKER, OXYGEN_GUILDS, TABLE1_TRAIT_LABELS, TABLE1_TRAITS
+from mtp.trait_lists import load_trait_list, parse_trait_list
 from mtp.workflow import kg_inputs
 from mtp.workflow.output_roots import add_temporary_output_option, require_durable_output
 
@@ -166,12 +168,17 @@ def load_kg_provenance_graph(
     for child, ancestors in parents.items():
         for parent in ancestors:
             children[parent].add(child)
+    trait_object_ids = {key.split("|", 1)[-1] for key in sources}
     names = {}
     with nodes_path.open(encoding="utf-8", newline="") as handle:
         reader = csv.DictReader(handle, delimiter="\t")
         _require_columns(reader, {"id", "name"}, nodes_path)
         for row in reader:
-            if row["id"] in traits or row["id"] in FOCAL_TAXA.values():
+            if (
+                row["id"] in traits
+                or row["id"] in FOCAL_TAXA.values()
+                or row["id"] in trait_object_ids
+            ):
                 names[row["id"]] = row["name"]
     return {
         "traits": traits,
@@ -299,16 +306,46 @@ def _subtree(taxon: str, children: dict[str, set[str]]) -> set[str]:
     return found
 
 
+def _trait_label(trait_key: str, names: Mapping[str, str]) -> str:
+    if trait_key in AUDIT_TRAITS:
+        return AUDIT_TRAITS[trait_key]
+    obj = trait_key.split("|", 1)[-1]
+    label = " ".join((names.get(obj) or "").split())
+    if label:
+        return label
+    return obj.split(":", 1)[-1] if ":" in obj else trait_key
+
+
+def _resolve_trait_list(trait_list: Sequence[str] | Path | None) -> tuple[str, ...]:
+    if trait_list is None:
+        return ()
+    if isinstance(trait_list, Path):
+        return load_trait_list(trait_list).trait_ids
+    if isinstance(trait_list, str) or not isinstance(trait_list, Sequence):
+        raise ValueError("Expected a Path or sequence of trait identifiers for trait_list")
+    if not trait_list:
+        return ()
+    return parse_trait_list("\n".join(trait_list))
+
+
 def build_label_support_tables(
     graph: dict[str, Any],
     matrix: pd.DataFrame,
     occurrences: pd.DataFrame,
     madin: dict[str, dict[str, set[str]]],
+    *,
+    trait_list: Sequence[str] | Path | None = None,
 ) -> tuple[list[Row], list[Row], list[Row]]:
     """Reconcile carrier counts and export source evidence without changing the matrix."""
     support, focal, evidence = [], [], []
     counts = matrix.set_index("taxon_id")
+    declared = _resolve_trait_list(trait_list)
+    if missing_declared := [key for key in declared if key not in counts.columns]:
+        raise ValueError(f"Declared traits absent from matrix: {missing_declared}")
     features = [key for key in AUDIT_TRAITS if key in counts]
+    for key in declared:
+        if key not in AUDIT_TRAITS:
+            features.append(key)
     annotated = {taxon for taxon, traits in graph["traits"].items() if traits}
     feature_carriers = {key: set(graph["sources"].get(key, {})) for key in features}
     occurrence_counts = occurrences["taxon_id"].value_counts()
@@ -359,7 +396,7 @@ def build_label_support_tables(
                 if taxon in counts.index
                 else "unknown",
                 "trait_key": key,
-                "trait_label": AUDIT_TRAITS[key],
+                "trait_label": _trait_label(key, graph["names"]),
                 "carrier_count": len(carriers),
                 "carrier_at_reported_taxon": taxon in carriers,
                 "inherited_carrier_count": len(carriers - {taxon}),
@@ -560,10 +597,12 @@ def run_label_support_audit(
     output_dir: Path,
     madin_csv: Path | None = None,
     strain_rollup: Scope = "off",
+    trait_list: Path | None = None,
 ) -> Row:
     """Write sidecar products only, after all source reconciliations pass."""
     if output_dir.exists() and any(output_dir.iterdir()):
         raise FileExistsError("Choose an empty output directory for the label-support sidecar")
+    declared_traits = load_trait_list(trait_list) if trait_list is not None else None
     inputs = {
         "taxa": taxa_path,
         "matrix": matrix_path,
@@ -576,7 +615,14 @@ def run_label_support_audit(
         # not recorded as unpinned.
         madin_source.verify_madin_table(madin_csv)
         inputs["madin"] = madin_csv
+    if trait_list is not None:
+        inputs["trait_list"] = trait_list
     provenance_inputs = {name: _inventory(path) for name, path in inputs.items()}
+    if (
+        declared_traits is not None
+        and provenance_inputs["trait_list"]["sha256"] != declared_traits.sha256
+    ):
+        raise ValueError("Declared trait list changed during execution")
     madin_status = "not_supplied_source_support_unknown"
     if madin_csv is not None:
         # The status rests on the recorded hash, so a file replaced after the check above
@@ -589,7 +635,13 @@ def run_label_support_audit(
     occurrences, scope_facts = bind_occurrences(taxa_path, matrix, profiles)
     graph = load_kg_provenance_graph(edges_path, nodes_path, strain_rollup=strain_rollup)
     madin = load_madin_subsources(madin_csv)
-    support, focal, evidence = build_label_support_tables(graph, matrix, occurrences, madin)
+    support, focal, evidence = build_label_support_tables(
+        graph,
+        matrix,
+        occurrences,
+        madin,
+        trait_list=declared_traits.trait_ids if declared_traits is not None else None,
+    )
     sensitivity = build_support_threshold_sensitivity(support, occurrences, profiles)
     census = build_coassertion_census(matrix, occurrences)
     tables = {
@@ -626,6 +678,7 @@ def run_label_support_audit(
         "matrix_policy_code": _inventory(Path(matrix_api.__file__)),
         "kg_parser_code": _inventory(Path(kg_inputs.__file__)),
         "trait_definitions_code": _inventory(Path(trait_guilds.__file__)),
+        "madin_verification_code": _inventory(Path(madin_source.__file__)),
         "kg_edge_serialization": graph["edge_serialization"],
         "environment_lock": _inventory(REPO_ROOT / "uv.lock"),
         "verification_status": "hashes_and_counts_reconciled_not_core_execution_verified",
@@ -647,6 +700,14 @@ def run_label_support_audit(
         ],
         "outputs": {name: _inventory(output_dir / name) for name in tables},
     }
+    if declared_traits is not None:
+        result["trait_list"] = {
+            "path": provenance_inputs["trait_list"]["path"],
+            "name": declared_traits.source_name,
+            "sha256": declared_traits.sha256,
+            "trait_count": len(declared_traits.trait_ids),
+            "trait_ids": list(declared_traits.trait_ids),
+        }
     (output_dir / "provenance.json").write_text(
         json.dumps(result, indent=2) + "\n", encoding="utf-8"
     )
@@ -662,6 +723,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--edges", type=Path)
     parser.add_argument("--nodes", type=Path)
     parser.add_argument("--madin-csv", type=Path)
+    parser.add_argument("--trait-list", type=Path, default=None)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--strain-rollup", choices=("off", "phenotype"), required=True)
     add_temporary_output_option(parser)
@@ -676,6 +738,7 @@ def main(argv: list[str] | None = None) -> int:
         madin_csv=args.madin_csv,
         strain_rollup=args.strain_rollup,
         output_dir=args.output_dir,
+        trait_list=args.trait_list,
     )
     return 0
 

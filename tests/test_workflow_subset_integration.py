@@ -20,7 +20,7 @@ from mtp.workflow.arms import runtime as arm_runtime
 from mtp.workflow.arms.noel import build_commands
 from mtp.workflow.arms.runtime import execute_arm, verify_arm
 from mtp.workflow.arms.types import ArmContext, Command
-from mtp.workflow.operations import OPERATIONS, validate_core_product
+from mtp.workflow.operations import OPERATIONS, validate_execution_product
 from mtp.workflow.runtime import artifact_path, content_hash, execute_workflow, validate_run
 from mtp.workflow.verification import verify_core_run
 
@@ -62,7 +62,7 @@ def cores(tmp_path_factory: pytest.TempPathFactory) -> dict[str, WorkflowRun]:
                 "source_mode": "fixture",
                 **({"contrast_population": population} if name == "subset" else {}),
             },
-            validator=validate_core_product,
+            validator=validate_execution_product,
             repository_root=REPO_ROOT,
         )
         for name, spec, population in (
@@ -143,7 +143,7 @@ def test_nondefault_parameter_cannot_label_an_unfiltered_execution(tmp_path: Pat
             tmp_path / "runs",
             OPERATIONS,
             parameter_overrides={"source_mode": "fixture", "contrast_population": POPULATION},
-            validator=validate_core_product,
+            validator=validate_execution_product,
         )
     assert not (tmp_path / "runs").exists()
 
@@ -217,7 +217,7 @@ def test_subset_requires_full_source_background_before_execution(
             tmp_path / "runs",
             OPERATIONS,
             parameter_overrides={"contrast_population": POPULATION},
-            validator=validate_core_product,
+            validator=validate_execution_product,
         )
     assert not (tmp_path / "runs").exists()
 
