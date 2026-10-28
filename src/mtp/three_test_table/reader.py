@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import csv
 import hashlib
+import io
 import json
 import math
 import re
@@ -301,15 +302,18 @@ def _bound_snapshot(path: Path, sources: VerifiedSources, record: dict[str, Any]
     return snapshot
 
 
-def _read_table(path: Path, keys: list[str]) -> pd.DataFrame:
-    with path.open(encoding="utf-8", newline="") as handle:
-        header = next(csv.reader(handle, delimiter="\t"), [])
+def _read_table(path: Path, keys: list[str], *, expected: dict[str, Any]) -> pd.DataFrame:
+    """Check, inspect the header and parse one immutable buffer of bound bytes."""
+    raw = path.read_bytes()
+    if {"sha256": hashlib.sha256(raw).hexdigest(), "size_bytes": len(raw)} != expected:
+        raise ValueError(f"Completed-table parsed input hash or size differs: {path.name}")
+    header = next(csv.reader(io.StringIO(raw.decode("utf-8"), newline=""), delimiter="\t"), [])
     if not header or len(set(header)) != len(header) or any(not name for name in header):
         raise ValueError("Completed-table TSV header has missing or duplicate columns")
     if header[: len(keys)] != keys:
         raise ValueError("Completed-table ledger identity columns differ")
     frame: pd.DataFrame = pd.read_csv(
-        path,
+        io.BytesIO(raw),
         sep="\t",
         dtype=dict.fromkeys(keys, str),
         keep_default_na=False,
@@ -326,8 +330,10 @@ def _read_table(path: Path, keys: list[str]) -> pd.DataFrame:
     return frame
 
 
-def _ledger(path: Path, keys: list[str], traits: list[str]) -> pd.DataFrame:
-    frame: pd.DataFrame = _read_table(path, keys)
+def _ledger(
+    path: Path, keys: list[str], traits: list[str], *, expected: dict[str, Any]
+) -> pd.DataFrame:
+    frame: pd.DataFrame = _read_table(path, keys, expected=expected)
     if list(frame.columns) != [*keys, *traits]:
         raise ValueError("Completed-table ledger columns differ from the retained catalog")
     frame = frame.set_index(keys)
@@ -530,8 +536,9 @@ def load_completed_table(
         comparison / "comparison_run.json" if comparison.is_dir() else comparison
     )
     resolved_targets[comparison] = comparison.resolve(strict=True)
-    comparison_hash = file_sha256(comparison)
-    declared_comparison = json.loads(comparison.read_text(encoding="utf-8"))
+    comparison_raw = comparison.read_bytes()
+    comparison_hash = hashlib.sha256(comparison_raw).hexdigest()
+    declared_comparison = json.loads(comparison_raw)
     if not isinstance(declared_comparison, dict):
         raise ValueError("Completed-table declared comparison is not an object")
     declared_aliases = _declared_aliases(declared_comparison)
@@ -568,8 +575,15 @@ def load_completed_table(
             raise ValueError("Declared source alias is not bound to a consumed input")
         _remember_path(alias, snapshots[target], snapshots, resolved_targets)
     traits = list(sources.features["count_profiles"])
-    pairs = _ledger(manifest.parent / _OUTPUTS[0], ["study_id", "experiment_id"], traits)
-    studies = _ledger(manifest.parent / _OUTPUTS[1], ["study_id"], traits)
+    pairs = _ledger(
+        manifest.parent / _OUTPUTS[0],
+        ["study_id", "experiment_id"],
+        traits,
+        expected=record["outputs"][_OUTPUTS[0]],
+    )
+    studies = _ledger(
+        manifest.parent / _OUTPUTS[1], ["study_id"], traits, expected=record["outputs"][_OUTPUTS[1]]
+    )
     expected_pairs, input_profiles = _pair_population(sources)
     if set(pairs.index) != expected_pairs or set(studies.index) != {
         key[0] for key in expected_pairs
@@ -580,7 +594,9 @@ def load_completed_table(
         studies.to_numpy(dtype=float), means.to_numpy(dtype=float), rtol=1e-12, atol=1e-14
     ):
         raise ValueError("Completed-table study means differ from its pair ledger")
-    evidence = _read_table(manifest.parent / _OUTPUTS[2], ["trait"])
+    evidence = _read_table(
+        manifest.parent / _OUTPUTS[2], ["trait"], expected=record["outputs"][_OUTPUTS[2]]
+    )
     _check_summary(evidence, pairs, studies, sources, input_profiles)
     bundle = CompletedTable(
         manifest,

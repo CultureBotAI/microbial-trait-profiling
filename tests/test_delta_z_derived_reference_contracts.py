@@ -20,12 +20,12 @@ import pytest
 from git import Repo
 
 import test_delta_z_derived_reproduction as qualification
+from delta_z_reference_helpers import F_COMMIT
 from mtp.paths import file_sha256
 
 REPOSITORY = Path(__file__).resolve().parents[1]
 TRAIT_LIST = "methods/trait_lists/headline_ten_phenotype.txt"
 EXTRA_TRAIT = "METPO:2000103|pathways:trithionate_oxidation"
-F_COMMIT = "511c891229b659e207cfe0f4281a97c3fc039a80"
 HISTORICAL_DISPLAY_LABELS = {
     "Irritable bowel syndrome": "Irritable bowel",
     "Polycystic ovary syndrome": "Polycystic ovary",
@@ -331,3 +331,57 @@ def test_qualification_rejects_changed_core_experiment_bytes(tmp_path: Path) -> 
     )
     with pytest.raises(AssertionError):
         qualification.test_site_condition_cells_against_persisted_pairs(fixture.inputs())
+
+
+def active_reference_inputs(tmp_path: Path, changed_scope: str = "") -> qualification.Inputs:
+    fixtures = []
+    for scope, trait_count, active in (("off", 317, 291), ("phenotype", 344, 316)):
+        source = tmp_path / scope
+        source.mkdir()
+        fixture = base_fixture(source)
+        traits = [
+            *fixture.record["retained_traits"],
+            *(
+                f"METPO:fixture_{index}"
+                for index in range(trait_count - len(fixture.record["retained_traits"]))
+            ),
+        ]
+        fixture.record.update(
+            strain_rollup=scope,
+            family_size=trait_count,
+            retained_traits=traits,
+            counts={
+                "traits": trait_count,
+                "comparisons": 935,
+                "studies": 548,
+                "traits_with_at_least_50_active_studies": active,
+            },
+        )
+        rows = [
+            {
+                "trait": trait,
+                "sdz_active_studies": 50 if index < active else 49,
+                "sdz_active_at_least_50": index < active,
+            }
+            for index, trait in enumerate(traits)
+        ]
+        if scope == changed_scope:
+            # Preserve every count and rehash the output, but falsify the boundary flag.
+            rows[0]["sdz_active_at_least_50"] = False
+        write_table(fixture.root / "trait_summary.tsv", rows)
+        fixture.save()
+        fixtures.append(fixture)
+    off, phenotype = fixtures
+    return off.root, phenotype.root, *phenotype.inputs()[2:]
+
+
+def test_activity_qualification_accepts_exactly_fifty_boundary_flags(tmp_path: Path) -> None:
+    qualification.test_active_study_references(active_reference_inputs(tmp_path))
+
+
+@pytest.mark.parametrize("scope", ["off", "phenotype"])
+def test_activity_qualification_reads_flags_not_recomputed_counts(
+    tmp_path: Path, scope: str
+) -> None:
+    with pytest.raises(AssertionError):
+        qualification.test_active_study_references(active_reference_inputs(tmp_path, scope))
