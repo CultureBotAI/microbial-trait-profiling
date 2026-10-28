@@ -2357,8 +2357,8 @@ def render_fig7_svg() -> str:
             'th="0.9" stroke-dasharray="3,3"/>',
             "",
             '  <g id="panel_a">',
-            '    <text x="32" y="122" class="panel-title">A. Pairwise Taxonomic Converge'
-            "nce Network (Feces Decreased)</text>",
+            '    <text x="32" y="122" class="panel-title">A. Pairwise Taxonomic '
+            "Convergence Network (Feces Decreased)</text>",
             '    <text x="32" y="141" class="panel-sub">Edge weight proportional to Jacc'
             "ard similarity J = |A ∩ B| / |A \u222a B|; every pairwise overlap contains the 17"
             "-taxon 3-way core</text>",
@@ -2881,12 +2881,12 @@ def render_fig8_svg() -> str:
             '        <line x1="16" y1="134" x2="709" y2="134" stroke="#E5E0D5" stroke-width="1"/>',
             '        <text x="16" y="151" font-size="12.0" font-weight="bold" fill="#'
             '9E2A2B">Published Literature Citations:</text>',
-            '        <text x="16" y="169" font-size="11.2" fill="#181715">• <tspan fon'
-            't-weight="bold">Wallen et al. (2022) Nat Commun (PMID 36414626, N=724):</tspan>'
-            " Reproducible loss of Roseburia,</text>",
-            '        <text x="26" y="184" font-size="11.0" fill="#4A4843">Faecalibacte'
-            "rium, Blautia and plant-polysaccharide degradation pathways in PD metagenomes.</t"
-            "ext>",
+            '        <text x="16" y="169" font-size="11.2" fill="#181715">• <tspan '
+            'font-weight="bold">Wallen et al. (2022) Nature Communications '
+            "(PMID 36414626, N=724):</tspan> Reproducible loss</text>",
+            '        <text x="26" y="184" font-size="11.0" fill="#4A4843">of '
+            "Roseburia, Faecalibacterium, Blautia, and plant-polysaccharide "
+            "pathways in PD metagenomes.</text>",
             '        <text x="16" y="203" font-size="11.2" fill="#181715">• <tspan fon'
             't-weight="bold">Romano et al. (2021) npj Parkinsons Dis (PMID 33654098):</tspan'
             "> 21-cohort meta-analysis</text>",
@@ -3520,8 +3520,8 @@ def render_slide_deck_html() -> str:
             '      <span class="cat-badge" style="color:#9E2A2B;background:#F9ECEC">Set 3 '
             "· Edward Tufte Plates</span>",
             '      <div class="title-block">',
-            "        <h2>Plate I: Three Distinct Diseases Lose the Same Gut Fiber-Digesting Ba"
-            "cteria</h2>",
+            "        <h2>Plate I: Three Distinct Diseases Lose the Same Gut Fiber-Digesting "
+            "Bacteria</h2>",
             '        <p class="subtitle">Slopegraph and mutually exclusive set partition vs.'
             " full pairwise overlaps across 90 human stool studies</p>",
             "      </div>",
@@ -3580,8 +3580,8 @@ def render_slide_deck_html() -> str:
             '    <div class="footer-col"><b>Core genera and species:</b> <i>Roseburia</i> (2'
             "5 studies: 18·2·5), <i>Blautia</i> (19: 12·2·5), <i>Clostridium</i> (16: 7·4·5), "
             "<i>Bacteroides</i> (15: 6·7·2), <i>Lachnospira</i> (14: 5·3·6), <i>Ruminococcus</"
-            "i> (14: 6·4·4), <i>Anaerostipes</i> (8: 2·3·3), <i>Butyrivibrio</i> (4: 2·1·1), a"
-            "nd <i>Eubacterium</i> (4: 1·1·2) decrease across PD, HIV, and CRC.</div>",
+            "i> (14: 6·4·4), <i>Anaerostipes</i> (8: 2·3·3), <i>Butyrivibrio</i> (4: 2·1·1), "
+            "and <i>Eubacterium</i> (4: 1·1·2) decrease across PD, HIV, and CRC.</div>",
             '    <div class="footer-col"><b>Rank sensitivity:</b> Restricting to Genus + Spe'
             "cies (N = 93 stool background taxa, 22 cellulose-annotated) increases PD\u2013CRC"
             " Jaccard similarity to <b>62.5%</b> (<i>p</i> = 5.98 \u00d7 10⁻¹⁰) and 3-way core"
@@ -3668,8 +3668,8 @@ def render_slide_deck_html() -> str:
             '      <span class="cat-badge" style="color:#9E2A2B;background:#F9ECEC">Set 3 '
             "· Edward Tufte Plates</span>",
             '      <div class="title-block">',
-            "        <h2>Plate V: One Matrix, Three Statistical Questions: Composition, Enrich"
-            "ment, and Study Direction</h2>",
+            "        <h2>Plate V: One Matrix, Three Statistical Questions: Composition, "
+            "Enrichment, and Study Direction</h2>",
             '        <p class="subtitle">Filter cascade, 100-fold sample-size scale across s'
             "ampling units, and Table 1 fraction and log-ratio results</p>",
             "      </div>",
@@ -3706,8 +3706,8 @@ def render_slide_deck_html() -> str:
             '      <span class="cat-badge" style="color:#9E2A2B;background:#F9ECEC">Set 3 '
             "· Edward Tufte Plates</span>",
             '      <div class="title-block">',
-            "        <h2>Plate VI: How Results Are Combined: Shared Comparison Basis and the I"
-            "ntegrated Evidence Contract</h2>",
+            "        <h2>Plate VI: How Results Are Combined: Shared Comparison Basis and the "
+            "Integrated Evidence Contract</h2>",
             '        <p class="subtitle">Denominator alignment (317 non-MediaDive traits), s'
             "tudy-equal weighting, and the 1,912-row integrated_evidence.tsv schema</p>",
             "      </div>",
@@ -3730,10 +3730,10 @@ def render_slide_deck_html() -> str:
             "rk-comparison-v1</code> pins the 317 non-MediaDive trait denominator, 2,241 non-z"
             "ero pairs across 939 studies, equal study weighting, and unimputed positive count"
             "s for log-ratios.</div>",
-            '    <div class="footer-col"><b>Integrated evidence contract:</b> <code>integrat'
-            "ed_evidence.tsv</code> (1,912 rows = 40 method rows + 1,872 grid cells) keeps FDR"
-            " families separate, reports both <i>q</i> ≤ 0.05 and <i>q</i> ≤ 0.001, and classi"
-            "fies every blank cell.</div>",
+            '    <div class="footer-col"><b>Integrated evidence contract:</b> '
+            "<code>integrated_evidence.tsv</code> (1,912 rows = 40 method rows + 1,872 grid "
+            "cells) keeps FDR families separate, reports both <i>q</i> ≤ 0.05 and "
+            "<i>q</i> ≤ 0.001, and classifies every blank cell.</div>",
             "  </footer>",
             "</section>",
             "",
@@ -3840,10 +3840,10 @@ def render_slide_deck_html() -> str:
             "c colonic lumen where plant fiber accumulates (73.1% decrease, 50.4% shared taxa)"
             ", whereas mucosal biopsies (18.8% shared) and oral sites (0.0% shared) do not.</d"
             "iv>",
-            '    <div class="footer-col"><b>Colorectal biopsy contrast:</b> On colorectal tu'
-            "mor biopsies, mucosa-adherent bacteria (such as <i>Bacteroides fragilis</i>) ofte"
-            "n increase (6 dec vs. 11 inc) while luminal fiber-degraders decrease in stool (30"
-            " dec vs. 7 inc).</div>",
+            '    <div class="footer-col"><b>Colorectal biopsy contrast:</b> On colorectal '
+            "tumor biopsies, mucosa-adherent bacteria (such as <i>Bacteroides fragilis</i>) "
+            "often increase (6 dec vs. 11 inc) while luminal fiber-degraders decrease in "
+            "stool (30 dec vs. 7 inc).</div>",
             "  </footer>",
             "</section>",
             "",
@@ -3926,8 +3926,8 @@ def render_slide_deck_html() -> str:
             '      <span class="cat-badge" style="color:#0F766E;background:#CCFBF1">Set 1 '
             "· Statistical Reference</span>",
             '      <div class="title-block">',
-            "        <h2>Statistical Figure 2: Anatomical Compartment Specificity and Sensitiv"
-            "ity Across Taxonomic Ranks</h2>",
+            "        <h2>Statistical Figure 2: Anatomical Compartment Specificity and "
+            "Sensitivity Across Taxonomic Ranks</h2>",
             '        <p class="subtitle">Within-study binomial sign tests, cross-disease Jac'
             "card similarity across 4 body compartments, and rank sensitivity</p>",
             "      </div>",
@@ -3996,8 +3996,8 @@ def render_slide_deck_html() -> str:
             '<section class="slide">',
             '  <header class="slide-header">',
             '    <div class="header-left">',
-            '      <span class="cat-badge" style="color:#7C2D12;background:#FFEDD5">Litera'
-            "ture Audit · Vector Table</span>",
+            '      <span class="cat-badge" style="color:#7C2D12;background:#FFEDD5">'
+            "Literature Audit · Vector Table</span>",
             '      <div class="title-block">',
             "        <h2>Published Literature Support for the Four Highlighted Condition-Trait"
             " Signatures</h2>",
