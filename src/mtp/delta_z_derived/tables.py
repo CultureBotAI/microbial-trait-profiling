@@ -11,10 +11,12 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
+from typing import Literal
 
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
+from scipy import __version__ as SCIPY_VERSION
 from scipy import stats
 
 FACULTATIVE = "METPO:1000608"
@@ -22,6 +24,10 @@ OBLIGATE = "METPO:1000607"
 ACTIVE_THRESHOLD = 1e-12
 MEAN_RTOL = 1e-12
 MEAN_ATOL = 1e-14
+WILCOXON_METHOD_CONTRACTS = {
+    "1.17.1": "scipy-1.17.1-wilcoxon-auto-wilcox-v1",
+    "1.18.1": "scipy-1.18.1-wilcoxon-auto-wilcox-v1",
+}
 PAIR_KEYS = ["study_id", "experiment_id"]
 METADATA_FIELDS = [*PAIR_KEYS, "body_site", "condition"]
 CELL_COLUMNS = [
@@ -45,7 +51,15 @@ STOOL_COLUMNS = [
     "wilcoxon_method",
     "test_unit",
     "p_adjustment",
+    "wilcoxon_method_requested",
+    "wilcoxon_correction",
+    "wilcoxon_method_contract",
+    "wilcoxon_scipy_version",
 ]
+STUDY_STOOL_COLUMNS = [
+    column.replace("_comparisons", "_studies") if column.startswith("wilcoxon_") else column
+    for column in STOOL_COLUMNS
+] + ["mean_weighting"]
 
 
 @dataclass(frozen=True)
@@ -56,6 +70,7 @@ class DerivedTables:
     quadrant_pairs: pd.DataFrame
     quadrant_summary: pd.DataFrame
     stool_disease_shifts: pd.DataFrame
+    stool_study_sensitivity: pd.DataFrame
     site_disease_shifts: pd.DataFrame
 
 
@@ -228,7 +243,7 @@ def _pearson(frame: pd.DataFrame) -> dict[str, object]:
     return {"pearson_r": np.nan, "pearson_p": np.nan, "pearson_status": status}
 
 
-def _quadrant_summary(per_pair: pd.DataFrame) -> pd.DataFrame:
+def _quadrant_summary(per_pair: pd.DataFrame, labels: dict[str, str]) -> pd.DataFrame:
     rows: list[dict[str, object]] = []
     for population, frame in (("all", per_pair), ("stool", per_pair.loc[per_pair.is_stool])):
         counts = frame.quadrant.value_counts()
@@ -239,8 +254,8 @@ def _quadrant_summary(per_pair: pd.DataFrame) -> pd.DataFrame:
                 "population": population,
                 "fa_trait": FACULTATIVE,
                 "oa_trait": OBLIGATE,
-                "fa_label": "facultatively aerobic",
-                "oa_label": "obligately anaerobic",
+                "fa_label": labels[FACULTATIVE],
+                "oa_label": labels[OBLIGATE],
                 "fa_up_oa_down": q4,
                 "fa_down_oa_up": q2,
                 "both_up": int(counts.get("both_up", 0)),
@@ -283,7 +298,36 @@ def _cell(
     }
 
 
-def _wilcoxon(values: NDArray[np.float64]) -> dict[str, object]:
+def _resolved_wilcoxon_method(values: NDArray[np.float64]) -> str:
+    """Describe the reviewed locked SciPy auto branch without changing its result.
+
+    SciPy 1.17.1 and 1.18.1 use the same auto branches for finite NumPy vectors.
+    Both use the original observation count for their 50/13 boundaries, even
+    when ``wilcox`` removes exact zeros from the ranks. This is deliberately
+    separate from the tolerance-filtered full-family study test (#1073).
+    """
+    if SCIPY_VERSION not in WILCOXON_METHOD_CONTRACTS:
+        raise ValueError(
+            "Wilcoxon auto-method contract requires a reviewed locked SciPy version "
+            f"({', '.join(WILCOXON_METHOD_CONTRACTS)}); "
+            f"found {SCIPY_VERSION}"
+        )
+    nonzero = values[values != 0]
+    if not len(nonzero):
+        return "not_tested"
+    if len(values) > 50:
+        return "asymptotic"
+    zeros = len(nonzero) != len(values)
+    ties = len(np.unique(np.abs(nonzero))) != len(nonzero)
+    if not (zeros or ties):
+        return "exact"
+    return "permutation" if len(values) <= 13 else "asymptotic"
+
+
+def _wilcoxon(
+    values: NDArray[np.float64], *, unit: Literal["comparison", "study"] = "comparison"
+) -> dict[str, object]:
+    method = _resolved_wilcoxon_method(values)
     nonzero = int(np.count_nonzero(values))
     statistic, probability = np.nan, np.nan
     if nonzero:
@@ -295,12 +339,17 @@ def _wilcoxon(values: NDArray[np.float64]) -> dict[str, object]:
         "wilcoxon_statistic": statistic,
         "wilcoxon_p": probability,
         "wilcoxon_status": "tested" if nonzero else "all_tied",
-        "wilcoxon_nonzero_comparisons": nonzero,
-        "wilcoxon_zero_comparisons": len(values) - nonzero,
+        f"wilcoxon_nonzero_{'comparisons' if unit == 'comparison' else 'studies'}": nonzero,
+        f"wilcoxon_zero_{'comparisons' if unit == 'comparison' else 'studies'}": len(values)
+        - nonzero,
         "wilcoxon_zero_method": "wilcox",
-        "wilcoxon_method": "auto",
-        "test_unit": "comparison",
+        "wilcoxon_method": method,
+        "test_unit": unit,
         "p_adjustment": "none_nominal",
+        "wilcoxon_method_requested": "auto",
+        "wilcoxon_correction": False,
+        "wilcoxon_method_contract": WILCOXON_METHOD_CONTRACTS[SCIPY_VERSION],
+        "wilcoxon_scipy_version": SCIPY_VERSION,
     }
 
 
@@ -310,6 +359,8 @@ def _stool_shifts(
     labels: dict[str, str],
     traits: Sequence[str],
     top_diseases: int,
+    *,
+    by_study: bool = False,
 ) -> pd.DataFrame:
     stool = metadata.loc[metadata.body_site.eq("Feces")]
     groups = {
@@ -323,14 +374,24 @@ def _stool_shifts(
     for rank, condition in enumerate(selected, start=1):
         group = groups[condition]
         for trait in traits:
+            cell = _cell(pairs, group, trait, labels[trait], "Feces", condition)
+            values = pairs.loc[group.index, trait]
+            if by_study:
+                values = values.groupby(level="study_id", sort=True).mean()
+                cell["mean_delta_z"] = float(values.mean())
+                cell["mean_weighting"] = "equal_weight_within_cell_study_means"
             rows.append(
                 {
-                    **_cell(pairs, group, trait, labels[trait], "Feces", condition),
+                    **cell,
                     "disease_rank": rank,
-                    **_wilcoxon(pairs.loc[group.index, trait].to_numpy(dtype=float)),
+                    **_wilcoxon(
+                        values.to_numpy(dtype=float), unit="study" if by_study else "comparison"
+                    ),
                 }
             )
-    return pd.DataFrame.from_records(rows, columns=STOOL_COLUMNS)
+    return pd.DataFrame.from_records(
+        rows, columns=STUDY_STOOL_COLUMNS if by_study else STOOL_COLUMNS
+    )
 
 
 def _site_shifts(
@@ -380,7 +441,10 @@ def build_tables(
     return DerivedTables(
         trait_summary=summary,
         quadrant_pairs=per_pair,
-        quadrant_summary=_quadrant_summary(per_pair),
+        quadrant_summary=_quadrant_summary(per_pair, labels),
         stool_disease_shifts=_stool_shifts(pairs, metadata, labels, traits, top_diseases),
+        stool_study_sensitivity=_stool_shifts(
+            pairs, metadata, labels, traits, top_diseases, by_study=True
+        ),
         site_disease_shifts=_site_shifts(pairs, metadata, labels, list(summary.trait)),
     )

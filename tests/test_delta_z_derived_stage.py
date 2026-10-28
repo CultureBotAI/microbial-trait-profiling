@@ -145,13 +145,20 @@ def synthetic_parent(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
     }
     monkeypatch.setattr(stage, "_producer", lambda _commit: producer.copy())
     summary = pd.DataFrame(
-        {"trait": [FA, OA], "sdz_up": [1, 1], "sdz_down": [1, 1], "sdz_active_studies": [2, 2]}
+        {
+            "trait": [FA, OA],
+            "sdz_up": [1, 1],
+            "sdz_down": [1, 1],
+            "sdz_active_studies": [2, 2],
+            "sdz_active_at_least_50": [False, False],
+        }
     )
     derived = SimpleNamespace(
         trait_summary=summary,
         quadrant_pairs=pd.DataFrame({"study_id": ["001"], "quadrant": ["Q4"]}),
         quadrant_summary=pd.DataFrame({"population": ["all"], "n_comparisons": [2]}),
         stool_disease_shifts=pd.DataFrame({"condition": ["NA"], "trait": [FA]}),
+        stool_study_sensitivity=pd.DataFrame({"condition": ["NA"], "trait": [FA]}),
         site_disease_shifts=pd.DataFrame({"body_site": ["Feces"], "trait": [FA]}),
     )
     builder = Mock(return_value=derived)
@@ -214,6 +221,7 @@ def test_exports_parent_bytes_and_binds_input_and_output_identity(
         "quadrant_pairs.tsv",
         "quadrant_summary.tsv",
         "stool_disease_shifts.tsv",
+        "stool_study_sensitivity.tsv",
         "site_disease_shifts.tsv",
     }
     for name, identity in record["outputs"].items():
@@ -461,3 +469,92 @@ def test_capability_failure_precedes_computation_and_leaves_no_output(
         run(parent, tmp_path / "output")
     parent.builder.assert_not_called()
     assert not (tmp_path / "output").exists()
+
+
+def test_experiments_parse_uses_the_bytes_bound_to_the_record(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An ABA path change must never publish a body site under another payload's hash."""
+    parent = synthetic_parent(tmp_path, monkeypatch)
+    original = parent.experiments.read_bytes()
+    original_reader = pd.read_csv
+
+    def transient_reader(source: Any, *args: Any, **kwargs: Any) -> pd.DataFrame:
+        if isinstance(source, Path) and source == parent.experiments:
+            source.write_bytes(original.replace(b"Feces", b"Blood"))
+            try:
+                result: pd.DataFrame = original_reader(source, *args, **kwargs)
+                return result
+            finally:
+                source.write_bytes(original)
+        result = original_reader(source, *args, **kwargs)
+        return result
+
+    monkeypatch.setattr(pd, "read_csv", transient_reader)
+    record = run(parent, tmp_path / "output")
+    assert parent.experiments.read_bytes() == original
+    assert parent.builder.call_args.args[3].loc[0, "body_site"] == "Feces"
+    assert (
+        record["inputs"][f"experiments.tsv@sha256:{file_sha256(parent.experiments)}"]
+        == (parent.bundle.snapshots[parent.experiments])
+    )
+
+
+def test_experiments_rejects_changed_bytes_even_when_path_inventory_stays_original(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The returned byte buffer itself must match the verified source identity."""
+    parent = synthetic_parent(tmp_path, monkeypatch)
+    original_reader = Path.read_bytes
+
+    def transient_bytes(path: Path) -> bytes:
+        raw = original_reader(path)
+        return raw.replace(b"Feces", b"Blood") if path == parent.experiments else raw
+
+    monkeypatch.setattr(Path, "read_bytes", transient_bytes)
+    with pytest.raises(ValueError, match=r"Experiments.*identity|input.*identity"):
+        run(parent, tmp_path / "output")
+    parent.builder.assert_not_called()
+    assert not (tmp_path / "output").exists()
+
+
+@pytest.mark.parametrize(("active_counts", "expected"), [([49, 50], 1), ([50, 51], 2)])
+def test_stage_counts_the_actual_inclusive_activity_flags(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    active_counts: list[int],
+    expected: int,
+) -> None:
+    """Exercise the real row-1 calculation and inspect its exported stage count."""
+    from mtp.delta_z_derived.tables import trait_summary
+
+    parent = synthetic_parent(tmp_path, monkeypatch)
+    studies = pd.DataFrame(
+        {
+            trait: [1.0] * n + [0.0] * (51 - n)
+            for trait, n in zip([FA, OA], active_counts, strict=True)
+        },
+        index=pd.Index([f"study{i}" for i in range(51)], name="study_id"),
+    )
+    parent.bundle.study_delta_z = studies
+    parent.bundle.evidence = pd.DataFrame(
+        {
+            "trait": [FA, OA],
+            "trait_label": ["verified FA", "verified OA"],
+            "study_mean_delta_z": studies.mean().to_numpy(),
+            "experiment_mean_delta_z": studies.mean().to_numpy(),
+            "noel_studies_up": active_counts,
+            "noel_studies_down": [0, 0],
+            "noel_studies_tied": [51 - n for n in active_counts],
+        }
+    )
+    monkeypatch.setattr(stage, "trait_summary", trait_summary)
+    output = tmp_path / "output"
+    record = run(parent, output, summary_only=True, trait_list=None)
+    table = pd.read_csv(output / "trait_summary.tsv", sep="\t")
+    assert table["sdz_active_studies"].tolist() == active_counts
+    assert table["sdz_active_at_least_50"].tolist() == (
+        [False, True] if expected == 1 else [True, True]
+    )
+    assert record["counts"]["traits_with_at_least_50_active_studies"] == expected
+    assert int(table["sdz_active_at_least_50"].sum()) == expected

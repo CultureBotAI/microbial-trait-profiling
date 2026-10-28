@@ -141,7 +141,7 @@ def test_reader_preserves_round_trip_float_values(tmp_path: Path) -> None:
     path = tmp_path / "round-trip.tsv"
     expected = 0.1 + 0.2
     pd.DataFrame({"study_id": ["study"], "trait": [expected]}).to_csv(path, sep="\t", index=False)
-    frame = reader._read_table(path, ["study_id"])
+    frame = reader._read_table(path, ["study_id"], expected=reader._snapshot(path))
     assert float(frame.trait.iloc[0]) == expected
 
 
@@ -518,3 +518,53 @@ def test_supplied_parent_alias_preserves_symlink_dotdot_resolution(
     assert bundle.manifest == parent_bundle.manifest
     assert supplied in bundle.snapshots
     reader.recheck_completed_table(bundle)
+
+
+def test_reader_parses_the_hashed_evidence_bytes_during_transient_path_change(
+    parent_bundle: ParentBundle, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The filesystem can return to its original hash after parsing false evidence."""
+    path = parent_bundle.root / "per_trait_evidence.tsv"
+    original = path.read_bytes()
+    rows = original.decode("utf-8").splitlines()
+    transient = (
+        "\n".join(
+            f"{line}\t{'unbound_read_marker' if index == 0 else 'injected'}"
+            for index, line in enumerate(rows)
+        )
+        + "\n"
+    ).encode("utf-8")
+    original_reader = pd.read_csv
+
+    def transient_reader(source: Any, *args: Any, **kwargs: Any) -> pd.DataFrame:
+        if isinstance(source, Path) and source == path:
+            path.write_bytes(transient)
+            try:
+                result: pd.DataFrame = original_reader(source, *args, **kwargs)
+                return result
+            finally:
+                path.write_bytes(original)
+        result = original_reader(source, *args, **kwargs)
+        return result
+
+    monkeypatch.setattr(pd, "read_csv", transient_reader)
+    loaded = parent_bundle.load()
+    assert path.read_bytes() == original
+    assert "unbound_read_marker" not in loaded.evidence.columns
+
+
+@pytest.mark.parametrize("name", reader._OUTPUTS)
+def test_reader_checks_the_parsed_buffer_against_the_bound_output_identity(
+    parent_bundle: ParentBundle, monkeypatch: pytest.MonkeyPatch, name: str
+) -> None:
+    """A changed read buffer is not validated by hashing the restored on-disk file."""
+    path = parent_bundle.root / name
+    original_reader = Path.read_bytes
+
+    def transient_bytes(source: Path) -> bytes:
+        raw = original_reader(source)
+        return raw + b"\n" if source == path else raw
+
+    monkeypatch.setattr(Path, "read_bytes", transient_bytes)
+    with pytest.raises(ValueError, match=r"Completed-table.*(hash|identity|size)"):
+        parent_bundle.load()

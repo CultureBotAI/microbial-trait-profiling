@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+import math
+
 import numpy as np
 import pandas as pd
 import pytest
+from scipy import __version__ as SCIPY_VERSION
 from scipy import stats
 
+from mtp.delta_z_derived import tables as tables_module
 from mtp.delta_z_derived.tables import build_tables, trait_summary
 
 FA = "METPO:1000608"
@@ -17,6 +21,10 @@ SHIFT = "TEST:shift"
 ZERO = "TEST:zero"
 TRAITS = [FA, OA, ANAEROBIC, SIGN, SHIFT, ZERO]
 Inputs = tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]
+REVIEWED_SCIPY_CONTRACTS = {
+    "1.17.1": "scipy-1.17.1-wilcoxon-auto-wilcox-v1",
+    "1.18.1": "scipy-1.18.1-wilcoxon-auto-wilcox-v1",
+}
 
 
 @pytest.fixture
@@ -119,7 +127,7 @@ def test_active_study_support_boundary_is_exactly_fifty(inputs: Inputs) -> None:
     evidence["study_mean_delta_z"] = studies.mean().reindex(TRAITS).to_numpy()
     summary = trait_summary(studies, evidence)
     assert list(summary.sdz_active_studies) == [49, 50, 51, 0, 0, 0]
-    assert int(summary.sdz_active_studies.ge(50).sum()) == 2
+    assert summary.sdz_active_at_least_50.tolist() == [False, True, True, False, False, False]
 
 
 def test_quadrants_use_obligate_label_exact_signs_and_all_values_for_pearson(
@@ -343,3 +351,208 @@ def test_zero_only_oxygen_vectors_are_explicitly_untestable(inputs: Inputs) -> N
     assert result.quadrant_summary.sign_test_p.isna().all()
     assert set(result.quadrant_summary.pearson_status) == {"constant_input"}
     assert result.quadrant_summary.pearson_r.isna().all()
+
+
+def _cell_inputs(
+    values: list[float],
+    *,
+    study_ids: list[str] | None = None,
+    sites: list[str] | None = None,
+) -> Inputs:
+    """One condition with arbitrary comparison/study multiplicity and exact sites."""
+    count = len(values)
+    ids = study_ids if study_ids is not None else [f"s{index}" for index in range(count)]
+    index = pd.MultiIndex.from_arrays(
+        [ids, [f"e{number}" for number in range(count)]], names=["study_id", "experiment_id"]
+    )
+    pairs = pd.DataFrame({FA: np.ones(count), OA: -np.ones(count), SHIFT: values}, index=index)
+    studies = pairs.groupby(level="study_id").mean()
+    evidence = pd.DataFrame(
+        {
+            "trait": [FA, OA, SHIFT],
+            "trait_label": ["verified facultative", "verified obligate", "shift"],
+            "experiment_mean_delta_z": pairs.mean().to_numpy(),
+            "study_mean_delta_z": studies.mean().to_numpy(),
+            "noel_studies_up": [0, 0, 0],
+            "noel_studies_down": [0, 0, 0],
+            "noel_studies_tied": [len(studies)] * 3,
+        }
+    )
+    metadata = index.to_frame(index=False).assign(
+        body_site=sites if sites is not None else ["Feces"] * count,
+        condition="One condition",
+    )
+    return pairs, studies, evidence, metadata
+
+
+def test_mixed_zero_wilcoxon_pins_wilcox_and_no_continuity_correction() -> None:
+    # Eleven nonzero ranks 1..11; negative ranks 3+6+9=18. With three
+    # exact zeros, original n=14 forces auto's asymptotic path. No tie
+    # correction: mean rank sum=33, variance=11*12*23/24=126.5.
+    values = [0.0] * 3 + [1.0, 2.0, -3.0, 4.0, 5.0, -6.0, 7.0, 8.0, -9.0, 10.0, 11.0]
+    row = build_tables(*_cell_inputs(values), [SHIFT]).stool_disease_shifts.iloc[0]
+    assert row["wilcoxon_statistic"] == 18.0
+    assert row["wilcoxon_p"] == pytest.approx(math.erfc(15 / math.sqrt(253)), rel=1e-13)
+    assert row["wilcoxon_nonzero_comparisons"] == 11
+    assert row["wilcoxon_zero_comparisons"] == 3
+    assert row["wilcoxon_zero_method"] == "wilcox"
+    assert row["wilcoxon_method"] == "asymptotic"
+    assert row["wilcoxon_method_requested"] == "auto"
+    assert not row["wilcoxon_correction"]
+    assert row["wilcoxon_method_contract"] == REVIEWED_SCIPY_CONTRACTS[SCIPY_VERSION]
+    assert row["wilcoxon_scipy_version"] == SCIPY_VERSION
+
+
+def test_locked_environment_records_its_reviewed_wilcoxon_contract() -> None:
+    """Exercise the installed SciPy; changing only a version constant proves nothing."""
+    assert SCIPY_VERSION in REVIEWED_SCIPY_CONTRACTS
+    result = build_tables(*_cell_inputs([1.0, -2.0, 3.0]), [SHIFT])
+    for table in (result.stool_disease_shifts, result.stool_study_sensitivity):
+        row = table.iloc[0]
+        assert row["wilcoxon_statistic"] == 2.0
+        assert row["wilcoxon_p"] == 0.75
+        assert row["wilcoxon_method"] == "exact"
+        assert row["wilcoxon_scipy_version"] == SCIPY_VERSION
+        assert row["wilcoxon_method_contract"] == REVIEWED_SCIPY_CONTRACTS[SCIPY_VERSION]
+
+
+def _all_positive_asymptotic_p(nonzero: int) -> float:
+    """Independent normal-tail oracle for untied ranks 1..n without correction."""
+    mean = nonzero * (nonzero + 1) / 4
+    variance = nonzero * (nonzero + 1) * (2 * nonzero + 1) / 24
+    return math.erfc(mean / math.sqrt(2 * variance))
+
+
+@pytest.mark.parametrize(
+    ("values", "expected_method", "expected_statistic", "expected_p"),
+    [
+        ([1.0, -2.0, 3.0], "exact", 2.0, 0.75),
+        ([0.0, 1.0, -2.0], "permutation", 1.0, 1.0),
+        ([1.0, -1.0, 2.0], "permutation", 1.5, 0.75),
+        ([0.0, 1e-13, -1e-13], "permutation", 1.5, 1.0),
+        ([0.0, *map(float, range(1, 13))], "permutation", 0.0, 2 / 2**12),
+        (
+            [0.0, *map(float, range(1, 14))],
+            "asymptotic",
+            0.0,
+            _all_positive_asymptotic_p(13),
+        ),
+        (list(map(float, range(1, 51))), "exact", 0.0, 2 / 2**50),
+        (list(map(float, range(1, 52))), "asymptotic", 0.0, _all_positive_asymptotic_p(51)),
+        ([0.0, *map(float, range(1, 51))], "asymptotic", 0.0, _all_positive_asymptotic_p(50)),
+        ([0.0, 0.0], "not_tested", math.nan, math.nan),
+    ],
+)
+def test_resolved_auto_method_uses_original_size_zeros_and_absolute_ties(
+    values: list[float], expected_method: str, expected_statistic: float, expected_p: float
+) -> None:
+    result = build_tables(*_cell_inputs(values), [SHIFT])
+    row = result.stool_disease_shifts.iloc[0]
+    assert row["wilcoxon_method"] == expected_method
+    assert row["wilcoxon_method_requested"] == "auto"
+    assert row["wilcoxon_zero_comparisons"] == values.count(0.0)
+    assert row["wilcoxon_nonzero_comparisons"] == len(values) - values.count(0.0)
+    if expected_method == "not_tested":
+        assert row["wilcoxon_status"] == "all_tied"
+        assert pd.isna(row["wilcoxon_statistic"])
+        assert pd.isna(row["wilcoxon_p"])
+    else:
+        assert row["wilcoxon_statistic"] == expected_statistic
+        assert row["wilcoxon_p"] == pytest.approx(expected_p, rel=1e-13, abs=0.0)
+        # Reporting the resolved method must not alter the historical auto result.
+        expected = stats.wilcoxon(
+            values, zero_method="wilcox", correction=False, alternative="two-sided", method="auto"
+        )
+        assert row["wilcoxon_statistic"] == expected.statistic
+        assert row["wilcoxon_p"] == expected.pvalue
+
+
+def test_quadrant_labels_come_from_verified_evidence_even_with_empty_stool() -> None:
+    inputs = _cell_inputs([1.0, -2.0], sites=["Saliva", "Saliva"])
+    result = build_tables(*inputs, [SHIFT])
+    assert result.quadrant_summary.fa_label.tolist() == ["verified facultative"] * 2
+    assert result.quadrant_summary.oa_label.tolist() == ["verified obligate"] * 2
+
+
+def test_row_three_counts_every_trait_cell_against_exact_raw_stool_metadata(inputs: Inputs) -> None:
+    pairs, studies, evidence, metadata = inputs
+    metadata = metadata.copy()
+    metadata.loc[7, ["body_site", "condition"]] = ["Feces,Blood", "Disease A"]
+    result = build_tables(pairs, studies, evidence, metadata, [SHIFT, ZERO])
+    exact = metadata.loc[metadata["body_site"].eq("Feces")]
+    expected_counts = exact.groupby("condition").size().to_dict()
+    assert expected_counts == {"Disease A": 1, "Disease B": 3, "Disease C": 1}
+    for row in result.stool_disease_shifts.itertuples(index=False):
+        assert row.n_comparisons == expected_counts[row.condition]
+        rows = exact.loc[exact["condition"].eq(row.condition)]
+        assert row.n_studies == rows["study_id"].nunique()
+    assert result.stool_disease_shifts.groupby("trait")["n_comparisons"].sum().to_dict() == {
+        SHIFT: 5,
+        ZERO: 5,
+    }
+
+
+def test_study_sensitivity_averages_within_cell_then_weights_studies_equally() -> None:
+    inputs = _cell_inputs(
+        [1.0, 2.0, 3.0, -10.0, 100.0],
+        study_ids=["s1", "s1", "s1", "s2", "s1"],
+        sites=["Feces", "Feces", "Feces", "Feces", "Oral"],
+    )
+    result = build_tables(*inputs, [SHIFT])
+    comparison = result.stool_disease_shifts.iloc[0]
+    study = result.stool_study_sensitivity.iloc[0]
+    assert comparison["mean_delta_z"] == -1.0
+    assert comparison["wilcoxon_statistic"] == 4.0
+    assert comparison["wilcoxon_p"] == 0.875
+    assert study["mean_delta_z"] == -4.0  # equally weighted within-cell means [2, -10]
+    assert study["n_comparisons"] == 4
+    assert study["n_studies"] == 2
+    assert study["wilcoxon_statistic"] == 1.0
+    assert study["wilcoxon_p"] == 1.0
+    assert study["wilcoxon_nonzero_studies"] == 2
+    assert study["wilcoxon_zero_studies"] == 0
+    assert study["wilcoxon_method"] == "exact"
+    assert study["test_unit"] == "study"
+    assert study["mean_weighting"] == "equal_weight_within_cell_study_means"
+    assert study["p_adjustment"] == "none_nominal"
+    assert list(result.stool_study_sensitivity.condition) == list(
+        result.stool_disease_shifts.condition
+    )
+    assert list(result.stool_study_sensitivity.trait) == list(result.stool_disease_shifts.trait)
+    assert list(result.stool_study_sensitivity.disease_rank) == list(
+        result.stool_disease_shifts.disease_rank
+    )
+
+
+def test_study_sensitivity_retains_within_study_cancellation_as_an_exact_zero() -> None:
+    result = build_tables(*_cell_inputs([1.0, -1.0, 4.0], study_ids=["s1", "s1", "s2"]), [SHIFT])
+    row = result.stool_study_sensitivity.iloc[0]
+    assert row["mean_delta_z"] == 2.0
+    assert row["n_comparisons"] == 3
+    assert row["n_studies"] == 2
+    assert row["wilcoxon_nonzero_studies"] == 1
+    assert row["wilcoxon_zero_studies"] == 1
+    assert row["wilcoxon_method"] == "permutation"
+    assert row["wilcoxon_p"] == 1.0
+
+
+def test_study_sensitivity_empty_population_keeps_its_schema() -> None:
+    result = build_tables(*_cell_inputs([1.0, -2.0], sites=["Saliva", "Saliva"]), [SHIFT])
+    assert result.stool_study_sensitivity.empty
+    assert {
+        "trait",
+        "n_studies",
+        "n_comparisons",
+        "wilcoxon_nonzero_studies",
+        "test_unit",
+    }.issubset(result.stool_study_sensitivity.columns)
+
+
+@pytest.mark.parametrize("version", ["1.18.0", "1.19.0", "1.18.1.dev0"])
+def test_auto_method_reporting_rejects_an_unreviewed_scipy_version(
+    monkeypatch: pytest.MonkeyPatch,
+    version: str,
+) -> None:
+    monkeypatch.setattr(tables_module, "SCIPY_VERSION", version)
+    with pytest.raises(ValueError, match=r"Wilcoxon auto-method contract requires .*SciPy"):
+        build_tables(*_cell_inputs([1.0, -2.0]), [SHIFT])

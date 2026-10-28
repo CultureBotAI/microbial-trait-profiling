@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
+import io
 import json
 import shutil
 import uuid
@@ -100,6 +102,14 @@ def _policies(top_diseases: int) -> dict[str, Any]:
         "row3_top_diseases": top_diseases,
         "row3_test": "two_sided_wilcoxon_signed_rank_zero_method_wilcox_method_auto",
         "row3_effect_weighting": "equal_comparison",
+        "row3_zero_method": "wilcox",
+        "row3_correction": False,
+        "row3_method_requested": "auto",
+        "row3_resolved_method_field": "wilcoxon_method",
+        "row3_study_sensitivity_test": "two_sided_wilcoxon_signed_rank",
+        "row3_study_sensitivity_effect_weighting": "equal_weight_within_cell_study_means",
+        "row3_study_sensitivity_inference_unit": "study",
+        "row3_study_sensitivity_correction": "none_nominal",
         "row5_grouping": ["body_site", "condition"],
         "row5_effect_weighting": "equal_comparison",
         "row5_trait_family": "all_parent_retained_traits",
@@ -165,7 +175,13 @@ def run_derived(
     roots.extend(_manifest_roots(list(bundle.snapshots), multiplicity=None, label_support=None))
     _disjoint(output, roots)
     experiments_path = bundle.sources.product("experiments")
-    additional = {experiments_path: _inventory(experiments_path)}
+    experiments_raw = experiments_path.read_bytes()
+    additional = {
+        experiments_path: {
+            "sha256": hashlib.sha256(experiments_raw).hexdigest(),
+            "size_bytes": len(experiments_raw),
+        }
+    }
     if bundle.snapshots.get(experiments_path.resolve()) != additional[experiments_path]:
         raise ValueError("Experiments identity differs from the verified parent source")
     declared: DeclaredTraitList | None = None
@@ -180,7 +196,9 @@ def run_derived(
     else:
         if declared is None:
             raise ValueError("A full run requires an explicitly declared trait list")
-        experiments = pd.read_csv(experiments_path, sep="\t", dtype=str, keep_default_na=False)
+        experiments = pd.read_csv(
+            io.BytesIO(experiments_raw), sep="\t", dtype=str, keep_default_na=False
+        )
         derived = build_tables(
             bundle.pair_delta_z,
             bundle.study_delta_z,
@@ -194,6 +212,7 @@ def run_derived(
             "quadrant_pairs.tsv": derived.quadrant_pairs,
             "quadrant_summary.tsv": derived.quadrant_summary,
             "stool_disease_shifts.tsv": derived.stool_disease_shifts,
+            "stool_study_sensitivity.tsv": derived.stool_study_sensitivity,
             "site_disease_shifts.tsv": derived.site_disease_shifts,
         }
     _recheck(bundle, additional, producer, code_commit)
@@ -227,7 +246,7 @@ def run_derived(
             "comparisons": len(bundle.pair_delta_z),
             "studies": len(bundle.study_delta_z),
             "traits_with_at_least_50_active_studies": int(
-                tables["trait_summary.tsv"]["sdz_active_studies"].ge(50).sum()
+                tables["trait_summary.tsv"]["sdz_active_at_least_50"].sum()
             ),
         },
         "trait_list": declared.provenance() if declared is not None else None,
