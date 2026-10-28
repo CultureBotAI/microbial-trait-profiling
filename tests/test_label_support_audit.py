@@ -12,7 +12,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from mtp import madin_source
+from mtp import label_support_audit, madin_source
 from mtp.label_support_audit import (
     AUDIT_TRAITS,
     MADIN_SOURCE,
@@ -25,6 +25,7 @@ from mtp.label_support_audit import (
     run_label_support_audit,
 )
 from mtp.paths import REPO_ROOT, file_sha256
+from mtp.trait_lists import DeclaredTraitList, load_trait_list
 
 CELL = "METPO:2000103|GO:0030245"
 ANA = "METPO:1000603"
@@ -584,6 +585,7 @@ def _add_non_focal_rollup_traits(
 def test_default_audit_outputs_stay_byte_identical_without_trait_list(
     inputs: dict[str, Path], tmp_path: Path
 ) -> None:
+    """Omitting --trait-list matches trait_list=None and ignores unrequested matrix columns."""
     baseline_dir = tmp_path / "baseline"
     run_audit(inputs, baseline_dir)
     default_api_dir = tmp_path / "default_api"
@@ -637,7 +639,7 @@ def test_default_audit_outputs_stay_byte_identical_without_trait_list(
         assert (after_dir / name).read_bytes() == (baseline_dir / name).read_bytes(), name
 
 
-def test_trait_list_audits_non_focal_strain_rollup_carriers_and_records_provenance(
+def test_trait_list_audits_taxonomic_inheritance_and_strain_rollup_carriers_and_records_provenance(
     inputs: dict[str, Path], tmp_path: Path
 ) -> None:
     _add_non_focal_rollup_traits(inputs, include_strain_phenotype=True)
@@ -737,3 +739,31 @@ def test_trait_list_rejects_unknown_or_absent_trait(
         occurrences, _ = bind_occurrences(inputs["taxa"], matrix, profiles)
         with pytest.raises(ValueError, match="absent from matrix"):
             build_label_support_tables(graph, matrix, occurrences, {}, trait_list=(bad_entry,))
+
+
+def test_trait_list_rejects_file_changed_during_execution(
+    inputs: dict[str, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    trait_list_path = tmp_path / "declared_traits.txt"
+    trait_list_path.write_text(f"{CELL}\n", encoding="utf-8")
+    output = tmp_path / "audit_changed_list"
+
+    def load_then_mutate(path: Path) -> DeclaredTraitList:
+        loaded = load_trait_list(path)
+        path.write_text(f"{CELL}\n# mutated after load_trait_list\n", encoding="utf-8")
+        return loaded
+
+    monkeypatch.setattr(label_support_audit, "load_trait_list", load_then_mutate)
+    with pytest.raises(ValueError, match=r"^Declared trait list changed during execution$"):
+        run_label_support_audit(
+            taxa_path=inputs["taxa"],
+            matrix_path=inputs["matrix"],
+            profiles_path=inputs["profiles"],
+            edges_path=inputs["edges"],
+            nodes_path=inputs["nodes"],
+            madin_csv=inputs["madin"],
+            output_dir=output,
+            strain_rollup="off",
+            trait_list=trait_list_path,
+        )
+    assert not output.exists()

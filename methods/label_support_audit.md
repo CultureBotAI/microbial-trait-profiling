@@ -31,19 +31,28 @@ malformed table fails instead of silently falling back to unknown.
 
 Optionally supply `--trait-list LIST/traits.txt` (`mtp.trait_lists.load_trait_list`,
 #1132) to audit additional declared traits (such as non-focal headline traits
-whose carriers arrive through strain rollup) alongside the default eight focal
-and oxygen traits (`FOCAL_TRAITS` plus `OXYGEN_TRAITS`). Without `--trait-list`,
-the audited trait set is the default eight traits and all five output TSVs and
-`provenance.json` keep their default structure. With `--trait-list`, every
-listed identifier must be a valid CURIE or rollup composite present as a column
-in `taxa_trait_matrix.tsv`; malformed, duplicated, or absent trait identifiers
+whose carriers arrive through taxonomic inheritance or strain rollup) alongside
+the default 14 traits in `AUDIT_TRAITS` (the six `FOCAL_TRAITS` plus eight
+oxygen and cell-shape traits). Without `--trait-list`, the audited trait set is
+the default 14 traits in `AUDIT_TRAITS`, all five output TSVs stay
+byte-identical, and `provenance.json` omits `inputs.trait_list` and
+`trait_list` (differing across runs only in `created_at` and the producer file
+digest/size when code changes). With `--trait-list`, every listed identifier
+must be a valid CURIE or rollup composite present as a column in
+`taxa_trait_matrix.tsv`; malformed, duplicated, or absent trait identifiers
 fail before any output is written. `taxon_trait_label_support.tsv`,
 `focal_taxa_trait_support.tsv`, and `carrier_source_evidence.tsv` include the
-declared traits (deduplicated in declaration order after the default eight),
-and `provenance.json` records `inputs.trait_list` plus `trait_list` (`path`,
-`name`, `sha256`, `trait_count`, and `trait_ids`).
+declared traits (deduplicated in declaration order after the default 14
+`AUDIT_TRAITS` entries), and `provenance.json` records `inputs.trait_list` plus
+`trait_list` (`path`, `name`, `sha256`, `trait_count`, and `trait_ids`).
 `support_threshold_sensitivity.tsv` and `coasserted_label_census.tsv` retain
 their fixed six-trait sensitivity family and label-pair definitions.
+`MADIN_RULES` does not yet define field/value mappings for `ligninolysis`
+(`METPO:2000103|GO:0046274`), `thiosulfate_oxidation`
+(`METPO:2000103|pathways:thiosulfate_oxidation`), or `xylan_degradation`
+(`METPO:2000103|GO:0045493`), so Madin-sourced carriers for those declared
+traits remain `unresolved` (`source_status=unknown`) when `--madin-csv` is
+supplied (#1151).
 
 The `phenotype` scope uses the public `scoped_taxon_traits` and
 `strain_trait_rolls_up` functions introduced by PR #828. Both `off` and
