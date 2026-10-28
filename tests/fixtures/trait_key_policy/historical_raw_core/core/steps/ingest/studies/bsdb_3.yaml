@@ -1,0 +1,59 @@
+id: bsdb:3
+source_record_id: Study 3
+pmid: null
+title: Synthetic family contrast
+publication_year: 2026
+doi: null
+url: null
+study_design: null
+authors_list: null
+journal: null
+keywords: null
+experiments:
+- id: bsdb:3-1
+  experiment_name: null
+  location_of_subjects: null
+  host_species: Homo sapiens
+  body_site: stool
+  body_site_ontology_id: null
+  condition: fixture condition
+  condition_ontology_id: null
+  group_0_name: controls
+  group_1_name: cases
+  group_1_definition: null
+  group_0_sample_size: null
+  group_1_sample_size: null
+  antibiotics_exclusion: null
+  sequencing_type: WMS
+  variable_region_16s: null
+  sequencing_platform: null
+  data_transformation: null
+  statistical_test: null
+  significance_threshold: null
+  mht_correction: null
+  lda_score_above: null
+  matched_on: null
+  confounders_controlled_for: null
+  pielou: null
+  shannon: null
+  chao1: null
+  simpson: null
+  inverse_simpson: null
+  richness: null
+  signatures:
+  - id: bsdb:3-1-1
+    direction: increased
+    signature_source: null
+    signature_description: null
+    taxa:
+    - id: NCBITaxon:900
+      taxon_name: Examplefamily
+      taxonomic_rank: family
+  - id: bsdb:3-1-2
+    direction: decreased
+    signature_source: null
+    signature_description: null
+    taxa:
+    - id: NCBITaxon:103
+      taxon_name: Examplegenus_gamma
+      taxonomic_rank: species

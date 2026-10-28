@@ -25,7 +25,7 @@ from mtp.workflow.operations import (
     ingest_operation,
     ora_profiles_operation,
     trace_profile_feature,
-    validate_core_product,
+    validate_execution_product,
 )
 from mtp.workflow.runtime import (
     WorkflowExecutionError,
@@ -64,7 +64,7 @@ def completed_core(tmp_path_factory: pytest.TempPathFactory) -> WorkflowRun:
         tmp_path_factory.mktemp("core-execution"),
         OPERATIONS,
         parameter_overrides={"source_mode": "fixture"},
-        validator=validate_core_product,
+        validator=validate_execution_product,
         repository_root=ROOT,
     )
 
@@ -105,7 +105,7 @@ def test_false_scientific_descriptors_fail_before_product_publication(
             INPUTS,
             tmp_path / "runs",
             OPERATIONS,
-            validator=validate_core_product,
+            validator=validate_execution_product,
             repository_root=ROOT,
         )
     run = failure.value.run
@@ -127,7 +127,7 @@ def test_declared_but_unimplemented_operation_parameter_fails(tmp_path: Path, st
             INPUTS,
             tmp_path / "runs",
             OPERATIONS,
-            validator=validate_core_product,
+            validator=validate_execution_product,
             repository_root=ROOT,
         )
 
@@ -206,6 +206,7 @@ def test_selected_feature_source_ledger_exposes_rank_overlap(completed_core: Wor
         INPUTS["kg_nodes"],
         OVERLAP_KEY,
         TRAIT,
+        trait_key_policy="facultative_union_v1",
     )
     assert result["count_profile_value"] == 4
     assert result["ora_profile_value"] == result["ora_taxa_count"] == 2
@@ -235,6 +236,7 @@ def test_source_ledger_distinguishes_present_zero_from_kg_absent(
         INPUTS["kg_nodes"],
         ("bsdb:1", experiment, "dec"),
         TRAIT,
+        trait_key_policy="facultative_union_v1",
     )
     assert result["reported_taxa_absent_from_kg"] == expected
     assert result["matrix_unmatched_taxon_ids"] == []
@@ -277,7 +279,7 @@ def test_host_override_changes_bound_cohort_and_row_membership(tmp_path: Path) -
         tmp_path / "runs",
         OPERATIONS,
         parameter_overrides={"count_host_species": "Homo sapiens", "ora_host_species": "all"},
-        validator=validate_core_product,
+        validator=validate_execution_product,
         repository_root=ROOT,
     )
     assert len(_rows(artifact_path(run, "count_profiles"))) == 7
@@ -370,7 +372,7 @@ def test_only_16s_and_shotgun_experiments_enter_the_profiles(
         {**INPUTS, "raw_dump": raw},
         tmp_path / "runs",
         OPERATIONS,
-        validator=validate_core_product,
+        validator=validate_execution_product,
         repository_root=ROOT,
     )
     experiments = {r["experiment_id"]: r for r in _rows(artifact_path(run, "experiments"))}
@@ -396,4 +398,5 @@ def test_only_16s_and_shotgun_experiments_enter_the_profiles(
             INPUTS["kg_nodes"],
             ("bsdb:3", "bsdb:3-1", "inc"),
             TRAIT,
+            trait_key_policy="facultative_union_v1",
         )

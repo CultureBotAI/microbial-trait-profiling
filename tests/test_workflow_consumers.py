@@ -18,7 +18,7 @@ from mtp.workflow.consumers import (
     verify_consumer_record,
     write_consumer_record,
 )
-from mtp.workflow.operations import OPERATIONS, validate_core_product
+from mtp.workflow.operations import OPERATIONS, validate_execution_product
 from mtp.workflow.runtime import execute_workflow
 
 
@@ -34,7 +34,7 @@ def core_manifest(tmp_path: Path) -> Path:
         },
         tmp_path / "runs",
         OPERATIONS,
-        validator=validate_core_product,
+        validator=validate_execution_product,
         repository_root=REPO_ROOT,
     )
     return Path(run.manifest_path)

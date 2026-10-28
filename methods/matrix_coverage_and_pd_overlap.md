@@ -3,13 +3,14 @@
 This note documents the definitions, data sources, and exact denominator semantics implemented in [`src/mtp/matrix_overlap_coverage.py`](../src/mtp/matrix_overlap_coverage.py) (`just matrix-overlap-coverage`, issue `#1053`). All interpretations follow [`methods/biological_interpretation.md`](biological_interpretation.md): KG-Microbe trait columns represent curated organism-level annotations rather than direct in vivo physiological measurements, and BugSigDB signatures record reported taxon abundance shifts across published comparisons.
 
 The numeric tables below are historical references from the F Tier 1+2
-`phenotype` core, with separate raw-object trait keys and the then-current
+`phenotype` core under `raw_object_v1`, with separate raw-object trait keys and the then-current
 ten-trait list. They are not results from a rerun with the canonical facultative
 union. The current [declared list](trait_lists/headline_ten_phenotype.txt) contains
 nine traits despite its historical filename and requests 36 unordered trait
 pairs; the archived ten-trait list requested 45. Trait-key policy and strain
 rollup are separate choices: `phenotype` alone does not specify the trait-key
-policy.
+policy. Current builds default to [`facultative_union_v1`](trait_key_policy.md)
+and require fresh tables; the historical values below are not regenerated basis P results.
 
 ---
 
@@ -37,7 +38,8 @@ to absence of annotation.
 The historical `matrix_trait_overlap.tsv` contains all 45 pairs for the archived
 ten-trait list. New output uses the explicitly supplied list and the verified
 core's matrix; it does not reconstruct the historical ten-trait family from the
-current nine-trait file.
+current nine-trait file. The current nine-trait list has no separate
+`METPO:1000605` entry, so the first historical row has no current-list counterpart.
 
 ---
 

@@ -11,6 +11,18 @@ from pathlib import Path
 from typing import Literal
 
 from mtp.paths import KG_MICROBE_DIR, REPO_ROOT
+from mtp.trait_key_policy import (
+    DEFAULT_TRAIT_KEY_POLICY,
+    TRAIT_KEY_POLICIES,
+    TRAIT_POLICY_METADATA_COLUMNS,
+    TraitKeyPolicy,
+    canonical_object,
+    parse_trait_key_policy,
+    policy_metadata,
+)
+from mtp.trait_key_policy import (
+    FACULTATIVE_TRAIT_ID as FACULTATIVE_TRAIT_ID,
+)
 
 TAXON_PREFIX = "NCBITaxon:"
 STRAIN_PREFIX = "kgmicrobe.strain:"
@@ -222,24 +234,17 @@ def parse_strain_rollup(value: object) -> StrainRollup:
     raise ValueError(f"strain_rollup must be one of {', '.join(STRAIN_ROLLUPS)}: {value!r}")
 
 
-# Redundant facultative oxygen-preference classes unified into a single nonredundant
-# feature (#1123; upstream kg-microbe#1678).
-FACULTATIVE_TRAIT_ID = "METPO:1000608"
-FACULTATIVE_SYNONYM_TRAIT_IDS: dict[str, str] = {
-    "METPO:1000605": FACULTATIVE_TRAIT_ID,
-    "METPO:1000612": FACULTATIVE_TRAIT_ID,
-}
-
-
-def make_trait_key(predicate: str, obj: str) -> str:
+def make_trait_key(
+    predicate: str, obj: str, *, trait_key_policy: TraitKeyPolicy = DEFAULT_TRAIT_KEY_POLICY
+) -> str:
     """Create the output trait key for a KG taxon assertion.
 
     A METPO object is its own key, except under a negated relation, which keeps its
     predicate so that the absence of a phenotype is never keyed as the phenotype (#788).
-    Redundant facultative oxygen-preference terms (METPO:1000605, METPO:1000612)
-    canonicalize to METPO:1000608 (#1123).
+    The explicit policy either preserves source object IDs or unifies the three
+    declared facultative oxygen-preference terms as METPO:1000608 (#1129).
     """
-    obj = FACULTATIVE_SYNONYM_TRAIT_IDS.get(obj, obj)
+    obj = canonical_object(obj, trait_key_policy=trait_key_policy)
     if _is_trait(obj) and predicate not in NEGATED_PREDICATES:
         return obj
     return f"{predicate}{TRAIT_KEY_SEPARATOR}{obj}"
@@ -285,7 +290,11 @@ def node_ids_for_trait_keys(trait_keys: set[str]) -> set[str]:
 
 
 def read_kg_trait_edges(
-    edges_path: Path, *, strains: bool = False, strain_rollup: StrainRollup | None = None
+    edges_path: Path,
+    *,
+    strains: bool = False,
+    strain_rollup: StrainRollup | None = None,
+    trait_key_policy: TraitKeyPolicy = DEFAULT_TRAIT_KEY_POLICY,
 ) -> KgTraitEdges:
     """Read taxonomy parent links and direct trait assertions from KG edges.
 
@@ -299,6 +308,7 @@ def read_kg_trait_edges(
     2-3 GB of resident memory, and around 6 GB with strains; switch to a
     streaming / two-pass implementation if that becomes a constraint.
     """
+    trait_key_policy = parse_trait_key_policy(trait_key_policy)
     child_to_parents: defaultdict[str, set[str]] = defaultdict(set)
     taxon_traits: defaultdict[str, set[str]] = defaultdict(set)
     strain_taxa: defaultdict[str, set[str]] = defaultdict(set)
@@ -318,12 +328,14 @@ def read_kg_trait_edges(
             if predicate == SUBCLASS_OF and _is_taxon(subject) and _is_taxon(obj):
                 child_to_parents[subject].add(obj)
             elif _is_taxon(subject) and (_is_trait(obj) or _is_trait(predicate)):
-                taxon_traits[subject].add(make_trait_key(predicate, obj))
+                taxon_traits[subject].add(
+                    make_trait_key(predicate, obj, trait_key_policy=trait_key_policy)
+                )
             elif strains and _is_strain(subject):
                 if predicate == SUBCLASS_OF and _is_taxon(obj):
                     strain_taxa[subject].add(obj)
                 elif _is_trait(obj) or _is_trait(predicate):
-                    key = make_trait_key(predicate, obj)
+                    key = make_trait_key(predicate, obj, trait_key_policy=trait_key_policy)
                     keys = strain_traits[subject]
                     if strain_rollup is None or strain_trait_rolls_up(key, strain_rollup):
                         keys.add(key)
@@ -381,7 +393,10 @@ def scoped_taxon_traits(
 
 
 def read_kg_edges(
-    edges_path: Path, *, strain_rollup: StrainRollup = "off"
+    edges_path: Path,
+    *,
+    strain_rollup: StrainRollup = "off",
+    trait_key_policy: TraitKeyPolicy = DEFAULT_TRAIT_KEY_POLICY,
 ) -> tuple[dict[str, set[str]], dict[str, set[str]]]:
     """Read taxonomy parent links and per-taxon trait sets from KG edges.
 
@@ -391,7 +406,9 @@ def read_kg_edges(
     unless told otherwise (#774, #788).
     """
     strains = strain_rollup != "off"
-    edges = read_kg_trait_edges(edges_path, strains=strains, strain_rollup=strain_rollup)
+    edges = read_kg_trait_edges(
+        edges_path, strains=strains, strain_rollup=strain_rollup, trait_key_policy=trait_key_policy
+    )
     return edges.child_to_parents, scoped_taxon_traits(
         edges.taxon_traits, edges.strain_taxa, edges.strain_traits, strain_rollup
     )
@@ -515,8 +532,16 @@ def matrix_rows(
 def column_metadata_rows(
     counts: dict[str, Counter[str]],
     node_metadata: dict[str, NodeMetadata],
+    *,
+    trait_key_policy: TraitKeyPolicy = DEFAULT_TRAIT_KEY_POLICY,
+    include_policy_metadata: bool = True,
 ) -> tuple[list[str], list[list[str]]]:
-    """Build metadata rows describing compact matrix columns."""
+    """Describe columns, preserving literal node labels and declaring feature semantics.
+
+    Historical verification selects the old seven-column layout explicitly; its
+    scientific policy is independent of its serialization format (#1129).
+    """
+    trait_key_policy = parse_trait_key_policy(trait_key_policy)
 
     def trait_sort_key(trait_id: str) -> tuple[str, str]:
         trait_label = trait_column_label(trait_id, node_metadata)
@@ -541,6 +566,8 @@ def column_metadata_rows(
         "object_name",
         "object_category",
     ]
+    if include_policy_metadata:
+        headers.extend(TRAIT_POLICY_METADATA_COLUMNS)
     rows: list[list[str]] = []
     for trait_id in trait_ids:
         predicate, obj = split_trait_key(trait_id)
@@ -559,6 +586,8 @@ def column_metadata_rows(
                 object_metadata.category,
             ]
         )
+        if include_policy_metadata:
+            rows[-1].extend(policy_metadata(obj, trait_key_policy=trait_key_policy))
     return headers, rows
 
 
@@ -579,12 +608,15 @@ def create_taxa_trait_matrix(
     edges_path: Path | None = None,
     nodes_path: Path | None = None,
     strain_rollup: StrainRollup = PRIMARY_STRAIN_ROLLUP,
+    trait_key_policy: TraitKeyPolicy = DEFAULT_TRAIT_KEY_POLICY,
+    include_policy_metadata: bool = True,
 ) -> MatrixStats:
     """Create data/derived/taxa_trait_matrix.tsv from BugSigDB taxa and KG-Microbe.
 
     ``strain_rollup`` also counts the BacDive strain trait edges its scope admits
     (read_kg_edges); the default is the primary scope, as in the core workflow (#774, #788).
     """
+    trait_key_policy = parse_trait_key_policy(trait_key_policy)
     resolved_edges_path = resolve_kg_file(EDGES_FILENAME, kg_dir, edges_path)
     resolved_nodes_path = resolve_kg_file(NODES_FILENAME, kg_dir, nodes_path)
     resolved_column_metadata_path = column_metadata_path or output_path.with_name(
@@ -595,7 +627,9 @@ def create_taxa_trait_matrix(
         raise FileNotFoundError(f"BugSigDB taxa TSV not found: {taxa_path}")
 
     reported_taxa = read_reported_taxa(taxa_path)
-    child_to_parents, taxon_traits = read_kg_edges(resolved_edges_path, strain_rollup=strain_rollup)
+    child_to_parents, taxon_traits = read_kg_edges(
+        resolved_edges_path, strain_rollup=strain_rollup, trait_key_policy=trait_key_policy
+    )
     counts = compute_trait_counts(reported_taxa, child_to_parents, taxon_traits)
     trait_keys = {
         trait_key
@@ -605,7 +639,12 @@ def create_taxa_trait_matrix(
     }
     node_metadata = read_node_metadata(resolved_nodes_path, node_ids_for_trait_keys(trait_keys))
     headers, rows = matrix_rows(reported_taxa, counts, node_metadata)
-    metadata_headers, metadata_rows = column_metadata_rows(counts, node_metadata)
+    metadata_headers, metadata_rows = column_metadata_rows(
+        counts,
+        node_metadata,
+        trait_key_policy=trait_key_policy,
+        include_policy_metadata=include_policy_metadata,
+    )
     write_matrix(output_path, headers, rows)
     write_matrix(resolved_column_metadata_path, metadata_headers, metadata_rows)
 
@@ -665,6 +704,12 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
+        "--trait-key-policy",
+        choices=TRAIT_KEY_POLICIES,
+        default=DEFAULT_TRAIT_KEY_POLICY,
+        help="Versioned feature mapping: source object IDs or the declared facultative union.",
+    )
+    parser.add_argument(
         "--strain-rollup",
         choices=STRAIN_ROLLUPS,
         default=PRIMARY_STRAIN_ROLLUP,
@@ -699,6 +744,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         edges_path=args.edges,
         nodes_path=args.nodes,
         strain_rollup=args.strain_rollup,
+        trait_key_policy=parse_trait_key_policy(args.trait_key_policy),
     )
     print(f"Wrote matrix: {stats.output_path}")
     print(f"Wrote column metadata: {stats.column_metadata_path}")

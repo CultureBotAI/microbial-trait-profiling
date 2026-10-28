@@ -13,7 +13,7 @@ from mtp.paths import REPO_ROOT, file_sha256
 from mtp.workflow.__main__ import main
 from mtp.workflow.archive import ArchiveResolver, create_archive, verify_archive
 from mtp.workflow.consumers import open_core_bundle, write_consumer_record
-from mtp.workflow.operations import OPERATIONS, validate_core_product
+from mtp.workflow.operations import OPERATIONS, validate_execution_product
 from mtp.workflow.runtime import execute_workflow, inventory
 
 
@@ -33,7 +33,7 @@ def evidence(tmp_path: Path) -> tuple[Path, Path, Path, Path]:
         },
         original / "runs",
         OPERATIONS,
-        validator=validate_core_product,
+        validator=validate_execution_product,
         repository_root=REPO_ROOT,
     )
     core = Path(run.manifest_path)

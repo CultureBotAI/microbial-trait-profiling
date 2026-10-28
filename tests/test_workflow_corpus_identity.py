@@ -13,7 +13,7 @@ from mtp import corpus_identity, table1_trait_maps, trait_composition
 from mtp.paths import REPO_ROOT
 from mtp.trait_guilds import TABLE1_TRAITS
 from mtp.workflow.consumers import verify_consumer_record
-from mtp.workflow.operations import OPERATIONS, validate_core_product
+from mtp.workflow.operations import OPERATIONS, validate_execution_product
 from mtp.workflow.runtime import artifact_path, execute_workflow
 
 
@@ -51,7 +51,7 @@ def test_core_consumer_identity_comes_only_from_bound_kg(
         tmp_path / "runs",
         OPERATIONS,
         parameter_overrides={"source_mode": "fixture"},
-        validator=validate_core_product,
+        validator=validate_execution_product,
         repository_root=REPO_ROOT,
     )
     legacy_reads: list[Path] = []

@@ -25,7 +25,7 @@ from mtp.presence_depth_sensitivity import (
     run_sensitivity,
 )
 from mtp.workflow.consumers import CoreBundle, open_core_bundle, verify_consumer_record
-from mtp.workflow.operations import OPERATIONS, validate_core_product
+from mtp.workflow.operations import OPERATIONS, validate_execution_product
 from mtp.workflow.runtime import execute_workflow
 
 
@@ -382,7 +382,7 @@ def _core(tmp_path: Path, subset: bool, scope: str = "phenotype") -> Path:
                 else {}
             ),
         },
-        validator=validate_core_product,
+        validator=validate_execution_product,
         repository_root=REPO_ROOT,
     )
     return Path(run.manifest_path)

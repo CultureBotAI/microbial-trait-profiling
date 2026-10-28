@@ -51,14 +51,26 @@ def test_contradictory_source_claims_fail(tmp_path: Path, field: str, value: obj
     record[field] = value
     output.write_text(json.dumps(record), encoding="utf-8")
     with pytest.raises(ValueError, match="Source identity"):
-        validate_core_product(PRODUCT, output, INPUTS)
+        validate_core_product(
+            PRODUCT,
+            output,
+            INPUTS,
+            trait_key_policy="raw_object_v1",
+            include_policy_metadata=False,
+        )
 
 
 @pytest.mark.parametrize("mode", ["unknown", "fixture", "live"])
 def test_valid_unverified_declarations_remain_explicit(tmp_path: Path, mode: str) -> None:
     output = tmp_path / "source_identity.json"
     identify_sources(INPUTS, {"source_identity": output}, {"source_mode": mode})
-    result = validate_core_product(PRODUCT, output, INPUTS)
+    result = validate_core_product(
+        PRODUCT,
+        output,
+        INPUTS,
+        trait_key_policy="raw_object_v1",
+        include_policy_metadata=False,
+    )
     assert result[0].status == "passed"
     record = json.loads(output.read_text(encoding="utf-8"))
     assert record["declared_source_mode"] == mode
@@ -99,7 +111,22 @@ def test_verified_pin_requires_exact_release_claims(
         record["verified_release"][change] = "fabricated"
     output.write_text(json.dumps(record), encoding="utf-8")
     if change is None:
-        assert validate_core_product(PRODUCT, output, INPUTS)[0].status == "passed"
+        assert (
+            validate_core_product(
+                PRODUCT,
+                output,
+                INPUTS,
+                trait_key_policy="raw_object_v1",
+                include_policy_metadata=False,
+            )[0].status
+            == "passed"
+        )
     else:
         with pytest.raises(ValueError, match="Source identity"):
-            validate_core_product(PRODUCT, output, INPUTS)
+            validate_core_product(
+                PRODUCT,
+                output,
+                INPUTS,
+                trait_key_policy="raw_object_v1",
+                include_policy_metadata=False,
+            )

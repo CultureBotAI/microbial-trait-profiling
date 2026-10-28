@@ -14,7 +14,7 @@ from mtp.paths import REPO_ROOT, file_sha256
 from mtp.trait_guilds import TABLE1_TRAITS
 from mtp.workflow.arms.noel import build_commands
 from mtp.workflow.arms.types import ArmContext
-from mtp.workflow.operations import OPERATIONS, validate_core_product
+from mtp.workflow.operations import OPERATIONS, validate_execution_product
 from mtp.workflow.orientation_assessment import main, write_assessment
 from mtp.workflow.runtime import artifact_path, execute_workflow
 from mtp.workflow.verification import verify_core_run
@@ -146,7 +146,7 @@ def inputs(tmp_path: Path) -> dict[str, Path]:
         tmp_path / "core",
         OPERATIONS,
         parameter_overrides={"source_mode": "fixture", "contrast_population": POPULATION},
-        validator=validate_core_product,
+        validator=validate_execution_product,
         repository_root=REPO_ROOT,
     )
     review = tmp_path / "review.tsv"

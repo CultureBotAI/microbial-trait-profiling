@@ -977,8 +977,24 @@ class FeatureDefinition(ConfiguredBaseModel):
     object_id: str = Field(default=..., title="Object id", description="""Trait or culture-medium object identifier.""", json_schema_extra = { "linkml_meta": {'domain_of': ['KgTraitAssertion', 'FeatureDefinition']} })
     object_name: str = Field(default=..., title="Object name", description="""Human-readable trait or medium name.""", json_schema_extra = { "linkml_meta": {'domain_of': ['KgTraitAssertion', 'FeatureDefinition']} })
     object_category: str = Field(default=..., title="Object category", description="""KG category of the assertion object.""", json_schema_extra = { "linkml_meta": {'domain_of': ['KgTraitAssertion', 'FeatureDefinition']} })
+    trait_key_policy: Optional[str] = Field(default=None, title="Trait key policy", description="""Versioned trait identity rule; required by the current scientific contract and absent only in verified historical formats.""", json_schema_extra = { "linkml_meta": {'domain_of': ['FeatureDefinition']} })
+    trait_member_ids_json: Optional[str] = Field(default=None, title="Trait member identifiers JSON", description="""Canonical JSON array of declared raw object CURIEs represented by this feature, not an inventory of observed contributors.""", json_schema_extra = { "linkml_meta": {'domain_of': ['FeatureDefinition']} })
+    trait_source_vocabularies_json: Optional[str] = Field(default=None, title="Trait source vocabularies JSON", description="""Canonical JSON array of declared object_id, source_id and source_label mappings; does not imply those sources contributed to every matrix cell.""", json_schema_extra = { "linkml_meta": {'domain_of': ['FeatureDefinition']} })
     feature_class: FeatureClass = Field(default=..., title="Feature class", description="""Whether the feature is a trait annotation or a culture-medium relation.""", json_schema_extra = { "linkml_meta": {'domain_of': ['FeatureDefinition']} })
     annotation_evidence: str = Field(default=..., title="Annotation evidence", description="""The assertion origins the feature's counts may combine, unresolved by this matrix; direct or descendant, and BacDive strain records when the run's strain rollup scope admits the feature.""", json_schema_extra = { "linkml_meta": {'domain_of': ['FeatureDefinition']} })
+
+    @field_validator('trait_key_policy')
+    def pattern_trait_key_policy(cls, v):
+        pattern=re.compile(r"^(raw_object_v1|facultative_union_v1)$")
+        if isinstance(v, list):
+            for element in v:
+                if isinstance(element, str) and not pattern.match(element):
+                    err_msg = f"Invalid trait_key_policy format: {element}"
+                    raise ValueError(err_msg)
+        elif isinstance(v, str) and not pattern.match(v):
+            err_msg = f"Invalid trait_key_policy format: {v}"
+            raise ValueError(err_msg)
+        return v
 
     @field_validator('annotation_evidence')
     def pattern_annotation_evidence(cls, v):

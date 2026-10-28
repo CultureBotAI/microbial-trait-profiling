@@ -9,7 +9,7 @@ from mtp.datamodel.workflow_pydantic import WorkflowRun
 from mtp.multiplicity.sources import bind_analysis_basis
 from mtp.workflow.comparison import core_analysis_bases
 from mtp.workflow.consumers import open_core_bundle
-from mtp.workflow.operations import OPERATIONS, validate_core_product
+from mtp.workflow.operations import OPERATIONS, validate_execution_product
 from mtp.workflow.runtime import execute_workflow
 from test_workflow_strain_rollup import FIXTURE, ROOT, SPEC, STRAIN_EDGES, STRAIN_NODES
 
@@ -33,7 +33,7 @@ def actual_basis_runs(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Wor
             root / scope,
             OPERATIONS,
             parameter_overrides={"source_mode": "fixture", "strain_rollup": scope},
-            validator=validate_core_product,
+            validator=validate_execution_product,
             repository_root=ROOT,
         )
         for scope in ("off", "phenotype", "full")

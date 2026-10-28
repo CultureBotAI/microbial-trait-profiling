@@ -1,0 +1,25 @@
+{
+  "format": "historical-trait-policy-inventories-v1",
+  "records": [
+    {
+      "code_inventory": {
+        "path": "src/mtp/taxa_trait_matrix.py",
+        "sha256": "e7208fbc26c505cb5b7ad3e35b515b9ec1bd4976307d06046e27788f2ac8402f",
+        "size_bytes": 26364
+      },
+      "policy": "raw_object_v1",
+      "source_commit": "511c891229b659e207cfe0f4281a97c3fc039a80",
+      "source_reference": "511c891"
+    },
+    {
+      "code_inventory": {
+        "path": "src/mtp/taxa_trait_matrix.py",
+        "sha256": "db02030a8ce6c33a7d57151517962722470f7f0973d9ea49db30ca58c96fc874",
+        "size_bytes": 26851
+      },
+      "policy": "facultative_union_v1",
+      "source_commit": "0e49e87d7160829193e1187c4d1a74aba9026a23",
+      "source_reference": "0e49e87"
+    }
+  ]
+}

@@ -279,14 +279,22 @@ def test_cli_main(mock_pipeline_data: dict[str, Path], tmp_path: Path) -> None:
 def test_figure4_draws_only_significant_adjusted_effects_as_surviving(
     mock_pipeline_data: dict[str, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Only significant effects that keep the raw sign are drawn as surviving (#1084, #1097)."""
+    """Only rows significant both raw and adjusted in the same direction are green (#1084-#1098)."""
     import plotly.graph_objects as go
+
+    from mtp.density_adjustment import SIGNIFICANT_POST_ADJUSTMENT_STATUSES, adjustment_status
+
+    nonsig_raw_status = adjustment_status(-2.181818, 0.208697, -5.834487, 0.000029)
+    assert nonsig_raw_status == "significant only post-adjustment"
+    assert nonsig_raw_status not in SIGNIFICANT_POST_ADJUSTMENT_STATUSES
 
     effects_path = mock_pipeline_data["table1_effects"]
     effects = pd.read_csv(effects_path, sep="\t")
+    effects = pd.concat([effects, effects.iloc[[0]]], ignore_index=True)
     effects["status"] = [
         "survived (significant post-adjustment)",
         "enhanced (significant, larger magnitude)",
+        nonsig_raw_status,
         "enhanced magnitude (nonsignificant post-adjustment)",
         "collapsed (nonsignificant post-adjustment, larger magnitude)",
         "reversed (significant post-adjustment)",
@@ -310,7 +318,7 @@ def test_figure4_draws_only_significant_adjusted_effects_as_surviving(
 
     (figure,) = figures
     green, red = "#27ae60", "#e74c3c"
-    expected = [green, green, red, red, red, red]
+    expected = [green, green, red, red, red, red, red]
     adjusted = next(trace for trace in figure.data if trace.name == "PC1-Adjusted")
     assert list(adjusted.marker.color) == expected
     dumbbells = [

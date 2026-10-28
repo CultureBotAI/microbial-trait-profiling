@@ -416,6 +416,10 @@ classes:
         ifabsent: string(group_1_vs_group_0)
         title: Direction basis
         description: Direction semantics of selected Study signatures and all products derived from them.
+      trait_key_policy:
+        pattern: ^(raw_object_v1|facultative_union_v1)$
+        title: Trait key policy
+        description: Versioned trait identity rule, bound to the resolved parameter and matrix/catalog producers. Absent historical values require an audited producer inventory; no current-policy default applies.
       definition:
         range: WorkflowDefinition
         inlined: true
