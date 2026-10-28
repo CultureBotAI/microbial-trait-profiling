@@ -20,6 +20,7 @@ from typing import Any
 import pytest
 from git import Blob, Repo
 
+from delta_z_reference_helpers import F_COMMIT
 from mtp.paths import file_sha256
 
 pytestmark = pytest.mark.integration
@@ -64,7 +65,7 @@ def record(root: Path, scope: str, producer: str) -> dict[str, Any]:
     assert result["strain_rollup"] == scope
     assert result["contrast_population"] == "disease_vs_healthy_tier1_2_subject_controls"
     assert result["direction_basis"] == "disease_vs_comparison"
-    assert set(result["source_commits"].values()) == {"511c891229b659e207cfe0f4281a97c3fc039a80"}
+    assert set(result["source_commits"].values()) == {F_COMMIT}
     assert {path.name for path in root.iterdir()} == {
         "delta_z_derived_run.json",
         *result["outputs"],
@@ -94,7 +95,12 @@ def test_active_study_references(inputs: Inputs) -> None:
         rows = table(root / "trait_summary.tsv")
         assert len(rows) == traits
         assert len({row["trait"] for row in rows}) == traits
-        assert sum(int(row["sdz_active_studies"]) >= 50 for row in rows) == active
+        flags = [row["sdz_active_at_least_50"] for row in rows]
+        assert set(flags).issubset({"True", "False"})
+        assert (
+            sum(flag == "True" for flag in flags)
+            == result["counts"]["traits_with_at_least_50_active_studies"]
+        )
 
 
 def test_oxygen_quadrant_references(inputs: Inputs) -> None:
