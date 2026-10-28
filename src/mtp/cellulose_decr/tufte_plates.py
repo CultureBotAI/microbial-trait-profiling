@@ -2554,11 +2554,11 @@ def render_fig7_svg() -> str:
             "  </g>",
             "",
             '  <g id="panel_b">',
-            '    <text x="626" y="122" class="panel-title">B. 49-Taxon 3-Way Venn Partit'
-            "ion &amp; Micro/Macro Taxonomic Breakdown</text>",
-            '    <text x="626" y="141" class="panel-sub">Exact partition of the 49 uniqu'
-            "e cellulose-annotated taxa decreased in Feces into 7 mutually exclusive subsets w"
-            "ith constituent taxa</text>",
+            '    <text x="626" y="122" class="panel-title">B. 49-Taxon 3-Way Venn '
+            "Partition &amp; Micro/Macro Taxonomic Breakdown</text>",
+            '    <text x="626" y="141" class="panel-sub">Exact partition of the 49 '
+            "unique cellulose-annotated taxa decreased in Feces into 7 mutually "
+            "exclusive subsets with constituent taxa</text>",
             "",
             '    <circle cx="772" cy="302" r="118" fill="#9E2A2B" fill-opacity="0.08'
             '" stroke="#9E2A2B" stroke-width="1.8"/>',
@@ -2761,8 +2761,8 @@ def render_fig7_svg() -> str:
             '    <text x="1259.6" y="614" text-anchor="middle" font-size="10" font-wei'
             'ght="700" fill="#181715">1-Disease Only: 17 (34.7%)</text>',
             "",
-            '    <text x="626" y="646" font-size="10.5" fill="#4A4742">Stool Backgroun'
-            "d (N = 530)</text>",
+            '    <text x="626" y="646" font-size="10.5" fill="#4A4742">Stool '
+            "Background (N = 530)</text>",
             '    <rect x="805" y="631" width="50.8" height="21" fill="#9E2A2B" fill-'
             'opacity="0.58"/>',
             '    <text x="830.4" y="645" text-anchor="middle" font-size="9.2" font-wei'
@@ -3067,39 +3067,39 @@ def render_fig9_svg() -> str:
             "",
             '      <circle cx="290" cy="295" r="145" fill="#9E2A2B" fill-opacity="0.1'
             '6" stroke="#9E2A2B" stroke-width="2.5"/>',
-            '      <text x="175" y="140" font-size="16" font-weight="bold" fill="#9E2'
-            'A2B" text-anchor="middle">Parkinson\u2019s Disease</text>',
-            '      <text x="175" y="160" font-size="13" fill="#4A4843" text-anchor="m'
-            'iddle">Total |PD| = 40 taxa</text>',
+            '      <text x="175" y="140" font-size="16" font-weight="bold" '
+            'fill="#9E2A2B" text-anchor="middle">Parkinson\u2019s Disease</text>',
+            '      <text x="175" y="160" font-size="13" fill="#4A4843" '
+            'text-anchor="middle">Total |PD| = 40 taxa</text>',
             "",
             '      <circle cx="450" cy="295" r="145" fill="#2B4C65" fill-opacity="0.1'
             '6" stroke="#2B4C65" stroke-width="2.5"/>',
-            '      <text x="565" y="140" font-size="16" font-weight="bold" fill="#2B4'
-            'C65" text-anchor="middle">Colorectal Cancer</text>',
-            '      <text x="565" y="160" font-size="13" fill="#4A4843" text-anchor="m'
-            'iddle">Total |CRC| = 34 taxa</text>',
+            '      <text x="565" y="140" font-size="16" font-weight="bold" '
+            'fill="#2B4C65" text-anchor="middle">Colorectal Cancer</text>',
+            '      <text x="565" y="160" font-size="13" fill="#4A4843" '
+            'text-anchor="middle">Total |CRC| = 34 taxa</text>',
             "",
             '      <circle cx="370" cy="430" r="145" fill="#8C5A2B" fill-opacity="0.1'
             '6" stroke="#8C5A2B" stroke-width="2.5"/>',
-            '      <text x="370" y="605" font-size="16" font-weight="bold" fill="#8C5'
-            'A2B" text-anchor="middle">HIV Infection</text>',
-            '      <text x="370" y="625" font-size="13" fill="#4A4843" text-anchor="m'
-            'iddle">Total |HIV| = 24 taxa</text>',
+            '      <text x="370" y="605" font-size="16" font-weight="bold" '
+            'fill="#8C5A2B" text-anchor="middle">HIV Infection</text>',
+            '      <text x="370" y="625" font-size="13" fill="#4A4843" '
+            'text-anchor="middle">Total |HIV| = 24 taxa</text>',
             "",
             '      <text x="215" y="275" font-size="22" font-weight="bold" fill="#181'
             '715" text-anchor="middle">9</text>',
-            '      <text x="215" y="295" font-size="12" fill="#4A4843" text-anchor="m'
-            'iddle">PD only</text>',
+            '      <text x="215" y="295" font-size="12" fill="#4A4843" '
+            'text-anchor="middle">PD only</text>',
             "",
             '      <text x="525" y="275" font-size="22" font-weight="bold" fill="#181'
             '715" text-anchor="middle">6</text>',
-            '      <text x="525" y="295" font-size="12" fill="#4A4843" text-anchor="m'
-            'iddle">CRC only</text>',
+            '      <text x="525" y="295" font-size="12" fill="#4A4843" '
+            'text-anchor="middle">CRC only</text>',
             "",
             '      <text x="370" y="515" font-size="22" font-weight="bold" fill="#181'
             '715" text-anchor="middle">2</text>',
-            '      <text x="370" y="535" font-size="12" fill="#4A4843" text-anchor="m'
-            'iddle">HIV only</text>',
+            '      <text x="370" y="535" font-size="12" fill="#4A4843" '
+            'text-anchor="middle">HIV only</text>',
             "",
             '      <text x="370" y="230" font-size="22" font-weight="bold" fill="#8C5'
             'A2B" text-anchor="middle">10</text>',
@@ -3127,9 +3127,9 @@ def render_fig9_svg() -> str:
             'A" stroke="#D8D2C5" stroke-width="1"/>',
             '      <text x="55" y="668" font-size="13" font-weight="bold" fill="#1817'
             '15">Why the 2-way-only slices (10, 4, 1) are smaller than 17:</text>',
-            '      <text x="55" y="689" font-size="12.5" fill="#33312E">Each 2-way-onl'
-            "y slice excludes the 17 core taxa. Total 2-way-only = 10 + 4 + 1 = 15 taxa.</text"
-            ">",
+            '      <text x="55" y="689" font-size="12.5" fill="#33312E">Each '
+            "2-way-only slice excludes the 17 core taxa. Total 2-way-only = 10 + 4 + 1 "
+            "= 15 taxa.</text>",
             "",
             "      <!-- Right Panel: Full Pairwise Intersections vs. Mutually Exclusive Tiers -->",
             '      <rect x="750" y="15" width="735" height="710" rx="10" fill="#FFF'
@@ -3141,9 +3141,9 @@ def render_fig9_svg() -> str:
             "plus its 2-way-only slice:</text>",
             "",
             '      <g transform="translate(775, 115)">',
-            '        <text x="0" y="20" font-size="15" font-weight="bold" fill="#1817'
-            '15">1. Parkinson\u2019s Disease ∩ Colorectal Cancer  (|PD ∩ CRC| = 27 of 47 unio'
-            "n, 57.4%)</text>",
+            '        <text x="0" y="20" font-size="15" font-weight="bold" '
+            'fill="#181715">1. Parkinson\u2019s Disease ∩ Colorectal Cancer  '
+            "(|PD ∩ CRC| = 27 of 47 union, 57.4%)</text>",
             '        <rect x="0" y="34" width="340" height="42" fill="#9E2A2B" rx="4"/>',
             '        <text x="170" y="60" font-size="14" font-weight="bold" fill="#FF'
             'FFFF" text-anchor="middle">17 Core Taxa (in all 3 diseases)</text>',
@@ -3602,8 +3602,8 @@ def render_slide_deck_html() -> str:
             "      </div>",
             "    </div>",
             '    <div class="header-right">',
-            '      <span class="meta-pill">Vector SVG · <code>figures_tufte/fig3_tufte_why_o'
-            "nly_stool.svg</code></span>",
+            '      <span class="meta-pill">Vector SVG · '
+            "<code>figures_tufte/fig3_tufte_why_only_stool.svg</code></span>",
             '      <span class="slide-num">4 / 16</span>',
             "    </div>",
             "  </header>",
@@ -3693,10 +3693,11 @@ def render_slide_deck_html() -> str:
             "; Arm 2 tests taxon-calibrated hypergeometric ORA across 4,670 profiles \u00d7 31"
             "7 traits (66,240 enrichments, 23 depletions); Arm 3 tests study-level sign consis"
             "tency across 939 studies.</div>",
-            '    <div class="footer-col"><b>Table 1 fraction and ratio tests:</b> All 6 Tabl'
-            "e 1 traits pass BH <i>q</i> ≤ 0.05 in the 6-trait fraction sign test (FA, HAL, CE"
-            "L pass <i>q</i> ≤ 0.001); FA/CEL (59.5% up), CEL/SPH (40.7% up), and CEL/ARS (36."
-            "5% up) pass BY <i>q</i> ≤ 0.05 across 15 log-ratios.</div>",
+            '    <div class="footer-col"><b>Table 1 fraction and ratio tests:</b> '
+            "All 6 Table 1 traits pass BH <i>q</i> ≤ 0.05 in the 6-trait fraction "
+            "sign test (FA, HAL, CEL pass <i>q</i> ≤ 0.001); FA/CEL (59.5% up), "
+            "CEL/SPH (40.7% up), and CEL/ARS (36.5% up) pass BY <i>q</i> ≤ 0.05 "
+            "across 15 log-ratios.</div>",
             "  </footer>",
             "</section>",
             "",
@@ -3745,8 +3746,8 @@ def render_slide_deck_html() -> str:
             '      <div class="title-block">',
             "        <h2>Graphical Summary 1: Cross-Disease Convergence Network and 3-Way Venn"
             " Partition</h2>",
-            '        <p class="subtitle">Disease triangle network, pairwise Jaccard similari'
-            "ty gauge, and 49-taxon union breakdown across PD, HIV, and CRC</p>",
+            '        <p class="subtitle">Disease triangle network, pairwise Jaccard '
+            "similarity gauge, and 49-taxon union breakdown across PD, HIV, and CRC</p>",
             "      </div>",
             "    </div>",
             '    <div class="header-right">',
@@ -3867,9 +3868,9 @@ def render_slide_deck_html() -> str:
             "  </header>",
             "",
             '  <div class="fig-canvas">',
-            '    <img src="figures_graphical/fig4_top_functional_pathway_podium.svg" alt="G'
-            "raphical Summary 4: Cellulose Catabolism Ranks #1 Among GO Processes, Pathways, a"
-            'nd Chemical Traits" />',
+            '    <img src="figures_graphical/fig4_top_functional_pathway_podium.svg" '
+            'alt="Graphical Summary 4: Cellulose Catabolism Ranks #1 Among GO '
+            'Processes, Pathways, and Chemical Traits" />',
             "  </div>",
             "",
             '  <footer class="slide-footer">',
@@ -4037,8 +4038,9 @@ def render_slide_deck_html() -> str:
             '      <div class="title-block">',
             "        <h2>Why Mutually Exclusive 2-Way Slices Have Fewer Taxa Than the 3-Way Co"
             "re</h2>",
-            '        <p class="subtitle">Comparing full pairwise intersections |A ∩ B| (whic'
-            "h include the 3-way core) against 2-way-only Venn slices</p>",
+            '        <p class="subtitle">Comparing full pairwise intersections '
+            "|A ∩ B| (which include the 3-way core) against 2-way-only Venn "
+            "slices</p>",
             "      </div>",
             "    </div>",
             '    <div class="header-right">',
