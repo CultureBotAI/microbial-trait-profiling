@@ -282,11 +282,14 @@ are not a test; traits share taxa.
 | `four_highlighted_pairs_taxon_drivers.tsv`, `four_highlighted_pairs_study_evidence.tsv`, `four_highlighted_pairs_summary.json` | Taxa and studies behind the four exploratory leads |
 
 `just cellulose-decr-figures` runs `mtp.cellulose_decr.figures`
-(`src/mtp/cellulose_decr/figures.py`) and `mtp.cellulose_decr.tufte_plates`
+(`src/mtp/cellulose_decr/figures.py`), which draws the statistical and graphical
+summary figures from those tables only, and `mtp.cellulose_decr.tufte_plates`
 (`src/mtp/cellulose_decr/tufte_plates.py`, also runnable alone via
-`just cellulose-decr-tufte`), which draw the figures, Tufte analytical plates
-(`figures_tufte/`) and 16-slide deck (`cellulose_decr_slide_deck.html`) from
-those tables only (#550). The figures are written beside the tables and are
+`just cellulose-decr-tufte`), which reproduces the fixed October 16 study-modal
+worked-example Tufte analytical plates (`figures_tufte/`) and 16-slide deck
+(`cellulose_decr_slide_deck.html`) preserved for the `tufte-plate` skill
+(`figure-wizard#19`) with the #550/#1127 rendering, citation, and #570 figure-path
+fixes. The figures are written beside the tables and are
 gitignored, as CONTRIBUTING.md requires for images outside `trait-visualization/`
 (#560). Reruns on the same inputs give identical tables and figures; only the
 provenance timestamp changes. Figure provenance is in

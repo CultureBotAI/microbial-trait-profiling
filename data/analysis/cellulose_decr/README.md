@@ -589,12 +589,15 @@ stay out of git outside `trait-visualization/`.
 
 - **Tufte plates and 16-slide deck.** `just cellulose-decr-figures` (or
   `just cellulose-decr-tufte` standalone, via `src/mtp/cellulose_decr/tufte_plates.py`)
-  writes the six Tufte analytical plates (`fig1_tufte_convergence_slope_and_overlap`
-  through `fig6_combining_results_integrated_evidence` as SVG, PDF and PNG), three
+  reproduces the fixed October 16 study-modal worked-example Tufte analytical plates
+  (`fig1_tufte_convergence_slope_and_overlap` through
+  `fig6_tufte_combining_results_integrated_evidence` as SVG, PDF and PNG), three
   supplemental SVG figures (`fig7_tufte_convergence_network_and_venn.svg`,
   `fig8_literature_support_four_pairs.svg`, `fig9_set_theory_17_core_vs_pairwise.svg`),
   the combined `cellulose_decr_tufte_figures.pdf` in `figures_tufte/`, and the
-  16-slide HTML deck `cellulose_decr_slide_deck.html` (#550).
+  16-slide HTML deck `cellulose_decr_slide_deck.html` preserved for the `tufte-plate`
+  skill (`figure-wizard#19`) with the #550/#1127 rendering, citation, and #570
+  figure-path fixes.
 
 Reruns on the same tables give identical bytes.
 
