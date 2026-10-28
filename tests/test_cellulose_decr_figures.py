@@ -466,3 +466,85 @@ def test_slide15_literature_svg_text_fits_inside_boxes(generated_tufte_dir: Path
                 f"Card line overflows 725px card: est_right={est_right:.1f}, line={line!r}"
             )
             assert not re.search(r"Nishiwaki\s+2024", line)
+
+
+def test_tufte_plates_and_deck_are_byte_repeatable(
+    generated_tufte_dir: Path, tmp_path: Path
+) -> None:
+    """Rerunning tufte_plates produces identical bytes across all 23 output files (#1127)."""
+    from mtp.cellulose_decr import tufte_plates
+
+    second_dir = tmp_path / "rerun"
+    assert tufte_plates.main(["--analysis-dir", str(second_dir), "--code-commit", "deadbeef"]) == 0
+
+    first_files = sorted(
+        p.relative_to(generated_tufte_dir) for p in generated_tufte_dir.rglob("*") if p.is_file()
+    )
+    second_files = sorted(p.relative_to(second_dir) for p in second_dir.rglob("*") if p.is_file())
+    assert first_files == second_files
+    assert len(first_files) == 6 * 3 + 3 + 1 + 1
+    for rel_path in first_files:
+        assert (generated_tufte_dir / rel_path).read_bytes() == (
+            second_dir / rel_path
+        ).read_bytes(), f"Non-repeatable bytes in {rel_path}"
+
+
+def test_slide_deck_image_paths_match_current_figure_stems(generated_tufte_dir: Path) -> None:
+    """Every <img src=...> in the 16-slide deck resolves to a current figure (#1127)."""
+    import re
+
+    from mtp.cellulose_decr import tufte_plates
+
+    deck_html = (generated_tufte_dir / "cellulose_decr_slide_deck.html").read_text(encoding="utf-8")
+    img_srcs = re.findall(r'<img\s+src="([^"]+)"', deck_html)
+    assert len(img_srcs) == 13
+
+    expected_tufte_svgs = {f"figures_tufte/{stem}.svg" for stem in tufte_plates.PLATE_STEMS}
+    expected_graphical_svgs = {
+        "figures_graphical/fig1_overlap_and_null_models.svg",
+        "figures_graphical/fig2_shared_taxa_and_set_definitions.svg",
+        "figures_graphical/fig3_direction_by_body_site.svg",
+        "figures_graphical/fig4_trait_overlap_ranking.svg",
+    }
+    expected_statistical_svgs = {
+        "figures/fig1_pairwise_and_3way_jaccard_nulls.svg",
+        "figures/fig2_direction_by_body_site_and_definition.svg",
+        "figures/fig3_core_taxa_and_trait_benchmark.svg",
+    }
+    assert set(img_srcs) == (
+        expected_tufte_svgs | expected_graphical_svgs | expected_statistical_svgs
+    )
+    for src in expected_tufte_svgs:
+        assert (generated_tufte_dir / src).is_file()
+
+
+def test_tufte_builders_apply_rc_context_without_mutating_global_rcparams() -> None:
+    """Standalone build_plate* calls apply _tufte_rcparams() without mutating rcParams (#1127)."""
+    import matplotlib
+    import matplotlib.pyplot as plt
+
+    from mtp.cellulose_decr import tufte_plates
+
+    before = dict(matplotlib.rcParams)
+    importlib.reload(tufte_plates)
+    assert dict(matplotlib.rcParams) == before
+
+    fig = tufte_plates.build_plate1_convergence_slope_and_overlap()
+    try:
+        assert dict(matplotlib.rcParams) == before
+        # Text artists constructed inside build_plate1 must carry the Tufte serif stack
+        assert fig.texts[0].get_fontfamily() == ["serif"]
+    finally:
+        plt.close(fig)
+
+
+def test_tufte_options_are_never_abbreviated() -> None:
+    """tufte_plates.parse_args rejects abbreviated flags so Justfile guards hold (#617, #1127)."""
+    from mtp.cellulose_decr import tufte_plates
+
+    with pytest.raises(SystemExit) as stopped:
+        tufte_plates.parse_args(["--analysis", "/tmp/x"])
+    assert stopped.value.code == 2
+    with pytest.raises(SystemExit) as stopped:
+        tufte_plates.parse_args(["--code", "abc"])
+    assert stopped.value.code == 2

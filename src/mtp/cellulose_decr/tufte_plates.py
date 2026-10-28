@@ -1,6 +1,9 @@
-"""Generate the Tufte analytical plates, standalone SVGs, and 16-slide HTML deck (#550).
+"""Generate the Tufte analytical plates, standalone SVGs, and 16-slide HTML deck (#550, #1127).
 
-Writes ``data/analysis/cellulose_decr/figures_tufte/`` (Plates I-VI as ``.svg``, ``.pdf``,
+Reproduces the October 16 worked-example Tufte analytical plates and 16-slide deck
+(preserved for the ``tufte-plate`` skill snapshot, ``figure-wizard#19``) with the
+#550 rendering, citation, and #570 figure-path fixes. Writes
+``data/analysis/cellulose_decr/figures_tufte/`` (Plates I-VI as ``.svg``, ``.pdf``,
 ``.png``, standalone diagrams ``fig7``-``fig9`` as ``.svg``, and the combined 6-page vector
 packet ``cellulose_decr_tufte_figures.pdf``) plus the 16-slide presentation deck
 ``data/analysis/cellulose_decr/cellulose_decr_slide_deck.html``.
@@ -9,7 +12,8 @@ packet ``cellulose_decr_tufte_figures.pdf``) plus the 16-slide presentation deck
 from __future__ import annotations
 
 import argparse
-from collections.abc import Sequence
+import functools
+from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -388,23 +392,48 @@ def _draw_specification_card(
         ry -= row_step
 
 
+def _with_tufte_rcparams(builder: Callable[[], Figure]) -> Callable[[], Figure]:
+    """Run a plate builder inside ``matplotlib.rc_context(_tufte_rcparams())`` (#1127)."""
+
+    @functools.wraps(builder)
+    def _wrapped() -> Figure:
+        with matplotlib.rc_context(_tufte_rcparams()):
+            return builder()
+
+    return _wrapped
+
+
 def _save_plate(fig: Figure, output_dir: Path, stem: str, *, dpi: int = 300) -> list[Path]:
-    """Save a plate in .svg, .pdf, and .png formats."""
+    """Save a plate in .svg, .pdf, and .png formats with repeatable bytes (#1127)."""
     output_dir.mkdir(parents=True, exist_ok=True)
     saved: list[Path] = []
-    for ext in ("svg", "pdf", "png"):
-        out_path = output_dir / f"{stem}.{ext}"
-        if ext == "png":
-            fig.savefig(out_path, dpi=dpi, bbox_inches="tight", facecolor=PAPER_BG)
-        else:
-            fig.savefig(out_path, bbox_inches="tight", facecolor=PAPER_BG)
-        saved.append(out_path)
+    with matplotlib.rc_context(_tufte_rcparams()):
+        for ext in ("svg", "pdf", "png"):
+            out_path = output_dir / f"{stem}.{ext}"
+            if ext == "svg":
+                fig.savefig(
+                    out_path,
+                    bbox_inches="tight",
+                    facecolor=PAPER_BG,
+                    metadata={"Date": None},
+                )
+            elif ext == "pdf":
+                fig.savefig(
+                    out_path,
+                    bbox_inches="tight",
+                    facecolor=PAPER_BG,
+                    metadata={"CreationDate": None},
+                )
+            else:
+                fig.savefig(out_path, dpi=dpi, bbox_inches="tight", facecolor=PAPER_BG)
+            saved.append(out_path)
     return saved
 
 
 # --------------------------------------------------------------------------- Plate I
 
 
+@_with_tufte_rcparams
 def build_plate1_convergence_slope_and_overlap() -> Figure:
     """Build Plate I: Cross-Disease Taxonomic Convergence (Slopegraph + Sharing Tiers)."""
     fig = _make_tufte_plate(
@@ -690,6 +719,7 @@ def build_plate1_convergence_slope_and_overlap() -> Figure:
 # --------------------------------------------------------------------------- Plate II
 
 
+@_with_tufte_rcparams
 def build_plate2_core_guild_dot_table() -> Figure:
     """Build Plate II: The Shared Fiber-Degrading Guild at Genus & Species Resolution (#550)."""
     fig = _make_tufte_plate(
@@ -1005,6 +1035,7 @@ def build_plate2_core_guild_dot_table() -> Figure:
 # --------------------------------------------------------------------------- Plate III
 
 
+@_with_tufte_rcparams
 def build_plate3_why_only_stool() -> Figure:
     """Build Plate III: Anatomical & Ecological Specificity (#550)."""
     # Item 2 (#550): Cite the real committed table compartment_jaccard_and_direction_stats.tsv
@@ -1342,6 +1373,7 @@ _PLATE4_TRAIT_COORDS: tuple[tuple[float, float], ...] = (
 )
 
 
+@_with_tufte_rcparams
 def build_plate4_trait_landscape_and_four_pairs() -> Figure:
     """Build Plate IV: Functional Pathway Benchmark & Literature-Supported Signatures (#550)."""
     fig = _make_tufte_plate(
@@ -1525,6 +1557,7 @@ def build_plate4_trait_landscape_and_four_pairs() -> Figure:
 # --------------------------------------------------------------------------- Plate V
 
 
+@_with_tufte_rcparams
 def build_plate5_three_statistical_arms() -> Figure:
     """Build Plate V: Statistical Architecture (One Matrix, Three Statistical Questions)."""
     fig = _make_tufte_plate(
@@ -1953,6 +1986,7 @@ def build_plate5_three_statistical_arms() -> Figure:
 # --------------------------------------------------------------------------- Plate VI
 
 
+@_with_tufte_rcparams
 def build_plate6_combining_results_integrated_evidence() -> Figure:
     """Build Plate VI: Result Integration & Evidence Contract."""
     fig = _make_tufte_plate(
@@ -3751,14 +3785,14 @@ def render_slide_deck_html() -> str:
             "      </div>",
             "    </div>",
             '    <div class="header-right">',
-            '      <span class="meta-pill">Vector SVG · <code>figures_graphical/fig1_surpris'
-            "ing_convergence_network_venn.svg</code></span>",
+            '      <span class="meta-pill">Vector SVG · <code>figures_graphical/fig1_overlap'
+            "_and_null_models.svg</code></span>",
             '      <span class="slide-num">8 / 16</span>',
             "    </div>",
             "  </header>",
             "",
             '  <div class="fig-canvas">',
-            '    <img src="figures_graphical/fig1_surprising_convergence_network_venn.svg" a'
+            '    <img src="figures_graphical/fig1_overlap_and_null_models.svg" a'
             'lt="Graphical Summary 1: Cross-Disease Convergence Network and 3-Way Venn Partit'
             'ion" />',
             "  </div>",
@@ -3788,15 +3822,15 @@ def render_slide_deck_html() -> str:
             "      </div>",
             "    </div>",
             '    <div class="header-right">',
-            '      <span class="meta-pill">Vector SVG · <code>figures_graphical/fig2_genus_s'
-            "pecies_core_guild.svg</code></span>",
+            '      <span class="meta-pill">Vector SVG · <code>figures_graphical/fig2_shared_'
+            "taxa_and_set_definitions.svg</code></span>",
             '      <span class="slide-num">9 / 16</span>',
             "    </div>",
             "  </header>",
             "",
             '  <div class="fig-canvas">',
-            '    <img src="figures_graphical/fig2_genus_species_core_guild.svg" alt="Graphi'
-            'cal Summary 2: Taxonomic Rollup Sensitivity at Genus and Species Ranks" />',
+            '    <img src="figures_graphical/fig2_shared_taxa_and_set_definitions.svg" alt="G'
+            'raphical Summary 2: Taxonomic Rollup Sensitivity at Genus and Species Ranks" />',
             "  </div>",
             "",
             '  <footer class="slide-footer">',
@@ -3824,14 +3858,14 @@ def render_slide_deck_html() -> str:
             "      </div>",
             "    </div>",
             '    <div class="header-right">',
-            '      <span class="meta-pill">Vector SVG · <code>figures_graphical/fig3_feces_c'
-            "ompartment_specificity.svg</code></span>",
+            '      <span class="meta-pill">Vector SVG · <code>figures_graphical/fig3_directi'
+            "on_by_body_site.svg</code></span>",
             '      <span class="slide-num">10 / 16</span>',
             "    </div>",
             "  </header>",
             "",
             '  <div class="fig-canvas">',
-            '    <img src="figures_graphical/fig3_feces_compartment_specificity.svg" alt="G'
+            '    <img src="figures_graphical/fig3_direction_by_body_site.svg" alt="G'
             "raphical Summary 3: Both Depletion and Taxonomic Convergence Are Specific to Stoo"
             'l" />',
             "  </div>",
@@ -3861,14 +3895,14 @@ def render_slide_deck_html() -> str:
             "      </div>",
             "    </div>",
             '    <div class="header-right">',
-            '      <span class="meta-pill">Vector SVG · <code>figures_graphical/fig4_top_fun'
-            "ctional_pathway_podium.svg</code></span>",
+            '      <span class="meta-pill">Vector SVG · <code>figures_graphical/fig4_trait_o'
+            "verlap_ranking.svg</code></span>",
             '      <span class="slide-num">11 / 16</span>',
             "    </div>",
             "  </header>",
             "",
             '  <div class="fig-canvas">',
-            '    <img src="figures_graphical/fig4_top_functional_pathway_podium.svg" '
+            '    <img src="figures_graphical/fig4_trait_overlap_ranking.svg" '
             'alt="Graphical Summary 4: Cellulose Catabolism Ranks #1 Among GO '
             'Processes, Pathways, and Chemical Traits" />',
             "  </div>",
@@ -3934,14 +3968,14 @@ def render_slide_deck_html() -> str:
             "      </div>",
             "    </div>",
             '    <div class="header-right">',
-            '      <span class="meta-pill">Vector SVG · <code>figures/fig2_compartment_speci'
-            "ficity_and_sensitivity.svg</code></span>",
+            '      <span class="meta-pill">Vector SVG · <code>figures/fig2_direction_by_body'
+            "_site_and_definition.svg</code></span>",
             '      <span class="slide-num">13 / 16</span>',
             "    </div>",
             "  </header>",
             "",
             '  <div class="fig-canvas">',
-            '    <img src="figures/fig2_compartment_specificity_and_sensitivity.svg" alt="S'
+            '    <img src="figures/fig2_direction_by_body_site_and_definition.svg" alt="S'
             "tatistical Figure 2: Anatomical Compartment Specificity and Sensitivity Across Ta"
             'xonomic Ranks" />',
             "  </div>",
@@ -4131,18 +4165,24 @@ def generate_tufte_plates_and_deck(
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
-    """Parse command-line arguments for Tufte plate and deck generation."""
+    """Parse command-line arguments for Tufte plate and deck generation (#617, #1127)."""
     parser = argparse.ArgumentParser(
         description=(
             "Generate the Edward Tufte analytical plates (fig1\u2013fig6), standalone vector SVGs "
             "(fig7\u2013fig9), combined PDF packet, and 16-slide HTML deck under analysis_dir."
-        )
+        ),
+        allow_abbrev=False,
     )
     parser.add_argument(
         "--analysis-dir",
         type=Path,
         default=ANALYSIS_DIR,
         help="Target cellulose_decr analysis directory (default: data/analysis/cellulose_decr).",
+    )
+    parser.add_argument(
+        "--code-commit",
+        default="unrecorded",
+        help="Revision that draws the figures, accepted for CLI parity with figures.py (#1127).",
     )
     parser.add_argument(
         "--dpi",
