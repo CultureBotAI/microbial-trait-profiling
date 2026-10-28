@@ -4,7 +4,11 @@ from __future__ import annotations
 
 import dataclasses
 import hashlib
+import io
 import json
+import shutil
+from collections.abc import Iterator
+from datetime import timedelta
 from pathlib import Path
 from typing import Any
 
@@ -13,7 +17,7 @@ import pytest
 
 from mtp.cellulose_decr import selection_scan as scan
 from mtp.cellulose_decr import selection_scan_scopes as scopes
-from mtp.datamodel.workflow_pydantic import WorkflowRun
+from mtp.datamodel.workflow_pydantic import ConsumerRecord, WorkflowRun
 from mtp.workflow import consumers
 from mtp.workflow.archive import ArchiveResolver, create_archive
 from test_cellulose_decr_selection_scan import cores as cores
@@ -41,11 +45,28 @@ def retained(
     return ArchiveResolver(relocated / archived.name)
 
 
+@pytest.fixture
+def isolated_retained(
+    retained: ArchiveResolver, scans: dict[str, Path], tmp_path: Path
+) -> Iterator[ArchiveResolver]:
+    """Each byte mutation gets an independent archive; shared source fixtures stay immutable."""
+    originals = (
+        retained.files
+        | {retained.root / "archive.json"}
+        | {path for directory in scans.values() for path in directory.rglob("*") if path.is_file()}
+    )
+    before = {path: hashlib.sha256(path.read_bytes()).hexdigest() for path in originals}
+    restored = tmp_path / "private-archive"
+    shutil.copytree(retained.root, restored)
+    yield ArchiveResolver(restored / "archive.json")
+    assert {path: hashlib.sha256(path.read_bytes()).hexdigest() for path in originals} == before
+
+
 def forbid_original_reads(monkeypatch: pytest.MonkeyPatch, retained: ArchiveResolver) -> None:
     original_open = Path.open
 
     def retained_only(path: Path, *args: Any, **kwargs: Any) -> Any:
-        if path.absolute() in retained.mappings:
+        if any(path.absolute().is_relative_to(original) for original in retained.mappings):
             pytest.fail(f"A relocated scan read an original path: {path}")
         return original_open(path, *args, **kwargs)
 
@@ -87,27 +108,135 @@ def test_resolver_refusal_does_not_fall_back_to_existing_original_core(
         scopes.load_run(scans["off"], resolver=without_core)
 
 
+def one_byte_change(name: str, raw: bytes) -> bytes:
+    """Keep valid syntax and byte count so rejection must depend on the output digest."""
+    if name in {"summary", "provenance"}:
+        offset = raw.index(b"\n ") + 1
+        changed = raw[:offset] + b"\t" + raw[offset + 1 :]
+        assert json.loads(changed) == json.loads(raw)
+    else:
+        header, first_row, *_ = raw.splitlines()
+        position = header.split(b"\t").index(b"trait_label")
+        fields = first_row.split(b"\t")
+        label = fields[position]
+        character = next(
+            index
+            for index, value in enumerate(label)
+            if chr(value).isascii() and chr(value).isalpha()
+        )
+        offset = len(header) + 1 + sum(len(field) + 1 for field in fields[:position]) + character
+        replacement = bytes([label[character]]).swapcase()
+        changed = raw[:offset] + replacement + raw[offset + 1 :]
+        before = pd.read_csv(io.BytesIO(raw), sep="\t", dtype=str, keep_default_na=False)
+        after = pd.read_csv(io.BytesIO(changed), sep="\t", dtype=str, keep_default_na=False)
+        expected = before.copy()
+        original_label = str(before.loc[0, "trait_label"])
+        expected.loc[0, "trait_label"] = (
+            original_label[:character]
+            + replacement.decode("ascii")
+            + original_label[character + 1 :]
+        )
+        pd.testing.assert_frame_equal(after, expected)
+    assert len(changed) == len(raw)
+    assert sum(left != right for left, right in zip(raw, changed, strict=True)) == 1
+    return changed
+
+
 @pytest.mark.parametrize("name", scopes.READ)
 def test_loaded_bytes_must_still_match_the_verified_output_inventory(
     scans: dict[str, Path],
+    retained: ArchiveResolver,
+    isolated_retained: ArchiveResolver,
     monkeypatch: pytest.MonkeyPatch,
     name: str,
 ) -> None:
-    path = scans["off"] / scan.OUTPUTS[name]
+    source = scans["off"] / scan.OUTPUTS[name]
+    retained_source = retained.resolve(source)
+    path = isolated_retained.resolve(source)
+    assert path.is_relative_to(isolated_retained.root)
+    assert not path.is_relative_to(retained.root)
     original_bytes = path.read_bytes()
+    assert source.read_bytes() == retained_source.read_bytes() == original_bytes
+    changed = one_byte_change(name, original_bytes)
     original_verify = consumers.verify_consumer_record
 
     def verify_then_change(*args: Any, **kwargs: Any) -> Any:
         record = original_verify(*args, **kwargs)
-        path.write_bytes(original_bytes + b"\n")
+        path.write_bytes(changed)
         return record
 
     monkeypatch.setattr(consumers, "verify_consumer_record", verify_then_change)
     try:
         with pytest.raises(ValueError, match=r"(?i)changed|hash|bound|bytes|digest"):
-            scopes.load_run(scans["off"])
+            scopes.load_run(scans["off"], resolver=isolated_retained.resolve)
     finally:
-        path.write_bytes(original_bytes)
+        assert source.read_bytes() == retained_source.read_bytes() == original_bytes
+
+
+def test_loaded_consumer_record_must_equal_the_verified_record(
+    scans: dict[str, Path],
+    isolated_retained: ArchiveResolver,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    path = isolated_retained.resolve(scans["off"] / scan.CONSUMER_RECORD)
+    original_verify = consumers.verify_consumer_record
+
+    def verify_then_change(*args: Any, **kwargs: Any) -> Any:
+        record = original_verify(*args, **kwargs)
+        changed = record.model_copy(update={"created_at": record.created_at + timedelta(seconds=1)})
+        path.write_text(changed.model_dump_json(), encoding="utf-8")
+        return record
+
+    monkeypatch.setattr(consumers, "verify_consumer_record", verify_then_change)
+    with pytest.raises(ValueError, match="consumer record changed after verification"):
+        scopes.load_run(scans["off"], resolver=isolated_retained.resolve)
+
+
+def test_verified_snapshots_must_still_declare_v2_after_preflight(
+    scans: dict[str, Path],
+    isolated_retained: ArchiveResolver,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    original_verify = consumers.verify_consumer_record
+    original = scans["off"]
+    consumer_path = isolated_retained.resolve(original / scan.CONSUMER_RECORD)
+    paths = {
+        name: isolated_retained.resolve(original / scan.OUTPUTS[name])
+        for name in ("summary", "provenance")
+    }
+    protocol = scan.load_protocol(scan.PROTOCOL_V1_PATH)
+    rollup = scan.scope_record("off", "recorded", protocol)
+    del rollup["scope_source"]
+
+    def change_then_verify(*args: Any, **kwargs: Any) -> Any:
+        # The loader has already accepted the original v2 preflight by this call.
+        summary = json.loads(paths["summary"].read_bytes())
+        provenance = json.loads(paths["provenance"].read_bytes())
+        summary.update(protocol=scan.VERSION_V1, **{scan.STRAIN_ROLLUP: rollup})
+        provenance.update(
+            protocol=scan.protocol_record(scan.VERSION_V1), **{scan.STRAIN_ROLLUP: rollup}
+        )
+        assert scan.recorded_protocol(summary, provenance) == protocol
+        for name, value in (("summary", summary), ("provenance", provenance)):
+            paths[name].write_text(json.dumps(value), encoding="utf-8")
+        record = ConsumerRecord.model_validate_json(consumer_path.read_bytes())
+        outputs = []
+        for output in record.outputs:
+            path = isolated_retained.resolve(Path(output.path))
+            if path in paths.values():
+                raw = path.read_bytes()
+                output = output.model_copy(
+                    update={"sha256": hashlib.sha256(raw).hexdigest(), "size_bytes": len(raw)}
+                )
+            outputs.append(output)
+        consumer_path.write_text(
+            record.model_copy(update={"outputs": outputs}).model_dump_json(), encoding="utf-8"
+        )
+        return original_verify(*args, **kwargs)
+
+    monkeypatch.setattr(consumers, "verify_consumer_record", change_then_verify)
+    with pytest.raises(ValueError, match=scan.VERSION_V1):
+        scopes.load_run(original, resolver=isolated_retained.resolve)
 
 
 @pytest.mark.parametrize("version_record", ["summary", "provenance", "both"])
