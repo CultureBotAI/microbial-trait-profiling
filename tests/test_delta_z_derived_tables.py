@@ -189,6 +189,44 @@ def test_stool_uses_exact_site_top_diseases_and_nominal_comparison_wilcoxon(inpu
     assert zero.wilcoxon_statistic.isna().all()
 
 
+def test_row_two_quadrants_exclude_multisite_nonaxis_pairs(inputs: Inputs) -> None:
+    pairs, studies, evidence, metadata = inputs
+    original = build_tables(pairs, studies, evidence, metadata, [SHIFT, ZERO])
+    metadata = metadata.copy()
+    multisite = metadata.study_id.eq("s4") & metadata.experiment_id.eq("e1")
+    metadata.loc[multisite, "body_site"] = "Feces,Blood"
+    result = build_tables(pairs, studies, evidence, metadata, [SHIFT, ZERO])
+    summary = result.quadrant_summary.set_index("population")
+    counts = ["fa_up_oa_down", "fa_down_oa_up", "both_up", "both_down", "axis"]
+    all_rows = summary.loc[["all"]].iloc[0]
+    stool = summary.loc[["stool"]].iloc[0]
+    assert all_rows["n_comparisons"] == 8
+    assert all_rows["n_studies"] == 6
+    assert all_rows[counts].tolist() == [3, 1, 1, 1, 2]
+    assert stool["n_comparisons"] == 5
+    assert stool["n_studies"] == 3
+    assert stool[counts].tolist() == [2, 1, 1, 1, 0]
+    per_pair = result.quadrant_pairs.set_index(["study_id", "experiment_id"])
+    assert set(per_pair.loc[per_pair.is_stool].index) == {
+        ("s1", "e1"),
+        ("s1", "e2"),
+        ("s1", "e3"),
+        ("s2", "e1"),
+        ("s5", "e1"),
+    }
+    excluded = per_pair.loc[[("s4", "e1")]].iloc[0]
+    assert excluded["body_site"] == "Feces,Blood"
+    assert excluded["fa_delta_z"] > 0
+    assert excluded["oa_delta_z"] < 0
+    assert excluded["quadrant"] == "fa_up_oa_down"
+    assert not excluded["is_stool"]
+    pd.testing.assert_series_equal(
+        all_rows, original.quadrant_summary.set_index("population").loc[["all"]].iloc[0]
+    )
+    pd.testing.assert_frame_equal(result.stool_disease_shifts, original.stool_disease_shifts)
+    pd.testing.assert_frame_equal(result.stool_study_sensitivity, original.stool_study_sensitivity)
+
+
 def test_row_five_preserves_every_exact_cell_and_reports_two_counts(inputs: Inputs) -> None:
     pairs, studies, evidence, metadata = inputs
     result = build_tables(pairs, studies, evidence, metadata, [SHIFT])
