@@ -625,6 +625,54 @@ def test_late_failure_removes_only_new_empty_output_ancestors(
     assert sibling.read_text() == "unowned sibling"
 
 
+def _assert_failed_run_preserves_empty_existing_parent(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, nested: bool
+) -> None:
+    """Behavioral oracle shared with the ownership mutation probe (#1218)."""
+    parent = synthetic_parent(tmp_path, monkeypatch)
+    existing = tmp_path / "existing_empty"
+    existing.mkdir()
+    before = existing.stat()
+    assert not list(existing.iterdir())
+    output = existing / "new" / "nested" / "output" if nested else existing / "output"
+    failure = OSError("injected publication failure with empty existing parent")
+    monkeypatch.setattr(stage, "_publish_directory", Mock(side_effect=failure))
+    with pytest.raises(OSError, match="injected publication failure with empty existing parent"):
+        run(parent, output)
+    assert existing.is_dir(), "pre-existing empty ancestor was removed"
+    after = existing.stat()
+    assert (after.st_dev, after.st_ino) == (before.st_dev, before.st_ino)
+    assert not list(existing.iterdir())
+
+
+@pytest.mark.parametrize("nested", [False, True], ids=["direct", "nested"])
+def test_failed_run_preserves_empty_existing_parent(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, nested: bool
+) -> None:
+    _assert_failed_run_preserves_empty_existing_parent(tmp_path, monkeypatch, nested=nested)
+
+
+@pytest.mark.parametrize("nested", [False, True], ids=["direct", "nested"])
+def test_empty_existing_parent_oracle_kills_false_ownership(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, nested: bool
+) -> None:
+    """Probe the documented mutant without changing any production source bytes."""
+    original = stage._create_parents
+
+    def claim_existing(parent: Path, created: list[tuple[Path, tuple[int, int]]]) -> None:
+        cursor = parent
+        while not cursor.is_dir():
+            cursor = cursor.parent
+        metadata = cursor.stat()
+        # The mutant incorrectly grants ownership of the first existing ancestor.
+        created.append((cursor, (metadata.st_dev, metadata.st_ino)))
+        original(parent, created)
+
+    monkeypatch.setattr(stage, "_create_parents", claim_existing)
+    with pytest.raises(AssertionError, match=r"^pre-existing empty ancestor was removed(?:\n|$)"):
+        _assert_failed_run_preserves_empty_existing_parent(tmp_path, monkeypatch, nested=nested)
+
+
 def test_staging_mkdir_failure_removes_new_ancestors_without_touching_siblings(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
