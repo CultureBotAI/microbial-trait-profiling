@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 import tempfile
 from collections.abc import Iterator
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -15,6 +15,7 @@ import pandas as pd
 import pytest
 from git import Actor, Repo
 
+from mtp.count_input import CountTableRow, profile_count_reader
 from mtp.datamodel.workflow_pydantic import ComparisonRun, ExecutionStatus
 from mtp.delta_z_derived import stage as derived_stage
 from mtp.multiple_testing import canonical_sha256
@@ -68,6 +69,14 @@ class ParentBundle:
         )
 
 
+def parsed_fixture_sources(
+    sources: VerifiedSources, path: Path, *, manifest_bytes: bytes | None = None
+) -> VerifiedSources:
+    """Stub upstream execution while really parsing the captured comparison bytes."""
+    raw = path.read_bytes() if manifest_bytes is None else manifest_bytes
+    return replace(sources, comparison=ComparisonRun.model_validate_json(raw))
+
+
 @pytest.fixture
 def parent_bundle(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> ParentBundle:
     sources = fixture_sources(tmp_path / "inputs", monkeypatch)
@@ -87,7 +96,11 @@ def parent_bundle(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> ParentBund
         arm.id = f"fixture-{name}"
         arm.git_commit = "a" * 40
     monkeypatch.setattr(stage, "open_verified_sources", lambda _path: sources)
-    monkeypatch.setattr(reader, "open_verified_sources", lambda _path: sources)
+
+    def parsed_sources(path: Path, *, manifest_bytes: bytes | None = None) -> VerifiedSources:
+        return parsed_fixture_sources(sources, path, manifest_bytes=manifest_bytes)
+
+    monkeypatch.setattr(reader, "open_verified_sources", parsed_sources)
     repository_root = tmp_path / "producer"
     with Repo.init(repository_root) as repository:
         names = [
@@ -337,9 +350,10 @@ def test_recheck_detects_changes_after_loading(parent_bundle: ParentBundle) -> N
 def test_late_input_mutation_during_verification_is_rejected(
     parent_bundle: ParentBundle, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    def mutate(_comparison: Path) -> VerifiedSources:
+    def mutate(_comparison: Path, *, manifest_bytes: bytes | None = None) -> VerifiedSources:
         parent_bundle.manifest.write_text("{}\n", encoding="utf-8")
-        return parent_bundle.sources
+        raw = _comparison.read_bytes() if manifest_bytes is None else manifest_bytes
+        return replace(parent_bundle.sources, comparison=ComparisonRun.model_validate_json(raw))
 
     monkeypatch.setattr(reader, "open_verified_sources", mutate)
     with pytest.raises(ValueError, match=r"manifest|changed|pin"):
@@ -383,6 +397,18 @@ def external_experiments_alias(
         "sha256": core_sha,
         "size_bytes": core_manifest.stat().st_size,
     }
+    # Keep the fixture's on-disk ComparisonRun consistent now that the reader seam
+    # parses the provided bytes instead of returning an already constructed object.
+    parent.comparison.write_text(parent.sources.comparison.model_dump_json(), encoding="utf-8")
+    comparison_sha = file_sha256(parent.comparison)
+    for key in list(parent.record["inputs"]):
+        if key.startswith(f"{parent.comparison.name}@sha256:"):
+            del parent.record["inputs"][key]
+    parent.record["inputs"][f"{parent.comparison.name}@sha256:{comparison_sha}"] = {
+        "sha256": comparison_sha,
+        "size_bytes": parent.comparison.stat().st_size,
+    }
+    parent.record["comparison_manifest_sha256"] = comparison_sha
     parent.save()
     monkeypatch.setattr(source_module, "artifact_path", artifact_path)
     return alias, target
@@ -568,3 +594,107 @@ def test_reader_checks_the_parsed_buffer_against_the_bound_output_identity(
     monkeypatch.setattr(Path, "read_bytes", transient_bytes)
     with pytest.raises(ValueError, match=r"Completed-table.*(hash|identity|size)"):
         parent_bundle.load()
+
+
+@pytest.mark.parametrize("alias", [False, True])
+def test_comparison_verification_parses_captured_bytes_during_restored_swap(
+    parent_bundle: ParentBundle, monkeypatch: pytest.MonkeyPatch, alias: bool
+) -> None:
+    target = parent_bundle.comparison
+    original = target.read_bytes()
+    changed = json.loads(original)
+    changed["git_dirty"] = True
+    transient = json.dumps(changed).encode("utf-8")
+    supplied = target
+    if alias:
+        supplied = parent_bundle.root.parent / "comparison-input-alias" / target.name
+        supplied.parent.mkdir()
+        supplied.symlink_to(target)
+    observed: list[bytes | None] = []
+
+    def swapped(path: Path, *, manifest_bytes: bytes | None = None) -> VerifiedSources:
+        observed.append(manifest_bytes)
+        target.write_bytes(transient)
+        try:
+            return parsed_fixture_sources(
+                parent_bundle.sources, path, manifest_bytes=manifest_bytes
+            )
+        finally:
+            target.write_bytes(original)
+
+    monkeypatch.setattr(reader, "open_verified_sources", swapped)
+    loaded = reader.load_completed_table(
+        parent_bundle.manifest, supplied, expected_sha256=file_sha256(parent_bundle.manifest)
+    )
+    assert target.read_bytes() == original
+    # A dropped keyword still returns a valid model but carries the transient false flag.
+    assert loaded.sources.comparison.git_dirty is False
+    assert observed == [original]
+    assert supplied in loaded.snapshots
+    assert loaded.resolved_targets[supplied] == target
+    reader.recheck_completed_table(loaded)
+
+
+def test_count_population_parses_bound_bytes_during_restored_path_swap(
+    parent_bundle: ParentBundle, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = parent_bundle.sources.product("count_profiles")
+    original = path.read_bytes()
+    lines = original.decode("utf-8").splitlines()
+    first = lines[1].split("\t")
+    expected_counts = tuple(int(value) for value in first[3:])
+    first[3] = "999"
+    lines[1] = "\t".join(first)
+    transient = ("\n".join(lines) + "\n").encode("utf-8")
+    observed: list[CountTableRow] = []
+    buffers: list[bytes | None] = []
+
+    def swapped(source: Path, *, raw_bytes: bytes | None = None) -> Iterator[CountTableRow]:
+        assert source == path
+        buffers.append(raw_bytes)
+        path.write_bytes(transient)
+        try:
+            checked = (
+                profile_count_reader(source)
+                if raw_bytes is None
+                else profile_count_reader(source, raw_bytes=raw_bytes)
+            )
+            # Consume while swapped; restore before the loader's final hash recheck.
+            parsed = list(checked)
+            observed.extend(parsed)
+            return iter(parsed)
+        finally:
+            path.write_bytes(original)
+
+    monkeypatch.setattr(reader, "profile_count_reader", swapped)
+    loaded = parent_bundle.load()
+    assert path.read_bytes() == original
+    assert observed[0].counts == expected_counts
+    assert observed[0].counts[0] != 999
+    assert buffers == [original]
+    assert len(loaded.pair_delta_z) == 8
+    reader.recheck_completed_table(loaded)
+
+
+def test_count_population_rejects_unbound_read_buffer_even_when_path_is_restored(
+    parent_bundle: ParentBundle, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = parent_bundle.sources.product("count_profiles")
+    original = path.read_bytes()
+    lines = original.splitlines(keepends=True)
+    first = lines[1].split(b"\t")
+    first[3] = b"9" * len(first[3]) if first[3] != b"9" * len(first[3]) else b"8" * len(first[3])
+    lines[1] = b"\t".join(first)
+    transient = b"".join(lines)
+    assert len(transient) == len(original)
+    assert transient != original
+    original_read = Path.read_bytes
+
+    def changed_buffer(source: Path) -> bytes:
+        raw = original_read(source)
+        return transient if source == path else raw
+
+    monkeypatch.setattr(Path, "read_bytes", changed_buffer)
+    with pytest.raises(ValueError, match=r"(hash|identity|digest)"):
+        parent_bundle.load()
+    assert original_read(path) == original
