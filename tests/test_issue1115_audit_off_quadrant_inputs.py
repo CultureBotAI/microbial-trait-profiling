@@ -1,4 +1,4 @@
-"""Refuse audit report destinations inside completed input bundles (#1186)."""
+"""Refuse audit report destinations inside completed input bundles (#1186, #1212)."""
 
 from __future__ import annotations
 
@@ -6,12 +6,22 @@ import hashlib
 import json
 import runpy
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
 import pytest
 
 SCRIPT_PATH = Path(__file__).parents[1] / "scripts/adhoc/issue1115_audit_off_quadrant_inputs.py"
+MACOS = pytest.mark.skipif(
+    sys.platform != "darwin",
+    reason="macOS APFS case-insensitivity and /System/Volumes/Data firmlinks",
+)
+BUNDLE_REFUSAL_MATCH = (
+    r"^Report output must be outside completed input bundles and disjoint from audit inputs$"
+)
+SYMLINK_CYCLE_MATCH = r"^Symlink cycle while protecting input bundles$"
+SYMLINK_LIMIT_MATCH = r"^Symlink expansion limit reached while protecting input bundles$"
 
 
 def _load_module() -> dict[str, Any]:
@@ -118,6 +128,7 @@ def audit_fixture(tmp_path: Path) -> dict[str, Any]:
         "output_file_symlink_into_parent_bundle",
         "output_file_symlink_into_reference_bundle",
         "trait_list_collision",
+        "output_is_parent_of_bundles",
     ],
 )
 def test_refuses_output_inside_either_completed_bundle_without_modifying_bundles(
@@ -173,6 +184,8 @@ def test_refuses_output_inside_either_completed_bundle_without_modifying_bundles
     elif case == "output_file_symlink_into_reference_bundle":
         output = tmp_path / "aliases" / "report_into_reference.json"
         output.symlink_to(reference_bundle / "nested" / "audit_report.json")
+    elif case == "output_is_parent_of_bundles":
+        output = tmp_path
     else:
         output = trait_list
 
@@ -199,15 +212,244 @@ def test_refuses_output_inside_either_completed_bundle_without_modifying_bundles
             str(output),
         ],
     )
-    with pytest.raises(ValueError, match=r"input bundle|disjoint|outside"):
+    with pytest.raises(ValueError, match=BUNDLE_REFUSAL_MATCH):
         module["main"]()
 
     assert _tree_state(parent_bundle) == parent_before
     assert _tree_state(reference_bundle) == reference_before
     if case == "trait_list_collision":
         assert trait_list.read_text(encoding="utf-8") == "METPO:1000608\nMETPO:1000607\n"
+    elif case == "output_is_parent_of_bundles":
+        assert output.is_dir()
     else:
         assert not output.exists()
+
+
+@MACOS
+@pytest.mark.parametrize(
+    "case",
+    [
+        "parent_case_variant",
+        "reference_case_variant_nested",
+        "users_prefix_case_variant",
+        "parent_firmlink",
+        "reference_firmlink_nested",
+        "case_variant_reference_file_input",
+        "trait_list_case_variant",
+    ],
+)
+def test_refuses_macos_case_variant_and_firmlink_bundle_spellings(
+    audit_fixture: dict[str, Any],
+    monkeypatch: pytest.MonkeyPatch,
+    case: str,
+) -> None:
+    tmp_path: Path = audit_fixture["tmp_path"]
+    parent_bundle: Path = audit_fixture["parent_bundle"]
+    reference_bundle: Path = audit_fixture["reference_bundle"]
+    parent_manifest: Path = audit_fixture["parent_manifest"]
+    reference_manifest: Path = audit_fixture["reference_manifest"]
+    reference_summary: Path = audit_fixture["reference_summary"]
+    trait_list: Path = audit_fixture["trait_list"]
+
+    if case == "parent_case_variant":
+        output = tmp_path / "PARENT_BUNDLE" / "a.json"
+    elif case == "reference_case_variant_nested":
+        output = tmp_path / "Reference_Bundle" / "x" / "a.json"
+    elif case == "users_prefix_case_variant":
+        scratch_base = Path(__file__).resolve().parents[1] / ".tmp"
+        scratch_base.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix="audit-users-", dir=scratch_base) as raw_dir:
+            users_root = Path(raw_dir).resolve()
+            users_parent = users_root / "parent_bundle"
+            users_parent.mkdir()
+            for item in parent_bundle.iterdir():
+                (users_parent / item.name).write_bytes(item.read_bytes())
+            users_manifest = users_parent / "three_test_run.json"
+            assert users_parent.parts[1] == "Users"
+            upper_users_parent = Path("/USERS", *users_parent.parts[2:])
+            output = upper_users_parent / "a.json"
+            users_before = _tree_state(users_parent)
+            module = _load_module()
+            monkeypatch.setattr(
+                sys,
+                "argv",
+                [
+                    str(SCRIPT_PATH),
+                    "--parent-manifest",
+                    str(users_manifest),
+                    "--parent-sha256",
+                    audit_fixture["parent_sha256"],
+                    "--trait-list",
+                    str(trait_list),
+                    "--reference-file",
+                    str(reference_manifest),
+                    "--output",
+                    str(output),
+                ],
+            )
+            with pytest.raises(ValueError, match=BUNDLE_REFUSAL_MATCH):
+                module["main"]()
+            assert _tree_state(users_parent) == users_before
+            assert not (users_parent / "a.json").exists()
+        if scratch_base.exists() and not any(scratch_base.iterdir()):
+            scratch_base.rmdir()
+        return
+    elif case == "parent_firmlink":
+        output = Path("/System/Volumes/Data" + str(parent_bundle.resolve())) / "a.json"
+    elif case == "reference_firmlink_nested":
+        output = Path("/System/Volumes/Data" + str(reference_bundle.resolve())) / "x" / "a.json"
+    elif case == "case_variant_reference_file_input":
+        reference_manifest = tmp_path / "REFERENCE_BUNDLE" / "delta_z_derived_run.json"
+        reference_summary = tmp_path / "REFERENCE_BUNDLE" / "trait_summary.tsv"
+        output = reference_bundle / "a.json"
+    else:
+        output = trait_list.parent / trait_list.name.upper()
+
+    parent_before = _tree_state(parent_bundle)
+    reference_before = _tree_state(reference_bundle)
+
+    module = _load_module()
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            str(SCRIPT_PATH),
+            "--parent-manifest",
+            str(parent_manifest),
+            "--parent-sha256",
+            audit_fixture["parent_sha256"],
+            "--trait-list",
+            str(trait_list),
+            "--reference-file",
+            str(reference_manifest),
+            "--reference-file",
+            str(reference_summary),
+            "--output",
+            str(output),
+        ],
+    )
+    with pytest.raises(ValueError, match=BUNDLE_REFUSAL_MATCH):
+        module["main"]()
+
+    assert _tree_state(parent_bundle) == parent_before
+    assert _tree_state(reference_bundle) == reference_before
+
+
+def test_refuses_symlink_cycle_with_pinned_message(
+    audit_fixture: dict[str, Any],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    tmp_path: Path = audit_fixture["tmp_path"]
+    loop_a = tmp_path / "loop_a"
+    loop_b = tmp_path / "loop_b"
+    loop_a.symlink_to(loop_b)
+    loop_b.symlink_to(loop_a)
+
+    module = _load_module()
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            str(SCRIPT_PATH),
+            "--parent-manifest",
+            str(audit_fixture["parent_manifest"]),
+            "--parent-sha256",
+            audit_fixture["parent_sha256"],
+            "--trait-list",
+            str(audit_fixture["trait_list"]),
+            "--reference-file",
+            str(audit_fixture["reference_manifest"]),
+            "--output",
+            str(loop_a / "audit_report.json"),
+        ],
+    )
+    with pytest.raises(ValueError, match=SYMLINK_CYCLE_MATCH):
+        module["main"]()
+
+
+def test_refuses_symlink_expansion_limit_with_pinned_message(
+    audit_fixture: dict[str, Any],
+) -> None:
+    tmp_path: Path = audit_fixture["tmp_path"]
+    separate_dir = tmp_path / "separate_hop_target"
+    separate_dir.mkdir()
+    module = _load_module()
+    chain_dir = tmp_path / "hop_chain"
+    chain_dir.mkdir()
+    target = separate_dir
+    links: list[Path] = []
+    for index in range(41):
+        link = chain_dir / f"hop_{index}"
+        link.symlink_to(target, target_is_directory=True)
+        links.append(link)
+        target = link
+
+    validate_output_path = module["validate_output_path"]
+    validate_output_path(
+        links[39] / "audit_report.json",
+        audit_fixture["parent_manifest"],
+        audit_fixture["trait_list"],
+        [audit_fixture["reference_manifest"]],
+    )
+    with pytest.raises(ValueError, match=SYMLINK_LIMIT_MATCH):
+        validate_output_path(
+            links[40] / "audit_report.json",
+            audit_fixture["parent_manifest"],
+            audit_fixture["trait_list"],
+            [audit_fixture["reference_manifest"]],
+        )
+
+
+def test_accepts_symlinked_inputs_with_separate_output_directory(
+    audit_fixture: dict[str, Any],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    tmp_path: Path = audit_fixture["tmp_path"]
+    parent_bundle: Path = audit_fixture["parent_bundle"]
+    reference_bundle: Path = audit_fixture["reference_bundle"]
+    aliases = tmp_path / "input_aliases"
+    aliases.mkdir()
+    parent_alias = aliases / "parent_bundle_link"
+    reference_alias = aliases / "reference_bundle_link"
+    trait_list_alias = aliases / "headline_ten_phenotype_link.txt"
+    reference_summary_alias = aliases / "trait_summary_link.tsv"
+    parent_alias.symlink_to(parent_bundle, target_is_directory=True)
+    reference_alias.symlink_to(reference_bundle, target_is_directory=True)
+    trait_list_alias.symlink_to(audit_fixture["trait_list"])
+    reference_summary_alias.symlink_to(audit_fixture["reference_summary"])
+
+    output = tmp_path / "separate_from_symlinks" / "audit_report.json"
+    parent_before = _tree_state(parent_bundle)
+    reference_before = _tree_state(reference_bundle)
+
+    module = _load_module()
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            str(SCRIPT_PATH),
+            "--parent-manifest",
+            str(parent_alias / "three_test_run.json"),
+            "--parent-sha256",
+            audit_fixture["parent_sha256"],
+            "--trait-list",
+            str(trait_list_alias),
+            "--reference-file",
+            str(reference_alias / "delta_z_derived_run.json"),
+            "--reference-file",
+            str(reference_summary_alias),
+            "--output",
+            str(output),
+        ],
+    )
+    module["main"]()
+
+    assert _tree_state(parent_bundle) == parent_before
+    assert _tree_state(reference_bundle) == reference_before
+    assert output.is_file()
+    report = json.loads(output.read_text(encoding="utf-8"))
+    assert report["parent_run_id"] == "three-test-off-fixture"
+    assert report["input_bytes_unchanged"] is True
 
 
 def test_separate_output_directory_writes_report_and_leaves_bundles_unchanged(

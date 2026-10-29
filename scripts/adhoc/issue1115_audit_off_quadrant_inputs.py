@@ -9,6 +9,7 @@ This is a read-only byte/identity audit, not full source verification or a rerun
 from __future__ import annotations
 
 import argparse
+import contextlib
 import csv
 import hashlib
 import io
@@ -78,10 +79,30 @@ def _expanded_spellings(path: Path) -> list[Path]:
     candidates = [*_spellings(path), Path(os.path.abspath(path))]
     result: list[Path] = []
     for candidate in candidates:
-        for item in (*_spellings(candidate), Path(os.path.abspath(candidate)), candidate.resolve()):
+        extra = [*_spellings(candidate), Path(os.path.abspath(candidate))]
+        with contextlib.suppress(OSError):
+            extra.append(candidate.resolve())
+        for item in extra:
             if item not in result:
                 result.append(item)
     return result
+
+
+def _stat_key(path: Path) -> tuple[int, int] | None:
+    try:
+        info = path.stat()
+    except OSError:
+        return None
+    return (info.st_dev, info.st_ino)
+
+
+def _ancestor_stat_keys(paths: list[Path]) -> set[tuple[int, int]]:
+    return {
+        key
+        for path in paths
+        for ancestor in (path, *path.parents)
+        if (key := _stat_key(ancestor)) is not None
+    }
 
 
 def validate_output_path(
@@ -100,10 +121,12 @@ def validate_output_path(
         *(spelling for root in protected_roots for spelling in _expanded_spellings(root)),
         *_expanded_spellings(trait_list),
     ]
-    if any(
-        candidate == source or candidate.is_relative_to(source) or source.is_relative_to(candidate)
-        for candidate in output_spellings
-        for source in protected
+    protected_keys = {key for source in protected if (key := _stat_key(source)) is not None}
+    output_keys = {
+        key for candidate in output_spellings if (key := _stat_key(candidate)) is not None
+    }
+    if _ancestor_stat_keys(output_spellings) & protected_keys or output_keys & _ancestor_stat_keys(
+        protected
     ):
         raise ValueError(
             "Report output must be outside completed input bundles and disjoint from audit inputs"
