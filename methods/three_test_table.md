@@ -175,7 +175,10 @@ for audited traits with no bound `infores:madin_etal` carrier evidence rows,
 exist without `--madin-csv`, `unresolved` when `--madin-csv` was verified but
 at least one bound `infores:madin_etal` carrier row remained
 `madin_resolution=unknown`, and `pinned_verified` when every bound
-`infores:madin_etal` carrier row resolved (`madin_resolution=resolved`).
+`infores:madin_etal` carrier row resolved (`madin_resolution=resolved`; this
+per-trait `pinned_verified` reuses the audit-wide `provenance.json`
+`madin_status` name with a narrower meaning requiring all bound
+`infores:madin_etal` carriers of that trait to resolve).
 Missing original record identifiers remain unresolved.
 
 `METPO:1000603` means anaerobic; `METPO:1000607` means obligately anaerobic.
