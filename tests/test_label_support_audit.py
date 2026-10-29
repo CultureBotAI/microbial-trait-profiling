@@ -782,3 +782,139 @@ def test_trait_list_rejects_file_changed_during_execution(
             trait_list=trait_list_path,
         )
     assert not output.exists()
+
+
+def test_madin_rules_resolve_declared_headline_and_strictly_anaerobic_traits(
+    inputs: dict[str, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Cover the six #1151/#1155/#1065 Madin rules on pinned-table carrier rows."""
+    pinned_cases = (
+        ("METPO:2000103|GO:0046274", 701347, "gold", "lignin_degradation", "", "gold_patric_only"),
+        (
+            "METPO:2000103|pathways:ligninolysis",
+            124798,
+            "faprotax",
+            "ligninolysis",
+            "",
+            "includes_other_sources",
+        ),
+        (
+            "METPO:2000103|pathways:thiosulfate_oxidation",
+            921,
+            "amend-shock",
+            "thiosulfate_oxidation",
+            "",
+            "includes_other_sources",
+        ),
+        (
+            "METPO:2000103|GO:0045493",
+            515440,
+            "faprotax",
+            "xylan_degradation",
+            "",
+            "includes_other_sources",
+        ),
+        ("METPO:1000845", 2325, "amend-shock", "acetogenesis", "", "includes_other_sources"),
+        ("METPO:1000611", 349095, "gold", "", "strictly anaerobic", "gold_patric_only"),
+    )
+    for non_madin_trait in ("METPO:1000683", "METPO:1000681", HIGH_TEMP):
+        assert non_madin_trait not in label_support_audit.MADIN_RULES
+
+    madin_rows = pd.read_csv(inputs["madin"]).to_dict("records")
+    edge_lines = []
+    node_lines = []
+    declared_traits = []
+    for trait_key, tax_id, data_source, pathway_token, metabolism_token, _ in pinned_cases:
+        madin_rows.append(
+            {
+                "tax_id": tax_id,
+                "data_source": data_source,
+                "pathways": pathway_token,
+                "metabolism": metabolism_token,
+                "cell_shape": "",
+            }
+        )
+        taxon_curie = f"NCBITaxon:{tax_id}"
+        predicate, obj = (
+            trait_key.split("|", 1) if "|" in trait_key else ("biolink:has_phenotype", trait_key)
+        )
+        edge_lines.append(
+            f"edge-sub-{tax_id}\t{taxon_curie}\tbiolink:subclass_of\tNCBITaxon:10\tinfores:ncbi\n"
+        )
+        edge_lines.append(
+            f"edge-trait-{tax_id}\t{taxon_curie}\t{predicate}\t{obj}\t{MADIN_SOURCE}\n"
+        )
+        node_lines.append(f"{taxon_curie}\tPinned carrier {tax_id}\n")
+        node_lines.append(f"{obj}\tLabel for {obj}\n")
+        if trait_key not in AUDIT_TRAITS:
+            declared_traits.append(trait_key)
+
+    pd.DataFrame(madin_rows).to_csv(inputs["madin"], index=False)
+    monkeypatch.setattr(
+        madin_source,
+        "MADIN_PIN",
+        replace(
+            madin_source.MADIN_PIN,
+            sha256=file_sha256(inputs["madin"]),
+            size_bytes=inputs["madin"].stat().st_size,
+        ),
+    )
+    subsources = load_madin_subsources(inputs["madin"])
+    for trait_key, tax_id, data_source, _, _, _ in pinned_cases:
+        assert subsources.get(trait_key, {}).get(f"NCBITaxon:{tax_id}") == {data_source}
+
+    with inputs["edges"].open("a", encoding="utf-8") as handle:
+        handle.writelines(edge_lines)
+    with inputs["nodes"].open("a", encoding="utf-8") as handle:
+        handle.writelines(node_lines)
+
+    matrix = pd.read_csv(inputs["matrix"], sep="\t")
+    for trait_key, _, _, _, _, _ in pinned_cases:
+        matrix[trait_key] = [1 if tid == "NCBITaxon:10" else 0 for tid in matrix["taxon_id"]]
+    matrix.to_csv(inputs["matrix"], sep="\t", index=False)
+    count_lookup = matrix.set_index("taxon_id")
+    taxa = pd.read_csv(inputs["taxa"], sep="\t")
+    profiles = pd.read_csv(inputs["profiles"], sep="\t")
+    for trait_key, _, _, _, _, _ in pinned_cases:
+        totals = []
+        for _, row in profiles.iterrows():
+            direction = "increased" if row["inc_dec"] == "inc" else "decreased"
+            group = taxa[
+                (taxa["study_id"] == row["study_id"])
+                & (taxa["experiment_id"] == row["experiment_id"])
+                & (taxa["direction"] == direction)
+            ]
+            totals.append(int(count_lookup.loc[group["taxon_id"], trait_key].sum()))
+        profiles[trait_key] = totals
+    profiles.to_csv(inputs["profiles"], sep="\t", index=False)
+
+    trait_list_path = tmp_path / "headline_and_pathway_traits.txt"
+    trait_list_path.write_text("\n".join(declared_traits) + "\n", encoding="utf-8")
+    output = tmp_path / "audit_madin_rules"
+    run_label_support_audit(
+        taxa_path=inputs["taxa"],
+        matrix_path=inputs["matrix"],
+        profiles_path=inputs["profiles"],
+        edges_path=inputs["edges"],
+        nodes_path=inputs["nodes"],
+        madin_csv=inputs["madin"],
+        output_dir=output,
+        strain_rollup="off",
+        trait_list=trait_list_path,
+    )
+    support = pd.read_csv(output / "taxon_trait_label_support.tsv", sep="\t")
+    evidence = pd.read_csv(output / "carrier_source_evidence.tsv", sep="\t")
+    for trait_key, tax_id, data_source, _, _, expected_status in pinned_cases:
+        s_row = support[
+            (support["taxon_id"] == "NCBITaxon:10") & (support["trait_key"] == trait_key)
+        ].iloc[0]
+        assert s_row["unresolved_madin_carriers"] == 0
+        assert s_row["madin_subsources"] == data_source
+        assert s_row["source_status"] == expected_status
+        e_row = evidence[
+            (evidence["reported_taxon_id"] == "NCBITaxon:10")
+            & (evidence["trait_key"] == trait_key)
+            & (evidence["carrier_taxon_id"] == f"NCBITaxon:{tax_id}")
+        ].iloc[0]
+        assert e_row["madin_resolution"] == "resolved"
+        assert e_row["madin_subsources"] == data_source

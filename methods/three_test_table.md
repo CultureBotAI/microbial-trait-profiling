@@ -161,11 +161,22 @@ is not a source record. Report direct-at-reported-taxon and inherited support
 only for supported, reconciled audit traits; mark unsupported traits explicitly.
 Direct and inherited reported-taxon counts can overlap. Unique carrier IDs are
 deduplicated across reported ancestors and descendants. The importer checks the
-audit's bound inputs, complete focal matrix cells, signature occurrences and
-carrier-count coherence; it does not independently reconstruct the KG annotations.
-Do not equate unique source names or carrier taxa with original record counts.
-Madin source resolution requires its separately pinned table. Missing original
-record identifiers remain unresolved.
+audit's bound inputs, complete focal matrix cells, signature occurrences,
+carrier-count coherence, and per-cell reconciliation between
+`unresolved_madin_carriers` in `taxon_trait_label_support.tsv` and
+`madin_resolution` in `carrier_source_evidence.tsv`; it does not independently
+reconstruct the KG annotations. Do not equate unique source names or carrier
+taxa with original record counts. Madin source resolution requires its
+separately pinned table, and `carrier_madin_status` is reported per trait
+(#1151): `not_supplied` when no label-support sidecar is supplied,
+`not_in_focal_audit` for traits outside the audited catalog, `not_applicable`
+for audited traits with no bound `infores:madin_etal` carrier evidence rows,
+`not_supplied_source_support_unknown` when bound `infores:madin_etal` carriers
+exist without `--madin-csv`, `unresolved` when `--madin-csv` was verified but
+at least one bound `infores:madin_etal` carrier row remained
+`madin_resolution=unknown`, and `pinned_verified` when every bound
+`infores:madin_etal` carrier row resolved (`madin_resolution=resolved`).
+Missing original record identifiers remain unresolved.
 
 `METPO:1000603` means anaerobic; `METPO:1000607` means obligately anaerobic.
 The anaerobe guild combines both. Preserve qualified trait IDs; never substitute
