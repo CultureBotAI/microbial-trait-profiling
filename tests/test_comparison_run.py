@@ -22,6 +22,7 @@ from mtp.datamodel.workflow_pydantic import (
     CalibrationOutcome,
     CalibrationVerdict,
     ComparisonRun,
+    DirectionBasis,
     EligibilityLedger,
     WorkflowRun,
 )
@@ -350,6 +351,116 @@ def test_supplied_comparison_buffer_retains_execution_and_source_checks(
     with pytest.raises(ValueError, match=message):
         verify(manifest, manifest_bytes=invalid)
     assert manifest.read_bytes() == raw
+
+
+@pytest.mark.parametrize("entrypoint", ["comparison", "sources"])
+def test_buffered_comparison_rejects_wrong_manifest_path(
+    stage: dict[str, Path], entrypoint: str
+) -> None:
+    manifest = stage["comparison"] / "comparison_run.json"
+    raw = manifest.read_bytes()
+    record = json.loads(raw)
+    record["manifest_path"] = str(manifest.parent / "different_run.json")
+    verify = (
+        comparison.verify_comparison_sources
+        if entrypoint == "comparison"
+        else multiplicity_sources.open_verified_sources
+    )
+    with pytest.raises(ValueError, match=r"ComparisonRun manifest_path .* does not match"):
+        verify(manifest, manifest_bytes=json.dumps(record).encode("utf-8"))
+    assert manifest.read_bytes() == raw
+
+
+@pytest.mark.parametrize("entrypoint", ["comparison", "sources"])
+@pytest.mark.parametrize(
+    ("mutation", "error", "message"),
+    [
+        ("missing_inventory", ValueError, r"outputs\s+Field required"),
+        ("empty_inventory", ValueError, "ComparisonRun has no recorded outputs"),
+        ("missing_file", FileNotFoundError, "Missing ComparisonRun output file"),
+        ("hash", ValueError, "SHA-256 mismatch for ComparisonRun output file"),
+        ("size", ValueError, "Size mismatch for ComparisonRun output file"),
+    ],
+    ids=["missing_inventory", "empty_inventory", "missing_file", "hash", "size"],
+)
+def test_buffered_comparison_retains_output_inventory_checks(
+    stage: dict[str, Path], entrypoint: str, mutation: str, error: type[Exception], message: str
+) -> None:
+    """Corrupt only the caller buffer; the shared verified fixture stays unchanged."""
+    manifest = stage["comparison"] / "comparison_run.json"
+    raw = manifest.read_bytes()
+    record = json.loads(raw)
+    assert record["outputs"]
+    first = record["outputs"][0]
+    original_output = manifest.parent / first["path"]
+    original_bytes = original_output.read_bytes()
+    if mutation == "missing_inventory":
+        del record["outputs"]
+    elif mutation == "empty_inventory":
+        record["outputs"] = []
+    elif mutation == "missing_file":
+        missing = "not-created-output.tsv"
+        assert not (manifest.parent / missing).exists()
+        first["path"] = missing
+    elif mutation == "hash":
+        assert first["sha256"] != "0" * 64
+        first["sha256"] = "0" * 64
+    else:
+        first["size_bytes"] += 1
+    verify = (
+        comparison.verify_comparison_sources
+        if entrypoint == "comparison"
+        else multiplicity_sources.open_verified_sources
+    )
+    with pytest.raises(error, match=message):
+        verify(manifest, manifest_bytes=json.dumps(record).encode("utf-8"))
+    assert manifest.read_bytes() == raw
+    assert original_output.read_bytes() == original_bytes
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("contrast_population", ContrastPopulation.case_vs_control_subject),
+        ("direction_basis", DirectionBasis.disease_vs_comparison),
+    ],
+    ids=["population", "direction"],
+)
+def test_buffered_adapter_rejects_one_core_population_or_direction_mismatch(
+    stage: dict[str, Path],
+    monkeypatch: pytest.MonkeyPatch,
+    field: str,
+    value: ContrastPopulation | DirectionBasis,
+) -> None:
+    """Isolate the adapter guard after the real upstream verification has succeeded."""
+    manifest = stage["comparison"] / "comparison_run.json"
+    raw = manifest.read_bytes()
+    core_raw = stage["core"].read_bytes()
+    real_verify = comparison.verify_comparison_sources
+    verified_calls: list[Path] = []
+
+    def different_core(
+        path: Path, *, manifest_bytes: bytes | None = None
+    ) -> tuple[ComparisonRun, WorkflowRun, dict[str, ArmRun]]:
+        assert manifest_bytes == raw
+        record, core, arms = real_verify(path, manifest_bytes=manifest_bytes)
+        verified_calls.append(path)
+        assert core.contrast_population == record.contrast_population
+        assert core.direction_basis == record.direction_basis
+        assert getattr(core, field) != value
+        changed = core.model_copy(update={field: value})
+        before, after = core.model_dump(mode="json"), changed.model_dump(mode="json")
+        assert {key for key in before if before[key] != after[key]} == {field}
+        return record, changed, arms
+
+    monkeypatch.setattr(multiplicity_sources, "verify_comparison_sources", different_core)
+    with pytest.raises(
+        ValueError, match=r"^Comparison population/direction differs from the verified core$"
+    ):
+        multiplicity_sources.open_verified_sources(manifest, manifest_bytes=raw)
+    assert verified_calls == [manifest]
+    assert manifest.read_bytes() == raw
+    assert stage["core"].read_bytes() == core_raw
 
 
 @pytest.mark.parametrize("entrypoint", ["comparison", "sources"])

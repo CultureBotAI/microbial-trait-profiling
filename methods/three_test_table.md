@@ -290,8 +290,8 @@ verification. For population validation, it hashes the raw `count_profiles`
 buffer against its upstream identity and gives that buffer to the shared strict
 count reader for both header and row parsing. Gzip inputs retain their compressed
 byte identity. Final path, alias-target and hash checks remain mandatory before
-publication; restoring a transiently replaced file cannot authorize different
-parsed bytes.
+publication. For the comparison manifest and `count_profiles`, restoring a
+transiently replaced file cannot authorize different parsed bytes.
 
 `just test-three-test-table` covers synthetic contracts. The separate
 `test-three-test-off-reproduction` recipe requires a completed, verified historical
