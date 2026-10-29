@@ -1,11 +1,10 @@
-"""Reject incomplete producer evidence and unexpected baseline coverage (#1156, #1187)."""
+"""Reject incomplete producer evidence and unexpected baseline coverage (#1156, #1187, #1213)."""
 
 from __future__ import annotations
 
 import argparse
 import hashlib
 import json
-import os
 import runpy
 import sys
 import tempfile
@@ -15,16 +14,25 @@ from typing import Any
 
 import pytest
 
-os.environ.setdefault("GIT_CONFIG_GLOBAL", os.devnull)
-os.environ.setdefault("GIT_CONFIG_NOSYSTEM", "1")
-
 SCRIPT_PATH = Path(__file__).parents[1] / "scripts/adhoc/issue1115_compare_qualified_outputs.py"
-MODULE = runpy.run_path(str(SCRIPT_PATH))
-CHECK_TRIAL = MODULE["check_trial"]
-TABLE_KEYS: dict[str, list[str]] = MODULE["TABLE_KEYS"]
-PAIR_LEDGER: str = MODULE["PAIR_LEDGER"]
-STUDY_LEDGER: str = MODULE["STUDY_LEDGER"]
-EVIDENCE: str = MODULE["EVIDENCE"]
+PAIR_LEDGER = "composition_pair_delta_z.tsv"
+STUDY_LEDGER = "composition_study_delta_z.tsv"
+EVIDENCE = "per_trait_evidence.tsv"
+TABLE_KEYS: dict[str, list[str]] = {
+    "trait_summary.tsv": ["trait"],
+    "quadrant_pairs.tsv": ["study_id", "experiment_id"],
+    "quadrant_summary.tsv": ["population"],
+    "stool_disease_shifts.tsv": ["body_site", "condition", "trait"],
+    "stool_study_sensitivity.tsv": ["body_site", "condition", "trait"],
+    "site_disease_shifts.tsv": ["body_site", "condition", "trait"],
+}
+PRE_1115_PHENOTYPE_TABLES: tuple[str, ...] = tuple(
+    name for name in TABLE_KEYS if name != "stool_study_sensitivity.tsv"
+)
+EXPLICIT_COVERAGE_MODE_MATCH = (
+    r"^Explicit baseline coverage mode must be 'complete', "
+    r"'historical-off-summary' or 'historical-phenotype-pre-1115'$"
+)
 TRAIT_LIST_REL = "methods/trait_lists/headline_ten_phenotype.txt"
 TRAIT_LIST_BYTES = b"METPO:1000608\nMETPO:1000607\n"
 PRODUCER_FILES = {
@@ -51,8 +59,6 @@ def digest_inventory(inventory: dict[str, str]) -> str:
 
 @pytest.fixture(scope="module")
 def _shared_trial_repo() -> Iterator[tuple[dict[str, Any], argparse.Namespace, Path]]:
-    from git import Actor, Repo
-
     scratch_Base = Path(__file__).resolve().parents[1] / ".tmp"
     scratch_root = scratch_Base / "delta-z-qualification-tests"
     scratch_root.mkdir(parents=True, exist_ok=True)
@@ -69,19 +75,24 @@ def _shared_trial_repo() -> Iterator[tuple[dict[str, Any], argparse.Namespace, P
                 path = repo_dir / name
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_bytes(raw)
-            author = Actor("Qualification fixture", "qualification@example.invalid")
-            with Repo.init(repo_dir) as repository:
-                repository.index.add(list(files))
-                base = repository.index.commit("base", author=author, committer=author)
-                issue = repository.index.commit(
-                    "1115", parent_commits=[base], head=False, author=author, committer=author
-                )
-                policy = repository.index.commit(
-                    "1130", parent_commits=[base], head=False, author=author, committer=author
-                )
-                merged = repository.index.commit(
-                    "trial", parent_commits=[issue, policy], author=author, committer=author
-                )
+            with pytest.MonkeyPatch.context() as mp:
+                mp.setenv("GIT_CONFIG_GLOBAL", "/dev/null")
+                mp.setenv("GIT_CONFIG_NOSYSTEM", "1")
+                from git import Actor, Repo
+
+                author = Actor("Qualification fixture", "qualification@example.invalid")
+                with Repo.init(repo_dir) as repository:
+                    repository.index.add(list(files))
+                    base = repository.index.commit("base", author=author, committer=author)
+                    issue = repository.index.commit(
+                        "1115", parent_commits=[base], head=False, author=author, committer=author
+                    )
+                    policy = repository.index.commit(
+                        "1130", parent_commits=[base], head=False, author=author, committer=author
+                    )
+                    merged = repository.index.commit(
+                        "trial", parent_commits=[issue, policy], author=author, committer=author
+                    )
             inventory = {
                 name: hashlib.sha256(raw).hexdigest() for name, raw in PRODUCER_FILES.items()
             }
@@ -107,7 +118,10 @@ def _shared_trial_repo() -> Iterator[tuple[dict[str, Any], argparse.Namespace, P
 @pytest.fixture
 def trial(
     _shared_trial_repo: tuple[dict[str, Any], argparse.Namespace, Path],
+    monkeypatch: pytest.MonkeyPatch,
 ) -> tuple[dict[str, Any], argparse.Namespace, Path]:
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", "/dev/null")
+    monkeypatch.setenv("GIT_CONFIG_NOSYSTEM", "1")
     record, args, repo_dir = _shared_trial_repo
     return (
         {
@@ -152,6 +166,7 @@ def _build_qualification_scenario(
     strain_rollup: str = "off",
     baseline_ledger_names: tuple[str, ...] = (PAIR_LEDGER, STUDY_LEDGER),
     baseline_table_names: tuple[str, ...] = tuple(TABLE_KEYS),
+    baseline_table_overrides: dict[str, bytes] | None = None,
     baseline_summary_only: bool = False,
     baseline_coverage: str | None = "complete",
 ) -> tuple[argparse.Namespace, Path, Path]:
@@ -264,9 +279,13 @@ def _build_qualification_scenario(
         PAIR_LEDGER: pair_bytes,
         STUDY_LEDGER: study_bytes,
     }
+    baseline_tables = {
+        **derived_tables,
+        **(baseline_table_overrides or {}),
+    }
     baseline_files = {
         **{name: ledger_bytes_by_name[name] for name in baseline_ledger_names},
-        **{name: derived_tables[name] for name in baseline_table_names},
+        **{name: baseline_tables[name] for name in baseline_table_names},
     }
     baseline_manifest, baseline_sha256 = _write_bundle(
         work_root / "baseline_bundle",
@@ -335,7 +354,8 @@ def test_complete_trial_inventory_passes(
     trial: tuple[dict[str, Any], argparse.Namespace, Path],
 ) -> None:
     record, args, root = trial
-    result = CHECK_TRIAL(record, args, root)
+    module = _load_repo_helper(root)
+    result = module["check_trial"](record, args, root)
     assert result["local_trial_merge_commit"] == args.trial_sha
 
 
@@ -344,6 +364,7 @@ def test_incomplete_or_stale_producer_identity_rejected(
     trial: tuple[dict[str, Any], argparse.Namespace, Path], corruption: str
 ) -> None:
     record, args, root = trial
+    module = _load_repo_helper(root)
     if corruption == "omitted_module":
         del record["code_inventory"]["src/mtp/extra.py"]
         record["implementation_sha256"] = digest_inventory(record["code_inventory"])
@@ -351,7 +372,7 @@ def test_incomplete_or_stale_producer_identity_rejected(
         field = "implementation_sha256" if corruption == "aggregate_digest" else "methods_sha256"
         record[field] = "0" * 64
     with pytest.raises(ValueError, match=r"inventory|implementation|method"):
-        CHECK_TRIAL(record, args, root)
+        module["check_trial"](record, args, root)
 
 
 @pytest.mark.parametrize("invalid_mode", [None, "partial", "auto"])
@@ -364,7 +385,7 @@ def test_qualify_rejects_missing_or_invalid_baseline_coverage_mode(
         baseline_coverage=invalid_mode,
     )
     module = _load_repo_helper(repo_root)
-    with pytest.raises(ValueError, match=r"coverage|complete|historical-off-summary"):
+    with pytest.raises(ValueError, match=EXPLICIT_COVERAGE_MODE_MATCH):
         module["qualify"](args)
     assert not output_dir.exists()
 
@@ -443,7 +464,14 @@ def test_complete_coverage_mode_rejects_missing_derived_tables_or_summary_only_b
         baseline_coverage="complete",
     )
     module = _load_repo_helper(repo_root)
-    with pytest.raises(ValueError, match=r"Complete baseline coverage|summary_only|missing"):
+    with pytest.raises(
+        ValueError,
+        match=(
+            r"^Complete baseline coverage "
+            r"(requires baseline summary_only to be False|"
+            r"missing or unexpected tables: )"
+        ),
+    ):
         module["qualify"](args)
     assert not output_dir.exists()
 
@@ -478,7 +506,12 @@ def test_historical_off_summary_mode_rejects_non_off_scope_or_unexpected_baselin
     module = _load_repo_helper(repo_root)
     with pytest.raises(
         ValueError,
-        match=r"historical-off-summary|off scope|summary_only|trait_summary\.tsv|missing",
+        match=(
+            r"^historical-off-summary baseline coverage "
+            r"(is restricted to off scope|"
+            r"requires baseline summary_only to be True|"
+            r"requires trait_summary\.tsv and both ledgers only: )"
+        ),
     ):
         module["qualify"](args)
     assert not output_dir.exists()
@@ -532,3 +565,137 @@ def test_historical_off_summary_mode_labels_report_as_partial_reference_comparis
     ]
     persisted = json.loads((output_dir / "table_parity.json").read_text(encoding="utf-8"))
     assert persisted == result
+
+
+@pytest.mark.parametrize(
+    ("strain_rollup", "baseline_ledgers", "baseline_tables", "summary_only"),
+    [
+        ("off", (PAIR_LEDGER, STUDY_LEDGER), PRE_1115_PHENOTYPE_TABLES, False),
+        ("phenotype", (PAIR_LEDGER, STUDY_LEDGER), PRE_1115_PHENOTYPE_TABLES, True),
+        ("phenotype", (PAIR_LEDGER, STUDY_LEDGER), tuple(TABLE_KEYS), False),
+        (
+            "phenotype",
+            (PAIR_LEDGER, STUDY_LEDGER),
+            tuple(name for name in PRE_1115_PHENOTYPE_TABLES if name != "site_disease_shifts.tsv"),
+            False,
+        ),
+        ("phenotype", (PAIR_LEDGER, STUDY_LEDGER), ("trait_summary.tsv",), False),
+        ("phenotype", (PAIR_LEDGER,), PRE_1115_PHENOTYPE_TABLES, False),
+        ("phenotype", (STUDY_LEDGER,), PRE_1115_PHENOTYPE_TABLES, False),
+    ],
+)
+def test_historical_phenotype_pre_1115_rejects_non_phenotype_or_unexpected_baseline(
+    trial: tuple[dict[str, Any], argparse.Namespace, Path],
+    strain_rollup: str,
+    baseline_ledgers: tuple[str, ...],
+    baseline_tables: tuple[str, ...],
+    summary_only: bool,
+) -> None:
+    args, repo_root, output_dir = _build_qualification_scenario(
+        trial,
+        strain_rollup=strain_rollup,
+        baseline_ledger_names=baseline_ledgers,
+        baseline_table_names=baseline_tables,
+        baseline_summary_only=summary_only,
+        baseline_coverage="historical-phenotype-pre-1115",
+    )
+    module = _load_repo_helper(repo_root)
+    with pytest.raises(
+        ValueError,
+        match=(
+            r"^historical-phenotype-pre-1115 baseline coverage "
+            r"(is restricted to phenotype scope|"
+            r"requires baseline summary_only to be False|"
+            r"requires the five pre-#1115 derived tables and both ledgers only: )"
+        ),
+    ):
+        module["qualify"](args)
+    assert not output_dir.exists()
+
+
+def test_historical_phenotype_pre_1115_mode_labels_report_as_partial_reference_comparison(
+    trial: tuple[dict[str, Any], argparse.Namespace, Path],
+) -> None:
+    args, repo_root, output_dir = _build_qualification_scenario(
+        trial,
+        strain_rollup="phenotype",
+        baseline_table_names=PRE_1115_PHENOTYPE_TABLES,
+        baseline_summary_only=False,
+        baseline_coverage="historical-phenotype-pre-1115",
+    )
+    module = _load_repo_helper(repo_root)
+    result = module["qualify"](args)
+    assert result["status"] == "PASS"
+    assert result["baseline_coverage_mode"] == "historical-phenotype-pre-1115"
+    assert result["comparison_scope"] == "partial_reference_comparison"
+    assert result["complete_parity"] is False
+    assert result["partial_reference_comparison"] is True
+    assert "partial-reference comparison" in result["description"]
+    assert set(result["comparisons"]) == set(PRE_1115_PHENOTYPE_TABLES)
+    assert result["new_tables_without_old_reference"] == ["stool_study_sensitivity.tsv"]
+    persisted = json.loads((output_dir / "table_parity.json").read_text(encoding="utf-8"))
+    assert persisted == result
+
+
+def test_complete_coverage_mode_sets_complete_parity_false_and_exits_nonzero_on_fail(
+    trial: tuple[dict[str, Any], argparse.Namespace, Path],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    args, repo_root, output_dir = _build_qualification_scenario(
+        trial,
+        strain_rollup="phenotype",
+        baseline_table_names=tuple(TABLE_KEYS),
+        baseline_table_overrides={
+            "trait_summary.tsv": (
+                b"trait\ttrait_label\tsdz_active_at_least_50\tmean_sdz\n"
+                b"METPO:1000608\tfacultatively aerobic\tTrue\t0.50\n"
+                b"METPO:1000607\tobligately anaerobic\tFalse\t-0.25\n"
+            ),
+        },
+        baseline_summary_only=False,
+        baseline_coverage="complete",
+    )
+    module = _load_repo_helper(repo_root)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            str(repo_root / "scripts/adhoc/issue1115_compare_qualified_outputs.py"),
+            "--current-manifest",
+            str(args.current_manifest),
+            "--parent-manifest",
+            str(args.parent_manifest),
+            "--baseline-manifest",
+            str(args.baseline_manifest),
+            "--experiments",
+            str(args.experiments),
+            "--trait-list",
+            str(args.trait_list),
+            "--output",
+            str(args.output),
+            "--parent-sha256",
+            args.parent_sha256,
+            "--baseline-sha256",
+            args.baseline_sha256,
+            "--current-sha256",
+            args.current_sha256,
+            "--issue1115-sha",
+            args.issue1115_sha,
+            "--pr1130-sha",
+            args.pr1130_sha,
+            "--trial-sha",
+            args.trial_sha,
+            "--baseline-coverage",
+            "complete",
+        ],
+    )
+    with pytest.raises(SystemExit) as exc_info:
+        module["main"]()
+    assert exc_info.value.code == 1
+    persisted = json.loads((output_dir / "table_parity.json").read_text(encoding="utf-8"))
+    assert persisted["status"] == "FAIL"
+    assert persisted["baseline_coverage_mode"] == "complete"
+    assert persisted["comparison_scope"] == "complete_parity"
+    assert persisted["complete_parity"] is False
+    assert persisted["partial_reference_comparison"] is False
+    assert persisted["comparisons"]["trait_summary.tsv"]["unexpected_changes"] != []

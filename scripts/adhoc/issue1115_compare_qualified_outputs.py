@@ -39,9 +39,20 @@ LABEL_FIELDS = {"trait_label", "fa_label", "oa_label"}
 REMOVED_TRAIT = "METPO:1000605"
 COMPLETE_COVERAGE = "complete"
 HISTORICAL_OFF_SUMMARY_COVERAGE = "historical-off-summary"
-COVERAGE_MODES = (COMPLETE_COVERAGE, HISTORICAL_OFF_SUMMARY_COVERAGE)
+HISTORICAL_PHENOTYPE_PRE_1115_COVERAGE = "historical-phenotype-pre-1115"
+COVERAGE_MODES = (
+    COMPLETE_COVERAGE,
+    HISTORICAL_OFF_SUMMARY_COVERAGE,
+    HISTORICAL_PHENOTYPE_PRE_1115_COVERAGE,
+)
+HISTORICAL_PHENOTYPE_PRE_1115_TABLES = tuple(
+    name for name in TABLE_KEYS if name != "stool_study_sensitivity.tsv"
+)
 COMPLETE_BASELINE_OUTPUTS = frozenset({PAIR_LEDGER, STUDY_LEDGER, *TABLE_KEYS})
 HISTORICAL_OFF_SUMMARY_OUTPUTS = frozenset({PAIR_LEDGER, STUDY_LEDGER, "trait_summary.tsv"})
+HISTORICAL_PHENOTYPE_PRE_1115_OUTPUTS = frozenset(
+    {PAIR_LEDGER, STUDY_LEDGER, *HISTORICAL_PHENOTYPE_PRE_1115_TABLES}
+)
 
 
 def validate_baseline_coverage(
@@ -52,7 +63,8 @@ def validate_baseline_coverage(
 ) -> str:
     if not isinstance(coverage_mode, str) or coverage_mode not in COVERAGE_MODES:
         raise ValueError(
-            "Explicit baseline coverage mode must be 'complete' or 'historical-off-summary'"
+            "Explicit baseline coverage mode must be 'complete', "
+            "'historical-off-summary' or 'historical-phenotype-pre-1115'"
         )
     observed = set(baseline_outputs)
     if coverage_mode == COMPLETE_COVERAGE:
@@ -68,6 +80,25 @@ def validate_baseline_coverage(
                 f"missing={missing}, unexpected={unexpected}"
             )
         return COMPLETE_COVERAGE
+    if coverage_mode == HISTORICAL_PHENOTYPE_PRE_1115_COVERAGE:
+        if strain_rollup != "phenotype":
+            raise ValueError(
+                "historical-phenotype-pre-1115 baseline coverage is restricted to phenotype scope"
+            )
+        if baseline.get("summary_only") is not False:
+            raise ValueError(
+                "historical-phenotype-pre-1115 baseline coverage requires "
+                "baseline summary_only to be False"
+            )
+        missing = sorted(HISTORICAL_PHENOTYPE_PRE_1115_OUTPUTS - observed)
+        unexpected = sorted(observed - HISTORICAL_PHENOTYPE_PRE_1115_OUTPUTS)
+        if missing or unexpected:
+            raise ValueError(
+                "historical-phenotype-pre-1115 baseline coverage requires "
+                "the five pre-#1115 derived tables and both ledgers only: "
+                f"missing={missing}, unexpected={unexpected}"
+            )
+        return HISTORICAL_PHENOTYPE_PRE_1115_COVERAGE
     if strain_rollup != "off":
         raise ValueError("historical-off-summary baseline coverage is restricted to off scope")
     if baseline.get("summary_only") is not True:
@@ -423,7 +454,15 @@ def qualify(args: argparse.Namespace) -> dict[str, Any]:
     is_complete = coverage_mode == COMPLETE_COVERAGE
     if is_complete and (set(comparisons) != set(TABLE_KEYS) or new_tables_without_old_reference):
         raise ValueError("Complete baseline coverage did not compare all derived tables")
-    if not is_complete and (
+    if coverage_mode == HISTORICAL_PHENOTYPE_PRE_1115_COVERAGE and (
+        set(comparisons) != set(HISTORICAL_PHENOTYPE_PRE_1115_TABLES)
+        or new_tables_without_old_reference != ["stool_study_sensitivity.tsv"]
+    ):
+        raise ValueError(
+            "historical-phenotype-pre-1115 baseline coverage must compare "
+            "the five pre-#1115 derived tables only"
+        )
+    if coverage_mode == HISTORICAL_OFF_SUMMARY_COVERAGE and (
         set(comparisons) != {"trait_summary.tsv"}
         or new_tables_without_old_reference
         != [name for name in TABLE_KEYS if name != "trait_summary.tsv"]
@@ -457,7 +496,12 @@ def qualify(args: argparse.Namespace) -> dict[str, Any]:
             if is_complete
             else (
                 "partial-reference comparison of completed verified trial outputs "
-                "against pinned historical off summary baseline"
+                "against pinned historical pre-#1115 phenotype baseline"
+                if coverage_mode == HISTORICAL_PHENOTYPE_PRE_1115_COVERAGE
+                else (
+                    "partial-reference comparison of completed verified trial outputs "
+                    "against pinned historical off summary baseline"
+                )
             )
         ),
         "baseline_coverage_mode": coverage_mode,
