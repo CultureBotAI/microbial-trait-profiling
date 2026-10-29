@@ -74,7 +74,7 @@ def _parse_command(command: Command, monkeypatch: pytest.MonkeyPatch) -> argpars
     return parsed[0]
 
 
-@pytest.mark.parametrize("command_index", range(13))
+@pytest.mark.parametrize("command_index", range(14))
 def test_actual_cli_paths_are_explicit_and_declared(
     context: ArmContext, command_index: int, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -144,6 +144,7 @@ def test_profiles_are_count_products_and_sensitivity_protocol_is_bound(context: 
         "taxa_guild_heatmap",
         "profile_heatmap",
         "condition_trait_heatmap",
+        "taxa_coverage",
     ):
         assert human_count_path(context) in commands[name].inputs
     assert (REPOSITORY / "methods" / "table1_log_ratio_sensitivity_protocol.json") in commands[

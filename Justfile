@@ -156,6 +156,20 @@ evidence-resolve archive original:
 rerun-core output raw edges nodes *ARGS:
 	uv run python -m mtp.workflow prepare-core "$@"
 
+# Prepare a 548-study (disease_vs_healthy_tier1_2_subject_controls) core run.
+[positional-arguments]
+rerun-core-548 output raw="data/raw/full_dump.csv" edges="data/kg-microbe/merged-kg_edges.tsv" nodes="data/kg-microbe/merged-kg_nodes.tsv" *ARGS:
+	uv run python -m mtp.workflow prepare-core "$1" "$2" "$3" "$4" --contrast-population disease_vs_healthy_tier1_2_subject_controls "${@:5}"
+
+# Prepare core and run all three analysis arms (Ilyas, Noel, Jed with figures) on the 548-study subset.
+[positional-arguments]
+rerun-all-548 output raw="data/raw/full_dump.csv" edges="data/kg-microbe/merged-kg_edges.tsv" nodes="data/kg-microbe/merged-kg_nodes.tsv" *ARGS:
+	just rerun-core-548 "$1/core" "$2" "$3" "$4" "${@:5}"
+	just rerun-ilyas "$1/core/run.json" "$1/ilyas" --figures
+	just rerun-noel "$1/core/run.json" "$1/noel"
+	just rerun-jed "$1/core/run.json" "$1/jed" --figures
+	just rerun-compare "$1/core/run.json" "$1/noel/arm_run.json" "$1/jed/arm_run.json" "$1/ilyas/arm_run.json" "$1/comparison"
+
 # Standard ORA, depletion, rankings, strata, calibration and optional figures.
 [positional-arguments]
 rerun-ilyas run output *ARGS:
@@ -699,6 +713,11 @@ study-trait-profiles: taxa-trait-matrix
 [positional-arguments]
 taxa-coverage *ARGS:
 	uv run python scripts/create_taxa_coverage_histogram.py "$@"
+
+# Regenerate taxa-coverage histograms filtered to the 548-study Tier 1+2 healthy/disease subset.
+[positional-arguments]
+taxa-coverage-548 *ARGS:
+	uv run python scripts/create_taxa_coverage_histogram.py --strain-rollup phenotype --contrast-population disease_vs_healthy_tier1_2_subject_controls --output-dir trait-visualization/trait-profile-investigation/taxa-coverage-548 "$@"
 
 # Compute matrix trait overlap, Tier 1+2 coverage by rank and filter cascade, and Parkinson's
 # stool study overlap from a verified core run (#1053).

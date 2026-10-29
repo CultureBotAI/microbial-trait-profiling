@@ -1146,3 +1146,41 @@ def test_histogram2_summary_boxes_do_not_cover_bar_labels(
             if text is not summary
         )
     coverage.plt.close(fig)
+
+
+def test_contrast_population_filters_profiles_and_records_provenance(
+    inputs: dict[str, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        coverage.orientation,
+        "read_experiment_records",
+        lambda _raw: {("s1", "e1"): {}},
+    )
+    monkeypatch.setattr(
+        coverage.orientation,
+        "classify",
+        lambda _record: coverage.orientation.Classification(
+            contrast_class=coverage.orientation.DISEASE_VS_HEALTHY,
+            contrast_type=coverage.orientation.CASE_VS_CONTROL_SUBJECT,
+            control_tier=coverage.orientation.TIER_1_HEALTHY_NORMAL,
+            orientation=coverage.orientation.NATIVE,
+            evidence="test",
+            flags=(),
+        ),
+    )
+    output = tmp_path / "contrast-pop"
+    coverage.run_coverage(
+        output_dir=output,
+        tables_only=True,
+        strain_rollup="phenotype",
+        contrast_population="disease_vs_healthy_tier1_2_subject_controls",
+        **inputs,
+    )
+    profiles = pd.read_csv(output / "profile_trait_mapping_summary.tsv", sep="\t")
+    assert set(profiles.study_id) == {"s1"}
+    assert len(profiles) == 2
+    record = json.loads((output / "provenance.json").read_text(encoding="utf-8"))
+    assert record["population"]["contrast_filter"] == "disease_vs_healthy_tier1_2_subject_controls"
+    readme = (output / "README.md").read_text(encoding="utf-8")
+    assert "disease_vs_healthy_tier1_2_subject_controls" in readme
+    assert "--contrast-population disease_vs_healthy_tier1_2_subject_controls" in readme
