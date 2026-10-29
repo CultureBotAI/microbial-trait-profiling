@@ -30,6 +30,7 @@ from matplotlib.figure import Figure
 from matplotlib.patches import Patch, Rectangle
 from matplotlib.text import Text
 
+from mtp import contrast_orientation as orientation
 from mtp.corpus_identity import DEFAULT_KG_PROVENANCE_PATH, corpus_identity
 from mtp.human_host_corpus import (
     CORPUS_SEQUENCING_TYPES,
@@ -40,6 +41,12 @@ from mtp.paths import file_sha256
 from mtp.study_trait_profiles import direction_to_inc_dec
 from mtp.taxa_trait_matrix import STRAIN_ROLLUPS, StrainRollup, parse_strain_rollup
 from mtp.trait_guilds import MEDIADIVE_MARKER, read_bugsigdb_vintage
+from mtp.workflow.population import (
+    ALL_PAIRED,
+    NATIVE_DIRECTION_BASIS,
+    ORIENTED_DIRECTION_BASIS,
+    POPULATIONS,
+)
 from mtp.workflow.runtime import repository_state
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -281,12 +288,113 @@ def select_corpus(
     return taxa, matrix, profiles
 
 
+def _filter_contrast_population(
+    taxa_df: pd.DataFrame,
+    profiles_df: pd.DataFrame,
+    contrast_population: str,
+    raw_dump: Path | None,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Filter human 16S/WMS profiles and taxa to a declared contrast population."""
+    if contrast_population not in POPULATIONS:
+        raise ValueError(f"Unknown contrast population: {contrast_population!r}")
+    pair_dirs = (
+        profiles_df.groupby(["study_id", "experiment_id"])["inc_dec"]
+        .agg(lambda s: set(s.astype(str)))
+        .to_dict()
+    )
+    paired_keys = {key for key, dirs in pair_dirs.items() if dirs == {"inc", "dec"}}
+    if contrast_population == ALL_PAIRED:
+        selected_keys = paired_keys
+        reversed_keys: set[tuple[str, str]] = set()
+    else:
+        dump_path = raw_dump or REPO_ROOT / "data/raw/full_dump.csv"
+        records = orientation.read_experiment_records(dump_path)
+        classes = {key: orientation.classify(record) for key, record in records.items()}
+        selected_keys = set()
+        reversed_keys = set()
+        for key in sorted(paired_keys):
+            found = classes.get((str(key[0]), str(key[1])))
+            if found is None or found.contrast_class != orientation.DISEASE_VS_HEALTHY:
+                continue
+            if (
+                contrast_population != "disease_vs_healthy_oriented"
+                and found.contrast_type != orientation.CASE_VS_CONTROL_SUBJECT
+            ):
+                continue
+            if (
+                contrast_population == "disease_vs_healthy_tier1_2_subject_controls"
+                and found.control_tier
+                not in {
+                    orientation.TIER_1_HEALTHY_NORMAL,
+                    orientation.TIER_2_CONDITION_NEGATIVE_SCREENED,
+                }
+            ):
+                continue
+            if found.orientation not in {orientation.NATIVE, orientation.REVERSED}:
+                continue
+            selected_keys.add((str(key[0]), str(key[1])))
+            if found.orientation == orientation.REVERSED:
+                reversed_keys.add((str(key[0]), str(key[1])))
+
+    prof_keys = list(
+        zip(
+            profiles_df["study_id"].astype(str),
+            profiles_df["experiment_id"].astype(str),
+            strict=True,
+        )
+    )
+    profiles_out = profiles_df.loc[[k in selected_keys for k in prof_keys]].copy()
+    if reversed_keys:
+        rev_prof = [
+            (s, e) in reversed_keys
+            for s, e in zip(
+                profiles_out["study_id"].astype(str),
+                profiles_out["experiment_id"].astype(str),
+                strict=True,
+            )
+        ]
+        profiles_out.loc[rev_prof, "inc_dec"] = profiles_out.loc[rev_prof, "inc_dec"].map(
+            {"inc": "dec", "dec": "inc"}
+        )
+
+    taxa_keys = list(
+        zip(taxa_df["study_id"].astype(str), taxa_df["experiment_id"].astype(str), strict=True)
+    )
+    taxa_out = taxa_df.loc[[k in selected_keys for k in taxa_keys]].copy()
+    if reversed_keys:
+        rev_taxa = [
+            (s, e) in reversed_keys
+            for s, e in zip(
+                taxa_out["study_id"].astype(str),
+                taxa_out["experiment_id"].astype(str),
+                strict=True,
+            )
+        ]
+        flip_dir = {
+            "increased": "decreased",
+            "decreased": "increased",
+            "inc": "dec",
+            "dec": "inc",
+        }
+        taxa_out.loc[rev_taxa, "direction"] = (
+            taxa_out.loc[rev_taxa, "direction"]
+            .astype(str)
+            .map(lambda d: flip_dir.get(d.strip().lower(), d))
+        )
+        taxa_out.loc[rev_taxa, "inc_dec"] = taxa_out.loc[rev_taxa, "inc_dec"].map(
+            {"inc": "dec", "dec": "inc"}
+        )
+    return taxa_out, profiles_out
+
+
 def load_and_process_data(
     *,
     taxa: Path = TAXA_PATH,
     matrix: Path = TAXA_TRAIT_MATRIX_PATH,
     profiles: Path = PROFILES_WIDE_PATH,
     experiments: Path = EXPERIMENTS_PATH,
+    contrast_population: str = "none",
+    raw_dump: Path | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Load occurrences, matrix, profiles and metadata to compute coverage statistics."""
     print(f"Reading taxa occurrences from {taxa}...")
@@ -297,11 +405,17 @@ def load_and_process_data(
 
     print(f"Reading study trait profiles from {profiles}...")
     profiles_df = read_tsv(profiles)
+    experiments_df = read_tsv(experiments)
     input_profile_count = len(profiles_df)
     input_occurrence_count = len(taxa_df)
-    taxa_df, matrix_df, profiles_df = select_corpus(
-        taxa_df, matrix_df, profiles_df, read_tsv(experiments)
-    )
+    taxa_df, matrix_df, profiles_df = select_corpus(taxa_df, matrix_df, profiles_df, experiments_df)
+    if contrast_population != "none":
+        taxa_df, profiles_df = _filter_contrast_population(
+            taxa_df, profiles_df, contrast_population, raw_dump
+        )
+        taxa_df, matrix_df, profiles_df = select_corpus(
+            taxa_df, matrix_df, profiles_df, experiments_df
+        )
 
     meta_cols = ["taxon_id", "taxon_name", "taxonomic_rank"]
     trait_cols = [c for c in matrix_df.columns if c not in meta_cols]
@@ -2355,6 +2469,7 @@ def run_coverage(
     matrix: Path = TAXA_TRAIT_MATRIX_PATH,
     profiles: Path = PROFILES_WIDE_PATH,
     experiments: Path = EXPERIMENTS_PATH,
+    contrast_population: str = "none",
     tables_only: bool = False,
     kg_provenance: Path = DEFAULT_KG_PROVENANCE_PATH,
     bugsigdb_vintage: str | None = None,
@@ -2362,6 +2477,8 @@ def run_coverage(
 ) -> None:
     """Validate first, then write data-derived outputs and a consumed-byte manifest."""
     scope = parse_strain_rollup(strain_rollup)
+    if contrast_population != "none" and contrast_population not in POPULATIONS:
+        raise ValueError(f"Unknown contrast population: {contrast_population!r}")
     inputs = {"taxa": taxa, "matrix": matrix, "profiles": profiles, "experiments": experiments}
     consumed = {**inputs}
     selected_dump = raw_dump or REPO_ROOT / "data/raw/full_dump.csv"
@@ -2397,7 +2514,11 @@ def run_coverage(
 
     # 1. Load data and compute statistics
     taxa_master, rank_df, prof_rank_df, prof_summary, _prof_taxa, top_zero_df = (
-        load_and_process_data(**inputs)
+        load_and_process_data(
+            **inputs,
+            contrast_population=contrast_population,
+            raw_dump=selected_dump if selected_dump.is_file() else None,
+        )
     )
     if (
         tables_only
@@ -2437,6 +2558,8 @@ def run_coverage(
     print(f"  Written top 100 zero-trait diagnosis table: {top_zero_tsv_path}")
 
     regeneration = ["just", "taxa-coverage", "--strain-rollup", scope]
+    if contrast_population != "none":
+        regeneration.extend(["--contrast-population", contrast_population])
     for name, path in {**inputs, "output-dir": out_dir, "kg-provenance": kg_provenance}.items():
         regeneration.extend([f"--{name}", regeneration_path(path)])
     if "raw_dump" in consumed:
@@ -2472,6 +2595,15 @@ def run_coverage(
         output_names.extend(
             f"{stem}.{suffix}" for stem in FIGURE_STEMS for suffix in ("png", "svg")
         )
+    direction_basis = (
+        "curated"
+        if contrast_population == "none"
+        else (
+            NATIVE_DIRECTION_BASIS
+            if contrast_population == ALL_PAIRED
+            else ORIENTED_DIRECTION_BASIS
+        )
+    )
     provenance = {
         "schema_version": "1.0",
         "recipe": "just taxa-coverage",
@@ -2486,8 +2618,8 @@ def run_coverage(
         "population": {
             "host_species": HUMAN_HOST_SPECIES,
             "sequencing_types": list(CORPUS_SEQUENCING_TYPES),
-            "contrast_filter": "none",
-            "direction_basis": "curated",
+            "contrast_filter": contrast_population,
+            "direction_basis": direction_basis,
             "zero_trait_profiles": "included",
         },
         "counts": prof_summary.attrs["population_counts"],
@@ -2576,6 +2708,14 @@ def main() -> None:
         "--raw-dump",
         type=Path,
         help="Raw dump for vintage; defaults to data/raw/full_dump.csv when present",
+    )
+    parser.add_argument(
+        "--contrast-population",
+        choices=("none", *POPULATIONS),
+        default="none",
+        help=(
+            "Optional contrast population filter (e.g. disease_vs_healthy_tier1_2_subject_controls)"
+        ),
     )
     parser.add_argument(
         "--tables-only",

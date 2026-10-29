@@ -70,6 +70,7 @@ def build_commands(context: ArmContext) -> list[Command]:
     raw_dump = products["raw_dump"]
     columns = products["feature_metadata"]
     taxa = products["reported_taxa"]
+    kg_provenance = context.repository / "data" / "kg-microbe" / "provenance.json"
     profile_inputs = (profiles, experiments, raw_dump)
     core_profile_inputs = (products["count_profiles"], experiments, raw_dump)
     profile_options: dict[str, Path | str | int] = {
@@ -234,6 +235,36 @@ def build_commands(context: ArmContext) -> list[Command]:
                 {"--core-run": context.manifest, "--code-commit": context.code_commit},
                 (context.manifest, *core_profile_inputs),
                 ("table1_traits_direction_shift.tsv", "core_consumption.json"),
+            ),
+            _directory_command(
+                context,
+                "taxa_coverage",
+                _script(context, "create_taxa_coverage_histogram.py"),
+                {
+                    "--strain-rollup": context.strain_rollup,
+                    "--taxa": taxa,
+                    "--matrix": products["taxa_matrix"],
+                    "--profiles": profiles,
+                    "--experiments": experiments,
+                    "--raw-dump": raw_dump,
+                    "--kg-provenance": kg_provenance,
+                },
+                (taxa, products["taxa_matrix"], profiles, experiments, raw_dump, kg_provenance),
+                (
+                    "taxa_coverage_by_rank.tsv",
+                    "profile_coverage_by_rank.tsv",
+                    "profile_trait_mapping_summary.tsv",
+                    "taxa_kgmicrobe_coverage_details.tsv",
+                    "top_zero_trait_bugsigdb_taxa.tsv",
+                    "README.md",
+                    "provenance.json",
+                    "taxa_coverage_histogram_rank_stratified.png",
+                    "taxa_coverage_occurrences_vs_unique.png",
+                    "taxa_profile_distribution_by_rank.png",
+                    "histogram1_mapped_traits_and_taxa_per_profile.png",
+                    "histogram2_taxa_trait_counts_and_zero_trait_frequency.png",
+                    "taxa_trait_count_distribution.png",
+                ),
             ),
         ]
     )
