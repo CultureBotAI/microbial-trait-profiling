@@ -7,6 +7,7 @@ Outputs: a new evidence directory; sources are read-only. No scientific replay.
 from __future__ import annotations
 
 import argparse
+import csv
 import hashlib
 import io
 import json
@@ -139,6 +140,120 @@ def pages_and_exports(record: dict[str, Any], name: str) -> tuple[list[dict[str,
     return pages, exports
 
 
+def protect_table_sources(output: Path, aliases: dict[Path, Path]) -> None:
+    """Keep #1206 audit evidence outside source bundles and aliases (#1208)."""
+    parents = {alias.parent.resolve(strict=True) for alias in aliases} | {
+        target.parent for target in aliases.values()
+    }
+    require(
+        all(
+            not output.is_relative_to(parent) and not parent.is_relative_to(output)
+            for parent in parents
+        ),
+        "Audit output must be disjoint from parent trait evidence source directories",
+    )
+
+
+def expected_table_traits(
+    record: dict[str, Any],
+    snapshots: dict[Path, dict[str, Any]],
+    targets: dict[Path, Path],
+    output: Path,
+) -> set[str]:
+    """Read the bound parent family, independently of the page coverage declarations."""
+    sources = record.get("input_files")
+    if not isinstance(sources, list):
+        raise ValueError("Table requires bound parent trait evidence")
+    evidence = [
+        item
+        for item in sources
+        if isinstance(item, dict)
+        and isinstance(item.get("path"), str)
+        and Path(item["path"]).name == "per_trait_evidence.tsv"
+    ]
+    require(bool(evidence), "Table requires bound parent trait evidence")
+    aliases = {Path(item["path"]): Path(item["path"]).resolve(strict=True) for item in evidence}
+    require(len(set(aliases.values())) == 1, "Ambiguous distinct parent trait evidence tables")
+    protect_table_sources(output, aliases)
+    contents: list[bytes] = []
+    for item in evidence:
+        require(
+            set(item) == {"path", "sha256", "size_bytes"},
+            "Malformed bound parent trait evidence identity",
+        )
+        contents.append(
+            read_bound(
+                aliases[Path(item["path"])],
+                snapshots,
+                targets,
+                {key: item[key] for key in ("sha256", "size_bytes")},
+            )
+        )
+    for alias, target in aliases.items():
+        require(alias.resolve(strict=True) == target, "Parent trait evidence target changed")
+        require(
+            alias not in targets or targets[alias] == target, "Parent trait evidence target changed"
+        )
+        targets[alias] = target
+    require(all(raw == contents[0] for raw in contents), "Conflicting parent trait evidence")
+    rows = list(csv.reader(io.StringIO(contents[0].decode("utf-8")), delimiter="\t"))
+    require(
+        bool(rows) and len(rows[0]) == len(set(rows[0])) and "trait" in rows[0],
+        "Malformed parent trait evidence columns",
+    )
+    column = rows[0].index("trait")
+    require(
+        all(len(row) == len(rows[0]) and bool(row[column]) for row in rows[1:]),
+        "Malformed parent trait evidence rows",
+    )
+    traits = [row[column] for row in rows[1:]]
+    require(bool(traits) and len(traits) == len(set(traits)), "Invalid parent trait family")
+    return set(traits)
+
+
+def table_coverage(pages: list[dict[str, Any]], traits: set[str]) -> None:
+    ids = [row for page in pages for row in page["row_ids"]]
+    require(
+        set(ids) == traits and len(ids) == len(traits), "Table does not cover the full trait family"
+    )
+    for page in pages:
+        details = page["details"]
+        require(
+            type(details.get("retained_family_count")) is int
+            and details["retained_family_count"] == len(traits)
+            and type(details.get("page_row_count")) is int
+            and details["page_row_count"] == len(page["row_ids"])
+            and page["mark_count"] == len(page["row_ids"]),
+            "Table page coverage differs from the bound trait family",
+        )
+
+
+def quadrant_coverage(pages: list[dict[str, Any]]) -> None:
+    for page in pages:
+        populations = page["details"].get("populations")
+        require(
+            isinstance(populations, dict) and set(populations) == {"all", "stool"},
+            "Quadrant population coverage is incomplete",
+        )
+        counts: dict[str, int] = {}
+        for population, detail in populations.items():
+            require(
+                isinstance(detail, dict)
+                and type(detail.get("n_comparisons")) is int
+                and detail["n_comparisons"] >= 0,
+                "Quadrant population comparison count is invalid",
+            )
+            counts[population] = detail["n_comparisons"]
+        observed = Counter(row.partition(":")[0] for row in page["row_ids"])
+        require(
+            page["mark_count"] == sum(counts.values())
+            and len(page["row_ids"]) == sum(counts.values())
+            and all(observed[population] == count for population, count in counts.items())
+            and set(observed).issubset(counts),
+            "Quadrant marks and identities do not cover every population comparison",
+        )
+
+
 def audit(bundle: Path, output: Path, design_reports: Path | None) -> dict[str, Any]:
     if output.exists() or output.is_symlink():
         raise FileExistsError("Choose a fresh figure-check evidence directory")
@@ -196,11 +311,11 @@ def audit(bundle: Path, output: Path, design_reports: Path | None) -> dict[str, 
         all_ids = [row for page in pages for row in page["row_ids"]]
         if len(all_ids) != len(set(all_ids)):
             raise ValueError("Figure page coverage has duplicate identities")
-        if (
-            name == "three-test"
-            and len(all_ids) != record["pages"][0]["details"]["retained_family_count"]
-        ):
-            raise ValueError("Table does not cover the full trait family")
+        if name == "three-test":
+            traits = expected_table_traits(record, snapshots, targets, output)
+            table_coverage(pages, traits)
+        elif name == "quadrant":
+            quadrant_coverage(pages)
         verdicts: Counter[str] = Counter()
         for page in pages:
             prefix = record_path.parent / f"page-{page['page']:03d}"
@@ -238,6 +353,8 @@ def audit(bundle: Path, output: Path, design_reports: Path | None) -> dict[str, 
         inventory(directory, expected_members)
     for path in snapshots:
         read_bound(path, snapshots, targets)
+    for alias, target in targets.items():
+        require(alias.resolve(strict=True) == target, "Audit input target changed")
     result = {
         "figures": figures,
         "bundle_manifest": snapshots[root_path],

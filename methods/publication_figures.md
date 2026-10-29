@@ -48,6 +48,9 @@ two panels comparable. No points are clipped or sampled. Comparisons may share
 studies and controls, and the two composition-derived coordinates can be
 structurally correlated; the scatter does not establish independent biological
 replication or causal physiology.
+Counts appear in a separate strip outside the data panels. Its key identifies
+the signs of the horizontal and vertical coordinates; quadrant counts exclude
+exact-axis comparisons, whose counts are shown separately.
 
 The table figure paginates the full retained trait family, in stable identifier
 order, rather than selecting significant rows. It preserves native Noel study
@@ -70,6 +73,13 @@ checks each page at journal double-column width, validates the reports and
 binds their PDF/PNG hashes back to the exports. Visual findings can override
 an automated pass; a rejected canary must be corrected and checked again
 before rendering the full set.
+The bundle audit compares table row identities against the hash-bound
+`per_trait_evidence.tsv` input and checks each page's row and mark counts. It
+checks quadrant marks and population-prefixed comparison identities against
+each population's declared comparison count, including axis points. The table
+audit therefore needs the recorded input-table path as well as the figure
+bundle. Automated design checks supplement manual inspection: a passing
+report alone does not rule out text covering a data mark.
 
 This first slice supplies the builder and these three figures. Other publication
 figures and the final paper-basis rendering remain under issue #1046. Development

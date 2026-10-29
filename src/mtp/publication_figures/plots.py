@@ -87,8 +87,18 @@ def _format(value: object) -> str:
 
 
 def validate_authored_wording(value: str) -> str:
-    """Guard authored interpretation only; verified trait labels bypass this check."""
-    if re.search(r"\b(redox|coupled|dysbiosis|causes|physiological)\b", value, re.IGNORECASE):
+    """Guard these annotation figures, not literal labels or source-study language.
+
+    The rendered contrasts use increase/decrease and stool. They do not measure
+    abundance or physiology, and enrichment/depletion belongs to a different
+    quantity. Verified trait labels are kept verbatim outside this guard.
+    """
+    if re.search(
+        r"\b(redox|coupled|dysbiosis|causes|physiological|enriched|depleted|"
+        r"abundances?|fecal|faecal)\b",
+        value,
+        re.IGNORECASE,
+    ):
         raise ValueError("Unsupported claim in authored figure wording")
     return value
 
@@ -150,7 +160,10 @@ def forest_pages(
     labels = [
         _label(bundle, str(row["trait"]))
         + (
-            "\n" + _wrap(f"Study CI unavailable ({row['study_t_status']})", 30)
+            "\n"
+            + _wrap(
+                validate_authored_wording(f"Study CI unavailable ({row['study_t_status']})"), 30
+            )
             if row["study_t_status"] != "tested"
             else ""
         )
@@ -201,13 +214,13 @@ def forest_pages(
             gid="forest-comparison",
             zorder=3,
         )
-        axis.set_xlabel("Mean Δz (increase minus decrease)")
+        axis.set_xlabel(validate_authored_wording("Mean Δz (increase minus decrease)"))
         axis.margins(x=0.08)
         if not rows:
             axis.text(
                 0.5,
                 0.5,
-                "No traits meet the declared rank and direction rule",
+                validate_authored_wording("No traits meet the declared rank and direction rule"),
                 ha="center",
                 transform=axis.transAxes,
             )
@@ -224,11 +237,21 @@ def forest_pages(
         figure.text(
             0.04,
             1 - 0.52 / height,
-            _wrap(f"Top {top_n} ranks per direction. " + _context(bundle), 115),
+            _wrap(
+                validate_authored_wording(f"Top {top_n} ranks per direction. " + _context(bundle)),
+                115,
+            ),
             va="top",
         )
         handles = [
-            Line2D([], [], marker="o", color=INK, markersize=4, label="Study mean and 95% CI"),
+            Line2D(
+                [],
+                [],
+                marker="o",
+                color=INK,
+                markersize=4,
+                label=validate_authored_wording("Study mean and 95% CI"),
+            ),
             Line2D(
                 [],
                 [],
@@ -237,7 +260,7 @@ def forest_pages(
                 markerfacecolor="none",
                 markeredgecolor=ACCENT,
                 markersize=4,
-                label="Comparison mean (no interval)",
+                label=validate_authored_wording("Comparison mean (no interval)"),
             ),
         ]
         figure.legend(
@@ -294,10 +317,12 @@ def quadrant_pages(bundle: FigureInputs) -> Iterator[Page]:
     all_ids: list[str] = []
     populations: dict[str, Any] = {}
     with matplotlib.rc_context(STYLE):
-        figure = _figure(4.5)
+        # Keep count explanations in a separate inch-based strip, never over observations.
+        height = 5.8
+        figure = _figure(height)
         for index, (population, frame) in enumerate((("all", pairs), ("stool", stool))):
             row = summary[population]
-            axis = figure.add_axes((0.13 + index * 0.49, 0.29, 0.32, 0.50))
+            axis = figure.add_axes((0.13 + index * 0.49, 2.35 / height, 0.32, 2.3 / height))
             axis.spines[["top", "right"]].set_visible(False)
             axis.axvline(0, color=GRAY, linewidth=0.6, zorder=0)
             axis.axhline(0, color=GRAY, linewidth=0.6, zorder=0)
@@ -312,25 +337,32 @@ def quadrant_pages(bundle: FigureInputs) -> Iterator[Page]:
             )
             axis.set_xlim(*xlim)
             axis.set_ylim(*ylim)
-            axis.set_xlabel("Δz: " + _label(bundle, str(row["fa_trait"]), 29))
-            axis.set_ylabel("Δz: " + _label(bundle, str(row["oa_trait"]), 27))
+            axis.set_xlabel(
+                validate_authored_wording("Δz: ") + _label(bundle, str(row["fa_trait"]), 29)
+            )
+            axis.set_ylabel(
+                validate_authored_wording("Δz: ") + _label(bundle, str(row["oa_trait"]), 27)
+            )
             title = "All comparisons" if population == "all" else "Stool (exact Feces)"
             axis.set_title(
-                f"{title}\n{int(row['n_comparisons'])} comparisons; {int(row['n_studies'])} studies"
-            )
-            for column, xy in (
-                ("fa_down_oa_up", (0.02, 0.98)),
-                ("both_up", (0.98, 0.98)),
-                ("both_down", (0.02, 0.02)),
-                ("fa_up_oa_down", (0.98, 0.02)),
-            ):
-                axis.text(
-                    *xy,
-                    str(int(row[column])),
-                    transform=axis.transAxes,
-                    ha="left" if xy[0] < 0.5 else "right",
-                    va="top" if xy[1] > 0.5 else "bottom",
+                validate_authored_wording(
+                    f"{title}\n{int(row['n_comparisons'])} comparisons; "
+                    f"{int(row['n_studies'])} studies"
                 )
+            )
+            figure.text(
+                0.13 + index * 0.49,
+                1.24 / height,
+                validate_authored_wording(
+                    f"x increase / y increase: {int(row['both_up'])}\n"
+                    f"x decrease / y increase: {int(row['fa_down_oa_up'])}\n"
+                    f"x decrease / y decrease: {int(row['both_down'])}\n"
+                    f"x increase / y decrease: {int(row['fa_up_oa_down'])}\n"
+                    f"Axis comparisons (separate): {int(row['axis'])}"
+                ),
+                va="top",
+                gid=f"quadrant-count-{population}",
+            )
             all_ids.extend(
                 f"{population}:{study}/{experiment}"
                 for study, experiment in frame[["study_id", "experiment_id"]].itertuples(
@@ -346,27 +378,41 @@ def quadrant_pages(bundle: FigureInputs) -> Iterator[Page]:
                 "pearson_status": row["pearson_status"],
                 "pearson_r": _number(row["pearson_r"]),
             }
-            figure.text(0.13 + index * 0.49, 0.125, f"Exact-axis comparisons: {int(row['axis'])}")
         figure.text(
             0.04,
-            0.98,
+            1.46 / height,
+            validate_authored_wording(
+                "Comparisons by quadrant (axis excluded); x/y: horizontal/vertical Δz"
+            ),
+            weight="bold",
+            va="top",
+            gid="quadrant-count-key",
+        )
+        figure.text(
+            0.04,
+            1 - 0.22 / height,
             validate_authored_wording(
                 "Oxygen-label contrasts in transformed annotation composition"
             ),
             fontsize=10,
             va="top",
         )
-        figure.text(0.04, 0.92, _wrap(_context(bundle), 115), va="top")
         figure.text(
             0.04,
-            0.08,
+            1 - 0.55 / height,
+            _wrap(validate_authored_wording(_context(bundle)), 115),
+            va="top",
+        )
+        figure.text(
+            0.04,
+            0.27 / height,
             validate_authored_wording(
                 "Δz: standardized log-transformed annotation fractions, increase minus decrease."
             ),
         )
         figure.text(
             0.04,
-            0.04,
+            0.08 / height,
             validate_authored_wording(
                 "Shared denominators constrain correlation; every comparison is shown. "
                 "Studies can repeat."
@@ -382,6 +428,8 @@ def quadrant_pages(bundle: FigureInputs) -> Iterator[Page]:
                 "sampling": "none",
                 "jitter": "none",
                 "axis_sign_threshold": 0.0,
+                "count_placement": "separate_strip_outside_data_axes",
+                "count_unit": "comparisons_by_quadrant_axis_excluded_and_reported_separately",
                 "units": "standardized_log1p_1000_retained_fraction_difference",
                 "x_trait": str(summary["all"]["fa_trait"]),
                 "y_trait": str(summary["all"]["oa_trait"]),
@@ -422,7 +470,7 @@ def _cells(bundle: FigureInputs, row: dict[str, Any]) -> list[str]:
     return [
         _label(bundle, str(row["trait"]), 29),
         *[
-            "\n".join(_wrap(line, width) for line in cell.splitlines())
+            "\n".join(_wrap(line, width) for line in validate_authored_wording(cell).splitlines())
             for cell, width in ((noel, 24), (study, 25), (ora, 22))
         ],
     ]
@@ -453,7 +501,9 @@ def table_pages(bundle: FigureInputs) -> Iterator[Page]:
                 fontsize=10,
                 va="top",
             )
-            figure.text(0.04, 0.935, _wrap(_context(bundle), 115), va="top")
+            figure.text(
+                0.04, 0.935, _wrap(validate_authored_wording(_context(bundle)), 115), va="top"
+            )
             columns = [0.04, 0.39, 0.59, 0.81]
             headers = [
                 "Verified label / qualified ID",
@@ -462,7 +512,7 @@ def table_pages(bundle: FigureInputs) -> Iterator[Page]:
                 "ORA direction counts\nUncalibrated",
             ]
             for x, header in zip(columns, headers, strict=True):
-                figure.text(x, 0.88, header, va="top", weight="bold")
+                figure.text(x, 0.88, validate_authored_wording(header), va="top", weight="bold")
             y = 0.825
             for row, cells, height in group:
                 for column, (x, cell) in enumerate(zip(columns, cells, strict=True)):
@@ -478,7 +528,7 @@ def table_pages(bundle: FigureInputs) -> Iterator[Page]:
                     )
                 )
             if not group:
-                figure.text(0.04, 0.78, "No retained traits")
+                figure.text(0.04, 0.78, validate_authored_wording("No retained traits"))
             figure.text(
                 0.04,
                 0.055,

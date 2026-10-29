@@ -546,12 +546,13 @@ def test_changed_feature_metadata_refused(fixture: Fixture) -> None:
 
 
 def test_parses_checked_bytes_not_a_second_path_read(
-    fixture: Fixture, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    path = fixture.root / "quadrant_pairs.tsv"
-    original = path.read_bytes()
-    changed = original.replace(b"0.30000000000000004", b"9.30000000000000004")
-    assert changed != original
+    path = tmp_path / "quadrant_pairs.tsv"
+    original = b"study_id\texperiment_id\tfa_delta_z\ns1\te1\t0.3\n"
+    changed = original.replace(b"0.3", b"9.3")
+    path.write_bytes(original)
+    expected = identity(path)
     original_read = Path.read_bytes
     calls = 0
 
@@ -559,12 +560,15 @@ def test_parses_checked_bytes_not_a_second_path_read(
         nonlocal calls
         if candidate == path:
             calls += 1
-            return changed if calls == 1 else original
+            return changed if calls == 2 else original
         return original_read(candidate)
 
     monkeypatch.setattr(Path, "read_bytes", read)
-    with pytest.raises(ValueError, match=r"hash|identity"):
-        fixture.load()
+    snapshots: dict[Path, dict[str, Any]] = {}
+    targets: dict[Path, Path] = {}
+    frame = inputs._table(inputs._read(path, snapshots, targets, expected=expected))
+    assert snapshots[path] == expected
+    assert frame.loc[0, "fa_delta_z"] == 0.3, "Parsed value differs from the hashed first read"
 
 
 def test_aliases_preserved_and_identical_byte_retarget_refused(fixture: Fixture) -> None:
