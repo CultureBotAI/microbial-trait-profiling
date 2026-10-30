@@ -96,9 +96,17 @@ def test_table1_trait_semantics_coverage() -> None:
     assert "facultative (aerobe or anaerobe)" in metpo_608_row
     assert "annotation for growth with or without oxygen" in metpo_608_row
     assert "clean_trait_label" not in content
-    delta_z_md = (REPO_ROOT / "methods" / "delta_z_derived.md").read_text(encoding="utf-8")
+    delta_z_md = " ".join(
+        (REPO_ROOT / "methods" / "delta_z_derived.md").read_text(encoding="utf-8").split()
+    )
     assert "facultative (aerobe or anaerobe)" in delta_z_md
     assert "keep the KG node label" in delta_z_md
+    assert "do not record member arrays" in delta_z_md
+    policy_md = " ".join(
+        (REPO_ROOT / "methods" / "trait_key_policy.md").read_text(encoding="utf-8").split()
+    )
+    assert "do not record member arrays" in policy_md
+    assert "trait_direction_screen.tsv" in policy_md
 
 
 def test_governance_cross_references() -> None:

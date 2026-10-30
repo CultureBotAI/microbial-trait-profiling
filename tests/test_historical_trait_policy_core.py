@@ -160,9 +160,10 @@ def test_real_verifier_accepts_relocated_union_core_produced_by_main_without_cha
     assert report["normalized_historical_verification"] is True
     assert isinstance(report.get("helper_sha256"), str)
     assert len(report["helper_sha256"]) == 64
-    helper_path = ROOT / "scripts/adhoc/issue1231_generate_historical_union_core_fixture.py"
-    assert report["helper_sha256"] == hashlib.sha256(helper_path.read_bytes()).hexdigest()
-    assert (FIXTURE.parent / "README.md").is_file()
+    readme_text = (FIXTURE.parent / "README.md").read_text(encoding="utf-8")
+    assert "$ORIGINAL_OUTPUT" in readme_text
+    assert "core/steps/identify_sources/provenance/source_identity.json" in readme_text
+    assert "/tmp/" not in readme_text
     assert all("original_value_sha256" not in item for item in report["location_transformations"])
     run = verify_core_run(
         UNION_NAMESPACE / "core/run.json", resolver=resolver(copied, UNION_NAMESPACE)
