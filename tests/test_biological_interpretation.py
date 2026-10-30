@@ -85,6 +85,29 @@ def test_table1_trait_semantics_coverage() -> None:
     for tid in expected_trait_ids:
         assert tid in content, f"Trait ID '{tid}' missing from Table 1 semantics audit"
 
+    section_5 = content.split(
+        "## 5. Decisions, Approved Wording, and Unsupported Interpretations", 1
+    )[1]
+    metpo_608_row = next(
+        line for line in section_5.splitlines() if line.startswith("| `METPO:1000608` |")
+    )
+    assert "pre-#1124" in metpo_608_row
+    assert "(capable of growth in both the presence and absence of oxygen)" in metpo_608_row
+    assert "facultative (aerobe or anaerobe)" in metpo_608_row
+    assert "annotation for growth with or without oxygen" in metpo_608_row
+    assert "clean_trait_label" not in content
+    delta_z_md = " ".join(
+        (REPO_ROOT / "methods" / "delta_z_derived.md").read_text(encoding="utf-8").split()
+    )
+    assert "facultative (aerobe or anaerobe)" in delta_z_md
+    assert "keep the KG node label" in delta_z_md
+    assert "do not record member arrays" in delta_z_md
+    policy_md = " ".join(
+        (REPO_ROOT / "methods" / "trait_key_policy.md").read_text(encoding="utf-8").split()
+    )
+    assert "do not record member arrays" in policy_md
+    assert "trait_direction_screen.tsv" in policy_md
+
 
 def test_governance_cross_references() -> None:
     """Verify that governance documents reference the biological interpretation standards."""

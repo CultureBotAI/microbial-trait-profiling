@@ -574,3 +574,68 @@ def test_facultative_synonyms_unify_into_single_nonredundant_feature(tmp_path: P
             "source_label": "Ox_facultative_aerobe_anaerobe",
         },
     ]
+
+
+def test_facultative_union_preserves_recorded_column_order_with_facultative_psychrophilic(
+    tmp_path: Path,
+) -> None:
+    """METPO:1000720 precedes METPO:1000608 under both trait_key_policy settings (#1233)."""
+    from mtp.workflow.coverage import write_feature_catalog
+
+    taxa_path = tmp_path / "bugsigdb_taxa.tsv"
+    edges_path = tmp_path / "merged-kg_edges.tsv"
+    nodes_path = tmp_path / "merged-kg_nodes.tsv"
+    taxa_path.write_text(
+        "direction\ttaxon_id\ttaxon_name\ttaxonomic_rank\n"
+        "increased\tNCBITaxon:101\tSpecies a\tspecies\n",
+        encoding="utf-8",
+    )
+    nodes_path.write_text(
+        "id\tcategory\tname\n"
+        "NCBITaxon:101\tbiolink:OrganismTaxon\tSpecies a\n"
+        "METPO:1000608\tbiolink:PhenotypicQuality\tfacultatively aerobic\n"
+        "METPO:1000720\tbiolink:PhenotypicQuality\tfacultative psychrophilic\n",
+        encoding="utf-8",
+    )
+    edges_path.write_text(
+        "id\tsubject\tpredicate\tobject\n"
+        "e1\tNCBITaxon:101\tbiolink:has_phenotype\tMETPO:1000608\n"
+        "e2\tNCBITaxon:101\tbiolink:has_phenotype\tMETPO:1000720\n",
+        encoding="utf-8",
+    )
+
+    for policy in ("raw_object_v1", "facultative_union_v1"):
+        matrix_path = tmp_path / f"matrix_{policy}.tsv"
+        cols_path = tmp_path / f"cols_{policy}.tsv"
+        catalog_path = tmp_path / f"catalog_{policy}.tsv"
+        taxa_trait_matrix.create_taxa_trait_matrix(
+            taxa_path=taxa_path,
+            kg_dir=tmp_path,
+            output_path=matrix_path,
+            column_metadata_path=cols_path,
+            edges_path=edges_path,
+            nodes_path=nodes_path,
+            trait_key_policy=policy,
+        )
+        header = matrix_path.read_text(encoding="utf-8").splitlines()[0].split("\t")
+        assert header == [
+            "taxon_id",
+            "taxon_name",
+            "taxonomic_rank",
+            "METPO:1000720",
+            "METPO:1000608",
+        ]
+        with cols_path.open(encoding="utf-8", newline="") as handle:
+            col_rows = list(csv.reader(handle, delimiter="\t"))
+        assert [row[0] for row in col_rows[1:]] == ["METPO:1000720", "METPO:1000608"]
+        write_feature_catalog(
+            cols_path,
+            catalog_path,
+            trait_key_policy=policy,
+            include_policy_metadata=True,
+        )
+        with catalog_path.open(encoding="utf-8", newline="") as handle:
+            cat_rows = list(csv.reader(handle, delimiter="\t"))
+        cat_header = cat_rows[0]
+        id_idx = cat_header.index("column_id")
+        assert [row[id_idx] for row in cat_rows[1:]] == ["METPO:1000720", "METPO:1000608"]

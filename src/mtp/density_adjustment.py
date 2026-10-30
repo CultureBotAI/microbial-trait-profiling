@@ -34,6 +34,7 @@ from scipy import stats
 
 from mtp.composition_denominators import MEDIADIVE_MARKER, trait_fractions
 from mtp.paths import DERIVED_DATA_DIR
+from mtp.trait_key_policy import display_trait_label, read_recorded_member_ids
 from mtp.trait_lists import (
     DeclaredTraitList,
     file_sha256,
@@ -57,6 +58,21 @@ TABLE_1_TRAITS: dict[str, str] = {
     "METPO:2000103|pathways:arsenate_reduction": "arsenate reduction",
     "METPO:1000623": "moderately halophilic",
 }
+
+
+def table1_traits_for_columns(columns_path: Path | None) -> dict[str, str]:
+    """Return Table 1 trait labels resolved against recorded column member metadata."""
+    resolved = columns_path
+    if resolved is not None and not resolved.exists():
+        gz_candidate = resolved.with_name(f"{resolved.name}.gz")
+        if gz_candidate.exists():
+            resolved = gz_candidate
+    members = read_recorded_member_ids(resolved)
+    return {
+        trait_id: display_trait_label(trait_id, label, members.get(trait_id))
+        for trait_id, label in TABLE_1_TRAITS.items()
+    }
+
 
 # The specific test case pair identified in Issue #264
 TEST_PAIR_A = "METPO:1000608"  # facultatively aerobic
@@ -843,9 +859,11 @@ def run_density_audit(
         _validate_declared_density_output(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     profiles_df, non_media_cols = load_non_media_profile_matrix(profiles_path, columns_path)
+    table1_traits = table1_traits_for_columns(columns_path)
     reported_traits = (
-        TABLE_1_TRAITS if trait_list is None else declared_density_traits(columns_path, trait_list)
+        table1_traits if trait_list is None else declared_density_traits(columns_path, trait_list)
     )
+    test_pair_a_label = reported_traits.get(TEST_PAIR_A, table1_traits[TEST_PAIR_A])
     raw_matrix = np.nan_to_num(profiles_df[non_media_cols].to_numpy(dtype=float), nan=0.0)
 
     # 1. Baseline metrics (Pearson & Spearman)
@@ -934,7 +952,7 @@ def run_density_audit(
             "",
             "2. DENSITY AXIS ADJUSTMENT: SEPARATING BIOLOGY FROM CURATION EFFORT",
             "-" * 80,
-            "Test Case Pair: facultatively aerobic x moderately halophilic",
+            f"Test Case Pair: {test_pair_a_label} x moderately halophilic",
             f"  Baseline Pearson r: {raw_pearson.test_pair_r:+.4f}",
             f"  Post-PC1 regression r: {adj_pc1_pearson.test_pair_r:+.4f} "
             f"(attenuation: {adj_pc1_pearson.test_pair_r - raw_pearson.test_pair_r:+.4f})",
@@ -985,8 +1003,8 @@ def run_density_audit(
             f"({raw_pearson.pc1_variance_pct:.2f}% variance explained).",
             f"2. Method A (PC1 regression) centers median pairwise correlation from "
             f"{raw_pearson.median_pairwise_r:+.4f} to {adj_pc1_pearson.median_pairwise_r:+.4f}.",
-            "3. Test case pair (facultatively aerobic x moderately halophilic) correlation "
-            f"attenuates from r={raw_pearson.test_pair_r:+.4f} "
+            f"3. Test case pair ({test_pair_a_label} x moderately halophilic) "
+            f"correlation attenuates from r={raw_pearson.test_pair_r:+.4f} "
             f"to r={adj_pc1_pearson.test_pair_r:+.4f}.",
             f"4. Near-twins ({twin_summary.trait_a_label} and {twin_summary.trait_b_label}) show "
             f"profile VIF = {twin_summary.vif_profile:.2f} "

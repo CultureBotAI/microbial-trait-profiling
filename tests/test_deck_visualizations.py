@@ -327,3 +327,78 @@ def test_figure4_draws_only_significant_adjusted_effects_as_surviving(
         if trace.type == "scatter" and trace.mode == "lines" and len(trace.x) == 2
     ]
     assert dumbbells == expected
+
+
+def test_facultative_union_label_in_deck_visualizations(
+    mock_pipeline_data: dict[str, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Deck visualizations render union label only from member metadata (#1138, #1232, #1235)."""
+    import json
+
+    import plotly.graph_objects as go
+
+    from mtp.deck_visualizations import TABLE_1_TRAITS, TRAIT_SHORT_NAMES, clean_trait_label
+
+    assert TABLE_1_TRAITS["METPO:1000608"] == "facultatively aerobic"
+    assert TRAIT_SHORT_NAMES["METPO:1000608"] == "Facultatively aerobic"
+    assert clean_trait_label("facultatively aerobic") == "Facultatively aerobic"
+    assert (
+        clean_trait_label("facultative (aerobe or anaerobe)") == "Facultative (aerobe or anaerobe)"
+    )
+    import inspect
+
+    assert '"facultative (aerobe or anaerobe)"' not in inspect.getsource(clean_trait_label)
+
+    figures: list[Any] = []
+
+    def capture(figure: Any, path: str, **_kwargs: Any) -> None:
+        figures.append(figure)
+        Path(path).write_bytes(b"")
+
+    monkeypatch.setattr(go.Figure, "write_image", capture)
+
+    # Raw/legacy columns.tsv (no extra union members) preserves 'Facultatively aerobic' on Figure 4.
+    generate_figure4_annotation_density_pc1_landscape(
+        taxa_matrix_path=mock_pipeline_data["taxa_matrix"],
+        columns_path=mock_pipeline_data["columns"],
+        profiles_path=mock_pipeline_data["profiles"],
+        table1_effects_path=mock_pipeline_data["table1_effects"],
+        output_path=tmp_path / "fig4_raw.png",
+    )
+    raw_fig = figures.pop()
+    raw_scatter_texts = [
+        str(lbl)
+        for trace in raw_fig.data
+        if getattr(trace, "mode", None) == "markers+text"
+        for lbl in (trace.text or [])
+    ]
+    assert "Facultatively aerobic" in raw_scatter_texts
+    assert "Facultative (aerobe or anaerobe)" not in raw_scatter_texts
+
+    # Union columns.tsv (with METPO:1000605 and METPO:1000612) renders the union label on Figure 4.
+    cols_df = pd.read_csv(mock_pipeline_data["columns"], sep="\t")
+    cols_df["trait_member_ids_json"] = [
+        json.dumps(["METPO:1000605", "METPO:1000608", "METPO:1000612"])
+        if cid == "METPO:1000608"
+        else json.dumps([cid])
+        for cid in cols_df["column_id"]
+    ]
+    union_cols_path = tmp_path / "union_columns.tsv"
+    cols_df.to_csv(union_cols_path, sep="\t", index=False)
+
+    generate_figure4_annotation_density_pc1_landscape(
+        taxa_matrix_path=mock_pipeline_data["taxa_matrix"],
+        columns_path=union_cols_path,
+        profiles_path=mock_pipeline_data["profiles"],
+        table1_effects_path=mock_pipeline_data["table1_effects"],
+        output_path=tmp_path / "fig4_union.png",
+    )
+    union_fig = figures.pop()
+    union_scatter_texts = [
+        str(lbl)
+        for trace in union_fig.data
+        if getattr(trace, "mode", None) == "markers+text"
+        for lbl in (trace.text or [])
+    ]
+    assert "Facultative (aerobe or anaerobe)" in union_scatter_texts
+    assert "Facultatively aerobic" not in union_scatter_texts
