@@ -2029,9 +2029,15 @@ def _zero_trait_rows() -> list[dict[str, str]]:
         ("8", "NCBITaxon:35493", "Streptophyta", "phylum", "14", "11", "14"),
         ("9", "NCBITaxon:81850", "Lactobacillaceae", "family", "12", "12", "12"),
     ]
+    # Lineage is explicit; the producer has no default, so missing lineage is
+    # never read as bacteria (#957, #1270).
+    eukaryota = producer.TaxonomyState("eukaryota", "resolved_root", ("NCBITaxon:2759",))
+    bacteria = producer.TaxonomyState("bacteria", "resolved_root", ("NCBITaxon:2",))
+    eukaryotic_taxa = {"NCBITaxon:5476", "NCBITaxon:35493"}
     rows: list[dict[str, str]] = []
     for rank_idx, taxon_id, taxon_name, tax_rank, occs, studies, profiles in specs:
-        cat, rem = producer.diagnose_zero_trait_taxon(taxon_id, taxon_name, tax_rank)
+        taxonomy = eukaryota if taxon_id in eukaryotic_taxa else bacteria
+        cat, rem = producer.diagnose_zero_trait_taxon(taxon_id, taxon_name, tax_rank, taxonomy)
         rows.append(
             {
                 "zero_trait_rank": rank_idx,
@@ -3114,7 +3120,10 @@ def test_plate6_candidatus_label_preserves_direct_evidence_caution() -> None:
     """Candidatus producer diagnosis maps to direct-evidence caution, not MAG inference (#925)."""
     producer = _load("create_taxa_coverage_histogram")
     category, remediation = producer.diagnose_zero_trait_taxon(
-        "fixture:candidatus", "Candidatus test lineage", "species"
+        "fixture:candidatus",
+        "Candidatus test lineage",
+        "species",
+        producer.TaxonomyState("bacteria", "resolved_root", ("NCBITaxon:2",)),
     )
     for row in (
         {"diagnosis_category": category, "suggested_remediation": remediation},

@@ -692,9 +692,11 @@ recognized roots and parser/Graph implementation hashes. Its identity as the
 matrix's producing KG is explicitly **not verified**. The input is rehashed before
 the provenance record is published; this boundary check does not promise immunity
 to transient edits restored between checks. Changing taxonomy can change diagnoses
-without changing any population, matrix, profile or coverage count. Deck consumers
-must accept the three exact new categories before adopting regenerated tables;
-this change does not regenerate scientific outputs or edit deck builders.
+without changing any population, matrix, profile or coverage count. Plates I and
+VI already map all nine producer categories, including `Unresolved Taxonomic Label`,
+`Taxonomy Unresolved` and `Non-Bacterial / Viral Taxon`, and reject an unknown
+category (#920, #1009); the slide deck reads the category only to list TaxID alias
+candidates. This change does not regenerate scientific outputs.
 
 The recipe generates five TSVs, six PNG/SVG figure pairs, a data-derived README,
 and `provenance.json` with input/output SHA-256 hashes, producer and lockfile

@@ -1,6 +1,7 @@
 """Lineage-backed coverage diagnosis and input binding regressions (#957)."""
 
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -229,6 +230,28 @@ def test_alias_candidate_does_not_inherit_suggested_target_ancestry(tmp_path: Pa
     assert "Review possible alias" in remediation
 
 
+@pytest.mark.parametrize(
+    "name",
+    [
+        "unclassified sequences",
+        "Candidatus placeholder lineage",
+        "uncultured bacterium",
+        "Placeholder isolate",
+    ],
+)
+def test_lineage_without_recognized_root_is_taxonomy_unresolved(tmp_path: Path, name: str) -> None:
+    """A present lineage that reaches no recognized root skips the name rules (#1272)."""
+    # Shaped like NCBI "unclassified sequences" (NCBITaxon:12908), whose lineage
+    # exists but reaches only the NCBI root, never a recognized domain root.
+    taxonomy = coverage.CoverageTaxonomy(
+        write_edges(tmp_path / "unrooted.tsv", [("12908", "1"), ("10", "2"), ("2", "1")])
+    )
+    state = taxonomy.classify("NCBITaxon:12908")
+    assert state == coverage.TaxonomyState("unresolved", "no_recognized_root_path", ())
+    category, _ = coverage.diagnose_zero_trait_taxon("NCBITaxon:12908", name, "species", state)
+    assert category == "Taxonomy Unresolved"
+
+
 def test_mapped_taxa_also_undergo_taxonomy_validation(
     taxonomic_inputs: dict[str, Path], tmp_path: Path
 ) -> None:
@@ -345,21 +368,55 @@ def test_rank_class_skip_count_is_emitted_in_coverage_provenance(
 
 
 @pytest.mark.parametrize(
-    "content",
+    ("content", "message"),
     [
-        "subject\tpredicate\tobject\nNCBITaxon:10\tbiolink:subclass_of\tNCBITaxon:2\n",
-        "id\tsubject\tpredicate\tobject\ne1\tNCBITaxon:nope\tbiolink:subclass_of\tNCBITaxon:2\n",
-        "id\tsubject\tpredicate\tobject\ne1\tNCBITaxon:biotype\tbiolink:subclass_of\tOBO:NCBITaxon#_taxonomic_rank_extra\n",
-        "id\tsubject\tpredicate\tobject\ne1\tNCBITaxon:10\tbiolink:subclass_of\tNCBITaxon:biotype\n",
-        "id\tsubject\tpredicate\tobject\ne1\tNCBITaxon:10\tbiolink:subclass_of\n",
-        "id\tsubject\tpredicate\tobject\ne1\tNCBITaxon:10\tbiolink:capable_of\tNCBITaxon:2\n",
+        (
+            "subject\tpredicate\tobject\nNCBITaxon:10\tbiolink:subclass_of\tNCBITaxon:2\n",
+            "expected leading KG edge columns id/subject/predicate/object",
+        ),
+        (
+            "id\tsubject\tpredicate\tobject\ne1\tNCBITaxon:10\tbiolink:subclass_of\n",
+            "unknown malformed KG edge record",
+        ),
+        (
+            "id\tsubject\tpredicate\tobject\ne1\tNCBITaxon:10\tbiolink:capable_of\tNCBITaxon:2\n",
+            "Taxonomy input has no NCBITaxon subclass_of edges",
+        ),
     ],
 )
-def test_malformed_or_unusable_taxonomy_fails_closed(tmp_path: Path, content: str) -> None:
+def test_malformed_or_unusable_taxonomy_fails_closed(
+    tmp_path: Path, content: str, message: str
+) -> None:
     edges = tmp_path / "bad.tsv"
     edges.write_text(content)
+    with pytest.raises(ValueError, match=re.escape(message)):
+        coverage.CoverageTaxonomy(edges)
+
+
+@pytest.mark.parametrize(
+    ("bad_edge", "identifier"),
+    [
+        ("NCBITaxon:nope\tbiolink:subclass_of\tNCBITaxon:2", "NCBITaxon:nope"),
+        (
+            "NCBITaxon:biotype\tbiolink:subclass_of\tOBO:NCBITaxon#_taxonomic_rank_extra",
+            "NCBITaxon:biotype",
+        ),
+        ("NCBITaxon:10\tbiolink:subclass_of\tNCBITaxon:biotype", "NCBITaxon:biotype"),
+    ],
+)
+def test_invalid_taxonomy_identifier_rejects_beside_a_valid_organism_edge(
+    tmp_path: Path, bad_edge: str, identifier: str
+) -> None:
+    # The valid organism edge keeps the input usable, so silently skipping the
+    # bad edge would load instead of raising (#1271).
+    edges = tmp_path / "bad.tsv"
+    edges.write_text(
+        "id\tsubject\tpredicate\tobject\n"
+        "e0\tNCBITaxon:91626\tbiolink:subclass_of\tNCBITaxon:2759\n"
+        f"e1\t{bad_edge}\n"
+    )
     with pytest.raises(
-        ValueError, match=r"expected leading|Invalid taxonomy|malformed|no NCBITaxon"
+        ValueError, match=re.escape(f"Invalid taxonomy identifier in edge e1: {identifier}")
     ):
         coverage.CoverageTaxonomy(edges)
 
