@@ -375,6 +375,29 @@ def test_incomplete_or_stale_producer_identity_rejected(
         module["check_trial"](record, args, root)
 
 
+@pytest.mark.parametrize("corruption", ["omitted_module", "extra_module", "changed_hash"])
+def test_inventory_mismatch_with_full_implementation_digest_rejected(
+    trial: tuple[dict[str, Any], argparse.Namespace, Path],
+    corruption: str,
+) -> None:
+    record, args, root = trial
+    module = _load_repo_helper(root)
+    assert record["implementation_sha256"] == digest_inventory(record["code_inventory"])
+    if corruption == "omitted_module":
+        del record["code_inventory"]["src/mtp/extra.py"]
+    elif corruption == "extra_module":
+        record["code_inventory"]["src/mtp/not_in_tree.py"] = "0" * 64
+    else:
+        record["code_inventory"]["src/mtp/extra.py"] = "0" * 64
+    # Keep the full digest valid so only exact inventory equality can reject this.
+    assert record["implementation_sha256"] != digest_inventory(record["code_inventory"])
+    with pytest.raises(
+        ValueError,
+        match=r"^Trial producer inventory differs from the complete Git tree inventory$",
+    ):
+        module["check_trial"](record, args, root)
+
+
 @pytest.mark.parametrize("invalid_mode", [None, "partial", "auto"])
 def test_qualify_rejects_missing_or_invalid_baseline_coverage_mode(
     trial: tuple[dict[str, Any], argparse.Namespace, Path],
