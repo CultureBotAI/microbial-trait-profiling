@@ -595,3 +595,281 @@ def test_stage_counts_the_actual_inclusive_activity_flags(
     )
     assert record["counts"]["traits_with_at_least_50_active_studies"] == expected
     assert int(table["sdz_active_at_least_50"].sum()) == expected
+
+
+@pytest.mark.parametrize("existing_parent", [False, True])
+def test_late_failure_removes_only_new_empty_output_ancestors(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, existing_parent: bool
+) -> None:
+    parent = synthetic_parent(tmp_path, monkeypatch)
+    boundary = tmp_path / "existing" if existing_parent else tmp_path
+    if existing_parent:
+        boundary.mkdir()
+    sibling = boundary / "keep.txt"
+    sibling.write_text("unowned sibling", encoding="utf-8")
+    original_boundary = boundary.stat()
+    output = boundary / "new" / "nested" / "output"
+    original = pd.DataFrame.to_csv
+
+    def mutate_after_write(self: pd.DataFrame, *args: Any, **kwargs: Any) -> Any:
+        result = original(self, *args, **kwargs)
+        assert output.parent.is_dir()
+        parent.experiments.write_text(parent.experiments.read_text() + "\n")
+        return result
+
+    monkeypatch.setattr(pd.DataFrame, "to_csv", mutate_after_write)
+    with pytest.raises(ValueError, match=r"changed|identity"):
+        run(parent, output)
+    assert not (boundary / "new").exists()
+    assert boundary.stat().st_ino == original_boundary.st_ino
+    assert sibling.read_text() == "unowned sibling"
+
+
+def _assert_failed_run_preserves_empty_existing_parent(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, nested: bool
+) -> None:
+    """Behavioral oracle shared with the ownership mutation probe (#1218)."""
+    parent = synthetic_parent(tmp_path, monkeypatch)
+    existing = tmp_path / "existing_empty"
+    existing.mkdir()
+    before = existing.stat()
+    assert not list(existing.iterdir())
+    output = existing / "new" / "nested" / "output" if nested else existing / "output"
+    failure = OSError("injected publication failure with empty existing parent")
+    monkeypatch.setattr(stage, "_publish_directory", Mock(side_effect=failure))
+    with pytest.raises(OSError, match="injected publication failure with empty existing parent"):
+        run(parent, output)
+    assert existing.is_dir(), "pre-existing empty ancestor was removed"
+    after = existing.stat()
+    assert (after.st_dev, after.st_ino) == (before.st_dev, before.st_ino)
+    assert not list(existing.iterdir())
+
+
+@pytest.mark.parametrize("nested", [False, True], ids=["direct", "nested"])
+def test_failed_run_preserves_empty_existing_parent(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, nested: bool
+) -> None:
+    _assert_failed_run_preserves_empty_existing_parent(tmp_path, monkeypatch, nested=nested)
+
+
+@pytest.mark.parametrize("nested", [False, True], ids=["direct", "nested"])
+def test_empty_existing_parent_oracle_kills_false_ownership(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, nested: bool
+) -> None:
+    """Probe the documented mutant without changing any production source bytes."""
+    original = stage._create_parents
+
+    def claim_existing(parent: Path, created: list[tuple[Path, tuple[int, int]]]) -> None:
+        cursor = parent
+        while not cursor.is_dir():
+            cursor = cursor.parent
+        metadata = cursor.stat()
+        # The mutant incorrectly grants ownership of the first existing ancestor.
+        created.append((cursor, (metadata.st_dev, metadata.st_ino)))
+        original(parent, created)
+
+    monkeypatch.setattr(stage, "_create_parents", claim_existing)
+    with pytest.raises(AssertionError, match=r"^pre-existing empty ancestor was removed(?:\n|$)"):
+        _assert_failed_run_preserves_empty_existing_parent(tmp_path, monkeypatch, nested=nested)
+
+
+def test_staging_mkdir_failure_removes_new_ancestors_without_touching_siblings(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    parent = synthetic_parent(tmp_path, monkeypatch)
+    output = tmp_path / "new" / "nested" / "output"
+    sibling = tmp_path / "keep.txt"
+    sibling.write_text("not this run", encoding="utf-8")
+    original_mkdir = Path.mkdir
+    attempted: list[Path] = []
+
+    def fail_staging(
+        path: Path, mode: int = 0o777, parents: bool = False, exist_ok: bool = False
+    ) -> None:
+        if path.parent == output.parent and path.name.startswith(".output-staging-"):
+            assert output.parent.is_dir()
+            attempted.append(path)
+            raise OSError("injected staging mkdir failure")
+        original_mkdir(path, mode=mode, parents=parents, exist_ok=exist_ok)
+
+    monkeypatch.setattr(Path, "mkdir", fail_staging)
+    with pytest.raises(OSError, match="injected staging mkdir failure"):
+        run(parent, output)
+    assert len(attempted) == 1
+    assert not (tmp_path / "new").exists()
+    assert sibling.read_text() == "not this run"
+
+
+def test_intermediate_parent_mkdir_failure_cleans_partial_chain_and_preserves_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    parent = synthetic_parent(tmp_path, monkeypatch)
+    existing = tmp_path / "existing"
+    existing.mkdir()
+    before = existing.stat()
+    sibling = existing / "keep.txt"
+    sibling.write_text("preexisting data", encoding="utf-8")
+    created = existing / "new"
+    output = created / "nested" / "output"
+    failure = OSError("injected intermediate parent mkdir failure")
+    original_mkdir = Path.mkdir
+    attempted: list[Path] = []
+
+    def fail_second_parent(
+        path: Path, mode: int = 0o777, parents: bool = False, exist_ok: bool = False
+    ) -> None:
+        if path == output.parent:
+            assert created.is_dir()
+            assert not list(created.iterdir())
+            attempted.append(path)
+            raise failure
+        original_mkdir(path, mode=mode, parents=parents, exist_ok=exist_ok)
+
+    monkeypatch.setattr(Path, "mkdir", fail_second_parent)
+    with pytest.raises(OSError, match="injected intermediate parent mkdir failure") as caught:
+        run(parent, output)
+    assert caught.value is failure
+    assert attempted == [output.parent]
+    assert not created.exists()
+    assert (existing.stat().st_dev, existing.stat().st_ino) == (before.st_dev, before.st_ino)
+    assert sibling.read_text() == "preexisting data"
+    assert {path.name for path in existing.iterdir()} == {"keep.txt"}
+
+
+def test_nested_publish_collision_preserves_competitor_and_required_parents(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    parent = synthetic_parent(tmp_path, monkeypatch)
+    output = tmp_path / "new" / "nested" / "output"
+    competitor_identity: list[tuple[int, int]] = []
+
+    def compete(source: Path, destination: Path) -> None:
+        destination.mkdir()
+        identity = destination.stat()
+        competitor_identity.append((identity.st_dev, identity.st_ino))
+        (destination / "keep.txt").write_text("competitor result", encoding="utf-8")
+        _publish_directory(source, destination)
+
+    monkeypatch.setattr(stage, "_publish_directory", compete)
+    with pytest.raises(FileExistsError):
+        run(parent, output)
+    identity = output.stat()
+    assert competitor_identity == [(identity.st_dev, identity.st_ino)]
+    assert (output / "keep.txt").read_text() == "competitor result"
+    assert {path.name for path in output.parent.iterdir()} == {"output"}
+    assert {path.name for path in (tmp_path / "new").iterdir()} == {"nested"}
+
+
+def test_new_nonempty_ancestor_is_retained_but_empty_owned_descendants_are_removed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    parent = synthetic_parent(tmp_path, monkeypatch)
+    output = tmp_path / "new" / "nested" / "output"
+    sibling = output.parent.parent / "concurrent.txt"
+
+    def fail_with_new_sibling(_source: Path, _destination: Path) -> None:
+        sibling.write_text("concurrent data", encoding="utf-8")
+        raise OSError("injected publication failure")
+
+    monkeypatch.setattr(stage, "_publish_directory", fail_with_new_sibling)
+    with pytest.raises(OSError, match="injected publication failure"):
+        run(parent, output)
+    assert sibling.read_text() == "concurrent data"
+    assert not output.parent.exists()
+    assert {path.name for path in sibling.parent.iterdir()} == {"concurrent.txt"}
+
+
+@pytest.mark.parametrize("location", ["parent", "staging"])
+@pytest.mark.parametrize("nonempty", [False, True])
+def test_failure_cleanup_preserves_replaced_directory_even_when_empty(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, location: str, nonempty: bool
+) -> None:
+    parent = synthetic_parent(tmp_path, monkeypatch)
+    output = tmp_path / "new" / "nested" / "output"
+    replacements: list[tuple[Path, int, int]] = []
+    displaced = tmp_path / "displaced-owned-tree"
+
+    def replace_then_fail(source: Path, _destination: Path) -> None:
+        replaced = source.parent if location == "parent" else source
+        original_identity = replaced.stat()
+        replaced.rename(displaced)
+        replaced.mkdir()
+        identity = replaced.stat()
+        assert (identity.st_dev, identity.st_ino) != (
+            original_identity.st_dev,
+            original_identity.st_ino,
+        )
+        replacements.append((replaced, identity.st_dev, identity.st_ino))
+        if nonempty:
+            (replaced / "keep.txt").write_text("replacement data", encoding="utf-8")
+        raise OSError("injected publication failure after replacement")
+
+    monkeypatch.setattr(stage, "_publish_directory", replace_then_fail)
+    with pytest.raises(OSError, match="injected publication failure after replacement"):
+        run(parent, output)
+    assert len(replacements) == 1
+    path, device, inode = replacements[0]
+    assert (path.stat().st_dev, path.stat().st_ino) == (device, inode)
+    assert {item.name for item in path.iterdir()} == ({"keep.txt"} if nonempty else set())
+    if nonempty:
+        assert (path / "keep.txt").read_text() == "replacement data"
+    # The displaced tree is no longer at a location owned by the failed invocation.
+    assert displaced.is_dir()
+    assert not output.exists()
+
+
+@pytest.mark.parametrize("kind", ["dangling_intermediate", "missing_dotdot", "nested_dotdot"])
+def test_invalid_output_components_fail_before_loading_or_probe(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, kind: str
+) -> None:
+    parent = synthetic_parent(tmp_path, monkeypatch)
+    target = tmp_path / "uncreated-target"
+    if kind == "dangling_intermediate":
+        link = tmp_path / "dangling"
+        link.symlink_to(target, target_is_directory=True)
+        output = link / "nested" / "output"
+    elif kind == "missing_dotdot":
+        output = tmp_path / "missing" / ".." / "output"
+    else:
+        output = tmp_path / "missing" / "nested" / ".." / "output"
+    with pytest.raises(FileNotFoundError):
+        output.parent.stat()
+    before = {path.name for path in tmp_path.iterdir()}
+    probe = Mock(side_effect=AssertionError("invalid path reached publication probe"))
+    parent.loader.side_effect = AssertionError("invalid path reached source loading")
+    monkeypatch.setattr(stage, "_probe_publication", probe)
+    with pytest.raises((FileNotFoundError, ValueError)):
+        run(parent, output)
+    parent.loader.assert_not_called()
+    probe.assert_not_called()
+    assert {path.name for path in tmp_path.iterdir()} == before
+    assert not target.exists()
+    assert not (tmp_path / "output").exists()
+
+
+@pytest.mark.parametrize("via_symlink", [False, True])
+def test_existing_dotdot_output_uses_kernel_resolution(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, via_symlink: bool
+) -> None:
+    parent = synthetic_parent(tmp_path, monkeypatch)
+    if via_symlink:
+        leaf = tmp_path / "target" / "leaf"
+        leaf.mkdir(parents=True)
+        route = tmp_path / "route"
+        route.mkdir()
+        link = route / "link"
+        link.symlink_to(leaf, target_is_directory=True)
+        supplied = link / ".." / "output"
+        actual = leaf.parent / "output"
+        wrongly_collapsed = route / "output"
+    else:
+        existing = tmp_path / "existing"
+        existing.mkdir()
+        supplied = existing / ".." / "output"
+        actual = tmp_path / "output"
+        wrongly_collapsed = existing / "output"
+    assert supplied.parent.samefile(actual.parent)
+    record = run(parent, supplied)
+    assert json.loads((actual / "delta_z_derived_run.json").read_text()) == record
+    assert not wrongly_collapsed.exists()
+    assert not list(actual.parent.glob(".output-staging-*"))
