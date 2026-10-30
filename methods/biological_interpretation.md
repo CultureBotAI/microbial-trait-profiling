@@ -8,7 +8,10 @@ signatures. Counts can include taxonomic rollup and annotation multiplicity.
 They are not direct measurements of patient-level trait abundance, pathway
 activity, oxygen exposure or disease causation.
 
-The [paired-contrast investigation notes](../../trait-visualization/trait-profile-investigation/paired_contrast_interpretation_notes.md)
+It implements [#179](https://github.com/CultureBotAI/microbial-trait-profiling/issues/179).
+Use it with the [claim audit](biological_interpretation_audit.md).
+
+[Jed's paired contrast interpretation notes at `a2b2df98`](https://github.com/CultureBotAI/microbial-trait-profiling/blob/a2b2df98e9beec98b772c9cb5af7aa090d033a98/trait-visualization/trait-profile-investigation/paired_contrast_interpretation_notes.md)
 provide the starting evidence: standardized annotation signals differ from raw
 abundance, curated direction differs from z-score sign, and the arms share data.
 This guide makes background enrichment distinct from an above-average z-score
@@ -235,7 +238,7 @@ output is not implicitly approved by this guide.
 | --- | --- | --- |
 | #188 | Contrast eligibility/orientation manifest; Noel with Jed | Required before disease/control language; host filtering alone is insufficient |
 | #189 | Trait semantics, source evidence and justified grouping; Ilyas with Jed | Required before label translations, gene claims or merging features |
-| #190 | Reconciled contributions and genus/family influence; Jed with Noel and Ilyas | Draft PR #194 supplies provisional contribution/influence artifacts; orientation, semantics, native Jed/ORA integration and calibration remain unresolved, and sensitivity is not causal validation |
+| #190 | Reconciled contributions and genus/family influence; Jed with Noel and Ilyas | PR #194 supplies provisional contribution/influence artifacts, including native composition and fixed/recomputed-background ORA reruns; orientation, semantics, native-owner review and calibration remain unresolved, and sensitivity is not causal validation |
 | #191 | Inventory of measured inflammation/SCFA evidence and feasible independent validation; Noel with Ilyas | Starts with feasibility and protocol; does not assume measured markers or successful validation |
 
 These deliverables feed #178 and #179; none marks mechanisms validated. Preserve
