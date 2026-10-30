@@ -1187,6 +1187,11 @@ three-test-table *ARGS:
 publication-figures *ARGS:
 	uv run python -m mtp.publication_figures "$@"
 
+# Slice 2: saved rank sensitivity, candidate-triple distribution and nine-trait overlap.
+[positional-arguments]
+publication-figures-slice2 *ARGS:
+	uv run python -m mtp.publication_figures.slice2 "$@"
+
 test-publication-figures:
 	uv run pytest tests/test_publication_figure_*.py -v
 
