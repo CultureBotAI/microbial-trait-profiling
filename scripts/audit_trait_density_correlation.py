@@ -6,7 +6,8 @@ Addresses Issue #264 and Issue #352:
 - Evaluates PC1 regression adjustment and profile composition normalization (Task 1).
 - Audits METPO ontology redundancy, states branch collapsing rules, and bounds
   distinct trait space (Task 2).
-- Tests collapse of facultatively aerobic x moderately halophilic vs. survival of convergent six.
+- Tests collapse of facultative (aerobe or anaerobe) x moderately halophilic vs.
+  survival of convergent six.
 - Tests conditional contrast and VIF for coccus shaped vs. sphere shaped (Task 3).
 """
 
@@ -146,7 +147,7 @@ def write_consolidated_report(
         "",
         "2. DENSITY AXIS ADJUSTMENT: SEPARATING BIOLOGY FROM CURATION EFFORT",
         "-" * 80,
-        "Test Case Pair: facultatively aerobic x moderately halophilic",
+        "Test Case Pair: facultative (aerobe or anaerobe) x moderately halophilic",
         f"  Baseline Pearson r: {raw.test_pair_r:+.4f}",
         f"  Post-PC1 regression r: {adj_pc1.test_pair_r:+.4f} "
         f"(attenuation: {adj_pc1.test_pair_r - raw.test_pair_r:+.4f})",
@@ -251,7 +252,7 @@ def write_consolidated_report(
         [
             "1. The vast majority of positive correlation among traits is driven by "
             "curation density (PC1).",
-            "2. Regressing out PC1 collapses the spurious facultatively aerobic x "
+            "2. Regressing out PC1 collapses the spurious facultative (aerobe or anaerobe) x "
             "moderately halophilic",
             f"   contrast from significant ({aerobic_p_raw_str}) to completely "
             f"nonsignificant ({aerobic_p_adj_str}).",
@@ -325,7 +326,7 @@ def main() -> int:
         f"(was {raw.median_pairwise_r:+.4f})."
     )
     print(
-        f"  - facultatively aerobic x moderately halophilic r: {raw.test_pair_r:+.4f} "
+        f"  - facultative (aerobe or anaerobe) x moderately halophilic r: {raw.test_pair_r:+.4f} "
         f"-> {adj.test_pair_r:+.4f} (attenuated by {pair_attenuation:+.4f})."
     )
     print(

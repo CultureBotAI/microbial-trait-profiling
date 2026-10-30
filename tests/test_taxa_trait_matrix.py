@@ -542,8 +542,8 @@ def test_facultative_synonyms_unify_into_single_nonredundant_feature(tmp_path: P
             "\tobject_name\tobject_category"
         ),
         (
-            "METPO:1000608\tfacultatively aerobic METPO:1000608\t\t\tMETPO:1000608"
-            "\tfacultatively aerobic\tbiolink:PhenotypicQuality"
+            "METPO:1000608\tfacultative (aerobe or anaerobe) METPO:1000608\t\t\tMETPO:1000608"
+            "\tfacultative (aerobe or anaerobe)\tbiolink:PhenotypicQuality"
         ),
     ]
     assert json.loads(metadata[1][8]) == ["METPO:1000605", "METPO:1000608", "METPO:1000612"]

@@ -327,3 +327,14 @@ def test_figure4_draws_only_significant_adjusted_effects_as_surviving(
         if trace.type == "scatter" and trace.mode == "lines" and len(trace.x) == 2
     ]
     assert dumbbells == expected
+
+
+def test_facultative_union_label_in_deck_visualizations() -> None:
+    """METPO:1000608 uses the owner-approved union label across deck visualizations (#1138)."""
+    from mtp.deck_visualizations import TABLE_1_TRAITS, TRAIT_SHORT_NAMES, clean_trait_label
+
+    assert TABLE_1_TRAITS["METPO:1000608"] == "facultative (aerobe or anaerobe)"
+    assert TRAIT_SHORT_NAMES["METPO:1000608"] == "Facultative (aerobe or anaerobe)"
+    assert (
+        clean_trait_label("facultative (aerobe or anaerobe)") == "Facultative (aerobe or anaerobe)"
+    )

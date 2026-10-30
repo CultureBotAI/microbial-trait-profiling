@@ -391,7 +391,7 @@ def test_contributor_tables_carry_shares_status_and_direction() -> None:
     assert cell.loc[(S2, "dec"), "status"] == "resolved"
     assert (cell.loc[(F, "inc"), "count"], cell.loc[(F, "inc"), "studies"]) == (4, 1)
     assert set(cells["trait_direction"]) == {"increased"}
-    assert set(cells["trait_label"]) == {"facultatively aerobic (METPO:1000608)"}
+    assert set(cells["trait_label"]) == {"facultative (aerobe or anaerobe) (METPO:1000608)"}
 
 
 def test_cells_without_contributions_are_absent() -> None:
@@ -412,7 +412,7 @@ def test_cells_without_contributions_are_absent() -> None:
             {
                 "trait_key": "T1",
                 "trait_slug": "facultatively_aerobic",
-                "trait_label": "facultatively aerobic (METPO:1000608)",
+                "trait_label": "facultative (aerobe or anaerobe) (METPO:1000608)",
                 "trait_direction": "increased",
             }
         ]
@@ -572,13 +572,18 @@ def test_selected_taxa_with_equal_totals_are_listed_by_name() -> None:
 def test_trait_labels_lead_with_the_lollipop_direction() -> None:
     coverage = pd.DataFrame(
         {
-            "trait_slug": ["a", "b"],
-            "trait_label": ["coccus shaped (METPO:1000668)", "moderately halophilic (x)"],
-            "trait_direction": ["decreased", "increased"],
+            "trait_slug": ["a", "b", "facultatively_aerobic"],
+            "trait_label": [
+                "coccus shaped (METPO:1000668)",
+                "moderately halophilic (x)",
+                contributors.TABLE1_TRAIT_LABELS["facultatively_aerobic"],
+            ],
+            "trait_direction": ["decreased", "increased", "increased"],
         }
     )
 
     assert contributors.trait_display_labels(coverage) == {
         "a": "↓ coccus shaped",
         "b": "↑ moderately halophilic",
+        "facultatively_aerobic": "↑ facultative (aerobe or anaerobe)",
     }

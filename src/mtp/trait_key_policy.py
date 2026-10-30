@@ -16,6 +16,7 @@ TraitKeyPolicy = Literal["raw_object_v1", "facultative_union_v1"]
 TRAIT_KEY_POLICIES: tuple[TraitKeyPolicy, ...] = ("raw_object_v1", "facultative_union_v1")
 DEFAULT_TRAIT_KEY_POLICY: TraitKeyPolicy = "facultative_union_v1"
 FACULTATIVE_TRAIT_ID = "METPO:1000608"
+FACULTATIVE_UNION_LABEL = "facultative (aerobe or anaerobe)"
 FACULTATIVE_MEMBER_IDS = ("METPO:1000605", "METPO:1000608", "METPO:1000612")
 TRAIT_POLICY_METADATA_COLUMNS = (
     "trait_key_policy",
@@ -60,6 +61,14 @@ def canonical_object(obj: str, *, trait_key_policy: TraitKeyPolicy) -> str:
     if trait_key_policy != "facultative_union_v1":
         raise ValueError(f"Unknown trait_key_policy: {trait_key_policy!r}")
     return FACULTATIVE_TRAIT_ID if obj in FACULTATIVE_MEMBER_IDS else obj
+
+
+def canonical_object_name(obj: str, raw_name: str, *, trait_key_policy: TraitKeyPolicy) -> str:
+    """Label the facultative union under facultative_union_v1; keep raw name under raw_object_v1."""
+    policy = parse_trait_key_policy(trait_key_policy)
+    if policy == "facultative_union_v1" and obj == FACULTATIVE_TRAIT_ID and raw_name:
+        return FACULTATIVE_UNION_LABEL
+    return raw_name
 
 
 def policy_metadata(obj: str, *, trait_key_policy: TraitKeyPolicy) -> tuple[str, str, str]:

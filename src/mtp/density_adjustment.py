@@ -11,7 +11,7 @@ Addresses Issue #264, Issue #352, and follow-ups #375-#383:
    - Method B: Profile composition normalization (Total Sum Scaling / profile
      annotation depth normalization).
    - Re-evaluates pairwise correlations and tests the diagnostic test pair
-     (facultatively aerobic x moderately halophilic) across profile representations.
+     (facultative (aerobe or anaerobe) x moderately halophilic) across profile representations.
 3. Evaluates conditional test and collinearity for near-twins (coccus shaped vs. sphere shaped):
    - Computes bivariate correlation, paired contrast correlation, and
      Variance Inflation Factor (VIF).
@@ -50,7 +50,7 @@ TRAIT_LIST_PROVENANCE_FILENAME = "trait_list_provenance.json"
 
 # The six canonical Table 1 traits
 TABLE_1_TRAITS: dict[str, str] = {
-    "METPO:1000608": "facultatively aerobic",
+    "METPO:1000608": "facultative (aerobe or anaerobe)",
     "METPO:2000103|GO:0030245": "cellulose catabolic process",
     "METPO:1000668": "coccus shaped",
     "METPO:1000683": "sphere shaped",
@@ -59,7 +59,7 @@ TABLE_1_TRAITS: dict[str, str] = {
 }
 
 # The specific test case pair identified in Issue #264
-TEST_PAIR_A = "METPO:1000608"  # facultatively aerobic
+TEST_PAIR_A = "METPO:1000608"  # facultative (aerobe or anaerobe)
 TEST_PAIR_B = "METPO:1000623"  # moderately halophilic
 
 # The near-twin candidate pair
@@ -934,7 +934,7 @@ def run_density_audit(
             "",
             "2. DENSITY AXIS ADJUSTMENT: SEPARATING BIOLOGY FROM CURATION EFFORT",
             "-" * 80,
-            "Test Case Pair: facultatively aerobic x moderately halophilic",
+            "Test Case Pair: facultative (aerobe or anaerobe) x moderately halophilic",
             f"  Baseline Pearson r: {raw_pearson.test_pair_r:+.4f}",
             f"  Post-PC1 regression r: {adj_pc1_pearson.test_pair_r:+.4f} "
             f"(attenuation: {adj_pc1_pearson.test_pair_r - raw_pearson.test_pair_r:+.4f})",
@@ -985,8 +985,8 @@ def run_density_audit(
             f"({raw_pearson.pc1_variance_pct:.2f}% variance explained).",
             f"2. Method A (PC1 regression) centers median pairwise correlation from "
             f"{raw_pearson.median_pairwise_r:+.4f} to {adj_pc1_pearson.median_pairwise_r:+.4f}.",
-            "3. Test case pair (facultatively aerobic x moderately halophilic) correlation "
-            f"attenuates from r={raw_pearson.test_pair_r:+.4f} "
+            "3. Test case pair (facultative (aerobe or anaerobe) x moderately halophilic) "
+            f"correlation attenuates from r={raw_pearson.test_pair_r:+.4f} "
             f"to r={adj_pc1_pearson.test_pair_r:+.4f}.",
             f"4. Near-twins ({twin_summary.trait_a_label} and {twin_summary.trait_b_label}) show "
             f"profile VIF = {twin_summary.vif_profile:.2f} "

@@ -30,7 +30,7 @@ TABLE_1_TRAITS: dict[str, str] = {
     "METPO:1000668": "coccus shaped",
     "METPO:1000683": "sphere shaped",
     "METPO:2000103|pathways:arsenate_reduction": "arsenate reduction",
-    "METPO:1000608": "facultatively aerobic",
+    "METPO:1000608": "facultative (aerobe or anaerobe)",
 }
 
 TRAIT_SHORT_NAMES: dict[str, str] = {
@@ -39,7 +39,7 @@ TRAIT_SHORT_NAMES: dict[str, str] = {
     "METPO:1000668": "Coccus shaped",
     "METPO:1000683": "Sphere shaped",
     "METPO:2000103|pathways:arsenate_reduction": "Arsenate reduction",
-    "METPO:1000608": "Facultatively aerobic",
+    "METPO:1000608": "Facultative (aerobe or anaerobe)",
 }
 
 # The four exploratory leads from Slide 1
@@ -90,7 +90,8 @@ def clean_trait_label(name: str) -> str:
         "anaerobic": "Anaerobic",
         "mesophilic": "Mesophilic",
         "Fermentation": "Fermentation",
-        "facultatively aerobic": "Facultatively aerobic",
+        "facultative (aerobe or anaerobe)": "Facultative (aerobe or anaerobe)",
+        "facultatively aerobic": "Facultative (aerobe or anaerobe)",
         "cellulose catabolic process": "Cellulose catabolism",
         "moderately halophilic": "Moderately halophilic",
         "coccus shaped": "Coccus shaped",
@@ -934,7 +935,7 @@ def generate_figure4_annotation_density_pc1_landscape(
         "METPO:1000623": ("Mod. halophilic", "bottom right"),
         "METPO:1000683": ("Sphere shaped", "top left"),
         "METPO:1000668": ("Coccus shaped", "bottom right"),
-        "METPO:1000608": ("Facultative aerobe", "top left"),
+        "METPO:1000608": ("Facultative (aerobe or anaerobe)", "top left"),
     }
     for _, r in t1_df.iterrows():
         tid = r["trait_id"]

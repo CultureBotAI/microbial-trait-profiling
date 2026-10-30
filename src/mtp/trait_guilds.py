@@ -61,7 +61,7 @@ TABLE1_TRAITS: dict[str, tuple[str, ...]] = {
 }
 
 TABLE1_TRAIT_LABELS: dict[str, str] = {
-    "facultatively_aerobic": "facultatively aerobic (METPO:1000608)",
+    "facultatively_aerobic": "facultative (aerobe or anaerobe) (METPO:1000608)",
     "cellulose_catabolic_process": "cellulose catabolic process (GO:0030245)",
     "coccus_shaped": "coccus shaped (METPO:1000668)",
     "sphere_shaped": "sphere shaped (METPO:1000683)",

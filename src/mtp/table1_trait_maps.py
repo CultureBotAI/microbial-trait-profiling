@@ -4,7 +4,7 @@ This is the oxygen guild pair of figures (`mtp.guild_maps`) re-run over the six
 individual traits named in manuscript Table 1 rather than over the two pooled
 oxygen guilds, with all six combined into a single figure each:
 
-1. facultatively aerobic (METPO:1000608)
+1. facultative (aerobe or anaerobe) (METPO:1000608)
 2. cellulose catabolic process (GO:0030245)
 3. coccus shaped (METPO:1000668)
 4. sphere shaped (METPO:1000683)

@@ -81,7 +81,10 @@ SHARE_TOLERANCE = 1e-12
 
 def base_trait_label(value: object) -> str:
     """Drop ontology suffixes from a display label."""
-    return str(value).split(" (", maxsplit=1)[0]
+    text = str(value)
+    if text.endswith(")") and not text.endswith("(aerobe or anaerobe)"):
+        return text.rsplit(" (", maxsplit=1)[0]
+    return text
 
 
 def trait_display_labels(coverage: pd.DataFrame) -> dict[str, str]:

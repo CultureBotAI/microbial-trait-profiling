@@ -85,6 +85,15 @@ def test_table1_trait_semantics_coverage() -> None:
     for tid in expected_trait_ids:
         assert tid in content, f"Trait ID '{tid}' missing from Table 1 semantics audit"
 
+    section_5 = content.split(
+        "## 5. Decisions, Approved Wording, and Unsupported Interpretations", 1
+    )[1]
+    metpo_608_row = next(
+        line for line in section_5.splitlines() if line.startswith("| `METPO:1000608` |")
+    )
+    assert "pre-#1124" in metpo_608_row
+    assert "facultative (aerobe or anaerobe)" in metpo_608_row
+
 
 def test_governance_cross_references() -> None:
     """Verify that governance documents reference the biological interpretation standards."""
