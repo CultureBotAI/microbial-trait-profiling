@@ -1,7 +1,0 @@
-taxonomic_rank	display_rank	total_profiles_in_cohort	profiles_containing_rank	pct_of_all_profiles	profiles_all_taxa_mapped	pct_all_taxa_mapped_within_rank	profiles_mixed_mapped_and_zero	pct_mixed_within_rank	profiles_zero_traits_only_for_rank	pct_zero_only_within_rank	profiles_with_at_least_1_mapped_taxon	pct_any_mapped_within_rank	pct_of_mapped_profiles	median_mapped_taxa_when_present	mean_mapped_taxa_when_present	median_profile_mapped_traits_when_rank_mapped
-species	Species	1870	893	47.75	520	58.23	272	30.46	101	11.31	792	88.69	42.93	3.0	6.13	150.5
-genus	Genus	1870	1454	77.75	1339	92.09	100	6.88	15	1.03	1439	98.97	77.99	4.0	5.78	211.0
-family	Family	1870	783	41.87	725	92.59	44	5.62	14	1.79	769	98.21	41.68	2.0	2.95	409.0
-order	Order	1870	444	23.74	426	95.95	5	1.13	13	2.93	431	97.07	23.36	2.0	2.16	620.0
-class	Class	1870	390	20.86	384	98.46	0	0.0	6	1.54	384	98.46	20.81	1.0	1.74	742.5
-phylum	Phylum	1870	515	27.54	502	97.48	9	1.75	4	0.78	511	99.22	27.7	1.0	1.69	913.0

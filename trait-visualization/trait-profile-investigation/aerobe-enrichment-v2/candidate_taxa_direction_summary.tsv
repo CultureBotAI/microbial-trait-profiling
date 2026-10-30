@@ -1,8 +1,0 @@
-taxon_id	target_taxon_name	taxon_name	taxonomic_rank	bugsigdb_study_count	bugsigdb_profile_count	decreased	increased	dominant_direction	increased_fraction	increased_profile_tendency	increased_to_decreased_ratio	trait_count
-NCBITaxon:84112	Eggerthella lenta	Eggerthella lenta	species	20	21	1	20	increased	0.9523809523809523	0.9047619047619048	20.0	16
-NCBITaxon:851	Fusobacterium nucleatum	Fusobacterium nucleatum	species	18	19	3	16	increased	0.8421052631578947	0.6842105263157895	5.333333333333333	14
-NCBITaxon:33033	Parvimonas micra	Parvimonas micra	species	14	17	3	14	increased	0.8235294117647058	0.6470588235294118	4.666666666666667	13
-NCBITaxon:562	Escherichia coli	Escherichia coli	species	34	38	8	30	increased	0.7894736842105263	0.5789473684210527	3.75	81
-NCBITaxon:28131	Prevotella intermedia	Prevotella intermedia	species	16	18	4	14	increased	0.7777777777777778	0.5555555555555556	3.5	12
-NCBITaxon:1328	Streptococcus anginosus	Streptococcus anginosus	species	16	20	5	15	increased	0.75	0.5	3.0	21
-NCBITaxon:39778	Veillonella dispar	Veillonella dispar	species	18	25	7	18	increased	0.72	0.44	2.5714285714285716	8

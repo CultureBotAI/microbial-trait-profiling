@@ -1,2 +1,0 @@
-condition	taxon_id	taxon_name	taxonomic_rank	paired_study_count	reported_study_count	increased_reported_studies	decreased_reported_studies	increased_only_studies	decreased_only_studies	both_directions_studies	neither_direction_studies	discordant_study_count	directional_difference_fraction	direction	p_value	passes_min_taxon_studies	test	q_value	selected_after_bh
-Parkinson's disease	NCBITaxon:841	Roseburia	genus	36	18	1	17	1	17	0	18	18	-0.44444444	decreased	0.0001449585	True	exact McNemar/binomial test on discordant paired studies	0.020874023	True

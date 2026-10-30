@@ -1,2 +1,0 @@
-trait_id	trait_name	slug	base_color	paired_q_value	paired_p_value	paired_mean_increased_minus_decreased	paired_direction
-METPO:1000668	coccus shaped	coccus_shaped	#009e73	0.0063172192611699	0.0003177299628399	0.1624855457279763	trait enriched in increased profiles

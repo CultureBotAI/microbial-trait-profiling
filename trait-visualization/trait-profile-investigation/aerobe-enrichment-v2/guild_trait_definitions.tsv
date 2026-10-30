@@ -1,7 +1,0 @@
-trait_id	trait_id	profile_support	total_signal	composition_variance	display_label	column_label	object_name	object_category	display_category	selection_score	investigation_trait_name
-METPO:1000608	METPO:1000608	1555	1873779.0	0.0012800062396276	"facultatively aerobic
-METPO:1000608"	facultatively aerobic METPO:1000608	facultatively aerobic	biolink:PhenotypicQuality	PhenotypicQuality	0.018487729595713	facultatively aerobic
-METPO:1000602	METPO:1000602	1516	2436716.0	0.000801158229028	"aerobic
-METPO:1000602"	aerobic METPO:1000602	aerobic	biolink:PhenotypicQuality	PhenotypicQuality	0.0117819628635339	aerobic
-METPO:1000604	METPO:1000604	1543	536998.0	0.0003186482428386	"microaerophilic
-METPO:1000604"	microaerophilic METPO:1000604	microaerophilic	biolink:PhenotypicQuality	PhenotypicQuality	0.0042041657355229	microaerophilic

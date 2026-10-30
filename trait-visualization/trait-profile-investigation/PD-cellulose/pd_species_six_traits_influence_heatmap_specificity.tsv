@@ -1,4 +1,0 @@
-taxon_id	taxon_name	taxonomic_rank	pd_feces_profiles	other_feces_profiles	pd_other_feces_counts	pd_feces_studies	other_feces_studies	pd_specificity_fraction	pd_vs_other_feces_log2_ratio
-NCBITaxon:2173	Methanobrevibacter smithii	species	3	4	3/4	3	4	0.42857142857142855	-0.36257007938470825
-NCBITaxon:301302	Roseburia faecis	species	5	8	5/8	4	7	0.38461538461538464	-0.6280312226130421
-NCBITaxon:853	Faecalibacterium prausnitzii	species	9	41	9/41	5	30	0.18	-2.1271119179033393

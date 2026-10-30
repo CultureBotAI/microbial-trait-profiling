@@ -1,7 +1,0 @@
-guild	guild_traits	condition	profile_count	study_count	experiment_count	mean_guild_trait_signal	mean_relative_guild_signal	increased_mean_guild_trait_signal	decreased_mean_guild_trait_signal
-aerobe_v2	aerobic; microaerophilic; facultatively aerobic	Eczema	20	4	10	487.13336	0.025271531	141.66666	832.6
-aerobe_v2	aerobic; microaerophilic; facultatively aerobic	Multiple sclerosis	22	6	11	423.60608	0.015402952	391.21213	456.0
-aerobe_v2	aerobic; microaerophilic; facultatively aerobic	Pancreatic carcinoma	24	5	12	846.625	0.02302116	282.52777	1410.7223
-anaerobe_v2_depletion	anaerobic; obligately anaerobic	Eczema	20	4	10	279.825	0.031041041	176.4	383.25
-anaerobe_v2_depletion	anaerobic; obligately anaerobic	Multiple sclerosis	22	6	11	248.54546	0.051073205	366.9091	130.18182
-anaerobe_v2_depletion	anaerobic; obligately anaerobic	Pancreatic carcinoma	24	5	12	241.6875	0.028735891	190.04167	293.33334

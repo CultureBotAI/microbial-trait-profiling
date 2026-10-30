@@ -1,3 +1,0 @@
-condition	body_site_group	direction	direction_label	profile_count	study_count	experiment_count	aerobe_v2_mean_score	aerobe_v2_median_score	aerobe_v2_positive_profile_count	anaerobe_v2_mean_score	anaerobe_v2_median_score	anaerobe_v2_positive_profile_count
-Parkinson's disease	Feces	inc	Increased	70	36	70	-0.12630351801802164	0.1533311412487932	48	0.13684316831854632	0.21521615280121556	42
-Parkinson's disease	Feces	dec	Decreased	70	36	70	-0.5212342138965922	-0.8645480846538848	38	0.5456975056357951	0.7950452848093328	64

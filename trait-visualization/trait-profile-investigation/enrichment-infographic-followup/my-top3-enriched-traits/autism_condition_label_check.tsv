@@ -1,3 +1,0 @@
-exact_condition_label	efo_ids	profile_count	nonzero_profile_count	study_count	experiment_count	body_sites	mean_profile_trait_count	interpretation	recommended_group_label
-Autism	EFO:0003758	8	8	4	4	Feces	206.375	Distinct exact BugSigDB label; analyze separately unless an explicit autism/ASD grouping is declared.	Autism / autism spectrum disorder
-Autism spectrum disorder	EFO:0003756	4	4	2	2	Feces	123.75	Distinct exact BugSigDB label; analyze separately unless an explicit autism/ASD grouping is declared.	Autism / autism spectrum disorder

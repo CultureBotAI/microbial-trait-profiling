@@ -1,8 +1,0 @@
-taxon_id	target_taxon_name	taxonomic_rank	guild_trait_presence_count	anaerobic_present	anaerobic_count	obligately anaerobic_present	obligately anaerobic_count
-NCBITaxon:39485	Lachnospira eligens	species	2	True	2	True	1
-NCBITaxon:40518	Ruminococcus bromii	species	2	True	2	True	1
-NCBITaxon:39491	Agathobacter rectalis	species	1	True	3	False	0
-NCBITaxon:39488	Anaerobutyricum hallii	species	1	True	2	False	0
-NCBITaxon:853	Faecalibacterium prausnitzii	species	1	True	3	False	0
-NCBITaxon:166486	Roseburia intestinalis	species	1	True	4	False	0
-NCBITaxon:360807	Roseburia inulinivorans	species	1	True	2	False	0

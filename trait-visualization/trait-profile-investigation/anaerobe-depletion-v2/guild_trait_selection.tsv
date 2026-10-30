@@ -1,3 +1,0 @@
-guild	focus_direction	comparator_direction	candidate_universe_role	trait_id	trait_name	profile_matrix_object_name	profile_support	total_signal	composition_variance	kg_microbe_taxa_with_trait_count	selection_justification
-anaerobe v2	decreased	increased	core oxygen-tolerance trait	METPO:1000603	anaerobic	anaerobic	1814	1972136.0	0.0027957339149754	1884	Anaerobic oxygen-tolerance counterpart to the aerobe v2 trait set; selected for the decreased-profile comparison.
-anaerobe v2	decreased	increased	core oxygen-tolerance trait	METPO:1000607	obligately anaerobic	obligately anaerobic	1526	126287.0	0.000114728882547	414	Stricter anaerobe oxygen-tolerance concept; selected to keep the decreased-profile trait set parallel to oxygen-tolerance rather than fermentation metabolism.

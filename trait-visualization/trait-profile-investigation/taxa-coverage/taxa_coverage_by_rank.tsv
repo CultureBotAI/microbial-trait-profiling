@@ -1,7 +1,0 @@
-taxonomic_rank	display_rank	total_taxa	zero_trait_taxa	zero_trait_pct	sparse_1_2_taxa	sparse_1_2_pct	rich_gte_3_taxa	rich_gte_3_pct	trait_bearing_taxa	trait_bearing_pct	total_occurrences	zero_trait_occurrences	zero_trait_occurrences_pct	sparse_occurrences	rich_occurrences	trait_bearing_occurrences	trait_bearing_occurrences_pct	profiles_with_rank	profiles_with_rank_pct_of_all	profiles_all_mapped	profiles_all_mapped_pct	profiles_mixed_mapped_zero	profiles_mixed_pct	profiles_zero_only	profiles_zero_only_pct	profiles_any_mapped	profiles_any_mapped_pct
-species	Species	1983	696	35.1	120	6.05	1167	58.85	1287	64.9	6078	1182	19.45	223	4673	4896	80.55	893	47.75	520	58.23	272	30.46	101	11.31	792	88.69
-genus	Genus	842	103	12.23	21	2.49	718	85.27	739	87.77	8556	173	2.02	97	8286	8383	97.98	1454	77.75	1339	92.09	100	6.88	15	1.03	1439	98.97
-family	Family	202	26	12.87	1	0.5	175	86.63	176	87.13	2392	71	2.97	1	2320	2321	97.03	783	41.87	725	92.59	44	5.62	14	1.79	769	98.21
-order	Order	99	19	19.19	1	1.01	79	79.8	80	80.81	964	28	2.9	1	935	936	97.1	444	23.74	426	95.95	5	1.13	13	2.93	431	97.07
-class	Class	50	8	16.0	0	0.0	42	84.0	42	84.0	683	9	1.32	0	674	674	98.68	390	20.86	384	98.46	0	0.0	6	1.54	384	98.46
-phylum	Phylum	45	6	13.33	5	11.11	34	75.56	39	86.67	893	15	1.68	9	869	878	98.32	515	27.54	502	97.48	9	1.75	4	0.78	511	99.22

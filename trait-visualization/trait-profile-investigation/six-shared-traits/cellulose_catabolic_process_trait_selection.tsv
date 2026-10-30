@@ -1,2 +1,0 @@
-trait_id	trait_name	slug	base_color	paired_q_value	paired_p_value	paired_mean_increased_minus_decreased	paired_direction
-METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	5.2684562368762426e-06	1.5587148629811368e-08	-0.2482695891982761	trait enriched in decreased profiles
