@@ -398,6 +398,7 @@ def overlap_pages(bundle: OverlapInputs) -> Iterator[Page]:
     """Display all unordered pairs, omitting the unobserved diagonal and lower triangle."""
     audit = overlap_audit(bundle)
     count = len(bundle.trait_ids)
+    matrix_taxa = _count(audit.matrix_taxa_total.iloc[0])
     labels = [
         _wrap(bundle.labels[trait], 43) + "\n" + _wrap(trait, 45) for trait in bundle.trait_ids
     ]
@@ -420,6 +421,12 @@ def overlap_pages(bundle: OverlapInputs) -> Iterator[Page]:
             a, b = positions[str(row["trait_a_id"])], positions[str(row["trait_b_id"])]
             missing = row["overlap_status"] == "undefined_empty_union"
             value = 0.0 if missing else _finite(row["jaccard_pct"])
+            if missing:
+                display = "—"
+            elif 0 < value < 0.05:
+                display = "<0.1"
+            else:
+                display = f"{value:.1f}"
             patch = Rectangle(
                 (b, a),
                 1,
@@ -432,7 +439,7 @@ def overlap_pages(bundle: OverlapInputs) -> Iterator[Page]:
             axis.text(
                 b + 0.5,
                 a + 0.5,
-                validate_authored_wording("—" if missing else f"{value:.1f}"),
+                validate_authored_wording(display),
                 ha="center",
                 va="center",
                 fontsize=8,
@@ -489,7 +496,8 @@ def overlap_pages(bundle: OverlapInputs) -> Iterator[Page]:
             0.05,
             0.13 / height,
             validate_authored_wording(
-                "Positive annotation counts define carriers across all matrix taxa. "
+                "Positive annotation counts define carriers across "
+                f"all {matrix_taxa:,} matrix taxa. "
                 "—: empty union; diagonal not shown."
             ),
             fontsize=8,
@@ -502,7 +510,7 @@ def overlap_pages(bundle: OverlapInputs) -> Iterator[Page]:
                 "pair_count": len(audit),
                 "trait_ids": list(bundle.trait_ids),
                 "undefined_pairs": int(audit.overlap_status.eq("undefined_empty_union").sum()),
-                "matrix_taxa_total": _count(audit.matrix_taxa_total.iloc[0]),
+                "matrix_taxa_total": matrix_taxa,
                 "units": "taxon-carrier Jaccard percent",
                 "context": bundle.context.copy(),
                 "selection": "all unordered pairs in declared trait-list order; no diagonal",

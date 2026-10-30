@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import re
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import pandas as pd
 import pytest
@@ -81,7 +81,7 @@ def test_table_preserves_every_saved_value_and_unselected_trait() -> None:
 
 
 def test_renderer_uses_complete_tied_union_in_experiment_directional_order() -> None:
-    pages = list(rank_sensitivity_pages(source(), top_n=2))
+    pages = list(rank_sensitivity_pages(source(), trait_key_policy="raw_object_v1", top_n=2))
     assert [trait for page in pages for trait in page.row_ids] == list("ABCDHGFE")
     assert sum(page.mark_count for page in pages) == 16
     assert all(page.details["retained_family_count"] == 9 for page in pages)
@@ -101,7 +101,7 @@ def test_saved_rank_is_not_recomputed_from_selected_rows(monkeypatch: pytest.Mon
     monkeypatch.setattr(pd.Series, "mean", forbidden)
     result = rank_sensitivity_table(source(), top_n=2)
     assert result.loc[result.trait.eq("C"), "study_mean_delta_z_rank_descending"].item() == 2
-    assert list(rank_sensitivity_pages(source(), top_n=2))
+    assert list(rank_sensitivity_pages(source(), trait_key_policy="raw_object_v1", top_n=2))
 
 
 @pytest.mark.parametrize("column", ["study_mean_delta_z", "experiment_mean_delta_z", *RANKS])
@@ -149,11 +149,11 @@ def test_all_rendered_authored_text_is_guarded_and_source_label_is_exempt(
         return original(value)
 
     monkeypatch.setattr(rank_sensitivity, "validate_authored_wording", record)
-    pages = list(rank_sensitivity_pages(bundle, top_n=2))
+    pages = list(rank_sensitivity_pages(bundle, trait_key_policy="raw_object_v1", top_n=2))
     text = rendered(pages)
     assert "Native redox label" in text
     assert all("Native redox label" not in value for value in seen)
-    assert any("Secondary weighting sensitivity" in value for value in seen)
+    assert any("Study-weighted rank sensitivity" in value for value in seen)
     assert any("equal study weights" in value for value in seen)
     # Independent lexical check after removing only the known literal source label.
     assert not re.search(
@@ -178,11 +178,14 @@ def test_large_tie_family_paginates_without_omitting_rows() -> None:
     cast("SimpleNamespace", bundle.parent).evidence = frame
     bundle.parent.record["retained_traits"] = frame.trait.tolist()
     bundle.labels.update(dict(zip(frame.trait, frame.trait_label, strict=True)))
-    pages = list(rank_sensitivity_pages(bundle, top_n=2))
+    pages = list(rank_sensitivity_pages(bundle, trait_key_policy="raw_object_v1", top_n=2))
     assert len(pages) > 1
     assert [trait for page in pages for trait in page.row_ids] == frame.trait.tolist()
     assert sum(page.mark_count for page in pages) == 70
     assert all(page.figure.get_figheight() <= 10.5 for page in pages)
+    for page in pages:
+        assert page.details["trait_key_policy"] == "raw_object_v1"
+        assert "trait keys: raw_object_v1" in rendered([page])
 
 
 def test_zero_only_family_keeps_audit_and_renders_explicit_empty_state() -> None:
@@ -191,8 +194,47 @@ def test_zero_only_family_keeps_audit_and_renders_explicit_empty_state() -> None
     result = rank_sensitivity_table(bundle)
     assert len(result) == 9
     assert not result.selected_for_display.any()
-    pages = list(rank_sensitivity_pages(bundle))
+    pages = list(rank_sensitivity_pages(bundle, trait_key_policy="raw_object_v1"))
     assert len(pages) == 1
     assert pages[0].row_ids == []
     assert pages[0].mark_count == 0
     assert "No traits meet" in rendered(pages)
+
+
+@pytest.mark.parametrize("policy", ["raw_object_v1", "facultative_union_v1"])
+def test_explicit_trait_policy_and_study_weighting_are_visible_without_changing_values(
+    policy: str,
+) -> None:
+    bundle = source()
+    # The rendering argument is supplied from the verified core by the publisher;
+    # the renderer must not guess semantics from a label or an unbound record field.
+    bundle.record["trait_key_policy"] = "unverified-policy"
+    bundle.labels["A"] = "Verified annotation label"
+    before = rank_sensitivity_table(bundle, top_n=2)
+    pages = list(rank_sensitivity_pages(bundle, trait_key_policy=policy, top_n=2))
+    for page in pages:
+        text = rendered([page])
+        assert "Study-weighted rank sensitivity" in text
+        assert f"trait keys: {policy}" in text
+        assert "unverified-policy" not in text
+        assert page.details["trait_key_policy"] == policy
+    assert [trait for page in pages for trait in page.row_ids] == list("ABCDHGFE")
+    assert sum(page.mark_count for page in pages) == 16
+    pd.testing.assert_frame_equal(rank_sensitivity_table(bundle, top_n=2), before)
+
+
+def test_title_names_study_weighted_rank_sensitivity() -> None:
+    pages = list(rank_sensitivity_pages(source(), trait_key_policy="raw_object_v1"))
+    assert "Study-weighted rank sensitivity" in rendered(pages)
+
+
+def test_trait_policy_argument_is_required() -> None:
+    omitted: dict[str, Any] = {}
+    with pytest.raises(TypeError, match="trait_key_policy"):
+        list(rank_sensitivity_pages(source(), **omitted))
+
+
+@pytest.mark.parametrize("policy", [None, "", "unknown", "raw_object_v0"])
+def test_missing_or_unknown_trait_policy_refuses(policy: object) -> None:
+    with pytest.raises(ValueError, match="trait_key_policy"):
+        list(rank_sensitivity_pages(source(), trait_key_policy=cast("str", policy)))

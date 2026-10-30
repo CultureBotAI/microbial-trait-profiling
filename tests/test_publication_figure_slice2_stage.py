@@ -21,6 +21,11 @@ from mtp.paths import file_sha256
 from mtp.publication_figures import slice2
 from mtp.publication_figures.plots import Page
 from mtp.three_test_table import source_paths
+from mtp.workflow.trait_policy import (
+    HISTORICAL_MATRIX_POLICIES,
+    MATRIX_SOURCE,
+    resolve_trait_policy,
+)
 
 
 @pytest.fixture
@@ -34,9 +39,16 @@ def sources(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
         "strain_rollup": "phenotype",
         "contrast_population": "disease_vs_healthy_tier1_2_subject_controls",
         "direction_basis": "disease_vs_comparison",
+        "trait_key_policy": "raw_object_v1",
+        "source_commit": "b" * 40,
     }
     snapshots = {source: {"sha256": file_sha256(source), "size_bytes": source.stat().st_size}}
     targets = {source: source.resolve()}
+    matrix_sha256, matrix_size = next(
+        identity
+        for identity, policy in HISTORICAL_MATRIX_POLICIES.items()
+        if policy == "raw_object_v1"
+    )
     parent = SimpleNamespace(
         record={
             **context,
@@ -44,7 +56,22 @@ def sources(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Any:
             "code_commit": "a" * 40,
             "source_commits": {"core": "b" * 40},
         },
-        sources=SimpleNamespace(comparison=SimpleNamespace(core_manifest_sha256="e" * 64)),
+        sources=SimpleNamespace(
+            comparison=SimpleNamespace(core_manifest_sha256="e" * 64),
+            core=SimpleNamespace(
+                trait_key_policy=None,
+                code_inventory=[
+                    SimpleNamespace(
+                        path=MATRIX_SOURCE,
+                        sha256=matrix_sha256,
+                        size_bytes=matrix_size,
+                    )
+                ],
+                parameters=[],
+                definition=SimpleNamespace(parameters=[], steps=[]),
+                steps=[],
+            ),
+        ),
     )
     bundle = SimpleNamespace(
         parent=parent, record={"run_id": "derived-1"}, snapshots=snapshots, targets=targets
@@ -418,6 +445,83 @@ def test_historical_v1_scan_remains_standalone_without_pairing_identity(
         output=tmp_path / "historical", figures=("candidate-triples",), **sources.args
     )
     assert set(result["figures"]) == {"candidate-triples"}
+
+
+@pytest.mark.parametrize("policy", ["raw_object_v1", "facultative_union_v1"])
+def test_policy_is_resolved_once_from_verified_core_and_bound_to_every_figure(
+    sources: Any, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, policy: str
+) -> None:
+    core = sources.bundle.parent.sources.core
+    implementation = core.code_inventory[0]
+    implementation.sha256, implementation.size_bytes = next(
+        identity
+        for identity, resolved_policy in HISTORICAL_MATRIX_POLICIES.items()
+        if resolved_policy == policy
+    )
+    # A copied descriptive field must not override the verified core's rule.
+    sources.bundle.parent.record["trait_key_policy"] = "untrusted copied label"
+    sources.scan.context["trait_key_policy"] = policy
+    sources.overlap.context["trait_key_policy"] = policy
+    resolver = Mock(wraps=resolve_trait_policy)
+    monkeypatch.setattr(slice2, "resolve_trait_policy", resolver, raising=False)
+    pages = Mock(side_effect=sources.pages)
+    monkeypatch.setattr(slice2, "rank_sensitivity_pages", pages)
+    output = tmp_path / "figures"
+    slice2.build_slice2_figures(output=output, **sources.args)
+    resolver.assert_called_once_with(core)
+    assert pages.call_args.kwargs["trait_key_policy"] == policy
+    for name in slice2.FIGURES:
+        record = json.loads((output / name / "provenance.json").read_bytes())
+        assert record["context"]["trait_key_policy"] == policy
+
+
+@pytest.mark.parametrize("role", ["scan", "overlap"])
+def test_sidecar_trait_policy_must_match_verified_parent(
+    sources: Any, tmp_path: Path, role: str
+) -> None:
+    getattr(sources, role).context["trait_key_policy"] = "facultative_union_v1"
+    output = tmp_path / "fresh" / "figures"
+    with pytest.raises(ValueError, match=r"trait.*policy"):
+        slice2.build_slice2_figures(output=output, **sources.args)
+    assert not output.parent.exists()
+
+
+def test_unknown_core_policy_is_refused_before_any_output(sources: Any, tmp_path: Path) -> None:
+    sources.bundle.parent.sources.core.code_inventory[0].sha256 = "f" * 64
+    output = tmp_path / "fresh" / "figures"
+    with pytest.raises(ValueError, match="Unknown historical matrix implementation"):
+        slice2.build_slice2_figures(output=output, **sources.args)
+    assert not output.parent.exists()
+
+
+@pytest.mark.parametrize("role", ["scan", "overlap"])
+@pytest.mark.parametrize(
+    "change",
+    ["parent_inventory", "parent_core", "parent_invalid", "sidecar_missing", "sidecar_null"],
+)
+def test_source_commit_check_never_silently_skips_missing_or_invalid_identity(
+    sources: Any, tmp_path: Path, role: str, change: str
+) -> None:
+    record = sources.bundle.parent.record
+    sidecar = getattr(sources, role)
+    if change == "parent_inventory":
+        record.pop("source_commits")
+    elif change == "parent_core":
+        record["source_commits"].pop("core")
+    elif change == "parent_invalid":
+        record["source_commits"]["core"] = "not-a-commit"
+        sidecar.context["source_commit"] = "not-a-commit"
+        # Both source roles carry the same false value, avoiding an unrelated refusal.
+        sources.scan.context["source_commit"] = "not-a-commit"
+        sources.overlap.context["source_commit"] = "not-a-commit"
+    elif change == "sidecar_missing":
+        sidecar.context.pop("source_commit")
+    else:
+        sidecar.context["source_commit"] = None
+    output = tmp_path / "fresh" / "figures"
+    with pytest.raises(ValueError, match=r"source.*commit"):
+        slice2.build_slice2_figures(output=output, **sources.args)
+    assert not output.parent.exists()
 
 
 def test_slice2_checks_producer_again_before_publishing(

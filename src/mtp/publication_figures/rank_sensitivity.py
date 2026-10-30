@@ -28,6 +28,7 @@ from mtp.publication_figures.plots import (
     _wrap,
     validate_authored_wording,
 )
+from mtp.trait_key_policy import parse_trait_key_policy
 
 if TYPE_CHECKING:
     from mtp.publication_figures.inputs import FigureInputs
@@ -123,8 +124,11 @@ def _authored(figure: Figure, x: float, y: float, value: str, **kwargs: Any) -> 
     figure.text(x, y, validate_authored_wording(value), fontsize=FONT, **kwargs)
 
 
-def rank_sensitivity_pages(bundle: FigureInputs, *, top_n: int = 5) -> Iterator[Page]:
-    """Paginate every trait selected by either saved weighting, without inference."""
+def rank_sensitivity_pages(
+    bundle: FigureInputs, *, trait_key_policy: str, top_n: int = 5
+) -> Iterator[Page]:
+    """Display saved selections and the policy supplied from the verified core."""
+    policy = parse_trait_key_policy(trait_key_policy)
     audit = rank_sensitivity_table(bundle, top_n=top_n)
     rows = [
         {str(key): value for key, value in row.items()}
@@ -152,7 +156,7 @@ def rank_sensitivity_pages(bundle: FigureInputs, *, top_n: int = 5) -> Iterator[
         with matplotlib.rc_context(STYLE):
             figure = _figure(height)
 
-            _authored(figure, 0.04, 1 - 0.20 / height, "Secondary weighting sensitivity", va="top")
+            _authored(figure, 0.04, 1 - 0.20 / height, "Study-weighted rank sensitivity", va="top")
             _authored(
                 figure,
                 0.04,
@@ -161,7 +165,8 @@ def rank_sensitivity_pages(bundle: FigureInputs, *, top_n: int = 5) -> Iterator[
                     f"Top {top_n} saved ranks per direction; union of both weightings. "
                     + _context(bundle),
                     105,
-                ),
+                )
+                + f"\ntrait keys: {policy}",
                 va="top",
             )
             columns = (0.04, 0.45, 0.56, 0.67, 0.78, 0.91)
@@ -236,6 +241,7 @@ def rank_sensitivity_pages(bundle: FigureInputs, *, top_n: int = 5) -> Iterator[
                 [str(row["trait"]) for row, _, _ in group],
                 marks,
                 {
+                    "trait_key_policy": policy,
                     "top_n": top_n,
                     "retained_family_count": len(audit),
                     "selected_trait_ids": selected_ids,

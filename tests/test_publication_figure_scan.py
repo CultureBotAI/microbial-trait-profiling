@@ -5,7 +5,7 @@ from __future__ import annotations
 import gzip
 import hashlib
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from itertools import combinations
 from pathlib import Path
 from typing import Any
@@ -18,7 +18,9 @@ from matplotlib.text import Text
 from mtp.cellulose_decr import selection_scan as native
 from mtp.datamodel.workflow_pydantic import ConsumerRecord
 from mtp.publication_figures import scan
+from mtp.publication_figures.inputs import _table
 from mtp.publication_figures.plots import validate_authored_wording
+from mtp.workflow.trait_policy import HISTORICAL_MATRIX_POLICIES, MATRIX_SOURCE
 
 TRAIT = "METPO:2000103|GO:0030245"
 LABEL = "capable of: cellulose catabolic process GO:0030245 [METPO:2000103]"
@@ -102,7 +104,11 @@ def fixture(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Fixture:
         "definition_sha256": "a" * 64,
         "execution_fingerprint": "a" * 64,
         "code_sha256": "a" * 64,
-        "code_inventory": [],
+        "code_inventory": [
+            {"path": MATRIX_SOURCE, "sha256": digest, "size_bytes": size}
+            for (digest, size), policy in HISTORICAL_MATRIX_POLICIES.items()
+            if policy == "raw_object_v1"
+        ],
         "lock_sha256": "a" * 64,
         "git_commit": "a" * 40,
         "git_dirty": False,
@@ -293,9 +299,9 @@ def test_historical_v1_preserves_role_labels_and_every_candidate(fixture: Fixtur
     assert bundle.context["historical"] is True
     assert bundle.context["report_beside"] == []
     audit = scan.scan_audit(bundle)
-    assert len(audit) == 6
+    assert len(audit) == 8
     assert set(audit["trait_label"]) == {LABEL}
-    assert set(audit["rank_min"]) == {1, 2, 3}
+    assert set(audit["rank_min"].dropna()) == {1, 2, 3}
     pages = list(scan.scan_pages(bundle))
     assert len(pages) == 1
     assert pages[0].mark_count == 6
@@ -616,7 +622,7 @@ def test_native_default_consumer_binds_reported_taxa_through_verified_core(
     assert bundle.snapshots[source] == identity(source)
     assert bundle.targets[source] == source.resolve()
     assert source.parent in bundle.source_roots
-    assert len(scan.scan_audit(bundle)) == 6
+    assert len(scan.scan_audit(bundle)) == 8
     assert bundle.context["protocol_version"] == version
 
 
@@ -655,3 +661,160 @@ def test_late_scan_only_source_mutation_is_refused(fixture: Fixture) -> None:
     source.write_bytes(source.read_bytes() + b"changed\n")
     with pytest.raises(ValueError, match="Scan input hash changed"):
         scan.recheck_scan_inputs(bundle)
+
+
+def set_metadata(fixture: Fixture, object_name: str) -> None:
+    frame = pd.read_csv(fixture.metadata, sep="\t", keep_default_na=False)
+    frame["object_name"] = object_name
+    frame.to_csv(fixture.metadata, sep="\t", index=False)
+    core = json.loads(fixture.core.read_bytes())
+    item = next(row for row in core["artifacts"] if row["product_id"] == "feature_metadata")
+    item.update(identity(fixture.metadata))
+    fixture.provenance["inputs"]["feature_metadata"].update(
+        sha256=item["sha256"], bytes=item["size_bytes"]
+    )
+    rebind_core(fixture, core)
+
+
+@pytest.mark.parametrize("object_name", ["cellulose catabolic process", ""])
+def test_display_label_uses_object_name_with_native_column_label_check(
+    fixture: Fixture, object_name: str
+) -> None:
+    set_metadata(fixture, object_name)
+    bundle = fixture.load()
+    expected = object_name or LABEL
+    assert bundle.labels[TRAIT] == expected
+    assert set(scan.scan_audit(bundle)["trait_label"]) == {expected}
+    text = " ".join(item.get_text() for item in next(scan.scan_pages(bundle)).figure.findobj(Text))
+    assert expected in text
+    if object_name:
+        assert LABEL not in text
+    fixture.traits.loc[0, "trait_label"] = "A different native label"
+    with pytest.raises(ValueError, match="label differs from bound metadata"):
+        fixture.load()
+
+
+@pytest.mark.parametrize("status", [native.NO_TAXA, native.POOL_TOO_SMALL])
+def test_audit_keeps_untestable_candidates_without_plotted_marks(
+    fixture: Fixture, status: str
+) -> None:
+    fixture.triples.loc[3, "test_status"] = status
+    if status == native.NO_TAXA:
+        fixture.triples.loc[3, ["n_a", "n_b", "n_c", native.CORE, "three_way_union"]] = 0
+    bundle = fixture.load()
+    audit = scan.scan_audit(bundle)
+    assert len(audit) == 8  # Four triples, two statistics, including untested rows.
+    untested = audit.loc[audit["test_status"].eq(status)]
+    assert len(untested) == 2
+    assert not untested["plotted"].any()
+    assert untested["p_value"].isna().all()
+    assert untested["rank_min"].isna().all()
+    page = next(scan.scan_pages(bundle))
+    assert page.mark_count == 6
+    assert set(page.row_ids) == set(audit.loc[audit["plotted"], "row_id"])
+    assert not set(untested["row_id"]) & set(page.row_ids)
+    assert page.details["candidate_triples"] == 4
+    assert page.details["tested_triples"] == 3
+    assert page.details["untestable_triples"] == 1
+
+
+def test_row_ids_are_unique_across_scope_pages(fixture: Fixture) -> None:
+    phenotype = fixture.load()
+    off = replace(phenotype, context={**phenotype.context, "strain_rollup": "off"})
+    audits = pd.concat([scan.scan_audit(phenotype), scan.scan_audit(off)], ignore_index=True)
+    assert not audits["row_id"].duplicated().any()
+    ids = [
+        row_id for bundle in (phenotype, off) for row_id in next(scan.scan_pages(bundle)).row_ids
+    ]
+    assert len(ids) == len(set(ids)) == 12
+
+
+@pytest.mark.parametrize("policy", ["raw_object_v1", "facultative_union_v1"])
+def test_scan_resolves_and_displays_bound_policy_once(
+    fixture: Fixture, monkeypatch: pytest.MonkeyPatch, policy: str
+) -> None:
+    from mtp.workflow.trait_policy import resolve_trait_policy
+
+    core = json.loads(fixture.core.read_bytes())
+    digest, size = next(key for key, value in HISTORICAL_MATRIX_POLICIES.items() if value == policy)
+    core["code_inventory"] = [{"path": MATRIX_SOURCE, "sha256": digest, "size_bytes": size}]
+    rebind_core(fixture, core)
+    calls: list[str] = []
+
+    def resolved(run: Any) -> Any:
+        calls.append(run.run_id)
+        return resolve_trait_policy(run)
+
+    monkeypatch.setattr(scan, "resolve_trait_policy", resolved, raising=False)
+    bundle = fixture.load()
+    assert calls == ["core-fixture"]
+    assert bundle.context["trait_key_policy"] == policy
+    page = next(scan.scan_pages(bundle))
+    assert page.details["trait_key_policy"] == policy
+    text = " ".join(item.get_text() for item in page.figure.findobj(Text))
+    assert f"trait keys: {policy}" in text
+
+
+def test_scan_refuses_unknown_historical_policy(fixture: Fixture) -> None:
+    core = json.loads(fixture.core.read_bytes())
+    core["code_inventory"][0]["sha256"] = "0" * 64
+    rebind_core(fixture, core)
+    with pytest.raises(ValueError, match="Unknown historical matrix implementation"):
+        fixture.load()
+
+
+def test_scan_explains_rank_null_and_readable_recorded_role(fixture: Fixture) -> None:
+    page = next(scan.scan_pages(fixture.load()))
+    text = " ".join(" ".join(item.get_text() for item in page.figure.findobj(Text)).split())
+    assert "rank 1 = smallest nominal p-value" in text
+    assert "U6: whole-study-signature null" in text
+    assert "distinct studies" in text
+    assert "declared sensitivity" in text
+    assert "declared_sensitivity" not in text
+
+
+def test_callout_conditions_come_from_record_not_fixed_abbreviations(fixture: Fixture) -> None:
+    bundle = fixture.load()
+    summary = {**bundle.summary, "lead_triple": {"conditions": ["Alpha", "Beta", "Gamma"]}}
+    page = next(scan.scan_pages(replace(bundle, summary=summary)))
+    text = " ".join(item.get_text() for item in page.figure.findobj(Text))
+    assert "Alpha / Beta / Gamma" in text
+    assert "PD / HIV / CRC" not in text
+    assert "Parkinson's disease" not in text
+
+
+def test_numeric_callout_equality_does_not_depend_on_text_spelling(fixture: Fixture) -> None:
+    fixture.triples[native.MEAN_DISTANCE] = fixture.triples[native.MEAN_DISTANCE].astype(object)
+    fixture.triples[native.CORE] = fixture.triples[native.CORE].astype(object)
+    fixture.triples.loc[0, native.MEAN_DISTANCE] = "1"
+    fixture.traits.loc[0, "lead_" + native.MEAN_DISTANCE] = 1.0
+    fixture.triples.loc[0, native.CORE] = "1.0"
+    fixture.traits.loc[0, "lead_" + native.CORE] = 1
+    fixture.load()
+
+
+def test_late_focal_rows_have_consistent_whole_table_parsing(fixture: Fixture) -> None:
+    """#1240: blanks after the first 32,768 rows must not create mixed Python types."""
+    bundle = fixture.load()
+    before = pd.concat([fixture.triples.iloc[[0]]] * 33000, ignore_index=True)
+    before["trait_id"] = "other-trait"
+    frame = pd.concat([before, fixture.triples], ignore_index=True)
+    # Force the native-size parser chunk boundary (at least 33 columns).
+    for index in range(12):
+        frame[f"extra_{index}"] = 0
+    parsed = _table(frame.to_csv(sep="\t", index=False).encode())
+    column = parsed["u6_p_mean_distance"]
+    assert {type(value) for value in column} == {str}
+    focal = parsed.loc[parsed["trait_id"].eq(TRAIT)].copy()
+    assert len(focal) == 4
+    assert len(parsed) > 32768
+    reloaded = replace(bundle, tables={**bundle.tables, "triples": focal})
+    scan._validate(reloaded, native.load_protocol(native.PROTOCOLS[native.VERSION_V1]))
+    assert scan.scan_audit(reloaded)["p_value"].dropna().tolist() == [
+        0.05,
+        0.05,
+        0.9,
+        0.8,
+        0.1,
+        0.8,
+    ]

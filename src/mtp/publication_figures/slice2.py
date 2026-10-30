@@ -8,6 +8,7 @@ the native statistical producers.
 from __future__ import annotations
 
 import argparse
+import re
 import shutil
 import uuid
 from collections.abc import Iterable, Iterator, Sequence
@@ -36,6 +37,7 @@ from mtp.publication_figures.stage import _manifest, _producer, _source_roots, _
 from mtp.three_test_table import source_paths
 from mtp.three_test_table.stage import _disjoint, _inventory, _publish_directory
 from mtp.workflow.output_roots import add_temporary_output_option, require_durable_output_path
+from mtp.workflow.trait_policy import resolve_trait_policy
 
 VERSION = "publication-figures-slice2-v1"
 FIGURES = ("rank-sensitivity", "candidate-triples", "trait-overlap")
@@ -215,6 +217,8 @@ def build_slice2_figures(
         derived_sha256=derived_sha256,
     )
     context = {key: bundle.parent.record[key] for key in CONTEXT}
+    policy = resolve_trait_policy(bundle.parent.sources.core).policy
+    context["trait_key_policy"] = policy
     core_manifest_sha256 = bundle.parent.sources.comparison.core_manifest_sha256
     context["core_manifest_sha256"] = core_manifest_sha256
     # Include the original parent record: this binds comparison, arm and basis identities.
@@ -239,16 +243,21 @@ def build_slice2_figures(
             continue
         if any(sidecar.context.get(key) != context[key] for key in CONTEXT):
             raise ValueError(f"Figure source context differs for {role}")
+        if sidecar.context.get("trait_key_policy") != policy:
+            raise ValueError(f"Figure source trait-key policy differs for {role}")
         sidecar_core_pin = (
             sidecar.core_manifest_sha256 if role == "scan" else sidecar.consumer.run_manifest_sha256
         )
         if sidecar_core_pin != core_manifest_sha256:
             raise ValueError(f"Figure source core manifest differs for {role}")
-        source_commit = bundle.parent.record.get("source_commits", {}).get("core")
+        source_commits = bundle.parent.record.get("source_commits")
+        source_commit = source_commits.get("core") if isinstance(source_commits, dict) else None
         if (
-            source_commit is not None
-            and sidecar.context.get("source_commit", source_commit) != source_commit
+            not isinstance(source_commit, str)
+            or re.fullmatch(r"[0-9a-f]{40}", source_commit) is None
         ):
+            raise ValueError("Figure parent source core commit is missing or invalid")
+        if sidecar.context.get("source_commit") != source_commit:
             raise ValueError(f"Figure source context commit differs for {role}")
     if scans:
         companion_scopes = scans[0].context.get("report_beside", [])
@@ -268,6 +277,7 @@ def build_slice2_figures(
                         "direction_basis",
                         "source_commit",
                         "protocol_version",
+                        "trait_key_policy",
                     )
                 )
             ):
@@ -306,7 +316,7 @@ def build_slice2_figures(
         for name in figures:
             if name == "rank-sensitivity":
                 audit = rank_sensitivity_table(bundle, top_n=top_n)
-                pages = rank_sensitivity_pages(bundle, top_n=top_n)
+                pages = rank_sensitivity_pages(bundle, trait_key_policy=policy, top_n=top_n)
                 selected_sources = {"derived": bundle}
                 selection = {
                     "headline_ranking": "experiment_mean_delta_z",
@@ -331,6 +341,7 @@ def build_slice2_figures(
                 }
                 selection = {
                     "reference_set": "all_tested_triples",
+                    "audit_population": "all_candidate_triples_including_untestable",
                     "sampling": "none",
                     "quantity": "candidate_triple_distribution",
                     "scopes": [item.context["strain_rollup"] for item in scans],

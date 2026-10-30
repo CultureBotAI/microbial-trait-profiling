@@ -34,6 +34,7 @@ from mtp.publication_figures.plots import (
 )
 from mtp.trait_screen import TESTED
 from mtp.workflow.consumers import verify_consumer_record
+from mtp.workflow.trait_policy import resolve_trait_policy
 
 KEYS = ["trait_id", "condition_a", "condition_b", "condition_c"]
 STATS = {
@@ -54,6 +55,7 @@ class ScanFigureInputs:
     context: dict[str, Any]
     summary: dict[str, Any]
     labels: dict[str, str]
+    native_labels: dict[str, str]
     core_manifest_sha256: str
     pairing_identity: dict[str, Any] | None
     native_run: scopes.ScanRun
@@ -80,15 +82,20 @@ def _count(value: Any, description: str) -> int:
     return int(value)
 
 
-def _labels(metadata: pd.DataFrame) -> dict[str, str]:
+def _labels(metadata: pd.DataFrame, *, display: bool) -> dict[str, str]:
     _require(
         {"column_id", "column_label"}.issubset(metadata), "Scan label metadata columns missing"
     )
     _require(not metadata["column_id"].duplicated().any(), "Duplicate scan metadata trait")
-    result = dict(
-        zip(metadata["column_id"].astype(str), metadata["column_label"].astype(str), strict=True)
+    result = {
+        str(row["column_id"]): str(
+            (row.get("object_name") or row["column_label"]) if display else row["column_label"]
+        )
+        for row in metadata.to_dict("records")
+    }
+    _require(
+        all(result) and all(value.strip() for value in result.values()), "Blank verified scan label"
     )
-    _require(all(result) and all(result.values()), "Blank verified scan label")
     return result
 
 
@@ -152,7 +159,7 @@ def _validate(bundle: ScanFigureInputs, protocol: native.Protocol) -> None:
         _require(actual == expected_keys, "Incomplete or unexpected scan candidate population")
         label = traits.loc[traits["trait_id"].eq(trait), "trait_label"].item()
         _require(
-            trait in bundle.labels and label == bundle.labels[trait],
+            trait in bundle.native_labels and label == bundle.native_labels[trait],
             "Scan trait label differs from bound metadata",
         )
     mine = triples[triples["trait_id"].eq(protocol.lead_trait)].copy()
@@ -201,9 +208,14 @@ def _validate(bundle: ScanFigureInputs, protocol: native.Protocol) -> None:
         str(trait["is_lead_trait"]) == "True" and str(trait["lead_in_scan"]) == "True",
         "Scan trait callout flag differs",
     )
-    for name in (*KEYS[1:], "test_status", native.MEAN_DISTANCE, native.CORE):
+    for name in (*KEYS[1:], "test_status"):
         _require(
             str(trait[f"lead_{name}"]) == str(lead[name]), f"Scan trait callout differs: {name}"
+        )
+    for name in (native.MEAN_DISTANCE, native.CORE):
+        _require(
+            float(trait[f"lead_{name}"]) == float(lead[name]),
+            f"Scan trait callout differs: {name}",
         )
     own = distribution[distribution["trait_id"].eq(protocol.lead_trait)]
     _require(
@@ -325,6 +337,7 @@ def load_scan_inputs(path: Path, *, manifest_sha256: str) -> ScanFigureInputs:
     core_raw = _read(core_path, snapshots, targets, digest=record.run_manifest_sha256)
     core = WorkflowRun.model_validate_json(core_raw)
     _require(core.run_id == record.run_id, "Scan core execution differs")
+    policy = resolve_trait_policy(core).policy
     scopes.check_bound_core(root, summary, provenance, core, record.run_manifest_sha256, protocol)
     _require(
         str(core.contrast_population) == native.TIER1_2
@@ -408,6 +421,7 @@ def load_scan_inputs(path: Path, *, manifest_sha256: str) -> ScanFigureInputs:
         "scope_role": rollup["role"],
         "report_beside": beside,
         "historical": protocol.version == native.VERSION_V1,
+        "trait_key_policy": policy,
     }
     native_run = scopes.ScanRun(
         root,
@@ -422,6 +436,7 @@ def load_scan_inputs(path: Path, *, manifest_sha256: str) -> ScanFigureInputs:
         core.run_id,
     )
     pairing_identity = scopes.comparable(native_run) if protocol.version == native.VERSION else None
+    metadata = _table(source_buffers["feature_metadata"])
     bundle = ScanFigureInputs(
         provenance,
         snapshots,
@@ -430,7 +445,8 @@ def load_scan_inputs(path: Path, *, manifest_sha256: str) -> ScanFigureInputs:
         list(dict.fromkeys(roots)),
         context,
         summary,
-        _labels(_table(source_buffers["feature_metadata"])),
+        _labels(metadata, display=True),
+        _labels(metadata, display=False),
         record.run_manifest_sha256,
         pairing_identity,
         native_run,
@@ -452,18 +468,20 @@ def recheck_scan_inputs(bundle: ScanFigureInputs) -> None:
 
 
 def scan_audit(bundle: ScanFigureInputs) -> pd.DataFrame:
-    """Every plotted candidate/statistic with original p and saved rank; no thinning."""
+    """Every candidate/statistic, including untestable rows without plotted marks."""
     trait = bundle.summary["lead_trait"]
     chosen = bundle.tables["triples"]
-    chosen = chosen[chosen["trait_id"].eq(trait) & chosen["test_status"].eq(TESTED)]
+    chosen = chosen[chosen["trait_id"].eq(trait)]
     rows = []
     for statistic, (p_column, rank_column, _) in STATS.items():
         for original in chosen.to_dict("records"):
             row = {str(key): value for key, value in original.items()}
+            plotted = row["test_status"] == TESTED
             row.update(
                 statistic=statistic,
-                p_value=float(row[p_column]),
-                rank_min=int(row[rank_column]),
+                p_value=float(row[p_column]) if plotted else None,
+                rank_min=int(row[rank_column]) if plotted else None,
+                plotted=plotted,
                 trait_label=bundle.labels[trait],
                 reference_set=native.ALL_TRIPLES,
                 strain_rollup=bundle.context["strain_rollup"],
@@ -475,16 +493,26 @@ def scan_audit(bundle: ScanFigureInputs) -> pd.DataFrame:
 
 def json_row_id(statistic: str, row: dict[str, Any]) -> str:
     # JSON avoids collisions in condition labels containing slashes or separators.
-    return json.dumps([statistic, *(str(row[key]) for key in KEYS)], ensure_ascii=False)
+    return json.dumps(
+        [str(row["strain_rollup"]), statistic, *(str(row[key]) for key in KEYS)], ensure_ascii=False
+    )
 
 
 def scan_pages(bundle: ScanFigureInputs) -> Iterator[Page]:
     """Two saved p distributions with every candidate and the declared lead callout."""
     audit = scan_audit(bundle)
+    plotted = audit.loc[audit["plotted"]]
     trait_id = bundle.summary["lead_trait"]
     trait = bundle.tables["traits"].loc[bundle.tables["traits"]["trait_id"].eq(trait_id)].iloc[0]
     candidate_count = int(bundle.summary["counts"]["triples"])
-    tested = len(audit) // len(STATS)
+    tested = len(plotted) // len(STATS)
+    conditions = bundle.summary["lead_triple"]["conditions"]
+    abbreviations = {
+        "Parkinson's disease": "PD",
+        "HIV infection": "HIV",
+        "Colorectal cancer": "CRC",
+    }
+    callout_conditions = " / ".join(abbreviations.get(name, name) for name in conditions)
     details: dict[str, Any] = {
         "candidate_triples": candidate_count,
         "tested_triples": tested,
@@ -492,12 +520,13 @@ def scan_pages(bundle: ScanFigureInputs) -> Iterator[Page]:
         "reference_set": native.ALL_TRIPLES,
         "protocol_version": bundle.context["protocol_version"],
         "scope_role": bundle.context["scope_role"],
+        "trait_key_policy": bundle.context["trait_key_policy"],
         "report_beside": bundle.context["report_beside"],
         "inference": "saved nominal U6 p-values; no new inference",
         "panels": [],
     }
     with matplotlib.rc_context(STYLE):
-        figure = _figure(6.2)
+        figure = _figure(7.0)
         figure.text(
             0.12,
             0.96,
@@ -512,13 +541,20 @@ def scan_pages(bundle: ScanFigureInputs) -> Iterator[Page]:
             validate_authored_wording(
                 f"{tested} tested of {candidate_count} triples; "
                 f"{candidate_count - tested} untestable. Rollup: "
-                f"{bundle.context['strain_rollup']} ({bundle.context['scope_role']})."
+                f"{bundle.context['strain_rollup']} "
+                f"({bundle.context['scope_role'].replace('_', ' ')})."
             ),
             fontsize=8,
         )
+        figure.text(
+            0.12,
+            0.835,
+            validate_authored_wording(f"trait keys: {bundle.context['trait_key_policy']}"),
+            fontsize=8,
+        )
         for index, (statistic, (_, _, title)) in enumerate(STATS.items()):
-            axis = figure.add_axes((0.12, 0.51 - index * 0.34, 0.82, 0.22))
-            rows = audit[audit["statistic"].eq(statistic)]
+            axis = figure.add_axes((0.12, 0.52 - index * 0.31, 0.82, 0.21))
+            rows = plotted[plotted["statistic"].eq(statistic)]
             bins = bundle.tables["distribution"]
             bins = bins[
                 bins["trait_id"].eq(trait_id)
@@ -544,7 +580,7 @@ def scan_pages(bundle: ScanFigureInputs) -> Iterator[Page]:
             prefix = f"{statistic}_{native.ALL_TRIPLES}_"
             low, high = int(trait[prefix + "rank_min"]), int(trait[prefix + "rank_max"])
             rank = str(low) if low == high else f"{low}\u2013{high}"
-            callout = f"PD / HIV / CRC: p = {p_value:.4g}; Rank {rank} of {tested}"
+            callout = f"{callout_conditions}: p = {p_value:.4g}; Rank {rank} of {tested}"
             axis.set_title(
                 validate_authored_wording(title + "\n" + callout), loc="left", fontsize=8, pad=9
             )
@@ -566,13 +602,21 @@ def scan_pages(bundle: ScanFigureInputs) -> Iterator[Page]:
             )
         note = (
             "Stool decreased-signature annotation sets; every p-value is nominal. "
+            "rank 1 = smallest nominal p-value. "
+            "U6: whole-study-signature null; draws distinct studies from the stool-signature pool, "
+            "takes one random condition unit per study, and splits them into three groups "
+            "of the recorded sizes. "
             "Candidate triples share studies and taxa. "
-            "PD: Parkinson's disease; HIV: HIV infection; CRC: colorectal cancer."
         )
+        note += "; ".join(
+            f"{abbreviations[name]}: {name}" for name in conditions if name in abbreviations
+        )
+        if any(name in abbreviations for name in conditions):
+            note += "."
         if bundle.context["historical"]:
             note += " Historical protocol v1; recorded scope roles retained."
         else:
             note += " Protocol v2 requires both rollup scopes together."
-        figure.text(0.12, 0.035, _wrap(validate_authored_wording(note), 110), fontsize=7)
-        page = Page(figure, audit["row_id"].astype(str).tolist(), len(audit), details)
+        figure.text(0.12, 0.025, _wrap(validate_authored_wording(note), 110), fontsize=7)
+        page = Page(figure, plotted["row_id"].astype(str).tolist(), len(plotted), details)
     yield page

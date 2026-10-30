@@ -492,6 +492,72 @@ def test_complete_render_and_authored_wording(fixture: Fixture) -> None:
     assert page.details["trait_ids"] == list(bundle.trait_ids)
 
 
+def test_display_distinguishes_small_positive_zero_and_missing_overlap(fixture: Fixture) -> None:
+    """#1243: positive overlaps must remain visibly distinct from a true zero."""
+    carriers = [
+        {1},
+        set(range(1, 2312)),
+        set(range(1, 2002)),
+        set(range(1, 2001)),
+        set(range(1, 2000)),
+        {3000},
+        set(),
+        set(),
+        {1, 2},
+    ]
+    for index, (a, b) in enumerate(combinations(carriers, 2)):
+        intersection, union = len(a & b), len(a | b)
+        fraction = intersection / union if union else None
+        fixture.frame.loc[
+            index,
+            [
+                "matrix_taxa_total",
+                "trait_a_taxa",
+                "trait_b_taxa",
+                "intersection_taxa",
+                "union_taxa",
+                "jaccard_fraction",
+                "jaccard_pct",
+            ],
+        ] = [
+            3000,
+            len(a),
+            len(b),
+            intersection,
+            union,
+            fraction,
+            100 * fraction if fraction is not None else None,
+        ]
+    fixture.summary["coverage_and_cascade"]["matrix_taxa_total"] = 3000
+    fixture.seal()
+    bundle = fixture.load()
+    original = overlap.overlap_audit(bundle).copy(deep=True)
+    (page,) = overlap.overlap_pages(bundle)
+    displayed = {item.get_position(): item.get_text() for item in page.figure.axes[0].texts}
+    assert displayed[(1.5, 0.5)] == "<0.1"  # One shared carrier out of 2,311.
+    assert displayed[(2.5, 0.5)] == "<0.1"  # Immediately below 0.05 percent.
+    assert displayed[(3.5, 0.5)] == "0.1"  # Exactly 0.05 percent.
+    assert displayed[(4.5, 0.5)] == "0.1"  # Immediately above 0.05 percent.
+    assert displayed[(5.5, 0.5)] == "0.0"  # Disjoint nonempty carrier sets.
+    assert displayed[(7.5, 6.5)] == "—"  # Two empty sets: undefined Jaccard.
+    assert page.mark_count == 36
+    pd.testing.assert_frame_equal(overlap.overlap_audit(bundle), original)
+
+
+@pytest.mark.parametrize("matrix_taxa", [10, 12345])
+def test_matrix_taxon_denominator_is_printed_from_saved_values(
+    fixture: Fixture, matrix_taxa: int
+) -> None:
+    """#1244: label the validated universe; never substitute the F reference count."""
+    fixture.frame["matrix_taxa_total"] = matrix_taxa
+    fixture.summary["coverage_and_cascade"]["matrix_taxa_total"] = matrix_taxa
+    fixture.seal()
+    (page,) = overlap.overlap_pages(fixture.load())
+    text = " ".join(item.get_text() for item in page.figure.findobj(Text))
+    assert f"all {matrix_taxa:,} matrix taxa" in text
+    assert page.details["matrix_taxa_total"] == matrix_taxa
+
+
 @pytest.mark.parametrize("file_format", ["pdf", "svg"])
 def test_vector_exports_do_not_rasterize_the_colorbar(fixture: Fixture, file_format: str) -> None:
     """#1228: inspect real exports; a low-resolution embedded scale must fail."""

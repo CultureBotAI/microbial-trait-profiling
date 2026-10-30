@@ -95,7 +95,11 @@ exports a complete `audit.tsv`, combined/page PDFs, page SVGs and PNGs at at lea
 300 dpi, and input/output/producer provenance. Source buffers are hash-bound and
 rechecked before the exclusive atomic publication. Core identity, population,
 direction and rollup must match the parent unit; a sidecar from another unit is
-refused. Scientific producers are never rerun by figure code.
+refused. The trait-key policy is resolved from each verified core, recorded in
+figure provenance and printed on the pages. Sidecars must match the parent's
+policy and exact core-manifest pin. The source-commit check also requires a
+recorded full Git SHA on both sides; absent declarations cannot skip the check.
+Scientific producers are never rerun by figure code.
 
 The forest's default experiment-weighted selection is unchanged. The rank
 sensitivity uses the saved `experiment_mean_delta_z`, `study_mean_delta_z` and
@@ -110,14 +114,22 @@ does not introduce an inferential family.
 
 For candidate triples, pass `--scan-run` and `--scan-sha256`, pinning the native
 `core_consumption.json`. The figure consumes the saved distribution and compressed
-triple tables for cellulose, retaining every tested candidate and identifying the
-protocol's PD/HIV/CRC triple with its saved ranks. The panels display nominal U6
+triple tables for cellulose. The audit retains every candidate for each statistic,
+including untestable candidates with their status, missing normalized p/rank and
+`plotted=False`. Only tested candidates receive plotted marks. Row identities
+include the rollup scope, so the two v2 scopes remain distinct in the combined
+audit. The declared focal triple is identified from the scan record with its
+saved ranks; rank 1 denotes the smallest nominal p-value. The panels display nominal U6
 p-values for mean pairwise Jaccard distance and three-way core across candidate
 triples. This is a **candidate-triple distribution**, not a distribution of null
 draws. There is no simulated-null export to plot. Counts, excluded/untestable
 states and the candidate reference family remain explicit. Candidate triples
 can share studies and randomization draws; these panels are neither an independent
-replication count nor a uniform-p-value calibration check.
+replication count nor a uniform-p-value calibration check. U6 is the native
+whole-study-signature null model. The display uses the verified metadata's
+`object_name` (or `column_label` when absent); the native trait-table label
+continues to be checked against `column_label`. Whole-table parsing and numeric
+callout comparisons keep focal traits independent of their position in the file.
 
 Historical protocol-v1 F scans retain their version and historical scope labels.
 Protocol-v2 scans require their declared companion scope, passed with
@@ -133,6 +145,8 @@ must have nine keys in the recorded order and bind to the native output metadata
 Every one of the 36 unordered pairs is retained. Cells show the saved taxon-carrier
 Jaccard fraction across all matrix taxa, with verified feature labels and IDs.
 An empty union is missing, while a nonempty union with no common carrier is zero.
+Small positive percentages below 0.05 display as `<0.1`, rather than as `0.0`.
+The figure prints the matrix-taxon denominator from the saved overlap table.
 Diagonal cells are structural, not observations. No tenth trait is selected,
 and `METPO:1000605` is not restored to the declared union list. Co-annotation
 does not demonstrate co-expression, physiological activity or taxon interaction.
