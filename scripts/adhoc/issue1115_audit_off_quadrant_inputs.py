@@ -9,10 +9,14 @@ This is a read-only byte/identity audit, not full source verification or a rerun
 from __future__ import annotations
 
 import argparse
+import contextlib
 import csv
 import hashlib
 import io
 import json
+import os
+import stat
+from collections import deque
 from pathlib import Path
 from typing import Any
 
@@ -21,15 +25,123 @@ LEDGER_KEYS = {
     "composition_pair_delta_z.tsv": ("study_id", "experiment_id"),
     "composition_study_delta_z.tsv": ("study_id",),
 }
+_MAX_SYMLINK_EXPANSIONS = 40
 
 
 def identity(raw: bytes) -> dict[str, str | int]:
     return {"sha256": hashlib.sha256(raw).hexdigest(), "size_bytes": len(raw)}
 
 
+def _spellings(path: Path) -> list[Path]:
+    original = path if path.is_absolute() else Path.cwd() / path
+    spellings = [original]
+    visited = {original}
+    pending = deque(original.parts[1:])
+    resolved = Path(original.anchor)
+    expansions = 0
+    while pending:
+        component = pending.popleft()
+        if component == "..":
+            resolved = resolved.parent
+            continue
+        candidate = resolved / component
+        try:
+            mode = candidate.lstat().st_mode
+        except FileNotFoundError:
+            resolved = candidate
+            continue
+        if not stat.S_ISLNK(mode):
+            resolved = candidate
+            continue
+        expansions += 1
+        if expansions > _MAX_SYMLINK_EXPANSIONS:
+            raise ValueError("Symlink expansion limit reached while protecting input bundles")
+        spellings.append(candidate.joinpath(*pending))
+        target = candidate.readlink()
+        expanded = target if target.is_absolute() else candidate.parent / target
+        spelling = expanded.joinpath(*pending)
+        if spelling in visited:
+            raise ValueError("Symlink cycle while protecting input bundles")
+        visited.add(spelling)
+        spellings.append(spelling)
+        if target.is_absolute():
+            resolved = Path(target.anchor)
+            target_parts = target.parts[1:]
+        else:
+            resolved = candidate.parent
+            target_parts = target.parts
+        pending.extendleft(reversed(target_parts))
+    spellings.append(resolved)
+    return list(dict.fromkeys(spellings))
+
+
+def _expanded_spellings(path: Path) -> list[Path]:
+    candidates = [*_spellings(path), Path(os.path.abspath(path))]
+    result: list[Path] = []
+    for candidate in candidates:
+        extra = [*_spellings(candidate), Path(os.path.abspath(candidate))]
+        with contextlib.suppress(OSError):
+            extra.append(candidate.resolve())
+        for item in extra:
+            if item not in result:
+                result.append(item)
+    return result
+
+
+def _stat_key(path: Path) -> tuple[int, int] | None:
+    try:
+        info = path.stat()
+    except OSError:
+        return None
+    return (info.st_dev, info.st_ino)
+
+
+def _ancestor_stat_keys(paths: list[Path]) -> set[tuple[int, int]]:
+    return {
+        key
+        for path in paths
+        for ancestor in (path, *path.parents)
+        if (key := _stat_key(ancestor)) is not None
+    }
+
+
+def validate_output_path(
+    output: Path,
+    parent: Path,
+    trait_list: Path,
+    reference_files: list[Path],
+) -> None:
+    output_spellings = _expanded_spellings(output)
+    protected_roots = [
+        spelling if spelling.is_dir() else spelling.parent
+        for bundle_input in (parent, *reference_files)
+        for spelling in _expanded_spellings(bundle_input)
+    ]
+    protected = [
+        *(spelling for root in protected_roots for spelling in _expanded_spellings(root)),
+        *_expanded_spellings(trait_list),
+    ]
+    protected_keys = {key for source in protected if (key := _stat_key(source)) is not None}
+    output_keys = {
+        key for candidate in output_spellings if (key := _stat_key(candidate)) is not None
+    }
+    if _ancestor_stat_keys(output_spellings) & protected_keys or output_keys & _ancestor_stat_keys(
+        protected
+    ):
+        raise ValueError(
+            "Report output must be outside completed input bundles and disjoint from audit inputs"
+        )
+
+
 def audit(
-    parent: Path, parent_sha256: str, trait_list: Path, reference_files: list[Path]
+    parent: Path,
+    parent_sha256: str,
+    trait_list: Path,
+    reference_files: list[Path],
+    output: Path | None = None,
 ) -> dict[str, Any]:
+    if output is not None:
+        validate_output_path(output, parent, trait_list, reference_files)
     parent_bytes = parent.read_bytes()
     if hashlib.sha256(parent_bytes).hexdigest() != parent_sha256:
         raise ValueError("Parent manifest differs from the caller's explicit pin")
@@ -122,7 +234,15 @@ def main() -> None:
     parser.add_argument("--reference-file", type=Path, action="append", default=[])
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
-    result = audit(args.parent_manifest, args.parent_sha256, args.trait_list, args.reference_file)
+    validate_output_path(args.output, args.parent_manifest, args.trait_list, args.reference_file)
+    result = audit(
+        args.parent_manifest,
+        args.parent_sha256,
+        args.trait_list,
+        args.reference_file,
+        output=args.output,
+    )
+    validate_output_path(args.output, args.parent_manifest, args.trait_list, args.reference_file)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open("x", encoding="utf-8") as handle:
         json.dump(result, handle, indent=2)
