@@ -711,6 +711,11 @@ probe-matrix-population-guard case output:
 matrix-overlap-coverage *ARGS:
 	uv run python -m mtp.matrix_overlap_coverage --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" "$@"
 
+# Isolated synthetic guard proofs; production source is never rewritten (#1175).
+[positional-arguments]
+probe-matrix-follow-up-guards guard mode output:
+	uv run python scripts/adhoc/issue1175_probe_followup_guards.py "$1" "$2" --output-dir "$3"
+
 # After an intended input change, such as a BugSigDB release or a new KG pin, refresh the
 # committed copy with `just study-trait-profiles-refresh-gz` and commit it (#667).
 # Check that the profile table is the committed canonical one (#656).

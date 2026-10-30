@@ -158,6 +158,110 @@ def test_orphan_experiment_keys_refused(corpus: dict[str, pd.DataFrame], table: 
         overlap(corpus)
 
 
+@pytest.mark.parametrize("consumer", [coverage, overlap])
+def test_active_profile_needs_tier12_metadata_even_when_source_metadata_exists(
+    corpus: dict[str, pd.DataFrame], consumer: Any
+) -> None:
+    corpus["tier12_experiments"] = corpus["tier12_experiments"].iloc[1:].copy()
+    with pytest.raises(ValueError, match="Active profile contains an orphan experiment"):
+        consumer(corpus)
+
+
+def test_inactive_experiments_are_counted_even_without_reported_taxa(
+    corpus: dict[str, pd.DataFrame],
+) -> None:
+    extra = corpus["tier12_experiments"].iloc[[0]].copy()
+    extra.loc[:, "study_id"] = "s4"
+    extra.loc[:, "experiment_id"] = "e4"
+    extra.loc[:, "body_site"] = "Blood"
+    extra.loc[:, "condition"] = "Other condition"
+    for name in ("tier12_experiments", "source_experiments"):
+        corpus[name] = pd.concat([corpus[name], extra], ignore_index=True)
+    _, _, summary = coverage(corpus)
+    assert summary["tier12_input_experiments"] == 4
+    assert summary["tier12_excluded_experiments_without_active_profiles"] == 2
+    assert summary["tier12_experiments"] == 2
+    assert summary["tier12_excluded_occurrence_rows"] == 1
+    summaries, _ = overlap(corpus)
+    tier12 = next(row for row in summaries if row["scope"] == "tier12_paired")
+    assert tier12["input_experiments"] == 4
+    assert tier12["excluded_experiments_without_active_profiles"] == 2
+    assert tier12["n_experiments"] == 2
+    assert next(row for row in summaries if row["scope"] == "full_export")["n_studies"] == 3
+
+
+@pytest.mark.parametrize("positive", [False, True])
+def test_matrix_feature_without_metadata_is_refused(
+    corpus: dict[str, pd.DataFrame], positive: bool
+) -> None:
+    matrix = corpus["matrix"]
+    matrix["METPO:unmapped"] = 0
+    if positive:
+        matrix.loc[matrix.index[-1], "METPO:unmapped"] = 1
+    with pytest.raises(ValueError, match=r"Matrix feature.*metadata"):
+        coverage(corpus)
+    with pytest.raises(ValueError, match=r"Matrix feature.*metadata"):
+        analysis.compute_matrix_trait_overlap(matrix, corpus["columns"], [FAC_AER, FAC_ANA])
+
+
+@pytest.mark.parametrize("host", ["homo sapiens", "HOMO SAPIENS", " homo Sapiens "])
+def test_case_variant_hosts_are_counted_without_admission(
+    corpus: dict[str, pd.DataFrame], host: str
+) -> None:
+    corpus["source_experiments"].loc[0, "host_species"] = host
+    # This variant has no reported taxa: the experiment diagnostic must still count it.
+    extra = corpus["source_experiments"].iloc[[0]].copy()
+    extra.loc[:, "study_id"] = "s4"
+    extra.loc[:, "experiment_id"] = "e4"
+    extra.loc[:, "body_site"] = "Blood"
+    extra.loc[:, "condition"] = "Other condition"
+    extra.loc[:, "sequencing_type"] = "ITS"
+    corpus["source_experiments"] = pd.concat(
+        [corpus["source_experiments"], extra], ignore_index=True
+    )
+    _, cascade, summary = coverage(corpus)
+    assert summary["source_host_case_variant_experiments"] == 2
+    assert summary["source_host_case_variant_profile_keys"] == 2
+    human = next(row for row in cascade if row["step_id"] == "full_human_16s_wms")
+    assert human["retained_count"] == 2
+    assert human["signatures_count"] == 3
+    summaries, pairs = overlap(corpus)
+    human_pd = next(row for row in summaries if row["scope"] == "export_human_hosts")
+    assert human_pd["source_host_case_variant_experiments"] == 2
+    assert human_pd["source_host_case_variant_profile_keys"] == 2
+    assert human_pd["n_studies"] == 2
+    assert all(
+        "s1" not in (row["study_a_id"], row["study_b_id"])
+        for row in pairs
+        if row["scope"] == "export_human_hosts"
+    )
+    assert next(row for row in summaries if row["scope"] == "full_export")["n_studies"] == 3
+
+
+@pytest.mark.parametrize(
+    ("host", "method", "human_studies", "human_pd_studies"),
+    [(" Homo sapiens ", "16S", 3, 3), ("Homo sapiens", "ITS", 2, 3), ("Mus musculus", "16S", 2, 2)],
+)
+def test_host_case_diagnostics_do_not_reclassify_other_exclusions(
+    corpus: dict[str, pd.DataFrame],
+    host: str,
+    method: str,
+    human_studies: int,
+    human_pd_studies: int,
+) -> None:
+    corpus["source_experiments"].loc[0, ["host_species", "sequencing_type"]] = [host, method]
+    _, cascade, summary = coverage(corpus)
+    assert summary["source_host_case_variant_experiments"] == 0
+    assert summary["source_host_case_variant_profile_keys"] == 0
+    human = next(row for row in cascade if row["step_id"] == "full_human_16s_wms")
+    assert human["retained_count"] == human_studies
+    summaries, _ = overlap(corpus)
+    human_pd = next(row for row in summaries if row["scope"] == "export_human_hosts")
+    assert human_pd["source_host_case_variant_experiments"] == 0
+    assert human_pd["source_host_case_variant_profile_keys"] == 0
+    assert human_pd["n_studies"] == human_pd_studies
+
+
 def test_legitimate_inactive_rows_are_counted_and_repeated_occurrences_deduplicated(
     corpus: dict[str, pd.DataFrame],
 ) -> None:

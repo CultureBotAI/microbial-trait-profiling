@@ -4,6 +4,10 @@ Run F's verified run directories were kept only under the system temporary direc
 and were lost on a restart (#1040). Outputs a record cites must be written somewhere
 durable; a throwaway run or a test opts in explicitly.
 
+Symlink loops are invalid destinations even with that opt-in (#1175). Strict probes
+before and after nonstrict normalization detect loops even when an initial missing
+component masks a later loop (#1190). Fresh destinations retain nonstrict semantics.
+
 Bandit's B108 check forbids a "/tmp" literal here, so /tmp is not a fixed root (#1051).
 macOS's /tmp is still refused, because it resolves to /private/tmp. On Linux, /tmp is
 refused only as the process temporary directory, which it is unless $TMPDIR points
@@ -13,6 +17,7 @@ elsewhere.
 from __future__ import annotations
 
 import argparse
+import errno
 import os
 import tempfile
 from collections.abc import Iterable
@@ -34,9 +39,42 @@ def system_temporary_directories() -> list[Path]:
     return directories
 
 
+def _resolved_path(path: Path) -> Path:
+    """Reject loops consistently while retaining nonstrict handling of new outputs."""
+    try:
+        return path.resolve(strict=True)
+    except RuntimeError as error:
+        # Python 3.11/3.12 use RuntimeError for a symlink loop.
+        raise ValueError(f"Cannot resolve output path {path}: symbolic link loop") from error
+    except OSError as error:
+        # Newer pathlib reports ELOOP only when strict=True. Other strict errors
+        # fall through to the previous nonstrict policy, including missing suffixes.
+        if error.errno == errno.ELOOP:
+            raise ValueError(f"Cannot resolve output path {path}: symbolic link loop") from error
+    try:
+        resolved = path.resolve(strict=False)
+    except RuntimeError as error:
+        raise ValueError(f"Cannot resolve output path {path}: symbolic link loop") from error
+    except OSError as error:
+        if error.errno == errno.ELOOP:
+            raise ValueError(f"Cannot resolve output path {path}: symbolic link loop") from error
+        raise
+    # A missing/../ prefix can stop the first strict probe before a real loop.
+    # Nonstrict normalization removes that prefix but newer pathlib suppresses
+    # the loop; probe the resulting spelling before accepting a fresh output.
+    try:
+        resolved.resolve(strict=True)
+    except RuntimeError as error:
+        raise ValueError(f"Cannot resolve output path {path}: symbolic link loop") from error
+    except OSError as error:
+        if error.errno == errno.ELOOP:
+            raise ValueError(f"Cannot resolve output path {path}: symbolic link loop") from error
+    return resolved
+
+
 def _spellings(path: Path) -> set[Path]:
     """A path as written, made absolute, and with every symlink resolved."""
-    return {Path(os.path.abspath(path)), path.resolve()}
+    return {Path(os.path.abspath(path)), _resolved_path(path)}
 
 
 def temporary_root(path: Path, directories: Iterable[Path] | None = None) -> Path | None:
@@ -73,7 +111,10 @@ def add_temporary_output_option(parser: argparse.ArgumentParser) -> None:
 
 
 def require_durable_output_path(output: Path, *, allowed: bool) -> Path:
-    """Check the literal destination without writing; callers expand a home explicitly."""
+    """Check the literal destination without writing; callers expand a home explicitly.
+
+    The temporary-storage opt-in never allows an unresolvable symlink loop.
+    """
     root = None if allowed else temporary_root(output)
     if root is not None:
         raise ValueError(
@@ -81,7 +122,7 @@ def require_durable_output_path(output: Path, *, allowed: bool) -> Path:
             "system can empty on restart (#1049). Write outputs that a record will cite "
             f"to a durable location, or pass {ALLOW_TEMPORARY_OUTPUT} for a throwaway run."
         )
-    return output.resolve()
+    return _resolved_path(output)
 
 
 def require_durable_output(parser: argparse.ArgumentParser, output: Path, *, allowed: bool) -> None:
