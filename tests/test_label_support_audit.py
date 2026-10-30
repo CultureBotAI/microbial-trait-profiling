@@ -782,3 +782,253 @@ def test_trait_list_rejects_file_changed_during_execution(
             trait_list=trait_list_path,
         )
     assert not output.exists()
+
+
+def test_madin_rules_resolve_declared_headline_and_strictly_anaerobic_traits(
+    inputs: dict[str, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Cover the six #1151/#1155/#1066 Madin rules, comma-joined rows, and _dark lookalikes."""
+    pinned_cases = (
+        ("METPO:2000103|GO:0046274", 701347, "gold", "lignin_degradation", "", "gold_patric_only"),
+        (
+            "METPO:2000103|pathways:ligninolysis",
+            124798,
+            "faprotax",
+            "ligninolysis",
+            "",
+            "includes_other_sources",
+        ),
+        (
+            "METPO:2000103|pathways:thiosulfate_oxidation",
+            36861,
+            "amend-shock",
+            "thiosulfate_oxidation, denitrification",
+            "",
+            "includes_other_sources",
+        ),
+        (
+            "METPO:2000103|GO:0045493",
+            515440,
+            "faprotax",
+            "xylan_degradation",
+            "",
+            "includes_other_sources",
+        ),
+        ("METPO:1000845", 2325, "amend-shock", "acetogenesis", "", "includes_other_sources"),
+        ("METPO:1000611", 349095, "gold", "", "strictly anaerobic", "gold_patric_only"),
+    )
+    for non_madin_trait in ("METPO:1000683", "METPO:1000681", HIGH_TEMP):
+        assert non_madin_trait not in label_support_audit.MADIN_RULES
+
+    madin_rows = pd.read_csv(inputs["madin"]).to_dict("records")
+    edge_lines = []
+    node_lines = []
+    declared_traits = []
+    for trait_key, tax_id, data_source, pathway_token, metabolism_token, _ in pinned_cases:
+        madin_rows.append(
+            {
+                "tax_id": tax_id,
+                "data_source": data_source,
+                "pathways": pathway_token,
+                "metabolism": metabolism_token,
+                "cell_shape": "",
+            }
+        )
+        taxon_curie = f"NCBITaxon:{tax_id}"
+        predicate, obj = (
+            trait_key.split("|", 1) if "|" in trait_key else ("biolink:has_phenotype", trait_key)
+        )
+        edge_lines.append(
+            f"edge-sub-{tax_id}\t{taxon_curie}\tbiolink:subclass_of\tNCBITaxon:10\tinfores:ncbi\n"
+        )
+        edge_lines.append(
+            f"edge-trait-{tax_id}\t{taxon_curie}\t{predicate}\t{obj}\t{MADIN_SOURCE}\n"
+        )
+        node_lines.append(f"{taxon_curie}\tPinned carrier {tax_id}\n")
+        node_lines.append(f"{obj}\tLabel for {obj}\n")
+        if trait_key not in AUDIT_TRAITS:
+            declared_traits.append(trait_key)
+
+    # Real pinned row with only thiosulfate_oxidation_dark (364030, Thiomonas arsenivorans):
+    # must NOT substring-match thiosulfate_oxidation (#1200).
+    dark_only_tax_id = 364030
+    thiosulfate_key = "METPO:2000103|pathways:thiosulfate_oxidation"
+    madin_rows.append(
+        {
+            "tax_id": dark_only_tax_id,
+            "data_source": "faprotax",
+            "pathways": "thiosulfate_oxidation_dark",
+            "metabolism": "",
+            "cell_shape": "",
+        }
+    )
+    edge_lines.append(
+        f"edge-sub-{dark_only_tax_id}\tNCBITaxon:{dark_only_tax_id}\tbiolink:subclass_of\tNCBITaxon:20\tinfores:ncbi\n"
+    )
+    edge_lines.append(
+        f"edge-trait-{dark_only_tax_id}\tNCBITaxon:{dark_only_tax_id}\tMETPO:2000103\tpathways:thiosulfate_oxidation\t{MADIN_SOURCE}\n"
+    )
+    node_lines.append(f"NCBITaxon:{dark_only_tax_id}\tThiomonas arsenivorans\n")
+
+    pd.DataFrame(madin_rows).to_csv(inputs["madin"], index=False)
+    monkeypatch.setattr(
+        madin_source,
+        "MADIN_PIN",
+        replace(
+            madin_source.MADIN_PIN,
+            sha256=file_sha256(inputs["madin"]),
+            size_bytes=inputs["madin"].stat().st_size,
+        ),
+    )
+    subsources = load_madin_subsources(inputs["madin"])
+    for trait_key, tax_id, data_source, _, _, _ in pinned_cases:
+        assert subsources.get(trait_key, {}).get(f"NCBITaxon:{tax_id}") == {data_source}
+    assert f"NCBITaxon:{dark_only_tax_id}" not in subsources.get(thiosulfate_key, {})
+
+    with inputs["edges"].open("a", encoding="utf-8") as handle:
+        handle.writelines(edge_lines)
+    with inputs["nodes"].open("a", encoding="utf-8") as handle:
+        handle.writelines(node_lines)
+
+    matrix = pd.read_csv(inputs["matrix"], sep="\t")
+    for trait_key, _, _, _, _, _ in pinned_cases:
+        matrix[trait_key] = [
+            1
+            if tid == "NCBITaxon:10" or (trait_key == thiosulfate_key and tid == "NCBITaxon:20")
+            else 0
+            for tid in matrix["taxon_id"]
+        ]
+    matrix.to_csv(inputs["matrix"], sep="\t", index=False)
+    count_lookup = matrix.set_index("taxon_id")
+    taxa = pd.read_csv(inputs["taxa"], sep="\t")
+    profiles = pd.read_csv(inputs["profiles"], sep="\t")
+    for trait_key, _, _, _, _, _ in pinned_cases:
+        totals = []
+        for _, row in profiles.iterrows():
+            direction = "increased" if row["inc_dec"] == "inc" else "decreased"
+            group = taxa[
+                (taxa["study_id"] == row["study_id"])
+                & (taxa["experiment_id"] == row["experiment_id"])
+                & (taxa["direction"] == direction)
+            ]
+            totals.append(int(count_lookup.loc[group["taxon_id"], trait_key].sum()))
+        profiles[trait_key] = totals
+    profiles.to_csv(inputs["profiles"], sep="\t", index=False)
+
+    trait_list_path = tmp_path / "headline_and_pathway_traits.txt"
+    trait_list_path.write_text("\n".join(declared_traits) + "\n", encoding="utf-8")
+    output = tmp_path / "audit_madin_rules"
+    run_label_support_audit(
+        taxa_path=inputs["taxa"],
+        matrix_path=inputs["matrix"],
+        profiles_path=inputs["profiles"],
+        edges_path=inputs["edges"],
+        nodes_path=inputs["nodes"],
+        madin_csv=inputs["madin"],
+        output_dir=output,
+        strain_rollup="off",
+        trait_list=trait_list_path,
+    )
+    support = pd.read_csv(output / "taxon_trait_label_support.tsv", sep="\t", keep_default_na=False)
+    evidence = pd.read_csv(output / "carrier_source_evidence.tsv", sep="\t", keep_default_na=False)
+    for trait_key, tax_id, data_source, _, _, expected_status in pinned_cases:
+        s_row = support[
+            (support["taxon_id"] == "NCBITaxon:10") & (support["trait_key"] == trait_key)
+        ].iloc[0]
+        assert int(s_row["unresolved_madin_carriers"]) == 0
+        assert s_row["madin_subsources"] == data_source
+        assert s_row["source_status"] == expected_status
+        e_row = evidence[
+            (evidence["reported_taxon_id"] == "NCBITaxon:10")
+            & (evidence["trait_key"] == trait_key)
+            & (evidence["carrier_taxon_id"] == f"NCBITaxon:{tax_id}")
+        ].iloc[0]
+        assert e_row["madin_resolution"] == "resolved"
+        assert e_row["madin_subsources"] == data_source
+
+    dark_support = support[
+        (support["taxon_id"] == "NCBITaxon:20") & (support["trait_key"] == thiosulfate_key)
+    ].iloc[0]
+    assert int(dark_support["unresolved_madin_carriers"]) == 1
+    assert dark_support["madin_subsources"] == ""
+    assert dark_support["source_status"] == "unknown"
+    dark_evidence = evidence[
+        (evidence["reported_taxon_id"] == "NCBITaxon:20")
+        & (evidence["trait_key"] == thiosulfate_key)
+        & (evidence["carrier_taxon_id"] == f"NCBITaxon:{dark_only_tax_id}")
+    ].iloc[0]
+    assert dark_evidence["madin_resolution"] == "unknown"
+    assert dark_evidence["madin_subsources"] == ""
+
+
+def test_run_label_support_audit_empty_support_and_evidence_fallback_columns(
+    inputs: dict[str, Path], tmp_path: Path
+) -> None:
+    """When no audited trait has carriers, empty support and evidence TSVs include Madin columns."""
+    matrix = pd.read_csv(inputs["matrix"], sep="\t")
+    for col in list(matrix.columns[3:]):
+        matrix[col] = 0
+    matrix[HIGH_TEMP] = [
+        1 if tid in ("NCBITaxon:10", "NCBITaxon:20") else 0 for tid in matrix["taxon_id"]
+    ]
+    matrix.to_csv(inputs["matrix"], sep="\t", index=False)
+
+    profiles = pd.read_csv(inputs["profiles"], sep="\t")
+    for col in list(profiles.columns[3:]):
+        profiles[col] = 0
+    profiles[HIGH_TEMP] = 1
+    profiles.to_csv(inputs["profiles"], sep="\t", index=False)
+
+    edges = pd.read_csv(inputs["edges"], sep="\t")
+    edges = edges[edges["predicate"] == "biolink:subclass_of"].copy()
+    extra_edges = pd.DataFrame(
+        [
+            {
+                "id": "edge-ht-10",
+                "subject": "NCBITaxon:10",
+                "predicate": "biolink:has_phenotype",
+                "object": HIGH_TEMP,
+                "primary_knowledge_source": "infores:bacdive",
+            },
+            {
+                "id": "edge-ht-20",
+                "subject": "NCBITaxon:20",
+                "predicate": "biolink:has_phenotype",
+                "object": HIGH_TEMP,
+                "primary_knowledge_source": "infores:bacdive",
+            },
+        ]
+    )
+    pd.concat([edges, extra_edges], ignore_index=True).to_csv(
+        inputs["edges"], sep="\t", index=False
+    )
+    with inputs["nodes"].open("a", encoding="utf-8") as handle:
+        handle.write(f"{HIGH_TEMP}\ttemperature optimum high\n")
+
+    output = tmp_path / "audit_empty_support_and_evidence"
+    run_label_support_audit(
+        taxa_path=inputs["taxa"],
+        matrix_path=inputs["matrix"],
+        profiles_path=inputs["profiles"],
+        edges_path=inputs["edges"],
+        nodes_path=inputs["nodes"],
+        madin_csv=None,
+        output_dir=output,
+        strain_rollup="off",
+    )
+    support = pd.read_csv(output / "taxon_trait_label_support.tsv", sep="\t")
+    evidence = pd.read_csv(output / "carrier_source_evidence.tsv", sep="\t")
+    assert support.empty
+    assert evidence.empty
+    assert list(support.columns) == [
+        "taxon_id",
+        "trait_key",
+        "carrier_count",
+        "unresolved_madin_carriers",
+    ]
+    assert list(evidence.columns) == [
+        "reported_taxon_id",
+        "trait_key",
+        "carrier_taxon_id",
+        "madin_resolution",
+    ]

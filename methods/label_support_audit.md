@@ -47,15 +47,25 @@ declared traits (deduplicated in declaration order after the default 14
 `trait_list` (`path`, `name`, `sha256`, `trait_count`, and `trait_ids`).
 `support_threshold_sensitivity.tsv` and `coasserted_label_census.tsv` retain
 their fixed six-trait sensitivity family and label-pair definitions.
-`MADIN_RULES` does not yet define field/value mappings for `ligninolysis`
-(`METPO:2000103|GO:0046274`), `thiosulfate_oxidation`
-(`METPO:2000103|pathways:thiosulfate_oxidation`), `xylan_degradation`
-(`METPO:2000103|GO:0045493`), or `acetogenesis` (`METPO:1000845`,
-`pathways: acetogenesis`), so Madin-sourced carriers for those declared traits
-record `madin_resolution=unknown` in `carrier_source_evidence.tsv` and
-increment `unresolved_madin_carriers` in `taxon_trait_label_support.tsv`
-(leaving `source_status=unknown` on Madin-only cells) when `--madin-csv` is
-supplied (#1151, #1155).
+`MADIN_RULES` maps the Madin-sourced traits in `AUDIT_TRAITS` (including
+`METPO:1000611` to `metabolism: strictly anaerobic`, #1066), the
+Madin-sourced traits in `methods/trait_lists/headline_ten_phenotype.txt`
+(`METPO:2000103|GO:0046274` to `pathways: lignin_degradation`,
+`METPO:2000103|pathways:thiosulfate_oxidation` to
+`pathways: thiosulfate_oxidation`, `METPO:2000103|GO:0045493` to
+`pathways: xylan_degradation`, and `METPO:1000845` to
+`pathways: acetogenesis`, #1151, #1155), and the separate raw composite
+`METPO:2000103|pathways:ligninolysis` to `pathways: ligninolysis` (which is in
+neither `AUDIT_TRAITS` nor the headline list; the headline lignin trait
+`METPO:2000103|GO:0046274` resolves through `lignin_degradation` in `gold`, not
+through FAPROTAX `ligninolysis`). In `carrier_source_evidence.tsv`,
+`madin_resolution=not_applicable` is recorded whenever a carrier lacks
+`infores:madin_etal` in `primary_sources` (for example on `METPO:1000683`
+`sphere shaped`, `METPO:1000681` `rod shaped`, and `METPO:1000447`
+`temperature optimum high`, whose KG-Microbe carriers lack `infores:madin_etal`),
+not because a trait is omitted from `MADIN_RULES` (an `infores:madin_etal`
+carrier without a matching `MADIN_RULES` token records
+`madin_resolution=unknown`).
 
 The `phenotype` scope uses the public `scoped_taxon_traits` and
 `strain_trait_rolls_up` functions introduced by PR #828. Both `off` and

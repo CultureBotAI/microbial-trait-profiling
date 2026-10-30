@@ -11,6 +11,7 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
+from mtp import madin_source
 from mtp.datamodel.workflow_pydantic import ArtifactInstance, ComparisonRun, WorkflowRun
 from mtp.label_support_audit import AUDIT_TRAITS, run_label_support_audit
 from mtp.multiplicity.sources import VerifiedSources
@@ -446,11 +447,174 @@ def test_carrier_table_imports_declared_trait_list_taxonomic_inheritance_and_str
     assert high_temp.carrier_inherited_reported_taxa == 1
     assert high_temp.carrier_unique_taxa == 1
     assert pd.isna(high_temp.carrier_source_record_count)
-    assert high_temp.carrier_madin_status == "not_supplied_source_support_unknown"
+    assert high_temp.carrier_madin_status == "not_applicable"
 
     outside = result.loc[OUTSIDE]
     assert outside.carrier_status == "not_in_focal_audit"
     assert pd.isna(outside.carrier_unique_taxa)
+    assert outside.carrier_madin_status == "not_in_focal_audit"
+
+
+def test_carrier_table_reports_per_trait_madin_status(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Report each trait's Madin resolution instead of stamping the run-level status (#1151)."""
+    sources, _, trait_list_path = _declared_list_audit_fixture(tmp_path / "inputs")
+    products = {
+        pid: sources.product(pid)
+        for pid in ("taxa_matrix", "count_profiles", "reported_taxa", "kg_edges", "kg_nodes")
+    }
+    # Add an unresolved Madin carrier on NCBITaxon:11 for ANAEROBIC (omitted from madin.csv).
+    matrix_df = pd.read_csv(products["taxa_matrix"], sep="\t")
+    matrix_df[ANAEROBIC] = [
+        1 if tid in ("NCBITaxon:10", "NCBITaxon:11") else 0 for tid in matrix_df["taxon_id"]
+    ]
+    matrix_df.to_csv(products["taxa_matrix"], sep="\t", index=False)
+    profiles_df = pd.read_csv(products["count_profiles"], sep="\t")
+    profiles_df[ANAEROBIC] = [1 for _ in profiles_df["inc_dec"]]
+    profiles_df.to_csv(products["count_profiles"], sep="\t", index=False)
+    with products["kg_edges"].open("a", encoding="utf-8") as handle:
+        handle.write(
+            f"edge-ana-11\tNCBITaxon:11\tbiolink:has_phenotype\t{ANAEROBIC}\tinfores:madin_etal\n"
+        )
+
+    madin_csv = tmp_path / "inputs" / "madin.csv"
+    pd.DataFrame(
+        [
+            {
+                "tax_id": 11,
+                "data_source": "gold",
+                "pathways": "cellulose_degradation",
+                "metabolism": "",
+            },
+            {
+                "tax_id": 12,
+                "data_source": "gold",
+                "pathways": "cellulose_degradation;lignin_degradation",
+                "metabolism": "",
+            },
+            {
+                "tax_id": 21,
+                "data_source": "faprotax",
+                "pathways": "cellulose_degradation",
+                "metabolism": "",
+            },
+        ]
+    ).to_csv(madin_csv, index=False)
+    monkeypatch.setattr(
+        madin_source,
+        "MADIN_PIN",
+        replace(
+            madin_source.MADIN_PIN,
+            sha256=file_sha256(madin_csv),
+            size_bytes=madin_csv.stat().st_size,
+        ),
+    )
+    audit_pinned = tmp_path / "inputs" / "audit_pinned"
+    run_label_support_audit(
+        taxa_path=products["reported_taxa"],
+        matrix_path=products["taxa_matrix"],
+        profiles_path=products["count_profiles"],
+        edges_path=products["kg_edges"],
+        nodes_path=products["kg_nodes"],
+        madin_csv=madin_csv,
+        output_dir=audit_pinned,
+        strain_rollup="phenotype",
+        trait_list=trait_list_path,
+    )
+    updated_sources = VerifiedSources(
+        sources.comparison,
+        sources.core,
+        {},
+        {},
+        sources.features,
+        sources.scope,
+        {path.resolve(): file_sha256(path) for path in products.values()},
+    )
+    table, _ = carrier_table(updated_sources, audit_pinned)
+    result = table.set_index("trait")
+    assert result.loc[CELL, "carrier_madin_status"] == "pinned_verified"
+    assert result.loc[LIGNIN, "carrier_madin_status"] == "pinned_verified"
+    assert result.loc[ANAEROBIC, "carrier_madin_status"] == "unresolved"
+    assert result.loc[HIGH_TEMP, "carrier_madin_status"] == "not_applicable"
+    assert result.loc["METPO:1000683", "carrier_madin_status"] == "not_applicable"
+    assert result.loc[OUTSIDE, "carrier_madin_status"] == "not_in_focal_audit"
+
+
+@pytest.mark.parametrize(
+    ("mutation", "expected_error"),
+    [
+        (
+            "support_unresolved_mismatch",
+            r"^Label-support carrier evidence disagrees with support counts$",
+        ),
+        (
+            "invalid_madin_resolution",
+            r"^Orphan or malformed label-support carrier evidence$",
+        ),
+        (
+            "resolved_without_pinned_madin",
+            r"^Label-support carrier evidence disagrees with support counts$",
+        ),
+        (
+            "provenance_madin_status_mismatch",
+            r"^Unsupported label-support audit provenance or scope$",
+        ),
+        (
+            "provenance_unpinned_madin_input",
+            r"^madin is 123 bytes, expected ",
+        ),
+    ],
+)
+def test_carrier_table_rejects_support_and_evidence_madin_resolution_mismatch(
+    tmp_path: Path, mutation: str, expected_error: str
+) -> None:
+    sources, audit = audit_fixture(tmp_path / "inputs")
+    if mutation == "support_unresolved_mismatch":
+        support_name = "taxon_trait_label_support.tsv"
+        support = pd.read_csv(audit / support_name, sep="\t", dtype=str, keep_default_na=False)
+        support.loc[0, "unresolved_madin_carriers"] = "0"
+        rewrite_output(audit, support_name, support)
+    elif mutation == "invalid_madin_resolution":
+        evidence_name = "carrier_source_evidence.tsv"
+        evidence = pd.read_csv(audit / evidence_name, sep="\t", dtype=str, keep_default_na=False)
+        evidence.loc[0, "madin_resolution"] = " bogus "
+        rewrite_output(audit, evidence_name, evidence)
+    elif mutation == "provenance_madin_status_mismatch":
+        manifest = audit / "provenance.json"
+        record = json.loads(manifest.read_text(encoding="utf-8"))
+        record["madin_status"] = "pinned_verified"
+        manifest.write_text(json.dumps(record), encoding="utf-8")
+    elif mutation == "provenance_unpinned_madin_input":
+        manifest = audit / "provenance.json"
+        record = json.loads(manifest.read_text(encoding="utf-8"))
+        record["madin_status"] = "pinned_verified"
+        record["inputs"]["madin"] = {
+            "path": "/tmp/madin.csv",
+            "name": "madin.csv",
+            "size_bytes": 123,
+            "sha256": "0" * 64,
+        }
+        manifest.write_text(json.dumps(record), encoding="utf-8")
+    else:
+        support_name = "taxon_trait_label_support.tsv"
+        evidence_name = "carrier_source_evidence.tsv"
+        support = pd.read_csv(audit / support_name, sep="\t", dtype=str, keep_default_na=False)
+        evidence = pd.read_csv(audit / evidence_name, sep="\t", dtype=str, keep_default_na=False)
+        parent = support.index[(support.taxon_id == "NCBITaxon:10") & (support.trait_key == CELL)][
+            0
+        ]
+        support.loc[parent, "unresolved_madin_carriers"] = "1"
+        ev_idx = evidence.index[
+            (evidence.reported_taxon_id == "NCBITaxon:10")
+            & (evidence.trait_key == CELL)
+            & (evidence.carrier_taxon_id == "NCBITaxon:11")
+        ][0]
+        evidence.loc[ev_idx, "madin_resolution"] = "resolved"
+        rewrite_output(audit, support_name, support)
+        rewrite_output(audit, evidence_name, evidence)
+    with pytest.raises(ValueError, match=expected_error):
+        carrier_table(sources, audit)
 
 
 def test_carrier_table_rejects_tampered_trait_list_provenance(tmp_path: Path) -> None:

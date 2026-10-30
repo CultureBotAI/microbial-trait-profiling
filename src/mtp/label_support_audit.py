@@ -95,12 +95,18 @@ MADIN_RULES = {
     "METPO:1000603": ("metabolism", "anaerobic"),
     "METPO:1000606": ("metabolism", "obligate aerobic"),
     "METPO:1000607": ("metabolism", "obligate anaerobic"),
+    "METPO:1000611": ("metabolism", "strictly anaerobic"),
     "METPO:1000604": ("metabolism", "microaerophilic"),
     "METPO:1000668": ("cell_shape", "coccus"),
     "METPO:1000667": ("cell_shape", "bacillus"),
     "METPO:1000623": ("range_salinity", "moderate-halophilic"),
+    "METPO:1000845": ("pathways", "acetogenesis"),
     "METPO:2000103|GO:0030245": ("pathways", "cellulose_degradation"),
+    "METPO:2000103|GO:0046274": ("pathways", "lignin_degradation"),
+    "METPO:2000103|pathways:ligninolysis": ("pathways", "ligninolysis"),
     "METPO:2000103|pathways:arsenate_reduction": ("pathways", "arsenate_reduction"),
+    "METPO:2000103|pathways:thiosulfate_oxidation": ("pathways", "thiosulfate_oxidation"),
+    "METPO:2000103|GO:0045493": ("pathways", "xylan_degradation"),
 }
 PROFILE_KEYS = ["study_id", "experiment_id", "inc_dec"]
 
@@ -645,11 +651,14 @@ def run_label_support_audit(
     sensitivity = build_support_threshold_sensitivity(support, occurrences, profiles)
     census = build_coassertion_census(matrix, occurrences)
     tables = {
-        "taxon_trait_label_support.tsv": (support, ["taxon_id", "trait_key", "carrier_count"]),
+        "taxon_trait_label_support.tsv": (
+            support,
+            ["taxon_id", "trait_key", "carrier_count", "unresolved_madin_carriers"],
+        ),
         "focal_taxa_trait_support.tsv": (focal, ["taxon_id", "trait_key", "carrier_count"]),
         "carrier_source_evidence.tsv": (
             evidence,
-            ["reported_taxon_id", "trait_key", "carrier_taxon_id"],
+            ["reported_taxon_id", "trait_key", "carrier_taxon_id", "madin_resolution"],
         ),
         "support_threshold_sensitivity.tsv": (
             sensitivity,
