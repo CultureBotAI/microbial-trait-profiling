@@ -43,8 +43,9 @@ which names the v1 file by its hash and leaves it unchanged. A run follows v2. S
 - **Not cellulose_decr's own inputs.** cellulose_decr reads the checkout's
   `data/derived` tables, including its own contrast manifest. Its `control_tiers_1_2`
   definition keeps Tier 1–2 controls without requiring `case_vs_control_subject` or a
-  sequencing type. #818 found that the two populations give different set sizes. The scan uses the core's population, so that
-  its numbers agree with the core run and the three arms. Its PD, HIV and CRC sets
+  sequencing type. #818 found that the two populations give different set sizes. The
+  scan uses the core's population, so that its numbers agree with the core run and
+  the three arms. Its PD, HIV and CRC sets
   can therefore differ from those in `cellulose_decreased_taxa_catalog_tier1_2.tsv`.
 - **Products.** From the core run: `experiments` (each experiment's condition and body
   site), `reported_taxa` (signature taxa, directions already oriented),
@@ -241,6 +242,10 @@ The eligible counts on the pinned export and timings on synthetic fixtures were 
      such as the run of 2026-10-23, still verify against it, and the code still reads it.
      The first two amendments went into the v1 file itself because no record existed
      then.
+   - **v2 immutability.** Once a v2 record exists, its protocol file must also stay
+     byte-identical. A future v3 must name the unchanged v2 file and its SHA-256,
+     adding amendments in a separate file, as v2 names v1. Editing v2 in place would
+     invalidate the existing records that bind its bytes.
 
 ## How the scan runs
 
@@ -330,20 +335,55 @@ summary names the other scope as the one they must be reported beside.
   `mtp.cellulose_decr.selection_scan_scopes` on the output directories of two scans, one
   on a Tier 1+2 × phenotype core and one on a Tier 1+2 × off core, given in either
   order. It writes to a new or empty directory. It runs no null and recomputes nothing.
+- **Relocated archives.** Keep each `SCAN` argument as its original recorded directory.
+  Add `--archive SCAN ARCHIVE_JSON` for each archived scan. For example:
+
+  ```bash
+  just cellulose-decr-selection-scan-scopes \
+    /original/phenotype /original/off /durable/scopes \
+    --archive /original/phenotype /retained/phenotype/archive.json \
+    --archive /original/off /retained/off/archive.json
+  ```
+
+  An archive can retain a scan's files in separate directories. Each consumer record,
+  scan output, bound-output path and bound-core manifest is therefore resolved
+  separately through that scan's `LocationResolver`. The same resolver is passed
+  through core and consumer verification. Missing retained paths are errors even if
+  their original files still exist; there is no fallback to live files. Duplicate
+  mappings and mappings for an undeclared scan are refused before archive reads.
+  `just evidence-resolve ARCHIVE_JSON ORIGINAL_FILE` locates an individual retained
+  file without changing its historical record. The report keeps the logical scan
+  identities and hashes, so relocation changes no reported result.
 - **Checks.**
   - Each scan's consumer record is verified end to end (`verify_consumer_record`: its
     core run, and the hash of every output), and every file read must be one of the
     outputs it binds.
   - Each scan's summary and provenance must agree with the protocol version they name
-    (`recorded_protocol`).
+    (`recorded_protocol`). The scopes report accepts v2 only. A rejection-only
+    preflight names v1 explicitly before core verification; it does not certify the
+    rejected records. Historical v1 records remain readable by `recorded_protocol`
+    and are never relabelled as v2 by the scopes report.
+  - Every parsed scan buffer is checked against its bound output's size and SHA-256.
+    The reported hashes describe those same bytes. The separately read consumer
+    record must parse to the record that was verified, and the resolved core manifest
+    must still match the bound hash and run ID.
   - A scan's own summary is not trusted for its scope (#1079). Its summary and
     provenance must name the core run its consumer record binds, with that core's
     manifest hash, and its scope and where the scope came from must be what
-    `core_scope` reads from that core (`check_bound_core`).
+    `core_scope` reads from that core (`check_bound_core`). Whether `scope_source`
+    belongs in that record is determined by protocol version, not by the reporting
+    flag.
   - The two scans must be one of each declared scope, read two different core runs, and
     both follow v2. They must share the protocol file, code commit and module hashes,
-    rule (draws and seed included), core population, core commit, core parameters other
-    than the scope, and core sources. Anything else is refused.
+    methods hash, environment versions, chunk size, rule (draws and seed included),
+    core population, core commit, core parameters other than the scope, and core
+    sources. Missing comparability fields or differences are refused.
+- **Verification limit.** Consumer records bind output bytes by hash, not the process
+  that produced those bytes. These checks detect mismatched recorded identities,
+  scopes and inputs. They cannot establish computational authorship if an actor
+  rewrites every record consistently using a real other-scope run's fields and
+  rebinds the output hashes. Detecting that case requires recomputation, which this
+  reporting step does not perform.
 - **Outputs.**
 
 | File | Contents |
@@ -366,6 +406,7 @@ multiplicity family and the reporting) belongs to #854.
 
 | Function | Signature | Returns |
 | --- | --- | --- |
+| `open_tier1_2` | `(core_run: Path, protocol=None) -> OpenTier12` | A named tuple with `bundle`, `scope` and `scope_source`. The last field is `recorded` or `absent_means`, never the primary/sensitivity role. Existing three-value unpacking remains supported. |
 | `load_core_inputs` | `(core_run: Path, protocol=None) -> tuple[CoreBundle, ScanInputs]` | Verifies a Tier 1+2 core run of a declared scope and reads its population once. A core of another population or scope is refused. `ScanInputs.studies` lists the population's studies; `ScanInputs.restricted(studies)` keeps whole studies; `ScanInputs.contrast_population`, `strain_rollup` and `strain_rollup_role` give the population and scope. |
 | `load_inputs` | `(paths, *, contrast_population, strain_rollup, protocol=None) -> ScanInputs` | The same from product paths, with the population and scope stated and checked. |
 | `build_population`, `screen_table` | `(experiments, keyed, reported, matrix_taxa, studies=None)`; `(profiles, columns, labels, studies=None)` | The population's profiles and taxa, and the directional screen, from in-memory tables, optionally for some studies only. `load_core_inputs` uses them. |

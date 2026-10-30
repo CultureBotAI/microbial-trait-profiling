@@ -498,8 +498,8 @@ cellulose-decr-selection-scan run output *ARGS:
 # on a Tier 1+2 x off core, in either order, and a new or empty OUTPUT directory.
 # Both scans are verified and written together, so neither scope is reported alone.
 [positional-arguments]
-cellulose-decr-selection-scan-scopes scan_a scan_b output:
-	uv run python -m mtp.cellulose_decr.selection_scan_scopes --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" --scan "$1" --scan "$2" --output-dir "$3"
+cellulose-decr-selection-scan-scopes scan_a scan_b output *ARGS:
+	uv run python -m mtp.cellulose_decr.selection_scan_scopes --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" --scan "$1" --scan "$2" --output-dir "$3" "${@:4}"
 
 # The two methods plates and seven Tufte plates of the selected-figure deck, drawn
 # from the rerun tables into this checkout's data/derived/tufte_plates/ (#573). Plates IV
