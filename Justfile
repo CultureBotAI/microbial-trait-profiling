@@ -1182,6 +1182,14 @@ audit-coassertions *ARGS:
 three-test-table *ARGS:
 	uv run python -m mtp.three_test_table run "$@"
 
+# Publication figures from pinned completed sidecars; source runs stay read-only (#1046).
+[positional-arguments]
+publication-figures *ARGS:
+	uv run python -m mtp.publication_figures "$@"
+
+test-publication-figures:
+	uv run pytest tests/test_publication_figure_*.py -v
+
 # Read pinned completed Delta-z ledgers; derive votes, oxygen quadrants and site/disease cells.
 [positional-arguments]
 delta-z-derived *ARGS:
