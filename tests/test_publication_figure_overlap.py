@@ -6,6 +6,7 @@ import hashlib
 import io
 import json
 import re
+import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from itertools import combinations
 from pathlib import Path
@@ -489,6 +490,24 @@ def test_complete_render_and_authored_wording(fixture: Fixture) -> None:
     assert page.details["pair_count"] == 36
     assert page.details["undefined_pairs"] == 1
     assert page.details["trait_ids"] == list(bundle.trait_ids)
+
+
+@pytest.mark.parametrize("file_format", ["pdf", "svg"])
+def test_vector_exports_do_not_rasterize_the_colorbar(fixture: Fixture, file_format: str) -> None:
+    """#1228: inspect real exports; a low-resolution embedded scale must fail."""
+    (page,) = overlap.overlap_pages(fixture.load())
+    exported = io.BytesIO()
+    page.figure.savefig(exported, format=file_format)
+    raw = exported.getvalue()
+    if file_format == "pdf":
+        assert raw.startswith(b"%PDF")
+        assert b"/Subtype /Image" not in raw, "PDF unexpectedly embeds a raster image"
+    else:
+        document = ET.fromstring(raw)
+        assert document.tag == "{http://www.w3.org/2000/svg}svg"
+        assert not list(document.iter("{http://www.w3.org/2000/svg}image")), (
+            "SVG unexpectedly embeds a raster image"
+        )
 
 
 def test_verified_label_is_not_rewritten_by_wording_guard(fixture: Fixture) -> None:

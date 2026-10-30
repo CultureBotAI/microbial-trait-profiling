@@ -453,6 +453,8 @@ def overlap_pages(bundle: OverlapInputs) -> Iterator[Page]:
             spine.set_visible(False)
         color_axis = figure.add_axes((0.85, (height - 5.65) / height, 0.025, 4.75 / height))
         bar = figure.colorbar(ScalarMappable(norm=norm, cmap=palette), cax=color_axis)
+        if bar.solids is not None:
+            bar.solids.set_rasterized(False)
         bar.set_label(validate_authored_wording("Taxon-carrier Jaccard (%)"))
         figure.text(
             0.05,
