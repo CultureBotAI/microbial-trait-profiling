@@ -362,6 +362,8 @@ def test_write_consolidated_report_dynamic_numbers(tmp_path: Path) -> None:
                 adj_wilcoxon_p=0.456,
                 relative_change_pct=-80.0,
                 status="spurious",
+                magnitude_change_pct=-80.0,
+                sign_flipped=False,
             ),
             Table1TraitEffect(
                 trait_id="METPO:2000103|GO:0030245",
@@ -370,8 +372,10 @@ def test_write_consolidated_report_dynamic_numbers(tmp_path: Path) -> None:
                 raw_wilcoxon_p=1e-8,
                 adj_mean_diff=-0.09,
                 adj_wilcoxon_p=3.4e-12,
-                relative_change_pct=12.5,
+                relative_change_pct=-12.5,
                 status="genuine",
+                magnitude_change_pct=12.5,
+                sign_flipped=False,
             ),
         ],
         "twin_summary": ConditionalTwinSummary(

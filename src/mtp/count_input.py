@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import csv
 import gzip
+import io
 import json
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
@@ -184,6 +185,7 @@ class CountTableReader:
         count_columns: Sequence[str] | None = None,
         exact_columns: Sequence[str] | None = None,
         mode: CountInputMode = COMPLETE_COUNT_MODE,
+        raw_bytes: bytes | None = None,
     ) -> None:
         if mode not in COUNT_INPUT_MODES:
             raise ValueError(f"Unsupported count input mode: {mode!r}")
@@ -191,10 +193,11 @@ class CountTableReader:
         self.leading_columns = tuple(leading_columns)
         self.key_columns = tuple(key_columns)
         self.mode = mode
+        self._raw_bytes = raw_bytes
         self._rows = 0
         self._blank_counts = 0
 
-        with open_input_text(path) as handle:
+        with self._open_text() as handle:
             header = next(csv.reader(handle, delimiter="\t"), None)
         if header is None:
             raise ValueError(f"{path} is empty")
@@ -218,6 +221,21 @@ class CountTableReader:
         if not self.count_columns:
             raise ValueError(f"{path} has no count columns")
         self._count_positions = tuple(positions[column] for column in self.count_columns)
+
+    def _open_text(self) -> IO[str]:
+        """Use one caller-owned snapshot for both header and rows when supplied.
+
+        The caller binds the raw (possibly gzip-compressed) bytes to its provenance.
+        Ordinary file-backed readers keep streaming without materializing a snapshot.
+        """
+        if self._raw_bytes is None:
+            return open_input_text(self.path)
+        raw = (
+            gzip.decompress(self._raw_bytes)
+            if self.path.suffix.lower() == ".gz"
+            else self._raw_bytes
+        )
+        return io.TextIOWrapper(io.BytesIO(raw), encoding="utf-8", newline="")
 
     def _validate_header(self, exact_columns: Sequence[str] | None) -> None:
         if not self.header:
@@ -257,7 +275,7 @@ class CountTableReader:
         self._rows = 0
         self._blank_counts = 0
         seen_keys: dict[tuple[str, ...], int] = {}
-        with open_input_text(self.path) as handle:
+        with self._open_text() as handle:
             reader = csv.reader(handle, delimiter="\t")
             header = tuple(next(reader, ()))
             if header != self.header:
@@ -305,7 +323,7 @@ class CountTableReader:
 
 
 def profile_count_reader(
-    path: Path, *, mode: CountInputMode = COMPLETE_COUNT_MODE
+    path: Path, *, mode: CountInputMode = COMPLETE_COUNT_MODE, raw_bytes: bytes | None = None
 ) -> CountTableReader:
     """Return the shared strict reader for study profile count matrices."""
     return CountTableReader(
@@ -313,6 +331,7 @@ def profile_count_reader(
         leading_columns=PROFILE_KEY_COLUMNS,
         key_columns=PROFILE_KEY_COLUMNS,
         mode=mode,
+        raw_bytes=raw_bytes,
     )
 
 

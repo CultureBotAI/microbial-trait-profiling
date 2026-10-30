@@ -6,6 +6,7 @@ import argparse
 import hashlib
 import json
 import math
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from textwrap import wrap
@@ -20,6 +21,9 @@ from scipy.cluster.hierarchy import dendrogram, leaves_list, linkage
 from scipy.spatial.distance import squareform
 from scipy.stats import fisher_exact
 
+from mtp.stool_group_contrasts import select_stool_group_contrasts
+from mtp.trait_lists import DeclaredTraitList
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = REPO_ROOT / "trait-visualization" / "trait-profile-investigation" / "six-shared-traits"
 
@@ -33,6 +37,11 @@ CONTRAST_PAGES_FILENAME = "six_shared_trait_signed_direction_heatmap_pages.tsv"
 CLUSTER_TREE_NODES_FILENAME = "six_shared_trait_signed_direction_cluster_tree_nodes.tsv"
 CLUSTER_TREE_LEAVES_FILENAME = "six_shared_trait_signed_direction_cluster_tree_leaves.tsv"
 CLUSTER_COMPARISON_FILENAME = "six_shared_trait_signed_direction_cluster_comparison.tsv"
+TRAIT_LIST_CONTRAST_TABLE_FILENAME = "trait_list_condition_body_site_direction_contrasts.tsv"
+TRAIT_LIST_PROVENANCE_FILENAME = "trait_list_provenance.json"
+TRAIT_LIST_STOOL_CONTRAST_TABLE_FILENAME = "trait_list_stool_group_direction_contrasts.tsv"
+TRAIT_LIST_STOOL_ALL_CONTRAST_TABLE_FILENAME = "trait_list_stool_all_group_direction_contrasts.tsv"
+TRAIT_LIST_STOOL_SELECTION_FILENAME = "trait_list_stool_group_selection.tsv"
 CONTRAST_ROWS_PER_PAGE = 24
 EXPORT_FLOAT_SIGNIFICANT_DIGITS = 12
 
@@ -2347,6 +2356,145 @@ def write_six_shared_trait_cytoscape_heatmaps(
     )
     append_readme_section(output_dir, manifest)
     return manifest
+
+
+def trait_list_edges_filename(view_key: str) -> str:
+    """Name the full edge table one trait-list view is read from (#1054)."""
+    return f"trait_list_{view_key}_edges.tsv"
+
+
+def trait_list_stool_edges_filename(direction: str) -> str:
+    """Name grouped edges rebuilt from exact-stool profiles and corpus-wide z (#1093)."""
+    if direction not in {"increased", "decreased"}:
+        raise ValueError("Stool edge direction must be increased or decreased")
+    return f"trait_list_stool_{direction}_grouped_edges.tsv"
+
+
+def _write_stool_group_selection(
+    output_dir: Path,
+    trait_order: pd.DataFrame,
+    full_cells: pd.DataFrame,
+    group_count: int,
+) -> dict[str, object]:
+    """Persist the complete stool family and the declared support-only row selection."""
+    names = [trait_list_stool_edges_filename(direction) for direction in ("increased", "decreased")]
+    increased, decreased = (read_tsv(output_dir / name) for name in names)
+    if increased.empty and decreased.empty:
+        cells = (
+            full_cells.loc[full_cells["view_key"] == "grouped_direction_contrast"].iloc[:0].copy()
+        )
+    else:
+        mode = next(mode for mode in CONTRAST_MODES if mode.key == "grouped")
+        cells = prepare_contrast_cells(increased, decreased, mode, trait_order)
+    selected, selection = select_stool_group_contrasts(cells, group_count=group_count)
+    write_tsv(cells, output_dir / TRAIT_LIST_STOOL_ALL_CONTRAST_TABLE_FILENAME)
+    write_tsv(selected, output_dir / TRAIT_LIST_STOOL_CONTRAST_TABLE_FILENAME)
+    write_tsv(selection, output_dir / TRAIT_LIST_STOOL_SELECTION_FILENAME)
+    output_names = [
+        *names,
+        TRAIT_LIST_STOOL_ALL_CONTRAST_TABLE_FILENAME,
+        TRAIT_LIST_STOOL_CONTRAST_TABLE_FILENAME,
+        TRAIT_LIST_STOOL_SELECTION_FILENAME,
+    ]
+    return {
+        "stool_group_selection": {
+            "group_count_requested": group_count,
+            "eligibility": "at least one declared-trait cell passes the existing support filter",
+            "support_min_positive_profiles": MIN_POSITIVE_PROFILES,
+            "support_min_studies": MIN_STUDIES,
+            "ranking": ["distinct stool-study count descending", "condition group name ascending"],
+            "chosen_groups": [
+                {"condition": row.condition, "stool_study_count": int(row.stool_study_count)}
+                for row in selection.loc[selection["chosen"]].itertuples(index=False)
+            ],
+            "inference": "Fisher nominal; group selection does not use p or q values",
+            "cell_value": (
+                "100 times increased_minus_decreased_positive_fraction (percentage points)"
+            ),
+            "additional_bh_values": (
+                "native BH across all stool-group cells before top-group selection"
+            ),
+        },
+        "stool_output_sha256": {
+            name: hashlib.sha256((output_dir / name).read_bytes()).hexdigest()
+            for name in output_names
+        },
+    }
+
+
+def write_trait_list_direction_contrasts(
+    output_dir: Path,
+    trait_order: pd.DataFrame,
+    trait_list: DeclaredTraitList,
+    input_provenance: Mapping[str, object],
+    *,
+    stool_group_count: int = 6,
+) -> pd.DataFrame:
+    """Write signed direction contrasts for a declared trait list (#1054).
+
+    Each cell comes from ``prepare_contrast_cells``, as in the six-trait heatmaps: the
+    increased minus decreased fraction of profiles with positive trait z, a two-sided
+    Fisher test, and BH over the cells of one condition mode. A condition, body site
+    and trait with no positive-z profile in either direction has no edge row, so it is
+    not a cell and not in the BH family (#1084). The BH family therefore grows with the
+    list; the fractions and Fisher p-values of a trait do not.
+    """
+    if trait_order["trait_id"].tolist() != list(trait_list.trait_ids):
+        raise ValueError("Trait order must be the declared trait list, in declared order")
+    tables: list[pd.DataFrame] = []
+    sources: dict[str, str] = {}
+    for mode in CONTRAST_MODES:
+        increased_name = trait_list_edges_filename(mode.increased_view_key)
+        decreased_name = trait_list_edges_filename(mode.decreased_view_key)
+        sources[mode.key] = f"{increased_name}, {decreased_name}"
+        tables.append(
+            prepare_contrast_cells(
+                read_tsv(output_dir / increased_name),
+                read_tsv(output_dir / decreased_name),
+                mode,
+                trait_order,
+            )
+        )
+    contrasts = pd.concat(tables, ignore_index=True)
+    undeclared = sorted(set(contrasts["trait_id"]) - set(trait_list.trait_ids))
+    if undeclared:
+        raise ValueError(f"Edge tables contain undeclared traits: {undeclared}")
+    cell_counts = contrasts["trait_id"].value_counts()
+    absent = [trait_id for trait_id in trait_list.trait_ids if trait_id not in cell_counts]
+    if absent:
+        raise ValueError(f"Declared traits have no contrast cell: {absent}")
+    write_tsv(contrasts, output_dir / TRAIT_LIST_CONTRAST_TABLE_FILENAME)
+    stool_provenance = _write_stool_group_selection(
+        output_dir, trait_order, contrasts, stool_group_count
+    )
+    provenance = {
+        **trait_list.provenance(),
+        **input_provenance,
+        **stool_provenance,
+        "contrast_table": TRAIT_LIST_CONTRAST_TABLE_FILENAME,
+        "contrast_table_sha256": hashlib.sha256(
+            (output_dir / TRAIT_LIST_CONTRAST_TABLE_FILENAME).read_bytes()
+        ).hexdigest(),
+        "edge_tables": sources,
+        "cell_value": "increased_minus_decreased_positive_fraction",
+        "fisher_test": "two-sided Fisher exact test on positive-z profile counts",
+        "bh_family": (
+            "the cells of one condition mode across every declared trait; a cell is a "
+            "condition, body site and trait with at least one positive-z profile among "
+            "the increased or decreased profiles. One with none in either direction has "
+            "no edge row and is not in the family."
+        ),
+        "cells_per_mode": {
+            str(key): int(value) for key, value in contrasts["view_key"].value_counts().items()
+        },
+        "cells_per_trait": {
+            trait_id: int(cell_counts[trait_id]) for trait_id in trait_list.trait_ids
+        },
+    }
+    (output_dir / TRAIT_LIST_PROVENANCE_FILENAME).write_text(
+        json.dumps(provenance, indent=2) + "\n", encoding="utf-8"
+    )
+    return contrasts
 
 
 def select_oral_contrast_cells(cells: pd.DataFrame) -> pd.DataFrame:

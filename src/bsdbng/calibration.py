@@ -7,6 +7,7 @@ from mtp.calibration import (
     _PROTOCOL,
     ALPHA,
     DEFAULT_OUTPUT_DIR,
+    ELIGIBILITY_POLICY,
     INJECTED_TRAIT,
     INJECTION_MULTIPLIERS,
     INJECTION_STUDY_SHARE,
@@ -86,6 +87,7 @@ from mtp.calibration import (
 __all__ = [
     "ALPHA",
     "DEFAULT_OUTPUT_DIR",
+    "ELIGIBILITY_POLICY",
     "INJECTED_TRAIT",
     "INJECTION_MULTIPLIERS",
     "INJECTION_STUDY_SHARE",

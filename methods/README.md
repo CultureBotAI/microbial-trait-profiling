@@ -97,7 +97,17 @@ Its tables are committed and its figures are regenerated. The code is the
 selection scan of #835: the same overlap statistics and U6 null for every triple of
 eligible conditions and the top decreasing traits, with the rule fixed in
 [`cellulose_decr_selection_scan_protocol.json`](cellulose_decr_selection_scan_protocol.json)
-before any run on real data.
+before any run on real data. Protocol v2,
+[`cellulose_decr_selection_scan_protocol_v2.json`](cellulose_decr_selection_scan_protocol_v2.json),
+amends it after the results of both scopes had been seen: phenotype is the primary
+strain-rollup scope and off the declared sensitivity. Because that is a post-results choice
+of primary scope, the two are always reported side by side (#1050).
+
+[`study_split_selection.md`](study_split_selection.md) documents the additive
+whole-study training/held-out assessment of those exploratory selections. Its
+[`protocol`](study_split_selection_protocol.json) reserves both overlap statistics
+in a full BY/BH family per split, retains untestable and empty selections, and
+reports repeated-split stability descriptively rather than as independent replication.
 
 The selected-figure slide deck in `data/derived/figure_review_2026-09-21/` is built
 by `scripts/build_slide_deck.py` (`just figure-review-deck`), which places the

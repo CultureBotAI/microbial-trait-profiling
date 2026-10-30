@@ -2,8 +2,10 @@ import importlib.util
 import json
 import math
 import sys
+from collections.abc import Callable, Iterator
 from itertools import combinations
 from pathlib import Path
+from types import ModuleType
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -15,7 +17,7 @@ from mtp.integrated_evidence import native_composition_records
 from mtp.paths import REPO_ROOT, file_sha256
 from mtp.trait_guilds import TABLE1_TRAITS
 from mtp.workflow.consumers import CoreBundle, open_core_bundle, verify_consumer_record
-from mtp.workflow.operations import OPERATIONS, validate_core_product
+from mtp.workflow.operations import OPERATIONS, validate_execution_product
 from mtp.workflow.runtime import execute_workflow
 
 MODULE_PATH = (
@@ -26,6 +28,50 @@ assert SPEC is not None
 assert SPEC.loader is not None
 infographic = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(infographic)
+
+
+def output_inventory(root: Path) -> dict[str, str]:
+    """Include ignored and untracked outputs in the test's non-mutation check."""
+    return {
+        path.relative_to(root).as_posix(): file_sha256(path)
+        for path in sorted(root.rglob("*"))
+        if path.is_file()
+    }
+
+
+@pytest.fixture
+def isolated_investigation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> Iterator[Callable[[ModuleType], Path]]:
+    """Redirect all declared output paths and prove the real output tree is intact."""
+    originals: dict[Path, dict[str, str]] = {}
+
+    def isolate(producer: ModuleType) -> Path:
+        original = producer.INVESTIGATION_DIR
+        assert isinstance(original, Path)
+        originals.setdefault(original, output_inventory(original))
+        output = tmp_path / f"isolated-investigation-{len(originals)}"
+        for name, value in list(vars(producer).items()):
+            if isinstance(value, Path) and value.is_relative_to(original):
+                monkeypatch.setattr(producer, name, output / value.relative_to(original))
+        monkeypatch.setattr(producer, "create_infographic", lambda *_args, **_kwargs: None)
+        return output
+
+    yield isolate
+    for root, before in originals.items():
+        assert output_inventory(root) == before, "Real investigation outputs changed during test"
+
+
+def test_isolation_discovers_new_output_constants(
+    isolated_investigation: Callable[[ModuleType], Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    original = infographic.INVESTIGATION_DIR
+    monkeypatch.setattr(infographic, "FUTURE_OUTPUT", original / "nested/future.tsv", raising=False)
+    output = isolated_investigation(infographic)
+    assert output / "nested/future.tsv" == infographic.FUTURE_OUTPUT
+    infographic.FUTURE_OUTPUT.parent.mkdir(parents=True)
+    infographic.FUTURE_OUTPUT.write_text("synthetic fixture output\n")
+    assert output == infographic.INVESTIGATION_DIR
 
 
 @pytest.fixture
@@ -109,6 +155,7 @@ def test_stratified_stats_only_records_outputs_and_stale_files(
     assert set(manifest["filename_token"]) == {"feces", "feces_excluded", "mouth"}
     assert manifest["pair_count"].eq(8).all()
     record = json.loads((output / "stratified_stats_provenance.json").read_text())
+    assert record["schema_version"] == "1.2"
     assert record["verification_status"] == "legacy_inputs_hashed_not_core_verified"
     assert record["inputs"]["profiles"]["sha256"] == file_sha256(profiles)
     assert record["inputs"]["pair_metadata"]["sha256"] == file_sha256(pairs)
@@ -128,6 +175,11 @@ def test_stratified_stats_only_records_outputs_and_stale_files(
         assert path.read_bytes() == stale_contents[path]
         assert item["sha256"] == file_sha256(path)
         assert item["size_bytes"] == len(stale_contents[path])
+        assert item["reason"] == (
+            "existing_stratum_table_not_refreshed"
+            if path == stale
+            else "not_produced_by_site_stats_mode"
+        )
     assert set(output.glob("*.png")) == {output / infographic.OUTPUT_PNG.name, unrelated}
     assert pooled.read_bytes() == pooled_alias.read_bytes()
     native_output = tmp_path / "native-pooled"
@@ -211,24 +263,12 @@ def test_stratified_stats_no_eligible_sites_has_readable_empty_manifest(
 @pytest.mark.parametrize("mode", [[], ["--stats-only"]])
 def test_min_stratified_pairs_is_rejected_outside_site_stats(
     stratified_inputs: tuple[Path, Path, Path],
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
+    isolated_investigation: Callable[[ModuleType], Path],
     capsys: pytest.CaptureFixture[str],
     mode: list[str],
 ) -> None:
     profiles, pairs, labels = stratified_inputs
-    output = tmp_path / "isolated-legacy-output"
-    monkeypatch.setattr(infographic, "INVESTIGATION_DIR", output)
-    for name in (
-        "TRAIT_STATS_TSV",
-        "POOLED_TRAIT_STATS_TSV",
-        "CONDITION_SUMMARY_TSV",
-        "BODY_SITE_SUMMARY_TSV",
-        "STRATIFIED_TRAIT_STATS_MANIFEST_TSV",
-        "OUTPUT_PNG",
-    ):
-        monkeypatch.setattr(infographic, name, output / getattr(infographic, name).name)
-    monkeypatch.setattr(infographic, "create_infographic", lambda *_args, **_kwargs: None)
+    output = isolated_investigation(infographic)
     with pytest.raises(SystemExit, match="2"):
         infographic.main(
             [
@@ -252,26 +292,14 @@ def test_min_stratified_pairs_is_rejected_outside_site_stats(
 @pytest.mark.parametrize("mode", [[], ["--stats-only"]])
 def test_other_modes_invalidate_old_site_provenance(
     stratified_inputs: tuple[Path, Path, Path],
-    tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
+    isolated_investigation: Callable[[ModuleType], Path],
     mode: list[str],
 ) -> None:
     profiles, pairs, labels = stratified_inputs
-    output = tmp_path / "full"
+    output = isolated_investigation(infographic)
     output.mkdir()
     provenance = output / "stratified_stats_provenance.json"
     provenance.write_text('{"obsolete": true}\n')
-    monkeypatch.setattr(infographic, "INVESTIGATION_DIR", output)
-    for name in (
-        "TRAIT_STATS_TSV",
-        "POOLED_TRAIT_STATS_TSV",
-        "CONDITION_SUMMARY_TSV",
-        "BODY_SITE_SUMMARY_TSV",
-        "STRATIFIED_TRAIT_STATS_MANIFEST_TSV",
-        "OUTPUT_PNG",
-    ):
-        monkeypatch.setattr(infographic, name, output / getattr(infographic, name).name)
-    monkeypatch.setattr(infographic, "create_infographic", lambda *_args, **_kwargs: None)
     infographic.main(
         [
             *mode,
@@ -287,8 +315,12 @@ def test_other_modes_invalidate_old_site_provenance(
     assert infographic.trait_stats_path(output, "pooled").exists()
 
 
+@pytest.mark.parametrize("direction_basis", ["group_1_vs_group_0", "disease_vs_comparison"])
 def test_heatmap_main_to_site_stats_binds_hashes_and_selection_parameters(
-    stratified_inputs: tuple[Path, Path, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    stratified_inputs: tuple[Path, Path, Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    direction_basis: str,
 ) -> None:
     """Exercise the producer mapping instead of hand-writing hash columns (#875)."""
     heatmap_path = MODULE_PATH.with_name("create_study_trait_profile_heatmap.py")
@@ -343,7 +375,7 @@ def test_heatmap_main_to_site_stats_binds_hashes_and_selection_parameters(
     argv = [
         "heatmap",
         "--direction-basis",
-        "group_1_vs_group_0",
+        direction_basis,
         "--study-trait-profiles-input",
         str(profiles),
         "--trait-columns-input",
@@ -379,6 +411,10 @@ def test_heatmap_main_to_site_stats_binds_hashes_and_selection_parameters(
     assert record["inputs"]["profiles"]["sha256"] == file_sha256(profiles)
     assert record["parameters"]["heatmap_selection"]["max_profiles"] == 24
     assert record["parameters"]["heatmap_selection"]["max_body_site_categories"] == 1
+    assert "direction_basis" in record["parameters"]["heatmap_selection"], (
+        "Paired metadata did not preserve the basis in site-stat provenance"
+    )
+    assert record["parameters"]["heatmap_selection"]["direction_basis"] == direction_basis
     assert 0 < record["pair_denominator_audit"]["n_experiments"] < 16
 
 
@@ -935,7 +971,7 @@ def pooled_core(tmp_path: Path) -> CoreBundle:
         {"raw_dump": dump, "kg_edges": edges, "kg_nodes": nodes},
         tmp_path / "runs",
         OPERATIONS,
-        validator=validate_core_product,
+        validator=validate_execution_product,
         repository_root=REPO_ROOT,
     )
     return open_core_bundle(Path(run.manifest_path))

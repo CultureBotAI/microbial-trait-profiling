@@ -547,6 +547,7 @@ class WorkflowRun(ConfiguredBaseModel):
                        'ScientificResultRecord',
                        'ComparisonRun'],
          'ifabsent': 'string(group_1_vs_group_0)'} })
+    trait_key_policy: Optional[str] = Field(default=None, title="Trait key policy", description="""Versioned trait identity rule, bound to the resolved parameter and matrix/catalog producers. Absent historical values require an audited producer inventory; no current-policy default applies.""", json_schema_extra = { "linkml_meta": {'domain_of': ['WorkflowRun']} })
     definition: WorkflowDefinition = Field(default=..., title="Definition", description="""Embedded validated workflow definition used by this attempt.""", json_schema_extra = { "linkml_meta": {'domain_of': ['WorkflowRun']} })
     status: ExecutionStatus = Field(default=..., title="Status", description="""Explicit lifecycle or validation outcome; only completed verified runs are consumable.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ValidationResult',
                        'StepExecution',
@@ -590,6 +591,19 @@ class WorkflowRun(ConfiguredBaseModel):
                        'ArmCommandExecution',
                        'ArmRun',
                        'ComparisonRun']} })
+
+    @field_validator('trait_key_policy')
+    def pattern_trait_key_policy(cls, v):
+        pattern=re.compile(r"^(raw_object_v1|facultative_union_v1)$")
+        if isinstance(v, list):
+            for element in v:
+                if isinstance(element, str) and not pattern.match(element):
+                    err_msg = f"Invalid trait_key_policy format: {element}"
+                    raise ValueError(err_msg)
+        elif isinstance(v, str) and not pattern.match(v):
+            err_msg = f"Invalid trait_key_policy format: {v}"
+            raise ValueError(err_msg)
+        return v
 
     @field_validator('spec_sha256')
     def pattern_spec_sha256(cls, v):

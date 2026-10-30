@@ -8,7 +8,13 @@ decreasing traits of the Noel arm's directional screen. It reports where PD, HIV
 fall among the triples, and where cellulose falls among the traits.
 
 The rule is declared in ``methods/cellulose_decr_selection_scan.md`` and fixed in
-``methods/cellulose_decr_selection_scan_protocol.json``, both committed before this code.
+``methods/cellulose_decr_selection_scan_protocol.json`` (v1), both committed before this
+code. Protocol v2 (``methods/cellulose_decr_selection_scan_protocol_v2.json``) amends v1
+once, on 2026-10-25, after the results of both scopes had been seen: phenotype becomes the
+primary strain-rollup scope and off the declared sensitivity. As a post-results choice of
+primary scope, it reports the two side by side, always (#1050;
+``mtp.cellulose_decr.selection_scan_scopes``). A run follows v2. v1 stays byte-identical
+and readable, so the records written under it still verify.
 The population is a verified Tier 1+2 core run rather than cellulose_decr's own
 ``data/derived`` inputs, which give different set sizes (#818).
 
@@ -38,7 +44,7 @@ from collections.abc import Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, NamedTuple
 
 import numpy as np
 import numpy.typing as npt
@@ -70,13 +76,34 @@ from mtp.trait_screen import (
     run_screen,
     screen_candidates,
 )
+from mtp.workflow.output_roots import add_temporary_output_option, require_durable_output
 
 if TYPE_CHECKING:
+    from mtp.datamodel.workflow_pydantic import WorkflowRun
     from mtp.workflow.consumers import CoreBundle
 
-PROTOCOL_PATH = REPO_ROOT / "methods" / "cellulose_decr_selection_scan_protocol.json"
+PROTOCOL_V1_PATH = REPO_ROOT / "methods" / "cellulose_decr_selection_scan_protocol.json"
+PROTOCOL_PATH = REPO_ROOT / "methods" / "cellulose_decr_selection_scan_protocol_v2.json"
 METHODS_PATH = REPO_ROOT / "methods" / "cellulose_decr_selection_scan.md"
-VERSION = "cellulose-decr-selection-scan-v1"
+VERSION_V1 = "cellulose-decr-selection-scan-v1"
+VERSION = "cellulose-decr-selection-scan-v2"
+# Every protocol version this code reads, with its committed file. A run follows VERSION;
+# v1 stays readable so that the records written under it still verify (#1050).
+PROTOCOLS = {VERSION_V1: PROTOCOL_V1_PATH, VERSION: PROTOCOL_PATH}
+# The version a later version amends. It names that version's file by path and SHA-256,
+# and adds amendments to the ones in force there.
+AMENDS = {VERSION: VERSION_V1}
+# The fields of a file that amends an earlier version: nothing else, so no rule field can
+# be set there except through an amendment.
+AMENDING_FILE_KEYS = {
+    "protocol",
+    "issue",
+    "methods",
+    "amends",
+    "declared",
+    "drafted_by",
+    "amendments",
+}
 TIER1_2 = "disease_vs_healthy_tier1_2_subject_controls"
 CORE_PRODUCTS = (
     "experiments",
@@ -119,6 +146,10 @@ OUTPUTS = {
     "provenance": "selection_scan_provenance.json",
 }
 CONSUMER_RECORD = "core_consumption.json"
+CONSUMER = "mtp.cellulose_decr.selection_scan"
+# The core run's external sources, recorded with their hashes so that two scans can be
+# shown to read the same corpus and KG (#1050).
+CORE_SOURCES = ("raw_dump", "kg_edges", "kg_nodes")
 
 BoolArray = npt.NDArray[np.bool_]
 FloatArray = npt.NDArray[np.float64]
@@ -135,8 +166,14 @@ def seed_entropy(seed: SeedLike) -> list[int]:
 
 @dataclass(frozen=True)
 class Protocol:
-    """The declared rule's parameters, read from the protocol file with its amendments."""
+    """The declared rule's parameters, read from a protocol file with its amendments.
 
+    ``results_seen`` lists the scopes whose scan results had been seen when the
+    strain-rollup roles were declared; ``side_by_side`` is whether the scopes must be
+    reported together (both set by v2, #1050).
+    """
+
+    version: str
     min_studies: int
     top_n: int
     always_included: str
@@ -149,11 +186,18 @@ class Protocol:
     scope_primary: str
     scope_sensitivity: tuple[str, ...]
     scope_absent: str
+    results_seen: tuple[str, ...]
+    side_by_side: bool
 
 
 STRAIN_ROLLUP = "strain_rollup"
 PRIMARY = "primary"
 SENSITIVITY = "declared_sensitivity"
+SIDE_BY_SIDE = "side_by_side"
+# Where a run's scope came from: the core's recorded parameter, or, for a core built
+# before #828 that records none, the protocol's declared ``absent_means`` (#927).
+RECORDED = "recorded"
+ABSENT_MEANS = "absent_means"
 # What this code implements for each field the protocol fixes. load_protocol refuses a
 # protocol that says otherwise, so an edited field cannot pass as followed (#872).
 FIXED_FIELDS: dict[tuple[str, ...], object] = {
@@ -166,41 +210,91 @@ FIXED_FIELDS: dict[tuple[str, ...], object] = {
     ("lead_triple",): list(CONDITIONS.values()),
     ("lead_trait",): TRAIT_ID,
 }
-# The fields the amendments of 2026-10-22 set (#872), as this code implements them.
-AMENDED_FIELDS: dict[str, dict[str, object]] = {
-    STRAIN_ROLLUP: {
+# The strain-rollup scope each version declares, as this code implements it: v1's
+# amendment of 2026-10-22 (#872) made off primary; v2's of 2026-10-25, made after the
+# results of both scopes had been seen, makes phenotype primary and both scopes
+# reported (#1050).
+SCOPE_DECLARATIONS: dict[str, dict[str, object]] = {
+    VERSION_V1: {
         "parameter": STRAIN_ROLLUP,
         "primary": "off",
         "sensitivity": ["phenotype"],
         "absent_means": "off",
     },
-    "secondary_rank": {
-        "by": "u6_z",
-        MEAN_DISTANCE: "ascending",
-        CORE: "descending",
-        "ties": "range",
+    VERSION: {
+        "parameter": STRAIN_ROLLUP,
+        "primary": "phenotype",
+        "sensitivity": ["off"],
+        "absent_means": "off",
+        "reported": SIDE_BY_SIDE,
+        "declared_after_results": ["off", "phenotype"],
     },
 }
+# The secondary rank the amendment of 2026-10-22 declares (#872), in force in both versions.
+SECONDARY_RANK: dict[str, object] = {
+    "by": "u6_z",
+    MEAN_DISTANCE: "ascending",
+    CORE: "descending",
+    "ties": "range",
+}
+AMENDABLE_FIELDS = (STRAIN_ROLLUP, "secondary_rank")
 AMENDMENT_KEYS = {"date", "change", "reason", "known_when_amended", "sets"}
 
 
-def load_protocol(path: Path = PROTOCOL_PATH) -> Protocol:
-    """The declared parameters, with the amendments applied in date order.
+def repository_path(path: Path) -> str:
+    """A committed file's path within the repository, as the records give it."""
+    return str(path.relative_to(REPO_ROOT))
 
-    A protocol of another version is refused, and so is one whose fields say something
-    this code does not do (``FIXED_FIELDS``, ``AMENDED_FIELDS``) or whose amendments are
-    malformed, out of date order or set an unknown field.
+
+def declaration(path: Path) -> tuple[str, dict[str, Any], list[dict[str, Any]]]:
+    """A protocol file's version, the fields it declares, and every amendment in force.
+
+    A version that amends an earlier one (``AMENDS``) must name that version's committed
+    file by path and SHA-256 and hold nothing but amendments; the earlier version's fields
+    and amendments come first, unchanged. A file of an unknown version is refused.
     """
     data = json.loads(path.read_text(encoding="utf-8"))
-    if data["protocol"] != VERSION:
-        raise ValueError(f"{path} declares {data['protocol']!r}, but this code is {VERSION!r}")
+    version = data["protocol"]
+    if version not in PROTOCOLS:
+        raise ValueError(f"{path} declares {version!r}; this code reads {sorted(PROTOCOLS)}")
+    base = AMENDS.get(version)
+    if base is None:
+        if "amends" in data:
+            raise ValueError(f"{path}: {version} amends no earlier version")
+        return version, data, list(data["amendments"])
+    base_path = PROTOCOLS[base]
+    reference = data.get("amends", {})
+    if set(reference) != {"protocol", "path", "sha256"} or (
+        reference["protocol"],
+        reference["path"],
+    ) != (base, repository_path(base_path)):
+        raise ValueError(f"{path}: {version} must amend {base} at {repository_path(base_path)}")
+    if file_sha256(base_path) != reference["sha256"]:
+        raise ValueError(f"{repository_path(base_path)} has changed since {version} amended it")
+    extra = sorted(set(data) - AMENDING_FILE_KEYS)
+    if extra:
+        raise ValueError(f"{path}: {version} may set fields only by amendment, not {extra}")
+    _, declared, amendments = declaration(base_path)
+    return version, declared, [*amendments, *data["amendments"]]
+
+
+def load_protocol(path: Path = PROTOCOL_PATH) -> Protocol:
+    """The declared parameters of the protocol in ``path``, with its amendments applied in
+    date order: by default v2, which a run follows; ``PROTOCOL_V1_PATH`` reads v1.
+
+    A protocol of an unknown version is refused, and so is one whose fields say something
+    this code does not do for its version (``FIXED_FIELDS``, ``SCOPE_DECLARATIONS``,
+    ``SECONDARY_RANK``), whose amendments are malformed, out of date order or set an
+    unknown field, or that does not amend the earlier version as declared (``declaration``).
+    """
+    version, data, amendments = declaration(path)
     effective = dict(data)
     dates = []
-    for number, amendment in enumerate(data["amendments"]):
+    for number, amendment in enumerate(amendments):
         if set(amendment) != AMENDMENT_KEYS:
             raise ValueError(f"{path}: amendment {number} needs exactly {sorted(AMENDMENT_KEYS)}")
         dates.append(date.fromisoformat(amendment["date"]))
-        unknown = sorted(set(amendment["sets"]) - set(AMENDED_FIELDS))
+        unknown = sorted(set(amendment["sets"]) - set(AMENDABLE_FIELDS))
         if unknown:
             raise ValueError(f"{path}: amendment {number} sets unknown fields {unknown}")
         effective.update(amendment["sets"])
@@ -212,13 +306,15 @@ def load_protocol(path: Path = PROTOCOL_PATH) -> Protocol:
             value = value[key]
         if value != expected:
             raise ValueError(f"{path}: {'.'.join(keys)} is {value!r}; this code does {expected!r}")
-    for field, expected in AMENDED_FIELDS.items():
+    amended = {STRAIN_ROLLUP: SCOPE_DECLARATIONS[version], "secondary_rank": SECONDARY_RANK}
+    for field, expected in amended.items():
         if effective.get(field) != expected:
             raise ValueError(
                 f"{path}: {field} is {effective.get(field)!r}; this code does {expected!r}"
             )
     rollup = effective[STRAIN_ROLLUP]
     return Protocol(
+        version=version,
         min_studies=int(data["eligibility"]["min_studies"]),
         top_n=int(data["traits"]["top_n"]),
         always_included=str(data["traits"]["always_included"]),
@@ -231,14 +327,34 @@ def load_protocol(path: Path = PROTOCOL_PATH) -> Protocol:
         scope_primary=str(rollup["primary"]),
         scope_sensitivity=tuple(rollup["sensitivity"]),
         scope_absent=str(rollup["absent_means"]),
+        results_seen=tuple(rollup.get("declared_after_results", ())),
+        side_by_side=rollup.get("reported") == SIDE_BY_SIDE,
     )
+
+
+def protocol_record(version: str = VERSION) -> dict[str, Any]:
+    """A version's committed file, its hash, and the file and hash of the version it
+    amends, as a scan's provenance records them."""
+    path = PROTOCOLS[version]
+    record: dict[str, Any] = {
+        "path": repository_path(path),
+        "sha256": file_sha256(path),
+        "version": version,
+    }
+    base = AMENDS.get(version)
+    if base is not None:
+        record["amends"] = {
+            "protocol": base,
+            "path": repository_path(PROTOCOLS[base]),
+            "sha256": file_sha256(PROTOCOLS[base]),
+        }
+    return record
 
 
 def scope_role(scope: str, protocol: Protocol) -> str:
     """A strain-rollup scope's declared role, primary or sensitivity; another is refused.
 
-    The scope is the core's, as ``mtp.workflow.operations.run_strain_rollup`` reads it: a
-    core built before #828 records none and is ``off``, the protocol's ``absent_means``.
+    The scope is the core's (``core_scope``).
     """
     if scope == protocol.scope_primary:
         return PRIMARY
@@ -248,6 +364,86 @@ def scope_role(scope: str, protocol: Protocol) -> str:
         f"strain_rollup {scope!r} is neither the declared primary scope "
         f"{protocol.scope_primary!r} nor a declared sensitivity {list(protocol.scope_sensitivity)}"
     )
+
+
+def core_scope(run: WorkflowRun, protocol: Protocol) -> tuple[str, str]:
+    """A core run's strain-rollup scope, and where it came from.
+
+    A run that records the parameter has that scope (``recorded``), read with
+    ``mtp.workflow.operations.run_strain_rollup``. A core built before #828 records none:
+    its scope is the protocol's declared ``absent_means`` (``absent_means``), off, which
+    v2 makes the sensitivity. No default outside the protocol decides it (#927).
+    """
+    from mtp.workflow.operations import run_strain_rollup
+
+    if STRAIN_ROLLUP in {item.name for item in run.parameters or []}:
+        return str(run_strain_rollup(run)), RECORDED
+    return protocol.scope_absent, ABSENT_MEANS
+
+
+def scope_record(scope: str, source: str, protocol: Protocol) -> dict[str, Any]:
+    """What a run records about its scope, in its summary, provenance and ``--plan``.
+
+    The scope and where it came from (``core_scope``); the role the protocol declares for
+    it, and the version that declared it after which results had been seen; and, when the
+    scopes are reported side by side (v2, #1050), the scopes it must be reported beside.
+    """
+    declared = [protocol.scope_primary, *protocol.scope_sensitivity]
+    return {
+        "scope": scope,
+        "scope_source": source,
+        "role": scope_role(scope, protocol),
+        "declared_primary": protocol.scope_primary,
+        "declared_sensitivity": list(protocol.scope_sensitivity),
+        "declared_by": protocol.version,
+        "declared_after_results": list(protocol.results_seen),
+        "reported": SIDE_BY_SIDE if protocol.side_by_side else None,
+        "report_beside": [other for other in declared if other != scope]
+        if protocol.side_by_side
+        else [],
+    }
+
+
+def recorded_protocol(summary: Mapping[str, Any], provenance: Mapping[str, Any]) -> Protocol:
+    """The protocol a scan's summary and provenance name, once they agree with it.
+
+    Both must name the same known version; the provenance must give that version's
+    committed file, its current hash and, for v2, the v1 file and hash it amends; and the
+    recorded scope's role and the declared scopes must be the ones that version declares.
+    A record written under v1, such as those of 2026-10-23, verifies against the v1 file,
+    which v2 leaves unchanged (#1050).
+    """
+    version = summary["protocol"]
+    recorded = provenance["protocol"]
+    if recorded["version"] != version:
+        raise ValueError(
+            f"the summary names {version!r} but the provenance names {recorded['version']!r}"
+        )
+    if version not in PROTOCOLS:
+        raise ValueError(f"the records name an unknown protocol version {version!r}")
+    committed = protocol_record(version)
+    if recorded["path"] != committed["path"]:
+        raise ValueError(f"the records give {version} the path {recorded['path']!r}")
+    if recorded["sha256"] != committed["sha256"]:
+        raise ValueError(f"the recorded hash of {committed['path']} is not the committed file's")
+    if recorded != committed:
+        raise ValueError(f"the records of {version} do not match {committed}")
+    protocol = load_protocol(PROTOCOLS[version])
+    rollup = summary[STRAIN_ROLLUP]
+    if provenance[STRAIN_ROLLUP] != rollup:
+        raise ValueError("the summary and the provenance differ in the strain-rollup scope")
+    expected = {
+        "role": scope_role(rollup["scope"], protocol),
+        "declared_primary": protocol.scope_primary,
+        "declared_sensitivity": list(protocol.scope_sensitivity),
+    }
+    actual = {key: rollup.get(key) for key in expected}
+    if actual != expected:
+        raise ValueError(
+            f"the records give strain_rollup {rollup['scope']!r} the role and declaration "
+            f"{actual}; {version} declares {expected}"
+        )
+    return protocol
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
@@ -283,7 +479,12 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         default="unrecorded",
         help="Revision of this script, e.g. $(git rev-parse HEAD) with +dirty when modified.",
     )
-    return parser.parse_args(argv)
+    add_temporary_output_option(parser)
+    args = parser.parse_args(argv)
+    # A plan writes nothing; a scan's outputs are cited, so they must outlive a restart (#1087)
+    if not args.plan:
+        require_durable_output(parser, args.output_dir, allowed=args.allow_temporary_output)
+    return args
 
 
 # --------------------------------------------------------------------------- population
@@ -1342,13 +1543,21 @@ def require_scope(inputs: ScanInputs, protocol: Protocol) -> None:
         )
 
 
-def open_tier1_2(core_run: Path, protocol: Protocol | None = None) -> tuple[CoreBundle, str, str]:
-    """Verify a core run; return it with its strain-rollup scope and that scope's role.
+class OpenTier12(NamedTuple):
+    """A verified core, its scope and the origin of that scope (never a scope role)."""
+
+    bundle: CoreBundle
+    scope: str
+    scope_source: str
+
+
+def open_tier1_2(core_run: Path, protocol: Protocol | None = None) -> OpenTier12:
+    """Verify a core run; return it with its strain-rollup scope and where the scope came
+    from (``core_scope``).
 
     A core of another population, direction basis or undeclared scope is refused.
     """
     from mtp.workflow.consumers import open_core_bundle
-    from mtp.workflow.operations import run_strain_rollup
     from mtp.workflow.population import ORIENTED_DIRECTION_BASIS
 
     bundle = open_core_bundle(core_run)
@@ -1360,20 +1569,23 @@ def open_tier1_2(core_run: Path, protocol: Protocol | None = None) -> tuple[Core
             f"the scan reads a {TIER1_2} core oriented {ORIENTED_DIRECTION_BASIS}; "
             f"{core_run} is {bundle.run.contrast_population}, {bundle.run.direction_basis}"
         )
-    scope = run_strain_rollup(bundle.run)
-    return bundle, scope, scope_role(scope, protocol or load_protocol())
+    protocol = protocol or load_protocol()
+    scope, source = core_scope(bundle.run, protocol)
+    scope_role(scope, protocol)  # refuses an undeclared scope
+    return OpenTier12(bundle, scope, source)
 
 
 def load_core_inputs(
     core_run: Path, protocol: Protocol | None = None
 ) -> tuple[CoreBundle, ScanInputs]:
     """Verify a Tier 1+2 core run (its ``run.json``) of a declared scope; read it once."""
-    bundle, scope, _ = open_tier1_2(core_run, protocol)
+    opened = open_tier1_2(core_run, protocol)
+    bundle = opened.bundle
     paths = {product: bundle.path(product) for product in CORE_PRODUCTS}
     inputs = load_inputs(
         paths,
         contrast_population=str(bundle.run.contrast_population),
-        strain_rollup=scope,
+        strain_rollup=opened.scope,
         protocol=protocol,
     )
     return bundle, inputs
@@ -1633,13 +1845,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     out = args.output_dir
     if not args.plan and out.exists() and (not out.is_dir() or any(out.iterdir())):
         raise ValueError(f"{out} must be a new or empty directory")
-    bundle, scope, role = open_tier1_2(args.core_run, protocol)
-    rollup = {
-        "scope": scope,
-        "role": role,
-        "declared_primary": protocol.scope_primary,
-        "declared_sensitivity": list(protocol.scope_sensitivity),
-    }
+    opened = open_tier1_2(args.core_run, protocol)
+    bundle, scope = opened.bundle, opened.scope
+    rollup = scope_record(scope, opened.scope_source, protocol)
     outputs = [out / name for name in OUTPUTS.values()]
     if not args.plan:
         out.mkdir(parents=True, exist_ok=True)
@@ -1666,6 +1874,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         traits = chosen["trait_id"].tolist()
         prepared = prepare(inputs.profiles, inputs.taxa, inputs.matrix, traits, eligible)
         report = {
+            "protocol": protocol.version,
             STRAIN_ROLLUP: rollup,
             **plan(conditions, chosen, prepared, protocol, permutations),
         }
@@ -1683,8 +1892,21 @@ def main(argv: Sequence[str] | None = None) -> int:
     conditions["layout_position"] = conditions["condition"].map(layout).astype("Int64")
     conditions["is_lead_condition"] = conditions["condition"].isin(protocol.lead_triple)
     follows = permutations == protocol.permutations and seed == protocol.seed
+    notes = [
+        "Every p-value is nominal; no multiplicity correction is applied here.",
+        "One sequence of U6 draws serves every triple and trait, so p-values share draws.",
+        "Counts describe curated signature taxa and their annotations, not physiology.",
+    ]
+    if protocol.side_by_side:
+        seen = " and ".join(protocol.results_seen)
+        notes.append(
+            f"The strain-rollup roles were declared after the {seen} results had been seen "
+            f"({protocol.version}), a post-results choice of primary scope. Report this "
+            f"{scope} scan only beside the {', '.join(rollup['report_beside'])} scan of the "
+            "same protocol (just cellulose-decr-selection-scan-scopes)."
+        )
     summary = {
-        "protocol": VERSION,
+        "protocol": protocol.version,
         "follows_protocol": follows,
         "rule": {
             "min_studies": protocol.min_studies,
@@ -1724,11 +1946,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "lead_trait": protocol.lead_trait,
         "traits": trait_frame.to_dict("records"),
         "p_value_distribution": quantiles,
-        "notes": [
-            "Every p-value is nominal; no multiplicity correction is applied here.",
-            "One sequence of U6 draws serves every triple and trait, so p-values share draws.",
-            "Counts describe curated signature taxa and their annotations, not physiology.",
-        ],
+        "notes": notes,
     }
     write_tsv(conditions, out / OUTPUTS["conditions"])
     write_tsv(trait_frame, out / OUTPUTS["traits"])
@@ -1748,13 +1966,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         "code_commit": args.code_commit,
         "script": "src/mtp/cellulose_decr/selection_scan.py",
         "scripts": {f"src/mtp/cellulose_decr/{path.name}": file_sha256(path) for path in modules},
-        "protocol": {
-            "path": str(PROTOCOL_PATH.relative_to(REPO_ROOT)),
-            "sha256": file_sha256(PROTOCOL_PATH),
-            "version": VERSION,
-        },
+        "protocol": protocol_record(protocol.version),
         "methods": {
-            "path": str(METHODS_PATH.relative_to(REPO_ROOT)),
+            "path": repository_path(METHODS_PATH),
             "sha256": file_sha256(METHODS_PATH),
         },
         "core_run": {
@@ -1765,6 +1979,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             "contrast_population": TIER1_2,
             "direction_basis": ORIENTED_DIRECTION_BASIS,
             "parameters": {item.name: item.value for item in bundle.run.parameters or []},
+            "sources": {
+                artifact.product_id: artifact.sha256
+                for artifact in bundle.run.artifacts or []
+                if artifact.product_id in CORE_SOURCES
+            },
         },
         STRAIN_ROLLUP: rollup,
         "inputs": hashes,
@@ -1781,9 +2000,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "outputs": sorted([*OUTPUTS.values(), CONSUMER_RECORD]),
     }
     write_json(provenance, out / OUTPUTS["provenance"])
-    write_consumer_record(
-        bundle, out / CONSUMER_RECORD, consumer="mtp.cellulose_decr.selection_scan", outputs=outputs
-    )
+    write_consumer_record(bundle, out / CONSUMER_RECORD, consumer=CONSUMER, outputs=outputs)
     print(f"wrote {len(outputs) + 1} files to {out}")
     return 0
 

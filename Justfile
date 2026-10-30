@@ -90,24 +90,34 @@ core-import-legacy source output:
 core-compare run baseline_dir output:
 	uv run python -m mtp.workflow compare-legacy "{{run}}" "{{baseline_dir}}" "{{output}}"
 
-core-screen run output:
-	uv run python -m mtp.trait_screen --core-run "{{run}}" --output-dir "{{output}}"
+# The arms run these core-* modules too, so the recipe, not the module, refuses an output
+# root under the system temporary directory; --allow-temporary-output admits a throwaway run (#1087).
+[positional-arguments]
+core-screen run output *ARGS:
+	bash scripts/guard_output_root.sh "$2" uv run python -m mtp.trait_screen --core-run "$1" --output-dir "$2" "${@:3}"
 
-core-composition run output:
-	uv run python -m mtp.trait_composition --core-run "{{run}}" --output-dir "{{output}}"
+[positional-arguments]
+core-composition run output *ARGS:
+	bash scripts/guard_output_root.sh "$2" uv run python -m mtp.trait_composition --core-run "$1" --output-dir "$2" "${@:3}"
 
 # After study-trait-profiles and trait-heatmaps: pooled/site tables with hashed provenance.
 [positional-arguments]
 trait-profile-site-stats *ARGS:
 	uv run python scripts/create_trait_profile_infographic.py --stratified-stats-only "$@"
 
-# Complete exports carry the verified input fingerprints needed for integration.
+# Synthetic argument-guard probe using a copied producer (#950).
 [positional-arguments]
-core-ora run output tail="upper":
-	uv run python scripts/trait_enrichment.py --core-run "$1" \
+probe-site-stats-guard *ARGS:
+	uv run python scripts/adhoc/issue928_guard_isolation.py "$@"
+
+# Complete exports carry the verified input fingerprints needed for integration.
+# Give the tail before --allow-temporary-output, e.g. `just core-ora RUN OUT upper --allow-temporary-output`.
+[positional-arguments]
+core-ora run output *ARGS:
+	bash scripts/guard_output_root.sh "$2" uv run python scripts/trait_enrichment.py --core-run "$1" \
 	  --output "$2/report.txt" --tsv-output "$2/results.tsv" \
-	  --all-results-output "$2/all_results.tsv" --tail "$3" \
-	  --p-threshold 0.001 --min-fold 1.5 --max-fold 0.5 --fdr-scope global
+	  --all-results-output "$2/all_results.tsv" --tail "${3:-upper}" \
+	  --p-threshold 0.001 --min-fold 1.5 --max-fold 0.5 --fdr-scope global "${@:4}"
 
 [positional-arguments]
 audit-ora-refresh manifest output:
@@ -116,7 +126,7 @@ audit-ora-refresh manifest output:
 # Bind all anatomical partitions and summaries to the same verified ORA core.
 [positional-arguments]
 core-strata run output *ARGS:
-	uv run python scripts/run_stratified_enrichment.py --core-run "$1" --output-dir "$2" "${@:3}"
+	bash scripts/guard_output_root.sh "$2" uv run python scripts/run_stratified_enrichment.py --core-run "$1" --output-dir "$2" "${@:3}"
 
 [positional-arguments]
 audit-core-strata historical current:
@@ -126,6 +136,7 @@ core-verify-consumer record:
 	uv run python -m mtp.workflow verify-consumer "{{record}}"
 
 # Retain original records and declared dependencies; --retain adds explicit supporting evidence.
+# A destination under the system temporary directory needs --allow-temporary-output (#1049).
 [positional-arguments]
 evidence-archive output *ARGS:
 	uv run python -m mtp.workflow archive --output "$1" "${@:2}"
@@ -139,6 +150,8 @@ evidence-resolve archive original:
 # Its strain rollup scope is the primary phenotype unless --strain-rollup off or full asks
 # for the sensitivity or exploratory core (#788).
 # Build one shared raw-to-core execution before rerunning any owner analysis.
+# The rerun recipes refuse an output root under the system temporary directory unless
+# --allow-temporary-output marks a throwaway run (#1049).
 [positional-arguments]
 rerun-core output raw edges nodes *ARGS:
 	uv run python -m mtp.workflow prepare-core "$@"
@@ -171,6 +184,15 @@ rerun-compare core_run noel_run jed_run ilyas_run output *ARGS:
 rerun-verify-comparison record:
 	uv run python -m mtp.workflow.arms verify-comparison "$@"
 
+# Additive BY/BH sidecars from a verified completed comparison; native tables unchanged.
+[positional-arguments]
+rerun-multiplicity comparison output *ARGS:
+	uv run python -m mtp.multiplicity run --comparison-run "$1" --output "$2" "${@:3}"
+
+[positional-arguments]
+rerun-verify-multiplicity record:
+	uv run python -m mtp.multiplicity verify --run "$1"
+
 # Additive #771 lineage extension and complete six-fraction study LOSO.
 [positional-arguments]
 table1-influence-extension *ARGS:
@@ -180,8 +202,23 @@ table1-influence-extension *ARGS:
 test-influence-extension:
 	uv run pytest tests/test_influence_extension.py tests/test_influence_extension_core.py tests/test_influence_extension_joint.py -v
 
+# Isolated logical-guard probes; each invocation requires a fresh output directory (#969).
+[positional-arguments]
+probe-influence-extension-guards mutation output:
+	uv run python scripts/adhoc/issue969_probe_influence_guards.py "$1" --output-dir "$2"
+
+# Isolated original/current arm-parser regression evidence (#973).
+[positional-arguments]
+probe-arm-parser-guards *ARGS:
+	uv run python scripts/adhoc/issue973_probe_parser_guards.py "$@"
+
 sync:
 	uv sync --all-extras --group dev --group qa
+
+# Isolated copies prove actual plotted-label and metadata propagation (#955, #962).
+[positional-arguments]
+probe-direction-forwarding *ARGS:
+	uv run python scripts/adhoc/issue955_probe_direction_forwarding.py "$@"
 
 # Use the same declared uv version as the lock hook; run `just sync` first.
 [positional-arguments]
@@ -215,6 +252,15 @@ trait-profile-pooled-stats *ARGS:
 # Regenerate six-trait pattern and full-table signed direction heatmaps.
 six-shared-trait-heatmaps:
 	uv run python scripts/create_six_shared_trait_cytoscape_heatmaps.py
+
+# Signed increased-vs-decreased contrasts, as in the six-trait heatmaps, for a declared
+# TRAIT_LIST on one run's PROFILES, profile METADATA (its total_trait_signal must match the
+# profiles) and trait COLUMNS, into OUTPUT. Writes edge tables, the contrast table and
+# trait_list_provenance.json plus exact-Feces top-group tables (--stool-group-count, default 6).
+# No figures; the default six-trait path is unchanged (#1054, #1093).
+[positional-arguments]
+trait-list-direction-contrasts trait_list profiles metadata columns output *ARGS:
+	uv run python scripts/create_six_shared_trait_sankeys.py --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" --trait-list "$1" --profiles "$2" --profile-metadata "$3" --columns "$4" --output-dir "$5" "${@:6}"
 
 # Check regenerated clustering and oral exports against a saved contrast table.
 audit-six-trait-diagnostics baseline:
@@ -319,9 +365,20 @@ typecheck:
 test:
 	uv run pytest
 
+# Canonical exports and legacy import-star contracts (#937); no scientific inputs.
+test-shim-exports:
+	uv run pytest tests/test_mtp_imports.py
+
+[positional-arguments]
+audit-shim-exports *ARGS:
+	uv run python scripts/adhoc/issue937_audit_exports.py "$@"
+
 # Additive policy and full-family BH/BY contract; no scientific rerun inputs.
 test-multiple-testing:
 	uv run pytest tests/test_multiple_testing.py
+
+test-multiplicity-adapters:
+	uv run pytest tests/test_multiplicity_adapters.py tests/test_multiplicity_basis_integration.py tests/test_multiplicity_regression_guards.py tests/test_multiplicity_cross_product.py tests/test_multiplicity_reason_vocabulary.py
 
 # Analyzer, ranking exporter, and complete-universe density regression checks (#664).
 test-stratification:
@@ -402,24 +459,47 @@ cellulose-decr *ARGS:
 cellulose-decr-figures *ARGS:
 	#!/usr/bin/env bash
 	set -euo pipefail
+	help_only=0
 	for arg in "$@"; do
 		case "$arg" in
 			--analysis-dir* | --code-commit*)
 				echo "the recipe records this checkout and its commit; drop $arg" >&2
 				exit 1
 				;;
+			-h | --help)
+				help_only=1
+				;;
 		esac
 	done
 	commit="$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} data/analysis/cellulose_decr && git diff --cached --quiet -- {{code_paths}} data/analysis/cellulose_decr || echo +dirty)"
 	uv run python -m mtp.cellulose_decr.figures --code-commit "$commit" "$@"
+	if [ "$help_only" -eq 0 ]; then
+		uv run python -m mtp.cellulose_decr.tufte_plates --code-commit "$commit" "$@"
+	fi
+
+# Draw the Tufte plates (figures_tufte/) and 16-slide deck (cellulose_decr_slide_deck.html)
+# in data/analysis/cellulose_decr/ (#550). Also invoked by `just cellulose-decr-figures`.
+[positional-arguments]
+cellulose-decr-tufte *ARGS:
+	uv run python -m mtp.cellulose_decr.tufte_plates "$@"
 
 # The #835 selection scan (methods/cellulose_decr_selection_scan.md): cellulose_decr's
 # overlap and U6 null for every triple of eligible conditions and the top decreasing
 # traits, on a verified Tier 1+2 core RUN (its run.json), into a new or empty OUTPUT
 # directory. Pass --plan to print the counts and a timed estimate without running the null.
+# Protocol v2 (#1050) makes phenotype primary and off the declared sensitivity.
+# Scan a core of each scope, then report both with cellulose-decr-selection-scan-scopes.
 [positional-arguments]
 cellulose-decr-selection-scan run output *ARGS:
 	uv run python -m mtp.cellulose_decr.selection_scan --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" --core-run "$1" --output-dir "$2" "${@:3}"
+
+# The selection scan's two strain-rollup scopes side by side (#1050): give the output
+# directories of `just cellulose-decr-selection-scan` on a Tier 1+2 x phenotype core and
+# on a Tier 1+2 x off core, in either order, and a new or empty OUTPUT directory.
+# Both scans are verified and written together, so neither scope is reported alone.
+[positional-arguments]
+cellulose-decr-selection-scan-scopes scan_a scan_b output *ARGS:
+	uv run python -m mtp.cellulose_decr.selection_scan_scopes --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" --scan "$1" --scan "$2" --output-dir "$3" "${@:4}"
 
 # The two methods plates and seven Tufte plates of the selected-figure deck, drawn
 # from the rerun tables into this checkout's data/derived/tufte_plates/ (#573). Plates IV
@@ -596,6 +676,14 @@ audit-strain-rollup *ARGS:
 audit-label-support *ARGS:
 	uv run python -m mtp.label_support_audit "$@"
 
+# dest must be durable and outside the working tree. The request is anonymous, and a file
+# whose size or sha256 differs from the pin is refused. Verified reuse records provenance.
+# Pass the file to
+# `just audit-label-support --madin-csv`.
+# Download the Madin et al. condensed trait table pinned in mtp.madin_source (#1048).
+download-madin dest:
+	uv run python -m mtp.madin_source --dest-dir "{{dest}}"
+
 # The analyses read human hosts only, without the trait columns that are zero in every
 # human profile, as committed in data/derived/study_trait_profiles_wide.tsv.gz (#656).
 # They also read 16S and shotgun (WMS) experiments only, the values of
@@ -611,6 +699,22 @@ study-trait-profiles: taxa-trait-matrix
 [positional-arguments]
 taxa-coverage *ARGS:
 	uv run python scripts/create_taxa_coverage_histogram.py "$@"
+
+# Isolate one synthetic population-guard mutation; canonical source stays untouched (#1176).
+[positional-arguments]
+probe-matrix-population-guard case output:
+	uv run python scripts/adhoc/issue1176_probe_population_guard.py "$1" --output-dir "$2"
+
+# Compute matrix trait overlap, Tier 1+2 coverage by rank and filter cascade, and Parkinson's
+# stool study overlap from a verified core run (#1053).
+[positional-arguments]
+matrix-overlap-coverage *ARGS:
+	uv run python -m mtp.matrix_overlap_coverage --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" "$@"
+
+# Isolated synthetic guard proofs; production source is never rewritten (#1175).
+[positional-arguments]
+probe-matrix-follow-up-guards guard mode output:
+	uv run python scripts/adhoc/issue1175_probe_followup_guards.py "$1" "$2" --output-dir "$3"
 
 # After an intended input change, such as a BugSigDB release or a new KG pin, refresh the
 # committed copy with `just study-trait-profiles-refresh-gz` and commit it (#667).
@@ -827,6 +931,13 @@ trait-direction-screen *ARGS:
 audit-trait-density *ARGS:
 	just timed audit-trait-density "uv run python scripts/audit_trait_density_correlation.py --code-commit \"$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)\" $*"
 
+# Density-adjusted paired effects for a declared TRAIT_LIST (one identifier per line) on one
+# run's PROFILES and COLUMNS, into OUTPUT; PC1 is still fit on every non-MediaDive trait and
+# trait_list_provenance.json records the list's SHA-256 (#1054). Without a list: audit-trait-density.
+[positional-arguments]
+density-adjustment-trait-list trait_list profiles columns output *ARGS:
+	bash scripts/guard_output_root.sh "$4" uv run python -m mtp.density_adjustment --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" --trait-list "$1" --profiles "$2" --columns "$3" --output-dir "$4" "${@:5}"
+
 # Audit trait coupling sensitivity via LOTO, LCO, and three-arm evaluation (#260).
 [positional-arguments]
 audit-trait-coupling *ARGS:
@@ -844,7 +955,7 @@ security:
 	uv export --quiet --frozen --all-extras --group dev --group qa --format requirements-txt \
 	  --no-emit-project --no-emit-workspace \
 	  --output-file "$reqfile" && \
-	uv run pip-audit -r "$reqfile" --disable-pip \
+	uv run python scripts/run_pip_audit.py -r "$reqfile" --disable-pip \
 	  --cache-dir "$tmpdir/pip-audit-cache"
 
 # Audit locked packages selected for Linux x86_64 / Python 3.11, on any host.
@@ -857,7 +968,7 @@ security-linux:
 	uv run --locked --group qa uv pip compile "$audit_tmp/requirements.txt" \
 	  --python-platform x86_64-unknown-linux-gnu --python-version 3.11 --no-deps \
 	  --no-header --no-annotate --output-file "$audit_tmp/requirements-linux.txt" && \
-	uv run --locked --group qa pip-audit -r "$audit_tmp/requirements-linux.txt" \
+	uv run --locked --group qa python scripts/run_pip_audit.py -r "$audit_tmp/requirements-linux.txt" \
 	  --disable-pip --no-deps --cache-dir "$audit_tmp/pip-audit-cache"
 
 precommit:
@@ -936,6 +1047,11 @@ calibration-flip-assignments *ARGS:
 	uv run python -m mtp.calibration --flip-assignments-only --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" "$@"
 
 pipeline: download ingest
+
+# Additive binary-presence and equal-study depth sensitivity of a verified core (#772).
+[positional-arguments]
+presence-depth-sensitivity *ARGS:
+	uv run python -m mtp.presence_depth_sensitivity "$@"
 
 # The integrated evidence table (#178): one row per method result, each keeping its
 # own family, units and states. Reads the other analyses' status files from
@@ -1051,7 +1167,79 @@ clean-all: clean-raw clean-studies clean-derived clean-logs
 calibration-screen *ARGS:
 	uv run python -m mtp.screen_calibration --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" "$@"
 
+# Additive training/held-out study splits; native arm outputs remain unchanged (#854).
+[positional-arguments]
+selection-study-splits COMPARISON_RUN OUTPUT *ARGS:
+	uv run python -m mtp.cellulose_decr.study_split_run --comparison-run "$1" --output-dir "$2" "${@:3}"
+
 # Audit literal phenotype co-assertions for all strain scopes without rerunning arms (#846).
 [positional-arguments]
 audit-coassertions *ARGS:
 	uv run python -m mtp.coassertion_audit "$@"
+
+# Declared additive per-trait evidence; completed native runs stay read-only (#1044).
+[positional-arguments]
+three-test-table *ARGS:
+	uv run python -m mtp.three_test_table run "$@"
+
+# Publication figures from pinned completed sidecars; source runs stay read-only (#1046).
+[positional-arguments]
+publication-figures *ARGS:
+	uv run python -m mtp.publication_figures "$@"
+
+# Slice 2: saved rank sensitivity, candidate-triple distribution and nine-trait overlap.
+[positional-arguments]
+publication-figures-slice2 *ARGS:
+	uv run python -m mtp.publication_figures.slice2 "$@"
+
+test-publication-figures:
+	uv run pytest tests/test_publication_figure_*.py -v
+
+# Read pinned completed Delta-z ledgers; derive votes, oxygen quadrants and site/disease cells.
+[positional-arguments]
+delta-z-derived *ARGS:
+	uv run python -m mtp.delta_z_derived "$@"
+
+test-delta-z-derived:
+	uv run pytest tests/test_delta_z_derived_*.py tests/test_three_test_reader.py -v
+
+# Read completed F-derived tables against fixed numerical references; never replay Delta-z.
+[positional-arguments]
+test-delta-z-reproduction off phenotype reference commit experiments reference_sha256:
+	MTP_DZ_DERIVED_OFF="$1" MTP_DZ_DERIVED_PHENOTYPE="$2" MTP_DZ_HISTORICAL_STATS="$3" MTP_DZ_DERIVED_COMMIT="$4" MTP_DZ_CORE_EXPERIMENTS="$5" MTP_DZ_HISTORICAL_SHA256="$6" uv run pytest tests/test_delta_z_derived_reproduction.py -m integration -v
+
+[positional-arguments]
+three-test-verify *ARGS:
+	uv run python -m mtp.three_test_table verify "$@"
+
+# Pin and audit historical study Wilcoxon columns without rerunning any source (#1073).
+[positional-arguments]
+three-test-wilcoxon-audit *ARGS:
+	uv run python -m mtp.three_test_table.wilcoxon_audit_cli "$@"
+
+# Synthetic provenance/statistics contracts; never starts an owner arm rerun.
+test-three-test-table:
+	uv run pytest tests/test_three_test_*.py -v
+
+# Repeatable isolated carrier/ORA guard probes; fresh durable output/scratch are required.
+[positional-arguments]
+probe-three-test-guards *ARGS:
+	uv run python scripts/adhoc/issue1077_probe_sidecar_guards.py "$@"
+
+# Explicit historical F check: verifies and replays the additive table, never owner arms.
+[positional-arguments]
+test-three-test-off-reproduction comparison output scratch basis="511c891" multiplicity="" label_support="":
+	MTP_THREE_TEST_COMPARISON="$1" MTP_THREE_TEST_OUTPUT="$2" MTP_THREE_TEST_SCRATCH="$3" MTP_THREE_TEST_BASIS="$4" MTP_THREE_TEST_MULTIPLICITY="$5" MTP_THREE_TEST_LABEL_SUPPORT="$6" uv run pytest tests/test_three_test_reproduction.py -m integration -v
+
+# Compare completed off and phenotype parents on an identical cohort (#1041).
+[positional-arguments]
+rollup-comparison *ARGS:
+	uv run python -m mtp.rollup_comparison "$@"
+
+test-rollup-comparison:
+	uv run pytest tests/test_rollup_comparison_tables.py tests/test_rollup_comparison_validation.py tests/test_rollup_comparison_stage.py tests/test_rollup_comparison_cli.py tests/test_rollup_comparison_reference_contracts.py
+
+# Read-only checks of completed F comparison products; never replay a pipeline.
+[positional-arguments]
+test-rollup-reproduction off phenotype output commit source_commit off_sha256 phenotype_sha256:
+	MTP_ROLLUP_OFF_PARENT="$1" MTP_ROLLUP_PHENOTYPE_PARENT="$2" MTP_ROLLUP_RESULT="$3" MTP_ROLLUP_COMMIT="$4" MTP_ROLLUP_SOURCE_COMMIT="$5" MTP_ROLLUP_OFF_SHA256="$6" MTP_ROLLUP_PHENOTYPE_SHA256="$7" uv run pytest tests/test_rollup_comparison_reproduction.py -m integration -s

@@ -10,13 +10,14 @@ from pathlib import Path
 import pytest
 
 from mtp import influence_extension as extension
+from mtp.contribution_inputs import Base, load_base
 from mtp.influence_extension import run_extension
 from mtp.paths import REPO_ROOT, file_sha256
 from mtp.trait_guilds import TABLE1_TRAITS
 from mtp.workflow.arms.runtime import execute_arm, verify_arm
 from mtp.workflow.arms.types import ArmContext, Command
 from mtp.workflow.consumers import open_core_bundle, verify_consumer_record
-from mtp.workflow.operations import OPERATIONS, validate_core_product
+from mtp.workflow.operations import OPERATIONS, validate_execution_product
 from mtp.workflow.runtime import execute_workflow
 
 SUBSET = "disease_vs_healthy_tier1_2_subject_controls"
@@ -113,7 +114,7 @@ def test_verified_extension_reconciles_scope_subset_and_orientation(
         tmp_path / "core",
         OPERATIONS,
         parameter_overrides=parameters,
-        validator=validate_core_product,
+        validator=validate_execution_product,
         repository_root=REPO_ROOT,
     )
     manifest = Path(core.manifest_path)
@@ -154,8 +155,7 @@ def test_verified_extension_reconciles_scope_subset_and_orientation(
     for name, digest in originals.items():
         assert file_sha256(bundle.path(name)) == digest
     assert (
-        "Native baseline was not supplied"
-        in (output / "influence_extension_summary.md").read_text()
+        "Native report was not supplied" in (output / "influence_extension_summary.md").read_text()
     )
     assert not (output / "native_summary.md").exists()
     with (output / "lineage_fraction_effects.tsv").open() as handle:
@@ -218,7 +218,7 @@ def extension_core(root: Path) -> Path:
         root / "core",
         OPERATIONS,
         parameter_overrides={"source_mode": "fixture", "strain_rollup": "off"},
-        validator=validate_core_product,
+        validator=validate_execution_product,
         repository_root=REPO_ROOT,
     )
     return Path(core.manifest_path)
@@ -241,6 +241,27 @@ def test_protocol_rule_tampering_is_rejected_before_output_creation(
     monkeypatch.setattr(extension, "load_base", unexpected_analysis)
     output = tmp_path / "must-not-write"
     with pytest.raises(ValueError, match="protocol hash differs from the declared rule"):
+        run_extension(core, output)
+    assert not output.exists()
+
+
+def test_protocol_change_after_analysis_entry_is_rejected_before_publication(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    core = extension_core(tmp_path)
+    copied_protocol = tmp_path / "protocol.json"
+    copied_protocol.write_bytes(extension.PROTOCOL.read_bytes())
+    monkeypatch.setattr(extension, "PROTOCOL", copied_protocol)
+    original = load_base
+
+    def load_then_change(*args: Path) -> Base:
+        base = original(*args)
+        copied_protocol.write_bytes(copied_protocol.read_bytes() + b"\n")
+        return base
+
+    monkeypatch.setattr(extension, "load_base", load_then_change)
+    output = tmp_path / "must-not-publish"
+    with pytest.raises(ValueError, match="Extension protocol changed during analysis"):
         run_extension(core, output)
     assert not output.exists()
 
@@ -290,6 +311,8 @@ def test_cli_includes_a_real_verified_same_core_noel_summary(tmp_path: Path) -> 
                 str(output),
                 "--noel-run",
                 str(noel_manifest),
+                # tmp_path is temporary storage, which the sidecar refuses without the opt-in
+                "--allow-temporary-output",
             ]
         )
         == 0

@@ -1,0 +1,151 @@
+id: bsdb:1
+source_record_id: Study 1
+pmid: null
+title: Synthetic overlap and coverage
+publication_year: 2026
+doi: null
+url: null
+study_design: null
+authors_list: null
+journal: null
+keywords: null
+experiments:
+- id: bsdb:1-1
+  experiment_name: null
+  location_of_subjects: null
+  host_species: Homo sapiens
+  body_site: stool
+  body_site_ontology_id: null
+  condition: fixture condition
+  condition_ontology_id: null
+  group_0_name: controls
+  group_1_name: cases
+  group_1_definition: null
+  group_0_sample_size: null
+  group_1_sample_size: null
+  antibiotics_exclusion: null
+  sequencing_type: 16S
+  variable_region_16s: null
+  sequencing_platform: null
+  data_transformation: null
+  statistical_test: null
+  significance_threshold: null
+  mht_correction: null
+  lda_score_above: null
+  matched_on: null
+  confounders_controlled_for: null
+  pielou: null
+  shannon: null
+  chao1: null
+  simpson: null
+  inverse_simpson: null
+  richness: null
+  signatures:
+  - id: bsdb:1-1-1
+    direction: increased
+    signature_source: null
+    signature_description: null
+    taxa:
+    - id: NCBITaxon:100
+      taxon_name: Examplegenus
+      taxonomic_rank: genus
+    - id: NCBITaxon:100
+      taxon_name: Examplegenus
+      taxonomic_rank: genus
+    - id: NCBITaxon:101
+      taxon_name: Examplegenus_alpha
+      taxonomic_rank: species
+  - id: bsdb:1-1-2
+    direction: decreased
+    signature_source: null
+    signature_description: null
+    taxa:
+    - id: NCBITaxon:300
+      taxon_name: Unannotated_bacterium
+      taxonomic_rank: species
+- id: bsdb:1-2
+  experiment_name: null
+  location_of_subjects: null
+  host_species: Homo sapiens
+  body_site: stool
+  body_site_ontology_id: null
+  condition: fixture condition
+  condition_ontology_id: null
+  group_0_name: controls
+  group_1_name: cases
+  group_1_definition: null
+  group_0_sample_size: null
+  group_1_sample_size: null
+  antibiotics_exclusion: null
+  sequencing_type: 16S
+  variable_region_16s: null
+  sequencing_platform: null
+  data_transformation: null
+  statistical_test: null
+  significance_threshold: null
+  mht_correction: null
+  lda_score_above: null
+  matched_on: null
+  confounders_controlled_for: null
+  pielou: null
+  shannon: null
+  chao1: null
+  simpson: null
+  inverse_simpson: null
+  richness: null
+  signatures:
+  - id: bsdb:1-2-1
+    direction: increased
+    signature_source: null
+    signature_description: null
+    taxa:
+    - id: NCBITaxon:200
+      taxon_name: Mediaonly_bacterium
+      taxonomic_rank: species
+  - id: bsdb:1-2-2
+    direction: decreased
+    signature_source: null
+    signature_description: null
+    taxa:
+    - id: NCBITaxon:999
+      taxon_name: Missingkg_bacterium
+      taxonomic_rank: species
+- id: bsdb:1-3
+  experiment_name: null
+  location_of_subjects: null
+  host_species: Homo sapiens
+  body_site: stool
+  body_site_ontology_id: null
+  condition: fixture condition
+  condition_ontology_id: null
+  group_0_name: controls
+  group_1_name: cases
+  group_1_definition: null
+  group_0_sample_size: null
+  group_1_sample_size: null
+  antibiotics_exclusion: null
+  sequencing_type: 16S
+  variable_region_16s: null
+  sequencing_platform: null
+  data_transformation: null
+  statistical_test: null
+  significance_threshold: null
+  mht_correction: null
+  lda_score_above: null
+  matched_on: null
+  confounders_controlled_for: null
+  pielou: null
+  shannon: null
+  chao1: null
+  simpson: null
+  inverse_simpson: null
+  richness: null
+  signatures:
+  - id: bsdb:1-3-1
+    direction: increased
+    signature_source: null
+    signature_description: null
+    taxa:
+    - id: NCBITaxon:101
+      taxon_name: Examplegenus_alpha
+      taxonomic_rank: species

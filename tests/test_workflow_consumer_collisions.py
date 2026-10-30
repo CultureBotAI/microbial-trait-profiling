@@ -12,7 +12,7 @@ import pytest
 from mtp import table1_trait_maps, trait_composition, trait_screen
 from mtp.paths import REPO_ROOT
 from mtp.workflow.consumers import CoreBundle, open_core_bundle, write_consumer_record
-from mtp.workflow.operations import OPERATIONS, validate_core_product
+from mtp.workflow.operations import OPERATIONS, validate_execution_product
 from mtp.workflow.runtime import execute_workflow
 
 
@@ -33,7 +33,7 @@ def bundle(tmp_path: Path) -> CoreBundle:
         inputs,
         tmp_path / "runs",
         OPERATIONS,
-        validator=validate_core_product,
+        validator=validate_execution_product,
         repository_root=REPO_ROOT,
     )
     return open_core_bundle(Path(run.manifest_path))

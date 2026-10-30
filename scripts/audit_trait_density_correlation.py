@@ -6,7 +6,8 @@ Addresses Issue #264 and Issue #352:
 - Evaluates PC1 regression adjustment and profile composition normalization (Task 1).
 - Audits METPO ontology redundancy, states branch collapsing rules, and bounds
   distinct trait space (Task 2).
-- Tests collapse of facultatively aerobic x moderately halophilic vs. survival of convergent six.
+- Tests collapse of facultatively aerobic x moderately halophilic vs.
+  survival of convergent six.
 - Tests conditional contrast and VIF for coccus shaped vs. sphere shaped (Task 3).
 """
 
@@ -21,9 +22,12 @@ from mtp.density_adjustment import (
     DEFAULT_COLUMNS_PATH,
     DEFAULT_OUTPUT_DIR,
     DEFAULT_PROFILES_PATH,
+    add_trait_list_argument,
+    reported_traits_heading,
     run_density_audit,
 )
 from mtp.ontology_audit import run_ontology_redundancy_audit
+from mtp.trait_lists import DeclaredTraitList, load_trait_list, output_dir_argument
 
 
 def parse_args() -> argparse.Namespace:
@@ -47,7 +51,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--output-dir",
-        type=Path,
+        type=output_dir_argument,
         default=DEFAULT_OUTPUT_DIR,
         help=f"Directory to write summary TSVs and reports (default: {DEFAULT_OUTPUT_DIR})",
     )
@@ -57,6 +61,7 @@ def parse_args() -> argparse.Namespace:
         default="",
         help="Code commit hash for provenance tracking",
     )
+    add_trait_list_argument(parser)
     return parser.parse_args()
 
 
@@ -64,8 +69,14 @@ def write_consolidated_report(
     output_dir: Path,
     density_res: dict[str, Any],
     ontology_res: dict[str, Any],
+    trait_list: DeclaredTraitList | None = None,
 ) -> Path:
-    """Generate a comprehensive consolidated report for Issue #264 covering all tasks."""
+    """Generate a comprehensive consolidated report for Issue #264 covering all tasks.
+
+    With a declared ``trait_list`` the fixed-text conclusions of section 6 are not
+    written: they name the six Table 1 traits and fall back to constant p-values
+    when one of them is not reported (#1054).
+    """
     raw = density_res["raw_pearson"]
     raw_sp = density_res["raw_spearman"]
     adj_pc1 = density_res["adj_pc1_pearson"]
@@ -83,6 +94,7 @@ def write_consolidated_report(
 
     t1_by_id = {eff.trait_id: eff for eff in t1_effects}
     aerobic_eff = t1_by_id.get("METPO:1000608")
+    aerobic_label = aerobic_eff.trait_label if aerobic_eff is not None else "facultatively aerobic"
     cellulose_eff = t1_by_id.get("METPO:2000103|GO:0030245")
 
     aerobic_p_raw_str = (
@@ -103,6 +115,14 @@ def write_consolidated_report(
         "=" * 80,
         "TRAIT CORRELATION, ANNOTATION DENSITY ADJUSTMENT, AND REDUNDANCY AUDIT",
         "=" * 80,
+        *(
+            []
+            if trait_list is None
+            else [
+                f"Trait list: {trait_list.source_name} (sha256 {trait_list.sha256}, "
+                f"{len(trait_list.trait_ids)} traits)"
+            ]
+        ),
         "",
         "1. BASELINE DIMENSIONALITY AND CORRELATION STRUCTURE",
         "-" * 80,
@@ -128,7 +148,7 @@ def write_consolidated_report(
         "",
         "2. DENSITY AXIS ADJUSTMENT: SEPARATING BIOLOGY FROM CURATION EFFORT",
         "-" * 80,
-        "Test Case Pair: facultatively aerobic x moderately halophilic",
+        f"Test Case Pair: {aerobic_label} x moderately halophilic",
         f"  Baseline Pearson r: {raw.test_pair_r:+.4f}",
         f"  Post-PC1 regression r: {adj_pc1.test_pair_r:+.4f} "
         f"(attenuation: {adj_pc1.test_pair_r - raw.test_pair_r:+.4f})",
@@ -145,7 +165,7 @@ def write_consolidated_report(
             f"  Pairs > 0.5: {adj_pc1.pct_pairs_gt_05:.1f}%",
             "",
             (
-                "3. SURVIVAL OF CONVERGENT SIX TRAIT SIGNALS "
+                f"3. {reported_traits_heading(trait_list)} "
                 f"(PAIRED EXPERIMENTS N={twin.n_paired_experiments:,})"
             ),
             "-" * 80,
@@ -216,10 +236,24 @@ def write_consolidated_report(
             "",
             "6. CONCLUSION & METHODOLOGICAL IMPLICATIONS",
             "-" * 80,
+        ]
+    )
+    if trait_list is not None:
+        lines.extend(
+            [
+                "Not written for a declared trait list; section 3 reports each listed",
+                "trait's computed effects.",
+                "=" * 80,
+            ]
+        )
+        report_out.write_text("\n".join(lines), encoding="utf-8")
+        return report_out
+
+    lines.extend(
+        [
             "1. The vast majority of positive correlation among traits is driven by "
             "curation density (PC1).",
-            "2. Regressing out PC1 collapses the spurious facultatively aerobic x "
-            "moderately halophilic",
+            f"2. Regressing out PC1 collapses the spurious {aerobic_label} x moderately halophilic",
             f"   contrast from significant ({aerobic_p_raw_str}) to completely "
             f"nonsignificant ({aerobic_p_adj_str}).",
             "3. In contrast, genuine convergent signals survive and strengthen: "
@@ -249,18 +283,22 @@ def write_consolidated_report(
 def main() -> int:
     args = parse_args()
     try:
+        trait_list = None if args.trait_list is None else load_trait_list(args.trait_list)
         density_res = run_density_audit(
             profiles_path=args.profiles,
             columns_path=args.columns,
             output_dir=args.output_dir,
             code_commit=args.code_commit,
+            trait_list=trait_list,
         )
         ontology_res = run_ontology_redundancy_audit(
             profiles_path=args.profiles,
             columns_path=args.columns,
             output_dir=args.output_dir,
         )
-        report_path = write_consolidated_report(args.output_dir, density_res, ontology_res)
+        report_path = write_consolidated_report(
+            args.output_dir, density_res, ontology_res, trait_list
+        )
     except Exception as exc:
         sys.stderr.write(f"Error during density & redundancy audit: {exc}\n")
         return 1
@@ -279,6 +317,12 @@ def main() -> int:
     adj = density_res["adj_pc1_pearson"]
     twin = density_res["twin_summary"]
     pair_attenuation = adj.test_pair_r - raw.test_pair_r
+    t1_by_id = {eff.trait_id: eff for eff in density_res["table1_effects"]}
+    aerobic_label = (
+        t1_by_id["METPO:1000608"].trait_label
+        if "METPO:1000608" in t1_by_id
+        else "facultatively aerobic"
+    )
     print(
         f"  - Baseline PC1 explains {raw.pc1_variance_pct:.2f}% of variance "
         f"across {raw.n_traits} traits."
@@ -288,7 +332,7 @@ def main() -> int:
         f"(was {raw.median_pairwise_r:+.4f})."
     )
     print(
-        f"  - facultatively aerobic x moderately halophilic r: {raw.test_pair_r:+.4f} "
+        f"  - {aerobic_label} x moderately halophilic r: {raw.test_pair_r:+.4f} "
         f"-> {adj.test_pair_r:+.4f} (attenuated by {pair_attenuation:+.4f})."
     )
     print(

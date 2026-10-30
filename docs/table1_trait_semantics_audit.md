@@ -1,5 +1,15 @@
 # Table 1 Trait Semantics, Ontology Overlap, and Source Evidence Audit
 
+**Historical policy boundary (#1129):** The counts and source inventories below
+describe the original Table 1 features before facultative unification. In
+particular, its `METPO:1000608` inventory is the single original term, not the
+current union. Current core runs default to the versioned local mapping of
+`METPO:1000605`, `METPO:1000608` and `METPO:1000612` documented in
+[`methods/trait_key_policy.md`](../methods/trait_key_policy.md), with member CURIEs
+and source vocabularies exported in matrix metadata and the feature catalog.
+The historical recommendations about separating Table 1 traits do not prohibit
+this declared facultative union. Current counts require a new run.
+
 **Issue Reference:** [#189](https://github.com/CultureBotAI/bsdbng/issues/189)  
 **Leads:** Ilyas Abdolcader, Jed Dongjin Kim-Ozaeta  
 **Related Issues:** [#178](https://github.com/CultureBotAI/bsdbng/issues/178), [#179](https://github.com/CultureBotAI/bsdbng/issues/179), [#182](https://github.com/CultureBotAI/bsdbng/issues/182), [#187](https://github.com/CultureBotAI/bsdbng/issues/187)  
@@ -164,7 +174,7 @@ Microbial reduction of arsenate ($As^{5+}$) to arsenite ($As^{3+}$) proceeds via
 
 | Feature Key | Grouping Decision | Approved Phrasing | Unsupported Interpretations |
 | :--- | :--- | :--- | :--- |
-| `METPO:1000608` | **Keep separate** | "Taxa annotated as facultatively aerobic (capable of growth in both the presence and absence of oxygen)." | Do not infer anaerobic nitrate/tetrathionate respiration, *nar*/*nap*/*ttr* expression, or host mucosal inflammation. |
+| `METPO:1000608` | **Historical (pre-#1124): Keep separate**; unified post-#1124 (`METPO:1000605`, `METPO:1000608`, `METPO:1000612`) under label `"facultative (aerobe or anaerobe)"` (#1138) | Historical (pre-#1124): "Taxa annotated as facultatively aerobic (capable of growth in both the presence and absence of oxygen)." Post-#1124 union: "Taxa annotated as facultative (aerobe or anaerobe) (annotation for growth with or without oxygen)." | Do not infer anaerobic nitrate/tetrathionate respiration, *nar*/*nap*/*ttr* expression, or host mucosal inflammation. |
 | `METPO:2000103\|GO:0030245` | **Keep separate** | "Taxa annotated with pathway capability for cellulose catabolic processes." | Do not infer active in vivo cellulose breakdown in patients. Do not equate cellulose catabolism with butyrate or SCFA production. |
 | `METPO:1000668` | **Keep separate** | "Taxa annotated with coccus-shaped cell morphology (primarily derived from Madin et al. isolate compilation)." | Do not merge with sphere-shaped by naive string replacement. Do not claim biological non-equivalence without noting source database divergence. |
 | `METPO:1000683` | **Keep separate** | "Taxa annotated with sphere-shaped cell morphology (derived from BactoTraits records and, under the primary `phenotype` scope, BacDive strain records)." | Do not treat as biologically distinct morphology from coccus. Do not sum profile counts without deduplicating shared taxa. |

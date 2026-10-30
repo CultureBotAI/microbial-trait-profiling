@@ -24,7 +24,7 @@ from typing import Any, overload
 import numpy as np
 from scipy.stats import hypergeom as _scipy_hypergeom
 
-from mtp.trait_screen import step_up
+from mtp.trait_screen import step_up_array
 
 
 def _validate_int(val: Any, name: str) -> int:
@@ -85,7 +85,7 @@ def benjamini_hochberg(
 ) -> list[float] | np.ndarray:
     """Apply Benjamini-Hochberg (1995) FDR control to adjust p-values into q-values.
 
-    Delegates to :func:`mtp.trait_screen.step_up` for monotone rank step-up adjustment.
+    Delegates to :func:`mtp.trait_screen.step_up_array` for monotone rank step-up adjustment.
 
     Guarantees:
     - Returns the same container type as input (list -> list, ndarray -> ndarray).
@@ -101,11 +101,11 @@ def benjamini_hochberg(
         return np.empty(0, dtype=float) if is_numpy else []
 
     eff_family = n if family_size is None else _validate_int(family_size, "family_size")
-    adjusted = step_up(list(p_arr), method=method, family_size=eff_family)
+    adjusted = step_up_array(p_arr, method=method, family_size=eff_family)
 
     if is_numpy:
-        return np.asarray(adjusted, dtype=float)
-    return adjusted
+        return adjusted
+    return [float(value) for value in adjusted]
 
 
 def _log_comb(n: int, k: int) -> float:

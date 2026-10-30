@@ -8,6 +8,7 @@ from mtp.trait_terms import (
     DEFAULT_NODES_PATH,
     DEFAULT_PROVENANCE_PATH,
     EXPECTED_LABELS,
+    NEGATION_PREFIXES,
     NodeTableIdentity,
     TermCheck,
     check_term_labels,
@@ -16,12 +17,14 @@ from mtp.trait_terms import (
     grouped_identifiers,
     identify_node_table,
     main,
+    unlisted_negations,
 )
 
 __all__ = [
     "DEFAULT_NODES_PATH",
     "DEFAULT_PROVENANCE_PATH",
     "EXPECTED_LABELS",
+    "NEGATION_PREFIXES",
     "_HASH_BLOCK_BYTES",
     "NodeTableIdentity",
     "TermCheck",
@@ -31,6 +34,7 @@ __all__ = [
     "grouped_identifiers",
     "identify_node_table",
     "main",
+    "unlisted_negations",
 ]
 
 import mtp.trait_terms as _target

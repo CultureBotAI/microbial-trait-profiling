@@ -2,9 +2,17 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
-from mtp.quoted_results import McNemar, OraCalls, screened_rejection_rate
+from mtp.quoted_results import (
+    MatrixCounts,
+    McNemar,
+    OraCalls,
+    read_matrix_counts,
+    screened_rejection_rate,
+)
 
 ENRICHMENT_HEADER = [
     "# Tail: upper\n",
@@ -23,6 +31,41 @@ def test_ora_counts_come_from_the_table_header() -> None:
     assert calls == OraCalls(tests=1480390, calls=66240, p_threshold="0.001", fold="1.5")
     depletion = [line.replace("Min-Fold: 1.5", "Max-Fold: 0.5") for line in ENRICHMENT_HEADER]
     assert OraCalls.from_header(depletion).fold == "0.5"
+    with_universe = [
+        "# Total-Profiles-Input: 4670\n",
+        "# Background-Taxa-Universe-M: 5829\n",
+        *ENRICHMENT_HEADER,
+    ]
+    parsed = OraCalls.from_header(with_universe)
+    assert parsed.input_profiles == 4670
+    assert parsed.background_taxa_m == 5829
+
+
+def test_read_matrix_counts_excludes_mediadive_and_counts_trait_bearing_taxa(
+    tmp_path: Path,
+) -> None:
+    matrix_path = tmp_path / "taxa_trait_matrix.tsv"
+    cols_path = tmp_path / "taxa_trait_matrix_columns.tsv"
+    matrix_path.write_text(
+        "taxon_id\ttaxon_name\ttaxonomic_rank\tT0\tmediadive.medium:M0\n"
+        "NCBITaxon:1\tTaxon 1\tspecies\t1\t0\n"
+        "NCBITaxon:2\tTaxon 2\tspecies\t0\t1\n"
+        "NCBITaxon:3\tTaxon 3\tspecies\t0\t0\n",
+        encoding="utf-8",
+    )
+    cols_path.write_text(
+        "column_id\tobject_name\tpredicate_name\n"
+        "T0\ttrait_0\tcapable of\n"
+        "mediadive.medium:M0\tmedium_0\tgrows in\n",
+        encoding="utf-8",
+    )
+    assert read_matrix_counts(matrix_path, cols_path) == MatrixCounts(
+        matrix_taxa=3,
+        trait_bearing_taxa=2,
+        trait_count=1,
+        raw_trait_count=2,
+        mediadive_trait_count=1,
+    )
 
 
 def test_an_ora_header_without_counts_is_refused() -> None:

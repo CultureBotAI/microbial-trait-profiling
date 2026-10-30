@@ -58,6 +58,14 @@ def test_main_preserves_direction_basis_in_figures_and_drawn_values(
             heatmap.main()
         figures = {Path(call.args[1]).name: call.args[0] for call in savefig.call_args_list}
         try:
+            metadata = pd.read_csv(target / "paired_metadata.tsv", sep="\t")
+            assert len(metadata) == 3
+            assert "heatmap_parameter_direction_basis" in metadata, (
+                "CLI basis is missing from paired metadata"
+            )
+            assert metadata["heatmap_parameter_direction_basis"].eq(basis).all(), (
+                "CLI basis did not reach paired metadata"
+            )
             assert set(figures) == {"profiles.png", "paired.png"}
             titles = {
                 axis.get_legend().get_title().get_text()

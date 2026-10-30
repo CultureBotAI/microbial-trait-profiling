@@ -40,6 +40,8 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from statistics import fmean, median
 
+import numpy as np
+from numpy.typing import NDArray
 from scipy.linalg import eigvalsh
 from scipy.stats import binomtest, spearmanr
 
@@ -59,6 +61,7 @@ from mtp.trait_guilds import (
     retained_trait_columns,
     write_stats_report,
 )
+from mtp.trait_key_policy import display_trait_label
 
 VERSION = "trait-direction-screen-v1"
 MANIFEST_PATH = REPO_ROOT / "methods" / "trait_screen_manifest.json"
@@ -110,6 +113,7 @@ class TraitScreenRow:
     by_q_nominal: float | None
     by_q_effective: float | None
     test_status: str
+    member_ids: str | None = None
 
     @property
     def studies_scored(self) -> int:
@@ -212,21 +216,40 @@ def step_up(p_values: Sequence[float], *, method: str, family_size: int) -> list
     sensitivity run, where the substitution would otherwise deflate a large-rank
     p-value below itself.
     """
+    return [
+        float(value)
+        for value in step_up_array(
+            np.asarray(p_values, dtype=float), method=method, family_size=family_size
+        )
+    ]
+
+
+def step_up_array(
+    p_values: NDArray[np.float64], *, method: str, family_size: int
+) -> NDArray[np.float64]:
+    """The shared step-up arithmetic on numeric vectors, without Python row lists.
+
+    Preserve the historical multiplication-then-division order, stable sorting,
+    reverse cumulative minimum, raw-p floor and unit ceiling for explicit m.
+    """
     if method not in ("bh", "by"):
         msg = f"unknown correction method {method!r}"
         raise ValueError(msg)
     if family_size < 1:
         msg = "family_size must be at least 1"
         raise ValueError(msg)
-    if not p_values:
-        return []
+    values = np.asarray(p_values, dtype=float)
+    if values.ndim != 1:
+        raise ValueError("p-values must be one-dimensional")
+    if values.size == 0:
+        return np.empty(0, dtype=float)
     factor = family_size * (harmonic(family_size) if method == "by" else 1.0)
-    order = sorted(range(len(p_values)), key=lambda index: p_values[index])
-    adjusted = [0.0] * len(p_values)
-    running = math.inf
-    for rank, index in reversed(list(enumerate(order, start=1))):
-        running = min(running, factor * p_values[index] / rank)
-        adjusted[index] = min(1.0, max(running, p_values[index]))
+    order = np.argsort(values, kind="stable")
+    ordered = values[order]
+    scaled = factor * ordered / np.arange(1, len(values) + 1, dtype=float)
+    running = np.minimum.accumulate(scaled[::-1])[::-1]
+    adjusted = np.empty_like(values)
+    adjusted[order] = np.minimum(1.0, np.maximum(running, ordered))
     return adjusted
 
 
@@ -324,6 +347,7 @@ class ColumnLabel:
     label: str
     object_name: str
     object_category: str
+    member_ids: str | None = None
 
 
 def load_column_labels(path: Path = DEFAULT_COLUMN_LABELS_PATH) -> dict[str, ColumnLabel]:
@@ -340,10 +364,15 @@ def load_column_labels(path: Path = DEFAULT_COLUMN_LABELS_PATH) -> dict[str, Col
     labels: dict[str, ColumnLabel] = {}
     with path.open(encoding="utf-8", newline="") as handle:
         for row in csv.DictReader(handle, delimiter="\t"):
-            labels[row["column_id"]] = ColumnLabel(
-                label=row.get("column_label", "") or row["column_id"],
-                object_name=row.get("object_name", ""),
+            column_id = row["column_id"]
+            member_ids = row.get("trait_member_ids_json")
+            raw_label = row.get("column_label", "") or column_id
+            raw_object_name = row.get("object_name", "")
+            labels[column_id] = ColumnLabel(
+                label=display_trait_label(column_id, raw_label, member_ids),
+                object_name=display_trait_label(column_id, raw_object_name, member_ids),
                 object_category=row.get("object_category", ""),
+                member_ids=member_ids,
             )
     return labels
 
@@ -438,6 +467,7 @@ def run_screen(
                 by_q_nominal=by_value,
                 by_q_effective=by_effective_value,
                 test_status=status,
+                member_ids=naming.member_ids,
             )
         )
 
@@ -822,7 +852,9 @@ def _report(result: ScreenResult, vintage: str | None) -> str:
     for row in result.rows:
         if not row.in_table1:
             continue
-        manuscript = TABLE1_TRAIT_LABELS[row.table1_slug]
+        manuscript = display_trait_label(
+            row.term_id, TABLE1_TRAIT_LABELS[row.table1_slug], row.member_ids
+        )
         lines.append(
             f"| {manuscript} | {row.studies_up}/{row.studies_down}/{row.studies_tied} | "
             f"{_cell(row.share_up, '.4g')} ({_cell(row.ci_low, '.4g')}, "

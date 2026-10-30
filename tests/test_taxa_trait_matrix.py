@@ -1,10 +1,37 @@
+import csv
+import json
 from pathlib import Path
+from typing import TypedDict
 
 import pytest
 
 from bsdbng.taxa_trait_matrix import create_taxa_trait_matrix
 from mtp import taxa_trait_matrix
 from mtp.taxa_trait_matrix import StrainRollup
+
+
+class MatrixOptions(TypedDict, total=False):
+    strain_rollup: StrainRollup
+
+
+def _metadata_rows(path: Path) -> list[list[str]]:
+    with path.open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.reader(handle, delimiter="\t"))
+    assert rows[0] == [
+        "column_id",
+        "column_label",
+        "predicate_id",
+        "predicate_name",
+        "object_id",
+        "object_name",
+        "object_category",
+        "trait_key_policy",
+        "trait_member_ids_json",
+        "trait_source_vocabularies_json",
+    ]
+    assert all(len(row) == 10 for row in rows)
+    assert {row[7] for row in rows[1:]} == {"facultative_union_v1"}
+    return rows
 
 
 def test_create_taxa_trait_matrix_counts_self_and_descendants(tmp_path: Path) -> None:
@@ -96,7 +123,8 @@ def test_create_taxa_trait_matrix_counts_self_and_descendants(tmp_path: Path) ->
         "NCBITaxon:100\tGenus\tgenus\t1\t1\t1\t2\t1",
         "NCBITaxon:101\tSpecies a\tspecies\t1\t1\t1\t0\t1",
     ]
-    assert column_metadata_path.read_text(encoding="utf-8").splitlines() == [
+    metadata = _metadata_rows(column_metadata_path)
+    assert ["\t".join(row[:7]) for row in metadata] == [
         (
             "column_id\tcolumn_label\tpredicate_id\tpredicate_name\tobject_id"
             "\tobject_name\tobject_category"
@@ -123,6 +151,14 @@ def test_create_taxa_trait_matrix_counts_self_and_descendants(tmp_path: Path) ->
             "\tacetate\tbiolink:SmallMolecule"
         ),
     ]
+    assert [json.loads(row[8]) for row in metadata[1:]] == [
+        ["METPO:1000603"],
+        ["GO:0008150"],
+        ["METPO:1000636"],
+        ["METPO:1000615"],
+        ["CHEBI:123"],
+    ]
+    assert [json.loads(row[9]) for row in metadata[1:]] == [[], [], [], [], []]
 
 
 TAXONOMY_AND_TAXON_EDGES = [
@@ -198,7 +234,7 @@ def _matrix_lines(
     directory.mkdir()
     taxa_path, nodes_path, edges_path = _write_strain_fixture(directory, edges)
     output_path = directory / "taxa_trait_matrix.tsv"
-    options = {} if strain_rollup is None else {"strain_rollup": strain_rollup}
+    options: MatrixOptions = {} if strain_rollup is None else {"strain_rollup": strain_rollup}
     taxa_trait_matrix.create_taxa_trait_matrix(
         taxa_path=taxa_path,
         kg_dir=directory,
@@ -220,7 +256,7 @@ def test_strain_edges_never_reach_the_off_matrix(tmp_path: Path) -> None:
         with_strains
         == without_strains
         == [
-            "taxon_id\ttaxon_name\ttaxonomic_rank\tMETPO:1000603\tMETPO:1000605",
+            "taxon_id\ttaxon_name\ttaxonomic_rank\tMETPO:1000603\tMETPO:1000608",
             "NCBITaxon:900\tFamilyaceae\tfamily\t1\t1",
             "NCBITaxon:100\tGenus\tgenus\t1\t1",
             "NCBITaxon:101\tSpecies a\tspecies\t1\t0",
@@ -247,12 +283,12 @@ def test_strain_rollup_counts_strain_traits_at_the_linked_ncbitaxon_node(
 ) -> None:
     """A strain's traits count once at its species, then roll up like the species' own.
 
-    Species a carries anaerobic itself and through strain 1, and facultatively anaerobic
-    through two strains: each counts once at the species. The genus and family count
-    annotated NCBITaxon nodes, so facultatively anaerobic is 2 there (species a through its
-    strains, species b directly). Strains without an NCBITaxon link add nothing (#774).
-    The phenotype scope leaves out strain 3's capability edge, which has no bare METPO
-    phenotype object (#788).
+    Species a carries anaerobic itself and through strain 1, and facultative oxygen
+    preference through two strains: each counts once at the species. The genus and family
+    count annotated NCBITaxon nodes, so facultative oxygen preference is 2 there (species a
+    through its strains, species b directly). Strains without an NCBITaxon link add nothing
+    (#774). The phenotype scope leaves out strain 3's capability edge, which has no bare
+    METPO phenotype object (#788).
     """
     lines = _matrix_lines(
         tmp_path / "on", [*TAXONOMY_AND_TAXON_EDGES, *STRAIN_EDGES], strain_rollup
@@ -263,7 +299,7 @@ def test_strain_rollup_counts_strain_traits_at_the_linked_ncbitaxon_node(
     assert lines == [
         "taxon_id\ttaxon_name\ttaxonomic_rank\tMETPO:1000603"
         + "".join(cellulose)
-        + "\tMETPO:1000605",
+        + "\tMETPO:1000608",
         "NCBITaxon:900\tFamilyaceae\tfamily\t1" + "".join(cell) + "\t2",
         "NCBITaxon:100\tGenus\tgenus\t1" + "".join(cell) + "\t2",
         "NCBITaxon:101\tSpecies a\tspecies\t1" + "".join(no_cell) + "\t1",
@@ -294,7 +330,7 @@ def test_each_scope_has_its_own_vocabulary(
     """Off keeps the direct vocabulary, phenotype adds bare METPO phenotypes only, and
     full adds every strain key that does not assert an absence while dropping every one
     that does, the species' own "does not grow in" included (#788)."""
-    direct = {"METPO:1000603", "METPO:1000605", "METPO:2000518|mediadive.medium:1"}
+    direct = {"METPO:1000603", "METPO:1000608", "METPO:2000518|mediadive.medium:1"}
 
     header = _matrix_lines(tmp_path / strain_rollup, ALL_EDGES, strain_rollup)[0]
 
@@ -436,4 +472,170 @@ def test_strain_rollup_writes_an_explicit_output(tmp_path: Path) -> None:
     )
 
     assert exit_code == 0
-    assert output_path.read_text(encoding="utf-8").splitlines()[0].endswith("\tMETPO:1000605")
+    assert output_path.read_text(encoding="utf-8").splitlines()[0].endswith("\tMETPO:1000608")
+
+
+def test_facultative_synonyms_unify_into_single_nonredundant_feature(tmp_path: Path) -> None:
+    """METPO:1000605, METPO:1000608, and METPO:1000612 collapse to METPO:1000608 (#1123)."""
+    for synonym in ("METPO:1000605", "METPO:1000608", "METPO:1000612"):
+        assert (
+            taxa_trait_matrix.make_trait_key("biolink:has_phenotype", synonym)
+            == taxa_trait_matrix.FACULTATIVE_TRAIT_ID
+            == "METPO:1000608"
+        )
+    assert (
+        taxa_trait_matrix.make_trait_key("METPO:2000022", "METPO:1000605")
+        == "METPO:2000022|METPO:1000608"
+    )
+
+    taxa_path = tmp_path / "bugsigdb_taxa.tsv"
+    nodes_path = tmp_path / "nodes.tsv"
+    edges_path = tmp_path / "edges.tsv"
+    output_path = tmp_path / "taxa_trait_matrix.tsv"
+    column_metadata_path = tmp_path / "taxa_trait_matrix_columns.tsv"
+
+    taxa_path.write_text(
+        "direction\ttaxon_id\ttaxon_name\ttaxonomic_rank\n"
+        "increased\tNCBITaxon:100\tGenus\tgenus\n"
+        "increased\tNCBITaxon:101\tSpecies a\tspecies\n",
+        encoding="utf-8",
+    )
+    nodes_path.write_text(
+        "id\tcategory\tname\n"
+        "METPO:1000605\tbiolink:PhenotypicQuality\tfacultatively anaerobic\n"
+        "METPO:1000608\tbiolink:PhenotypicQuality\tfacultatively aerobic\n"
+        "METPO:1000612\tbiolink:PhenotypicQuality\tfacultative\n",
+        encoding="utf-8",
+    )
+    edges_path.write_text(
+        "id\tsubject\tpredicate\tobject\n"
+        "e1\tNCBITaxon:101\tbiolink:subclass_of\tNCBITaxon:100\n"
+        "e2\tNCBITaxon:101\tbiolink:has_phenotype\tMETPO:1000605\n"
+        "e3\tNCBITaxon:101\tbiolink:has_phenotype\tMETPO:1000608\n"
+        "e4\tNCBITaxon:101\tbiolink:has_phenotype\tMETPO:1000612\n"
+        "s1\tkgmicrobe.strain:1\tbiolink:subclass_of\tNCBITaxon:101\n"
+        "s2\tkgmicrobe.strain:1\tbiolink:has_phenotype\tMETPO:1000605\n"
+        "s3\tkgmicrobe.strain:1\tbiolink:has_phenotype\tMETPO:1000612\n",
+        encoding="utf-8",
+    )
+
+    stats = taxa_trait_matrix.create_taxa_trait_matrix(
+        taxa_path=taxa_path,
+        kg_dir=tmp_path,
+        output_path=output_path,
+        column_metadata_path=column_metadata_path,
+        edges_path=edges_path,
+        nodes_path=nodes_path,
+        strain_rollup="phenotype",
+    )
+
+    assert stats.traits == 1
+    assert output_path.read_text(encoding="utf-8").splitlines() == [
+        "taxon_id\ttaxon_name\ttaxonomic_rank\tMETPO:1000608",
+        "NCBITaxon:100\tGenus\tgenus\t1",
+        "NCBITaxon:101\tSpecies a\tspecies\t1",
+    ]
+    metadata = _metadata_rows(column_metadata_path)
+    assert ["\t".join(row[:7]) for row in metadata] == [
+        (
+            "column_id\tcolumn_label\tpredicate_id\tpredicate_name\tobject_id"
+            "\tobject_name\tobject_category"
+        ),
+        (
+            "METPO:1000608\tfacultatively aerobic METPO:1000608\t\t\tMETPO:1000608"
+            "\tfacultatively aerobic\tbiolink:PhenotypicQuality"
+        ),
+    ]
+    assert json.loads(metadata[1][8]) == ["METPO:1000605", "METPO:1000608", "METPO:1000612"]
+    assert json.loads(metadata[1][9]) == [
+        {
+            "object_id": "METPO:1000605",
+            "source_id": "infores:bacdive",
+            "source_label": "facultative anaerobe",
+        },
+        {
+            "object_id": "METPO:1000605",
+            "source_id": "infores:madin_etal",
+            "source_label": "facultative",
+        },
+        {
+            "object_id": "METPO:1000608",
+            "source_id": "infores:bacdive",
+            "source_label": "facultative aerobe",
+        },
+        {
+            "object_id": "METPO:1000608",
+            "source_id": "infores:madin_etal",
+            "source_label": "facultative",
+        },
+        {
+            "object_id": "METPO:1000612",
+            "source_id": "infores:bactotraits",
+            "source_label": "Ox_facultative_aerobe_anaerobe",
+        },
+    ]
+
+
+def test_facultative_union_preserves_recorded_column_order_with_facultative_psychrophilic(
+    tmp_path: Path,
+) -> None:
+    """METPO:1000720 precedes METPO:1000608 under both trait_key_policy settings (#1233)."""
+    from mtp.workflow.coverage import write_feature_catalog
+
+    taxa_path = tmp_path / "bugsigdb_taxa.tsv"
+    edges_path = tmp_path / "merged-kg_edges.tsv"
+    nodes_path = tmp_path / "merged-kg_nodes.tsv"
+    taxa_path.write_text(
+        "direction\ttaxon_id\ttaxon_name\ttaxonomic_rank\n"
+        "increased\tNCBITaxon:101\tSpecies a\tspecies\n",
+        encoding="utf-8",
+    )
+    nodes_path.write_text(
+        "id\tcategory\tname\n"
+        "NCBITaxon:101\tbiolink:OrganismTaxon\tSpecies a\n"
+        "METPO:1000608\tbiolink:PhenotypicQuality\tfacultatively aerobic\n"
+        "METPO:1000720\tbiolink:PhenotypicQuality\tfacultative psychrophilic\n",
+        encoding="utf-8",
+    )
+    edges_path.write_text(
+        "id\tsubject\tpredicate\tobject\n"
+        "e1\tNCBITaxon:101\tbiolink:has_phenotype\tMETPO:1000608\n"
+        "e2\tNCBITaxon:101\tbiolink:has_phenotype\tMETPO:1000720\n",
+        encoding="utf-8",
+    )
+
+    for policy in ("raw_object_v1", "facultative_union_v1"):
+        matrix_path = tmp_path / f"matrix_{policy}.tsv"
+        cols_path = tmp_path / f"cols_{policy}.tsv"
+        catalog_path = tmp_path / f"catalog_{policy}.tsv"
+        taxa_trait_matrix.create_taxa_trait_matrix(
+            taxa_path=taxa_path,
+            kg_dir=tmp_path,
+            output_path=matrix_path,
+            column_metadata_path=cols_path,
+            edges_path=edges_path,
+            nodes_path=nodes_path,
+            trait_key_policy=policy,
+        )
+        header = matrix_path.read_text(encoding="utf-8").splitlines()[0].split("\t")
+        assert header == [
+            "taxon_id",
+            "taxon_name",
+            "taxonomic_rank",
+            "METPO:1000720",
+            "METPO:1000608",
+        ]
+        with cols_path.open(encoding="utf-8", newline="") as handle:
+            col_rows = list(csv.reader(handle, delimiter="\t"))
+        assert [row[0] for row in col_rows[1:]] == ["METPO:1000720", "METPO:1000608"]
+        write_feature_catalog(
+            cols_path,
+            catalog_path,
+            trait_key_policy=policy,
+            include_policy_metadata=True,
+        )
+        with catalog_path.open(encoding="utf-8", newline="") as handle:
+            cat_rows = list(csv.reader(handle, delimiter="\t"))
+        cat_header = cat_rows[0]
+        id_idx = cat_header.index("column_id")
+        assert [row[id_idx] for row in cat_rows[1:]] == ["METPO:1000720", "METPO:1000608"]

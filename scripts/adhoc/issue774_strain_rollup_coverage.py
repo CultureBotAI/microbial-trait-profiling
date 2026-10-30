@@ -46,7 +46,7 @@ from mtp.taxa_trait_matrix import (
 )
 from mtp.trait_guilds import HUMAN_HOST_SPECIES, MEDIADIVE_MARKER, retained_trait_columns
 
-# The six Table 1 traits and facultatively anaerobic, the oxygen class named in #774.
+# The six Table 1 traits (with facultative oxygen preference unified under #1123).
 FOCAL_TRAITS = {
     "METPO:2000103|GO:0030245": "cellulose catabolic process",
     "METPO:1000608": "facultatively aerobic",
@@ -54,7 +54,6 @@ FOCAL_TRAITS = {
     "METPO:1000668": "coccus shaped",
     "METPO:1000683": "sphere shaped",
     "METPO:2000103|pathways:arsenate_reduction": "arsenate reduction",
-    "METPO:1000605": "facultatively anaerobic",
 }
 COVERAGE_COLUMNS = (
     "trait_key",

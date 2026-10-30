@@ -22,11 +22,14 @@ does not replace the run-specific provenance record.
 | Aerobic and anaerobic | `METPO:1000602` | `METPO:1000603` |
 | Obligately aerobic and anaerobic | `METPO:1000606` | `METPO:1000603` |
 | Mesophilic and psychrophilic | `METPO:1000615` | `METPO:1000614` |
-| Facultatively anaerobic and obligately aerobic | `METPO:1000605` | `METPO:1000606` |
+| Facultative oxygen-growth annotation union and obligately aerobic | `METPO:1000608` (union of `1000605`, `1000608`, `1000612`) | `METPO:1000606` |
 | Aerobe and anaerobe guilds | `trait_guilds.OXYGEN_GUILDS["aerobe"]` | `trait_guilds.OXYGEN_GUILDS["anaerobe"]` |
 
-These are literal class or guild memberships, without added ontology ancestry.
-The four exact-class pairs are separate from the broader canonical guild pair.
+These are declared class or guild memberships, without added ontology ancestry.
+The facultative member uses the local `facultative_union_v1` mapping described in
+[`trait_key_policy.md`](trait_key_policy.md); its historical pair identifier remains
+unchanged. The other three class pairs retain their literal members. All four
+are separate from the broader canonical guild pair.
 The audit records the actual KG labels for every class and fails if their
 metadata are missing. A missing taxon name remains explicitly missing.
 
@@ -36,13 +39,16 @@ from the label-support sidecar's `aerobic_and_anaerobic`, which compares
 {`METPO:1000603`, `METPO:1000607`, `METPO:1000611`}. These are different annotation
 sets and their counts must not be treated as the same measure.
 
-## Pinned-KG review counts
+## Historical pinned-KG review counts, before facultative unification
 
 The lead's [independent review and recount](https://github.com/CultureBotAI/microbial-trait-profiling/issues/948)
 used KG edges with SHA-256
 `d13812a436bd0b1c51cfe20c97076912a131f72b2b8e8ca3bb2db15095ab9ebb`,
 also recorded in `methods/table1-native-results/contribution_manifest.json`.
-The counts below are distinct NCBITaxon carrier nodes before ancestor closure.
+The counts below are distinct NCBITaxon carrier nodes before ancestor closure,
+under the historical raw-object policy. In particular, the facultative row used
+only `METPO:1000605`; it is not a result for the current union. Regenerate the
+run-bound audit before using these numbers for basis P.
 
 | Pair | off | phenotype | virtual full |
 | --- | ---: | ---: | ---: |

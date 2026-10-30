@@ -1,0 +1,5 @@
+column_id	column_label	predicate_id	predicate_name	object_id	object_name	object_category	feature_class	annotation_evidence
+METPO:1000612	facultative METPO:1000612			METPO:1000612	facultative	biolink:PhenotypicQuality	trait_annotation	direct_descendant_or_strain_unresolved
+METPO:1000605	facultatively anaerobic METPO:1000605			METPO:1000605	facultatively anaerobic	biolink:PhenotypicQuality	trait_annotation	direct_descendant_or_strain_unresolved
+METPO:1000608	facultatively anaerobic METPO:1000608			METPO:1000608	facultatively anaerobic	biolink:PhenotypicQuality	trait_annotation	direct_descendant_or_strain_unresolved
+METPO:2000510|mediadive.medium:1	grows in: Fixture medium mediadive.medium:1 [METPO:2000510]	METPO:2000510	grows in	mediadive.medium:1	Fixture medium	biolink:ChemicalMixture	culture_medium	direct_or_descendant_unresolved

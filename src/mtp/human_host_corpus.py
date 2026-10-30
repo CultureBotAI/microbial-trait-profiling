@@ -19,6 +19,7 @@ from collections.abc import Collection
 import pandas as pd
 
 __all__ = [
+    "CORPUS_DESCRIPTION",
     "CORPUS_SEQUENCING_TYPES",
     "EXCLUDED_BY_HOST",
     "EXCLUDED_BY_SEQUENCING_TYPE",

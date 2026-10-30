@@ -1,0 +1,12 @@
+# Headline traits for the disease-group contrasts of #1045 (row 4), in report
+# order, after unifying redundant facultative terms into METPO:1000608 (#1123).
+# One trait identifier per line; see mtp.trait_lists.
+METPO:1000608
+METPO:2000103|pathways:arsenate_reduction
+METPO:2000103|GO:0046274
+METPO:2000103|pathways:thiosulfate_oxidation
+METPO:1000447
+METPO:1000845
+METPO:1000603
+METPO:2000103|GO:0030245
+METPO:2000103|GO:0045493

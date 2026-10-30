@@ -13,7 +13,7 @@ from mtp.paths import REPO_ROOT, file_sha256
 from mtp.workflow.__main__ import main
 from mtp.workflow.archive import ArchiveResolver, create_archive, verify_archive
 from mtp.workflow.consumers import open_core_bundle, write_consumer_record
-from mtp.workflow.operations import OPERATIONS, validate_core_product
+from mtp.workflow.operations import OPERATIONS, validate_execution_product
 from mtp.workflow.runtime import execute_workflow, inventory
 
 
@@ -33,7 +33,7 @@ def evidence(tmp_path: Path) -> tuple[Path, Path, Path, Path]:
         },
         original / "runs",
         OPERATIONS,
-        validator=validate_core_product,
+        validator=validate_execution_product,
         repository_root=REPO_ROOT,
     )
     core = Path(run.manifest_path)
@@ -143,7 +143,9 @@ def test_cli_infers_core_from_consumer_and_preserves_record_bytes(
     _, core, consumer, _ = evidence
     checksum = file_sha256(consumer)
     destination = tmp_path / "archive"
-    assert main(["archive", "--output", str(destination), "--consumer", str(consumer)]) == 0
+    # tmp_path is temporary storage, which the archive command refuses without the opt-in
+    argv = ["archive", "--output", str(destination), "--consumer", str(consumer)]
+    assert main([*argv, "--allow-temporary-output"]) == 0
     record = verify_archive(destination / "archive.json")
     assert record.core_manifests == [str(core)]
     assert file_sha256(consumer) == checksum

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+from dataclasses import replace
 from math import isnan
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -553,7 +554,13 @@ def test_the_site_names_sit_below_the_last_subtitle_line(
     """Both real Table 1 layouts preserve measured clearance, including two-line notes."""
     matrix = build_matrix(
         [
-            _paired_profile(f"bsdb:{index}", f"bsdb:{index}-1", direction, count)
+            replace(
+                _paired_profile(
+                    f"bsdb:{condition}-{index}", f"bsdb:{condition}-{index}-1", direction, count
+                ),
+                condition=f"Condition {condition}",
+            )
+            for condition in range(8)
             for index in range(1, 4)
             for direction, count in (("inc", 8), ("dec", 2))
         ],
@@ -561,6 +568,9 @@ def test_the_site_names_sit_below_the_last_subtitle_line(
         max_body_sites=10,
         min_studies=1,
         guild_order=TRAIT_ORDER,
+    )
+    assert len(matrix.conditions) >= 8, (
+        "Rendered layout fixture needs at least eight condition rows"
     )
     scales: dict[str, object] = {trait: trait_colorscale(trait) for trait in TRAIT_ORDER}
 

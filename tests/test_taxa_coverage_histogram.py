@@ -831,8 +831,52 @@ def test_export_omits_empty_ranks_and_records_corpus_identity(
     assert record["corpus_identity"]["kg_microbe"]["release_tag"] == "fixture-release"
     assert record["corpus_identity"]["matrix"]["sha256"] == coverage.file_sha256(inputs["profiles"])
     assert record["inputs"]["kg_provenance"]["sha256"] == coverage.file_sha256(sidecar)
-    assert record["corpus_identity"]["matrix"]["path"] == "external/profiles.tsv"
+    recorded_path = Path(record["corpus_identity"]["matrix"]["path"])
+    assert not recorded_path.is_absolute()
+    assert ".." not in recorded_path.parts
+    profile_path = inputs["profiles"].resolve()
+    root = coverage.REPO_ROOT.resolve()
+    if profile_path.is_relative_to(root):
+        assert (root / recorded_path).resolve() == profile_path
+    else:
+        assert recorded_path.parts == ("external", inputs["profiles"].name)
     assert str(tmp_path) not in json.dumps(record)
+
+
+@pytest.mark.parametrize(
+    ("location", "expected"),
+    [
+        ("inside", "data/profiles.tsv"),
+        ("outside", "external/profiles.tsv"),
+        ("inside_link_to_outside", "external/profiles.tsv"),
+        ("outside_link_to_inside", "data/profiles.tsv"),
+    ],
+)
+def test_provenance_paths_follow_resolved_checkout_membership(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, location: str, expected: str
+) -> None:
+    """Check both path categories regardless of pytest's scratch location (#972)."""
+    root = tmp_path / "checkout"
+    inside = root / "data/profiles.tsv"
+    outside = tmp_path / "external-inputs/profiles.tsv"
+    inside.parent.mkdir(parents=True)
+    outside.parent.mkdir(parents=True)
+    inside.write_text("checkout fixture\n")
+    outside.write_text("external fixture\n")
+    inside_link = root / "linked/profiles.tsv"
+    outside_link = tmp_path / "linked/profiles.tsv"
+    inside_link.parent.mkdir()
+    outside_link.parent.mkdir()
+    inside_link.symlink_to(outside)
+    outside_link.symlink_to(inside)
+    paths = {
+        "inside": inside,
+        "outside": outside,
+        "inside_link_to_outside": inside_link,
+        "outside_link_to_inside": outside_link,
+    }
+    monkeypatch.setattr(coverage, "REPO_ROOT", root.resolve())
+    assert coverage.provenance_path(paths[location]) == expected
 
 
 def test_plate6_reads_compact_remediation_and_nonempty_rank_rows(
@@ -875,6 +919,74 @@ def test_plate6_reads_compact_remediation_and_nonempty_rank_rows(
     )
     assert "do not establish leaf-taxon traits" in remediation
     coverage.plt.close(fig)
+
+    # Also verify that the three new #957 / #1009 diagnosis categories render with distinct
+    # Panel B short names, distinct bar colors, and Panel C remediation labels (#1009):
+    zero_path = output / "top_zero_trait_bugsigdb_taxa.tsv"
+    zero_df = pd.read_csv(zero_path, sep="\t")
+    extra_rows = pd.DataFrame(
+        [
+            {
+                **zero_df.iloc[0].to_dict(),
+                "zero_trait_rank": len(zero_df) + 1,
+                "taxon_id": "NCBITaxon:155900",
+                "taxon_name": "uncultured organism",
+                "taxonomic_rank": "species",
+                "signature_occurrences": 17,
+                "profile_count": 17,
+                "study_count": 8,
+                "diagnosis_category": "Unresolved Taxonomic Label",
+                "suggested_remediation": (
+                    "Review the reported taxonomic label and source assignment before trait "
+                    "matching; an unresolved label does not establish a multi-taxon composite"
+                ),
+            },
+            {
+                **zero_df.iloc[0].to_dict(),
+                "zero_trait_rank": len(zero_df) + 2,
+                "taxon_id": "NCBITaxon:1505663",
+                "taxon_name": "Thomasclavelia",
+                "taxonomic_rank": "genus",
+                "signature_occurrences": 14,
+                "profile_count": 14,
+                "study_count": 11,
+                "diagnosis_category": "Taxonomy Unresolved",
+                "suggested_remediation": (
+                    "Review placement in the supplied taxonomy; missing lineage does not "
+                    "establish rarity, novelty or a bacterial isolate"
+                ),
+            },
+            {
+                **zero_df.iloc[0].to_dict(),
+                "zero_trait_rank": len(zero_df) + 3,
+                "taxon_id": "NCBITaxon:10239",
+                "taxon_name": "Caudoviricetes sp.",
+                "taxonomic_rank": "species",
+                "signature_occurrences": 11,
+                "profile_count": 11,
+                "study_count": 5,
+                "diagnosis_category": "Non-Bacterial / Viral Taxon",
+                "suggested_remediation": (
+                    "Review viral annotation resources; missing retained annotations do not "
+                    "establish biological absence"
+                ),
+            },
+        ]
+    )
+    pd.concat([zero_df, extra_rows], ignore_index=True).to_csv(zero_path, sep="\t", index=False)
+    captured.clear()
+    plate.build_plate6(tmp_path, tmp_path)
+    fig_new = captured[0]
+    fig_new.canvas.draw()
+    panel_b_yticks = [t.get_text() for t in fig_new.axes[1].get_yticklabels()]
+    assert "Unresolved Taxon Label" in panel_b_yticks
+    assert "Taxonomy Unresolved" in panel_b_yticks
+    assert "Viral Taxon (Non-Bacterial)" in panel_b_yticks
+    panel_c_texts = "\n".join(t.get_text() for t in fig_new.axes[2].texts)
+    assert "Review taxonomic label / source" in panel_c_texts
+    assert "Review taxonomy placement" in panel_c_texts
+    assert "Review viral annotation resources" in panel_c_texts
+    coverage.plt.close(fig_new)
 
 
 @pytest.mark.parametrize("all_zero", [False, True])

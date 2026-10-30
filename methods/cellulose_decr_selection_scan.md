@@ -24,6 +24,13 @@ code and before any run on real data. Its parameters are in
 which the code reads. A later change to the rule is added to that file's `amendments`,
 with its date and what was known when it was made, rather than edited in here.
 
+(Added on 2026-10-25, #1050.) The third amendment was made after the results of both
+scopes had been seen, when records that hash the v1 file existed. It is therefore protocol
+v2, in its own file,
+[`cellulose_decr_selection_scan_protocol_v2.json`](cellulose_decr_selection_scan_protocol_v2.json),
+which names the v1 file by its hash and leaves it unchanged. A run follows v2. See
+[Amendments](#amendments).
+
 ### Population
 
 - **Source.** The scan reads one verified core run (`--core-run`) whose contrast
@@ -36,8 +43,9 @@ with its date and what was known when it was made, rather than edited in here.
 - **Not cellulose_decr's own inputs.** cellulose_decr reads the checkout's
   `data/derived` tables, including its own contrast manifest. Its `control_tiers_1_2`
   definition keeps Tier 1–2 controls without requiring `case_vs_control_subject` or a
-  sequencing type. #818 found that the two populations give different set sizes. The scan uses the core's population, so that
-  its numbers agree with the core run and the three arms. Its PD, HIV and CRC sets
+  sequencing type. #818 found that the two populations give different set sizes. The
+  scan uses the core's population, so that its numbers agree with the core run and
+  the three arms. Its PD, HIV and CRC sets
   can therefore differ from those in `cellulose_decreased_taxa_catalog_tier1_2.tsv`.
 - **Products.** From the core run: `experiments` (each experiment's condition and body
   site), `reported_taxa` (signature taxa, directions already oriented),
@@ -161,10 +169,11 @@ For each trait and each triple of eligible conditions:
 
 ## Amendments
 
-Both amendments were made on 2026-10-22, after the review of PR #861 (#872) and before
-any run on real data. They are recorded in the protocol file's `amendments`. The
-declared rule above is as committed, except for two marked clarifications made with
-them, which change nothing computed:
+The first two amendments were made on 2026-10-22, after the review of PR #861 (#872) and
+before any run on real data. They are recorded in the v1 protocol file's `amendments`.
+The third was made on 2026-10-25, after the results of both scopes had been seen, and is
+protocol v2 (#1050). The declared rule above is as committed, except for two marked clarifications
+made with the first two, which change nothing computed, and the marked pointer to v2:
 
 - in *Traits*, that the screen votes over every body site while the sets are
   stool-only;
@@ -172,7 +181,8 @@ them, which change nothing computed:
   roughly uniform.
 
 (This paragraph was corrected on 2026-10-22, #907; it had said the declared rule was
-left as committed.) When the amendments were made, no scan result on real data existed.
+left as committed.) When the first two amendments were made, no scan result on real data
+existed.
 The eligible counts on the pinned export and timings on synthetic fixtures were known.
 
 1. **The strain-rollup scope is pinned.**
@@ -184,6 +194,7 @@ The eligible counts on the pinned export and timings on synthetic fixtures were 
    - A core of any other scope is refused. A core that records no `strain_rollup`
      parameter, built before #828, is read as `off`.
    - The summary, the provenance and `--plan` report the scope and its role.
+   - The roles were reversed by the third amendment: phenotype is now primary.
 2. **Triples are also ranked by U6 z.**
    - PD is the largest condition, so its triples have tighter nulls, and smaller p for
      the same excess overlap. A rank by z separates large from unusual.
@@ -193,6 +204,48 @@ The eligible counts on the pinned export and timings on synthetic fixtures were 
    - A triple whose null has no spread has no z and no z rank.
    - The trait table also ranks the traits by the share of triples whose z is at least
      as extreme as the lead's.
+3. **Phenotype becomes the primary scope (2026-10-25; protocol v2; made after results).**
+   - **Made after results of both scopes.** The owner decided on 2026-10-25 that
+     phenotype is the primary strain-rollup scope everywhere, the scan included (#1050).
+     By then the scan's results on both scopes had been seen:
+     - **off:** protocol v1 on the final rerun's Tier 1+2 × off core at commit 511c891,
+       reported in the
+       [rerun record of 2026-10-23](../docs/reviews/2026-10-23-final-rerun-record.md).
+       There, PD/HIV/CRC with cellulose catabolic process ranked 1,368 of 5,984 triples
+       by U6 p for the mean pairwise distance (p = 0.35) and 3,446 for the three-way
+       core (p = 0.82).
+     - **phenotype:** a run of the same recipe on 2026-10-24, under v1 (where phenotype
+       was the declared sensitivity), on the final rerun's Tier 1+2 × phenotype core at
+       the same commit (core run `run-ec264369`). There, PD/HIV/CRC with cellulose
+       catabolic process ranked 1,368 of 5,984 triples by U6 p for the mean pairwise
+       distance (p = 0.3515) and 3,446 for the three-way core (p = 0.822): the same
+       ranks and p-values as off. Its result was used in a presentation. It is outside
+       the repository's recorded evidence.
+   - **A post-results choice.** The amendment is therefore a choice of primary scope
+     made after both scopes' results were known. The phenotype result is not a
+     pre-declared primary analysis; off was the primary that v1 declared before any run.
+   - **Why.** Phenotype is the repository's primary scope (#788) and the scope of the
+     other analyses' primary results, such as the tracked outputs regenerated from the
+     final rerun. The scan's primary scope now agrees with them.
+   - **What changes.** Phenotype is primary and off the declared sensitivity. A core of
+     any other scope is still refused. A core that records no `strain_rollup`, built
+     before #828, is still read as `off`, now the sensitivity. Nothing a scan computes on
+     a given core changes; only the role it reports does.
+   - **Both scopes, side by side.** The first amendment warned that choosing between the
+     scopes after seeing both would reopen the forking path this scan exists to close.
+     That is what this amendment does, so neither scope is ever reported alone. Each
+     scan names the other scope as the one it must be reported beside, and
+     `just cellulose-decr-selection-scan-scopes` writes the two together
+     ([Both scopes side by side](#both-scopes-side-by-side-1050)).
+   - **v1 kept as recorded.** v2 names the v1 file by path and SHA-256 and adds only
+     this amendment. The v1 file stays byte-identical, so the records written under it,
+     such as the run of 2026-10-23, still verify against it, and the code still reads it.
+     The first two amendments went into the v1 file itself because no record existed
+     then.
+   - **v2 immutability.** Once a v2 record exists, its protocol file must also stay
+     byte-identical. A future v3 must name the unchanged v2 file and its SHA-256,
+     adding amendments in a separate file, as v2 names v1. Editing v2 in place would
+     invalidate the existing records that bind its bytes.
 
 ## How the scan runs
 
@@ -202,6 +255,8 @@ after the rule above was committed, and do not change it.
 - **Command.** `just cellulose-decr-selection-scan RUN OUTPUT` runs
   `mtp.cellulose_decr.selection_scan` (`src/mtp/cellulose_decr/selection_scan.py`) on a
   core run's `run.json`. It writes to a new or empty directory and refuses any other.
+  Run it once on a Tier 1+2 × phenotype core and once on a Tier 1+2 × off core, then
+  report the two together with `just cellulose-decr-selection-scan-scopes`.
 - **Dry run.** `--plan` verifies the core and prints the eligible conditions, the trait
   set, the number of triples and a timed estimate of the run. It writes nothing and runs
   no null.
@@ -211,17 +266,29 @@ after the rule above was committed, and do not change it.
   the scan writes its consumer record (`core_consumption.json`), as for the other core
   consumers. `just core-verify-consumer` checks that record later. A core of another
   population or direction basis is refused.
-- **Scope.** The core's `strain_rollup` parameter must be `off` (primary) or
-  `phenotype` (declared sensitivity); a core without it, built before #828, is read as
-  `off`. Any other scope is refused. The scope is read with `mtp.workflow`'s own
-  `run_strain_rollup`. The summary, the provenance and `--plan` record the scope and
-  its role (first amendment). The workflow's default scope since #828 is `phenotype`, so
-  build the primary core with `--strain-rollup off`.
-- **Protocol checks.** The code reads the protocol file and applies its amendments in
-  date order. It refuses a protocol whose fields say something the code does not do
-  (the population, stool body site, core products, statistics, reference sets, lead,
-  scope and secondary rank) and an amendment that is malformed, out of date order or
-  sets an unknown field. An edited protocol therefore cannot pass as followed.
+- **Scope.** The core's `strain_rollup` parameter must be `phenotype` (primary) or
+  `off` (declared sensitivity), as v2 declares. Any other scope is refused. The scope is
+  read with `mtp.workflow`'s own `run_strain_rollup`. A core without the parameter,
+  built before #828, takes the protocol's declared `absent_means`, `off`, and the run
+  records `scope_source` `absent_means` rather than `recorded`; no default outside the
+  protocol decides it (#927). The summary, the provenance and `--plan` record the
+  scope, where it came from, its role, the protocol version that declared it, the
+  results seen before it was declared, and the scope it must be reported beside. The
+  workflow's default scope since #828 is `phenotype`; build the off core with
+  `--strain-rollup off`.
+- **Protocol checks.** A run follows v2. The code reads a protocol file and applies its
+  amendments in date order. For v2 it first checks that the v1 file it names is
+  unchanged, by its SHA-256, and then applies v1's amendments and v2's. It refuses a
+  protocol whose fields say something the code does not do for its version (the
+  population, stool body site, core products, statistics, reference sets, lead, scope
+  declaration and secondary rank), an amendment that is malformed, out of date order or
+  sets an unknown field, and a v2 file that sets anything other than by amendment. An
+  edited protocol therefore cannot pass as followed.
+- **Records of either version.** `recorded_protocol` checks a scan's summary and
+  provenance against the version they name: its committed file and hash (for v2, also
+  the v1 file and hash it amends), and the role that version declares for the recorded
+  scope. A record written under v1 verifies against the v1 file, so the records of
+  2026-10-23 stay verifiable.
 - **Shared draws.** Each U6 draw is one call to cellulose_decr's draw function
   (`signature_draws`, which `signature_null` also uses). It gives a random order of the
   pool's studies and one random unit for each study.
@@ -252,12 +319,81 @@ after the rule above was committed, and do not change it.
 | `selection_scan_traits.tsv` | The trait set with its screen statistics and U3 size; PD/HIV/CRC's results, p ranks and z ranks (`*_z_*`) over all tested triples and over study-disjoint triples; and each trait's rank among the traits by PD/HIV/CRC's p, by the share of triples whose p is at most as large, and by the share whose z is at least as extreme |
 | `selection_scan_conditions.tsv` | Every named condition with a stool comparison: comparisons, studies, U6 units, eligibility and layout position |
 | `selection_scan_distribution.tsv` | U6 p-values over triples in twenty bins, per trait, statistic and reference set |
-| `selection_scan_summary.json` | The rule as run, the core's scope and its role, the counts, the trait table, and quantiles of p and z per trait, statistic and reference set |
-| `selection_scan_provenance.json` | Code commit, script hashes, protocol and methods hashes; the core run's ID, manifest hash and parameters; each input's path within the core run, with its hash; permutations, seed and package versions |
+| `selection_scan_summary.json` | The protocol version, the rule as run, the core's scope with where it came from, its role, the version that declared the role, the results seen before it was declared and the scope it must be reported beside (also as a note); the counts, the trait table, and quantiles of p and z per trait, statistic and reference set |
+| `selection_scan_provenance.json` | Code commit, script hashes; the protocol's version, path and hash, and the v1 file and hash it amends; the methods hash; the core run's ID, manifest hash, parameters and external sources (raw dump, KG edges and nodes) with their hashes; the scope record as in the summary; each input's path within the core run, with its hash; permutations, seed and package versions |
 | `core_consumption.json`, `core_consumption.coverage.tsv` | The binding to the verified core run |
 
 The triple table is gzip-compressed with a fixed timestamp, so the same core, rule and
 seed give the same bytes.
+
+## Both scopes side by side (#1050)
+
+A scan reads one core, so one scope. Its outputs are not reported on their own: the
+summary names the other scope as the one they must be reported beside.
+
+- **Command.** `just cellulose-decr-selection-scan-scopes SCAN SCAN OUTPUT` runs
+  `mtp.cellulose_decr.selection_scan_scopes` on the output directories of two scans, one
+  on a Tier 1+2 × phenotype core and one on a Tier 1+2 × off core, given in either
+  order. It writes to a new or empty directory. It runs no null and recomputes nothing.
+- **Relocated archives.** Keep each `SCAN` argument as its original recorded directory.
+  Add `--archive SCAN ARCHIVE_JSON` for each archived scan. For example:
+
+  ```bash
+  just cellulose-decr-selection-scan-scopes \
+    /original/phenotype /original/off /durable/scopes \
+    --archive /original/phenotype /retained/phenotype/archive.json \
+    --archive /original/off /retained/off/archive.json
+  ```
+
+  An archive can retain a scan's files in separate directories. Each consumer record,
+  scan output, bound-output path and bound-core manifest is therefore resolved
+  separately through that scan's `LocationResolver`. The same resolver is passed
+  through core and consumer verification. Missing retained paths are errors even if
+  their original files still exist; there is no fallback to live files. Duplicate
+  mappings and mappings for an undeclared scan are refused before archive reads.
+  `just evidence-resolve ARCHIVE_JSON ORIGINAL_FILE` locates an individual retained
+  file without changing its historical record. The report keeps the logical scan
+  identities and hashes, so relocation changes no reported result.
+- **Checks.**
+  - Each scan's consumer record is verified end to end (`verify_consumer_record`: its
+    core run, and the hash of every output), and every file read must be one of the
+    outputs it binds.
+  - Each scan's summary and provenance must agree with the protocol version they name
+    (`recorded_protocol`). The scopes report accepts v2 only. A rejection-only
+    preflight names v1 explicitly before core verification; it does not certify the
+    rejected records. Historical v1 records remain readable by `recorded_protocol`
+    and are never relabelled as v2 by the scopes report.
+  - Every parsed scan buffer is checked against its bound output's size and SHA-256.
+    The reported hashes describe those same bytes. The separately read consumer
+    record must parse to the record that was verified, and the resolved core manifest
+    must still match the bound hash and run ID.
+  - A scan's own summary is not trusted for its scope (#1079). Its summary and
+    provenance must name the core run its consumer record binds, with that core's
+    manifest hash, and its scope and where the scope came from must be what
+    `core_scope` reads from that core (`check_bound_core`). Whether `scope_source`
+    belongs in that record is determined by protocol version, not by the reporting
+    flag.
+  - The two scans must be one of each declared scope, read two different core runs, and
+    both follow v2. They must share the protocol file, code commit and module hashes,
+    methods hash, environment versions, chunk size, rule (draws and seed included),
+    core population, core commit, core parameters other than the scope, and core
+    sources. Missing comparability fields or differences are refused.
+- **Verification limit.** Consumer records bind output bytes by hash, not the process
+  that produced those bytes. These checks detect mismatched recorded identities,
+  scopes and inputs. They cannot establish computational authorship if an actor
+  rewrites every record consistently using a real other-scope run's fields and
+  rebinds the output hashes. Detecting that case requires recomputation, which this
+  reporting step does not perform.
+- **Outputs.**
+
+| File | Contents |
+| --- | --- |
+| `selection_scan_scopes.tsv` | Both scans' trait tables as written, with the scope and its role in front; the primary scope's rows first |
+| `selection_scan_scopes.json` | The scope declaration and the amendment that made it, with what was known when it was made; for each scope, its role, where the scope came from, the core run's ID, whether it follows the protocol, the counts, the lead triple's eligibility, the lead trait's results and the hashes of the files read; the shared rule; the report's code commit and protocol record |
+
+- **Reading it.** The two scopes can select different traits, because the phenotype
+  scope has more traits (#788); compare a trait across scopes only where both have a
+  row. Every p-value is nominal in both scopes.
 
 ## Study splits (#854)
 
@@ -270,6 +406,7 @@ multiplicity family and the reporting) belongs to #854.
 
 | Function | Signature | Returns |
 | --- | --- | --- |
+| `open_tier1_2` | `(core_run: Path, protocol=None) -> OpenTier12` | A named tuple with `bundle`, `scope` and `scope_source`. The last field is `recorded` or `absent_means`, never the primary/sensitivity role. Existing three-value unpacking remains supported. |
 | `load_core_inputs` | `(core_run: Path, protocol=None) -> tuple[CoreBundle, ScanInputs]` | Verifies a Tier 1+2 core run of a declared scope and reads its population once. A core of another population or scope is refused. `ScanInputs.studies` lists the population's studies; `ScanInputs.restricted(studies)` keeps whole studies; `ScanInputs.contrast_population`, `strain_rollup` and `strain_rollup_role` give the population and scope. |
 | `load_inputs` | `(paths, *, contrast_population, strain_rollup, protocol=None) -> ScanInputs` | The same from product paths, with the population and scope stated and checked. |
 | `build_population`, `screen_table` | `(experiments, keyed, reported, matrix_taxa, studies=None)`; `(profiles, columns, labels, studies=None)` | The population's profiles and taxa, and the directional screen, from in-memory tables, optionally for some studies only. `load_core_inputs` uses them. |

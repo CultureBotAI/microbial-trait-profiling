@@ -1,0 +1,84 @@
+# Versioned trait-key policy (#1129)
+
+New core runs bind `trait_key_policy` in the LinkML `WorkflowRun`, the resolved
+workflow parameters, and both matrix and feature-catalog producer steps. The
+parameter participates in the execution fingerprint. Scientific verification
+checks the same policy against the consumed KG, every matrix cell, metadata,
+catalog and profile contracts. Changing the field alone cannot relabel a run.
+
+`raw_object_v1` preserves each raw object CURIE. `facultative_union_v1` maps
+`METPO:1000605`, `METPO:1000608` and `METPO:1000612` to `METPO:1000608` before
+per-taxon set deduplication and ancestor rollup. Existing predicate handling is
+unchanged: negated METPO-object assertions and relation-value keys retain their
+predicates; positive METPO-object assertions remain bare class keys. A direct and
+strain-derived annotation
+of the same trait at the same taxon contributes once. Strain-rollup scope is an
+independent parameter. Neither policy converts annotations to measured physiology.
+
+The union is a local analytical mapping, not an upstream ontology merger.
+The [pinned METPO template](https://github.com/berkeleybop/metpo/blob/c6f49473730488c3aa71c3da2ef8dd4931c809a7/src/templates/metpo_sheet.tsv)
+maps the source vocabularies as follows:
+
+| Raw object | Source | Source label |
+| --- | --- | --- |
+| `METPO:1000605` | BacDive | facultative anaerobe |
+| `METPO:1000605` | Madin et al. | facultative |
+| `METPO:1000608` | BacDive | facultative aerobe |
+| `METPO:1000608` | Madin et al. | facultative |
+| `METPO:1000612` | BactoTraits | Ox_facultative_aerobe_anaerobe |
+
+The shared interpretation is an annotation for growth with or without oxygen.
+Under both policies, recorded `object_name` and `column_label` in
+`taxa_trait_matrix_columns.tsv` preserve the literal KG node label
+(`facultatively aerobic` and `facultatively aerobic METPO:1000608`) so core
+verification against the consumed KG nodes table remains invariant (#1231).
+Recorded and verified core and consumer tables (`taxa_trait_matrix_columns.tsv` /
+`feature_metadata`, `feature_catalog`, `three_test_table`, and `delta_z_derived`
+outputs) likewise keep the KG node label because readers and verifiers compare
+labels with the core (#1250). Only `feature_metadata` and `feature_catalog`
+record `trait_member_ids_json`; `three_test_table` and `delta_z_derived` tables do
+not record member arrays and instead read them from the core's `feature_metadata`
+when needed (#1259). No current renderer of `three_test_table` or
+`delta_z_derived` rows applies the display label yet (#1246, #1250).
+Human-facing renders (`table1_trait_maps`, `trait_screen`, `density_adjustment`,
+`scripts/audit_trait_density_correlation.py`, `deck_visualizations`,
+`label_support_audit`, `scripts/create_pd_trait_contributors.py`, and
+`trait_lists.trait_labels`) apply `display_trait_label` to render
+`METPO:1000608` as `facultative (aerobe or anaerobe)` when
+`trait_member_ids_json` records the union members (`METPO:1000605` or
+`METPO:1000612`, #1138), and preserve `facultatively aerobic` when only
+`METPO:1000608` is recorded. As a deliberate boundary exception,
+`trait_screen`'s `trait_direction_screen.tsv` is a recorded Noel-arm output that
+now carries the display label for union cores because no verifier compares its
+`trait_label` column against core metadata (#1259). Original KG assertions and
+node table entries remain unchanged. This mapping does not re-audit each
+underlying strain experiment or establish oxygen use in vivo.
+
+Matrix column metadata and the coverage module's feature catalog carry
+`trait_key_policy`, `trait_member_ids_json` and `trait_source_vocabularies_json`.
+The JSON arrays describe the declared mapping; they do not imply that every member
+or source supplied evidence to every cell. Unmapped features have singleton member
+arrays and no invented source-vocabulary mappings. Existing profile-coverage
+counts retain their definitions and remain linked to this catalog by the core run.
+
+Historical F manifests lack an explicit policy. The verifier recognizes only
+audited matrix-implementation SHA-256 and byte-size pairs from their recorded code
+inventory. The raw producer bytes cover the development interval
+`f8a57e2..0e49e87`: from `f8a57e2` (2026-10-22, inclusive), including F
+(`511c891`), until just before `0e49e87`. These select `raw_object_v1`.
+At `0e49e87`, #1124 introduces the distinct implicit union producer, which
+selects `facultative_union_v1`. Earlier cores whose matrix implementation
+predates `f8a57e2` are outside this audited range and are refused as unknown
+historical implementations. Both recognized producers retain their historical
+7-column metadata layouts without `trait_member_ids_json`, so membership-keyed
+renderers fall back to the recorded KG label `facultatively aerobic` on
+`0e49e87` implicit-union cores unless policy resolution is consulted (#1253).
+Unknown producer bytes, partial declarations, and
+contradictory step bindings fail closed. The compatibility resolver neither edits
+old records nor executes historical code, and it skips no inventory or scientific
+checks. Adding another historical producer requires an explicit compatibility review.
+
+Current runs emit the extended metadata layout even when explicitly selecting
+`raw_object_v1`. Reproducing a historical policy is distinct from reproducing the
+historical output serialization. Historical counts in methods notes remain labelled
+as F references; current union results must be regenerated before use for basis P.

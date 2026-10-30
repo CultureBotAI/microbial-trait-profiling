@@ -14,6 +14,8 @@
 
 Regenerate all of the above with `just audit-trait-density`. Only the three ontology tables are committed (CONTRIBUTING.md, "Generated outputs on `main`").
 
+`just density-adjustment-trait-list` reports the paired effects for a declared list of trait identifiers instead of the six Table 1 traits (#1054). PC1 is still fit on every non-MediaDive trait, so a trait's row is the same whichever list it appears in; each listed trait must be a non-MediaDive column, and labels come from the columns table's `object_name`. The six-trait default keeps its fixed labels, so a shared trait can carry a different label in the two tables while its values are identical: arsenate reduction is `arsenate_reduction` in the current columns table (#1084). The run writes `trait_list_provenance.json` with the list file's SHA-256 and the input hashes. `just audit-trait-density --trait-list FILE --output-dir DIR` passes the same list through the jed arm's script; its consolidated report then leaves out the fixed-text conclusions of section 6, which name the six traits (#1069). A list run refuses the default `data/derived/density_adjustment/` and any directory with a `density_adjustment` path component, including arm directories, nested destinations and symlink aliases (#1093). Component comparisons use `casefold()`, so spellings such as `Density_Adjustment` are also protected (#1144). A destination already containing `table1_density_adjusted_effects.tsv` is reserved regardless of the entry contents or type; use a fresh destination for each declared-list run. The audit API checks the destination before profile-input reads or directory creation; the module CLI also checks before loading the trait list. An empty `--output-dir` is rejected rather than read as the current directory (#1084). Without a list both runs are unchanged and write no provenance file.
+
 > [!NOTE]
 > **Step 5 Decomposition Boundary (#355, #382):** This document and PR #370 cover trait correlation, annotation density adjustment, and near-twin collinearity. The trait-semantics audit (#311) is tracked separately in the ontology redundancy workstream.
 
@@ -102,14 +104,21 @@ Issue #264 posed the diagnostic question: *Does the observed correlation between
 
 We evaluated which candidate trait signals survive PC1 density adjustment in paired experiment comparisons (increased vs. decreased, $N = 2,257$ pairs):
 
-| Trait Identifier | Trait Label | Raw Mean $\Delta$ | Raw Wilcoxon $p$ | Adj Mean $\Delta$ | Adj Wilcoxon $p$ | Relative Change | Adjustment Status |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| `METPO:1000608` | Facultatively aerobic | $+356.65$ | $8.05 \times 10^{-13}$ | $+204.56$ | **$2.97 \times 10^{-12}$** | -42.6% | **Survived (significant post-adjustment)** |
-| `METPO:2000103\|GO:0030245` | Cellulose catabolic process | $-1.78$ | $4.98 \times 10^{-2}$ | **$-4.85$** | **$5.61 \times 10^{-6}$** | -172.5% | **Enhanced (significant, larger magnitude)** |
-| `METPO:1000668` | Coccus shaped | $+210.05$ | $2.54 \times 10^{-8}$ | $+89.64$ | **$1.32 \times 10^{-3}$** | -57.3% | **Survived (significant post-adjustment)** |
-| `METPO:1000683` | Sphere shaped | $+9.18$ | $3.80 \times 10^{-7}$ | $+2.26$ | **$1.11 \times 10^{-3}$** | -75.4% | **Survived (significant post-adjustment)** |
-| `METPO:2000103\|pathways:arsenate_reduction` | Arsenate reduction | $+2.42$ | $2.55 \times 10^{-8}$ | $+1.32$ | **$1.01 \times 10^{-4}$** | -45.5% | **Survived (significant post-adjustment)** |
-| `METPO:1000623` | Moderately halophilic | $+12.38$ | $1.29 \times 10^{-6}$ | $+3.93$ | **$6.47 \times 10^{-9}$** | -68.3% | **Survived (significant post-adjustment)** |
+| Trait Identifier | Trait Label | Raw Mean $\Delta$ | Raw Wilcoxon $p$ | Adj Mean $\Delta$ | Adj Wilcoxon $p$ | Relative Change | Magnitude Change | Adjustment Status |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `METPO:1000608` | Facultatively aerobic | $+356.65$ | $8.05 \times 10^{-13}$ | $+204.56$ | **$2.97 \times 10^{-12}$** | -42.6% | -42.6% | **Survived (significant post-adjustment)** |
+| `METPO:2000103\|GO:0030245` | Cellulose catabolic process | $-1.78$ | $4.98 \times 10^{-2}$ | **$-4.85$** | **$5.61 \times 10^{-6}$** | -172.5% | +172.5% | **Enhanced (significant, larger magnitude)** |
+| `METPO:1000668` | Coccus shaped | $+210.05$ | $2.54 \times 10^{-8}$ | $+89.64$ | **$1.32 \times 10^{-3}$** | -57.3% | -57.3% | **Survived (significant post-adjustment)** |
+| `METPO:1000683` | Sphere shaped | $+9.18$ | $3.80 \times 10^{-7}$ | $+2.26$ | **$1.11 \times 10^{-3}$** | -75.4% | -75.4% | **Survived (significant post-adjustment)** |
+| `METPO:2000103\|pathways:arsenate_reduction` | Arsenate reduction | $+2.42$ | $2.55 \times 10^{-8}$ | $+1.32$ | **$1.01 \times 10^{-4}$** | -45.5% | -45.5% | **Survived (significant post-adjustment)** |
+| `METPO:1000623` | Moderately halophilic | $+12.38$ | $1.29 \times 10^{-6}$ | $+3.93$ | **$6.47 \times 10^{-9}$** | -68.3% | -68.3% | **Survived (significant post-adjustment)** |
+
+*Relative Change* is `relative_change_pct`, the signed change $(\text{adj} - \text{raw}) / |\text{raw}|$. It reads as attenuation only for a positive raw mean: cellulose's raw mean is negative, so its $-172.5\%$ means the effect grew. *Magnitude Change* is `magnitude_change_pct`, $(|\text{adj}| - |\text{raw}|) / |\text{raw}|$, negative exactly when the effect shrank whatever its sign; `sign_flipped` marks an adjusted mean of the opposite sign (#1084). A mean within $10^{-9}$ of zero has no sign, and a raw one leaves the magnitude change undefined (NaN). The Magnitude Change values above are computed from the same raw and adjusted means. The status combines the Wilcoxon $p$-values (significant at $p \le 0.05$) with the magnitude change:
+- A raw mean of zero gets *undefined magnitude change (raw mean zero, …)*, significant or nonsignificant post-adjustment.
+- A sign reversal gets *reversed (significant post-adjustment)* or *reversed (nonsignificant post-adjustment)*, whatever its magnitude (#1097).
+- Otherwise a significant adjusted contrast whose raw contrast was also significant ($p \le 0.05$) is *survived*, or *enhanced* if $|\text{adj}| > |\text{raw}|$, while one whose raw contrast was nonsignificant ($p > 0.05$) or had ten or fewer non-zero pairs (no raw $p$) is *significant only post-adjustment* (#1098); one that lost significance is *collapsed*, attenuated or with a larger magnitude; one nonsignificant before and after is *attenuated* or *enhanced magnitude*.
+
+A raw contrast with ten or fewer non-zero pairs has no raw $p$ and is treated as not raw-significant: it becomes *significant only post-adjustment* when the adjusted contrast is significant, and *attenuated* or *enhanced magnitude* when the adjusted contrast is nonsignificant. Deck figure 4 draws only *survived* and *enhanced* rows as surviving (green); *significant only post-adjustment*, reversed, and raw-mean-zero rows are drawn red with the rest.
 
 ### Key Methodological Takeaways
 1. **Cellulose Catabolism Depletion Is Strengthened:** When the positive curation baseline is removed, the negative paired contrast for *cellulose catabolic process* in disease signatures becomes sharper ($p = 5.61 \times 10^{-6}$ vs. raw $p = 4.98 \times 10^{-2}$). In raw count data, global positive density drift partially offsets the negative paired contrast for cellulose catabolism.
