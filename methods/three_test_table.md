@@ -282,6 +282,17 @@ verified source bundles. It compares the complete record, including numerical
 environment and implementation identity. Editing both a table and its local
 output checksum therefore does not make an altered result pass replay.
 
+The completed-table reader used by downstream consumers verifies stored evidence
+without replaying its statistics. It constructs the verified `ComparisonRun` from
+the same immutable manifest buffer whose hash is bound to the parent record.
+The core, arms, analysis bases and comparison outputs still undergo native
+verification. For population validation, it hashes the raw `count_profiles`
+buffer against its upstream identity and gives that buffer to the shared strict
+count reader for both header and row parsing. Gzip inputs retain their compressed
+byte identity. Final path, alias-target and hash checks remain mandatory before
+publication. For the comparison manifest and `count_profiles`, restoring a
+transiently replaced file cannot authorize different parsed bytes.
+
 `just test-three-test-table` covers synthetic contracts. The separate
 `test-three-test-off-reproduction` recipe requires a completed, verified historical
 off sidecar and its original comparison; it checks the rounded cellulose target

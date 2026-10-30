@@ -736,12 +736,20 @@ def verify_comparison_run(path: Path) -> ComparisonRun:
 
 def verify_comparison_sources(
     path: Path,
+    *,
+    manifest_bytes: bytes | None = None,
 ) -> tuple[ComparisonRun, WorkflowRun, dict[str, ArmRun]]:
-    """Verify the comparison DAG once and return its verified core and three arms."""
+    """Verify the comparison DAG once and return its verified core and three arms.
+
+    When supplied, ``manifest_bytes`` is the manifest snapshot to verify. Publishing
+    callers must bind its hash and recheck the path before publication. It changes
+    only the parser input; every upstream, basis and output check still runs.
+    """
     manifest = (path / "comparison_run.json" if path.is_dir() else path).resolve()
     if not manifest.is_file():
         raise FileNotFoundError(f"ComparisonRun manifest not found: {manifest}")
-    record = ComparisonRun.model_validate_json(manifest.read_text(encoding="utf-8"))
+    raw = manifest.read_bytes() if manifest_bytes is None else manifest_bytes
+    record = ComparisonRun.model_validate_json(raw)
     if record.status != ExecutionStatus.completed:
         raise ValueError(
             f"ComparisonRun {record.id} has status {record.status}, expected completed"
