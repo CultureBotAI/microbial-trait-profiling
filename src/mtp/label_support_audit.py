@@ -648,13 +648,14 @@ def run_label_support_audit(
     occurrences, scope_facts = bind_occurrences(taxa_path, matrix, profiles)
     graph = load_kg_provenance_graph(edges_path, nodes_path, strain_rollup=strain_rollup)
     madin = load_madin_subsources(madin_csv)
+    sibling_columns = matrix_path.with_name("taxa_trait_matrix_columns.tsv")
     support, focal, evidence = build_label_support_tables(
         graph,
         matrix,
         occurrences,
         madin,
         trait_list=declared_traits.trait_ids if declared_traits is not None else None,
-        column_metadata_path=matrix_path.with_name("taxa_trait_matrix_columns.tsv"),
+        column_metadata_path=sibling_columns if sibling_columns.exists() else None,
     )
     sensitivity = build_support_threshold_sensitivity(support, occurrences, profiles)
     census = build_coassertion_census(matrix, occurrences)

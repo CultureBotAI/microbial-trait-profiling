@@ -758,7 +758,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--core-run", type=Path, help="Verified core workflow run manifest")
     parser.add_argument("--profile-input", type=Path)
-    parser.add_argument("--columns", type=Path)
+    parser.add_argument("--column-labels", "--columns", dest="column_labels", type=Path)
     parser.add_argument("--experiments-input", type=Path)
     parser.add_argument("--full-dump-input", type=Path)
     parser.add_argument("--output-dir", type=Path, default=DERIVED_DATA_DIR / "table1_traits")
@@ -866,7 +866,9 @@ def main() -> int:
             output_directory=args.output_dir,
         )
     args.profile_input = args.profile_input or DEFAULT_PROFILE_PATH
-    args.columns = args.columns or args.profile_input.with_name("taxa_trait_matrix_columns.tsv")
+    if args.column_labels is None:
+        sibling_columns = args.profile_input.with_name("taxa_trait_matrix_columns.tsv")
+        args.column_labels = sibling_columns if sibling_columns.exists() else None
     args.experiments_input = args.experiments_input or DEFAULT_EXPERIMENTS_PATH
     args.full_dump_input = args.full_dump_input or DEFAULT_FULL_DUMP_PATH
     profiles, stats = load_profiles(
@@ -942,7 +944,7 @@ def main() -> int:
             args.output_dir,
             vintage,
             exclusion,
-            column_metadata_path=args.columns,
+            column_metadata_path=args.column_labels,
         )
     )
     written.append(
@@ -1084,7 +1086,7 @@ def main() -> int:
             args.output_dir / f"{OUTPUT_PREFIX}_direction_shift.png",
             vintage,
             TRAIT_ORDER,
-            column_metadata_path=args.columns,
+            column_metadata_path=args.column_labels,
         )
     )
 

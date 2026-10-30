@@ -62,7 +62,12 @@ TABLE_1_TRAITS: dict[str, str] = {
 
 def table1_traits_for_columns(columns_path: Path | None) -> dict[str, str]:
     """Return Table 1 trait labels resolved against recorded column member metadata."""
-    members = read_recorded_member_ids(columns_path)
+    resolved = columns_path
+    if resolved is not None and not resolved.exists():
+        gz_candidate = resolved.with_name(f"{resolved.name}.gz")
+        if gz_candidate.exists():
+            resolved = gz_candidate
+    members = read_recorded_member_ids(resolved)
     return {
         trait_id: display_trait_label(trait_id, label, members.get(trait_id))
         for trait_id, label in TABLE_1_TRAITS.items()

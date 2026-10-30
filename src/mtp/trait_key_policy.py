@@ -9,6 +9,7 @@ assertions, node labels, and source attribution remain authoritative evidence.
 from __future__ import annotations
 
 import csv
+import gzip
 import json
 from collections.abc import Sequence
 from dataclasses import asdict, dataclass
@@ -78,10 +79,10 @@ def _parse_member_ids(member_ids: Sequence[str] | str | None) -> tuple[str, ...]
             return ()
         try:
             parsed = json.loads(text)
-        except json.JSONDecodeError:
-            return ()
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"Invalid trait_member_ids_json: {text!r}") from exc
         if not isinstance(parsed, list) or not all(isinstance(item, str) for item in parsed):
-            return ()
+            raise ValueError(f"Invalid trait_member_ids_json: {text!r}")
         return tuple(item.strip() for item in parsed if item.strip())
     return tuple(str(item).strip() for item in member_ids if str(item).strip())
 
@@ -117,11 +118,14 @@ def display_trait_label(
 
 
 def read_recorded_member_ids(column_metadata_path: Path | None) -> dict[str, tuple[str, ...]]:
-    """Read column_id and object_id -> member_ids from a column metadata TSV if present."""
-    if column_metadata_path is None or not column_metadata_path.exists():
+    """Read column_id and object_id -> member_ids from a column metadata TSV."""
+    if column_metadata_path is None:
         return {}
+    if not column_metadata_path.exists():
+        raise FileNotFoundError(f"Column metadata TSV not found: {column_metadata_path}")
     member_ids_by_trait: dict[str, tuple[str, ...]] = {}
-    with column_metadata_path.open("r", encoding="utf-8", newline="") as handle:
+    open_fn = gzip.open if column_metadata_path.suffix == ".gz" else open
+    with open_fn(column_metadata_path, "rt", encoding="utf-8", newline="") as handle:
         reader = csv.DictReader(handle, delimiter="\t")
         if not reader.fieldnames or "trait_member_ids_json" not in reader.fieldnames:
             return {}

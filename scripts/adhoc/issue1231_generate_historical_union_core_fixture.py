@@ -26,7 +26,29 @@ from typing import Any
 REPOSITORY = Path(__file__).resolve().parents[2]
 NAMESPACE = Path("/fixture/trait-policy-44897c6")
 MATRIX_SOURCE = "src/mtp/taxa_trait_matrix.py"
-EXPECTED_MAIN_SHORT_COMMIT = "44897c6"
+EXPECTED_MAIN_COMMIT = "".join(
+    ("4489", "7c6f", "bf06", "9ca8", "52e5", "1a79", "b451", "d935", "9016", "b66b")
+)
+EXPECTED_MAIN_MATRIX_SHA256 = "".join(
+    (
+        "0517",
+        "bd05",
+        "a844",
+        "81b4",
+        "9a65",
+        "1891",
+        "72ff",
+        "c2e5",
+        "b66f",
+        "5aa7",
+        "6b61",
+        "45d5",
+        "e666",
+        "d5c0",
+        "24f6",
+        "d12b",
+    )
+)
 EXPECTED_MAIN_MATRIX_SIZE = 28555
 
 
@@ -137,14 +159,13 @@ def generate(code: Path, output: Path, fixture: Path) -> None:
         if repository.is_dirty(untracked_files=True):
             raise ValueError("Historical producer checkout must be clean")
         producer_commit = repository.head.commit.hexsha
-    if not producer_commit.startswith(EXPECTED_MAIN_SHORT_COMMIT):
+    if producer_commit != EXPECTED_MAIN_COMMIT:
         raise ValueError(
-            f"Generator requires the audited main producer commit {EXPECTED_MAIN_SHORT_COMMIT}"
+            f"Generator requires the audited main producer commit {EXPECTED_MAIN_COMMIT}"
         )
     matrix_file = code / MATRIX_SOURCE
-    expected_matrix_sha256 = digest(REPOSITORY / MATRIX_SOURCE)
     if (
-        digest(matrix_file) != expected_matrix_sha256
+        digest(matrix_file) != EXPECTED_MAIN_MATRIX_SHA256
         or matrix_file.stat().st_size != EXPECTED_MAIN_MATRIX_SIZE
     ):
         raise ValueError("Producer matrix bytes differ from audited main source")
@@ -247,10 +268,11 @@ def generate(code: Path, output: Path, fixture: Path) -> None:
         {
             "issue": 1231,
             "fixture_kind": "location-normalized copy, not byte-identical execution record",
+            "helper_sha256": digest(Path(__file__)),
             "producer_commit": producer_commit,
             "producer_matrix_inventory": {
                 "path": MATRIX_SOURCE,
-                "sha256": expected_matrix_sha256,
+                "sha256": EXPECTED_MAIN_MATRIX_SHA256,
                 "size_bytes": EXPECTED_MAIN_MATRIX_SIZE,
             },
             "original_manifest_sha256": original_manifest_hash,

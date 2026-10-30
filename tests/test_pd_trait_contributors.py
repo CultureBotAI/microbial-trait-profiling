@@ -596,12 +596,27 @@ def test_selected_taxa_with_equal_totals_are_listed_by_name() -> None:
 
 
 def test_trait_labels_lead_with_the_lollipop_direction() -> None:
+    assert (
+        contributors.base_trait_label("facultative (aerobe or anaerobe) (METPO:1000608)")
+        == "facultative (aerobe or anaerobe)"
+    )
+    assert (
+        contributors.base_trait_label("facultative (aerobe or anaerobe)")
+        == "facultative (aerobe or anaerobe)"
+    )
+    assert (
+        contributors.base_trait_label("arsenate reduction (pathways:arsenate_reduction)")
+        == "arsenate reduction"
+    )
+    assert contributors.base_trait_label("Optimum temp (30-40 C)") == "Optimum temp (30-40 C)"
+    assert contributors.base_trait_label("Low GC content (< 45%)") == "Low GC content (< 45%)"
+
     coverage = pd.DataFrame(
         {
             "trait_slug": ["a", "b", "facultatively_aerobic"],
             "trait_label": [
                 "coccus shaped (METPO:1000668)",
-                "moderately halophilic (x)",
+                "moderately halophilic (METPO:1000623)",
                 "facultative (aerobe or anaerobe) (METPO:1000608)",
             ],
             "trait_direction": ["decreased", "increased", "increased"],

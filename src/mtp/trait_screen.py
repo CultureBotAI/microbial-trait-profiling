@@ -113,6 +113,7 @@ class TraitScreenRow:
     by_q_nominal: float | None
     by_q_effective: float | None
     test_status: str
+    member_ids: str | None = None
 
     @property
     def studies_scored(self) -> int:
@@ -346,6 +347,7 @@ class ColumnLabel:
     label: str
     object_name: str
     object_category: str
+    member_ids: str | None = None
 
 
 def load_column_labels(path: Path = DEFAULT_COLUMN_LABELS_PATH) -> dict[str, ColumnLabel]:
@@ -370,6 +372,7 @@ def load_column_labels(path: Path = DEFAULT_COLUMN_LABELS_PATH) -> dict[str, Col
                 label=display_trait_label(column_id, raw_label, member_ids),
                 object_name=display_trait_label(column_id, raw_object_name, member_ids),
                 object_category=row.get("object_category", ""),
+                member_ids=member_ids,
             )
     return labels
 
@@ -464,6 +467,7 @@ def run_screen(
                 by_q_nominal=by_value,
                 by_q_effective=by_effective_value,
                 test_status=status,
+                member_ids=naming.member_ids,
             )
         )
 
@@ -848,10 +852,8 @@ def _report(result: ScreenResult, vintage: str | None) -> str:
     for row in result.rows:
         if not row.in_table1:
             continue
-        manuscript = (
-            f"{row.object_name} ({row.term_id})"
-            if row.object_name
-            else TABLE1_TRAIT_LABELS[row.table1_slug]
+        manuscript = display_trait_label(
+            row.term_id, TABLE1_TRAIT_LABELS[row.table1_slug], row.member_ids
         )
         lines.append(
             f"| {manuscript} | {row.studies_up}/{row.studies_down}/{row.studies_tied} | "

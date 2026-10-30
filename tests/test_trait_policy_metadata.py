@@ -283,15 +283,17 @@ def test_union_relabel_changes_only_labels_not_numerical_outputs(
     assert loaded_raw[CANONICAL].object_name == raw_label
     assert loaded_raw[CANONICAL].label == raw_col_label
 
-    # Compare trait_screen numerical outputs and both Table 1 + candidate sections (#1232).
+    # Compare trait_screen numerical outputs and both Table 1 + candidate sections (#1232, #1251).
+    arsenate_col = "METPO:2000103|pathways:arsenate_reduction"
+    screen_cols = [CANONICAL, arsenate_col]
     screen_profiles = [
-        Profile("S1", "E1", "inc", "cond", "feces", {CANONICAL: 4}, 5),
-        Profile("S1", "E1", "dec", "cond", "feces", {CANONICAL: 1}, 5),
-        Profile("S2", "E1", "inc", "cond", "feces", {CANONICAL: 3}, 4),
-        Profile("S2", "E1", "dec", "cond", "feces", {CANONICAL: 1}, 4),
+        Profile("S1", "E1", "inc", "cond", "feces", {CANONICAL: 4, arsenate_col: 3}, 5),
+        Profile("S1", "E1", "dec", "cond", "feces", {CANONICAL: 1, arsenate_col: 1}, 5),
+        Profile("S2", "E1", "inc", "cond", "feces", {CANONICAL: 3, arsenate_col: 2}, 4),
+        Profile("S2", "E1", "dec", "cond", "feces", {CANONICAL: 1, arsenate_col: 1}, 4),
     ]
-    res_union = run_screen(screen_profiles, [CANONICAL], labels=loaded_union)
-    res_raw = run_screen(screen_profiles, [CANONICAL], labels=loaded_raw)
+    res_union = run_screen(screen_profiles, screen_cols, labels=loaded_union)
+    res_raw = run_screen(screen_profiles, screen_cols, labels=loaded_raw)
     row_union, row_raw = res_union.rows[0], res_raw.rows[0]
     assert row_union.trait_label == union_col_label
     assert row_union.object_name == union_label
@@ -499,6 +501,38 @@ def test_union_relabel_changes_only_labels_not_numerical_outputs(
             f"Regressing out PC1 collapses the spurious {expected_lbl} x moderately halophilic"
             in consolidated_text
         )
+
+        # Verify trait_screen Table 1 section keeps spaced 'arsenate reduction' (#1251).
+        full_labels = load_column_labels(cols_file)
+        full_screen = run_screen(screen_profiles, screen_cols, labels=full_labels)
+        full_md = _report(full_screen, vintage="fixture")
+        assert "| arsenate reduction (pathways:arsenate_reduction) |" in full_md
+        assert "arsenate_reduction (pathways:arsenate_reduction)" not in full_md
+        assert f"| {expected_lbl} ({CANONICAL}) |" in full_md
+
+
+def test_read_recorded_member_ids_rejects_missing_explicit_path_and_malformed_json(
+    tmp_path: Path,
+) -> None:
+    """Missing explicit metadata path and malformed member JSON fail closed (#1249, #1253)."""
+    from mtp.trait_key_policy import display_trait_label, read_recorded_member_ids
+
+    assert read_recorded_member_ids(None) == {}
+    with pytest.raises(FileNotFoundError, match=r"missing_columns\.tsv"):
+        read_recorded_member_ids(tmp_path / "missing_columns.tsv")
+
+    for bad_json in ("[not-json", '{"id": "METPO:1000605"}', "[123]"):
+        with pytest.raises(ValueError, match="trait_member_ids_json"):
+            display_trait_label(CANONICAL, "facultatively aerobic", bad_json)
+
+    bad_tsv = tmp_path / "bad_columns.tsv"
+    _write(
+        bad_tsv,
+        ["column_id", "column_label", "object_name", "trait_member_ids_json"],
+        [[CANONICAL, "facultatively aerobic METPO:1000608", "facultatively aerobic", "[not-json"]],
+    )
+    with pytest.raises(ValueError, match="trait_member_ids_json"):
+        read_recorded_member_ids(bad_tsv)
 
 
 @pytest.mark.parametrize("modern", [False, True])

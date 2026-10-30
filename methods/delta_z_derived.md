@@ -55,9 +55,11 @@ experiment-weighted and study-weighted means and ranks remain labelled.
 
 ## Row 2: oxygen-label quadrants
 
-The x trait is `METPO:1000608`, displayed as `facultative (aerobe or anaerobe)`
-when the consumed core records the facultative union (#1138) and as
-`facultatively aerobic` on raw cores. The y trait is
+The x trait is `METPO:1000608`. Recorded and verified tables in `delta_z_derived`
+(along with `three_test_table` and matrix outputs) keep the KG node label
+`facultatively aerobic` and record their members because readers compare labels
+with the core (#1250), while human-facing renders apply `display_trait_label` to
+display `facultative (aerobe or anaerobe)` (#1138). The y trait is
 `METPO:1000607`, obligately anaerobic. `METPO:1000603` is anaerobic and is never
 substituted for the y trait.
 

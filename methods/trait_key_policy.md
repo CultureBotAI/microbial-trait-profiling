@@ -32,8 +32,14 @@ Under both policies, recorded `object_name` and `column_label` in
 `taxa_trait_matrix_columns.tsv` preserve the literal KG node label
 (`facultatively aerobic` and `facultatively aerobic METPO:1000608`) so core
 verification against the consumed KG nodes table remains invariant (#1231).
-Downstream tables, figures and reports render `METPO:1000608` as
-`facultative (aerobe or anaerobe)` at display time when
+Recorded and verified tables (`three_test_table`, `delta_z_derived`, and matrix
+and feature-catalog outputs) likewise keep the KG node label and record their
+members because readers and verifiers compare labels with the core (#1250).
+Human-facing renders (`table1_trait_maps`, `trait_screen`, `density_adjustment`,
+`scripts/audit_trait_density_correlation.py`, `deck_visualizations`,
+`label_support_audit`, `scripts/create_pd_trait_contributors.py`, and
+`trait_lists.trait_labels`) apply `display_trait_label` to render
+`METPO:1000608` as `facultative (aerobe or anaerobe)` when
 `trait_member_ids_json` records the union members (`METPO:1000605` or
 `METPO:1000612`, #1138), and preserve `facultatively aerobic` when only
 `METPO:1000608` is recorded. Original KG assertions and node table entries
@@ -56,7 +62,10 @@ At `0e49e87`, #1124 introduces the distinct implicit union producer, which
 selects `facultative_union_v1`. Earlier cores whose matrix implementation
 predates `f8a57e2` are outside this audited range and are refused as unknown
 historical implementations. Both recognized producers retain their historical
-metadata layouts. Unknown producer bytes, partial declarations, and
+7-column metadata layouts without `trait_member_ids_json`, so membership-keyed
+renderers fall back to the recorded KG label `facultatively aerobic` on
+`0e49e87` implicit-union cores unless policy resolution is consulted (#1253).
+Unknown producer bytes, partial declarations, and
 contradictory step bindings fail closed. The compatibility resolver neither edits
 old records nor executes historical code, and it skips no inventory or scientific
 checks. Adding another historical producer requires an explicit compatibility review.

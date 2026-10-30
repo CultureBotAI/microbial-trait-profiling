@@ -91,7 +91,6 @@ def clean_trait_label(name: str) -> str:
         "anaerobic": "Anaerobic",
         "mesophilic": "Mesophilic",
         "Fermentation": "Fermentation",
-        "facultative (aerobe or anaerobe)": "Facultative (aerobe or anaerobe)",
         "cellulose catabolic process": "Cellulose catabolism",
         "moderately halophilic": "Moderately halophilic",
         "coccus shaped": "Coccus shaped",
@@ -102,6 +101,13 @@ def clean_trait_label(name: str) -> str:
         return mapping[name_str]
     cleaned = name_str.replace("_", " ")
     return cleaned[0].upper() + cleaned[1:] if cleaned else name_str
+
+
+def _optional_sibling_columns(explicit: Path | None, anchor: Path) -> Path | None:
+    if explicit is not None:
+        return explicit
+    sibling = anchor.with_name("taxa_trait_matrix_columns.tsv")
+    return sibling if sibling.exists() else None
 
 
 def _trait_short_names(columns_path: Path | None = None) -> dict[str, str]:
@@ -143,9 +149,7 @@ def generate_figure1_condition_anatomy_ora_heatmap(
 
     print(f"Generating Figure 1 (Condition x Anatomy ORA Heatmap) -> {output_path}...")
     traits = list(TABLE_1_TRAITS.keys())
-    short_names = _trait_short_names(
-        columns_path or profiles_path.with_name("taxa_trait_matrix_columns.tsv")
-    )
+    short_names = _trait_short_names(_optional_sibling_columns(columns_path, profiles_path))
     profiles_df, exp_df = load_profile_data(profiles_path, experiments_path, use_cols=traits)
 
     valid_exp = exp_df.dropna(subset=["study_id", "condition", "body_site"]).copy()
@@ -1138,9 +1142,7 @@ def generate_figure5_pd_crc_taxon_attribution_bubble(
     top_taxa_names = target_taxa["taxon_name"].value_counts().head(top_n_taxa).index.tolist()
     taxa_trait_lookup = matrix_df[matrix_df["taxon_name"].isin(top_taxa_names)].copy()
 
-    short_names = _trait_short_names(
-        columns_path or taxa_matrix_path.with_name("taxa_trait_matrix_columns.tsv")
-    )
+    short_names = _trait_short_names(_optional_sibling_columns(columns_path, taxa_matrix_path))
     traits_to_show = list(TABLE_1_TRAITS.keys())
     trait_labels = [short_names[t] for t in traits_to_show]
 

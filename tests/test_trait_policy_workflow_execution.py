@@ -151,3 +151,81 @@ def test_execution_binds_policy_to_run_steps_metadata_and_complete_verification(
         validate_run(Path(run.manifest_path))
     Path(run.manifest_path).write_bytes(original)
     assert verify_core_run(Path(run.manifest_path)) == run
+
+
+@pytest.mark.parametrize(
+    ("policy", "expected_label"),
+    [
+        ("facultative_union_v1", "facultative (aerobe or anaerobe) (METPO:1000608)"),
+        ("raw_object_v1", "facultatively aerobic (METPO:1000608)"),
+    ],
+)
+def test_table1_trait_maps_core_run_binds_feature_metadata_and_renders_policy_label(
+    tmp_path: Path,
+    policy_inputs: dict[str, Path],
+    policy: str,
+    expected_label: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """table1_trait_maps --core-run binds feature_metadata under steps/taxa_matrix/derived."""
+    from mtp import table1_trait_maps
+
+    run = execute_workflow(
+        ROOT / "workflows" / "bugsigdb_core.yaml",
+        policy_inputs,
+        tmp_path / "runs",
+        OPERATIONS,
+        parameter_overrides={
+            "source_mode": "fixture",
+            "trait_key_policy": policy,
+            "strain_rollup": "phenotype",
+        },
+        validator=validate_execution_product,
+        repository_root=ROOT,
+    )
+    manifest = Path(run.manifest_path)
+    out_dir = tmp_path / "maps_out"
+    monkeypatch.setattr(
+        "plotly.graph_objs.Figure.write_image",
+        lambda _self, path, **_kw: Path(path).write_bytes(b"png"),
+    )
+    monkeypatch.setattr(
+        table1_trait_maps, "TABLE1_TRAITS", {"facultatively_aerobic": ("METPO:1000608",)}
+    )
+    monkeypatch.setattr(table1_trait_maps, "TRAIT_ORDER", ("facultatively_aerobic",))
+    monkeypatch.setattr(table1_trait_maps, "FOCUS_PANELS", ())
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "table1_trait_maps",
+            "--core-run",
+            str(manifest),
+            "--output-dir",
+            str(out_dir),
+            "--min-studies",
+            "1",
+            "--min-site-conditions",
+            "1",
+        ],
+    )
+    table1_trait_maps.main()
+    shift_tsv = out_dir / "table1_traits_direction_shift.tsv"
+    with shift_tsv.open(encoding="utf-8", newline="") as handle:
+        shift_rows = list(csv.DictReader(handle, delimiter="\t"))
+    fac_row = next(row for row in shift_rows if row["trait"] == "facultatively_aerobic")
+    assert fac_row["trait_label"] == expected_label
+
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "table1_trait_maps",
+            "--core-run",
+            str(manifest),
+            "--column-labels",
+            str(tmp_path / "other_columns.tsv"),
+            "--output-dir",
+            str(tmp_path / "maps_conflict"),
+        ],
+    )
+    with pytest.raises(ValueError, match="--core-run conflicts with explicit --column-labels"):
+        table1_trait_maps.main()

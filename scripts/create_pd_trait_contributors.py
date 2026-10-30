@@ -41,6 +41,7 @@ from mtp.contribution_inputs import Base, Graph, Key, load_base, load_graph, ver
 from mtp.taxa_trait_matrix import PRIMARY_STRAIN_ROLLUP, StrainRollup
 from mtp.taxon_contributions import Ledger, reconcile
 from mtp.trait_guilds import table1_trait_label
+from mtp.trait_lists import TRAIT_ID_PATTERN
 
 STEM = "pd_trait_contributors"
 SCOPE = "parkinsons_feces"
@@ -82,8 +83,10 @@ SHARE_TOLERANCE = 1e-12
 def base_trait_label(value: object) -> str:
     """Drop ontology suffixes from a display label."""
     text = str(value)
-    if text.endswith(")") and not text.endswith("(aerobe or anaerobe)"):
-        return text.rsplit(" (", maxsplit=1)[0]
+    if text.endswith(")") and " (" in text:
+        prefix, suffix = text.rsplit(" (", maxsplit=1)
+        if TRAIT_ID_PATTERN.fullmatch(suffix[:-1].strip()) is not None:
+            return prefix
     return text
 
 

@@ -345,6 +345,9 @@ def test_facultative_union_label_in_deck_visualizations(
     assert (
         clean_trait_label("facultative (aerobe or anaerobe)") == "Facultative (aerobe or anaerobe)"
     )
+    import inspect
+
+    assert '"facultative (aerobe or anaerobe)"' not in inspect.getsource(clean_trait_label)
 
     figures: list[Any] = []
 
