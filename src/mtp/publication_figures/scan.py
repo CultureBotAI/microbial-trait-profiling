@@ -346,15 +346,22 @@ def load_scan_inputs(path: Path, *, manifest_sha256: str) -> ScanFigureInputs:
         set(provenance["inputs"]) == set(native.CORE_PRODUCTS),
         "Scan source product inventory differs",
     )
-    artifacts = {item.id: item for item in core.artifacts or []}
+    artifacts = core.artifacts or []
     products = dict(zip(record.product_ids, record.artifact_ids, strict=True))
     source_buffers = {}
     roots = [root, root.resolve(), core_path.parent, core_path.resolve().parent]
     for product in native.CORE_PRODUCTS:
+        # The native scan binds reported_taxa in provenance and the complete
+        # core manifest, but does not add it to the default ConsumerRecord list.
+        # Resolve all scientific inputs through that already verified core; an
+        # explicit consumer reference must still identify the same artifact.
+        matches = [item for item in artifacts if item.product_id == product]
+        _require(len(matches) == 1, f"Scan core product must be unique: {product}")
+        artifact = matches[0]
         _require(
-            product in products and products[product] in artifacts, "Scan product binding missing"
+            product not in products or products[product] == artifact.id,
+            f"Scan explicit product reference differs from core: {product}",
         )
-        artifact = artifacts[products[product]]
         item = provenance["inputs"][product]
         source = core_path.parent / item["path"]
         artifact_path = core_path.parent / artifact.path

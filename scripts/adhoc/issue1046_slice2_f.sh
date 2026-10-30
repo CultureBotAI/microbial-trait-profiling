@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Purpose: render one slice-2 development figure from pinned F evidence (#1046).
+# Purpose: render slice-2 development figures from pinned F evidence (#1046).
 # Inputs: evidence base, fresh durable destination, figure name; 2026-10-29.
 # Outputs: verified PDF/SVG/PNG/TSV/provenance; F archives remain read-only.
 set -euo pipefail
@@ -11,8 +11,9 @@ evidence_base="$1"
 figure_output="$2"
 figure_name="$3"
 case "$figure_name" in
-    rank-sensitivity|candidate-triples|trait-overlap) ;;
-    *) echo 'Choose rank-sensitivity, candidate-triples, or trait-overlap' >&2; exit 2 ;;
+    rank-sensitivity|candidate-triples|trait-overlap) figure_args=(--figure "$figure_name") ;;
+    all) figure_args=(--figure rank-sensitivity --figure candidate-triples --figure trait-overlap) ;;
+    *) echo 'Choose rank-sensitivity, candidate-triples, trait-overlap, or all' >&2; exit 2 ;;
 esac
 exec just publication-figures-slice2 \
     --three-test-run "$evidence_base/mtp-data/codex-1052-development/parents/0c9e0ea/tier12-phenotype/table" \
@@ -26,4 +27,4 @@ exec just publication-figures-slice2 \
     --matrix-sha256 551a73cb246856518b79aa0aea0941156b01ee78a5e9a1d3e094de45bf02687f \
     --trait-list methods/trait_lists/headline_ten_phenotype.txt \
     --code-commit "$(git rev-parse HEAD)" \
-    --figure "$figure_name" --output "$figure_output"
+    "${figure_args[@]}" --output "$figure_output"

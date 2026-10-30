@@ -554,3 +554,104 @@ def test_pairing_uses_native_contract_on_already_loaded_records(
     assert calls[0].core_run_id == "core-fixture"
     assert calls[0].summary == fixture.summary
     assert calls[0].provenance == fixture.provenance
+
+
+def native_consumer_products(fixture: Fixture) -> None:
+    """Match the producer's default nine references, excluding scan-only reported_taxa.
+
+    The native verifier boundary is still stubbed by the synthetic fixture. The
+    additional default products are real core artifact records here, while all
+    five scientific scan input bindings remain unchanged.
+    """
+    core = json.loads(fixture.core.read_bytes())
+    defaults = [
+        "count_profiles",
+        "count_coverage",
+        "feature_catalog",
+        "feature_metadata",
+        "experiments",
+        "taxa_matrix",
+        "raw_dump",
+        "studies",
+        "source_identity",
+    ]
+    existing = {item["product_id"] for item in core["artifacts"]}
+    for name in defaults:
+        if name not in existing:
+            path = fixture.core.parent / f"{name}.tsv"
+            path.write_text("synthetic bound source\n", encoding="utf-8")
+            core["artifacts"].append(
+                {
+                    "id": name,
+                    "product_id": name,
+                    "run_id": "core-fixture",
+                    "path": str(path),
+                    **identity(path),
+                    "inventory": [],
+                    "validations": [],
+                }
+            )
+    fixture.consumer["product_ids"] = defaults
+    fixture.consumer["artifact_ids"] = defaults.copy()
+    rebind_core(fixture, core)
+
+
+def rebind_core(fixture: Fixture, core: dict[str, Any]) -> None:
+    fixture.core.write_text(json.dumps(core), encoding="utf-8")
+    digest = identity(fixture.core)["sha256"]
+    fixture.consumer["run_manifest_sha256"] = digest
+    fixture.provenance["core_run"]["manifest_sha256"] = digest
+
+
+@pytest.mark.parametrize("version", [native.VERSION_V1, native.VERSION])
+def test_native_default_consumer_binds_reported_taxa_through_verified_core(
+    fixture: Fixture, version: str
+) -> None:
+    if version == native.VERSION:
+        v2_fixture(fixture)
+    native_consumer_products(fixture)
+    assert "reported_taxa" not in fixture.consumer["product_ids"]
+    bundle = fixture.load()
+    source = fixture.core.parent / fixture.provenance["inputs"]["reported_taxa"]["path"]
+    assert bundle.snapshots[source] == identity(source)
+    assert bundle.targets[source] == source.resolve()
+    assert source.parent in bundle.source_roots
+    assert len(scan.scan_audit(bundle)) == 6
+    assert bundle.context["protocol_version"] == version
+
+
+@pytest.mark.parametrize(
+    "change",
+    ["missing", "duplicate", "wrong_path", "wrong_sha", "wrong_size", "explicit_reference"],
+)
+def test_scan_only_core_product_still_requires_unique_matching_bound_artifact(
+    fixture: Fixture, change: str
+) -> None:
+    native_consumer_products(fixture)
+    core = json.loads(fixture.core.read_bytes())
+    item = next(row for row in core["artifacts"] if row["product_id"] == "reported_taxa")
+    if change == "missing":
+        core["artifacts"].remove(item)
+    elif change == "duplicate":
+        core["artifacts"].append({**item, "id": "another-reported-taxa"})
+    elif change == "wrong_path":
+        fixture.provenance["inputs"]["reported_taxa"]["path"] = "experiments.tsv"
+    elif change == "wrong_sha":
+        fixture.provenance["inputs"]["reported_taxa"]["sha256"] = "f" * 64
+    elif change == "wrong_size":
+        fixture.provenance["inputs"]["reported_taxa"]["bytes"] += 1
+    else:
+        fixture.consumer["product_ids"].append("reported_taxa")
+        fixture.consumer["artifact_ids"].append("experiments")
+    rebind_core(fixture, core)
+    with pytest.raises(ValueError, match=r"Scan (core product|input|explicit product)"):
+        fixture.load()
+
+
+def test_late_scan_only_source_mutation_is_refused(fixture: Fixture) -> None:
+    native_consumer_products(fixture)
+    bundle = fixture.load()
+    source = fixture.core.parent / "reported_taxa.tsv"
+    source.write_bytes(source.read_bytes() + b"changed\n")
+    with pytest.raises(ValueError, match="Scan input hash changed"):
+        scan.recheck_scan_inputs(bundle)
