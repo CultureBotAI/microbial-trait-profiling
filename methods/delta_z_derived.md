@@ -55,7 +55,9 @@ experiment-weighted and study-weighted means and ranks remain labelled.
 
 ## Row 2: oxygen-label quadrants
 
-The x trait is `METPO:1000608`, facultatively aerobic. The y trait is
+The x trait is `METPO:1000608`, displayed as `facultative (aerobe or anaerobe)`
+when the consumed core records the facultative union (#1138) and as
+`facultatively aerobic` on raw cores. The y trait is
 `METPO:1000607`, obligately anaerobic. `METPO:1000603` is anaerobic and is never
 substituted for the y trait.
 

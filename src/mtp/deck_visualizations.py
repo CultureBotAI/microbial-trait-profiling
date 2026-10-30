@@ -22,6 +22,7 @@ from scipy import stats
 
 from mtp.density_adjustment import SIGNIFICANT_POST_ADJUSTMENT_STATUSES
 from mtp.paths import DERIVED_DATA_DIR
+from mtp.trait_key_policy import display_trait_label, read_recorded_member_ids
 
 # Table 1 canonical traits and display metadata
 TABLE_1_TRAITS: dict[str, str] = {
@@ -30,7 +31,7 @@ TABLE_1_TRAITS: dict[str, str] = {
     "METPO:1000668": "coccus shaped",
     "METPO:1000683": "sphere shaped",
     "METPO:2000103|pathways:arsenate_reduction": "arsenate reduction",
-    "METPO:1000608": "facultative (aerobe or anaerobe)",
+    "METPO:1000608": "facultatively aerobic",
 }
 
 TRAIT_SHORT_NAMES: dict[str, str] = {
@@ -39,7 +40,7 @@ TRAIT_SHORT_NAMES: dict[str, str] = {
     "METPO:1000668": "Coccus shaped",
     "METPO:1000683": "Sphere shaped",
     "METPO:2000103|pathways:arsenate_reduction": "Arsenate reduction",
-    "METPO:1000608": "Facultative (aerobe or anaerobe)",
+    "METPO:1000608": "Facultatively aerobic",
 }
 
 # The four exploratory leads from Slide 1
@@ -91,7 +92,6 @@ def clean_trait_label(name: str) -> str:
         "mesophilic": "Mesophilic",
         "Fermentation": "Fermentation",
         "facultative (aerobe or anaerobe)": "Facultative (aerobe or anaerobe)",
-        "facultatively aerobic": "Facultative (aerobe or anaerobe)",
         "cellulose catabolic process": "Cellulose catabolism",
         "moderately halophilic": "Moderately halophilic",
         "coccus shaped": "Coccus shaped",
@@ -102,6 +102,17 @@ def clean_trait_label(name: str) -> str:
         return mapping[name_str]
     cleaned = name_str.replace("_", " ")
     return cleaned[0].upper() + cleaned[1:] if cleaned else name_str
+
+
+def _trait_short_names(columns_path: Path | None = None) -> dict[str, str]:
+    """Resolve Table 1 short display names against recorded column member metadata."""
+    members = read_recorded_member_ids(columns_path)
+    return {
+        trait_id: clean_trait_label(
+            display_trait_label(trait_id, TRAIT_SHORT_NAMES[trait_id], members.get(trait_id))
+        )
+        for trait_id in TRAIT_SHORT_NAMES
+    }
 
 
 def load_profile_data(
@@ -125,12 +136,16 @@ def generate_figure1_condition_anatomy_ora_heatmap(
     output_path: Path,
     min_studies: int = 5,
     top_n_conditions: int = 22,
+    columns_path: Path | None = None,
 ) -> Path:
     """Render Condition x Anatomy ORA Heatmap (Replacing Slide 17)."""
     import plotly.graph_objects as go
 
     print(f"Generating Figure 1 (Condition x Anatomy ORA Heatmap) -> {output_path}...")
     traits = list(TABLE_1_TRAITS.keys())
+    short_names = _trait_short_names(
+        columns_path or profiles_path.with_name("taxa_trait_matrix_columns.tsv")
+    )
     profiles_df, exp_df = load_profile_data(profiles_path, experiments_path, use_cols=traits)
 
     valid_exp = exp_df.dropna(subset=["study_id", "condition", "body_site"]).copy()
@@ -191,7 +206,7 @@ def generate_figure1_condition_anatomy_ora_heatmap(
                 {
                     "cond_site": cond,
                     "trait": trait,
-                    "trait_name": TRAIT_SHORT_NAMES[trait],
+                    "trait_name": short_names[trait],
                     "n_studies": n_studies,
                     "net_delta": net_delta,
                     "pval": pval,
@@ -224,7 +239,7 @@ def generate_figure1_condition_anatomy_ora_heatmap(
     matrix_delta = res_df.pivot(index="cond_site", columns="trait_name", values="net_delta")
     matrix_pval = res_df.pivot(index="cond_site", columns="trait_name", values="pval")
 
-    ordered_cols = [TRAIT_SHORT_NAMES[t] for t in traits]
+    ordered_cols = [short_names[t] for t in traits]
     matrix_delta = matrix_delta[ordered_cols]
     matrix_pval = matrix_pval[ordered_cols]
 
@@ -330,13 +345,17 @@ def generate_figure2_calibrated_ora_infographic(
     label_map: dict[str, str] = {}
     if columns_path and columns_path.exists():
         cols_df = pd.read_csv(columns_path, sep="\t")
+        members = read_recorded_member_ids(columns_path)
         col_id_col = "column_id" if "column_id" in cols_df.columns else cols_df.columns[0]
         col_name_col = (
             "object_name"
             if "object_name" in cols_df.columns
             else ("column_label" if "column_label" in cols_df.columns else col_id_col)
         )
-        label_map = dict(zip(cols_df[col_id_col], cols_df[col_name_col], strict=False))
+        label_map = {
+            str(cid): display_trait_label(str(cid), str(name), members.get(str(cid)))
+            for cid, name in zip(cols_df[col_id_col], cols_df[col_name_col], strict=False)
+        }
 
     # 1. Enriched and Depleted Traits
     top_enc_labels: list[str] = []
@@ -851,7 +870,11 @@ def generate_figure4_annotation_density_pc1_landscape(
 
     # Panel C data: Dynamic near-twin Jaccard computation from taxa_trait_matrix
     cols_df = pd.read_csv(columns_path, sep="\t")
-    label_map = dict(zip(cols_df["column_id"], cols_df["object_name"], strict=False))
+    members = read_recorded_member_ids(columns_path)
+    label_map = {
+        str(cid): display_trait_label(str(cid), str(name), members.get(str(cid)))
+        for cid, name in zip(cols_df["column_id"], cols_df["object_name"], strict=False)
+    }
 
     bin_mat = matrix_df[trait_cols].to_numpy(dtype=float) > 0
     k_counts = bin_mat.sum(axis=0)
@@ -929,13 +952,18 @@ def generate_figure4_annotation_density_pc1_landscape(
         col=1,
     )
     # Highlight Table 1 traits with distinct positions to prevent text collision
+    fac_row = t1_df.loc[t1_df["trait_id"] == "METPO:1000608", "trait_label"]
+    fac_raw_label = str(fac_row.iloc[0]) if not fac_row.empty else TABLE_1_TRAITS["METPO:1000608"]
+    fac_scatter_label = clean_trait_label(
+        display_trait_label("METPO:1000608", fac_raw_label, members.get("METPO:1000608"))
+    )
     t1_scatter_config: dict[str, tuple[str, str]] = {
         "METPO:2000103|pathways:arsenate_reduction": ("Arsenate reduction", "top left"),
         "METPO:2000103|GO:0030245": ("Cellulose catabolism", "bottom right"),
         "METPO:1000623": ("Mod. halophilic", "bottom right"),
         "METPO:1000683": ("Sphere shaped", "top left"),
         "METPO:1000668": ("Coccus shaped", "bottom right"),
-        "METPO:1000608": ("Facultative (aerobe or anaerobe)", "top left"),
+        "METPO:1000608": (fac_scatter_label, "top left"),
     }
     for _, r in t1_df.iterrows():
         tid = r["trait_id"]
@@ -963,7 +991,10 @@ def generate_figure4_annotation_density_pc1_landscape(
 
     # Panel B: Dumbbell plot
     y_pos = list(range(len(t1_df)))
-    t1_labels = list(t1_df["trait_label"])
+    t1_labels = [
+        display_trait_label(str(tid), str(lbl), members.get(str(tid)))
+        for tid, lbl in zip(t1_df["trait_id"], t1_df["trait_label"], strict=False)
+    ]
     raw_diffs = list(t1_df["raw_mean_diff"])
     adj_diffs = list(t1_df["adj_mean_diff"])
 
@@ -1080,6 +1111,7 @@ def generate_figure5_pd_crc_taxon_attribution_bubble(
     taxa_matrix_path: Path,
     output_path: Path,
     top_n_taxa: int = 12,
+    columns_path: Path | None = None,
 ) -> Path:
     """Render Taxon Attribution Bubble Map for Lead Fecal Conditions."""
     import plotly.graph_objects as go
@@ -1106,8 +1138,11 @@ def generate_figure5_pd_crc_taxon_attribution_bubble(
     top_taxa_names = target_taxa["taxon_name"].value_counts().head(top_n_taxa).index.tolist()
     taxa_trait_lookup = matrix_df[matrix_df["taxon_name"].isin(top_taxa_names)].copy()
 
+    short_names = _trait_short_names(
+        columns_path or taxa_matrix_path.with_name("taxa_trait_matrix_columns.tsv")
+    )
     traits_to_show = list(TABLE_1_TRAITS.keys())
-    trait_labels = [TRAIT_SHORT_NAMES[t] for t in traits_to_show]
+    trait_labels = [short_names[t] for t in traits_to_show]
 
     fig = make_subplots(
         rows=1,
@@ -1147,7 +1182,7 @@ def generate_figure5_pd_crc_taxon_attribution_bubble(
                     sizes.append(max(10.0, float(n_studies) * 4.5))
                     colors.append(float(net_dir))
                     hover_texts.append(
-                        f"<b>{t_name}</b><br>Trait: {TRAIT_SHORT_NAMES[tr_key]}<br>"
+                        f"<b>{t_name}</b><br>Trait: {short_names[tr_key]}<br>"
                         f"Studies: {n_studies}<br>Net Direction: {net_dir:+.2f}"
                     )
 

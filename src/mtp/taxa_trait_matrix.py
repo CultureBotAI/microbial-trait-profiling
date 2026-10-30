@@ -17,7 +17,6 @@ from mtp.trait_key_policy import (
     TRAIT_POLICY_METADATA_COLUMNS,
     TraitKeyPolicy,
     canonical_object,
-    canonical_object_name,
     parse_trait_key_policy,
     policy_metadata,
 )
@@ -479,51 +478,32 @@ def trait_column_id(trait_key: str) -> str:
     return f"{predicate}|{obj}"
 
 
-def _node_label(
-    node_id: str,
-    node_metadata: dict[str, NodeMetadata],
-    *,
-    trait_key_policy: TraitKeyPolicy = DEFAULT_TRAIT_KEY_POLICY,
-) -> str:
-    node_name = canonical_object_name(
-        node_id,
-        node_metadata.get(node_id, NodeMetadata("", "")).name,
-        trait_key_policy=trait_key_policy,
-    )
+def _node_label(node_id: str, node_metadata: dict[str, NodeMetadata]) -> str:
+    node_name = node_metadata.get(node_id, NodeMetadata("", "")).name
     if node_name:
         return f"{node_name} {node_id}"
     return node_id
 
 
-def trait_column_label(
-    trait_key: str,
-    node_metadata: dict[str, NodeMetadata],
-    *,
-    trait_key_policy: TraitKeyPolicy = DEFAULT_TRAIT_KEY_POLICY,
-) -> str:
+def trait_column_label(trait_key: str, node_metadata: dict[str, NodeMetadata]) -> str:
     """Return the human-readable label for a KG trait."""
     predicate, obj = split_trait_key(trait_key)
     if predicate is None:
-        return _node_label(obj, node_metadata, trait_key_policy=trait_key_policy)
+        return _node_label(obj, node_metadata)
 
     predicate_name = node_metadata.get(predicate, NodeMetadata(predicate, "")).name or predicate
-    return (
-        f"{predicate_name}: "
-        f"{_node_label(obj, node_metadata, trait_key_policy=trait_key_policy)} [{predicate}]"
-    )
+    return f"{predicate_name}: {_node_label(obj, node_metadata)} [{predicate}]"
 
 
 def matrix_rows(
     reported_taxa: list[ReportedTaxon],
     counts: dict[str, Counter[str]],
     node_metadata: dict[str, NodeMetadata],
-    *,
-    trait_key_policy: TraitKeyPolicy = DEFAULT_TRAIT_KEY_POLICY,
 ) -> tuple[list[str], list[list[str]]]:
     """Build TSV headers and rows for the wide taxa-by-traits matrix."""
 
     def trait_sort_key(trait_id: str) -> tuple[str, str]:
-        trait_label = trait_column_label(trait_id, node_metadata, trait_key_policy=trait_key_policy)
+        trait_label = trait_column_label(trait_id, node_metadata)
         return trait_label.casefold(), trait_id
 
     trait_ids: list[str] = sorted(
@@ -564,7 +544,7 @@ def column_metadata_rows(
     trait_key_policy = parse_trait_key_policy(trait_key_policy)
 
     def trait_sort_key(trait_id: str) -> tuple[str, str]:
-        trait_label = trait_column_label(trait_id, node_metadata, trait_key_policy=trait_key_policy)
+        trait_label = trait_column_label(trait_id, node_metadata)
         return trait_label.casefold(), trait_id
 
     trait_ids: list[str] = sorted(
@@ -598,11 +578,11 @@ def column_metadata_rows(
         rows.append(
             [
                 trait_column_id(trait_id),
-                trait_column_label(trait_id, node_metadata, trait_key_policy=trait_key_policy),
+                trait_column_label(trait_id, node_metadata),
                 predicate or "",
                 predicate_metadata.name if predicate_metadata else "",
                 obj,
-                canonical_object_name(obj, object_metadata.name, trait_key_policy=trait_key_policy),
+                object_metadata.name,
                 object_metadata.category,
             ]
         )
@@ -658,9 +638,7 @@ def create_taxa_trait_matrix(
         if count > 0
     }
     node_metadata = read_node_metadata(resolved_nodes_path, node_ids_for_trait_keys(trait_keys))
-    headers, rows = matrix_rows(
-        reported_taxa, counts, node_metadata, trait_key_policy=trait_key_policy
-    )
+    headers, rows = matrix_rows(reported_taxa, counts, node_metadata)
     metadata_headers, metadata_rows = column_metadata_rows(
         counts,
         node_metadata,

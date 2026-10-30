@@ -28,12 +28,17 @@ maps the source vocabularies as follows:
 | `METPO:1000612` | BactoTraits | Ox_facultative_aerobe_anaerobe |
 
 The shared interpretation is an annotation for growth with or without oxygen.
-Under `facultative_union_v1`, the union column `METPO:1000608` is labelled
-`facultative (aerobe or anaerobe)` (`column_label`:
-`facultative (aerobe or anaerobe) METPO:1000608`, #1138); `raw_object_v1`
-preserves the literal KG node label (`facultatively aerobic`). Original KG
-assertions and node table entries remain unchanged. This mapping does not
-re-audit each underlying strain experiment or establish oxygen use in vivo.
+Under both policies, recorded `object_name` and `column_label` in
+`taxa_trait_matrix_columns.tsv` preserve the literal KG node label
+(`facultatively aerobic` and `facultatively aerobic METPO:1000608`) so core
+verification against the consumed KG nodes table remains invariant (#1231).
+Downstream tables, figures and reports render `METPO:1000608` as
+`facultative (aerobe or anaerobe)` at display time when
+`trait_member_ids_json` records the union members (`METPO:1000605` or
+`METPO:1000612`, #1138), and preserve `facultatively aerobic` when only
+`METPO:1000608` is recorded. Original KG assertions and node table entries
+remain unchanged. This mapping does not re-audit each underlying strain
+experiment or establish oxygen use in vivo.
 
 Matrix column metadata and the coverage module's feature catalog carry
 `trait_key_policy`, `trait_member_ids_json` and `trait_source_vocabularies_json`.

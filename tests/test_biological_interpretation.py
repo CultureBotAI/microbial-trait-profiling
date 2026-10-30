@@ -93,6 +93,10 @@ def test_table1_trait_semantics_coverage() -> None:
     )
     assert "pre-#1124" in metpo_608_row
     assert "facultative (aerobe or anaerobe)" in metpo_608_row
+    assert "annotation for growth with or without oxygen" in metpo_608_row
+    assert "clean_trait_label" not in content
+    delta_z_md = (REPO_ROOT / "methods" / "delta_z_derived.md").read_text(encoding="utf-8")
+    assert "facultative (aerobe or anaerobe)" in delta_z_md
 
 
 def test_governance_cross_references() -> None:

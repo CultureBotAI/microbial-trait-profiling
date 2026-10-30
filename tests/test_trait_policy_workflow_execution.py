@@ -126,13 +126,8 @@ def test_execution_binds_policy_to_run_steps_metadata_and_complete_verification(
         with artifact_path(run, product).open(encoding="utf-8", newline="") as handle:
             records = list(csv.DictReader(handle, delimiter="\t"))
         focal = next(row for row in records if row["column_id"] == "METPO:1000608")
-        expected_label = (
-            "facultative (aerobe or anaerobe)"
-            if policy == "facultative_union_v1"
-            else "facultatively aerobic"
-        )
-        assert focal["object_name"] == expected_label
-        assert focal["column_label"] == f"{expected_label} METPO:1000608"
+        assert focal["object_name"] == "facultatively aerobic"
+        assert focal["column_label"] == "facultatively aerobic METPO:1000608"
         assert focal["trait_key_policy"] == policy
         assert json.loads(focal["trait_member_ids_json"]) == (
             expected if policy == "facultative_union_v1" else ["METPO:1000608"]

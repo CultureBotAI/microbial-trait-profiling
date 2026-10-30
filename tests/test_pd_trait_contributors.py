@@ -391,7 +391,33 @@ def test_contributor_tables_carry_shares_status_and_direction() -> None:
     assert cell.loc[(S2, "dec"), "status"] == "resolved"
     assert (cell.loc[(F, "inc"), "count"], cell.loc[(F, "inc"), "studies"]) == (4, 1)
     assert set(cells["trait_direction"]) == {"increased"}
-    assert set(cells["trait_label"]) == {"facultative (aerobe or anaerobe) (METPO:1000608)"}
+    assert set(cells["trait_label"]) == {"facultatively aerobic (METPO:1000608)"}
+
+
+def test_trait_frame_uses_union_display_label_only_when_union_members_recorded(
+    tmp_path: Path,
+) -> None:
+    base, _, _ = ledger_fixture()
+    directions = pd.DataFrame({"trait_id": ["T1"], "trait_direction": ["increased"]})
+    raw_cols = tmp_path / "raw_columns.tsv"
+    raw_cols.write_text(
+        "column_id\tobject_id\tobject_name\ttrait_member_ids_json\n"
+        'METPO:1000608\tMETPO:1000608\tfacultatively aerobic\t["METPO:1000608"]\n',
+        encoding="utf-8",
+    )
+    union_cols = tmp_path / "union_columns.tsv"
+    union_cols.write_text(
+        "column_id\tobject_id\tobject_name\ttrait_member_ids_json\n"
+        "METPO:1000608\tMETPO:1000608\tfacultatively aerobic\t"
+        '["METPO:1000605","METPO:1000608","METPO:1000612"]\n',
+        encoding="utf-8",
+    )
+    raw_frame = contributors.trait_frame(base, directions, column_metadata_path=raw_cols)
+    union_frame = contributors.trait_frame(base, directions, column_metadata_path=union_cols)
+    assert raw_frame["trait_label"].tolist() == ["facultatively aerobic (METPO:1000608)"]
+    assert union_frame["trait_label"].tolist() == [
+        "facultative (aerobe or anaerobe) (METPO:1000608)"
+    ]
 
 
 def test_cells_without_contributions_are_absent() -> None:
@@ -576,7 +602,7 @@ def test_trait_labels_lead_with_the_lollipop_direction() -> None:
             "trait_label": [
                 "coccus shaped (METPO:1000668)",
                 "moderately halophilic (x)",
-                contributors.TABLE1_TRAIT_LABELS["facultatively_aerobic"],
+                "facultative (aerobe or anaerobe) (METPO:1000608)",
             ],
             "trait_direction": ["decreased", "increased", "increased"],
         }

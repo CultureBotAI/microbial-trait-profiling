@@ -31,6 +31,7 @@ from mtp.taxa_trait_matrix import (
     resolve_kg_file,
 )
 from mtp.trait_guilds import MEDIADIVE_MARKER, OXYGEN_GUILDS, TABLE1_TRAIT_LABELS, TABLE1_TRAITS
+from mtp.trait_key_policy import display_trait_label, read_recorded_member_ids
 from mtp.trait_lists import load_trait_list, parse_trait_list
 from mtp.workflow import kg_inputs
 from mtp.workflow.output_roots import add_temporary_output_option, require_durable_output
@@ -312,14 +313,18 @@ def _subtree(taxon: str, children: dict[str, set[str]]) -> set[str]:
     return found
 
 
-def _trait_label(trait_key: str, names: Mapping[str, str]) -> str:
+def _trait_label(
+    trait_key: str,
+    names: Mapping[str, str],
+    member_ids: Sequence[str] | str | None = None,
+) -> str:
     if trait_key in AUDIT_TRAITS:
-        return AUDIT_TRAITS[trait_key]
-    obj = trait_key.split("|", 1)[-1]
-    label = " ".join((names.get(obj) or "").split())
-    if label:
-        return label
-    return obj.split(":", 1)[-1] if ":" in obj else trait_key
+        base = AUDIT_TRAITS[trait_key]
+    else:
+        obj = trait_key.split("|", 1)[-1]
+        label = " ".join((names.get(obj) or "").split())
+        base = label if label else (obj.split(":", 1)[-1] if ":" in obj else trait_key)
+    return display_trait_label(trait_key, base, member_ids)
 
 
 def _resolve_trait_list(trait_list: Sequence[str] | Path | None) -> tuple[str, ...]:
@@ -341,10 +346,12 @@ def build_label_support_tables(
     madin: dict[str, dict[str, set[str]]],
     *,
     trait_list: Sequence[str] | Path | None = None,
+    column_metadata_path: Path | None = None,
 ) -> tuple[list[Row], list[Row], list[Row]]:
     """Reconcile carrier counts and export source evidence without changing the matrix."""
     support, focal, evidence = [], [], []
     counts = matrix.set_index("taxon_id")
+    member_ids_by_trait = read_recorded_member_ids(column_metadata_path)
     declared = _resolve_trait_list(trait_list)
     if missing_declared := [key for key in declared if key not in counts.columns]:
         raise ValueError(f"Declared traits absent from matrix: {missing_declared}")
@@ -402,7 +409,7 @@ def build_label_support_tables(
                 if taxon in counts.index
                 else "unknown",
                 "trait_key": key,
-                "trait_label": _trait_label(key, graph["names"]),
+                "trait_label": _trait_label(key, graph["names"], member_ids_by_trait.get(key)),
                 "carrier_count": len(carriers),
                 "carrier_at_reported_taxon": taxon in carriers,
                 "inherited_carrier_count": len(carriers - {taxon}),
@@ -647,6 +654,7 @@ def run_label_support_audit(
         occurrences,
         madin,
         trait_list=declared_traits.trait_ids if declared_traits is not None else None,
+        column_metadata_path=matrix_path.with_name("taxa_trait_matrix_columns.tsv"),
     )
     sensitivity = build_support_threshold_sensitivity(support, occurrences, profiles)
     census = build_coassertion_census(matrix, occurrences)

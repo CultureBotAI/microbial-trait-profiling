@@ -40,7 +40,7 @@ from lookup_pd_trait_taxa import SUMMARY_NAME, pd_feces_profile_ids, trait_direc
 from mtp.contribution_inputs import Base, Graph, Key, load_base, load_graph, verify_kg
 from mtp.taxa_trait_matrix import PRIMARY_STRAIN_ROLLUP, StrainRollup
 from mtp.taxon_contributions import Ledger, reconcile
-from mtp.trait_guilds import TABLE1_TRAIT_LABELS
+from mtp.trait_guilds import table1_trait_label
 
 STEM = "pd_trait_contributors"
 SCOPE = "parkinsons_feces"
@@ -259,7 +259,11 @@ def count_contributions(
     return count_table, coverage_table
 
 
-def trait_frame(base: Base, directions: pd.DataFrame) -> pd.DataFrame:
+def trait_frame(
+    base: Base,
+    directions: pd.DataFrame,
+    column_metadata_path: Path | None = None,
+) -> pd.DataFrame:
     """The six traits in Table 1 order with their slugs, labels and lollipop directions."""
     by_key = directions.set_index("trait_id")["trait_direction"]
     missing = sorted(set(base.traits.values()) - set(by_key.index))
@@ -271,7 +275,7 @@ def trait_frame(base: Base, directions: pd.DataFrame) -> pd.DataFrame:
             {
                 "trait_key": trait_key,
                 "trait_slug": slug,
-                "trait_label": TABLE1_TRAIT_LABELS[slug],
+                "trait_label": table1_trait_label(slug, column_metadata_path=column_metadata_path),
                 "trait_direction": by_key[trait_key],
             }
             for slug, trait_key in base.traits.items()
@@ -1359,7 +1363,7 @@ def main() -> None:
     )
     keys = pd_contribution_profiles(base, metadata)
     counts, coverage_counts = count_contributions(base, graph, ledger, keys)
-    traits = trait_frame(base, directions)
+    traits = trait_frame(base, directions, DERIVED_DIR / "taxa_trait_matrix_columns.tsv")
     names = contributor_names(base, graph)
     cells, coverage, selected = build_contributor_tables(counts, coverage_counts, traits, names)
     write_tsv(cells, OUTPUT_DIR / f"{STEM}_cells.tsv")

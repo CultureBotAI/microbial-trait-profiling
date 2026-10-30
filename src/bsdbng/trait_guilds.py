@@ -33,6 +33,7 @@ from mtp.trait_guilds import (
     read_bugsigdb_vintage,
     resolve_trait_columns,
     retained_trait_columns,
+    table1_trait_label,
     write_stats_report,
 )
 
@@ -66,6 +67,7 @@ __all__ = [
     "read_bugsigdb_vintage",
     "resolve_trait_columns",
     "retained_trait_columns",
+    "table1_trait_label",
     "write_stats_report",
 ]
 

@@ -10,12 +10,13 @@ from __future__ import annotations
 import csv
 import sys
 from collections import defaultdict
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TextIO
 
 from mtp.paths import DERIVED_DATA_DIR, RAW_DATA_DIR
+from mtp.trait_key_policy import display_trait_label, read_recorded_member_ids
 
 DEFAULT_PROFILE_PATH = DERIVED_DATA_DIR / "study_trait_profiles_wide.tsv"
 DEFAULT_EXPERIMENTS_PATH = DERIVED_DATA_DIR / "experiments.tsv"
@@ -61,13 +62,33 @@ TABLE1_TRAITS: dict[str, tuple[str, ...]] = {
 }
 
 TABLE1_TRAIT_LABELS: dict[str, str] = {
-    "facultatively_aerobic": "facultative (aerobe or anaerobe) (METPO:1000608)",
+    "facultatively_aerobic": "facultatively aerobic (METPO:1000608)",
     "cellulose_catabolic_process": "cellulose catabolic process (GO:0030245)",
     "coccus_shaped": "coccus shaped (METPO:1000668)",
     "sphere_shaped": "sphere shaped (METPO:1000683)",
     "arsenate_reduction": "arsenate reduction (pathways:arsenate_reduction)",
     "moderately_halophilic": "moderately halophilic (METPO:1000623)",
 }
+
+
+def table1_trait_label(
+    trait_name: str,
+    column_metadata_path: Path | None = None,
+    member_ids_by_trait: Mapping[str, Sequence[str] | str] | None = None,
+) -> str:
+    """Return the display label for a Table 1 trait slug from recorded member IDs."""
+    base_label = TABLE1_TRAIT_LABELS[trait_name]
+    terms = TABLE1_TRAITS.get(trait_name, ())
+    if not terms:
+        return base_label
+    term_id = terms[0]
+    members = (
+        dict(member_ids_by_trait)
+        if member_ids_by_trait is not None
+        else read_recorded_member_ids(column_metadata_path)
+    )
+    return display_trait_label(term_id, base_label, members.get(term_id))
+
 
 TABLE1_TRAIT_COLORS: dict[str, str] = {
     "facultatively_aerobic": "#0072b2",

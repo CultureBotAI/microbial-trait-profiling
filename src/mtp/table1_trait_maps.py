@@ -4,7 +4,7 @@ This is the oxygen guild pair of figures (`mtp.guild_maps`) re-run over the six
 individual traits named in manuscript Table 1 rather than over the two pooled
 oxygen guilds, with all six combined into a single figure each:
 
-1. facultative (aerobe or anaerobe) (METPO:1000608)
+1. facultatively aerobic (METPO:1000608)
 2. cellulose catabolic process (GO:0030245)
 3. coccus shaped (METPO:1000668)
 4. sphere shaped (METPO:1000683)
@@ -54,7 +54,6 @@ from mtp.trait_guilds import (
     DEFAULT_FULL_DUMP_PATH,
     DEFAULT_PROFILE_PATH,
     TABLE1_TRAIT_COLORS,
-    TABLE1_TRAIT_LABELS,
     TABLE1_TRAITS,
     PairExclusion,
     Profile,
@@ -62,6 +61,7 @@ from mtp.trait_guilds import (
     format_pair_exclusion,
     load_profiles,
     read_bugsigdb_vintage,
+    table1_trait_label,
     write_stats_report,
 )
 
@@ -492,6 +492,8 @@ def write_shift_table(
     output_dir: Path,
     vintage: str | None,
     exclusion: PairExclusion | None = None,
+    *,
+    column_metadata_path: Path | None = None,
 ) -> list[Path]:
     """Write the per-trait shift table and the trait-pair correlation table.
 
@@ -539,7 +541,7 @@ def write_shift_table(
             writer.writerow(
                 [
                     shift.trait,
-                    TABLE1_TRAIT_LABELS[shift.trait],
+                    table1_trait_label(shift.trait, column_metadata_path=column_metadata_path),
                     shift.studies_up,
                     shift.studies_down,
                     shift.studies_tied,
@@ -571,7 +573,11 @@ def write_shift_table(
 
 
 def build_shift_figure(
-    result: ShiftResult, vintage: str | None, trait_order: Sequence[str]
+    result: ShiftResult,
+    vintage: str | None,
+    trait_order: Sequence[str],
+    *,
+    column_metadata_path: Path | None = None,
 ) -> Figure:
     """Build all six traits' directional shifts and their correlations as one figure.
 
@@ -592,7 +598,9 @@ def build_shift_figure(
     by_trait = {shift.trait: shift for shift in result.shifts}
     ordered = [by_trait[t] for t in trait_order]
     # Plot top-to-bottom in Table 1 order; the categorical axis is reversed below.
-    labels = [TABLE1_TRAIT_LABELS[s.trait] for s in ordered]
+    labels = [
+        table1_trait_label(s.trait, column_metadata_path=column_metadata_path) for s in ordered
+    ]
 
     figure = make_subplots(
         rows=1,
@@ -723,10 +731,17 @@ def build_shift_figure(
 
 
 def write_shift_figure(
-    result: ShiftResult, output_path: Path, vintage: str | None, trait_order: Sequence[str]
+    result: ShiftResult,
+    output_path: Path,
+    vintage: str | None,
+    trait_order: Sequence[str],
+    *,
+    column_metadata_path: Path | None = None,
 ) -> Path:
     """Render the directional-shift figure to an image file."""
-    figure = build_shift_figure(result, vintage, trait_order)
+    figure = build_shift_figure(
+        result, vintage, trait_order, column_metadata_path=column_metadata_path
+    )
     output_path.parent.mkdir(parents=True, exist_ok=True)
     figure.write_image(str(output_path), scale=2)
     return output_path
@@ -743,6 +758,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--core-run", type=Path, help="Verified core workflow run manifest")
     parser.add_argument("--profile-input", type=Path)
+    parser.add_argument("--columns", type=Path)
     parser.add_argument("--experiments-input", type=Path)
     parser.add_argument("--full-dump-input", type=Path)
     parser.add_argument("--output-dir", type=Path, default=DERIVED_DATA_DIR / "table1_traits")
@@ -850,6 +866,7 @@ def main() -> int:
             output_directory=args.output_dir,
         )
     args.profile_input = args.profile_input or DEFAULT_PROFILE_PATH
+    args.columns = args.columns or args.profile_input.with_name("taxa_trait_matrix_columns.tsv")
     args.experiments_input = args.experiments_input or DEFAULT_EXPERIMENTS_PATH
     args.full_dump_input = args.full_dump_input or DEFAULT_FULL_DUMP_PATH
     profiles, stats = load_profiles(
@@ -919,7 +936,15 @@ def main() -> int:
     result = compute_direction_shifts(profiles, TRAIT_ORDER)
 
     written = write_matrix_outputs(matrix, args.output_dir, OUTPUT_PREFIX)
-    written.extend(write_shift_table(result, args.output_dir, vintage, exclusion))
+    written.extend(
+        write_shift_table(
+            result,
+            args.output_dir,
+            vintage,
+            exclusion,
+            column_metadata_path=args.columns,
+        )
+    )
     written.append(
         write_figure(
             matrix,
@@ -1059,6 +1084,7 @@ def main() -> int:
             args.output_dir / f"{OUTPUT_PREFIX}_direction_shift.png",
             vintage,
             TRAIT_ORDER,
+            column_metadata_path=args.columns,
         )
     )
 
