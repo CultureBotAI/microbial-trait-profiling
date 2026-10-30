@@ -332,7 +332,11 @@ def load_profiles(
     other analysis labels profiles with; experiment and study details come from the
     pinned dump and the study table.
     """
+    from mtp.population_tables import is_canonical_derived_path, orient_and_filter_profiles_df
+
     profiles = pd.read_csv(profile_path, sep="\t")
+    if is_canonical_derived_path(profile_path, "study_trait_profiles_wide.tsv"):
+        profiles = orient_and_filter_profiles_df(profiles, filter_to_selection=True)
     trait_columns = [
         column for column in profiles.columns if column not in PROFILE_METADATA_COLUMNS
     ]
@@ -760,6 +764,13 @@ def parse_taxa_from_raw_row(row: dict[str, str]) -> list[dict[str, str]]:
 
 def load_target_taxa_occurrences(full_dump_path: Path) -> pd.DataFrame:
     """Load target-condition taxon/profile occurrences from raw full_dump.csv."""
+    from mtp.population_tables import get_population_selection
+
+    sel = (
+        get_population_selection()
+        if full_dump_path.resolve() == (REPO_ROOT / "data/raw/full_dump.csv").resolve()
+        else None
+    )
     records: list[dict[str, object]] = []
     with full_dump_path.open(encoding="utf-8", newline="") as handle:
         rows = (line for line in handle if not line.startswith("#"))
@@ -769,14 +780,24 @@ def load_target_taxa_occurrences(full_dump_path: Path) -> pd.DataFrame:
             direction = clean_text(row.get("Abundance in Group 1")).lower()
             if condition not in TARGET_CONDITIONS or direction not in DIRECTION_TO_INC_DEC:
                 continue
-            profile_id = profile_id_from_raw_row(row)
+            study_id = study_id_from_bsdb_id(row.get("BSDB ID"))
+            experiment_id = experiment_id_from_bsdb_id(row.get("BSDB ID"))
+            if sel is not None:
+                key = (study_id, experiment_id)
+                if key not in sel.selected_keys:
+                    continue
+                if key in sel.reversed_keys:
+                    direction = "decreased" if direction == "increased" else "increased"
+            profile_id = profile_id_from_parts(
+                study_id, experiment_id, DIRECTION_TO_INC_DEC[direction]
+            )
             for taxon in parse_taxa_from_raw_row(row):
                 records.append(
                     {
                         "condition": condition,
                         "profile_id": profile_id,
-                        "study_id": study_id_from_bsdb_id(row.get("BSDB ID")),
-                        "experiment_id": experiment_id_from_bsdb_id(row.get("BSDB ID")),
+                        "study_id": study_id,
+                        "experiment_id": experiment_id,
                         "direction": direction,
                         **taxon,
                     }

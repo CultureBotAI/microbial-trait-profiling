@@ -1,81 +1,81 @@
 module_id	study_count	profile_count	experiment_count	condition	body_site	location	host_species	total_trait_signal	trait_count	denominator_definition	body_site_group	module_size_group
-Parkinson's disease | Feces	53	242	145	Parkinson's disease	Feces	China	Homo sapiens	5678852	340	sum of all retained non-MediaDive trait columns before selection	Feces	11+
-Colorectal cancer | Feces	37	113	64	Colorectal cancer	Feces	China	Homo sapiens	2752087	325	sum of all retained non-MediaDive trait columns before selection	Feces	11+
-Obesity | Feces	34	165	93	Obesity	Feces	Mexico	Homo sapiens	3512121	325	sum of all retained non-MediaDive trait columns before selection	Feces	11+
-Antimicrobial agent | Feces	19	92	58	Antimicrobial agent	Feces	United States of America	Homo sapiens	1724717	316	sum of all retained non-MediaDive trait columns before selection	Feces	11+
-HIV infection | Feces	19	63	35	HIV infection	Feces	China	Homo sapiens	2149248	320	sum of all retained non-MediaDive trait columns before selection	Feces	11+
-Diet | Feces	16	89	63	Diet	Feces	United States of America	Homo sapiens	995867	324	sum of all retained non-MediaDive trait columns before selection	Feces	11+
-Schizophrenia | Feces	16	48	26	Schizophrenia	Feces	China	Homo sapiens	814868	320	sum of all retained non-MediaDive trait columns before selection	Feces	11+
-Irritable bowel syndrome | Feces	14	86	46	Irritable bowel syndrome	Feces	United States of America	Homo sapiens	2959044	342	sum of all retained non-MediaDive trait columns before selection	Feces	11+
-Chronic constipation | Feces	14	86	48	Chronic constipation	Feces	China	Homo sapiens	2245178	341	sum of all retained non-MediaDive trait columns before selection	Feces	11+
-Type II diabetes mellitus | Feces	13	43	23	Type II diabetes mellitus	Feces	China	Homo sapiens	1021436	336	sum of all retained non-MediaDive trait columns before selection	Feces	11+
-Polycystic ovary syndrome | Feces	12	52	28	Polycystic ovary syndrome	Feces	China	Homo sapiens	1272484	316	sum of all retained non-MediaDive trait columns before selection	Feces	11+
-COVID-19 | Feces	12	52	27	COVID-19	Feces	China	Homo sapiens	677518	294	sum of all retained non-MediaDive trait columns before selection	Feces	11+
-Age | Feces	11	45	29	Age	Feces	United States of America	Homo sapiens	1961375	340	sum of all retained non-MediaDive trait columns before selection	Feces	11+
-Ulcerative colitis | Feces	11	31	18	Ulcerative colitis	Feces	China	Homo sapiens	1129018	317	sum of all retained non-MediaDive trait columns before selection	Feces	11+
-Crohn's disease | Feces	10	28	17	Crohn's disease	Feces	China	Homo sapiens	311629	310	sum of all retained non-MediaDive trait columns before selection	Feces	6-10
-COVID-19 | Nasopharynx	10	22	14	COVID-19	Nasopharynx	China	Homo sapiens	621482	316	sum of all retained non-MediaDive trait columns before selection	Nasopharynx	6-10
-Socioeconomic status | Feces	10	21	11	Socioeconomic status	Feces	United States of America	Homo sapiens	374004	285	sum of all retained non-MediaDive trait columns before selection	Feces	6-10
-Chronic kidney disease | Feces	9	26	13	Chronic kidney disease	Feces	China	Homo sapiens	1542479	322	sum of all retained non-MediaDive trait columns before selection	Feces	6-10
-Response to immunochemotherapy | Feces	9	18	9	Response to immunochemotherapy	Feces	China	Homo sapiens	411853	309	sum of all retained non-MediaDive trait columns before selection	Feces	6-10
-Body mass index | Feces	9	14	10	Body mass index	Feces	China	Homo sapiens	12304	163	sum of all retained non-MediaDive trait columns before selection	Feces	6-10
-Gestational diabetes | Feces	8	54	28	Gestational diabetes	Feces	China	Homo sapiens	1424639	331	sum of all retained non-MediaDive trait columns before selection	Feces	6-10
-Human papilloma virus infection | Uterine cervix	7	36	21	Human papilloma virus infection	Uterine cervix	China	Homo sapiens	1783513	316	sum of all retained non-MediaDive trait columns before selection	Uterine cervix	6-10
-Ethnic group | Feces	7	33	19	Ethnic group	Feces	United States of America	Homo sapiens	473713	282	sum of all retained non-MediaDive trait columns before selection	Feces	6-10
-Constipation | Feces	7	23	12	Constipation	Feces	China	Homo sapiens	148830	288	sum of all retained non-MediaDive trait columns before selection	Feces	6-10
-Food allergy | Feces	7	22	13	Food allergy	Feces	China	Homo sapiens	599336	316	sum of all retained non-MediaDive trait columns before selection	Feces	6-10
-Breast cancer | Feces	7	21	11	Breast cancer	Feces	United States of America	Homo sapiens	200712	275	sum of all retained non-MediaDive trait columns before selection	Feces	6-10
-Human papilloma virus infection | Vagina	7	17	10	Human papilloma virus infection	Vagina	China	Homo sapiens	289764	308	sum of all retained non-MediaDive trait columns before selection	Vagina	6-10
-Diet measurement | Feces	6	47	33	Diet measurement	Feces	Burkina Faso	Homo sapiens	34676	158	sum of all retained non-MediaDive trait columns before selection	Feces	6-10
-Response to diet | Feces	6	28	16	Response to diet	Feces	China	Homo sapiens	471389	316	sum of all retained non-MediaDive trait columns before selection	Feces	6-10
-Multiple sclerosis | Feces	6	28	14	Multiple sclerosis	Feces	United States of America	Homo sapiens	415782	331	sum of all retained non-MediaDive trait columns before selection	Feces	6-10
-Colorectal cancer | Intestine	6	26	15	Colorectal cancer	Intestine	China	Homo sapiens	359645	317	sum of all retained non-MediaDive trait columns before selection	Intestine	6-10
-Psoriasis | Feces	6	20	12	Psoriasis	Feces	China	Homo sapiens	297260	332	sum of all retained non-MediaDive trait columns before selection	Feces	6-10
-Non-alcoholic fatty liver disease | Feces	6	19	10	Non-alcoholic fatty liver disease	Feces	United States of America	Homo sapiens	321440	299	sum of all retained non-MediaDive trait columns before selection	Feces	6-10
-Type I diabetes mellitus | Feces	6	18	10	Type I diabetes mellitus	Feces	Spain	Homo sapiens	385877	278	sum of all retained non-MediaDive trait columns before selection	Feces	6-10
-Cesarean section | Meconium	6	17	11	Cesarean section	Meconium	Finland	Homo sapiens	625519	316	sum of all retained non-MediaDive trait columns before selection	Meconium	6-10
-Response to transplant | Feces	5	25	14	Response to transplant	Feces	China	Homo sapiens	280310	292	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
-Acute lymphoblastic leukemia | Feces	5	19	13	Acute lymphoblastic leukemia	Feces	United States of America	Homo sapiens	667629	335	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
-Major depressive disorder | Feces	5	19	11	Major depressive disorder	Feces	China	Homo sapiens	139281	271	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
-Colorectal adenoma | Feces	5	17	10	Colorectal adenoma	Feces	China	Homo sapiens	752371	306	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
-Endometriosis | Feces	5	17	10	Endometriosis	Feces	China	Homo sapiens	67995	231	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
-Epilepsy | Feces	5	16	10	Epilepsy	Feces	China	Homo sapiens	762718	335	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
-Lung cancer | Feces	5	15	11	Lung cancer	Feces	China	Homo sapiens	517435	316	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
-Alzheimer's disease | Feces	5	14	8	Alzheimer's disease	Feces	China	Homo sapiens	586043	302	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
-Graft versus host disease | Feces	5	14	10	Graft versus host disease	Feces	China	Homo sapiens	397689	305	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
-Depressive disorder | Feces	5	14	8	Depressive disorder	Feces	China	Homo sapiens	302227	307	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
-Colorectal cancer | Colon	5	13	7	Colorectal cancer	Colon	United States of America	Homo sapiens	135181	280	sum of all retained non-MediaDive trait columns before selection	Colon	3-5
-Rheumatoid arthritis | Feces	5	9	5	Rheumatoid arthritis	Feces	Canada	Homo sapiens	359625	280	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
-Stroke | Feces	4	41	27	Stroke	Feces	China	Homo sapiens	1820030	320	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
-Gastric cancer | Stomach	4	26	15	Gastric cancer	Stomach	China	Homo sapiens	2007849	316	sum of all retained non-MediaDive trait columns before selection	Stomach	3-5
-Atopic eczema | Feces	4	22	13	Atopic eczema	Feces	South Korea	Homo sapiens	547738	316	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
-Asthma | Feces	4	22	13	Asthma	Feces	Canada	Homo sapiens	376051	309	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
-Response to antiviral drug | Feces	4	21	12	Response to antiviral drug	Feces	Cameroon	Homo sapiens	358771	293	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
-Lifestyle measurement | Feces	4	20	15	Lifestyle measurement	Feces	Canada,India	Homo sapiens	127373	231	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
-Health-related quality of life measurement | Feces	4	20	12	Health-related quality of life measurement	Feces	China	Homo sapiens	126626	283	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
-Gastric cancer | Feces	4	18	10	Gastric cancer	Feces	China	Homo sapiens	1477915	308	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
-COVID-19 | Oropharynx	4	18	10	COVID-19	Oropharynx	China	Homo sapiens	243480	310	sum of all retained non-MediaDive trait columns before selection	Other	3-5
-Bipolar disorder | Feces	4	18	14	Bipolar disorder	Feces	United States of America	Homo sapiens	237852	252	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
-Atopic eczema | Skin of body	4	16	10	Atopic eczema	Skin of body	United States of America	Homo sapiens	303863	303	sum of all retained non-MediaDive trait columns before selection	Other	3-5
-Cervical glandular intraepithelial neoplasia | Uterine cervix	4	15	9	Cervical glandular intraepithelial neoplasia	Uterine cervix	United States of America	Homo sapiens	547367	301	sum of all retained non-MediaDive trait columns before selection	Uterine cervix	3-5
-Delivery method | Feces	4	15	8	Delivery method	Feces	Australia	Homo sapiens	415582	308	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
-Health study participation | Feces	4	15	10	Health study participation	Feces	China	Homo sapiens	350607	275	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
-Cognitive impairment | Feces	4	15	10	Cognitive impairment	Feces	United States of America	Homo sapiens	306310	304	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
-Chronic fatigue syndrome | Feces	4	15	8	Chronic fatigue syndrome	Feces	United States of America	Homo sapiens	37765	202	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
-Autism | Feces	4	14	10	Autism	Feces	China	Homo sapiens	746218	316	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
-Milk allergic reaction | Feces	4	14	9	Milk allergic reaction	Feces	Italy	Homo sapiens	240670	278	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
-Pancreatic carcinoma | Feces	4	14	8	Pancreatic carcinoma	Feces	China	Homo sapiens	54256	227	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
-Rheumatoid arthritis | Subgingival dental plaque	4	14	7	Rheumatoid arthritis	Subgingival dental plaque	Norway	Homo sapiens	35201	198	sum of all retained non-MediaDive trait columns before selection	Subgingival dental plaque	3-5
-Periodontitis | Subgingival dental plaque	4	14	7	Periodontitis	Subgingival dental plaque	China	Homo sapiens	18866	174	sum of all retained non-MediaDive trait columns before selection	Subgingival dental plaque	3-5
-Squamous cell carcinoma | Saliva	4	12	7	Squamous cell carcinoma	Saliva	Austria	Homo sapiens	415312	314	sum of all retained non-MediaDive trait columns before selection	Saliva	3-5
-Clinical treatment | Feces	4	12	6	Clinical treatment	Feces	China	Homo sapiens	166119	291	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
-Triglyceride measurement | Feces	4	4	4	Triglyceride measurement	Feces	China	Homo sapiens	1279	83	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
-Diarrhea | Feces	3	24	12	Diarrhea	Feces	China	Homo sapiens	239428	285	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
-Attention deficit-hyperactivity disorder | Feces	3	22	13	Attention deficit-hyperactivity disorder	Feces	Canada,United States of America	Homo sapiens	999719	322	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
-Cervical glandular intraepithelial neoplasia | Vagina	3	22	14	Cervical glandular intraepithelial neoplasia	Vagina	China	Homo sapiens	352776	276	sum of all retained non-MediaDive trait columns before selection	Vagina	3-5
-Eczema | Feces	3	19	12	Eczema	Feces	China	Homo sapiens	713152	315	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
-Asthma | Nasal cavity	3	19	12	Asthma	Nasal cavity	United States of America	Homo sapiens	329395	299	sum of all retained non-MediaDive trait columns before selection	Other	3-5
-Hypertension | Feces	3	17	10	Hypertension	Feces	China	Homo sapiens	531856	309	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
-Response to allogeneic hematopoietic stem cell transplant | Feces	3	17	12	Response to allogeneic hematopoietic stem cell transplant	Feces	United States of America	Homo sapiens	510251	277	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
-Rheumatoid arthritis | Saliva	3	16	8	Rheumatoid arthritis	Saliva	China	Homo sapiens	685527	316	sum of all retained non-MediaDive trait columns before selection	Saliva	3-5
-Treatment | Feces	3	16	9	Treatment	Feces	Australia	Homo sapiens	141266	252	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
+Parkinson's disease | Feces	36	140	70	Parkinson's disease	Feces	China	Homo sapiens	3835860	340	sum of all retained non-MediaDive trait columns before selection	Feces	11+
+Obesity | Feces	25	90	45	Obesity	Feces	Mexico	Homo sapiens	2554799	325	sum of all retained non-MediaDive trait columns before selection	Feces	11+
+Colorectal cancer | Feces	24	62	31	Colorectal cancer	Feces	China	Homo sapiens	1799483	325	sum of all retained non-MediaDive trait columns before selection	Feces	11+
+Schizophrenia | Feces	13	36	18	Schizophrenia	Feces	China	Homo sapiens	580465	311	sum of all retained non-MediaDive trait columns before selection	Feces	11+
+Irritable bowel syndrome | Feces	12	62	31	Irritable bowel syndrome	Feces	United States of America	Homo sapiens	2210595	342	sum of all retained non-MediaDive trait columns before selection	Feces	11+
+HIV infection | Feces	12	32	16	HIV infection	Feces	China	Homo sapiens	1255352	316	sum of all retained non-MediaDive trait columns before selection	Feces	11+
+Chronic constipation | Feces	10	28	14	Chronic constipation	Feces	China	Homo sapiens	1630827	335	sum of all retained non-MediaDive trait columns before selection	Feces	6-10
+Polycystic ovary syndrome | Feces	9	34	17	Polycystic ovary syndrome	Feces	China	Homo sapiens	1053330	316	sum of all retained non-MediaDive trait columns before selection	Feces	6-10
+Type II diabetes mellitus | Feces	9	30	15	Type II diabetes mellitus	Feces	China	Homo sapiens	684194	335	sum of all retained non-MediaDive trait columns before selection	Feces	6-10
+Chronic kidney disease | Feces	8	16	8	Chronic kidney disease	Feces	China	Homo sapiens	1415357	321	sum of all retained non-MediaDive trait columns before selection	Feces	6-10
+COVID-19 | Feces	7	20	10	COVID-19	Feces	China	Homo sapiens	473220	289	sum of all retained non-MediaDive trait columns before selection	Feces	6-10
+Multiple sclerosis | Feces	6	22	11	Multiple sclerosis	Feces	United States of America	Homo sapiens	358448	331	sum of all retained non-MediaDive trait columns before selection	Feces	6-10
+Ulcerative colitis | Feces	6	14	7	Ulcerative colitis	Feces	South Korea	Homo sapiens	296696	315	sum of all retained non-MediaDive trait columns before selection	Feces	6-10
+Breast cancer | Feces	6	14	7	Breast cancer	Feces	United States of America	Homo sapiens	132065	262	sum of all retained non-MediaDive trait columns before selection	Feces	6-10
+Gestational diabetes | Feces	5	42	21	Gestational diabetes	Feces	China	Homo sapiens	1341106	331	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
+Human papilloma virus infection | Uterine cervix	5	18	9	Human papilloma virus infection	Uterine cervix	China	Homo sapiens	1049159	316	sum of all retained non-MediaDive trait columns before selection	Uterine cervix	3-5
+Human papilloma virus infection | Vagina	5	12	6	Human papilloma virus infection	Vagina	China	Homo sapiens	279388	308	sum of all retained non-MediaDive trait columns before selection	Vagina	3-5
+Psoriasis | Feces	5	12	6	Psoriasis	Feces	Argentina	Homo sapiens	223403	313	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
+Crohn's disease | Feces	5	12	6	Crohn's disease	Feces	South Korea	Homo sapiens	215635	303	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
+COVID-19 | Nasopharynx	5	10	5	COVID-19	Nasopharynx	United States of America	Homo sapiens	283427	309	sum of all retained non-MediaDive trait columns before selection	Nasopharynx	3-5
+Type I diabetes mellitus | Feces	5	10	5	Type I diabetes mellitus	Feces	China	Homo sapiens	210069	277	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
+Colorectal adenoma | Feces	4	14	7	Colorectal adenoma	Feces	Austria	Homo sapiens	530627	306	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
+Alzheimer's disease | Feces	4	12	6	Alzheimer's disease	Feces	China	Homo sapiens	579007	302	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
+Food allergy | Feces	4	12	6	Food allergy	Feces	China	Homo sapiens	451528	316	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
+Autism | Feces	4	8	4	Autism	Feces	China	Homo sapiens	402561	316	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
+Rheumatoid arthritis | Feces	4	8	4	Rheumatoid arthritis	Feces	Canada	Homo sapiens	359194	280	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
+Colorectal cancer | Intestine	4	8	4	Colorectal cancer	Intestine	China	Homo sapiens	225687	312	sum of all retained non-MediaDive trait columns before selection	Intestine	3-5
+Constipation | Feces	4	8	4	Constipation	Feces	China	Homo sapiens	55964	263	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
+Diarrhea | Feces	3	18	9	Diarrhea	Feces	China	Homo sapiens	214431	285	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
+Eczema | Feces	3	14	7	Eczema	Feces	China	Homo sapiens	333278	315	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
+Atopic eczema | Feces	3	14	7	Atopic eczema	Feces	South Korea	Homo sapiens	302986	310	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
+Asthma | Feces	3	14	7	Asthma	Feces	Canada	Homo sapiens	265979	309	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
+COVID-19 | Oropharynx	3	14	7	COVID-19	Oropharynx	China	Homo sapiens	230130	310	sum of all retained non-MediaDive trait columns before selection	Oropharynx	3-5
+Chronic fatigue syndrome | Feces	3	12	6	Chronic fatigue syndrome	Feces	United States of America	Homo sapiens	34680	200	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
+Major depressive disorder | Feces	3	10	5	Major depressive disorder	Feces	China	Homo sapiens	78118	257	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
+Endometriosis | Feces	3	10	5	Endometriosis	Feces	China	Homo sapiens	44897	207	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
+Rheumatoid arthritis | Subgingival dental plaque	3	10	5	Rheumatoid arthritis	Subgingival dental plaque	Taiwan	Homo sapiens	22728	196	sum of all retained non-MediaDive trait columns before selection	Subgingival dental plaque	3-5
+Squamous cell carcinoma | Saliva	3	8	4	Squamous cell carcinoma	Saliva	Austria	Homo sapiens	372783	314	sum of all retained non-MediaDive trait columns before selection	Saliva	3-5
+Colorectal adenoma | Intestine	3	8	4	Colorectal adenoma	Intestine	China	Homo sapiens	88305	224	sum of all retained non-MediaDive trait columns before selection	Intestine	3-5
+Pancreatic carcinoma | Feces	3	8	4	Pancreatic carcinoma	Feces	China	Homo sapiens	24659	224	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
+Gastric cancer | Feces	3	6	3	Gastric cancer	Feces	China	Homo sapiens	630457	308	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
+Atopic eczema | Skin of body	3	6	3	Atopic eczema	Skin of body	China	Homo sapiens	223994	303	sum of all retained non-MediaDive trait columns before selection	Skin of body	3-5
+Oral squamous cell carcinoma | Saliva	3	6	3	Oral squamous cell carcinoma	Saliva	China	Homo sapiens	190903	279	sum of all retained non-MediaDive trait columns before selection	Saliva	3-5
+Non-alcoholic fatty liver disease | Feces	3	6	3	Non-alcoholic fatty liver disease	Feces	Canada	Homo sapiens	145194	292	sum of all retained non-MediaDive trait columns before selection	Feces	3-5
+Gastric adenocarcinoma | Feces	2	10	5	Gastric adenocarcinoma	Feces	China	Homo sapiens	818280	311	sum of all retained non-MediaDive trait columns before selection	Feces	2
+Cervical cancer | Feces	2	10	5	Cervical cancer	Feces	Finland	Homo sapiens	197601	289	sum of all retained non-MediaDive trait columns before selection	Feces	2
+Parkinson's disease | Saliva	2	10	5	Parkinson's disease	Saliva	United States of America	Homo sapiens	11081	170	sum of all retained non-MediaDive trait columns before selection	Saliva	2
+Autoimmune disease | Feces	2	8	4	Autoimmune disease	Feces	Finland	Homo sapiens	1092430	308	sum of all retained non-MediaDive trait columns before selection	Feces	2
+Dry eye syndrome | Conjunctival sac	2	8	4	Dry eye syndrome	Conjunctival sac	China	Homo sapiens	596146	316	sum of all retained non-MediaDive trait columns before selection	Conjunctival sac	2
+Colorectal cancer | Colorectal mucosa	2	8	4	Colorectal cancer	Colorectal mucosa	China	Homo sapiens	233666	302	sum of all retained non-MediaDive trait columns before selection	Other	2
+Multiple myeloma | Feces	2	8	4	Multiple myeloma	Feces	China	Homo sapiens	153250	302	sum of all retained non-MediaDive trait columns before selection	Feces	2
+Hypertension | Saliva	2	8	4	Hypertension	Saliva	China	Homo sapiens	3748	113	sum of all retained non-MediaDive trait columns before selection	Saliva	2
+Lung cancer | Feces	2	6	3	Lung cancer	Feces	China	Homo sapiens	478258	316	sum of all retained non-MediaDive trait columns before selection	Feces	2
+Colorectal carcinoma | Feces	2	6	3	Colorectal carcinoma	Feces	China	Homo sapiens	378260	309	sum of all retained non-MediaDive trait columns before selection	Feces	2
+Attention deficit-hyperactivity disorder | Feces	2	6	3	Attention deficit-hyperactivity disorder	Feces	Spain	Homo sapiens	344515	310	sum of all retained non-MediaDive trait columns before selection	Feces	2
+Diabetes mellitus | Feces	2	6	3	Diabetes mellitus	Feces	China	Homo sapiens	226230	314	sum of all retained non-MediaDive trait columns before selection	Feces	2
+Graft versus host disease | Feces	2	6	3	Graft versus host disease	Feces	France	Homo sapiens	131132	282	sum of all retained non-MediaDive trait columns before selection	Feces	2
+Prediabetes syndrome | Feces	2	6	3	Prediabetes syndrome	Feces	China	Homo sapiens	112215	290	sum of all retained non-MediaDive trait columns before selection	Feces	2
+Parkinson's disease | Nasal cavity	2	6	3	Parkinson's disease	Nasal cavity	Germany	Homo sapiens	97712	238	sum of all retained non-MediaDive trait columns before selection	Other	2
+Depressive disorder | Feces	2	6	3	Depressive disorder	Feces	China	Homo sapiens	93116	287	sum of all retained non-MediaDive trait columns before selection	Feces	2
+Esophageal squamous cell carcinoma | Saliva	2	6	3	Esophageal squamous cell carcinoma	Saliva	China	Homo sapiens	20633	185	sum of all retained non-MediaDive trait columns before selection	Saliva	2
+Human papilloma virus infection | Posterior fornix of vagina	2	4	2	Human papilloma virus infection	Posterior fornix of vagina	China	Homo sapiens	391634	308	sum of all retained non-MediaDive trait columns before selection	Other	2
+Rheumatoid arthritis | Saliva	2	4	2	Rheumatoid arthritis	Saliva	China	Homo sapiens	307628	316	sum of all retained non-MediaDive trait columns before selection	Saliva	2
+Colorectal cancer | Saliva	2	4	2	Colorectal cancer	Saliva	China	Homo sapiens	304325	313	sum of all retained non-MediaDive trait columns before selection	Saliva	2
+Type II diabetes mellitus | Subgingival dental plaque	2	4	2	Type II diabetes mellitus	Subgingival dental plaque	Brazil	Homo sapiens	263227	316	sum of all retained non-MediaDive trait columns before selection	Subgingival dental plaque	2
+Attention deficit hyperactivity disorder | Feces	2	4	2	Attention deficit hyperactivity disorder	Feces	China	Homo sapiens	208569	278	sum of all retained non-MediaDive trait columns before selection	Feces	2
+Colorectal cancer | Oral cavity	2	4	2	Colorectal cancer	Oral cavity	China	Homo sapiens	105012	258	sum of all retained non-MediaDive trait columns before selection	Other	2
+Human immunodeficiency virus | Feces	2	4	2	Human immunodeficiency virus	Feces	Ireland	Homo sapiens	81386	256	sum of all retained non-MediaDive trait columns before selection	Feces	2
+Clinical treatment | Feces	2	4	2	Clinical treatment	Feces	China	Homo sapiens	68266	256	sum of all retained non-MediaDive trait columns before selection	Feces	2
+Milk allergic reaction | Feces	2	4	2	Milk allergic reaction	Feces	Italy	Homo sapiens	54704	222	sum of all retained non-MediaDive trait columns before selection	Feces	2
+Esophageal cancer | Saliva	2	4	2	Esophageal cancer	Saliva	China	Homo sapiens	36328	216	sum of all retained non-MediaDive trait columns before selection	Saliva	2
+Autism spectrum disorder | Feces	2	4	2	Autism spectrum disorder	Feces	China	Homo sapiens	32018	213	sum of all retained non-MediaDive trait columns before selection	Feces	2
+Pancreatic carcinoma | Saliva	2	4	2	Pancreatic carcinoma	Saliva	Iran	Homo sapiens	26002	210	sum of all retained non-MediaDive trait columns before selection	Saliva	2
+Glaucoma | Buccal mucosa	2	4	2	Glaucoma	Buccal mucosa	Republic of Korea	Homo sapiens	22211	210	sum of all retained non-MediaDive trait columns before selection	Other	2
+Allergic rhinitis | Feces	2	4	2	Allergic rhinitis	Feces	China	Homo sapiens	19481	154	sum of all retained non-MediaDive trait columns before selection	Feces	2
+Human papilloma virus infection | Vaginal fluid	2	4	2	Human papilloma virus infection	Vaginal fluid	China	Homo sapiens	17685	196	sum of all retained non-MediaDive trait columns before selection	Other	2
+Vitiligo | Feces	2	4	2	Vitiligo	Feces	China	Homo sapiens	16711	199	sum of all retained non-MediaDive trait columns before selection	Feces	2
+Hypertension | Feces	2	4	2	Hypertension	Feces	China	Homo sapiens	15646	179	sum of all retained non-MediaDive trait columns before selection	Feces	2
+Hepatocellular carcinoma | Feces	2	4	2	Hepatocellular carcinoma	Feces	China	Homo sapiens	9048	134	sum of all retained non-MediaDive trait columns before selection	Feces	2
+Periodontitis | Subgingival dental plaque	2	4	2	Periodontitis	Subgingival dental plaque	China	Homo sapiens	4104	149	sum of all retained non-MediaDive trait columns before selection	Subgingival dental plaque	2

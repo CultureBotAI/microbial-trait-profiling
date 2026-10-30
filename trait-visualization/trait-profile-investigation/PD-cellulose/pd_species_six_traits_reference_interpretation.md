@@ -8,11 +8,9 @@ Rows follow the heatmap order: descending BugSigDB PD increased/decreased log2 p
 
 | Taxon | BugSigDB inc/dec | BugSigDB direction | Literature value | Match scope | Hamming distance | Agreement | Strongest six-trait influence |
 | --- | ---: | --- | --- | --- | ---: | --- | --- |
-| Bifidobacterium longum | 6/0 | increased | increased | Bifidobacterium; genus; genus_or_parent | 0 | agrees | facultatively aerobic ↑ (+0.01; mixed) |
-| Methanobrevibacter smithii | 3/0 | increased | increased | Methanobrevibacter; genus; exact | 0 | agrees | coccus shaped ↓ (+0.03; mixed) |
-| Escherichia coli | 1/2 | decreased | increased | Escherichia-Shigella; genus group; exact | 1 | differs | arsenate reduction ↑ (+0.10; mixed) |
-| Roseburia faecis | 0/6 | decreased | decreased | Roseburia; genus; genus_or_parent | 0 | agrees | cellulose catabolic process ↓ (-0.03; mixed) |
-| Faecalibacterium prausnitzii | 0/12 | decreased | decreased | Faecalibacterium; genus/species; exact | 0 | agrees | facultatively aerobic ↑ (-0.10; mixed) |
+| Methanobrevibacter smithii | 3/0 | increased | increased | Methanobrevibacter; genus; exact | 0 | agrees | coccus shaped ↑ (+0.04; mixed) |
+| Roseburia faecis | 0/5 | decreased | decreased | Roseburia; genus; genus_or_parent | 0 | agrees | cellulose catabolic process ↓ (-0.04; mixed) |
+| Faecalibacterium prausnitzii | 0/9 | decreased | decreased | Faecalibacterium; genus/species; exact | 0 | agrees | facultatively aerobic ↑ (-0.13; mixed) |
 
 ## Methods: Literature Review and Direction Comparison
 
@@ -26,32 +24,20 @@ BugSigDB direction is a recurrence summary, not a pooled abundance effect: `incr
 
 ## Taxon Details
 
-### Bifidobacterium longum
-- Literature match: Bifidobacterium (increased; genus; genus_or_parent); source(s): [10.1002/mds.26942](https://doi.org/10.1002/mds.26942); [10.1016/j.parkreldis.2016.08.019](https://doi.org/10.1016/j.parkreldis.2016.08.019)
-- BugSigDB PD direction: increased (6/0 increased/decreased profiles); Hamming distance: 0 (similar); agreement: agrees
-- KG-Microbe direct six-trait annotations: facultatively aerobic
-- Interpretation: BugSigDB PD occurrence agrees with literature (increased); treat this as a higher-priority taxon for trait-level follow-up. KG-Microbe direct six-trait annotations: facultatively aerobic. Strongest current influence: facultatively aerobic (lollipop direction increased; +0.01 fixed-reference z, mixed).
-
 ### Methanobrevibacter smithii
 - Literature match: Methanobrevibacter (increased; genus; exact); source(s): [10.1038/s41467-022-34667-x](https://doi.org/10.1038/s41467-022-34667-x)
 - BugSigDB PD direction: increased (3/0 increased/decreased profiles); Hamming distance: 0 (similar); agreement: agrees
 - KG-Microbe direct six-trait annotations: coccus shaped
-- Interpretation: BugSigDB PD occurrence agrees with literature (increased); treat this as a higher-priority taxon for trait-level follow-up. KG-Microbe direct six-trait annotations: coccus shaped. Strongest current influence: coccus shaped (lollipop direction decreased; +0.03 fixed-reference z, mixed).
-
-### Escherichia coli
-- Literature match: Escherichia-Shigella (increased; genus group; exact); source(s): [10.1007/s11427-016-9001-4](https://doi.org/10.1007/s11427-016-9001-4)
-- BugSigDB PD direction: decreased (1/2 increased/decreased profiles); Hamming distance: 1 (different); agreement: differs
-- KG-Microbe direct six-trait annotations: arsenate reduction; coccus shaped; facultatively aerobic; moderately halophilic
-- Interpretation: BugSigDB PD occurrence is decreased, but the literature reference is increased; review cohort, taxonomy, and direction labels before interpreting. KG-Microbe direct six-trait annotations: arsenate reduction; coccus shaped; facultatively aerobic; moderately halophilic. Strongest current influence: arsenate reduction (lollipop direction increased; +0.10 fixed-reference z, mixed).
+- Interpretation: BugSigDB PD occurrence agrees with literature (increased); treat this as a higher-priority taxon for trait-level follow-up. KG-Microbe direct six-trait annotations: coccus shaped. Strongest current influence: coccus shaped (lollipop direction increased; +0.04 fixed-reference z, mixed).
 
 ### Roseburia faecis
 - Literature match: Roseburia (decreased; genus; genus_or_parent); source(s): [10.1002/mds.26307](https://doi.org/10.1002/mds.26307); [10.1002/mds.28119](https://doi.org/10.1002/mds.28119); [10.1038/s41467-022-34667-x](https://doi.org/10.1038/s41467-022-34667-x)
-- BugSigDB PD direction: decreased (0/6 increased/decreased profiles); Hamming distance: 0 (similar); agreement: agrees
+- BugSigDB PD direction: decreased (0/5 increased/decreased profiles); Hamming distance: 0 (similar); agreement: agrees
 - KG-Microbe direct six-trait annotations: cellulose catabolic process
-- Interpretation: BugSigDB PD occurrence agrees with literature (decreased); treat this as a higher-priority taxon for trait-level follow-up. KG-Microbe direct six-trait annotations: cellulose catabolic process. Strongest current influence: cellulose catabolic process (lollipop direction decreased; -0.03 fixed-reference z, mixed).
+- Interpretation: BugSigDB PD occurrence agrees with literature (decreased); treat this as a higher-priority taxon for trait-level follow-up. KG-Microbe direct six-trait annotations: cellulose catabolic process. Strongest current influence: cellulose catabolic process (lollipop direction decreased; -0.04 fixed-reference z, mixed).
 
 ### Faecalibacterium prausnitzii
 - Literature match: Faecalibacterium (decreased; genus/species; exact); source(s): [10.1016/j.parkreldis.2016.08.019](https://doi.org/10.1016/j.parkreldis.2016.08.019); [10.1007/s11427-016-9001-4](https://doi.org/10.1007/s11427-016-9001-4); [10.1002/mds.28119](https://doi.org/10.1002/mds.28119)
-- BugSigDB PD direction: decreased (0/12 increased/decreased profiles); Hamming distance: 0 (similar); agreement: agrees
+- BugSigDB PD direction: decreased (0/9 increased/decreased profiles); Hamming distance: 0 (similar); agreement: agrees
 - KG-Microbe direct six-trait annotations: facultatively aerobic
-- Interpretation: BugSigDB PD occurrence agrees with literature (decreased); treat this as a higher-priority taxon for trait-level follow-up. KG-Microbe direct six-trait annotations: facultatively aerobic. Strongest current influence: facultatively aerobic (lollipop direction increased; -0.10 fixed-reference z, mixed).
+- Interpretation: BugSigDB PD occurrence agrees with literature (decreased); treat this as a higher-priority taxon for trait-level follow-up. KG-Microbe direct six-trait annotations: facultatively aerobic. Strongest current influence: facultatively aerobic (lollipop direction increased; -0.13 fixed-reference z, mixed).

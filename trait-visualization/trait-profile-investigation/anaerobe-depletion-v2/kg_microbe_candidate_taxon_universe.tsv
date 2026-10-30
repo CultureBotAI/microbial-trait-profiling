@@ -1,29 +1,39 @@
 taxon_id	taxon_name	taxonomic_rank	METPO:1000603	METPO:1000607	kg_microbe_universe_core_trait_count	kg_microbe_universe_associated_trait_count	kg_microbe_universe_core_traits	kg_microbe_universe_associated_traits
-NCBITaxon:35829	Acetivibrio	genus	17	2	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:35829	Acetivibrio	genus	18	2	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:288965	Acetivibrio clariflavus	species	2	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:1515	Acetivibrio thermocellus	species	7	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:49894	Acetomicrobium	genus	5	3	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:909930	Acidaminococcaceae	family	11	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:1843488	Acidaminococcales	order	11	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:904	Acidaminococcus	genus	5	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:187327	Acidaminococcus intestini	species	2	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:49894	Acetomicrobium	genus	6	3	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:909930	Acidaminococcaceae	family	12	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1843488	Acidaminococcales	order	12	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:904	Acidaminococcus	genus	6	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:187327	Acidaminococcus intestini	species	3	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:57723	Acidobacteriota	phylum	7	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:1654	Actinomyces	genus	18	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1654	Actinomyces	genus	29	2	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:52769	Actinomyces gerencseriae	species	1	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:2049	Actinomycetaceae	family	48	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:2037	Actinomycetales	order	48	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:1760	Actinomycetes	class	364	22	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:201174	Actinomycetota	phylum	425	31	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:135624	Aeromonadales	order	10	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:2232	Archaeoglobaceae	family	14	3	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:1643824	Atopobiaceae	family	18	2	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:1380	Atopobium	genus	3	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:1783272	Bacillati	superkingdom	4453	176	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:91061	Bacilli	class	2377	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:1239	Bacillota	phylum	3975	145	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:815	Bacteroidaceae	family	108	42	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:171549	Bacteroidales	order	347	75	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:816	Bacteroides	genus	85	38	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:2049	Actinomycetaceae	family	78	3	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:2037	Actinomycetales	order	78	3	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1760	Actinomycetes	class	427	26	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:201174	Actinomycetota	phylum	498	44	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:135624	Aeromonadales	order	11	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1766253	Agathobacter	genus	4	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:2048137	Agathobaculum	genus	1	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:28211	Alphaproteobacteria	class	117	3	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:165779	Anaerococcus	genus	23	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:292628	Anaerolineaceae	family	9	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:292625	Anaerolineae	class	12	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:292629	Anaerolineales	order	9	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1843206	Anaerotaenia	genus	1	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:2039240	Anaerotignum	genus	7	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:543314	Anaerovoracaceae	family	23	2	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:2232	Archaeoglobaceae	family	15	3	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1643824	Atopobiaceae	family	21	4	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1380	Atopobium	genus	4	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1783272	Bacillati	superkingdom	4816	234	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:91061	Bacilli	class	2485	2	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1239	Bacillota	phylum	4262	189	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:815	Bacteroidaceae	family	119	44	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:171549	Bacteroidales	order	387	86	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:816	Bacteroides	genus	94	40	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:85831	Bacteroides acidifaciens	species	2	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:47678	Bacteroides caccae	species	2	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:246787	Bacteroides cellulosilyticus	species	2	2	2	0	anaerobic; obligately anaerobic	
@@ -31,7 +41,7 @@ NCBITaxon:626929	Bacteroides clarus	species	2	2	2	0	anaerobic; obligately anaero
 NCBITaxon:28111	Bacteroides eggerthii	species	2	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:674529	Bacteroides faecis	species	2	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:626930	Bacteroides fluxus	species	2	2	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:817	Bacteroides fragilis	species	4	4	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:817	Bacteroides fragilis	species	5	4	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:329854	Bacteroides intestinalis	species	3	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:291645	Bacteroides nordii	species	1	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:626931	Bacteroides oleiciplenus	species	2	2	2	0	anaerobic; obligately anaerobic	
@@ -48,57 +58,74 @@ NCBITaxon:46506	Bacteroides stercoris	species	2	1	2	0	anaerobic; obligately anae
 NCBITaxon:818	Bacteroides thetaiotaomicron	species	2	2	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:820	Bacteroides uniformis	species	2	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:371601	Bacteroides xylanisolvens	species	4	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:200643	Bacteroidia	class	356	75	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:976	Bacteroidota	phylum	369	75	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:200643	Bacteroidia	class	396	86	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:976	Bacteroidota	phylum	420	86	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:397864	Barnesiella	genus	4	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:397865	Barnesiella viscericola	species	2	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:2005519	Barnesiellaceae	family	6	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:31953	Bifidobacteriaceae	family	149	21	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:85004	Bifidobacteriales	order	149	21	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:1678	Bifidobacterium	genus	127	2	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:28216	Betaproteobacteria	class	66	3	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:31953	Bifidobacteriaceae	family	167	22	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:85004	Bifidobacteriales	order	167	22	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1678	Bifidobacterium	genus	142	3	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:1680	Bifidobacterium adolescentis	species	5	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:1685	Bifidobacterium breve	species	8	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:572511	Blautia	genus	16	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:572511	Blautia	genus	23	2	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:40520	Blautia obeum	species	2	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:29521	Brachyspira	genus	10	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:574697	Butyricimonas	genus	5	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:33035	Blautia producta	species	2	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:29521	Brachyspira	genus	12	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:80840	Burkholderiales	order	36	3	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:3085642	Butyricicoccaceae	family	3	2	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:580596	Butyricicoccus	genus	2	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:574697	Butyricimonas	genus	7	2	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:544644	Butyricimonas synergistica	species	2	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:44000	Caldicellulosiruptor	genus	17	7	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:194	Campylobacter	genus	13	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:44000	Caldicellulosiruptor	genus	19	7	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:194	Campylobacter	genus	19	2	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:824	Campylobacter gracilis	species	2	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:72294	Campylobacteraceae	family	13	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:213849	Campylobacterales	order	42	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:29547	Campylobacterota	phylum	74	3	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:698776	Cellulosilyticum	genus	2	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:425254	Cellulosilyticum ruminicola	species	1	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:76517	Campylobacter hominis	species	2	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:72294	Campylobacteraceae	family	19	2	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:213849	Campylobacterales	order	54	2	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:29547	Campylobacterota	phylum	86	5	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:698776	Cellulosilyticum	genus	3	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:425254	Cellulosilyticum ruminicola	species	2	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:180162	Cetobacterium	genus	4	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:1090	Chlorobiota	phylum	14	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:135613	Chromatiales	order	63	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1090	Chlorobiota	phylum	17	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:200795	Chloroflexota	phylum	37	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1046	Chromatiaceae	family	48	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:135613	Chromatiales	order	69	2	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:508459	Cloacibacillus	genus	3	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:508460	Cloacibacillus evryensis	species	2	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:186801	Clostridia	class	1264	125	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:31979	Clostridiaceae	family	269	30	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:186801	Clostridia	class	1400	156	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:31979	Clostridiaceae	family	285	38	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:1870884	Clostridioides	genus	237	21	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:1496	Clostridioides difficile	species	237	21	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:1485	Clostridium	genus	227	30	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1485	Clostridium	genus	241	36	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:1491	Clostridium botulinum	species	18	17	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:46867	Clostridium chauvoei	species	1	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:137838	Clostridium neonatale	species	1	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:1502	Clostridium perfringens	species	18	3	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:1504	Clostridium septicum	species	1	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1506	Clostridium sp.	species	1	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:1509	Clostridium sporogenes	species	3	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:84107	Coriobacteriaceae	family	17	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:84999	Coriobacteriales	order	35	3	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:84998	Coriobacteriia	class	60	9	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:33870	Coriobacterium	genus	2	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:2810280	Coprobacillaceae	family	22	2	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:84107	Coriobacteriaceae	family	19	4	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:84999	Coriobacteriales	order	40	8	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:84998	Coriobacteriia	class	70	18	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:33870	Coriobacterium	genus	2	2	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:33871	Coriobacterium glomerans	species	1	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:84162	Cryptobacterium	genus	1	2	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:84163	Cryptobacterium curtum	species	1	2	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:191393	Deferribacterales	order	14	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:68337	Deferribacteres	class	14	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:200930	Deferribacterota	phylum	14	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:191393	Deferribacterales	order	15	2	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:68337	Deferribacteres	class	15	2	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:200930	Deferribacterota	phylum	15	2	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1125862	Deferrisoma	genus	3	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:453228	Desulfarculaceae	family	3	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:453227	Desulfarculales	order	3	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:218208	Desulfatibacillum aliphaticivorans	species	1	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:213118	Desulfobacterales	order	69	2	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:3024418	Desulfobacteria	class	71	2	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:213118	Desulfobacterales	order	71	2	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:3024418	Desulfobacteria	class	73	2	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:213121	Desulfobulbaceae	family	18	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:3024411	Desulfobulbales	order	35	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:893	Desulfobulbus	genus	9	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:2282741	Desulfofundulus	genus	9	2	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:58135	Desulfofundulus kuznetsovii	species	1	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:213117	Desulfohalobiaceae	family	3	1	2	0	anaerobic; obligately anaerobic	
@@ -107,52 +134,74 @@ NCBITaxon:1564	Desulforamulus ruminis	species	2	2	2	0	anaerobic; obligately anae
 NCBITaxon:79206	Desulfosporosinus	genus	15	3	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:1562	Desulfotomaculum	genus	10	2	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:1565	Desulfotomaculum nigrificans	species	2	2	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:872	Desulfovibrio	genus	29	5	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:872	Desulfovibrio	genus	30	5	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:885	Desulfovibrio sp.	species	1	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:194924	Desulfovibrionaceae	family	112	10	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:213115	Desulfovibrionales	order	153	13	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:3031449	Desulfovibrionia	class	153	13	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:194924	Desulfovibrionaceae	family	121	10	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:213115	Desulfovibrionales	order	163	14	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:3031449	Desulfovibrionia	class	163	14	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:510701	Desulfurispora	genus	2	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:2272	Desulfurococcaceae	family	20	5	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:47054	Dethiosulfovibrio	genus	6	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:3029088	Dethiosulfovibrionaceae	family	11	4	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:2005520	Dysgonomonadaceae	family	11	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:2272	Desulfurococcaceae	family	21	5	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:47054	Dethiosulfovibrio	genus	7	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:3029088	Dethiosulfovibrionaceae	family	14	4	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:2005520	Dysgonomonadaceae	family	12	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:72276	Ectothiorhodospiraceae	family	16	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:84111	Eggerthella	genus	4	2	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:1643826	Eggerthellaceae	family	25	6	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:1643822	Eggerthellales	order	25	6	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:84111	Eggerthella	genus	6	3	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:84112	Eggerthella lenta	species	3	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1643826	Eggerthellaceae	family	30	10	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1643822	Eggerthellales	order	30	10	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1472762	Enorma	genus	3	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1472761	Enorma massiliensis	species	2	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:2719313	Enterocloster	genus	12	8	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:358742	Enterocloster aldenensis	species	2	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:333367	Enterocloster asparagiformis	species	2	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:208479	Enterocloster bolteae	species	3	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:358743	Enterocloster citroniae	species	2	3	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:1531	Enterocloster clostridioformis	species	2	2	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:81852	Enterococcaceae	family	11	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:1350	Enterococcus	genus	6	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:81852	Enterococcaceae	family	16	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1350	Enterococcus	genus	9	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:1351	Enterococcus faecalis	species	2	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:3031852	Epsilonproteobacteria	class	61	3	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:3031852	Epsilonproteobacteria	class	73	4	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:128827	Erysipelotrichaceae	family	24	3	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:526525	Erysipelotrichales	order	48	5	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:526524	Erysipelotrichia	class	48	5	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:253238	Ethanoligenens	genus	2	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:253239	Ethanoligenens harbinense	species	2	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:186802	Eubacteriales	order	592	58	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:946234	Flavonifractor	genus	4	2	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:186806	Eubacteriaceae	family	37	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:186802	Eubacteriales	order	643	73	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1730	Eubacterium	genus	15	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:142586	Eubacterium sp.	species	1	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1982626	Faecalibacillus intestinalis	species	1	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1573536	Faecalicoccus	genus	3	2	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1323	Faecalicoccus pleomorphus	species	2	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:2005355	Faecalimonas	genus	1	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1912855	Faecalimonas umbilicata	species	1	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:204431	Fibrobacteraceae	family	1	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:218872	Fibrobacterales	order	1	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:204430	Fibrobacteria	class	1	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:65842	Fibrobacterota	phylum	3	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:946234	Flavonifractor	genus	5	2	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:292800	Flavonifractor plautii	species	4	2	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:203492	Fusobacteriaceae	family	69	2	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:203491	Fusobacteriales	order	91	2	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:203490	Fusobacteriia	class	91	2	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:32066	Fusobacteriota	phylum	91	2	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:1236	Gammaproteobacteria	class	295	3	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:203492	Fusobacteriaceae	family	75	2	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:203491	Fusobacteriales	order	99	2	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:203490	Fusobacteriia	class	99	2	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:32066	Fusobacteriota	phylum	99	2	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1236	Gammaproteobacteria	class	314	5	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:2701	Gardnerella	genus	5	19	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:2702	Gardnerella vaginalis	species	5	15	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:204475	Gemmiger	genus	2	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:745368	Gemmiger formicilis	species	1	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:213422	Geobacteraceae	family	31	3	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:351604	Geotalea uraniireducens	species	1	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:644652	Gordonibacter	genus	3	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:471189	Gordonibacter pamelaeae	species	2	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:972	Halanaerobiaceae	family	13	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:53433	Halanaerobiales	order	36	2	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:53433	Halanaerobiales	order	36	3	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:2330	Halanaerobium	genus	12	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:2235	Halobacteriales	order	8	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:274591	Hoeflea	genus	2	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:533205	Holophagae	class	4	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:574975	Holophagales	order	3	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:840	Hoylesella loescheii	species	1	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:840	Hoylesella loescheii	species	2	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:189722	Hoylesella marshii	species	2	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:425941	Hoylesella nanceiensis	species	2	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:407975	Hoylesella pleuritidis	species	1	1	2	0	anaerobic; obligately anaerobic	
@@ -160,151 +209,188 @@ NCBITaxon:228603	Hoylesella shahii	species	2	1	2	0	anaerobic; obligately anaerob
 NCBITaxon:386414	Hoylesella timonensis	species	3	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:1649459	Hungatella	genus	4	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:154046	Hungatella hathewayi	species	2	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:356	Hyphomicrobiales	order	32	2	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:428711	Jonquetella	genus	3	2	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:428712	Jonquetella anthropi	species	3	2	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:2163168	Kineothrix	genus	1	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:140625	Lachnobacterium	genus	1	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:140626	Lachnobacterium bovis	species	1	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:28050	Lachnospira	genus	4	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:28050	Lachnospira	genus	6	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:39485	Lachnospira eligens	species	2	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:186803	Lachnospiraceae	family	173	17	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:3085636	Lachnospirales	order	188	18	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:2719231	Lacrimispora	genus	11	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:186803	Lachnospiraceae	family	222	25	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:3085636	Lachnospirales	order	240	29	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1763508	Lachnotalea	genus	1	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1763509	Lachnotalea glycerini	species	1	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:2719231	Lacrimispora	genus	14	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:84030	Lacrimispora saccharolytica	species	3	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:186826	Lactobacillales	order	290	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:186826	Lactobacillales	order	391	2	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:2767353	Lancefieldella	genus	4	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:1382	Lancefieldella parvula	species	2	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1840213	Lentimicrobiaceae	family	1	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1840214	Lentimicrobium	genus	1	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:1313211	Lentisphaeria	class	2	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:256845	Lentisphaerota	phylum	3	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:158846	Megamonas	genus	6	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:491921	Megamonas rupellensis	species	2	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:906	Megasphaera	genus	14	2	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:906	Megasphaera	genus	16	2	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:187326	Megasphaera micronuciformis	species	2	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:183925	Methanobacteria	class	79	10	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:2159	Methanobacteriaceae	family	76	8	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:2158	Methanobacteriales	order	79	10	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:28890	Methanobacteriota	phylum	313	58	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:2172	Methanobrevibacter	genus	40	2	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:183925	Methanobacteria	class	88	10	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:2159	Methanobacteriaceae	family	85	8	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:2158	Methanobacteriales	order	88	10	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:28890	Methanobacteriota	phylum	358	65	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:2172	Methanobrevibacter	genus	44	2	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:67760	Methanocaldococcus infernus	species	2	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:2182	Methanococcales	order	33	15	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:183939	Methanococci	class	33	15	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:2182	Methanococcales	order	35	16	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:183939	Methanococci	class	35	16	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:88404	Methanocorpusculaceae	family	7	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:2191	Methanomicrobiales	order	61	6	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:2191	Methanomicrobiales	order	68	7	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:395331	Methanoregula	genus	4	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:909932	Negativicutes	class	160	9	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:2050	Mobiluncus	genus	12	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:2052	Mobiluncus mulieris	species	5	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:86331	Mogibacterium	genus	7	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:909932	Negativicutes	class	171	9	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:881	Nitratidesulfovibrio vulgaris	species	5	2	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:283168	Odoribacter	genus	5	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:135619	Oceanospirillales	order	1	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:283168	Odoribacter	genus	6	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:28118	Odoribacter splanchnicus	species	2	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:1853231	Odoribacteraceae	family	10	2	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:134623	Opitutaceae	family	3	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:415000	Opitutales	order	3	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:414999	Opitutia	class	3	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:178440	Opitutus	genus	3	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:216572	Oscillospiraceae	family	97	8	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:375288	Parabacteroides	genus	17	8	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1853231	Odoribacteraceae	family	13	3	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:133925	Olsenella	genus	8	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:138595	Olsenella profusa	species	3	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:134623	Opitutaceae	family	4	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:415000	Opitutales	order	4	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:414999	Opitutia	class	4	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:178440	Opitutus	genus	4	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:216572	Oscillospiraceae	family	114	9	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:375288	Parabacteroides	genus	18	8	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:328812	Parabacteroides goldsteinii	species	2	2	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:574930	Parabacteroides gordonii	species	2	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:387661	Parabacteroides johnsonii	species	2	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:46503	Parabacteroides merdae	species	2	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:712	Pasteurellaceae	family	7	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:135625	Pasteurellales	order	7	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:712	Pasteurellaceae	family	11	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:135625	Pasteurellales	order	11	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:191373	Pelotomaculum	genus	7	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:186807	Peptococcaceae	family	38	7	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:186804	Peptostreptococcaceae	family	269	21	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:3082720	Peptostreptococcales	order	327	23	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:909656	Phocaeicola	genus	23	4	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:186807	Peptococcaceae	family	39	8	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:2740	Peptococcus	genus	2	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1570339	Peptoniphilaceae	family	84	3	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:162289	Peptoniphilus	genus	36	2	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1465756	Peptoniphilus grossensis	species	2	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:186804	Peptostreptococcaceae	family	274	21	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:3082720	Peptostreptococcales	order	348	27	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:2036786	Petrothermobacter	genus	1	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:909656	Phocaeicola	genus	25	4	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:555313	Phocaeicola abscessus	species	2	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:310298	Phocaeicola coprocola	species	2	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:204516	Phocaeicola massiliensis	species	2	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:821	Phocaeicola vulgatus	species	3	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:171551	Porphyromonadaceae	family	31	5	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:836	Porphyromonas	genus	27	5	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:69277	Phyllobacteriaceae	family	1	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:171551	Porphyromonadaceae	family	40	7	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:836	Porphyromonas	genus	35	7	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:28124	Porphyromonas endodontalis	species	2	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:322095	Porphyromonas somerae	species	2	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1924944	Porphyromonas sp.	species	1	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:281920	Porphyromonas uenonis	species	2	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:838	Prevotella	genus	57	5	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:838	Prevotella	genus	60	6	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:28129	Prevotella denticola	species	3	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:515414	Prevotella falsenii	species	2	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:28131	Prevotella intermedia	species	4	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:189723	Prevotella micans	species	3	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:28137	Prevotella veroralis	species	2	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:171552	Prevotellaceae	family	122	15	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:171552	Prevotellaceae	family	132	18	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:31957	Propionibacteriaceae	family	130	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:85009	Propionibacteriales	order	131	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:84034	Propionispira	genus	5	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:84035	Propionispira arboris	species	1	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:46205	Pseudobutyrivibrio	genus	3	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:46206	Pseudobutyrivibrio ruminis	species	1	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:182210	Pseudodesulfovibrio aespoeensis	species	1	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:1224	Pseudomonadota	phylum	449	3	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1224	Pseudomonadota	phylum	501	11	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:1643951	Pseudothermotoga	genus	9	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:177758	Pseudothermotoga lettingae	species	2	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:623282	Psychrilyobacter	genus	3	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:638847	Pyramidobacter	genus	2	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:638847	Pyramidobacter	genus	3	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:638849	Pyramidobacter piscolens	species	2	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:82115	Rhizobiaceae	family	3	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:28138	Rikenella	genus	1	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:28139	Rikenella microfusus	species	1	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:171550	Rikenellaceae	family	27	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:841	Roseburia	genus	9	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:171550	Rikenellaceae	family	28	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:841	Roseburia	genus	13	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:301301	Roseburia hominis	species	2	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:1263	Ruminococcus	genus	17	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1263	Ruminococcus	genus	21	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:40518	Ruminococcus bromii	species	2	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:190972	Sedimentibacter	genus	4	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:2974251	Segatella	genus	27	3	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1905344	Ruthenibacterium	genus	1	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1550024	Ruthenibacterium lactatiformans	species	1	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:190972	Sedimentibacter	genus	4	2	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:2974251	Segatella	genus	28	4	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:305719	Segatella baroniae	species	4	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:439703	Segatella maculosa	species	4	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:28135	Segatella oris	species	4	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:1843491	Selenomonadaceae	family	54	3	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:909929	Selenomonadales	order	88	6	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:970	Selenomonas	genus	26	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1843491	Selenomonadaceae	family	58	3	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:909929	Selenomonadales	order	93	6	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:970	Selenomonas	genus	28	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:671224	Selenomonas artemidis	species	3	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:84108	Slackia	genus	8	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1473205	Senegalimassilia	genus	3	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1473216	Senegalimassilia anaerobia	species	2	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:84108	Slackia	genus	9	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:84110	Slackia heliotrinireducens	species	2	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:137	Spirochaetaceae	family	22	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:136	Spirochaetales	order	80	5	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:203692	Spirochaetia	class	92	6	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:203691	Spirochaetota	phylum	93	6	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:123375	Solobacterium	genus	3	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:102148	Solobacterium moorei	species	3	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:137	Spirochaetaceae	family	26	2	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:136	Spirochaetales	order	90	8	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:203692	Spirochaetia	class	105	9	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:203691	Spirochaetota	phylum	106	9	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:360541	Sporacetigenium	genus	2	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:44748	Sporobacter	genus	1	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:44749	Sporobacter termitidis	species	1	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:1843490	Sporomusaceae	family	34	3	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1843490	Sporomusaceae	family	35	3	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1300	Streptococcaceae	family	143	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1301	Streptococcus	genus	137	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1328	Streptococcus anginosus	species	5	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:674963	Succinatimonas	genus	2	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:83763	Succinivibrionaceae	family	8	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:83763	Succinivibrionaceae	family	9	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:40544	Sutterella	genus	6	2	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:995019	Sutterellaceae	family	10	3	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:649777	Synergistaceae	family	7	6	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:649776	Synergistales	order	33	15	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:649775	Synergistia	class	33	15	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:508458	Synergistota	phylum	33	15	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:649776	Synergistales	order	37	15	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:649775	Synergistia	class	37	15	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:508458	Synergistota	phylum	37	15	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:51196	Syntrophobotulus	genus	1	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:51197	Syntrophobotulus glycolicus	species	1	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:68298	Syntrophomonadaceae	family	19	2	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:68298	Syntrophomonadaceae	family	21	2	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:43773	Syntrophus	genus	4	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:2005525	Tannerellaceae	family	20	8	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:2005525	Tannerellaceae	family	21	8	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:81462	Thermanaerovibrio acidaminovorans	species	1	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:1754	Thermoanaerobacter	genus	30	12	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:186814	Thermoanaerobacteraceae	family	71	19	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:68295	Thermoanaerobacterales	order	74	20	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:28895	Thermoanaerobacterium	genus	13	4	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:183968	Thermococci	class	48	18	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:200940	Thermodesulfobacteriota	phylum	371	20	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:28889	Thermoproteota	phylum	53	9	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:188708	Thermotogae	class	85	9	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:200918	Thermotogota	phylum	85	9	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1754	Thermoanaerobacter	genus	33	12	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:186814	Thermoanaerobacteraceae	family	78	19	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:68295	Thermoanaerobacterales	order	81	20	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:28895	Thermoanaerobacterium	genus	15	4	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:183968	Thermococci	class	61	19	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:200940	Thermodesulfobacteriota	phylum	386	25	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:28889	Thermoproteota	phylum	66	11	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:188708	Thermotogae	class	88	10	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:200918	Thermotogota	phylum	88	10	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:336260	Thermovirga	genus	2	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:1737405	Tissierellales	order	96	2	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:1737404	Tissierellia	class	105	3	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:157	Treponema	genus	39	3	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:69894	Tindallia	genus	3	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1737405	Tissierellales	order	119	6	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1737404	Tissierellia	class	129	8	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:157	Treponema	genus	42	4	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:138851	Treponema parvum	species	1	2	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:2845253	Treponemataceae	family	40	3	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:31977	Veillonellaceae	family	57	2	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:1843489	Veillonellales	order	57	2	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:74201	Verrucomicrobiota	phylum	6	2	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:2845253	Treponemataceae	family	44	4	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1348611	Vallitalea	genus	2	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:2603322	Vallitaleaceae	family	3	2	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:31977	Veillonellaceae	family	62	2	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:1843489	Veillonellales	order	62	2	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:74201	Verrucomicrobiota	phylum	7	2	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:255528	Victivallaceae	family	2	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:278082	Victivallales	order	2	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:172900	Victivallis	genus	2	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:172901	Victivallis vadensis	species	2	1	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:558436	Xylanibacter	genus	4	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:558436	Xylanibacter	genus	8	2	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:185293	Xylanibacter oryzae	species	2	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:84026	[Clostridium] methylpentosum	species	1	1	2	0	anaerobic; obligately anaerobic	
 NCBITaxon:1512	[Clostridium] symbiosum	species	4	2	2	0	anaerobic; obligately anaerobic	
-NCBITaxon:46123	Abiotrophia	genus	1	0	1	0	anaerobic	
-NCBITaxon:46125	Abiotrophia defectiva	species	1	0	1	0	anaerobic	
+NCBITaxon:286136	uncultured Coriobacterium sp.	species	1	1	2	0	anaerobic; obligately anaerobic	
+NCBITaxon:46123	Abiotrophia	genus	2	0	1	0	anaerobic	
+NCBITaxon:46125	Abiotrophia defectiva	species	2	0	1	0	anaerobic	
 NCBITaxon:258514	Acetanaerobacterium	genus	1	0	1	0	anaerobic	
 NCBITaxon:258515	Acetanaerobacterium elongatum	species	1	0	1	0	anaerobic	
 NCBITaxon:1427378	Acetatifactor	genus	1	0	1	0	anaerobic	
@@ -313,12 +399,13 @@ NCBITaxon:31980	Acetitomaculum	genus	1	0	1	0	anaerobic
 NCBITaxon:2382	Acetitomaculum ruminis	species	1	0	1	0	anaerobic	
 NCBITaxon:35830	Acetivibrio cellulolyticus	species	1	0	1	0	anaerobic	
 NCBITaxon:1677857	Acetivibrio saccincola	species	1	0	1	0	anaerobic	
-NCBITaxon:433	Acetobacteraceae	family	1	0	1	0	anaerobic	
-NCBITaxon:3120395	Acetobacterales	order	1	0	1	0	anaerobic	
+NCBITaxon:433	Acetobacteraceae	family	2	0	1	0	anaerobic	
+NCBITaxon:3120395	Acetobacterales	order	2	0	1	0	anaerobic	
 NCBITaxon:33951	Acetobacterium	genus	12	0	1	0	anaerobic	
 NCBITaxon:52689	Acetobacterium bakii	species	1	0	1	0	anaerobic	
 NCBITaxon:33952	Acetobacterium woodii	species	1	0	1	0	anaerobic	
 NCBITaxon:186329	Acholeplasmatales	order	2	0	1	0	anaerobic	
+NCBITaxon:222	Achromobacter	genus	1	0	1	0	anaerobic	
 NCBITaxon:65402	Acidaminobacter	genus	2	0	1	0	anaerobic	
 NCBITaxon:3118653	Acidaminobacteraceae	family	2	0	1	0	anaerobic	
 NCBITaxon:905	Acidaminococcus fermentans	species	2	0	1	0	anaerobic	
@@ -339,43 +426,55 @@ NCBITaxon:472	Acinetobacter sp.	species	1	0	1	0	anaerobic
 NCBITaxon:108980	Acinetobacter ursingii	species	2	0	1	0	anaerobic	
 NCBITaxon:713	Actinobacillus	genus	1	0	1	0	anaerobic	
 NCBITaxon:715	Actinobacillus pleuropneumoniae	species	1	0	1	0	anaerobic	
-NCBITaxon:76833	Actinobaculum	genus	1	0	1	0	anaerobic	
+NCBITaxon:76833	Actinobaculum	genus	2	0	1	0	anaerobic	
 NCBITaxon:272548	Actinomyces dentalis	species	2	0	1	0	anaerobic	
-NCBITaxon:55565	Actinomyces graevenitzii	species	1	0	1	0	anaerobic	
+NCBITaxon:55565	Actinomyces graevenitzii	species	2	0	1	0	anaerobic	
 NCBITaxon:1659	Actinomyces israelii	species	2	0	1	0	anaerobic	
 NCBITaxon:544581	Actinomyces johnsonii	species	1	0	1	0	anaerobic	
-NCBITaxon:461393	Actinomyces massiliensis	species	1	0	1	0	anaerobic	
+NCBITaxon:114702	Actinomyces lingnae	species	1	0	1	0	anaerobic	
+NCBITaxon:461393	Actinomyces massiliensis	species	2	0	1	0	anaerobic	
 NCBITaxon:1655	Actinomyces naeslundii	species	2	0	1	0	anaerobic	
 NCBITaxon:544580	Actinomyces oris	species	1	0	1	0	anaerobic	
+NCBITaxon:111015	Actinomyces radicidentis	species	1	0	1	0	anaerobic	
 NCBITaxon:29317	Actinomyces sp.	species	1	0	1	0	anaerobic	
-NCBITaxon:1288391	Actinomyces timonensis	species	1	0	1	0	anaerobic	
-NCBITaxon:1656	Actinomyces viscosus	species	1	0	1	0	anaerobic	
-NCBITaxon:1653174	Actinotignum	genus	2	0	1	0	anaerobic	
+NCBITaxon:1288391	Actinomyces timonensis	species	2	0	1	0	anaerobic	
+NCBITaxon:103621	Actinomyces urogenitalis	species	1	0	1	0	anaerobic	
+NCBITaxon:1656	Actinomyces viscosus	species	2	0	1	0	anaerobic	
+NCBITaxon:1653174	Actinotignum	genus	4	0	1	0	anaerobic	
+NCBITaxon:59505	Actinotignum schaalii	species	1	0	1	0	anaerobic	
 NCBITaxon:1918385	Acutalibacter	genus	1	0	1	0	anaerobic	
 NCBITaxon:1796620	Acutalibacter muris	species	1	0	1	0	anaerobic	
-NCBITaxon:3082771	Acutalibacteraceae	family	1	0	1	0	anaerobic	
-NCBITaxon:447020	Adlercreutzia	genus	6	0	1	0	anaerobic	
+NCBITaxon:3082771	Acutalibacteraceae	family	3	0	1	0	anaerobic	
+NCBITaxon:447020	Adlercreutzia	genus	8	0	1	0	anaerobic	
 NCBITaxon:671266	Adlercreutzia caecimuris	species	1	0	1	0	anaerobic	
 NCBITaxon:446660	Adlercreutzia equolifaciens	species	3	0	1	0	anaerobic	
 NCBITaxon:394340	Adlercreutzia equolifaciens subsp. celatus	species	2	0	1	0	anaerobic	
 NCBITaxon:580026	Adlercreutzia mucosicola	species	1	0	1	0	anaerobic	
+NCBITaxon:755172	Aedoeadaptatus coxii	species	1	0	1	0	anaerobic	
 NCBITaxon:54006	Aedoeadaptatus ivorii	species	1	0	1	0	anaerobic	
-NCBITaxon:186827	Aerococcaceae	family	2	0	1	0	anaerobic	
+NCBITaxon:2582829	Aedoeadaptatus nemausensis	species	1	0	1	0	anaerobic	
+NCBITaxon:240233	Aeriscardovia	genus	1	0	1	0	anaerobic	
+NCBITaxon:186827	Aerococcaceae	family	10	0	1	0	anaerobic	
+NCBITaxon:1375	Aerococcus	genus	3	0	1	0	anaerobic	
+NCBITaxon:87541	Aerococcus christensenii	species	1	0	1	0	anaerobic	
+NCBITaxon:119206	Aerococcus sanguinicola	species	1	0	1	0	anaerobic	
+NCBITaxon:1377	Aerococcus viridans	species	1	0	1	0	anaerobic	
 NCBITaxon:84642	Aeromonadaceae	family	2	0	1	0	anaerobic	
 NCBITaxon:642	Aeromonas	genus	1	0	1	0	anaerobic	
-NCBITaxon:1766253	Agathobacter	genus	4	0	1	0	anaerobic	
 NCBITaxon:39491	Agathobacter rectalis	species	3	0	1	0	anaerobic	
-NCBITaxon:2048137	Agathobaculum	genus	1	0	1	0	anaerobic	
 NCBITaxon:1628085	Agathobaculum butyriciproducens	species	1	0	1	0	anaerobic	
-NCBITaxon:416916	Aggregatibacter	genus	1	0	1	0	anaerobic	
+NCBITaxon:39484	Agathobaculum desmolans	species	0	1	1	0	obligately anaerobic	
+NCBITaxon:416916	Aggregatibacter	genus	2	0	1	0	anaerobic	
 NCBITaxon:714	Aggregatibacter actinomycetemcomitans	species	1	0	1	0	anaerobic	
+NCBITaxon:732	Aggregatibacter aphrophilus	species	1	0	1	0	anaerobic	
 NCBITaxon:2767875	Agrilactobacillus	genus	1	0	1	0	anaerobic	
 NCBITaxon:239934	Akkermansia	genus	3	0	1	0	anaerobic	
 NCBITaxon:239935	Akkermansia muciniphila	species	2	0	1	0	anaerobic	
 NCBITaxon:1647988	Akkermansiaceae	family	3	0	1	0	anaerobic	
-NCBITaxon:506	Alcaligenaceae	family	7	0	1	0	anaerobic	
+NCBITaxon:506	Alcaligenaceae	family	10	0	1	0	anaerobic	
 NCBITaxon:507	Alcaligenes	genus	1	0	1	0	anaerobic	
-NCBITaxon:239759	Alistipes	genus	21	0	1	0	anaerobic	
+NCBITaxon:239759	Alistipes	genus	22	0	1	0	anaerobic	
+NCBITaxon:2585118	Alistipes communis	species	1	0	1	0	anaerobic	
 NCBITaxon:214856	Alistipes finegoldii	species	2	0	1	0	anaerobic	
 NCBITaxon:1470347	Alistipes ihumii	species	2	0	1	0	anaerobic	
 NCBITaxon:626932	Alistipes indistinctus	species	2	0	1	0	anaerobic	
@@ -389,39 +488,43 @@ NCBITaxon:1465754	Alistipes timonensis	species	2	0	1	0	anaerobic
 NCBITaxon:274470	Alkalibacter	genus	1	0	1	0	anaerobic	
 NCBITaxon:696745	Alkalibaculum	genus	1	0	1	0	anaerobic	
 NCBITaxon:286729	Alkaliflexus	genus	1	0	1	0	anaerobic	
-NCBITaxon:114627	Alkaliphilus	genus	7	0	1	0	anaerobic	
+NCBITaxon:114627	Alkaliphilus	genus	9	0	1	0	anaerobic	
 NCBITaxon:461876	Alkaliphilus oremlandii	species	2	0	1	0	anaerobic	
 NCBITaxon:174708	Allobaculum	genus	1	0	1	0	anaerobic	
 NCBITaxon:410072	Allocoprococcus comes	species	2	0	1	0	anaerobic	
 NCBITaxon:1940255	Allofournierella	genus	1	0	1	0	anaerobic	
 NCBITaxon:1650663	Allofournierella massiliensis	species	1	0	1	0	anaerobic	
+NCBITaxon:192987	Allofustis	genus	1	0	1	0	anaerobic	
+NCBITaxon:1651	Alloiococcus	genus	1	0	1	0	anaerobic	
+NCBITaxon:1652	Alloiococcus otitis	species	1	0	1	0	anaerobic	
 NCBITaxon:1283313	Alloprevotella	genus	3	0	1	0	anaerobic	
 NCBITaxon:671218	Alloprevotella rava	species	2	0	1	0	anaerobic	
 NCBITaxon:76122	Alloprevotella tannerae	species	1	0	1	0	anaerobic	
-NCBITaxon:419014	Alloscardovia	genus	6	0	1	0	anaerobic	
-NCBITaxon:419015	Alloscardovia omnicolens	species	2	0	1	0	anaerobic	
-NCBITaxon:28211	Alphaproteobacteria	class	95	0	1	0	anaerobic	
+NCBITaxon:419014	Alloscardovia	genus	7	0	1	0	anaerobic	
+NCBITaxon:419015	Alloscardovia omnicolens	species	3	0	1	0	anaerobic	
 NCBITaxon:72275	Alteromonadaceae	family	5	0	1	0	anaerobic	
-NCBITaxon:135622	Alteromonadales	order	25	0	1	0	anaerobic	
+NCBITaxon:135622	Alteromonadales	order	26	0	1	0	anaerobic	
 NCBITaxon:226	Alteromonas	genus	1	0	1	0	anaerobic	
 NCBITaxon:2749846	Amedibacillus	genus	1	0	1	0	anaerobic	
 NCBITaxon:31971	Amedibacillus dolichus	species	1	0	1	0	anaerobic	
 NCBITaxon:2749267	Amedibacterium	genus	1	0	1	0	anaerobic	
 NCBITaxon:290731	Aminiphilus	genus	2	0	1	0	anaerobic	
 NCBITaxon:290732	Aminiphilus circumscriptus	species	2	0	1	0	anaerobic	
+NCBITaxon:2060094	Aminipila	genus	3	0	1	0	anaerobic	
+NCBITaxon:2507160	Aminipila luticellarii	species	1	0	1	0	anaerobic	
 NCBITaxon:29331	Amphibacillus	genus	4	0	1	0	anaerobic	
 NCBITaxon:151038	Anaeroarcus	genus	2	0	1	0	anaerobic	
-NCBITaxon:704093	Anaerobacillus	genus	2	0	1	0	anaerobic	
+NCBITaxon:704093	Anaerobacillus	genus	3	0	1	0	anaerobic	
 NCBITaxon:1486725	Anaerobacterium	genus	1	0	1	0	anaerobic	
 NCBITaxon:1297424	Anaerobacterium chartisolvens	species	1	0	1	0	anaerobic	
-NCBITaxon:13334	Anaerobiospirillum	genus	2	0	1	0	anaerobic	
-NCBITaxon:13335	Anaerobiospirillum succiniciproducens	species	1	0	1	0	anaerobic	
+NCBITaxon:13334	Anaerobiospirillum	genus	3	0	1	0	anaerobic	
+NCBITaxon:13335	Anaerobiospirillum succiniciproducens	species	2	0	1	0	anaerobic	
 NCBITaxon:1619234	Anaerobium acetethylicum	species	1	0	1	0	anaerobic	
 NCBITaxon:2569097	Anaerobutyricum	genus	3	0	1	0	anaerobic	
 NCBITaxon:39488	Anaerobutyricum hallii	species	2	0	1	0	anaerobic	
 NCBITaxon:105843	Anaerobutyricum soehngenii	species	1	0	1	0	anaerobic	
 NCBITaxon:1634949	Anaerocella	genus	1	0	1	0	anaerobic	
-NCBITaxon:165779	Anaerococcus	genus	20	0	1	0	anaerobic	
+NCBITaxon:361500	Anaerococcus degeneri	species	1	0	1	0	anaerobic	
 NCBITaxon:33029	Anaerococcus hydrogenalis	species	3	0	1	0	anaerobic	
 NCBITaxon:33032	Anaerococcus lactolyticus	species	2	0	1	0	anaerobic	
 NCBITaxon:411577	Anaerococcus murdochii	species	1	0	1	0	anaerobic	
@@ -429,57 +532,58 @@ NCBITaxon:54007	Anaerococcus octavius	species	2	0	1	0	anaerobic
 NCBITaxon:33034	Anaerococcus prevotii	species	3	0	1	0	anaerobic	
 NCBITaxon:938293	Anaerococcus provencensis	species	1	0	1	0	anaerobic	
 NCBITaxon:1288120	Anaerococcus senegalensis	species	2	0	1	0	anaerobic	
+NCBITaxon:1872515	Anaerococcus sp.	species	1	0	1	0	anaerobic	
 NCBITaxon:33036	Anaerococcus tetradius	species	2	0	1	0	anaerobic	
 NCBITaxon:33037	Anaerococcus vaginalis	species	2	0	1	0	anaerobic	
 NCBITaxon:259063	Anaerocolumna jejuensis	species	2	0	1	0	anaerobic	
 NCBITaxon:100134	Anaerocolumna xylanovorans	species	1	0	1	0	anaerobic	
-NCBITaxon:52784	Anaerofilum	genus	2	0	1	0	anaerobic	
+NCBITaxon:52784	Anaerofilum	genus	3	0	1	0	anaerobic	
 NCBITaxon:264995	Anaerofustis	genus	2	0	1	0	anaerobic	
 NCBITaxon:214853	Anaerofustis stercorihominis	species	2	0	1	0	anaerobic	
 NCBITaxon:233189	Anaerolinea	genus	2	0	1	0	anaerobic	
-NCBITaxon:292628	Anaerolineaceae	family	9	0	1	0	anaerobic	
-NCBITaxon:292625	Anaerolineae	class	12	0	1	0	anaerobic	
-NCBITaxon:292629	Anaerolineales	order	9	0	1	0	anaerobic	
+NCBITaxon:1924093	Anaeromassilibacillus	genus	1	0	1	0	anaerobic	
+NCBITaxon:1673717	Anaeromassilibacillus senegalensis	species	1	0	1	0	anaerobic	
 NCBITaxon:81463	Anaeromusa	genus	1	0	1	0	anaerobic	
 NCBITaxon:161492	Anaeromyxobacter	genus	5	0	1	0	anaerobic	
-NCBITaxon:1347386	Anaerosalibacter	genus	2	0	1	0	anaerobic	
+NCBITaxon:2678884	Anaerosacchariphilus	genus	1	0	1	0	anaerobic	
+NCBITaxon:1347386	Anaerosalibacter	genus	3	0	1	0	anaerobic	
 NCBITaxon:151037	Anaerosinus	genus	1	0	1	0	anaerobic	
-NCBITaxon:1273095	Anaerosphaera	genus	2	0	1	0	anaerobic	
+NCBITaxon:1273095	Anaerosphaera	genus	3	0	1	0	anaerobic	
 NCBITaxon:244825	Anaerospora	genus	1	0	1	0	anaerobic	
-NCBITaxon:653683	Anaerosporobacter	genus	2	0	1	0	anaerobic	
+NCBITaxon:653683	Anaerosporobacter	genus	3	0	1	0	anaerobic	
 NCBITaxon:264463	Anaerosporobacter mobilis	species	2	0	1	0	anaerobic	
-NCBITaxon:207244	Anaerostipes	genus	6	0	1	0	anaerobic	
+NCBITaxon:207244	Anaerostipes	genus	7	0	1	0	anaerobic	
 NCBITaxon:645466	Anaerostipes butyraticus	species	1	0	1	0	anaerobic	
 NCBITaxon:105841	Anaerostipes caccae	species	2	0	1	0	anaerobic	
 NCBITaxon:649756	Anaerostipes hadrus	species	2	0	1	0	anaerobic	
-NCBITaxon:1843206	Anaerotaenia	genus	1	0	1	0	anaerobic	
-NCBITaxon:2039240	Anaerotignum	genus	5	0	1	0	anaerobic	
+NCBITaxon:2358141	Anaerotignum faecicola	species	1	0	1	0	anaerobic	
 NCBITaxon:160404	Anaerotignum lactatifermentans	species	1	0	1	0	anaerobic	
-NCBITaxon:36847	Anaerotignum neopropionicum	species	1	0	1	0	anaerobic	
+NCBITaxon:36847	Anaerotignum neopropionicum	species	2	0	1	0	anaerobic	
 NCBITaxon:28446	Anaerotignum propionicum	species	2	0	1	0	anaerobic	
 NCBITaxon:244127	Anaerotruncus	genus	2	0	1	0	anaerobic	
 NCBITaxon:169435	Anaerotruncus colihominis	species	2	0	1	0	anaerobic	
-NCBITaxon:82373	Anaerovibrio	genus	3	0	1	0	anaerobic	
+NCBITaxon:82373	Anaerovibrio	genus	4	0	1	0	anaerobic	
 NCBITaxon:82374	Anaerovibrio lipolyticus	species	2	0	1	0	anaerobic	
 NCBITaxon:312168	Anaerovirgula multivorans	species	1	0	1	0	anaerobic	
-NCBITaxon:543314	Anaerovoracaceae	family	16	0	1	0	anaerobic	
 NCBITaxon:109326	Anaerovorax	genus	1	0	1	0	anaerobic	
 NCBITaxon:109327	Anaerovorax odorimutans	species	1	0	1	0	anaerobic	
 NCBITaxon:1497	Andreesenella formicacetica	species	1	0	1	0	anaerobic	
 NCBITaxon:150247	Anoxybacillus	genus	1	0	1	0	anaerobic	
 NCBITaxon:1769008	Anoxybacter	genus	1	0	1	0	anaerobic	
 NCBITaxon:200783	Aquificota	phylum	17	0	1	0	anaerobic	
-NCBITaxon:2801844	Arachnia	genus	2	0	1	0	anaerobic	
-NCBITaxon:1750	Arachnia propionica	species	2	0	1	0	anaerobic	
-NCBITaxon:28263	Arcanobacterium	genus	3	0	1	0	anaerobic	
+NCBITaxon:2801844	Arachnia	genus	3	0	1	0	anaerobic	
+NCBITaxon:1750	Arachnia propionica	species	3	0	1	0	anaerobic	
+NCBITaxon:28263	Arcanobacterium	genus	5	0	1	0	anaerobic	
 NCBITaxon:2808963	Arcobacteraceae	family	1	0	1	0	anaerobic	
 NCBITaxon:1381	Atopobium minutum	species	1	0	1	0	anaerobic	
+NCBITaxon:1872650	Atopobium sp.	species	1	0	1	0	anaerobic	
 NCBITaxon:292480	Atopostipes	genus	1	0	1	0	anaerobic	
 NCBITaxon:180295	Atopostipes suicloacalis	species	1	0	1	0	anaerobic	
+NCBITaxon:67818	Atribacterota	phylum	1	0	1	0	anaerobic	
 NCBITaxon:414371	Aureimonas	genus	1	0	1	0	anaerobic	
 NCBITaxon:146939	Azospira oryzae	species	1	0	1	0	anaerobic	
-NCBITaxon:186817	Bacillaceae	family	32	0	1	0	anaerobic	
-NCBITaxon:1385	Bacillales	order	2087	0	1	0	anaerobic	
+NCBITaxon:186817	Bacillaceae	family	34	0	1	0	anaerobic	
+NCBITaxon:1385	Bacillales	order	2094	0	1	0	anaerobic	
 NCBITaxon:539003	Bacillales Family X. Incertae Sedis	family	2	0	1	0	anaerobic	
 NCBITaxon:1386	Bacillus	genus	9	0	1	0	anaerobic	
 NCBITaxon:1390	Bacillus amyloliquefaciens	species	1	0	1	0	anaerobic	
@@ -488,15 +592,19 @@ NCBITaxon:1423	Bacillus subtilis	species	3	0	1	0	anaerobic
 NCBITaxon:492670	Bacillus velezensis	species	1	0	1	0	anaerobic	
 NCBITaxon:1400053	Bacteroidales bacterium CF	species	1	0	1	0	anaerobic	
 NCBITaxon:1796613	Bacteroides caecimuris	species	1	0	1	0	anaerobic	
+NCBITaxon:2981780	Bacteroides cellulolyticus	species	1	0	1	0	anaerobic	
+NCBITaxon:1871006	Bacteroides congonensis	species	1	0	1	0	anaerobic	
 NCBITaxon:151276	Bacteroides coprosuis	species	2	0	1	0	anaerobic	
 NCBITaxon:871325	Bacteroides faecichinchillae	species	2	0	1	0	anaerobic	
 NCBITaxon:338188	Bacteroides finegoldii	species	2	0	1	0	anaerobic	
 NCBITaxon:384639	Bacteroides galacturonicus	species	1	0	1	0	anaerobic	
+NCBITaxon:1462571	Bacteroides gallinaceum	species	0	1	1	0	obligately anaerobic	
 NCBITaxon:376806	Bacteroides gallinarum	species	1	0	1	0	anaerobic	
 NCBITaxon:477666	Bacteroides graminisolvens	species	2	0	1	0	anaerobic	
 NCBITaxon:290053	Bacteroides helcogenes	species	1	0	1	0	anaerobic	
 NCBITaxon:1347393	Bacteroides neonati	species	1	0	1	0	anaerobic	
-NCBITaxon:310300	Bacteroides pyogenes	species	3	0	1	0	anaerobic	
+NCBITaxon:1912894	Bacteroides ovatus	species	1	0	1	0	anaerobic	
+NCBITaxon:310300	Bacteroides pyogenes	species	4	0	1	0	anaerobic	
 NCBITaxon:1133319	Bacteroides reticulotermitis	species	2	0	1	0	anaerobic	
 NCBITaxon:691816	Bacteroides rodentium	species	2	0	1	0	anaerobic	
 NCBITaxon:29523	Bacteroides sp.	species	1	0	1	0	anaerobic	
@@ -510,16 +618,19 @@ NCBITaxon:585544	Bacteroides sp. D22	species	1	0	1	0	anaerobic
 NCBITaxon:1078089	Bacteroides sp. HPS0048	species	0	1	1	0	obligately anaerobic	
 NCBITaxon:871324	Bacteroides stercorirosoris	species	2	0	1	0	anaerobic	
 NCBITaxon:1470345	Bacteroides timonensis	species	2	0	1	0	anaerobic	
+NCBITaxon:1917883	Bacteroides togonis	species	1	0	1	0	anaerobic	
+NCBITaxon:28119	Bacteroides zoogleoformans	species	1	0	1	0	anaerobic	
 NCBITaxon:652708	Bacteroidetes oral taxon 274	species	1	0	1	0	anaerobic	
 NCBITaxon:223787	Balnearium	genus	1	0	1	0	anaerobic	
 NCBITaxon:1936987	Balneolota	phylum	2	0	1	0	anaerobic	
+NCBITaxon:1745713	Bariatricus massiliensis	species	1	0	1	0	anaerobic	
 NCBITaxon:487174	Barnesiella intestinihominis	species	2	0	1	0	anaerobic	
+NCBITaxon:697279	Bavariicoccus	genus	1	0	1	0	anaerobic	
 NCBITaxon:958	Bdellovibrio	genus	1	0	1	0	anaerobic	
 NCBITaxon:213481	Bdellovibrionales	order	1	0	1	0	anaerobic	
 NCBITaxon:3031418	Bdellovibrionia	class	1	0	1	0	anaerobic	
 NCBITaxon:2815775	Berryella	genus	1	0	1	0	anaerobic	
 NCBITaxon:1531429	Berryella intestinalis	species	1	0	1	0	anaerobic	
-NCBITaxon:28216	Betaproteobacteria	class	55	0	1	0	anaerobic	
 NCBITaxon:638619	Bifidobacterium actinocoloniiforme	species	1	0	1	0	anaerobic	
 NCBITaxon:1329411	Bifidobacterium aesculapii	species	1	0	1	0	anaerobic	
 NCBITaxon:1683	Bifidobacterium angulatum	species	2	0	1	0	anaerobic	
@@ -527,14 +638,15 @@ NCBITaxon:28025	Bifidobacterium animalis	species	14	0	1	0	anaerobic
 NCBITaxon:302912	Bifidobacterium animalis subsp. animalis	species	1	0	1	0	anaerobic	
 NCBITaxon:302911	Bifidobacterium animalis subsp. lactis	species	12	0	1	0	anaerobic	
 NCBITaxon:762212	Bifidobacterium biavatii	species	1	0	1	0	anaerobic	
-NCBITaxon:1681	Bifidobacterium bifidum	species	8	0	1	0	anaerobic	
+NCBITaxon:1681	Bifidobacterium bifidum	species	9	0	1	0	anaerobic	
 NCBITaxon:78343	Bifidobacterium boum	species	1	0	1	0	anaerobic	
 NCBITaxon:762209	Bifidobacterium callitrichos	species	1	0	1	0	anaerobic	
-NCBITaxon:1686	Bifidobacterium catenulatum	species	4	0	1	0	anaerobic	
+NCBITaxon:1686	Bifidobacterium catenulatum	species	5	0	1	0	anaerobic	
 NCBITaxon:630129	Bifidobacterium catenulatum subsp. kashiwanohense	species	2	0	1	0	anaerobic	
 NCBITaxon:1687	Bifidobacterium coryneforme	species	2	0	1	0	anaerobic	
 NCBITaxon:1689	Bifidobacterium dentium	species	6	0	1	0	anaerobic	
 NCBITaxon:78342	Bifidobacterium gallicum	species	2	0	1	0	anaerobic	
+NCBITaxon:1691	Bifidobacterium indicum	species	1	0	1	0	anaerobic	
 NCBITaxon:1603886	Bifidobacterium lemurum	species	1	0	1	0	anaerobic	
 NCBITaxon:216816	Bifidobacterium longum	species	27	0	1	0	anaerobic	
 NCBITaxon:1682	Bifidobacterium longum subsp. infantis	species	4	0	1	0	anaerobic	
@@ -551,20 +663,25 @@ NCBITaxon:762210	Bifidobacterium saguini	species	1	0	1	0	anaerobic
 NCBITaxon:158787	Bifidobacterium scardovii	species	2	0	1	0	anaerobic	
 NCBITaxon:41200	Bifidobacterium sp.	species	1	0	1	0	anaerobic	
 NCBITaxon:33905	Bifidobacterium thermophilum	species	3	0	1	0	anaerobic	
-NCBITaxon:356829	Bifidobacterium tsurumiense	species	1	0	1	0	anaerobic	
-NCBITaxon:35832	Bilophila	genus	3	0	1	0	anaerobic	
+NCBITaxon:356829	Bifidobacterium tsurumiense	species	2	0	1	0	anaerobic	
+NCBITaxon:35832	Bilophila	genus	4	0	1	0	anaerobic	
 NCBITaxon:693988	Bilophila sp. 4_1_30	species	1	0	1	0	anaerobic	
-NCBITaxon:35833	Bilophila wadsworthia	species	2	0	1	0	anaerobic	
+NCBITaxon:35833	Bilophila wadsworthia	species	3	0	1	0	anaerobic	
 NCBITaxon:1748771	Blastocatellales	order	1	0	1	0	anaerobic	
 NCBITaxon:1562566	Blastocatellia	class	1	0	1	0	anaerobic	
+NCBITaxon:1912897	Blautia argi	species	1	0	1	0	anaerobic	
 NCBITaxon:1796615	Blautia caecimuris	species	1	0	1	0	anaerobic	
+NCBITaxon:2509240	Blautia faecicola	species	1	0	1	0	anaerobic	
 NCBITaxon:871665	Blautia faecis	species	1	0	1	0	anaerobic	
 NCBITaxon:536633	Blautia glucerasea	species	1	0	1	0	anaerobic	
 NCBITaxon:1322	Blautia hansenii	species	1	0	1	0	anaerobic	
+NCBITaxon:2025493	Blautia hominis	species	1	0	1	0	anaerobic	
 NCBITaxon:53443	Blautia hydrogenotrophica	species	2	0	1	0	anaerobic	
+NCBITaxon:2763028	Blautia intestinalis	species	1	0	1	0	anaerobic	
 NCBITaxon:89014	Blautia luti	species	1	0	1	0	anaerobic	
+NCBITaxon:1737424	Blautia massiliensis (ex Durand et al. 2017)	species	1	0	1	0	anaerobic	
 NCBITaxon:1532	Blautia producta	species	1	0	1	0	anaerobic	
-NCBITaxon:33035	Blautia producta	species	2	0	1	0	anaerobic	
+NCBITaxon:1796616	Blautia pseudococcoides	species	1	0	1	0	anaerobic	
 NCBITaxon:180164	Blautia schinkii	species	2	0	1	0	anaerobic	
 NCBITaxon:1955243	Blautia sp.	species	1	0	1	0	anaerobic	
 NCBITaxon:871664	Blautia stercoris	species	1	0	1	0	anaerobic	
@@ -572,9 +689,10 @@ NCBITaxon:418240	Blautia wexlerae	species	1	0	1	0	anaerobic
 NCBITaxon:517	Bordetella	genus	3	0	1	0	anaerobic	
 NCBITaxon:94624	Bordetella petrii	species	3	0	1	0	anaerobic	
 NCBITaxon:1643685	Borreliaceae	family	2	0	1	0	anaerobic	
+NCBITaxon:208480	Bowdeniella nasicola	species	1	0	1	0	anaerobic	
 NCBITaxon:43668	Brachybacterium	genus	3	0	1	0	anaerobic	
 NCBITaxon:219301	Brachybacterium muris	species	1	0	1	0	anaerobic	
-NCBITaxon:159	Brachyspira hyodysenteriae	species	1	0	1	0	anaerobic	
+NCBITaxon:159	Brachyspira hyodysenteriae	species	3	0	1	0	anaerobic	
 NCBITaxon:84378	Brachyspira murdochii	species	2	0	1	0	anaerobic	
 NCBITaxon:71655	Brenneria	genus	1	0	1	0	anaerobic	
 NCBITaxon:41275	Brevundimonas	genus	1	0	1	0	anaerobic	
@@ -584,16 +702,17 @@ NCBITaxon:118747	Bulleidia	genus	2	0	1	0	anaerobic
 NCBITaxon:118748	Bulleidia extructa	species	2	0	1	0	anaerobic	
 NCBITaxon:32008	Burkholderia	genus	1	0	1	0	anaerobic	
 NCBITaxon:119060	Burkholderiaceae	family	4	0	1	0	anaerobic	
-NCBITaxon:80840	Burkholderiales	order	31	0	1	0	anaerobic	
-NCBITaxon:3085642	Butyricicoccaceae	family	3	0	1	0	anaerobic	
-NCBITaxon:580596	Butyricicoccus	genus	2	0	1	0	anaerobic	
+NCBITaxon:1945634	Butyricicoccus porcorum	species	0	1	1	0	obligately anaerobic	
 NCBITaxon:501571	Butyricicoccus pullicaecorum	species	2	0	1	0	anaerobic	
+NCBITaxon:2093856	Butyricimonas faecalis	species	0	1	1	0	obligately anaerobic	
+NCBITaxon:1472416	Butyricimonas faecihominis	species	1	0	1	0	anaerobic	
 NCBITaxon:1472417	Butyricimonas paravirosa	species	1	0	1	0	anaerobic	
+NCBITaxon:1969738	Butyricimonas sp.	species	1	0	1	0	anaerobic	
 NCBITaxon:544645	Butyricimonas virosa	species	2	0	1	0	anaerobic	
-NCBITaxon:830	Butyrivibrio	genus	6	0	1	0	anaerobic	
+NCBITaxon:830	Butyrivibrio	genus	8	0	1	0	anaerobic	
 NCBITaxon:831	Butyrivibrio fibrisolvens	species	2	0	1	0	anaerobic	
 NCBITaxon:185008	Butyrivibrio hungatei	species	2	0	1	0	anaerobic	
-NCBITaxon:43305	Butyrivibrio proteoclasticus	species	1	0	1	0	anaerobic	
+NCBITaxon:43305	Butyrivibrio proteoclasticus	species	2	0	1	0	anaerobic	
 NCBITaxon:28121	Butyrivibrio sp.	species	1	0	1	0	anaerobic	
 NCBITaxon:1827195	Caballeronia	genus	3	0	1	0	anaerobic	
 NCBITaxon:35841	Caldibacillus thermoamylovorans	species	1	0	1	0	anaerobic	
@@ -604,34 +723,46 @@ NCBITaxon:859243	Caldilinea tarbellica	species	1	0	1	0	anaerobic
 NCBITaxon:475964	Caldilineaceae	family	2	0	1	0	anaerobic	
 NCBITaxon:475963	Caldilineales	order	2	0	1	0	anaerobic	
 NCBITaxon:67814	Caldisericota	phylum	2	0	1	0	anaerobic	
-NCBITaxon:1930617	Calditrichota	phylum	2	0	1	0	anaerobic	
+NCBITaxon:1930617	Calditrichota	phylum	3	0	1	0	anaerobic	
 NCBITaxon:76886	Caldivirga	genus	1	0	1	0	anaerobic	
-NCBITaxon:44258	Caloramator	genus	13	0	1	0	anaerobic	
+NCBITaxon:44258	Caloramator	genus	14	0	1	0	anaerobic	
 NCBITaxon:908809	Caloramator mitchellensis	species	1	0	1	0	anaerobic	
-NCBITaxon:76517	Campylobacter hominis	species	2	0	1	0	anaerobic	
+NCBITaxon:199	Campylobacter concisus	species	1	0	1	0	anaerobic	
+NCBITaxon:200	Campylobacter curvus	species	2	0	1	0	anaerobic	
+NCBITaxon:198	Campylobacter hyointestinalis	species	1	0	1	0	anaerobic	
 NCBITaxon:203	Campylobacter rectus	species	2	0	1	0	anaerobic	
 NCBITaxon:204	Campylobacter showae	species	2	0	1	0	anaerobic	
 NCBITaxon:827	Campylobacter ureolyticus	species	3	0	1	0	anaerobic	
 NCBITaxon:928852	Candidatus Bathyarchaeota	phylum	6	0	1	0	anaerobic	
 NCBITaxon:2383	Candidatus Epulonipiscium	genus	3	0	1	0	anaerobic	
 NCBITaxon:74015	Candidatus Latescibacterota	phylum	1	0	1	0	anaerobic	
+NCBITaxon:1560235	Candidatus Marispirochaeta associata	species	1	0	1	0	anaerobic	
 NCBITaxon:221216	Candidatus Parcubacteria	phylum	5	0	1	0	anaerobic	
+NCBITaxon:337315	Candidatus Peptoniphilus massiliensis (ex Fenollar et al. 2006)	species	1	0	1	0	anaerobic	
 NCBITaxon:200295	Candidatus Sumerlaeota	phylum	1	0	1	0	anaerobic	
 NCBITaxon:1379697	Candidatus Zixiibacteriota	phylum	6	0	1	0	anaerobic	
-NCBITaxon:1016	Capnocytophaga	genus	5	0	1	0	anaerobic	
+NCBITaxon:1016	Capnocytophaga	genus	10	0	1	0	anaerobic	
+NCBITaxon:28188	Capnocytophaga canimorsus	species	1	0	1	0	anaerobic	
+NCBITaxon:1017	Capnocytophaga gingivalis	species	1	0	1	0	anaerobic	
 NCBITaxon:45242	Capnocytophaga granulosa	species	1	0	1	0	anaerobic	
 NCBITaxon:45243	Capnocytophaga haemolytica	species	1	0	1	0	anaerobic	
 NCBITaxon:327575	Capnocytophaga leadbetteri	species	1	0	1	0	anaerobic	
-NCBITaxon:1018	Capnocytophaga ochracea	species	1	0	1	0	anaerobic	
-NCBITaxon:1019	Capnocytophaga sputigena	species	1	0	1	0	anaerobic	
+NCBITaxon:1018	Capnocytophaga ochracea	species	2	0	1	0	anaerobic	
+NCBITaxon:44737	Capnocytophaga sp.	species	1	0	1	0	anaerobic	
+NCBITaxon:1019	Capnocytophaga sputigena	species	2	0	1	0	anaerobic	
+NCBITaxon:1738645	Caproiciproducens	genus	1	0	1	0	anaerobic	
 NCBITaxon:868	Cardiobacteriaceae	family	2	0	1	0	anaerobic	
 NCBITaxon:135615	Cardiobacteriales	order	2	0	1	0	anaerobic	
-NCBITaxon:186828	Carnobacteriaceae	family	13	0	1	0	anaerobic	
-NCBITaxon:2747	Carnobacterium	genus	1	0	1	0	anaerobic	
+NCBITaxon:186828	Carnobacteriaceae	family	21	0	1	0	anaerobic	
+NCBITaxon:2747	Carnobacterium	genus	2	0	1	0	anaerobic	
+NCBITaxon:2751	Carnobacterium maltaromaticum	species	1	0	1	0	anaerobic	
 NCBITaxon:186818	Caryophanaceae	family	2	0	1	0	anaerobic	
-NCBITaxon:359336	Castellaniella	genus	1	0	1	0	anaerobic	
-NCBITaxon:135858	Catenibacterium	genus	2	0	1	0	anaerobic	
+NCBITaxon:359336	Castellaniella	genus	2	0	1	0	anaerobic	
+NCBITaxon:2316203	Catenibacillus	genus	1	0	1	0	anaerobic	
+NCBITaxon:673271	Catenibacillus scindens	species	1	0	1	0	anaerobic	
+NCBITaxon:135858	Catenibacterium	genus	3	0	1	0	anaerobic	
 NCBITaxon:100886	Catenibacterium mitsuokai	species	2	0	1	0	anaerobic	
+NCBITaxon:2049022	Catenibacterium sp.	species	1	0	1	0	anaerobic	
 NCBITaxon:43996	Catonella	genus	1	0	1	0	anaerobic	
 NCBITaxon:43997	Catonella morbi	species	1	0	1	0	anaerobic	
 NCBITaxon:76892	Caulobacteraceae	family	1	0	1	0	anaerobic	
@@ -640,24 +771,22 @@ NCBITaxon:1246649	Cellulosibacter	genus	1	0	1	0	anaerobic
 NCBITaxon:157920	Cellulosimicrobium	genus	1	0	1	0	anaerobic	
 NCBITaxon:82202	Centipeda	genus	2	0	1	0	anaerobic	
 NCBITaxon:82203	Centipeda periodontii	species	2	0	1	0	anaerobic	
-NCBITaxon:1063	Cereibacter sphaeroides	species	1	0	1	0	anaerobic	
+NCBITaxon:1063	Cereibacter sphaeroides	species	2	0	1	0	anaerobic	
 NCBITaxon:188913	Cetobacterium somerae	species	2	0	1	0	anaerobic	
 NCBITaxon:204428	Chlamydiota	phylum	1	0	1	0	anaerobic	
 NCBITaxon:1106	Chloroflexaceae	family	5	0	1	0	anaerobic	
 NCBITaxon:32064	Chloroflexales	order	7	0	1	0	anaerobic	
 NCBITaxon:32061	Chloroflexia	class	7	0	1	0	anaerobic	
-NCBITaxon:200795	Chloroflexota	phylum	36	0	1	0	anaerobic	
 NCBITaxon:1107	Chloroflexus	genus	5	0	1	0	anaerobic	
-NCBITaxon:990721	Christensenella	genus	2	0	1	0	anaerobic	
+NCBITaxon:990721	Christensenella	genus	3	0	1	0	anaerobic	
 NCBITaxon:270498	Christensenella hongkongensis	species	1	0	1	0	anaerobic	
 NCBITaxon:626937	Christensenella minuta	species	1	0	1	0	anaerobic	
-NCBITaxon:990719	Christensenellaceae	family	2	0	1	0	anaerobic	
-NCBITaxon:3082768	Christensenellales	order	2	0	1	0	anaerobic	
-NCBITaxon:1046	Chromatiaceae	family	42	0	1	0	anaerobic	
+NCBITaxon:990719	Christensenellaceae	family	3	0	1	0	anaerobic	
+NCBITaxon:3082768	Christensenellales	order	3	0	1	0	anaerobic	
 NCBITaxon:1499392	Chromobacteriaceae	family	1	0	1	0	anaerobic	
 NCBITaxon:1118	Chroococcales	order	3	0	1	0	anaerobic	
 NCBITaxon:200938	Chrysiogenota	phylum	6	0	1	0	anaerobic	
-NCBITaxon:544	Citrobacter	genus	2	0	1	0	anaerobic	
+NCBITaxon:544	Citrobacter	genus	3	0	1	0	anaerobic	
 NCBITaxon:133448	Citrobacter youngae	species	1	0	1	0	anaerobic	
 NCBITaxon:1197717	Cloacibacillus porcorum	species	1	0	1	0	anaerobic	
 NCBITaxon:539000	Clostridiales Family XVII. Incertae Sedis	family	1	0	1	0	anaerobic	
@@ -672,13 +801,11 @@ NCBITaxon:1494	Clostridium cochlearium	species	1	0	1	0	anaerobic
 NCBITaxon:84024	Clostridium disporicum	species	1	0	1	0	anaerobic	
 NCBITaxon:205328	Clostridium lacusfryxellense	species	1	0	1	0	anaerobic	
 NCBITaxon:39489	Clostridium moniliforme	species	1	0	1	0	anaerobic	
-NCBITaxon:137838	Clostridium neonatale	species	1	0	1	0	anaerobic	
 NCBITaxon:29363	Clostridium paraputrificum	species	1	0	1	0	anaerobic	
 NCBITaxon:36850	Clostridium quinii	species	1	0	1	0	anaerobic	
 NCBITaxon:169679	Clostridium saccharobutylicum	species	2	0	1	0	anaerobic	
 NCBITaxon:36745	Clostridium saccharoperbutylacetonicum	species	2	0	1	0	anaerobic	
 NCBITaxon:1414720	Clostridium saudiense	species	1	0	1	0	anaerobic	
-NCBITaxon:1506	Clostridium sp.	species	1	0	1	0	anaerobic	
 NCBITaxon:755731	Clostridium sp. BNL1100	species	1	0	1	0	anaerobic	
 NCBITaxon:556261	Clostridium sp. D5	species	1	0	1	0	anaerobic	
 NCBITaxon:641107	Clostridium sp. DL-VIII	species	1	0	1	0	anaerobic	
@@ -690,26 +817,27 @@ NCBITaxon:1559	Clostridium tertium	species	1	0	1	0	anaerobic
 NCBITaxon:179628	Clostridium thermopalmarium	species	2	0	1	0	anaerobic	
 NCBITaxon:84032	Clostridium thermosuccinogenes	species	2	0	1	0	anaerobic	
 NCBITaxon:1892251	Coleofasciculaceae	family	1	0	1	0	anaerobic	
-NCBITaxon:102106	Collinsella	genus	9	0	1	0	anaerobic	
+NCBITaxon:102106	Collinsella	genus	10	0	1	0	anaerobic	
 NCBITaxon:74426	Collinsella aerofaciens	species	2	0	1	0	anaerobic	
+NCBITaxon:1907654	Collinsella bouchesdurhonensis	species	1	0	1	0	anaerobic	
 NCBITaxon:147207	Collinsella intestinalis	species	2	0	1	0	anaerobic	
 NCBITaxon:147206	Collinsella stercoris	species	1	0	1	0	anaerobic	
 NCBITaxon:626935	Collinsella tanakaei	species	2	0	1	0	anaerobic	
-NCBITaxon:267889	Colwelliaceae	family	1	0	1	0	anaerobic	
+NCBITaxon:28228	Colwellia	genus	1	0	1	0	anaerobic	
+NCBITaxon:267889	Colwelliaceae	family	2	0	1	0	anaerobic	
 NCBITaxon:80864	Comamonadaceae	family	4	0	1	0	anaerobic	
-NCBITaxon:2810280	Coprobacillaceae	family	19	0	1	0	anaerobic	
 NCBITaxon:100883	Coprobacillus	genus	5	0	1	0	anaerobic	
 NCBITaxon:100884	Coprobacillus cateniformis	species	2	0	1	0	anaerobic	
 NCBITaxon:450746	Coprobacillus sp. 8_1_38FAA	species	1	0	1	0	anaerobic	
 NCBITaxon:469597	Coprobacillus sp. 8_2_54BFAA	species	1	0	1	0	anaerobic	
 NCBITaxon:1348911	Coprobacter	genus	2	0	1	0	anaerobic	
 NCBITaxon:1099853	Coprobacter fastidiosus	species	2	0	1	0	anaerobic	
-NCBITaxon:33042	Coprococcus	genus	5	0	1	0	anaerobic	
-NCBITaxon:33043	Coprococcus eutactus	species	1	0	1	0	anaerobic	
+NCBITaxon:33042	Coprococcus	genus	7	0	1	0	anaerobic	
+NCBITaxon:33043	Coprococcus eutactus	species	2	0	1	0	anaerobic	
 NCBITaxon:751585	Coprococcus sp. ART55/1	species	1	0	1	0	anaerobic	
 NCBITaxon:2138240	Coprothermobacterota	phylum	4	0	1	0	anaerobic	
-NCBITaxon:1653	Corynebacteriaceae	family	30	0	1	0	anaerobic	
-NCBITaxon:1716	Corynebacterium	genus	30	0	1	0	anaerobic	
+NCBITaxon:1653	Corynebacteriaceae	family	34	0	1	0	anaerobic	
+NCBITaxon:1716	Corynebacterium	genus	34	0	1	0	anaerobic	
 NCBITaxon:38284	Corynebacterium accolens	species	3	0	1	0	anaerobic	
 NCBITaxon:1697	Corynebacterium ammoniagenes	species	1	0	1	0	anaerobic	
 NCBITaxon:43765	Corynebacterium amycolatum	species	1	0	1	0	anaerobic	
@@ -720,6 +848,7 @@ NCBITaxon:161879	Corynebacterium kroppenstedtii	species	1	0	1	0	anaerobic
 NCBITaxon:38290	Corynebacterium macginleyi	species	1	0	1	0	anaerobic	
 NCBITaxon:258224	Corynebacterium resistens	species	1	0	1	0	anaerobic	
 NCBITaxon:156976	Corynebacterium riegelii	species	1	0	1	0	anaerobic	
+NCBITaxon:1720	Corynebacterium sp.	species	1	0	1	0	anaerobic	
 NCBITaxon:43770	Corynebacterium striatum	species	2	0	1	0	anaerobic	
 NCBITaxon:161902	Corynebacterium sundsvallense	species	1	0	1	0	anaerobic	
 NCBITaxon:38304	Corynebacterium tuberculostearicum	species	1	0	1	0	anaerobic	
@@ -729,49 +858,45 @@ NCBITaxon:43771	Corynebacterium urealyticum	species	2	0	1	0	anaerobic
 NCBITaxon:401472	Corynebacterium ureicelerivorans	species	1	0	1	0	anaerobic	
 NCBITaxon:776	Coxiella	genus	1	0	1	0	anaerobic	
 NCBITaxon:118968	Coxiellaceae	family	1	0	1	0	anaerobic	
+NCBITaxon:1871336	Criibacterium bergeronii	species	1	0	1	0	anaerobic	
 NCBITaxon:413496	Cronobacter	genus	1	0	1	0	anaerobic	
 NCBITaxon:28141	Cronobacter sakazakii	species	1	0	1	0	anaerobic	
-NCBITaxon:1912216	Cutibacterium	genus	95	0	1	0	anaerobic	
+NCBITaxon:1912216	Cutibacterium	genus	96	0	1	0	anaerobic	
 NCBITaxon:1747	Cutibacterium acnes	species	81	0	1	0	anaerobic	
 NCBITaxon:33010	Cutibacterium avidum	species	3	0	1	0	anaerobic	
 NCBITaxon:33011	Cutibacterium granulosum	species	3	0	1	0	anaerobic	
 NCBITaxon:2559073	Cutibacterium modestum	species	7	0	1	0	anaerobic	
-NCBITaxon:1574624	Cutibacterium namnetense	species	1	0	1	0	anaerobic	
+NCBITaxon:1574624	Cutibacterium namnetense	species	2	0	1	0	anaerobic	
 NCBITaxon:1117	Cyanobacteriota	phylum	5	0	1	0	anaerobic	
 NCBITaxon:3028117	Cyanophyceae	class	5	0	1	0	anaerobic	
 NCBITaxon:563798	Cyclobacteriaceae	family	1	0	1	0	anaerobic	
-NCBITaxon:768507	Cytophagales	order	1	0	1	0	anaerobic	
-NCBITaxon:191394	Deferribacteraceae	family	4	0	1	0	anaerobic	
-NCBITaxon:1125862	Deferrisoma	genus	3	0	1	0	anaerobic	
+NCBITaxon:768507	Cytophagales	order	2	0	1	0	anaerobic	
+NCBITaxon:73029	Dechloromonas	genus	1	0	1	0	anaerobic	
+NCBITaxon:191394	Deferribacteraceae	family	5	0	1	0	anaerobic	
 NCBITaxon:1185408	Defluviitalea	genus	3	0	1	0	anaerobic	
 NCBITaxon:879970	Defluviitalea saccharophila	species	1	0	1	0	anaerobic	
 NCBITaxon:1185407	Defluviitaleaceae	family	3	0	1	0	anaerobic	
 NCBITaxon:56112	Dehalobacter	genus	2	0	1	0	anaerobic	
-NCBITaxon:1202465	Dehalococcoidales	order	10	0	1	0	anaerobic	
+NCBITaxon:1202465	Dehalococcoidales	order	11	0	1	0	anaerobic	
 NCBITaxon:61435	Dehalococcoides mccartyi	species	7	0	1	0	anaerobic	
-NCBITaxon:670486	Dehalogenimonas	genus	3	0	1	0	anaerobic	
+NCBITaxon:670486	Dehalogenimonas	genus	4	0	1	0	anaerobic	
 NCBITaxon:188787	Deinococci	class	2	0	1	0	anaerobic	
 NCBITaxon:1297	Deinococcota	phylum	2	0	1	0	anaerobic	
-NCBITaxon:28221	Deltaproteobacteria	class	7	0	1	0	anaerobic	
-NCBITaxon:577469	Demequina	genus	2	0	1	0	anaerobic	
-NCBITaxon:1042322	Demequinaceae	family	2	0	1	0	anaerobic	
+NCBITaxon:28221	Deltaproteobacteria	class	8	0	1	0	anaerobic	
+NCBITaxon:577469	Demequina	genus	3	0	1	0	anaerobic	
+NCBITaxon:1042322	Demequinaceae	family	3	0	1	0	anaerobic	
 NCBITaxon:79603	Denitrobacterium	genus	1	0	1	0	anaerobic	
 NCBITaxon:79604	Denitrobacterium detoxificans	species	1	0	1	0	anaerobic	
-NCBITaxon:36739	Dermabacter	genus	1	0	1	0	anaerobic	
+NCBITaxon:36739	Dermabacter	genus	2	0	1	0	anaerobic	
 NCBITaxon:1667168	Dermabacter jinjuensis	species	1	0	1	0	anaerobic	
-NCBITaxon:85020	Dermabacteraceae	family	4	0	1	0	anaerobic	
-NCBITaxon:453228	Desulfarculaceae	family	3	0	1	0	anaerobic	
-NCBITaxon:453227	Desulfarculales	order	3	0	1	0	anaerobic	
+NCBITaxon:85020	Dermabacteraceae	family	5	0	1	0	anaerobic	
 NCBITaxon:453230	Desulfarculus baarsii	species	1	0	1	0	anaerobic	
 NCBITaxon:36853	Desulfitobacterium	genus	13	0	1	0	anaerobic	
 NCBITaxon:49338	Desulfitobacterium hafniense	species	6	0	1	0	anaerobic	
-NCBITaxon:213119	Desulfobacteraceae	family	33	0	1	0	anaerobic	
-NCBITaxon:1433996	Desulfobaculum	genus	4	0	1	0	anaerobic	
-NCBITaxon:213121	Desulfobulbaceae	family	18	0	1	0	anaerobic	
-NCBITaxon:3024411	Desulfobulbales	order	34	0	1	0	anaerobic	
-NCBITaxon:893	Desulfobulbus	genus	9	0	1	0	anaerobic	
+NCBITaxon:213119	Desulfobacteraceae	family	34	0	1	0	anaerobic	
+NCBITaxon:1433996	Desulfobaculum	genus	5	0	1	0	anaerobic	
 NCBITaxon:895	Desulfobulbus sp.	species	1	0	1	0	anaerobic	
-NCBITaxon:2886822	Desulfocapsaceae	family	16	0	1	0	anaerobic	
+NCBITaxon:2886822	Desulfocapsaceae	family	17	0	1	0	anaerobic	
 NCBITaxon:90729	Desulfocastanea catecholica	species	1	0	1	0	anaerobic	
 NCBITaxon:897	Desulfococcus multivorans	species	1	0	1	0	anaerobic	
 NCBITaxon:873	Desulfocurvibacter africanus	species	3	0	1	0	anaerobic	
@@ -784,17 +909,20 @@ NCBITaxon:206664	Desulfonauticus	genus	3	0	1	0	anaerobic
 NCBITaxon:2299	Desulfosarcina	genus	5	0	1	0	anaerobic	
 NCBITaxon:115780	Desulfotignum	genus	4	0	1	0	anaerobic	
 NCBITaxon:876	Desulfovibrio desulfuricans	species	3	0	1	0	anaerobic	
+NCBITaxon:44742	Desulfovibrio fairfieldensis	species	1	0	1	0	anaerobic	
 NCBITaxon:58621	Desulfovibrio intestinalis	species	2	0	1	0	anaerobic	
 NCBITaxon:901	Desulfovibrio piger	species	2	0	1	0	anaerobic	
 NCBITaxon:457398	Desulfovibrio sp. 3_1_syn3	species	1	0	1	0	anaerobic	
-NCBITaxon:213421	Desulfuromonadaceae	family	19	0	1	0	anaerobic	
-NCBITaxon:69541	Desulfuromonadales	order	33	0	1	0	anaerobic	
-NCBITaxon:890	Desulfuromonas	genus	12	0	1	0	anaerobic	
+NCBITaxon:213421	Desulfuromonadaceae	family	20	0	1	0	anaerobic	
+NCBITaxon:69541	Desulfuromonadales	order	34	0	1	0	anaerobic	
+NCBITaxon:890	Desulfuromonas	genus	13	0	1	0	anaerobic	
 NCBITaxon:37817	Desulfuromusa	genus	4	0	1	0	anaerobic	
 NCBITaxon:448125	Dethiosulfatibacter	genus	2	0	1	0	anaerobic	
+NCBITaxon:46913	Devosia	genus	1	0	1	0	anaerobic	
 NCBITaxon:209879	Dialister	genus	1	0	1	0	anaerobic	
-NCBITaxon:39948	Dialister	genus	9	0	1	0	anaerobic	
+NCBITaxon:39948	Dialister	genus	10	0	1	0	anaerobic	
 NCBITaxon:209880	Dialister histaminiformans	species	1	0	1	0	anaerobic	
+NCBITaxon:2582419	Dialister hominis	species	1	0	1	0	anaerobic	
 NCBITaxon:218538	Dialister invisus	species	2	0	1	0	anaerobic	
 NCBITaxon:309120	Dialister micraerophilus	species	3	0	1	0	anaerobic	
 NCBITaxon:39950	Dialister pneumosintes	species	1	0	1	0	anaerobic	
@@ -804,58 +932,62 @@ NCBITaxon:869	Dichelobacter	genus	2	0	1	0	anaerobic
 NCBITaxon:68297	Dictyoglomota	phylum	4	0	1	0	anaerobic	
 NCBITaxon:1472649	Dielma	genus	1	0	1	0	anaerobic	
 NCBITaxon:1034346	Dielma fastidiosa	species	1	0	1	0	anaerobic	
-NCBITaxon:189330	Dorea	genus	5	0	1	0	anaerobic	
-NCBITaxon:39486	Dorea formicigenerans	species	2	0	1	0	anaerobic	
+NCBITaxon:29393	Dolosigranulum	genus	2	0	1	0	anaerobic	
+NCBITaxon:29394	Dolosigranulum pigrum	species	2	0	1	0	anaerobic	
+NCBITaxon:189330	Dorea	genus	6	0	1	0	anaerobic	
+NCBITaxon:39486	Dorea formicigenerans	species	3	0	1	0	anaerobic	
 NCBITaxon:88431	Dorea longicatena	species	1	0	1	0	anaerobic	
 NCBITaxon:1937008	Dubosiella	genus	1	0	1	0	anaerobic	
 NCBITaxon:1862672	Dubosiella newyorkensis	species	1	0	1	0	anaerobic	
-NCBITaxon:156973	Dysgonomonas	genus	7	0	1	0	anaerobic	
+NCBITaxon:2518495	Duncaniella	genus	1	0	1	0	anaerobic	
+NCBITaxon:2094150	Duncaniella muris	species	1	0	1	0	anaerobic	
+NCBITaxon:156973	Dysgonomonas	genus	8	0	1	0	anaerobic	
 NCBITaxon:156974	Dysgonomonas gade	species	1	0	1	0	anaerobic	
 NCBITaxon:635	Edwardsiella	genus	2	0	1	0	anaerobic	
-NCBITaxon:84112	Eggerthella lenta	species	3	0	1	0	anaerobic	
 NCBITaxon:242230	Eggerthella sinensis	species	1	0	1	0	anaerobic	
+NCBITaxon:1929886	Eggerthella sp.	species	1	0	1	0	anaerobic	
 NCBITaxon:665943	Eggerthella sp. 1_3_56FAA	species	0	1	1	0	obligately anaerobic	
 NCBITaxon:502558	Eggerthella sp. YY7918	species	0	1	1	0	obligately anaerobic	
-NCBITaxon:1279384	Eggerthia	genus	1	0	1	0	anaerobic	
-NCBITaxon:31973	Eggerthia catenaformis	species	1	0	1	0	anaerobic	
+NCBITaxon:1279384	Eggerthia	genus	2	0	1	0	anaerobic	
+NCBITaxon:31973	Eggerthia catenaformis	species	2	0	1	0	anaerobic	
+NCBITaxon:538	Eikenella	genus	2	0	1	0	anaerobic	
+NCBITaxon:539	Eikenella corrodens	species	1	0	1	0	anaerobic	
 NCBITaxon:1432051	Eisenbergiella	genus	1	0	1	0	anaerobic	
 NCBITaxon:1432052	Eisenbergiella tayi	species	1	0	1	0	anaerobic	
+NCBITaxon:2137581	Ellagibacter isourolithinifaciens	species	0	1	1	0	obligately anaerobic	
 NCBITaxon:641853	Elusimicrobia	class	1	0	1	0	anaerobic	
 NCBITaxon:641876	Elusimicrobiaceae	family	1	0	1	0	anaerobic	
 NCBITaxon:641854	Elusimicrobiales	order	1	0	1	0	anaerobic	
-NCBITaxon:74152	Elusimicrobiota	phylum	2	0	1	0	anaerobic	
+NCBITaxon:74152	Elusimicrobiota	phylum	3	0	1	0	anaerobic	
 NCBITaxon:423604	Elusimicrobium	genus	1	0	1	0	anaerobic	
-NCBITaxon:1472762	Enorma	genus	3	0	1	0	anaerobic	
-NCBITaxon:1472761	Enorma massiliensis	species	2	0	1	0	anaerobic	
 NCBITaxon:547	Enterobacter	genus	5	0	1	0	anaerobic	
 NCBITaxon:550	Enterobacter cloacae	species	4	0	1	0	anaerobic	
 NCBITaxon:539813	Enterobacter mori	species	1	0	1	0	anaerobic	
-NCBITaxon:91347	Enterobacterales	order	57	0	1	0	anaerobic	
-NCBITaxon:543	Enterobacteriaceae	family	41	0	1	0	anaerobic	
+NCBITaxon:91347	Enterobacterales	order	62	0	1	0	anaerobic	
+NCBITaxon:543	Enterobacteriaceae	family	45	0	1	0	anaerobic	
 NCBITaxon:460384	Enterocloster lavalensis	species	1	0	1	0	anaerobic	
+NCBITaxon:44008	Enterococcus cecorum	species	1	0	1	0	anaerobic	
 NCBITaxon:1352	Enterococcus faecium	species	2	0	1	0	anaerobic	
+NCBITaxon:249189	Enterococcus hermanniensis	species	1	0	1	0	anaerobic	
+NCBITaxon:171412	Eremococcus	genus	1	0	1	0	anaerobic	
 NCBITaxon:551	Erwinia	genus	2	0	1	0	anaerobic	
 NCBITaxon:552	Erwinia amylovora	species	1	0	1	0	anaerobic	
 NCBITaxon:1903409	Erwiniaceae	family	2	0	1	0	anaerobic	
 NCBITaxon:1647	Erysipelothrix	genus	1	0	1	0	anaerobic	
 NCBITaxon:1514105	Erysipelothrix larvae	species	1	0	1	0	anaerobic	
-NCBITaxon:128827	Erysipelotrichaceae	family	22	0	1	0	anaerobic	
-NCBITaxon:526525	Erysipelotrichales	order	43	0	1	0	anaerobic	
-NCBITaxon:526524	Erysipelotrichia	class	43	0	1	0	anaerobic	
 NCBITaxon:1041	Erythrobacter	genus	1	0	1	0	anaerobic	
 NCBITaxon:1112	Erythrobacter neustonensis	species	1	0	1	0	anaerobic	
 NCBITaxon:335929	Erythrobacteraceae	family	1	0	1	0	anaerobic	
-NCBITaxon:561	Escherichia	genus	13	0	1	0	anaerobic	
-NCBITaxon:562	Escherichia coli	species	13	0	1	0	anaerobic	
-NCBITaxon:45851	Eshraghiella crossota	species	1	0	1	0	anaerobic	
-NCBITaxon:186806	Eubacteriaceae	family	32	0	1	0	anaerobic	
-NCBITaxon:543313	Eubacteriales Family XII. Incertae Sedis	family	5	0	1	0	anaerobic	
-NCBITaxon:1730	Eubacterium	genus	13	0	1	0	anaerobic	
+NCBITaxon:561	Escherichia	genus	15	0	1	0	anaerobic	
+NCBITaxon:562	Escherichia coli	species	14	0	1	0	anaerobic	
+NCBITaxon:1884818	Escherichia sp.	species	1	0	1	0	anaerobic	
+NCBITaxon:45851	Eshraghiella crossota	species	2	0	1	0	anaerobic	
+NCBITaxon:543313	Eubacteriales Family XII. Incertae Sedis	family	6	0	1	0	anaerobic	
 NCBITaxon:53442	Eubacterium callanderi	species	1	0	1	0	anaerobic	
+NCBITaxon:290054	Eubacterium coprostanoligenes	species	1	0	1	0	anaerobic	
 NCBITaxon:1736	Eubacterium limosum	species	2	0	1	0	anaerobic	
 NCBITaxon:1732	Eubacterium oxidoreducens	species	1	0	1	0	anaerobic	
 NCBITaxon:39490	Eubacterium ramulus	species	2	0	1	0	anaerobic	
-NCBITaxon:142586	Eubacterium sp.	species	1	0	1	0	anaerobic	
 NCBITaxon:457402	Eubacterium sp. 3_1_31	species	1	0	1	0	anaerobic	
 NCBITaxon:39496	Eubacterium ventriosum	species	1	0	1	0	anaerobic	
 NCBITaxon:33986	Exiguobacterium	genus	1	0	1	0	anaerobic	
@@ -866,13 +998,15 @@ NCBITaxon:178214	Facklamia hominis	species	1	0	1	0	anaerobic
 NCBITaxon:216851	Faecalibacterium	genus	4	0	1	0	anaerobic	
 NCBITaxon:411483	Faecalibacterium duncaniae	species	1	0	1	0	anaerobic	
 NCBITaxon:853	Faecalibacterium prausnitzii	species	3	0	1	0	anaerobic	
-NCBITaxon:1573536	Faecalicoccus	genus	3	0	1	0	anaerobic	
-NCBITaxon:1323	Faecalicoccus pleomorphus	species	2	0	1	0	anaerobic	
+NCBITaxon:1729679	Faecalibaculum	genus	1	0	1	0	anaerobic	
+NCBITaxon:1702221	Faecalibaculum rodentium	species	1	0	1	0	anaerobic	
+NCBITaxon:2005359	Faecalicatena	genus	3	0	1	0	anaerobic	
+NCBITaxon:39482	Faecalicatena contorta	species	1	0	1	0	anaerobic	
+NCBITaxon:290055	Faecalicatena fissicatena	species	1	0	1	0	anaerobic	
+NCBITaxon:1544	Faecalicatena orotica	species	1	0	1	0	anaerobic	
 NCBITaxon:1301100	Faecalimicrobium dakarense	species	1	0	1	0	anaerobic	
-NCBITaxon:2005355	Faecalimonas	genus	1	0	1	0	anaerobic	
 NCBITaxon:29361	Faecalimonas nexilis	species	1	0	1	0	anaerobic	
-NCBITaxon:1912855	Faecalimonas umbilicata	species	1	0	1	0	anaerobic	
-NCBITaxon:1549	Faecalispora sporosphaeroides	species	1	0	1	0	anaerobic	
+NCBITaxon:1549	Faecalispora sporosphaeroides	species	2	0	1	0	anaerobic	
 NCBITaxon:1573534	Faecalitalea	genus	2	0	1	0	anaerobic	
 NCBITaxon:39483	Faecalitalea cylindroides	species	2	0	1	0	anaerobic	
 NCBITaxon:82135	Fannyhessea vaginae	species	3	0	1	0	anaerobic	
@@ -882,19 +1016,17 @@ NCBITaxon:1686313	Fenollaria	genus	1	0	1	0	anaerobic
 NCBITaxon:938288	Fenollaria massiliensis	species	1	0	1	0	anaerobic	
 NCBITaxon:832	Fibrobacter	genus	1	0	1	0	anaerobic	
 NCBITaxon:833	Fibrobacter succinogenes	species	1	0	1	0	anaerobic	
-NCBITaxon:204431	Fibrobacteraceae	family	1	0	1	0	anaerobic	
-NCBITaxon:218872	Fibrobacterales	order	1	0	1	0	anaerobic	
-NCBITaxon:204430	Fibrobacteria	class	1	0	1	0	anaerobic	
-NCBITaxon:65842	Fibrobacterota	phylum	3	0	1	0	anaerobic	
-NCBITaxon:44259	Filifactor	genus	2	0	1	0	anaerobic	
-NCBITaxon:143361	Filifactor alocis	species	1	0	1	0	anaerobic	
+NCBITaxon:44259	Filifactor	genus	4	0	1	0	anaerobic	
+NCBITaxon:143361	Filifactor alocis	species	2	0	1	0	anaerobic	
 NCBITaxon:29374	Filifactor villosus	species	1	0	1	0	anaerobic	
-NCBITaxon:150022	Finegoldia	genus	5	0	1	0	anaerobic	
+NCBITaxon:150022	Finegoldia	genus	6	0	1	0	anaerobic	
 NCBITaxon:1260	Finegoldia magna	species	5	0	1	0	anaerobic	
-NCBITaxon:49546	Flavobacteriaceae	family	9	0	1	0	anaerobic	
-NCBITaxon:200644	Flavobacteriales	order	10	0	1	0	anaerobic	
-NCBITaxon:117743	Flavobacteriia	class	10	0	1	0	anaerobic	
+NCBITaxon:1981334	Finegoldia sp.	species	1	0	1	0	anaerobic	
+NCBITaxon:49546	Flavobacteriaceae	family	17	0	1	0	anaerobic	
+NCBITaxon:200644	Flavobacteriales	order	19	0	1	0	anaerobic	
+NCBITaxon:117743	Flavobacteriia	class	19	0	1	0	anaerobic	
 NCBITaxon:237	Flavobacterium	genus	1	0	1	0	anaerobic	
+NCBITaxon:2049025	Flavonifractor sp.	species	1	0	1	0	anaerobic	
 NCBITaxon:1918454	Flintibacter	genus	1	0	1	0	anaerobic	
 NCBITaxon:1417852	Flintibacter butyricus	species	1	0	1	0	anaerobic	
 NCBITaxon:995014	Fontibacillus	genus	1	0	1	0	anaerobic	
@@ -903,22 +1035,24 @@ NCBITaxon:1434006	Fretibacterium	genus	1	0	1	0	anaerobic
 NCBITaxon:651822	Fretibacterium fastidiosum	species	1	0	1	0	anaerobic	
 NCBITaxon:1335631	Frischella	genus	1	0	1	0	anaerobic	
 NCBITaxon:1918511	Frisingicoccus	genus	1	0	1	0	anaerobic	
-NCBITaxon:2767881	Fructilactobacillus	genus	3	0	1	0	anaerobic	
-NCBITaxon:1625	Fructilactobacillus sanfranciscensis	species	1	0	1	0	anaerobic	
-NCBITaxon:76008	Fusibacter	genus	4	0	1	0	anaerobic	
+NCBITaxon:2767881	Fructilactobacillus	genus	4	0	1	0	anaerobic	
+NCBITaxon:1625	Fructilactobacillus sanfranciscensis	species	2	0	1	0	anaerobic	
+NCBITaxon:231049	Furfurilactobacillus rossiae	species	1	0	1	0	anaerobic	
+NCBITaxon:76008	Fusibacter	genus	5	0	1	0	anaerobic	
 NCBITaxon:1407607	Fusicatenibacter	genus	1	0	1	0	anaerobic	
 NCBITaxon:1150298	Fusicatenibacter saccharivorans	species	1	0	1	0	anaerobic	
-NCBITaxon:848	Fusobacterium	genus	56	0	1	0	anaerobic	
+NCBITaxon:848	Fusobacterium	genus	62	0	1	0	anaerobic	
 NCBITaxon:76859	Fusobacterium animalis	species	9	0	1	0	anaerobic	
 NCBITaxon:285729	Fusobacterium canifelinum	species	1	0	1	0	anaerobic	
-NCBITaxon:849	Fusobacterium gonidiaformans	species	2	0	1	0	anaerobic	
+NCBITaxon:849	Fusobacterium gonidiaformans	species	3	0	1	0	anaerobic	
 NCBITaxon:1583098	Fusobacterium hwasookii	species	3	0	1	0	anaerobic	
 NCBITaxon:850	Fusobacterium mortiferum	species	2	0	1	0	anaerobic	
 NCBITaxon:77917	Fusobacterium naviforme	species	1	0	1	0	anaerobic	
-NCBITaxon:859	Fusobacterium necrophorum	species	12	0	1	0	anaerobic	
+NCBITaxon:858	Fusobacterium necrogenes	species	1	0	1	0	anaerobic	
+NCBITaxon:859	Fusobacterium necrophorum	species	13	0	1	0	anaerobic	
 NCBITaxon:851	Fusobacterium nucleatum	species	5	0	1	0	anaerobic	
 NCBITaxon:76856	Fusobacterium nucleatum subsp. nucleatum	species	4	0	1	0	anaerobic	
-NCBITaxon:860	Fusobacterium periodonticum	species	4	0	1	0	anaerobic	
+NCBITaxon:860	Fusobacterium periodonticum	species	5	0	1	0	anaerobic	
 NCBITaxon:76857	Fusobacterium polymorphum	species	3	0	1	0	anaerobic	
 NCBITaxon:68766	Fusobacterium sp.	species	1	0	1	0	anaerobic	
 NCBITaxon:712288	Fusobacterium sp. oral taxon 370	species	1	0	1	0	anaerobic	
@@ -930,17 +1064,17 @@ NCBITaxon:162290	Gallicola	genus	1	0	1	0	anaerobic
 NCBITaxon:2914925	Gardnerella greenwoodii	species	0	2	1	0	obligately anaerobic	
 NCBITaxon:2914924	Gardnerella pickettii	species	0	2	1	0	obligately anaerobic	
 NCBITaxon:189326	Gelria	genus	1	0	1	0	anaerobic	
-NCBITaxon:1378	Gemella	genus	1	0	1	0	anaerobic	
+NCBITaxon:1378	Gemella	genus	3	0	1	0	anaerobic	
+NCBITaxon:84136	Gemella bergeri	species	1	0	1	0	anaerobic	
+NCBITaxon:1379	Gemella haemolysans	species	1	0	1	0	anaerobic	
 NCBITaxon:29391	Gemella morbillorum	species	1	0	1	0	anaerobic	
-NCBITaxon:539738	Gemellaceae	family	2	0	1	0	anaerobic	
+NCBITaxon:539738	Gemellaceae	family	4	0	1	0	anaerobic	
 NCBITaxon:502393	Gemelliphila asaccharolytica	species	1	0	1	0	anaerobic	
 NCBITaxon:219687	Gemmatimonadaceae	family	5	0	1	0	anaerobic	
 NCBITaxon:219686	Gemmatimonadales	order	5	0	1	0	anaerobic	
 NCBITaxon:219685	Gemmatimonadia	class	5	0	1	0	anaerobic	
 NCBITaxon:142182	Gemmatimonadota	phylum	5	0	1	0	anaerobic	
 NCBITaxon:173479	Gemmatimonas	genus	5	0	1	0	anaerobic	
-NCBITaxon:204475	Gemmiger	genus	0	1	1	0	obligately anaerobic	
-NCBITaxon:745368	Gemmiger formicilis	species	0	1	1	0	obligately anaerobic	
 NCBITaxon:204456	Gemmobacter	genus	1	0	1	0	anaerobic	
 NCBITaxon:483547	Geoalkalibacter subterraneus	species	1	0	1	0	anaerobic	
 NCBITaxon:129337	Geobacillus	genus	4	0	1	0	anaerobic	
@@ -951,34 +1085,39 @@ NCBITaxon:35554	Geobacter sulfurreducens	species	4	0	1	0	anaerobic
 NCBITaxon:390806	Geosporobacter subterraneus	species	2	0	1	0	anaerobic	
 NCBITaxon:1203471	Geotalea daltonii	species	2	0	1	0	anaerobic	
 NCBITaxon:44675	Geothrix	genus	2	0	1	0	anaerobic	
+NCBITaxon:1193503	Gilliamella	genus	1	0	1	0	anaerobic	
 NCBITaxon:66228	Gleimia europaea	species	1	0	1	0	anaerobic	
+NCBITaxon:13075	Globicatella	genus	2	0	1	0	anaerobic	
 NCBITaxon:1335613	Gordonibacter urolithinfaciens	species	1	0	1	0	anaerobic	
 NCBITaxon:342658	Gracilibacter	genus	3	0	1	0	anaerobic	
 NCBITaxon:342666	Gracilibacter thermotolerans	species	2	0	1	0	anaerobic	
 NCBITaxon:541019	Gracilibacteraceae	family	3	0	1	0	anaerobic	
-NCBITaxon:117563	Granulicatella	genus	2	0	1	0	anaerobic	
-NCBITaxon:46124	Granulicatella adiacens	species	1	0	1	0	anaerobic	
+NCBITaxon:117563	Granulicatella	genus	4	0	1	0	anaerobic	
+NCBITaxon:46124	Granulicatella adiacens	species	2	0	1	0	anaerobic	
 NCBITaxon:137732	Granulicatella elegans	species	1	0	1	0	anaerobic	
 NCBITaxon:228923	Guggenheimella	genus	1	0	1	0	anaerobic	
-NCBITaxon:724	Haemophilus	genus	1	0	1	0	anaerobic	
+NCBITaxon:724	Haemophilus	genus	3	0	1	0	anaerobic	
+NCBITaxon:727	Haemophilus influenzae	species	1	0	1	0	anaerobic	
+NCBITaxon:729	Haemophilus parainfluenzae	species	1	0	1	0	anaerobic	
 NCBITaxon:1903412	Hafniaceae	family	2	0	1	0	anaerobic	
 NCBITaxon:52228	Hallella	genus	7	0	1	0	anaerobic	
 NCBITaxon:242750	Hallella bergensis	species	2	0	1	0	anaerobic	
 NCBITaxon:1703337	Hallella colorans	species	1	0	1	0	anaerobic	
 NCBITaxon:310514	Hallella multisaccharivorax	species	2	0	1	0	anaerobic	
 NCBITaxon:52229	Hallella seregens	species	2	0	1	0	anaerobic	
+NCBITaxon:1896222	Hallerella succinigenes	species	0	1	1	0	obligately anaerobic	
 NCBITaxon:1570	Halobacillus halophilus	species	1	0	1	0	anaerobic	
-NCBITaxon:2235	Halobacteriales	order	6	0	1	0	anaerobic	
 NCBITaxon:46466	Halocella	genus	1	0	1	0	anaerobic	
 NCBITaxon:1892380	Harryflintia	genus	1	0	1	0	anaerobic	
 NCBITaxon:1849041	Harryflintia acetispora	species	1	0	1	0	anaerobic	
 NCBITaxon:1769729	Hathewaya	genus	3	0	1	0	anaerobic	
 NCBITaxon:1498	Hathewaya histolytica	species	1	0	1	0	anaerobic	
-NCBITaxon:31983	Helcococcus	genus	1	0	1	0	anaerobic	
-NCBITaxon:209	Helicobacter	genus	3	0	1	0	anaerobic	
+NCBITaxon:31983	Helcococcus	genus	3	0	1	0	anaerobic	
+NCBITaxon:209	Helicobacter	genus	6	0	1	0	anaerobic	
 NCBITaxon:60246	Helicobacter ganmani	species	1	0	1	0	anaerobic	
+NCBITaxon:152490	Helicobacter marmotae	species	1	0	1	0	anaerobic	
 NCBITaxon:59617	Helicobacter rodentium	species	1	0	1	0	anaerobic	
-NCBITaxon:72293	Helicobacteraceae	family	4	0	1	0	anaerobic	
+NCBITaxon:72293	Helicobacteraceae	family	7	0	1	0	anaerobic	
 NCBITaxon:31984	Heliobacteriaceae	family	8	0	1	0	anaerobic	
 NCBITaxon:1663717	Herbinix	genus	2	0	1	0	anaerobic	
 NCBITaxon:1679721	Herbinix luporum	species	1	0	1	0	anaerobic	
@@ -986,16 +1125,15 @@ NCBITaxon:241189	Hespellia	genus	3	0	1	0	anaerobic
 NCBITaxon:1398	Heyndrickxia coagulans	species	1	0	1	0	anaerobic	
 NCBITaxon:214906	Histophilus	genus	1	0	1	0	anaerobic	
 NCBITaxon:731	Histophilus somni	species	1	0	1	0	anaerobic	
-NCBITaxon:274591	Hoeflea	genus	2	0	1	0	anaerobic	
 NCBITaxon:1573535	Holdemanella	genus	1	0	1	0	anaerobic	
 NCBITaxon:1735	Holdemanella biformis	species	1	0	1	0	anaerobic	
 NCBITaxon:61170	Holdemania	genus	2	0	1	0	anaerobic	
 NCBITaxon:61171	Holdemania filiformis	species	1	0	1	0	anaerobic	
 NCBITaxon:1468449	Holdemania massiliensis	species	1	0	1	0	anaerobic	
-NCBITaxon:1264	Hominimerdicola alba	species	2	0	1	0	anaerobic	
+NCBITaxon:1264	Hominimerdicola alba	species	3	0	1	0	anaerobic	
 NCBITaxon:404402	Howardella	genus	1	0	1	0	anaerobic	
 NCBITaxon:404403	Howardella ureilytica	species	1	0	1	0	anaerobic	
-NCBITaxon:28127	Hoylesella buccalis	species	1	0	1	0	anaerobic	
+NCBITaxon:28127	Hoylesella buccalis	species	2	0	1	0	anaerobic	
 NCBITaxon:76123	Hoylesella enoeca	species	1	0	1	0	anaerobic	
 NCBITaxon:28134	Hoylesella oralis	species	2	0	1	0	anaerobic	
 NCBITaxon:633701	Hoylesella saccharolytica	species	3	0	1	0	anaerobic	
@@ -1009,7 +1147,6 @@ NCBITaxon:119069	Hydrogenophilales	order	1	0	1	0	anaerobic
 NCBITaxon:2008785	Hydrogenophilia	class	1	0	1	0	anaerobic	
 NCBITaxon:70774	Hydrogenophilus	genus	1	0	1	0	anaerobic	
 NCBITaxon:45401	Hyphomicrobiaceae	family	2	0	1	0	anaerobic	
-NCBITaxon:356	Hyphomicrobiales	order	28	0	1	0	anaerobic	
 NCBITaxon:795747	Ignavibacteria	class	3	0	1	0	anaerobic	
 NCBITaxon:795748	Ignavibacteriales	order	3	0	1	0	anaerobic	
 NCBITaxon:1134404	Ignavibacteriota	phylum	3	0	1	0	anaerobic	
@@ -1018,13 +1155,12 @@ NCBITaxon:1862668	Ileibacterium valens	species	1	0	1	0	anaerobic
 NCBITaxon:45254	Indolivaga capnocytophagoides	species	2	0	1	0	anaerobic	
 NCBITaxon:1505657	Intestinibacter	genus	1	0	1	0	anaerobic	
 NCBITaxon:261299	Intestinibacter bartlettii	species	1	0	1	0	anaerobic	
-NCBITaxon:1392389	Intestinimonas	genus	1	0	1	0	anaerobic	
+NCBITaxon:1392389	Intestinimonas	genus	2	0	1	0	anaerobic	
 NCBITaxon:1297617	Intestinimonas butyriciproducens	species	1	0	1	0	anaerobic	
 NCBITaxon:43994	Johnsonella	genus	1	0	1	0	anaerobic	
 NCBITaxon:43995	Johnsonella ignava	species	1	0	1	0	anaerobic	
-NCBITaxon:1472764	Kallipyga massiliensis	species	1	0	1	0	anaerobic	
+NCBITaxon:1472764	Kallipyga massiliensis	species	2	0	1	0	anaerobic	
 NCBITaxon:1279388	Kandleria	genus	2	0	1	0	anaerobic	
-NCBITaxon:2163168	Kineothrix	genus	1	0	1	0	anaerobic	
 NCBITaxon:1307763	Kiritimatiella glycovorans	species	1	0	1	0	anaerobic	
 NCBITaxon:1921783	Kiritimatiellaceae	family	1	0	1	0	anaerobic	
 NCBITaxon:1921781	Kiritimatiellia	class	1	0	1	0	anaerobic	
@@ -1032,94 +1168,104 @@ NCBITaxon:134625	Kiritimatiellota	phylum	1	0	1	0	anaerobic
 NCBITaxon:85011	Kitasatosporales	order	1	0	1	0	anaerobic	
 NCBITaxon:570	Klebsiella	genus	2	0	1	0	anaerobic	
 NCBITaxon:573	Klebsiella pneumoniae	species	2	0	1	0	anaerobic	
-NCBITaxon:1164882	Lachnoanaerobaculum	genus	4	0	1	0	anaerobic	
+NCBITaxon:1164882	Lachnoanaerobaculum	genus	5	0	1	0	anaerobic	
 NCBITaxon:979627	Lachnoanaerobaculum orale	species	1	0	1	0	anaerobic	
 NCBITaxon:467210	Lachnoanaerobaculum saburreum	species	2	0	1	0	anaerobic	
 NCBITaxon:617123	Lachnoanaerobaculum umeaense	species	1	0	1	0	anaerobic	
 NCBITaxon:1506553	Lachnoclostridium	genus	12	0	1	0	anaerobic	
 NCBITaxon:66219	Lachnoclostridium phytofermentans	species	2	0	1	0	anaerobic	
 NCBITaxon:28051	Lachnospira multipara	species	2	0	1	0	anaerobic	
-NCBITaxon:1763508	Lachnotalea	genus	1	0	1	0	anaerobic	
-NCBITaxon:1763509	Lachnotalea glycerini	species	1	0	1	0	anaerobic	
+NCBITaxon:28052	Lachnospira pectinoschiza	species	1	0	1	0	anaerobic	
 NCBITaxon:36832	Lacrimispora aerotolerans	species	1	0	1	0	anaerobic	
 NCBITaxon:253257	Lacrimispora amygdalina	species	1	0	1	0	anaerobic	
 NCBITaxon:29354	Lacrimispora celerecrescens	species	1	0	1	0	anaerobic	
-NCBITaxon:69825	Lacrimispora indolis	species	1	0	1	0	anaerobic	
-NCBITaxon:29370	Lacrimispora sphenoides	species	1	0	1	0	anaerobic	
+NCBITaxon:69825	Lacrimispora indolis	species	2	0	1	0	anaerobic	
+NCBITaxon:29370	Lacrimispora sphenoides	species	3	0	1	0	anaerobic	
 NCBITaxon:384636	Lacrimispora xylanisolvens	species	1	0	1	0	anaerobic	
-NCBITaxon:2759736	Lacticaseibacillus	genus	5	0	1	0	anaerobic	
-NCBITaxon:1597	Lacticaseibacillus paracasei	species	1	0	1	0	anaerobic	
+NCBITaxon:2759736	Lacticaseibacillus	genus	8	0	1	0	anaerobic	
+NCBITaxon:1597	Lacticaseibacillus paracasei	species	2	0	1	0	anaerobic	
 NCBITaxon:47715	Lacticaseibacillus rhamnosus	species	1	0	1	0	anaerobic	
 NCBITaxon:57037	Lacticaseibacillus zeae	species	2	0	1	0	anaerobic	
-NCBITaxon:2767842	Lactiplantibacillus	genus	1	0	1	0	anaerobic	
-NCBITaxon:1590	Lactiplantibacillus plantarum	species	1	0	1	0	anaerobic	
+NCBITaxon:633405	Lacticigenium	genus	1	0	1	0	anaerobic	
+NCBITaxon:2767842	Lactiplantibacillus	genus	5	0	1	0	anaerobic	
+NCBITaxon:1590	Lactiplantibacillus plantarum	species	2	0	1	0	anaerobic	
 NCBITaxon:1508421	Lactivibrio	genus	1	0	1	0	anaerobic	
-NCBITaxon:33958	Lactobacillaceae	family	131	0	1	0	anaerobic	
-NCBITaxon:1578	Lactobacillus	genus	33	0	1	0	anaerobic	
-NCBITaxon:1579	Lactobacillus acidophilus	species	1	0	1	0	anaerobic	
+NCBITaxon:33958	Lactobacillaceae	family	201	0	1	0	anaerobic	
+NCBITaxon:1578	Lactobacillus	genus	55	0	1	0	anaerobic	
+NCBITaxon:1579	Lactobacillus acidophilus	species	3	0	1	0	anaerobic	
+NCBITaxon:1604	Lactobacillus amylovorus	species	1	0	1	0	anaerobic	
 NCBITaxon:303541	Lactobacillus apis	species	1	0	1	0	anaerobic	
-NCBITaxon:47770	Lactobacillus crispatus	species	1	0	1	0	anaerobic	
-NCBITaxon:1584	Lactobacillus delbrueckii	species	2	0	1	0	anaerobic	
+NCBITaxon:47770	Lactobacillus crispatus	species	2	0	1	0	anaerobic	
+NCBITaxon:1584	Lactobacillus delbrueckii	species	7	0	1	0	anaerobic	
 NCBITaxon:1537158	Lactobacillus delbrueckii subsp. jakobsenii	species	1	0	1	0	anaerobic	
 NCBITaxon:420645	Lactobacillus equicursoris	species	1	0	1	0	anaerobic	
 NCBITaxon:52242	Lactobacillus gallinarum	species	1	0	1	0	anaerobic	
-NCBITaxon:1596	Lactobacillus gasseri	species	1	0	1	0	anaerobic	
+NCBITaxon:1596	Lactobacillus gasseri	species	3	0	1	0	anaerobic	
 NCBITaxon:96565	Lactobacillus hamsteri	species	2	0	1	0	anaerobic	
-NCBITaxon:1587	Lactobacillus helveticus	species	1	0	1	0	anaerobic	
-NCBITaxon:147802	Lactobacillus iners	species	2	0	1	0	anaerobic	
+NCBITaxon:1587	Lactobacillus helveticus	species	2	0	1	0	anaerobic	
+NCBITaxon:147802	Lactobacillus iners	species	3	0	1	0	anaerobic	
 NCBITaxon:151781	Lactobacillus intestinalis	species	1	0	1	0	anaerobic	
-NCBITaxon:109790	Lactobacillus jensenii	species	1	0	1	0	anaerobic	
-NCBITaxon:33959	Lactobacillus johnsonii	species	1	0	1	0	anaerobic	
-NCBITaxon:267818	Lactobacillus kefiranofaciens	species	3	0	1	0	anaerobic	
+NCBITaxon:109790	Lactobacillus jensenii	species	3	0	1	0	anaerobic	
+NCBITaxon:33959	Lactobacillus johnsonii	species	2	0	1	0	anaerobic	
+NCBITaxon:267818	Lactobacillus kefiranofaciens	species	4	0	1	0	anaerobic	
+NCBITaxon:1591	Lactobacillus sp.	species	1	0	1	0	anaerobic	
 NCBITaxon:508451	Lactobacillus taiwanensis	species	1	0	1	0	anaerobic	
 NCBITaxon:227945	Lactobacillus ultunensis	species	2	0	1	0	anaerobic	
-NCBITaxon:1357	Lactococcus	genus	3	0	1	0	anaerobic	
+NCBITaxon:1357	Lactococcus	genus	4	0	1	0	anaerobic	
+NCBITaxon:1363	Lactococcus garvieae	species	1	0	1	0	anaerobic	
 NCBITaxon:1358	Lactococcus lactis	species	2	0	1	0	anaerobic	
 NCBITaxon:420345	Lactonifactor	genus	1	0	1	0	anaerobic	
 NCBITaxon:341220	Lactonifactor longoviformis	species	1	0	1	0	anaerobic	
 NCBITaxon:1383	Lancefieldella rimae	species	2	0	1	0	anaerobic	
-NCBITaxon:2767885	Latilactobacillus	genus	3	0	1	0	anaerobic	
-NCBITaxon:1599	Latilactobacillus sakei	species	2	0	1	0	anaerobic	
+NCBITaxon:2767885	Latilactobacillus	genus	6	0	1	0	anaerobic	
+NCBITaxon:28038	Latilactobacillus curvatus	species	1	0	1	0	anaerobic	
+NCBITaxon:1599	Latilactobacillus sakei	species	3	0	1	0	anaerobic	
 NCBITaxon:1847725	Lawsonella	genus	1	0	1	0	anaerobic	
 NCBITaxon:118969	Legionellales	order	1	0	1	0	anaerobic	
-NCBITaxon:2767893	Lentilactobacillus	genus	3	0	1	0	anaerobic	
-NCBITaxon:1840213	Lentimicrobiaceae	family	1	0	1	0	anaerobic	
-NCBITaxon:1840214	Lentimicrobium	genus	1	0	1	0	anaerobic	
-NCBITaxon:32067	Leptotrichia	genus	15	0	1	0	anaerobic	
+NCBITaxon:2767893	Lentilactobacillus	genus	4	0	1	0	anaerobic	
+NCBITaxon:32067	Leptotrichia	genus	16	0	1	0	anaerobic	
 NCBITaxon:40542	Leptotrichia buccalis	species	2	0	1	0	anaerobic	
 NCBITaxon:157688	Leptotrichia hofstadii	species	3	0	1	0	anaerobic	
 NCBITaxon:554406	Leptotrichia hongkongensis	species	1	0	1	0	anaerobic	
 NCBITaxon:157691	Leptotrichia shahii	species	2	0	1	0	anaerobic	
 NCBITaxon:671213	Leptotrichia sp. oral taxon 225	species	1	0	1	0	anaerobic	
-NCBITaxon:109328	Leptotrichia trevisanii	species	1	0	1	0	anaerobic	
+NCBITaxon:109328	Leptotrichia trevisanii	species	2	0	1	0	anaerobic	
 NCBITaxon:157687	Leptotrichia wadei	species	3	0	1	0	anaerobic	
-NCBITaxon:1129771	Leptotrichiaceae	family	22	0	1	0	anaerobic	
-NCBITaxon:1243	Leuconostoc	genus	7	0	1	0	anaerobic	
+NCBITaxon:1129771	Leptotrichiaceae	family	24	0	1	0	anaerobic	
+NCBITaxon:1243	Leuconostoc	genus	13	0	1	0	anaerobic	
+NCBITaxon:33964	Leuconostoc citreum	species	1	0	1	0	anaerobic	
+NCBITaxon:115778	Leuconostoc gasicomitatum	species	1	0	1	0	anaerobic	
 NCBITaxon:1244	Leuconostoc gelidum	species	1	0	1	0	anaerobic	
-NCBITaxon:1246	Leuconostoc lactis	species	1	0	1	0	anaerobic	
-NCBITaxon:1245	Leuconostoc mesenteroides	species	2	0	1	0	anaerobic	
+NCBITaxon:1246	Leuconostoc lactis	species	3	0	1	0	anaerobic	
+NCBITaxon:1245	Leuconostoc mesenteroides	species	3	0	1	0	anaerobic	
+NCBITaxon:33968	Leuconostoc pseudomesenteroides	species	1	0	1	0	anaerobic	
 NCBITaxon:2767886	Levilactobacillus	genus	4	0	1	0	anaerobic	
 NCBITaxon:1580	Levilactobacillus brevis	species	1	0	1	0	anaerobic	
 NCBITaxon:363265	Leyella stercorea	species	2	0	1	0	anaerobic	
-NCBITaxon:2767887	Ligilactobacillus	genus	11	0	1	0	anaerobic	
+NCBITaxon:2767887	Ligilactobacillus	genus	19	0	1	0	anaerobic	
+NCBITaxon:1605	Ligilactobacillus animalis	species	1	0	1	0	anaerobic	
 NCBITaxon:1606	Ligilactobacillus aviarius	species	1	0	1	0	anaerobic	
+NCBITaxon:1622	Ligilactobacillus murinus	species	1	0	1	0	anaerobic	
 NCBITaxon:1623	Ligilactobacillus ruminis	species	5	0	1	0	anaerobic	
-NCBITaxon:2742598	Limosilactobacillus	genus	18	0	1	0	anaerobic	
-NCBITaxon:227943	Limosilactobacillus antri	species	1	0	1	0	anaerobic	
-NCBITaxon:1613	Limosilactobacillus fermentum	species	1	0	1	0	anaerobic	
-NCBITaxon:227942	Limosilactobacillus gastricus	species	1	0	1	0	anaerobic	
-NCBITaxon:97478	Limosilactobacillus mucosae	species	2	0	1	0	anaerobic	
+NCBITaxon:1624	Ligilactobacillus salivarius	species	1	0	1	0	anaerobic	
+NCBITaxon:2742598	Limosilactobacillus	genus	26	0	1	0	anaerobic	
+NCBITaxon:227943	Limosilactobacillus antri	species	2	0	1	0	anaerobic	
+NCBITaxon:181675	Limosilactobacillus coleohominis	species	1	0	1	0	anaerobic	
+NCBITaxon:1613	Limosilactobacillus fermentum	species	2	0	1	0	anaerobic	
+NCBITaxon:227942	Limosilactobacillus gastricus	species	2	0	1	0	anaerobic	
+NCBITaxon:97478	Limosilactobacillus mucosae	species	3	0	1	0	anaerobic	
 NCBITaxon:1632	Limosilactobacillus oris	species	1	0	1	0	anaerobic	
 NCBITaxon:47493	Limosilactobacillus panis	species	2	0	1	0	anaerobic	
 NCBITaxon:35787	Limosilactobacillus pontis	species	2	0	1	0	anaerobic	
-NCBITaxon:1598	Limosilactobacillus reuteri	species	1	0	1	0	anaerobic	
+NCBITaxon:1598	Limosilactobacillus reuteri	species	3	0	1	0	anaerobic	
 NCBITaxon:1633	Limosilactobacillus vaginalis	species	1	0	1	0	anaerobic	
-NCBITaxon:2767888	Liquorilactobacillus	genus	7	0	1	0	anaerobic	
+NCBITaxon:2767888	Liquorilactobacillus	genus	8	0	1	0	anaerobic	
 NCBITaxon:82688	Liquorilactobacillus nagelii	species	2	0	1	0	anaerobic	
 NCBITaxon:1637	Listeria	genus	1	0	1	0	anaerobic	
 NCBITaxon:186820	Listeriaceae	family	1	0	1	0	anaerobic	
 NCBITaxon:1918536	Longicatena	genus	1	0	1	0	anaerobic	
 NCBITaxon:475961	Longilinea	genus	1	0	1	0	anaerobic	
+NCBITaxon:884684	Mageeibacillus indolicus	species	1	0	1	0	anaerobic	
 NCBITaxon:252965	Mahella	genus	2	0	1	0	anaerobic	
 NCBITaxon:252966	Mahella australiensis	species	2	0	1	0	anaerobic	
 NCBITaxon:558415	Marinilabiliaceae	family	9	0	1	0	anaerobic	
@@ -1128,10 +1274,11 @@ NCBITaxon:2742	Marinobacter	genus	4	0	1	0	anaerobic
 NCBITaxon:2743	Marinobacter nauticus	species	1	0	1	0	anaerobic	
 NCBITaxon:248744	Marvinbryantia	genus	1	0	1	0	anaerobic	
 NCBITaxon:168384	Marvinbryantia formatexigens	species	1	0	1	0	anaerobic	
-NCBITaxon:2316020	Mediterraneibacter	genus	7	0	1	0	anaerobic	
-NCBITaxon:592978	Mediterraneibacter faecis	species	1	0	1	0	anaerobic	
-NCBITaxon:342942	Mediterraneibacter glycyrrhizinilyticus	species	1	0	1	0	anaerobic	
-NCBITaxon:33038	Mediterraneibacter gnavus	species	2	0	1	0	anaerobic	
+NCBITaxon:2316020	Mediterraneibacter	genus	12	0	1	0	anaerobic	
+NCBITaxon:2316025	Mediterraneibacter butyricigenes	species	1	0	1	0	anaerobic	
+NCBITaxon:592978	Mediterraneibacter faecis	species	2	0	1	0	anaerobic	
+NCBITaxon:342942	Mediterraneibacter glycyrrhizinilyticus	species	2	0	1	0	anaerobic	
+NCBITaxon:33038	Mediterraneibacter gnavus	species	3	0	1	0	anaerobic	
 NCBITaxon:33039	Mediterraneibacter torques	species	2	0	1	0	anaerobic	
 NCBITaxon:879	Megalodesulfovibrio gigas	species	2	0	1	0	anaerobic	
 NCBITaxon:437897	Megamonas funiformis	species	2	0	1	0	anaerobic	
@@ -1139,63 +1286,74 @@ NCBITaxon:158847	Megamonas hypermegale	species	2	0	1	0	anaerobic
 NCBITaxon:156454	Megasphaera	genus	2	0	1	0	anaerobic	
 NCBITaxon:907	Megasphaera elsdenii	species	3	0	1	0	anaerobic	
 NCBITaxon:156456	Megasphaera geminata	species	2	0	1	0	anaerobic	
+NCBITaxon:1675036	Megasphaera hexanoica	species	1	0	1	0	anaerobic	
 NCBITaxon:879612	Megasphaera indica	species	1	0	1	0	anaerobic	
 NCBITaxon:1232428	Megasphaera massiliensis	species	1	0	1	0	anaerobic	
 NCBITaxon:1285585	Megasphaera sp. BL7	species	1	0	1	0	anaerobic	
+NCBITaxon:2144175	Megasphaera stantonii	species	1	0	1	0	anaerobic	
 NCBITaxon:1134403	Melioribacter	genus	1	0	1	0	anaerobic	
 NCBITaxon:33969	Melissococcus	genus	2	0	1	0	anaerobic	
 NCBITaxon:33970	Melissococcus plutonius	species	2	0	1	0	anaerobic	
+NCBITaxon:2023266	Merdimonas	genus	1	0	1	0	anaerobic	
 NCBITaxon:68287	Mesorhizobium	genus	1	0	1	0	anaerobic	
+NCBITaxon:2259133	Mesosutterella multiformis	species	0	1	1	0	obligately anaerobic	
 NCBITaxon:1184396	Mesotoga	genus	2	0	1	0	anaerobic	
-NCBITaxon:39441	Methanobrevibacter arboriphilus	species	1	0	1	0	anaerobic	
+NCBITaxon:2098	Metamycoplasma hominis	species	1	0	1	0	anaerobic	
+NCBITaxon:39441	Methanobrevibacter arboriphilus	species	3	0	1	0	anaerobic	
 NCBITaxon:230361	Methanobrevibacter millerae	species	1	0	1	0	anaerobic	
 NCBITaxon:294671	Methanobrevibacter olleyae	species	1	0	1	0	anaerobic	
 NCBITaxon:66851	Methanobrevibacter oralis	species	1	0	1	0	anaerobic	
 NCBITaxon:2173	Methanobrevibacter smithii	species	25	0	1	0	anaerobic	
-NCBITaxon:499551	Methanolinea	genus	3	0	1	0	anaerobic	
+NCBITaxon:66852	Methanobrevibacter sp.	species	1	0	1	0	anaerobic	
+NCBITaxon:499551	Methanolinea	genus	4	0	1	0	anaerobic	
 NCBITaxon:2316	Methanosphaera	genus	3	0	1	0	anaerobic	
 NCBITaxon:2317	Methanosphaera stadtmanae	species	2	0	1	0	anaerobic	
 NCBITaxon:660063	Methermicoccus	genus	2	0	1	0	anaerobic	
+NCBITaxon:316612	Methylibium	genus	1	0	1	0	anaerobic	
 NCBITaxon:1930071	Methylomusa anaerophila	species	1	0	1	0	anaerobic	
 NCBITaxon:32011	Methylophilaceae	family	2	0	1	0	anaerobic	
 NCBITaxon:16	Methylophilus	genus	2	0	1	0	anaerobic	
 NCBITaxon:29541	Methylophilus sp.	species	1	0	1	0	anaerobic	
-NCBITaxon:85006	Micrococcales	order	9	0	1	0	anaerobic	
-NCBITaxon:52225	Mitsuokella	genus	4	0	1	0	anaerobic	
+NCBITaxon:85006	Micrococcales	order	13	0	1	0	anaerobic	
+NCBITaxon:52225	Mitsuokella	genus	5	0	1	0	anaerobic	
 NCBITaxon:187979	Mitsuokella jalaludinii	species	2	0	1	0	anaerobic	
 NCBITaxon:52226	Mitsuokella multacida	species	2	0	1	0	anaerobic	
+NCBITaxon:2049034	Mitsuokella sp.	species	1	0	1	0	anaerobic	
 NCBITaxon:1649471	Mobilitalea	genus	1	0	1	0	anaerobic	
-NCBITaxon:2050	Mobiluncus	genus	11	0	1	0	anaerobic	
 NCBITaxon:2051	Mobiluncus curtisii	species	4	0	1	0	anaerobic	
-NCBITaxon:2052	Mobiluncus mulieris	species	5	0	1	0	anaerobic	
-NCBITaxon:86331	Mogibacterium	genus	7	0	1	0	anaerobic	
 NCBITaxon:114527	Mogibacterium diversum	species	1	0	1	0	anaerobic	
 NCBITaxon:114528	Mogibacterium neglectum	species	1	0	1	0	anaerobic	
 NCBITaxon:86332	Mogibacterium pumilum	species	1	0	1	0	anaerobic	
 NCBITaxon:35519	Mogibacterium timidum	species	2	0	1	0	anaerobic	
 NCBITaxon:86333	Mogibacterium vescum	species	2	0	1	0	anaerobic	
-NCBITaxon:31969	Mollicutes	class	11	0	1	0	anaerobic	
+NCBITaxon:31969	Mollicutes	class	12	0	1	0	anaerobic	
+NCBITaxon:3085657	Monoglobaceae	family	1	0	1	0	anaerobic	
+NCBITaxon:3085656	Monoglobales	order	1	0	1	0	anaerobic	
+NCBITaxon:2039302	Monoglobus	genus	1	0	1	0	anaerobic	
+NCBITaxon:1981510	Monoglobus pectinilyticus	species	1	0	1	0	anaerobic	
 NCBITaxon:468	Moraxellaceae	family	89	0	1	0	anaerobic	
 NCBITaxon:581	Morganella	genus	1	0	1	0	anaerobic	
 NCBITaxon:582	Morganella morganii	species	1	0	1	0	anaerobic	
-NCBITaxon:1903414	Morganellaceae	family	6	0	1	0	anaerobic	
+NCBITaxon:1903414	Morganellaceae	family	7	0	1	0	anaerobic	
 NCBITaxon:437755	Moryella	genus	1	0	1	0	anaerobic	
 NCBITaxon:371674	Moryella indoligenes	species	1	0	1	0	anaerobic	
 NCBITaxon:1433126	Mucinivorans hirudinis	species	1	0	1	0	anaerobic	
 NCBITaxon:248038	Mucispirillum	genus	2	0	1	0	anaerobic	
 NCBITaxon:248039	Mucispirillum schaedleri	species	2	0	1	0	anaerobic	
-NCBITaxon:1161127	Murdochiella	genus	1	0	1	0	anaerobic	
+NCBITaxon:1161127	Murdochiella	genus	2	0	1	0	anaerobic	
 NCBITaxon:507844	Murdochiella asaccharolytica	species	1	0	1	0	anaerobic	
-NCBITaxon:2005473	Muribaculaceae	family	1	0	1	0	anaerobic	
-NCBITaxon:1918540	Muribaculum	genus	1	0	1	0	anaerobic	
+NCBITaxon:1852373	Murdochiella vaginalis	species	1	0	1	0	anaerobic	
+NCBITaxon:2005473	Muribaculaceae	family	5	0	1	0	anaerobic	
+NCBITaxon:1918540	Muribaculum	genus	2	0	1	0	anaerobic	
+NCBITaxon:2530390	Muribaculum gordoncarteri	species	1	0	1	0	anaerobic	
 NCBITaxon:1796646	Muribaculum intestinale	species	1	0	1	0	anaerobic	
 NCBITaxon:1337051	Murimonas intestini	species	1	0	1	0	anaerobic	
-NCBITaxon:85007	Mycobacteriales	order	32	0	1	0	anaerobic	
-NCBITaxon:2093	Mycoplasma	genus	4	0	1	0	anaerobic	
+NCBITaxon:85007	Mycobacteriales	order	36	0	1	0	anaerobic	
+NCBITaxon:2093	Mycoplasma	genus	5	0	1	0	anaerobic	
 NCBITaxon:2102	Mycoplasma mycoides	species	4	0	1	0	anaerobic	
-NCBITaxon:2092	Mycoplasmataceae	family	4	0	1	0	anaerobic	
-NCBITaxon:2085	Mycoplasmatales	order	4	0	1	0	anaerobic	
-NCBITaxon:544448	Mycoplasmatota	phylum	11	0	1	0	anaerobic	
+NCBITaxon:2092	Mycoplasmataceae	family	5	0	1	0	anaerobic	
+NCBITaxon:2085	Mycoplasmatales	order	5	0	1	0	anaerobic	
+NCBITaxon:544448	Mycoplasmatota	phylum	13	0	1	0	anaerobic	
 NCBITaxon:76831	Myroides	genus	1	0	1	0	anaerobic	
 NCBITaxon:256	Myroides odoratus	species	1	0	1	0	anaerobic	
 NCBITaxon:29	Myxococcales	order	7	0	1	0	anaerobic	
@@ -1204,14 +1362,17 @@ NCBITaxon:89958	Natronincola	genus	5	0	1	0	anaerobic
 NCBITaxon:426128	Natronincola peptidivorans	species	2	0	1	0	anaerobic	
 NCBITaxon:909928	Negativicoccus	genus	1	0	1	0	anaerobic	
 NCBITaxon:620903	Negativicoccus succinicivorans	species	1	0	1	0	anaerobic	
-NCBITaxon:206351	Neisseriales	order	3	0	1	0	anaerobic	
-NCBITaxon:41294	Nitrobacteraceae	family	11	0	1	0	anaerobic	
+NCBITaxon:482	Neisseria	genus	2	0	1	0	anaerobic	
+NCBITaxon:490	Neisseria sicca	species	1	0	1	0	anaerobic	
+NCBITaxon:481	Neisseriaceae	family	4	0	1	0	anaerobic	
+NCBITaxon:206351	Neisseriales	order	7	0	1	0	anaerobic	
+NCBITaxon:41294	Nitrobacteraceae	family	13	0	1	0	anaerobic	
 NCBITaxon:32003	Nitrosomonadales	order	7	0	1	0	anaerobic	
 NCBITaxon:203693	Nitrospiria	class	4	0	1	0	anaerobic	
 NCBITaxon:40117	Nitrospirota	phylum	11	0	1	0	anaerobic	
 NCBITaxon:85015	Nocardioidaceae	family	1	0	1	0	anaerobic	
+NCBITaxon:165696	Novosphingobium	genus	1	0	1	0	anaerobic	
 NCBITaxon:182709	Oceanobacillus	genus	1	0	1	0	anaerobic	
-NCBITaxon:135619	Oceanospirillales	order	1	0	1	0	anaerobic	
 NCBITaxon:626933	Odoribacter laneus	species	2	0	1	0	anaerobic	
 NCBITaxon:58180	Oleidesulfovibrio alaskensis	species	3	0	1	0	anaerobic	
 NCBITaxon:201571	Oleidesulfovibrio vietnamensis	species	1	0	1	0	anaerobic	
@@ -1219,19 +1380,17 @@ NCBITaxon:1313210	Oligosphaera	genus	1	0	1	0	anaerobic
 NCBITaxon:1313209	Oligosphaeraceae	family	1	0	1	0	anaerobic	
 NCBITaxon:1313208	Oligosphaerales	order	1	0	1	0	anaerobic	
 NCBITaxon:1313207	Oligosphaeria	class	1	0	1	0	anaerobic	
-NCBITaxon:133925	Olsenella	genus	7	0	1	0	anaerobic	
-NCBITaxon:138595	Olsenella profusa	species	3	0	1	0	anaerobic	
 NCBITaxon:133926	Olsenella uli	species	2	0	1	0	anaerobic	
-NCBITaxon:1240483	Orbaceae	family	1	0	1	0	anaerobic	
-NCBITaxon:1240482	Orbales	order	1	0	1	0	anaerobic	
+NCBITaxon:1240483	Orbaceae	family	2	0	1	0	anaerobic	
+NCBITaxon:1240482	Orbales	order	2	0	1	0	anaerobic	
 NCBITaxon:1413210	Orenia metallireducens	species	1	0	1	0	anaerobic	
 NCBITaxon:265975	Oribacterium	genus	3	0	1	0	anaerobic	
 NCBITaxon:1501332	Oribacterium asaccharolyticum	species	1	0	1	0	anaerobic	
 NCBITaxon:1501329	Oribacterium parvum	species	1	0	1	0	anaerobic	
 NCBITaxon:237576	Oribacterium sinus	species	1	0	1	0	anaerobic	
 NCBITaxon:1434028	Ornatilinea	genus	1	0	1	0	anaerobic	
-NCBITaxon:459786	Oscillibacter	genus	3	0	1	0	anaerobic	
-NCBITaxon:1263547	Oscillibacter ruminantium	species	1	0	1	0	anaerobic	
+NCBITaxon:459786	Oscillibacter	genus	4	0	1	0	anaerobic	
+NCBITaxon:1263547	Oscillibacter ruminantium	species	2	0	1	0	anaerobic	
 NCBITaxon:351091	Oscillibacter valericigenes	species	2	0	1	0	anaerobic	
 NCBITaxon:846	Oxalobacter	genus	5	0	1	0	anaerobic	
 NCBITaxon:847	Oxalobacter formigenes	species	3	0	1	0	anaerobic	
@@ -1247,13 +1406,16 @@ NCBITaxon:100176	Papillibacter cinnamivorans	species	1	0	1	0	anaerobic
 NCBITaxon:871327	Parabacteroides chinchillae	species	1	0	1	0	anaerobic	
 NCBITaxon:823	Parabacteroides distasonis	species	2	0	1	0	anaerobic	
 NCBITaxon:1217282	Parabacteroides faecis	species	1	0	1	0	anaerobic	
+NCBITaxon:1869337	Parabacteroides sp.	species	1	0	1	0	anaerobic	
 NCBITaxon:469591	Parabacteroides sp. 20_3	species	0	1	1	0	obligately anaerobic	
 NCBITaxon:563193	Parabacteroides sp. D13	species	1	0	1	0	anaerobic	
 NCBITaxon:658662	Parabacteroides sp. D26	species	1	0	1	0	anaerobic	
-NCBITaxon:1849822	Paraclostridium	genus	8	0	1	0	anaerobic	
+NCBITaxon:1849822	Paraclostridium	genus	9	0	1	0	anaerobic	
 NCBITaxon:1505	Paraclostridium sordellii	species	4	0	1	0	anaerobic	
-NCBITaxon:31989	Paracoccaceae	family	18	0	1	0	anaerobic	
+NCBITaxon:31989	Paracoccaceae	family	25	0	1	0	anaerobic	
 NCBITaxon:651554	Paraeggerthella	genus	1	0	1	0	anaerobic	
+NCBITaxon:2518497	Paramuribaculum	genus	1	0	1	0	anaerobic	
+NCBITaxon:2094151	Paramuribaculum intestinale	species	1	0	1	0	anaerobic	
 NCBITaxon:577309	Paraprevotella	genus	4	0	1	0	anaerobic	
 NCBITaxon:454154	Paraprevotella clara	species	2	0	1	0	anaerobic	
 NCBITaxon:454155	Paraprevotella xylaniphila	species	2	0	1	0	anaerobic	
@@ -1264,36 +1426,36 @@ NCBITaxon:115544	Parasporobacterium paucivorans	species	1	0	1	0	anaerobic
 NCBITaxon:577310	Parasutterella	genus	3	0	1	0	anaerobic	
 NCBITaxon:487175	Parasutterella excrementihominis	species	2	0	1	0	anaerobic	
 NCBITaxon:626947	Parasutterella secunda	species	1	0	1	0	anaerobic	
+NCBITaxon:2082587	Parolsenella	genus	0	1	1	0	obligately anaerobic	
+NCBITaxon:2003188	Parolsenella catena	species	0	1	1	0	obligately anaerobic	
 NCBITaxon:1427376	Parvibacter	genus	1	0	1	0	anaerobic	
-NCBITaxon:543311	Parvimonas	genus	4	0	1	0	anaerobic	
+NCBITaxon:543311	Parvimonas	genus	5	0	1	0	anaerobic	
 NCBITaxon:33033	Parvimonas micra	species	2	0	1	0	anaerobic	
+NCBITaxon:1944660	Parvimonas sp.	species	1	0	1	0	anaerobic	
 NCBITaxon:671230	Parvimonas sp. oral taxon 110	species	1	0	1	0	anaerobic	
 NCBITaxon:713008	Parvimonas sp. oral taxon 393	species	1	0	1	0	anaerobic	
+NCBITaxon:745	Pasteurella	genus	1	0	1	0	anaerobic	
 NCBITaxon:178339	Pauljensenia hongkongensis	species	1	0	1	0	anaerobic	
 NCBITaxon:864	Pectinatus	genus	6	0	1	0	anaerobic	
 NCBITaxon:86956	Pectinatus cerevisiiphilus	species	1	0	1	0	anaerobic	
 NCBITaxon:1903410	Pectobacteriaceae	family	4	0	1	0	anaerobic	
 NCBITaxon:122277	Pectobacterium	genus	3	0	1	0	anaerobic	
 NCBITaxon:554	Pectobacterium carotovorum	species	2	0	1	0	anaerobic	
-NCBITaxon:1253	Pediococcus	genus	2	0	1	0	anaerobic	
-NCBITaxon:1254	Pediococcus acidilactici	species	1	0	1	0	anaerobic	
-NCBITaxon:1255	Pediococcus pentosaceus	species	1	0	1	0	anaerobic	
+NCBITaxon:1253	Pediococcus	genus	7	0	1	0	anaerobic	
+NCBITaxon:1254	Pediococcus acidilactici	species	3	0	1	0	anaerobic	
+NCBITaxon:1255	Pediococcus pentosaceus	species	2	0	1	0	anaerobic	
 NCBITaxon:18	Pelobacter	genus	7	0	1	0	anaerobic	
 NCBITaxon:29543	Pelobacter propionicus	species	1	0	1	0	anaerobic	
 NCBITaxon:1100	Pelodictyon luteolum	species	2	0	1	0	anaerobic	
 NCBITaxon:365349	Pelosinus fermentans	species	2	0	1	0	anaerobic	
 NCBITaxon:89152	Peptacetobacter hiranonis	species	2	0	1	0	anaerobic	
-NCBITaxon:1913599	Peptoanaerobacter	genus	2	0	1	0	anaerobic	
+NCBITaxon:1913599	Peptoanaerobacter	genus	3	0	1	0	anaerobic	
 NCBITaxon:796937	Peptoanaerobacter stomatis	species	1	0	1	0	anaerobic	
 NCBITaxon:1481960	Peptoclostridium	genus	2	0	1	0	anaerobic	
-NCBITaxon:2740	Peptococcus	genus	2	0	1	0	anaerobic	
 NCBITaxon:2741	Peptococcus niger	species	1	0	1	0	anaerobic	
-NCBITaxon:1570339	Peptoniphilaceae	family	64	0	1	0	anaerobic	
-NCBITaxon:162289	Peptoniphilus	genus	29	0	1	0	anaerobic	
 NCBITaxon:1258	Peptoniphilus asaccharolyticus	species	2	0	1	0	anaerobic	
 NCBITaxon:507750	Peptoniphilus duerdenii	species	2	0	1	0	anaerobic	
 NCBITaxon:411567	Peptoniphilus gorbachii	species	1	0	1	0	anaerobic	
-NCBITaxon:1465756	Peptoniphilus grossensis	species	2	0	1	0	anaerobic	
 NCBITaxon:54005	Peptoniphilus harei	species	2	0	1	0	anaerobic	
 NCBITaxon:33030	Peptoniphilus indolicus	species	2	0	1	0	anaerobic	
 NCBITaxon:507751	Peptoniphilus koenoeneniae	species	1	0	1	0	anaerobic	
@@ -1303,37 +1465,37 @@ NCBITaxon:411570	Peptoniphilus olsenii	species	1	0	1	0	anaerobic
 NCBITaxon:1971214	Peptoniphilus sp.	species	1	0	1	0	anaerobic	
 NCBITaxon:712430	Peptoniphilus sp. oral taxon 375	species	1	0	1	0	anaerobic	
 NCBITaxon:1268254	Peptoniphilus timonensis	species	2	0	1	0	anaerobic	
+NCBITaxon:755171	Peptoniphilus tyrrelliae	species	1	0	1	0	anaerobic	
 NCBITaxon:1257	Peptostreptococcus	genus	8	0	1	0	anaerobic	
 NCBITaxon:1261	Peptostreptococcus anaerobius	species	3	0	1	0	anaerobic	
 NCBITaxon:215200	Peptostreptococcus russellii	species	1	0	1	0	anaerobic	
 NCBITaxon:1262	Peptostreptococcus sp.	species	1	0	1	0	anaerobic	
 NCBITaxon:341694	Peptostreptococcus stomatis	species	2	0	1	0	anaerobic	
-NCBITaxon:2036786	Petrothermobacter	genus	1	0	1	0	anaerobic	
 NCBITaxon:33024	Phascolarctobacterium	genus	3	0	1	0	anaerobic	
 NCBITaxon:33025	Phascolarctobacterium faecium	species	2	0	1	0	anaerobic	
 NCBITaxon:626940	Phascolarctobacterium succinatutens	species	1	0	1	0	anaerobic	
 NCBITaxon:376804	Phocaeicola barnesiae	species	2	0	1	0	anaerobic	
-NCBITaxon:387090	Phocaeicola coprophilus	species	1	0	1	0	anaerobic	
+NCBITaxon:387090	Phocaeicola coprophilus	species	2	0	1	0	anaerobic	
 NCBITaxon:357276	Phocaeicola dorei	species	4	0	1	0	anaerobic	
 NCBITaxon:732242	Phocaeicola paurosaccharolyticus	species	2	0	1	0	anaerobic	
 NCBITaxon:310297	Phocaeicola plebeius	species	2	0	1	0	anaerobic	
 NCBITaxon:376805	Phocaeicola salanitronis	species	1	0	1	0	anaerobic	
 NCBITaxon:671267	Phocaeicola sartorii	species	2	0	1	0	anaerobic	
 NCBITaxon:657	Photobacterium	genus	2	0	1	0	anaerobic	
-NCBITaxon:666505	Phycisphaerae	class	4	0	1	0	anaerobic	
-NCBITaxon:69277	Phyllobacteriaceae	family	1	0	1	0	anaerobic	
+NCBITaxon:666505	Phycisphaerae	class	8	0	1	0	anaerobic	
 NCBITaxon:337670	Pilibacter	genus	1	0	1	0	anaerobic	
-NCBITaxon:203682	Planctomycetota	phylum	10	0	1	0	anaerobic	
+NCBITaxon:203682	Planctomycetota	phylum	14	0	1	0	anaerobic	
 NCBITaxon:702	Plesiomonas	genus	1	0	1	0	anaerobic	
 NCBITaxon:703	Plesiomonas shigelloides	species	1	0	1	0	anaerobic	
 NCBITaxon:49	Polyangiaceae	family	1	0	1	0	anaerobic	
 NCBITaxon:28123	Porphyromonas asaccharolytica	species	2	0	1	0	anaerobic	
 NCBITaxon:501496	Porphyromonas bennonis	species	2	0	1	0	anaerobic	
-NCBITaxon:36874	Porphyromonas cangingivalis	species	1	0	1	0	anaerobic	
+NCBITaxon:36874	Porphyromonas cangingivalis	species	2	0	1	0	anaerobic	
 NCBITaxon:41976	Porphyromonas catoniae	species	2	0	1	0	anaerobic	
 NCBITaxon:29524	Porphyromonas circumdentaria	species	1	0	1	0	anaerobic	
-NCBITaxon:393921	Porphyromonas crevioricanis	species	1	0	1	0	anaerobic	
+NCBITaxon:393921	Porphyromonas crevioricanis	species	3	0	1	0	anaerobic	
 NCBITaxon:837	Porphyromonas gingivalis	species	7	0	1	0	anaerobic	
+NCBITaxon:1583331	Porphyromonas pasteri	species	1	0	1	0	anaerobic	
 NCBITaxon:712438	Porphyromonas sp. oral taxon 279	species	1	0	1	0	anaerobic	
 NCBITaxon:419005	Prevotella amnii	species	3	0	1	0	anaerobic	
 NCBITaxon:596085	Prevotella aurantiaca	species	2	0	1	0	anaerobic	
@@ -1357,15 +1519,14 @@ NCBITaxon:712466	Prevotella sp. oral taxon 376	species	1	0	1	0	anaerobic
 NCBITaxon:712471	Prevotella sp. oral taxon 475	species	1	0	1	0	anaerobic	
 NCBITaxon:3366641	Promethearchaeota	phylum	1	0	1	0	anaerobic	
 NCBITaxon:85017	Promicromonosporaceae	family	1	0	1	0	anaerobic	
-NCBITaxon:31957	Propionibacteriaceae	family	124	0	1	0	anaerobic	
-NCBITaxon:85009	Propionibacteriales	order	125	0	1	0	anaerobic	
-NCBITaxon:1743	Propionibacterium	genus	12	0	1	0	anaerobic	
+NCBITaxon:1743	Propionibacterium	genus	14	0	1	0	anaerobic	
 NCBITaxon:556499	Propionibacterium acidifaciens	species	3	0	1	0	anaerobic	
 NCBITaxon:1744	Propionibacterium freudenreichii	species	3	0	1	0	anaerobic	
+NCBITaxon:1977903	Propionibacterium sp.	species	1	0	1	0	anaerobic	
 NCBITaxon:348581	Propionicicella	genus	1	0	1	0	anaerobic	
-NCBITaxon:1085622	Propioniciclava	genus	1	0	1	0	anaerobic	
+NCBITaxon:1085622	Propioniciclava	genus	2	0	1	0	anaerobic	
 NCBITaxon:83766	Propionivibrio	genus	5	0	1	0	anaerobic	
-NCBITaxon:583	Proteus	genus	1	0	1	0	anaerobic	
+NCBITaxon:583	Proteus	genus	2	0	1	0	anaerobic	
 NCBITaxon:102862	Proteus penneri	species	1	0	1	0	anaerobic	
 NCBITaxon:586	Providencia	genus	3	0	1	0	anaerobic	
 NCBITaxon:588	Providencia stuartii	species	1	0	1	0	anaerobic	
@@ -1373,47 +1534,54 @@ NCBITaxon:333965	Providencia vermicola	species	1	0	1	0	anaerobic
 NCBITaxon:1486726	Pseudobacteroides	genus	2	0	1	0	anaerobic	
 NCBITaxon:213483	Pseudobdellovibrionaceae	family	1	0	1	0	anaerobic	
 NCBITaxon:185007	Pseudobutyrivibrio xylanivorans	species	2	0	1	0	anaerobic	
-NCBITaxon:116085	Pseudocoprococcus catus	species	1	0	1	0	anaerobic	
+NCBITaxon:1504576	Pseudocitrobacter	genus	1	0	1	0	anaerobic	
+NCBITaxon:116085	Pseudocoprococcus catus	species	2	0	1	0	anaerobic	
 NCBITaxon:57320	Pseudodesulfovibrio profundus	species	1	0	1	0	anaerobic	
-NCBITaxon:1017280	Pseudoflavonifractor	genus	1	0	1	0	anaerobic	
+NCBITaxon:1017280	Pseudoflavonifractor	genus	2	0	1	0	anaerobic	
 NCBITaxon:106588	Pseudoflavonifractor capillosus	species	1	0	1	0	anaerobic	
+NCBITaxon:1364	Pseudolactococcus piscium	species	1	0	1	0	anaerobic	
 NCBITaxon:1366	Pseudolactococcus raffinolactis	species	1	0	1	0	anaerobic	
 NCBITaxon:157692	Pseudoleptotrichia goodfellowii	species	4	0	1	0	anaerobic	
 NCBITaxon:135621	Pseudomonadaceae	family	1	0	1	0	anaerobic	
 NCBITaxon:72274	Pseudomonadales	order	5	0	1	0	anaerobic	
-NCBITaxon:113286	Pseudoramibacter	genus	2	0	1	0	anaerobic	
+NCBITaxon:1847	Pseudonocardia	genus	1	0	1	0	anaerobic	
+NCBITaxon:2070	Pseudonocardiaceae	family	1	0	1	0	anaerobic	
+NCBITaxon:85010	Pseudonocardiales	order	1	0	1	0	anaerobic	
+NCBITaxon:113286	Pseudoramibacter	genus	3	0	1	0	anaerobic	
 NCBITaxon:113287	Pseudoramibacter alactolyticus	species	2	0	1	0	anaerobic	
 NCBITaxon:1302778	Pseudoscardovia	genus	2	0	1	0	anaerobic	
 NCBITaxon:497	Psychrobacter	genus	3	0	1	0	anaerobic	
 NCBITaxon:1562565	Pyrinomonas	genus	1	0	1	0	anaerobic	
-NCBITaxon:67575	Rheinheimera	genus	2	0	1	0	anaerobic	
-NCBITaxon:82115	Rhizobiaceae	family	3	0	1	0	anaerobic	
-NCBITaxon:1060	Rhodobacter	genus	5	0	1	0	anaerobic	
+NCBITaxon:434126	Rarimicrobium hominis	species	1	0	1	0	anaerobic	
+NCBITaxon:67575	Rheinheimera	genus	3	0	1	0	anaerobic	
+NCBITaxon:1060	Rhodobacter	genus	6	0	1	0	anaerobic	
 NCBITaxon:1062	Rhodobacter sp.	species	1	0	1	0	anaerobic	
-NCBITaxon:204455	Rhodobacterales	order	32	0	1	0	anaerobic	
+NCBITaxon:204455	Rhodobacterales	order	41	0	1	0	anaerobic	
 NCBITaxon:119043	Rhodobiaceae	family	1	0	1	0	anaerobic	
-NCBITaxon:75787	Rhodocyclaceae	family	11	0	1	0	anaerobic	
-NCBITaxon:206389	Rhodocyclales	order	11	0	1	0	anaerobic	
+NCBITaxon:75787	Rhodocyclaceae	family	12	0	1	0	anaerobic	
+NCBITaxon:206389	Rhodocyclales	order	13	0	1	0	anaerobic	
 NCBITaxon:28065	Rhodoferax	genus	2	0	1	0	anaerobic	
 NCBITaxon:1068	Rhodomicrobium	genus	2	0	1	0	anaerobic	
 NCBITaxon:1070	Rhodopila	genus	1	0	1	0	anaerobic	
 NCBITaxon:29407	Rhodoplanes	genus	4	0	1	0	anaerobic	
-NCBITaxon:1073	Rhodopseudomonas	genus	7	0	1	0	anaerobic	
+NCBITaxon:1073	Rhodopseudomonas	genus	9	0	1	0	anaerobic	
 NCBITaxon:1076	Rhodopseudomonas palustris	species	1	0	1	0	anaerobic	
-NCBITaxon:41295	Rhodospirillaceae	family	15	0	1	0	anaerobic	
-NCBITaxon:204441	Rhodospirillales	order	22	0	1	0	anaerobic	
-NCBITaxon:1081	Rhodospirillum	genus	2	0	1	0	anaerobic	
+NCBITaxon:41295	Rhodospirillaceae	family	20	0	1	0	anaerobic	
+NCBITaxon:204441	Rhodospirillales	order	28	0	1	0	anaerobic	
+NCBITaxon:1081	Rhodospirillum	genus	3	0	1	0	anaerobic	
 NCBITaxon:29548	Rhodothermus	genus	1	0	1	0	anaerobic	
 NCBITaxon:588605	Robinsoniella	genus	1	0	1	0	anaerobic	
 NCBITaxon:180332	Robinsoniella peoriensis	species	1	0	1	0	anaerobic	
-NCBITaxon:1501226	Romboutsia	genus	2	0	1	0	anaerobic	
+NCBITaxon:1501226	Romboutsia	genus	3	0	1	0	anaerobic	
+NCBITaxon:1507512	Romboutsia hominis	species	1	0	1	0	anaerobic	
 NCBITaxon:1115758	Romboutsia ilealis	species	1	0	1	0	anaerobic	
 NCBITaxon:1537	Romboutsia lituseburensis	species	1	0	1	0	anaerobic	
 NCBITaxon:301302	Roseburia faecis	species	2	0	1	0	anaerobic	
-NCBITaxon:166486	Roseburia intestinalis	species	3	0	1	0	anaerobic	
+NCBITaxon:166486	Roseburia intestinalis	species	4	0	1	0	anaerobic	
 NCBITaxon:360807	Roseburia inulinivorans	species	2	0	1	0	anaerobic	
+NCBITaxon:2049040	Roseburia sp.	species	1	0	1	0	anaerobic	
 NCBITaxon:28068	Rubrivivax gelatinosus	species	1	0	1	0	anaerobic	
-NCBITaxon:1508657	Ruminiclostridium	genus	11	0	1	0	anaerobic	
+NCBITaxon:1508657	Ruminiclostridium	genus	12	0	1	0	anaerobic	
 NCBITaxon:29371	Ruminiclostridium cellobioparum subsp. termitidis	species	2	0	1	0	anaerobic	
 NCBITaxon:48256	Ruminiclostridium hungatei	species	1	0	1	0	anaerobic	
 NCBITaxon:29362	Ruminiclostridium papyrosolvens	species	1	0	1	0	anaerobic	
@@ -1421,15 +1589,15 @@ NCBITaxon:396504	Ruminiclostridium sufflavum	species	2	0	1	0	anaerobic
 NCBITaxon:866	Ruminobacter	genus	1	0	1	0	anaerobic	
 NCBITaxon:867	Ruminobacter amylophilus	species	1	0	1	0	anaerobic	
 NCBITaxon:1160721	Ruminococcus bicirculans (ex Wegman et al. 2014)	species	1	0	1	0	anaerobic	
+NCBITaxon:2564099	Ruminococcus bovis	species	1	0	1	0	anaerobic	
 NCBITaxon:40519	Ruminococcus callidus	species	1	0	1	0	anaerobic	
 NCBITaxon:1161942	Ruminococcus champanellensis	species	2	0	1	0	anaerobic	
-NCBITaxon:1265	Ruminococcus flavefaciens	species	2	0	1	0	anaerobic	
+NCBITaxon:1265	Ruminococcus flavefaciens	species	3	0	1	0	anaerobic	
 NCBITaxon:438033	Ruminococcus gauvreauii	species	2	0	1	0	anaerobic	
+NCBITaxon:41978	Ruminococcus sp.	species	1	0	1	0	anaerobic	
 NCBITaxon:457412	Ruminococcus sp. 5_1_39BFAA	species	1	0	1	0	anaerobic	
 NCBITaxon:1095771	Ruminococcus sp. JC304	species	1	0	1	0	anaerobic	
 NCBITaxon:657323	Ruminococcus sp. SR1/5	species	1	0	1	0	anaerobic	
-NCBITaxon:1905344	Ruthenibacterium	genus	1	0	1	0	anaerobic	
-NCBITaxon:1550024	Ruthenibacterium lactatiformans	species	1	0	1	0	anaerobic	
 NCBITaxon:1200657	Saccharofermentans	genus	1	0	1	0	anaerobic	
 NCBITaxon:319644	Saccharofermentans acetigenes	species	1	0	1	0	anaerobic	
 NCBITaxon:1434040	Salimesophilobacter	genus	1	0	1	0	anaerobic	
@@ -1444,21 +1612,27 @@ NCBITaxon:1267	Sarcina ventriculi	species	1	0	1	0	anaerobic
 NCBITaxon:196081	Scardovia	genus	4	0	1	0	anaerobic	
 NCBITaxon:78259	Scardovia inopinata	species	2	0	1	0	anaerobic	
 NCBITaxon:230143	Scardovia wiggsiae	species	2	0	1	0	anaerobic	
-NCBITaxon:2529408	Schaalia	genus	5	0	1	0	anaerobic	
+NCBITaxon:2529408	Schaalia	genus	11	0	1	0	anaerobic	
 NCBITaxon:181487	Schaalia cardiffensis	species	1	0	1	0	anaerobic	
-NCBITaxon:52768	Schaalia georgiae	species	1	0	1	0	anaerobic	
+NCBITaxon:52768	Schaalia georgiae	species	2	0	1	0	anaerobic	
 NCBITaxon:52773	Schaalia meyeri	species	1	0	1	0	anaerobic	
+NCBITaxon:635203	Schaalia naturae	species	1	0	1	0	anaerobic	
+NCBITaxon:1660	Schaalia odontolytica	species	1	0	1	0	anaerobic	
 NCBITaxon:131111	Schaalia turicensis	species	1	0	1	0	anaerobic	
+NCBITaxon:2676048	Schaedlerella	genus	1	0	1	0	anaerobic	
+NCBITaxon:2044587	Schaedlerella arabinosiphila	species	1	0	1	0	anaerobic	
 NCBITaxon:304207	Schleiferilactobacillus harbinensis	species	1	0	1	0	anaerobic	
 NCBITaxon:55506	Schwartzia	genus	2	0	1	0	anaerobic	
 NCBITaxon:55507	Schwartzia succinivorans	species	2	0	1	0	anaerobic	
 NCBITaxon:32068	Sebaldella	genus	1	0	1	0	anaerobic	
 NCBITaxon:240427	Secundilactobacillus paracollinoides	species	1	0	1	0	anaerobic	
 NCBITaxon:349742	Sedimenticola	genus	2	0	1	0	anaerobic	
+NCBITaxon:2483368	Sedimentisphaera	genus	2	0	1	0	anaerobic	
 NCBITaxon:77768	Segatella albensis	species	2	0	1	0	anaerobic	
 NCBITaxon:77095	Segatella bryantii	species	1	0	1	0	anaerobic	
 NCBITaxon:28126	Segatella buccae	species	3	0	1	0	anaerobic	
 NCBITaxon:165179	Segatella copri	species	2	0	1	0	anaerobic	
+NCBITaxon:2518605	Segatella hominis	species	1	0	1	0	anaerobic	
 NCBITaxon:28136	Segatella oulorum	species	2	0	1	0	anaerobic	
 NCBITaxon:185294	Segatella paludivivens	species	2	0	1	0	anaerobic	
 NCBITaxon:228604	Segatella salivae	species	3	0	1	0	anaerobic	
@@ -1466,15 +1640,13 @@ NCBITaxon:416586	Selenomonas bovis	species	2	0	1	0	anaerobic
 NCBITaxon:135079	Selenomonas dianae	species	2	0	1	0	anaerobic	
 NCBITaxon:135080	Selenomonas flueggei	species	1	0	1	0	anaerobic	
 NCBITaxon:135082	Selenomonas infelix	species	1	0	1	0	anaerobic	
-NCBITaxon:135083	Selenomonas noxia	species	2	0	1	0	anaerobic	
+NCBITaxon:135083	Selenomonas noxia	species	3	0	1	0	anaerobic	
 NCBITaxon:971	Selenomonas ruminantium	species	3	0	1	0	anaerobic	
 NCBITaxon:2053611	Selenomonas sp.	species	1	0	1	0	anaerobic	
 NCBITaxon:671225	Selenomonas sp. oral taxon 140	species	1	0	1	0	anaerobic	
 NCBITaxon:69823	Selenomonas sputigena	species	1	0	1	0	anaerobic	
 NCBITaxon:1769710	Sellimonas	genus	1	0	1	0	anaerobic	
 NCBITaxon:1653434	Sellimonas intestinalis	species	1	0	1	0	anaerobic	
-NCBITaxon:1473205	Senegalimassilia	genus	2	0	1	0	anaerobic	
-NCBITaxon:1473216	Senegalimassilia anaerobia	species	2	0	1	0	anaerobic	
 NCBITaxon:613	Serratia	genus	1	0	1	0	anaerobic	
 NCBITaxon:615	Serratia marcescens	species	1	0	1	0	anaerobic	
 NCBITaxon:519427	Sharpea	genus	2	0	1	0	anaerobic	
@@ -1485,43 +1657,48 @@ NCBITaxon:267890	Shewanellaceae	family	14	0	1	0	anaerobic
 NCBITaxon:1335483	Shimwellia	genus	1	0	1	0	anaerobic	
 NCBITaxon:177971	Shuttleworthella	genus	2	0	1	0	anaerobic	
 NCBITaxon:177972	Shuttleworthella satelles	species	2	0	1	0	anaerobic	
-NCBITaxon:84109	Slackia exigua	species	1	0	1	0	anaerobic	
+NCBITaxon:84109	Slackia exigua	species	2	0	1	0	anaerobic	
 NCBITaxon:572010	Slackia isoflavoniconvertens	species	1	0	1	0	anaerobic	
 NCBITaxon:168808	Sneathia	genus	2	0	1	0	anaerobic	
 NCBITaxon:40543	Sneathia sanguinegens	species	1	0	1	0	anaerobic	
 NCBITaxon:187101	Sneathia vaginalis	species	1	0	1	0	anaerobic	
-NCBITaxon:123375	Solobacterium	genus	3	0	1	0	anaerobic	
-NCBITaxon:102148	Solobacterium moorei	species	3	0	1	0	anaerobic	
+NCBITaxon:2606626	Sodaliphilus pleomorphus	species	1	0	1	0	anaerobic	
 NCBITaxon:399320	Sphaerochaeta	genus	4	0	1	0	anaerobic	
 NCBITaxon:1131703	Sphaerochaeta globosa	species	2	0	1	0	anaerobic	
-NCBITaxon:204457	Sphingomonadales	order	8	0	1	0	anaerobic	
-NCBITaxon:146	Spirochaeta	genus	11	0	1	0	anaerobic	
+NCBITaxon:84566	Sphingobacteriaceae	family	1	0	1	0	anaerobic	
+NCBITaxon:200666	Sphingobacteriales	order	1	0	1	0	anaerobic	
+NCBITaxon:117747	Sphingobacteriia	class	1	0	1	0	anaerobic	
+NCBITaxon:41297	Sphingomonadaceae	family	1	0	1	0	anaerobic	
+NCBITaxon:204457	Sphingomonadales	order	9	0	1	0	anaerobic	
+NCBITaxon:146	Spirochaeta	genus	12	0	1	0	anaerobic	
 NCBITaxon:46355	Spirochaeta africana	species	2	0	1	0	anaerobic	
 NCBITaxon:2132	Spiroplasma	genus	3	0	1	0	anaerobic	
 NCBITaxon:100132	Sporobacterium	genus	1	0	1	0	anaerobic	
-NCBITaxon:186821	Sporolactobacillaceae	family	7	0	1	0	anaerobic	
-NCBITaxon:2077	Sporolactobacillus	genus	7	0	1	0	anaerobic	
+NCBITaxon:2681861	Sporofaciens musculi	species	1	0	1	0	anaerobic	
+NCBITaxon:186821	Sporolactobacillaceae	family	8	0	1	0	anaerobic	
+NCBITaxon:2077	Sporolactobacillus	genus	8	0	1	0	anaerobic	
 NCBITaxon:47679	Sporomusa sphaeroides	species	2	0	1	0	anaerobic	
 NCBITaxon:1569	Sporosarcina	genus	1	0	1	0	anaerobic	
-NCBITaxon:90964	Staphylococcaceae	family	2025	0	1	0	anaerobic	
-NCBITaxon:1279	Staphylococcus	genus	2025	0	1	0	anaerobic	
+NCBITaxon:90964	Staphylococcaceae	family	2027	0	1	0	anaerobic	
+NCBITaxon:1279	Staphylococcus	genus	2027	0	1	0	anaerobic	
 NCBITaxon:1280	Staphylococcus aureus	species	2020	0	1	0	anaerobic	
-NCBITaxon:1282	Staphylococcus epidermidis	species	1	0	1	0	anaerobic	
+NCBITaxon:1282	Staphylococcus epidermidis	species	2	0	1	0	anaerobic	
 NCBITaxon:28035	Staphylococcus lugdunensis	species	1	0	1	0	anaerobic	
+NCBITaxon:469322	Steroidobacter	genus	1	0	1	0	anaerobic	
 NCBITaxon:1213720	Stomatobaculum	genus	1	0	1	0	anaerobic	
 NCBITaxon:796942	Stomatobaculum longum	species	1	0	1	0	anaerobic	
-NCBITaxon:1300	Streptococcaceae	family	133	0	1	0	anaerobic	
-NCBITaxon:1301	Streptococcus	genus	129	0	1	0	anaerobic	
-NCBITaxon:1311	Streptococcus agalactiae	species	2	0	1	0	anaerobic	
-NCBITaxon:1328	Streptococcus anginosus	species	5	0	1	0	anaerobic	
+NCBITaxon:34104	Streptobacillus	genus	1	0	1	0	anaerobic	
+NCBITaxon:34105	Streptobacillus moniliformis	species	1	0	1	0	anaerobic	
+NCBITaxon:1311	Streptococcus agalactiae	species	4	0	1	0	anaerobic	
 NCBITaxon:113107	Streptococcus australis	species	2	0	1	0	anaerobic	
-NCBITaxon:76860	Streptococcus constellatus	species	4	0	1	0	anaerobic	
+NCBITaxon:76860	Streptococcus constellatus	species	5	0	1	0	anaerobic	
 NCBITaxon:45634	Streptococcus cristatus	species	2	0	1	0	anaerobic	
 NCBITaxon:1317	Streptococcus downei	species	2	0	1	0	anaerobic	
 NCBITaxon:1334	Streptococcus dysgalactiae	species	1	0	1	0	anaerobic	
 NCBITaxon:1335	Streptococcus equinus	species	2	0	1	0	anaerobic	
 NCBITaxon:315405	Streptococcus gallolyticus	species	3	0	1	0	anaerobic	
 NCBITaxon:1302	Streptococcus gordonii	species	1	0	1	0	anaerobic	
+NCBITaxon:102684	Streptococcus infantarius	species	1	0	1	0	anaerobic	
 NCBITaxon:68892	Streptococcus infantis	species	2	0	1	0	anaerobic	
 NCBITaxon:1338	Streptococcus intermedius	species	5	0	1	0	anaerobic	
 NCBITaxon:1339	Streptococcus macacae	species	1	0	1	0	anaerobic	
@@ -1534,6 +1711,7 @@ NCBITaxon:1318	Streptococcus parasanguinis	species	3	0	1	0	anaerobic
 NCBITaxon:68891	Streptococcus peroris	species	1	0	1	0	anaerobic	
 NCBITaxon:1313	Streptococcus pneumoniae	species	6	0	1	0	anaerobic	
 NCBITaxon:1340	Streptococcus porcinus	species	1	0	1	0	anaerobic	
+NCBITaxon:257758	Streptococcus pseudopneumoniae	species	1	0	1	0	anaerobic	
 NCBITaxon:1314	Streptococcus pyogenes	species	5	0	1	0	anaerobic	
 NCBITaxon:1304	Streptococcus salivarius	species	1	0	1	0	anaerobic	
 NCBITaxon:1305	Streptococcus sanguinis	species	1	0	1	0	anaerobic	
@@ -1544,6 +1722,7 @@ NCBITaxon:712621	Streptococcus sp. oral taxon 057	species	1	0	1	0	anaerobic
 NCBITaxon:712622	Streptococcus sp. oral taxon 058	species	1	0	1	0	anaerobic	
 NCBITaxon:712631	Streptococcus sp. oral taxon 074	species	1	0	1	0	anaerobic	
 NCBITaxon:712632	Streptococcus sp. oral taxon 423	species	1	0	1	0	anaerobic	
+NCBITaxon:1307	Streptococcus suis	species	1	0	1	0	anaerobic	
 NCBITaxon:1308	Streptococcus thermophilus	species	2	0	1	0	anaerobic	
 NCBITaxon:149016	Streptococcus urinalis	species	2	0	1	0	anaerobic	
 NCBITaxon:1343	Streptococcus vestibularis	species	2	0	1	0	anaerobic	
@@ -1557,20 +1736,20 @@ NCBITaxon:83768	Succinimonas	genus	1	0	1	0	anaerobic
 NCBITaxon:78119	Succinispira	genus	1	0	1	0	anaerobic	
 NCBITaxon:83770	Succinivibrio	genus	1	0	1	0	anaerobic	
 NCBITaxon:83771	Succinivibrio dextrinosolvens	species	1	0	1	0	anaerobic	
+NCBITaxon:2036206	Suicoccus acidiformans	species	1	0	1	0	anaerobic	
 NCBITaxon:28033	Sulfobacillus	genus	1	0	1	0	anaerobic	
 NCBITaxon:53425	Sulfophobococcus	genus	1	0	1	0	anaerobic	
 NCBITaxon:286130	Sulfuricurvum	genus	2	0	1	0	anaerobic	
 NCBITaxon:212790	Sulfurihydrogenibium	genus	1	0	1	0	anaerobic	
-NCBITaxon:2771471	Sulfurimonadaceae	family	5	0	1	0	anaerobic	
+NCBITaxon:2771471	Sulfurimonadaceae	family	7	0	1	0	anaerobic	
 NCBITaxon:1499082	Sulfurisoma	genus	1	0	1	0	anaerobic	
 NCBITaxon:1054211	Sulfuritalea	genus	1	0	1	0	anaerobic	
-NCBITaxon:57665	Sulfurospirillum	genus	13	0	1	0	anaerobic	
+NCBITaxon:57665	Sulfurospirillum	genus	14	0	1	0	anaerobic	
 NCBITaxon:265570	Sulfurovum	genus	3	0	1	0	anaerobic	
-NCBITaxon:40544	Sutterella	genus	5	0	1	0	anaerobic	
+NCBITaxon:2494234	Sutterella megalosphaeroides	species	0	1	1	0	obligately anaerobic	
 NCBITaxon:437898	Sutterella parvirubra	species	2	0	1	0	anaerobic	
 NCBITaxon:234908	Sutterella stercoricanis	species	1	0	1	0	anaerobic	
 NCBITaxon:40545	Sutterella wadsworthensis	species	2	0	1	0	anaerobic	
-NCBITaxon:995019	Sutterellaceae	family	9	0	1	0	anaerobic	
 NCBITaxon:543349	Symbiobacteriaceae	family	5	0	1	0	anaerobic	
 NCBITaxon:2733	Symbiobacterium	genus	4	0	1	0	anaerobic	
 NCBITaxon:2753	Synergistes	genus	0	2	1	0	obligately anaerobic	
@@ -1582,7 +1761,7 @@ NCBITaxon:119484	Syntrophobacter fumaroxidans	species	1	0	1	0	anaerobic
 NCBITaxon:213465	Syntrophobacteraceae	family	13	0	1	0	anaerobic	
 NCBITaxon:84036	Syntrophococcus	genus	1	0	1	0	anaerobic	
 NCBITaxon:84037	Syntrophococcus sucromutans	species	1	0	1	0	anaerobic	
-NCBITaxon:862	Syntrophomonas	genus	11	0	1	0	anaerobic	
+NCBITaxon:862	Syntrophomonas	genus	12	0	1	0	anaerobic	
 NCBITaxon:29542	Syntrophotalea acetylenica	species	1	0	1	0	anaerobic	
 NCBITaxon:195950	Tannerella	genus	3	0	1	0	anaerobic	
 NCBITaxon:28112	Tannerella forsythia	species	2	0	1	0	anaerobic	
@@ -1590,10 +1769,10 @@ NCBITaxon:665949	Tannerella sp. 6_1_58FAA_CT1	species	1	0	1	0	anaerobic
 NCBITaxon:499228	Tepidanaerobacter	genus	4	0	1	0	anaerobic	
 NCBITaxon:285105	Tepidimicrobium	genus	3	0	1	0	anaerobic	
 NCBITaxon:204433	Terriglobales	order	1	0	1	0	anaerobic	
-NCBITaxon:1505652	Terrisporobacter	genus	4	0	1	0	anaerobic	
+NCBITaxon:1505652	Terrisporobacter	genus	5	0	1	0	anaerobic	
 NCBITaxon:36841	Terrisporobacter glycolicus	species	2	0	1	0	anaerobic	
 NCBITaxon:1541	Terrisporobacter mayombei	species	1	0	1	0	anaerobic	
-NCBITaxon:51668	Tetragenococcus	genus	1	0	1	0	anaerobic	
+NCBITaxon:51668	Tetragenococcus	genus	2	0	1	0	anaerobic	
 NCBITaxon:168934	Thalassospira	genus	3	0	1	0	anaerobic	
 NCBITaxon:188786	Thermaceae	family	2	0	1	0	anaerobic	
 NCBITaxon:68933	Thermales	order	2	0	1	0	anaerobic	
@@ -1622,18 +1801,17 @@ NCBITaxon:69824	Thomasclavelia cocleata	species	1	0	1	0	anaerobic
 NCBITaxon:1547	Thomasclavelia ramosa	species	2	0	1	0	anaerobic	
 NCBITaxon:341225	Thomasclavelia saccharogumia	species	1	0	1	0	anaerobic	
 NCBITaxon:29348	Thomasclavelia spiroformis	species	2	0	1	0	anaerobic	
-NCBITaxon:69894	Tindallia	genus	3	0	1	0	anaerobic	
 NCBITaxon:361365	Tindallia texcoconensis	species	1	0	1	0	anaerobic	
-NCBITaxon:41273	Tissierella	genus	6	0	1	0	anaerobic	
-NCBITaxon:79681	Tissierella creatinophila	species	1	0	1	0	anaerobic	
+NCBITaxon:41273	Tissierella	genus	7	0	1	0	anaerobic	
+NCBITaxon:79681	Tissierella creatinophila	species	2	0	1	0	anaerobic	
 NCBITaxon:41274	Tissierella sp.	species	1	0	1	0	anaerobic	
-NCBITaxon:1737406	Tissierellaceae	family	7	0	1	0	anaerobic	
+NCBITaxon:1737406	Tissierellaceae	family	8	0	1	0	anaerobic	
 NCBITaxon:43947	Tolumonas	genus	1	0	1	0	anaerobic	
 NCBITaxon:43948	Tolumonas auensis	species	1	0	1	0	anaerobic	
 NCBITaxon:1299998	Tractidigestivibacter scatoligenes	species	1	0	1	0	anaerobic	
 NCBITaxon:225004	Treponema berlinense	species	1	0	1	0	anaerobic	
 NCBITaxon:81028	Treponema brennaborense	species	1	0	1	0	anaerobic	
-NCBITaxon:158	Treponema denticola	species	2	0	1	0	anaerobic	
+NCBITaxon:158	Treponema denticola	species	5	0	1	0	anaerobic	
 NCBITaxon:53418	Treponema lecithinolyticum	species	1	0	1	0	anaerobic	
 NCBITaxon:51160	Treponema maltophilum	species	2	0	1	0	anaerobic	
 NCBITaxon:58231	Treponema medium	species	1	0	1	0	anaerobic	
@@ -1650,7 +1828,7 @@ NCBITaxon:712745	Treponema sp. oral taxon 268	species	1	0	1	0	anaerobic
 NCBITaxon:167	Treponema succinifaciens	species	1	0	1	0	anaerobic	
 NCBITaxon:38815	Trichloromonas acetexigens	species	1	0	1	0	anaerobic	
 NCBITaxon:82802	Trichococcus	genus	5	0	1	0	anaerobic	
-NCBITaxon:1069494	Trueperella	genus	2	0	1	0	anaerobic	
+NCBITaxon:1069494	Trueperella	genus	3	0	1	0	anaerobic	
 NCBITaxon:1661	Trueperella pyogenes	species	1	0	1	0	anaerobic	
 NCBITaxon:2060	Tsukamurella	genus	1	0	1	0	anaerobic	
 NCBITaxon:85028	Tsukamurellaceae	family	1	0	1	0	anaerobic	
@@ -1661,21 +1839,22 @@ NCBITaxon:1918598	Turicimonas	genus	1	0	1	0	anaerobic
 NCBITaxon:1796652	Turicimonas muris	species	1	0	1	0	anaerobic	
 NCBITaxon:1506577	Tyzzerella	genus	2	0	1	0	anaerobic	
 NCBITaxon:2737	Vagococcus	genus	1	0	1	0	anaerobic	
-NCBITaxon:1348611	Vallitalea	genus	2	0	1	0	anaerobic	
 NCBITaxon:1348613	Vallitalea pronyensis	species	1	0	1	0	anaerobic	
-NCBITaxon:2603322	Vallitaleaceae	family	3	0	1	0	anaerobic	
-NCBITaxon:184869	Varibaculum	genus	1	0	1	0	anaerobic	
-NCBITaxon:184870	Varibaculum cambriense	species	1	0	1	0	anaerobic	
+NCBITaxon:184869	Varibaculum	genus	4	0	1	0	anaerobic	
+NCBITaxon:1177728	Varibaculum anthropi	species	1	0	1	0	anaerobic	
+NCBITaxon:184870	Varibaculum cambriense	species	2	0	1	0	anaerobic	
 NCBITaxon:34072	Variovorax	genus	1	0	1	0	anaerobic	
 NCBITaxon:436515	Variovorax boronicumulans	species	1	0	1	0	anaerobic	
-NCBITaxon:29465	Veillonella	genus	29	0	1	0	anaerobic	
+NCBITaxon:29465	Veillonella	genus	31	0	1	0	anaerobic	
 NCBITaxon:39777	Veillonella atypica	species	4	0	1	0	anaerobic	
 NCBITaxon:419208	Veillonella denticariosi	species	2	0	1	0	anaerobic	
 NCBITaxon:39778	Veillonella dispar	species	2	0	1	0	anaerobic	
+NCBITaxon:1911679	Veillonella infantium	species	1	0	1	0	anaerobic	
 NCBITaxon:464322	Veillonella magna	species	2	0	1	0	anaerobic	
 NCBITaxon:187328	Veillonella montpellierensis	species	2	0	1	0	anaerobic	
 NCBITaxon:29466	Veillonella parvula	species	4	0	1	0	anaerobic	
 NCBITaxon:423477	Veillonella rogosae	species	1	0	1	0	anaerobic	
+NCBITaxon:1926307	Veillonella sp.	species	1	0	1	0	anaerobic	
 NCBITaxon:457416	Veillonella sp. 3_1_44	species	1	0	1	0	anaerobic	
 NCBITaxon:450749	Veillonella sp. 6_1_27	species	1	0	1	0	anaerobic	
 NCBITaxon:671228	Veillonella sp. oral taxon 158	species	1	0	1	0	anaerobic	
@@ -1690,12 +1869,16 @@ NCBITaxon:641	Vibrionaceae	family	12	0	1	0	anaerobic
 NCBITaxon:135623	Vibrionales	order	12	0	1	0	anaerobic	
 NCBITaxon:84406	Virgibacillus	genus	3	0	1	0	anaerobic	
 NCBITaxon:57739	Vogesella	genus	1	0	1	0	anaerobic	
-NCBITaxon:46255	Weissella	genus	4	0	1	0	anaerobic	
+NCBITaxon:2762318	Weeksellaceae	family	1	0	1	0	anaerobic	
+NCBITaxon:46255	Weissella	genus	7	0	1	0	anaerobic	
 NCBITaxon:1583	Weissella confusa	species	1	0	1	0	anaerobic	
 NCBITaxon:165096	Weissella koreensis	species	2	0	1	0	anaerobic	
+NCBITaxon:155866	Weissella soli	species	1	0	1	0	anaerobic	
+NCBITaxon:29318	Winkia neuii subsp. anitrata	species	1	0	1	0	anaerobic	
 NCBITaxon:843	Wolinella	genus	1	0	1	0	anaerobic	
 NCBITaxon:626	Xenorhabdus	genus	1	0	1	0	anaerobic	
-NCBITaxon:83231	Xylanibacter brevis	species	1	0	1	0	anaerobic	
+NCBITaxon:83231	Xylanibacter brevis	species	2	0	1	0	anaerobic	
+NCBITaxon:1676614	Xylanibacter rarus	species	0	1	1	0	obligately anaerobic	
 NCBITaxon:839	Xylanibacter ruminicola	species	1	0	1	0	anaerobic	
 NCBITaxon:629	Yersinia	genus	1	0	1	0	anaerobic	
 NCBITaxon:632	Yersinia pestis	species	1	0	1	0	anaerobic	
@@ -1711,13 +1894,16 @@ NCBITaxon:47246	[Clostridium] viride	species	1	0	1	0	anaerobic
 NCBITaxon:1232426	[Collinsella] massiliensis	species	1	0	1	0	anaerobic	
 NCBITaxon:35517	[Eubacterium] brachy	species	2	0	1	0	anaerobic	
 NCBITaxon:29322	[Eubacterium] cellulosolvens	species	1	0	1	0	anaerobic	
+NCBITaxon:56774	[Eubacterium] infirmum	species	1	0	1	0	anaerobic	
 NCBITaxon:76124	[Eubacterium] minutum	species	2	0	1	0	anaerobic	
 NCBITaxon:35518	[Eubacterium] nodatum	species	2	0	1	0	anaerobic	
 NCBITaxon:51123	[Eubacterium] saphenum	species	1	0	1	0	anaerobic	
 NCBITaxon:39492	[Eubacterium] siraeum	species	3	0	1	0	anaerobic	
-NCBITaxon:39498	[Eubacterium] yurii	species	1	0	1	0	anaerobic	
+NCBITaxon:143393	[Eubacterium] sulci	species	1	0	1	0	anaerobic	
+NCBITaxon:39498	[Eubacterium] yurii	species	2	0	1	0	anaerobic	
 NCBITaxon:730	[Haemophilus] ducreyi	species	1	0	1	0	anaerobic	
+NCBITaxon:706562	[Lactobacillus] rogosae	species	1	0	1	0	anaerobic	
 NCBITaxon:157673	[Mannheimia] succiniciproducens	species	1	0	1	0	anaerobic	
-NCBITaxon:46228	[Ruminococcus] lactaris	species	1	0	1	0	anaerobic	
+NCBITaxon:46228	[Ruminococcus] lactaris	species	2	0	1	0	anaerobic	
+NCBITaxon:1869227	bacterium	species	1	0	1	0	anaerobic	
 NCBITaxon:245014	butyrate-producing bacterium SS3/4	species	1	0	1	0	anaerobic	
-NCBITaxon:286136	uncultured Coriobacterium sp.	species	1	0	1	0	anaerobic	

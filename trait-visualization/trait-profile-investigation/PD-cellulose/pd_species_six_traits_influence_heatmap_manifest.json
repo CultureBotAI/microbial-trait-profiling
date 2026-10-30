@@ -1,14 +1,14 @@
 {
   "method": "fixed-reference leave-one-reported-species-out influence",
   "traits": 6,
-  "species": 5,
-  "cells": 30,
-  "displayed_cells": 9,
-  "audited_cells_for_displayed_species": 30,
-  "direct_annotation_cells": 8,
-  "denominator_only_cells": 22,
-  "species_removed_all_low_support": 40,
-  "species_removed_by_explicit_exclusion": 1,
+  "species": 3,
+  "cells": 18,
+  "displayed_cells": 4,
+  "audited_cells_for_displayed_species": 18,
+  "direct_annotation_cells": 3,
+  "denominator_only_cells": 15,
+  "species_removed_all_low_support": 35,
+  "species_removed_by_explicit_exclusion": 0,
   "excluded_taxon_ids": [
     "NCBITaxon:33039"
   ],
@@ -18,7 +18,7 @@
   "species_removed_below_absolute_influence_threshold": 1,
   "absolute_influence_display_threshold_z": 0.01,
   "display_rule": "mean influence > +0.01 or < -0.01",
-  "non_mediadive_columns": 317,
+  "non_mediadive_columns": 344,
   "minimum_support_studies": 3,
   "row_filter": "exclude explicit taxon removals, species whose six cells are all low support, and species with no mean influence beyond +/-0.01",
   "row_order": "descending BugSigDB PD log2(increased/decreased) profile-count ratio; ties by increased-minus-decreased count, total direction profiles, and taxon name",
@@ -34,31 +34,30 @@
   },
   "pd_specificity_displayed": false,
   "pd_literature_reference_taxa": 20,
-  "displayed_species_with_literature_reference": 5,
+  "displayed_species_with_literature_reference": 3,
   "literature_bug_sig_direction_agreement_counts": {
-    "agrees": 4,
-    "differs": 1
+    "agrees": 3
   },
   "input_sha256_chunks": {
     "data/derived/study_trait_profiles_wide.tsv": [
-      "519a095b",
-      "09e179dc",
-      "92fb51f9",
-      "d892984a",
-      "52dd100d",
-      "ece4dadf",
-      "6c94b036",
-      "a5323e6c"
+      "43b2e230",
+      "2b0edf48",
+      "36a21e24",
+      "7329a6cb",
+      "f3245036",
+      "d350ab53",
+      "3325596d",
+      "e897f4d0"
     ],
     "data/derived/taxa_trait_matrix.tsv": [
-      "f6de0576",
-      "63f3a3b0",
-      "026579df",
-      "af341745",
-      "faac27df",
-      "7f9c0afd",
-      "6f5fa3e6",
-      "aa034178"
+      "45df0fe7",
+      "120455a9",
+      "3361d791",
+      "81953c33",
+      "8405160f",
+      "ff7a2e78",
+      "d2a7d8d1",
+      "8584ec8e"
     ],
     "data/derived/bugsigdb_taxa.tsv": [
       "e7fa982b",
@@ -71,14 +70,14 @@
       "db271c59"
     ],
     "trait-visualization/trait-profile-investigation/PD-cellulose/pd_six_trait_taxon_profile_evidence.tsv": [
-      "8793b9a0",
-      "e9209db3",
-      "49b3faab",
-      "512f4ccf",
-      "08c4522f",
-      "ec7b5662",
-      "0c442967",
-      "91d91000"
+      "93ba106a",
+      "83762100",
+      "bbf06399",
+      "0cef1266",
+      "392dcc0e",
+      "1602816b",
+      "9fcf8f0d",
+      "47950f7c"
     ]
   },
   "sha256_chunk_encoding": "concatenate each path's eight chunks in order"

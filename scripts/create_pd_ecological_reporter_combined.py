@@ -917,8 +917,12 @@ def main() -> None:
         raise ValueError(f"Figure traits missing from the trait summary: {sorted(missing_traits)}")
     metadata = load_profile_metadata()
     zscores = build_zscore_matrix(metadata, trait_ids)
+    from mtp.population_tables import is_canonical_derived_path, orient_and_filter_taxa_df
+
     summary, study_contrasts = build_condition_trait_summaries(metadata, zscores, traits)
     taxa = read_tsv(TAXA_PATH)
+    if is_canonical_derived_path(TAXA_PATH, "bugsigdb_taxa.tsv"):
+        taxa = orient_and_filter_taxa_df(taxa, filter_to_selection=True)
     taxa_trait_matrix = pd.read_csv(
         TAXA_TRAIT_MATRIX_PATH,
         sep="\t",

@@ -15,18 +15,18 @@ show how many taxa and profiles have only MediaDive annotations.
 
 | Metric | Count |
 | --- | ---: |
-| Total profiles | 5629 |
-| Profiles with mapped traits | 5538 |
-| Zero-trait profiles | 91 |
-| Unique taxa | 4750 |
-| Trait-bearing taxa | 3274 |
-| Taxa with non-MediaDive traits | 3272 |
-| Taxa with MediaDive annotations only | 2 |
-| Profiles with non-MediaDive traits | 5538 |
+| Total profiles | 1870 |
+| Profiles with mapped traits | 1845 |
+| Zero-trait profiles | 25 |
+| Unique taxa | 3221 |
+| Trait-bearing taxa | 2363 |
+| Taxa with non-MediaDive traits | 2363 |
+| Taxa with MediaDive annotations only | 0 |
+| Profiles with non-MediaDive traits | 1845 |
 | Profiles with MediaDive annotations only | 0 |
-| Zero-trait taxa | 1476 |
-| Taxon signature mentions | 46865 |
-| Zero-trait taxa recurring in ≥20 profiles | 12 |
+| Zero-trait taxa | 858 |
+| Taxon signature mentions | 19566 |
+| Zero-trait taxa recurring in ≥20 profiles | 3 |
 
 Zero-trait profiles remain in the coverage tables. Only the mapped-profile histogram
 and mapped-profile richness boxplot omit them; this audit does not declare eligibility
@@ -34,20 +34,19 @@ for downstream statistical tests. No recorded annotation is not biological absen
 
 | Rank | Unique taxa | Zero-trait taxa | Trait-bearing (%) | Signature mentions | Profiles with rank |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Species | 3165 | 1246 | 60.63 | 15507 | 2546 |
-| Genus | 1086 | 147 | 86.46 | 20021 | 4158 |
-| Family | 253 | 39 | 84.58 | 5840 | 2024 |
-| Order | 132 | 25 | 81.06 | 2117 | 1062 |
-| Class | 64 | 10 | 84.38 | 1471 | 872 |
-| Phylum | 49 | 9 | 81.63 | 1908 | 1159 |
-| Superkingdom | 1 | 0 | 100.00 | 1 | 1 |
+| Species | 1983 | 696 | 64.90 | 6078 | 893 |
+| Genus | 842 | 103 | 87.77 | 8556 | 1454 |
+| Family | 202 | 26 | 87.13 | 2392 | 783 |
+| Order | 99 | 19 | 80.81 | 964 | 444 |
+| Class | 50 | 8 | 84.00 | 683 | 390 |
+| Phylum | 45 | 6 | 86.67 | 893 | 515 |
 
 | Distribution | Median | Q1 | Q3 | Mean |
 | --- | ---: | ---: | ---: | ---: |
-| Traits per mapped profile | 156 | 60 | 387 | 290.912 |
-| Mapped taxa per mapped profile | 4 | 2 | 9 | 7.76887 |
-| Traits per reported taxon | 8 | 0 | 20 | 21.6143 |
-| Traits per trait-bearing taxon | 14 | 7 | 32 | 31.3586 |
+| Traits per mapped profile | 186 | 79 | 530 | 358.723 |
+| Mapped taxa per mapped profile | 6 | 3 | 12 | 9.70894 |
+| Traits per reported taxon | 10 | 0 | 24 | 25.8802 |
+| Traits per trait-bearing taxon | 15 | 8 | 36 | 35.2772 |
 
 Annotation counts can include traits aggregated from descendants; they do not measure
 physiology, patient-level abundance or activity. Suggested zero-trait diagnoses are
@@ -56,7 +55,7 @@ heuristics for review, not verified causes or permission to propagate annotation
 Regenerate from this repository's root with the same input paths and scope:
 
 ```sh
-just taxa-coverage --strain-rollup phenotype --taxa data/derived/bugsigdb_taxa.tsv --matrix data/derived/taxa_trait_matrix.tsv --profiles data/derived/study_trait_profiles_wide.tsv --experiments data/derived/experiments.tsv --output-dir trait-visualization/trait-profile-investigation/taxa-coverage --kg-provenance data/kg-microbe/provenance.json --raw-dump data/raw/full_dump.csv
+just taxa-coverage --strain-rollup phenotype --contrast-population disease_vs_healthy_tier1_2_subject_controls --taxa data/derived/bugsigdb_taxa.tsv --matrix data/derived/taxa_trait_matrix.tsv --profiles data/derived/study_trait_profiles_wide.tsv --experiments data/derived/experiments.tsv --output-dir trait-visualization/trait-profile-investigation/taxa-coverage --kg-provenance data/kg-microbe/provenance.json --raw-dump data/raw/full_dump.csv
 ```
 The five TSVs, this README, and generated figures are inventoried by SHA-256 in `provenance.json`.
 `profile_coverage_by_rank.tsv` uses `pct_of_mapped_profiles`, whose denominator is the

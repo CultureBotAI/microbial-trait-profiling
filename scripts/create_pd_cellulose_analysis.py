@@ -461,7 +461,11 @@ def build_taxon_driver_tables(traits: pd.DataFrame) -> tuple[pd.DataFrame, pd.Da
     ].copy()
     pd_feces["taxa_direction"] = pd_feces["inc_dec"].map({"inc": "increased", "dec": "decreased"})
 
+    from mtp.population_tables import is_canonical_derived_path, orient_and_filter_taxa_df
+
     taxa = read_tsv(TAXA_PATH)
+    if is_canonical_derived_path(TAXA_PATH, "bugsigdb_taxa.tsv"):
+        taxa = orient_and_filter_taxa_df(taxa, filter_to_selection=True)
     occurrences = taxa.merge(
         pd_feces[["study_id", "experiment_id", "inc_dec", "taxa_direction", "profile_id"]],
         left_on=["study_id", "experiment_id", "direction"],

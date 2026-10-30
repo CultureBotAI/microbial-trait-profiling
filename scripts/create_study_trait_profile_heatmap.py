@@ -23,6 +23,7 @@ from mtp.composition_denominators import (
 from mtp.direction_labels import DIRECTION_BASIS_LABELS
 from mtp.human_host_corpus import CORPUS_SEQUENCING_TYPES
 from mtp.paths import file_sha256
+from mtp.population_tables import is_canonical_derived_path, orient_and_filter_profiles_df
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = REPO_ROOT / "trait-visualization"
@@ -43,6 +44,7 @@ REQUIRED_PAIRED_TRAITS = {
     "METPO:1000698": "gram positive",
     "METPO:1000703": "non motile",
 }
+HIGH_SUPPORT_EXEMPT_TRAITS = frozenset({*REQUIRED_PAIRED_TRAITS, "METPO:1000603"})
 
 
 def clean_value(value: object) -> str:
@@ -230,6 +232,8 @@ def profile_id_from_parts(study_id: str, experiment_id: str, inc_dec: str) -> st
 def load_profile_matrix(profile_path: Path) -> tuple[pd.DataFrame, pd.DataFrame, list[str]]:
     """Load one row per study, experiment, and increased/decreased trait profile."""
     profiles = pd.read_csv(profile_path, sep="\t")
+    if is_canonical_derived_path(profile_path, "study_trait_profiles_wide.tsv"):
+        profiles = orient_and_filter_profiles_df(profiles, filter_to_selection=True)
     trait_columns = [
         column for column in profiles.columns if column not in PROFILE_METADATA_COLUMNS
     ]
@@ -399,10 +403,10 @@ def select_traits(
     ]
 
     max_support = max(2, int(len(selected_profile_matrix) * max_profile_support_fraction))
-    is_required = trait_metadata.index.isin(REQUIRED_PAIRED_TRAITS)
+    is_exempt = trait_metadata.index.isin(HIGH_SUPPORT_EXEMPT_TRAITS)
     eligible = trait_metadata[
         (trait_metadata["profile_support"] >= min_profile_support)
-        & ((trait_metadata["profile_support"] <= max_support) | is_required)
+        & ((trait_metadata["profile_support"] <= max_support) | is_exempt)
         & (trait_metadata["composition_variance"] > 0)
     ].copy()
     if not include_media_traits:

@@ -1,6 +1,4 @@
 taxon_id	taxon_name	taxonomic_rank	pd_feces_profiles	other_feces_profiles	pd_other_feces_counts	pd_feces_studies	other_feces_studies	pd_specificity_fraction	pd_vs_other_feces_log2_ratio
-NCBITaxon:216816	Bifidobacterium longum	species	6	46	6/46	5	30	0.11538461538461539	-2.8387190929669393
-NCBITaxon:2173	Methanobrevibacter smithii	species	3	12	3/12	3	8	0.2	-1.8365012677171204
-NCBITaxon:562	Escherichia coli	species	3	79	3/79	3	48	0.036585365853658534	-4.505528033226751
-NCBITaxon:301302	Roseburia faecis	species	6	17	6/17	5	16	0.2608695652173913	-1.4288432988038742
-NCBITaxon:853	Faecalibacterium prausnitzii	species	12	125	12/125	7	71	0.08759124087591241	-3.327687364176047
+NCBITaxon:2173	Methanobrevibacter smithii	species	3	4	3/4	3	4	0.42857142857142855	-0.36257007938470825
+NCBITaxon:301302	Roseburia faecis	species	5	8	5/8	4	7	0.38461538461538464	-0.6280312226130421
+NCBITaxon:853	Faecalibacterium prausnitzii	species	9	41	9/41	5	30	0.18	-2.1271119179033393

@@ -2712,9 +2712,11 @@ def main() -> None:
     parser.add_argument(
         "--contrast-population",
         choices=("none", *POPULATIONS),
-        default="none",
+        default=None,
         help=(
-            "Optional contrast population filter (e.g. disease_vs_healthy_tier1_2_subject_controls)"
+            "Optional contrast population filter (defaults to "
+            "disease_vs_healthy_tier1_2_subject_controls for canonical data/derived inputs, "
+            "or none for explicit pre-filtered inputs)"
         ),
     )
     parser.add_argument(
@@ -2723,7 +2725,14 @@ def main() -> None:
         help="Write tables, README and provenance without rendering figures "
         "(use a separate directory)",
     )
-    run_coverage(**vars(parser.parse_args()))
+    parsed = parser.parse_args()
+    if parsed.contrast_population is None:
+        parsed.contrast_population = (
+            "disease_vs_healthy_tier1_2_subject_controls"
+            if parsed.profiles.resolve() == PROFILES_WIDE_PATH.resolve()
+            else "none"
+        )
+    run_coverage(**vars(parsed))
 
 
 if __name__ == "__main__":

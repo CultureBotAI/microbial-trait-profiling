@@ -1,397 +1,205 @@
 condition	trait_id	trait	paired_study_count	mean_contrast	median_contrast	positive_study_count	negative_study_count	zero_study_count	direction	p_value	test	passes_min_paired_studies	q_value	selected_after_bh
-Parkinson's disease	METPO:1000623	moderately halophilic	45	0.51709599	0.55069277	32	8	5	increased	0.00021871557	two-sided Wilcoxon signed-rank test vs zero	True	0.086611365	False
-COVID-19	METPO:2000103|GO:0030245	cellulose catabolic process	12	-1.2115231	-1.2564662	0	11	1	decreased	0.0009765625	two-sided Wilcoxon signed-rank test vs zero	True	0.091452117	False
-Colorectal cancer	METPO:2000103|GO:0030245	cellulose catabolic process	28	-0.84357473	-0.81711007	3	19	6	decreased	0.00087556948	two-sided Wilcoxon signed-rank test vs zero	True	0.091452117	False
-Colorectal cancer	METPO:1000623	moderately halophilic	28	0.44763659	0.39350972	19	2	7	increased	0.0011546984	two-sided Wilcoxon signed-rank test vs zero	True	0.091452117	False
-Parkinson's disease	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	45	0.45008167	0.17813745	24	8	13	increased	0.0010664388	two-sided Wilcoxon signed-rank test vs zero	True	0.091452117	False
-Parkinson's disease	METPO:2000103|GO:0030245	cellulose catabolic process	45	-0.69154234	-0.57358991	15	28	2	decreased	0.0081832358	two-sided Wilcoxon signed-rank test vs zero	True	0.54009356	False
-COVID-19	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	12	0.51584803	0.17088023	7	0	5	increased	0.015625	two-sided Wilcoxon signed-rank test vs zero	True	0.7734375	False
-Constipation	METPO:2000103|GO:0030245	cellulose catabolic process	7	1.0101564	0.81305821	7	0	0	increased	0.015625	two-sided Wilcoxon signed-rank test vs zero	True	0.7734375	False
-COVID-19	METPO:1000623	moderately halophilic	12	0.68803457	0.47930052	9	2	1	increased	0.024414062	two-sided Wilcoxon signed-rank test vs zero	True	0.83293269	False
-Chronic kidney disease	METPO:2000103|GO:0030245	cellulose catabolic process	9	-1.4373788	-1.1457873	2	7	0	decreased	0.01953125	two-sided Wilcoxon signed-rank test vs zero	True	0.83293269	False
-Colorectal cancer	METPO:1000683	sphere shaped	28	0.5709819	0.22801555	15	9	4	increased	0.022270979	two-sided Wilcoxon signed-rank test vs zero	True	0.83293269	False
-Irritable bowel syndrome	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	13	1.1961957	0.14546603	8	2	3	increased	0.02734375	two-sided Wilcoxon signed-rank test vs zero	True	0.83293269	False
-Irritable bowel syndrome	METPO:1000668	coccus shaped	13	0.49735815	0.30431984	10	3	0	increased	0.026611328	two-sided Wilcoxon signed-rank test vs zero	True	0.83293269	False
-COVID-19	METPO:1000608	facultatively aerobic	12	0.7325579	0.75600321	9	3	0	increased	0.042480469	two-sided Wilcoxon signed-rank test vs zero	True	0.87496128	False
-Chronic constipation	METPO:2000103|GO:0030245	cellulose catabolic process	14	0.45340775	0.18849825	10	3	1	increased	0.046399462	two-sided Wilcoxon signed-rank test vs zero	True	0.87496128	False
-Chronic kidney disease	METPO:1000608	facultatively aerobic	9	0.80832416	0.98510469	8	1	0	increased	0.0390625	two-sided Wilcoxon signed-rank test vs zero	True	0.87496128	False
-Chronic kidney disease	METPO:1000623	moderately halophilic	9	0.5649123	0.51777923	6	2	1	increased	0.0390625	two-sided Wilcoxon signed-rank test vs zero	True	0.87496128	False
-Colorectal cancer	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	28	0.93373024	0	13	6	9	increased	0.044208439	two-sided Wilcoxon signed-rank test vs zero	True	0.87496128	False
-Colorectal cancer	METPO:1000608	facultatively aerobic	28	0.4750183	0.35855216	18	8	2	increased	0.046180343	two-sided Wilcoxon signed-rank test vs zero	True	0.87496128	False
-Irritable bowel syndrome	METPO:1000683	sphere shaped	13	0.46892286	0.36538938	8	3	2	increased	0.041992188	two-sided Wilcoxon signed-rank test vs zero	True	0.87496128	False
-Socioeconomic status	METPO:2000103|GO:0030245	cellulose catabolic process	9	0.71552034	0.80167049	6	0	3	increased	0.03125	two-sided Wilcoxon signed-rank test vs zero	True	0.87496128	False
-Acute lymphoblastic leukemia	METPO:2000103|GO:0030245	cellulose catabolic process	4	-0.66863493	-0.37309918	0	4	0	decreased	0.125	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Acute lymphoblastic leukemia	METPO:1000608	facultatively aerobic	4	0.60401796	0.67367714	3	1	0	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Age-related macular degeneration	METPO:1000683	sphere shaped	3	1.0093887	0.91624156	3	0	0	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Alzheimer's disease	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	5	1.2481505	0.19435564	3	0	2	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Antimicrobial agent	METPO:2000103|GO:0030245	cellulose catabolic process	16	-0.59256673	-0.15500684	5	10	1	decreased	0.08840248	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Antimicrobial agent	METPO:1000608	facultatively aerobic	16	0.38262489	0.16183977	12	4	0	increased	0.12973022	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Asthma	METPO:2000103|GO:0030245	cellulose catabolic process	4	-0.83911924	-0.97291669	1	3	0	decreased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Asthma	METPO:1000668	coccus shaped	4	0.54581311	0.67311878	3	1	0	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Atopic eczema	METPO:1000668	coccus shaped	4	1.5962893	1.493021	4	0	0	increased	0.125	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Atopic eczema	METPO:1000623	moderately halophilic	4	0.73141226	0.90319437	3	1	0	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Atopic eczema	METPO:1000683	sphere shaped	4	1.4366002	1.5193218	4	0	0	increased	0.125	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Attention deficit-hyperactivity disorder	METPO:1000623	moderately halophilic	3	-0.24650515	-0.15324348	0	3	0	decreased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Autism	METPO:2000103|GO:0030245	cellulose catabolic process	4	-0.79920123	-0.55712473	1	3	0	decreased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Autism	METPO:1000668	coccus shaped	4	-1.3422491	-1.3866863	0	4	0	decreased	0.125	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Autism	METPO:1000623	moderately halophilic	4	0.79939585	0.87682567	3	1	0	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Autism	METPO:1000683	sphere shaped	4	-0.59435911	-0.74274818	1	3	0	decreased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-COVID-19	METPO:1000668	coccus shaped	12	0.55060924	0.46919577	8	4	0	increased	0.15136719	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-COVID-19	METPO:1000683	sphere shaped	12	0.53160858	0.50176686	9	2	1	increased	0.067382812	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Chronic constipation	METPO:1000623	moderately halophilic	14	-0.38505219	-0.2634795	4	9	1	decreased	0.17295492	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Chronic fatigue syndrome	METPO:1000623	moderately halophilic	3	1.2824976	0.93532386	3	0	0	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Chronic kidney disease	METPO:1000683	sphere shaped	9	0.34810219	0.13899402	6	2	1	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Clinical treatment	METPO:1000608	facultatively aerobic	4	-0.67915969	-0.93634282	1	3	0	decreased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Cognitive impairment	METPO:1000608	facultatively aerobic	3	1.505097	1.3442373	3	0	0	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Cognitive impairment	METPO:1000683	sphere shaped	3	0.95374473	0.43059975	3	0	0	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Colorectal adenoma	METPO:1000683	sphere shaped	4	0.89231281	0.64683101	3	0	1	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Constipation	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	7	0.23107481	0	3	0	4	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Constipation	METPO:1000623	moderately halophilic	7	0.66485982	0.39686768	5	1	1	increased	0.21875	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Crohn's disease	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	7	1.0975061	0.96427136	5	1	1	increased	0.0625	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Crohn's disease	METPO:2000103|GO:0030245	cellulose catabolic process	7	-0.7999374	-0.36846876	2	4	1	decreased	0.15625	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Crohn's disease	METPO:1000608	facultatively aerobic	7	0.92967236	1.1184908	6	1	0	increased	0.078125	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Diarrhea	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	3	0.82656062	0.71205641	3	0	0	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Diarrhea	METPO:2000103|GO:0030245	cellulose catabolic process	3	-1.291991	-1.3404407	0	3	0	decreased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Diarrhea	METPO:1000608	facultatively aerobic	3	0.87622151	0.90778504	3	0	0	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Diarrhea	METPO:1000623	moderately halophilic	3	0.6237678	0.56998226	3	0	0	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Diet	METPO:1000668	coccus shaped	16	0.43810714	0.32470597	11	4	1	increased	0.11176875	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Diet	METPO:1000608	facultatively aerobic	16	0.27068405	0.17640675	9	5	2	increased	0.19812291	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Diet	METPO:1000683	sphere shaped	16	0.35857182	0	7	5	4	increased	0.13609738	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Diet measurement	METPO:1000623	moderately halophilic	6	0.59624159	0.25641526	4	0	2	increased	0.125	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Eczema	METPO:2000103|GO:0030245	cellulose catabolic process	3	1.642465	0.63532881	3	0	0	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Eczema	METPO:1000683	sphere shaped	3	-0.81340325	-0.91390412	0	3	0	decreased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Endometriosis	METPO:1000623	moderately halophilic	5	0.71826977	0.92498707	3	1	1	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Endometriosis	METPO:1000683	sphere shaped	5	1.1227018	1.005857	4	1	0	increased	0.125	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Epilepsy	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	4	1.1980429	1.2821738	3	1	0	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Epilepsy	METPO:1000668	coccus shaped	4	0.87060611	0.83374583	3	1	0	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Epilepsy	METPO:1000608	facultatively aerobic	4	1.4871381	1.3892753	4	0	0	increased	0.125	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Epilepsy	METPO:1000623	moderately halophilic	4	0.89088228	0.84615998	4	0	0	increased	0.125	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Ethnic group	METPO:2000103|GO:0030245	cellulose catabolic process	5	-0.43815607	-0.071584202	0	4	1	decreased	0.125	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Ethnic group	METPO:1000608	facultatively aerobic	5	-0.43653075	-0.24129499	0	4	1	decreased	0.125	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Food allergy	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	5	0.66566898	0.089665074	3	0	2	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Food allergy	METPO:2000103|GO:0030245	cellulose catabolic process	5	0.76875946	0.86011466	3	1	1	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Food allergy	METPO:1000668	coccus shaped	5	0.71919427	0.38780867	4	0	1	increased	0.125	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Gastric cancer	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	4	0.42992424	0.61333531	3	1	0	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Gastric cancer	METPO:1000668	coccus shaped	4	0.58310733	0.55893508	4	0	0	increased	0.125	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Gastric cancer	METPO:1000608	facultatively aerobic	4	0.93198326	0.93768523	4	0	0	increased	0.125	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Gastric cancer	METPO:1000623	moderately halophilic	4	0.64306844	0.59127138	3	1	0	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Gestational diabetes	METPO:2000103|GO:0030245	cellulose catabolic process	7	0.4534232	0.30946258	5	2	0	increased	0.15625	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Gestational diabetes	METPO:1000608	facultatively aerobic	7	0.59284207	0.43963081	5	2	0	increased	0.21875	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Graft versus host disease	METPO:1000623	moderately halophilic	3	1.1918896	1.116267	3	0	0	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-HIV infection	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	18	0.52108346	0.21072486	10	3	5	increased	0.19605096	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-HIV infection	METPO:2000103|GO:0030245	cellulose catabolic process	18	-0.37494377	-0.5588159	5	11	2	decreased	0.062671388	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Irritable bowel syndrome	METPO:1000608	facultatively aerobic	13	0.60254329	0.45577198	9	4	0	increased	0.080322266	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Irritable bowel syndrome	METPO:1000623	moderately halophilic	13	0.450557	0.53119676	8	4	1	increased	0.17626953	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Major depressive disorder	METPO:1000608	facultatively aerobic	4	-0.79495975	-1.006748	1	3	0	decreased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Milk allergic reaction	METPO:1000608	facultatively aerobic	4	-0.73852636	-0.47793114	1	3	0	decreased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Milk allergic reaction	METPO:1000623	moderately halophilic	4	-0.58282617	-0.35297687	0	4	0	decreased	0.125	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Non-alcoholic fatty liver disease	METPO:2000103|GO:0030245	cellulose catabolic process	5	0.62995557	0.48931044	4	0	1	increased	0.125	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Non-alcoholic fatty liver disease	METPO:1000668	coccus shaped	5	0.42485051	0.2042122	4	0	1	increased	0.125	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Obesity	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	33	-0.28475842	0	7	13	13	decreased	0.10839599	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Parkinson's disease	METPO:1000608	facultatively aerobic	45	0.34759256	0.46896746	26	18	1	increased	0.060258012	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Psoriasis	METPO:1000683	sphere shaped	5	0.64967792	0.51621553	4	1	0	increased	0.125	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Response to antiviral drug	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	3	0.55707441	5.5511151e-17	3	0	0	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Response to diet	METPO:1000608	facultatively aerobic	6	0.32277592	0.24293029	5	0	1	increased	0.0625	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Response to immunochemotherapy	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	9	0.53548581	0	3	1	5	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Response to transplant	METPO:1000668	coccus shaped	4	1.2307107	1.3087327	4	0	0	increased	0.125	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Response to transplant	METPO:1000608	facultatively aerobic	4	0.95184874	1.1354414	3	1	0	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Response to transplant	METPO:1000623	moderately halophilic	4	0.47853238	0.35484756	4	0	0	increased	0.125	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Response to transplant	METPO:1000683	sphere shaped	4	1.4057729	1.1364	3	1	0	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Rheumatoid arthritis	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	4	0.30304334	0.35160635	3	1	0	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Rheumatoid arthritis	METPO:1000608	facultatively aerobic	4	1.1277798	1.2417689	3	1	0	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Schizophrenia	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	14	0.76700659	0	6	2	6	increased	0.12302519	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Schizophrenia	METPO:1000608	facultatively aerobic	14	0.49337231	0.49597779	10	3	1	increased	0.17295492	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Stroke	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	4	0.6165088	0.60040524	4	0	0	increased	0.125	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Stroke	METPO:1000608	facultatively aerobic	4	0.86999998	1.0069487	3	1	0	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Stroke	METPO:1000623	moderately halophilic	4	1.5243628	1.7267321	4	0	0	increased	0.125	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Type II diabetes mellitus	METPO:1000608	facultatively aerobic	11	-0.54344913	-0.61346878	4	6	1	decreased	0.16015625	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Type II diabetes mellitus	METPO:1000683	sphere shaped	11	0.56459456	0.51464961	6	3	2	increased	0.203125	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Ulcerative colitis	METPO:2000103|GO:0030245	cellulose catabolic process	7	-0.90537372	-0.64439363	2	4	1	decreased	0.21875	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Ulcerative colitis	METPO:1000608	facultatively aerobic	7	1.0119449	1.2912989	6	1	0	increased	0.078125	two-sided Wilcoxon signed-rank test vs zero	True	0.90825688	False
-Obesity	METPO:1000683	sphere shaped	33	0.10265121	0	14	8	11	increased	0.26268609	two-sided Wilcoxon signed-rank test vs zero	True	0.93715038	False
-Schizophrenia	METPO:2000103|GO:0030245	cellulose catabolic process	14	-0.45320258	-0.12399744	2	7	5	decreased	0.26039294	two-sided Wilcoxon signed-rank test vs zero	True	0.93715038	False
-Acute lymphoblastic leukemia	METPO:1000668	coccus shaped	4	-0.53103409	-0.85293831	1	3	0	decreased	0.375	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Acute lymphoblastic leukemia	METPO:1000683	sphere shaped	4	-0.77698203	-0.50542114	1	3	0	decreased	0.375	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Age	METPO:1000668	coccus shaped	8	0.28481843	0.52839191	5	3	0	increased	0.4609375	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Age-related macular degeneration	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	3	-0.089910034	-0.028370969	0	2	1	decreased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Age-related macular degeneration	METPO:1000668	coccus shaped	3	1.1454772	1.7175014	2	1	0	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Age-related macular degeneration	METPO:1000608	facultatively aerobic	3	0.82924543	0.79417974	2	1	0	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Age-related macular degeneration	METPO:1000623	moderately halophilic	3	0.73808672	0.22605179	2	0	1	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Alcohol consumption measurement	METPO:2000103|GO:0030245	cellulose catabolic process	3	1.5969451	1.3873979	2	0	1	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Antimicrobial agent	METPO:1000623	moderately halophilic	16	0.16410996	0.034766497	8	8	0	increased	0.46374512	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Asthma	METPO:1000608	facultatively aerobic	4	0.58020114	0.72042237	3	1	0	increased	0.375	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Attention deficit-hyperactivity disorder	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	3	-0.22888414	-0.13867514	0	2	1	decreased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Attention deficit-hyperactivity disorder	METPO:2000103|GO:0030245	cellulose catabolic process	3	-0.68925656	-0.4594499	1	2	0	decreased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Attention deficit-hyperactivity disorder	METPO:1000608	facultatively aerobic	3	-0.84995938	-1.2918533	1	2	0	decreased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Breast cancer	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	7	0.6905374	0	2	1	4	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Breast cancer	METPO:2000103|GO:0030245	cellulose catabolic process	7	-0.5303239	-0.99455128	1	5	1	decreased	0.4375	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Breast cancer	METPO:1000683	sphere shaped	7	0.87879099	0.52897921	5	2	0	increased	0.296875	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Chronic constipation	METPO:1000608	facultatively aerobic	14	-0.37219049	-0.10505689	6	7	1	decreased	0.34544753	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Chronic fatigue syndrome	METPO:2000103|GO:0030245	cellulose catabolic process	3	-0.6590289	-0.058315087	1	2	0	decreased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Clinical treatment	METPO:1000623	moderately halophilic	4	-0.75688858	-1.215514	1	3	0	decreased	0.375	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Cognitive impairment	METPO:2000103|GO:0030245	cellulose catabolic process	3	-0.43818939	-0.092654982	1	2	0	decreased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Cognitive impairment	METPO:1000668	coccus shaped	3	1.048472	0.65196588	2	1	0	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Cognitive impairment	METPO:1000623	moderately halophilic	3	0.92172745	1.2750582	2	1	0	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Constipation	METPO:1000668	coccus shaped	7	0.40213948	0	3	1	3	increased	0.375	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Constipation	METPO:1000608	facultatively aerobic	7	0.20503385	0.12861266	4	3	0	increased	0.375	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Delivery method	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	3	0.42170608	0.27803801	2	0	1	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Delivery method	METPO:2000103|GO:0030245	cellulose catabolic process	3	0.78270314	1.2071298	2	1	0	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Depressive disorder	METPO:1000623	moderately halophilic	5	1.5006326	0.21737439	3	1	1	increased	0.375	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Diabetes mellitus	METPO:1000608	facultatively aerobic	3	0.44531181	0.25674272	2	0	1	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Diabetes mellitus	METPO:1000683	sphere shaped	3	0.65496259	0.89038832	2	0	1	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Diarrhea	METPO:1000668	coccus shaped	3	0.54956161	0.47062024	2	1	0	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Diet measurement	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	6	1.0903274	2.7755576e-17	3	1	2	increased	0.375	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Diet measurement	METPO:2000103|GO:0030245	cellulose catabolic process	6	-0.45580116	0	1	2	3	decreased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Diet measurement	METPO:1000608	facultatively aerobic	6	0.77155928	0.38825968	3	2	1	increased	0.3125	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Eczema	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	3	0.76511471	0.23475339	2	0	1	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Endometriosis	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	5	0.48577984	0	2	1	2	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Endometriosis	METPO:1000668	coccus shaped	5	0.48496854	0.405567	3	2	0	increased	0.4375	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Endometriosis	METPO:1000608	facultatively aerobic	5	0.47019086	0.46954074	4	1	0	increased	0.4375	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Fasting blood glucose measurement	METPO:2000103|GO:0030245	cellulose catabolic process	3	-0.68999034	-0.86131142	0	2	1	decreased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Fasting blood glucose measurement	METPO:1000668	coccus shaped	3	1.0445303	0.84770135	2	0	1	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Fasting blood glucose measurement	METPO:1000608	facultatively aerobic	3	0.55770453	0.06539133	2	0	1	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Food allergy	METPO:1000623	moderately halophilic	5	0.34242514	0	2	1	2	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Food allergy	METPO:1000683	sphere shaped	5	0.82129351	0.040769583	3	1	1	increased	0.375	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Gestational diabetes	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	7	0.31264342	0.45120612	4	3	0	increased	0.375	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Gestational diabetes	METPO:1000683	sphere shaped	7	0.28006762	0.75230678	5	2	0	increased	0.46875	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Graft versus host disease	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	3	0.92888689	0.93131389	2	1	0	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Graft versus host disease	METPO:2000103|GO:0030245	cellulose catabolic process	3	-1.3929225	-2.1856362	1	2	0	decreased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Graft versus host disease	METPO:1000608	facultatively aerobic	3	1.0166378	1.300633	2	1	0	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-HIV infection	METPO:1000623	moderately halophilic	18	0.21999312	0	8	6	4	increased	0.30028988	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Health-related quality of life measurement	METPO:1000623	moderately halophilic	3	-0.9747806	-0.36271582	0	2	1	decreased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Hepatocellular carcinoma	METPO:1000623	moderately halophilic	3	0.34567784	0.44401282	2	0	1	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Hepatocellular carcinoma	METPO:1000683	sphere shaped	3	0.85855637	0.51247775	2	1	0	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Hypertension	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	3	-1.1100635	-0.79232995	0	2	1	decreased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Hypertension	METPO:1000668	coccus shaped	3	-0.58352916	-0.1645498	0	2	1	decreased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Hypertension	METPO:1000608	facultatively aerobic	3	-1.0918262	-0.73224229	0	2	1	decreased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Hypertension	METPO:1000623	moderately halophilic	3	-0.48675173	-0.54627549	0	2	1	decreased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Hypertension	METPO:1000683	sphere shaped	3	-0.29810673	-0.17336922	0	2	1	decreased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Lifestyle measurement	METPO:2000103|GO:0030245	cellulose catabolic process	3	0.38188374	0.26239003	2	0	1	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Lifestyle measurement	METPO:1000668	coccus shaped	3	0.19278448	0.19857001	2	1	0	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Lifestyle measurement	METPO:1000683	sphere shaped	3	-0.15146088	-0.19807661	0	2	1	decreased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Major depressive disorder	METPO:2000103|GO:0030245	cellulose catabolic process	4	0.23862023	0.38749758	3	1	0	increased	0.375	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Milk allergic reaction	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	4	-1.0710357	-0.50036429	1	2	1	decreased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Multiple sclerosis	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	6	0.39888764	0.04342956	3	1	2	increased	0.375	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Multiple sclerosis	METPO:1000623	moderately halophilic	6	0.33213076	0.19616776	4	1	1	increased	0.3125	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Multiple sclerosis	METPO:1000683	sphere shaped	6	-0.61930431	-0.25823585	1	3	2	decreased	0.375	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Non-alcoholic fatty liver disease	METPO:1000683	sphere shaped	5	0.39560914	0.21246903	3	1	1	increased	0.375	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Obesity	METPO:2000103|GO:0030245	cellulose catabolic process	33	-0.11272859	0	11	15	7	decreased	0.30365918	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Obesity	METPO:1000668	coccus shaped	33	0.1085468	0.013722968	17	11	5	increased	0.43879574	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Pancreatic carcinoma	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	3	-1.2160572	-0.84657595	0	2	1	decreased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Pancreatic carcinoma	METPO:2000103|GO:0030245	cellulose catabolic process	3	-0.70435613	-0.57675108	0	2	1	decreased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Pancreatic carcinoma	METPO:1000683	sphere shaped	3	0.96485408	1.414391	2	0	1	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Parkinson's disease	METPO:1000683	sphere shaped	45	0.11227989	0	21	18	6	increased	0.45110753	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Polycystic ovary syndrome	METPO:1000668	coccus shaped	11	-0.071148267	-0.40939133	3	8	0	decreased	0.36523438	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Polycystic ovary syndrome	METPO:1000608	facultatively aerobic	11	0.3398102	0.234632	7	4	0	increased	0.3203125	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Polycystic ovary syndrome	METPO:1000683	sphere shaped	11	-0.30819474	-0.32675488	4	7	0	decreased	0.3203125	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Response to allogeneic hematopoietic stem cell transplant	METPO:1000668	coccus shaped	3	0.80927937	0.45954556	2	0	1	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Response to allogeneic hematopoietic stem cell transplant	METPO:1000608	facultatively aerobic	3	0.68905582	0.32754202	2	0	1	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Response to allogeneic hematopoietic stem cell transplant	METPO:1000683	sphere shaped	3	0.31413571	0.23041311	2	0	1	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Response to antiviral drug	METPO:1000668	coccus shaped	3	0.41973909	0.69569021	2	1	0	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Response to antiviral drug	METPO:1000608	facultatively aerobic	3	0.8534386	0.49044045	2	1	0	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Response to antiviral drug	METPO:1000623	moderately halophilic	3	-0.46582539	-0.022761239	0	2	1	decreased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Response to antiviral drug	METPO:1000683	sphere shaped	3	0.40069679	0.44647799	2	0	1	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Response to diet	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	6	0.26243416	0	2	1	3	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Response to immunochemotherapy	METPO:2000103|GO:0030245	cellulose catabolic process	9	0.5170928	0.61834388	6	2	1	increased	0.3125	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Response to immunochemotherapy	METPO:1000668	coccus shaped	9	0.2732385	0.24787845	7	2	0	increased	0.359375	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Response to immunochemotherapy	METPO:1000608	facultatively aerobic	9	0.21286782	0.66711567	5	4	0	increased	0.49609375	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Response to transplant	METPO:2000103|GO:0030245	cellulose catabolic process	4	-0.80596098	-0.96125177	1	2	1	decreased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Rheumatoid arthritis	METPO:2000103|GO:0030245	cellulose catabolic process	4	-0.37373298	-0.53048718	1	3	0	decreased	0.375	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Rheumatoid arthritis	METPO:1000668	coccus shaped	4	1.0793571	1.360056	3	1	0	increased	0.375	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Schizophrenia	METPO:1000668	coccus shaped	14	0.14859758	0.14862296	10	4	0	increased	0.32580566	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Schizophrenia	METPO:1000623	moderately halophilic	14	0.36251671	0.30055141	8	4	2	increased	0.27209518	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Schizophrenia	METPO:1000683	sphere shaped	14	0.26952732	0.24681712	8	5	1	increased	0.38235209	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Socioeconomic status	METPO:1000683	sphere shaped	9	0.1136753	0.29506316	5	1	3	increased	0.4375	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Stroke	METPO:2000103|GO:0030245	cellulose catabolic process	4	-1.1515012	-1.1305589	1	3	0	decreased	0.375	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Type II diabetes mellitus	METPO:1000623	moderately halophilic	11	-0.42396739	0	4	4	3	decreased	0.4609375	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Ulcerative colitis	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	7	0.27565839	0	2	1	4	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Unipolar depression	METPO:2000103|GO:0030245	cellulose catabolic process	3	-0.44835084	-0.80110829	1	2	0	decreased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Unipolar depression	METPO:1000623	moderately halophilic	3	-0.43197591	-0.60983703	1	2	0	decreased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.95192308	False
-Acute lymphoblastic leukemia	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	4	0.083167311	0.30716517	2	1	1	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Acute lymphoblastic leukemia	METPO:1000623	moderately halophilic	4	0.20450534	0.23255648	2	1	1	increased	0.75	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Age	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	8	0.47463492	0	3	3	2	increased	0.5625	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Age	METPO:2000103|GO:0030245	cellulose catabolic process	8	0.096254533	0.13553651	4	4	0	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Age	METPO:1000608	facultatively aerobic	8	0.32739602	0.19702092	4	4	0	increased	0.7421875	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Age	METPO:1000623	moderately halophilic	8	0.15704039	0.35365876	4	3	1	increased	0.578125	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Age	METPO:1000683	sphere shaped	8	-0.0029906671	-0.067370813	3	4	1	decreased	0.9375	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Age-related macular degeneration	METPO:2000103|GO:0030245	cellulose catabolic process	3	0.10113757	-0.63481056	1	2	0	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Alcohol consumption measurement	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	3	0	0	0	0	3	tie	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Alcohol consumption measurement	METPO:1000668	coccus shaped	3	-0.11962423	0	0	1	2	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Alcohol consumption measurement	METPO:1000608	facultatively aerobic	3	-0.61234137	0	0	1	2	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Alcohol consumption measurement	METPO:1000623	moderately halophilic	3	-0.36107612	0	0	1	2	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Alcohol consumption measurement	METPO:1000683	sphere shaped	3	0.026315656	0	1	0	2	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Alzheimer's disease	METPO:2000103|GO:0030245	cellulose catabolic process	5	-0.033169621	0.1929286	3	2	0	decreased	0.8125	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Alzheimer's disease	METPO:1000668	coccus shaped	5	-0.090529212	-0.22242908	2	3	0	decreased	0.8125	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Alzheimer's disease	METPO:1000608	facultatively aerobic	5	0.23618399	0.44402162	3	2	0	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Alzheimer's disease	METPO:1000623	moderately halophilic	5	-0.045759986	-0.051421811	2	3	0	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Alzheimer's disease	METPO:1000683	sphere shaped	5	-0.29582974	-0.14810179	2	3	0	decreased	0.625	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Antimicrobial agent	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	16	0.11456623	0	7	5	4	increased	0.87532925	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Antimicrobial agent	METPO:1000668	coccus shaped	16	-0.050072594	-0.017292366	7	9	0	decreased	0.82089233	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Antimicrobial agent	METPO:1000683	sphere shaped	16	-0.15369012	-0.050598097	8	8	0	decreased	0.52816772	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Asthma	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	4	0.30825981	-0.30273645	1	2	1	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Asthma	METPO:1000623	moderately halophilic	4	0.29689192	-0.1407046	2	2	0	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Asthma	METPO:1000683	sphere shaped	4	0.078930441	0.058572756	2	2	0	increased	0.875	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Atopic eczema	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	4	-0.62989179	-0.35822979	1	3	0	decreased	0.625	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Atopic eczema	METPO:2000103|GO:0030245	cellulose catabolic process	4	0.32300828	-0.028742525	2	2	0	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Atopic eczema	METPO:1000608	facultatively aerobic	4	0.77131052	0.97908141	3	1	0	increased	0.625	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Attention deficit-hyperactivity disorder	METPO:1000668	coccus shaped	3	0.20532344	-0.2702553	1	2	0	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Attention deficit-hyperactivity disorder	METPO:1000683	sphere shaped	3	0.33041269	-0.54150353	1	2	0	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Autism	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	4	0.56150852	0.66490238	3	1	0	increased	0.625	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Autism	METPO:1000608	facultatively aerobic	4	0.35634453	0.46755912	2	2	0	increased	0.875	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Body mass index	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	4	0	0	0	0	4	tie	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Body mass index	METPO:2000103|GO:0030245	cellulose catabolic process	4	-0.62927203	-1.1300305	1	2	1	decreased	0.75	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Body mass index	METPO:1000668	coccus shaped	4	-0.18196873	-0.62595551	1	2	1	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Body mass index	METPO:1000608	facultatively aerobic	4	0.31224929	0	1	0	3	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Body mass index	METPO:1000623	moderately halophilic	4	0.16217838	0	1	0	3	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Body mass index	METPO:1000683	sphere shaped	4	-0.22599774	-0.43229811	1	2	1	decreased	0.75	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Breast cancer	METPO:1000668	coccus shaped	7	0.082531218	-0.21950123	3	4	0	increased	0.9375	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Breast cancer	METPO:1000608	facultatively aerobic	7	-0.11261992	-0.35459976	2	5	0	decreased	0.6875	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Breast cancer	METPO:1000623	moderately halophilic	7	0.14644146	0	3	2	2	increased	0.8125	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Chronic constipation	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	14	-0.16504168	0	5	6	3	decreased	0.65664193	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Chronic constipation	METPO:1000668	coccus shaped	14	0.13094057	-0.0055015168	5	7	2	increased	0.6948866	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Chronic constipation	METPO:1000683	sphere shaped	14	0.052391372	0	6	6	2	increased	0.93747292	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Chronic fatigue syndrome	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	3	0.041519933	0	1	0	2	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Chronic fatigue syndrome	METPO:1000668	coccus shaped	3	0.22415652	-0.40383641	1	2	0	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Chronic fatigue syndrome	METPO:1000608	facultatively aerobic	3	-0.12856551	-0.15892989	1	2	0	decreased	0.75	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Chronic fatigue syndrome	METPO:1000683	sphere shaped	3	-0.069888791	-0.28255681	1	2	0	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Chronic kidney disease	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	9	-0.0096362092	0	3	3	3	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Chronic kidney disease	METPO:1000668	coccus shaped	9	0.13231596	-0.14606525	4	5	0	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Clinical treatment	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	4	0.20700315	0.35571838	2	1	1	increased	0.75	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Clinical treatment	METPO:2000103|GO:0030245	cellulose catabolic process	4	0.48871988	0.71763057	3	1	0	increased	0.625	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Clinical treatment	METPO:1000668	coccus shaped	4	-0.33647585	-0.2920018	2	2	0	decreased	0.875	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Clinical treatment	METPO:1000683	sphere shaped	4	-0.24105583	-0.4331941	1	2	1	decreased	0.75	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Cognitive impairment	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	3	0.056372251	0	1	1	1	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Colorectal adenoma	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	4	0.092317821	0	1	1	2	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Colorectal adenoma	METPO:2000103|GO:0030245	cellulose catabolic process	4	0.067384328	-0.13731703	1	2	1	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Colorectal adenoma	METPO:1000668	coccus shaped	4	0.062009998	0.26113321	2	2	0	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Colorectal adenoma	METPO:1000608	facultatively aerobic	4	0.23289116	0.62726813	3	1	0	increased	0.875	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Colorectal adenoma	METPO:1000623	moderately halophilic	4	0.053544886	-0.10541783	2	2	0	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Colorectal cancer	METPO:1000668	coccus shaped	28	0.092803723	0.11061741	16	11	1	increased	0.70068201	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Constipation	METPO:1000683	sphere shaped	7	0.42775345	0	2	2	3	increased	0.625	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Crohn's disease	METPO:1000668	coccus shaped	7	-0.1194192	-0.50785405	3	4	0	decreased	0.9375	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Crohn's disease	METPO:1000623	moderately halophilic	7	0.072246198	0.28559336	4	3	0	increased	0.9375	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Crohn's disease	METPO:1000683	sphere shaped	7	0.2056232	0.20390899	5	2	0	increased	0.578125	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Delivery method	METPO:1000668	coccus shaped	3	0.085944991	0.34859218	2	1	0	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Delivery method	METPO:1000608	facultatively aerobic	3	-0.19176952	-0.79147946	1	2	0	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Delivery method	METPO:1000623	moderately halophilic	3	0.24305502	-0.25742424	1	2	0	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Delivery method	METPO:1000683	sphere shaped	3	0.066959325	0.11446408	2	1	0	increased	0.75	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Depressive disorder	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	5	0.051355906	0	1	1	3	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Depressive disorder	METPO:2000103|GO:0030245	cellulose catabolic process	5	-0.18178375	0	2	2	1	decreased	0.875	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Depressive disorder	METPO:1000668	coccus shaped	5	-0.24519077	-0.39512803	1	3	1	decreased	0.625	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Depressive disorder	METPO:1000608	facultatively aerobic	5	0.18875733	-0.29814962	2	3	0	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Depressive disorder	METPO:1000683	sphere shaped	5	-0.070236107	0	1	2	2	decreased	0.75	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Diabetes mellitus	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	3	0.13766231	0	1	1	1	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Diabetes mellitus	METPO:2000103|GO:0030245	cellulose catabolic process	3	-0.10581638	0	1	1	1	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Diabetes mellitus	METPO:1000668	coccus shaped	3	0.27068116	0	1	1	1	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Diabetes mellitus	METPO:1000623	moderately halophilic	3	0.2817001	0	1	1	1	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Diarrhea	METPO:1000683	sphere shaped	3	0.2275349	0.43132232	2	1	0	increased	0.75	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Diet	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	16	0.011727905	0	4	2	10	increased	0.75315236	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Diet	METPO:2000103|GO:0030245	cellulose catabolic process	16	0.087549391	0.3615654	9	6	1	increased	0.86470458	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Diet	METPO:1000623	moderately halophilic	16	0.10567162	0	5	5	6	increased	0.79885935	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Diet measurement	METPO:1000668	coccus shaped	6	-0.1222182	0	2	2	2	decreased	0.875	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Diet measurement	METPO:1000683	sphere shaped	6	-0.15497391	0	1	1	4	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Eczema	METPO:1000668	coccus shaped	3	-0.062489907	-0.33285065	1	2	0	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Eczema	METPO:1000608	facultatively aerobic	3	-0.3187182	-0.15281931	1	2	0	decreased	0.75	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Eczema	METPO:1000623	moderately halophilic	3	0.01799026	-0.20770753	1	2	0	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Endometriosis	METPO:2000103|GO:0030245	cellulose catabolic process	5	-0.26796666	0	2	2	1	decreased	0.875	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Epilepsy	METPO:2000103|GO:0030245	cellulose catabolic process	4	-0.22372344	-0.2598438	1	2	1	decreased	0.75	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Epilepsy	METPO:1000683	sphere shaped	4	0.55973038	0.40129815	2	2	0	increased	0.625	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Ethnic group	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	5	-0.18852773	-0.094741039	1	3	1	decreased	0.625	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Ethnic group	METPO:1000668	coccus shaped	5	-0.14357975	0	2	2	1	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Ethnic group	METPO:1000623	moderately halophilic	5	-0.00036283925	0.10176165	3	1	1	decreased	0.875	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Ethnic group	METPO:1000683	sphere shaped	5	0.40836567	0.24032715	3	1	1	increased	0.625	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Fasting blood glucose measurement	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	3	0	0	0	0	3	tie	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Fasting blood glucose measurement	METPO:1000623	moderately halophilic	3	0	0	0	0	3	tie	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Fasting blood glucose measurement	METPO:1000683	sphere shaped	3	0.23211016	0	1	0	2	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Food allergy	METPO:1000608	facultatively aerobic	5	-0.23425009	0	2	2	1	decreased	0.875	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Gastric cancer	METPO:2000103|GO:0030245	cellulose catabolic process	4	-0.3819175	-0.53951823	1	3	0	decreased	0.625	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Gastric cancer	METPO:1000683	sphere shaped	4	0.083490671	0.19620096	3	1	0	increased	0.875	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Gestational diabetes	METPO:1000668	coccus shaped	7	0.25726648	-0.37998773	3	4	0	increased	0.6875	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Gestational diabetes	METPO:1000623	moderately halophilic	7	-0.015269491	-0.096236364	3	4	0	decreased	0.8125	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Graft versus host disease	METPO:1000668	coccus shaped	3	0.19906418	-0.62130389	1	2	0	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Graft versus host disease	METPO:1000683	sphere shaped	3	0.0074613226	-0.21630022	1	2	0	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-HIV infection	METPO:1000668	coccus shaped	18	0.17894853	0.16242546	9	7	2	increased	0.60509495	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-HIV infection	METPO:1000608	facultatively aerobic	18	0.0095105419	0.05920263	9	8	1	increased	0.83131021	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-HIV infection	METPO:1000683	sphere shaped	18	0.30101274	0	8	8	2	increased	0.71738089	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Health-related quality of life measurement	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	3	0.036060476	0	1	0	2	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Health-related quality of life measurement	METPO:2000103|GO:0030245	cellulose catabolic process	3	-0.47312516	0	1	1	1	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Health-related quality of life measurement	METPO:1000668	coccus shaped	3	0.080890839	0	1	0	2	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Health-related quality of life measurement	METPO:1000608	facultatively aerobic	3	0.10290145	0	1	1	1	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Health-related quality of life measurement	METPO:1000683	sphere shaped	3	-0.095501245	0	0	1	2	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Hepatocellular carcinoma	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	3	0.040983666	0	1	0	2	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Hepatocellular carcinoma	METPO:2000103|GO:0030245	cellulose catabolic process	3	-0.77700857	0.15293913	2	1	0	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Hepatocellular carcinoma	METPO:1000668	coccus shaped	3	0.75842579	0.14855785	2	1	0	increased	0.75	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Hepatocellular carcinoma	METPO:1000608	facultatively aerobic	3	0.61173375	-0.41927215	1	2	0	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Hypertension	METPO:2000103|GO:0030245	cellulose catabolic process	3	0.4555608	0	1	1	1	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Irritable bowel syndrome	METPO:2000103|GO:0030245	cellulose catabolic process	13	-0.20636264	0	5	6	2	decreased	0.57714844	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Lifestyle measurement	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	3	-0.92785852	0	0	1	2	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Lifestyle measurement	METPO:1000608	facultatively aerobic	3	0.39048488	0.19836157	2	1	0	increased	0.75	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Lifestyle measurement	METPO:1000623	moderately halophilic	3	-0.059992136	0	1	1	1	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Lung cancer	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	4	0.063350614	-0.03837415	1	2	1	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Lung cancer	METPO:2000103|GO:0030245	cellulose catabolic process	4	-0.45914602	-0.65366174	1	3	0	decreased	0.625	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Lung cancer	METPO:1000668	coccus shaped	4	-0.10928278	-0.32723036	1	3	0	decreased	0.875	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Lung cancer	METPO:1000608	facultatively aerobic	4	0.11801679	0.28070176	2	2	0	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Lung cancer	METPO:1000623	moderately halophilic	4	-0.24454208	-0.087576575	2	2	0	decreased	0.875	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Lung cancer	METPO:1000683	sphere shaped	4	-0.16522541	-0.27316839	2	2	0	decreased	0.625	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Major depressive disorder	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	4	-0.46591764	-2.7755576e-17	1	2	1	decreased	0.75	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Major depressive disorder	METPO:1000668	coccus shaped	4	-0.26400927	-0.39249359	2	2	0	decreased	0.625	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Major depressive disorder	METPO:1000623	moderately halophilic	4	-0.16327357	0.050135594	2	2	0	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Major depressive disorder	METPO:1000683	sphere shaped	4	-0.20439377	-0.15940825	2	2	0	decreased	0.875	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Milk allergic reaction	METPO:2000103|GO:0030245	cellulose catabolic process	4	0.64743916	0.30977007	2	2	0	increased	0.875	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Milk allergic reaction	METPO:1000668	coccus shaped	4	-0.3732354	0.046697781	2	2	0	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Milk allergic reaction	METPO:1000683	sphere shaped	4	-0.20511433	-0.19371854	2	2	0	decreased	0.625	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Multiple sclerosis	METPO:2000103|GO:0030245	cellulose catabolic process	6	-0.12016768	-0.036727364	2	3	1	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Multiple sclerosis	METPO:1000668	coccus shaped	6	0.14484053	0.23281759	3	3	0	increased	0.6875	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Multiple sclerosis	METPO:1000608	facultatively aerobic	6	0.16083008	0.40960392	3	3	0	increased	0.84375	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Non-alcoholic fatty liver disease	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	5	0.028334455	0	1	0	4	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Non-alcoholic fatty liver disease	METPO:1000608	facultatively aerobic	5	0.5409583	0	2	2	1	increased	0.625	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Non-alcoholic fatty liver disease	METPO:1000623	moderately halophilic	5	0.095230399	0	1	1	3	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Obesity	METPO:1000608	facultatively aerobic	33	0.12872527	0	16	16	1	increased	0.70842009	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Obesity	METPO:1000623	moderately halophilic	33	-0.052172357	0	12	13	8	decreased	0.69642547	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Pancreatic carcinoma	METPO:1000668	coccus shaped	3	0.23595073	0	1	1	1	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Pancreatic carcinoma	METPO:1000608	facultatively aerobic	3	-0.0045033374	0	1	1	1	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Pancreatic carcinoma	METPO:1000623	moderately halophilic	3	-0.2599477	0	1	1	1	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Parkinson's disease	METPO:1000668	coccus shaped	45	0.02965897	0.013187523	23	21	1	increased	0.83361814	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Polycystic ovary syndrome	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	11	0.34305974	0	4	5	2	increased	0.8203125	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Polycystic ovary syndrome	METPO:2000103|GO:0030245	cellulose catabolic process	11	-0.030568652	0.12512175	6	5	0	decreased	0.76464844	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Polycystic ovary syndrome	METPO:1000623	moderately halophilic	11	-0.076063399	0.032617217	6	5	0	decreased	0.8984375	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Psoriasis	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	5	0.20974997	0	2	2	1	increased	0.625	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Psoriasis	METPO:2000103|GO:0030245	cellulose catabolic process	5	-0.95279468	-0.15603482	2	3	0	decreased	0.625	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Psoriasis	METPO:1000668	coccus shaped	5	0.51199631	0.23789493	3	2	0	increased	0.625	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Psoriasis	METPO:1000608	facultatively aerobic	5	0.124011	0	2	2	1	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Psoriasis	METPO:1000623	moderately halophilic	5	0.29221197	0.046145749	3	1	1	increased	0.625	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Response to allogeneic hematopoietic stem cell transplant	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	3	0.18158068	0	1	1	1	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Response to allogeneic hematopoietic stem cell transplant	METPO:2000103|GO:0030245	cellulose catabolic process	3	0.061886973	0	1	1	1	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Response to allogeneic hematopoietic stem cell transplant	METPO:1000623	moderately halophilic	3	0.3760368	0	1	1	1	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Response to antiviral drug	METPO:2000103|GO:0030245	cellulose catabolic process	3	0.17124039	0.25541491	2	1	0	increased	0.75	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Response to diet	METPO:2000103|GO:0030245	cellulose catabolic process	6	-0.0087902497	0	1	1	4	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Response to diet	METPO:1000668	coccus shaped	6	-0.19017542	0.099438251	3	2	1	decreased	0.8125	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Response to diet	METPO:1000623	moderately halophilic	6	0.081709497	0	2	2	2	increased	0.875	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Response to diet	METPO:1000683	sphere shaped	6	-0.055719986	-0.10085946	2	3	1	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Response to immunochemotherapy	METPO:1000623	moderately halophilic	9	-0.17437401	0	4	3	2	decreased	0.8125	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Response to immunochemotherapy	METPO:1000683	sphere shaped	9	0.030223074	-0.15427535	4	5	0	increased	0.91015625	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Response to transplant	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	4	-0.56852148	-0.2234179	2	2	0	decreased	0.875	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Rheumatoid arthritis	METPO:1000623	moderately halophilic	4	-0.037335715	0.047599249	2	2	0	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Rheumatoid arthritis	METPO:1000683	sphere shaped	4	0.52013106	0.84993216	3	1	0	increased	0.625	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Socioeconomic status	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	9	-0.12765546	0	2	1	6	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Socioeconomic status	METPO:1000668	coccus shaped	9	0.17001893	0.44229708	6	2	1	increased	0.640625	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Socioeconomic status	METPO:1000608	facultatively aerobic	9	-0.0049371371	0	4	3	2	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Socioeconomic status	METPO:1000623	moderately halophilic	9	0.29502622	0	3	4	2	increased	0.578125	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Stroke	METPO:1000668	coccus shaped	4	0.40358425	0.16848314	3	1	0	increased	0.625	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Stroke	METPO:1000683	sphere shaped	4	0.046853477	-0.05577571	2	2	0	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Type I diabetes mellitus	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	6	-0.068712776	-0.015957759	1	3	2	decreased	0.875	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Type I diabetes mellitus	METPO:2000103|GO:0030245	cellulose catabolic process	6	0.012756306	-0.031613197	2	3	1	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Type I diabetes mellitus	METPO:1000668	coccus shaped	6	-0.32042003	-0.32315384	2	3	1	decreased	0.625	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Type I diabetes mellitus	METPO:1000608	facultatively aerobic	6	-0.061729291	0.32666475	3	2	1	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Type I diabetes mellitus	METPO:1000623	moderately halophilic	6	-0.10078893	0	2	2	2	decreased	0.625	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Type I diabetes mellitus	METPO:1000683	sphere shaped	6	-0.3031266	-0.061964795	2	3	1	decreased	0.625	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Type II diabetes mellitus	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	11	-0.10949512	0	3	4	4	decreased	0.578125	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Type II diabetes mellitus	METPO:2000103|GO:0030245	cellulose catabolic process	11	0.18795789	0	4	4	3	increased	0.7421875	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Type II diabetes mellitus	METPO:1000668	coccus shaped	11	0.16062729	-0.087351251	3	6	2	increased	0.91015625	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Ulcerative colitis	METPO:1000668	coccus shaped	7	0.33233641	0.34163549	4	3	0	increased	0.578125	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Ulcerative colitis	METPO:1000623	moderately halophilic	7	0.051387072	0.2899744	4	2	1	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Ulcerative colitis	METPO:1000683	sphere shaped	7	0.082847228	0	2	3	2	increased	0.8125	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Unipolar depression	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	3	0.14340056	-0.16612839	1	2	0	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Unipolar depression	METPO:1000668	coccus shaped	3	0.5063619	0.14983703	2	1	0	increased	0.75	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Unipolar depression	METPO:1000608	facultatively aerobic	3	-0.038488219	-0.25891798	1	2	0	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
-Unipolar depression	METPO:1000683	sphere shaped	3	0.26391721	-0.22587399	1	2	0	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+HIV infection	METPO:2000103|GO:0030245	cellulose catabolic process	12	-0.89064059	-0.97145401	0	10	2	decreased	0.001953125	two-sided Wilcoxon signed-rank test vs zero	True	0.20982127	False
+Parkinson's disease	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	36	0.51858371	0.06410487	18	4	14	increased	0.0024010673	two-sided Wilcoxon signed-rank test vs zero	True	0.20982127	False
+Parkinson's disease	METPO:1000623	moderately halophilic	36	0.56540836	0.64970164	24	7	5	increased	0.0030856069	two-sided Wilcoxon signed-rank test vs zero	True	0.20982127	False
+Colorectal cancer	METPO:2000103|GO:0030245	cellulose catabolic process	24	-0.68521447	-0.72810784	2	15	7	decreased	0.0048532309	two-sided Wilcoxon signed-rank test vs zero	True	0.24751477	False
+Colorectal cancer	METPO:1000623	moderately halophilic	24	0.50264238	0.19436824	14	4	6	increased	0.012274756	two-sided Wilcoxon signed-rank test vs zero	True	0.50081005	False
+Breast cancer	METPO:1000683	sphere shaped	6	1.5865655	1.0860253	6	0	0	increased	0.03125	two-sided Wilcoxon signed-rank test vs zero	True	0.53125	False
+COVID-19	METPO:2000103|GO:0030245	cellulose catabolic process	7	-1.1368842	-0.84036181	0	6	1	decreased	0.03125	two-sided Wilcoxon signed-rank test vs zero	True	0.53125	False
+Colorectal cancer	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	24	1.2727997	0	11	5	8	increased	0.026183648	two-sided Wilcoxon signed-rank test vs zero	True	0.53125	False
+Irritable bowel syndrome	METPO:1000668	coccus shaped	12	0.60245873	0.30248893	10	2	0	increased	0.020996094	two-sided Wilcoxon signed-rank test vs zero	True	0.53125	False
+Irritable bowel syndrome	METPO:1000608	facultatively aerobic	12	0.77345172	0.73165584	9	3	0	increased	0.026855469	two-sided Wilcoxon signed-rank test vs zero	True	0.53125	False
+Parkinson's disease	METPO:2000103|GO:0030245	cellulose catabolic process	36	-0.69166227	-0.63209268	10	23	3	decreased	0.022717748	two-sided Wilcoxon signed-rank test vs zero	True	0.53125	False
+Ulcerative colitis	METPO:1000608	facultatively aerobic	6	1.3448875	1.289048	6	0	0	increased	0.03125	two-sided Wilcoxon signed-rank test vs zero	True	0.53125	False
+Irritable bowel syndrome	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	12	1.4238144	0.21284048	7	1	4	increased	0.0390625	two-sided Wilcoxon signed-rank test vs zero	True	0.56919643	False
+Polycystic ovary syndrome	METPO:1000608	facultatively aerobic	9	1.0078862	0.91789799	7	2	0	increased	0.0390625	two-sided Wilcoxon signed-rank test vs zero	True	0.56919643	False
+Alzheimer's disease	METPO:2000103|GO:0030245	cellulose catabolic process	4	0.55366069	0.28074649	3	1	0	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Atopic eczema	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	3	-1.3054582	-0.93646613	0	3	0	decreased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Atopic eczema	METPO:1000668	coccus shaped	3	1.2248898	1.3245791	3	0	0	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Atopic eczema	METPO:1000683	sphere shaped	3	1.2238862	1.0725095	3	0	0	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Autism	METPO:2000103|GO:0030245	cellulose catabolic process	4	-0.92449598	-0.58837442	1	3	0	decreased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Autism	METPO:1000668	coccus shaped	4	-1.3377817	-1.3177927	0	4	0	decreased	0.125	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Autism	METPO:1000623	moderately halophilic	4	0.98890473	1.2042652	3	1	0	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Autism	METPO:1000683	sphere shaped	4	-0.98690294	-1.1555151	1	3	0	decreased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Breast cancer	METPO:1000668	coccus shaped	6	0.66803935	0.66712995	4	2	0	increased	0.21875	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+COVID-19	METPO:1000668	coccus shaped	7	0.39873199	0.38509101	6	1	0	increased	0.21875	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+COVID-19	METPO:1000608	facultatively aerobic	7	0.65362472	0.7845685	6	1	0	increased	0.15625	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+COVID-19	METPO:1000623	moderately halophilic	7	0.34483986	0.092196909	5	0	2	increased	0.0625	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Chronic constipation	METPO:2000103|GO:0030245	cellulose catabolic process	10	0.56199879	0.32882051	7	2	1	increased	0.09765625	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Chronic fatigue syndrome	METPO:2000103|GO:0030245	cellulose catabolic process	3	-1.091427	-1.2006916	0	3	0	decreased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Chronic fatigue syndrome	METPO:1000623	moderately halophilic	3	1.6754536	1.9137612	3	0	0	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Chronic kidney disease	METPO:2000103|GO:0030245	cellulose catabolic process	8	-1.5376503	-1.4206661	2	6	0	decreased	0.0546875	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Chronic kidney disease	METPO:1000608	facultatively aerobic	8	0.7460287	0.88631962	6	1	1	increased	0.078125	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Chronic kidney disease	METPO:1000623	moderately halophilic	8	0.53607884	0.50402176	5	1	2	increased	0.0625	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Colorectal adenoma	METPO:1000683	sphere shaped	4	0.95151739	0.71697814	3	0	1	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Colorectal cancer	METPO:1000608	facultatively aerobic	24	0.43460514	0.13471541	13	8	3	increased	0.139622	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Colorectal cancer	METPO:1000683	sphere shaped	24	0.59153061	0.23830289	13	8	3	increased	0.068034745	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Constipation	METPO:1000683	sphere shaped	4	0.75987187	0.79171543	3	0	1	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Crohn's disease	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	5	1.7498663	1.4248858	3	1	1	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Crohn's disease	METPO:2000103|GO:0030245	cellulose catabolic process	5	-1.141004	-0.73997625	1	3	1	decreased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Diarrhea	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	3	1.4911885	0.96609966	3	0	0	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Diarrhea	METPO:2000103|GO:0030245	cellulose catabolic process	3	-1.6538576	-1.9159085	0	3	0	decreased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Diarrhea	METPO:1000608	facultatively aerobic	3	1.2081705	1.5621958	3	0	0	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Diarrhea	METPO:1000623	moderately halophilic	3	0.81903668	0.39037321	3	0	0	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Eczema	METPO:2000103|GO:0030245	cellulose catabolic process	3	1.768286	0.66105063	3	0	0	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Eczema	METPO:1000683	sphere shaped	3	-0.69897225	-0.54775858	0	3	0	decreased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Endometriosis	METPO:1000608	facultatively aerobic	3	1.2186362	0.69063749	3	0	0	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Food allergy	METPO:2000103|GO:0030245	cellulose catabolic process	4	0.95064308	1.0120175	3	0	1	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Food allergy	METPO:1000668	coccus shaped	4	1.108293	0.86609138	3	0	1	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Food allergy	METPO:1000683	sphere shaped	4	1.0523155	0.061361686	3	0	1	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Gastric cancer	METPO:2000103|GO:0030245	cellulose catabolic process	3	-0.8708267	-0.90812272	0	3	0	decreased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Gastric cancer	METPO:1000668	coccus shaped	3	0.65655373	0.53824221	3	0	0	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Gastric cancer	METPO:1000608	facultatively aerobic	3	1.1741673	1.5117423	3	0	0	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Gastric cancer	METPO:1000683	sphere shaped	3	0.36500506	0.40683178	3	0	0	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Gestational diabetes	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	5	0.85092429	1.0058482	5	0	0	increased	0.0625	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+HIV infection	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	12	0.81716194	0.50435415	7	2	3	increased	0.203125	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+HIV infection	METPO:1000623	moderately halophilic	12	0.37222016	0.029483997	6	3	3	increased	0.1640625	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Irritable bowel syndrome	METPO:1000623	moderately halophilic	12	0.58885655	0.63965301	8	3	1	increased	0.1015625	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Irritable bowel syndrome	METPO:1000683	sphere shaped	12	0.42479413	0.22751546	8	2	2	increased	0.064453125	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Multiple sclerosis	METPO:1000623	moderately halophilic	6	0.59734335	0.26500043	4	1	1	increased	0.125	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Multiple sclerosis	METPO:1000683	sphere shaped	6	-0.7155436	-0.28709542	0	4	2	decreased	0.125	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Obesity	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	25	-0.27578486	0	4	8	13	decreased	0.084379443	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Obesity	METPO:2000103|GO:0030245	cellulose catabolic process	25	-0.29940441	0	7	11	7	decreased	0.19888473	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Obesity	METPO:1000668	coccus shaped	25	0.33080388	0.044415378	14	7	4	increased	0.14917759	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Obesity	METPO:1000608	facultatively aerobic	25	0.34451846	0.38864723	13	10	2	increased	0.2123927	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Obesity	METPO:1000683	sphere shaped	25	0.22089972	0	11	5	9	increased	0.12083865	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Parkinson's disease	METPO:1000608	facultatively aerobic	36	0.35926874	0.075892523	19	16	1	increased	0.16385362	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Psoriasis	METPO:1000668	coccus shaped	5	0.88105116	0.71134329	4	1	0	increased	0.1875	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Psoriasis	METPO:1000683	sphere shaped	5	0.7769682	0.40768601	4	1	0	increased	0.125	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Rheumatoid arthritis	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	4	0.29480004	0.33460222	3	1	0	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Rheumatoid arthritis	METPO:1000608	facultatively aerobic	4	1.2080223	1.3296459	3	1	0	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Schizophrenia	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	13	0.9006687	0	4	1	8	increased	0.125	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Type I diabetes mellitus	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	5	-0.27644226	-0.12306233	0	3	2	decreased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Type I diabetes mellitus	METPO:1000668	coccus shaped	5	-0.94801433	-1.2885764	1	3	1	decreased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Type II diabetes mellitus	METPO:1000608	facultatively aerobic	9	-0.77665011	-0.72105892	2	6	1	decreased	0.109375	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Type II diabetes mellitus	METPO:1000683	sphere shaped	9	0.68630283	1.0308016	5	3	1	increased	0.25	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Ulcerative colitis	METPO:2000103|GO:0030245	cellulose catabolic process	6	-1.362	-1.1478207	1	4	1	decreased	0.125	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Ulcerative colitis	METPO:1000623	moderately halophilic	6	0.48224017	0.52243405	4	0	2	increased	0.125	two-sided Wilcoxon signed-rank test vs zero	True	0.67105263	False
+Schizophrenia	METPO:1000608	facultatively aerobic	13	0.42947676	0.40409972	9	3	1	increased	0.26611328	two-sided Wilcoxon signed-rank test vs zero	True	0.70502739	False
+Chronic constipation	METPO:1000623	moderately halophilic	10	-0.47400518	-0.69607298	3	6	1	decreased	0.30078125	two-sided Wilcoxon signed-rank test vs zero	True	0.78665865	False
+Chronic kidney disease	METPO:1000683	sphere shaped	8	0.37051993	0.14912934	5	1	2	increased	0.3125	two-sided Wilcoxon signed-rank test vs zero	True	0.78703704	False
+Gestational diabetes	METPO:2000103|GO:0030245	cellulose catabolic process	5	0.43037177	0.33666685	4	1	0	increased	0.3125	two-sided Wilcoxon signed-rank test vs zero	True	0.78703704	False
+Gestational diabetes	METPO:1000608	facultatively aerobic	5	0.82227229	0.84798185	4	1	0	increased	0.3125	two-sided Wilcoxon signed-rank test vs zero	True	0.78703704	False
+Parkinson's disease	METPO:1000668	coccus shaped	36	0.23764889	-0.026525328	17	18	1	increased	0.31773282	two-sided Wilcoxon signed-rank test vs zero	True	0.79045727	False
+Alzheimer's disease	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	4	0.1091794	0.09849112	2	0	2	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Asthma	METPO:2000103|GO:0030245	cellulose catabolic process	3	-1.1382269	-1.5424233	1	2	0	decreased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Atopic eczema	METPO:1000623	moderately halophilic	3	0.36420867	0.50960502	2	1	0	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Breast cancer	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	6	0.93640161	0	2	1	3	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+COVID-19	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	7	0.37840166	0	2	0	5	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+COVID-19	METPO:1000683	sphere shaped	7	0.39523519	0.44278875	4	1	2	increased	0.4375	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Chronic constipation	METPO:1000683	sphere shaped	10	-0.19157915	-0.022481239	2	5	3	decreased	0.46875	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Constipation	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	4	0.70406716	0.64722892	2	0	2	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Constipation	METPO:1000668	coccus shaped	4	0.51949484	0.6525497	2	1	1	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Constipation	METPO:1000623	moderately halophilic	4	0.49705802	0.79106636	3	1	0	increased	0.375	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Crohn's disease	METPO:1000608	facultatively aerobic	5	0.61143526	1.4804997	3	2	0	increased	0.4375	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Crohn's disease	METPO:1000683	sphere shaped	5	0.29641609	0.43311849	4	1	0	increased	0.4375	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Diarrhea	METPO:1000668	coccus shaped	3	0.83538573	0.68457583	2	1	0	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Eczema	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	3	0.76592588	0.28342216	2	0	1	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Eczema	METPO:1000608	facultatively aerobic	3	-0.35662265	-0.167984	1	2	0	decreased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Endometriosis	METPO:1000668	coccus shaped	3	1.0333337	1.5225384	2	1	0	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Endometriosis	METPO:1000683	sphere shaped	3	1.4243808	1.546957	2	1	0	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Food allergy	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	4	0.1623751	0.099043715	2	0	2	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Gastric cancer	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	3	0.63191576	0.50601865	2	1	0	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Gastric cancer	METPO:1000623	moderately halophilic	3	0.69318505	0.56115473	2	1	0	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Gestational diabetes	METPO:1000668	coccus shaped	5	0.62189925	0.94190488	3	2	0	increased	0.4375	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Major depressive disorder	METPO:2000103|GO:0030245	cellulose catabolic process	3	-0.18342904	-0.2240316	1	2	0	decreased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Major depressive disorder	METPO:1000608	facultatively aerobic	3	-0.8721921	-1.0626889	1	2	0	decreased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Major depressive disorder	METPO:1000623	moderately halophilic	3	-0.56907167	-0.59081452	1	2	0	decreased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Major depressive disorder	METPO:1000683	sphere shaped	3	-0.60281064	-0.56135512	1	2	0	decreased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Multiple sclerosis	METPO:2000103|GO:0030245	cellulose catabolic process	6	-0.18220692	-0.10029094	1	4	1	decreased	0.4375	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Multiple sclerosis	METPO:1000608	facultatively aerobic	6	0.42893876	0.65922114	4	2	0	increased	0.4375	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Non-alcoholic fatty liver disease	METPO:2000103|GO:0030245	cellulose catabolic process	3	0.19705063	0.12925017	2	0	1	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Non-alcoholic fatty liver disease	METPO:1000668	coccus shaped	3	0.56924503	0.1210364	2	0	1	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Non-alcoholic fatty liver disease	METPO:1000608	facultatively aerobic	3	1.0935842	0.7664552	2	0	1	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Non-alcoholic fatty liver disease	METPO:1000623	moderately halophilic	3	0.38674911	0.3132533	2	0	1	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Non-alcoholic fatty liver disease	METPO:1000683	sphere shaped	3	0.63151373	0.42937275	2	0	1	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Pancreatic carcinoma	METPO:2000103|GO:0030245	cellulose catabolic process	3	-0.72656971	-1.0221543	0	2	1	decreased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Pancreatic carcinoma	METPO:1000683	sphere shaped	3	0.49306674	0.66308763	2	0	1	increased	0.5	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Parkinson's disease	METPO:1000683	sphere shaped	36	0.18843475	0	17	15	4	increased	0.34981562	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Polycystic ovary syndrome	METPO:1000623	moderately halophilic	9	0.47360911	0.066320631	5	3	1	increased	0.4609375	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Psoriasis	METPO:2000103|GO:0030245	cellulose catabolic process	5	-1.1256653	-0.63420505	2	3	0	decreased	0.4375	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Rheumatoid arthritis	METPO:2000103|GO:0030245	cellulose catabolic process	4	-0.38250723	-0.53514418	1	3	0	decreased	0.375	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Rheumatoid arthritis	METPO:1000668	coccus shaped	4	1.119357	1.385171	3	1	0	increased	0.375	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Schizophrenia	METPO:1000668	coccus shaped	13	0.32036411	0.20003691	9	4	0	increased	0.41430664	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Schizophrenia	METPO:1000623	moderately halophilic	13	0.34899246	0.34063313	7	4	2	increased	0.36523438	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Schizophrenia	METPO:1000683	sphere shaped	13	0.28689693	0.22094183	7	5	1	increased	0.46972656	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Type I diabetes mellitus	METPO:1000608	facultatively aerobic	5	-0.56162153	-0.61398222	1	3	1	decreased	0.375	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Type I diabetes mellitus	METPO:1000683	sphere shaped	5	-0.49544407	-0.41628378	1	3	1	decreased	0.375	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Type II diabetes mellitus	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	9	-0.16276164	0	2	3	4	decreased	0.4375	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Type II diabetes mellitus	METPO:2000103|GO:0030245	cellulose catabolic process	9	0.34152061	0	4	3	2	increased	0.46875	two-sided Wilcoxon signed-rank test vs zero	True	0.796875	False
+Chronic kidney disease	METPO:1000668	coccus shaped	8	-0.35106609	-0.20774901	3	5	0	decreased	0.546875	two-sided Wilcoxon signed-rank test vs zero	True	0.86482558	False
+Breast cancer	METPO:1000608	facultatively aerobic	6	0.31538456	0.26255482	3	3	0	increased	0.5625	two-sided Wilcoxon signed-rank test vs zero	True	0.8759542	False
+Ulcerative colitis	METPO:1000668	coccus shaped	6	0.43418393	0.17251639	3	3	0	increased	0.5625	two-sided Wilcoxon signed-rank test vs zero	True	0.8759542	False
+Alzheimer's disease	METPO:1000608	facultatively aerobic	4	-0.2584796	-0.3200027	2	2	0	decreased	0.625	two-sided Wilcoxon signed-rank test vs zero	True	0.87931034	False
+Autism	METPO:1000608	facultatively aerobic	4	0.38392014	0.73258439	2	2	0	increased	0.625	two-sided Wilcoxon signed-rank test vs zero	True	0.87931034	False
+Breast cancer	METPO:2000103|GO:0030245	cellulose catabolic process	6	-0.37327695	-1.1088546	1	4	1	decreased	0.625	two-sided Wilcoxon signed-rank test vs zero	True	0.87931034	False
+Constipation	METPO:1000608	facultatively aerobic	4	0.20495909	0.1865181	2	2	0	increased	0.625	two-sided Wilcoxon signed-rank test vs zero	True	0.87931034	False
+Crohn's disease	METPO:1000668	coccus shaped	5	0.27184488	0.70292345	3	2	0	increased	0.625	two-sided Wilcoxon signed-rank test vs zero	True	0.87931034	False
+Gestational diabetes	METPO:1000623	moderately halophilic	5	-0.10743785	-0.17566281	2	3	0	decreased	0.625	two-sided Wilcoxon signed-rank test vs zero	True	0.87931034	False
+Gestational diabetes	METPO:1000683	sphere shaped	5	0.28388063	0.73778724	3	2	0	increased	0.625	two-sided Wilcoxon signed-rank test vs zero	True	0.87931034	False
+Multiple sclerosis	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	6	0.35003565	0	2	2	2	increased	0.625	two-sided Wilcoxon signed-rank test vs zero	True	0.87931034	False
+Obesity	METPO:1000623	moderately halophilic	25	-0.13776624	0	9	10	6	decreased	0.57316897	two-sided Wilcoxon signed-rank test vs zero	True	0.87931034	False
+Psoriasis	METPO:1000608	facultatively aerobic	5	0.20420569	0.015235879	3	1	1	increased	0.625	two-sided Wilcoxon signed-rank test vs zero	True	0.87931034	False
+Psoriasis	METPO:1000623	moderately halophilic	5	-0.093627747	0	2	2	1	decreased	0.625	two-sided Wilcoxon signed-rank test vs zero	True	0.87931034	False
+Rheumatoid arthritis	METPO:1000683	sphere shaped	4	0.54677383	0.8963354	3	1	0	increased	0.625	two-sided Wilcoxon signed-rank test vs zero	True	0.87931034	False
+Type I diabetes mellitus	METPO:2000103|GO:0030245	cellulose catabolic process	5	0.25783147	0	2	2	1	increased	0.625	two-sided Wilcoxon signed-rank test vs zero	True	0.87931034	False
+Type II diabetes mellitus	METPO:1000623	moderately halophilic	9	-0.43970865	0	3	4	2	decreased	0.578125	two-sided Wilcoxon signed-rank test vs zero	True	0.87931034	False
+Chronic constipation	METPO:1000608	facultatively aerobic	10	-0.16471581	0.095802901	5	4	1	decreased	0.65234375	two-sided Wilcoxon signed-rank test vs zero	True	0.91149401	False
+Chronic constipation	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	10	0.26170042	0.3490214	5	2	3	increased	0.6875	two-sided Wilcoxon signed-rank test vs zero	True	0.94127517	False
+Multiple sclerosis	METPO:1000668	coccus shaped	6	0.11348831	0.11973301	3	3	0	increased	0.6875	two-sided Wilcoxon signed-rank test vs zero	True	0.94127517	False
+Polycystic ovary syndrome	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	9	0.80515639	0	4	3	2	increased	0.6875	two-sided Wilcoxon signed-rank test vs zero	True	0.94127517	False
+Asthma	METPO:1000668	coccus shaped	3	0.18448514	0.12428383	2	1	0	increased	0.75	two-sided Wilcoxon signed-rank test vs zero	True	0.96226415	False
+Asthma	METPO:1000623	moderately halophilic	3	0.59046228	0.066524715	2	1	0	increased	0.75	two-sided Wilcoxon signed-rank test vs zero	True	0.96226415	False
+Atopic eczema	METPO:1000608	facultatively aerobic	3	0.077073741	0.11340933	2	1	0	increased	0.75	two-sided Wilcoxon signed-rank test vs zero	True	0.96226415	False
+Autism	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	4	0.26205922	0.086465947	2	1	1	increased	0.75	two-sided Wilcoxon signed-rank test vs zero	True	0.96226415	False
+Chronic fatigue syndrome	METPO:1000683	sphere shaped	3	-0.21365111	-0.26404562	1	2	0	decreased	0.75	two-sided Wilcoxon signed-rank test vs zero	True	0.96226415	False
+Colorectal adenoma	METPO:2000103|GO:0030245	cellulose catabolic process	4	0.19995135	0.079524375	2	1	1	increased	0.75	two-sided Wilcoxon signed-rank test vs zero	True	0.96226415	False
+Constipation	METPO:2000103|GO:0030245	cellulose catabolic process	4	0.62897238	0.40049461	2	1	1	increased	0.75	two-sided Wilcoxon signed-rank test vs zero	True	0.96226415	False
+Diarrhea	METPO:1000683	sphere shaped	3	0.40419773	0.56415013	2	1	0	increased	0.75	two-sided Wilcoxon signed-rank test vs zero	True	0.96226415	False
+Psoriasis	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	5	-0.16711748	0	1	2	2	decreased	0.75	two-sided Wilcoxon signed-rank test vs zero	True	0.96226415	False
+Type II diabetes mellitus	METPO:1000668	coccus shaped	9	0.23660449	-0.06913979	3	5	1	increased	0.7421875	two-sided Wilcoxon signed-rank test vs zero	True	0.96226415	False
+Alzheimer's disease	METPO:1000668	coccus shaped	4	0.22630734	0.2758974	2	2	0	increased	0.875	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+Alzheimer's disease	METPO:1000623	moderately halophilic	4	-0.14856832	-0.40689095	1	3	0	decreased	0.875	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+Alzheimer's disease	METPO:1000683	sphere shaped	4	-0.0088868979	-0.050687893	2	2	0	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+Asthma	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	3	1.2421488	0	1	1	1	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+Asthma	METPO:1000608	facultatively aerobic	3	0.34766203	-0.32100975	1	2	0	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+Asthma	METPO:1000683	sphere shaped	3	-0.19380039	-0.71674279	1	2	0	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+Atopic eczema	METPO:2000103|GO:0030245	cellulose catabolic process	3	0.17064754	-0.2158126	1	2	0	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+Breast cancer	METPO:1000623	moderately halophilic	6	0.23327604	0.3566217	3	2	1	increased	0.8125	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+Chronic constipation	METPO:1000668	coccus shaped	10	0.13091632	-0.024547142	4	5	1	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+Chronic fatigue syndrome	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	3	0.038284069	0	1	0	2	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+Chronic fatigue syndrome	METPO:1000668	coccus shaped	3	0.11185405	-0.75167688	1	2	0	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+Chronic fatigue syndrome	METPO:1000608	facultatively aerobic	3	-0.067237581	0	1	1	1	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+Chronic kidney disease	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	8	-0.0092746817	0	2	2	4	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+Colorectal adenoma	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	4	0.17268373	0	1	1	2	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+Colorectal adenoma	METPO:1000668	coccus shaped	4	0.052049123	0.25567603	2	2	0	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+Colorectal adenoma	METPO:1000608	facultatively aerobic	4	0.26139029	0.71313834	3	1	0	increased	0.875	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+Colorectal adenoma	METPO:1000623	moderately halophilic	4	0.11722084	0.029839698	2	2	0	increased	0.875	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+Colorectal cancer	METPO:1000668	coccus shaped	24	0.015600563	0.14926264	13	10	1	increased	0.97573612	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+Crohn's disease	METPO:1000623	moderately halophilic	5	-0.30019208	0.34831028	3	2	0	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+Eczema	METPO:1000668	coccus shaped	3	-0.020398953	-0.15981713	1	2	0	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+Eczema	METPO:1000623	moderately halophilic	3	0.062014638	-0.22376801	1	2	0	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+Endometriosis	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	3	0.59077407	0	1	0	2	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+Endometriosis	METPO:2000103|GO:0030245	cellulose catabolic process	3	-0.43452802	0	1	1	1	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+Endometriosis	METPO:1000623	moderately halophilic	3	0.58030813	0	1	1	1	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+Food allergy	METPO:1000608	facultatively aerobic	4	-0.52548992	0.070872909	2	1	1	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+Food allergy	METPO:1000623	moderately halophilic	4	0.21876044	0	1	1	2	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+HIV infection	METPO:1000668	coccus shaped	12	0.067633012	0.11421209	6	5	1	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+HIV infection	METPO:1000608	facultatively aerobic	12	-0.037424775	-0.010260093	5	6	1	decreased	0.96582031	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+HIV infection	METPO:1000683	sphere shaped	12	0.40078907	-0.07086116	5	6	1	increased	0.83105469	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+Irritable bowel syndrome	METPO:2000103|GO:0030245	cellulose catabolic process	12	-0.14480246	0	5	5	2	decreased	0.84570312	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+Major depressive disorder	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	3	-0.59957162	0	0	1	2	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+Major depressive disorder	METPO:1000668	coccus shaped	3	-0.2038501	0.47724556	2	1	0	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+Non-alcoholic fatty liver disease	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	3	0.25923742	0	1	0	2	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+Pancreatic carcinoma	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	3	-0.41133843	0	0	1	2	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+Pancreatic carcinoma	METPO:1000668	coccus shaped	3	-0.20627925	0	1	1	1	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+Pancreatic carcinoma	METPO:1000608	facultatively aerobic	3	0.12198611	0	1	1	1	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+Pancreatic carcinoma	METPO:1000623	moderately halophilic	3	-0.24333026	0	1	1	1	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+Polycystic ovary syndrome	METPO:2000103|GO:0030245	cellulose catabolic process	9	-0.056956702	0.054213217	5	4	0	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+Polycystic ovary syndrome	METPO:1000668	coccus shaped	9	0.18576281	-0.1918426	4	5	0	increased	0.8203125	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+Polycystic ovary syndrome	METPO:1000683	sphere shaped	9	-0.30484828	-0.10883413	4	5	0	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+Rheumatoid arthritis	METPO:1000623	moderately halophilic	4	-0.041285321	0.063025342	2	2	0	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+Schizophrenia	METPO:2000103|GO:0030245	cellulose catabolic process	13	-0.23535762	0	3	5	5	decreased	0.9453125	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+Type I diabetes mellitus	METPO:1000623	moderately halophilic	5	0.55412811	0	1	2	2	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+Ulcerative colitis	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	6	0.15641261	0	1	1	4	increased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False
+Ulcerative colitis	METPO:1000683	sphere shaped	6	-0.10386355	0	1	2	3	decreased	1	two-sided Wilcoxon signed-rank test vs zero	True	1	False

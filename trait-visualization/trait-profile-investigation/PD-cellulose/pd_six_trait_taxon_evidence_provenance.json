@@ -2,44 +2,44 @@
   "evidence": "pd_six_trait_taxon_profile_evidence.tsv",
   "carriers": "pd_six_trait_taxon_carriers.tsv",
   "trait_summary": "pd_six_trait_direction_summary.tsv",
-  "pd_feces_profiles": 242,
-  "pd_feces_profile_ids_sha256": "143fa2c833af8d7fc38ea7d59745c43970636a9e5d91c06ab5f159028fcce7b7",
+  "pd_feces_profiles": 140,
+  "pd_feces_profile_ids_sha256": "a7f11a80123be6019bc22da0ed37346f4a287aaa0523b1ab7d2f0ea3c48c3b78",
   "pd_feces_profile_ids_encoding": "sha256 of the sorted profile_id values, one per line",
   "traits": [
     {
       "trait_id": "METPO:1000623",
       "trait": "moderately halophilic",
-      "increased_minus_decreased_mean_z": 0.5093256659570338,
+      "increased_minus_decreased_mean_z": 0.4945827655893071,
       "trait_direction": "increased"
     },
     {
       "trait_id": "METPO:2000103|pathways:arsenate_reduction",
       "trait": "arsenate reduction",
-      "increased_minus_decreased_mean_z": 0.3896882769399424,
+      "increased_minus_decreased_mean_z": 0.4370969314235318,
       "trait_direction": "increased"
     },
     {
       "trait_id": "METPO:1000608",
       "trait": "facultatively aerobic",
-      "increased_minus_decreased_mean_z": 0.3477377024240431,
+      "increased_minus_decreased_mean_z": 0.1866861050107753,
       "trait_direction": "increased"
     },
     {
       "trait_id": "METPO:1000668",
       "trait": "coccus shaped",
-      "increased_minus_decreased_mean_z": -0.0762325912240173,
-      "trait_direction": "decreased"
+      "increased_minus_decreased_mean_z": 0.0470777346767881,
+      "trait_direction": "increased"
     },
     {
       "trait_id": "METPO:1000683",
       "trait": "sphere shaped",
-      "increased_minus_decreased_mean_z": -0.1283950181958026,
+      "increased_minus_decreased_mean_z": -0.0263593747960704,
       "trait_direction": "decreased"
     },
     {
       "trait_id": "METPO:2000103|GO:0030245",
       "trait": "cellulose catabolic process",
-      "increased_minus_decreased_mean_z": -0.7113990449519834,
+      "increased_minus_decreased_mean_z": -0.7279927555179937,
       "trait_direction": "decreased"
     }
   ],
@@ -55,66 +55,66 @@
       "db271c59"
     ],
     "taxa_trait_matrix.tsv": [
-      "f6de0576",
-      "63f3a3b0",
-      "026579df",
-      "af341745",
-      "faac27df",
-      "7f9c0afd",
-      "6f5fa3e6",
-      "aa034178"
+      "45df0fe7",
+      "120455a9",
+      "3361d791",
+      "81953c33",
+      "8405160f",
+      "ff7a2e78",
+      "d2a7d8d1",
+      "8584ec8e"
     ],
     "study_trait_profiles_wide.tsv": [
-      "519a095b",
-      "09e179dc",
-      "92fb51f9",
-      "d892984a",
-      "52dd100d",
-      "ece4dadf",
-      "6c94b036",
-      "a5323e6c"
+      "43b2e230",
+      "2b0edf48",
+      "36a21e24",
+      "7329a6cb",
+      "f3245036",
+      "d350ab53",
+      "3325596d",
+      "e897f4d0"
     ],
     "study_trait_profile_study_metadata.tsv": [
-      "a7c83cb5",
-      "e2867bdd",
-      "60e57826",
-      "0e4944d1",
-      "bc455f3b",
-      "d77a410b",
-      "1b594f0c",
-      "223599f8"
+      "24721aed",
+      "f717ef74",
+      "28cd6be7",
+      "8ba36ce7",
+      "b3bdc832",
+      "b606a2a6",
+      "6f409da5",
+      "9409e793"
     ],
     "pd_six_trait_direction_summary.tsv": [
-      "a28f834a",
-      "34f51452",
-      "54f60c57",
-      "393241f9",
-      "8b59295b",
-      "18841261",
-      "d2e8b85a",
-      "4d973fbf"
+      "0ccae583",
+      "bb9cc269",
+      "0bb46e99",
+      "bb352955",
+      "b58a491b",
+      "be9812bd",
+      "fc374b03",
+      "cb3bfbad"
     ]
   },
   "output_sha256_chunks": {
     "pd_six_trait_taxon_carriers.tsv": [
-      "152fd917",
-      "268c9234",
-      "cec003f3",
-      "7df42023",
-      "84cca6c5",
-      "4c17b676",
-      "c5c4f478",
-      "cd18a1de"
+      "fefd1c2f",
+      "c91f121b",
+      "677f2b39",
+      "7da113c6",
+      "0dfa7a37",
+      "f159b6aa",
+      "fb17da40",
+      "9d6a9aaa"
     ],
     "pd_six_trait_taxon_profile_evidence.tsv": [
-      "8793b9a0",
-      "e9209db3",
-      "49b3faab",
-      "512f4ccf",
-      "08c4522f",
-      "ec7b5662",
-      "0c442967",
-      "91d91000"
+      "93ba106a",
+      "83762100",
+      "bbf06399",
+      "0cef1266",
+      "392dcc0e",
+      "1602816b",
+      "9fcf8f0d",
+      "47950f7c"
     ]
   },
   "sha256_chunk_encoding": "concatenate each file's eight chunks in order"

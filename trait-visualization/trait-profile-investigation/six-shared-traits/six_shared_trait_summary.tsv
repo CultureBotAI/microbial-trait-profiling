@@ -1,7 +1,7 @@
 trait_id	trait_label	slug	base_color	paired_q_value	paired_mean_increased_minus_decreased	paired_direction	profile_count	increased_profile_count	decreased_profile_count	annotated_profile_count	increased_annotated_profile_count	decreased_annotated_profile_count	positive_z_profile_count	increased_positive_z_profile_count	decreased_positive_z_profile_count
-METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	9.253285415445715e-09	0.1862991850074555	trait enriched in increased profiles	5629	2948	2681	4411	2357	2054	2912	1649	1263
-METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	7.633604503335897e-07	-0.1645451409552772	trait enriched in decreased profiles	5629	2948	2681	2922	1465	1457	1808	819	989
-METPO:1000668	coccus shaped	coccus_shaped	#009e73	6.398190118294285e-06	0.1572607242027672	trait enriched in increased profiles	5629	2948	2681	4338	2330	2008	2647	1475	1172
-METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	3.499578457486859e-05	0.1439612948441141	trait enriched in increased profiles	5629	2948	2681	3490	1908	1582	2405	1362	1043
-METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	5.418857681986591e-05	0.1479625567875006	trait enriched in increased profiles	5629	2948	2681	1739	974	765	1379	779	600
-METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	8.686640973196955e-05	0.1357294715712632	trait enriched in increased profiles	5629	2948	2681	3364	1863	1501	2600	1428	1172
+METPO:1000608	facultatively aerobic	facultatively_aerobic	#0072b2	7.311608230399531e-05	0.2186731233724685	trait enriched in increased profiles	1870	935	935	1555	792	763	1003	536	467
+METPO:2000103|GO:0030245	cellulose catabolic process	cellulose_catabolic_process	#d55e00	5.2684562368762426e-06	-0.2482695891982761	trait enriched in decreased profiles	1870	935	935	1100	536	564	646	260	386
+METPO:1000668	coccus shaped	coccus_shaped	#009e73	0.0063172192611699	0.1624855457279763	trait enriched in increased profiles	1870	935	935	1578	817	761	918	488	430
+METPO:1000683	sphere shaped	sphere_shaped	#cc79a7	0.0107548954970397	0.1499575850718177	trait enriched in increased profiles	1870	935	935	1304	689	615	840	452	388
+METPO:2000103|pathways:arsenate_reduction	arsenate reduction	arsenate_reduction	#e69f00	1.2167012771460592e-05	0.2526607539333616	trait enriched in increased profiles	1870	935	935	685	376	309	549	306	243
+METPO:1000623	moderately halophilic	moderately_halophilic	#6a3d9a	0.0077611923797572	0.1504932950504283	trait enriched in increased profiles	1870	935	935	1221	647	574	930	494	436

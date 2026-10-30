@@ -266,6 +266,8 @@ def load_oxygen_annotations() -> pd.DataFrame:
 
 def load_taxa_occurrences(metadata: pd.DataFrame, annotations: pd.DataFrame) -> pd.DataFrame:
     """Load unique taxon/profile occurrences and attach metadata plus oxygen class."""
+    from mtp.population_tables import is_canonical_derived_path, orient_and_filter_taxa_df
+
     taxa = pd.read_csv(
         TAXA_PATH,
         sep="\t",
@@ -279,6 +281,8 @@ def load_taxa_occurrences(metadata: pd.DataFrame, annotations: pd.DataFrame) -> 
             "taxonomic_rank",
         ],
     )
+    if is_canonical_derived_path(TAXA_PATH, "bugsigdb_taxa.tsv"):
+        taxa = orient_and_filter_taxa_df(taxa, filter_to_selection=True)
     taxa["profile_id"] = [
         profile_id_from_taxa_row(study_id, experiment_id, direction)
         for study_id, experiment_id, direction in taxa[

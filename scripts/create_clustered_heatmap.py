@@ -11,6 +11,7 @@ import pandas as pd
 import seaborn as sns
 
 from mtp.human_host_corpus import CORPUS_SEQUENCING_TYPES
+from mtp.population_tables import is_canonical_derived_path, orient_and_filter_taxa_df
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = REPO_ROOT / "trait-visualization/bsdb-taxa-only"
@@ -92,6 +93,12 @@ def build_binary_matrix(
         sep="\t",
         usecols=["study_id", "experiment_id", "direction", "taxon_name", "taxonomic_rank"],
     )
+    if is_canonical_derived_path(taxa_path, "bugsigdb_taxa.tsv"):
+        taxa = orient_and_filter_taxa_df(
+            taxa,
+            filter_to_selection=True,
+            raw_dump_path=full_dump_path,
+        )
     taxa = taxa[
         [
             (study_id, experiment_id) in human_experiment_ids

@@ -14,6 +14,11 @@ from matplotlib.patches import Patch
 
 from mtp.direction_labels import DIRECTION_BASIS_LABELS
 from mtp.human_host_corpus import CORPUS_SEQUENCING_TYPES
+from mtp.population_tables import (
+    is_canonical_derived_path,
+    orient_and_filter_profiles_df,
+    orient_and_filter_taxa_df,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = REPO_ROOT / "trait-visualization"
@@ -174,6 +179,12 @@ def load_bugsigdb_taxa_records(
         ],
         dtype=str,
     )
+    if is_canonical_derived_path(bugsigdb_taxa_path, "bugsigdb_taxa.tsv"):
+        taxa = orient_and_filter_taxa_df(
+            taxa,
+            filter_to_selection=True,
+            raw_dump_path=full_dump_path,
+        )
     input_rows = len(taxa)
     in_corpus = taxa["signature_id"].isin(corpus_taxa.keys())
     valid_direction = taxa["direction"].isin(["increased", "decreased"])
@@ -298,13 +309,23 @@ def load_profile_support(study_trait_profiles_path: Path, trait_columns: list[st
     if not selected_columns:
         return support
 
+    canonical = is_canonical_derived_path(
+        study_trait_profiles_path, "study_trait_profiles_wide.tsv"
+    )
+    key_cols = ["study_id", "experiment_id", "inc_dec"] if canonical else []
+    read_cols = list(dict.fromkeys([*key_cols, *selected_columns]))
     for chunk in pd.read_csv(
         study_trait_profiles_path,
         sep="\t",
-        usecols=selected_columns,
+        usecols=read_cols,
         chunksize=100,
     ):
-        support = support.add(chunk.gt(0).sum(axis=0).astype("int64"), fill_value=0).astype("int64")
+        if canonical:
+            chunk = orient_and_filter_profiles_df(chunk, filter_to_selection=True)
+        support = support.add(
+            chunk[selected_columns].gt(0).sum(axis=0).astype("int64"),
+            fill_value=0,
+        ).astype("int64")
     return support
 
 

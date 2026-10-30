@@ -1,9 +1,8 @@
 taxon_id	target_taxon_name	taxon_name	taxonomic_rank	bugsigdb_study_count	bugsigdb_profile_count	decreased	increased	dominant_direction	increased_fraction	increased_profile_tendency	increased_to_decreased_ratio	trait_count
-NCBITaxon:84112	Eggerthella lenta	Eggerthella lenta	species	33	44	8	36	increased	0.8181818181818182	0.6363636363636364	4.5	14
-NCBITaxon:851	Fusobacterium nucleatum	Fusobacterium nucleatum	species	34	57	11	46	increased	0.8070175438596491	0.6140350877192983	4.181818181818182	13
-NCBITaxon:33033	Parvimonas micra	Parvimonas micra	species	29	41	9	32	increased	0.7804878048780488	0.5609756097560976	3.5555555555555554	13
-NCBITaxon:573	Klebsiella pneumoniae	Klebsiella pneumoniae	species	24	51	12	39	increased	0.7647058823529411	0.5294117647058824	3.25	24
-NCBITaxon:1328	Streptococcus anginosus	Streptococcus anginosus	species	31	45	14	31	increased	0.6888888888888889	0.37777777777777777	2.2142857142857144	19
-NCBITaxon:562	Escherichia coli	Escherichia coli	species	67	114	36	78	increased	0.6842105263157895	0.3684210526315789	2.1666666666666665	78
-NCBITaxon:28131	Prevotella intermedia	Prevotella intermedia	species	27	35	12	23	increased	0.6571428571428571	0.3142857142857143	1.9166666666666667	12
-NCBITaxon:39778	Veillonella dispar	Veillonella dispar	species	36	60	22	38	increased	0.6333333333333333	0.26666666666666666	1.7272727272727273	8
+NCBITaxon:84112	Eggerthella lenta	Eggerthella lenta	species	20	21	1	20	increased	0.9523809523809523	0.9047619047619048	20.0	16
+NCBITaxon:851	Fusobacterium nucleatum	Fusobacterium nucleatum	species	18	19	3	16	increased	0.8421052631578947	0.6842105263157895	5.333333333333333	14
+NCBITaxon:33033	Parvimonas micra	Parvimonas micra	species	14	17	3	14	increased	0.8235294117647058	0.6470588235294118	4.666666666666667	13
+NCBITaxon:562	Escherichia coli	Escherichia coli	species	34	38	8	30	increased	0.7894736842105263	0.5789473684210527	3.75	81
+NCBITaxon:28131	Prevotella intermedia	Prevotella intermedia	species	16	18	4	14	increased	0.7777777777777778	0.5555555555555556	3.5	12
+NCBITaxon:1328	Streptococcus anginosus	Streptococcus anginosus	species	16	20	5	15	increased	0.75	0.5	3.0	21
+NCBITaxon:39778	Veillonella dispar	Veillonella dispar	species	18	25	7	18	increased	0.72	0.44	2.5714285714285716	8

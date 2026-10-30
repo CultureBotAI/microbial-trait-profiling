@@ -313,7 +313,11 @@ def profile_id(study_id: object, experiment_id: object, inc_dec: object) -> str:
 
 def read_profile_counts(path: Path) -> tuple[pd.DataFrame, list[str]]:
     """Read the complete non-MediaDive count matrix with one row per profile."""
+    from mtp.population_tables import is_canonical_derived_path, orient_and_filter_profiles_df
+
     profiles = pd.read_csv(path, sep="\t")
+    if is_canonical_derived_path(path, "study_trait_profiles_wide.tsv"):
+        profiles = orient_and_filter_profiles_df(profiles, filter_to_selection=True)
     raw_trait_columns = [column for column in profiles.columns if column not in PROFILE_COLUMNS]
     ids = [profile_id(*values) for values in profiles[PROFILE_COLUMNS].itertuples(index=False)]
     values = profiles[raw_trait_columns].apply(pd.to_numeric, errors="coerce").fillna(0.0)
@@ -576,6 +580,8 @@ def require_current_trait_taxa_evidence(metadata: pd.DataFrame, output_dir: Path
 
 def load_taxon_specificity(taxon_ids: pd.Index, metadata: pd.DataFrame) -> pd.DataFrame:
     """Load the full taxon occurrence table and build PD-vs-other feces specificity."""
+    from mtp.population_tables import is_canonical_derived_path, orient_and_filter_taxa_df
+
     taxa = read_tsv(
         TAXA_PATH,
         usecols=[
@@ -587,6 +593,8 @@ def load_taxon_specificity(taxon_ids: pd.Index, metadata: pd.DataFrame) -> pd.Da
             "taxonomic_rank",
         ],
     )
+    if is_canonical_derived_path(TAXA_PATH, "bugsigdb_taxa.tsv"):
+        taxa = orient_and_filter_taxa_df(taxa, filter_to_selection=True)
     return taxon_specificity_from_occurrences(taxa, metadata, taxon_ids)
 
 

@@ -430,7 +430,7 @@ def main() -> None:
         "--contrast-population",
         "disease_vs_healthy_tier1_2_subject_controls",
         "--output-dir",
-        str(INVESTIGATION_DIR / "taxa-coverage-548"),
+        str(INVESTIGATION_DIR / "taxa-coverage"),
     )
     run_script("investigate_facultative_aerobe_expansion.py")
     run_script("investigate_facultative_aerobe_condition_followup.py")

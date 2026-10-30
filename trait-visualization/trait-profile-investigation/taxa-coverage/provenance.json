@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "recipe": "just taxa-coverage",
-  "generated_at": "2026-10-23T23:39:40.211871+00:00",
+  "generated_at": "2026-10-30T20:37:31.559134+00:00",
   "tables_only": false,
   "strain_rollup": "phenotype",
   "strain_rollup_evidence": {
@@ -15,17 +15,17 @@
       "16S",
       "WMS"
     ],
-    "contrast_filter": "none",
-    "direction_basis": "curated",
+    "contrast_filter": "disease_vs_healthy_tier1_2_subject_controls",
+    "direction_basis": "disease_vs_comparison",
     "zero_trait_profiles": "included"
   },
   "counts": {
     "input_profiles": 5629,
-    "selected_profiles": 5629,
-    "excluded_profiles": 0,
+    "selected_profiles": 1870,
+    "excluded_profiles": 3759,
     "input_occurrences": 59486,
-    "selected_occurrences": 46865,
-    "excluded_occurrences": 12621
+    "selected_occurrences": 19566,
+    "excluded_occurrences": 39920
   },
   "inputs": {
     "taxa": {
@@ -55,8 +55,8 @@
     },
     "kg_provenance": {
       "file": "data/kg-microbe/provenance.json",
-      "sha256": "49b598a018fce22d8b1d2ee5a6af65133015802260ea444abfcbe20c4bd1e6d2",
-      "size_bytes": 532
+      "sha256": "1502fad61efb340ad17af238670c2610cc052ebb26cf18abfab75a2fae596a1e",
+      "size_bytes": 551
     }
   },
   "corpus_identity": {
@@ -106,86 +106,86 @@
   "bugsigdb_vintage_source": "raw_dump_header",
   "core_feature_filter": "exclude columns containing mediadive case-insensitively",
   "producer": {
-    "code_commit": "511c891229b659e207cfe0f4281a97c3fc039a80+dirty",
-    "script_sha256": "af6bbb5524d866a134d15345c959b0ff8cfed7f382a44b092dbb1074398f2935",
-    "corpus_policy_sha256": "8f5d8e4371834f2039510f754d9a6397a0f3bd93b849afb40e9b9cfcc22e74b8",
+    "code_commit": "a1069c417f5a40fe81ac1d8e50ab5223a218796d+dirty",
+    "script_sha256": "9567eaed53d10d712cd598c01660325fba0957e504958c072030c5fc6dbe4b17",
+    "corpus_policy_sha256": "e6bf55a1868b55da100efb54c8425f6398b85fd84acb38d8d24121de9136fe97",
     "profile_builder_sha256": "f90a77e5f68498d3e734088524c9fc5ea667c43d7a25b9923b4f8ae4921fd9d2",
     "corpus_identity_sha256": "900fbcee740cbc8021994173711f02e7206580203c9cf6725fb66e22f1bcf99e",
     "trait_guilds_sha256": "8945fb5c8f6928f5edabc2d162d2755825e923d0a7f9f2b78913ed550ecec89c",
-    "uv_lock_sha256": "1d3b96547698627125de773066562912773097dc47d981b898d117af4663267c"
+    "uv_lock_sha256": "1024ddf11c29ec3571d0f2939e3caf3561e8b92db5de57912e299758b7fb020e"
   },
   "outputs": {
     "taxa_coverage_by_rank.tsv": {
-      "sha256": "7902f961fdf1820e63eddcea6ab230c5bdeb4db2ee16785f21dec3b4eab9d508",
-      "size_bytes": 1481
+      "sha256": "72853106a282f24ceaa38abdbe90541c0088476497966facca3e5cb6cd9ec7b4",
+      "size_bytes": 1330
     },
     "profile_coverage_by_rank.tsv": {
-      "sha256": "d9b3aebdb95bd94b388112bc7b001101e4f3f8dcaf10fea6287a028516f5cc28",
-      "size_bytes": 1077
+      "sha256": "a49982fca3c715c1e12ee42b20019ad83307257f8513024f6b33df0106e62519",
+      "size_bytes": 985
     },
     "profile_trait_mapping_summary.tsv": {
-      "sha256": "1aeb1c565fdd8a537ee3c5084f7eff0530d1931c42f49b67b98eab4b73b8faf9",
-      "size_bytes": 811046
+      "sha256": "299d1ed4b8816217f76c22676e4e4b409b85ef2a3e82b167f93dc06087436e55",
+      "size_bytes": 273090
     },
     "taxa_kgmicrobe_coverage_details.tsv": {
-      "sha256": "814128594c6d5d4640600fe8ffab2bd5d3a781c31740395ad601f91e11b3e420",
-      "size_bytes": 350586
+      "sha256": "ec7ab3300743f7f0c384cd523cb07f74c012702dc6455617d480d42f5fca3ecc",
+      "size_bytes": 237879
     },
     "top_zero_trait_bugsigdb_taxa.tsv": {
-      "sha256": "12ca732f17ca1f244eaa8f48de802e295e845e0536bf0c8235e39ab65730bd05",
-      "size_bytes": 17586
+      "sha256": "69724a78f853db38281bbaa64059d8008bd359e98c3e7c4c3d77582eeac12f76",
+      "size_bytes": 17782
     },
     "README.md": {
-      "sha256": "7107800a7fce86040d769b8184f9e1544e0d8846549c9a1890bb623225a49090",
-      "size_bytes": 3617
+      "sha256": "beadcd9fa8e41833cb9bcea5198c4153aa8e0b58dead9d3a589f2b36951daf16",
+      "size_bytes": 3692
     },
     "taxa_coverage_histogram_rank_stratified.png": {
-      "sha256": "595efca25e33e4fc91de8bf99a2eb682d511a01382e067a512cea50172b983ac",
-      "size_bytes": 536821
+      "sha256": "1fb0d51ce8fc22b882cfce41fb5ed6647332bba31abd2c17e7bf85afab07211b",
+      "size_bytes": 489693
     },
     "taxa_coverage_histogram_rank_stratified.svg": {
-      "sha256": "4513cf60d1e55393134b6646b4fbb461743c9f5a1761b46f4a500c68fad5607b",
-      "size_bytes": 160189
+      "sha256": "8b1c599e3909a647ff68251f782eb42f1a2d8f407d55ae7f73aaef2e8842a22a",
+      "size_bytes": 153061
     },
     "taxa_coverage_occurrences_vs_unique.png": {
-      "sha256": "33788c37a17e2214c1e3243e19021aa67d5032e7f7543383719b52317ef3a62a",
-      "size_bytes": 269602
+      "sha256": "c3ef6c473bc74377e9d67b2f3369363174cb0d87616b6a02ff4cf041e762eae8",
+      "size_bytes": 268895
     },
     "taxa_coverage_occurrences_vs_unique.svg": {
-      "sha256": "724ed3cac927661b586071a97fbf589b55ad7ce802fd426c8e6423f9f2e4e7f7",
-      "size_bytes": 96970
+      "sha256": "dc3ab9d6964a63665e3098126b68d3e893a9fe334a37e2ac79de56be8886e053",
+      "size_bytes": 99470
     },
     "taxa_profile_distribution_by_rank.png": {
-      "sha256": "ac4093598a56ae94f1514bf98d44d93409721c8407b412c4172e553730d34aef",
-      "size_bytes": 448642
+      "sha256": "3843f10c18ab2c4b799be1aa6a5c0e81b289ff74e8dd35f240bc3b32e2355df2",
+      "size_bytes": 408741
     },
     "taxa_profile_distribution_by_rank.svg": {
-      "sha256": "d807c054bddb754b647c2186cf667b93e2cd5694bda271ba0b1561d6626ff7b8",
-      "size_bytes": 278939
+      "sha256": "09f79e0da695f47efb92bebb093452b0ea6d6c5d90dea8c33eb1dac59f4c0f8d",
+      "size_bytes": 164180
     },
     "histogram1_mapped_traits_and_taxa_per_profile.png": {
-      "sha256": "d389e6f0d734d09efeb5814856f694064cb3654a6b344afb8ebf4f6e43f6f30c",
-      "size_bytes": 484558
+      "sha256": "8ac259eb22d32785536565924e60da16c18de82eee24f14250b58c325f880c83",
+      "size_bytes": 458189
     },
     "histogram1_mapped_traits_and_taxa_per_profile.svg": {
-      "sha256": "cf7cbbfed69061e8d3082f37f3c3a3dd541a0050b3486e6b4cb1cbe75a8c52e4",
-      "size_bytes": 171384
+      "sha256": "0e783e899f3fe2d0c0abbf3822821d02b684e7998c71f9fea12357b4bb2af6a2",
+      "size_bytes": 169850
     },
     "histogram2_taxa_trait_counts_and_zero_trait_frequency.png": {
-      "sha256": "d9d067eca4b420e4c7d26b29ef7b2bc9bc1bb4f256a28165af72e25d2897838a",
-      "size_bytes": 725433
+      "sha256": "684ef438ed02df0129b3bceb8980cb03fa4d08aaa217b7d805dca2de020be847",
+      "size_bytes": 716179
     },
     "histogram2_taxa_trait_counts_and_zero_trait_frequency.svg": {
-      "sha256": "799aaaefc5adfb6a4a40bbb1fcbbc2beafff7fc74377f628fcaaadcdb60e8968",
-      "size_bytes": 243519
+      "sha256": "eba4c787deb776ad27e0d52a024a042257985fc17aaf61fcd7e473de3575c8b6",
+      "size_bytes": 245109
     },
     "taxa_trait_count_distribution.png": {
-      "sha256": "af01a0dc4367d25a73cef3c78538ff912fe150f3de7d1fc3c37aa962876c72cc",
-      "size_bytes": 361690
+      "sha256": "f7a08a7ee8c959676059de31af0729455086df58321183397d509d5397aaa33e",
+      "size_bytes": 342750
     },
     "taxa_trait_count_distribution.svg": {
-      "sha256": "ba109c459d9a85dc8be5da195b30d04b88282a356d3fad436add4e047377893a",
-      "size_bytes": 163527
+      "sha256": "421a4e3820005d47940622055f9dd2fa6e5202b0919b5bf2b4ccb2d7bae55ee0",
+      "size_bytes": 151263
     }
   }
 }

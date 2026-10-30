@@ -807,6 +807,8 @@ def build_guild_trait_selection(study_trait_metadata: pd.DataFrame) -> pd.DataFr
 
 def load_profile_taxa_occurrences(scored_profiles: pd.DataFrame) -> pd.DataFrame:
     """Load all taxon/profile occurrences and join scored profile metadata."""
+    from mtp.population_tables import orient_and_filter_taxa_df
+
     taxa = read_tsv(
         REPO_ROOT / "data/derived/bugsigdb_taxa.tsv",
         usecols=[
@@ -819,6 +821,7 @@ def load_profile_taxa_occurrences(scored_profiles: pd.DataFrame) -> pd.DataFrame
             "taxonomic_rank",
         ],
     )
+    taxa = orient_and_filter_taxa_df(taxa, filter_to_selection=True)
     taxa["profile_id"] = taxa.apply(profile_id_from_taxa_row, axis=1)
     taxa = taxa.drop_duplicates(subset=["taxon_id", "profile_id"])
     profile_columns = [
@@ -1234,6 +1237,8 @@ def load_target_taxa_occurrences(
     scored_profiles: pd.DataFrame,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Return target-taxon occurrences in human-host profiles and those set aside (#587)."""
+    from mtp.population_tables import orient_and_filter_taxa_df
+
     taxa = read_tsv(
         REPO_ROOT / "data/derived/bugsigdb_taxa.tsv",
         usecols=[
@@ -1246,6 +1251,7 @@ def load_target_taxa_occurrences(
             "taxonomic_rank",
         ],
     )
+    taxa = orient_and_filter_taxa_df(taxa, filter_to_selection=True, preserve_non_corpus_rows=True)
     taxa = taxa[taxa["taxon_id"].isin(TARGET_TAXA)].copy()
     taxa["profile_id"] = taxa.apply(profile_id_from_taxa_row, axis=1)
     taxa = taxa.drop_duplicates(subset=["taxon_id", "profile_id"])

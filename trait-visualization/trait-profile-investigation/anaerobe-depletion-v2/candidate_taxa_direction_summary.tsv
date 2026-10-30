@@ -1,8 +1,8 @@
 taxon_id	target_taxon_name	taxon_name	taxonomic_rank	bugsigdb_study_count	bugsigdb_profile_count	decreased	increased	dominant_direction	decreased_fraction	depletion_bias	decreased_to_increased_ratio	trait_count
-NCBITaxon:39491	Agathobacter rectalis	Agathobacter rectalis	species	40	80	63	17	decreased	0.7875	0.575	3.7058823529411766	9
-NCBITaxon:166486	Roseburia intestinalis	Roseburia intestinalis	species	33	60	42	18	decreased	0.7	0.4	2.3333333333333335	9
-NCBITaxon:39485	Lachnospira eligens	Lachnospira eligens	species	52	86	60	26	decreased	0.6976744186046512	0.3953488372093023	2.3076923076923075	10
-NCBITaxon:360807	Roseburia inulinivorans	Roseburia inulinivorans	species	36	58	40	18	decreased	0.6896551724137931	0.3793103448275862	2.2222222222222223	11
-NCBITaxon:853	Faecalibacterium prausnitzii	Faecalibacterium prausnitzii	species	91	158	99	59	decreased	0.6265822784810127	0.25316455696202533	1.6779661016949152	10
-NCBITaxon:40518	Ruminococcus bromii	Ruminococcus bromii	species	40	66	40	26	decreased	0.6060606060606061	0.21212121212121213	1.5384615384615385	9
-NCBITaxon:39488	Anaerobutyricum hallii	Anaerobutyricum hallii	species	53	93	49	44	mixed	0.5268817204301075	0.053763440860215055	1.1136363636363635	10
+NCBITaxon:39491	Agathobacter rectalis	Agathobacter rectalis	species	18	23	21	2	decreased	0.9130434782608695	0.8260869565217391	10.5	9
+NCBITaxon:360807	Roseburia inulinivorans	Roseburia inulinivorans	species	22	28	22	6	decreased	0.7857142857142857	0.5714285714285714	3.6666666666666665	11
+NCBITaxon:166486	Roseburia intestinalis	Roseburia intestinalis	species	20	28	22	6	decreased	0.7857142857142857	0.5714285714285714	3.6666666666666665	9
+NCBITaxon:853	Faecalibacterium prausnitzii	Faecalibacterium prausnitzii	species	39	57	41	16	decreased	0.7192982456140351	0.43859649122807015	2.5625	10
+NCBITaxon:39485	Lachnospira eligens	Lachnospira eligens	species	35	43	30	13	decreased	0.6976744186046512	0.3953488372093023	2.3076923076923075	10
+NCBITaxon:39488	Anaerobutyricum hallii	Anaerobutyricum hallii	species	28	35	22	13	decreased	0.6285714285714286	0.2571428571428571	1.6923076923076923	10
+NCBITaxon:40518	Ruminococcus bromii	Ruminococcus bromii	species	20	23	12	11	mixed	0.5217391304347826	0.043478260869565216	1.0909090909090908	9

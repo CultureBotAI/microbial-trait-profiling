@@ -389,9 +389,13 @@ def trace_traits() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFra
     check_saved_summary(summary, saved)
     directions = trait_directions(saved)
 
+    from mtp.population_tables import is_canonical_derived_path, orient_and_filter_taxa_df
+
     profiles = metadata[pd_feces_mask(metadata)].copy()
     profiles["direction"] = profiles["inc_dec"].map({"inc": "increased", "dec": "decreased"})
     taxa = read_tsv(TAXA_PATH)
+    if is_canonical_derived_path(TAXA_PATH, "bugsigdb_taxa.tsv"):
+        taxa = orient_and_filter_taxa_df(taxa, filter_to_selection=True)
     occurrences = taxa.merge(
         profiles[["study_id", "experiment_id", "direction", "profile_id"]],
         on=["study_id", "experiment_id", "direction"],

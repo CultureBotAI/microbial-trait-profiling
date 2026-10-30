@@ -226,10 +226,14 @@ def build_condition_taxon_tests(
     profile_lookup = feces_metadata[
         ["study_id", "experiment_id", "direction", "condition"]
     ].drop_duplicates()
+    from mtp.population_tables import is_canonical_derived_path, orient_and_filter_taxa_df
+
     taxa = read_tsv(
         TAXA_PATH,
         usecols=["study_id", "experiment_id", "direction", "taxon_id"],
     )
+    if is_canonical_derived_path(TAXA_PATH, "bugsigdb_taxa.tsv"):
+        taxa = orient_and_filter_taxa_df(taxa, filter_to_selection=True)
     for column in ["study_id", "experiment_id", "direction", "taxon_id"]:
         taxa[column] = taxa[column].map(clean_text)
     occurrences = taxa.merge(

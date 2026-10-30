@@ -1,1 +1,3 @@
 source	target	source_layer	target_layer	edge_class	evidence_type	direction	effect	p_value	q_value	study_support	annotation_count	statistically_significant	line_style
+condition::Parkinson's disease	taxon::NCBITaxon:841	condition	genus	FDR-significant condition-taxon direction	exact McNemar/binomial test on discordant paired studies	decreased	-0.4444444444444444	0.00014495849609375	0.0208740234375	18	NA	True	solid
+taxon::NCBITaxon:841	trait::METPO:2000103|GO:0030245	genus	trait	KG-Microbe annotation provenance	KG-Microbe taxon-trait annotation; no inferential test	NA	NA	NA	NA	NA	1	False	dashed

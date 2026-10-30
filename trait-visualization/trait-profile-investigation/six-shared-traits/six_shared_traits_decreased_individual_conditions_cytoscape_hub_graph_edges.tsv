@@ -1,177 +1,139 @@
 edge_type	source_label	target_label	body_site_group	trait_id	trait_label	trait_color	trait_rank	n	bg	s	links	signal	rank_score	color	width
-condition_trait	Parkinson's disease	facultatively aerobic		METPO:1000608	facultatively aerobic	#0072b2	0	57	125	29	3	0.5774193232817553	260.5957676127434	#abd1e6	8.879131774761756
-condition_trait	Obesity	facultatively aerobic		METPO:1000608	facultatively aerobic	#0072b2	0	29	102	16	1	1.1286874352004788	174.89974375530915	#88bddb	6.245142178889786
-condition_trait	Human papilloma virus infection	facultatively aerobic		METPO:1000608	facultatively aerobic	#0072b2	0	27	20	15	1	0.6369128179519836	122.53912249527208	#a8cfe5	6.015150198772886
-condition_trait	COVID-19	facultatively aerobic		METPO:1000608	facultatively aerobic	#0072b2	0	31	41	21	2	0.43056897340633904	79.48064697270414	#b5d6e9	6.467330970962848
-condition_trait	Dry eye syndrome	facultatively aerobic		METPO:1000608	facultatively aerobic	#0072b2	0	15	13	7	1	0.4309455054370449	44.633512918287614	#b5d6e9	4.40510609052752
-condition_trait	Colorectal cancer	facultatively aerobic		METPO:1000608	facultatively aerobic	#0072b2	0	48	89	28	3	0.7560795048100367	130.85845771815153	#a0cbe2	8.122725298159331
-condition_trait	Cervical glandular intraepithelial neoplasia	facultatively aerobic		METPO:1000608	facultatively aerobic	#0072b2	0	13	20	8	1	0.6444564402473247	46.97212138931328	#a7cfe4	4.079692326327772
-condition_trait	Rheumatoid arthritis	facultatively aerobic		METPO:1000608	facultatively aerobic	#0072b2	0	11	12	8	1	0.7655612078425801	42.67267926529452	#9fcae2	3.7281239641832356
-condition_trait	Gastric cancer	facultatively aerobic		METPO:1000608	facultatively aerobic	#0072b2	0	17	11	7	2	0.24138535218429596	16.261038008902876	#c1ddec	4.70945714396268
-condition_trait	Oral squamous cell carcinoma	facultatively aerobic		METPO:1000608	facultatively aerobic	#0072b2	0	9	4	6	1	0.0735710353472562	18.801654960726417	#cce3f0	3.3428520535179027
-condition_trait	Cesarean section	facultatively aerobic		METPO:1000608	facultatively aerobic	#0072b2	0	8	3	5	1	0.6066539892499364	23.029899992092822	#aad0e5	3.1340806260084437
-condition_trait	Asthma	facultatively aerobic		METPO:1000608	facultatively aerobic	#0072b2	0	18	18	6	3	0.7585350050885172	15.681533887295684	#a0cbe2	4.854908488705886
-condition_trait	Parkinson's disease	cellulose catabolic process		METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	69	141	34	1	1.5868886501736656	634.6129787901896	#e6a16a	9.8
-condition_trait	Obesity	cellulose catabolic process		METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	40	91	16	1	0.9210338726030806	217.70795208972143	#edbc95	7.388201057747873
-condition_trait	Human papilloma virus infection	cellulose catabolic process		METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	6	62	4	1	1.308358827347666	22.290961273411533	#e9ac7c	2.6729861898856884
-condition_trait	Glaucoma	cellulose catabolic process		METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	6	5	3	1	0.3172023212029861	10.956180902026384	#f4d5bc	2.6729861898856884
-condition_trait	COVID-19	cellulose catabolic process		METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	24	76	16	2	1.6183435831007322	128.35067116437588	#e6a068	5.65354747915782
-condition_trait	Colorectal cancer	cellulose catabolic process		METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	35	116	25	2	1.6350966786590957	254.09389781443176	#e69f67	6.891164326938654
-condition_trait	Cervical glandular intraepithelial neoplasia	cellulose catabolic process		METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	4	38	3	1	0.8652362445159549	10.34306595171564	#eebf99	2.1260430025497876
-condition_trait	Gastric cancer	cellulose catabolic process		METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	7	39	5	2	1.1130521037680012	9.076737625226611	#ebb489	2.9117990425277083
-condition_trait	HIV infection	cellulose catabolic process		METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	27	44	17	2	0.8799893243887466	123.5862340470475	#eebe98	6.015150198772886
-condition_trait	Dry eye syndrome	cellulose catabolic process		METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	3	42	3	1	1.0132908071454303	8.37304107972067	#ecb88f	1.8
-condition_trait	Oral squamous cell carcinoma	cellulose catabolic process		METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	3	18	3	1	0.6931465144288461	7.04159839650752	#f0c6a4	1.8
-condition_trait	Antimicrobial agent	cellulose catabolic process		METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	26	48	13	1	1.078246713131954	142.59991774703226	#ecb68b	5.896957995816294
-condition_trait	Parkinson's disease	coccus shaped		METPO:1000668	coccus shaped	#009e73	2	60	132	28	1	0.9163660476684128	387.1782840624904	#95d7c5	9.117787280441483
-condition_trait	Colorectal cancer	coccus shaped		METPO:1000668	coccus shaped	#009e73	2	39	86	27	2	1.0362099805297753	149.02628011293007	#8ed4c1	7.291394988342492
-condition_trait	COVID-19	coccus shaped		METPO:1000668	coccus shaped	#009e73	2	35	31	19	2	0.22030398730276637	66.30785182817172	#c3e9de	6.891164326938654
-condition_trait	Human papilloma virus infection	coccus shaped		METPO:1000668	coccus shaped	#009e73	2	20	39	14	2	0.789195729449699	81.80494641555825	#9edaca	5.134160407816982
-condition_trait	Rheumatoid arthritis	coccus shaped		METPO:1000668	coccus shaped	#009e73	2	10	11	7	1	0.7048243455911474	35.45082565489373	#a3dccd	3.5403129791807153
-condition_trait	Cervical glandular intraepithelial neoplasia	coccus shaped		METPO:1000668	coccus shaped	#009e73	2	10	21	6	1	0.7131306383495823	33.3359829582206	#a3dccd	3.5403129791807153
-condition_trait	Squamous cell carcinoma	coccus shaped		METPO:1000668	coccus shaped	#009e73	2	10	4	5	1	0.7345636934186058	31.079209226619756	#a1dccc	3.5403129791807153
-condition_trait	Asthma	coccus shaped		METPO:1000668	coccus shaped	#009e73	2	12	18	6	2	0.6468911612025509	23.23594536151908	#a7decf	3.9075750993864435
-condition_trait	Atopic asthma	coccus shaped		METPO:1000668	coccus shaped	#009e73	2	6	6	2	1	0.4587085384173247	9.61533075534222	#b3e3d6	2.6729861898856884
-condition_trait	Gastric cancer	coccus shaped		METPO:1000668	coccus shaped	#009e73	2	13	30	9	3	0.23787511992516752	8.904035620423219	#c2e8dd	4.079692326327772
-condition_trait	Cesarean section	coccus shaped		METPO:1000668	coccus shaped	#009e73	2	5	7	3	1	1.2274536981622537	15.439532507089895	#81cfba	2.4132926542152693
-condition_trait	Dry eye syndrome	coccus shaped		METPO:1000668	coccus shaped	#009e73	2	4	29	3	1	0.8789284520491425	10.418991672093805	#98d8c7	2.1260430025497876
-condition_trait	Parkinson's disease	sphere shaped		METPO:1000683	sphere shaped	#cc79a7	3	50	143	21	1	1.2414072477217857	346.4142478986529	#e6bdd3	8.296564214100774
-condition_trait	Antimicrobial agent	sphere shaped		METPO:1000683	sphere shaped	#cc79a7	3	23	50	14	1	0.8606739663526498	115.89236570163963	#ebcadc	5.5280361050986775
-condition_trait	COVID-19	sphere shaped		METPO:1000683	sphere shaped	#cc79a7	3	28	50	16	2	0.359408536126689	57.83444284494653	#f1dbe7	6.1311731844418595
-condition_trait	Human papilloma virus infection	sphere shaped		METPO:1000683	sphere shaped	#cc79a7	3	18	45	12	2	1.2973088934392214	72.3239623086692	#e5bbd2	4.854908488705886
-condition_trait	Cervical glandular intraepithelial neoplasia	sphere shaped		METPO:1000683	sphere shaped	#cc79a7	3	12	30	7	1	0.9951101119818414	49.7845781649666	#e9c5d9	3.9075750993864435
-condition_trait	Colorectal cancer	sphere shaped		METPO:1000683	sphere shaped	#cc79a7	3	24	116	20	3	0.7908464982518802	53.080310018751305	#ecccdd	5.65354747915782
-condition_trait	Rheumatoid arthritis	sphere shaped		METPO:1000683	sphere shaped	#cc79a7	3	9	14	6	1	1.039910597292648	35.72534460993525	#e8c3d8	3.3428520535179027
-condition_trait	Dry eye syndrome	sphere shaped		METPO:1000683	sphere shaped	#cc79a7	3	8	28	5	1	0.3099680720045363	18.777181579204377	#f2dce8	3.1340806260084437
-condition_trait	Atopic asthma	sphere shaped		METPO:1000683	sphere shaped	#cc79a7	3	8	6	2	1	0.4385817780745129	12.643548957173437	#f0d8e5	3.1340806260084437
-condition_trait	Oral squamous cell carcinoma	sphere shaped		METPO:1000683	sphere shaped	#cc79a7	3	6	10	5	1	0.1250870899443458	12.09531268268411	#f4e3ec	2.6729861898856884
-condition_trait	Cesarean section	sphere shaped		METPO:1000683	sphere shaped	#cc79a7	3	5	7	4	1	0.49151957922905715	12.002540789745009	#f0d6e4	2.4132926542152693
-condition_trait	Gastric cancer	sphere shaped		METPO:1000683	sphere shaped	#cc79a7	3	13	33	9	3	0.22402475276156744	9.560094399561828	#f3dfea	4.079692326327772
-condition_trait	Obesity	arsenate reduction		METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	28	117	12	1	1.9810286156329513	214.0932481027814	#eebd50	6.1311731844418595
-condition_trait	Parkinson's disease	arsenate reduction		METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	28	179	16	2	0.8156346687120453	118.18772545081003	#f5da9c	6.1311731844418595
-condition_trait	Human papilloma virus infection	arsenate reduction		METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	11	52	7	1	0.6316089309949379	37.321189299753726	#f6dea8	3.7281239641832356
-condition_trait	Gastric cancer	arsenate reduction		METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	12	25	5	2	0.6779487969385843	22.968445025192835	#f6dda5	3.9075750993864435
-condition_trait	COVID-19	arsenate reduction		METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	13	77	9	2	0.510209891617695	20.76488999405662	#f7e1b0	4.079692326327772
-condition_trait	Dry eye syndrome	arsenate reduction		METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	8	34	4	1	0.438634459826565	18.52314273423221	#f7e3b5	3.1340806260084437
-condition_trait	Colorectal cancer	arsenate reduction		METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	29	133	18	3	0.9681569118797713	66.73421895467807	#f4d692	6.245142178889786
-condition_trait	Cervical glandular intraepithelial neoplasia	arsenate reduction		METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	6	40	6	1	1.289030366440564	26.725484529314976	#f2ce7d	2.6729861898856884
-condition_trait	Cesarean section	arsenate reduction		METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	4	10	3	1	2.0396268152488877	16.855270055553376	#edbc4d	2.1260430025497876
-condition_trait	Chronic obstructive pulmonary disease	arsenate reduction		METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	4	2	3	1	1.3405687068633327	12.978868800553249	#f2cd7a	2.1260430025497876
-condition_trait	Smoking status measurement	arsenate reduction		METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	4	7	2	1	0.6516931011806674	7.258281352261682	#f6dea7	2.1260430025497876
-condition_trait	Chronic constipation	arsenate reduction		METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	10	62	6	1	2.014703675485227	58.66342478521059	#edbd4e	3.5403129791807153
-condition_trait	Obesity	moderately halophilic		METPO:1000623	moderately halophilic	#6a3d9a	5	37	102	17	1	0.9391851888653112	207.38374581939289	#c0aed5	7.093985402370144
-condition_trait	Parkinson's disease	moderately halophilic		METPO:1000623	moderately halophilic	#6a3d9a	5	35	152	21	2	0.4556455912193452	139.00489204368773	#d3c5e1	6.891164326938654
-condition_trait	Human papilloma virus infection	moderately halophilic		METPO:1000623	moderately halophilic	#6a3d9a	5	23	24	13	1	0.6258211773116048	98.68461177644168	#ccbddd	5.5280361050986775
-condition_trait	COVID-19	moderately halophilic		METPO:1000623	moderately halophilic	#6a3d9a	5	27	56	18	2	0.7084155901254854	84.15257430997646	#c9b9db	6.015150198772886
-condition_trait	Colorectal cancer	moderately halophilic		METPO:1000623	moderately halophilic	#6a3d9a	5	49	93	28	4	0.861372318334433	99.9403548484562	#c3b1d7	8.210088257390364
-condition_trait	Dry eye syndrome	moderately halophilic		METPO:1000623	moderately halophilic	#6a3d9a	5	12	21	6	1	1.0360925220361876	47.54463723655016	#bda9d2	3.9075750993864435
-condition_trait	Cervical glandular intraepithelial neoplasia	moderately halophilic		METPO:1000623	moderately halophilic	#6a3d9a	5	12	20	7	1	0.2996374700250994	32.430241731526486	#d9cde5	3.9075750993864435
-condition_trait	Gastric cancer	moderately halophilic		METPO:1000623	moderately halophilic	#6a3d9a	5	17	23	9	3	0.463212803218409	24.612388072090795	#d2c5e1	4.70945714396268
-condition_trait	Rheumatoid arthritis	moderately halophilic		METPO:1000623	moderately halophilic	#6a3d9a	5	11	22	7	2	0.9727344459666487	29.428488292503797	#bfacd4	3.7281239641832356
-condition_trait	Cesarean section	moderately halophilic		METPO:1000623	moderately halophilic	#6a3d9a	5	7	5	5	1	0.7218219882106035	21.595635961909977	#c9b8da	2.9117990425277083
-condition_trait	Glaucoma	moderately halophilic		METPO:1000623	moderately halophilic	#6a3d9a	5	8	7	5	2	0.566783130823252	15.34480763317081	#cfc0de	3.1340806260084437
-condition_trait	Asthma	moderately halophilic		METPO:1000623	moderately halophilic	#6a3d9a	5	10	28	5	2	1.0806858420356353	13.127001176821054	#bba7d1	3.5403129791807153
-trait_body_bundle	facultatively aerobic	facultatively aerobic -> Feces	Feces	METPO:1000608	facultatively aerobic	#0072b2	0	128	301	70	5	0.6513674364344769	260.5957676127434	#a7cfe4	8.340374126363281
-bundle_body_site	facultatively aerobic -> Feces	Feces	Feces	METPO:1000608	facultatively aerobic	#0072b2	0	128	301	70	5	0.6513674364344769	260.5957676127434	#a7cfe4	8.340374126363281
-trait_body_bundle	facultatively aerobic	facultatively aerobic -> Vaginal / reproductive	Vaginal / reproductive	METPO:1000608	facultatively aerobic	#0072b2	0	40	40	22	2	0.6393644951979696	122.53912249527208	#a7cfe4	4.830672561053784
-bundle_body_site	facultatively aerobic -> Vaginal / reproductive	Vaginal / reproductive	Vaginal / reproductive	METPO:1000608	facultatively aerobic	#0072b2	0	40	40	22	2	0.6393644951979696	122.53912249527208	#a7cfe4	4.830672561053784
-trait_body_bundle	facultatively aerobic	facultatively aerobic -> Upper airway / nasal	Upper airway / nasal	METPO:1000608	facultatively aerobic	#0072b2	0	30	33	17	3	0.7699564699242649	79.48064697270414	#9fcae2	4.234604565770005
-bundle_body_site	facultatively aerobic -> Upper airway / nasal	Upper airway / nasal	Upper airway / nasal	METPO:1000608	facultatively aerobic	#0072b2	0	30	33	17	3	0.7699564699242649	79.48064697270414	#9fcae2	4.234604565770005
-trait_body_bundle	facultatively aerobic	facultatively aerobic -> Ocular / eye	Ocular / eye	METPO:1000608	facultatively aerobic	#0072b2	0	15	13	7	1	0.4309455054370449	44.633512918287614	#b5d6e9	3.1060740797134496
-bundle_body_site	facultatively aerobic -> Ocular / eye	Ocular / eye	Ocular / eye	METPO:1000608	facultatively aerobic	#0072b2	0	15	13	7	1	0.4309455054370449	44.633512918287614	#b5d6e9	3.1060740797134496
-trait_body_bundle	facultatively aerobic	facultatively aerobic -> Lower GI tract	Lower GI tract	METPO:1000608	facultatively aerobic	#0072b2	0	13	36	7	1	1.539838225341692	68.65878649398478	#6daed3	2.9179446068964774
-bundle_body_site	facultatively aerobic -> Lower GI tract	Lower GI tract	Lower GI tract	METPO:1000608	facultatively aerobic	#0072b2	0	13	36	7	1	1.539838225341692	68.65878649398478	#6daed3	2.9179446068964774
-trait_body_bundle	facultatively aerobic	facultatively aerobic -> Oral cavity / dental	Oral cavity / dental	METPO:1000608	facultatively aerobic	#0072b2	0	35	22	23	5	0.37676753118647766	42.67267926529452	#b9d8ea	4.543323750324277
-bundle_body_site	facultatively aerobic -> Oral cavity / dental	Oral cavity / dental	Oral cavity / dental	METPO:1000608	facultatively aerobic	#0072b2	0	35	22	23	5	0.37676753118647766	42.67267926529452	#b9d8ea	4.543323750324277
-trait_body_bundle	facultatively aerobic	facultatively aerobic -> Stomach / esophagus	Stomach / esophagus	METPO:1000608	facultatively aerobic	#0072b2	0	11	8	3	1	0.0	15.249237972318795	#d1e6f1	2.71469453604582
-bundle_body_site	facultatively aerobic -> Stomach / esophagus	Stomach / esophagus	Stomach / esophagus	METPO:1000608	facultatively aerobic	#0072b2	0	11	8	3	1	0.0	15.249237972318795	#d1e6f1	2.71469453604582
-trait_body_bundle	facultatively aerobic	facultatively aerobic -> Birth-associated samples	Birth-associated samples	METPO:1000608	facultatively aerobic	#0072b2	0	8	3	5	1	0.6066539892499364	23.029899992092822	#aad0e5	2.371263887633978
-bundle_body_site	facultatively aerobic -> Birth-associated samples	Birth-associated samples	Birth-associated samples	METPO:1000608	facultatively aerobic	#0072b2	0	8	3	5	1	0.6066539892499364	23.029899992092822	#aad0e5	2.371263887633978
-trait_body_bundle	facultatively aerobic	facultatively aerobic -> Lower airway / lung	Lower airway / lung	METPO:1000608	facultatively aerobic	#0072b2	0	3	2	2	1	0.8154328850541773	5.983370630318157	#9cc9e1	1.6
-bundle_body_site	facultatively aerobic -> Lower airway / lung	Lower airway / lung	Lower airway / lung	METPO:1000608	facultatively aerobic	#0072b2	0	3	2	2	1	0.8154328850541773	5.983370630318157	#9cc9e1	1.6
-trait_body_bundle	cellulose catabolic process	cellulose catabolic process -> Feces	Feces	METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	211	422	113	7	1.3428829030580391	634.6129787901896	#e9ab7a	10.6
-bundle_body_site	cellulose catabolic process -> Feces	Feces	Feces	METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	211	422	113	7	1.3428829030580391	634.6129787901896	#e9ab7a	10.6
-trait_body_bundle	cellulose catabolic process	cellulose catabolic process -> Vaginal / reproductive	Vaginal / reproductive	METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	10	100	7	2	1.1311097942149817	22.290961273411533	#ebb488	2.6061165178889976
-bundle_body_site	cellulose catabolic process -> Vaginal / reproductive	Vaginal / reproductive	Vaginal / reproductive	METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	10	100	7	2	1.1311097942149817	22.290961273411533	#ebb488	2.6061165178889976
-trait_body_bundle	cellulose catabolic process	cellulose catabolic process -> Ocular / eye	Ocular / eye	METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	9	47	6	2	0.5492318165171342	10.956180902026384	#f1cbad	2.4919596384519815
-bundle_body_site	cellulose catabolic process -> Ocular / eye	Ocular / eye	Ocular / eye	METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	9	47	6	2	0.5492318165171342	10.956180902026384	#f1cbad	2.4919596384519815
-trait_body_bundle	cellulose catabolic process	cellulose catabolic process -> Upper airway / nasal	Upper airway / nasal	METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	5	49	5	1	1.2376272351187103	20.0464489356327	#eaaf81	1.9545591379755454
-bundle_body_site	cellulose catabolic process -> Upper airway / nasal	Upper airway / nasal	Upper airway / nasal	METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	5	49	5	1	1.2376272351187103	20.0464489356327	#eaaf81	1.9545591379755454
-trait_body_bundle	cellulose catabolic process	cellulose catabolic process -> Lower GI tract	Lower GI tract	METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	8	56	7	2	1.0263101590451977	16.134745853982157	#ecb88e	2.371263887633978
-bundle_body_site	cellulose catabolic process -> Lower GI tract	Lower GI tract	Lower GI tract	METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	8	56	7	2	1.0263101590451977	16.134745853982157	#ecb88e	2.371263887633978
-trait_body_bundle	cellulose catabolic process	cellulose catabolic process -> Stomach / esophagus	Stomach / esophagus	METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	4	28	2	1	1.0609706366734144	9.056830672134206	#ecb68c	1.7884932505427245
-bundle_body_site	cellulose catabolic process -> Stomach / esophagus	Stomach / esophagus	Stomach / esophagus	METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	4	28	2	1	1.0609706366734144	9.056830672134206	#ecb68c	1.7884932505427245
-trait_body_bundle	cellulose catabolic process	cellulose catabolic process -> Oral cavity / dental	Oral cavity / dental	METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	3	18	3	1	0.6931465144288461	7.04159839650752	#f0c6a4	1.6
-bundle_body_site	cellulose catabolic process -> Oral cavity / dental	Oral cavity / dental	Oral cavity / dental	METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	3	18	3	1	0.6931465144288461	7.04159839650752	#f0c6a4	1.6
-trait_body_bundle	coccus shaped	coccus shaped -> Feces	Feces	METPO:1000668	coccus shaped	#009e73	2	110	220	59	5	0.7399490596269261	387.1782840624904	#a1dccc	7.75957819501946
-bundle_body_site	coccus shaped -> Feces	Feces	Feces	METPO:1000668	coccus shaped	#009e73	2	110	220	59	5	0.7399490596269261	387.1782840624904	#a1dccc	7.75957819501946
-trait_body_bundle	coccus shaped	coccus shaped -> Upper airway / nasal	Upper airway / nasal	METPO:1000668	coccus shaped	#009e73	2	27	25	15	2	0.5230202655278258	66.30785182817172	#afe1d3	4.03687905055158
-bundle_body_site	coccus shaped -> Upper airway / nasal	Upper airway / nasal	Upper airway / nasal	METPO:1000668	coccus shaped	#009e73	2	27	25	15	2	0.5230202655278258	66.30785182817172	#afe1d3	4.03687905055158
-trait_body_bundle	coccus shaped	coccus shaped -> Vaginal / reproductive	Vaginal / reproductive	METPO:1000668	coccus shaped	#009e73	2	27	58	17	2	0.815729730009028	81.80494641555825	#9cdac9	4.03687905055158
-bundle_body_site	coccus shaped -> Vaginal / reproductive	Vaginal / reproductive	Vaginal / reproductive	METPO:1000668	coccus shaped	#009e73	2	27	58	17	2	0.815729730009028	81.80494641555825	#9cdac9	4.03687905055158
-trait_body_bundle	coccus shaped	coccus shaped -> Lower GI tract	Lower GI tract	METPO:1000668	coccus shaped	#009e73	2	12	32	10	1	1.3210528968881434	66.78770123235651	#7bcdb7	2.8184395252757897
-bundle_body_site	coccus shaped -> Lower GI tract	Lower GI tract	Lower GI tract	METPO:1000668	coccus shaped	#009e73	2	12	32	10	1	1.3210528968881434	66.78770123235651	#7bcdb7	2.8184395252757897
-trait_body_bundle	coccus shaped	coccus shaped -> Oral cavity / dental	Oral cavity / dental	METPO:1000668	coccus shaped	#009e73	2	27	22	17	4	0.6558260247809337	35.45082565489373	#a6decf	4.03687905055158
-bundle_body_site	coccus shaped -> Oral cavity / dental	Oral cavity / dental	Oral cavity / dental	METPO:1000668	coccus shaped	#009e73	2	27	22	17	4	0.6558260247809337	35.45082565489373	#a6decf	4.03687905055158
-trait_body_bundle	coccus shaped	coccus shaped -> Bronchial / tracheal	Bronchial / tracheal	METPO:1000668	coccus shaped	#009e73	2	6	6	2	1	0.4587085384173247	9.61533075534222	#b3e3d6	2.1046941763006677
-bundle_body_site	coccus shaped -> Bronchial / tracheal	Bronchial / tracheal	Bronchial / tracheal	METPO:1000668	coccus shaped	#009e73	2	6	6	2	1	0.4587085384173247	9.61533075534222	#b3e3d6	2.1046941763006677
-trait_body_bundle	coccus shaped	coccus shaped -> Stomach / esophagus	Stomach / esophagus	METPO:1000668	coccus shaped	#009e73	2	6	15	3	1	0.0280632737013482	8.551189915239801	#cfede5	2.1046941763006677
-bundle_body_site	coccus shaped -> Stomach / esophagus	Stomach / esophagus	Stomach / esophagus	METPO:1000668	coccus shaped	#009e73	2	6	15	3	1	0.0280632737013482	8.551189915239801	#cfede5	2.1046941763006677
-trait_body_bundle	coccus shaped	coccus shaped -> Birth-associated samples	Birth-associated samples	METPO:1000668	coccus shaped	#009e73	2	5	7	3	1	1.2274536981622537	15.439532507089895	#81cfba	1.9545591379755454
-bundle_body_site	coccus shaped -> Birth-associated samples	Birth-associated samples	Birth-associated samples	METPO:1000668	coccus shaped	#009e73	2	5	7	3	1	1.2274536981622537	15.439532507089895	#81cfba	1.9545591379755454
-trait_body_bundle	coccus shaped	coccus shaped -> Ocular / eye	Ocular / eye	METPO:1000668	coccus shaped	#009e73	2	4	29	3	1	0.8789284520491425	10.418991672093805	#98d8c7	1.7884932505427245
-bundle_body_site	coccus shaped -> Ocular / eye	Ocular / eye	Ocular / eye	METPO:1000668	coccus shaped	#009e73	2	4	29	3	1	0.8789284520491425	10.418991672093805	#98d8c7	1.7884932505427245
-trait_body_bundle	sphere shaped	sphere shaped -> Feces	Feces	METPO:1000683	sphere shaped	#cc79a7	3	97	306	53	5	0.9527572895453752	346.4142478986529	#eac6da	7.309900897585621
-bundle_body_site	sphere shaped -> Feces	Feces	Feces	METPO:1000683	sphere shaped	#cc79a7	3	97	306	53	5	0.9527572895453752	346.4142478986529	#eac6da	7.309900897585621
-trait_body_bundle	sphere shaped	sphere shaped -> Upper airway / nasal	Upper airway / nasal	METPO:1000683	sphere shaped	#cc79a7	3	18	21	11	1	0.2930162196520133	57.83444284494653	#f2dde8	3.366115594088862
-bundle_body_site	sphere shaped -> Upper airway / nasal	Upper airway / nasal	Upper airway / nasal	METPO:1000683	sphere shaped	#cc79a7	3	18	21	11	1	0.2930162196520133	57.83444284494653	#f2dde8	3.366115594088862
-trait_body_bundle	sphere shaped	sphere shaped -> Vaginal / reproductive	Vaginal / reproductive	METPO:1000683	sphere shaped	#cc79a7	3	27	71	16	2	1.0038057889867953	72.3239623086692	#e9c5d9	4.03687905055158
-bundle_body_site	sphere shaped -> Vaginal / reproductive	Vaginal / reproductive	Vaginal / reproductive	METPO:1000683	sphere shaped	#cc79a7	3	27	71	16	2	1.0038057889867953	72.3239623086692	#e9c5d9	4.03687905055158
-trait_body_bundle	sphere shaped	sphere shaped -> Lower GI tract	Lower GI tract	METPO:1000683	sphere shaped	#cc79a7	3	9	40	8	1	1.6842100189211642	53.080310018751305	#e0adc9	2.4919596384519815
-bundle_body_site	sphere shaped -> Lower GI tract	Lower GI tract	Lower GI tract	METPO:1000683	sphere shaped	#cc79a7	3	9	40	8	1	1.6842100189211642	53.080310018751305	#e0adc9	2.4919596384519815
-trait_body_bundle	sphere shaped	sphere shaped -> Oral cavity / dental	Oral cavity / dental	METPO:1000683	sphere shaped	#cc79a7	3	27	35	20	5	0.7107219905183798	35.72534460993525	#edcfdf	4.03687905055158
-bundle_body_site	sphere shaped -> Oral cavity / dental	Oral cavity / dental	Oral cavity / dental	METPO:1000683	sphere shaped	#cc79a7	3	27	35	20	5	0.7107219905183798	35.72534460993525	#edcfdf	4.03687905055158
-trait_body_bundle	sphere shaped	sphere shaped -> Ocular / eye	Ocular / eye	METPO:1000683	sphere shaped	#cc79a7	3	8	28	5	1	0.3099680720045363	18.777181579204377	#f2dce8	2.371263887633978
-bundle_body_site	sphere shaped -> Ocular / eye	Ocular / eye	Ocular / eye	METPO:1000683	sphere shaped	#cc79a7	3	8	28	5	1	0.3099680720045363	18.777181579204377	#f2dce8	2.371263887633978
-trait_body_bundle	sphere shaped	sphere shaped -> Bronchial / tracheal	Bronchial / tracheal	METPO:1000683	sphere shaped	#cc79a7	3	8	6	2	1	0.4385817780745129	12.643548957173437	#f0d8e5	2.371263887633978
-bundle_body_site	sphere shaped -> Bronchial / tracheal	Bronchial / tracheal	Bronchial / tracheal	METPO:1000683	sphere shaped	#cc79a7	3	8	6	2	1	0.4385817780745129	12.643548957173437	#f0d8e5	2.371263887633978
-trait_body_bundle	sphere shaped	sphere shaped -> Birth-associated samples	Birth-associated samples	METPO:1000683	sphere shaped	#cc79a7	3	5	7	4	1	0.49151957922905715	12.002540789745009	#f0d6e4	1.9545591379755454
-bundle_body_site	sphere shaped -> Birth-associated samples	Birth-associated samples	Birth-associated samples	METPO:1000683	sphere shaped	#cc79a7	3	5	7	4	1	0.49151957922905715	12.002540789745009	#f0d6e4	1.9545591379755454
-trait_body_bundle	sphere shaped	sphere shaped -> Stomach / esophagus	Stomach / esophagus	METPO:1000683	sphere shaped	#cc79a7	3	5	18	3	1	0.0165300904226358	7.046049661307962	#f6e6ef	1.9545591379755454
-bundle_body_site	sphere shaped -> Stomach / esophagus	Stomach / esophagus	Stomach / esophagus	METPO:1000683	sphere shaped	#cc79a7	3	5	18	3	1	0.0165300904226358	7.046049661307962	#f6e6ef	1.9545591379755454
-trait_body_bundle	arsenate reduction	arsenate reduction -> Feces	Feces	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	90	473	51	6	1.164329368080369	214.0932481027814	#f3d185	7.05522860421857
-bundle_body_site	arsenate reduction -> Feces	Feces	Feces	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	90	473	51	6	1.164329368080369	214.0932481027814	#f3d185	7.05522860421857
-trait_body_bundle	arsenate reduction	arsenate reduction -> Vaginal / reproductive	Vaginal / reproductive	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	17	92	13	2	0.8636400258581001	37.321189299753726	#f5d999	3.2820266961458033
-bundle_body_site	arsenate reduction -> Vaginal / reproductive	Vaginal / reproductive	Vaginal / reproductive	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	17	92	13	2	0.8636400258581001	37.321189299753726	#f5d999	3.2820266961458033
-trait_body_bundle	arsenate reduction	arsenate reduction -> Stomach / esophagus	Stomach / esophagus	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	9	16	3	1	0.8409145408209159	22.968445025192835	#f5d99a	2.4919596384519815
-bundle_body_site	arsenate reduction -> Stomach / esophagus	Stomach / esophagus	Stomach / esophagus	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	9	16	3	1	0.8409145408209159	22.968445025192835	#f5d99a	2.4919596384519815
-trait_body_bundle	arsenate reduction	arsenate reduction -> Upper airway / nasal	Upper airway / nasal	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	11	47	8	2	0.7165092655377908	20.76488999405662	#f6dca2	2.71469453604582
-bundle_body_site	arsenate reduction -> Upper airway / nasal	Upper airway / nasal	Upper airway / nasal	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	11	47	8	2	0.7165092655377908	20.76488999405662	#f6dca2	2.71469453604582
-trait_body_bundle	arsenate reduction	arsenate reduction -> Ocular / eye	Ocular / eye	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	8	34	4	1	0.438634459826565	18.52314273423221	#f7e3b5	2.371263887633978
-bundle_body_site	arsenate reduction -> Ocular / eye	Ocular / eye	Ocular / eye	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	8	34	4	1	0.438634459826565	18.52314273423221	#f7e3b5	2.371263887633978
-trait_body_bundle	arsenate reduction	arsenate reduction -> Lower GI tract	Lower GI tract	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	6	49	4	1	3.1955250614230657	40.51462257853014	#e6a001	2.1046941763006677
-bundle_body_site	arsenate reduction -> Lower GI tract	Lower GI tract	Lower GI tract	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	6	49	4	1	3.1955250614230657	40.51462257853014	#e6a001	2.1046941763006677
-trait_body_bundle	arsenate reduction	arsenate reduction -> Birth-associated samples	Birth-associated samples	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	4	10	3	1	2.0396268152488877	16.855270055553376	#edbc4d	1.7884932505427245
-bundle_body_site	arsenate reduction -> Birth-associated samples	Birth-associated samples	Birth-associated samples	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	4	10	3	1	2.0396268152488877	16.855270055553376	#edbc4d	1.7884932505427245
-trait_body_bundle	arsenate reduction	arsenate reduction -> Lower airway / lung	Lower airway / lung	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	4	2	3	1	1.3405687068633327	12.978868800553249	#f2cd7a	1.7884932505427245
-bundle_body_site	arsenate reduction -> Lower airway / lung	Lower airway / lung	Lower airway / lung	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	4	2	3	1	1.3405687068633327	12.978868800553249	#f2cd7a	1.7884932505427245
-trait_body_bundle	arsenate reduction	arsenate reduction -> Oral cavity / dental	Oral cavity / dental	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	8	15	4	2	0.5615524294957164	7.258281352261682	#f7e0ad	2.371263887633978
-bundle_body_site	arsenate reduction -> Oral cavity / dental	Oral cavity / dental	Oral cavity / dental	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	8	15	4	2	0.5615524294957164	7.258281352261682	#f7e0ad	2.371263887633978
-trait_body_bundle	moderately halophilic	moderately halophilic -> Feces	Feces	METPO:1000623	moderately halophilic	#6a3d9a	5	117	351	67	7	0.5559394629559301	207.38374581939289	#cfc1df	7.990712871241012
-bundle_body_site	moderately halophilic -> Feces	Feces	Feces	METPO:1000623	moderately halophilic	#6a3d9a	5	117	351	67	7	0.5559394629559301	207.38374581939289	#cfc1df	7.990712871241012
-trait_body_bundle	moderately halophilic	moderately halophilic -> Vaginal / reproductive	Vaginal / reproductive	METPO:1000623	moderately halophilic	#6a3d9a	5	35	44	19	2	0.5139867633848029	98.68461177644168	#d1c3e0	4.543323750324277
-bundle_body_site	moderately halophilic -> Vaginal / reproductive	Vaginal / reproductive	Vaginal / reproductive	METPO:1000623	moderately halophilic	#6a3d9a	5	35	44	19	2	0.5139867633848029	98.68461177644168	#d1c3e0	4.543323750324277
-trait_body_bundle	moderately halophilic	moderately halophilic -> Upper airway / nasal	Upper airway / nasal	METPO:1000623	moderately halophilic	#6a3d9a	5	23	48	16	3	1.175982804693651	84.15257430997646	#b7a2cf	3.7552667534503588
-bundle_body_site	moderately halophilic -> Upper airway / nasal	Upper airway / nasal	Upper airway / nasal	METPO:1000623	moderately halophilic	#6a3d9a	5	23	48	16	3	1.175982804693651	84.15257430997646	#b7a2cf	3.7552667534503588
-trait_body_bundle	moderately halophilic	moderately halophilic -> Lower GI tract	Lower GI tract	METPO:1000623	moderately halophilic	#6a3d9a	5	15	33	8	1	1.5686806585783732	84.65952411534882	#a98ec5	3.1060740797134496
-bundle_body_site	moderately halophilic -> Lower GI tract	Lower GI tract	Lower GI tract	METPO:1000623	moderately halophilic	#6a3d9a	5	15	33	8	1	1.5686806585783732	84.65952411534882	#a98ec5	3.1060740797134496
-trait_body_bundle	moderately halophilic	moderately halophilic -> Ocular / eye	Ocular / eye	METPO:1000623	moderately halophilic	#6a3d9a	5	17	27	9	2	0.9980809006482512	47.54463723655016	#beabd3	3.2820266961458033
-bundle_body_site	moderately halophilic -> Ocular / eye	Ocular / eye	Ocular / eye	METPO:1000623	moderately halophilic	#6a3d9a	5	17	27	9	2	0.9980809006482512	47.54463723655016	#beabd3	3.2820266961458033
-trait_body_bundle	moderately halophilic	moderately halophilic -> Stomach / esophagus	Stomach / esophagus	METPO:1000623	moderately halophilic	#6a3d9a	5	11	9	4	1	0.3902305938298458	24.612388072090795	#d5c9e3	2.71469453604582
-bundle_body_site	moderately halophilic -> Stomach / esophagus	Stomach / esophagus	Stomach / esophagus	METPO:1000623	moderately halophilic	#6a3d9a	5	11	9	4	1	0.3902305938298458	24.612388072090795	#d5c9e3	2.71469453604582
-trait_body_bundle	moderately halophilic	moderately halophilic -> Oral cavity / dental	Oral cavity / dental	METPO:1000623	moderately halophilic	#6a3d9a	5	20	32	13	4	0.8716160124917491	29.428488292503797	#c3b1d7	3.5275578012268802
-bundle_body_site	moderately halophilic -> Oral cavity / dental	Oral cavity / dental	Oral cavity / dental	METPO:1000623	moderately halophilic	#6a3d9a	5	20	32	13	4	0.8716160124917491	29.428488292503797	#c3b1d7	3.5275578012268802
-trait_body_bundle	moderately halophilic	moderately halophilic -> Birth-associated samples	Birth-associated samples	METPO:1000623	moderately halophilic	#6a3d9a	5	7	5	5	1	0.7218219882106035	21.595635961909977	#c9b8da	2.242757592824999
-bundle_body_site	moderately halophilic -> Birth-associated samples	Birth-associated samples	Birth-associated samples	METPO:1000623	moderately halophilic	#6a3d9a	5	7	5	5	1	0.7218219882106035	21.595635961909977	#c9b8da	2.242757592824999
-trait_body_bundle	moderately halophilic	moderately halophilic -> Intestinal / GI mucosa	Intestinal / GI mucosa	METPO:1000623	moderately halophilic	#6a3d9a	5	3	4	2	1	1.3552929529115565	7.762661344446106	#b199ca	1.6
-bundle_body_site	moderately halophilic -> Intestinal / GI mucosa	Intestinal / GI mucosa	Intestinal / GI mucosa	METPO:1000623	moderately halophilic	#6a3d9a	5	3	4	2	1	1.3552929529115565	7.762661344446106	#b199ca	1.6
+condition_trait	Parkinson's disease	facultatively aerobic		METPO:1000608	facultatively aerobic	#0072b2	0	39	72	21	3	0.5946492534718214	161.1059770243124	#a8cfe5	8.94882806902623
+condition_trait	Human papilloma virus infection	facultatively aerobic		METPO:1000608	facultatively aerobic	#0072b2	0	18	8	13	1	0.4934947307351871	70.94552788599232	#afd3e7	5.776952231396302
+condition_trait	Colorectal cancer	facultatively aerobic		METPO:1000608	facultatively aerobic	#0072b2	0	26	33	22	3	0.517888529209773	70.19026678465903	#add2e6	7.1335169625001456
+condition_trait	COVID-19	facultatively aerobic		METPO:1000608	facultatively aerobic	#0072b2	0	15	20	11	2	0.5724908013139792	36.571891192346506	#aad0e5	5.191388815098797
+condition_trait	Dry eye syndrome	facultatively aerobic		METPO:1000608	facultatively aerobic	#0072b2	0	9	5	4	1	0.1507331471302616	16.668301986774456	#c7e0ee	3.808521348392876
+condition_trait	Rheumatoid arthritis	facultatively aerobic		METPO:1000608	facultatively aerobic	#0072b2	0	8	7	7	1	1.2430182025131324	37.31380183239874	#7bb7d7	3.5367377589481874
+condition_trait	Squamous cell carcinoma	facultatively aerobic		METPO:1000608	facultatively aerobic	#0072b2	0	6	1	3	1	0.1602930406088875	9.651046196656518	#c6e0ee	2.936474100183201
+condition_trait	Spontaneous preterm birth	facultatively aerobic		METPO:1000608	facultatively aerobic	#0072b2	0	3	3	2	1	0.3656549973226353	4.5009760864189845	#b8d8e9	1.8
+condition_trait	Irritable bowel syndrome	facultatively aerobic		METPO:1000608	facultatively aerobic	#0072b2	0	16	24	8	1	0.1131824335422795	39.13458883260863	#c9e2ef	5.392592193173182
+condition_trait	Obesity	facultatively aerobic		METPO:1000608	facultatively aerobic	#0072b2	0	11	59	8	1	1.002341854397068	48.39554208181242	#8cc0dc	4.310077447529541
+condition_trait	Gestational diabetes	facultatively aerobic		METPO:1000608	facultatively aerobic	#0072b2	0	10	18	3	1	0.3664838656542538	18.94348877517802	#b8d8e9	4.065580658624772
+condition_trait	HIV infection	facultatively aerobic		METPO:1000608	facultatively aerobic	#0072b2	0	8	16	7	1	0.7735971353699946	29.504732491941777	#9cc8e1	3.5367377589481874
+condition_trait	Parkinson's disease	cellulose catabolic process		METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	46	75	25	1	1.4663270252849685	369.63445096464966	#e7a26c	9.8
+condition_trait	Obesity	cellulose catabolic process		METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	23	49	13	1	1.0786980051608956	126.173473751259	#ebb387	6.653245706609959
+condition_trait	Glaucoma	cellulose catabolic process		METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	5	2	2	1	0.0	5.493061443340549	#f7e2d1	2.59839890415624
+condition_trait	COVID-19	cellulose catabolic process		METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	12	36	10	2	1.4660693643707843	38.47541257327341	#e7a26c	4.543691185948043
+condition_trait	Human papilloma virus infection	cellulose catabolic process		METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	3	34	3	1	0.7603436404979028	7.321063387366506	#eec19d	1.8
+condition_trait	Colorectal cancer	cellulose catabolic process		METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	17	39	14	1	1.4303666645251614	111.886433888531	#e7a46f	5.587600225542558
+condition_trait	Irritable bowel syndrome	cellulose catabolic process		METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	16	34	5	1	1.1663279678487588	62.10461839754533	#eaaf81	5.392592193173182
+condition_trait	HIV infection	cellulose catabolic process		METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	13	17	10	1	1.1167753564988854	65.98547307202192	#ebb184	4.767757468874909
+condition_trait	Diarrhea	cellulose catabolic process		METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	9	9	3	1	1.9592892854378192	36.92201444392463	#e18d4a	3.808521348392876
+condition_trait	Chronic kidney disease	cellulose catabolic process		METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	7	7	7	1	1.799750289135512	40.7534194029096	#e39455	3.247366328448646
+condition_trait	Schizophrenia	cellulose catabolic process		METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	7	22	5	1	1.3470453755144018	29.43738543400092	#e8a774	3.247366328448646
+condition_trait	Polycystic ovary syndrome	cellulose catabolic process		METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	7	19	5	1	1.2128836673648349	27.75468685710734	#e9ad7e	3.247366328448646
+condition_trait	Parkinson's disease	coccus shaped		METPO:1000668	coccus shaped	#009e73	2	39	71	21	1	0.8224469296969809	219.6971723187496	#98d8c7	8.94882806902623
+condition_trait	Colorectal cancer	coccus shaped		METPO:1000668	coccus shaped	#009e73	2	19	39	17	2	1.023886076701021	84.38919839416405	#8bd3bf	5.961113545858416
+condition_trait	Human papilloma virus infection	coccus shaped		METPO:1000668	coccus shaped	#009e73	2	11	20	9	1	0.9823158928401857	50.208961269048935	#8dd4c1	4.310077447529541
+condition_trait	COVID-19	coccus shaped		METPO:1000668	coccus shaped	#009e73	2	17	13	11	2	0.2386647232118937	31.095093649495094	#c1e8dd	5.587600225542558
+condition_trait	Squamous cell carcinoma	coccus shaped		METPO:1000668	coccus shaped	#009e73	2	7	5	4	1	1.1026007294461933	23.688037300776084	#85d1bc	3.247366328448646
+condition_trait	Rheumatoid arthritis	coccus shaped		METPO:1000668	coccus shaped	#009e73	2	5	7	5	1	1.2002745257133376	19.7118135817407	#7eceb9	2.59839890415624
+condition_trait	Dry eye syndrome	coccus shaped		METPO:1000668	coccus shaped	#009e73	2	3	16	2	1	1.1511186736954686	7.089736227915862	#82d0ba	1.8
+condition_trait	Glaucoma	coccus shaped		METPO:1000668	coccus shaped	#009e73	2	3	4	2	1	0.0	3.295836866004329	#d1eee6	1.8
+condition_trait	Irritable bowel syndrome	coccus shaped		METPO:1000668	coccus shaped	#009e73	2	13	33	5	1	0.6024344096432784	37.32530135483776	#a8decf	4.767757468874909
+condition_trait	Schizophrenia	coccus shaped		METPO:1000668	coccus shaped	#009e73	2	8	17	7	1	0.3737435448623168	22.85295515840975	#b7e4d8	3.5367377589481874
+condition_trait	HIV infection	coccus shaped		METPO:1000668	coccus shaped	#009e73	2	7	17	6	1	0.8699642612222865	25.471477039982176	#95d7c5	3.247366328448646
+condition_trait	Obesity	coccus shaped		METPO:1000668	coccus shaped	#009e73	2	7	60	6	1	0.7932145673614046	24.426040982436728	#9ad9c8	3.247366328448646
+condition_trait	Parkinson's disease	sphere shaped		METPO:1000683	sphere shaped	#cc79a7	3	29	84	17	1	1.1100743903413026	176.86808332217154	#e7bfd5	7.586791379370685
+condition_trait	Irritable bowel syndrome	sphere shaped		METPO:1000683	sphere shaped	#cc79a7	3	15	31	4	1	0.5368989747169935	37.10315216235941	#efd4e2	5.191388815098797
+condition_trait	Human papilloma virus infection	sphere shaped		METPO:1000683	sphere shaped	#cc79a7	3	11	20	9	1	1.1090261338490706	53.41833350189309	#e7bfd5	4.310077447529541
+condition_trait	COVID-19	sphere shaped		METPO:1000683	sphere shaped	#cc79a7	3	12	21	8	2	0.10076739700862554	16.125835223052494	#f5e3ed	4.543691185948043
+condition_trait	Dry eye syndrome	sphere shaped		METPO:1000683	sphere shaped	#cc79a7	3	6	12	4	1	0.4308938007638148	13.817608389697256	#f0d7e5	2.936474100183201
+condition_trait	Rheumatoid arthritis	sphere shaped		METPO:1000683	sphere shaped	#cc79a7	3	4	8	4	1	1.0127726380573492	12.957730371197988	#e8c2d7	2.2244505036125695
+condition_trait	Colorectal cancer	sphere shaped		METPO:1000683	sphere shaped	#cc79a7	3	12	54	12	3	0.6398832314880462	15.342896055321434	#edd0e0	4.543691185948043
+condition_trait	Glaucoma	sphere shaped		METPO:1000683	sphere shaped	#cc79a7	3	4	2	2	1	0.5486775686696327	6.805584832500436	#eed3e2	2.2244505036125695
+condition_trait	Squamous cell carcinoma	sphere shaped		METPO:1000683	sphere shaped	#cc79a7	3	3	7	2	1	0.9228555702501344	6.33741827643217	#e9c6d9	1.8
+condition_trait	Obesity	sphere shaped		METPO:1000683	sphere shaped	#cc79a7	3	11	58	6	1	0.8321879104563122	39.218003549267245	#eac9db	4.310077447529541
+condition_trait	Schizophrenia	sphere shaped		METPO:1000683	sphere shaped	#cc79a7	3	9	14	8	1	0.5631563755573245	30.911450459349236	#eed3e2	3.808521348392876
+condition_trait	Type II diabetes mellitus	sphere shaped		METPO:1000683	sphere shaped	#cc79a7	3	8	13	6	1	0.1834837868654126	18.42362489683057	#f3e0eb	3.5367377589481874
+condition_trait	Obesity	arsenate reduction		METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	15	63	8	1	1.7385940059027178	90.25959085672656	#efc159	5.191388815098797
+condition_trait	Parkinson's disease	arsenate reduction		METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	15	100	9	1	0.3432149581375545	46.39300108941232	#f8e5b9	5.191388815098797
+condition_trait	Human papilloma virus infection	arsenate reduction		METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	7	25	6	1	0.4302618779381239	19.482127728606947	#f7e3b3	3.247366328448646
+condition_trait	COVID-19	arsenate reduction		METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	4	24	3	1	0.6925088985448298	9.38526216879174	#f5dca1	2.2244505036125695
+condition_trait	Dry eye syndrome	arsenate reduction		METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	4	15	3	1	0.4077490675454935	7.806218376840406	#f7e3b5	2.2244505036125695
+condition_trait	Colorectal cancer	arsenate reduction		METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	13	50	10	2	0.5650792437239927	20.79441541679836	#f6dfaa	4.767757468874909
+condition_trait	HIV infection	arsenate reduction		METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	6	17	5	1	0.0	10.75055681536833	#faeed1	2.936474100183201
+condition_trait	Irritable bowel syndrome	arsenate reduction		METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	6	42	3	1	0.0	8.317766166719343	#faeed1	2.936474100183201
+condition_trait	Atopic eczema	arsenate reduction		METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	5	9	3	1	2.014766369389194	20.896768089890625	#edba46	2.59839890415624
+condition_trait	Gestational diabetes	arsenate reduction		METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	5	28	3	1	0.0484055462382312	7.266993484584392	#faedce	2.59839890415624
+condition_trait	Type II diabetes mellitus	arsenate reduction		METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	4	23	4	1	0.7444161328724965	11.230117837226707	#f5db9e	2.2244505036125695
+condition_trait	Chronic kidney disease	arsenate reduction		METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	4	9	4	1	0.5438883442853937	9.939169735432094	#f6e0ac	2.2244505036125695
+condition_trait	Parkinson's disease	moderately halophilic		METPO:1000623	moderately halophilic	#6a3d9a	5	19	91	12	1	0.4747065163437584	71.86840309926501	#d1c3e0	5.961113545858416
+condition_trait	Obesity	moderately halophilic		METPO:1000623	moderately halophilic	#6a3d9a	5	17	59	12	1	0.9152635341122348	83.51341751024171	#bfacd4	5.587600225542558
+condition_trait	Human papilloma virus infection	moderately halophilic		METPO:1000623	moderately halophilic	#6a3d9a	5	14	10	11	1	0.5106480091925363	52.55346996944152	#cfc1df	4.983359191597428
+condition_trait	COVID-19	moderately halophilic		METPO:1000623	moderately halophilic	#6a3d9a	5	15	26	11	2	0.7177630398691603	39.96746718442311	#c7b6d9	5.191388815098797
+condition_trait	Dry eye syndrome	moderately halophilic		METPO:1000623	moderately halophilic	#6a3d9a	5	9	5	5	1	0.3337539414751455	21.507896288325	#d7cbe4	3.808521348392876
+condition_trait	Colorectal cancer	moderately halophilic		METPO:1000623	moderately halophilic	#6a3d9a	5	22	34	18	3	0.22518444072750024	43.7194400819523	#dbd0e7	6.486259669086319
+condition_trait	Rheumatoid arthritis	moderately halophilic		METPO:1000623	moderately halophilic	#6a3d9a	5	7	14	6	2	1.3016548560834933	16.085731986904943	#b098c9	3.247366328448646
+condition_trait	Glaucoma	moderately halophilic		METPO:1000623	moderately halophilic	#6a3d9a	5	4	5	3	1	1.1003939764137614	11.647057302530326	#b8a2cf	2.2244505036125695
+condition_trait	Head and neck squamous cell carcinoma	moderately halophilic		METPO:1000623	moderately halophilic	#6a3d9a	5	3	6	2	1	1.9942929994576801	9.868701255231304	#9474b7	1.8
+condition_trait	Irritable bowel syndrome	moderately halophilic		METPO:1000623	moderately halophilic	#6a3d9a	5	16	23	6	1	0.3654976412853545	42.51417149901221	#d5c9e3	5.392592193173182
+condition_trait	Gestational diabetes	moderately halophilic		METPO:1000623	moderately halophilic	#6a3d9a	5	11	17	4	1	1.294670819768588	40.62443235280982	#b098ca	4.310077447529541
+condition_trait	Chronic constipation	moderately halophilic		METPO:1000623	moderately halophilic	#6a3d9a	5	9	11	7	1	0.7920279479083396	33.53775622858683	#c4b3d7	3.808521348392876
+trait_body_bundle	facultatively aerobic	facultatively aerobic -> Feces	Feces	METPO:1000608	facultatively aerobic	#0072b2	0	101	220	62	7	0.5254010950495621	161.1059770243124	#add2e6	8.637562361830279
+bundle_body_site	facultatively aerobic -> Feces	Feces	Feces	METPO:1000608	facultatively aerobic	#0072b2	0	101	220	62	7	0.5254010950495621	161.1059770243124	#add2e6	8.637562361830279
+trait_body_bundle	facultatively aerobic	facultatively aerobic -> Vaginal / reproductive	Vaginal / reproductive	METPO:1000608	facultatively aerobic	#0072b2	0	21	11	15	2	0.4752319116762512	70.94552788599232	#b0d4e7	4.011777971838327
+bundle_body_site	facultatively aerobic -> Vaginal / reproductive	Vaginal / reproductive	Vaginal / reproductive	METPO:1000608	facultatively aerobic	#0072b2	0	21	11	15	2	0.4752319116762512	70.94552788599232	#b0d4e7	4.011777971838327
+trait_body_bundle	facultatively aerobic	facultatively aerobic -> Upper airway / nasal	Upper airway / nasal	METPO:1000608	facultatively aerobic	#0072b2	0	12	16	9	2	0.9166822161134305	36.571891192346506	#92c3de	3.065457117137713
+bundle_body_site	facultatively aerobic -> Upper airway / nasal	Upper airway / nasal	Upper airway / nasal	METPO:1000608	facultatively aerobic	#0072b2	0	12	16	9	2	0.9166822161134305	36.571891192346506	#92c3de	3.065457117137713
+trait_body_bundle	facultatively aerobic	facultatively aerobic -> Ocular / eye	Ocular / eye	METPO:1000608	facultatively aerobic	#0072b2	0	9	5	4	1	0.1507331471302616	16.668301986774456	#c7e0ee	2.672789066058222
+bundle_body_site	facultatively aerobic -> Ocular / eye	Ocular / eye	Ocular / eye	METPO:1000608	facultatively aerobic	#0072b2	0	9	5	4	1	0.1507331471302616	16.668301986774456	#c7e0ee	2.672789066058222
+trait_body_bundle	facultatively aerobic	facultatively aerobic -> Oral cavity / dental	Oral cavity / dental	METPO:1000608	facultatively aerobic	#0072b2	0	20	11	15	4	0.5563393349581615	37.31380183239874	#abd1e5	3.918336889032617
+bundle_body_site	facultatively aerobic -> Oral cavity / dental	Oral cavity / dental	Oral cavity / dental	METPO:1000608	facultatively aerobic	#0072b2	0	20	11	15	4	0.5563393349581615	37.31380183239874	#abd1e5	3.918336889032617
+trait_body_bundle	facultatively aerobic	facultatively aerobic -> Lower GI tract	Lower GI tract	METPO:1000608	facultatively aerobic	#0072b2	0	6	3	6	1	0.607916618389958	18.77316759935831	#a7cfe4	2.207012212994618
+bundle_body_site	facultatively aerobic -> Lower GI tract	Lower GI tract	Lower GI tract	METPO:1000608	facultatively aerobic	#0072b2	0	6	3	6	1	0.607916618389958	18.77316759935831	#a7cfe4	2.207012212994618
+trait_body_bundle	cellulose catabolic process	cellulose catabolic process -> Feces	Feces	METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	153	280	93	10	1.3704605708185857	369.63445096464966	#e8a673	10.6
+bundle_body_site	cellulose catabolic process -> Feces	Feces	Feces	METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	153	280	93	10	1.3704605708185857	369.63445096464966	#e8a673	10.6
+trait_body_bundle	cellulose catabolic process	cellulose catabolic process -> Ocular / eye	Ocular / eye	METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	5	2	2	1	0.0	5.493061443340549	#f7e2d1	2.026439885947452
+bundle_body_site	cellulose catabolic process -> Ocular / eye	Ocular / eye	Ocular / eye	METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	5	2	2	1	0.0	5.493061443340549	#f7e2d1	2.026439885947452
+trait_body_bundle	cellulose catabolic process	cellulose catabolic process -> Upper airway / nasal	Upper airway / nasal	METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	4	27	4	1	1.455095407262985	15.805294508367544	#e7a36d	1.8267070049929102
+bundle_body_site	cellulose catabolic process -> Upper airway / nasal	Upper airway / nasal	Upper airway / nasal	METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	4	27	4	1	1.455095407262985	15.805294508367544	#e7a36d	1.8267070049929102
+trait_body_bundle	cellulose catabolic process	cellulose catabolic process -> Vaginal / reproductive	Vaginal / reproductive	METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	3	34	3	1	0.7603436404979028	7.321063387366506	#eec19d	1.6
+bundle_body_site	cellulose catabolic process -> Vaginal / reproductive	Vaginal / reproductive	Vaginal / reproductive	METPO:2000103|GO:0030245	cellulose catabolic process	#d55e00	1	3	34	3	1	0.7603436404979028	7.321063387366506	#eec19d	1.6
+trait_body_bundle	coccus shaped	coccus shaped -> Feces	Feces	METPO:1000668	coccus shaped	#009e73	2	95	236	63	7	0.7538949732443275	219.6971723187496	#9ddac9	8.381130730897977
+bundle_body_site	coccus shaped -> Feces	Feces	Feces	METPO:1000668	coccus shaped	#009e73	2	95	236	63	7	0.7538949732443275	219.6971723187496	#9ddac9	8.381130730897977
+trait_body_bundle	coccus shaped	coccus shaped -> Vaginal / reproductive	Vaginal / reproductive	METPO:1000668	coccus shaped	#009e73	2	11	20	9	1	0.9823158928401857	50.208961269048935	#8dd4c1	2.9406796212664905
+bundle_body_site	coccus shaped -> Vaginal / reproductive	Vaginal / reproductive	Vaginal / reproductive	METPO:1000668	coccus shaped	#009e73	2	11	20	9	1	0.9823158928401857	50.208961269048935	#8dd4c1	2.9406796212664905
+trait_body_bundle	coccus shaped	coccus shaped -> Upper airway / nasal	Upper airway / nasal	METPO:1000668	coccus shaped	#009e73	2	11	8	7	1	0.359416284972863	31.095093649495094	#b8e5d8	2.9406796212664905
+bundle_body_site	coccus shaped -> Upper airway / nasal	Upper airway / nasal	Upper airway / nasal	METPO:1000668	coccus shaped	#009e73	2	11	8	7	1	0.359416284972863	31.095093649495094	#b8e5d8	2.9406796212664905
+trait_body_bundle	coccus shaped	coccus shaped -> Oral cavity / dental	Oral cavity / dental	METPO:1000668	coccus shaped	#009e73	2	12	12	9	2	1.1432981445575034	23.688037300776084	#82d0bb	3.065457117137713
+bundle_body_site	coccus shaped -> Oral cavity / dental	Oral cavity / dental	Oral cavity / dental	METPO:1000668	coccus shaped	#009e73	2	12	12	9	2	1.1432981445575034	23.688037300776084	#82d0bb	3.065457117137713
+trait_body_bundle	coccus shaped	coccus shaped -> Lower GI tract	Lower GI tract	METPO:1000668	coccus shaped	#009e73	2	4	6	4	1	0.6192029753845589	10.424026626040034	#a6decf	1.8267070049929102
+bundle_body_site	coccus shaped -> Lower GI tract	Lower GI tract	Lower GI tract	METPO:1000668	coccus shaped	#009e73	2	4	6	4	1	0.6192029753845589	10.424026626040034	#a6decf	1.8267070049929102
+trait_body_bundle	coccus shaped	coccus shaped -> Ocular / eye	Ocular / eye	METPO:1000668	coccus shaped	#009e73	2	6	20	4	2	0.5755593368477343	7.089736227915862	#a9dfd0	2.207012212994618
+bundle_body_site	coccus shaped -> Ocular / eye	Ocular / eye	Ocular / eye	METPO:1000668	coccus shaped	#009e73	2	6	20	4	2	0.5755593368477343	7.089736227915862	#a9dfd0	2.207012212994618
+trait_body_bundle	sphere shaped	sphere shaped -> Feces	Feces	METPO:1000683	sphere shaped	#cc79a7	3	80	254	49	7	0.7588528590657618	176.86808332217154	#ecccdd	7.702130895202947
+bundle_body_site	sphere shaped -> Feces	Feces	Feces	METPO:1000683	sphere shaped	#cc79a7	3	80	254	49	7	0.7588528590657618	176.86808332217154	#ecccdd	7.702130895202947
+trait_body_bundle	sphere shaped	sphere shaped -> Vaginal / reproductive	Vaginal / reproductive	METPO:1000683	sphere shaped	#cc79a7	3	11	20	9	1	1.1090261338490706	53.41833350189309	#e7bfd5	2.9406796212664905
+bundle_body_site	sphere shaped -> Vaginal / reproductive	Vaginal / reproductive	Vaginal / reproductive	METPO:1000683	sphere shaped	#cc79a7	3	11	20	9	1	1.1090261338490706	53.41833350189309	#e7bfd5	2.9406796212664905
+trait_body_bundle	sphere shaped	sphere shaped -> Upper airway / nasal	Upper airway / nasal	METPO:1000683	sphere shaped	#cc79a7	3	9	11	5	1	0.0	16.125835223052494	#f6e7ef	2.672789066058222
+bundle_body_site	sphere shaped -> Upper airway / nasal	Upper airway / nasal	Upper airway / nasal	METPO:1000683	sphere shaped	#cc79a7	3	9	11	5	1	0.0	16.125835223052494	#f6e7ef	2.672789066058222
+trait_body_bundle	sphere shaped	sphere shaped -> Ocular / eye	Ocular / eye	METPO:1000683	sphere shaped	#cc79a7	3	10	14	6	2	0.47800730792614193	13.817608389697256	#efd6e4	2.8100892832383404
+bundle_body_site	sphere shaped -> Ocular / eye	Ocular / eye	Ocular / eye	METPO:1000683	sphere shaped	#cc79a7	3	10	14	6	2	0.47800730792614193	13.817608389697256	#efd6e4	2.8100892832383404
+trait_body_bundle	sphere shaped	sphere shaped -> Oral cavity / dental	Oral cavity / dental	METPO:1000683	sphere shaped	#cc79a7	3	10	16	9	3	0.7743291129681747	12.957730371197988	#ebcbdd	2.8100892832383404
+bundle_body_site	sphere shaped -> Oral cavity / dental	Oral cavity / dental	Oral cavity / dental	METPO:1000683	sphere shaped	#cc79a7	3	10	16	9	3	0.7743291129681747	12.957730371197988	#ebcbdd	2.8100892832383404
+trait_body_bundle	sphere shaped	sphere shaped -> Lower GI tract	Lower GI tract	METPO:1000683	sphere shaped	#cc79a7	3	4	9	4	1	0.7979828951521251	11.574967349463424	#ebcadc	1.8267070049929102
+bundle_body_site	sphere shaped -> Lower GI tract	Lower GI tract	Lower GI tract	METPO:1000683	sphere shaped	#cc79a7	3	4	9	4	1	0.7979828951521251	11.574967349463424	#ebcadc	1.8267070049929102
+trait_body_bundle	arsenate reduction	arsenate reduction -> Feces	Feces	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	70	331	46	9	0.6670887421053253	90.25959085672656	#f6dda3	7.2133732794713765
+bundle_body_site	arsenate reduction -> Feces	Feces	Feces	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	70	331	46	9	0.6670887421053253	90.25959085672656	#f6dda3	7.2133732794713765
+trait_body_bundle	arsenate reduction	arsenate reduction -> Vaginal / reproductive	Vaginal / reproductive	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	7	25	6	1	0.4302618779381239	19.482127728606947	#f7e3b3	2.3730656051940664
+bundle_body_site	arsenate reduction -> Vaginal / reproductive	Vaginal / reproductive	Vaginal / reproductive	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	7	25	6	1	0.4302618779381239	19.482127728606947	#f7e3b3	2.3730656051940664
+trait_body_bundle	arsenate reduction	arsenate reduction -> Upper airway / nasal	Upper airway / nasal	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	4	24	3	1	0.6925088985448298	9.38526216879174	#f5dca1	1.8267070049929102
+bundle_body_site	arsenate reduction -> Upper airway / nasal	Upper airway / nasal	Upper airway / nasal	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	4	24	3	1	0.6925088985448298	9.38526216879174	#f5dca1	1.8267070049929102
+trait_body_bundle	arsenate reduction	arsenate reduction -> Ocular / eye	Ocular / eye	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	4	15	3	1	0.4077490675454935	7.806218376840406	#f7e3b5	1.8267070049929102
+bundle_body_site	arsenate reduction -> Ocular / eye	Ocular / eye	Ocular / eye	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	4	15	3	1	0.4077490675454935	7.806218376840406	#f7e3b5	1.8267070049929102
+trait_body_bundle	arsenate reduction	arsenate reduction -> Lower GI tract	Lower GI tract	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	3	10	3	1	2.448676722803968	14.342643282445694	#eaae29	1.6
+bundle_body_site	arsenate reduction -> Lower GI tract	Lower GI tract	Lower GI tract	METPO:2000103|pathways:arsenate_reduction	arsenate reduction	#e69f00	4	3	10	3	1	2.448676722803968	14.342643282445694	#eaae29	1.6
+trait_body_bundle	moderately halophilic	moderately halophilic -> Feces	Feces	METPO:1000623	moderately halophilic	#6a3d9a	5	95	240	58	8	0.6114027068924965	83.51341751024171	#cbbcdc	8.381130730897977
+bundle_body_site	moderately halophilic -> Feces	Feces	Feces	METPO:1000623	moderately halophilic	#6a3d9a	5	95	240	58	8	0.6114027068924965	83.51341751024171	#cbbcdc	8.381130730897977
+trait_body_bundle	moderately halophilic	moderately halophilic -> Vaginal / reproductive	Vaginal / reproductive	METPO:1000623	moderately halophilic	#6a3d9a	5	14	10	11	1	0.5106480091925363	52.55346996944152	#cfc1df	3.300292076464231
+bundle_body_site	moderately halophilic -> Vaginal / reproductive	Vaginal / reproductive	Vaginal / reproductive	METPO:1000623	moderately halophilic	#6a3d9a	5	14	10	11	1	0.5106480091925363	52.55346996944152	#cfc1df	3.300292076464231
+trait_body_bundle	moderately halophilic	moderately halophilic -> Upper airway / nasal	Upper airway / nasal	METPO:1000623	moderately halophilic	#6a3d9a	5	9	19	7	1	1.135587655698504	39.96746718442311	#b6a1ce	2.672789066058222
+bundle_body_site	moderately halophilic -> Upper airway / nasal	Upper airway / nasal	Upper airway / nasal	METPO:1000623	moderately halophilic	#6a3d9a	5	9	19	7	1	1.135587655698504	39.96746718442311	#b6a1ce	2.672789066058222
+trait_body_bundle	moderately halophilic	moderately halophilic -> Ocular / eye	Ocular / eye	METPO:1000623	moderately halophilic	#6a3d9a	5	13	10	8	2	0.5696431829947196	21.507896288325	#cdbedd	3.185135137283522
+bundle_body_site	moderately halophilic -> Ocular / eye	Ocular / eye	Ocular / eye	METPO:1000623	moderately halophilic	#6a3d9a	5	13	10	8	2	0.5696431829947196	21.507896288325	#cdbedd	3.185135137283522
+trait_body_bundle	moderately halophilic	moderately halophilic -> Lower GI tract	Lower GI tract	METPO:1000623	moderately halophilic	#6a3d9a	5	5	2	5	1	0.0	8.958797346140274	#e4dced	2.026439885947452
+bundle_body_site	moderately halophilic -> Lower GI tract	Lower GI tract	Lower GI tract	METPO:1000623	moderately halophilic	#6a3d9a	5	5	2	5	1	0.0	8.958797346140274	#e4dced	2.026439885947452
+trait_body_bundle	moderately halophilic	moderately halophilic -> Oral cavity / dental	Oral cavity / dental	METPO:1000623	moderately halophilic	#6a3d9a	5	10	20	8	3	1.4307916928560798	16.085731986904943	#ab91c6	2.8100892832383404
+bundle_body_site	moderately halophilic -> Oral cavity / dental	Oral cavity / dental	Oral cavity / dental	METPO:1000623	moderately halophilic	#6a3d9a	5	10	20	8	3	1.4307916928560798	16.085731986904943	#ab91c6	2.8100892832383404

@@ -1,76 +1,58 @@
 condition_group	condition	focus_direction	trait_id	trait_name	trait_category	taxon_id	taxon_name	taxonomic_rank	taxon_profile_count	study_count	trait_annotation_count
-Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1224	Pseudomonadota	phylum	3	2	4306
-Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:31953	Bifidobacteriaceae	family	3	1	1
-Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1350	Enterococcus	genus	3	1	34
-Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:85023	Microbacteriaceae	family	3	1	222
-Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:976	Bacteroidota	phylum	2	2	762
-Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1653	Corynebacteriaceae	family	2	2	122
-Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1678	Bifidobacterium	genus	2	1	1
-Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1760	Actinomycetes	class	1	1	2367
-Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:201174	Actinomycetota	phylum	1	1	2394
-Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:186817	Bacillaceae	family	1	1	500
+Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:976	Bacteroidota	phylum	2	2	1406
+Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1653	Corynebacteriaceae	family	2	2	137
+Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:186817	Bacillaceae	family	1	1	587
 Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:816	Bacteroides	genus	1	1	1
-Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:200643	Bacteroidia	class	1	1	17
-Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1716	Corynebacterium	genus	1	1	122
-Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:543	Enterobacteriaceae	family	1	1	227
-Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:81852	Enterococcaceae	family	1	1	43
+Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:200643	Bacteroidia	class	1	1	21
+Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:31953	Bifidobacteriaceae	family	1	1	5
+Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1716	Corynebacterium	genus	1	1	137
+Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:543	Enterobacteriaceae	family	1	1	243
+Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:81852	Enterococcaceae	family	1	1	48
 Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:128827	Erysipelotrichaceae	family	1	1	4
-Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:561	Escherichia	genus	1	1	17
-Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1578	Lactobacillus	genus	1	1	8
-Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:620	Shigella	genus	1	1	10
-Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:186824	Thermoactinomycetaceae	family	1	1	25
-Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1224	Pseudomonadota	phylum	3	2	2507
-Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:31953	Bifidobacteriaceae	family	3	1	27
-Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1350	Enterococcus	genus	3	1	109
-Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:85023	Microbacteriaceae	family	3	1	1
-Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:976	Bacteroidota	phylum	2	2	83
+Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1578	Lactobacillus	genus	1	1	9
+Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:85023	Microbacteriaceae	family	1	1	293
+Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1224	Pseudomonadota	phylum	1	1	5541
+Autism	Autism	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:186824	Thermoactinomycetaceae	family	1	1	35
+Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:976	Bacteroidota	phylum	2	2	84
 Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1653	Corynebacteriaceae	family	2	2	75
-Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1678	Bifidobacterium	genus	2	1	7
-Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1760	Actinomycetes	class	1	1	196
-Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:201174	Actinomycetota	phylum	1	1	197
 Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:186817	Bacillaceae	family	1	1	204
 Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:816	Bacteroides	genus	1	1	2
 Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:200643	Bacteroidia	class	1	1	12
+Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:31953	Bifidobacteriaceae	family	1	1	27
 Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1716	Corynebacterium	genus	1	1	75
 Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:872	Desulfovibrio	genus	1	1	3
 Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:543	Enterobacteriaceae	family	1	1	1206
 Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:81852	Enterococcaceae	family	1	1	119
 Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:128827	Erysipelotrichaceae	family	1	1	1
-Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:561	Escherichia	genus	1	1	800
 Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1578	Lactobacillus	genus	1	1	60
+Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:85023	Microbacteriaceae	family	1	1	1
 Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:821	Phocaeicola vulgatus	species	1	1	3
-Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:620	Shigella	genus	1	1	47
+Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1224	Pseudomonadota	phylum	1	1	2523
 Autism	Autism	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:191303	Turicibacter	genus	1	1	1
-Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1224	Pseudomonadota	phylum	3	2	425
-Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:31953	Bifidobacteriaceae	family	3	1	7
-Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1350	Enterococcus	genus	3	1	64
-Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:85023	Microbacteriaceae	family	3	1	24
-Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:976	Bacteroidota	phylum	2	2	49
-Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1653	Corynebacteriaceae	family	2	2	76
-Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1678	Bifidobacterium	genus	2	1	3
-Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1760	Actinomycetes	class	1	1	330
-Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:201174	Actinomycetota	phylum	1	1	331
-Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186817	Bacillaceae	family	1	1	28
+Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:976	Bacteroidota	phylum	2	2	53
+Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1653	Corynebacteriaceae	family	2	2	80
+Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186817	Bacillaceae	family	1	1	30
 Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:816	Bacteroides	genus	1	1	2
-Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:200643	Bacteroidia	class	1	1	7
-Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1485	Clostridium	genus	1	1	2
-Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1716	Corynebacterium	genus	1	1	76
+Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:200643	Bacteroidia	class	1	1	8
+Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:31953	Bifidobacteriaceae	family	1	1	8
+Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1716	Corynebacterium	genus	1	1	80
 Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:872	Desulfovibrio	genus	1	1	1
 Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:543	Enterobacteriaceae	family	1	1	7
-Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:81852	Enterococcaceae	family	1	1	79
+Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:81852	Enterococcaceae	family	1	1	92
 Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:128827	Erysipelotrichaceae	family	1	1	5
-Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:561	Escherichia	genus	1	1	1
-Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1578	Lactobacillus	genus	1	1	63
-Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186824	Thermoactinomycetaceae	family	1	1	2
+Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1578	Lactobacillus	genus	1	1	68
+Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:85023	Microbacteriaceae	family	1	1	25
+Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1224	Pseudomonadota	phylum	1	1	459
+Autism	Autism	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186824	Thermoactinomycetaceae	family	1	1	3
 Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:816	Bacteroides	genus	3	2	2
-Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1236	Gammaproteobacteria	class	3	1	2190
-Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1224	Pseudomonadota	phylum	3	1	2507
-Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:91061	Bacilli	class	2	1	2357
-Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1239	Bacillota	phylum	2	1	2377
+Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1236	Gammaproteobacteria	class	3	1	2195
+Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1224	Pseudomonadota	phylum	3	1	2523
+Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:91061	Bacilli	class	2	1	2362
+Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1239	Bacillota	phylum	2	1	2382
 Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:815	Bacteroidaceae	family	2	1	5
 Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:171549	Bacteroidales	order	2	1	8
 Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:200643	Bacteroidia	class	2	1	12
-Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:976	Bacteroidota	phylum	2	1	83
+Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:976	Bacteroidota	phylum	2	1	84
 Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:186801	Clostridia	class	2	1	15
 Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:547	Enterobacter	genus	2	1	15
 Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:91347	Enterobacterales	order	2	1	1482
@@ -78,12 +60,12 @@ Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aero
 Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:561	Escherichia	genus	2	1	800
 Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:562	Escherichia coli	species	2	1	779
 Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:186802	Eubacteriales	order	2	1	6
-Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:186826	Lactobacillales	order	2	1	1138
+Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:186826	Lactobacillales	order	2	1	1140
 Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1300	Streptococcaceae	family	2	1	763
 Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1301	Streptococcus	genus	2	1	736
 Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:506	Alcaligenaceae	family	1	1	8
-Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:28216	Betaproteobacteria	class	1	1	134
-Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:80840	Burkholderiales	order	1	1	75
+Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:28216	Betaproteobacteria	class	1	1	138
+Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:80840	Burkholderiales	order	1	1	78
 Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:186828	Carnobacteriaceae	family	1	1	12
 Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:526525	Erysipelotrichales	order	1	1	3
 Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:526524	Erysipelotrichia	class	1	1	3
@@ -94,71 +76,75 @@ Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aero
 Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:32066	Fusobacteriota	phylum	1	1	3
 Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:186803	Lachnospiraceae	family	1	1	5
 Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:47715	Lacticaseibacillus rhamnosus	species	1	1	18
-Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:33958	Lactobacillaceae	family	1	1	238
+Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:33958	Lactobacillaceae	family	1	1	240
 Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1578	Lactobacillus	genus	1	1	60
 Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1579	Lactobacillus acidophilus	species	1	1	3
 Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:216572	Oscillospiraceae	family	1	1	2
 Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:821	Phocaeicola vulgatus	species	1	1	3
 Autoimmune disease	Autoimmune disease	increased	METPO:1000608	facultatively aerobic	PhenotypicQuality	NCBITaxon:1304	Streptococcus salivarius	species	1	1	6
 Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:816	Bacteroides	genus	3	2	1
-Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1236	Gammaproteobacteria	class	3	1	2036
-Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1224	Pseudomonadota	phylum	3	1	4306
+Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1236	Gammaproteobacteria	class	3	1	2549
+Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1224	Pseudomonadota	phylum	3	1	5541
 Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:31977	Veillonellaceae	family	3	1	1
-Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:91061	Bacilli	class	2	1	1245
-Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1239	Bacillota	phylum	2	1	1259
+Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:91061	Bacilli	class	2	1	1472
+Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1239	Bacillota	phylum	2	1	1487
 Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:815	Bacteroidaceae	family	2	1	2
-Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:171549	Bacteroidales	order	2	1	6
+Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:171549	Bacteroidales	order	2	1	8
 Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:820	Bacteroides uniformis	species	2	1	1
-Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:200643	Bacteroidia	class	2	1	17
-Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:976	Bacteroidota	phylum	2	1	762
-Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:186801	Clostridia	class	2	1	7
-Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:547	Enterobacter	genus	2	1	15
-Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:91347	Enterobacterales	order	2	1	402
-Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:543	Enterobacteriaceae	family	2	1	227
+Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:200643	Bacteroidia	class	2	1	21
+Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:976	Bacteroidota	phylum	2	1	1406
+Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:186801	Clostridia	class	2	1	8
+Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:547	Enterobacter	genus	2	1	19
+Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:91347	Enterobacterales	order	2	1	433
+Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:543	Enterobacteriaceae	family	2	1	243
 Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:561	Escherichia	genus	2	1	17
 Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:562	Escherichia coli	species	2	1	15
-Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:186802	Eubacteriales	order	2	1	7
-Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:186826	Lactobacillales	order	2	1	204
-Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1300	Streptococcaceae	family	2	1	38
-Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1301	Streptococcus	genus	2	1	33
-Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:506	Alcaligenaceae	family	1	1	88
-Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:28216	Betaproteobacteria	class	1	1	801
-Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:80840	Burkholderiales	order	1	1	580
-Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:186828	Carnobacteriaceae	family	1	1	23
+Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:186802	Eubacteriales	order	2	1	8
+Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:186826	Lactobacillales	order	2	1	241
+Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1300	Streptococcaceae	family	2	1	52
+Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1301	Streptococcus	genus	2	1	47
+Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:506	Alcaligenaceae	family	1	1	117
+Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:28216	Betaproteobacteria	class	1	1	1008
+Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:80840	Burkholderiales	order	1	1	753
+Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:186828	Carnobacteriaceae	family	1	1	26
+Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:31979	Clostridiaceae	family	1	1	1
+Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1485	Clostridium	genus	1	1	1
 Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:526525	Erysipelotrichales	order	1	1	4
 Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:526524	Erysipelotrichia	class	1	1	4
 Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:203491	Fusobacteriales	order	1	1	2
 Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:203490	Fusobacteriia	class	1	1	2
 Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:32066	Fusobacteriota	phylum	1	1	2
+Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:117563	Granulicatella	genus	1	1	1
 Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:47715	Lacticaseibacillus rhamnosus	species	1	1	1
-Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:33958	Lactobacillaceae	family	1	1	94
-Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1578	Lactobacillus	genus	1	1	8
+Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:33958	Lactobacillaceae	family	1	1	104
+Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1578	Lactobacillus	genus	1	1	9
 Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:171551	Porphyromonadaceae	family	1	1	1
 Autoimmune disease	Autoimmune disease	increased	METPO:1000602	aerobic	PhenotypicQuality	NCBITaxon:1304	Streptococcus salivarius	species	1	1	2
 Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:816	Bacteroides	genus	3	2	2
-Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1236	Gammaproteobacteria	class	3	1	243
-Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1224	Pseudomonadota	phylum	3	1	425
-Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:91061	Bacilli	class	2	1	651
-Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1239	Bacillota	phylum	2	1	671
+Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1236	Gammaproteobacteria	class	3	1	257
+Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1224	Pseudomonadota	phylum	3	1	459
+Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:31977	Veillonellaceae	family	3	1	1
+Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:91061	Bacilli	class	2	1	726
+Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1239	Bacillota	phylum	2	1	749
 Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:815	Bacteroidaceae	family	2	1	2
-Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:171549	Bacteroidales	order	2	1	7
+Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:171549	Bacteroidales	order	2	1	8
 Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:820	Bacteroides uniformis	species	2	1	1
-Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:200643	Bacteroidia	class	2	1	7
-Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:976	Bacteroidota	phylum	2	1	49
+Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:200643	Bacteroidia	class	2	1	8
+Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:976	Bacteroidota	phylum	2	1	53
 Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186801	Clostridia	class	2	1	8
 Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:547	Enterobacter	genus	2	1	1
-Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:91347	Enterobacterales	order	2	1	13
+Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:91347	Enterobacterales	order	2	1	14
 Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:543	Enterobacteriaceae	family	2	1	7
 Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:561	Escherichia	genus	2	1	1
 Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:562	Escherichia coli	species	2	1	1
 Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186802	Eubacteriales	order	2	1	7
-Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186826	Lactobacillales	order	2	1	564
-Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1300	Streptococcaceae	family	2	1	154
-Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1301	Streptococcus	genus	2	1	141
-Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:506	Alcaligenaceae	family	1	1	17
-Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:28216	Betaproteobacteria	class	1	1	100
-Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:80840	Burkholderiales	order	1	1	46
-Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186828	Carnobacteriaceae	family	1	1	28
+Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186826	Lactobacillales	order	2	1	633
+Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1300	Streptococcaceae	family	2	1	182
+Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1301	Streptococcus	genus	2	1	167
+Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:506	Alcaligenaceae	family	1	1	18
+Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:28216	Betaproteobacteria	class	1	1	110
+Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:80840	Burkholderiales	order	1	1	49
+Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186828	Carnobacteriaceae	family	1	1	29
 Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:31979	Clostridiaceae	family	1	1	2
 Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1485	Clostridium	genus	1	1	2
 Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1506	Clostridium sp.	species	1	1	1
@@ -170,8 +156,8 @@ Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	Ph
 Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:117563	Granulicatella	genus	1	1	3
 Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:186803	Lachnospiraceae	family	1	1	1
 Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:47715	Lacticaseibacillus rhamnosus	species	1	1	3
-Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:33958	Lactobacillaceae	family	1	1	281
-Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1578	Lactobacillus	genus	1	1	63
+Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:33958	Lactobacillaceae	family	1	1	305
+Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1578	Lactobacillus	genus	1	1	68
 Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1579	Lactobacillus acidophilus	species	1	1	2
 Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:216572	Oscillospiraceae	family	1	1	1
 Autoimmune disease	Autoimmune disease	increased	METPO:1000604	microaerophilic	PhenotypicQuality	NCBITaxon:1304	Streptococcus salivarius	species	1	1	1

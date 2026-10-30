@@ -38,6 +38,7 @@ from create_pd_six_trait_taxon_heatmap import (
 )
 from lookup_pd_trait_taxa import SUMMARY_NAME, pd_feces_profile_ids, trait_directions
 from mtp.contribution_inputs import Base, Graph, Key, load_base, load_graph, verify_kg
+from mtp.population_tables import get_population_selection, is_canonical_derived_path
 from mtp.taxa_trait_matrix import PRIMARY_STRAIN_ROLLUP, StrainRollup
 from mtp.taxon_contributions import Ledger, reconcile
 from mtp.trait_guilds import TABLE1_TRAIT_LABELS
@@ -132,6 +133,29 @@ def load_contribution_ledger(
             "data/derived inputs with `just table1-taxon-influence`."
         )
         raise ValueError(msg)
+    if is_canonical_derived_path(
+        derived_dir / "study_trait_profiles_wide.tsv", "study_trait_profiles_wide.tsv"
+    ):
+        selection = get_population_selection()
+        flip = {"inc": "dec", "dec": "inc"}
+        base.profiles = {
+            (
+                key[0],
+                key[1],
+                flip.get(key[2], key[2]) if key[:2] in selection.reversed_keys else key[2],
+            ): values
+            for key, values in base.profiles.items()
+            if key[:2] in selection.selected_keys
+        }
+        base.reported = {
+            (
+                key[0],
+                key[1],
+                flip.get(key[2], key[2]) if key[:2] in selection.reversed_keys else key[2],
+            ): taxa
+            for key, taxa in base.reported.items()
+            if key[:2] in selection.selected_keys
+        }
     return base, graph, ledger
 
 

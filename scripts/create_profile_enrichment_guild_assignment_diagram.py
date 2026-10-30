@@ -206,6 +206,10 @@ def get_trait_profile_input_counts() -> dict[str, int]:
         STUDY_TRAIT_PROFILE_WIDE_TSV,
         usecols=PROFILE_METADATA_COLUMNS,
     )
+    from mtp.population_tables import is_canonical_derived_path, orient_and_filter_profiles_df
+
+    if is_canonical_derived_path(STUDY_TRAIT_PROFILE_WIDE_TSV, "study_trait_profiles_wide.tsv"):
+        metadata = orient_and_filter_profiles_df(metadata, filter_to_selection=True)
     return {
         "raw_profile_count": len(metadata),
         "raw_profile_study_count": metadata["study_id"].nunique(),

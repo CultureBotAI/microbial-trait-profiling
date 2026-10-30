@@ -1,13 +1,13 @@
 direction	trait	focus_enriched_profiles	focus_studies	body_sites	edge_rows	max_focus_minus_comparator_z
-decreased	cellulose catabolic process	70	35	2	2	1.5868886501736656
-decreased	coccus shaped	66	31	3	3	0.9163660476684128
-decreased	facultatively aerobic	58	32	4	4	1.176921796540136
-decreased	sphere shaped	51	22	2	2	1.2414072477217857
-decreased	moderately halophilic	36	23	3	3	0.7634080571677968
-decreased	arsenate reduction	28	17	2	2	1.73685312449326
-increased	facultatively aerobic	84	42	4	4	1.7400894330612076
-increased	moderately halophilic	74	43	4	4	1.3437652284309574
-increased	coccus shaped	62	31	3	3	0.8671228995764547
-increased	sphere shaped	57	29	2	2	1.0342399412280363
-increased	arsenate reduction	50	30	3	3	2.222182163167151
-increased	cellulose catabolic process	35	23	2	2	0.6277470394216508
+decreased	cellulose catabolic process	47	26	2	2	1.4663270252849685
+decreased	coccus shaped	45	24	3	3	0.8224469296969809
+decreased	facultatively aerobic	39	23	3	3	0.8042748578838256
+decreased	sphere shaped	30	18	2	2	1.1100743903413026
+decreased	moderately halophilic	22	15	3	3	1.0585175133710512
+decreased	arsenate reduction	16	10	2	2	1.2282567787503735
+increased	facultatively aerobic	48	30	4	4	1.900907085903002
+increased	coccus shaped	40	26	3	3	1.0081639531711095
+increased	moderately halophilic	40	28	4	4	1.445527891123409
+increased	sphere shaped	32	21	2	2	1.04415341569192
+increased	arsenate reduction	29	20	3	3	2.098715348946852
+increased	cellulose catabolic process	22	16	2	2	0.7147261313878718

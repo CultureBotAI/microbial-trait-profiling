@@ -1,282 +1,261 @@
 condition_group	direction	taxon_id	taxon_name	taxonomic_rank	profile_count	study_count	experiment_count	signature_count	exact_conditions	body_site_groups	mean_profile_guild_z	guild_trait_presence_count	guild_trait_names	is_focal_target_taxon	focal_target_taxon_name
-Autism	increased	NCBITaxon:1224	Pseudomonadota	phylum	3	2	3	3	Autism	Feces	0.5955176596109196	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism	increased	NCBITaxon:31953	Bifidobacteriaceae	family	3	1	3	3	Autism	Feces	0.5531875513173995	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism	increased	NCBITaxon:1350	Enterococcus	genus	3	1	3	3	Autism	Feces	0.5336570600649947	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism	increased	NCBITaxon:85023	Microbacteriaceae	family	3	1	3	3	Autism	Feces	0.5531875513173995	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism	increased	NCBITaxon:976	Bacteroidota	phylum	2	2	2	2	Autism	Feces	0.27872971630969606	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism	increased	NCBITaxon:1653	Corynebacteriaceae	family	2	2	2	2	Autism	Feces	0.7841960708732139	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism	increased	NCBITaxon:1678	Bifidobacterium	genus	2	1	2	2	Autism	Feces	0.4811335675834548	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism	increased	NCBITaxon:208479	Enterocloster bolteae	species	2	1	2	2	Autism	Feces	0.4811335675834548	0		True	Enterocloster bolteae
-Autism	increased	NCBITaxon:186814	Thermoanaerobacteraceae	family	2	1	2	2	Autism	Feces	0.4811335675834548	0		False	
-Autism	increased	NCBITaxon:1760	Actinomycetes	class	1	1	1	1	Autism	Feces	0.34756826661951185	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism	increased	NCBITaxon:201174	Actinomycetota	phylum	1	1	1	1	Autism	Feces	0.34756826661951185	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism	increased	NCBITaxon:186817	Bacillaceae	family	1	1	1	1	Autism	Feces	0.6972955187852885	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism	increased	NCBITaxon:816	Bacteroides	genus	1	1	1	1	Autism	Feces	0.5331500652572866	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism	increased	NCBITaxon:200643	Bacteroidia	class	1	1	1	1	Autism	Feces	0.8710966229611392	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism	increased	NCBITaxon:1716	Corynebacterium	genus	1	1	1	1	Autism	Feces	0.8710966229611392	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism	increased	NCBITaxon:543	Enterobacteriaceae	family	1	1	1	1	Autism	Feces	0.6972955187852885	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism	increased	NCBITaxon:81852	Enterococcaceae	family	1	1	1	1	Autism	Feces	0.6972955187852885	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism	increased	NCBITaxon:128827	Erysipelotrichaceae	family	1	1	1	1	Autism	Feces	0.6972955187852885	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism	increased	NCBITaxon:561	Escherichia	genus	1	1	1	1	Autism	Feces	-0.007539745139924318	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism	increased	NCBITaxon:1578	Lactobacillus	genus	1	1	1	1	Autism	Feces	0.8710966229611392	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism	increased	NCBITaxon:872	Desulfovibrio	genus	1	1	1	1	Autism	Feces	0.5331500652572866	2	facultatively aerobic; microaerophilic	False	
-Autism	increased	NCBITaxon:620	Shigella	genus	1	1	1	1	Autism	Feces	-0.007539745139924318	2	facultatively aerobic; aerobic	False	
-Autism	increased	NCBITaxon:186824	Thermoactinomycetaceae	family	1	1	1	1	Autism	Feces	0.6972955187852885	2	aerobic; microaerophilic	False	
-Autism	increased	NCBITaxon:1485	Clostridium	genus	1	1	1	1	Autism	Feces	-0.007539745139924318	1	microaerophilic	False	
-Autism	increased	NCBITaxon:821	Phocaeicola vulgatus	species	1	1	1	1	Autism	Feces	0.5331500652572866	1	facultatively aerobic	False	
-Autism	increased	NCBITaxon:191303	Turicibacter	genus	1	1	1	1	Autism	Feces	0.5331500652572866	1	facultatively aerobic	False	
-Autism	increased	NCBITaxon:258514	Acetanaerobacterium	genus	1	1	1	1	Autism	Feces	0.5331500652572866	0		False	
-Autism	increased	NCBITaxon:286729	Alkaliflexus	genus	1	1	1	1	Autism	Feces	0.5331500652572866	0		False	
-Autism	increased	NCBITaxon:102106	Collinsella	genus	1	1	1	1	Autism	Feces	0.8710966229611392	0		False	
-Autism	increased	NCBITaxon:213117	Desulfohalobiaceae	family	1	1	1	1	Autism	Feces	0.6972955187852885	0		False	
-Autism	increased	NCBITaxon:876	Desulfovibrio desulfuricans	species	1	1	1	1	Autism	Feces	0.5331500652572866	0		False	
-Autism	increased	NCBITaxon:58621	Desulfovibrio intestinalis	species	1	1	1	1	Autism	Feces	0.5331500652572866	0		False	
-Autism	increased	NCBITaxon:901	Desulfovibrio piger	species	1	1	1	1	Autism	Feces	0.5331500652572866	0		False	
-Autism	increased	NCBITaxon:189330	Dorea	genus	1	1	1	1	Autism	Feces	0.8710966229611392	0		False	
-Autism	increased	NCBITaxon:203492	Fusobacteriaceae	family	1	1	1	1	Autism	Feces	0.6972955187852885	0		False	
-Autism	increased	NCBITaxon:375288	Parabacteroides	genus	1	1	1	1	Autism	Feces	0.5331500652572866	0		False	
-Autism	decreased	NCBITaxon:1239	Bacillota	phylum	2	2	2	2	Autism	Feces	0.6602482688742071	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism	decreased	NCBITaxon:1301	Streptococcus	genus	2	2	2	2	Autism	Feces	0.6602482688742071	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism	decreased	NCBITaxon:39948	Dialister	genus	2	2	2	2	Autism	Feces	-0.05727555230074993	1	aerobic	False	
-Autism	decreased	NCBITaxon:29465	Veillonella	genus	2	2	2	2	Autism	Feces	-0.041779901713325074	0		False	
-Autism	decreased	NCBITaxon:1654	Actinomyces	genus	1	1	1	1	Autism	Feces	0.6757439194616319	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism	decreased	NCBITaxon:201174	Actinomycetota	phylum	1	1	1	1	Autism	Feces	0.6447526182867822	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism	decreased	NCBITaxon:171549	Bacteroidales	order	1	1	1	1	Autism	Feces	-0.7593037228882821	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism	decreased	NCBITaxon:976	Bacteroidota	phylum	1	1	1	1	Autism	Feces	0.02430936736210554	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism	decreased	NCBITaxon:1678	Bifidobacterium	genus	1	1	1	1	Autism	Feces	0.6447526182867822	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism	decreased	NCBITaxon:561	Escherichia	genus	1	1	1	1	Autism	Feces	0.6757439194616319	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism	decreased	NCBITaxon:31983	Helcococcus	genus	1	1	1	1	Autism	Feces	0.6447526182867822	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism	decreased	NCBITaxon:1578	Lactobacillus	genus	1	1	1	1	Autism	Feces	0.6447526182867822	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism	decreased	NCBITaxon:1243	Leuconostoc	genus	1	1	1	1	Autism	Feces	0.6447526182867822	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism	decreased	NCBITaxon:46255	Weissella	genus	1	1	1	1	Autism	Feces	0.6447526182867822	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism	decreased	NCBITaxon:186803	Lachnospiraceae	family	1	1	1	1	Autism	Feces	-0.9378816568738088	2	facultatively aerobic; microaerophilic	False	
-Autism	decreased	NCBITaxon:909932	Negativicutes	class	1	1	1	1	Autism	Feces	-0.7593037228882821	2	aerobic; microaerophilic	False	
-Autism	decreased	NCBITaxon:1485	Clostridium	genus	1	1	1	1	Autism	Feces	0.6447526182867822	1	microaerophilic	False	
-Autism	decreased	NCBITaxon:543311	Parvimonas	genus	1	1	1	1	Autism	Feces	0.6757439194616319	1	microaerophilic	False	
-Autism	decreased	NCBITaxon:162289	Peptoniphilus	genus	1	1	1	1	Autism	Feces	0.6757439194616319	1	microaerophilic	False	
-Autism	decreased	NCBITaxon:909929	Selenomonadales	order	1	1	1	1	Autism	Feces	-0.7593037228882821	1	microaerophilic	False	
-Autism	decreased	NCBITaxon:31977	Veillonellaceae	family	1	1	1	1	Autism	Feces	-0.7593037228882821	1	aerobic	False	
-Autism	decreased	NCBITaxon:239759	Alistipes	genus	1	1	1	1	Autism	Feces	-0.7593037228882821	0		False	
-Autism	decreased	NCBITaxon:114627	Alkaliphilus	genus	1	1	1	1	Autism	Feces	0.6447526182867822	0		False	
-Autism	decreased	NCBITaxon:52784	Anaerofilum	genus	1	1	1	1	Autism	Feces	0.6447526182867822	0		False	
-Autism	decreased	NCBITaxon:109326	Anaerovorax	genus	1	1	1	1	Autism	Feces	0.6447526182867822	0		False	
-Autism	decreased	NCBITaxon:1683	Bifidobacterium angulatum	species	1	1	1	1	Autism	Feces	0.6447526182867822	0		False	
-Autism	decreased	NCBITaxon:1679	Bifidobacterium longum subsp. longum	species	1	1	1	1	Autism	Feces	0.6447526182867822	0		False	
-Autism	decreased	NCBITaxon:35832	Bilophila	genus	1	1	1	1	Autism	Feces	-0.7593037228882821	0		False	
-Autism	decreased	NCBITaxon:118747	Bulleidia	genus	1	1	1	1	Autism	Feces	0.6757439194616319	0		False	
-Autism	decreased	NCBITaxon:102106	Collinsella	genus	1	1	1	1	Autism	Feces	0.6447526182867822	0		False	
-Autism	decreased	NCBITaxon:218538	Dialister invisus	species	1	1	1	1	Autism	Feces	0.6447526182867822	0		False	
-Autism	decreased	NCBITaxon:253238	Ethanoligenens	genus	1	1	1	1	Autism	Feces	0.6447526182867822	0		False	
-Autism	decreased	NCBITaxon:204475	Gemmiger	genus	1	1	1	1	Autism	Feces	-1.3498358804413157	0		False	
-Autism	decreased	NCBITaxon:375288	Parabacteroides	genus	1	1	1	1	Autism	Feces	-0.7593037228882821	0		False	
-Autism	decreased	NCBITaxon:113286	Pseudoramibacter	genus	1	1	1	1	Autism	Feces	0.6447526182867822	0		False	
-Autism	decreased	NCBITaxon:1263	Ruminococcus	genus	1	1	1	1	Autism	Feces	0.6447526182867822	0		False	
-Autism	decreased	NCBITaxon:1535	[Clostridium] leptum	species	1	1	1	1	Autism	Feces	0.6447526182867822	0		False	
-Autism spectrum disorder	increased	NCBITaxon:33042	Coprococcus	genus	3	2	3	3	Autism spectrum disorder	Feces	-0.5287089047014434	0		False	
-Autism spectrum disorder	increased	NCBITaxon:1485	Clostridium	genus	2	2	2	2	Autism spectrum disorder	Feces	-0.7662989140431733	1	microaerophilic	False	
-Autism spectrum disorder	increased	NCBITaxon:375288	Parabacteroides	genus	2	2	2	2	Autism spectrum disorder	Feces	-0.7197376494195771	0		False	
-Autism spectrum disorder	increased	NCBITaxon:1870884	Clostridioides	genus	2	1	2	2	Autism spectrum disorder	Feces	-0.7482436478532457	1	facultatively aerobic	False	
-Autism spectrum disorder	increased	NCBITaxon:239759	Alistipes	genus	2	1	2	2	Autism spectrum disorder	Feces	-1.2393343851729608	0		False	
-Autism spectrum disorder	increased	NCBITaxon:1649459	Hungatella	genus	2	1	2	2	Autism spectrum disorder	Feces	-0.7482436478532457	0		False	
-Autism spectrum disorder	increased	NCBITaxon:3025755	Thomasclavelia	genus	2	1	2	2	Autism spectrum disorder	Feces	-0.7482436478532457	0		False	
-Autism spectrum disorder	increased	NCBITaxon:283	Comamonas	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.08963941839783851	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism spectrum disorder	increased	NCBITaxon:128827	Erysipelotrichaceae	family	1	1	1	1	Autism spectrum disorder	Feces	-0.08963941839783851	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism spectrum disorder	increased	NCBITaxon:570	Klebsiella	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.3676544058018855	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism spectrum disorder	increased	NCBITaxon:872	Desulfovibrio	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.08963941839783851	2	facultatively aerobic; microaerophilic	False	
-Autism spectrum disorder	increased	NCBITaxon:2569097	Anaerobutyricum	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.3676544058018855	0		False	
-Autism spectrum disorder	increased	NCBITaxon:291645	Bacteroides nordii	species	1	1	1	1	Autism spectrum disorder	Feces	-1.164943422284461	0		False	
-Autism spectrum disorder	increased	NCBITaxon:397864	Barnesiella	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.08963941839783851	0		False	
-Autism spectrum disorder	increased	NCBITaxon:1470349	Candidatus Stoquefichus	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.08963941839783851	0		False	
-Autism spectrum disorder	increased	NCBITaxon:1348911	Coprobacter	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.08963941839783851	0		False	
-Autism spectrum disorder	increased	NCBITaxon:1472762	Enorma	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.08963941839783851	0		False	
-Autism spectrum disorder	increased	NCBITaxon:2719313	Enterocloster	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.3676544058018855	0		False	
-Autism spectrum disorder	increased	NCBITaxon:848	Fusobacterium	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.08963941839783851	0		False	
-Autism spectrum disorder	increased	NCBITaxon:1506553	Lachnoclostridium	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.3676544058018855	0		False	
-Autism spectrum disorder	increased	NCBITaxon:158846	Megamonas	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.08963941839783851	0		False	
-Autism spectrum disorder	increased	NCBITaxon:2039302	Monoglobus	genus	1	1	1	1	Autism spectrum disorder	Feces	-1.1288328899046058	0		False	
-Autism spectrum disorder	increased	NCBITaxon:283168	Odoribacter	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.08963941839783851	0		False	
-Autism spectrum disorder	increased	NCBITaxon:577309	Paraprevotella	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.08963941839783851	0		False	
-Autism spectrum disorder	increased	NCBITaxon:1481960	Peptoclostridium	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.08963941839783851	0		False	
-Autism spectrum disorder	increased	NCBITaxon:2740	Peptococcus	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.08963941839783851	0		False	
-Autism spectrum disorder	increased	NCBITaxon:33024	Phascolarctobacterium	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.08963941839783851	0		False	
-Autism spectrum disorder	increased	NCBITaxon:1508657	Ruminiclostridium	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.08963941839783851	0		False	
-Autism spectrum disorder	increased	NCBITaxon:1266	Sarcina	genus	1	1	1	1	Autism spectrum disorder	Feces	-1.1288328899046058	0		False	
-Autism spectrum disorder	increased	NCBITaxon:172900	Victivallis	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.08963941839783851	0		False	
-Autism spectrum disorder	increased	NCBITaxon:707003	uncultured Oscillospiraceae bacterium	species	1	1	1	1	Autism spectrum disorder	Feces	-0.08963941839783851	0		False	
-Autism spectrum disorder	decreased	NCBITaxon:1375	Aerococcus	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6149780304733311	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism spectrum disorder	decreased	NCBITaxon:1716	Corynebacterium	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6149780304733311	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism spectrum disorder	decreased	NCBITaxon:128827	Erysipelotrichaceae	family	1	1	1	1	Autism spectrum disorder	Feces	0.6149780304733311	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism spectrum disorder	decreased	NCBITaxon:1578	Lactobacillus	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6149780304733311	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism spectrum disorder	decreased	NCBITaxon:1357	Lactococcus	genus	1	1	1	1	Autism spectrum disorder	Feces	1.131658984561693	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism spectrum disorder	decreased	NCBITaxon:1637	Listeria	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6149780304733311	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism spectrum disorder	decreased	NCBITaxon:407	Methylobacterium	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6149780304733311	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism spectrum disorder	decreased	NCBITaxon:33882	Microbacterium	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6149780304733311	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism spectrum disorder	decreased	NCBITaxon:286	Pseudomonas	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6149780304733311	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism spectrum disorder	decreased	NCBITaxon:1279	Staphylococcus	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6149780304733311	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism spectrum disorder	decreased	NCBITaxon:29391	Gemella morbillorum	species	1	1	1	1	Autism spectrum disorder	Feces	1.131658984561693	2	facultatively aerobic; microaerophilic	False	
-Autism spectrum disorder	decreased	NCBITaxon:186803	Lachnospiraceae	family	1	1	1	1	Autism spectrum disorder	Feces	0.6149780304733311	2	facultatively aerobic; microaerophilic	False	
-Autism spectrum disorder	decreased	NCBITaxon:1660	Schaalia odontolytica	species	1	1	1	1	Autism spectrum disorder	Feces	1.131658984561693	2	facultatively aerobic; microaerophilic	False	
-Autism spectrum disorder	decreased	NCBITaxon:171552	Prevotellaceae	family	1	1	1	1	Autism spectrum disorder	Feces	0.6149780304733311	1	aerobic	False	
-Autism spectrum disorder	decreased	NCBITaxon:48736	Ralstonia	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6149780304733311	1	aerobic	False	
-Autism spectrum disorder	decreased	NCBITaxon:157	Treponema	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6149780304733311	1	microaerophilic	False	
-Autism spectrum disorder	decreased	NCBITaxon:207244	Anaerostipes	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6149780304733311	0		False	
-Autism spectrum disorder	decreased	NCBITaxon:84107	Coriobacteriaceae	family	1	1	1	1	Autism spectrum disorder	Feces	0.6149780304733311	0		False	
-Autism spectrum disorder	decreased	NCBITaxon:39497	Eubacterium xylanophilum	species	1	1	1	1	Autism spectrum disorder	Feces	0.6149780304733311	0		False	
-Autism spectrum disorder	decreased	NCBITaxon:1506553	Lachnoclostridium	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6149780304733311	0		False	
-Autism spectrum disorder	decreased	NCBITaxon:39485	Lachnospira eligens	species	1	1	1	1	Autism spectrum disorder	Feces	0.6149780304733311	0		False	
-Autism spectrum disorder	decreased	NCBITaxon:877420	Lachnospiraceae bacterium NK4A136	species	1	1	1	1	Autism spectrum disorder	Feces	0.6149780304733311	0		False	
-Autism spectrum disorder	decreased	NCBITaxon:475961	Longilinea	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6149780304733311	0		False	
-Autism spectrum disorder	decreased	NCBITaxon:248744	Marvinbryantia	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6149780304733311	0		False	
-Autism spectrum disorder	decreased	NCBITaxon:33038	Mediterraneibacter gnavus	species	1	1	1	1	Autism spectrum disorder	Feces	0.6149780304733311	0		False	
-Autism spectrum disorder	decreased	NCBITaxon:838	Prevotella	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6149780304733311	0		False	
-Autism spectrum disorder	decreased	NCBITaxon:1263	Ruminococcus	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6149780304733311	0		False	
-Autism spectrum disorder	decreased	NCBITaxon:399320	Sphaerochaeta	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6149780304733311	0		False	
-Autism spectrum disorder	decreased	NCBITaxon:3025755	Thomasclavelia	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6149780304733311	0		False	
-Autism spectrum disorder	decreased	NCBITaxon:1506577	Tyzzerella	genus	1	1	1	1	Autism spectrum disorder	Feces	0.6149780304733311	0		False	
-Autism spectrum disorder	decreased	NCBITaxon:35517	[Eubacterium] brachy	species	1	1	1	1	Autism spectrum disorder	Feces	0.6149780304733311	0		False	
-Autoimmune disease	increased	NCBITaxon:816	Bacteroides	genus	3	2	3	3	Autoimmune disease	Feces	0.2970122859471123	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	increased	NCBITaxon:28116	Bacteroides ovatus	species	3	2	3	3	Autoimmune disease	Feces	0.2970122859471123	0		False	
-Autoimmune disease	increased	NCBITaxon:1236	Gammaproteobacteria	class	3	1	3	3	Autoimmune disease	Feces	0.6992102630371311	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	increased	NCBITaxon:1224	Pseudomonadota	phylum	3	1	3	3	Autoimmune disease	Feces	0.6992102630371311	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	increased	NCBITaxon:31977	Veillonellaceae	family	3	1	3	3	Autoimmune disease	Feces	0.6992102630371311	1	aerobic	False	
-Autoimmune disease	increased	NCBITaxon:91061	Bacilli	class	2	1	2	2	Autoimmune disease	Feces	0.7465543540804673	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	increased	NCBITaxon:1239	Bacillota	phylum	2	1	2	2	Autoimmune disease	Feces	0.6807528386547331	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	increased	NCBITaxon:815	Bacteroidaceae	family	2	1	2	2	Autoimmune disease	Feces	0.6703235963761929	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	increased	NCBITaxon:171549	Bacteroidales	order	2	1	2	2	Autoimmune disease	Feces	0.6703235963761929	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	increased	NCBITaxon:200643	Bacteroidia	class	2	1	2	2	Autoimmune disease	Feces	0.6703235963761929	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	increased	NCBITaxon:976	Bacteroidota	phylum	2	1	2	2	Autoimmune disease	Feces	0.6703235963761929	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	increased	NCBITaxon:186801	Clostridia	class	2	1	2	2	Autoimmune disease	Feces	0.6807528386547331	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	increased	NCBITaxon:547	Enterobacter	genus	2	1	2	2	Autoimmune disease	Feces	0.6807528386547331	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	increased	NCBITaxon:91347	Enterobacterales	order	2	1	2	2	Autoimmune disease	Feces	0.6807528386547331	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	increased	NCBITaxon:543	Enterobacteriaceae	family	2	1	2	2	Autoimmune disease	Feces	0.6807528386547331	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	increased	NCBITaxon:561	Escherichia	genus	2	1	2	2	Autoimmune disease	Feces	0.6807528386547331	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	increased	NCBITaxon:562	Escherichia coli	species	2	1	2	2	Autoimmune disease	Feces	0.6807528386547331	3	facultatively aerobic; aerobic; microaerophilic	True	Escherichia coli
-Autoimmune disease	increased	NCBITaxon:186802	Eubacteriales	order	2	1	2	2	Autoimmune disease	Feces	0.6807528386547331	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	increased	NCBITaxon:186826	Lactobacillales	order	2	1	2	2	Autoimmune disease	Feces	0.7465543540804673	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	increased	NCBITaxon:1300	Streptococcaceae	family	2	1	2	2	Autoimmune disease	Feces	0.7465543540804673	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	increased	NCBITaxon:1301	Streptococcus	genus	2	1	2	2	Autoimmune disease	Feces	0.7465543540804673	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	increased	NCBITaxon:820	Bacteroides uniformis	species	2	1	2	2	Autoimmune disease	Feces	0.6703235963761929	2	aerobic; microaerophilic	False	
-Autoimmune disease	increased	NCBITaxon:188902	Bacteroides sp. CJ78	species	2	1	2	2	Autoimmune disease	Feces	0.6703235963761929	0		False	
-Autoimmune disease	increased	NCBITaxon:818	Bacteroides thetaiotaomicron	species	2	1	2	2	Autoimmune disease	Feces	0.6703235963761929	0		False	
-Autoimmune disease	increased	NCBITaxon:171550	Rikenellaceae	family	2	1	2	2	Autoimmune disease	Feces	0.6703235963761929	0		False	
-Autoimmune disease	increased	NCBITaxon:157949	bacterium mpn-isolate group 18	species	2	1	2	2	Autoimmune disease	Feces	0.6703235963761929	0		False	
-Autoimmune disease	increased	NCBITaxon:621345	swine fecal bacterium RF3E-Xyl1	species	2	1	2	2	Autoimmune disease	Feces	0.6703235963761929	0		False	
-Autoimmune disease	increased	NCBITaxon:506	Alcaligenaceae	family	1	1	1	1	Autoimmune disease	Feces	0.6045220809504587	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	increased	NCBITaxon:28216	Betaproteobacteria	class	1	1	1	1	Autoimmune disease	Feces	0.6045220809504587	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	increased	NCBITaxon:80840	Burkholderiales	order	1	1	1	1	Autoimmune disease	Feces	0.6045220809504587	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	increased	NCBITaxon:186828	Carnobacteriaceae	family	1	1	1	1	Autoimmune disease	Feces	0.7569835963590076	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	increased	NCBITaxon:526525	Erysipelotrichales	order	1	1	1	1	Autoimmune disease	Feces	0.7361251118019271	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	increased	NCBITaxon:526524	Erysipelotrichia	class	1	1	1	1	Autoimmune disease	Feces	0.7361251118019271	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	increased	NCBITaxon:203491	Fusobacteriales	order	1	1	1	1	Autoimmune disease	Feces	0.6045220809504587	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	increased	NCBITaxon:203490	Fusobacteriia	class	1	1	1	1	Autoimmune disease	Feces	0.6045220809504587	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	increased	NCBITaxon:32066	Fusobacteriota	phylum	1	1	1	1	Autoimmune disease	Feces	0.6045220809504587	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	increased	NCBITaxon:47715	Lacticaseibacillus rhamnosus	species	1	1	1	1	Autoimmune disease	Feces	0.7569835963590076	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	increased	NCBITaxon:33958	Lactobacillaceae	family	1	1	1	1	Autoimmune disease	Feces	0.7569835963590076	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	increased	NCBITaxon:1578	Lactobacillus	genus	1	1	1	1	Autoimmune disease	Feces	0.7569835963590076	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	increased	NCBITaxon:1304	Streptococcus salivarius	species	1	1	1	1	Autoimmune disease	Feces	0.7361251118019271	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	increased	NCBITaxon:186803	Lachnospiraceae	family	1	1	1	1	Autoimmune disease	Feces	0.7569835963590076	2	facultatively aerobic; microaerophilic	False	
-Autoimmune disease	increased	NCBITaxon:1579	Lactobacillus acidophilus	species	1	1	1	1	Autoimmune disease	Feces	-0.4496103349110487	2	facultatively aerobic; microaerophilic	False	
-Autoimmune disease	increased	NCBITaxon:216572	Oscillospiraceae	family	1	1	1	1	Autoimmune disease	Feces	0.6045220809504587	2	facultatively aerobic; microaerophilic	False	
-Autoimmune disease	increased	NCBITaxon:31979	Clostridiaceae	family	1	1	1	1	Autoimmune disease	Feces	0.7361251118019271	1	microaerophilic	False	
-Autoimmune disease	increased	NCBITaxon:1485	Clostridium	genus	1	1	1	1	Autoimmune disease	Feces	0.7361251118019271	1	microaerophilic	False	
-Autoimmune disease	increased	NCBITaxon:1506	Clostridium sp.	species	1	1	1	1	Autoimmune disease	Feces	0.7361251118019271	1	microaerophilic	False	
-Autoimmune disease	increased	NCBITaxon:216851	Faecalibacterium	genus	1	1	1	1	Autoimmune disease	Feces	0.6045220809504587	1	facultatively aerobic	False	
-Autoimmune disease	increased	NCBITaxon:853	Faecalibacterium prausnitzii	species	1	1	1	1	Autoimmune disease	Feces	0.6045220809504587	1	facultatively aerobic	False	
-Autoimmune disease	increased	NCBITaxon:117563	Granulicatella	genus	1	1	1	1	Autoimmune disease	Feces	0.7569835963590076	1	microaerophilic	False	
-Autoimmune disease	increased	NCBITaxon:821	Phocaeicola vulgatus	species	1	1	1	1	Autoimmune disease	Feces	-0.4496103349110487	1	facultatively aerobic	False	
-Autoimmune disease	increased	NCBITaxon:171551	Porphyromonadaceae	family	1	1	1	1	Autoimmune disease	Feces	0.6045220809504587	1	aerobic	False	
-Autoimmune disease	increased	NCBITaxon:239759	Alistipes	genus	1	1	1	1	Autoimmune disease	Feces	0.7361251118019271	0		False	
-Autoimmune disease	increased	NCBITaxon:817	Bacteroides fragilis	species	1	1	1	1	Autoimmune disease	Feces	-0.4496103349110487	0		False	
-Autoimmune disease	increased	NCBITaxon:536478	Bacteroides sp. B2	species	1	1	1	1	Autoimmune disease	Feces	0.7361251118019271	0		False	
-Autoimmune disease	increased	NCBITaxon:28025	Bifidobacterium animalis	species	1	1	1	1	Autoimmune disease	Feces	-0.4496103349110487	0		False	
-Autoimmune disease	increased	NCBITaxon:572511	Blautia	genus	1	1	1	1	Autoimmune disease	Feces	0.7361251118019271	0		False	
-Autoimmune disease	increased	NCBITaxon:500389	Clostridiales bacterium 80/3	species	1	1	1	1	Autoimmune disease	Feces	0.7361251118019271	0		False	
-Autoimmune disease	increased	NCBITaxon:620858	Clostridiales bacterium 80/4	species	1	1	1	1	Autoimmune disease	Feces	0.7361251118019271	0		False	
-Autoimmune disease	increased	NCBITaxon:1502	Clostridium perfringens	species	1	1	1	1	Autoimmune disease	Feces	-0.4496103349110487	0		False	
-Autoimmune disease	increased	NCBITaxon:188893	Clostridium sp. CJ67	species	1	1	1	1	Autoimmune disease	Feces	0.7361251118019271	0		False	
-Autoimmune disease	increased	NCBITaxon:189712	Dialister sp. E2_20	species	1	1	1	1	Autoimmune disease	Feces	0.6045220809504587	0		False	
-Autoimmune disease	increased	NCBITaxon:634877	Enterobacter sp. NII-26	species	1	1	1	1	Autoimmune disease	Feces	0.7361251118019271	0		False	
-Autoimmune disease	increased	NCBITaxon:292800	Flavonifractor plautii	species	1	1	1	1	Autoimmune disease	Feces	0.7361251118019271	0		False	
-Autoimmune disease	increased	NCBITaxon:203492	Fusobacteriaceae	family	1	1	1	1	Autoimmune disease	Feces	0.6045220809504587	0		False	
-Autoimmune disease	increased	NCBITaxon:848	Fusobacterium	genus	1	1	1	1	Autoimmune disease	Feces	0.6045220809504587	0		False	
-Autoimmune disease	increased	NCBITaxon:321195	Granulicatella para-adiacens	species	1	1	1	1	Autoimmune disease	Feces	0.7569835963590076	0		False	
-Autoimmune disease	increased	NCBITaxon:154046	Hungatella hathewayi	species	1	1	1	1	Autoimmune disease	Feces	0.6045220809504587	0		False	
-Autoimmune disease	increased	NCBITaxon:537393	Lachnospiraceae bacterium DJF_RP14	species	1	1	1	1	Autoimmune disease	Feces	0.7361251118019271	0		False	
-Autoimmune disease	increased	NCBITaxon:33038	Mediterraneibacter gnavus	species	1	1	1	1	Autoimmune disease	Feces	0.7361251118019271	0		False	
-Autoimmune disease	increased	NCBITaxon:283168	Odoribacter	genus	1	1	1	1	Autoimmune disease	Feces	0.6045220809504587	0		False	
-Autoimmune disease	increased	NCBITaxon:375288	Parabacteroides	genus	1	1	1	1	Autoimmune disease	Feces	0.6045220809504587	0		False	
-Autoimmune disease	increased	NCBITaxon:823	Parabacteroides distasonis	species	1	1	1	1	Autoimmune disease	Feces	0.6045220809504587	0		False	
-Autoimmune disease	increased	NCBITaxon:487175	Parasutterella excrementihominis	species	1	1	1	1	Autoimmune disease	Feces	0.6045220809504587	0		False	
-Autoimmune disease	increased	NCBITaxon:357276	Phocaeicola dorei	species	1	1	1	1	Autoimmune disease	Feces	0.7361251118019271	0		False	
-Autoimmune disease	increased	NCBITaxon:841	Roseburia	genus	1	1	1	1	Autoimmune disease	Feces	0.7361251118019271	0		False	
-Autoimmune disease	increased	NCBITaxon:1263	Ruminococcus	genus	1	1	1	1	Autoimmune disease	Feces	0.7361251118019271	0		False	
-Autoimmune disease	increased	NCBITaxon:40518	Ruminococcus bromii	species	1	1	1	1	Autoimmune disease	Feces	0.7361251118019271	0		False	
-Autoimmune disease	increased	NCBITaxon:165151	Ruminococcus sp. CB3	species	1	1	1	1	Autoimmune disease	Feces	0.7361251118019271	0		False	
-Autoimmune disease	increased	NCBITaxon:165152	Ruminococcus sp. CO27	species	1	1	1	1	Autoimmune disease	Feces	0.7361251118019271	0		False	
-Autoimmune disease	increased	NCBITaxon:320872	Ruminococcus sp. ID8	species	1	1	1	1	Autoimmune disease	Feces	0.7361251118019271	0		False	
-Autoimmune disease	increased	NCBITaxon:29465	Veillonella	genus	1	1	1	1	Autoimmune disease	Feces	0.7569835963590076	0		False	
-Autoimmune disease	increased	NCBITaxon:39777	Veillonella atypica	species	1	1	1	1	Autoimmune disease	Feces	0.7569835963590076	0		False	
-Autoimmune disease	increased	NCBITaxon:269267	Veillonella sp. ADV 3107.03	species	1	1	1	1	Autoimmune disease	Feces	0.6045220809504587	0		False	
-Autoimmune disease	increased	NCBITaxon:1522	[Clostridium] innocuum	species	1	1	1	1	Autoimmune disease	Feces	0.7361251118019271	0		False	
-Autoimmune disease	decreased	NCBITaxon:817	Bacteroides fragilis	species	3	1	3	3	Autoimmune disease	Feces	0.43366708502848555	0		False	
-Autoimmune disease	decreased	NCBITaxon:186806	Eubacteriaceae	family	3	1	3	3	Autoimmune disease	Feces	0.43366708502848555	0		False	
-Autoimmune disease	decreased	NCBITaxon:818	Bacteroides thetaiotaomicron	species	2	2	2	2	Autoimmune disease	Feces	-0.7406433160505405	0		False	
-Autoimmune disease	decreased	NCBITaxon:729	Haemophilus parainfluenzae	species	2	1	2	2	Autoimmune disease	Feces	0.7162260033726109	2	facultatively aerobic; microaerophilic	False	
-Autoimmune disease	decreased	NCBITaxon:186803	Lachnospiraceae	family	2	1	2	2	Autoimmune disease	Feces	0.7162260033726109	2	facultatively aerobic; microaerophilic	False	
-Autoimmune disease	decreased	NCBITaxon:216572	Oscillospiraceae	family	2	1	2	2	Autoimmune disease	Feces	0.1713097409964472	2	facultatively aerobic; microaerophilic	False	
-Autoimmune disease	decreased	NCBITaxon:171551	Porphyromonadaceae	family	2	1	2	2	Autoimmune disease	Feces	0.1713097409964472	1	aerobic	False	
-Autoimmune disease	decreased	NCBITaxon:1730	Eubacterium	genus	2	1	2	2	Autoimmune disease	Feces	0.7162260033726109	0		False	
-Autoimmune disease	decreased	NCBITaxon:537281	Faecalibacterium sp. DJF_VR20	species	2	1	2	2	Autoimmune disease	Feces	0.7162260033726109	0		False	
-Autoimmune disease	decreased	NCBITaxon:39485	Lachnospira eligens	species	2	1	2	2	Autoimmune disease	Feces	0.7162260033726109	0		False	
-Autoimmune disease	decreased	NCBITaxon:33038	Mediterraneibacter gnavus	species	2	1	2	2	Autoimmune disease	Feces	0.41346551071639853	0		False	
-Autoimmune disease	decreased	NCBITaxon:165137	human intestinal firmicute CO19	species	2	1	2	2	Autoimmune disease	Feces	0.7162260033726109	0		False	
-Autoimmune disease	decreased	NCBITaxon:165261	human intestinal firmicute CO35	species	2	1	2	2	Autoimmune disease	Feces	0.7162260033726109	0		False	
-Autoimmune disease	decreased	NCBITaxon:1239	Bacillota	phylum	1	1	1	1	Autoimmune disease	Feces	0.4740702336526595	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	decreased	NCBITaxon:815	Bacteroidaceae	family	1	1	1	1	Autoimmune disease	Feces	-0.13145075165976514	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	decreased	NCBITaxon:171549	Bacteroidales	order	1	1	1	1	Autoimmune disease	Feces	-0.13145075165976514	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	decreased	NCBITaxon:816	Bacteroides	genus	1	1	1	1	Autoimmune disease	Feces	-0.13145075165976514	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	decreased	NCBITaxon:200643	Bacteroidia	class	1	1	1	1	Autoimmune disease	Feces	-0.13145075165976514	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	decreased	NCBITaxon:976	Bacteroidota	phylum	1	1	1	1	Autoimmune disease	Feces	-0.13145075165976514	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	decreased	NCBITaxon:186801	Clostridia	class	1	1	1	1	Autoimmune disease	Feces	0.4740702336526595	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	decreased	NCBITaxon:526525	Erysipelotrichales	order	1	1	1	1	Autoimmune disease	Feces	0.9583817730925622	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	decreased	NCBITaxon:186802	Eubacteriales	order	1	1	1	1	Autoimmune disease	Feces	0.4740702336526595	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	decreased	NCBITaxon:203491	Fusobacteriales	order	1	1	1	1	Autoimmune disease	Feces	0.4740702336526595	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	decreased	NCBITaxon:203490	Fusobacteriia	class	1	1	1	1	Autoimmune disease	Feces	0.4740702336526595	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	decreased	NCBITaxon:32066	Fusobacteriota	phylum	1	1	1	1	Autoimmune disease	Feces	0.4740702336526595	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	decreased	NCBITaxon:186826	Lactobacillales	order	1	1	1	1	Autoimmune disease	Feces	0.9583817730925622	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	decreased	NCBITaxon:712	Pasteurellaceae	family	1	1	1	1	Autoimmune disease	Feces	0.9583817730925622	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	decreased	NCBITaxon:135625	Pasteurellales	order	1	1	1	1	Autoimmune disease	Feces	0.9583817730925622	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	decreased	NCBITaxon:1300	Streptococcaceae	family	1	1	1	1	Autoimmune disease	Feces	0.9583817730925622	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	decreased	NCBITaxon:1301	Streptococcus	genus	1	1	1	1	Autoimmune disease	Feces	0.9583817730925622	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	decreased	NCBITaxon:1304	Streptococcus salivarius	species	1	1	1	1	Autoimmune disease	Feces	0.9583817730925622	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	decreased	NCBITaxon:724	Haemophilus	genus	1	1	1	1	Autoimmune disease	Feces	0.9583817730925622	2	facultatively aerobic; microaerophilic	False	
-Autoimmune disease	decreased	NCBITaxon:31979	Clostridiaceae	family	1	1	1	1	Autoimmune disease	Feces	-0.13145075165976514	1	microaerophilic	False	
-Autoimmune disease	decreased	NCBITaxon:1485	Clostridium	genus	1	1	1	1	Autoimmune disease	Feces	-0.13145075165976514	1	microaerophilic	False	
-Autoimmune disease	decreased	NCBITaxon:216851	Faecalibacterium	genus	1	1	1	1	Autoimmune disease	Feces	0.4740702336526595	1	facultatively aerobic	False	
-Autoimmune disease	decreased	NCBITaxon:853	Faecalibacterium prausnitzii	species	1	1	1	1	Autoimmune disease	Feces	0.4740702336526595	1	facultatively aerobic	False	
-Autoimmune disease	decreased	NCBITaxon:821	Phocaeicola vulgatus	species	1	1	1	1	Autoimmune disease	Feces	0.4740702336526595	1	facultatively aerobic	False	
-Autoimmune disease	decreased	NCBITaxon:171552	Prevotellaceae	family	1	1	1	1	Autoimmune disease	Feces	0.9583817730925622	1	aerobic	False	
-Autoimmune disease	decreased	NCBITaxon:258515	Acetanaerobacterium elongatum	species	1	1	1	1	Autoimmune disease	Feces	-1.3498358804413157	0		False	
-Autoimmune disease	decreased	NCBITaxon:39491	Agathobacter rectalis	species	1	1	1	1	Autoimmune disease	Feces	0.4740702336526595	0		False	
-Autoimmune disease	decreased	NCBITaxon:328813	Alistipes onderdonkii	species	1	1	1	1	Autoimmune disease	Feces	0.9583817730925622	0		False	
-Autoimmune disease	decreased	NCBITaxon:100134	Anaerocolumna xylanovorans	species	1	1	1	1	Autoimmune disease	Feces	-1.3498358804413157	0		False	
-Autoimmune disease	decreased	NCBITaxon:47678	Bacteroides caccae	species	1	1	1	1	Autoimmune disease	Feces	-0.13145075165976514	0		False	
-Autoimmune disease	decreased	NCBITaxon:384639	Bacteroides galacturonicus	species	1	1	1	1	Autoimmune disease	Feces	0.9583817730925622	0		False	
-Autoimmune disease	decreased	NCBITaxon:543888	Citrobacter sp. CK3	species	1	1	1	1	Autoimmune disease	Feces	0.4740702336526595	0		False	
-Autoimmune disease	decreased	NCBITaxon:537373	Clostridiaceae bacterium DJF_VR07	species	1	1	1	1	Autoimmune disease	Feces	-0.13145075165976514	0		False	
-Autoimmune disease	decreased	NCBITaxon:358742	Enterocloster aldenensis	species	1	1	1	1	Autoimmune disease	Feces	0.4740702336526595	0		False	
-Autoimmune disease	decreased	NCBITaxon:154046	Hungatella hathewayi	species	1	1	1	1	Autoimmune disease	Feces	0.4740702336526595	0		False	
-Autoimmune disease	decreased	NCBITaxon:283168	Odoribacter	genus	1	1	1	1	Autoimmune disease	Feces	0.4740702336526595	0		False	
-Autoimmune disease	decreased	NCBITaxon:28118	Odoribacter splanchnicus	species	1	1	1	1	Autoimmune disease	Feces	0.4740702336526595	0		False	
-Autoimmune disease	decreased	NCBITaxon:375288	Parabacteroides	genus	1	1	1	1	Autoimmune disease	Feces	-0.13145075165976514	0		False	
-Autoimmune disease	decreased	NCBITaxon:823	Parabacteroides distasonis	species	1	1	1	1	Autoimmune disease	Feces	-0.13145075165976514	0		False	
-Autoimmune disease	decreased	NCBITaxon:537292	Parabacteroides sp. DJF_B086	species	1	1	1	1	Autoimmune disease	Feces	-0.13145075165976514	0		False	
-Autoimmune disease	decreased	NCBITaxon:411567	Peptoniphilus gorbachii	species	1	1	1	1	Autoimmune disease	Feces	-1.3498358804413157	0		False	
-Autoimmune disease	decreased	NCBITaxon:357276	Phocaeicola dorei	species	1	1	1	1	Autoimmune disease	Feces	0.9583817730925622	0		False	
-Autoimmune disease	decreased	NCBITaxon:841	Roseburia	genus	1	1	1	1	Autoimmune disease	Feces	0.9583817730925622	0		False	
-Autoimmune disease	decreased	NCBITaxon:301302	Roseburia faecis	species	1	1	1	1	Autoimmune disease	Feces	-1.3498358804413157	0		False	
-Autoimmune disease	decreased	NCBITaxon:1263	Ruminococcus	genus	1	1	1	1	Autoimmune disease	Feces	0.9583817730925622	0		False	
-Autoimmune disease	decreased	NCBITaxon:390634	Ruminococcus sp. M10	species	1	1	1	1	Autoimmune disease	Feces	0.4740702336526595	0		False	
-Autoimmune disease	decreased	NCBITaxon:29465	Veillonella	genus	1	1	1	1	Autoimmune disease	Feces	0.9583817730925622	0		False	
-Autoimmune disease	decreased	NCBITaxon:39778	Veillonella dispar	species	1	1	1	1	Autoimmune disease	Feces	0.9583817730925622	0		True	Veillonella dispar
-Autoimmune disease	decreased	NCBITaxon:165138	human intestinal firmicute CB47	species	1	1	1	1	Autoimmune disease	Feces	0.4740702336526595	0		False	
+Autism	increased	NCBITaxon:976	Bacteroidota	phylum	2	2	2	2	Autism	Feces	0.23246057447194124	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	increased	NCBITaxon:1653	Corynebacteriaceae	family	2	2	2	2	Autism	Feces	0.7179507360804189	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	increased	NCBITaxon:186817	Bacillaceae	family	1	1	1	1	Autism	Feces	0.6488049404024644	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	increased	NCBITaxon:816	Bacteroides	genus	1	1	1	1	Autism	Feces	0.47515629084703476	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	increased	NCBITaxon:200643	Bacteroidia	class	1	1	1	1	Autism	Feces	0.7870965317583734	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	increased	NCBITaxon:31953	Bifidobacteriaceae	family	1	1	1	1	Autism	Feces	0.6488049404024644	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	increased	NCBITaxon:1716	Corynebacterium	genus	1	1	1	1	Autism	Feces	0.7870965317583734	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	increased	NCBITaxon:543	Enterobacteriaceae	family	1	1	1	1	Autism	Feces	0.6488049404024644	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	increased	NCBITaxon:81852	Enterococcaceae	family	1	1	1	1	Autism	Feces	0.6488049404024644	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	increased	NCBITaxon:128827	Erysipelotrichaceae	family	1	1	1	1	Autism	Feces	0.6488049404024644	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	increased	NCBITaxon:1578	Lactobacillus	genus	1	1	1	1	Autism	Feces	0.7870965317583734	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	increased	NCBITaxon:85023	Microbacteriaceae	family	1	1	1	1	Autism	Feces	0.6488049404024644	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	increased	NCBITaxon:1224	Pseudomonadota	phylum	1	1	1	1	Autism	Feces	0.47515629084703476	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	increased	NCBITaxon:872	Desulfovibrio	genus	1	1	1	1	Autism	Feces	0.47515629084703476	2	facultatively aerobic; microaerophilic	False	
+Autism	increased	NCBITaxon:186824	Thermoactinomycetaceae	family	1	1	1	1	Autism	Feces	0.6488049404024644	2	aerobic; microaerophilic	False	
+Autism	increased	NCBITaxon:821	Phocaeicola vulgatus	species	1	1	1	1	Autism	Feces	0.47515629084703476	1	facultatively aerobic	False	
+Autism	increased	NCBITaxon:191303	Turicibacter	genus	1	1	1	1	Autism	Feces	0.47515629084703476	1	facultatively aerobic	False	
+Autism	increased	NCBITaxon:258514	Acetanaerobacterium	genus	1	1	1	1	Autism	Feces	0.47515629084703476	0		False	
+Autism	increased	NCBITaxon:286729	Alkaliflexus	genus	1	1	1	1	Autism	Feces	0.47515629084703476	0		False	
+Autism	increased	NCBITaxon:102106	Collinsella	genus	1	1	1	1	Autism	Feces	0.7870965317583734	0		False	
+Autism	increased	NCBITaxon:213117	Desulfohalobiaceae	family	1	1	1	1	Autism	Feces	0.6488049404024644	0		False	
+Autism	increased	NCBITaxon:876	Desulfovibrio desulfuricans	species	1	1	1	1	Autism	Feces	0.47515629084703476	0		False	
+Autism	increased	NCBITaxon:58621	Desulfovibrio intestinalis	species	1	1	1	1	Autism	Feces	0.47515629084703476	0		False	
+Autism	increased	NCBITaxon:901	Desulfovibrio piger	species	1	1	1	1	Autism	Feces	0.47515629084703476	0		False	
+Autism	increased	NCBITaxon:189330	Dorea	genus	1	1	1	1	Autism	Feces	0.7870965317583734	0		False	
+Autism	increased	NCBITaxon:203492	Fusobacteriaceae	family	1	1	1	1	Autism	Feces	0.6488049404024644	0		False	
+Autism	increased	NCBITaxon:375288	Parabacteroides	genus	1	1	1	1	Autism	Feces	0.47515629084703476	0		False	
+Autism	decreased	NCBITaxon:1239	Bacillota	phylum	2	2	2	2	Autism	Feces	0.6240162197419484	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	decreased	NCBITaxon:1301	Streptococcus	genus	2	2	2	2	Autism	Feces	0.6240162197419484	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	decreased	NCBITaxon:39948	Dialister	genus	2	2	2	2	Autism	Feces	-0.13041327341278142	1	aerobic	False	
+Autism	decreased	NCBITaxon:29465	Veillonella	genus	2	2	2	2	Autism	Feces	-0.10859112821069838	0		False	
+Autism	decreased	NCBITaxon:1654	Actinomyces	genus	1	1	1	1	Autism	Feces	0.6458383649440315	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	decreased	NCBITaxon:201174	Actinomycetota	phylum	1	1	1	1	Autism	Feces	0.6021940745398654	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	decreased	NCBITaxon:171549	Bacteroidales	order	1	1	1	1	Autism	Feces	-0.8630206213654282	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	decreased	NCBITaxon:1678	Bifidobacterium	genus	1	1	1	1	Autism	Feces	0.6021940745398654	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	decreased	NCBITaxon:561	Escherichia	genus	1	1	1	1	Autism	Feces	0.6458383649440315	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	decreased	NCBITaxon:31983	Helcococcus	genus	1	1	1	1	Autism	Feces	0.6021940745398654	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	decreased	NCBITaxon:1578	Lactobacillus	genus	1	1	1	1	Autism	Feces	0.6021940745398654	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	decreased	NCBITaxon:1243	Leuconostoc	genus	1	1	1	1	Autism	Feces	0.6021940745398654	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	decreased	NCBITaxon:46255	Weissella	genus	1	1	1	1	Autism	Feces	0.6021940745398654	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	decreased	NCBITaxon:1485	Clostridium	genus	1	1	1	1	Autism	Feces	0.6021940745398654	2	aerobic; microaerophilic	False	
+Autism	decreased	NCBITaxon:186803	Lachnospiraceae	family	1	1	1	1	Autism	Feces	-1.110064348761764	2	facultatively aerobic; microaerophilic	False	
+Autism	decreased	NCBITaxon:909932	Negativicutes	class	1	1	1	1	Autism	Feces	-0.8630206213654282	2	aerobic; microaerophilic	False	
+Autism	decreased	NCBITaxon:31977	Veillonellaceae	family	1	1	1	1	Autism	Feces	-0.8630206213654282	2	aerobic; microaerophilic	False	
+Autism	decreased	NCBITaxon:543311	Parvimonas	genus	1	1	1	1	Autism	Feces	0.6458383649440315	1	microaerophilic	False	
+Autism	decreased	NCBITaxon:162289	Peptoniphilus	genus	1	1	1	1	Autism	Feces	0.6458383649440315	1	microaerophilic	False	
+Autism	decreased	NCBITaxon:909929	Selenomonadales	order	1	1	1	1	Autism	Feces	-0.8630206213654282	1	microaerophilic	False	
+Autism	decreased	NCBITaxon:239759	Alistipes	genus	1	1	1	1	Autism	Feces	-0.8630206213654282	0		False	
+Autism	decreased	NCBITaxon:114627	Alkaliphilus	genus	1	1	1	1	Autism	Feces	0.6021940745398654	0		False	
+Autism	decreased	NCBITaxon:52784	Anaerofilum	genus	1	1	1	1	Autism	Feces	0.6021940745398654	0		False	
+Autism	decreased	NCBITaxon:109326	Anaerovorax	genus	1	1	1	1	Autism	Feces	0.6021940745398654	0		False	
+Autism	decreased	NCBITaxon:1683	Bifidobacterium angulatum	species	1	1	1	1	Autism	Feces	0.6021940745398654	0		False	
+Autism	decreased	NCBITaxon:1679	Bifidobacterium longum subsp. longum	species	1	1	1	1	Autism	Feces	0.6021940745398654	0		False	
+Autism	decreased	NCBITaxon:35832	Bilophila	genus	1	1	1	1	Autism	Feces	-0.8630206213654282	0		False	
+Autism	decreased	NCBITaxon:118747	Bulleidia	genus	1	1	1	1	Autism	Feces	0.6458383649440315	0		False	
+Autism	decreased	NCBITaxon:102106	Collinsella	genus	1	1	1	1	Autism	Feces	0.6021940745398654	0		False	
+Autism	decreased	NCBITaxon:218538	Dialister invisus	species	1	1	1	1	Autism	Feces	0.6021940745398654	0		False	
+Autism	decreased	NCBITaxon:253238	Ethanoligenens	genus	1	1	1	1	Autism	Feces	0.6021940745398654	0		False	
+Autism	decreased	NCBITaxon:375288	Parabacteroides	genus	1	1	1	1	Autism	Feces	-0.8630206213654282	0		False	
+Autism	decreased	NCBITaxon:113286	Pseudoramibacter	genus	1	1	1	1	Autism	Feces	0.6021940745398654	0		False	
+Autism	decreased	NCBITaxon:1263	Ruminococcus	genus	1	1	1	1	Autism	Feces	0.6021940745398654	0		False	
+Autism	decreased	NCBITaxon:1535	[Clostridium] leptum	species	1	1	1	1	Autism	Feces	0.6021940745398654	0		False	
+Autism spectrum disorder	increased	NCBITaxon:283	Comamonas	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.23119565540326503	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism spectrum disorder	increased	NCBITaxon:128827	Erysipelotrichaceae	family	1	1	1	1	Autism spectrum disorder	Feces	-0.23119565540326503	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism spectrum disorder	increased	NCBITaxon:1485	Clostridium	genus	1	1	1	1	Autism spectrum disorder	Feces	-1.242885051149845	2	aerobic; microaerophilic	False	
+Autism spectrum disorder	increased	NCBITaxon:872	Desulfovibrio	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.23119565540326503	2	facultatively aerobic; microaerophilic	False	
+Autism spectrum disorder	increased	NCBITaxon:291645	Bacteroides nordii	species	1	1	1	1	Autism spectrum disorder	Feces	-1.242885051149845	0		False	
+Autism spectrum disorder	increased	NCBITaxon:397864	Barnesiella	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.23119565540326503	0		False	
+Autism spectrum disorder	increased	NCBITaxon:1470349	Candidatus Stoquefichus	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.23119565540326503	0		False	
+Autism spectrum disorder	increased	NCBITaxon:1348911	Coprobacter	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.23119565540326503	0		False	
+Autism spectrum disorder	increased	NCBITaxon:33042	Coprococcus	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.23119565540326503	0		False	
+Autism spectrum disorder	increased	NCBITaxon:1472762	Enorma	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.23119565540326503	0		False	
+Autism spectrum disorder	increased	NCBITaxon:848	Fusobacterium	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.23119565540326503	0		False	
+Autism spectrum disorder	increased	NCBITaxon:158846	Megamonas	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.23119565540326503	0		False	
+Autism spectrum disorder	increased	NCBITaxon:283168	Odoribacter	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.23119565540326503	0		False	
+Autism spectrum disorder	increased	NCBITaxon:375288	Parabacteroides	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.23119565540326503	0		False	
+Autism spectrum disorder	increased	NCBITaxon:577309	Paraprevotella	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.23119565540326503	0		False	
+Autism spectrum disorder	increased	NCBITaxon:1481960	Peptoclostridium	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.23119565540326503	0		False	
+Autism spectrum disorder	increased	NCBITaxon:2740	Peptococcus	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.23119565540326503	0		False	
+Autism spectrum disorder	increased	NCBITaxon:33024	Phascolarctobacterium	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.23119565540326503	0		False	
+Autism spectrum disorder	increased	NCBITaxon:1508657	Ruminiclostridium	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.23119565540326503	0		False	
+Autism spectrum disorder	increased	NCBITaxon:172900	Victivallis	genus	1	1	1	1	Autism spectrum disorder	Feces	-0.23119565540326503	0		False	
+Autism spectrum disorder	increased	NCBITaxon:707003	uncultured Oscillospiraceae bacterium	species	1	1	1	1	Autism spectrum disorder	Feces	-0.23119565540326503	0		False	
+Autism spectrum disorder	decreased	NCBITaxon:1375	Aerococcus	genus	1	1	1	1	Autism spectrum disorder	Feces	0.5687618354340109	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism spectrum disorder	decreased	NCBITaxon:1716	Corynebacterium	genus	1	1	1	1	Autism spectrum disorder	Feces	0.5687618354340109	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism spectrum disorder	decreased	NCBITaxon:128827	Erysipelotrichaceae	family	1	1	1	1	Autism spectrum disorder	Feces	0.5687618354340109	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism spectrum disorder	decreased	NCBITaxon:1578	Lactobacillus	genus	1	1	1	1	Autism spectrum disorder	Feces	0.5687618354340109	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism spectrum disorder	decreased	NCBITaxon:1357	Lactococcus	genus	1	1	1	1	Autism spectrum disorder	Feces	1.0565668338544587	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism spectrum disorder	decreased	NCBITaxon:1637	Listeria	genus	1	1	1	1	Autism spectrum disorder	Feces	0.5687618354340109	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism spectrum disorder	decreased	NCBITaxon:407	Methylobacterium	genus	1	1	1	1	Autism spectrum disorder	Feces	0.5687618354340109	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism spectrum disorder	decreased	NCBITaxon:33882	Microbacterium	genus	1	1	1	1	Autism spectrum disorder	Feces	0.5687618354340109	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism spectrum disorder	decreased	NCBITaxon:286	Pseudomonas	genus	1	1	1	1	Autism spectrum disorder	Feces	0.5687618354340109	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism spectrum disorder	decreased	NCBITaxon:1279	Staphylococcus	genus	1	1	1	1	Autism spectrum disorder	Feces	0.5687618354340109	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism spectrum disorder	decreased	NCBITaxon:29391	Gemella morbillorum	species	1	1	1	1	Autism spectrum disorder	Feces	1.0565668338544587	2	facultatively aerobic; microaerophilic	False	
+Autism spectrum disorder	decreased	NCBITaxon:186803	Lachnospiraceae	family	1	1	1	1	Autism spectrum disorder	Feces	0.5687618354340109	2	facultatively aerobic; microaerophilic	False	
+Autism spectrum disorder	decreased	NCBITaxon:1660	Schaalia odontolytica	species	1	1	1	1	Autism spectrum disorder	Feces	1.0565668338544587	2	facultatively aerobic; microaerophilic	False	
+Autism spectrum disorder	decreased	NCBITaxon:171552	Prevotellaceae	family	1	1	1	1	Autism spectrum disorder	Feces	0.5687618354340109	1	aerobic	False	
+Autism spectrum disorder	decreased	NCBITaxon:48736	Ralstonia	genus	1	1	1	1	Autism spectrum disorder	Feces	0.5687618354340109	1	aerobic	False	
+Autism spectrum disorder	decreased	NCBITaxon:157	Treponema	genus	1	1	1	1	Autism spectrum disorder	Feces	0.5687618354340109	1	microaerophilic	False	
+Autism spectrum disorder	decreased	NCBITaxon:207244	Anaerostipes	genus	1	1	1	1	Autism spectrum disorder	Feces	0.5687618354340109	0		False	
+Autism spectrum disorder	decreased	NCBITaxon:84107	Coriobacteriaceae	family	1	1	1	1	Autism spectrum disorder	Feces	0.5687618354340109	0		False	
+Autism spectrum disorder	decreased	NCBITaxon:39497	Eubacterium xylanophilum	species	1	1	1	1	Autism spectrum disorder	Feces	0.5687618354340109	0		False	
+Autism spectrum disorder	decreased	NCBITaxon:1506553	Lachnoclostridium	genus	1	1	1	1	Autism spectrum disorder	Feces	0.5687618354340109	0		False	
+Autism spectrum disorder	decreased	NCBITaxon:39485	Lachnospira eligens	species	1	1	1	1	Autism spectrum disorder	Feces	0.5687618354340109	0		False	
+Autism spectrum disorder	decreased	NCBITaxon:877420	Lachnospiraceae bacterium NK4A136	species	1	1	1	1	Autism spectrum disorder	Feces	0.5687618354340109	0		False	
+Autism spectrum disorder	decreased	NCBITaxon:475961	Longilinea	genus	1	1	1	1	Autism spectrum disorder	Feces	0.5687618354340109	0		False	
+Autism spectrum disorder	decreased	NCBITaxon:248744	Marvinbryantia	genus	1	1	1	1	Autism spectrum disorder	Feces	0.5687618354340109	0		False	
+Autism spectrum disorder	decreased	NCBITaxon:33038	Mediterraneibacter gnavus	species	1	1	1	1	Autism spectrum disorder	Feces	0.5687618354340109	0		False	
+Autism spectrum disorder	decreased	NCBITaxon:838	Prevotella	genus	1	1	1	1	Autism spectrum disorder	Feces	0.5687618354340109	0		False	
+Autism spectrum disorder	decreased	NCBITaxon:1263	Ruminococcus	genus	1	1	1	1	Autism spectrum disorder	Feces	0.5687618354340109	0		False	
+Autism spectrum disorder	decreased	NCBITaxon:399320	Sphaerochaeta	genus	1	1	1	1	Autism spectrum disorder	Feces	0.5687618354340109	0		False	
+Autism spectrum disorder	decreased	NCBITaxon:3025755	Thomasclavelia	genus	1	1	1	1	Autism spectrum disorder	Feces	0.5687618354340109	0		False	
+Autism spectrum disorder	decreased	NCBITaxon:1506577	Tyzzerella	genus	1	1	1	1	Autism spectrum disorder	Feces	0.5687618354340109	0		False	
+Autism spectrum disorder	decreased	NCBITaxon:35517	[Eubacterium] brachy	species	1	1	1	1	Autism spectrum disorder	Feces	0.5687618354340109	0		False	
+Autoimmune disease	increased	NCBITaxon:816	Bacteroides	genus	3	2	3	3	Autoimmune disease	Feces	0.2230241871045839	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	increased	NCBITaxon:28116	Bacteroides ovatus	species	3	2	3	3	Autoimmune disease	Feces	0.2230241871045839	0		False	
+Autoimmune disease	increased	NCBITaxon:1236	Gammaproteobacteria	class	3	1	3	3	Autoimmune disease	Feces	0.6597395378497176	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	increased	NCBITaxon:1224	Pseudomonadota	phylum	3	1	3	3	Autoimmune disease	Feces	0.6597395378497176	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	increased	NCBITaxon:31977	Veillonellaceae	family	3	1	3	3	Autoimmune disease	Feces	0.6597395378497176	2	aerobic; microaerophilic	False	
+Autoimmune disease	increased	NCBITaxon:91061	Bacilli	class	2	1	2	2	Autoimmune disease	Feces	0.7118390032308685	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	increased	NCBITaxon:1239	Bacillota	phylum	2	1	2	2	Autoimmune disease	Feces	0.6383728544901822	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	increased	NCBITaxon:815	Bacteroidaceae	family	2	1	2	2	Autoimmune disease	Feces	0.629006755828102	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	increased	NCBITaxon:171549	Bacteroidales	order	2	1	2	2	Autoimmune disease	Feces	0.629006755828102	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	increased	NCBITaxon:200643	Bacteroidia	class	2	1	2	2	Autoimmune disease	Feces	0.629006755828102	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	increased	NCBITaxon:976	Bacteroidota	phylum	2	1	2	2	Autoimmune disease	Feces	0.629006755828102	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	increased	NCBITaxon:186801	Clostridia	class	2	1	2	2	Autoimmune disease	Feces	0.6383728544901822	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	increased	NCBITaxon:547	Enterobacter	genus	2	1	2	2	Autoimmune disease	Feces	0.6383728544901822	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	increased	NCBITaxon:91347	Enterobacterales	order	2	1	2	2	Autoimmune disease	Feces	0.6383728544901822	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	increased	NCBITaxon:543	Enterobacteriaceae	family	2	1	2	2	Autoimmune disease	Feces	0.6383728544901822	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	increased	NCBITaxon:561	Escherichia	genus	2	1	2	2	Autoimmune disease	Feces	0.6383728544901822	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	increased	NCBITaxon:562	Escherichia coli	species	2	1	2	2	Autoimmune disease	Feces	0.6383728544901822	3	facultatively aerobic; aerobic; microaerophilic	True	Escherichia coli
+Autoimmune disease	increased	NCBITaxon:186802	Eubacteriales	order	2	1	2	2	Autoimmune disease	Feces	0.6383728544901822	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	increased	NCBITaxon:186826	Lactobacillales	order	2	1	2	2	Autoimmune disease	Feces	0.7118390032308685	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	increased	NCBITaxon:1300	Streptococcaceae	family	2	1	2	2	Autoimmune disease	Feces	0.7118390032308685	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	increased	NCBITaxon:1301	Streptococcus	genus	2	1	2	2	Autoimmune disease	Feces	0.7118390032308685	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	increased	NCBITaxon:820	Bacteroides uniformis	species	2	1	2	2	Autoimmune disease	Feces	0.629006755828102	2	aerobic; microaerophilic	False	
+Autoimmune disease	increased	NCBITaxon:188902	Bacteroides sp. CJ78	species	2	1	2	2	Autoimmune disease	Feces	0.629006755828102	0		False	
+Autoimmune disease	increased	NCBITaxon:818	Bacteroides thetaiotaomicron	species	2	1	2	2	Autoimmune disease	Feces	0.629006755828102	0		False	
+Autoimmune disease	increased	NCBITaxon:171550	Rikenellaceae	family	2	1	2	2	Autoimmune disease	Feces	0.629006755828102	0		False	
+Autoimmune disease	increased	NCBITaxon:157949	bacterium mpn-isolate group 18	species	2	1	2	2	Autoimmune disease	Feces	0.629006755828102	0		False	
+Autoimmune disease	increased	NCBITaxon:621345	swine fecal bacterium RF3E-Xyl1	species	2	1	2	2	Autoimmune disease	Feces	0.629006755828102	0		False	
+Autoimmune disease	increased	NCBITaxon:506	Alcaligenaceae	family	1	1	1	1	Autoimmune disease	Feces	0.5555406070874157	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	increased	NCBITaxon:28216	Betaproteobacteria	class	1	1	1	1	Autoimmune disease	Feces	0.5555406070874157	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	increased	NCBITaxon:80840	Burkholderiales	order	1	1	1	1	Autoimmune disease	Feces	0.5555406070874157	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	increased	NCBITaxon:186828	Carnobacteriaceae	family	1	1	1	1	Autoimmune disease	Feces	0.7212051018929487	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	increased	NCBITaxon:526525	Erysipelotrichales	order	1	1	1	1	Autoimmune disease	Feces	0.7024729045687882	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	increased	NCBITaxon:526524	Erysipelotrichia	class	1	1	1	1	Autoimmune disease	Feces	0.7024729045687882	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	increased	NCBITaxon:203491	Fusobacteriales	order	1	1	1	1	Autoimmune disease	Feces	0.5555406070874157	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	increased	NCBITaxon:203490	Fusobacteriia	class	1	1	1	1	Autoimmune disease	Feces	0.5555406070874157	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	increased	NCBITaxon:32066	Fusobacteriota	phylum	1	1	1	1	Autoimmune disease	Feces	0.5555406070874157	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	increased	NCBITaxon:47715	Lacticaseibacillus rhamnosus	species	1	1	1	1	Autoimmune disease	Feces	0.7212051018929487	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	increased	NCBITaxon:33958	Lactobacillaceae	family	1	1	1	1	Autoimmune disease	Feces	0.7212051018929487	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	increased	NCBITaxon:1578	Lactobacillus	genus	1	1	1	1	Autoimmune disease	Feces	0.7212051018929487	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	increased	NCBITaxon:1304	Streptococcus salivarius	species	1	1	1	1	Autoimmune disease	Feces	0.7024729045687882	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	increased	NCBITaxon:31979	Clostridiaceae	family	1	1	1	1	Autoimmune disease	Feces	0.7024729045687882	2	aerobic; microaerophilic	False	
+Autoimmune disease	increased	NCBITaxon:1485	Clostridium	genus	1	1	1	1	Autoimmune disease	Feces	0.7024729045687882	2	aerobic; microaerophilic	False	
+Autoimmune disease	increased	NCBITaxon:117563	Granulicatella	genus	1	1	1	1	Autoimmune disease	Feces	0.7212051018929487	2	aerobic; microaerophilic	False	
+Autoimmune disease	increased	NCBITaxon:186803	Lachnospiraceae	family	1	1	1	1	Autoimmune disease	Feces	0.7212051018929487	2	facultatively aerobic; microaerophilic	False	
+Autoimmune disease	increased	NCBITaxon:1579	Lactobacillus acidophilus	species	1	1	1	1	Autoimmune disease	Feces	-0.5889409503424522	2	facultatively aerobic; microaerophilic	False	
+Autoimmune disease	increased	NCBITaxon:216572	Oscillospiraceae	family	1	1	1	1	Autoimmune disease	Feces	0.5555406070874157	2	facultatively aerobic; microaerophilic	False	
+Autoimmune disease	increased	NCBITaxon:1506	Clostridium sp.	species	1	1	1	1	Autoimmune disease	Feces	0.7024729045687882	1	microaerophilic	False	
+Autoimmune disease	increased	NCBITaxon:216851	Faecalibacterium	genus	1	1	1	1	Autoimmune disease	Feces	0.5555406070874157	1	facultatively aerobic	False	
+Autoimmune disease	increased	NCBITaxon:853	Faecalibacterium prausnitzii	species	1	1	1	1	Autoimmune disease	Feces	0.5555406070874157	1	facultatively aerobic	False	
+Autoimmune disease	increased	NCBITaxon:821	Phocaeicola vulgatus	species	1	1	1	1	Autoimmune disease	Feces	-0.5889409503424522	1	facultatively aerobic	False	
+Autoimmune disease	increased	NCBITaxon:171551	Porphyromonadaceae	family	1	1	1	1	Autoimmune disease	Feces	0.5555406070874157	1	aerobic	False	
+Autoimmune disease	increased	NCBITaxon:239759	Alistipes	genus	1	1	1	1	Autoimmune disease	Feces	0.7024729045687882	0		False	
+Autoimmune disease	increased	NCBITaxon:817	Bacteroides fragilis	species	1	1	1	1	Autoimmune disease	Feces	-0.5889409503424522	0		False	
+Autoimmune disease	increased	NCBITaxon:536478	Bacteroides sp. B2	species	1	1	1	1	Autoimmune disease	Feces	0.7024729045687882	0		False	
+Autoimmune disease	increased	NCBITaxon:28025	Bifidobacterium animalis	species	1	1	1	1	Autoimmune disease	Feces	-0.5889409503424522	0		False	
+Autoimmune disease	increased	NCBITaxon:572511	Blautia	genus	1	1	1	1	Autoimmune disease	Feces	0.7024729045687882	0		False	
+Autoimmune disease	increased	NCBITaxon:500389	Clostridiales bacterium 80/3	species	1	1	1	1	Autoimmune disease	Feces	0.7024729045687882	0		False	
+Autoimmune disease	increased	NCBITaxon:620858	Clostridiales bacterium 80/4	species	1	1	1	1	Autoimmune disease	Feces	0.7024729045687882	0		False	
+Autoimmune disease	increased	NCBITaxon:1502	Clostridium perfringens	species	1	1	1	1	Autoimmune disease	Feces	-0.5889409503424522	0		False	
+Autoimmune disease	increased	NCBITaxon:188893	Clostridium sp. CJ67	species	1	1	1	1	Autoimmune disease	Feces	0.7024729045687882	0		False	
+Autoimmune disease	increased	NCBITaxon:189712	Dialister sp. E2_20	species	1	1	1	1	Autoimmune disease	Feces	0.5555406070874157	0		False	
+Autoimmune disease	increased	NCBITaxon:634877	Enterobacter sp. NII-26	species	1	1	1	1	Autoimmune disease	Feces	0.7024729045687882	0		False	
+Autoimmune disease	increased	NCBITaxon:292800	Flavonifractor plautii	species	1	1	1	1	Autoimmune disease	Feces	0.7024729045687882	0		False	
+Autoimmune disease	increased	NCBITaxon:203492	Fusobacteriaceae	family	1	1	1	1	Autoimmune disease	Feces	0.5555406070874157	0		False	
+Autoimmune disease	increased	NCBITaxon:848	Fusobacterium	genus	1	1	1	1	Autoimmune disease	Feces	0.5555406070874157	0		False	
+Autoimmune disease	increased	NCBITaxon:321195	Granulicatella para-adiacens	species	1	1	1	1	Autoimmune disease	Feces	0.7212051018929487	0		False	
+Autoimmune disease	increased	NCBITaxon:154046	Hungatella hathewayi	species	1	1	1	1	Autoimmune disease	Feces	0.5555406070874157	0		False	
+Autoimmune disease	increased	NCBITaxon:537393	Lachnospiraceae bacterium DJF_RP14	species	1	1	1	1	Autoimmune disease	Feces	0.7024729045687882	0		False	
+Autoimmune disease	increased	NCBITaxon:33038	Mediterraneibacter gnavus	species	1	1	1	1	Autoimmune disease	Feces	0.7024729045687882	0		False	
+Autoimmune disease	increased	NCBITaxon:283168	Odoribacter	genus	1	1	1	1	Autoimmune disease	Feces	0.5555406070874157	0		False	
+Autoimmune disease	increased	NCBITaxon:375288	Parabacteroides	genus	1	1	1	1	Autoimmune disease	Feces	0.5555406070874157	0		False	
+Autoimmune disease	increased	NCBITaxon:823	Parabacteroides distasonis	species	1	1	1	1	Autoimmune disease	Feces	0.5555406070874157	0		False	
+Autoimmune disease	increased	NCBITaxon:487175	Parasutterella excrementihominis	species	1	1	1	1	Autoimmune disease	Feces	0.5555406070874157	0		False	
+Autoimmune disease	increased	NCBITaxon:357276	Phocaeicola dorei	species	1	1	1	1	Autoimmune disease	Feces	0.7024729045687882	0		False	
+Autoimmune disease	increased	NCBITaxon:841	Roseburia	genus	1	1	1	1	Autoimmune disease	Feces	0.7024729045687882	0		False	
+Autoimmune disease	increased	NCBITaxon:1263	Ruminococcus	genus	1	1	1	1	Autoimmune disease	Feces	0.7024729045687882	0		False	
+Autoimmune disease	increased	NCBITaxon:40518	Ruminococcus bromii	species	1	1	1	1	Autoimmune disease	Feces	0.7024729045687882	0		False	
+Autoimmune disease	increased	NCBITaxon:165151	Ruminococcus sp. CB3	species	1	1	1	1	Autoimmune disease	Feces	0.7024729045687882	0		False	
+Autoimmune disease	increased	NCBITaxon:165152	Ruminococcus sp. CO27	species	1	1	1	1	Autoimmune disease	Feces	0.7024729045687882	0		False	
+Autoimmune disease	increased	NCBITaxon:320872	Ruminococcus sp. ID8	species	1	1	1	1	Autoimmune disease	Feces	0.7024729045687882	0		False	
+Autoimmune disease	increased	NCBITaxon:29465	Veillonella	genus	1	1	1	1	Autoimmune disease	Feces	0.7212051018929487	0		False	
+Autoimmune disease	increased	NCBITaxon:39777	Veillonella atypica	species	1	1	1	1	Autoimmune disease	Feces	0.7212051018929487	0		False	
+Autoimmune disease	increased	NCBITaxon:269267	Veillonella sp. ADV 3107.03	species	1	1	1	1	Autoimmune disease	Feces	0.5555406070874157	0		False	
+Autoimmune disease	increased	NCBITaxon:1522	[Clostridium] innocuum	species	1	1	1	1	Autoimmune disease	Feces	0.7024729045687882	0		False	
+Autoimmune disease	decreased	NCBITaxon:817	Bacteroides fragilis	species	3	1	3	3	Autoimmune disease	Feces	0.39972772136859797	0		False	
+Autoimmune disease	decreased	NCBITaxon:186806	Eubacteriaceae	family	3	1	3	3	Autoimmune disease	Feces	0.39972772136859797	0		False	
+Autoimmune disease	decreased	NCBITaxon:818	Bacteroides thetaiotaomicron	species	2	2	2	2	Autoimmune disease	Feces	-0.8412439836452765	0		False	
+Autoimmune disease	decreased	NCBITaxon:729	Haemophilus parainfluenzae	species	2	1	2	2	Autoimmune disease	Feces	0.6837999368095755	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	decreased	NCBITaxon:186803	Lachnospiraceae	family	2	1	2	2	Autoimmune disease	Feces	0.6837999368095755	2	facultatively aerobic; microaerophilic	False	
+Autoimmune disease	decreased	NCBITaxon:216572	Oscillospiraceae	family	2	1	2	2	Autoimmune disease	Feces	0.12401674649132123	2	facultatively aerobic; microaerophilic	False	
+Autoimmune disease	decreased	NCBITaxon:171551	Porphyromonadaceae	family	2	1	2	2	Autoimmune disease	Feces	0.12401674649132123	1	aerobic	False	
+Autoimmune disease	decreased	NCBITaxon:1730	Eubacterium	genus	2	1	2	2	Autoimmune disease	Feces	0.6837999368095755	0		False	
+Autoimmune disease	decreased	NCBITaxon:537281	Faecalibacterium sp. DJF_VR20	species	2	1	2	2	Autoimmune disease	Feces	0.6837999368095755	0		False	
+Autoimmune disease	decreased	NCBITaxon:39485	Lachnospira eligens	species	2	1	2	2	Autoimmune disease	Feces	0.6837999368095755	0		False	
+Autoimmune disease	decreased	NCBITaxon:33038	Mediterraneibacter gnavus	species	2	1	2	2	Autoimmune disease	Feces	0.39136648080489705	0		False	
+Autoimmune disease	decreased	NCBITaxon:165137	human intestinal firmicute CO19	species	2	1	2	2	Autoimmune disease	Feces	0.6837999368095755	0		False	
+Autoimmune disease	decreased	NCBITaxon:165261	human intestinal firmicute CO35	species	2	1	2	2	Autoimmune disease	Feces	0.6837999368095755	0		False	
+Autoimmune disease	decreased	NCBITaxon:1239	Bacillota	phylum	1	1	1	1	Autoimmune disease	Feces	0.41645020249599973	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	decreased	NCBITaxon:815	Bacteroidaceae	family	1	1	1	1	Autoimmune disease	Feces	-0.16841670951335727	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	decreased	NCBITaxon:171549	Bacteroidales	order	1	1	1	1	Autoimmune disease	Feces	-0.16841670951335727	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	decreased	NCBITaxon:816	Bacteroides	genus	1	1	1	1	Autoimmune disease	Feces	-0.16841670951335727	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	decreased	NCBITaxon:200643	Bacteroidia	class	1	1	1	1	Autoimmune disease	Feces	-0.16841670951335727	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	decreased	NCBITaxon:976	Bacteroidota	phylum	1	1	1	1	Autoimmune disease	Feces	-0.16841670951335727	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	decreased	NCBITaxon:186801	Clostridia	class	1	1	1	1	Autoimmune disease	Feces	0.41645020249599973	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	decreased	NCBITaxon:526525	Erysipelotrichales	order	1	1	1	1	Autoimmune disease	Feces	0.9511496711231514	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	decreased	NCBITaxon:186802	Eubacteriales	order	1	1	1	1	Autoimmune disease	Feces	0.41645020249599973	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	decreased	NCBITaxon:203491	Fusobacteriales	order	1	1	1	1	Autoimmune disease	Feces	0.41645020249599973	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	decreased	NCBITaxon:203490	Fusobacteriia	class	1	1	1	1	Autoimmune disease	Feces	0.41645020249599973	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	decreased	NCBITaxon:32066	Fusobacteriota	phylum	1	1	1	1	Autoimmune disease	Feces	0.41645020249599973	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	decreased	NCBITaxon:724	Haemophilus	genus	1	1	1	1	Autoimmune disease	Feces	0.9511496711231514	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	decreased	NCBITaxon:186826	Lactobacillales	order	1	1	1	1	Autoimmune disease	Feces	0.9511496711231514	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	decreased	NCBITaxon:712	Pasteurellaceae	family	1	1	1	1	Autoimmune disease	Feces	0.9511496711231514	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	decreased	NCBITaxon:135625	Pasteurellales	order	1	1	1	1	Autoimmune disease	Feces	0.9511496711231514	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	decreased	NCBITaxon:1300	Streptococcaceae	family	1	1	1	1	Autoimmune disease	Feces	0.9511496711231514	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	decreased	NCBITaxon:1301	Streptococcus	genus	1	1	1	1	Autoimmune disease	Feces	0.9511496711231514	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	decreased	NCBITaxon:1304	Streptococcus salivarius	species	1	1	1	1	Autoimmune disease	Feces	0.9511496711231514	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	decreased	NCBITaxon:31979	Clostridiaceae	family	1	1	1	1	Autoimmune disease	Feces	-0.16841670951335727	2	aerobic; microaerophilic	False	
+Autoimmune disease	decreased	NCBITaxon:1485	Clostridium	genus	1	1	1	1	Autoimmune disease	Feces	-0.16841670951335727	2	aerobic; microaerophilic	False	
+Autoimmune disease	decreased	NCBITaxon:216851	Faecalibacterium	genus	1	1	1	1	Autoimmune disease	Feces	0.41645020249599973	1	facultatively aerobic	False	
+Autoimmune disease	decreased	NCBITaxon:853	Faecalibacterium prausnitzii	species	1	1	1	1	Autoimmune disease	Feces	0.41645020249599973	1	facultatively aerobic	False	
+Autoimmune disease	decreased	NCBITaxon:821	Phocaeicola vulgatus	species	1	1	1	1	Autoimmune disease	Feces	0.41645020249599973	1	facultatively aerobic	False	
+Autoimmune disease	decreased	NCBITaxon:171552	Prevotellaceae	family	1	1	1	1	Autoimmune disease	Feces	0.9511496711231514	1	aerobic	False	
+Autoimmune disease	decreased	NCBITaxon:258515	Acetanaerobacterium elongatum	species	1	1	1	1	Autoimmune disease	Feces	-1.5140712577771958	0		False	
+Autoimmune disease	decreased	NCBITaxon:39491	Agathobacter rectalis	species	1	1	1	1	Autoimmune disease	Feces	0.41645020249599973	0		False	
+Autoimmune disease	decreased	NCBITaxon:328813	Alistipes onderdonkii	species	1	1	1	1	Autoimmune disease	Feces	0.9511496711231514	0		False	
+Autoimmune disease	decreased	NCBITaxon:100134	Anaerocolumna xylanovorans	species	1	1	1	1	Autoimmune disease	Feces	-1.5140712577771958	0		False	
+Autoimmune disease	decreased	NCBITaxon:47678	Bacteroides caccae	species	1	1	1	1	Autoimmune disease	Feces	-0.16841670951335727	0		False	
+Autoimmune disease	decreased	NCBITaxon:384639	Bacteroides galacturonicus	species	1	1	1	1	Autoimmune disease	Feces	0.9511496711231514	0		False	
+Autoimmune disease	decreased	NCBITaxon:543888	Citrobacter sp. CK3	species	1	1	1	1	Autoimmune disease	Feces	0.41645020249599973	0		False	
+Autoimmune disease	decreased	NCBITaxon:537373	Clostridiaceae bacterium DJF_VR07	species	1	1	1	1	Autoimmune disease	Feces	-0.16841670951335727	0		False	
+Autoimmune disease	decreased	NCBITaxon:358742	Enterocloster aldenensis	species	1	1	1	1	Autoimmune disease	Feces	0.41645020249599973	0		False	
+Autoimmune disease	decreased	NCBITaxon:154046	Hungatella hathewayi	species	1	1	1	1	Autoimmune disease	Feces	0.41645020249599973	0		False	
+Autoimmune disease	decreased	NCBITaxon:283168	Odoribacter	genus	1	1	1	1	Autoimmune disease	Feces	0.41645020249599973	0		False	
+Autoimmune disease	decreased	NCBITaxon:28118	Odoribacter splanchnicus	species	1	1	1	1	Autoimmune disease	Feces	0.41645020249599973	0		False	
+Autoimmune disease	decreased	NCBITaxon:375288	Parabacteroides	genus	1	1	1	1	Autoimmune disease	Feces	-0.16841670951335727	0		False	
+Autoimmune disease	decreased	NCBITaxon:823	Parabacteroides distasonis	species	1	1	1	1	Autoimmune disease	Feces	-0.16841670951335727	0		False	
+Autoimmune disease	decreased	NCBITaxon:537292	Parabacteroides sp. DJF_B086	species	1	1	1	1	Autoimmune disease	Feces	-0.16841670951335727	0		False	
+Autoimmune disease	decreased	NCBITaxon:411567	Peptoniphilus gorbachii	species	1	1	1	1	Autoimmune disease	Feces	-1.5140712577771958	0		False	
+Autoimmune disease	decreased	NCBITaxon:357276	Phocaeicola dorei	species	1	1	1	1	Autoimmune disease	Feces	0.9511496711231514	0		False	
+Autoimmune disease	decreased	NCBITaxon:841	Roseburia	genus	1	1	1	1	Autoimmune disease	Feces	0.9511496711231514	0		False	
+Autoimmune disease	decreased	NCBITaxon:301302	Roseburia faecis	species	1	1	1	1	Autoimmune disease	Feces	-1.5140712577771958	0		False	
+Autoimmune disease	decreased	NCBITaxon:1263	Ruminococcus	genus	1	1	1	1	Autoimmune disease	Feces	0.9511496711231514	0		False	
+Autoimmune disease	decreased	NCBITaxon:390634	Ruminococcus sp. M10	species	1	1	1	1	Autoimmune disease	Feces	0.41645020249599973	0		False	
+Autoimmune disease	decreased	NCBITaxon:29465	Veillonella	genus	1	1	1	1	Autoimmune disease	Feces	0.9511496711231514	0		False	
+Autoimmune disease	decreased	NCBITaxon:39778	Veillonella dispar	species	1	1	1	1	Autoimmune disease	Feces	0.9511496711231514	0		True	Veillonella dispar
+Autoimmune disease	decreased	NCBITaxon:165138	human intestinal firmicute CB47	species	1	1	1	1	Autoimmune disease	Feces	0.41645020249599973	0		False	

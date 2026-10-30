@@ -11,6 +11,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from mtp.population_tables import is_canonical_derived_path, orient_and_filter_profiles_df
 from mtp.trait_guilds import MEDIADIVE_MARKER
 
 DENOMINATOR_DEFINITION = "sum of all retained non-MediaDive trait columns before selection"
@@ -67,6 +68,8 @@ def validate_cached_totals(counts: pd.DataFrame, metadata: pd.DataFrame) -> None
 def load_retained_profiles(path: Path, metadata: pd.DataFrame) -> pd.DataFrame:
     """Read the full denominator universe and align by keys, never by row position."""
     frame = pd.read_csv(path, sep="\t")
+    if is_canonical_derived_path(path, "study_trait_profiles_wide.tsv"):
+        frame = orient_and_filter_profiles_df(frame, filter_to_selection=True)
     keys = ["study_id", "experiment_id", "inc_dec"]
     counts = frame.drop(columns=keys).apply(pd.to_numeric, errors="raise")
     counts.index = frame[keys].astype(str).agg("|".join, axis=1)

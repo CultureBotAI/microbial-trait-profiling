@@ -21,6 +21,7 @@ from mtp.taxa_trait_matrix import (
     strain_trait_rolls_up,
 )
 from mtp.trait_guilds import MEDIADIVE_MARKER, TABLE1_TRAITS, column_term_id
+from mtp.trait_key_policy import FACULTATIVE_MEMBER_IDS, FACULTATIVE_TRAIT_ID, TraitKeyPolicy
 
 Key = tuple[str, str, str]
 Pair = tuple[str, str]
@@ -239,6 +240,11 @@ def load_graph(
     strain_assertions: defaultdict[tuple[str, str], list[Assertion]] = defaultdict(list)
     repaired = False
     continued = 0
+    policy: TraitKeyPolicy = (
+        "raw_object_v1"
+        if any(m in columns for m in FACULTATIVE_MEMBER_IDS if m != FACULTATIVE_TRAIT_ID)
+        else "facultative_union_v1"
+    )
     with edges.open(encoding="utf-8", newline="") as handle:
         reader = csv.reader(handle, delimiter="\t")
         header = next(reader)
@@ -268,7 +274,7 @@ def load_graph(
             if predicate == "biolink:subclass_of" and obj.startswith("NCBITaxon:"):
                 (strain_taxa if strain else parents)[subject].add(obj)
             elif predicate.startswith("METPO:") or obj.startswith("METPO:"):
-                key = make_trait_key(predicate, obj)
+                key = make_trait_key(predicate, obj, trait_key_policy=policy)
                 if key not in columns or (strain and not strain_trait_rolls_up(key, strain_rollup)):
                     continue
                 (strain_traits if strain else traits)[subject].add(key)

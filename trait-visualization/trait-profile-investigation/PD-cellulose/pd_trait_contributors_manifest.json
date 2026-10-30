@@ -1,11 +1,12 @@
 {
   "method": "Table 1 contribution ledger (#190) restricted to PD fecal profiles",
   "profile_scope": "human PD fecal profiles in experiments with both directions",
-  "pd_feces_profiles": 242,
-  "ledger_profiles": 194,
-  "ledger_increased_profiles": 97,
-  "ledger_decreased_profiles": 97,
-  "ledger_studies": 43,
+  "strain_rollup": "phenotype",
+  "pd_feces_profiles": 140,
+  "ledger_profiles": 140,
+  "ledger_increased_profiles": 70,
+  "ledger_decreased_profiles": 70,
+  "ledger_studies": 36,
   "ranks": [
     "species",
     "family"
@@ -35,7 +36,7 @@
       "trait_key": "METPO:1000668",
       "trait_slug": "coccus_shaped",
       "trait_label": "coccus shaped (METPO:1000668)",
-      "trait_direction": "decreased"
+      "trait_direction": "increased"
     },
     {
       "trait_key": "METPO:1000683",
@@ -59,14 +60,14 @@
   "kg_md5_verified_against": "methods/table1_taxon_influence_protocol.json",
   "input_sha256_chunks": {
     "study_trait_profiles_wide.tsv": [
-      "519a095b",
-      "09e179dc",
-      "92fb51f9",
-      "d892984a",
-      "52dd100d",
-      "ece4dadf",
-      "6c94b036",
-      "a5323e6c"
+      "43b2e230",
+      "2b0edf48",
+      "36a21e24",
+      "7329a6cb",
+      "f3245036",
+      "d350ab53",
+      "3325596d",
+      "e897f4d0"
     ],
     "experiments.tsv": [
       "16271237",
@@ -89,14 +90,14 @@
       "db271c59"
     ],
     "taxa_trait_matrix.tsv": [
-      "f6de0576",
-      "63f3a3b0",
-      "026579df",
-      "af341745",
-      "faac27df",
-      "7f9c0afd",
-      "6f5fa3e6",
-      "aa034178"
+      "45df0fe7",
+      "120455a9",
+      "3361d791",
+      "81953c33",
+      "8405160f",
+      "ff7a2e78",
+      "d2a7d8d1",
+      "8584ec8e"
     ]
   },
   "sha256_chunk_encoding": "concatenate each input's eight chunks in order"

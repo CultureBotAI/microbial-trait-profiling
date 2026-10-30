@@ -165,7 +165,7 @@ rerun-core-548 output raw="data/raw/full_dump.csv" edges="data/kg-microbe/merged
 [positional-arguments]
 rerun-all-548 output raw="data/raw/full_dump.csv" edges="data/kg-microbe/merged-kg_edges.tsv" nodes="data/kg-microbe/merged-kg_nodes.tsv" *ARGS:
 	just rerun-core-548 "$1/core" "$2" "$3" "$4" "${@:5}"
-	just rerun-ilyas "$1/core/run.json" "$1/ilyas" --figures
+	just rerun-ilyas "$1/core/run.json" "$1/ilyas"
 	just rerun-noel "$1/core/run.json" "$1/noel"
 	just rerun-jed "$1/core/run.json" "$1/jed" --figures
 	just rerun-compare "$1/core/run.json" "$1/noel/arm_run.json" "$1/jed/arm_run.json" "$1/ilyas/arm_run.json" "$1/comparison"
@@ -356,8 +356,8 @@ six-shared-trait-high-support-sankeys:
 trait-heatmaps:
 	uv run python scripts/create_clustered_heatmap.py
 	uv run python scripts/create_condition_taxon_heatmap.py
-	uv run python scripts/create_taxa_guild_heatmap.py --direction-basis group_1_vs_group_0
-	uv run python scripts/create_study_trait_profile_heatmap.py --direction-basis group_1_vs_group_0
+	uv run python scripts/create_taxa_guild_heatmap.py --direction-basis disease_vs_comparison
+	uv run python scripts/create_study_trait_profile_heatmap.py --direction-basis disease_vs_comparison
 	uv run python scripts/create_condition_trait_module_heatmap.py
 
 trait-visualization:
@@ -717,7 +717,7 @@ taxa-coverage *ARGS:
 # Regenerate taxa-coverage histograms filtered to the 548-study Tier 1+2 healthy/disease subset.
 [positional-arguments]
 taxa-coverage-548 *ARGS:
-	uv run python scripts/create_taxa_coverage_histogram.py --strain-rollup phenotype --contrast-population disease_vs_healthy_tier1_2_subject_controls --output-dir trait-visualization/trait-profile-investigation/taxa-coverage-548 "$@"
+	uv run python scripts/create_taxa_coverage_histogram.py --strain-rollup phenotype --contrast-population disease_vs_healthy_tier1_2_subject_controls --output-dir trait-visualization/trait-profile-investigation/taxa-coverage "$@"
 
 # Compute matrix trait overlap, Tier 1+2 coverage by rank and filter cascade, and Parkinson's
 # stool study overlap from a verified core run (#1053).

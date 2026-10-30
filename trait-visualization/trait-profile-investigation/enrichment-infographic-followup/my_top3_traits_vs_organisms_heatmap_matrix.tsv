@@ -1,80 +1,80 @@
-	"facultatively aerobic
-METPO:1000608"	"arsenate_reduction
-..."	"moderately halophilic
-METPO:1000623"	"gram negative
-METPO:1000699"	"gram positive
-METPO:1000698"	"anaerobic
-METPO:1000603"	"non-spore forming
+	"cellulose catabolic process
+METPO:2000103|GO:0030245"	"arsenate_reduction
+..."	"facultatively aerobic
+METPO:1000608"	"mesophilic
+METPO:1000615"	"non-spore forming
 METPO:1000872"	"bacillus shaped
-METPO:1000667"	"mesophilic
-METPO:1000615"	"non motile
-METPO:1000703"	"motile
-METPO:1000702"	"GC high
-METPO:1000432"	"GC low
-METPO:1000429"	"D-glucose
+METPO:1000667"	"non motile
+METPO:1000703"	"gram negative
+METPO:1000699"	"gram positive
+METPO:1000698"	"rod shaped
+METPO:1000681"	"anaerobic
+METPO:1000603"	"aerobic
+METPO:1000602"	"coccus shaped
+METPO:1000668"	"motile
+METPO:1000702"	"D-glucose
+..."	"GC low
+METPO:1000429"	"mannose
+..."	"obligately aerobic
+METPO:1000606"	"Fermentation
+METPO:1002005"	"facultatively anaerobic
+METPO:1000605"	"sucrose
 ..."	"temperature range mid4
-METPO:1000453"	"pH range low
-METPO:1000460"	"cell length very small
-METPO:1000883"	"pH range mid1
-METPO:1000461"	"aerobic
-METPO:1000602"	"Fermentation
-METPO:1002005"	"pH range mid2
-METPO:1000462"	"rod shaped
-METPO:1000681"	"obligately anaerobic
-METPO:1000607"	"temperature optimum mid4
-METPO:1000446"	"mannose
-..."	"coccus shaped
-METPO:1000668"	"temperature range mid2
-METPO:1000451"	"microaerophilic
-METPO:1000604"	"temperature range mid3
-METPO:1000452"	"cell width medium
-METPO:1000889"	"maltose
-..."	"spore forming
-METPO:1000871"	"pH optimum mid1
-METPO:1000456"	"temperature range mid1
-METPO:1000450"
-Prevotella (7 profiles)	0	0	0	1	1	1	1	1	1	1	0	1	1	1	0	1	1	1	0	1	1	1	1	1	1	0	0	0	0	1	1	0	1	0
-Akkermansia (7 profiles)	0	0	0	1	1	1	1	1	1	1	1	0	1	0	1	1	1	1	1	0	1	0	0	0	0	0	1	0	1	0	0	0	0	1
-Segatella copri (5 profiles)	0	0	0	1	0	1	1	1	1	1	0	0	1	1	0	0	1	0	0	0	0	1	0	1	0	0	0	0	0	1	1	0	0	0
-Butyricimonas (4 profiles)	0	0	0	1	1	1	1	1	1	1	0	0	1	1	0	0	1	0	0	0	0	1	1	0	1	0	0	0	0	0	0	0	0	0
-Lachnospira (9 profiles)	0	0	0	1	1	1	1	1	1	0	0	1	0	0	0	0	0	0	0	1	0	0	1	0	0	0	0	0	0	0	0	1	0	0
-Sutterella (6 profiles)	0	0	0	1	0	1	1	1	1	1	1	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	1	0	1	0	1	0	0
-Phocaeicola coprocola (5 profiles)	0	0	0	1	0	1	1	1	1	1	0	1	0	1	0	0	0	0	0	0	0	1	1	1	1	0	0	0	0	1	1	0	0	0
-Megamonas funiformis (4 profiles)	0	0	0	1	0	1	1	1	0	1	0	1	0	1	0	0	0	0	0	0	0	1	0	0	1	0	0	0	0	0	1	0	0	0
-Streptococcus thermophilus (3 profiles)	1	0	0	0	1	1	1	0	1	1	0	1	0	0	1	0	0	0	1	1	0	0	0	0	0	1	0	1	0	0	0	0	0	0
-Streptococcus salivarius (3 profiles)	1	0	0	0	1	1	1	0	1	1	0	1	0	0	0	0	0	0	1	0	0	0	0	0	0	1	0	1	0	0	0	0	0	0
-Methanobrevibacter (3 profiles)	0	0	0	1	1	1	1	1	1	1	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	1	0	0	0	0	0	0	0	0
-Phocaeicola coprophilus (3 profiles)	0	0	0	1	0	1	1	1	1	1	0	0	1	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	1	0	0	0	0
-Faecalibacterium (10 profiles)	1	0	0	1	1	1	1	1	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-Blautia (5 profiles)	0	0	0	0	1	1	1	0	1	1	0	1	1	1	0	0	0	0	0	1	0	0	1	1	0	1	0	0	0	0	0	0	1	0
-Barnesiella intestinihominis (4 profiles)	0	0	0	1	1	1	1	1	1	1	0	0	1	1	0	0	0	0	0	0	0	1	0	1	1	0	0	0	0	1	1	0	1	0
-Roseburia (14 profiles)	0	0	0	1	1	1	1	1	1	0	1	1	1	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
-Enterococcus (10 profiles)	1	0	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1
-Erwinia (5 profiles)	1	0	1	1	0	1	1	1	1	1	1	0	1	1	0	0	0	0	1	1	0	1	0	0	1	0	1	0	0	1	0	0	0	1
-Lactobacillus (5 profiles)	1	0	1	0	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	0	1	1	0	1	1	1	1	1	0	1	1
-Plesiomonas (4 profiles)	1	0	1	1	0	1	1	1	1	0	1	0	0	0	0	0	0	0	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-Parabacteroides (5 profiles)	0	0	0	1	1	1	1	1	1	1	0	1	1	1	1	1	0	1	0	0	1	1	1	1	1	0	1	0	1	1	1	0	0	1
-Desulfovibrio (5 profiles)	1	0	0	1	0	1	1	1	1	0	1	1	1	0	1	0	1	0	0	1	0	0	1	0	0	0	1	1	1	0	0	1	0	1
-Bilophila (5 profiles)	0	0	0	1	0	1	1	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-Veillonella (5 profiles)	0	0	0	1	1	1	1	0	1	1	1	1	0	0	1	1	1	1	0	0	1	0	0	1	0	1	1	0	1	1	0	0	1	1
-Collinsella (4 profiles)	0	0	0	0	1	1	1	1	1	1	0	0	0	1	0	0	0	0	0	0	0	1	0	1	1	0	0	0	0	1	1	0	1	0
-Anaerostipes (3 profiles)	0	0	0	0	1	1	1	1	1	1	0	1	1	1	1	1	0	1	0	0	1	1	0	1	1	1	0	0	0	0	1	1	0	0
-Ruminococcus (3 profiles)	0	0	0	0	1	1	1	0	1	1	1	0	1	0	1	0	0	1	0	1	0	0	1	1	0	1	0	0	1	1	0	0	1	0
-Escherichia (2 profiles)	1	1	1	1	1	1	1	1	1	1	1	0	1	0	1	1	0	1	1	1	1	1	0	0	0	1	1	1	1	0	0	1	0	1
-Megasphaera (2 profiles)	0	0	0	1	1	1	1	0	1	1	0	1	1	0	1	0	1	0	0	1	0	0	1	0	0	1	1	0	1	0	0	1	1	1
-Aggregatibacter (2 profiles)	1	0	0	1	0	1	1	1	1	1	0	0	1	0	0	0	0	0	1	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0
-Coprococcus (4 profiles)	0	0	0	0	1	1	1	1	1	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	1	0	0
-Phascolarctobacterium (4 profiles)	0	0	0	1	0	1	1	1	1	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-Weissella (3 profiles)	1	0	0	1	1	1	1	1	1	1	0	1	1	1	1	1	1	1	1	0	1	1	0	0	1	1	1	1	1	1	1	0	1	1
-Klebsiella (3 profiles)	1	0	1	1	1	1	1	1	1	1	1	0	1	1	1	0	0	0	1	1	0	0	0	0	0	0	1	1	1	0	0	0	0	0
-Lachnoanaerobaculum (3 profiles)	0	0	0	1	1	1	1	1	1	0	0	1	0	0	0	0	0	0	0	0	0	1	0	0	1	0	0	0	0	0	0	1	1	0
-Filomicrobium (3 profiles)	0	0	0	1	0	0	0	1	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-Paraprevotella (4 profiles)	0	0	0	1	0	1	1	1	1	1	0	0	1	1	0	0	0	0	0	1	0	1	0	0	1	0	0	0	0	1	1	0	0	0
-Fusicatenibacter (4 profiles)	0	0	0	0	1	1	1	1	0	1	0	0	1	1	0	1	0	0	0	0	0	1	0	0	1	0	0	0	0	1	1	0	0	0
-Eggerthella (3 profiles)	0	0	0	0	1	1	1	1	1	1	0	0	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	1	0	0	0	0	0	0
-Kineothrix (2 profiles)	0	0	0	1	1	1	0	0	0	0	1	0	1	0	1	1	0	1	0	0	1	1	0	1	0	0	1	0	1	0	0	1	1	1
-Rhodopirellula (2 profiles)	1	0	0	1	0	0	1	1	1	1	1	0	1	1	0	0	0	0	1	0	0	0	0	0	1	1	1	0	1	0	1	0	0	0
-Allobaculum (2 profiles)	0	0	0	0	1	1	1	1	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-Dialister (2 profiles)	0	0	0	0	0	1	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-Eubacterium ruminantium (2 profiles)	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
-uncultured Coriobacterium sp. (2 profiles)	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+METPO:1000453"	"obligately anaerobic
+METPO:1000607"	"temperature range mid2
+METPO:1000451"	"GC high
+METPO:1000432"	"maltose
+..."	"cell length very small
+METPO:1000883"	"microaerophilic
+METPO:1000604"	"spore forming
+METPO:1000871"	"raffinose
+..."	"fructose
+..."	"temperature range mid1
+METPO:1000450"	"arabinose
+..."	"lactose
+..."
+Akkermansia (14 profiles)	0	0	0	1	1	1	1	1	1	1	1	1	0	1	0	1	0	0	0	0	0	1	0	1	0	0	1	0	0	0	0	1	0	0
+Segatella copri (4 profiles)	0	0	0	1	1	1	1	1	0	1	1	0	0	0	1	1	0	0	0	0	1	0	0	0	0	1	1	0	0	1	0	0	1	1
+Butyricimonas (4 profiles)	0	0	0	1	1	1	1	1	1	1	1	0	1	0	1	1	1	0	0	0	0	0	1	0	0	0	1	0	0	0	0	0	0	0
+Prevotella (5 profiles)	0	0	0	1	1	1	1	1	1	1	1	0	0	0	1	1	1	0	1	0	1	0	1	0	1	1	1	0	0	1	1	0	1	1
+Lachnospira (4 profiles)	1	0	0	1	1	1	0	1	1	0	1	0	0	0	0	0	0	0	1	0	0	0	1	0	1	0	0	0	1	0	0	0	0	0
+Streptococcus salivarius (4 profiles)	0	0	1	1	1	0	1	0	1	0	1	1	1	0	0	0	0	0	0	1	0	0	0	0	1	0	0	1	0	0	0	0	0	0
+Megamonas funiformis (3 profiles)	0	0	0	1	1	1	1	1	0	1	1	0	0	0	1	0	1	0	0	0	1	0	0	0	1	1	0	0	0	1	0	0	1	1
+Phocaeicola coprocola (3 profiles)	0	0	0	1	1	1	1	1	0	1	1	0	0	0	1	0	1	0	0	0	0	0	1	0	1	1	0	0	0	0	0	0	0	1
+Streptococcus thermophilus (3 profiles)	0	0	1	1	1	0	1	0	1	0	1	1	1	0	0	0	0	0	1	1	0	1	0	0	1	0	0	1	0	0	0	0	0	0
+Methanobrevibacter (3 profiles)	0	0	0	1	1	1	1	1	1	1	1	0	1	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
+Phocaeicola coprophilus (3 profiles)	0	0	0	1	1	1	1	1	0	1	1	0	0	0	0	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Faecalibacterium (6 profiles)	0	0	1	1	1	1	1	1	1	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Gemella (5 profiles)	0	0	1	1	1	0	1	0	1	0	1	0	1	1	0	0	0	0	0	1	0	0	0	0	1	0	0	1	0	0	0	0	0	0
+Blautia (3 profiles)	1	0	0	1	1	0	1	0	1	0	1	0	1	0	1	1	0	0	1	0	0	0	1	0	1	0	0	0	0	0	0	0	1	0
+Sutterella (3 profiles)	0	0	0	1	1	1	1	1	0	1	1	0	1	1	0	0	0	0	0	0	0	0	1	0	0	0	1	1	1	0	0	0	0	0
+Streptococcus (6 profiles)	0	0	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	1	0	1
+Bifidobacterium (6 profiles)	0	0	1	1	1	1	1	1	1	1	1	1	0	1	1	1	1	0	1	1	1	1	1	1	0	1	1	1	1	1	1	1	1	1
+Haemophilus (5 profiles)	0	0	1	1	1	1	1	1	0	1	1	1	1	0	0	1	0	1	0	1	0	0	0	0	1	0	0	1	0	0	0	0	0	0
+Veillonella (5 profiles)	0	0	0	1	1	0	1	1	1	1	1	0	1	1	0	0	0	0	0	1	0	1	0	1	1	0	1	0	0	0	0	1	0	0
+Erwinia (3 profiles)	0	0	1	1	1	1	1	1	0	1	1	1	0	1	1	1	1	1	1	1	1	0	0	1	0	0	0	0	0	1	1	1	1	0
+Dermacoccus (3 profiles)	1	0	0	1	1	1	1	0	1	1	0	1	1	0	0	0	0	1	0	1	0	1	0	1	0	0	0	1	1	0	0	1	0	0
+Bacteroides fragilis (3 profiles)	0	0	0	1	1	1	1	1	1	1	1	0	0	0	0	1	0	0	0	0	0	0	1	0	1	0	0	0	0	0	0	0	0	0
+Clostridium (4 profiles)	1	0	0	1	1	1	1	1	1	1	1	1	0	1	1	1	1	1	1	0	1	1	1	1	1	1	0	1	1	1	1	1	0	1
+Enterobacter (3 profiles)	0	0	1	1	1	1	1	1	1	1	1	1	0	1	0	1	0	0	0	1	0	1	0	1	0	0	0	1	1	0	0	0	0	0
+Bifidobacterium bifidum (3 profiles)	0	0	0	1	1	1	1	1	1	1	1	0	0	1	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Deinococcus (2 profiles)	0	0	1	1	1	1	1	1	1	1	0	1	1	0	1	1	1	1	0	1	1	1	0	1	0	1	1	1	0	1	1	1	1	1
+Methylobacterium (2 profiles)	0	0	1	1	1	1	1	1	1	1	0	1	0	1	1	0	1	1	0	0	1	1	0	1	0	1	1	1	1	0	1	1	1	1
+Phocaeicola plebeius (2 profiles)	0	0	0	1	1	1	1	1	0	1	1	0	0	0	1	1	1	0	0	0	1	0	0	0	0	1	0	0	0	1	0	0	1	1
+Roseburia (2 profiles)	1	0	0	1	1	1	0	1	1	0	1	0	0	1	0	1	0	0	0	0	0	0	1	0	1	0	0	0	0	0	0	0	0	0
+Bifidobacterium longum subsp. longum (2 profiles)	0	0	0	1	1	1	1	1	1	1	1	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Sphingomonas (6 profiles)	0	0	0	1	1	1	1	1	0	1	0	1	0	1	1	0	1	1	0	0	1	1	0	1	0	1	1	1	0	1	1	1	1	1
+Stenotrophomonas (6 profiles)	0	0	1	1	1	1	1	1	0	1	0	1	0	1	1	0	1	1	0	1	0	1	0	1	0	1	1	0	0	0	1	1	1	0
+Propionibacterium (6 profiles)	0	0	1	1	1	1	1	0	1	1	1	0	0	0	1	0	1	0	0	1	1	0	0	0	0	1	0	1	0	1	1	0	1	1
+Turicibacter (7 profiles)	0	0	1	1	1	1	0	0	1	0	1	0	1	1	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	0	0	0
+Ruminiclostridium (5 profiles)	1	0	0	1	0	1	0	1	1	1	1	0	0	1	1	0	0	0	1	0	0	1	0	1	1	0	0	0	1	0	1	1	0	0
+Anaerostipes (4 profiles)	1	0	0	1	1	1	1	0	1	1	1	0	1	0	1	1	1	0	0	0	1	1	0	0	1	1	0	0	1	1	0	0	0	0
+Megasphaera (3 profiles)	0	0	0	1	1	0	1	1	1	1	1	0	1	0	0	1	0	0	1	0	0	1	1	1	1	0	1	0	1	0	0	1	0	0
+Leptotrichia (2 profiles)	0	0	1	1	1	1	1	1	0	1	1	1	0	0	0	0	1	0	0	0	0	1	0	1	0	0	0	1	0	0	0	1	1	0
+Lactobacillus (3 profiles)	0	0	1	1	1	1	1	0	1	1	1	1	0	1	1	1	1	0	1	1	1	1	0	1	1	1	1	1	0	1	1	1	0	1
+Butyricicoccus (3 profiles)	0	0	0	1	1	0	1	0	1	0	1	0	1	0	1	1	1	0	0	0	1	0	1	0	0	1	0	0	0	0	0	0	0	0
+Dorea (3 profiles)	0	0	0	1	1	1	1	0	1	0	1	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Gemmiger (3 profiles)	0	0	0	1	0	0	0	1	0	0	1	0	1	0	0	0	0	0	1	0	0	0	1	0	0	0	0	0	0	0	0	0	0	0
+Bilophila (3 profiles)	0	0	0	1	1	1	0	1	0	0	1	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0	0
+Clostridium sp. (3 profiles)	0	0	0	1	0	1	0	0	1	0	1	0	0	1	0	1	0	0	0	0	0	0	1	0	1	0	0	1	1	0	0	0	0	0
+Rhizobium (2 profiles)	0	0	1	1	1	1	1	1	1	1	0	1	0	1	1	1	1	1	0	1	1	1	0	1	0	1	1	0	0	1	1	1	1	1

@@ -4,36 +4,31 @@ Autism	Autism	NCBITaxon:109326	Anaerovorax	genus	1	0	-1	1	0		False
 Autism	Autism	NCBITaxon:113286	Pseudoramibacter	genus	1	0	-1	1	0		False	
 Autism	Autism	NCBITaxon:114627	Alkaliphilus	genus	1	0	-1	1	0		False	
 Autism	Autism	NCBITaxon:118747	Bulleidia	genus	1	0	-1	1	0		False	
-Autism	Autism	NCBITaxon:1224	Pseudomonadota	phylum	0	3	3	3	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	Autism	NCBITaxon:1224	Pseudomonadota	phylum	0	1	1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autism	Autism	NCBITaxon:1239	Bacillota	phylum	2	0	-2	2	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autism	Autism	NCBITaxon:1243	Leuconostoc	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autism	Autism	NCBITaxon:1263	Ruminococcus	genus	1	0	-1	1	0		False	
 Autism	Autism	NCBITaxon:128827	Erysipelotrichaceae	family	0	1	1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autism	Autism	NCBITaxon:1301	Streptococcus	genus	2	0	-2	2	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism	Autism	NCBITaxon:1350	Enterococcus	genus	0	3	3	3	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism	Autism	NCBITaxon:1485	Clostridium	genus	1	1	0	2	1	microaerophilic	False	
+Autism	Autism	NCBITaxon:1485	Clostridium	genus	1	0	-1	1	2	aerobic; microaerophilic	False	
 Autism	Autism	NCBITaxon:1535	[Clostridium] leptum	species	1	0	-1	1	0		False	
 Autism	Autism	NCBITaxon:1578	Lactobacillus	genus	1	1	0	2	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autism	Autism	NCBITaxon:162289	Peptoniphilus	genus	1	0	-1	1	1	microaerophilic	False	
 Autism	Autism	NCBITaxon:1653	Corynebacteriaceae	family	0	2	2	2	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autism	Autism	NCBITaxon:1654	Actinomyces	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism	Autism	NCBITaxon:1678	Bifidobacterium	genus	1	2	1	3	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	Autism	NCBITaxon:1678	Bifidobacterium	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autism	Autism	NCBITaxon:1679	Bifidobacterium longum subsp. longum	species	1	0	-1	1	0		False	
 Autism	Autism	NCBITaxon:1683	Bifidobacterium angulatum	species	1	0	-1	1	0		False	
 Autism	Autism	NCBITaxon:171549	Bacteroidales	order	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autism	Autism	NCBITaxon:1716	Corynebacterium	genus	0	1	1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism	Autism	NCBITaxon:1760	Actinomycetes	class	0	1	1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autism	Autism	NCBITaxon:186803	Lachnospiraceae	family	1	0	-1	1	2	facultatively aerobic; microaerophilic	False	
-Autism	Autism	NCBITaxon:186814	Thermoanaerobacteraceae	family	0	2	2	2	0		False	
 Autism	Autism	NCBITaxon:186817	Bacillaceae	family	0	1	1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autism	Autism	NCBITaxon:186824	Thermoactinomycetaceae	family	0	1	1	1	2	aerobic; microaerophilic	False	
 Autism	Autism	NCBITaxon:189330	Dorea	genus	0	1	1	1	0		False	
 Autism	Autism	NCBITaxon:191303	Turicibacter	genus	0	1	1	1	1	facultatively aerobic	False	
 Autism	Autism	NCBITaxon:200643	Bacteroidia	class	0	1	1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism	Autism	NCBITaxon:201174	Actinomycetota	phylum	1	1	0	2	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	Autism	NCBITaxon:201174	Actinomycetota	phylum	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autism	Autism	NCBITaxon:203492	Fusobacteriaceae	family	0	1	1	1	0		False	
-Autism	Autism	NCBITaxon:204475	Gemmiger	genus	1	0	-1	1	0		False	
-Autism	Autism	NCBITaxon:208479	Enterocloster bolteae	species	0	2	2	2	0		True	Enterocloster bolteae
 Autism	Autism	NCBITaxon:213117	Desulfohalobiaceae	family	0	1	1	1	0		False	
 Autism	Autism	NCBITaxon:218538	Dialister invisus	species	1	0	-1	1	0		False	
 Autism	Autism	NCBITaxon:239759	Alistipes	genus	1	0	-1	1	0		False	
@@ -41,8 +36,8 @@ Autism	Autism	NCBITaxon:253238	Ethanoligenens	genus	1	0	-1	1	0		False
 Autism	Autism	NCBITaxon:258514	Acetanaerobacterium	genus	0	1	1	1	0		False	
 Autism	Autism	NCBITaxon:286729	Alkaliflexus	genus	0	1	1	1	0		False	
 Autism	Autism	NCBITaxon:29465	Veillonella	genus	2	0	-2	2	0		False	
-Autism	Autism	NCBITaxon:31953	Bifidobacteriaceae	family	0	3	3	3	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism	Autism	NCBITaxon:31977	Veillonellaceae	family	1	0	-1	1	1	aerobic	False	
+Autism	Autism	NCBITaxon:31953	Bifidobacteriaceae	family	0	1	1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	Autism	NCBITaxon:31977	Veillonellaceae	family	1	0	-1	1	2	aerobic; microaerophilic	False	
 Autism	Autism	NCBITaxon:31983	Helcococcus	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autism	Autism	NCBITaxon:35832	Bilophila	genus	1	0	-1	1	0		False	
 Autism	Autism	NCBITaxon:375288	Parabacteroides	genus	1	1	0	2	0		False	
@@ -51,21 +46,19 @@ Autism	Autism	NCBITaxon:46255	Weissella	genus	1	0	-1	1	3	facultatively aerobic; 
 Autism	Autism	NCBITaxon:52784	Anaerofilum	genus	1	0	-1	1	0		False	
 Autism	Autism	NCBITaxon:543	Enterobacteriaceae	family	0	1	1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autism	Autism	NCBITaxon:543311	Parvimonas	genus	1	0	-1	1	1	microaerophilic	False	
-Autism	Autism	NCBITaxon:561	Escherichia	genus	1	1	0	2	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	Autism	NCBITaxon:561	Escherichia	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autism	Autism	NCBITaxon:58621	Desulfovibrio intestinalis	species	0	1	1	1	0		False	
-Autism	Autism	NCBITaxon:620	Shigella	genus	0	1	1	1	2	facultatively aerobic; aerobic	False	
 Autism	Autism	NCBITaxon:816	Bacteroides	genus	0	1	1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autism	Autism	NCBITaxon:81852	Enterococcaceae	family	0	1	1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autism	Autism	NCBITaxon:821	Phocaeicola vulgatus	species	0	1	1	1	1	facultatively aerobic	False	
-Autism	Autism	NCBITaxon:85023	Microbacteriaceae	family	0	3	3	3	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	Autism	NCBITaxon:85023	Microbacteriaceae	family	0	1	1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autism	Autism	NCBITaxon:872	Desulfovibrio	genus	0	1	1	1	2	facultatively aerobic; microaerophilic	False	
 Autism	Autism	NCBITaxon:876	Desulfovibrio desulfuricans	species	0	1	1	1	0		False	
 Autism	Autism	NCBITaxon:901	Desulfovibrio piger	species	0	1	1	1	0		False	
 Autism	Autism	NCBITaxon:909929	Selenomonadales	order	1	0	-1	1	1	microaerophilic	False	
 Autism	Autism	NCBITaxon:909932	Negativicutes	class	1	0	-1	1	2	aerobic; microaerophilic	False	
-Autism	Autism	NCBITaxon:976	Bacteroidota	phylum	1	2	1	3	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autism	Autism	NCBITaxon:976	Bacteroidota	phylum	0	2	2	2	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1263	Ruminococcus	genus	1	0	-1	1	0		False	
-Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1266	Sarcina	genus	0	1	1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1279	Staphylococcus	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:128827	Erysipelotrichaceae	family	1	1	0	2	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1348911	Coprobacter	genus	0	1	1	1	0		False	
@@ -74,40 +67,34 @@ Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1375	Aerococcus	genu
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1470349	Candidatus Stoquefichus	genus	0	1	1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1472762	Enorma	genus	0	1	1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1481960	Peptoclostridium	genus	0	1	1	1	0		False	
-Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1485	Clostridium	genus	0	2	2	2	1	microaerophilic	False	
-Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1506553	Lachnoclostridium	genus	1	1	0	2	0		False	
+Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1485	Clostridium	genus	0	1	1	1	2	aerobic; microaerophilic	False	
+Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1506553	Lachnoclostridium	genus	1	0	-1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1506577	Tyzzerella	genus	1	0	-1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1508657	Ruminiclostridium	genus	0	1	1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:157	Treponema	genus	1	0	-1	1	1	microaerophilic	False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1578	Lactobacillus	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:158846	Megamonas	genus	0	1	1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1637	Listeria	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1649459	Hungatella	genus	0	2	2	2	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1660	Schaalia odontolytica	species	1	0	-1	1	2	facultatively aerobic; microaerophilic	False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:171552	Prevotellaceae	family	1	0	-1	1	1	aerobic	False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1716	Corynebacterium	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:172900	Victivallis	genus	0	1	1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:186803	Lachnospiraceae	family	1	0	-1	1	2	facultatively aerobic; microaerophilic	False	
-Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:1870884	Clostridioides	genus	0	2	2	2	1	facultatively aerobic	False	
-Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2039302	Monoglobus	genus	0	1	1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:207244	Anaerostipes	genus	1	0	-1	1	0		False	
-Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:239759	Alistipes	genus	0	2	2	2	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:248744	Marvinbryantia	genus	1	0	-1	1	0		False	
-Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2569097	Anaerobutyricum	genus	0	1	1	1	0		False	
-Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2719313	Enterocloster	genus	0	1	1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:2740	Peptococcus	genus	0	1	1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:283	Comamonas	genus	0	1	1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:283168	Odoribacter	genus	0	1	1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:286	Pseudomonas	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:291645	Bacteroides nordii	species	0	1	1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:29391	Gemella morbillorum	species	1	0	-1	1	2	facultatively aerobic; microaerophilic	False	
-Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:3025755	Thomasclavelia	genus	1	2	1	3	0		False	
+Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:3025755	Thomasclavelia	genus	1	0	-1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:33024	Phascolarctobacterium	genus	0	1	1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:33038	Mediterraneibacter gnavus	species	1	0	-1	1	0		False	
-Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:33042	Coprococcus	genus	0	3	3	3	0		False	
+Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:33042	Coprococcus	genus	0	1	1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:33882	Microbacterium	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:35517	[Eubacterium] brachy	species	1	0	-1	1	0		False	
-Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:375288	Parabacteroides	genus	0	2	2	2	0		False	
+Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:375288	Parabacteroides	genus	0	1	1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:39485	Lachnospira eligens	species	1	0	-1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:39497	Eubacterium xylanophilum	species	1	0	-1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:397864	Barnesiella	genus	0	1	1	1	0		False	
@@ -115,7 +102,6 @@ Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:399320	Sphaerochaeta
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:407	Methylobacterium	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:475961	Longilinea	genus	1	0	-1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:48736	Ralstonia	genus	1	0	-1	1	1	aerobic	False	
-Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:570	Klebsiella	genus	0	1	1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:577309	Paraprevotella	genus	0	1	1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:707003	uncultured Oscillospiraceae bacterium	species	0	1	1	1	0		False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:838	Prevotella	genus	1	0	-1	1	0		False	
@@ -124,7 +110,7 @@ Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:848	Fusobacterium	ge
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:872	Desulfovibrio	genus	0	1	1	1	2	facultatively aerobic; microaerophilic	False	
 Autism spectrum disorder	Autism spectrum disorder	NCBITaxon:877420	Lachnospiraceae bacterium NK4A136	species	1	0	-1	1	0		False	
 Autoimmune disease	Autoimmune disease	NCBITaxon:100134	Anaerocolumna xylanovorans	species	1	0	-1	1	0		False	
-Autoimmune disease	Autoimmune disease	NCBITaxon:117563	Granulicatella	genus	0	1	1	1	1	microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:117563	Granulicatella	genus	0	1	1	1	2	aerobic; microaerophilic	False	
 Autoimmune disease	Autoimmune disease	NCBITaxon:1224	Pseudomonadota	phylum	0	3	3	3	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autoimmune disease	Autoimmune disease	NCBITaxon:1236	Gammaproteobacteria	class	0	3	3	3	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autoimmune disease	Autoimmune disease	NCBITaxon:1239	Bacillota	phylum	1	2	1	3	3	facultatively aerobic; aerobic; microaerophilic	False	
@@ -133,7 +119,7 @@ Autoimmune disease	Autoimmune disease	NCBITaxon:1300	Streptococcaceae	family	1	2
 Autoimmune disease	Autoimmune disease	NCBITaxon:1301	Streptococcus	genus	1	2	1	3	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autoimmune disease	Autoimmune disease	NCBITaxon:1304	Streptococcus salivarius	species	1	1	0	2	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autoimmune disease	Autoimmune disease	NCBITaxon:135625	Pasteurellales	order	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	Autoimmune disease	NCBITaxon:1485	Clostridium	genus	1	1	0	2	1	microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:1485	Clostridium	genus	1	1	0	2	2	aerobic; microaerophilic	False	
 Autoimmune disease	Autoimmune disease	NCBITaxon:1502	Clostridium perfringens	species	0	1	1	1	0		False	
 Autoimmune disease	Autoimmune disease	NCBITaxon:1506	Clostridium sp.	species	0	1	1	1	1	microaerophilic	False	
 Autoimmune disease	Autoimmune disease	NCBITaxon:1522	[Clostridium] innocuum	species	0	1	1	1	0		False	
@@ -177,8 +163,8 @@ Autoimmune disease	Autoimmune disease	NCBITaxon:283168	Odoribacter	genus	1	1	0	2
 Autoimmune disease	Autoimmune disease	NCBITaxon:292800	Flavonifractor plautii	species	0	1	1	1	0		False	
 Autoimmune disease	Autoimmune disease	NCBITaxon:29465	Veillonella	genus	1	1	0	2	0		False	
 Autoimmune disease	Autoimmune disease	NCBITaxon:301302	Roseburia faecis	species	1	0	-1	1	0		False	
-Autoimmune disease	Autoimmune disease	NCBITaxon:31977	Veillonellaceae	family	0	3	3	3	1	aerobic	False	
-Autoimmune disease	Autoimmune disease	NCBITaxon:31979	Clostridiaceae	family	1	1	0	2	1	microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:31977	Veillonellaceae	family	0	3	3	3	2	aerobic; microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:31979	Clostridiaceae	family	1	1	0	2	2	aerobic; microaerophilic	False	
 Autoimmune disease	Autoimmune disease	NCBITaxon:32066	Fusobacteriota	phylum	1	1	0	2	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autoimmune disease	Autoimmune disease	NCBITaxon:320872	Ruminococcus sp. ID8	species	0	1	1	1	0		False	
 Autoimmune disease	Autoimmune disease	NCBITaxon:321195	Granulicatella para-adiacens	species	0	1	1	1	0		False	
@@ -218,8 +204,8 @@ Autoimmune disease	Autoimmune disease	NCBITaxon:620858	Clostridiales bacterium 8
 Autoimmune disease	Autoimmune disease	NCBITaxon:621345	swine fecal bacterium RF3E-Xyl1	species	0	2	2	2	0		False	
 Autoimmune disease	Autoimmune disease	NCBITaxon:634877	Enterobacter sp. NII-26	species	0	1	1	1	0		False	
 Autoimmune disease	Autoimmune disease	NCBITaxon:712	Pasteurellaceae	family	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
-Autoimmune disease	Autoimmune disease	NCBITaxon:724	Haemophilus	genus	1	0	-1	1	2	facultatively aerobic; microaerophilic	False	
-Autoimmune disease	Autoimmune disease	NCBITaxon:729	Haemophilus parainfluenzae	species	2	0	-2	2	2	facultatively aerobic; microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:724	Haemophilus	genus	1	0	-1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
+Autoimmune disease	Autoimmune disease	NCBITaxon:729	Haemophilus parainfluenzae	species	2	0	-2	2	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autoimmune disease	Autoimmune disease	NCBITaxon:80840	Burkholderiales	order	0	1	1	1	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autoimmune disease	Autoimmune disease	NCBITaxon:815	Bacteroidaceae	family	1	2	1	3	3	facultatively aerobic; aerobic; microaerophilic	False	
 Autoimmune disease	Autoimmune disease	NCBITaxon:816	Bacteroides	genus	1	3	2	4	3	facultatively aerobic; aerobic; microaerophilic	False	

@@ -19,6 +19,7 @@ from mtp.composition_denominators import (
     trait_fractions,
 )
 from mtp.human_host_corpus import CORPUS_SEQUENCING_TYPES
+from mtp.population_tables import is_canonical_derived_path, orient_and_filter_profiles_df
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = REPO_ROOT / "trait-visualization"
@@ -136,6 +137,8 @@ def load_aggregated_study_profiles(
         msg = "experiment_metadata needs group_by, the experiment labels to sum profiles by."
         raise ValueError(msg)
     profiles = pd.read_csv(profile_path, sep="\t")
+    if is_canonical_derived_path(profile_path, "study_trait_profiles_wide.tsv"):
+        profiles = orient_and_filter_profiles_df(profiles, filter_to_selection=True)
     unfiltered_profile_count = len(profiles)
     unfiltered_study_count = profiles["study_id"].nunique()
     if human_experiment_ids is not None:
