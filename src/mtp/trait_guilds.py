@@ -15,6 +15,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TextIO
 
+from mtp.count_input import (
+    COMPLETE_COUNT_MODE,
+    LEGACY_SPARSE_ZERO_MODE,
+    CountInputMode,
+    open_input_text,
+    profile_count_reader,
+)
 from mtp.paths import DERIVED_DATA_DIR, RAW_DATA_DIR
 from mtp.trait_key_policy import display_trait_label, read_recorded_member_ids
 
@@ -28,6 +35,8 @@ PROFILE_METADATA_COLUMNS = frozenset(
 )
 HUMAN_HOST_SPECIES = "Homo sapiens"
 MEDIADIVE_MARKER = "mediadive.medium"
+# How count_input.parse_nonnegative_integer starts a blank-count error.
+_READER_MISSING_COUNT_PREFIX = "Missing count in "
 
 # Oxygen guilds, fixed a priori and identical to both analysis arms. Labels were
 # verified against data/kg-microbe/merged-kg_nodes.tsv.
@@ -325,7 +334,7 @@ def _select_trait_columns(
 
 def _read_profile_header(profile_path: Path) -> list[str]:
     """Return the profile matrix header, rejecting a file that is not one."""
-    with profile_path.open(encoding="utf-8", newline="") as handle:
+    with open_input_text(profile_path) as handle:
         header = next(csv.reader(handle, delimiter="\t"), None)
     if header is None:
         msg = f"{profile_path} is empty"
@@ -361,39 +370,41 @@ def load_profiles(
     *,
     human_only: bool = True,
     paired_only: bool = True,
-    reject_missing_counts: bool = False,
+    count_input_mode: CountInputMode = COMPLETE_COUNT_MODE,
+    reject_missing_counts: bool | None = None,
 ) -> tuple[list[Profile], CorpusStats]:
     """Load profile rows joined to experiment metadata, with corpus filters applied."""
     guild_map = OXYGEN_GUILDS if guilds is None else guilds
     metadata = ExperimentMetadata.load(experiments_path)
+    effective_mode: CountInputMode = (
+        count_input_mode
+        if reject_missing_counts is None
+        else (COMPLETE_COUNT_MODE if reject_missing_counts else LEGACY_SPARSE_ZERO_MODE)
+    )
 
-    with profile_path.open(encoding="utf-8", newline="") as handle:
-        reader = csv.reader(handle, delimiter="\t")
-        header = next(reader, None)
-        if header is None:
-            msg = f"{profile_path} is empty"
-            raise ValueError(msg)
-        if header[:3] != list(PROFILE_ID_COLUMNS):
-            msg = f"{profile_path} must start with {PROFILE_ID_COLUMNS}"
-            raise ValueError(msg)
+    count_reader = profile_count_reader(profile_path, mode=effective_mode)
+    header = list(count_reader.header)
+    selection = _select_trait_columns(header, guild_map)
+    total_positions = selection.total_positions
+    guild_positions = selection.guild_positions
+    mediadive_excluded = selection.mediadive_excluded
 
-        selection = _select_trait_columns(header, guild_map)
-        total_positions = selection.total_positions
-        guild_positions = selection.guild_positions
-        mediadive_excluded = selection.mediadive_excluded
+    profile_rows = 0
+    unmatched = 0
+    dropped_non_human = 0
+    candidates: list[Profile] = []
+    count_offset = len(PROFILE_ID_COLUMNS)
 
-        profile_rows = 0
-        unmatched = 0
-        dropped_non_human = 0
-        candidates: list[Profile] = []
-
-        for row in reader:
-            if not row:
-                continue
+    try:
+        for parsed_row in count_reader:
             profile_rows += 1
-            study_id, experiment_id, inc_dec = row[0], row[1], row[2]
+            study_id, experiment_id, inc_dec = parsed_row.key
             if inc_dec not in DIRECTIONS:
-                continue
+                msg = (
+                    f"Unknown profile direction in {profile_path}:{parsed_row.line_number}: "
+                    f"{inc_dec!r}; expected one of {DIRECTIONS}"
+                )
+                raise ValueError(msg)
 
             meta = metadata.get(study_id, experiment_id)
             if meta is None:
@@ -403,17 +414,9 @@ def load_profiles(
                 dropped_non_human += 1
                 continue
 
-            if reject_missing_counts:
-                for i in total_positions:
-                    if i >= len(row) or not row[i].strip():
-                        msg = (
-                            f"Missing trait count for {study_id}, {experiment_id}, {inc_dec}: "
-                            f"{header[i]}; missing is not zero"
-                        )
-                        raise ValueError(msg)
-            values = [int(row[i]) if row[i].strip() else 0 for i in total_positions]
+            values = [parsed_row.counts[i - count_offset] for i in total_positions]
             guild_counts = {
-                guild: sum(int(row[i]) if row[i].strip() else 0 for i in positions)
+                guild: sum(parsed_row.counts[i - count_offset] for i in positions)
                 for guild, positions in guild_positions.items()
             }
             candidates.append(
@@ -427,6 +430,16 @@ def load_profiles(
                     total=sum(values),
                 )
             )
+    except ValueError as exc:
+        # Relabel only the strict reader's missing-count error, matched as a
+        # prefix: a path that contains the phrase must not relabel any other
+        # error (#1300). The reader's file:line:column and its statement that
+        # missing is not an observed zero are kept as they are.
+        message = str(exc)
+        if message.startswith(_READER_MISSING_COUNT_PREFIX):
+            detail = message.removeprefix(_READER_MISSING_COUNT_PREFIX)
+            raise ValueError(f"Missing trait count in {detail}") from exc
+        raise
 
     kept, dropped_unpaired = _apply_pair_filter(candidates, paired_only=paired_only)
     experiments_seen = len({(p.study_id, p.experiment_id) for p in candidates})
