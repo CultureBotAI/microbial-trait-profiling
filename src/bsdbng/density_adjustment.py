@@ -32,6 +32,7 @@ from mtp.density_adjustment import (
     regress_out_pc1,
     reported_traits_heading,
     run_density_audit,
+    table1_traits_for_columns,
     write_trait_list_provenance,
 )
 
@@ -64,6 +65,7 @@ __all__ = [
     "regress_out_pc1",
     "reported_traits_heading",
     "run_density_audit",
+    "table1_traits_for_columns",
     "write_trait_list_provenance",
 ]
 

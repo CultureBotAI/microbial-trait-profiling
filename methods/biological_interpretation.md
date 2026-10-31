@@ -234,11 +234,17 @@ owner and disposition. Correct generators as well as their rendered output;
 label historical artifacts and keep their provenance. An unreviewed external
 output is not implicitly approved by this guide.
 
+The following are historical work items, not a list of currently open issues.
+The [status checkpoint](biological_interpretation_audit.md#status-checkpoint-2026-10-30)
+records the UTC closure dates for #182 and #188-#191 and the merge of PR #194.
+Tracker closure does not establish patient-level effects or validate a mechanism;
+the evidence requirements below still apply to each result.
+
 | Follow-up | Deliverable and lead | Boundary |
 | --- | --- | --- |
 | #188 | Contrast eligibility/orientation manifest; Noel with Jed | Required before disease/control language; host filtering alone is insufficient |
 | #189 | Trait semantics, source evidence and justified grouping; Ilyas with Jed | Required before label translations, gene claims or merging features |
-| #190 | Reconciled contributions and genus/family influence; Jed with Noel and Ilyas | PR #194 supplies provisional contribution/influence artifacts, including native composition and fixed/recomputed-background ORA reruns; orientation, semantics, native-owner review and calibration remain unresolved, and sensitivity is not causal validation |
+| #190 | Reconciled contributions and genus/family influence; Jed with Noel and Ilyas | #190 closed 2026-10-12; PR #194 merged 2026-10-13 with contribution/influence artifacts, including native composition and fixed/recomputed-background ORA reruns. These remain annotation influence diagnostics; sensitivity is not causal validation. |
 | #191 | Inventory of measured inflammation/SCFA evidence and feasible independent validation; Noel with Ilyas | Starts with feasibility and protocol; does not assume measured markers or successful validation |
 
 These deliverables feed #178 and #179; none marks mechanisms validated. Preserve

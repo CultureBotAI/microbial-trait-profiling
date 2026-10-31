@@ -24,8 +24,22 @@ def _outside_code(content: str) -> str:
     fence = ""
     position = 0
     reference_continuation = False
+    block_boundaries: set[int] = set()
     for line in content.splitlines(keepends=True):
-        marker = re.match(r" {0,3}(`{3,}|~{3,})(.*)", line.rstrip("\r\n"))
+        text = line.rstrip("\r\n")
+        marker = re.match(r" {0,3}(`{3,}|~{3,})(.*)", text)
+        if not fence:
+            heading = re.match(r" {0,3}#{1,6}(?:[ \t]|$)", text)
+            item = re.match(r" {0,3}(?:[-+*]|[0-9]{1,9}[.)])(?:[ \t]|$)", text)
+            thematic = re.fullmatch(
+                r" {0,3}(?:(?:\*[ \t]*){3,}|(?:-[ \t]*){3,}|(?:_[ \t]*){3,})", text
+            )
+            if heading or item or thematic:
+                block_boundaries.add(position)
+            if heading:
+                # An ATX heading is one line; its code spans cannot continue
+                # into the following paragraph. List-item continuations can.
+                block_boundaries.add(position + len(line))
         if fence:
             hide(position, position + len(line))
             if re.fullmatch(
@@ -34,6 +48,7 @@ def _outside_code(content: str) -> str:
             ):
                 fence = ""
         elif marker and not (marker[1][0] == "`" and "`" in marker[2]):
+            block_boundaries.add(position)
             fence = marker[1]
             hide(position, position + len(line))
         elif line.startswith(("    ", "\t")) and not reference_continuation:
@@ -50,11 +65,16 @@ def _outside_code(content: str) -> str:
         if not _escaped(code, opening.start()):
             boundary = re.search(r"\n[ \t\r]*\n", code[opening.end() :])
             paragraph_end = opening.end() + boundary.start() if boundary else len(code)
+            block_end = min(
+                (offset for offset in block_boundaries if offset > opening.start()),
+                default=len(code),
+            )
             closing = next(
                 (
                     item
                     for item in range(index + 1, len(ticks))
-                    if ticks[item].start() < paragraph_end and ticks[item][0] == opening[0]
+                    if ticks[item].start() < min(paragraph_end, block_end)
+                    and ticks[item][0] == opening[0]
                 ),
                 None,
             )

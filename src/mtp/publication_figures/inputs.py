@@ -157,6 +157,7 @@ def _table(raw: bytes) -> pd.DataFrame:
         io.BytesIO(raw),
         sep="\t",
         keep_default_na=False,
+        low_memory=False,
         dtype={name: str for name in header if name in identifiers},
         float_precision="round_trip",
     )

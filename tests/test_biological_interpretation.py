@@ -141,7 +141,78 @@ def test_claim_audit_names_the_reviewed_revision(surface: str, revision_abbrevia
     assert full_pins, f"Missing full Git revision in {surface}"
     assert full_pins[0].startswith(revision_abbreviation)
     if "#173" in surface:
-        assert "open" in row
+        assert "closed unmerged on 2026-10-30" in row
+        assert "#172" in row
+        assert "open" not in row
+
+
+def test_overlay_audit_intro_records_closed_pr_and_rebuild() -> None:
+    """The historical P rows must not be presented as an open PR's current results."""
+    content = " ".join(BIOLOGICAL_INTERPRETATION_AUDIT_MD.read_text().split())
+    intro = content.split("## PR #173: proposed overlay and narrative", 1)[1].split("| ID", 1)[0]
+    assert "closed unmerged on 2026-10-30" in intro
+    assert "#172" in intro
+    assert "remains open" not in intro
+    assert "historical 62-cell discussion" in intro
+
+
+@pytest.mark.parametrize(
+    ("number", "status", "date"),
+    [
+        (182, "Closed", "2026-10-12"),
+        (188, "Closed", "2026-10-11"),
+        (189, "Closed", "2026-10-08"),
+        (190, "Closed", "2026-10-12"),
+        (191, "Closed", "2026-10-11"),
+        (194, "Merged", "2026-10-13"),
+    ],
+)
+def test_audit_separates_dated_tracker_closures_from_biological_validation(
+    number: int, status: str, date: str
+) -> None:
+    content = BIOLOGICAL_INTERPRETATION_AUDIT_MD.read_text()
+    assert "## Status checkpoint (2026-10-30)" in content
+    checkpoint = content.split("## Status checkpoint (2026-10-30)", 1)[1].split("##", 1)[0]
+    kind = "pull" if number == 194 else "issues"
+    target = f"https://github.com/CultureBotAI/microbial-trait-profiling/{kind}/{number}"
+    row = next(line for line in checkpoint.splitlines() if f"]({target})" in line)
+    assert status in row
+    assert date in row
+    assert "Dates are UTC" in checkpoint
+    assert "do not establish patient-level effects or validate a mechanism" in " ".join(
+        checkpoint.split()
+    )
+
+
+def test_audit_reproduction_uses_public_pull_refs() -> None:
+    content = BIOLOGICAL_INTERPRETATION_AUDIT_MD.read_text()
+    reproduction = content.split("The original review fetched", 1)[1].split("##", 1)[0]
+    assert "refs/pull/193/head" in reproduction
+    assert "refs/pull/245/head" in reproduction
+    assert "refs/review/" not in reproduction
+    assert "locally retained" not in reproduction
+
+
+def test_table1_methods_intro_states_patient_level_evidence_limit() -> None:
+    content = " ".join(
+        (METHODS_DIR / "table1_trait_condition_body_site_maps.md").read_text().split()
+    )
+    intro = content.split("The figures described here", 1)[0]
+    assert (
+        "Fractions and shifts describe annotation representation, not patient-level trait "
+        "abundance or pathway activity."
+    ) in intro
+
+
+def test_guide_dates_the_historical_follow_up_status() -> None:
+    content = BIOLOGICAL_INTERPRETATION_MD.read_text()
+    section = content.split("## Review responsibilities and open evidence work", 1)[1]
+    assert "historical work items" in section
+    assert "biological_interpretation_audit.md#status-checkpoint-2026-10-30" in section
+    row = next(line for line in section.splitlines() if line.startswith("| #190 |"))
+    assert "closed 2026-10-12" in row
+    assert "merged 2026-10-13" in row
+    assert "remain unresolved" not in row
 
 
 def test_claim_audit_preserves_native_influence_and_later_adoption_limits() -> None:
@@ -151,10 +222,18 @@ def test_claim_audit_preserves_native_influence_and_later_adoption_limits() -> N
     assert "rule-declared 24-scenario panel" in g11
     assert "native composition and fixed/recomputed-background ORA reruns" in g11
     assert "distinct correction families" in g11
-    assert "native-owner review" in g11
+    assert "status checkpoint" in g11
+    assert "remain unresolved" not in g11
     adoption = " ".join(content.split("## Adoption record", 1)[1].split())
-    assert "pending native-owner review" in adoption
+    assert "dated tracker closures" in adoption
+    assert "pending native-owner review" not in adoption
     assert "pending native integrations" not in adoption
+    pr194 = next(
+        line for line in content.splitlines() if line.startswith("| Taxon contribution/influence")
+    )
+    assert "complete native-owner review before closing #190" not in pr194
+    assert "merged 2026-10-13" in pr194
+    assert "#188-#191 remain open work" not in content
     for finding in ("G14", "G15", "G16"):
         assert any(line.startswith(f"| {finding} ") for line in content.splitlines())
 
@@ -184,6 +263,29 @@ def test_table1_trait_semantics_coverage() -> None:
     ]
     for tid in expected_trait_ids:
         assert tid in content, f"Trait ID '{tid}' missing from Table 1 semantics audit"
+
+    section_5 = content.split(
+        "## 5. Decisions, Approved Wording, and Unsupported Interpretations", 1
+    )[1]
+    metpo_608_row = next(
+        line for line in section_5.splitlines() if line.startswith("| `METPO:1000608` |")
+    )
+    assert "pre-#1124" in metpo_608_row
+    assert "(capable of growth in both the presence and absence of oxygen)" in metpo_608_row
+    assert "facultative (aerobe or anaerobe)" in metpo_608_row
+    assert "annotation for growth with or without oxygen" in metpo_608_row
+    assert "clean_trait_label" not in content
+    delta_z_md = " ".join(
+        (REPO_ROOT / "methods" / "delta_z_derived.md").read_text(encoding="utf-8").split()
+    )
+    assert "facultative (aerobe or anaerobe)" in delta_z_md
+    assert "keep the KG node label" in delta_z_md
+    assert "do not record member arrays" in delta_z_md
+    policy_md = " ".join(
+        (REPO_ROOT / "methods" / "trait_key_policy.md").read_text(encoding="utf-8").split()
+    )
+    assert "do not record member arrays" in policy_md
+    assert "trait_direction_screen.tsv" in policy_md
 
 
 def test_governance_cross_references() -> None:

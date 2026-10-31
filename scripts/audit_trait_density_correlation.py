@@ -6,7 +6,8 @@ Addresses Issue #264 and Issue #352:
 - Evaluates PC1 regression adjustment and profile composition normalization (Task 1).
 - Audits METPO ontology redundancy, states branch collapsing rules, and bounds
   distinct trait space (Task 2).
-- Tests collapse of facultatively aerobic x moderately halophilic vs. survival of convergent six.
+- Tests collapse of facultatively aerobic x moderately halophilic vs.
+  survival of convergent six.
 - Tests conditional contrast and VIF for coccus shaped vs. sphere shaped (Task 3).
 """
 
@@ -93,6 +94,7 @@ def write_consolidated_report(
 
     t1_by_id = {eff.trait_id: eff for eff in t1_effects}
     aerobic_eff = t1_by_id.get("METPO:1000608")
+    aerobic_label = aerobic_eff.trait_label if aerobic_eff is not None else "facultatively aerobic"
     cellulose_eff = t1_by_id.get("METPO:2000103|GO:0030245")
 
     aerobic_p_raw_str = (
@@ -146,7 +148,7 @@ def write_consolidated_report(
         "",
         "2. DENSITY AXIS ADJUSTMENT: SEPARATING BIOLOGY FROM CURATION EFFORT",
         "-" * 80,
-        "Test Case Pair: facultatively aerobic x moderately halophilic",
+        f"Test Case Pair: {aerobic_label} x moderately halophilic",
         f"  Baseline Pearson r: {raw.test_pair_r:+.4f}",
         f"  Post-PC1 regression r: {adj_pc1.test_pair_r:+.4f} "
         f"(attenuation: {adj_pc1.test_pair_r - raw.test_pair_r:+.4f})",
@@ -251,8 +253,7 @@ def write_consolidated_report(
         [
             "1. The vast majority of positive correlation among traits is driven by "
             "curation density (PC1).",
-            "2. Regressing out PC1 collapses the spurious facultatively aerobic x "
-            "moderately halophilic",
+            f"2. Regressing out PC1 collapses the spurious {aerobic_label} x moderately halophilic",
             f"   contrast from significant ({aerobic_p_raw_str}) to completely "
             f"nonsignificant ({aerobic_p_adj_str}).",
             "3. In contrast, genuine convergent signals survive and strengthen: "
@@ -316,6 +317,12 @@ def main() -> int:
     adj = density_res["adj_pc1_pearson"]
     twin = density_res["twin_summary"]
     pair_attenuation = adj.test_pair_r - raw.test_pair_r
+    t1_by_id = {eff.trait_id: eff for eff in density_res["table1_effects"]}
+    aerobic_label = (
+        t1_by_id["METPO:1000608"].trait_label
+        if "METPO:1000608" in t1_by_id
+        else "facultatively aerobic"
+    )
     print(
         f"  - Baseline PC1 explains {raw.pc1_variance_pct:.2f}% of variance "
         f"across {raw.n_traits} traits."
@@ -325,7 +332,7 @@ def main() -> int:
         f"(was {raw.median_pairwise_r:+.4f})."
     )
     print(
-        f"  - facultatively aerobic x moderately halophilic r: {raw.test_pair_r:+.4f} "
+        f"  - {aerobic_label} x moderately halophilic r: {raw.test_pair_r:+.4f} "
         f"-> {adj.test_pair_r:+.4f} (attenuated by {pair_attenuation:+.4f})."
     )
     print(

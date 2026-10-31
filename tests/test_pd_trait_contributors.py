@@ -394,6 +394,32 @@ def test_contributor_tables_carry_shares_status_and_direction() -> None:
     assert set(cells["trait_label"]) == {"facultatively aerobic (METPO:1000608)"}
 
 
+def test_trait_frame_uses_union_display_label_only_when_union_members_recorded(
+    tmp_path: Path,
+) -> None:
+    base, _, _ = ledger_fixture()
+    directions = pd.DataFrame({"trait_id": ["T1"], "trait_direction": ["increased"]})
+    raw_cols = tmp_path / "raw_columns.tsv"
+    raw_cols.write_text(
+        "column_id\tobject_id\tobject_name\ttrait_member_ids_json\n"
+        'METPO:1000608\tMETPO:1000608\tfacultatively aerobic\t["METPO:1000608"]\n',
+        encoding="utf-8",
+    )
+    union_cols = tmp_path / "union_columns.tsv"
+    union_cols.write_text(
+        "column_id\tobject_id\tobject_name\ttrait_member_ids_json\n"
+        "METPO:1000608\tMETPO:1000608\tfacultatively aerobic\t"
+        '["METPO:1000605","METPO:1000608","METPO:1000612"]\n',
+        encoding="utf-8",
+    )
+    raw_frame = contributors.trait_frame(base, directions, column_metadata_path=raw_cols)
+    union_frame = contributors.trait_frame(base, directions, column_metadata_path=union_cols)
+    assert raw_frame["trait_label"].tolist() == ["facultatively aerobic (METPO:1000608)"]
+    assert union_frame["trait_label"].tolist() == [
+        "facultative (aerobe or anaerobe) (METPO:1000608)"
+    ]
+
+
 def test_cells_without_contributions_are_absent() -> None:
     counts = pd.DataFrame(
         [("species", "NCBITaxon:7", "inc", "T1", 3, 2)],
@@ -412,7 +438,7 @@ def test_cells_without_contributions_are_absent() -> None:
             {
                 "trait_key": "T1",
                 "trait_slug": "facultatively_aerobic",
-                "trait_label": "facultatively aerobic (METPO:1000608)",
+                "trait_label": "facultative (aerobe or anaerobe) (METPO:1000608)",
                 "trait_direction": "increased",
             }
         ]
@@ -570,15 +596,35 @@ def test_selected_taxa_with_equal_totals_are_listed_by_name() -> None:
 
 
 def test_trait_labels_lead_with_the_lollipop_direction() -> None:
+    assert (
+        contributors.base_trait_label("facultative (aerobe or anaerobe) (METPO:1000608)")
+        == "facultative (aerobe or anaerobe)"
+    )
+    assert (
+        contributors.base_trait_label("facultative (aerobe or anaerobe)")
+        == "facultative (aerobe or anaerobe)"
+    )
+    assert (
+        contributors.base_trait_label("arsenate reduction (pathways:arsenate_reduction)")
+        == "arsenate reduction"
+    )
+    assert contributors.base_trait_label("Optimum temp (30-40 C)") == "Optimum temp (30-40 C)"
+    assert contributors.base_trait_label("Low GC content (< 45%)") == "Low GC content (< 45%)"
+
     coverage = pd.DataFrame(
         {
-            "trait_slug": ["a", "b"],
-            "trait_label": ["coccus shaped (METPO:1000668)", "moderately halophilic (x)"],
-            "trait_direction": ["decreased", "increased"],
+            "trait_slug": ["a", "b", "facultatively_aerobic"],
+            "trait_label": [
+                "coccus shaped (METPO:1000668)",
+                "moderately halophilic (METPO:1000623)",
+                "facultative (aerobe or anaerobe) (METPO:1000608)",
+            ],
+            "trait_direction": ["decreased", "increased", "increased"],
         }
     )
 
     assert contributors.trait_display_labels(coverage) == {
         "a": "↓ coccus shaped",
         "b": "↑ moderately halophilic",
+        "facultatively_aerobic": "↑ facultative (aerobe or anaerobe)",
     }

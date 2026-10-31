@@ -1129,7 +1129,7 @@ def write_figure(
         f"Rows clustered by Euclidean distance into {n_clusters} groups, separated by blank rows."
     )
     if mark_no_signal:
-        cluster_note += " Dark grey = sampled, with no recorded annotation signal."
+        cluster_note += f" Dark grey = sampled, with no recorded {group_noun} annotation signal."
     # Broken into explicit lines: as one run the subtitle overflows the plotting
     # area and is clipped by the right-hand colour bars.
     lines = [
@@ -1140,6 +1140,7 @@ def write_figure(
         cluster_note,
         *_coverage_note(matrix),
         *([note] if note else []),
+        "Annotation shares do not measure patient traits or exposure.",
         f"BugSigDB {vintage or 'vintage unknown'}. Directions are curated signature labels.",
     ]
     title_layout: dict[str, object] = {"text": f"{title}<br><sub>{'<br>'.join(lines)}</sub>"}
@@ -1349,7 +1350,9 @@ def write_body_site_panels(
     if range_quantile < 1.0:
         range_note += f", cut at the {range_quantile:.0%} quantile of observed cells"
     grey_note = (
-        " Dark grey = sampled, with no recorded annotation signal." if mark_no_signal else ""
+        f" Dark grey = sampled, with no recorded {group_noun} annotation signal."
+        if mark_no_signal
+        else ""
     )
     lines = [
         f"Mean {value_phrase}, averaged within study then across studies, shown as a "
@@ -1360,6 +1363,7 @@ def write_body_site_panels(
         f"blank row here was drawn in another body site.{grey_note}",
         *_coverage_note(matrix),
         *([note] if note else []),
+        "Annotation shares do not measure patient traits or exposure.",
         f"BugSigDB {vintage or 'vintage unknown'}. Directions are curated signature labels.",
     ]
     # Sized from the subtitle and the site titles under it, as in ``write_figure``.

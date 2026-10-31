@@ -15,6 +15,8 @@ analysis differs from the composition and enrichment arms is set out in
 Interpret these annotation summaries using the
 [shared guide](biological_interpretation.md). Curated increased/decreased
 directions do not by themselves establish disease/control orientation (#188).
+Fractions and shifts describe annotation representation, not patient-level trait
+abundance or pathway activity.
 Heatmap cells are descriptive means without cell-level confidence intervals;
 the pooled paired test does not establish significance for individual cells.
 

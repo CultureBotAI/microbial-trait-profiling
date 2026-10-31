@@ -61,6 +61,7 @@ from mtp.trait_guilds import (
     retained_trait_columns,
     write_stats_report,
 )
+from mtp.trait_key_policy import display_trait_label
 
 VERSION = "trait-direction-screen-v1"
 MANIFEST_PATH = REPO_ROOT / "methods" / "trait_screen_manifest.json"
@@ -112,6 +113,7 @@ class TraitScreenRow:
     by_q_nominal: float | None
     by_q_effective: float | None
     test_status: str
+    member_ids: str | None = None
 
     @property
     def studies_scored(self) -> int:
@@ -345,6 +347,7 @@ class ColumnLabel:
     label: str
     object_name: str
     object_category: str
+    member_ids: str | None = None
 
 
 def load_column_labels(path: Path = DEFAULT_COLUMN_LABELS_PATH) -> dict[str, ColumnLabel]:
@@ -361,10 +364,15 @@ def load_column_labels(path: Path = DEFAULT_COLUMN_LABELS_PATH) -> dict[str, Col
     labels: dict[str, ColumnLabel] = {}
     with path.open(encoding="utf-8", newline="") as handle:
         for row in csv.DictReader(handle, delimiter="\t"):
-            labels[row["column_id"]] = ColumnLabel(
-                label=row.get("column_label", "") or row["column_id"],
-                object_name=row.get("object_name", ""),
+            column_id = row["column_id"]
+            member_ids = row.get("trait_member_ids_json")
+            raw_label = row.get("column_label", "") or column_id
+            raw_object_name = row.get("object_name", "")
+            labels[column_id] = ColumnLabel(
+                label=display_trait_label(column_id, raw_label, member_ids),
+                object_name=display_trait_label(column_id, raw_object_name, member_ids),
                 object_category=row.get("object_category", ""),
+                member_ids=member_ids,
             )
     return labels
 
@@ -459,6 +467,7 @@ def run_screen(
                 by_q_nominal=by_value,
                 by_q_effective=by_effective_value,
                 test_status=status,
+                member_ids=naming.member_ids,
             )
         )
 
@@ -843,7 +852,9 @@ def _report(result: ScreenResult, vintage: str | None) -> str:
     for row in result.rows:
         if not row.in_table1:
             continue
-        manuscript = TABLE1_TRAIT_LABELS[row.table1_slug]
+        manuscript = display_trait_label(
+            row.term_id, TABLE1_TRAIT_LABELS[row.table1_slug], row.member_ids
+        )
         lines.append(
             f"| {manuscript} | {row.studies_up}/{row.studies_down}/{row.studies_tied} | "
             f"{_cell(row.share_up, '.4g')} ({_cell(row.ci_low, '.4g')}, "

@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import textwrap
 from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -54,7 +55,6 @@ from mtp.trait_guilds import (
     DEFAULT_FULL_DUMP_PATH,
     DEFAULT_PROFILE_PATH,
     TABLE1_TRAIT_COLORS,
-    TABLE1_TRAIT_LABELS,
     TABLE1_TRAITS,
     PairExclusion,
     Profile,
@@ -62,6 +62,7 @@ from mtp.trait_guilds import (
     format_pair_exclusion,
     load_profiles,
     read_bugsigdb_vintage,
+    table1_trait_label,
     write_stats_report,
 )
 
@@ -492,6 +493,8 @@ def write_shift_table(
     output_dir: Path,
     vintage: str | None,
     exclusion: PairExclusion | None = None,
+    *,
+    column_metadata_path: Path | None = None,
 ) -> list[Path]:
     """Write the per-trait shift table and the trait-pair correlation table.
 
@@ -539,7 +542,7 @@ def write_shift_table(
             writer.writerow(
                 [
                     shift.trait,
-                    TABLE1_TRAIT_LABELS[shift.trait],
+                    table1_trait_label(shift.trait, column_metadata_path=column_metadata_path),
                     shift.studies_up,
                     shift.studies_down,
                     shift.studies_tied,
@@ -571,7 +574,11 @@ def write_shift_table(
 
 
 def build_shift_figure(
-    result: ShiftResult, vintage: str | None, trait_order: Sequence[str]
+    result: ShiftResult,
+    vintage: str | None,
+    trait_order: Sequence[str],
+    *,
+    column_metadata_path: Path | None = None,
 ) -> Figure:
     """Build all six traits' directional shifts and their correlations as one figure.
 
@@ -592,7 +599,9 @@ def build_shift_figure(
     by_trait = {shift.trait: shift for shift in result.shifts}
     ordered = [by_trait[t] for t in trait_order]
     # Plot top-to-bottom in Table 1 order; the categorical axis is reversed below.
-    labels = [TABLE1_TRAIT_LABELS[s.trait] for s in ordered]
+    labels = [
+        table1_trait_label(s.trait, column_metadata_path=column_metadata_path) for s in ordered
+    ]
 
     figure = make_subplots(
         rows=1,
@@ -694,26 +703,38 @@ def build_shift_figure(
         col=2,
     )
 
-    subtitle = (
+    subtitle_paragraphs = [
+        ANALYSIS_NOTE,
         "Each study contributes one value per trait: the mean increased annotation share minus "
-        "the mean decreased annotation share over its paired experiments. "
+        "the mean decreased annotation share over its paired experiments.",
         f"{result.studies} studies; ties "
-        "are excluded from a trait's test, so the denominators differ between traits."
-        "<br>Error bars are exact binomial 95% intervals; q is Benjamini-Hochberg across the "
-        f"six traits. Correlations are between traits over those per-study contrasts. "
-        "Both fractions and their contrasts remain denominator-dependent. "
-        f"BugSigDB {vintage or 'vintage unknown'}. Directions are curated signature labels."
-    )
+        "are excluded from a trait's test, so the denominators differ between traits.",
+        "Error bars are exact binomial 95% intervals; q is Benjamini-Hochberg across the "
+        "six traits.",
+        "Correlations are between traits over those per-study contrasts. "
+        "Both fractions and their contrasts remain denominator-dependent.",
+        "Directions are curated signature labels. "
+        "Shared annotations do not establish patient-level change or independent validation.",
+        f"BugSigDB {vintage or 'vintage unknown'}.",
+    ]
+    subtitle_lines = [line for text in subtitle_paragraphs for line in textwrap.wrap(text, 150)]
+    # Reserve title space per wrapped line, retaining the previous 380 px plot
+    # height and bottom margin instead of compressing the six trait rows (#1276).
+    top = 100 + 22 * len(subtitle_lines)
+    height = top + 380 + 90
     figure.update_layout(
         title={
             "text": (
                 f"{ANALYSIS_LABEL}: paired annotation contrast<br>"
-                f"<sub>{ANALYSIS_NOTE} {subtitle}</sub>"
-            )
+                f"<sub>{'<br>'.join(subtitle_lines)}</sub>"
+            ),
+            "yref": "container",
+            "yanchor": "top",
+            "y": 1 - 20 / height,
         },
         width=1650,
-        height=640,
-        margin={"l": 290, "r": 120, "t": 170, "b": 90},
+        height=height,
+        margin={"l": 290, "r": 120, "t": top, "b": 90},
         plot_bgcolor="white",
     )
     figure.update_xaxes(
@@ -726,10 +747,17 @@ def build_shift_figure(
 
 
 def write_shift_figure(
-    result: ShiftResult, output_path: Path, vintage: str | None, trait_order: Sequence[str]
+    result: ShiftResult,
+    output_path: Path,
+    vintage: str | None,
+    trait_order: Sequence[str],
+    *,
+    column_metadata_path: Path | None = None,
 ) -> Path:
     """Render the directional-shift figure to an image file."""
-    figure = build_shift_figure(result, vintage, trait_order)
+    figure = build_shift_figure(
+        result, vintage, trait_order, column_metadata_path=column_metadata_path
+    )
     output_path.parent.mkdir(parents=True, exist_ok=True)
     figure.write_image(str(output_path), scale=2)
     return output_path
@@ -746,6 +774,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--core-run", type=Path, help="Verified core workflow run manifest")
     parser.add_argument("--profile-input", type=Path)
+    parser.add_argument("--column-labels", "--columns", dest="column_labels", type=Path)
     parser.add_argument("--experiments-input", type=Path)
     parser.add_argument("--full-dump-input", type=Path)
     parser.add_argument("--output-dir", type=Path, default=DERIVED_DATA_DIR / "table1_traits")
@@ -853,6 +882,9 @@ def main() -> int:
             output_directory=args.output_dir,
         )
     args.profile_input = args.profile_input or DEFAULT_PROFILE_PATH
+    if args.column_labels is None:
+        sibling_columns = args.profile_input.with_name("taxa_trait_matrix_columns.tsv")
+        args.column_labels = sibling_columns if sibling_columns.exists() else None
     args.experiments_input = args.experiments_input or DEFAULT_EXPERIMENTS_PATH
     args.full_dump_input = args.full_dump_input or DEFAULT_FULL_DUMP_PATH
     profiles, stats = load_profiles(
@@ -922,7 +954,15 @@ def main() -> int:
     result = compute_direction_shifts(profiles, TRAIT_ORDER)
 
     written = write_matrix_outputs(matrix, args.output_dir, OUTPUT_PREFIX)
-    written.extend(write_shift_table(result, args.output_dir, vintage, exclusion))
+    written.extend(
+        write_shift_table(
+            result,
+            args.output_dir,
+            vintage,
+            exclusion,
+            column_metadata_path=args.column_labels,
+        )
+    )
     written.append(
         write_figure(
             matrix,
@@ -1062,6 +1102,7 @@ def main() -> int:
             args.output_dir / f"{OUTPUT_PREFIX}_direction_shift.png",
             vintage,
             TRAIT_ORDER,
+            column_metadata_path=args.column_labels,
         )
     )
 
