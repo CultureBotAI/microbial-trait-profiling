@@ -1,5 +1,7 @@
 """Corpus filters, guild aggregation, and the guild-map statistics."""
 
+import gzip
+import re
 from collections.abc import Callable
 from math import isnan
 from pathlib import Path
@@ -28,6 +30,7 @@ from bsdbng.trait_guilds import (
     Profile,
     load_profiles,
     read_bugsigdb_vintage,
+    resolve_trait_columns,
 )
 
 AEROBE_A, AEROBE_B, AEROBE_C = OXYGEN_GUILDS["aerobe"]
@@ -1000,7 +1003,15 @@ def test_method_loader_rejects_blank_by_default_and_allows_sparse_zero_override(
         [("bsdb:1", "bsdb:1-1", "Colorectal cancer", "Feces", "Homo sapiens")],
     )
 
-    with pytest.raises(ValueError, match="Missing trait count"):
+    # One label, one statement that missing is not zero, and the file:line:column
+    # of the blank cell (#1300).
+    with pytest.raises(
+        ValueError,
+        match=(
+            rf"^Missing trait count in {re.escape(str(profiles_path))}:2, "
+            r"column 'METPO:1000615'; missing is not an observed zero$"
+        ),
+    ):
         load_profiles(profiles_path, experiments_path, OXYGEN_GUILDS)
 
     profiles, _ = load_profiles(
@@ -1011,6 +1022,50 @@ def test_method_loader_rejects_blank_by_default_and_allows_sparse_zero_override(
     )
     inc = next(profile for profile in profiles if profile.inc_dec == "inc")
     assert inc.total == 7
+
+
+def test_method_loader_relabels_only_missing_count_errors_when_the_path_names_the_marker(
+    tmp_path: Path,
+) -> None:
+    # The relabel keys on the start of the reader's message, not on the phrase
+    # appearing anywhere in it, so a path carrying the phrase changes nothing (#1300).
+    profiles_path = tmp_path / "Missing count in here.tsv"
+    experiments_path = tmp_path / "experiments.tsv"
+    _write_experiments(
+        experiments_path,
+        [("bsdb:1", "bsdb:1-1", "Colorectal cancer", "Feces", "Homo sapiens")],
+    )
+    _write_profiles(
+        profiles_path,
+        [
+            ("bsdb:1", "bsdb:1-1", "inc", [6, 0, 0, 1, 0, 3, 100]),
+            ("bsdb:1", "bsdb:1-1", "dec", [1, 0, 0, 6, 0, 3, 100]),
+            ("bsdb:1", "bsdb:1-1", "up", [1, 0, 0, 6, 0, 3, 100]),
+        ],
+    )
+
+    path = re.escape(str(profiles_path))
+    with pytest.raises(
+        ValueError, match=rf"^Unknown profile direction in {path}:4: 'up'; "
+    ) as unknown:
+        load_profiles(profiles_path, experiments_path, OXYGEN_GUILDS)
+    assert "Missing trait count" not in str(unknown.value)
+
+    _write_profiles(
+        profiles_path,
+        [
+            ("bsdb:1", "bsdb:1-1", "inc", [6, 0, 0, 1, 0, "", 100]),
+            ("bsdb:1", "bsdb:1-1", "dec", [1, 0, 0, 6, 0, 3, 100]),
+        ],
+    )
+    with pytest.raises(
+        ValueError,
+        match=(
+            rf"^Missing trait count in {path}:2, column 'METPO:1000615'; "
+            r"missing is not an observed zero$"
+        ),
+    ):
+        load_profiles(profiles_path, experiments_path, OXYGEN_GUILDS)
 
 
 @pytest.mark.parametrize("strict", [False, True])
@@ -1030,7 +1085,12 @@ def test_method_loader_rejects_duplicate_profile_keys(tmp_path: Path, strict: bo
         [("bsdb:1", "bsdb:1-1", "Colorectal cancer", "Feces", "Homo sapiens")],
     )
 
-    with pytest.raises(ValueError, match="Duplicate key"):
+    # Anchored, so the reader's label must survive the loader unchanged (#1295).
+    duplicate = re.escape(repr(("bsdb:1", "bsdb:1-1", "inc")))
+    with pytest.raises(
+        ValueError,
+        match=rf"^Duplicate key {duplicate} in {re.escape(str(profiles_path))}:3; ",
+    ):
         load_profiles(
             profiles_path,
             experiments_path,
@@ -1039,8 +1099,20 @@ def test_method_loader_rejects_duplicate_profile_keys(tmp_path: Path, strict: bo
         )
 
 
+@pytest.mark.parametrize(
+    ("study_id", "experiment_id"),
+    [
+        pytest.param("bsdb:1", "bsdb:1-1", id="kept_human_row"),
+        pytest.param("bsdb:4", "bsdb:4-1", id="non_human_row"),
+        pytest.param("bsdb:9", "bsdb:9-1", id="unmatched_row"),
+    ],
+)
 @pytest.mark.parametrize("strict", [False, True])
-def test_method_loader_rejects_unknown_direction(tmp_path: Path, strict: bool) -> None:
+def test_method_loader_rejects_unknown_direction(
+    tmp_path: Path, strict: bool, study_id: str, experiment_id: str
+) -> None:
+    # The direction is checked before the metadata join and the host filter, so
+    # an unknown direction fails even on a row those filters would drop (#1295).
     profiles_path = tmp_path / "profiles.tsv"
     experiments_path = tmp_path / "experiments.tsv"
     _write_profiles(
@@ -1048,15 +1120,24 @@ def test_method_loader_rejects_unknown_direction(tmp_path: Path, strict: bool) -
         [
             ("bsdb:1", "bsdb:1-1", "inc", [6, 0, 0, 1, 0, 3, 100]),
             ("bsdb:1", "bsdb:1-1", "dec", [1, 0, 0, 6, 0, 3, 100]),
-            ("bsdb:1", "bsdb:1-1", "up", [1, 0, 0, 6, 0, 3, 100]),
+            (study_id, experiment_id, "up", [1, 0, 0, 6, 0, 3, 100]),
         ],
     )
     _write_experiments(
         experiments_path,
-        [("bsdb:1", "bsdb:1-1", "Colorectal cancer", "Feces", "Homo sapiens")],
+        [
+            ("bsdb:1", "bsdb:1-1", "Colorectal cancer", "Feces", "Homo sapiens"),
+            ("bsdb:4", "bsdb:4-1", "Colitis", "Caecum", "Mus musculus"),
+        ],
     )
 
-    with pytest.raises(ValueError, match="Unknown profile direction"):
+    with pytest.raises(
+        ValueError,
+        match=(
+            rf"^Unknown profile direction in {re.escape(str(profiles_path))}:4: "
+            r"'up'; expected one of "
+        ),
+    ):
         load_profiles(
             profiles_path,
             experiments_path,
@@ -1111,12 +1192,18 @@ def test_method_loader_validates_yet_excludes_metadata_columns_from_total(
         "METPO:1000615",
         MEDIA_COLUMN,
     ]
-    rows = [
-        "\t".join(header),
-        "\t".join(["bsdb:1", "bsdb:1-1", "inc", "50", "6", "0", "0", "1", "0", "3", "100"]),
-        "\t".join(["bsdb:1", "bsdb:1-1", "dec", "40", "1", "0", "0", "6", "0", "3", "100"]),
-    ]
-    profiles_path.write_text("\n".join(rows) + "\n", encoding="utf-8")
+
+    def write(inc_taxa_count: str) -> None:
+        rows = [
+            "\t".join(header),
+            "\t".join(
+                ["bsdb:1", "bsdb:1-1", "inc", inc_taxa_count, "6", "0", "0", "1", "0", "3", "100"]
+            ),
+            "\t".join(["bsdb:1", "bsdb:1-1", "dec", "40", "1", "0", "0", "6", "0", "3", "100"]),
+        ]
+        profiles_path.write_text("\n".join(rows) + "\n", encoding="utf-8")
+
+    write("50")
     _write_experiments(
         experiments_path,
         [("bsdb:1", "bsdb:1-1", "Colorectal cancer", "Feces", "Homo sapiens")],
@@ -1125,3 +1212,44 @@ def test_method_loader_validates_yet_excludes_metadata_columns_from_total(
     profiles, _ = load_profiles(profiles_path, experiments_path, OXYGEN_GUILDS)
     inc = next(profile for profile in profiles if profile.inc_dec == "inc")
     assert inc.total == 10
+
+    # Excluded from the total is not exempt from validation: a malformed or
+    # negative metadata cell fails in either mode, and a blank one fails by
+    # default (#1295).
+    location = rf"{re.escape(str(profiles_path))}:2, column 'taxa_count'"
+    for bad in ("-5", "4.5", "fifty"):
+        write(bad)
+        for strict in (True, False):
+            with pytest.raises(
+                ValueError,
+                match=(
+                    rf"^Expected a finite nonnegative integer count in {location}; "
+                    rf"got {re.escape(repr(bad))}$"
+                ),
+            ):
+                load_profiles(
+                    profiles_path, experiments_path, OXYGEN_GUILDS, reject_missing_counts=strict
+                )
+    write("")
+    with pytest.raises(ValueError, match=rf"^Missing trait count in {location}; "):
+        load_profiles(profiles_path, experiments_path, OXYGEN_GUILDS)
+
+
+def test_method_loader_and_column_resolver_read_tsv_gz_like_tsv(
+    tmp_path: Path, corpus: tuple[Path, Path]
+) -> None:
+    # The same matrix, gzip-compressed, loads to the same profiles, filter
+    # counts and resolved columns (#1295).
+    plain, experiments = corpus
+    packed = tmp_path / "profiles.tsv.gz"
+    packed.write_bytes(gzip.compress(plain.read_bytes()))
+
+    plain_profiles, plain_stats = load_profiles(plain, experiments, OXYGEN_GUILDS)
+    packed_profiles, packed_stats = load_profiles(packed, experiments, OXYGEN_GUILDS)
+    assert plain_stats.kept_profiles == 4
+    assert packed_profiles == plain_profiles
+    assert packed_stats == plain_stats
+
+    plain_columns = resolve_trait_columns(plain, OXYGEN_GUILDS)
+    assert set(plain_columns) == set(OXYGEN_GUILDS)
+    assert resolve_trait_columns(packed, OXYGEN_GUILDS) == plain_columns

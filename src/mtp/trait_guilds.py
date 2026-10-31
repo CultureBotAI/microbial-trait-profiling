@@ -35,6 +35,8 @@ PROFILE_METADATA_COLUMNS = frozenset(
 )
 HUMAN_HOST_SPECIES = "Homo sapiens"
 MEDIADIVE_MARKER = "mediadive.medium"
+# How count_input.parse_nonnegative_integer starts a blank-count error.
+_READER_MISSING_COUNT_PREFIX = "Missing count in "
 
 # Oxygen guilds, fixed a priori and identical to both analysis arms. Labels were
 # verified against data/kg-microbe/merged-kg_nodes.tsv.
@@ -429,8 +431,14 @@ def load_profiles(
                 )
             )
     except ValueError as exc:
-        if "Missing count in " in str(exc):
-            raise ValueError(f"Missing trait count: {exc}; missing is not zero") from exc
+        # Relabel only the strict reader's missing-count error, matched as a
+        # prefix: a path that contains the phrase must not relabel any other
+        # error (#1300). The reader's file:line:column and its statement that
+        # missing is not an observed zero are kept as they are.
+        message = str(exc)
+        if message.startswith(_READER_MISSING_COUNT_PREFIX):
+            detail = message.removeprefix(_READER_MISSING_COUNT_PREFIX)
+            raise ValueError(f"Missing trait count in {detail}") from exc
         raise
 
     kept, dropped_unpaired = _apply_pair_filter(candidates, paired_only=paired_only)
