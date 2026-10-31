@@ -29,7 +29,7 @@ from pydantic import (
 )
 
 
-metamodel_version = "1.7.0"
+metamodel_version = "1.12.0"
 version = "None"
 
 
@@ -271,10 +271,10 @@ class Study(NamedThing):
         pattern=re.compile(r"^10\..+$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid doi format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid doi format: {v}"
             raise ValueError(err_msg)
         return v
@@ -284,10 +284,10 @@ class Study(NamedThing):
         pattern=re.compile(r"^bsdb:.+$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid id format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid id format: {v}"
             raise ValueError(err_msg)
         return v
@@ -342,10 +342,10 @@ class Experiment(NamedThing):
         pattern=re.compile(r"^UBERON:[0-9]+$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid body_site_ontology_id format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid body_site_ontology_id format: {v}"
             raise ValueError(err_msg)
         return v
@@ -355,10 +355,10 @@ class Experiment(NamedThing):
         pattern=re.compile(r"^bsdb:.+-[0-9]+$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid id format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid id format: {v}"
             raise ValueError(err_msg)
         return v
@@ -388,10 +388,10 @@ class Signature(NamedThing):
         pattern=re.compile(r"^bsdb:.+-[0-9]+-[0-9]+$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid id format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid id format: {v}"
             raise ValueError(err_msg)
         return v
@@ -423,10 +423,10 @@ class Taxon(NamedThing):
         pattern=re.compile(r"^NCBITaxon:[0-9]+$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid id format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid id format: {v}"
             raise ValueError(err_msg)
         return v
@@ -485,10 +485,10 @@ class Phenotype(ConfiguredBaseModel):
         pattern=re.compile(r"^METPO:[0-9]+$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid phenotype_id format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid phenotype_id format: {v}"
             raise ValueError(err_msg)
         return v
@@ -535,10 +535,10 @@ class TaxonTraitMatrixRow(ConfiguredBaseModel):
         pattern=re.compile(r"^NCBITaxon:[0-9]+$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid taxon_id format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid taxon_id format: {v}"
             raise ValueError(err_msg)
         return v

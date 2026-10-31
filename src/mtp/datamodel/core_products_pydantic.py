@@ -29,7 +29,7 @@ from pydantic import (
 )
 
 
-metamodel_version = "1.7.0"
+metamodel_version = "1.12.0"
 version = "1.0.0"
 
 
@@ -276,10 +276,10 @@ class Study(NamedThing):
         pattern=re.compile(r"^10\..+$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid doi format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid doi format: {v}"
             raise ValueError(err_msg)
         return v
@@ -289,10 +289,10 @@ class Study(NamedThing):
         pattern=re.compile(r"^bsdb:.+$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid id format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid id format: {v}"
             raise ValueError(err_msg)
         return v
@@ -347,10 +347,10 @@ class Experiment(NamedThing):
         pattern=re.compile(r"^UBERON:[0-9]+$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid body_site_ontology_id format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid body_site_ontology_id format: {v}"
             raise ValueError(err_msg)
         return v
@@ -360,10 +360,10 @@ class Experiment(NamedThing):
         pattern=re.compile(r"^bsdb:.+-[0-9]+$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid id format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid id format: {v}"
             raise ValueError(err_msg)
         return v
@@ -393,10 +393,10 @@ class Signature(NamedThing):
         pattern=re.compile(r"^bsdb:.+-[0-9]+-[0-9]+$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid id format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid id format: {v}"
             raise ValueError(err_msg)
         return v
@@ -429,10 +429,10 @@ class Taxon(NamedThing):
         pattern=re.compile(r"^NCBITaxon:[0-9]+$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid id format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid id format: {v}"
             raise ValueError(err_msg)
         return v
@@ -491,10 +491,10 @@ class Phenotype(ConfiguredBaseModel):
         pattern=re.compile(r"^METPO:[0-9]+$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid phenotype_id format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid phenotype_id format: {v}"
             raise ValueError(err_msg)
         return v
@@ -541,10 +541,10 @@ class TaxonTraitMatrixRow(ConfiguredBaseModel):
         pattern=re.compile(r"^NCBITaxon:[0-9]+$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid taxon_id format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid taxon_id format: {v}"
             raise ValueError(err_msg)
         return v
@@ -593,10 +593,10 @@ class CountProfileRow(ConfiguredBaseModel):
         pattern=re.compile(r"^(inc|dec)$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid inc_dec format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid inc_dec format: {v}"
             raise ValueError(err_msg)
         return v
@@ -606,10 +606,10 @@ class CountProfileRow(ConfiguredBaseModel):
         pattern=re.compile(r"^sha256:[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid trait_filter_id format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid trait_filter_id format: {v}"
             raise ValueError(err_msg)
         return v
@@ -619,10 +619,10 @@ class CountProfileRow(ConfiguredBaseModel):
         pattern=re.compile(r"^rolled_up_source_taxon_count$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid unit format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid unit format: {v}"
             raise ValueError(err_msg)
         return v
@@ -661,10 +661,10 @@ class ORAProfileRow(ConfiguredBaseModel):
         pattern=re.compile(r"^(inc|dec)$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid inc_dec format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid inc_dec format: {v}"
             raise ValueError(err_msg)
         return v
@@ -674,10 +674,10 @@ class ORAProfileRow(ConfiguredBaseModel):
         pattern=re.compile(r"^sha256:[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid trait_filter_id format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid trait_filter_id format: {v}"
             raise ValueError(err_msg)
         return v
@@ -687,10 +687,10 @@ class ORAProfileRow(ConfiguredBaseModel):
         pattern=re.compile(r"^distinct_matched_reported_taxon_count$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid unit format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid unit format: {v}"
             raise ValueError(err_msg)
         return v
@@ -713,10 +713,10 @@ class SourceFileIdentity(ConfiguredBaseModel):
         pattern=re.compile(r"^[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid sha256 format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid sha256 format: {v}"
             raise ValueError(err_msg)
         return v
@@ -756,10 +756,10 @@ class SourceIdentity(ConfiguredBaseModel):
         pattern=re.compile(r"^(unknown|fixture|live|pinned)$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid declared_source_mode format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid declared_source_mode format: {v}"
             raise ValueError(err_msg)
         return v
@@ -769,10 +769,10 @@ class SourceIdentity(ConfiguredBaseModel):
         pattern=re.compile(r"^(pinned_bytes_verified|origin_unverified)$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid verification_status format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid verification_status format: {v}"
             raise ValueError(err_msg)
         return v
@@ -870,10 +870,10 @@ class SignatureTableRow(ConfiguredBaseModel):
         pattern=re.compile(r"^(increased|decreased)$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid direction format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid direction format: {v}"
             raise ValueError(err_msg)
         return v
@@ -912,10 +912,10 @@ class TaxonOccurrenceRow(ConfiguredBaseModel):
         pattern=re.compile(r"^(increased|decreased)$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid direction format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid direction format: {v}"
             raise ValueError(err_msg)
         return v
@@ -988,10 +988,10 @@ class FeatureDefinition(ConfiguredBaseModel):
         pattern=re.compile(r"^(raw_object_v1|facultative_union_v1)$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid trait_key_policy format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid trait_key_policy format: {v}"
             raise ValueError(err_msg)
         return v
@@ -1001,10 +1001,10 @@ class FeatureDefinition(ConfiguredBaseModel):
         pattern=re.compile(r"^(direct_or_descendant_unresolved|direct_descendant_or_strain_unresolved)$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid annotation_evidence format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid annotation_evidence format: {v}"
             raise ValueError(err_msg)
         return v
@@ -1049,10 +1049,10 @@ class ProfileCoverageRecord(ConfiguredBaseModel):
         pattern=re.compile(r"^sha256:[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid trait_filter_id format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid trait_filter_id format: {v}"
             raise ValueError(err_msg)
         return v
@@ -1062,10 +1062,10 @@ class ProfileCoverageRecord(ConfiguredBaseModel):
         pattern=re.compile(r"^unresolved$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid lineage_resolution format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid lineage_resolution format: {v}"
             raise ValueError(err_msg)
         return v
