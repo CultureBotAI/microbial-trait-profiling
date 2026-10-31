@@ -389,7 +389,8 @@ def ensure_stacked_slides(entries: dict[str, bytes]) -> None:
 def refresh_powerpoint() -> None:
     """Replace slide media in the existing PowerPoint deck with regenerated PNGs."""
     if not PPTX_PATH.exists():
-        raise FileNotFoundError(f"Missing PowerPoint deck: {PPTX_PATH}")
+        print(f"==> skipping PowerPoint refresh ({PPTX_PATH.relative_to(REPO_ROOT)} not present)")
+        return
 
     missing_sources = [path for path in SLIDE_IMAGE_SOURCES.values() if not path.exists()]
     if missing_sources:
@@ -438,7 +439,13 @@ def main() -> None:
     run_script("create_condition_body_site_guild_maps.py")
     run_script("create_all_bugsigdb_condition_body_site_maps.py")
     run_script("create_profile_enrichment_guild_assignment_diagram.py")
+    if not (REPO_ROOT / "trait-visualization" / "study_trait_profile_study_metadata.tsv").exists():
+        run_script("create_study_trait_profile_heatmap.py")
     run_script("create_trait_profile_infographic.py")
+    run_script("create_six_shared_trait_sankeys.py")
+    run_script("create_six_shared_trait_sankeys.py", "--combined-high-support-only")
+    run_script("create_six_shared_trait_sankeys.py", "--high-support-layouts-only")
+    run_script("investigate_taxa_oxygen_switches.py")
     run_script("analyze_parkinsons_disease_trait_profiles.py")
     # Each run rewrites profile-condition-bars/README.md, which describes the last one.
     run_script("create_profile_condition_enrichment_bars.py", "--focus-direction", "inc")
