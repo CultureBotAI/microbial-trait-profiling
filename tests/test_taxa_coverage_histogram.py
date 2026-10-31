@@ -59,7 +59,7 @@ def test_readme_command_replays_explicit_inputs_and_options(
         "declared fixture vintage",
     ]
     for name, path in paths.items():
-        arguments.extend([f"--{name}", str(path)])
+        arguments.extend([f"--{name.replace('_', '-')}", str(path)])
     monkeypatch.setattr(sys, "argv", arguments)
     coverage.main()
     replay = readme_regeneration_argv((output / "README.md").read_text())
@@ -95,7 +95,7 @@ def test_scope_is_explicitly_declared_in_readme_and_provenance(
         scope,
     ]
     for name, path in inputs.items():
-        arguments.extend([f"--{name}", str(path)])
+        arguments.extend([f"--{name.replace('_', '-')}", str(path)])
     monkeypatch.setattr(sys, "argv", arguments)
     coverage.main()
     record = json.loads((output / "provenance.json").read_text())
@@ -223,6 +223,10 @@ def inputs(tmp_path: Path) -> dict[str, Path]:
     for name, frame in frames.items():
         paths[name] = tmp_path / f"{name}.tsv"
         frame.to_csv(paths[name], sep="\t", index=False)
+    paths["taxonomy_edges"] = tmp_path / "taxonomy.tsv"
+    paths["taxonomy_edges"].write_text(
+        "id\tsubject\tpredicate\tobject\nroot\tNCBITaxon:2\tbiolink:subclass_of\tNCBITaxon:1\n"
+    )
     return paths
 
 
@@ -692,7 +696,7 @@ def test_cli_accepts_canonical_profiles_without_taxa_count(
         "off",
     ]
     for name, path in inputs.items():
-        args.extend([f"--{name}", str(path)])
+        args.extend([f"--{name.replace('_', '-')}", str(path)])
     result = subprocess.run(args, capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
     assert "| Total profiles | 3 |" in (output / "README.md").read_text()
@@ -907,7 +911,12 @@ def test_plate6_reads_compact_remediation_and_nonempty_rank_rows(
     assert "Review possible" not in alias[0].get_text()
     assert alias[0].get_window_extent().x1 <= fig.axes[2].get_window_extent().x1
     # Downward propagation is deliberately not restored; #864 owns that consumer label.
-    _, remediation = coverage.diagnose_zero_trait_taxon("t6", "uncultured bacterium", "species")
+    _, remediation = coverage.diagnose_zero_trait_taxon(
+        "NCBITaxon:6",
+        "uncultured bacterium",
+        "species",
+        coverage.TaxonomyState("bacteria", "resolved_root", ("NCBITaxon:2",)),
+    )
     assert "do not establish leaf-taxon traits" in remediation
     coverage.plt.close(fig)
 
