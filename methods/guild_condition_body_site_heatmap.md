@@ -5,6 +5,13 @@ Figure: `guild_condition_body_site_heatmap.png`. Produced by
 differs from the composition and enrichment arms is set out in
 [`three_arm_statistics.md`](three_arm_statistics.md).
 
+Interpret all outputs using the [shared guide](biological_interpretation.md).
+Guild labels summarize annotations, not measured oxygen exposure or respiration.
+`inc`/`dec` refer to curated comparison directions; human host and pairing do not
+verify disease/control orientation (#188). Heatmap cells are descriptive means
+without cell-level confidence intervals; use the support and status tables, and
+do not assign the pooled statistical test to individual cells.
+
 ## Input corpus
 
 BugSigDB differential-abundance signatures were ingested from the full_dump.csv
@@ -133,8 +140,9 @@ to a cell in the other, while the hue still identifies which guild is being read
 
 A condition whose every cell was masked would render as a blank row and is
 dropped before clustering; the dropped labels are listed on each run. A row that
-keeps only dark-grey cells is retained, because "sampled, but no taxon carried
-the guild trait" is a result rather than an absence. On the run described here 9
+keeps only dark-grey cells is retained, because "sampled, but no recorded guild
+annotation signal" distinguishes mapped zero signal from unsampled cells.
+On the run described here 9
 conditions were dropped (Atopic asthma, Cervical cancer, Head and neck squamous
 cell carcinoma, Helminthiasis, Metabolic toxicity, Phenylketonuria, Population,
 Psoriasis vulgaris, Smoking behaviour measurement), leaving 52 rows.
@@ -164,10 +172,10 @@ Cells fall into four states, recorded per cell in a companion status table so th
 distinction is machine-readable rather than only visual. A cell carries a value
 when at least the minimum number of studies support it and at least one study has
 non-zero guild signal. A cell is filled dark grey when the body site was sampled
-for that condition but no taxon in those profiles carried any trait of that
-guild; previously such a cell was drawn as a fraction of zero and was
-indistinguishable from a genuinely small fraction, which understated how often a
-guild is simply absent. Since #783 every profile behind a dark-grey cell carries
+for that condition but there is no recorded guild annotation signal under the
+selected sources and mappings. Previously such a cell was drawn as a fraction
+of zero and was indistinguishable from a genuinely small fraction. This state
+does not establish biological absence. Since #783 every profile behind a dark-grey cell carries
 some retained annotation. Before, a profile with none at all scored share 0 and
 shaded cells too: 8 of this corpus's 20 dark-grey cells were backed only by
 such profiles. A cell is left blank when the site was sampled by fewer

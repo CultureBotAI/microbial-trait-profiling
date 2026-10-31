@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import textwrap
 from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
@@ -583,8 +584,8 @@ def build_shift_figure(
 
     Left panel: the share of studies whose paired contrast is positive, with an
     exact binomial 95% interval, against the half-and-half null. Right panel: the
-    rank correlation between traits across per-study contrasts, which is what
-    shows that coccus shaped and sphere shaped are close to the same measurement.
+    rank correlation between traits across per-study contrasts, which describes
+    numerical overlap, not semantic equivalence or independent evidence.
 
     Separate from ``write_shift_figure`` so the undefined-share branches below -
     the absent marker, the absent error bar, the fallback annotation column and
@@ -608,7 +609,7 @@ def build_shift_figure(
         column_widths=[0.56, 0.44],
         horizontal_spacing=0.18,
         subplot_titles=(
-            "Share of studies shifted toward the increased side",
+            "Share of studies with positive annotation contrast",
             "Rank correlation between per-study trait contrasts",
         ),
     )
@@ -702,28 +703,43 @@ def build_shift_figure(
         col=2,
     )
 
-    subtitle = (
-        "Each study contributes one value per trait: the mean increased fraction minus the "
-        f"mean decreased fraction over its paired experiments. {result.studies} studies; ties "
-        "are excluded from a trait's test, so the denominators differ between traits."
-        "<br>Error bars are exact binomial 95% intervals; q is Benjamini-Hochberg across the "
-        f"six traits. Correlations are between traits over those per-study contrasts. "
-        "Both fractions and their contrasts remain denominator-dependent. "
-        f"BugSigDB {vintage or 'vintage unknown'}."
-    )
+    subtitle_paragraphs = [
+        ANALYSIS_NOTE,
+        "Each study contributes one value per trait: the mean increased annotation share minus "
+        "the mean decreased annotation share over its paired experiments.",
+        f"{result.studies} studies; ties "
+        "are excluded from a trait's test, so the denominators differ between traits.",
+        "Error bars are exact binomial 95% intervals; q is Benjamini-Hochberg across the "
+        "six traits.",
+        "Correlations are between traits over those per-study contrasts. "
+        "Both fractions and their contrasts remain denominator-dependent.",
+        "Directions are curated signature labels. "
+        "Shared annotations do not establish patient-level change or independent validation.",
+        f"BugSigDB {vintage or 'vintage unknown'}.",
+    ]
+    subtitle_lines = [line for text in subtitle_paragraphs for line in textwrap.wrap(text, 150)]
+    # Reserve title space per wrapped line, retaining the previous 380 px plot
+    # height and bottom margin instead of compressing the six trait rows (#1276).
+    top = 100 + 22 * len(subtitle_lines)
+    height = top + 380 + 90
     figure.update_layout(
         title={
             "text": (
-                f"{ANALYSIS_LABEL}: paired directional shift<br>"
-                f"<sub>{ANALYSIS_NOTE} {subtitle}</sub>"
-            )
+                f"{ANALYSIS_LABEL}: paired annotation contrast<br>"
+                f"<sub>{'<br>'.join(subtitle_lines)}</sub>"
+            ),
+            "yref": "container",
+            "yanchor": "top",
+            "y": 1 - 20 / height,
         },
         width=1650,
-        height=640,
-        margin={"l": 290, "r": 120, "t": 170, "b": 90},
+        height=height,
+        margin={"l": 290, "r": 120, "t": top, "b": 90},
         plot_bgcolor="white",
     )
-    figure.update_xaxes(title_text="share of studies with increased > decreased", row=1, col=1)
+    figure.update_xaxes(
+        title_text="study share: annotation fraction increased > decreased", row=1, col=1
+    )
     figure.update_yaxes(autorange="reversed", row=1, col=1)
     figure.update_xaxes(tickangle=-40, row=1, col=2)
     figure.update_yaxes(autorange="reversed", row=1, col=2)
