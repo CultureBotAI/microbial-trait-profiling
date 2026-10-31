@@ -17,7 +17,7 @@ import shlex
 from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, NamedTuple
 
 import matplotlib
 
@@ -30,6 +30,7 @@ from matplotlib.figure import Figure
 from matplotlib.patches import Patch, Rectangle
 from matplotlib.text import Text
 
+from mtp.contribution_inputs import Graph
 from mtp.corpus_identity import DEFAULT_KG_PROVENANCE_PATH, corpus_identity
 from mtp.human_host_corpus import (
     CORPUS_SEQUENCING_TYPES,
@@ -40,6 +41,7 @@ from mtp.paths import file_sha256
 from mtp.study_trait_profiles import direction_to_inc_dec
 from mtp.taxa_trait_matrix import STRAIN_ROLLUPS, StrainRollup, parse_strain_rollup
 from mtp.trait_guilds import MEDIADIVE_MARKER, read_bugsigdb_vintage
+from mtp.workflow.kg_inputs import iter_kg_edges
 from mtp.workflow.runtime import repository_state
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -51,6 +53,14 @@ TAXA_PATH = REPO_ROOT / "data" / "derived" / "bugsigdb_taxa.tsv"
 TAXA_TRAIT_MATRIX_PATH = REPO_ROOT / "data" / "derived" / "taxa_trait_matrix.tsv"
 PROFILES_WIDE_PATH = REPO_ROOT / "data" / "derived" / "study_trait_profiles_wide.tsv"
 EXPERIMENTS_PATH = REPO_ROOT / "data" / "derived" / "experiments.tsv"
+TAXONOMY_EDGES_PATH = REPO_ROOT / "data/kg-microbe/merged-kg_edges.tsv"
+TAXONOMY_DIAGNOSIS_POLICY = "coverage-taxonomy-v1"
+TAXONOMY_ROOTS = {
+    "NCBITaxon:2": "bacteria",
+    "NCBITaxon:2157": "archaea",
+    "NCBITaxon:2759": "eukaryota",
+    "NCBITaxon:10239": "viruses",
+}
 
 # Standard taxonomic hierarchy (ascending order)
 RANK_ORDER = ["species", "genus", "family", "order", "class", "phylum", "superkingdom", "other"]
@@ -119,9 +129,99 @@ def save_figure(fig: Figure, output_path: Path) -> None:
     plt.close(fig)
 
 
-def diagnose_zero_trait_taxon(taxon_id: str, name: str, rank: str) -> tuple[str, str]:
-    """Diagnose the informatics root cause and remediation for a zero-trait BugSigDB taxon."""
-    lower_name = name.lower()
+class TaxonomyState(NamedTuple):
+    """Placement in the supplied edges, not evidence of the matrix's producing KG."""
+
+    group: str
+    status: str
+    root_ids: tuple[str, ...]
+
+
+class CoverageTaxonomy:
+    """A taxonomy-only projection of complete, strictly parsed KG edge records."""
+
+    def __init__(self, path: Path) -> None:
+        parents: dict[str, set[str]] = {}
+        self.nodes: set[str] = set()
+        self.audit: dict[str, object] = {}
+        accepted = 0
+        rank_class_records = 0
+        for row in iter_kg_edges(path, self.audit):
+            if row["predicate"] != "biolink:subclass_of":
+                continue
+            subject, parent = row["subject"], row["object"]
+            # These are ontology rank classes, not organism ancestry (#1008).
+            if parent == "OBO:NCBITaxon#_taxonomic_rank" and re.fullmatch(
+                r"NCBITaxon:[A-Za-z_][A-Za-z0-9_]*", subject
+            ):
+                rank_class_records += 1
+                continue
+            for identifier in (subject, parent):
+                if identifier.startswith("NCBITaxon:") and not re.fullmatch(
+                    r"NCBITaxon:[1-9][0-9]*", identifier
+                ):
+                    raise ValueError(
+                        f"Invalid taxonomy identifier in edge {row['id']}: {identifier}"
+                    )
+            if not (subject.startswith("NCBITaxon:") and parent.startswith("NCBITaxon:")):
+                continue
+            parents.setdefault(subject, set()).add(parent)
+            self.nodes.update((subject, parent))
+            accepted += 1
+        if not accepted:
+            raise ValueError("Taxonomy input has no NCBITaxon subclass_of edges")
+        self.audit.update(
+            taxonomy_edge_records=accepted,
+            taxonomy_rank_class_edge_records_skipped=rank_class_records,
+            unique_taxonomy_edges=sum(len(values) for values in parents.values()),
+            taxonomy_node_count=len(self.nodes),
+        )
+        self.graph = Graph(parents, {}, {}, {}, False)
+
+    def classify(self, taxon: str) -> TaxonomyState:
+        """Reject reachable cycles/conflicting roots; absence does not imply bacteria."""
+        if not re.fullmatch(r"NCBITaxon:[1-9][0-9]*", taxon):
+            return TaxonomyState("unresolved", "non_ncbi_identifier", ())
+        if taxon not in self.nodes:
+            return TaxonomyState("unresolved", "not_in_taxonomy_edges", ())
+        roots = tuple(sorted(set(TAXONOMY_ROOTS) & self.graph.ancestors(taxon)))
+        if len(roots) > 1:
+            raise ValueError(f"Conflicting recognized taxonomy roots for {taxon}: {roots}")
+        if not roots:
+            return TaxonomyState("unresolved", "no_recognized_root_path", ())
+        return TaxonomyState(TAXONOMY_ROOTS[roots[0]], "resolved_root", roots)
+
+
+def diagnose_zero_trait_taxon(
+    taxon_id: str, name: str, _rank: str, taxonomy: TaxonomyState
+) -> tuple[str, str]:
+    """Suggest review actions from lineage and labels, not proven causes of missing traits."""
+    lower_name = " ".join(name.casefold().split())
+
+    if "/" in name:
+        return (
+            "Ambiguous Taxon / Bin Slash",
+            "Resolve to lowest common ancestor (LCA) or treat as composite multi-taxon marker",
+        )
+    if lower_name in {"uncultured organism", "unidentified", "unclassified", "unknown"}:
+        return (
+            "Unresolved Taxonomic Label",
+            "Review the reported taxonomic label and source assignment before trait matching; "
+            "an unresolved label does not establish a multi-taxon composite",
+        )
+
+    if taxonomy.group == "eukaryota":
+        return (
+            "Non-Bacterial / Fungal Eukaryote",
+            "Review eukaryotic annotation coverage; use lineage-appropriate resources "
+            "(e.g. FungiTraits for fungi), not bacterial trait transfer",
+        )
+    if taxonomy.group == "viruses":
+        return (
+            "Non-Bacterial / Viral Taxon",
+            "Review viral annotation resources; missing retained annotations do not establish "
+            "biological absence",
+        )
 
     if taxon_id in {"NCBITaxon:541000", "NCBITaxon:81850", "NCBITaxon:508215"}:
         canonical_map = {
@@ -135,26 +235,17 @@ def diagnose_zero_trait_taxon(taxon_id: str, name: str, rank: str) -> tuple[str,
             "Review possible alias before transferring traits: " + twin.split(" (")[0],
         )
 
-    if "/" in name or re.search(r"\b(unidentified|uncultured organism|unknown)\b", lower_name):
+    if taxonomy.group == "unresolved":
         return (
-            "Ambiguous Taxon / Bin Slash",
-            "Resolve to lowest common ancestor (LCA) or treat as composite multi-taxon marker",
+            "Taxonomy Unresolved",
+            "Review placement in the supplied taxonomy; missing lineage does not establish "
+            "rarity, novelty or a bacterial isolate",
         )
 
     if "candidatus" in lower_name or lower_name.startswith("ca. "):
         return (
             "Candidatus Lineage",
             "Seek direct trait evidence; neighboring taxa do not establish this lineage's traits",
-        )
-
-    if re.search(
-        r"\b(candida|malassezia|ascomycota|saccharomyces|fungus|fungi|basidiomycota|streptophyta|viridiplantae)\b",
-        lower_name,
-    ) or (rank in {"kingdom", "superkingdom", "phylum"} and "fung" in lower_name):
-        return (
-            "Non-Bacterial / Fungal Eukaryote",
-            "Integrate specialized microeukaryotic trait ontologies "
-            "(e.g. FungiTraits) into KG-Microbe",
         )
 
     if (
@@ -287,8 +378,9 @@ def load_and_process_data(
     matrix: Path = TAXA_TRAIT_MATRIX_PATH,
     profiles: Path = PROFILES_WIDE_PATH,
     experiments: Path = EXPERIMENTS_PATH,
+    taxonomy_edges: Path | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Load occurrences, matrix, profiles and metadata to compute coverage statistics."""
+    """Load coverage tables and supplied taxonomy; diagnose without changing coverage counts."""
     print(f"Reading taxa occurrences from {taxa}...")
     taxa_df = read_tsv(taxa)
 
@@ -581,10 +673,15 @@ def load_and_process_data(
         .reset_index(drop=True)
     )
 
+    taxonomy = CoverageTaxonomy(taxonomy_edges or TAXONOMY_EDGES_PATH)
+    # Validate every selected reported taxon, not only the displayed top 100.
+    placements = {str(taxon): taxonomy.classify(str(taxon)) for taxon in taxa_master.taxon_id}
+    prof_summary.attrs["taxonomy_audit"] = taxonomy.audit
     top_zero_records: list[dict[str, Any]] = []
     for rank_idx, (_, row) in enumerate(zero_taxa_df.head(100).iterrows(), start=1):
+        placement = placements[str(row["taxon_id"])]
         cat, rec = diagnose_zero_trait_taxon(
-            str(row["taxon_id"]), str(row["taxon_name"]), str(row["taxonomic_rank"])
+            str(row["taxon_id"]), str(row["taxon_name"]), str(row["taxonomic_rank"]), placement
         )
         top_zero_records.append(
             {
@@ -595,6 +692,9 @@ def load_and_process_data(
                 "signature_occurrences": row["signature_occurrences"],
                 "profile_count": row["profile_count"],
                 "study_count": row["study_count"],
+                "taxonomy_group": placement.group,
+                "taxonomy_status": placement.status,
+                "taxonomy_root_ids": json.dumps(placement.root_ids),
                 "diagnosis_category": cat,
                 "suggested_remediation": rec,
             }
@@ -610,6 +710,9 @@ def load_and_process_data(
                 "signature_occurrences",
                 "profile_count",
                 "study_count",
+                "taxonomy_group",
+                "taxonomy_status",
+                "taxonomy_root_ids",
                 "diagnosis_category",
                 "suggested_remediation",
             ]
@@ -2311,6 +2414,16 @@ def write_readme(
             "physiology, patient-level abundance or activity. Suggested zero-trait diagnoses are",
             "heuristics for review, not verified causes or permission to propagate "
             "annotations downward.",
+            "Taxonomic placement uses NCBITaxon subclass-of ancestry in the supplied",
+            "`--taxonomy-edges` file. This input is hashed independently; its identity as the",
+            "matrix's producing KG is not verified. The top-zero table records taxonomy_group,",
+            "taxonomy_status and JSON taxonomy_root_ids. Missing paths are explicit; conflicting",
+            "recognized roots or reachable cycles reject the run before outputs are written.",
+            "Ontology rank-class edges are excluded from organism ancestry and counted in",
+            "the provenance audit as taxonomy_rank_class_edge_records_skipped.",
+            "Explicit unresolved labels and slash composites retain their distinct diagnoses.",
+            "Eukaryotic and viral ancestry precedes Candidatus/cultivation heuristics;",
+            "alias suggestions do not transfer ancestry or traits.",
             "",
             "Regenerate from this repository's root with the same input paths and scope:",
             "",
@@ -2355,6 +2468,7 @@ def run_coverage(
     matrix: Path = TAXA_TRAIT_MATRIX_PATH,
     profiles: Path = PROFILES_WIDE_PATH,
     experiments: Path = EXPERIMENTS_PATH,
+    taxonomy_edges: Path | None = None,
     tables_only: bool = False,
     kg_provenance: Path = DEFAULT_KG_PROVENANCE_PATH,
     bugsigdb_vintage: str | None = None,
@@ -2362,7 +2476,13 @@ def run_coverage(
 ) -> None:
     """Validate first, then write data-derived outputs and a consumed-byte manifest."""
     scope = parse_strain_rollup(strain_rollup)
-    inputs = {"taxa": taxa, "matrix": matrix, "profiles": profiles, "experiments": experiments}
+    inputs = {
+        "taxa": taxa,
+        "matrix": matrix,
+        "profiles": profiles,
+        "experiments": experiments,
+        "taxonomy_edges": taxonomy_edges or TAXONOMY_EDGES_PATH,
+    }
     consumed = {**inputs}
     selected_dump = raw_dump or REPO_ROOT / "data/raw/full_dump.csv"
     if raw_dump is not None and not raw_dump.is_file():
@@ -2438,7 +2558,7 @@ def run_coverage(
 
     regeneration = ["just", "taxa-coverage", "--strain-rollup", scope]
     for name, path in {**inputs, "output-dir": out_dir, "kg-provenance": kg_provenance}.items():
-        regeneration.extend([f"--{name}", regeneration_path(path)])
+        regeneration.extend([f"--{name.replace('_', '-')}", regeneration_path(path)])
     if "raw_dump" in consumed:
         regeneration.extend(["--raw-dump", regeneration_path(selected_dump)])
     if declared_vintage and bugsigdb_vintage is not None:
@@ -2491,6 +2611,15 @@ def run_coverage(
             "zero_trait_profiles": "included",
         },
         "counts": prof_summary.attrs["population_counts"],
+        "taxonomy_diagnosis": {
+            "policy": TAXONOMY_DIAGNOSIS_POLICY,
+            "roots": TAXONOMY_ROOTS,
+            "validation_population": "all selected reported taxa",
+            "parser_audit": prof_summary.attrs["taxonomy_audit"],
+            "matrix_kg_identity": "not_verified",
+            "limitation": "The supplied taxonomy is hashed, not verified as "
+            "the matrix's producing KG",
+        },
         "inputs": input_records,
         "corpus_identity": identity.as_record(),
         "bugsigdb_vintage_source": "declared"
@@ -2504,6 +2633,8 @@ def run_coverage(
             "profile_builder_sha256": file_sha256(REPO_ROOT / "src/mtp/study_trait_profiles.py"),
             "corpus_identity_sha256": file_sha256(REPO_ROOT / "src/mtp/corpus_identity.py"),
             "trait_guilds_sha256": file_sha256(REPO_ROOT / "src/mtp/trait_guilds.py"),
+            "taxonomy_parser_sha256": file_sha256(REPO_ROOT / "src/mtp/workflow/kg_inputs.py"),
+            "taxonomy_graph_sha256": file_sha256(REPO_ROOT / "src/mtp/contribution_inputs.py"),
             "uv_lock_sha256": file_sha256(REPO_ROOT / "uv.lock"),
         },
         "outputs": {
@@ -2570,6 +2701,12 @@ def main() -> None:
     parser.add_argument("--matrix", type=Path, default=TAXA_TRAIT_MATRIX_PATH)
     parser.add_argument("--profiles", type=Path, default=PROFILES_WIDE_PATH)
     parser.add_argument("--experiments", type=Path, default=EXPERIMENTS_PATH)
+    parser.add_argument(
+        "--taxonomy-edges",
+        type=Path,
+        default=TAXONOMY_EDGES_PATH,
+        help="KG edges for lineage-based diagnoses; hashed independently of the producing matrix",
+    )
     parser.add_argument("--kg-provenance", type=Path, default=DEFAULT_KG_PROVENANCE_PATH)
     parser.add_argument("--bugsigdb-vintage", help="Override the vintage read from the raw dump")
     parser.add_argument(
