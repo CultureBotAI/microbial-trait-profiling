@@ -6,6 +6,9 @@ import argparse
 import csv
 from pathlib import Path
 
+import matplotlib
+
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
@@ -250,6 +253,7 @@ def main() -> None:
 
     matrix_to_save = matrix.copy()
     matrix_to_save.insert(0, "inc_dec", inc_dec)
+    args.matrix_output.parent.mkdir(parents=True, exist_ok=True)
     matrix_to_save.to_csv(args.matrix_output, sep="\t")
 
     save_clustered_heatmap(matrix, inc_dec, args.output)
