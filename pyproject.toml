@@ -20,7 +20,7 @@ authors = [
 dependencies = [
   "gitpython>=3.2.1",
   "httpx>=0.28.0",
-  "linkml>=1.11.0",
+  "linkml>=1.12.1",
   "linkml-runtime>=1.8.3",
   # numpy arrives with scipy either way; it is declared because `mtp.enrichment_stats`
   # and `mtp.calibration` import it directly.
