@@ -35,7 +35,7 @@ ANAEROBE_A, ANAEROBE_B = OXYGEN_GUILDS["anaerobe"]
 MEDIA_COLUMN = "METPO:2000517|mediadive.medium:J14"
 
 
-def _write_profiles(path: Path, rows: list[tuple[str, str, str, list[int]]]) -> None:
+def _write_profiles(path: Path, rows: list[tuple[str, str, str, list[int | str]]]) -> None:
     header = [
         "study_id",
         "experiment_id",
@@ -946,3 +946,182 @@ def test_dropped_other_site_preserves_condition_pool_membership() -> None:
     condition_pool = next(pool for pool in matrix.pooled if pool.kind == "condition")
     assert condition_pool.bucketed
     assert condition_pool.pooled_names == ("PooledA", "PooledB")
+
+
+@pytest.mark.parametrize("bad_count", ["", "-1", "1.5", "NaN", "not-a-count", "3_0"])
+def test_method_loader_rejects_invalid_counts_before_filtering(
+    tmp_path: Path, bad_count: str
+) -> None:
+    profiles_path = tmp_path / "profiles.tsv"
+    experiments_path = tmp_path / "experiments.tsv"
+    _write_profiles(
+        profiles_path,
+        [
+            ("bsdb:1", "bsdb:1-1", "inc", [6, 0, 0, 1, 0, 3, 100]),
+            ("bsdb:1", "bsdb:1-1", "dec", [1, 0, 0, 6, 0, 3, 100]),
+            ("bsdb:4", "bsdb:4-1", "inc", [9, 0, 0, 1, 0, bad_count, 100]),
+        ],
+    )
+    _write_experiments(
+        experiments_path,
+        [
+            ("bsdb:1", "bsdb:1-1", "Colorectal cancer", "Feces", "Homo sapiens"),
+            ("bsdb:4", "bsdb:4-1", "Colitis", "Caecum", "Mus musculus"),
+        ],
+    )
+
+    with pytest.raises(ValueError, match="count"):
+        load_profiles(profiles_path, experiments_path, OXYGEN_GUILDS)
+
+    if bad_count != "":
+        with pytest.raises(ValueError, match="count"):
+            load_profiles(
+                profiles_path,
+                experiments_path,
+                OXYGEN_GUILDS,
+                reject_missing_counts=False,
+            )
+
+
+def test_method_loader_rejects_blank_by_default_and_allows_sparse_zero_override(
+    tmp_path: Path,
+) -> None:
+    profiles_path = tmp_path / "profiles.tsv"
+    experiments_path = tmp_path / "experiments.tsv"
+    _write_profiles(
+        profiles_path,
+        [
+            ("bsdb:1", "bsdb:1-1", "inc", [6, 0, 0, 1, 0, "", 100]),
+            ("bsdb:1", "bsdb:1-1", "dec", [1, 0, 0, 6, 0, 3, 100]),
+        ],
+    )
+    _write_experiments(
+        experiments_path,
+        [("bsdb:1", "bsdb:1-1", "Colorectal cancer", "Feces", "Homo sapiens")],
+    )
+
+    with pytest.raises(ValueError, match="Missing trait count"):
+        load_profiles(profiles_path, experiments_path, OXYGEN_GUILDS)
+
+    profiles, _ = load_profiles(
+        profiles_path,
+        experiments_path,
+        OXYGEN_GUILDS,
+        reject_missing_counts=False,
+    )
+    inc = next(profile for profile in profiles if profile.inc_dec == "inc")
+    assert inc.total == 7
+
+
+@pytest.mark.parametrize("strict", [False, True])
+def test_method_loader_rejects_duplicate_profile_keys(tmp_path: Path, strict: bool) -> None:
+    profiles_path = tmp_path / "profiles.tsv"
+    experiments_path = tmp_path / "experiments.tsv"
+    _write_profiles(
+        profiles_path,
+        [
+            ("bsdb:1", "bsdb:1-1", "inc", [6, 0, 0, 1, 0, 3, 100]),
+            ("bsdb:1", "bsdb:1-1", "inc", [6, 0, 0, 1, 0, 3, 100]),
+            ("bsdb:1", "bsdb:1-1", "dec", [1, 0, 0, 6, 0, 3, 100]),
+        ],
+    )
+    _write_experiments(
+        experiments_path,
+        [("bsdb:1", "bsdb:1-1", "Colorectal cancer", "Feces", "Homo sapiens")],
+    )
+
+    with pytest.raises(ValueError, match="Duplicate key"):
+        load_profiles(
+            profiles_path,
+            experiments_path,
+            OXYGEN_GUILDS,
+            reject_missing_counts=strict,
+        )
+
+
+@pytest.mark.parametrize("strict", [False, True])
+def test_method_loader_rejects_unknown_direction(tmp_path: Path, strict: bool) -> None:
+    profiles_path = tmp_path / "profiles.tsv"
+    experiments_path = tmp_path / "experiments.tsv"
+    _write_profiles(
+        profiles_path,
+        [
+            ("bsdb:1", "bsdb:1-1", "inc", [6, 0, 0, 1, 0, 3, 100]),
+            ("bsdb:1", "bsdb:1-1", "dec", [1, 0, 0, 6, 0, 3, 100]),
+            ("bsdb:1", "bsdb:1-1", "up", [1, 0, 0, 6, 0, 3, 100]),
+        ],
+    )
+    _write_experiments(
+        experiments_path,
+        [("bsdb:1", "bsdb:1-1", "Colorectal cancer", "Feces", "Homo sapiens")],
+    )
+
+    with pytest.raises(ValueError, match="Unknown profile direction"):
+        load_profiles(
+            profiles_path,
+            experiments_path,
+            OXYGEN_GUILDS,
+            reject_missing_counts=strict,
+        )
+
+
+@pytest.mark.parametrize("bad_count", ["-1", "3_0"])
+@pytest.mark.parametrize("strict", [False, True])
+def test_method_loader_rejects_negative_and_underscore_counts_on_kept_human_rows(
+    tmp_path: Path, bad_count: str, strict: bool
+) -> None:
+    profiles_path = tmp_path / "profiles.tsv"
+    experiments_path = tmp_path / "experiments.tsv"
+    _write_profiles(
+        profiles_path,
+        [
+            ("bsdb:1", "bsdb:1-1", "inc", [6, 0, 0, 1, 0, bad_count, 100]),
+            ("bsdb:1", "bsdb:1-1", "dec", [1, 0, 0, 6, 0, 3, 100]),
+        ],
+    )
+    _write_experiments(
+        experiments_path,
+        [("bsdb:1", "bsdb:1-1", "Colorectal cancer", "Feces", "Homo sapiens")],
+    )
+
+    with pytest.raises(ValueError, match="count"):
+        load_profiles(
+            profiles_path,
+            experiments_path,
+            OXYGEN_GUILDS,
+            reject_missing_counts=strict,
+        )
+
+
+def test_method_loader_validates_yet_excludes_metadata_columns_from_total(
+    tmp_path: Path,
+) -> None:
+    profiles_path = tmp_path / "profiles_with_taxa_count.tsv"
+    experiments_path = tmp_path / "experiments.tsv"
+    header = [
+        "study_id",
+        "experiment_id",
+        "inc_dec",
+        "taxa_count",
+        AEROBE_A,
+        AEROBE_B,
+        AEROBE_C,
+        ANAEROBE_A,
+        ANAEROBE_B,
+        "METPO:1000615",
+        MEDIA_COLUMN,
+    ]
+    rows = [
+        "\t".join(header),
+        "\t".join(["bsdb:1", "bsdb:1-1", "inc", "50", "6", "0", "0", "1", "0", "3", "100"]),
+        "\t".join(["bsdb:1", "bsdb:1-1", "dec", "40", "1", "0", "0", "6", "0", "3", "100"]),
+    ]
+    profiles_path.write_text("\n".join(rows) + "\n", encoding="utf-8")
+    _write_experiments(
+        experiments_path,
+        [("bsdb:1", "bsdb:1-1", "Colorectal cancer", "Feces", "Homo sapiens")],
+    )
+
+    profiles, _ = load_profiles(profiles_path, experiments_path, OXYGEN_GUILDS)
+    inc = next(profile for profile in profiles if profile.inc_dec == "inc")
+    assert inc.total == 10
