@@ -1,6 +1,7 @@
 # Biological interpretation claim audit (#179)
 
-Audit date: 2026-09-14 (updated 2026-10-07). Policy: [shared interpretation guide](biological_interpretation.md).
+Audit date: 2026-09-14 (updated 2026-10-07; interpretation port and selected
+revision pins refreshed 2026-10-30). Policy: [shared interpretation guide](biological_interpretation.md).
 This is a wording/provenance audit, not a reanalysis or validation of mechanisms.
 `Corrected here` means the source prose/template on this branch is changed;
 previously exported images still require regeneration. `Proposed correction`
@@ -12,27 +13,47 @@ has applied it. `Retain` means the scoped wording/evidence limit is appropriate.
 | Surface | Inspected revision and coverage | Responsible adoption |
 | --- | --- | --- |
 | Current checkout | `c9b51a7` / `3b73376`: README, CONTRIBUTING, AGENTS, generated Copilot instructions, PR template, all methods, docs, profile aggregation and enrichment/depletion scripts | All contributors; Noel for current guild/Table 1 methods and figures; manuscript/public-description owners to be identified by coordinators |
-| Proposed overlay, PR #173 | `85f97ac714c6d7c580c3a548b7f428229d58b634`: Table 1 methods, `guild_maps.py::_significance_note`, overlay source and output schema; figure captions inspected in generator source | Noel, with Jed and Ilyas for their statistical labels |
-| Rosalind archive/review, PR #192 | `593f3c88100c915187c8bc06e2cbdbedef7730c3`: `docs/rosalind-six-trait-interpretation.md`; also supplied in the issue request. The archived review describes its own evidence at `f22b31bd4bdef6e6e55bb5830ca631b81e3d4319` | All narrative authors; follow-up leads below |
-| Taxon contribution/influence audit, PR #194 | `021e5b449080c4a4f2f22a2ae329fccffc7eb367`: `methods/table1_taxon_influence.md` and `methods/table1_taxon_influence_results.md`; inspected the measured contribution, concentration, shared-fraction and bounded lineage-exclusion summaries | Jed with Noel and Ilyas; retain the provisional annotation-level limits and integrate the missing native results before closing #190 |
+| Proposed overlay, PR #173 | PR #173 closed unmerged on 2026-10-30 at head `bf235552cf58e0400fa24d6fc4836c44bc4a99f4`; its rebuild is tracked in [#172](https://github.com/CultureBotAI/microbial-trait-profiling/issues/172). The P01-P10 findings below retain their historical basis at `85f97ac714c6d7c580c3a548b7f428229d58b634`: Table 1 methods, `guild_maps.py::_significance_note`, overlay source and output schema; figure captions inspected in generator source. The closing head has revised rules and counts; this pin refresh does not recertify the historical findings against it. | Noel, with Jed and Ilyas for their statistical labels |
+| Rosalind archive/review, PR #192 | `8268ccce657629c60268bc47e6fd9b9fa99529ac`: `docs/rosalind-six-trait-interpretation.md` and the separately marked, unreviewed `docs/rosalind-six-trait-interpretation-response-2.md`; archive attribution/status, oxygen-versus-anaerobic-respiration separation, and added mechanism/site predictions. The first archived review describes its own evidence at `f22b31bd4bdef6e6e55bb5830ca631b81e3d4319` | All narrative authors; follow-up leads below |
+| Taxon contribution/influence audit, PR #194 | `04aca04c730a06d9b3e73d67664e45ff8441922d`: targeted review of `methods/table1_taxon_influence.md`, `methods/table1_taxon_influence_results.md`, `methods/table1_native_influence.md` and the compact native review bundle/manifests; contribution/concentration, shared-fraction, rule-declared lineage exclusions, native composition and native ORA summaries | Jed with Noel and Ilyas; #190 closed 2026-10-12 and PR #194 merged 2026-10-13. Retain the annotation-level limits; tracker closure is not biological validation. |
 | Composition branch | `a2b2df98e9beec98b772c9cb5af7aa090d033a98`: targeted review of generated narrative/title sites in `analyze_parkinsons_disease_trait_profiles.py`, `investigate_facultative_aerobe_expansion.py`, `investigate_gut_anaerobe_depletion.py`, and figure annotation templates | Jed; remaining branch artifact owners to inventory |
 | Enrichment branch | `c9b51a7`: `scripts/generate_enrichment_summary.py`, `scripts/generate_depletion_summary.py`, `docs/milestone_taxon_model_before_after_summary.md`, and `docs/draft_pr_overview_and_merge_guide.md` | Ilyas |
 
-The PR revisions were fetched through `refs/pull/173/head` and
-`refs/pull/192/head`; no changes were made to those PRs. Other branches were
-inspected with `git show`/`git grep`. Reproduce a claim lookup with
+The original review fetched PR revisions through `refs/pull/173/head` and
+`refs/pull/192/head`. The 2026-10-30 port uses Jed's public pull-request revisions
+`refs/pull/193/head` (`7b58bce208df0fb2ad7b9f735dc05e1dc12188b0`) and
+`refs/pull/245/head` (`fb355a3acb7bdc759fce4dcf1585c63e080c9ed6`), with the
+selected PR pins above inspected through Git objects. No changes were made to
+those PRs. Other branches were inspected with `git show`/`git grep`. Reproduce a claim lookup with
 `git show <revision>:<path>` and the quoted phrase below. The separate-branch
 reviews are targeted, not exhaustive certification of every historical image.
 Unpublished manuscripts, slides and public pages not present in this checkout
 remain to be inventoried by Jed, Ilyas and Noel, with a named owner and revision.
-The source evidence audits and validation work in #188-#191 remain open work.
+The source evidence audits and validation work were tracked in #188-#191;
+their closure dates are recorded below.
+
+## Status checkpoint (2026-10-30)
+
+Dates are UTC, from the linked GitHub issue and pull-request records. These
+tracker closures do not establish patient-level effects or validate a mechanism.
+Historical findings retain their inspected revisions and evidence limits; this
+status update does not reanalyse or recertify their scientific results.
+
+| Record | Tracker status | Date (UTC) |
+| --- | --- | --- |
+| [#182](https://github.com/CultureBotAI/microbial-trait-profiling/issues/182), calibration | Closed | 2026-10-12 |
+| [#188](https://github.com/CultureBotAI/microbial-trait-profiling/issues/188), contrast orientation | Closed | 2026-10-11 |
+| [#189](https://github.com/CultureBotAI/microbial-trait-profiling/issues/189), trait semantics | Closed | 2026-10-08 |
+| [#190](https://github.com/CultureBotAI/microbial-trait-profiling/issues/190), taxon influence | Closed | 2026-10-12 |
+| [#191](https://github.com/CultureBotAI/microbial-trait-profiling/issues/191), validation feasibility | Closed | 2026-10-11 |
+| [PR #194](https://github.com/CultureBotAI/microbial-trait-profiling/pull/194), contribution/influence implementation | Merged | 2026-10-13 |
 
 ## Current prose, workflow and generated captions
 
 | ID / location | Affected claim or omission | Correction / evidence and disposition |
 | --- | --- | --- |
 | C01 `methods/guild_condition_body_site_heatmap.md`, Cell states and row selection | "no taxon ... carried" the guild; "guild is simply absent" | **Corrected here:** no recorded guild annotation signal under selected sources/mappings. Distinguish unsampled, low support and zero signal; none establishes biological absence. |
-| C02 `src/bsdbng/guild_maps.py`, `write_figure` and `write_body_site_panels` captions/docstrings | Dark grey means "no taxon carried" the trait; "an absent trait" | **Corrected here:** no recorded annotation signal; captions retain annotation-share units and state the evidence limit and curated meaning of direction. Split long caption/coverage lines so these limits remain visible in the rendered panels. |
+| C02 `src/mtp/guild_maps.py`, `write_figure` and `write_body_site_panels` captions/docstrings | Dark grey means "no taxon carried" the trait; "an absent trait" | **Corrected here:** no recorded annotation signal; captions retain annotation-share units and state the patient-level evidence limit and curated meaning of direction. Historical rendered panels still need regeneration. |
 | C03 `methods/table1_trait_condition_body_site_maps.md`, cell states, ties and empty sides | "trait is absent from both sides"; profiles whose taxa "carry none" | **Corrected here:** zero recorded counts, not biological absence; empty-side handling is an analytical policy. |
 | C04 same methods, right-panel correlations; `table1_trait_maps.py` comments/docstring | Contrast correlations "do not share that artefact"; coccus/sphere are "close to the same measurement" | **Corrected here:** shared denominators, taxa and selection can induce dependence even across paired contrasts. Correlation does not establish semantic equivalence, independent mechanisms or justify merging IDs. #165/#182 and #189 retain their work. |
 | C05 `methods/three_arm_statistics.md`, Compositionality and Vintage | Any pair of fractions is negatively correlated "by construction"; paired tests "do not share the artefact"; same dump implies valid comparison | **Corrected here:** closure constrains dependence for positive denominators but does not force every pair negative; paired contrasts remain denominator-sensitive. Match populations, denominator, transformation, background and family, not just vintage. |
@@ -40,17 +61,22 @@ The source evidence audits and validation work in #188-#191 remain open work.
 | C07 README, methods index and per-figure methods | Public project scope and per-figure descriptions lack a common interpretation contract | **Corrected here:** link the guide/audit and state annotation scope, contrast-orientation restriction and descriptive heatmap uncertainty limits. |
 | C08 CONTRIBUTING, AGENTS, Copilot instructions, PR checklist | Review workflow does not require biological claim/provenance review | **Corrected here:** guide applies to every author/reviewer and output; require effect/uncertainty/support/inference/scope, caption/template review and audit updates. Regenerate Copilot via `just sync-agent-docs`. |
 | C09 Table 1 methods, agreement with composition arm | Explicitly describes shared-matrix agreement as robustness rather than independent evidence | **Retain**, with denominator/selection/calibration qualifications from the guide. Do not promote agreement to replication. |
-| C10 `MANUSCRIPT_AUDIT.md`, #131/#132/#133 and uncertainty notes | Existing warnings about assertion-level inference and incomplete manuscript access | **Retain:** where tracked, link this biological audit. A statistical audit or corrected implementation does not validate biological interpretations. |
+| C10 `MANUSCRIPT_AUDIT.md`, #131/#132/#133 and uncertainty notes | Existing warnings about assertion-level inference and incomplete manuscript access | **Corrected here:** add the biological interpretation companion linking the guide and this audit; retain the statistical warnings. A statistical audit or corrected implementation does not validate biological interpretations. |
 | C11 `docs/origin-story.md`, "taxa and their abundance directions"; access/benchmark docs | Ingestion history describes the original curated direction; access docs describe data acquisition | **Retain** as provenance descriptions, not claims of patient-level trait measurement. No mechanistic result claim identified in those documents. |
 
 ## PR #173: proposed overlay and narrative
 
 Source: [PR #173](https://github.com/CultureBotAI/microbial-trait-profiling/pull/173),
-revision above, `methods/table1_trait_condition_body_site_maps.md`, "Third layer"
+historical revision `85f97ac714c6d7c580c3a548b7f428229d58b634`,
+`methods/table1_trait_condition_body_site_maps.md`, "Third layer"
 and "What the outlines show"; `src/bsdbng/guild_maps.py::_significance_note`.
 All entries below are **proposed corrections for the PR owner**, not edits to
 the separate branch. Reported numbers are historical values in that PR and have
-not been recomputed or approved here.
+not been recomputed or approved here. PR #173 closed unmerged on 2026-10-30 at
+the head listed above; its rebuild is tracked in
+[#172](https://github.com/CultureBotAI/microbial-trait-profiling/issues/172).
+Its later rule/count changes need review in that rebuild; the historical 62-cell
+discussion below is not a result for the closing head.
 
 | ID / affected claim | Replacement or supporting evidence | Owner / remaining work |
 | --- | --- | --- |
@@ -102,8 +128,8 @@ not a claim that the original publications lack richer evidence.
 | G08 same notes, interpretation/integration grids | Positive mean z means "enriched"; single-trait enrichment treated as prevalence; "High enrichment" implies "Common trait" | Replace with "above-average transformed annotation signal" for z-scores. Define ORA as a comparison against its background; a large fold need not mean common/high-prevalence. Keep prevalence, background enrichment and paired contrast in separate columns. | Jed with Ilyas; Proposed correction |
 | G09 `trait-visualization/trait-profile-investigation/six-shared-traits/interpretations.md`, Overall/Cross-Disease Patterns | Traits "are not disease-specific"; "shared microbial phenotype axis" including "aerotolerance/oxygen exposure" and "halophily/osmotic tolerance" | "Selected annotation signals recur across the displayed condition/site groups." Display recurrence does not test disease specificity, measure oxygen exposure or justify salt-label translation. Keep native semantics, eligible orientation and anatomical limits (#188/#189). | Jed; Proposed correction |
 | G10 `trait-visualization/figure_methods.md`, taxon heatmap legend | Zero "cells indicate absence/no annotation" | "Zero cells indicate no recorded annotation under the selected mappings." Distinguish missing mapping/coverage and biological absence; update the generator and rendered legend too. | Jed; Proposed correction |
-| G11 PR #194 contribution/influence results | Largest contributing genera, pooled baseline contrasts and largest changes in a predeclared 22-exclusion panel | **Retain as provisional annotation influence diagnostics:** carry resolved-rank coverage, exact corpus/denominator, pairs/studies, effect units, conditional intervals, ambiguity and selection limits. Count concentration is not an additive fraction-effect contribution, and an exclusion is not a causal intervention. Do not infer patient abundance, oxygen exposure, SCFA production or a mechanism. Orientation (#188), semantics/source identity (#189), native Jed/ORA integration and calibration (#182) remain unresolved. | Jed with Noel/Ilyas; PR #194 / #190 |
-| G12 `docs/milestone_taxon_model_before_after_summary.md` | Claimed restored exchangeability, calibrated probabilities, genuine biological drivers, demonstrated recovery power, and specific disease/control trait rankings while referencing historical artifacts with p=0 rows | **Corrected here:** Replace unsupported completion and biological claims with measured implementation status. Separate intended taxon urn architecture from demonstrated empirical benchmark results. Clarify that binary presence alone does not establish independent sampling or universal biological exchangeability across phylogenetically correlated taxa. State that exact discrete hypergeometric p-values need not be uniform under the null. Describe recurrent annotation signals as representation in curated signatures rather than genuine biological drivers or disease/control rankings. Note that historical `c75744a` artifacts contained p=0 rows and empirical calibration benchmarking awaits #263 / #182. | Ilyas; **Corrected here** |
+| G11 PR #194 contribution/influence results | Largest contributing genera, pooled baseline contrasts and largest changes in a rule-declared 24-scenario panel, with native composition and fixed/recomputed-background ORA reruns | **Retain as provisional annotation influence diagnostics:** carry resolved-rank coverage, exact corpus/denominator, pairs/studies, effect units, conditional intervals, ambiguity, selection limits and distinct correction families. Count concentration is not an additive fraction-effect contribution, and an exclusion is not a causal intervention. Do not infer patient abundance, oxygen exposure, SCFA production or a mechanism. The original review required orientation, source-semantics, native-owner and calibration review; see the [status checkpoint](#status-checkpoint-2026-10-30) for the subsequent #188/#189/#182/#190 closures and #194 merge. | Jed with Noel/Ilyas; historical PR #194 / #190 evidence |
+| G12 `docs/milestone_taxon_model_before_after_summary.md` | Claimed restored exchangeability, calibrated probabilities, genuine biological drivers, demonstrated recovery power, and specific disease/control trait rankings while referencing historical artifacts with p=0 rows | **Corrected here:** Replace unsupported completion and biological claims with measured implementation status. Separate intended taxon urn architecture from demonstrated empirical benchmark results. Clarify that binary presence alone does not establish independent sampling or universal biological exchangeability across phylogenetically correlated taxa. State that exact discrete hypergeometric p-values need not be uniform under the null. Describe recurrent annotation signals as representation in curated signatures rather than genuine biological drivers or disease/control rankings. The historical `c75744a` artifacts contained p=0 rows; the original audit awaited empirical calibration benchmarking under #263 / #182. The status checkpoint records #182's subsequent closure. | Ilyas; **Corrected here** |
 | G13 `docs/draft_pr_overview_and_merge_guide.md` | Claimed completion of calibrated probabilities, unified production adapter, and demonstrated recovery power across branch deliverables | **Corrected here:** Separate implemented infrastructure/interfaces from demonstrated calibration results. Note that calibration benchmarking requires execution of the full synthetic and empirical battery (#263 / #182) and that biological wording is governed by `methods/biological_interpretation.md`. | Ilyas; **Corrected here** |
 | G14 `docs/density_adjustment_audit.md`, `scripts/audit_trait_density_correlation.py`, Table 1 density adjustment and METPO ontology redundancy audit | Trait correlation, annotation density adjustment, near-twin collinearity, and METPO ontology redundancy | **Delivered here:** 60.82% of baseline trait variance is captured by PC1 (curation density). Spurious correlation between facultatively aerobic and moderately halophilic collapses after PC1 residualization (p = 0.262), while genuine biological signals (cellulose catabolism depletion p = 1.84e-11, coccus p = 0.0072, sphere p = 9.35e-05, mod halophilic p = 0.00033) survive. Coccus and sphere exhibit severe collinearity (VIF = 5.88) and should not be included simultaneously in multivariate models. METPO ontology redundancy audit identified 24 redundant pairs across 10 concept clusters, collapsing 16 features and bounding distinct trait space to 301 features. Branch collapsing leaves PC1 variance (61.35%) unchanged, confirming that pervasive trait correlation is driven by curation density rather than ontology redundancy. | Ilyas & Jed; **Delivered here** (#264) |
 | G15 `methods/calibration_composition.md`, `src/mtp/composition_calibration/composition.py`, Paired composition arm calibration | Permutation null calibration under direction-label study flips, empirical FDR control, and Table 1 survival | **Delivered here:** Under complete direction-label permutation null (100 replicates, seed 182, 959 paired studies, 317 non-MediaDive traits under `off`), empirical false discovery rates are strictly controlled: BH q <= 0.001 yields 0.00 false discoveries (0/100 replicates, max 0); BH q <= 0.05 yields 0.09 false discoveries (max 7, 97/100 replicates call zero; family error 3.0%, 95% CI 0.6%–8.5%); BY q <= 0.05 yields 0.02 false discoveries (max 2, family error 1.0%). Table 1 canonical traits cellulose catabolism (q = 1.06e-3, 0/100 reach |t_obs|), coccus (q = 1.06e-3, 0/100 reach |t_obs|), sphere (q = 5.37e-5, 0/100 reach |t_obs|), arsenate reduction (q = 1.66e-4, 0/100 reach |t_obs|), and moderately halophilic (q = 3.54e-5, 0/100 reach |t_obs|) all survive null calibration; facultatively aerobic is uncalibrated/not significant in this arm (q = 0.184, 11/100 reach |t_obs|). | Jed; **Delivered here** (#263) |
@@ -111,11 +137,23 @@ not a claim that the original publications lack richer evidence.
 
 ## Adoption record
 
-The repository guide, claim audit, workflow integration, generator corrections (G01-G04),
-and milestone documentation updates (G12-G13) are delivered on #179. PR #173, PR #194's
-pending native integrations, separate analysis branches, unpublished manuscript sections,
-and public outputs still require their owners to apply the proposed corrections and
-record artifact revisions. No coordinator sign-off or outside-branch modification is
-asserted here. Add each newly identified output to this ledger; record its owner,
-source revision, exact claim, evidence or replacement, and completion revision.
-#188-#191 complement this guide and do not close biological validation.
+Jed's guide and audit from PR #193 reached main through PR #427, but the C01-C04,
+C06 and C10 corrections listed there were not all present. The #1262 port
+restores the remaining source/method wording and manuscript companion, and
+adapts PR #245's revision pins and adoption record to current main. It does not
+reanalyse historical results or change their zero-total policy. Subtitle wrapping
+is handled by #1276; historical figures still require regeneration. Later main
+additions, including G14-G16, remain in this ledger without
+being reanalysed or recertified by this port.
+
+The repository guide, claim audit, workflow integration, generator corrections
+(G01-G04) and milestone documentation updates (G12-G13) remain recorded here.
+The dated tracker closures above supersede the original pending-review status
+for #194/#190, #182 and #188-#191. PR #173 closed unmerged; its rebuild remains
+tracked in #172. Separate analysis branches, unpublished manuscript sections and
+public outputs require their owners to apply applicable corrections and record
+artifact revisions. No coordinator sign-off or outside-branch modification is
+asserted here. Add each newly
+identified output to this ledger; record its owner, source revision, exact claim,
+evidence or replacement, and completion revision. #188-#191 complement this
+guide and do not close biological validation.

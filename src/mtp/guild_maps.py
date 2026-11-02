@@ -102,8 +102,8 @@ class GuildMatrix:
     # Body sites whose column block was backed by too few conditions to read as a
     # site-level pattern, removed with all of their columns.
     dropped_body_sites: list[str]
-    # True where the body site was sampled for that condition but no taxon in the
-    # profile carried any trait of that guild. Without this, an all-zero cell is
+    # True where the body site was sampled but profiles have no recorded annotation
+    # signal for the selected guild or trait. Without this, an all-zero cell is
     # drawn in the same colour as a genuinely low fraction.
     sampled_no_signal: list[list[bool]]
     # Keep the build's visibility policy when cutting a focus panel. The masks
@@ -989,8 +989,8 @@ def write_figure(
     than an order of magnitude, so they are drawn on per-trait ranges instead and each
     colour bar carries its own maximum.
 
-    Cells where the site was sampled but carried no trait of the group are filled
-    dark grey, so an absent trait is distinguishable from a small fraction. With
+    Cells where the site was sampled but no group annotations were recorded are filled
+    dark grey, so zero mapped signal is distinguishable from a small fraction. With
     ``mark_no_signal`` off they are left blank instead: the shading dominates the
     figure where the traits are rare, and the state is still recorded in the
     emitted cell-status table.
@@ -1129,9 +1129,7 @@ def write_figure(
         f"Rows clustered by Euclidean distance into {n_clusters} groups, separated by blank rows."
     )
     if mark_no_signal:
-        cluster_note += (
-            f" Dark grey = site sampled for that condition but no taxon carried the {group_noun}."
-        )
+        cluster_note += f" Dark grey = sampled, with no recorded {group_noun} annotation signal."
     # Broken into explicit lines: as one run the subtitle overflows the plotting
     # area and is clipped by the right-hand colour bars.
     lines = [
@@ -1142,7 +1140,8 @@ def write_figure(
         cluster_note,
         *_coverage_note(matrix),
         *([note] if note else []),
-        f"BugSigDB {vintage or 'vintage unknown'}.",
+        "Annotation shares do not measure patient traits or exposure.",
+        f"BugSigDB {vintage or 'vintage unknown'}. Directions are curated signature labels.",
     ]
     title_layout: dict[str, object] = {"text": f"{title}<br><sub>{'<br>'.join(lines)}</sub>"}
     # The title block hangs from the top of the figure, and the plotting area starts
@@ -1351,7 +1350,7 @@ def write_body_site_panels(
     if range_quantile < 1.0:
         range_note += f", cut at the {range_quantile:.0%} quantile of observed cells"
     grey_note = (
-        f" Dark grey = site sampled for that condition but no taxon carried the {group_noun}."
+        f" Dark grey = sampled, with no recorded {group_noun} annotation signal."
         if mark_no_signal
         else ""
     )
@@ -1364,7 +1363,8 @@ def write_body_site_panels(
         f"blank row here was drawn in another body site.{grey_note}",
         *_coverage_note(matrix),
         *([note] if note else []),
-        f"BugSigDB {vintage or 'vintage unknown'}.",
+        "Annotation shares do not measure patient traits or exposure.",
+        f"BugSigDB {vintage or 'vintage unknown'}. Directions are curated signature labels.",
     ]
     # Sized from the subtitle and the site titles under it, as in ``write_figure``.
     # A fixed 400 pixels with the title centred in it let a panel's last subtitle

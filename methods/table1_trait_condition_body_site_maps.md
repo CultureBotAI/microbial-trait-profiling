@@ -12,6 +12,14 @@ Figures: `table1_traits_condition_body_site_heatmap.png`, the four cuts
 analysis differs from the composition and enrichment arms is set out in
 [`three_arm_statistics.md`](three_arm_statistics.md).
 
+Interpret these annotation summaries using the
+[shared guide](biological_interpretation.md). Curated increased/decreased
+directions do not by themselves establish disease/control orientation (#188).
+Fractions and shifts describe annotation representation, not patient-level trait
+abundance or pathway activity.
+Heatmap cells are descriptive means without cell-level confidence intervals;
+the pooled paired test does not establish significance for individual cells.
+
 The figures described here repeat the oxygen guild analysis
 ([`guild_condition_body_site_heatmap.md`](guild_condition_body_site_heatmap.md))
 over the six individual traits named in manuscript Table 1 rather than over the two
@@ -133,9 +141,10 @@ cervix, Vagina, and Other. Before the zero-total exclusion it removed Subgingiva
 dental plaque too: periodontitis, which joins rheumatoid arthritis there, was
 outside the condition cut (see the oral cut below).
 
-Third, cells where a site was sampled for a condition but no taxon carried the
-trait are **left blank by default rather than shaded dark grey**. The guild figure
-shades them, because a guild is absent rarely enough that the shading marks an
+Third, cells where a site was sampled for a condition but no trait annotation
+signal was recorded are **left blank by default rather than shaded dark grey**.
+The guild figure shades them, because a guild has zero mapped signal rarely
+enough that the shading marks an
 exception. Four of the six Table 1 traits are rare enough that the shading would
 cover most of the figure and read as the dominant signal. The state is still
 recorded per cell in the companion status table either way, and `--mark-no-signal`
@@ -283,7 +292,8 @@ with status `all_tied`, it keeps its place in the six-trait family at p = 1, and
 the figure draws no marker for it rather than a point at 0 that would read as
 every study shifting down. Ties are common for the rarer traits — 316 studies for
 arsenate reduction against 24 for facultatively aerobic — and almost all of them
-are studies where the trait is absent from both sides. Each trait then gets a
+are studies with zero recorded trait annotations on both sides. This does not
+establish biological absence. Each trait then gets a
 two-sided exact binomial test against a half-and-half null with an exact
 binomial 95 per cent interval, and the six p-values are Benjamini-Hochberg
 corrected together as one family.
@@ -326,8 +336,10 @@ Closure can produce positive as well as negative component correlations, so
 neither sign alone establishes biological association. Coccus shaped and sphere
 shaped correlate at rho = 0.44 over 922
 studies, which is high enough to treat them as overlapping evidence rather than
-two independent lines of it, but well short of the near-identity their names
-suggest. Facultatively aerobic correlates positively with coccus shaped (0.46),
+two independent lines of it. This is descriptive overlap, not proof of semantic
+equivalence or independent mechanisms. Keep their distinct IDs unless source
+evidence justifies a separately defined grouping (#189).
+Facultatively aerobic correlates positively with coccus shaped (0.46),
 arsenate reduction (0.39), and moderately halophilic (0.38), and negatively with
 cellulose catabolic process (-0.26); arsenate reduction and moderately halophilic
 correlate at 0.34. A pair is omitted rather than written as a
