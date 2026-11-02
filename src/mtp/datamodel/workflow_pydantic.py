@@ -29,7 +29,7 @@ from pydantic import (
 )
 
 
-metamodel_version = "1.7.0"
+metamodel_version = "1.12.0"
 version = "1.0.0"
 
 
@@ -219,10 +219,10 @@ class ProductDefinition(ConfiguredBaseModel):
         pattern=re.compile(r"^[A-Za-z][A-Za-z0-9_.-]*$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid id format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid id format: {v}"
             raise ValueError(err_msg)
         return v
@@ -245,10 +245,10 @@ class ParameterDefinition(ConfiguredBaseModel):
         pattern=re.compile(r"^[A-Za-z][A-Za-z0-9_]*$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid name format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid name format: {v}"
             raise ValueError(err_msg)
         return v
@@ -310,10 +310,10 @@ class StepDefinition(ConfiguredBaseModel):
         pattern=re.compile(r"^[A-Za-z][A-Za-z0-9_.-]*$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid id format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid id format: {v}"
             raise ValueError(err_msg)
         return v
@@ -359,10 +359,10 @@ class WorkflowDefinition(ConfiguredBaseModel):
         pattern=re.compile(r"^[A-Za-z][A-Za-z0-9_.-]*$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid id format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid id format: {v}"
             raise ValueError(err_msg)
         return v
@@ -390,10 +390,10 @@ class FileInventoryEntry(ConfiguredBaseModel):
         pattern=re.compile(r"^[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid sha256 format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid sha256 format: {v}"
             raise ValueError(err_msg)
         return v
@@ -466,10 +466,10 @@ class ArtifactInstance(ConfiguredBaseModel):
         pattern=re.compile(r"^[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid sha256 format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid sha256 format: {v}"
             raise ValueError(err_msg)
         return v
@@ -536,13 +536,13 @@ class WorkflowRun(ConfiguredBaseModel):
          'title': 'Workflow Run'})
 
     run_id: str = Field(default=..., title="Run id", description="""Unique execution-attempt identifier, distinct from the deterministic fingerprint.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ArtifactInstance', 'WorkflowRun', 'ConsumerRecord']} })
-    contrast_population: Optional[ContrastPopulation] = Field(default=ContrastPopulation.all_paired, title="Contrast population", description="""Executed selection policy; historical records without this field retain the unfiltered policy.""", json_schema_extra = { "linkml_meta": {'domain_of': ['WorkflowRun',
+    contrast_population: Optional[ContrastPopulation] = Field(default=ContrastPopulation("all_paired"), title="Contrast population", description="""Executed selection policy; historical records without this field retain the unfiltered policy.""", json_schema_extra = { "linkml_meta": {'domain_of': ['WorkflowRun',
                        'ArmRun',
                        'EligibilityLedger',
                        'ScientificResultRecord',
                        'ComparisonRun'],
          'ifabsent': 'string(all_paired)'} })
-    direction_basis: Optional[DirectionBasis] = Field(default=DirectionBasis.group_1_vs_group_0, title="Direction basis", description="""Direction semantics of selected Study signatures and all products derived from them.""", json_schema_extra = { "linkml_meta": {'domain_of': ['WorkflowRun',
+    direction_basis: Optional[DirectionBasis] = Field(default=DirectionBasis("group_1_vs_group_0"), title="Direction basis", description="""Direction semantics of selected Study signatures and all products derived from them.""", json_schema_extra = { "linkml_meta": {'domain_of': ['WorkflowRun',
                        'ArmRun',
                        'ScientificResultRecord',
                        'ComparisonRun'],
@@ -597,10 +597,10 @@ class WorkflowRun(ConfiguredBaseModel):
         pattern=re.compile(r"^(raw_object_v1|facultative_union_v1)$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid trait_key_policy format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid trait_key_policy format: {v}"
             raise ValueError(err_msg)
         return v
@@ -610,10 +610,10 @@ class WorkflowRun(ConfiguredBaseModel):
         pattern=re.compile(r"^[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid spec_sha256 format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid spec_sha256 format: {v}"
             raise ValueError(err_msg)
         return v
@@ -623,10 +623,10 @@ class WorkflowRun(ConfiguredBaseModel):
         pattern=re.compile(r"^[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid definition_sha256 format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid definition_sha256 format: {v}"
             raise ValueError(err_msg)
         return v
@@ -636,10 +636,10 @@ class WorkflowRun(ConfiguredBaseModel):
         pattern=re.compile(r"^[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid execution_fingerprint format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid execution_fingerprint format: {v}"
             raise ValueError(err_msg)
         return v
@@ -649,10 +649,10 @@ class WorkflowRun(ConfiguredBaseModel):
         pattern=re.compile(r"^[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid code_sha256 format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid code_sha256 format: {v}"
             raise ValueError(err_msg)
         return v
@@ -662,10 +662,10 @@ class WorkflowRun(ConfiguredBaseModel):
         pattern=re.compile(r"^[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid lock_sha256 format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid lock_sha256 format: {v}"
             raise ValueError(err_msg)
         return v
@@ -719,10 +719,10 @@ class ConsumerRecord(ConfiguredBaseModel):
         pattern=re.compile(r"^[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid run_manifest_sha256 format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid run_manifest_sha256 format: {v}"
             raise ValueError(err_msg)
         return v
@@ -732,10 +732,10 @@ class ConsumerRecord(ConfiguredBaseModel):
         pattern=re.compile(r"^sha256:[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid feature_filter_id format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid feature_filter_id format: {v}"
             raise ValueError(err_msg)
         return v
@@ -745,10 +745,10 @@ class ConsumerRecord(ConfiguredBaseModel):
         pattern=re.compile(r"^input_cohort_before_analysis_specific_exclusions$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid coverage_scope format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid coverage_scope format: {v}"
             raise ValueError(err_msg)
         return v
@@ -789,10 +789,10 @@ class LegacyImportRecord(ConfiguredBaseModel):
         pattern=re.compile(r"^[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid source_sha256 format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid source_sha256 format: {v}"
             raise ValueError(err_msg)
         return v
@@ -802,10 +802,10 @@ class LegacyImportRecord(ConfiguredBaseModel):
         pattern=re.compile(r"^imported_unverified$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid verification_status format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid verification_status format: {v}"
             raise ValueError(err_msg)
         return v
@@ -835,10 +835,10 @@ class ArchivedLocation(ConfiguredBaseModel):
         pattern=re.compile(r"^[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid sha256 format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid sha256 format: {v}"
             raise ValueError(err_msg)
         return v
@@ -879,10 +879,10 @@ class EvidenceArchive(ConfiguredBaseModel):
         pattern=re.compile(r"^1$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid archive_version format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid archive_version format: {v}"
             raise ValueError(err_msg)
         return v
@@ -911,10 +911,10 @@ class RecordedPath(ConfiguredBaseModel):
         pattern=re.compile(r"^[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid sha256 format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid sha256 format: {v}"
             raise ValueError(err_msg)
         return v
@@ -959,10 +959,10 @@ class ArmCommandDefinition(ConfiguredBaseModel):
         pattern=re.compile(r"^[A-Za-z][A-Za-z0-9_.-]*$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid id format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid id format: {v}"
             raise ValueError(err_msg)
         return v
@@ -1045,13 +1045,13 @@ class ArmRun(ConfiguredBaseModel):
                        'ScientificResultRecord',
                        'ComparisonRun']} })
     arm: str = Field(default=..., title="Arm", description="""Owner of the declared standard analysis suite.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ArmRun']} })
-    contrast_population: Optional[ContrastPopulation] = Field(default=ContrastPopulation.all_paired, title="Contrast population", description="""Selection inherited from the verified upstream core, never independently overridden.""", json_schema_extra = { "linkml_meta": {'domain_of': ['WorkflowRun',
+    contrast_population: Optional[ContrastPopulation] = Field(default=ContrastPopulation("all_paired"), title="Contrast population", description="""Selection inherited from the verified upstream core, never independently overridden.""", json_schema_extra = { "linkml_meta": {'domain_of': ['WorkflowRun',
                        'ArmRun',
                        'EligibilityLedger',
                        'ScientificResultRecord',
                        'ComparisonRun'],
          'ifabsent': 'string(all_paired)'} })
-    direction_basis: Optional[DirectionBasis] = Field(default=DirectionBasis.group_1_vs_group_0, title="Direction basis", description="""Upstream direction semantics; disease-oriented inputs must not be reversed a second time.""", json_schema_extra = { "linkml_meta": {'domain_of': ['WorkflowRun',
+    direction_basis: Optional[DirectionBasis] = Field(default=DirectionBasis("group_1_vs_group_0"), title="Direction basis", description="""Upstream direction semantics; disease-oriented inputs must not be reversed a second time.""", json_schema_extra = { "linkml_meta": {'domain_of': ['WorkflowRun',
                        'ArmRun',
                        'ScientificResultRecord',
                        'ComparisonRun'],
@@ -1106,10 +1106,10 @@ class ArmRun(ConfiguredBaseModel):
         pattern=re.compile(r"^(ilyas|noel|jed)$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid arm format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid arm format: {v}"
             raise ValueError(err_msg)
         return v
@@ -1119,10 +1119,10 @@ class ArmRun(ConfiguredBaseModel):
         pattern=re.compile(r"^standard_analysis_calibration_and_optional_figures$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid scope format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid scope format: {v}"
             raise ValueError(err_msg)
         return v
@@ -1132,10 +1132,10 @@ class ArmRun(ConfiguredBaseModel):
         pattern=re.compile(r"^[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid core_manifest_sha256 format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid core_manifest_sha256 format: {v}"
             raise ValueError(err_msg)
         return v
@@ -1145,10 +1145,10 @@ class ArmRun(ConfiguredBaseModel):
         pattern=re.compile(r"^(count_profiles|ora_profiles)$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid profile_product format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid profile_product format: {v}"
             raise ValueError(err_msg)
         return v
@@ -1158,10 +1158,10 @@ class ArmRun(ConfiguredBaseModel):
         pattern=re.compile(r"^[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid plan_sha256 format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid plan_sha256 format: {v}"
             raise ValueError(err_msg)
         return v
@@ -1203,10 +1203,10 @@ class AnalysisSpec(ConfiguredBaseModel):
         pattern=re.compile(r"^[A-Za-z][A-Za-z0-9_:.-]*$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid id format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid id format: {v}"
             raise ValueError(err_msg)
         return v
@@ -1286,10 +1286,10 @@ class AnalysisBasis(ConfiguredBaseModel):
         pattern=re.compile(r"^[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid feature_catalog_sha256 format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid feature_catalog_sha256 format: {v}"
             raise ValueError(err_msg)
         return v
@@ -1299,10 +1299,10 @@ class AnalysisBasis(ConfiguredBaseModel):
         pattern=re.compile(r"^sha256:[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid feature_filter_id format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid feature_filter_id format: {v}"
             raise ValueError(err_msg)
         return v
@@ -1312,10 +1312,10 @@ class AnalysisBasis(ConfiguredBaseModel):
         pattern=re.compile(r"^(count_profiles|ora_profiles)$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid profile_unit format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid profile_unit format: {v}"
             raise ValueError(err_msg)
         return v
@@ -1486,10 +1486,10 @@ class ComparisonRun(ConfiguredBaseModel):
         pattern=re.compile(r"^[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid core_manifest_sha256 format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid core_manifest_sha256 format: {v}"
             raise ValueError(err_msg)
         return v
@@ -1499,10 +1499,10 @@ class ComparisonRun(ConfiguredBaseModel):
         pattern=re.compile(r"^[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid noel_manifest_sha256 format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid noel_manifest_sha256 format: {v}"
             raise ValueError(err_msg)
         return v
@@ -1512,10 +1512,10 @@ class ComparisonRun(ConfiguredBaseModel):
         pattern=re.compile(r"^[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid jed_manifest_sha256 format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid jed_manifest_sha256 format: {v}"
             raise ValueError(err_msg)
         return v
@@ -1525,10 +1525,10 @@ class ComparisonRun(ConfiguredBaseModel):
         pattern=re.compile(r"^[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid ilyas_manifest_sha256 format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid ilyas_manifest_sha256 format: {v}"
             raise ValueError(err_msg)
         return v
