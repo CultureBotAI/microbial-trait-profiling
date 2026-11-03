@@ -2,6 +2,11 @@
 
 Date: 2026-11-02. Inputs: repository and a saved Git deleted-path list.
 Outputs: fresh TSV inventories plus a JSON search-scope/identity record.
+Recreate the 522-path input list (#1358) with:
+
+    git diff --diff-filter=D --name-only ab9156f 1eda796
+
+Save that command's stdout to a new file and pass it as --deleted-list.
 Reads ignored files without consulting Git ignore rules. Deletes nothing;
 does not import repository modules, execute commands, or parse XML/binary assets.
 """
