@@ -64,14 +64,17 @@ references it:
    ```
    Do not use `gh issue develop`. It records a link in the issue's
    Development sidebar, and GitHub closes every linked issue when the PR
-   merges, even an issue the PR only partly addresses (#1317).
-   `--no-track` keeps a bare `git push` from targeting `main`; push with
+   merges into `main`, even an issue the PR only partly addresses (#1317).
+   `--no-track` keeps the new branch from treating `main` as its
+   upstream; set the upstream on the first push with
    `git push -u origin <branch>`.
 3. **Push and open a PR** after the first commit. Reference the issue in
    the PR body: `Closes #<number>` only when the PR fully resolves it,
-   `Refs #<number>` for partial work. A closing keyword present when the
-   PR is opened links the issue, and editing the body later does not
-   remove that link, so choose before opening.
+   `Refs #<number>` for partial work. Choose before opening the PR, and
+   before merging check which issues the PR will close (its Development
+   sidebar, or `closingIssuesReferences` in the GraphQL API): a link can
+   outlast a later edit of the body. Remove any link to an issue the PR
+   only partly addresses.
 4. **Run `just check`** — all checks must pass before requesting review (`just security` exports `--all-extras --group dev --group qa`, matching CI's extras and dependency groups; host-specific environment markers can select different packages, so the Linux CI audit must also pass).
 5. **Wait for CI and Copilot review.** Address all review comments.
 6. **Do not merge your own PR** unless you are the repo owner.

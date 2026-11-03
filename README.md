@@ -227,7 +227,7 @@ linkml-store approach.
 ### Workflow
 
 1. Pick an [open issue](https://github.com/CultureBotAI/microbial-trait-profiling/issues)
-2. Create a plain branch named for the issue: `git switch -c <number>-<short-slug> --no-track origin/main` (not `gh issue develop`; see AGENTS.md)
+2. Create a plain branch named for the issue: `git fetch origin`, then `git switch -c <number>-<short-slug> --no-track origin/main` (not `gh issue develop`; see AGENTS.md)
 3. Make your changes
 4. Run `just check` — **all checks must pass before opening a PR**
 5. Commit and push (`git push -u origin <branch>`)

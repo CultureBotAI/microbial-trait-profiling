@@ -127,10 +127,12 @@ git switch -c <number>-<short-slug> --no-track origin/main
 ```
 
 Do not use `gh issue develop`: its Development-sidebar link makes GitHub close
-the issue when the PR merges, even if the PR only partly addresses it (#1317).
-In the PR body, write `Closes #<number>` only when the PR fully resolves the
-issue, and `Refs #<number>` otherwise; decide before opening the PR, because a
-closing keyword present at that point stays linked after later body edits.
+the issue when the PR merges into `main`, even if the PR only partly addresses
+it (#1317). In the PR body, write `Closes #<number>` only when the PR fully
+resolves the issue, and `Refs #<number>` otherwise. Decide before opening the
+PR, and before merging check the PR's Development sidebar for the issues it will
+close, because a link can outlast a later edit of the body; remove any link to
+an issue the PR only partly addresses.
 
 ### 3. Write code
 
@@ -193,12 +195,12 @@ If your contribution adds or modifies prose describing biological results, figur
 ```bash
 git add <your files>
 git commit -m "Short description of what and why"
-git push -u origin issue-<number>-<short-slug>
+git push -u origin <number>-<short-slug>
 ```
 
 ### 7. Open a PR
 
-- Reference the issue: "Closes #30" in the PR body
+- Reference the issue in the PR body: "Closes #30" only if the PR fully resolves it, otherwise "Refs #30"
 - Wait for CI to pass
 - Respond to Copilot review comments if any
 
