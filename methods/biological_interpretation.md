@@ -182,8 +182,12 @@ Template for a result or generated narrative (replace every bracket; use
 Heatmap captions must identify fills as annotation shares and provide support and
 cell-status tables. A zero signal, an untested/low-support cell and an unsampled
 cell are different states even if all render blank. Machine-readable status tables
-use `no_annotation_signal` for sampled zero-signal cells across guild and individual
-trait outputs. State when the heatmap has no cell-level uncertainty. In PR #173,
+use `no_guild_signal` for sampled zero-signal cells across guild and individual
+trait outputs (`CELL_NO_SIGNAL` in `src/mtp/guild_maps.py`, shared by the
+integrated evidence table). The label is kept so existing outputs stay comparable
+(#1263); for a guild or an individual trait alike, it means that the sampled cell
+carries no annotation signal among the reported taxa. Captions describe it as
+"sampled, with no recorded guild (or trait) annotation signal". State when the heatmap has no cell-level uncertainty. In PR #173,
 the proposed enrichment outline summarizes
 profile-level calls across supporting studies; this aggregation has no calibrated
 cell-level p-value. The implemented mark kinds and verdicts must match the legend
