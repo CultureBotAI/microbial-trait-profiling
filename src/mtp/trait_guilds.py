@@ -17,6 +17,7 @@ from typing import TextIO
 
 from mtp.count_input import (
     COMPLETE_COUNT_MODE,
+    COUNT_INPUT_MODES,
     LEGACY_SPARSE_ZERO_MODE,
     CountInputMode,
     open_input_text,
@@ -35,8 +36,9 @@ PROFILE_METADATA_COLUMNS = frozenset(
 )
 HUMAN_HOST_SPECIES = "Homo sapiens"
 MEDIADIVE_MARKER = "mediadive.medium"
-# How count_input.parse_nonnegative_integer starts a blank-count error.
+# How count_input.parse_nonnegative_integer frames a blank-count error.
 _READER_MISSING_COUNT_PREFIX = "Missing count in "
+_MISSING_COUNT_SUFFIX = "; missing is not an observed zero"
 
 # Oxygen guilds, identical in both analysis arms. This repository has no record of
 # where or when they were first declared (#294). Labels were verified against
@@ -372,6 +374,26 @@ def resolve_trait_columns(
     return selection.matched_columns
 
 
+def _resolve_count_input_mode(
+    count_input_mode: CountInputMode | None,
+    reject_missing_counts: bool | None,
+) -> CountInputMode:
+    """Resolve the effective count-input mode, rejecting conflicting options (#1298)."""
+    if count_input_mode is not None and count_input_mode not in COUNT_INPUT_MODES:
+        raise ValueError(f"Unsupported count input mode: {count_input_mode!r}")
+    if reject_missing_counts is None:
+        return COMPLETE_COUNT_MODE if count_input_mode is None else count_input_mode
+    flag_mode: CountInputMode = (
+        COMPLETE_COUNT_MODE if reject_missing_counts else LEGACY_SPARSE_ZERO_MODE
+    )
+    if count_input_mode is not None and count_input_mode != flag_mode:
+        raise ValueError(
+            f"Conflicting count input options: count_input_mode={count_input_mode!r} "
+            f"disagrees with reject_missing_counts={reject_missing_counts!r}"
+        )
+    return flag_mode
+
+
 def load_profiles(
     profile_path: Path = DEFAULT_PROFILE_PATH,
     experiments_path: Path = DEFAULT_EXPERIMENTS_PATH,
@@ -379,22 +401,27 @@ def load_profiles(
     *,
     human_only: bool = True,
     paired_only: bool = True,
-    count_input_mode: CountInputMode = COMPLETE_COUNT_MODE,
+    count_input_mode: CountInputMode | None = None,
     reject_missing_counts: bool | None = None,
 ) -> tuple[list[Profile], CorpusStats]:
-    """Load profile rows joined to experiment metadata, with corpus filters applied."""
+    """Load profile rows joined to experiment metadata, with corpus filters applied.
+
+    Count cells are validated according to ``count_input_mode`` (defaulting to
+    ``"complete"``, which rejects blank count cells; ``"legacy_sparse_zero"``
+    interprets blank cells as ``0``) or its boolean alias
+    ``reject_missing_counts`` (``True`` for ``"complete"``, ``False`` for
+    ``"legacy_sparse_zero"``). Passing both options with disagreeing values
+    raises ``ValueError``.
+    """
+    effective_mode = _resolve_count_input_mode(count_input_mode, reject_missing_counts)
     guild_map = OXYGEN_GUILDS if guilds is None else guilds
     metadata = ExperimentMetadata.load(experiments_path)
-    effective_mode: CountInputMode = (
-        count_input_mode
-        if reject_missing_counts is None
-        else (COMPLETE_COUNT_MODE if reject_missing_counts else LEGACY_SPARSE_ZERO_MODE)
-    )
 
     count_reader = profile_count_reader(profile_path, mode=effective_mode)
     header = list(count_reader.header)
     selection = _select_trait_columns(header, guild_map)
     total_positions = selection.total_positions
+    trait_columns = frozenset(header[i] for i in total_positions)
     guild_positions = selection.guild_positions
     mediadive_excluded = selection.mediadive_excluded
 
@@ -440,12 +467,15 @@ def load_profiles(
                 )
             )
     except ValueError as exc:
-        # Relabel only the strict reader's missing-count error, matched as a
-        # prefix: a path that contains the phrase must not relabel any other
-        # error (#1300). The reader's file:line:column and its statement that
-        # missing is not an observed zero are kept as they are.
+        # Relabel only the strict reader's missing-count error on retained trait
+        # columns, matched as a prefix and suffix: a path that contains the
+        # phrase must not relabel any other error (#1300), and metadata or
+        # MediaDive columns keep the neutral "Missing count" noun (#1302).
         message = str(exc)
-        if message.startswith(_READER_MISSING_COUNT_PREFIX):
+        if message.startswith(_READER_MISSING_COUNT_PREFIX) and any(
+            message.endswith(f", column {column!r}{_MISSING_COUNT_SUFFIX}")
+            for column in trait_columns
+        ):
             detail = message.removeprefix(_READER_MISSING_COUNT_PREFIX)
             raise ValueError(f"Missing trait count in {detail}") from exc
         raise

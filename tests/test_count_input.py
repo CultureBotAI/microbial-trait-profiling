@@ -1,6 +1,7 @@
 """Shared count-table contract at every statistical input boundary."""
 
 import gzip
+import re
 from pathlib import Path
 
 import pytest
@@ -9,6 +10,7 @@ from mtp.count_input import (
     LEGACY_SPARSE_ZERO_MODE,
     PROFILE_KEY_COLUMNS,
     CountTableReader,
+    parse_nonnegative_integer,
     profile_count_reader,
     taxa_trait_count_reader,
 )
@@ -181,3 +183,45 @@ def test_buffer_keeps_explicit_legacy_sparse_mode(tmp_path: Path) -> None:
     checked = profile_count_reader(path, raw_bytes=raw, mode=LEGACY_SPARSE_ZERO_MODE)
     assert [row.counts for row in checked] == [(0, 2)]
     assert checked.summary.blank_counts_interpreted_as_zero == 1
+
+
+def test_missing_count_error_includes_row_key_and_neutral_noun(tmp_path: Path) -> None:
+    profile_path = _write(
+        tmp_path / "profiles.tsv",
+        "study_id\texperiment_id\tinc_dec\ttaxa_count\ttrait_a\ns1\te1\tinc\t\t2\n",
+    )
+    with pytest.raises(
+        ValueError,
+        match=(
+            rf"^Missing count in {re.escape(str(profile_path))}:2 for s1, e1, inc, "
+            r"column 'taxa_count'; missing is not an observed zero$"
+        ),
+    ):
+        list(profile_count_reader(profile_path))
+
+    taxa_path = _write(
+        tmp_path / "taxa.tsv",
+        "taxon_id\ttaxon_name\ttaxonomic_rank\ttrait_a\nNCBITaxon:1\tFirst name\tspecies\t\n",
+    )
+    with pytest.raises(
+        ValueError,
+        match=(
+            rf"^Missing count in {re.escape(str(taxa_path))}:2 for NCBITaxon:1, "
+            r"column 'trait_a'; missing is not an observed zero$"
+        ),
+    ):
+        list(taxa_trait_count_reader(taxa_path))
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            rf"^Missing count in {re.escape(str(profile_path))}:5, "
+            r"column 'trait_a'; missing is not an observed zero$"
+        ),
+    ):
+        parse_nonnegative_integer(
+            "",
+            path=profile_path,
+            line_number=5,
+            column_name="trait_a",
+        )
