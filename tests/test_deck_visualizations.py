@@ -143,6 +143,10 @@ def mock_pipeline_data(tmp_path: Path) -> dict[str, Path]:
             "adj_wilcoxon_p": 0.005,
             "relative_change_pct": -20.0,
             "status": "survived (significant post-adjustment)",
+            # Six equal p-values have BH q equal to p over the six-trait family (#1321).
+            "raw_wilcoxon_bh_q": 0.001,
+            "adj_wilcoxon_bh_q": 0.005,
+            "bh_family_size": len(TABLE_1_TRAITS),
         }
         for t_id, t_label in TABLE_1_TRAITS.items()
     ]
@@ -284,7 +288,8 @@ def test_figure4_draws_only_significant_adjusted_effects_as_surviving(
 
     from mtp.density_adjustment import SIGNIFICANT_POST_ADJUSTMENT_STATUSES, adjustment_status
 
-    nonsig_raw_status = adjustment_status(-2.181818, 0.208697, -5.834487, 0.000029)
+    # The classifier reads BH q-values (#1321): raw nonsignificant, adjusted significant.
+    nonsig_raw_status = adjustment_status(-2.181818, raw_q=0.42, adj_mean=-5.834487, adj_q=0.0004)
     assert nonsig_raw_status == "significant only post-adjustment"
     assert nonsig_raw_status not in SIGNIFICANT_POST_ADJUSTMENT_STATUSES
 

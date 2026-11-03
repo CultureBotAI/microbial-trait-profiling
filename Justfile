@@ -939,7 +939,8 @@ audit-trait-density *ARGS:
 
 # Density-adjusted paired effects for a declared TRAIT_LIST (one identifier per line) on one
 # run's PROFILES and COLUMNS, into OUTPUT; PC1 is still fit on every non-MediaDive trait and
-# trait_list_provenance.json records the list's SHA-256 (#1054). Without a list: audit-trait-density.
+# trait_list_provenance.json records the list's SHA-256 (#1054). Statuses read BH q-values over
+# the declared list (#1321). Without a list: audit-trait-density.
 [positional-arguments]
 density-adjustment-trait-list trait_list profiles columns output *ARGS:
 	bash scripts/guard_output_root.sh "$4" uv run python -m mtp.density_adjustment --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" --trait-list "$1" --profiles "$2" --columns "$3" --output-dir "$4" "${@:5}"

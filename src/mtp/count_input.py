@@ -71,6 +71,7 @@ def parse_nonnegative_integer(
     line_number: int,
     column_name: str,
     mode: CountInputMode = COMPLETE_COUNT_MODE,
+    row_key: Sequence[str] | None = None,
 ) -> int:
     """Parse one count without coercion, truncation, or implicit missingness."""
     if mode not in COUNT_INPUT_MODES:
@@ -79,8 +80,9 @@ def parse_nonnegative_integer(
     if not text:
         if mode == LEGACY_SPARSE_ZERO_MODE:
             return 0
+        key_clause = f" for {', '.join(row_key)}" if row_key else ""
         raise ValueError(
-            f"Missing count in {path}:{line_number}, column {column_name!r}; "
+            f"Missing count in {path}:{line_number}{key_clause}, column {column_name!r}; "
             "missing is not an observed zero"
         )
     if not text.isascii() or not text.isdecimal():
@@ -316,6 +318,7 @@ class CountTableReader:
                             line_number=line_number,
                             column_name=column,
                             mode=self.mode,
+                            row_key=key,
                         )
                     )
                 self._rows += 1

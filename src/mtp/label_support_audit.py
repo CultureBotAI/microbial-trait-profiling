@@ -16,7 +16,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import binomtest
 
-from mtp import madin_source, trait_guilds
+from mtp import madin_source, trait_guilds, trait_key_policy
 from mtp import taxa_trait_matrix as matrix_api
 from mtp.count_input import CountTableReader, profile_count_reader, taxa_trait_count_reader
 from mtp.paths import KG_MICROBE_DIR, REPO_ROOT, file_sha256
@@ -31,7 +31,11 @@ from mtp.taxa_trait_matrix import (
     resolve_kg_file,
 )
 from mtp.trait_guilds import MEDIADIVE_MARKER, OXYGEN_GUILDS, TABLE1_TRAIT_LABELS, TABLE1_TRAITS
-from mtp.trait_key_policy import display_trait_label, read_recorded_member_ids
+from mtp.trait_key_policy import (
+    display_trait_label,
+    read_recorded_member_evidence,
+    read_recorded_member_ids,
+)
 from mtp.trait_lists import load_trait_list, parse_trait_list
 from mtp.workflow import kg_inputs
 from mtp.workflow.output_roots import add_temporary_output_option, require_durable_output
@@ -347,11 +351,13 @@ def build_label_support_tables(
     *,
     trait_list: Sequence[str] | Path | None = None,
     column_metadata_path: Path | None = None,
+    member_ids_by_trait: Mapping[str, tuple[str, ...]] | None = None,
 ) -> tuple[list[Row], list[Row], list[Row]]:
     """Reconcile carrier counts and export source evidence without changing the matrix."""
     support, focal, evidence = [], [], []
     counts = matrix.set_index("taxon_id")
-    member_ids_by_trait = read_recorded_member_ids(column_metadata_path)
+    if member_ids_by_trait is None:
+        member_ids_by_trait = read_recorded_member_ids(column_metadata_path)
     declared = _resolve_trait_list(trait_list)
     if missing_declared := [key for key in declared if key not in counts.columns]:
         raise ValueError(f"Declared traits absent from matrix: {missing_declared}")
@@ -592,11 +598,13 @@ def build_coassertion_census(matrix: pd.DataFrame, occurrences: pd.DataFrame) ->
     return results
 
 
-def _inventory(path: Path) -> Row:
+def _inventory(path: Path, *, allow_absent: bool = False) -> Row:
     resolved = path.resolve()
     display = (
         str(resolved.relative_to(REPO_ROOT)) if resolved.is_relative_to(REPO_ROOT) else path.name
     )
+    if allow_absent and not path.exists() and not path.is_symlink():
+        return {"path": display, "status": "absent"}
     return {"path": display, "sha256": file_sha256(path), "size_bytes": path.stat().st_size}
 
 
@@ -611,17 +619,24 @@ def run_label_support_audit(
     madin_csv: Path | None = None,
     strain_rollup: Scope = "off",
     trait_list: Path | None = None,
+    column_metadata_path: Path | None = None,
 ) -> Row:
     """Write sidecar products only, after all source reconciliations pass."""
     if output_dir.exists() and any(output_dir.iterdir()):
         raise FileExistsError("Choose an empty output directory for the label-support sidecar")
     declared_traits = load_trait_list(trait_list) if trait_list is not None else None
+    columns = (
+        column_metadata_path
+        if column_metadata_path is not None
+        else matrix_path.with_name("taxa_trait_matrix_columns.tsv")
+    )
     inputs = {
         "taxa": taxa_path,
         "matrix": matrix_path,
         "profiles": profiles_path,
         "kg_edges": edges_path,
         "kg_nodes": nodes_path,
+        "column_metadata": columns,
     }
     if madin_csv is not None:
         # Before reading anything else: a table that is not the pinned one is refused,
@@ -630,7 +645,12 @@ def run_label_support_audit(
         inputs["madin"] = madin_csv
     if trait_list is not None:
         inputs["trait_list"] = trait_list
-    provenance_inputs = {name: _inventory(path) for name, path in inputs.items()}
+    provenance_inputs = {
+        name: _inventory(
+            path, allow_absent=name == "column_metadata" and column_metadata_path is None
+        )
+        for name, path in inputs.items()
+    }
     if (
         declared_traits is not None
         and provenance_inputs["trait_list"]["sha256"] != declared_traits.sha256
@@ -648,14 +668,16 @@ def run_label_support_audit(
     occurrences, scope_facts = bind_occurrences(taxa_path, matrix, profiles)
     graph = load_kg_provenance_graph(edges_path, nodes_path, strain_rollup=strain_rollup)
     madin = load_madin_subsources(madin_csv)
-    sibling_columns = matrix_path.with_name("taxa_trait_matrix_columns.tsv")
+    member_evidence = read_recorded_member_evidence(
+        columns if "sha256" in provenance_inputs["column_metadata"] else None
+    )
     support, focal, evidence = build_label_support_tables(
         graph,
         matrix,
         occurrences,
         madin,
         trait_list=declared_traits.trait_ids if declared_traits is not None else None,
-        column_metadata_path=sibling_columns if sibling_columns.exists() else None,
+        member_ids_by_trait=member_evidence.member_ids_by_trait,
     )
     sensitivity = build_support_threshold_sensitivity(support, occurrences, profiles)
     census = build_coassertion_census(matrix, occurrences)
@@ -675,8 +697,15 @@ def run_label_support_audit(
         ),
         "coasserted_label_census.tsv": (census, ["label_pair", "rank", "status"]),
     }
-    if provenance_inputs != {name: _inventory(path) for name, path in inputs.items()}:
+    if provenance_inputs != {
+        name: _inventory(path, allow_absent=name == "column_metadata")
+        for name, path in inputs.items()
+    }:
         raise ValueError("Audit inputs changed during execution")
+    provenance_inputs["column_metadata"].update(
+        selection="explicit" if column_metadata_path is not None else "sibling_default",
+        member_id_rows=member_evidence.member_id_rows,
+    )
     output_dir.mkdir(parents=True, exist_ok=True)
     for name, (rows, empty_columns) in tables.items():
         pd.DataFrame(rows, columns=None if rows else empty_columns).to_csv(
@@ -696,6 +725,7 @@ def run_label_support_audit(
         "matrix_policy_code": _inventory(Path(matrix_api.__file__)),
         "kg_parser_code": _inventory(Path(kg_inputs.__file__)),
         "trait_definitions_code": _inventory(Path(trait_guilds.__file__)),
+        "trait_key_policy_code": _inventory(Path(trait_key_policy.__file__)),
         "madin_verification_code": _inventory(Path(madin_source.__file__)),
         "kg_edge_serialization": graph["edge_serialization"],
         "environment_lock": _inventory(REPO_ROOT / "uv.lock"),
@@ -736,6 +766,11 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--taxa", type=Path, required=True)
     parser.add_argument("--matrix", type=Path, required=True)
+    parser.add_argument(
+        "--columns",
+        type=Path,
+        help="Column metadata TSV; defaults to taxa_trait_matrix_columns.tsv beside --matrix",
+    )
     parser.add_argument("--profiles", type=Path, required=True)
     parser.add_argument("--kg-dir", type=Path, default=KG_MICROBE_DIR)
     parser.add_argument("--edges", type=Path)
@@ -757,6 +792,7 @@ def main(argv: list[str] | None = None) -> int:
         strain_rollup=args.strain_rollup,
         output_dir=args.output_dir,
         trait_list=args.trait_list,
+        column_metadata_path=args.columns,
     )
     return 0
 

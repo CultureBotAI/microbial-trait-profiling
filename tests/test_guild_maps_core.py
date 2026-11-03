@@ -21,13 +21,18 @@ def bundle(tmp_path: Path) -> CoreBundle:
     fixture = REPO_ROOT / "tests/fixtures/workflow"
     nodes = tmp_path / "nodes.tsv"
     edges = tmp_path / "edges.tsv"
+    # Each oxygen guild needs a matrix column. The fixture KG's own oxygen term is
+    # METPO:1000608, which is in neither guild since #1237, so one aerobic and one
+    # anaerobic annotation are added.
     nodes.write_text(
         (fixture / "merged-kg_nodes.tsv").read_text()
         + "METPO:1000603\tbiolink:PhenotypicQuality\tanaerobic\n"
+        + "METPO:1000602\tbiolink:PhenotypicQuality\taerobic\n"
     )
     edges.write_text(
         (fixture / "merged-kg_edges.tsv").read_text()
         + "anaerobe\tNCBITaxon:300\tbiolink:has_phenotype\tMETPO:1000603\tfixture:annotation\n"
+        + "aerobe\tNCBITaxon:300\tbiolink:has_phenotype\tMETPO:1000602\tfixture:annotation\n"
     )
     run = execute_workflow(
         REPO_ROOT / "workflows/bugsigdb_core.yaml",
