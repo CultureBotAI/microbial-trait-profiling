@@ -121,12 +121,16 @@ If BugSigDB is unreachable while reproducing pipeline steps, see the README sect
 ### 2. Create a branch
 
 ```bash
-git checkout main
-git pull
-gh issue develop <number> --repo CultureBotAI/microbial-trait-profiling \
-  --name issue-<number>-<short-slug> --checkout
-# Example: gh issue develop 30 --repo CultureBotAI/microbial-trait-profiling --name issue-30-aggregate-tables --checkout
+git fetch origin
+git switch -c <number>-<short-slug> --no-track origin/main
+# Example: git switch -c 30-aggregate-tables --no-track origin/main
 ```
+
+Do not use `gh issue develop`: its Development-sidebar link makes GitHub close
+the issue when the PR merges, even if the PR only partly addresses it (#1317).
+In the PR body, write `Closes #<number>` only when the PR fully resolves the
+issue, and `Refs #<number>` otherwise; decide before opening the PR, because a
+closing keyword present at that point stays linked after later body edits.
 
 ### 3. Write code
 

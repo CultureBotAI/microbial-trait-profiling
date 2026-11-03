@@ -227,11 +227,11 @@ linkml-store approach.
 ### Workflow
 
 1. Pick an [open issue](https://github.com/CultureBotAI/microbial-trait-profiling/issues)
-2. Create a linked branch: `gh issue develop <number> --repo CultureBotAI/microbial-trait-profiling --checkout`
+2. Create a plain branch named for the issue: `git switch -c <number>-<short-slug> --no-track origin/main` (not `gh issue develop`; see AGENTS.md)
 3. Make your changes
 4. Run `just check` — **all checks must pass before opening a PR**
-5. Commit and push
-6. Open a PR that references the issue (e.g., "Closes #30")
+5. Commit and push (`git push -u origin <branch>`)
+6. Open a PR that references the issue: "Closes #30" only if it fully resolves the issue, otherwise "Refs #30"
 
 ### Using LLMs
 
