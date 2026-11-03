@@ -8,6 +8,7 @@ import json
 from collections.abc import Callable
 from dataclasses import replace
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 import pytest
@@ -147,7 +148,13 @@ def inputs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Path]:
     return paths
 
 
-def run_audit(inputs: dict[str, Path], output: Path, *, madin: bool = True) -> None:
+def run_audit(
+    inputs: dict[str, Path],
+    output: Path,
+    *,
+    madin: bool = True,
+    columns: Path | None = None,
+) -> None:
     arguments = [
         argument
         for name in ("taxa", "matrix", "profiles", "edges", "nodes")
@@ -155,6 +162,8 @@ def run_audit(inputs: dict[str, Path], output: Path, *, madin: bool = True) -> N
     ]
     if madin:
         arguments.extend(["--madin-csv", str(inputs["madin"])])
+    if columns is not None:
+        arguments.extend(["--columns", str(columns)])
     # Tests write to temporary storage, which the sidecar refuses without the opt-in
     arguments.append("--allow-temporary-output")
     assert main([*arguments, "--output-dir", str(output), "--strain-rollup", "off"]) == 0
@@ -1032,3 +1041,155 @@ def test_run_label_support_audit_empty_support_and_evidence_fallback_columns(
         "carrier_taxon_id",
         "madin_resolution",
     ]
+
+
+def write_facultative_metadata(path: Path, *, union: bool) -> None:
+    """Write contrasting display evidence without changing any count input (#1331)."""
+    pd.DataFrame(
+        [
+            {
+                "column_id": FAC,
+                "object_id": FAC,
+                "object_name": "facultatively aerobic",
+                "column_label": "facultatively aerobic",
+                "trait_member_ids_json": json.dumps(
+                    ["METPO:1000605", FAC, "METPO:1000612"] if union else [FAC]
+                ),
+            }
+        ]
+    ).to_csv(path, sep="\t", index=False)
+
+
+def assert_facultative_audit_label(output: Path, expected: str) -> None:
+    support = pd.read_csv(output / "taxon_trait_label_support.tsv", sep="\t")
+    labels = support.loc[support["trait_key"] == FAC, "trait_label"]
+    assert not labels.empty
+    assert set(labels) == {expected}
+
+
+@pytest.mark.parametrize("present", [False, True], ids=["absent", "present"])
+def test_column_metadata_default_inventory_records_present_or_absent(
+    inputs: dict[str, Path], tmp_path: Path, present: bool
+) -> None:
+    """The default sibling's presence and exact identity determine its label claim."""
+    columns = inputs["matrix"].with_name("taxa_trait_matrix_columns.tsv")
+    if present:
+        write_facultative_metadata(columns, union=True)
+    output = tmp_path / "metadata-inventory"
+    run_audit(inputs, output)
+    provenance = json.loads((output / "provenance.json").read_text(encoding="utf-8"))
+    expected = (
+        {
+            "path": columns.name,
+            "sha256": file_sha256(columns),
+            "size_bytes": columns.stat().st_size,
+        }
+        if present
+        else {"path": columns.name, "status": "absent"}
+    )
+    assert provenance["inputs"]["column_metadata"] == expected
+    assert_facultative_audit_label(
+        output, "facultative (aerobe or anaerobe)" if present else "facultatively aerobic"
+    )
+
+
+@pytest.mark.parametrize("change", ["modify", "same-size", "add", "delete"])
+def test_column_metadata_change_after_label_read_refuses_publication(
+    inputs: dict[str, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch, change: str
+) -> None:
+    """A valid post-read metadata change must fail the late input check, before writes."""
+    columns = inputs["matrix"].with_name("taxa_trait_matrix_columns.tsv")
+    if change != "add":
+        write_facultative_metadata(columns, union=True)
+    original_build = build_label_support_tables
+    visited: list[str] = []
+
+    def build_then_change(*args: Any, **kwargs: Any) -> Any:
+        result = original_build(*args, **kwargs)
+        visited.append(change)
+        if change == "delete":
+            columns.unlink()
+        elif change == "same-size":
+            original = columns.read_bytes()
+            changed = original.replace(b"METPO:1000605", b"METPO:1000606")
+            assert changed != original
+            assert len(changed) == len(original)
+            columns.write_bytes(changed)
+        else:
+            write_facultative_metadata(columns, union=change == "add")
+        return result
+
+    monkeypatch.setattr(label_support_audit, "build_label_support_tables", build_then_change)
+    output = tmp_path / "metadata-change"
+    with pytest.raises(ValueError, match="changed during execution"):
+        run_audit(inputs, output)
+    assert visited == [change]
+    assert not output.exists()
+
+
+@pytest.mark.parametrize("explicit_union", [False, True], ids=["explicit-raw", "explicit-union"])
+def test_column_metadata_cli_explicit_path_overrides_conflicting_sibling(
+    inputs: dict[str, Path], tmp_path: Path, explicit_union: bool
+) -> None:
+    """The CLI-selected file controls both rendered labels and the native input pin."""
+    sibling = inputs["matrix"].with_name("taxa_trait_matrix_columns.tsv")
+    explicit = tmp_path / "selected metadata.tsv"
+    write_facultative_metadata(sibling, union=not explicit_union)
+    write_facultative_metadata(explicit, union=explicit_union)
+    output = tmp_path / "explicit-metadata"
+    run_audit(inputs, output, columns=explicit)
+    provenance = json.loads((output / "provenance.json").read_text(encoding="utf-8"))
+    assert provenance["inputs"]["column_metadata"] == {
+        "path": explicit.name,
+        "sha256": file_sha256(explicit),
+        "size_bytes": explicit.stat().st_size,
+    }
+    assert provenance["inputs"]["column_metadata"]["sha256"] != file_sha256(sibling)
+    assert_facultative_audit_label(
+        output, "facultative (aerobe or anaerobe)" if explicit_union else "facultatively aerobic"
+    )
+
+
+@pytest.mark.parametrize("interface", ["api", "cli"])
+def test_column_metadata_explicit_missing_refuses_sibling_fallback(
+    inputs: dict[str, Path], tmp_path: Path, interface: str
+) -> None:
+    """An explicitly requested missing file is an error even when a sibling exists."""
+    sibling = inputs["matrix"].with_name("taxa_trait_matrix_columns.tsv")
+    write_facultative_metadata(sibling, union=True)
+    missing = tmp_path / "missing-specified.tsv"
+    output = tmp_path / "missing-metadata"
+    if interface == "cli":
+        with pytest.raises(FileNotFoundError, match="missing-specified"):
+            run_audit(inputs, output, columns=missing)
+    else:
+        with pytest.raises(FileNotFoundError, match="missing-specified"):
+            run_label_support_audit(
+                taxa_path=inputs["taxa"],
+                matrix_path=inputs["matrix"],
+                profiles_path=inputs["profiles"],
+                edges_path=inputs["edges"],
+                nodes_path=inputs["nodes"],
+                madin_csv=inputs["madin"],
+                output_dir=output,
+                strain_rollup="off",
+                column_metadata_path=missing,
+            )
+    assert not output.exists()
+
+
+@pytest.mark.parametrize("invalid", ["directory", "dangling-symlink"])
+def test_column_metadata_default_invalid_path_is_not_an_absent_input(
+    inputs: dict[str, Path], tmp_path: Path, invalid: str
+) -> None:
+    """Only an actually absent sibling may use the recorded-absence fallback."""
+    columns = inputs["matrix"].with_name("taxa_trait_matrix_columns.tsv")
+    if invalid == "directory":
+        columns.mkdir()
+    else:
+        columns.symlink_to(tmp_path / "absent-target.tsv")
+    output = tmp_path / "invalid-metadata"
+    expected_error = IsADirectoryError if invalid == "directory" else FileNotFoundError
+    with pytest.raises(expected_error, match="taxa_trait_matrix_columns"):
+        run_audit(inputs, output)
+    assert not output.exists()

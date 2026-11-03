@@ -15,6 +15,7 @@ the exact KG snapshot used to produce them. Supply the run's strain scope:
 just audit-label-support \
   --taxa RUN/bugsigdb_taxa.tsv \
   --matrix RUN/taxa_trait_matrix.tsv \
+  --columns RUN/taxa_trait_matrix_columns.tsv \
   --profiles RUN/study_trait_profiles_wide.tsv \
   --edges KG/merged-kg_edges.tsv \
   --nodes KG/merged-kg_nodes.tsv \
@@ -29,6 +30,18 @@ described below; a file with any other bytes fails before outputs are written.
 Omitting it leaves Madin subsources unknown. A supplied but unreadable or
 malformed table fails instead of silently falling back to unknown.
 
+`--columns` selects the column metadata used to interpret recorded trait member
+IDs for display labels. An explicit path must exist; it never falls back to a
+different file. Without the flag, the audit checks for
+`taxa_trait_matrix_columns.tsv` beside the matrix, preserving the sibling default.
+`inputs.column_metadata` records the selected file's `path`, `sha256`, and
+`size_bytes`. If the default sibling is absent, it instead records its candidate
+`path` and `status: absent`; labels then retain their existing raw fallback.
+Directories and broken symlinks are refused. The late input check checks this
+same candidate again: changes to the file, its disappearance, or its appearance
+after an initially absent declaration fail before any output tables are written.
+The other input inventory entries retain their existing format.
+
 Optionally supply `--trait-list LIST/traits.txt` (`mtp.trait_lists.load_trait_list`,
 #1132) to audit additional declared traits (such as non-focal headline traits
 whose carriers arrive through taxonomic inheritance or strain rollup) alongside
@@ -36,8 +49,8 @@ the default 14 traits in `AUDIT_TRAITS` (the six `FOCAL_TRAITS` plus eight
 oxygen and cell-shape traits). Without `--trait-list`, the audited trait set is
 the default 14 traits in `AUDIT_TRAITS`, all five output TSVs stay
 byte-identical, and `provenance.json` omits `inputs.trait_list` and
-`trait_list` (differing across runs only in `created_at` and the producer file
-digest/size when code changes). With `--trait-list`, every listed identifier
+`trait_list`. The column-metadata declaration above is independent of whether a
+trait list is supplied. With `--trait-list`, every listed identifier
 must be a valid CURIE or rollup composite present as a column in
 `taxa_trait_matrix.tsv`; malformed, duplicated, or absent trait identifiers
 fail before any output is written. `taxon_trait_label_support.tsv`,
@@ -190,7 +203,7 @@ Limits of the pin:
 | `carrier_source_evidence.tsv` | Named KG source fields and optional Madin subsources for each carrier supporting an audited matrix cell. |
 | `support_threshold_sensitivity.tsv` | Six focal traits under seven declared support rules, with effect units, paired/study counts, ties, and nominal study sign tests. |
 | `coasserted_label_census.tsv` | Co-assertion by species, genus, family and other/unknown rank, among bound reported taxa and their occurrences; missing features remain unavailable. |
-| `provenance.json` | SHA256 and size of all inputs, all five output tables, producer, matrix policy and Madin verification code, environment lock, scope reconciliation, source rules, the Madin pin and status, and limitations. |
+| `provenance.json` | SHA256 and size of present inputs (or the explicit absence of default column metadata), all five output tables, producer, matrix policy and Madin verification code, environment lock, scope reconciliation, source rules, the Madin pin and status, and limitations. Inputs, including column-metadata presence, are rechecked before publication. |
 
 A carrier is a distinct NCBITaxon node at or below the reported taxon, including
 the reported taxon itself when it carries an annotation under the selected scope.
