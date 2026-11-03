@@ -16,8 +16,10 @@ import pytest
 from mtp import label_support_audit, madin_source, trait_key_policy
 from mtp.label_support_audit import (
     AUDIT_TRAITS,
+    COASSERTION_PAIRS,
     MADIN_SOURCE,
     bind_occurrences,
+    build_coassertion_census,
     build_label_support_tables,
     load_kg_provenance_graph,
     load_madin_subsources,
@@ -215,8 +217,11 @@ def test_sidecar_records_sources_reconciliations_and_study_means(
     dual = census[
         (census["label_pair"] == "aerobe_guild_and_anaerobe_guild") & (census["rank"] == "genus")
     ].iloc[0]
+    # Genus 20 carries anaerobic and facultative counts. The facultative column is
+    # in no oxygen guild (#1237), so genus 20 is anaerobe-only, like genus 10.
     assert dual["taxa_with_either"] == 2
-    assert dual["taxa_with_both"] == 1
+    assert dual["taxa_with_both"] == 0
+    assert dual["side_a_count_mass"] == 0
     provenance = json.loads((output / "provenance.json").read_text())
     assert provenance["scope"]["profile_counts_reconciled"] is True
     assert provenance["inputs"]["madin"]["sha256"] == file_sha256(inputs["madin"])
@@ -224,6 +229,62 @@ def test_sidecar_records_sources_reconciliations_and_study_means(
         assert entry["sha256"] == file_sha256(output / name)
     assert "table1_trait_semantic_audit.tsv" not in provenance["outputs"]
     assert "/Users/" not in (output / "provenance.json").read_text()
+
+
+def test_coassertion_census_counts_a_taxon_on_both_sides_of_a_pair() -> None:
+    """The both-sides count is tested at a non-zero value (#1345).
+
+    Genus 1 carries aerobic and anaerobic counts, so it is on both sides of the oxygen
+    guild pair and of the aerobic/anaerobic pair. Genus 2 is anaerobic with a
+    facultative count and genus 3 is facultative only. METPO:1000608 is in neither
+    oxygen guild (#1237), so neither of them is on the aerobe side. Genus 4 is on the
+    aerobe side only (microaerophilic), so a "both" that reads one side alone counts
+    two taxa instead of one, whichever side it reads (#1352).
+    """
+    columns = sorted(
+        {term for _, left, right in COASSERTION_PAIRS for term in (*left, *right)} | {FAC}
+    )
+    carried = {
+        "NCBITaxon:1": {"METPO:1000602": 2, ANA: 1},
+        "NCBITaxon:2": {ANA: 3, FAC: 4},
+        "NCBITaxon:3": {FAC: 5},
+        "NCBITaxon:4": {"METPO:1000604": 1},
+    }
+    matrix = pd.DataFrame(
+        [
+            {"taxon_id": taxon, "taxonomic_rank": "genus", **dict.fromkeys(columns, 0), **counts}
+            for taxon, counts in carried.items()
+        ]
+    )
+    # Genus 1 is reported twice, the other three once each.
+    occurrences = pd.DataFrame(
+        {
+            "taxon_id": [
+                "NCBITaxon:1",
+                "NCBITaxon:1",
+                "NCBITaxon:2",
+                "NCBITaxon:3",
+                "NCBITaxon:4",
+            ]
+        }
+    )
+    census = pd.DataFrame(build_coassertion_census(matrix, occurrences))
+    genus = census[census["rank"] == "genus"].set_index("label_pair")
+
+    guild = genus.loc["aerobe_guild_and_anaerobe_guild"]
+    assert guild["status"] == "assessed"
+    assert guild["unique_reported_taxa"] == 4
+    assert guild["taxa_with_either"] == 3
+    assert guild["taxa_with_both"] == 1
+    assert guild["fraction_both_of_either"] == pytest.approx(1 / 3)
+    assert guild["occurrences_with_either"] == 4
+    assert guild["occurrences_with_both"] == 2
+    assert guild["side_a_count_mass"] == 5
+    assert guild["side_b_count_mass"] == 5
+    assert guild["side_a_coasserted_mass_fraction"] == pytest.approx(4 / 5)
+    assert guild["side_b_coasserted_mass_fraction"] == pytest.approx(2 / 5)
+    assert genus.loc["aerobic_and_anaerobic", "taxa_with_both"] == 1
+    assert genus.loc["coccus_sphere_and_rod_bacillus", "taxa_with_either"] == 0
 
 
 def test_optional_madin_is_unknown_not_negative(inputs: dict[str, Path], tmp_path: Path) -> None:

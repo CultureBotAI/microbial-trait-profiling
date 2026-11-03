@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from collections.abc import Sequence
 from dataclasses import replace
+from itertools import combinations
 
 import numpy as np
 import pytest
@@ -46,7 +47,7 @@ from bsdbng.calibration import (
 )
 from bsdbng.guild_maps import study_direction_means
 from bsdbng.table1_trait_maps import compute_direction_shifts
-from bsdbng.trait_guilds import TABLE1_TRAITS, Profile
+from bsdbng.trait_guilds import OXYGEN_GUILDS, TABLE1_TRAITS, Profile
 from mtp.calibration import guild_mcnemar_with
 from mtp.guild_maps import compute_correlation
 from mtp.trait_guilds import drop_zero_total_pairs
@@ -257,6 +258,19 @@ def test_injection_touches_only_the_increased_side_and_holds_the_total() -> None
         assert sum(after.guild_counts.values()) <= after.total
         others = {t: c for t, c in after.guild_counts.items() if t != INJECTED_TRAIT}
         assert others == {t: c for t, c in before.guild_counts.items() if t != INJECTED_TRAIT}
+
+
+def test_the_tracked_trait_groups_are_pairwise_disjoint() -> None:
+    """The injection headroom is the untracked complement only if no term is in two groups.
+
+    Calibration loads ``{**TABLE1_TRAITS, **OXYGEN_GUILDS}`` and takes the headroom as
+    ``total - sum(guild_counts)``. Before #1237, METPO:1000608 was both a Table 1 trait
+    and an aerobe-guild member, so its counts were subtracted twice (#1345).
+    """
+    groups = {**TABLE1_TRAITS, **OXYGEN_GUILDS}
+    assert len(groups) == len(TABLE1_TRAITS) + len(OXYGEN_GUILDS)
+    for (left, left_terms), (right, right_terms) in combinations(groups.items(), 2):
+        assert set(left_terms).isdisjoint(right_terms), (left, right)
 
 
 def test_the_effective_lift_is_reported_not_just_the_nominal_one() -> None:

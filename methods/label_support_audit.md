@@ -286,6 +286,8 @@ unknown malformed records fail. The sidecar records repair counts and hashes
 the parser and shared trait-definition code. Pipe-joined primary sources are
 split before Madin lookup, preserving each source and its resolution status.
 Table 1 trait membership and the oxygen guild pair use `trait_guilds` definitions.
+Since #1237 the aerobe side of the guild pair is `METPO:1000602` and
+`METPO:1000604`; the facultative column `METPO:1000608` is in neither side.
 The separate `trait_key_policy_code` inventory records the path, SHA256 and size
 of `src/mtp/trait_key_policy.py`, which interprets the recorded member IDs and
 selects display labels. These declarations and late checks do not establish

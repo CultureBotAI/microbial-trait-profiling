@@ -17,11 +17,13 @@ between a study's experiments. The experiment-level flip is reported beside it,
 because the unit changes the null rather than merely its variance.
 
 Power is measured by injecting a known effect into one trait on the increased side.
-The injected counts are taken from the complement of the eight tracked traits -- the
-other 309 trait columns the procedures never read -- so each profile's total is
-unchanged and every other tracked trait's share is unchanged exactly, which is what
-makes the "untouched" truth labels, and therefore the false-discovery proportion,
-mean anything.
+The injected counts are taken from the complement of the eight tracked groups (ten
+columns) -- the other 307 trait columns under ``off`` (334 under ``phenotype``) that
+the procedures never read -- so each profile's total is unchanged and every other
+tracked trait's share is unchanged exactly, which is what makes the "untouched"
+truth labels, and therefore the false-discovery proportion, mean anything. Before
+#1237 the groups overlapped on METPO:1000608, so the headroom subtracted it twice and
+the power results in methods/calibration.md were measured that way (#1345).
 
 Acceptance is judged on rejections pooled per procedure against a declared tolerance,
 with the simulation replicate as the independent unit. A per-label interval that
@@ -308,9 +310,13 @@ def inject_effect(
     """Raise one trait's share on the increased side for a share of studies.
 
     The added counts come from the complement of the tracked traits: a profile's
-    ``total`` sums all 317 trait columns, of which the eight the procedures read are
-    disjoint subsets, so there is headroom to move annotations into the injected
-    trait without touching any other tracked count or the denominator. Holding the
+    ``total`` sums all retained trait columns (317 under ``off``), of which the eight
+    groups the procedures read are disjoint subsets, so there is headroom to move
+    annotations into the injected trait without touching any other tracked count or
+    the denominator. ``total - sum(guild_counts)`` is that complement exactly only
+    because no term is in two groups. Before #1237, METPO:1000608 was both a Table 1
+    trait and an aerobe-guild member, so the headroom subtracted it twice and the
+    power results in methods/calibration.md were measured that way (#1345). Holding the
     total fixed is what makes the truth labels valid -- every other tracked trait's
     share is unchanged exactly, not merely approximately, so a rejection on one of
     them is a false discovery and nothing else. Raising the total instead (as

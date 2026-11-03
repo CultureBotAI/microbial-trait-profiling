@@ -498,7 +498,7 @@ def test_union_relabel_changes_only_labels_not_numerical_outputs(
         consolidated_text = consolidated_path.read_text(encoding="utf-8")
         assert f"Test Case Pair: {expected_lbl} x moderately halophilic" in consolidated_text
         assert (
-            f"Regressing out PC1 collapses the spurious {expected_lbl} x moderately halophilic"
+            f"After PC1 regression the {expected_lbl} paired contrast is labelled"
             in consolidated_text
         )
 
