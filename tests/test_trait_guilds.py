@@ -27,11 +27,13 @@ from bsdbng.guild_maps import (
 from bsdbng.trait_guilds import (
     GRAM_GUILDS,
     OXYGEN_GUILDS,
+    CorpusStats,
     Profile,
     load_profiles,
     read_bugsigdb_vintage,
     resolve_trait_columns,
 )
+from mtp.count_input import COMPLETE_COUNT_MODE, LEGACY_SPARSE_ZERO_MODE
 
 AEROBE_A, AEROBE_B, AEROBE_C = OXYGEN_GUILDS["aerobe"]
 ANAEROBE_A, ANAEROBE_B = OXYGEN_GUILDS["anaerobe"]
@@ -100,6 +102,7 @@ def corpus(tmp_path: Path) -> tuple[Path, Path]:
 def test_filters_drop_non_human_unpaired_and_mediadive(corpus: tuple[Path, Path]) -> None:
     profiles, stats = load_profiles(*corpus, OXYGEN_GUILDS)
 
+    assert stats.profile_rows == 7
     assert stats.dropped_non_human == 2
     assert stats.dropped_unpaired == 1
     assert stats.mediadive_columns_excluded == 1
@@ -129,8 +132,38 @@ def test_unmatched_experiments_are_counted_not_silently_dropped(
     )
     _, stats = load_profiles(profiles_path, experiments, OXYGEN_GUILDS)
 
+    assert stats.profile_rows == 7
     assert stats.unmatched_experiments == 5
     assert stats.kept_experiments == 1
+
+
+def test_corpus_stats_counts_profile_rows_and_all_filter_stages(
+    tmp_path: Path, corpus: tuple[Path, Path]
+) -> None:
+    """Assert CorpusStats.profile_rows together with every filter counter (#1296)."""
+    profiles_path, _ = corpus
+    experiments = tmp_path / "partial_experiments.tsv"
+    _write_experiments(
+        experiments,
+        [
+            ("bsdb:1", "bsdb:1-1", "Colorectal cancer", "Feces", "Homo sapiens"),
+            ("bsdb:3", "bsdb:3-1", "Asthma", "Feces", "Homo sapiens"),
+            ("bsdb:4", "bsdb:4-1", "Colitis", "Caecum", "Mus musculus"),
+        ],
+    )
+    _, stats = load_profiles(profiles_path, experiments, OXYGEN_GUILDS)
+
+    assert stats == CorpusStats(
+        profile_rows=7,
+        experiments_seen=2,
+        unmatched_experiments=2,
+        dropped_non_human=2,
+        dropped_unpaired=1,
+        mediadive_columns_excluded=1,
+        trait_columns_used=6,
+        kept_experiments=1,
+        kept_profiles=2,
+    )
 
 
 def test_missing_guild_column_raises(corpus: tuple[Path, Path]) -> None:
@@ -1003,12 +1036,13 @@ def test_method_loader_rejects_blank_by_default_and_allows_sparse_zero_override(
         [("bsdb:1", "bsdb:1-1", "Colorectal cancer", "Feces", "Homo sapiens")],
     )
 
-    # One label, one statement that missing is not zero, and the file:line:column
-    # of the blank cell (#1300).
+    # One label, one statement that missing is not zero, the profile key, and
+    # the file:line:column of the blank cell (#1300, #1302).
     with pytest.raises(
         ValueError,
         match=(
-            rf"^Missing trait count in {re.escape(str(profiles_path))}:2, "
+            rf"^Missing trait count in {re.escape(str(profiles_path))}:2 "
+            r"for bsdb:1, bsdb:1-1, inc, "
             r"column 'METPO:1000615'; missing is not an observed zero$"
         ),
     ):
@@ -1018,6 +1052,74 @@ def test_method_loader_rejects_blank_by_default_and_allows_sparse_zero_override(
         profiles_path,
         experiments_path,
         OXYGEN_GUILDS,
+        reject_missing_counts=False,
+    )
+    inc = next(profile for profile in profiles if profile.inc_dec == "inc")
+    assert inc.total == 7
+
+
+def test_method_loader_rejects_conflicting_count_input_mode_and_reject_missing_counts(
+    tmp_path: Path,
+) -> None:
+    """Disagreeing count_input_mode and reject_missing_counts must raise (#1298)."""
+    profiles_path = tmp_path / "profiles.tsv"
+    experiments_path = tmp_path / "experiments.tsv"
+    _write_profiles(
+        profiles_path,
+        [
+            ("bsdb:1", "bsdb:1-1", "inc", [6, 0, 0, 1, 0, "", 100]),
+            ("bsdb:1", "bsdb:1-1", "dec", [1, 0, 0, 6, 0, 3, 100]),
+        ],
+    )
+    _write_experiments(
+        experiments_path,
+        [("bsdb:1", "bsdb:1-1", "Colorectal cancer", "Feces", "Homo sapiens")],
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            r"^Conflicting count input options: count_input_mode='complete' "
+            r"disagrees with reject_missing_counts=False$"
+        ),
+    ):
+        load_profiles(
+            profiles_path,
+            experiments_path,
+            OXYGEN_GUILDS,
+            count_input_mode=COMPLETE_COUNT_MODE,
+            reject_missing_counts=False,
+        )
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            r"^Conflicting count input options: count_input_mode='legacy_sparse_zero' "
+            r"disagrees with reject_missing_counts=True$"
+        ),
+    ):
+        load_profiles(
+            profiles_path,
+            experiments_path,
+            OXYGEN_GUILDS,
+            count_input_mode=LEGACY_SPARSE_ZERO_MODE,
+            reject_missing_counts=True,
+        )
+
+    with pytest.raises(ValueError, match=r"^Missing trait count in "):
+        load_profiles(
+            profiles_path,
+            experiments_path,
+            OXYGEN_GUILDS,
+            count_input_mode=COMPLETE_COUNT_MODE,
+            reject_missing_counts=True,
+        )
+
+    profiles, _ = load_profiles(
+        profiles_path,
+        experiments_path,
+        OXYGEN_GUILDS,
+        count_input_mode=LEGACY_SPARSE_ZERO_MODE,
         reject_missing_counts=False,
     )
     inc = next(profile for profile in profiles if profile.inc_dec == "inc")
@@ -1061,8 +1163,8 @@ def test_method_loader_relabels_only_missing_count_errors_when_the_path_names_th
     with pytest.raises(
         ValueError,
         match=(
-            rf"^Missing trait count in {path}:2, column 'METPO:1000615'; "
-            r"missing is not an observed zero$"
+            rf"^Missing trait count in {path}:2 for bsdb:1, bsdb:1-1, inc, "
+            r"column 'METPO:1000615'; missing is not an observed zero$"
         ),
     ):
         load_profiles(profiles_path, experiments_path, OXYGEN_GUILDS)
@@ -1215,7 +1317,7 @@ def test_method_loader_validates_yet_excludes_metadata_columns_from_total(
 
     # Excluded from the total is not exempt from validation: a malformed or
     # negative metadata cell fails in either mode, and a blank one fails by
-    # default (#1295).
+    # default with a neutral "Missing count" noun (#1295, #1302).
     location = rf"{re.escape(str(profiles_path))}:2, column 'taxa_count'"
     for bad in ("-5", "4.5", "fifty"):
         write(bad)
@@ -1231,8 +1333,34 @@ def test_method_loader_validates_yet_excludes_metadata_columns_from_total(
                     profiles_path, experiments_path, OXYGEN_GUILDS, reject_missing_counts=strict
                 )
     write("")
-    with pytest.raises(ValueError, match=rf"^Missing trait count in {location}; "):
+    with pytest.raises(
+        ValueError,
+        match=(
+            rf"^Missing count in {re.escape(str(profiles_path))}:2 "
+            r"for bsdb:1, bsdb:1-1, inc, "
+            r"column 'taxa_count'; missing is not an observed zero$"
+        ),
+    ) as blank_meta:
         load_profiles(profiles_path, experiments_path, OXYGEN_GUILDS)
+    assert "Missing trait count" not in str(blank_meta.value)
+
+    _write_profiles(
+        profiles_path,
+        [
+            ("bsdb:1", "bsdb:1-1", "inc", [6, 0, 0, 1, 0, 3, ""]),
+            ("bsdb:1", "bsdb:1-1", "dec", [1, 0, 0, 6, 0, 3, 100]),
+        ],
+    )
+    with pytest.raises(
+        ValueError,
+        match=(
+            rf"^Missing count in {re.escape(str(profiles_path))}:2 "
+            r"for bsdb:1, bsdb:1-1, inc, "
+            rf"column '{re.escape(MEDIA_COLUMN)}'; missing is not an observed zero$"
+        ),
+    ) as blank_media:
+        load_profiles(profiles_path, experiments_path, OXYGEN_GUILDS)
+    assert "Missing trait count" not in str(blank_media.value)
 
 
 def test_method_loader_and_column_resolver_read_tsv_gz_like_tsv(
