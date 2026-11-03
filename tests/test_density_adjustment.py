@@ -449,6 +449,10 @@ def test_status_follows_significance_and_magnitude(
 
     assert (effect.raw_wilcoxon_p <= 0.05) is raw_significant
     assert (effect.adj_wilcoxon_p <= 0.05) is adj_significant
+    # A family of one trait: each BH q equals its p, so these labels are unchanged (#1321).
+    assert effect.bh_family_size == 1
+    assert effect.raw_wilcoxon_bh_q == pytest.approx(effect.raw_wilcoxon_p)
+    assert effect.adj_wilcoxon_bh_q == pytest.approx(effect.adj_wilcoxon_p)
     assert effect.status == status
 
 
@@ -516,8 +520,11 @@ def test_an_adjusted_mean_within_1e9_of_zero_is_not_a_reversal() -> None:
 
 
 @pytest.mark.parametrize(
-    ("raw_mean", "raw_p", "adj_mean", "adj_p", "status"),
+    ("raw_mean", "raw_q", "adj_mean", "adj_q", "status"),
     [
+        # The classifier receives BH q-values since #1321. The F rows below supply the
+        # inputs of each branch (their nominal Wilcoxon p-values, as pinned by #1084 and
+        # #1098); they test the branch, not the label F's rows carry under BH.
         # F, full corpus x phenotype, 14-trait list: temperature optimum high and anaerobic.
         (0.157732, 0.698116, -3.734108, 0.023218, "reversed (significant post-adjustment)"),
         (62.024369, 0.113137, -58.934577, 0.729661, "reversed (nonsignificant post-adjustment)"),
@@ -537,7 +544,7 @@ def test_an_adjusted_mean_within_1e9_of_zero_is_not_a_reversal() -> None:
         (-1.253434, 0.051001, -2.012255, 0.002051, "significant only post-adjustment"),
         (-0.455029, 0.345410, -2.964282, 0.000081, "significant only post-adjustment"),
         (-4.565352, 0.326122, -10.513785, 0.006857, "significant only post-adjustment"),
-        # p = 0.05 is significant, for the adjusted and for the raw p.
+        # q = 0.05 is significant, for the adjusted and for the raw q.
         (12.0, 0.01, 3.0, 0.05, "survived (significant post-adjustment)"),
         (12.0, 0.05, 3.0, 0.05, "survived (significant post-adjustment)"),
         (-5.0, 0.05, -9.0, 0.05, "enhanced (significant, larger magnitude)"),
@@ -560,9 +567,9 @@ def test_an_adjusted_mean_within_1e9_of_zero_is_not_a_reversal() -> None:
     ],
 )
 def test_adjustment_status_on_real_rows_and_at_the_significance_boundary(
-    raw_mean: float, raw_p: float, adj_mean: float, adj_p: float, status: str
+    raw_mean: float, raw_q: float, adj_mean: float, adj_q: float, status: str
 ) -> None:
-    assert adjustment_status(raw_mean, raw_p, adj_mean, adj_p) == status
+    assert adjustment_status(raw_mean, raw_q, adj_mean, adj_q) == status
 
 
 @pytest.mark.skipif(
@@ -621,6 +628,7 @@ def test_full_density_audit_integration(tmp_path: Path) -> None:
     assert len(t1_effects) == len(TABLE_1_TRAITS)
     for eff in t1_effects:
         assert eff.trait_id in TABLE_1_TRAITS
+        assert eff.bh_family_size == len(TABLE_1_TRAITS)
         assert eff.status in {
             "insufficient non-zero pairs",
             "collapsed (attenuated to nonsignificant)",
@@ -947,10 +955,11 @@ def _write_trait_list(path: Path, trait_ids: Sequence[str]) -> Path:
 def test_density_audit_reports_a_declared_trait_list_without_changing_shared_rows(
     tmp_path: Path,
 ) -> None:
-    """A declared list changes which rows are reported, never a row's values (#1054).
+    """A declared list changes which rows are reported, never a row's means or p (#1054).
 
     Labels differ by design: the default keeps its fixed labels, a list run uses the
-    columns table's ``object_name`` (#1084).
+    columns table's ``object_name`` (#1084). The BH q-values, and the statuses read
+    from them, are taken over the reported family, so they may differ (#1321).
     """
     profiles, columns = _write_density_fixture(tmp_path)
     declared_ids = ["METPO:1000605", *TABLE_1_TRAITS, "METPO:2000103|GO:0045493"]
@@ -970,9 +979,22 @@ def test_density_audit_reports_a_declared_trait_list_without_changing_shared_row
     assert declared["trait_id"].tolist() == declared_ids
     assert declared.loc[0, "trait_label"] == "facultatively anaerobic"
     shared = declared.set_index("trait_id").loc[list(TABLE_1_TRAITS)].reset_index()
+    family_columns = ["trait_label", "status", "raw_wilcoxon_bh_q", "adj_wilcoxon_bh_q"]
     pd.testing.assert_frame_equal(
-        shared.drop(columns="trait_label"), default.drop(columns="trait_label")
+        shared.drop(columns=[*family_columns, "bh_family_size"]),
+        default.drop(columns=[*family_columns, "bh_family_size"]),
     )
+    assert set(default["bh_family_size"]) == {len(TABLE_1_TRAITS)}
+    assert set(declared["bh_family_size"]) == {len(declared_ids)}
+    status_inputs = ("raw_mean_diff", "raw_wilcoxon_bh_q", "adj_mean_diff", "adj_wilcoxon_bh_q")
+    for table in (default, declared):
+        expected = [
+            adjustment_status(raw_mean, raw_q, adj_mean, adj_q)
+            for raw_mean, raw_q, adj_mean, adj_q in zip(
+                *(table[column].to_numpy(dtype=float) for column in status_inputs), strict=True
+            )
+        ]
+        assert table["status"].tolist() == expected
     assert default["trait_label"].tolist() == list(TABLE_1_TRAITS.values())
     assert shared["trait_label"].tolist() == [OBJECT_NAMES[trait] for trait in TABLE_1_TRAITS]
     assert "arsenate_reduction" in shared["trait_label"].tolist()
@@ -1006,7 +1028,7 @@ def test_density_audit_reports_a_declared_trait_list_without_changing_shared_row
 
 
 def test_effects_table_appends_the_new_columns_after_status(tmp_path: Path) -> None:
-    """Existing column positions do not move (#1084, #1097)."""
+    """Existing column positions do not move (#1084, #1097, #1321)."""
     profiles, columns = _write_density_fixture(tmp_path)
     run_density_audit(profiles, columns, tmp_path / "output")
 
@@ -1022,6 +1044,9 @@ def test_effects_table_appends_the_new_columns_after_status(tmp_path: Path) -> N
         "status",
         "magnitude_change_pct",
         "sign_flipped",
+        "raw_wilcoxon_bh_q",
+        "adj_wilcoxon_bh_q",
+        "bh_family_size",
     ]
 
 
@@ -1092,6 +1117,17 @@ def _audit_script() -> Any:
     return module
 
 
+@pytest.mark.parametrize(
+    ("q", "text"),
+    [(0.0504, "q=5.04e-02"), (0.0496, "q=4.96e-02"), (0.05004, "q=5.004e-02")],
+)
+def test_audit_script_conclusions_never_round_a_q_onto_the_threshold(q: float, text: str) -> None:
+    """Section 6 printed q=0.05 for 0.0504, beside a nonsignificant label (#1325)."""
+    assert _audit_script()._q_text(q) == text
+    # NumPy scalars, as read back from the effects TSV, format the same way (#1330).
+    assert _audit_script()._q_text(np.float64(q)) == text
+
+
 def test_audit_script_reports_a_trait_list_without_fixed_conclusions(tmp_path: Path) -> None:
     """The arm's audit script takes the list; its six-trait narrative is not printed (#1054)."""
     profiles, columns = _write_density_fixture(tmp_path)
@@ -1120,7 +1156,7 @@ def test_audit_script_reports_a_trait_list_without_fixed_conclusions(tmp_path: P
     assert f"Trait list: traits.txt (sha256 {digest}, 3 traits)" in declared
     assert "3. DECLARED TRAIT LIST SIGNALS (3 TRAITS)" in declared
     assert "Not written for a declared trait list" in declared
-    for fixed_text in ("p=2.6e-5", "p=0.26", "p=1.8e-11", "retain clear significance"):
+    for fixed_text in ("After PC1 regression the", "Significant before and after PC1"):
         assert fixed_text not in declared
     for label in EXTRA_TRAITS.values():
         assert label in declared
@@ -1130,7 +1166,11 @@ def test_audit_script_reports_a_trait_list_without_fixed_conclusions(tmp_path: P
 
     default = reports["default"]
     assert "3. SURVIVAL OF CONVERGENT SIX TRAIT SIGNALS" in default
-    assert "retain clear significance" in default
+    assert "Significant before and after PC1 regression in the same direction" in default
+    for report in (declared, default):
+        assert "Benjamini-Hochberg q <= 0.05" in report
+    assert "over all 3 reported traits" in declared
+    assert "over all 6 reported traits" in default
     assert "Trait list:" not in default
     assert not (tmp_path / "default" / TRAIT_LIST_PROVENANCE_FILENAME).exists()
 

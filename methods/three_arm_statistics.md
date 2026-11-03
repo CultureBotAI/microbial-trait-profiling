@@ -127,6 +127,9 @@ the new traits:
 - **Oxygen guilds.** Aerobic goes from 1,588 to 1,746 reported taxa, anaerobic from 1,707
   to 1,884 and obligately anaerobic from 319 to 414. The aerobe guild's count mass rises
   by 16.7% and the anaerobe guild's by 9.2%. Facultatively anaerobic is in neither guild.
+  These percentages used the aerobe guild of that run, which included facultatively
+  aerobic (METPO:1000608). Since #1237 no facultative column is in either guild, under
+  either trait-key policy; the percentages have not been recomputed.
 - **New traits.** Facultatively anaerobic enters with 712 reported taxa. The six Table 1
   trait keys, and the Table 1 families built on them, stay the same.
 

@@ -53,24 +53,35 @@ is broken and we need to fix it — not paper over it.
 
 ## Required workflow for every change
 
-Every change requires an issue, a linked branch, and a linked PR:
+Every change requires an issue, a branch named for it, and a PR that
+references it:
 
 1. **Create or identify a GitHub issue** before writing any code.
-2. **Create a branch linked to the issue** using `gh issue develop`:
+2. **Create a plain branch named for the issue**, starting from `origin/main`:
    ```bash
-   gh issue develop <number> --repo CultureBotAI/microbial-trait-profiling --checkout
+   git fetch origin
+   git switch -c <number>-<short-slug> --no-track origin/main
    ```
-   This formally links the branch to the issue in GitHub's Development
-   sidebar. Do not create branches manually with `git checkout -b`.
-3. **Push and open a PR** after the first commit. The PR body must
-   include `Closes #<number>` to formally link the PR to the issue.
+   Do not use `gh issue develop`. It records a link in the issue's
+   Development sidebar, and GitHub closes every linked issue when the PR
+   merges into `main`, even an issue the PR only partly addresses (#1317).
+   `--no-track` keeps the new branch from treating `main` as its
+   upstream; set the upstream on the first push with
+   `git push -u origin <branch>`.
+3. **Push and open a PR** after the first commit. Reference the issue in
+   the PR body: `Closes #<number>` only when the PR fully resolves it,
+   `Refs #<number>` for partial work. Choose before opening the PR, and
+   before merging check which issues the PR will close (its Development
+   sidebar, or `closingIssuesReferences` in the GraphQL API): a link can
+   outlast a later edit of the body. Remove any link to an issue the PR
+   only partly addresses.
 4. **Run `just check`** — all checks must pass before requesting review (`just security` exports `--all-extras --group dev --group qa`, matching CI's extras and dependency groups; host-specific environment markers can select different packages, so the Linux CI audit must also pass).
 5. **Wait for CI and Copilot review.** Address all review comments.
 6. **Do not merge your own PR** unless you are the repo owner.
 
-No commits without an issue. No branches without a linked issue.
-No PRs without a linked issue. No merging without CI green and
-review addressed.
+No commits without an issue. No branches without an issue.
+No PRs that do not reference their issue. No merging without CI green
+and review addressed.
 
 ## What agents should do
 

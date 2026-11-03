@@ -22,7 +22,11 @@ from mtp.density_adjustment import (
     DEFAULT_COLUMNS_PATH,
     DEFAULT_OUTPUT_DIR,
     DEFAULT_PROFILES_PATH,
+    SIGNIFICANT_POST_ADJUSTMENT_STATUSES,
     add_trait_list_argument,
+    format_p_and_q,
+    format_q_value,
+    q_value_statement,
     reported_traits_heading,
     run_density_audit,
 )
@@ -65,6 +69,28 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def _q_text(q: float) -> str:
+    """A BH q-value for the conclusions; NA when the trait is untestable or not reported.
+
+    Three significant digits, or more when a q next to 0.05 would otherwise round onto
+    the other side of the threshold (#1325).
+    """
+    return f"q={format_q_value(q)}"
+
+
+def _reported_family_size(t1_effects: list[Any]) -> int:
+    """The q-value family, which must be the reported rows: never empty or mismatched (#1324)."""
+    if not t1_effects:
+        raise ValueError("The density results report no traits, so there is no q-value family")
+    sizes = {eff.bh_family_size for eff in t1_effects}
+    if sizes != {len(t1_effects)}:
+        raise ValueError(
+            f"The q-value family sizes {sorted(sizes)} differ from the "
+            f"{len(t1_effects)} reported traits"
+        )
+    return len(t1_effects)
+
+
 def write_consolidated_report(
     output_dir: Path,
     density_res: dict[str, Any],
@@ -73,15 +99,16 @@ def write_consolidated_report(
 ) -> Path:
     """Generate a comprehensive consolidated report for Issue #264 covering all tasks.
 
-    With a declared ``trait_list`` the fixed-text conclusions of section 6 are not
-    written: they name the six Table 1 traits and fall back to constant p-values
-    when one of them is not reported (#1054).
+    With a declared ``trait_list`` the conclusions of section 6 are not written: they
+    name Table 1 traits (#1054). They quote BH q-values and statuses from the reported
+    effects, and read NA for a trait that is not reported (#1321).
     """
+    t1_effects = density_res["table1_effects"]
+    family_size = _reported_family_size(t1_effects)
     raw = density_res["raw_pearson"]
     raw_sp = density_res["raw_spearman"]
     adj_pc1 = density_res["adj_pc1_pearson"]
     adj_norm = density_res.get("adj_norm_pearson", density_res.get("adj_dw_pearson"))
-    t1_effects = density_res["table1_effects"]
     twin = density_res["twin_summary"]
 
     n_pairs = ontology_res["n_redundant_pairs"]
@@ -95,18 +122,12 @@ def write_consolidated_report(
     t1_by_id = {eff.trait_id: eff for eff in t1_effects}
     aerobic_eff = t1_by_id.get("METPO:1000608")
     aerobic_label = aerobic_eff.trait_label if aerobic_eff is not None else "facultatively aerobic"
-    cellulose_eff = t1_by_id.get("METPO:2000103|GO:0030245")
-
-    aerobic_p_raw_str = (
-        f"p={aerobic_eff.raw_wilcoxon_p:.1e}" if aerobic_eff is not None else "p=2.6e-5"
-    )
-    aerobic_p_adj_str = (
-        f"p={aerobic_eff.adj_wilcoxon_p:.2f}"
-        if aerobic_eff is not None and aerobic_eff.adj_wilcoxon_p >= 0.01
-        else (f"p={aerobic_eff.adj_wilcoxon_p:.1e}" if aerobic_eff is not None else "p=0.26")
-    )
-    cellulose_p_adj_str = (
-        f"p={cellulose_eff.adj_wilcoxon_p:.1e}" if cellulose_eff is not None else "p=1.8e-11"
+    nan = float("nan")
+    aerobic_status = aerobic_eff.status if aerobic_eff is not None else "not reported"
+    aerobic_q_raw_str = _q_text(aerobic_eff.raw_wilcoxon_bh_q if aerobic_eff is not None else nan)
+    aerobic_q_adj_str = _q_text(aerobic_eff.adj_wilcoxon_bh_q if aerobic_eff is not None else nan)
+    survivors = ", ".join(
+        eff.trait_label for eff in t1_effects if eff.status in SIGNIFICANT_POST_ADJUSTMENT_STATUSES
     )
     vif_str = f"VIF ~ {twin.vif_profile:.2f}"
 
@@ -169,14 +190,17 @@ def write_consolidated_report(
                 f"(PAIRED EXPERIMENTS N={twin.n_paired_experiments:,})"
             ),
             "-" * 80,
+            *q_value_statement(family_size),
         ]
     )
 
     for eff in t1_effects:
         lines.append(
             f"  {eff.trait_label:<30s} | "
-            f"Raw mean: {eff.raw_mean_diff:+.3f} (p={eff.raw_wilcoxon_p:.2e}) | "
-            f"Adj mean: {eff.adj_mean_diff:+.3f} (p={eff.adj_wilcoxon_p:.2e}) | "
+            f"Raw mean: {eff.raw_mean_diff:+.3f} "
+            f"({format_p_and_q(eff.raw_wilcoxon_p, eff.raw_wilcoxon_bh_q)}) | "
+            f"Adj mean: {eff.adj_mean_diff:+.3f} "
+            f"({format_p_and_q(eff.adj_wilcoxon_p, eff.adj_wilcoxon_bh_q)}) | "
             f"{eff.status}"
         )
 
@@ -253,14 +277,11 @@ def write_consolidated_report(
         [
             "1. The vast majority of positive correlation among traits is driven by "
             "curation density (PC1).",
-            f"2. Regressing out PC1 collapses the spurious {aerobic_label} x moderately halophilic",
-            f"   contrast from significant ({aerobic_p_raw_str}) to completely "
-            f"nonsignificant ({aerobic_p_adj_str}).",
-            "3. In contrast, genuine convergent signals survive and strengthen: "
-            "cellulose depletion",
-            f"   becomes significantly sharper ({cellulose_p_adj_str}), while coccus, sphere, "
-            "and mod halophilic",
-            "   retain clear significance.",
+            f"2. After PC1 regression the {aerobic_label} paired contrast is labelled "
+            f"'{aerobic_status}'",
+            f"   (raw BH {aerobic_q_raw_str}, adjusted BH {aerobic_q_adj_str}).",
+            "3. Significant before and after PC1 regression in the same direction "
+            f"(BH q <= 0.05; survived or enhanced): {survivors or 'none'}.",
             f"4. Coccus and sphere exhibit severe collinearity ({vif_str}); "
             "conditional testing confirms",
             "   unstable coefficients when included simultaneously.",

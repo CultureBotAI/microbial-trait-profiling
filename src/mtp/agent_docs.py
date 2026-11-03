@@ -24,18 +24,28 @@ def _outside_code(content: str) -> str:
     fence = ""
     position = 0
     reference_continuation = False
+    in_paragraph = False
     block_boundaries: set[int] = set()
     for line in content.splitlines(keepends=True):
         text = line.rstrip("\r\n")
         marker = re.match(r" {0,3}(`{3,}|~{3,})(.*)", text)
         if not fence:
             heading = re.match(r" {0,3}#{1,6}(?:[ \t]|$)", text)
-            item = re.match(r" {0,3}(?:[-+*]|[0-9]{1,9}[.)])(?:[ \t]|$)", text)
+            blockquote = re.match(r" {0,3}>", text)
+            setext = in_paragraph and re.fullmatch(r" {0,3}(?:=+|-+)[ \t]*", text)
             thematic = re.fullmatch(
                 r" {0,3}(?:(?:\*[ \t]*){3,}|(?:-[ \t]*){3,}|(?:_[ \t]*){3,})", text
             )
-            if heading or item or thematic:
+            item = (
+                re.match(r" {0,3}(?:[-+*]|1[.)])[ \t]+\S", text)
+                if in_paragraph
+                else re.match(r" {0,3}(?:[-+*]|[0-9]{1,9}[.)])(?:[ \t]|$)", text)
+            )
+            if heading or item or thematic or setext or blockquote:
                 block_boundaries.add(position)
+                in_paragraph = False
+            else:
+                in_paragraph = bool(text.strip())
             if heading:
                 # An ATX heading is one line; its code spans cannot continue
                 # into the following paragraph. List-item continuations can.
@@ -50,6 +60,7 @@ def _outside_code(content: str) -> str:
         elif marker and not (marker[1][0] == "`" and "`" in marker[2]):
             block_boundaries.add(position)
             fence = marker[1]
+            in_paragraph = False
             hide(position, position + len(line))
         elif line.startswith(("    ", "\t")) and not reference_continuation:
             hide(position, position + len(line))

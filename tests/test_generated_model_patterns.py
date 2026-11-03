@@ -1,12 +1,18 @@
-"""Characterize generated regex boundaries before the LinkML upgrade (#1043)."""
+"""Guard LinkML schema regex anchors and generated validator boundaries (#1043, #1315)."""
 
 from __future__ import annotations
 
+import ast
+import importlib
+import importlib.util
+import re
 import runpy
+import shutil
 from pathlib import Path
 from typing import Any
 
 import pytest
+import yaml
 from pydantic import BaseModel, ValidationError
 
 from mtp.datamodel import (
@@ -24,7 +30,21 @@ from mtp.datamodel import (
 
 # The public bsdbng.datamodel compatibility alias points to mtp. Load the
 # separately generated legacy file explicitly so its validators are covered.
-LEGACY = runpy.run_path(str(Path(__file__).parents[1] / "src/bsdbng/datamodel/bsdbng_pydantic.py"))
+REPO_ROOT = Path(__file__).parents[1]
+SCHEMA_DIR = REPO_ROOT / "schema"
+GENERATED_MODEL_PATHS: tuple[Path, ...] = (
+    REPO_ROOT / "src/bsdbng/datamodel/bsdbng_pydantic.py",
+    REPO_ROOT / "src/mtp/datamodel/core_products_pydantic.py",
+    REPO_ROOT / "src/mtp/datamodel/mtp_pydantic.py",
+    REPO_ROOT / "src/mtp/datamodel/multiple_testing_pydantic.py",
+    REPO_ROOT / "src/mtp/datamodel/workflow_pydantic.py",
+)
+_BSDBNG_SPEC = importlib.util.find_spec("bsdbng")
+assert _BSDBNG_SPEC is not None
+assert _BSDBNG_SPEC.origin is not None
+LEGACY = runpy.run_path(str(Path(_BSDBNG_SPEC.origin).parent / "datamodel/bsdbng_pydantic.py"))
+_RE_PARSER: Any = importlib.import_module("re._parser")
+_RE_CONSTANTS: Any = importlib.import_module("re._constants")
 
 DIGEST = "a" * 64
 STUDY = {"id": "bsdb:1", "source_record_id": "1", "experiments": []}
@@ -113,3 +133,258 @@ def test_generated_profile_filter_id_requires_exact_prefix_and_digest() -> None:
         with pytest.raises(ValidationError) as failure:
             core.CountProfileRow.model_validate({**required, "trait_filter_id": value})
         assert {error["loc"] for error in failure.value.errors()} == {("trait_filter_id",)}
+
+
+def _format_pattern_target(schema_name: str, trail: tuple[str, ...]) -> str:
+    if len(trail) == 2 and trail[0] == "slots":
+        return f"{schema_name}: slot '{trail[1]}' (slots.{trail[1]})"
+    if len(trail) == 2 and trail[0] == "types":
+        return f"{schema_name}: type '{trail[1]}' (types.{trail[1]})"
+    if len(trail) == 4 and trail[0] == "classes" and trail[2] in {"attributes", "slot_usage"}:
+        _, class_name, section, slot_name = trail
+        return (
+            f"{schema_name}: slot '{class_name}.{slot_name}' "
+            f"(classes.{class_name}.{section}.{slot_name})"
+        )
+    return f"{schema_name}: {'.'.join(trail)}"
+
+
+def _collect_schema_patterns(
+    schema_dir: Path = SCHEMA_DIR,
+) -> list[tuple[str, str, object]]:
+    entries: list[tuple[str, str, object]] = []
+    for path in sorted(schema_dir.glob("*.yaml")):
+        document = yaml.safe_load(path.read_text(encoding="utf-8"))
+
+        def walk(node: object, trail: tuple[str, ...], *, schema_name: str = path.name) -> None:
+            if isinstance(node, dict):
+                if "pattern" in node and not isinstance(node["pattern"], dict):
+                    entries.append(
+                        (
+                            schema_name,
+                            _format_pattern_target(schema_name, trail),
+                            node["pattern"],
+                        )
+                    )
+                for key, value in node.items():
+                    if key == "pattern" and not isinstance(value, dict):
+                        continue
+                    walk(value, (*trail, str(key)), schema_name=schema_name)
+            elif isinstance(node, list):
+                for index, item in enumerate(node):
+                    walk(item, (*trail, str(index)), schema_name=schema_name)
+
+        walk(document, ())
+    return entries
+
+
+def _pattern_anchor_violation(pattern: object) -> str | None:
+    if not isinstance(pattern, str) or not pattern:
+        return "pattern must be a non-empty string"
+    try:
+        parsed = _RE_PARSER.parse(pattern)
+    except re.error as exc:
+        return f"invalid regex ({exc})"
+    if parsed.state.flags & re.MULTILINE:
+        return "MULTILINE flag makes ^ and $ match internal line breaks under re.search"
+    if len(parsed) == 1 and parsed[0][0] == _RE_CONSTANTS.BRANCH:
+        return "ungrouped top-level alternation; wrap alternatives as ^(a|b)$"
+    if not (
+        pattern.startswith("^")
+        and len(parsed) >= 1
+        and parsed[0] == (_RE_CONSTANTS.AT, _RE_CONSTANTS.AT_BEGINNING)
+    ):
+        return "missing leading '^' anchor"
+    if not (
+        pattern.endswith("$")
+        and len(parsed) >= 2
+        and parsed[-1] == (_RE_CONSTANTS.AT, _RE_CONSTANTS.AT_END)
+    ):
+        return "missing trailing '$' anchor"
+    if len(parsed) < 3:
+        return "empty anchored pattern '^$'"
+    return None
+
+
+def find_unanchored_schema_patterns(schema_dir: Path = SCHEMA_DIR) -> list[str]:
+    entries = _collect_schema_patterns(schema_dir)
+    assert entries, f"No pattern declarations found under {schema_dir}"
+    violations: list[str] = []
+    for _, target, pattern in entries:
+        violation = _pattern_anchor_violation(pattern)
+        if violation is not None:
+            violations.append(f"{target}: {pattern!r} ({violation})")
+    return violations
+
+
+def assert_schema_patterns_anchored(schema_dir: Path = SCHEMA_DIR) -> None:
+    violations = find_unanchored_schema_patterns(schema_dir)
+    assert not violations, "Unanchored LinkML schema patterns:\n" + "\n".join(violations)
+
+
+def _collect_generated_model_patterns(
+    model_paths: tuple[Path, ...] = GENERATED_MODEL_PATHS,
+) -> list[tuple[str, str, object]]:
+    entries: list[tuple[str, str, object]] = []
+    for path in model_paths:
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for node in tree.body:
+            if not isinstance(node, ast.ClassDef):
+                continue
+            for item in node.body:
+                if not isinstance(item, ast.FunctionDef) or not item.name.startswith("pattern_"):
+                    continue
+                slot_name = item.name.removeprefix("pattern_")
+                compiled_arg: object = None
+                for subnode in ast.walk(item):
+                    if (
+                        isinstance(subnode, ast.Call)
+                        and isinstance(subnode.func, ast.Attribute)
+                        and isinstance(subnode.func.value, ast.Name)
+                        and subnode.func.value.id == "re"
+                        and subnode.func.attr == "compile"
+                        and subnode.args
+                        and isinstance(subnode.args[0], ast.Constant)
+                    ):
+                        compiled_arg = subnode.args[0].value
+                        break
+                target = f"{path.name}:{item.lineno}: slot '{node.name}.{slot_name}'"
+                entries.append((path.name, target, compiled_arg))
+    return entries
+
+
+def find_unanchored_generated_model_patterns(
+    model_paths: tuple[Path, ...] = GENERATED_MODEL_PATHS,
+) -> list[str]:
+    entries = _collect_generated_model_patterns(model_paths)
+    assert entries, "No generated pattern validators found"
+    violations: list[str] = []
+    for _, target, pattern in entries:
+        violation = _pattern_anchor_violation(pattern)
+        if violation is not None:
+            violations.append(f"{target}: {pattern!r} ({violation})")
+    return violations
+
+
+def test_all_linkml_schema_patterns_are_anchored_at_both_ends() -> None:
+    """#1315: LinkML 1.12+ validators use re.search, so every pattern must be ^...$-anchored."""
+    assert_schema_patterns_anchored(SCHEMA_DIR)
+    entries = _collect_schema_patterns(SCHEMA_DIR)
+    assert {name for name, _, _ in entries} == {
+        "bsdbng.yaml",
+        "core_products.yaml",
+        "mtp.yaml",
+        "multiple_testing.yaml",
+        "workflow.yaml",
+    }
+    assert len(entries) >= 86
+
+
+def test_all_generated_model_pattern_validators_are_anchored_at_both_ends() -> None:
+    """#1315: all 99 generated pattern validators across Pydantic models must be ^...$-anchored."""
+    violations = find_unanchored_generated_model_patterns(GENERATED_MODEL_PATHS)
+    assert not violations, "Unanchored generated pattern validators:\n" + "\n".join(violations)
+    entries = _collect_generated_model_patterns(GENERATED_MODEL_PATHS)
+    assert len(entries) >= 99
+
+
+def test_schema_pattern_anchor_guard_reports_offending_slot_or_type(tmp_path: Path) -> None:
+    """#1315: unanchored slots, types, and ungrouped alternations name each offending target."""
+    scratch_schema_dir = tmp_path / "schema"
+    shutil.copytree(SCHEMA_DIR, scratch_schema_dir)
+
+    multiple_testing_path = scratch_schema_dir / "multiple_testing.yaml"
+    multiple_testing_text = multiple_testing_path.read_text(encoding="utf-8")
+    assert "pattern: ^(off|phenotype)$" in multiple_testing_text
+    multiple_testing_path.write_text(
+        multiple_testing_text.replace("pattern: ^(off|phenotype)$", "pattern: (off|phenotype)$", 1)
+        .replace("pattern: ^(off|phenotype)$", "pattern: ^off|phenotype$", 1)
+        .replace("pattern: ^1\\.2\\.0$", "pattern: ^1\\.2\\.0", 1),
+        encoding="utf-8",
+    )
+
+    mtp_path = scratch_schema_dir / "mtp.yaml"
+    mtp_text = mtp_path.read_text(encoding="utf-8")
+    assert 'pattern: "^UBERON:[0-9]+$"' in mtp_text
+    mtp_path.write_text(
+        mtp_text.replace('pattern: "^UBERON:[0-9]+$"', 'pattern: "UBERON:[0-9]+$"', 1)
+        + "\ntypes:\n  curie_code:\n    typeof: string\n    pattern: '[A-Z]+:[0-9]+'\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(AssertionError, match="Unanchored LinkML schema patterns:") as failure:
+        assert_schema_patterns_anchored(scratch_schema_dir)
+    message = str(failure.value)
+    assert (
+        "multiple_testing.yaml: slot 'HypothesisFamilyMetadata.strain_rollup' "
+        "(classes.HypothesisFamilyMetadata.attributes.strain_rollup): "
+        "'(off|phenotype)$' (missing leading '^' anchor)"
+    ) in message
+    assert (
+        "multiple_testing.yaml: slot 'PostArmMultiplicityRun.strain_rollup' "
+        "(classes.PostArmMultiplicityRun.attributes.strain_rollup): "
+        "'^off|phenotype$' (ungrouped top-level alternation; wrap alternatives as ^(a|b)$)"
+    ) in message
+    assert (
+        "multiple_testing.yaml: slot 'PostArmMultiplicityRun.version' "
+        "(classes.PostArmMultiplicityRun.attributes.version): "
+        "'^1\\\\.2\\\\.0' (missing trailing '$' anchor)"
+    ) in message
+    assert (
+        "mtp.yaml: slot 'body_site_ontology_id' (slots.body_site_ontology_id): "
+        "'UBERON:[0-9]+$' (missing leading '^' anchor)"
+    ) in message
+    assert (
+        "mtp.yaml: type 'curie_code' (types.curie_code): "
+        "'[A-Z]+:[0-9]+' (missing leading '^' anchor)"
+    ) in message
+
+
+def test_generated_alternation_parameter_and_experiment_patterns_reject_affixes() -> None:
+    """#1315: guard the generated validators where unanchored mutants previously survived."""
+    family_required = {
+        "family_id": "fam-1",
+        "analysis_id": "arm-1",
+        "analysis_basis_sha256": DIGEST,
+        "source_membership_sha256": DIGEST,
+        "retained_feature_count": 6,
+        "feature_filter_id": "sha256:" + DIGEST,
+        "expected_family_size": 6,
+        "population": "human",
+        "direction_basis": "curated",
+        "profile_unit": "count_profiles",
+        "inference_unit": "study",
+        "hypothesis_unit": "trait",
+        "estimand": "annotation",
+        "selection_rule": "all",
+        "selection_history": [],
+        "sources": [],
+    }
+    for value in ("off", "phenotype", "off\n", "phenotype\n"):
+        validated = multiple.HypothesisFamilyMetadata.model_validate(
+            {**family_required, "strain_rollup": value}
+        )
+        assert validated.strain_rollup == value
+    for value in ("xoff", "offx", "xphenotype", "phenotypex", "off|phenotype", "\noff"):
+        with pytest.raises(ValidationError) as failure:
+            multiple.HypothesisFamilyMetadata.model_validate(
+                {**family_required, "strain_rollup": value}
+            )
+        assert {error["loc"] for error in failure.value.errors()} == {("strain_rollup",)}
+
+    for value in ("alpha", "Alpha_1", "alpha\n"):
+        param = workflow.ParameterDefinition.model_validate({"name": value})
+        assert param.name == value
+    for value in ("1alpha", "_alpha", "alpha-beta", "alpha beta", "\nalpha"):
+        with pytest.raises(ValidationError) as failure:
+            workflow.ParameterDefinition.model_validate({"name": value})
+        assert {error["loc"] for error in failure.value.errors()} == {("name",)}
+
+    for model in (LEGACY["Experiment"], current.Experiment):
+        for value in ("bsdb:10202341-1", "bsdb:PMC1-42", "bsdb:1-1\n"):
+            exp = model.model_validate({"id": value, "signatures": []})
+            assert exp.model_dump()["id"] == value
+        for value in ("xbsdb:1-1", "bsdb:1-1x", "bsdb:1", "bsdb:-1", "\nbsdb:1-1"):
+            with pytest.raises(ValidationError) as failure:
+                model.model_validate({"id": value, "signatures": []})
+            assert {error["loc"] for error in failure.value.errors()} == {("id",)}

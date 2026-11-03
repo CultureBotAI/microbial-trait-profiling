@@ -27,6 +27,7 @@ from bsdbng.guild_maps import (
 from bsdbng.trait_guilds import (
     GRAM_GUILDS,
     OXYGEN_GUILDS,
+    TABLE1_TRAITS,
     CorpusStats,
     Profile,
     load_profiles,
@@ -34,9 +35,19 @@ from bsdbng.trait_guilds import (
     resolve_trait_columns,
 )
 from mtp.count_input import COMPLETE_COUNT_MODE, LEGACY_SPARSE_ZERO_MODE
+from mtp.trait_key_policy import (
+    FACULTATIVE_MEMBER_IDS,
+    FACULTATIVE_TRAIT_ID,
+    TRAIT_KEY_POLICIES,
+    TraitKeyPolicy,
+    canonical_object,
+)
 
-AEROBE_A, AEROBE_B, AEROBE_C = OXYGEN_GUILDS["aerobe"]
-ANAEROBE_A, ANAEROBE_B = OXYGEN_GUILDS["anaerobe"]
+#: Aerobic and microaerophilic; anaerobic and obligately anaerobic (#1237).
+AEROBE_A, AEROBE_B = "METPO:1000602", "METPO:1000604"
+ANAEROBE_A, ANAEROBE_B = "METPO:1000603", "METPO:1000607"
+#: A profile column that counts in every total and in no oxygen guild (#1237).
+FACULTATIVE = FACULTATIVE_TRAIT_ID
 MEDIA_COLUMN = "METPO:2000517|mediadive.medium:J14"
 
 
@@ -47,7 +58,7 @@ def _write_profiles(path: Path, rows: list[tuple[str, str, str, list[int | str]]
         "inc_dec",
         AEROBE_A,
         AEROBE_B,
-        AEROBE_C,
+        FACULTATIVE,
         ANAEROBE_A,
         ANAEROBE_B,
         "METPO:1000615",
@@ -115,11 +126,87 @@ def test_guild_counts_sum_member_terms_and_exclude_media(corpus: tuple[Path, Pat
     profiles, _ = load_profiles(*corpus, OXYGEN_GUILDS)
     inc = next(p for p in profiles if p.study_id == "bsdb:2" and p.inc_dec == "inc")
 
-    # aerobe = 5 + 1 + 0; anaerobe = 2 + 0; total excludes the MediaDive column.
+    # aerobe = 5 + 1; anaerobe = 2 + 0; the total adds the facultative column (0
+    # here) and METPO:1000615, and excludes the MediaDive column.
     assert inc.guild_counts["aerobe"] == 6
     assert inc.guild_counts["anaerobe"] == 2
     assert inc.total == 5 + 1 + 0 + 2 + 0 + 2
     assert inc.fraction("aerobe") == pytest.approx(6 / 10)
+
+
+@pytest.mark.parametrize("policy", TRAIT_KEY_POLICIES)
+def test_no_oxygen_guild_holds_a_facultative_column(policy: TraitKeyPolicy) -> None:
+    """Aerobe and facultative are distinct under both trait-key policies (#1237).
+
+    Under facultative_union_v1, METPO:1000608 also carries the facultatively
+    anaerobic assertions of METPO:1000605 and METPO:1000612, so an aerobe guild
+    holding it counted taxa annotated only as facultative anaerobes. Under
+    raw_object_v1 each of the three is its own column, and none is a guild member
+    either. The column stays one of the six Table 1 traits, reported on its own.
+    """
+    assert OXYGEN_GUILDS == {
+        "aerobe": (AEROBE_A, AEROBE_B),
+        "anaerobe": (ANAEROBE_A, ANAEROBE_B),
+    }
+    facultative_columns = {
+        canonical_object(member, trait_key_policy=policy) for member in FACULTATIVE_MEMBER_IDS
+    }
+    guild_columns = {
+        canonical_object(term, trait_key_policy=policy)
+        for terms in OXYGEN_GUILDS.values()
+        for term in terms
+    }
+    assert facultative_columns.isdisjoint(guild_columns)
+    assert TABLE1_TRAITS["facultatively_aerobic"] == (FACULTATIVE,)
+
+
+@pytest.mark.parametrize("policy", TRAIT_KEY_POLICIES)
+def test_a_facultative_only_profile_adds_nothing_to_the_aerobe_guild(
+    tmp_path: Path, policy: TraitKeyPolicy
+) -> None:
+    """Facultative annotations count in the denominator, never in the aerobe sum (#1237).
+
+    The matrix carries the facultative columns the policy writes: the one union
+    column under facultative_union_v1, the three raw columns under raw_object_v1.
+    Apart from one anaerobic count, the increased profile's oxygen annotations are
+    all facultative.
+    """
+    facultative = sorted(
+        {canonical_object(member, trait_key_policy=policy) for member in FACULTATIVE_MEMBER_IDS}
+    )
+    header = [
+        "study_id",
+        "experiment_id",
+        "inc_dec",
+        AEROBE_A,
+        AEROBE_B,
+        ANAEROBE_A,
+        ANAEROBE_B,
+        *facultative,
+    ]
+    rows = [
+        ["bsdb:1", "bsdb:1-1", "inc", "0", "0", "1", "0", *["4"] * len(facultative)],
+        ["bsdb:1", "bsdb:1-1", "dec", "1", "0", "1", "0", *["0"] * len(facultative)],
+    ]
+    profiles_path = tmp_path / "profiles.tsv"
+    profiles_path.write_text(
+        "\n".join("\t".join(row) for row in (header, *rows)) + "\n", encoding="utf-8"
+    )
+    experiments_path = tmp_path / "experiments.tsv"
+    _write_experiments(
+        experiments_path,
+        [("bsdb:1", "bsdb:1-1", "Colorectal cancer", "Feces", "Homo sapiens")],
+    )
+
+    profiles, _ = load_profiles(profiles_path, experiments_path, OXYGEN_GUILDS)
+    inc = next(p for p in profiles if p.inc_dec == "inc")
+    dec = next(p for p in profiles if p.inc_dec == "dec")
+
+    assert inc.guild_counts == {"aerobe": 0, "anaerobe": 1}
+    assert inc.total == 1 + 4 * len(facultative)
+    assert inc.fraction("aerobe") == 0.0
+    assert dec.guild_counts == {"aerobe": 1, "anaerobe": 1}
+    assert dec.fraction("aerobe") == pytest.approx(1 / 2)
 
 
 def test_unmatched_experiments_are_counted_not_silently_dropped(
@@ -1288,7 +1375,7 @@ def test_method_loader_validates_yet_excludes_metadata_columns_from_total(
         "taxa_count",
         AEROBE_A,
         AEROBE_B,
-        AEROBE_C,
+        FACULTATIVE,
         ANAEROBE_A,
         ANAEROBE_B,
         "METPO:1000615",

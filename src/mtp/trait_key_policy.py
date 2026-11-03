@@ -117,29 +117,49 @@ def display_trait_label(
     return FACULTATIVE_UNION_LABEL
 
 
-def read_recorded_member_ids(column_metadata_path: Path | None) -> dict[str, tuple[str, ...]]:
-    """Read column_id and object_id -> member_ids from a column metadata TSV."""
+@dataclass(frozen=True)
+class RecordedMemberEvidence:
+    """Parsed member aliases and the number of usable source rows, not changed labels."""
+
+    member_ids_by_trait: dict[str, tuple[str, ...]]
+    member_id_rows: int
+
+
+def read_recorded_member_evidence(column_metadata_path: Path | None) -> RecordedMemberEvidence:
+    """Read declared members and count rows with nonempty members and an identifier.
+
+    A column/object alias pair counts once; duplicate rows still count separately.
+    Legacy metadata without member declarations retains the empty-mapping fallback.
+    """
     if column_metadata_path is None:
-        return {}
+        return RecordedMemberEvidence({}, 0)
     if not column_metadata_path.exists():
         raise FileNotFoundError(f"Column metadata TSV not found: {column_metadata_path}")
     member_ids_by_trait: dict[str, tuple[str, ...]] = {}
+    member_id_rows = 0
     open_fn = gzip.open if column_metadata_path.suffix == ".gz" else open
     with open_fn(column_metadata_path, "rt", encoding="utf-8", newline="") as handle:
         reader = csv.DictReader(handle, delimiter="\t")
         if not reader.fieldnames or "trait_member_ids_json" not in reader.fieldnames:
-            return {}
+            return RecordedMemberEvidence({}, 0)
         for row in reader:
             members = _parse_member_ids(row.get("trait_member_ids_json"))
             if not members:
                 continue
             column_id = (row.get("column_id") or "").strip()
             object_id = (row.get("object_id") or "").strip()
+            if column_id or object_id:
+                member_id_rows += 1
             if column_id:
                 member_ids_by_trait[column_id] = members
             if object_id and object_id not in member_ids_by_trait:
                 member_ids_by_trait[object_id] = members
-    return member_ids_by_trait
+    return RecordedMemberEvidence(member_ids_by_trait, member_id_rows)
+
+
+def read_recorded_member_ids(column_metadata_path: Path | None) -> dict[str, tuple[str, ...]]:
+    """Read column_id and object_id -> member_ids, preserving legacy fallback semantics."""
+    return read_recorded_member_evidence(column_metadata_path).member_ids_by_trait
 
 
 def policy_metadata(obj: str, *, trait_key_policy: TraitKeyPolicy) -> tuple[str, str, str]:
