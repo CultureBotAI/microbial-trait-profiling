@@ -25,9 +25,10 @@ those taxa carry (a taxonomic rollup, so one reported taxon can contribute many
 assertion counts).
 
 Two oxygen guilds were defined a priori and were not selected from the data. The
-aerobe guild is METPO:1000602 (aerobic), METPO:1000604 (microaerophilic), and
-METPO:1000608 (facultatively aerobic); the anaerobe guild is METPO:1000603
-(anaerobic) and METPO:1000607 (obligately anaerobic). The term labels were
+aerobe guild is METPO:1000602 (aerobic) and METPO:1000604 (microaerophilic); the
+anaerobe guild is METPO:1000603 (anaerobic) and METPO:1000607 (obligately
+anaerobic). The facultative column METPO:1000608 is in neither guild, under both
+trait-key policies (#1237). The term labels were
 checked against the merged KG-Microbe node table rather than taken from prior
 analysis code, and the check is re-runnable: `just verify-trait-terms` looks every
 grouped identifier up in `data/kg-microbe/merged-kg_nodes.tsv` and fails on a
@@ -39,12 +40,23 @@ term as missing when the real finding is that the build is not the pinned one
 pinned build (nodes MD5 `dd76b4656f9341db25a7c4afa96cd58e`, fetched 2026-04-21)
 all twelve grouped identifiers carry their expected label, `pathways:arsenate_reduction`
 included. A label
-check cannot validate the grouping itself. Placing microaerophilic and
-facultatively aerobic organisms in the aerobe guild is an a priori decision: both
-tolerate oxygen, but neither is an obligate aerobe, and a guild of strict aerobes
-alone would be a different quantity. METPO:1000608 (facultatively aerobic) is also
-one of the six Table 1 traits, so this figure and the Table 1 figures share
-evidence and are not independent of each other.
+check cannot validate the grouping itself. Placing microaerophilic annotations in
+the aerobe guild is an a priori decision: microaerophilic is not obligately
+aerobic, and a guild of strict-aerobe annotations alone would be a different
+quantity.
+
+Aerobe and facultative annotations are kept distinct. Earlier revisions placed
+METPO:1000608 (facultatively aerobic) in the aerobe guild. Under the
+`facultative_union_v1` trait-key policy that column also carries the facultatively
+anaerobic assertions of METPO:1000605 and METPO:1000612
+([`trait_key_policy.md`](trait_key_policy.md)), so taxa annotated only as
+facultative anaerobes counted toward the aerobe guild. The repository owner
+decided that the column is in neither oxygen guild under either policy, raw or
+union, and that no separate facultative guild is drawn (#1237). METPO:1000608 is
+reported on its own as one of the six Table 1 traits instead. Its annotation
+counts still enter every profile's denominator, as every retained trait column
+does, so this figure and the Table 1 figures no longer share a numerator term but
+still share profile denominators, and are not independent of each other.
 
 Three input filters were applied once, upstream, so that the figure operates on a
 single corpus definition. Non-human samples were excluded on the per-experiment
@@ -99,7 +111,11 @@ carries as commit 35ece98 (#808): the corpus cascade, the zero-total exclusion,
 the multi-experiment share, the pooled labels, the row cuts and clusters, the
 cell census, the McNemar and the rank correlations. The figure's numbers from
 before #783, given for comparison, are from main's code at 65850b0 on the same
-inputs.
+inputs. Both commits placed METPO:1000608 in the aerobe guild. The numbers that
+depend on the guild numerators (the row clusters, the cell census, the McNemar
+and the rank correlations) were measured with that definition and have not been
+regenerated since #1237 removed it. The corpus cascade, the zero-total exclusion
+and the pooled labels do not depend on guild membership.
 
 
 ## Cell values and axes

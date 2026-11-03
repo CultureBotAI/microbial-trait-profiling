@@ -206,8 +206,11 @@ def test_sidecar_records_sources_reconciliations_and_study_means(
     dual = census[
         (census["label_pair"] == "aerobe_guild_and_anaerobe_guild") & (census["rank"] == "genus")
     ].iloc[0]
+    # Genus 20 carries anaerobic and facultative counts. The facultative column is
+    # in no oxygen guild (#1237), so genus 20 is anaerobe-only, like genus 10.
     assert dual["taxa_with_either"] == 2
-    assert dual["taxa_with_both"] == 1
+    assert dual["taxa_with_both"] == 0
+    assert dual["side_a_count_mass"] == 0
     provenance = json.loads((output / "provenance.json").read_text())
     assert provenance["scope"]["profile_counts_reconciled"] is True
     assert provenance["inputs"]["madin"]["sha256"] == file_sha256(inputs["madin"])

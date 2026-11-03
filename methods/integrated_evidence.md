@@ -283,9 +283,14 @@ one before that stated the assessments' branch findings as established (#294).
   no row here carries a validation status from it.
 - **Guild grouping.** The guild rows previously claimed the oxygen guilds were
   fixed a priori. Nothing in this repository records where or when they were
-  declared, and the aerobe guild contains METPO:1000608, which is also one of the
-  six traits selected on this corpus - so that grouping is not independent of the
-  selection either. The claim is removed rather than restated (#294).
+  declared, and the aerobe guild then contained METPO:1000608, which is also one
+  of the six traits selected on this corpus - so that grouping was not independent
+  of the selection either. The claim is removed rather than restated (#294).
+  Since #1237 neither oxygen guild contains METPO:1000608, under either trait-key
+  policy, and the guild rows' note says so. The committed outputs in
+  `data/derived/integrated_evidence/` predate #1237: their guild rows still list
+  METPO:1000608 as an aerobe-guild column, and the guild McNemar and cell counts
+  quoted above were measured with that definition. They have not been regenerated.
 
 ## Reproducing
 

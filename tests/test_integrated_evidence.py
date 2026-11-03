@@ -31,6 +31,7 @@ from mtp.integrated_evidence import (
     GUILD_MAX_BODY_SITES,
     GUILD_MAX_CONDITIONS,
     GUILD_MIN_STUDIES,
+    GUILD_SELECTION_NOTE,
     INSUFFICIENT,
     MASKED,
     NO_ELIGIBLE_PAIRS,
@@ -108,7 +109,9 @@ STATUSES: dict[str, AssessmentStatus] = {
 
 #: The matrix header, as the pinned corpus actually spells it: four of the six
 #: Table 1 terms are bare CURIEs and two are METPO-qualified composites, so the
-#: declared term is not the column name and cannot be joined on (#294).
+#: declared term is not the column name and cannot be joined on (#294). The two
+#: aerobe-guild terms are in the reverse of their declared order, so a result in
+#: declaration order cannot pass for one in header order.
 MATRIX_COLUMNS: dict[str, str] = {
     "METPO:1000608": "METPO:1000608",
     "GO:0030245": "METPO:2000103|GO:0030245",
@@ -116,8 +119,8 @@ MATRIX_COLUMNS: dict[str, str] = {
     "METPO:1000683": "METPO:1000683",
     "pathways:arsenate_reduction": "METPO:2000103|pathways:arsenate_reduction",
     "METPO:1000623": "METPO:1000623",
-    "METPO:1000602": "METPO:1000602",
     "METPO:1000604": "METPO:1000604",
+    "METPO:1000602": "METPO:1000602",
     "METPO:1000603": "METPO:1000603",
     "METPO:1000607": "METPO:1000607",
 }
@@ -847,6 +850,16 @@ def test_a_record_carries_the_selection_note() -> None:
     assert isinstance(record, Record)
 
 
+def test_the_guild_selection_note_matches_the_guild_definition() -> None:
+    """Every guild row carries this note, so it must not claim a member the guild lacks.
+
+    It said the aerobe guild contains METPO:1000608. Since #1237 no oxygen guild does.
+    """
+    assert all("METPO:1000608" not in terms for terms in OXYGEN_GUILDS.values())
+    assert "aerobe guild contains" not in GUILD_SELECTION_NOTE
+    assert "neither guild contains METPO:1000608" in GUILD_SELECTION_NOTE
+
+
 def test_a_zero_total_pair_is_excluded_rather_than_counted_as_a_tie() -> None:
     """A pair with no retained annotation on a side has an undefined share (#294).
 
@@ -1026,7 +1039,7 @@ def test_the_feature_column_sidecar_is_atomic_and_covers_every_feature(tmp_path:
 
     Each of the six Table 1 traits resolves to exactly one column, so a side-car
     that simply copied the main table's packed cell would be indistinguishable on
-    them. The aerobe guild pools three terms, which is what forces the split.
+    them. The aerobe guild pools two terms, which is what forces the split.
     """
     columns = resolved_columns(tmp_path)
     records = fraction_sign_records(
@@ -1043,11 +1056,12 @@ def test_the_feature_column_sidecar_is_atomic_and_covers_every_feature(tmp_path:
     # One row per pooled term, not one packed row for the guild.
     aerobe = [row for row in rows if row["feature"] == "aerobe"]
     assert {row["matrix_column"] for row in aerobe} == set(OXYGEN_GUILDS["aerobe"])
-    # Header order, not declaration order: the header puts METPO:1000608 first.
+    # The facultative column is in the header and in no oxygen guild (#1237).
+    assert "METPO:1000608" not in {row["matrix_column"] for row in aerobe}
+    # Header order, not declaration order: the header puts METPO:1000604 first.
     assert [row["matrix_column"] for row in aerobe] == [
-        "METPO:1000608",
-        "METPO:1000602",
         "METPO:1000604",
+        "METPO:1000602",
     ]
     assert {
         "feature": "cellulose_catabolic_process",
@@ -1059,8 +1073,8 @@ def test_the_feature_column_sidecar_is_atomic_and_covers_every_feature(tmp_path:
 def test_an_unresolved_declared_term_is_reported(tmp_path: Path) -> None:
     """A guild with no column at all is rejected upstream; one missing term is not.
 
-    The aerobe guild pools three terms. If one of them matched no column the sum
-    would silently cover two, so the run names the term rather than staying quiet.
+    The aerobe guild pools two terms. If one of them matched no column the sum
+    would silently cover one, so the run names the term rather than staying quiet.
     """
     columns = resolved_columns(tmp_path)
     assert unmatched_terms(columns, {**TABLE1_TRAITS, **OXYGEN_GUILDS}) == []

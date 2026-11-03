@@ -6,9 +6,10 @@ against ``merged-kg_nodes.tsv``; that file is downloaded rather than committed, 
 this module makes the claim re-checkable on any machine that has run
 ``just download-kg`` (#165). It checks that every identifier exists in the node
 table with the expected label. It does not check that a grouping is biologically
-right: placing microaerophilic and facultatively aerobic in the aerobe guild is an
-a priori decision recorded in the guild methods text, not something a label can
-confirm.
+right: placing microaerophilic in the aerobe guild, and leaving the facultative
+column METPO:1000608 out of both oxygen guilds (#1237), are decisions recorded in
+the guild methods text, not something a label can confirm. METPO:1000608 is still
+checked here as one of the six Table 1 traits.
 
 The strain rollup rule names identifiers too (#788): the handling and clinical classes
 the phenotype scope excludes, and every negated METPO relation. Their labels are
