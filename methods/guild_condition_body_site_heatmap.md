@@ -24,9 +24,10 @@ as increased, or as decreased, in one experiment, summed over the METPO traits
 those taxa carry (a taxonomic rollup, so one reported taxon can contribute many
 assertion counts).
 
-Two oxygen guilds were fixed before the analysis and were not selected from the
-data. Their membership was revised once (#1237), to separate facultative from
-aerobe annotations on semantic grounds, not on results. The aerobe guild is
+The figure pools the oxygen annotations into two guilds. This repository has no
+record of where or when the guilds were first declared (#294). Their membership
+was revised once (#1237), to separate facultative from aerobe annotations, on
+semantic grounds and not because of results. The aerobe guild is
 METPO:1000602 (aerobic) and METPO:1000604 (microaerophilic); the anaerobe guild is
 METPO:1000603 (anaerobic) and METPO:1000607 (obligately anaerobic). The facultative
 column METPO:1000608 is in neither guild, under both trait-key policies. The term
@@ -43,9 +44,8 @@ pinned build (nodes MD5 `dd76b4656f9341db25a7c4afa96cd58e`, fetched 2026-04-21)
 all twelve grouped identifiers carry their expected label, `pathways:arsenate_reduction`
 included. A label
 check cannot validate the grouping itself. Placing microaerophilic annotations in
-the aerobe guild is a decision made before the analysis: microaerophilic is not
-obligately aerobic, and a guild of strict-aerobe annotations alone would be a
-different quantity.
+the aerobe guild is a grouping choice: microaerophilic is not obligately aerobic,
+and a guild of strict-aerobe annotations alone would be a different quantity.
 
 Aerobe and facultative annotations are kept distinct. Earlier revisions placed
 METPO:1000608 (facultatively aerobic) in the aerobe guild. Under the

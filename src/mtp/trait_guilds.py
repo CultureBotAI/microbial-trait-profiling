@@ -38,11 +38,12 @@ MEDIADIVE_MARKER = "mediadive.medium"
 # How count_input.parse_nonnegative_integer starts a blank-count error.
 _READER_MISSING_COUNT_PREFIX = "Missing count in "
 
-# Oxygen guilds, fixed before the analysis and identical in both analysis arms.
-# Labels were verified against data/kg-microbe/merged-kg_nodes.tsv. The membership
-# was revised once, on semantic grounds rather than results: aerobe and facultative
-# annotations are distinct, so METPO:1000608 is in neither guild under either
-# trait-key policy (owner decision, #1237). Under facultative_union_v1 that column
+# Oxygen guilds, identical in both analysis arms. This repository has no record of
+# where or when they were first declared (#294). Labels were verified against
+# data/kg-microbe/merged-kg_nodes.tsv. The membership was revised once, on semantic
+# grounds and not because of results: aerobe and facultative annotations are
+# distinct, so METPO:1000608 is in neither guild under either trait-key policy
+# (owner decision, #1237). Under facultative_union_v1 that column
 # also carries the facultatively anaerobic assertions of METPO:1000605 and
 # METPO:1000612, which an aerobe guild holding it counted as aerobe annotations. The
 # column is still one of the six Table 1 traits below, reported on its own, and

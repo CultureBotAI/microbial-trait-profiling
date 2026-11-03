@@ -291,11 +291,11 @@ one before that stated the assessments' branch findings as established (#294).
   declared, and the aerobe guild then contained METPO:1000608, which is also one
   of the six traits selected on this corpus - so that grouping was not independent
   of the selection either (#294). Since #1237 neither oxygen guild contains
-  METPO:1000608, under either trait-key policy. The guild rows' note now says the
-  guilds were fixed before the analysis, still with no record here of where or
-  when, and were revised once (#1237) to separate facultative from aerobe
-  annotations on semantic grounds, not on results. The guild numbers above that
-  predate #1237 are marked where they are quoted.
+  METPO:1000608, under either trait-key policy. The guild rows' note still says
+  there is no record here of where or when the guilds were declared, and now says
+  their membership was revised once (#1237), on semantic grounds and not because
+  of results, to separate facultative from aerobe annotations. The guild numbers
+  above that predate #1237 are marked where they are quoted.
 
 ## Reproducing
 

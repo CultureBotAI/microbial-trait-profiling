@@ -228,7 +228,9 @@ def test_coassertion_census_counts_a_taxon_on_both_sides_of_a_pair() -> None:
     Genus 1 carries aerobic and anaerobic counts, so it is on both sides of the oxygen
     guild pair and of the aerobic/anaerobic pair. Genus 2 is anaerobic with a
     facultative count and genus 3 is facultative only. METPO:1000608 is in neither
-    oxygen guild (#1237), so neither of them is on the aerobe side.
+    oxygen guild (#1237), so neither of them is on the aerobe side. Genus 4 is on the
+    aerobe side only (microaerophilic), so a "both" that reads one side alone counts
+    two taxa instead of one, whichever side it reads (#1352).
     """
     columns = sorted(
         {term for _, left, right in COASSERTION_PAIRS for term in (*left, *right)} | {FAC}
@@ -237,6 +239,7 @@ def test_coassertion_census_counts_a_taxon_on_both_sides_of_a_pair() -> None:
         "NCBITaxon:1": {"METPO:1000602": 2, ANA: 1},
         "NCBITaxon:2": {ANA: 3, FAC: 4},
         "NCBITaxon:3": {FAC: 5},
+        "NCBITaxon:4": {"METPO:1000604": 1},
     }
     matrix = pd.DataFrame(
         [
@@ -244,24 +247,32 @@ def test_coassertion_census_counts_a_taxon_on_both_sides_of_a_pair() -> None:
             for taxon, counts in carried.items()
         ]
     )
-    # Genus 1 is reported twice, the other two once each.
+    # Genus 1 is reported twice, the other three once each.
     occurrences = pd.DataFrame(
-        {"taxon_id": ["NCBITaxon:1", "NCBITaxon:1", "NCBITaxon:2", "NCBITaxon:3"]}
+        {
+            "taxon_id": [
+                "NCBITaxon:1",
+                "NCBITaxon:1",
+                "NCBITaxon:2",
+                "NCBITaxon:3",
+                "NCBITaxon:4",
+            ]
+        }
     )
     census = pd.DataFrame(build_coassertion_census(matrix, occurrences))
     genus = census[census["rank"] == "genus"].set_index("label_pair")
 
     guild = genus.loc["aerobe_guild_and_anaerobe_guild"]
     assert guild["status"] == "assessed"
-    assert guild["unique_reported_taxa"] == 3
-    assert guild["taxa_with_either"] == 2
+    assert guild["unique_reported_taxa"] == 4
+    assert guild["taxa_with_either"] == 3
     assert guild["taxa_with_both"] == 1
-    assert guild["fraction_both_of_either"] == pytest.approx(1 / 2)
-    assert guild["occurrences_with_either"] == 3
+    assert guild["fraction_both_of_either"] == pytest.approx(1 / 3)
+    assert guild["occurrences_with_either"] == 4
     assert guild["occurrences_with_both"] == 2
-    assert guild["side_a_count_mass"] == 4
+    assert guild["side_a_count_mass"] == 5
     assert guild["side_b_count_mass"] == 5
-    assert guild["side_a_coasserted_mass_fraction"] == pytest.approx(1.0)
+    assert guild["side_a_coasserted_mass_fraction"] == pytest.approx(4 / 5)
     assert guild["side_b_coasserted_mass_fraction"] == pytest.approx(2 / 5)
     assert genus.loc["aerobic_and_anaerobic", "taxa_with_both"] == 1
     assert genus.loc["coccus_sphere_and_rod_bacillus", "taxa_with_either"] == 0
