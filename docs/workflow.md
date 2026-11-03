@@ -183,11 +183,12 @@ and pinned-KG protocol requirements; incompatible inputs fail with diagnostics.
 | --- | --- |
 | `rerun-ilyas` | Enrichment, depletion, full rankings, background strata, ORA calibration, and standard Figures 1–5 with a freshly computed density audit. |
 | `rerun-noel` | Directional screen, shared study-flip assignments, directional calibrations, contrast orientation, taxon/native influence, validation evidence, and integrated evidence. |
-| `rerun-jed` | Paired composition, log-ratio sensitivity, calibration, density/coupling audits, ordinary heatmaps, guild maps, and Table 1 maps. |
+| `rerun-jed` | Paired composition, log-ratio sensitivity, calibration, density/coupling audits, ordinary heatmaps, guild maps, Table 1 maps, and taxa coverage. |
 
 Stage-specific replicate counts, seeds and statistical thresholds retain their
 existing defaults. `--replicates N` and `--seed N` explicitly override supported
-stochastic stages; `--no-figures` omits optional renderers. Options are captured
+stochastic stages; `--figures` explicitly requests the default rendering, and
+`--no-figures` omits optional renderers. The two switches are mutually exclusive. Options are captured
 in the execution record. Fixed scientific protocols remain explicit in the
 individual command arguments. Figure rendering requires the existing rendering
 dependencies, including Chrome for Plotly/Kaleido; install it separately with
@@ -362,6 +363,14 @@ general workflow CLI. The optional positional source mode still works before the
 flag, for example `fixture --contrast-population ...`; omitting it keeps the
 verified pinned-source requirement.
 
+`just rerun-core-548 OUTPUT RAW EDGES NODES [STRAIN_ROLLUP] [SOURCE_MODE]`
+is a shorthand for the Tier 1+2 rule above. Its optional positional values
+default to `phenotype` and `pinned`; it requires the four explicit paths and
+parses with CI's just 1.39.0. The historical name describes a selection rule,
+not an asserted study count. Use the printed `run-ID/run.json` for the arm
+commands; no `run.json` is assumed directly under `OUTPUT`. Other core options
+remain available through `rerun-core`.
+
 | Population | Selection and direction |
 | --- | --- |
 | `all_paired` (default) | Preserve the existing unfiltered core and original Group 1 versus Group 0 directions. Human pairing and other eligibility remain downstream rules; the profiles still keep 16S and shotgun experiments only (#742). The name does not assert that every ingested record is human or paired. |
@@ -408,6 +417,29 @@ colorbar name that basis explicitly (#842). The standalone profile command
 requires `--direction-basis`; it labels the supplied profiles without reorienting
 their values. `just trait-heatmaps` names the canonical Group 1 versus Group 0
 basis, while verified subset arm plans use disease versus comparison.
+
+The optional Jed taxa-coverage stage also consumes the verified core directly
+(#1344, adapted from Jed Dongjin Kim-Ozaeta's #1219). Its command declares the
+core count profiles, reported taxa, matrix, experiments, raw dump, KG edges and
+nodes, and source identity. It checks the plan's population, direction and strain
+scope against that core and writes `taxa_coverage/core_consumption.json` with
+the tables, figures and provenance. It uses the source identity already bound
+to the core, not a checkout download-provenance file. Human 16S/WMS filtering
+and zero-trait and unpaired human profiles retain the coverage producer's rules.
+Already oriented subset profiles are never classified or swapped a second time.
+
+For explicit standalone selection, `create_taxa_coverage_histogram.py` accepts
+`--contrast-population` and `--direction-basis`. Its `as_supplied` population
+default preserves the previous standalone behavior. A requested subset uses
+the shared population-table helper and the supplied profiles, experiment table
+and raw dump; its source direction basis determines whether reversed contrasts
+need swapping. Verified-core mode derives this information from the manifest.
+The existing native composition, composition-denominator and contribution-input
+loaders do not select a population from a filename or a checkout default.
+
+This port retains the generated files and ignore rules that #1219 proposed
+removing. The [file and reference inventory](reviews/issue1344_deferred_generated_outputs.md)
+records the separate removal decision needed from the owner.
 
 Noel's non-default workflow route uses an assessment adapter that requires a
 verified core manifest and consumes its already oriented profiles directly.
