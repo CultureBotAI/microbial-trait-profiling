@@ -1005,10 +1005,10 @@ def generate_figure4_annotation_density_pc1_landscape(
     for y, r_diff, a_diff, (_, r) in zip(
         y_pos, raw_diffs, adj_diffs, t1_df.iterrows(), strict=True
     ):
-        # Green only when both the raw and adjusted contrasts are significant in the same
-        # direction: a nonsignificant status can say "enhanced magnitude", and a
-        # significant-only-post-adjustment, reversed, or raw-mean-zero row has no
-        # significant raw effect that survived (#1084, #1097, #1098).
+        # Green only when both the raw and adjusted contrasts are significant (BH q <= 0.05
+        # over the reported traits, #1321) in the same direction: a nonsignificant status
+        # can say "enhanced magnitude", and a significant-only-post-adjustment, reversed, or
+        # raw-mean-zero row has no significant raw effect that survived (#1084, #1097, #1098).
         survived = r["status"] in SIGNIFICANT_POST_ADJUSTMENT_STATUSES
         color = "#27ae60" if survived else "#e74c3c"
         fig.add_trace(

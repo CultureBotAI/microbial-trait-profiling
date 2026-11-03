@@ -23,16 +23,18 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import operator
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, SupportsFloat, SupportsIndex
 
 import numpy as np
 import pandas as pd
 from scipy import stats
 
 from mtp.composition_denominators import MEDIADIVE_MARKER, trait_fractions
+from mtp.enrichment_stats import benjamini_hochberg
 from mtp.paths import DERIVED_DATA_DIR
 from mtp.trait_key_policy import display_trait_label, read_recorded_member_ids
 from mtp.trait_lists import (
@@ -133,6 +135,11 @@ class Table1TraitEffect:
     (|adj| - |raw|) / |raw| x 100, negative exactly when the effect shrank, and
     ``sign_flipped`` marks an adjusted mean of the opposite sign (#1084). A mean
     within 1e-9 of zero has no sign, and a raw one leaves the magnitude change NaN.
+
+    ``raw_wilcoxon_bh_q`` and ``adj_wilcoxon_bh_q`` are Benjamini-Hochberg q-values of
+    the raw and adjusted p, corrected separately over the ``bh_family_size`` reported
+    traits; ``status`` reads significance from them (#1321). An untestable trait (NaN p)
+    stays in the family at p = 1 and has a NaN q.
     """
 
     trait_id: str
@@ -145,10 +152,14 @@ class Table1TraitEffect:
     status: str
     magnitude_change_pct: float
     sign_flipped: bool
+    raw_wilcoxon_bh_q: float
+    adj_wilcoxon_bh_q: float
+    bh_family_size: int
 
 
-# Statuses whose raw and adjusted paired contrasts are both significant (Wilcoxon p <= 0.05)
-# in the same direction (#1084, #1097, #1098); deck figure 4 draws only these as surviving.
+# Statuses whose raw and adjusted paired contrasts are both significant (BH q <= 0.05 over
+# the reported traits, #1321) in the same direction (#1084, #1097, #1098); deck figure 4
+# draws only these as surviving.
 SIGNIFICANT_POST_ADJUSTMENT_STATUSES = frozenset(
     {"enhanced (significant, larger magnitude)", "survived (significant post-adjustment)"}
 )
@@ -156,35 +167,121 @@ SIGNIFICANT_POST_ADJUSTMENT_STATUSES = frozenset(
 # A paired mean difference within this of zero has no sign (#1097).
 _ZERO_MEAN = 1e-9
 
+# Inclusive BH q threshold for every significance decision in a status (#1321).
+_SIGNIFICANCE_Q = 0.05
+
+
+def family_bh_q_values(
+    p_values: Sequence[float] | np.ndarray, family_size: SupportsIndex
+) -> list[float]:
+    """Benjamini-Hochberg q-values of ``p_values`` over a family of ``family_size`` traits.
+
+    The family is every reported trait, not only the testable ones: an undefined (NaN) p
+    is held at 1.0 for the correction and its q is exported as NaN (#1321). Every member
+    must be supplied, as a p or a NaN: as in methods/multiple_testing.md, an omitted
+    declared member is an error, not a silent p = 1 member (#1324). NumPy values are
+    accepted and Python floats returned (#1330).
+    """
+    family_size = operator.index(family_size)
+    if family_size != len(p_values):
+        raise ValueError(
+            f"family_size ({family_size}) differs from the {len(p_values)} p-values given; "
+            "pass NaN for an untestable member"
+        )
+    if len(p_values) == 0:
+        return []
+    held = [1.0 if math.isnan(p) else float(p) for p in p_values]
+    adjusted = benjamini_hochberg(held, family_size=family_size)
+    return [float("nan") if math.isnan(p) else q for p, q in zip(p_values, adjusted, strict=True)]
+
+
+def q_value_provenance(family_size: SupportsIndex) -> dict[str, object]:
+    """Machine-readable record of the q-value family behind the statuses (#1321).
+
+    ``family_size`` is stored as a Python int, so a NumPy count serializes (#1330).
+    """
+    return {
+        "procedure": "benjamini_hochberg",
+        "family": "every reported trait",
+        "family_size": operator.index(family_size),
+        "corrected_separately": ["raw_wilcoxon_p", "adj_wilcoxon_p"],
+        "untestable_p_held_at": 1.0,
+        "label_threshold_q": _SIGNIFICANCE_Q,
+    }
+
+
+def q_value_statement(family_size: SupportsIndex) -> list[str]:
+    """Report lines stating the q-value family the statuses are read from (#1321)."""
+    family_size = operator.index(family_size)
+    if family_size < 1:
+        raise ValueError(f"a q-value family needs at least one reported trait, not {family_size}")
+    return [
+        f"Significance: Benjamini-Hochberg q <= {_SIGNIFICANCE_Q:g} over all {family_size} "
+        "reported traits, raw and adjusted",
+        "Wilcoxon p corrected separately; a trait with ten or fewer non-zero pairs stays in",
+        "the family at p = 1 and has no q.",
+    ]
+
+
+def format_q_value(q: SupportsFloat) -> str:
+    """Format a BH q with three significant digits, or more when needed (#1325).
+
+    A q on one side of the 0.05 threshold never displays on the other: 0.05004 prints
+    as 5.004e-02, not 5.00e-02. An undefined q reads NA. A NumPy scalar, as read back
+    from the effects TSV, is converted first so the side test compares Python bools
+    (#1330).
+    """
+    q = float(q)
+    if math.isnan(q):
+        return "NA"
+    significant = q <= _SIGNIFICANCE_Q
+    for decimals in range(2, 17):
+        text = f"{q:.{decimals}e}"
+        if (float(text) <= _SIGNIFICANCE_Q) == significant:
+            return text
+    return repr(q)
+
+
+def format_p_and_q(p: SupportsFloat, q: SupportsFloat) -> str:
+    """Format a Wilcoxon p and its BH q for a report line; undefined values read NA."""
+    p = float(p)
+    p_text = "NA" if math.isnan(p) else f"{p:.2e}"
+    return f"p={p_text}, q={format_q_value(q)}"
+
 
 def _sign_flipped(raw_mean: float, adj_mean: float) -> bool:
     """Whether two means clearly away from zero have opposite signs."""
     return min(abs(raw_mean), abs(adj_mean)) > _ZERO_MEAN and raw_mean * adj_mean < 0
 
 
-def adjustment_status(raw_mean: float, raw_p: float, adj_mean: float, adj_p: float) -> str:
+def adjustment_status(
+    raw_mean: SupportsFloat, raw_q: SupportsFloat, adj_mean: SupportsFloat, adj_q: SupportsFloat
+) -> str:
     """Classify a trait by raw and adjusted significance and by the change in effect magnitude.
 
-    Significance comes from the Wilcoxon p-values; "enhanced" and "attenuated" compare
-    |adj| with |raw| (#1084). A reversed sign and a raw mean of zero, where the
-    magnitude change is undefined, each get their own status (#1097), and a significant
-    adjusted contrast whose raw contrast was nonsignificant (or had <= 10 non-zero pairs)
-    is classified as "significant only post-adjustment" rather than "survived" or
-    "enhanced" (#1098).
+    Significance is BH q <= 0.05, from the q-values of the raw and adjusted Wilcoxon p over
+    the reported traits (#1321); "enhanced" and "attenuated" compare |adj| with |raw|
+    (#1084). A reversed sign and a raw mean of zero, where the magnitude change is
+    undefined, each get their own status (#1097), and a significant adjusted contrast
+    whose raw contrast was nonsignificant (or had <= 10 non-zero pairs, so no q) is
+    classified as "significant only post-adjustment" rather than "survived" or
+    "enhanced" (#1098). Arguments are converted to float first, so a NumPy scalar is
+    compared exactly as ``format_q_value`` displays it (#1330).
     """
-    if math.isnan(adj_p):
+    raw_mean, raw_q, adj_mean, adj_q = (float(v) for v in (raw_mean, raw_q, adj_mean, adj_q))
+    if math.isnan(adj_q):
         return "insufficient non-zero pairs"
     if abs(raw_mean) <= _ZERO_MEAN:
-        if adj_p <= 0.05:
+        if adj_q <= _SIGNIFICANCE_Q:
             return "undefined magnitude change (raw mean zero, significant post-adjustment)"
         return "undefined magnitude change (raw mean zero, nonsignificant post-adjustment)"
     if _sign_flipped(raw_mean, adj_mean):
-        if adj_p <= 0.05:
+        if adj_q <= _SIGNIFICANCE_Q:
             return "reversed (significant post-adjustment)"
         return "reversed (nonsignificant post-adjustment)"
-    raw_significant = not math.isnan(raw_p) and raw_p <= 0.05
+    raw_significant = not math.isnan(raw_q) and raw_q <= _SIGNIFICANCE_Q
     larger = abs(adj_mean) > abs(raw_mean)
-    if adj_p <= 0.05:
+    if adj_q <= _SIGNIFICANCE_Q:
         if not raw_significant:
             return "significant only post-adjustment"
         if larger:
@@ -482,10 +579,16 @@ def evaluate_table1_paired_effects(
     """Evaluate paired experiment contrasts (inc - dec) before and after PC1 adjustment.
 
     ``traits`` maps the reported trait identifiers to labels, in report order. PC1 is
-    fit on every non-MediaDive trait whatever is reported, so a trait's row does not
-    depend on which other traits are listed (#1054).
+    fit on every non-MediaDive trait whatever is reported, so a trait's means and
+    p-values do not depend on which other traits are listed (#1054). Its BH q-values,
+    and the status read from them, do: every trait in ``traits`` is one member of the
+    correction family, testable or not (#1321), so every trait must be a column of
+    ``non_media_cols``: one that cannot have a row is an error (#1324).
     """
-    t1_keys = [k for k in traits if k in non_media_cols]
+    absent = [trait_id for trait_id in traits if trait_id not in non_media_cols]
+    if absent:
+        raise ValueError(f"Reported traits are not non-MediaDive trait columns: {absent}")
+    t1_keys = list(traits)
     has_paired_directions = (
         not profiles_df.empty
         and "study_id" in profiles_df.columns
@@ -522,10 +625,8 @@ def evaluate_table1_paired_effects(
             aggfunc="mean",
         ).dropna()
 
-    results: list[Table1TraitEffect] = []
+    measured: list[dict[str, Any]] = []
     for trait_id in t1_keys:
-        label = traits[trait_id]
-
         can_eval = (
             has_paired_directions
             and not pvt_raw.empty
@@ -573,23 +674,38 @@ def evaluate_table1_paired_effects(
             else float("nan")
         )
 
-        results.append(
-            Table1TraitEffect(
-                trait_id=trait_id,
-                trait_label=label,
-                raw_mean_diff=raw_mean,
-                raw_wilcoxon_p=raw_p,
-                adj_mean_diff=adj_mean,
-                adj_wilcoxon_p=adj_p,
-                relative_change_pct=rel_change,
-                # General statistical criteria rather than hardcoded trait IDs (#383)
-                status=adjustment_status(raw_mean, raw_p, adj_mean, adj_p),
-                magnitude_change_pct=magnitude_change,
-                sign_flipped=_sign_flipped(raw_mean, adj_mean),
-            )
+        measured.append(
+            {
+                "trait_id": trait_id,
+                "trait_label": traits[trait_id],
+                "raw_mean_diff": raw_mean,
+                "raw_wilcoxon_p": raw_p,
+                "adj_mean_diff": adj_mean,
+                "adj_wilcoxon_p": adj_p,
+                "relative_change_pct": rel_change,
+                "magnitude_change_pct": magnitude_change,
+            }
         )
 
-    return results
+    # The family is every reported trait, one row each (#1321, #1324): a trait with too
+    # few pairs stays a member at p = 1.
+    family_size = len(traits)
+    raw_q = family_bh_q_values([row["raw_wilcoxon_p"] for row in measured], family_size)
+    adj_q = family_bh_q_values([row["adj_wilcoxon_p"] for row in measured], family_size)
+    return [
+        Table1TraitEffect(
+            **row,
+            # General statistical criteria rather than hardcoded trait IDs (#383)
+            status=adjustment_status(
+                row["raw_mean_diff"], row_raw_q, row["adj_mean_diff"], row_adj_q
+            ),
+            sign_flipped=_sign_flipped(row["raw_mean_diff"], row["adj_mean_diff"]),
+            raw_wilcoxon_bh_q=row_raw_q,
+            adj_wilcoxon_bh_q=row_adj_q,
+            bh_family_size=family_size,
+        )
+        for row, row_raw_q, row_adj_q in zip(measured, raw_q, adj_q, strict=True)
+    ]
 
 
 def evaluate_conditional_twin_test(
@@ -755,7 +871,7 @@ def write_trait_list_provenance(
     columns_path: Path,
     code_commit: str,
 ) -> Path:
-    """Record the declared list, its hash and the inputs it was evaluated on."""
+    """Record the declared list, its hash, the inputs and the q-value family (#1321)."""
     # The loaders above fall back to a .gz sibling; hash the file they actually read.
     resolved_profiles, resolved_columns = (
         path if path.exists() else path.with_name(f"{path.name}.gz")
@@ -765,6 +881,7 @@ def write_trait_list_provenance(
         **trait_list.provenance(),
         "reported_table": "table1_density_adjusted_effects.tsv",
         "pc1_fit_traits": "every non-MediaDive trait column, independent of the list",
+        "q_values": q_value_provenance(len(trait_list.trait_ids)),
         "profiles_file": resolved_profiles.name,
         "profiles_sha256": file_sha256(resolved_profiles),
         "columns_file": resolved_columns.name,
@@ -851,6 +968,8 @@ def run_density_audit(
 
     With a declared ``trait_list`` the effects table reports those traits instead of
     the six Table 1 traits, and ``trait_list_provenance.json`` records the list (#1054).
+    Statuses read BH q-values over the reported traits: the six, or the declared list;
+    the table's ``bh_family_size`` column records the family size (#1321).
     A list run never writes into default or arm density directories, or replaces
     an existing canonical density table. Its destination is checked before any
     input reads or directory creation (#1083, #1093).
@@ -860,6 +979,15 @@ def run_density_audit(
     output_dir.mkdir(parents=True, exist_ok=True)
     profiles_df, non_media_cols = load_non_media_profile_matrix(profiles_path, columns_path)
     table1_traits = table1_traits_for_columns(columns_path)
+    if trait_list is None:
+        absent = [trait_id for trait_id in table1_traits if trait_id not in non_media_cols]
+        if absent:
+            # As a declared list does: a Table 1 trait without a column has no row,
+            # so it can be neither reported nor a member of the q-value family (#1324).
+            raise ValueError(
+                f"Table 1 traits are not non-MediaDive trait columns of {columns_path.name}: "
+                f"{absent}"
+            )
     reported_traits = (
         table1_traits if trait_list is None else declared_density_traits(columns_path, trait_list)
     )
@@ -966,16 +1094,17 @@ def run_density_audit(
             f"3. {reported_traits_heading(trait_list)} "
             f"(PAIRED EXPERIMENTS N={twin_summary.n_paired_experiments:,})",
             "-" * 80,
+            *q_value_statement(len(reported_traits)),
         ]
     )
 
     for eff in t1_effects:
-        p_raw_str = f"p={eff.raw_wilcoxon_p:.2e}" if not math.isnan(eff.raw_wilcoxon_p) else "p=NA"
-        p_adj_str = f"p={eff.adj_wilcoxon_p:.2e}" if not math.isnan(eff.adj_wilcoxon_p) else "p=NA"
         report_lines.append(
             f"  {eff.trait_label:<30s} | "
-            f"Raw mean: {eff.raw_mean_diff:+.3f} ({p_raw_str}) | "
-            f"Adj mean: {eff.adj_mean_diff:+.3f} ({p_adj_str}) | "
+            f"Raw mean: {eff.raw_mean_diff:+.3f} "
+            f"({format_p_and_q(eff.raw_wilcoxon_p, eff.raw_wilcoxon_bh_q)}) | "
+            f"Adj mean: {eff.adj_mean_diff:+.3f} "
+            f"({format_p_and_q(eff.adj_wilcoxon_p, eff.adj_wilcoxon_bh_q)}) | "
             f"{eff.status}"
         )
 
@@ -1036,6 +1165,7 @@ def run_density_audit(
         "adj_pc1_pearson": adj_pc1_pearson,
         "adj_comp_pearson": adj_comp_pearson,
         "table1_effects": t1_effects,
+        "bh_family_size": len(reported_traits),
         "twin_summary": twin_summary,
         "summary_tsv": summary_out,
         "table1_tsv": t1_out,
