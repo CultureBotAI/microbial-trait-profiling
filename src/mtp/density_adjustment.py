@@ -23,10 +23,11 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import operator
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, SupportsFloat, SupportsIndex
 
 import numpy as np
 import pandas as pd
@@ -170,14 +171,18 @@ _ZERO_MEAN = 1e-9
 _SIGNIFICANCE_Q = 0.05
 
 
-def family_bh_q_values(p_values: Sequence[float] | np.ndarray, family_size: int) -> list[float]:
+def family_bh_q_values(
+    p_values: Sequence[float] | np.ndarray, family_size: SupportsIndex
+) -> list[float]:
     """Benjamini-Hochberg q-values of ``p_values`` over a family of ``family_size`` traits.
 
     The family is every reported trait, not only the testable ones: an undefined (NaN) p
     is held at 1.0 for the correction and its q is exported as NaN (#1321). Every member
     must be supplied, as a p or a NaN: as in methods/multiple_testing.md, an omitted
-    declared member is an error, not a silent p = 1 member (#1324).
+    declared member is an error, not a silent p = 1 member (#1324). NumPy values are
+    accepted and Python floats returned (#1330).
     """
+    family_size = operator.index(family_size)
     if family_size != len(p_values):
         raise ValueError(
             f"family_size ({family_size}) differs from the {len(p_values)} p-values given; "
@@ -190,20 +195,24 @@ def family_bh_q_values(p_values: Sequence[float] | np.ndarray, family_size: int)
     return [float("nan") if math.isnan(p) else q for p, q in zip(p_values, adjusted, strict=True)]
 
 
-def q_value_provenance(family_size: int) -> dict[str, object]:
-    """Machine-readable record of the q-value family behind the statuses (#1321)."""
+def q_value_provenance(family_size: SupportsIndex) -> dict[str, object]:
+    """Machine-readable record of the q-value family behind the statuses (#1321).
+
+    ``family_size`` is stored as a Python int, so a NumPy count serializes (#1330).
+    """
     return {
         "procedure": "benjamini_hochberg",
         "family": "every reported trait",
-        "family_size": family_size,
+        "family_size": operator.index(family_size),
         "corrected_separately": ["raw_wilcoxon_p", "adj_wilcoxon_p"],
         "untestable_p_held_at": 1.0,
         "label_threshold_q": _SIGNIFICANCE_Q,
     }
 
 
-def q_value_statement(family_size: int) -> list[str]:
+def q_value_statement(family_size: SupportsIndex) -> list[str]:
     """Report lines stating the q-value family the statuses are read from (#1321)."""
+    family_size = operator.index(family_size)
     if family_size < 1:
         raise ValueError(f"a q-value family needs at least one reported trait, not {family_size}")
     return [
@@ -214,24 +223,28 @@ def q_value_statement(family_size: int) -> list[str]:
     ]
 
 
-def format_q_value(q: float) -> str:
+def format_q_value(q: SupportsFloat) -> str:
     """Format a BH q with three significant digits, or more when needed (#1325).
 
     A q on one side of the 0.05 threshold never displays on the other: 0.05004 prints
-    as 5.004e-02, not 5.00e-02. An undefined q reads NA.
+    as 5.004e-02, not 5.00e-02. An undefined q reads NA. A NumPy scalar, as read back
+    from the effects TSV, is converted first so the side test compares Python bools
+    (#1330).
     """
+    q = float(q)
     if math.isnan(q):
         return "NA"
     significant = q <= _SIGNIFICANCE_Q
     for decimals in range(2, 17):
         text = f"{q:.{decimals}e}"
-        if (float(text) <= _SIGNIFICANCE_Q) is significant:
+        if (float(text) <= _SIGNIFICANCE_Q) == significant:
             return text
     return repr(q)
 
 
-def format_p_and_q(p: float, q: float) -> str:
+def format_p_and_q(p: SupportsFloat, q: SupportsFloat) -> str:
     """Format a Wilcoxon p and its BH q for a report line; undefined values read NA."""
+    p = float(p)
     p_text = "NA" if math.isnan(p) else f"{p:.2e}"
     return f"p={p_text}, q={format_q_value(q)}"
 
@@ -241,7 +254,9 @@ def _sign_flipped(raw_mean: float, adj_mean: float) -> bool:
     return min(abs(raw_mean), abs(adj_mean)) > _ZERO_MEAN and raw_mean * adj_mean < 0
 
 
-def adjustment_status(raw_mean: float, raw_q: float, adj_mean: float, adj_q: float) -> str:
+def adjustment_status(
+    raw_mean: SupportsFloat, raw_q: SupportsFloat, adj_mean: SupportsFloat, adj_q: SupportsFloat
+) -> str:
     """Classify a trait by raw and adjusted significance and by the change in effect magnitude.
 
     Significance is BH q <= 0.05, from the q-values of the raw and adjusted Wilcoxon p over
@@ -250,8 +265,10 @@ def adjustment_status(raw_mean: float, raw_q: float, adj_mean: float, adj_q: flo
     undefined, each get their own status (#1097), and a significant adjusted contrast
     whose raw contrast was nonsignificant (or had <= 10 non-zero pairs, so no q) is
     classified as "significant only post-adjustment" rather than "survived" or
-    "enhanced" (#1098).
+    "enhanced" (#1098). Arguments are converted to float first, so a NumPy scalar is
+    compared exactly as ``format_q_value`` displays it (#1330).
     """
+    raw_mean, raw_q, adj_mean, adj_q = (float(v) for v in (raw_mean, raw_q, adj_mean, adj_q))
     if math.isnan(adj_q):
         return "insufficient non-zero pairs"
     if abs(raw_mean) <= _ZERO_MEAN:

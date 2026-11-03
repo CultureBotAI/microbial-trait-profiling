@@ -190,6 +190,48 @@ def test_q_text_never_rounds_across_the_threshold(q: float, text: str) -> None:
         assert (float(text) <= 0.05) is (q <= 0.05)
 
 
+@pytest.mark.parametrize("scalar", [np.float64, np.float32])
+@pytest.mark.parametrize(
+    ("q", "text"),
+    [
+        (0.0498, "4.98e-02"),
+        (0.0496, "4.96e-02"),
+        (0.0504, "5.04e-02"),
+        (0.05004, "5.004e-02"),
+        (float("nan"), "NA"),
+    ],
+)
+def test_q_text_formats_numpy_scalars_as_numbers(scalar: Any, q: float, text: str) -> None:
+    """A q read back from the TSV is a NumPy scalar; it printed as its repr (#1330)."""
+    value = scalar(q)
+    assert density_module.format_q_value(value) == text
+    assert density_module.format_p_and_q(scalar(0.01), value) == f"p=1.00e-02, q={text}"
+
+
+def test_float32_q_at_the_threshold_displays_on_the_side_of_its_label() -> None:
+    """float32(0.05) is 0.0500000007 as a float: the label and the display both read it as
+    above 0.05, although NumPy compares it equal to 0.05 in float32 (#1330)."""
+    value = np.float32(0.05)
+    text = density_module.format_q_value(value)
+    assert text == "5.0000001e-02"
+    assert float(text) > 0.05
+    assert adjustment_status(12.0, 0.001, 3.0, value) == "collapsed (attenuated to nonsignificant)"
+
+
+def test_q_value_records_accept_numpy_integers() -> None:
+    """A family size taken from a NumPy count is still written as a JSON integer (#1330)."""
+    record = density_module.q_value_provenance(np.int64(6))
+    assert json.loads(json.dumps(record))["family_size"] == 6
+    assert type(record["family_size"]) is int
+    assert "over all 6 reported traits" in density_module.q_value_statement(np.int64(6))[0]
+    q = density_module.family_bh_q_values(
+        np.array([0.01, np.nan], dtype=np.float32), family_size=np.int64(2)
+    )
+    assert all(type(value) is float for value in q)
+    assert q[0] == pytest.approx(0.02)
+    assert math.isnan(q[1])
+
+
 def test_default_run_rejects_a_table1_trait_absent_from_the_columns(tmp_path: Path) -> None:
     """An absent Table 1 trait fails the run, as in list mode, rather than joining the
     family without a row (#1324)."""

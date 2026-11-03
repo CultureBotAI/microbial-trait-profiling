@@ -1124,6 +1124,8 @@ def _audit_script() -> Any:
 def test_audit_script_conclusions_never_round_a_q_onto_the_threshold(q: float, text: str) -> None:
     """Section 6 printed q=0.05 for 0.0504, beside a nonsignificant label (#1325)."""
     assert _audit_script()._q_text(q) == text
+    # NumPy scalars, as read back from the effects TSV, format the same way (#1330).
+    assert _audit_script()._q_text(np.float64(q)) == text
 
 
 def test_audit_script_reports_a_trait_list_without_fixed_conclusions(tmp_path: Path) -> None:
