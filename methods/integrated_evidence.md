@@ -153,6 +153,11 @@ kept zero-total pairs and reported p = 2.0e-06 over 932 studies.
 An earlier version wrote the uncorrected p into `q_value` as well, which made it
 look like a one-member FDR family (#294).
 
+These McNemar numbers, and the cell counts below, predate #1237. They were measured
+with an aerobe guild that included METPO:1000608 and have not been regenerated, nor
+have the committed outputs in `data/derived/integrated_evidence/`, whose guild rows
+still list METPO:1000608 as an aerobe-guild column.
+
 The cell rows are the oxygen guild figure's own inventory, one per cell of its
 condition-by-body-site grid: 52 condition rows (51 conditions and the pooled
 Other) by 20 body-site blocks (19 sites and the pooled Other), each block four
@@ -283,9 +288,14 @@ one before that stated the assessments' branch findings as established (#294).
   no row here carries a validation status from it.
 - **Guild grouping.** The guild rows previously claimed the oxygen guilds were
   fixed a priori. Nothing in this repository records where or when they were
-  declared, and the aerobe guild contains METPO:1000608, which is also one of the
-  six traits selected on this corpus - so that grouping is not independent of the
-  selection either. The claim is removed rather than restated (#294).
+  declared, and the aerobe guild then contained METPO:1000608, which is also one
+  of the six traits selected on this corpus - so that grouping was not independent
+  of the selection either (#294). Since #1237 neither oxygen guild contains
+  METPO:1000608, under either trait-key policy. The guild rows' note still says
+  there is no record here of where or when the guilds were declared, and now says
+  their membership was revised once (#1237), on semantic grounds and not because
+  of results, to separate facultative from aerobe annotations. The guild numbers
+  above that predate #1237 are marked where they are quoted.
 
 ## Reproducing
 

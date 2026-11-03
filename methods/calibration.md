@@ -73,14 +73,23 @@ assignments be handed to another arm (see **The shared null** below).
 Power is measured by raising one trait's counts (coccus shaped) on the increased side
 of half the studies by a declared multiplier. The added counts come **from the
 complement**: a profile's total sums all retained trait columns (317 under `off`, 344
-under `phenotype`), the eight the procedures read are disjoint subsets of them, and
-the raise moves annotations in from the other 309 (336 under `phenotype`), which no
-procedure reads. The total is held fixed, so every other tracked trait's
+under `phenotype`). The eight groups the procedures read - the six single-column
+Table 1 traits and the two two-column oxygen guilds, ten columns in all - are
+disjoint subsets of them, and the raise moves annotations in from the other 307
+(334 under `phenotype`), which no procedure reads. The total is held fixed, so every other tracked trait's
 share is unchanged *exactly* - which is the only thing that makes the "untouched"
 truth labels, and therefore the false-discovery proportion, mean anything. An earlier
 version added the injected counts to the total, which lowered every other trait's
 increased-side share and manufactured real effects on the traits it then counted as
 false discoveries; `calibration_protocol.json` records that amendment.
+
+The groups have been disjoint only since #1237. Before it, METPO:1000608 was both a
+Table 1 trait and an aerobe-guild member. The injection's headroom, the profile total
+minus the summed group counts, therefore subtracted that column's counts twice and
+fell short of the complement wherever the column was non-zero; it is now the exact
+complement. This text earlier said "the other 309" (336 under `phenotype`), which
+counted eight columns where the groups read ten. The power results below were
+measured with the double-subtracted headroom (#1345).
 
 ## The independent unit, and what it costs
 
@@ -163,6 +172,14 @@ otherwise `pass` only if every judged criterion passed, otherwise `not_certified
 
 At 1400 null and 400 power replicates, seed 182, on the pinned v1.3.1 corpus:
 
+All results in this section and in "What the numbers say" predate #1237. The
+`guild_mcnemar` rows used an aerobe guild that included METPO:1000608. The power
+rows, the effective multipliers, the injection cap count and the false-discovery
+proportions under injection used the double-subtracted headroom described above.
+The fraction, log-ratio and screened rows under the complete null read only the six
+Table 1 traits' counts and the profile totals, which the guild definition does not
+change. None of these numbers has been recomputed.
+
 | Criterion | Procedure | Verdict | Evidence |
 | --- | --- | --- | --- |
 | Pooled per-test upper bound at most 0.065 | fraction_sign_test | pass (**sanity check**) | 0.0465 (781/16,800), upper bound 0.0495; analytic exact size 0.0466 |
@@ -224,6 +241,9 @@ coarse. Uniformity of p is neither expected nor required.
 `round` leaves a small count where it is, so 16.6% of eligible profiles are unchanged
 at a nominal 1.1x and 7.0% at 1.3x; at 4x the complement caps about 30 profiles per
 replicate. The effective multipliers are therefore 1.086, 1.284, 2.000 and 3.979.
+The cap count and these multipliers were measured with the double-subtracted
+headroom of before #1237. The exact complement is never smaller, so it caps no more
+profiles, but they have not been recomputed.
 Rejection at q <= 0.05 for the injected trait, 400 replicates, with its exact
 interval:
 
@@ -248,7 +268,8 @@ them a real effect. The mean false-discovery proportion of the fraction family i
 0.051, 0.038, 0.043 and 0.040 across the four lifts, and below 0.01 for the ratio
 family. `guild_mcnemar` is untouched by the injection by construction, and its
 false-discovery proportion of 0.038 to 0.055 is simply its null rate, which confirms
-that the injection no longer leaks into it.
+that the injection no longer leaks into it. That rate was measured with the aerobe
+guild of before #1237, which included METPO:1000608.
 
 **Selecting traits on the data and testing the selection inflates the error rate.**
 The screened procedure rejects a true null 0.093 of the time per test against a
@@ -348,6 +369,8 @@ On the current core, 94 pairs are affected: eligible support is 939 studies and
 4,482 profiles, compared with the 959 studies and 4,670 profiles used to generate
 the flip assignments. Guild discordant study counts change from 420/290 to
 420/293. A v2 guild verdict therefore does not certify the production procedure.
+Both pairs of counts predate #1237: they used an aerobe guild that included
+METPO:1000608.
 
 Calibration-v3 applies the existing whole-pair exclusion inside each guild
 replicate and exports its policy and support. It preserves the complete loaded
@@ -364,3 +387,5 @@ integration checks. The three directional procedures meet their
 declared criteria; the screened negative control remains failed. Passing the
 power-reporting criterion does not imply sufficient power for small signals,
 and these results do not calibrate the native ORA or composition methods.
+That execution also predates #1237. Its guild McNemar used the old aerobe guild,
+and its power scenarios used the double-subtracted injection headroom.
