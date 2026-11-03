@@ -133,14 +133,122 @@ def test_heading_code_delimiter_stops_at_the_heading_end() -> None:
     assert links_relative_to_github(source) == expected
 
 
-@pytest.mark.parametrize("line", ["#not-a-heading", "####### not-a-heading", "-not-a-list", "**"])
-def test_nonblock_lines_preserve_multiline_code_spans(line: str) -> None:
-    source = f"`code\n{line} [literal](docs/literal.md)\nend`"
+def test_heading_start_boundary_stops_prior_unmatched_code_delimiter() -> None:
+    """#1312: removing heading from the start-boundary check must fail."""
+    source = "`unclosed\n# Heading [guide](docs/guide.md) `code`"
+    expected = source.replace("(docs/guide.md)", "(../docs/guide.md)")
+    assert links_relative_to_github(source) == expected
+
+
+def test_multiline_code_span_immediately_after_heading() -> None:
+    """#1312: heading-end boundary at opening.start() must not cut the next span."""
+    source = "# Heading\n`code\n[literal](docs/literal.md)\nend`"
     assert links_relative_to_github(source) == source
 
 
-def test_same_list_item_preserves_multiline_code_span() -> None:
-    source = "- `code\n  continuation [literal](docs/literal.md)\n  end`"
+@pytest.mark.parametrize(
+    "source",
+    [
+        "`unclosed\n* [guide](docs/guide.md)\n`later`",
+        "`unclosed\n+ [guide](docs/guide.md)\n`later`",
+        "`unclosed\n1. [guide](docs/guide.md)\n`later`",
+        "`unclosed\n1) [guide](docs/guide.md)\n`later`",
+        "`unclosed\n___\n[guide](docs/guide.md)\n`later`",
+        "- `unclosed\n---\n[guide](docs/guide.md)\n`later`",
+    ],
+    ids=[
+        "star-item",
+        "plus-item",
+        "ordered-dot",
+        "ordered-paren",
+        "underscore-break",
+        "dash-break",
+    ],
+)
+def test_list_and_thematic_marker_variants_stop_unmatched_code_delimiter(source: str) -> None:
+    """#1312: each list and thematic marker branch must be exercised."""
+    expected = source.replace("(docs/guide.md)", "(../docs/guide.md)")
+    assert links_relative_to_github(source) == expected
+
+
+@pytest.mark.parametrize("marker", ["2.", "10)", "2025."])
+def test_non_interrupting_ordered_markers_preserve_multiline_code_spans(marker: str) -> None:
+    """#1311: ordered markers other than 1 cannot interrupt a paragraph."""
+    source = f"`code\n{marker} [literal](docs/literal.md)\nend`"
+    assert links_relative_to_github(source) == source
+
+
+@pytest.mark.parametrize("marker", ["1.", "1)", "*", "+"])
+def test_empty_list_markers_preserve_multiline_code_spans(marker: str) -> None:
+    """#1311: empty list markers cannot interrupt a paragraph."""
+    source = f"`code\n{marker}\n[literal](docs/literal.md)\nend`"
+    assert links_relative_to_github(source) == source
+
+
+def test_ordered_list_context_distinguishes_paragraph_from_sibling() -> None:
+    """#1311, #1312: non-1 ordered markers are boundaries in lists, after blanks, and fences."""
+    source = (
+        "Paragraph\n\n"
+        "2. `unclosed\n"
+        "3. [guide](docs/guide.md)\n"
+        "`later`\n"
+        "~~~\n"
+        "code\n"
+        "~~~\n"
+        "2. `unclosed\n"
+        "3. [next](methods/next.md)\n"
+        "`later`\n\n"
+        "`code\n"
+        "2. [literal](docs/literal.md)\n"
+        "end`"
+    )
+    expected = source.replace("(docs/guide.md)", "(../docs/guide.md)").replace(
+        "(methods/next.md)", "(../methods/next.md)"
+    )
+    assert links_relative_to_github(source) == expected
+
+
+@pytest.mark.parametrize("underline", ["===", "--"])
+def test_setext_heading_underlines_stop_unmatched_code_delimiter(underline: str) -> None:
+    """#1311: a setext heading underline is a block boundary."""
+    source = f"Heading `unclosed\n{underline}\n[guide](docs/guide.md)\n`later`"
+    expected = source.replace("(docs/guide.md)", "(../docs/guide.md)")
+    assert links_relative_to_github(source) == expected
+
+
+@pytest.mark.parametrize(
+    "blockquote",
+    ["> [guide](docs/guide.md)", "> quote\n[guide](docs/guide.md)"],
+    ids=["direct", "lazy-continuation"],
+)
+def test_blockquote_stops_unmatched_code_delimiter(blockquote: str) -> None:
+    """#1311: a blockquote interrupting a paragraph is a block boundary."""
+    source = f"`unclosed\n{blockquote}\n`later`"
+    expected = source.replace("(docs/guide.md)", "(../docs/guide.md)")
+    assert links_relative_to_github(source) == expected
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "#not-a-heading",
+        "####### not-a-heading",
+        "-not-a-list",
+        "**",
+        "*** not-a-break",
+        "[ref]:\n    # not-a-heading",
+        "[ref]:\n    1. not-a-list",
+        "[ref]:\n    > not-a-quote",
+    ],
+)
+def test_nonblock_lines_preserve_multiline_code_spans(line: str) -> None:
+    source = f"`code\n{line}\n[literal](docs/literal.md)\nend`"
+    assert links_relative_to_github(source) == source
+
+
+@pytest.mark.parametrize("continuation", ["  continuation", "==="])
+def test_same_list_item_preserves_multiline_code_span(continuation: str) -> None:
+    source = f"- `code\n{continuation}\n[literal](docs/literal.md)\n  end`"
     assert links_relative_to_github(source) == source
 
 
