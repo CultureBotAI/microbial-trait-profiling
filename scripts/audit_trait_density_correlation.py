@@ -14,7 +14,6 @@ Addresses Issue #264 and Issue #352:
 from __future__ import annotations
 
 import argparse
-import math
 import sys
 from pathlib import Path
 from typing import Any
@@ -26,6 +25,7 @@ from mtp.density_adjustment import (
     SIGNIFICANT_POST_ADJUSTMENT_STATUSES,
     add_trait_list_argument,
     format_p_and_q,
+    format_q_value,
     q_value_statement,
     reported_traits_heading,
     run_density_audit,
@@ -70,10 +70,25 @@ def parse_args() -> argparse.Namespace:
 
 
 def _q_text(q: float) -> str:
-    """A BH q-value for the conclusions; NA when the trait is untestable or not reported."""
-    if math.isnan(q):
-        return "q=NA"
-    return f"q={q:.2f}" if q >= 0.01 else f"q={q:.1e}"
+    """A BH q-value for the conclusions; NA when the trait is untestable or not reported.
+
+    Three significant digits, or more when a q next to 0.05 would otherwise round onto
+    the other side of the threshold (#1325).
+    """
+    return f"q={format_q_value(q)}"
+
+
+def _reported_family_size(t1_effects: list[Any]) -> int:
+    """The q-value family, which must be the reported rows: never empty or mismatched (#1324)."""
+    if not t1_effects:
+        raise ValueError("The density results report no traits, so there is no q-value family")
+    sizes = {eff.bh_family_size for eff in t1_effects}
+    if sizes != {len(t1_effects)}:
+        raise ValueError(
+            f"The q-value family sizes {sorted(sizes)} differ from the "
+            f"{len(t1_effects)} reported traits"
+        )
+    return len(t1_effects)
 
 
 def write_consolidated_report(
@@ -88,11 +103,12 @@ def write_consolidated_report(
     name Table 1 traits (#1054). They quote BH q-values and statuses from the reported
     effects, and read NA for a trait that is not reported (#1321).
     """
+    t1_effects = density_res["table1_effects"]
+    family_size = _reported_family_size(t1_effects)
     raw = density_res["raw_pearson"]
     raw_sp = density_res["raw_spearman"]
     adj_pc1 = density_res["adj_pc1_pearson"]
     adj_norm = density_res.get("adj_norm_pearson", density_res.get("adj_dw_pearson"))
-    t1_effects = density_res["table1_effects"]
     twin = density_res["twin_summary"]
 
     n_pairs = ontology_res["n_redundant_pairs"]
@@ -113,7 +129,6 @@ def write_consolidated_report(
     survivors = ", ".join(
         eff.trait_label for eff in t1_effects if eff.status in SIGNIFICANT_POST_ADJUSTMENT_STATUSES
     )
-    family_size = t1_effects[0].bh_family_size if t1_effects else 0
     vif_str = f"VIF ~ {twin.vif_profile:.2f}"
 
     report_out = output_dir / "density_adjustment_report.txt"

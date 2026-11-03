@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -427,7 +428,7 @@ def test_write_consolidated_report_dynamic_numbers(tmp_path: Path) -> None:
         "After PC1 regression the facultatively aerobic paired contrast is labelled "
         "'collapsed (attenuated to nonsignificant)'"
     ) in content
-    assert "(raw BH q=6.9e-04, adjusted BH q=0.46)" in content
+    assert "(raw BH q=6.90e-04, adjusted BH q=4.56e-01)" in content
     assert (
         "Significant before and after PC1 regression in the same direction "
         "(BH q <= 0.05; survived or enhanced): cellulose catabolic process."
@@ -437,3 +438,15 @@ def test_write_consolidated_report_dynamic_numbers(tmp_path: Path) -> None:
     assert "over all 2 reported traits" in content
     assert "18 redundant pairs (12 features collapsed into 8 clusters)" in content
     assert "bounding distinct trait space to 250 features" in content
+
+    # The report never states a family it does not report: no rows, or a family size
+    # other than the number of rows, is an error rather than "over all 0 traits" (#1324).
+    effects = density_res["table1_effects"]
+    assert isinstance(effects, list)
+    for bad_effects in ([], [replace(effect, bh_family_size=6) for effect in effects]):
+        with pytest.raises(ValueError, match="family"):
+            module.write_consolidated_report(
+                output_dir=tmp_path / "bad",
+                density_res={**density_res, "table1_effects": bad_effects},
+                ontology_res=ontology_res,
+            )

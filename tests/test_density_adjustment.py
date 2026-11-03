@@ -1117,6 +1117,15 @@ def _audit_script() -> Any:
     return module
 
 
+@pytest.mark.parametrize(
+    ("q", "text"),
+    [(0.0504, "q=5.04e-02"), (0.0496, "q=4.96e-02"), (0.05004, "q=5.004e-02")],
+)
+def test_audit_script_conclusions_never_round_a_q_onto_the_threshold(q: float, text: str) -> None:
+    """Section 6 printed q=0.05 for 0.0504, beside a nonsignificant label (#1325)."""
+    assert _audit_script()._q_text(q) == text
+
+
 def test_audit_script_reports_a_trait_list_without_fixed_conclusions(tmp_path: Path) -> None:
     """The arm's audit script takes the list; its six-trait narrative is not printed (#1054)."""
     profiles, columns = _write_density_fixture(tmp_path)

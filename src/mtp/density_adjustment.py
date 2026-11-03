@@ -170,19 +170,20 @@ _ZERO_MEAN = 1e-9
 _SIGNIFICANCE_Q = 0.05
 
 
-def family_bh_q_values(p_values: Sequence[float], family_size: int) -> list[float]:
+def family_bh_q_values(p_values: Sequence[float] | np.ndarray, family_size: int) -> list[float]:
     """Benjamini-Hochberg q-values of ``p_values`` over a family of ``family_size`` traits.
 
     The family is every reported trait, not only the testable ones: an undefined (NaN) p
-    is held at 1.0 for the correction and its q is exported as NaN, and a declared trait
-    with no row at all also counts toward ``family_size`` (#1321, as in
-    methods/multiple_testing.md, where filters never shrink the family).
+    is held at 1.0 for the correction and its q is exported as NaN (#1321). Every member
+    must be supplied, as a p or a NaN: as in methods/multiple_testing.md, an omitted
+    declared member is an error, not a silent p = 1 member (#1324).
     """
-    if family_size < len(p_values):
+    if family_size != len(p_values):
         raise ValueError(
-            f"family_size ({family_size}) is smaller than the {len(p_values)} p-values given"
+            f"family_size ({family_size}) differs from the {len(p_values)} p-values given; "
+            "pass NaN for an untestable member"
         )
-    if not p_values:
+    if len(p_values) == 0:
         return []
     held = [1.0 if math.isnan(p) else float(p) for p in p_values]
     adjusted = benjamini_hochberg(held, family_size=family_size)
@@ -203,6 +204,8 @@ def q_value_provenance(family_size: int) -> dict[str, object]:
 
 def q_value_statement(family_size: int) -> list[str]:
     """Report lines stating the q-value family the statuses are read from (#1321)."""
+    if family_size < 1:
+        raise ValueError(f"a q-value family needs at least one reported trait, not {family_size}")
     return [
         f"Significance: Benjamini-Hochberg q <= {_SIGNIFICANCE_Q:g} over all {family_size} "
         "reported traits, raw and adjusted",
@@ -211,11 +214,26 @@ def q_value_statement(family_size: int) -> list[str]:
     ]
 
 
+def format_q_value(q: float) -> str:
+    """Format a BH q with three significant digits, or more when needed (#1325).
+
+    A q on one side of the 0.05 threshold never displays on the other: 0.05004 prints
+    as 5.004e-02, not 5.00e-02. An undefined q reads NA.
+    """
+    if math.isnan(q):
+        return "NA"
+    significant = q <= _SIGNIFICANCE_Q
+    for decimals in range(2, 17):
+        text = f"{q:.{decimals}e}"
+        if (float(text) <= _SIGNIFICANCE_Q) is significant:
+            return text
+    return repr(q)
+
+
 def format_p_and_q(p: float, q: float) -> str:
     """Format a Wilcoxon p and its BH q for a report line; undefined values read NA."""
     p_text = "NA" if math.isnan(p) else f"{p:.2e}"
-    q_text = "NA" if math.isnan(q) else f"{q:.2e}"
-    return f"p={p_text}, q={q_text}"
+    return f"p={p_text}, q={format_q_value(q)}"
 
 
 def _sign_flipped(raw_mean: float, adj_mean: float) -> bool:
@@ -547,9 +565,13 @@ def evaluate_table1_paired_effects(
     fit on every non-MediaDive trait whatever is reported, so a trait's means and
     p-values do not depend on which other traits are listed (#1054). Its BH q-values,
     and the status read from them, do: every trait in ``traits`` is one member of the
-    correction family, testable or not (#1321).
+    correction family, testable or not (#1321), so every trait must be a column of
+    ``non_media_cols``: one that cannot have a row is an error (#1324).
     """
-    t1_keys = [k for k in traits if k in non_media_cols]
+    absent = [trait_id for trait_id in traits if trait_id not in non_media_cols]
+    if absent:
+        raise ValueError(f"Reported traits are not non-MediaDive trait columns: {absent}")
+    t1_keys = list(traits)
     has_paired_directions = (
         not profiles_df.empty
         and "study_id" in profiles_df.columns
@@ -648,8 +670,8 @@ def evaluate_table1_paired_effects(
             }
         )
 
-    # The family is every reported trait (#1321): a trait with too few pairs, or one
-    # absent from the columns table, still counts as a member at p = 1.
+    # The family is every reported trait, one row each (#1321, #1324): a trait with too
+    # few pairs stays a member at p = 1.
     family_size = len(traits)
     raw_q = family_bh_q_values([row["raw_wilcoxon_p"] for row in measured], family_size)
     adj_q = family_bh_q_values([row["adj_wilcoxon_p"] for row in measured], family_size)
@@ -940,6 +962,15 @@ def run_density_audit(
     output_dir.mkdir(parents=True, exist_ok=True)
     profiles_df, non_media_cols = load_non_media_profile_matrix(profiles_path, columns_path)
     table1_traits = table1_traits_for_columns(columns_path)
+    if trait_list is None:
+        absent = [trait_id for trait_id in table1_traits if trait_id not in non_media_cols]
+        if absent:
+            # As a declared list does: a Table 1 trait without a column has no row,
+            # so it can be neither reported nor a member of the q-value family (#1324).
+            raise ValueError(
+                f"Table 1 traits are not non-MediaDive trait columns of {columns_path.name}: "
+                f"{absent}"
+            )
     reported_traits = (
         table1_traits if trait_list is None else declared_density_traits(columns_path, trait_list)
     )

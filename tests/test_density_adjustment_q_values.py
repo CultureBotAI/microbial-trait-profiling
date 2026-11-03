@@ -148,16 +148,75 @@ def test_untestable_traits_stay_in_the_family_at_p_one_and_export_nan_q() -> Non
     assert nominal.raw_wilcoxon_bh_q != pytest.approx(dropped[1])
 
 
-def test_family_bh_q_values_holds_undefined_p_at_one_and_counts_absent_members() -> None:
+def test_family_bh_q_values_holds_undefined_p_at_one_and_needs_every_member() -> None:
     family_bh_q_values = density_module.family_bh_q_values
     q = family_bh_q_values([0.01, float("nan"), 0.04], family_size=3)
     np.testing.assert_allclose([q[0], q[2]], _bh([0.01, 1.0, 0.04])[[0, 2]])
     assert math.isnan(q[1])
-    # A declared member with no row at all is padded at p = 1 as well.
-    assert family_bh_q_values([0.01], family_size=6) == pytest.approx([0.06])
-    assert family_bh_q_values([], family_size=6) == []
-    with pytest.raises(ValueError, match="family_size"):
-        family_bh_q_values([0.01, 0.02], family_size=1)
+    assert family_bh_q_values([], family_size=0) == []
+    # A declared member without a p (NaN for untestable) is an error, not padding (#1324).
+    for p_values, family_size in (([0.01], 6), ([], 6), ([0.01, 0.02], 1)):
+        with pytest.raises(ValueError, match="family_size"):
+            family_bh_q_values(p_values, family_size=family_size)
+
+
+def test_family_bh_q_values_accepts_a_numpy_array() -> None:
+    """A length check, not truthiness: an array of two or more values is valid (#1325)."""
+    p_values = np.array([0.01, np.nan, 0.04])
+    q = density_module.family_bh_q_values(p_values, family_size=3)
+    np.testing.assert_allclose([q[0], q[2]], _bh([0.01, 1.0, 0.04])[[0, 2]])
+    assert math.isnan(q[1])
+    assert density_module.family_bh_q_values(np.array([]), family_size=0) == []
+
+
+@pytest.mark.parametrize(
+    ("q", "text"),
+    [
+        (0.0504, "5.04e-02"),
+        (0.0496, "4.96e-02"),
+        (0.05, "5.00e-02"),
+        # Three significant digits would round these onto 0.05, across the threshold.
+        (0.05004, "5.004e-02"),
+        (0.050000001, "5.0000001e-02"),
+        (0.000345, "3.45e-04"),
+        (float("nan"), "NA"),
+    ],
+)
+def test_q_text_never_rounds_across_the_threshold(q: float, text: str) -> None:
+    """A q just above 0.05 must not display as 0.05 next to a nonsignificant label (#1325)."""
+    assert density_module.format_q_value(q) == text
+    assert density_module.format_p_and_q(0.01, q) == f"p=1.00e-02, q={text}"
+    if not math.isnan(q):
+        assert (float(text) <= 0.05) is (q <= 0.05)
+
+
+def test_default_run_rejects_a_table1_trait_absent_from_the_columns(tmp_path: Path) -> None:
+    """An absent Table 1 trait fails the run, as in list mode, rather than joining the
+    family without a row (#1324)."""
+    profiles, columns = _write_fixture(tmp_path)
+    table = pd.read_csv(columns, sep="\t")
+    table[table["column_id"] != CONSTANT_TRAIT].to_csv(columns, sep="\t", index=False)
+    with pytest.raises(ValueError, match=r"Table 1 traits .*METPO:1000683"):
+        run_density_audit(profiles, columns, tmp_path / "output")
+    assert not (tmp_path / "output" / "table1_density_adjusted_effects.tsv").exists()
+
+
+def test_effects_reject_reported_traits_absent_from_the_columns() -> None:
+    """The family is the reported rows: a trait that cannot have a row is an error (#1324)."""
+    family = {"T:strong": (_strong(12.0), _strong(3.0)), "T:null": (_null(), _null())}
+    effects = _family_effects(family)
+    assert {effect.bh_family_size for effect in effects.values()} == {len(effects)}
+    profiles = pd.DataFrame(
+        {"study_id": ["s0", "s0"], "experiment_id": ["e0", "e0"], "inc_dec": ["inc", "dec"]}
+        | {trait: [1.0, 0.0] for trait in family}
+    )
+    with pytest.raises(ValueError, match=r"not non-MediaDive trait columns: \['T:absent'\]"):
+        evaluate_table1_paired_effects(
+            profiles,
+            np.zeros((2, len(family))),
+            list(family),
+            {**{t: t for t in family}, "T:absent": "absent"},
+        )
 
 
 _STATUS_CASES: list[tuple[Callable[[], np.ndarray], Callable[[], np.ndarray], str, str]] = [
