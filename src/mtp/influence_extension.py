@@ -34,6 +34,7 @@ from mtp.workflow.consumers import (
     write_consumer_record,
 )
 from mtp.workflow.output_roots import add_temporary_output_option, require_durable_output
+from mtp.workflow.trait_policy import resolve_trait_policy
 
 PROTOCOL = REPO_ROOT / "methods/table1_influence_extension_protocol.json"
 PROTOCOL_SHA256 = "366857b28d00228c52323fc6c7ed68848c037d09fa06ed15c8f453f553aebfd6"
@@ -81,8 +82,10 @@ IMPLEMENTATIONS = (
     "taxon_influence.py",
     "taxa_trait_matrix.py",
     "trait_guilds.py",
+    "trait_key_policy.py",
     "workflow/operations.py",
     "workflow/consumers.py",
+    "workflow/trait_policy.py",
     "workflow/arms/runtime.py",
 )
 
@@ -684,6 +687,7 @@ def run_extension(core_manifest: Path, output: Path, noel_manifest: Path | None 
         set(base.columns),
         set(base.traits.values()),
         strain_rollup=scope,
+        trait_key_policy=resolve_trait_policy(bundle.run).policy,
     )
     ledger = reconcile(base, graph)
     if ledger.mismatches:

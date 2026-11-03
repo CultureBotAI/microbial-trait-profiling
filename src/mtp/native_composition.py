@@ -130,26 +130,30 @@ def select_stratum_traits(
     profile_support = profile_matrix.gt(0).sum(axis=0).astype(int)
     total_signal = profile_matrix.sum(axis=0).astype(float)
     composition_variance = composition.var(axis=0)
-    trait_metadata = pd.DataFrame(
-        {
-            "trait_id": composition.columns,
-            "profile_support": profile_support,
-            "total_signal": total_signal,
-            "composition_variance": composition_variance,
-        },
-        index=composition.columns,
-    ).join(
-        trait_labels[
-            [
-                "trait_label",
-                "display_label",
-                "column_label",
-                "object_name",
-                "object_category",
-                "display_category",
-            ]
-        ],
-        how="left",
+    trait_metadata = (
+        pd.DataFrame(
+            {
+                "trait_id": composition.columns,
+                "profile_support": profile_support,
+                "total_signal": total_signal,
+                "composition_variance": composition_variance,
+            },
+            index=composition.columns,
+        )
+        .join(
+            trait_labels[
+                [
+                    "trait_label",
+                    "display_label",
+                    "column_label",
+                    "object_name",
+                    "object_category",
+                    "display_category",
+                ]
+            ],
+            how="left",
+        )
+        .copy()
     )
     trait_metadata["trait_label"] = trait_metadata["trait_label"].fillna(
         pd.Series(trait_metadata.index, index=trait_metadata.index)

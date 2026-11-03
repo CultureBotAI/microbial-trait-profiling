@@ -16,7 +16,7 @@ import pytest
 from mtp.corpus_identity import CorpusIdentity, measure_matrix
 from mtp.paths import file_sha256
 from mtp.workflow.consumers import CoreBundle
-from test_taxa_coverage_histogram import coverage
+from test_taxa_coverage_histogram import coverage, readme_regeneration_argv
 from test_taxa_coverage_histogram import inputs as inputs
 
 TIER12 = "disease_vs_healthy_tier1_2_subject_controls"
@@ -254,6 +254,82 @@ def test_wrong_producer_commit_refuses_before_output(core: SimpleNamespace, tmp_
     output = tmp_path / "wrong-producer"
     with pytest.raises(ValueError, match="code commit"):
         invoke(core, output, code_commit="wrong-commit")
+    assert not output.exists()
+
+
+@pytest.mark.parametrize("recorded_dirty", [False, True])
+@pytest.mark.parametrize("current_dirty", [False, True])
+def test_recorded_producer_accepts_dirty_state_changes_but_records_live_state(
+    core: SimpleNamespace,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    recorded_dirty: bool,
+    current_dirty: bool,
+) -> None:
+    """Creating an unignored arm output can change dirtiness after the plan was bound."""
+    commit = "fixture-producer"
+    recorded = commit + ("+dirty" if recorded_dirty else "")
+    monkeypatch.setattr(coverage, "repository_state", lambda _root: (commit, current_dirty))
+    output = tmp_path / "dirty-state-transition"
+    invoke(core, output, code_commit=recorded)
+    provenance = json.loads((output / "provenance.json").read_text())
+    assert provenance["producer"]["code_commit"] == commit + ("+dirty" if current_dirty else "")
+    assert core.writes
+
+
+def test_regeneration_can_use_a_later_producer_without_rewriting_original_provenance(
+    core: SimpleNamespace, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    original = tmp_path / "original"
+    monkeypatch.setattr(coverage, "repository_state", lambda _root: ("original-producer", False))
+    invoke(core, original, code_commit="original-producer")
+    original_provenance = (original / "provenance.json").read_bytes()
+    command = readme_regeneration_argv((original / "README.md").read_text())
+    assert "--code-commit" not in command
+    replay = tmp_path / "replay"
+    command[command.index("--output-dir") + 1] = str(replay)
+    monkeypatch.setattr(coverage, "repository_state", lambda _root: ("later-producer", False))
+    monkeypatch.setattr(sys, "argv", ["coverage", *command[2:]])
+    coverage.main()
+    assert (original / "provenance.json").read_bytes() == original_provenance
+    assert json.loads(original_provenance)["producer"]["code_commit"] == "original-producer"
+    assert json.loads((replay / "provenance.json").read_text())["producer"]["code_commit"] == (
+        "later-producer"
+    )
+    for path in original.glob("*.tsv"):
+        assert (replay / path.name).read_bytes() == path.read_bytes()
+
+
+@pytest.mark.parametrize("checkout_raw_exists", [False, True])
+@pytest.mark.parametrize(
+    "population",
+    [TIER12, "case_vs_control_subject", "disease_vs_healthy_oriented"],
+)
+def test_standalone_subset_requires_explicit_raw_dump_before_any_input_read(
+    inputs: dict[str, Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    checkout_raw_exists: bool,
+    population: str,
+) -> None:
+    checkout = tmp_path / "checkout"
+    if checkout_raw_exists:
+        raw = checkout / "data/raw/full_dump.csv"
+        raw.parent.mkdir(parents=True)
+        raw.write_text("# unrelated checkout export\nStudy\nfixture\n")
+    monkeypatch.setattr(coverage, "REPO_ROOT", checkout)
+    identity = Mock(side_effect=AssertionError("Subset must declare --raw-dump before reading"))
+    monkeypatch.setattr(coverage, "corpus_identity", identity)
+    output = tmp_path / "subset-without-raw"
+    with pytest.raises(ValueError, match=r"--raw-dump.*required"):
+        coverage.run_coverage(
+            output_dir=output,
+            strain_rollup="off",
+            tables_only=True,
+            contrast_population=population,
+            **inputs,
+        )
+    identity.assert_not_called()
     assert not output.exists()
 
 

@@ -2619,6 +2619,8 @@ def run_coverage(
             raise ValueError(f"Unknown contrast population: {contrast_population!r}")
         if direction_basis not in {NATIVE_DIRECTION_BASIS, ORIENTED_DIRECTION_BASIS}:
             raise ValueError(f"Unknown direction basis: {direction_basis!r}")
+        if contrast_population not in {"as_supplied", "all_paired"} and raw_dump is None:
+            raise ValueError("--raw-dump is required for standalone contrast subset selection")
         inputs = {
             "taxa": taxa or TAXA_PATH,
             "matrix": matrix or TAXA_TRAIT_MATRIX_PATH,
@@ -2668,7 +2670,7 @@ def run_coverage(
             ),
         )
     commit, dirty = repository_state(REPO_ROOT)
-    if code_commit is not None and code_commit != commit + ("+dirty" if dirty else ""):
+    if code_commit is not None and code_commit.removesuffix("+dirty") != commit:
         raise ValueError("Declared code commit differs from the executing producer")
 
     # 1. Load data and compute statistics
@@ -2732,8 +2734,6 @@ def run_coverage(
         regeneration.extend(["--contrast-population", contrast_population])
     if direction_basis != NATIVE_DIRECTION_BASIS or bound is not None:
         regeneration.extend(["--direction-basis", direction_basis])
-    if code_commit is not None:
-        regeneration.extend(["--code-commit", code_commit])
     if declared_vintage and bugsigdb_vintage is not None:
         regeneration.extend(["--bugsigdb-vintage", bugsigdb_vintage])
     if tables_only:
@@ -2909,7 +2909,9 @@ def build_parser(
     parser.add_argument(
         "--core-run", type=Path, help="Use one verified core and its recorded population"
     )
-    parser.add_argument("--code-commit", help="Expected executing producer identity")
+    parser.add_argument(
+        "--code-commit", help="Expected executing commit; a recorded +dirty suffix is ignored"
+    )
     parser.add_argument(
         "--strain-rollup",
         choices=STRAIN_ROLLUPS,
@@ -2930,7 +2932,8 @@ def build_parser(
     parser.add_argument(
         "--raw-dump",
         type=Path,
-        help="Raw dump for vintage; defaults to data/raw/full_dump.csv when present",
+        help="Required for standalone contrast subsets; otherwise used for vintage "
+        "(default data/raw/full_dump.csv when present)",
     )
     parser.add_argument(
         "--contrast-population",

@@ -188,8 +188,10 @@ and pinned-KG protocol requirements; incompatible inputs fail with diagnostics.
 Stage-specific replicate counts, seeds and statistical thresholds retain their
 existing defaults. `--replicates N` and `--seed N` explicitly override supported
 stochastic stages; `--figures` explicitly requests the default rendering, and
-`--no-figures` omits optional renderers. The two switches are mutually exclusive. Options are captured
-in the execution record. Fixed scientific protocols remain explicit in the
+`--no-figures` omits optional stages. For Jed, it drops the entire taxa-coverage
+stage, including its tables, README, provenance and core-consumption record,
+as well as its figures. The two switches are mutually exclusive. Options are
+captured in the execution record. Fixed scientific protocols remain explicit in the
 individual command arguments. Figure rendering requires the existing rendering
 dependencies, including Chrome for Plotly/Kaleido; install it separately with
 `just get-chrome` if needed.
@@ -373,7 +375,7 @@ remain available through `rerun-core`.
 
 | Population | Selection and direction |
 | --- | --- |
-| `all_paired` (default) | Preserve the existing unfiltered core and original Group 1 versus Group 0 directions. Human pairing and other eligibility remain downstream rules; the profiles still keep 16S and shotgun experiments only (#742). The name does not assert that every ingested record is human or paired. |
+| `all_paired` (default) | Preserve the existing unfiltered core, including unpaired rows, and original Group 1 versus Group 0 directions. Human pairing and other eligibility remain downstream rules; the profiles still keep 16S and shotgun experiments only (#742). The name does not assert that every ingested record is human or paired. |
 | `disease_vs_healthy_tier1_2_subject_controls` | Paired human disease-versus-healthy classifications with subject controls and Tier 1 healthy/normal or Tier 2 condition-negative/screened comparisons. |
 | `case_vs_control_subject` | Paired human disease-versus-healthy classifications with subject controls, including Tier 3 hospital/comorbid controls. |
 | `disease_vs_healthy_oriented` | All paired human disease-versus-healthy classifications, including paired-tissue and within-disease comorbidity comparisons. |
@@ -437,9 +439,12 @@ need swapping. Verified-core mode derives this information from the manifest.
 The existing native composition, composition-denominator and contribution-input
 loaders do not select a population from a filename or a checkout default.
 
-This port retains the generated files and ignore rules that #1219 proposed
-removing. The [file and reference inventory](reviews/issue1344_deferred_generated_outputs.md)
-records the separate removal decision needed from the owner.
+All 522 files proposed for removal in #1219 stay tracked, and `.gitignore`
+remains unchanged. [PR #1351](https://github.com/CultureBotAI/microbial-trait-profiling/pull/1351)
+summarises the externally retained file/reference inventory and the separate
+owner decision on file retirement and ignore-pattern adoption. The proposed
+patterns also cover handwritten PD-cellulose Markdown; they are not limited
+to generated figures and tables.
 
 Noel's non-default workflow route uses an assessment adapter that requires a
 verified core manifest and consumes its already oriented profiles directly.
