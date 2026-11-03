@@ -24,7 +24,7 @@ dependencies = [
   "linkml-runtime>=1.12.1",
   # numpy arrives with scipy either way; it is declared because `mtp.enrichment_stats`
   # and `mtp.calibration` import it directly.
-  "numpy>=2.0",
+  "numpy>=2.4.6",
   "pandas>=3.0.6",
   "plotly>=7.1.0",
   "pydantic>=2.13.0",
