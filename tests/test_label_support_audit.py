@@ -13,7 +13,7 @@ from typing import Any
 import pandas as pd
 import pytest
 
-from mtp import label_support_audit, madin_source
+from mtp import label_support_audit, madin_source, trait_key_policy
 from mtp.label_support_audit import (
     AUDIT_TRAITS,
     MADIN_SOURCE,
@@ -1078,7 +1078,7 @@ def test_column_metadata_default_inventory_records_present_or_absent(
     output = tmp_path / "metadata-inventory"
     run_audit(inputs, output)
     provenance = json.loads((output / "provenance.json").read_text(encoding="utf-8"))
-    expected = (
+    expected: dict[str, str | int] = (
         {
             "path": columns.name,
             "sha256": file_sha256(columns),
@@ -1087,18 +1087,38 @@ def test_column_metadata_default_inventory_records_present_or_absent(
         if present
         else {"path": columns.name, "status": "absent"}
     )
+    expected.update(selection="sibling_default", member_id_rows=int(present))
     assert provenance["inputs"]["column_metadata"] == expected
     assert_facultative_audit_label(
         output, "facultative (aerobe or anaerobe)" if present else "facultatively aerobic"
     )
 
 
-@pytest.mark.parametrize("change", ["modify", "same-size", "add", "delete"])
+@pytest.mark.parametrize(
+    ("selection", "change"),
+    [
+        ("sibling_default", "modify"),
+        ("sibling_default", "same-size"),
+        ("sibling_default", "add"),
+        ("sibling_default", "delete"),
+        ("explicit", "modify"),
+        ("explicit", "same-size"),
+        ("explicit", "delete"),
+    ],
+)
 def test_column_metadata_change_after_label_read_refuses_publication(
-    inputs: dict[str, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch, change: str
+    inputs: dict[str, Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    selection: str,
+    change: str,
 ) -> None:
     """A valid post-read metadata change must fail the late input check, before writes."""
-    columns = inputs["matrix"].with_name("taxa_trait_matrix_columns.tsv")
+    columns = (
+        tmp_path / "explicit metadata.tsv"
+        if selection == "explicit"
+        else inputs["matrix"].with_name("taxa_trait_matrix_columns.tsv")
+    )
     if change != "add":
         write_facultative_metadata(columns, union=True)
     original_build = build_label_support_tables
@@ -1122,7 +1142,7 @@ def test_column_metadata_change_after_label_read_refuses_publication(
     monkeypatch.setattr(label_support_audit, "build_label_support_tables", build_then_change)
     output = tmp_path / "metadata-change"
     with pytest.raises(ValueError, match="changed during execution"):
-        run_audit(inputs, output)
+        run_audit(inputs, output, columns=columns if selection == "explicit" else None)
     assert visited == [change]
     assert not output.exists()
 
@@ -1143,6 +1163,8 @@ def test_column_metadata_cli_explicit_path_overrides_conflicting_sibling(
         "path": explicit.name,
         "sha256": file_sha256(explicit),
         "size_bytes": explicit.stat().st_size,
+        "selection": "explicit",
+        "member_id_rows": 1,
     }
     assert provenance["inputs"]["column_metadata"]["sha256"] != file_sha256(sibling)
     assert_facultative_audit_label(
@@ -1176,6 +1198,98 @@ def test_column_metadata_explicit_missing_refuses_sibling_fallback(
                 column_metadata_path=missing,
             )
     assert not output.exists()
+
+
+@pytest.mark.parametrize(
+    ("metadata_kind", "expected_rows", "union_label"),
+    [
+        ("missing-member-column", 0, False),
+        ("empty-members", 0, False),
+        ("members-without-id", 0, False),
+        ("raw", 1, False),
+        ("union", 1, True),
+        ("distinct-aliases", 1, True),
+        ("repeated-source-rows", 2, True),
+    ],
+)
+def test_column_metadata_records_source_member_rows_not_mapping_alias_count(
+    inputs: dict[str, Path],
+    tmp_path: Path,
+    metadata_kind: str,
+    expected_rows: int,
+    union_label: bool,
+) -> None:
+    columns = inputs["matrix"].with_name("taxa_trait_matrix_columns.tsv")
+    write_facultative_metadata(columns, union=union_label)
+    metadata = pd.read_csv(columns, sep="\t", keep_default_na=False)
+    if metadata_kind == "missing-member-column":
+        metadata = metadata.drop(columns="trait_member_ids_json")
+    elif metadata_kind == "empty-members":
+        metadata = pd.concat([metadata, metadata], ignore_index=True)
+        metadata["trait_member_ids_json"] = ["", "[]"]
+    elif metadata_kind == "members-without-id":
+        metadata[["column_id", "object_id"]] = ""
+    elif metadata_kind == "distinct-aliases":
+        metadata["column_id"] = f"biolink:has_phenotype|{FAC}"
+    elif metadata_kind == "repeated-source-rows":
+        metadata = pd.concat([metadata, metadata], ignore_index=True)
+    metadata.to_csv(columns, sep="\t", index=False)
+    output = tmp_path / "member-row-audit"
+    run_audit(inputs, output)
+    provenance = json.loads((output / "provenance.json").read_text(encoding="utf-8"))
+    assert provenance["inputs"]["column_metadata"] == {
+        "path": columns.name,
+        "sha256": file_sha256(columns),
+        "size_bytes": columns.stat().st_size,
+        "selection": "sibling_default",
+        "member_id_rows": expected_rows,
+    }
+    assert_facultative_audit_label(
+        output, "facultative (aerobe or anaerobe)" if union_label else "facultatively aerobic"
+    )
+
+
+@pytest.mark.parametrize("union", [False, True], ids=["raw", "union"])
+def test_explicit_and_default_same_metadata_preserve_all_five_table_bytes(
+    inputs: dict[str, Path], tmp_path: Path, union: bool
+) -> None:
+    columns = inputs["matrix"].with_name("taxa_trait_matrix_columns.tsv")
+    write_facultative_metadata(columns, union=union)
+    original = columns.read_bytes()
+    default_output, explicit_output = tmp_path / "default", tmp_path / "explicit"
+    run_audit(inputs, default_output)
+    run_audit(inputs, explicit_output, columns=columns)
+    tables = {
+        "taxon_trait_label_support.tsv",
+        "focal_taxa_trait_support.tsv",
+        "carrier_source_evidence.tsv",
+        "support_threshold_sensitivity.tsv",
+        "coasserted_label_census.tsv",
+    }
+    assert {path.name for path in default_output.glob("*.tsv")} == tables
+    assert {path.name for path in explicit_output.glob("*.tsv")} == tables
+    for name in tables:
+        assert (default_output / name).read_bytes() == (explicit_output / name).read_bytes()
+    for output, selection in ((default_output, "sibling_default"), (explicit_output, "explicit")):
+        record = json.loads((output / "provenance.json").read_text(encoding="utf-8"))
+        assert record["inputs"]["column_metadata"]["selection"] == selection
+        assert record["inputs"]["column_metadata"]["member_id_rows"] == 1
+        assert_facultative_audit_label(
+            output, "facultative (aerobe or anaerobe)" if union else "facultatively aerobic"
+        )
+    assert columns.read_bytes() == original
+
+
+def test_audit_inventories_trait_key_policy_code(inputs: dict[str, Path], tmp_path: Path) -> None:
+    output = tmp_path / "policy-code"
+    run_audit(inputs, output)
+    provenance = json.loads((output / "provenance.json").read_text(encoding="utf-8"))
+    policy_path = Path(trait_key_policy.__file__)
+    assert provenance["trait_key_policy_code"] == {
+        "path": str(policy_path.relative_to(REPO_ROOT)),
+        "sha256": file_sha256(policy_path),
+        "size_bytes": policy_path.stat().st_size,
+    }
 
 
 @pytest.mark.parametrize("invalid", ["directory", "dangling-symlink"])

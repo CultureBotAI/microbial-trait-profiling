@@ -36,7 +36,19 @@ different file. Without the flag, the audit checks for
 `taxa_trait_matrix_columns.tsv` beside the matrix, preserving the sibling default.
 `inputs.column_metadata` records the selected file's `path`, `sha256`, and
 `size_bytes`. If the default sibling is absent, it instead records its candidate
-`path` and `status: absent`; labels then retain their existing raw fallback.
+`path` and `status: absent`. Both forms include `selection` (`explicit` or
+`sibling_default`) and `member_id_rows`.
+
+`member_id_rows` counts parsed source rows with nonempty member IDs in
+`trait_member_ids_json` and at least one nonempty `column_id` or `object_id`.
+A row exposing both identifier aliases counts once; repeated source rows count
+separately. This is the number of available metadata rows, not the number of
+display labels changed or audited traits that used those rows. An absent default,
+an empty file, a missing `trait_member_ids_json` header, or metadata with no
+qualifying rows records zero and retains the existing raw-label fallback. This
+preserves compatibility with historical metadata without member declarations;
+hashing such a file does not imply that its rows supplied member-based labels.
+
 Directories and broken symlinks are refused. The late input check checks this
 same candidate again: changes to the file, its disappearance, or its appearance
 after an initially absent declaration fail before any output tables are written.
@@ -203,7 +215,7 @@ Limits of the pin:
 | `carrier_source_evidence.tsv` | Named KG source fields and optional Madin subsources for each carrier supporting an audited matrix cell. |
 | `support_threshold_sensitivity.tsv` | Six focal traits under seven declared support rules, with effect units, paired/study counts, ties, and nominal study sign tests. |
 | `coasserted_label_census.tsv` | Co-assertion by species, genus, family and other/unknown rank, among bound reported taxa and their occurrences; missing features remain unavailable. |
-| `provenance.json` | SHA256 and size of present inputs (or the explicit absence of default column metadata), all five output tables, producer, matrix policy and Madin verification code, environment lock, scope reconciliation, source rules, the Madin pin and status, and limitations. Inputs, including column-metadata presence, are rechecked before publication. |
+| `provenance.json` | SHA256 and size of present inputs (or the explicit absence of default column metadata), metadata selection and member-ID row count, all five output tables, producer, matrix policy, trait-key policy and Madin verification code, environment lock, scope reconciliation, source rules, the Madin pin and status, and limitations. Inputs, including column-metadata presence, are rechecked before publication. |
 
 A carrier is a distinct NCBITaxon node at or below the reported taxon, including
 the reported taxon itself when it carries an annotation under the selected scope.
@@ -274,6 +286,11 @@ unknown malformed records fail. The sidecar records repair counts and hashes
 the parser and shared trait-definition code. Pipe-joined primary sources are
 split before Madin lookup, preserving each source and its resolution status.
 Table 1 trait membership and the oxygen guild pair use `trait_guilds` definitions.
+The separate `trait_key_policy_code` inventory records the path, SHA256 and size
+of `src/mtp/trait_key_policy.py`, which interprets the recorded member IDs and
+selects display labels. These declarations and late checks do not establish
+that hashing and parsing consumed one immutable byte buffer; that separate
+consistency fix is tracked in #1357.
 
 The broader node-level co-assertion census, mesophilic/psychrophilic and
 facultative-anaerobe/obligate-aerobe pairs, and the off/phenotype/full scope
