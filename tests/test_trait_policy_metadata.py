@@ -608,3 +608,103 @@ def test_unknown_policy_is_rejected() -> None:
     for value in ("", "facultative_union_v2", None, 4):
         with pytest.raises(ValueError, match="trait_key_policy"):
             parse_trait_key_policy(value)
+
+
+@pytest.mark.parametrize("compressed", [False, True], ids=["tsv", "gzip"])
+def test_recorded_member_evidence_counts_rows_without_changing_alias_precedence(
+    tmp_path: Path, compressed: bool
+) -> None:
+    import gzip
+
+    from mtp.trait_key_policy import read_recorded_member_evidence, read_recorded_member_ids
+
+    path = _write(
+        tmp_path / "members.tsv",
+        ["column_id", "object_id", "trait_member_ids_json"],
+        [
+            ["feature-a", "object-x", '["METPO:1000605", "METPO:1000608"]'],
+            ["feature-b", "object-x", '["METPO:1000612"]'],
+            ["feature-a", "object-x", '["METPO:1000608"]'],
+            ["feature-a", "object-x", '["METPO:1000608"]'],
+            ["", " object-y ", '[" METPO:1000612 "]'],
+            [" ", "", '["METPO:1000605"]'],
+            ["empty", "object-z", "[]"],
+            ["blank", "object-z", ""],
+            ["spaces", "object-z", '[" ", ""]'],
+        ],
+    )
+    if compressed:
+        packed = path.with_suffix(".tsv.gz")
+        packed.write_bytes(gzip.compress(path.read_bytes()))
+        path = packed
+    before = path.read_bytes()
+
+    evidence = read_recorded_member_evidence(path)
+
+    # Two aliases from one row count once; repeated rows count separately. A later
+    # column entry replaces that key, while an existing object alias keeps priority.
+    assert evidence.member_id_rows == 5
+    assert evidence.member_ids_by_trait == {
+        "feature-a": ("METPO:1000608",),
+        "object-x": ("METPO:1000605", "METPO:1000608"),
+        "feature-b": ("METPO:1000612",),
+        "object-y": ("METPO:1000612",),
+    }
+    assert read_recorded_member_ids(path) == evidence.member_ids_by_trait
+    assert path.read_bytes() == before
+
+
+@pytest.mark.parametrize("kind", ["absent", "empty", "legacy", "header_only"])
+def test_recorded_member_evidence_exposes_zero_for_legacy_or_absent_metadata(
+    tmp_path: Path, kind: str
+) -> None:
+    from mtp.trait_key_policy import read_recorded_member_evidence, read_recorded_member_ids
+
+    path: Path | None = None
+    if kind != "absent":
+        path = tmp_path / "metadata.tsv"
+        content = {
+            "empty": "",
+            "legacy": "column_id\tobject_name\nMETPO:1000608\tfacultatively aerobic\n",
+            "header_only": "column_id\tobject_id\ttrait_member_ids_json\n",
+        }
+        path.write_text(content[kind], encoding="utf-8")
+
+    evidence = read_recorded_member_evidence(path)
+
+    assert evidence.member_id_rows == 0
+    assert evidence.member_ids_by_trait == {}
+    assert read_recorded_member_ids(path) == {}
+
+
+@pytest.mark.parametrize("members", ["[invalid", '{"id": "METPO:1000608"}', "[1]"])
+def test_recorded_member_evidence_still_refuses_invalid_member_arrays(
+    tmp_path: Path, members: str
+) -> None:
+    from mtp.trait_key_policy import read_recorded_member_evidence
+
+    path = _write(
+        tmp_path / "invalid.tsv",
+        ["column_id", "object_id", "trait_member_ids_json"],
+        [["feature", "object", members]],
+    )
+    with pytest.raises(ValueError, match="trait_member_ids_json"):
+        read_recorded_member_evidence(path)
+
+
+def test_recorded_member_evidence_refuses_an_explicit_missing_file(tmp_path: Path) -> None:
+    from mtp.trait_key_policy import read_recorded_member_evidence
+
+    with pytest.raises(FileNotFoundError, match=r"missing\.tsv"):
+        read_recorded_member_evidence(tmp_path / "missing.tsv")
+
+
+@pytest.mark.parametrize("field", ["member_ids_by_trait", "member_id_rows"])
+def test_recorded_member_evidence_is_a_frozen_result(field: str) -> None:
+    from dataclasses import FrozenInstanceError
+
+    from mtp.trait_key_policy import read_recorded_member_evidence
+
+    evidence = read_recorded_member_evidence(None)
+    with pytest.raises(FrozenInstanceError):
+        setattr(evidence, field, None)
