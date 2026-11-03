@@ -134,14 +134,17 @@ SELECTION_NOTE = (
     "the six Table 1 traits were selected on this corpus by the composition arm; "
     "correcting within them is not independent confirmation"
 )
-#: The guild rows carried "fixed a priori", which nothing in this repository
-#: establishes (#294). The note also said the aerobe guild contains METPO:1000608,
-#: one of the six traits the composition arm selected on this corpus. Since #1237
-#: neither oxygen guild contains it, under either trait-key policy.
+#: The guild rows carried "fixed a priori" with no record of where or when (#294).
+#: The note also said the aerobe guild contains METPO:1000608, one of the six
+#: traits the composition arm selected on this corpus. Since #1237 neither oxygen
+#: guild contains it, under either trait-key policy, and the note says the
+#: membership was revised after results existed, on semantic grounds (#1345).
 GUILD_SELECTION_NOTE = (
-    "the two oxygen guilds are the groupings both arms use, with no record in this "
-    "repository of where or when they were declared; neither guild contains "
-    "METPO:1000608, one of the six traits selected on this corpus (#1237)"
+    "the two oxygen guilds are the groupings both arms use; they were fixed before "
+    "the analysis, with no record in this repository of where or when, and revised "
+    "once (#1237) to separate facultative from aerobe annotations on semantic "
+    "grounds, not on results; neither guild contains METPO:1000608, one of the six "
+    "traits selected on this corpus"
 )
 #: No single cutoff is native to all three families collected here, so each row
 #: is decided at both and each threshold names where it comes from (#294). The

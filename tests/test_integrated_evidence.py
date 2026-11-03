@@ -853,11 +853,16 @@ def test_a_record_carries_the_selection_note() -> None:
 def test_the_guild_selection_note_matches_the_guild_definition() -> None:
     """Every guild row carries this note, so it must not claim a member the guild lacks.
 
-    It said the aerobe guild contains METPO:1000608. Since #1237 no oxygen guild does.
+    It said the aerobe guild contains METPO:1000608. Since #1237 no oxygen guild does,
+    and the note says the membership was revised once, on semantic grounds (#1345).
     """
     assert all("METPO:1000608" not in terms for terms in OXYGEN_GUILDS.values())
     assert "aerobe guild contains" not in GUILD_SELECTION_NOTE
     assert "neither guild contains METPO:1000608" in GUILD_SELECTION_NOTE
+    assert "fixed before the analysis" in GUILD_SELECTION_NOTE
+    assert "revised once (#1237)" in GUILD_SELECTION_NOTE
+    assert "on semantic grounds, not on results" in GUILD_SELECTION_NOTE
+    assert "a priori" not in GUILD_SELECTION_NOTE
 
 
 def test_a_zero_total_pair_is_excluded_rather_than_counted_as_a_tie() -> None:
