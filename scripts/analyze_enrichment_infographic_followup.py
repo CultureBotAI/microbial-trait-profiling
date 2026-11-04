@@ -18,6 +18,7 @@ import seaborn as sns
 from matplotlib.patches import Patch
 
 from mtp.composition_denominators import retained_trait_counts, trait_fractions
+from mtp.trait_guilds import OXYGEN_GUILDS
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = (
@@ -66,15 +67,16 @@ INFOGRAPHIC_TOP_TRAITS = {
     "METPO:1002005": "Fermentation",
     "METPO:1000604": "microaerophilic",
 }
+_OXYGEN_TRAIT_LABELS = {
+    "METPO:1000602": "aerobic",
+    "METPO:1000604": "microaerophilic",
+    "METPO:1000603": "anaerobic",
+    "METPO:1000607": "obligately anaerobic",
+}
 GUILD_TRAITS = {
-    "aerobe_v2": {
-        "METPO:1000602": "aerobic",
-        "METPO:1000604": "microaerophilic",
-        "METPO:1000608": "facultatively aerobic",
-    },
+    "aerobe_v2": {trait_id: _OXYGEN_TRAIT_LABELS[trait_id] for trait_id in OXYGEN_GUILDS["aerobe"]},
     "anaerobe_v2_depletion": {
-        "METPO:1000603": "anaerobic",
-        "METPO:1000607": "obligately anaerobic",
+        trait_id: _OXYGEN_TRAIT_LABELS[trait_id] for trait_id in OXYGEN_GUILDS["anaerobe"]
     },
 }
 AUTISM_LABELS = ("Autism", "Autism spectrum disorder")

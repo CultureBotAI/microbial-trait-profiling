@@ -32,22 +32,19 @@ from mtp.human_host_corpus import (
     excluded_host_summary,
     join_human_host_profiles,
 )
+from mtp.trait_guilds import OXYGEN_GUILDS
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VIS_DIR = REPO_ROOT / "trait-visualization"
 OUTPUT_DIR = VIS_DIR / "trait-profile-investigation" / "aerobe-enrichment-v2"
 PROFILE_MATRIX_PATH = REPO_ROOT / "data/derived/study_trait_profiles_wide.tsv"
 
-GUILD_TRAITS = {
-    "METPO:1000608": "facultatively aerobic",
+_AEROBE_TRAIT_LABELS = {
     "METPO:1000602": "aerobic",
     "METPO:1000604": "microaerophilic",
 }
+GUILD_TRAITS = {trait_id: _AEROBE_TRAIT_LABELS[trait_id] for trait_id in OXYGEN_GUILDS["aerobe"]}
 GUILD_TRAIT_SELECTION_JUSTIFICATIONS = {
-    "METPO:1000608": (
-        "Primary facultatively aerobic concept; selected as one core trait for the "
-        "increased-profile aerobe v2 oxygen-tolerance trait set."
-    ),
     "METPO:1000602": (
         "Oxygen-positive growth trait; selected to capture taxa whose profile signal is "
         "consistent with aerobic oxygen tolerance."
@@ -57,11 +54,7 @@ GUILD_TRAIT_SELECTION_JUSTIFICATIONS = {
         "without broadening the score to unrelated metabolic traits."
     ),
 }
-KG_MICROBE_TAXON_UNIVERSE_TRAITS = {
-    "METPO:1000608": "facultatively aerobic",
-    "METPO:1000602": "aerobic",
-    "METPO:1000604": "microaerophilic",
-}
+KG_MICROBE_TAXON_UNIVERSE_TRAITS = dict(GUILD_TRAITS)
 KG_MICROBE_TAXON_UNIVERSE_ASSOCIATED_TRAITS: dict[str, str] = {}
 
 TARGET_TAXA = {
@@ -103,7 +96,7 @@ INFERRED_GUILD_TOP_TAXA_PER_GROUP = 12
 MIN_KG_MICROBE_UNIVERSE_CORE_TRAITS = 1
 GUILD_SPECIFIC_NOTE = (
     "Guild-specific: yes - uses the aerobe v2 trait-enrichment score "
-    "(facultatively aerobic, aerobic, microaerophilic)."
+    f"({', '.join(GUILD_TRAITS.values())})."
 )
 NON_GUILD_SPECIFIC_TARGET_TAXA_NOTE = (
     "Guild-specific: no - fixed target-taxon count view; "
@@ -1694,7 +1687,7 @@ def write_summary_report(
         "| plot | guild-specific? | basis |",
         "| --- | --- | --- |",
         "| `condition_increased_guild_signal.png` | yes | v2 trait-enrichment score by condition |",
-        "| `guild_trait_direction_shift.png` | yes | the three selected v2 traits |",
+        "| `guild_trait_direction_shift.png` | yes | the two selected v2 traits |",
         "| `anatomical_sites_diagram.png` | yes | v2 trait-enrichment score by body-site group |",
         "| `candidate_taxa_increased_profile_tendency.png` | no | "
         "fixed target-taxon direction counts |",
