@@ -63,8 +63,13 @@ DIRECTION_REQUIRED_SCRIPTS = frozenset(
         "scripts/create_study_trait_profile_heatmap.py",
     }
 )
-# These additional scripts expose their execution parser but do not accept a basis.
-FULL_PARSER_SCRIPTS = frozenset({"scripts/create_condition_trait_module_heatmap.py"})
+# These scripts expose their execution parser; their basis is absent or derived from a core.
+FULL_PARSER_SCRIPTS = frozenset(
+    {
+        "scripts/create_condition_trait_module_heatmap.py",
+        "scripts/create_taxa_coverage_histogram.py",
+    }
+)
 INPUT_NAMES = {
     "raw_dump": "full_dump.csv",
     "kg_edges": "merged-kg_edges.tsv",

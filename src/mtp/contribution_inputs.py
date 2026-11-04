@@ -21,6 +21,11 @@ from mtp.taxa_trait_matrix import (
     strain_trait_rolls_up,
 )
 from mtp.trait_guilds import MEDIADIVE_MARKER, TABLE1_TRAITS, column_term_id
+from mtp.trait_key_policy import (
+    DEFAULT_TRAIT_KEY_POLICY,
+    TraitKeyPolicy,
+    parse_trait_key_policy,
+)
 
 Key = tuple[str, str, str]
 Pair = tuple[str, str]
@@ -223,6 +228,8 @@ def load_graph(
     columns: set[str],
     six: set[str],
     strain_rollup: StrainRollup = PRIMARY_STRAIN_ROLLUP,
+    *,
+    trait_key_policy: TraitKeyPolicy = DEFAULT_TRAIT_KEY_POLICY,
 ) -> Graph:
     """Read the taxonomy, retained traits and six-trait edge provenance of the KG.
 
@@ -230,7 +237,10 @@ def load_graph(
     at the strains' linked NCBITaxon nodes by the builder's rule, and their edges are
     assertions of those nodes. The default is the primary scope, which the legacy matrix
     builder also defaults to (#788).
+    Historical raw-vocabulary matrices require explicit ``raw_object_v1``. Retained
+    column names cannot establish policy; standalone callers keep the current union.
     """
+    trait_key_policy = parse_trait_key_policy(trait_key_policy)
     parents: defaultdict[str, set[str]] = defaultdict(set)
     traits: defaultdict[str, set[str]] = defaultdict(set)
     assertions: defaultdict[tuple[str, str], list[Assertion]] = defaultdict(list)
@@ -268,7 +278,7 @@ def load_graph(
             if predicate == "biolink:subclass_of" and obj.startswith("NCBITaxon:"):
                 (strain_taxa if strain else parents)[subject].add(obj)
             elif predicate.startswith("METPO:") or obj.startswith("METPO:"):
-                key = make_trait_key(predicate, obj)
+                key = make_trait_key(predicate, obj, trait_key_policy=trait_key_policy)
                 if key not in columns or (strain and not strain_trait_rolls_up(key, strain_rollup)):
                     continue
                 (strain_traits if strain else traits)[subject].add(key)

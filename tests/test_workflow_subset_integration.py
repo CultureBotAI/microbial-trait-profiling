@@ -20,6 +20,7 @@ from mtp.workflow.arms import runtime as arm_runtime
 from mtp.workflow.arms.noel import build_commands
 from mtp.workflow.arms.runtime import execute_arm, verify_arm
 from mtp.workflow.arms.types import ArmContext, Command
+from mtp.workflow.consumers import verify_consumer_record
 from mtp.workflow.operations import OPERATIONS, validate_execution_product
 from mtp.workflow.runtime import artifact_path, content_hash, execute_workflow, validate_run
 from mtp.workflow.verification import verify_core_run
@@ -107,6 +108,55 @@ def test_subset_retains_source_background_and_exact_oriented_profile_values(
     assert audit["counts"]["source"]["experiments"] > audit["counts"]["selected"]["experiments"]
     assert file_sha256(artifact_path(original, "reported_taxa")) == file_sha256(
         artifact_path(selected, "source_reported_taxa")
+    )
+
+
+def test_jed_coverage_cli_consumes_the_real_verified_subset(
+    cores: dict[str, WorkflowRun], tmp_path: Path
+) -> None:
+    """No mocked verifier: the CLI's native record binds the already oriented core (#1344)."""
+    core = cores["subset"]
+    output = tmp_path / "coverage-from-real-core"
+    subprocess.run(
+        [
+            sys.executable,
+            str(REPO_ROOT / "scripts/create_taxa_coverage_histogram.py"),
+            "--core-run",
+            core.manifest_path,
+            "--output-dir",
+            str(output),
+            "--contrast-population",
+            POPULATION,
+            "--direction-basis",
+            "disease_vs_comparison",
+            "--tables-only",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    record = verify_consumer_record(output / "core_consumption.json")
+    assert record.run_id == core.run_id
+    assert record.run_manifest_path == core.manifest_path
+    assert {"reported_taxa", "kg_edges", "kg_nodes"} <= set(record.product_ids)
+    assert record.feature_policy == "include_mediadive"
+    summary = _rows(output / "profile_trait_mapping_summary.tsv")
+    key_fields = ("study_id", "experiment_id", "inc_dec")
+    observed = {tuple(row[field] for field in key_fields): row for row in summary}
+    native = _rows(artifact_path(core, "count_profiles"))
+    expected = {tuple(row[field] for field in key_fields): row for row in native}
+    assert len(observed) == len(summary) == 4
+    assert observed.keys() == expected.keys()
+    for key, row in expected.items():
+        assert int(observed[key]["mapped_trait_count"]) == sum(
+            int(value) > 0 for column, value in row.items() if column not in key_fields
+        )
+    provenance = json.loads((output / "provenance.json").read_text())
+    assert provenance["population"]["contrast_filter"] == POPULATION
+    assert provenance["population"]["direction_basis"] == "disease_vs_comparison"
+    assert "kg_provenance" not in provenance["inputs"]
+    assert provenance["inputs"]["profiles"]["sha256"] == file_sha256(
+        artifact_path(core, "count_profiles")
     )
 
 

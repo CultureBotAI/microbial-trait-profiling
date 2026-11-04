@@ -235,6 +235,52 @@ def build_commands(context: ArmContext) -> list[Command]:
                 (context.manifest, *core_profile_inputs),
                 ("table1_traits_direction_shift.tsv", "core_consumption.json"),
             ),
+            _directory_command(
+                context,
+                "taxa_coverage",
+                _script(context, "create_taxa_coverage_histogram.py"),
+                {
+                    "--core-run": context.manifest,
+                    "--code-commit": context.code_commit,
+                    "--strain-rollup": context.strain_rollup,
+                    "--contrast-population": context.contrast_population,
+                    "--direction-basis": context.direction_basis,
+                },
+                (
+                    context.manifest,
+                    products["count_profiles"],
+                    taxa,
+                    products["taxa_matrix"],
+                    experiments,
+                    raw_dump,
+                    products["kg_edges"],
+                    products["kg_nodes"],
+                    products["source_identity"],
+                ),
+                (
+                    "taxa_coverage_by_rank.tsv",
+                    "profile_coverage_by_rank.tsv",
+                    "profile_trait_mapping_summary.tsv",
+                    "taxa_kgmicrobe_coverage_details.tsv",
+                    "top_zero_trait_bugsigdb_taxa.tsv",
+                    "README.md",
+                    "provenance.json",
+                    "core_consumption.json",
+                    "core_consumption.coverage.tsv",
+                    *(
+                        f"{name}.{suffix}"
+                        for name in (
+                            "taxa_coverage_histogram_rank_stratified",
+                            "taxa_coverage_occurrences_vs_unique",
+                            "taxa_profile_distribution_by_rank",
+                            "histogram1_mapped_traits_and_taxa_per_profile",
+                            "histogram2_taxa_trait_counts_and_zero_trait_frequency",
+                            "taxa_trait_count_distribution",
+                        )
+                        for suffix in ("png", "svg")
+                    ),
+                ),
+            ),
         ]
     )
     return commands

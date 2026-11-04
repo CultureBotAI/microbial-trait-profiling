@@ -38,10 +38,23 @@ from mtp.human_host_corpus import (
     experiment_in_profile_population,
 )
 from mtp.paths import file_sha256
+from mtp.population_tables import (
+    get_population_selection,
+    select_profiles_pandas,
+    select_taxa_pandas,
+    selection_from_verified_core,
+)
 from mtp.study_trait_profiles import direction_to_inc_dec
+from mtp.taxa_coverage_inputs import CoverageInputs, bind_coverage_inputs
 from mtp.taxa_trait_matrix import STRAIN_ROLLUPS, StrainRollup, parse_strain_rollup
 from mtp.trait_guilds import MEDIADIVE_MARKER, read_bugsigdb_vintage
+from mtp.workflow.consumers import (
+    core_corpus_identity,
+    preflight_consumer_outputs,
+    write_consumer_record,
+)
 from mtp.workflow.kg_inputs import iter_kg_edges
+from mtp.workflow.population import NATIVE_DIRECTION_BASIS, ORIENTED_DIRECTION_BASIS, POPULATIONS
 from mtp.workflow.runtime import repository_state
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -379,20 +392,47 @@ def load_and_process_data(
     profiles: Path = PROFILES_WIDE_PATH,
     experiments: Path = EXPERIMENTS_PATH,
     taxonomy_edges: Path | None = None,
+    contrast_population: str = "as_supplied",
+    direction_basis: str = NATIVE_DIRECTION_BASIS,
+    raw_dump: Path | None = None,
+    core_inputs: CoverageInputs | None = None,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Load coverage tables and supplied taxonomy; diagnose without changing coverage counts."""
+    identity_options: dict[str, Any] = (
+        {"dtype": {"study_id": str, "experiment_id": str}}
+        if core_inputs is not None or contrast_population != "as_supplied"
+        else {}
+    )
     print(f"Reading taxa occurrences from {taxa}...")
-    taxa_df = read_tsv(taxa)
+    taxa_df = read_tsv(taxa, **identity_options)
 
     print(f"Reading taxa trait matrix from {matrix}...")
     matrix_df = read_tsv(matrix)
 
     print(f"Reading study trait profiles from {profiles}...")
-    profiles_df = read_tsv(profiles)
+    profiles_df = read_tsv(profiles, **identity_options)
     input_profile_count = len(profiles_df)
     input_occurrence_count = len(taxa_df)
+    selection = None
+    if core_inputs is not None:
+        selection = selection_from_verified_core(
+            profiles_df,
+            contrast_population=core_inputs.contrast_population,
+            direction_basis=core_inputs.direction_basis,
+        )
+    elif contrast_population != "as_supplied":
+        selection = get_population_selection(
+            profiles,
+            experiments,
+            contrast_population=contrast_population,
+            input_direction_basis=direction_basis,
+            raw_dump_path=raw_dump,
+        )
+    if selection is not None:
+        profiles_df = select_profiles_pandas(profiles_df, selection)
+        taxa_df = select_taxa_pandas(taxa_df, selection)
     taxa_df, matrix_df, profiles_df = select_corpus(
-        taxa_df, matrix_df, profiles_df, read_tsv(experiments)
+        taxa_df, matrix_df, profiles_df, read_tsv(experiments, **identity_options)
     )
 
     meta_cols = ["taxon_id", "taxon_name", "taxonomic_rank"]
@@ -677,6 +717,14 @@ def load_and_process_data(
     # Validate every selected reported taxon, not only the displayed top 100.
     placements = {str(taxon): taxonomy.classify(str(taxon)) for taxon in taxa_master.taxon_id}
     prof_summary.attrs["taxonomy_audit"] = taxonomy.audit
+    if selection is not None:
+        prof_summary.attrs["contrast_selection"] = {
+            "contrast_population": selection.contrast_population,
+            "input_direction_basis": selection.input_direction_basis,
+            "output_direction_basis": selection.output_direction_basis,
+            "reoriented_experiments": len(selection.keys_to_flip),
+            "source": "verified_core" if core_inputs is not None else "explicit_selection",
+        }
     top_zero_records: list[dict[str, Any]] = []
     for rank_idx, (_, row) in enumerate(zero_taxa_df.head(100).iterrows(), start=1):
         placement = placements[str(row["taxon_id"])]
@@ -2337,6 +2385,10 @@ def write_readme(
     output: Path,
     strain_rollup: StrainRollup,
     regeneration_command: str,
+    *,
+    core_inputs: CoverageInputs | None = None,
+    contrast_population: str = "as_supplied",
+    direction_basis: str = NATIVE_DIRECTION_BASIS,
 ) -> None:
     """Write the coverage narrative from the same frames as the backing tables."""
     mapped = profiles.loc[profiles.has_mapped_traits]
@@ -2363,12 +2415,48 @@ def write_readme(
         "# Taxa coverage and profile annotation mapping",
         "",
         f"Population: {HUMAN_HOST_SPECIES}; sequencing types {', '.join(CORPUS_SEQUENCING_TYPES)}.",
-        "No contrast-class, control-tier, pairing or direction-orientation restriction is applied.",
-        f"Declared upstream strain-rollup scope: `{strain_rollup}`.",
-        "This required caller declaration is recorded as `declared_unverified`.",
-        "Input hashes and count reconciliation bind the consumed tables but",
-        "do not verify the upstream rollup scope; no scope is inferred from feature counts.",
-        "Profiles are study / experiment / curated direction; taxa and signature mentions",
+        *(
+            [
+                "No contrast-class, control-tier, pairing or direction-orientation "
+                "restriction is applied."
+            ]
+            if core_inputs is None and contrast_population == "as_supplied"
+            else [
+                f"Contrast population: `{contrast_population}`; "
+                f"direction basis: `{direction_basis}`.",
+                "Core directions are used unchanged; no second contrast selection "
+                "or orientation is applied."
+                if core_inputs is not None
+                else "The explicitly requested contrast selection is applied "
+                "before coverage reconciliation.",
+            ]
+        ),
+        *(
+            [f"Input direction basis: `{direction_basis}`; supplied directions are unchanged."]
+            if core_inputs is None
+            and contrast_population == "as_supplied"
+            and direction_basis != NATIVE_DIRECTION_BASIS
+            else []
+        ),
+        *(
+            [
+                f"Declared upstream strain-rollup scope: `{strain_rollup}`.",
+                "This required caller declaration is recorded as `declared_unverified`.",
+                "Input hashes and count reconciliation bind the consumed tables but",
+                "do not verify the upstream rollup scope; "
+                "no scope is inferred from feature counts.",
+            ]
+            if core_inputs is None
+            else [
+                f"Verified upstream strain-rollup scope: `{strain_rollup}`.",
+                "Scope, population, directions and KG inputs bind to the supplied core execution.",
+            ]
+        ),
+        "Profiles are study / experiment / recorded direction; taxa and signature mentions"
+        if core_inputs is not None
+        or contrast_population != "as_supplied"
+        or direction_basis != NATIVE_DIRECTION_BASIS
+        else "Profiles are study / experiment / curated direction; taxa and signature mentions",
         "are restricted to those same profiles. The matrix is restricted to the profile "
         "vocabulary,",
         "including MediaDive columns if present. Source hashes and exclusions are in "
@@ -2415,8 +2503,20 @@ def write_readme(
             "heuristics for review, not verified causes or permission to propagate "
             "annotations downward.",
             "Taxonomic placement uses NCBITaxon subclass-of ancestry in the supplied",
-            "`--taxonomy-edges` file. This input is hashed independently; its identity as the",
-            "matrix's producing KG is not verified. The top-zero table records taxonomy_group,",
+            *(
+                [
+                    "`--taxonomy-edges` file. This input is hashed independently; "
+                    "its identity as the",
+                    "matrix's producing KG is not verified. "
+                    "The top-zero table records taxonomy_group,",
+                ]
+                if core_inputs is None
+                else [
+                    "verified core's KG edges. The matrix and taxonomy "
+                    "share that verified source identity.",
+                    "The top-zero table records taxonomy_group,",
+                ]
+            ),
             "taxonomy_status and JSON taxonomy_root_ids. Missing paths are explicit; conflicting",
             "recognized roots or reachable cycles reject the run before outputs are written.",
             "Ontology rank-class edges are excluded from organism ancestry and counted in",
@@ -2463,26 +2563,72 @@ def regeneration_path(path: Path) -> str:
 def run_coverage(
     *,
     output_dir: Path,
-    strain_rollup: str,
-    taxa: Path = TAXA_PATH,
-    matrix: Path = TAXA_TRAIT_MATRIX_PATH,
-    profiles: Path = PROFILES_WIDE_PATH,
-    experiments: Path = EXPERIMENTS_PATH,
+    strain_rollup: str | None,
+    taxa: Path | None = None,
+    matrix: Path | None = None,
+    profiles: Path | None = None,
+    experiments: Path | None = None,
     taxonomy_edges: Path | None = None,
     tables_only: bool = False,
-    kg_provenance: Path = DEFAULT_KG_PROVENANCE_PATH,
+    kg_provenance: Path | None = None,
     bugsigdb_vintage: str | None = None,
     raw_dump: Path | None = None,
+    core_run: Path | None = None,
+    code_commit: str | None = None,
+    contrast_population: str | None = None,
+    direction_basis: str | None = None,
 ) -> None:
     """Validate first, then write data-derived outputs and a consumed-byte manifest."""
-    scope = parse_strain_rollup(strain_rollup)
-    inputs = {
-        "taxa": taxa,
-        "matrix": matrix,
-        "profiles": profiles,
-        "experiments": experiments,
-        "taxonomy_edges": taxonomy_edges or TAXONOMY_EDGES_PATH,
-    }
+    bound = None
+    if core_run is not None:
+        if kg_provenance is not None:
+            raise ValueError(
+                "--core-run conflicts with --kg-provenance; use the bound core identity"
+            )
+        bound = bind_coverage_inputs(
+            core_run,
+            supplied={
+                "taxa": taxa,
+                "matrix": matrix,
+                "profiles": profiles,
+                "experiments": experiments,
+                "taxonomy_edges": taxonomy_edges,
+                "raw_dump": raw_dump,
+            },
+            strain_rollup=strain_rollup,
+            contrast_population=contrast_population,
+            direction_basis=direction_basis,
+        )
+        scope = bound.strain_rollup
+        contrast_population, direction_basis = bound.contrast_population, bound.direction_basis
+        inputs = {
+            name: bound.paths[name]
+            for name in ("taxa", "matrix", "profiles", "experiments", "taxonomy_edges")
+        }
+        raw_dump = bound.paths["raw_dump"]
+        preflight_consumer_outputs(
+            bound.bundle,
+            output_dir / "core_consumption.json",
+            output_directory=output_dir,
+        )
+    else:
+        scope = parse_strain_rollup(strain_rollup)
+        contrast_population = contrast_population or "as_supplied"
+        direction_basis = direction_basis or NATIVE_DIRECTION_BASIS
+        if contrast_population not in {"as_supplied", *POPULATIONS}:
+            raise ValueError(f"Unknown contrast population: {contrast_population!r}")
+        if direction_basis not in {NATIVE_DIRECTION_BASIS, ORIENTED_DIRECTION_BASIS}:
+            raise ValueError(f"Unknown direction basis: {direction_basis!r}")
+        if contrast_population not in {"as_supplied", "all_paired"} and raw_dump is None:
+            raise ValueError("--raw-dump is required for standalone contrast subset selection")
+        inputs = {
+            "taxa": taxa or TAXA_PATH,
+            "matrix": matrix or TAXA_TRAIT_MATRIX_PATH,
+            "profiles": profiles or PROFILES_WIDE_PATH,
+            "experiments": experiments or EXPERIMENTS_PATH,
+            "taxonomy_edges": taxonomy_edges or TAXONOMY_EDGES_PATH,
+        }
+    profiles = inputs["profiles"]
     consumed = {**inputs}
     selected_dump = raw_dump or REPO_ROOT / "data/raw/full_dump.csv"
     if raw_dump is not None and not raw_dump.is_file():
@@ -2492,8 +2638,13 @@ def run_coverage(
         consumed["raw_dump"] = selected_dump
         if not declared_vintage:
             bugsigdb_vintage = read_bugsigdb_vintage(selected_dump)
-    if kg_provenance.is_file():
-        consumed["kg_provenance"] = kg_provenance
+    if bound is None:
+        kg_provenance = kg_provenance or DEFAULT_KG_PROVENANCE_PATH
+        if kg_provenance.is_file():
+            consumed["kg_provenance"] = kg_provenance
+    else:
+        consumed.update({name: bound.paths[name] for name in ("kg_nodes", "source_identity")})
+        consumed["core_run"] = bound.bundle.manifest
     input_records = {
         name: {
             "file": provenance_path(path),
@@ -2502,22 +2653,35 @@ def run_coverage(
         }
         for name, path in consumed.items()
     }
-    identity = corpus_identity(
-        profiles, bugsigdb_vintage=bugsigdb_vintage, kg_provenance_path=kg_provenance
-    )
-    identity = replace(
-        identity,
-        matrix=replace(identity.matrix, path=provenance_path(profiles)),
-        kg_provenance_path=provenance_path(kg_provenance),
-        kg_release_tag=(identity.kg_release_tag or "unknown").replace(
-            str(kg_provenance), provenance_path(kg_provenance)
-        ),
-    )
+    if bound is not None:
+        identity = core_corpus_identity(bound.bundle, bugsigdb_vintage=bugsigdb_vintage)
+    else:
+        if kg_provenance is None:
+            raise ValueError("Standalone KG identity path is missing")
+        identity = corpus_identity(
+            profiles, bugsigdb_vintage=bugsigdb_vintage, kg_provenance_path=kg_provenance
+        )
+        identity = replace(
+            identity,
+            matrix=replace(identity.matrix, path=provenance_path(profiles)),
+            kg_provenance_path=provenance_path(kg_provenance),
+            kg_release_tag=(identity.kg_release_tag or "unknown").replace(
+                str(kg_provenance), provenance_path(kg_provenance)
+            ),
+        )
     commit, dirty = repository_state(REPO_ROOT)
+    if code_commit is not None and code_commit.removesuffix("+dirty") != commit:
+        raise ValueError("Declared code commit differs from the executing producer")
 
     # 1. Load data and compute statistics
     taxa_master, rank_df, prof_rank_df, prof_summary, _prof_taxa, top_zero_df = (
-        load_and_process_data(**inputs)
+        load_and_process_data(
+            **inputs,
+            contrast_population=contrast_population,
+            direction_basis=direction_basis,
+            raw_dump=selected_dump if selected_dump.is_file() else None,
+            core_inputs=bound,
+        )
     )
     if (
         tables_only
@@ -2557,10 +2721,19 @@ def run_coverage(
     print(f"  Written top 100 zero-trait diagnosis table: {top_zero_tsv_path}")
 
     regeneration = ["just", "taxa-coverage", "--strain-rollup", scope]
-    for name, path in {**inputs, "output-dir": out_dir, "kg-provenance": kg_provenance}.items():
+    regenerate_paths = {**inputs, "output-dir": out_dir}
+    if bound is not None:
+        regenerate_paths = {"core-run": bound.bundle.manifest, "output-dir": out_dir}
+    elif kg_provenance is not None:
+        regenerate_paths["kg-provenance"] = kg_provenance
+    for name, path in regenerate_paths.items():
         regeneration.extend([f"--{name.replace('_', '-')}", regeneration_path(path)])
-    if "raw_dump" in consumed:
+    if "raw_dump" in consumed and bound is None:
         regeneration.extend(["--raw-dump", regeneration_path(selected_dump)])
+    if contrast_population != "as_supplied":
+        regeneration.extend(["--contrast-population", contrast_population])
+    if direction_basis != NATIVE_DIRECTION_BASIS or bound is not None:
+        regeneration.extend(["--direction-basis", direction_basis])
     if declared_vintage and bugsigdb_vintage is not None:
         regeneration.extend(["--bugsigdb-vintage", bugsigdb_vintage])
     if tables_only:
@@ -2572,6 +2745,11 @@ def run_coverage(
         out_dir / "README.md",
         scope,
         shlex.join(regeneration),
+        core_inputs=bound,
+        contrast_population=contrast_population,
+        direction_basis=prof_summary.attrs.get("contrast_selection", {}).get(
+            "output_direction_basis", direction_basis
+        ),
     )
 
     # 3. Generate visualizations unless explicitly testing/exporting tables only.
@@ -2645,9 +2823,45 @@ def run_coverage(
             for name in output_names
         },
     }
+    if bound is not None:
+        provenance["strain_rollup_evidence"] = {
+            "status": "verified_core",
+            "source": str(bound.bundle.manifest),
+            "run_id": bound.bundle.run.run_id,
+        }
+        provenance["taxonomy_diagnosis"].update(
+            matrix_kg_identity="verified_core",
+            limitation="Taxonomy and matrix inputs bind to one verified core; "
+            "diagnosis suggestions remain hypotheses for review",
+        )
+    if bound is not None or contrast_population != "as_supplied":
+        provenance["population"].update(
+            contrast_filter=contrast_population,
+            direction_basis=prof_summary.attrs["contrast_selection"]["output_direction_basis"],
+        )
+        provenance["contrast_selection"] = prof_summary.attrs["contrast_selection"]
+    elif direction_basis != NATIVE_DIRECTION_BASIS:
+        provenance["population"].update(
+            direction_basis=direction_basis, direction_basis_source="declared_input"
+        )
+    provenance["producer"]["coverage_inputs_sha256"] = file_sha256(
+        REPO_ROOT / "src/mtp/taxa_coverage_inputs.py"
+    )
+    provenance["producer"]["population_tables_sha256"] = file_sha256(
+        REPO_ROOT / "src/mtp/population_tables.py"
+    )
     (out_dir / "provenance.json").write_text(
         json.dumps(provenance, indent=2) + "\n", encoding="utf-8"
     )
+    if bound is not None:
+        write_consumer_record(
+            bound.bundle,
+            out_dir / "core_consumption.json",
+            consumer="mtp.taxa_coverage",
+            feature_policy="include_mediadive",
+            additional_products=("reported_taxa", "kg_edges", "kg_nodes"),
+            outputs=[out_dir / name for name in [*output_names, "provenance.json"]],
+        )
 
 
 FIGURE_STEMS = (
@@ -2687,32 +2901,49 @@ def render_figures(
     )
 
 
-def main() -> None:
-    """Execute the explicit-I/O coverage recipe."""
-    parser = argparse.ArgumentParser(description=__doc__)
+def build_parser(
+    parser_class: type[argparse.ArgumentParser] = argparse.ArgumentParser,
+) -> argparse.ArgumentParser:
+    """Expose the full CLI grammar to the verified arm's recorded-command validator."""
+    parser = parser_class(description=__doc__)
+    parser.add_argument(
+        "--core-run", type=Path, help="Use one verified core and its recorded population"
+    )
+    parser.add_argument(
+        "--code-commit", help="Expected executing commit; a recorded +dirty suffix is ignored"
+    )
     parser.add_argument(
         "--strain-rollup",
         choices=STRAIN_ROLLUPS,
-        required=True,
-        help="Declare the upstream scope; hashes/reconciliation do not verify this declaration",
+        help="Required without --core-run; otherwise must match the verified core",
     )
     parser.add_argument("--output-dir", type=Path, default=OUTPUT_DIR)
-    parser.add_argument("--taxa", type=Path, default=TAXA_PATH)
-    parser.add_argument("--matrix", type=Path, default=TAXA_TRAIT_MATRIX_PATH)
-    parser.add_argument("--profiles", type=Path, default=PROFILES_WIDE_PATH)
-    parser.add_argument("--experiments", type=Path, default=EXPERIMENTS_PATH)
+    parser.add_argument("--taxa", type=Path)
+    parser.add_argument("--matrix", type=Path)
+    parser.add_argument("--profiles", type=Path)
+    parser.add_argument("--experiments", type=Path)
     parser.add_argument(
         "--taxonomy-edges",
         type=Path,
-        default=TAXONOMY_EDGES_PATH,
-        help="KG edges for lineage-based diagnoses; hashed independently of the producing matrix",
+        help="KG edges for lineage-based diagnoses; must match --core-run when supplied",
     )
-    parser.add_argument("--kg-provenance", type=Path, default=DEFAULT_KG_PROVENANCE_PATH)
+    parser.add_argument("--kg-provenance", type=Path, help="Standalone download sidecar only")
     parser.add_argument("--bugsigdb-vintage", help="Override the vintage read from the raw dump")
     parser.add_argument(
         "--raw-dump",
         type=Path,
-        help="Raw dump for vintage; defaults to data/raw/full_dump.csv when present",
+        help="Required for standalone contrast subsets; otherwise used for vintage "
+        "(default data/raw/full_dump.csv when present)",
+    )
+    parser.add_argument(
+        "--contrast-population",
+        choices=("as_supplied", *POPULATIONS),
+        help="Standalone default: as_supplied. Core mode inherits its verified population",
+    )
+    parser.add_argument(
+        "--direction-basis",
+        choices=(NATIVE_DIRECTION_BASIS, ORIENTED_DIRECTION_BASIS),
+        help="Standalone input basis defaults to group_1_vs_group_0; core mode inherits its basis",
     )
     parser.add_argument(
         "--tables-only",
@@ -2720,7 +2951,16 @@ def main() -> None:
         help="Write tables, README and provenance without rendering figures "
         "(use a separate directory)",
     )
-    run_coverage(**vars(parser.parse_args()))
+    return parser
+
+
+def main() -> None:
+    """Execute the explicit-I/O coverage recipe, preserving standalone defaults."""
+    parser = build_parser()
+    args = parser.parse_args()
+    if args.core_run is None and args.strain_rollup is None:
+        parser.error("--strain-rollup is required without --core-run")
+    run_coverage(**vars(args))
 
 
 if __name__ == "__main__":

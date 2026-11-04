@@ -156,6 +156,12 @@ evidence-resolve archive original:
 rerun-core output raw edges nodes *ARGS:
 	uv run python -m mtp.workflow prepare-core "$@"
 
+# Historical 548-study rule, not a fixed count. Explicit sources; just 1.39-compatible.
+# Optional positional values name the strain scope and source mode, respectively.
+[positional-arguments]
+rerun-core-548 output raw edges nodes strain_rollup="phenotype" source_mode="pinned":
+	uv run python -m mtp.workflow prepare-core "$1" "$2" "$3" "$4" "$6" --strain-rollup "$5" --contrast-population disease_vs_healthy_tier1_2_subject_controls
+
 # Standard ORA, depletion, rankings, strata, calibration and optional figures.
 [positional-arguments]
 rerun-ilyas run output *ARGS:
