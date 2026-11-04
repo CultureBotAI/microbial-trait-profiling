@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib
 import re
 from pathlib import Path
 
@@ -311,3 +312,47 @@ def test_governance_cross_references() -> None:
         encoding="utf-8"
     )
     assert "methods/biological_interpretation.md" in pr_template_content
+
+
+def test_guide_cell_status_labels_match_emitted_code_constants() -> None:
+    """#1342: every backticked cell-status label in the guide is emitted by code, and reverse."""
+    content = BIOLOGICAL_INTERPRETATION_MD.read_text(encoding="utf-8")
+    paragraph = content.split(
+        "Heatmap captions must identify fills as annotation shares and provide support and\n"
+        "cell-status tables.",
+        1,
+    )[1].split("\n\n", 1)[0]
+
+    guide_bindings = re.findall(
+        r"`([^`]+)`\s+\(`([A-Z][A-Z0-9_]*)`\s+in\s+`(src/mtp/[a-z0-9_]+\.py)`\)",
+        paragraph,
+    )
+    assert guide_bindings, "Guide must bind at least one cell-status label to a code constant"
+
+    spans = re.findall(r"`([^`]+)`", paragraph)
+    guide_labels = [
+        span
+        for span in spans
+        if not span.startswith("--") and not span.endswith(".py") and not span.isupper()
+    ]
+    assert guide_labels == [label for label, _, _ in guide_bindings]
+
+    for label, const_name, mod_path in guide_bindings:
+        mod_name = mod_path.removeprefix("src/").removesuffix(".py").replace("/", ".")
+        module = importlib.import_module(mod_name)
+        assert getattr(module, const_name) == label
+
+    guild_maps = importlib.import_module("mtp.guild_maps")
+    integrated_evidence = importlib.import_module("mtp.integrated_evidence")
+
+    assert guild_maps.cell_status(None, True, 1) == guild_maps.CELL_NO_SIGNAL
+    assert (
+        integrated_evidence.CELL_STATES[guild_maps.CELL_NO_SIGNAL][0]
+        == integrated_evidence.ZERO_ANNOTATION
+    )
+
+    emitted_zero_signal_labels = {
+        guild_maps.cell_status(None, True, 1),
+        integrated_evidence.CELL_STATES[guild_maps.CELL_NO_SIGNAL][0],
+    }
+    assert emitted_zero_signal_labels == {label for label, _, _ in guide_bindings}
