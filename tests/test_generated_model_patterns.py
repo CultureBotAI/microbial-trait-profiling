@@ -1,9 +1,8 @@
-"""Guard LinkML schema regex anchors and generated validator boundaries (#1043, #1315)."""
+"""Guard LinkML schema regex anchors and generated validator boundaries (#1043, #1315, #1360)."""
 
 from __future__ import annotations
 
 import ast
-import importlib
 import importlib.util
 import re
 import runpy
@@ -31,20 +30,24 @@ from mtp.datamodel import (
 # The public bsdbng.datamodel compatibility alias points to mtp. Load the
 # separately generated legacy file explicitly so its validators are covered.
 REPO_ROOT = Path(__file__).parents[1]
-SCHEMA_DIR = REPO_ROOT / "schema"
-GENERATED_MODEL_PATHS: tuple[Path, ...] = (
-    REPO_ROOT / "src/bsdbng/datamodel/bsdbng_pydantic.py",
-    REPO_ROOT / "src/mtp/datamodel/core_products_pydantic.py",
-    REPO_ROOT / "src/mtp/datamodel/mtp_pydantic.py",
-    REPO_ROOT / "src/mtp/datamodel/multiple_testing_pydantic.py",
-    REPO_ROOT / "src/mtp/datamodel/workflow_pydantic.py",
-)
 _BSDBNG_SPEC = importlib.util.find_spec("bsdbng")
 assert _BSDBNG_SPEC is not None
 assert _BSDBNG_SPEC.origin is not None
-LEGACY = runpy.run_path(str(Path(_BSDBNG_SPEC.origin).parent / "datamodel/bsdbng_pydantic.py"))
-_RE_PARSER: Any = importlib.import_module("re._parser")
-_RE_CONSTANTS: Any = importlib.import_module("re._constants")
+_LEGACY_PATH = Path(_BSDBNG_SPEC.origin).parent / "datamodel/bsdbng_pydantic.py"
+LEGACY = runpy.run_path(str(_LEGACY_PATH))
+assert core.__file__ is not None
+assert current.__file__ is not None
+assert multiple.__file__ is not None
+assert workflow.__file__ is not None
+_MODEL_ROOT = Path(multiple.__file__).resolve().parents[3]
+SCHEMA_DIR = _MODEL_ROOT / "schema" if (_MODEL_ROOT / "schema").is_dir() else REPO_ROOT / "schema"
+GENERATED_MODEL_PATHS: tuple[Path, ...] = (
+    _LEGACY_PATH,
+    Path(core.__file__),
+    Path(current.__file__),
+    Path(multiple.__file__),
+    Path(workflow.__file__),
+)
 
 DIGEST = "a" * 64
 STUDY = {"id": "bsdb:1", "source_record_id": "1", "experiments": []}
@@ -182,27 +185,52 @@ def _pattern_anchor_violation(pattern: object) -> str | None:
     if not isinstance(pattern, str) or not pattern:
         return "pattern must be a non-empty string"
     try:
-        parsed = _RE_PARSER.parse(pattern)
+        compiled = re.compile(pattern)
     except re.error as exc:
         return f"invalid regex ({exc})"
-    if parsed.state.flags & re.MULTILINE:
+    if compiled.flags & re.MULTILINE:
         return "MULTILINE flag makes ^ and $ match internal line breaks under re.search"
-    if len(parsed) == 1 and parsed[0][0] == _RE_CONSTANTS.BRANCH:
-        return "ungrouped top-level alternation; wrap alternatives as ^(a|b)$"
-    if not (
-        pattern.startswith("^")
-        and len(parsed) >= 1
-        and parsed[0] == (_RE_CONSTANTS.AT, _RE_CONSTANTS.AT_BEGINNING)
-    ):
+
+    escaped = False
+    in_char_class = False
+    char_class_content_start = 0
+    group_depth = 0
+    has_top_level_alternation = False
+    trailing_unescaped_dollar = False
+
+    for index, char in enumerate(pattern):
+        if escaped:
+            escaped = False
+            continue
+        if char == "\\":
+            escaped = True
+            continue
+        if in_char_class:
+            if char == "]" and index > char_class_content_start:
+                in_char_class = False
+            continue
+        if char == "[":
+            in_char_class = True
+            char_class_content_start = (
+                index + 2 if pattern[index + 1 : index + 2] == "^" else index + 1
+            )
+        elif char == "(":
+            group_depth += 1
+        elif char == ")":
+            group_depth -= 1
+        elif char == "|" and group_depth == 0:
+            has_top_level_alternation = True
+        elif char == "$" and index == len(pattern) - 1 and group_depth == 0:
+            trailing_unescaped_dollar = True
+
+    if not pattern.startswith("^"):
         return "missing leading '^' anchor"
-    if not (
-        pattern.endswith("$")
-        and len(parsed) >= 2
-        and parsed[-1] == (_RE_CONSTANTS.AT, _RE_CONSTANTS.AT_END)
-    ):
+    if not trailing_unescaped_dollar:
         return "missing trailing '$' anchor"
-    if len(parsed) < 3:
+    if pattern == "^$":
         return "empty anchored pattern '^$'"
+    if has_top_level_alternation:
+        return "ungrouped top-level alternation; wrap alternatives as ^(a|b)$"
     return None
 
 
@@ -291,7 +319,7 @@ def test_all_generated_model_pattern_validators_are_anchored_at_both_ends() -> N
 def test_schema_pattern_anchor_guard_reports_offending_slot_or_type(tmp_path: Path) -> None:
     """#1315: unanchored slots, types, and ungrouped alternations name each offending target."""
     scratch_schema_dir = tmp_path / "schema"
-    shutil.copytree(SCHEMA_DIR, scratch_schema_dir)
+    shutil.copytree(REPO_ROOT / "schema", scratch_schema_dir)
 
     multiple_testing_path = scratch_schema_dir / "multiple_testing.yaml"
     multiple_testing_text = multiple_testing_path.read_text(encoding="utf-8")
@@ -388,3 +416,35 @@ def test_generated_alternation_parameter_and_experiment_patterns_reject_affixes(
             with pytest.raises(ValidationError) as failure:
                 model.model_validate({"id": value, "signatures": []})
             assert {error["loc"] for error in failure.value.errors()} == {("id",)}
+
+
+@pytest.mark.parametrize(
+    ("pattern", "expected_violation"),
+    [
+        ("^(off|phenotype)$", None),
+        ("^(?:off|phenotype)$", None),
+        ("^[a|b]+$", None),
+        ("^[]|a]+$", None),
+        ("^[^]|a]+$", None),
+        (r"^a\|b$", None),
+        (r"^a\\$", None),
+        ("^off|phenotype$", "ungrouped top-level alternation; wrap alternatives as ^(a|b)$"),
+        ("^(off)|(phenotype)$", "ungrouped top-level alternation; wrap alternatives as ^(a|b)$"),
+        ("^[a]|b$", "ungrouped top-level alternation; wrap alternatives as ^(a|b)$"),
+        (r"^\[a]|b$", "ungrouped top-level alternation; wrap alternatives as ^(a|b)$"),
+        ("(off|phenotype)$", "missing leading '^' anchor"),
+        ("(^a)$", "missing leading '^' anchor"),
+        ("^1\\.2\\.0", "missing trailing '$' anchor"),
+        (r"^a\$", "missing trailing '$' anchor"),
+        (r"^a\\\$", "missing trailing '$' anchor"),
+        ("^[a$]", "missing trailing '$' anchor"),
+        ("^(a$)", "missing trailing '$' anchor"),
+        ("^$", "empty anchored pattern '^$'"),
+        ("(?m)^a$", "MULTILINE flag makes ^ and $ match internal line breaks under re.search"),
+    ],
+)
+def test_pattern_anchor_violation_scanner_tracks_escapes_classes_and_groups(
+    pattern: str, expected_violation: str | None
+) -> None:
+    """#1360: scanner tracks escapes, character classes, and group depth without re._parser."""
+    assert _pattern_anchor_violation(pattern) == expected_violation
