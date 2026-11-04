@@ -1,8 +1,10 @@
 """Corpus filters, guild aggregation, and the guild-map statistics."""
 
 import gzip
+import io
 import re
 from collections.abc import Callable
+from dataclasses import asdict
 from math import isnan
 from pathlib import Path
 from statistics import fmean
@@ -30,9 +32,11 @@ from bsdbng.trait_guilds import (
     TABLE1_TRAITS,
     CorpusStats,
     Profile,
+    format_stats_report,
     load_profiles,
     read_bugsigdb_vintage,
     resolve_trait_columns,
+    write_stats_report,
 )
 from mtp.count_input import COMPLETE_COUNT_MODE, LEGACY_SPARSE_ZERO_MODE
 from mtp.trait_key_policy import (
@@ -250,7 +254,23 @@ def test_corpus_stats_counts_profile_rows_and_all_filter_stages(
         trait_columns_used=6,
         kept_experiments=1,
         kept_profiles=2,
+        count_input_mode=COMPLETE_COUNT_MODE,
+        blank_counts_interpreted_as_zero=0,
     )
+    assert format_stats_report(stats, "2026-04-24_00:41_UTC").splitlines() == [
+        "BugSigDB vintage:            2026-04-24_00:41_UTC",
+        "Profile rows read:           7",
+        "Experiments after join:      2",
+        "Dropped, no metadata match:  2",
+        "Dropped, non-human host:     2",
+        "Dropped, unpaired:           1",
+        "MediaDive columns excluded:  1",
+        "Trait columns used:          6",
+        "Experiments kept:            1",
+        "Profiles kept:               2",
+        "Count input mode:            complete",
+        "Blank counts used as zero:   0",
+    ]
 
 
 def test_missing_guild_column_raises(corpus: tuple[Path, Path]) -> None:
@@ -1135,7 +1155,7 @@ def test_method_loader_rejects_blank_by_default_and_allows_sparse_zero_override(
     ):
         load_profiles(profiles_path, experiments_path, OXYGEN_GUILDS)
 
-    profiles, _ = load_profiles(
+    profiles, stats = load_profiles(
         profiles_path,
         experiments_path,
         OXYGEN_GUILDS,
@@ -1143,6 +1163,47 @@ def test_method_loader_rejects_blank_by_default_and_allows_sparse_zero_override(
     )
     inc = next(profile for profile in profiles if profile.inc_dec == "inc")
     assert inc.total == 7
+    assert stats.count_input_mode == LEGACY_SPARSE_ZERO_MODE
+    assert stats.blank_counts_interpreted_as_zero == 1
+
+
+def test_corpus_stats_records_count_input_mode_and_blank_zero_fills(
+    tmp_path: Path,
+) -> None:
+    """CorpusStats and stats reports record count_input_mode and blank zero-fills (#1299)."""
+    profiles_path = tmp_path / "profiles.tsv"
+    experiments_path = tmp_path / "experiments.tsv"
+    _write_profiles(
+        profiles_path,
+        [
+            ("bsdb:1", "bsdb:1-1", "inc", [6, "", 0, 1, 0, "", 100]),
+            ("bsdb:1", "bsdb:1-1", "dec", [1, 0, 0, 6, "", 3, 100]),
+        ],
+    )
+    _write_experiments(
+        experiments_path,
+        [("bsdb:1", "bsdb:1-1", "Colorectal cancer", "Feces", "Homo sapiens")],
+    )
+
+    _, legacy_stats = load_profiles(
+        profiles_path,
+        experiments_path,
+        OXYGEN_GUILDS,
+        count_input_mode=LEGACY_SPARSE_ZERO_MODE,
+    )
+    assert legacy_stats.count_input_mode == LEGACY_SPARSE_ZERO_MODE
+    assert legacy_stats.blank_counts_interpreted_as_zero == 3
+    serialized = asdict(legacy_stats)
+    assert serialized["count_input_mode"] == LEGACY_SPARSE_ZERO_MODE
+    assert serialized["blank_counts_interpreted_as_zero"] == 3
+
+    stream = io.StringIO()
+    write_stats_report(legacy_stats, None, stream=stream)
+    report_lines = stream.getvalue().rstrip("\n").splitlines()
+    assert report_lines[-2:] == [
+        "Count input mode:            legacy_sparse_zero",
+        "Blank counts used as zero:   3",
+    ]
 
 
 def test_method_loader_rejects_conflicting_count_input_mode_and_reject_missing_counts(

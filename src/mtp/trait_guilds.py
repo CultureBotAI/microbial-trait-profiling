@@ -159,6 +159,8 @@ class CorpusStats:
     trait_columns_used: int
     kept_experiments: int
     kept_profiles: int
+    count_input_mode: CountInputMode = COMPLETE_COUNT_MODE
+    blank_counts_interpreted_as_zero: int = 0
 
 
 @dataclass(frozen=True)
@@ -482,6 +484,7 @@ def load_profiles(
 
     kept, dropped_unpaired = _apply_pair_filter(candidates, paired_only=paired_only)
     experiments_seen = len({(p.study_id, p.experiment_id) for p in candidates})
+    reader_summary = count_reader.summary
     stats = CorpusStats(
         profile_rows=profile_rows,
         experiments_seen=experiments_seen,
@@ -492,6 +495,8 @@ def load_profiles(
         trait_columns_used=len(total_positions),
         kept_experiments=len({(p.study_id, p.experiment_id) for p in kept}),
         kept_profiles=len(kept),
+        count_input_mode=reader_summary.mode,
+        blank_counts_interpreted_as_zero=reader_summary.blank_counts_interpreted_as_zero,
     )
     return kept, stats
 
@@ -521,6 +526,8 @@ def format_stats_report(stats: CorpusStats, vintage: str | None) -> str:
         f"Trait columns used:          {stats.trait_columns_used}",
         f"Experiments kept:            {stats.kept_experiments}",
         f"Profiles kept:               {stats.kept_profiles}",
+        f"Count input mode:            {stats.count_input_mode}",
+        f"Blank counts used as zero:   {stats.blank_counts_interpreted_as_zero}",
     ]
     return "\n".join(lines)
 
