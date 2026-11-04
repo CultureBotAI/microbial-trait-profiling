@@ -8,7 +8,7 @@ from types import ModuleType
 
 import pytest
 
-from mtp.agent_docs import links_relative_to_github
+from mtp.agent_docs import _destination, links_relative_to_github
 
 
 def test_copilot_links_are_relative_to_github_directory() -> None:
@@ -59,6 +59,39 @@ def test_copilot_links_are_relative_to_github_directory() -> None:
             "[a](docs/a.md)\r\n[b]: methods/b.md\r\n",
             "[a](../docs/a.md)\r\n[b]: ../methods/b.md\r\n",
         ),
+        (r"[guide](docs/a\)b.md)", r"[guide](../docs/a\)b.md)"),
+        (r"[guide](<docs/a\>b.md>)", r"[guide](<../docs/a\>b.md>)"),
+        ('[guide](docs/a.md "title" )', '[guide](../docs/a.md "title" )'),
+        (
+            r'[guide](docs/a.md "title \" [literal](docs/b.md)")',
+            r'[guide](../docs/a.md "title \" [literal](docs/b.md)")',
+        ),
+        (
+            '[guide](docs/a.md "[literal](docs/b.md)")',
+            '[guide](../docs/a.md "[literal](docs/b.md)")',
+        ),
+        ("[ref]: docs/a(b).md\n", "[ref]: ../docs/a(b).md\n"),
+        ("[ref]: docs/a.md", "[ref]: ../docs/a.md"),
+        (
+            '[ref]: docs/a.md "[literal](docs/b.md)"',
+            '[ref]: ../docs/a.md "[literal](docs/b.md)"',
+        ),
+        (
+            '[ref]: docs/a.md\n"quoted" [guide](docs/b.md)\n',
+            '[ref]: ../docs/a.md\n"quoted" [guide](../docs/b.md)\n',
+        ),
+        (
+            "[ref]: docs/a.md\n    [literal](docs/b.md)\n",
+            "[ref]: ../docs/a.md\n    [literal](docs/b.md)\n",
+        ),
+        (r"\`not code [guide](docs/a.md) `later`", r"\`not code [guide](../docs/a.md) `later`"),
+        ("` `` ` [guide](docs/a.md) ``", "` `` ` [guide](../docs/a.md) ``"),
+        ("```info`string\n[guide](docs/a.md)\n", "```info`string\n[guide](../docs/a.md)\n"),
+        ("    ```\n[guide](docs/a.md)\n", "    ```\n[guide](../docs/a.md)\n"),
+        (
+            "```\n[literal](docs/a.md)\n````\n[guide](docs/b.md)\n",
+            "```\n[literal](docs/a.md)\n````\n[guide](../docs/b.md)\n",
+        ),
     ],
 )
 def test_markdown_destination_forms_preserve_other_bytes(source: str, expected: str) -> None:
@@ -69,20 +102,52 @@ def test_markdown_destination_forms_preserve_other_bytes(source: str, expected: 
     "source",
     [
         "`[literal](docs/a.md)`",
+        r"\\`[literal](docs/a.md)`",
         "``a ` [literal](docs/a.md)``",
         "`multi\n[literal](docs/a.md)\nline`",
+        "[ref `code\rspan`]: docs/a.md\n",
         "```markdown\n[literal](docs/a.md)\n[ref]: docs/a.md\n```\n",
+        "```\n[literal](docs/a.md)\n\n[also literal](docs/b.md)\n```\n",
+        "```\n[literal](docs/a.md)\n~~~\n[still literal](docs/b.md)\n```\n",
+        "```\n[literal](docs/a.md)\n    ```\n[still literal](docs/b.md)\n```\n",
+        "```\n[literal](docs/a.md)\n``` trailing\n[still literal](docs/b.md)\n```\n",
+        "~~~info`string\n[literal](docs/a.md)\n~~~\n",
+        "~~~ [literal](docs/a.md)\n~~~\n",
         "~~~~\n[literal](docs/a.md)\n~~~\n[still literal](docs/b.md)\n~~~~\n",
         "    [literal](docs/a.md)\n\t[also literal](docs/b.md)\n",
+        "    [ref]:\n    [literal](docs/a.md)\n",
+        "[prev]:\n    [ref]: docs/a.md\n",
+        "    - x\n2. `code\n3. [literal](docs/a.md)\nend`",
+        "1234567890. `code\n2. [literal](docs/a.md)\nend`",
         r"\[literal](docs/a.md)",
         r"[literal\](docs/a.md)",
         "not a link ](docs/a.md)",
+        "[guide](<>)",
         "[incomplete](docs/a.md",
+        "[incomplete](\n",
+        "[invalid](docs/a(b)",
+        "[invalid](docs/a<b.md)",
+        "[invalid](<docs/a<b.md>)",
+        "[invalid](<docs/a\nb.md>)",
+        "[invalid](<docs/a\rb.md>)",
         "[invalid](\n\n docs/a.md)",
+        "[invalid](docs/a.md\n\n)",
+        '[invalid](docs/a.md "title"\n\n)',
+        '[invalid](docs/a.md "title"junk)',
+        '[invalid](docs/a.md "title"',
         '[web](<https://example.org/a(b)> "Title")',
         "[web](https://example.org/x) [mail](mailto:info@example.org)",
+        (
+            "[upper](HTTPS://example.org/x) [digit](h323:host) "
+            "[plus](svn+ssh://host/x) [dot](z39.50r:host) [dash](custom-scheme:path)"
+        ),
         "[root](/docs/a.md) [remote](//example.org/a) [fragment](#a) [query](?view=raw)",
         "[web]: https://example.org/x\n[anchor]: #scope\n[web] [anchor]",
+        "[ref]: <docs/a.md",
+        "[ref]: docs/a(b.md\n",
+        '[ref]: docs/a.md "unclosed title',
+        "[ref]: docs/a.md x",
+        '[ref]: docs/a.md "Title" junk\n',
         "[ref]: docs/a.md stray words\n[ref]",
     ],
 )
@@ -155,6 +220,9 @@ def test_multiline_code_span_immediately_after_heading() -> None:
         "`unclosed\n1) [guide](docs/guide.md)\n`later`",
         "`unclosed\n___\n[guide](docs/guide.md)\n`later`",
         "- `unclosed\n---\n[guide](docs/guide.md)\n`later`",
+        "`unclosed\n###### Heading [guide](docs/guide.md)\n`later`",
+        "`unclosed\n######\n[guide](docs/guide.md)\n`later`",
+        "> `unclosed\n-\n[guide](docs/guide.md)\n`later`",
     ],
     ids=[
         "star-item",
@@ -163,6 +231,9 @@ def test_multiline_code_span_immediately_after_heading() -> None:
         "ordered-paren",
         "underscore-break",
         "dash-break",
+        "six-hash-heading",
+        "empty-six-hash-heading",
+        "empty-item-after-blockquote",
     ],
 )
 def test_list_and_thematic_marker_variants_stop_unmatched_code_delimiter(source: str) -> None:
@@ -208,7 +279,7 @@ def test_ordered_list_context_distinguishes_paragraph_from_sibling() -> None:
     assert links_relative_to_github(source) == expected
 
 
-@pytest.mark.parametrize("underline", ["===", "--"])
+@pytest.mark.parametrize("underline", ["===", "--", "=", "-"])
 def test_setext_heading_underlines_stop_unmatched_code_delimiter(underline: str) -> None:
     """#1311: a setext heading underline is a block boundary."""
     source = f"Heading `unclosed\n{underline}\n[guide](docs/guide.md)\n`later`"
@@ -239,11 +310,20 @@ def test_blockquote_stops_unmatched_code_delimiter(blockquote: str) -> None:
         "[ref]:\n    # not-a-heading",
         "[ref]:\n    1. not-a-list",
         "[ref]:\n    > not-a-quote",
+        "[ref]:\n    ===",
+        "[ref]:\n    ***",
+        "[ref]:\n    - not-a-list",
     ],
 )
 def test_nonblock_lines_preserve_multiline_code_spans(line: str) -> None:
     source = f"`code\n{line}\n[literal](docs/literal.md)\nend`"
     assert links_relative_to_github(source) == source
+
+
+def test_destination_helper_rejects_empty_bare_and_bounds_trailing_backslash() -> None:
+    """#1283: direct unit checks for _destination edge conditions masked by caller."""
+    assert _destination("[guide]()", 8) is None
+    assert _destination("docs/a.md\\", 0) == (0, 10, 10)
 
 
 @pytest.mark.parametrize("continuation", ["  continuation", "==="])
