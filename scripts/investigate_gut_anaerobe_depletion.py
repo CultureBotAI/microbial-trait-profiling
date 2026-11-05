@@ -434,17 +434,27 @@ def summarize_group(metadata: pd.DataFrame, group_column: str, min_profiles: int
         if group_column == "condition":
             record.update(paired_guild_enrichment_stats(group))
         records.append(record)
-    return pd.DataFrame(records).sort_values(
+    summary = pd.DataFrame(records).sort_values(
         ["decreased_mean_guild_z", "profile_count"],
         ascending=[False, False],
     )
+    if group_column == "condition" and not summary.empty:
+        tested = summary["paired_t_test_p_value"].notna()
+        summary["p_value_type"] = np.where(tested, "nominal", "not_tested")
+        summary["n_tests"] = int(tested.sum())
+    return summary
 
 
 def remove_excluded_condition_labels(condition_summary: pd.DataFrame) -> pd.DataFrame:
     """Remove broad study-design labels from disease/injury condition summaries."""
-    return condition_summary[
+    filtered = condition_summary[
         ~condition_summary["condition"].map(is_excluded_condition_label)
     ].copy()
+    if "paired_t_test_p_value" in filtered.columns:
+        tested = filtered["paired_t_test_p_value"].notna()
+        filtered["p_value_type"] = np.where(tested, "nominal", "not_tested")
+        filtered["n_tests"] = int(tested.sum())
+    return filtered
 
 
 def is_excluded_condition_label(value: object) -> bool:
@@ -485,7 +495,13 @@ def paired_smd_label(row: Any) -> str:
     pair_count = int(row.paired_profile_pair_count)
     smd = row.paired_standardized_mean_difference
     p_value = row.paired_t_test_p_value
-    p_text = "p=NA" if pd.isna(p_value) else f"p={p_value:.3g}"
+    n_tests = getattr(row, "n_tests", None)
+    if pd.isna(p_value):
+        p_text = "p=NA (not tested)"
+    elif n_tests is not None and not pd.isna(n_tests):
+        p_text = f"nominal p={p_value:.3g} ({int(n_tests)} condition tests)"
+    else:
+        p_text = f"nominal p={p_value:.3g}"
     if pd.isna(smd):
         return f"paired d=NA, {p_text}, n={pair_count}"
     return f"paired d={smd:.2f}, {p_text}, n={pair_count}"
@@ -2371,13 +2387,19 @@ def write_summary_report(
         ]
     )
 
+    filtered_conditions = remove_excluded_condition_labels(condition_summary)
+    n_tested_conditions = (
+        int(filtered_conditions["paired_t_test_p_value"].notna().sum())
+        if "paired_t_test_p_value" in filtered_conditions.columns
+        else 0
+    )
     lines.extend(
         [
             "",
             "## Conditions With Anaerobe v2 Trait Enrichment in Decreased Profiles",
             "",
             "| condition | profiles | studies | decreased - increased z | paired d | "
-            "paired p | matched pairs | decreased mean trait z |",
+            "nominal paired p | matched pairs | decreased mean trait z |",
             "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
         ]
     )
@@ -2397,7 +2419,9 @@ def write_summary_report(
     lines.extend(
         [
             "",
-            "Paired d and paired p are blank for conditions with fewer than "
+            "Reported paired p values are uncorrected two-sided paired t-test nominal p-values "
+            f"across {n_tested_conditions} tested conditions in `condition_guild_summary.tsv`. "
+            "Paired d and nominal paired p are blank for conditions with fewer than "
             f"{MIN_PAIRED_SMD_PROFILE_PAIRS} matched decreased/increased profile pairs, or with "
             "zero variance among the paired differences.",
         ]

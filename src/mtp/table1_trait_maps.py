@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import math
 import textwrap
 from collections.abc import Collection, Mapping, Sequence
 from dataclasses import dataclass
@@ -561,14 +562,36 @@ def write_shift_table(
                 ]
             )
 
+    n_spearman_tests = sum(1 for _, p_val, _ in result.spearman.values() if math.isfinite(p_val))
     with spearman_path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle, delimiter="\t", lineterminator="\n")
         writer.writerow(
-            ["trait_a", "trait_b", "spearman_rho", "p_value", "studies", "bugsigdb_vintage"]
+            [
+                "trait_a",
+                "trait_b",
+                "spearman_rho",
+                "p_value",
+                "studies",
+                "bugsigdb_vintage",
+                "p_value_type",
+                "n_tests",
+            ]
         )
         for pair, (rho, p_value, n_studies) in sorted(result.spearman.items()):
             left, right = pair.split("~", 1)
-            writer.writerow([left, right, f"{rho:.6f}", f"{p_value:.6g}", n_studies, vintage or ""])
+            tested = math.isfinite(p_value)
+            writer.writerow(
+                [
+                    left,
+                    right,
+                    f"{rho:.6f}",
+                    f"{p_value:.6g}" if tested else "",
+                    n_studies,
+                    vintage or "",
+                    "nominal" if tested else "not_tested",
+                    n_spearman_tests,
+                ]
+            )
 
     return [shifts_path, spearman_path]
 
@@ -703,6 +726,7 @@ def build_shift_figure(
         col=2,
     )
 
+    n_spearman_tests = sum(1 for _, p_val, _ in result.spearman.values() if math.isfinite(p_val))
     subtitle_paragraphs = [
         ANALYSIS_NOTE,
         "Each study contributes one value per trait: the mean increased annotation share minus "
@@ -711,8 +735,9 @@ def build_shift_figure(
         "are excluded from a trait's test, so the denominators differ between traits.",
         "Error bars are exact binomial 95% intervals; q is Benjamini-Hochberg across the "
         "six traits.",
-        "Correlations are between traits over those per-study contrasts. "
-        "Both fractions and their contrasts remain denominator-dependent.",
+        "Correlations are between traits over those per-study contrasts "
+        f"(companion TSV reports nominal Spearman p across {n_spearman_tests} tested trait pairs; "
+        "uncorrected). Both fractions and their contrasts remain denominator-dependent.",
         "Directions are curated signature labels. "
         "Shared annotations do not establish patient-level change or independent validation.",
         f"BugSigDB {vintage or 'vintage unknown'}.",

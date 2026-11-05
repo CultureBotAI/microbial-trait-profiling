@@ -1462,3 +1462,62 @@ def test_methods_with_table1_numbers_carry_the_analog_label(relative_doc_path: s
     content = doc_path.read_text(encoding="utf-8").lower()
     assert "matched-corpus table 1-trait analog" in content
     assert "not a reproduction of the published table 1 baseline" in content
+
+
+def test_contrast_correlation_table_and_figure_label_nominal_spearman_p_values(
+    tmp_path: Path, corpus: tuple[Path, Path]
+) -> None:
+    """#1411: contrast correlation TSV and figure label uncorrected Spearman p as nominal."""
+    profiles, _ = load_profiles(*corpus, TABLE1_TRAITS)
+    result = compute_direction_shifts(profiles, TRAIT_ORDER)
+    assert len(result.spearman) == 10
+
+    _, spearman_path = write_shift_table(result, tmp_path, "v1.3.1")
+    with spearman_path.open(encoding="utf-8") as handle:
+        reader = csv.DictReader(handle, delimiter="\t")
+        assert reader.fieldnames == [
+            "trait_a",
+            "trait_b",
+            "spearman_rho",
+            "p_value",
+            "studies",
+            "bugsigdb_vintage",
+            "p_value_type",
+            "n_tests",
+        ]
+        rows = list(reader)
+    assert len(rows) == 10
+    assert {(row["p_value_type"], row["n_tests"]) for row in rows} == {("nominal", "10")}
+
+    figure = build_shift_figure(result, "v1.3.1", TRAIT_ORDER)
+    assert figure.layout.title.text is not None
+    assert (
+        "companion TSV reports nominal Spearman p across 10 tested trait pairs; uncorrected"
+        in figure.layout.title.text
+    )
+
+    partial = replace(
+        result,
+        spearman={
+            "aerobic~anaerobic": (-0.5, 0.25, 3),
+            "aerobic~gram_positive": (0.4, 0.5, 3),
+            "anaerobic~gram_positive": (0.0, float("nan"), 3),
+        },
+    )
+    _, partial_path = write_shift_table(partial, tmp_path / "partial", "v1.3.1")
+    with partial_path.open(encoding="utf-8") as handle:
+        partial_rows = {
+            f"{row['trait_a']}~{row['trait_b']}": (row["p_value_type"], row["n_tests"])
+            for row in csv.DictReader(handle, delimiter="\t")
+        }
+    assert partial_rows == {
+        "aerobic~anaerobic": ("nominal", "2"),
+        "aerobic~gram_positive": ("nominal", "2"),
+        "anaerobic~gram_positive": ("not_tested", "2"),
+    }
+    partial_figure = build_shift_figure(partial, "v1.3.1", TRAIT_ORDER)
+    assert partial_figure.layout.title.text is not None
+    assert (
+        "companion TSV reports nominal Spearman p across 2 tested trait pairs; uncorrected"
+        in partial_figure.layout.title.text
+    )

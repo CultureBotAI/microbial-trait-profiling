@@ -1529,3 +1529,126 @@ def test_method_loader_and_column_resolver_read_tsv_gz_like_tsv(
     plain_columns = resolve_trait_columns(plain, OXYGEN_GUILDS)
     assert set(plain_columns) == set(OXYGEN_GUILDS)
     assert resolve_trait_columns(packed, OXYGEN_GUILDS) == plain_columns
+
+
+def test_guild_correlation_table_and_cli_label_nominal_p_values_with_test_counts(
+    tmp_path: Path,
+    corpus: tuple[Path, Path],
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """#1411: guild correlation TSV and stdout label McNemar and Spearman p-values as nominal."""
+    import csv
+
+    from bsdbng import guild_maps
+    from bsdbng.guild_maps import write_outputs
+    from bsdbng.trait_guilds import drop_zero_total_pairs
+
+    four_pair_profiles = _constant_series_profiles(hold_aerobe_inc_constant=True)
+    four_pair_corr = compute_correlation(four_pair_profiles)
+    assert len(four_pair_corr.spearman) == 4
+    assert four_pair_corr.status == "tested"
+    matrix = build_matrix(four_pair_profiles, max_conditions=10, max_body_sites=10, min_studies=1)
+    exclusion = drop_zero_total_pairs(four_pair_profiles)
+    four_dir = tmp_path / "four_pairs"
+    four_dir.mkdir()
+    write_outputs(matrix, four_pair_corr, four_dir, "2026-04-24_00:41_UTC", exclusion=exclusion)
+
+    with (four_dir / "guild_aerobe_anaerobe_correlation.tsv").open(encoding="utf-8") as handle:
+        reader = csv.DictReader(handle, delimiter="\t")
+        assert reader.fieldnames == [
+            "statistic",
+            "comparison",
+            "value",
+            "p_value",
+            "n",
+            "bugsigdb_vintage",
+            "p_value_type",
+            "n_tests",
+        ]
+        four_rows = list(reader)
+
+    non_test_rows = [
+        row
+        for row in four_rows
+        if row["statistic"]
+        in {"excluded_experiment_pairs", "studies_shifted", "discordant_studies"}
+    ]
+    assert len(non_test_rows) == 7
+    assert {(row["p_value_type"], row["n_tests"]) for row in non_test_rows} == {("", "")}
+
+    (mcnemar_row,) = [row for row in four_rows if row["statistic"] == "mcnemar_odds_ratio"]
+    assert (mcnemar_row["p_value_type"], mcnemar_row["n_tests"]) == ("nominal", "1")
+
+    spearman_four = [row for row in four_rows if row["statistic"] == "spearman_rho_across_studies"]
+    assert len(spearman_four) == 4
+    assert {(row["p_value_type"], row["n_tests"]) for row in spearman_four} == {("nominal", "4")}
+
+    seven_pair_profiles = _constant_series_profiles(hold_aerobe_inc_constant=False)
+    seven_pair_corr = compute_correlation(seven_pair_profiles)
+    assert len(seven_pair_corr.spearman) == 7
+    seven_dir = tmp_path / "seven_pairs"
+    seven_dir.mkdir()
+    write_outputs(matrix, seven_pair_corr, seven_dir, "2026-04-24_00:41_UTC")
+    with (seven_dir / "guild_aerobe_anaerobe_correlation.tsv").open(encoding="utf-8") as handle:
+        spearman_seven = [
+            row
+            for row in csv.DictReader(handle, delimiter="\t")
+            if row["statistic"] == "spearman_rho_across_studies"
+        ]
+    assert len(spearman_seven) == 7
+    assert {(row["p_value_type"], row["n_tests"]) for row in spearman_seven} == {("nominal", "7")}
+
+    tied_profiles = [
+        Profile(
+            study_id="bsdb:1",
+            experiment_id="bsdb:1-1",
+            inc_dec=direction,
+            guild_counts={"aerobe": 5, "anaerobe": 5},
+            total=20,
+            condition="c",
+            body_site="s",
+        )
+        for direction in ("inc", "dec")
+    ]
+    tied_corr = compute_correlation(tied_profiles)
+    assert tied_corr.mcnemar_p is None
+    assert tied_corr.status == "no_studies"
+    tied_dir = tmp_path / "tied"
+    tied_dir.mkdir()
+    write_outputs(matrix, tied_corr, tied_dir, "2026-04-24_00:41_UTC")
+    with (tied_dir / "guild_aerobe_anaerobe_correlation.tsv").open(encoding="utf-8") as handle:
+        (tied_mcnemar,) = [
+            row
+            for row in csv.DictReader(handle, delimiter="\t")
+            if row["statistic"] == "mcnemar_odds_ratio"
+        ]
+    assert (tied_mcnemar["p_value_type"], tied_mcnemar["n_tests"]) == ("not_tested", "0")
+
+    profiles_path, experiments_path = corpus
+    cli_out = tmp_path / "cli_out"
+    monkeypatch.setattr(
+        guild_maps,
+        "write_figure",
+        lambda _matrix, path, _vintage, **_kwargs: path,
+    )
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "bsdbng-guild-maps",
+            "--profile-input",
+            str(profiles_path),
+            "--experiments-input",
+            str(experiments_path),
+            "--output-dir",
+            str(cli_out),
+            "--min-studies",
+            "1",
+        ],
+    )
+    guild_maps.main()
+    stdout = capsys.readouterr().out
+    assert (
+        "McNemar (exact, paired signs): discordant 2/0, "
+        "odds ratio undefined (nominal p=0.5, 1 nominal test) over 2 studies [tested]"
+    ) in stdout
