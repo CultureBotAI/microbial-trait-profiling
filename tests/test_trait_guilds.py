@@ -1539,6 +1539,7 @@ def test_guild_correlation_table_and_cli_label_nominal_p_values_with_test_counts
 ) -> None:
     """#1411: guild correlation TSV and stdout label McNemar and Spearman p-values as nominal."""
     import csv
+    from dataclasses import replace
 
     from bsdbng import guild_maps
     from bsdbng.guild_maps import write_outputs
@@ -1578,11 +1579,11 @@ def test_guild_correlation_table_and_cli_label_nominal_p_values_with_test_counts
     assert {(row["p_value_type"], row["n_tests"]) for row in non_test_rows} == {("", "")}
 
     (mcnemar_row,) = [row for row in four_rows if row["statistic"] == "mcnemar_odds_ratio"]
-    assert (mcnemar_row["p_value_type"], mcnemar_row["n_tests"]) == ("nominal", "1")
+    assert (mcnemar_row["p_value_type"], mcnemar_row["n_tests"]) == ("nominal", "5")
 
     spearman_four = [row for row in four_rows if row["statistic"] == "spearman_rho_across_studies"]
     assert len(spearman_four) == 4
-    assert {(row["p_value_type"], row["n_tests"]) for row in spearman_four} == {("nominal", "4")}
+    assert {(row["p_value_type"], row["n_tests"]) for row in spearman_four} == {("nominal", "5")}
 
     seven_pair_profiles = _constant_series_profiles(hold_aerobe_inc_constant=False)
     seven_pair_corr = compute_correlation(seven_pair_profiles)
@@ -1591,13 +1592,38 @@ def test_guild_correlation_table_and_cli_label_nominal_p_values_with_test_counts
     seven_dir.mkdir()
     write_outputs(matrix, seven_pair_corr, seven_dir, "2026-04-24_00:41_UTC")
     with (seven_dir / "guild_aerobe_anaerobe_correlation.tsv").open(encoding="utf-8") as handle:
-        spearman_seven = [
-            row
-            for row in csv.DictReader(handle, delimiter="\t")
-            if row["statistic"] == "spearman_rho_across_studies"
-        ]
+        seven_rows = list(csv.DictReader(handle, delimiter="\t"))
+    (seven_mcnemar,) = [row for row in seven_rows if row["statistic"] == "mcnemar_odds_ratio"]
+    assert (seven_mcnemar["p_value_type"], seven_mcnemar["n_tests"]) == ("nominal", "8")
+    spearman_seven = [
+        row for row in seven_rows if row["statistic"] == "spearman_rho_across_studies"
+    ]
     assert len(spearman_seven) == 7
-    assert {(row["p_value_type"], row["n_tests"]) for row in spearman_seven} == {("nominal", "7")}
+    assert {(row["p_value_type"], row["n_tests"]) for row in spearman_seven} == {("nominal", "8")}
+
+    partial_corr = replace(
+        four_pair_corr,
+        spearman={
+            "aerobe_inc_vs_dec": (-0.5, 0.25, 3),
+            "anaerobe_inc_vs_dec": (0.0, float("nan"), 3),
+        },
+    )
+    partial_dir = tmp_path / "partial_spearman"
+    partial_dir.mkdir()
+    write_outputs(matrix, partial_corr, partial_dir, "2026-04-24_00:41_UTC")
+    with (partial_dir / "guild_aerobe_anaerobe_correlation.tsv").open(encoding="utf-8") as handle:
+        partial_rows = list(csv.DictReader(handle, delimiter="\t"))
+    (partial_mcnemar,) = [row for row in partial_rows if row["statistic"] == "mcnemar_odds_ratio"]
+    assert (partial_mcnemar["p_value_type"], partial_mcnemar["n_tests"]) == ("nominal", "2")
+    partial_spearman = {
+        row["comparison"]: (row["p_value"], row["p_value_type"], row["n_tests"])
+        for row in partial_rows
+        if row["statistic"] == "spearman_rho_across_studies"
+    }
+    assert partial_spearman == {
+        "aerobe_inc_vs_dec": ("0.25", "nominal", "2"),
+        "anaerobe_inc_vs_dec": ("", "not_tested", "2"),
+    }
 
     tied_profiles = [
         Profile(
@@ -1623,7 +1649,11 @@ def test_guild_correlation_table_and_cli_label_nominal_p_values_with_test_counts
             for row in csv.DictReader(handle, delimiter="\t")
             if row["statistic"] == "mcnemar_odds_ratio"
         ]
-    assert (tied_mcnemar["p_value_type"], tied_mcnemar["n_tests"]) == ("not_tested", "0")
+    assert (
+        tied_mcnemar["p_value"],
+        tied_mcnemar["p_value_type"],
+        tied_mcnemar["n_tests"],
+    ) == ("", "not_tested", "0")
 
     profiles_path, experiments_path = corpus
     cli_out = tmp_path / "cli_out"

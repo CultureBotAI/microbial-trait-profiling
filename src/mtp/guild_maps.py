@@ -723,6 +723,7 @@ def write_outputs(
     n_spearman_tests = sum(
         1 for _, p_val, _ in correlation.spearman.values() if math.isfinite(p_val)
     )
+    n_tests = n_mcnemar_tests + n_spearman_tests
     with stats_path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle, delimiter="\t", lineterminator="\n")
         writer.writerow(
@@ -797,7 +798,7 @@ def write_outputs(
                 up_down + down_up,
                 vintage or "",
                 "nominal" if n_mcnemar_tests > 0 else "not_tested",
-                n_mcnemar_tests,
+                n_tests,
             ]
         )
         for pair, (rho, p_value, n_studies) in sorted(correlation.spearman.items()):
@@ -811,7 +812,7 @@ def write_outputs(
                     n_studies,
                     vintage or "",
                     "nominal" if tested else "not_tested",
-                    n_spearman_tests,
+                    n_tests,
                 ]
             )
 

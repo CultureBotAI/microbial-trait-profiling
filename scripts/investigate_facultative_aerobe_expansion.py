@@ -476,13 +476,10 @@ def paired_smd_label(row: Any) -> str:
     pair_count = int(row.paired_profile_pair_count)
     smd = row.paired_standardized_mean_difference
     p_value = row.paired_t_test_p_value
-    n_tests = getattr(row, "n_tests", None)
     if pd.isna(p_value):
         p_text = "p=NA (not tested)"
-    elif n_tests is not None and not pd.isna(n_tests):
-        p_text = f"nominal p={p_value:.3g} ({int(n_tests)} condition tests)"
     else:
-        p_text = f"nominal p={p_value:.3g}"
+        p_text = f"nominal p={p_value:.3g} ({int(row.n_tests)} condition tests)"
     if pd.isna(smd):
         return f"paired d=NA, {p_text}, n={pair_count}"
     return f"paired d={smd:.2f}, {p_text}, n={pair_count}"

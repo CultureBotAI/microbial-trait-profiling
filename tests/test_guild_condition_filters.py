@@ -338,6 +338,9 @@ def test_condition_summary_and_labels_report_nominal_paired_t_test_counts(
     assert "nominal p=" in pd_label
     assert "(2 condition tests)" in pd_label
     assert module.paired_smd_label(rare_row) == "paired d=NA, p=NA (not tested), n=4"
+    without_n_tests = next(filtered.drop(columns=["n_tests"]).itertuples(index=False))
+    with pytest.raises(AttributeError):
+        module.paired_smd_label(without_n_tests)
 
     monkeypatch.setattr(module, "OUTPUT_DIR", tmp_path)
     empty_occ = pd.DataFrame(columns=["inc_dec", "profile_id", "study_id", "exclusion_reason"])

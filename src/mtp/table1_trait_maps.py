@@ -735,9 +735,9 @@ def build_shift_figure(
         "are excluded from a trait's test, so the denominators differ between traits.",
         "Error bars are exact binomial 95% intervals; q is Benjamini-Hochberg across the "
         "six traits.",
-        "Correlations are between traits over those per-study contrasts "
-        f"(companion TSV reports nominal Spearman p across {n_spearman_tests} tested trait pairs; "
-        "uncorrected). Both fractions and their contrasts remain denominator-dependent.",
+        f"Contrast correlations (companion TSV reports nominal Spearman p across "
+        f"{n_spearman_tests} tested trait pairs); fractions and contrasts remain "
+        "denominator-dependent.",
         "Directions are curated signature labels. "
         "Shared annotations do not establish patient-level change or independent validation.",
         f"BugSigDB {vintage or 'vintage unknown'}.",
