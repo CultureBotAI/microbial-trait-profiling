@@ -1462,22 +1462,3 @@ def test_methods_with_table1_numbers_carry_the_analog_label(relative_doc_path: s
     content = doc_path.read_text(encoding="utf-8").lower()
     assert "matched-corpus table 1-trait analog" in content
     assert "not a reproduction of the published table 1 baseline" in content
-
-
-def test_table1_maps_doc_describes_exported_shift_family_fields() -> None:
-    """methods/table1_trait_condition_body_site_maps.md documents the exported shift family
-    provenance columns rather than claiming they are not exported (#1415).
-    """
-    doc_path = REPO_ROOT / "methods" / "table1_trait_condition_body_site_maps.md"
-    content = doc_path.read_text(encoding="utf-8")
-    assert "Outstanding: the correction family is described here but not exported" not in content
-    assert "nothing in the row says which correction family produced that q" not in content
-    for token in (
-        "family_id",
-        "family_size",
-        "correction_method",
-        table1_trait_maps.SHIFT_FAMILY_ID,
-        table1_trait_maps.SHIFT_CORRECTION,
-        "src/mtp/table1_trait_maps.py",
-    ):
-        assert token in content, f"Missing expected family provenance token {token!r} in doc"

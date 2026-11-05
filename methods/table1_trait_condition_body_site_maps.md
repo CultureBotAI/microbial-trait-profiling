@@ -356,20 +356,27 @@ these historical fraction results or turn them into absolute abundance claims.
 ### Exported correction-family columns
 
 `table1_traits_direction_shift.tsv` exports the correction family and its size on
-every row alongside `binomial_p`, `bh_q`, and `status`. In
-`src/mtp/table1_trait_maps.py:487-488`, `:528-530`, and `:555-557`,
-`write_shift_table` writes the header columns `"family_id"`, `"family_size"`, and
-`"correction_method"`, populated with `SHIFT_FAMILY_ID = "table1_six_fractions"`,
-`len(result.shifts)` (`6` for the six-trait Table 1 family, or the length of the
-supplied trait list), and `SHIFT_CORRECTION = "Benjamini-Hochberg"`. Every trait
-in `trait_order` is included in the family and padded at `p = 1.0` when it has no
-scored study (`src/mtp/table1_trait_maps.py:431-432`), so untestable traits stay
-inside the correction family (`family_size = len(result.shifts)`) while their
-exported `binomial_p` and `bh_q` cells remain blank. A reader joining this table
-to the composition arm's per-stratum BH tables or to the enrichment arm's global
-FDR can therefore distinguish `family_id = "table1_six_fractions"` (`family_size = 6`,
-`correction_method = "Benjamini-Hochberg"`) directly from the exported row (#178,
-#289, #1415).
+every row alongside `binomial_p`, `bh_q`, and `status`. The exported family columns
+were added in commit `c86a312` (PR #241). In `src/mtp/table1_trait_maps.py`,
+`write_shift_table` writes the header columns `family_id`, `family_size`, and
+`correction_method`, populated with `SHIFT_FAMILY_ID` (`table1_six_fractions`),
+`len(result.shifts)` (the length of the supplied trait list), and
+`SHIFT_CORRECTION` (`Benjamini-Hochberg`). Every trait in `trait_order` is included
+in the family: `compute_direction_shifts` pads it at `p = 1.0` when it has no
+scored study and applies Benjamini-Hochberg correction to the whole list.
+Untestable traits stay inside the correction family
+(`family_size = len(result.shifts)`) while their exported `binomial_p` and `bh_q`
+cells remain blank. A reader joining this table to the composition arm's
+per-stratum BH tables or to the enrichment arm's global FDR can therefore
+distinguish the production `family_id = "table1_six_fractions"`
+(`family_size = 6`, `correction_method = "Benjamini-Hochberg"`) directly from the
+exported row (#178, #289, #1415).
+
+`family_id` remains the constant `table1_six_fractions` even when the supplied
+trait list is not six long; the production callers `table1_trait_maps.main`,
+`calibration.fraction_sign_test`, `calibration.screened_fraction_sign_test`,
+`contrast_orientation.comparison_rows`, and `integrated_evidence.fraction_sign_records`
+all use the six Table 1 traits through `TRAIT_ORDER`, explicitly or by default.
 
 ## Reproducing
 
