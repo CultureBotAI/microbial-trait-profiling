@@ -31,6 +31,26 @@ CALIBRATION_CRITERIA = Path("data/derived/calibration/calibration_criteria.tsv")
 MATRIX_METADATA_COLUMNS = frozenset({"taxon_id", "taxon_name", "taxonomic_rank"})
 
 
+def refuse_nominal_ora(lines: Iterable[str]) -> None:
+    """Reject explicit nominal ORA in FDR-labelled figures (#1409).
+
+    Older headerless adjusted tables remain supported by these figure readers.
+    This guard is not a substitute for native workflow verification.
+    """
+    for line in lines:
+        if not line.strip():
+            continue
+        if not line.startswith("#"):
+            break
+        key, _, value = line[1:].partition(":")
+        if (
+            (key.strip() == "FDR" and value.strip().casefold() == "false")
+            or (key.strip() == "Stat-Type" and value.strip() == "p_value")
+            or (key.strip() == "FDR-Scope" and value.strip() == "none")
+        ):
+            raise ValueError("Nominal ORA input is not FDR-controlled; cannot use in this figure")
+
+
 @dataclass(frozen=True)
 class MatrixCounts:
     """Row and column counts from taxa_trait_matrix.tsv and taxa_trait_matrix_columns.tsv (#988)."""

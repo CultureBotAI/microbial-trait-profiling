@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 
 import pytest
+from scripts.adhoc.issue720_audit_ora_refresh import audit_pair
 
 from mtp.paths import file_sha256
 
@@ -421,3 +422,167 @@ def test_refresh_audit_rejects_duplicate_input_identities(
     assert result.returncode == 1, result.stdout
     report = json.loads(output.read_text(encoding="utf-8"))
     assert any(message in error for error in report["pairs"][0]["errors"])
+
+
+def _write_nominal_refresh_table(path: Path, scope: str, fingerprints: dict[str, str]) -> None:
+    """Write an independent two-profile contract fixture, never run the producer."""
+    metadata = {
+        "Tail": "upper",
+        "FDR": "False",
+        "FDR-Scope": scope,
+        "Testable-Set": "K>0 & N>0",
+        "P-Threshold": "0.2",
+        "Min-Fold": "0.0",
+        "Background-Mode": "TaxaMatrix (matrix.tsv)",
+        "Total-Profiles-Input": "2",
+        "Testable-Profiles": "2",
+        "Background-Taxa-Universe-M": "4",
+        "Total-Tests-Performed": "2",
+        "Significant-Hits": "1",
+        "Result-Status": "discoveries",
+        **fingerprints,
+    }
+    columns = [
+        "study_id",
+        "experiment_id",
+        "inc_dec",
+        "trait",
+        "p_value",
+        "fdr_q",
+        "fold",
+        "count",
+        "expected",
+        "testable_profiles",
+        "background_m",
+        "background_k",
+        "is_significant",
+        "correction_family",
+        "eligibility_status",
+    ]
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        for key, value in metadata.items():
+            handle.write(f"# {key}: {value}\n")
+        writer = csv.DictWriter(handle, fieldnames=columns, delimiter="\t")
+        writer.writeheader()
+        for direction, p_value, count, fold, significant in (
+            ("inc", "0.16666666666666666", 2, 2, "True"),
+            ("dec", "1.0", 0, 0, "False"),
+        ):
+            writer.writerow(
+                {
+                    "study_id": "s1",
+                    "experiment_id": "e1",
+                    "inc_dec": direction,
+                    "trait": "TraitA",
+                    "p_value": p_value,
+                    "fdr_q": "" if scope == "none" else p_value,
+                    "fold": fold,
+                    "count": count,
+                    "expected": 1,
+                    "testable_profiles": 2,
+                    "background_m": 4,
+                    "background_k": 2,
+                    "is_significant": significant,
+                    "correction_family": scope,
+                    "eligibility_status": "testable",
+                }
+            )
+
+
+def _nominal_refresh_pair(tmp_path: Path, scope: str) -> dict[str, str]:
+    profiles = tmp_path / "profiles.tsv"
+    matrix = tmp_path / "matrix.tsv"
+    profiles.write_text(
+        "study_id\texperiment_id\tinc_dec\ttaxa_count\tTraitA\n"
+        "s1\te1\tinc\t2\t2\ns1\te1\tdec\t2\t0\n",
+        encoding="utf-8",
+    )
+    matrix.write_text("taxon_id\tTraitA\n1\t1\n2\t1\n3\t0\n4\t0\n", encoding="utf-8")
+    _write_nominal_refresh_table(tmp_path / "historical.tsv", scope, {})
+    _write_nominal_refresh_table(
+        tmp_path / "current.tsv",
+        scope,
+        {"Profiles-SHA256": file_sha256(profiles), "Taxa-Matrix-SHA256": file_sha256(matrix)},
+    )
+    return {
+        "label": "nominal-contract",
+        "historical": "historical.tsv",
+        "current": "current.tsv",
+        "profiles": "profiles.tsv",
+        "taxa_matrix": "matrix.tsv",
+    }
+
+
+@pytest.mark.parametrize("scope", ["none", "global", "profile"])
+def test_nominal_refresh_audit_accepts_new_and_legacy_contracts(tmp_path: Path, scope: str) -> None:
+    pair = _nominal_refresh_pair(tmp_path, scope)
+    before = file_sha256(tmp_path / "historical.tsv")
+    result = audit_pair(pair, tmp_path)
+    assert result["passed"], result["errors"]
+    assert result["table_body_equal"]
+    current = result["current"]
+    assert isinstance(current, dict)
+    assert current["rows"] == 2
+    assert current["significant_rows"] == 1
+    assert file_sha256(tmp_path / "historical.tsv") == before
+
+
+@pytest.mark.parametrize("q_value", ["0.16666666666666666", "nan", "NA", "garbage", " "])
+def test_nominal_refresh_audit_refuses_nonblank_q(tmp_path: Path, q_value: str) -> None:
+    pair = _nominal_refresh_pair(tmp_path, "none")
+    for filename in ("historical.tsv", "current.tsv"):
+        mutate_table(tmp_path / filename, "fdr_q", q_value)
+    with pytest.raises(ValueError, match="fdr_q"):
+        audit_pair(pair, tmp_path)
+
+
+@pytest.mark.parametrize("scope", ["global", "profile"])
+def test_nominal_refresh_audit_legacy_q_must_equal_p(tmp_path: Path, scope: str) -> None:
+    pair = _nominal_refresh_pair(tmp_path, scope)
+    for filename in ("historical.tsv", "current.tsv"):
+        mutate_table(tmp_path / filename, "fdr_q", "0.3")
+    with pytest.raises(ValueError, match="fdr_q differs from p_value"):
+        audit_pair(pair, tmp_path)
+
+
+@pytest.mark.parametrize("scope", ["none", "global", "profile"])
+def test_nominal_refresh_audit_refuses_mismatched_family(tmp_path: Path, scope: str) -> None:
+    pair = _nominal_refresh_pair(tmp_path, scope)
+    family = "global" if scope == "none" else "none"
+    for filename in ("historical.tsv", "current.tsv"):
+        mutate_table(tmp_path / filename, "correction_family", family)
+    with pytest.raises(ValueError, match="correction_family"):
+        audit_pair(pair, tmp_path)
+
+
+def test_nominal_refresh_audit_validates_p_based_selection(tmp_path: Path) -> None:
+    pair = _nominal_refresh_pair(tmp_path, "none")
+    for filename in ("historical.tsv", "current.tsv"):
+        mutate_table(tmp_path / filename, "is_significant", "False")
+    with pytest.raises(ValueError, match="is_significant disagrees"):
+        audit_pair(pair, tmp_path)
+
+
+def test_nominal_refresh_audit_keeps_format_change_visible(tmp_path: Path) -> None:
+    pair = _nominal_refresh_pair(tmp_path, "global")
+    _write_nominal_refresh_table(
+        tmp_path / "current.tsv",
+        "none",
+        {
+            "Profiles-SHA256": file_sha256(tmp_path / "profiles.tsv"),
+            "Taxa-Matrix-SHA256": file_sha256(tmp_path / "matrix.tsv"),
+        },
+    )
+    result = audit_pair(pair, tmp_path)
+    historical = result["historical"]
+    current = result["current"]
+    errors = result["errors"]
+    assert isinstance(historical, dict)
+    assert isinstance(current, dict)
+    assert isinstance(errors, list)
+    assert historical["errors"] == []
+    assert current["errors"] == []
+    assert not result["passed"]
+    assert not result["table_body_equal"]
+    assert "Table body bytes differ" in errors
+    assert "Unexpected metadata change: FDR-Scope" in errors

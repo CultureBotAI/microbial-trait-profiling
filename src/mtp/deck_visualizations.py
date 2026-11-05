@@ -12,6 +12,7 @@ Generates high-resolution publication figures for the microbial trait profiling 
 from __future__ import annotations
 
 import argparse
+import io
 import sys
 from pathlib import Path
 from typing import Any
@@ -22,6 +23,7 @@ from scipy import stats
 
 from mtp.density_adjustment import SIGNIFICANT_POST_ADJUSTMENT_STATUSES
 from mtp.paths import DERIVED_DATA_DIR
+from mtp.quoted_results import refuse_nominal_ora
 from mtp.trait_key_policy import display_trait_label, read_recorded_member_ids
 
 # Table 1 canonical traits and display metadata
@@ -334,6 +336,15 @@ def generate_figure2_calibrated_ora_infographic(
     columns_path: Path | None = None,
 ) -> Path:
     """Render Calibrated ORA Infographic & Governance Summary."""
+    # Validate the same buffers used below, including a supplied depletion file
+    # even if the enrichment rows later provide all displayed decreased hits.
+    ora_text: dict[Path, str] = {}
+    for source in (enrichment_results_path, depletion_results_path):
+        if source is not None and source.exists():
+            text = source.read_text(encoding="utf-8")
+            refuse_nominal_ora(io.StringIO(text))
+            ora_text[source] = text
+
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
 
@@ -368,7 +379,7 @@ def generate_figure2_calibrated_ora_infographic(
     top_dep_counts: list[int] = []
 
     if enrichment_results_path and enrichment_results_path.exists():
-        enc_df = pd.read_csv(enrichment_results_path, sep="\t", comment="#")
+        enc_df = pd.read_csv(io.StringIO(ora_text[enrichment_results_path]), sep="\t", comment="#")
         trait_col = (
             "trait"
             if "trait" in enc_df.columns
@@ -408,7 +419,7 @@ def generate_figure2_calibrated_ora_infographic(
             top_dep_counts = [int(v) for v in t_counts.values]
 
     if not top_dep_labels and depletion_results_path and depletion_results_path.exists():
-        dep_df = pd.read_csv(depletion_results_path, sep="\t", comment="#")
+        dep_df = pd.read_csv(io.StringIO(ora_text[depletion_results_path]), sep="\t", comment="#")
         trait_col = (
             "trait"
             if "trait" in dep_df.columns
