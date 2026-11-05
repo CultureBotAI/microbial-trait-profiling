@@ -93,8 +93,8 @@ Issue #264 posed the diagnostic question: *Does the observed correlation between
 - **Post-PC1 Regression:** Pearson $r = +0.6256$ (an attenuation of $\Delta r = -0.2701$).
 - **Post-Profile-Composition:** Pearson $r = +0.1651$ (an attenuation of $\Delta r = -0.7306$).
 - **Paired Experiment Contrasts ($N = 2,257$):**
-  - **Raw Difference:** Wilcoxon signed-rank $p = 8.05 \times 10^{-13}$ (significant).
-  - **Density-Adjusted Difference:** Wilcoxon signed-rank $p = 2.97 \times 10^{-12}$ (remains significant post-adjustment in raw count profiles).
+  - **Raw Difference:** Wilcoxon signed-rank $p = 8.05 \times 10^{-13}$, BH $q = 4.83 \times 10^{-12}$ over the six reported Table 1 traits (significant at $q \le 0.05$, #1321).
+  - **Density-Adjusted Difference:** Wilcoxon signed-rank $p = 2.97 \times 10^{-12}$, BH $q = 1.78 \times 10^{-11}$ (remains significant at $q \le 0.05$ post-adjustment in raw count profiles; status `survived (significant post-adjustment)`).
 
 **Finding:** The correlation between *facultatively aerobic* and *moderately halophilic* is substantially inflated by the primary density axis, attenuating by $\Delta r = -0.27$ under PC1 regression and dropping to $+0.17$ under profile composition normalization. While the paired contrast survives in raw count profiles, previous analyses under binarized profiles showed full attenuation (#375), demonstrating sensitivity to profile representation.
 
