@@ -127,6 +127,7 @@ def _figure_commands(context: ArmContext) -> list[Command]:
                 density_effects,
                 density / "density_adjustment_summary.tsv",
                 density / "density_adjustment_report.txt",
+                density / "density_adjustment_provenance.json",
             ),
         ),
         Command(

@@ -453,3 +453,151 @@ def test_tsv_reports_q_values_over_the_six_traits_and_the_declared_list(tmp_path
         "untestable_p_held_at": 1.0,
         "label_threshold_q": 0.05,
     }
+
+
+def test_default_run_records_machine_readable_provenance_matching_trait_list_schema(
+    tmp_path: Path,
+) -> None:
+    """Default (arm) density runs write machine-readable BH provenance reusing trait-list
+    fields and names, while leaving trait-list provenance byte-for-byte unchanged (#1327)."""
+    import gzip
+
+    import bsdbng.density_adjustment as bsdbng_density
+    from mtp.trait_lists import file_sha256
+    from mtp.workflow.arms import ilyas, jed
+    from mtp.workflow.arms.types import ArmContext
+
+    profiles, columns = _write_fixture(tmp_path)
+    declared_ids = [*EXTRA_TRAITS, *TABLE_1_TRAITS]
+    list_path = tmp_path / "traits.txt"
+    list_path.write_text("\n".join(declared_ids) + "\n", encoding="utf-8")
+    trait_list = load_trait_list(list_path)
+
+    default_dir = tmp_path / "default"
+    declared_dir = tmp_path / "declared"
+    default_res = run_density_audit(profiles, columns, default_dir, code_commit="abc123")
+    declared_res = run_density_audit(
+        profiles, columns, declared_dir, code_commit="abc123", trait_list=trait_list
+    )
+
+    assert (default_dir / "density_adjustment_provenance.json").is_file()
+    filename = density_module.DENSITY_PROVENANCE_FILENAME
+    assert filename == "density_adjustment_provenance.json"
+    assert filename == bsdbng_density.DENSITY_PROVENANCE_FILENAME
+    assert bsdbng_density.density_provenance is density_module.density_provenance
+    assert bsdbng_density.write_density_provenance is density_module.write_density_provenance
+
+    default_prov_path = default_dir / filename
+    declared_prov_path = declared_dir / TRAIT_LIST_PROVENANCE_FILENAME
+    assert default_prov_path.is_file()
+    assert not (default_dir / TRAIT_LIST_PROVENANCE_FILENAME).exists()
+    assert default_res["density_provenance"] == default_prov_path
+    assert default_res["trait_list_provenance"] is None
+    assert default_res["provenance"] == default_prov_path
+
+    assert declared_prov_path.is_file()
+    assert not (declared_dir / filename).exists()
+    assert declared_res["density_provenance"] is None
+    assert declared_res["trait_list_provenance"] == declared_prov_path
+    assert declared_res["provenance"] == declared_prov_path
+
+    default_prov = json.loads(default_prov_path.read_text(encoding="utf-8"))
+    declared_prov = json.loads(declared_prov_path.read_text(encoding="utf-8"))
+
+    # Default provenance reuses the exact field names and order from trait-list mode,
+    # omitting only the two declared-list file fields.
+    assert list(default_prov) == [
+        key for key in declared_prov if key not in {"trait_list_file", "trait_list_sha256"}
+    ]
+    expected_default_q = {
+        "procedure": "benjamini_hochberg",
+        "family": "every reported trait",
+        "family_size": 6,
+        "corrected_separately": ["raw_wilcoxon_p", "adj_wilcoxon_p"],
+        "untestable_p_held_at": 1.0,
+        "label_threshold_q": 0.05,
+    }
+    assert default_prov == {
+        "trait_count": 6,
+        "trait_ids": list(TABLE_1_TRAITS),
+        "reported_table": "table1_density_adjusted_effects.tsv",
+        "pc1_fit_traits": "every non-MediaDive trait column, independent of the list",
+        "q_values": expected_default_q,
+        "profiles_file": "profiles.tsv",
+        "profiles_sha256": file_sha256(profiles),
+        "columns_file": "columns.tsv",
+        "columns_sha256": file_sha256(columns),
+        "code_commit": "abc123",
+    }
+    assert default_res["q_values"] == expected_default_q
+    assert declared_res["q_values"] == declared_prov["q_values"]
+
+    # Trait-list provenance is byte-for-byte unchanged.
+    expected_declared_text = (
+        json.dumps(
+            {
+                **trait_list.provenance(),
+                "reported_table": "table1_density_adjusted_effects.tsv",
+                "pc1_fit_traits": "every non-MediaDive trait column, independent of the list",
+                "q_values": density_module.q_value_provenance(len(declared_ids)),
+                "profiles_file": "profiles.tsv",
+                "profiles_sha256": file_sha256(profiles),
+                "columns_file": "columns.tsv",
+                "columns_sha256": file_sha256(columns),
+                "code_commit": "abc123",
+            },
+            indent=2,
+        )
+        + "\n"
+    )
+    assert declared_prov_path.read_text(encoding="utf-8") == expected_declared_text
+
+    # Gzip fallback hashes the actual .gz files read in default mode too.
+    gz_dir = tmp_path / "gz_inputs"
+    gz_dir.mkdir()
+    profiles_gz = gz_dir / "profiles.tsv.gz"
+    columns_gz = gz_dir / "columns.tsv.gz"
+    profiles_gz.write_bytes(gzip.compress(profiles.read_bytes()))
+    columns_gz.write_bytes(gzip.compress(columns.read_bytes()))
+    gz_out = tmp_path / "gz_default"
+    run_density_audit(gz_dir / "profiles.tsv", gz_dir / "columns.tsv", gz_out, code_commit="gz123")
+    gz_prov = json.loads((gz_out / filename).read_text(encoding="utf-8"))
+    assert gz_prov["profiles_file"] == "profiles.tsv.gz"
+    assert gz_prov["profiles_sha256"] == file_sha256(profiles_gz)
+    assert gz_prov["columns_file"] == "columns.tsv.gz"
+    assert gz_prov["columns_sha256"] == file_sha256(columns_gz)
+
+    # Both arm plans (jed and ilyas) declare the default density provenance file.
+    products = dict.fromkeys(
+        (
+            "raw_dump",
+            "count_profiles",
+            "experiments",
+            "feature_metadata",
+            "reported_taxa",
+            "taxa_matrix",
+            "study_table",
+            "kg_edges",
+            "kg_nodes",
+            "source_identity",
+            "ora_profiles",
+        ),
+        tmp_path / "core" / "in.tsv",
+    )
+    arm_ctx = ArmContext(
+        repository=Path(__file__).resolve().parents[1],
+        manifest=tmp_path / "core" / "run.json",
+        output=tmp_path / "arm",
+        inputs=tmp_path / "arm" / "inputs",
+        products=products,
+        code_commit="abc123",
+        replicates=None,
+        seed=None,
+        figures=True,
+    )
+    jed_density = next(c for c in jed.build_commands(arm_ctx) if c.id == "density_adjustment")
+    ilyas_density = next(
+        c for c in ilyas.build_commands(arm_ctx) if c.id == "figure_density_adjustment"
+    )
+    assert (arm_ctx.output / "density_adjustment" / filename) in jed_density.outputs
+    assert (arm_ctx.output / "density_adjustment" / filename) in ilyas_density.outputs
