@@ -17,7 +17,7 @@ def single_method_registry() -> dict[str, Any]:
 
 
 @pytest.mark.parametrize("role", ["primary", "comparison"])
-def test_own_family_roles_cannot_borrow_another_familys_anchor(role: str) -> None:
+def test_own_family_roles_cannot_borrow_another_family_anchor(role: str) -> None:
     registry = single_method_registry()
     # A different family covers BH at the shared site. The first still may not
     # claim BH without declaring it at one of its own anchors.
