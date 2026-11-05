@@ -1,5 +1,8 @@
 # Additive full-family multiple testing
 
+This is the contract for the additive sidecar. The project-wide rules, and the registry of
+every correction family, are in [multiple_testing_policy.md](multiple_testing_policy.md).
+
 Policy version 1 is defined in [multiple_testing_policy_v1.yaml](multiple_testing_policy_v1.yaml)
 and validated by [the LinkML schema](../schema/multiple_testing.yaml). The engine
 in `mtp.multiple_testing` reports BY as primary **within this additive sidecar**,

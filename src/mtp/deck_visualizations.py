@@ -12,6 +12,8 @@ Generates high-resolution publication figures for the microbial trait profiling 
 from __future__ import annotations
 
 import argparse
+import io
+import math
 import sys
 from pathlib import Path
 from typing import Any
@@ -22,6 +24,7 @@ from scipy import stats
 
 from mtp.density_adjustment import SIGNIFICANT_POST_ADJUSTMENT_STATUSES
 from mtp.paths import DERIVED_DATA_DIR
+from mtp.quoted_results import refuse_nominal_ora
 from mtp.trait_key_policy import display_trait_label, read_recorded_member_ids
 
 # Table 1 canonical traits and display metadata
@@ -204,7 +207,7 @@ def generate_figure1_condition_anatomy_ora_heatmap(
                 btest = stats.binomtest(inc_wins, tested, p=0.5, alternative="two-sided")
                 pval = float(btest.pvalue)
             else:
-                pval = 1.0
+                pval = math.nan
 
             results_list.append(
                 {
@@ -212,6 +215,7 @@ def generate_figure1_condition_anatomy_ora_heatmap(
                     "trait": trait,
                     "trait_name": short_names[trait],
                     "n_studies": n_studies,
+                    "tested": tested,
                     "net_delta": net_delta,
                     "pval": pval,
                 }
@@ -288,11 +292,17 @@ def generate_figure1_condition_anatomy_ora_heatmap(
         )
     )
 
+    n_cond_sites = len(matrix_delta.index)
+    n_traits = len(ordered_cols)
+    n_tests = int((res_df["tested"] > 0).sum())
     subtitle = (
-        "Paired study-level directional contrasts across 22 clinical conditions and "
+        f"Paired study-level directional contrasts across {n_cond_sites} clinical conditions and "
         "anatomical body sites for Table 1 canonical traits.<br>"
-        "Net contrast Delta = (N_inc - N_dec) / N_studies. Cell asterisks denote two-sided "
-        "binomial sign test (* p < 0.05, ** p < 0.01, *** p < 0.001).<br>"
+        "Net contrast Delta = (N_inc - N_dec) / N_studies.<br>"
+        "Cell asterisks denote uncorrected "
+        "two-sided binomial sign test nominal p (* nominal p < 0.05, ** nominal p < 0.01, "
+        f"*** nominal p < 0.001;<br>{n_tests} nominal tests across {n_cond_sites} x {n_traits} "
+        "condition-site x trait cells).<br>"
         "Orange = Enriched in Increased Signatures; Blue = Enriched in Decreased Signatures.<br>"
         "Curated organism-level annotations from KG-Microbe; does not measure "
         "in vivo physiological activity or metabolite flux."
@@ -311,7 +321,7 @@ def generate_figure1_condition_anatomy_ora_heatmap(
         },
         width=1150,
         height=1080,
-        margin={"l": 320, "r": 80, "t": 170, "b": 70},
+        margin={"l": 320, "r": 80, "t": 195, "b": 70},
         plot_bgcolor="white",
     )
     fig.update_xaxes(tickangle=-30, title_text="Curated Functional Trait (KG-Microbe)")
@@ -334,6 +344,15 @@ def generate_figure2_calibrated_ora_infographic(
     columns_path: Path | None = None,
 ) -> Path:
     """Render Calibrated ORA Infographic & Governance Summary."""
+    # Validate the same buffers used below, including a supplied depletion file
+    # even if the enrichment rows later provide all displayed decreased hits.
+    ora_text: dict[Path, str] = {}
+    for source in (enrichment_results_path, depletion_results_path):
+        if source is not None and source.exists():
+            text = source.read_text(encoding="utf-8")
+            refuse_nominal_ora(io.StringIO(text))
+            ora_text[source] = text
+
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
 
@@ -368,7 +387,7 @@ def generate_figure2_calibrated_ora_infographic(
     top_dep_counts: list[int] = []
 
     if enrichment_results_path and enrichment_results_path.exists():
-        enc_df = pd.read_csv(enrichment_results_path, sep="\t", comment="#")
+        enc_df = pd.read_csv(io.StringIO(ora_text[enrichment_results_path]), sep="\t", comment="#")
         trait_col = (
             "trait"
             if "trait" in enc_df.columns
@@ -408,7 +427,7 @@ def generate_figure2_calibrated_ora_infographic(
             top_dep_counts = [int(v) for v in t_counts.values]
 
     if not top_dep_labels and depletion_results_path and depletion_results_path.exists():
-        dep_df = pd.read_csv(depletion_results_path, sep="\t", comment="#")
+        dep_df = pd.read_csv(io.StringIO(ora_text[depletion_results_path]), sep="\t", comment="#")
         trait_col = (
             "trait"
             if "trait" in dep_df.columns
@@ -629,6 +648,8 @@ def generate_figure3_lead_findings_ora_evidence(
     ci_highs: list[float] = []
     annot_texts: list[str] = []
     table_rows: list[list[str]] = []
+    n_binom_tests = 0
+    n_wilcoxon_tests = 0
 
     for item in EXPLORATORY_LEADS:
         cond = item["condition"]
@@ -667,45 +688,61 @@ def generate_figure3_lead_findings_ora_evidence(
         non_ties = inc_studies + dec_studies
         success = dec_studies if target_dir == "Decreased" else inc_studies
         if non_ties > 0:
+            n_binom_tests += 1
             btest = stats.binomtest(success, non_ties, p=0.5)
             ci = btest.proportion_ci(confidence_level=0.95)
             pval = float(btest.pvalue)
             frac = success / non_ties
             low = float(ci.low)
             high = float(ci.high)
+            p_str = f"nominal p={pval:.2e}" if pval < 0.001 else f"nominal p={pval:.4f}"
         else:
-            pval = 1.0
-            frac = 0.5
-            low, high = 0.5, 0.5
+            pval = math.nan
+            frac = math.nan
+            low, high = math.nan, math.nan
+            p_str = "not tested"
 
         # Profile mean shift calculation
-        s_series = pd.Series(study_shifts)
-        mean_shift = float(s_series.mean())
+        s_series = pd.Series(study_shifts, dtype=float)
+        mean_str = f"{float(s_series.mean()):+.2f}" if len(s_series) > 0 else "NA"
         non_zero_shifts = s_series[s_series != 0]
         if len(non_zero_shifts) > 0:
+            n_wilcoxon_tests += 1
             wilcoxon_res = stats.wilcoxon(non_zero_shifts)
             w_pval = float(wilcoxon_res.pvalue)
+            w_p_str = f"nominal p={w_pval:.2e}" if w_pval < 0.001 else f"nominal p={w_pval:.4f}"
         else:
-            w_pval = 1.0
+            w_pval = math.nan
+            w_p_str = "not tested"
 
-        p_str = f"p={pval:.2e}" if pval < 0.001 else f"p={pval:.4f}"
-        w_p_str = f"p={w_pval:.2e}" if w_pval < 0.001 else f"p={w_pval:.4f}"
         label = f"{cond} x Feces<br>[{t_name}]"
         forest_labels.append(label)
         proportions.append(frac)
         ci_lows.append(low)
         ci_highs.append(high)
-        annot_texts.append(f"{success}/{non_ties} studies ({frac * 100:.1f}%), {p_str}")
+        annot_texts.append(
+            f"{success}/{non_ties} studies ({frac * 100:.1f}%), {p_str}"
+            if non_ties > 0
+            else f"0/0 studies ({p_str})"
+        )
 
-        status = (
-            "Concordant (p < 0.05)" if pval < 0.05 or w_pval < 0.05 else "Directionally Aligned"
+        if not math.isfinite(pval) and not math.isfinite(w_pval):
+            status = "Not tested"
+        elif pval < 0.05 or w_pval < 0.05:
+            status = "Concordant (nominal p < 0.05)"
+        else:
+            status = "Directionally Aligned"
+        binom_cell = (
+            f"{success}/{non_ties} non-tied ({frac * 100:.1f}%)<br>({p_str})"
+            if non_ties > 0
+            else f"0/0 non-tied<br>({p_str})"
         )
         table_rows.append(
             [
                 f"{cond}<br>({t_name})",
                 target_dir,
-                f"{n_studies} studies<br>Mean: {mean_shift:+.2f} ({w_p_str})",
-                f"{success}/{non_ties} non-tied<br>({frac * 100:.1f}%, {p_str})",
+                f"{n_studies} studies<br>Mean: {mean_str}<br>({w_p_str})",
+                binom_cell,
                 status,
             ]
         )
@@ -713,8 +750,8 @@ def generate_figure3_lead_findings_ora_evidence(
     fig = make_subplots(
         rows=1,
         cols=2,
-        column_widths=[0.42, 0.58],
-        horizontal_spacing=0.12,
+        column_widths=[0.38, 0.62],
+        horizontal_spacing=0.08,
         subplot_titles=(
             "A. Study Directional Consistency (Exact 95% Clopper-Pearson Intervals)",
             "B. Multi-Scale Evidence Synthesis (Continuous Shift vs. Discrete Sign Test)",
@@ -728,15 +765,21 @@ def generate_figure3_lead_findings_ora_evidence(
             x=proportions,
             y=forest_labels,
             mode="markers+text",
-            text=[f"{p * 100:.1f}%" for p in proportions],
+            text=[f"{p * 100:.1f}%" if math.isfinite(p) else "" for p in proportions],
             textposition="top center",
             textfont={"size": 10, "weight": "bold"},
             marker={"size": 12, "color": "#2980b9", "line": {"color": "#1a252f", "width": 1.2}},
             error_x={
                 "type": "data",
                 "symmetric": False,
-                "array": [h - p for h, p in zip(ci_highs, proportions, strict=True)],
-                "arrayminus": [p - low for low, p in zip(ci_lows, proportions, strict=True)],
+                "array": [
+                    h - p if math.isfinite(p) and math.isfinite(h) else 0.0
+                    for h, p in zip(ci_highs, proportions, strict=True)
+                ],
+                "arrayminus": [
+                    p - low if math.isfinite(p) and math.isfinite(low) else 0.0
+                    for low, p in zip(ci_lows, proportions, strict=True)
+                ],
                 "color": "#34495e",
                 "thickness": 1.8,
                 "width": 6,
@@ -751,19 +794,19 @@ def generate_figure3_lead_findings_ora_evidence(
     # Panel B: Table
     fig.add_trace(
         go.Table(
-            columnwidth=[0.22, 0.10, 0.25, 0.27, 0.16],
+            columnwidth=[0.22, 0.09, 0.21, 0.21, 0.27],
             header={
                 "values": [
                     "<b>Condition<br>(Trait)</b>",
                     "<b>Target<br>Dir.</b>",
-                    "<b>Continuous Profile Shift<br>(Mean Shift, Wilcoxon p)</b>",
-                    "<b>Discrete Sign Test<br>(Non-Tied, Binomial p)</b>",
+                    "<b>Continuous Profile Shift<br>(Mean Shift,<br>Nominal Wilcoxon p)</b>",
+                    "<b>Discrete Sign Test<br>(Non-Tied,<br>Nominal Binomial p)</b>",
                     "<b>Consistency<br>Status</b>",
                 ],
                 "fill_color": "#2c3e50",
                 "font": {"color": "white", "size": 10},
                 "align": ["left", "center", "center", "center", "center"],
-                "height": 48,
+                "height": 56,
             },
             cells={
                 "values": [
@@ -782,17 +825,20 @@ def generate_figure3_lead_findings_ora_evidence(
                 ],
                 "font": {"size": 9.5},
                 "align": ["left", "center", "center", "center", "center"],
-                "height": 40,
+                "height": 52,
             },
         ),
         row=1,
         col=2,
     )
 
+    n_leads = len(EXPLORATORY_LEADS)
+    n_tests = n_wilcoxon_tests + n_binom_tests
     subtitle = (
-        "Multi-scale consistency check of four exploratory leads (Slide 1) across the "
+        f"Multi-scale consistency check of {n_leads} exploratory leads (Slide 1) across the "
         "continuous profile shift arm and discrete sign test arm on shared BugSigDB fecal "
-        "studies.<br>"
+        f"studies<br>({n_tests} nominal tests: {n_wilcoxon_tests} Wilcoxon + {n_binom_tests} "
+        "binomial, uncorrected).<br>"
         "Forest points show proportion of non-tied studies shifting in target direction "
         "with exact 95% Clopper-Pearson binomial intervals.<br>"
         "Evaluates internal consistency on shared data; does not claim independent "
@@ -810,9 +856,9 @@ def generate_figure3_lead_findings_ora_evidence(
             "xanchor": "left",
             "yanchor": "top",
         },
-        width=1550,
+        width=1650,
         height=680,
-        margin={"l": 260, "r": 60, "t": 175, "b": 70},
+        margin={"l": 240, "r": 50, "t": 190, "b": 70},
         plot_bgcolor="white",
     )
     fig.update_xaxes(
@@ -862,7 +908,9 @@ def generate_figure4_annotation_density_pc1_landscape(
     rho_res = stats.spearmanr(log_counts, pc1_loadings)
     spearman_rho = float(rho_res.statistic)
     spearman_p = float(rho_res.pvalue)
-    p_str = f"p = {spearman_p:.2e}" if spearman_p < 0.001 else f"p = {spearman_p:.4f}"
+    p_str = (
+        f"nominal p = {spearman_p:.2e}" if spearman_p < 0.001 else f"nominal p = {spearman_p:.4f}"
+    )
 
     # Fit linear regression trendline for visualization
     slope, intercept = np.polyfit(log_counts, pc1_loadings, 1)
@@ -919,7 +967,8 @@ def generate_figure4_annotation_density_pc1_landscape(
         subplot_titles=(
             (
                 "A. Trait PC1 Loading vs. Annotation Density<br>"
-                f"(Spearman rho = {spearman_rho:.3f}, {p_str})"
+                f"(Spearman rho = {spearman_rho:.3f}, {p_str};<br>"
+                f"1 nominal test, n = {len(common_traits)} traits)"
             ),
             (
                 "B. Table 1 Trait Shift Stability Under PC1 Residualization<br>"
@@ -1074,7 +1123,8 @@ def generate_figure4_annotation_density_pc1_landscape(
 
     subtitle = (
         "Methodological audit of KG-Microbe knowledge graph structure.<br>"
-        "(A) Trait loadings on PC1 correlate with curation depth; "
+        f"(A) Trait loadings on PC1 correlate with curation depth (1 nominal Spearman test across "
+        f"{len(common_traits)} traits); "
         "(B) Table 1 paired trait shifts before vs. after PC1 residualization;<br>"
         "(C) Near-twin trait pairs sharing >80% taxon annotations."
     )

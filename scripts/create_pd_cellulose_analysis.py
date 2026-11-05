@@ -319,14 +319,25 @@ def build_pd_vs_other_cellulose_summary(
 ) -> pd.DataFrame:
     """Compare PD feces to other feces for cellulose z-scores."""
     records: list[dict[str, object]] = []
+    n_tests = 0
     for direction in ["inc", "dec"]:
         feces_mask = metadata["body_site_group"].eq(FECES) & metadata["inc_dec"].eq(direction)
         pd_mask = feces_mask & metadata["condition"].eq(PD_CONDITION)
         other_mask = feces_mask & ~metadata["condition"].eq(PD_CONDITION)
         pd_values = zscores.loc[pd_mask, CELLULOSE_ID]
         other_values = zscores.loc[other_mask, CELLULOSE_ID]
-        odds_ratio, fisher_p = fisher_positive_test(pd_values, other_values)
-        mann_p = stats.mannwhitneyu(pd_values, other_values, alternative="two-sided").pvalue
+        if pd_values.dropna().empty or other_values.dropna().empty:
+            odds_ratio = float("nan")
+            fisher_p = float("nan")
+            mann_p = float("nan")
+            p_value_type = "not_tested"
+        else:
+            odds_ratio, fisher_p = fisher_positive_test(pd_values, other_values)
+            mann_p = float(
+                stats.mannwhitneyu(pd_values, other_values, alternative="two-sided").pvalue
+            )
+            p_value_type = "nominal"
+            n_tests += int(np.isfinite(fisher_p)) + int(np.isfinite(mann_p))
         for group_label, mask, values in [
             ("PD feces", pd_mask, pd_values),
             ("Other feces", other_mask, other_values),
@@ -338,15 +349,18 @@ def build_pd_vs_other_cellulose_summary(
                     "profiles": int(mask.sum()),
                     "studies": int(metadata.loc[mask, "study_id"].nunique()),
                     "positive_z_profiles": int((values > 0).sum()),
-                    "positive_z_rate": float((values > 0).mean()),
-                    "mean_z": float(values.mean()),
-                    "median_z": float(values.median()),
+                    "positive_z_rate": float((values > 0).mean()) if len(values) else float("nan"),
+                    "mean_z": float(values.mean()) if len(values) else float("nan"),
+                    "median_z": float(values.median()) if len(values) else float("nan"),
                     "pd_vs_other_positive_z_odds_ratio": odds_ratio,
                     "pd_vs_other_fisher_p": float(fisher_p),
                     "pd_vs_other_mannwhitney_p": float(mann_p),
+                    "p_value_type": p_value_type,
                 }
             )
-    return pd.DataFrame.from_records(records)
+    summary = pd.DataFrame.from_records(records)
+    summary["n_tests"] = n_tests
+    return summary
 
 
 def fit_cluster_ols(
@@ -361,15 +375,23 @@ def fit_cluster_ols(
         [np.ones(len(frame)), *[frame[term].to_numpy(dtype=float) for term in terms]]
     )
     term_names = ["intercept", *terms]
-    xtx_inv = np.linalg.pinv(x.T @ x)
-    beta = xtx_inv @ x.T @ y
+    _, s_x, vt_x = np.linalg.svd(x, full_matrices=False)
+    rcond_x = max(x.shape) * float(np.finfo(float).eps)
+    rank_x = int(np.sum(s_x > (rcond_x * s_x[0] if s_x.size else 0.0)))
+    v_null = vt_x[rank_x:, :]
+    identifiable = np.sum(v_null**2, axis=0) <= rcond_x
+    beta, _, _, _ = np.linalg.lstsq(x, y, rcond=None)
     residuals = y - x @ beta
-    meat = np.zeros((len(term_names), len(term_names)))
+    xtx_inv = np.linalg.pinv(x.T @ x)
+    cluster_scores = []
     for _cluster, group in frame.groupby(cluster_column, sort=False):
         indices = group.index.to_numpy()
         xg = x[indices, :]
-        ug = residuals[indices][:, None]
-        meat += xg.T @ ug @ ug.T @ xg
+        ug = residuals[indices]
+        cluster_scores.append(xg.T @ ug)
+    scores_matrix = (
+        np.vstack(cluster_scores) if cluster_scores else np.zeros((0, len(term_names)), dtype=float)
+    )
     groups = frame[cluster_column].nunique()
     observations = len(frame)
     parameters = len(term_names)
@@ -377,22 +399,35 @@ def fit_cluster_ols(
         finite_sample = (groups / (groups - 1)) * ((observations - 1) / (observations - parameters))
     else:
         finite_sample = 1.0
-    cov = finite_sample * xtx_inv @ meat @ xtx_inv
-    se = np.sqrt(np.maximum(np.diag(cov), 0.0))
-    t_stat = np.divide(beta, se, out=np.full_like(beta, np.nan), where=se > 0)
+    influence = np.sqrt(finite_sample) * (scores_matrix @ xtx_inv)
+    se = np.linalg.norm(influence, axis=0)
+    # Scale-free tolerance: an SE this far below the coefficient's own scale is rounding
+    # noise of a rank-deficient design. Centring y keeps the rule invariant to shifting
+    # the outcome, and no factor grows with the number of profiles (#1538).
+    scale = np.sqrt(finite_sample * np.maximum(np.diag(xtx_inv), 0.0)) * float(
+        np.linalg.norm(y - y.mean())
+    )
+    rcond_se = float(np.sqrt(np.finfo(float).eps))
+    estimable = identifiable & (scale > 0.0) & (se > rcond_se * scale)
+    coef_out = np.where(identifiable, beta, np.nan)
+    se_out = np.where(identifiable, se, np.nan)
+    t_stat = np.divide(beta, se, out=np.full_like(beta, np.nan), where=estimable)
     df = max(groups - 1, 1)
-    p_values = 2 * stats.t.sf(np.abs(t_stat), df=df)
-    ci_low = beta - stats.t.ppf(0.975, df=df) * se
-    ci_high = beta + stats.t.ppf(0.975, df=df) * se
+    p_values = np.where(estimable, 2 * stats.t.sf(np.abs(t_stat), df=df), np.nan)
+    t_crit = float(stats.t.ppf(0.975, df=df))
+    ci_low = np.where(identifiable, beta - t_crit * se, np.nan)
+    ci_high = np.where(identifiable, beta + t_crit * se, np.nan)
     return pd.DataFrame(
         {
             "outcome": outcome,
             "term": term_names,
-            "coefficient": beta,
-            "std_error_clustered_by_study": se,
+            "coefficient": coef_out,
+            "std_error_clustered_by_study": se_out,
             "t_stat": t_stat,
             "df": df,
             "p_value": p_values,
+            "p_value_type": np.where(np.isfinite(p_values), "nominal", "not_tested"),
+            "n_model_terms": len(terms),
             "ci_low": ci_low,
             "ci_high": ci_high,
             "cluster_count": groups,
@@ -424,6 +459,7 @@ def build_cellulose_model_tables(
         ],
         ignore_index=True,
     )
+    models["n_tests"] = int(models["p_value"].notna().sum())
     models["term_label"] = models["term"].map(
         {
             "intercept": "Other feces, increased baseline",
@@ -649,11 +685,14 @@ def plot_direction_specificity(
     dec_pd = pd_vs_other[
         pd_vs_other["direction"].eq("decreased") & pd_vs_other["group"].eq("PD feces")
     ].iloc[0]
+    n_directions = int(
+        pd_vs_other.loc[pd_vs_other["p_value_type"].eq("nominal"), "direction"].nunique()
+    )
     ax.text(
         0.98,
         0.05,
         f"Decreased PD vs other feces:\nOR={dec_pd.pd_vs_other_positive_z_odds_ratio:.2f}, "
-        f"Fisher p={dec_pd.pd_vs_other_fisher_p:.3f}",
+        f"nominal Fisher p={dec_pd.pd_vs_other_fisher_p:.3f} ({n_directions} directions tested)",
         transform=ax.transAxes,
         ha="right",
         va="bottom",
@@ -929,7 +968,7 @@ def plot_enrichment_test(
     for y_pos, row, color in zip(y, plot_frame.itertuples(index=False), colors, strict=True):
         ax.plot([row.ci_low, row.ci_high], [y_pos, y_pos], color=color, linewidth=2.2)
         ax.scatter(row.coefficient, y_pos, s=90, color=color, edgecolor="white", zorder=3)
-        p_label = "p<0.001" if row.p_value < 0.001 else f"p={row.p_value:.3f}"
+        p_label = "nominal p<0.001" if row.p_value < 0.001 else f"nominal p={row.p_value:.3f}"
         ax.text(
             row.coefficient,
             y_pos + 0.20,
@@ -942,8 +981,13 @@ def plot_enrichment_test(
     # Headroom keeps the top estimate's label below the panel title.
     ax.set_ylim(-0.5, len(plot_frame) - 0.2)
     ax.set_yticks(y, plot_frame["term_label"])
-    ax.set_xlabel("OLS coefficient on cellulose z-score")
-    ax.set_title("Study-clustered interaction model", fontweight="bold")
+    ax.set_xlabel(
+        f"OLS coefficient on cellulose z-score (nominal p, {len(plot_frame)} model terms tested)"
+    )
+    ax.set_title(
+        f"Study-clustered interaction model ({len(plot_frame)} nominal tests)",
+        fontweight="bold",
+    )
     ax.grid(axis="x", color=SLATE_200, linewidth=0.8)
     ax.spines[["top", "right", "left"]].set_visible(False)
 
@@ -1113,6 +1157,17 @@ def write_interpretations(
         "taxon_name",
     ].tolist()
 
+    n_non_intercept_terms = int(
+        model_table.loc[~model_table["term"].eq("intercept"), "term"].nunique()
+    )
+    n_outcomes = int(model_table["outcome"].nunique())
+    n_model_tests = int(model_table["p_value"].notna().sum())
+    n_directions = int(
+        pd_vs_other.loc[pd_vs_other["p_value_type"].eq("nominal"), "direction"].nunique()
+    )
+    n_tests_per_direction = 2
+    n_direction_tests = int(pd_vs_other["n_tests"].iloc[0])
+
     lines = [
         "# Parkinson's Disease and Cellulose Catabolic Process",
         "",
@@ -1136,8 +1191,11 @@ def write_interpretations(
             "profiles is "
             f"`{interaction.coefficient:+.3f}` cellulose z (95% CI "
             f"`{interaction.ci_low:+.3f}` to `{interaction.ci_high:+.3f}`, "
-            f"`p={interaction.p_value:.3g}`, {int(interaction.cluster_count)} study "
-            f"clusters), and the interval {interval} zero. This is one nominal test, not "
+            f"`nominal p={interaction.p_value:.3g}`, {int(interaction.cluster_count)} study "
+            f"clusters), and the interval {interval} zero. This is the interaction's nominal p, "
+            f"one of {n_non_intercept_terms} non-intercept model terms tested in the figure "
+            f"({n_model_tests} terms across {n_outcomes} outcomes in "
+            "`pd_cellulose_interaction_model.tsv`), not "
             "corrected for the other conditions and traits examined; the corrected screen "
             "of every eligible fecal condition-trait contrast is described in "
             "`pd_condition_taxon_trait_network_methods.md`."
@@ -1190,7 +1248,11 @@ def write_interpretations(
         (
             f"The decreased-direction PD-vs-other Fisher test gives an odds ratio "
             f"of `{dec_vs_other.pd_vs_other_positive_z_odds_ratio:.2f}` and "
-            f"`p={dec_vs_other.pd_vs_other_fisher_p:.3g}`. It treats the profiles of one "
+            f"`nominal p={dec_vs_other.pd_vs_other_fisher_p:.3g}` "
+            f"(two-sided Mann-Whitney `nominal p={dec_vs_other.pd_vs_other_mannwhitney_p:.3g}`; "
+            f"uncorrected across {n_directions} directions x {n_tests_per_direction} tests = "
+            f"{n_direction_tests} nominal tests in "
+            "`pd_cellulose_vs_other_feces_summary.tsv`). It treats the profiles of one "
             "study as independent, so the study-clustered model below is the better guide."
         ),
         "",
@@ -1199,7 +1261,12 @@ def write_interpretations(
             f"PD-by-decreased interaction, with standard errors clustered by study. The "
             f"cellulose z-score interaction term is `{interaction.coefficient:.3f}` "
             f"(95% CI `{interaction.ci_low:.3f}` to `{interaction.ci_high:.3f}`, "
-            f"`p={interaction.p_value:.3g}`). It tests whether the decreased direction has "
+            f"`nominal p={interaction.p_value:.3g}`, uncorrected across "
+            f"{n_non_intercept_terms} non-intercept "
+            f"model terms plotted in `pd_cellulose_enrichment_test.png` and "
+            f"{n_model_tests} terms across {n_outcomes} outcomes in "
+            "`pd_cellulose_interaction_model.tsv`). "
+            "It tests whether the decreased direction has "
             "an extra PD-associated shift in cellulose annotation beyond the main PD and "
             "direction effects."
         ),

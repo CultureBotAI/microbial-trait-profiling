@@ -14,6 +14,11 @@ Malformed input (missing file, missing columns, non-numeric statistics,
 row counts that disagree with the metadata, or an empty table that does not
 say how many tests were performed) raises :class:`MalformedResultsError`
 instead of yielding an empty successful report.
+
+Nominal files declare ``FDR: False`` and ``FDR-Scope: none`` and leave ``fdr_q``
+empty. Legacy nominal files with global/profile scope are accepted only when
+their numeric ``fdr_q`` copies ``p_value`` exactly. Both nominal representations
+expose unavailable adjusted values as NaN, so downstream exports leave them blank.
 """
 
 from __future__ import annotations
@@ -121,10 +126,39 @@ def _parse_metadata_count(metadata: dict[str, str], key: str, path: Path) -> int
     return value
 
 
-def _validate_numeric(frame: Any, path: Path, first_data_line: int) -> Any:
+def _correction_mode(frame: Any, metadata: dict[str, str], path: Path) -> str | None:
+    """Validate declared correction settings without guessing missing legacy metadata."""
+    fdr = metadata.get("FDR")
+    scope = metadata.get("FDR-Scope")
+    if fdr is not None and fdr not in {"True", "False"}:
+        raise MalformedResultsError(f"{path}: invalid FDR declaration {fdr!r}.")
+    if scope is not None and scope not in {"global", "profile", "none"}:
+        raise MalformedResultsError(f"{path}: invalid FDR-Scope {scope!r}.")
+    if scope == "none" and fdr != "False":
+        raise MalformedResultsError(f"{path}: FDR-Scope none requires FDR: False.")
+    if fdr == "False" and scope is None:
+        raise MalformedResultsError(f"{path}: FDR: False requires an explicit FDR-Scope.")
+    if (
+        scope is not None
+        and "correction_family" in frame.columns
+        and not bool(frame["correction_family"].eq(scope).all())
+    ):
+        raise MalformedResultsError(f"{path}: correction_family differs from FDR-Scope.")
+    if fdr == "False":
+        return "none" if scope == "none" else "legacy_nominal"
+    return None
+
+
+def _validate_numeric(
+    frame: Any, path: Path, first_data_line: int, *, nominal_blank_q: bool = False
+) -> Any:
     for column in PROBABILITY_COLUMNS + FLOAT_COLUMNS + COUNT_COLUMNS:
         converted = pd.to_numeric(frame[column], errors="coerce")
         bad = converted.isna()
+        if column == "fdr_q" and nominal_blank_q:
+            # Only the empty cell means unavailable; numeric q, NA, nan, and
+            # whitespace remain invalid in the explicitly nominal format.
+            bad = frame[column].ne("")
         if column in PROBABILITY_COLUMNS:
             bad = bad | (converted < 0) | (converted > 1)
         if column in COUNT_COLUMNS:
@@ -177,8 +211,18 @@ def load_results_tsv(path: Path, *, allow_unfiltered: bool = False) -> ResultsTa
         dtype=str,
         keep_default_na=False,
     )
+    mode = _correction_mode(frame, metadata, path)
     # Line numbers are 1-based: metadata lines, then the header, then data.
-    frame = _validate_numeric(frame, path, first_data_line=header_index + 2)
+    frame = _validate_numeric(
+        frame,
+        path,
+        first_data_line=header_index + 2,
+        nominal_blank_q=mode == "none",
+    )
+    if mode == "legacy_nominal" and not bool(frame["fdr_q"].eq(frame["p_value"]).all()):
+        raise MalformedResultsError(f"{path}: fdr_q differs from p_value with FDR disabled.")
+    if mode is not None:
+        frame["fdr_q"] = float("nan")
     for column in ID_COLUMNS:
         frame[column] = frame[column].astype(str)
 

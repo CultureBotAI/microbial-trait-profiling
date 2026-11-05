@@ -116,10 +116,10 @@ def exact_mcnemar_p_value(increased_only: int, decreased_only: int) -> float:
 
 
 def safe_wilcoxon(values: pd.Series) -> float:
-    """Return a two-sided paired Wilcoxon p-value, including all-zero inputs."""
+    """Return a two-sided paired Wilcoxon p-value, or NaN for empty/all-zero inputs."""
     clean = pd.to_numeric(values, errors="coerce").dropna().to_numpy(dtype=float)
     if len(clean) == 0 or np.allclose(clean, 0.0):
-        return 1.0
+        return float("nan")
     return float(stats.wilcoxon(clean, alternative="two-sided", method="auto").pvalue)
 
 
@@ -267,7 +267,12 @@ def build_condition_taxon_tests(
         both = increased_studies & decreased_studies
         reported = increased_studies | decreased_studies
         passes_support = len(reported) >= MIN_TAXON_STUDIES
-        p_value = exact_mcnemar_p_value(len(increased_only), len(decreased_only))
+        discordant = len(increased_only) + len(decreased_only)
+        p_value = (
+            float("nan")
+            if discordant == 0
+            else exact_mcnemar_p_value(len(increased_only), len(decreased_only))
+        )
         difference = (len(increased_only) - len(decreased_only)) / len(all_studies)
         direction = "increased" if difference > 0 else "decreased" if difference < 0 else "tie"
         records.append(
@@ -284,7 +289,7 @@ def build_condition_taxon_tests(
                 "decreased_only_studies": len(decreased_only),
                 "both_directions_studies": len(both),
                 "neither_direction_studies": len(all_studies - reported),
-                "discordant_study_count": len(increased_only) + len(decreased_only),
+                "discordant_study_count": discordant,
                 "directional_difference_fraction": difference,
                 "direction": direction,
                 "p_value": p_value,
@@ -295,9 +300,14 @@ def build_condition_taxon_tests(
     tests = pd.DataFrame.from_records(records)
     if tests.empty:
         raise ValueError("No annotated genus/species taxa occur in eligible fecal conditions")
+    tests["p_value_type"] = np.where(tests["p_value"].notna(), "nominal", "not_tested")
     tests["q_value"] = np.nan
     support = tests["passes_min_taxon_studies"].astype(bool)
-    tests.loc[support, "q_value"] = benjamini_hochberg(tests.loc[support, "p_value"])
+    tests["n_tests"] = int(tests["p_value"].notna().sum())
+    tests["bh_family_size"] = pd.Series(pd.NA, index=tests.index, dtype="Int64")
+    tests.loc[support, "bh_family_size"] = int(support.sum())
+    padded_q = benjamini_hochberg(tests.loc[support, "p_value"].fillna(1.0))
+    tests.loc[support, "q_value"] = padded_q.where(tests.loc[support, "p_value"].notna())
     tests["selected_after_bh"] = support & tests["q_value"].le(Q_VALUE_CUTOFF)
     return tests.sort_values(
         ["selected_after_bh", "q_value", "condition", "taxonomic_rank", "taxon_name"],
@@ -388,10 +398,15 @@ def build_condition_trait_tests(
     tests = pd.DataFrame.from_records(records)
     if tests.empty:
         raise ValueError("No eligible paired fecal condition-trait contrasts")
+    tests["p_value_type"] = np.where(tests["p_value"].notna(), "nominal", "not_tested")
     tests["passes_min_paired_studies"] = tests["paired_study_count"].ge(MIN_PAIRED_STUDIES)
     tests["q_value"] = np.nan
     support = tests["passes_min_paired_studies"].astype(bool)
-    tests.loc[support, "q_value"] = benjamini_hochberg(tests.loc[support, "p_value"])
+    tests["n_tests"] = int(tests["p_value"].notna().sum())
+    tests["bh_family_size"] = pd.Series(pd.NA, index=tests.index, dtype="Int64")
+    tests.loc[support, "bh_family_size"] = int(support.sum())
+    padded_q = benjamini_hochberg(tests.loc[support, "p_value"].fillna(1.0))
+    tests.loc[support, "q_value"] = padded_q.where(tests.loc[support, "p_value"].notna())
     tests["selected_after_bh"] = support & tests["q_value"].le(Q_VALUE_CUTOFF)
     tests = tests.sort_values(
         ["selected_after_bh", "q_value", "condition", "trait"],
@@ -1389,7 +1404,7 @@ def plot_fdr_evidence_landscape(
             y_position,
             (
                 f"effect={float(row.mean_contrast):+.2f}; "
-                f"p={_format_probability(row.p_value)}; "
+                f"nominal p={_format_probability(row.p_value)}; "
                 f"q={_format_probability(row.q_value)}; "
                 f"n={int(row.paired_study_count)}"
             ),
@@ -1415,10 +1430,18 @@ def plot_fdr_evidence_landscape(
     ax_pd.spines[["top", "right", "left"]].set_visible(False)
     ax_pd.tick_params(axis="y", length=0, labelsize=8)
     ax_pd.tick_params(axis="x", labelsize=8)
+    trait_bh_family_size = int(trait_tests["passes_min_paired_studies"].sum())
+    trait_tested_count = int(
+        (trait_tests["passes_min_paired_studies"] & trait_tests["p_value"].notna()).sum()
+    )
     ax_pd.text(
         0.0,
         -0.17,
-        "p is unadjusted; q is global across all condition-trait tests.",
+        (
+            f"nominal p is unadjusted ({len(pd_rows)} PD trait tests shown); "
+            f"q is BH-adjusted across {trait_bh_family_size} condition-trait tests "
+            f"({trait_tested_count} with finite p)."
+        ),
         transform=ax_pd.transAxes,
         fontsize=8,
         color=SLATE_700,
@@ -1533,6 +1556,16 @@ def write_methods_summary(
     eligible_count = int(eligibility["passes_min_paired_studies"].sum())
     displayed_count = int(eligibility["displayed_in_network"].sum())
     eligible_taxon_test_count = int(taxon_tests["passes_min_taxon_studies"].sum())
+    eligible_trait_test_count = int(trait_tests["passes_min_paired_studies"].sum())
+    tested_taxon_count = int(
+        (taxon_tests["passes_min_taxon_studies"] & taxon_tests["p_value"].notna()).sum()
+    )
+    tested_trait_count = int(
+        (trait_tests["passes_min_paired_studies"] & trait_tests["p_value"].notna()).sum()
+    )
+    pd_trait_test_count = int(
+        (trait_tests["condition"].eq(PD_CONDITION) & trait_tests["p_value"].notna()).sum()
+    )
     selected_taxa = taxon_tests[taxon_tests["selected_after_bh"]]
     selected_traits = trait_tests[trait_tests["selected_after_bh"]]
     exploratory_taxa = taxon_tests[
@@ -1567,7 +1600,11 @@ def write_methods_summary(
         ),
         (
             f"- The resulting condition-taxon test family contained "
-            f"`{eligible_taxon_test_count}` eligible comparisons."
+            f"`{eligible_taxon_test_count}` eligible comparisons (`{tested_taxon_count}` with "
+            f"finite nominal p), and the condition-trait "
+            f"test family contained `{eligible_trait_test_count}` eligible condition-trait "
+            f"comparisons (`{tested_trait_count}` with finite nominal p; "
+            f"`{pd_trait_test_count}` PD trait comparisons shown in Panel C)."
         ),
         (
             "- Taxon direction was tested with an exact McNemar/binomial test "
@@ -1579,9 +1616,14 @@ def write_methods_summary(
             "signed-rank test."
         ),
         (
-            "- Benjamini-Hochberg correction was applied globally within the "
-            "complete condition-taxon family and within the complete "
-            "condition-trait family."
+            "- Reported `p_value` columns and Panel C `nominal p` labels are nominal "
+            f"(uncorrected) across the `{tested_taxon_count}` tested "
+            f"(`{eligible_taxon_test_count}` BH-family) condition-taxon tests and "
+            f"`{tested_trait_count}` tested (`{eligible_trait_test_count}` BH-family) "
+            "condition-trait tests; "
+            "`q_value` is Benjamini-Hochberg adjusted globally within the complete "
+            "condition-taxon family and within the complete condition-trait family "
+            "(holding untestable support rows at `p = 1.0`)."
         ),
         f"- FDR-significant results require `q <= {Q_VALUE_CUTOFF:.2f}`.",
         (

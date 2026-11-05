@@ -7,6 +7,7 @@ from mtp.density_adjustment import (
     DEFAULT_COLUMNS_PATH,
     DEFAULT_OUTPUT_DIR,
     DEFAULT_PROFILES_PATH,
+    DENSITY_PROVENANCE_FILENAME,
     SIGNIFICANT_POST_ADJUSTMENT_STATUSES,
     TABLE_1_TRAITS,
     TEST_PAIR_A,
@@ -22,6 +23,7 @@ from mtp.density_adjustment import (
     compute_correlation_metrics,
     compute_effective_tests,
     declared_density_traits,
+    density_provenance,
     evaluate_conditional_twin_test,
     evaluate_table1_paired_effects,
     family_bh_q_values,
@@ -38,6 +40,7 @@ from mtp.density_adjustment import (
     reported_traits_heading,
     run_density_audit,
     table1_traits_for_columns,
+    write_density_provenance,
     write_trait_list_provenance,
 )
 
@@ -45,6 +48,7 @@ __all__ = [
     "DEFAULT_COLUMNS_PATH",
     "DEFAULT_OUTPUT_DIR",
     "DEFAULT_PROFILES_PATH",
+    "DENSITY_PROVENANCE_FILENAME",
     "SIGNIFICANT_POST_ADJUSTMENT_STATUSES",
     "TABLE_1_TRAITS",
     "TEST_PAIR_A",
@@ -60,6 +64,7 @@ __all__ = [
     "compute_correlation_metrics",
     "compute_effective_tests",
     "declared_density_traits",
+    "density_provenance",
     "evaluate_conditional_twin_test",
     "evaluate_table1_paired_effects",
     "family_bh_q_values",
@@ -76,6 +81,7 @@ __all__ = [
     "reported_traits_heading",
     "run_density_audit",
     "table1_traits_for_columns",
+    "write_density_provenance",
     "write_trait_list_provenance",
 ]
 

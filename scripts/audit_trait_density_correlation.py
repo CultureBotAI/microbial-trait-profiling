@@ -14,6 +14,7 @@ Addresses Issue #264 and Issue #352:
 from __future__ import annotations
 
 import argparse
+import math
 import sys
 from pathlib import Path
 from typing import Any
@@ -23,6 +24,7 @@ from mtp.density_adjustment import (
     DEFAULT_OUTPUT_DIR,
     DEFAULT_PROFILES_PATH,
     SIGNIFICANT_POST_ADJUSTMENT_STATUSES,
+    CorrelationMetrics,
     add_trait_list_argument,
     format_p_and_q,
     format_q_value,
@@ -91,6 +93,27 @@ def _reported_family_size(t1_effects: list[Any]) -> int:
     return len(t1_effects)
 
 
+def _conclusion_number(
+    value: float, format_spec: str, *, allow_positive_infinity: bool = False
+) -> str:
+    """Render section 6 summaries without treating undefined values as zero (#1328)."""
+    if math.isfinite(value):
+        return format(value, format_spec)
+    if allow_positive_infinity and value == math.inf:
+        return "inf"
+    return "NA"
+
+
+def _conclusion_metrics(metrics: CorrelationMetrics) -> tuple[str, str]:
+    """Return median r and PC1 percent; the producer's no-variation zeros are unavailable."""
+    if metrics.n_traits - metrics.constant_traits_excluded < 2:
+        return "NA", "NA"
+    return (
+        _conclusion_number(metrics.median_pairwise_r, "+.4f"),
+        _conclusion_number(metrics.pc1_variance_pct, ".2f"),
+    )
+
+
 def write_consolidated_report(
     output_dir: Path,
     density_res: dict[str, Any],
@@ -102,6 +125,8 @@ def write_consolidated_report(
     With a declared ``trait_list`` the conclusions of section 6 are not written: they
     name Table 1 traits (#1054). They quote BH q-values and statuses from the reported
     effects, and read NA for a trait that is not reported (#1321).
+    Section 6 describes the computed correlations and VIFs without inferring their
+    cause, a severity category, or joint-model coefficient stability (#1328).
     """
     t1_effects = density_res["table1_effects"]
     family_size = _reported_family_size(t1_effects)
@@ -129,8 +154,6 @@ def write_consolidated_report(
     survivors = ", ".join(
         eff.trait_label for eff in t1_effects if eff.status in SIGNIFICANT_POST_ADJUSTMENT_STATUSES
     )
-    vif_str = f"VIF ~ {twin.vif_profile:.2f}"
-
     report_out = output_dir / "density_adjustment_report.txt"
     lines = [
         "=" * 80,
@@ -273,25 +296,43 @@ def write_consolidated_report(
         report_out.write_text("\n".join(lines), encoding="utf-8")
         return report_out
 
+    raw_r, raw_pc1 = _conclusion_metrics(raw)
+    adjusted_r, _ = _conclusion_metrics(adj_pc1)
+    native_r, native_pc1 = _conclusion_metrics(nat_m)
+    max_member_r, max_member_pc1 = _conclusion_metrics(max_m)
+    collapsed_adjusted_r, collapsed_adjusted_pc1 = _conclusion_metrics(adj_col_m)
+    profile_r = _conclusion_number(twin.profile_correlation, "+.4f")
+    paired_r = _conclusion_number(twin.paired_correlation, "+.4f")
+    profile_vif = _conclusion_number(twin.vif_profile, ".2f", allow_positive_infinity=True)
+    paired_vif = _conclusion_number(twin.vif_paired, ".2f", allow_positive_infinity=True)
     lines.extend(
         [
-            "1. The vast majority of positive correlation among traits is driven by "
-            "curation density (PC1).",
+            "1. Median pairwise Pearson r across profile trait annotations: "
+            f"raw = {raw_r}; post-PC1 regression = {adjusted_r}.",
+            f"   Raw PC1 variance explained (%) = {raw_pc1}.",
             f"2. After PC1 regression the {aerobic_label} paired contrast is labelled "
             f"'{aerobic_status}'",
             f"   (raw BH {aerobic_q_raw_str}, adjusted BH {aerobic_q_adj_str}).",
             "3. Significant before and after PC1 regression in the same direction "
             f"(BH q <= 0.05; survived or enhanced): {survivors or 'none'}.",
-            f"4. Coccus and sphere exhibit severe collinearity ({vif_str}); "
-            "conditional testing confirms",
-            "   unstable coefficients when included simultaneously.",
+            f"4. {twin.trait_a_label} and {twin.trait_b_label}: "
+            f"profile r = {profile_r}, VIF ~ {profile_vif}.",
+            "   Paired increased-minus-decreased experiment contrasts "
+            f"(N={twin.n_paired_experiments:,}): r = {paired_r}, VIF ~ {paired_vif}.",
+            "   Joint-model coefficient stability was not evaluated.",
             f"5. Ontology redundancy accounts for {n_pairs} "
             f"redundant pairs ({n_collapsed} features "
             f"collapsed into {n_clusters} clusters),",
-            f"   bounding distinct trait space to {bounded_space} features. "
-            "Collapsing alone does not "
-            "collapse PC1;",
-            "   both ontology collapsing and density adjustment are necessary and complementary.",
+            f"   bounding distinct trait space to {bounded_space} features.",
+            f"   PC1 variance explained (%): raw = {raw_pc1}; collapsed native = {native_pc1};",
+            f"   collapsed max-member = {max_member_pc1}; "
+            f"collapsed + PC1 regression = {collapsed_adjusted_pc1}.",
+            f"   Median pairwise Pearson r: collapsed native = {native_r}; "
+            f"collapsed max-member = {max_member_r};",
+            f"   collapsed + PC1 regression = {collapsed_adjusted_r}.",
+            "These are descriptive comparisons of annotation matrices; "
+            "they do not identify the source of the observed associations.",
+            "NA denotes an unavailable summary; inf denotes a reported positive-infinite VIF.",
             "=" * 80,
         ]
     )

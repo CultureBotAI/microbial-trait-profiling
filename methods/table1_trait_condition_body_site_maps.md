@@ -353,31 +353,30 @@ reference-explicit relative contrasts for all 15 trait pairs. It reports zero
 exclusions and the resulting conditional study populations. It does not replace
 these historical fraction results or turn them into absolute abundance claims.
 
-### Outstanding: the correction family is described here but not exported
+### Exported correction-family columns
 
-`table1_traits_direction_shift.tsv` carries each trait's p and q and its status,
-but nothing in the row says which correction family produced that q or how large
-the family was. A reader joining this table to the composition arm's per-stratum
-BH tables or to the enrichment arm's global FDR sees three columns called `q`
-whose families differ in size by orders of magnitude — six selected traits here
-against hundreds of screened traits and hundreds of thousands of profile tests
-there, per #178 — and no exported row says which. The family here is Table 1's
-six traits corrected together, with every trait included at p = 1 when it has no
-scored study, so the family size is 6 on every run of this figure and the
-untestable traits are inside it rather than dropped from it.
+`table1_traits_direction_shift.tsv` exports the correction family and its size on
+every row alongside `binomial_p`, `bh_q`, and `status`. The exported family columns
+were added in commit `c86a312` (PR #241). In `src/mtp/table1_trait_maps.py`,
+`write_shift_table` writes the header columns `family_id`, `family_size`, and
+`correction_method`, populated with `SHIFT_FAMILY_ID` (`table1_six_fractions`),
+`len(result.shifts)` (the length of the supplied trait list), and
+`SHIFT_CORRECTION` (`Benjamini-Hochberg`). Every trait in `trait_order` is included
+in the family: `compute_direction_shifts` pads it at `p = 1.0` when it has no
+scored study and applies Benjamini-Hochberg correction to the whole list.
+Untestable traits stay inside the correction family
+(`family_size = len(result.shifts)`) while their exported `binomial_p` and `bh_q`
+cells remain blank. A reader joining this table to the composition arm's
+per-stratum BH tables or to the enrichment arm's global FDR can therefore
+distinguish the production `family_id = "table1_six_fractions"`
+(`family_size = 6`, `correction_method = "Benjamini-Hochberg"`) directly from the
+exported row (#178, #289, #1415).
 
-That is a property of the exported row, not of this figure, and the same gap
-exists in the other two arms' exports. It is therefore tracked as part of the
-shared result contract in
-[#178](https://github.com/CultureBotAI/microbial-trait-profiling/issues/178) and
-implemented in
-[#241](https://github.com/CultureBotAI/microbial-trait-profiling/pull/241),
-whose acceptance criteria already require a family identifier and its size on
-every exported result. It is deliberately not added here: adding a
-`correction_family` / `correction_family_size` pair to this one TSV ahead of
-that contract would fix a column spelling that the integration then has to
-reconcile across three producers. When #241 lands the implementing commit, this
-paragraph should name it and the requirement closes.
+`family_id` remains the constant `table1_six_fractions` even when the supplied
+trait list is not six long; the production callers `table1_trait_maps.main`,
+`calibration.fraction_sign_test`, `calibration.screened_fraction_sign_test`,
+`contrast_orientation.comparison_rows`, and `integrated_evidence.fraction_sign_records`
+all use the six Table 1 traits through `TRAIT_ORDER`, explicitly or by default.
 
 ## Reproducing
 
