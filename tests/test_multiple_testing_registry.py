@@ -616,10 +616,13 @@ def visible_by_derivation(unit: Unit, scope: str) -> bool:
                 loop_paths.append((break_paths, continue_paths))
                 inside = statements(statement.body, inside, credit=credit)
                 loop_paths.pop()
-                env = intersection(env, inside)
-                for exited in (*break_paths, *continue_paths):
+                normal = intersection(env, inside)
+                for continued in continue_paths:
+                    normal = intersection(normal, continued)
+                # A break skips the loop's else clause, so break states join after it.
+                env = statements(statement.orelse, normal, credit=credit)
+                for exited in break_paths:
                     env = intersection(env, exited)
-                env = statements(statement.orelse, env, credit=credit)
             elif isinstance(statement, ast.With | ast.AsyncWith):
                 for context_item in statement.items:
                     if context_item.optional_vars is not None:
