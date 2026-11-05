@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import ast
 import re
-from collections import defaultdict
+from collections import Counter, defaultdict
 from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -395,6 +395,136 @@ def discover(
     return sites, anchors
 
 
+def nonempty_text(value: Any) -> bool:
+    return isinstance(value, str) and bool(value.strip())
+
+
+def reference_errors(value: Any, existing: set[tuple[str, str]], label: str) -> list[str]:
+    if not isinstance(value, dict) or not all(
+        nonempty_text(value.get(field)) for field in ("path", "function")
+    ):
+        return [f"{label} needs non-empty path and function"]
+    key = (value["path"], value["function"])
+    return [] if key in existing else [f"{label} does not exist: {key[0]}::{key[1]}"]
+
+
+def procedure_list(value: Any) -> bool:
+    return isinstance(value, list) and all(
+        isinstance(item, str) and item in {"BH", "BY", "none"} for item in value
+    )
+
+
+def family_schema_errors(
+    family: Any, existing: set[tuple[str, str]], sites: Mapping[tuple[str, str], Any]
+) -> list[str]:
+    if not isinstance(family, dict):
+        return ["family must be a mapping"]
+    errors: list[str] = []
+    if missing := REQUIRED - family.keys():
+        errors.append(f"missing fields {sorted(missing)}")
+    for name in (
+        "family_id",
+        "area",
+        "hypotheses",
+        "family_definition",
+        "threshold",
+        "deliberate_difference",
+    ):
+        if not nonempty_text(family.get(name)):
+            errors.append(f"{name} must be non-empty text")
+    primary = family.get("primary_procedure")
+    if not isinstance(primary, str) or primary not in {"BH", "BY", "none"}:
+        errors.append("primary_procedure must be BH, BY or none")
+    if not procedure_list(family.get("comparison_procedure")):
+        errors.append("comparison_procedure must be a list of BH, BY or none")
+    issues = family.get("open_issue")
+    if not isinstance(issues, list) or any(type(issue) is not int for issue in issues):
+        errors.append("open_issue must be a list of integers")
+    size = family.get("size_source")
+    if not isinstance(size, dict):
+        errors.append("size_source must be a mapping")
+    else:
+        if size.get("kind") not in ("executed_inventory", "selected_rows"):
+            errors.append("size_source kind must be executed_inventory or selected_rows")
+        for name in ("selection_rule", "count_rule"):
+            if not nonempty_text(size.get(name)):
+                errors.append(f"size_source {name} must be non-empty text")
+        if size.get("selection_rule") == family.get("family_definition"):
+            errors.append("selection_rule must explain selection, not repeat family_definition")
+        if size.get("kind") == "selected_rows" and not nonempty_text(
+            size.get("unfiltered_count_rule")
+        ):
+            errors.append("selected_rows needs an unfiltered_count_rule")
+    for name in ("anchors", "consumers"):
+        references = family.get(name)
+        if not isinstance(references, list) or not references:
+            errors.append(f"{name} must be a non-empty list")
+            continue
+        for reference in references:
+            errors.extend(
+                reference_errors(reference, existing, "anchor" if name == "anchors" else "consumer")
+            )
+            if (
+                name == "anchors"
+                and isinstance(reference, dict)
+                and not procedure_list(reference.get("procedures"))
+            ):
+                errors.append("anchor procedures must be a list of BH, BY or none")
+    if "launcher" in family and type(family["launcher"]) is not bool:
+        errors.append("launcher must be a boolean")
+    if (
+        not errors
+        and family.get("launcher") is not True
+        and not any((anchor["path"], anchor["function"]) in sites for anchor in family["anchors"])
+    ):
+        errors.append("family needs a discovered correction anchor or explicit launcher: true")
+    for name in ("outputs", "policy_rule"):
+        value = family.get(name)
+        if not isinstance(value, list) or not value:
+            errors.append(f"{name} must be a non-empty list")
+    return errors
+
+
+def literal_count_errors(
+    registry: dict[str, Any], sites: Mapping[tuple[str, str], Any], existing: set[tuple[str, str]]
+) -> list[str]:
+    records = registry.get("literal_procedure_counts")
+    if not isinstance(records, list):
+        return ["literal_procedure_counts must be a list"]
+    expected: dict[tuple[str, str], dict[str, int]] = {}
+    errors: list[str] = []
+    for record in records:
+        invalid = reference_errors(record, existing, "literal procedure count anchor")
+        if invalid:
+            errors.extend(invalid)
+            continue
+        key = (record["path"], record["function"])
+        counts = record.get("counts")
+        if not isinstance(counts, dict) or any(
+            method not in {"BH", "BY", "none"} or type(count) is not int or count < 1
+            for method, count in counts.items()
+        ):
+            errors.append(f"invalid literal procedure counts: {key}")
+            continue
+        if key in expected:
+            errors.append(f"duplicate literal procedure count anchor: {key}")
+        expected[key] = counts
+        if key not in sites:
+            errors.append(f"literal procedure count anchor is not a discovered site: {key}")
+    for key, site in sorted(sites.items()):
+        actual = dict(
+            Counter(procedure for call in site["calls"] for procedure in call["procedures"])
+        )
+        if key not in expected:
+            errors.append(f"missing literal procedure counts: {key[0]}::{key[1]}")
+        elif actual != expected[key]:
+            errors.append(
+                f"literal procedure count mismatch: {key[0]}::{key[1]} "
+                f"expected {expected[key]}, found {actual}"
+            )
+    return errors
+
+
 def registry_errors(sources: Sources, registry: dict[str, Any]) -> list[str]:
     sites, existing = discover(sources)
     errors = []
@@ -403,13 +533,23 @@ def registry_errors(sources: Sources, registry: dict[str, Any]) -> list[str]:
     declared: dict[tuple[str, str], set[str]] = defaultdict(set)
     reported: dict[tuple[str, str], set[str]] = defaultdict(set)
     identities: set[str] = set()
-    for family in registry.get("families", []):
-        if missing := REQUIRED - family.keys():
-            errors.append(f"family {family.get('family_id')} missing {sorted(missing)}")
-        identity = family.get("family_id")
+    bh_reasons: set[str] = set()
+    families = registry.get("families")
+    if not isinstance(families, list) or not families:
+        return [*errors, "families must be a non-empty list"]
+    for family in families:
+        if invalid := family_schema_errors(family, existing, sites):
+            errors.extend(invalid)
+            continue
+        identity = family["family_id"]
         if identity in identities:
             errors.append(f"duplicate family_id {identity}")
         identities.add(identity)
+        if family["primary_procedure"] == "BH":
+            reason = family["deliberate_difference"].strip()
+            if reason in bh_reasons:
+                errors.append(f"duplicate BH-primary reason: {identity}")
+            bh_reasons.add(reason)
         for anchor in family.get("anchors", []):
             key = (anchor["path"], anchor["function"])
             declared[key].update(anchor["procedures"])
@@ -417,6 +557,9 @@ def registry_errors(sources: Sources, registry: dict[str, Any]) -> list[str]:
                 value = family.get(field_name)
                 reported[key].update(value if isinstance(value, list) else [value])
     for anchor in registry.get("infrastructure", []):
+        if invalid := reference_errors(anchor, existing, "infrastructure anchor"):
+            errors.extend(invalid)
+            continue
         if not anchor.get("reason"):
             errors.append(f"infrastructure anchor needs reason: {anchor}")
         key = (anchor["path"], anchor["function"])
@@ -434,6 +577,7 @@ def registry_errors(sources: Sources, registry: dict[str, Any]) -> list[str]:
             errors.append(f"unregistered correction: {key[0]}::{key[1]}")
         elif missing := site["procedures"] - declared[key]:
             errors.append(f"procedure contradicts code: {key[0]}::{key[1]} needs {sorted(missing)}")
+    errors.extend(literal_count_errors(registry, sites, existing))
     return errors
 
 
@@ -469,13 +613,28 @@ def example_registry(*anchors: tuple[str, str, list[str]]) -> dict[str, Any]:
             {
                 **dict.fromkeys(REQUIRED, "synthetic fixture"),
                 "family_id": "synthetic-family",
-                "primary_procedure": ["BH", "BY"],
-                "comparison_procedure": "none",
+                "primary_procedure": "BY",
+                "comparison_procedure": ["BH"],
+                "size_source": {
+                    "kind": "executed_inventory",
+                    "selection_rule": "Include every input hypothesis.",
+                    "count_rule": "Count every input hypothesis, including untestable slots.",
+                },
+                "outputs": [{"file": "results.tsv", "column": "q"}],
+                "consumers": [
+                    {"path": path, "function": function} for path, function, _ in anchors
+                ],
+                "policy_rule": ["R1"],
+                "open_issue": [],
                 "anchors": [
                     {"path": path, "function": function, "procedures": procedures}
                     for path, function, procedures in anchors
                 ],
             }
+        ],
+        "literal_procedure_counts": [
+            {"path": path, "function": function, "counts": dict.fromkeys(procedures, 1)}
+            for path, function, procedures in anchors
         ],
     }
 
@@ -515,14 +674,14 @@ def test_import_assignment_and_local_forwarding_aliases_are_discovered() -> None
     errors = registry_errors(sources, example_registry(("src/x.py", "wrapper", ["BY"])))
     assert "unregistered correction: src/x.py::screen" in errors
     assert "unregistered correction: scripts/y.py::run" in errors
-    assert not registry_errors(
-        sources,
-        example_registry(
-            ("src/x.py", "wrapper", ["BY"]),
-            ("src/x.py", "screen", ["BY"]),
-            ("scripts/y.py", "run", ["BY"]),
-        ),
+    registry = example_registry(
+        ("src/x.py", "wrapper", ["BY"]),
+        ("src/x.py", "screen", ["BY"]),
+        ("scripts/y.py", "run", ["BY"]),
     )
+    registry["literal_procedure_counts"][1]["counts"] = {}
+    registry["literal_procedure_counts"][2]["counts"] = {}
+    assert not registry_errors(sources, registry)
 
 
 def test_nested_qualified_function_anchor_does_not_accept_parent() -> None:
@@ -554,7 +713,9 @@ def test_dynamic_method_is_not_falsely_inferred() -> None:
     }
     sites, _ = discover(sources)
     assert sites[("src/x.py", "screen")]["procedures"] == set()
-    assert not registry_errors(sources, example_registry(("src/x.py", "screen", ["BH", "BY"])))
+    registry = example_registry(("src/x.py", "screen", ["BH", "BY"]))
+    registry["literal_procedure_counts"][0]["counts"] = {}
+    assert not registry_errors(sources, registry)
 
 
 def test_top_level_procedure_change_cannot_hide_behind_correct_anchor() -> None:

@@ -2,11 +2,11 @@
   "version": 1,
   "family_ids_are_new": true,
   "identifier_note": "mt-* identifiers are newly declared by this registry, not historical producer IDs. Existing outputs keep their original labels; this documentation/test change changes no computation or number.",
-  "source_commit": "f0cb5b7a500b11320ea84e63bfaf125fe1520df9",
-  "policy_reference": "Lead MT policy draft 2026-11-04, rules R1-R9; repository policy methods/multiple_testing_policy.md. Numeric policy choices D1-D3 are not adopted.",
+  "source_commit": "f0cb5b7",
+  "policy_reference": "methods/multiple_testing_policy.md, rules R1-R9. Numeric policy choices remain separately governed; registry corrections change no computation.",
   "observation_note": "Family sizes must be read from an execution. Historical observations remain in the corrected inventory; they are intentionally not constants in this registry.",
   "discovery": "Guard parses all Python files under src/ and scripts/ without gitignore exclusions, resolves import/assignment aliases and local wrappers, and recognizes correction names and literal procedures. Shared primitives and verification-only calls are explicit infrastructure. Dynamic dispatch/methods require review; AST checks do not establish statistical validity.",
-  "procedure_check_scope": "Static checks bind procedures at path plus qualified function. When one function implements several families, procedures are checked against their union; assigning a call to a particular branch/family still requires source review. Registry declarations are not learned from the discovered call literals.",
+  "procedure_check_scope": "Static checks bind literal-procedure counts once per path plus qualified function. Shared family anchors reuse that count declaration; assigning an individual call or dynamic branch to a particular family, or detecting arithmetic implementations, still requires source review. Registry declarations are not learned during the guard check.",
   "families": [
     {
       "family_id": "mt-core-noel-sign-nominal",
@@ -18,14 +18,14 @@
       "family_definition": "All candidate columns; all-tied/no-eligible members held at internal p=1, exported blank.",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "All candidate columns; all-tied/no-eligible members held at internal p=1, exported blank.",
+        "selection_rule": "Use every column passed to run_screen (candidate_slots from the retained feature catalog); do not filter by sign-test support or significance.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BY",
       "comparison_procedure": [
         "BH"
       ],
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "BY q <=0.05 and <=0.001; BH also exported",
       "outputs": [
         {
@@ -104,7 +104,7 @@
       "family_definition": "Same full p vector; effective multiplier is rounded/clamped dependence effective size. This is not the number of hypotheses.",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "Same full p vector; effective multiplier is rounded/clamped dependence effective size. This is not the number of hypotheses.",
+        "selection_rule": "Reuse the nominal run_screen candidate vector unchanged; estimate, round and clamp the dependence multiplier separately from membership.",
         "count_rule": "Count the full declared candidate inventory; record the observed effective multiplier separately as sensitivity metadata, never as its hypothesis count."
       },
       "primary_procedure": "none",
@@ -173,12 +173,12 @@
       "family_definition": "All unordered pairs of requested traits; eligibility requires four positive counts; untestable pairs held p=1.",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "All unordered pairs of requested traits; eligibility requires four positive counts; untestable pairs held p=1.",
+        "selection_rule": "Enumerate combinations(requested traits, 2); restrict observations within each pair to four positive trait counts but never drop a declared pair for lack of observations.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BY",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "No cutoff in producer report; q displayed, calibration evaluates .05.",
       "outputs": [
         {
@@ -241,12 +241,13 @@
       "family_definition": "Each stratum independently: support/variance-selected traits (optional max-traits); undefined tests filled p=1. P observation is pooled stratum.",
       "size_source": {
         "kind": "selected_rows",
-        "selection_rule": "Each stratum independently: support/variance-selected traits (optional max-traits); undefined tests filled p=1. P observation is pooled stratum.",
-        "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
+        "selection_rule": "Within the stratum, select_stratum_traits applies support bounds, positive composition variance and MediaDive exclusion; ranks by variance times log1p(total signal), then variance, support and trait ID; and applies max_traits when supplied. Use its matrix columns for the pair t tests.",
+        "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size.",
+        "unfiltered_count_rule": "Count retained_trait_counts(profile_matrix).columns before select_stratum_traits; the producer records this as retained_trait_count in the stratum statistics, while correction_family_size records the selected matrix width."
       },
       "primary_procedure": "BH",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7/R6; current native exceptions preserve the producer's computation.",
       "threshold": "No q rejection cutoff in the pair-table producer. Infographic displays study_q_value when present (standard paired export), otherwise falls back to pair q_value.",
       "outputs": [
         {
@@ -288,7 +289,7 @@
         "R7",
         "R6"
       ],
-      "deliberate_difference": "Native support/variance-selected composition and full-retained-catalog three-test results use different inventories. Pair-level and study-level tests also use different independent units. Keep their q fields and family names separate.",
+      "deliberate_difference": "BH is retained for the native pair-level t-test export so the selected-composition diagnostic reproduces its producer; this is an experiment-weighted family distinct from the full-catalog study-level BY screen (methods/multiple_testing_policy.md R4/R6).",
       "open_issue": [
         1417
       ],
@@ -313,12 +314,13 @@
       "family_definition": "Each stratum independently: support/variance-selected traits (optional max-traits); undefined tests filled p=1. P observation is pooled stratum.",
       "size_source": {
         "kind": "selected_rows",
-        "selection_rule": "Each stratum independently: support/variance-selected traits (optional max-traits); undefined tests filled p=1. P observation is pooled stratum.",
-        "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
+        "selection_rule": "Reuse select_stratum_traits columns (support bounds, positive variance, MediaDive exclusion, variance times log1p(signal) ranking and optional max_traits); aggregate pair contrasts by study before testing without further feature removal.",
+        "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size.",
+        "unfiltered_count_rule": "Read retained_trait_count from the stratum statistics (the width of retained_trait_counts before support/variance selection); use correction_family_size only for the selected study-test family."
       },
       "primary_procedure": "BH",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7/R6; current native exceptions preserve the producer's computation.",
       "threshold": "q exported; figure callout displays q",
       "outputs": [
         {
@@ -356,7 +358,7 @@
         "R7",
         "R6"
       ],
-      "deliberate_difference": "Native support/variance-selected composition and full-retained-catalog three-test results use different inventories. Pair-level and study-level tests also use different independent units. Keep their q fields and family names separate.",
+      "deliberate_difference": "BH is retained for the native study-mean t-test export as the native selected-composition comparison; its support/variance-selected inventory differs from the all-retained-trait BY table (methods/multiple_testing_policy.md R4/R6).",
       "open_issue": [
         1417
       ],
@@ -381,12 +383,12 @@
       "family_definition": "One global family for each tail separately: all K>0 traits x N>0 profiles.",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "One global family for each tail separately: all K>0 traits x N>0 profiles.",
+        "selection_rule": "In trait_enrichment.main retain background traits with K>0 and profiles with N>0, enumerate their Cartesian product for the upper tail, then apply q/fold filters only after correction.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BH",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "Workflow q <=0.001 plus fold >=1.5 upper or <=0.5 lower; standalone lower default .67.",
       "outputs": [
         {
@@ -455,7 +457,7 @@
         "R5",
         "R7"
       ],
-      "deliberate_difference": "Native ORA families are separate by tail and declared population/stratum/profile scope. They supply directional evidence; the joint-tail multiplicity family is a separate BY/BH comparison.",
+      "deliberate_difference": "BH remains the native upper-tail global ORA procedure supplying enrichment-direction evidence; the joint-tail BY multiplicity table is a separately declared comparison (methods/multiple_testing_policy.md R4).",
       "open_issue": [
         1416
       ],
@@ -480,12 +482,12 @@
       "family_definition": "One global family for each tail separately: all K>0 traits x N>0 profiles.",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "One global family for each tail separately: all K>0 traits x N>0 profiles.",
+        "selection_rule": "In trait_enrichment.main retain K>0 background traits and N>0 profiles, enumerate the lower-tail product including zero observed counts, then filter reported hits after correction.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BH",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "Workflow q <=0.001 plus fold >=1.5 upper or <=0.5 lower; standalone lower default .67.",
       "outputs": [
         {
@@ -554,7 +556,7 @@
         "R5",
         "R7"
       ],
-      "deliberate_difference": "Native ORA families are separate by tail and declared population/stratum/profile scope. They supply directional evidence; the joint-tail multiplicity family is a separate BY/BH comparison.",
+      "deliberate_difference": "BH remains the native lower-tail global ORA procedure supplying depletion-direction evidence, with its own tail family rather than the joint-tail sidecar inventory (methods/multiple_testing_policy.md R4).",
       "open_issue": [
         1416
       ],
@@ -579,12 +581,12 @@
       "family_definition": "Only eligible traits within one profile corrected together; separate family for each profile and chosen tail.",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "Only eligible traits within one profile corrected together; separate family for each profile and chosen tail.",
+        "selection_rule": "Choose --fdr-scope profile; for each positive-total profile use all positive-background traits for the requested tail before any hit filters.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BH",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "--p-threshold default .001 plus fold cutoff",
       "outputs": [
         {
@@ -633,7 +635,7 @@
         "R5",
         "R7"
       ],
-      "deliberate_difference": "Native ORA families are separate by tail and declared population/stratum/profile scope. They supply directional evidence; the joint-tail multiplicity family is a separate BY/BH comparison.",
+      "deliberate_difference": "BH preserves the explicit native per-profile ORA option; a within-profile q is directional evidence and is not a global profile-by-trait q (methods/multiple_testing_policy.md R4).",
       "open_issue": [],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -656,12 +658,12 @@
       "family_definition": "One global eligible profile x trait family within pooled stratum; each stratum separately.",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "One global eligible profile x trait family within pooled stratum; each stratum separately.",
+        "selection_rule": "Partition profiles with stratum=pooled (all supplied profiles); run_stratum_enrichment invokes the native ORA producer on positive-total profiles and positive-background traits, preserving the supplied background.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BH",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "q <= p_threshold (pipeline default .001) plus min-fold",
       "outputs": [
         {
@@ -686,7 +688,7 @@
         "R5",
         "R7"
       ],
-      "deliberate_difference": "Native ORA families are separate by tail and declared population/stratum/profile scope. They supply directional evidence; the joint-tail multiplicity family is a separate BY/BH comparison.",
+      "deliberate_difference": "BH preserves the pooled stratification invocation of native ORA for comparing annotation-background sensitivity across strata; pooling profiles here does not combine the stratum-specific families (methods/multiple_testing_policy.md R4).",
       "open_issue": [
         1418
       ],
@@ -698,8 +700,16 @@
           "procedures": [
             "BH"
           ]
+        },
+        {
+          "path": "src/mtp/stratification.py",
+          "function": "run_stratum_enrichment",
+          "procedures": [
+            "BH"
+          ]
         }
-      ]
+      ],
+      "launcher": true
     },
     {
       "family_id": "mt-core-stratified-ora-feces",
@@ -711,12 +721,12 @@
       "family_definition": "One global eligible profile x trait family within feces stratum; each stratum separately.",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "One global eligible profile x trait family within feces stratum; each stratum separately.",
+        "selection_rule": "Partition profiles into the feces stratum using stratification's body-site rules, then invoke run_stratum_enrichment; retain N>0 profiles and K>0 traits before report filtering.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BH",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "q <= p_threshold (pipeline default .001) plus min-fold",
       "outputs": [
         {
@@ -741,7 +751,7 @@
         "R5",
         "R7"
       ],
-      "deliberate_difference": "Native ORA families are separate by tail and declared population/stratum/profile scope. They supply directional evidence; the joint-tail multiplicity family is a separate BY/BH comparison.",
+      "deliberate_difference": "BH is retained for the feces-only native ORA sensitivity family so its directional calls preserve that stratum's profile inventory, separately from pooled and feces-excluded calls (methods/multiple_testing_policy.md R4).",
       "open_issue": [
         1418
       ],
@@ -753,8 +763,16 @@
           "procedures": [
             "BH"
           ]
+        },
+        {
+          "path": "src/mtp/stratification.py",
+          "function": "run_stratum_enrichment",
+          "procedures": [
+            "BH"
+          ]
         }
-      ]
+      ],
+      "launcher": true
     },
     {
       "family_id": "mt-core-stratified-ora-feces-excluded",
@@ -766,12 +784,12 @@
       "family_definition": "One global eligible profile x trait family within feces_excluded stratum; each stratum separately.",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "One global eligible profile x trait family within feces_excluded stratum; each stratum separately.",
+        "selection_rule": "Partition profiles into feces_excluded using stratification's body-site rules, then invoke run_stratum_enrichment; retain N>0 profiles and K>0 traits before report filtering.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BH",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "q <= p_threshold (pipeline default .001) plus min-fold",
       "outputs": [
         {
@@ -796,7 +814,7 @@
         "R5",
         "R7"
       ],
-      "deliberate_difference": "Native ORA families are separate by tail and declared population/stratum/profile scope. They supply directional evidence; the joint-tail multiplicity family is a separate BY/BH comparison.",
+      "deliberate_difference": "BH is retained for native ORA on the feces-excluded partition as an anatomical-sensitivity comparison; its directional calls are not treated as independent replication of pooled results (methods/multiple_testing_policy.md R4).",
       "open_issue": [
         1418
       ],
@@ -808,8 +826,16 @@
           "procedures": [
             "BH"
           ]
+        },
+        {
+          "path": "src/mtp/stratification.py",
+          "function": "run_stratum_enrichment",
+          "procedures": [
+            "BH"
+          ]
         }
-      ]
+      ],
+      "launcher": true
     },
     {
       "family_id": "mt-core-multiplicity-noel",
@@ -821,14 +847,14 @@
       "family_definition": "Native full candidate Noel family, exact imported six-significant-digit p-values; untestable reserve p=1.",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "Native full candidate Noel family, exact imported six-significant-digit p-values; untestable reserve p=1.",
+        "selection_rule": "Declare every feature in the verified Noel candidate catalog, import its native p/status by feature key and reserve unavailable declarations; do not select significant native rows.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BY",
       "comparison_procedure": [
         "BH"
       ],
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "q <=.05 and <=.001",
       "outputs": [
         {
@@ -889,14 +915,14 @@
       "family_definition": "Declared focal ratio pairs with pair-specific eligibility; imported native ratio p; untestable reserve p=1.",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "Declared focal ratio pairs with pair-specific eligibility; imported native ratio p; untestable reserve p=1.",
+        "selection_rule": "Construct the declared focal unordered trait pairs, match every pair to the verified Jed export and preserve untestable declarations; native pair-specific observation eligibility does not reduce membership.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BY",
       "comparison_procedure": [
         "BH"
       ],
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "q <=.05 and <=.001",
       "outputs": [
         {
@@ -957,14 +983,15 @@
       "family_definition": "Native selected pooled trait family defined by support and variance filters; imported study t p; untestable reserve p=1.",
       "size_source": {
         "kind": "selected_rows",
-        "selection_rule": "Native selected pooled trait family defined by support and variance filters; imported study t p; untestable reserve p=1.",
-        "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
+        "selection_rule": "Reconstruct native_core_support from verified pooled inputs using support 6..max(2,floor(0.95*n)), positive fraction variance and MediaDive exclusion with no rank cap; bind every selected feature to its native exported p/status, retaining unavailable selected rows.",
+        "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size.",
+        "unfiltered_count_rule": "Count the verified core feature catalog before native selection; its analysis basis retained_feature_count records that count. The family metadata expected_family_size counts the imported selected traits, not the unfiltered catalog."
       },
       "primary_procedure": "BY",
       "comparison_procedure": [
         "BH"
       ],
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7/R6; current native exceptions preserve the producer's computation.",
       "threshold": "q <=.05 and <=.001",
       "outputs": [
         {
@@ -1026,14 +1053,14 @@
       "family_definition": "One joint family of eligible profile x K>0 trait x upper/lower tail; all declared members tested.",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "One joint family of eligible profile x K>0 trait x upper/lower tail; all declared members tested.",
+        "selection_rule": "Enumerate each eligible profile and positive-background trait for BOTH tails from the verified ORA inputs; join native rows by the complete profile/trait/tail identity rather than selecting hits.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BY",
       "comparison_procedure": [
         "BH"
       ],
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "q <=.05 and <=.001",
       "outputs": [
         {
@@ -1094,14 +1121,14 @@
       "family_definition": "All retained traits; no native support/variance selection; untestable p=1 internally, blank final inferential fields.",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "All retained traits; no native support/variance selection; untestable p=1 internally, blank final inferential fields.",
+        "selection_rule": "Pass every retained feature-catalog trait to composition_table and JedCompositionAdapter with study_aggregation=True; do not apply the native support, variance or rank selection.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BY",
       "comparison_procedure": [
         "BH"
       ],
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "BY primary; q exported",
       "outputs": [
         {
@@ -1137,6 +1164,14 @@
             "BH",
             "BY"
           ]
+        },
+        {
+          "path": "src/mtp/three_test_table/composition.py",
+          "function": "composition_table",
+          "procedures": [
+            "BH",
+            "BY"
+          ]
         }
       ]
     },
@@ -1150,14 +1185,14 @@
       "family_definition": "All retained catalog traits independently of study t family; all-tied values p=1 internally, blank on export.",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "All retained catalog traits independently of study t family; all-tied values p=1 internally, blank on export.",
+        "selection_rule": "Iterate the complete composition_table traits argument; compute study-level Wilcoxon for each and keep undefined tests in the declared catalog vector.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BY",
       "comparison_procedure": [
         "BH"
       ],
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "q exported",
       "outputs": [
         {
@@ -1202,14 +1237,15 @@
       "family_definition": "Selected native trait family only, including internally padded untestable members; not full catalog.",
       "size_source": {
         "kind": "selected_rows",
-        "selection_rule": "Selected native trait family only, including internally padded untestable members; not full catalog.",
-        "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
+        "selection_rule": "Read the complete verified native selected-trait export through native_tables; preserve its support/variance-selected membership and statuses rather than selecting by p or q.",
+        "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size.",
+        "unfiltered_count_rule": "Count the verified core feature catalog, or its bound analysis-basis retained_feature_count, before native support/variance selection; native_selected statistics contain only the selected family, not this full catalog."
       },
       "primary_procedure": "BH",
       "comparison_procedure": [
         "BY"
       ],
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7/R6; current native exceptions preserve the producer's computation.",
       "threshold": "q exported",
       "outputs": [
         {
@@ -1231,7 +1267,7 @@
         "R7",
         "R6"
       ],
-      "deliberate_difference": "Native support/variance-selected composition and full-retained-catalog three-test results use different inventories. Pair-level and study-level tests also use different independent units. Keep their q fields and family names separate.",
+      "deliberate_difference": "BH is the imported native selected-composition q, preserved unchanged for the three-test comparison; the additionally computed BY column does not redefine the all-catalog primary family (methods/multiple_testing_policy.md R4/R6).",
       "open_issue": [],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -1263,14 +1299,14 @@
       "family_definition": "All retained traits, with unavailable/all-tied members held p=1, reported null.",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "All retained traits, with unavailable/all-tied members held p=1, reported null.",
+        "selection_rule": "Iterate the retained features argument in ora_table and form the directional study statistic from native ORA hit calls; retain all-tied or unavailable features as declared slots.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BY",
       "comparison_procedure": [
         "BH"
       ],
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "BY primary; native hit construction uses q <=.001 and fold >=1.5",
       "outputs": [
         {
@@ -1319,7 +1355,7 @@
       "family_definition": "All parent-ledger traits; all-tied reserve p=1.",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "All parent-ledger traits; all-tied reserve p=1.",
+        "selection_rule": "Read every trait in the bound parent Wilcoxon ledger and reproduce the historical kernel; do not filter by whether the legacy p is testable or significant.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "none",
@@ -1380,7 +1416,7 @@
       "family_definition": "All parent-ledger traits; all-tied reserve p=1.",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "All parent-ledger traits; all-tied reserve p=1.",
+        "selection_rule": "Read the same full parent trait ledger and apply the updated zero/tie kernel; maintain parent feature membership while comparing the resulting probabilities.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "none",
@@ -1441,8 +1477,9 @@
       "family_definition": "Select SCREEN_KEEP traits by strongest absolute departure from .5 sign share, then BH only selected; deliberately a negative control.",
       "size_source": {
         "kind": "selected_rows",
-        "selection_rule": "Select SCREEN_KEEP traits by strongest absolute departure from .5 sign share, then BH only selected; deliberately a negative control.",
-        "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
+        "selection_rule": "Rank compute_direction_shifts results by descending absolute share_up minus 0.5 (undefined share treated as 0.5), keep the first SCREEN_KEEP, then correct only those selected p values as a negative control.",
+        "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size.",
+        "unfiltered_count_rule": "Count result.shifts before ranked[:SCREEN_KEEP]; the returned Outcome list also includes unchosen rows with selected=False, so count all outcomes for the unfiltered inventory and only selected=True for correction membership."
       },
       "primary_procedure": "none",
       "comparison_procedure": [
@@ -1500,7 +1537,7 @@
       "family_definition": "All supplied traits; internal p=1 for untestable; BH and BY across same vector.",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "All supplied traits; internal p=1 for untestable; BH and BY across same vector.",
+        "selection_rule": "Use every trait supplied to run_composition_calibration for the observed run; keep undefined standard deviations in the correction vector at p=1.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "none",
@@ -1554,7 +1591,7 @@
       "family_definition": "All supplied trait columns within each replicate; invalid std reserved p=1.",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "All supplied trait columns within each replicate; invalid std reserved p=1.",
+        "selection_rule": "For each null replicate reuse all supplied trait columns from the observed calibration setup; never select columns using that replicate's p or q.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "none",
@@ -1618,7 +1655,7 @@
       "family_definition": "All K>0 traits x N>0 profiles in each invocation; each tail separate.",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "All K>0 traits x N>0 profiles in each invocation; each tail separate.",
+        "selection_rule": "IlyasORAAdapter.run_inference forms all positive-background trait by positive-total profile tests for the upper tail in the current observed or null invocation.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "none",
@@ -1686,7 +1723,7 @@
       "family_definition": "All K>0 traits x N>0 profiles in each invocation; each tail separate.",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "All K>0 traits x N>0 profiles in each invocation; each tail separate.",
+        "selection_rule": "IlyasORAAdapter.run_inference uses the same eligible profile and background-trait universe for the lower tail, including zero observed counts, in each invocation.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "none",
@@ -1750,12 +1787,12 @@
       "family_definition": "All requested trait_order entries, including unscored slots at p=1 for BH",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "All requested trait_order entries, including unscored slots at p=1 for BH",
+        "selection_rule": "Iterate the requested trait_order in compute_direction_shifts, aggregate within study, and retain a slot even when no non-tied signs are available.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BH",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "q shown; no binary threshold in the shift table",
       "outputs": [
         {
@@ -1792,7 +1829,7 @@
         "R5",
         "R7"
       ],
-      "deliberate_difference": "The focal fraction family and focal unordered-ratio family test different estimands. Population sensitivity recomputes each family separately; Table 1 BH is not the full-screen BY family.",
+      "deliberate_difference": "BH preserves the existing focal Table 1 fraction-sign procedure while the owner decision on changing that focal family remains separate; it is not the full-trait BY screen (methods/multiple_testing_policy.md R4).",
       "open_issue": [
         1415,
         1416
@@ -1818,12 +1855,12 @@
       "family_definition": "All focal_traits in the baseline, separate from leave-out families",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "All focal_traits in the baseline, separate from leave-out families",
+        "selection_rule": "For the coupling transformed-composition t arm, pass every declared focal trait without a deletion; correct one p per remaining focal trait separately for this invocation.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BH",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "q values and changes reported; ORA profile-hit threshold q<=0.05 is a distinct family",
       "outputs": [
         {
@@ -1848,7 +1885,7 @@
         "R5",
         "R7"
       ],
-      "deliberate_difference": "Baseline and each leave-one-trait/cluster-out family are corrected separately over the declared remaining focal traits. q from a reduced family is not relabelled as baseline q.",
+      "deliberate_difference": "BH preserves the coupling transformed-composition t baseline sensitivity kernel, where the producer must pass every declared focal trait without a deletion; keeping its native focal correction separates deletion sensitivity from a change in procedure (methods/multiple_testing_policy.md R4).",
       "open_issue": [],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -1871,12 +1908,12 @@
       "family_definition": "Remaining focal traits, separately for each dropped trait and each arm",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "Remaining focal traits, separately for each dropped trait and each arm",
+        "selection_rule": "For the coupling transformed-composition t arm, remove the named focal trait and refit using the remaining focal traits; correct one p per remaining focal trait separately for this invocation.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BH",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "q values and changes reported; ORA profile-hit threshold q<=0.05 is a distinct family",
       "outputs": [
         {
@@ -1901,7 +1938,7 @@
         "R5",
         "R7"
       ],
-      "deliberate_difference": "Baseline and each leave-one-trait/cluster-out family are corrected separately over the declared remaining focal traits. q from a reduced family is not relabelled as baseline q.",
+      "deliberate_difference": "BH preserves the coupling transformed-composition t loto sensitivity kernel, where the producer must remove the named focal trait and refit using the remaining focal traits; keeping its native focal correction separates deletion sensitivity from a change in procedure (methods/multiple_testing_policy.md R4).",
       "open_issue": [],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -1924,12 +1961,12 @@
       "family_definition": "Remaining focal traits after dropping the named correlated cluster, separate from baseline",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "Remaining focal traits after dropping the named correlated cluster, separate from baseline",
+        "selection_rule": "For the coupling transformed-composition t arm, remove every member of the named correlated cluster and refit the remaining focal traits; correct one p per remaining focal trait separately for this invocation.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BH",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "q values and changes reported; ORA profile-hit threshold q<=0.05 is a distinct family",
       "outputs": [
         {
@@ -1954,7 +1991,7 @@
         "R5",
         "R7"
       ],
-      "deliberate_difference": "Baseline and each leave-one-trait/cluster-out family are corrected separately over the declared remaining focal traits. q from a reduced family is not relabelled as baseline q.",
+      "deliberate_difference": "BH preserves the coupling transformed-composition t lco sensitivity kernel, where the producer must remove every member of the named correlated cluster and refit the remaining focal traits; keeping its native focal correction separates deletion sensitivity from a change in procedure (methods/multiple_testing_policy.md R4).",
       "open_issue": [],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -1977,12 +2014,12 @@
       "family_definition": "All focal_traits in the baseline, separate from leave-out families",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "All focal_traits in the baseline, separate from leave-out families",
+        "selection_rule": "For the coupling study-direction sign arm, pass every declared focal trait without a deletion; correct one p per remaining focal trait separately for this invocation.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BH",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "q values and changes reported; ORA profile-hit threshold q<=0.05 is a distinct family",
       "outputs": [
         {
@@ -2007,7 +2044,7 @@
         "R5",
         "R7"
       ],
-      "deliberate_difference": "Baseline and each leave-one-trait/cluster-out family are corrected separately over the declared remaining focal traits. q from a reduced family is not relabelled as baseline q.",
+      "deliberate_difference": "BH preserves the coupling study-direction sign baseline sensitivity kernel, where the producer must pass every declared focal trait without a deletion; keeping its native focal correction separates deletion sensitivity from a change in procedure (methods/multiple_testing_policy.md R4).",
       "open_issue": [],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -2030,12 +2067,12 @@
       "family_definition": "Remaining focal traits, separately for each dropped trait and each arm",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "Remaining focal traits, separately for each dropped trait and each arm",
+        "selection_rule": "For the coupling study-direction sign arm, remove the named focal trait and refit using the remaining focal traits; correct one p per remaining focal trait separately for this invocation.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BH",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "q values and changes reported; ORA profile-hit threshold q<=0.05 is a distinct family",
       "outputs": [
         {
@@ -2060,7 +2097,7 @@
         "R5",
         "R7"
       ],
-      "deliberate_difference": "Baseline and each leave-one-trait/cluster-out family are corrected separately over the declared remaining focal traits. q from a reduced family is not relabelled as baseline q.",
+      "deliberate_difference": "BH preserves the coupling study-direction sign loto sensitivity kernel, where the producer must remove the named focal trait and refit using the remaining focal traits; keeping its native focal correction separates deletion sensitivity from a change in procedure (methods/multiple_testing_policy.md R4).",
       "open_issue": [],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -2083,12 +2120,12 @@
       "family_definition": "Remaining focal traits after dropping the named correlated cluster, separate from baseline",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "Remaining focal traits after dropping the named correlated cluster, separate from baseline",
+        "selection_rule": "For the coupling study-direction sign arm, remove every member of the named correlated cluster and refit the remaining focal traits; correct one p per remaining focal trait separately for this invocation.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BH",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "q values and changes reported; ORA profile-hit threshold q<=0.05 is a distinct family",
       "outputs": [
         {
@@ -2113,7 +2150,7 @@
         "R5",
         "R7"
       ],
-      "deliberate_difference": "Baseline and each leave-one-trait/cluster-out family are corrected separately over the declared remaining focal traits. q from a reduced family is not relabelled as baseline q.",
+      "deliberate_difference": "BH preserves the coupling study-direction sign lco sensitivity kernel, where the producer must remove every member of the named correlated cluster and refit the remaining focal traits; keeping its native focal correction separates deletion sensitivity from a change in procedure (methods/multiple_testing_policy.md R4).",
       "open_issue": [],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -2136,12 +2173,12 @@
       "family_definition": "All focal_traits in the baseline, separate from leave-out families",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "All focal_traits in the baseline, separate from leave-out families",
+        "selection_rule": "For the coupling Fisher-combined ORA arm, pass every declared focal trait without a deletion; correct one p per remaining focal trait separately for this invocation.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BH",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "q values and changes reported; ORA profile-hit threshold q<=0.05 is a distinct family",
       "outputs": [
         {
@@ -2166,7 +2203,7 @@
         "R5",
         "R7"
       ],
-      "deliberate_difference": "Baseline and each leave-one-trait/cluster-out family are corrected separately over the declared remaining focal traits. q from a reduced family is not relabelled as baseline q.",
+      "deliberate_difference": "BH preserves the coupling Fisher-combined ORA baseline sensitivity kernel, where the producer must pass every declared focal trait without a deletion; keeping its native focal correction separates deletion sensitivity from a change in procedure (methods/multiple_testing_policy.md R4).",
       "open_issue": [],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -2189,12 +2226,12 @@
       "family_definition": "Remaining focal traits, separately for each dropped trait and each arm",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "Remaining focal traits, separately for each dropped trait and each arm",
+        "selection_rule": "For the coupling Fisher-combined ORA arm, remove the named focal trait and refit using the remaining focal traits; correct one p per remaining focal trait separately for this invocation.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BH",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "q values and changes reported; ORA profile-hit threshold q<=0.05 is a distinct family",
       "outputs": [
         {
@@ -2219,7 +2256,7 @@
         "R5",
         "R7"
       ],
-      "deliberate_difference": "Baseline and each leave-one-trait/cluster-out family are corrected separately over the declared remaining focal traits. q from a reduced family is not relabelled as baseline q.",
+      "deliberate_difference": "BH preserves the coupling Fisher-combined ORA loto sensitivity kernel, where the producer must remove the named focal trait and refit using the remaining focal traits; keeping its native focal correction separates deletion sensitivity from a change in procedure (methods/multiple_testing_policy.md R4).",
       "open_issue": [],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -2242,12 +2279,12 @@
       "family_definition": "Remaining focal traits after dropping the named correlated cluster, separate from baseline",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "Remaining focal traits after dropping the named correlated cluster, separate from baseline",
+        "selection_rule": "For the coupling Fisher-combined ORA arm, remove every member of the named correlated cluster and refit the remaining focal traits; correct one p per remaining focal trait separately for this invocation.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BH",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "q values and changes reported; ORA profile-hit threshold q<=0.05 is a distinct family",
       "outputs": [
         {
@@ -2272,7 +2309,7 @@
         "R5",
         "R7"
       ],
-      "deliberate_difference": "Baseline and each leave-one-trait/cluster-out family are corrected separately over the declared remaining focal traits. q from a reduced family is not relabelled as baseline q.",
+      "deliberate_difference": "BH preserves the coupling Fisher-combined ORA lco sensitivity kernel, where the producer must remove every member of the named correlated cluster and refit the remaining focal traits; keeping its native focal correction separates deletion sensitivity from a change in procedure (methods/multiple_testing_policy.md R4).",
       "open_issue": [],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -2295,12 +2332,13 @@
       "family_definition": "Positive k, N and K profile tests within each focal trait, separately for baseline and every leave-out; no across-trait profile family",
       "size_source": {
         "kind": "selected_rows",
-        "selection_rule": "Positive k, N and K profile tests within each focal trait, separately for baseline and every leave-out; no across-trait profile family",
-        "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
+        "selection_rule": "For each focal trait within the current baseline/leave-out universe, include only profile tests with observed k>0, profile N>0 and background K>0; correct valid_p before counting profile hits.",
+        "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size.",
+        "unfiltered_count_rule": "For each focal trait count all paired_profiles_df rows before testing k>0, N>0 and K>0. The producer exports tested-profile/hit summaries but no dedicated unfiltered profile-family count; obtain it from the bound input and record that reporting gap."
       },
       "primary_procedure": "BH",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7/R6; current native exceptions preserve the producer's computation.",
       "threshold": "q<=0.05",
       "outputs": [
         {
@@ -2326,7 +2364,7 @@
         "R7",
         "R6"
       ],
-      "deliberate_difference": "BH corrects eligible positive-count profile tests separately within each focal trait and each leave-out scenario. This differs from BH over the focal trait-level Fisher-combined p values; neither q is relabelled as the other family's q.",
+      "deliberate_difference": "BH preserves the coupling producer's within-trait positive-count profile-hit diagnostic; it corrects profile-level hypergeometric p values before Fisher combination, not the focal combined-p family (methods/multiple_testing_policy.md R4/R6).",
       "open_issue": [],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -2349,12 +2387,12 @@
       "family_definition": "Every reported trait including undefined tests held at p=1, corrected separately for raw and adjusted columns",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "Every reported trait including undefined tests held at p=1, corrected separately for raw and adjusted columns",
+        "selection_rule": "Iterate all paired_effects rows produced for the requested traits and take the raw Wilcoxon p column; family_bh_q_values pads undefined values before display selection.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BH",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "q<=0.05 for significance status",
       "outputs": [
         {
@@ -2383,7 +2421,7 @@
         "R5",
         "R7"
       ],
-      "deliberate_difference": "Raw and adjusted Wilcoxon columns have separate reported-trait BH families (owner decision). Documentation recomputation from rounded p values is labelled separately from producer q.",
+      "deliberate_difference": "BH follows the owner-decided raw-column correction over all reported density-audit traits; raw and residualized tests are separate estimands and separately corrected columns (methods/multiple_testing_policy.md R4).",
       "open_issue": [],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -2427,12 +2465,12 @@
       "family_definition": "Every reported trait including undefined tests held at p=1, corrected separately for raw and adjusted columns",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "Every reported trait including undefined tests held at p=1, corrected separately for raw and adjusted columns",
+        "selection_rule": "Use the same requested-trait paired_effects rows but extract the density-adjusted Wilcoxon p column; retain undefined members via family_bh_q_values.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BH",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "q<=0.05 for significance status",
       "outputs": [
         {
@@ -2461,7 +2499,7 @@
         "R5",
         "R7"
       ],
-      "deliberate_difference": "Raw and adjusted Wilcoxon columns have separate reported-trait BH families (owner decision). Documentation recomputation from rounded p values is labelled separately from producer q.",
+      "deliberate_difference": "BH follows the owner-decided density-adjusted Wilcoxon column family to preserve its residualized sensitivity calculation; it does not share correction membership with the raw column (methods/multiple_testing_policy.md R4).",
       "open_issue": [],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -2505,12 +2543,12 @@
       "family_definition": "All declared focal traits (fraction) or focal unordered pairs (log ratio), separately for each scenario, scope and before/after/before_matched/after_matched/matched_change population; untestable slots retained",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "All declared focal traits (fraction) or focal unordered pairs (log ratio), separately for each scenario, scope and before/after/before_matched/after_matched/matched_change population; untestable slots retained",
+        "selection_rule": "For each scenario/scope and before, after or matched population, enumerate all supplied focal traits with the shared fraction estimator and retain untestable rows.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BH",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "none declared",
       "outputs": [
         {
@@ -2543,7 +2581,7 @@
         "R5",
         "R7"
       ],
-      "deliberate_difference": "Before/after, matched, omitted-study and lineage/scenario families remain separate sensitivity views. Repeated q values are not independent replications.",
+      "deliberate_difference": "BH retains the shared focal-fraction sensitivity kernel in effect_rows, allowing before/after taxon-removal comparisons to preserve the focal Table 1 procedure; each scenario/population is corrected anew (methods/multiple_testing_policy.md R4).",
       "open_issue": [],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -2566,12 +2604,12 @@
       "family_definition": "All declared focal traits (fraction) or focal unordered pairs (log ratio), separately for each scenario, scope and before/after/before_matched/after_matched/matched_change population; untestable slots retained",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "All declared focal traits (fraction) or focal unordered pairs (log ratio), separately for each scenario, scope and before/after/before_matched/after_matched/matched_change population; untestable slots retained",
+        "selection_rule": "For each scenario/scope and population, enumerate all supplied focal traits using the Noel-compatible zero-total fraction convention; keep missing-support slots.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BH",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "none declared",
       "outputs": [
         {
@@ -2596,7 +2634,7 @@
         "R5",
         "R7"
       ],
-      "deliberate_difference": "Before/after, matched, omitted-study and lineage/scenario families remain separate sensitivity views. Repeated q values are not independent replications.",
+      "deliberate_difference": "BH is the effect_rows native-Noel-zero-fraction sensitivity choice over focal traits, retaining zero-total observation conventions while varying taxon removal; it is not Noel's all-trait BY screen (methods/multiple_testing_policy.md R4).",
       "open_issue": [],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -2619,12 +2657,12 @@
       "family_definition": "All declared focal traits (fraction) or focal unordered pairs (log ratio), separately for each scenario, scope and before/after/before_matched/after_matched/matched_change population; untestable slots retained",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "All declared focal traits (fraction) or focal unordered pairs (log ratio), separately for each scenario, scope and before/after/before_matched/after_matched/matched_change population; untestable slots retained",
+        "selection_rule": "Within each scenario/scope/population enumerate all unordered focal pairs and use pair-specific positive-count support; preserve every declared pair in the BY vector.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BY",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "none declared",
       "outputs": [
         {
@@ -2672,7 +2710,7 @@
       "family_definition": "Complete focal trait family recomputed per scope and each omitted study",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "Complete focal trait family recomputed per scope and each omitted study",
+        "selection_rule": "fraction_family enumerates the declared focal traits at baseline and after each individual study omission within each scope; no p/q filter defines the next omission's family.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "none",
@@ -2733,7 +2771,7 @@
       "family_definition": "Complete focal trait family recomputed per lineage scenario, scope and each before/after/matched population",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "Complete focal trait family recomputed per lineage scenario, scope and each before/after/matched population",
+        "selection_rule": "lineage_effects enumerates the complete focal trait list separately for every lineage-removal scenario, scope and before/after/matched population.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "none",
@@ -2794,12 +2832,13 @@
       "family_definition": "Only rows with nonempty p (eligible selection, sufficient pairs, nonzero variance); selected untestable traits get q=1 outside correction vector",
       "size_source": {
         "kind": "selected_rows",
-        "selection_rule": "Only rows with nonempty p (eligible selection, sufficient pairs, nonzero variance); selected untestable traits get q=1 outside correction vector",
-        "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
+        "selection_rule": "For each base.columns trait require support within the supplied policy bounds and positive fraction variance; include in BH only rows with a nonempty t-test p (enough pairs and paired standard deviation>1e-8).",
+        "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size.",
+        "unfiltered_count_rule": "Count base.columns before support/variance/testability filters, equivalently all returned records; family_selected_traits counts support-selected traits and family_tests counts tested probabilities, so neither is the unfiltered count."
       },
       "primary_procedure": "BH",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7/R6; current native exceptions preserve the producer's computation.",
       "threshold": "q<=0.001 and q<=0.05",
       "outputs": [
         {
@@ -2829,7 +2868,7 @@
         "R7",
         "R6"
       ],
-      "deliberate_difference": "Before/after, matched, omitted-study and lineage/scenario families remain separate sensitivity views. Repeated q values are not independent replications.",
+      "deliberate_difference": "BH preserves the native transformed-composition influence kernel's tested-row family so deletion effects can be compared with that native implementation; selected untestable rows receive q=1 outside its correction vector (methods/multiple_testing_policy.md R4/R6).",
       "open_issue": [],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -2852,12 +2891,13 @@
       "family_definition": "All active profiles x base.columns, separately by scope/scenario and tail; enrichment excludes zero count, depletion includes zero count",
       "size_source": {
         "kind": "selected_rows",
-        "selection_rule": "All active profiles x base.columns, separately by scope/scenario and tail; enrichment excludes zero count, depletion includes zero count",
-        "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
+        "selection_rule": "Within the scenario/scope take active profiles with row total>0 and base.columns, then retain only profile/trait pairs whose observed count>0 before upper-tail BH.",
+        "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size.",
+        "unfiltered_count_rule": "Count len(keys)*len(base.columns) before active-profile and observed-positive filters; family.profiles records len(keys), family.testable_profiles records active profiles and enrichment_tests records the selected correction count. No separate Cartesian-product count is exported."
       },
       "primary_procedure": "BH",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7/R6; current native exceptions preserve the producer's computation.",
       "threshold": "q<=0.001 or0.05 AND fold>=1.5 (enrichment) or<=0.67 (depletion)",
       "outputs": [
         {
@@ -2883,7 +2923,7 @@
         "R7",
         "R6"
       ],
-      "deliberate_difference": "Before/after, matched, omitted-study and lineage/scenario families remain separate sensitivity views. Repeated q values are not independent replications.",
+      "deliberate_difference": "BH preserves the native influence upper-tail ORA calculation after taxon removal; its positive-observed-count selection makes this sensitivity inventory different from full eligible native ORA (methods/multiple_testing_policy.md R4/R6).",
       "open_issue": [],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -2906,12 +2946,13 @@
       "family_definition": "All active profiles x base.columns, separately by scope/scenario and tail; enrichment excludes zero count, depletion includes zero count",
       "size_source": {
         "kind": "selected_rows",
-        "selection_rule": "All active profiles x base.columns, separately by scope/scenario and tail; enrichment excludes zero count, depletion includes zero count",
-        "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
+        "selection_rule": "Within the scenario/scope take active profiles with row total>0 and every base.columns trait; keep zero observed counts in the lower-tail BH vector.",
+        "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size.",
+        "unfiltered_count_rule": "Count len(keys)*len(base.columns) before excluding zero-total profiles; family.profiles and the bound base column list recover this count, whereas depletion_tests counts the active-profile product. No separate unfiltered product field is exported."
       },
       "primary_procedure": "BH",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7/R6; current native exceptions preserve the producer's computation.",
       "threshold": "q<=0.001 or0.05 AND fold>=1.5 (enrichment) or<=0.67 (depletion)",
       "outputs": [
         {
@@ -2937,7 +2978,7 @@
         "R7",
         "R6"
       ],
-      "deliberate_difference": "Before/after, matched, omitted-study and lineage/scenario families remain separate sensitivity views. Repeated q values are not independent replications.",
+      "deliberate_difference": "BH preserves the native influence lower-tail ORA sensitivity calculation, including zero observed counts across active profiles; it remains separate from the enrichment-tail family (methods/multiple_testing_policy.md R4/R6).",
       "open_issue": [],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -2960,12 +3001,12 @@
       "family_definition": "All focal traits grouped by (scenario, scope, reference) for composition and (scenario, scope, background) for ORA, separately for each before/after/matched population; distinct from native t/ORA families",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "All focal traits grouped by (scenario, scope, reference) for composition and (scenario, scope, background) for ORA, separately for each before/after/matched population; distinct from native t/ORA families",
+        "selection_rule": "Group the shared focal sign-test rows by scenario, scope and reference (composition) or background (ORA); correct every focal trait within each before/after/matched population independently.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BH",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "none declared",
       "outputs": [
         {
@@ -2990,7 +3031,7 @@
         "R5",
         "R7"
       ],
-      "deliberate_difference": "Before/after, matched, omitted-study and lineage/scenario families remain separate sensitivity views. Repeated q values are not independent replications.",
+      "deliberate_difference": "BH retains the shared focal sign-test comparison computed from native-influence scenarios, which is separate from native transformed t tests and profile-level ORA probabilities (methods/multiple_testing_policy.md R4).",
       "open_issue": [],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -3013,14 +3054,14 @@
       "family_definition": "Every retained non-MediaDive feature, including untestable slots; separate family per raw/presence/prevalence representation and test",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "Every retained non-MediaDive feature, including untestable slots; separate family per raw/presence/prevalence representation and test",
+        "selection_rule": "In declare_and_correct, group the study sign ledger rows separately by representation/test and full family; enumerate every retained non-MediaDive core feature without filtering by test result.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BY",
       "comparison_procedure": [
         "BH"
       ],
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "policy rejection flags q<=0.05 and0.001; full BY primary, BH diagnostic",
       "outputs": [
         {
@@ -3065,14 +3106,14 @@
       "family_definition": "All declared focal traits, unavailable slots retained; separate family per raw/presence/prevalence representation and test",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "All declared focal traits, unavailable slots retained; separate family per raw/presence/prevalence representation and test",
+        "selection_rule": "In declare_and_correct, group the study sign ledger rows separately by representation/test and focal family; enumerate the declared Table 1 focal traits, including unavailable features without filtering by test result.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
-      "primary_procedure": "BH",
+      "primary_procedure": "BY",
       "comparison_procedure": [
-        "BY"
+        "BH"
       ],
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "policy rejection flags q<=0.05 and0.001; full BY primary, BH diagnostic",
       "outputs": [
         {
@@ -3093,7 +3134,7 @@
         "R5",
         "R7"
       ],
-      "deliberate_difference": "Full-catalog BY is the primary screen. The focal BH comparison retains the earlier six-trait choice; representation/test families remain separate exploratory sensitivities, not replications.",
+      "deliberate_difference": "The sign focal family uses correct_family's BY primary and BH comparison. The producer explicitly calls six-trait BH a native-method comparison; full-family BY remains the primary screen (methods/multiple_testing_policy.md R4).",
       "open_issue": [],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -3117,14 +3158,14 @@
       "family_definition": "Every retained non-MediaDive feature, including untestable slots; separate family per raw/presence/prevalence representation and test",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "Every retained non-MediaDive feature, including untestable slots; separate family per raw/presence/prevalence representation and test",
+        "selection_rule": "In declare_and_correct, group the unadjusted study mean HC3 ledger rows separately by representation/test and full family; enumerate every retained non-MediaDive core feature without filtering by test result.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BY",
       "comparison_procedure": [
         "BH"
       ],
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "policy rejection flags q<=0.05 and0.001; full BY primary, BH diagnostic",
       "outputs": [
         {
@@ -3169,14 +3210,14 @@
       "family_definition": "All declared focal traits, unavailable slots retained; separate family per raw/presence/prevalence representation and test",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "All declared focal traits, unavailable slots retained; separate family per raw/presence/prevalence representation and test",
+        "selection_rule": "In declare_and_correct, group the unadjusted study mean HC3 ledger rows separately by representation/test and focal family; enumerate the declared Table 1 focal traits, including unavailable features without filtering by test result.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
-      "primary_procedure": "BH",
+      "primary_procedure": "BY",
       "comparison_procedure": [
-        "BY"
+        "BH"
       ],
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "policy rejection flags q<=0.05 and0.001; full BY primary, BH diagnostic",
       "outputs": [
         {
@@ -3197,7 +3238,7 @@
         "R5",
         "R7"
       ],
-      "deliberate_difference": "Full-catalog BY is the primary screen. The focal BH comparison retains the earlier six-trait choice; representation/test families remain separate exploratory sensitivities, not replications.",
+      "deliberate_difference": "The mean-hc3 focal family uses correct_family's BY primary and BH comparison. The producer explicitly calls six-trait BH a native-method comparison; full-family BY remains the primary screen (methods/multiple_testing_policy.md R4).",
       "open_issue": [],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -3221,14 +3262,14 @@
       "family_definition": "Every retained non-MediaDive feature, including untestable slots; separate family per raw/presence/prevalence representation and test",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "Every retained non-MediaDive feature, including untestable slots; separate family per raw/presence/prevalence representation and test",
+        "selection_rule": "In declare_and_correct, group the primary adjusted HC3 ledger rows separately by representation/test and full family; enumerate every retained non-MediaDive core feature without filtering by test result.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BY",
       "comparison_procedure": [
         "BH"
       ],
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "policy rejection flags q<=0.05 and0.001; full BY primary, BH diagnostic",
       "outputs": [
         {
@@ -3273,14 +3314,14 @@
       "family_definition": "All declared focal traits, unavailable slots retained; separate family per raw/presence/prevalence representation and test",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "All declared focal traits, unavailable slots retained; separate family per raw/presence/prevalence representation and test",
+        "selection_rule": "In declare_and_correct, group the primary adjusted HC3 ledger rows separately by representation/test and focal family; enumerate the declared Table 1 focal traits, including unavailable features without filtering by test result.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
-      "primary_procedure": "BH",
+      "primary_procedure": "BY",
       "comparison_procedure": [
-        "BY"
+        "BH"
       ],
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "policy rejection flags q<=0.05 and0.001; full BY primary, BH diagnostic",
       "outputs": [
         {
@@ -3301,7 +3342,7 @@
         "R5",
         "R7"
       ],
-      "deliberate_difference": "Full-catalog BY is the primary screen. The focal BH comparison retains the earlier six-trait choice; representation/test families remain separate exploratory sensitivities, not replications.",
+      "deliberate_difference": "The adjusted-primary focal family uses correct_family's BY primary and BH comparison. The producer explicitly calls six-trait BH a native-method comparison; full-family BY remains the primary screen (methods/multiple_testing_policy.md R4).",
       "open_issue": [],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -3325,14 +3366,14 @@
       "family_definition": "Every retained non-MediaDive feature, including untestable slots; separate family per raw/presence/prevalence representation and test",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "Every retained non-MediaDive feature, including untestable slots; separate family per raw/presence/prevalence representation and test",
+        "selection_rule": "In declare_and_correct, group the secondary adjusted HC3 ledger rows separately by representation/test and full family; enumerate every retained non-MediaDive core feature without filtering by test result.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BY",
       "comparison_procedure": [
         "BH"
       ],
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "policy rejection flags q<=0.05 and0.001; full BY primary, BH diagnostic",
       "outputs": [
         {
@@ -3377,14 +3418,14 @@
       "family_definition": "All declared focal traits, unavailable slots retained; separate family per raw/presence/prevalence representation and test",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "All declared focal traits, unavailable slots retained; separate family per raw/presence/prevalence representation and test",
+        "selection_rule": "In declare_and_correct, group the secondary adjusted HC3 ledger rows separately by representation/test and focal family; enumerate the declared Table 1 focal traits, including unavailable features without filtering by test result.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
-      "primary_procedure": "BH",
+      "primary_procedure": "BY",
       "comparison_procedure": [
-        "BY"
+        "BH"
       ],
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "policy rejection flags q<=0.05 and0.001; full BY primary, BH diagnostic",
       "outputs": [
         {
@@ -3405,7 +3446,7 @@
         "R5",
         "R7"
       ],
-      "deliberate_difference": "Full-catalog BY is the primary screen. The focal BH comparison retains the earlier six-trait choice; representation/test families remain separate exploratory sensitivities, not replications.",
+      "deliberate_difference": "The adjusted-secondary focal family uses correct_family's BY primary and BH comparison. The producer explicitly calls six-trait BH a native-method comparison; full-family BY remains the primary screen (methods/multiple_testing_policy.md R4).",
       "open_issue": [],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -3429,14 +3470,14 @@
       "family_definition": "All declared focal pair slots, including missing features; separate raw and presence representations",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "All declared focal pair slots, including missing features; separate raw and presence representations",
+        "selection_rule": "declare_and_correct groups the ledger by representation/test/family; use every declared focal pair in the raw and presence representations, retaining missing-feature pairs.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BY",
       "comparison_procedure": [
         "BH"
       ],
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "policy q<=0.05 and0.001",
       "outputs": [
         {
@@ -3481,12 +3522,12 @@
       "family_definition": "S0:six_fractions; all complete pairs; zero totals score zero; every declared row retained with untestable p held at1, null q exported",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "S0:six_fractions; all complete pairs; zero totals score zero; every declared row retained with untestable p held at1, null q exported",
+        "selection_rule": "run_scenarios: use all complete profile pairs and score zero totals as zero; declare the entire scenario's trait/pair/triple list before dropping unavailable p values for export.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BH",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "q<=0.05",
       "outputs": [
         {
@@ -3507,7 +3548,7 @@
         "R5",
         "R7"
       ],
-      "deliberate_difference": "Each declared eligibility scenario has its own ratio/fraction family. Influence checks replace the focal p within the held family; there is no correction across omissions.",
+      "deliberate_difference": "BH preserves the S0 baseline focal-fraction correction with zero totals scored zero, providing the explicit historical comparator for the BY ratio scenarios (methods/multiple_testing_policy.md R4).",
       "open_issue": [],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -3537,12 +3578,12 @@
       "family_definition": "S1:six_fractions; positive total both sides; every declared row retained with untestable p held at1, null q exported",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "S1:six_fractions; positive total both sides; every declared row retained with untestable p held at1, null q exported",
+        "selection_rule": "run_scenarios: require positive profile totals on both sides before computing each focal fraction; declare the entire scenario's trait/pair/triple list before dropping unavailable p values for export.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BH",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "q<=0.05",
       "outputs": [
         {
@@ -3571,7 +3612,7 @@
         "R5",
         "R7"
       ],
-      "deliberate_difference": "Each declared eligibility scenario has its own ratio/fraction family. Influence checks replace the focal p within the held family; there is no correction across omissions.",
+      "deliberate_difference": "BH preserves the focal-fraction procedure in S1 while restricting observations to positive totals on both sides; this isolates eligibility changes from correction-method changes (methods/multiple_testing_policy.md R4).",
       "open_issue": [
         1419
       ],
@@ -3603,12 +3644,12 @@
       "family_definition": "S2:fifteen_ratios; both traits positive; every declared row retained with untestable p held at1, null q exported",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "S2:fifteen_ratios; both traits positive; every declared row retained with untestable p held at1, null q exported",
+        "selection_rule": "run_scenarios: enumerate focal unordered pairs and require both traits positive on both sides within each pair; declare the entire scenario's trait/pair/triple list before dropping unavailable p values for export.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BY",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "q<=0.05",
       "outputs": [
         {
@@ -3659,12 +3700,12 @@
       "family_definition": "S3:thirty_matched_fractions; fraction contrasts matched to each ratio eligibility; every declared row retained with untestable p held at1, null q exported",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "S3:thirty_matched_fractions; fraction contrasts matched to each ratio eligibility; every declared row retained with untestable p held at1, null q exported",
+        "selection_rule": "run_scenarios: for each unordered focal ratio pair use its positive-count eligibility for both component fraction tests; declare the entire scenario's trait/pair/triple list before dropping unavailable p values for export.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BY",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "q<=0.05",
       "outputs": [
         {
@@ -3725,12 +3766,12 @@
       "family_definition": "S4:six_fractions; all focal traits positive; every declared row retained with untestable p held at1, null q exported",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "S4:six_fractions; all focal traits positive; every declared row retained with untestable p held at1, null q exported",
+        "selection_rule": "run_scenarios: restrict observations to pairs where all focal traits are positive on both sides, then enumerate focal fractions; declare the entire scenario's trait/pair/triple list before dropping unavailable p values for export.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BH",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "q<=0.05",
       "outputs": [
         {
@@ -3751,7 +3792,7 @@
         "R5",
         "R7"
       ],
-      "deliberate_difference": "Each declared eligibility scenario has its own ratio/fraction family. Influence checks replace the focal p within the held family; there is no correction across omissions.",
+      "deliberate_difference": "BH preserves the fraction branch of S4 on the common all-focal-positive observation set, permitting an eligibility-matched comparison with S4's separately BY-corrected ratios (methods/multiple_testing_policy.md R4).",
       "open_issue": [],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -3781,12 +3822,12 @@
       "family_definition": "S4:fifteen_ratios; all focal traits positive; every declared row retained with untestable p held at1, null q exported",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "S4:fifteen_ratios; all focal traits positive; every declared row retained with untestable p held at1, null q exported",
+        "selection_rule": "run_scenarios: use that same all-focal-positive observation mask and enumerate unordered focal ratios; declare the entire scenario's trait/pair/triple list before dropping unavailable p values for export.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BY",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "q<=0.05",
       "outputs": [
         {
@@ -3837,12 +3878,12 @@
       "family_definition": "S5:sixty_triple_ratios; all trait triples, ratios on common triple support; every declared row retained with untestable p held at1, null q exported",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "S5:sixty_triple_ratios; all trait triples, ratios on common triple support; every declared row retained with untestable p held at1, null q exported",
+        "selection_rule": "run_scenarios: enumerate focal triples, use common positive support within each triple and enumerate its unordered trait-pair ratio tests; declare the entire scenario's trait/pair/triple list before dropping unavailable p values for export.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BY",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "q<=0.05",
       "outputs": [
         {
@@ -3893,12 +3934,12 @@
       "family_definition": "S6:fifteen_ratios; exact Feces; every declared row retained with untestable p held at1, null q exported",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "S6:fifteen_ratios; exact Feces; every declared row retained with untestable p held at1, null q exported",
+        "selection_rule": "run_scenarios: select literal body_site Feces observations, then enumerate all focal ratios with pair-specific positive support; declare the entire scenario's trait/pair/triple list before dropping unavailable p values for export.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BY",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "q<=0.05",
       "outputs": [
         {
@@ -3949,12 +3990,12 @@
       "family_definition": "S7:fifteen_ratios; outside exact Feces; every declared row retained with untestable p held at1, null q exported",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "S7:fifteen_ratios; outside exact Feces; every declared row retained with untestable p held at1, null q exported",
+        "selection_rule": "run_scenarios: select observations outside literal body_site Feces, then enumerate all focal ratios; declare the entire scenario's trait/pair/triple list before dropping unavailable p values for export.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BY",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "q<=0.05",
       "outputs": [
         {
@@ -4005,12 +4046,12 @@
       "family_definition": "S9:fifteen_ratios; body-site label set contains Feces; every declared row retained with untestable p held at1, null q exported",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "S9:fifteen_ratios; body-site label set contains Feces; every declared row retained with untestable p held at1, null q exported",
+        "selection_rule": "run_scenarios: select observations whose body-site label set contains Feces, then enumerate focal ratios; declare the entire scenario's trait/pair/triple list before dropping unavailable p values for export.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BY",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "q<=0.05",
       "outputs": [
         {
@@ -4061,12 +4102,12 @@
       "family_definition": "S10:fifteen_ratios; other gut label set; every declared row retained with untestable p held at1, null q exported",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "S10:fifteen_ratios; other gut label set; every declared row retained with untestable p held at1, null q exported",
+        "selection_rule": "run_scenarios: select the other-gut body-site label set, then enumerate focal ratios; declare the entire scenario's trait/pair/triple list before dropping unavailable p values for export.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BY",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "q<=0.05",
       "outputs": [
         {
@@ -4117,12 +4158,12 @@
       "family_definition": "S11:fifteen_ratios; no gut label set; every declared row retained with untestable p held at1, null q exported",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "S11:fifteen_ratios; no gut label set; every declared row retained with untestable p held at1, null q exported",
+        "selection_rule": "run_scenarios: select observations with no gut body-site label, then enumerate focal ratios; declare the entire scenario's trait/pair/triple list before dropping unavailable p values for export.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BY",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "q<=0.05",
       "outputs": [
         {
@@ -4173,12 +4214,12 @@
       "family_definition": "BY focal pair family with only the inspected ratio p replaced; all other ratios retain full-data p. No correction across omissions.",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "BY focal pair family with only the inspected ratio p replaced; all other ratios retain full-data p. No correction across omissions.",
+        "selection_rule": "Start with the full focal ratio p vector; replace only the inspected ratio's p after deleting one study, leaving all other ratio probabilities fixed; repeat for each inspected omission.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BY",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "q<=0.05 crossing rule",
       "outputs": [
         {
@@ -4250,12 +4291,12 @@
       "family_definition": "BY focal pair family with only the inspected ratio p replaced; all other ratios retain full-data p. No correction across omissions.",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "BY focal pair family with only the inspected ratio p replaced; all other ratios retain full-data p. No correction across omissions.",
+        "selection_rule": "Start with the full focal ratio p vector; replace only the inspected ratio's p after deleting a declared stratum, keeping the other ratio probabilities fixed for each sensitivity calculation.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BY",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "q<=0.05 crossing rule",
       "outputs": [
         {
@@ -4327,12 +4368,13 @@
       "family_definition": "All nonmissing p_value entries in concatenated direction_summary_rows + convergence_summary_rows + interaction_summary_rows; not the full underlying exploratory test inventory",
       "size_source": {
         "kind": "selected_rows",
-        "selection_rule": "All nonmissing p_value entries in concatenated direction_summary_rows + convergence_summary_rows + interaction_summary_rows; not the full underlying exploratory test inventory",
-        "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
+        "selection_rule": "Concatenate direction_summary_rows, convergence_summary_rows and interaction_summary_rows in main; pass their p_value column to benjamini_hochberg, which removes missing p from the correction vector.",
+        "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size.",
+        "unfiltered_count_rule": "Count all concatenated summary rows, including missing p_value, before the helper's nonmissing filter; recover this from the summary table row count. This is the unfiltered summary table, not the complete underlying exploratory test inventory, which this producer does not export as one family."
       },
       "primary_procedure": "BH",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7/R6/R3; current native exceptions preserve the producer's computation.",
       "threshold": "significance_tier is based on raw p, not bh_q_within_table",
       "outputs": [
         {
@@ -4355,7 +4397,7 @@
         "R6",
         "R3"
       ],
-      "deliberate_difference": "Summary-table BH covers selected nonmissing summary p values only; raw-p significance tiers are not adjusted-family decisions. Correction does not undo prior selection.",
+      "deliberate_difference": "BH is retained as the existing exploratory correction over nonmissing cellulose summary-table p values; it does not correct the prior summary selection or the complete underlying scan, and nominal tier labels remain tracked in #1412 (methods/multiple_testing_policy.md R4/R6).",
       "open_issue": [
         1412
       ],
@@ -4380,14 +4422,15 @@
       "family_definition": "Joint family of both statistics for all frozen selected candidates within one split, including unavailable tests; separate split families and no across-split inference",
       "size_source": {
         "kind": "selected_rows",
-        "selection_rule": "Joint family of both statistics for all frozen selected candidates within one split, including unavailable tests; separate split families and no across-split inference",
-        "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
+        "selection_rule": "Run scanner.select on split.training only with always_included=False; keep closest_disjoint_triples at tolerance=0.0, freeze those candidates, and declare both held-out statistics per candidate before evaluating split.testing.",
+        "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size.",
+        "unfiltered_count_rule": "The bound analysis basis retained_feature_count counts features offered to the training scanner before selection. The unfiltered candidate-triple inventory is larger and distinct: count scanner.select(...).triples before closest_disjoint_triples; run_splits records selected_candidates, not a complete unfiltered triple-count field."
       },
       "primary_procedure": "BY",
       "comparison_procedure": [
         "BH"
       ],
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7/R6; current native exceptions preserve the producer's computation.",
       "threshold": "policy q<=0.05 and0.001",
       "outputs": [
         {
@@ -4433,16 +4476,17 @@
         "script-pd-taxon-mcnemar"
       ],
       "area": "Investigation/deck scripts",
-      "hypotheses": "One eligible fecal condition × annotated genus/species taxon: directional asymmetry among discordant paired studies.",
+      "hypotheses": "One eligible fecal condition \u00d7 annotated genus/species taxon: directional asymmetry among discordant paired studies.",
       "family_definition": "Finite p-values across all condition/taxon rows passing MIN_TAXON_STUDIES; below-support rows retain raw p and blank q.",
       "size_source": {
         "kind": "selected_rows",
-        "selection_rule": "Finite p-values across all condition/taxon rows passing MIN_TAXON_STUDIES; below-support rows retain raw p and blank q.",
-        "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
+        "selection_rule": "Build eligible human fecal condition/taxon rows, require reported_study_count>=MIN_TAXON_STUDIES, then let benjamini_hochberg retain finite p among those supported rows.",
+        "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size.",
+        "unfiltered_count_rule": "Count all rows of the returned condition/taxon test table before passes_min_taxon_studies and finite-p selection; below-support rows remain in that table with blank q, so its full row count is recoverable."
       },
       "primary_procedure": "BH",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7/R6; current native exceptions preserve the producer's computation.",
       "threshold": "q <= 0.05; exploratory q <= 0.20; support >= 3 reported studies",
       "outputs": [
         {
@@ -4492,7 +4536,7 @@
         "R7",
         "R6"
       ],
-      "deliberate_difference": "This family remains separate by its declared hypothesis, population and selection rule; no q is transferred from another family.",
+      "deliberate_difference": "BH preserves the supported condition-by-taxon McNemar network screen and its exploratory q<=0.20 display tier; this selected taxon screen is separate from condition-by-trait Wilcoxon (methods/multiple_testing_policy.md R4/R6/R7).",
       "open_issue": [],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -4511,16 +4555,17 @@
         "script-pd-trait-wilcoxon"
       ],
       "area": "Investigation/deck scripts",
-      "hypotheses": "One eligible fecal condition × trait: within-study paired annotation-z contrast versus zero.",
+      "hypotheses": "One eligible fecal condition \u00d7 trait: within-study paired annotation-z contrast versus zero.",
       "family_definition": "Finite p-values across condition/trait rows passing MIN_PAIRED_STUDIES; separate from the taxon screen.",
       "size_source": {
         "kind": "selected_rows",
-        "selection_rule": "Finite p-values across condition/trait rows passing MIN_PAIRED_STUDIES; separate from the taxon screen.",
-        "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
+        "selection_rule": "Form paired study z contrasts for eligible human fecal condition/trait rows; require paired_study_count>=MIN_PAIRED_STUDIES and pass supported finite Wilcoxon probabilities to BH.",
+        "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size.",
+        "unfiltered_count_rule": "Count all returned condition/trait test rows before passes_min_paired_studies and finite-p selection; retained below-support or undefined rows make the prefilter inventory count recoverable from the full table."
       },
       "primary_procedure": "BH",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7/R6; current native exceptions preserve the producer's computation.",
       "threshold": "q <= 0.05; exploratory q <= 0.20; >=3 paired studies",
       "outputs": [
         {
@@ -4566,7 +4611,7 @@
         "R7",
         "R6"
       ],
-      "deliberate_difference": "This family remains separate by its declared hypothesis, population and selection rule; no q is transferred from another family.",
+      "deliberate_difference": "BH preserves the supported condition-by-trait Wilcoxon network comparison on study z contrasts, including its exploratory display tier; sharing the network view does not merge this family with taxon McNemar (methods/multiple_testing_policy.md R4/R6/R7).",
       "open_issue": [],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -4589,12 +4634,12 @@
       "family_definition": "All cells supplied for one focus-direction/condition-mode heatmap view, corrected before display/support selection; undefined p filled1.",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "All cells supplied for one focus-direction/condition-mode heatmap view, corrected before display/support selection; undefined p filled1.",
+        "selection_rule": "prepare_pattern_cells constructs cells from the current focus-direction edges and condition mode; finalize_inferential_cells corrects all supplied cells before support, effect or p/q display cuts.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BH",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "BH q <=.05 with support; exploratory pattern display nominal p <.01, at least3 positive profiles and2 studies.",
       "outputs": [
         {
@@ -4619,7 +4664,7 @@
         "R5",
         "R7"
       ],
-      "deliberate_difference": "BH covers all eligible edge cells for one declared condition-mode view before display filters. Six-trait, expanded-list and stool-group views retain distinct inventories, so shared raw p may have different q.",
+      "deliberate_difference": "BH preserves the heatmap producer's focus-direction Fisher cell diagnostic before support/display cuts; it annotates that view separately from its explicitly nominal display selection (methods/multiple_testing_policy.md R4).",
       "open_issue": [],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -4642,12 +4687,12 @@
       "family_definition": "Union of increased/decreased edges, duplicate condition/body-site/trait collapsed, then all cells within each condition mode corrected together.",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "Union of increased/decreased edges, duplicate condition/body-site/trait collapsed, then all cells within each condition mode corrected together.",
+        "selection_rule": "prepare_contrast_cells unions increased and decreased edges, collapses duplicate condition/body-site/trait identities, and corrects the resulting cells for one condition mode before display cuts.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BH",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "BH q <=.05 with support; signed display is finite p, support and absolute difference >.01, not a q gate.",
       "outputs": [
         {
@@ -4680,7 +4725,7 @@
         "R5",
         "R7"
       ],
-      "deliberate_difference": "BH covers all eligible edge cells for one declared condition-mode view before display filters. Six-trait, expanded-list and stool-group views retain distinct inventories, so shared raw p may have different q.",
+      "deliberate_difference": "BH preserves the native Fisher correction on the union of increased/decreased cells for one condition mode; this direction-contrast family differs from either focus-direction view (methods/multiple_testing_policy.md R4).",
       "open_issue": [],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -4703,12 +4748,13 @@
       "family_definition": "All edge-present cells of one condition mode across every declared trait; no-positive-z-in-either-direction cells have no edge and are excluded; q family grows with trait list.",
       "size_source": {
         "kind": "selected_rows",
-        "selection_rule": "All edge-present cells of one condition mode across every declared trait; no-positive-z-in-either-direction cells have no edge and are excluded; q family grows with trait list.",
-        "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
+        "selection_rule": "Build direction-contrast cells from the expanded declared trait-list edges; union both directions and collapse duplicate identities before BH; a condition/trait with no positive-z edge in either direction is absent.",
+        "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size.",
+        "unfiltered_count_rule": "From the bound profile metadata enumerate observed condition/body-site identities for the chosen condition mode and cross them with the full declared trait list before positive-z edge creation. Edge-cell tables omit zero-edge identities; no complete unfiltered Cartesian-product count is exported."
       },
       "primary_procedure": "BH",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7/R6; current native exceptions preserve the producer's computation.",
       "threshold": "q <=.05 with support; nominal Fisher p retained separately.",
       "outputs": [
         {
@@ -4730,7 +4776,7 @@
         "R7",
         "R6"
       ],
-      "deliberate_difference": "BH covers all eligible edge cells for one declared condition-mode view before display filters. Six-trait, expanded-list and stool-group views retain distinct inventories, so shared raw p may have different q.",
+      "deliberate_difference": "BH preserves the expanded-trait-list Fisher cell diagnostic; adding declared traits changes its edge-present cell inventory, so its q cannot be borrowed from the focal-trait heatmap (methods/multiple_testing_policy.md R4/R6).",
       "open_issue": [],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -4753,12 +4799,13 @@
       "family_definition": "All grouped stool edge cells BEFORE selecting top support-ranked groups; separate family from all-body-site grouped cells.",
       "size_source": {
         "kind": "selected_rows",
-        "selection_rule": "All grouped stool edge cells BEFORE selecting top support-ranked groups; separate family from all-body-site grouped cells.",
-        "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
+        "selection_rule": "Build grouped edges from profiles with body_site exactly Feces, union both directions, collapse condition/trait identities and correct every resulting stool cell before support-ranked top-group selection.",
+        "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size.",
+        "unfiltered_count_rule": "From exact-Feces profile metadata enumerate all grouped conditions and cross with the declared trait list before positive-z edge creation. The all-stool-cell table records edge-present cells before top-group selection, not the zero-edge Cartesian product; the latter has no exported count field."
       },
       "primary_procedure": "BH",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7/R6; current native exceptions preserve the producer's computation.",
       "threshold": "q <=.05 with support; row selection uses study support and no p/q.",
       "outputs": [
         {
@@ -4784,7 +4831,7 @@
         "R7",
         "R6"
       ],
-      "deliberate_difference": "BH covers all eligible edge cells for one declared condition-mode view before display filters. Six-trait, expanded-list and stool-group views retain distinct inventories, so shared raw p may have different q.",
+      "deliberate_difference": "BH remains an additional native Fisher diagnostic across all exact-stool group cells before top-group selection; row-4 group ranking uses study support and nominal Fisher remains explicitly labelled (methods/multiple_testing_policy.md R4/R6).",
       "open_issue": [],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -4807,12 +4854,12 @@
       "family_definition": "The raw Wilcoxon column across every parsed documented trait; separate from the other column.",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "Every parsed documented trait; raw and adjusted columns corrected as two separate families.",
+        "selection_rule": "Parse every documented trait row in relabel and extract the rounded raw Wilcoxon p column; do not subset by the displayed significance labels.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BH",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "status_from_q applies BH q <= .05 through adjustment_status; status_from_p applies the same cutoff to nominal raw p. Both are exported for comparison.",
       "outputs": [
         {
@@ -4837,7 +4884,7 @@
         "R5",
         "R7"
       ],
-      "deliberate_difference": "Raw and adjusted Wilcoxon columns have separate reported-trait BH families (owner decision). Documentation recomputation from rounded p values is labelled separately from producer q.",
+      "deliberate_difference": "BH recomputes the owner-requested raw Wilcoxon documentation column from its rounded printed probabilities; it is labelled as a documentation reconstruction, not substituted for the full-precision producer q (methods/multiple_testing_policy.md R4).",
       "open_issue": [],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -4861,12 +4908,12 @@
       "family_definition": "The adjusted Wilcoxon column across every parsed documented trait; separate from the other column.",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "Every parsed documented trait; raw and adjusted columns corrected as two separate families.",
+        "selection_rule": "Parse the same documented trait rows in relabel and extract the rounded adjusted Wilcoxon p column independently of raw-column calls.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BH",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "status_from_q applies BH q <= .05 through adjustment_status; status_from_p applies the same cutoff to nominal raw p. Both are exported for comparison.",
       "outputs": [
         {
@@ -4891,7 +4938,7 @@
         "R5",
         "R7"
       ],
-      "deliberate_difference": "Raw and adjusted Wilcoxon columns have separate reported-trait BH families (owner decision). Documentation recomputation from rounded p values is labelled separately from producer q.",
+      "deliberate_difference": "BH recomputes the owner-requested adjusted Wilcoxon documentation column independently from rounded printed values; this reconstruction is kept separate from raw-column and full-precision adjusted output (methods/multiple_testing_policy.md R4).",
       "open_issue": [],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -4915,12 +4962,12 @@
       "family_definition": "Global BH over profile x eligible trait tests within each requested site; --fdr-scope profile or --no-fdr can override.",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "Global BH over profile x eligible trait tests within each requested site; --fdr-scope profile or --no-fdr can override.",
+        "selection_rule": "Select profiles for the user-requested site through stratification, pass that partition and the supplied taxa background to run_stratum_enrichment, then honor its global/profile/no-fdr option.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BH",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "Configured p-threshold interpreted as q when FDR enabled, with configured min-fold.",
       "outputs": [
         {
@@ -4941,7 +4988,7 @@
         "R5",
         "R7"
       ],
-      "deliberate_difference": "Native ORA families are separate by tail and declared population/stratum/profile scope. They supply directional evidence; the joint-tail multiplicity family is a separate BY/BH comparison.",
+      "deliberate_difference": "BH preserves the default native global ORA procedure for each user-selected site so anatomical sensitivity remains comparable to its native producer; explicit profile/no-fdr overrides must be reported separately (methods/multiple_testing_policy.md R4).",
       "open_issue": [
         1409
       ],
@@ -4961,7 +5008,8 @@
             "BH"
           ]
         }
-      ]
+      ],
+      "launcher": true
     },
     {
       "family_id": "mt-core-population-fraction",
@@ -4970,15 +5018,15 @@
       ],
       "area": "Contrast-population sensitivity",
       "hypotheses": "Each focal fraction test rerun within one selected/oriented population.",
-      "family_definition": "A separate family per population: six focal fractions.",
+      "family_definition": "A separate focal fraction family per requested population; membership comes from the executed trait list.",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "A separate family per population: six focal fractions.",
+        "selection_rule": "For each supplied pre-filtered contrast population, comparison_rows calls compute_direction_shifts over the declared focal traits without selecting them from that population's results.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BH",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "Source q retained without new display correction.",
       "outputs": [
         {
@@ -4999,9 +5047,11 @@
         "R5",
         "R7"
       ],
-      "deliberate_difference": "The focal fraction family and focal unordered-ratio family test different estimands. Population sensitivity recomputes each family separately; Table 1 BH is not the full-screen BY family.",
-      "open_issue": [],
-      "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
+      "deliberate_difference": "BH retains the focal Table 1 fraction kernel while comparison_rows changes the contrast population, isolating population sensitivity from multiplicity-method changes; it is not the full-trait BY analysis (methods/multiple_testing_policy.md R4).",
+      "open_issue": [
+        1454
+      ],
+      "conformance_status": "The producer currently hard-codes the labels 'over 6 fractions'/'over 15 ratios'; #1454 records this run-size-label defect. The registry does not make those labels authoritative current counts.",
       "anchors": [
         {
           "path": "src/mtp/contrast_orientation.py",
@@ -5017,7 +5067,8 @@
             "BH"
           ]
         }
-      ]
+      ],
+      "launcher": true
     },
     {
       "family_id": "mt-core-population-log-ratio",
@@ -5026,15 +5077,15 @@
       ],
       "area": "Contrast-population sensitivity",
       "hypotheses": "Each focal log-ratio test rerun within one selected/oriented population.",
-      "family_definition": "A separate family per population: fifteen unordered trait pairs.",
+      "family_definition": "A separate unordered focal-ratio family per requested population; membership comes from the executed trait-pair list.",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "A separate family per population: fifteen unordered trait pairs.",
+        "selection_rule": "For each supplied pre-filtered population, comparison_rows calls compute_log_ratio_shifts on all declared focal pairs; positive-count eligibility selects observations within each pair only.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BY",
-      "comparison_procedure": "none",
-      "procedure_role": "Reporting designation under the lead policy/current native-family exceptions; not an assertion that the producer itself uses the word primary.",
+      "comparison_procedure": [],
+      "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
       "threshold": "Source q retained without new display correction.",
       "outputs": [
         {
@@ -5056,8 +5107,10 @@
         "R7"
       ],
       "deliberate_difference": "The focal fraction family and focal unordered-ratio family test different estimands. Population sensitivity recomputes each family separately; Table 1 BH is not the full-screen BY family.",
-      "open_issue": [],
-      "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
+      "open_issue": [
+        1454
+      ],
+      "conformance_status": "The producer currently hard-codes the labels 'over 6 fractions'/'over 15 ratios'; #1454 records this run-size-label defect. The registry does not make those labels authoritative current counts.",
       "anchors": [
         {
           "path": "src/mtp/contrast_orientation.py",
@@ -5073,7 +5126,8 @@
             "BY"
           ]
         }
-      ]
+      ],
+      "launcher": true
     },
     {
       "family_id": "mt-core-calibration-fraction-replicate",
@@ -5085,7 +5139,7 @@
       "family_definition": "Each replicate has its own six-trait BH family.",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "Each replicate has its own six-trait BH family.",
+        "selection_rule": "fraction_sign_test calls compute_direction_shifts on each resampled corpus and emits every requested focal trait; do not pool or select hypotheses across replicates.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "none",
@@ -5138,7 +5192,128 @@
             "BH"
           ]
         }
-      ]
+      ],
+      "launcher": true
+    },
+    {
+      "family_id": "mt-core-calibration-log-ratio-replicate",
+      "inventory_ids": [
+        "core-jed-log-ratio-sign"
+      ],
+      "area": "Jed log-ratio calibration procedure",
+      "hypotheses": "Re-run the focal paired log-ratio sign tests within each null or alternative calibration replicate.",
+      "family_definition": "All declared unordered focal trait pairs within each replicate, including untestable slots reserved at p=1.",
+      "size_source": {
+        "kind": "executed_inventory",
+        "selection_rule": "log_ratio_sign_test calls compute_log_ratio_shifts on each resampled profile set and emits every returned declared focal pair, retaining untestable members.",
+        "count_rule": "Count result.summaries before Outcome testability filtering in log_ratio_sign_test; tests_evaluated counts only scored members and is not the declared family size."
+      },
+      "primary_procedure": "none",
+      "comparison_procedure": [
+        "BY"
+      ],
+      "procedure_role": "Diagnostic/sensitivity/audit corrections only; no primary inferential family is claimed.",
+      "threshold": "Diagnostic raw-p and BY-family-q rejection thresholds supplied to replicate_counts; no across-replicate correction.",
+      "outputs": [
+        {
+          "file": "calibration_replicates.tsv",
+          "column": "tests_evaluated,null_tests_rejected_p,family_rejected_q"
+        },
+        {
+          "file": "calibration_results.tsv",
+          "column": "rejections_p,rejection_rate_p,rejections_q,rejection_rate_q"
+        }
+      ],
+      "consumers": [
+        {
+          "path": "src/mtp/calibration.py",
+          "function": "replicate_counts"
+        }
+      ],
+      "policy_rule": [
+        "R1",
+        "R2",
+        "R4",
+        "R5",
+        "R7",
+        "R3"
+      ],
+      "deliberate_difference": "Each resampled corpus launches the native focal-ratio BY family independently; this diagnoses the ratio procedure's rejection rate rather than pooling replicate p values (methods/multiple_testing_policy.md R3/R4).",
+      "open_issue": [
+        1410
+      ],
+      "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
+      "anchors": [
+        {
+          "path": "src/mtp/calibration.py",
+          "function": "log_ratio_sign_test",
+          "procedures": [
+            "BY"
+          ]
+        }
+      ],
+      "launcher": true
+    },
+    {
+      "family_id": "mt-core-calibration-screen-null-replicate",
+      "inventory_ids": [
+        "core-noel-sign-nominal",
+        "core-noel-sign-effective"
+      ],
+      "area": "Noel full-screen null calibration",
+      "hypotheses": "Re-run the full trait-direction screen after each study-level null flip.",
+      "family_definition": "Every supplied candidate trait in each replicate; nominal BH/BY and effective-size BY are distinct columns on the same p vector.",
+      "size_source": {
+        "kind": "executed_inventory",
+        "selection_rule": "run_null_screens reuses every supplied columns entry, flips whole study direction labels, and calls run_screen unchanged in each replicate; no observed-significance subset enters calibration.",
+        "count_rule": "Read nominal family_size from screen_null_replicates.tsv; effective family_size is a multiplier and must be recorded separately from candidate count."
+      },
+      "primary_procedure": "none",
+      "comparison_procedure": [
+        "BH",
+        "BY"
+      ],
+      "procedure_role": "Diagnostic/sensitivity/audit corrections only; no primary inferential family is claimed.",
+      "threshold": "Count calls at q<=0.10, 0.05, 0.01 and 0.001 for each nominal/effective column; no across-replicate correction.",
+      "outputs": [
+        {
+          "file": "screen_null_replicates.tsv",
+          "column": "replicate,q_column,family_basis,family_size,threshold,significant"
+        },
+        {
+          "file": "screen_null_summary.tsv",
+          "column": "q_column,family_basis,threshold,family_size_min,family_size_max"
+        }
+      ],
+      "consumers": [
+        {
+          "path": "src/mtp/screen_calibration.py",
+          "function": "summarize"
+        }
+      ],
+      "policy_rule": [
+        "R1",
+        "R2",
+        "R4",
+        "R5",
+        "R7",
+        "R3",
+        "R9"
+      ],
+      "deliberate_difference": "Each study-flipped replicate re-runs the actual screen, including re-estimating the effective multiplier; its BH/nominal-BY/effective-BY columns diagnose calibration and do not become new biological discoveries (methods/multiple_testing_policy.md R3/R4/R9).",
+      "open_issue": [],
+      "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
+      "anchors": [
+        {
+          "path": "src/mtp/screen_calibration.py",
+          "function": "run_null_screens",
+          "procedures": [
+            "BH",
+            "BY"
+          ]
+        }
+      ],
+      "launcher": true
     }
   ],
   "infrastructure": [
@@ -5270,5 +5445,377 @@
       ],
       "reason": "Shared correction implementation, not a scientific family. Hypothesis selection and family identity belong to registered caller entries."
     }
-  ]
+  ],
+  "literal_procedure_counts": [
+    {
+      "path": "scripts/adhoc/issue1321_doc_table_bh_q.py",
+      "function": "relabel",
+      "counts": {
+        "BH": 2
+      }
+    },
+    {
+      "path": "scripts/adhoc/issue976_measure_ora_validation.py",
+      "function": "main",
+      "counts": {
+        "BH": 1
+      }
+    },
+    {
+      "path": "scripts/adhoc/issue976_producer_parity.py",
+      "function": "main",
+      "counts": {}
+    },
+    {
+      "path": "scripts/audit_trait_density_correlation.py",
+      "function": "main",
+      "counts": {}
+    },
+    {
+      "path": "scripts/create_pd_significant_condition_taxon_trait_network.py",
+      "function": "benjamini_hochberg",
+      "counts": {}
+    },
+    {
+      "path": "scripts/create_pd_significant_condition_taxon_trait_network.py",
+      "function": "build_condition_taxon_tests",
+      "counts": {
+        "BH": 1
+      }
+    },
+    {
+      "path": "scripts/create_pd_significant_condition_taxon_trait_network.py",
+      "function": "build_condition_trait_tests",
+      "counts": {
+        "BH": 1
+      }
+    },
+    {
+      "path": "scripts/create_six_shared_trait_cytoscape_heatmaps.py",
+      "function": "benjamini_hochberg",
+      "counts": {}
+    },
+    {
+      "path": "scripts/create_six_shared_trait_cytoscape_heatmaps.py",
+      "function": "finalize_inferential_cells",
+      "counts": {
+        "BH": 1
+      }
+    },
+    {
+      "path": "scripts/create_trait_profile_infographic.py",
+      "function": "benjamini_hochberg",
+      "counts": {}
+    },
+    {
+      "path": "scripts/create_trait_profile_infographic.py",
+      "function": "compute_trait_stats",
+      "counts": {
+        "BH": 2
+      }
+    },
+    {
+      "path": "scripts/trait_enrichment.py",
+      "function": "main",
+      "counts": {
+        "BH": 2
+      }
+    },
+    {
+      "path": "src/mtp/calibration.py",
+      "function": "screened_fraction_sign_test",
+      "counts": {
+        "BH": 1
+      }
+    },
+    {
+      "path": "src/mtp/cellulose_decr/analysis.py",
+      "function": "benjamini_hochberg",
+      "counts": {}
+    },
+    {
+      "path": "src/mtp/cellulose_decr/analysis.py",
+      "function": "main",
+      "counts": {
+        "BH": 1
+      }
+    },
+    {
+      "path": "src/mtp/cellulose_decr/study_split.py",
+      "function": "run_splits",
+      "counts": {}
+    },
+    {
+      "path": "src/mtp/composition_calibration/adapters/jed_composition.py",
+      "function": "JedCompositionAdapter.run_inference",
+      "counts": {
+        "BH": 2
+      }
+    },
+    {
+      "path": "src/mtp/composition_calibration/composition.py",
+      "function": "run_composition_calibration",
+      "counts": {
+        "BH": 1
+      }
+    },
+    {
+      "path": "src/mtp/coupling.py",
+      "function": "compute_composition_arm",
+      "counts": {
+        "BH": 1
+      }
+    },
+    {
+      "path": "src/mtp/coupling.py",
+      "function": "compute_directional_arm",
+      "counts": {
+        "BH": 1
+      }
+    },
+    {
+      "path": "src/mtp/coupling.py",
+      "function": "compute_ora_arm",
+      "counts": {
+        "BH": 2
+      }
+    },
+    {
+      "path": "src/mtp/density_adjustment.py",
+      "function": "evaluate_table1_paired_effects",
+      "counts": {
+        "BH": 2
+      }
+    },
+    {
+      "path": "src/mtp/density_adjustment.py",
+      "function": "family_bh_q_values",
+      "counts": {
+        "BH": 1
+      }
+    },
+    {
+      "path": "src/mtp/density_adjustment.py",
+      "function": "main",
+      "counts": {}
+    },
+    {
+      "path": "src/mtp/density_adjustment.py",
+      "function": "run_density_audit",
+      "counts": {}
+    },
+    {
+      "path": "src/mtp/enrichment_stats.py",
+      "function": "benjamini_hochberg",
+      "counts": {}
+    },
+    {
+      "path": "src/mtp/influence_extension.py",
+      "function": "fraction_family",
+      "counts": {
+        "BH": 1,
+        "BY": 1
+      }
+    },
+    {
+      "path": "src/mtp/influence_extension.py",
+      "function": "lineage_effects",
+      "counts": {
+        "BH": 1,
+        "BY": 1
+      }
+    },
+    {
+      "path": "src/mtp/log_ratio_sensitivity.py",
+      "function": "_crosses",
+      "counts": {}
+    },
+    {
+      "path": "src/mtp/log_ratio_sensitivity.py",
+      "function": "_held_family_q",
+      "counts": {
+        "BY": 1
+      }
+    },
+    {
+      "path": "src/mtp/log_ratio_sensitivity.py",
+      "function": "_min_flips_to_cross",
+      "counts": {}
+    },
+    {
+      "path": "src/mtp/log_ratio_sensitivity.py",
+      "function": "_min_removals_to_cross",
+      "counts": {}
+    },
+    {
+      "path": "src/mtp/log_ratio_sensitivity.py",
+      "function": "correct",
+      "counts": {}
+    },
+    {
+      "path": "src/mtp/log_ratio_sensitivity.py",
+      "function": "leave_one_stratum_out",
+      "counts": {
+        "BY": 1
+      }
+    },
+    {
+      "path": "src/mtp/log_ratio_sensitivity.py",
+      "function": "leave_one_study_out",
+      "counts": {
+        "BY": 1
+      }
+    },
+    {
+      "path": "src/mtp/log_ratio_sensitivity.py",
+      "function": "run_scenarios",
+      "counts": {
+        "BH": 3,
+        "BY": 7
+      }
+    },
+    {
+      "path": "src/mtp/multiple_testing.py",
+      "function": "_results",
+      "counts": {}
+    },
+    {
+      "path": "src/mtp/multiple_testing.py",
+      "function": "adjusted_probabilities",
+      "counts": {}
+    },
+    {
+      "path": "src/mtp/multiple_testing.py",
+      "function": "correct_family",
+      "counts": {}
+    },
+    {
+      "path": "src/mtp/multiple_testing.py",
+      "function": "verify_correction",
+      "counts": {}
+    },
+    {
+      "path": "src/mtp/multiplicity/inventory.py",
+      "function": "correct_inventory",
+      "counts": {}
+    },
+    {
+      "path": "src/mtp/multiplicity/ora.py",
+      "function": "native_bh_rows",
+      "counts": {
+        "BH": 1
+      }
+    },
+    {
+      "path": "src/mtp/multiplicity/stage.py",
+      "function": "_run_post_arm_from_sources",
+      "counts": {}
+    },
+    {
+      "path": "src/mtp/native_taxon_influence.py",
+      "function": "correct_shared_comparisons",
+      "counts": {
+        "BH": 1
+      }
+    },
+    {
+      "path": "src/mtp/native_taxon_influence.py",
+      "function": "ora_cells",
+      "counts": {
+        "BH": 1
+      }
+    },
+    {
+      "path": "src/mtp/native_taxon_influence.py",
+      "function": "transformed",
+      "counts": {
+        "BH": 1
+      }
+    },
+    {
+      "path": "src/mtp/ora_calibration/adapters/ilyas_ora.py",
+      "function": "IlyasORAAdapter.run_inference",
+      "counts": {
+        "BH": 1
+      }
+    },
+    {
+      "path": "src/mtp/presence_depth_families.py",
+      "function": "declare_and_correct",
+      "counts": {}
+    },
+    {
+      "path": "src/mtp/table1_trait_maps.py",
+      "function": "compute_direction_shifts",
+      "counts": {
+        "BH": 1
+      }
+    },
+    {
+      "path": "src/mtp/taxon_influence.py",
+      "function": "adjust",
+      "counts": {}
+    },
+    {
+      "path": "src/mtp/taxon_influence.py",
+      "function": "effect_rows",
+      "counts": {}
+    },
+    {
+      "path": "src/mtp/three_test_table/composition.py",
+      "function": "composition_table",
+      "counts": {}
+    },
+    {
+      "path": "src/mtp/three_test_table/native.py",
+      "function": "_observations",
+      "counts": {}
+    },
+    {
+      "path": "src/mtp/three_test_table/native.py",
+      "function": "native_tables",
+      "counts": {}
+    },
+    {
+      "path": "src/mtp/three_test_table/ora.py",
+      "function": "ora_table",
+      "counts": {}
+    },
+    {
+      "path": "src/mtp/three_test_table/wilcoxon_audit.py",
+      "function": "_correct",
+      "counts": {}
+    },
+    {
+      "path": "src/mtp/three_test_table/wilcoxon_audit.py",
+      "function": "audit_parent",
+      "counts": {}
+    },
+    {
+      "path": "src/mtp/trait_composition.py",
+      "function": "compute_log_ratio_shifts",
+      "counts": {
+        "BY": 1
+      }
+    },
+    {
+      "path": "src/mtp/trait_screen.py",
+      "function": "run_screen",
+      "counts": {
+        "BH": 1,
+        "BY": 2
+      }
+    },
+    {
+      "path": "src/mtp/trait_screen.py",
+      "function": "step_up",
+      "counts": {}
+    },
+    {
+      "path": "src/mtp/trait_screen.py",
+      "function": "step_up_array",
+      "counts": {}
+    }
+  ],
+  "literal_count_scope": "One source-reviewed snapshot per discovered function, counting literal procedure calls once regardless of how many families share its anchor. Empty maps mean no inferable literal call. This is not per-family call attribution, role validation, or dynamic/arithmetic method inference."
 }
