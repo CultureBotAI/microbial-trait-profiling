@@ -124,8 +124,9 @@ def output_inventory(root: Path) -> dict[str, str]:
     }
 
 
-def test_manifest_spec_matches_native_transformed_pair_statistic() -> None:
-    """Bind Jed's declaration to independently reconstructed producer values (#1497)."""
+def test_manifest_spec_matches_native_transformed_study_primary_statistic(tmp_path: Path) -> None:
+    """Bind the declaration to independent study values and their consumer (#1604)."""
+    from scipy.stats import false_discovery_control
     from scipy.stats import t as student_t
 
     profiles = pd.DataFrame(
@@ -166,7 +167,10 @@ def test_manifest_spec_matches_native_transformed_pair_statistic() -> None:
     audit = infographic.pair_denominator_summary(profiles, metadata)
     result = (
         infographic.compute_trait_stats(
-            matrix, study_ids=metadata["study_id"], denominator_summary=audit
+            matrix,
+            study_ids=metadata["study_id"],
+            selected_profile_count=len(profiles),
+            denominator_summary=audit,
         )
         .set_index("trait")
         .loc[selected]
@@ -183,16 +187,61 @@ def test_manifest_spec_matches_native_transformed_pair_statistic() -> None:
     assert result["n_zero_total_excluded"].eq(0).all()
     assert result["zero_total_policy"].eq("included_in_historical_native_composition").all()
 
+    # s1 contributes two contrasts and s2 one: equal study and contrast weights
+    # must produce different effects, t statistics and probabilities here.
+    study_means = np.vstack([expected_pairs[:2].mean(axis=0), expected_pairs[2]])
+    expected_study_mean = study_means.mean(axis=0)
+    expected_study_t = expected_study_mean / (study_means.std(axis=0, ddof=1) / np.sqrt(2))
+    expected_study_p = 2 * student_t.sf(np.abs(expected_study_t), df=1)
+    expected_study_q = false_discovery_control(expected_study_p, method="bh")
+    expected_pair_q = false_discovery_control(expected_p, method="bh")
+    assert not np.allclose(expected_study_mean, expected_mean)
+    assert not np.allclose(expected_study_p, expected_p)
+    np.testing.assert_allclose(result["study_mean_increased_minus_decreased"], expected_study_mean)
+    np.testing.assert_allclose(result["study_t_statistic"], expected_study_t)
+    np.testing.assert_allclose(result["study_p_value"], expected_study_p)
+    np.testing.assert_allclose(result["study_q_value"], expected_study_q)
+    np.testing.assert_allclose(result["q_value"], expected_pair_q)
+
+    # Map the six overlay names onto the two synthetic columns without changing
+    # the producer's two-trait BH family, then read its actual saved output.
+    columns = {
+        feature: [(terms[0], str(selected[i % len(selected)]))]
+        for i, (feature, terms) in enumerate(TABLE1_TRAITS.items())
+    }
+    output = tmp_path / "native.tsv"
+    result.rename_axis("trait").reset_index().to_csv(output, sep="\t", index=False)
+    records = native_composition_records(
+        output,
+        columns=columns,
+        q_threshold=0.05,
+        strict_q_threshold=0.001,
+        profile_sha256="synthetic",
+    )
+    assert len(records) == len(columns)
+    for record in records:
+        index = list(selected).index(record.trait_columns)
+        assert record.inference_level == "study"
+        assert record.testable_units == record.unique_studies == 2
+        assert record.paired_experiments == 3
+        assert record.family_id == "native_composition_pooled_study"
+        assert record.family_size == len(selected)
+        assert record.effect_value == pytest.approx(expected_study_mean[index])
+        assert record.p_value == pytest.approx(expected_study_p[index])
+        assert record.q_value == pytest.approx(expected_study_q[index])
+        assert record.native_pair_p_value == pytest.approx(expected_p[index])
+        assert record.native_pair_q_value == pytest.approx(expected_pair_q[index])
+
     spec = get_standard_analysis_spec("jed_pooled_contrast_fraction_diff_v1")
-    assert spec.estimand == "pooled_contrast_standardized_log1p_trait_fraction_shift"
+    assert spec.estimand == "study_mean_standardized_log1p_trait_fraction_shift"
     assert spec.kernel == "two_sided_one_sample_t_test"
     assert result["test_method"].eq(spec.kernel).all()
     assert spec.transformation == (
         "profile_column_zscore_ddof0_of_log1p_1000_trait_fraction_then_inc_minus_dec"
     )
     assert spec.eligibility_rule == "paired_human_16S_WMS_retaining_zero_total_as_zero_fraction"
-    assert spec.sampling_unit == "paired_experiment_contrast"
-    assert spec.weighting == "equal_contrast_weight"
+    assert spec.sampling_unit == "study" == records[0].inference_level
+    assert spec.weighting == "equal_study_weight_of_within_study_mean_contrasts"
 
 
 @pytest.fixture
