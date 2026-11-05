@@ -305,8 +305,9 @@ def build_condition_taxon_tests(
     support = tests["passes_min_taxon_studies"].astype(bool)
     tests["n_tests"] = int(tests["p_value"].notna().sum())
     tests["bh_family_size"] = pd.Series(pd.NA, index=tests.index, dtype="Int64")
-    tests.loc[support, "bh_family_size"] = int(tests.loc[support, "p_value"].notna().sum())
-    tests.loc[support, "q_value"] = benjamini_hochberg(tests.loc[support, "p_value"])
+    tests.loc[support, "bh_family_size"] = int(support.sum())
+    padded_q = benjamini_hochberg(tests.loc[support, "p_value"].fillna(1.0))
+    tests.loc[support, "q_value"] = padded_q.where(tests.loc[support, "p_value"].notna())
     tests["selected_after_bh"] = support & tests["q_value"].le(Q_VALUE_CUTOFF)
     return tests.sort_values(
         ["selected_after_bh", "q_value", "condition", "taxonomic_rank", "taxon_name"],
@@ -403,8 +404,9 @@ def build_condition_trait_tests(
     support = tests["passes_min_paired_studies"].astype(bool)
     tests["n_tests"] = int(tests["p_value"].notna().sum())
     tests["bh_family_size"] = pd.Series(pd.NA, index=tests.index, dtype="Int64")
-    tests.loc[support, "bh_family_size"] = int(tests.loc[support, "p_value"].notna().sum())
-    tests.loc[support, "q_value"] = benjamini_hochberg(tests.loc[support, "p_value"])
+    tests.loc[support, "bh_family_size"] = int(support.sum())
+    padded_q = benjamini_hochberg(tests.loc[support, "p_value"].fillna(1.0))
+    tests.loc[support, "q_value"] = padded_q.where(tests.loc[support, "p_value"].notna())
     tests["selected_after_bh"] = support & tests["q_value"].le(Q_VALUE_CUTOFF)
     tests = tests.sort_values(
         ["selected_after_bh", "q_value", "condition", "trait"],
@@ -1428,12 +1430,17 @@ def plot_fdr_evidence_landscape(
     ax_pd.spines[["top", "right", "left"]].set_visible(False)
     ax_pd.tick_params(axis="y", length=0, labelsize=8)
     ax_pd.tick_params(axis="x", labelsize=8)
+    trait_bh_family_size = int(trait_tests["passes_min_paired_studies"].sum())
+    trait_tested_count = int(
+        (trait_tests["passes_min_paired_studies"] & trait_tests["p_value"].notna()).sum()
+    )
     ax_pd.text(
         0.0,
         -0.17,
         (
             f"nominal p is unadjusted ({len(pd_rows)} PD trait tests shown); "
-            f"q is BH-adjusted across {len(trait_plot)} condition-trait tests."
+            f"q is BH-adjusted across {trait_bh_family_size} condition-trait tests "
+            f"({trait_tested_count} with finite p)."
         ),
         transform=ax_pd.transAxes,
         fontsize=8,
@@ -1548,10 +1555,12 @@ def write_methods_summary(
     """Write a compact interpretation and methods companion for the evidence figure."""
     eligible_count = int(eligibility["passes_min_paired_studies"].sum())
     displayed_count = int(eligibility["displayed_in_network"].sum())
-    eligible_taxon_test_count = int(
+    eligible_taxon_test_count = int(taxon_tests["passes_min_taxon_studies"].sum())
+    eligible_trait_test_count = int(trait_tests["passes_min_paired_studies"].sum())
+    tested_taxon_count = int(
         (taxon_tests["passes_min_taxon_studies"] & taxon_tests["p_value"].notna()).sum()
     )
-    eligible_trait_test_count = int(
+    tested_trait_count = int(
         (trait_tests["passes_min_paired_studies"] & trait_tests["p_value"].notna()).sum()
     )
     pd_trait_test_count = int(
@@ -1591,9 +1600,11 @@ def write_methods_summary(
         ),
         (
             f"- The resulting condition-taxon test family contained "
-            f"`{eligible_taxon_test_count}` eligible comparisons, and the condition-trait "
+            f"`{eligible_taxon_test_count}` eligible comparisons (`{tested_taxon_count}` with "
+            f"finite nominal p), and the condition-trait "
             f"test family contained `{eligible_trait_test_count}` eligible condition-trait "
-            f"comparisons (`{pd_trait_test_count}` PD trait comparisons shown in Panel C)."
+            f"comparisons (`{tested_trait_count}` with finite nominal p; "
+            f"`{pd_trait_test_count}` PD trait comparisons shown in Panel C)."
         ),
         (
             "- Taxon direction was tested with an exact McNemar/binomial test "
@@ -1606,10 +1617,13 @@ def write_methods_summary(
         ),
         (
             "- Reported `p_value` columns and Panel C `nominal p` labels are nominal "
-            f"(uncorrected) across the `{eligible_taxon_test_count}` eligible condition-taxon "
-            f"tests and `{eligible_trait_test_count}` eligible condition-trait tests; "
+            f"(uncorrected) across the `{tested_taxon_count}` tested "
+            f"(`{eligible_taxon_test_count}` BH-family) condition-taxon tests and "
+            f"`{tested_trait_count}` tested (`{eligible_trait_test_count}` BH-family) "
+            "condition-trait tests; "
             "`q_value` is Benjamini-Hochberg adjusted globally within the complete "
-            "condition-taxon family and within the complete condition-trait family."
+            "condition-taxon family and within the complete condition-trait family "
+            "(holding untestable support rows at `p = 1.0`)."
         ),
         f"- FDR-significant results require `q <= {Q_VALUE_CUTOFF:.2f}`.",
         (

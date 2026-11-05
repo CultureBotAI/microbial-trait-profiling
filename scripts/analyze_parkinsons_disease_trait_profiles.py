@@ -302,10 +302,11 @@ def safe_mannwhitney(focus: pd.Series, comparator: pd.Series) -> float:
 
 def safe_wilcoxon(contrast: pd.Series) -> float:
     values = contrast.dropna()
-    if len(values) == 0:
+    non_zero = values[values != 0]
+    if len(non_zero) == 0:
         return math.nan
     try:
-        return float(stats.wilcoxon(values, alternative="two-sided").pvalue)
+        return float(stats.wilcoxon(non_zero, alternative="two-sided").pvalue)
     except ValueError:
         return math.nan
 
@@ -718,45 +719,59 @@ def write_readme(
         finite_tests["comparison"].eq("within-experiment paired contrast").sum()
     )
     total_test_count = len(finite_tests)
+
+    def _format_readme_test(test_label: str, p_value: object, count_label: str) -> str:
+        numeric_p = float(pd.to_numeric(p_value, errors="coerce"))
+        if math.isfinite(numeric_p):
+            return (
+                f"nominal {test_label} p={fmt_p_value(numeric_p)} "
+                f"(uncorrected; {count_label}, {total_test_count} tests in table)."
+            )
+        return f"{test_label} not tested ({count_label}, {total_test_count} tests in table)."
+
+    aerobe_mw_label = _format_readme_test(
+        "Mann-Whitney", aerobe_test.p_value, f"{profile_test_count} profile-level tests"
+    )
+    anaerobe_mw_label = _format_readme_test(
+        "Mann-Whitney", anaerobe_test.p_value, f"{profile_test_count} profile-level tests"
+    )
     lines.extend(
         [
             (
                 "- Aerobe enrichment profile-level effect "
                 f"(increased minus decreased mean): "
                 f"{fmt_float(aerobe_test.focus_minus_comparator)}; "
-                f"nominal Mann-Whitney p={fmt_p_value(aerobe_test.p_value)} "
-                f"(uncorrected; {profile_test_count} profile-level tests, "
-                f"{total_test_count} tests in table)."
+                f"{aerobe_mw_label}"
             ),
             (
                 "- Anaerobe depletion profile-level effect "
                 f"(decreased minus increased mean): "
                 f"{fmt_float(anaerobe_test.focus_minus_comparator)}; "
-                f"nominal Mann-Whitney p={fmt_p_value(anaerobe_test.p_value)} "
-                f"(uncorrected; {profile_test_count} profile-level tests, "
-                f"{total_test_count} tests in table)."
+                f"{anaerobe_mw_label}"
             ),
         ]
     )
 
     if paired_test_count > 0 and not aerobe_pair.empty and not anaerobe_pair.empty:
+        aerobe_wx_label = _format_readme_test(
+            "Wilcoxon", aerobe_pair.iloc[0].p_value, f"{paired_test_count} paired-contrast tests"
+        )
+        anaerobe_wx_label = _format_readme_test(
+            "Wilcoxon", anaerobe_pair.iloc[0].p_value, f"{paired_test_count} paired-contrast tests"
+        )
         lines.extend(
             [
                 (
                     "- Aerobe within-experiment contrast mean "
                     f"(increased minus decreased): "
                     f"{fmt_float(aerobe_pair.iloc[0].focus_minus_comparator)}; "
-                    f"nominal Wilcoxon p={fmt_p_value(aerobe_pair.iloc[0].p_value)} "
-                    f"(uncorrected; {paired_test_count} paired-contrast tests, "
-                    f"{total_test_count} tests in table)."
+                    f"{aerobe_wx_label}"
                 ),
                 (
                     "- Anaerobe within-experiment contrast mean "
                     f"(decreased minus increased): "
                     f"{fmt_float(anaerobe_pair.iloc[0].focus_minus_comparator)}; "
-                    f"nominal Wilcoxon p={fmt_p_value(anaerobe_pair.iloc[0].p_value)} "
-                    f"(uncorrected; {paired_test_count} paired-contrast tests, "
-                    f"{total_test_count} tests in table)."
+                    f"{anaerobe_wx_label}"
                 ),
             ]
         )

@@ -687,13 +687,13 @@ def generate_figure3_lead_findings_ora_evidence(
             p_str = f"nominal p={pval:.2e}" if pval < 0.001 else f"nominal p={pval:.4f}"
         else:
             pval = math.nan
-            frac = 0.5
-            low, high = 0.5, 0.5
+            frac = math.nan
+            low, high = math.nan, math.nan
             p_str = "not tested"
 
         # Profile mean shift calculation
         s_series = pd.Series(study_shifts, dtype=float)
-        mean_shift = float(s_series.mean()) if len(s_series) > 0 else 0.0
+        mean_str = f"{float(s_series.mean()):+.2f}" if len(s_series) > 0 else "NA"
         non_zero_shifts = s_series[s_series != 0]
         if len(non_zero_shifts) > 0:
             n_wilcoxon_tests += 1
@@ -715,11 +715,12 @@ def generate_figure3_lead_findings_ora_evidence(
             else f"0/0 studies ({p_str})"
         )
 
-        status = (
-            "Concordant (nominal p < 0.05)"
-            if pval < 0.05 or w_pval < 0.05
-            else "Directionally Aligned"
-        )
+        if not math.isfinite(pval) and not math.isfinite(w_pval):
+            status = "Not tested"
+        elif pval < 0.05 or w_pval < 0.05:
+            status = "Concordant (nominal p < 0.05)"
+        else:
+            status = "Directionally Aligned"
         binom_cell = (
             f"{success}/{non_ties} non-tied ({frac * 100:.1f}%)<br>({p_str})"
             if non_ties > 0
@@ -729,7 +730,7 @@ def generate_figure3_lead_findings_ora_evidence(
             [
                 f"{cond}<br>({t_name})",
                 target_dir,
-                f"{n_studies} studies<br>Mean: {mean_shift:+.2f}<br>({w_p_str})",
+                f"{n_studies} studies<br>Mean: {mean_str}<br>({w_p_str})",
                 binom_cell,
                 status,
             ]
@@ -738,8 +739,8 @@ def generate_figure3_lead_findings_ora_evidence(
     fig = make_subplots(
         rows=1,
         cols=2,
-        column_widths=[0.42, 0.58],
-        horizontal_spacing=0.12,
+        column_widths=[0.38, 0.62],
+        horizontal_spacing=0.08,
         subplot_titles=(
             "A. Study Directional Consistency (Exact 95% Clopper-Pearson Intervals)",
             "B. Multi-Scale Evidence Synthesis (Continuous Shift vs. Discrete Sign Test)",
@@ -753,15 +754,21 @@ def generate_figure3_lead_findings_ora_evidence(
             x=proportions,
             y=forest_labels,
             mode="markers+text",
-            text=[f"{p * 100:.1f}%" for p in proportions],
+            text=[f"{p * 100:.1f}%" if math.isfinite(p) else "" for p in proportions],
             textposition="top center",
             textfont={"size": 10, "weight": "bold"},
             marker={"size": 12, "color": "#2980b9", "line": {"color": "#1a252f", "width": 1.2}},
             error_x={
                 "type": "data",
                 "symmetric": False,
-                "array": [h - p for h, p in zip(ci_highs, proportions, strict=True)],
-                "arrayminus": [p - low for low, p in zip(ci_lows, proportions, strict=True)],
+                "array": [
+                    h - p if math.isfinite(p) and math.isfinite(h) else 0.0
+                    for h, p in zip(ci_highs, proportions, strict=True)
+                ],
+                "arrayminus": [
+                    p - low if math.isfinite(p) and math.isfinite(low) else 0.0
+                    for low, p in zip(ci_lows, proportions, strict=True)
+                ],
                 "color": "#34495e",
                 "thickness": 1.8,
                 "width": 6,
@@ -776,7 +783,7 @@ def generate_figure3_lead_findings_ora_evidence(
     # Panel B: Table
     fig.add_trace(
         go.Table(
-            columnwidth=[0.20, 0.10, 0.22, 0.22, 0.26],
+            columnwidth=[0.22, 0.09, 0.21, 0.21, 0.27],
             header={
                 "values": [
                     "<b>Condition<br>(Trait)</b>",
@@ -838,9 +845,9 @@ def generate_figure3_lead_findings_ora_evidence(
             "xanchor": "left",
             "yanchor": "top",
         },
-        width=1550,
+        width=1650,
         height=680,
-        margin={"l": 260, "r": 60, "t": 190, "b": 70},
+        margin={"l": 240, "r": 50, "t": 190, "b": 70},
         plot_bgcolor="white",
     )
     fig.update_xaxes(

@@ -426,13 +426,21 @@ def test_deck_figures_label_uncorrected_p_values_as_nominal_with_test_counts(
     import re
 
     def _text_width_px(text: str, size: float) -> float:
+        from matplotlib import font_manager
         from PIL import ImageFont
 
-        try:
-            font = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial.ttf", round(size))
-            return float(font.getlength(text))
-        except OSError:
-            return len(text) * 0.58 * size
+        fallback_px = len(text) * 0.58 * size
+        measured_px = 0.0
+        for font_path in (
+            font_manager.findfont("DejaVu Sans", fallback_to_default=True),
+            "/System/Library/Fonts/Supplemental/Arial.ttf",
+        ):
+            try:
+                font = ImageFont.truetype(font_path, round(size))
+                measured_px = max(measured_px, float(font.getlength(text)))
+            except OSError:
+                continue
+        return max(measured_px, fallback_px)
 
     def assert_plotly_figure_text_fits(fig: Any) -> None:
         width = float(fig.layout.width)
@@ -585,12 +593,19 @@ def test_deck_figures_label_uncorrected_p_values_as_nominal_with_test_counts(
     fig3_partial = figures.pop()
     fig3_partial_title = str(fig3_partial.layout.title.text)
     assert "6 nominal tests: 3 Wilcoxon + 3 binomial, uncorrected" in fig3_partial_title
+    partial_scatter = next(trace for trace in fig3_partial.data if trace.type == "scatter")
+    assert pd.isna(partial_scatter.x[1])
+    assert partial_scatter.text[1] == ""
+    assert "50.0%" not in [str(t) for t in partial_scatter.text]
     partial_table = next(trace for trace in fig3_partial.data if trace.type == "table")
     assert "(not tested)" in str(partial_table.cells.values[2][1])
+    assert "Mean: NA" in str(partial_table.cells.values[2][1])
+    assert "Mean: +0.00" not in str(partial_table.cells.values[2][1])
     assert "(not tested)" in str(partial_table.cells.values[3][1])
     assert "1.0000" not in str(partial_table.cells.values[2][1])
     assert "1.0000" not in str(partial_table.cells.values[3][1])
     assert partial_table.cells.values[4][0] == "Concordant (nominal p < 0.05)"
+    assert partial_table.cells.values[4][1] == "Not tested"
     assert partial_table.cells.values[4][2] == "Directionally Aligned"
     assert_plotly_figure_text_fits(fig3_partial)
 
@@ -608,6 +623,27 @@ def test_deck_figures_label_uncorrected_p_values_as_nominal_with_test_counts(
     assert "nominal p =" in panel_a_title
     assert "<br>1 nominal test, n = 6 traits)" in panel_a_title
     assert_plotly_figure_text_fits(fig4)
+
+    # Simulate Linux CI where macOS Arial and TrueType loading fail (#1512)
+    from PIL import ImageFont
+
+    real_truetype = ImageFont.truetype
+
+    def _no_macos_fonts(font: Any = None, *args: Any, **kwargs: Any) -> Any:
+        if "/System/Library/Fonts" in str(font):
+            raise OSError(f"simulated Linux: no {font}")
+        return real_truetype(font, *args, **kwargs)
+
+    monkeypatch.setattr(ImageFont, "truetype", _no_macos_fonts)
+    for rendered_fig in (fig1, fig3, fig3_partial, fig4):
+        assert_plotly_figure_text_fits(rendered_fig)
+
+    def _no_fonts_at_all(font: Any = None, *_args: Any, **_kwargs: Any) -> Any:
+        raise OSError(f"simulated fallback: no {font}")
+
+    monkeypatch.setattr(ImageFont, "truetype", _no_fonts_at_all)
+    for rendered_fig in (fig1, fig3, fig3_partial, fig4):
+        assert_plotly_figure_text_fits(rendered_fig)
 
 
 def test_analyze_pd_trait_profiles_labels_nominal_p_values_and_test_counts(
@@ -705,3 +741,31 @@ def test_analyze_pd_trait_profiles_labels_nominal_p_values_and_test_counts(
     assert readme_partial.count("(uncorrected; 2 profile-level tests, 2 tests in table).") == 2
     assert "(2 profile-level tests; 2 nominal tests in total)." in readme_partial
     assert "(2 nominal tests, uncorrected)." in readme_partial
+    assert "p=NA" not in readme_partial
+
+    # Verify mixed tested/untested Mann-Whitney and Wilcoxon rows print 'not tested' (#1518)
+    mixed_scores = scores.copy()
+    mixed_scores.loc[mixed_scores["inc_dec"] == "inc", "aerobe_v2_score"] = float("nan")
+    mixed_paired = pd.DataFrame(
+        {
+            "study_id": ["S1", "S2", "S3"],
+            "experiment_id": ["E1", "E2", "E3"],
+            "aerobe_v2_increased_minus_decreased": [0.0, 0.0, 0.0],
+            "anaerobe_v2_decreased_minus_increased": [1.2, 1.2, 1.0],
+        }
+    )
+    tests_mixed = pd_profiles.summarize_paired_tests(mixed_scores, mixed_paired)
+    assert tests_mixed["p_value_type"].tolist() == [
+        "not_tested",
+        "not_tested",
+        "nominal",
+        "nominal",
+    ]
+    assert tests_mixed["n_tests"].tolist() == [2, 2, 2, 2]
+    pd_profiles.write_readme(
+        mixed_scores, direction_summary, tests_mixed, mixed_paired, taxa, taxa_summary
+    )
+    readme_mixed = (tmp_path / "README.md").read_text(encoding="utf-8")
+    assert "Mann-Whitney not tested (1 profile-level tests, 2 tests in table)." in readme_mixed
+    assert "Wilcoxon not tested (1 paired-contrast tests, 2 tests in table)." in readme_mixed
+    assert "p=NA" not in readme_mixed

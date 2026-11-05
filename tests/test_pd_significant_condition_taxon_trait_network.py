@@ -109,12 +109,15 @@ def test_condition_taxon_tests_keep_ranks_separate_and_apply_bh(
     assert tests.loc["species-1", "taxonomic_rank"] == "species"
     assert tests.loc["genus-1", "increased_only_studies"] == 8
     assert bool(tests.loc["genus-1", "selected_after_bh"])
+    assert tests.loc["genus-1", "q_value"] == pytest.approx(0.015625)
     assert tests.loc["species-1", "both_directions_studies"] == 3
     assert not bool(tests.loc["species-1", "selected_after_bh"])
     assert pd.isna(tests.loc["species-1", "p_value"])
+    assert pd.isna(tests.loc["species-1", "q_value"])
     assert tests.loc["genus-1", "p_value_type"] == "nominal"
     assert tests.loc["species-1", "p_value_type"] == "not_tested"
     assert tests["n_tests"].tolist() == [1, 1]
+    assert tests["bh_family_size"].tolist() == [2, 2]
 
 
 def test_condition_trait_tests_select_consistent_paired_contrasts() -> None:
@@ -312,6 +315,22 @@ def test_network_tables_figure_and_methods_label_nominal_p_values(
                 }
             )
             zscore_rows.append({"trait-1": value})
+    for index in range(3):
+        for direction, value in [("inc", 0.5), ("dec", 0.5)]:
+            profile_id = f"tied-study-{index}|experiment-{index}|{direction}"
+            indices.append(profile_id)
+            metadata_rows.append(
+                {
+                    "study_id": f"tied-study-{index}",
+                    "experiment_id": f"experiment-{index}-{direction}",
+                    "direction": "increased" if direction == "inc" else "decreased",
+                    "inc_dec": direction,
+                    "condition": "Condition C",
+                    "body_site_group": network.FECES,
+                    "host_species": network.HUMAN_HOST,
+                }
+            )
+            zscore_rows.append({"trait-1": value})
     metadata = pd.DataFrame(metadata_rows, index=indices)
     zscores = pd.DataFrame(zscore_rows, index=indices)
     traits = pd.DataFrame(
@@ -323,10 +342,10 @@ def test_network_tables_figure_and_methods_label_nominal_p_values(
     )
     eligibility = pd.DataFrame(
         {
-            "condition": [network.PD_CONDITION, "Condition B"],
-            "paired_study_count": [8, 2],
-            "passes_min_paired_studies": [True, True],
-            "displayed_in_network": [True, False],
+            "condition": [network.PD_CONDITION, "Condition B", "Condition C"],
+            "paired_study_count": [8, 2, 3],
+            "passes_min_paired_studies": [True, True, True],
+            "displayed_in_network": [True, False, False],
         }
     )
     annotated_taxa = pd.DataFrame(
@@ -363,7 +382,7 @@ def test_network_tables_figure_and_methods_label_nominal_p_values(
                 "direction": full_dir,
                 "taxon_id": "species-tie",
             }
-            for index in range(2)
+            for index in range(3)
             for short_dir, full_dir in [("inc", "increased"), ("dec", "decreased")]
         ]
     )
@@ -374,24 +393,33 @@ def test_network_tables_figure_and_methods_label_nominal_p_values(
 
     taxon_by_id = taxon_tests.set_index("taxon_id")
     assert taxon_by_id.loc["genus-1", "p_value_type"] == "nominal"
+    assert taxon_by_id.loc["genus-1", "q_value"] == pytest.approx(0.015625)
     assert taxon_by_id.loc["species-low", "p_value_type"] == "nominal"
     assert taxon_by_id.loc["species-tie", "p_value_type"] == "not_tested"
     assert pd.isna(taxon_by_id.loc["species-tie", "p_value"])
+    assert pd.isna(taxon_by_id.loc["species-tie", "q_value"])
     assert len(taxon_tests) == 3
     assert taxon_tests["n_tests"].tolist() == [2, 2, 2]
     assert taxon_tests.loc[taxon_tests["passes_min_taxon_studies"], "bh_family_size"].tolist() == [
-        1
+        2,
+        2,
     ]
     assert taxon_tests.loc[~taxon_tests["passes_min_taxon_studies"], "bh_family_size"].isna().all()
 
     trait_by_cond = trait_tests.set_index("condition")
     assert trait_by_cond.loc[network.PD_CONDITION, "p_value_type"] == "nominal"
+    assert trait_by_cond.loc[network.PD_CONDITION, "q_value"] == pytest.approx(0.015625)
     assert trait_by_cond.loc["Condition B", "p_value_type"] == "not_tested"
     assert pd.isna(trait_by_cond.loc["Condition B", "p_value"])
-    assert len(trait_tests) == 2
-    assert trait_tests["n_tests"].tolist() == [1, 1]
+    assert pd.isna(trait_by_cond.loc["Condition B", "q_value"])
+    assert trait_by_cond.loc["Condition C", "p_value_type"] == "not_tested"
+    assert pd.isna(trait_by_cond.loc["Condition C", "p_value"])
+    assert pd.isna(trait_by_cond.loc["Condition C", "q_value"])
+    assert len(trait_tests) == 3
+    assert trait_tests["n_tests"].tolist() == [1, 1, 1]
     assert trait_tests.loc[trait_tests["passes_min_paired_studies"], "bh_family_size"].tolist() == [
-        1
+        2,
+        2,
     ]
     assert trait_tests.loc[~trait_tests["passes_min_paired_studies"], "bh_family_size"].isna().all()
 
@@ -414,16 +442,17 @@ def test_network_tables_figure_and_methods_label_nominal_p_values(
     joined_texts = "\n".join(captured_texts)
     assert "nominal p=" in joined_texts
     assert "nominal p is unadjusted (1 PD trait tests shown)" in joined_texts
-    assert "q is BH-adjusted across 1 condition-trait tests." in joined_texts
+    assert "q is BH-adjusted across 2 condition-trait tests (1 with finite p)." in joined_texts
 
     methods_path = tmp_path / "methods.md"
     network.write_methods_summary(eligibility, taxon_tests, trait_tests, nodes, edges, methods_path)
     methods_text = methods_path.read_text(encoding="utf-8")
     assert (
         "Reported `p_value` columns and Panel C `nominal p` labels are nominal "
-        "(uncorrected) across the `1` eligible condition-taxon tests and `1` eligible "
-        "condition-trait tests"
+        "(uncorrected) across the `1` tested (`2` BH-family) condition-taxon tests and "
+        "`1` tested (`2` BH-family) condition-trait tests"
     ) in methods_text
     assert (
-        "`1` eligible condition-trait comparisons (`1` PD trait comparisons shown in Panel C)."
+        "`2` eligible condition-trait comparisons (`1` with finite nominal p; "
+        "`1` PD trait comparisons shown in Panel C)."
     ) in methods_text

@@ -375,15 +375,23 @@ def fit_cluster_ols(
         [np.ones(len(frame)), *[frame[term].to_numpy(dtype=float) for term in terms]]
     )
     term_names = ["intercept", *terms]
-    xtx_inv = np.linalg.pinv(x.T @ x)
-    beta = xtx_inv @ x.T @ y
+    _, s_x, vt_x = np.linalg.svd(x, full_matrices=False)
+    rcond_x = max(x.shape) * float(np.finfo(float).eps)
+    rank_x = int(np.sum(s_x > (rcond_x * s_x[0] if s_x.size else 0.0)))
+    v_null = vt_x[rank_x:, :]
+    identifiable = np.sum(v_null**2, axis=0) <= rcond_x
+    beta, _, _, _ = np.linalg.lstsq(x, y, rcond=None)
     residuals = y - x @ beta
-    meat = np.zeros((len(term_names), len(term_names)))
+    xtx_inv = np.linalg.pinv(x.T @ x)
+    cluster_scores = []
     for _cluster, group in frame.groupby(cluster_column, sort=False):
         indices = group.index.to_numpy()
         xg = x[indices, :]
-        ug = residuals[indices][:, None]
-        meat += xg.T @ ug @ ug.T @ xg
+        ug = residuals[indices]
+        cluster_scores.append(xg.T @ ug)
+    scores_matrix = (
+        np.vstack(cluster_scores) if cluster_scores else np.zeros((0, len(term_names)), dtype=float)
+    )
     groups = frame[cluster_column].nunique()
     observations = len(frame)
     parameters = len(term_names)
@@ -391,23 +399,29 @@ def fit_cluster_ols(
         finite_sample = (groups / (groups - 1)) * ((observations - 1) / (observations - parameters))
     else:
         finite_sample = 1.0
-    cov = finite_sample * xtx_inv @ meat @ xtx_inv
-    se = np.sqrt(np.maximum(np.diag(cov), 0.0))
-    t_stat = np.divide(beta, se, out=np.full_like(beta, np.nan), where=se > 0)
+    influence = np.sqrt(finite_sample) * (scores_matrix @ xtx_inv)
+    se = np.linalg.norm(influence, axis=0)
+    scale = np.sqrt(finite_sample * np.maximum(np.diag(xtx_inv), 0.0)) * float(np.linalg.norm(y))
+    rcond_se = max(x.shape) * float(np.sqrt(np.finfo(float).eps))
+    estimable = identifiable & (scale > 0.0) & (se > rcond_se * scale)
+    coef_out = np.where(identifiable, beta, np.nan)
+    se_out = np.where(identifiable, se, np.nan)
+    t_stat = np.divide(beta, se, out=np.full_like(beta, np.nan), where=estimable)
     df = max(groups - 1, 1)
-    p_values = 2 * stats.t.sf(np.abs(t_stat), df=df)
-    ci_low = beta - stats.t.ppf(0.975, df=df) * se
-    ci_high = beta + stats.t.ppf(0.975, df=df) * se
+    p_values = np.where(estimable, 2 * stats.t.sf(np.abs(t_stat), df=df), np.nan)
+    t_crit = float(stats.t.ppf(0.975, df=df))
+    ci_low = np.where(identifiable, beta - t_crit * se, np.nan)
+    ci_high = np.where(identifiable, beta + t_crit * se, np.nan)
     return pd.DataFrame(
         {
             "outcome": outcome,
             "term": term_names,
-            "coefficient": beta,
-            "std_error_clustered_by_study": se,
+            "coefficient": coef_out,
+            "std_error_clustered_by_study": se_out,
             "t_stat": t_stat,
             "df": df,
             "p_value": p_values,
-            "p_value_type": "nominal",
+            "p_value_type": np.where(np.isfinite(p_values), "nominal", "not_tested"),
             "n_model_terms": len(terms),
             "ci_low": ci_low,
             "ci_high": ci_high,

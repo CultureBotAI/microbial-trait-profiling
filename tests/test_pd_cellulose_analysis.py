@@ -65,12 +65,19 @@ def test_cellulose_tables_plots_and_interpretations_label_nominal_p_values(
 ) -> None:
     """Every uncorrected Fisher, Mann-Whitney, and OLS p-value is labelled nominal (#1335)."""
     monkeypatch.setenv("MPLCONFIGDIR", str(tmp_path / "mplconfig"))
+    import numpy as np
+
+    cell_z = {
+        ("other condition", "inc"): [-0.8, -0.5, -0.3, -0.1, 0.2, 0.4],
+        ("other condition", "dec"): [-0.6, -0.2, 0.1, -0.3, 0.3, 0.6],
+        (cellulose.PD_CONDITION, "inc"): [-0.4, -0.1, 0.2, -0.2, 0.5, -0.3],
+        (cellulose.PD_CONDITION, "dec"): [0.5, 0.8, 1.1, 0.9, -0.1, 1.3],
+    }
     rows = []
     z_rows = []
     for study_idx in range(6):
-        jitter = (1.0 if study_idx % 2 == 0 else -1.0) + 0.05 * study_idx
         for cond, base in [(cellulose.PD_CONDITION, 0.8), ("other condition", -0.4)]:
-            for inc_dec, delta in [("inc", -0.3), ("dec", 0.9)]:
+            for inc_dec in ("inc", "dec"):
                 rows.append(
                     {
                         "study_id": f"{cond}-{study_idx}",
@@ -81,7 +88,7 @@ def test_cellulose_tables_plots_and_interpretations_label_nominal_p_values(
                 )
                 z_rows.append(
                     {
-                        cellulose.CELLULOSE_ID: base + delta + jitter,
+                        cellulose.CELLULOSE_ID: cell_z[(cond, inc_dec)][study_idx],
                         "METPO:1000668": -base,
                     }
                 )
@@ -117,10 +124,46 @@ def test_cellulose_tables_plots_and_interpretations_label_nominal_p_values(
         pd_vs_other_partial["direction"].eq("decreased"), "p_value_type"
     ].tolist() == ["nominal", "nominal"]
 
+    # When one PD increased row has a NaN continuous z-score,
+    # Fisher runs while Mann-Whitney propagates NaN (n_tests == 3)
+    zscores_nan_inc = zscores.copy()
+    first_pd_inc = metadata.index[
+        metadata["condition"].eq(cellulose.PD_CONDITION) & metadata["inc_dec"].eq("inc")
+    ][0]
+    zscores_nan_inc.loc[first_pd_inc, cellulose.CELLULOSE_ID] = float("nan")
+    pd_vs_other_three = cellulose.build_pd_vs_other_cellulose_summary(metadata, zscores_nan_inc)
+    assert pd_vs_other_three["n_tests"].tolist() == [3, 3, 3, 3]
+    assert pd_vs_other_three["p_value_type"].eq("nominal").all()
+    assert (
+        pd_vs_other_three.loc[
+            pd_vs_other_three["direction"].eq("increased"), "pd_vs_other_mannwhitney_p"
+        ]
+        .isna()
+        .all()
+    )
+
     model_table, group_summary = cellulose.build_cellulose_model_tables(metadata, zscores)
     assert model_table["p_value_type"].eq("nominal").all()
     assert model_table["n_model_terms"].eq(3).all()
     assert model_table["n_tests"].eq(8).all()
+
+    # Row-order permutation stability across 25 shuffles (#1515)
+    rng = np.random.default_rng(1515)
+    for _ in range(25):
+        perm = rng.permutation(len(metadata))
+        perm_model, _ = cellulose.build_cellulose_model_tables(
+            metadata.iloc[perm].reset_index(drop=True),
+            zscores.iloc[perm].reset_index(drop=True),
+        )
+        assert perm_model["p_value_type"].eq("nominal").all()
+        assert perm_model["n_tests"].eq(8).all()
+
+    # Degenerate zero-variance non-zero outcome produces not_tested and NaN p-values (#1515)
+    const_zscores = zscores.assign(**{cellulose.CELLULOSE_ID: 2.0})
+    deg_model, _ = cellulose.build_cellulose_model_tables(metadata, const_zscores)
+    assert deg_model["p_value_type"].eq("not_tested").all()
+    assert deg_model["p_value"].isna().all()
+    assert deg_model["n_tests"].eq(0).all()
 
     import matplotlib.figure
     import matplotlib.pyplot as plt
@@ -236,3 +279,122 @@ def test_cellulose_tables_plots_and_interpretations_label_nominal_p_values(
         "`pd_cellulose_enrichment_test.png` and 8 terms across 2 outcomes in "
         "`pd_cellulose_interaction_model.tsv`"
     ) in readme
+
+
+def test_rank_deficient_and_cluster_degenerate_designs_mark_unestimable_terms_not_tested() -> None:
+    """Rank-deficient and cluster-degenerate designs mark unestimable terms not_tested (#1515)."""
+    import numpy as np
+
+    # 1. Rank-deficient design X: only PD has decreased profiles, so pd_x_decreased == is_decreased
+    collinear_rows = []
+    collinear_z = []
+    pd_inc_vals = (-0.5, 0.2, -0.3, 0.4, -0.2, 0.3)
+    other_inc_vals = (-0.6, 0.3, -0.4, 0.2, -0.3, 0.4)
+    for study_idx in range(6):
+        for cond, z_inc, z_dec in [
+            (cellulose.PD_CONDITION, pd_inc_vals[study_idx], 0.5 + 0.15 * study_idx),
+            ("other condition", other_inc_vals[study_idx], None),
+        ]:
+            collinear_rows.append(
+                {
+                    "study_id": f"{cond}-{study_idx}",
+                    "condition": cond,
+                    "body_site_group": cellulose.FECES,
+                    "inc_dec": "inc",
+                }
+            )
+            collinear_z.append({cellulose.CELLULOSE_ID: z_inc, "METPO:1000668": -z_inc})
+            if z_dec is not None:
+                collinear_rows.append(
+                    {
+                        "study_id": f"{cond}-{study_idx}",
+                        "condition": cond,
+                        "body_site_group": cellulose.FECES,
+                        "inc_dec": "dec",
+                    }
+                )
+                collinear_z.append({cellulose.CELLULOSE_ID: z_dec, "METPO:1000668": -z_dec})
+
+    collinear_meta = pd.DataFrame(collinear_rows)
+    collinear_zscores = pd.DataFrame(collinear_z)
+    rng = np.random.default_rng(151501)
+    for _ in range(40):
+        perm = rng.permutation(len(collinear_meta))
+        model_df, _ = cellulose.build_cellulose_model_tables(
+            collinear_meta.iloc[perm].reset_index(drop=True),
+            collinear_zscores.iloc[perm].reset_index(drop=True),
+        )
+        assert model_df["n_tests"].eq(4).all()
+        for outcome in ("cellulose_z", "cellulose_positive_z"):
+            sub = model_df[model_df["outcome"].eq(outcome)].set_index("term")
+            assert sub.loc[["intercept", "is_pd"], "p_value_type"].tolist() == [
+                "nominal",
+                "nominal",
+            ]
+            assert sub.loc[["intercept", "is_pd"], "p_value"].notna().all()
+            assert sub.loc[["is_decreased", "pd_x_decreased"], "p_value_type"].tolist() == [
+                "not_tested",
+                "not_tested",
+            ]
+            assert (
+                sub.loc[
+                    ["is_decreased", "pd_x_decreased"],
+                    ["coefficient", "std_error_clustered_by_study", "t_stat", "p_value"],
+                ]
+                .isna()
+                .all()
+                .all()
+            )
+
+    # 2. Cluster-degenerate design: within-study jitter is shared between inc and dec,
+    # so is_decreased and pd_x_decreased in cellulose_z and is_decreased in cellulose_positive_z
+    # have analytically zero cluster-robust SE and are marked not_tested under every row order.
+    deg_rows = []
+    deg_z = []
+    for study_idx in range(6):
+        jitter = (1.0 if study_idx % 2 == 0 else -1.0) + 0.05 * study_idx
+        for cond, base in [(cellulose.PD_CONDITION, 0.8), ("other condition", -0.4)]:
+            for inc_dec, delta in [("inc", -0.3), ("dec", 0.9)]:
+                deg_rows.append(
+                    {
+                        "study_id": f"{cond}-{study_idx}",
+                        "condition": cond,
+                        "body_site_group": cellulose.FECES,
+                        "inc_dec": inc_dec,
+                    }
+                )
+                deg_z.append(
+                    {
+                        cellulose.CELLULOSE_ID: base + delta + jitter,
+                        "METPO:1000668": -base,
+                    }
+                )
+    deg_meta = pd.DataFrame(deg_rows)
+    deg_zscores = pd.DataFrame(deg_z)
+    expected_types = [
+        ("cellulose_z", "intercept", "nominal"),
+        ("cellulose_z", "is_pd", "nominal"),
+        ("cellulose_z", "is_decreased", "not_tested"),
+        ("cellulose_z", "pd_x_decreased", "not_tested"),
+        ("cellulose_positive_z", "intercept", "nominal"),
+        ("cellulose_positive_z", "is_pd", "nominal"),
+        ("cellulose_positive_z", "is_decreased", "not_tested"),
+        ("cellulose_positive_z", "pd_x_decreased", "nominal"),
+    ]
+    for scale_factor in (1.0, 1e6):
+        scaled_z = deg_zscores.assign(
+            **{cellulose.CELLULOSE_ID: deg_zscores[cellulose.CELLULOSE_ID] * scale_factor}
+        )
+        for _ in range(25):
+            perm = rng.permutation(len(deg_meta))
+            model_df, _ = cellulose.build_cellulose_model_tables(
+                deg_meta.iloc[perm].reset_index(drop=True),
+                scaled_z.iloc[perm].reset_index(drop=True),
+            )
+            assert model_df["n_tests"].eq(5).all()
+            got = list(
+                model_df[["outcome", "term", "p_value_type"]].itertuples(index=False, name=None)
+            )
+            assert got == expected_types
+            not_tested_rows = model_df[model_df["p_value_type"].eq("not_tested")]
+            assert not_tested_rows[["t_stat", "p_value"]].isna().all().all()
