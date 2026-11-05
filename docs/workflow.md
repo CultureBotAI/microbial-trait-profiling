@@ -296,6 +296,28 @@ profile tables. A record whose bases differ, in any field, number or order, is r
 rather than verifying it with the current verifier. Historical verification uses
 the recorded implementation and preserved paths under the rule above.
 
+Declaration erratum (#1497–#1500): the committed
+[`integrated_evidence_provenance.json`](../data/derived/integrated_evidence/integrated_evidence_provenance.json)
+and older archived comparison records retain inaccurate declaration strings under
+the same stable `*_v1` spec IDs. The corrected declarations in
+[`STANDARD_ANALYSIS_SPECS`](../src/mtp/workflow/downstream_contracts.py) describe
+the existing producers; they do not change their statistical calculations or rewrite
+archived evidence. In particular, `jed_pooled_contrast_fraction_diff_v1` describes a
+two-sided one-sample t test of paired shifts in profile-column z scores of
+`log1p(1000 * trait_fraction)` (population standard deviation, `ddof=0`), retaining
+zero-total profiles as zero fractions before transformation. Its primary test weights
+contrasts equally; the producer also exports a separate study-mean test.
+`ilyas_signature_hypergeometric_ora_v1` uses separate global BH families for
+enrichment and depletion, each across eligible profile–trait tests. Earlier MT
+declaration corrections, including Jed's 15-pair BY family and selected pooled-trait
+BH family, likewise leave the old recorded labels intact (#1417, #1500).
+
+`verify_comparison_sources` parses `analysis_specs` through the schema but does not
+compare their methodological strings with current declarations. It verifies upstream
+executions, hashes, bases and output contracts; success does not certify the accuracy
+of those strings. Historical and arbitrary schema-valid labels can therefore survive
+verification unchanged (#1498).
+
 Each `integrated_evidence` input is the file its producing step recorded in that
 arm's `arm_run.json`: Ilyas's `enrichment` and `depletion`, Noel's
 `directional_screen`, `empirical_calibration`, `contrast_orientation` and

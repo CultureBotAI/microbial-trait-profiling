@@ -63,12 +63,12 @@ STANDARD_ANALYSIS_SPECS: dict[str, AnalysisSpec] = {
     ),
     "jed_pooled_contrast_fraction_diff_v1": AnalysisSpec(
         id="jed_pooled_contrast_fraction_diff_v1",
-        estimand="pooled_contrast_trait_fraction_difference",
-        kernel="paired_wilcoxon_and_sign_test_and_paired_t",
-        transformation="signature_trait_fraction_difference_inc_minus_dec",
+        estimand="pooled_contrast_standardized_log1p_trait_fraction_shift",
+        kernel="two_sided_one_sample_t_test",
+        transformation="profile_column_zscore_ddof0_of_log1p_1000_trait_fraction_then_inc_minus_dec",
         sampling_unit="paired_experiment_contrast",
         weighting="equal_contrast_weight",
-        eligibility_rule="paired_human_16S_WMS_excluding_zero_total_pairs",
+        eligibility_rule="paired_human_16S_WMS_retaining_zero_total_as_zero_fraction",
         multiple_testing_policy="BH_q_across_support_and_variance_selected_non_MediaDive_traits",
     ),
     "ilyas_signature_hypergeometric_ora_v1": AnalysisSpec(
@@ -79,7 +79,7 @@ STANDARD_ANALYSIS_SPECS: dict[str, AnalysisSpec] = {
         sampling_unit="directional_signature",
         weighting="unweighted_unique_signature_taxa",
         eligibility_rule="human_16S_WMS_signatures_with_annotated_taxa",
-        multiple_testing_policy="global_BH_fdr_across_signature_trait_tests",
+        multiple_testing_policy="global_BH_q_per_tail_across_eligible_profile_trait_tests",
     ),
     "historical_native_taxon_influence_experiment_weighted_v1": AnalysisSpec(
         id="historical_native_taxon_influence_experiment_weighted_v1",

@@ -124,6 +124,77 @@ def output_inventory(root: Path) -> dict[str, str]:
     }
 
 
+def test_manifest_spec_matches_native_transformed_pair_statistic() -> None:
+    """Bind Jed's declaration to independently reconstructed producer values (#1497)."""
+    from scipy.stats import t as student_t
+
+    profiles = pd.DataFrame(
+        {
+            "METPO:1": [2, 2, 0, 3, 1, 0],
+            "METPO:2": [0, 0, 0, 1, 4, 0],
+            # This retained but unselected trait must remain in every denominator.
+            "METPO:background": [3, 3, 0, 2, 4, 0],
+            "mediadive.medium:1": [0, 0, 100, 0, 0, 0],
+        },
+        index=["s1|e1|inc", "s1|e1|dec", "s1|e2|inc", "s1|e2|dec", "s2|e1|inc", "s2|e1|dec"],
+    )
+    metadata = pd.DataFrame(
+        {
+            "study_id": ["s1", "s1", "s2"],
+            "increased_profile_ids": ["s1|e1|inc", "s1|e2|inc", "s2|e1|inc"],
+            "decreased_profile_ids": ["s1|e1|dec", "s1|e2|dec", "s2|e1|dec"],
+        },
+        index=["p1", "p2", "p3"],
+    )
+    selected = pd.Index(["METPO:1", "METPO:2"])
+    counts = profiles[["METPO:1", "METPO:2", "METPO:background"]].to_numpy(dtype=float)
+    totals = counts.sum(axis=1, keepdims=True)
+    fractions = np.divide(counts, totals, out=np.zeros_like(counts), where=totals != 0)
+    logged = np.log1p(1000 * fractions[:, :2])
+    expected_z = (logged - logged.mean(axis=0)) / logged.std(axis=0, ddof=0)
+    zscores = infographic.build_zscore_matrix(profiles, selected)
+    np.testing.assert_allclose(zscores.to_numpy(), expected_z)
+    # Zero-total fractions are zero before standardization, not generally afterwards.
+    assert np.count_nonzero(fractions[[2, 5]]) == 0
+    assert np.count_nonzero(expected_z[[2, 5]]) > 0
+
+    expected_pairs = expected_z[[0, 2, 4]] - expected_z[[1, 3, 5]]
+    matrix = infographic.build_pair_matrix_from_profiles(zscores, metadata)
+    np.testing.assert_allclose(matrix.loc[metadata.index, selected], expected_pairs)
+    assert not np.allclose(expected_pairs, fractions[[0, 2, 4], :2] - fractions[[1, 3, 5], :2])
+
+    audit = infographic.pair_denominator_summary(profiles, metadata)
+    result = (
+        infographic.compute_trait_stats(
+            matrix, study_ids=metadata["study_id"], denominator_summary=audit
+        )
+        .set_index("trait")
+        .loc[selected]
+    )
+    expected_mean = expected_pairs.mean(axis=0)
+    expected_t = expected_mean / (expected_pairs.std(axis=0, ddof=1) / np.sqrt(3))
+    expected_p = 2 * student_t.sf(np.abs(expected_t), df=2)
+    np.testing.assert_allclose(result["mean_increased_minus_decreased"], expected_mean)
+    np.testing.assert_allclose(result["t_statistic"], expected_t)
+    np.testing.assert_allclose(result["p_value"], expected_p)
+    assert result["pair_count"].eq(3).all()
+    assert result["study_count"].eq(2).all()
+    assert result["n_zero_total_experiments"].eq(2).all()
+    assert result["n_zero_total_excluded"].eq(0).all()
+    assert result["zero_total_policy"].eq("included_in_historical_native_composition").all()
+
+    spec = get_standard_analysis_spec("jed_pooled_contrast_fraction_diff_v1")
+    assert spec.estimand == "pooled_contrast_standardized_log1p_trait_fraction_shift"
+    assert spec.kernel == "two_sided_one_sample_t_test"
+    assert result["test_method"].eq(spec.kernel).all()
+    assert spec.transformation == (
+        "profile_column_zscore_ddof0_of_log1p_1000_trait_fraction_then_inc_minus_dec"
+    )
+    assert spec.eligibility_rule == "paired_human_16S_WMS_retaining_zero_total_as_zero_fraction"
+    assert spec.sampling_unit == "paired_experiment_contrast"
+    assert spec.weighting == "equal_contrast_weight"
+
+
 @pytest.fixture
 def isolated_investigation(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch

@@ -1148,30 +1148,45 @@ def test_an_unchanged_copy_of_the_comparison_verifies(
     assert verify_comparison_run(copy).analysis_bases == _comparison(stage).analysis_bases
 
 
-def test_historical_policy_strings_verify_against_recorded_arm_plans(
-    stage: dict[str, Path], tmp_path: Path
+@pytest.mark.parametrize(
+    "policies",
+    [
+        {
+            "jed_table1_paired_log_ratio_sign_test_v1": "BH_and_BY_q_across_15_trait_pairs",
+            "jed_pooled_contrast_fraction_diff_v1": "BH_q_across_retained_non_MediaDive_traits",
+        },
+        {
+            "jed_table1_paired_log_ratio_sign_test_v1": "unreviewed fixture policy one",
+            "jed_pooled_contrast_fraction_diff_v1": "unreviewed fixture policy two",
+        },
+    ],
+    ids=["historical", "arbitrary-schema-valid"],
+)
+def test_recorded_policy_strings_are_preserved_without_semantic_revalidation(
+    stage: dict[str, Path], tmp_path: Path, policies: dict[str, str]
 ) -> None:
-    """New declarations do not rewrite or invalidate existing verified runs (#1417)."""
-    historical = {
-        "jed_table1_paired_log_ratio_sign_test_v1": "BH_and_BY_q_across_15_trait_pairs",
-        "jed_pooled_contrast_fraction_diff_v1": "BH_q_across_retained_non_MediaDive_traits",
-    }
+    """Verification parses the schema but does not compare analysis_specs with current
+    declarations. Upstream/hash/basis/output checks do not certify these labels (#1498).
+    """
     copy = _comparison_copy(stage, tmp_path)
     manifest = copy / "comparison_run.json"
     record = json.loads(manifest.read_text(encoding="utf-8"))
     for spec in record["analysis_specs"]:
-        if spec["id"] in historical:
-            assert spec["multiple_testing_policy"] != historical[spec["id"]]
-            spec["multiple_testing_policy"] = historical[spec["id"]]
-    original_plans = {name: verify_arm(stage[name]).plan_sha256 for name in PLANNERS}
-    manifest.write_text(json.dumps(record), encoding="utf-8")
+        if spec["id"] in policies:
+            assert spec["multiple_testing_policy"] != policies[spec["id"]]
+            spec["multiple_testing_policy"] = policies[spec["id"]]
+    recorded_bytes = json.dumps(record).encode("utf-8")
+    manifest.write_bytes(recorded_bytes)
     verified = verify_comparison_run(copy)
     assert {
         spec.id: spec.multiple_testing_policy
         for spec in verified.analysis_specs
-        if spec.id in historical
-    } == historical
-    assert {name: verify_arm(stage[name]).plan_sha256 for name in PLANNERS} == original_plans
+        if spec.id in policies
+    } == policies
+    assert (
+        verified.analysis_specs == ComparisonRun.model_validate_json(recorded_bytes).analysis_specs
+    )
+    assert manifest.read_bytes() == recorded_bytes
 
 
 @pytest.mark.parametrize(
