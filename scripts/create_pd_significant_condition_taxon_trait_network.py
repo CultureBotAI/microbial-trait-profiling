@@ -295,8 +295,10 @@ def build_condition_taxon_tests(
     tests = pd.DataFrame.from_records(records)
     if tests.empty:
         raise ValueError("No annotated genus/species taxa occur in eligible fecal conditions")
+    tests["p_value_type"] = "nominal"
     tests["q_value"] = np.nan
     support = tests["passes_min_taxon_studies"].astype(bool)
+    tests["n_tests"] = int(support.sum())
     tests.loc[support, "q_value"] = benjamini_hochberg(tests.loc[support, "p_value"])
     tests["selected_after_bh"] = support & tests["q_value"].le(Q_VALUE_CUTOFF)
     return tests.sort_values(
@@ -388,9 +390,11 @@ def build_condition_trait_tests(
     tests = pd.DataFrame.from_records(records)
     if tests.empty:
         raise ValueError("No eligible paired fecal condition-trait contrasts")
+    tests["p_value_type"] = "nominal"
     tests["passes_min_paired_studies"] = tests["paired_study_count"].ge(MIN_PAIRED_STUDIES)
     tests["q_value"] = np.nan
     support = tests["passes_min_paired_studies"].astype(bool)
+    tests["n_tests"] = int(support.sum())
     tests.loc[support, "q_value"] = benjamini_hochberg(tests.loc[support, "p_value"])
     tests["selected_after_bh"] = support & tests["q_value"].le(Q_VALUE_CUTOFF)
     tests = tests.sort_values(
@@ -1389,7 +1393,7 @@ def plot_fdr_evidence_landscape(
             y_position,
             (
                 f"effect={float(row.mean_contrast):+.2f}; "
-                f"p={_format_probability(row.p_value)}; "
+                f"nominal p={_format_probability(row.p_value)}; "
                 f"q={_format_probability(row.q_value)}; "
                 f"n={int(row.paired_study_count)}"
             ),
@@ -1418,7 +1422,10 @@ def plot_fdr_evidence_landscape(
     ax_pd.text(
         0.0,
         -0.17,
-        "p is unadjusted; q is global across all condition-trait tests.",
+        (
+            f"nominal p is unadjusted ({len(pd_rows)} PD trait tests shown); "
+            f"q is BH-adjusted across {len(trait_plot)} condition-trait tests."
+        ),
         transform=ax_pd.transAxes,
         fontsize=8,
         color=SLATE_700,
@@ -1533,6 +1540,8 @@ def write_methods_summary(
     eligible_count = int(eligibility["passes_min_paired_studies"].sum())
     displayed_count = int(eligibility["displayed_in_network"].sum())
     eligible_taxon_test_count = int(taxon_tests["passes_min_taxon_studies"].sum())
+    eligible_trait_test_count = int(trait_tests["passes_min_paired_studies"].sum())
+    pd_trait_test_count = int(trait_tests["condition"].eq(PD_CONDITION).sum())
     selected_taxa = taxon_tests[taxon_tests["selected_after_bh"]]
     selected_traits = trait_tests[trait_tests["selected_after_bh"]]
     exploratory_taxa = taxon_tests[
@@ -1567,7 +1576,9 @@ def write_methods_summary(
         ),
         (
             f"- The resulting condition-taxon test family contained "
-            f"`{eligible_taxon_test_count}` eligible comparisons."
+            f"`{eligible_taxon_test_count}` eligible comparisons, and the condition-trait "
+            f"test family contained `{eligible_trait_test_count}` eligible condition-trait "
+            f"comparisons (`{pd_trait_test_count}` PD trait comparisons shown in Panel C)."
         ),
         (
             "- Taxon direction was tested with an exact McNemar/binomial test "
@@ -1579,9 +1590,11 @@ def write_methods_summary(
             "signed-rank test."
         ),
         (
-            "- Benjamini-Hochberg correction was applied globally within the "
-            "complete condition-taxon family and within the complete "
-            "condition-trait family."
+            "- Reported `p_value` columns and Panel C `nominal p` labels are nominal "
+            f"(uncorrected) across the `{eligible_taxon_test_count}` eligible condition-taxon "
+            f"tests and `{eligible_trait_test_count}` eligible condition-trait tests; "
+            "`q_value` is Benjamini-Hochberg adjusted globally within the complete "
+            "condition-taxon family and within the complete condition-trait family."
         ),
         f"- FDR-significant results require `q <= {Q_VALUE_CUTOFF:.2f}`.",
         (

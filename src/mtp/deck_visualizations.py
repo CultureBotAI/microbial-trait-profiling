@@ -288,11 +288,16 @@ def generate_figure1_condition_anatomy_ora_heatmap(
         )
     )
 
+    n_cond_sites = len(matrix_delta.index)
+    n_traits = len(ordered_cols)
+    n_tests = n_cond_sites * n_traits
     subtitle = (
-        "Paired study-level directional contrasts across 22 clinical conditions and "
+        f"Paired study-level directional contrasts across {n_cond_sites} clinical conditions and "
         "anatomical body sites for Table 1 canonical traits.<br>"
-        "Net contrast Delta = (N_inc - N_dec) / N_studies. Cell asterisks denote two-sided "
-        "binomial sign test (* p < 0.05, ** p < 0.01, *** p < 0.001).<br>"
+        "Net contrast Delta = (N_inc - N_dec) / N_studies. Cell asterisks denote uncorrected "
+        "two-sided binomial sign test nominal p (* nominal p < 0.05, ** nominal p < 0.01, "
+        f"*** nominal p < 0.001; {n_tests} nominal tests across {n_cond_sites} x {n_traits} "
+        "condition-site x trait cells).<br>"
         "Orange = Enriched in Increased Signatures; Blue = Enriched in Decreased Signatures.<br>"
         "Curated organism-level annotations from KG-Microbe; does not measure "
         "in vivo physiological activity or metabolite flux."
@@ -688,8 +693,8 @@ def generate_figure3_lead_findings_ora_evidence(
         else:
             w_pval = 1.0
 
-        p_str = f"p={pval:.2e}" if pval < 0.001 else f"p={pval:.4f}"
-        w_p_str = f"p={w_pval:.2e}" if w_pval < 0.001 else f"p={w_pval:.4f}"
+        p_str = f"nominal p={pval:.2e}" if pval < 0.001 else f"nominal p={pval:.4f}"
+        w_p_str = f"nominal p={w_pval:.2e}" if w_pval < 0.001 else f"nominal p={w_pval:.4f}"
         label = f"{cond} x Feces<br>[{t_name}]"
         forest_labels.append(label)
         proportions.append(frac)
@@ -698,7 +703,9 @@ def generate_figure3_lead_findings_ora_evidence(
         annot_texts.append(f"{success}/{non_ties} studies ({frac * 100:.1f}%), {p_str}")
 
         status = (
-            "Concordant (p < 0.05)" if pval < 0.05 or w_pval < 0.05 else "Directionally Aligned"
+            "Concordant (nominal p < 0.05)"
+            if pval < 0.05 or w_pval < 0.05
+            else "Directionally Aligned"
         )
         table_rows.append(
             [
@@ -756,8 +763,8 @@ def generate_figure3_lead_findings_ora_evidence(
                 "values": [
                     "<b>Condition<br>(Trait)</b>",
                     "<b>Target<br>Dir.</b>",
-                    "<b>Continuous Profile Shift<br>(Mean Shift, Wilcoxon p)</b>",
-                    "<b>Discrete Sign Test<br>(Non-Tied, Binomial p)</b>",
+                    "<b>Continuous Profile Shift<br>(Mean Shift, Nominal Wilcoxon p)</b>",
+                    "<b>Discrete Sign Test<br>(Non-Tied, Nominal Binomial p)</b>",
                     "<b>Consistency<br>Status</b>",
                 ],
                 "fill_color": "#2c3e50",
@@ -789,10 +796,13 @@ def generate_figure3_lead_findings_ora_evidence(
         col=2,
     )
 
+    n_leads = len(EXPLORATORY_LEADS)
+    n_tests = 2 * n_leads
     subtitle = (
-        "Multi-scale consistency check of four exploratory leads (Slide 1) across the "
+        f"Multi-scale consistency check of {n_leads} exploratory leads (Slide 1) across the "
         "continuous profile shift arm and discrete sign test arm on shared BugSigDB fecal "
-        "studies.<br>"
+        f"studies ({n_tests} nominal tests: {n_leads} Wilcoxon + {n_leads} binomial, "
+        "uncorrected).<br>"
         "Forest points show proportion of non-tied studies shifting in target direction "
         "with exact 95% Clopper-Pearson binomial intervals.<br>"
         "Evaluates internal consistency on shared data; does not claim independent "
@@ -862,7 +872,9 @@ def generate_figure4_annotation_density_pc1_landscape(
     rho_res = stats.spearmanr(log_counts, pc1_loadings)
     spearman_rho = float(rho_res.statistic)
     spearman_p = float(rho_res.pvalue)
-    p_str = f"p = {spearman_p:.2e}" if spearman_p < 0.001 else f"p = {spearman_p:.4f}"
+    p_str = (
+        f"nominal p = {spearman_p:.2e}" if spearman_p < 0.001 else f"nominal p = {spearman_p:.4f}"
+    )
 
     # Fit linear regression trendline for visualization
     slope, intercept = np.polyfit(log_counts, pc1_loadings, 1)
@@ -919,7 +931,8 @@ def generate_figure4_annotation_density_pc1_landscape(
         subplot_titles=(
             (
                 "A. Trait PC1 Loading vs. Annotation Density<br>"
-                f"(Spearman rho = {spearman_rho:.3f}, {p_str})"
+                f"(Spearman rho = {spearman_rho:.3f}, {p_str}; "
+                f"1 nominal test, n = {len(common_traits)} traits)"
             ),
             (
                 "B. Table 1 Trait Shift Stability Under PC1 Residualization<br>"
@@ -1074,7 +1087,8 @@ def generate_figure4_annotation_density_pc1_landscape(
 
     subtitle = (
         "Methodological audit of KG-Microbe knowledge graph structure.<br>"
-        "(A) Trait loadings on PC1 correlate with curation depth; "
+        f"(A) Trait loadings on PC1 correlate with curation depth (1 nominal Spearman test across "
+        f"{len(common_traits)} traits); "
         "(B) Table 1 paired trait shifts before vs. after PC1 residualization;<br>"
         "(C) Near-twin trait pairs sharing >80% taxon annotations."
     )

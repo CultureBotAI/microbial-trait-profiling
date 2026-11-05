@@ -407,3 +407,124 @@ def test_facultative_union_label_in_deck_visualizations(
     ]
     assert "Facultative (aerobe or anaerobe)" in union_scatter_texts
     assert "Facultatively aerobic" not in union_scatter_texts
+
+
+def test_deck_figures_label_uncorrected_p_values_as_nominal_with_test_counts(
+    mock_pipeline_data: dict[str, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Figures 1, 3, and 4 label binomial, Wilcoxon, and Spearman p as nominal (#1335)."""
+    import plotly.graph_objects as go
+
+    figures: list[Any] = []
+
+    def capture(figure: Any, path: str, **_kwargs: Any) -> None:
+        figures.append(figure)
+        Path(path).write_bytes(b"")
+
+    monkeypatch.setattr(go.Figure, "write_image", capture)
+
+    generate_figure1_condition_anatomy_ora_heatmap(
+        profiles_path=mock_pipeline_data["profiles"],
+        experiments_path=mock_pipeline_data["experiments"],
+        output_path=tmp_path / "fig1.png",
+        min_studies=1,
+    )
+    fig1 = figures.pop()
+    fig1_title = str(fig1.layout.title.text)
+    assert "nominal p" in fig1_title
+    assert "24 nominal tests across 4 x 6 condition-site x trait cells" in fig1_title
+
+    generate_figure3_lead_findings_ora_evidence(
+        profiles_path=mock_pipeline_data["profiles"],
+        experiments_path=mock_pipeline_data["experiments"],
+        output_path=tmp_path / "fig3.png",
+    )
+    fig3 = figures.pop()
+    fig3_title = str(fig3.layout.title.text)
+    assert "8 nominal tests: 4 Wilcoxon + 4 binomial, uncorrected" in fig3_title
+    table_trace = next(trace for trace in fig3.data if trace.type == "table")
+    header_vals = " ".join(str(v) for v in table_trace.header.values)
+    assert "Nominal Wilcoxon p" in header_vals
+    assert "Nominal Binomial p" in header_vals
+    cell_vals = " ".join(str(v) for col in table_trace.cells.values for v in col)
+    assert "nominal p=" in cell_vals
+
+    generate_figure4_annotation_density_pc1_landscape(
+        taxa_matrix_path=mock_pipeline_data["taxa_matrix"],
+        columns_path=mock_pipeline_data["columns"],
+        profiles_path=mock_pipeline_data["profiles"],
+        table1_effects_path=mock_pipeline_data["table1_effects"],
+        output_path=tmp_path / "fig4.png",
+    )
+    fig4 = figures.pop()
+    fig4_title = str(fig4.layout.title.text)
+    assert "1 nominal Spearman test across 6 traits" in fig4_title
+    fig4_annotations = " ".join(str(ann.text) for ann in fig4.layout.annotations)
+    assert "nominal p =" in fig4_annotations
+    assert "1 nominal test, n = 6 traits" in fig4_annotations
+
+
+def test_analyze_pd_trait_profiles_labels_nominal_p_values_and_test_counts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """PD trait-profile script labels Mann-Whitney and Wilcoxon p as nominal (#1335)."""
+    import importlib.util
+    import os
+    import sys
+
+    os.environ.setdefault("MPLCONFIGDIR", "/tmp/mtp-mplconfig")
+    script_path = (
+        Path(__file__).resolve().parents[1]
+        / "scripts"
+        / "analyze_parkinsons_disease_trait_profiles.py"
+    )
+    spec = importlib.util.spec_from_file_location("analyze_pd_trait_profiles", script_path)
+    assert spec is not None
+    assert spec.loader is not None
+    pd_profiles = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = pd_profiles
+    spec.loader.exec_module(pd_profiles)
+
+    scores = pd.DataFrame(
+        {
+            "study_id": ["S1", "S1", "S2", "S2", "S3", "S3"],
+            "experiment_id": ["E1", "E1", "E2", "E2", "E3", "E3"],
+            "inc_dec": ["inc", "dec", "inc", "dec", "inc", "dec"],
+            "aerobe_v2_score": [0.8, -0.2, 0.6, -0.4, 0.7, -0.1],
+            "anaerobe_v2_score": [-0.5, 0.7, -0.3, 0.9, -0.4, 0.6],
+            "aerobe_v2_positive_traits": [3, 1, 3, 1, 2, 1],
+            "anaerobe_v2_positive_traits": [1, 3, 1, 4, 1, 3],
+        }
+    )
+    paired = pd.DataFrame(
+        {
+            "study_id": ["S1", "S2", "S3"],
+            "experiment_id": ["E1", "E2", "E3"],
+            "aerobe_v2_increased_minus_decreased": [1.0, 1.0, 0.8],
+            "anaerobe_v2_decreased_minus_increased": [1.2, 1.2, 1.0],
+        }
+    )
+    tests = pd_profiles.summarize_paired_tests(scores, paired)
+    assert tests["p_value_type"].eq("nominal").all()
+    assert tests["n_tests"].eq(4).all()
+
+    monkeypatch.setattr(pd_profiles, "OUTPUT_DIR", tmp_path)
+    direction_summary = pd.DataFrame([{"inc_dec": "inc", "profile_count": 3}])
+    taxa = pd.DataFrame(
+        {
+            "analysis": [pd_profiles.AEROBE_CONFIG.key, pd_profiles.ANAEROBE_CONFIG.key],
+            "target_taxon_name": ["Streptococcus", "Roseburia"],
+            "decreased_profile_count": [1, 6],
+            "increased_profile_count": [5, 1],
+            "decreased_study_count": [1, 3],
+            "increased_study_count": [3, 1],
+        }
+    )
+    taxa_summary = pd.DataFrame([{"guild_analysis": pd_profiles.AEROBE_CONFIG.key}])
+    pd_profiles.write_readme(scores, direction_summary, tests, paired, taxa, taxa_summary)
+    readme = (tmp_path / "README.md").read_text(encoding="utf-8")
+    assert "nominal Mann-Whitney p=" in readme
+    assert "nominal Wilcoxon p=" in readme
+    assert "2 profile-level tests, 4 tests in table" in readme
+    assert "2 paired-contrast tests, 4 tests in table" in readme
+    assert "4 nominal tests, uncorrected" in readme

@@ -1,10 +1,12 @@
 import importlib.util
+import os
 import sys
 from pathlib import Path
 
 import pandas as pd
 import pytest
 
+os.environ.setdefault("MPLCONFIGDIR", "/tmp/mtp-mplconfig")
 MODULE_PATH = (
     Path(__file__).resolve().parents[1]
     / "scripts"
@@ -266,3 +268,98 @@ def test_build_network_tables_handles_empty_fdr_selection() -> None:
     assert edges.empty
     assert list(edges.columns) == network.EDGE_COLUMNS
     assert selected_taxa.empty
+
+
+def test_network_tables_figure_and_methods_label_nominal_p_values(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Taxon/trait tables, Panel C labels, and methods summary label p as nominal (#1335)."""
+    metadata_rows = []
+    zscore_rows = []
+    indices = []
+    for index in range(8):
+        for direction, value in [("inc", 1.0), ("dec", 0.0)]:
+            profile_id = f"study-{index}|experiment-{index}|{direction}"
+            indices.append(profile_id)
+            metadata_rows.append(
+                {
+                    "study_id": f"study-{index}",
+                    "experiment_id": f"experiment-{index}-{direction}",
+                    "direction": "increased" if direction == "inc" else "decreased",
+                    "inc_dec": direction,
+                    "condition": network.PD_CONDITION,
+                    "body_site_group": network.FECES,
+                    "host_species": network.HUMAN_HOST,
+                }
+            )
+            zscore_rows.append({"trait-1": value})
+    metadata = pd.DataFrame(metadata_rows, index=indices)
+    zscores = pd.DataFrame(zscore_rows, index=indices)
+    traits = pd.DataFrame(
+        {
+            "trait_id": ["trait-1"],
+            "trait_label": ["cellulose catabolic process"],
+            "trait_order": [0],
+        }
+    )
+    eligibility = pd.DataFrame(
+        {
+            "condition": [network.PD_CONDITION],
+            "paired_study_count": [8],
+            "passes_min_paired_studies": [True],
+            "displayed_in_network": [True],
+        }
+    )
+    annotated_taxa = pd.DataFrame(
+        {
+            "taxon_id": ["genus-1"],
+            "taxon_name": ["Roseburia"],
+            "taxonomic_rank": ["genus"],
+            "trait-1": [1],
+        }
+    )
+    taxon_rows = [
+        {
+            "study_id": f"study-{index}",
+            "experiment_id": f"experiment-{index}-inc",
+            "direction": "increased",
+            "taxon_id": "genus-1",
+        }
+        for index in range(8)
+    ]
+    monkeypatch.setattr(network, "read_tsv", lambda *_args, **_kwargs: pd.DataFrame(taxon_rows))
+
+    taxon_tests = network.build_condition_taxon_tests(metadata, eligibility, annotated_taxa)
+    trait_tests, _ = network.build_condition_trait_tests(metadata, zscores, traits, eligibility)
+
+    assert taxon_tests["p_value_type"].eq("nominal").all()
+    assert taxon_tests["n_tests"].eq(1).all()
+    assert trait_tests["p_value_type"].eq("nominal").all()
+    assert trait_tests["n_tests"].eq(1).all()
+
+    nodes, edges, _ = network.build_network_tables(taxon_tests, trait_tests, annotated_taxa, traits)
+    import matplotlib.figure
+
+    captured_texts: list[str] = []
+
+    def capture_savefig(
+        self: matplotlib.figure.Figure, path: Path, *_args: object, **_kwargs: object
+    ) -> None:
+        Path(path).write_text("", encoding="utf-8")
+        for ax in self.axes:
+            captured_texts.extend(t.get_text() for t in ax.texts)
+            captured_texts.append(ax.get_title(loc="left"))
+
+    monkeypatch.setattr(matplotlib.figure.Figure, "savefig", capture_savefig)
+    fig_path = tmp_path / "landscape.png"
+    network.plot_fdr_evidence_landscape(taxon_tests, trait_tests, traits, fig_path)
+    joined_texts = "\n".join(captured_texts)
+    assert "nominal p=" in joined_texts
+    assert "nominal p is unadjusted (1 PD trait tests shown)" in joined_texts
+    assert "q is BH-adjusted across 1 condition-trait tests." in joined_texts
+
+    methods_path = tmp_path / "methods.md"
+    network.write_methods_summary(eligibility, taxon_tests, trait_tests, nodes, edges, methods_path)
+    methods_text = methods_path.read_text(encoding="utf-8")
+    assert "nominal (uncorrected)" in methods_text
+    assert "`1` eligible condition-trait comparisons" in methods_text

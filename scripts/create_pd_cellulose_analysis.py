@@ -344,6 +344,8 @@ def build_pd_vs_other_cellulose_summary(
                     "pd_vs_other_positive_z_odds_ratio": odds_ratio,
                     "pd_vs_other_fisher_p": float(fisher_p),
                     "pd_vs_other_mannwhitney_p": float(mann_p),
+                    "p_value_type": "nominal",
+                    "n_tests": 4,
                 }
             )
     return pd.DataFrame.from_records(records)
@@ -393,6 +395,8 @@ def fit_cluster_ols(
             "t_stat": t_stat,
             "df": df,
             "p_value": p_values,
+            "p_value_type": "nominal",
+            "n_model_terms": parameters,
             "ci_low": ci_low,
             "ci_high": ci_high,
             "cluster_count": groups,
@@ -424,6 +428,7 @@ def build_cellulose_model_tables(
         ],
         ignore_index=True,
     )
+    models["n_tests"] = len(models)
     models["term_label"] = models["term"].map(
         {
             "intercept": "Other feces, increased baseline",
@@ -649,11 +654,12 @@ def plot_direction_specificity(
     dec_pd = pd_vs_other[
         pd_vs_other["direction"].eq("decreased") & pd_vs_other["group"].eq("PD feces")
     ].iloc[0]
+    n_directions = int(pd_vs_other["direction"].nunique())
     ax.text(
         0.98,
         0.05,
         f"Decreased PD vs other feces:\nOR={dec_pd.pd_vs_other_positive_z_odds_ratio:.2f}, "
-        f"Fisher p={dec_pd.pd_vs_other_fisher_p:.3f}",
+        f"nominal Fisher p={dec_pd.pd_vs_other_fisher_p:.3f} ({n_directions} directions tested)",
         transform=ax.transAxes,
         ha="right",
         va="bottom",
@@ -929,7 +935,7 @@ def plot_enrichment_test(
     for y_pos, row, color in zip(y, plot_frame.itertuples(index=False), colors, strict=True):
         ax.plot([row.ci_low, row.ci_high], [y_pos, y_pos], color=color, linewidth=2.2)
         ax.scatter(row.coefficient, y_pos, s=90, color=color, edgecolor="white", zorder=3)
-        p_label = "p<0.001" if row.p_value < 0.001 else f"p={row.p_value:.3f}"
+        p_label = "nominal p<0.001" if row.p_value < 0.001 else f"nominal p={row.p_value:.3f}"
         ax.text(
             row.coefficient,
             y_pos + 0.20,
@@ -942,8 +948,13 @@ def plot_enrichment_test(
     # Headroom keeps the top estimate's label below the panel title.
     ax.set_ylim(-0.5, len(plot_frame) - 0.2)
     ax.set_yticks(y, plot_frame["term_label"])
-    ax.set_xlabel("OLS coefficient on cellulose z-score")
-    ax.set_title("Study-clustered interaction model", fontweight="bold")
+    ax.set_xlabel(
+        f"OLS coefficient on cellulose z-score (nominal p, {len(plot_frame)} model terms tested)"
+    )
+    ax.set_title(
+        f"Study-clustered interaction model ({len(plot_frame)} nominal tests)",
+        fontweight="bold",
+    )
     ax.grid(axis="x", color=SLATE_200, linewidth=0.8)
     ax.spines[["top", "right", "left"]].set_visible(False)
 
@@ -1136,8 +1147,10 @@ def write_interpretations(
             "profiles is "
             f"`{interaction.coefficient:+.3f}` cellulose z (95% CI "
             f"`{interaction.ci_low:+.3f}` to `{interaction.ci_high:+.3f}`, "
-            f"`p={interaction.p_value:.3g}`, {int(interaction.cluster_count)} study "
-            f"clusters), and the interval {interval} zero. This is one nominal test, not "
+            f"`nominal p={interaction.p_value:.3g}`, {int(interaction.cluster_count)} study "
+            f"clusters; 3 non-intercept model terms tested in the figure, "
+            f"{len(model_table)} terms across 2 outcomes in `pd_cellulose_interaction_model.tsv`), "
+            f"and the interval {interval} zero. This is one nominal test, not "
             "corrected for the other conditions and traits examined; the corrected screen "
             "of every eligible fecal condition-trait contrast is described in "
             "`pd_condition_taxon_trait_network_methods.md`."
@@ -1190,7 +1203,10 @@ def write_interpretations(
         (
             f"The decreased-direction PD-vs-other Fisher test gives an odds ratio "
             f"of `{dec_vs_other.pd_vs_other_positive_z_odds_ratio:.2f}` and "
-            f"`p={dec_vs_other.pd_vs_other_fisher_p:.3g}`. It treats the profiles of one "
+            f"`nominal p={dec_vs_other.pd_vs_other_fisher_p:.3g}` "
+            f"(two-sided Mann-Whitney `nominal p={dec_vs_other.pd_vs_other_mannwhitney_p:.3g}`; "
+            "uncorrected across 2 directions x 2 tests = 4 nominal tests in "
+            "`pd_cellulose_vs_other_feces_summary.tsv`). It treats the profiles of one "
             "study as independent, so the study-clustered model below is the better guide."
         ),
         "",
@@ -1199,7 +1215,10 @@ def write_interpretations(
             f"PD-by-decreased interaction, with standard errors clustered by study. The "
             f"cellulose z-score interaction term is `{interaction.coefficient:.3f}` "
             f"(95% CI `{interaction.ci_low:.3f}` to `{interaction.ci_high:.3f}`, "
-            f"`p={interaction.p_value:.3g}`). It tests whether the decreased direction has "
+            f"`nominal p={interaction.p_value:.3g}`, uncorrected across 3 non-intercept "
+            f"model terms plotted in `pd_cellulose_enrichment_test.png` and "
+            f"{len(model_table)} terms across 2 outcomes in `pd_cellulose_interaction_model.tsv`). "
+            "It tests whether the decreased direction has "
             "an extra PD-associated shift in cellulose annotation beyond the main PD and "
             "direction effects."
         ),
