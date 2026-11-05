@@ -146,7 +146,7 @@ def _conclusions(
     ontology: dict[str, Any],
     trait_list: DeclaredTraitList | None = None,
 ) -> str:
-    report = audit_script.write_consolidated_report(output_dir, density, ontology, trait_list)
+    report: Path = audit_script.write_consolidated_report(output_dir, density, ontology, trait_list)
     assert report.is_file()
     content = report.read_text(encoding="utf-8")
     assert content.count(_SECTION) == 1
