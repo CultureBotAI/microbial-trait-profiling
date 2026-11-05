@@ -274,3 +274,180 @@ def test_oxygen_switch_set_is_labelled_as_its_own_construct(
     assert "not the shared oxygen guild" in report_text
     assert "facultative" in report_text
     assert "microaerophilic" in report_text
+
+
+def _condition_profiles_for_nominal_test() -> pd.DataFrame:
+    rows: list[dict[str, object]] = []
+    specs = [
+        ("Parkinson's disease", 5, 1.4, -0.4),
+        ("Crohn's disease", 5, 1.1, -0.3),
+        ("Exposure", 5, 1.6, -0.5),
+        ("Rare condition", 4, 0.9, -0.2),
+    ]
+    for cond_idx, (condition, pair_count, inc_base, dec_base) in enumerate(specs):
+        for pair_idx in range(pair_count):
+            study_id = f"bsdb:{cond_idx}-{pair_idx}"
+            experiment_id = f"{study_id}-1"
+            shift = pair_idx * 0.12
+            for direction, base in (("inc", inc_base + shift), ("dec", dec_base - shift * 0.5)):
+                rows.append(
+                    {
+                        "study_id": study_id,
+                        "experiment_id": experiment_id,
+                        "inc_dec": direction,
+                        "condition": condition,
+                        "body_site_group": "Feces",
+                        "guild_z_mean": base if direction == "inc" else -base,
+                        "oxygen_tolerance_z_mean": base,
+                        "anaerobe_z_mean": -base,
+                    }
+                )
+    return pd.DataFrame(rows)
+
+
+@pytest.mark.parametrize("module", [aerobe, anaerobe], ids=["aerobe", "anaerobe"])
+def test_condition_summary_and_labels_report_nominal_paired_t_test_counts(
+    module: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#1414: condition summaries, bar labels, and README report nominal paired t-test counts."""
+    metadata = _condition_profiles_for_nominal_test()
+    raw_summary = module.summarize_group(metadata, "condition", min_profiles=5)
+    assert list(raw_summary.columns[-2:]) == ["p_value_type", "n_tests"]
+    raw_by_cond = raw_summary.set_index("condition")
+    assert raw_by_cond.loc["Parkinson's disease", "p_value_type"] == "nominal"
+    assert raw_by_cond.loc["Crohn's disease", "p_value_type"] == "nominal"
+    assert raw_by_cond.loc["Exposure", "p_value_type"] == "nominal"
+    assert raw_by_cond.loc["Rare condition", "p_value_type"] == "not_tested"
+    assert set(raw_summary["n_tests"]) == {3}
+
+    filtered = module.remove_excluded_condition_labels(raw_summary)
+    assert "Exposure" not in set(filtered["condition"])
+    filtered_by_cond = filtered.set_index("condition")
+    assert filtered_by_cond.loc["Parkinson's disease", "p_value_type"] == "nominal"
+    assert filtered_by_cond.loc["Crohn's disease", "p_value_type"] == "nominal"
+    assert filtered_by_cond.loc["Rare condition", "p_value_type"] == "not_tested"
+    assert set(filtered["n_tests"]) == {2}
+
+    pd_row = next(
+        row for row in filtered.itertuples(index=False) if row.condition == "Parkinson's disease"
+    )
+    rare_row = next(
+        row for row in filtered.itertuples(index=False) if row.condition == "Rare condition"
+    )
+    pd_label = module.paired_smd_label(pd_row)
+    assert "nominal p=" in pd_label
+    assert "(2 condition tests)" in pd_label
+    assert module.paired_smd_label(rare_row) == "paired d=NA, p=NA (not tested), n=4"
+    without_n_tests = next(filtered.drop(columns=["n_tests"]).itertuples(index=False))
+    with pytest.raises(AttributeError):
+        module.paired_smd_label(without_n_tests)
+
+    monkeypatch.setattr(module, "OUTPUT_DIR", tmp_path)
+    empty_occ = pd.DataFrame(columns=["inc_dec", "profile_id", "study_id", "exclusion_reason"])
+    if module is aerobe:
+        module.write_summary_report(
+            direction_summary=pd.DataFrame(
+                {
+                    "trait": list(module.GUILD_TRAITS.values()),
+                    "increased_minus_decreased_z": [0.5, 0.4],
+                }
+            ),
+            body_site_summary=pd.DataFrame(
+                {
+                    "body_site_group": ["Feces"],
+                    "profile_count": [10],
+                    "increased_mean_guild_z": [0.2],
+                    "increased_minus_decreased_guild_z": [0.1],
+                }
+            ),
+            condition_summary=raw_summary,
+            taxa_summary=pd.DataFrame(
+                {
+                    "target_taxon_name": ["Escherichia coli"],
+                    "increased": [5],
+                    "decreased": [1],
+                    "increased_profile_tendency": [0.667],
+                }
+            ),
+            condition_taxa_summary=pd.DataFrame(
+                {
+                    "target_taxon_name": ["Escherichia coli"],
+                    "condition": ["Parkinson's disease"],
+                    "body_site_group": ["Feces"],
+                    "increased_profile_count": [4],
+                    "decreased_profile_count": [1],
+                    "increased_study_count": [3],
+                }
+            ),
+            inferred_group_summary=pd.DataFrame(),
+            kg_microbe_taxon_universe=pd.DataFrame({"taxon_id": ["NCBITaxon:1"]}),
+            top_increased_profiles=pd.DataFrame(
+                {
+                    "profile_id": ["p1"],
+                    "condition": ["Parkinson's disease"],
+                    "body_site": ["Feces"],
+                    "guild_z_mean": [1.2],
+                    "title": ["Study"],
+                }
+            ),
+            excluded_occurrences=empty_occ,
+        )
+    else:
+        module.write_summary_report(
+            direction_summary=pd.DataFrame(
+                {
+                    "trait": list(module.GUILD_TRAITS.values()),
+                    "decreased_minus_increased_z": [0.5, 0.4],
+                }
+            ),
+            body_site_summary=pd.DataFrame(
+                {
+                    "body_site_group": ["Feces"],
+                    "profile_count": [10],
+                    "increased_mean_guild_z": [-0.1],
+                    "decreased_mean_guild_z": [0.3],
+                    "decreased_minus_increased_guild_z": [0.4],
+                }
+            ),
+            condition_summary=raw_summary,
+            taxa_summary=pd.DataFrame(
+                {
+                    "target_taxon_name": ["Faecalibacterium prausnitzii"],
+                    "decreased": [5],
+                    "increased": [1],
+                    "depletion_bias": [0.667],
+                }
+            ),
+            condition_taxa_summary=pd.DataFrame(
+                {
+                    "target_taxon_name": ["Faecalibacterium prausnitzii"],
+                    "condition": ["Parkinson's disease"],
+                    "body_site_group": ["Feces"],
+                    "decreased_profile_count": [4],
+                    "increased_profile_count": [1],
+                    "decreased_study_count": [3],
+                }
+            ),
+            trait_enriched_profile_counts=pd.DataFrame(),
+            condition_enriched_profile_counts=pd.DataFrame(),
+            body_site_enriched_profile_summary=pd.DataFrame(),
+            inferred_group_summary=pd.DataFrame(),
+            kg_microbe_taxon_universe=pd.DataFrame({"taxon_id": ["NCBITaxon:1"]}),
+            top_depletion_profiles=pd.DataFrame(
+                {
+                    "profile_id": ["p1"],
+                    "condition": ["Parkinson's disease"],
+                    "body_site": ["Feces"],
+                    "guild_z_mean": [1.2],
+                    "title": ["Study"],
+                }
+            ),
+            excluded_occurrences=empty_occ,
+        )
+
+    readme = (tmp_path / "README.md").read_text(encoding="utf-8")
+    assert "| nominal paired p |" in readme
+    assert (
+        "Reported paired p values are uncorrected two-sided paired t-test nominal p-values "
+        "across 2 tested conditions in `condition_guild_summary.tsv`."
+    ) in readme
