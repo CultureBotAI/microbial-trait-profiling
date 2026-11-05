@@ -181,8 +181,10 @@ wrapper functions. Among other checks, it fails when:
   does not check that an issue exists.
 
 Discovery reads files lazily and keeps compact per-file summaries. Alias expansion,
-source size and summary size have explicit limits. The derivation recognizer's
-environment-copying cost is not separately bounded (#1581).
+source size and summary size have explicit limits. The derivation recognizer runs only
+in functions whose own resolved calls include both `benjamini_hochberg` and
+`numpy.clip`. Its repeated subtree walks and nested-loop re-analysis are not separately
+bounded; the work can double with each additional loop nesting level (#1581).
 Derivation facts are reduced while each file's AST is resident; the summaries retain
 neither the AST nor source text. The check establishes a supported calculation in an
 anchor, not the ancestry of each family's output. At `run_composition_calibration`,
@@ -209,7 +211,13 @@ Within a registered function, it also does not detect:
 - arithmetic outside the supported local BH-to-BY form. Opaque helper results,
   mutation through calls (including closures), and alternative forms such as
   `np.minimum`, a list-comprehension harmonic sum or a `pd.Series` wrapper are not
-  interpreted. Derivations inside unsupported `try` or `match` blocks are not credited;
+  interpreted. Derivations inside unsupported `try` or `match` blocks, or stored only
+  through a subscript or attribute rather than a local name, are not credited.
+  Escaping `break` or `continue` paths inside those unsupported blocks are not propagated;
+- other binding forms, including starred targets, `def`/`class` rebinding (including
+  decorated definitions), `global`
+  writes from another function and context managers that suppress a `raise`, are not
+  modelled;
 - whether a witnessed calculation reaches an output or is subsequently used. The
   check rejects constant-false branches, discarded expression statements and calculations
   after explicit block terminators, but does not prove general reachability or evaluate

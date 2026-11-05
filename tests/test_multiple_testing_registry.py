@@ -535,6 +535,8 @@ def visible_by_derivation(unit: Unit, scope: str) -> bool:
                     return True
         return False
 
+    loop_paths: list[tuple[list[dict[str, Fact]], list[dict[str, Fact]]]] = []
+
     def statements(
         body: list[ast.stmt], env: dict[str, Fact], *, credit: bool = True
     ) -> dict[str, Fact]:
@@ -564,6 +566,9 @@ def visible_by_derivation(unit: Unit, scope: str) -> bool:
                         witnessed = True
                 break
             elif isinstance(statement, ast.Raise | ast.Break | ast.Continue):
+                if loop_paths and isinstance(statement, ast.Break | ast.Continue):
+                    exits = loop_paths[-1][0 if isinstance(statement, ast.Break) else 1]
+                    exits.append(env.copy())
                 break
             elif isinstance(statement, ast.If):
                 if isinstance(statement.test, ast.Constant):
@@ -593,16 +598,27 @@ def visible_by_derivation(unit: Unit, scope: str) -> bool:
                     inside = entry.copy()
                     if isinstance(statement, ast.For | ast.AsyncFor):
                         assign(statement.target, None, inside)
+                    break_paths: list[dict[str, Fact]] = []
+                    continue_paths: list[dict[str, Fact]] = []
+                    loop_paths.append((break_paths, continue_paths))
                     inside = statements(statement.body, inside, credit=False)
+                    loop_paths.pop()
                     updated = intersection(entry, inside)
+                    for continued in continue_paths:
+                        updated = intersection(updated, continued)
                     if updated == entry:
                         break
                     entry = updated
                 inside = entry.copy()
                 if isinstance(statement, ast.For | ast.AsyncFor):
                     assign(statement.target, None, inside)
+                break_paths, continue_paths = [], []
+                loop_paths.append((break_paths, continue_paths))
                 inside = statements(statement.body, inside, credit=credit)
+                loop_paths.pop()
                 env = intersection(env, inside)
+                for exited in (*break_paths, *continue_paths):
+                    env = intersection(env, exited)
                 env = statements(statement.orelse, env, credit=credit)
             elif isinstance(statement, ast.With | ast.AsyncWith):
                 for context_item in statement.items:
@@ -670,12 +686,21 @@ def summarize_source(path: str, source: str, budget: SummaryBudget) -> CompactUn
     for function in unit.functions:
         budget.charge(path, function)
     calls = []
+    bh_scopes: set[str] = set()
+    clip_scopes: set[str] = set()
     for function, call in unit.calls:
         target = unit.resolve(call.func, function)
         procedures = tuple(sorted(literal_procedures(call, target)))
         budget.charge(path, function, target, *procedures)
         calls.append((function, target, procedures, call.lineno))
-    derived = tuple(name for name in unit.functions if visible_by_derivation(unit, name))
+        if target.rsplit(".", 1)[-1] == "benjamini_hochberg":
+            bh_scopes.add(function)
+        if target == "numpy.clip":
+            clip_scopes.add(function)
+    candidates = bh_scopes & clip_scopes
+    derived = tuple(
+        name for name in unit.functions if name in candidates and visible_by_derivation(unit, name)
+    )
     for name in derived:
         budget.charge(path, name, "BY")
     return CompactUnit(
