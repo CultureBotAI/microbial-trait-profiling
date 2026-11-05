@@ -239,16 +239,22 @@ def test_conclusions_report_observed_correlations_and_pc1_changes(
         ontology[key] = replace(ontology[key], pc1_variance_pct=value)
     conclusions = _conclusions(audit_script, tmp_path, density, ontology)
     correlation = _point(conclusions, 1)
-    assert "-0.0234" in correlation
-    assert "-0.0456" in correlation
-    assert "PC1 variance explained (%)" in correlation
-    assert f"{raw_pc1:.2f}" in correlation
+    assert "raw = -0.0234; post-PC1 regression = -0.0456." in correlation
+    assert f"Raw PC1 variance explained (%) = {raw_pc1:.2f}." in correlation
     collapse = _point(conclusions, 5)
-    assert "PC1 variance explained (%)" in collapse
-    for percentage in (raw_pc1, native_pc1, max_pc1, adjusted_pc1):
-        assert f"{percentage:.2f}" in collapse
     assert "8 redundant pairs (6 features collapsed into 3 clusters)" in collapse
     assert "bounding distinct trait space to 34 features" in collapse
+    assert (
+        f"PC1 variance explained (%): raw = {raw_pc1:.2f}; "
+        f"collapsed native = {native_pc1:.2f}; "
+        f"collapsed max-member = {max_pc1:.2f}; "
+        f"collapsed + PC1 regression = {adjusted_pc1:.2f}."
+    ) in collapse
+    assert (
+        "Median pairwise Pearson r: collapsed native = -0.0123; "
+        "collapsed max-member = -0.0098; "
+        "collapsed + PC1 regression = -0.0045."
+    ) in collapse
     _assert_no_fixed_claims(conclusions)
 
 
@@ -298,7 +304,7 @@ def test_conclusions_report_no_paired_experiments_as_unavailable(
     _assert_no_fixed_claims(conclusions)
 
 
-@pytest.mark.parametrize("n_constant", [39, 40])
+@pytest.mark.parametrize("n_constant", [38, 39, 40])
 def test_conclusions_do_not_treat_unavailable_zero_sentinels_as_observations(
     tmp_path: Path, audit_script: ModuleType, n_constant: int
 ) -> None:
@@ -311,10 +317,23 @@ def test_conclusions_do_not_treat_unavailable_zero_sentinels_as_observations(
         ontology[key] = sentinel
     conclusions = _conclusions(audit_script, tmp_path, density, ontology)
     correlation = _point(conclusions, 1)
+    collapse = _point(conclusions, 5)
+    if n_constant == 38:
+        assert "raw = +0.0000; post-PC1 regression = +0.0000." in correlation
+        assert "Raw PC1 variance explained (%) = 0.00." in correlation
+        assert (
+            "PC1 variance explained (%): raw = 0.00; collapsed native = 0.00; "
+            "collapsed max-member = 0.00; collapsed + PC1 regression = 0.00."
+        ) in collapse
+        assert (
+            "Median pairwise Pearson r: collapsed native = +0.0000; "
+            "collapsed max-member = +0.0000; collapsed + PC1 regression = +0.0000."
+        ) in collapse
+        assert "= NA" not in correlation + collapse
+        return
     assert re.search(r"raw\s*=\s*NA", correlation)
     assert re.search(r"post-PC1 regression\s*=\s*NA", correlation)
     assert re.search(r"PC1 variance explained \(%\)\s*=\s*NA", correlation)
-    collapse = _point(conclusions, 5)
     for label in (
         "raw",
         "collapsed native",
