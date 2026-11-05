@@ -34,10 +34,19 @@ def _baseline() -> dict[str, Any]:
     return snapshot
 
 
+# Constant labels added by #1410/#1483 that mark nominal p columns as diagnostics.
+# They describe the ledger; they are not scientific results of the calibration.
+_DIAGNOSTIC_LABELS = {"p_value_diagnostics_role", "p_value_diagnostics_correction"}
+
+
 def _scientific_results(snapshot: dict[str, Any]) -> dict[str, Any]:
-    """Keep the ledger, outcomes and numeric/decision criteria, without prose."""
+    """Keep the ledger, outcomes and numeric/decision criteria, without prose or labels."""
     return {
         **snapshot,
+        "ledger": [
+            {key: value for key, value in row.items() if key not in _DIAGNOSTIC_LABELS}
+            for row in snapshot["ledger"]
+        ],
         "criteria": [
             {key: value for key, value in row.items() if key not in {"detail", "requirement"}}
             for row in snapshot["criteria"]
@@ -47,6 +56,13 @@ def _scientific_results(snapshot: dict[str, Any]) -> dict[str, Any]:
 
 def test_calibration_matches_before_removal_fixture_without_matrix() -> None:
     assert _scientific_results(_fixture_helper().capture()) == _scientific_results(_baseline())
+
+
+def test_capture_ledger_marks_nominal_p_columns_as_diagnostics() -> None:
+    ledger = _fixture_helper().capture()["ledger"]
+    assert ledger
+    assert {row["p_value_diagnostics_role"] for row in ledger} == {"calibration_diagnostic"}
+    assert {row["p_value_diagnostics_correction"] for row in ledger} == {"none (nominal)"}
 
 
 def test_fixture_capture_has_no_obsolete_legacy_interface() -> None:
