@@ -45,6 +45,7 @@ from mtp.quoted_results import (
     format_coverage_population,
     read_coverage_run_info,
     read_matrix_counts,
+    refuse_nominal_ora,
     screened_rejection_rate,
 )
 from mtp.table1_directions import (
@@ -91,11 +92,15 @@ INPUTS_READ: set[Path] = set()
 PLATE_COUNTS: dict[str, int] = {}
 
 
-def read_tsv(path: Path) -> list[dict[str, str]]:
+def read_tsv(path: Path, *, adjusted_ora: bool = False) -> list[dict[str, str]]:
     INPUTS_READ.add(path)
     with path.open(newline="", encoding="utf-8") as f:
-        lines = [line for line in f if not line.startswith("#")]
-        return list(csv.DictReader(lines, delimiter="\t"))
+        lines = list(f)
+        if adjusted_ora:
+            refuse_nominal_ora(lines)
+        return list(
+            csv.DictReader((line for line in lines if not line.startswith("#")), delimiter="\t")
+        )
 
 
 def read_json(path: Path) -> Any:
@@ -1178,7 +1183,10 @@ def build_methods_plate2(repo: Path, out_dir: Path) -> Path:
             paired["pooled"],
             {
                 r["trait"]: r
-                for r in read_tsv(repo / "data/derived/trait_enrichment_traits_overall_ranked.tsv")
+                for r in read_tsv(
+                    repo / "data/derived/trait_enrichment_traits_overall_ranked.tsv",
+                    adjusted_ora=True,
+                )
             },
             {r["trait"]: r for r in screen},
             {tid for tid, *_ in TABLE1_TRAITS},
@@ -4103,7 +4111,9 @@ def build_plate7(repo: Path, out_dir: Path) -> Path:
     }
     arm2_rows = {
         r["trait"]: r
-        for r in read_tsv(repo / "data/derived/trait_enrichment_traits_overall_ranked.tsv")
+        for r in read_tsv(
+            repo / "data/derived/trait_enrichment_traits_overall_ranked.tsv", adjusted_ora=True
+        )
     }
     arm3_screen_rows = {
         r["trait"]: r

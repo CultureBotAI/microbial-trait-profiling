@@ -526,9 +526,9 @@ def parse_report(
                 if "mediadive.medium:" in trait:
                     continue
 
-                # Set whichever statistic we found, and default the other to 1.0
+                # A nominal report supplies no adjusted probability.
                 p_value = val if stat_type == "p_value" else 1.0
-                fdr_q = val if stat_type == "fdr_q" else 1.0
+                fdr_q = val if stat_type == "fdr_q" else float("nan")
 
                 trait_tot = trait_totals.get(trait, 0) if trait_totals else 0
                 rows.append(
@@ -591,8 +591,11 @@ def build_overall_table(
     complete_results: bool = False,
 ) -> pd.DataFrame:
     _ = total_profiles, trait_totals  # Legacy arguments; parsed rows carry authoritative K.
-    if fdr_scope not in {"global", "profile"}:
-        raise ValueError(f"Unsupported fdr_scope: {fdr_scope!r}; expected 'global' or 'profile'.")
+    allowed_scopes = (
+        {"global", "profile", "none"} if stat_type == "p_value" else {"global", "profile"}
+    )
+    if fdr_scope not in allowed_scopes:
+        raise ValueError(f"Unsupported fdr_scope: {fdr_scope!r} for statistic {stat_type!r}.")
     columns = overall_columns(stat_type, censored=bool(max_traits), body_site_group=body_site_group)
     if frame.empty:
         return pd.DataFrame(columns=columns)
@@ -990,6 +993,9 @@ def main(argv: list[str] | None = None) -> int:
     except (FileNotFoundError, MalformedResultsError) as exc:
         return _fail(str(exc))
 
+    # A requested FDR scope cannot turn nominal calls into adjusted results.
+    if stat_type == "p_value":
+        fdr_scope = "none"
     frame = rows_to_frame(rows, max_traits)
 
     overall = build_overall_table(
