@@ -309,6 +309,16 @@ def test_each_deck_slide_subtitle_declares_its_own_basis(
     assert _plain(subtitle.group(1)).endswith(f"· {label}")
 
 
+@pytest.mark.parametrize("slide_number", range(2, 17))
+def test_each_labelled_deck_subtitle_wraps_instead_of_truncating(
+    deck_sections: list[str], slide_number: int
+) -> None:
+    """The deck CSS truncates subtitles with an ellipsis, which would hide a trailing label."""
+    tag = re.search(r'<p class="subtitle"[^>]*>', deck_sections[slide_number - 1])
+    assert tag is not None
+    assert 'style="white-space:normal"' in tag.group(0)
+
+
 @pytest.mark.parametrize(
     ("slide_number", "image_src"),
     [

@@ -3587,7 +3587,8 @@ def render_slide_deck_html() -> str:
             '      <div class="title-block">',
             "        <h2>Plate I: Three Distinct Diseases Lose the Same Gut Fiber-Digesting "
             "Bacteria</h2>",
-            '        <p class="subtitle">Slopegraph and mutually exclusive set partition vs.'
+            '        <p class="subtitle" style="white-space:normal">'
+            "Slopegraph and mutually exclusive set partition vs."
             " full pairwise overlaps across 90 human stool studies · October 16 worked example</p>",
             "      </div>",
             "    </div>",
@@ -3624,7 +3625,8 @@ def render_slide_deck_html() -> str:
             '      <div class="title-block">',
             "        <h2>Plate II: Nine Butyrate- and Fiber-Degrading Genera Decrease Across A"
             "ll Three Diseases</h2>",
-            '        <p class="subtitle">Taxonomic dot-bar table and Genus + Species sensiti'
+            '        <p class="subtitle" style="white-space:normal">'
+            "Taxonomic dot-bar table and Genus + Species sensiti"
             "vity test (N = 93 stool background taxa) · historical (#1416)</p>",
             "      </div>",
             "    </div>",
@@ -3663,7 +3665,8 @@ def render_slide_deck_html() -> str:
             '      <div class="title-block">',
             "        <h2>Plate III: Shared Loss Appears in Stool, Not in Tissue Biopsies or th"
             "e Mouth</h2>",
-            '        <p class="subtitle">Range-frame dot plots of within-study directional s'
+            '        <p class="subtitle" style="white-space:normal">'
+            "Range-frame dot plots of within-study directional s"
             "ign tests and cross-disease Jaccard similarity by body site · October 16 worked "
             "example</p>",
             "      </div>",
@@ -3701,7 +3704,8 @@ def render_slide_deck_html() -> str:
             '      <div class="title-block">',
             "        <h2>Plate IV: Plant-Fiber Breakdown Ranks First Among Metabolic Pathways "
             "as Salt-Tolerant Taxa Increase</h2>",
-            '        <p class="subtitle">90-trait range-frame distribution strip and the fou'
+            '        <p class="subtitle" style="white-space:normal">'
+            "90-trait range-frame distribution strip and the fou"
             "r highlighted condition-trait signatures with literature citations · historical "
             "(#1416)</p>",
             "      </div>",
@@ -3741,7 +3745,8 @@ def render_slide_deck_html() -> str:
             '      <div class="title-block">',
             "        <h2>Plate V: One Matrix, Three Statistical Questions: Composition, "
             "Enrichment, and Study Direction</h2>",
-            '        <p class="subtitle">Filter cascade, 100-fold sample-size scale across s'
+            '        <p class="subtitle" style="white-space:normal">'
+            "Filter cascade, 100-fold sample-size scale across s"
             "ampling units, and Table 1 fraction and log-ratio results · historical (#1416)</p>",
             "      </div>",
             "    </div>",
@@ -4096,7 +4101,8 @@ def render_slide_deck_html() -> str:
             '      <div class="title-block">',
             "        <h2>Published Literature Support for the Four Highlighted Condition-Trait"
             " Signatures</h2>",
-            '        <p class="subtitle">Comparing microbial-trait-profiling (MTP) stool sig'
+            '        <p class="subtitle" style="white-space:normal">'
+            "Comparing microbial-trait-profiling (MTP) stool sig"
             "natures against 17 peer-reviewed metagenomic and physiological studies "
             "· historical (#1416)</p>",
             "      </div>",
@@ -4133,7 +4139,8 @@ def render_slide_deck_html() -> str:
             '      <div class="title-block">',
             "        <h2>Why Mutually Exclusive 2-Way Slices Have Fewer Taxa Than the 3-Way Co"
             "re</h2>",
-            '        <p class="subtitle">Comparing full pairwise intersections '
+            '        <p class="subtitle" style="white-space:normal">'
+            "Comparing full pairwise intersections "
             "|A ∩ B| (which include the 3-way core) against 2-way-only Venn "
             "slices · October 16 worked example</p>",
             "      </div>",
