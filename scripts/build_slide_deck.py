@@ -299,6 +299,17 @@ def cited_refs() -> list[str]:
     return refs
 
 
+def _has_finite(row: Mapping[str, str], column: str) -> bool:
+    try:
+        return math.isfinite(float(row.get(column) or "nan"))
+    except ValueError:
+        return False
+
+
+def _has_p(row: Mapping[str, str]) -> bool:
+    return row.get("p_value_type") != "not_tested" and _has_finite(row, "p_value")
+
+
 def load_rerun_metrics(repo: Path) -> dict:
     """Read fresh rerun TSVs to ensure slide titles, takeaways, and cover table match rerun data."""
     metrics: dict = {}
@@ -342,7 +353,8 @@ def load_rerun_metrics(repo: Path) -> dict:
         "pd_condition_taxon_trait_network_condition_trait_tests.tsv"
     )
     pd_net_rows = read_tsv(pd_net_path)
-    metrics["pd_net_total"] = len(pd_net_rows)
+    pd_net_tested = [r for r in pd_net_rows if _has_p(r)]
+    metrics["pd_net_total"] = len(pd_net_tested)
     for r in pd_net_rows:
         if (
             r.get("condition") == "Parkinson's disease"
@@ -358,8 +370,9 @@ def load_rerun_metrics(repo: Path) -> dict:
         ):
             metrics["pd_cellulose_wilcoxon"] = r
             break
-    if pd_net_rows:
-        metrics["pd_net_lead"] = min(pd_net_rows, key=lambda r: float(r["q_value"]))
+    pd_net_with_q = [r for r in pd_net_tested if _has_finite(r, "q_value")]
+    if pd_net_with_q:
+        metrics["pd_net_lead"] = min(pd_net_with_q, key=lambda r: float(r["q_value"]))
     pd_dir = repo / "trait-visualization/trait-profile-investigation/PD-cellulose"
     family = [
         r
@@ -717,6 +730,20 @@ def cover_table1_text(metrics: dict) -> str:
         f"{down_text(cellulose)}, p = {sci(cellulose.p_value)}, and "
         f"{plural(len(survivors), 'log-ratio')} {'passes' if len(survivors) == 1 else 'pass'} BY "
         f"q ≤ 0.05{named})"
+    )
+
+
+def cover_wilcoxon_text(metrics: Mapping[str, Any]) -> str:
+    """The cover's fecal study Wilcoxon sentence, from the PD network table (#1430)."""
+    pd_w = metrics["pd_halo_wilcoxon"]
+    pd_w_p = float(pd_w["p_value"])
+    pd_w_q = float(pd_w["q_value"])
+    verb = "leads" if metrics.get("pd_net_lead") is pd_w else "has"
+    return (
+        f"In the {metrics['pd_net_total']}-test fecal study Wilcoxon screen, PD moderately "
+        f"halophilic {verb} ({float(pd_w['mean_contrast']):+.3f} mean contrast across "
+        f"{pd_w['paired_study_count']} studies, {pd_w['positive_study_count']}↑:"
+        f"{pd_w['negative_study_count']}↓, nominal p = {pd_w_p:.2e}, BH q = {pd_w_q:.4f})."
     )
 
 
@@ -1643,7 +1670,7 @@ def update_previous_slide_text(row: dict[str, str], metrics: dict) -> tuple[str,
                 takeaway = (
                     f"PD moderately halophilic scores change by {mean_c:+.3f} across {n_st} "
                     f"paired studies ({w_row['positive_study_count']} up vs "
-                    f"{w_row['negative_study_count']} down, p = {p_val:.2e}, BH q = "
+                    f"{w_row['negative_study_count']} down, nominal p = {p_val:.2e}, BH q = "
                     f"{q_val:.4f}); {taxon_family_text(metrics)}."
                 )
 
@@ -1751,33 +1778,41 @@ CONDITION_SHORT = {
 TRAIT_SHORT = {"cellulose catabolic process": "cellulose", "moderately halophilic": "halophily"}
 
 
+def _nominal_p_clause(row: Mapping[str, str]) -> str:
+    return f"nominal p = {p_text(float(row['p_value']))}" if _has_p(row) else "not tested"
+
+
 def pd_direction_caveat(model: dict[str, str], positive: dict[str, str]) -> str:
     """The study-clustered test of a PD-specific cellulose direction, from its model rows.
 
     ``model`` is the cellulose z-score outcome; ``positive`` the share of profiles with a
-    positive z-score, which the figure's right panel plots (#590, #608).
+    positive z-score, which the figure's right panel plots (#590, #608, #1430).
     """
     rows = (model, positive)
-    shown = [float(r["p_value"]) < 0.05 and float(r["coefficient"]) > 0 for r in rows]
-    against = [float(r["p_value"]) < 0.05 and float(r["coefficient"]) < 0 for r in rows]
+    tested = [r for r in rows if _has_p(r)]
+    shown = [_has_p(r) and float(r["p_value"]) < 0.05 and float(r["coefficient"]) > 0 for r in rows]
+    against = [
+        _has_p(r) and float(r["p_value"]) < 0.05 and float(r["coefficient"]) < 0 for r in rows
+    ]
     if any(against):
         verdict = "at least one measure points the other way"
     elif all(shown):
-        verdict = "a PD-specific direction is shown at p < 0.05"
+        verdict = "a PD-specific direction is shown at nominal p < 0.05"
     elif any(shown):
-        verdict = "a PD-specific direction is shown at p < 0.05 for one measure only"
+        verdict = "a PD-specific direction is shown at nominal p < 0.05 for one measure only"
     else:
-        verdict = "a PD-specific direction is not shown at p < 0.05"
+        verdict = "a PD-specific direction is not shown at nominal p < 0.05"
     return (
         "Exploratory PD diagnostic. Its profile-level Fisher test treats the profiles of one "
         "study as independent. In the study-clustered model "
-        "(pd_cellulose_interaction_model.tsv), the extra PD effect in decreased feces is "
+        f"(pd_cellulose_interaction_model.tsv, {plural(len(tested), 'nominal test')}), "
+        "the extra PD effect in decreased feces is "
         f"{signed(float(model['coefficient']), 2)} cellulose z (95% CI "
-        f"{signed(float(model['ci_low']), 2)} to {signed(float(model['ci_high']), 2)}, p = "
-        f"{p_text(float(model['p_value']))}), and "
+        f"{signed(float(model['ci_low']), 2)} to {signed(float(model['ci_high']), 2)}, "
+        f"{_nominal_p_clause(model)}), and "
         f"{signed(100 * float(positive['coefficient']))} percentage points (95% CI "
         f"{signed(100 * float(positive['ci_low']))} to {signed(100 * float(positive['ci_high']))}"
-        f", p = {p_text(float(positive['p_value']))}) in the share of profiles with cellulose "
+        f", {_nominal_p_clause(positive)}) in the share of profiles with cellulose "
         f"z > 0 that the right panel plots, so {verdict}."
     )
 
@@ -4528,10 +4563,6 @@ def build_deck(
             f"<td>{delta_str}</td><td>{studies_str}</td><td>{q_str}</td></tr>"
         )
 
-    pd_w = metrics["pd_halo_wilcoxon"]
-    pd_w_q = float(pd_w["q_value"])
-    pd_w_p = float(pd_w["p_value"])
-
     statements = cellulose["statements"]
     cellulose_note = statements["overlap"] + (
         f"; {statements['fragile']}" if statements["fragile"] else ""
@@ -4605,14 +4636,8 @@ def build_deck(
         f"trait z-score ({metrics['ind_total_tests']:,}-row profile-level Fisher family).<br>"
         f"{arm_two_text(metrics)} {cover_table1_text(metrics)}; {mcnemar_text(metrics)}."
         "</p></main>"
-        '<aside class="note"><p><strong>Evidence across scales:</strong> In the '
-        f"{metrics['pd_net_total']}-test fecal study Wilcoxon screen, PD moderately halophilic "
-        f"{'leads' if metrics.get('pd_net_lead') is metrics['pd_halo_wilcoxon'] else 'has'} "
-        f"({float(metrics['pd_halo_wilcoxon']['mean_contrast']):+.3f} mean contrast across "
-        f"{metrics['pd_halo_wilcoxon']['paired_study_count']} studies, "
-        f"{metrics['pd_halo_wilcoxon']['positive_study_count']}↑:"
-        f"{metrics['pd_halo_wilcoxon']['negative_study_count']}↓, p = {pd_w_p:.2e}, BH q = "
-        f"{pd_w_q:.4f}). In the cellulose deep-dive, "
+        '<aside class="note"><p><strong>Evidence across scales:</strong> '
+        f"{cover_wilcoxon_text(metrics)} In the cellulose deep-dive, "
         f"{html.escape(cellulose_note)}.</p>"
         f"<p>{n_checked} linked figures match the committed files at the revisions their "
         f"slides cite; {n_untracked} are gitignored outputs, identified by SHA-256 in the "

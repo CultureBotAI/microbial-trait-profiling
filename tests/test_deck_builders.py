@@ -296,24 +296,33 @@ def _model(coefficient: float, p: float) -> dict[str, str]:
 @pytest.mark.parametrize(
     ("model", "positive", "verdict"),
     [
-        ((0.4098, 0.08004), (0.1859, 0.0553), "a PD-specific direction is not shown at p < 0.05"),
-        ((0.41, 0.01), (0.19, 0.02), "a PD-specific direction is shown at p < 0.05."),
-        ((0.41, 0.01), (0.19, 0.2), "is shown at p < 0.05 for one measure only"),
-        ((-0.41, 0.04), (0.19, 0.2), "points the other way"),
+        (
+            (0.4098, 0.08004),
+            (0.1859, 0.0553),
+            "a PD-specific direction is not shown at nominal p < 0.05.",
+        ),
+        ((0.41, 0.01), (0.19, 0.02), "a PD-specific direction is shown at nominal p < 0.05."),
+        ((0.41, 0.01), (0.19, 0.2), "is shown at nominal p < 0.05 for one measure only."),
+        ((-0.41, 0.04), (0.19, 0.2), "points the other way."),
     ],
 )
 def test_pd_direction_caveat_quotes_the_clustered_model(
     model: tuple[float, float], positive: tuple[float, float], verdict: str
 ) -> None:
-    """The figure's title says direction-specific; the clustered model decides (#590, #608)."""
+    """The figure's title says direction-specific; the clustered model decides (#590, #1430)."""
     caveat = deck.pd_direction_caveat(_model(*model), _model(*positive))
+    assert "(pd_cellulose_interaction_model.tsv, 2 nominal tests)" in caveat
     assert f"{model[0]:+.2f} cellulose z" in caveat
+    assert f"nominal p = {deck.p_text(model[1])}" in caveat
+    assert f"nominal p = {deck.p_text(positive[1])}" in caveat
     assert "the share of profiles with cellulose z > 0" in caveat
     assert verdict in caveat
+    assert ", p = " not in caveat
+    assert "at p < 0.05" not in caveat
 
 
 def test_pd_direction_caveat_gives_the_share_in_percentage_points() -> None:
-    """The positive-z outcome is 0/1, so its term is a share, with its interval (#617)."""
+    """The positive-z outcome is 0/1, so its term is a share, with its interval (#617, #1430)."""
     model = {"coefficient": "0.4098", "ci_low": "-0.0492", "ci_high": "0.8687", "p_value": "0.08"}
     positive = {
         "coefficient": "0.1859",
@@ -321,9 +330,46 @@ def test_pd_direction_caveat_gives_the_share_in_percentage_points() -> None:
         "ci_high": "0.3761",
         "p_value": "0.0553",
     }
-    assert "+18.6 percentage points (95% CI -0.4 to +37.6, p = 0.055)" in (
-        deck.pd_direction_caveat(model, positive)
+    caveat = deck.pd_direction_caveat(model, positive)
+    assert "(pd_cellulose_interaction_model.tsv, 2 nominal tests)" in caveat
+    assert "+0.41 cellulose z (95% CI -0.05 to +0.87, nominal p = 0.080)" in caveat
+    assert "+18.6 percentage points (95% CI -0.4 to +37.6, nominal p = 0.055)" in caveat
+
+
+@pytest.mark.parametrize(
+    "unrun_fields",
+    [
+        {"p_value": "NaN"},
+        {"p_value": ""},
+        {"p_value": "0.01", "p_value_type": "not_tested"},
+    ],
+)
+def test_pd_direction_caveat_excludes_unrun_test_from_count(
+    unrun_fields: dict[str, str],
+) -> None:
+    """An unrun interaction test is excluded from the nominal test count (#1430)."""
+    tested_nonsig = _model(0.4098, 0.08004)
+    tested_sig = _model(0.41, 0.01)
+    unrun = {**_model(0.1859, 0.0553), **unrun_fields}
+
+    caveat_nonsig = deck.pd_direction_caveat(tested_nonsig, unrun)
+    assert "(pd_cellulose_interaction_model.tsv, 1 nominal test)" in caveat_nonsig
+    assert "nominal p = 0.080" in caveat_nonsig
+    assert ", not tested) in the share of profiles" in caveat_nonsig
+    assert "a PD-specific direction is not shown at nominal p < 0.05." in caveat_nonsig
+    assert "nan" not in caveat_nonsig.lower()
+
+    caveat_sig = deck.pd_direction_caveat(unrun, tested_sig)
+    assert "(pd_cellulose_interaction_model.tsv, 1 nominal test)" in caveat_sig
+    assert ", not tested), and " in caveat_sig
+    assert "nominal p = 0.010) in the share of profiles" in caveat_sig
+    assert (
+        "a PD-specific direction is shown at nominal p < 0.05 for one measure only." in caveat_sig
     )
+
+    caveat_none = deck.pd_direction_caveat(unrun, unrun)
+    assert "(pd_cellulose_interaction_model.tsv, 0 nominal tests)" in caveat_none
+    assert "nominal p =" not in caveat_none
 
 
 def test_p_values_do_not_round_across_the_threshold() -> None:
@@ -4024,3 +4070,188 @@ def test_committed_phenotype_coverage_tables_drive_deck_and_plate6(tmp_path: Pat
     assert len(mod_traits) == 60
     assert len(pooled_stats) == 340
     assert {r["retained_trait_count"] for r in pooled_stats} == {"344"}
+
+
+def test_pd_network_slide_and_cover_label_nominal_p_and_exclude_unrun_tests(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """PD network slide and cover label Wilcoxon p nominal and exclude unrun tests (#1430)."""
+    rank_rows = _coverage_rank_rows()
+    zero_rows = _zero_trait_rows()
+    metrics = _mock_rerun_repo_for_deck(tmp_path, monkeypatch, rank_rows, zero_rows)
+
+    base_read_tsv = deck.read_tsv
+    net_rows = [
+        {
+            "condition": "Parkinson's disease",
+            "trait": "moderately halophilic",
+            "mean_contrast": "0.312",
+            "paired_study_count": "17",
+            "positive_study_count": "14",
+            "negative_study_count": "3",
+            "p_value": "0.000167",
+            "q_value": "0.0561",
+        },
+        {
+            "condition": "Parkinson's disease",
+            "trait": "cellulose catabolic process",
+            "mean_contrast": "-0.120",
+            "paired_study_count": "17",
+            "positive_study_count": "5",
+            "negative_study_count": "12",
+            "p_value": "0.01",
+            "q_value": "0.10",
+        },
+    ]
+    monkeypatch.setattr(
+        deck,
+        "read_tsv",
+        lambda p, quoted=True: (
+            list(net_rows)
+            if p.name == "pd_condition_taxon_trait_network_condition_trait_tests.tsv"
+            else base_read_tsv(p, quoted)
+        ),
+    )
+
+    loaded = deck.load_rerun_metrics(tmp_path)
+    loaded["plate_counts"] = metrics["plate_counts"]
+    loaded["cellulose_statements"] = metrics["cellulose_statements"]
+    assert loaded["pd_net_total"] == 2
+
+    net_slide = {
+        "figure_file_path": (
+            "trait-visualization/trait-profile-investigation/PD-cellulose/"
+            "pd_condition_taxon_trait_network.png"
+        ),
+        "title": "",
+        "takeaway": "",
+        "caveat": "",
+    }
+    title, takeaway, _ = deck.update_previous_slide_text(net_slide, loaded)
+    assert title == "PD halophily leads the 2-test study-level fecal screen (BH q = 0.0561)"
+    assert takeaway == (
+        "PD moderately halophilic scores change by +0.312 across 17 paired studies "
+        "(14 up vs 3 down, nominal p = 1.67e-04, BH q = 0.0561); "
+        "no taxon survives the separate 1-test family."
+    )
+    assert ", p = " not in takeaway
+
+    cover_text = deck.cover_wilcoxon_text(loaded)
+    assert cover_text == (
+        "In the 2-test fecal study Wilcoxon screen, PD moderately halophilic leads "
+        "(+0.312 mean contrast across 17 studies, 14↑:3↓, nominal p = 1.67e-04, BH q = 0.0561)."
+    )
+    assert ", p = " not in cover_text
+
+    # An unrun test row is excluded from pd_net_total, whereas a tested row is counted:
+    for unrun_row in (
+        {"condition": "HIV infection", "trait": "coccus shaped", "p_value": "", "q_value": ""},
+        {
+            "condition": "HIV infection",
+            "trait": "coccus shaped",
+            "p_value": "NaN",
+            "p_value_type": "not_tested",
+            "q_value": "NaN",
+        },
+    ):
+        net_rows_with_unrun = [*net_rows, unrun_row]
+        monkeypatch.setattr(
+            deck,
+            "read_tsv",
+            lambda p, quoted=True, _rows=net_rows_with_unrun: (
+                list(_rows)
+                if p.name == "pd_condition_taxon_trait_network_condition_trait_tests.tsv"
+                else base_read_tsv(p, quoted)
+            ),
+        )
+        with_unrun = deck.load_rerun_metrics(tmp_path)
+        assert with_unrun["pd_net_total"] == 2
+        u_title, u_takeaway, _ = deck.update_previous_slide_text(dict(net_slide), with_unrun)
+        assert "2-test study-level fecal screen" in u_title
+        assert "nominal p = 1.67e-04, BH q = 0.0561" in u_takeaway
+        assert "In the 2-test fecal study Wilcoxon screen" in deck.cover_wilcoxon_text(with_unrun)
+
+    net_rows_three = [
+        *net_rows,
+        {
+            "condition": "HIV infection",
+            "trait": "coccus shaped",
+            "mean_contrast": "0.050",
+            "paired_study_count": "10",
+            "positive_study_count": "6",
+            "negative_study_count": "4",
+            "p_value": "0.20",
+            "q_value": "0.40",
+        },
+    ]
+    monkeypatch.setattr(
+        deck,
+        "read_tsv",
+        lambda p, quoted=True: (
+            list(net_rows_three)
+            if p.name == "pd_condition_taxon_trait_network_condition_trait_tests.tsv"
+            else base_read_tsv(p, quoted)
+        ),
+    )
+    with_three = deck.load_rerun_metrics(tmp_path)
+    assert with_three["pd_net_total"] == 3
+    t_title, _, _ = deck.update_previous_slide_text(dict(net_slide), with_three)
+    assert "3-test study-level fecal screen" in t_title
+    assert "In the 3-test fecal study Wilcoxon screen" in deck.cover_wilcoxon_text(with_three)
+
+    # When another row has a smaller q_value, halophily is "in" / "has" rather than "leads":
+    not_lead = {**with_three, "pd_net_lead": net_rows_three[1]}
+    nl_title, _, _ = deck.update_previous_slide_text(dict(net_slide), not_lead)
+    assert nl_title == "PD halophily in the 3-test study-level fecal screen (BH q = 0.0561)"
+    assert deck.cover_wilcoxon_text(not_lead).startswith(
+        "In the 3-test fecal study Wilcoxon screen, PD moderately halophilic has ("
+    )
+
+    # Verify build_deck renders cover_wilcoxon_text into selected_figures_v6.html:
+    monkeypatch.setattr(deck, "load_rerun_metrics", lambda _r: dict(loaded))
+    monkeypatch.setattr(
+        deck,
+        "load_cellulose_captions",
+        lambda _r: {"statements": {"overlap": "test overlap", "fragile": ""}},
+    )
+    monkeypatch.setattr(deck, "cellulose_revision", lambda _r: "deadbeef")
+    monkeypatch.setattr(deck, "plate_revision", lambda _r: "deadbeef")
+    monkeypatch.setattr(deck, "extract_committed_figures", lambda _p: None)
+    monkeypatch.setattr(deck, "placed_slides", lambda *_a, **_kw: [])
+    monkeypatch.setattr(deck, "cellulose_decr_slides", lambda *_a, **_kw: [])
+    monkeypatch.setattr(deck, "get_remaining_appendix_slides", lambda *_a, **_kw: [])
+    monkeypatch.setattr(deck, "check_coverage_table_sync", lambda *_a, **_kw: None)
+    monkeypatch.setattr(deck, "REPO_ROOT", tmp_path)
+    (tmp_path / "Justfile").write_text("", encoding="utf-8")
+    plates_prov = tmp_path / deck.PLATES_DIR / "plates_provenance.json"
+    plates_prov.parent.mkdir(parents=True, exist_ok=True)
+    plates_prov.write_text(json.dumps({"counts": metrics["plate_counts"]}), encoding="utf-8")
+    cell_fig_prov = tmp_path / deck.CELLULOSE_DIR / "figures" / "figures_provenance.json"
+    cell_fig_prov.parent.mkdir(parents=True, exist_ok=True)
+    cell_fig_prov.write_text("{}", encoding="utf-8")
+    cell_prov = tmp_path / deck.CELLULOSE_DIR / "cellulose_decr_provenance.json"
+    cell_prov.write_text(
+        json.dumps({"contrast_classifier_version": loaded["contrast_classifier"]}),
+        encoding="utf-8",
+    )
+    prev_slides_dir = tmp_path / deck.DECK_DIR / "slides"
+    prev_slides_dir.mkdir(parents=True, exist_ok=True)
+    for m_name in ("slide_manifest_v1.tsv", "slide_manifest_v2.tsv"):
+        (prev_slides_dir / m_name).write_text(
+            "slide\tfigure_file_path\tdeck_section\tcode_path\n",
+            encoding="utf-8",
+        )
+    prov_src = tmp_path / deck.DECK_DIR / "provenance" / deck.PROVENANCE_NAME
+    prov_src.parent.mkdir(parents=True, exist_ok=True)
+    prov_src.write_text("figures: []\nstatistical_results: []\n", encoding="utf-8")
+    deck.build_deck(
+        tmp_path,
+        tmp_path / "out_slides",
+        tmp_path / "out_prov",
+        trees={},
+        allow_unverified=True,
+    )
+    rendered_html = (tmp_path / "out_slides" / "selected_figures_v6.html").read_text(
+        encoding="utf-8"
+    )
+    assert deck.cover_wilcoxon_text(loaded) in rendered_html
