@@ -54,7 +54,7 @@ def _written_shifts(
     with shift_path.open(encoding="utf-8", newline="") as handle:
         reader = csv.DictReader(handle, delimiter="\t")
         assert reader.fieldnames is not None
-        return reader.fieldnames, {row["trait"]: row for row in reader}
+        return list(reader.fieldnames), {row["trait"]: row for row in reader}
 
 
 @pytest.fixture
