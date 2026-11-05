@@ -5,11 +5,12 @@ from __future__ import annotations
 import importlib.util
 from pathlib import Path
 from types import ModuleType
-from typing import Any
+from typing import Any, SupportsIndex
 
 import pytest
 from markdown_it import MarkdownIt
 
+from mtp import agent_docs
 from mtp.agent_docs import _destination, links_relative_to_github
 
 
@@ -782,3 +783,88 @@ def test_review_definition_continuation_distinguishes_html_blocks_and_angle_dest
 def test_review_unquoted_ordered_item_starts_after_quote_exit(source: str, expected: str) -> None:
     """#1377: a missing quote marker can start a new list, not a lazy paragraph."""
     assert_commonmark_rewrite(source, expected)
+
+
+class MeasuredText(str):
+    """Count copied characters while preserving tracking across string operations."""
+
+    work: dict[str, int]
+
+    def __new__(cls, value: str, work: dict[str, int]) -> MeasuredText:
+        text = super().__new__(cls, value)
+        text.work = work
+        return text
+
+    def __getitem__(self, key: SupportsIndex | slice) -> str:
+        result = super().__getitem__(key)
+        if isinstance(key, slice):
+            self.work["copied"] += len(result)
+            return MeasuredText(result, self.work)
+        return result
+
+    def __add__(self, other: str) -> str:
+        result = super().__add__(other)
+        self.work["copied"] += len(result)
+        return MeasuredText(result, self.work)
+
+    def __radd__(self, other: str) -> str:
+        result = str.__add__(other, self)
+        self.work["copied"] += len(result)
+        return MeasuredText(result, self.work)
+
+
+@pytest.mark.parametrize("count", [64, 128])
+@pytest.mark.parametrize("prefix", ["", "> ", "- "])
+def test_reference_definition_work_is_linear(
+    count: int, prefix: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#1431: count actual parser operations and copies, not wall-clock timings."""
+    source = "".join(f"{prefix}[r{i:04d}]: docs/{i:04d}.md\n" for i in range(count))
+    work = {"line_ends": 0, "copied": 0}
+    original = agent_docs._line_end
+
+    def measured_line_end(*args: Any, **kwargs: Any) -> int:
+        work["line_ends"] += 1
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(agent_docs, "_line_end", measured_line_end)
+    assert links_relative_to_github(MeasuredText(source, work)) == source.replace(
+        ": docs/", ": ../docs/"
+    )
+    assert work["line_ends"] <= 12 * count, work
+    assert work["copied"] <= 20 * len(source), work
+
+
+@pytest.mark.parametrize("count", [64, 128])
+def test_definition_followed_by_long_paragraph_has_linear_copy_work(count: int) -> None:
+    """#1431: a single forward walk must not copy a shrinking suffix at each line."""
+    source = "[r]: docs/r.md\n" + "ordinary text line\n" * count
+    work = {"copied": 0}
+    assert links_relative_to_github(MeasuredText(source, work)) == source.replace(
+        ": docs/", ": ../docs/"
+    )
+    assert work["copied"] <= 20 * len(source), work
+
+
+@pytest.mark.parametrize("newline", ["\n", "\r\n"])
+@pytest.mark.parametrize(
+    "definition",
+    [
+        '[r]: docs/r.md\n  "next-line title"\n',
+        '[r]: docs/r.md "multi\nline title"\n',
+        '[r]: docs/r.md\n  "unfinished title\n',
+        '[r]: docs/r.md\n  "title [literal](docs/literal.md)"\n',
+    ],
+)
+def test_definition_bound_reuse_preserves_titles(definition: str, newline: str) -> None:
+    """#1431: caching cannot truncate valid titles or change an unfinished fallback."""
+    source = ("[first]: docs/first.md\n" + definition + "\n[r]\n").replace("\n", newline)
+    expected = source.replace(": docs/", ": ../docs/")
+    assert_commonmark_rewrite(source, expected)
+
+
+def test_definition_bound_cache_distinguishes_pending_destination() -> None:
+    """A cached continuation cannot bypass a pending destination's container guard."""
+    source = '- [first]: docs/first.md\n  [pending]:\n"outside"\n'
+    expected = source.replace(": docs/first.md", ": ../docs/first.md")
+    assert links_relative_to_github(source) == expected

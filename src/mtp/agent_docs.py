@@ -6,6 +6,8 @@ import re
 
 _NEWLINE = r"(?:\r\n|\n|\r(?!\n))"
 _BLANK_LINE = rf"{_NEWLINE}[ \t]*{_NEWLINE}"
+_LINE_BREAK = re.compile(r"\r\n|\n|\r")
+_BLANK_BREAK = re.compile(_BLANK_LINE)
 _REF_LABEL = r"(\[(?:\\[^\r\n]|[^\\\[\]\r\n])+\]):[ \t]*"
 # CommonMark HTML block types 1-6 can interrupt a definition's paragraph;
 # a generic complete tag (type 7), such as the destination <foo>, cannot.
@@ -62,19 +64,31 @@ def _container_block_text(text: str, quotes: int, columns: list[int]) -> str | N
     return " " * (column - base) + text[index:]
 
 
-def _definition_limit(content: str, start: int, quotes: int, columns: list[int]) -> int:
-    """Bound a definition to lines that can continue its current container."""
+def _definition_limit(
+    content: str,
+    start: int,
+    quotes: int,
+    columns: list[int],
+    cache: dict[tuple[int, int, bool], int],
+) -> int:
+    """Reuse validated continuation bounds within this document/container (#1431)."""
     end = _line_end(content, start)
     needs_destination = not content[start:end].strip()
+    # This restriction applies before any reuse of a previously checked suffix.
+    if quotes and needs_destination:
+        return end
+    container_column = columns[-1] if columns else 0
+    visited: list[tuple[int, int, bool]] = []
     while end < len(content):
+        key = (end, container_column, needs_destination)
+        if key in cache:
+            end = cache[key]
+            break
+        visited.append(key)
         step = 2 if content[end : end + 2] == "\r\n" else 1
         next_start = end + step
         next_end = _line_end(content, next_start)
         text = content[next_start:next_end]
-        # Multi-line quoted definitions require stripping prefixes with an
-        # offset map; keep these outside this rewriter's supported subset.
-        if quotes and needs_destination:
-            break
         index, column = _advance_indent(text, 0, 0)
         rest = text[index:]
         if not rest or (needs_destination and columns and column < columns[-1]):
@@ -88,6 +102,8 @@ def _definition_limit(content: str, start: int, quotes: int, columns: list[int])
             break
         needs_destination = False
         end = next_end
+    for key in visited:
+        cache[key] = end
     return end
 
 
@@ -110,6 +126,7 @@ def _outside_code(content: str, definition_limits: dict[int, int] | None = None)
     quote_depth = 0
     list_cols: list[int] = []
     block_boundaries: set[int] = set()
+    continuation_limits: dict[tuple[int, int, bool], int] = {}
     for line in re.findall(r"[^\r\n]*(?:\r\n|\n|\r)|[^\r\n]+", content):
         text = line.rstrip("\r\n")
         if fence or html_comment:
@@ -241,10 +258,11 @@ def _outside_code(content: str, definition_limits: dict[int, int] | None = None)
             if ref_match:
                 if indent <= 3 and not in_paragraph:
                     dest_start = position + index + ref_match.end()
-                    limit = _definition_limit(content, dest_start, line_quotes, kept_cols)
-                    definition = content[:limit]
-                    dest = _destination(definition, dest_start)
-                    ref_end = _reference_end(definition, dest[2]) if dest is not None else None
+                    limit = _definition_limit(
+                        content, dest_start, line_quotes, kept_cols, continuation_limits
+                    )
+                    dest = _destination(content, dest_start, limit)
+                    ref_end = _reference_end(content, dest[2], limit) if dest is not None else None
                     if ref_end is not None:
                         reference_end_offset = ref_end
                         if definition_limits is not None:
@@ -300,27 +318,29 @@ def _outside_code(content: str, definition_limits: dict[int, int] | None = None)
     return "".join(masked)
 
 
-def _space_end(text: str, position: int) -> int | None:
+def _space_end(text: str, position: int, limit: int | None = None) -> int | None:
+    limit = len(text) if limit is None else limit
     start = position
-    while position < len(text) and text[position] in " \t\r\n":
+    while position < limit and text[position] in " \t\r\n":
         position += 1
-    return None if re.search(_BLANK_LINE, text[start:position]) else position
+    return None if _BLANK_BREAK.search(text, start, position) else position
 
 
-def _destination(text: str, start: int) -> tuple[int, int, int] | None:
+def _destination(text: str, start: int, limit: int | None = None) -> tuple[int, int, int] | None:
     """Return destination bounds and the first following character, preserving <>."""
-    whitespace_end = _space_end(text, start)
+    limit = len(text) if limit is None else limit
+    whitespace_end = _space_end(text, start, limit)
     if whitespace_end is None:
         return None
     start = whitespace_end
-    if start == len(text):
+    if start == limit:
         return None
     angle = text[start] == "<"
     start += int(angle)
     position, depth = start, 0
-    while position < len(text):
+    while position < limit:
         char = text[position]
-        if char == "\\" and position + 1 < len(text):
+        if char == "\\" and position + 1 < limit:
             position += 2
             continue
         if angle:
@@ -342,18 +362,19 @@ def _destination(text: str, start: int) -> tuple[int, int, int] | None:
     return start, position, position
 
 
-def _title_end(text: str, position: int) -> int | None:
-    if position == len(text) or text[position] not in "\"'(":
+def _title_end(text: str, position: int, limit: int | None = None) -> int | None:
+    limit = len(text) if limit is None else limit
+    if position == limit or text[position] not in "\"'(":
         return None
     opening = text[position]
     end = ")" if opening == "(" else opening
     start = position + 1
     position = start
-    while position < len(text) and (text[position] != end or _escaped(text, position)):
+    while position < limit and (text[position] != end or _escaped(text, position)):
         if opening == "(" and text[position] == "(" and not _escaped(text, position):
             return None
         position += 1
-    if position == len(text) or re.search(_BLANK_LINE, text[start:position]):
+    if position == limit or _BLANK_BREAK.search(text, start, position):
         return None
     return position + 1
 
@@ -373,24 +394,26 @@ def _inline_end(text: str, position: int) -> int | None:
     return position + 1 if position < len(text) and text[position] == ")" else None
 
 
-def _line_end(text: str, position: int) -> int:
-    match = re.search(r"\r\n|\n|\r", text[position:])
-    return position + match.start() if match else len(text)
+def _line_end(text: str, position: int, limit: int | None = None) -> int:
+    limit = len(text) if limit is None else limit
+    match = _LINE_BREAK.search(text, position, limit)
+    return match.start() if match else limit
 
 
-def _reference_end(text: str, position: int) -> int | None:
+def _reference_end(text: str, position: int, limit: int | None = None) -> int | None:
     """Validate the rest of a definition; titles may continue on the next line."""
-    line_end = _line_end(text, position)
+    limit = len(text) if limit is None else limit
+    line_end = _line_end(text, position, limit)
     on_next_line = not text[position:line_end].strip()
     if on_next_line:
         step = 2 if text[line_end : line_end + 2] == "\r\n" else 1
-        position = min(line_end + step, len(text))
-    while position < len(text) and text[position] in " \t":
+        position = min(line_end + step, limit)
+    while position < limit and text[position] in " \t":
         position += 1
-    title_end = _title_end(text, position)
+    title_end = _title_end(text, position, limit)
     if title_end is None:
         return line_end if on_next_line else None
-    end = _line_end(text, title_end)
+    end = _line_end(text, title_end, limit)
     if text[title_end:end].strip():
         return line_end if on_next_line else None
     return end
@@ -402,10 +425,10 @@ def _targets(
     targets: list[tuple[int, int]] = []
     masked = list(visible)
     for reference in re.finditer(rf"(?m)^[ \t]*{_REF_LABEL}", visible):
-        definition = content[: definition_limits.get(reference.end(), len(content))]
-        destination = _destination(definition, reference.end())
+        limit = definition_limits.get(reference.end(), len(content))
+        destination = _destination(content, reference.end(), limit)
         if destination is not None:
-            end = _reference_end(definition, destination[2])
+            end = _reference_end(content, destination[2], limit)
             if end is not None:
                 targets.append(destination[:2])
                 # Link-like text inside a definition's title is literal.
@@ -449,15 +472,21 @@ def links_relative_to_github(content: str) -> str:
     fragments/queries remain unchanged. Parent-relative paths gain one parent
     too: this transforms source text once, rather than treating it as idempotent.
     """
-    rewritten = content
+    chunks: list[str] = []
+    cursor = 0
     definition_limits: dict[int, int] = {}
     visible = _outside_code(content, definition_limits)
-    for start, end in sorted(set(_targets(content, visible, definition_limits)), reverse=True):
+    # The reference and inline scans each return targets in source order. Keep
+    # those two runs ordered when deduplicating, then merge them with sorted().
+    targets = sorted(dict.fromkeys(_targets(content, visible, definition_limits)))
+    for start, end in targets:
         target = content[start:end]
         if (
             target
             and not target.startswith(("#", "/", "?"))
             and not re.match(r"[A-Za-z][A-Za-z0-9+.-]*:", target)
         ):
-            rewritten = rewritten[:start] + "../" + target.removeprefix("./") + rewritten[end:]
-    return rewritten
+            chunks.extend((content[cursor:start], "../", target.removeprefix("./")))
+            cursor = end
+    chunks.append(content[cursor:])
+    return "".join(chunks)
