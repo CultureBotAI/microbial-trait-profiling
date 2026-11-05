@@ -92,6 +92,31 @@ def test_cellulose_tables_plots_and_interpretations_label_nominal_p_values(
     assert pd_vs_other["p_value_type"].eq("nominal").all()
     assert pd_vs_other["n_tests"].eq(4).all()
 
+    # When one direction has no PD feces profiles, its 2 tests are not run (n_tests == 2)
+    dec_only_mask = ~(
+        metadata["condition"].eq(cellulose.PD_CONDITION) & metadata["inc_dec"].eq("inc")
+    )
+    pd_vs_other_partial = cellulose.build_pd_vs_other_cellulose_summary(
+        metadata.loc[dec_only_mask].reset_index(drop=True),
+        zscores.loc[dec_only_mask].reset_index(drop=True),
+    )
+    assert pd_vs_other_partial["n_tests"].tolist() == [2, 2, 2, 2]
+    assert pd_vs_other_partial.loc[
+        pd_vs_other_partial["direction"].eq("increased"), "p_value_type"
+    ].tolist() == ["not_tested", "not_tested"]
+    assert (
+        pd_vs_other_partial.loc[
+            pd_vs_other_partial["direction"].eq("increased"),
+            ["pd_vs_other_fisher_p", "pd_vs_other_mannwhitney_p"],
+        ]
+        .isna()
+        .all()
+        .all()
+    )
+    assert pd_vs_other_partial.loc[
+        pd_vs_other_partial["direction"].eq("decreased"), "p_value_type"
+    ].tolist() == ["nominal", "nominal"]
+
     model_table, group_summary = cellulose.build_cellulose_model_tables(metadata, zscores)
     assert model_table["p_value_type"].eq("nominal").all()
     assert model_table["n_model_terms"].eq(3).all()

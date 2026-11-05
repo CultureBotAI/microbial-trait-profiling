@@ -513,8 +513,11 @@ def test_deck_figures_label_uncorrected_p_values_as_nominal_with_test_counts(
     fig1 = figures.pop()
     fig1_title = str(fig1.layout.title.text)
     assert "(* nominal p < 0.05, ** nominal p < 0.01, " in fig1_title
-    assert "*** nominal p < 0.001;" in fig1_title
-    assert "4 nominal tests across 4 x 6 condition-site x trait cells" in fig1_title
+    assert (
+        "*** nominal p < 0.001;<br>4 nominal tests across 4 x 6 condition-site x trait cells)"
+        in fig1_title
+    )
+    assert "24 nominal tests" not in fig1_title
     assert_plotly_figure_text_fits(fig1)
 
     generate_figure3_lead_findings_ora_evidence(

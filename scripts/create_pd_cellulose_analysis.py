@@ -319,14 +319,25 @@ def build_pd_vs_other_cellulose_summary(
 ) -> pd.DataFrame:
     """Compare PD feces to other feces for cellulose z-scores."""
     records: list[dict[str, object]] = []
+    n_tests = 0
     for direction in ["inc", "dec"]:
         feces_mask = metadata["body_site_group"].eq(FECES) & metadata["inc_dec"].eq(direction)
         pd_mask = feces_mask & metadata["condition"].eq(PD_CONDITION)
         other_mask = feces_mask & ~metadata["condition"].eq(PD_CONDITION)
         pd_values = zscores.loc[pd_mask, CELLULOSE_ID]
         other_values = zscores.loc[other_mask, CELLULOSE_ID]
-        odds_ratio, fisher_p = fisher_positive_test(pd_values, other_values)
-        mann_p = stats.mannwhitneyu(pd_values, other_values, alternative="two-sided").pvalue
+        if pd_values.dropna().empty or other_values.dropna().empty:
+            odds_ratio = float("nan")
+            fisher_p = float("nan")
+            mann_p = float("nan")
+            p_value_type = "not_tested"
+        else:
+            odds_ratio, fisher_p = fisher_positive_test(pd_values, other_values)
+            mann_p = float(
+                stats.mannwhitneyu(pd_values, other_values, alternative="two-sided").pvalue
+            )
+            p_value_type = "nominal"
+            n_tests += int(np.isfinite(fisher_p)) + int(np.isfinite(mann_p))
         for group_label, mask, values in [
             ("PD feces", pd_mask, pd_values),
             ("Other feces", other_mask, other_values),
@@ -338,17 +349,18 @@ def build_pd_vs_other_cellulose_summary(
                     "profiles": int(mask.sum()),
                     "studies": int(metadata.loc[mask, "study_id"].nunique()),
                     "positive_z_profiles": int((values > 0).sum()),
-                    "positive_z_rate": float((values > 0).mean()),
-                    "mean_z": float(values.mean()),
-                    "median_z": float(values.median()),
+                    "positive_z_rate": float((values > 0).mean()) if len(values) else float("nan"),
+                    "mean_z": float(values.mean()) if len(values) else float("nan"),
+                    "median_z": float(values.median()) if len(values) else float("nan"),
                     "pd_vs_other_positive_z_odds_ratio": odds_ratio,
                     "pd_vs_other_fisher_p": float(fisher_p),
                     "pd_vs_other_mannwhitney_p": float(mann_p),
-                    "p_value_type": "nominal",
-                    "n_tests": 4,
+                    "p_value_type": p_value_type,
                 }
             )
-    return pd.DataFrame.from_records(records)
+    summary = pd.DataFrame.from_records(records)
+    summary["n_tests"] = n_tests
+    return summary
 
 
 def fit_cluster_ols(
@@ -654,7 +666,9 @@ def plot_direction_specificity(
     dec_pd = pd_vs_other[
         pd_vs_other["direction"].eq("decreased") & pd_vs_other["group"].eq("PD feces")
     ].iloc[0]
-    n_directions = int(pd_vs_other["direction"].nunique())
+    n_directions = int(
+        pd_vs_other.loc[pd_vs_other["p_value_type"].eq("nominal"), "direction"].nunique()
+    )
     ax.text(
         0.98,
         0.05,
@@ -1129,7 +1143,9 @@ def write_interpretations(
     )
     n_outcomes = int(model_table["outcome"].nunique())
     n_model_tests = int(model_table["p_value"].notna().sum())
-    n_directions = int(pd_vs_other["direction"].nunique())
+    n_directions = int(
+        pd_vs_other.loc[pd_vs_other["p_value_type"].eq("nominal"), "direction"].nunique()
+    )
     n_tests_per_direction = 2
     n_direction_tests = int(pd_vs_other["n_tests"].iloc[0])
 

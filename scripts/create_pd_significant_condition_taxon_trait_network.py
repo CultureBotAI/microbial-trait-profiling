@@ -116,10 +116,10 @@ def exact_mcnemar_p_value(increased_only: int, decreased_only: int) -> float:
 
 
 def safe_wilcoxon(values: pd.Series) -> float:
-    """Return a two-sided paired Wilcoxon p-value, including all-zero inputs."""
+    """Return a two-sided paired Wilcoxon p-value, or NaN for empty/all-zero inputs."""
     clean = pd.to_numeric(values, errors="coerce").dropna().to_numpy(dtype=float)
     if len(clean) == 0 or np.allclose(clean, 0.0):
-        return 1.0
+        return float("nan")
     return float(stats.wilcoxon(clean, alternative="two-sided", method="auto").pvalue)
 
 
@@ -267,7 +267,12 @@ def build_condition_taxon_tests(
         both = increased_studies & decreased_studies
         reported = increased_studies | decreased_studies
         passes_support = len(reported) >= MIN_TAXON_STUDIES
-        p_value = exact_mcnemar_p_value(len(increased_only), len(decreased_only))
+        discordant = len(increased_only) + len(decreased_only)
+        p_value = (
+            float("nan")
+            if discordant == 0
+            else exact_mcnemar_p_value(len(increased_only), len(decreased_only))
+        )
         difference = (len(increased_only) - len(decreased_only)) / len(all_studies)
         direction = "increased" if difference > 0 else "decreased" if difference < 0 else "tie"
         records.append(
@@ -284,7 +289,7 @@ def build_condition_taxon_tests(
                 "decreased_only_studies": len(decreased_only),
                 "both_directions_studies": len(both),
                 "neither_direction_studies": len(all_studies - reported),
-                "discordant_study_count": len(increased_only) + len(decreased_only),
+                "discordant_study_count": discordant,
                 "directional_difference_fraction": difference,
                 "direction": direction,
                 "p_value": p_value,
@@ -295,7 +300,7 @@ def build_condition_taxon_tests(
     tests = pd.DataFrame.from_records(records)
     if tests.empty:
         raise ValueError("No annotated genus/species taxa occur in eligible fecal conditions")
-    tests["p_value_type"] = "nominal"
+    tests["p_value_type"] = np.where(tests["p_value"].notna(), "nominal", "not_tested")
     tests["q_value"] = np.nan
     support = tests["passes_min_taxon_studies"].astype(bool)
     tests["n_tests"] = int(tests["p_value"].notna().sum())
@@ -392,7 +397,7 @@ def build_condition_trait_tests(
     tests = pd.DataFrame.from_records(records)
     if tests.empty:
         raise ValueError("No eligible paired fecal condition-trait contrasts")
-    tests["p_value_type"] = "nominal"
+    tests["p_value_type"] = np.where(tests["p_value"].notna(), "nominal", "not_tested")
     tests["passes_min_paired_studies"] = tests["paired_study_count"].ge(MIN_PAIRED_STUDIES)
     tests["q_value"] = np.nan
     support = tests["passes_min_paired_studies"].astype(bool)
@@ -1543,9 +1548,15 @@ def write_methods_summary(
     """Write a compact interpretation and methods companion for the evidence figure."""
     eligible_count = int(eligibility["passes_min_paired_studies"].sum())
     displayed_count = int(eligibility["displayed_in_network"].sum())
-    eligible_taxon_test_count = int(taxon_tests["passes_min_taxon_studies"].sum())
-    eligible_trait_test_count = int(trait_tests["passes_min_paired_studies"].sum())
-    pd_trait_test_count = int(trait_tests["condition"].eq(PD_CONDITION).sum())
+    eligible_taxon_test_count = int(
+        (taxon_tests["passes_min_taxon_studies"] & taxon_tests["p_value"].notna()).sum()
+    )
+    eligible_trait_test_count = int(
+        (trait_tests["passes_min_paired_studies"] & trait_tests["p_value"].notna()).sum()
+    )
+    pd_trait_test_count = int(
+        (trait_tests["condition"].eq(PD_CONDITION) & trait_tests["p_value"].notna()).sum()
+    )
     selected_taxa = taxon_tests[taxon_tests["selected_after_bh"]]
     selected_traits = trait_tests[trait_tests["selected_after_bh"]]
     exploratory_taxa = taxon_tests[
