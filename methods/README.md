@@ -35,6 +35,12 @@ and defines the shared corpus, paired quantities and evidence levels required
 before choosing comparison thresholds or ranking scores. It also explains why
 the native p-values are not on comparable scales.
 
+[`multiple_testing_policy.md`](multiple_testing_policy.md) is the project-wide
+multiple-testing policy: every reported q names its family, size and procedure, every
+uncorrected p is labelled nominal, and every correction family is registered in
+[`multiple_testing_families.yaml`](multiple_testing_families.yaml), which a test keeps
+in step with the code.
+
 [`multiple_testing.md`](multiple_testing.md) documents the additive full-family
 BY/BH policy, explicit hypothesis inventories and v1.1 scientific coordinates,
 reserved untestable members, and provenance replay. It leaves native arm calls
