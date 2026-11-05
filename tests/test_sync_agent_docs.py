@@ -39,7 +39,7 @@ def test_copilot_links_are_relative_to_github_directory() -> None:
         ("![figure](images/a.svg)", "![figure](../images/a.svg)"),
         ("[`guide.md`](docs/a.md)", "[`guide.md`](../docs/a.md)"),
         ("[nested [label]](docs/a.md)", "[nested [label]](../docs/a.md)"),
-        ("[guide][ref]\n[ref]: docs/a.md#scope\n", "[guide][ref]\n[ref]: ../docs/a.md#scope\n"),
+        ("[guide][ref]\n\n[ref]: docs/a.md#scope\n", "[guide][ref]\n\n[ref]: ../docs/a.md#scope\n"),
         (
             '[ref]: <docs/a guide.md> "Title"\n[ref][]',
             '[ref]: <../docs/a guide.md> "Title"\n[ref][]',
@@ -56,8 +56,8 @@ def test_copilot_links_are_relative_to_github_directory() -> None:
             '[ref]: ../docs/a.md\n  "[literal](docs/title.md)"\n[ref]',
         ),
         (
-            "[a](docs/a.md)\r\n[b]: methods/b.md\r\n",
-            "[a](../docs/a.md)\r\n[b]: ../methods/b.md\r\n",
+            "[a](docs/a.md)\r\n\r\n[b]: methods/b.md\r\n",
+            "[a](../docs/a.md)\r\n\r\n[b]: ../methods/b.md\r\n",
         ),
         (r"[guide](docs/a\)b.md)", r"[guide](../docs/a\)b.md)"),
         (r"[guide](<docs/a\>b.md>)", r"[guide](<../docs/a\>b.md>)"),
@@ -117,7 +117,7 @@ def test_markdown_destination_forms_preserve_other_bytes(source: str, expected: 
         "    [literal](docs/a.md)\n\t[also literal](docs/b.md)\n",
         "    [ref]:\n    [literal](docs/a.md)\n",
         "[prev]:\n    [ref]: docs/a.md\n",
-        "    - x\n2. `code\n3. [literal](docs/a.md)\nend`",
+        "para\n    - x\n2. `code\n3. [literal](docs/a.md)\nend`",
         "1234567890. `code\n2. [literal](docs/a.md)\nend`",
         r"\[literal](docs/a.md)",
         r"[literal\](docs/a.md)",
@@ -339,6 +339,162 @@ def test_reference_destination_cannot_cross_a_blank_paragraph(paragraph: str) ->
     assert links_relative_to_github(source) == source
 
 
+@pytest.mark.parametrize(
+    "source",
+    [
+        "- item\n    - [guide](docs/a.md)\n",
+        "- item\n\t- [guide](docs/a.md)\n",
+        "Paragraph\n    [guide](docs/a.md)\n",
+        "Paragraph\n\t[guide](docs/a.md)\n",
+        "1.  item\n\n    [guide](docs/a.md)\n",
+        "1.\titem\n\n\t[guide](docs/a.md)\n",
+        "    - x\n2. `code\n3. [guide](docs/a.md)\nend`",
+    ],
+    ids=[
+        "nested-list-4-spaces",
+        "nested-list-tab",
+        "lazy-continuation-4-spaces",
+        "lazy-continuation-tab",
+        "item-paragraph-4-spaces",
+        "item-paragraph-tab",
+        "list-after-indented-code",
+    ],
+)
+def test_indented_nested_lists_lazy_continuations_and_item_paragraphs_rebase_links(
+    source: str,
+) -> None:
+    """#1282: 4-space or tab indentation in list items and lazy continuations is not code."""
+    expected = source.replace("(docs/a.md)", "(../docs/a.md)")
+    assert links_relative_to_github(source) == expected
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        ("> [ref]: docs/a.md\n> [ref]\n", "> [ref]: ../docs/a.md\n> [ref]\n"),
+        ("- [ref]: docs/a.md\n  [ref]\n", "- [ref]: ../docs/a.md\n  [ref]\n"),
+        (
+            r"[a\]b]: docs/a.md" + "\n" + r"[a\]b]" + "\n",
+            r"[a\]b]: ../docs/a.md" + "\n" + r"[a\]b]" + "\n",
+        ),
+    ],
+    ids=["blockquote-ref", "list-item-ref", "escaped-bracket-label"],
+)
+def test_reference_definitions_in_containers_and_with_escaped_brackets_rebase_links(
+    source: str, expected: str
+) -> None:
+    """#1282: reference definitions inside > or - containers and \\[ / \\] labels rebase."""
+    assert links_relative_to_github(source) == expected
+
+
+@pytest.mark.parametrize(
+    "separator",
+    ["\u2028", "\x0c", "\x85"],
+    ids=["line-separator-u2028", "form-feed-x0c", "nel-x85"],
+)
+def test_non_commonmark_line_separators_before_fence_markers_do_not_hide_links(
+    separator: str,
+) -> None:
+    """#1282: CommonMark does not split lines on U+2028, form feed, or NEL."""
+    source = f"text{separator}```\n[guide](docs/a.md)\n"
+    expected = source.replace("(docs/a.md)", "(../docs/a.md)")
+    assert links_relative_to_github(source) == expected
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "Paragraph\n[ref]: docs/a.md\n[ref]\n",
+        "> Paragraph\n> [ref]: docs/a.md\n> [ref]\n",
+        "- Paragraph\n  [ref]: docs/a.md\n  [ref]\n",
+    ],
+    ids=["top-level-paragraph", "blockquote-paragraph", "list-item-paragraph"],
+)
+def test_reference_like_line_interrupting_paragraph_is_unchanged(source: str) -> None:
+    """#1282: a reference definition cannot interrupt a paragraph."""
+    assert links_relative_to_github(source) == source
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        ("[[inner](docs/b.md)](docs/a.md)", "[[inner](../docs/b.md)](docs/a.md)"),
+        (
+            "[outer [inner](docs/b.md) text](docs/a.md)",
+            "[outer [inner](../docs/b.md) text](docs/a.md)",
+        ),
+        ("[![alt](images/b.svg)](docs/a.md)", "[![alt](../images/b.svg)](../docs/a.md)"),
+        ("![[inner](docs/b.md)](images/a.svg)", "![[inner](../docs/b.md)](../images/a.svg)"),
+    ],
+    ids=["nested-link", "outer-text-nested-link", "image-in-link", "link-in-image"],
+)
+def test_nested_link_rebases_only_inner_target_while_preserving_image_combinations(
+    source: str, expected: str
+) -> None:
+    """#1282: CommonMark forbids links inside links; outer (a) is literal text."""
+    assert links_relative_to_github(source) == expected
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "<!-- [literal](docs/a.md) -->\n",
+        "<!--\n[literal](docs/a.md)\n[ref]: docs/b.md\n-->\n",
+        "Paragraph <!-- [literal](docs/a.md) --> text\n",
+    ],
+    ids=["single-line-block-comment", "multiline-block-comment", "inline-comment"],
+)
+def test_html_comments_are_unchanged(source: str) -> None:
+    """#1282: links inside HTML comments are not rebased."""
+    assert links_relative_to_github(source) == source
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        ("[guide](docs/a.md (title (nested)))\n", "[guide](docs/a.md (title (nested)))\n"),
+        ("[ref]: docs/a.md (title (nested)\n[ref]\n", "[ref]: docs/a.md (title (nested)\n[ref]\n"),
+        (
+            r"[guide](docs/a.md (title \(escaped\)))",
+            r"[guide](../docs/a.md (title \(escaped\)))",
+        ),
+    ],
+    ids=["inline-nested-parens", "reference-nested-parens", "inline-escaped-parens"],
+)
+def test_parenthesised_titles_reject_unescaped_nested_parentheses(
+    source: str, expected: str
+) -> None:
+    """#1282: unescaped parentheses inside (...) link titles are invalid in CommonMark."""
+    assert links_relative_to_github(source) == expected
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        ("[invalid](\r\r docs/a.md)", "[invalid](\r\r docs/a.md)"),
+        ("[invalid](docs/a.md\r\r)", "[invalid](docs/a.md\r\r)"),
+        ('[invalid](docs/a.md "title"\r\r)', '[invalid](docs/a.md "title"\r\r)'),
+        ("[ref]:\r\r  docs/a.md\n[ref]\n", "[ref]:\r\r  docs/a.md\n[ref]\n"),
+        (
+            "`unclosed\r\r[guide](docs/a.md)\r\r`later`",
+            "`unclosed\r\r[guide](../docs/a.md)\r\r`later`",
+        ),
+    ],
+    ids=[
+        "inline-before-dest-cr-blank",
+        "inline-after-dest-cr-blank",
+        "inline-after-title-cr-blank",
+        "ref-dest-cr-blank",
+        "code-span-cr-blank",
+    ],
+)
+def test_cr_only_blank_lines_break_paragraphs_and_reject_multiline_destinations(
+    source: str, expected: str
+) -> None:
+    """#1282: blank lines ending in CR only are paragraph breaks in CommonMark."""
+    assert links_relative_to_github(source) == expected
+
+
 def load_sync_script() -> ModuleType:
     path = Path(__file__).resolve().parents[1] / "scripts" / "sync_agent_docs.py"
     spec = importlib.util.spec_from_file_location("sync_agent_docs_test", path)
@@ -362,7 +518,7 @@ def test_sync_entrypoint_rebases_links_and_preserves_source(
 ) -> None:
     source = tmp_path / "AGENTS.md"
     output = tmp_path / "copilot-instructions.md"
-    raw = "[guide](<methods/guide.md>)\n`[example](docs/example.md)`\n[ref]: docs/ref.md\n"
+    raw = "[guide](<methods/guide.md>)\n`[example](docs/example.md)`\n\n[ref]: docs/ref.md\n"
     source.write_text(raw, encoding="utf-8")
     module = load_sync_script()
     monkeypatch.setattr(module, "AGENTS_MD", source)
@@ -370,7 +526,7 @@ def test_sync_entrypoint_rebases_links_and_preserves_source(
     module.main()
     assert output.read_text(encoding="utf-8") == (
         module.COPILOT_HEADER
-        + "[guide](<../methods/guide.md>)\n`[example](docs/example.md)`\n[ref]: ../docs/ref.md\n"
+        + "[guide](<../methods/guide.md>)\n`[example](docs/example.md)`\n\n[ref]: ../docs/ref.md\n"
         + module.PROJECT_CONVENTIONS
     )
     assert source.read_text(encoding="utf-8") == raw
