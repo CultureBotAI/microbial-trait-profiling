@@ -7,6 +7,17 @@ import re
 _NEWLINE = r"(?:\r\n|\n|\r(?!\n))"
 _BLANK_LINE = rf"{_NEWLINE}[ \t]*{_NEWLINE}"
 _REF_LABEL = r"(\[(?:\\[^\r\n]|[^\\\[\]\r\n])+\]):[ \t]*"
+# CommonMark HTML block types 1-6 can interrupt a definition's paragraph;
+# a generic complete tag (type 7), such as the destination <foo>, cannot.
+_HTML_BLOCK_START = re.compile(
+    r"<(?:!--|\?|![A-Z]|!\[CDATA\[)"
+    r"|<(?i:script|pre|style|textarea)(?=\s|>|$)"
+    r"|</?(?i:address|article|aside|base|basefont|blockquote|body|caption|center|col|colgroup"
+    r"|dd|details|dialog|dir|div|dl|dt|fieldset|figcaption|figure|footer|form|frame|frameset"
+    r"|h1|h2|h3|h4|h5|h6|head|header|hr|html|iframe|legend|li|link|main|menu|menuitem|nav"
+    r"|noframes|ol|optgroup|option|p|param|search|section|summary|table|tbody|td|tfoot|th|thead"
+    r"|title|tr|track|ul)(?=\s|/?>|$)"
+)
 
 
 def _escaped(text: str, position: int) -> bool:
@@ -28,7 +39,59 @@ def _advance_indent(text: str, index: int, column: int) -> tuple[int, int]:
     return index, column
 
 
-def _outside_code(content: str) -> str:
+def _container_block_text(text: str, quotes: int, columns: list[int]) -> str | None:
+    """Return a fence/comment line relative to its opening container, or its end."""
+    index, column = _advance_indent(text, 0, 0)
+    base = 0
+    for _ in range(quotes):
+        if column - base > 3 or index == len(text) or text[index] != ">":
+            return None
+        index += 1
+        column += 1
+        if index < len(text) and text[index] in " \t":
+            column += 1 if text[index] == " " else 4 - column % 4
+            index += 1
+        base = column
+        index, column = _advance_indent(text, index, column)
+    if index == len(text):
+        return ""
+    if columns:
+        base += columns[-1]
+        if column < base:
+            return None
+    return " " * (column - base) + text[index:]
+
+
+def _definition_limit(content: str, start: int, quotes: int, columns: list[int]) -> int:
+    """Bound a definition to lines that can continue its current container."""
+    end = _line_end(content, start)
+    needs_destination = not content[start:end].strip()
+    while end < len(content):
+        step = 2 if content[end : end + 2] == "\r\n" else 1
+        next_start = end + step
+        next_end = _line_end(content, next_start)
+        text = content[next_start:next_end]
+        # Multi-line quoted definitions require stripping prefixes with an
+        # offset map; keep these outside this rewriter's supported subset.
+        if quotes and needs_destination:
+            break
+        index, column = _advance_indent(text, 0, 0)
+        rest = text[index:]
+        if not rest or (needs_destination and columns and column < columns[-1]):
+            break
+        if column - (columns[-1] if columns else 0) <= 3 and (
+            re.match(r"(?:`{3,}|~{3,}|#{1,6}(?:[ \t]|$)|>)", rest)
+            or _HTML_BLOCK_START.match(rest)
+            or re.match(r"(?:[-+*]|[0-9]{1,9}[.)])(?:[ \t]|$)", rest)
+            or re.fullmatch(r"(?:(?:\*[ \t]*){3,}|(?:-[ \t]*){3,}|(?:_[ \t]*){3,})", rest)
+        ):
+            break
+        needs_destination = False
+        end = next_end
+    return end
+
+
+def _outside_code(content: str, definition_limits: dict[int, int] | None = None) -> str:
     """Mask code without changing offsets, line endings, or the eventual output."""
     masked = list(content)
 
@@ -39,6 +102,8 @@ def _outside_code(content: str) -> str:
 
     fence = ""
     html_comment = False
+    block_quotes = 0
+    block_cols: list[int] = []
     position = 0
     reference_end_offset = 0
     in_paragraph = False
@@ -47,20 +112,22 @@ def _outside_code(content: str) -> str:
     block_boundaries: set[int] = set()
     for line in re.findall(r"[^\r\n]*(?:\r\n|\n|\r)|[^\r\n]+", content):
         text = line.rstrip("\r\n")
-        if fence:
-            hide(position, position + len(line))
-            if re.fullmatch(
-                r" {0,3}" + re.escape(fence[0]) + "{" + str(len(fence)) + r",}[ \t]*",
-                text,
-            ):
-                fence = ""
-            position += len(line)
-            continue
-        if html_comment:
-            hide(position, position + len(line))
-            html_comment = "-->" not in text
-            position += len(line)
-            continue
+        if fence or html_comment:
+            block_text = _container_block_text(text, block_quotes, block_cols)
+            if block_text is not None:
+                hide(position, position + len(line))
+                if fence and re.fullmatch(
+                    r" {0,3}" + re.escape(fence[0]) + "{" + str(len(fence)) + r",}[ \t]*",
+                    block_text,
+                ):
+                    fence = ""
+                if html_comment:
+                    html_comment = "-->" not in block_text
+                position += len(line)
+                continue
+            fence = ""
+            html_comment = False
+            block_boundaries.add(position)
         index, column = _advance_indent(text, 0, 0)
         base_col = 0
         line_quotes = 0
@@ -76,13 +143,15 @@ def _outside_code(content: str) -> str:
                 index += 1
             base_col = column
             index, column = _advance_indent(text, index, column)
-        if line_quotes != quote_depth:
+        quote_base_col = base_col
+        lazy_quote = in_paragraph and line_quotes < quote_depth
+        if line_quotes != quote_depth and (line_quotes > quote_depth or not in_paragraph):
             list_cols = []
         kept_cols = (
             [col for col in list_cols if col <= column] if index < len(text) else list(list_cols)
         )
         dedented = len(kept_cols) < len(list_cols)
-        if kept_cols:
+        if kept_cols and not lazy_quote:
             base_col = kept_cols[-1]
         if line_quotes > quote_depth:
             block_boundaries.add(position)
@@ -108,6 +177,8 @@ def _outside_code(content: str) -> str:
                 block_boundaries.add(position)
                 in_paragraph = False
                 container_paragraph = False
+                if lazy_quote:
+                    kept_cols = []
                 list_cols = kept_cols
                 marker_end = index + len(item[1])
                 marker_col = column + len(item[1])
@@ -141,6 +212,8 @@ def _outside_code(content: str) -> str:
             fence = marker[1]
             in_paragraph = False
             list_cols = kept_cols
+            block_quotes = line_quotes
+            block_cols = [col - quote_base_col for col in kept_cols]
             hide(position, position + len(line))
         elif comment_start:
             block_boundaries.add(position)
@@ -148,6 +221,8 @@ def _outside_code(content: str) -> str:
             list_cols = kept_cols
             hide(position, position + len(line))
             html_comment = "-->" not in rest
+            block_quotes = line_quotes
+            block_cols = [col - quote_base_col for col in kept_cols]
         elif heading or thematic or setext:
             block_boundaries.add(position)
             in_paragraph = False
@@ -165,10 +240,15 @@ def _outside_code(content: str) -> str:
             ref_match = re.match(_REF_LABEL, rest)
             if ref_match:
                 if indent <= 3 and not in_paragraph:
-                    dest = _destination(content, position + index + ref_match.end())
-                    ref_end = _reference_end(content, dest[2]) if dest is not None else None
+                    dest_start = position + index + ref_match.end()
+                    limit = _definition_limit(content, dest_start, line_quotes, kept_cols)
+                    definition = content[:limit]
+                    dest = _destination(definition, dest_start)
+                    ref_end = _reference_end(definition, dest[2]) if dest is not None else None
                     if ref_end is not None:
                         reference_end_offset = ref_end
+                        if definition_limits is not None:
+                            definition_limits[dest_start] = limit
                         list_cols = kept_cols
                     else:
                         masked[position + index + ref_match.end(1)] = " "
@@ -180,7 +260,8 @@ def _outside_code(content: str) -> str:
                 in_paragraph = True
             if not was_in_paragraph or not dedented:
                 list_cols = kept_cols
-        quote_depth = line_quotes
+        if not (was_in_paragraph and in_paragraph and not had_item and line_quotes < quote_depth):
+            quote_depth = line_quotes
         position += len(line)
     code = "".join(masked)
     tokens = list(re.finditer(r"`+|<!--", code))
@@ -315,13 +396,16 @@ def _reference_end(text: str, position: int) -> int | None:
     return end
 
 
-def _targets(content: str, visible: str) -> list[tuple[int, int]]:
+def _targets(
+    content: str, visible: str, definition_limits: dict[int, int]
+) -> list[tuple[int, int]]:
     targets: list[tuple[int, int]] = []
     masked = list(visible)
     for reference in re.finditer(rf"(?m)^[ \t]*{_REF_LABEL}", visible):
-        destination = _destination(content, reference.end())
+        definition = content[: definition_limits.get(reference.end(), len(content))]
+        destination = _destination(definition, reference.end())
         if destination is not None:
-            end = _reference_end(content, destination[2])
+            end = _reference_end(definition, destination[2])
             if end is not None:
                 targets.append(destination[:2])
                 # Link-like text inside a definition's title is literal.
@@ -366,7 +450,9 @@ def links_relative_to_github(content: str) -> str:
     too: this transforms source text once, rather than treating it as idempotent.
     """
     rewritten = content
-    for start, end in sorted(set(_targets(content, _outside_code(content))), reverse=True):
+    definition_limits: dict[int, int] = {}
+    visible = _outside_code(content, definition_limits)
+    for start, end in sorted(set(_targets(content, visible, definition_limits)), reverse=True):
         target = content[start:end]
         if (
             target

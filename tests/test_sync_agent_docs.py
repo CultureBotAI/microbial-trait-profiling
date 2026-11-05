@@ -5,8 +5,10 @@ from __future__ import annotations
 import importlib.util
 from pathlib import Path
 from types import ModuleType
+from typing import Any
 
 import pytest
+from markdown_it import MarkdownIt
 
 from mtp.agent_docs import _destination, links_relative_to_github
 
@@ -530,3 +532,253 @@ def test_sync_entrypoint_rebases_links_and_preserves_source(
         + module.PROJECT_CONVENTIONS
     )
     assert source.read_text(encoding="utf-8") == raw
+
+
+def commonmark_targets(source: str) -> tuple[list[str], list[str]]:
+    """Collect rendered links and definitions independently of the rewriter."""
+    environment: dict[str, Any] = {}
+    tokens = MarkdownIt("commonmark").parse(source, environment)
+    links: list[str] = []
+    for token in tokens:
+        for child in token.children or []:
+            if child.type == "link_open":
+                target = child.attrGet("href")
+                assert isinstance(target, str)
+                links.append(target)
+    definitions = sorted(
+        reference["href"] for reference in environment.get("references", {}).values()
+    )
+    return links, definitions
+
+
+def assert_commonmark_rewrite(source: str, expected: str) -> None:
+    """Pin literal output and independently confirm each intended destination."""
+    original_links, original_definitions = commonmark_targets(source)
+    assert commonmark_targets(expected) == (
+        ["../" + target for target in original_links],
+        ["../" + target for target in original_definitions],
+    )
+    assert links_relative_to_github(source) == expected
+
+
+@pytest.mark.parametrize(
+    ("source", "target"),
+    [
+        ("> ```\n> code\n> ```\n\nSee [y](docs/b.md).\n", "docs/b.md"),
+        (
+            "> Example:\n>\n> ```bash\n> just check\n> ```\n\n## Next\n\nSee [y](docs/b.md).\n",
+            "docs/b.md",
+        ),
+        ("- a\n  - b\n    ```bash\n    code\n    ```\n- [y](docs/b.md)\n", "docs/b.md"),
+        (
+            "1. Run:\n\n    ```bash\n    just check\n    ```\n\n2. Read [guide](docs/guide.md).\n",
+            "docs/guide.md",
+        ),
+        ("> - item\n>   ```\n>   [x](docs/a.md)\n>   ```\n> [y](docs/b.md)\n", "docs/b.md"),
+    ],
+    ids=["quoted", "quoted-shell-example", "nested-list", "ordered-list", "quoted-list"],
+)
+def test_review_container_fences_close_before_following_links(source: str, target: str) -> None:
+    """#1373: opening and closing fences use the same container coordinates."""
+    assert_commonmark_rewrite(source, source.replace(f"({target})", f"(../{target})"))
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        (
+            "> <!-- note\n\nSee [guide](docs/guide.md).\n",
+            "> <!-- note\n\nSee [guide](../docs/guide.md).\n",
+        ),
+        (
+            "> ```\n\nSee [guide](docs/guide.md).\n",
+            "> ```\n\nSee [guide](../docs/guide.md).\n",
+        ),
+        ("- <!--\n[a](docs/a.md)\n", "- <!--\n[a](../docs/a.md)\n"),
+        ("- ```\n[a](docs/a.md)\n", "- ```\n[a](../docs/a.md)\n"),
+        ("- ```\n  code\n```\n[x](docs/a.md)\n", "- ```\n  code\n```\n[x](docs/a.md)\n"),
+        (
+            "- ```\n\n  [literal](docs/a.md)\n  ```\n\n[guide](docs/b.md)\n",
+            "- ```\n\n  [literal](docs/a.md)\n  ```\n\n[guide](../docs/b.md)\n",
+        ),
+    ],
+    ids=[
+        "quote-comment-ends",
+        "quote-fence-ends",
+        "item-comment-ends",
+        "item-fence-ends",
+        "dedented-fence-opens-new-block",
+        "blank-preserves-item-fence",
+    ],
+)
+def test_review_fences_and_comments_end_with_their_container(source: str, expected: str) -> None:
+    """#1374: container exit ends its block, but list-item blank lines do not."""
+    assert_commonmark_rewrite(source, expected)
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        (
+            "- [Required]:\n```bash\n[x](docs/a.md)\n```\n",
+            "- [Required]:\n```bash\n[x](docs/a.md)\n```\n",
+        ),
+        ("> [Note]:\n>\n> [x](docs/a.md)\n", "> [Note]:\n>\n> [x](../docs/a.md)\n"),
+        ("- [Note]:\n---\n", "- [Note]:\n---\n"),
+        (
+            "- [Note]:\n# Heading\n\n[x](docs/a.md)\n",
+            "- [Note]:\n# Heading\n\n[x](../docs/a.md)\n",
+        ),
+        (
+            "- [Note]:\n<!-- comment -->\n\n[x](docs/a.md)\n",
+            "- [Note]:\n<!-- comment -->\n\n[x](../docs/a.md)\n",
+        ),
+    ],
+    ids=["fence", "empty-quote-line", "thematic-break", "heading", "html-comment"],
+)
+def test_review_reference_destination_cannot_consume_another_block(
+    source: str, expected: str
+) -> None:
+    """#1375: a new block cannot supply an incomplete definition's destination."""
+    assert_commonmark_rewrite(source, expected)
+
+
+def test_review_lazy_quote_continuation_preserves_paragraph_state() -> None:
+    """#1377: an explicit > after a lazy line continues the same paragraph."""
+    source = "> Para\nlazy\n> [r]: docs/a.md\n> [r]\n"
+    assert commonmark_targets(source) == ([], [])
+    assert_commonmark_rewrite(source, source)
+
+
+@pytest.mark.parametrize("spaces", [5, 6, 8])
+def test_review_five_or_more_spaces_after_list_marker_are_indented_code(spaces: int) -> None:
+    """#1378: pin the item-5plus-spaces-rule-dropped mutation."""
+    source = "-" + " " * spaces + "[x](docs/a.md)\n"
+    assert commonmark_targets(source) == ([], [])
+    assert_commonmark_rewrite(source, source)
+
+
+def test_review_entering_quote_starts_a_new_reference_paragraph() -> None:
+    """#1378: pin the bq-entry-no-paragraph-reset mutation."""
+    source = "Text\n> [r]: docs/a.md\n\n[r]\n"
+    expected = "Text\n> [r]: ../docs/a.md\n\n[r]\n"
+    assert commonmark_targets(source) == (["docs/a.md"], ["docs/a.md"])
+    assert_commonmark_rewrite(source, expected)
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        ("   >\t[](d)", "   >\t[](../d)"),
+        ("0) x\n)\n0) [r]:d", "0) x\n)\n0) [r]:../d"),
+        ("  -\n\t[](>)", "  -\n\t[](../>)"),
+    ],
+    ids=["quote-tab-content", "list-after-lazy-line", "empty-list-item-content-column"],
+)
+def test_review_surviving_mutant_witnesses_preserve_commonmark(source: str, expected: str) -> None:
+    """#1378: pin reviewer minima where the existing branch matches CommonMark."""
+    assert_commonmark_rewrite(source, expected)
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        (">\n`\n>`[](d)`", ">\n`\n>`[](d)`"),
+        (">\r`\n>[](d)`", ">\r`\n>[](../d)`"),
+        ("-\tx\n>     [b]:d", "-\tx\n>     [b]:d"),
+    ],
+    ids=["new-quote-code-span", "new-quote-link", "new-quote-drops-list-indent"],
+)
+def test_review_quote_state_reentry_after_container_exit(source: str, expected: str) -> None:
+    """#1377: only an actual lazy paragraph retains old container state."""
+    assert_commonmark_rewrite(source, expected)
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        (
+            "   > - ```\n>   [literal](d)\n>   ```\n> [x](e)\n",
+            "   > - ```\n>   [literal](d)\n>   ```\n> [x](../e)\n",
+        ),
+        (
+            "   > - <!--\n>   [literal](d)\n>   -->\n> [x](e)\n",
+            "   > - <!--\n>   [literal](d)\n>   -->\n> [x](../e)\n",
+        ),
+        ("- [r]:\n  <div>\n\n[r]\n", "- [r]:\n  <div>\n\n[r]\n"),
+        (
+            "- [r]: d\n  'title\noutside [x](e)'\n\n[r]\n",
+            "- [r]: ../d\n  'title\noutside [x](e)'\n\n[r]\n",
+        ),
+        ("> [r]: d\n'[x](e)'\n[r]\n", "> [r]: ../d\n'[x](e)'\n[r]\n"),
+        (
+            "  <docs/auto.md>\n  >  `\r1. `\n >\ttext [b](docs/b.md) `x\n"
+            "> [r]: docs/r.md 'title'\n",
+            "  <docs/auto.md>\n  >  `\r1. `\n >\ttext [b](../docs/b.md) `x\n"
+            "> [r]: docs/r.md 'title'\n",
+        ),
+        (">- '\n    ~~~\n \t[](d)", ">- '\n    ~~~\n \t[](../d)"),
+        (">- )\n    1. [r]:'", ">- )\n    1. [r]:'"),
+    ],
+    ids=[
+        "fence-variable-quote-prefix-indent",
+        "comment-variable-quote-prefix-indent",
+        "definition-destination-html-block",
+        "list-reference-title-lazy-continuation",
+        "quote-reference-title-lazy-continuation",
+        "unquoted-list-ends-old-quote",
+        "lazy-quote-line-is-not-fence",
+        "lazy-quote-line-is-not-list-reference",
+    ],
+)
+def test_review_container_coordinates_and_valid_definition_titles(
+    source: str, expected: str
+) -> None:
+    """#1373-#1377: preserve actual containers and valid lazy reference titles."""
+    assert_commonmark_rewrite(source, expected)
+
+
+@pytest.mark.parametrize(
+    ("destination", "expected_destination"),
+    [
+        ("<script>", "<script>"),
+        ("<DIV>", "<DIV>"),
+        ("<?pi?>", "<?pi?>"),
+        ("<![CDATA[x]]>", "<![CDATA[x]]>"),
+        ("<!DOCTYPE html>", "<!DOCTYPE html>"),
+        ("<foo>", "<../foo>"),
+        ("<docs/a>", "<../docs/a>"),
+        ("<docs/a guide.md>", "<../docs/a guide.md>"),
+    ],
+    ids=[
+        "script-html-block",
+        "uppercase-div-html-block",
+        "processing-instruction-block",
+        "cdata-block",
+        "doctype-block",
+        "generic-tag-angle-destination",
+        "path-angle-destination",
+        "spaced-path-angle-destination",
+    ],
+)
+def test_review_definition_continuation_distinguishes_html_blocks_and_angle_destinations(
+    destination: str, expected_destination: str
+) -> None:
+    """#1375: only paragraph-interrupting HTML blocks forbid a destination."""
+    source = f"- [r]:\n  {destination}\n\n[r]\n"
+    expected = f"- [r]:\n  {expected_destination}\n\n[r]\n"
+    assert_commonmark_rewrite(source, expected)
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        (">`\n2. `[](d)`", ">`\n2. `[](d)`"),
+        (">`\n2. [](d)`", ">`\n2. [](../d)`"),
+        (">)\n  1.\n    [](d)", ">)\n  1.\n    [](d)"),
+    ],
+    ids=["non-one-ordered-code-span", "non-one-ordered-link", "empty-ordered-item-code"],
+)
+def test_review_unquoted_ordered_item_starts_after_quote_exit(source: str, expected: str) -> None:
+    """#1377: a missing quote marker can start a new list, not a lazy paragraph."""
+    assert_commonmark_rewrite(source, expected)
