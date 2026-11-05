@@ -49,7 +49,7 @@ STANDARD_ANALYSIS_SPECS: dict[str, AnalysisSpec] = {
         sampling_unit="study",
         weighting="equal_study_weight",
         eligibility_rule="paired_human_16S_WMS_positive_numerator_and_denominator_in_both_directions",
-        multiple_testing_policy="BH_and_BY_q_across_15_trait_pairs",
+        multiple_testing_policy="BY_q_across_15_trait_pairs",
     ),
     "jed_composition_arcsine_sqrt_ttest_calibration_v1": AnalysisSpec(
         id="jed_composition_arcsine_sqrt_ttest_calibration_v1",
@@ -69,7 +69,7 @@ STANDARD_ANALYSIS_SPECS: dict[str, AnalysisSpec] = {
         sampling_unit="paired_experiment_contrast",
         weighting="equal_contrast_weight",
         eligibility_rule="paired_human_16S_WMS_excluding_zero_total_pairs",
-        multiple_testing_policy="BH_q_across_retained_non_MediaDive_traits",
+        multiple_testing_policy="BH_q_across_support_and_variance_selected_non_MediaDive_traits",
     ),
     "ilyas_signature_hypergeometric_ora_v1": AnalysisSpec(
         id="ilyas_signature_hypergeometric_ora_v1",

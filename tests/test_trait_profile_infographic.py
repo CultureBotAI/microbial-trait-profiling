@@ -13,10 +13,13 @@ import pandas as pd
 import pytest
 from matplotlib.patches import Circle
 
+from mtp.composition_denominators import trait_fractions
 from mtp.integrated_evidence import native_composition_records
+from mtp.native_composition import select_stratum_traits
 from mtp.paths import REPO_ROOT, file_sha256
 from mtp.trait_guilds import TABLE1_TRAITS
 from mtp.workflow.consumers import CoreBundle, open_core_bundle, verify_consumer_record
+from mtp.workflow.downstream_contracts import get_standard_analysis_spec
 from mtp.workflow.operations import OPERATIONS, validate_execution_product
 from mtp.workflow.runtime import execute_workflow
 
@@ -28,6 +31,62 @@ assert SPEC is not None
 assert SPEC.loader is not None
 infographic = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(infographic)
+
+
+def test_manifest_policy_matches_native_support_variance_selected_bh_family() -> None:
+    """Retained decoys do not enter the native correction family (#1417)."""
+    from scipy.stats import false_discovery_control
+
+    rows = []
+    for i in range(6):
+        for direction in ("inc", "dec"):
+            a = 3 + i if direction == "inc" else 1
+            rare = int(i == 0 and direction == "inc")
+            rows.append(
+                {
+                    "METPO:A": a,
+                    "METPO:B": 15 - a - rare,
+                    "METPO:constant": 5,
+                    "METPO:rare": rare,
+                    "METPO:zero": 0,
+                }
+            )
+    counts = pd.DataFrame(rows)
+    labels = pd.DataFrame(
+        dict.fromkeys(
+            (
+                "trait_label",
+                "display_label",
+                "column_label",
+                "object_name",
+                "object_category",
+                "display_category",
+            ),
+            counts.columns,
+        ),
+        index=counts.columns,
+    )
+    selected = select_stratum_traits(
+        counts, labels, min_profile_support=2, max_profile_support_fraction=1.0
+    )
+    assert set(selected.index) == {"METPO:A", "METPO:B"}
+    fractions = trait_fractions(counts)[selected.index]
+    contrasts = fractions.iloc[::2].reset_index(drop=True) - fractions.iloc[1::2].reset_index(
+        drop=True
+    )
+    result = infographic.compute_trait_stats(contrasts, selected, study_ids=list(range(6)))
+    assert set(result["correction_family_size"]) == {2}
+    assert set(result["correction_method"]) == {"BH"}
+    for p_column, q_column in (("p_value", "q_value"), ("study_p_value", "study_q_value")):
+        assert result[q_column].tolist() == pytest.approx(
+            false_discovery_control(result[p_column], method="bh")
+        )
+        assert (result[q_column] < 0.05).all()
+    spec = get_standard_analysis_spec("jed_pooled_contrast_fraction_diff_v1")
+    assert (
+        spec.multiple_testing_policy
+        == "BH_q_across_support_and_variance_selected_non_MediaDive_traits"
+    )
 
 
 def output_inventory(root: Path) -> dict[str, str]:
