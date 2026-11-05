@@ -93,10 +93,10 @@ Issue #264 posed the diagnostic question: *Does the observed correlation between
 - **Post-PC1 Regression:** Pearson $r = +0.6256$ (an attenuation of $\Delta r = -0.2701$).
 - **Post-Profile-Composition:** Pearson $r = +0.1651$ (an attenuation of $\Delta r = -0.7306$).
 - **Paired Experiment Contrasts ($N = 2,257$):**
-  - **Raw Difference:** Wilcoxon signed-rank $p = 8.05 \times 10^{-13}$, BH $q = 4.83 \times 10^{-12}$ over the six reported Table 1 traits (significant at $q \le 0.05$, #1321).
+  - **Raw Difference:** Wilcoxon signed-rank $p = 8.05 \times 10^{-13}$, BH $q = 4.83 \times 10^{-12}$ over the six reported Table 1 traits (significant at $q \le 0.05$, #1321; $q$ recomputed from the documented pre-#1321 $p$-values by `scripts/adhoc/issue1321_doc_table_bh_q.py`, section 5).
   - **Density-Adjusted Difference:** Wilcoxon signed-rank $p = 2.97 \times 10^{-12}$, BH $q = 1.78 \times 10^{-11}$ (remains significant at $q \le 0.05$ post-adjustment in raw count profiles; status `survived (significant post-adjustment)`).
 
-**Finding:** The correlation between *facultatively aerobic* and *moderately halophilic* is substantially inflated by the primary density axis, attenuating by $\Delta r = -0.27$ under PC1 regression and dropping to $+0.17$ under profile composition normalization. While the paired contrast survives in raw count profiles, previous analyses under binarized profiles showed full attenuation (#375), demonstrating sensitivity to profile representation.
+**Finding:** The correlation between *facultatively aerobic* and *moderately halophilic* is substantially inflated by the primary density axis, attenuating by $\Delta r = -0.27$ under PC1 regression and dropping to $+0.17$ under profile composition normalization. While the paired contrast survives in raw count profiles, previous analyses under binarized profiles showed full attenuation (#375, read from uncorrected $p$-values), demonstrating sensitivity to profile representation.
 
 ---
 
@@ -239,4 +239,4 @@ Comparing the collapsed configurations against the raw baseline shows a consiste
 Following the project interpretation guidelines in `AGENTS.md` and [#179](https://github.com/CultureBotAI/microbial-trait-profiling/issues/179):
 1. **Annotation Representation Only:** Trait counts measure curated knowledge representation in published signatures, not physical abundance in patient microbiomes.
 2. **Do Not Conflate Density with Co-selection:** Positive correlations across traits in raw profiles must not be cited as biological co-selection or shared operon architecture without testing against PC1 density residualization.
-3. **No Causal Inferences:** The survival of *moderately halophilic* ($p = 6.47 \times 10^{-9}$) does not indicate patient-level osmolarity changes or causal dysbiosis; it indicates that taxa curated with this trait are disproportionately represented in published disease-increased signatures.
+3. **No Causal Inferences:** The survival of *moderately halophilic* (adjusted $p = 6.47 \times 10^{-9}$, BH $q = 1.94 \times 10^{-8}$) does not indicate patient-level osmolarity changes or causal dysbiosis; it indicates that taxa curated with this trait are disproportionately represented in published disease-increased signatures.
