@@ -1148,6 +1148,32 @@ def test_an_unchanged_copy_of_the_comparison_verifies(
     assert verify_comparison_run(copy).analysis_bases == _comparison(stage).analysis_bases
 
 
+def test_historical_policy_strings_verify_against_recorded_arm_plans(
+    stage: dict[str, Path], tmp_path: Path
+) -> None:
+    """New declarations do not rewrite or invalidate existing verified runs (#1417)."""
+    historical = {
+        "jed_table1_paired_log_ratio_sign_test_v1": "BH_and_BY_q_across_15_trait_pairs",
+        "jed_pooled_contrast_fraction_diff_v1": "BH_q_across_retained_non_MediaDive_traits",
+    }
+    copy = _comparison_copy(stage, tmp_path)
+    manifest = copy / "comparison_run.json"
+    record = json.loads(manifest.read_text(encoding="utf-8"))
+    for spec in record["analysis_specs"]:
+        if spec["id"] in historical:
+            assert spec["multiple_testing_policy"] != historical[spec["id"]]
+            spec["multiple_testing_policy"] = historical[spec["id"]]
+    original_plans = {name: verify_arm(stage[name]).plan_sha256 for name in PLANNERS}
+    manifest.write_text(json.dumps(record), encoding="utf-8")
+    verified = verify_comparison_run(copy)
+    assert {
+        spec.id: spec.multiple_testing_policy
+        for spec in verified.analysis_specs
+        if spec.id in historical
+    } == historical
+    assert {name: verify_arm(stage[name]).plan_sha256 for name in PLANNERS} == original_plans
+
+
 @pytest.mark.parametrize(
     ("field", "value"),
     [
