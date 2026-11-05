@@ -3764,7 +3764,8 @@ def test_deck_and_plates_derive_corpus_and_trait_counts_from_tables(
         encoding="utf-8",
     )
     (p_derived / "trait_enrichment_traits_overall_ranked.tsv").write_text(
-        "trait\tinc_hits\tdec_hits\thit_rows\n" + "".join(f"T{i}\t10\t2\t12\n" for i in range(344)),
+        "# Stat-Type: fdr_q\ntrait\tinc_hits\tdec_hits\thit_rows\n"
+        + "".join(f"T{i}\t10\t2\t12\n" for i in range(344)),
         encoding="utf-8",
     )
     for ora_name in (plates.ORA_ENRICHMENT, plates.ORA_DEPLETION):
@@ -3940,6 +3941,26 @@ def test_deck_and_plates_derive_corpus_and_trait_counts_from_tables(
         assert "317" not in mp2_text
     finally:
         real_close(mp2_fig)
+
+    # Exercise the real Plate II and VII call sites, not just read_tsv's guard
+    # helper. Dropping adjusted_ora=True at either builder must fail (#1502).
+    ranked_path = p_derived / "trait_enrichment_traits_overall_ranked.tsv"
+    adjusted_rankings = ranked_path.read_text(encoding="utf-8")
+    ranked_path.write_text(
+        adjusted_rankings.replace("# Stat-Type: fdr_q", "# Stat-Type: p_value"),
+        encoding="utf-8",
+    )
+    try:
+        for builder in (plates.build_methods_plate2, plates.build_plate7):
+            existing_figures = set(plates.plt.get_fignums())
+            try:
+                with pytest.raises(ValueError, match="Nominal ORA input is not FDR-controlled"):
+                    builder(plate_repo, plate_repo)
+            finally:
+                for number in set(plates.plt.get_fignums()) - existing_figures:
+                    real_close(number)
+    finally:
+        ranked_path.write_text(adjusted_rankings, encoding="utf-8")
 
     # Mismatched trait_direction_screen.tsv row count raises ValueError:
     (screen_dir / "trait_direction_screen.tsv").write_text(

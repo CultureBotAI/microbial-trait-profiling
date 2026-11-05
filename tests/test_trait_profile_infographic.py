@@ -17,6 +17,7 @@ from mtp.integrated_evidence import native_composition_records
 from mtp.paths import REPO_ROOT, file_sha256
 from mtp.trait_guilds import TABLE1_TRAITS
 from mtp.workflow.consumers import CoreBundle, open_core_bundle, verify_consumer_record
+from mtp.workflow.downstream_contracts import get_standard_analysis_spec
 from mtp.workflow.operations import OPERATIONS, validate_execution_product
 from mtp.workflow.runtime import execute_workflow
 
@@ -28,6 +29,90 @@ assert SPEC is not None
 assert SPEC.loader is not None
 infographic = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(infographic)
+
+
+def test_manifest_policy_matches_native_support_variance_selected_bh_family(tmp_path: Path) -> None:
+    """Bind the declaration to main's real default selection (#1417, #1496)."""
+    from scipy.stats import false_discovery_control
+
+    rows = []
+    for i in range(6):
+        for direction in ("inc", "dec"):
+            counts = {
+                "METPO:A": 3 + i if direction == "inc" else int(i == 0),
+                "METPO:B": 2 + i if direction == "inc" else 2 * int(i == 1),
+                "METPO:C": 3 + i if direction == "dec" else int(i == 0),
+                "METPO:D": (5 + i + int(direction == "inc")) if i < 4 else 0,
+                # A retained id with a MediaDive label reaches the label filter;
+                # a MediaDive id alone is already removed by denominator loading.
+                "METPO:media_label": 2 + i if direction == "inc" else int(i == 0),
+                "METPO:rare": int(i == 0 and direction == "inc"),
+                "METPO:constant": 5,
+                "METPO:zero": 0,
+            }
+            counts["METPO:ubiquitous"] = 100 - sum(counts.values())
+            rows.append(
+                {
+                    "study_id": f"s{i}",
+                    "experiment_id": "e1",
+                    "inc_dec": direction,
+                    **counts,
+                    "mediadive.medium:1": 10 + i,
+                }
+            )
+    profiles = pd.DataFrame(rows)
+    profiles_path, pairs_path, labels_path = (
+        tmp_path / name for name in ("profiles.tsv", "pairs.tsv", "labels.tsv")
+    )
+    profiles.to_csv(profiles_path, sep="\t", index=False)
+    pd.DataFrame(
+        {
+            "study_id": [f"s{i}" for i in range(6)],
+            "increased_profile_ids": [f"s{i}|e1|inc" for i in range(6)],
+            "decreased_profile_ids": [f"s{i}|e1|dec" for i in range(6)],
+        }
+    ).to_csv(pairs_path, sep="\t")
+    traits = list(profiles.columns[3:])
+    labels = ["mediadive.medium:label-decoy" if t == "METPO:media_label" else t for t in traits]
+    pd.DataFrame(
+        {
+            "column_id": traits,
+            "column_label": labels,
+            "object_name": labels,
+            "object_category": ["biolink:OntologyClass"] * len(traits),
+        }
+    ).to_csv(labels_path, sep="\t", index=False)
+    output = tmp_path / "output"
+    infographic.main(
+        [
+            "--stats-only",
+            "--profiles",
+            str(profiles_path),
+            "--pair-metadata",
+            str(pairs_path),
+            "--trait-labels",
+            str(labels_path),
+            "--output-dir",
+            str(output),
+        ]
+    )
+    result = pd.read_csv(output / "trait_profile_paired_contrast_trait_stats_pooled.tsv", sep="\t")
+    assert set(result["trait"]) == {"METPO:A", "METPO:B", "METPO:C", "METPO:D"}
+    assert set(result["correction_family_size"]) == {4}
+    assert set(result["retained_trait_count"]) == {9}
+    assert (result["correction_family_size"] < result["retained_trait_count"]).all()
+    assert not result["trait_label"].str.contains("mediadive", case=False).any()
+    assert set(result["correction_method"]) == {"BH"}
+    for p_column, q_column in (("p_value", "q_value"), ("study_p_value", "study_q_value")):
+        assert result[q_column].tolist() == pytest.approx(
+            false_discovery_control(result[p_column].fillna(1.0), method="bh")
+        )
+        assert (result[q_column] < 0.05).any()
+    spec = get_standard_analysis_spec("jed_pooled_contrast_fraction_diff_v1")
+    assert (
+        spec.multiple_testing_policy
+        == "BH_q_across_support_and_variance_selected_non_MediaDive_traits"
+    )
 
 
 def output_inventory(root: Path) -> dict[str, str]:

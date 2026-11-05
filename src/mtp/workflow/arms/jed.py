@@ -124,7 +124,11 @@ def build_commands(context: ArmContext) -> list[Command]:
             _script(context, "audit_trait_density_correlation.py"),
             {**matrix_options, "--code-commit": context.code_commit},
             (profiles, columns),
-            ("density_adjustment_summary.tsv", "ontology_redundancy_summary.tsv"),
+            (
+                "density_adjustment_summary.tsv",
+                "ontology_redundancy_summary.tsv",
+                "density_adjustment_provenance.json",
+            ),
         ),
         _directory_command(
             context,

@@ -5,6 +5,9 @@ and taxa-matrix inputs. Output: a JSON audit; nonzero exit on unexpected changes
 Only new input fingerprint metadata is allowed. Historical exports are read-only.
 Input eligibility, taxon/background counts and profile/trait completeness are
 checked independently (#725); p/q values and effect estimates are not recalculated.
+Nominal exports may use blank q with scope/family none, or the historical copied-p
+representation with global/profile scope. Each format is validated independently;
+switching formats still changes body bytes and fails the refresh-parity audit.
 """
 
 from __future__ import annotations
@@ -202,6 +205,10 @@ class RowContract:
             raise ValueError("invalid inc_dec")
         values = {}
         for column in PROBABILITY_COLUMNS + FLOAT_COLUMNS + COUNT_COLUMNS + BACKGROUND_COLUMNS:
+            if column == "fdr_q" and not self.fdr and self.family == "none":
+                if row[indices[column]] != "":
+                    raise ValueError("invalid fdr_q: nominal scope none requires an empty cell")
+                continue
             values[column] = number(
                 row[indices[column]],
                 column,
@@ -223,7 +230,7 @@ class RowContract:
             raise ValueError("invalid eligibility_status")
         if row[indices["correction_family"]] != self.family:
             raise ValueError("correction_family differs from FDR-Scope")
-        if not self.fdr and values["fdr_q"] != values["p_value"]:
+        if not self.fdr and self.family != "none" and values["fdr_q"] != values["p_value"]:
             raise ValueError("fdr_q differs from p_value with FDR disabled")
         selected = row[indices["is_significant"]]
         if selected not in {"True", "False"}:
@@ -244,11 +251,13 @@ def row_contract(header: list[str], metadata: dict[str, str]) -> RowContract:
     for key, allowed in (
         ("Tail", {"upper", "lower"}),
         ("FDR", {"True", "False"}),
-        ("FDR-Scope", {"global", "profile"}),
+        ("FDR-Scope", {"global", "profile", "none"}),
         ("Testable-Set", {"K>0 & N>0"}),
     ):
         if metadata.get(key) not in allowed:
             raise ValueError(f"missing or invalid {key}")
+    if metadata["FDR-Scope"] == "none" and metadata["FDR"] != "False":
+        raise ValueError("FDR-Scope none requires FDR: False")
     fold_key = "Min-Fold" if metadata["Tail"] == "upper" else "Max-Fold"
     try:
         total_profiles = number(
