@@ -137,7 +137,8 @@ not by line number. An entry gives:
 | `procedure_role`, `inference_role` | What the primary designation and the family's results are used for. |
 | `conformance_status`, `open_issue` | Whether the family conforms, and the issue that tracks it if not. |
 | `inventory_ids`, `joint_status_outputs` | The inventory records behind the entry, and outputs that combine several families' calls. |
-| `launcher` | Marks an anchor that starts a family's computation without making the correction call itself. |
+| `launcher` | A family flag: the family's anchor starts its computation without itself making the correction call. |
+| `derived_procedures` | A procedure obtained arithmetically at an anchor rather than by a literal call (for example BY computed from BH), with its reason. |
 | `size_source.unfiltered_count_rule` | For a selected family, how to count the unfiltered inventory (R6). |
 
 The registry also pins `literal_procedure_counts`: for each discovered function, how many
@@ -158,14 +159,16 @@ To add or change a correction:
 
 `tests/test_multiple_testing_registry.py` parses every Python file under `src/` and
 `scripts/`, including ignored files. It resolves import and assignment aliases and local
-wrapper functions. It fails when:
+wrapper functions. Among other checks, it fails when:
 - a correction call has no registry entry for its enclosing function;
 - a registry anchor does not exist, or an infrastructure anchor gives no reason;
 - the literal procedures in a discovered function do not match the per-function counts
   pinned in `literal_procedure_counts`. A change that alters a count is caught; a swap
   between two calls that keeps the counts is not;
 - a family's declared primary or comparison procedure does not appear among its own
-  anchors' procedures;
+  anchors' procedures, or a site where every call is literal lacks a declared procedure;
+- a launcher is declared where none is needed, or a selected family's selection rule merely
+  repeats its definition or lacks an unfiltered-count rule;
 - an entry is malformed. That is: a required field is missing or empty; a procedure is
   outside {BY, BH, none}; a `family_id` or a BH-primary reason is duplicated; an
   `outputs` item or a `policy_rule` value is invalid; an anchor or consumer does not resolve
@@ -192,6 +195,8 @@ Within a registered function, it also does not detect:
 - a new family added as loop data that makes no new call;
 - a family deleted from the registry, or never registered, when its function also hosts
   another registered family;
+- a procedure claimed through `derived_procedures` that the code does not in fact derive.
+  The guard accepts any such entry that gives a reason (#1490);
 - a primary and comparison procedure exchanged, when the function makes both calls.
 
 These need source review. The test does not show that a correction is statistically valid,
@@ -203,7 +208,7 @@ Each of the following would change reported q-values, and so a pinned analysis r
 None is adopted here; each is recorded for the next analysis version:
 - **D1.** Make BY primary, with BH as the comparison, for the BH-primary families that do
   not already export BY. These are every BH-primary entry in the registry whose
-  `comparison_procedure` is empty, for example:
+  `comparison_procedure` is empty, other than the ORA families (D2), for example:
   - the six-trait Table 1 family and the density family;
   - the coupling and heatmap cell families;
   - the native pair-t and study-t composition families;
@@ -212,7 +217,7 @@ None is adopted here; each is recorded for the next analysis version:
   - the source-lineage influence fraction families;
   - the PD script families and the cellulose summary.
 
-  Where BY is already exported, as for the presence/depth focal families, designating it
+  Where BY is already exported, as for `mt-core-three-test-native-selected`, designating it
   primary changes no number.
 - **D2.** Report the joint-tail BY family as the ORA q, instead of the native per-tail
   BH families.
