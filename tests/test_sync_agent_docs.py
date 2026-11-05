@@ -5,9 +5,12 @@ from __future__ import annotations
 import importlib.util
 from pathlib import Path
 from types import ModuleType
+from typing import Any, SupportsIndex
 
 import pytest
+from markdown_it import MarkdownIt
 
+from mtp import agent_docs
 from mtp.agent_docs import _destination, links_relative_to_github
 
 
@@ -39,7 +42,7 @@ def test_copilot_links_are_relative_to_github_directory() -> None:
         ("![figure](images/a.svg)", "![figure](../images/a.svg)"),
         ("[`guide.md`](docs/a.md)", "[`guide.md`](../docs/a.md)"),
         ("[nested [label]](docs/a.md)", "[nested [label]](../docs/a.md)"),
-        ("[guide][ref]\n[ref]: docs/a.md#scope\n", "[guide][ref]\n[ref]: ../docs/a.md#scope\n"),
+        ("[guide][ref]\n\n[ref]: docs/a.md#scope\n", "[guide][ref]\n\n[ref]: ../docs/a.md#scope\n"),
         (
             '[ref]: <docs/a guide.md> "Title"\n[ref][]',
             '[ref]: <../docs/a guide.md> "Title"\n[ref][]',
@@ -56,8 +59,8 @@ def test_copilot_links_are_relative_to_github_directory() -> None:
             '[ref]: ../docs/a.md\n  "[literal](docs/title.md)"\n[ref]',
         ),
         (
-            "[a](docs/a.md)\r\n[b]: methods/b.md\r\n",
-            "[a](../docs/a.md)\r\n[b]: ../methods/b.md\r\n",
+            "[a](docs/a.md)\r\n\r\n[b]: methods/b.md\r\n",
+            "[a](../docs/a.md)\r\n\r\n[b]: ../methods/b.md\r\n",
         ),
         (r"[guide](docs/a\)b.md)", r"[guide](../docs/a\)b.md)"),
         (r"[guide](<docs/a\>b.md>)", r"[guide](<../docs/a\>b.md>)"),
@@ -117,7 +120,7 @@ def test_markdown_destination_forms_preserve_other_bytes(source: str, expected: 
         "    [literal](docs/a.md)\n\t[also literal](docs/b.md)\n",
         "    [ref]:\n    [literal](docs/a.md)\n",
         "[prev]:\n    [ref]: docs/a.md\n",
-        "    - x\n2. `code\n3. [literal](docs/a.md)\nend`",
+        "para\n    - x\n2. `code\n3. [literal](docs/a.md)\nend`",
         "1234567890. `code\n2. [literal](docs/a.md)\nend`",
         r"\[literal](docs/a.md)",
         r"[literal\](docs/a.md)",
@@ -339,6 +342,162 @@ def test_reference_destination_cannot_cross_a_blank_paragraph(paragraph: str) ->
     assert links_relative_to_github(source) == source
 
 
+@pytest.mark.parametrize(
+    "source",
+    [
+        "- item\n    - [guide](docs/a.md)\n",
+        "- item\n\t- [guide](docs/a.md)\n",
+        "Paragraph\n    [guide](docs/a.md)\n",
+        "Paragraph\n\t[guide](docs/a.md)\n",
+        "1.  item\n\n    [guide](docs/a.md)\n",
+        "1.\titem\n\n\t[guide](docs/a.md)\n",
+        "    - x\n2. `code\n3. [guide](docs/a.md)\nend`",
+    ],
+    ids=[
+        "nested-list-4-spaces",
+        "nested-list-tab",
+        "lazy-continuation-4-spaces",
+        "lazy-continuation-tab",
+        "item-paragraph-4-spaces",
+        "item-paragraph-tab",
+        "list-after-indented-code",
+    ],
+)
+def test_indented_nested_lists_lazy_continuations_and_item_paragraphs_rebase_links(
+    source: str,
+) -> None:
+    """#1282: 4-space or tab indentation in list items and lazy continuations is not code."""
+    expected = source.replace("(docs/a.md)", "(../docs/a.md)")
+    assert links_relative_to_github(source) == expected
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        ("> [ref]: docs/a.md\n> [ref]\n", "> [ref]: ../docs/a.md\n> [ref]\n"),
+        ("- [ref]: docs/a.md\n  [ref]\n", "- [ref]: ../docs/a.md\n  [ref]\n"),
+        (
+            r"[a\]b]: docs/a.md" + "\n" + r"[a\]b]" + "\n",
+            r"[a\]b]: ../docs/a.md" + "\n" + r"[a\]b]" + "\n",
+        ),
+    ],
+    ids=["blockquote-ref", "list-item-ref", "escaped-bracket-label"],
+)
+def test_reference_definitions_in_containers_and_with_escaped_brackets_rebase_links(
+    source: str, expected: str
+) -> None:
+    """#1282: reference definitions inside > or - containers and \\[ / \\] labels rebase."""
+    assert links_relative_to_github(source) == expected
+
+
+@pytest.mark.parametrize(
+    "separator",
+    ["\u2028", "\x0c", "\x85"],
+    ids=["line-separator-u2028", "form-feed-x0c", "nel-x85"],
+)
+def test_non_commonmark_line_separators_before_fence_markers_do_not_hide_links(
+    separator: str,
+) -> None:
+    """#1282: CommonMark does not split lines on U+2028, form feed, or NEL."""
+    source = f"text{separator}```\n[guide](docs/a.md)\n"
+    expected = source.replace("(docs/a.md)", "(../docs/a.md)")
+    assert links_relative_to_github(source) == expected
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "Paragraph\n[ref]: docs/a.md\n[ref]\n",
+        "> Paragraph\n> [ref]: docs/a.md\n> [ref]\n",
+        "- Paragraph\n  [ref]: docs/a.md\n  [ref]\n",
+    ],
+    ids=["top-level-paragraph", "blockquote-paragraph", "list-item-paragraph"],
+)
+def test_reference_like_line_interrupting_paragraph_is_unchanged(source: str) -> None:
+    """#1282: a reference definition cannot interrupt a paragraph."""
+    assert links_relative_to_github(source) == source
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        ("[[inner](docs/b.md)](docs/a.md)", "[[inner](../docs/b.md)](docs/a.md)"),
+        (
+            "[outer [inner](docs/b.md) text](docs/a.md)",
+            "[outer [inner](../docs/b.md) text](docs/a.md)",
+        ),
+        ("[![alt](images/b.svg)](docs/a.md)", "[![alt](../images/b.svg)](../docs/a.md)"),
+        ("![[inner](docs/b.md)](images/a.svg)", "![[inner](../docs/b.md)](../images/a.svg)"),
+    ],
+    ids=["nested-link", "outer-text-nested-link", "image-in-link", "link-in-image"],
+)
+def test_nested_link_rebases_only_inner_target_while_preserving_image_combinations(
+    source: str, expected: str
+) -> None:
+    """#1282: CommonMark forbids links inside links; outer (a) is literal text."""
+    assert links_relative_to_github(source) == expected
+
+
+@pytest.mark.parametrize(
+    "source",
+    [
+        "<!-- [literal](docs/a.md) -->\n",
+        "<!--\n[literal](docs/a.md)\n[ref]: docs/b.md\n-->\n",
+        "Paragraph <!-- [literal](docs/a.md) --> text\n",
+    ],
+    ids=["single-line-block-comment", "multiline-block-comment", "inline-comment"],
+)
+def test_html_comments_are_unchanged(source: str) -> None:
+    """#1282: links inside HTML comments are not rebased."""
+    assert links_relative_to_github(source) == source
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        ("[guide](docs/a.md (title (nested)))\n", "[guide](docs/a.md (title (nested)))\n"),
+        ("[ref]: docs/a.md (title (nested)\n[ref]\n", "[ref]: docs/a.md (title (nested)\n[ref]\n"),
+        (
+            r"[guide](docs/a.md (title \(escaped\)))",
+            r"[guide](../docs/a.md (title \(escaped\)))",
+        ),
+    ],
+    ids=["inline-nested-parens", "reference-nested-parens", "inline-escaped-parens"],
+)
+def test_parenthesised_titles_reject_unescaped_nested_parentheses(
+    source: str, expected: str
+) -> None:
+    """#1282: unescaped parentheses inside (...) link titles are invalid in CommonMark."""
+    assert links_relative_to_github(source) == expected
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        ("[invalid](\r\r docs/a.md)", "[invalid](\r\r docs/a.md)"),
+        ("[invalid](docs/a.md\r\r)", "[invalid](docs/a.md\r\r)"),
+        ('[invalid](docs/a.md "title"\r\r)', '[invalid](docs/a.md "title"\r\r)'),
+        ("[ref]:\r\r  docs/a.md\n[ref]\n", "[ref]:\r\r  docs/a.md\n[ref]\n"),
+        (
+            "`unclosed\r\r[guide](docs/a.md)\r\r`later`",
+            "`unclosed\r\r[guide](../docs/a.md)\r\r`later`",
+        ),
+    ],
+    ids=[
+        "inline-before-dest-cr-blank",
+        "inline-after-dest-cr-blank",
+        "inline-after-title-cr-blank",
+        "ref-dest-cr-blank",
+        "code-span-cr-blank",
+    ],
+)
+def test_cr_only_blank_lines_break_paragraphs_and_reject_multiline_destinations(
+    source: str, expected: str
+) -> None:
+    """#1282: blank lines ending in CR only are paragraph breaks in CommonMark."""
+    assert links_relative_to_github(source) == expected
+
+
 def load_sync_script() -> ModuleType:
     path = Path(__file__).resolve().parents[1] / "scripts" / "sync_agent_docs.py"
     spec = importlib.util.spec_from_file_location("sync_agent_docs_test", path)
@@ -362,7 +521,7 @@ def test_sync_entrypoint_rebases_links_and_preserves_source(
 ) -> None:
     source = tmp_path / "AGENTS.md"
     output = tmp_path / "copilot-instructions.md"
-    raw = "[guide](<methods/guide.md>)\n`[example](docs/example.md)`\n[ref]: docs/ref.md\n"
+    raw = "[guide](<methods/guide.md>)\n`[example](docs/example.md)`\n\n[ref]: docs/ref.md\n"
     source.write_text(raw, encoding="utf-8")
     module = load_sync_script()
     monkeypatch.setattr(module, "AGENTS_MD", source)
@@ -370,7 +529,342 @@ def test_sync_entrypoint_rebases_links_and_preserves_source(
     module.main()
     assert output.read_text(encoding="utf-8") == (
         module.COPILOT_HEADER
-        + "[guide](<../methods/guide.md>)\n`[example](docs/example.md)`\n[ref]: ../docs/ref.md\n"
+        + "[guide](<../methods/guide.md>)\n`[example](docs/example.md)`\n\n[ref]: ../docs/ref.md\n"
         + module.PROJECT_CONVENTIONS
     )
     assert source.read_text(encoding="utf-8") == raw
+
+
+def commonmark_targets(source: str) -> tuple[list[str], list[str]]:
+    """Collect rendered links and definitions independently of the rewriter."""
+    environment: dict[str, Any] = {}
+    tokens = MarkdownIt("commonmark").parse(source, environment)
+    links: list[str] = []
+    for token in tokens:
+        for child in token.children or []:
+            if child.type == "link_open":
+                target = child.attrGet("href")
+                assert isinstance(target, str)
+                links.append(target)
+    definitions = sorted(
+        reference["href"] for reference in environment.get("references", {}).values()
+    )
+    return links, definitions
+
+
+def assert_commonmark_rewrite(source: str, expected: str) -> None:
+    """Pin literal output and independently confirm each intended destination."""
+    original_links, original_definitions = commonmark_targets(source)
+    assert commonmark_targets(expected) == (
+        ["../" + target for target in original_links],
+        ["../" + target for target in original_definitions],
+    )
+    assert links_relative_to_github(source) == expected
+
+
+@pytest.mark.parametrize(
+    ("source", "target"),
+    [
+        ("> ```\n> code\n> ```\n\nSee [y](docs/b.md).\n", "docs/b.md"),
+        (
+            "> Example:\n>\n> ```bash\n> just check\n> ```\n\n## Next\n\nSee [y](docs/b.md).\n",
+            "docs/b.md",
+        ),
+        ("- a\n  - b\n    ```bash\n    code\n    ```\n- [y](docs/b.md)\n", "docs/b.md"),
+        (
+            "1. Run:\n\n    ```bash\n    just check\n    ```\n\n2. Read [guide](docs/guide.md).\n",
+            "docs/guide.md",
+        ),
+        ("> - item\n>   ```\n>   [x](docs/a.md)\n>   ```\n> [y](docs/b.md)\n", "docs/b.md"),
+    ],
+    ids=["quoted", "quoted-shell-example", "nested-list", "ordered-list", "quoted-list"],
+)
+def test_review_container_fences_close_before_following_links(source: str, target: str) -> None:
+    """#1373: opening and closing fences use the same container coordinates."""
+    assert_commonmark_rewrite(source, source.replace(f"({target})", f"(../{target})"))
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        (
+            "> <!-- note\n\nSee [guide](docs/guide.md).\n",
+            "> <!-- note\n\nSee [guide](../docs/guide.md).\n",
+        ),
+        (
+            "> ```\n\nSee [guide](docs/guide.md).\n",
+            "> ```\n\nSee [guide](../docs/guide.md).\n",
+        ),
+        ("- <!--\n[a](docs/a.md)\n", "- <!--\n[a](../docs/a.md)\n"),
+        ("- ```\n[a](docs/a.md)\n", "- ```\n[a](../docs/a.md)\n"),
+        ("- ```\n  code\n```\n[x](docs/a.md)\n", "- ```\n  code\n```\n[x](docs/a.md)\n"),
+        (
+            "- ```\n\n  [literal](docs/a.md)\n  ```\n\n[guide](docs/b.md)\n",
+            "- ```\n\n  [literal](docs/a.md)\n  ```\n\n[guide](../docs/b.md)\n",
+        ),
+    ],
+    ids=[
+        "quote-comment-ends",
+        "quote-fence-ends",
+        "item-comment-ends",
+        "item-fence-ends",
+        "dedented-fence-opens-new-block",
+        "blank-preserves-item-fence",
+    ],
+)
+def test_review_fences_and_comments_end_with_their_container(source: str, expected: str) -> None:
+    """#1374: container exit ends its block, but list-item blank lines do not."""
+    assert_commonmark_rewrite(source, expected)
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        (
+            "- [Required]:\n```bash\n[x](docs/a.md)\n```\n",
+            "- [Required]:\n```bash\n[x](docs/a.md)\n```\n",
+        ),
+        ("> [Note]:\n>\n> [x](docs/a.md)\n", "> [Note]:\n>\n> [x](../docs/a.md)\n"),
+        ("- [Note]:\n---\n", "- [Note]:\n---\n"),
+        (
+            "- [Note]:\n# Heading\n\n[x](docs/a.md)\n",
+            "- [Note]:\n# Heading\n\n[x](../docs/a.md)\n",
+        ),
+        (
+            "- [Note]:\n<!-- comment -->\n\n[x](docs/a.md)\n",
+            "- [Note]:\n<!-- comment -->\n\n[x](../docs/a.md)\n",
+        ),
+    ],
+    ids=["fence", "empty-quote-line", "thematic-break", "heading", "html-comment"],
+)
+def test_review_reference_destination_cannot_consume_another_block(
+    source: str, expected: str
+) -> None:
+    """#1375: a new block cannot supply an incomplete definition's destination."""
+    assert_commonmark_rewrite(source, expected)
+
+
+def test_review_lazy_quote_continuation_preserves_paragraph_state() -> None:
+    """#1377: an explicit > after a lazy line continues the same paragraph."""
+    source = "> Para\nlazy\n> [r]: docs/a.md\n> [r]\n"
+    assert commonmark_targets(source) == ([], [])
+    assert_commonmark_rewrite(source, source)
+
+
+@pytest.mark.parametrize("spaces", [5, 6, 8])
+def test_review_five_or_more_spaces_after_list_marker_are_indented_code(spaces: int) -> None:
+    """#1378: pin the item-5plus-spaces-rule-dropped mutation."""
+    source = "-" + " " * spaces + "[x](docs/a.md)\n"
+    assert commonmark_targets(source) == ([], [])
+    assert_commonmark_rewrite(source, source)
+
+
+def test_review_entering_quote_starts_a_new_reference_paragraph() -> None:
+    """#1378: pin the bq-entry-no-paragraph-reset mutation."""
+    source = "Text\n> [r]: docs/a.md\n\n[r]\n"
+    expected = "Text\n> [r]: ../docs/a.md\n\n[r]\n"
+    assert commonmark_targets(source) == (["docs/a.md"], ["docs/a.md"])
+    assert_commonmark_rewrite(source, expected)
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        ("   >\t[](d)", "   >\t[](../d)"),
+        ("0) x\n)\n0) [r]:d", "0) x\n)\n0) [r]:../d"),
+        ("  -\n\t[](>)", "  -\n\t[](../>)"),
+    ],
+    ids=["quote-tab-content", "list-after-lazy-line", "empty-list-item-content-column"],
+)
+def test_review_surviving_mutant_witnesses_preserve_commonmark(source: str, expected: str) -> None:
+    """#1378: pin reviewer minima where the existing branch matches CommonMark."""
+    assert_commonmark_rewrite(source, expected)
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        (">\n`\n>`[](d)`", ">\n`\n>`[](d)`"),
+        (">\r`\n>[](d)`", ">\r`\n>[](../d)`"),
+        ("-\tx\n>     [b]:d", "-\tx\n>     [b]:d"),
+    ],
+    ids=["new-quote-code-span", "new-quote-link", "new-quote-drops-list-indent"],
+)
+def test_review_quote_state_reentry_after_container_exit(source: str, expected: str) -> None:
+    """#1377: only an actual lazy paragraph retains old container state."""
+    assert_commonmark_rewrite(source, expected)
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        (
+            "   > - ```\n>   [literal](d)\n>   ```\n> [x](e)\n",
+            "   > - ```\n>   [literal](d)\n>   ```\n> [x](../e)\n",
+        ),
+        (
+            "   > - <!--\n>   [literal](d)\n>   -->\n> [x](e)\n",
+            "   > - <!--\n>   [literal](d)\n>   -->\n> [x](../e)\n",
+        ),
+        ("- [r]:\n  <div>\n\n[r]\n", "- [r]:\n  <div>\n\n[r]\n"),
+        (
+            "- [r]: d\n  'title\noutside [x](e)'\n\n[r]\n",
+            "- [r]: ../d\n  'title\noutside [x](e)'\n\n[r]\n",
+        ),
+        ("> [r]: d\n'[x](e)'\n[r]\n", "> [r]: ../d\n'[x](e)'\n[r]\n"),
+        (
+            "  <docs/auto.md>\n  >  `\r1. `\n >\ttext [b](docs/b.md) `x\n"
+            "> [r]: docs/r.md 'title'\n",
+            "  <docs/auto.md>\n  >  `\r1. `\n >\ttext [b](../docs/b.md) `x\n"
+            "> [r]: docs/r.md 'title'\n",
+        ),
+        (">- '\n    ~~~\n \t[](d)", ">- '\n    ~~~\n \t[](../d)"),
+        (">- )\n    1. [r]:'", ">- )\n    1. [r]:'"),
+    ],
+    ids=[
+        "fence-variable-quote-prefix-indent",
+        "comment-variable-quote-prefix-indent",
+        "definition-destination-html-block",
+        "list-reference-title-lazy-continuation",
+        "quote-reference-title-lazy-continuation",
+        "unquoted-list-ends-old-quote",
+        "lazy-quote-line-is-not-fence",
+        "lazy-quote-line-is-not-list-reference",
+    ],
+)
+def test_review_container_coordinates_and_valid_definition_titles(
+    source: str, expected: str
+) -> None:
+    """#1373-#1377: preserve actual containers and valid lazy reference titles."""
+    assert_commonmark_rewrite(source, expected)
+
+
+@pytest.mark.parametrize(
+    ("destination", "expected_destination"),
+    [
+        ("<script>", "<script>"),
+        ("<DIV>", "<DIV>"),
+        ("<?pi?>", "<?pi?>"),
+        ("<![CDATA[x]]>", "<![CDATA[x]]>"),
+        ("<!DOCTYPE html>", "<!DOCTYPE html>"),
+        ("<foo>", "<../foo>"),
+        ("<docs/a>", "<../docs/a>"),
+        ("<docs/a guide.md>", "<../docs/a guide.md>"),
+    ],
+    ids=[
+        "script-html-block",
+        "uppercase-div-html-block",
+        "processing-instruction-block",
+        "cdata-block",
+        "doctype-block",
+        "generic-tag-angle-destination",
+        "path-angle-destination",
+        "spaced-path-angle-destination",
+    ],
+)
+def test_review_definition_continuation_distinguishes_html_blocks_and_angle_destinations(
+    destination: str, expected_destination: str
+) -> None:
+    """#1375: only paragraph-interrupting HTML blocks forbid a destination."""
+    source = f"- [r]:\n  {destination}\n\n[r]\n"
+    expected = f"- [r]:\n  {expected_destination}\n\n[r]\n"
+    assert_commonmark_rewrite(source, expected)
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        (">`\n2. `[](d)`", ">`\n2. `[](d)`"),
+        (">`\n2. [](d)`", ">`\n2. [](../d)`"),
+        (">)\n  1.\n    [](d)", ">)\n  1.\n    [](d)"),
+    ],
+    ids=["non-one-ordered-code-span", "non-one-ordered-link", "empty-ordered-item-code"],
+)
+def test_review_unquoted_ordered_item_starts_after_quote_exit(source: str, expected: str) -> None:
+    """#1377: a missing quote marker can start a new list, not a lazy paragraph."""
+    assert_commonmark_rewrite(source, expected)
+
+
+class MeasuredText(str):
+    """Count copied characters while preserving tracking across string operations."""
+
+    work: dict[str, int]
+
+    def __new__(cls, value: str, work: dict[str, int]) -> MeasuredText:
+        text = super().__new__(cls, value)
+        text.work = work
+        return text
+
+    def __getitem__(self, key: SupportsIndex | slice) -> str:
+        result = super().__getitem__(key)
+        if isinstance(key, slice):
+            self.work["copied"] += len(result)
+            return MeasuredText(result, self.work)
+        return result
+
+    def __add__(self, other: str) -> str:
+        result = super().__add__(other)
+        self.work["copied"] += len(result)
+        return MeasuredText(result, self.work)
+
+    def __radd__(self, other: str) -> str:
+        result = str.__add__(other, self)
+        self.work["copied"] += len(result)
+        return MeasuredText(result, self.work)
+
+
+@pytest.mark.parametrize("count", [64, 128])
+@pytest.mark.parametrize("prefix", ["", "> ", "- "])
+def test_reference_definition_work_is_linear(
+    count: int, prefix: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#1431: count actual parser operations and copies, not wall-clock timings."""
+    source = "".join(f"{prefix}[r{i:04d}]: docs/{i:04d}.md\n" for i in range(count))
+    work = {"line_ends": 0, "copied": 0}
+    original = agent_docs._line_end
+
+    def measured_line_end(*args: Any, **kwargs: Any) -> int:
+        work["line_ends"] += 1
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(agent_docs, "_line_end", measured_line_end)
+    assert links_relative_to_github(MeasuredText(source, work)) == source.replace(
+        ": docs/", ": ../docs/"
+    )
+    assert work["line_ends"] <= 12 * count, work
+    assert work["copied"] <= 20 * len(source), work
+
+
+@pytest.mark.parametrize("count", [64, 128])
+def test_definition_followed_by_long_paragraph_has_linear_copy_work(count: int) -> None:
+    """#1431: a single forward walk must not copy a shrinking suffix at each line."""
+    source = "[r]: docs/r.md\n" + "ordinary text line\n" * count
+    work = {"copied": 0}
+    assert links_relative_to_github(MeasuredText(source, work)) == source.replace(
+        ": docs/", ": ../docs/"
+    )
+    assert work["copied"] <= 20 * len(source), work
+
+
+@pytest.mark.parametrize("newline", ["\n", "\r\n"])
+@pytest.mark.parametrize(
+    "definition",
+    [
+        '[r]: docs/r.md\n  "next-line title"\n',
+        '[r]: docs/r.md "multi\nline title"\n',
+        '[r]: docs/r.md\n  "unfinished title\n',
+        '[r]: docs/r.md\n  "title [literal](docs/literal.md)"\n',
+    ],
+)
+def test_definition_bound_reuse_preserves_titles(definition: str, newline: str) -> None:
+    """#1431: caching cannot truncate valid titles or change an unfinished fallback."""
+    source = ("[first]: docs/first.md\n" + definition + "\n[r]\n").replace("\n", newline)
+    expected = source.replace(": docs/", ": ../docs/")
+    assert_commonmark_rewrite(source, expected)
+
+
+def test_definition_bound_cache_distinguishes_pending_destination() -> None:
+    """A cached continuation cannot bypass a pending destination's container guard."""
+    source = '- [first]: docs/first.md\n  [pending]:\n"outside"\n'
+    expected = source.replace(": docs/first.md", ": ../docs/first.md")
+    assert links_relative_to_github(source) == expected
