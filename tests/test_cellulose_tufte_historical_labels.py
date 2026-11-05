@@ -65,12 +65,12 @@ def label_plates() -> Iterator[dict[str, Figure]]:
         (
             "V",
             "PLATE V · STATISTICAL ARCHITECTURE (METHODS/THREE_ARM_STATISTICS.MD)",
-            "October 16 worked example",
+            "historical (#1416)",
         ),
         (
             "VI",
             "PLATE VI · RESULT INTEGRATION & EVIDENCE CONTRACT (METHODS/INTEGRATED_EVIDENCE.MD)",
-            "October 16 worked example",
+            "historical (#1416)",
         ),
     ],
 )
@@ -120,6 +120,10 @@ def test_plate_four_family_note_is_on_the_four_pair_panel(
 def test_plate_six_qualifies_the_existing_drawn_cell_claim(
     label_plates: dict[str, Figure],
 ) -> None:
+    drawn_status = [
+        text for text in _artist_texts(label_plates["VI"]) if text.startswith("drawn (")
+    ]
+    assert drawn_status == ["drawn (316 cells, 16.9%) [test_status = untested]"]
     claim = next(
         text
         for text in _artist_texts(label_plates["VI"])
@@ -133,7 +137,7 @@ def test_plate_six_qualifies_the_existing_drawn_cell_claim(
         text for text in label_plates["VI"].axes[2].texts if text.get_position() == (0.595, 0.42)
     )
     assert note.get_text() == (
-        "historical claim (#1416); cells untested; family not recorded (#1525)"
+        "historical claim (#1416); cells untested; family not recorded (#1526)"
     )
 
 
@@ -145,6 +149,7 @@ def test_plate_five_preserves_the_original_displayed_family_sizes(
     assert "BH across 1,480,390 tests; 66,240 enrichments" in text
     assert "Six Table 1 Single-Trait Fractions (BH across 6 traits):" in text
     assert "Key Table 1 Paired Log-Ratios (BY across 15 pairs; cancels T):" in text
+    assert "BH (6 traits) & BY (15 ratios, 317 traits)" in text
 
 
 def test_fig_seven_pins_the_kicker_and_unknown_family_note() -> None:
@@ -157,6 +162,7 @@ def test_fig_seven_pins_the_kicker_and_unknown_family_note() -> None:
         "BH q: family not recorded (#1525); p-values nominal; "
         "benchmark/percentile: historical (#1416)."
     ) in texts
+    assert "46 studies · Δ = \u221227.4 pp (q = 0.0077)" in texts
 
 
 def test_fig_eight_pins_the_title_family_note() -> None:
@@ -256,6 +262,8 @@ def test_new_plate_labels_fit_the_fixed_packet_canvas(
                 "nominal p",
                 "p-values nominal",
                 "family not recorded (#1525)",
+                "family not recorded (#1526)",
+                "test_status = untested",
             )
         )
     ]
@@ -284,11 +292,50 @@ def test_each_deck_slide_subtitle_declares_its_own_basis(
     deck_sections: list[str], slide_number: int
 ) -> None:
     subtitle = re.search(
-        r'<p class="subtitle">(.*?)</p>', deck_sections[slide_number - 1], re.DOTALL
+        r'<p class="subtitle"[^>]*>(.*?)</p>', deck_sections[slide_number - 1], re.DOTALL
     )
     assert subtitle is not None
-    label = "historical (#1416)" if slide_number in {3, 5, 11, 14} else "October 16 worked example"
+    if 8 <= slide_number <= 14:
+        text_basis = (
+            "historical (#1416)" if slide_number in {11, 14} else "October 16 worked example"
+        )
+        label = f"text: {text_basis}; figure drawn from current tables"
+    else:
+        label = (
+            "historical (#1416)"
+            if slide_number in {3, 5, 6, 7, 15}
+            else "October 16 worked example"
+        )
     assert _plain(subtitle.group(1)).endswith(f"· {label}")
+
+
+@pytest.mark.parametrize(
+    ("slide_number", "image_src"),
+    [
+        (8, "figures_graphical/fig1_overlap_and_null_models.svg"),
+        (9, "figures_graphical/fig2_shared_taxa_and_set_definitions.svg"),
+        (10, "figures_graphical/fig3_direction_by_body_site.svg"),
+        (11, "figures_graphical/fig4_trait_overlap_ranking.svg"),
+        (12, "figures/fig1_pairwise_and_3way_jaccard_nulls.svg"),
+        (13, "figures/fig2_direction_by_body_site_and_definition.svg"),
+        (14, "figures/fig3_core_taxa_and_trait_benchmark.svg"),
+    ],
+)
+def test_current_table_image_labels_are_scoped_to_the_correct_output_route(
+    deck_sections: list[str], slide_number: int, image_src: str
+) -> None:
+    """Pin the deck's public output routes from figures.main (#1544).
+
+    The table-driven generator and its outputs are documented in
+    methods/cellulose_decr.md (the figures section) and the analysis README.
+    This checks each labelled slide's link, without executing or duplicating
+    the generator's table loading, calculations or rendering.
+    """
+    section = deck_sections[slide_number - 1]
+    assert re.findall(r'<img\s+src="([^"]+)"', section) == [image_src]
+    subtitle = re.search(r'<p class="subtitle"[^>]*>(.*?)</p>', section, re.DOTALL)
+    assert subtitle is not None
+    assert "; figure drawn from current tables" in _plain(subtitle.group(1))
 
 
 def test_deck_four_pair_footer_identifies_the_unknown_bh_family(deck_sections: list[str]) -> None:

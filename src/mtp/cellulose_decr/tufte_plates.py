@@ -1566,7 +1566,7 @@ def build_plate5_three_statistical_arms() -> Figure:
     fig = _make_tufte_plate(
         (13.6, 8.2),
         "PLATE V  ·  STATISTICAL ARCHITECTURE (METHODS/THREE_ARM_STATISTICS.MD)"
-        " · October 16 worked example",
+        " · historical (#1416)",
         "One Matrix, Three Statistical Questions: Composition, Enrichment, and Study Direction",
         "All three arms start from the same paired human trait matrix (2,335 experiments across "
         "959 studies and 317 non-MediaDive traits), but test different sampling units, "
@@ -1996,7 +1996,7 @@ def build_plate6_combining_results_integrated_evidence() -> Figure:
     fig = _make_tufte_plate(
         (13.6, 8.2),
         "PLATE VI  ·  RESULT INTEGRATION & EVIDENCE CONTRACT (METHODS/INTEGRATED_EVIDENCE.MD)"
-        " · October 16 worked example",
+        " · historical (#1416)",
         "How Results Are Combined: Shared Comparison Basis and the Integrated Evidence Contract",
         "Rather than pooling incompatible p-values across sampling units, the pipeline aligns "
         "corpus denominators and records each method, threshold family, and grid-cell state "
@@ -2305,7 +2305,7 @@ def build_plate6_combining_results_integrated_evidence() -> Figure:
 
     cell_states = [
         (
-            "drawn (316 cells, 16.9%)   [test_status = tested / all_tied]",
+            "drawn (316 cells, 16.9%)   [test_status = untested]",
             "≥ 3 studies with trait signal; rendered on map (26 cells have BH q ≤ "
             "0.05 '*', 4 have q ≤ 0.001)",
             0.51,
@@ -2337,7 +2337,7 @@ def build_plate6_combining_results_integrated_evidence() -> Figure:
     ax_c.text(
         0.595,
         0.42,
-        "historical claim (#1416); cells untested; family not recorded (#1525)",
+        "historical claim (#1416); cells untested; family not recorded (#1526)",
         fontsize=7.35,
         color=MUTED,
     )
@@ -3742,8 +3742,7 @@ def render_slide_deck_html() -> str:
             "        <h2>Plate V: One Matrix, Three Statistical Questions: Composition, "
             "Enrichment, and Study Direction</h2>",
             '        <p class="subtitle">Filter cascade, 100-fold sample-size scale across s'
-            "ampling units, and Table 1 fraction and log-ratio results · October 16 worked "
-            "example</p>",
+            "ampling units, and Table 1 fraction and log-ratio results · historical (#1416)</p>",
             "      </div>",
             "    </div>",
             '    <div class="header-right">',
@@ -3781,9 +3780,10 @@ def render_slide_deck_html() -> str:
             '      <div class="title-block">',
             "        <h2>Plate VI: How Results Are Combined: Shared Comparison Basis and the "
             "Integrated Evidence Contract</h2>",
-            '        <p class="subtitle">Denominator alignment (317 non-MediaDive traits), s'
-            "tudy-equal weighting, and the 1,912-row integrated_evidence.tsv schema · October "
-            "16 worked example</p>",
+            '        <p class="subtitle" style="white-space:normal">'
+            "Denominator alignment (317 non-MediaDive traits), s"
+            "tudy-equal weighting, and the 1,912-row integrated_evidence.tsv schema "
+            "· historical (#1416)</p>",
             "      </div>",
             "    </div>",
             '    <div class="header-right">',
@@ -3819,9 +3819,10 @@ def render_slide_deck_html() -> str:
             '      <div class="title-block">',
             "        <h2>Graphical Summary 1: Cross-Disease Convergence Network and 3-Way Venn"
             " Partition</h2>",
-            '        <p class="subtitle">Disease triangle network, pairwise Jaccard '
-            "similarity gauge, and 49-taxon union breakdown across PD, HIV, and CRC · October "
-            "16 worked example</p>",
+            '        <p class="subtitle" style="white-space:normal">'
+            "Disease triangle network, pairwise Jaccard "
+            "similarity gauge, and 49-taxon union breakdown across PD, HIV, and CRC "
+            "· text: October 16 worked example; figure drawn from current tables</p>",
             "      </div>",
             "    </div>",
             '    <div class="header-right">',
@@ -3858,9 +3859,10 @@ def render_slide_deck_html() -> str:
             '      <div class="title-block">',
             "        <h2>Graphical Summary 2: Taxonomic Rollup Sensitivity at Genus and Specie"
             "s Ranks</h2>",
-            '        <p class="subtitle">Fine-rank sensitivity comparison (N = 93 Genus + Sp'
-            "ecies) and shared 17-taxon Genus/Species guild scorecard · October 16 worked "
-            "example</p>",
+            '        <p class="subtitle" style="white-space:normal">'
+            "Fine-rank sensitivity comparison (N = 93 Genus + Sp"
+            "ecies) and shared 17-taxon Genus/Species guild scorecard "
+            "· text: October 16 worked example; figure drawn from current tables</p>",
             "      </div>",
             "    </div>",
             '    <div class="header-right">',
@@ -3896,8 +3898,10 @@ def render_slide_deck_html() -> str:
             '      <div class="title-block">',
             "        <h2>Graphical Summary 3: Both Depletion and Taxonomic Convergence Are Spe"
             "cific to Stool</h2>",
-            '        <p class="subtitle">Diverging butterfly chart of paired experiment dire'
-            "ctions and cross-compartment Jaccard overlap · October 16 worked example</p>",
+            '        <p class="subtitle" style="white-space:normal">'
+            "Diverging butterfly chart of paired experiment dire"
+            "ctions and cross-compartment Jaccard overlap "
+            "· text: October 16 worked example; figure drawn from current tables</p>",
             "      </div>",
             "    </div>",
             '    <div class="header-right">',
@@ -3933,8 +3937,10 @@ def render_slide_deck_html() -> str:
             '      <div class="title-block">',
             "        <h2>Graphical Summary 4: Cellulose Catabolism Ranks #1 Among GO Processes"
             ", Pathways, and Chemical Traits</h2>",
-            '        <p class="subtitle">Functional pathway ranking and top 10 convergent no'
-            "n-MediaDive traits across 90 microbial traits in stool · historical (#1416)</p>",
+            '        <p class="subtitle" style="white-space:normal">'
+            "Functional pathway ranking and top 10 convergent no"
+            "n-MediaDive traits across 90 microbial traits in stool "
+            "· text: historical (#1416); figure drawn from current tables</p>",
             "      </div>",
             "    </div>",
             '    <div class="header-right">',
@@ -3970,9 +3976,10 @@ def render_slide_deck_html() -> str:
             '      <div class="title-block">',
             "        <h2>Statistical Figure 1: Pairwise and 3-Way Jaccard Convergence Against "
             "Five Null Models</h2>",
-            '        <p class="subtitle">Quantitative reference for PD (40 taxa), HIV (24 ta'
-            "xa), and CRC (34 taxa) stool cellulose-catabolism signatures · October 16 worked "
-            "example</p>",
+            '        <p class="subtitle" style="white-space:normal">'
+            "Quantitative reference for PD (40 taxa), HIV (24 ta"
+            "xa), and CRC (34 taxa) stool cellulose-catabolism signatures "
+            "· text: October 16 worked example; figure drawn from current tables</p>",
             "      </div>",
             "    </div>",
             '    <div class="header-right">',
@@ -4010,9 +4017,10 @@ def render_slide_deck_html() -> str:
             '      <div class="title-block">',
             "        <h2>Statistical Figure 2: Anatomical Compartment Specificity and "
             "Sensitivity Across Taxonomic Ranks</h2>",
-            '        <p class="subtitle">Within-study binomial sign tests, cross-disease Jac'
-            "card similarity across 4 body compartments, and rank sensitivity · October 16 "
-            "worked example</p>",
+            '        <p class="subtitle" style="white-space:normal">'
+            "Within-study binomial sign tests, cross-disease Jac"
+            "card similarity across 4 body compartments, and rank sensitivity "
+            "· text: October 16 worked example; figure drawn from current tables</p>",
             "      </div>",
             "    </div>",
             '    <div class="header-right">',
@@ -4049,9 +4057,10 @@ def render_slide_deck_html() -> str:
             '      <div class="title-block">',
             "        <h2>Statistical Figure 3: 17-Taxon Core Presence Matrix and 90-Trait Func"
             "tional Guild Benchmark</h2>",
-            '        <p class="subtitle">Study-count matrix across the 17 three-way core tax'
-            "a and empirical ranking across all 90 non-MediaDive functional traits · "
-            "historical (#1416)</p>",
+            '        <p class="subtitle" style="white-space:normal">'
+            "Study-count matrix across the 17 three-way core tax"
+            "a and empirical ranking across all 90 non-MediaDive functional traits "
+            "· text: historical (#1416); figure drawn from current tables</p>",
             "      </div>",
             "    </div>",
             '    <div class="header-right">',
@@ -4088,8 +4097,8 @@ def render_slide_deck_html() -> str:
             "        <h2>Published Literature Support for the Four Highlighted Condition-Trait"
             " Signatures</h2>",
             '        <p class="subtitle">Comparing microbial-trait-profiling (MTP) stool sig'
-            "natures against 17 peer-reviewed metagenomic and physiological studies · October "
-            "16 worked example</p>",
+            "natures against 17 peer-reviewed metagenomic and physiological studies "
+            "· historical (#1416)</p>",
             "      </div>",
             "    </div>",
             '    <div class="header-right">',
