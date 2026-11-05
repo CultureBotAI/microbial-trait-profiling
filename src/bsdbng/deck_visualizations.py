@@ -15,6 +15,7 @@ from mtp.deck_visualizations import (
     generate_figure3_lead_findings_ora_evidence,
     generate_figure4_annotation_density_pc1_landscape,
     generate_figure5_pd_crc_taxon_attribution_bubble,
+    lead_consistency_status,
     load_profile_data,
     main,
 )
@@ -30,6 +31,7 @@ __all__ = [
     "generate_figure3_lead_findings_ora_evidence",
     "generate_figure4_annotation_density_pc1_landscape",
     "generate_figure5_pd_crc_taxon_attribution_bubble",
+    "lead_consistency_status",
     "load_profile_data",
     "main",
 ]

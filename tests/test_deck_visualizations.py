@@ -773,3 +773,124 @@ def test_analyze_pd_trait_profiles_labels_nominal_p_values_and_test_counts(
     assert "Mann-Whitney not tested (1 profile-level tests, 2 tests in table)." in readme_mixed
     assert "Wilcoxon not tested (1 paired-contrast tests, 2 tests in table)." in readme_mixed
     assert "p=NA" not in readme_mixed
+
+
+def test_figure3_lead_concordance_depends_on_shift_sign(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#1413: Figure 3 lead status checks observed shift direction against expected_direction."""
+    import plotly.graph_objects as go
+
+    from mtp.deck_visualizations import lead_consistency_status
+
+    assert (
+        lead_consistency_status("Decreased", -2.5, 0.008, 0.9, 0.015)
+        == "Concordant (nominal p < 0.05)"
+    )
+    assert (
+        lead_consistency_status("Decreased", 2.5, 0.008, 0.1, 0.015)
+        == "Discordant (nominal p < 0.05)"
+    )
+    assert (
+        lead_consistency_status("Increased", -2.5, 0.008, 0.6, 0.5)
+        == "Discordant (nominal p < 0.05)"
+    )
+    assert (
+        lead_consistency_status("Increased", 0.5, 0.4, 0.1, 0.015)
+        == "Discordant (nominal p < 0.05)"
+    )
+    assert lead_consistency_status("Decreased", -0.5, 0.4, 3 / 7, 1.0) == "Opposite Direction"
+    assert lead_consistency_status("Decreased", 0.5, 0.4, 4 / 7, 1.0) == "Opposite Direction"
+    assert lead_consistency_status("Decreased", 0.0, 1.0, 0.5, 1.0) == "No Net Shift"
+    assert (
+        lead_consistency_status("Decreased", float("nan"), float("nan"), float("nan"), float("nan"))
+        == "Not tested"
+    )
+    with pytest.raises(ValueError, match="Unexpected target_dir"):
+        lead_consistency_status("Flat", 0.0, 1.0, 0.5, 1.0)
+
+    figures: list[Any] = []
+
+    def _capture(fig: Any, path: str, **_kw: Any) -> None:
+        figures.append(fig)
+        Path(path).write_bytes(b"")
+
+    monkeypatch.setattr(go.Figure, "write_image", _capture)
+
+    trait_cols = list(TABLE_1_TRAITS.keys())
+    exp_rows = []
+    prof_rows = []
+    # 7 PD studies: Cellulose (expected Decreased) shifted UP (opposite, p < 0.05);
+    # Moderately halophilic (expected Increased) shifted UP (aligned, p < 0.05).
+    for idx in range(7):
+        s_id = f"study_pd_{idx}"
+        e_id = f"exp_pd_{idx}"
+        exp_rows.append((s_id, e_id, "Parkinson's disease", "Feces", "Homo sapiens"))
+        inc_vals = dict.fromkeys(trait_cols, 5.0)
+        dec_vals = dict.fromkeys(trait_cols, 5.0)
+        inc_vals["METPO:2000103|GO:0030245"] = 10.0 + idx * 0.1
+        dec_vals["METPO:2000103|GO:0030245"] = 1.0
+        inc_vals["METPO:1000623"] = 12.0 + idx * 0.1
+        dec_vals["METPO:1000623"] = 2.0
+        prof_rows.append({"study_id": s_id, "experiment_id": e_id, "inc_dec": "inc", **inc_vals})
+        prof_rows.append({"study_id": s_id, "experiment_id": e_id, "inc_dec": "dec", **dec_vals})
+
+    # 2 HIV studies: Cellulose (expected Decreased) shifted UP (opposite, p >= 0.05).
+    for idx in range(2):
+        s_id = f"study_hiv_{idx}"
+        e_id = f"exp_hiv_{idx}"
+        exp_rows.append((s_id, e_id, "HIV infection", "Feces", "Homo sapiens"))
+        inc_vals = dict.fromkeys(trait_cols, 5.0)
+        dec_vals = dict.fromkeys(trait_cols, 5.0)
+        inc_vals["METPO:2000103|GO:0030245"] = 8.0 + idx * 0.1
+        dec_vals["METPO:2000103|GO:0030245"] = 1.0
+        prof_rows.append({"study_id": s_id, "experiment_id": e_id, "inc_dec": "inc", **inc_vals})
+        prof_rows.append({"study_id": s_id, "experiment_id": e_id, "inc_dec": "dec", **dec_vals})
+
+    # 2 CRC studies: Cellulose (expected Decreased) shifted DOWN (aligned, p >= 0.05).
+    for idx in range(2):
+        s_id = f"study_crc_{idx}"
+        e_id = f"exp_crc_{idx}"
+        exp_rows.append((s_id, e_id, "Colorectal cancer", "Feces", "Homo sapiens"))
+        inc_vals = dict.fromkeys(trait_cols, 5.0)
+        dec_vals = dict.fromkeys(trait_cols, 5.0)
+        inc_vals["METPO:2000103|GO:0030245"] = 1.0
+        dec_vals["METPO:2000103|GO:0030245"] = 9.0 + idx * 0.1
+        prof_rows.append({"study_id": s_id, "experiment_id": e_id, "inc_dec": "inc", **inc_vals})
+        prof_rows.append({"study_id": s_id, "experiment_id": e_id, "inc_dec": "dec", **dec_vals})
+
+    exp_path = tmp_path / "exp_sign.tsv"
+    prof_path = tmp_path / "prof_sign.tsv"
+    pd.DataFrame(
+        exp_rows,
+        columns=["study_id", "experiment_id", "condition", "body_site", "host_species"],
+    ).to_csv(exp_path, sep="\t", index=False)
+    pd.DataFrame(prof_rows).to_csv(prof_path, sep="\t", index=False)
+
+    generate_figure3_lead_findings_ora_evidence(
+        profiles_path=prof_path,
+        experiments_path=exp_path,
+        output_path=tmp_path / "fig3_sign.png",
+    )
+    fig = figures.pop()
+    table_trace = next(trace for trace in fig.data if trace.type == "table")
+    statuses = list(table_trace.cells.values[4])
+    assert statuses == [
+        "Discordant (nominal p < 0.05)",
+        "Opposite Direction",
+        "Directionally Aligned",
+        "Concordant (nominal p < 0.05)",
+    ]
+
+    import mtp.deck_visualizations as dv
+
+    monkeypatch.setattr(dv, "EXPLORATORY_LEADS", dv.EXPLORATORY_LEADS[:3])
+    generate_figure3_lead_findings_ora_evidence(
+        profiles_path=prof_path,
+        experiments_path=exp_path,
+        output_path=tmp_path / "fig3_sign_3.png",
+    )
+    fig3 = figures.pop()
+    table3 = next(trace for trace in fig3.data if trace.type == "table")
+    assert list(table3.cells.fill.color[0]) == ["#ffffff", "#f8f9fa", "#ffffff"]
+    assert list(table3.cells.fill.color[4]) == ["#e8f5e9", "#e8f5e9", "#e8f5e9"]

@@ -4042,7 +4042,22 @@ def test_deck_and_plates_derive_corpus_and_trait_counts_from_tables(
     assert plates.build_methods_plate2(plate_repo, plate_repo).exists()
     mp2_fig = closed.pop()
     try:
-        mp2_fig.canvas.draw()
+        for check_dpi in (100, 220):
+            mp2_fig.set_dpi(check_dpi)
+            mp2_fig.canvas.draw()
+            ax_mp2 = mp2_fig.axes[0]
+            mc_patch = next(
+                p
+                for p in ax_mp2.patches
+                if isinstance(p, plates.mpatches.FancyBboxPatch)
+                and abs(p.get_x() - 69.8) < 1e-3
+                and abs(p.get_y() - 53.5) < 1e-3
+            )
+            mc_bbox = mc_patch.get_window_extent()
+            mc_sub = next(t for t in ax_mp2.texts if "discordant studies:" in t.get_text())
+            mc_s_bbox = mc_sub.get_window_extent()
+            assert mc_s_bbox.x0 >= mc_bbox.x0
+            assert mc_s_bbox.x1 <= mc_bbox.x1
         mp2_text = "\n".join(
             [
                 *(t.get_text() for t in mp2_fig.texts),
@@ -4054,6 +4069,12 @@ def test_deck_and_plates_derive_corpus_and_trait_counts_from_tables(
             "2\N{MULTIPLICATION SIGN}2 Hypergeometric Over-Representation (M = 5,999 Taxa)"
             in mp2_text
         )
+        assert (
+            "654 discordant studies: 399 Aerobe↑/Anaerobe↓\n"
+            "vs 255 opposite (OR = 1.56, nominal p = 1.9 \N{MULTIPLICATION SIGN} "
+            "10\N{SUPERSCRIPT MINUS}\N{SUPERSCRIPT EIGHT}, 1 test)" in mp2_text
+        )
+        assert "1.56, p =" not in mp2_text
         assert "Pass conservative 344-trait\nBenjamini\N{EN DASH}Yekutieli q ≤ 0.05" in mp2_text
         assert "Aggregated across N = 908 unique studies" in mp2_text
         assert "344-trait BH/BY screen (fixes 0.354 screening bias)" in mp2_text
@@ -4410,3 +4431,57 @@ def test_pd_network_slide_and_cover_label_nominal_p_and_exclude_unrun_tests(
         encoding="utf-8"
     )
     assert deck.cover_wilcoxon_text(loaded) in rendered_html
+
+
+def test_plate5_labels_mcnemar_nominal_p_with_one_test(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#1462: Plate 5 footer labels McNemar p as 'nominal p = ..., 1 test' from the guild table."""
+    guild_corr = tmp_path / plates.GUILD_CORRELATION
+    guild_corr.parent.mkdir(parents=True, exist_ok=True)
+    guild_corr.write_text(
+        "statistic\tcomparison\tvalue\tp_value\n"
+        "discordant_studies\taerobe_up_anaerobe_down\t412\t\n"
+        "discordant_studies\tanaerobe_up_aerobe_down\t248\t\n"
+        "mcnemar_odds_ratio\taerobe_up_anaerobe_down_vs_reverse\t1.661\t2.4e-07\n",
+        encoding="utf-8",
+    )
+    sw_dir = (
+        tmp_path / "trait-visualization" / "trait-profile-investigation" / "taxa-oxygen-switches"
+    )
+    sw_dir.mkdir(parents=True, exist_ok=True)
+    (sw_dir / "condition_oxygen_switch_scores.tsv").write_text(
+        "condition\tbody_site_display\taerobe_up_anaerobe_down_score\trank_score\t"
+        "aerobic_only_study_count\tanaerobic_only_study_count\n"
+        "Colorectal cancer\tFeces\t0.85\t1.50\t12\t10\n"
+        "Periodontitis\tOral\t-0.65\t1.10\t4\t9\n",
+        encoding="utf-8",
+    )
+    (sw_dir / "taxa_cross_disease_switch_summary.tsv").write_text(
+        "taxon_name\ttaxonomic_rank\tincreased_side_profiles\tdecreased_side_profiles\t"
+        "switch_score\ttop_increased_conditions\ttop_decreased_conditions\n"
+        "Streptococcus\tgenus\t40\t30\t70\tParkinson's disease (12)\tColorectal cancer (9)\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(plates, "cellulose_decr_notes", lambda _r: {"crc_source": "CRC note"})
+    monkeypatch.setattr(plates, "pd_split", lambda _rows: "PD split note")
+    monkeypatch.setattr(plates, "crc_oxygen_split", lambda _rows: "CRC split")
+    monkeypatch.setattr(
+        plates.plt.Figure,
+        "savefig",
+        lambda _self, path, **_kw: Path(path).write_bytes(b""),
+    )
+    real_close = plates.plt.close
+    closed: list[Any] = []
+    monkeypatch.setattr(plates.plt, "close", lambda fig: closed.append(fig))
+    assert plates.build_plate5(tmp_path, tmp_path).exists()
+    p5_fig = closed.pop()
+    try:
+        p5_text = "\n".join(t.get_text() for t in p5_fig.texts)
+        assert (
+            "Pooled McNemar OR = 1.661 (412 vs 248 st., nominal p = 2.4e-07, 1 test); CRC note"
+            in p5_text
+        )
+        assert "st., p =" not in p5_text
+    finally:
+        real_close(p5_fig)

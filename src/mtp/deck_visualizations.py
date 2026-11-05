@@ -622,6 +622,36 @@ def generate_figure2_calibrated_ora_infographic(
     return output_path
 
 
+def lead_consistency_status(
+    target_dir: str,
+    mean_shift: float,
+    w_pval: float,
+    frac: float,
+    pval: float,
+) -> str:
+    """Classify Figure 3 lead consistency from observed shift direction and nominal p-values."""
+    if target_dir not in ("Decreased", "Increased"):
+        raise ValueError(f"Unexpected target_dir: {target_dir!r}")
+    if not math.isfinite(pval) and not math.isfinite(w_pval):
+        return "Not tested"
+    expected_sign = -1.0 if target_dir == "Decreased" else 1.0
+    w_tested = math.isfinite(w_pval) and math.isfinite(mean_shift)
+    b_tested = math.isfinite(pval) and math.isfinite(frac)
+    w_aligned = w_tested and mean_shift * expected_sign > 0
+    w_opposite = w_tested and mean_shift * expected_sign < 0
+    b_aligned = b_tested and frac > 0.5
+    b_opposite = b_tested and frac < 0.5
+    if (w_opposite and w_pval < 0.05) or (b_opposite and pval < 0.05):
+        return "Discordant (nominal p < 0.05)"
+    if w_opposite or b_opposite:
+        return "Opposite Direction"
+    if not w_aligned and not b_aligned:
+        return "No Net Shift"
+    if (w_aligned and w_pval < 0.05) or (b_aligned and pval < 0.05):
+        return "Concordant (nominal p < 0.05)"
+    return "Directionally Aligned"
+
+
 def generate_figure3_lead_findings_ora_evidence(
     profiles_path: Path,
     experiments_path: Path,
@@ -704,7 +734,8 @@ def generate_figure3_lead_findings_ora_evidence(
 
         # Profile mean shift calculation
         s_series = pd.Series(study_shifts, dtype=float)
-        mean_str = f"{float(s_series.mean()):+.2f}" if len(s_series) > 0 else "NA"
+        mean_shift = float(s_series.mean()) if len(s_series) > 0 else math.nan
+        mean_str = f"{mean_shift:+.2f}" if math.isfinite(mean_shift) else "NA"
         non_zero_shifts = s_series[s_series != 0]
         if len(non_zero_shifts) > 0:
             n_wilcoxon_tests += 1
@@ -726,12 +757,7 @@ def generate_figure3_lead_findings_ora_evidence(
             else f"0/0 studies ({p_str})"
         )
 
-        if not math.isfinite(pval) and not math.isfinite(w_pval):
-            status = "Not tested"
-        elif pval < 0.05 or w_pval < 0.05:
-            status = "Concordant (nominal p < 0.05)"
-        else:
-            status = "Directionally Aligned"
+        status = lead_consistency_status(target_dir, mean_shift, w_pval, frac, pval)
         binom_cell = (
             f"{success}/{non_ties} non-tied ({frac * 100:.1f}%)<br>({p_str})"
             if non_ties > 0
@@ -792,6 +818,7 @@ def generate_figure3_lead_findings_ora_evidence(
     fig.add_vline(x=0.5, line={"color": "#e74c3c", "dash": "dash", "width": 1.5}, row=1, col=1)
 
     # Panel B: Table
+    row_stripes = ["#ffffff" if idx % 2 == 0 else "#f8f9fa" for idx in range(len(table_rows))]
     fig.add_trace(
         go.Table(
             columnwidth=[0.22, 0.09, 0.21, 0.21, 0.27],
@@ -817,10 +844,10 @@ def generate_figure3_lead_findings_ora_evidence(
                     [r[4] for r in table_rows],
                 ],
                 "fill_color": [
-                    ["#ffffff", "#f8f9fa"] * 2,
-                    ["#ffffff", "#f8f9fa"] * 2,
-                    ["#ffffff", "#f8f9fa"] * 2,
-                    ["#ffffff", "#f8f9fa"] * 2,
+                    row_stripes,
+                    row_stripes,
+                    row_stripes,
+                    row_stripes,
                     ["#e8f5e9" for _ in table_rows],
                 ],
                 "font": {"size": 9.5},
