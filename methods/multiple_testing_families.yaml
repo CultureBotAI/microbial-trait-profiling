@@ -708,8 +708,7 @@
             "BH"
           ]
         }
-      ],
-      "launcher": true
+      ]
     },
     {
       "family_id": "mt-core-stratified-ora-feces",
@@ -771,8 +770,7 @@
             "BH"
           ]
         }
-      ],
-      "launcher": true
+      ]
     },
     {
       "family_id": "mt-core-stratified-ora-feces-excluded",
@@ -834,8 +832,7 @@
             "BH"
           ]
         }
-      ],
-      "launcher": true
+      ]
     },
     {
       "family_id": "mt-core-multiplicity-noel",
@@ -1160,6 +1157,9 @@
         {
           "path": "src/mtp/composition_calibration/adapters/jed_composition.py",
           "function": "JedCompositionAdapter.run_inference",
+          "derived_procedures": {
+            "BY": "Reviewed arithmetic: clip(benjamini_hochberg(p_array) * sum(1/i for i=1..len(p_array)), 0, 1), when correction is by. The guard checks the declaration, not the formula."
+          },
           "procedures": [
             "BH",
             "BY"
@@ -1574,6 +1574,9 @@
         {
           "path": "src/mtp/composition_calibration/composition.py",
           "function": "run_composition_calibration",
+          "derived_procedures": {
+            "BY": "Reviewed observed arithmetic: obs_by = clip(obs_bh * harmonic_sum, 0, 1); harmonic_sum is sum(1/i for i=1..n_traits). The guard checks the declaration, not the formula."
+          },
           "procedures": [
             "BH",
             "BY"
@@ -1638,6 +1641,9 @@
         {
           "path": "src/mtp/composition_calibration/composition.py",
           "function": "run_composition_calibration",
+          "derived_procedures": {
+            "BY": "Reviewed null arithmetic: by_r = clip(benjamini_hochberg(p_r) * harmonic_sum, 0, 1); harmonic_sum is sum(1/i for i=1..n_traits). The guard checks the declaration, not the formula."
+          },
           "procedures": [
             "BH",
             "BY"
@@ -5008,8 +5014,7 @@
             "BH"
           ]
         }
-      ],
-      "launcher": true
+      ]
     },
     {
       "family_id": "mt-core-population-fraction",
@@ -5067,8 +5072,7 @@
             "BH"
           ]
         }
-      ],
-      "launcher": true
+      ]
     },
     {
       "family_id": "mt-core-population-log-ratio",
@@ -5126,8 +5130,7 @@
             "BY"
           ]
         }
-      ],
-      "launcher": true
+      ]
     },
     {
       "family_id": "mt-core-calibration-fraction-replicate",
@@ -5192,8 +5195,7 @@
             "BH"
           ]
         }
-      ],
-      "launcher": true
+      ]
     },
     {
       "family_id": "mt-core-calibration-log-ratio-replicate",

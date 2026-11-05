@@ -13,6 +13,7 @@ SOURCE = {"src/x.py": "def screen(p):\n    return step_up(p, method='by')\n"}
 
 
 def fixture_registry(counts: dict[str, int] | None = None) -> dict[str, Any]:
+    counts = {"BY": 1} if counts is None else counts
     return {
         "family_ids_are_new": True,
         "families": [
@@ -27,21 +28,23 @@ def fixture_registry(counts: dict[str, int] | None = None) -> dict[str, Any]:
                     "count_rule": "Count the input hypotheses, including untestable slots.",
                 },
                 "primary_procedure": "BY",
-                "comparison_procedure": ["BH"],
+                "comparison_procedure": ["BH"] if "BH" in counts else [],
                 "threshold": "q <= 0.05",
                 "outputs": [{"file": "results.tsv", "column": "q"}],
                 "consumers": [{"path": "src/x.py", "function": "screen"}],
                 "policy_rule": ["R1"],
                 "deliberate_difference": "BY primary for the synthetic all-trait screen.",
                 "open_issue": [],
-                "anchors": [{"path": "src/x.py", "function": "screen", "procedures": ["BH", "BY"]}],
+                "anchors": [
+                    {"path": "src/x.py", "function": "screen", "procedures": sorted(counts)}
+                ],
             }
         ],
         "literal_procedure_counts": [
             {
                 "path": "src/x.py",
                 "function": "screen",
-                "counts": {"BY": 1} if counts is None else counts,
+                "counts": counts,
             }
         ],
     }
@@ -154,13 +157,16 @@ def test_shared_anchor_counts_are_not_multiplied_by_families() -> None:
 
 
 def test_duplicate_bh_reason_and_repeated_selection_definition_are_refused() -> None:
-    registry = fixture_registry()
+    registry = fixture_registry({"BH": 1, "BY": 1})
+    sources = {
+        "src/x.py": "def screen(p):\n    return step_up(p, method='by'), step_up(p, method='bh')\n"
+    }
     first = registry["families"][0]
     first.update(primary_procedure="BH", comparison_procedure=["BY"])
     second = deepcopy(first)
     second["family_id"] = "second-family"
     registry["families"].append(second)
-    assert any("BH-primary reason" in e for e in registry_errors(SOURCE, registry))
+    assert any("BH-primary reason" in e for e in registry_errors(sources, registry))
     registry["families"].pop()
     first["size_source"]["selection_rule"] = first["family_definition"]
-    assert any("selection_rule" in e for e in registry_errors(SOURCE, registry))
+    assert any("selection_rule" in e for e in registry_errors(sources, registry))

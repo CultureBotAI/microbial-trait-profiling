@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import ast
 import re
+import unicodedata
 from collections import Counter, defaultdict
 from collections.abc import Iterable, Iterator, Mapping
 from dataclasses import dataclass, field
@@ -472,17 +473,80 @@ def family_schema_errors(
                 errors.append("anchor procedures must be a list of BH, BY or none")
     if "launcher" in family and type(family["launcher"]) is not bool:
         errors.append("launcher must be a boolean")
-    if (
-        not errors
-        and family.get("launcher") is not True
-        and not any((anchor["path"], anchor["function"]) in sites for anchor in family["anchors"])
-    ):
-        errors.append("family needs a discovered correction anchor or explicit launcher: true")
+    if not errors:
+        discovered = any(
+            (anchor["path"], anchor["function"]) in sites for anchor in family["anchors"]
+        )
+        if family.get("launcher") is True and discovered:
+            errors.append("launcher: true is redundant with a discovered correction anchor")
+        elif not discovered and family.get("launcher") is not True:
+            errors.append("family needs a discovered correction anchor or explicit launcher: true")
     for name in ("outputs", "policy_rule"):
         value = family.get(name)
         if not isinstance(value, list) or not value:
             errors.append(f"{name} must be a non-empty list")
+        elif name == "outputs":
+            for output in value:
+                if not isinstance(output, dict) or not all(
+                    nonempty_text(output.get(key)) for key in ("file", "column")
+                ):
+                    errors.append("outputs items need non-empty file and column")
+        elif any(
+            not isinstance(rule, str) or rule not in {f"R{i}" for i in range(1, 10)}
+            for rule in value
+        ):
+            errors.append("policy_rule items must be R1 through R9")
     return errors
+
+
+def family_procedure_errors(
+    family: dict[str, Any], sites: Mapping[tuple[str, str], Any]
+) -> list[str]:
+    """Check each family's own declarations, without borrowing from other families.
+
+    Arithmetic derivations are explicit reviewed metadata, not AST inference.
+    Dynamic calls and helper definitions do not provide an exhaustive literal set.
+    """
+    errors = []
+    identity = family["family_id"]
+    anchored = {method for anchor in family["anchors"] for method in anchor["procedures"]}
+    roles = {family["primary_procedure"], *family["comparison_procedure"]} - {"none"}
+    if missing := roles - anchored:
+        errors.append(f"{identity}: procedures absent from own anchors: {sorted(missing)}")
+    for anchor in family["anchors"]:
+        key = (anchor["path"], anchor["function"])
+        derived = anchor.get("derived_procedures", {})
+        if not isinstance(derived, dict) or any(
+            method not in {"BH", "BY"}
+            or method not in anchor["procedures"]
+            or not nonempty_text(reason)
+            for method, reason in derived.items()
+        ):
+            errors.append(f"{identity}: invalid derived_procedures at {key}")
+            continue
+        site = sites.get(key)
+        if not site or not site["calls"] or any(not call["procedures"] for call in site["calls"]):
+            if derived:
+                errors.append(f"{identity}: derived procedures need an all-literal site: {key}")
+            continue
+        literal = {method for call in site["calls"] for method in call["procedures"]}
+        if redundant := derived.keys() & literal:
+            errors.append(f"{identity}: derived procedures already literal: {sorted(redundant)}")
+        if extra := set(anchor["procedures"]) - literal - derived.keys() - {"none"}:
+            errors.append(
+                f"{identity}: procedures absent from all-literal site {key}: {sorted(extra)}"
+            )
+    return errors
+
+
+def normalized_reason(reason: str) -> str:
+    normalized = " ".join(reason.casefold().split())
+    end = len(normalized)
+    while end and (
+        normalized[end - 1].isspace() or unicodedata.category(normalized[end - 1]).startswith("P")
+    ):
+        end -= 1
+    return normalized[:end]
 
 
 def literal_count_errors(
@@ -545,9 +609,10 @@ def registry_errors(sources: Sources, registry: dict[str, Any]) -> list[str]:
         if identity in identities:
             errors.append(f"duplicate family_id {identity}")
         identities.add(identity)
+        errors.extend(family_procedure_errors(family, sites))
         if family["primary_procedure"] == "BH":
-            reason = family["deliberate_difference"].strip()
-            if reason in bh_reasons:
+            reason = normalized_reason(family["deliberate_difference"])
+            if not reason or reason in bh_reasons:
                 errors.append(f"duplicate BH-primary reason: {identity}")
             bh_reasons.add(reason)
         for anchor in family.get("anchors", []):
@@ -606,6 +671,8 @@ def test_repository_corrections_have_registered_families() -> None:
 
 
 def example_registry(*anchors: tuple[str, str, list[str]]) -> dict[str, Any]:
+    procedures = {method for _, _, methods in anchors for method in methods}
+    primary = "BY" if "BY" in procedures else "BH" if "BH" in procedures else "none"
     return {
         "version": 1,
         "family_ids_are_new": True,
@@ -613,8 +680,8 @@ def example_registry(*anchors: tuple[str, str, list[str]]) -> dict[str, Any]:
             {
                 **dict.fromkeys(REQUIRED, "synthetic fixture"),
                 "family_id": "synthetic-family",
-                "primary_procedure": "BY",
-                "comparison_procedure": ["BH"],
+                "primary_procedure": primary,
+                "comparison_procedure": sorted(procedures - {primary}),
                 "size_source": {
                     "kind": "executed_inventory",
                     "selection_rule": "Include every input hypothesis.",

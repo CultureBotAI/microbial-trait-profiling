@@ -17,8 +17,9 @@ is tracked as an issue. If a correction would change a reported number, the note
 current practice, and the change is listed under [Choices not adopted](#choices-not-adopted).
 
 [`multiple_testing_families.yaml`](multiple_testing_families.yaml) is the registry of
-every correction family in the code. `tests/test_multiple_testing_registry.py` keeps
-it in step with the code (see [Enforcement](#enforcement)).
+every correction family in the code. `tests/test_multiple_testing_registry.py` checks
+it against the correction calls it can recognise in the code. The test has known limits,
+listed under [Enforcement](#enforcement).
 
 This policy changes no computation and no reported number. It records the current
 procedures, names the deliberate differences between families, and sets the reporting
@@ -67,7 +68,7 @@ Quote them with that run, never as the current size.
     families;
   - the density reported-trait family (#1321);
   - the native, stratified and site ORA families, which are directional views;
-  - heatmap and map cell families;
+  - heatmap cell families;
   - selected native composition and influence families (R6);
   - the cellulose summary and the PD script families, which are exploratory;
   - sensitivity analyses that mirror a native BH family.
@@ -136,6 +137,11 @@ not by line number. An entry gives:
 | `procedure_role`, `inference_role` | What the primary designation and the family's results are used for. |
 | `conformance_status`, `open_issue` | Whether the family conforms, and the issue that tracks it if not. |
 | `inventory_ids`, `joint_status_outputs` | The inventory records behind the entry, and outputs that combine several families' calls. |
+| `launcher` | Marks an anchor that starts a family's computation without making the correction call itself. |
+| `size_source.unfiltered_count_rule` | For a selected family, how to count the unfiltered inventory (R6). |
+
+The registry also pins `literal_procedure_counts`: for each discovered function, how many
+literal BY and BH calls it makes.
 
 Observed family sizes are not stored in the registry, because they belong to an
 execution (R2). The registry was built from a quote-checked inventory of every correction
@@ -155,12 +161,16 @@ To add or change a correction:
 wrapper functions. It fails when:
 - a correction call has no registry entry for its enclosing function;
 - a registry anchor does not exist, or an infrastructure anchor gives no reason;
-- the literal procedures in an anchored function do not match its registered families,
-  counted per procedure, so a single BY call changed to BH is caught;
-- an entry is malformed: a required field is missing or empty, a procedure is outside
-  {BY, BH, none}, a `family_id` is duplicated, an anchor or consumer does not resolve in
-  the source, or an `open_issue` value is not an integer. The test runs offline, so it does
-  not check that an issue exists.
+- the literal procedures in a discovered function do not match the per-function counts
+  pinned in `literal_procedure_counts`. A change that alters a count is caught; a swap
+  between two calls that keeps the counts is not;
+- a family's declared primary or comparison procedure does not appear among its own
+  anchors' procedures;
+- an entry is malformed. That is: a required field is missing or empty; a procedure is
+  outside {BY, BH, none}; a `family_id` or a BH-primary reason is duplicated; an
+  `outputs` item or a `policy_rule` value is invalid; an anchor or consumer does not resolve
+  in the source; or an `open_issue` value is not an integer. The test runs offline, so it
+  does not check that an issue exists.
 
 Discovery reads files lazily and keeps compact per-file summaries. Bounded alias
 expansion, together with cycle and size limits, keeps it fast and its memory small.
@@ -172,7 +182,17 @@ by the name of the function it calls, so it does not detect any of these (#1443)
 - a correction function re-exported under another name;
 - `functools.partial` and `getattr` dispatch;
 - calls between scripts that import each other by bare module name;
-- methods called on objects.
+- methods called on objects. Conversely, any `obj.correct()` or `obj.adjust()` call is
+  reported as a correction even when it is not one.
+
+Within a registered function, it also does not detect:
+- a procedure chosen from a variable or a loop, or BY derived arithmetically from BH;
+- a swap between two calls that keeps the per-function counts, for example exchanging the
+  BH and BY calls that fill the screen's reported columns;
+- a new family added as loop data that makes no new call;
+- a family deleted from the registry, or never registered, when its function also hosts
+  another registered family;
+- a primary and comparison procedure exchanged, when the function makes both calls.
 
 These need source review. The test does not show that a correction is statistically valid,
 or that a family's membership matches its definition.
@@ -182,10 +202,18 @@ or that a family's membership matches its definition.
 Each of the following would change reported q-values, and so a pinned analysis rerun.
 None is adopted here; each is recorded for the next analysis version:
 - **D1.** Make BY primary, with BH as the comparison, for the BH-primary families that do
-  not already export BY. These are the six-trait Table 1 family, the density family, the
-  coupling, heatmap and map cell families, the PD script families, the native influence
-  families and the cellulose summary. (Where BY is already exported, as for presence/depth
-  focal families, designating it primary changes no number.)
+  not already export BY. These are every BH-primary entry in the registry whose
+  `comparison_procedure` is empty, for example:
+  - the six-trait Table 1 family and the density family;
+  - the coupling and heatmap cell families;
+  - the native pair-t and study-t composition families;
+  - the ratio-sensitivity S0, S1 and S4 fraction families, and the population fraction
+    family;
+  - the source-lineage influence fraction families;
+  - the PD script families and the cellulose summary.
+
+  Where BY is already exported, as for the presence/depth focal families, designating it
+  primary changes no number.
 - **D2.** Report the joint-tail BY family as the ORA q, instead of the native per-tail
   BH families.
 - **D3.** Hold untestable members at p = 1 in the families that correct over tested rows
