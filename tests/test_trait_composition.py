@@ -12,6 +12,29 @@ from bsdbng.table1_trait_maps import compute_direction_shifts
 from bsdbng.trait_composition import compute_log_ratio_shifts, main
 from bsdbng.trait_guilds import TABLE1_TRAITS, Profile
 from mtp.trait_composition import paired_log2_ratio_change
+from mtp.workflow.downstream_contracts import get_standard_analysis_spec
+
+
+def test_manifest_policy_matches_native_ratio_procedure_and_complete_family() -> None:
+    """The manifest names the actual adjustment, including untestable pairs (#1417)."""
+    profiles = []
+    for i in range(8):
+        for direction in ("inc", "dec"):
+            counts = dict.fromkeys(TABLE1_TRAITS, 1)
+            counts[next(iter(TABLE1_TRAITS))] = 4 if direction == "inc" else 1
+            profiles.append(
+                Profile(str(i), "e1", direction, "X", "Feces", counts, sum(counts.values()))
+            )
+    result = compute_log_ratio_shifts(profiles)
+    assert result.family_size == 15
+    tested = [row for row in result.summaries if row.sign_p is not None]
+    assert len(tested) == 5
+    # Five equal p=1/128, ten untestable p=1 placeholders: BY, not BH.
+    expected = (1 / 128) * (15 / 5) * sum(1 / rank for rank in range(1, 16))
+    assert [row.by_q for row in tested] == pytest.approx([expected] * 5)
+    assert all(row.by_q is None for row in result.summaries if row.sign_p is None)
+    spec = get_standard_analysis_spec("jed_table1_paired_log_ratio_sign_test_v1")
+    assert spec.multiple_testing_policy == f"BY_q_across_{result.family_size}_trait_pairs"
 
 
 def _profile(

@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import csv
 import importlib.util
+import math
 from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import dataclass, field, replace
@@ -716,9 +717,27 @@ def write_outputs(
     written = write_matrix_outputs(matrix, output_dir)
     stats_path = output_dir / "guild_aerobe_anaerobe_correlation.tsv"
 
+    n_mcnemar_tests = (
+        1 if correlation.mcnemar_p is not None and math.isfinite(correlation.mcnemar_p) else 0
+    )
+    n_spearman_tests = sum(
+        1 for _, p_val, _ in correlation.spearman.values() if math.isfinite(p_val)
+    )
+    n_tests = n_mcnemar_tests + n_spearman_tests
     with stats_path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle, delimiter="\t", lineterminator="\n")
-        writer.writerow(["statistic", "comparison", "value", "p_value", "n", "bugsigdb_vintage"])
+        writer.writerow(
+            [
+                "statistic",
+                "comparison",
+                "value",
+                "p_value",
+                "n",
+                "bugsigdb_vintage",
+                "p_value_type",
+                "n_tests",
+            ]
+        )
         if exclusion is not None:
             writer.writerow(
                 [
@@ -728,10 +747,23 @@ def write_outputs(
                     "",
                     exclusion.studies_after,
                     vintage or "",
+                    "",
+                    "",
                 ]
             )
         for key, count in sorted(correlation.table.items()):
-            writer.writerow(["studies_shifted", key, count, "", correlation.studies, vintage or ""])
+            writer.writerow(
+                [
+                    "studies_shifted",
+                    key,
+                    count,
+                    "",
+                    correlation.studies,
+                    vintage or "",
+                    "",
+                    "",
+                ]
+            )
         up_down, down_up = correlation.discordant
         writer.writerow(
             [
@@ -741,6 +773,8 @@ def write_outputs(
                 "",
                 up_down + down_up,
                 vintage or "",
+                "",
+                "",
             ]
         )
         writer.writerow(
@@ -751,6 +785,8 @@ def write_outputs(
                 "",
                 up_down + down_up,
                 vintage or "",
+                "",
+                "",
             ]
         )
         writer.writerow(
@@ -761,17 +797,22 @@ def write_outputs(
                 "" if correlation.mcnemar_p is None else f"{correlation.mcnemar_p:.6g}",
                 up_down + down_up,
                 vintage or "",
+                "nominal" if n_mcnemar_tests > 0 else "not_tested",
+                n_tests,
             ]
         )
         for pair, (rho, p_value, n_studies) in sorted(correlation.spearman.items()):
+            tested = math.isfinite(p_value)
             writer.writerow(
                 [
                     "spearman_rho_across_studies",
                     pair,
                     f"{rho:.6f}",
-                    f"{p_value:.6g}",
+                    f"{p_value:.6g}" if tested else "",
                     n_studies,
                     vintage or "",
+                    "nominal" if tested else "not_tested",
+                    n_tests,
                 ]
             )
 
@@ -1594,7 +1635,11 @@ def main() -> int:
 
     up_down, down_up = correlation.discordant
     ratio = "undefined" if correlation.odds_ratio is None else f"{correlation.odds_ratio:.3f}"
-    p_text = "not tested" if correlation.mcnemar_p is None else f"p={correlation.mcnemar_p:.3g}"
+    p_text = (
+        "not tested"
+        if correlation.mcnemar_p is None
+        else f"nominal p={correlation.mcnemar_p:.3g}, 1 nominal test"
+    )
     print(
         f"\nMcNemar (exact, paired signs): discordant {up_down}/{down_up}, "
         f"odds ratio {ratio} ({p_text}) over {correlation.studies} studies "

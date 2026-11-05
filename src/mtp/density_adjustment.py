@@ -49,6 +49,7 @@ from mtp.trait_screen import effective_family_size
 DEFAULT_PROFILES_PATH = DERIVED_DATA_DIR / "study_trait_profiles_wide.tsv"
 DEFAULT_COLUMNS_PATH = DERIVED_DATA_DIR / "taxa_trait_matrix_columns.tsv"
 DEFAULT_OUTPUT_DIR = DERIVED_DATA_DIR / "density_adjustment"
+DENSITY_PROVENANCE_FILENAME = "density_adjustment_provenance.json"
 TRAIT_LIST_PROVENANCE_FILENAME = "trait_list_provenance.json"
 
 # The six canonical Table 1 traits
@@ -863,6 +864,59 @@ def declared_density_traits(
     return trait_labels(non_media, trait_list.trait_ids)
 
 
+def density_provenance(
+    trait_ids: Sequence[str],
+    *,
+    profiles_path: Path,
+    columns_path: Path,
+    code_commit: str,
+    trait_list: DeclaredTraitList | None = None,
+) -> dict[str, object]:
+    """Record the reported traits, the inputs and the q-value family (#1321, #1327)."""
+    # The loaders above fall back to a .gz sibling; hash the file they actually read.
+    resolved_profiles, resolved_columns = (
+        path if path.exists() else path.with_name(f"{path.name}.gz")
+        for path in (profiles_path, columns_path)
+    )
+    ids = list(trait_ids) if trait_list is None else list(trait_list.trait_ids)
+    trait_fields: dict[str, object] = (
+        {"trait_count": len(ids), "trait_ids": ids}
+        if trait_list is None
+        else trait_list.provenance()
+    )
+    return {
+        **trait_fields,
+        "reported_table": "table1_density_adjusted_effects.tsv",
+        "pc1_fit_traits": "every non-MediaDive trait column, independent of the list",
+        "q_values": q_value_provenance(len(ids)),
+        "profiles_file": resolved_profiles.name,
+        "profiles_sha256": file_sha256(resolved_profiles),
+        "columns_file": resolved_columns.name,
+        "columns_sha256": file_sha256(resolved_columns),
+        "code_commit": code_commit,
+    }
+
+
+def write_density_provenance(
+    output_dir: Path,
+    trait_ids: Sequence[str],
+    *,
+    profiles_path: Path,
+    columns_path: Path,
+    code_commit: str,
+) -> Path:
+    """Record the default reported traits, the inputs and the q-value family (#1327)."""
+    provenance = density_provenance(
+        trait_ids,
+        profiles_path=profiles_path,
+        columns_path=columns_path,
+        code_commit=code_commit,
+    )
+    path = output_dir / DENSITY_PROVENANCE_FILENAME
+    path.write_text(json.dumps(provenance, indent=2) + "\n", encoding="utf-8")
+    return path
+
+
 def write_trait_list_provenance(
     output_dir: Path,
     trait_list: DeclaredTraitList,
@@ -872,22 +926,13 @@ def write_trait_list_provenance(
     code_commit: str,
 ) -> Path:
     """Record the declared list, its hash, the inputs and the q-value family (#1321)."""
-    # The loaders above fall back to a .gz sibling; hash the file they actually read.
-    resolved_profiles, resolved_columns = (
-        path if path.exists() else path.with_name(f"{path.name}.gz")
-        for path in (profiles_path, columns_path)
+    provenance = density_provenance(
+        trait_list.trait_ids,
+        profiles_path=profiles_path,
+        columns_path=columns_path,
+        code_commit=code_commit,
+        trait_list=trait_list,
     )
-    provenance = {
-        **trait_list.provenance(),
-        "reported_table": "table1_density_adjusted_effects.tsv",
-        "pc1_fit_traits": "every non-MediaDive trait column, independent of the list",
-        "q_values": q_value_provenance(len(trait_list.trait_ids)),
-        "profiles_file": resolved_profiles.name,
-        "profiles_sha256": file_sha256(resolved_profiles),
-        "columns_file": resolved_columns.name,
-        "columns_sha256": file_sha256(resolved_columns),
-        "code_commit": code_commit,
-    }
     path = output_dir / TRAIT_LIST_PROVENANCE_FILENAME
     path.write_text(json.dumps(provenance, indent=2) + "\n", encoding="utf-8")
     return path
@@ -965,9 +1010,13 @@ def run_density_audit(
       output_dir / 'density_adjustment_summary.tsv'
       output_dir / 'table1_density_adjusted_effects.tsv'
       output_dir / 'density_adjustment_report.txt'
+      output_dir / 'density_adjustment_provenance.json' (default six-trait runs, #1327)
+      output_dir / 'trait_list_provenance.json' (declared-list runs, #1054)
 
     With a declared ``trait_list`` the effects table reports those traits instead of
-    the six Table 1 traits, and ``trait_list_provenance.json`` records the list (#1054).
+    the six Table 1 traits, and ``trait_list_provenance.json`` records the list (#1054);
+    default runs record the same provenance schema (without the list-file fields) in
+    ``density_adjustment_provenance.json`` (#1327).
     Statuses read BH q-values over the reported traits: the six, or the declared list;
     the table's ``bh_family_size`` column records the family size (#1321).
     A list run never writes into default or arm density directories, or replaces
@@ -1146,11 +1195,20 @@ def run_density_audit(
     report_text = "\n".join(report_lines) + "\n"
     report_out.write_text(report_text, encoding="utf-8")
 
+    default_provenance_out = None
     provenance_out = None
     if trait_list is None:
         # A default rerun into a reused directory must not keep a list it did not use.
         (output_dir / TRAIT_LIST_PROVENANCE_FILENAME).unlink(missing_ok=True)
+        default_provenance_out = write_density_provenance(
+            output_dir,
+            list(reported_traits),
+            profiles_path=profiles_path,
+            columns_path=columns_path,
+            code_commit=code_commit,
+        )
     else:
+        (output_dir / DENSITY_PROVENANCE_FILENAME).unlink(missing_ok=True)
         provenance_out = write_trait_list_provenance(
             output_dir,
             trait_list,
@@ -1166,11 +1224,14 @@ def run_density_audit(
         "adj_comp_pearson": adj_comp_pearson,
         "table1_effects": t1_effects,
         "bh_family_size": len(reported_traits),
+        "q_values": q_value_provenance(len(reported_traits)),
         "twin_summary": twin_summary,
         "summary_tsv": summary_out,
         "table1_tsv": t1_out,
         "report_txt": report_out,
+        "density_provenance": default_provenance_out,
         "trait_list_provenance": provenance_out,
+        "provenance": default_provenance_out or provenance_out,
     }
 
 
