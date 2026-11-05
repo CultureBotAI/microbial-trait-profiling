@@ -302,11 +302,12 @@ def safe_mannwhitney(focus: pd.Series, comparator: pd.Series) -> float:
 
 def safe_wilcoxon(contrast: pd.Series) -> float:
     values = contrast.dropna()
-    non_zero = values[values != 0]
-    if len(non_zero) == 0:
+    if not (values != 0).any():
         return math.nan
     try:
-        return float(stats.wilcoxon(non_zero, alternative="two-sided").pvalue)
+        # Pass the zeros too: scipy's zero handling and method choice depend on them,
+        # and main computed the p-value on all contrasts (#1537).
+        return float(stats.wilcoxon(values, alternative="two-sided").pvalue)
     except ValueError:
         return math.nan
 

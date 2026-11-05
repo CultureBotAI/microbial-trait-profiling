@@ -401,8 +401,13 @@ def fit_cluster_ols(
         finite_sample = 1.0
     influence = np.sqrt(finite_sample) * (scores_matrix @ xtx_inv)
     se = np.linalg.norm(influence, axis=0)
-    scale = np.sqrt(finite_sample * np.maximum(np.diag(xtx_inv), 0.0)) * float(np.linalg.norm(y))
-    rcond_se = max(x.shape) * float(np.sqrt(np.finfo(float).eps))
+    # Scale-free tolerance: an SE this far below the coefficient's own scale is rounding
+    # noise of a rank-deficient design. Centring y keeps the rule invariant to shifting
+    # the outcome, and no factor grows with the number of profiles (#1538).
+    scale = np.sqrt(finite_sample * np.maximum(np.diag(xtx_inv), 0.0)) * float(
+        np.linalg.norm(y - y.mean())
+    )
+    rcond_se = float(np.sqrt(np.finfo(float).eps))
     estimable = identifiable & (scale > 0.0) & (se > rcond_se * scale)
     coef_out = np.where(identifiable, beta, np.nan)
     se_out = np.where(identifiable, se, np.nan)

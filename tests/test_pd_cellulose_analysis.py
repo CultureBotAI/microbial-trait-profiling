@@ -398,3 +398,33 @@ def test_rank_deficient_and_cluster_degenerate_designs_mark_unestimable_terms_no
             assert got == expected_types
             not_tested_rows = model_df[model_df["p_value_type"].eq("not_tested")]
             assert not_tested_rows[["t_stat", "p_value"]].isna().all().all()
+
+
+@pytest.mark.parametrize("profiles", [400, 20000])
+def test_estimability_is_invariant_to_outcome_shift_and_holds_for_large_designs(
+    profiles: int,
+) -> None:
+    """Shifting the outcome or growing the design never marks real slopes untested (#1538)."""
+    import numpy as np
+
+    rng = np.random.default_rng(1538 + profiles)
+    is_pd = rng.integers(0, 2, profiles)
+    is_decreased = rng.integers(0, 2, profiles)
+    frame = pd.DataFrame(
+        {
+            "study_id": rng.integers(0, max(profiles // 6, 12), profiles),
+            "is_pd": is_pd,
+            "is_decreased": is_decreased,
+            "pd_x_decreased": is_pd * is_decreased,
+        }
+    )
+    frame["outcome"] = (
+        0.3 * frame["is_pd"] - 0.2 * frame["is_decreased"] + rng.normal(0.0, 1.0, profiles)
+    )
+    frame["shifted"] = frame["outcome"] + 1000.0
+    terms = ["is_pd", "is_decreased", "pd_x_decreased"]
+    base = cellulose.fit_cluster_ols(frame, "outcome", terms, "study_id")
+    shifted = cellulose.fit_cluster_ols(frame, "shifted", terms, "study_id")
+    slopes = base.iloc[1:]
+    assert slopes["p_value"].notna().all()
+    assert shifted.iloc[1:]["p_value"].to_numpy() == pytest.approx(slopes["p_value"].to_numpy())
