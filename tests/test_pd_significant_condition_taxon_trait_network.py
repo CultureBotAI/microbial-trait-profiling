@@ -1,12 +1,10 @@
 import importlib.util
-import os
 import sys
 from pathlib import Path
 
 import pandas as pd
 import pytest
 
-os.environ.setdefault("MPLCONFIGDIR", "/tmp/mtp-mplconfig")
 MODULE_PATH = (
     Path(__file__).resolve().parents[1]
     / "scripts"
@@ -274,6 +272,7 @@ def test_network_tables_figure_and_methods_label_nominal_p_values(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Taxon/trait tables, Panel C labels, and methods summary label p as nominal (#1335)."""
+    monkeypatch.setenv("MPLCONFIGDIR", str(tmp_path / "mplconfig"))
     metadata_rows = []
     zscore_rows = []
     indices = []
@@ -293,6 +292,22 @@ def test_network_tables_figure_and_methods_label_nominal_p_values(
                 }
             )
             zscore_rows.append({"trait-1": value})
+    for index in range(2):
+        for direction, value in [("inc", 0.5), ("dec", 0.0)]:
+            profile_id = f"other-study-{index}|experiment-{index}|{direction}"
+            indices.append(profile_id)
+            metadata_rows.append(
+                {
+                    "study_id": f"other-study-{index}",
+                    "experiment_id": f"experiment-{index}-{direction}",
+                    "direction": "increased" if direction == "inc" else "decreased",
+                    "inc_dec": direction,
+                    "condition": "Condition B",
+                    "body_site_group": network.FECES,
+                    "host_species": network.HUMAN_HOST,
+                }
+            )
+            zscore_rows.append({"trait-1": value})
     metadata = pd.DataFrame(metadata_rows, index=indices)
     zscores = pd.DataFrame(zscore_rows, index=indices)
     traits = pd.DataFrame(
@@ -304,18 +319,18 @@ def test_network_tables_figure_and_methods_label_nominal_p_values(
     )
     eligibility = pd.DataFrame(
         {
-            "condition": [network.PD_CONDITION],
-            "paired_study_count": [8],
-            "passes_min_paired_studies": [True],
-            "displayed_in_network": [True],
+            "condition": [network.PD_CONDITION, "Condition B"],
+            "paired_study_count": [8, 2],
+            "passes_min_paired_studies": [True, True],
+            "displayed_in_network": [True, False],
         }
     )
     annotated_taxa = pd.DataFrame(
         {
-            "taxon_id": ["genus-1"],
-            "taxon_name": ["Roseburia"],
-            "taxonomic_rank": ["genus"],
-            "trait-1": [1],
+            "taxon_id": ["genus-1", "species-low"],
+            "taxon_name": ["Roseburia", "Low support species"],
+            "taxonomic_rank": ["genus", "species"],
+            "trait-1": [1, 1],
         }
     )
     taxon_rows = [
@@ -326,16 +341,33 @@ def test_network_tables_figure_and_methods_label_nominal_p_values(
             "taxon_id": "genus-1",
         }
         for index in range(8)
+    ] + [
+        {
+            "study_id": f"study-{index}",
+            "experiment_id": f"experiment-{index}-inc",
+            "direction": "increased",
+            "taxon_id": "species-low",
+        }
+        for index in range(2)
     ]
     monkeypatch.setattr(network, "read_tsv", lambda *_args, **_kwargs: pd.DataFrame(taxon_rows))
 
     taxon_tests = network.build_condition_taxon_tests(metadata, eligibility, annotated_taxa)
     trait_tests, _ = network.build_condition_trait_tests(metadata, zscores, traits, eligibility)
 
-    assert taxon_tests["p_value_type"].eq("nominal").all()
-    assert taxon_tests["n_tests"].eq(1).all()
-    assert trait_tests["p_value_type"].eq("nominal").all()
-    assert trait_tests["n_tests"].eq(1).all()
+    assert taxon_tests["p_value_type"].tolist() == ["nominal", "nominal"]
+    assert taxon_tests["n_tests"].tolist() == [2, 2]
+    assert taxon_tests.loc[taxon_tests["passes_min_taxon_studies"], "bh_family_size"].tolist() == [
+        1
+    ]
+    assert taxon_tests.loc[~taxon_tests["passes_min_taxon_studies"], "bh_family_size"].isna().all()
+
+    assert trait_tests["p_value_type"].tolist() == ["nominal", "nominal"]
+    assert trait_tests["n_tests"].tolist() == [2, 2]
+    assert trait_tests.loc[trait_tests["passes_min_paired_studies"], "bh_family_size"].tolist() == [
+        1
+    ]
+    assert trait_tests.loc[~trait_tests["passes_min_paired_studies"], "bh_family_size"].isna().all()
 
     nodes, edges, _ = network.build_network_tables(taxon_tests, trait_tests, annotated_taxa, traits)
     import matplotlib.figure
@@ -361,5 +393,11 @@ def test_network_tables_figure_and_methods_label_nominal_p_values(
     methods_path = tmp_path / "methods.md"
     network.write_methods_summary(eligibility, taxon_tests, trait_tests, nodes, edges, methods_path)
     methods_text = methods_path.read_text(encoding="utf-8")
-    assert "nominal (uncorrected)" in methods_text
-    assert "`1` eligible condition-trait comparisons" in methods_text
+    assert (
+        "Reported `p_value` columns and Panel C `nominal p` labels are nominal "
+        "(uncorrected) across the `1` eligible condition-taxon tests and `1` eligible "
+        "condition-trait tests"
+    ) in methods_text
+    assert (
+        "`1` eligible condition-trait comparisons (`1` PD trait comparisons shown in Panel C)."
+    ) in methods_text

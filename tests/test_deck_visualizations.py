@@ -423,6 +423,87 @@ def test_deck_figures_label_uncorrected_p_values_as_nominal_with_test_counts(
 
     monkeypatch.setattr(go.Figure, "write_image", capture)
 
+    import re
+
+    def _text_width_px(text: str, size: float) -> float:
+        from PIL import ImageFont
+
+        try:
+            font = ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial.ttf", round(size))
+            return float(font.getlength(text))
+        except OSError:
+            return len(text) * 0.58 * size
+
+    def assert_plotly_figure_text_fits(fig: Any) -> None:
+        width = float(fig.layout.width)
+        margin_l = float(fig.layout.margin.l or 80)
+        margin_r = float(fig.layout.margin.r or 60)
+        title_x = float(fig.layout.title.x or 0.02)
+        title_avail_px = width * (1.0 - title_x)
+        font_base = (
+            float(fig.layout.title.font.size or 17.0)
+            if getattr(fig.layout.title, "font", None)
+            else 17.0
+        )
+        title_lines = str(fig.layout.title.text).split("<br>")
+        for idx, raw_line in enumerate(title_lines):
+            clean = re.sub(r"<[^>]+>", "", raw_line)
+            font_px = font_base if idx == 0 else font_base * 0.7
+            est_px = _text_width_px(clean, font_px)
+            assert est_px <= title_avail_px, (
+                f"Title line {idx} overflows canvas ({est_px:.1f}px > {title_avail_px:.1f}px): "
+                f"{clean!r}"
+            )
+
+        plot_w = width - margin_l - margin_r
+        for ann in fig.layout.annotations:
+            ann_lines = str(ann.text).split("<br>")
+            for raw_line in ann_lines:
+                clean = re.sub(r"<[^>]+>", "", raw_line)
+                est_px = _text_width_px(clean, 16.0)
+                avail_px = plot_w * 0.36 if len(fig.layout.annotations) >= 3 else plot_w * 0.58
+                assert est_px <= avail_px, (
+                    f"Annotation line overflows subplot ({est_px:.1f}px > {avail_px:.1f}px): "
+                    f"{clean!r}"
+                )
+
+        for trace in fig.data:
+            if getattr(trace, "type", None) != "table":
+                continue
+            dom_x = trace.domain.x if trace.domain and trace.domain.x else (0.0, 1.0)
+            table_px = (float(dom_x[1]) - float(dom_x[0])) * plot_w
+            col_weights = [float(w) for w in trace.columnwidth]
+            total_w = sum(col_weights)
+            header_font_px = float(trace.header.font.size or 10.0)
+            header_height = float(trace.header.height or 48.0)
+            cell_font_px = float(trace.cells.font.size or 9.5)
+            cell_height = float(trace.cells.height or 40.0)
+            for col_idx, weight in enumerate(col_weights):
+                col_px = (weight / total_w) * table_px
+                h_lines = str(trace.header.values[col_idx]).split("<br>")
+                assert len(h_lines) * header_font_px * 1.35 + 10.0 <= header_height, (
+                    f"Table header col {col_idx} overflows height {header_height}px: {h_lines!r}"
+                )
+                for raw_line in h_lines:
+                    clean = re.sub(r"<[^>]+>", "", raw_line)
+                    est_px = _text_width_px(clean, header_font_px) + 10.0
+                    assert est_px <= col_px, (
+                        f"Table header col {col_idx} line overflows width "
+                        f"({est_px:.1f}px > {col_px:.1f}px): {clean!r}"
+                    )
+                for row_val in trace.cells.values[col_idx]:
+                    c_lines = str(row_val).split("<br>")
+                    assert len(c_lines) * cell_font_px * 1.35 + 8.0 <= cell_height, (
+                        f"Table cell col {col_idx} overflows height {cell_height}px: {c_lines!r}"
+                    )
+                    for raw_line in c_lines:
+                        clean = re.sub(r"<[^>]+>", "", raw_line)
+                        est_px = _text_width_px(clean, cell_font_px) + 10.0
+                        assert est_px <= col_px, (
+                            f"Table cell col {col_idx} line overflows width "
+                            f"({est_px:.1f}px > {col_px:.1f}px): {clean!r}"
+                        )
+
     generate_figure1_condition_anatomy_ora_heatmap(
         profiles_path=mock_pipeline_data["profiles"],
         experiments_path=mock_pipeline_data["experiments"],
@@ -431,8 +512,10 @@ def test_deck_figures_label_uncorrected_p_values_as_nominal_with_test_counts(
     )
     fig1 = figures.pop()
     fig1_title = str(fig1.layout.title.text)
-    assert "nominal p" in fig1_title
-    assert "24 nominal tests across 4 x 6 condition-site x trait cells" in fig1_title
+    assert "(* nominal p < 0.05, ** nominal p < 0.01, " in fig1_title
+    assert "*** nominal p < 0.001;" in fig1_title
+    assert "4 nominal tests across 4 x 6 condition-site x trait cells" in fig1_title
+    assert_plotly_figure_text_fits(fig1)
 
     generate_figure3_lead_findings_ora_evidence(
         profiles_path=mock_pipeline_data["profiles"],
@@ -443,11 +526,70 @@ def test_deck_figures_label_uncorrected_p_values_as_nominal_with_test_counts(
     fig3_title = str(fig3.layout.title.text)
     assert "8 nominal tests: 4 Wilcoxon + 4 binomial, uncorrected" in fig3_title
     table_trace = next(trace for trace in fig3.data if trace.type == "table")
-    header_vals = " ".join(str(v) for v in table_trace.header.values)
-    assert "Nominal Wilcoxon p" in header_vals
-    assert "Nominal Binomial p" in header_vals
-    cell_vals = " ".join(str(v) for col in table_trace.cells.values for v in col)
-    assert "nominal p=" in cell_vals
+    header_vals = [str(v) for v in table_trace.header.values]
+    assert "Nominal Wilcoxon p" in header_vals[2]
+    assert "Nominal Binomial p" in header_vals[3]
+    for cell in table_trace.cells.values[2]:
+        assert "nominal p=" in str(cell)
+        assert str(cell).count("<br>") == 2
+    for cell in table_trace.cells.values[3]:
+        assert "nominal p=" in str(cell)
+        assert str(cell).count("<br>") == 1
+    assert_plotly_figure_text_fits(fig3)
+
+    # Also verify Figure 3 when one lead condition is absent (untested) and one is significant
+    exp_df = pd.read_csv(mock_pipeline_data["experiments"], sep="\t")
+    prof_df = pd.read_csv(mock_pipeline_data["profiles"], sep="\t")
+    exp_df = exp_df[exp_df["condition"] != "HIV infection"].copy()
+    trait_cols = list(TABLE_1_TRAITS.keys())
+    extra_exp_rows = []
+    extra_prof_rows = []
+    for idx in range(3, 8):
+        s_id = f"study_pd_{idx}"
+        e_id = f"exp_pd_{idx}"
+        extra_exp_rows.append(
+            {
+                "study_id": s_id,
+                "experiment_id": e_id,
+                "condition": "Parkinson's disease",
+                "body_site": "Feces",
+                "host_species": "Homo sapiens",
+            }
+        )
+        inc_vals = dict.fromkeys(trait_cols, 5.0)
+        inc_vals["METPO:2000103|GO:0030245"] = 1.0
+        dec_vals = dict.fromkeys(trait_cols, 5.0)
+        dec_vals["METPO:2000103|GO:0030245"] = 10.0 + idx * 0.1
+        extra_prof_rows.append(
+            {"study_id": s_id, "experiment_id": e_id, "inc_dec": "inc", **inc_vals}
+        )
+        extra_prof_rows.append(
+            {"study_id": s_id, "experiment_id": e_id, "inc_dec": "dec", **dec_vals}
+        )
+    exp_partial_path = tmp_path / "exp_partial.tsv"
+    prof_partial_path = tmp_path / "prof_partial.tsv"
+    pd.concat([exp_df, pd.DataFrame(extra_exp_rows)], ignore_index=True).to_csv(
+        exp_partial_path, sep="\t", index=False
+    )
+    pd.concat([prof_df, pd.DataFrame(extra_prof_rows)], ignore_index=True).to_csv(
+        prof_partial_path, sep="\t", index=False
+    )
+    generate_figure3_lead_findings_ora_evidence(
+        profiles_path=prof_partial_path,
+        experiments_path=exp_partial_path,
+        output_path=tmp_path / "fig3_partial.png",
+    )
+    fig3_partial = figures.pop()
+    fig3_partial_title = str(fig3_partial.layout.title.text)
+    assert "6 nominal tests: 3 Wilcoxon + 3 binomial, uncorrected" in fig3_partial_title
+    partial_table = next(trace for trace in fig3_partial.data if trace.type == "table")
+    assert "(not tested)" in str(partial_table.cells.values[2][1])
+    assert "(not tested)" in str(partial_table.cells.values[3][1])
+    assert "1.0000" not in str(partial_table.cells.values[2][1])
+    assert "1.0000" not in str(partial_table.cells.values[3][1])
+    assert partial_table.cells.values[4][0] == "Concordant (nominal p < 0.05)"
+    assert partial_table.cells.values[4][2] == "Directionally Aligned"
+    assert_plotly_figure_text_fits(fig3_partial)
 
     generate_figure4_annotation_density_pc1_landscape(
         taxa_matrix_path=mock_pipeline_data["taxa_matrix"],
@@ -459,9 +601,10 @@ def test_deck_figures_label_uncorrected_p_values_as_nominal_with_test_counts(
     fig4 = figures.pop()
     fig4_title = str(fig4.layout.title.text)
     assert "1 nominal Spearman test across 6 traits" in fig4_title
-    fig4_annotations = " ".join(str(ann.text) for ann in fig4.layout.annotations)
-    assert "nominal p =" in fig4_annotations
-    assert "1 nominal test, n = 6 traits" in fig4_annotations
+    panel_a_title = str(fig4.layout.annotations[0].text)
+    assert "nominal p =" in panel_a_title
+    assert "<br>1 nominal test, n = 6 traits)" in panel_a_title
+    assert_plotly_figure_text_fits(fig4)
 
 
 def test_analyze_pd_trait_profiles_labels_nominal_p_values_and_test_counts(
@@ -469,10 +612,9 @@ def test_analyze_pd_trait_profiles_labels_nominal_p_values_and_test_counts(
 ) -> None:
     """PD trait-profile script labels Mann-Whitney and Wilcoxon p as nominal (#1335)."""
     import importlib.util
-    import os
     import sys
 
-    os.environ.setdefault("MPLCONFIGDIR", "/tmp/mtp-mplconfig")
+    monkeypatch.setenv("MPLCONFIGDIR", str(tmp_path / "mplconfig"))
     script_path = (
         Path(__file__).resolve().parents[1]
         / "scripts"
@@ -505,8 +647,8 @@ def test_analyze_pd_trait_profiles_labels_nominal_p_values_and_test_counts(
         }
     )
     tests = pd_profiles.summarize_paired_tests(scores, paired)
-    assert tests["p_value_type"].eq("nominal").all()
-    assert tests["n_tests"].eq(4).all()
+    assert tests["p_value_type"].tolist() == ["nominal", "nominal", "nominal", "nominal"]
+    assert tests["n_tests"].tolist() == [4, 4, 4, 4]
 
     monkeypatch.setattr(pd_profiles, "OUTPUT_DIR", tmp_path)
     direction_summary = pd.DataFrame([{"inc_dec": "inc", "profile_count": 3}])
@@ -523,8 +665,40 @@ def test_analyze_pd_trait_profiles_labels_nominal_p_values_and_test_counts(
     taxa_summary = pd.DataFrame([{"guild_analysis": pd_profiles.AEROBE_CONFIG.key}])
     pd_profiles.write_readme(scores, direction_summary, tests, paired, taxa, taxa_summary)
     readme = (tmp_path / "README.md").read_text(encoding="utf-8")
-    assert "nominal Mann-Whitney p=" in readme
-    assert "nominal Wilcoxon p=" in readme
-    assert "2 profile-level tests, 4 tests in table" in readme
-    assert "2 paired-contrast tests, 4 tests in table" in readme
-    assert "4 nominal tests, uncorrected" in readme
+    assert readme.count("nominal Mann-Whitney p=") == 2
+    assert readme.count("(uncorrected; 2 profile-level tests, 4 tests in table).") == 2
+    assert readme.count("nominal Wilcoxon p=") == 2
+    assert readme.count("(uncorrected; 2 paired-contrast tests, 4 tests in table).") == 2
+    assert (
+        "(2 profile-level tests). Paired contrasts use two-sided Wilcoxon signed-rank "
+        "tests against zero (2 paired-contrast tests; 4 nominal tests in total)."
+    ) in readme
+    assert (
+        "- `parkinsons_feces_trait_score_tests.tsv`: profile-level and paired tests "
+        "(4 nominal tests, uncorrected)."
+    ) in readme
+
+    # Verify unpaired / zero-contrast edge cases do not overcount untested rows
+    zero_paired = pd.DataFrame(
+        {
+            "study_id": ["S1"],
+            "experiment_id": ["E1"],
+            "aerobe_v2_increased_minus_decreased": [0.0],
+            "anaerobe_v2_decreased_minus_increased": [0.0],
+        }
+    )
+    tests_partial = pd_profiles.summarize_paired_tests(scores, zero_paired)
+    assert tests_partial["p_value_type"].tolist() == [
+        "nominal",
+        "not_tested",
+        "nominal",
+        "not_tested",
+    ]
+    assert tests_partial["n_tests"].tolist() == [2, 2, 2, 2]
+    pd_profiles.write_readme(
+        scores, direction_summary, tests_partial, zero_paired, taxa, taxa_summary
+    )
+    readme_partial = (tmp_path / "README.md").read_text(encoding="utf-8")
+    assert readme_partial.count("(uncorrected; 2 profile-level tests, 2 tests in table).") == 2
+    assert "(2 profile-level tests; 2 nominal tests in total)." in readme_partial
+    assert "(2 nominal tests, uncorrected)." in readme_partial

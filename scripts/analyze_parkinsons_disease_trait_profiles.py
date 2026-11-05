@@ -337,6 +337,7 @@ def summarize_paired_tests(scores: pd.DataFrame, paired: pd.DataFrame) -> pd.Dat
             scores["inc_dec"] == spec["comparator_direction"],
             spec["score_column"],
         ]
+        mw_p = safe_mannwhitney(focus, comparator)
         records.append(
             {
                 "analysis": spec["analysis"],
@@ -350,13 +351,14 @@ def summarize_paired_tests(scores: pd.DataFrame, paired: pd.DataFrame) -> pd.Dat
                 "comparator_mean": mean_or_nan(comparator),
                 "focus_minus_comparator": mean_or_nan(focus) - mean_or_nan(comparator),
                 "test": "Mann-Whitney U",
-                "p_value": safe_mannwhitney(focus, comparator),
-                "p_value_type": "nominal",
+                "p_value": mw_p,
+                "p_value_type": "nominal" if math.isfinite(mw_p) else "not_tested",
             }
         )
 
         if not paired.empty:
             contrast = paired[spec["contrast_column"]]
+            w_p = safe_wilcoxon(contrast)
             records.append(
                 {
                     "analysis": spec["analysis"],
@@ -370,12 +372,12 @@ def summarize_paired_tests(scores: pd.DataFrame, paired: pd.DataFrame) -> pd.Dat
                     "comparator_mean": 0.0,
                     "focus_minus_comparator": mean_or_nan(contrast),
                     "test": "Wilcoxon signed-rank vs zero",
-                    "p_value": safe_wilcoxon(contrast),
-                    "p_value_type": "nominal",
+                    "p_value": w_p,
+                    "p_value_type": "nominal" if math.isfinite(w_p) else "not_tested",
                 }
             )
 
-    n_tests = len(records)
+    n_tests = sum(1 for record in records if math.isfinite(float(str(record["p_value"]))))
     for record in records:
         record["n_tests"] = n_tests
     return pd.DataFrame.from_records(records)
@@ -707,23 +709,37 @@ def write_readme(
         "",
         "## Approach 2: PD Feces-Only Trait-Score Contrast",
         "",
-        (
-            "- Aerobe enrichment profile-level effect "
-            f"(increased minus decreased mean): "
-            f"{fmt_float(aerobe_test.focus_minus_comparator)}; "
-            f"nominal Mann-Whitney p={fmt_p_value(aerobe_test.p_value)} "
-            f"(uncorrected; 2 profile-level tests, {len(tests)} tests in table)."
-        ),
-        (
-            "- Anaerobe depletion profile-level effect "
-            f"(decreased minus increased mean): "
-            f"{fmt_float(anaerobe_test.focus_minus_comparator)}; "
-            f"nominal Mann-Whitney p={fmt_p_value(anaerobe_test.p_value)} "
-            f"(uncorrected; 2 profile-level tests, {len(tests)} tests in table)."
-        ),
     ]
+    finite_tests = tests[pd.to_numeric(tests["p_value"], errors="coerce").map(math.isfinite)]
+    profile_test_count = int(
+        finite_tests["comparison"].eq("profile-level focus direction vs comparator direction").sum()
+    )
+    paired_test_count = int(
+        finite_tests["comparison"].eq("within-experiment paired contrast").sum()
+    )
+    total_test_count = len(finite_tests)
+    lines.extend(
+        [
+            (
+                "- Aerobe enrichment profile-level effect "
+                f"(increased minus decreased mean): "
+                f"{fmt_float(aerobe_test.focus_minus_comparator)}; "
+                f"nominal Mann-Whitney p={fmt_p_value(aerobe_test.p_value)} "
+                f"(uncorrected; {profile_test_count} profile-level tests, "
+                f"{total_test_count} tests in table)."
+            ),
+            (
+                "- Anaerobe depletion profile-level effect "
+                f"(decreased minus increased mean): "
+                f"{fmt_float(anaerobe_test.focus_minus_comparator)}; "
+                f"nominal Mann-Whitney p={fmt_p_value(anaerobe_test.p_value)} "
+                f"(uncorrected; {profile_test_count} profile-level tests, "
+                f"{total_test_count} tests in table)."
+            ),
+        ]
+    )
 
-    if not aerobe_pair.empty and not anaerobe_pair.empty:
+    if paired_test_count > 0 and not aerobe_pair.empty and not anaerobe_pair.empty:
         lines.extend(
             [
                 (
@@ -731,17 +747,38 @@ def write_readme(
                     f"(increased minus decreased): "
                     f"{fmt_float(aerobe_pair.iloc[0].focus_minus_comparator)}; "
                     f"nominal Wilcoxon p={fmt_p_value(aerobe_pair.iloc[0].p_value)} "
-                    f"(uncorrected; 2 paired-contrast tests, {len(tests)} tests in table)."
+                    f"(uncorrected; {paired_test_count} paired-contrast tests, "
+                    f"{total_test_count} tests in table)."
                 ),
                 (
                     "- Anaerobe within-experiment contrast mean "
                     f"(decreased minus increased): "
                     f"{fmt_float(anaerobe_pair.iloc[0].focus_minus_comparator)}; "
                     f"nominal Wilcoxon p={fmt_p_value(anaerobe_pair.iloc[0].p_value)} "
-                    f"(uncorrected; 2 paired-contrast tests, {len(tests)} tests in table)."
+                    f"(uncorrected; {paired_test_count} paired-contrast tests, "
+                    f"{total_test_count} tests in table)."
                 ),
             ]
         )
+
+    statistical_summary_line = (
+        (
+            "- Statistical summaries: profile-level comparisons use two-sided "
+            f"Mann-Whitney U tests ({profile_test_count} profile-level tests). "
+            "Paired contrasts use two-sided Wilcoxon signed-rank tests against zero "
+            f"({paired_test_count} paired-contrast tests; {total_test_count} nominal tests "
+            "in total). Reported p-values are nominal (uncorrected). These tests summarize "
+            "recurrence patterns and are not causal models."
+        )
+        if paired_test_count > 0
+        else (
+            "- Statistical summaries: profile-level comparisons use two-sided "
+            f"Mann-Whitney U tests ({profile_test_count} profile-level tests; "
+            f"{total_test_count} nominal tests in total). Reported p-values are "
+            "nominal (uncorrected). These tests summarize recurrence patterns and "
+            "are not causal models."
+        )
+    )
 
     lines.extend(
         [
@@ -820,14 +857,7 @@ def write_readme(
                 "Aerobe contrast is increased minus decreased; anaerobe contrast is "
                 "decreased minus increased; combined reciprocal signal is their sum."
             ),
-            (
-                "- Statistical summaries: profile-level comparisons use two-sided "
-                "Mann-Whitney U tests (2 profile-level tests). Paired contrasts use "
-                "two-sided Wilcoxon signed-rank tests against zero (2 paired-contrast "
-                f"tests; {len(tests)} nominal tests in total). Reported p-values are "
-                "nominal (uncorrected). These tests summarize recurrence patterns and "
-                "are not causal models."
-            ),
+            statistical_summary_line,
             (
                 "- Target-taxa diagrams: candidate taxa are read from the aerobe and "
                 "anaerobe v2 `candidate_taxa_condition_direction.tsv` files and "
@@ -850,7 +880,7 @@ def write_readme(
             "- `parkinsons_feces_paired_trait_contrasts.tsv`: within-experiment contrasts.",
             (
                 "- `parkinsons_feces_trait_score_tests.tsv`: profile-level and paired tests "
-                f"({len(tests)} nominal tests, uncorrected)."
+                f"({total_test_count} nominal tests, uncorrected)."
             ),
             "- `parkinsons_target_taxa_direction.tsv`: PD target taxa by direction.",
             "- `parkinsons_target_taxa_direction_summary.tsv`: target taxa rollup.",

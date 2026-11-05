@@ -298,7 +298,9 @@ def build_condition_taxon_tests(
     tests["p_value_type"] = "nominal"
     tests["q_value"] = np.nan
     support = tests["passes_min_taxon_studies"].astype(bool)
-    tests["n_tests"] = int(support.sum())
+    tests["n_tests"] = int(tests["p_value"].notna().sum())
+    tests["bh_family_size"] = pd.Series(pd.NA, index=tests.index, dtype="Int64")
+    tests.loc[support, "bh_family_size"] = int(tests.loc[support, "p_value"].notna().sum())
     tests.loc[support, "q_value"] = benjamini_hochberg(tests.loc[support, "p_value"])
     tests["selected_after_bh"] = support & tests["q_value"].le(Q_VALUE_CUTOFF)
     return tests.sort_values(
@@ -394,7 +396,9 @@ def build_condition_trait_tests(
     tests["passes_min_paired_studies"] = tests["paired_study_count"].ge(MIN_PAIRED_STUDIES)
     tests["q_value"] = np.nan
     support = tests["passes_min_paired_studies"].astype(bool)
-    tests["n_tests"] = int(support.sum())
+    tests["n_tests"] = int(tests["p_value"].notna().sum())
+    tests["bh_family_size"] = pd.Series(pd.NA, index=tests.index, dtype="Int64")
+    tests.loc[support, "bh_family_size"] = int(tests.loc[support, "p_value"].notna().sum())
     tests.loc[support, "q_value"] = benjamini_hochberg(tests.loc[support, "p_value"])
     tests["selected_after_bh"] = support & tests["q_value"].le(Q_VALUE_CUTOFF)
     tests = tests.sort_values(

@@ -396,7 +396,7 @@ def fit_cluster_ols(
             "df": df,
             "p_value": p_values,
             "p_value_type": "nominal",
-            "n_model_terms": parameters,
+            "n_model_terms": len(terms),
             "ci_low": ci_low,
             "ci_high": ci_high,
             "cluster_count": groups,
@@ -428,7 +428,7 @@ def build_cellulose_model_tables(
         ],
         ignore_index=True,
     )
-    models["n_tests"] = len(models)
+    models["n_tests"] = int(models["p_value"].notna().sum())
     models["term_label"] = models["term"].map(
         {
             "intercept": "Other feces, increased baseline",
@@ -1124,6 +1124,15 @@ def write_interpretations(
         "taxon_name",
     ].tolist()
 
+    n_non_intercept_terms = int(
+        model_table.loc[~model_table["term"].eq("intercept"), "term"].nunique()
+    )
+    n_outcomes = int(model_table["outcome"].nunique())
+    n_model_tests = int(model_table["p_value"].notna().sum())
+    n_directions = int(pd_vs_other["direction"].nunique())
+    n_tests_per_direction = 2
+    n_direction_tests = int(pd_vs_other["n_tests"].iloc[0])
+
     lines = [
         "# Parkinson's Disease and Cellulose Catabolic Process",
         "",
@@ -1148,9 +1157,10 @@ def write_interpretations(
             f"`{interaction.coefficient:+.3f}` cellulose z (95% CI "
             f"`{interaction.ci_low:+.3f}` to `{interaction.ci_high:+.3f}`, "
             f"`nominal p={interaction.p_value:.3g}`, {int(interaction.cluster_count)} study "
-            f"clusters; 3 non-intercept model terms tested in the figure, "
-            f"{len(model_table)} terms across 2 outcomes in `pd_cellulose_interaction_model.tsv`), "
-            f"and the interval {interval} zero. This is one nominal test, not "
+            f"clusters), and the interval {interval} zero. This is the interaction's nominal p, "
+            f"one of {n_non_intercept_terms} non-intercept model terms tested in the figure "
+            f"({n_model_tests} terms across {n_outcomes} outcomes in "
+            "`pd_cellulose_interaction_model.tsv`), not "
             "corrected for the other conditions and traits examined; the corrected screen "
             "of every eligible fecal condition-trait contrast is described in "
             "`pd_condition_taxon_trait_network_methods.md`."
@@ -1205,7 +1215,8 @@ def write_interpretations(
             f"of `{dec_vs_other.pd_vs_other_positive_z_odds_ratio:.2f}` and "
             f"`nominal p={dec_vs_other.pd_vs_other_fisher_p:.3g}` "
             f"(two-sided Mann-Whitney `nominal p={dec_vs_other.pd_vs_other_mannwhitney_p:.3g}`; "
-            "uncorrected across 2 directions x 2 tests = 4 nominal tests in "
+            f"uncorrected across {n_directions} directions x {n_tests_per_direction} tests = "
+            f"{n_direction_tests} nominal tests in "
             "`pd_cellulose_vs_other_feces_summary.tsv`). It treats the profiles of one "
             "study as independent, so the study-clustered model below is the better guide."
         ),
@@ -1215,9 +1226,11 @@ def write_interpretations(
             f"PD-by-decreased interaction, with standard errors clustered by study. The "
             f"cellulose z-score interaction term is `{interaction.coefficient:.3f}` "
             f"(95% CI `{interaction.ci_low:.3f}` to `{interaction.ci_high:.3f}`, "
-            f"`nominal p={interaction.p_value:.3g}`, uncorrected across 3 non-intercept "
+            f"`nominal p={interaction.p_value:.3g}`, uncorrected across "
+            f"{n_non_intercept_terms} non-intercept "
             f"model terms plotted in `pd_cellulose_enrichment_test.png` and "
-            f"{len(model_table)} terms across 2 outcomes in `pd_cellulose_interaction_model.tsv`). "
+            f"{n_model_tests} terms across {n_outcomes} outcomes in "
+            "`pd_cellulose_interaction_model.tsv`). "
             "It tests whether the decreased direction has "
             "an extra PD-associated shift in cellulose annotation beyond the main PD and "
             "direction effects."

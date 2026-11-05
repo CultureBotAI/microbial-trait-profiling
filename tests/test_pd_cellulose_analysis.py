@@ -3,14 +3,12 @@
 from __future__ import annotations
 
 import importlib.util
-import os
 import sys
 from pathlib import Path
 
 import pandas as pd
 import pytest
 
-os.environ.setdefault("MPLCONFIGDIR", "/tmp/mtp-mplconfig")
 MODULE_PATH = Path(__file__).resolve().parents[1] / "scripts" / "create_pd_cellulose_analysis.py"
 sys.path.insert(0, str(MODULE_PATH.parent))
 SPEC = importlib.util.spec_from_file_location("pd_cellulose_analysis", MODULE_PATH)
@@ -66,9 +64,11 @@ def test_cellulose_tables_plots_and_interpretations_label_nominal_p_values(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Every uncorrected Fisher, Mann-Whitney, and OLS p-value is labelled nominal (#1335)."""
+    monkeypatch.setenv("MPLCONFIGDIR", str(tmp_path / "mplconfig"))
     rows = []
     z_rows = []
     for study_idx in range(6):
+        jitter = (1.0 if study_idx % 2 == 0 else -1.0) + 0.05 * study_idx
         for cond, base in [(cellulose.PD_CONDITION, 0.8), ("other condition", -0.4)]:
             for inc_dec, delta in [("inc", -0.3), ("dec", 0.9)]:
                 rows.append(
@@ -81,7 +81,7 @@ def test_cellulose_tables_plots_and_interpretations_label_nominal_p_values(
                 )
                 z_rows.append(
                     {
-                        cellulose.CELLULOSE_ID: base + delta + 0.05 * study_idx,
+                        cellulose.CELLULOSE_ID: base + delta + jitter,
                         "METPO:1000668": -base,
                     }
                 )
@@ -94,7 +94,7 @@ def test_cellulose_tables_plots_and_interpretations_label_nominal_p_values(
 
     model_table, group_summary = cellulose.build_cellulose_model_tables(metadata, zscores)
     assert model_table["p_value_type"].eq("nominal").all()
-    assert model_table["n_model_terms"].eq(4).all()
+    assert model_table["n_model_terms"].eq(3).all()
     assert model_table["n_tests"].eq(8).all()
 
     import matplotlib.figure
@@ -143,9 +143,20 @@ def test_cellulose_tables_plots_and_interpretations_label_nominal_p_values(
     assert "nominal Fisher p=" in dir_joined
     assert "2 directions tested" in dir_joined
 
-    cellulose.plot_enrichment_test(model_table, group_summary, tmp_path / "enrich.png")
+    # Exercise both p < 0.001 ("nominal p<0.001") and p >= 0.001 ("nominal p=") branches
+    model_for_plot = model_table.copy()
+    model_for_plot.loc[
+        model_for_plot["outcome"].eq("cellulose_z") & model_for_plot["term"].eq("is_pd"),
+        "p_value",
+    ] = 0.042
+    model_for_plot.loc[
+        model_for_plot["outcome"].eq("cellulose_z") & model_for_plot["term"].eq("pd_x_decreased"),
+        "p_value",
+    ] = 0.0001
+    cellulose.plot_enrichment_test(model_for_plot, group_summary, tmp_path / "enrich.png")
     enrich_joined = "\n".join(captured_texts["enrich.png"])
-    assert "nominal p" in enrich_joined
+    assert "nominal p<0.001" in enrich_joined
+    assert "nominal p=0.042" in enrich_joined
     assert "3 model terms tested" in enrich_joined
     assert "3 nominal tests" in enrich_joined
 
@@ -185,7 +196,18 @@ def test_cellulose_tables_plots_and_interpretations_label_nominal_p_values(
         drivers,
     )
     readme = readme_path.read_text(encoding="utf-8")
-    assert "nominal p=" in readme
-    assert "4 nominal tests" in readme
-    assert "3 non-intercept model terms" in readme
-    assert "8 terms across 2 outcomes" in readme
+    assert readme.count("nominal p=") == 4
+    assert (
+        "This is the interaction's nominal p, one of 3 non-intercept model terms tested "
+        "in the figure (8 terms across 2 outcomes in `pd_cellulose_interaction_model.tsv`), "
+        "not corrected for the other conditions and traits examined"
+    ) in readme
+    assert (
+        "uncorrected across 2 directions x 2 tests = 4 nominal tests in "
+        "`pd_cellulose_vs_other_feces_summary.tsv`"
+    ) in readme
+    assert (
+        "uncorrected across 3 non-intercept model terms plotted in "
+        "`pd_cellulose_enrichment_test.png` and 8 terms across 2 outcomes in "
+        "`pd_cellulose_interaction_model.tsv`"
+    ) in readme
