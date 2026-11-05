@@ -75,6 +75,12 @@ VERSION = "calibration-v3"
 
 ALPHA = 0.05
 Q_THRESHOLD = 0.05
+P_VALUE_DIAGNOSTICS_ROLE = "calibration_diagnostic"
+P_VALUE_DIAGNOSTICS_CORRECTION = "none (nominal)"
+P_VALUE_DIAGNOSTICS_NOTE = (
+    "smallest_observed_p, attainable_p_below_alpha, and attainable_p_above_alpha "
+    "are uncorrected nominal p-value calibration diagnostics, not inferential results"
+)
 #: One-sided 95% bound: the criteria ask whether a rate is demonstrably below a
 #: tolerance, not whether its two-sided interval happens to cover the nominal level.
 Z_ONE_SIDED = float(norm.ppf(0.95))
@@ -580,6 +586,8 @@ def summarize(
                     ),
                     "attainable_p_below_alpha": below,
                     "attainable_p_above_alpha": above,
+                    "p_value_diagnostics_role": P_VALUE_DIAGNOSTICS_ROLE,
+                    "p_value_diagnostics_correction": P_VALUE_DIAGNOSTICS_CORRECTION,
                     "exact_size_at_median_scored": (
                         exact_sign_test_size(median_scored) if median_scored else None
                     ),
@@ -1472,6 +1480,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         },
         "calibration_status_rule": OVERALL_RULE,
         "calibration_status": calibration_status(criteria),
+        "p_value_diagnostics": P_VALUE_DIAGNOSTICS_NOTE,
         "not_calibrated_here": [
             "the enrichment arm's hypergeometric urn (#131)",
             "the composition arm's native transformed test",

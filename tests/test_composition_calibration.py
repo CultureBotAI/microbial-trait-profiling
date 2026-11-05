@@ -555,3 +555,33 @@ def test_zero_total_paired_studies_do_not_desynchronize_flip_assignments(
             )
         }
         assert df_nonzero_flipped == expected_nonzero_flipped
+
+
+def test_composition_null_pvalues_are_marked_as_uncorrected_calibration_diagnostics(
+    synthetic_paired_profiles: pd.DataFrame,
+) -> None:
+    """#1410: null_p_value is preserved and labelled as an uncorrected calibration diagnostic."""
+    traits = ["trait_A", "trait_B", "trait_C"]
+    summary_dict, _, _, null_pvals_df, _ = run_composition_calibration(
+        profiles_df=synthetic_paired_profiles,
+        trait_columns=traits,
+        replicates=3,
+        seed=182,
+        stream=STREAM,
+    )
+    assert {
+        "null_p_value",
+        "null_t_statistic",
+        "replicate",
+        "trait",
+        "p_value_role",
+        "correction",
+        "n_tests",
+    } <= set(null_pvals_df.columns)
+    assert set(null_pvals_df["p_value_role"]) == {"calibration_diagnostic"}
+    assert set(null_pvals_df["correction"]) == {"none (nominal)"}
+    assert set(null_pvals_df["n_tests"]) == {len(traits)}
+    role_note = str(summary_dict["null_p_value_role"])
+    assert "calibration_diagnostic" in role_note
+    assert "uncorrected" in role_note
+    assert "nominal" in role_note

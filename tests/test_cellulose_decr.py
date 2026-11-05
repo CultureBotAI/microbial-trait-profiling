@@ -1147,3 +1147,92 @@ def test_tier1_2_catalog_scopes_taxa_to_tier1_2_oriented_contrasts(tmp_path: Pat
 
     assert "t3" in all_sets["PD"]
     assert "t3" not in t12_sets["PD"]
+
+
+def test_significance_tier_is_labelled_nominal_and_summary_records_bh_selection_rule() -> None:
+    """#1412: significance_tier is labelled nominal and summary records the R6 BH selection rule."""
+    from mtp.cellulose_decr.analysis import (
+        ANALYSIS_DIR,
+        SUMMARY_BH_SELECTION_RULE,
+        significant_results_summary_table,
+        summary_definitions,
+        tier,
+    )
+
+    assert tier(math.nan) == "not tested"
+    assert tier(0.0009) == "nominal p < 0.001"
+    assert tier(0.001) == "nominal p < 0.01"
+    assert tier(0.009) == "nominal p < 0.01"
+    assert tier(0.01) == "nominal p < 0.05"
+    assert tier(0.049) == "nominal p < 0.05"
+    assert tier(0.05) == "not significant (nominal p >= 0.05)"
+
+    compartments = pd.read_csv(
+        ANALYSIS_DIR / "compartment_jaccard_and_direction_stats.tsv", sep="\t"
+    )
+    scenario_direction = pd.read_csv(
+        ANALYSIS_DIR / "condition_definition_sensitivity.tsv", sep="\t"
+    )
+    pairwise = pd.read_csv(ANALYSIS_DIR / "pairwise_jaccard_significance.tsv", sep="\t")
+    interaction = pd.read_csv(ANALYSIS_DIR / "compartment_direction_interaction.tsv", sep="\t")
+    scenario_interaction = pd.read_csv(
+        ANALYSIS_DIR / "condition_definition_interaction.tsv", sep="\t"
+    )
+    committed = pd.read_csv(ANALYSIS_DIR / "significant_results_summary.tsv", sep="\t")
+
+    summary = significant_results_summary_table(
+        compartments, scenario_direction, pairwise, interaction, scenario_interaction
+    )
+    assert len(summary) == len(committed) == 29
+    np.testing.assert_allclose(
+        summary["p_value"].to_numpy(dtype=float),
+        committed["p_value"].to_numpy(dtype=float),
+        rtol=1e-5,
+        equal_nan=True,
+    )
+    np.testing.assert_allclose(
+        summary["bh_q_within_table"].to_numpy(dtype=float),
+        committed["bh_q_within_table"].to_numpy(dtype=float),
+        rtol=1e-5,
+        equal_nan=True,
+    )
+    tested_tiers = set(summary["significance_tier"])
+    assert tested_tiers == {
+        "nominal p < 0.001",
+        "nominal p < 0.01",
+        "nominal p < 0.05",
+        "not significant (nominal p >= 0.05)",
+    }
+    assert all("nominal" in label for label in tested_tiers)
+    assert set(summary["bh_family_size"]) == {29}
+    assert set(summary["bh_unfiltered_summary_rows"]) == {29}
+    assert set(summary["bh_selection_rule"]) == {SUMMARY_BH_SELECTION_RULE}
+
+    pairwise_with_untested = pairwise.copy()
+    pairwise_with_untested.loc[0, "u6_signature_perm_p"] = math.nan
+    summary_with_untested = significant_results_summary_table(
+        compartments,
+        scenario_direction,
+        pairwise_with_untested,
+        interaction,
+        scenario_interaction,
+    )
+    assert set(
+        summary_with_untested.loc[summary_with_untested["p_value"].isna(), "significance_tier"]
+    ) == {"not tested"}
+    assert set(summary_with_untested["bh_family_size"]) == {28}
+    assert set(summary_with_untested["bh_unfiltered_summary_rows"]) == {29}
+
+    for token in (
+        "direction_summary_rows",
+        "convergence_summary_rows",
+        "interaction_summary_rows",
+        "non-missing",
+        "does not repair",
+    ):
+        assert token in SUMMARY_BH_SELECTION_RULE
+
+    defs = summary_definitions(100)
+    assert "nominal" in defs["significance_tier"]
+    assert SUMMARY_BH_SELECTION_RULE in defs["bh_q_within_table"]
+    assert defs["bh_selection_rule"] == SUMMARY_BH_SELECTION_RULE

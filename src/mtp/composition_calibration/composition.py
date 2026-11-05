@@ -307,6 +307,9 @@ def run_composition_calibration(
                     "null_t_statistic": t_r[t_idx],
                     "replicate": rep,
                     "trait": trait_name,
+                    "p_value_role": "calibration_diagnostic",
+                    "correction": "none (nominal)",
+                    "n_tests": m,
                 }
             )
 
@@ -418,6 +421,10 @@ def run_composition_calibration(
         "n_pairs": contrast_data.n_pairs,
         "n_traits": m,
         "pseudocount_scale": pseudocount_scale,
+        "null_p_value_role": (
+            "calibration_diagnostic (uncorrected nominal p-values under study-flip null; "
+            "not inferential results)"
+        ),
         "type_i_error_metrics": type_i_metrics,
         "observed_calls": {f"{k[0]}_q_{k[1]}": v for k, v in observed_calls.items()},
         "summary": [asdict(row) for row in summary_rows],

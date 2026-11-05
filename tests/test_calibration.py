@@ -846,3 +846,27 @@ def test_a_p_or_q_exactly_at_the_threshold_counts_as_a_rejection() -> None:
     assert (by_label["a"]["rejections_p"], by_label["a"]["rejections_q"]) == (1, 1)
     assert (by_label["b"]["rejections_p"], by_label["b"]["rejections_q"]) == (0, 0)
     assert by_label["FAMILY"]["rejections_q"] == 1
+
+
+def test_calibration_summary_marks_p_value_columns_as_uncorrected_diagnostics() -> None:
+    """#1410: smallest_observed_p and attainable_p_* are marked as uncorrected diagnostics."""
+    import mtp.calibration as cal
+
+    runs = [[Outcome("p", "a", 0.02, 0.04, scored=40)]]
+    rows = summarize(runs, _scenario(), None)
+    row = next(r for r in rows if r["label"] == "a")
+    assert "smallest_observed_p" in row
+    assert "attainable_p_below_alpha" in row
+    assert "attainable_p_above_alpha" in row
+    assert row["p_value_diagnostics_role"] == "calibration_diagnostic"
+    assert row["p_value_diagnostics_correction"] == "none (nominal)"
+    note = str(cal.P_VALUE_DIAGNOSTICS_NOTE)
+    for token in (
+        "smallest_observed_p",
+        "attainable_p_below_alpha",
+        "attainable_p_above_alpha",
+        "calibration diagnostic",
+        "uncorrected",
+        "nominal",
+    ):
+        assert token in note
