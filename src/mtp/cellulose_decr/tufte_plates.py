@@ -15,7 +15,7 @@ import argparse
 import functools
 from collections.abc import Callable, Sequence
 from pathlib import Path
-from typing import Any, ParamSpec
+from typing import Any
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -392,16 +392,13 @@ def _draw_specification_card(
         ry -= row_step
 
 
-_P = ParamSpec("_P")
-
-
-def _with_tufte_rcparams(builder: Callable[_P, Figure]) -> Callable[_P, Figure]:
+def _with_tufte_rcparams(builder: Callable[[], Figure]) -> Callable[[], Figure]:
     """Run a plate builder inside ``matplotlib.rc_context(_tufte_rcparams())`` (#1127)."""
 
     @functools.wraps(builder)
-    def _wrapped(*args: _P.args, **kwargs: _P.kwargs) -> Figure:
+    def _wrapped() -> Figure:
         with matplotlib.rc_context(_tufte_rcparams()):
-            return builder(*args, **kwargs)
+            return builder()
 
     return _wrapped
 
@@ -436,46 +433,9 @@ def _save_plate(fig: Figure, output_dir: Path, stem: str, *, dpi: int = 300) -> 
 # --------------------------------------------------------------------------- Plate I
 
 
-_PLATE1_PAIRS_INFO: tuple[tuple[str, int, int, str, float, str], ...] = (
-    (
-        "Parkinson\u2019s & Colorectal cancer",
-        17,
-        10,
-        "= 27 shared of 47 (57.4%)   (+10 in PD & CRC only)",
-        0.485,
-        OCHRE,
-    ),
-    (
-        "Parkinson\u2019s & HIV infection",
-        17,
-        4,
-        "= 21 shared of 43 (48.8%)   (+4 in PD & HIV only)",
-        0.368,
-        SLATE,
-    ),
-    (
-        "HIV & Colorectal cancer",
-        17,
-        1,
-        "= 18 shared of 40 (45.0%)   (+1 in HIV & CRC only)",
-        0.251,
-        TEAL,
-    ),
-)
-
-
 @_with_tufte_rcparams
-def build_plate1_convergence_slope_and_overlap(
-    *,
-    tier_counts: tuple[int, int, int] = (17, 15, 17),
-    pairs_info: Sequence[tuple[str, int, int, str, float, str]] = _PLATE1_PAIRS_INFO,
-) -> Figure:
+def build_plate1_convergence_slope_and_overlap() -> Figure:
     """Build Plate I: Cross-Disease Taxonomic Convergence (Slopegraph + Sharing Tiers)."""
-    core_all3, only2, unique1 = tier_counts
-    total_fiber = core_all3 + only2 + unique1
-    shared_ge2 = core_all3 + only2
-    n_pairs = len(pairs_info)
-
     fig = _make_tufte_plate(
         (13.2, 7.6),
         "PLATE I  ·  CROSS-DISEASE TAXONOMIC CONVERGENCE",
@@ -483,8 +443,7 @@ def build_plate1_convergence_slope_and_overlap(
         "Parkinson\u2019s disease (brain), HIV infection (immune system), and colorectal cancer "
         "(colon tumor) have different causes, yet across 90 stool studies, half of the "
         "fiber-digesting bacteria they lose are the same organisms.",
-        "Source: Historical October 16 export — BugSigDB human stool signatures "
-        "(90 studies: 46 PD, 17 HIV, 27 CRC) "
+        "Source: BugSigDB human stool signatures (90 studies: 46 PD, 17 HIV, 27 CRC) "
         "\u00d7 KG-Microbe cellulose catabolic process (GO:0030245).",
         "Plate I  ·  data/analysis/cellulose_decr",
     )
@@ -493,7 +452,7 @@ def build_plate1_convergence_slope_and_overlap(
     _add_panel_header(
         ax_slope,
         "A. Share of Lost Bacteria Common to Both Diseases (%)",
-        f"Slopegraph comparing random chance, all 530 stool bacteria, and the {total_fiber} "
+        "Slopegraph comparing random chance, all 530 stool bacteria, and the 49 "
         "fiber-digesting bacteria",
         y_title=0.985,
         y_subtitle=0.933,
@@ -504,7 +463,7 @@ def build_plate1_convergence_slope_and_overlap(
     xs = [0.0, 1.0, 2.0]
     series = [
         ("PD vs. CRC (27/47 shared)", [14.7, 24.4, 57.4], CRIMSON, 2.2, 1.0),
-        (f"{n_pairs}-pair mean (2.5\u00d7 gut baseline)", [12.3, 20.1, 50.4], INK, 1.8, 0.95),
+        ("3-pair mean (2.5\u00d7 gut baseline)", [12.3, 20.1, 50.4], INK, 1.8, 0.95),
         ("PD vs. HIV (21/43 shared)", [11.6, 18.0, 48.8], SLATE, 1.6, 0.9),
         ("HIV vs. CRC (18/40 shared)", [10.7, 17.8, 45.0], OCHRE, 1.6, 0.9),
     ]
@@ -542,7 +501,7 @@ def build_plate1_convergence_slope_and_overlap(
     for x_pos, l1, l2, col, fw in [
         (0.0, "Random", "Chance", MUTED, "normal"),
         (1.0, "All Lost Gut", "Bacteria (530)", MUTED, "normal"),
-        (2.0, "Lost Fiber-Digesting", f"Bacteria ({total_fiber})", CRIMSON, "bold"),
+        (2.0, "Lost Fiber-Digesting", "Bacteria (49)", CRIMSON, "bold"),
     ]:
         ax_slope.text(x_pos, 7.2, l1, fontsize=8.8, fontweight=fw, color=col, ha="center")
         ax_slope.text(x_pos, 4.4, l2, fontsize=8.8, fontweight=fw, color=col, ha="center")
@@ -552,8 +511,7 @@ def build_plate1_convergence_slope_and_overlap(
         -0.02,
         "If fiber-digesting bacteria were lost at the same rate as other stool bacteria,\n"
         "only ~20% would overlap between diseases. Observed overlap is 50.4%\n"
-        "(nominal exact hypergeometric p < 10⁻¹⁰ for every pair; "
-        "nominal random-guild permutation p = 0.011).",
+        "(exact hypergeometric p < 10⁻¹⁰ for every pair; random-guild permutation p = 0.011).",
         transform=ax_slope.transAxes,
         fontsize=8.3,
         color=MUTED,
@@ -567,7 +525,7 @@ def build_plate1_convergence_slope_and_overlap(
 
     _add_panel_header(
         ax_right,
-        f"B. How the {total_fiber} Lost Fiber-Digesting Taxa Are Shared Across Diseases",
+        "B. How the 49 Lost Fiber-Digesting Taxa Are Shared Across Diseases",
         "Distinguishing mutually exclusive sharing tiers from total pairwise overlaps",
         y_title=0.985,
         y_subtitle=0.933,
@@ -578,17 +536,14 @@ def build_plate1_convergence_slope_and_overlap(
     ax_right.text(
         0.0,
         0.855,
-        f"1. Partition of all {total_fiber} lost fiber-digesting taxa into three "
-        "mutually exclusive tiers:",
+        "1. Partition of all 49 lost fiber-digesting taxa into three mutually exclusive tiers:",
         fontsize=9.2,
         fontweight="bold",
         color=INK,
     )
 
     bar_y, bar_h = 0.715, 0.085
-    w1 = core_all3 / total_fiber
-    w2 = only2 / total_fiber
-    w3 = unique1 / total_fiber
+    w1, w2, w3 = 17 / 49, 15 / 49, 17 / 49
     ax_right.add_patch(
         Rectangle((0.0, bar_y), w1, bar_h, facecolor=CRIMSON, edgecolor=PAPER_BG, lw=1.2)
     )
@@ -612,7 +567,7 @@ def build_plate1_convergence_slope_and_overlap(
     ax_right.text(
         w1 / 2,
         bar_y + bar_h * 0.28,
-        f"{core_all3} taxa ({core_all3 / total_fiber * 100:.1f}%)",
+        "17 taxa (34.7%)",
         fontsize=8.6,
         fontweight="bold",
         color="#ffffff",
@@ -632,7 +587,7 @@ def build_plate1_convergence_slope_and_overlap(
     ax_right.text(
         w1 + w2 / 2,
         bar_y + bar_h * 0.28,
-        f"{only2} taxa ({only2 / total_fiber * 100:.1f}%)",
+        "15 taxa (30.6%)",
         fontsize=8.6,
         fontweight="bold",
         color="#ffffff",
@@ -651,7 +606,7 @@ def build_plate1_convergence_slope_and_overlap(
     ax_right.text(
         w1 + w2 + w3 / 2,
         bar_y + bar_h * 0.28,
-        f"{unique1} taxa ({unique1 / total_fiber * 100:.1f}%)",
+        "17 taxa (34.7%)",
         fontsize=8.6,
         color=INK,
         ha="center",
@@ -661,10 +616,8 @@ def build_plate1_convergence_slope_and_overlap(
     ax_right.text(
         0.0,
         0.650,
-        f"Shared by at least 2 diseases: {shared_ge2} of {total_fiber} taxa "
-        f"({shared_ge2 / total_fiber * 100:.1f}%)\n"
-        f"= {core_all3} in all three  +  10 in PD & CRC only  +  "
-        "4 in PD & HIV only  +  1 in HIV & CRC only",
+        "Shared by at least 2 diseases: 32 of 49 taxa (65.3%)\n"
+        "= 17 in all three  +  10 in PD & CRC only  +  4 in PD & HIV only  +  1 in HIV & CRC only",
         fontsize=8.4,
         fontweight="bold",
         color=CRIMSON,
@@ -674,13 +627,39 @@ def build_plate1_convergence_slope_and_overlap(
     ax_right.text(
         0.0,
         0.545,
-        f"2. Total overlap for each disease pair (every pair includes the {core_all3} "
+        "2. Total overlap for each disease pair (every pair includes the 17 "
         "three-disease core taxa):",
         fontsize=9.2,
         fontweight="bold",
         color=INK,
     )
 
+    pairs_info = [
+        (
+            "Parkinson\u2019s & Colorectal cancer",
+            17,
+            10,
+            "= 27 shared of 47 (57.4%)   (+10 in PD & CRC only)",
+            0.485,
+            OCHRE,
+        ),
+        (
+            "Parkinson\u2019s & HIV infection",
+            17,
+            4,
+            "= 21 shared of 43 (48.8%)   (+4 in PD & HIV only)",
+            0.368,
+            SLATE,
+        ),
+        (
+            "HIV & Colorectal cancer",
+            17,
+            1,
+            "= 18 shared of 40 (45.0%)   (+1 in HIV & CRC only)",
+            0.251,
+            TEAL,
+        ),
+    ]
     scale = 0.018
     for title_str, core_n, extra_n, summary_str, y_top, extra_col in pairs_info:
         ax_right.text(0.0, y_top, title_str, fontsize=9.0, fontweight="bold", color=INK)
@@ -697,7 +676,7 @@ def build_plate1_convergence_slope_and_overlap(
         ax_right.text(
             cw / 2,
             by + bh / 2,
-            f"{core_n} (all 3)",
+            "17 (all 3)",
             fontsize=8.0,
             fontweight="bold",
             color="#ffffff",
@@ -727,10 +706,9 @@ def build_plate1_convergence_slope_and_overlap(
     ax_right.text(
         0.0,
         0.11,
-        f"Most shared taxa ({core_all3} of {shared_ge2}) decrease in all three diseases, "
-        f"so the 3-disease core ({core_all3})\n"
-        f"is larger than the subset shared by only 2 diseases ({only2}). Every complete 2-disease\n"
-        f"comparison (27, 21, 18) is larger than the {core_all3}-taxon core it contains.",
+        "Most shared taxa (17 of 32) decrease in all three diseases, so the 3-disease core (17)\n"
+        "is larger than the subset shared by only 2 diseases (15). Every complete 2-disease\n"
+        "comparison (27, 21, 18) is larger than the 17-taxon core it contains.",
         fontsize=8.4,
         color=MUTED,
         va="top",
@@ -741,84 +719,18 @@ def build_plate1_convergence_slope_and_overlap(
 # --------------------------------------------------------------------------- Plate II
 
 
-_PLATE2_GENERA_ROWS: tuple[tuple[str, str, int, int, int], ...] = (
-    ("Roseburia", "Butyrate producer; ferments dietary plant fiber", 18, 2, 5),
-    ("Blautia", "Acetate and SCFA fermentative commensal", 12, 2, 5),
-    ("Clostridium", "Spore-forming anaerobic cellulose degrader", 7, 4, 5),
-    ("Bacteroides", "Polysaccharide-utilizing locus (PUL) specialist", 6, 7, 2),
-    ("Lachnospira", "Pectin and plant cell-wall SCFA fermenter", 5, 3, 6),
-    ("Ruminococcus", "Primary cellulolytic and resistant-starch guild", 6, 4, 4),
-    ("Anaerostipes", "Lactate- and fiber-utilizing butyrate synthesizer", 2, 3, 3),
-    ("Butyrivibrio", "Hemicellulose and cellulose butyrate producer", 2, 1, 1),
-    ("Eubacterium", "Butyrate-producing strict colonic anaerobe", 1, 1, 2),
-)
-
-# Item 1 (#550): Redundant "(PD & CRC)" and "(CRC)" suffixes removed so role text never
-# collides with the PD/HIV/CRC dot columns.
-_PLATE2_SPECIES_ROWS: tuple[tuple[str, str, tuple[bool, bool, bool], int, str], ...] = (
-    (
-        "Roseburia faecis",
-        "Beta-glucan and fiber-degrading butyrate producer",
-        (True, False, True),
-        7,
-        "7 studies",
-    ),
-    (
-        "Anaerostipes hadrus",
-        "Fiber- and lactate-fermenting butyrate producer",
-        (True, False, True),
-        3,
-        "3 studies",
-    ),
-    (
-        "Bacteroides cellulosilyticus",
-        "Human gut cellulolytic specialist",
-        (True, False, True),
-        2,
-        "2 studies",
-    ),
-    (
-        "Ruminococcus flavefaciens",
-        "Cellulosome crystalline-cellulose degrader",
-        (True, False, True),
-        2,
-        "2 studies",
-    ),
-    (
-        "Ruminococcus champanellensis",
-        "Human-colon crystalline-cellulose degrader",
-        (False, False, True),
-        1,
-        "1 study",
-    ),
-)
-
-
 @_with_tufte_rcparams
-def build_plate2_core_guild_dot_table(
-    *,
-    genera_rows: Sequence[tuple[str, str, int, int, int]] = _PLATE2_GENERA_ROWS,
-    species_rows: Sequence[
-        tuple[str, str, tuple[bool, bool, bool], int, str]
-    ] = _PLATE2_SPECIES_ROWS,
-) -> Figure:
+def build_plate2_core_guild_dot_table() -> Figure:
     """Build Plate II: The Shared Fiber-Degrading Guild at Genus & Species Resolution (#550)."""
-    n_genera = len(genera_rows)
-    n_species = len(species_rows)
-    genera_title_word = "Nine" if n_genera == 9 else str(n_genera)
-    genera_header_word = "NINE" if n_genera == 9 else str(n_genera)
-
     fig = _make_tufte_plate(
         (13.8, 8.0),
         "PLATE II  ·  THE SHARED FIBER-DEGRADING GUILD AT GENUS & SPECIES RESOLUTION",
-        f"{genera_title_word} Butyrate- and Fiber-Degrading Genera Decrease Across All "
-        "Three Diseases",
+        "Nine Butyrate- and Fiber-Degrading Genera Decrease Across All Three Diseases",
         "Removing broad family and order labels to compare only specific genera and species "
         "(93 background taxa) strengthens the overlap: 62.5% of lost fiber-digesting genera "
         "and species are shared between Parkinson\u2019s disease and colorectal cancer.",
-        "Source: Historical October 16 export — Genus + Species sensitivity analysis "
-        "(N = 93 stool decreased genera/species; "
-        "22 cellulose-annotated). PD\u2013CRC nominal exact p = 5.98 \u00d7 10⁻¹⁰.",
+        "Source: Genus + Species sensitivity analysis (N = 93 stool decreased genera/species; "
+        "22 cellulose-annotated). PD\u2013CRC exact p = 5.98 \u00d7 10⁻¹⁰.",
         "Plate II  ·  data/analysis/cellulose_decr",
     )
 
@@ -865,12 +777,24 @@ def build_plate2_core_guild_dot_table(
     ax_table.text(
         x_taxon,
         0.912,
-        f"{genera_header_word} CORE GENERA REPORTED DECREASED IN ALL THREE DISEASES "
-        "(17.1\u00d7 over random expectation, nominal p = 3.5 \u00d7 10⁻¹²)",
+        "NINE CORE GENERA REPORTED DECREASED IN ALL THREE DISEASES "
+        "(17.1\u00d7 over random expectation, p = 3.5 \u00d7 10⁻¹²)",
         fontsize=8.2,
         fontweight="bold",
         color=CRIMSON,
     )
+
+    genera_rows = [
+        ("Roseburia", "Butyrate producer; ferments dietary plant fiber", 18, 2, 5),
+        ("Blautia", "Acetate and SCFA fermentative commensal", 12, 2, 5),
+        ("Clostridium", "Spore-forming anaerobic cellulose degrader", 7, 4, 5),
+        ("Bacteroides", "Polysaccharide-utilizing locus (PUL) specialist", 6, 7, 2),
+        ("Lachnospira", "Pectin and plant cell-wall SCFA fermenter", 5, 3, 6),
+        ("Ruminococcus", "Primary cellulolytic and resistant-starch guild", 6, 4, 4),
+        ("Anaerostipes", "Lactate- and fiber-utilizing butyrate synthesizer", 2, 3, 3),
+        ("Butyrivibrio", "Hemicellulose and cellulose butyrate producer", 2, 1, 1),
+        ("Eubacterium", "Butyrate-producing strict colonic anaerobe", 1, 1, 2),
+    ]
 
     bar_scale = 0.0058
     y = 0.865
@@ -918,11 +842,51 @@ def build_plate2_core_guild_dot_table(
     ax_table.text(
         x_taxon,
         0.372,
-        f"{n_species} NAMED CELLULOSE-ANNOTATED SPECIES REPORTED DECREASED IN STOOL",
+        "NAMED CELLULOSE-ANNOTATED SPECIES REPORTED DECREASED IN STOOL",
         fontsize=8.2,
         fontweight="bold",
         color=SLATE,
     )
+
+    # Item 1 (#550): Redundant "(PD & CRC)" and "(CRC)" suffixes removed so role text never
+    # collides with the PD/HIV/CRC dot columns.
+    species_rows = [
+        (
+            "Roseburia faecis",
+            "Beta-glucan and fiber-degrading butyrate producer",
+            (True, False, True),
+            7,
+            "7 studies",
+        ),
+        (
+            "Anaerostipes hadrus",
+            "Fiber- and lactate-fermenting butyrate producer",
+            (True, False, True),
+            3,
+            "3 studies",
+        ),
+        (
+            "Bacteroides cellulosilyticus",
+            "Human gut cellulolytic specialist",
+            (True, False, True),
+            2,
+            "2 studies",
+        ),
+        (
+            "Ruminococcus flavefaciens",
+            "Cellulosome crystalline-cellulose degrader",
+            (True, False, True),
+            2,
+            "2 studies",
+        ),
+        (
+            "Ruminococcus champanellensis",
+            "Human-colon crystalline-cellulose degrader",
+            (False, False, True),
+            1,
+            "1 study",
+        ),
+    ]
 
     sy = 0.326
     for sp_name, role, (in_pd, in_hiv, in_crc), study_n, study_label in species_rows:
@@ -1071,126 +1035,9 @@ def build_plate2_core_guild_dot_table(
 # --------------------------------------------------------------------------- Plate III
 
 
-_PLATE3_DIRECTION_ROWS: tuple[tuple[str, float, float, float, str, float, bool, str], ...] = (
-    (
-        "Stool (All 3 Diseases Combined)",
-        73.1,
-        65.1,
-        80.1,
-        "106 dec vs. 39 inc, nominal p = 2.4 \u00d7 10⁻⁸",
-        0.76,
-        True,
-        CRIMSON,
-    ),
-    (
-        "· Colorectal cancer stool",
-        81.1,
-        64.8,
-        92.0,
-        "30 dec vs. 7 inc, nominal p = 1.9 \u00d7 10⁻⁴",
-        0.64,
-        False,
-        CRIMSON,
-    ),
-    (
-        "· HIV infection stool",
-        76.0,
-        54.9,
-        90.6,
-        "19 dec vs. 6 inc, nominal p = 0.015",
-        0.53,
-        False,
-        CRIMSON,
-    ),
-    (
-        "· Parkinson\u2019s disease stool",
-        68.7,
-        57.6,
-        78.4,
-        "57 dec vs. 26 inc, nominal p = 8.8 \u00d7 10⁻⁴",
-        0.42,
-        False,
-        CRIMSON,
-    ),
-    (
-        "Gut Wall Biopsy (Colon Mucosa)",
-        48.1,
-        28.7,
-        68.1,
-        "13 dec vs. 14 inc, nominal p = 1.00",
-        0.26,
-        True,
-        MUTED,
-    ),
-    (
-        "· Colorectal tumor biopsy",
-        35.3,
-        14.2,
-        61.7,
-        "6 dec vs. 11 inc, nominal p = 0.33",
-        0.15,
-        False,
-        MUTED,
-    ),
-    (
-        "Mouth & Saliva (Oral Cavity)",
-        45.5,
-        16.7,
-        76.6,
-        "5 dec vs. 6 inc, nominal p = 1.00",
-        0.04,
-        True,
-        MUTED,
-    ),
-)
-
-_PLATE3_COMP_ROWS: tuple[tuple[str, float, str, str, float, str], ...] = (
-    (
-        "Stool (Fecal Lumen)",
-        50.4,
-        "50.4% shared  ·  17 core taxa in all 3 diseases  (90 studies)",
-        "Consistent overlap across all 3 pairs (45%\u201357%)",
-        0.72,
-        CRIMSON,
-    ),
-    (
-        "Gut Wall Biopsy (Mucosa)",
-        18.8,
-        "18.8% shared  ·  2 core taxa in all 3 diseases  (15 studies)",
-        "Adherent mucosal biofilm differs from lumen",
-        0.50,
-        MUTED,
-    ),
-    (
-        "Other Sites (Vaginal / Skin / Nasal)",
-        3.7,
-        "3.7% shared  ·  0 core taxa in all 3 diseases  (7 studies)",
-        "Cellulolytic anaerobes rare outside GI tract",
-        0.28,
-        MUTED,
-    ),
-    (
-        "Mouth & Saliva (Oral Cavity)",
-        0.0,
-        "0.0% shared  ·  0 core taxa in all 3 diseases  (9 studies)",
-        "Zero cross-disease overlap in oral samples",
-        0.07,
-        MUTED,
-    ),
-)
-
-
 @_with_tufte_rcparams
-def build_plate3_why_only_stool(
-    *,
-    direction_rows: Sequence[
-        tuple[str, float, float, float, str, float, bool, str]
-    ] = _PLATE3_DIRECTION_ROWS,
-    comp_rows: Sequence[tuple[str, float, str, str, float, str]] = _PLATE3_COMP_ROWS,
-) -> Figure:
+def build_plate3_why_only_stool() -> Figure:
     """Build Plate III: Anatomical & Ecological Specificity (#550)."""
-    n_dir_tests = len(direction_rows)
-    n_compartments = len(comp_rows)
     # Item 2 (#550): Cite the real committed table compartment_jaccard_and_direction_stats.tsv
     fig = _make_tufte_plate(
         (13.0, 7.5),
@@ -1199,7 +1046,7 @@ def build_plate3_why_only_stool(
         "Cellulose-fermenting bacteria inhabit the anaerobic lumen of the lower colon where "
         "dietary plant fiber collects. In stool, 73.1% of experiments show a decrease; in colon "
         "wall biopsies and saliva, no directional bias is observed.",
-        "Source: Historical October 16 export — Compartment-stratified directional sign tests "
+        "Source: Compartment-stratified directional sign tests "
         "(data/analysis/cellulose_decr/compartment_jaccard_and_direction_stats.tsv) "
         "& cross-compartment Jaccard analysis.",
         "Plate III  ·  data/analysis/cellulose_decr",
@@ -1209,8 +1056,8 @@ def build_plate3_why_only_stool(
     _add_panel_header(
         ax_left,
         "A. Direction Within Studies: % of Experiments Where Fiber Bacteria Decrease",
-        f"Comparing stool against colon wall biopsies and saliva relative to a 50% "
-        f"binomial baseline ({n_dir_tests} nominal binomial sign tests; 10 compartment rows)",
+        "Comparing stool against colon wall biopsies and saliva relative to a 50% "
+        "binomial baseline",
         y_title=0.985,
         y_subtitle=0.920,
         title_size=10.6,
@@ -1218,6 +1065,79 @@ def build_plate3_why_only_stool(
     )
 
     ax_left.axvline(50.0, ymin=0.0, ymax=0.84, color=MUTED, linestyle="--", linewidth=0.9, zorder=2)
+
+    direction_rows = [
+        (
+            "Stool (All 3 Diseases Combined)",
+            73.1,
+            65.1,
+            80.1,
+            "106 dec vs. 39 inc, p = 2.4 \u00d7 10⁻⁸",
+            0.76,
+            True,
+            CRIMSON,
+        ),
+        (
+            "· Colorectal cancer stool",
+            81.1,
+            64.8,
+            92.0,
+            "30 dec vs. 7 inc, p = 1.9 \u00d7 10⁻⁴",
+            0.64,
+            False,
+            CRIMSON,
+        ),
+        (
+            "· HIV infection stool",
+            76.0,
+            54.9,
+            90.6,
+            "19 dec vs. 6 inc, p = 0.015",
+            0.53,
+            False,
+            CRIMSON,
+        ),
+        (
+            "· Parkinson\u2019s disease stool",
+            68.7,
+            57.6,
+            78.4,
+            "57 dec vs. 26 inc, p = 8.8 \u00d7 10⁻⁴",
+            0.42,
+            False,
+            CRIMSON,
+        ),
+        (
+            "Gut Wall Biopsy (Colon Mucosa)",
+            48.1,
+            28.7,
+            68.1,
+            "13 dec vs. 14 inc, p = 1.00",
+            0.26,
+            True,
+            MUTED,
+        ),
+        (
+            "· Colorectal tumor biopsy",
+            35.3,
+            14.2,
+            61.7,
+            "6 dec vs. 11 inc, p = 0.33",
+            0.15,
+            False,
+            MUTED,
+        ),
+        (
+            "Mouth & Saliva (Oral Cavity)",
+            45.5,
+            16.7,
+            76.6,
+            "5 dec vs. 6 inc, p = 1.00",
+            0.04,
+            True,
+            MUTED,
+        ),
+    ]
 
     for label, pct, ci_lo, ci_hi, stats_str, y_pos, is_bold, col in direction_rows:
         fw = "bold" if is_bold else "normal"
@@ -1254,14 +1174,47 @@ def build_plate3_why_only_stool(
     _add_panel_header(
         ax_right,
         "B. Cross-Disease Convergence: % of Lost Taxa Shared Across Diseases",
-        "Average pairwise overlap (Jaccard similarity) across PD, HIV, and CRC "
-        f"across {n_compartments} body compartments",
+        "Average pairwise overlap (Jaccard similarity) across PD, HIV, and CRC by body site",
         y_title=0.985,
         y_subtitle=0.920,
         title_size=10.6,
         subtitle_size=8.6,
     )
 
+    comp_rows = [
+        (
+            "Stool (Fecal Lumen)",
+            50.4,
+            "50.4% shared  ·  17 core taxa in all 3 diseases  (90 studies)",
+            "Consistent overlap across all 3 pairs (45%\u201357%)",
+            0.72,
+            CRIMSON,
+        ),
+        (
+            "Gut Wall Biopsy (Mucosa)",
+            18.8,
+            "18.8% shared  ·  2 core taxa in all 3 diseases  (15 studies)",
+            "Adherent mucosal biofilm differs from lumen",
+            0.50,
+            MUTED,
+        ),
+        (
+            "Other Sites (Vaginal / Skin / Nasal)",
+            3.7,
+            "3.7% shared  ·  0 core taxa in all 3 diseases  (7 studies)",
+            "Cellulolytic anaerobes rare outside GI tract",
+            0.28,
+            MUTED,
+        ),
+        (
+            "Mouth & Saliva (Oral Cavity)",
+            0.0,
+            "0.0% shared  ·  0 core taxa in all 3 diseases  (9 studies)",
+            "Zero cross-disease overlap in oral samples",
+            0.07,
+            MUTED,
+        ),
+    ]
     for site_label, val, main_note, sub_note, y_pos, col in comp_rows:
         ax_right.text(0.0, y_pos + 0.055, site_label, fontsize=9.2, fontweight="bold", color=INK)
         ax_right.plot([0.0, val], [y_pos, y_pos], color=col, linewidth=3.2, solid_capstyle="butt")
@@ -1420,69 +1373,18 @@ _PLATE4_TRAIT_COORDS: tuple[tuple[float, float], ...] = (
 )
 
 
-_PLATE4_FOUR_PAIRS: tuple[tuple[str, float, str, str, float, str], ...] = (
-    (
-        "1. Parkinson\u2019s Disease  ·  Cellulose Breakdown Decreased",
-        -27.4,
-        "\u221227.4 pp  (52 stool studies, BH q = 0.0077; 57 Down vs 26 Up, nominal p = "
-        "8.8 \u00d7 10⁻⁴)",
-        "Depletion of Roseburia, Lachnospiraceae, Blautia, Ruminococcus; "
-        "reported by Wallen 2022, Romano 2021, Nishiwaki 2020.",
-        0.70,
-        CRIMSON,
-    ),
-    (
-        "2. HIV Infection  ·  Cellulose Breakdown Decreased",
-        -53.7,
-        "\u221253.7 pp  (18 stool studies, BH q = 0.0080; 19 Down vs 6 Up, nominal p = 0.0146)",
-        "Depletion of fiber-fermenting Bacteroides, Clostridia & Lachnospiraceae; "
-        "reported by Vujkovic-Cvijin 2013, Noguera-Julian 2016.",
-        0.50,
-        CRIMSON,
-    ),
-    (
-        "3. Colorectal Cancer  ·  Cellulose Breakdown Decreased",
-        -36.9,
-        "\u221236.9 pp  (30 stool studies, BH q = 0.0336; 30 Down vs 7 Up, nominal p = "
-        "1.9 \u00d7 10⁻⁴)",
-        "Depletion of Roseburia, Blautia, Lachnospira, R. champanellensis; "
-        "reported by Wirbel 2019, Thomas 2019, Yang 2021.",
-        0.30,
-        CRIMSON,
-    ),
-    (
-        "4. Parkinson\u2019s Disease  ·  Moderately Halophilic Increased (METPO:1000623)",
-        24.4,
-        "+24.4 pp  (52 stool studies, BH q = 0.0265; Wilcoxon 33 Up vs 8 Down, nominal p "
-        "= 1.7 \u00d7 10⁻⁴)",
-        "Increase of osmotolerant/stress-tolerant Lactobacillus, Bifidobacterium, "
-        "Enterococcus, Alistipes; Vandeputte 2016, Maini Rekdal 2019.",
-        0.10,
-        SLATE,
-    ),
-)
-
-
 @_with_tufte_rcparams
-def build_plate4_trait_landscape_and_four_pairs(
-    *,
-    trait_coords: Sequence[tuple[float, float]] = _PLATE4_TRAIT_COORDS,
-    four_pairs: Sequence[tuple[str, float, str, str, float, str]] = _PLATE4_FOUR_PAIRS,
-) -> Figure:
+def build_plate4_trait_landscape_and_four_pairs() -> Figure:
     """Build Plate IV: Functional Pathway Benchmark & Literature-Supported Signatures (#550)."""
-    n_traits = len(trait_coords)
-    n_pairs = len(four_pairs)
-    pairs_word = "Four" if n_pairs == 4 else str(n_pairs)
     fig = _make_tufte_plate(
         (13.6, 7.8),
         "PLATE IV  ·  FUNCTIONAL PATHWAY BENCHMARK & LITERATURE-SUPPORTED SIGNATURES",
         "Plant-Fiber Breakdown Ranks First Among Metabolic Pathways as Salt-Tolerant Taxa Increase",
-        f"Across all {n_traits} microbial functional traits tested in stool, the three "
-        "plant-polysaccharide pathways (cellulose, xylan, chitin) rank #1, #2, and #3 "
-        "among metabolic pathways for cross-disease convergence, while salt-tolerant "
-        "bacteria increase in Parkinson\u2019s disease.",
-        f"Source: Historical October 16 export — {n_traits}-trait benchmark "
-        f"(trait_convergence_benchmark.tsv) & {n_pairs}-pair literature audit "
+        "Across all 90 microbial functional traits tested in stool, the three plant-polysaccharide "
+        "pathways (cellulose, xylan, chitin) rank #1, #2, and #3 among metabolic pathways for "
+        "cross-disease convergence, while salt-tolerant bacteria increase in "
+        "Parkinson\u2019s disease.",
+        "Source: 90-trait benchmark (trait_convergence_benchmark.tsv) & 4-pair literature audit "
         "(FOUR_HIGHLIGHTED_PAIRS_LITERATURE_SUPPORT.md).",
         "Plate IV  ·  data/analysis/cellulose_decr",
     )
@@ -1490,18 +1392,17 @@ def build_plate4_trait_landscape_and_four_pairs(
     ax_top = fig.add_axes((0.03, 0.52, 0.94, 0.30), facecolor=PAPER_BG)
     _add_panel_header(
         ax_top,
-        f"A. Distribution of Cross-Disease Overlap Across All {n_traits} "
-        "Functional Traits in Stool",
-        f"Each mark is one functional trait ({n_traits} non-media traits with ≥10 lost "
-        "taxa per disease), plotted by % of lost taxa shared across PD, HIV, and CRC",
+        "A. Distribution of Cross-Disease Overlap Across All 90 Functional Traits in Stool",
+        "Each mark is one functional trait (90 non-media traits with ≥10 lost taxa per disease), "
+        "plotted by % of lost taxa shared across PD, HIV, and CRC",
         y_title=0.985,
         y_subtitle=0.875,
         title_size=11.0,
         subtitle_size=8.8,
     )
 
-    xs = [pt[0] for pt in trait_coords]
-    ys = [pt[1] for pt in trait_coords]
+    xs = [pt[0] for pt in _PLATE4_TRAIT_COORDS]
+    ys = [pt[1] for pt in _PLATE4_TRAIT_COORDS]
     ax_top.scatter(xs, ys, s=22, color=WARM_GRAY, alpha=0.55, zorder=2)
     _draw_tufte_quartile_rule(ax_top, xs, 0.16, color=INK, median_size=34.0)
 
@@ -1576,11 +1477,9 @@ def build_plate4_trait_landscape_and_four_pairs(
     ax_bot = fig.add_axes((0.03, 0.08, 0.94, 0.38), facecolor=PAPER_BG)
     _add_panel_header(
         ax_bot,
-        f"B. {pairs_word} Highlighted Condition-Trait Signatures and "
-        "Independent Literature Support",
+        "B. Four Highlighted Condition-Trait Signatures and Independent Literature Support",
         "Difference in share of stool profiles with positive trait annotation "
-        "(Increased minus Decreased; pp; BH q across 48 condition \u00d7 trait tests "
-        "[8 conditions \u00d7 6 Table 1 traits]; directional p is nominal)",
+        "(Increased minus Decreased; percentage points, pp)",
         y_title=0.985,
         y_subtitle=0.895,
         title_size=11.0,
@@ -1588,6 +1487,49 @@ def build_plate4_trait_landscape_and_four_pairs(
     )
 
     ax_bot.axvline(0.0, ymin=0.0, ymax=0.82, color=MUTED, linestyle="--", linewidth=0.9, zorder=2)
+
+    # Item 3 (#550): Cite Nishiwaki 2020 (Mov Disord, PMID 32472608), matching Slide 15 & audit doc.
+    four_pairs = [
+        (
+            "1. Parkinson\u2019s Disease  ·  Cellulose Breakdown Decreased",
+            -27.4,
+            "\u221227.4 pp  (52 stool studies, BH q = 0.0077; 57 Down vs 26 Up, p = "
+            "8.8 \u00d7 10⁻⁴)",
+            "Depletion of Roseburia, Lachnospiraceae, Blautia, Ruminococcus; "
+            "reported by Wallen 2022, Romano 2021, Nishiwaki 2020.",
+            0.70,
+            CRIMSON,
+        ),
+        (
+            "2. HIV Infection  ·  Cellulose Breakdown Decreased",
+            -53.7,
+            "\u221253.7 pp  (18 stool studies, BH q = 0.0080; 19 Down vs 6 Up, p = 0.0146)",
+            "Depletion of fiber-fermenting Bacteroides, Clostridia & Lachnospiraceae; "
+            "reported by Vujkovic-Cvijin 2013, Noguera-Julian 2016.",
+            0.50,
+            CRIMSON,
+        ),
+        (
+            "3. Colorectal Cancer  ·  Cellulose Breakdown Decreased",
+            -36.9,
+            "\u221236.9 pp  (30 stool studies, BH q = 0.0336; 30 Down vs 7 Up, p = "
+            "1.9 \u00d7 10⁻⁴)",
+            "Depletion of Roseburia, Blautia, Lachnospira, R. champanellensis; "
+            "reported by Wirbel 2019, Thomas 2019, Yang 2021.",
+            0.30,
+            CRIMSON,
+        ),
+        (
+            "4. Parkinson\u2019s Disease  ·  Moderately Halophilic Increased (METPO:1000623)",
+            24.4,
+            "+24.4 pp  (52 stool studies, BH q = 0.0265; Wilcoxon 33 Up vs 8 Down, p "
+            "= 1.7 \u00d7 10⁻⁴)",
+            "Increase of osmotolerant/stress-tolerant Lactobacillus, Bifidobacterium, "
+            "Enterococcus, Alistipes; Vandeputte 2016, Maini Rekdal 2019.",
+            0.10,
+            SLATE,
+        ),
+    ]
 
     for title_str, delta_pp, stats_line, lit_line, y_pos, col in four_pairs:
         ax_bot.text(-55.5, y_pos + 0.055, title_str, fontsize=8.4, fontweight="bold", color=INK)
@@ -1615,179 +1557,18 @@ def build_plate4_trait_landscape_and_four_pairs(
 # --------------------------------------------------------------------------- Plate V
 
 
-_PLATE5_CASCADE: tuple[tuple[str, int, str, float, str, bool], ...] = (
-    (
-        "1. Raw profile rows read",
-        7329,
-        "7,329 profiles (all hosts, paired & unpaired)",
-        0.72,
-        WARM_GRAY,
-        False,
-    ),
-    (
-        "2. Drop 1,500 non-human rows",
-        5829,
-        "5,829 human profiles (3,494 human experiments)",
-        0.56,
-        SLATE,
-        False,
-    ),
-    (
-        "3. Drop 1,159 unpaired rows",
-        4670,
-        "4,670 paired profiles = 2,335 pairs in 959 studies",
-        0.40,
-        SLATE,
-        True,
-    ),
-    (
-        "4. Drop 94 zero-total pairs",
-        4482,
-        "4,482 non-zero profiles = 2,241 pairs in 939 studies",
-        0.24,
-        CRIMSON,
-        True,
-    ),
-)
-
-_PLATE5_ARM3_FRACTIONS: tuple[tuple[str, float, float, float, str, float, str, bool], ...] = (
-    (
-        "FA  (facultative anaerobe)",
-        58.2,
-        55.0,
-        61.4,
-        "58.2% (n=917, BH q = 4.1\u00d710⁻⁶ **)",
-        0.78,
-        SLATE,
-        True,
-    ),
-    (
-        "HAL (halotolerant)",
-        57.4,
-        54.0,
-        60.8,
-        "57.4% (n=845, BH q = 5.8\u00d710⁻⁵ **)",
-        0.71,
-        SLATE,
-        True,
-    ),
-    (
-        "ARS (arsenate reduction)",
-        56.2,
-        52.1,
-        60.1,
-        "56.2% (n=616, BH q = 0.0030 *)",
-        0.64,
-        SLATE,
-        False,
-    ),
-    (
-        "SPH (sphere shaped)",
-        55.3,
-        51.9,
-        58.7,
-        "55.3% (n=844, BH q = 0.0030 *)",
-        0.57,
-        SLATE,
-        False,
-    ),
-    (
-        "COC (coccus shaped)",
-        54.5,
-        51.2,
-        57.8,
-        "54.5% (n=915, BH q = 0.0067 *)",
-        0.50,
-        SLATE,
-        False,
-    ),
-    (
-        "CEL (cellulose catabolism)",
-        43.2,
-        39.6,
-        46.8,
-        "43.2% up / 56.8% down (BH q = 3.1\u00d710⁻⁴ **)",
-        0.43,
-        CRIMSON,
-        True,
-    ),
-)
-
-_PLATE5_ARM3_RATIOS: tuple[tuple[str, float, float, float, str, float, str, bool], ...] = (
-    (
-        "FA / CEL  (+0.79 log₂)",
-        59.5,
-        54.9,
-        64.0,
-        "59.5% up (n=467, BY q = 0.0011 *)",
-        0.27,
-        CRIMSON,
-        True,
-    ),
-    (
-        "FA / COC  (both up -> flat)",
-        50.8,
-        46.9,
-        54.6,
-        "50.8% up (n=676, BY q = 1.00 n.s.)",
-        0.20,
-        FAINT,
-        False,
-    ),
-    (
-        "CEL / SPH (\u22120.54 log₂)",
-        40.7,
-        36.1,
-        45.4,
-        "40.7% up / 59.3% down (BY q = 0.0026 *)",
-        0.13,
-        CRIMSON,
-        True,
-    ),
-    (
-        "CEL / ARS (\u22120.85 log₂)",
-        36.5,
-        31.3,
-        41.9,
-        "36.5% up / 63.5% down (BY q = 0.0011 *)",
-        0.06,
-        CRIMSON,
-        True,
-    ),
-)
-
-
 @_with_tufte_rcparams
-def build_plate5_three_statistical_arms(
-    *,
-    cascade: Sequence[tuple[str, int, str, float, str, bool]] = _PLATE5_CASCADE,
-    n_retained_traits: int = 317,
-    arm3_fractions: Sequence[
-        tuple[str, float, float, float, str, float, str, bool]
-    ] = _PLATE5_ARM3_FRACTIONS,
-    arm3_ratios: Sequence[
-        tuple[str, float, float, float, str, float, str, bool]
-    ] = _PLATE5_ARM3_RATIOS,
-) -> Figure:
+def build_plate5_three_statistical_arms() -> Figure:
     """Build Plate V: Statistical Architecture (One Matrix, Three Statistical Questions)."""
-    n_raw_profiles = max(cascade[0][1], 1)
-    n_paired_profiles = cascade[2][1]
-    n_pairs = n_paired_profiles // 2
-    n_ora_tests = n_paired_profiles * n_retained_traits
-    n_frac = len(arm3_fractions)
-    n_ratios_family = n_frac * (n_frac - 1) // 2
-    frac_word = "Six" if n_frac == 6 else str(n_frac)
-
     fig = _make_tufte_plate(
         (13.6, 8.2),
         "PLATE V  ·  STATISTICAL ARCHITECTURE (METHODS/THREE_ARM_STATISTICS.MD)",
         "One Matrix, Three Statistical Questions: Composition, Enrichment, and Study Direction",
-        f"All three arms start from the same historical BugSigDB v1.3.1 paired human trait matrix "
-        f"({n_pairs:,} experiments across 959 studies and {n_retained_traits:,} "
-        "non-MediaDive traits), "
-        "but test different sampling units, transformations, and null hypotheses.",
-        "Source: Historical three-framework-comparison-v1 run — methods/three_arm_statistics.md "
-        "& methods/table1_log_ratio_validation.md (* q ≤ 0.05; ** q ≤ 0.001).",
+        "All three arms start from the same paired human trait matrix (2,335 experiments across "
+        "959 studies and 317 non-MediaDive traits), but test different sampling units, "
+        "transformations, and null hypotheses.",
+        "Source: methods/three_arm_statistics.md & methods/table1_log_ratio_validation.md "
+        "(* q ≤ 0.05; ** q ≤ 0.001).",
         "Plate V  ·  data/analysis/cellulose_decr",
     )
 
@@ -1798,18 +1579,52 @@ def build_plate5_three_statistical_arms(
     _add_panel_header(
         ax_a,
         "A. Shared Input Matrix Filter Cascade (study_trait_profiles_wide.tsv)",
-        "Historical BugSigDB v1.3.1 (2026-04-24_00:41_UTC) joined to KG-Microbe trait assertions; "
-        f"2,653 columns -> {n_retained_traits:,} non-MediaDive traits",
+        "BugSigDB v1.3.1 (2026-04-24_00:41_UTC) joined to KG-Microbe trait assertions; "
+        "2,653 columns -> 317 non-MediaDive traits",
         y_title=0.985,
         y_subtitle=0.880,
         title_size=10.6,
         subtitle_size=8.3,
     )
 
+    cascade = [
+        (
+            "1. Raw profile rows read",
+            7329,
+            "7,329 profiles (all hosts, paired & unpaired)",
+            0.72,
+            WARM_GRAY,
+            False,
+        ),
+        (
+            "2. Drop 1,500 non-human rows",
+            5829,
+            "5,829 human profiles (3,494 human experiments)",
+            0.56,
+            SLATE,
+            False,
+        ),
+        (
+            "3. Drop 1,159 unpaired rows",
+            4670,
+            "4,670 paired profiles = 2,335 pairs in 959 studies",
+            0.40,
+            SLATE,
+            True,
+        ),
+        (
+            "4. Drop 94 zero-total pairs",
+            4482,
+            "4,482 non-zero profiles = 2,241 pairs in 939 studies",
+            0.24,
+            CRIMSON,
+            True,
+        ),
+    ]
     for step_label, count_val, desc, cy, col, bold in cascade:
         fw = "bold" if bold else "normal"
         ax_a.text(0.0, cy, step_label, fontsize=8.4, fontweight=fw, color=INK, va="center")
-        bw = (count_val / float(n_raw_profiles)) * 0.28
+        bw = (count_val / 7329.0) * 0.28
         ax_a.add_patch(Rectangle((0.32, cy - 0.042), bw, 0.084, facecolor=col, alpha=0.85))
         ax_a.text(
             0.32 + bw + 0.015,
@@ -1824,7 +1639,7 @@ def build_plate5_three_statistical_arms(
         0.0,
         0.06,
         "Column filter: 2,653 matrix columns = 3 ID columns + 2,333 MediaDive growth-medium "
-        f"columns (excluded) + {n_retained_traits:,} retained trait columns.",
+        "columns (excluded) + 317 retained trait columns.",
         fontsize=7.9,
         color=FAINT,
     )
@@ -1844,28 +1659,27 @@ def build_plate5_three_statistical_arms(
     sample_units = [
         (
             "Arm 2 (Taxon ORA / Urn)",
-            np.log10(max(n_paired_profiles, 1)),
-            f"{n_paired_profiles:,} profiles \u00d7 {n_retained_traits:,} traits "
-            f"({n_ora_tests:,} tests; historical v1.3.1 #131)",
+            np.log10(4670),
+            "4,670 profiles \u00d7 317 traits (1.48M tests; #131)",
             0.72,
             OCHRE,
         ),
         (
             "Arm 1 (Composition)",
-            np.log10(max(n_pairs, 1)),
-            f"{n_pairs:,} experiment pairs (56.2% multi-exp studies)",
+            np.log10(2335),
+            "2,335 experiment pairs (56.2% multi-exp studies)",
             0.50,
             SLATE,
         ),
         (
-            f"Arm 3 ({n_frac} Fractions)",
+            "Arm 3 (6 Fractions)",
             np.log10(917),
             "616\u2013917 non-tied studies (1 vote per study)",
             0.28,
             CRIMSON,
         ),
         (
-            f"Arm 3 ({n_ratios_family} Log-Ratios)",
+            "Arm 3 (15 Log-Ratios)",
             np.log10(467),
             "243\u2013676 positive-count studies (unimputed)",
             0.08,
@@ -1888,24 +1702,10 @@ def build_plate5_three_statistical_arms(
     ax_b.set_ylim(-0.04, 1.0)
     ax_b.set_yticks([])
     ax_b.set_xticks(
-        [
-            2.0,
-            np.log10(243),
-            np.log10(939),
-            np.log10(max(n_pairs, 1)),
-            np.log10(max(n_paired_profiles, 1)),
-            np.log10(23687),
-        ]
+        [2.0, np.log10(243), np.log10(939), np.log10(2335), np.log10(4670), np.log10(23687)]
     )
     ax_b.set_xticklabels(
-        [
-            "100",
-            "243",
-            "939\nstudies",
-            f"{n_pairs:,}\npairs",
-            f"{n_paired_profiles:,}\nprofiles",
-            "23,687\nassertions",
-        ],
+        ["100", "243", "939\nstudies", "2,335\npairs", "4,670\nprofiles", "23,687\nassertions"],
         fontsize=7.6,
     )
     _apply_range_frame(ax_b, x_bounds=(2.0, np.log10(23687)))
@@ -1934,13 +1734,12 @@ def build_plate5_three_statistical_arms(
         rows=[
             (
                 "Sampling unit & n:",
-                f"Matched experiment pair (n = {n_pairs:,} pairs; identical sample size "
-                "for every trait)",
+                "Matched experiment pair (n = 2,335 pairs; identical sample size for every trait)",
             ),
             (
                 "Transformation:",
-                f"Fraction C(e,d,t)/T_{n_retained_traits}(e,d) \u00d7 1000 -> log(1 + x) -> "
-                "per-trait z-score across profiles",
+                "Fraction C(e,d,t)/T_317(e,d) \u00d7 1000 -> log(1 + x) -> per-trait "
+                "z-score across profiles",
             ),
             (
                 "Test & Null:",
@@ -1953,8 +1752,8 @@ def build_plate5_three_statistical_arms(
             ),
             (
                 "Scope note:",
-                f"Harmonized to the shared {n_retained_traits:,} non-MediaDive trait denominator "
-                f"T_{n_retained_traits} (#174 / #503 / #514)",
+                "Harmonized to the shared 317 non-MediaDive trait denominator T_317 "
+                "(#174 / #503 / #514)",
             ),
         ],
     )
@@ -1971,8 +1770,8 @@ def build_plate5_three_statistical_arms(
         rows=[
             (
                 "Sampling unit & n:",
-                "Historical v1.3.1 taxon-calibrated profile \u00d7 trait hypergeometric model "
-                f"({n_paired_profiles:,} \u00d7 {n_retained_traits:,} = {n_ora_tests:,} tests)",
+                "Taxon-calibrated profile \u00d7 trait hypergeometric model (4,670 "
+                "\u00d7 317 = 1,480,390 tests)",
             ),
             (
                 "Transformation:",
@@ -1985,8 +1784,8 @@ def build_plate5_three_statistical_arms(
             ),
             (
                 "Multiplicity & Rule:",
-                f"Historical v1.3.1 BH across {n_ora_tests:,} tests; 66,240 enrichments "
-                "(fold ≥ 1.5, q ≤ 0.001) & 23 depletions (fold ≤ 0.5)",
+                "BH across 1,480,390 tests; 66,240 enrichments (fold ≥ 1.5, q ≤ "
+                "0.001) & 23 depletions (fold ≤ 0.5)",
             ),
             (
                 "Scope note:",
@@ -2013,8 +1812,8 @@ def build_plate5_three_statistical_arms(
             ),
             (
                 "Estimand A (Fractions):",
-                f"Sign of study-mean Δ_F = p_inc \u2212 p_dec over {n_retained_traits:,} "
-                "non-MediaDive traits (ties |Δ| ≤ 10⁻¹² dropped)",
+                "Sign of study-mean Δ_F = p_inc \u2212 p_dec over 317 non-MediaDive "
+                "traits (ties |Δ| ≤ 10⁻¹² dropped)",
             ),
             (
                 "Estimand B (Log-Ratios):",
@@ -2023,8 +1822,8 @@ def build_plate5_three_statistical_arms(
             ),
             (
                 "Test & Multiplicity:",
-                f"Exact two-sided binomial test vs. 0.5 (95% Clopper-Pearson CI); BH "
-                f"({n_frac} traits) & BY ({n_ratios_family} ratios, {n_retained_traits:,} traits)",
+                "Exact two-sided binomial test vs. 0.5 (95% Clopper-Pearson CI); BH "
+                "(6 traits) & BY (15 ratios, 317 traits)",
             ),
         ],
     )
@@ -2043,12 +1842,74 @@ def build_plate5_three_statistical_arms(
     ax_d.text(
         2.0,
         0.85,
-        f"{frac_word} Table 1 Single-Trait Fractions (BH across {n_frac} traits):",
+        "Six Table 1 Single-Trait Fractions (BH across 6 traits):",
         fontsize=8.2,
         fontweight="bold",
         color=INK,
     )
 
+    arm3_fractions = [
+        (
+            "FA  (facultative anaerobe)",
+            58.2,
+            55.0,
+            61.4,
+            "58.2% (n=917, BH q = 4.1\u00d710⁻⁶ **)",
+            0.78,
+            SLATE,
+            True,
+        ),
+        (
+            "HAL (halotolerant)",
+            57.4,
+            54.0,
+            60.8,
+            "57.4% (n=845, BH q = 5.8\u00d710⁻⁵ **)",
+            0.71,
+            SLATE,
+            True,
+        ),
+        (
+            "ARS (arsenate reduction)",
+            56.2,
+            52.1,
+            60.1,
+            "56.2% (n=616, BH q = 0.0030 *)",
+            0.64,
+            SLATE,
+            False,
+        ),
+        (
+            "SPH (sphere shaped)",
+            55.3,
+            51.9,
+            58.7,
+            "55.3% (n=844, BH q = 0.0030 *)",
+            0.57,
+            SLATE,
+            False,
+        ),
+        (
+            "COC (coccus shaped)",
+            54.5,
+            51.2,
+            57.8,
+            "54.5% (n=915, BH q = 0.0067 *)",
+            0.50,
+            SLATE,
+            False,
+        ),
+        (
+            "CEL (cellulose catabolism)",
+            43.2,
+            39.6,
+            46.8,
+            "43.2% up / 56.8% down (q = 3.1\u00d710⁻⁴ **)",
+            0.43,
+            CRIMSON,
+            True,
+        ),
+    ]
     for label, pct, lo, hi, summary_str, ry, col, bold in arm3_fractions:
         fw = "bold" if bold else "normal"
         ax_d.text(2.0, ry, label, fontsize=7.9, fontweight=fw, color=INK, va="center")
@@ -2059,11 +1920,53 @@ def build_plate5_three_statistical_arms(
     ax_d.text(
         2.0,
         0.34,
-        f"Key Table 1 Paired Log-Ratios (BY across {n_ratios_family} pairs; cancels T):",
+        "Key Table 1 Paired Log-Ratios (BY across 15 pairs; cancels T):",
         fontsize=8.2,
         fontweight="bold",
         color=INK,
     )
+    arm3_ratios = [
+        (
+            "FA / CEL  (+0.79 log₂)",
+            59.5,
+            54.9,
+            64.0,
+            "59.5% up (n=467, BY q = 0.0011 *)",
+            0.27,
+            CRIMSON,
+            True,
+        ),
+        (
+            "FA / COC  (both up -> flat)",
+            50.8,
+            46.9,
+            54.6,
+            "50.8% up (n=676, BY q = 1.00 n.s.)",
+            0.20,
+            FAINT,
+            False,
+        ),
+        (
+            "CEL / SPH (\u22120.54 log₂)",
+            40.7,
+            36.1,
+            45.4,
+            "40.7% up / 59.3% down (BY q = 0.0026 *)",
+            0.13,
+            CRIMSON,
+            True,
+        ),
+        (
+            "CEL / ARS (\u22120.85 log₂)",
+            36.5,
+            31.3,
+            41.9,
+            "36.5% up / 63.5% down (BY q = 0.0011 *)",
+            0.06,
+            CRIMSON,
+            True,
+        ),
+    ]
     for label, pct, lo, hi, summary_str, ry, col, bold in arm3_ratios:
         fw = "bold" if bold else "normal"
         ax_d.text(2.0, ry, label, fontsize=7.9, fontweight=fw, color=INK, va="center")
@@ -2083,84 +1986,17 @@ def build_plate5_three_statistical_arms(
 # --------------------------------------------------------------------------- Plate VI
 
 
-_PLATE6_METHOD_ROWS: tuple[tuple[str, str, str, str, str, str, str, bool], ...] = (
-    (
-        "table1_Burst_direction",
-        "6 rows",
-        "BH (m = 6)",
-        "6 / 6",
-        "3 / 6",
-        "All 6 traits pass q ≤ 0.05; FA, HAL, CEL pass q ≤ 0.001",
-        CRIMSON,
-        True,
-    ),
-    (
-        "table1_ora_background",
-        "6 rows",
-        "Descriptive",
-        "untested",
-        "untested",
-        "Study-mean inc & dec ORA folds vs. corpus background",
-        OCHRE,
-        False,
-    ),
-    (
-        "table1_paired_log_ratio",
-        "15 rows",
-        "BY (m = 15)",
-        "3 / 15",
-        "0 / 15",
-        "FA/CEL (up), CEL/SPH (down), CEL/ARS (down) pass BY",
-        TEAL,
-        True,
-    ),
-    (
-        "all_traits_direction_screen",
-        "3 rows",
-        "BH & BY (317)",
-        "42 BH / 19 BY",
-        "13 BY",
-        "Full 317-trait screen (939 studies; 16 zero-signal traits)",
-        SLATE,
-        True,
-    ),
-    (
-        "jed_composition_top10",
-        "10 rows",
-        "BH (table)",
-        "pending",
-        "pending",
-        "Marked source_not_supplied until export is wired (#174)",
-        FAINT,
-        False,
-    ),
-)
-
-_PLATE6_CELL_COUNTS: tuple[int, int, int, int] = (316, 7, 209, 1340)
-
-
 @_with_tufte_rcparams
-def build_plate6_combining_results_integrated_evidence(
-    *,
-    n_retained_traits: int = 317,
-    method_rows: Sequence[tuple[str, str, str, str, str, str, str, bool]] = _PLATE6_METHOD_ROWS,
-    cell_counts: tuple[int, int, int, int] = _PLATE6_CELL_COUNTS,
-) -> Figure:
+def build_plate6_combining_results_integrated_evidence() -> Figure:
     """Build Plate VI: Result Integration & Evidence Contract."""
-    n_method_blocks = len(method_rows)
-    n_method_rows = sum(int(row[1].split()[0]) for row in method_rows)
-    n_drawn, n_zero, n_mask, n_ns = cell_counts
-    n_grid_rows = n_drawn + n_zero + n_mask + n_ns
-    n_total_rows = n_method_rows + n_grid_rows
-
     fig = _make_tufte_plate(
         (13.6, 8.2),
         "PLATE VI  ·  RESULT INTEGRATION & EVIDENCE CONTRACT (METHODS/INTEGRATED_EVIDENCE.MD)",
         "How Results Are Combined: Shared Comparison Basis and the Integrated Evidence Contract",
         "Rather than pooling incompatible p-values across sampling units, the pipeline aligns "
         "corpus denominators and records each method, threshold family, and grid-cell state "
-        f"in a single {n_total_rows:,}-row table.",
-        "Source: Historical three-framework-comparison-v1 run — methods/integrated_evidence.md & "
+        "in a single 1,912-row table.",
+        "Source: methods/integrated_evidence.md & "
         "data/derived/integrated_evidence/integrated_evidence.tsv "
         "(just integrated-evidence).",
         "Plate VI  ·  data/analysis/cellulose_decr",
@@ -2182,8 +2018,8 @@ def build_plate6_combining_results_integrated_evidence(
 
     rules = [
         (
-            f"1. Identical Matrix & {n_retained_traits:,}-Trait Denominator",
-            f"All descriptive shares use the {n_retained_traits:,} non-MediaDive trait columns in "
+            "1. Identical Matrix & 317-Trait Denominator",
+            "All descriptive shares use the 317 non-MediaDive trait columns in "
             "study_trait_profiles_wide.tsv\n"
             "(excluding 2,333 MediaDive columns so growth-medium annotations do not "
             "dilute trait shares).",
@@ -2260,7 +2096,7 @@ def build_plate6_combining_results_integrated_evidence(
         ),
         (
             "Case 3 · Compositional Closure vs. Log-Ratio Cancellation",
-            "Both FA (58.2% up, BH q = 4.1\u00d710⁻⁶) and COC (54.5% up, BH q = 0.0067) "
+            "Both FA (58.2% up, q = 4.1\u00d710⁻⁶) and COC (54.5% up, q = 0.0067) "
             "rise as fractions of T,\n"
             "yet their direct ratio FA/COC is flat (50.8% up, BY q = 1.00). "
             "Conversely, FA/CEL (59.5% up),\n"
@@ -2280,7 +2116,7 @@ def build_plate6_combining_results_integrated_evidence(
     _add_panel_header(
         ax_c,
         "C. The Integrated Evidence Contract: "
-        f"data/derived/integrated_evidence/integrated_evidence.tsv ({n_total_rows:,} Rows)",
+        "data/derived/integrated_evidence/integrated_evidence.tsv (1,912 Rows)",
         "One row per (method, feature, inference_level): keeps correction families separate, "
         "reports both q ≤ 0.05 and q ≤ 0.001, and classifies every blank cell",
         y_title=0.985,
@@ -2292,8 +2128,7 @@ def build_plate6_combining_results_integrated_evidence(
     ax_c.text(
         0.0,
         0.81,
-        f"1. Pooled Study-Level Method Rows ({n_method_rows} Rows across "
-        f"{n_method_blocks} Method Blocks):",
+        "1. Pooled Study-Level Method Rows (40 Rows across 5 Method Blocks):",
         fontsize=9.0,
         fontweight="bold",
         color=INK,
@@ -2310,6 +2145,58 @@ def build_plate6_combining_results_integrated_evidence(
         ax_c.text(cx, 0.755, cname, fontsize=7.6, fontweight="bold", color=MUTED)
     ax_c.plot([0.0, 0.54], [0.735, 0.735], color=RULE, linewidth=0.6)
 
+    method_rows = [
+        (
+            "table1_Burst_direction",
+            "6 rows",
+            "BH (m = 6)",
+            "6 / 6",
+            "3 / 6",
+            "All 6 traits pass q ≤ 0.05; FA, HAL, CEL pass q ≤ 0.001",
+            CRIMSON,
+            True,
+        ),
+        (
+            "table1_ora_background",
+            "6 rows",
+            "Descriptive",
+            "untested",
+            "untested",
+            "Study-mean inc & dec ORA folds vs. corpus background",
+            OCHRE,
+            False,
+        ),
+        (
+            "table1_paired_log_ratio",
+            "15 rows",
+            "BY (m = 15)",
+            "3 / 15",
+            "0 / 15",
+            "FA/CEL (up), CEL/SPH (down), CEL/ARS (down) pass BY",
+            TEAL,
+            True,
+        ),
+        (
+            "all_traits_direction_screen",
+            "3 rows",
+            "BH & BY (317)",
+            "42 BH / 19 BY",
+            "13 BY",
+            "Full 317-trait screen (939 studies; 16 zero-signal traits)",
+            SLATE,
+            True,
+        ),
+        (
+            "jed_composition_top10",
+            "10 rows",
+            "BH (table)",
+            "pending",
+            "pending",
+            "Marked source_not_supplied until export is wired (#174)",
+            FAINT,
+            False,
+        ),
+    ]
     ry = 0.690
     for mname, rcount, fdr, q05, q001, summ, mcol, bold in method_rows:
         ax_c.text(0.0, ry, mname, fontsize=7.3, fontweight="bold", family="monospace", color=mcol)
@@ -2345,7 +2232,7 @@ def build_plate6_combining_results_integrated_evidence(
     ax_c.text(
         0.58,
         0.81,
-        f"2. Condition \u00d7 Body-Site Grid Cells ({n_grid_rows:,} Rows = 6 Traits \u00d7 13 "
+        "2. Condition \u00d7 Body-Site Grid Cells (1,872 Rows = 6 Traits \u00d7 13 "
         "Conditions \u00d7 12 Sites \u00d7 2 Metrics):",
         fontsize=8.8,
         fontweight="bold",
@@ -2362,11 +2249,10 @@ def build_plate6_combining_results_integrated_evidence(
     )
 
     gx, gy, gw, gh = 0.58, 0.59, 0.40, 0.10
-    denom_grid = max(n_grid_rows, 1)
-    w_drawn = (n_drawn / denom_grid) * gw
-    w_zero = (n_zero / denom_grid) * gw
-    w_mask = (n_mask / denom_grid) * gw
-    w_ns = (n_ns / denom_grid) * gw
+    w_drawn = (316 / 1872) * gw
+    w_zero = (7 / 1872) * gw
+    w_mask = (209 / 1872) * gw
+    w_ns = (1340 / 1872) * gw
     ax_c.add_patch(Rectangle((gx, gy), w_drawn, gh, facecolor=CRIMSON, edgecolor=PAPER_BG))
     ax_c.add_patch(Rectangle((gx + w_drawn, gy), w_zero, gh, facecolor=OCHRE, edgecolor=PAPER_BG))
     ax_c.add_patch(
@@ -2384,7 +2270,7 @@ def build_plate6_combining_results_integrated_evidence(
     ax_c.text(
         gx + w_drawn / 2,
         gy + gh / 2,
-        f"{n_drawn:,}\ndrawn",
+        "316\ndrawn",
         fontsize=7.4,
         fontweight="bold",
         color="#ffffff",
@@ -2394,7 +2280,7 @@ def build_plate6_combining_results_integrated_evidence(
     ax_c.text(
         gx + w_drawn + w_zero + w_mask / 2,
         gy + gh / 2,
-        f"{n_mask:,}\nmasked",
+        "209\nmasked",
         fontsize=7.2,
         fontweight="bold",
         color="#ffffff",
@@ -2404,7 +2290,7 @@ def build_plate6_combining_results_integrated_evidence(
     ax_c.text(
         gx + w_drawn + w_zero + w_mask + w_ns / 2,
         gy + gh / 2,
-        f"{n_ns:,} not_sampled ({n_ns / denom_grid * 100:.1f}%: 0 paired human studies in cell)",
+        "1,340 not_sampled (71.6%: 0 paired human studies in cell)",
         fontsize=7.6,
         fontweight="bold",
         color=INK,
@@ -2414,31 +2300,26 @@ def build_plate6_combining_results_integrated_evidence(
 
     cell_states = [
         (
-            f"drawn ({n_drawn:,} cells, {n_drawn / denom_grid * 100:.1f}%)   "
-            "[test_status = tested / all_tied]",
+            "drawn (316 cells, 16.9%)   [test_status = tested / all_tied]",
             "≥ 3 studies with trait signal; rendered on map (26 cells have BH q ≤ "
-            "0.05 '*' across the 184 tested condition \u00d7 body-site cells in "
-            "each metric family; 4 have BH q ≤ 0.001)",
+            "0.05 '*', 4 have q ≤ 0.001)",
             0.51,
             CRIMSON,
         ),
         (
-            f"sampled-without-signal ({n_zero:,} cells, {n_zero / denom_grid * 100:.1f}%)   "
-            "[test_status = zero_annotation_signal]",
+            "sampled-without-signal (7 cells, 0.4%)   [test_status = zero_annotation_signal]",
             "≥ 3 studies sampled in BugSigDB, but all profiles have 0 annotations for that trait",
             0.37,
             OCHRE,
         ),
         (
-            f"masked_below_min_studies ({n_mask:,} cells, {n_mask / denom_grid * 100:.1f}%)   "
-            "[test_status = insufficient_support]",
+            "masked_below_min_studies (209 cells, 11.2%)   [test_status = insufficient_support]",
             "1\u20132 studies in cell; suppressed by the ≥ 3-study display rule (never tested)",
             0.23,
             SLATE,
         ),
         (
-            f"not_sampled ({n_ns:,} cells, {n_ns / denom_grid * 100:.1f}%)   "
-            "[test_status = not_sampled]",
+            "not_sampled (1,340 cells, 71.6%)   [test_status = not_sampled]",
             "0 paired human studies for that condition \u00d7 body site in the pinned corpus",
             0.09,
             INK,
@@ -2514,7 +2395,7 @@ def render_fig7_svg() -> str:
             "Convergence Network (Feces Decreased)</text>",
             '    <text x="32" y="141" class="panel-sub">Edge weight proportional to Jacc'
             "ard similarity J = |A ∩ B| / |A \u222a B|; every pairwise overlap contains the 17"
-            "-taxon 3-way core (3 disease pairs; nominal p)</text>",
+            "-taxon 3-way core</text>",
             "",
             '    <line x1="148" y1="262" x2="472" y2="262" stroke="#9E2A2B" stroke-o'
             'pacity="0.18" stroke-width="15" stroke-linecap="round"/>',
@@ -2592,8 +2473,7 @@ def render_fig7_svg() -> str:
             '#181715"><tspan font-weight="700" fill="#9E2A2B">J = 57.4%</tspan>  (d_J = 0'
             ".426 · 17 + 10)</text>",
             '      <text x="310" y="209" text-anchor="middle" font-size="9.5" fill="#'
-            '4A4742">3.8\u00d7 vs. U₁ (nominal p = 9.6\u00d710⁻¹⁷; nominal hyp '
-            "p = 2.7\u00d710⁻¹³)</text>",
+            '4A4742">3.8\u00d7 vs. U₁ (p = 9.6\u00d710⁻¹⁷; hyp p = 2.7\u00d710⁻¹³)</text>',
             "    </g>",
             "",
             '    <g id="edge_pd_hiv">',
@@ -2605,8 +2485,7 @@ def render_fig7_svg() -> str:
             '#181715"><tspan font-weight="700" fill="#8C5A2B">J = 48.8%</tspan>  (d_J = 0'
             ".512 · 17 + 4)</text>",
             '      <text x="124" y="388" text-anchor="middle" font-size="9.5" fill="#'
-            '4A4742">4.1\u00d7 vs. U₁ (nominal p = 4.8\u00d710⁻¹⁴; nominal hyp '
-            "p = 8.4\u00d710⁻¹²)</text>",
+            '4A4742">4.1\u00d7 vs. U₁ (p = 4.8\u00d710⁻¹⁴; hyp p = 8.4\u00d710⁻¹²)</text>',
             "    </g>",
             "",
             '    <g id="edge_hiv_crc">',
@@ -2618,8 +2497,7 @@ def render_fig7_svg() -> str:
             '#181715"><tspan font-weight="700" fill="#2B4C6F">J = 45.0%</tspan>  (d_J = 0'
             ".550 · 17 + 1)</text>",
             '      <text x="496" y="388" text-anchor="middle" font-size="9.5" fill="#'
-            '4A4742">4.2\u00d7 vs. U₁ (nominal p = 2.6\u00d710⁻¹¹; nominal hyp '
-            "p = 6.7\u00d710⁻¹¹)</text>",
+            '4A4742">4.2\u00d7 vs. U₁ (p = 2.6\u00d710⁻¹¹; hyp p = 6.7\u00d710⁻¹¹)</text>',
             "    </g>",
             "",
             '    <g id="centroid_mean">',
@@ -2664,7 +2542,7 @@ def render_fig7_svg() -> str:
             'ke-width="1.1"/>',
             '    <polygon points="264.9,611 271.5,607.8 271.5,614.2" fill="#9E2A2B"/>',
             '    <text x="343.7" y="607" text-anchor="middle" font-size="9.5" font-wei'
-            'ght="700" fill="#9E2A2B">Δd_J = \u22120.303 tighter vs. background (U₄ nominal p &lt;'
+            'ght="700" fill="#9E2A2B">Δd_J = \u22120.303 tighter vs. background (U₄ p &lt;'
             " 10⁻⁵)</text>",
             "",
             '    <text x="32" y="636" font-size="10.5" fill="#2B4C6F" font-weight="70'
@@ -2673,7 +2551,7 @@ def render_fig7_svg() -> str:
             '-opacity="0.25" stroke="#2B4C6F" stroke-width="0.8"/>',
             '    <circle cx="369.9" cy="632" r="4.2" fill="#2B4C6F"/>',
             '    <text x="394" y="636" font-size="10" fill="#4A4742"><tspan font-weigh'
-            't="700" fill="#2B4C6F">0.698</tspan> (J = 30.2%, guild perm nominal p = 0.0110)</text'
+            't="700" fill="#2B4C6F">0.698</tspan> (J = 30.2%, guild perm p = 0.0110)</text'
             ">",
             "",
             '    <text x="32" y="668" font-size="10.5" fill="#4A4742">All Feces Decrea'
@@ -2726,19 +2604,17 @@ def render_fig7_svg() -> str:
             '    <text x="722" y="168" text-anchor="middle" font-size="12" font-weight'
             '="700" fill="#9E2A2B">Parkinson\u2019s Disease (40)</text>',
             '    <text x="722" y="181" text-anchor="middle" font-size="9.5" font-style'
-            '="italic" fill="#4A4742">46 studies · Δ = \u221227.4 pp (BH q = 0.0077; '
-            "48-test family)</text>",
+            '="italic" fill="#4A4742">46 studies · Δ = \u221227.4 pp (q = 0.0077)</text>',
             "",
             '    <text x="950" y="168" text-anchor="middle" font-size="12" font-weight'
             '="700" fill="#2B4C6F">Colorectal Cancer (34)</text>',
             '    <text x="950" y="181" text-anchor="middle" font-size="9.5" font-style'
-            '="italic" fill="#4A4742">27 studies · Δ = \u221236.9 pp (BH q = 0.0336; '
-            "48-test family)</text>",
+            '="italic" fill="#4A4742">27 studies · Δ = \u221236.9 pp (q = 0.0336)</text>',
             "",
             '    <text x="836" y="544" text-anchor="middle" font-size="12" font-weight'
             '="700" fill="#8C5A2B">HIV Infection (24)  <tspan font-size="9.5" font-weigh'
             't="400" font-style="italic" fill="#4A4742">· 17 studies · Δ = \u221253.7 pp'
-            " (BH q = 0.0080; 48-test family)</tspan></text>",
+            " (q = 0.0080)</tspan></text>",
             "",
             '    <text x="710" y="256" text-anchor="middle" font-size="16" font-weight'
             '="700" fill="#9E2A2B">9</text>',
@@ -2820,16 +2696,16 @@ def render_fig7_svg() -> str:
             '81715">34.7% (17 / 49) <tspan font-size="10.2" font-weight="400" fill="#4A4'
             '742">vs. 9.2% baseline (49 / 530)</tspan></text>',
             '      <text x="1053" y="214" font-size="10.4" font-weight="700" fill="#9'
-            'E2A2B">3.75\u00d7 Enriched  (OR = 7.45, nominal Fisher p = 1.29 \u00d7 10⁻⁷)</text>',
+            'E2A2B">3.75\u00d7 Enriched  (OR = 7.45, Fisher p = 1.29 \u00d7 10⁻⁷)</text>',
             '      <text x="1053" y="229" font-size="9.2" fill="#4A4742">10.6\u00d7 vs'
-            ". 530-taxon null (nominal p = 6.2\u00d710⁻¹⁶) · 18.6\u00d7 vs. U₁ "
-            "(nominal p = 1.5\u00d710⁻²²)</text>",
+            ". 530-taxon null (p = 6.2\u00d710⁻¹⁶) · 18.6\u00d7 vs. U₁ (p = 1.5\u00d710⁻²²)</t"
+            "ext>",
             "",
             '      <line x1="1053" y1="238" x2="1356" y2="238" stroke="#D6D1C7" stro'
             'ke-width="0.8"/>',
             '      <text x="1053" y="253" font-size="9.6" font-weight="700" fill="#18'
-            '1715">All 17 Core Taxa (9 Genera [17.1\u00d7, nominal p=3.5\u00d710⁻¹²] '
-            "+ 8 Higher):</text>",
+            '1715">All 17 Core Taxa (9 Genera [17.1\u00d7, p=3.5\u00d710⁻¹²] + 8 Higher):</te'
+            "xt>",
             '      <text x="1053" y="268" font-size="9.1" fill="#181715">• <tspan font'
             '-style="italic" font-weight="700">Roseburia</tspan> (25 studies: 18·2·5), <ts'
             'pan font-style="italic" font-weight="700">Blautia</tspan> (19), <tspan font-s'
@@ -2854,8 +2730,8 @@ def render_fig7_svg() -> str:
             'tyle="italic">Clostridiaceae</tspan> (10), <tspan font-style="italic">Bactero'
             "idia</tspan> (7)</text>",
             '      <text x="1053" y="356" font-size="8.8" font-style="italic" fill="#'
-            '2B4C6F">Genus+Species only (N=93): PD\u2013CRC J = 62.5% '
-            "(nominal p = 6.0\u00d710⁻¹⁰)</text>",
+            '2B4C6F">Genus+Species only (N=93): PD\u2013CRC J = 62.5% (p = 6.0\u00d710⁻¹⁰)</t'
+            "ext>",
             '      <text x="1053" y="369" font-size="8.8" font-style="italic" fill="#'
             '2B4C6F">Confirms convergence is driven by fine-rank butyrate/fiber genera.</text'
             ">",
@@ -2871,7 +2747,7 @@ def render_fig7_svg() -> str:
             '81715">65.3% (32 / 49) <tspan font-size="10.2" font-weight="400" fill="#4A4'
             '742">vs. 27.2% baseline (144 / 530)</tspan></text>',
             '      <text x="1053" y="446" font-size="10.4" font-weight="700" fill="#2'
-            'B4C6F">2.40\u00d7 Enriched  (OR = 6.20, nominal Fisher p = 4.53 \u00d7 10⁻⁹)</text>',
+            'B4C6F">2.40\u00d7 Enriched  (OR = 6.20, Fisher p = 4.53 \u00d7 10⁻⁹)</text>',
             '      <text x="1053" y="461" font-size="9.2" fill="#4A4742">Only 17 / 49 '
             "taxa (34.7%) are unique to a single disease (vs. 72.8% bg).</text>",
             "",
@@ -2903,7 +2779,7 @@ def render_fig7_svg() -> str:
             '    <line x1="1164.2" y1="591" x2="1164.2" y2="595" stroke="#9E2A2B" st'
             'roke-width="1.0"/>',
             '    <text x="984.6" y="587" text-anchor="middle" font-size="9.4" font-wei'
-            'ght="700" fill="#9E2A2B">65.3% shared across ≥2 diseases (32 / 49 taxa; nominal Fishe'
+            'ght="700" fill="#9E2A2B">65.3% shared across ≥2 diseases (32 / 49 taxa; Fishe'
             "r p = 4.53 \u00d7 10⁻⁹)</text>",
             "",
             '    <text x="626" y="614" font-size="10.8" font-weight="700" fill="#1817'
@@ -2943,10 +2819,10 @@ def render_fig7_svg() -> str:
             "  </g>",
             "",
             '  <line x1="32" y1="724" x2="1368" y2="724" stroke="#D6D1C7" stroke-width="0.85"/>',
-            '  <text x="32" y="745" class="footnote">Source: Historical October 16 export '
-            "— BugSigDB human stool signatures (90 studies: 46 PD, 17 HIV, 27 CRC) \u00d7 "
-            "KG-Microbe cellulose catabolism (METPO:2000103 | GO:0030245). Reflects "
-            "taxon-annotation alignment, not measured in vivo cellulolytic flux.</text>",
+            '  <text x="32" y="745" class="footnote">Source: BugSigDB human stool signat'
+            "ures (90 studies: 46 PD, 17 HIV, 27 CRC) \u00d7 KG-Microbe cellulose catabolism ("
+            "METPO:2000103 | GO:0030245). Reflects taxon-annotation alignment, not measured in"
+            " vivo cellulolytic flux.</text>",
             '  <text x="1368" y="745" text-anchor="end" class="footnote">Plate VII (Pa'
             "ge 8 Venn Redesign)  ·  data/analysis/cellulose_decr</text>",
             "</svg>",
@@ -2969,11 +2845,10 @@ def render_fig8_svg() -> str:
             '      <text x="35" y="34" font-size="15.5" font-weight="bold" fill="#181'
             '715">OPPOSITE STOOL TRAIT DIRECTIONS IN HUMAN SIGNATURES (BugSigDB \u00d7 KG-Mic'
             "robe)</text>",
-            '      <text x="35" y="55" font-size="11.5" font-style="italic" fill="#4A'
-            '4843">Interpretation note (Historical October 16 export): BugSigDB records '
-            "reported shifts; KG-Microbe maps taxa to trait annotations (not in vivo flux; "
-            "BH q across 48 condition \u00d7 trait tests; Fisher/binomial/Wilcoxon p are "
-            "nominal).</text>",
+            '      <text x="35" y="55" font-size="12.5" font-style="italic" fill="#4A'
+            '4843">Interpretation note: BugSigDB records reported taxon abundance shifts; KG-'
+            "Microbe maps taxa to curated trait annotations (trait-annotation alignment, not d"
+            "irect in vivo metabolite flux).</text>",
             "",
             "      <!-- Left Box in Banner (width=680, x=30..710) -->",
             '      <rect x="30" y="68" width="680" height="56" rx="5" fill="#F9ECEC'
@@ -3009,7 +2884,7 @@ def render_fig8_svg() -> str:
             "resentation of osmotolerant and stress-tolerant taxa (+24.4 pp, BH q = 0.0265;</t"
             "ext>",
             '      <text x="825" y="116" font-size="11.0" fill="#181715">paired within'
-            "-study Wilcoxon 33 Up vs. 8 Down, nominal p = 1.67 \u00d7 10⁻⁴)</text>",
+            "-study Wilcoxon 33 Up vs. 8 Down, p = 1.67 \u00d7 10⁻⁴)</text>",
             "",
             "      <!-- Four Detailed Cards (2x2 Grid, each width=725) -->",
             "      <!-- Card 1: PD Cellulose Decrease -->",
@@ -3027,11 +2902,11 @@ def render_fig8_svg() -> str:
             '81715">MTP Stool Signal (46 Decreased Studies / 52 Total, 83 Paired Signature Ex'
             "periments):</text>",
             '        <text x="16" y="74" font-size="11.2" fill="#33312E">• Present in '
-            "27.5% of Increased (36/131) vs. 54.8% of Decreased profiles (68/124; "
-            "nominal Fisher p = 1.28 \u00d7 10⁻⁵)</text>",
+            "27.5% of Increased (36/131) vs. 54.8% of Decreased profiles (68/124; Fisher p = 1"
+            ".28 \u00d7 10⁻⁵)</text>",
             '        <text x="16" y="91" font-size="11.2" fill="#33312E">• Within-stud'
-            "y experiment sign test: 57 Decreased vs. 26 Increased (68.7% decrease, "
-            "nominal binomial p = 8.78 \u00d7 10⁻⁴)</text>",
+            "y experiment sign test: 57 Decreased vs. 26 Increased (68.7% decrease, binomial p"
+            " = 8.78 \u00d7 10⁻⁴)</text>",
             '        <text x="16" y="108" font-size="11.2" fill="#33312E">• Top deplet'
             "ed core genera: Roseburia (18 studies), Blautia (12), Clostridium (7),</text>",
             '        <text x="26" y="123" font-size="11.2" fill="#33312E">Bacteroides '
@@ -3075,11 +2950,11 @@ def render_fig8_svg() -> str:
             '81715">MTP Stool Signal (17 Decreased Studies / 18 Total, 25 Paired Signature Ex'
             "periments):</text>",
             '        <text x="16" y="74" font-size="11.2" fill="#33312E">• Present in '
-            "19.2% of Increased (10/52) vs. 72.9% of Decreased profiles (35/48; "
-            "nominal Fisher p = 6.23 \u00d7 10⁻⁸)</text>",
+            "19.2% of Increased (10/52) vs. 72.9% of Decreased profiles (35/48; Fisher p = 6.2"
+            "3 \u00d7 10⁻⁸)</text>",
             '        <text x="16" y="91" font-size="11.2" fill="#33312E">• Within-stud'
-            "y experiment sign test: 19 Decreased vs. 6 Increased (76.0% decrease, "
-            "nominal binomial p = 0.0146)</text>",
+            "y experiment sign test: 19 Decreased vs. 6 Increased (76.0% decrease, binomial p "
+            "= 0.0146)</text>",
             '        <text x="16" y="108" font-size="11.2" fill="#33312E">• Top deplet'
             "ed core genera: Bacteroides (7 studies), Clostridium (4), Ruminococcus (4),</text"
             ">",
@@ -3122,11 +2997,11 @@ def render_fig8_svg() -> str:
             '81715">MTP Stool Signal (27 Decreased Studies / 30 Total, 37 Paired Signature Ex'
             "periments):</text>",
             '        <text x="16" y="74" font-size="11.2" fill="#33312E">• Present in '
-            "26.9% of Increased (18/67) vs. 63.8% of Decreased profiles (37/58; "
-            "nominal Fisher p = 3.74 \u00d7 10⁻⁵)</text>",
+            "26.9% of Increased (18/67) vs. 63.8% of Decreased profiles (37/58; Fisher p = 3.7"
+            "4 \u00d7 10⁻⁵)</text>",
             '        <text x="16" y="91" font-size="11.2" fill="#33312E">• Within-stud'
-            "y experiment sign test: 30 Decreased vs. 7 Increased (81.1% decrease, "
-            "nominal binomial p = 1.91 \u00d7 10⁻⁴)</text>",
+            "y experiment sign test: 30 Decreased vs. 7 Increased (81.1% decrease, binomial p "
+            "= 1.91 \u00d7 10⁻⁴)</text>",
             '        <text x="16" y="108" font-size="11.2" fill="#33312E">• Top deplet'
             "ed core genera: Lachnospira (6 studies), Roseburia (5), Blautia (5),</text>",
             '        <text x="26" y="123" font-size="11.2" fill="#33312E">Clostridium '
@@ -3169,11 +3044,11 @@ def render_fig8_svg() -> str:
             '81715">MTP Stool Signal (43 Increased Studies / 52 Total, Paired Within-Study Wi'
             "lcoxon Test):</text>",
             '        <text x="16" y="74" font-size="11.2" fill="#33312E">• Present in '
-            "52.7% of Increased (69/131) vs. 28.2% of Decreased profiles (35/124; "
-            "nominal Fisher p = 7.76 \u00d7 10⁻⁵)</text>",
+            "52.7% of Increased (69/131) vs. 28.2% of Decreased profiles (35/124; Fisher p = 7"
+            ".76 \u00d7 10⁻⁵)</text>",
             '        <text x="16" y="91" font-size="11.2" fill="#33312E">• Paired with'
-            "in-study fraction difference: 33 Studies Up vs. 8 Down (4 tied; "
-            "nominal Wilcoxon p = 1.67 \u00d7 10⁻⁴)</text>",
+            "in-study fraction difference: 33 Studies Up vs. 8 Down (4 tied; Wilcoxon p = 1.67"
+            " \u00d7 10⁻⁴)</text>",
             '        <text x="16" y="108" font-size="11.2" fill="#33312E">• Top increa'
             "sed osmotolerant/stress-tolerant taxa: Akkermansia, Bifidobacterium,</text>",
             '        <text x="26" y="123" font-size="11.2" fill="#33312E">Lactobacillu'
@@ -3221,8 +3096,8 @@ def render_fig9_svg() -> str:
             '      <text x="40" y="52" font-size="18" font-weight="bold" fill="#18171'
             '5">A. The 7 Mutually Exclusive Regions (Sum = 49 Taxa)</text>',
             '      <text x="40" y="76" font-size="13.5" font-style="italic" fill="#4A'
-            '4843">When a Venn diagram partitions the 49 union taxa (Historical October 16 '
-            "export) into non-overlapping subsets:</text>",
+            '4843">When a Venn diagram partitions the 49 union taxa into non-overlapping subs'
+            "ets:</text>",
             "",
             '      <circle cx="290" cy="295" r="145" fill="#9E2A2B" fill-opacity="0.1'
             '6" stroke="#9E2A2B" stroke-width="2.5"/>',
@@ -3621,9 +3496,8 @@ def render_slide_deck_html() -> str:
             "  <h1>Cellulose-Catabolizing Gut Microbiota Convergence, Four Highlighted Trait S"
             "ignatures, and Three-Arm Statistical Integration</h1>",
             '  <p class="lead">',
-            "    Combined vector-graphics deck (Historical October 16 export &amp; "
-            "three-framework-comparison-v1 run) containing <b>Set 3 (Six Edward Tufte "
-            "Analytical Plates)</b>,",
+            "    Combined vector-graphics deck containing <b>Set 3 (Six Edward Tufte Analytica"
+            "l Plates)</b>,",
             "    <b>Set 2 (Four Graphical Summary Figures)</b>, <b>Set 1 (Three Statistical Re"
             "ference Figures)</b>,",
             "    and <b>Two Literature &amp; Set-Theory Reference Tables</b> across Parkinson"
@@ -3635,19 +3509,19 @@ def render_slide_deck_html() -> str:
             '      <div class="num">50.4%</div>',
             '      <div class="lbl"><b>Mean Pairwise Jaccard Similarity</b><br/>Across PD, H'
             "IV &amp; CRC stool (<i>d</i> = 0.4957; 2.5\u00d7 gut baseline of 20.1%, permutati"
-            "on nominal <i>p</i> = 0.011)</div>",
+            "on <i>p</i> = 0.011)</div>",
             "    </div>",
             '    <div class="cover-card">',
             '      <div class="num">17 / 49</div>',
             '      <div class="lbl"><b>3-Disease Core Guild (34.7%)</b><br/>10.6\u00d7 over '
-            "random expectation (nominal <i>p</i> = 6.2 \u00d7 10⁻¹⁶); 9 core genera "
-            "(17.1\u00d7 at Genus+Species, nominal <i>p</i> = 3.5 \u00d7 10⁻¹²)</div>",
+            "random expectation (<i>p</i> = 6.2 \u00d7 10⁻¹⁶); 9 core genera (17.1\u00d7 at Ge"
+            "nus+Species, <i>p</i> = 3.5 \u00d7 10⁻¹²)</div>",
             "    </div>",
             '    <div class="cover-card">',
             '      <div class="num">73.1%</div>',
             '      <div class="lbl"><b>Stool Decrease Direction</b><br/>106 decrease vs. 39 '
-            "increase experiments in stool (binomial nominal <i>p</i> = 2.4 \u00d7 10⁻⁸); "
-            "absent in mucosa (48.1%) &amp; oral (45.5%)</div>",
+            "increase experiments in stool (<i>p</i> = 2.4 \u00d7 10⁻⁸); absent in mucosa (48."
+            "1%) &amp; oral (45.5%)</div>",
             "    </div>",
             '    <div class="cover-card">',
             '      <div class="num">3 Arms</div>',
@@ -3703,7 +3577,7 @@ def render_slide_deck_html() -> str:
             '    <div class="footer-col"><b>Slopegraph:</b> Compares random chance (11%'
             "\u201315%), all 530 stool decreased bacteria (18%\u201324%), and the 49 cellulose"
             "-catabolizing bacteria (45.0%\u201357.4%; mean 50.4%, 2.5\u00d7 gut baseline, per"
-            "mutation nominal <i>p</i> = 0.011).</div>",
+            "mutation <i>p</i> = 0.011).</div>",
             '    <div class="footer-col"><b>Set partition:</b> Splitting the 49 lost taxa in'
             "to mutually exclusive tiers shows 17 (34.7%) lost in all 3 diseases and 15 (30.6%"
             ") in only 2 diseases. Every complete 2-disease intersection (27, 21, 18) includes"
@@ -3744,9 +3618,8 @@ def render_slide_deck_html() -> str:
             "and <i>Eubacterium</i> (4: 1·1·2) decrease across PD, HIV, and CRC.</div>",
             '    <div class="footer-col"><b>Rank sensitivity:</b> Restricting to Genus + Spe'
             "cies (N = 93 stool background taxa, 22 cellulose-annotated) increases PD\u2013CRC"
-            " Jaccard similarity to <b>62.5%</b> (nominal <i>p</i> = 5.98 \u00d7 10⁻¹⁰) and "
-            "3-way core enrichment to <b>17.1\u00d7</b> "
-            "(nominal <i>p</i> = 3.5 \u00d7 10⁻¹²).</div>",
+            " Jaccard similarity to <b>62.5%</b> (<i>p</i> = 5.98 \u00d7 10⁻¹⁰) and 3-way core"
+            " enrichment to <b>17.1\u00d7</b> (<i>p</i> = 3.5 \u00d7 10⁻¹²).</div>",
             "  </footer>",
             "</section>",
             "",
@@ -3776,10 +3649,9 @@ def render_slide_deck_html() -> str:
             "",
             '  <footer class="slide-footer">',
             '    <div class="footer-col"><b>Within-study direction:</b> In stool, 73.1% of s'
-            "ignature experiments report a decrease (106 decrease vs. 39 increase, binomial "
-            "nominal <i>p</i> = 2.4 \u00d7 10⁻⁸). Mucosal biopsies (48.1%, nominal "
-            "<i>p</i> = 1.00) and oral samples (45.5%, nominal <i>p</i> = 1.00) show no "
-            "directional bias.</div>",
+            "ignature experiments report a decrease (106 decrease vs. 39 increase, binomial <i"
+            ">p</i> = 2.4 \u00d7 10⁻⁸). Mucosal biopsies (48.1%, <i>p</i> = 1.00) and oral sam"
+            "ples (45.5%, <i>p</i> = 1.00) show no directional bias.</div>",
             '    <div class="footer-col"><b>Colonic niche:</b> Insoluble plant cellulose rea'
             "ches the anaerobic lumen of the lower colon sampled by stool, whereas mucosal bio"
             "psies sample biofilm bacteria attached to the gut wall.</div>",
@@ -3816,12 +3688,11 @@ def render_slide_deck_html() -> str:
             "unctional traits in stool, cellulose (50.4%), xylan (46.6%), and chitin (45.8%) c"
             "atabolism rank #1, #2, and #3 among metabolic pathways (second overall only to en"
             "dospore formation at 67.0%).</div>",
-            '    <div class="footer-col"><b>Four highlighted pairs:</b> Across 48 condition '
-            "\u00d7 trait tests, cellulose catabolism decreases in PD (\u221227.4 pp, "
-            "BH <i>q</i> = 0.0077), HIV (\u221253.7 pp, BH <i>q</i> = 0.0080), and CRC "
-            "(\u221236.9 pp, BH <i>q</i> = 0.0336), while halotolerance increases in PD "
-            "(+24.4 pp, Fisher BH <i>q</i> = 0.0265 across 48 condition \u00d7 trait tests; "
-            "paired Wilcoxon nominal <i>p</i> = 1.67 \u00d7 10⁻⁴).</div>",
+            '    <div class="footer-col"><b>Four highlighted pairs:</b> Cellulose catabolism'
+            " decreases in PD (\u221227.4 pp, <i>q</i> = 0.0077), HIV (\u221253.7 pp, <i>q</i>"
+            " = 0.0080), and CRC (\u221236.9 pp, <i>q</i> = 0.0336), while halotolerance incre"
+            "ases in PD (+24.4 pp, Fisher BH <i>q</i> = 0.0265; paired Wilcoxon <i>p</i> = 1.6"
+            "7 \u00d7 10⁻⁴).</div>",
             "  </footer>",
             "</section>",
             "",
@@ -3858,7 +3729,7 @@ def render_slide_deck_html() -> str:
             "tency across 939 studies.</div>",
             '    <div class="footer-col"><b>Table 1 fraction and ratio tests:</b> '
             "All 6 Table 1 traits pass BH <i>q</i> ≤ 0.05 in the 6-trait fraction "
-            "sign test (FA, HAL, CEL pass BH <i>q</i> ≤ 0.001 across 6 tests); FA/CEL (59.5% up), "
+            "sign test (FA, HAL, CEL pass <i>q</i> ≤ 0.001); FA/CEL (59.5% up), "
             "CEL/SPH (40.7% up), and CEL/ARS (36.5% up) pass BY <i>q</i> ≤ 0.05 "
             "across 15 log-ratios.</div>",
             "  </footer>",
@@ -3933,8 +3804,8 @@ def render_slide_deck_html() -> str:
             "ase in all three.</div>",
             '    <div class="footer-col"><b>Pairwise Jaccard overlap:</b> Mean pairwise Jacc'
             "ard similarity is 50.4% (vs. 20.1% across all 530 stool decreased taxa; random-gu"
-            "ild permutation nominal <i>p</i> = 0.0110; 3-way core 10.6\u00d7 over random "
-            "expectation, nominal <i>p</i> = 6.2 \u00d7 10⁻¹⁶).</div>",
+            "ild permutation <i>p</i> = 0.0110; 3-way core 10.6\u00d7 over random expectation,"
+            " <i>p</i> = 6.2 \u00d7 10⁻¹⁶).</div>",
             "  </footer>",
             "</section>",
             "",
@@ -3966,11 +3837,11 @@ def render_slide_deck_html() -> str:
             '    <div class="footer-col"><b>Fine-rank test:</b> Removing family, order, and '
             "phylum rollups and testing only Genus + Species (N = 93) reduces mean Jaccard dis"
             "tance to <i>d<sub>J</sub></i> = 0.478 (<i>J</i> = 52.2%) and increases PD\u2013CR"
-            "C similarity to 62.5% (nominal <i>p</i> = 5.98 \u00d7 10⁻¹⁰).</div>",
+            "C similarity to 62.5% (<i>p</i> = 5.98 \u00d7 10⁻¹⁰).</div>",
             '    <div class="footer-col"><b>Core genera:</b> Nine genera decrease across all'
-            " three diseases (17.1\u00d7 over random expectation, nominal <i>p</i> = "
-            "3.5 \u00d7 10⁻¹²), led by <i>Roseburia</i>, <i>Blautia</i>, <i>Clostridium</i>, "
-            "<i>Bacteroides</i>, and <i>Ruminococcus</i>.</div>",
+            " three diseases (17.1\u00d7 over random expectation, <i>p</i> = 3.5 \u00d7 10⁻¹²)"
+            ", led by <i>Roseburia</i>, <i>Blautia</i>, <i>Clostridium</i>, <i>Bacteroides</i>"
+            ", and <i>Ruminococcus</i>.</div>",
             "  </footer>",
             "</section>",
             "",
@@ -4074,10 +3945,10 @@ def render_slide_deck_html() -> str:
             "",
             '  <footer class="slide-footer">',
             '    <div class="footer-col"><b>Exact and Monte Carlo tests:</b> PD\u2013CRC (<i'
-            ">J</i> = 0.5745, <i>d</i> = 0.4255, hypergeometric nominal <i>p</i> = "
-            "2.66 \u00d7 10⁻¹³), PD\u2013HIV (<i>J</i> = 0.4884, <i>d</i> = 0.5116, "
-            "nominal <i>p</i> = 8.43 \u00d7 10⁻¹²), HIV\u2013CRC (<i>J</i> = 0.4500, "
-            "<i>d</i> = 0.5500, nominal <i>p</i> = 6.72 \u00d7 10⁻¹¹).</div>",
+            ">J</i> = 0.5745, <i>d</i> = 0.4255, hypergeometric <i>p</i> = 2.66 \u00d7 10⁻¹³),"
+            " PD\u2013HIV (<i>J</i> = 0.4884, <i>d</i> = 0.5116, <i>p</i> = 8.43 \u00d7 10⁻¹²)"
+            ", HIV\u2013CRC (<i>J</i> = 0.4500, <i>d</i> = 0.5500, <i>p</i> = 6.72 \u00d7 10⁻¹"
+            "¹).</div>",
             '    <div class="footer-col"><b>Study-label permutation null:</b> Permuting dise'
             "ase labels across all 90 stool studies (10,000 iterations) shows that cross-disea"
             "se overlap matches sampling from a single shared fiber-degrading guild.</div>",
@@ -4114,9 +3985,9 @@ def render_slide_deck_html() -> str:
             "f 121 studies (46 PD, 17 HIV, 27 CRC) and 145 directional experiments, whereas GI"
             " mucosa has 15 studies (2 PD, 6 HIV, 7 CRC) and oral sites have 9 studies.</div>",
             '    <div class="footer-col"><b>Compartment sign tests:</b> Significant decrease'
-            " bias occurs only in stool (PD binomial nominal <i>p</i> = 8.8 \u00d7 10⁻⁴, "
-            "HIV nominal <i>p</i> = 0.015, CRC nominal <i>p</i> = 1.9 \u00d7 10⁻⁴); mucosal "
-            "and oral tests have nominal <i>p</i> ≥ 0.33.</div>",
+            " bias occurs only in stool (PD <i>p</i> = 8.8 \u00d7 10⁻⁴, HIV <i>p</i> = 0.015, "
+            "CRC <i>p</i> = 1.9 \u00d7 10⁻⁴); mucosal and oral tests have <i>p</i> ≥ 0.33.</di"
+            "v>",
             "  </footer>",
             "</section>",
             "",

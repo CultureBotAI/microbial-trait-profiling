@@ -363,7 +363,7 @@ every row alongside `binomial_p`, `bh_q`, and `status`. In
 `len(result.shifts)` (`6` for the six-trait Table 1 family, or the length of the
 supplied trait list), and `SHIFT_CORRECTION = "Benjamini-Hochberg"`. Every trait
 in `trait_order` is included in the family and padded at `p = 1.0` when it has no
-scored study (`src/mtp/table1_trait_maps.py:440-441`), so untestable traits stay
+scored study (`src/mtp/table1_trait_maps.py:431-432`), so untestable traits stay
 inside the correction family (`family_size = len(result.shifts)`) while their
 exported `binomial_p` and `bh_q` cells remain blank. A reader joining this table
 to the composition arm's per-stratum BH tables or to the enrichment arm's global
