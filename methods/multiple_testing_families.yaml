@@ -1514,7 +1514,7 @@
       ],
       "deliberate_difference": "Each replicate/observed invocation preserves its source procedure and family; calibration evaluates diagnostic error rates rather than pooling replicates into a biological screen.",
       "open_issue": [
-        1410
+        1482
       ],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -1634,7 +1634,7 @@
       ],
       "deliberate_difference": "Each replicate/observed invocation preserves its source procedure and family; calibration evaluates diagnostic error rates rather than pooling replicates into a biological screen.",
       "open_issue": [
-        1410
+        1482
       ],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -3620,7 +3620,7 @@
       ],
       "deliberate_difference": "BH preserves the focal-fraction procedure in S1 while restricting observations to positive totals on both sides; this isolates eligibility changes from correction-method changes (methods/multiple_testing_policy.md R4).",
       "open_issue": [
-        1419
+        1482
       ],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -3742,7 +3742,7 @@
       ],
       "deliberate_difference": "Each declared eligibility scenario has its own ratio/fraction family. Influence checks replace the focal p within the held family; there is no correction across omissions.",
       "open_issue": [
-        1419
+        1482
       ],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -4404,7 +4404,9 @@
         "R3"
       ],
       "deliberate_difference": "BH is retained as the existing exploratory correction over nonmissing cellulose summary-table p values; it does not correct the prior summary selection or the complete underlying scan, while significance_tier is labelled as a nominal p-value tier alongside bh_family_size, bh_unfiltered_summary_rows and bh_selection_rule (methods/multiple_testing_policy.md R4/R6).",
-      "open_issue": [],
+      "open_issue": [
+        1482
+      ],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
         {
@@ -5175,7 +5177,7 @@
       ],
       "deliberate_difference": "Each replicate/observed invocation preserves its source procedure and family; calibration evaluates diagnostic error rates rather than pooling replicates into a biological screen.",
       "open_issue": [
-        1410
+        1482
       ],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -5240,7 +5242,7 @@
       ],
       "deliberate_difference": "Each resampled corpus launches the native focal-ratio BY family independently; this diagnoses the ratio procedure's rejection rate rather than pooling replicate p values (methods/multiple_testing_policy.md R3/R4).",
       "open_issue": [
-        1410
+        1482
       ],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
