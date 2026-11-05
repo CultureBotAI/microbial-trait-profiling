@@ -159,13 +159,17 @@ def mock_pipeline_data(tmp_path: Path) -> dict[str, Path]:
         {"trait_id": t, "trait_label": TABLE_1_TRAITS[t], "q_value": 0.01} for t in trait_cols[:4]
     ]
     enc_path = derived_dir / "trait_enrichment_results.tsv"
-    pd.DataFrame(enc_rows).to_csv(enc_path, sep="\t", index=False)
+    with enc_path.open("w", encoding="utf-8") as stream:
+        stream.write("# Stat-Type: fdr_q\n")
+        pd.DataFrame(enc_rows).to_csv(stream, sep="\t", index=False)
 
     dep_rows = [
         {"trait_id": t, "trait_label": TABLE_1_TRAITS[t], "q_value": 0.01} for t in trait_cols[2:]
     ]
     dep_path = derived_dir / "trait_depletion_results.tsv"
-    pd.DataFrame(dep_rows).to_csv(dep_path, sep="\t", index=False)
+    with dep_path.open("w", encoding="utf-8") as stream:
+        stream.write("# Stat-Type: fdr_q\n")
+        pd.DataFrame(dep_rows).to_csv(stream, sep="\t", index=False)
 
     return {
         "derived_dir": derived_dir,

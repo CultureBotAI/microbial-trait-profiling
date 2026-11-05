@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import importlib.util
 import io
 import json
 import subprocess
@@ -10,9 +11,19 @@ import sys
 from pathlib import Path
 
 import pytest
-from scripts.adhoc.issue720_audit_ora_refresh import audit_pair
 
 from mtp.paths import file_sha256
+
+_AUDIT_PATH = (
+    Path(__file__).resolve().parents[1] / "scripts" / "adhoc" / "issue720_audit_ora_refresh.py"
+)
+_SPEC = importlib.util.spec_from_file_location("issue720_audit_ora_refresh", _AUDIT_PATH)
+assert _SPEC is not None
+assert _SPEC.loader is not None
+_AUDIT = importlib.util.module_from_spec(_SPEC)
+sys.modules[_SPEC.name] = _AUDIT
+_SPEC.loader.exec_module(_AUDIT)
+audit_pair = _AUDIT.audit_pair
 
 
 @pytest.fixture

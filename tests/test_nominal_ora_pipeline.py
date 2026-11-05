@@ -236,7 +236,7 @@ def test_plate_rankings_refuse_explicit_nominal_hits(tmp_path: Path, metadata: s
         plate.read_tsv(path, adjusted_ora=True)
 
 
-@pytest.mark.parametrize("metadata", ["", "# Stat-Type: fdr_q\n"])
+@pytest.mark.parametrize("metadata", ["# FDR: True\n", "# Stat-Type: fdr_q\n"])
 def test_plate_rankings_preserve_existing_adjusted_rows(tmp_path: Path, metadata: str) -> None:
     plate = _script("generate_tufte_plates")
     path = tmp_path / "rankings.tsv"
@@ -244,3 +244,34 @@ def test_plate_rankings_preserve_existing_adjusted_rows(tmp_path: Path, metadata
     assert plate.read_tsv(path, adjusted_ora=True) == [
         {"trait": "TraitA", "inc_hits": "3", "dec_hits": "1", "hit_rows": "4"}
     ]
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "",
+        "\n\n",
+        "# Producer: fixture\n",
+        "trait\tfdr_q\nTraitA\t\n",
+        "\n# Producer: fixture\n\ntrait\tfdr_q\nTraitA\t\n",
+        "# FDR-Scope: global\ntrait\tfdr_q\nTraitA\t0.01\n",
+    ],
+    ids=["empty", "blank", "comment-only", "headerless", "generic-header", "scope-only"],
+)
+def test_ora_figure_guard_requires_an_adjusted_declaration(text: str) -> None:
+    """A table or a generic comment cannot establish FDR control (#1504)."""
+    with pytest.raises(ValueError, match="FDR"):
+        refuse_nominal_ora(io.StringIO(text))
+
+
+@pytest.mark.parametrize("metadata", ["# FDR: True\n", "# Stat-Type: fdr_q\n"])
+def test_ora_figure_guard_preserves_affirmative_adjusted_headers(metadata: str) -> None:
+    refuse_nominal_ora(io.StringIO("\n# Producer: fixture\n\n" + metadata + "trait\tfdr_q\n"))
+
+
+@pytest.mark.parametrize(
+    "metadata", ["# FDR: False\n", "# Stat-Type: p_value\n", "# FDR-Scope: none\n"]
+)
+def test_ora_figure_guard_does_not_stop_after_an_adjusted_header(metadata: str) -> None:
+    with pytest.raises(ValueError, match="Nominal ORA input is not FDR-controlled"):
+        refuse_nominal_ora(io.StringIO("# FDR: True\n" + metadata + "trait\tfdr_q\n"))
