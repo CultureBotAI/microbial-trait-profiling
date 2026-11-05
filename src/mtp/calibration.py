@@ -78,8 +78,10 @@ Q_THRESHOLD = 0.05
 P_VALUE_DIAGNOSTICS_ROLE = "calibration_diagnostic"
 P_VALUE_DIAGNOSTICS_CORRECTION = "none (nominal)"
 P_VALUE_DIAGNOSTICS_NOTE = (
-    "smallest_observed_p, attainable_p_below_alpha, and attainable_p_above_alpha "
-    "are uncorrected nominal p-value calibration diagnostics, not inferential results"
+    "rejections_p, rejection_rate_p, null_tests_rejected_p (at nominal p <= ALPHA), "
+    "smallest_observed_p, attainable_p_below_alpha, attainable_p_above_alpha, and "
+    "null_p_value are uncorrected nominal p-value calibration diagnostics, not "
+    "inferential results"
 )
 #: One-sided 95% bound: the criteria ask whether a rate is demonstrably below a
 #: tolerance, not whether its two-sided interval happens to cover the nominal level.
@@ -664,6 +666,8 @@ def replicate_counts(
                     "null_tests_rejected_p": sum(
                         1 for o in null_tested if o.p_value is not None and o.p_value <= ALPHA
                     ),
+                    "p_value_diagnostics_role": P_VALUE_DIAGNOSTICS_ROLE,
+                    "p_value_diagnostics_correction": P_VALUE_DIAGNOSTICS_CORRECTION,
                     "family_rejected_q": int(
                         any(o.q_value is not None and o.q_value <= Q_THRESHOLD for o in mine)
                     ),

@@ -856,12 +856,15 @@ def test_family_status_keeps_the_two_families_of_one_scenario_apart(tmp_path: Pa
 def test_detection_change_uses_nominal_p_threshold_and_documents_nominal_vs_corrected_q(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """#1419: _detection_change uses NOMINAL_P_THRESHOLD for raw p and documents the rule."""
-    import bsdbng.log_ratio_sensitivity as bsdbng_lrs
+    """#1419, #1485, #1486: _detection_change uses NOMINAL_P_THRESHOLD and pins rule + doc text."""
     import mtp.log_ratio_sensitivity as mtp_lrs
 
     assert pytest.approx(0.05) == mtp_lrs.NOMINAL_P_THRESHOLD
-    assert pytest.approx(0.05) == bsdbng_lrs.NOMINAL_P_THRESHOLD
+    shim_src = (PROTOCOL_PATH.parent.parent / "src/bsdbng/log_ratio_sensitivity.py").read_text(
+        encoding="utf-8"
+    )
+    assert "    NOMINAL_P_THRESHOLD,\n" in shim_src
+    assert '    "NOMINAL_P_THRESHOLD",\n' in shim_src
 
     base = Row(
         scenario="S1",
@@ -925,9 +928,12 @@ def test_detection_change_uses_nominal_p_threshold_and_documents_nominal_vs_corr
         next(p for p in written if p.name == "sensitivity_status.json").read_text(encoding="utf-8")
     )
     rule = str(status["population_detection_change_rule"])
-    assert "nominal" in rule
-    assert "corrected q" in rule
-    assert "lost at correction" in rule
+    assert rule == (
+        "Compares baseline corrected q <= 0.05 against restricted corrected "
+        "q <= 0.05 and restricted nominal (uncorrected) p <= 0.05; "
+        "'lost at correction' means baseline corrected q <= 0.05, restricted "
+        "nominal p <= 0.05, and restricted corrected q > 0.05."
+    )
 
     doc_text = " ".join(
         (PROTOCOL_PATH.parent / "table1_log_ratio_sensitivity.md")
@@ -936,3 +942,7 @@ def test_detection_change_uses_nominal_p_threshold_and_documents_nominal_vs_corr
     )
     assert "nominal (uncorrected) p <= 0.05" in doc_text
     assert "compares the restricted run's nominal p with its corrected q" in doc_text
+    assert (
+        "Nineteen rows lose nominal (uncorrected) p <= 0.05 before any correction "
+        "(`lost before correction`)." in doc_text
+    )

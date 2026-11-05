@@ -1999,11 +1999,11 @@ def interaction_interpretation(row: pd.Series | Mapping[str, Any], shared: int =
     elif p >= ALPHA:
         finding = (
             "No difference in direction between stool and GI mucosa/lumen samples "
-            "detected at p < 0.05"
+            "detected at nominal p < 0.05"
         )
     elif low <= 1 <= high:
         finding = (
-            "Direction differs between stool and GI mucosa/lumen samples at p < 0.05, "
+            "Direction differs between stool and GI mucosa/lumen samples at nominal p < 0.05, "
             "but the 95% interval of the odds ratio includes 1"
         )
     else:
@@ -2036,13 +2036,16 @@ def benjamini_hochberg(p_values: pd.Series) -> pd.Series:
 
 
 SUMMARY_BH_SELECTION_RULE = (
-    "Concatenate direction_summary_rows (Feces all_contrasts and "
-    "disease_vs_healthy_contrasts, experiment and study units), "
-    "convergence_summary_rows (U6 pairwise and three-way Jaccard rows), and "
-    "interaction_summary_rows (Feces vs Non-fecal GI mucosa/lumen for CRC and "
-    "pooled_stratified); apply Benjamini-Hochberg over the non-missing p_value "
-    "entries in this selected summary table. Correcting within this selected "
-    "summary table does not repair selection from the larger exploratory tables."
+    f"Concatenate direction_summary_rows ({FECES} {ALL_CONTRASTS} and "
+    f"{ORIENTED}, experiment and study units), "
+    "convergence_summary_rows (U6 pairwise_jaccard_distance rows "
+    "jaccard_PD_vs_HIV, jaccard_PD_vs_CRC, jaccard_HIV_vs_CRC, plus "
+    "mean_pairwise_jaccard_distance and three_way_core), and "
+    f"interaction_summary_rows ({FECES} vs {NON_FECAL_GI} for CRC and "
+    f"{POOLED_STRATIFIED}); apply Benjamini-Hochberg over "
+    "the non-missing p_value entries in this selected summary table. Correcting "
+    "within this selected summary table does not repair selection from the larger "
+    "exploratory tables."
 )
 
 

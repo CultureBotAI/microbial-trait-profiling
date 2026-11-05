@@ -117,7 +117,7 @@ two patterns:
   0.605) on 939, with p = 0.0058 and BY q = 0.0985. Facultatively aerobic on the
   facultatively aerobic/moderately halophilic pairs is the same case: 0.554 (0.513
   to 0.595) on 582 studies, p = 0.0101, q = 0.150.
-- **Nineteen rows lose p <= 0.05 before any correction.** On these rows the
+- **Nineteen rows lose nominal (uncorrected) p <= 0.05 before any correction (`lost before correction`).** On these rows the
   eligible n falls to between a quarter and three quarters of 939, and eighteen of
   the nineteen intervals overlap their baseline.
 
