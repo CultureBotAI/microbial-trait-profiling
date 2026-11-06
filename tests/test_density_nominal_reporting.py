@@ -8,6 +8,7 @@ missing and nonfinite p-values without reading any derived scientific data.
 from __future__ import annotations
 
 import importlib.util
+import json
 import math
 from collections.abc import Callable
 from dataclasses import asdict
@@ -27,12 +28,17 @@ ReportRenderer = Callable[[list[density.Table1TraitEffect], float], tuple[str, d
 
 @pytest.fixture(scope="module")
 def audit_script() -> ModuleType:
-    path = Path(__file__).resolve().parents[1] / "scripts/audit_trait_density_correlation.py"
+    repo_root = Path(__file__).resolve().parents[1]
+    assert density.__file__ is not None
+    assert Path(density.__file__).resolve() == repo_root / "src/mtp/density_adjustment.py"
+    path = repo_root / "scripts/audit_trait_density_correlation.py"
     spec = importlib.util.spec_from_file_location("density_nominal_under_test", path)
     assert spec is not None
     assert spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
+    assert module.__file__ is not None
+    assert Path(module.__file__).resolve() == path
     return module
 
 
@@ -174,6 +180,38 @@ def test_p_and_q_labels_nominal_without_changing_numeric_text(
     assert density.format_p_and_q(p, q) == expected
 
 
+def _assert_count_line_placement(
+    report: str,
+    effects: list[density.Table1TraitEffect],
+    raw_count: int,
+    adjusted_count: int,
+) -> None:
+    """#1658: count line sits in section 3 right after the family statement and before row 1."""
+    count_line = (
+        f"Finite nominal Wilcoxon tests shown: raw={raw_count}; PC1-adjusted={adjusted_count}."
+    )
+    assert report.count("Finite nominal Wilcoxon tests shown:") == 1
+    lines = report.splitlines()
+    sec3_idx = next(
+        idx
+        for idx, line in enumerate(lines)
+        if line.startswith(
+            (
+                "3. SURVIVAL OF CONVERGENT SIX TRAIT SIGNALS",
+                "3. DECLARED TRAIT LIST SIGNALS",
+            )
+        )
+    )
+    family_end_idx = lines.index("the family at p = 1 and has no q.")
+    count_idx = lines.index(count_line)
+    first_trait_idx = next(
+        idx for idx, line in enumerate(lines) if f"{effects[0].trait_label:<30s} |" in line
+    )
+    assert sec3_idx < family_end_idx
+    assert count_idx == family_end_idx + 1
+    assert first_trait_idx == count_idx + 1
+
+
 @pytest.mark.parametrize(
     ("raw", "adjusted", "raw_count", "adjusted_count"),
     [
@@ -201,10 +239,11 @@ def test_reports_count_finite_nominal_wilcoxon_values_in_each_displayed_column(
     adjusted_count: int,
 ) -> None:
     effects = _effects(raw, adjusted)
-    report, _ = render_report(effects, 0.0125)
-    assert (
-        f"Finite nominal Wilcoxon tests shown: raw={raw_count}; PC1-adjusted={adjusted_count}."
-    ) in report
+    report, result = render_report(effects, 0.0125)
+    _assert_count_line_placement(report, effects, raw_count, adjusted_count)
+    assert result["q_values"]["p_value_type"] == "nominal"
+    provenance = json.loads(result["provenance"].read_text(encoding="utf-8"))
+    assert provenance["q_values"]["p_value_type"] == "nominal"
     assert "over all 6 reported traits" in report
     assert "PAIRED EXPERIMENTS N=23" in report
     for effect in effects:
@@ -234,9 +273,87 @@ def test_reports_label_paired_slope_and_count_only_its_finite_test(
 ) -> None:
     effects = _effects([0.01] * 6, [float("nan")] * 6)
     report, _ = render_report(effects, slope_p)
-    assert "Finite nominal Wilcoxon tests shown: raw=6; PC1-adjusted=0." in report
+    _assert_count_line_placement(report, effects, 6, 0)
     line = next(line for line in report.splitlines() if line.startswith("Paired regression slope:"))
     assert line.startswith("Paired regression slope: -0.3125 ")
     assert f"nominal p={p_text}; {count} finite paired-regression {test_word} shown" in line
     assert "; diagnostic" in line
     assert ("untested" in line) is (count == 0)
+
+
+@pytest.mark.parametrize("writer", ["module", "consolidated"])
+@pytest.mark.parametrize("n_pairs", [2, 3])
+def test_unmocked_two_vs_three_pairs_paired_regression_p_and_report_line(
+    tmp_path: Path, audit_script: ModuleType, writer: str, n_pairs: int
+) -> None:
+    """#1660: N=2 paired experiments yield NaN regression p (0 finite tests, NA/untested);
+    N=3 paired experiments yield a finite regression p (1 finite test)."""
+    traits = list(density.TABLE_1_TRAITS)
+    rows = []
+    # 3 distinct (delta_b, delta_a) pairs that are not collinear so N=3 has 0 < p < 1.
+    pair_shifts = [(1.0, 2.0), (3.0, 9.0), (6.0, 11.0)]
+    for exp_idx in range(n_pairs):
+        db, da = pair_shifts[exp_idx]
+        for direction in ("inc", "dec"):
+            base = {trait_id: float(5 + exp_idx) for trait_id in traits}
+            if direction == "inc":
+                base[density.TWIN_A] += da
+                base[density.TWIN_B] += db
+            rows.append(
+                {
+                    "study_id": f"study-{exp_idx}",
+                    "experiment_id": f"exp-{exp_idx}",
+                    "inc_dec": direction,
+                    **base,
+                }
+            )
+    profiles = tmp_path / "profiles.tsv"
+    columns = tmp_path / "columns.tsv"
+    pd.DataFrame(rows).to_csv(profiles, sep="\t", index=False)
+    pd.DataFrame(
+        {
+            "column_id": traits,
+            "column_label": list(density.TABLE_1_TRAITS.values()),
+            "object_name": list(density.TABLE_1_TRAITS.values()),
+            "object_category": ["biolink:PhenotypicQuality"] * len(traits),
+        }
+    ).to_csv(columns, sep="\t", index=False)
+
+    out_dir = tmp_path / f"out_{writer}_{n_pairs}"
+    result = density.run_density_audit(profiles, columns, out_dir)
+    if writer == "consolidated":
+        ontology = {
+            "n_redundant_pairs": 0,
+            "n_clusters": 0,
+            "n_collapsed_features": 0,
+            "bounded_trait_space": len(traits),
+            "native_metrics": result["raw_pearson"],
+            "max_metrics": result["raw_pearson"],
+            "adj_collapsed_metrics": result["adj_pc1_pearson"],
+        }
+        report_path = audit_script.write_consolidated_report(out_dir, result, ontology)
+    else:
+        report_path = result["report_txt"]
+
+    twin = result["twin_summary"]
+    assert twin.n_paired_experiments == n_pairs
+    assert math.isfinite(twin.paired_slope_a_on_b)
+    report = report_path.read_text(encoding="utf-8")
+    _assert_count_line_placement(report, result["table1_effects"], 0, 0)
+    slope_line = next(
+        line for line in report.splitlines() if line.startswith("Paired regression slope:")
+    )
+    if n_pairs == 2:
+        assert math.isnan(twin.paired_slope_pvalue)
+        assert slope_line == (
+            f"Paired regression slope: {twin.paired_slope_a_on_b:.4f} "
+            "(nominal p=NA; 0 finite paired-regression tests shown; diagnostic; untested)"
+        )
+    else:
+        assert math.isfinite(twin.paired_slope_pvalue)
+        assert 0.0 < twin.paired_slope_pvalue < 1.0
+        assert slope_line == (
+            f"Paired regression slope: {twin.paired_slope_a_on_b:.4f} "
+            f"(nominal p={twin.paired_slope_pvalue:.2e}; "
+            "1 finite paired-regression test shown; diagnostic)"
+        )

@@ -197,7 +197,7 @@ def family_bh_q_values(
 
 
 def q_value_provenance(family_size: SupportsIndex) -> dict[str, object]:
-    """Machine-readable record of the q-value family behind the statuses (#1321).
+    """Machine-readable record of the q-value family behind the statuses (#1321, #1661).
 
     ``family_size`` is stored as a Python int, so a NumPy count serializes (#1330).
     """
@@ -205,6 +205,7 @@ def q_value_provenance(family_size: SupportsIndex) -> dict[str, object]:
         "procedure": "benjamini_hochberg",
         "family": "every reported trait",
         "family_size": operator.index(family_size),
+        "p_value_type": "nominal",
         "corrected_separately": ["raw_wilcoxon_p", "adj_wilcoxon_p"],
         "untestable_p_held_at": 1.0,
         "label_threshold_q": _SIGNIFICANCE_Q,
@@ -848,7 +849,8 @@ def evaluate_conditional_twin_test(
     if n_paired >= 2 and std_delta_b > 0.0:
         res_paired = stats.linregress(delta_b, delta_a)
         slope_paired = float(res_paired.slope)
-        pval_paired_slope = float(res_paired.pvalue)
+        # Require >= 3 pairs for regression p (N=2 fits two points with 0 residual df, #1660).
+        pval_paired_slope = float(res_paired.pvalue) if n_paired >= 3 else float("nan")
     else:
         slope_paired = 0.0
         pval_paired_slope = float("nan")
