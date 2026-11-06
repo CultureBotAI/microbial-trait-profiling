@@ -64,7 +64,7 @@ tar -xzf tests/fixtures/trait_key_policy/historical_union_core.tar.gz -C "$EXTRA
    use the virtual `/fixture/trait-policy-44897c6` namespace and `location_transformations`
    records only `field` and `replacement`:
    ```sh
-   ! rg '/Users/|/home/|/private/|/var/folders/' "$EXTRACTED_FIXTURE"
+   ! rg '/Users/|/home/|/private/|/var/folders' "$EXTRACTED_FIXTURE"
    ```
 2. **Secret scan**: run `detect-secrets-hook` across all extracted non-hash text files
    (the only high-entropy strings in the bundle are the SHA-256 digests in
