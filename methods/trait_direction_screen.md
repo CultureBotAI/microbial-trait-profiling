@@ -120,10 +120,11 @@ and Galwey were derived to set per-test thresholds for familywise error, so putt
 their m into a BH or BY step-up is a heuristic, and BY at the nominal m already
 controls FDR under arbitrary dependence, so shrinking m on top of it would adjust for
 dependence twice. Because the count moves from 18 to 56 with the assumed dependence,
-the sensitivity discovery count is not stable: label it as a sensitivity bound,
-not as the primary result or evidence that the BY family should shrink. This follows
-the ruling on issue #265 (2026-09-28); the manuscript wording is
-issue #205.
+the sensitivity discovery count is not stable. Under policy R9, label it as a
+sensitivity bound, not as the primary result or evidence that the BY family should
+shrink. For manuscript text, the ruling on issue #265 (2026-09-28) requires:
+"report it as unstable rather than quote either number alone". The manuscript
+wording is issue #205.
 
 ## Two correlation bases, and why they disagree
 

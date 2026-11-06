@@ -352,9 +352,10 @@ inherited from descendants at any rank. Over the 317 non-MediaDive traits of tha
 1,430,938 tests per tail. The upper-tail family (`mt-core-ora-upper-global`) at
 Benjamini-Hochberg q at most 0.001 and fold at least 1.5
 called 66,064 enrichments; the separately corrected lower-tail family
-(`mt-core-ora-lower-global`) at the same q threshold and fold at most 0.5 called 3
+(`mt-core-ora-lower-global`) at fold at most 0.5 called 3
 depletions (`data/derived/trait_enrichment_all_results.tsv` and
-`trait_depletion_all_results.tsv` headers). An earlier assertion-level run,
+`trait_depletion_all_results.tsv` headers). The lower-tail run's q threshold is
+not recorded here. An earlier assertion-level run,
 with a mean of 23,686.87 assertions per testable profile and 556,516 tests,
 produced many p- and q-values of numerically zero; that sampling-unit problem is
 #131, now closed. The taxon urn removes the repeated counting of one organism, but
@@ -490,9 +491,11 @@ population claim. This documentation correction changes no reported value.
 ### The matrix the counts in this note were measured on
 
 Naming the dump does not identify the matrix. The matrix every arm consumes is a
-**join** of the BugSigDB dump with a KG-Microbe build. A source vintage alone does
-not bind the KG bytes, profile population or trait inventory. This section retains
-mixed historical observations from the discussion under #222: 2,290 and 2,333
+**join** of the BugSigDB dump with a KG-Microbe build. In the historical discussion
+under #222, the KG side was pinned by Drive file id and checksum but carried
+**no release tag**, so runs using the same BugSigDB version could read different
+matrices. A source vintage alone does not bind the KG bytes, profile population or
+trait inventory. This section retains mixed historical observations: 2,290 and 2,333
 MediaDive columns were reported for different revisions. The table and subsequent
 paragraphs do not establish a single reconciled matrix or filter cascade.
 

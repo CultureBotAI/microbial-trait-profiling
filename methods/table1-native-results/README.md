@@ -8,17 +8,9 @@ These reruns extend the reconciled 190-v2 audit using protocol 190-native-v2. Th
 
 ## Composition
 
-Native effects are experiment-weighted increased-minus-decreased z-score contrasts. Nominal native p-values test the mean; native BH families contain finite tests among the support/variance-selected traits, not just Table 1. Zero-total profiles remain as zero fractions. Study-weighted comparisons, sign tests and conditional intervals are separately labeled in native_composition_comparison.tsv.gz. Refitted scales and fixed baseline SD comparisons must not be conflated.
+Native effects are experiment-weighted increased-minus-decreased z-score contrasts. Native p-values test the mean; native BH families contain all supported variable traits, not just Table 1. Zero-total profiles remain as zero fractions. Study-weighted comparisons, sign tests and conditional intervals are separately labeled in native_composition_comparison.tsv.gz. Refitted scales and fixed baseline SD comparisons must not be conflated.
 
-The native composition q-values in both tables below are from
-`mt-supp-native-influence-composition`, independently corrected by BH for each
-scope/scenario. Read `family_tests` from the corresponding
-`native_table1_stats.tsv.gz` rows for the executed size; support-selected but
-untestable rows have the historical q=1 marker outside the tested correction
-vector. Selection is not repaired by correction within this family. The values
-remain those of this directory's historical manifests, not a current rerun.
-
-| Trait | Pooled native effect | Nominal native p | Native BH q | Largest matched change, fixed baseline SD | Exclusion |
+| Trait | Pooled native effect | Native p | Native q | Largest matched change, fixed baseline SD | Exclusion |
 | --- | --- | --- | --- | --- | --- | --- |
 | facultatively_aerobic | 0.18631 | 5.35241e-12 | 1.68601e-09 | -0.0544385 | exclude_family_NCBITaxon:543 |
 | cellulose_catabolic_process | -0.164876 | 2.10484e-09 | 3.31512e-07 | 0.00949518 | exclude_family_NCBITaxon:543 |
@@ -46,12 +38,6 @@ This table directly checks whether any predeclared genus/family exclusion causes
 
 Native enrichment and depletion were rerun against fixed-baseline and recomputed scope backgrounds separately. The global BH families use every eligible retained trait/profile cell. Enrichment tests positive cells; depletion includes zeros in nonzero-total profiles. All six traits remain in the export, not only significant hits. Fold limits are >=1.5 for enrichment and <=0.67 for depletion.
 
-Their registry families are `mt-supp-native-influence-ora-enrichment` and
-`mt-supp-native-influence-ora-depletion`; the corresponding executed sizes are
-`enrichment_tests` and `depletion_tests` in `native_ora_families.tsv`, separately
-for each scenario/scope/background. These annotation-count sensitivity families
-are not the modern distinct-taxon ORA families.
-
 The profile table includes exact 95% central hypergeometric null count intervals: these are NOT confidence intervals for fold effects. The fold-comparison TSV instead gives study-weighted paired fold differences, conditional mean intervals, directional support and matched versus eligibility changes. It also reports native hit counts at q<=0.001 and q<=0.05 separately by curated direction.
 
 | Trait | Background | Largest absolute matched fold change | Exclusion | Lost pairs |
@@ -78,10 +64,6 @@ For #179, these are annotation influence diagnostics. Higher-rank direct asserti
 ## Cross-scale interpretation flags (#213)
 
 The study-weighted raw-fraction mean and the native transformed analysis are different estimands. The raw-fraction directional q-value is a third statistic: it tests the share of non-tied study directions, not whether the mean-effect interval excludes zero. The machine-readable `interpretation_handoff.tsv` keeps those fields separate for #178.
-That directional q belongs to `mt-supp-taxon-influence-shared-fraction`: BH
-over the focal traits within the indicated scenario/scope/population, with
-all declared focal members retained. Its family size comes from the complete
-corresponding group in `effects.tsv.gz`, not the two handoff rows displayed here.
 
 | Trait | Study-weighted raw-fraction finding | Native transformed finding | Interpretation |
 | --- | --- | --- | --- |

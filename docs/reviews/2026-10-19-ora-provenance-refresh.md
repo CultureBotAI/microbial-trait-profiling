@@ -94,13 +94,21 @@ scientific metadata is unchanged. The only metadata additions are the profile
 and taxa-matrix fingerprints, both checked against actual input bytes. Declared
 test counts and selected-hit counts match the observed complete rows.
 
-| Export | Correction family | Tested profiles | Complete tests (family size) | Discoveries |
-| --- | --- | ---: | ---: | ---: |
-| Pooled enrichment | `mt-core-ora-upper-global` | 4,670 | 1,480,390 | 66,240 |
-| Pooled depletion | `mt-core-ora-lower-global` | 4,670 | 1,480,390 | 23 |
-| Stratified pooled enrichment | `mt-core-stratified-ora-pooled` | 4,670 | 1,480,390 | 66,240 |
-| Feces enrichment | `mt-core-stratified-ora-feces` | 2,950 | 935,150 | 36,562 |
-| Feces-excluded enrichment | `mt-core-stratified-ora-feces-excluded` | 1,720 | 545,240 | 29,498 |
+| Export | Tested profiles | Complete tests (family size) | Discoveries |
+| --- | ---: | ---: | ---: |
+| Pooled enrichment | 4,670 | 1,480,390 | 66,240 |
+| Pooled depletion | 4,670 | 1,480,390 | 23 |
+| Stratified pooled enrichment | 4,670 | 1,480,390 | 66,240 |
+| Feces enrichment | 2,950 | 935,150 | 36,562 |
+| Feces-excluded enrichment | 1,720 | 545,240 | 29,498 |
+
+The correction families for these exports are:
+
+- Pooled enrichment: `mt-core-ora-upper-global`.
+- Pooled depletion: `mt-core-ora-lower-global`.
+- Stratified pooled enrichment: `mt-core-stratified-ora-pooled`.
+- Feces enrichment: `mt-core-stratified-ora-feces`.
+- Feces-excluded enrichment: `mt-core-stratified-ora-feces-excluded`.
 
 The three complete-trait summaries, annotation-density deciles and stratification
 sensitivity TSV are also byte-identical to the corrected #664 baseline under

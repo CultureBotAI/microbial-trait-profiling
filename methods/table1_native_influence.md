@@ -82,6 +82,11 @@ BH size is `family_tests` in `native_composition.tsv.gz`, not
 `family_selected_traits` or the full retained catalog size. The support,
 variance and testability selection remains part of this sensitivity; BH within
 the selected family does not correct that selection.
+The compact `native_table1_stats.tsv.gz` retains `family_tests` from those full
+native families. In the generated summary, "Native p" means nominal native
+p and "Native q" means BH q from this family, including the
+baseline-versus-exclusion table. Those values belong to the committed bundle's
+historical manifests; this qualification does not represent a new rerun.
 
 Native mean intervals target experiment-weighted effects; exact binomial intervals
 describe the positive share of experiment contrasts after applying the same `1e-12`
@@ -145,6 +150,14 @@ lost/gained pairs and eligibility components remain separate. Loss of significan
 ORA cells alone is not an explanation of the signal.
 
 ## Files And Handoff
+
+The raw-fraction directional q in `interpretation_handoff.tsv` belongs to
+`mt-supp-taxon-influence-shared-fraction`: BH over the focal traits separately
+within each scenario/scope/population, with all declared focal members retained.
+Recover its family size from the complete corresponding `shared_fraction` group
+in `effects.tsv.gz`, not the displayed handoff rows. This tests the share of
+non-tied study directions, separately from the raw-fraction mean interval and
+the native transformed test.
 
 | File | Contents |
 | --- | --- |

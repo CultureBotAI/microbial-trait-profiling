@@ -18,9 +18,12 @@ For a quoted q, bind the stratum's complete
 `Total-Tests-Performed`, `FDR-Scope`, `P-Threshold` and fold-cutoff headers. The global
 family size is its complete eligible-test count, not the selected ranking's
 row count. The default threshold is q ≤ 0.001 plus the configured fold cutoff.
-If the run requests profile-level FDR, use `mt-core-ora-profile` (BH over the
-eligible traits separately within each profile) and count each profile's
-complete tested rows. With FDR disabled there is no corrected q: report a
+If a stratified run requests profile-level FDR, retain the stratum's family ID
+and record `FDR-Scope: profile`. A requested additional site remains
+`mt-core-stratified-ora-custom-site`; `mt-core-ora-profile` names the standalone
+analyzer option. Profile scope applies BH over the eligible traits separately
+within each profile; count each profile's complete tested rows. With FDR
+disabled there is no corrected q: report a
 **nominal p threshold**, its displayed test count and the fold rule. Missing
 statistic/scope metadata does not establish a correction procedure. These
 reporting requirements follow [policy R1–R8](../methods/multiple_testing_policy.md).

@@ -19,9 +19,11 @@ The observed BH/BY values belong to `mt-core-calibration-composition-observed`
 `mt-core-calibration-composition-null` (every supplied trait separately within
 each replicate). Both are diagnostic families in
 [`multiple_testing_families.yaml`](multiple_testing_families.yaml), with no
-primary inferential procedure. Use each execution's
-`composition_calibration_replicates.tsv` `n_tests` for its family size; do not
-pool tests across replicates. Bare p-values below are nominal diagnostics.
+primary inferential procedure. For the observed family size, use the execution's
+`composition_calibration_summary.json` top-level `n_traits`. For each null
+replicate's family size, use that replicate's `n_tests` in
+`composition_calibration_replicates.tsv`; do not pool tests across replicates.
+Bare p-values below are nominal diagnostics.
 
 ---
 
