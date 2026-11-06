@@ -1536,3 +1536,15 @@ def test_contrast_correlation_table_and_figure_label_nominal_spearman_p_values(
         "(`nominal` when tested, `not_tested` when no finite p-value exists) "
         "and `n_tests` (the number of finite Spearman p-values in the table)."
     ) in methods_text
+
+
+@pytest.mark.parametrize("n_tests", [1, 10, 15, 99, 999])
+def test_spearman_subtitle_sentence_stays_on_one_line(n_tests: int) -> None:
+    """The #1520 sentence must not wrap and orphan a word on the real figure (#1750)."""
+    import textwrap
+
+    from mtp.table1_trait_maps import _SUBTITLE_WRAP_WIDTH, _spearman_subtitle_sentence
+
+    sentence = _spearman_subtitle_sentence(n_tests)
+    assert f"across {n_tests} tested trait pairs" in sentence
+    assert len(textwrap.wrap(sentence, _SUBTITLE_WRAP_WIDTH)) == 1, (len(sentence), sentence)
