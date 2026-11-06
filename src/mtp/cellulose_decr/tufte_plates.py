@@ -1,4 +1,9 @@
-"""Generate the Tufte analytical plates, standalone SVGs, and 16-slide HTML deck (#550, #1127).
+"""Audit-only reproduction of retired historical cellulose plates and deck (#1572).
+
+The historical numbers are unverified; these are not current analysis outputs.
+Generation requires explicit ``--audit-retired`` / ``audit_retired=True`` and
+every canvas, standalone SVG and HTML slide carries a retirement warning.
+Rebuilding the plates from current rerun data is pending under #1670.
 
 Reproduces the October 16 worked-example Tufte analytical plates and 16-slide deck
 (preserved for the ``tufte-plate`` skill snapshot, ``figure-wizard#19``) with the
@@ -34,6 +39,7 @@ __all__ = [
     "PLATE2_DOT_X",
     "PLATE2_ROLE_X",
     "PLATE_STEMS",
+    "RETIREMENT_BANNER",
     "STANDALONE_SVGS",
     "build_plate1_convergence_slope_and_overlap",
     "build_plate2_core_guild_dot_table",
@@ -63,6 +69,8 @@ SLATE = "#2b4c6f"
 OCHRE = "#8c5a2b"
 TEAL = "#3b6e5c"
 WARM_GRAY = "#8c867c"
+
+RETIREMENT_BANNER = "RETIRED: historical, unverified numbers (#1572)"
 
 SERIF_STACK = [
     "Palatino",
@@ -399,7 +407,63 @@ def _with_tufte_rcparams(builder: Callable[[], Figure]) -> Callable[[], Figure]:
     @functools.wraps(builder)
     def _wrapped() -> Figure:
         with matplotlib.rc_context(_tufte_rcparams()):
-            return builder()
+            figure = builder()
+            # Use the existing blank top margin; preserve all archived positions.
+            figure.text(
+                0.03,
+                0.994,
+                RETIREMENT_BANNER,
+                fontsize=11,
+                fontweight="bold",
+                color=CRIMSON,
+                ha="left",
+                va="top",
+                gid="retirement-banner",
+            )
+            return figure
+
+    return _wrapped
+
+
+def _with_retirement_svg(renderer: Callable[[], str]) -> Callable[[], str]:
+    """Add a separate warning band above the original SVG coordinate space."""
+
+    @functools.wraps(renderer)
+    def _wrapped() -> str:
+        svg = renderer()
+        root = re.search(r"<svg\b[^>]*>", svg)
+        if root is None:
+            raise ValueError("Historical SVG has no root for its retirement banner")
+        header = root.group()
+        bounds = re.search(r'viewBox="0 0 ([0-9.]+) ([0-9.]+)"', header)
+        if bounds is None:
+            raise ValueError("Historical SVG has unexpected retirement-band coordinates")
+        width, height = map(float, bounds.groups())
+        band = 44
+        header = header.replace(bounds.group(), f'viewBox="0 -{band} {width:g} {height + band:g}"')
+
+        def expanded_height(match: re.Match[str]) -> str:
+            return f'height="{height + band:g}{match.group(1) or ""}"'
+
+        header, replacements = re.subn(
+            r'height="[0-9.]+(pt|px)?"',
+            expanded_height,
+            header,
+        )
+        if replacements != 1:
+            raise ValueError("Historical SVG height cannot accommodate its retirement banner")
+        banner = (
+            f'\n<rect x="0" y="-{band}" width="{width:g}" height="{band}" fill="{PAPER_BG}"/>'
+            f'\n<text x="24" y="-16" font-size="18" font-family="sans-serif" '
+            f'font-weight="bold" fill="{CRIMSON}" class="retirement-banner">'
+            f"{RETIREMENT_BANNER}</text>\n"
+        )
+        closing = svg.rfind("</svg>")
+        if closing < root.end():
+            raise ValueError("Historical SVG has no closing root for its retirement banner")
+        # Append the warning so archival text extraction keeps its original order.
+        # Its negative coordinates still place it above all original content.
+        return svg[: root.start()] + header + svg[root.end() : closing] + banner + svg[closing:]
 
     return _wrapped
 
@@ -2366,6 +2430,7 @@ def build_plate6_combining_results_integrated_evidence() -> Figure:
 # ---------------------------------------------------------------------- Standalone SVGs (fig7-fig9)
 
 
+@_with_retirement_svg
 def render_fig7_svg() -> str:
     """Return the standalone SVG string for Plate VII
     (fig7_tufte_convergence_network_and_venn.svg).
@@ -2880,6 +2945,7 @@ def render_fig7_svg() -> str:
     )
 
 
+@_with_retirement_svg
 def render_fig8_svg() -> str:
     """Return the standalone SVG for Slide 15 / fig8 with wrapped lines inside boxes (#550)."""
     svg = "\n".join(
@@ -3148,6 +3214,7 @@ def render_fig8_svg() -> str:
     )
 
 
+@_with_retirement_svg
 def render_fig9_svg() -> str:
     """Return the standalone SVG string for Slide 16 / fig9
     (fig9_set_theory_17_core_vs_pairwise.svg).
@@ -4216,7 +4283,24 @@ def render_slide_deck_html() -> str:
             "",
         ]
     )
-    return _annotate_deck_nominal_counts_and_footer_labels(raw_html)
+    html = _annotate_deck_nominal_counts_and_footer_labels(raw_html)
+    # Add 36 px to both the page and top padding, preserving the content box.
+    retirement_style = """
+      @page { size: 1600px 1036px; }
+      .slide { height: 1036px; padding-top: 56px; }
+      .cover-slide { padding-top: 100px; }
+      .slide > .retirement-banner {
+        position: absolute; top: 0; left: 0; width: 100%; height: 36px;
+        padding: 7px 28px; background: #fbfaf7; color: #9e2a2b;
+        font-family: sans-serif; font-size: 18px; line-height: 22px; font-weight: bold;
+      }
+    """
+    html = html.replace("</style>", retirement_style + "</style>", 1)
+    return re.sub(
+        r"(<section\b[^>]*>)",
+        lambda match: f'{match.group()}\n<div class="retirement-banner">{RETIREMENT_BANNER}</div>',
+        html,
+    )
 
 
 def _annotate_deck_nominal_counts_and_footer_labels(html_text: str) -> str:
@@ -4284,8 +4368,14 @@ def generate_tufte_plates_and_deck(
     analysis_dir: Path = ANALYSIS_DIR,
     *,
     dpi: int = 300,
+    audit_retired: bool = False,
 ) -> list[Path]:
-    """Generate all Tufte plates, standalone SVGs, combined PDF, and 16-slide HTML deck (#550)."""
+    """Reproduce retired historical products only after explicit audit opt-in (#1572)."""
+    if audit_retired is not True:
+        raise ValueError(
+            f"{RETIREMENT_BANNER}. Use --audit-retired or audit_retired=True for audit only; "
+            "replacement from current rerun data is pending under #1670."
+        )
     tufte_dir = analysis_dir / "figures_tufte"
     tufte_dir.mkdir(parents=True, exist_ok=True)
 
@@ -4338,10 +4428,20 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     """Parse command-line arguments for Tufte plate and deck generation (#617, #1127)."""
     parser = argparse.ArgumentParser(
         description=(
-            "Generate the Edward Tufte analytical plates (fig1\u2013fig6), standalone vector SVGs "
+            f"{RETIREMENT_BANNER}. Replacement from current rerun data is pending under #1670. "
+            "Audit-only reproduction of analytical plates (fig1\u2013fig6), standalone vector SVGs "
             "(fig7\u2013fig9), combined PDF packet, and 16-slide HTML deck under analysis_dir."
         ),
         allow_abbrev=False,
+    )
+    parser.add_argument(
+        "--audit-retired",
+        action="store_true",
+        required=True,
+        help=(
+            "Explicitly opt in to retired, unverified historical outputs (#1572); "
+            "replacement #1670."
+        ),
     )
     parser.add_argument(
         "--analysis-dir",
@@ -4366,7 +4466,9 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
 def main(argv: Sequence[str] | None = None) -> int:
     """CLI entry point for generating the Tufte plates and HTML slide deck."""
     args = parse_args(argv)
-    generate_tufte_plates_and_deck(args.analysis_dir, dpi=args.dpi)
+    generate_tufte_plates_and_deck(
+        args.analysis_dir, dpi=args.dpi, audit_retired=args.audit_retired
+    )
     return 0
 
 
