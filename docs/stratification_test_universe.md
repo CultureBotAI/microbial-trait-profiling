@@ -57,18 +57,29 @@ Outputs have different purposes:
   fold contrasts now cover all eligible tests, avoiding selection on discoveries.
   The existing `pooled_best_stat`, `feces_best_stat`, and
   `feces_excluded_best_stat` values are unchanged: minimum q when available,
-  otherwise minimum nominal p. Each has a companion `*_best_stat_type` column
-  containing `fdr_q`, `p_value`, or `unavailable` (#1418). These minima describe
+  otherwise minimum nominal p. Each has companion `*_best_stat_type`
+  (`fdr_q`, `p_value`, or `unavailable`), `*_best_stat_scope`
+  (`global`, `profile`, `none`, `unknown`, or `unavailable`), and
+  `*_best_stat_basis` (`FDR q`, `nominal p`, or `unavailable`) columns, plus
+  `*_significance_basis` and `*_fdr_scope` columns and per-stratum header
+  lines recording the call rule (#1418, #1507, #1508). These minima describe
   eligible profile-level tests; they do not define a trait-level FDR family.
 
-Statistic types use the complete tested table's own `Stat-Type` header.
+Statistic types and scopes use the complete tested table's own `Stat-Type`,
+`FDR-Scope`, and `Stat-Threshold` headers.
 Historical nominal tables copied raw p into the q field; identical copies are
 labelled `p_value`, as are the empty-q nominal tables produced after #1409.
-Contradictory nominal q/p values or invalid/duplicate `Stat-Type` declarations
-are refused. When the header is absent, the available column name identifies
-the statistic. A missing q falls back to p even in a corrected table; missing
-values or unavailable traits/analyses are labelled `unavailable`. Type columns
-are additive; support states and numerical summaries retain their definitions.
+Contradictory nominal q/p values, contradictory or invalid/duplicate
+`Stat-Type` / `FDR-Scope` / `Stat-Threshold` declarations, or headerless tables
+with `best_qvalue == best_pvalue` are refused (#1507, #1509). When the header
+is absent and `best_qvalue != best_pvalue`, the available column name identifies
+the statistic. A missing q falls back to p (with `*_best_stat_scope: none`) even
+in a corrected table while `*_significance_basis` retains the stratum's call
+rule; missing values or unavailable traits/analyses are labelled `unavailable`.
+Type, scope, and basis columns are additive; support states and numerical
+summaries retain their definitions, and `scripts/adhoc/issue727_compare_core_strata.py`
+treats validated additive label columns and header/report lines as
+scientifically equivalent (#1511).
 
 `tested_nonsignificant` means tests were performed and none passed the analyzer's
 selection rule; for a nominal run the legacy name does not imply an FDR result.
