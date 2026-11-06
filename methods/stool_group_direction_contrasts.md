@@ -51,6 +51,15 @@ for the complete stool-group cell family; they do not select groups. Profile
 lists are the inference units here, not studies or patients. These are contrasts
 in trait annotations attached to reported taxa, not measurements of physiology.
 
+The BH family is `mt-script-heatmap-stool-fisher`: every represented grouped
+stool edge cell across the declared trait list, before support-ranked group
+selection. Its executed size is the row count of
+`trait_list_stool_all_group_direction_contrasts.tsv`, including cells that fail
+the display support rule; absent edges are not invented tests. The BH flag uses
+q <=0.05 plus support. It is separate from the all-body-site grouped-cell
+family `mt-script-heatmap-trait-list-direction-fisher`. Any nominal Fisher
+display must also state how many cell tests it displays.
+
 ## Declared group rule and outputs
 
 `--stool-group-count` is a positive integer with default 6. A group is eligible

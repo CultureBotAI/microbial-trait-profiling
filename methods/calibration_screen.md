@@ -28,6 +28,15 @@ false call. The per-replicate count is therefore the number of false discoveries
 and the share of replicates with any call is the family error of the whole screen,
 reported with an exact binomial interval over independent replicates.
 
+The registry names this diagnostic family
+`mt-core-calibration-screen-null-replicate`: every supplied candidate trait,
+separately in each replicate, with no primary inferential designation. Its BH,
+full-candidate BY and effective-multiplier BY columns must remain distinct.
+Use the executed `family_size`/`family_basis` in `screen_null_replicates.tsv`;
+the effective multiplier is a sensitivity quantity, never the hypothesis count.
+The observed reference calls use `mt-core-noel-sign-nominal` for full-candidate
+BY/BH and `mt-core-noel-sign-effective` for the no-guarantee sensitivity bound.
+
 ## Result
 
 100 replicates, seed 182, code commit `0cc6c66`, on the pinned v1.3.1 corpus

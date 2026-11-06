@@ -181,7 +181,14 @@ the larger share. Ties are excluded.
     disagree near 0.05.
   - Units are treated as independent, and a few studies sampled two compartments.
 - **Multiplicity:** `significant_results_summary.tsv` adds Benjamini-Hochberg
-  q-values over its 29 tests.
+  q-values over its 29 tests in the pinned run described above. This is
+  `mt-supp-cellulose-summary-bh`: the nonmissing p-values in the concatenated
+  direction, convergence and interaction summary rows, not the full exploratory
+  inventory. Count those nonmissing rows in the executed table for its family
+  size. Its `significance_tier` is based on nominal p, not
+  `bh_q_within_table`; it must not be described as a BH discovery label.
+  All other unadjusted p-values in this note are nominal. The summary-family
+  correction does not correct selection of traits, conditions or displayed tests.
 
 ## Overlap tests
 

@@ -46,7 +46,12 @@ def test_anchor_edit_cannot_invent_a_literal_method() -> None:
 
 
 def test_derived_by_is_narrow_and_does_not_disable_literal_counts() -> None:
-    source = {"src/x.py": "def screen(p):\n    return benjamini_hochberg(p) * harmonic(p)\n"}
+    source = {
+        "src/x.py": "import numpy as np\ndef screen(p):\n"
+        "    m = len(p)\n"
+        "    harmonic = np.sum(1.0 / np.arange(1, m + 1))\n"
+        "    return np.clip(benjamini_hochberg(p) * harmonic, 0, 1)\n"
+    }
     registry = single_method_registry()
     family = registry["families"][0]
     family["comparison_procedure"] = ["BH"]

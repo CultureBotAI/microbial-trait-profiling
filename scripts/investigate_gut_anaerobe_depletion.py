@@ -262,7 +262,9 @@ def paired_t_test_p_value(
     return max(0.0, min(1.0, p_value))
 
 
-def paired_guild_enrichment_stats(group: pd.DataFrame) -> dict[str, float | int]:
+def paired_guild_enrichment_stats(
+    group: pd.DataFrame, *, run_test: bool = True
+) -> dict[str, float | int]:
     """Calculate paired decreased-vs-increased trait enrichment within study/experiment."""
     paired = group.pivot_table(
         index=["study_id", "experiment_id"],
@@ -287,7 +289,8 @@ def paired_guild_enrichment_stats(group: pd.DataFrame) -> dict[str, float | int]
     smd = math.nan
     p_value = math.nan
     if (
-        pair_count >= MIN_PAIRED_SMD_PROFILE_PAIRS
+        run_test
+        and pair_count >= MIN_PAIRED_SMD_PROFILE_PAIRS
         and not pd.isna(difference_sd)
         and difference_sd > 0
     ):
@@ -432,7 +435,11 @@ def summarize_group(metadata: pd.DataFrame, group_column: str, min_profiles: int
             "decreased_mean_anaerobe_z": dec["anaerobe_z_mean"].mean(),
         }
         if group_column == "condition":
-            record.update(paired_guild_enrichment_stats(group))
+            record.update(
+                paired_guild_enrichment_stats(
+                    group, run_test=not is_excluded_condition_label(group_value)
+                )
+            )
         records.append(record)
     summary = pd.DataFrame(records).sort_values(
         ["decreased_mean_guild_z", "profile_count"],
@@ -488,6 +495,13 @@ def select_top_conditions(condition_summary: pd.DataFrame, limit: int) -> pd.Dat
         top_conditions = condition_summary[condition_summary["decreased_profile_count"] >= 3].head(
             limit
         )
+    top_conditions = top_conditions.copy()
+    top_conditions["n_shown"] = len(top_conditions)
+    top_conditions["n_shown_tested"] = (
+        int(top_conditions["paired_t_test_p_value"].notna().sum())
+        if "paired_t_test_p_value" in top_conditions.columns
+        else 0
+    )
     return top_conditions
 
 
@@ -498,7 +512,20 @@ def paired_smd_label(row: Any) -> str:
     if pd.isna(p_value):
         p_text = "p=NA (not tested)"
     else:
-        p_text = f"nominal p={p_value:.3g} ({int(row.n_tests)} condition tests)"
+        n_tests = int(row.n_tests)
+        n_shown = getattr(row, "n_shown", None)
+        if n_shown is not None and not pd.isna(n_shown):
+            n_shown_tested = int(row.n_shown_tested)
+            p_text = (
+                f"nominal p={p_value:.3g} "
+                f"(one of {n_tests} condition tests; shown: top {int(n_shown)} by guild-z "
+                f"difference, {n_shown_tested} of them tested)"
+            )
+        else:
+            p_text = (
+                f"nominal p={p_value:.3g} "
+                f"({n_tests} condition tests after excluding broad study-design labels)"
+            )
     if pd.isna(smd):
         return f"paired d=NA, {p_text}, n={pair_count}"
     return f"paired d={smd:.2f}, {p_text}, n={pair_count}"
@@ -2390,6 +2417,12 @@ def write_summary_report(
         if "paired_t_test_p_value" in filtered_conditions.columns
         else 0
     )
+    n_shown_conditions = len(top_conditions)
+    n_shown_tested_conditions = (
+        int(top_conditions["paired_t_test_p_value"].notna().sum())
+        if "paired_t_test_p_value" in top_conditions.columns
+        else 0
+    )
     lines.extend(
         [
             "",
@@ -2417,7 +2450,10 @@ def write_summary_report(
         [
             "",
             "Reported paired p values are uncorrected two-sided paired t-test nominal p-values "
-            f"across {n_tested_conditions} tested conditions in `condition_guild_summary.tsv`. "
+            f"across {n_tested_conditions} tested conditions after excluding broad study-design "
+            f"labels in `condition_guild_summary.tsv` (shown above: top {n_shown_conditions} "
+            f"eligible conditions by guild-z difference, {n_shown_tested_conditions} of them "
+            "tested). "
             "Paired d and nominal paired p are blank for conditions with fewer than "
             f"{MIN_PAIRED_SMD_PROFILE_PAIRS} matched decreased/increased profile pairs, or with "
             "zero variance among the paired differences.",

@@ -23,6 +23,20 @@ significance is not proof of explanation. These outputs feed #178 and the eviden
 limits in #179; they do not validate the Rosalind mechanisms, oxygen exposure, SCFA
 production, or causal ecological readouts.
 
+For the historical shared-effect run below, directional fraction q-values use BH over the
+complete focal family (`mt-supp-taxon-influence-shared-fraction`); log-ratio
+q-values use BY over the complete focal pair family
+(`mt-supp-taxon-influence-shared-log2-ratio`), separately per scenario and scope.
+Native transformed q-values instead use the finite, support/variance-selected
+tests in `mt-supp-native-influence-composition` under BH. Count the declared
+shared-effect family rows in that run's `effects.tsv.gz`; the displayed rows
+do not define its family sizes. The linked compact native bundle has a separate
+execution and population, recorded in its own `run_manifest.json`. Its
+`family_tests` must not be used to bind the native q-values quoted on this page
+to the shared-effect run. The exact native execution behind these quotations
+remains to be reconciled; retain the historical values without substituting
+the linked bundle's values or family counts.
+
 Largest contributing resolved genus, with share of **all** propagated counts:
 
 | Trait key | Direction | Genus | Count share | Genus resolution coverage |

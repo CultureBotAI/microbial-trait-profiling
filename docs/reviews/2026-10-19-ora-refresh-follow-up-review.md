@@ -59,7 +59,18 @@ null scenarios and all four 400-replicate injection scenarios. The actual status
 record binds the profile, experiment, raw-dump, protocol and analysis-source
 hashes, and records the whole-pair eligibility policy and retained support.
 
-| Procedure | Null replicates with any adjusted p-value at most 0.05 | Exact one-sided 95% upper bound | Family criterion, tolerance 0.065 |
+These are calibration diagnostics, not new biological discoveries. For the
+fraction and log-ratio rows, the 0.05 cutoff applies to q in each replicate's
+own family: six-trait BH (`mt-core-calibration-fraction-replicate`) and 15-pair BY
+(`mt-core-calibration-log-ratio-replicate`). The guild row instead uses a single
+nominal McNemar p-value at the same cutoff. The screened negative control uses
+BH only within its selected family (`mt-core-calibration-screened-fraction`);
+its selection and per-replicate family inventory remain part of that diagnostic.
+These identifiers map to the later
+[registry](../../methods/multiple_testing_families.yaml); replicates are not
+pooled into a common correction family.
+
+| Procedure | Null replicates crossing the stated p or q cutoff, 0.05 | Exact one-sided 95% upper bound | Family criterion, tolerance 0.065 |
 | --- | --- | --- | --- |
 | Fraction sign test, six-trait BH family | 128 / 2,800 | 0.0527474 | Pass |
 | Log-ratio sign test, 15-pair BY family | 38 / 2,800 | 0.0177512 | Pass |

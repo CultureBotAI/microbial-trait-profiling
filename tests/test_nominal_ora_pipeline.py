@@ -16,6 +16,7 @@ from mtp.deck_visualizations import generate_figure2_calibrated_ora_infographic
 from mtp.paths import REPO_ROOT
 from mtp.quoted_results import OraCalls, refuse_nominal_ora
 from mtp.stratification import run_stratum_enrichment
+from mtp.workflow.downstream_contracts import get_standard_analysis_spec
 
 
 def _script(name: str) -> ModuleType:
@@ -138,6 +139,61 @@ def test_producer_declares_actual_correction_and_preserves_probabilities(
                 false_discovery_control([float(row["p_value"]) for row in family], method="bh")
             )
         assert report.read_text().startswith("FDR q <= 1")
+
+
+def test_ora_spec_matches_independent_enrichment_and_depletion_families(
+    tmp_path: Path, inputs: tuple[Path, Path], producers: tuple[ModuleType, ModuleType]
+) -> None:
+    """The arm's two real entry points each correct their own eligible tests (#1499)."""
+    profiles, matrix = inputs
+    enrichment, _ = producers
+    depletion = _script("trait_depletion")
+    probabilities: list[float] = []
+    adjusted: list[float] = []
+    for producer, tail in ((enrichment, "upper"), (depletion, "lower")):
+        complete = tmp_path / f"{tail}_all_results.tsv"
+        producer.main(
+            [
+                "--input",
+                str(profiles),
+                "--taxa-matrix",
+                str(matrix),
+                "--output",
+                str(tmp_path / f"{tail}_report.txt"),
+                "--tsv-output",
+                str(tmp_path / f"{tail}_selected.tsv"),
+                "--all-results-output",
+                str(complete),
+                "--fdr-scope",
+                "global",
+            ]
+        )
+        metadata, rows = _table(complete)
+        assert len(rows) == 4
+        assert metadata["FDR-Scope"] == "global"
+        assert {row["correction_family"] for row in rows} == {"global"}
+        p_values = [float(row["p_value"]) for row in rows]
+        q_values = [float(row["fdr_q"]) for row in rows]
+        # No --tail is supplied: exercise enrichment's default and the real
+        # depletion forwarder, independently of the plan's requested labels.
+        for row, observed in zip(rows, p_values, strict=True):
+            count = int(row["count"])
+            background = 3 if row["trait"] == "TraitA" else 5
+            expected = (
+                hypergeom.sf(count - 1, 10, background, 2)
+                if tail == "upper"
+                else hypergeom.cdf(count, 10, background, 2)
+            )
+            assert observed == pytest.approx(expected)
+        assert q_values == pytest.approx(false_discovery_control(p_values, method="bh"))
+        probabilities.extend(p_values)
+        adjusted.extend(q_values)
+    # This fixture distinguishes two tail families from one pooled family.
+    assert adjusted != pytest.approx(false_discovery_control(probabilities, method="bh"))
+    spec = get_standard_analysis_spec("ilyas_signature_hypergeometric_ora_v1")
+    assert (
+        spec.multiple_testing_policy == "global_BH_q_per_tail_across_eligible_profile_trait_tests"
+    )
 
 
 def test_nominal_stratum_rankings_and_report_fallback_keep_q_missing(

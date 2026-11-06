@@ -67,7 +67,12 @@ just audit-ora-refresh \
   "$OUTPUT/audit.json"
 ```
 
-Global BH uses q ≤ 0.001, enrichment fold ≥ 1.5 and depletion fold ≤ 0.5.
+Global BH uses q ≤ 0.001, enrichment fold ≥ 1.5 and depletion fold ≤ 0.5,
+independently within each eligible profile–trait family in the table below.
+Upper and lower tails are separate families; each stratified enrichment run
+also has its own family. The `mt-*` names map this historical execution to the
+later [registry](../../methods/multiple_testing_families.yaml), without changing
+the saved records or treating the historical test counts as current sizes.
 The audit compares every table-body byte, all scientific metadata, actual input
 fingerprints, row counts and selected-hit counts. It does not fabricate input
 fingerprints for the historical files. Native composition, directional screen
@@ -89,13 +94,21 @@ scientific metadata is unchanged. The only metadata additions are the profile
 and taxa-matrix fingerprints, both checked against actual input bytes. Declared
 test counts and selected-hit counts match the observed complete rows.
 
-| Export | Tested profiles | Complete tests | Discoveries |
+| Export | Tested profiles | Complete tests (family size) | Discoveries |
 | --- | ---: | ---: | ---: |
 | Pooled enrichment | 4,670 | 1,480,390 | 66,240 |
 | Pooled depletion | 4,670 | 1,480,390 | 23 |
 | Stratified pooled enrichment | 4,670 | 1,480,390 | 66,240 |
 | Feces enrichment | 2,950 | 935,150 | 36,562 |
 | Feces-excluded enrichment | 1,720 | 545,240 | 29,498 |
+
+The correction families for these exports are:
+
+- Pooled enrichment: `mt-core-ora-upper-global`.
+- Pooled depletion: `mt-core-ora-lower-global`.
+- Stratified pooled enrichment: `mt-core-stratified-ora-pooled`.
+- Feces enrichment: `mt-core-stratified-ora-feces`.
+- Feces-excluded enrichment: `mt-core-stratified-ora-feces-excluded`.
 
 The three complete-trait summaries, annotation-density deciles and stratification
 sensitivity TSV are also byte-identical to the corrected #664 baseline under

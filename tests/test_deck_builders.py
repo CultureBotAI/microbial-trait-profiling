@@ -252,12 +252,32 @@ def test_plate_two_caveat_reads_saliva_and_feces(
                 *_nitrate(-2.30, 0.0252, 0.979, 55),
                 _paired("aerobic METPO:1000602", 0.4, 0.1, trait="METPO:1000602", study_count="55"),
                 _paired("unrun U:1", "NaN", 0.0, trait="U:1", study_count="55"),
+                _paired(
+                    "padded P:1",
+                    1.0,
+                    0.0,
+                    trait="P:1",
+                    study_count="55",
+                    study_p_value="1.0",
+                    study_test_status="not_tested",
+                ),
+                _paired(
+                    "padded P:2",
+                    1.0,
+                    0.0,
+                    trait="P:2",
+                    study_count="55",
+                    study_p_value="NaN",
+                ),
             ],
         }
     }
     multi_caveat = deck.paired_contrast_caveat(multi_metrics)
-    assert "nominal p = 0.025, q = 0.98 over 2 saliva tests" in multi_caveat
+    # The producer fills a missing study p with 1 before BH, so the two padded saliva traits
+    # stay in the family the q was computed over; they are counted and flagged (#1568).
+    assert "nominal p = 0.025, q = 0.98 over 4 saliva tests, 2 not tested;" in multi_caveat
     assert "Feces t = +3.97, q = 0.0013 over 3 feces tests)" in multi_caveat
+    assert "in Saliva (55 studies), 0 of 4." in multi_caveat
 
 
 def test_plate_two_caveat_needs_the_nitrate_rows() -> None:
@@ -333,9 +353,10 @@ def test_pd_direction_caveat_quotes_the_clustered_model(
     model: tuple[float, float], positive: tuple[float, float], verdict: str
 ) -> None:
     """The figure's title says direction-specific; the clustered model decides (#590, #608,
-    #1430)."""
+    #1430, #1566)."""
     caveat = deck.pd_direction_caveat(_model(*model), _model(*positive))
-    assert "(pd_cellulose_interaction_model.tsv, 2 of its 2 nominal tests shown)" in caveat
+    assert "(pd_cellulose_interaction_model.tsv, 2 nominal tests shown)" in caveat
+    assert "of its" not in caveat
     assert f"{model[0]:+.2f} cellulose z" in caveat
     assert f"nominal p = {deck.p_text(model[1])}" in caveat
     assert f"nominal p = {deck.p_text(positive[1])}" in caveat
@@ -359,33 +380,89 @@ def test_pd_direction_caveat_gives_the_share_in_percentage_points() -> None:
         "p_value": "0.0553",
     }
     caveat = deck.pd_direction_caveat(model, positive)
-    assert "(pd_cellulose_interaction_model.tsv, 2 of its 2 nominal tests shown)" in caveat
+    assert "(pd_cellulose_interaction_model.tsv, 2 nominal tests shown)" in caveat
     assert "+0.41 cellulose z (95% CI -0.05 to +0.87, nominal p = 0.080)" in caveat
     assert "+18.6 percentage points (95% CI -0.4 to +37.6, nominal p = 0.055)" in caveat
 
 
 @pytest.mark.parametrize(
-    "unrun_fields",
+    ("unrun", "expected_pos_clause", "expected_z_clause"),
     [
-        {"p_value": "NaN"},
-        {"p_value": "NA"},
-        {"p_value": ""},
-        {"p_value": "0.01", "p_value_type": "not_tested"},
+        (
+            {
+                "coefficient": "",
+                "ci_low": "",
+                "ci_high": "",
+                "p_value": "",
+                "p_value_type": "not_tested",
+            },
+            "and not estimable (not tested) in the share of profiles",
+            "is not estimable for cellulose z (not tested), and ",
+        ),
+        (
+            {
+                "coefficient": "NaN",
+                "ci_low": "NaN",
+                "ci_high": "NaN",
+                "p_value": "NaN",
+                "p_value_type": "not_tested",
+            },
+            "and not estimable (not tested) in the share of profiles",
+            "is not estimable for cellulose z (not tested), and ",
+        ),
+        (
+            {
+                "coefficient": "0.2334",
+                "ci_low": "0.2334",
+                "ci_high": "0.2334",
+                "p_value": "",
+                "p_value_type": "not_tested",
+            },
+            "and +23.3 percentage points (95% CI +23.3 to +23.3, not tested) "
+            "in the share of profiles",
+            "is +0.23 cellulose z (95% CI +0.23 to +0.23, not tested), and ",
+        ),
+        (
+            {
+                "coefficient": "0.2334",
+                "ci_low": "0.03",
+                "ci_high": "0.43",
+                "p_value": "NA",
+            },
+            "and +23.3 percentage points (95% CI +3.0 to +43.0, not tested) "
+            "in the share of profiles",
+            "is +0.23 cellulose z (95% CI +0.03 to +0.43, not tested), and ",
+        ),
+        (
+            {
+                "coefficient": "0.1859",
+                "ci_low": "-0.2741",
+                "ci_high": "0.6459",
+                "p_value": "0.01",
+                "p_value_type": "not_tested",
+            },
+            "and +18.6 percentage points (95% CI -27.4 to +64.6, not tested) "
+            "in the share of profiles",
+            "is +0.19 cellulose z (95% CI -0.27 to +0.65, not tested), and ",
+        ),
     ],
 )
 def test_pd_direction_caveat_excludes_unrun_test_from_count(
-    unrun_fields: dict[str, str],
+    unrun: dict[str, str],
+    expected_pos_clause: str,
+    expected_z_clause: str,
 ) -> None:
-    """An unrun interaction test is excluded from the nominal test count (#1430, #1561, #1562)."""
+    """An unrun interaction test is excluded from the nominal test count (#1430, #1560, #1561,
+    #1562, #1563, #1566)."""
     tested_nonsig = _model(0.4098, 0.08004)
     tested_sig = _model(0.41, 0.01)
-    unrun = {**_model(0.1859, 0.0553), **unrun_fields}
 
     caveat_nonsig = deck.pd_direction_caveat(tested_nonsig, unrun)
-    assert "(pd_cellulose_interaction_model.tsv, 1 of its 1 nominal test shown)" in caveat_nonsig
+    assert "(pd_cellulose_interaction_model.tsv, 1 nominal test shown)" in caveat_nonsig
+    assert "of its" not in caveat_nonsig
     assert "nominal p = 0.080" in caveat_nonsig
-    assert ", not tested) in the share of profiles" in caveat_nonsig
-    assert "a PD-specific direction is not shown at nominal p < 0.05." in caveat_nonsig
+    assert expected_pos_clause in caveat_nonsig
+    assert caveat_nonsig.endswith("so only one measure was tested.")
     assert "nan" not in caveat_nonsig.lower()
 
     eight_with_one_unrun = [_model(0.1, 0.2) for _ in range(6)] + [tested_nonsig, unrun]
@@ -393,16 +470,16 @@ def test_pd_direction_caveat_excludes_unrun_test_from_count(
     assert "(pd_cellulose_interaction_model.tsv, 1 of its 7 nominal tests shown)" in caveat_seven
 
     caveat_sig = deck.pd_direction_caveat(unrun, tested_sig)
-    assert "(pd_cellulose_interaction_model.tsv, 1 of its 1 nominal test shown)" in caveat_sig
-    assert ", not tested), and " in caveat_sig
+    assert "(pd_cellulose_interaction_model.tsv, 1 nominal test shown)" in caveat_sig
+    assert expected_z_clause in caveat_sig
     assert "nominal p = 0.010) in the share of profiles" in caveat_sig
-    assert (
-        "a PD-specific direction is shown at nominal p < 0.05 for one measure only." in caveat_sig
-    )
+    assert caveat_sig.endswith("so only one measure was tested.")
 
     caveat_none = deck.pd_direction_caveat(unrun, unrun)
-    assert "(pd_cellulose_interaction_model.tsv, 0 of its 0 nominal tests shown)" in caveat_none
+    assert "(pd_cellulose_interaction_model.tsv, 0 nominal tests shown)" in caveat_none
+    assert "of its" not in caveat_none
     assert "nominal p =" not in caveat_none
+    assert caveat_none.endswith("so neither measure was tested.")
 
 
 def test_p_values_do_not_round_across_the_threshold() -> None:
@@ -982,7 +1059,7 @@ def test_plate_one_slide_text_reads_the_tables() -> None:
     u_takeaway, u_caveat = deck.plate_one_text(with_untested)
     assert "405 fecal study Wilcoxon tests run" in u_takeaway
     assert (
-        "nominal Wilcoxon p = 0.00017 (in the 408-test screen (3 not tested); BH q = 0.056)"
+        "nominal Wilcoxon p = 0.00017 (in the 408-test screen, 3 not tested; BH q = 0.056)"
         in u_caveat
     )
 
@@ -1320,6 +1397,22 @@ def test_mcnemar_text_labels_its_single_nominal_test() -> None:
     assert deck.mcnemar_text({"mcnemar": test}) == (
         "oxygen-guild McNemar OR = 1.560 (399 vs 255 discordant studies, "
         "nominal p = 1.9 \N{MULTIPLICATION SIGN} 10⁻⁸, 1 test)"
+    )
+    guild_slide = {
+        "figure_file_path": "data/derived/guild_maps/guild_condition_body_site_heatmap.png",
+        "title": "Oxygen-guild discordance is asymmetric across studies",
+        "takeaway": (
+            "Discordant study counts are 420 versus 290: paired odds ratio 1.448; "
+            "exact McNemar p = 1.21 \N{MULTIPLICATION SIGN} 10⁻⁶."
+        ),
+        "caveat": "The saved image is an unversioned local output.",
+    }
+    _, takeaway, _ = deck.update_previous_slide_text(
+        guild_slide, {"contrasts_by_key": {}, "mcnemar": test}
+    )
+    assert takeaway == (
+        "Discordant study counts are 399 versus 255: paired odds ratio 1.560; "
+        "exact McNemar nominal p = 1.9 \N{MULTIPLICATION SIGN} 10⁻⁸, 1 test."
     )
 
 
@@ -4061,7 +4154,22 @@ def test_deck_and_plates_derive_corpus_and_trait_counts_from_tables(
     assert plates.build_methods_plate2(plate_repo, plate_repo).exists()
     mp2_fig = closed.pop()
     try:
-        mp2_fig.canvas.draw()
+        for check_dpi in (100, 220):
+            mp2_fig.set_dpi(check_dpi)
+            mp2_fig.canvas.draw()
+            ax_mp2 = mp2_fig.axes[0]
+            mc_patch = next(
+                p
+                for p in ax_mp2.patches
+                if isinstance(p, plates.mpatches.FancyBboxPatch)
+                and abs(p.get_x() - 69.8) < 1e-3
+                and abs(p.get_y() - 53.5) < 1e-3
+            )
+            mc_bbox = mc_patch.get_window_extent()
+            mc_sub = next(t for t in ax_mp2.texts if "discordant studies:" in t.get_text())
+            mc_s_bbox = mc_sub.get_window_extent()
+            assert mc_s_bbox.x0 >= mc_bbox.x0
+            assert mc_s_bbox.x1 <= mc_bbox.x1
         mp2_text = "\n".join(
             [
                 *(t.get_text() for t in mp2_fig.texts),
@@ -4073,6 +4181,12 @@ def test_deck_and_plates_derive_corpus_and_trait_counts_from_tables(
             "2\N{MULTIPLICATION SIGN}2 Hypergeometric Over-Representation (M = 5,999 Taxa)"
             in mp2_text
         )
+        assert (
+            "654 discordant studies: 399 Aerobe↑/Anaerobe↓\n"
+            "vs 255 opposite (OR = 1.56, nominal p = 1.9 \N{MULTIPLICATION SIGN} "
+            "10\N{SUPERSCRIPT MINUS}\N{SUPERSCRIPT EIGHT}, 1 test)" in mp2_text
+        )
+        assert "1.56, p =" not in mp2_text
         assert "Pass conservative 344-trait\nBenjamini\N{EN DASH}Yekutieli q ≤ 0.05" in mp2_text
         assert "Aggregated across N = 908 unique studies" in mp2_text
         assert "344-trait BH/BY screen (fixes 0.354 screening bias)" in mp2_text
@@ -4295,7 +4409,7 @@ def test_pd_network_slide_and_cover_label_nominal_p_and_exclude_unrun_tests(
     ):
         net_rows_with_unrun = [*net_rows, unrun_row]
         model_extra = [
-            *({"outcome": "cellulose_z", "term": f"t{i}", "p_value": "0.2"} for i in range(6)),
+            *({"outcome": "cellulose_z", "term": f"t{i}", "p_value": "0.2"} for i in range(5)),
             {"outcome": "cellulose_z", "term": "extra_unrun", **unrun_row},
         ]
         monkeypatch.setattr(
@@ -4316,14 +4430,14 @@ def test_pd_network_slide_and_cover_label_nominal_p_and_exclude_unrun_tests(
         assert with_unrun["pd_net_tested"] == 2
         assert with_unrun["pd_net_untested"] == 1
         assert with_unrun["pd_net_lead"] is with_unrun["pd_halo_wilcoxon"]
-        assert "(pd_cellulose_interaction_model.tsv, 2 of its 8 nominal tests shown)" in (
+        assert "(pd_cellulose_interaction_model.tsv, 2 of its 7 nominal tests shown)" in (
             deck.pd_direction_caveat(
                 with_unrun["pd_interaction"], with_unrun["pd_interaction_positive"]
             )
         )
         u_title, u_takeaway, _ = deck.update_previous_slide_text(dict(net_slide), with_unrun)
         assert u_title == (
-            "PD halophily leads the 3-test study-level fecal screen (1 not tested) (BH q = 0.0561)"
+            "PD halophily leads the 3-test study-level fecal screen (1 not tested; BH q = 0.0561)"
         )
         assert "nominal p = 1.67e-04, BH q = 0.0561" in u_takeaway
         assert (
@@ -4342,7 +4456,7 @@ def test_pd_network_slide_and_cover_label_nominal_p_and_exclude_unrun_tests(
         p1_takeaway, p1_caveat = deck.plate_one_text(with_unrun)
         assert "2 fecal study Wilcoxon tests run" in p1_takeaway
         assert (
-            "nominal Wilcoxon p = 0.00017 (in the 3-test screen (1 not tested); BH q = 0.056)"
+            "nominal Wilcoxon p = 0.00017 (in the 3-test screen, 1 not tested; BH q = 0.056)"
             in p1_caveat
         )
 
@@ -4514,7 +4628,7 @@ def test_generate_tufte_plates_nominal_p_displays_state_computed_test_counts(
     finally:
         real_close(p2_fig)
 
-    # Plate 4 (10 of 11 lead rows present; 1 Panel A Wilcoxon row untested -> 83 cells, 395 tests):
+    # Plate 4 (10 of 11 lead rows; 1 drawn Panel A Wilcoxon row untested -> 82 cells, 395 tests):
     def _p4_read_tsv(path: Path, *, adjusted_ora: bool = False) -> list[dict[str, str]]:
         rows: list[dict[str, str]] = base_read_tsv(path, adjusted_ora=adjusted_ora)
         if path.name == "pd_ecological_reporter_combined_condition_trait_summary.tsv":
@@ -4534,7 +4648,7 @@ def test_generate_tufte_plates_nominal_p_displays_state_computed_test_counts(
                     and r.get("trait") == "cellulose catabolic process"
                 ):
                     out.append({**r, "p_value": "0.020", "q_value": "0.250"})
-                elif r.get("condition") == "Obesity" and r.get("trait") == "coccus shaped":
+                elif r.get("condition") == "Stroke" and r.get("trait") == "coccus shaped":
                     out.append({**r, "p_value": "", "q_value": "1.0"})
                 else:
                     out.append(r)
@@ -4554,10 +4668,10 @@ def test_generate_tufte_plates_nominal_p_displays_state_computed_test_counts(
                 *(t.get_text() for ax in p4_fig.axes for t in ax.texts),
             ]
         )
-        assert "*nominal p≤0.05 (83 Wilcoxon tests) / CI≠0" in p4_text
+        assert "*nominal p≤0.05 (82 Wilcoxon tests) / CI≠0" in p4_text
         assert (
-            "COVID-19; 10 shown)\nStudy win/loss, Fisher FDR (★), "
-            "Wilcoxon nominal p/BH q (395 tests)"
+            "COVID-19; 10 shown)\nStudy win/loss, Profile Fisher FDR (★), "
+            "Study Wilcoxon nominal p/BH q (395 tests)"
         ) in p4_text
         assert "Wilc nominal p=0.020" in p4_text
         assert "Wilc p=" not in p4_text
@@ -4598,7 +4712,10 @@ def test_generate_tufte_plates_nominal_p_displays_state_computed_test_counts(
         _assert_inside_canvas(p5_fig)
         footer_box = p5_fig.texts[2].get_window_extent()
         for ax in p5_fig.axes:
-            assert not footer_box.overlaps(ax.xaxis.label.get_window_extent())
+            xlabel_box = ax.xaxis.label.get_window_extent()
+            assert not footer_box.overlaps(xlabel_box)
+            assert xlabel_box.y0 - footer_box.y1 >= 6.0
+        assert "st., nominal p = 1.9e-08, 1 test);\n" in p5_fig.texts[2].get_text()
         assert "(2/56 tests) (cellulose_decr)." in p5_fig.texts[2].get_text()
     finally:
         real_close(p5_fig)
@@ -4687,8 +4804,62 @@ def test_generate_tufte_plates_nominal_p_displays_state_computed_test_counts(
         assert "○ Oriented 550-st. Table 1 (5 tests; Cell. ↓ nominal p=4.1e-06)" in p7_text
         assert "(nominal p=4.1e-06)" in p7_text
         assert (
-            "Oriented 550 st. (○, 5 Table 1 tests): Cellulose 39.4%↑/60.6%↓ "
-            "(nominal p=4.1e-06, BH₆ q=0.0020)"
+            "Oriented 550-study filter (○, 5 Table 1 nominal tests): "
+            "Cellulose 39.4%↑/60.6%↓ (nominal p=4.1e-06, BH₆ q=0.0020)"
         ) in p7_text
     finally:
         real_close(p7_fig)
+
+
+def test_plate5_labels_mcnemar_nominal_p_with_one_test(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#1462: Plate 5 footer labels McNemar p as 'nominal p = ..., 1 test' from the guild table."""
+    guild_corr = tmp_path / plates.GUILD_CORRELATION
+    guild_corr.parent.mkdir(parents=True, exist_ok=True)
+    guild_corr.write_text(
+        "statistic\tcomparison\tvalue\tp_value\n"
+        "discordant_studies\taerobe_up_anaerobe_down\t412\t\n"
+        "discordant_studies\tanaerobe_up_aerobe_down\t248\t\n"
+        "mcnemar_odds_ratio\taerobe_up_anaerobe_down_vs_reverse\t1.661\t2.4e-07\n",
+        encoding="utf-8",
+    )
+    sw_dir = (
+        tmp_path / "trait-visualization" / "trait-profile-investigation" / "taxa-oxygen-switches"
+    )
+    sw_dir.mkdir(parents=True, exist_ok=True)
+    (sw_dir / "condition_oxygen_switch_scores.tsv").write_text(
+        "condition\tbody_site_display\taerobe_up_anaerobe_down_score\trank_score\t"
+        "aerobic_only_study_count\tanaerobic_only_study_count\n"
+        "Colorectal cancer\tFeces\t0.85\t1.50\t12\t10\n"
+        "Periodontitis\tOral\t-0.65\t1.10\t4\t9\n",
+        encoding="utf-8",
+    )
+    (sw_dir / "taxa_cross_disease_switch_summary.tsv").write_text(
+        "taxon_name\ttaxonomic_rank\tincreased_side_profiles\tdecreased_side_profiles\t"
+        "switch_score\ttop_increased_conditions\ttop_decreased_conditions\n"
+        "Streptococcus\tgenus\t40\t30\t70\tParkinson's disease (12)\tColorectal cancer (9)\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(plates, "cellulose_decr_notes", lambda _r: {"crc_source": "CRC note"})
+    monkeypatch.setattr(plates, "pd_split", lambda _rows: "PD split note")
+    monkeypatch.setattr(plates, "crc_oxygen_split", lambda _rows: "CRC split")
+    monkeypatch.setattr(
+        plates.plt.Figure,
+        "savefig",
+        lambda _self, path, **_kw: Path(path).write_bytes(b""),
+    )
+    real_close = plates.plt.close
+    closed: list[Any] = []
+    monkeypatch.setattr(plates.plt, "close", lambda fig: closed.append(fig))
+    assert plates.build_plate5(tmp_path, tmp_path).exists()
+    p5_fig = closed.pop()
+    try:
+        p5_text = "\n".join(t.get_text() for t in p5_fig.texts)
+        assert (
+            "Pooled McNemar OR = 1.661 (412 vs 248 st., nominal p = 2.4e-07, 1 test);\nCRC note"
+            in p5_text
+        )
+        assert "st., p =" not in p5_text
+    finally:
+        real_close(p5_fig)

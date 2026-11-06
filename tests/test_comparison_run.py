@@ -18,6 +18,7 @@ from pathlib import Path
 import pytest
 
 from mtp.datamodel.workflow_pydantic import (
+    AnalysisSpec,
     ArmRun,
     CalibrationOutcome,
     CalibrationVerdict,
@@ -1087,9 +1088,11 @@ def test_a_ledger_must_reconcile_with_the_recorded_exclusion(
 
 
 def test_a_ledger_needs_a_study_level_spec(stage: dict[str, Path]) -> None:
-    pooled = STANDARD_ANALYSIS_SPECS["jed_pooled_contrast_fraction_diff_v1"]
-    with pytest.raises(ValueError, match="paired_experiment_contrast"):
-        shared_basis_ledger(pooled, verify_core_run(stage["core"]), ContrastPopulation.all_paired)
+    signature = STANDARD_ANALYSIS_SPECS["ilyas_signature_hypergeometric_ora_v1"]
+    with pytest.raises(ValueError, match="directional_signature"):
+        shared_basis_ledger(
+            signature, verify_core_run(stage["core"]), ContrastPopulation.all_paired
+        )
 
 
 def test_an_input_no_step_recorded_is_an_error(stage: dict[str, Path]) -> None:
@@ -1148,30 +1151,49 @@ def test_an_unchanged_copy_of_the_comparison_verifies(
     assert verify_comparison_run(copy).analysis_bases == _comparison(stage).analysis_bases
 
 
-def test_historical_policy_strings_verify_against_recorded_arm_plans(
-    stage: dict[str, Path], tmp_path: Path
+@pytest.mark.parametrize("variant", ["historical-f0cb5b7", "arbitrary-schema-valid"])
+def test_recorded_specs_are_preserved_without_semantic_revalidation(
+    stage: dict[str, Path], tmp_path: Path, variant: str
 ) -> None:
-    """New declarations do not rewrite or invalidate existing verified runs (#1417)."""
-    historical = {
-        "jed_table1_paired_log_ratio_sign_test_v1": "BH_and_BY_q_across_15_trait_pairs",
-        "jed_pooled_contrast_fraction_diff_v1": "BH_q_across_retained_non_MediaDive_traits",
-    }
+    """All historical or arbitrary descriptive fields pass unchanged (#1498, #1606).
+
+    This uses a real historical declaration list in a synthetic verified run;
+    upstream/hash/basis/output checks do not certify those declaration strings.
+    """
     copy = _comparison_copy(stage, tmp_path)
     manifest = copy / "comparison_run.json"
     record = json.loads(manifest.read_text(encoding="utf-8"))
-    for spec in record["analysis_specs"]:
-        if spec["id"] in historical:
-            assert spec["multiple_testing_policy"] != historical[spec["id"]]
-            spec["multiple_testing_policy"] = historical[spec["id"]]
-    original_plans = {name: verify_arm(stage[name]).plan_sha256 for name in PLANNERS}
-    manifest.write_text(json.dumps(record), encoding="utf-8")
+    current = {item["id"]: AnalysisSpec.model_validate(item) for item in record["analysis_specs"]}
+    if variant == "historical-f0cb5b7":
+        fixture = REPO_ROOT / "tests/fixtures/comparison_specs/analysis_specs_f0cb5b7.json"
+        record["analysis_specs"] = json.loads(fixture.read_text(encoding="utf-8"))
+        historical = {
+            item["id"]: AnalysisSpec.model_validate(item) for item in record["analysis_specs"]
+        }
+        assert historical.keys() == current.keys()
+        assert {key for key in historical if historical[key] != current[key]} == {
+            "jed_pooled_contrast_fraction_diff_v1",
+            "ilyas_signature_hypergeometric_ora_v1",
+            "jed_table1_paired_log_ratio_sign_test_v1",
+            "jed_composition_arcsine_sqrt_ttest_calibration_v1",
+            "historical_native_taxon_influence_experiment_weighted_v1",
+        }
+        pooled_id = "jed_pooled_contrast_fraction_diff_v1"
+        assert historical[pooled_id].kernel != current[pooled_id].kernel
+        assert historical[pooled_id].estimand != current[pooled_id].estimand
+    else:
+        for spec in record["analysis_specs"]:
+            for field in AnalysisSpec.model_fields.keys() - {"id"}:
+                replacement = f"unreviewed fixture {field} for {spec['id']}"
+                assert spec[field] != replacement
+                spec[field] = replacement
+    recorded_bytes = json.dumps(record).encode("utf-8")
+    manifest.write_bytes(recorded_bytes)
     verified = verify_comparison_run(copy)
-    assert {
-        spec.id: spec.multiple_testing_policy
-        for spec in verified.analysis_specs
-        if spec.id in historical
-    } == historical
-    assert {name: verify_arm(stage[name]).plan_sha256 for name in PLANNERS} == original_plans
+    assert (
+        verified.analysis_specs == ComparisonRun.model_validate_json(recorded_bytes).analysis_specs
+    )
+    assert manifest.read_bytes() == recorded_bytes
 
 
 @pytest.mark.parametrize(

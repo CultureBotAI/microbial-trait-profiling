@@ -131,8 +131,9 @@ For each trait and each triple of eligible conditions:
 - **Shared draws.** One sequence of U6 draws serves every triple and every trait. Each
   eligible condition takes its own block of each draw's studies, so every triple's
   null is exactly U6. A triple whose blocks would overlap gets its own U6 draws. Each
-  p-value is valid on its own, but the p-values of different triples and traits share
-  draws and are not independent.
+  nominal p-value describes that triple's declared U6 reference; its validity
+  still depends on the reference model's exchangeability assumptions. The
+  p-values of different triples and traits share draws and are not independent.
 - **Untestable triples.** A triple whose conditions have more units between them than
   the pool has studies cannot be drawn. It is not tested.
 

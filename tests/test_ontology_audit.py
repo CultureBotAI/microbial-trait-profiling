@@ -433,8 +433,8 @@ def test_write_consolidated_report_dynamic_numbers(tmp_path: Path) -> None:
         "Significant before and after PC1 regression in the same direction "
         "(BH q <= 0.05; survived or enhanced): cellulose catabolic process."
     ) in content
-    assert "(p=3.45e-04, q=6.90e-04)" in content
-    assert "(p=3.40e-12, q=6.80e-12)" in content
+    assert "(nominal p=3.45e-04, q=6.90e-04)" in content
+    assert "(nominal p=3.40e-12, q=6.80e-12)" in content
     assert "over all 2 reported traits" in content
     assert "18 redundant pairs (12 features collapsed into 8 clusters)" in content
     assert "bounding distinct trait space to 250 features" in content

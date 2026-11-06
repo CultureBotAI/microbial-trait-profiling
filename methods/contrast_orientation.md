@@ -519,6 +519,13 @@ analysis) and the 15 paired log-ratios (positive-count complete cases,
 Benjamini-Yekutieli over 15). In all four oriented populations "increased" means
 higher in the disease group.
 
+The registry families are `mt-core-population-fraction` (BH over the requested
+focal traits) and `mt-core-population-log-ratio` (BY over the requested unordered
+focal pairs), separately within each population. The historical sizes above
+come from the complete `disease_control_comparison.tsv` inventories, grouped by
+`population` and `family`; they are not a pooled family across populations.
+The p-values shown alongside q-values are nominal.
+
 | Comparison | Historical (932 studies) | All `disease_vs_healthy` (574) | Tier 1 + 2 subject controls (548) | Tier 1 healthy/normal only (478) |
 | --- | --- | --- | --- | --- |
 | facultatively aerobic | 0.580 [0.547, 0.613], q 1.0e-05 | 0.580 [0.538, 0.622], q 5.6e-04 | 0.573 [0.529, 0.616], q 0.0020 | 0.567 [0.520, 0.613], q 0.0067 |

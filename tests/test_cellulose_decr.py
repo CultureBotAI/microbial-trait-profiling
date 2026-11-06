@@ -960,6 +960,7 @@ def test_interaction_wording_follows_p_unit_and_population() -> None:
     }
     text = interaction_interpretation(healthy, shared=2)
     assert text.startswith("No difference in direction")
+    assert "detected at nominal p < 0.05;" in text
     # Study rows say how many studies sampled both compartments (#631).
     assert "; 2 studies sampled both compartments;" in text
     assert "; 1 study sampled both compartments;" in interaction_interpretation(healthy, shared=1)
@@ -968,7 +969,10 @@ def test_interaction_wording_follows_p_unit_and_population() -> None:
     assert text.endswith("not a test of anatomical specificity.")
     # The exact test and its interval can disagree near p = 0.05.
     borderline = {**healthy, "fisher_p_two_sided": 0.03, "conditional_or_ci95_low": 0.93}
-    assert "the 95% interval of the odds ratio includes 1" in interaction_interpretation(borderline)
+    assert (
+        "at nominal p < 0.05, but the 95% interval of the odds ratio includes 1"
+        in interaction_interpretation(borderline)
+    )
     # Boundaries: p = 0.05 is not below 0.05, and an interval ending at 1 includes it.
     at_alpha = {**healthy, "fisher_p_two_sided": 0.05}
     assert interaction_interpretation(at_alpha).startswith("No difference in direction")
@@ -1147,3 +1151,279 @@ def test_tier1_2_catalog_scopes_taxa_to_tier1_2_oriented_contrasts(tmp_path: Pat
 
     assert "t3" in all_sets["PD"]
     assert "t3" not in t12_sets["PD"]
+
+
+def _main_input_root(root: Path) -> Path:
+    """Build a complete synthetic input root for running ``analysis.main`` end-to-end."""
+    paths = {key: root / relative for key, relative in INPUTS.items()}
+    experiments_spec = [
+        ("bsdb:1", "bsdb:1-1", "Parkinson's disease", "Feces", "disease_vs_healthy", "native"),
+        ("bsdb:1", "bsdb:1-2", "Parkinson's disease", "Feces", "disease_vs_healthy", "reversed"),
+        ("bsdb:4", "bsdb:4-1", "HIV infection", "Feces", "treatment_exposure", "not_applicable"),
+        ("bsdb:2", "bsdb:2-1", "Colorectal cancer", "Colon", "disease_vs_healthy", "native"),
+        ("bsdb:2", "bsdb:2-2", "Colorectal cancer", "Colon", "disease_vs_healthy", "native"),
+        ("bsdb:2", "bsdb:2-3", "Colorectal cancer", "Feces", "disease_vs_healthy", "native"),
+        ("bsdb:3", "bsdb:3-1", "HIV infection", "Feces", "disease_vs_healthy", "native"),
+    ]
+    taxon_ids = [f"NCBITaxon:{i}" for i in range(1, 11)]
+    profiles, counts, taxa, dump = [], [], [], []
+    for index, (study, experiment, condition, site, *_rest) in enumerate(experiments_spec):
+        for signature, (inc_dec, cellulose) in enumerate((("inc", 1), ("dec", 10 + index)), 1):
+            other, medium = 2, 5
+            profiles.append(
+                {
+                    "profile_id": f"{study}|{experiment}|{inc_dec}",
+                    "study_id": study,
+                    "experiment_id": experiment,
+                    "inc_dec": inc_dec,
+                    "condition": condition,
+                    "body_site": site,
+                    "total_trait_signal": cellulose + other,
+                }
+            )
+            counts.append(
+                {
+                    "study_id": study,
+                    "experiment_id": experiment,
+                    "inc_dec": inc_dec,
+                    TRAIT_ID: cellulose,
+                    HALOPHILIC: other,
+                    MEDIUM: medium,
+                }
+            )
+            direction = "increased" if inc_dec == "inc" else "decreased"
+            reported_taxa = ["NCBITaxon:10"] if inc_dec == "inc" else taxon_ids
+            for taxon in reported_taxa:
+                taxa.append(
+                    {
+                        "study_id": study,
+                        "experiment_id": experiment,
+                        "direction": direction,
+                        "taxon_id": taxon,
+                    }
+                )
+            number = experiment.rsplit("-", 1)[1]
+            dump.append(
+                {
+                    "BSDB ID": f"{study}/{number}/{signature}",
+                    "Condition": condition,
+                    "Body site": site,
+                    "EFO ID": "EFO:0000001",
+                    "Authors list": "Author A",
+                    "Journal": "Journal B",
+                    "Sequencing type": "16S",
+                    "Location of subjects": "USA",
+                }
+            )
+    _write(paths["profile_metadata"], pd.DataFrame(profiles), index=False)
+    _write(paths["profile_counts"], pd.DataFrame(counts), index=False)
+    _write(paths["signature_taxa"], pd.DataFrame(taxa), index=False)
+    paths["full_dump"].parent.mkdir(parents=True, exist_ok=True)
+    paths["full_dump"].write_text(
+        "# BugSigDB 2026-04-24_00:41_UTC\n" + pd.DataFrame(dump).to_csv(index=False)
+    )
+    columns = ["study_id", "experiment_id", "condition", "body_site"]
+    experiments = pd.DataFrame([row[:4] for row in experiments_spec], columns=columns)
+    _write(paths["experiments"], experiments.assign(host_species="Homo sapiens"), index=False)
+    studies = pd.DataFrame(
+        {
+            "study_id": ["bsdb:1", "bsdb:2", "bsdb:3", "bsdb:4"],
+            "pmid": ["111", "222", "333", "444"],
+            "doi": ["10.1/a", "10.1/b", "10.1/c", "10.1/d"],
+            "publication_year": ["2020", "2021", "2022", "2023"],
+            "title": ["Study 1", "Study 2", "Study 3", "Study 4"],
+        }
+    )
+    _write(paths["studies"], studies, index=False)
+    manifest = pd.DataFrame(
+        [(*row[:2], *row[4:]) for row in experiments_spec],
+        columns=["study_id", "experiment_id", "contrast_class", "orientation"],
+    ).assign(
+        classifier_version=CLASSIFIER_VERSION,
+        contrast_type=CASE_VS_CONTROL_SUBJECT,
+        control_tier=TIER_1_HEALTHY_NORMAL,
+        flags="",
+        group_0_name="Controls",
+        group_1_name="Cases",
+        group_1_definition="",
+        description="",
+    )
+    _write(paths["contrast_manifest"], manifest, index=False)
+    matrix = pd.DataFrame(
+        {
+            "taxon_name": [f"Taxon {i}" for i in range(1, 11)],
+            "taxonomic_rank": ["genus"] * 10,
+            TRAIT_ID: [1] * 10,
+            HALOPHILIC: [1] * 10,
+        },
+        index=pd.Index(taxon_ids, name="taxon_id"),
+    )
+    _write(paths["taxa_trait_matrix"], matrix)
+    trait_columns = pd.DataFrame(
+        {
+            "column_id": [TRAIT_ID, HALOPHILIC],
+            "object_name": ["cellulose catabolic process", "moderately halophilic"],
+            "predicate_name": ["capable of", "has phenotype"],
+            "column_label": ["cellulose catabolic process", "moderately halophilic"],
+        }
+    )
+    _write(paths["trait_columns"], trait_columns, index=False)
+    paths["kg_edges"].parent.mkdir(parents=True, exist_ok=True)
+    paths["kg_edges"].write_text(
+        "id\tsubject\tpredicate\tobject\ne1\tNCBITaxon:1\tMETPO:2000103\tGO:0030245\n"
+    )
+    return root
+
+
+def test_significance_tier_is_labelled_nominal_and_summary_records_bh_selection_rule(
+    tmp_path: Path,
+) -> None:
+    """#1412, #1484, #1485: significance_tier is labelled nominal and summary records R6 BH rule."""
+    from mtp.cellulose_decr.analysis import (
+        ANALYSIS_DIR,
+        POOLED_STRATIFIED,
+        SUMMARY_BH_SELECTION_RULE,
+        significant_results_summary_table,
+        summary_definitions,
+        tier,
+    )
+    from mtp.cellulose_decr.analysis import (
+        main as analysis_main,
+    )
+
+    assert tier(math.nan) == "not tested"
+    assert tier(0.0009) == "nominal p < 0.001"
+    assert tier(0.001) == "nominal p < 0.01"
+    assert tier(0.009) == "nominal p < 0.01"
+    assert tier(0.01) == "nominal p < 0.05"
+    assert tier(0.049) == "nominal p < 0.05"
+    assert tier(0.05) == "not significant (nominal p >= 0.05)"
+
+    compartments = pd.read_csv(
+        ANALYSIS_DIR / "compartment_jaccard_and_direction_stats.tsv", sep="\t"
+    )
+    scenario_direction = pd.read_csv(
+        ANALYSIS_DIR / "condition_definition_sensitivity.tsv", sep="\t"
+    )
+    pairwise = pd.read_csv(ANALYSIS_DIR / "pairwise_jaccard_significance.tsv", sep="\t")
+    interaction = pd.read_csv(ANALYSIS_DIR / "compartment_direction_interaction.tsv", sep="\t")
+    scenario_interaction = pd.read_csv(
+        ANALYSIS_DIR / "condition_definition_interaction.tsv", sep="\t"
+    )
+    committed = pd.read_csv(ANALYSIS_DIR / "significant_results_summary.tsv", sep="\t")
+
+    summary = significant_results_summary_table(
+        compartments, scenario_direction, pairwise, interaction, scenario_interaction
+    )
+    assert len(summary) == len(committed) == 29
+    np.testing.assert_allclose(
+        summary["p_value"].to_numpy(dtype=float),
+        committed["p_value"].to_numpy(dtype=float),
+        rtol=1e-5,
+        equal_nan=True,
+    )
+    np.testing.assert_allclose(
+        summary["bh_q_within_table"].to_numpy(dtype=float),
+        committed["bh_q_within_table"].to_numpy(dtype=float),
+        rtol=1e-5,
+        equal_nan=True,
+    )
+    tested_tiers = set(summary["significance_tier"])
+    assert tested_tiers == {
+        "nominal p < 0.001",
+        "nominal p < 0.01",
+        "nominal p < 0.05",
+        "not significant (nominal p >= 0.05)",
+    }
+    assert all("nominal" in label for label in tested_tiers)
+    assert set(summary["bh_family_size"]) == {29}
+    assert set(summary["bh_unfiltered_summary_rows"]) == {29}
+    assert set(summary["bh_selection_rule"]) == {SUMMARY_BH_SELECTION_RULE}
+
+    # #1484: tie SUMMARY_BH_SELECTION_RULE to the actual populations, endpoints, and conditions
+    direction_rows = summary[summary["result_category"].eq("1_within_condition_direction")]
+    assert set(direction_rows["contrast_population"]) == {ALL_CONTRASTS, ORIENTED}
+    for pop in set(direction_rows["contrast_population"]):
+        assert pop in SUMMARY_BH_SELECTION_RULE
+    assert "disease_vs_healthy," not in SUMMARY_BH_SELECTION_RULE
+    assert "disease_vs_healthy)" not in SUMMARY_BH_SELECTION_RULE
+
+    convergence_rows = summary[summary["result_category"].eq("2_cross_condition_overlap")]
+    assert list(convergence_rows["test_id"]) == [
+        "jaccard_PD_vs_HIV",
+        "jaccard_PD_vs_CRC",
+        "jaccard_HIV_vs_CRC",
+        "mean_pairwise_jaccard_distance",
+        "three_way_core",
+    ]
+    for test_id in convergence_rows["test_id"]:
+        assert str(test_id) in SUMMARY_BH_SELECTION_RULE
+
+    interaction_rows = summary[summary["result_category"].eq("3_compartment_interaction")]
+    assert set(interaction_rows["scope_or_comparison"]) == {
+        f"Colorectal cancer: {FECES} vs {NON_FECAL_GI}",
+        f"Pooled (PD + HIV + CRC), stratified by condition: {FECES} vs {NON_FECAL_GI}",
+    }
+    assert f"{FECES} vs {NON_FECAL_GI} for CRC and {POOLED_STRATIFIED}" in SUMMARY_BH_SELECTION_RULE
+
+    pairwise_with_untested = pairwise.copy()
+    pairwise_with_untested.loc[0, "u6_signature_perm_p"] = math.nan
+    summary_with_untested = significant_results_summary_table(
+        compartments,
+        scenario_direction,
+        pairwise_with_untested,
+        interaction,
+        scenario_interaction,
+    )
+    assert set(
+        summary_with_untested.loc[summary_with_untested["p_value"].isna(), "significance_tier"]
+    ) == {"not tested"}
+    assert set(summary_with_untested["bh_family_size"]) == {28}
+    assert set(summary_with_untested["bh_unfiltered_summary_rows"]) == {29}
+
+    for token in (
+        "direction_summary_rows",
+        "convergence_summary_rows",
+        "interaction_summary_rows",
+        "non-missing",
+        "does not repair",
+    ):
+        assert token in SUMMARY_BH_SELECTION_RULE
+
+    defs = summary_definitions(100)
+    assert "nominal" in defs["significance_tier"]
+    assert SUMMARY_BH_SELECTION_RULE in defs["bh_q_within_table"]
+    assert defs["bh_selection_rule"] == SUMMARY_BH_SELECTION_RULE
+
+    # #1485: verify analysis.main() writes the new columns and definitions to disk
+    input_dir = _main_input_root(tmp_path / "inputs")
+    out_dir = tmp_path / "out"
+    rc = analysis_main(
+        [
+            "--input-root",
+            str(input_dir),
+            "--output-dir",
+            str(out_dir),
+            "--permutations",
+            "10",
+            "--repin",
+        ]
+    )
+    assert rc == 0
+    written_summary = pd.read_csv(out_dir / "significant_results_summary.tsv", sep="\t")
+    assert {
+        "bh_q_within_table",
+        "bh_family_size",
+        "bh_unfiltered_summary_rows",
+        "bh_selection_rule",
+    }.issubset(written_summary.columns)
+    assert set(written_summary["bh_selection_rule"]) == {SUMMARY_BH_SELECTION_RULE}
+    assert set(written_summary["bh_unfiltered_summary_rows"]) == {len(written_summary)}
+    assert set(written_summary["bh_family_size"]) == {int(written_summary["p_value"].notna().sum())}
+    for label in set(written_summary["significance_tier"]):
+        assert label == "not tested" or "nominal" in str(label)
+
+    written_json = json.loads((out_dir / "cellulose_decr_summary.json").read_text(encoding="utf-8"))
+    assert "nominal" in written_json["definitions"]["significance_tier"]
+    assert SUMMARY_BH_SELECTION_RULE in written_json["definitions"]["bh_q_within_table"]
+    assert written_json["definitions"]["bh_selection_rule"] == SUMMARY_BH_SELECTION_RULE

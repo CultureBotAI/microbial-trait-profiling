@@ -9,6 +9,14 @@ lists, and tables are formatted as Markdown.
 repository evidence review; its claims and proposed tests remain attributed to
 Rosalind.
 
+**Statistical-use boundary (#1449):** This preserved transcript supplies no
+run-bound testing families, sizes or corrected probabilities. Its predictions
+and mechanistic wording are hypotheses, not significant or causal results of
+this repository. Any reuse must follow the [MT policy](../methods/multiple_testing_policy.md):
+bind the result to its actual source, name the family/size/procedure/threshold,
+and label a p-only statement nominal. No current result or correction is
+implied by keeping the transcript unchanged.
+
 Previous exchange: [first response and repository review](rosalind-six-trait-interpretation.md).
 Tracking issue: [#187](https://github.com/CultureBotAI/microbial-trait-profiling/issues/187).
 

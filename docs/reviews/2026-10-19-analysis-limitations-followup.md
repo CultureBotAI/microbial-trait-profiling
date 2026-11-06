@@ -14,8 +14,11 @@ records. Native composition derives its human paired cohort from the core
 experiment table; it no longer needs a pre-existing figure metadata table in
 this mode. Historical zero-total pairs remain included and explicitly counted.
 The native study-level t-test and its support/variance-filtered BH family are
-preserved. Log-ratio BY15 results and the separately corrected full directional
-screen retain their own estimands and families.
+preserved (`mt-core-native-study-t` in the later
+[registry](../../methods/multiple_testing_families.yaml)). Correcting within this
+selected family does not correct its support/variance selection. Log-ratio BY15
+results (`mt-core-jed-log-ratio-sign`, all unordered focal trait pairs) and the
+separately corrected full directional screen retain their own estimands and families.
 
 Core-bound composition imports require matching profile and experiment hashes.
 Checking experiment identity matters because changing host assignments can
@@ -38,7 +41,8 @@ Native composition results with too few studies, all-zero study contrasts, or
 insufficient study variance remain untested (#706). The native producer records
 these states explicitly; the importer retains descriptive study effects and any
 separately testable pair-level result without inventing primary p-values, q-values
-or confidence intervals. Their original nominal BH family remains recorded.
+or confidence intervals. Their original declared BH correction family remains
+recorded; BH-adjusted q-values are not nominal p-values.
 
 Calibration rejects malformed, negative, fractional and infinite counts before
 binarizing the taxon matrix. A failed or partial execution cannot report a
@@ -89,7 +93,9 @@ actual 2026-10-19 execution time and supplied core-derived input paths; input
 checksums and numerical results are unchanged. The original report remains a
 historical account of that earlier generation.
 
-At q=0.05 and q=0.001, respectively, complete-null empirical FDR remains zero,
+For the diagnostic upper-tail BH family, corrected separately over the eligible
+profile–trait tests in each replicate (`mt-core-calibration-ora-upper`), at
+q=0.05 and q=0.001, respectively, complete-null empirical FDR remains zero,
 mixed declared-spike FDP means are 0.222857 and 0.075, and TPR is 0.000428266 at
 both thresholds. These results do not establish mixed-signal FDR control.
 
@@ -133,6 +139,13 @@ used 363/363 and replaced K with a profile count sum. The corrected density
 summary includes 11 zero-hit and eight one-hit traits omitted from the earlier
 298-trait selected ranking. These remain descriptive diagnostics, not a test
 of calibration or a biological mechanism.
+
+Here "significant profiles" means the pooled-stratum global BH/q-and-fold rule
+(`mt-core-stratified-ora-pooled`), corrected across all eligible profile–trait
+tests, not across profiles of this trait alone. The
+[historical refresh table](2026-10-19-ora-provenance-refresh.md#verification-results)
+records the executed family size and the shared q/fold thresholds. These counts
+are historical and are not promoted to a current-run discovery claim.
 
 ## Native influence standing (#671)
 

@@ -20,7 +20,8 @@ outputs (the `off` table identified under "What is in it now") this removes **55
 (`trait-visualization/trait-profile-investigation/stratified_stats_provenance.json`). It changes the tie counts rather
 than the directions: facultatively aerobic 32 to 24, arsenate reduction 324 to
 316, moderately halophilic 101 to 93. All six fraction traits remain significant
-at q <= 0.05. Since #783 the oxygen guild figure, and with it the figure-cell
+at BH q <= 0.05 within `mt-supp-table1-direction`, the six requested fraction
+traits of that run. Since #783 the oxygen guild figure, and with it the figure-cell
 inventory, leaves those pairs out too. Every test and figure cell computed here
 shares one population, chosen by the repository owner on 2026-10-22 for the
 reasons given in [`three_arm_statistics.md`](three_arm_statistics.md). The rows
@@ -144,12 +145,23 @@ full screen were not regenerated. Regenerating these files with every input is #
 | aggregated profile support | 6 | - | 0 | not a test | not a test |
 | oxygen guild cell support | 4,160 | - | 0 | not a test | not a test |
 
-The guild McNemar is a single uncorrected test. It carries p = 3.6e-06 over 922
+The historical source-family IDs and executed sizes are retained in
+`integrated_evidence.tsv` (`family_id`, `family_size`, `correction_method`,
+`q_threshold`, `strict_q_threshold`) and `integrated_evidence_families.tsv`.
+The row count of a displayed six-trait subset is not the size of its imported
+native family. Current imports map study t-values to `mt-core-native-study-t`
+and secondary pair t-values to `mt-core-native-pair-t`; they must not be used
+to relabel an archived result without its recorded estimator/population.
+The focal fraction and ratio rows use `mt-supp-table1-direction` (BH) and
+`mt-core-jed-log-ratio-sign` (BY), respectively, with the historical sizes shown
+above. No correction combines those families or the two displayed thresholds.
+
+The guild McNemar is a single nominal, uncorrected test. It carries nominal p = 3.6e-06 over 922
 studies and leaves q blank, so it has no threshold decision in either column: a
 decision in this table is a decision on a corrected value and there is no
 corrected value here. Since #783 the figure's own McNemar is the same test on the
-same population: 410 and 287 discordant studies, p = 3.6e-06. Before, the figure
-kept zero-total pairs and reported p = 2.0e-06 over 932 studies.
+same population: 410 and 287 discordant studies, nominal p = 3.6e-06. Before, the figure
+kept zero-total pairs and reported nominal p = 2.0e-06 over 932 studies.
 An earlier version wrote the uncorrected p into `q_value` as well, which made it
 look like a one-member FDR family (#294).
 

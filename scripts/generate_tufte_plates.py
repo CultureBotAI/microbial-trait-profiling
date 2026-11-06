@@ -1538,7 +1538,7 @@ def build_methods_plate2(repo: Path, out_dir: Path) -> Path:
             "2. Coupled Oxygen-Guild McNemar Test",
             f"{mcnemar.discordant:,} discordant studies: {mcnemar.aerobe_up_anaerobe_down} "
             f"Aerobe↑/Anaerobe↓\nvs {mcnemar.anaerobe_up_aerobe_down} opposite (OR = "
-            f"{mcnemar.odds_ratio:.2f}, p = {sci(mcnemar.p_value)})",
+            f"{mcnemar.odds_ratio:.2f}, nominal p = {sci(mcnemar.p_value)}, 1 test)",
             "#fef9ec",
         ),
         (
@@ -3132,9 +3132,9 @@ def build_plate4(repo: Path, out_dir: Path) -> Path:
     n_wilc_tests = sum(has_value(r.get("p_value")) for r in wilc_tests)
     ax_lead.set_title(
         "B. Lead Fecal Disease \N{MULTIPLICATION SIGN} Trait Contrasts (PD, CRC, HIV, "
-        f"COVID-19; {n_lead_rows} shown)\nStudy win/loss, Fisher FDR (★), "
-        f"Wilcoxon nominal p/BH q ({n_wilc_tests} tests)",
-        fontsize=8.35,
+        f"COVID-19; {n_lead_rows} shown)\nStudy win/loss, Profile Fisher FDR (★), "
+        f"Study Wilcoxon nominal p/BH q ({n_wilc_tests} tests)",
+        fontsize=7.5,
         fontweight="bold",
         loc="left",
         pad=12,
@@ -3440,11 +3440,11 @@ def build_plate5(repo: Path, out_dir: Path) -> Path:
 
     fig.text(
         0.05,
-        0.025,
+        0.008,
         f"{RERUN_SOURCE} · condition_oxygen_switch_scores.tsv, "
         "taxa_cross_disease_switch_summary.tsv. Pooled McNemar OR = "
         f"{mcnemar.odds_ratio:.3f} ({mcnemar.aerobe_up_anaerobe_down} vs "
-        f"{mcnemar.anaerobe_up_aerobe_down} st., p = {fmt_p(mcnemar.p_value)});\n"
+        f"{mcnemar.anaerobe_up_aerobe_down} st., nominal p = {fmt_p(mcnemar.p_value)}, 1 test);\n"
         f"{cellulose['crc_source']}",
         fontsize=7.8,
         color=MUTED,
@@ -4491,10 +4491,10 @@ def build_plate7(repo: Path, out_dir: Path) -> Path:
         f"Table 1 ★ + {groups['three_arm_additional']} Expanded 3-Arm ✓ + "
         f"{groups['ora_inverted']} ORA-Inv. ▲"
         + (f" + {groups['not_concordant']} Discordant ■" if groups["not_concordant"] else "")
-        + f")\nOriented {oriented.tested_studies:,} st. (○, {n_oriented_t1} Table 1 "
-        f"tests): Cellulose {cellulose.share_up:.1%}↑/{cellulose.share_down:.1%}↓ "
+        + f")\nOriented {oriented.tested_studies:,}-study filter (○, {n_oriented_t1} Table 1 "
+        f"nominal tests): Cellulose {cellulose.share_up:.1%}↑/{cellulose.share_down:.1%}↓ "
         f"(nominal p={fmt_p(cellulose.p_value)}, BH₆ q={fmt_p(cellulose.q_value)})",
-        fontsize=8.35,
+        fontsize=7.5,
         fontweight="bold",
         loc="left",
         pad=10,

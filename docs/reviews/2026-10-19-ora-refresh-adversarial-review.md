@@ -41,7 +41,11 @@ also agree. Logs record successful independent verification of enrichment,
 depletion and integrated consumer records.
 
 The regenerated results retain 66,240 pooled enrichment discoveries and 23
-pooled depletion discoveries. The evidence table retains its 1,912 records,
+pooled depletion discoveries. These are the separate upper-tail
+`mt-core-ora-upper-global` and lower-tail `mt-core-ora-lower-global` BH families;
+their historical family sizes and q/fold decision rules are in the
+[execution report](2026-10-19-ora-provenance-refresh.md#verification-results).
+They are not a joint-tail discovery family. The evidence table retains its 1,912 records,
 including 40 method results. The 1,780 assessment records preserve 25 calibration
 details, 19 orientation details, 1,701 influence details and 35 procedure-status
 rows. The one-replicate calibration FAIL/insufficient-budget findings, 58/60
