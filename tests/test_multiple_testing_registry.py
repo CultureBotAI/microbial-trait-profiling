@@ -40,7 +40,7 @@ class Limits:
     summary_bytes: int = 33_554_432
     name_characters: int = 4_096
     alias_steps: int = 64
-    derivation_steps: int = 100_000
+    derivation_steps: int = 1_000_000
 
 
 DEFAULT_LIMITS = Limits()
@@ -334,7 +334,8 @@ def visible_by_derivation(unit: Unit, scope: str) -> bool:
         if work > unit.limits.derivation_steps:
             raise DiscoveryLimitError(
                 f"derivation work budget exceeded: {unit.path}:{scope} "
-                f"(limit {unit.limits.derivation_steps})"
+                f"(attempted {work}, limit {unit.limits.derivation_steps}). "
+                "Simplify the function or review and raise Limits.derivation_steps."
             )
 
     def copy_env(env: dict[str, Fact]) -> dict[str, Fact]:

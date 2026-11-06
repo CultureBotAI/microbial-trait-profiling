@@ -1,10 +1,12 @@
-"""Pin conservative declared-scope reads in the BY witness guard (#1609).
+"""Pin declared-scope reads and known enclosing-binding limits (#1609, #1684).
 
 The resolver does not implement declaration-aware lexical lookup. An explicit
 ``global`` or ``nonlocal`` therefore invalidates the declared name, including
 callables; it is not evidence that the runtime object is the imported primitive.
-Undeclared free vectors retain the existing bounded name/extent model. These
-regressions pin behavior already present on main, rather than introduce a fix.
+Undeclared free vectors retain the existing bounded name/extent model. Enclosing
+parameters and loop targets can also be credited as imported callables when no
+declaration intervenes. These tests pin existing behavior, including that known
+acceptance limitation; they do not establish the runtime callable's identity.
 """
 
 from __future__ import annotations
@@ -61,6 +63,32 @@ def test_declared_vector_rebound_before_whole_calculation_is_supported(scope: Sc
     # Invalidation is a fact reset, not a permanent ban on the enclosing anchor.
     source, anchor = vector_source(scope, f"{scope} p\np = other\n" + EXTENT + RESULT)
     assert derived(source) == (anchor,)
+
+
+@pytest.mark.parametrize("callable_name", ["np", "benjamini_hochberg"])
+def test_undeclared_enclosing_callable_parameters_are_known_acceptances(callable_name: str) -> None:
+    # Runtime lookup reaches the outer argument, but the bounded resolver still
+    # credits the module import when there is no nonlocal declaration.
+    function = "def screen(p):\n" + indent(EXTENT + RESULT, "    ") + "return screen\n"
+    source = IMPORTS + f"def outer({callable_name}):\n" + indent(function, "    ")
+    assert derived(source) == ("outer.screen",)
+
+
+def test_undeclared_enclosing_numpy_loop_target_is_a_known_acceptance() -> None:
+    function = "def screen(p):\n" + indent(EXTENT + RESULT, "    ") + "return screen\n"
+    source = IMPORTS + "def outer(mods):\n    for np in mods:\n" + indent(function, "        ")
+    assert derived(source) == ("outer.screen",)
+
+
+@pytest.mark.parametrize(
+    "binding", ["np = fake", "import math as np"], ids=["assignment", "import"]
+)
+def test_enclosing_numpy_assignment_and_import_are_rejected(binding: str) -> None:
+    # Unlike enclosing parameters and loop targets, these bindings resolve away
+    # from the module's NumPy import even without a nonlocal declaration.
+    function = "def screen(p):\n" + indent(EXTENT + RESULT, "    ") + "return screen\n"
+    source = IMPORTS + "def outer(fake):\n" + indent(binding + "\n" + function, "    ")
+    assert derived(source) == ()
 
 
 @pytest.mark.parametrize("callable_name", ["np", "benjamini_hochberg"])

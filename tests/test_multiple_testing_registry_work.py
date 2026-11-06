@@ -1,11 +1,19 @@
-"""Bound repeated derivation analysis, including small deeply nested ASTs (#1581)."""
+"""Bound derivation analysis and preserve real-anchor budget headroom (#1581, #1683)."""
 
+import re
 from dataclasses import replace
 from textwrap import indent
 
 import pytest
+import yaml
 
-from test_multiple_testing_registry import DEFAULT_LIMITS, DiscoveryLimitError, discover
+from test_multiple_testing_registry import (
+    DEFAULT_LIMITS,
+    REGISTRY,
+    ROOT,
+    DiscoveryLimitError,
+    discover,
+)
 from test_multiple_testing_registry_derived import PREFIX, source
 
 
@@ -36,12 +44,39 @@ def test_ordinary_derivations_still_provide_a_witness(text: str) -> None:
     assert discovered[("src/x.py", "screen")]["derived_procedures"] == {"BY"}
 
 
+def test_real_derived_by_anchors_use_at_most_quarter_of_default_budget() -> None:
+    """Use current registry claims, deduplicating anchors shared across families."""
+    registry = yaml.safe_load(REGISTRY.read_text(encoding="utf-8"))
+    anchors: set[tuple[str, str]] = {
+        (anchor["path"], anchor["function"])
+        for family in registry["families"]
+        for anchor in family["anchors"]
+        if "BY" in anchor.get("derived_procedures", {})
+    }
+    assert anchors, "The registry must supply real derived-BY headroom cases"
+    sources = {
+        path: (ROOT / path).read_text(encoding="utf-8") for path in sorted({p for p, _ in anchors})
+    }
+    limits = replace(DEFAULT_LIMITS, derivation_steps=DEFAULT_LIMITS.derivation_steps // 4)
+    discovered, _ = discover(sources, limits=limits)
+    for anchor in sorted(anchors):
+        assert "BY" in discovered[anchor].get("derived_procedures", set()), anchor
+
+
 def test_custom_work_budget_refuses_before_a_witness_is_credited() -> None:
     limits = replace(DEFAULT_LIMITS, derivation_steps=1)
-    with pytest.raises(DiscoveryLimitError, match="derivation work budget"):
+    with pytest.raises(DiscoveryLimitError, match="derivation work budget") as stopped:
         discover(
             {"src/x.py": source(PREFIX + "return np.clip(q * harmonic_sum, 0, 1)\n")}, limits=limits
         )
+    message = str(stopped.value)
+    assert "src/x.py:screen" in message
+    # One module visit plus its three body entries is charged before traversal.
+    # Report that attempted charge, not merely the limit or limit + 1.
+    assert re.search(r"\battempted 4\b", message)
+    assert re.search(r"\blimit 1\b", message)
+    assert "Simplify" in message
+    assert "Limits.derivation_steps" in message
 
 
 def test_environment_work_counts_toward_budget() -> None:
