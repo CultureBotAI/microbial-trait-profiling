@@ -11,6 +11,9 @@ numbers (#1572). They are excluded from default generation.
 :mod:`mtp.cellulose_decr.tufte_plates` remains available for audit only via
 ``just cellulose-decr-tufte --audit-retired``. Every historical plate, standalone
 SVG and HTML slide carries ``RETIRED: historical, unverified numbers (#1572)``.
+All 16 slides have their own HTML banner even without referenced images. Inline
+fig8/fig9 omit the duplicate SVG banner band and keep their original size;
+referenced plate files retain their own banners as separate products (#1738).
 A replacement built from current rerun data is pending under #1670.
 methods/cellulose_decr.md describes the analysis and figure pipeline.
 """

@@ -3,6 +3,9 @@
 The historical numbers are unverified; these are not current analysis outputs.
 Generation requires explicit ``--audit-retired`` / ``audit_retired=True`` and
 every canvas, standalone SVG and HTML slide carries a retirement warning.
+All 16 slides have their own HTML banner even without referenced images. Inline
+fig8/fig9 omit the duplicate SVG banner band and keep their original size;
+referenced plate files retain their own banners as separate products (#1738).
 Rebuilding the plates from current rerun data is pending under #1670.
 
 Reproduces the October 16 worked-example Tufte analytical plates and 16-slide deck
@@ -4299,14 +4302,11 @@ def render_slide_deck_html() -> str:
       }
     """
     html = html.replace("</style>", retirement_style + "</style>", 1)
-    plate_routes = {f"figures_tufte/{stem}.svg" for stem in PLATE_STEMS}
 
     def add_slide_warning(match: re.Match[str]) -> str:
         section = match.group()
-        images = re.findall(r'<img\b[^>]*\bsrc="([^"]+)"', section)
-        # These six saved plate SVGs already carry the warning on their canvas.
-        if any(source in plate_routes for source in images):
-            return section
+        # Every slide's own historical text needs a warning even if image files
+        # are absent. Referenced plates keep their separate product warnings.
         return re.sub(
             r"(<section\b[^>]*>)",
             lambda opening: (

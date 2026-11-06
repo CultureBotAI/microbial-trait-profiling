@@ -352,7 +352,7 @@ def _retirement_artist(figure: Figure) -> Text:
     return banner
 
 
-def _assert_retirement_save_crop(kwargs: dict[str, Any]) -> None:
+def _assert_retirement_save_crop(figure: Figure, kwargs: dict[str, Any]) -> None:
     """Pin effective Matplotlib defaults and explicit kwargs before a real export."""
     bbox = kwargs.get("bbox_inches")
     if bbox is None:
@@ -367,6 +367,44 @@ def _assert_retirement_save_crop(kwargs: dict[str, Any]) -> None:
     assert not isinstance(pad, bool)
     assert math.isfinite(pad), "Historical export padding must be finite"
     assert pad >= 0, "Negative export padding can crop away the retirement banner"
+    extra_artists = kwargs.get("bbox_extra_artists")
+    # Omission and None retain Matplotlib's default artist discovery.
+    if extra_artists is not None:
+        banner = _retirement_artist(figure)
+        assert any(artist is banner for artist in extra_artists), (
+            "bbox_extra_artists must include the figure's retirement banner"
+        )
+
+
+@pytest.mark.parametrize("extra_artists", ["empty", "legend_only"])
+def test_save_crop_rejects_extra_artists_that_exclude_retirement_banner(
+    extra_artists: Literal["empty", "legend_only"],
+) -> None:
+    figure = Figure()
+    figure.text(0.5, 0.95, RETIREMENT_BANNER)
+    legend = figure.legend([], [], title="Historical series")
+    kwargs = {
+        "bbox_inches": "tight",
+        "pad_inches": 0.1,
+        "bbox_extra_artists": [] if extra_artists == "empty" else [legend],
+    }
+    with pytest.raises(AssertionError, match=r"bbox_extra_artists.*retirement banner"):
+        _assert_retirement_save_crop(figure, kwargs)
+
+
+@pytest.mark.parametrize("extra_artists", ["absent", "none", "banner_present"])
+def test_save_crop_accepts_default_or_banner_inclusive_extra_artists(
+    extra_artists: Literal["absent", "none", "banner_present"],
+) -> None:
+    figure = Figure()
+    banner = figure.text(0.5, 0.95, RETIREMENT_BANNER)
+    kwargs: dict[str, Any] = {"bbox_inches": "tight", "pad_inches": 0.1}
+    if extra_artists == "none":
+        # None retains Matplotlib's default artist discovery, as omission does.
+        kwargs["bbox_extra_artists"] = None
+    elif extra_artists == "banner_present":
+        kwargs["bbox_extra_artists"] = [figure.legend([], [], title="Historical series"), banner]
+    _assert_retirement_save_crop(figure, kwargs)
 
 
 def _retirement_save(
@@ -414,7 +452,7 @@ def retirement_export(tmp_path_factory: pytest.TempPathFactory) -> RetirementExp
         *args: Any,
         **kwargs: Any,
     ) -> None:
-        _assert_retirement_save_crop(kwargs)
+        _assert_retirement_save_crop(figure, kwargs)
         if isinstance(destination, PdfPages):
             saves.append(_retirement_save(figure, "packet_figure", "packet page", "pdf"))
             figure_savefig(figure, destination, *args, **kwargs)
@@ -445,7 +483,7 @@ def retirement_export(tmp_path_factory: pytest.TempPathFactory) -> RetirementExp
             figure.set_dpi(original_dpi)
 
     def checked_packet_savefig(packet: PdfPages, figure: Figure, **kwargs: Any) -> None:
-        _assert_retirement_save_crop(kwargs)
+        _assert_retirement_save_crop(figure, kwargs)
         before = pagecount(packet)
         page = before + 1
         saves.append(_retirement_save(figure, "packet", f"packet page {page}", "pdf"))
@@ -648,6 +686,7 @@ def test_written_html_banners_keep_original_slide_content_clear(generated_tufte_
     _assert_html_banner_style(html_text)
     sections = re.findall(r"<section\b.*?</section>", html_text, re.DOTALL)
     assert len(sections) == 16
+    assert html_text.count('<div class="retirement-banner">') == 16
     for number, section in enumerate(sections, start=1):
         banners = re.findall(r'<div class="retirement-banner">(.*?)</div>', section)
         references = [
@@ -661,20 +700,22 @@ def test_written_html_banners_keep_original_slide_content_clear(generated_tufte_
         assert references == expected_references, (
             f"Written slide {number}: historical image changed"
         )
-        assert banners == ([] if expected_references else [RETIREMENT_BANNER]), number
-        embedded_svgs = [
-            ET.fromstring((generated_tufte_dir / route).read_text(encoding="utf-8"))
-            for route in references
-        ]
-        embedded_svgs.extend(
-            ET.fromstring(raw_svg) for raw_svg in re.findall(r"<svg\b.*?</svg>", section, re.DOTALL)
-        )
-        embedded_banners = sum(
+        assert banners == [RETIREMENT_BANNER], number
+        for route in references:
+            referenced_svg = ET.fromstring(
+                (generated_tufte_dir / route).read_text(encoding="utf-8")
+            )
+            referenced_banners = sum(
+                " ".join("".join(node.itertext()).split()) == RETIREMENT_BANNER
+                for node in referenced_svg.findall(".//{*}text")
+            )
+            assert referenced_banners == 1, f"Separate plate product {route}: warning count"
+        inline_banners = sum(
             " ".join("".join(node.itertext()).split()) == RETIREMENT_BANNER
-            for svg in embedded_svgs
-            for node in svg.findall(".//{*}text")
+            for raw_svg in re.findall(r"<svg\b.*?</svg>", section, re.DOTALL)
+            for node in ET.fromstring(raw_svg).findall(".//{*}text")
         )
-        assert len(banners) + embedded_banners == 1, f"Written slide {number}: warning count"
+        assert len(banners) + inline_banners == 1, f"Written slide {number}: warning count"
     banner = _written_css_properties(html_text, {".slide > .retirement-banner"})
     slide = _written_css_properties(html_text, {".slide"})
     cover = _written_css_properties(html_text, {".slide", ".cover-slide"})

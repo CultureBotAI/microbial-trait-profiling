@@ -323,6 +323,9 @@ Every newly generated audit plate, standalone SVG and HTML slide carries the ban
 `RETIRED: historical, unverified numbers (#1572)`. Opting in reproduces the
 historical display; it does not validate its numbers or recompute them from current
 data. The tracked source snapshots and their source-pin tests remain audit evidence.
+All 16 slides carry their own HTML banner even when referenced images are missing.
+Inline fig8/fig9 omit their duplicate SVG banner band and keep their original size;
+referenced plate images remain separate products with their own banners (#1738).
 A replacement built from current rerun data is pending under
 [#1670](https://github.com/CultureBotAI/microbial-trait-profiling/issues/1670).
 The separate seven-plate generator, `scripts/generate_tufte_plates.py`, is unaffected.
@@ -339,6 +342,7 @@ only the exact retirement banner; historical numbers remain pinned. The helper
 refuses existing output files. Full-clone tests resolve the abbreviation and
 check the full object ID against this record; they skip only outside Git or in a
 shallow checkout.
+CI's shallow checkout skips the real-Git pin check; that check runs only in full clones (#1740).
 
 **Building the inputs.**
 

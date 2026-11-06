@@ -166,6 +166,7 @@ def test_each_of_sixteen_html_slides_has_its_own_retirement_banner() -> None:
     html = tufte_plates.render_slide_deck_html()
     sections = re.findall(r"<section\b.*?</section>", html, re.DOTALL)
     assert len(sections) == 16
+    assert html.count('<div class="retirement-banner">') == 16
     for number, section in enumerate(sections, start=1):
         banners = re.findall(r'<div class="retirement-banner">(.*?)</div>', section)
         references = [
@@ -175,15 +176,15 @@ def test_each_of_sixteen_html_slides_has_its_own_retirement_banner() -> None:
         ]
         expected_references = [PLATE_SLIDE_ROUTES[number]] if number in PLATE_SLIDE_ROUTES else []
         assert references == expected_references, f"Slide {number}: unexpected historical image"
-        assert banners == ([] if expected_references else [BANNER]), number
+        assert banners == [BANNER], number
         inline_banners = sum(
             " ".join("".join(node.itertext()).split()) == BANNER
             for raw_svg in re.findall(r"<svg\b.*?</svg>", section, re.DOTALL)
             for node in ET.fromstring(raw_svg).findall(".//{*}text")
         )
-        # The six referenced plates have one banner each, independently checked by
-        # the canvas tests and by reading their saved SVGs in the export test.
-        assert len(banners) + inline_banners + len(expected_references) == 1, number
+        # Referenced plate files are separate products. The HTML must warn even
+        # when those files are unavailable, without duplicating an inline warning.
+        assert len(banners) + inline_banners == 1, number
 
 
 @pytest.mark.parametrize(
