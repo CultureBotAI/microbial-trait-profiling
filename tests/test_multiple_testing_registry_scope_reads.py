@@ -84,12 +84,19 @@ def test_undeclared_enclosing_numpy_loop_target_is_a_known_acceptance() -> None:
 
 @pytest.mark.parametrize(
     "binding",
-    ["np = load(fake)", "np: object = fake", "np, other = fake, 1"],
-    ids=["call-value", "annotated", "tuple-target"],
+    [
+        "np = load(fake)",
+        "np: object = fake",
+        "np, other = fake, 1",
+        "(np := fake)",
+        "with fake as np:\n    pass",
+        "match fake:\n    case np:\n        pass",
+    ],
+    ids=["call-value", "annotated", "tuple-target", "walrus", "with-as", "match-capture"],
 )
 def test_other_enclosing_numpy_assignments_are_known_acceptances(binding: str) -> None:
     # Only an import or a plain `name = dotted.name` assignment is modelled as an
-    # enclosing binding (#1699); these forms still let the module import be credited.
+    # enclosing binding (#1699, #1711); these forms still let the module import be credited.
     function = "def screen(p):\n" + indent(EXTENT + RESULT, "    ") + "return screen\n"
     source = IMPORTS + "def outer(fake):\n" + indent(binding + "\n" + function, "    ")
     assert derived(source) == ("outer.screen",)
