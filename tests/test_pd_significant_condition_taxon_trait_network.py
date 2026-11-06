@@ -643,15 +643,15 @@ def test_network_tables_figure_and_methods_label_nominal_p_values(
     methods_path = tmp_path / "methods.md"
     network.write_methods_summary(eligibility, taxon_tests, trait_tests, nodes, edges, methods_path)
     methods_text = methods_path.read_text(encoding="utf-8")
-    for fragment in (
-        "`displayed_p_value_count` counts finite p-values in exported edges separately by "
-        "inferential edge class",
-        "`n_tests` preserves the source table count (including finite tests outside support "
-        "eligibility)",
-        "`bh_family_size` preserves its support-eligible padded BH family",
-        "Annotation edges have no inferential counts.",
-    ):
-        assert fragment in methods_text
+    assert (
+        "- In the edge export, `displayed_p_value_count` counts finite p-values in "
+        "exported edges separately by inferential edge class; `n_tests` is the number "
+        "of finite p-values (tests run) in the source table, including rows outside "
+        "support eligibility that are not in the BH family, and `bh_family_size` "
+        "preserves its support-eligible padded BH family. Annotation edges have no "
+        "inferential counts."
+    ) in methods_text
+    assert "preserves the source table count" not in methods_text
     assert (
         "Reported `p_value` columns and Panel C `nominal p` labels are nominal "
         "(uncorrected) across the `1` tested (`2` BH-family) condition-taxon tests and "

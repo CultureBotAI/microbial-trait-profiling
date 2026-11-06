@@ -561,8 +561,9 @@ def test_composition_null_pvalues_are_marked_as_uncorrected_calibration_diagnost
     tmp_path: Path,
     synthetic_paired_profiles: pd.DataFrame,
 ) -> None:
-    """#1410, #1485, #1488: null_p_value and saved artifacts carry unified diagnostic labels."""
+    """#1410, #1485, #1488, #1584: composition artifacts carry composition-specific nominal note."""
     import mtp.calibration as cal
+    import mtp.composition_calibration.composition as comp
     from mtp.composition_calibration.composition import save_composition_calibration_artifacts
 
     traits = ["trait_A", "trait_B", "trait_C"]
@@ -588,9 +589,25 @@ def test_composition_null_pvalues_are_marked_as_uncorrected_calibration_diagnost
         cal.P_VALUE_DIAGNOSTICS_CORRECTION
     }
     assert set(null_pvals_df["n_tests"]) == {len(traits)}
+    expected_note = (
+        "null_p_value, observed_p, null_type_i_alpha_05 (at nominal p <= 0.05), "
+        "and type_i_error_metrics (at nominal p <= 0.05, 0.01, 0.001) "
+        "are uncorrected nominal p-value calibration diagnostics, not inferential results"
+    )
+    assert str(comp.P_VALUE_DIAGNOSTICS_NOTE) == expected_note
+    assert "ALPHA" not in comp.P_VALUE_DIAGNOSTICS_NOTE
+    for sign_test_only_token in (
+        "rejections_p",
+        "rejection_rate_p",
+        "null_tests_rejected_p",
+        "smallest_observed_p",
+        "attainable_p_below_alpha",
+        "attainable_p_above_alpha",
+    ):
+        assert sign_test_only_token not in comp.P_VALUE_DIAGNOSTICS_NOTE
     assert summary_dict["p_value_diagnostics_role"] == cal.P_VALUE_DIAGNOSTICS_ROLE
     assert summary_dict["p_value_diagnostics_correction"] == cal.P_VALUE_DIAGNOSTICS_CORRECTION
-    assert summary_dict["p_value_diagnostics"] == cal.P_VALUE_DIAGNOSTICS_NOTE
+    assert summary_dict["p_value_diagnostics"] == expected_note
 
     saved = save_composition_calibration_artifacts(
         summary_dict, summary_df, replicates_df, null_pvals_df, table1_df, tmp_path
@@ -604,4 +621,4 @@ def test_composition_null_pvalues_are_marked_as_uncorrected_calibration_diagnost
     written_summary = json.loads(saved["summary_json"].read_text(encoding="utf-8"))
     assert written_summary["p_value_diagnostics_role"] == "calibration_diagnostic"
     assert written_summary["p_value_diagnostics_correction"] == "none (nominal)"
-    assert written_summary["p_value_diagnostics"] == cal.P_VALUE_DIAGNOSTICS_NOTE
+    assert written_summary["p_value_diagnostics"] == expected_note

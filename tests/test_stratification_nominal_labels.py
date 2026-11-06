@@ -331,15 +331,106 @@ def test_fdr_report_exports_retain_post_1489_schema_and_text(
         assert f"{1:<8} {20:<8} {20:<8} {1:<14} {1:<12} {100.0:<8.1f}%" in report
 
 
-def test_nominal_nonpooled_stratum_keeps_the_mixed_report_labels(tmp_path: Path) -> None:
+@pytest.mark.parametrize(
+    ("pooled_spec", "feces_spec", "expected_pooled_hit_label"),
+    [
+        (("fdr_q", "global", "FDR q"), ("p_value", "none", "nominal p"), "FDR hits"),
+        (("p_value", "none", "nominal p"), ("fdr_q", "global", "FDR q"), "Nominal hits"),
+        (("fdr_q", "global", "FDR q"), ("p_value", "global", "nominal p"), "FDR hits"),
+    ],
+    ids=["pooled-fdr-feces-nominal", "pooled-nominal-feces-fdr", "nominal-with-global-scope"],
+)
+def test_nominal_nonpooled_stratum_keeps_the_mixed_report_labels(
+    tmp_path: Path,
+    pooled_spec: tuple[str, str, str],
+    feces_spec: tuple[str, str, str],
+    expected_pooled_hit_label: str,
+) -> None:
+    pooled_type, pooled_scope, pooled_basis = pooled_spec
+    feces_type, feces_scope, feces_basis = feces_spec
     outputs = {
-        "pooled": _outputs(tmp_path, "pooled", "fdr_q", "global"),
-        "feces": _outputs(tmp_path, "feces", "p_value", "none"),
+        "pooled": _outputs(tmp_path, "pooled", pooled_type, pooled_scope),
+        "feces": _outputs(tmp_path, "feces", feces_type, feces_scope),
     }
-    summary, text = generate_sensitivity_reports(outputs, tmp_path / "reports")
-    assert "# feces-Hit-Statistic: nominal p\n" in summary.read_text(encoding="utf-8")
-    assert "# pooled-Hit-Statistic: FDR q\n" in summary.read_text(encoding="utf-8")
-    assert "Hit statistic: nominal p | FDR scope: none" in text.read_text(encoding="utf-8")
+    report_dir = tmp_path / "reports"
+    summary, text = generate_sensitivity_reports(outputs, report_dir)
+    summary_text = summary.read_text(encoding="utf-8")
+    report_text = text.read_text(encoding="utf-8")
+    assert f"# pooled-Threshold-Statistic: {pooled_basis}\n" in summary_text
+    assert f"# pooled-Hit-Statistic: {pooled_basis}\n" in summary_text
+    assert f"# pooled-FDR-Scope: {pooled_scope}\n" in summary_text
+    assert f"# feces-Threshold-Statistic: {feces_basis}\n" in summary_text
+    assert f"# feces-Hit-Statistic: {feces_basis}\n" in summary_text
+    assert f"# feces-FDR-Scope: {feces_scope}\n" in summary_text
+    traits = pd.read_csv(summary, sep="\t", comment="#")
+    for name, basis, scope in [
+        ("pooled", pooled_basis, pooled_scope),
+        ("feces", feces_basis, feces_scope),
+    ]:
+        assert traits[f"{name}_best_stat_basis"].tolist() == [basis]
+        assert traits[f"{name}_significance_basis"].tolist() == [basis]
+        assert traits[f"{name}_fdr_scope"].tolist() == [scope]
+    density = pd.read_csv(report_dir / "annotation_density_deciles.tsv", sep="\t")
+    assert density["threshold_statistic"].tolist() == [pooled_basis]
+    assert density["hit_statistic"].tolist() == [pooled_basis]
+    assert density["fdr_scope"].tolist() == [pooled_scope]
+    assert f"Hit statistic: {pooled_basis} | FDR scope: {pooled_scope}" in report_text
+    assert f"Hit statistic: {feces_basis} | FDR scope: {feces_scope}" in report_text
+    assert (
+        f"{expected_pooled_hit_label}: traits with any test passing "
+        f"the declared {pooled_basis} and fold thresholds." in report_text
+    )
+    assert "Sig Traits:" not in report_text
+    assert (
+        "Support-state names retain 'significant'; interpret each stratum using "
+        "its hit statistic and FDR scope above." in report_text
+    )
+
+
+@pytest.mark.parametrize(
+    "strata_specs",
+    [
+        {"pooled": ("fdr_q", None)},
+        {"pooled": ("fdr_q", "global"), "feces": ("fdr_q", None)},
+    ],
+    ids=["single-undeclared-scope", "mixed-global-and-undeclared-scope"],
+)
+def test_fdr_stratum_with_undeclared_scope_keeps_explicit_report_labels(
+    tmp_path: Path,
+    strata_specs: dict[str, tuple[str, str | None]],
+) -> None:
+    outputs = {
+        name: _outputs(tmp_path, name, stat_type, scope)
+        for name, (stat_type, scope) in strata_specs.items()
+    }
+    report_dir = tmp_path / "reports"
+    summary, text = generate_sensitivity_reports(outputs, report_dir)
+    summary_text = summary.read_text(encoding="utf-8")
+    report_text = text.read_text(encoding="utf-8")
+    traits = pd.read_csv(summary, sep="\t", comment="#")
+    for name, (_stat_type, scope) in strata_specs.items():
+        expected_scope = scope or "unknown"
+        assert f"# {name}-Threshold-Statistic: FDR q\n" in summary_text
+        assert f"# {name}-Hit-Statistic: FDR q\n" in summary_text
+        assert f"# {name}-FDR-Scope: {expected_scope}\n" in summary_text
+        assert traits[f"{name}_best_stat_basis"].tolist() == ["FDR q"]
+        assert traits[f"{name}_significance_basis"].tolist() == ["FDR q"]
+        assert traits[f"{name}_fdr_scope"].tolist() == [expected_scope]
+        assert f"Hit statistic: FDR q | FDR scope: {expected_scope}" in report_text
+    pooled_scope = strata_specs["pooled"][1] or "unknown"
+    density = pd.read_csv(report_dir / "annotation_density_deciles.tsv", sep="\t")
+    assert density["threshold_statistic"].tolist() == ["FDR q"]
+    assert density["hit_statistic"].tolist() == ["FDR q"]
+    assert density["fdr_scope"].tolist() == [pooled_scope]
+    assert (
+        "FDR hits: traits with any test passing the declared FDR q and fold thresholds."
+        in report_text
+    )
+    assert "Sig Traits:" not in report_text
+    assert (
+        "Support-state names retain 'significant'; interpret each stratum using "
+        "its hit statistic and FDR scope above." in report_text
+    )
 
 
 @pytest.mark.parametrize("stat_type", [None, "p_value", "fdr_q"])

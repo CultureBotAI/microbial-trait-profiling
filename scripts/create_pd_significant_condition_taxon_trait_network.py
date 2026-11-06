@@ -1656,8 +1656,9 @@ def write_methods_summary(
         ),
         (
             "- In the edge export, `displayed_p_value_count` counts finite p-values in "
-            "exported edges separately by inferential edge class; `n_tests` preserves "
-            "the source table count (including finite tests outside support eligibility), "
+            "exported edges separately by inferential edge class; `n_tests` is the "
+            "number of finite p-values (tests run) in the source table, including rows "
+            "outside support eligibility that are not in the BH family, "
             "and `bh_family_size` preserves its support-eligible padded BH family. "
             "Annotation edges have no inferential counts."
         ),

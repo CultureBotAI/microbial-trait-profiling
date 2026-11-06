@@ -39,7 +39,6 @@ from scipy import stats
 
 from mtp.calibration import (
     P_VALUE_DIAGNOSTICS_CORRECTION,
-    P_VALUE_DIAGNOSTICS_NOTE,
     P_VALUE_DIAGNOSTICS_ROLE,
 )
 from mtp.composition_calibration.adapters.jed_composition import (
@@ -65,6 +64,12 @@ DEFAULT_OUTPUT_DIR = DERIVED_DATA_DIR / "calibration" / "composition"
 
 THRESHOLDS = (0.05, 0.01, 0.001)
 CORRECTIONS = ("BH", "BY")
+P_VALUE_DIAGNOSTICS_NOTE = (
+    "null_p_value, observed_p, null_type_i_alpha_05 "
+    f"(at nominal p <= {THRESHOLDS[0]}), and type_i_error_metrics "
+    f"(at nominal p <= {', '.join(str(alpha) for alpha in THRESHOLDS)}) "
+    "are uncorrected nominal p-value calibration diagnostics, not inferential results"
+)
 
 __all__ = [
     "CORRECTIONS",
@@ -72,6 +77,7 @@ __all__ = [
     "DEFAULT_OUTPUT_DIR",
     "DEFAULT_PROFILES_PATH",
     "DEFAULT_REPLICATES",
+    "P_VALUE_DIAGNOSTICS_NOTE",
     "SEED",
     "STREAM",
     "THRESHOLDS",

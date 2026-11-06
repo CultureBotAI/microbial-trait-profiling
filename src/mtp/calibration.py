@@ -78,10 +78,9 @@ Q_THRESHOLD = 0.05
 P_VALUE_DIAGNOSTICS_ROLE = "calibration_diagnostic"
 P_VALUE_DIAGNOSTICS_CORRECTION = "none (nominal)"
 P_VALUE_DIAGNOSTICS_NOTE = (
-    "rejections_p, rejection_rate_p, null_tests_rejected_p (at nominal p <= ALPHA), "
-    "smallest_observed_p, attainable_p_below_alpha, attainable_p_above_alpha, and "
-    "null_p_value are uncorrected nominal p-value calibration diagnostics, not "
-    "inferential results"
+    f"rejections_p, rejection_rate_p, null_tests_rejected_p (at nominal p <= {ALPHA}), "
+    "smallest_observed_p, attainable_p_below_alpha, and attainable_p_above_alpha "
+    "are uncorrected nominal p-value calibration diagnostics, not inferential results"
 )
 #: One-sided 95% bound: the criteria ask whether a rate is demonstrably below a
 #: tolerance, not whether its two-sided interval happens to cover the nominal level.

@@ -854,6 +854,7 @@ def test_calibration_summary_marks_p_value_columns_as_uncorrected_diagnostics(
 ) -> None:
     """#1410, #1483, #1485, #1488: raw-p columns and status JSON carry nominal diagnostic labels."""
     import csv
+    import re
 
     import mtp.calibration as cal
 
@@ -877,17 +878,19 @@ def test_calibration_summary_marks_p_value_columns_as_uncorrected_diagnostics(
     assert rep_row["p_value_diagnostics_correction"] == "none (nominal)"
 
     note = str(cal.P_VALUE_DIAGNOSTICS_NOTE)
-    for token in (
-        "rejections_p",
-        "rejection_rate_p",
-        "null_tests_rejected_p (at nominal p <= ALPHA)",
-        "smallest_observed_p",
-        "attainable_p_below_alpha",
-        "attainable_p_above_alpha",
+    assert note == (
+        "rejections_p, rejection_rate_p, null_tests_rejected_p (at nominal p <= 0.05), "
+        "smallest_observed_p, attainable_p_below_alpha, and attainable_p_above_alpha "
+        "are uncorrected nominal p-value calibration diagnostics, not inferential results"
+    )
+    assert "ALPHA" not in note
+    for composition_only_token in (
         "null_p_value",
-        "are uncorrected nominal p-value calibration diagnostics, not inferential results",
+        "observed_p",
+        "null_type_i_alpha_05",
+        "type_i_error_metrics",
     ):
-        assert token in note
+        assert re.search(rf"\b{re.escape(composition_only_token)}\b", note) is None
 
     monkeypatch.setattr(
         cal,
