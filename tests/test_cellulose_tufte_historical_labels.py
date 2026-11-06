@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import ast
 import html
 import re
 import xml.etree.ElementTree as ET
 from collections.abc import Iterator
+from pathlib import Path
+from typing import Any
 
 import matplotlib.pyplot as plt
 import pytest
@@ -24,6 +27,42 @@ def _artist_texts(fig: Figure) -> list[str]:
 
 def _svg_texts(svg: str) -> list[str]:
     return [_plain("".join(node.itertext())) for node in ET.fromstring(svg).findall(".//{*}text")]
+
+
+def _producer_image_routes() -> list[str]:
+    """Read the small literal route table, without importing or running its producer."""
+    producer = Path(tufte_plates.__file__).with_name("figures.py")
+    assert producer.stat().st_size <= 262_144
+    source = producer.read_text(encoding="utf-8")
+    assert len(source.encode("utf-8")) <= 262_144
+    tree = ast.parse(source, filename=str(producer))
+    mains = [
+        node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == "main"
+    ]
+    assert len(mains) == 1
+    tables = [
+        node.value
+        for node in mains[0].body
+        if isinstance(node, ast.AnnAssign)
+        and isinstance(node.target, ast.Name)
+        and node.target.id == "plates"
+    ]
+    assert len(tables) == 1
+    table = tables[0]
+    assert isinstance(table, ast.Dict)
+    routes = []
+    for folder, entries in zip(table.keys, table.values, strict=True):
+        assert isinstance(folder, ast.Constant)
+        assert isinstance(folder.value, str)
+        assert isinstance(entries, ast.List)
+        for entry in entries.elts:
+            assert isinstance(entry, ast.Tuple)
+            assert len(entry.elts) == 3
+            stem = entry.elts[0]
+            assert isinstance(stem, ast.Constant)
+            assert isinstance(stem.value, str)
+            routes.append(f"{folder.value}/{stem.value}.svg")
+    return routes
 
 
 @pytest.fixture(scope="module")
@@ -334,18 +373,41 @@ def test_each_labelled_deck_subtitle_wraps_instead_of_truncating(
 def test_current_table_image_labels_are_scoped_to_the_correct_output_route(
     deck_sections: list[str], slide_number: int, image_src: str
 ) -> None:
-    """Pin the deck's public output routes from figures.main (#1544).
+    """Bind each slide's expected image to figures.main's actual routes (#1556).
 
     The table-driven generator and its outputs are documented in
     methods/cellulose_decr.md (the figures section) and the analysis README.
-    This checks each labelled slide's link, without executing or duplicating
-    the generator's table loading, calculations or rendering.
+    The literals keep the slide-to-figure identity pinned; the independent AST
+    read refuses a producer rename that would leave those literals stale.
+    No producer table loading, calculations or rendering are executed.
     """
+    assert _producer_image_routes()[slide_number - 8] == image_src
     section = deck_sections[slide_number - 1]
     assert re.findall(r'<img\s+src="([^"]+)"', section) == [image_src]
     subtitle = re.search(r'<p class="subtitle"[^>]*>(.*?)</p>', section, re.DOTALL)
     assert subtitle is not None
     assert "; figure drawn from current tables" in _plain(subtitle.group(1))
+
+
+def test_current_table_route_guard_rejects_a_renamed_producer_output(
+    deck_sections: list[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A current-table label must not survive a producer-only output rename (#1556)."""
+    producer = Path(tufte_plates.__file__).with_name("figures.py")
+    original = producer.read_text(encoding="utf-8")
+    old_stem = "fig1_overlap_and_null_models"
+    assert original.count(f'"{old_stem}"') == 1
+    changed = original.replace(f'"{old_stem}"', '"renamed_overlap_output"')
+    read_text = Path.read_text
+
+    def changed_producer(path: Path, *args: Any, **kwargs: Any) -> str:
+        return changed if path == producer else read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", changed_producer)
+    with pytest.raises(AssertionError):
+        test_current_table_image_labels_are_scoped_to_the_correct_output_route(
+            deck_sections, 8, f"figures_graphical/{old_stem}.svg"
+        )
 
 
 def test_deck_four_pair_footer_identifies_the_unknown_bh_family(deck_sections: list[str]) -> None:
