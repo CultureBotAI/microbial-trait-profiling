@@ -102,7 +102,7 @@ The native historical fallback can read the legacy pooled TSV when the regenerat
 
 The first full verification exposed pre-existing warnings. Minimal repairs replaced deprecated colormap mutation, handled exact constant t-test and zero-probability Fisher limits without changing the ordinary statistical path, and modernized LinkML checks with a 1.11 minimum (also addressing [#500](https://github.com/CultureBotAI/microbial-trait-profiling/issues/500)). The standard `just lock` invocation migrated lockfile metadata to the installed pinned uv format; dependency package versions did not change. These validation repairs did not regenerate parallel figure or coupling outputs.
 
-Work was isolated in `/private/tmp/mtp-pipeline-20261017` on the issue-linked branch `551-integrate-native-evidence-and-ora-calibration`. The parallel cellulose, methods, slide files, and existing main-checkout edits were preserved. No ad hoc helper scripts were needed.
+Work was isolated in `<temp dir>/mtp-pipeline-20261017` on the issue-linked branch `551-integrate-native-evidence-and-ora-calibration`. The parallel cellulose, methods, slide files, and existing main-checkout edits were preserved. No ad hoc helper scripts were needed.
 
 ## Validation and delivery
 
