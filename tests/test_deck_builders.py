@@ -252,12 +252,32 @@ def test_plate_two_caveat_reads_saliva_and_feces(
                 *_nitrate(-2.30, 0.0252, 0.979, 55),
                 _paired("aerobic METPO:1000602", 0.4, 0.1, trait="METPO:1000602", study_count="55"),
                 _paired("unrun U:1", "NaN", 0.0, trait="U:1", study_count="55"),
+                _paired(
+                    "padded P:1",
+                    1.0,
+                    0.0,
+                    trait="P:1",
+                    study_count="55",
+                    study_p_value="1.0",
+                    study_test_status="not_tested",
+                ),
+                _paired(
+                    "padded P:2",
+                    1.0,
+                    0.0,
+                    trait="P:2",
+                    study_count="55",
+                    study_p_value="NaN",
+                ),
             ],
         }
     }
     multi_caveat = deck.paired_contrast_caveat(multi_metrics)
-    assert "nominal p = 0.025, q = 0.98 over 2 saliva tests" in multi_caveat
+    # The producer fills a missing study p with 1 before BH, so the two padded saliva traits
+    # stay in the family the q was computed over; they are counted and flagged (#1568).
+    assert "nominal p = 0.025, q = 0.98 over 4 saliva tests, 2 not tested;" in multi_caveat
     assert "Feces t = +3.97, q = 0.0013 over 3 feces tests)" in multi_caveat
+    assert "in Saliva (55 studies), 0 of 4." in multi_caveat
 
 
 def test_plate_two_caveat_needs_the_nitrate_rows() -> None:
@@ -333,9 +353,10 @@ def test_pd_direction_caveat_quotes_the_clustered_model(
     model: tuple[float, float], positive: tuple[float, float], verdict: str
 ) -> None:
     """The figure's title says direction-specific; the clustered model decides (#590, #608,
-    #1430)."""
+    #1430, #1566)."""
     caveat = deck.pd_direction_caveat(_model(*model), _model(*positive))
-    assert "(pd_cellulose_interaction_model.tsv, 2 of its 2 nominal tests shown)" in caveat
+    assert "(pd_cellulose_interaction_model.tsv, 2 nominal tests shown)" in caveat
+    assert "of its" not in caveat
     assert f"{model[0]:+.2f} cellulose z" in caveat
     assert f"nominal p = {deck.p_text(model[1])}" in caveat
     assert f"nominal p = {deck.p_text(positive[1])}" in caveat
@@ -359,33 +380,89 @@ def test_pd_direction_caveat_gives_the_share_in_percentage_points() -> None:
         "p_value": "0.0553",
     }
     caveat = deck.pd_direction_caveat(model, positive)
-    assert "(pd_cellulose_interaction_model.tsv, 2 of its 2 nominal tests shown)" in caveat
+    assert "(pd_cellulose_interaction_model.tsv, 2 nominal tests shown)" in caveat
     assert "+0.41 cellulose z (95% CI -0.05 to +0.87, nominal p = 0.080)" in caveat
     assert "+18.6 percentage points (95% CI -0.4 to +37.6, nominal p = 0.055)" in caveat
 
 
 @pytest.mark.parametrize(
-    "unrun_fields",
+    ("unrun", "expected_pos_clause", "expected_z_clause"),
     [
-        {"p_value": "NaN"},
-        {"p_value": "NA"},
-        {"p_value": ""},
-        {"p_value": "0.01", "p_value_type": "not_tested"},
+        (
+            {
+                "coefficient": "",
+                "ci_low": "",
+                "ci_high": "",
+                "p_value": "",
+                "p_value_type": "not_tested",
+            },
+            "and not estimable (not tested) in the share of profiles",
+            "is not estimable for cellulose z (not tested), and ",
+        ),
+        (
+            {
+                "coefficient": "NaN",
+                "ci_low": "NaN",
+                "ci_high": "NaN",
+                "p_value": "NaN",
+                "p_value_type": "not_tested",
+            },
+            "and not estimable (not tested) in the share of profiles",
+            "is not estimable for cellulose z (not tested), and ",
+        ),
+        (
+            {
+                "coefficient": "0.2334",
+                "ci_low": "0.2334",
+                "ci_high": "0.2334",
+                "p_value": "",
+                "p_value_type": "not_tested",
+            },
+            "and +23.3 percentage points (95% CI +23.3 to +23.3, not tested) "
+            "in the share of profiles",
+            "is +0.23 cellulose z (95% CI +0.23 to +0.23, not tested), and ",
+        ),
+        (
+            {
+                "coefficient": "0.2334",
+                "ci_low": "0.03",
+                "ci_high": "0.43",
+                "p_value": "NA",
+            },
+            "and +23.3 percentage points (95% CI +3.0 to +43.0, not tested) "
+            "in the share of profiles",
+            "is +0.23 cellulose z (95% CI +0.03 to +0.43, not tested), and ",
+        ),
+        (
+            {
+                "coefficient": "0.1859",
+                "ci_low": "-0.2741",
+                "ci_high": "0.6459",
+                "p_value": "0.01",
+                "p_value_type": "not_tested",
+            },
+            "and +18.6 percentage points (95% CI -27.4 to +64.6, not tested) "
+            "in the share of profiles",
+            "is +0.19 cellulose z (95% CI -0.27 to +0.65, not tested), and ",
+        ),
     ],
 )
 def test_pd_direction_caveat_excludes_unrun_test_from_count(
-    unrun_fields: dict[str, str],
+    unrun: dict[str, str],
+    expected_pos_clause: str,
+    expected_z_clause: str,
 ) -> None:
-    """An unrun interaction test is excluded from the nominal test count (#1430, #1561, #1562)."""
+    """An unrun interaction test is excluded from the nominal test count (#1430, #1560, #1561,
+    #1562, #1563, #1566)."""
     tested_nonsig = _model(0.4098, 0.08004)
     tested_sig = _model(0.41, 0.01)
-    unrun = {**_model(0.1859, 0.0553), **unrun_fields}
 
     caveat_nonsig = deck.pd_direction_caveat(tested_nonsig, unrun)
-    assert "(pd_cellulose_interaction_model.tsv, 1 of its 1 nominal test shown)" in caveat_nonsig
+    assert "(pd_cellulose_interaction_model.tsv, 1 nominal test shown)" in caveat_nonsig
+    assert "of its" not in caveat_nonsig
     assert "nominal p = 0.080" in caveat_nonsig
-    assert ", not tested) in the share of profiles" in caveat_nonsig
-    assert "a PD-specific direction is not shown at nominal p < 0.05." in caveat_nonsig
+    assert expected_pos_clause in caveat_nonsig
+    assert caveat_nonsig.endswith("so only one measure was tested.")
     assert "nan" not in caveat_nonsig.lower()
 
     eight_with_one_unrun = [_model(0.1, 0.2) for _ in range(6)] + [tested_nonsig, unrun]
@@ -393,16 +470,16 @@ def test_pd_direction_caveat_excludes_unrun_test_from_count(
     assert "(pd_cellulose_interaction_model.tsv, 1 of its 7 nominal tests shown)" in caveat_seven
 
     caveat_sig = deck.pd_direction_caveat(unrun, tested_sig)
-    assert "(pd_cellulose_interaction_model.tsv, 1 of its 1 nominal test shown)" in caveat_sig
-    assert ", not tested), and " in caveat_sig
+    assert "(pd_cellulose_interaction_model.tsv, 1 nominal test shown)" in caveat_sig
+    assert expected_z_clause in caveat_sig
     assert "nominal p = 0.010) in the share of profiles" in caveat_sig
-    assert (
-        "a PD-specific direction is shown at nominal p < 0.05 for one measure only." in caveat_sig
-    )
+    assert caveat_sig.endswith("so only one measure was tested.")
 
     caveat_none = deck.pd_direction_caveat(unrun, unrun)
-    assert "(pd_cellulose_interaction_model.tsv, 0 of its 0 nominal tests shown)" in caveat_none
+    assert "(pd_cellulose_interaction_model.tsv, 0 nominal tests shown)" in caveat_none
+    assert "of its" not in caveat_none
     assert "nominal p =" not in caveat_none
+    assert caveat_none.endswith("so neither measure was tested.")
 
 
 def test_p_values_do_not_round_across_the_threshold() -> None:
@@ -971,7 +1048,7 @@ def test_plate_one_slide_text_reads_the_tables() -> None:
     u_takeaway, u_caveat = deck.plate_one_text(with_untested)
     assert "405 fecal study Wilcoxon tests run" in u_takeaway
     assert (
-        "nominal Wilcoxon p = 0.00017 (in the 408-test screen (3 not tested); BH q = 0.056)"
+        "nominal Wilcoxon p = 0.00017 (in the 408-test screen, 3 not tested; BH q = 0.056)"
         in u_caveat
     )
 
@@ -1309,6 +1386,22 @@ def test_mcnemar_text_labels_its_single_nominal_test() -> None:
     assert deck.mcnemar_text({"mcnemar": test}) == (
         "oxygen-guild McNemar OR = 1.560 (399 vs 255 discordant studies, "
         "nominal p = 1.9 \N{MULTIPLICATION SIGN} 10⁻⁸, 1 test)"
+    )
+    guild_slide = {
+        "figure_file_path": "data/derived/guild_maps/guild_condition_body_site_heatmap.png",
+        "title": "Oxygen-guild discordance is asymmetric across studies",
+        "takeaway": (
+            "Discordant study counts are 420 versus 290: paired odds ratio 1.448; "
+            "exact McNemar p = 1.21 \N{MULTIPLICATION SIGN} 10⁻⁶."
+        ),
+        "caveat": "The saved image is an unversioned local output.",
+    }
+    _, takeaway, _ = deck.update_previous_slide_text(
+        guild_slide, {"contrasts_by_key": {}, "mcnemar": test}
+    )
+    assert takeaway == (
+        "Discordant study counts are 399 versus 255: paired odds ratio 1.560; "
+        "exact McNemar nominal p = 1.9 \N{MULTIPLICATION SIGN} 10⁻⁸, 1 test."
     )
 
 
@@ -4275,7 +4368,7 @@ def test_pd_network_slide_and_cover_label_nominal_p_and_exclude_unrun_tests(
     ):
         net_rows_with_unrun = [*net_rows, unrun_row]
         model_extra = [
-            *({"outcome": "cellulose_z", "term": f"t{i}", "p_value": "0.2"} for i in range(6)),
+            *({"outcome": "cellulose_z", "term": f"t{i}", "p_value": "0.2"} for i in range(5)),
             {"outcome": "cellulose_z", "term": "extra_unrun", **unrun_row},
         ]
         monkeypatch.setattr(
@@ -4296,14 +4389,14 @@ def test_pd_network_slide_and_cover_label_nominal_p_and_exclude_unrun_tests(
         assert with_unrun["pd_net_tested"] == 2
         assert with_unrun["pd_net_untested"] == 1
         assert with_unrun["pd_net_lead"] is with_unrun["pd_halo_wilcoxon"]
-        assert "(pd_cellulose_interaction_model.tsv, 2 of its 8 nominal tests shown)" in (
+        assert "(pd_cellulose_interaction_model.tsv, 2 of its 7 nominal tests shown)" in (
             deck.pd_direction_caveat(
                 with_unrun["pd_interaction"], with_unrun["pd_interaction_positive"]
             )
         )
         u_title, u_takeaway, _ = deck.update_previous_slide_text(dict(net_slide), with_unrun)
         assert u_title == (
-            "PD halophily leads the 3-test study-level fecal screen (1 not tested) (BH q = 0.0561)"
+            "PD halophily leads the 3-test study-level fecal screen (1 not tested; BH q = 0.0561)"
         )
         assert "nominal p = 1.67e-04, BH q = 0.0561" in u_takeaway
         assert (
@@ -4322,7 +4415,7 @@ def test_pd_network_slide_and_cover_label_nominal_p_and_exclude_unrun_tests(
         p1_takeaway, p1_caveat = deck.plate_one_text(with_unrun)
         assert "2 fecal study Wilcoxon tests run" in p1_takeaway
         assert (
-            "nominal Wilcoxon p = 0.00017 (in the 3-test screen (1 not tested); BH q = 0.056)"
+            "nominal Wilcoxon p = 0.00017 (in the 3-test screen, 1 not tested; BH q = 0.056)"
             in p1_caveat
         )
 

@@ -685,9 +685,9 @@ def increased_side_caveat(metrics: dict) -> str:
     )
 
 
-def _pd_untested_note(metrics: Mapping[str, Any]) -> str:
+def _pd_untested_note(metrics: Mapping[str, Any], *, prefix: str = " (", suffix: str = ")") -> str:
     untested = int(metrics.get("pd_net_untested") or 0)
-    return f" ({untested} not tested)" if untested > 0 else ""
+    return f"{prefix}{untested} not tested{suffix}" if untested > 0 else ""
 
 
 def _table1_sign_test_count(population: Any) -> int:
@@ -921,15 +921,22 @@ def three_arm_text(metrics: dict) -> str:
 
 
 def tested_rows(rows: list[dict[str, str]]) -> list[dict[str, str]]:
-    """Traits with a study-level q-value, the family the stratum's BH ran over."""
+    """Traits with a study-level q-value: the family the stratum's BH ran over.
 
-    def has_q(row: dict[str, str]) -> bool:
-        try:
-            return not math.isnan(float(row.get("study_q_value") or "nan"))
-        except ValueError:
-            return False
+    The producer fills a missing study p with 1 before BH, so a trait whose test was not run
+    stays in this family (#1568); ``untested_family_rows`` counts those members.
+    """
+    return [r for r in rows if _has_finite(r, "study_q_value")]
 
-    return [r for r in rows if has_q(r)]
+
+def untested_family_rows(rows: list[dict[str, str]]) -> list[dict[str, str]]:
+    """Members of the stratum's BH family whose study test was not run (#1568)."""
+    return [
+        r
+        for r in tested_rows(rows)
+        if r.get("study_test_status", "tested") != "tested"
+        or ("study_p_value" in r and not _has_finite(r, "study_p_value"))
+    ]
 
 
 def study_bh_rows(rows: list[dict[str, str]]) -> list[dict[str, str]]:
@@ -1018,18 +1025,24 @@ def paired_contrast_caveat(metrics: dict) -> str:
     else:
         support = "without reaching nominal p ≤ 0.05"
     excluded = contrasts["feces_excluded"]
-    saliva_tested = len(tested_rows(contrasts["saliva"]))
-    feces_tested = len(tested_rows(contrasts["feces"]))
+    saliva_family = len(tested_rows(contrasts["saliva"]))
+    feces_family = len(tested_rows(contrasts["feces"]))
+
+    def untested_note(stratum: str) -> str:
+        untested = len(untested_family_rows(contrasts[stratum]))
+        return f", {untested} not tested" if untested else ""
+
     return (
         f"Without Feces ({studies('feces_excluded')} studies), {len(study_bh_rows(excluded))} "
         f"of {plural(len(tested_rows(excluded)), 'trait')} pass study BH q ≤ 0.05; in "
         f"Saliva ({studies('saliva')} studies), {len(study_bh_rows(contrasts['saliva']))} of "
-        f"{saliva_tested}. Saliva's nitrate reduction has {sign} "
+        f"{saliva_family}. Saliva's nitrate reduction has {sign} "
         f"Feces' {support} (t = {t_saliva:+.2f}, nominal p = "
         f"{p_text(float(saliva['study_p_value']))}, q = "
-        f"{p_text(float(saliva['study_q_value']))} over {plural(saliva_tested, 'saliva test')}; "
-        f"Feces t = {t_feces:+.2f}, q = {p_text(float(feces['study_q_value']))} over "
-        f"{plural(feces_tested, 'feces test')}), and no test compares the two sites."
+        f"{p_text(float(saliva['study_q_value']))} over {plural(saliva_family, 'saliva test')}"
+        f"{untested_note('saliva')}; Feces t = {t_feces:+.2f}, q = "
+        f"{p_text(float(feces['study_q_value']))} over {plural(feces_family, 'feces test')}"
+        f"{untested_note('feces')}), and no test compares the two sites."
     )
 
 
@@ -1112,7 +1125,8 @@ def plate_one_text(metrics: dict) -> tuple[str, str]:
         f"{plural(cells, 'individual profile cell')} {'is' if cells == 1 else 'are'} selected "
         "after BH (q ≤ 0.05 and the study-support rule), and PD fecal halophily reaches "
         f"nominal Wilcoxon p = {p_text(float(halophily['p_value']))} "
-        f"(in the {metrics['pd_net_total']}-test screen{_pd_untested_note(metrics)}; "
+        f"(in the {metrics['pd_net_total']}-test "
+        f"screen{_pd_untested_note(metrics, prefix=', ', suffix='')}; "
         f"BH q = {p_text(float(halophily['q_value']))})."
     )
     return takeaway, caveat
@@ -1694,7 +1708,8 @@ def update_previous_slide_text(row: dict[str, str], metrics: dict) -> tuple[str,
                 leads = "leads" if metrics.get("pd_net_lead") is w_row else "in"
                 title = (
                     f"PD halophily {leads} the {metrics['pd_net_total']}-test study-level fecal "
-                    f"screen{_pd_untested_note(metrics)} (BH q = {q_val:.3g})"
+                    f"screen ({_pd_untested_note(metrics, prefix='', suffix='; ')}"
+                    f"BH q = {q_val:.3g})"
                 )
                 takeaway = (
                     f"PD moderately halophilic scores change by {mean_c:+.3f} across {n_st} "
@@ -1787,6 +1802,15 @@ def update_previous_slide_text(row: dict[str, str], metrics: dict) -> tuple[str,
     elif fig_path.endswith("table1_traits_direction_shift.png"):
         title, takeaway, caveat = direction_shift_text(metrics)
 
+    elif fig_path == "data/derived/guild_maps/guild_condition_body_site_heatmap.png":
+        test = metrics.get("mcnemar")
+        if test:
+            takeaway = (
+                f"Discordant study counts are {test.aerobe_up_anaerobe_down} versus "
+                f"{test.anaerobe_up_aerobe_down}: paired odds ratio {test.odds_ratio:.3f}; "
+                f"exact McNemar nominal p = {sci(test.p_value)}, 1 test."
+            )
+
     return title, takeaway, caveat
 
 
@@ -1811,6 +1835,14 @@ def _nominal_p_clause(row: Mapping[str, str]) -> str:
     return f"nominal p = {p_text(float(row['p_value']))}" if _has_p(row) else "not tested"
 
 
+def _estimable_effect(row: Mapping[str, str]) -> bool:
+    return (
+        _has_finite(row, "coefficient")
+        and _has_finite(row, "ci_low")
+        and _has_finite(row, "ci_high")
+    )
+
+
 def pd_direction_caveat(
     model: dict[str, str],
     positive: dict[str, str],
@@ -1819,21 +1851,41 @@ def pd_direction_caveat(
     """The study-clustered test of a PD-specific cellulose direction, from its model rows.
 
     ``model`` is the cellulose z-score outcome; ``positive`` the share of profiles with a
-    positive z-score, which the figure's right panel plots (#590, #608, #1430, #1561).
+    positive z-score, which the figure's right panel plots (#590, #608, #1430, #1560, #1561,
+    #1563, #1566).
     """
     rows = (model, positive)
     tested = [r for r in rows if _has_p(r)]
     if model_rows is not None:
-        total = sum(_has_p(r) for r in model_rows)
+        total: int | None = sum(_has_p(r) for r in model_rows)
     elif _has_finite(model, "n_tests"):
         total = int(model["n_tests"])
     else:
-        total = len(tested)
-    shown = [_has_p(r) and float(r["p_value"]) < 0.05 and float(r["coefficient"]) > 0 for r in rows]
-    against = [
-        _has_p(r) and float(r["p_value"]) < 0.05 and float(r["coefficient"]) < 0 for r in rows
+        total = None
+    count = (
+        f"{len(tested)} of its {plural(total, 'nominal test')} shown"
+        if total is not None
+        else f"{plural(len(tested), 'nominal test')} shown"
+    )
+    shown = [
+        _has_p(r)
+        and _has_finite(r, "coefficient")
+        and float(r["p_value"]) < 0.05
+        and float(r["coefficient"]) > 0
+        for r in rows
     ]
-    if any(against):
+    against = [
+        _has_p(r)
+        and _has_finite(r, "coefficient")
+        and float(r["p_value"]) < 0.05
+        and float(r["coefficient"]) < 0
+        for r in rows
+    ]
+    if not tested:
+        verdict = "neither measure was tested"
+    elif len(tested) == 1:
+        verdict = "only one measure was tested"
+    elif any(against):
         verdict = "at least one measure points the other way"
     elif all(shown):
         verdict = "a PD-specific direction is shown at nominal p < 0.05"
@@ -1841,19 +1893,26 @@ def pd_direction_caveat(
         verdict = "a PD-specific direction is shown at nominal p < 0.05 for one measure only"
     else:
         verdict = "a PD-specific direction is not shown at nominal p < 0.05"
+    z_clause = (
+        f"{signed(float(model['coefficient']), 2)} cellulose z (95% CI "
+        f"{signed(float(model['ci_low']), 2)} to {signed(float(model['ci_high']), 2)}, "
+        f"{_nominal_p_clause(model)})"
+        if _estimable_effect(model)
+        else f"not estimable for cellulose z ({_nominal_p_clause(model)})"
+    )
+    pos_clause = (
+        f"{signed(100 * float(positive['coefficient']))} percentage points (95% CI "
+        f"{signed(100 * float(positive['ci_low']))} to {signed(100 * float(positive['ci_high']))}"
+        f", {_nominal_p_clause(positive)})"
+        if _estimable_effect(positive)
+        else f"not estimable ({_nominal_p_clause(positive)})"
+    )
     return (
         "Exploratory PD diagnostic. Its profile-level Fisher test treats the profiles of one "
         "study as independent. In the study-clustered model "
-        f"(pd_cellulose_interaction_model.tsv, {len(tested)} of its "
-        f"{plural(total, 'nominal test')} shown), "
-        "the extra PD effect in decreased feces is "
-        f"{signed(float(model['coefficient']), 2)} cellulose z (95% CI "
-        f"{signed(float(model['ci_low']), 2)} to {signed(float(model['ci_high']), 2)}, "
-        f"{_nominal_p_clause(model)}), and "
-        f"{signed(100 * float(positive['coefficient']))} percentage points (95% CI "
-        f"{signed(100 * float(positive['ci_low']))} to {signed(100 * float(positive['ci_high']))}"
-        f", {_nominal_p_clause(positive)}) in the share of profiles with cellulose "
-        f"z > 0 that the right panel plots, so {verdict}."
+        f"(pd_cellulose_interaction_model.tsv, {count}), "
+        f"the extra PD effect in decreased feces is {z_clause}, and {pos_clause} in the share of "
+        f"profiles with cellulose z > 0 that the right panel plots, so {verdict}."
     )
 
 
