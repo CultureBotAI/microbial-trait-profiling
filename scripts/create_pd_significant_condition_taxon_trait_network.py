@@ -432,6 +432,10 @@ EDGE_COLUMNS = [
     "annotation_count",
     "statistically_significant",
     "line_style",
+    "p_value_type",
+    "n_tests",
+    "bh_family_size",
+    "displayed_p_value_count",
 ]
 
 
@@ -441,7 +445,13 @@ def build_network_tables(
     annotated_taxa: pd.DataFrame,
     traits: pd.DataFrame,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Build nodes and inferential/provenance edges from FDR-selected results."""
+    """Build nodes and inferential/provenance edges from FDR-selected results.
+
+    Preserve the source statistic label, source test count and padded BH family
+    size. Count finite displayed p-values separately within each inferential edge
+    class, including repeated taxa across conditions. Annotation links have no
+    inferential statistic or test counts.
+    """
     selected_taxa = taxon_tests[taxon_tests["selected_after_bh"]].copy()
     selected_traits = trait_tests[trait_tests["selected_after_bh"]].copy()
     displayed_conditions = sorted(
@@ -454,6 +464,13 @@ def build_network_tables(
             pd.DataFrame(columns=EDGE_COLUMNS),
             selected_taxa,
         )
+
+    displayed_taxon_tests = int(
+        np.isfinite(pd.to_numeric(selected_taxa["p_value"], errors="coerce")).sum()
+    )
+    displayed_trait_tests = int(
+        np.isfinite(pd.to_numeric(selected_traits["p_value"], errors="coerce")).sum()
+    )
 
     trait_names = dict(zip(traits["trait_id"], traits["trait_label"], strict=True))
     trait_ids = traits["trait_id"].tolist()
@@ -484,6 +501,10 @@ def build_network_tables(
                 "direction": row.direction,
                 "effect": row.directional_difference_fraction,
                 "p_value": row.p_value,
+                "p_value_type": row.p_value_type,
+                "n_tests": row.n_tests,
+                "bh_family_size": row.bh_family_size,
+                "displayed_p_value_count": displayed_taxon_tests,
                 "q_value": row.q_value,
                 "study_support": row.reported_study_count,
                 "annotation_count": pd.NA,
@@ -516,6 +537,10 @@ def build_network_tables(
                 "direction": row.direction,
                 "effect": row.mean_contrast,
                 "p_value": row.p_value,
+                "p_value_type": row.p_value_type,
+                "n_tests": row.n_tests,
+                "bh_family_size": row.bh_family_size,
+                "displayed_p_value_count": displayed_trait_tests,
                 "q_value": row.q_value,
                 "study_support": row.paired_study_count,
                 "annotation_count": pd.NA,
@@ -541,6 +566,10 @@ def build_network_tables(
                     "direction": pd.NA,
                     "effect": pd.NA,
                     "p_value": pd.NA,
+                    "p_value_type": "not_inferential",
+                    "n_tests": pd.NA,
+                    "bh_family_size": pd.NA,
+                    "displayed_p_value_count": pd.NA,
                     "q_value": pd.NA,
                     "study_support": pd.NA,
                     "annotation_count": annotation_count,
@@ -1624,6 +1653,13 @@ def write_methods_summary(
             "`q_value` is Benjamini-Hochberg adjusted globally within the complete "
             "condition-taxon family and within the complete condition-trait family "
             "(holding untestable support rows at `p = 1.0`)."
+        ),
+        (
+            "- In the edge export, `displayed_p_value_count` counts finite p-values in "
+            "exported edges separately by inferential edge class; `n_tests` preserves "
+            "the source table count (including finite tests outside support eligibility), "
+            "and `bh_family_size` preserves its support-eligible padded BH family. "
+            "Annotation edges have no inferential counts."
         ),
         f"- FDR-significant results require `q <= {Q_VALUE_CUTOFF:.2f}`.",
         (
