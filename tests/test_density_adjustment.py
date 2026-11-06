@@ -788,6 +788,27 @@ def test_evaluate_conditional_twin_test_constant_and_unpaired() -> None:
     assert summary_exact.paired_slope_a_on_b == pytest.approx(3.0)
     assert np.isnan(summary_exact.paired_slope_pvalue)
 
+    # Non-integer exact line (delta_A = 0.7 delta_B + 0.3): rounding leaves scipy a tiny
+    # positive stderr and p ~ 1e-8, so a stderr check alone is not enough (#1713).
+    deltas_b = [2.2, 3.1, 7.9]
+    float_line_df = pd.DataFrame(
+        {
+            "study_id": ["s1", "s1", "s2", "s2", "s3", "s3"],
+            "experiment_id": ["e1", "e1", "e2", "e2", "e3", "e3"],
+            "inc_dec": ["inc", "dec"] * 3,
+            TWIN_A: [v for b in deltas_b for v in (0.7 * b + 0.3, 0.0)],
+            TWIN_B: [v for b in deltas_b for v in (b, 0.0)],
+        }
+    )
+    summary_float = evaluate_conditional_twin_test(float_line_df, TWIN_A, TWIN_B)
+    assert summary_float.n_paired_experiments == 3
+    assert np.isnan(summary_float.paired_slope_pvalue)
+
+    # A genuine near-exact fit keeps its p: one value off by 1e-4.
+    near_df = collinear_df.assign(**{TWIN_A: [10.0, 2.0, 22.0001, 5.0, 38.0, 6.0]})
+    summary_near = evaluate_conditional_twin_test(near_df, TWIN_A, TWIN_B)
+    assert np.isfinite(summary_near.paired_slope_pvalue)
+
 
 def test_evaluate_table1_paired_effects_missing_keys_and_mismatched_shape() -> None:
     """Verify evaluate_table1_paired_effects handles missing IDs or shape mismatches safely."""

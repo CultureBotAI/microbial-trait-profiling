@@ -730,6 +730,10 @@ def evaluate_table1_paired_effects(
     ]
 
 
+# 1 - r^2 at or below this is an exact fit up to rounding (#1713).
+_EXACT_FIT_RESIDUAL_SHARE = 64 * float(np.finfo(float).eps)
+
+
 def evaluate_conditional_twin_test(
     profiles_df: pd.DataFrame,
     trait_a: str = TWIN_A,
@@ -850,11 +854,13 @@ def evaluate_conditional_twin_test(
         res_paired = stats.linregress(delta_b, delta_a)
         slope_paired = float(res_paired.slope)
         # A regression p needs residual variation: >= 3 pairs (N=2 fits two points with
-        # 0 residual df, #1660) and a nonzero standard error (an exact fit makes scipy's
-        # p an artefact of its internal constant, #1713).
+        # 0 residual df, #1660) and residual variance above rounding noise. On an exact
+        # line scipy's p is an artefact of its internal constant, and rounding can leave a
+        # tiny positive stderr, so the test is on 1 - r^2 (noise <= ~1e-15), not stderr (#1713).
+        residual_share = 1.0 - float(res_paired.rvalue) ** 2
         pval_paired_slope = (
             float(res_paired.pvalue)
-            if n_paired >= 3 and float(res_paired.stderr) > 0.0
+            if n_paired >= 3 and residual_share > _EXACT_FIT_RESIDUAL_SHARE
             else float("nan")
         )
     else:
