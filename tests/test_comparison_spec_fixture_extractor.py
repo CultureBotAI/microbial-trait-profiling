@@ -114,7 +114,7 @@ def test_pinned_git_extraction_reproduces_fixture_bytes_and_refuses_overwrite(
     extractor.write_fixture(tmp_path, output)
     assert output.read_bytes() == original
     assert FIXTURE.read_bytes() == original
-    assert repository.revisions == [extractor.SOURCE_COMMIT]
+    assert repository.revisions == ["f0cb5b7"]
     assert repository.tree.paths == ["src/mtp/workflow/downstream_contracts.py"]
     assert repository.tree.stream.read_sizes == [extractor.MAX_SOURCE_BYTES + 1]
     assert repository.closed
@@ -174,16 +174,24 @@ def test_refuses_missing_fields_and_mismatched_mapping_ids(extractor: ModuleType
 def test_real_pinned_blob_reproduces_the_fixture_when_the_commit_is_present(
     extractor: ModuleType, tmp_path: Path
 ) -> None:
-    """Read the real historical blob, not a stand-in (#1721); skip on a shallow clone."""
+    """Read the real historical blob, not a stand-in (#1721).
+
+    Skip only outside a git checkout or in a shallow one (CI's depth-1 clone). On a full
+    clone a wrong or ambiguous ``SOURCE_COMMIT`` must fail, not skip (#1730).
+    """
     from git import Repo
-    from git.exc import BadName, InvalidGitRepositoryError, NoSuchPathError
+    from git.exc import InvalidGitRepositoryError, NoSuchPathError
 
     try:
-        commit = Repo(ROOT).commit(extractor.SOURCE_COMMIT)
-    except (BadName, InvalidGitRepositoryError, NoSuchPathError, ValueError):
-        pytest.skip("the pinned commit is not in this checkout (shallow clone); see the README")
+        repo = Repo(ROOT)
+    except (InvalidGitRepositoryError, NoSuchPathError):
+        pytest.skip("not a git checkout")
+    if repo.git.rev_parse("--is-shallow-repository") == "true":
+        pytest.skip("shallow clone: fetch the pinned commit first; see the README")
+    commit = repo.commit(extractor.SOURCE_COMMIT)
     # The short SHA resolves to the commit the README names in full (#1722).
-    assert commit.hexsha.startswith(extractor.SOURCE_COMMIT)
+    assert commit.hexsha.startswith("f0cb5b7")
+    assert commit.hexsha in (FIXTURE.parent / "README.md").read_text(encoding="utf-8")
     output = tmp_path / "from_real_blob.json"
     extractor.write_fixture(ROOT, output)
     assert output.read_bytes() == FIXTURE.read_bytes()
