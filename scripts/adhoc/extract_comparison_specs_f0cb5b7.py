@@ -18,6 +18,8 @@ from pathlib import Path
 
 from git import Repo
 
+# Short SHA on purpose: a 40-hex literal trips detect-secrets, and git fails loudly on an
+# ambiguous prefix rather than reading another blob (#1722). Full SHA is in the README.
 SOURCE_COMMIT = "f0cb5b7"
 SOURCE_PATH = "src/mtp/workflow/downstream_contracts.py"
 MAX_SOURCE_BYTES = 128 * 1024

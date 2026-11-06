@@ -16,10 +16,12 @@ indentation and a final newline. Comparison records themselves sort specs by id;
 this fixture retains the source declaration order.
 
 From the repository root, with dependencies installed and commit `f0cb5b7`
-available locally, reproduce the fixture into a fresh temporary directory and
+(`f0cb5b7a500b11320ea84e63bfaf125fe1520df9`) available locally, reproduce the fixture into a fresh temporary directory and
 compare every byte:
 
 ```bash
+# On a shallow clone (CI checks out depth 1), fetch the commit first:
+# git fetch origin f0cb5b7a500b11320ea84e63bfaf125fe1520df9
 comparison_specs_dir=$(mktemp -d)
 uv run python scripts/adhoc/extract_comparison_specs_f0cb5b7.py \
   --repo . --output "$comparison_specs_dir/analysis_specs_f0cb5b7.json"
