@@ -123,6 +123,11 @@ core-ora run output *ARGS:
 audit-ora-refresh manifest output:
 	uv run python scripts/adhoc/issue720_audit_ora_refresh.py --manifest "$1" --output "$2"
 
+# Write a new portable, hash-bound inputs manifest; leave historical records intact.
+[positional-arguments]
+ora-refresh-inputs manifest output:
+	uv run python scripts/adhoc/issue720_audit_ora_refresh.py --manifest "$1" --output "$2" --write-portable-manifest
+
 # Bind all anatomical partitions and summaries to the same verified ORA core.
 [positional-arguments]
 core-strata run output *ARGS:

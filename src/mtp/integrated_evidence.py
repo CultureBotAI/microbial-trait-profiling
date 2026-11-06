@@ -32,6 +32,7 @@ import argparse
 import csv
 import json
 import math
+import re
 import statistics
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass, field, fields, replace
@@ -52,6 +53,7 @@ from mtp.guild_maps import (
     compute_correlation,
 )
 from mtp.paths import DERIVED_DATA_DIR, REPO_ROOT, file_sha256
+from mtp.provenance_paths import PortablePaths, assert_portable_text
 from mtp.table1_trait_maps import SHIFT_FAMILY_ID, compute_direction_shifts
 from mtp.trait_composition import ANALYSIS_VERSION as LOG_RATIO_VERSION
 from mtp.trait_composition import compute_log_ratio_shifts
@@ -1666,7 +1668,7 @@ def read_status(
             issue=issue,
             verdicts={},
             default=f"pending {issue}",
-            source={"path": str(path) if path is not None else None, "binding": "not_supplied"},
+            source={"path": None, "binding": "not_supplied"},
         )
     try:
         content = json.loads(path.read_text(encoding="utf-8"))
@@ -1829,6 +1831,101 @@ def _bound_assessment(
 def assessed_procedure(method: str) -> str:
     """The procedure name an assessment would know this method's rows by."""
     return ASSESSED_PROCEDURE.get(method, method)
+
+
+def _metadata_paths(value: object) -> Iterable[Path]:
+    """Find explicit absolute locators, including JSON-encoded assessment detail."""
+    if isinstance(value, Mapping):
+        for item in value.values():
+            yield from _metadata_paths(item)
+    elif isinstance(value, (list, tuple)):
+        for item in value:
+            yield from _metadata_paths(item)
+    elif isinstance(value, str):
+        if Path(value).is_absolute():
+            yield Path(value)
+        elif value.startswith(("{", "[")):
+            try:
+                decoded = json.loads(value)
+            except json.JSONDecodeError:
+                return
+            yield from _metadata_paths(decoded)
+
+
+def _portable_metadata(value: object, paths: PortablePaths) -> object:
+    """Re-encode locators, preserving source hashes and substantive metadata."""
+    if isinstance(value, Mapping):
+        return {key: _portable_metadata(item, paths) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_portable_metadata(item, paths) for item in value]
+    if isinstance(value, str):
+        if Path(value).is_absolute():
+            return paths.encode(Path(value))
+        if value.startswith(("{", "[")):
+            try:
+                decoded = json.loads(value)
+            except json.JSONDecodeError:
+                return value
+            return json.dumps(_portable_metadata(decoded, paths), sort_keys=True)
+    return value
+
+
+def _portable_status(status: AssessmentStatus, paths: PortablePaths) -> AssessmentStatus:
+    source = _portable_metadata(status.source, paths)
+    if not isinstance(source, dict):
+        raise ValueError("Assessment source metadata must be an object")
+    # A relative review locator came from another producer, whose working root
+    # is not declared here. Preserve it as reported metadata, never resolve it
+    # against this output's root. Its parent assessment bytes remain hash-bound.
+    review = status.source.get("review")
+    if isinstance(review, Mapping) and isinstance(review.get("path"), str):
+        locator = review["path"]
+        if not Path(locator).is_absolute():
+            converted = source["review"]
+            if not isinstance(converted, dict):
+                raise ValueError("Assessment review metadata must be an object")
+            converted["producer_relative_path"] = converted.pop("path")
+    detail = tuple(
+        (
+            kind,
+            scope,
+            variable,
+            paths.encode(Path(value))
+            if kind == "source" and variable == "path"
+            else str(_portable_metadata(value, paths)),
+        )
+        for kind, scope, variable, value in status.detail
+    )
+    return replace(
+        status,
+        source=source,
+        detail=detail,
+        default=_portable_diagnostic(status.default, paths),
+        verdicts={
+            key: _portable_diagnostic(value, paths) for key, value in status.verdicts.items()
+        },
+    )
+
+
+_QUOTED_ERROR_PATH = re.compile(r"""(?P<quote>['"])(?P<path>/[^'"\r\n]+)(?P=quote)""")
+
+
+def _diagnostic_paths(value: str) -> Iterable[Path]:
+    if value.startswith("unreadable"):
+        for match in _QUOTED_ERROR_PATH.finditer(value):
+            yield Path(match.group("path"))
+
+
+def _portable_diagnostic(value: str, paths: PortablePaths) -> str:
+    """Keep unreadable evidence nonfatal without publishing an OSError pathname."""
+    if not value.startswith("unreadable"):
+        return value
+    return _QUOTED_ERROR_PATH.sub(
+        lambda match: (
+            match.group("quote") + paths.encode(Path(match.group("path"))) + match.group("quote")
+        ),
+        value,
+    )
 
 
 def apply_statuses(
@@ -2678,13 +2775,41 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "--require-complete-sources rejected unreadable or unbound statuses: "
                 + "; ".join(rejected)
             )
+    output = args.output_dir
+    provenance_path = output / "integrated_evidence_provenance.json"
+    native_paths = {
+        "arm1_pooled_stats": arm1_path,
+        "arm2_enrichment": enrichment_path,
+        "arm2_depletion": depletion_path,
+        "full_screen": screen_path,
+        "full_screen_provenance": screen_provenance_path,
+    }
+    source_paths = [path for path in native_paths.values() if path.is_file()]
+    for status in statuses.values():
+        source_paths.extend(_metadata_paths(status.source))
+        source_paths.extend(_metadata_paths(status.detail))
+        source_paths.extend(_diagnostic_paths(status.default))
+        for verdict in status.verdicts.values():
+            source_paths.extend(_diagnostic_paths(verdict))
+        source_paths.extend(
+            Path(value)
+            for kind, _, variable, value in status.detail
+            if kind == "source" and variable == "path"
+        )
+    if bundle is not None:
+        source_paths.append(bundle.path("ora_profiles"))
+    portable = PortablePaths.create(provenance_path, source_paths)
+    statuses = {key: _portable_status(status, portable) for key, status in statuses.items()}
     records = apply_statuses(records, statuses)
     summary = summarize(records)
     families = family_inventory(records)
     feature_rows = feature_column_rows(records, columns)
     assessments = assessment_rows(records, statuses)
 
-    output = args.output_dir
+    # Refuse unrecognized machine paths before publishing any output. The source
+    # reports themselves are never edited; their hashes retain the original bytes.
+    assert_portable_text(json.dumps(assessments))
+    assert_portable_text(json.dumps([status.source for status in statuses.values()]))
     written = [
         write_table(records, output / "integrated_evidence.tsv"),
         write_table(
@@ -2722,6 +2847,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     ]
     provenance = {
         "version": VERSION,
+        "path_basis": portable.declaration,
         "bugsigdb_vintage": vintage,
         "code_commit": args.code_commit,
         "profile_sha256": _sha256(args.profile_input),
@@ -2732,7 +2858,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "ora_eligibility_source": (
             {
                 "product_id": "ora_profiles",
-                "path": str(bundle.path("ora_profiles")),
+                "path": portable.encode(bundle.path("ora_profiles")),
                 "sha256": _sha256(bundle.path("ora_profiles")),
                 "rule": "paired human experiments; distinct matched reported taxa N > 0",
             }
@@ -2740,14 +2866,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             else None
         ),
         "native_sources": {
-            key: {"path": str(path), "sha256": _sha256(path) if path.exists() else None}
-            for key, path in {
-                "arm1_pooled_stats": arm1_path,
-                "arm2_enrichment": enrichment_path,
-                "arm2_depletion": depletion_path,
-                "full_screen": screen_path,
-                "full_screen_provenance": screen_provenance_path,
-            }.items()
+            key: {
+                "path": portable.encode(path) if path.is_file() else None,
+                "sha256": _sha256(path) if path.is_file() else None,
+            }
+            for key, path in native_paths.items()
         },
         "corpus": asdict(stats),
         # The exclusion that defines the shared comparison basis, recorded here
@@ -2813,8 +2936,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             "require_complete_sources": bool(args.require_complete_sources),
         },
     }
-    provenance_path = output / "integrated_evidence_provenance.json"
-    provenance_path.write_text(json.dumps(provenance, indent=2) + "\n", encoding="utf-8")
+    provenance_text = json.dumps(provenance, indent=2) + "\n"
+    assert_portable_text(provenance_text)
+    provenance_path.write_text(provenance_text, encoding="utf-8")
     written.append(provenance_path)
     if bundle is not None:
         written.append(
