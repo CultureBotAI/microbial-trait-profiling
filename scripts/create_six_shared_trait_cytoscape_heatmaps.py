@@ -6,7 +6,7 @@ import argparse
 import hashlib
 import json
 import math
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from textwrap import wrap
@@ -2223,6 +2223,13 @@ MANIFEST_COLUMNS: tuple[str, ...] = (
 )
 
 
+def validate_manifest_record_keys(records: Sequence[Mapping[str, object]]) -> None:
+    """Ensure every manifest record key is declared in MANIFEST_COLUMNS (#1726)."""
+    unknown_keys = sorted({key for record in records for key in record} - set(MANIFEST_COLUMNS))
+    if unknown_keys:
+        raise ValueError(f"Manifest records contain undeclared columns: {unknown_keys}")
+
+
 def write_six_shared_trait_cytoscape_heatmaps(
     output_dir: Path = OUTPUT_DIR,
     repo_root: Path = REPO_ROOT,
@@ -2465,6 +2472,7 @@ def write_six_shared_trait_cytoscape_heatmaps(
         clusterings["individual_conditions"],
         rollup_map,
     )
+    validate_manifest_record_keys(manifest_records)
     manifest = pd.DataFrame.from_records(manifest_records, columns=MANIFEST_COLUMNS)
     selected_cells = pd.concat(
         [

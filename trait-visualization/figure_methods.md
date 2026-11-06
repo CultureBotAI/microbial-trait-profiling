@@ -1672,7 +1672,8 @@ Supported effects with finite two-sided Fisher exact p-values are displayed when
 the absolute increased-minus-decreased positive-z fraction is strictly greater
 than 0.01, including nonsignificant results above that effect cutoff. Support
 requires at least 3 positive-z profiles in either direction and at least 2 total
-studies. A dark cell border marks BH-adjusted `q <= 0.05`; the manifest separately
+studies. A dark cell border marks BH-adjusted `q <= 0.05` over all candidate cells
+per view (untested held at p = 1); the manifest separately
 reports how many cells passed the nominal Fisher `p < 0.01` threshold. Unbordered
 cells are descriptive effects. The figure legend reports the displayed condition-label,
 anatomy-group, row, cell, and BH-border counts. The

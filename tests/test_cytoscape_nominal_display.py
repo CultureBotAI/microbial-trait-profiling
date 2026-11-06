@@ -297,12 +297,24 @@ def test_generated_manifest_and_pages_append_finite_counts(
         "finite_test_count",
         "displayed_finite_test_count",
     ]
+    tracked_manifest_path = (
+        SOURCE.parents[1]
+        / "trait-visualization/trait-profile-investigation/six-shared-traits"
+        / heatmaps.MANIFEST_FILENAME
+    )
+    with tracked_manifest_path.open("r", encoding="utf-8") as handle:
+        tracked_header = handle.readline().rstrip("\n").split("\t")
+    assert tracked_header == LEGACY_MANIFEST_COLUMNS
     assert manifest["tested_cell_count"].tolist() == [9] * len(manifest)
     assert manifest["finite_test_count"].tolist() == [7] * len(manifest)
     assert manifest["displayed_finite_test_count"].tolist() == [3] * len(manifest)
     pages = exports[heatmaps.CONTRAST_PAGES_FILENAME]
     assert pages["finite_test_count"].tolist() == [7] * 4
     assert pages["displayed_finite_test_count"].tolist() == [1, 2, 1, 2]
+    with pytest.raises(ValueError, match="undeclared columns"):
+        heatmaps.validate_manifest_record_keys(
+            [{**dict.fromkeys(heatmaps.MANIFEST_COLUMNS, 1), "new_audit_field": 1}]
+        )
 
 
 def test_readme_names_candidates_and_finite_tests_separately(tmp_path: Path) -> None:
@@ -332,6 +344,11 @@ def test_readme_names_candidates_and_finite_tests_separately(tmp_path: Path) -> 
     assert "Cell color is nominal Fisher evidence" in text
     assert "smaller nominal p-values" in text
     assert "BH over all 9 candidate cells (untested held at p = 1)" in text
+    assert (
+        "Each view's BH q-value family is all `tested_cell_count` candidate cells "
+        "(untested held at p = 1), not `finite_test_count` or `displayed_finite_test_count`."
+        in text
+    )
     header = next(line for line in text.splitlines() if line.startswith("| heatmap |"))
     row = next(line for line in text.splitlines() if line.startswith("| Fixture |"))
     fields = dict(
@@ -351,14 +368,27 @@ def test_readme_names_candidates_and_finite_tests_separately(tmp_path: Path) -> 
 
 def test_figure_methods_approach_2_names_nominal_fisher_and_bh_family() -> None:
     methods_path = SOURCE.parents[1] / "trait-visualization/figure_methods.md"
-    lines = methods_path.read_text(encoding="utf-8").splitlines()
-    passage = "\n".join(lines[1651:1661])
+    paragraphs = [
+        " ".join(block.splitlines())
+        for block in methods_path.read_text(encoding="utf-8").split("\n\n")
+    ]
+    passage = next(
+        p for p in paragraphs if p.startswith("Four trait-pattern heatmaps are written:")
+    )
     assert "nominal Fisher evidence, `-log10(p)`" in passage
     assert "smaller nominal p-values" in passage
     assert "nominal Fisher p < 0.01" in passage
     assert "nominal-p recurrence" in passage
     assert "nominal p-value evidence" in passage
     assert "over all candidate cells (untested held at p = 1)" in passage
+
+    contrast_passage = next(
+        p for p in paragraphs if p.startswith("Two primary signed direction contrast heatmaps")
+    )
+    assert (
+        "A dark cell border marks BH-adjusted `q <= 0.05` over all candidate cells "
+        "per view (untested held at p = 1)" in contrast_passage
+    )
 
 
 def test_added_nominal_text_fits_synthetic_pattern_render(tmp_path: Path) -> None:
