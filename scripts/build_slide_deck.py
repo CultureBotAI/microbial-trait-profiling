@@ -4133,6 +4133,31 @@ def placed_slides(
     return placed
 
 
+# These 23 exact, case-sensitive relative names define the historical outputs (#1572).
+# The inherited-manifest filter resolves them under the input and checkout roots.
+# Current CELLULOSE figures and data/derived/tufte_plates/ remain eligible.
+RETIRED_CELLULOSE_OUTPUTS = frozenset(
+    f"{CELLULOSE_DIR}/figures_tufte/{stem}.{extension}"
+    for stem in (
+        "fig1_tufte_convergence_slope_and_overlap",
+        "fig2_tufte_core_guild_dot_table",
+        "fig3_tufte_why_only_stool",
+        "fig4_tufte_trait_landscape_and_four_pairs",
+        "fig5_tufte_three_statistical_arms",
+        "fig6_tufte_combining_results_integrated_evidence",
+    )
+    for extension in ("svg", "png", "pdf")
+) | frozenset(
+    (
+        f"{CELLULOSE_DIR}/figures_tufte/fig7_tufte_convergence_network_and_venn.svg",
+        f"{CELLULOSE_DIR}/figures_tufte/fig8_literature_support_four_pairs.svg",
+        f"{CELLULOSE_DIR}/figures_tufte/fig9_set_theory_17_core_vs_pairwise.svg",
+        f"{CELLULOSE_DIR}/figures_tufte/cellulose_decr_tufte_figures.pdf",
+        f"{CELLULOSE_DIR}/cellulose_decr_slide_deck.html",
+    )
+)
+
+
 def build_deck(
     repo: Path,
     slides_dir: Path,
@@ -4146,6 +4171,10 @@ def build_deck(
     ``trees`` holds the blob ids of the revisions the slides cite. A file that differs from
     its revision stops the build unless ``allow_unverified``; the deck is then a review
     build, like one with a ``review`` reason, and the files that differ are not linked.
+
+    Inherited v1/v2 Main and Appendix entries are excluded when their resolved paths
+    match one of the 23 exact, case-sensitive historical names under the input root
+    ``repo`` or the checkout root ``REPO_ROOT``. This includes symlink aliases.
     """
     if trees is None and not allow_unverified:
         raise SystemExit("no git listings to check the slides against; pass --allow-unverified")
@@ -4196,8 +4225,26 @@ def build_deck(
     for manifest_path in (v1_manifest_path, v2_manifest_path):
         if not manifest_path.exists():
             raise FileNotFoundError(f"missing earlier deck manifest {manifest_path}")
-    v1_rows = read_tsv(v1_manifest_path)
-    v2_rows = read_tsv(v2_manifest_path)
+    # Compare resolved paths for the 23 exact, case-sensitive names under the input and
+    # checkout roots, including absolute paths, dot segments and symlink aliases.
+    # Filter both inputs before either Main or Appendix can inherit an old entry.
+    retired_paths = {
+        (root / relative).resolve()
+        for root in (repo, REPO_ROOT)
+        for relative in RETIRED_CELLULOSE_OUTPUTS
+    }
+    v1_rows = [
+        row
+        for row in read_tsv(v1_manifest_path)
+        if (figure_root(repo, row["figure_file_path"]) / row["figure_file_path"]).resolve()
+        not in retired_paths
+    ]
+    v2_rows = [
+        row
+        for row in read_tsv(v2_manifest_path)
+        if (figure_root(repo, row["figure_file_path"]) / row["figure_file_path"]).resolve()
+        not in retired_paths
+    ]
 
     v1_by_fig = {r["figure_file_path"]: r for r in v1_rows}
     v2_by_fig = {r["figure_file_path"]: r for r in v2_rows}
