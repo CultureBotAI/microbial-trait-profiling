@@ -56,9 +56,7 @@ SUMMARY_NEW_COLUMNS = [
     "bh_family_size",
     "paired_q_value_family",
 ]
-EXPECTED_FAMILY_340 = (
-    "pooled pair-level BH over 340 support/variance-selected traits"
-)
+EXPECTED_FAMILY_340 = "pooled pair-level BH over 340 support/variance-selected traits"
 MIXED_P = (0.0, 1.0, math.nan, math.inf, -math.inf, 0.125)
 
 
@@ -262,9 +260,9 @@ def test_family_size_parser_accepts_whole_sizes(raw: object, size: int) -> None:
 
 def test_sankey_methods_paragraph_names_the_selection_q_family() -> None:
     """The six-trait selection's q names its family (#1744)."""
-    methods = (Path(__file__).resolve().parents[1] / "trait-visualization/figure_methods.md").read_text(
-        encoding="utf-8"
-    )
+    methods = (
+        Path(__file__).resolve().parents[1] / "trait-visualization/figure_methods.md"
+    ).read_text(encoding="utf-8")
     assert (
         "using `q_value <= 0.001`, where `q_value` is the pooled pair-level BH q over the "
         "support/variance-selected traits of that table (its `correction_family_size`)"
