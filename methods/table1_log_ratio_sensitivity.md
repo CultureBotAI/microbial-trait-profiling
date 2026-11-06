@@ -60,6 +60,17 @@ added after review and are recorded as such.
 | S9 / S10 / S11 label-set strata | S2 partitioned by body-site label set: any Feces label / other lower gut with no Feces label / no gut label | BY over 15 each |
 | S8 influence | S2 with each study, then each stratum of 30+ eligible studies, removed in turn | BY over 15, other 14 p held fixed; crossing at q = 0.05 |
 
+Registry IDs are `mt-supp-ratio-sensitivity-s0`, `-s1`, `-s2`, `-s3`, `-s5`,
+`-s6`, `-s7`, `-s9`, `-s10` and `-s11` with the same prefix;
+S4 has two distinct entries, `mt-supp-ratio-sensitivity-s4-fractions` and
+`mt-supp-ratio-sensitivity-s4-ratios`. S8 uses
+`mt-supp-ratio-influence-study` and `mt-supp-ratio-influence-stratum`.
+Each scenario's q-values below use only its listed family and procedure.
+Read the actual `family`, `family_size` and `correction` columns from that
+execution's `sensitivity_results.tsv`; the sizes above belong to the described
+historical six-trait grid. Bare p-values are nominal. There is no correction
+across the collection of scenarios or omissions.
+
 S0 reproduces the published six-trait directions and S2 reproduces the log-ratio
 module's output exactly (study counts, partially observed studies, pairs, effects
 and BY q), which the tests check.
@@ -132,7 +143,7 @@ populations (0.354 to 0.403). The other five traits together retain detection on
 of their 25 rows (facultatively aerobic on the facultatively aerobic/coccus shaped
 pairs, 0.567, q = 0.0104).
 
-**The three significant ratios are carried by cellulose (S3 against S2).** The
+**The three ratios passing the S2 BY rule involve cellulose (S3 against S2).** The
 ratios with BY q <= 0.05 are facultatively aerobic/cellulose (share up 0.595,
 q = 0.0011), cellulose/sphere shaped (0.407, q = 0.0026) and cellulose/arsenate
 reduction (0.365, q = 0.0011). On exactly the same pairs the cellulose fraction

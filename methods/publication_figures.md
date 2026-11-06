@@ -59,6 +59,14 @@ ORA direction counts. ORA remains an uncalibrated directional column and does no
 decide a headline call. Missing or untestable values remain missing. The two
 statistical families retain their recorded definitions; their q values are not
 compared across tests.
+The table's sign-test q is `mt-core-noel-sign-nominal` (BY over the complete
+retained candidate catalog); the study-mean t-test q is
+`mt-core-three-test-catalog-t` (BY over its complete retained catalog).
+Read `noel_family_size` and `composition_family_size` from the bound
+`per_trait_evidence.tsv` when captioning them. The historical `nominal` suffix
+of Noel's family ID does not mean that its BY q is uncorrected. Family size and
+any q threshold used in a claim must accompany the caption; these methods do
+not certify older rendered captions that omit them.
 
 ## Verification and scope
 

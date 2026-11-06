@@ -11,6 +11,15 @@ repository review. The transcript is not an approved interpretation of the resul
 The review begins at [Repository review](#repository-review).
 Tracking issue: [#187](https://github.com/CultureBotAI/microbial-trait-profiling/issues/187).
 
+**Statistical-use boundary (#1449):** The preserved conversation supplies no
+run-bound q-values, correction families or executed family sizes. Its opening
+"significantly changing" statement and causal explanations must not be quoted
+as repository results. Under the [MT policy](../methods/multiple_testing_policy.md),
+reuse requires the actual producing result's family ID and definition, size,
+BH/BY procedure and threshold; p-only statements must say nominal. The transcript
+is retained as historical discussion, not repaired by assigning it a current
+run or an inferred family.
+
 Follow-up: [second prompt and Rosalind response](rosalind-six-trait-interpretation-response-2.md),
 which develops competing explanations and predictions after the measurement limits
 were clarified. The review below concerns this first response.

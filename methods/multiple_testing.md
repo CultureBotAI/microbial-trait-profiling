@@ -10,6 +10,14 @@ and BH for comparison, at inclusive adjusted-p thresholds 0.05 and 0.001. Native
 arm calls and arm execution plans remain unchanged. Changing which calls are
 primary in the scientific report requires a separate decision.
 
+These thresholds apply separately to each executed adapter family, not to a pooled
+set of all sidecar rows. The registered families and source-output routes are listed
+in [the adapter notes](../docs/multiple_testing_sidecars.md). Quote the family ID,
+its executed `expected_family_size`, the correction procedure and the threshold
+beside any reported q; source p-values remain nominal. Recomputed sidecar q-values
+must remain distinguishable from native q-values, especially for the joint-tail
+ORA family, whose membership differs from the separate native tail families.
+
 BY controls false discovery rate under arbitrary dependence when the individual
 null p-values are valid. BH requires independence or suitable positive dependence.
 Neither method repairs invalid tests, study pseudoreplication, data-driven lead
@@ -23,8 +31,8 @@ An adapter must verify upstream execution, derive the complete declared
 hypothesis inventory from its AnalysisBasis and selection rule, and supply that
 inventory independently of the observed p-value rows. `retained_feature_count`
 comes from that basis; it is not a fixed corpus constant and is distinct from
-`expected_family_size`. A family may contain one test per trait, fifteen ordered
-ratio comparisons, or profile-by-trait-by-tail tests. An adapter declaring a
+`expected_family_size`. A family may contain one test per trait, fifteen unordered
+focal pairs with a fixed ratio orientation, or profile-by-trait-by-tail tests. An adapter declaring a
 joint upper/lower-tail family must independently enumerate both tails for every
 eligible coordinate and reject a missing counterpart. The generic engine checks
 the supplied inventory exactly; it permits one-sided families and cannot infer

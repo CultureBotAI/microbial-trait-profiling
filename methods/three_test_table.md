@@ -6,6 +6,19 @@ comparison. It preserves distinct estimands, populations and correction families
 and reconciliation evidence. Tracked result tables wait for the selected new main
 basis P. No generated table changes any native arm call.
 
+The registry distinguishes `mt-core-three-test-catalog-t`,
+`mt-core-three-test-catalog-wilcoxon` and `mt-core-three-test-ora-direction`:
+each tests every retained catalog trait separately, with BY primary and BH
+reported alongside it. Read the executed sizes from `composition_family_size`
+and `ora_direction_family_size` in `per_trait_evidence.tsv` and the bound
+`three_test_run.json` `family_size`. Native Noel's separate full-catalog family
+is `mt-core-noel-sign-nominal` (`noel_family_size`); the historical word
+`nominal` in that identifier means the full candidate count, not uncorrected p.
+The support/variance-selected comparison is
+`mt-core-three-test-native-selected` (`native_selected_family_size`), which
+retains its BH-primary designation. Its q-values are not full-catalog q-values.
+These registry IDs describe the families; historical output IDs remain unchanged.
+
 ## Declared composition quantities
 
 The denominator is every retained non-MediaDive annotation column. With annotation
@@ -93,13 +106,17 @@ replication from the two calculations.
 ## ORA declaration: ora-study-enrichment-direction-v1
 
 Declared before computation; accepted through the coordination review on 2026-10-25.
-Use only the complete native upper-tail export's `is_significant` flag: global
-separate-tail BH q <=0.001 and fold >=1.5. Count increased and decreased enriched
+Use only the complete native upper-tail export's `is_significant` flag:
+`mt-core-ora-upper-global`, global BH over all eligible profile × trait tests
+in that tail, q <=0.001 and fold >=1.5. Count increased and decreased enriched
 lists separately, retaining explicit zeros after family completeness validation.
 For K=0, enrichment and depletion counts are blank because no native test exists;
 these are not observed zero-hit counts.
-Lower-tail depletion counts (native q <=0.001 and fold <=0.5) are separate columns;
+Lower-tail depletion counts (`mt-core-ora-lower-global`, separate-tail BH
+q <=0.001 and fold <=0.5) are separate columns;
 enrichment among decreased lists is not depletion.
+The executed per-tail family size is `ora_native_tests_per_tail`; these two
+native families are distinct from the joint-tail multiplicity sidecar family.
 
 For each trait, use experiment pairs for which both directions have N>0 and the
 trait has background K>0. Let H(e,d,t) be the binary native enrichment flag. For
@@ -147,10 +164,11 @@ mixed-signal FDR control or pooled trait significance.
 
 ## Native votes and label support
 
-Reuse Noel's raw-fraction study votes, exact binomial p and nominal full-family BY.
+Reuse Noel's raw-fraction study votes, nominal exact binomial p and full-family BY q.
 Ties use its native tolerance 1e-12. Noel excludes a complete experiment pair if
 one retained annotation total is zero; preserve this eligibility difference from
-historical transformed composition. Effective-family BY is not the nominal result.
+historical transformed composition. Effective-size BY is a sensitivity bound
+without an FDR guarantee, not the full-candidate result.
 
 Label-support imports retain the existing audit's 14-trait `AUDIT_TRAITS`
 coverage (`focal_and_selected_oxygen_traits_only`) by default, and extend to

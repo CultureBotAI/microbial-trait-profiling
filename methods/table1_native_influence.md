@@ -77,6 +77,12 @@ selected traits retain the native q=1 convention, missing p and explicit status;
 unselected traits have no native p/q. q=1 does not make an untestable result null
 evidence. Tests do not use the six-trait-only family.
 
+This is registry family `mt-supp-native-influence-composition`. Its executed
+BH size is `family_tests` in `native_composition.tsv.gz`, not
+`family_selected_traits` or the full retained catalog size. The support,
+variance and testability selection remains part of this sensitivity; BH within
+the selected family does not correct that selection.
+
 Native mean intervals target experiment-weighted effects; exact binomial intervals
 describe the positive share of experiment contrasts after applying the same `1e-12`
 tie tolerance used by the shared summaries. The unit still differs: shared directional
@@ -90,6 +96,9 @@ p-values**; their BH6 families are separate for each scope/scenario/reference an
 before/after/matched/change population. In the comparison tables, `native_*_p/q`
 belong to the experiment-weighted native t/BH family; unprefixed `*_p/q` belong to the
 study-weighted sign-test/BH6 family and must not be substituted for one another.
+The latter is `mt-supp-native-influence-shared-sign`, a separate focal family
+for each scope/scenario/reference and population; recover its membership from
+all focal rows in that group, not just rows displayed in a summary.
 
 Two reference policies are exported: refitted z-scores and contrasts divided by
 the fixed baseline SD. The latter isolates change on a common scale; a change in
@@ -115,6 +124,11 @@ cells, in nonzero-total profiles. Global BH is computed before extracting the si
 traits, separately by scope/scenario/background/tail. Reported membership uses
 q<=0.001 or q<=0.05 plus the existing fold limits (>=1.5 or <=0.67). Native ORA
 does not give equal weights to studies; it tests individual count profiles.
+The registry IDs are `mt-supp-native-influence-ora-enrichment` and
+`mt-supp-native-influence-ora-depletion`. Their run sizes are the respective
+`enrichment_tests` and `depletion_tests` fields in `native_ora_families.tsv`.
+These historical annotation-count families are not the modern distinct-taxon
+native ORA families or the joint-tail multiplicity family.
 
 Zero-total profiles remain visible with no tests. A zero-background trait remains
 in the depletion family with p=q=1, but has undefined fold, explicit status and no
