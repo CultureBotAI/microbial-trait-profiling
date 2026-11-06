@@ -465,26 +465,19 @@ cellulose-decr *ARGS:
 cellulose-decr-figures *ARGS:
 	#!/usr/bin/env bash
 	set -euo pipefail
-	help_only=0
 	for arg in "$@"; do
 		case "$arg" in
 			--analysis-dir* | --code-commit*)
 				echo "the recipe records this checkout and its commit; drop $arg" >&2
 				exit 1
 				;;
-			-h | --help)
-				help_only=1
-				;;
 		esac
 	done
 	commit="$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} data/analysis/cellulose_decr && git diff --cached --quiet -- {{code_paths}} data/analysis/cellulose_decr || echo +dirty)"
 	uv run python -m mtp.cellulose_decr.figures --code-commit "$commit" "$@"
-	if [ "$help_only" -eq 0 ]; then
-		uv run python -m mtp.cellulose_decr.tufte_plates --code-commit "$commit" "$@"
-	fi
 
-# Draw the Tufte plates (figures_tufte/) and 16-slide deck (cellulose_decr_slide_deck.html)
-# in data/analysis/cellulose_decr/ (#550). Also invoked by `just cellulose-decr-figures`.
+# Audit-only historical plates/deck: requires --audit-retired (#1572).
+# Unverified numbers; replacement from current rerun data is pending under #1670.
 [positional-arguments]
 cellulose-decr-tufte *ARGS:
 	uv run python -m mtp.cellulose_decr.tufte_plates "$@"

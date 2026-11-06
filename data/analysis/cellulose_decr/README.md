@@ -587,26 +587,33 @@ stay out of git outside `trait-visualization/`.
   (`scripts/build_slide_deck.py`) takes its cellulose slides from it, so a rerun
   updates the slides with the figures (#556).
 
-- **Tufte plates and 16-slide deck.** `just cellulose-decr-figures` (or
-  `just cellulose-decr-tufte` standalone, via `src/mtp/cellulose_decr/tufte_plates.py`)
-  reproduces the fixed October 16 study-modal worked-example Tufte analytical plates
+- **Retired historical Tufte plates and 16-slide deck.** The fixed October 16
+  study-modal display is retired because some numbers have no compatible tracked
+  source or contradict the cited source
+  ([#1572](https://github.com/CultureBotAI/microbial-trait-profiling/issues/1572)).
+  It is excluded from default generation. For audit only,
+  `just cellulose-decr-tufte --audit-retired` invokes the retained
+  `src/mtp/cellulose_decr/tufte_plates.py` to reproduce the historical plates
   (`fig1_tufte_convergence_slope_and_overlap` through
   `fig6_tufte_combining_results_integrated_evidence` as SVG, PDF and PNG), three
   supplemental SVG figures (`fig7_tufte_convergence_network_and_venn.svg`,
   `fig8_literature_support_four_pairs.svg`, `fig9_set_theory_17_core_vs_pairwise.svg`),
   the combined `cellulose_decr_tufte_figures.pdf` in `figures_tufte/`, and the
-  16-slide HTML deck `cellulose_decr_slide_deck.html` preserved for the `tufte-plate`
-  skill (`figure-wizard#19`) with the #550/#1127 rendering, citation, and #570
-  figure-path fixes.
+  16-slide HTML deck `cellulose_decr_slide_deck.html`. Every historical plate,
+  standalone SVG and HTML slide carries the banner
+  `RETIRED: historical, unverified numbers (#1572)`. Audit opt-in does not validate
+  or recompute the historical numbers. Source snapshots and source-pin tests are
+  retained as evidence. A replacement built from current rerun data is pending
+  under [#1670](https://github.com/CultureBotAI/microbial-trait-profiling/issues/1670).
+  The separate seven-plate generator, `scripts/generate_tufte_plates.py`, is unaffected.
 
-Reruns on the same tables give identical bytes.
+Reruns of the current figures on the same tables give identical bytes.
 
 ## 10. Reproduce
 
 ```bash
 just cellulose-decr                # tables, summary and provenance
-just cellulose-decr-figures        # figures, Tufte plates and decks (gitignored)
-just cellulose-decr-tufte          # Tufte plates and 16-slide deck only (gitignored)
+just cellulose-decr-figures        # current table-driven figures only (gitignored)
 ```
 
 The run takes about a minute. The Monte Carlo nulls use fixed seeds, so reruns

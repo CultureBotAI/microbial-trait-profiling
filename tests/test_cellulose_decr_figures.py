@@ -293,7 +293,7 @@ def generated_tufte_dir(tmp_path_factory: pytest.TempPathFactory) -> Path:
     from mtp.cellulose_decr import tufte_plates
 
     out_dir = tmp_path_factory.mktemp("cellulose_decr_tufte")
-    assert tufte_plates.main(["--analysis-dir", str(out_dir)]) == 0
+    assert tufte_plates.main(["--audit-retired", "--analysis-dir", str(out_dir)]) == 0
     return out_dir
 
 
@@ -475,7 +475,12 @@ def test_tufte_plates_and_deck_are_byte_repeatable(
     from mtp.cellulose_decr import tufte_plates
 
     second_dir = tmp_path / "rerun"
-    assert tufte_plates.main(["--analysis-dir", str(second_dir), "--code-commit", "deadbeef"]) == 0
+    assert (
+        tufte_plates.main(
+            ["--audit-retired", "--analysis-dir", str(second_dir), "--code-commit", "deadbeef"]
+        )
+        == 0
+    )
 
     first_files = sorted(
         p.relative_to(generated_tufte_dir) for p in generated_tufte_dir.rglob("*") if p.is_file()
@@ -543,8 +548,11 @@ def test_tufte_options_are_never_abbreviated() -> None:
     from mtp.cellulose_decr import tufte_plates
 
     with pytest.raises(SystemExit) as stopped:
-        tufte_plates.parse_args(["--analysis", "/tmp/x"])
+        tufte_plates.parse_args(["--audit-retired", "--analysis", "/tmp/x"])
     assert stopped.value.code == 2
     with pytest.raises(SystemExit) as stopped:
-        tufte_plates.parse_args(["--code", "abc"])
+        tufte_plates.parse_args(["--audit-retired", "--code", "abc"])
+    assert stopped.value.code == 2
+    with pytest.raises(SystemExit) as stopped:
+        tufte_plates.parse_args(["--audit"])
     assert stopped.value.code == 2
