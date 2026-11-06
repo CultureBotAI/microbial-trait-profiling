@@ -67,19 +67,23 @@ Outputs have different purposes:
 
 Statistic types and scopes use the complete tested table's own `Stat-Type`,
 `FDR-Scope`, and `Stat-Threshold` headers.
-Historical nominal tables copied raw p into the q field; identical copies are
-labelled `p_value`, as are the empty-q nominal tables produced after #1409.
-Contradictory nominal q/p values, contradictory or invalid/duplicate
-`Stat-Type` / `FDR-Scope` / `Stat-Threshold` declarations, or headerless tables
-with `best_qvalue == best_pvalue` are refused (#1507, #1509). When the header
+Historical nominal tables before #1465 declared `Stat-Type: p_value` alongside
+`FDR-Scope: global` (or `profile`) and copied raw p into the q field; identical
+copies and empty-q nominal tables are accepted and labelled `p_value` with
+`*_best_stat_scope: none` (#1489, #1761).
+Contradictory nominal q/p values (`best_qvalue != best_pvalue`), `Stat-Type: fdr_q`
+with `FDR-Scope: none`, invalid or duplicate `Stat-Type` / `FDR-Scope` /
+`Stat-Threshold` declarations, out-of-range `--p-threshold` values outside
+`(0, 1]`, or headerless tables with `best_qvalue == best_pvalue` are refused
+(#1507, #1509, #1761, #1764). When the header
 is absent and `best_qvalue != best_pvalue`, the available column name identifies
 the statistic. A missing q falls back to p (with `*_best_stat_scope: none`) even
 in a corrected table while `*_significance_basis` retains the stratum's call
 rule; missing values or unavailable traits/analyses are labelled `unavailable`.
 Type, scope, and basis columns are additive; support states and numerical
 summaries retain their definitions, and `scripts/adhoc/issue727_compare_core_strata.py`
-treats validated additive label columns and header/report lines as
-scientifically equivalent (#1511).
+treats additive label columns and header/report lines as scientifically
+equivalent only when they match the tested tables in the same directory (#1511, #1762).
 
 `tested_nonsignificant` means tests were performed and none passed the analyzer's
 selection rule; for a nominal run the legacy name does not imply an FDR result.

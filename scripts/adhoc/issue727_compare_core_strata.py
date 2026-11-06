@@ -14,9 +14,15 @@ import io
 import json
 import math
 from pathlib import Path
+from typing import NamedTuple
 
 from mtp.paths import file_sha256
-from mtp.stratification import BEST_STAT_NOTE, PRIMARY_STRATA
+from mtp.stratification import (
+    BEST_STAT_NOTE,
+    PRIMARY_STRATA,
+    _extract_q_or_p,
+    _read_tested_summary,
+)
 
 ALLOWED_BASIS_VALUES = {"FDR q", "nominal p", "unknown", "unavailable"}
 ALLOWED_BEST_BASIS_VALUES = {"FDR q", "nominal p", "unavailable"}
@@ -43,6 +49,12 @@ VALID_HIT_DESCRIPTIONS = {
     "Nominal hits: traits with any test passing the declared nominal p and fold thresholds.",
     "Hits (statistic not declared): traits with any test passing the analyzer's thresholds.",
 }
+EXPECTED_HIT_DESCRIPTIONS = {
+    "FDR q": "FDR hits: traits with any test passing the declared FDR q and fold thresholds.",
+    "nominal p": (
+        "Nominal hits: traits with any test passing the declared nominal p and fold thresholds."
+    ),
+}
 LEGACY_DECILE_HEADER = (
     f"{'Decile':<8} {'Min K':<8} {'Max K':<8} {'Total Traits':<14} {'Sig Traits':<12} {'% Sig':<8}"
 )
@@ -54,10 +66,62 @@ VALID_DECILE_HEADERS = {
     f"{'Decile':<8} {'Min K':<8} {'Max K':<8} {'Total Traits':<14} "
     f"{'Hits (statistic not declared)':<29} {'% Hits':<8}",
 }
+EXPECTED_DECILE_HEADERS = {
+    "FDR q": (
+        f"{'Decile':<8} {'Min K':<8} {'Max K':<8} {'Total Traits':<14} "
+        f"{'FDR hits':<24} {'% Hits':<8}"
+    ),
+    "nominal p": (
+        f"{'Decile':<8} {'Min K':<8} {'Max K':<8} {'Total Traits':<14} "
+        f"{'Nominal hits':<24} {'% Hits':<8}"
+    ),
+}
 SUPPORT_STATE_NOTE = (
     "Support-state names retain 'significant'; interpret each stratum using "
     "its hit statistic and FDR scope above."
 )
+
+
+class _StratumTruth(NamedTuple):
+    stat_type: str | None
+    fdr_scope: str
+    stat_threshold: str | None
+    hit_statistic: str
+    trait_types: dict[str, str]
+    trait_sig_basis: dict[str, str]
+
+
+def _expected_labels_from_tested(directory: Path) -> dict[str, _StratumTruth]:
+    truth: dict[str, _StratumTruth] = {}
+    for stratum in PRIMARY_STRATA:
+        tested_path = directory / f"trait_enrichment_traits_tested_{stratum}.tsv"
+        if not tested_path.exists():
+            continue
+        df, meta = _read_tested_summary(tested_path)
+        stat_type = meta.stat_type
+        fdr_scope = meta.fdr_scope or ("none" if stat_type == "p_value" else "unknown")
+        stat_threshold = meta.stat_threshold
+        hit_statistic = {"p_value": "nominal p", "fdr_q": "FDR q"}.get(
+            stat_type or "unknown", "unknown"
+        )
+        trait_types: dict[str, str] = {}
+        trait_sig_basis: dict[str, str] = {}
+        for _, row in df.iterrows():
+            _val, best_type, _best_scope = _extract_q_or_p(row, meta.stat_type, meta.fdr_scope)
+            trait_name = str(row["trait"])
+            trait_types[trait_name] = best_type
+            trait_sig_basis[trait_name] = (
+                hit_statistic if int(row["n_profiles_tested"]) > 0 else "unavailable"
+            )
+        truth[stratum] = _StratumTruth(
+            stat_type=stat_type,
+            fdr_scope=fdr_scope,
+            stat_threshold=stat_threshold,
+            hit_statistic=hit_statistic,
+            trait_types=trait_types,
+            trait_sig_basis=trait_sig_basis,
+        )
+    return truth
 
 
 def _split_comments_and_csv(path: Path) -> tuple[dict[str, str], list[str], list[list[str]]] | None:
@@ -93,7 +157,9 @@ def _valid_probability(value: str) -> bool:
     return math.isfinite(parsed) and 0.0 < parsed <= 1.0
 
 
-def _summary_tsv_scientifically_equal(old: Path, new: Path) -> bool:
+def _summary_tsv_scientifically_equal(
+    old: Path, new: Path, truth: dict[str, _StratumTruth] | None = None
+) -> bool:
     old_parsed = _split_comments_and_csv(old)
     new_parsed = _split_comments_and_csv(new)
     if old_parsed is None or new_parsed is None:
@@ -120,12 +186,25 @@ def _summary_tsv_scientifically_equal(old: Path, new: Path) -> bool:
             prefix = f"{stratum}-"
             if key.startswith(prefix):
                 field = key[len(prefix) :]
+                stratum_truth = truth.get(stratum) if truth is not None else None
                 if field in {"Threshold-Statistic", "Hit-Statistic"}:
-                    matched = new_val in ALLOWED_BASIS_VALUES
+                    matched = new_val in ALLOWED_BASIS_VALUES and (
+                        stratum_truth is None
+                        or stratum_truth.hit_statistic == "unknown"
+                        or new_val == stratum_truth.hit_statistic
+                    )
                 elif field == "FDR-Scope":
-                    matched = new_val in ALLOWED_SCOPE_VALUES
+                    matched = new_val in ALLOWED_SCOPE_VALUES and (
+                        stratum_truth is None
+                        or stratum_truth.fdr_scope == "unknown"
+                        or new_val == stratum_truth.fdr_scope
+                    )
                 elif field == "Stat-Threshold":
-                    matched = _valid_probability(new_val)
+                    matched = _valid_probability(new_val) and (
+                        stratum_truth is None
+                        or stratum_truth.stat_threshold is None
+                        or float(new_val) == float(stratum_truth.stat_threshold)
+                    )
                 break
         if not matched:
             return False
@@ -168,11 +247,46 @@ def _summary_tsv_scientifically_equal(old: Path, new: Path) -> bool:
                         return False
                     if stat_type == "unavailable" and stat_scope != "unavailable":
                         return False
+            stratum_truth = truth.get(stratum) if truth is not None else None
+            if stratum_truth is not None and "trait" in new_idx:
+                trait_name = row[new_idx["trait"]]
+                if (
+                    type_col in new_idx
+                    and stratum_truth.stat_type is not None
+                    and row[new_idx[type_col]]
+                    != stratum_truth.trait_types.get(trait_name, "unavailable")
+                ):
+                    return False
+                if (
+                    scope_col in new_idx
+                    and type_col in new_idx
+                    and row[new_idx[type_col]] == "fdr_q"
+                    and stratum_truth.fdr_scope != "unknown"
+                    and row[new_idx[scope_col]] != stratum_truth.fdr_scope
+                ):
+                    return False
+                sig_col = f"{stratum}_significance_basis"
+                if (
+                    sig_col in new_idx
+                    and stratum_truth.hit_statistic != "unknown"
+                    and row[new_idx[sig_col]]
+                    != stratum_truth.trait_sig_basis.get(trait_name, "unavailable")
+                ):
+                    return False
+                fdr_col = f"{stratum}_fdr_scope"
+                if (
+                    fdr_col in new_idx
+                    and stratum_truth.fdr_scope != "unknown"
+                    and row[new_idx[fdr_col]] != stratum_truth.fdr_scope
+                ):
+                    return False
     projected_new = [[row[new_idx[col]] for col in old_header] for row in new_rows]
     return projected_new == old_rows
 
 
-def _deciles_tsv_scientifically_equal(old: Path, new: Path) -> bool:
+def _deciles_tsv_scientifically_equal(
+    old: Path, new: Path, truth: dict[str, _StratumTruth] | None = None
+) -> bool:
     old_parsed = _split_comments_and_csv(old)
     new_parsed = _split_comments_and_csv(new)
     if old_parsed is None or new_parsed is None:
@@ -188,6 +302,7 @@ def _deciles_tsv_scientifically_equal(old: Path, new: Path) -> bool:
     if any(col not in ADDITIVE_DECILE_COLUMNS for col in added_cols):
         return False
     new_idx = {col: idx for idx, col in enumerate(new_header)}
+    pooled_truth = truth.get("pooled") if truth is not None else None
     for row in new_rows:
         for col in added_cols:
             if row[new_idx[col]] not in ADDITIVE_DECILE_COLUMNS[col]:
@@ -198,15 +313,34 @@ def _deciles_tsv_scientifically_equal(old: Path, new: Path) -> bool:
             and row[new_idx["threshold_statistic"]] != row[new_idx["hit_statistic"]]
         ):
             return False
+        if pooled_truth is not None:
+            if (
+                "hit_statistic" in new_idx
+                and pooled_truth.hit_statistic != "unknown"
+                and row[new_idx["hit_statistic"]] != pooled_truth.hit_statistic
+            ):
+                return False
+            if (
+                "fdr_scope" in new_idx
+                and pooled_truth.fdr_scope != "unknown"
+                and row[new_idx["fdr_scope"]] != pooled_truth.fdr_scope
+            ):
+                return False
     projected_new = [[row[new_idx[col]] for col in old_header] for row in new_rows]
     return projected_new == old_rows
 
 
-def _normalize_summary_txt(text: str) -> list[str] | None:
+def _normalize_summary_txt(
+    text: str, truth: dict[str, _StratumTruth] | None = None
+) -> list[str] | None:
     cleaned = text.replace(f"\n{BEST_STAT_NOTE}\n", "")
     normalized: list[str] = []
     in_deciles = False
+    current_stratum: str | None = None
+    pooled_truth = truth.get("pooled") if truth is not None else None
     for line in cleaned.splitlines():
+        if line.startswith("Stratum:"):
+            current_stratum = line[len("Stratum:") :].split("|", 1)[0].strip()
         if line.startswith("  Hit statistic: "):
             payload = line[len("  Hit statistic: ") :]
             hit_stat, sep, scope_part = payload.partition(" | FDR scope: ")
@@ -216,11 +350,32 @@ def _normalize_summary_txt(text: str) -> list[str] | None:
                 or scope_part not in ALLOWED_SCOPE_VALUES
             ):
                 return None
+            if truth is not None and current_stratum is not None and current_stratum in truth:
+                stratum_truth = truth[current_stratum]
+                if (
+                    stratum_truth.hit_statistic != "unknown"
+                    and hit_stat != stratum_truth.hit_statistic
+                ):
+                    return None
+                if stratum_truth.fdr_scope != "unknown" and scope_part != stratum_truth.fdr_scope:
+                    return None
             continue
         if line in VALID_HIT_DESCRIPTIONS:
+            if (
+                pooled_truth is not None
+                and pooled_truth.hit_statistic in EXPECTED_HIT_DESCRIPTIONS
+                and line != EXPECTED_HIT_DESCRIPTIONS[pooled_truth.hit_statistic]
+            ):
+                return None
             normalized.append(LEGACY_HIT_DESCRIPTION)
             continue
         if line in VALID_DECILE_HEADERS:
+            if (
+                pooled_truth is not None
+                and pooled_truth.hit_statistic in EXPECTED_DECILE_HEADERS
+                and line != EXPECTED_DECILE_HEADERS[pooled_truth.hit_statistic]
+            ):
+                return None
             normalized.append(LEGACY_DECILE_HEADER)
             in_deciles = True
             continue
@@ -250,14 +405,20 @@ def _normalize_summary_txt(text: str) -> list[str] | None:
     return normalized
 
 
-def _summary_txt_scientifically_equal(old: Path, new: Path, before: Path, after: Path) -> bool:
+def _summary_txt_scientifically_equal(
+    old: Path,
+    new: Path,
+    before: Path,
+    after: Path,
+    truth: dict[str, _StratumTruth] | None = None,
+) -> bool:
     old_text = old.read_text(encoding="utf-8").replace(str(before), "<OUTPUT>")
     new_text = new.read_text(encoding="utf-8").replace(str(after), "<OUTPUT>")
     if old_text == new_text:
         return True
     old_norm = _normalize_summary_txt(old_text)
-    new_norm = _normalize_summary_txt(new_text)
-    return old_norm is not None and old_norm == new_norm
+    new_norm = _normalize_summary_txt(new_text, truth=truth)
+    return old_norm is not None and new_norm is not None and old_norm == new_norm
 
 
 def compare(before: Path, after: Path) -> dict[str, object]:
@@ -267,6 +428,7 @@ def compare(before: Path, after: Path) -> dict[str, object]:
     new_files = {path.name for path in after.iterdir() if path.is_file()} - reserved
     if len(old_files) != 24 or old_files != new_files:
         raise ValueError("Expected the same 24 stratification products in both directories")
+    truth = _expected_labels_from_tested(after)
     comparisons = []
     for name in sorted(old_files):
         old, new = before / name, after / name
@@ -274,11 +436,11 @@ def compare(before: Path, after: Path) -> dict[str, object]:
         equal = old_hash == new_hash
         if not equal:
             if name == "stratification_sensitivity_summary.txt":
-                equal = _summary_txt_scientifically_equal(old, new, before, after)
+                equal = _summary_txt_scientifically_equal(old, new, before, after, truth)
             elif name == "stratification_sensitivity_summary.tsv":
-                equal = _summary_tsv_scientifically_equal(old, new)
+                equal = _summary_tsv_scientifically_equal(old, new, truth)
             elif name == "annotation_density_deciles.tsv":
-                equal = _deciles_tsv_scientifically_equal(old, new)
+                equal = _deciles_tsv_scientifically_equal(old, new, truth)
         if not equal:
             raise ValueError(f"Scientific output differs: {name}")
         comparisons.append(

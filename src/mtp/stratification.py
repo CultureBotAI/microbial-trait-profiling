@@ -89,6 +89,12 @@ def _validate_strata(strata: list[str] | tuple[str, ...]) -> None:
             raise ValueError(f"Invalid stratum name: {name!r}")
 
 
+def _validate_p_threshold(p_threshold: float) -> None:
+    """Require a finite significance threshold in (0, 1] before running ORA (#1764)."""
+    if not np.isfinite(p_threshold) or p_threshold <= 0.0 or p_threshold > 1.0:
+        raise ValueError(f"p_threshold out of range (0, 1]: {p_threshold!r}")
+
+
 def partition_profiles(
     profiles_path: Path,
     experiments_path: Path,
@@ -240,6 +246,7 @@ def run_stratum_enrichment(
     taxa_matrix: Path | None = None,
 ) -> StratumOutputs:
     """Execute ORA enrichment and rankings export for one stratum."""
+    _validate_p_threshold(p_threshold)
     output_dir.mkdir(parents=True, exist_ok=True)
     outputs = _stratum_outputs(stratum, profiles_tsv, output_dir)
 
@@ -391,33 +398,34 @@ def _read_tested_summary(path: Path) -> tuple[pd.DataFrame, _TestedTableMetadata
                 break
             if line.startswith("# Stat-Type:"):
                 value = line.split(":", 1)[1].strip()
-                if stat_type is not None or value not in {"fdr_q", "p_value"}:
-                    raise ValueError(f"Invalid or duplicate Stat-Type in {path}: {value!r}")
+                if stat_type is not None:
+                    raise ValueError(f"Duplicate Stat-Type in {path}: {value!r}")
+                if value not in {"fdr_q", "p_value"}:
+                    raise ValueError(f"Invalid Stat-Type in {path}: {value!r}")
                 stat_type = value
             elif line.startswith("# FDR-Scope:"):
                 value = line.split(":", 1)[1].strip()
-                if fdr_scope is not None or value not in {"global", "profile", "none"}:
-                    raise ValueError(f"Invalid or duplicate FDR-Scope in {path}: {value!r}")
+                if fdr_scope is not None:
+                    raise ValueError(f"Duplicate FDR-Scope in {path}: {value!r}")
+                if value not in {"global", "profile", "none"}:
+                    raise ValueError(f"Invalid FDR-Scope in {path}: {value!r}")
                 fdr_scope = value
             elif line.startswith("# Stat-Threshold:"):
                 value = line.split(":", 1)[1].strip()
+                if stat_threshold is not None:
+                    raise ValueError(f"Duplicate Stat-Threshold in {path}: {value!r}")
                 try:
                     parsed_threshold = float(value)
                 except ValueError as exc:
-                    raise ValueError(
-                        f"Invalid or duplicate Stat-Threshold in {path}: {value!r}"
-                    ) from exc
+                    raise ValueError(f"Invalid Stat-Threshold in {path}: {value!r}") from exc
                 if (
-                    stat_threshold is not None
-                    or not np.isfinite(parsed_threshold)
+                    not np.isfinite(parsed_threshold)
                     or parsed_threshold <= 0.0
                     or parsed_threshold > 1.0
                 ):
-                    raise ValueError(f"Invalid or duplicate Stat-Threshold in {path}: {value!r}")
+                    raise ValueError(f"Stat-Threshold out of range (0, 1] in {path}: {value!r}")
                 stat_threshold = value
-        if (stat_type == "p_value" and fdr_scope in {"global", "profile"}) or (
-            stat_type == "fdr_q" and fdr_scope == "none"
-        ):
+        if stat_type == "fdr_q" and fdr_scope == "none":
             raise ValueError(
                 f"Contradictory Stat-Type {stat_type!r} and FDR-Scope {fdr_scope!r} in {path}"
             )
@@ -899,6 +907,7 @@ def run_stratification_pipeline(
 ) -> tuple[dict[str, StratumOutputs], Path, Path]:
     """Execute the full background stratification pipeline."""
     _validate_strata(strata)
+    _validate_p_threshold(p_threshold)
     bundle = open_core_bundle(core_run, "ora_profiles") if core_run is not None else None
     bindings = {
         "profiles": (profiles_path, "ora_profiles", DEFAULT_PROFILES_PATH),
@@ -1046,7 +1055,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         type=Path,
         help="Path to taxa_trait_matrix.tsv (default: data/derived/taxa_trait_matrix.tsv).",
     )
-    return parser.parse_args(argv)
+    args = parser.parse_args(argv)
+    _validate_p_threshold(args.p_threshold)
+    return args
 
 
 def main(argv: list[str] | None = None) -> int:

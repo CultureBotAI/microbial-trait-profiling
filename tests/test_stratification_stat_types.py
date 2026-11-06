@@ -17,6 +17,9 @@ from mtp.stratification import (
     StratumOutputs,
     build_sensitivity_summary_table,
     generate_sensitivity_reports,
+    parse_args,
+    run_stratification_pipeline,
+    run_stratum_enrichment,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -92,6 +95,10 @@ def write_outputs(
         (None, None, None, None, None, "unavailable", "unavailable"),
         ("p_value", None, 0.02, 0.02, 0.02, "p_value", "none"),
         ("p_value", "none", None, 0.02, 0.02, "p_value", "none"),
+        ("p_value", "global", 0.02, 0.02, 0.02, "p_value", "none"),
+        ("p_value", "profile", 0.02, 0.02, 0.02, "p_value", "none"),
+        ("p_value", "global", None, 0.02, 0.02, "p_value", "none"),
+        ("p_value", "profile", None, 0.02, 0.02, "p_value", "none"),
         ("fdr_q", None, 0.4, 0.02, 0.4, "fdr_q", "unknown"),
         ("fdr_q", "global", 0.4, 0.02, 0.4, "fdr_q", "global"),
         ("fdr_q", "profile", 0.4, 0.02, 0.4, "fdr_q", "profile"),
@@ -113,6 +120,10 @@ def test_statistic_type_tracks_the_preserved_value(
     row = frame.iloc[0]
     assert row["pooled_best_stat_type"] == kind
     assert row["pooled_best_stat_scope"] == expected_scope
+    if metadata is not None:
+        expected_stratum_scope = scope or ("none" if metadata == "p_value" else "unknown")
+        assert row["pooled_fdr_scope"] == expected_stratum_scope
+        assert strata.iloc[0]["fdr_scope"] == expected_stratum_scope
     assert (
         row["pooled_best_stat_basis"]
         == {
@@ -308,15 +319,83 @@ def test_fdr_reports_from_complete_tested_tables_emit_call_basis_and_scope_label
     )
 
 
+@pytest.mark.parametrize("fdr_scope", [None, "none", "global", "profile"])
 @pytest.mark.parametrize(("q", "p"), [(0.4, 0.02), (0.4, None)])
 def test_nominal_metadata_cannot_relabel_a_different_q(
     tmp_path: Path,
+    fdr_scope: str | None,
     q: float,
     p: float | None,
 ) -> None:
-    outputs = write_outputs(tmp_path, "pooled", q, p, "p_value")
+    outputs = write_outputs(tmp_path, "pooled", q, p, "p_value", fdr_scope=fdr_scope)
     with pytest.raises(ValueError, match=r"nominal.*best_qvalue"):
         build_sensitivity_summary_table({"pooled": outputs})
+
+
+@pytest.mark.parametrize("scope", ["global", "profile"])
+def test_pre_1465_nominal_tested_table_header_and_copied_q_summarise_cleanly(
+    tmp_path: Path, scope: str
+) -> None:
+    outputs = write_outputs(tmp_path, "pooled", 0.02, 0.02, "p_value", fdr_scope=scope)
+    assert outputs.tested_traits_tsv is not None
+    body = pd.read_csv(outputs.tested_traits_tsv, sep="\t", comment="#").to_csv(
+        sep="\t", index=False
+    )
+    pre_1465_header = (
+        "# Tail: upper\n"
+        "# Stat-Type: p_value\n"
+        f"# FDR-Scope: {scope}\n"
+        "# Stat-Threshold: 0.05\n"
+        "# Min-Fold: 1.5\n"
+        "# Result-Status: discoveries\n"
+        "# Total-Tests-Performed: 4\n"
+        "# Significant-Hits: 1\n"
+        "# Body-Site-Group: pooled\n"
+    )
+    outputs.tested_traits_tsv.write_text(pre_1465_header + body, encoding="utf-8")
+    tsv, _ = generate_sensitivity_reports({"pooled": outputs}, tmp_path / "reports")
+    row = pd.read_csv(tsv, sep="\t", comment="#").iloc[0]
+    assert row["pooled_best_stat"] == 0.02
+    assert row["pooled_best_stat_type"] == "p_value"
+    assert row["pooled_best_stat_scope"] == "none"
+    assert row["pooled_best_stat_basis"] == "nominal p"
+    assert row["pooled_significance_basis"] == "nominal p"
+    assert row["pooled_fdr_scope"] == scope
+
+
+@pytest.mark.parametrize(
+    ("fdr_scope", "stat_threshold", "expected_scope", "expected_threshold"),
+    [
+        ("global", None, "global", "unknown"),
+        (None, 0.001, "unknown", "0.001"),
+    ],
+    ids=["scope-only", "threshold-only"],
+)
+def test_scope_only_or_threshold_only_tested_header_overrides_ranking_metadata(
+    tmp_path: Path,
+    fdr_scope: str | None,
+    stat_threshold: float | None,
+    expected_scope: str,
+    expected_threshold: str,
+) -> None:
+    outputs = write_outputs(
+        tmp_path,
+        "pooled",
+        0.4,
+        0.02,
+        None,
+        fdr_scope=fdr_scope,
+        stat_threshold=stat_threshold,
+    )
+    frame, strata = build_sensitivity_summary_table({"pooled": outputs})
+    meta = strata.iloc[0]
+    assert bool(meta["tested_has_header"]) is True
+    assert meta["stat_type"] == "unknown"
+    assert meta["hit_statistic"] == "unknown"
+    assert meta["fdr_scope"] == expected_scope
+    assert str(meta["stat_threshold"]) == expected_threshold
+    assert frame.iloc[0]["pooled_fdr_scope"] == expected_scope
+    assert frame.iloc[0]["pooled_significance_basis"] == "unknown"
 
 
 @pytest.mark.parametrize("equal_value", [0.02, 1.0])
@@ -336,18 +415,17 @@ def test_invalid_statistic_metadata_is_refused(tmp_path: Path, metadata: str) ->
 @pytest.mark.parametrize(
     ("stat_type", "fdr_scope", "stat_threshold", "match"),
     [
-        ("fdr_q", "", None, "FDR-Scope"),
-        ("fdr_q", "by", None, "FDR-Scope"),
-        ("fdr_q", "global\n# FDR-Scope: profile", None, "FDR-Scope"),
-        ("p_value", "global", None, "FDR-Scope"),
-        ("p_value", "profile", None, "FDR-Scope"),
-        ("fdr_q", "none", None, "FDR-Scope"),
-        ("fdr_q", "global", "", "Stat-Threshold"),
-        ("fdr_q", "global", "0", "Stat-Threshold"),
-        ("fdr_q", "global", "-0.01", "Stat-Threshold"),
-        ("fdr_q", "global", "1.5", "Stat-Threshold"),
-        ("fdr_q", "global", "nan", "Stat-Threshold"),
-        ("fdr_q", "global", "0.05\n# Stat-Threshold: 0.01", "Stat-Threshold"),
+        ("fdr_q", "", None, "Invalid FDR-Scope"),
+        ("fdr_q", "by", None, "Invalid FDR-Scope"),
+        ("fdr_q", "global\n# FDR-Scope: profile", None, "Duplicate FDR-Scope"),
+        ("fdr_q", "none", None, "Contradictory Stat-Type"),
+        ("fdr_q", "global", "", "Invalid Stat-Threshold"),
+        ("fdr_q", "global", "0", r"Stat-Threshold out of range"),
+        ("fdr_q", "global", "-0.01", r"Stat-Threshold out of range"),
+        ("fdr_q", "global", "1.5", r"Stat-Threshold out of range"),
+        ("fdr_q", "global", "nan", r"Stat-Threshold out of range"),
+        ("fdr_q", "global", "abc", "Invalid Stat-Threshold"),
+        ("fdr_q", "global", "0.05\n# Stat-Threshold: 0.01", "Duplicate Stat-Threshold"),
     ],
 )
 def test_invalid_or_contradictory_scope_and_threshold_metadata_are_refused(
@@ -368,6 +446,32 @@ def test_invalid_or_contradictory_scope_and_threshold_metadata_are_refused(
     )
     with pytest.raises(ValueError, match=match):
         build_sensitivity_summary_table({"pooled": outputs})
+
+
+@pytest.mark.parametrize("bad_threshold", [0.0, -0.01, 1.5, float("nan"), float("inf")])
+def test_out_of_range_p_threshold_is_refused_before_ora_runs(
+    tmp_path: Path, bad_threshold: float
+) -> None:
+    out_dir = tmp_path / "out"
+    with pytest.raises(ValueError, match=r"out of range"):
+        parse_args(["--p-threshold", str(bad_threshold)])
+    with pytest.raises(ValueError, match=r"out of range"):
+        run_stratum_enrichment(
+            stratum="pooled",
+            profiles_tsv=tmp_path / "missing_profiles.tsv",
+            output_dir=out_dir,
+            p_threshold=bad_threshold,
+            taxa_matrix=tmp_path / "missing_matrix.tsv",
+        )
+    with pytest.raises(ValueError, match=r"out of range"):
+        run_stratification_pipeline(
+            profiles_path=tmp_path / "missing_profiles.tsv",
+            experiments_path=tmp_path / "missing_experiments.tsv",
+            output_dir=out_dir,
+            p_threshold=bad_threshold,
+            taxa_matrix=tmp_path / "missing_matrix.tsv",
+        )
+    assert not out_dir.exists()
 
 
 @pytest.mark.parametrize("compressed", [False, True])
@@ -431,7 +535,18 @@ def _assemble_24_strata_products(
                     "test_status": "tested_significant",
                     "best_qvalue": 0.02,
                     "best_pvalue": 0.004,
-                }
+                },
+                {
+                    "trait": "trait-fallback",
+                    "trait_total": 5,
+                    "n_profiles_tested": 2,
+                    "prevalence": 0.0,
+                    "mean_fold": 1.0,
+                    "hit_rows": 0,
+                    "test_status": "tested_nonsignificant",
+                    "best_qvalue": float("nan"),
+                    "best_pvalue": 0.01,
+                },
             ]
         )
         tested_path.write_text(
@@ -492,7 +607,28 @@ def test_core_strata_comparison_accepts_additive_stat_and_scope_labels(
         before, include_stat_type_col=before_has_1489, include_full_labels=False
     )
     _assemble_24_strata_products(after, include_stat_type_col=True, include_full_labels=True)
-    result = issue727.compare(before, after)
+    truth = issue727._expected_labels_from_tested(after)
+    assert issue727._summary_tsv_scientifically_equal(
+        before / "stratification_sensitivity_summary.tsv",
+        after / "stratification_sensitivity_summary.tsv",
+        truth,
+    )
+    assert issue727._deciles_tsv_scientifically_equal(
+        before / "annotation_density_deciles.tsv",
+        after / "annotation_density_deciles.tsv",
+        truth,
+    )
+    assert issue727._summary_txt_scientifically_equal(
+        before / "stratification_sensitivity_summary.txt",
+        after / "stratification_sensitivity_summary.txt",
+        before,
+        after,
+        truth,
+    )
+    try:
+        result = issue727.compare(before, after)
+    except ValueError as exc:
+        raise AssertionError(f"compare unexpectedly rejected valid products: {exc}") from exc
     assert result["passed"] is True
     products = {entry["file"]: entry for entry in result["products"]}
     for report_name in (
@@ -524,11 +660,89 @@ def test_core_strata_comparison_accepts_additive_stat_and_scope_labels(
             "# pooled-FDR-Scope: global",
             "# pooled-FDR-Scope: bad",
         ),
+        (
+            "stratification_sensitivity_summary.tsv",
+            "# pooled-Stat-Threshold: 0.001",
+            "# pooled-Stat-Threshold: 0.05",
+        ),
+        (
+            "stratification_sensitivity_summary.tsv",
+            "# pooled-FDR-Scope: global",
+            "# pooled-FDR-Scope: profile",
+        ),
+        (
+            "stratification_sensitivity_summary.tsv",
+            "# pooled-Hit-Statistic: FDR q",
+            "# pooled-Hit-Statistic: nominal p",
+        ),
+        (
+            "stratification_sensitivity_summary.tsv",
+            "# pooled-Threshold-Statistic: FDR q",
+            "# pooled-Threshold-Statistic: nominal p",
+        ),
+        (
+            "stratification_sensitivity_summary.tsv",
+            "0.02\tfdr_q",
+            "0.02\tp_value",
+        ),
+        (
+            "stratification_sensitivity_summary.tsv",
+            "\tglobal\tFDR q\tFDR q\tglobal\t",
+            "\tglobal\tFDR q\tFDR q\tprofile\t",
+        ),
+        (
+            "stratification_sensitivity_summary.tsv",
+            "\tglobal\tFDR q\tFDR q\tglobal\t",
+            "\tglobal\tFDR q\tnominal p\tglobal\t",
+        ),
+        (
+            "stratification_sensitivity_summary.tsv",
+            "\tglobal\tFDR q\tFDR q\tglobal\t",
+            "\tprofile\tFDR q\tFDR q\tglobal\t",
+        ),
+        (
+            "stratification_sensitivity_summary.tsv",
+            "\tglobal\tFDR q\tFDR q\tglobal\t",
+            "\tglobal\tnominal p\tFDR q\tglobal\t",
+        ),
+        (
+            "stratification_sensitivity_summary.tsv",
+            "\tnone\tnominal p\tFDR q\tglobal\t",
+            "\tglobal\tnominal p\tFDR q\tglobal\t",
+        ),
+        (
+            "stratification_sensitivity_summary.tsv",
+            f"# Best-Statistic: {BEST_STAT_NOTE}",
+            "# Best-Statistic: tampered best statistic note",
+        ),
+        (
+            "stratification_sensitivity_summary.tsv",
+            f"# Note: {PRECAUTIONARY_NOTE}",
+            "# Note: tampered precautionary note",
+        ),
         ("annotation_density_deciles.tsv", "100.0", "50.0"),
         ("annotation_density_deciles.tsv", "FDR q\tFDR q\tglobal", "FDR q\tFDR q\tinvalid_scope"),
         ("annotation_density_deciles.tsv", "FDR q\tFDR q\tglobal", "FDR q\tnominal p\tglobal"),
+        ("annotation_density_deciles.tsv", "FDR q\tFDR q\tglobal", "nominal p\tnominal p\tnone"),
+        ("annotation_density_deciles.tsv", "FDR q\tFDR q\tglobal", "FDR q\tFDR q\tprofile"),
         ("stratification_sensitivity_summary.txt", "100.0   %", "50.0    %"),
         ("stratification_sensitivity_summary.txt", "FDR scope: global", "FDR scope: invalid"),
+        (
+            "stratification_sensitivity_summary.txt",
+            "Hit statistic: FDR q | FDR scope: global",
+            "Hit statistic: nominal p | FDR scope: none",
+        ),
+        (
+            "stratification_sensitivity_summary.txt",
+            "FDR hits: traits with any test passing the declared FDR q and fold thresholds.",
+            "Nominal hits: traits with any test passing "
+            "the declared nominal p and fold thresholds.",
+        ),
+        (
+            "stratification_sensitivity_summary.txt",
+            f"{'FDR hits':<24}",
+            f"{'Nominal hits':<24}",
+        ),
     ],
 )
 def test_core_strata_comparison_rejects_scientific_and_invalid_label_changes(
@@ -545,3 +759,103 @@ def test_core_strata_comparison_rejects_scientific_and_invalid_label_changes(
     target.write_text(content.replace(old_substr, new_substr, 1), encoding="utf-8")
     with pytest.raises(ValueError, match=f"Scientific output differs: {target_file}"):
         issue727.compare(before, after)
+
+
+def test_core_strata_comparison_rejects_out_of_range_threshold_when_tested_threshold_absent(
+    tmp_path: Path,
+) -> None:
+    issue727 = _load_issue727_compare()
+    before = tmp_path / "before"
+    after = tmp_path / "after"
+    _assemble_24_strata_products(before, include_stat_type_col=False, include_full_labels=False)
+    _assemble_24_strata_products(after, include_stat_type_col=True, include_full_labels=True)
+    for directory in (before, after):
+        tested = directory / "trait_enrichment_traits_tested_pooled.tsv"
+        tested.write_text(
+            tested.read_text(encoding="utf-8").replace("# Stat-Threshold: 0.001\n", ""),
+            encoding="utf-8",
+        )
+    summary = after / "stratification_sensitivity_summary.tsv"
+    summary.write_text(
+        summary.read_text(encoding="utf-8").replace(
+            "# pooled-Stat-Threshold: 0.001", "# pooled-Stat-Threshold: 1.5", 1
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(
+        ValueError, match=r"Scientific output differs: stratification_sensitivity_summary\.tsv"
+    ):
+        issue727.compare(before, after)
+
+
+def test_core_strata_comparison_rejects_relabeling_q_as_nominal_p(tmp_path: Path) -> None:
+    issue727 = _load_issue727_compare()
+    before = tmp_path / "before"
+    after = tmp_path / "after"
+    _assemble_24_strata_products(before, include_stat_type_col=False, include_full_labels=False)
+    _assemble_24_strata_products(after, include_stat_type_col=True, include_full_labels=True)
+    summary = after / "stratification_sensitivity_summary.tsv"
+    content = summary.read_text(encoding="utf-8")
+    content = content.replace("0.02\tfdr_q", "0.02\tp_value", 1)
+    content = content.replace(
+        "\tglobal\tFDR q\tFDR q\tglobal\t", "\tnone\tnominal p\tFDR q\tglobal\t", 1
+    )
+    summary.write_text(content, encoding="utf-8")
+    with pytest.raises(
+        ValueError, match=r"Scientific output differs: stratification_sensitivity_summary\.tsv"
+    ):
+        issue727.compare(before, after)
+
+
+def test_core_strata_comparison_standalone_domain_and_consistency_guards(tmp_path: Path) -> None:
+    issue727 = _load_issue727_compare()
+    before = tmp_path / "before"
+    after = tmp_path / "after"
+    _assemble_24_strata_products(before, include_stat_type_col=False, include_full_labels=False)
+    _assemble_24_strata_products(after, include_stat_type_col=True, include_full_labels=True)
+
+    summary_before = before / "stratification_sensitivity_summary.tsv"
+    summary_after = after / "stratification_sensitivity_summary.tsv"
+    bad_summary = tmp_path / "bad_summary.tsv"
+    bad_summary.write_text(
+        summary_after.read_text(encoding="utf-8").replace(
+            "\tglobal\tFDR q\tFDR q\tglobal\t", "\tglobal\tFDR q\tFDR q\tinvalid_scope\t", 1
+        ),
+        encoding="utf-8",
+    )
+    assert not issue727._summary_tsv_scientifically_equal(summary_before, bad_summary, truth=None)
+
+    deciles_before = before / "annotation_density_deciles.tsv"
+    deciles_after = after / "annotation_density_deciles.tsv"
+    bad_deciles_scope = tmp_path / "bad_deciles_scope.tsv"
+    bad_deciles_scope.write_text(
+        deciles_after.read_text(encoding="utf-8").replace(
+            "FDR q\tFDR q\tglobal", "FDR q\tFDR q\tbad_scope", 1
+        ),
+        encoding="utf-8",
+    )
+    assert not issue727._deciles_tsv_scientifically_equal(
+        deciles_before, bad_deciles_scope, truth=None
+    )
+
+    bad_deciles_hit = tmp_path / "bad_deciles_hit.tsv"
+    bad_deciles_hit.write_text(
+        deciles_after.read_text(encoding="utf-8").replace(
+            "FDR q\tFDR q\tglobal", "FDR q\tnominal p\tglobal", 1
+        ),
+        encoding="utf-8",
+    )
+    assert not issue727._deciles_tsv_scientifically_equal(
+        deciles_before, bad_deciles_hit, truth=None
+    )
+
+    txt_before = before / "stratification_sensitivity_summary.txt"
+    txt_after = after / "stratification_sensitivity_summary.txt"
+    bad_txt = tmp_path / "bad_summary.txt"
+    bad_txt.write_text(
+        txt_after.read_text(encoding="utf-8").replace("FDR scope: global", "FDR scope: invalid", 1),
+        encoding="utf-8",
+    )
+    assert not issue727._summary_txt_scientifically_equal(
+        txt_before, bad_txt, before, after, truth=None
+    )
