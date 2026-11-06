@@ -1047,7 +1047,8 @@ def paired_contrast_caveat(metrics: dict) -> str:
         f"of {plural(excluded_family, 'trait')}{untested_note('feces_excluded', paren=True)} "
         f"pass study BH q ≤ 0.05; in "
         f"Saliva ({studies('saliva')} studies), {len(study_bh_rows(contrasts['saliva']))} of "
-        f"{saliva_family}. Saliva's nitrate reduction has {sign} "
+        f"{saliva_family}{untested_note('saliva', paren=True)}. Saliva's nitrate reduction has "
+        f"{sign} "
         f"Feces' {support} (t = {t_saliva:+.2f}, nominal p = "
         f"{p_text(float(saliva['study_p_value']))}, q = "
         f"{p_text(float(saliva['study_q_value']))} over {plural(saliva_family, 'saliva test')}"
@@ -1816,12 +1817,11 @@ def update_previous_slide_text(row: dict[str, str], metrics: dict) -> tuple[str,
     elif fig_path == "data/derived/guild_maps/guild_condition_body_site_heatmap.png":
         test = metrics.get("mcnemar")
         if test:
-            asymmetric = (
-                test.p_value < 0.05 and test.aerobe_up_anaerobe_down != test.anaerobe_up_aerobe_down
-            )
+            # An exact McNemar test with equal discordant counts has p = 1, so the
+            # nominal threshold alone decides; the title names it (R3, #1701).
             title = (
-                "Oxygen-guild discordance is asymmetric across studies"
-                if asymmetric
+                "Oxygen-guild discordance is asymmetric across studies at nominal p < 0.05"
+                if test.p_value < 0.05
                 else "Oxygen-guild discordance across studies"
             )
             takeaway = (
@@ -1918,6 +1918,9 @@ def pd_direction_caveat(
         f"{signed(float(model['ci_low']), 2)} to {signed(float(model['ci_high']), 2)}, "
         f"{_nominal_p_clause(model)})"
         if _estimable_effect(model)
+        else f"{signed(float(model['coefficient']), 2)} cellulose z (CI not estimable, "
+        f"{_nominal_p_clause(model)})"
+        if _has_finite(model, "coefficient") and _has_p(model)
         else f"{signed(float(model['coefficient']), 2)} cellulose z (CI and test not estimable)"
         if _has_finite(model, "coefficient")
         else f"not estimable for cellulose z ({_nominal_p_clause(model)})"
@@ -1927,6 +1930,9 @@ def pd_direction_caveat(
         f"{signed(100 * float(positive['ci_low']))} to {signed(100 * float(positive['ci_high']))}"
         f", {_nominal_p_clause(positive)})"
         if _estimable_effect(positive)
+        else f"{signed(100 * float(positive['coefficient']))} percentage points "
+        f"(CI not estimable, {_nominal_p_clause(positive)})"
+        if _has_finite(positive, "coefficient") and _has_p(positive)
         else f"{signed(100 * float(positive['coefficient']))} percentage points "
         "(CI and test not estimable)"
         if _has_finite(positive, "coefficient")

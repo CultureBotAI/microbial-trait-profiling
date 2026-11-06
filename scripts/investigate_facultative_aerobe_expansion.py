@@ -500,7 +500,8 @@ def paired_smd_label(row: Any) -> str:
             p_text = (
                 f"nominal p={p_value:.3g} "
                 f"(one of {n_tests} condition tests; shown: top {int(n_shown)} eligible "
-                f"conditions by guild-z difference, {n_shown_tested} of them tested)"
+                f"{pluralize(int(n_shown), 'condition')} by guild-z difference, "
+                f"{n_shown_tested} of them tested)"
             )
         else:
             p_text = (

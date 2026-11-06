@@ -318,7 +318,7 @@ def test_plate_two_caveat_reads_saliva_and_feces(
     )
     assert "nominal p = 0.025, q = 0.98 over 4 saliva tests, 2 not tested;" in multi_caveat
     assert "Feces t = +3.97, q = 0.0013 over 4 feces tests, 1 not tested)" in multi_caveat
-    assert "in Saliva (55 studies), 0 of 4." in multi_caveat
+    assert "in Saliva (55 studies), 0 of 4 (2 not tested)." in multi_caveat
 
 
 def test_plate_two_caveat_needs_the_nitrate_rows() -> None:
@@ -1479,7 +1479,7 @@ def test_mcnemar_text_labels_its_single_nominal_test() -> None:
     title, takeaway, _ = deck.update_previous_slide_text(
         {**guild_slide, "title": ""}, {"contrasts_by_key": {}, "mcnemar": test}
     )
-    assert title == "Oxygen-guild discordance is asymmetric across studies"
+    assert title == "Oxygen-guild discordance is asymmetric across studies at nominal p < 0.05"
     assert takeaway == (
         "Discordant study counts are 399 versus 255: paired odds ratio 1.560; "
         "exact McNemar nominal p = 1.9 \N{MULTIPLICATION SIGN} 10⁻⁸, 1 test."
@@ -1489,11 +1489,17 @@ def test_mcnemar_text_labels_its_single_nominal_test() -> None:
         {"contrasts_by_key": {}, "mcnemar": McNemar(260, 240, 260 / 240, 0.40)},
     )
     assert nonsig_title == "Oxygen-guild discordance across studies"
-    equal_title, _, _ = deck.update_previous_slide_text(
-        guild_slide,
-        {"contrasts_by_key": {}, "mcnemar": McNemar(250, 250, 1.0, 0.01)},
-    )
-    assert equal_title == "Oxygen-guild discordance across studies"
+    # The title names its nominal threshold; p = 0.05 itself is not below it (#1701).
+    boundary = {
+        p: deck.update_previous_slide_text(
+            guild_slide, {"contrasts_by_key": {}, "mcnemar": McNemar(300, 240, 1.25, p)}
+        )[0]
+        for p in (0.0499, 0.05)
+    }
+    assert boundary == {
+        0.0499: "Oxygen-guild discordance is asymmetric across studies at nominal p < 0.05",
+        0.05: "Oxygen-guild discordance across studies",
+    }
 
 
 def test_oriented_cellulose_text_reads_both_populations() -> None:
@@ -4630,6 +4636,15 @@ def test_pd_network_slide_and_cover_label_nominal_p_and_exclude_unrun_tests(
         in untested_model_caveat
     )
     assert "95% CI" not in untested_model_caveat
+    # A tested row without a CI keeps its test; only the CI is missing (#1702).
+    tested_no_ci = [
+        {**row, "ci_low": "", "ci_high": "", "p_value": p, "p_value_type": "nominal"}
+        for row, p in zip(all_untested_model, ("0.012", "0.30"), strict=True)
+    ]
+    no_ci_caveat = deck.pd_direction_caveat(tested_no_ci[0], tested_no_ci[1], tested_no_ci)
+    assert "is +0.50 cellulose z (CI not estimable, nominal p = 0.012), and " in no_ci_caveat
+    assert "0.0 percentage points (CI not estimable, nominal p = 0.30)" in no_ci_caveat
+    assert "test not estimable" not in no_ci_caveat
 
     net_rows_three = [
         *net_rows,
