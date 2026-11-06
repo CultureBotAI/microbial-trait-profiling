@@ -1058,15 +1058,14 @@ def main(argv: list[str] | None = None) -> int:
     def na(value: int | None) -> str:
         return "NA" if value is None else str(value)
 
-    statistic_label = "nominal p" if stat_type == "p_value" else "FDR q"
     common: list[tuple[str, Any]] = [
         ("Tail", tail),
         ("Stat-Type", stat_type),
         ("FDR-Scope", fdr_scope),
-        ("Threshold-Statistic", statistic_label),
-        ("Hit-Statistic", statistic_label),
-        ("Stat-Threshold", stat_threshold),
     ]
+    if stat_type == "p_value":
+        common.extend([("Threshold-Statistic", "nominal p"), ("Hit-Statistic", "nominal p")])
+    common.append(("Stat-Threshold", stat_threshold))
     if tail == "lower":
         common.append(("Max-Fold", max_fold))
     else:

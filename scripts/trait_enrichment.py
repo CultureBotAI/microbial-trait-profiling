@@ -525,8 +525,9 @@ def main(argv: list[str] | None = None) -> None:
             out_fh.write("# Testable-Set: K>0 & N>0\n")
             out_fh.write(f"# FDR: {args.fdr}\n")
             out_fh.write(f"# FDR-Scope: {correction_family}\n")
-            out_fh.write(f"# Threshold-Statistic: {statistic_label}\n")
-            out_fh.write(f"# Hit-Statistic: {statistic_label}\n")
+            if not args.fdr:
+                out_fh.write(f"# Threshold-Statistic: {statistic_label}\n")
+                out_fh.write(f"# Hit-Statistic: {statistic_label}\n")
             out_fh.write(f"# P-Threshold: {args.p_threshold}\n")
             if args.tail == "upper":
                 out_fh.write(f"# Min-Fold: {args.min_fold}\n")
@@ -594,8 +595,9 @@ def main(argv: list[str] | None = None) -> None:
             out_fh.write("# Testable-Set: K>0 & N>0\n")
             out_fh.write(f"# FDR: {args.fdr}\n")
             out_fh.write(f"# FDR-Scope: {correction_family}\n")
-            out_fh.write(f"# Threshold-Statistic: {statistic_label}\n")
-            out_fh.write(f"# Hit-Statistic: {statistic_label}\n")
+            if not args.fdr:
+                out_fh.write(f"# Threshold-Statistic: {statistic_label}\n")
+                out_fh.write(f"# Hit-Statistic: {statistic_label}\n")
             out_fh.write(f"# P-Threshold: {args.p_threshold}\n")
             if args.tail == "upper":
                 out_fh.write(f"# Min-Fold: {args.min_fold}\n")

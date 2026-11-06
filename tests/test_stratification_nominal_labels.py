@@ -1,5 +1,6 @@
 """Pin additive ORA statistic labels without changing calculations (#1503)."""
 
+from dataclasses import replace
 from pathlib import Path
 
 import pandas as pd
@@ -127,7 +128,7 @@ def test_missing_metadata_and_unavailable_analysis_are_not_called_corrected(tmp_
     [
         ("p_value", "none", "nominal p", "Nominal hits"),
         ("fdr_q", "profile", "FDR q", "FDR hits"),
-        (None, None, "unknown", "Hits (statistic unknown)"),
+        (None, None, "unknown", "Hits (statistic not declared)"),
     ],
 )
 def test_written_reports_and_density_counts_label_the_pooled_hit_basis(
@@ -146,10 +147,16 @@ def test_written_reports_and_density_counts_label_the_pooled_hit_basis(
     assert f"# pooled-Hit-Statistic: {basis}\n" in summary
     assert f"# pooled-FDR-Scope: {scope or 'unknown'}\n" in summary
     assert f"Hit statistic: {basis} | FDR scope: {scope or 'unknown'}" in report
-    assert (
-        f"{hit_label}: traits with any test passing the declared {basis} and fold thresholds."
-        in report
-    )
+    if stat_type is None:
+        assert (
+            "Hits (statistic not declared): traits with any test passing the analyzer's thresholds."
+            in report
+        )
+    else:
+        assert (
+            f"{hit_label}: traits with any test passing the declared {basis} and fold thresholds."
+            in report
+        )
     assert "Sig Traits:" not in report
     assert "declared p/q" not in report
     assert (
@@ -178,3 +185,80 @@ def test_written_reports_and_density_counts_label_the_pooled_hit_basis(
         "significant_traits": 1,
         "pct_significant": 100.0,
     }
+
+
+@pytest.mark.parametrize(("stat_type", "scope"), [("p_value", "none"), ("fdr_q", "global")])
+def test_untested_trait_does_not_inherit_declared_stratum_hit_basis(
+    tmp_path: Path, stat_type: str, scope: str
+) -> None:
+    output = _outputs(tmp_path, "pooled", stat_type, scope)
+    assert output.tested_traits_tsv is not None
+    tested = pd.read_csv(output.tested_traits_tsv, sep="\t")
+    untested = pd.DataFrame(
+        {
+            "trait": ["UntestedTrait"],
+            "trait_total": [0],
+            "n_profiles_tested": [0],
+            "prevalence": [float("nan")],
+            "mean_fold": [float("nan")],
+            "best_pvalue": [float("nan")],
+            "best_qvalue": [float("nan")],
+            "hit_rows": [0],
+            "test_status": ["untested_zero_trait_total"],
+        }
+    )
+    pd.concat([tested, untested], ignore_index=True).to_csv(
+        output.tested_traits_tsv, sep="\t", index=False
+    )
+    traits, strata = build_sensitivity_summary_table({"pooled": output})
+    row = traits.set_index("trait").loc["UntestedTrait"]
+    assert row["pooled_n_tested"] == 0
+    assert row["pooled_significant"] is None
+    assert row["pooled_test_status"] == "untested_zero_trait_total"
+    assert row["pooled_best_stat_basis"] == "unavailable"
+    assert row["pooled_significance_basis"] == "unavailable"
+    assert row["pooled_fdr_scope"] == scope
+    assert strata.iloc[0]["hit_statistic"] == ("nominal p" if stat_type == "p_value" else "FDR q")
+    assert strata.iloc[0]["tested_traits"] == 1
+    assert strata.iloc[0]["untested_traits"] == 1
+
+
+@pytest.mark.parametrize("missing_path", [False, True], ids=["none", "absent-file"])
+def test_missing_tested_table_resets_parsed_labels_and_explains_unavailable_hits(
+    tmp_path: Path, missing_path: bool
+) -> None:
+    pooled = _outputs(tmp_path, "pooled", "fdr_q", "profile")
+    pooled = replace(
+        pooled,
+        tested_traits_tsv=tmp_path / "absent-tested.tsv" if missing_path else None,
+    )
+    outputs = {
+        "pooled": pooled,
+        "feces": _outputs(tmp_path, "feces", "p_value", "none"),
+    }
+    traits, strata = build_sensitivity_summary_table(outputs)
+    pooled_metadata = strata.set_index("stratum").loc["pooled"]
+    for field in ("stat_type", "threshold_statistic", "hit_statistic", "fdr_scope"):
+        assert pooled_metadata[field] == "unavailable"
+    row = traits.set_index("trait").loc["TraitA"]
+    assert row["pooled_test_status"] == "unavailable_analysis"
+    assert row["pooled_significant"] is None
+    assert pd.isna(row["pooled_best_stat"])
+    assert row["pooled_best_stat_basis"] == "unavailable"
+    assert row["pooled_significance_basis"] == "unavailable"
+    assert row["pooled_fdr_scope"] == "unavailable"
+
+    report_dir = tmp_path / "reports"
+    tsv, txt = generate_sensitivity_reports(outputs, report_dir)
+    summary = tsv.read_text(encoding="utf-8")
+    report = txt.read_text(encoding="utf-8")
+    assert "# pooled-Threshold-Statistic: unavailable\n" in summary
+    assert "# pooled-Hit-Statistic: unavailable\n" in summary
+    assert "# pooled-FDR-Scope: unavailable\n" in summary
+    assert "Hit statistic: unavailable | FDR scope: unavailable" in report
+    assert (
+        "Hits (statistic not declared): traits with any test passing the analyzer's thresholds."
+        in report
+    )
+    assert "declared unavailable" not in report
+    assert pd.read_csv(report_dir / "annotation_density_deciles.tsv", sep="\t").empty

@@ -651,7 +651,12 @@ def generate_sensitivity_reports(
 
     pooled_basis = str(pooled_metadata.get("hit_statistic", "unavailable"))
     hit_label = {"nominal p": "Nominal hits", "FDR q": "FDR hits"}.get(
-        pooled_basis, f"Hits (statistic {pooled_basis})"
+        pooled_basis, "Hits (statistic not declared)"
+    )
+    threshold_description = (
+        f"the declared {pooled_basis} and fold thresholds"
+        if pooled_basis in {"nominal p", "FDR q"}
+        else "the analyzer's thresholds"
     )
 
     txt_lines.extend(
@@ -661,8 +666,7 @@ def generate_sensitivity_reports(
             "-" * 80,
             "Traits binned by background annotation count (trait_total) deciles:",
             "Universe: all eligible tested traits, including traits with zero discoveries.",
-            f"{hit_label}: traits with any test passing the declared {pooled_basis} "
-            "and fold thresholds.",
+            f"{hit_label}: traits with any test passing {threshold_description}.",
             "Untested traits and unavailable analyses are excluded; "
             "empty diagnostics are not zero discovery rates.",
             (

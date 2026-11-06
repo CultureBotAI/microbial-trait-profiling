@@ -97,8 +97,12 @@ def test_producer_and_rankings_label_the_actual_threshold_and_hits(
     hits_label = "Nominal hits" if mode == "none" else "Significant hits"
     for path in (selected, complete):
         header, _ = _table(path)
-        assert header["Threshold-Statistic"] == label
-        assert header["Hit-Statistic"] == label
+        if mode == "none":
+            assert header["Threshold-Statistic"] == label
+            assert header["Hit-Statistic"] == label
+        else:
+            assert "Threshold-Statistic" not in header
+            assert "Hit-Statistic" not in header
     text = report.read_text(encoding="utf-8")
     assert text.startswith(f"{label} <= {threshold:g}")
     assert f"{hits_label}: {sum(decisions)}" in text
@@ -141,8 +145,12 @@ def test_producer_and_rankings_label_the_actual_threshold_and_hits(
         assert "significant hits" not in exported_stdout
     for path in (overall, pairs, tested):
         header, _ = _table(path)
-        assert header["Threshold-Statistic"] == label
-        assert header["Hit-Statistic"] == label
+        if mode == "none":
+            assert header["Threshold-Statistic"] == label
+            assert header["Hit-Statistic"] == label
+        else:
+            assert "Threshold-Statistic" not in header
+            assert "Hit-Statistic" not in header
         assert float(header["Stat-Threshold"]) == threshold
         assert header["FDR-Scope"] == mode
     filtered = rankings.parse_results_tsv(

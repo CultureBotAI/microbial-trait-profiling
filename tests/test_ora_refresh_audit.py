@@ -146,6 +146,34 @@ def test_refresh_audit_accepts_only_new_fingerprints(refresh_manifest: Path) -> 
 
 
 @pytest.mark.parametrize(
+    "refresh_manifest",
+    [
+        {"scope": scope, "tail": tail}
+        for scope in ("global", "profile")
+        for tail in ("upper", "lower")
+    ],
+    indirect=True,
+)
+def test_fdr_refresh_accepts_the_legacy_metadata_contract(refresh_manifest: Path) -> None:
+    """Actual FDR producer output must remain compatible with the pre-label audit (#1618)."""
+    historical = refresh_manifest.parent / "historical.tsv"
+    # These labels did not exist in historical FDR exports. Unlike the common
+    # fixture's same-producer copy, this preserves that older header contract.
+    historical.write_bytes(
+        b"".join(
+            line
+            for line in historical.read_bytes().splitlines(keepends=True)
+            if not line.startswith((b"# Threshold-Statistic:", b"# Hit-Statistic:"))
+        )
+    )
+    pair = json.loads(refresh_manifest.read_text(encoding="utf-8"))["pairs"][0]
+    result = audit_pair(pair, refresh_manifest.parent)
+    assert result["passed"], result["errors"]
+    assert result["table_body_equal"]
+    assert set(result["metadata_changes"]) == {"Profiles-SHA256", "Taxa-Matrix-SHA256"}
+
+
+@pytest.mark.parametrize(
     ("mutation", "message"),
     [
         ("body", "Table body bytes differ"),
