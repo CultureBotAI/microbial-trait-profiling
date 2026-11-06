@@ -1655,6 +1655,27 @@ def test_guild_correlation_table_and_cli_label_nominal_p_values_with_test_counts
         tied_mcnemar["n_tests"],
     ) == ("", "not_tested", "0")
 
+    nan_mcnemar_corr = replace(
+        four_pair_corr,
+        mcnemar_p=float("nan"),
+        spearman={"aerobe_inc_vs_dec": (-0.5, 0.25, 3)},
+    )
+    nan_mcnemar_dir = tmp_path / "nan_mcnemar"
+    nan_mcnemar_dir.mkdir()
+    write_outputs(matrix, nan_mcnemar_corr, nan_mcnemar_dir, "2026-04-24_00:41_UTC")
+    with (nan_mcnemar_dir / "guild_aerobe_anaerobe_correlation.tsv").open(
+        encoding="utf-8"
+    ) as handle:
+        nan_mcnemar_rows = list(csv.DictReader(handle, delimiter="\t"))
+    (nan_mcnemar_row,) = [
+        row for row in nan_mcnemar_rows if row["statistic"] == "mcnemar_odds_ratio"
+    ]
+    assert (
+        nan_mcnemar_row["p_value"],
+        nan_mcnemar_row["p_value_type"],
+        nan_mcnemar_row["n_tests"],
+    ) == ("", "not_tested", "1")
+
     profiles_path, experiments_path = corpus
     cli_out = tmp_path / "cli_out"
     monkeypatch.setattr(
@@ -1682,3 +1703,26 @@ def test_guild_correlation_table_and_cli_label_nominal_p_values_with_test_counts
         "McNemar (exact, paired signs): discordant 2/0, "
         "odds ratio undefined (nominal p=0.5, 1 nominal test) over 2 studies [tested]"
     ) in stdout
+
+    monkeypatch.setattr(
+        guild_maps,
+        "compute_correlation",
+        lambda _profiles: nan_mcnemar_corr,
+    )
+    guild_maps.main()
+    nan_stdout = capsys.readouterr().out
+    assert (
+        "McNemar (exact, paired signs): discordant 2/1, "
+        "odds ratio 2.000 (not tested) over 4 studies [tested]"
+    ) in nan_stdout
+
+    methods_text = " ".join(
+        (Path(__file__).resolve().parents[1] / "methods/guild_condition_body_site_heatmap.md")
+        .read_text(encoding="utf-8")
+        .split()
+    )
+    assert (
+        "`guild_aerobe_anaerobe_correlation.tsv` appends `p_value_type` "
+        "(`nominal` or `not_tested`, blank on non-test count rows) and `n_tests` "
+        "(the table-wide count of finite McNemar and Spearman tests)."
+    ) in methods_text

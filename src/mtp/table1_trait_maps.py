@@ -735,7 +735,7 @@ def build_shift_figure(
         "are excluded from a trait's test, so the denominators differ between traits.",
         "Error bars are exact binomial 95% intervals; q is Benjamini-Hochberg across the "
         "six traits.",
-        f"Contrast correlations (companion TSV reports nominal Spearman p across "
+        f"Trait-trait correlations (companion TSV reports nominal Spearman p across "
         f"{n_spearman_tests} tested trait pairs); fractions and contrasts remain "
         "denominator-dependent.",
         "Directions are curated signature labels. "
