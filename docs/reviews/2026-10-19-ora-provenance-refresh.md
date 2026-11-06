@@ -11,13 +11,13 @@ required input fingerprints. The execution uses committed analysis revision
 The output root is:
 
 ```text
-/Users/marcin/Documents/VIMSS/ontology/KG-Hub/KG-Microbe/microbial-trait-profiling/data/derived/ora_provenance_refresh/issue720
+data/derived/ora_provenance_refresh/issue720
 ```
 
 ## Input identity and execution
 
 The core manifest is
-`/private/tmp/mtp-workflow-629/.tmp/core-production-final/run-49a0c712ad3d4fc59d10804951fe511a/run.json`.
+`<temp dir>/mtp-workflow-629/.tmp/core-production-final/run-49a0c712ad3d4fc59d10804951fe511a/run.json`.
 The measured input identities are retained in `input-sha256.txt` under the output
 root. The committed [audit manifest](2026-10-19-ora-provenance-refresh-inputs.json)
 identifies every historical/current result pair and the actual input files.
@@ -27,12 +27,12 @@ The refresh reuses the core and native inputs at the paths listed here. Full
 future revalidation requires retaining those inputs; the new output directory
 is not a self-contained archival copy of the core and other analysis arms.
 
-The production commands use these bindings (`OUTPUT` must be a fresh directory):
+The production commands use these bindings. The three inputs were checkouts under `<temp dir>`; replace `/path/to` with yours (`OUTPUT` must be a fresh directory):
 
 ```bash
-CORE=/private/tmp/mtp-workflow-629/.tmp/core-production-final/run-49a0c712ad3d4fc59d10804951fe511a
-NATIVE=/private/tmp/mtp-issue551/.tmp/issue551-native-core
-NOEL=/private/tmp/mtp-workflow-629/.tmp/issue658-noel-production
+CORE=/path/to/mtp-workflow-629/.tmp/core-production-final/run-49a0c712ad3d4fc59d10804951fe511a
+NATIVE=/path/to/mtp-issue551/.tmp/issue551-native-core
+NOEL=/path/to/mtp-workflow-629/.tmp/issue658-noel-production
 OUTPUT=/absolute/path/to/a/new/ora-refresh
 
 just core-ora "$CORE/run.json" "$OUTPUT/enrichment" upper
@@ -112,7 +112,7 @@ The correction families for these exports are:
 
 The three complete-trait summaries, annotation-density deciles and stratification
 sensitivity TSV are also byte-identical to the corrected #664 baseline under
-`/private/tmp/mtp-issue664/.tmp/issue664-strata/` (checked with `cmp`).
+`<temp dir>/mtp-issue664/.tmp/issue664-strata/` (checked with `cmp`).
 
 The completed pooled producers wrote these new core-bound consumer records:
 

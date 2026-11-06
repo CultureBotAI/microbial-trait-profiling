@@ -117,7 +117,7 @@ a different corpus or procedure; those checks remain the consumer's responsibili
 The production retention destination for issue #720 is:
 
 ```text
-/Users/marcin/Documents/VIMSS/ontology/KG-Hub/KG-Microbe/microbial-trait-profiling/data/derived/provenance_archives/issue726/historical-ora-refresh
+data/derived/provenance_archives/issue726/historical-ora-refresh
 ```
 
 Its manifest lists the three explicitly verified consumer chains: pooled
