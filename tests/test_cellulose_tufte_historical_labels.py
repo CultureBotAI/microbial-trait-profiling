@@ -152,7 +152,7 @@ def test_plate_four_family_note_is_on_the_four_pair_panel(
     assert _plain(subtitle) == (
         "Difference in share of stool profiles with positive trait annotation "
         "(Increased minus Decreased; percentage points, pp) "
-        "BH q: family not recorded (#1525)"
+        "BH q: family not recorded (#1525); 4 nominal tests shown"
     )
 
 
@@ -198,7 +198,7 @@ def test_fig_seven_pins_the_kicker_and_unknown_family_note() -> None:
         "(METPO:2000103 | GO:0030245) · October 16 worked example"
     )
     assert (
-        "BH q: family not recorded (#1525); p-values nominal; "
+        "BH q: family not recorded (#1525); p-values nominal (14 tests shown); "
         "benchmark/percentile: historical (#1416)."
     ) in texts
     assert "46 studies · Δ = \u221227.4 pp (q = 0.0077)" in texts
@@ -208,7 +208,7 @@ def test_fig_eight_pins_the_title_family_note() -> None:
     texts = _svg_texts(tufte_plates.render_fig8_svg())
     assert texts[0] == (
         "OPPOSITE STOOL TRAIT DIRECTIONS IN HUMAN SIGNATURES (BugSigDB \u00d7 KG-Microbe) "
-        "· historical (#1416); BH q: family not recorded (#1525)"
+        "· historical (#1416); BH q: family not recorded (#1525); 8 nominal tests (2/card)"
     )
 
 
@@ -278,9 +278,37 @@ def test_plate_one_nominal_note_is_above_the_existing_footer_rule(
     assert captions == [
         "(p-values nominal) If fiber-digesting bacteria were lost at the same rate "
         "as other stool bacteria,\n"
-        "only ~20% would overlap between diseases. Observed overlap is 50.4%\n"
-        "(exact hypergeometric p < 10⁻¹⁰ for every pair; random-guild permutation p = 0.011)."
+        "only ~20% would overlap between diseases. Observed overlap is 50.4% "
+        "(4 nominal tests shown:\n"
+        "exact hypergeometric p < 10⁻¹⁰ per pair, 3 tests; "
+        "random-guild permutation p = 0.011, 1 test)."
     ]
+
+
+def test_plates_two_and_three_state_nominal_test_counts(
+    label_plates: dict[str, Figure],
+) -> None:
+    """Plates II and III state how many nominal tests their panels show (#1533)."""
+    p2_source = _plain(label_plates["II"].texts[3].get_text())
+    assert p2_source.endswith("PD\u2013CRC exact nominal p = 5.98 \u00d7 10⁻¹⁰ (1/3 tests).")
+    p2_headers = [
+        text
+        for text in _artist_texts(label_plates["II"])
+        if text.startswith("NINE CORE GENERA REPORTED DECREASED IN ALL THREE DISEASES")
+    ]
+    assert p2_headers == [
+        "NINE CORE GENERA REPORTED DECREASED IN ALL THREE DISEASES "
+        "(17.1\u00d7 over random expectation, nominal p = 3.5 \u00d7 10⁻¹², 1 core test)"
+    ]
+    p3_subtitle = next(
+        text.get_text()
+        for text in label_plates["III"].axes[0].texts
+        if text.get_text().startswith("Comparing stool against colon wall biopsies")
+    )
+    assert _plain(p3_subtitle) == (
+        "Comparing stool against colon wall biopsies and saliva relative to a 50% "
+        "binomial baseline (7 nominal binomial sign tests)"
+    )
 
 
 @pytest.mark.parametrize("plate", ["I", "II", "III", "IV", "V", "VI"])
@@ -290,6 +318,12 @@ def test_new_plate_labels_fit_the_fixed_packet_canvas(
     fig = label_plates[plate]
     fig.draw_without_rendering()
     artists = list(fig.texts) + [text for ax in fig.axes for text in ax.texts]
+    ticks = [
+        tick
+        for ax in fig.axes
+        for tick in (*ax.get_xticklabels(), *ax.get_yticklabels())
+        if tick.get_text()
+    ]
     changed = [
         text
         for text in artists
@@ -312,6 +346,11 @@ def test_new_plate_labels_fit_the_fixed_packet_canvas(
         assert bounds.y0 >= 0, text.get_text()
         assert bounds.x1 <= fig.bbox.width, text.get_text()
         assert bounds.y1 <= fig.bbox.height, text.get_text()
+        for tick in ticks:
+            assert not bounds.overlaps(tick.get_window_extent()), (
+                text.get_text(),
+                tick.get_text(),
+            )
         for other in artists:
             if other is text or not other.get_text():
                 continue
@@ -415,6 +454,83 @@ def test_deck_four_pair_footer_identifies_the_unknown_bh_family(deck_sections: l
     assert footer is not None
     pair_note = _plain(footer.group(1)).split("Four highlighted pairs:", 1)[1]
     assert "BH q: family not recorded (#1525)" in pair_note
+    assert "(1 nominal test shown)" in pair_note
+
+
+@pytest.mark.parametrize(
+    ("slide_number", "expected_counts"),
+    [
+        (1, ["(1 nominal test shown)", "(2 nominal tests shown)", "(1 nominal test shown)"]),
+        (2, ["(1 nominal test shown)"]),
+        (3, ["(2 nominal tests shown)"]),
+        (4, ["(3 nominal tests shown)"]),
+        (5, ["(1 nominal test shown)"]),
+        (8, ["(2 nominal tests shown)"]),
+        (9, ["(1 nominal test shown)", "(1 nominal test shown)"]),
+        (12, ["(3 nominal tests shown)"]),
+        (13, ["(6 nominal tests shown)"]),
+    ],
+)
+def test_deck_cards_and_footers_state_nominal_test_counts(
+    deck_sections: list[str], slide_number: int, expected_counts: list[str]
+) -> None:
+    """Every deck cover card and footer with nominal p states its test count (#1533)."""
+    section = deck_sections[slide_number - 1]
+    blocks = re.findall(r'<div class="(?:lbl|footer-col)">(.*?)</div>', section, re.DOTALL)
+    with_p = [
+        _plain(b)
+        for b in blocks
+        if re.search(r"\bnominal\s+(?:<i>)?p(?:</i>)?\s*(?:=|≤|≥|<|>|&lt;|&gt;)", b)
+    ]
+    assert len(with_p) == len(expected_counts)
+    for block_text, expected in zip(with_p, expected_counts, strict=True):
+        assert expected in block_text, (slide_number, block_text)
+        assert ") (" not in block_text, (slide_number, block_text)
+        if slide_number > 1:
+            assert block_text.endswith(f"{expected}."), (slide_number, block_text)
+
+
+def test_deck_slides_six_and_seven_footers_carry_historical_run_label(
+    deck_sections: list[str],
+) -> None:
+    """Slides 6 and 7 footers quoting 317, 66,240, and 1,912 carry their run label (#1533)."""
+    s6_cols = [
+        _plain(c)
+        for c in re.findall(r'<div class="footer-col">(.*?)</div>', deck_sections[5], re.DOTALL)
+    ]
+    assert len(s6_cols) == 2
+    assert s6_cols[0].startswith("Three statistical arms \u2014 historical (#1416):")
+    assert "317 non-MediaDive traits" in s6_cols[0]
+    assert "66,240 enrichments" in s6_cols[0]
+    assert s6_cols[1].startswith("Table 1 fraction and ratio tests:")
+    assert "historical (#1416)" not in s6_cols[1]
+
+    s7_cols = [
+        _plain(c)
+        for c in re.findall(r'<div class="footer-col">(.*?)</div>', deck_sections[6], re.DOTALL)
+    ]
+    assert len(s7_cols) == 2
+    assert s7_cols[0].startswith("Shared comparison basis \u2014 historical (#1416):")
+    assert "317 non-MediaDive trait denominator" in s7_cols[0]
+    assert s7_cols[1].startswith("Integrated evidence contract \u2014 historical (#1416):")
+    assert "1,912 rows" in s7_cols[1]
+
+    synthetic = (
+        '<section class="slide">'
+        '<p class="subtitle">Example · historical (#1416)</p>'
+        '<footer class="slide-footer">'
+        '<div class="footer-col"><b>Unrelated decimal:</b> r = 0.317 across 1,317 pairs.</div>'
+        '<div class="footer-col"><b>Screen basis:</b> 317 non-MediaDive traits.</div>'
+        "</footer></section>"
+    )
+    rewritten = tufte_plates._annotate_deck_nominal_counts_and_footer_labels(synthetic)
+    syn_cols = [
+        _plain(c) for c in re.findall(r'<div class="footer-col">(.*?)</div>', rewritten, re.DOTALL)
+    ]
+    assert syn_cols == [
+        "Unrelated decimal: r = 0.317 across 1,317 pairs.",
+        "Screen basis \u2014 historical (#1416): 317 non-MediaDive traits.",
+    ]
 
 
 @pytest.mark.parametrize("slide_number", range(1, 17))
