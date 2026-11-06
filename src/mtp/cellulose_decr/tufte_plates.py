@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import functools
+import re
 from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Any
@@ -506,13 +507,18 @@ def build_plate1_convergence_slope_and_overlap() -> Figure:
         ax_slope.text(x_pos, 7.2, l1, fontsize=8.8, fontweight=fw, color=col, ha="center")
         ax_slope.text(x_pos, 4.4, l2, fontsize=8.8, fontweight=fw, color=col, ha="center")
 
+    n_pair_tests = sum("vs." in label for label, *_ in series)
+    n_perm_tests = sum("mean" in label for label, *_ in series)
+    n_nominal_tests = n_pair_tests + n_perm_tests
     ax_slope.text(
         0.0,
         -0.02,
         "(p-values nominal) If fiber-digesting bacteria were lost at the same rate "
         "as other stool bacteria,\n"
-        "only ~20% would overlap between diseases. Observed overlap is 50.4%\n"
-        "(exact hypergeometric p < 10⁻¹⁰ for every pair; random-guild permutation p = 0.011).",
+        f"only ~20% would overlap between diseases. Observed overlap is 50.4% "
+        f"({n_nominal_tests} nominal tests shown:\n"
+        f"exact hypergeometric p < 10⁻¹⁰ per pair, {n_pair_tests} tests; "
+        f"random-guild permutation p = 0.011, {n_perm_tests} test).",
         transform=ax_slope.transAxes,
         fontsize=8.3,
         color=MUTED,
@@ -723,6 +729,17 @@ def build_plate1_convergence_slope_and_overlap() -> Figure:
 @_with_tufte_rcparams
 def build_plate2_core_guild_dot_table() -> Figure:
     """Build Plate II: The Shared Fiber-Degrading Guild at Genus & Species Resolution (#550)."""
+    slope_items = [
+        ("PD vs. CRC", 57.4, 62.5, CRIMSON, 0.58, 0.635),
+        ("3-Pair Mean", 50.4, 52.2, INK, 0.50, 0.520),
+        ("PD vs. HIV", 48.8, 47.4, SLATE, 0.48, 0.478),
+        ("HIV vs. CRC", 45.0, 46.7, OCHRE, 0.44, 0.440),
+    ]
+    n_pair_tests = sum("vs." in label for label, *_ in slope_items)
+    pdcrc_note = "PD\u2013CRC exact nominal p = 5.98 \u00d7 10⁻¹⁰"
+    n_pdcrc_shown = len(re.findall(r"\bnominal\s+p\s*=", pdcrc_note))
+    core_header_stat = "17.1\u00d7 over random expectation, nominal p = 3.5 \u00d7 10⁻¹²"
+    n_core_tests = len(re.findall(r"\bnominal\s+p\s*=", core_header_stat))
     fig = _make_tufte_plate(
         (13.8, 8.0),
         "PLATE II  ·  THE SHARED FIBER-DEGRADING GUILD AT GENUS & SPECIES RESOLUTION"
@@ -732,7 +749,8 @@ def build_plate2_core_guild_dot_table() -> Figure:
         "(93 background taxa) strengthens the overlap: 62.5% of lost fiber-digesting genera "
         "and species are shared between Parkinson\u2019s disease and colorectal cancer.",
         "Source: Genus + Species sensitivity analysis (N = 93 stool decreased genera/species; "
-        "22 cellulose-annotated). PD\u2013CRC exact nominal p = 5.98 \u00d7 10⁻¹⁰.",
+        f"22 cellulose-annotated). {pdcrc_note} "
+        f"({n_pdcrc_shown}/{n_pair_tests} tests).",
         "Plate II  ·  data/analysis/cellulose_decr",
     )
 
@@ -780,7 +798,7 @@ def build_plate2_core_guild_dot_table() -> Figure:
         x_taxon,
         0.912,
         "NINE CORE GENERA REPORTED DECREASED IN ALL THREE DISEASES "
-        "(17.1\u00d7 over random expectation, nominal p = 3.5 \u00d7 10⁻¹²)",
+        f"({core_header_stat}, {n_core_tests} core test)",
         fontsize=8.2,
         fontweight="bold",
         color=CRIMSON,
@@ -985,12 +1003,6 @@ def build_plate2_core_guild_dot_table() -> Figure:
         ha="center",
     )
 
-    slope_items = [
-        ("PD vs. CRC", 57.4, 62.5, CRIMSON, 0.58, 0.635),
-        ("3-Pair Mean", 50.4, 52.2, INK, 0.50, 0.520),
-        ("PD vs. HIV", 48.8, 47.4, SLATE, 0.48, 0.478),
-        ("HIV vs. CRC", 45.0, 46.7, OCHRE, 0.44, 0.440),
-    ]
     for label, v1, v2, col, y1, y2 in slope_items:
         ax_side.plot([0.18, 0.58], [y1, y2], color=col, linewidth=1.6)
         ax_side.scatter([0.18, 0.58], [y1, y2], color=col, s=24, zorder=4)
@@ -1037,6 +1049,80 @@ def build_plate2_core_guild_dot_table() -> Figure:
 # --------------------------------------------------------------------------- Plate III
 
 
+PLATE3_DIRECTION_ROWS = (
+    (
+        "Stool (All 3 Diseases Combined)",
+        73.1,
+        65.1,
+        80.1,
+        "106 dec vs. 39 inc,\nnominal p = 2.4 \u00d7 10⁻⁸",
+        0.76,
+        True,
+        CRIMSON,
+    ),
+    (
+        "· Colorectal cancer stool",
+        81.1,
+        64.8,
+        92.0,
+        "30 dec vs. 7 inc,\nnominal p = 1.9 \u00d7 10⁻⁴",
+        0.64,
+        False,
+        CRIMSON,
+    ),
+    (
+        "· HIV infection stool",
+        76.0,
+        54.9,
+        90.6,
+        "19 dec vs. 6 inc,\nnominal p = 0.015",
+        0.53,
+        False,
+        CRIMSON,
+    ),
+    (
+        "· Parkinson\u2019s disease stool",
+        68.7,
+        57.6,
+        78.4,
+        "57 dec vs. 26 inc,\nnominal p = 8.8 \u00d7 10⁻⁴",
+        0.42,
+        False,
+        CRIMSON,
+    ),
+    (
+        "Gut Wall Biopsy (Colon Mucosa)",
+        48.1,
+        28.7,
+        68.1,
+        "13 dec vs. 14 inc,\nnominal p = 1.00",
+        0.26,
+        True,
+        MUTED,
+    ),
+    (
+        "· Colorectal tumor biopsy",
+        35.3,
+        14.2,
+        61.7,
+        "6 dec vs. 11 inc,\nnominal p = 0.33",
+        0.15,
+        False,
+        MUTED,
+    ),
+    (
+        "Mouth & Saliva (Oral Cavity)",
+        45.5,
+        16.7,
+        76.6,
+        "5 dec vs. 6 inc,\nnominal p = 1.00",
+        0.04,
+        True,
+        MUTED,
+    ),
+)
+
+
 @_with_tufte_rcparams
 def build_plate3_why_only_stool() -> Figure:
     """Build Plate III: Anatomical & Ecological Specificity (#550)."""
@@ -1055,11 +1141,14 @@ def build_plate3_why_only_stool() -> Figure:
     )
 
     ax_left = fig.add_axes((0.03, 0.21, 0.47, 0.62), facecolor=PAPER_BG)
+
+    direction_rows = list(PLATE3_DIRECTION_ROWS)
+
     _add_panel_header(
         ax_left,
         "A. Direction Within Studies: % of Experiments Where Fiber Bacteria Decrease",
         "Comparing stool against colon wall biopsies and saliva relative to a 50% "
-        "binomial baseline",
+        f"binomial baseline\n({len(direction_rows)} nominal binomial sign tests)",
         y_title=0.985,
         y_subtitle=0.920,
         title_size=10.6,
@@ -1067,79 +1156,6 @@ def build_plate3_why_only_stool() -> Figure:
     )
 
     ax_left.axvline(50.0, ymin=0.0, ymax=0.84, color=MUTED, linestyle="--", linewidth=0.9, zorder=2)
-
-    direction_rows = [
-        (
-            "Stool (All 3 Diseases Combined)",
-            73.1,
-            65.1,
-            80.1,
-            "106 dec vs. 39 inc,\nnominal p = 2.4 \u00d7 10⁻⁸",
-            0.76,
-            True,
-            CRIMSON,
-        ),
-        (
-            "· Colorectal cancer stool",
-            81.1,
-            64.8,
-            92.0,
-            "30 dec vs. 7 inc,\nnominal p = 1.9 \u00d7 10⁻⁴",
-            0.64,
-            False,
-            CRIMSON,
-        ),
-        (
-            "· HIV infection stool",
-            76.0,
-            54.9,
-            90.6,
-            "19 dec vs. 6 inc,\nnominal p = 0.015",
-            0.53,
-            False,
-            CRIMSON,
-        ),
-        (
-            "· Parkinson\u2019s disease stool",
-            68.7,
-            57.6,
-            78.4,
-            "57 dec vs. 26 inc,\nnominal p = 8.8 \u00d7 10⁻⁴",
-            0.42,
-            False,
-            CRIMSON,
-        ),
-        (
-            "Gut Wall Biopsy (Colon Mucosa)",
-            48.1,
-            28.7,
-            68.1,
-            "13 dec vs. 14 inc,\nnominal p = 1.00",
-            0.26,
-            True,
-            MUTED,
-        ),
-        (
-            "· Colorectal tumor biopsy",
-            35.3,
-            14.2,
-            61.7,
-            "6 dec vs. 11 inc,\nnominal p = 0.33",
-            0.15,
-            False,
-            MUTED,
-        ),
-        (
-            "Mouth & Saliva (Oral Cavity)",
-            45.5,
-            16.7,
-            76.6,
-            "5 dec vs. 6 inc,\nnominal p = 1.00",
-            0.04,
-            True,
-            MUTED,
-        ),
-    ]
 
     for label, pct, ci_lo, ci_hi, stats_str, y_pos, is_bold, col in direction_rows:
         fw = "bold" if is_bold else "normal"
@@ -1478,18 +1494,6 @@ def build_plate4_trait_landscape_and_four_pairs() -> Figure:
     _apply_range_frame(ax_top, x_bounds=(14.8, 67.0))
 
     ax_bot = fig.add_axes((0.03, 0.08, 0.94, 0.38), facecolor=PAPER_BG)
-    _add_panel_header(
-        ax_bot,
-        "B. Four Highlighted Condition-Trait Signatures and Independent Literature Support",
-        "Difference in share of stool profiles with positive trait annotation "
-        "(Increased minus Decreased; percentage points, pp)\nBH q: family not recorded (#1525)",
-        y_title=0.985,
-        y_subtitle=0.895,
-        title_size=11.0,
-        subtitle_size=8.8,
-    )
-
-    ax_bot.axvline(0.0, ymin=0.0, ymax=0.82, color=MUTED, linestyle="--", linewidth=0.9, zorder=2)
 
     # Item 3 (#550): Cite Nishiwaki 2020 (Mov Disord, PMID 32472608), matching Slide 15 & audit doc.
     four_pairs = [
@@ -1533,6 +1537,20 @@ def build_plate4_trait_landscape_and_four_pairs() -> Figure:
             SLATE,
         ),
     ]
+
+    _add_panel_header(
+        ax_bot,
+        "B. Four Highlighted Condition-Trait Signatures and Independent Literature Support",
+        "Difference in share of stool profiles with positive trait annotation "
+        "(Increased minus Decreased; percentage points, pp)\n"
+        f"BH q: family not recorded (#1525); {len(four_pairs)} nominal tests shown",
+        y_title=0.985,
+        y_subtitle=0.895,
+        title_size=11.0,
+        subtitle_size=8.8,
+    )
+
+    ax_bot.axvline(0.0, ymin=0.0, ymax=0.82, color=MUTED, linestyle="--", linewidth=0.9, zorder=2)
 
     for title_str, delta_pp, stats_line, lit_line, y_pos, col in four_pairs:
         ax_bot.text(-55.5, y_pos + 0.055, title_str, fontsize=8.4, fontweight="bold", color=INK)
@@ -2352,7 +2370,7 @@ def render_fig7_svg() -> str:
     """Return the standalone SVG string for Plate VII
     (fig7_tufte_convergence_network_and_venn.svg).
     """
-    return "\n".join(
+    svg = "\n".join(
         [
             '<?xml version="1.0" encoding="utf-8" standalone="no"?>',
             '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"',
@@ -2830,9 +2848,7 @@ def render_fig7_svg() -> str:
             '    <text x="626" y="693" font-size="9.5" font-style="italic" fill="#4A4'
             '742">Disease totals:  |PD| = 17 + 10 + 4 + 9 = 40 taxa   ·   |CRC| = 17 + 10 + 1'
             " + 6 = 34 taxa   ·   |HIV| = 17 + 4 + 1 + 2 = 24 taxa.</text>",
-            '    <text x="626" y="709" font-size="9.5" fill="#4A4742">'
-            "BH q: family not recorded (#1525); p-values nominal; "
-            "benchmark/percentile: historical (#1416).</text>",
+            '    <text x="626" y="709" font-size="9.5" fill="#4A4742">__FIG7_NOMINAL_NOTE__</text>',
             "  </g>",
             "",
             '  <line x1="32" y1="724" x2="1368" y2="724" stroke="#D6D1C7" stroke-width="0.85"/>',
@@ -2846,11 +2862,27 @@ def render_fig7_svg() -> str:
             "",
         ]
     )
+    n_nominal_p = len(
+        {
+            re.sub(r"\s+", " ", m.group(0))
+            for line in svg.splitlines()
+            for m in re.finditer(
+                r"(?:(?:Fisher|hyp|perm|U₄)\s+)?\bp\s*(?:=|&lt;|<|≤|≥|>)\s*[0-9.]+"
+                r"(?:\s*\u00d7\s*10⁻[⁰¹²³⁴⁵⁶⁷⁸⁹]+|⁻[⁰¹²³⁴⁵⁶⁷⁸⁹]+)?",
+                line,
+            )
+        }
+    )
+    return svg.replace(
+        "__FIG7_NOMINAL_NOTE__",
+        f"BH q: family not recorded (#1525); p-values nominal ({n_nominal_p} tests shown); "
+        "benchmark/percentile: historical (#1416).",
+    )
 
 
 def render_fig8_svg() -> str:
     """Return the standalone SVG for Slide 15 / fig8 with wrapped lines inside boxes (#550)."""
-    return "\n".join(
+    svg = "\n".join(
         [
             '<svg viewBox="0 0 1500 740" width="1500" height="740" xmlns="http://www.w3'
             ".org/2000/svg\" style=\"font-family:'Palatino','Georgia',serif\">",
@@ -2860,8 +2892,7 @@ def render_fig8_svg() -> str:
             '      <rect x="15" y="10" width="1470" height="124" rx="8" fill="#F4F1'
             'EA" stroke="#D8D2C5" stroke-width="1.2"/>',
             '      <text x="35" y="34" font-size="15.5" font-weight="bold" fill="#181'
-            '715">OPPOSITE STOOL TRAIT DIRECTIONS IN HUMAN SIGNATURES (BugSigDB \u00d7 KG-Mic'
-            "robe) · historical (#1416); BH q: family not recorded (#1525)</text>",
+            '715">__FIG8_BANNER_TITLE__</text>',
             '      <text x="35" y="55" font-size="12.5" font-style="italic" fill="#4A'
             '4843">Interpretation note: BugSigDB records reported taxon abundance shifts; KG-'
             "Microbe maps taxa to curated trait annotations (trait-annotation alignment, not d"
@@ -3103,6 +3134,18 @@ def render_fig8_svg() -> str:
             "    </svg>",
         ]
     )
+    cards = re.findall(r'<g transform="translate\([^"]+">(.*?)</g>', svg, re.DOTALL)
+    n_cards = len(cards)
+    n_card_tests = sum(
+        len(re.findall(r"\bnominal\s+p\s*(?:=|&lt;|<|≤|≥|>)", card)) for card in cards
+    )
+    per_card = n_card_tests // n_cards
+    return svg.replace(
+        "__FIG8_BANNER_TITLE__",
+        "OPPOSITE STOOL TRAIT DIRECTIONS IN HUMAN SIGNATURES (BugSigDB \u00d7 KG-Microbe) "
+        f"· historical (#1416); BH q: family not recorded (#1525); "
+        f"{n_card_tests} nominal tests ({per_card}/card)",
+    )
 
 
 def render_fig9_svg() -> str:
@@ -3285,7 +3328,7 @@ def render_slide_deck_html() -> str:
     """Return the complete 16-slide HTML presentation deck (#550)."""
     fig8_inline = render_fig8_svg().strip()
     fig9_inline = render_fig9_svg().strip()
-    return "\n".join(
+    raw_html = "\n".join(
         [
             "<!DOCTYPE html>",
             '<html lang="en">',
@@ -4173,6 +4216,65 @@ def render_slide_deck_html() -> str:
             "",
         ]
     )
+    return _annotate_deck_nominal_counts_and_footer_labels(raw_html)
+
+
+def _annotate_deck_nominal_counts_and_footer_labels(html_text: str) -> str:
+    """Attach computed nominal test counts and per-slide footer run labels (#1533)."""
+    screen_trigger_re = re.compile(
+        r"(?<![.\d,])(?:317\s+non-MediaDive|66,240\s+enrichments|1,912\s+rows)"
+    )
+
+    def _add_nominal_count(match: re.Match[str]) -> str:
+        open_tag, inner, close_tag = match.group(1), match.group(2), match.group(3)
+        n_nom = len(re.findall(r"\bnominal\s+(?:<i>)?p(?:</i>)?\s*(?:=|≤|≥|<|>|&lt;|&gt;)", inner))
+        if n_nom == 0:
+            return match.group(0)
+        if "mucosal and oral tests have nominal" in inner:
+            n_non_stool = sum("stool" not in row[0].lower() for row in PLATE3_DIRECTION_ROWS)
+            n_nom += n_non_stool - 1
+        noun = "test" if n_nom == 1 else "tests"
+        suffix = f" ({n_nom} nominal {noun} shown)"
+        if inner.endswith(")."):
+            return f"{open_tag}{inner[:-1]};{suffix}.{close_tag}"
+        if inner.endswith(")"):
+            return f"{open_tag}{inner};{suffix}{close_tag}"
+        if inner.endswith("."):
+            return f"{open_tag}{inner[:-1]}{suffix}.{close_tag}"
+        return f"{open_tag}{inner}{suffix}{close_tag}"
+
+    def _annotate_section(sec_match: re.Match[str]) -> str:
+        sec = sec_match.group(0)
+        sub_m = re.search(r'<p class="subtitle"[^>]*>.*?·\s*([^<]+)</p>', sec, re.DOTALL)
+        if sub_m is not None:
+            run_label = " ".join(sub_m.group(1).split())
+            if ";" not in run_label:
+
+                def _label_col(col_match: re.Match[str]) -> str:
+                    col = col_match.group(0)
+                    if not screen_trigger_re.search(col):
+                        return col
+                    return re.sub(
+                        r'(<div class="footer-col"><b>)([^<:]+)(:</b>)',
+                        lambda m: f"{m.group(1)}{m.group(2)} \u2014 {run_label}{m.group(3)}",
+                        col,
+                        count=1,
+                    )
+
+                sec = re.sub(
+                    r'<div class="footer-col">.*?</div>',
+                    _label_col,
+                    sec,
+                    flags=re.DOTALL,
+                )
+        return re.sub(
+            r'(<div class="(?:lbl|footer-col)">)(.*?)(</div>)',
+            _add_nominal_count,
+            sec,
+            flags=re.DOTALL,
+        )
+
+    return re.sub(r"<section\b.*?</section>", _annotate_section, html_text, flags=re.DOTALL)
 
 
 # --------------------------------------------------------------------------- Orchestration & CLI
