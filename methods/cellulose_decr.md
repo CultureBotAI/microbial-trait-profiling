@@ -290,14 +290,8 @@ are not a test; traits share taxa.
 
 `just cellulose-decr-figures` runs `mtp.cellulose_decr.figures`
 (`src/mtp/cellulose_decr/figures.py`), which draws the statistical and graphical
-summary figures from those tables only, and `mtp.cellulose_decr.tufte_plates`
-(`src/mtp/cellulose_decr/tufte_plates.py`, also runnable alone via
-`just cellulose-decr-tufte`), which reproduces the fixed October 16 study-modal
-worked-example Tufte analytical plates (`figures_tufte/`) and 16-slide deck
-(`cellulose_decr_slide_deck.html`) preserved for the `tufte-plate` skill
-(`figure-wizard#19`) with the #550/#1127 rendering, citation, and #570 figure-path
-fixes. The figures are written beside the tables and are
-gitignored, as CONTRIBUTING.md requires for images outside `trait-visualization/`
+summary figures from those tables only. The figures are written beside the tables
+and are gitignored, as CONTRIBUTING.md requires for images outside `trait-visualization/`
 (#560). Reruns on the same inputs give identical tables and figures; only the
 provenance timestamp changes. Figure provenance is in
 `figures/figures_provenance.json`, with the commit that drew the figures (`+dirty`
@@ -307,12 +301,34 @@ the slide text for each figure, worded from the same tables (#556).
 ```bash
 just cellulose-decr
 just cellulose-decr-figures
-just cellulose-decr-tufte
 ```
 
 The recipe records `git rev-parse HEAD` as the code commit, with `+dirty` when
 the analysis scripts or the repository's code paths (`src`, `scripts`,
 `methods`, `schema`, `Justfile`, `pyproject.toml`, `uv.lock`) differ from it.
+
+**Retired historical plates.** The fixed October 16 study-modal Tufte plates
+(`figures_tufte/`) and 16-slide deck (`cellulose_decr_slide_deck.html`) are retired
+because some displayed numbers have no compatible tracked source or contradict
+the cited source ([#1572](https://github.com/CultureBotAI/microbial-trait-profiling/issues/1572)).
+They are excluded from default generation. The module
+`src/mtp/cellulose_decr/tufte_plates.py` remains available only for auditing that
+historical display, with explicit opt-in:
+
+```bash
+just cellulose-decr-tufte --audit-retired
+```
+
+Every newly generated audit plate, standalone SVG and HTML slide carries the banner
+`RETIRED: historical, unverified numbers (#1572)`. Opting in reproduces the
+historical display; it does not validate its numbers or recompute them from current
+data. The tracked source snapshots and their source-pin tests remain audit evidence.
+A replacement built from current rerun data is pending under
+[#1670](https://github.com/CultureBotAI/microbial-trait-profiling/issues/1670).
+The separate seven-plate generator, `scripts/generate_tufte_plates.py`, is unaffected.
+Older unmarked copies trigger a warning; preview their exact-file cleanup with
+`just cellulose-decr-cleanup-retired`, then add `--delete` to remove only the 23
+historical files while keeping current figures and directories.
 
 **Building the inputs.**
 
