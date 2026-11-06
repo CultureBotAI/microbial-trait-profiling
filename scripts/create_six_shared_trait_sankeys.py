@@ -2184,6 +2184,15 @@ def build_trait_summary(
     return pd.DataFrame.from_records(records)
 
 
+def selection_display_metadata(selection: pd.DataFrame) -> pd.DataFrame:
+    """Label raw p and count finite tests in these displayed selection rows."""
+    output = selection.copy()
+    finite = np.isfinite(pd.to_numeric(output["paired_p_value"], errors="coerce")).fillna(False)
+    output["paired_p_value_type"] = np.where(finite, "nominal", "not_tested")
+    output["displayed_nominal_test_count"] = int(finite.sum())
+    return output
+
+
 def build_trait_selection(q_stats: pd.DataFrame) -> pd.DataFrame:
     """Write a minimal trait-selection audit table."""
     records: list[dict[str, object]] = []
@@ -2201,7 +2210,7 @@ def build_trait_selection(q_stats: pd.DataFrame) -> pd.DataFrame:
                 "paired_direction": row["direction"],
             }
         )
-    return pd.DataFrame.from_records(records)
+    return selection_display_metadata(pd.DataFrame.from_records(records))
 
 
 def write_direction_outputs(
@@ -2722,9 +2731,9 @@ def write_individual_outputs(
     """Write the twelve individual trait-direction Sankeys and TSVs."""
     output_records: list[dict[str, object]] = []
     for trait in SHARED_TRAITS:
-        trait_selection[trait_selection["trait_id"] == trait.trait_id].to_csv(
-            OUTPUT_DIR / f"{trait.slug}_trait_selection.tsv", sep="\t", index=False
-        )
+        selection_display_metadata(
+            trait_selection[trait_selection["trait_id"] == trait.trait_id]
+        ).to_csv(OUTPUT_DIR / f"{trait.slug}_trait_selection.tsv", sep="\t", index=False)
 
         for focus_direction, focus_label in DIRECTION_LABELS.items():
             analysis_key = f"{trait.slug}_{focus_label}"
