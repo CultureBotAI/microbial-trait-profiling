@@ -1,0 +1,7 @@
+guild	guild_traits	condition	profile_count	study_count	experiment_count	mean_guild_trait_signal	mean_relative_guild_signal	increased_mean_guild_trait_signal	decreased_mean_guild_trait_signal
+aerobe_v2	aerobic; microaerophilic; facultatively aerobic	Constipation	23	7	12	104.50724	0.017642338	167.18182	47.055557
+aerobe_v2	aerobic; microaerophilic; facultatively aerobic	Multiple sclerosis	28	6	14	318.55954	0.014798465	322.78568	314.33328
+aerobe_v2	aerobic; microaerophilic; facultatively aerobic	Stroke	43	5	28	1259.124	0.019019093	1799.9762	249.53334
+anaerobe_v2_depletion	anaerobic; obligately anaerobic	Constipation	23	7	12	178.19565	0.06034411	225.31818	135.0
+anaerobe_v2_depletion	anaerobic; obligately anaerobic	Multiple sclerosis	28	6	14	182.71428	0.06272397	277.2857	88.14286
+anaerobe_v2_depletion	anaerobic; obligately anaerobic	Stroke	43	5	28	398.96512	0.040190805	457.23215	290.2

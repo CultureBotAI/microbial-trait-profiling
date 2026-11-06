@@ -136,8 +136,6 @@ def load_taxa_occurrences(
         "oxygen_tolerance_z_mean",
     ]
     if taxa is None:
-        from mtp.population_tables import orient_and_filter_taxa_df
-
         taxa = pd.read_csv(
             REPO_ROOT / "data/derived/bugsigdb_taxa.tsv",
             sep="\t",
@@ -150,11 +148,6 @@ def load_taxa_occurrences(
                 "taxon_name",
                 "taxonomic_rank",
             ],
-        )
-        taxa = orient_and_filter_taxa_df(
-            taxa,
-            filter_to_selection=True,
-            preserve_non_corpus_rows=True,
         )
     else:
         taxa = taxa.copy()

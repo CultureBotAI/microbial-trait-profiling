@@ -17,6 +17,8 @@ from pathlib import Path
 
 import pandas as pd
 
+from mtp.trait_key_policy import display_trait_label
+
 _CURIE = r"[A-Za-z][\w.-]*:[^\s|]+"
 TRAIT_ID_PATTERN = re.compile(rf"{_CURIE}(?:\|{_CURIE})*")
 
@@ -78,7 +80,8 @@ def trait_labels(columns: pd.DataFrame, trait_ids: Sequence[str]) -> dict[str, s
     """
     if not {"column_id", "object_name"} <= set(columns.columns):
         raise ValueError("Trait columns table needs column_id and object_name")
-    names = columns.drop_duplicates("column_id").set_index("column_id")["object_name"]
+    dedup = columns.drop_duplicates("column_id").set_index("column_id")
+    names = dedup["object_name"]
     missing = [trait_id for trait_id in trait_ids if trait_id not in names.index]
     if missing:
         raise ValueError(f"Declared traits absent from the trait columns table: {missing}")
@@ -90,7 +93,17 @@ def trait_labels(columns: pd.DataFrame, trait_ids: Sequence[str]) -> dict[str, s
     ]
     if unlabeled:
         raise ValueError(f"Declared traits without an object_name label: {unlabeled}")
-    return {trait_id: str(label).strip() for trait_id, label in labels.items()}
+    members_col = (
+        dedup["trait_member_ids_json"] if "trait_member_ids_json" in dedup.columns else None
+    )
+    return {
+        trait_id: display_trait_label(
+            trait_id,
+            str(label).strip(),
+            None if members_col is None else members_col.get(trait_id),
+        )
+        for trait_id, label in labels.items()
+    }
 
 
 def output_dir_argument(value: str) -> Path:

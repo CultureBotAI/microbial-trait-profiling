@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import io
 import json
 import sys
 from collections.abc import Mapping, Sequence
@@ -46,6 +47,8 @@ from mtp.cellulose_decr.selection_scan import (
     PROTOCOL_PATH,
     SIDE_BY_SIDE,
     STRAIN_ROLLUP,
+    VERSION,
+    VERSION_V1,
     Protocol,
     core_scope,
     load_protocol,
@@ -55,6 +58,8 @@ from mtp.cellulose_decr.selection_scan import (
 )
 from mtp.cellulose_decr.selection_scan import OUTPUTS as SCAN_OUTPUTS
 from mtp.paths import file_sha256
+from mtp.workflow.archive import ArchiveResolver
+from mtp.workflow.locations import LocationResolver, locate
 from mtp.workflow.output_roots import add_temporary_output_option, require_durable_output
 
 if TYPE_CHECKING:
@@ -119,7 +124,13 @@ def check_bound_core(
     scope, source = core_scope(run, protocol)
     rollup = summary[STRAIN_ROLLUP]
     recorded = (rollup["scope"], rollup.get("scope_source"))
-    expected = (scope, source if protocol.side_by_side else None)
+    expected: tuple[str, str | None]
+    if protocol.version == VERSION:
+        expected = (scope, source)
+    elif protocol.version == VERSION_V1:
+        expected = (scope, None)
+    else:
+        raise ValueError(f"Unknown scope protocol version: {protocol.version}")
     if recorded != expected:
         raise ValueError(
             f"{directory}: the records give strain_rollup and its source as {recorded}, but "
@@ -127,7 +138,23 @@ def check_bound_core(
         )
 
 
-def load_run(directory: Path) -> ScanRun:
+def _require_v2(directory: Path, summary: object, provenance: object) -> None:
+    """Reject historical declarations early; this preflight does not verify their bytes."""
+    if not isinstance(summary, Mapping) or not isinstance(provenance, Mapping):
+        raise ValueError(f"{directory}: scan summary and provenance must be objects")
+    declaration = provenance.get("protocol")
+    versions = (
+        summary.get("protocol"),
+        declaration.get("version") if isinstance(declaration, Mapping) else None,
+    )
+    if versions != (VERSION, VERSION):
+        raise ValueError(
+            f"{directory}: scan records name protocols {versions!r}; the scopes report "
+            f"requires {VERSION}. {VERSION_V1} records remain historical evidence."
+        )
+
+
+def load_run(directory: Path, *, resolver: LocationResolver | None = None) -> ScanRun:
     """Read a scan's outputs once its consumer record, its core and its protocol verify.
 
     The consumer record is verified end to end (the core run, and the hash of every
@@ -135,26 +162,44 @@ def load_run(directory: Path) -> ScanRun:
     agree with the protocol version they name, and they must describe the bound core and
     its scope (``check_bound_core``).
     """
-    from mtp.datamodel.workflow_pydantic import WorkflowRun
+    from mtp.datamodel.workflow_pydantic import ConsumerRecord, WorkflowRun
     from mtp.workflow.consumers import verify_consumer_record
 
-    record = verify_consumer_record(directory / CONSUMER_RECORD)
+    directory = directory.expanduser().absolute()
+    paths = {name: locate(directory / SCAN_OUTPUTS[name], resolver) for name in READ}
+    # Rejection-only preflight keeps v1 diagnostics independent of later core contracts.
+    _require_v2(
+        directory,
+        json.loads(paths["summary"].read_bytes()),
+        json.loads(paths["provenance"].read_bytes()),
+    )
+    record_path = locate(directory / CONSUMER_RECORD, resolver)
+    record = verify_consumer_record(directory / CONSUMER_RECORD, resolver=resolver)
     if record.consumer != CONSUMER:
         raise ValueError(f"{directory} holds a record of {record.consumer}, not of {CONSUMER}")
-    bound = {Path(output.path) for output in record.outputs}
-    paths = {name: directory / SCAN_OUTPUTS[name] for name in READ}
+    bound = {locate(Path(output.path), resolver).resolve(): output for output in record.outputs}
     unbound = sorted(path.name for path in paths.values() if path.resolve() not in bound)
     if unbound:
         raise ValueError(f"{directory}: {unbound} are not bound to the scan's core record")
-    summary = json.loads(paths["summary"].read_text(encoding="utf-8"))
-    provenance = json.loads(paths["provenance"].read_text(encoding="utf-8"))
-    traits = pd.read_csv(paths["traits"], sep="\t", dtype=str, keep_default_na=False)
-    files = {
-        path.name: file_sha256(path) for path in [*paths.values(), directory / CONSUMER_RECORD]
-    }
+    buffers = {name: path.read_bytes() for name, path in paths.items()}
+    files = {}
+    for name, raw in buffers.items():
+        output = bound[paths[name].resolve()]
+        digest = hashlib.sha256(raw).hexdigest()
+        if digest != output.sha256 or len(raw) != output.size_bytes:
+            raise ValueError(f"{directory}: bound scan output changed after verification: {name}")
+        files[SCAN_OUTPUTS[name]] = digest
+    record_bytes = record_path.read_bytes()
+    if ConsumerRecord.model_validate_json(record_bytes) != record:
+        raise ValueError(f"{directory}: consumer record changed after verification")
+    files[CONSUMER_RECORD] = hashlib.sha256(record_bytes).hexdigest()
+    summary = json.loads(buffers["summary"])
+    provenance = json.loads(buffers["provenance"])
+    traits = pd.read_csv(io.BytesIO(buffers["traits"]), sep="\t", dtype=str, keep_default_na=False)
+    _require_v2(directory, summary, provenance)
     protocol = recorded_protocol(summary, provenance)
     # The bound core, from the manifest bytes whose hash the record holds.
-    manifest = Path(record.run_manifest_path).read_bytes()
+    manifest = locate(Path(record.run_manifest_path), resolver).read_bytes()
     if hashlib.sha256(manifest).hexdigest() != record.run_manifest_sha256:
         raise ValueError(f"{directory}: the bound core's manifest changed after verification")
     run = WorkflowRun.model_validate_json(manifest)
@@ -167,10 +212,16 @@ def load_run(directory: Path) -> ScanRun:
 def comparable(run: ScanRun) -> dict[str, Any]:
     """What two scans must share to differ in nothing but the scope."""
     core = run.provenance["core_run"]
+    for field in ("environment", "methods", "chunk"):
+        if field not in run.provenance or run.provenance[field] is None:
+            raise ValueError(f"{run.directory}: missing {field} in scan provenance")
     return {
         "protocol": run.provenance["protocol"],
         "code_commit": run.provenance["code_commit"],
         "scripts": run.provenance["scripts"],
+        "environment": run.provenance["environment"],
+        "methods": run.provenance["methods"],
+        "chunk": run.provenance["chunk"],
         "rule": run.summary["rule"],
         "core population": (core["contrast_population"], core["direction_basis"]),
         "core git_commit": (core["git_commit"], core["git_dirty"]),
@@ -294,6 +345,16 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         help="Output directory of a selection scan; give one scan of each declared scope.",
     )
     parser.add_argument(
+        "--archive",
+        type=Path,
+        nargs=2,
+        action="append",
+        default=[],
+        metavar=("SCAN", "ARCHIVE_JSON"),
+        help="Resolve this original --scan directory exclusively through an evidence archive; "
+        "repeat for each archived scan.",
+    )
+    parser.add_argument(
         "--output-dir",
         type=Path,
         required=True,
@@ -310,6 +371,22 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     return args
 
 
+def scan_resolvers(
+    scans: Sequence[Path], archives: Sequence[Sequence[Path]]
+) -> dict[Path, LocationResolver]:
+    """Associate explicit scan identities with archives before reading any archive bytes."""
+    declared = {path.expanduser().absolute() for path in scans}
+    mappings = {}
+    for scan, archive in archives:
+        identity = scan.expanduser().absolute()
+        if identity not in declared:
+            raise ValueError(f"Archive mapping names an unknown scan: {scan}")
+        if identity in mappings:
+            raise ValueError(f"Duplicate archive mapping for scan: {scan}")
+        mappings[identity] = archive.expanduser()
+    return {scan: ArchiveResolver(archive).resolve for scan, archive in mappings.items()}
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
     out = args.output_dir
@@ -322,7 +399,14 @@ def main(argv: Sequence[str] | None = None) -> int:
             f"the scopes report needs one scan of each declared scope {declared}, "
             f"not {len(args.scan)} scans"
         )
-    ordered = pair_scopes([load_run(directory) for directory in args.scan], protocol)
+    resolvers = scan_resolvers(args.scan, args.archive)
+    ordered = pair_scopes(
+        [
+            load_run(directory, resolver=resolvers.get(directory.expanduser().absolute()))
+            for directory in args.scan
+        ],
+        protocol,
+    )
     table, report = side_by_side(ordered, protocol, args.code_commit)
     out.mkdir(parents=True, exist_ok=True)
     table.to_csv(out / OUTPUTS["table"], sep="\t", index=False, lineterminator="\n")

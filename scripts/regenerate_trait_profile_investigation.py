@@ -424,23 +424,16 @@ def refresh_powerpoint() -> None:
 
 
 def main() -> None:
-    run_script(
-        "create_taxa_coverage_histogram.py",
-        "--strain-rollup",
-        "phenotype",
-        "--contrast-population",
-        "disease_vs_healthy_tier1_2_subject_controls",
-        "--output-dir",
-        str(INVESTIGATION_DIR / "taxa-coverage"),
-    )
+    if not (REPO_ROOT / "trait-visualization" / "study_trait_profile_study_metadata.tsv").exists():
+        run_script(
+            "create_study_trait_profile_heatmap.py", "--direction-basis", "group_1_vs_group_0"
+        )
     run_script("investigate_facultative_aerobe_expansion.py")
     run_script("investigate_facultative_aerobe_condition_followup.py")
     run_script("investigate_gut_anaerobe_depletion.py")
     run_script("create_condition_body_site_guild_maps.py")
     run_script("create_all_bugsigdb_condition_body_site_maps.py")
     run_script("create_profile_enrichment_guild_assignment_diagram.py")
-    if not (REPO_ROOT / "trait-visualization" / "study_trait_profile_study_metadata.tsv").exists():
-        run_script("create_study_trait_profile_heatmap.py")
     run_script("create_trait_profile_infographic.py")
     run_script("create_six_shared_trait_sankeys.py")
     run_script("create_six_shared_trait_sankeys.py", "--combined-high-support-only")

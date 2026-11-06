@@ -11,13 +11,13 @@ required input fingerprints. The execution uses committed analysis revision
 The output root is:
 
 ```text
-/Users/marcin/Documents/VIMSS/ontology/KG-Hub/KG-Microbe/microbial-trait-profiling/data/derived/ora_provenance_refresh/issue720
+data/derived/ora_provenance_refresh/issue720
 ```
 
 ## Input identity and execution
 
 The core manifest is
-`/private/tmp/mtp-workflow-629/.tmp/core-production-final/run-49a0c712ad3d4fc59d10804951fe511a/run.json`.
+`<temp dir>/mtp-workflow-629/.tmp/core-production-final/run-49a0c712ad3d4fc59d10804951fe511a/run.json`.
 The measured input identities are retained in `input-sha256.txt` under the output
 root. The committed [audit manifest](2026-10-19-ora-provenance-refresh-inputs.json)
 identifies every historical/current result pair and the actual input files.
@@ -27,12 +27,12 @@ The refresh reuses the core and native inputs at the paths listed here. Full
 future revalidation requires retaining those inputs; the new output directory
 is not a self-contained archival copy of the core and other analysis arms.
 
-The production commands use these bindings (`OUTPUT` must be a fresh directory):
+The production commands use these bindings. The three inputs were checkouts under `<temp dir>`; replace `/path/to` with yours (`OUTPUT` must be a fresh directory):
 
 ```bash
-CORE=/private/tmp/mtp-workflow-629/.tmp/core-production-final/run-49a0c712ad3d4fc59d10804951fe511a
-NATIVE=/private/tmp/mtp-issue551/.tmp/issue551-native-core
-NOEL=/private/tmp/mtp-workflow-629/.tmp/issue658-noel-production
+CORE=/path/to/mtp-workflow-629/.tmp/core-production-final/run-49a0c712ad3d4fc59d10804951fe511a
+NATIVE=/path/to/mtp-issue551/.tmp/issue551-native-core
+NOEL=/path/to/mtp-workflow-629/.tmp/issue658-noel-production
 OUTPUT=/absolute/path/to/a/new/ora-refresh
 
 just core-ora "$CORE/run.json" "$OUTPUT/enrichment" upper
@@ -67,7 +67,12 @@ just audit-ora-refresh \
   "$OUTPUT/audit.json"
 ```
 
-Global BH uses q ≤ 0.001, enrichment fold ≥ 1.5 and depletion fold ≤ 0.5.
+Global BH uses q ≤ 0.001, enrichment fold ≥ 1.5 and depletion fold ≤ 0.5,
+independently within each eligible profile–trait family in the table below.
+Upper and lower tails are separate families; each stratified enrichment run
+also has its own family. The `mt-*` names map this historical execution to the
+later [registry](../../methods/multiple_testing_families.yaml), without changing
+the saved records or treating the historical test counts as current sizes.
 The audit compares every table-body byte, all scientific metadata, actual input
 fingerprints, row counts and selected-hit counts. It does not fabricate input
 fingerprints for the historical files. Native composition, directional screen
@@ -89,7 +94,7 @@ scientific metadata is unchanged. The only metadata additions are the profile
 and taxa-matrix fingerprints, both checked against actual input bytes. Declared
 test counts and selected-hit counts match the observed complete rows.
 
-| Export | Tested profiles | Complete tests | Discoveries |
+| Export | Tested profiles | Complete tests (family size) | Discoveries |
 | --- | ---: | ---: | ---: |
 | Pooled enrichment | 4,670 | 1,480,390 | 66,240 |
 | Pooled depletion | 4,670 | 1,480,390 | 23 |
@@ -97,9 +102,17 @@ test counts and selected-hit counts match the observed complete rows.
 | Feces enrichment | 2,950 | 935,150 | 36,562 |
 | Feces-excluded enrichment | 1,720 | 545,240 | 29,498 |
 
+The correction families for these exports are:
+
+- Pooled enrichment: `mt-core-ora-upper-global`.
+- Pooled depletion: `mt-core-ora-lower-global`.
+- Stratified pooled enrichment: `mt-core-stratified-ora-pooled`.
+- Feces enrichment: `mt-core-stratified-ora-feces`.
+- Feces-excluded enrichment: `mt-core-stratified-ora-feces-excluded`.
+
 The three complete-trait summaries, annotation-density deciles and stratification
 sensitivity TSV are also byte-identical to the corrected #664 baseline under
-`/private/tmp/mtp-issue664/.tmp/issue664-strata/` (checked with `cmp`).
+`<temp dir>/mtp-issue664/.tmp/issue664-strata/` (checked with `cmp`).
 
 The completed pooled producers wrote these new core-bound consumer records:
 

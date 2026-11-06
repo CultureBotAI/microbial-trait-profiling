@@ -8,7 +8,10 @@ signatures. Counts can include taxonomic rollup and annotation multiplicity.
 They are not direct measurements of patient-level trait abundance, pathway
 activity, oxygen exposure or disease causation.
 
-The [paired-contrast investigation notes](../../trait-visualization/trait-profile-investigation/paired_contrast_interpretation_notes.md)
+It implements [#179](https://github.com/CultureBotAI/microbial-trait-profiling/issues/179).
+Use it with the [claim audit](biological_interpretation_audit.md).
+
+[Jed's paired contrast interpretation notes at `a2b2df98`](https://github.com/CultureBotAI/microbial-trait-profiling/blob/a2b2df98e9beec98b772c9cb5af7aa090d033a98/trait-visualization/trait-profile-investigation/paired_contrast_interpretation_notes.md)
 provide the starting evidence: standardized annotation signals differ from raw
 abundance, curated direction differs from z-score sign, and the arms share data.
 This guide makes background enrichment distinct from an above-average z-score
@@ -147,7 +150,10 @@ unit and scoped claim and link the full evidence record.
   vintage and relevant corpus restrictions. Report pooled `Other` constituents,
   exclusions, pairing, zero-signal/zero-denominator policies and coverage gaps.
 - **Effect and uncertainty:** effect value, units, interval and interval method;
-  p/q, null, thresholds and correction family where inference is made. If no
+  nominal p, null, and q with its family ID/definition, executed size, BH/BY
+  procedure and threshold where inference is made
+  ([multiple-testing policy](multiple_testing_policy.md), R1–R3/R8). A display
+  of nominal p also states how many tests it shows. If no
   interval was computed, say so and keep the summary descriptive. Never invent
   uncertainty or treat a significance marker as an effect size.
 - **Support and inference level:** unique studies, matched experiments/profiles,
@@ -178,9 +184,20 @@ Template for a result or generated narrative (replace every bracket; use
 
 Heatmap captions must identify fills as annotation shares and provide support and
 cell-status tables. A zero signal, an untested/low-support cell and an unsampled
-cell are different states even if all render blank. Machine-readable status tables
-use `no_annotation_signal` for sampled zero-signal cells across guild and individual
-trait outputs. State when the heatmap has no cell-level uncertainty. In PR #173,
+cell are different states even if all render blank. The machine-readable labels
+for a sampled zero-signal cell are kept as the code emits them, so existing
+outputs stay comparable (#1263): the guild and Table 1 trait map cell-status
+tables use `no_guild_signal` (`CELL_NO_SIGNAL` in `src/mtp/guild_maps.py`), and
+the integrated evidence table records the same guild cells as
+`zero_annotation_signal` (`ZERO_ANNOTATION` in `src/mtp/integrated_evidence.py`).
+Both mean that at least one study sampled the cell and, under the selected
+sources and mappings, none of its reported taxa carries the guild or trait
+annotation. No minimum-study threshold applies to this state, and it does not
+establish biological absence. When dark-grey shading is on (the guild maps'
+default; the Table 1 trait maps leave these cells blank unless
+`--mark-no-signal` is given), the caption reads "Dark grey = sampled, with no
+recorded guild annotation signal." with "trait" in place of "guild" on trait
+maps. State when the heatmap has no cell-level uncertainty. In PR #173,
 the proposed enrichment outline summarizes
 profile-level calls across supporting studies; this aggregation has no calibrated
 cell-level p-value. The implemented mark kinds and verdicts must match the legend
@@ -231,11 +248,17 @@ owner and disposition. Correct generators as well as their rendered output;
 label historical artifacts and keep their provenance. An unreviewed external
 output is not implicitly approved by this guide.
 
+The following are historical work items, not a list of currently open issues.
+The [status checkpoint](biological_interpretation_audit.md#status-checkpoint-2026-10-30)
+records the UTC closure dates for #182 and #188-#191 and the merge of PR #194.
+Tracker closure does not establish patient-level effects or validate a mechanism;
+the evidence requirements below still apply to each result.
+
 | Follow-up | Deliverable and lead | Boundary |
 | --- | --- | --- |
 | #188 | Contrast eligibility/orientation manifest; Noel with Jed | Required before disease/control language; host filtering alone is insufficient |
 | #189 | Trait semantics, source evidence and justified grouping; Ilyas with Jed | Required before label translations, gene claims or merging features |
-| #190 | Reconciled contributions and genus/family influence; Jed with Noel and Ilyas | Draft PR #194 supplies provisional contribution/influence artifacts; orientation, semantics, native Jed/ORA integration and calibration remain unresolved, and sensitivity is not causal validation |
+| #190 | Reconciled contributions and genus/family influence; Jed with Noel and Ilyas | #190 closed 2026-10-12; PR #194 merged 2026-10-13 with contribution/influence artifacts, including native composition and fixed/recomputed-background ORA reruns. These remain annotation influence diagnostics; sensitivity is not causal validation. |
 | #191 | Inventory of measured inflammation/SCFA evidence and feasible independent validation; Noel with Ilyas | Starts with feasibility and protocol; does not assume measured markers or successful validation |
 
 These deliverables feed #178 and #179; none marks mechanisms validated. Preserve

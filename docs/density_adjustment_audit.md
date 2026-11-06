@@ -14,7 +14,22 @@
 
 Regenerate all of the above with `just audit-trait-density`. Only the three ontology tables are committed (CONTRIBUTING.md, "Generated outputs on `main`").
 
-`just density-adjustment-trait-list` reports the paired effects for a declared list of trait identifiers instead of the six Table 1 traits (#1054). PC1 is still fit on every non-MediaDive trait, so a trait's row is the same whichever list it appears in; each listed trait must be a non-MediaDive column, and labels come from the columns table's `object_name`. The six-trait default keeps its fixed labels, so a shared trait can carry a different label in the two tables while its values are identical: arsenate reduction is `arsenate_reduction` in the current columns table (#1084). The run writes `trait_list_provenance.json` with the list file's SHA-256 and the input hashes. `just audit-trait-density --trait-list FILE --output-dir DIR` passes the same list through the jed arm's script; its consolidated report then leaves out the fixed-text conclusions of section 6, which name the six traits (#1069). A list run refuses the default `data/derived/density_adjustment/` and any directory with a `density_adjustment` path component, including arm directories, nested destinations and symlink aliases (#1093). Component comparisons use `casefold()`, so spellings such as `Density_Adjustment` are also protected (#1144). A destination already containing `table1_density_adjusted_effects.tsv` is reserved regardless of the entry contents or type; use a fresh destination for each declared-list run. The audit API checks the destination before profile-input reads or directory creation; the module CLI also checks before loading the trait list. An empty `--output-dir` is rejected rather than read as the current directory (#1084). Without a list both runs are unchanged and write no provenance file.
+**Reporting scope (#1449).** The numerical examples below retain the historical
+`off`-scope audit; they are not current-run family sizes or a phenotype-scope
+validation. The rounded nominal p-values printed in section 5 are the source
+for the documentation-only BH reconstruction by
+[`issue1321_doc_table_bh_q.py`](../scripts/adhoc/issue1321_doc_table_bh_q.py).
+Its raw and adjusted columns are separate families,
+`mt-script-doc-table-bh-raw` and `mt-script-doc-table-bh-adjusted`: every one of
+the six printed trait rows belongs to each column's family, with BH and
+q ≤ 0.05. These are the families of the reconstructed q-values quoted in
+sections 4, 5 and 8, not full-precision q-values from a new producer execution.
+The earlier density run's complete producer binding is not supplied on this
+page; recover and verify it before reusing its numerical examples as run-bound
+results. The [MT policy](../methods/multiple_testing_policy.md) and
+[registry](../methods/multiple_testing_families.yaml) govern new reporting.
+
+`just density-adjustment-trait-list` reports the paired effects for a declared list of trait identifiers instead of the six Table 1 traits (#1054). PC1 is still fit on every non-MediaDive trait, so a trait's means and Wilcoxon p-values are the same whichever list it appears in, while its BH q-values and status are taken over the list it is reported in (#1321); each listed trait must be a non-MediaDive column, and labels come from the columns table's `object_name`. The six-trait default keeps its fixed labels, so a shared trait can carry a different label in the two tables while its means and p-values are identical: arsenate reduction is `arsenate_reduction` in the current columns table (#1084). The run writes `trait_list_provenance.json` with the list file's SHA-256, the input hashes and the q-value family (`q_values`). `just audit-trait-density --trait-list FILE --output-dir DIR` passes the same list through the jed arm's script; its consolidated report then leaves out the conclusions of section 6, which name Table 1 traits (#1069). A list run refuses the default `data/derived/density_adjustment/` and any directory with a `density_adjustment` path component, including arm directories, nested destinations and symlink aliases (#1093). Component comparisons use `casefold()`, so spellings such as `Density_Adjustment` are also protected (#1144). A destination already containing `table1_density_adjusted_effects.tsv` is reserved regardless of the entry contents or type; use a fresh destination for each declared-list run. The audit API checks the destination before profile-input reads or directory creation; the module CLI also checks before loading the trait list. An empty `--output-dir` is rejected rather than read as the current directory (#1084). Without a list, default runs write `density_adjustment_provenance.json` with the same input-hash and q-value family fields (without the list-file fields, #1327).
 
 > [!NOTE]
 > **Step 5 Decomposition Boundary (#355, #382):** This document and PR #370 cover trait correlation, annotation density adjustment, and near-twin collinearity. The trait-semantics audit (#311) is tracked separately in the ontology redundancy workstream.
@@ -26,13 +41,13 @@ Regenerate all of the above with `just audit-trait-density`. Only the three onto
 Discussions in [#264](https://github.com/CultureBotAI/microbial-trait-profiling/issues/264) and [#118](https://github.com/CultureBotAI/microbial-trait-profiling/issues/118) raised a fundamental methodological question:
 > *Is the dense positive correlation across microbial traits a biological signal of co-selected phenotypes, or is it an artifact of annotation density driven by uneven curation effort across well-studied model organisms?*
 
-To resolve this question empirically:
+To characterize the associations without identifying their cause:
 1. We quantify the baseline trait correlation structure across all non-MediaDive traits and measure the variance explained by the primary principal component (PC1).
 2. We test whether the correlation structure collapses or persists after adjusting for the primary annotation density axis using:
    - **Method A:** Profile-level PC1 regression / residualization.
    - **Method B:** Profile composition normalization (Total Sum Scaling / profile annotation richness normalization: $x_i / \sum_j x_{ij}$).
 3. We test the explicit diagnostic case identified in #264: *facultatively aerobic* (`METPO:1000608`) $\times$ *moderately halophilic* (`METPO:1000623`).
-4. We evaluate the survival of the six canonical Table 1 convergent traits under density adjustment.
+4. We evaluate the paired contrasts of the six selected Table 1 traits under density adjustment.
 5. We audit near-twin candidate features (*coccus-shaped* `METPO:1000668` vs. *sphere-shaped* `METPO:1000683`) for bivariate correlation, partial correlation controlling for study annotation depth, paired contrast correlation, and Variance Inflation Factor (VIF).
 
 ---
@@ -50,9 +65,12 @@ Restricting the trait universe to non-MediaDive traits (`object_category != 'MET
 | **PC1 Variance Explained** | **66.50%** | **60.42%** | A single global axis accounts for over 66% of total trait variation. |
 | **PC1–PC5 Variance Explained** | **89.35%** | **78.81%** | Top 5 components explain $\approx 89$% of total variance. |
 
-### Effective Number of Independent Tests ($M_{\text{eff}}$)
+### Effective-Test-Count Sensitivity Diagnostics ($M_{\text{eff}}$)
 
-Trait features are strongly correlated, so treating them as independent tests in statistical inference severely over-corrects (Bonferroni $\alpha = 0.05 / P$). We evaluate spectral estimators of $M_{\text{eff}}$ from the eigenvalues of the correlation matrix:
+Trait features are correlated. Bonferroni ($\alpha = 0.05 / P$) does not require
+independence and can be conservative under dependence; the correlations alone
+do not quantify that conservatism. We evaluate spectral estimators of
+$M_{\text{eff}}$ as sensitivity diagnostics, not replacement family sizes:
 
 - **Li & Ji (2005):** Canonical estimator in `mtp.trait_screen.effective_family_size`  
   $$f(\lambda) = \mathbb{I}(|\lambda| \ge 1) + (|\lambda| - \lfloor |\lambda| \rfloor)$$
@@ -61,9 +79,15 @@ Trait features are strongly correlated, so treating them as independent tests in
 - **Galwey (2009):** Alternative spectral estimator  
   $$M_{\text{eff}} = \frac{\left(\sum \sqrt{\max(0, \lambda_i)}\right)^2}{\sum \lambda_i}$$
   **$M_{\text{eff}} = 16.0$**
-- **Cheverud (1995) / Nyholt (2004):** Excluded as unreliable per #325 and #357 ($M_{\text{eff}} = 172.6$) due to severe sensitivity to collinear eigenvalue distributions and failure to satisfy basic boundary constraints in empirical genomic matrices.
+- **Cheverud (1995) / Nyholt (2004):** Excluded per #325 and #357 ($M_{\text{eff}} = 172.6$); the documented concern is sensitivity to collinear eigenvalue distributions and failure of the audited boundary constraints.
 
-Estimators confirm that the effective dimensionality of the 317-trait `off` space is on the order of $\approx 16$ to $30$ independent dimensions, driven by the concentration of variance on PC1.
+The historical estimates for the 317-trait `off` matrix range from
+$\approx 16$ to $30$. They summarize its eigenvalue spectrum and do not establish
+that this many hypotheses are independent or that an effective-M correction
+controls FDR. Under policy R9, `mt-core-noel-sign-effective` is a sensitivity
+bound with no FDR guarantee; the full-catalog BY family
+`mt-core-noel-sign-nominal` remains primary. Its size comes from the producing
+screen's declared candidate inventory, not either spectral estimate.
 
 ---
 
@@ -74,14 +98,14 @@ We standardize each trait column and regress out the first principal component s
 $$\mathbf{x}_j^{\text{adj}} = \mathbf{x}_j - \hat{\beta}_j \mathbf{pc}_1$$
 - **Effect on global correlation:** The median pairwise correlation collapses from $+0.7049$ to **$-0.0268$** (centered around zero), and mean pairwise correlation drops to $+0.0024$.
 - The proportion of pairs with $r > 0.5$ drops from $67.7\%$ to $16.9\%$.
-- Residual traits are orthogonal to the global curation density component.
+- Residual traits are orthogonal to the fitted PC1 scores. Identifying PC1 with curation effort is an interpretation, not a causal result of PCA.
 
 ### Method B: Profile Composition Normalization (Total Sum Scaling)
 Each profile's trait counts are normalized by its row sum across non-MediaDive traits:
 $$x_{ij}^{\text{norm}} = \frac{x_{ij}}{\sum_k x_{ik}}$$
-This adjusts for overall profile annotation richness and study annotation depth (#352, #379).
+This rescales overall profile annotation totals (#352, #379); it does not identify the biological or curation causes of those totals.
 - **Effect on diagnostic pair correlation:** Reduces Pearson correlation between *facultatively aerobic* and *moderately halophilic* from $+0.8957$ to **$+0.1651$** (median pairwise $r = +0.0165$, pairs $> 0.5 = 2.4\%$).
-- Method B substantially attenuates curation bias while preserving relative compositional shifts. Method A provides complete orthogonal separation from PC1.
+- Method B reduces the displayed correlation under a compositional representation. Method A makes the fitted residuals orthogonal to PC1. Neither calculation alone shows that curation bias has been removed.
 
 ---
 
@@ -93,18 +117,22 @@ Issue #264 posed the diagnostic question: *Does the observed correlation between
 - **Post-PC1 Regression:** Pearson $r = +0.6256$ (an attenuation of $\Delta r = -0.2701$).
 - **Post-Profile-Composition:** Pearson $r = +0.1651$ (an attenuation of $\Delta r = -0.7306$).
 - **Paired Experiment Contrasts ($N = 2,257$):**
-  - **Raw Difference:** Wilcoxon signed-rank $p = 8.05 \times 10^{-13}$ (significant).
-  - **Density-Adjusted Difference:** Wilcoxon signed-rank $p = 2.97 \times 10^{-12}$ (remains significant post-adjustment in raw count profiles).
+  - **Raw Difference:** Nominal Wilcoxon signed-rank $p = 8.05 \times 10^{-13}$, BH $q = 4.83 \times 10^{-12}$ in `mt-script-doc-table-bh-raw`, the six printed raw-p rows (significant at $q \le 0.05$, #1321; documentation reconstruction described above).
+  - **Density-Adjusted Difference:** Nominal Wilcoxon signed-rank $p = 2.97 \times 10^{-12}$, BH $q = 1.78 \times 10^{-11}$ in `mt-script-doc-table-bh-adjusted`, the six printed adjusted-p rows (passes $q \le 0.05$; status `survived (significant post-adjustment)`).
 
-**Finding:** The correlation between *facultatively aerobic* and *moderately halophilic* is substantially inflated by the primary density axis, attenuating by $\Delta r = -0.27$ under PC1 regression and dropping to $+0.17$ under profile composition normalization. While the paired contrast survives in raw count profiles, previous analyses under binarized profiles showed full attenuation (#375), demonstrating sensitivity to profile representation.
+**Finding:** The correlation between *facultatively aerobic* and *moderately halophilic* decreases by $\Delta r = -0.27$ under PC1 regression and drops to $+0.17$ under profile composition normalization. This describes sensitivity to the transformation, not a causal attribution to curation. The raw-count paired contrast passes the documentation-family BH threshold above. The earlier binarized-profile claim in #375 was read from nominal p-values; it is not a corrected-family replication of this result.
 
 ---
 
-## 5. Survival of Convergent Six Trait Signals
+## 5. Paired Contrasts of the Six Selected Traits
 
-We evaluated which candidate trait signals survive PC1 density adjustment in paired experiment comparisons (increased vs. decreased, $N = 2,257$ pairs):
+The historical table records paired experiment comparisons before and after PC1
+adjustment (increased vs. decreased, $N = 2,257$ pairs). Its twelve displayed
+Wilcoxon p-values are nominal. The statuses are retained from that historical
+table; their documentation-only BH comparison uses the two separate six-row
+families defined above, not a joint family of all displayed tests:
 
-| Trait Identifier | Trait Label | Raw Mean $\Delta$ | Raw Wilcoxon $p$ | Adj Mean $\Delta$ | Adj Wilcoxon $p$ | Relative Change | Magnitude Change | Adjustment Status |
+| Trait Identifier | Trait Label | Raw Mean $\Delta$ | Raw nominal Wilcoxon $p$ | Adj Mean $\Delta$ | Adj nominal Wilcoxon $p$ | Relative Change | Magnitude Change | Adjustment Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | `METPO:1000608` | Facultatively aerobic | $+356.65$ | $8.05 \times 10^{-13}$ | $+204.56$ | **$2.97 \times 10^{-12}$** | -42.6% | -42.6% | **Survived (significant post-adjustment)** |
 | `METPO:2000103\|GO:0030245` | Cellulose catabolic process | $-1.78$ | $4.98 \times 10^{-2}$ | **$-4.85$** | **$5.61 \times 10^{-6}$** | -172.5% | +172.5% | **Enhanced (significant, larger magnitude)** |
@@ -113,36 +141,60 @@ We evaluated which candidate trait signals survive PC1 density adjustment in pai
 | `METPO:2000103\|pathways:arsenate_reduction` | Arsenate reduction | $+2.42$ | $2.55 \times 10^{-8}$ | $+1.32$ | **$1.01 \times 10^{-4}$** | -45.5% | -45.5% | **Survived (significant post-adjustment)** |
 | `METPO:1000623` | Moderately halophilic | $+12.38$ | $1.29 \times 10^{-6}$ | $+3.93$ | **$6.47 \times 10^{-9}$** | -68.3% | -68.3% | **Survived (significant post-adjustment)** |
 
-*Relative Change* is `relative_change_pct`, the signed change $(\text{adj} - \text{raw}) / |\text{raw}|$. It reads as attenuation only for a positive raw mean: cellulose's raw mean is negative, so its $-172.5\%$ means the effect grew. *Magnitude Change* is `magnitude_change_pct`, $(|\text{adj}| - |\text{raw}|) / |\text{raw}|$, negative exactly when the effect shrank whatever its sign; `sign_flipped` marks an adjusted mean of the opposite sign (#1084). A mean within $10^{-9}$ of zero has no sign, and a raw one leaves the magnitude change undefined (NaN). The Magnitude Change values above are computed from the same raw and adjusted means. The status combines the Wilcoxon $p$-values (significant at $p \le 0.05$) with the magnitude change:
+*Relative Change* is `relative_change_pct`, the signed change $(\text{adj} - \text{raw}) / |\text{raw}|$. It reads as attenuation only for a positive raw mean: cellulose's raw mean is negative, so its $-172.5\%$ means the effect grew. *Magnitude Change* is `magnitude_change_pct`, $(|\text{adj}| - |\text{raw}|) / |\text{raw}|$, negative exactly when the effect shrank whatever its sign; `sign_flipped` marks an adjusted mean of the opposite sign (#1084). A mean within $10^{-9}$ of zero has no sign, and a raw one leaves the magnitude change undefined (NaN). The Magnitude Change values above are computed from the same raw and adjusted means. The status combines the Benjamini-Hochberg $q$-values of the Wilcoxon $p$-values (significant at $q \le 0.05$, #1321) with the magnitude change:
 - A raw mean of zero gets *undefined magnitude change (raw mean zero, …)*, significant or nonsignificant post-adjustment.
 - A sign reversal gets *reversed (significant post-adjustment)* or *reversed (nonsignificant post-adjustment)*, whatever its magnitude (#1097).
-- Otherwise a significant adjusted contrast whose raw contrast was also significant ($p \le 0.05$) is *survived*, or *enhanced* if $|\text{adj}| > |\text{raw}|$, while one whose raw contrast was nonsignificant ($p > 0.05$) or had ten or fewer non-zero pairs (no raw $p$) is *significant only post-adjustment* (#1098); one that lost significance is *collapsed*, attenuated or with a larger magnitude; one nonsignificant before and after is *attenuated* or *enhanced magnitude*.
+- Otherwise a significant adjusted contrast whose raw contrast was also significant ($q \le 0.05$) is *survived*, or *enhanced* if $|\text{adj}| > |\text{raw}|$, while one whose raw contrast was nonsignificant ($q > 0.05$) or had ten or fewer non-zero pairs (no raw $p$ or $q$) is *significant only post-adjustment* (#1098); one that lost significance is *collapsed*, attenuated or with a larger magnitude; one nonsignificant before and after is *attenuated* or *enhanced magnitude*.
+
+**Runtime correction families (#1321).** `mt-supp-density-raw-wilcoxon` and
+`mt-supp-density-adjusted-wilcoxon` each use BH across every reported trait, raw
+and adjusted columns separately, at $q \le 0.05$. They are distinct from the
+documentation-reconstruction families above. The reported list is the six
+Table 1 traits by default, or the declared list of a
+`density-adjustment-trait-list` run. A trait with ten or fewer non-zero pairs
+stays in the family, held at $p = 1$ internally, and has no exported $q$.
+The family size is the number of reported traits, including these untestable
+members. Every requested trait must have a non-MediaDive column; an absent
+Table 1 or list member fails the run (#1324).
+
+For a quoted runtime q, read `bh_family_size` beside `raw_wilcoxon_bh_q` or
+`adj_wilcoxon_bh_q` in `table1_density_adjusted_effects.tsv` and bind that table
+to `density_adjustment_provenance.json` or `trait_list_provenance.json`, whose
+`q_values` records the family and procedure. Preserve its input hashes, list
+and threshold. Do not substitute the historical six-row size for a different
+list run. Because the family is the reported set, a trait can retain its means
+and nominal p-values across lists while its q and status change. BH is the
+registry's deliberate choice for these density sensitivity families; it does
+not confer a full-catalog BY result or measure trait activity.
+
+The table above predates #1321: its statuses were read from nominal $p \le 0.05$. Recomputed separately with BH over each column's six documented $p$-values (`scripts/adhoc/issue1321_doc_table_bh_q.py`), every status is unchanged. The closest is cellulose catabolic process, whose raw $p = 4.98 \times 10^{-2}$ is the largest of the six and so equals its $q$; every other raw and adjusted $q$ is at most $1.32 \times 10^{-3}$.
 
 A raw contrast with ten or fewer non-zero pairs has no raw $p$ and is treated as not raw-significant: it becomes *significant only post-adjustment* when the adjusted contrast is significant, and *attenuated* or *enhanced magnitude* when the adjusted contrast is nonsignificant. Deck figure 4 draws only *survived* and *enhanced* rows as surviving (green); *significant only post-adjustment*, reversed, and raw-mean-zero rows are drawn red with the rest.
 
 ### Key Methodological Takeaways
-1. **Cellulose Catabolism Depletion Is Strengthened:** When the positive curation baseline is removed, the negative paired contrast for *cellulose catabolic process* in disease signatures becomes sharper ($p = 5.61 \times 10^{-6}$ vs. raw $p = 4.98 \times 10^{-2}$). In raw count data, global positive density drift partially offsets the negative paired contrast for cellulose catabolism.
-2. **Morphological Signals Attenuate Substantially in Magnitude:** *Coccus shaped* (-57.3%, $p = 1.32 \times 10^{-3}$) and *sphere shaped* (-75.4%, $p = 1.11 \times 10^{-3}$) lose 57–75% of their raw mean difference after removing PC1 in raw count profiles (and collapse to nonsignificance under binarized presence/absence profiles per #375).
-3. **Physiological Signals Survive with Attenuated Magnitude:** *Facultatively aerobic*, *moderately halophilic*, and *arsenate reduction* maintain statistical significance in raw count profiles, though their mean effect magnitudes attenuate by 43–68%.
-4. **Representation Sensitivity (#375):** The survival versus collapse of specific traits (e.g., *facultatively aerobic* and *arsenate reduction*) is sensitive to profile representation (raw count sums vs. binarized presence/absence per #365 opt-in flags). Pipelines should report both representations.
+The $q$-values below are BH over the six traits of the table above, recomputed from its $p$-values by `scripts/adhoc/issue1321_doc_table_bh_q.py` (#1326): raw q belongs to `mt-script-doc-table-bh-raw`, adjusted q to `mt-script-doc-table-bh-adjusted`, each at $q \le 0.05$. Each takeaway describes the paired contrast (increased minus decreased profile of the same experiment) of rolled-up trait annotation counts in raw count profiles, before and after PC1 adjustment; none measures trait activity in the sampled communities.
+1. **The cellulose catabolic process contrast grows under PC1 adjustment:** The contrast is negative: profiles of taxa reported decreased carry more *cellulose catabolic process* annotations than profiles of taxa reported increased. Its mean moves from $-1.78$ (raw $q = 4.98 \times 10^{-2}$, just inside $q \le 0.05$) to $-4.85$ after adjustment (adjusted $q = 1.12 \times 10^{-5}$; magnitude change $+172.5\%$). The fitted PC1 contribution partly offsets this negative contrast; that decomposition does not identify the source of PC1.
+2. **The coccus shaped and sphere shaped contrasts shrink and stay at $q \le 0.05$:** *Coccus shaped* moves from raw $q = 5.10 \times 10^{-8}$ to adjusted $q = 1.32 \times 10^{-3}$ (magnitude change $-57.3\%$), and *sphere shaped* from raw $q = 5.70 \times 10^{-7}$ to adjusted $q = 1.32 \times 10^{-3}$ ($-75.4\%$). #375 reported that neither passed its nominal p-value threshold under binarized presence/absence profiles; that statement does not report a corrected family.
+3. **The facultatively aerobic, moderately halophilic and arsenate reduction contrasts shrink and stay at $q \le 0.05$:** *Facultatively aerobic* moves from raw $q = 4.83 \times 10^{-12}$ to adjusted $q = 1.78 \times 10^{-11}$ ($-42.6\%$), *moderately halophilic* from $1.55 \times 10^{-6}$ to $1.94 \times 10^{-8}$ ($-68.3\%$), and *arsenate reduction* from $5.10 \times 10^{-8}$ to $1.51 \times 10^{-4}$ ($-45.5\%$). These describe how reported taxa align with oxygen, salt and arsenate annotations, not measured oxygen tolerance, salinity or arsenate reduction in the sampled communities.
+4. **Representation Sensitivity (#375):** Whether a contrast keeps its label (e.g., *facultatively aerobic* and *arsenate reduction*) depends on profile representation (raw count sums vs. binarized presence/absence per #365 opt-in flags). Pipelines should report both representations.
 
 ---
 
 ## 6. Near-Twin Collinearity & Conditional Testing (Coccus vs. Sphere)
 
-We evaluated the collinearity and conditional independence of the sibling morphological traits *coccus-shaped* (`METPO:1000668`) and *sphere-shaped* (`METPO:1000683`):
+We evaluated correlation and regression diagnostics for the sibling morphological traits *coccus-shaped* (`METPO:1000668`) and *sphere-shaped* (`METPO:1000683`); these diagnostics do not establish conditional independence:
 
 - **Profile Correlation:** $r = +0.7970$
 - **Profile Composition Normalized Correlation:** $r = +0.2309$ (PC1 residualized $r = +0.7124$)
 - **Variance Inflation Factor (VIF):** $2.74$ (paired contrast VIF = $2.34$, paired $r = +0.7573$)
 - **Profile Regression Slope (Coccus ~ Sphere):** $\beta = 20.41$
-- **Paired Regression Slope:** $\beta = 22.69$ ($p < 10^{-15}$)
+- **Paired Regression Slope:** $\beta = 22.69$ (nominal diagnostic $p < 10^{-15}$; one displayed regression test, no family correction claimed)
 
 ### Methodological Recommendations for Near-Twins
-- **Substantial Collinearity:** An $r \approx 0.80$ and VIF of $2.74$ demonstrate substantial collinearity between sibling morphological descriptors.
-- **Controlled Conditioning:** The traits retain positive association ($r = +0.2309$ under composition normalization, $+0.7124$ after PC1 regression), confirming that their association is terminological/ontological rather than an artifact of total annotation count alone.
-- **Annotation Disparity:** The steep regression slope ($\beta \approx 22.7$) reflects the substantial annotation disparity between the two terms across distinct source ontologies (`infores:madin_etal` vs. `infores:bactotraits`, per #189).
-- **Recommendation:** Analysts should not include both *coccus-shaped* and *sphere-shaped* as independent unregularized predictors in the same multivariate model. Sibling morphological terms should be consolidated, regularized (Ridge/ElasticNet), or evaluated with conditional contrasts.
+- **Collinearity Diagnostics:** The reported $r \approx 0.80$ and VIF of $2.74$ describe association and variance inflation in the fitted design. No severity cutoff or model-instability result is established here.
+- **Conditioning:** The traits retain positive association ($r = +0.2309$ under composition normalization, $+0.7124$ after PC1 regression). Persistence after these transformations does not identify an ontological or biological cause.
+- **Annotation Disparity:** The regression slope ($\beta \approx 22.7$) describes a scale difference; the separate source audit (#189) identifies `infores:madin_etal` and `infores:bactotraits`. The slope alone does not attribute that difference to source curation.
+- **Recommendation:** Evaluate the two terms' source overlap and the intended model before choosing separate, regularized or conditional predictors. A correlation or VIF alone does not justify merging their biological definitions.
 
 ---
 
@@ -191,7 +243,7 @@ In accordance with #264's directive that branch collapse requires a stated rule 
 #### Rule 1: Survivor Selection (Max-Support Evidence Rule)
 For each redundant cluster $\mathcal{C}_k = \{m_1, m_2, \dots, m_K\}$, the surviving representative feature $s \in \mathcal{C}_k$ is chosen as the feature maximizing total annotation support across all profiles:
 $$s = \arg\max_{m \in \mathcal{C}_k} \sum_{i=1}^N \mathbf{X}_{im}$$
-*Rationale:* As shown in #189, terms like *coccus* ($4,430,794$ total profile count support) and *sphere* ($200,030$ total profile count support) differ by more than twenty-fold in total evidence. The max-support ancestor/canonical term maximizes coverage and stability across diverse studies, preventing loss of statistical power.
+*Rationale:* As shown in #189, terms like *coccus* ($4,430,794$ total profile count support) and *sphere* ($200,030$ total profile count support) differ by more than twenty-fold in total evidence. The max-support rule chooses the term with the larger observed total; it does not establish improved stability, power or biological equivalence.
 
 #### Rule 2: Collapsed Count Semantics
 We evaluated two distinct count collapse semantics:
@@ -220,12 +272,12 @@ We recomputed the complete correlation matrix, principal components, and effecti
 ### 7.5 Critical Scientific Finding: Redundancy vs. Density
 
 Comparing the collapsed configurations against the raw baseline shows a consistent empirical pattern:
-1. **Collapsing Redundancy Does NOT Reduce Global Correlation:** Collapsing the 24 redundant pairs shrinks the `off` trait universe from 317 to 301 features, but the median pairwise correlation ($+0.7049 \to +0.7092$) and PC1 variance explained ($66.50\% \to 66.81\%$) remain essentially identical (in fact slightly more concentrated due to the removal of lower-support noise).
-2. **Correlation Is Driven by Curation Density, Not Ontology Redundancy:** The pervasive positive correlation across microbial traits is not an artifact of ontology duplication. It is driven by the fact that well-studied organisms carry hundreds of curated annotations simultaneously across completely unrelated metabolic and physiological pathways (e.g., *facultatively aerobic* $\times$ *moderately halophilic* at $r = +0.8957$).
+1. **Correlation Persists Under This Collapse Rule:** Collapsing the 24 redundant pairs shrinks the `off` trait universe from 317 to 301 features, while the median pairwise correlation ($+0.7049 \to +0.7092$) and PC1 variance explained ($66.50\% \to 66.81\%$) change little. This does not establish that the removed variation was noise.
+2. **Curation Density Remains a Candidate Explanation:** Persistence after this ontology collapse is consistent with shared annotation density, including the *facultatively aerobic* $\times$ *moderately halophilic* correlation at $r = +0.8957$. It does not exclude biological co-occurrence, shared taxa, other ontology effects or sampling differences, and does not assign a causal share to curation.
 3. **Complementary Roles of Collapsing and Density Adjustment:**
-   - **Ontology collapsing** is necessary to eliminate collinear near-twins (preventing VIF $= 2.74$ model instability) and to establish well-defined, distinct biological concepts.
-   - **PC1 density adjustment** is necessary to remove the primary curation-effort axis, separating residual trait co-annotation structure from overall curation intensity.
-   Both operations are complementary and address distinct structural challenges in microbial trait profiling.
+   - **Ontology collapsing** changes feature definitions and requires a separately justified semantic and deduplication rule; VIF $= 2.74$ alone does not require it.
+   - **PC1 adjustment** removes the fitted first-component contribution and can be reported as a sensitivity analysis. It does not establish that PC1 contains only curation effort.
+   These operations address different representations and must not be treated as validated causal corrections.
 
 ---
 
@@ -233,5 +285,5 @@ Comparing the collapsed configurations against the raw baseline shows a consiste
 
 Following the project interpretation guidelines in `AGENTS.md` and [#179](https://github.com/CultureBotAI/microbial-trait-profiling/issues/179):
 1. **Annotation Representation Only:** Trait counts measure curated knowledge representation in published signatures, not physical abundance in patient microbiomes.
-2. **Do Not Conflate Density with Co-selection:** Positive correlations across traits in raw profiles must not be cited as biological co-selection or shared operon architecture without testing against PC1 density residualization.
-3. **No Causal Inferences:** The survival of *moderately halophilic* ($p = 6.47 \times 10^{-9}$) does not indicate patient-level osmolarity changes or causal dysbiosis; it indicates that taxa curated with this trait are disproportionately represented in published disease-increased signatures.
+2. **Do Not Conflate Density with Co-selection:** Positive correlations across traits in raw or PC1-residualized profiles do not establish biological co-selection or shared operon architecture.
+3. **No Causal Inferences:** The historical *moderately halophilic* contrast (nominal density-adjusted $p = 6.47 \times 10^{-9}$, reconstructed BH $q = 1.94 \times 10^{-8}$ in `mt-script-doc-table-bh-adjusted`, six printed traits, $q \le 0.05$) describes annotation representation among taxa reported increased versus decreased. It does not establish patient-level osmolarity changes, a verified disease-versus-healthy contrast, or causal dysbiosis.

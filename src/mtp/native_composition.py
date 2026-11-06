@@ -16,7 +16,6 @@ import pandas as pd
 from numpy.typing import NDArray
 
 from mtp.composition_denominators import retained_trait_counts, trait_fractions
-from mtp.population_tables import is_canonical_derived_path, orient_and_filter_profiles_df
 from mtp.trait_guilds import load_profiles
 
 PROFILE_METADATA_COLUMNS = ["study_id", "experiment_id", "inc_dec"]
@@ -58,8 +57,6 @@ def load_trait_labels(path: Path) -> pd.DataFrame:
 
 def load_profile_matrix(path: Path) -> pd.DataFrame:
     profiles = pd.read_csv(path, sep="\t")
-    if is_canonical_derived_path(path, "study_trait_profiles_wide.tsv"):
-        profiles = orient_and_filter_profiles_df(profiles, filter_to_selection=True)
     columns = [column for column in profiles.columns if column not in PROFILE_METADATA_COLUMNS]
     values = profiles[columns].apply(pd.to_numeric, errors="coerce").fillna(0.0)
     values.index = [

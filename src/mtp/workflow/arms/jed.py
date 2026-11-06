@@ -70,7 +70,6 @@ def build_commands(context: ArmContext) -> list[Command]:
     raw_dump = products["raw_dump"]
     columns = products["feature_metadata"]
     taxa = products["reported_taxa"]
-    kg_provenance = context.repository / "data" / "kg-microbe" / "provenance.json"
     profile_inputs = (profiles, experiments, raw_dump)
     core_profile_inputs = (products["count_profiles"], experiments, raw_dump)
     profile_options: dict[str, Path | str | int] = {
@@ -125,7 +124,11 @@ def build_commands(context: ArmContext) -> list[Command]:
             _script(context, "audit_trait_density_correlation.py"),
             {**matrix_options, "--code-commit": context.code_commit},
             (profiles, columns),
-            ("density_adjustment_summary.tsv", "ontology_redundancy_summary.tsv"),
+            (
+                "density_adjustment_summary.tsv",
+                "ontology_redundancy_summary.tsv",
+                "density_adjustment_provenance.json",
+            ),
         ),
         _directory_command(
             context,
@@ -241,15 +244,23 @@ def build_commands(context: ArmContext) -> list[Command]:
                 "taxa_coverage",
                 _script(context, "create_taxa_coverage_histogram.py"),
                 {
+                    "--core-run": context.manifest,
+                    "--code-commit": context.code_commit,
                     "--strain-rollup": context.strain_rollup,
-                    "--taxa": taxa,
-                    "--matrix": products["taxa_matrix"],
-                    "--profiles": profiles,
-                    "--experiments": experiments,
-                    "--raw-dump": raw_dump,
-                    "--kg-provenance": kg_provenance,
+                    "--contrast-population": context.contrast_population,
+                    "--direction-basis": context.direction_basis,
                 },
-                (taxa, products["taxa_matrix"], profiles, experiments, raw_dump, kg_provenance),
+                (
+                    context.manifest,
+                    products["count_profiles"],
+                    taxa,
+                    products["taxa_matrix"],
+                    experiments,
+                    raw_dump,
+                    products["kg_edges"],
+                    products["kg_nodes"],
+                    products["source_identity"],
+                ),
                 (
                     "taxa_coverage_by_rank.tsv",
                     "profile_coverage_by_rank.tsv",
@@ -258,12 +269,20 @@ def build_commands(context: ArmContext) -> list[Command]:
                     "top_zero_trait_bugsigdb_taxa.tsv",
                     "README.md",
                     "provenance.json",
-                    "taxa_coverage_histogram_rank_stratified.png",
-                    "taxa_coverage_occurrences_vs_unique.png",
-                    "taxa_profile_distribution_by_rank.png",
-                    "histogram1_mapped_traits_and_taxa_per_profile.png",
-                    "histogram2_taxa_trait_counts_and_zero_trait_frequency.png",
-                    "taxa_trait_count_distribution.png",
+                    "core_consumption.json",
+                    "core_consumption.coverage.tsv",
+                    *(
+                        f"{name}.{suffix}"
+                        for name in (
+                            "taxa_coverage_histogram_rank_stratified",
+                            "taxa_coverage_occurrences_vs_unique",
+                            "taxa_profile_distribution_by_rank",
+                            "histogram1_mapped_traits_and_taxa_per_profile",
+                            "histogram2_taxa_trait_counts_and_zero_trait_frequency",
+                            "taxa_trait_count_distribution",
+                        )
+                        for suffix in ("png", "svg")
+                    ),
                 ),
             ),
         ]

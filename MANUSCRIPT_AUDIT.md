@@ -185,3 +185,11 @@ the tracker get ahead of `main`.
 - The ranked export's `rank` column is prevalence over *testable* profiles; its top rows are
   traits testable in as few as 20 profiles. Any manuscript use of that table should rank by
   absolute profile support instead (Table 1's ORA-only block already does).
+
+## Biological interpretation companion
+
+Use the [shared interpretation guide](methods/biological_interpretation.md) and
+[claim audit](methods/biological_interpretation_audit.md) alongside this statistical
+audit. Correcting implementation or calibration does not provide patient-level
+biological measurements or validate a mechanism. The claim audit records proposed
+corrections for PR #173 and adopts the separate PR #192 review as a worked example.

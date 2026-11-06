@@ -12,6 +12,7 @@ from pathlib import Path
 import pytest
 
 from mtp.workflow.arms.jed import build_commands
+from mtp.workflow.arms.runtime import _validate_plan
 from mtp.workflow.arms.shared import human_count_path
 from mtp.workflow.arms.types import ArmContext, Command
 
@@ -30,6 +31,9 @@ def context(tmp_path: Path) -> ArmContext:
             "reported_taxa",
             "taxa_matrix",
             "study_table",
+            "kg_edges",
+            "kg_nodes",
+            "source_identity",
         )
     }
     return ArmContext(
@@ -144,7 +148,6 @@ def test_profiles_are_count_products_and_sensitivity_protocol_is_bound(context: 
         "taxa_guild_heatmap",
         "profile_heatmap",
         "condition_trait_heatmap",
-        "taxa_coverage",
     ):
         assert human_count_path(context) in commands[name].inputs
     assert (REPOSITORY / "methods" / "table1_log_ratio_sensitivity_protocol.json") in commands[
@@ -154,3 +157,65 @@ def test_profiles_are_count_products_and_sensitivity_protocol_is_bound(context: 
         command = commands[name]
         assert command.argv[command.argv.index("--core-run") + 1] == str(context.manifest)
         assert command.outputs[0] / "core_consumption.json" in command.outputs
+
+
+@pytest.mark.parametrize(
+    ("population", "basis"),
+    [
+        ("all_paired", "group_1_vs_group_0"),
+        ("disease_vs_healthy_tier1_2_subject_controls", "disease_vs_comparison"),
+    ],
+)
+def test_coverage_uses_only_the_verified_core_inputs(
+    context: ArmContext, population: str, basis: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The new stage must pass the actual arm plan gate without a checkout KG sidecar."""
+    context = replace(context, contrast_population=population, direction_basis=basis)
+    commands = build_commands(context)
+    _validate_plan(commands, context)
+    command = next(command for command in commands if command.id == "taxa_coverage")
+    parsed = _parse_command(command, monkeypatch)
+    assert parsed.core_run == context.manifest
+    assert parsed.code_commit == context.code_commit
+    assert parsed.contrast_population == population
+    assert parsed.direction_basis == basis
+    assert parsed.strain_rollup == context.strain_rollup
+    assert set(command.inputs) == {
+        context.manifest,
+        *(
+            context.products[name]
+            for name in (
+                "count_profiles",
+                "reported_taxa",
+                "taxa_matrix",
+                "experiments",
+                "raw_dump",
+                "kg_edges",
+                "kg_nodes",
+                "source_identity",
+            )
+        ),
+    }
+    assert human_count_path(context) not in command.inputs
+    assert not any("data/kg-microbe/provenance.json" in str(path) for path in command.inputs)
+    expected = {
+        "taxa_coverage_by_rank.tsv",
+        "profile_coverage_by_rank.tsv",
+        "profile_trait_mapping_summary.tsv",
+        "taxa_kgmicrobe_coverage_details.tsv",
+        "top_zero_trait_bugsigdb_taxa.tsv",
+        "README.md",
+        "provenance.json",
+        "core_consumption.json",
+        "core_consumption.coverage.tsv",
+    }
+    figures = (
+        "taxa_coverage_histogram_rank_stratified",
+        "taxa_coverage_occurrences_vs_unique",
+        "taxa_profile_distribution_by_rank",
+        "histogram1_mapped_traits_and_taxa_per_profile",
+        "histogram2_taxa_trait_counts_and_zero_trait_frequency",
+        "taxa_trait_count_distribution",
+    )
+    expected.update(f"{name}.{suffix}" for name in figures for suffix in ("png", "svg"))
+    assert {path.name for path in command.outputs[1:]} == expected

@@ -12,9 +12,13 @@ Generates high-resolution publication figures for the microbial trait profiling 
 from __future__ import annotations
 
 import argparse
+import io
+import math
 import sys
+from collections.abc import Iterator, Sequence
+from contextlib import ExitStack
 from pathlib import Path
-from typing import Any
+from typing import Any, TextIO
 
 import numpy as np
 import pandas as pd
@@ -22,6 +26,8 @@ from scipy import stats
 
 from mtp.density_adjustment import SIGNIFICANT_POST_ADJUSTMENT_STATUSES
 from mtp.paths import DERIVED_DATA_DIR
+from mtp.quoted_results import refuse_nominal_ora
+from mtp.trait_key_policy import display_trait_label, read_recorded_member_ids
 
 # Table 1 canonical traits and display metadata
 TABLE_1_TRAITS: dict[str, str] = {
@@ -90,7 +96,6 @@ def clean_trait_label(name: str) -> str:
         "anaerobic": "Anaerobic",
         "mesophilic": "Mesophilic",
         "Fermentation": "Fermentation",
-        "facultatively aerobic": "Facultatively aerobic",
         "cellulose catabolic process": "Cellulose catabolism",
         "moderately halophilic": "Moderately halophilic",
         "coccus shaped": "Coccus shaped",
@@ -101,6 +106,24 @@ def clean_trait_label(name: str) -> str:
         return mapping[name_str]
     cleaned = name_str.replace("_", " ")
     return cleaned[0].upper() + cleaned[1:] if cleaned else name_str
+
+
+def _optional_sibling_columns(explicit: Path | None, anchor: Path) -> Path | None:
+    if explicit is not None:
+        return explicit
+    sibling = anchor.with_name("taxa_trait_matrix_columns.tsv")
+    return sibling if sibling.exists() else None
+
+
+def _trait_short_names(columns_path: Path | None = None) -> dict[str, str]:
+    """Resolve Table 1 short display names against recorded column member metadata."""
+    members = read_recorded_member_ids(columns_path)
+    return {
+        trait_id: clean_trait_label(
+            display_trait_label(trait_id, TRAIT_SHORT_NAMES[trait_id], members.get(trait_id))
+        )
+        for trait_id in TRAIT_SHORT_NAMES
+    }
 
 
 def load_profile_data(
@@ -124,12 +147,14 @@ def generate_figure1_condition_anatomy_ora_heatmap(
     output_path: Path,
     min_studies: int = 5,
     top_n_conditions: int = 22,
+    columns_path: Path | None = None,
 ) -> Path:
     """Render Condition x Anatomy ORA Heatmap (Replacing Slide 17)."""
     import plotly.graph_objects as go
 
     print(f"Generating Figure 1 (Condition x Anatomy ORA Heatmap) -> {output_path}...")
     traits = list(TABLE_1_TRAITS.keys())
+    short_names = _trait_short_names(_optional_sibling_columns(columns_path, profiles_path))
     profiles_df, exp_df = load_profile_data(profiles_path, experiments_path, use_cols=traits)
 
     valid_exp = exp_df.dropna(subset=["study_id", "condition", "body_site"]).copy()
@@ -184,14 +209,15 @@ def generate_figure1_condition_anatomy_ora_heatmap(
                 btest = stats.binomtest(inc_wins, tested, p=0.5, alternative="two-sided")
                 pval = float(btest.pvalue)
             else:
-                pval = 1.0
+                pval = math.nan
 
             results_list.append(
                 {
                     "cond_site": cond,
                     "trait": trait,
-                    "trait_name": TRAIT_SHORT_NAMES[trait],
+                    "trait_name": short_names[trait],
                     "n_studies": n_studies,
+                    "tested": tested,
                     "net_delta": net_delta,
                     "pval": pval,
                 }
@@ -223,7 +249,7 @@ def generate_figure1_condition_anatomy_ora_heatmap(
     matrix_delta = res_df.pivot(index="cond_site", columns="trait_name", values="net_delta")
     matrix_pval = res_df.pivot(index="cond_site", columns="trait_name", values="pval")
 
-    ordered_cols = [TRAIT_SHORT_NAMES[t] for t in traits]
+    ordered_cols = [short_names[t] for t in traits]
     matrix_delta = matrix_delta[ordered_cols]
     matrix_pval = matrix_pval[ordered_cols]
 
@@ -268,11 +294,17 @@ def generate_figure1_condition_anatomy_ora_heatmap(
         )
     )
 
+    n_cond_sites = len(matrix_delta.index)
+    n_traits = len(ordered_cols)
+    n_tests = int((res_df["tested"] > 0).sum())
     subtitle = (
-        "Paired study-level directional contrasts across 22 clinical conditions and "
+        f"Paired study-level directional contrasts across {n_cond_sites} clinical conditions and "
         "anatomical body sites for Table 1 canonical traits.<br>"
-        "Net contrast Delta = (N_inc - N_dec) / N_studies. Cell asterisks denote two-sided "
-        "binomial sign test (* p < 0.05, ** p < 0.01, *** p < 0.001).<br>"
+        "Net contrast Delta = (N_inc - N_dec) / N_studies.<br>"
+        "Cell asterisks denote uncorrected "
+        "two-sided binomial sign test nominal p (* nominal p < 0.05, ** nominal p < 0.01, "
+        f"*** nominal p < 0.001;<br>{n_tests} nominal tests across {n_cond_sites} x {n_traits} "
+        "condition-site x trait cells).<br>"
         "Orange = Enriched in Increased Signatures; Blue = Enriched in Decreased Signatures.<br>"
         "Curated organism-level annotations from KG-Microbe; does not measure "
         "in vivo physiological activity or metabolite flux."
@@ -291,7 +323,7 @@ def generate_figure1_condition_anatomy_ora_heatmap(
         },
         width=1150,
         height=1080,
-        margin={"l": 320, "r": 80, "t": 170, "b": 70},
+        margin={"l": 320, "r": 80, "t": 195, "b": 70},
         plot_bgcolor="white",
     )
     fig.update_xaxes(tickangle=-30, title_text="Curated Functional Trait (KG-Microbe)")
@@ -305,6 +337,68 @@ def generate_figure1_condition_anatomy_ora_heatmap(
     return output_path
 
 
+class _OraTableReader:
+    """Validate metadata, then stream its table without reopening the source."""
+
+    def __init__(self, source: TextIO) -> None:
+        self._source = source
+        self._table_header = ""
+        refuse_nominal_ora(self._metadata_lines())
+
+    def _metadata_lines(self) -> Iterator[str]:
+        for line in self._source:
+            if line.strip() and not line.startswith("#"):
+                self._table_header = line
+            yield line
+
+    def readable(self) -> bool:
+        return True
+
+    @property
+    def mode(self) -> str:
+        return self._source.mode
+
+    @property
+    def closed(self) -> bool:
+        return self._source.closed
+
+    def seekable(self) -> bool:
+        return False
+
+    def seek(self, offset: int, whence: int = 0) -> int:
+        raise io.UnsupportedOperation(f"Validated ORA stream cannot seek ({offset}, {whence})")
+
+    def tell(self) -> int:
+        raise io.UnsupportedOperation("Validated ORA stream has no seek position")
+
+    def fileno(self) -> int:
+        raise io.UnsupportedOperation("Validated ORA stream cannot bypass its header buffer")
+
+    def __iter__(self) -> Iterator[str]:
+        return self
+
+    def __next__(self) -> str:
+        line = self.readline()
+        if not line:
+            raise StopIteration
+        return line
+
+    def readline(self, size: int = -1) -> str:
+        if not self._table_header:
+            return self._source.readline(size)
+        length = len(self._table_header) if size < 0 else size
+        line, self._table_header = self._table_header[:length], self._table_header[length:]
+        return line
+
+    def read(self, size: int = -1) -> str:
+        if size < 0:
+            prefix, self._table_header = self._table_header, ""
+            return prefix + self._source.read()
+        prefix = self._table_header[:size]
+        self._table_header = self._table_header[size:]
+        return prefix + self._source.read(size - len(prefix))
+
+
 def generate_figure2_calibrated_ora_infographic(
     taxa_matrix_path: Path,
     experiments_path: Path,
@@ -314,6 +408,42 @@ def generate_figure2_calibrated_ora_infographic(
     columns_path: Path | None = None,
 ) -> Path:
     """Render Calibrated ORA Infographic & Governance Summary."""
+    # Validate every supplied header before reading the matrix, including an
+    # unused depletion source. Keep these same handles for any needed parsing.
+    with ExitStack() as stack:
+        ora_readers: dict[Path, _OraTableReader] = {}
+        for source in (enrichment_results_path, depletion_results_path):
+            if source is not None and source not in ora_readers and source.exists():
+                handle = stack.enter_context(source.open(encoding="utf-8"))
+                ora_readers[source] = _OraTableReader(handle)
+        return _render_figure2_calibrated_ora_infographic(
+            taxa_matrix_path,
+            experiments_path,
+            output_path,
+            enrichment_results_path,
+            depletion_results_path,
+            columns_path,
+            ora_readers,
+        )
+
+
+def _render_figure2_calibrated_ora_infographic(
+    taxa_matrix_path: Path,
+    experiments_path: Path,
+    output_path: Path,
+    enrichment_results_path: Path | None,
+    depletion_results_path: Path | None,
+    columns_path: Path | None,
+    ora_readers: dict[Path, _OraTableReader],
+) -> Path:
+    """Render using validated streams, parsing each needed table only once."""
+    ora_tables: dict[Path, pd.DataFrame] = {}
+
+    def read_table(path: Path) -> pd.DataFrame:
+        if path not in ora_tables:
+            ora_tables[path] = pd.read_csv(ora_readers[path], sep="\t", comment="#")
+        return ora_tables[path]
+
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
 
@@ -329,13 +459,17 @@ def generate_figure2_calibrated_ora_infographic(
     label_map: dict[str, str] = {}
     if columns_path and columns_path.exists():
         cols_df = pd.read_csv(columns_path, sep="\t")
+        members = read_recorded_member_ids(columns_path)
         col_id_col = "column_id" if "column_id" in cols_df.columns else cols_df.columns[0]
         col_name_col = (
             "object_name"
             if "object_name" in cols_df.columns
             else ("column_label" if "column_label" in cols_df.columns else col_id_col)
         )
-        label_map = dict(zip(cols_df[col_id_col], cols_df[col_name_col], strict=False))
+        label_map = {
+            str(cid): display_trait_label(str(cid), str(name), members.get(str(cid)))
+            for cid, name in zip(cols_df[col_id_col], cols_df[col_name_col], strict=False)
+        }
 
     # 1. Enriched and Depleted Traits
     top_enc_labels: list[str] = []
@@ -343,8 +477,8 @@ def generate_figure2_calibrated_ora_infographic(
     top_dep_labels: list[str] = []
     top_dep_counts: list[int] = []
 
-    if enrichment_results_path and enrichment_results_path.exists():
-        enc_df = pd.read_csv(enrichment_results_path, sep="\t", comment="#")
+    if enrichment_results_path is not None and enrichment_results_path in ora_readers:
+        enc_df = read_table(enrichment_results_path)
         trait_col = (
             "trait"
             if "trait" in enc_df.columns
@@ -383,8 +517,12 @@ def generate_figure2_calibrated_ora_infographic(
             top_dep_labels = list(t_counts.index)
             top_dep_counts = [int(v) for v in t_counts.values]
 
-    if not top_dep_labels and depletion_results_path and depletion_results_path.exists():
-        dep_df = pd.read_csv(depletion_results_path, sep="\t", comment="#")
+    if (
+        not top_dep_labels
+        and depletion_results_path is not None
+        and depletion_results_path in ora_readers
+    ):
+        dep_df = read_table(depletion_results_path)
         trait_col = (
             "trait"
             if "trait" in dep_df.columns
@@ -579,6 +717,63 @@ def generate_figure2_calibrated_ora_infographic(
     return output_path
 
 
+def wilcoxon_signed_rank_diff(shifts: Sequence[float] | pd.Series) -> float:
+    """Return Wilcoxon signed-rank sum difference (W+ minus W-) on non-zero shifts (#1615)."""
+    arr = np.asarray(shifts, dtype=float)
+    if arr.size == 0 or not np.all(np.isfinite(arr)):
+        return math.nan
+    nonzero = arr[arr != 0]
+    if nonzero.size == 0:
+        return 0.0
+    ranks = stats.rankdata(np.abs(nonzero))
+    return float(ranks[nonzero > 0].sum() - ranks[nonzero < 0].sum())
+
+
+def lead_consistency_status(
+    target_dir: str,
+    wilcoxon_shift: float | Sequence[float] | pd.Series,
+    w_pval: float,
+    frac: float,
+    pval: float,
+) -> str:
+    """Classify Figure 3 lead consistency from Wilcoxon and sign tests (#1413, #1615, #1616).
+
+    The Wilcoxon direction comes from its signed-rank sum difference (W+ minus W-).
+    When the two tests are significant (nominal p < 0.05) in opposite directions,
+    "Discordant (nominal p < 0.05)" takes precedence over "Concordant (nominal p < 0.05)"
+    because significant opposite-direction evidence refutes multi-scale concordance.
+    When neither test is significant and the two tests point in opposite directions,
+    the status is "Mixed".
+    """
+    if target_dir not in ("Decreased", "Increased"):
+        raise ValueError(f"Unexpected target_dir: {target_dir!r}")
+    if not math.isfinite(pval) and not math.isfinite(w_pval):
+        return "Not tested"
+    w_dir = (
+        float(wilcoxon_shift)
+        if isinstance(wilcoxon_shift, (int, float, np.floating))
+        else wilcoxon_signed_rank_diff(wilcoxon_shift)
+    )
+    expected_sign = -1.0 if target_dir == "Decreased" else 1.0
+    w_tested = math.isfinite(w_pval) and math.isfinite(w_dir)
+    b_tested = math.isfinite(pval) and math.isfinite(frac)
+    w_aligned = w_tested and w_dir * expected_sign > 0
+    w_opposite = w_tested and w_dir * expected_sign < 0
+    b_aligned = b_tested and frac > 0.5
+    b_opposite = b_tested and frac < 0.5
+    if (w_opposite and w_pval < 0.05) or (b_opposite and pval < 0.05):
+        return "Discordant (nominal p < 0.05)"
+    if (w_aligned and w_pval < 0.05) or (b_aligned and pval < 0.05):
+        return "Concordant (nominal p < 0.05)"
+    if (w_aligned and b_opposite) or (w_opposite and b_aligned):
+        return "Mixed"
+    if w_opposite or b_opposite:
+        return "Opposite Direction"
+    if not w_aligned and not b_aligned:
+        return "No Net Shift"
+    return "Directionally Aligned"
+
+
 def generate_figure3_lead_findings_ora_evidence(
     profiles_path: Path,
     experiments_path: Path,
@@ -605,6 +800,8 @@ def generate_figure3_lead_findings_ora_evidence(
     ci_highs: list[float] = []
     annot_texts: list[str] = []
     table_rows: list[list[str]] = []
+    n_binom_tests = 0
+    n_wilcoxon_tests = 0
 
     for item in EXPLORATORY_LEADS:
         cond = item["condition"]
@@ -643,45 +840,58 @@ def generate_figure3_lead_findings_ora_evidence(
         non_ties = inc_studies + dec_studies
         success = dec_studies if target_dir == "Decreased" else inc_studies
         if non_ties > 0:
+            n_binom_tests += 1
             btest = stats.binomtest(success, non_ties, p=0.5)
             ci = btest.proportion_ci(confidence_level=0.95)
             pval = float(btest.pvalue)
             frac = success / non_ties
             low = float(ci.low)
             high = float(ci.high)
+            p_str = f"nominal p={pval:.2e}" if pval < 0.001 else f"nominal p={pval:.4f}"
         else:
-            pval = 1.0
-            frac = 0.5
-            low, high = 0.5, 0.5
+            pval = math.nan
+            frac = math.nan
+            low, high = math.nan, math.nan
+            p_str = "not tested"
 
         # Profile mean shift calculation
-        s_series = pd.Series(study_shifts)
-        mean_shift = float(s_series.mean())
+        s_series = pd.Series(study_shifts, dtype=float)
+        mean_shift = float(s_series.mean()) if len(s_series) > 0 else math.nan
+        mean_str = f"{mean_shift:+.2f}" if math.isfinite(mean_shift) else "NA"
         non_zero_shifts = s_series[s_series != 0]
         if len(non_zero_shifts) > 0:
+            n_wilcoxon_tests += 1
             wilcoxon_res = stats.wilcoxon(non_zero_shifts)
             w_pval = float(wilcoxon_res.pvalue)
+            w_p_str = f"nominal p={w_pval:.2e}" if w_pval < 0.001 else f"nominal p={w_pval:.4f}"
         else:
-            w_pval = 1.0
+            w_pval = math.nan
+            w_p_str = "not tested"
 
-        p_str = f"p={pval:.2e}" if pval < 0.001 else f"p={pval:.4f}"
-        w_p_str = f"p={w_pval:.2e}" if w_pval < 0.001 else f"p={w_pval:.4f}"
         label = f"{cond} x Feces<br>[{t_name}]"
         forest_labels.append(label)
         proportions.append(frac)
         ci_lows.append(low)
         ci_highs.append(high)
-        annot_texts.append(f"{success}/{non_ties} studies ({frac * 100:.1f}%), {p_str}")
+        annot_texts.append(
+            f"{success}/{non_ties} studies ({frac * 100:.1f}%), {p_str}"
+            if non_ties > 0
+            else f"0/0 studies ({p_str})"
+        )
 
-        status = (
-            "Concordant (p < 0.05)" if pval < 0.05 or w_pval < 0.05 else "Directionally Aligned"
+        w_shift = wilcoxon_signed_rank_diff(s_series)
+        status = lead_consistency_status(target_dir, w_shift, w_pval, frac, pval)
+        binom_cell = (
+            f"{success}/{non_ties} non-tied ({frac * 100:.1f}%)<br>({p_str})"
+            if non_ties > 0
+            else f"0/0 non-tied<br>({p_str})"
         )
         table_rows.append(
             [
                 f"{cond}<br>({t_name})",
                 target_dir,
-                f"{n_studies} studies<br>Mean: {mean_shift:+.2f} ({w_p_str})",
-                f"{success}/{non_ties} non-tied<br>({frac * 100:.1f}%, {p_str})",
+                f"{n_studies} studies<br>Mean: {mean_str}<br>({w_p_str})",
+                binom_cell,
                 status,
             ]
         )
@@ -689,8 +899,8 @@ def generate_figure3_lead_findings_ora_evidence(
     fig = make_subplots(
         rows=1,
         cols=2,
-        column_widths=[0.42, 0.58],
-        horizontal_spacing=0.12,
+        column_widths=[0.38, 0.62],
+        horizontal_spacing=0.08,
         subplot_titles=(
             "A. Study Directional Consistency (Exact 95% Clopper-Pearson Intervals)",
             "B. Multi-Scale Evidence Synthesis (Continuous Shift vs. Discrete Sign Test)",
@@ -704,15 +914,21 @@ def generate_figure3_lead_findings_ora_evidence(
             x=proportions,
             y=forest_labels,
             mode="markers+text",
-            text=[f"{p * 100:.1f}%" for p in proportions],
+            text=[f"{p * 100:.1f}%" if math.isfinite(p) else "" for p in proportions],
             textposition="top center",
             textfont={"size": 10, "weight": "bold"},
             marker={"size": 12, "color": "#2980b9", "line": {"color": "#1a252f", "width": 1.2}},
             error_x={
                 "type": "data",
                 "symmetric": False,
-                "array": [h - p for h, p in zip(ci_highs, proportions, strict=True)],
-                "arrayminus": [p - low for low, p in zip(ci_lows, proportions, strict=True)],
+                "array": [
+                    h - p if math.isfinite(p) and math.isfinite(h) else 0.0
+                    for h, p in zip(ci_highs, proportions, strict=True)
+                ],
+                "arrayminus": [
+                    p - low if math.isfinite(p) and math.isfinite(low) else 0.0
+                    for low, p in zip(ci_lows, proportions, strict=True)
+                ],
                 "color": "#34495e",
                 "thickness": 1.8,
                 "width": 6,
@@ -725,21 +941,22 @@ def generate_figure3_lead_findings_ora_evidence(
     fig.add_vline(x=0.5, line={"color": "#e74c3c", "dash": "dash", "width": 1.5}, row=1, col=1)
 
     # Panel B: Table
+    row_stripes = ["#ffffff" if idx % 2 == 0 else "#f8f9fa" for idx in range(len(table_rows))]
     fig.add_trace(
         go.Table(
-            columnwidth=[0.22, 0.10, 0.25, 0.27, 0.16],
+            columnwidth=[0.22, 0.09, 0.21, 0.21, 0.27],
             header={
                 "values": [
                     "<b>Condition<br>(Trait)</b>",
                     "<b>Target<br>Dir.</b>",
-                    "<b>Continuous Profile Shift<br>(Mean Shift, Wilcoxon p)</b>",
-                    "<b>Discrete Sign Test<br>(Non-Tied, Binomial p)</b>",
+                    "<b>Continuous Profile Shift<br>(Mean Shift,<br>Nominal Wilcoxon p)</b>",
+                    "<b>Discrete Sign Test<br>(Non-Tied,<br>Nominal Binomial p)</b>",
                     "<b>Consistency<br>Status</b>",
                 ],
                 "fill_color": "#2c3e50",
                 "font": {"color": "white", "size": 10},
                 "align": ["left", "center", "center", "center", "center"],
-                "height": 48,
+                "height": 56,
             },
             cells={
                 "values": [
@@ -750,25 +967,28 @@ def generate_figure3_lead_findings_ora_evidence(
                     [r[4] for r in table_rows],
                 ],
                 "fill_color": [
-                    ["#ffffff", "#f8f9fa"] * 2,
-                    ["#ffffff", "#f8f9fa"] * 2,
-                    ["#ffffff", "#f8f9fa"] * 2,
-                    ["#ffffff", "#f8f9fa"] * 2,
+                    row_stripes,
+                    row_stripes,
+                    row_stripes,
+                    row_stripes,
                     ["#e8f5e9" for _ in table_rows],
                 ],
                 "font": {"size": 9.5},
                 "align": ["left", "center", "center", "center", "center"],
-                "height": 40,
+                "height": 52,
             },
         ),
         row=1,
         col=2,
     )
 
+    n_leads = len(EXPLORATORY_LEADS)
+    n_tests = n_wilcoxon_tests + n_binom_tests
     subtitle = (
-        "Multi-scale consistency check of four exploratory leads (Slide 1) across the "
+        f"Multi-scale consistency check of {n_leads} exploratory leads (Slide 1) across the "
         "continuous profile shift arm and discrete sign test arm on shared BugSigDB fecal "
-        "studies.<br>"
+        f"studies<br>({n_tests} nominal tests: {n_wilcoxon_tests} Wilcoxon + {n_binom_tests} "
+        "binomial, uncorrected).<br>"
         "Forest points show proportion of non-tied studies shifting in target direction "
         "with exact 95% Clopper-Pearson binomial intervals.<br>"
         "Evaluates internal consistency on shared data; does not claim independent "
@@ -786,9 +1006,9 @@ def generate_figure3_lead_findings_ora_evidence(
             "xanchor": "left",
             "yanchor": "top",
         },
-        width=1550,
+        width=1650,
         height=680,
-        margin={"l": 260, "r": 60, "t": 175, "b": 70},
+        margin={"l": 240, "r": 50, "t": 190, "b": 70},
         plot_bgcolor="white",
     )
     fig.update_xaxes(
@@ -838,7 +1058,9 @@ def generate_figure4_annotation_density_pc1_landscape(
     rho_res = stats.spearmanr(log_counts, pc1_loadings)
     spearman_rho = float(rho_res.statistic)
     spearman_p = float(rho_res.pvalue)
-    p_str = f"p = {spearman_p:.2e}" if spearman_p < 0.001 else f"p = {spearman_p:.4f}"
+    p_str = (
+        f"nominal p = {spearman_p:.2e}" if spearman_p < 0.001 else f"nominal p = {spearman_p:.4f}"
+    )
 
     # Fit linear regression trendline for visualization
     slope, intercept = np.polyfit(log_counts, pc1_loadings, 1)
@@ -850,7 +1072,11 @@ def generate_figure4_annotation_density_pc1_landscape(
 
     # Panel C data: Dynamic near-twin Jaccard computation from taxa_trait_matrix
     cols_df = pd.read_csv(columns_path, sep="\t")
-    label_map = dict(zip(cols_df["column_id"], cols_df["object_name"], strict=False))
+    members = read_recorded_member_ids(columns_path)
+    label_map = {
+        str(cid): display_trait_label(str(cid), str(name), members.get(str(cid)))
+        for cid, name in zip(cols_df["column_id"], cols_df["object_name"], strict=False)
+    }
 
     bin_mat = matrix_df[trait_cols].to_numpy(dtype=float) > 0
     k_counts = bin_mat.sum(axis=0)
@@ -891,7 +1117,8 @@ def generate_figure4_annotation_density_pc1_landscape(
         subplot_titles=(
             (
                 "A. Trait PC1 Loading vs. Annotation Density<br>"
-                f"(Spearman rho = {spearman_rho:.3f}, {p_str})"
+                f"(Spearman rho = {spearman_rho:.3f}, {p_str};<br>"
+                f"1 nominal test, n = {len(common_traits)} traits)"
             ),
             (
                 "B. Table 1 Trait Shift Stability Under PC1 Residualization<br>"
@@ -928,13 +1155,18 @@ def generate_figure4_annotation_density_pc1_landscape(
         col=1,
     )
     # Highlight Table 1 traits with distinct positions to prevent text collision
+    fac_row = t1_df.loc[t1_df["trait_id"] == "METPO:1000608", "trait_label"]
+    fac_raw_label = str(fac_row.iloc[0]) if not fac_row.empty else TABLE_1_TRAITS["METPO:1000608"]
+    fac_scatter_label = clean_trait_label(
+        display_trait_label("METPO:1000608", fac_raw_label, members.get("METPO:1000608"))
+    )
     t1_scatter_config: dict[str, tuple[str, str]] = {
         "METPO:2000103|pathways:arsenate_reduction": ("Arsenate reduction", "top left"),
         "METPO:2000103|GO:0030245": ("Cellulose catabolism", "bottom right"),
         "METPO:1000623": ("Mod. halophilic", "bottom right"),
         "METPO:1000683": ("Sphere shaped", "top left"),
         "METPO:1000668": ("Coccus shaped", "bottom right"),
-        "METPO:1000608": ("Facultative aerobe", "top left"),
+        "METPO:1000608": (fac_scatter_label, "top left"),
     }
     for _, r in t1_df.iterrows():
         tid = r["trait_id"]
@@ -962,17 +1194,20 @@ def generate_figure4_annotation_density_pc1_landscape(
 
     # Panel B: Dumbbell plot
     y_pos = list(range(len(t1_df)))
-    t1_labels = list(t1_df["trait_label"])
+    t1_labels = [
+        display_trait_label(str(tid), str(lbl), members.get(str(tid)))
+        for tid, lbl in zip(t1_df["trait_id"], t1_df["trait_label"], strict=False)
+    ]
     raw_diffs = list(t1_df["raw_mean_diff"])
     adj_diffs = list(t1_df["adj_mean_diff"])
 
     for y, r_diff, a_diff, (_, r) in zip(
         y_pos, raw_diffs, adj_diffs, t1_df.iterrows(), strict=True
     ):
-        # Green only when both the raw and adjusted contrasts are significant in the same
-        # direction: a nonsignificant status can say "enhanced magnitude", and a
-        # significant-only-post-adjustment, reversed, or raw-mean-zero row has no
-        # significant raw effect that survived (#1084, #1097, #1098).
+        # Green only when both the raw and adjusted contrasts are significant (BH q <= 0.05
+        # over the reported traits, #1321) in the same direction: a nonsignificant status
+        # can say "enhanced magnitude", and a significant-only-post-adjustment, reversed, or
+        # raw-mean-zero row has no significant raw effect that survived (#1084, #1097, #1098).
         survived = r["status"] in SIGNIFICANT_POST_ADJUSTMENT_STATUSES
         color = "#27ae60" if survived else "#e74c3c"
         fig.add_trace(
@@ -1038,7 +1273,8 @@ def generate_figure4_annotation_density_pc1_landscape(
 
     subtitle = (
         "Methodological audit of KG-Microbe knowledge graph structure.<br>"
-        "(A) Trait loadings on PC1 correlate with curation depth; "
+        f"(A) Trait loadings on PC1 correlate with curation depth (1 nominal Spearman test across "
+        f"{len(common_traits)} traits); "
         "(B) Table 1 paired trait shifts before vs. after PC1 residualization;<br>"
         "(C) Near-twin trait pairs sharing >80% taxon annotations."
     )
@@ -1079,6 +1315,7 @@ def generate_figure5_pd_crc_taxon_attribution_bubble(
     taxa_matrix_path: Path,
     output_path: Path,
     top_n_taxa: int = 12,
+    columns_path: Path | None = None,
 ) -> Path:
     """Render Taxon Attribution Bubble Map for Lead Fecal Conditions."""
     import plotly.graph_objects as go
@@ -1105,8 +1342,9 @@ def generate_figure5_pd_crc_taxon_attribution_bubble(
     top_taxa_names = target_taxa["taxon_name"].value_counts().head(top_n_taxa).index.tolist()
     taxa_trait_lookup = matrix_df[matrix_df["taxon_name"].isin(top_taxa_names)].copy()
 
+    short_names = _trait_short_names(_optional_sibling_columns(columns_path, taxa_matrix_path))
     traits_to_show = list(TABLE_1_TRAITS.keys())
-    trait_labels = [TRAIT_SHORT_NAMES[t] for t in traits_to_show]
+    trait_labels = [short_names[t] for t in traits_to_show]
 
     fig = make_subplots(
         rows=1,
@@ -1146,7 +1384,7 @@ def generate_figure5_pd_crc_taxon_attribution_bubble(
                     sizes.append(max(10.0, float(n_studies) * 4.5))
                     colors.append(float(net_dir))
                     hover_texts.append(
-                        f"<b>{t_name}</b><br>Trait: {TRAIT_SHORT_NAMES[tr_key]}<br>"
+                        f"<b>{t_name}</b><br>Trait: {short_names[tr_key]}<br>"
                         f"Studies: {n_studies}<br>Net Direction: {net_dir:+.2f}"
                     )
 

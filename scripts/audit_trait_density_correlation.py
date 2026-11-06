@@ -6,13 +6,15 @@ Addresses Issue #264 and Issue #352:
 - Evaluates PC1 regression adjustment and profile composition normalization (Task 1).
 - Audits METPO ontology redundancy, states branch collapsing rules, and bounds
   distinct trait space (Task 2).
-- Tests collapse of facultatively aerobic x moderately halophilic vs. survival of convergent six.
+- Tests collapse of facultatively aerobic x moderately halophilic vs.
+  survival of convergent six.
 - Tests conditional contrast and VIF for coccus shaped vs. sphere shaped (Task 3).
 """
 
 from __future__ import annotations
 
 import argparse
+import math
 import sys
 from pathlib import Path
 from typing import Any
@@ -21,7 +23,14 @@ from mtp.density_adjustment import (
     DEFAULT_COLUMNS_PATH,
     DEFAULT_OUTPUT_DIR,
     DEFAULT_PROFILES_PATH,
+    SIGNIFICANT_POST_ADJUSTMENT_STATUSES,
+    CorrelationMetrics,
     add_trait_list_argument,
+    format_p_and_q,
+    format_paired_regression_test,
+    format_q_value,
+    nominal_test_count_statement,
+    q_value_statement,
     reported_traits_heading,
     run_density_audit,
 )
@@ -64,6 +73,49 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def _q_text(q: float) -> str:
+    """A BH q-value for the conclusions; NA when the trait is untestable or not reported.
+
+    Three significant digits, or more when a q next to 0.05 would otherwise round onto
+    the other side of the threshold (#1325).
+    """
+    return f"q={format_q_value(q)}"
+
+
+def _reported_family_size(t1_effects: list[Any]) -> int:
+    """The q-value family, which must be the reported rows: never empty or mismatched (#1324)."""
+    if not t1_effects:
+        raise ValueError("The density results report no traits, so there is no q-value family")
+    sizes = {eff.bh_family_size for eff in t1_effects}
+    if sizes != {len(t1_effects)}:
+        raise ValueError(
+            f"The q-value family sizes {sorted(sizes)} differ from the "
+            f"{len(t1_effects)} reported traits"
+        )
+    return len(t1_effects)
+
+
+def _conclusion_number(
+    value: float, format_spec: str, *, allow_positive_infinity: bool = False
+) -> str:
+    """Render section 6 summaries without treating undefined values as zero (#1328)."""
+    if math.isfinite(value):
+        return format(value, format_spec)
+    if allow_positive_infinity and value == math.inf:
+        return "inf"
+    return "NA"
+
+
+def _conclusion_metrics(metrics: CorrelationMetrics) -> tuple[str, str]:
+    """Return median r and PC1 percent; the producer's no-variation zeros are unavailable."""
+    if metrics.n_traits - metrics.constant_traits_excluded < 2:
+        return "NA", "NA"
+    return (
+        _conclusion_number(metrics.median_pairwise_r, "+.4f"),
+        _conclusion_number(metrics.pc1_variance_pct, ".2f"),
+    )
+
+
 def write_consolidated_report(
     output_dir: Path,
     density_res: dict[str, Any],
@@ -72,15 +124,18 @@ def write_consolidated_report(
 ) -> Path:
     """Generate a comprehensive consolidated report for Issue #264 covering all tasks.
 
-    With a declared ``trait_list`` the fixed-text conclusions of section 6 are not
-    written: they name the six Table 1 traits and fall back to constant p-values
-    when one of them is not reported (#1054).
+    With a declared ``trait_list`` the conclusions of section 6 are not written: they
+    name Table 1 traits (#1054). They quote BH q-values and statuses from the reported
+    effects, and read NA for a trait that is not reported (#1321).
+    Section 6 describes the computed correlations and VIFs without inferring their
+    cause, a severity category, or joint-model coefficient stability (#1328).
     """
+    t1_effects = density_res["table1_effects"]
+    family_size = _reported_family_size(t1_effects)
     raw = density_res["raw_pearson"]
     raw_sp = density_res["raw_spearman"]
     adj_pc1 = density_res["adj_pc1_pearson"]
     adj_norm = density_res.get("adj_norm_pearson", density_res.get("adj_dw_pearson"))
-    t1_effects = density_res["table1_effects"]
     twin = density_res["twin_summary"]
 
     n_pairs = ontology_res["n_redundant_pairs"]
@@ -93,21 +148,14 @@ def write_consolidated_report(
 
     t1_by_id = {eff.trait_id: eff for eff in t1_effects}
     aerobic_eff = t1_by_id.get("METPO:1000608")
-    cellulose_eff = t1_by_id.get("METPO:2000103|GO:0030245")
-
-    aerobic_p_raw_str = (
-        f"p={aerobic_eff.raw_wilcoxon_p:.1e}" if aerobic_eff is not None else "p=2.6e-5"
+    aerobic_label = aerobic_eff.trait_label if aerobic_eff is not None else "facultatively aerobic"
+    nan = float("nan")
+    aerobic_status = aerobic_eff.status if aerobic_eff is not None else "not reported"
+    aerobic_q_raw_str = _q_text(aerobic_eff.raw_wilcoxon_bh_q if aerobic_eff is not None else nan)
+    aerobic_q_adj_str = _q_text(aerobic_eff.adj_wilcoxon_bh_q if aerobic_eff is not None else nan)
+    survivors = ", ".join(
+        eff.trait_label for eff in t1_effects if eff.status in SIGNIFICANT_POST_ADJUSTMENT_STATUSES
     )
-    aerobic_p_adj_str = (
-        f"p={aerobic_eff.adj_wilcoxon_p:.2f}"
-        if aerobic_eff is not None and aerobic_eff.adj_wilcoxon_p >= 0.01
-        else (f"p={aerobic_eff.adj_wilcoxon_p:.1e}" if aerobic_eff is not None else "p=0.26")
-    )
-    cellulose_p_adj_str = (
-        f"p={cellulose_eff.adj_wilcoxon_p:.1e}" if cellulose_eff is not None else "p=1.8e-11"
-    )
-    vif_str = f"VIF ~ {twin.vif_profile:.2f}"
-
     report_out = output_dir / "density_adjustment_report.txt"
     lines = [
         "=" * 80,
@@ -146,7 +194,7 @@ def write_consolidated_report(
         "",
         "2. DENSITY AXIS ADJUSTMENT: SEPARATING BIOLOGY FROM CURATION EFFORT",
         "-" * 80,
-        "Test Case Pair: facultatively aerobic x moderately halophilic",
+        f"Test Case Pair: {aerobic_label} x moderately halophilic",
         f"  Baseline Pearson r: {raw.test_pair_r:+.4f}",
         f"  Post-PC1 regression r: {adj_pc1.test_pair_r:+.4f} "
         f"(attenuation: {adj_pc1.test_pair_r - raw.test_pair_r:+.4f})",
@@ -167,14 +215,18 @@ def write_consolidated_report(
                 f"(PAIRED EXPERIMENTS N={twin.n_paired_experiments:,})"
             ),
             "-" * 80,
+            *q_value_statement(family_size),
+            nominal_test_count_statement(t1_effects),
         ]
     )
 
     for eff in t1_effects:
         lines.append(
             f"  {eff.trait_label:<30s} | "
-            f"Raw mean: {eff.raw_mean_diff:+.3f} (p={eff.raw_wilcoxon_p:.2e}) | "
-            f"Adj mean: {eff.adj_mean_diff:+.3f} (p={eff.adj_wilcoxon_p:.2e}) | "
+            f"Raw mean: {eff.raw_mean_diff:+.3f} "
+            f"({format_p_and_q(eff.raw_wilcoxon_p, eff.raw_wilcoxon_bh_q)}) | "
+            f"Adj mean: {eff.adj_mean_diff:+.3f} "
+            f"({format_p_and_q(eff.adj_wilcoxon_p, eff.adj_wilcoxon_bh_q)}) | "
             f"{eff.status}"
         )
 
@@ -191,7 +243,7 @@ def write_consolidated_report(
             f"Paired contrasts (N={twin.n_paired_experiments}): "
             f"r = {twin.paired_correlation:+.4f} | Paired VIF: {twin.vif_paired:.2f}",
             f"Paired regression slope: {twin.paired_slope_a_on_b:.4f} "
-            f"(p={twin.paired_slope_pvalue:.2e})",
+            f"({format_paired_regression_test(twin.paired_slope_pvalue)})",
             "",
             "5. METPO ONTOLOGY REDUNDANCY AUDIT AND BRANCH COLLAPSING (TASK 2)",
             "-" * 80,
@@ -247,29 +299,43 @@ def write_consolidated_report(
         report_out.write_text("\n".join(lines), encoding="utf-8")
         return report_out
 
+    raw_r, raw_pc1 = _conclusion_metrics(raw)
+    adjusted_r, _ = _conclusion_metrics(adj_pc1)
+    native_r, native_pc1 = _conclusion_metrics(nat_m)
+    max_member_r, max_member_pc1 = _conclusion_metrics(max_m)
+    collapsed_adjusted_r, collapsed_adjusted_pc1 = _conclusion_metrics(adj_col_m)
+    profile_r = _conclusion_number(twin.profile_correlation, "+.4f")
+    paired_r = _conclusion_number(twin.paired_correlation, "+.4f")
+    profile_vif = _conclusion_number(twin.vif_profile, ".2f", allow_positive_infinity=True)
+    paired_vif = _conclusion_number(twin.vif_paired, ".2f", allow_positive_infinity=True)
     lines.extend(
         [
-            "1. The vast majority of positive correlation among traits is driven by "
-            "curation density (PC1).",
-            "2. Regressing out PC1 collapses the spurious facultatively aerobic x "
-            "moderately halophilic",
-            f"   contrast from significant ({aerobic_p_raw_str}) to completely "
-            f"nonsignificant ({aerobic_p_adj_str}).",
-            "3. In contrast, genuine convergent signals survive and strengthen: "
-            "cellulose depletion",
-            f"   becomes significantly sharper ({cellulose_p_adj_str}), while coccus, sphere, "
-            "and mod halophilic",
-            "   retain clear significance.",
-            f"4. Coccus and sphere exhibit severe collinearity ({vif_str}); "
-            "conditional testing confirms",
-            "   unstable coefficients when included simultaneously.",
+            "1. Median pairwise Pearson r across profile trait annotations: "
+            f"raw = {raw_r}; post-PC1 regression = {adjusted_r}.",
+            f"   Raw PC1 variance explained (%) = {raw_pc1}.",
+            f"2. After PC1 regression the {aerobic_label} paired contrast is labelled "
+            f"'{aerobic_status}'",
+            f"   (raw BH {aerobic_q_raw_str}, adjusted BH {aerobic_q_adj_str}).",
+            "3. Significant before and after PC1 regression in the same direction "
+            f"(BH q <= 0.05; survived or enhanced): {survivors or 'none'}.",
+            f"4. {twin.trait_a_label} and {twin.trait_b_label}: "
+            f"profile r = {profile_r}, VIF ~ {profile_vif}.",
+            "   Paired increased-minus-decreased experiment contrasts "
+            f"(N={twin.n_paired_experiments:,}): r = {paired_r}, VIF ~ {paired_vif}.",
+            "   Joint-model coefficient stability was not evaluated.",
             f"5. Ontology redundancy accounts for {n_pairs} "
             f"redundant pairs ({n_collapsed} features "
             f"collapsed into {n_clusters} clusters),",
-            f"   bounding distinct trait space to {bounded_space} features. "
-            "Collapsing alone does not "
-            "collapse PC1;",
-            "   both ontology collapsing and density adjustment are necessary and complementary.",
+            f"   bounding distinct trait space to {bounded_space} features.",
+            f"   PC1 variance explained (%): raw = {raw_pc1}; collapsed native = {native_pc1};",
+            f"   collapsed max-member = {max_member_pc1}; "
+            f"collapsed + PC1 regression = {collapsed_adjusted_pc1}.",
+            f"   Median pairwise Pearson r: collapsed native = {native_r}; "
+            f"collapsed max-member = {max_member_r};",
+            f"   collapsed + PC1 regression = {collapsed_adjusted_r}.",
+            "These are descriptive comparisons of annotation matrices; "
+            "they do not identify the source of the observed associations.",
+            "NA denotes an unavailable summary; inf denotes a reported positive-infinite VIF.",
             "=" * 80,
         ]
     )
@@ -316,6 +382,12 @@ def main() -> int:
     adj = density_res["adj_pc1_pearson"]
     twin = density_res["twin_summary"]
     pair_attenuation = adj.test_pair_r - raw.test_pair_r
+    t1_by_id = {eff.trait_id: eff for eff in density_res["table1_effects"]}
+    aerobic_label = (
+        t1_by_id["METPO:1000608"].trait_label
+        if "METPO:1000608" in t1_by_id
+        else "facultatively aerobic"
+    )
     print(
         f"  - Baseline PC1 explains {raw.pc1_variance_pct:.2f}% of variance "
         f"across {raw.n_traits} traits."
@@ -325,7 +397,7 @@ def main() -> int:
         f"(was {raw.median_pairwise_r:+.4f})."
     )
     print(
-        f"  - facultatively aerobic x moderately halophilic r: {raw.test_pair_r:+.4f} "
+        f"  - {aerobic_label} x moderately halophilic r: {raw.test_pair_r:+.4f} "
         f"-> {adj.test_pair_r:+.4f} (attenuated by {pair_attenuation:+.4f})."
     )
     print(

@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import errno
 import hashlib
 import io
 import json
 import shutil
+import stat
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
@@ -58,9 +60,85 @@ def _producer(requested_commit: str | None) -> dict[str, Any]:
 
 
 def _durable(path: Path) -> Path:
+    # Resolving first would silently erase a missing component followed by '..',
+    # or accept a dangling link as a directory that this invocation may create.
+    absolute = path if path.is_absolute() else Path.cwd() / path
+    prefix = Path(absolute.anchor)
+    for component in absolute.parts[1:]:
+        if component == ".." and not prefix.is_dir():
+            raise ValueError(f"Output path '..' requires an existing directory: {prefix}")
+        prefix /= component
+        if prefix.is_symlink():
+            try:
+                prefix.resolve(strict=True)
+            except (OSError, RuntimeError) as error:
+                raise ValueError(f"Output path contains an invalid symlink: {prefix}") from error
     if temporary_root(path) is not None:
         raise ValueError("Use a durable output directory outside system temporary roots")
     return path.resolve()
+
+
+def _directory_identity(path: Path) -> tuple[int, int] | None:
+    """Identify a real directory without treating a symlink as owned storage."""
+    try:
+        metadata = path.lstat()
+    except FileNotFoundError:
+        return None
+    if not stat.S_ISDIR(metadata.st_mode):
+        return None
+    return metadata.st_dev, metadata.st_ino
+
+
+def _create_parents(parent: Path, created: list[tuple[Path, tuple[int, int]]]) -> None:
+    """Record each exclusive mkdir immediately, including a partially created chain."""
+    missing = []
+    cursor = parent
+    while _directory_identity(cursor) is None:
+        if cursor.exists() or cursor.is_symlink():
+            raise FileExistsError(f"Output ancestor is not a directory: {cursor}")
+        missing.append(cursor)
+        cursor = cursor.parent
+    for directory in reversed(missing):
+        try:
+            directory.mkdir()
+        except FileExistsError:
+            if _directory_identity(directory) is None:
+                raise
+        else:
+            identity = _directory_identity(directory)
+            if identity is None:
+                raise FileNotFoundError(f"Created output ancestor disappeared: {directory}")
+            created.append((directory, identity))
+
+
+def _still_owned(path: Path, created: list[tuple[Path, tuple[int, int]]]) -> bool:
+    return all(
+        _directory_identity(directory) == identity
+        for directory, identity in created
+        if path.is_relative_to(directory)
+    )
+
+
+def _cleanup_failed_output(
+    staging: Path,
+    staging_identity: tuple[int, int] | None,
+    created: list[tuple[Path, tuple[int, int]]],
+) -> None:
+    """Remove owned staging and empty owned ancestors; retain replacements and siblings."""
+    if (
+        staging_identity is not None
+        and _still_owned(staging, created)
+        and _directory_identity(staging) == staging_identity
+    ):
+        shutil.rmtree(staging)
+    for directory, _identity in reversed(created):
+        if not _still_owned(directory, created):
+            continue
+        try:
+            directory.rmdir()
+        except OSError as error:
+            if error.errno not in (errno.ENOENT, errno.ENOTEMPTY, errno.EEXIST):
+                raise
 
 
 def _declared_roots(three_test: Path, comparison: Path) -> list[Path]:
@@ -257,11 +335,16 @@ def run_derived(
     staging = output.parent / f".{output.name}-staging-{uuid.uuid4().hex}"
     _durable(staging)
     _disjoint(staging, roots)
-    output.parent.mkdir(parents=True, exist_ok=True)
-    # Preserve the lexical name so a dangling symlink is an exclusive-mkdir collision.
-    staging.mkdir()
+    created: list[tuple[Path, tuple[int, int]]] = []
+    staging_identity: tuple[int, int] | None = None
     published = False
     try:
+        _create_parents(output.parent, created)
+        # An exclusive mkdir never grants ownership of a colliding path.
+        staging.mkdir()
+        staging_identity = _directory_identity(staging)
+        if staging_identity is None:
+            raise FileNotFoundError(f"Created staging directory disappeared: {staging}")
         for name in (PAIR_FILE, STUDY_FILE):
             shutil.copyfile(bundle.root / name, staging / name)
         for name, table in tables.items():
@@ -280,5 +363,5 @@ def run_derived(
         published = True
     finally:
         if not published:
-            shutil.rmtree(staging)
+            _cleanup_failed_output(staging, staging_identity, created)
     return record

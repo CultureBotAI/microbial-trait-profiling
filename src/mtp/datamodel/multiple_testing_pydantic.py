@@ -29,7 +29,7 @@ from pydantic import (
 )
 
 
-metamodel_version = "1.7.0"
+metamodel_version = "1.12.0"
 version = "1.2.0"
 
 
@@ -179,10 +179,10 @@ class SourceArtifact(ConfiguredBaseModel):
         pattern=re.compile(r"^[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid sha256 format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid sha256 format: {v}"
             raise ValueError(err_msg)
         return v
@@ -220,10 +220,10 @@ class HypothesisDefinition(ConfiguredBaseModel):
         pattern=re.compile(r"^[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid eligibility_sha256 format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid eligibility_sha256 format: {v}"
             raise ValueError(err_msg)
         return v
@@ -259,10 +259,10 @@ class HypothesisFamilyMetadata(ConfiguredBaseModel):
         pattern=re.compile(r"^[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid analysis_basis_sha256 format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid analysis_basis_sha256 format: {v}"
             raise ValueError(err_msg)
         return v
@@ -272,10 +272,10 @@ class HypothesisFamilyMetadata(ConfiguredBaseModel):
         pattern=re.compile(r"^[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid source_membership_sha256 format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid source_membership_sha256 format: {v}"
             raise ValueError(err_msg)
         return v
@@ -285,10 +285,10 @@ class HypothesisFamilyMetadata(ConfiguredBaseModel):
         pattern=re.compile(r"^(off|phenotype)$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid strain_rollup format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid strain_rollup format: {v}"
             raise ValueError(err_msg)
         return v
@@ -298,10 +298,10 @@ class HypothesisFamilyMetadata(ConfiguredBaseModel):
         pattern=re.compile(r"^sha256:[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid feature_filter_id format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid feature_filter_id format: {v}"
             raise ValueError(err_msg)
         return v
@@ -338,10 +338,10 @@ class HypothesisFamily(HypothesisFamilyMetadata):
         pattern=re.compile(r"^[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid analysis_basis_sha256 format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid analysis_basis_sha256 format: {v}"
             raise ValueError(err_msg)
         return v
@@ -351,10 +351,10 @@ class HypothesisFamily(HypothesisFamilyMetadata):
         pattern=re.compile(r"^[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid source_membership_sha256 format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid source_membership_sha256 format: {v}"
             raise ValueError(err_msg)
         return v
@@ -364,10 +364,10 @@ class HypothesisFamily(HypothesisFamilyMetadata):
         pattern=re.compile(r"^(off|phenotype)$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid strain_rollup format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid strain_rollup format: {v}"
             raise ValueError(err_msg)
         return v
@@ -377,10 +377,10 @@ class HypothesisFamily(HypothesisFamilyMetadata):
         pattern=re.compile(r"^sha256:[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid feature_filter_id format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid feature_filter_id format: {v}"
             raise ValueError(err_msg)
         return v
@@ -397,17 +397,17 @@ class RawHypothesis(ConfiguredBaseModel):
     status: str = Field(default=..., title="Status", description="""Tested or explicitly untestable, never an inferred missing row.""", json_schema_extra = { "linkml_meta": {'domain_of': ['RawHypothesis']} })
     p_value: Optional[float] = Field(default=None, title="P value", description="""Finite probability for a tested member; undefined for an untestable member.""", ge=0, le=1, json_schema_extra = { "linkml_meta": {'domain_of': ['RawHypothesis']} })
     reason: Optional[str] = Field(default=None, title="Reason", description="""Nonempty explanation required only for an untestable member.""", json_schema_extra = { "linkml_meta": {'domain_of': ['RawHypothesis']} })
-    reason_vocabulary: ReasonVocabulary = Field(default=ReasonVocabulary.legacy_free_text_v1, title="Reason vocabulary", description="""Missing fields preserve legacy caller semantics. analysis_reason_v1 requires exact AnalysisReasonV1 membership in the shared runtime validator; tested records require no reason under either vocabulary.""", json_schema_extra = { "linkml_meta": {'domain_of': ['RawHypothesis'], 'ifabsent': 'string(legacy_free_text_v1)'} })
+    reason_vocabulary: ReasonVocabulary = Field(default=ReasonVocabulary("legacy_free_text_v1"), title="Reason vocabulary", description="""Missing fields preserve legacy caller semantics. analysis_reason_v1 requires exact AnalysisReasonV1 membership in the shared runtime validator; tested records require no reason under either vocabulary.""", json_schema_extra = { "linkml_meta": {'domain_of': ['RawHypothesis'], 'ifabsent': 'string(legacy_free_text_v1)'} })
 
     @field_validator('status')
     def pattern_status(cls, v):
         pattern=re.compile(r"^(tested|untestable)$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid status format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid status format: {v}"
             raise ValueError(err_msg)
         return v
@@ -430,17 +430,17 @@ class AdjustedHypothesis(RawHypothesis):
     status: str = Field(default=..., title="Status", description="""Tested or explicitly untestable, never an inferred missing row.""", json_schema_extra = { "linkml_meta": {'domain_of': ['RawHypothesis']} })
     p_value: Optional[float] = Field(default=None, title="P value", description="""Finite probability for a tested member; undefined for an untestable member.""", ge=0, le=1, json_schema_extra = { "linkml_meta": {'domain_of': ['RawHypothesis']} })
     reason: Optional[str] = Field(default=None, title="Reason", description="""Nonempty explanation required only for an untestable member.""", json_schema_extra = { "linkml_meta": {'domain_of': ['RawHypothesis']} })
-    reason_vocabulary: ReasonVocabulary = Field(default=ReasonVocabulary.legacy_free_text_v1, title="Reason vocabulary", description="""Missing fields preserve legacy caller semantics. analysis_reason_v1 requires exact AnalysisReasonV1 membership in the shared runtime validator; tested records require no reason under either vocabulary.""", json_schema_extra = { "linkml_meta": {'domain_of': ['RawHypothesis'], 'ifabsent': 'string(legacy_free_text_v1)'} })
+    reason_vocabulary: ReasonVocabulary = Field(default=ReasonVocabulary("legacy_free_text_v1"), title="Reason vocabulary", description="""Missing fields preserve legacy caller semantics. analysis_reason_v1 requires exact AnalysisReasonV1 membership in the shared runtime validator; tested records require no reason under either vocabulary.""", json_schema_extra = { "linkml_meta": {'domain_of': ['RawHypothesis'], 'ifabsent': 'string(legacy_free_text_v1)'} })
 
     @field_validator('status')
     def pattern_status(cls, v):
         pattern=re.compile(r"^(tested|untestable)$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid status format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid status format: {v}"
             raise ValueError(err_msg)
         return v
@@ -476,10 +476,10 @@ class CorrectionRun(ConfiguredBaseModel):
         pattern=re.compile(r"^[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid code_sha256 format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid code_sha256 format: {v}"
             raise ValueError(err_msg)
         return v
@@ -489,10 +489,10 @@ class CorrectionRun(ConfiguredBaseModel):
         pattern=re.compile(r"^[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid policy_sha256 format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid policy_sha256 format: {v}"
             raise ValueError(err_msg)
         return v
@@ -502,10 +502,10 @@ class CorrectionRun(ConfiguredBaseModel):
         pattern=re.compile(r"^[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid family_sha256 format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid family_sha256 format: {v}"
             raise ValueError(err_msg)
         return v
@@ -515,10 +515,10 @@ class CorrectionRun(ConfiguredBaseModel):
         pattern=re.compile(r"^[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid input_sha256 format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid input_sha256 format: {v}"
             raise ValueError(err_msg)
         return v
@@ -528,10 +528,10 @@ class CorrectionRun(ConfiguredBaseModel):
         pattern=re.compile(r"^[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid output_sha256 format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid output_sha256 format: {v}"
             raise ValueError(err_msg)
         return v
@@ -541,10 +541,10 @@ class CorrectionRun(ConfiguredBaseModel):
         pattern=re.compile(r"^[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid run_sha256 format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid run_sha256 format: {v}"
             raise ValueError(err_msg)
         return v
@@ -576,10 +576,10 @@ class ExternalFamilyCorrection(ConfiguredBaseModel):
         pattern=re.compile(r"^[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid policy_sha256 format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid policy_sha256 format: {v}"
             raise ValueError(err_msg)
         return v
@@ -589,10 +589,10 @@ class ExternalFamilyCorrection(ConfiguredBaseModel):
         pattern=re.compile(r"^[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid family_sha256 format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid family_sha256 format: {v}"
             raise ValueError(err_msg)
         return v
@@ -602,10 +602,10 @@ class ExternalFamilyCorrection(ConfiguredBaseModel):
         pattern=re.compile(r"^[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid input_sha256 format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid input_sha256 format: {v}"
             raise ValueError(err_msg)
         return v
@@ -615,10 +615,10 @@ class ExternalFamilyCorrection(ConfiguredBaseModel):
         pattern=re.compile(r"^[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid output_sha256 format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid output_sha256 format: {v}"
             raise ValueError(err_msg)
         return v
@@ -654,10 +654,10 @@ class PostArmMultiplicityRun(ConfiguredBaseModel):
         pattern=re.compile(r"^1\.2\.0$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid version format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid version format: {v}"
             raise ValueError(err_msg)
         return v
@@ -667,10 +667,10 @@ class PostArmMultiplicityRun(ConfiguredBaseModel):
         pattern=re.compile(r"^[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid comparison_manifest_sha256 format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid comparison_manifest_sha256 format: {v}"
             raise ValueError(err_msg)
         return v
@@ -680,10 +680,10 @@ class PostArmMultiplicityRun(ConfiguredBaseModel):
         pattern=re.compile(r"^(off|phenotype)$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid strain_rollup format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid strain_rollup format: {v}"
             raise ValueError(err_msg)
         return v
@@ -693,10 +693,10 @@ class PostArmMultiplicityRun(ConfiguredBaseModel):
         pattern=re.compile(r"^[0-9a-f]{64}$")
         if isinstance(v, list):
             for element in v:
-                if isinstance(element, str) and not pattern.match(element):
+                if isinstance(element, str) and not pattern.search(element):
                     err_msg = f"Invalid code_sha256 format: {element}"
                     raise ValueError(err_msg)
-        elif isinstance(v, str) and not pattern.match(v):
+        elif isinstance(v, str) and not pattern.search(v):
             err_msg = f"Invalid code_sha256 format: {v}"
             raise ValueError(err_msg)
         return v

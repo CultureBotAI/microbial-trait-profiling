@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -361,9 +362,12 @@ def test_write_consolidated_report_dynamic_numbers(tmp_path: Path) -> None:
                 adj_mean_diff=0.01,
                 adj_wilcoxon_p=0.456,
                 relative_change_pct=-80.0,
-                status="spurious",
+                status="collapsed (attenuated to nonsignificant)",
                 magnitude_change_pct=-80.0,
                 sign_flipped=False,
+                raw_wilcoxon_bh_q=0.00069,
+                adj_wilcoxon_bh_q=0.456,
+                bh_family_size=2,
             ),
             Table1TraitEffect(
                 trait_id="METPO:2000103|GO:0030245",
@@ -373,9 +377,12 @@ def test_write_consolidated_report_dynamic_numbers(tmp_path: Path) -> None:
                 adj_mean_diff=-0.09,
                 adj_wilcoxon_p=3.4e-12,
                 relative_change_pct=-12.5,
-                status="genuine",
+                status="enhanced (significant, larger magnitude)",
                 magnitude_change_pct=12.5,
                 sign_flipped=False,
+                raw_wilcoxon_bh_q=1e-8,
+                adj_wilcoxon_bh_q=6.8e-12,
+                bh_family_size=2,
             ),
         ],
         "twin_summary": ConditionalTwinSummary(
@@ -416,8 +423,30 @@ def test_write_consolidated_report_dynamic_numbers(tmp_path: Path) -> None:
     # Assert dynamic formatting
     assert "N=1,234" in content
     assert "VIF ~ 6.12" in content
-    assert "p=3.5e-04" in content or "p=3.4e-04" in content or "p=3.5e-4" in content
-    assert "p=0.46" in content
-    assert "p=3.4e-12" in content
+    # Section 6 reads the BH q-values and labels of the reported effects (#1321).
+    assert (
+        "After PC1 regression the facultatively aerobic paired contrast is labelled "
+        "'collapsed (attenuated to nonsignificant)'"
+    ) in content
+    assert "(raw BH q=6.90e-04, adjusted BH q=4.56e-01)" in content
+    assert (
+        "Significant before and after PC1 regression in the same direction "
+        "(BH q <= 0.05; survived or enhanced): cellulose catabolic process."
+    ) in content
+    assert "(nominal p=3.45e-04, q=6.90e-04)" in content
+    assert "(nominal p=3.40e-12, q=6.80e-12)" in content
+    assert "over all 2 reported traits" in content
     assert "18 redundant pairs (12 features collapsed into 8 clusters)" in content
     assert "bounding distinct trait space to 250 features" in content
+
+    # The report never states a family it does not report: no rows, or a family size
+    # other than the number of rows, is an error rather than "over all 0 traits" (#1324).
+    effects = density_res["table1_effects"]
+    assert isinstance(effects, list)
+    for bad_effects in ([], [replace(effect, bh_family_size=6) for effect in effects]):
+        with pytest.raises(ValueError, match="family"):
+            module.write_consolidated_report(
+                output_dir=tmp_path / "bad",
+                density_res={**density_res, "table1_effects": bad_effects},
+                ontology_res=ontology_res,
+            )

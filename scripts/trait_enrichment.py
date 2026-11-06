@@ -18,6 +18,7 @@ import csv
 import gzip
 import math
 from collections import defaultdict
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, TextIO
 
@@ -92,7 +93,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--fdr",
         action=argparse.BooleanOptionalAction,
         default=True,
-        help="Apply Benjamini-Hochberg FDR correction (default: True)",
+        help=(
+            "Apply Benjamini-Hochberg FDR correction (default: True); "
+            "--no-fdr uses nominal p-values, leaves fdr_q empty and records scope none"
+        ),
     )
     parser.add_argument(
         "--fdr-scope",
@@ -230,6 +234,10 @@ def main(argv: list[str] | None = None) -> None:
     )
 
     args = parse_args(argv)
+    statistic_key = "fdr_q" if args.fdr else "p_value"
+    statistic_label = "FDR q" if args.fdr else "nominal p"
+    hits_label = "Significant hits" if args.fdr else "Nominal hits"
+    correction_family = args.fdr_scope if args.fdr else "none"
     bundle = None
     if args.core_run is not None:
         bundle = open_core_bundle(args.core_run, "ora_profiles")
@@ -438,10 +446,11 @@ def main(argv: list[str] | None = None) -> None:
                 )
 
             # Per-profile FDR correction if requested
+            q_values: Sequence[float | None]
             if args.fdr and args.fdr_scope == "profile":
                 q_values = benjamini_hochberg(p_values)
             else:
-                q_values = p_values
+                q_values = [None] * len(p_values)
 
             for trait, p, q, count, trait_total in zip(
                 candidate_traits, p_values, q_values, row_counts, trait_totals, strict=True
@@ -470,10 +479,14 @@ def main(argv: list[str] | None = None) -> None:
                     }
                 )
 
+    p_threshold: float = args.p_threshold
+    min_fold: float = args.min_fold
+    max_fold: float = args.max_fold
+
     def is_hit(stat: float, fold_val: float) -> bool:
         if args.tail == "upper":
-            return (stat <= args.p_threshold) and (fold_val >= args.min_fold)
-        return (stat <= args.p_threshold) and (fold_val <= args.max_fold)
+            return (stat <= p_threshold) and (fold_val >= min_fold)
+        return (stat <= p_threshold) and (fold_val <= max_fold)
 
     # Apply global FDR correction if requested
     if args.fdr:
@@ -488,7 +501,7 @@ def main(argv: list[str] | None = None) -> None:
                 h["is_significant"] = is_hit(h["fdr_q"], h["fold"])
     else:
         for h in all_hits:
-            h["fdr_q"] = h["p_value"]
+            h["fdr_q"] = None
             h["is_significant"] = is_hit(h["p_value"], h["fold"])
 
     # Filter significant hits
@@ -502,16 +515,19 @@ def main(argv: list[str] | None = None) -> None:
     # Write TSV output if requested
     if args.tsv_output:
         args.tsv_output.parent.mkdir(parents=True, exist_ok=True)
-        # Sort globally by significance (FDR q), then by study/experiment/direction/trait
+        # Sort by the applied statistic: adjusted q or nominal p.
         significant_hits.sort(
-            key=lambda h: (h["fdr_q"], h["study_id"], h["experiment_id"], h["trait"])
+            key=lambda h: (h[statistic_key], h["study_id"], h["experiment_id"], h["trait"])
         )
         with args.tsv_output.open("w", encoding="utf-8", newline="") as out_fh:
             # Metadata header
             out_fh.write(f"# Tail: {args.tail}\n")
             out_fh.write("# Testable-Set: K>0 & N>0\n")
             out_fh.write(f"# FDR: {args.fdr}\n")
-            out_fh.write(f"# FDR-Scope: {args.fdr_scope}\n")
+            out_fh.write(f"# FDR-Scope: {correction_family}\n")
+            if not args.fdr:
+                out_fh.write(f"# Threshold-Statistic: {statistic_label}\n")
+                out_fh.write(f"# Hit-Statistic: {statistic_label}\n")
             out_fh.write(f"# P-Threshold: {args.p_threshold}\n")
             if args.tail == "upper":
                 out_fh.write(f"# Min-Fold: {args.min_fold}\n")
@@ -567,8 +583,10 @@ def main(argv: list[str] | None = None) -> None:
     # Write all-results output if requested
     if args.all_results_output:
         args.all_results_output.parent.mkdir(parents=True, exist_ok=True)
-        # Sort globally by significance (FDR q), then by study/experiment/direction/trait
-        all_hits.sort(key=lambda h: (h["fdr_q"], h["study_id"], h["experiment_id"], h["trait"]))
+        # Sort by the applied statistic: adjusted q or nominal p.
+        all_hits.sort(
+            key=lambda h: (h[statistic_key], h["study_id"], h["experiment_id"], h["trait"])
+        )
         with args.all_results_output.open("w", encoding="utf-8", newline="") as out_fh:
             # Metadata header
             out_fh.write(f"# Profiles-SHA256: {profiles_sha256}\n")
@@ -576,7 +594,10 @@ def main(argv: list[str] | None = None) -> None:
             out_fh.write(f"# Tail: {args.tail}\n")
             out_fh.write("# Testable-Set: K>0 & N>0\n")
             out_fh.write(f"# FDR: {args.fdr}\n")
-            out_fh.write(f"# FDR-Scope: {args.fdr_scope}\n")
+            out_fh.write(f"# FDR-Scope: {correction_family}\n")
+            if not args.fdr:
+                out_fh.write(f"# Threshold-Statistic: {statistic_label}\n")
+                out_fh.write(f"# Hit-Statistic: {statistic_label}\n")
             out_fh.write(f"# P-Threshold: {args.p_threshold}\n")
             if args.tail == "upper":
                 out_fh.write(f"# Min-Fold: {args.min_fold}\n")
@@ -633,7 +654,7 @@ def main(argv: list[str] | None = None) -> None:
                         "background_m": background_taxa_universe,
                         "background_k": h["trait_total"],
                         "is_significant": h["is_significant"],
-                        "correction_family": args.fdr_scope,
+                        "correction_family": correction_family,
                         "eligibility_status": "testable",
                     }
                 )
@@ -641,10 +662,7 @@ def main(argv: list[str] | None = None) -> None:
     # Generate text report
     report_lines: list[str] = []
     tail_suffix = " (Depletion)" if args.tail == "lower" else ""
-    if args.fdr:
-        report_lines.append(f"FDR q <= {args.p_threshold:g}{tail_suffix}")
-    else:
-        report_lines.append(f"p <= {args.p_threshold:g}{tail_suffix}")
+    report_lines.append(f"{statistic_label} <= {args.p_threshold:g}{tail_suffix}")
     if args.tail == "upper":
         if args.min_fold > 0:
             report_lines.append(f"Min Fold >= {args.min_fold:g}")
@@ -656,7 +674,7 @@ def main(argv: list[str] | None = None) -> None:
     else:
         report_lines.append("Max traits per profile: unlimited")
     report_lines.append(f"Tests performed: {len(all_hits)}")
-    report_lines.append(f"Significant hits: {len(significant_hits)}")
+    report_lines.append(f"{hits_label}: {len(significant_hits)}")
     report_lines.append(f"Result status: {result_status}")
     report_lines.append("")
 
@@ -673,9 +691,9 @@ def main(argv: list[str] | None = None) -> None:
         rows_with_hits += 1
         # Sort by significance then fold
         if args.tail == "upper":
-            group.sort(key=lambda h: (h["fdr_q"], -h["fold"], h["trait"]))
+            group.sort(key=lambda h: (h[statistic_key], -h["fold"], h["trait"]))
         else:
-            group.sort(key=lambda h: (h["fdr_q"], h["fold"], h["trait"]))
+            group.sort(key=lambda h: (h[statistic_key], h["fold"], h["trait"]))
 
         report_lines.append(f"{key[0]}\t{key[1]}\t{key[2]}")
         report_lines.append("")
@@ -687,7 +705,7 @@ def main(argv: list[str] | None = None) -> None:
             report_lines.append(
                 "- "
                 f"{format_trait_name(h['trait'])}, "
-                f"{format_pvalue(h['fdr_q'])}, "
+                f"{format_pvalue(h[statistic_key])}, "
                 f"fold={h['fold']:.2f}"
             )
         report_lines.append("")
@@ -721,7 +739,7 @@ def main(argv: list[str] | None = None) -> None:
         )
     print(f"Background taxa universe M: {background_taxa_universe}")
     print(f"Total tests performed: {len(all_hits)}")
-    print(f"Significant hits: {len(significant_hits)}")
+    print(f"{hits_label}: {len(significant_hits)}")
     print(f"Result status: {result_status}")
     print(f"Rows with hits: {rows_with_hits}")
     print(f"Wrote report: {args.output}")

@@ -10,6 +10,21 @@
 - Null p-values: `data/derived/calibration/composition/composition_null_pvalues.tsv.gz` (683 KB, not committed; regenerate with `just calibrate-composition`)  
 - Table 1 Calibration: [`data/derived/calibration/composition/table1_composition_calibration.tsv`](../data/derived/calibration/composition/table1_composition_calibration.tsv)  
 
+The numbers below retain the historical #263 benchmark described by these
+artifacts; they are not current-run family sizes. This note does not provide an
+immutable run-manifest pin for those paths. Before reusing a number in a new
+claim, bind it to the archived execution and its recorded inventory.
+The observed BH/BY values belong to `mt-core-calibration-composition-observed`
+(every supplied trait), and the replicate BH/BY values to
+`mt-core-calibration-composition-null` (every supplied trait separately within
+each replicate). Both are diagnostic families in
+[`multiple_testing_families.yaml`](multiple_testing_families.yaml), with no
+primary inferential procedure. For the observed family size, use the execution's
+`composition_calibration_summary.json` top-level `n_traits`. For each null
+replicate's family size, use that replicate's `n_tests` in
+`composition_calibration_replicates.tsv`; do not pool tests across replicates.
+Bare p-values below are nominal diagnostics.
+
 ---
 
 ## 1. Executive Summary & Problem Formulation
@@ -17,12 +32,12 @@
 Issue [#263](https://github.com/CultureBotAI/microbial-trait-profiling/issues/263) posed the central calibration question for the paired composition arm:
 > *"Does the paired composition arm control the empirical false discovery rate under a complete null, or does it suffer from permutation runaway? If permuted runs produce dozens of $q \le 0.001$ traits, calibration is settled."*
 
-To resolve this question conclusively, we benchmarked the complete direction-label permutation null (`complete_null_study_flip` stream, seed 182, 100 Monte Carlo replicates) across the full corpus of 959 paired BugSigDB studies, 2,335 paired experiments, and 317 non-MediaDive traits under the `off` scope (31,700 total hypothesis tests under the null):
+To assess this specific null, we benchmarked the complete direction-label permutation null (`complete_null_study_flip` stream, seed 182, 100 Monte Carlo replicates) across the historical corpus of 959 paired BugSigDB studies, 2,335 paired experiments, and 317 non-MediaDive traits under the `off` scope (31,700 total hypothesis tests under the null):
 
 1. **Zero Runaway at $q \le 0.001$:**  
    Across all 100 null replicates, the mean number of false discoveries at Benjamini-Hochberg $q \le 0.001$ was **0.00** (max: 0; 0/100 replicates produced any call; empirical family-wise error = **0.0%**, 95% Clopper-Pearson CI: 0.0%–3.6%). Within the 100-replicate empirical null benchmark, no permutation runaway was observed at stringent discovery thresholds.
 
-2. **Conservative Control at $q \le 0.05$:**  
+2. **Observed Complete-Null Calls at $q \le 0.05$:**
    At the standard Benjamini-Hochberg $q \le 0.05$ threshold, the mean number of false discoveries was **0.09** out of 317 `off`-scope tests (max: 7 in a single replicate; 97 out of 100 replicates produced exactly zero false calls; empirical family-wise error = **3.0%**, 95% CI: 0.6%–8.5%). With Benjamini-Yekutieli (BY) correction, the mean false call count fell to **0.02** (family-wise error = **1.0%**). None of the 100 null replicates reached or approached the 132 calls observed in unpermuted data.
 
 3. **Nominal Type I Error Rate:**  
@@ -70,7 +85,7 @@ The paired composition arm evaluates systematic directional shifts in trait comp
    $$t_j = \frac{\frac{1}{S} \sum_{s=1}^S \bar{\Delta}_{sj}}{\hat{s}_{\bar{\Delta}, j} / \sqrt{S}}, \quad p_j = 2 \cdot \left(1 - F_t(|t_j|, S - 1)\right)$$
 
 7. **Multiple Testing Correction:**  
-   Control FDR across the $P$ trait tests ($P = 317$ under `off`, 344 under `phenotype`) using Benjamini-Hochberg (BH) and Benjamini-Yekutieli (BY).
+   Apply Benjamini-Hochberg (BH) and Benjamini-Yekutieli (BY) across the $P$ supplied trait tests ($P = 317$ in the reported `off` benchmark). The historical `phenotype` catalog count, 344, is context for an alternate scope, not evidence that this benchmark ran that scope. These diagnostic families are separate from the selected native composition families; BH's dependence assumptions are not established by these complete-null simulations.
 
 ---
 
@@ -112,7 +127,9 @@ Across the 31,700 null hypothesis tests:
 - $\alpha = 0.01$: 258 rejections $\implies \hat{\alpha} = 0.0081$ (Nominal 0.010)
 - $\alpha = 0.001$: 21 rejections $\implies \hat{\alpha} = 0.0007$ (Nominal 0.001)
 
-All empirical rejection rates are strictly bounded by nominal significance levels, demonstrating that one-sample study-level t-testing is well-calibrated and slightly conservative under empirical direction exchangeability.
+The observed rejection rates are below the nominal thresholds in this finite
+benchmark. This is evidence about the declared study-flip null, not a guarantee
+of Type I error or FDR control under every dependent or mixed-signal population.
 
 ---
 
@@ -140,10 +157,10 @@ We evaluated the observed effect size, t-statistic, and survival under null cali
 ## 6. Methodological Takeaways & Recommendations
 
 1. **Paired Composition Arm Empirical Null Calibration:**  
-   Across 100 study-flip replicates, the paired composition adapter (`JedCompositionAdapter`, `jed_composition_ttest`) maintains empirical false discovery rates at or below nominal thresholds under the study-level direction-flip null. In this benchmark (#263), zero false discoveries are generated across 100 replicates at $q \le 0.001$, and 3% of null replicates generate at least one call at $q \le 0.05$.
+   Across 100 study-flip replicates, the paired composition adapter (`JedCompositionAdapter`, `jed_composition_ttest`) has observed complete-null rejection rates at or below the declared thresholds. In this benchmark (#263), the BH version of `mt-core-calibration-composition-null` produces zero false discoveries across 100 replicates at $q \le 0.001$, and 3% of null replicates generate at least one call at $q \le 0.05$. These finite-simulation diagnostics do not establish mixed-signal FDR control.
 
 2. **Study Aggregation is Statistically Essential:**  
-   Aggregating matched experiment contrasts to study-level means ($\bar{\Delta}_{sj}$) before performing the Student's t-test successfully accounts for within-study correlation across multi-experiment datasets, preventing inflated degrees of freedom and ensuring valid empirical Type I error rates ($\hat{\alpha} = 0.0460 \le 0.05$).
+   Aggregating matched experiment contrasts to study-level means ($\bar{\Delta}_{sj}$) before performing the Student's t-test gives each study one observation. It avoids treating that study's experiments as independent replicates; it does not establish independence between studies. The observed nominal rejection rate in this benchmark is $\hat{\alpha} = 0.0460 \le 0.05$.
 
 3. **Reproducibility & CLI Tooling:**  
    The calibration battery is integrated into the build pipeline via `just calibrate-composition` and `mtp.composition_calibration.composition`. All random number streams adhere strictly to seed 182 with deterministic stream isolation (`complete_null_study_flip`).

@@ -20,7 +20,8 @@ outputs (the `off` table identified under "What is in it now") this removes **55
 (`trait-visualization/trait-profile-investigation/stratified_stats_provenance.json`). It changes the tie counts rather
 than the directions: facultatively aerobic 32 to 24, arsenate reduction 324 to
 316, moderately halophilic 101 to 93. All six fraction traits remain significant
-at q <= 0.05. Since #783 the oxygen guild figure, and with it the figure-cell
+at BH q <= 0.05 within `mt-supp-table1-direction`, the six requested fraction
+traits of that run. Since #783 the oxygen guild figure, and with it the figure-cell
 inventory, leaves those pairs out too. Every test and figure cell computed here
 shares one population, chosen by the repository owner on 2026-10-22 for the
 reasons given in [`three_arm_statistics.md`](three_arm_statistics.md). The rows
@@ -144,14 +145,30 @@ full screen were not regenerated. Regenerating these files with every input is #
 | aggregated profile support | 6 | - | 0 | not a test | not a test |
 | oxygen guild cell support | 4,160 | - | 0 | not a test | not a test |
 
-The guild McNemar is a single uncorrected test. It carries p = 3.6e-06 over 922
+The historical source-family IDs and executed sizes are retained in
+`integrated_evidence.tsv` (`family_id`, `family_size`, `correction_method`,
+`q_threshold`, `strict_q_threshold`) and `integrated_evidence_families.tsv`.
+The row count of a displayed six-trait subset is not the size of its imported
+native family. Current imports map study t-values to `mt-core-native-study-t`
+and secondary pair t-values to `mt-core-native-pair-t`; they must not be used
+to relabel an archived result without its recorded estimator/population.
+The focal fraction and ratio rows use `mt-supp-table1-direction` (BH) and
+`mt-core-jed-log-ratio-sign` (BY), respectively, with the historical sizes shown
+above. No correction combines those families or the two displayed thresholds.
+
+The guild McNemar is a single nominal, uncorrected test. It carries nominal p = 3.6e-06 over 922
 studies and leaves q blank, so it has no threshold decision in either column: a
 decision in this table is a decision on a corrected value and there is no
 corrected value here. Since #783 the figure's own McNemar is the same test on the
-same population: 410 and 287 discordant studies, p = 3.6e-06. Before, the figure
-kept zero-total pairs and reported p = 2.0e-06 over 932 studies.
+same population: 410 and 287 discordant studies, nominal p = 3.6e-06. Before, the figure
+kept zero-total pairs and reported nominal p = 2.0e-06 over 932 studies.
 An earlier version wrote the uncorrected p into `q_value` as well, which made it
 look like a one-member FDR family (#294).
+
+These McNemar numbers, and the cell counts below, predate #1237. They were measured
+with an aerobe guild that included METPO:1000608 and have not been regenerated, nor
+have the committed outputs in `data/derived/integrated_evidence/`, whose guild rows
+still list METPO:1000608 as an aerobe-guild column.
 
 The cell rows are the oxygen guild figure's own inventory, one per cell of its
 condition-by-body-site grid: 52 condition rows (51 conditions and the pooled
@@ -283,9 +300,14 @@ one before that stated the assessments' branch findings as established (#294).
   no row here carries a validation status from it.
 - **Guild grouping.** The guild rows previously claimed the oxygen guilds were
   fixed a priori. Nothing in this repository records where or when they were
-  declared, and the aerobe guild contains METPO:1000608, which is also one of the
-  six traits selected on this corpus - so that grouping is not independent of the
-  selection either. The claim is removed rather than restated (#294).
+  declared, and the aerobe guild then contained METPO:1000608, which is also one
+  of the six traits selected on this corpus - so that grouping was not independent
+  of the selection either (#294). Since #1237 neither oxygen guild contains
+  METPO:1000608, under either trait-key policy. The guild rows' note still says
+  there is no record here of where or when the guilds were declared, and now says
+  their membership was revised once (#1237), on semantic grounds and not because
+  of results, to separate facultative from aerobe annotations. The guild numbers
+  above that predate #1237 are marked where they are quoted.
 
 ## Reproducing
 

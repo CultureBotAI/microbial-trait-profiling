@@ -1759,10 +1759,14 @@ def fmt_p(value: float) -> str:
 def tier(value: float) -> str:
     if math.isnan(value):
         return "not tested"
-    for bound, label in ((1e-3, "p < 0.001"), (1e-2, "p < 0.01"), (5e-2, "p < 0.05")):
+    for bound, label in (
+        (1e-3, "nominal p < 0.001"),
+        (1e-2, "nominal p < 0.01"),
+        (5e-2, "nominal p < 0.05"),
+    ):
         if value < bound:
             return label
-    return "not significant (p >= 0.05)"
+    return "not significant (nominal p >= 0.05)"
 
 
 def definition_range(scenarios: pd.DataFrame, population_name: str, short: str, unit: str) -> str:
@@ -1995,11 +1999,11 @@ def interaction_interpretation(row: pd.Series | Mapping[str, Any], shared: int =
     elif p >= ALPHA:
         finding = (
             "No difference in direction between stool and GI mucosa/lumen samples "
-            "detected at p < 0.05"
+            "detected at nominal p < 0.05"
         )
     elif low <= 1 <= high:
         finding = (
-            "Direction differs between stool and GI mucosa/lumen samples at p < 0.05, "
+            "Direction differs between stool and GI mucosa/lumen samples at nominal p < 0.05, "
             "but the 95% interval of the odds ratio includes 1"
         )
     else:
@@ -2029,6 +2033,109 @@ def benjamini_hochberg(p_values: pd.Series) -> pd.Series:
     result = pd.Series(np.nan, index=values.index)
     result.loc[order.index] = adjusted
     return result
+
+
+SUMMARY_BH_SELECTION_RULE = (
+    f"Concatenate direction_summary_rows ({FECES} {ALL_CONTRASTS} and "
+    f"{ORIENTED}, experiment and study units), "
+    "convergence_summary_rows (U6 pairwise_jaccard_distance rows "
+    "jaccard_PD_vs_HIV, jaccard_PD_vs_CRC, jaccard_HIV_vs_CRC, plus "
+    "mean_pairwise_jaccard_distance and three_way_core), and "
+    f"interaction_summary_rows ({FECES} vs {NON_FECAL_GI} for CRC and "
+    f"{POOLED_STRATIFIED}); apply Benjamini-Hochberg over "
+    "the non-missing p_value entries in this selected summary table. Correcting "
+    "within this selected summary table does not repair selection from the larger "
+    "exploratory tables."
+)
+
+
+def significant_results_summary_table(
+    compartments: pd.DataFrame,
+    scenario_direction: pd.DataFrame,
+    pairwise: pd.DataFrame,
+    interaction: pd.DataFrame,
+    scenario_interaction: pd.DataFrame,
+) -> pd.DataFrame:
+    """Build significant_results_summary.tsv with nominal tier labels and R6 BH metadata."""
+    summary_rows = (
+        direction_summary_rows(compartments, scenario_direction)
+        + convergence_summary_rows(pairwise)
+        + interaction_summary_rows(interaction, scenario_interaction)
+    )
+    significant = pd.DataFrame(summary_rows)
+    tier_index = list(significant.columns).index("significance_tier")
+    significant.insert(
+        tier_index + 1,
+        "bh_q_within_table",
+        benjamini_hochberg(significant["p_value"]),
+    )
+    significant.insert(
+        tier_index + 2,
+        "bh_family_size",
+        int(significant["p_value"].notna().sum()),
+    )
+    significant.insert(
+        tier_index + 3,
+        "bh_unfiltered_summary_rows",
+        len(significant),
+    )
+    significant.insert(
+        tier_index + 4,
+        "bh_selection_rule",
+        SUMMARY_BH_SELECTION_RULE,
+    )
+    return significant
+
+
+def summary_definitions(retained_profiles: int) -> dict[str, str]:
+    """Return the definitions map recorded in cellulose_decr_summary.json."""
+    return {
+        "profile": (
+            "one study/experiment/direction aggregate of curated signature taxa (human hosts)"
+        ),
+        "feces": (
+            "experiment body site exactly 'Feces'; multi-site labels such as "
+            "'Feces,Blood' or 'Oral cavity,Feces' are grouped with Other non-GI"
+        ),
+        "condition": (
+            "exact BugSigDB condition label of the experiment; condition_synonyms are "
+            "counted only in the synonyms_merged sensitivity or with "
+            "--condition-labels synonyms"
+        ),
+        "disease_vs_healthy": (
+            "contrast_class disease_vs_healthy and contrast_type case_vs_control_subject, "
+            "with reversed experiments relabelled so dec means lower in the disease group; "
+            "the condition_definition_* tables apply the other case_control_rules, and "
+            "case_control_inventory lists the experiments in the three conditions that a "
+            "rule sets aside"
+        ),
+        "set": "matrix taxa annotated with the trait in at least one feces decreased profile",
+        "annotation": (
+            "a matrix taxon bears the trait when it or a descendant has the KG edge; "
+            "has_direct_trait_edge marks the taxon's own edge"
+        ),
+        "annotation_share": (
+            "trait count / sum of all retained non-MediaDive trait counts in the profile"
+        ),
+        "z": (
+            f"per-trait z-score of log1p(1000 * annotation share) over all "
+            f"{retained_profiles:,} retained profiles"
+        ),
+        "paired_delta": "annotation share in the increased profile minus the decreased profile",
+        "down": "the decreased signature has the larger annotation share (paired delta < 0)",
+        "study_collapsed": (
+            "one vote per study: the sign of the mean paired delta over its experiments; "
+            "study_majority_* columns use the majority of experiment signs instead"
+        ),
+        "jaccard_distance": "1 - |intersection| / |union|",
+        "monte_carlo_p": "(1 + #null at least as extreme) / (1 + permutations)",
+        "significance_tier": "nominal (uncorrected) p-value tier of p_value",
+        "bh_q_within_table": (
+            "Benjamini-Hochberg over every non-missing p-value in "
+            f"significant_results_summary.tsv ({SUMMARY_BH_SELECTION_RULE})"
+        ),
+        "bh_selection_rule": SUMMARY_BH_SELECTION_RULE,
+    }
 
 
 # --------------------------------------------------------------------------- output
@@ -2642,16 +2749,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     studies = read_tsv(paths["studies"])
     drivers, evidence, four_pairs = four_pair_tables(taxa, matrix, studies, dump)
 
-    summary_rows = (
-        direction_summary_rows(compartments, scenario_direction)
-        + convergence_summary_rows(pairwise)
-        + interaction_summary_rows(interaction, scenario_interaction)
-    )
-    significant = pd.DataFrame(summary_rows)
-    significant.insert(
-        list(significant.columns).index("significance_tier") + 1,
-        "bh_q_within_table",
-        benjamini_hochberg(significant["p_value"]),
+    significant = significant_results_summary_table(
+        compartments, scenario_direction, pairwise, interaction, scenario_interaction
     )
 
     # Label-source comparison, without the Monte Carlo nulls.
@@ -2695,50 +2794,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "site_miscurations": SITE_MISCURATIONS,
         "case_control_rules": CASE_CONTROL_RULES,
         "case_control_inventory": case_control_inventory(corpus),
-        "definitions": {
-            "profile": (
-                "one study/experiment/direction aggregate of curated signature taxa (human hosts)"
-            ),
-            "feces": (
-                "experiment body site exactly 'Feces'; multi-site labels such as "
-                "'Feces,Blood' or 'Oral cavity,Feces' are grouped with Other non-GI"
-            ),
-            "condition": (
-                "exact BugSigDB condition label of the experiment; condition_synonyms are "
-                "counted only in the synonyms_merged sensitivity or with "
-                "--condition-labels synonyms"
-            ),
-            "disease_vs_healthy": (
-                "contrast_class disease_vs_healthy and contrast_type case_vs_control_subject, "
-                "with reversed experiments relabelled so dec means lower in the disease group; "
-                "the condition_definition_* tables apply the other case_control_rules, and "
-                "case_control_inventory lists the experiments in the three conditions that a "
-                "rule sets aside"
-            ),
-            "set": "matrix taxa annotated with the trait in at least one feces decreased profile",
-            "annotation": (
-                "a matrix taxon bears the trait when it or a descendant has the KG edge; "
-                "has_direct_trait_edge marks the taxon's own edge"
-            ),
-            "annotation_share": (
-                "trait count / sum of all retained non-MediaDive trait counts in the profile"
-            ),
-            "z": (
-                f"per-trait z-score of log1p(1000 * annotation share) over all "
-                f"{len(corpus.profiles):,} retained profiles"
-            ),
-            "paired_delta": "annotation share in the increased profile minus the decreased profile",
-            "down": "the decreased signature has the larger annotation share (paired delta < 0)",
-            "study_collapsed": (
-                "one vote per study: the sign of the mean paired delta over its experiments; "
-                "study_majority_* columns use the majority of experiment signs instead"
-            ),
-            "jaccard_distance": "1 - |intersection| / |union|",
-            "monte_carlo_p": "(1 + #null at least as extreme) / (1 + permutations)",
-            "bh_q_within_table": (
-                "Benjamini-Hochberg over every p-value in significant_results_summary.tsv"
-            ),
-        },
+        "definitions": summary_definitions(len(corpus.profiles)),
         "universes": {
             "U1_all_cellulose_taxa_in_matrix": universes["U1"],
             "U2_all_cellulose_taxa_in_retained_feces_profiles": universes["U2"],

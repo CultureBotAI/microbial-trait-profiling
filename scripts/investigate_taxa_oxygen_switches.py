@@ -21,17 +21,29 @@ TAXA_PATH = REPO_ROOT / "data/derived/bugsigdb_taxa.tsv"
 TAXA_TRAIT_MATRIX_PATH = REPO_ROOT / "data/derived/taxa_trait_matrix.tsv"
 OUTPUT_DIR = REPO_ROOT / "trait-visualization/trait-profile-investigation/taxa-oxygen-switches"
 
-AEROBIC_TRAITS = {
+# Taxon oxygen-switch classification is its own construct, not the shared
+# OXYGEN_GUILDS["aerobe"] oxygen guild (#1237, #1346): it includes facultative
+# (METPO:1000608), microaerophilic (METPO:1000604), and obligately aerobic
+# (METPO:1000606) assertions alongside aerobic (METPO:1000602) by design.
+OXYGEN_SWITCH_AEROBIC_TERMS = {
     "METPO:1000602": "aerobic",
     "METPO:1000604": "microaerophilic",
     "METPO:1000606": "obligately aerobic",
     "METPO:1000608": "facultatively aerobic",
 }
-ANAEROBIC_TRAITS = {
+OXYGEN_SWITCH_ANAEROBIC_TERMS = {
     "METPO:1000603": "anaerobic",
     "METPO:1000607": "obligately anaerobic",
     "METPO:1000611": "strictly anaerobic",
 }
+AEROBIC_TRAITS = OXYGEN_SWITCH_AEROBIC_TERMS
+ANAEROBIC_TRAITS = OXYGEN_SWITCH_ANAEROBIC_TERMS
+OXYGEN_SWITCH_CONSTRUCT_NOTE = (
+    "Note: this taxon oxygen-switch classification (`OXYGEN_SWITCH_AEROBIC_TERMS`) "
+    "is its own construct and is not the shared oxygen guild (`OXYGEN_GUILDS`); "
+    "its aerobic side includes facultative (`METPO:1000608`), microaerophilic "
+    "(`METPO:1000604`), and obligately aerobic (`METPO:1000606`) assertions by design."
+)
 
 DISPLAY_RANKS = {"genus", "species"}
 MIN_TAXON_CONDITION_PROFILES = 2
@@ -224,7 +236,7 @@ def trait_names_for_row(row: pd.Series, traits: dict[str, str]) -> str:
 
 def load_oxygen_annotations() -> pd.DataFrame:
     """Load taxon oxygen-tolerance annotations from the taxa trait matrix."""
-    trait_ids = [*AEROBIC_TRAITS, *ANAEROBIC_TRAITS]
+    trait_ids = [*OXYGEN_SWITCH_AEROBIC_TERMS, *OXYGEN_SWITCH_ANAEROBIC_TERMS]
     annotations = pd.read_csv(
         TAXA_TRAIT_MATRIX_PATH,
         sep="\t",
@@ -239,15 +251,17 @@ def load_oxygen_annotations() -> pd.DataFrame:
             .fillna(0)
             .astype(int)
         )
-    annotations["aerobic_trait_signal"] = annotations[list(AEROBIC_TRAITS)].sum(axis=1)
-    annotations["anaerobic_trait_signal"] = annotations[list(ANAEROBIC_TRAITS)].sum(axis=1)
+    annotations["aerobic_trait_signal"] = annotations[list(OXYGEN_SWITCH_AEROBIC_TERMS)].sum(axis=1)
+    annotations["anaerobic_trait_signal"] = annotations[list(OXYGEN_SWITCH_ANAEROBIC_TERMS)].sum(
+        axis=1
+    )
     annotations["oxygen_class"] = annotations.apply(classify_oxygen, axis=1)
     annotations["aerobic_traits"] = annotations.apply(
-        lambda row: trait_names_for_row(row, AEROBIC_TRAITS),
+        lambda row: trait_names_for_row(row, OXYGEN_SWITCH_AEROBIC_TERMS),
         axis=1,
     )
     annotations["anaerobic_traits"] = annotations.apply(
-        lambda row: trait_names_for_row(row, ANAEROBIC_TRAITS),
+        lambda row: trait_names_for_row(row, OXYGEN_SWITCH_ANAEROBIC_TERMS),
         axis=1,
     )
     return annotations[
@@ -266,8 +280,6 @@ def load_oxygen_annotations() -> pd.DataFrame:
 
 def load_taxa_occurrences(metadata: pd.DataFrame, annotations: pd.DataFrame) -> pd.DataFrame:
     """Load unique taxon/profile occurrences and attach metadata plus oxygen class."""
-    from mtp.population_tables import is_canonical_derived_path, orient_and_filter_taxa_df
-
     taxa = pd.read_csv(
         TAXA_PATH,
         sep="\t",
@@ -281,8 +293,6 @@ def load_taxa_occurrences(metadata: pd.DataFrame, annotations: pd.DataFrame) -> 
             "taxonomic_rank",
         ],
     )
-    if is_canonical_derived_path(TAXA_PATH, "bugsigdb_taxa.tsv"):
-        taxa = orient_and_filter_taxa_df(taxa, filter_to_selection=True)
     taxa["profile_id"] = [
         profile_id_from_taxa_row(study_id, experiment_id, direction)
         for study_id, experiment_id, direction in taxa[
@@ -796,9 +806,10 @@ def write_report(
         (f"- Genus/species taxon-profile occurrences after metadata join: {len(occurrences):,}."),
         (
             "- Oxygen classes are based on direct KG-Microbe trait columns: "
-            f"aerobic side = {', '.join(AEROBIC_TRAITS.values())}; "
-            f"anaerobic side = {', '.join(ANAEROBIC_TRAITS.values())}."
+            f"aerobic side = {', '.join(OXYGEN_SWITCH_AEROBIC_TERMS.values())}; "
+            f"anaerobic side = {', '.join(OXYGEN_SWITCH_ANAEROBIC_TERMS.values())}."
         ),
+        f"- {OXYGEN_SWITCH_CONSTRUCT_NOTE}",
         (
             "- Disease-like filtering excludes Healthy/reference rows, broad cohort/design "
             "labels, measurements, exposures, diet/intervention response labels, and other "

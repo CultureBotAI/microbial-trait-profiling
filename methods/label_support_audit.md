@@ -15,6 +15,7 @@ the exact KG snapshot used to produce them. Supply the run's strain scope:
 just audit-label-support \
   --taxa RUN/bugsigdb_taxa.tsv \
   --matrix RUN/taxa_trait_matrix.tsv \
+  --columns RUN/taxa_trait_matrix_columns.tsv \
   --profiles RUN/study_trait_profiles_wide.tsv \
   --edges KG/merged-kg_edges.tsv \
   --nodes KG/merged-kg_nodes.tsv \
@@ -29,6 +30,30 @@ described below; a file with any other bytes fails before outputs are written.
 Omitting it leaves Madin subsources unknown. A supplied but unreadable or
 malformed table fails instead of silently falling back to unknown.
 
+`--columns` selects the column metadata used to interpret recorded trait member
+IDs for display labels. An explicit path must exist; it never falls back to a
+different file. Without the flag, the audit checks for
+`taxa_trait_matrix_columns.tsv` beside the matrix, preserving the sibling default.
+`inputs.column_metadata` records the selected file's `path`, `sha256`, and
+`size_bytes`. If the default sibling is absent, it instead records its candidate
+`path` and `status: absent`. Both forms include `selection` (`explicit` or
+`sibling_default`) and `member_id_rows`.
+
+`member_id_rows` counts parsed source rows with nonempty member IDs in
+`trait_member_ids_json` and at least one nonempty `column_id` or `object_id`.
+A row exposing both identifier aliases counts once; repeated source rows count
+separately. This is the number of available metadata rows, not the number of
+display labels changed or audited traits that used those rows. An absent default,
+an empty file, a missing `trait_member_ids_json` header, or metadata with no
+qualifying rows records zero and retains the existing raw-label fallback. This
+preserves compatibility with historical metadata without member declarations;
+hashing such a file does not imply that its rows supplied member-based labels.
+
+Directories and broken symlinks are refused. The late input check checks this
+same candidate again: changes to the file, its disappearance, or its appearance
+after an initially absent declaration fail before any output tables are written.
+The other input inventory entries retain their existing format.
+
 Optionally supply `--trait-list LIST/traits.txt` (`mtp.trait_lists.load_trait_list`,
 #1132) to audit additional declared traits (such as non-focal headline traits
 whose carriers arrive through taxonomic inheritance or strain rollup) alongside
@@ -36,8 +61,8 @@ the default 14 traits in `AUDIT_TRAITS` (the six `FOCAL_TRAITS` plus eight
 oxygen and cell-shape traits). Without `--trait-list`, the audited trait set is
 the default 14 traits in `AUDIT_TRAITS`, all five output TSVs stay
 byte-identical, and `provenance.json` omits `inputs.trait_list` and
-`trait_list` (differing across runs only in `created_at` and the producer file
-digest/size when code changes). With `--trait-list`, every listed identifier
+`trait_list`. The column-metadata declaration above is independent of whether a
+trait list is supplied. With `--trait-list`, every listed identifier
 must be a valid CURIE or rollup composite present as a column in
 `taxa_trait_matrix.tsv`; malformed, duplicated, or absent trait identifiers
 fail before any output is written. `taxon_trait_label_support.tsv`,
@@ -47,15 +72,25 @@ declared traits (deduplicated in declaration order after the default 14
 `trait_list` (`path`, `name`, `sha256`, `trait_count`, and `trait_ids`).
 `support_threshold_sensitivity.tsv` and `coasserted_label_census.tsv` retain
 their fixed six-trait sensitivity family and label-pair definitions.
-`MADIN_RULES` does not yet define field/value mappings for `ligninolysis`
-(`METPO:2000103|GO:0046274`), `thiosulfate_oxidation`
-(`METPO:2000103|pathways:thiosulfate_oxidation`), `xylan_degradation`
-(`METPO:2000103|GO:0045493`), or `acetogenesis` (`METPO:1000845`,
-`pathways: acetogenesis`), so Madin-sourced carriers for those declared traits
-record `madin_resolution=unknown` in `carrier_source_evidence.tsv` and
-increment `unresolved_madin_carriers` in `taxon_trait_label_support.tsv`
-(leaving `source_status=unknown` on Madin-only cells) when `--madin-csv` is
-supplied (#1151, #1155).
+`MADIN_RULES` maps the Madin-sourced traits in `AUDIT_TRAITS` (including
+`METPO:1000611` to `metabolism: strictly anaerobic`, #1066), the
+Madin-sourced traits in `methods/trait_lists/headline_ten_phenotype.txt`
+(`METPO:2000103|GO:0046274` to `pathways: lignin_degradation`,
+`METPO:2000103|pathways:thiosulfate_oxidation` to
+`pathways: thiosulfate_oxidation`, `METPO:2000103|GO:0045493` to
+`pathways: xylan_degradation`, and `METPO:1000845` to
+`pathways: acetogenesis`, #1151, #1155), and the separate raw composite
+`METPO:2000103|pathways:ligninolysis` to `pathways: ligninolysis` (which is in
+neither `AUDIT_TRAITS` nor the headline list; the headline lignin trait
+`METPO:2000103|GO:0046274` resolves through `lignin_degradation` in `gold`, not
+through FAPROTAX `ligninolysis`). In `carrier_source_evidence.tsv`,
+`madin_resolution=not_applicable` is recorded whenever a carrier lacks
+`infores:madin_etal` in `primary_sources` (for example on `METPO:1000683`
+`sphere shaped`, `METPO:1000681` `rod shaped`, and `METPO:1000447`
+`temperature optimum high`, whose KG-Microbe carriers lack `infores:madin_etal`),
+not because a trait is omitted from `MADIN_RULES` (an `infores:madin_etal`
+carrier without a matching `MADIN_RULES` token records
+`madin_resolution=unknown`).
 
 The `phenotype` scope uses the public `scoped_taxon_traits` and
 `strain_trait_rolls_up` functions introduced by PR #828. Both `off` and
@@ -180,7 +215,7 @@ Limits of the pin:
 | `carrier_source_evidence.tsv` | Named KG source fields and optional Madin subsources for each carrier supporting an audited matrix cell. |
 | `support_threshold_sensitivity.tsv` | Six focal traits under seven declared support rules, with effect units, paired/study counts, ties, and nominal study sign tests. |
 | `coasserted_label_census.tsv` | Co-assertion by species, genus, family and other/unknown rank, among bound reported taxa and their occurrences; missing features remain unavailable. |
-| `provenance.json` | SHA256 and size of all inputs, all five output tables, producer, matrix policy and Madin verification code, environment lock, scope reconciliation, source rules, the Madin pin and status, and limitations. |
+| `provenance.json` | SHA256 and size of present inputs (or the explicit absence of default column metadata), metadata selection and member-ID row count, all five output tables, producer, matrix policy, trait-key policy and Madin verification code, environment lock, scope reconciliation, source rules, the Madin pin and status, and limitations. Inputs, including column-metadata presence, are rechecked before publication. |
 
 A carrier is a distinct NCBITaxon node at or below the reported taxon, including
 the reported taxon itself when it carries an annotation under the selected scope.
@@ -251,6 +286,13 @@ unknown malformed records fail. The sidecar records repair counts and hashes
 the parser and shared trait-definition code. Pipe-joined primary sources are
 split before Madin lookup, preserving each source and its resolution status.
 Table 1 trait membership and the oxygen guild pair use `trait_guilds` definitions.
+Since #1237 the aerobe side of the guild pair is `METPO:1000602` and
+`METPO:1000604`; the facultative column `METPO:1000608` is in neither side.
+The separate `trait_key_policy_code` inventory records the path, SHA256 and size
+of `src/mtp/trait_key_policy.py`, which interprets the recorded member IDs and
+selects display labels. These declarations and late checks do not establish
+that hashing and parsing consumed one immutable byte buffer; that separate
+consistency fix is tracked in #1357.
 
 The broader node-level co-assertion census, mesophilic/psychrophilic and
 facultative-anaerobe/obligate-aerobe pairs, and the off/phenotype/full scope

@@ -37,6 +37,82 @@ TABLE_KEYS = {
 }
 LABEL_FIELDS = {"trait_label", "fa_label", "oa_label"}
 REMOVED_TRAIT = "METPO:1000605"
+COMPLETE_COVERAGE = "complete"
+HISTORICAL_OFF_SUMMARY_COVERAGE = "historical-off-summary"
+HISTORICAL_PHENOTYPE_PRE_1115_COVERAGE = "historical-phenotype-pre-1115"
+COVERAGE_MODES = (
+    COMPLETE_COVERAGE,
+    HISTORICAL_OFF_SUMMARY_COVERAGE,
+    HISTORICAL_PHENOTYPE_PRE_1115_COVERAGE,
+)
+HISTORICAL_PHENOTYPE_PRE_1115_TABLES = tuple(
+    name for name in TABLE_KEYS if name != "stool_study_sensitivity.tsv"
+)
+COMPLETE_BASELINE_OUTPUTS = frozenset({PAIR_LEDGER, STUDY_LEDGER, *TABLE_KEYS})
+HISTORICAL_OFF_SUMMARY_OUTPUTS = frozenset({PAIR_LEDGER, STUDY_LEDGER, "trait_summary.tsv"})
+HISTORICAL_PHENOTYPE_PRE_1115_OUTPUTS = frozenset(
+    {PAIR_LEDGER, STUDY_LEDGER, *HISTORICAL_PHENOTYPE_PRE_1115_TABLES}
+)
+
+
+def validate_baseline_coverage(
+    coverage_mode: Any,
+    strain_rollup: str,
+    baseline: dict[str, Any],
+    baseline_outputs: dict[str, bytes],
+) -> str:
+    if not isinstance(coverage_mode, str) or coverage_mode not in COVERAGE_MODES:
+        raise ValueError(
+            "Explicit baseline coverage mode must be 'complete', "
+            "'historical-off-summary' or 'historical-phenotype-pre-1115'"
+        )
+    observed = set(baseline_outputs)
+    if coverage_mode == COMPLETE_COVERAGE:
+        if baseline.get("summary_only") is not False:
+            raise ValueError(
+                "Complete baseline coverage requires baseline summary_only to be False"
+            )
+        missing = sorted(COMPLETE_BASELINE_OUTPUTS - observed)
+        unexpected = sorted(observed - COMPLETE_BASELINE_OUTPUTS)
+        if missing or unexpected:
+            raise ValueError(
+                "Complete baseline coverage missing or unexpected tables: "
+                f"missing={missing}, unexpected={unexpected}"
+            )
+        return COMPLETE_COVERAGE
+    if coverage_mode == HISTORICAL_PHENOTYPE_PRE_1115_COVERAGE:
+        if strain_rollup != "phenotype":
+            raise ValueError(
+                "historical-phenotype-pre-1115 baseline coverage is restricted to phenotype scope"
+            )
+        if baseline.get("summary_only") is not False:
+            raise ValueError(
+                "historical-phenotype-pre-1115 baseline coverage requires "
+                "baseline summary_only to be False"
+            )
+        missing = sorted(HISTORICAL_PHENOTYPE_PRE_1115_OUTPUTS - observed)
+        unexpected = sorted(observed - HISTORICAL_PHENOTYPE_PRE_1115_OUTPUTS)
+        if missing or unexpected:
+            raise ValueError(
+                "historical-phenotype-pre-1115 baseline coverage requires "
+                "the five pre-#1115 derived tables and both ledgers only: "
+                f"missing={missing}, unexpected={unexpected}"
+            )
+        return HISTORICAL_PHENOTYPE_PRE_1115_COVERAGE
+    if strain_rollup != "off":
+        raise ValueError("historical-off-summary baseline coverage is restricted to off scope")
+    if baseline.get("summary_only") is not True:
+        raise ValueError(
+            "historical-off-summary baseline coverage requires baseline summary_only to be True"
+        )
+    missing = sorted(HISTORICAL_OFF_SUMMARY_OUTPUTS - observed)
+    unexpected = sorted(observed - HISTORICAL_OFF_SUMMARY_OUTPUTS)
+    if missing or unexpected:
+        raise ValueError(
+            "historical-off-summary baseline coverage requires trait_summary.tsv "
+            f"and both ledgers only: missing={missing}, unexpected={unexpected}"
+        )
+    return HISTORICAL_OFF_SUMMARY_COVERAGE
 
 
 def identity(raw: bytes) -> dict[str, str | int]:
@@ -304,6 +380,12 @@ def qualify(args: argparse.Namespace) -> dict[str, Any]:
         raise ValueError("Trial output inventory differs from expected full bundle")
     if parent["strain_rollup"] not in {"off", "phenotype"}:
         raise ValueError("Expected archived off or phenotype scope")
+    coverage_mode = validate_baseline_coverage(
+        getattr(args, "baseline_coverage", None),
+        parent["strain_rollup"],
+        baseline,
+        baseline_outputs,
+    )
     for name in (PAIR_LEDGER, STUDY_LEDGER):
         if (
             baseline_outputs[name] != parent_outputs[name]
@@ -368,6 +450,26 @@ def qualify(args: argparse.Namespace) -> dict[str, Any]:
     unhandled = set(baseline_outputs) - {PAIR_LEDGER, STUDY_LEDGER, *comparisons}
     if unhandled:
         raise ValueError(f"Uncompared historical outputs: {sorted(unhandled)}")
+    new_tables_without_old_reference = [name for name in generated if name not in comparisons]
+    is_complete = coverage_mode == COMPLETE_COVERAGE
+    if is_complete and (set(comparisons) != set(TABLE_KEYS) or new_tables_without_old_reference):
+        raise ValueError("Complete baseline coverage did not compare all derived tables")
+    if coverage_mode == HISTORICAL_PHENOTYPE_PRE_1115_COVERAGE and (
+        set(comparisons) != set(HISTORICAL_PHENOTYPE_PRE_1115_TABLES)
+        or new_tables_without_old_reference != ["stool_study_sensitivity.tsv"]
+    ):
+        raise ValueError(
+            "historical-phenotype-pre-1115 baseline coverage must compare "
+            "the five pre-#1115 derived tables only"
+        )
+    if coverage_mode == HISTORICAL_OFF_SUMMARY_COVERAGE and (
+        set(comparisons) != {"trait_summary.tsv"}
+        or new_tables_without_old_reference
+        != [name for name in TABLE_KEYS if name != "trait_summary.tsv"]
+    ):
+        raise ValueError(
+            "historical-off-summary baseline coverage must compare trait_summary.tsv only"
+        )
     summary = frame(generated["trait_summary.tsv"], ["trait"], text=True)
     flags = list(summary.sdz_active_at_least_50)
     if set(flags) - {"True", "False"}:
@@ -383,20 +485,36 @@ def qualify(args: argparse.Namespace) -> dict[str, Any]:
     for path, raw in snapshots.items():
         if path.read_bytes() != raw:
             raise ValueError(f"Input or implementation changed: {path}")
+    status = (
+        "FAIL" if any(value["unexpected_changes"] for value in comparisons.values()) else "PASS"
+    )
     result = {
         "issue": 1115,
         "description": (
-            "comparison of completed verified trial outputs against pinned historical outputs"
+            "complete parity comparison of completed verified trial outputs "
+            "against pinned historical outputs"
+            if is_complete
+            else (
+                "partial-reference comparison of completed verified trial outputs "
+                "against pinned historical pre-#1115 phenotype baseline"
+                if coverage_mode == HISTORICAL_PHENOTYPE_PRE_1115_COVERAGE
+                else (
+                    "partial-reference comparison of completed verified trial outputs "
+                    "against pinned historical off summary baseline"
+                )
+            )
         ),
+        "baseline_coverage_mode": coverage_mode,
+        "comparison_scope": ("complete_parity" if is_complete else "partial_reference_comparison"),
+        "complete_parity": is_complete and status == "PASS",
+        "partial_reference_comparison": not is_complete,
         "full_upstream_verification_performed_by_this_helper": False,
         "qualification_source": "actual delta-z-derived command on local trial merge",
         "merge_commits": commits,
         "current_run_id": current["run_id"],
         "current_manifest_sha256": args.current_sha256,
         "delta_z_recomputed": False,
-        "status": "FAIL"
-        if any(value["unexpected_changes"] for value in comparisons.values())
-        else "PASS",
+        "status": status,
         "strain_rollup": parent["strain_rollup"],
         "parent_run_id": parent["run_id"],
         "parent_manifest_sha256": args.parent_sha256,
@@ -413,7 +531,7 @@ def qualify(args: argparse.Namespace) -> dict[str, Any]:
         "declared_traits": traits,
         "counts": counts,
         "comparisons": comparisons,
-        "new_tables_without_old_reference": [name for name in generated if name not in comparisons],
+        "new_tables_without_old_reference": new_tables_without_old_reference,
         "outputs": {name: identity(raw) for name, raw in generated.items()},
         "output_rows": {
             name: len(frame(raw, TABLE_KEYS[name], text=True)) for name, raw in generated.items()
@@ -441,6 +559,7 @@ def main() -> None:
     parser.add_argument("--issue1115-sha", required=True)
     parser.add_argument("--pr1130-sha", required=True)
     parser.add_argument("--trial-sha", required=True)
+    parser.add_argument("--baseline-coverage", choices=COVERAGE_MODES, required=True)
     result = qualify(parser.parse_args())
     print(json.dumps(result, indent=2))
     if result["status"] != "PASS":

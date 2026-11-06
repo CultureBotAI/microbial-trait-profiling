@@ -8,6 +8,13 @@ current-core compatibility, additional review fixes and refreshed execution
 evidence. The retained calibration artifacts now record that later execution;
 its replicate results are byte-identical to those reported here.
 
+**Historical statistical scope:** all sizes and results below belong to that
+recorded generation, not a later rerun. Raw p-values are nominal; calibration
+p-values and error rates are procedure diagnostics. The `mt-*` family names
+below map these results to the later
+[registry](../../methods/multiple_testing_families.yaml); they are not newly
+assigned execution provenance.
+
 ## Implemented scope
 
 The integrated evidence pipeline now imports the native pooled composition tests and complete enrichment/depletion exports, retains the existing BY-corrected 15 log-ratios, and attaches the compatible full-trait directional screen. Native source readers reject incompatible test families, populations, duplicate profile tests, inconsistent backgrounds, and mismatched input hashes where supplied.
@@ -19,7 +26,7 @@ ORA calibration now excludes MediaDive before simulation and spike selection and
 ## Corrections to the supplied prompt
 
 - The canonical coccus and sphere IDs are `METPO:1000668` and `METPO:1000683`.
-- Native composition uses two-sided one-sample **t-tests**, with separate study and experiment results. Its support/variance-filtered correction family has **315 traits**, although the retained denominator universe has 317. The integration uses study-level p/q/effect/interval values together; experiment-level p/q remain explicitly secondary.
+- Native composition uses two-sided one-sample **t-tests**, with separate study and experiment results. Its support/variance-filtered correction family has **315 traits**, although the retained denominator universe has 317. BH is applied separately to the study tests (`mt-core-native-study-t`) and experiment tests (`mt-core-native-pair-t`). The integration uses study-level p/q/effect/interval values together; experiment-level p/q remain explicitly secondary. Correction within these selected families does not correct their support/variance selection.
 - The current 15 log-ratio rows already had BY15 q-values. They are preserved, with 3 significant at 0.05 and none at 0.001.
 - ORA ranked files omit traits with fewer than two significant hits. Complete result exports are required to establish zero discoveries and actual tested denominators.
 - The production depletion rule is q ≤ 0.001 and fold ≤ **0.5**, in its own lower-tail global BH family.
@@ -28,9 +35,9 @@ ORA calibration now excludes MediaDive before simulation and spike selection and
 
 ## Resulting evidence
 
-The full integrated output has 1,912 rows: 40 non-cell method records and 1,872 descriptive oxygen-guild cell records. All 18 previously absent native source rows are supplied. All 15 log-ratio rows are tested and carry BY15 q-values. Native composition has six study-level results significant at the integration's 0.05 threshold; that cutoff is explicitly distinguished from the original native output, which publishes q without imposing a decision threshold.
+The full integrated output has 1,912 rows: 40 non-cell method records and 1,872 descriptive oxygen-guild cell records. All 18 previously absent native source rows are supplied. All 15 log-ratio rows are tested and carry BY15 q-values (`mt-core-jed-log-ratio-sign`, all unordered focal trait pairs). Native composition has six study-level results meeting BH q ≤ 0.05 in its 315-trait selected family, `mt-core-native-study-t`; that integration cutoff is explicitly distinguished from the original native output, which publishes q without imposing a decision threshold.
 
-The full-screen values below are recorded alongside, without replacing, the within-six BH values. BY is the full screen's primary correction.
+The full-screen values below are recorded alongside, without replacing, the within-six BH values (`mt-supp-table1-direction`). The full-screen family is `mt-core-noel-sign-nominal`, all 317 candidate traits in this historical execution; BY is primary and BH is the comparison. Despite `nominal` in this registry identifier, its BH/BY q-values are adjusted, not nominal p-values.
 
 | Trait | Full-family BH317 q | Full-family BY317 q |
 | --- | ---: | ---: |
@@ -43,7 +50,7 @@ The full-screen values below are recorded alongside, without replacing, the with
 
 All six meet BH317 q ≤ 0.05; only facultatively aerobic meets BH317 q ≤ 0.001. Under the primary BY317 correction, three meet 0.05 and none meet 0.001. Same-corpus selection still precludes a claim of independent confirmation.
 
-Each Table 1 trait has 4,670 native ORA profile tests in the global 1,480,390-test enrichment family:
+Each Table 1 trait has 4,670 native ORA profile tests in the global 1,480,390-test enrichment family (`mt-core-ora-upper-global`, all eligible profile–trait tests in the upper tail). These hit counts use BH q ≤ 0.001 and enrichment fold ≥ 1.5. The lower tail is corrected separately as `mt-core-ora-lower-global`; it is not pooled with the upper-tail family:
 
 | Trait | Enriched increased profiles | Enriched decreased profiles |
 | --- | ---: | ---: |
@@ -58,7 +65,7 @@ None of these six traits has a significant lower-tail depletion hit. Best/median
 
 ## Calibration result and interpretation
 
-The production-aligned run completed 10 of 10 replicates, with no failed or invalid replicates. It uses 317 retained/testable biological traits, 4,670 paired profiles, 1,480,390 tests per replicate, and minimum enrichment fold 1.5. Its ORA input contains 2,333 excluded MediaDive columns; this differs from the 2,290 in the raw annotation-count input and is recorded separately.
+The production-aligned run completed 10 of 10 replicates, with no failed or invalid replicates. It uses 317 retained/testable biological traits, 4,670 paired profiles, 1,480,390 tests per replicate, and minimum enrichment fold 1.5. The diagnostic discovery q below uses BH over that upper-tail eligible profile–trait family separately in each replicate (`mt-core-calibration-ora-upper`), not across replicates. Its ORA input contains 2,333 excluded MediaDive columns; this differs from the 2,290 in the raw annotation-count input and is recorded separately.
 
 | Discovery q | Complete-null empirical FDR | Mixed declared-spike FDR | Mixed TPR | Mean true discoveries / true signals |
 | --- | ---: | ---: | ---: | ---: |
@@ -95,7 +102,7 @@ The native historical fallback can read the legacy pooled TSV when the regenerat
 
 The first full verification exposed pre-existing warnings. Minimal repairs replaced deprecated colormap mutation, handled exact constant t-test and zero-probability Fisher limits without changing the ordinary statistical path, and modernized LinkML checks with a 1.11 minimum (also addressing [#500](https://github.com/CultureBotAI/microbial-trait-profiling/issues/500)). The standard `just lock` invocation migrated lockfile metadata to the installed pinned uv format; dependency package versions did not change. These validation repairs did not regenerate parallel figure or coupling outputs.
 
-Work was isolated in `/private/tmp/mtp-pipeline-20261017` on the issue-linked branch `551-integrate-native-evidence-and-ora-calibration`. The parallel cellulose, methods, slide files, and existing main-checkout edits were preserved. No ad hoc helper scripts were needed.
+Work was isolated in `<temp dir>/mtp-pipeline-20261017` on the issue-linked branch `551-integrate-native-evidence-and-ora-calibration`. The parallel cellulose, methods, slide files, and existing main-checkout edits were preserved. No ad hoc helper scripts were needed.
 
 ## Validation and delivery
 

@@ -198,9 +198,17 @@ def bind_recorded_hashes(sources: VerifiedSources, comparison_sha256: str) -> Ve
     return replace(sources, recorded_hashes=hashes)
 
 
-def open_verified_sources(path: Path) -> VerifiedSources:
-    """Verify one completed comparison and each core/arm source before adaptation."""
-    comparison, core, arms = verify_comparison_sources(path)
+def open_verified_sources(path: Path, *, manifest_bytes: bytes | None = None) -> VerifiedSources:
+    """Verify a comparison snapshot and each core/arm source before adaptation.
+
+    A supplied immutable buffer must be hash-bound and its path rechecked by the
+    publishing caller. All native source and analysis-basis checks remain mandatory.
+    """
+    comparison, core, arms = (
+        verify_comparison_sources(path)
+        if manifest_bytes is None
+        else verify_comparison_sources(path, manifest_bytes=manifest_bytes)
+    )
     if (
         comparison.contrast_population != core.contrast_population
         or comparison.direction_basis != core.direction_basis

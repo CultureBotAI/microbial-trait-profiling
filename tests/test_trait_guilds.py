@@ -1,6 +1,10 @@
 """Corpus filters, guild aggregation, and the guild-map statistics."""
 
+import gzip
+import io
+import re
 from collections.abc import Callable
+from dataclasses import asdict
 from math import isnan
 from pathlib import Path
 from statistics import fmean
@@ -25,24 +29,40 @@ from bsdbng.guild_maps import (
 from bsdbng.trait_guilds import (
     GRAM_GUILDS,
     OXYGEN_GUILDS,
+    TABLE1_TRAITS,
+    CorpusStats,
     Profile,
+    format_stats_report,
     load_profiles,
     read_bugsigdb_vintage,
+    resolve_trait_columns,
+    write_stats_report,
+)
+from mtp.count_input import COMPLETE_COUNT_MODE, LEGACY_SPARSE_ZERO_MODE
+from mtp.trait_key_policy import (
+    FACULTATIVE_MEMBER_IDS,
+    FACULTATIVE_TRAIT_ID,
+    TRAIT_KEY_POLICIES,
+    TraitKeyPolicy,
+    canonical_object,
 )
 
-AEROBE_A, AEROBE_B, AEROBE_C = OXYGEN_GUILDS["aerobe"]
-ANAEROBE_A, ANAEROBE_B = OXYGEN_GUILDS["anaerobe"]
+#: Aerobic and microaerophilic; anaerobic and obligately anaerobic (#1237).
+AEROBE_A, AEROBE_B = "METPO:1000602", "METPO:1000604"
+ANAEROBE_A, ANAEROBE_B = "METPO:1000603", "METPO:1000607"
+#: A profile column that counts in every total and in no oxygen guild (#1237).
+FACULTATIVE = FACULTATIVE_TRAIT_ID
 MEDIA_COLUMN = "METPO:2000517|mediadive.medium:J14"
 
 
-def _write_profiles(path: Path, rows: list[tuple[str, str, str, list[int]]]) -> None:
+def _write_profiles(path: Path, rows: list[tuple[str, str, str, list[int | str]]]) -> None:
     header = [
         "study_id",
         "experiment_id",
         "inc_dec",
         AEROBE_A,
         AEROBE_B,
-        AEROBE_C,
+        FACULTATIVE,
         ANAEROBE_A,
         ANAEROBE_B,
         "METPO:1000615",
@@ -97,6 +117,7 @@ def corpus(tmp_path: Path) -> tuple[Path, Path]:
 def test_filters_drop_non_human_unpaired_and_mediadive(corpus: tuple[Path, Path]) -> None:
     profiles, stats = load_profiles(*corpus, OXYGEN_GUILDS)
 
+    assert stats.profile_rows == 7
     assert stats.dropped_non_human == 2
     assert stats.dropped_unpaired == 1
     assert stats.mediadive_columns_excluded == 1
@@ -109,11 +130,87 @@ def test_guild_counts_sum_member_terms_and_exclude_media(corpus: tuple[Path, Pat
     profiles, _ = load_profiles(*corpus, OXYGEN_GUILDS)
     inc = next(p for p in profiles if p.study_id == "bsdb:2" and p.inc_dec == "inc")
 
-    # aerobe = 5 + 1 + 0; anaerobe = 2 + 0; total excludes the MediaDive column.
+    # aerobe = 5 + 1; anaerobe = 2 + 0; the total adds the facultative column (0
+    # here) and METPO:1000615, and excludes the MediaDive column.
     assert inc.guild_counts["aerobe"] == 6
     assert inc.guild_counts["anaerobe"] == 2
     assert inc.total == 5 + 1 + 0 + 2 + 0 + 2
     assert inc.fraction("aerobe") == pytest.approx(6 / 10)
+
+
+@pytest.mark.parametrize("policy", TRAIT_KEY_POLICIES)
+def test_no_oxygen_guild_holds_a_facultative_column(policy: TraitKeyPolicy) -> None:
+    """Aerobe and facultative are distinct under both trait-key policies (#1237).
+
+    Under facultative_union_v1, METPO:1000608 also carries the facultatively
+    anaerobic assertions of METPO:1000605 and METPO:1000612, so an aerobe guild
+    holding it counted taxa annotated only as facultative anaerobes. Under
+    raw_object_v1 each of the three is its own column, and none is a guild member
+    either. The column stays one of the six Table 1 traits, reported on its own.
+    """
+    assert OXYGEN_GUILDS == {
+        "aerobe": (AEROBE_A, AEROBE_B),
+        "anaerobe": (ANAEROBE_A, ANAEROBE_B),
+    }
+    facultative_columns = {
+        canonical_object(member, trait_key_policy=policy) for member in FACULTATIVE_MEMBER_IDS
+    }
+    guild_columns = {
+        canonical_object(term, trait_key_policy=policy)
+        for terms in OXYGEN_GUILDS.values()
+        for term in terms
+    }
+    assert facultative_columns.isdisjoint(guild_columns)
+    assert TABLE1_TRAITS["facultatively_aerobic"] == (FACULTATIVE,)
+
+
+@pytest.mark.parametrize("policy", TRAIT_KEY_POLICIES)
+def test_a_facultative_only_profile_adds_nothing_to_the_aerobe_guild(
+    tmp_path: Path, policy: TraitKeyPolicy
+) -> None:
+    """Facultative annotations count in the denominator, never in the aerobe sum (#1237).
+
+    The matrix carries the facultative columns the policy writes: the one union
+    column under facultative_union_v1, the three raw columns under raw_object_v1.
+    Apart from one anaerobic count, the increased profile's oxygen annotations are
+    all facultative.
+    """
+    facultative = sorted(
+        {canonical_object(member, trait_key_policy=policy) for member in FACULTATIVE_MEMBER_IDS}
+    )
+    header = [
+        "study_id",
+        "experiment_id",
+        "inc_dec",
+        AEROBE_A,
+        AEROBE_B,
+        ANAEROBE_A,
+        ANAEROBE_B,
+        *facultative,
+    ]
+    rows = [
+        ["bsdb:1", "bsdb:1-1", "inc", "0", "0", "1", "0", *["4"] * len(facultative)],
+        ["bsdb:1", "bsdb:1-1", "dec", "1", "0", "1", "0", *["0"] * len(facultative)],
+    ]
+    profiles_path = tmp_path / "profiles.tsv"
+    profiles_path.write_text(
+        "\n".join("\t".join(row) for row in (header, *rows)) + "\n", encoding="utf-8"
+    )
+    experiments_path = tmp_path / "experiments.tsv"
+    _write_experiments(
+        experiments_path,
+        [("bsdb:1", "bsdb:1-1", "Colorectal cancer", "Feces", "Homo sapiens")],
+    )
+
+    profiles, _ = load_profiles(profiles_path, experiments_path, OXYGEN_GUILDS)
+    inc = next(p for p in profiles if p.inc_dec == "inc")
+    dec = next(p for p in profiles if p.inc_dec == "dec")
+
+    assert inc.guild_counts == {"aerobe": 0, "anaerobe": 1}
+    assert inc.total == 1 + 4 * len(facultative)
+    assert inc.fraction("aerobe") == 0.0
+    assert dec.guild_counts == {"aerobe": 1, "anaerobe": 1}
+    assert dec.fraction("aerobe") == pytest.approx(1 / 2)
 
 
 def test_unmatched_experiments_are_counted_not_silently_dropped(
@@ -126,8 +223,54 @@ def test_unmatched_experiments_are_counted_not_silently_dropped(
     )
     _, stats = load_profiles(profiles_path, experiments, OXYGEN_GUILDS)
 
+    assert stats.profile_rows == 7
     assert stats.unmatched_experiments == 5
     assert stats.kept_experiments == 1
+
+
+def test_corpus_stats_counts_profile_rows_and_all_filter_stages(
+    tmp_path: Path, corpus: tuple[Path, Path]
+) -> None:
+    """Assert CorpusStats.profile_rows together with every filter counter (#1296)."""
+    profiles_path, _ = corpus
+    experiments = tmp_path / "partial_experiments.tsv"
+    _write_experiments(
+        experiments,
+        [
+            ("bsdb:1", "bsdb:1-1", "Colorectal cancer", "Feces", "Homo sapiens"),
+            ("bsdb:3", "bsdb:3-1", "Asthma", "Feces", "Homo sapiens"),
+            ("bsdb:4", "bsdb:4-1", "Colitis", "Caecum", "Mus musculus"),
+        ],
+    )
+    _, stats = load_profiles(profiles_path, experiments, OXYGEN_GUILDS)
+
+    assert stats == CorpusStats(
+        profile_rows=7,
+        experiments_seen=2,
+        unmatched_experiments=2,
+        dropped_non_human=2,
+        dropped_unpaired=1,
+        mediadive_columns_excluded=1,
+        trait_columns_used=6,
+        kept_experiments=1,
+        kept_profiles=2,
+        count_input_mode=COMPLETE_COUNT_MODE,
+        blank_counts_interpreted_as_zero=0,
+    )
+    assert format_stats_report(stats, "2026-04-24_00:41_UTC").splitlines() == [
+        "BugSigDB vintage:            2026-04-24_00:41_UTC",
+        "Profile rows read:           7",
+        "Experiments after join:      2",
+        "Dropped, no metadata match:  2",
+        "Dropped, non-human host:     2",
+        "Dropped, unpaired:           1",
+        "MediaDive columns excluded:  1",
+        "Trait columns used:          6",
+        "Experiments kept:            1",
+        "Profiles kept:               2",
+        "Count input mode:            complete",
+        "Blank counts used as zero:   0",
+    ]
 
 
 def test_missing_guild_column_raises(corpus: tuple[Path, Path]) -> None:
@@ -946,3 +1089,596 @@ def test_dropped_other_site_preserves_condition_pool_membership() -> None:
     condition_pool = next(pool for pool in matrix.pooled if pool.kind == "condition")
     assert condition_pool.bucketed
     assert condition_pool.pooled_names == ("PooledA", "PooledB")
+
+
+@pytest.mark.parametrize("bad_count", ["", "-1", "1.5", "NaN", "not-a-count", "3_0"])
+def test_method_loader_rejects_invalid_counts_before_filtering(
+    tmp_path: Path, bad_count: str
+) -> None:
+    profiles_path = tmp_path / "profiles.tsv"
+    experiments_path = tmp_path / "experiments.tsv"
+    _write_profiles(
+        profiles_path,
+        [
+            ("bsdb:1", "bsdb:1-1", "inc", [6, 0, 0, 1, 0, 3, 100]),
+            ("bsdb:1", "bsdb:1-1", "dec", [1, 0, 0, 6, 0, 3, 100]),
+            ("bsdb:4", "bsdb:4-1", "inc", [9, 0, 0, 1, 0, bad_count, 100]),
+        ],
+    )
+    _write_experiments(
+        experiments_path,
+        [
+            ("bsdb:1", "bsdb:1-1", "Colorectal cancer", "Feces", "Homo sapiens"),
+            ("bsdb:4", "bsdb:4-1", "Colitis", "Caecum", "Mus musculus"),
+        ],
+    )
+
+    with pytest.raises(ValueError, match="count"):
+        load_profiles(profiles_path, experiments_path, OXYGEN_GUILDS)
+
+    if bad_count != "":
+        with pytest.raises(ValueError, match="count"):
+            load_profiles(
+                profiles_path,
+                experiments_path,
+                OXYGEN_GUILDS,
+                reject_missing_counts=False,
+            )
+
+
+def test_method_loader_rejects_blank_by_default_and_allows_sparse_zero_override(
+    tmp_path: Path,
+) -> None:
+    profiles_path = tmp_path / "profiles.tsv"
+    experiments_path = tmp_path / "experiments.tsv"
+    _write_profiles(
+        profiles_path,
+        [
+            ("bsdb:1", "bsdb:1-1", "inc", [6, 0, 0, 1, 0, "", 100]),
+            ("bsdb:1", "bsdb:1-1", "dec", [1, 0, 0, 6, 0, 3, 100]),
+        ],
+    )
+    _write_experiments(
+        experiments_path,
+        [("bsdb:1", "bsdb:1-1", "Colorectal cancer", "Feces", "Homo sapiens")],
+    )
+
+    # One label, one statement that missing is not zero, the profile key, and
+    # the file:line:column of the blank cell (#1300, #1302).
+    with pytest.raises(
+        ValueError,
+        match=(
+            rf"^Missing trait count in {re.escape(str(profiles_path))}:2 "
+            r"for bsdb:1, bsdb:1-1, inc, "
+            r"column 'METPO:1000615'; missing is not an observed zero$"
+        ),
+    ):
+        load_profiles(profiles_path, experiments_path, OXYGEN_GUILDS)
+
+    profiles, stats = load_profiles(
+        profiles_path,
+        experiments_path,
+        OXYGEN_GUILDS,
+        reject_missing_counts=False,
+    )
+    inc = next(profile for profile in profiles if profile.inc_dec == "inc")
+    assert inc.total == 7
+    assert stats.count_input_mode == LEGACY_SPARSE_ZERO_MODE
+    assert stats.blank_counts_interpreted_as_zero == 1
+
+
+def test_corpus_stats_records_count_input_mode_and_blank_zero_fills(
+    tmp_path: Path,
+) -> None:
+    """CorpusStats and stats reports record count_input_mode and blank zero-fills (#1299)."""
+    profiles_path = tmp_path / "profiles.tsv"
+    experiments_path = tmp_path / "experiments.tsv"
+    _write_profiles(
+        profiles_path,
+        [
+            ("bsdb:1", "bsdb:1-1", "inc", [6, "", 0, 1, 0, "", 100]),
+            ("bsdb:1", "bsdb:1-1", "dec", [1, 0, 0, 6, "", 3, 100]),
+        ],
+    )
+    _write_experiments(
+        experiments_path,
+        [("bsdb:1", "bsdb:1-1", "Colorectal cancer", "Feces", "Homo sapiens")],
+    )
+
+    _, legacy_stats = load_profiles(
+        profiles_path,
+        experiments_path,
+        OXYGEN_GUILDS,
+        count_input_mode=LEGACY_SPARSE_ZERO_MODE,
+    )
+    assert legacy_stats.count_input_mode == LEGACY_SPARSE_ZERO_MODE
+    assert legacy_stats.blank_counts_interpreted_as_zero == 3
+    serialized = asdict(legacy_stats)
+    assert serialized["count_input_mode"] == LEGACY_SPARSE_ZERO_MODE
+    assert serialized["blank_counts_interpreted_as_zero"] == 3
+
+    stream = io.StringIO()
+    write_stats_report(legacy_stats, None, stream=stream)
+    report_lines = stream.getvalue().rstrip("\n").splitlines()
+    assert report_lines[-2:] == [
+        "Count input mode:            legacy_sparse_zero",
+        "Blank counts used as zero:   3",
+    ]
+
+
+def test_method_loader_rejects_conflicting_count_input_mode_and_reject_missing_counts(
+    tmp_path: Path,
+) -> None:
+    """Disagreeing count_input_mode and reject_missing_counts must raise (#1298)."""
+    profiles_path = tmp_path / "profiles.tsv"
+    experiments_path = tmp_path / "experiments.tsv"
+    _write_profiles(
+        profiles_path,
+        [
+            ("bsdb:1", "bsdb:1-1", "inc", [6, 0, 0, 1, 0, "", 100]),
+            ("bsdb:1", "bsdb:1-1", "dec", [1, 0, 0, 6, 0, 3, 100]),
+        ],
+    )
+    _write_experiments(
+        experiments_path,
+        [("bsdb:1", "bsdb:1-1", "Colorectal cancer", "Feces", "Homo sapiens")],
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            r"^Conflicting count input options: count_input_mode='complete' "
+            r"disagrees with reject_missing_counts=False$"
+        ),
+    ):
+        load_profiles(
+            profiles_path,
+            experiments_path,
+            OXYGEN_GUILDS,
+            count_input_mode=COMPLETE_COUNT_MODE,
+            reject_missing_counts=False,
+        )
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            r"^Conflicting count input options: count_input_mode='legacy_sparse_zero' "
+            r"disagrees with reject_missing_counts=True$"
+        ),
+    ):
+        load_profiles(
+            profiles_path,
+            experiments_path,
+            OXYGEN_GUILDS,
+            count_input_mode=LEGACY_SPARSE_ZERO_MODE,
+            reject_missing_counts=True,
+        )
+
+    with pytest.raises(ValueError, match=r"^Missing trait count in "):
+        load_profiles(
+            profiles_path,
+            experiments_path,
+            OXYGEN_GUILDS,
+            count_input_mode=COMPLETE_COUNT_MODE,
+            reject_missing_counts=True,
+        )
+
+    profiles, _ = load_profiles(
+        profiles_path,
+        experiments_path,
+        OXYGEN_GUILDS,
+        count_input_mode=LEGACY_SPARSE_ZERO_MODE,
+        reject_missing_counts=False,
+    )
+    inc = next(profile for profile in profiles if profile.inc_dec == "inc")
+    assert inc.total == 7
+
+
+def test_method_loader_relabels_only_missing_count_errors_when_the_path_names_the_marker(
+    tmp_path: Path,
+) -> None:
+    # The relabel keys on the start of the reader's message, not on the phrase
+    # appearing anywhere in it, so a path carrying the phrase changes nothing (#1300).
+    profiles_path = tmp_path / "Missing count in here.tsv"
+    experiments_path = tmp_path / "experiments.tsv"
+    _write_experiments(
+        experiments_path,
+        [("bsdb:1", "bsdb:1-1", "Colorectal cancer", "Feces", "Homo sapiens")],
+    )
+    _write_profiles(
+        profiles_path,
+        [
+            ("bsdb:1", "bsdb:1-1", "inc", [6, 0, 0, 1, 0, 3, 100]),
+            ("bsdb:1", "bsdb:1-1", "dec", [1, 0, 0, 6, 0, 3, 100]),
+            ("bsdb:1", "bsdb:1-1", "up", [1, 0, 0, 6, 0, 3, 100]),
+        ],
+    )
+
+    path = re.escape(str(profiles_path))
+    with pytest.raises(
+        ValueError, match=rf"^Unknown profile direction in {path}:4: 'up'; "
+    ) as unknown:
+        load_profiles(profiles_path, experiments_path, OXYGEN_GUILDS)
+    assert "Missing trait count" not in str(unknown.value)
+
+    _write_profiles(
+        profiles_path,
+        [
+            ("bsdb:1", "bsdb:1-1", "inc", [6, 0, 0, 1, 0, "", 100]),
+            ("bsdb:1", "bsdb:1-1", "dec", [1, 0, 0, 6, 0, 3, 100]),
+        ],
+    )
+    with pytest.raises(
+        ValueError,
+        match=(
+            rf"^Missing trait count in {path}:2 for bsdb:1, bsdb:1-1, inc, "
+            r"column 'METPO:1000615'; missing is not an observed zero$"
+        ),
+    ):
+        load_profiles(profiles_path, experiments_path, OXYGEN_GUILDS)
+
+
+@pytest.mark.parametrize("strict", [False, True])
+def test_method_loader_rejects_duplicate_profile_keys(tmp_path: Path, strict: bool) -> None:
+    profiles_path = tmp_path / "profiles.tsv"
+    experiments_path = tmp_path / "experiments.tsv"
+    _write_profiles(
+        profiles_path,
+        [
+            ("bsdb:1", "bsdb:1-1", "inc", [6, 0, 0, 1, 0, 3, 100]),
+            ("bsdb:1", "bsdb:1-1", "inc", [6, 0, 0, 1, 0, 3, 100]),
+            ("bsdb:1", "bsdb:1-1", "dec", [1, 0, 0, 6, 0, 3, 100]),
+        ],
+    )
+    _write_experiments(
+        experiments_path,
+        [("bsdb:1", "bsdb:1-1", "Colorectal cancer", "Feces", "Homo sapiens")],
+    )
+
+    # Anchored, so the reader's label must survive the loader unchanged (#1295).
+    duplicate = re.escape(repr(("bsdb:1", "bsdb:1-1", "inc")))
+    with pytest.raises(
+        ValueError,
+        match=rf"^Duplicate key {duplicate} in {re.escape(str(profiles_path))}:3; ",
+    ):
+        load_profiles(
+            profiles_path,
+            experiments_path,
+            OXYGEN_GUILDS,
+            reject_missing_counts=strict,
+        )
+
+
+@pytest.mark.parametrize(
+    ("study_id", "experiment_id"),
+    [
+        pytest.param("bsdb:1", "bsdb:1-1", id="kept_human_row"),
+        pytest.param("bsdb:4", "bsdb:4-1", id="non_human_row"),
+        pytest.param("bsdb:9", "bsdb:9-1", id="unmatched_row"),
+    ],
+)
+@pytest.mark.parametrize("strict", [False, True])
+def test_method_loader_rejects_unknown_direction(
+    tmp_path: Path, strict: bool, study_id: str, experiment_id: str
+) -> None:
+    # The direction is checked before the metadata join and the host filter, so
+    # an unknown direction fails even on a row those filters would drop (#1295).
+    profiles_path = tmp_path / "profiles.tsv"
+    experiments_path = tmp_path / "experiments.tsv"
+    _write_profiles(
+        profiles_path,
+        [
+            ("bsdb:1", "bsdb:1-1", "inc", [6, 0, 0, 1, 0, 3, 100]),
+            ("bsdb:1", "bsdb:1-1", "dec", [1, 0, 0, 6, 0, 3, 100]),
+            (study_id, experiment_id, "up", [1, 0, 0, 6, 0, 3, 100]),
+        ],
+    )
+    _write_experiments(
+        experiments_path,
+        [
+            ("bsdb:1", "bsdb:1-1", "Colorectal cancer", "Feces", "Homo sapiens"),
+            ("bsdb:4", "bsdb:4-1", "Colitis", "Caecum", "Mus musculus"),
+        ],
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            rf"^Unknown profile direction in {re.escape(str(profiles_path))}:4: "
+            r"'up'; expected one of "
+        ),
+    ):
+        load_profiles(
+            profiles_path,
+            experiments_path,
+            OXYGEN_GUILDS,
+            reject_missing_counts=strict,
+        )
+
+
+@pytest.mark.parametrize("bad_count", ["-1", "3_0"])
+@pytest.mark.parametrize("strict", [False, True])
+def test_method_loader_rejects_negative_and_underscore_counts_on_kept_human_rows(
+    tmp_path: Path, bad_count: str, strict: bool
+) -> None:
+    profiles_path = tmp_path / "profiles.tsv"
+    experiments_path = tmp_path / "experiments.tsv"
+    _write_profiles(
+        profiles_path,
+        [
+            ("bsdb:1", "bsdb:1-1", "inc", [6, 0, 0, 1, 0, bad_count, 100]),
+            ("bsdb:1", "bsdb:1-1", "dec", [1, 0, 0, 6, 0, 3, 100]),
+        ],
+    )
+    _write_experiments(
+        experiments_path,
+        [("bsdb:1", "bsdb:1-1", "Colorectal cancer", "Feces", "Homo sapiens")],
+    )
+
+    with pytest.raises(ValueError, match="count"):
+        load_profiles(
+            profiles_path,
+            experiments_path,
+            OXYGEN_GUILDS,
+            reject_missing_counts=strict,
+        )
+
+
+def test_method_loader_validates_yet_excludes_metadata_columns_from_total(
+    tmp_path: Path,
+) -> None:
+    profiles_path = tmp_path / "profiles_with_taxa_count.tsv"
+    experiments_path = tmp_path / "experiments.tsv"
+    header = [
+        "study_id",
+        "experiment_id",
+        "inc_dec",
+        "taxa_count",
+        AEROBE_A,
+        AEROBE_B,
+        FACULTATIVE,
+        ANAEROBE_A,
+        ANAEROBE_B,
+        "METPO:1000615",
+        MEDIA_COLUMN,
+    ]
+
+    def write(inc_taxa_count: str) -> None:
+        rows = [
+            "\t".join(header),
+            "\t".join(
+                ["bsdb:1", "bsdb:1-1", "inc", inc_taxa_count, "6", "0", "0", "1", "0", "3", "100"]
+            ),
+            "\t".join(["bsdb:1", "bsdb:1-1", "dec", "40", "1", "0", "0", "6", "0", "3", "100"]),
+        ]
+        profiles_path.write_text("\n".join(rows) + "\n", encoding="utf-8")
+
+    write("50")
+    _write_experiments(
+        experiments_path,
+        [("bsdb:1", "bsdb:1-1", "Colorectal cancer", "Feces", "Homo sapiens")],
+    )
+
+    profiles, _ = load_profiles(profiles_path, experiments_path, OXYGEN_GUILDS)
+    inc = next(profile for profile in profiles if profile.inc_dec == "inc")
+    assert inc.total == 10
+
+    # Excluded from the total is not exempt from validation: a malformed or
+    # negative metadata cell fails in either mode, and a blank one fails by
+    # default with a neutral "Missing count" noun (#1295, #1302).
+    location = rf"{re.escape(str(profiles_path))}:2, column 'taxa_count'"
+    for bad in ("-5", "4.5", "fifty"):
+        write(bad)
+        for strict in (True, False):
+            with pytest.raises(
+                ValueError,
+                match=(
+                    rf"^Expected a finite nonnegative integer count in {location}; "
+                    rf"got {re.escape(repr(bad))}$"
+                ),
+            ):
+                load_profiles(
+                    profiles_path, experiments_path, OXYGEN_GUILDS, reject_missing_counts=strict
+                )
+    write("")
+    with pytest.raises(
+        ValueError,
+        match=(
+            rf"^Missing count in {re.escape(str(profiles_path))}:2 "
+            r"for bsdb:1, bsdb:1-1, inc, "
+            r"column 'taxa_count'; missing is not an observed zero$"
+        ),
+    ) as blank_meta:
+        load_profiles(profiles_path, experiments_path, OXYGEN_GUILDS)
+    assert "Missing trait count" not in str(blank_meta.value)
+
+    _write_profiles(
+        profiles_path,
+        [
+            ("bsdb:1", "bsdb:1-1", "inc", [6, 0, 0, 1, 0, 3, ""]),
+            ("bsdb:1", "bsdb:1-1", "dec", [1, 0, 0, 6, 0, 3, 100]),
+        ],
+    )
+    with pytest.raises(
+        ValueError,
+        match=(
+            rf"^Missing count in {re.escape(str(profiles_path))}:2 "
+            r"for bsdb:1, bsdb:1-1, inc, "
+            rf"column '{re.escape(MEDIA_COLUMN)}'; missing is not an observed zero$"
+        ),
+    ) as blank_media:
+        load_profiles(profiles_path, experiments_path, OXYGEN_GUILDS)
+    assert "Missing trait count" not in str(blank_media.value)
+
+
+def test_method_loader_and_column_resolver_read_tsv_gz_like_tsv(
+    tmp_path: Path, corpus: tuple[Path, Path]
+) -> None:
+    # The same matrix, gzip-compressed, loads to the same profiles, filter
+    # counts and resolved columns (#1295).
+    plain, experiments = corpus
+    packed = tmp_path / "profiles.tsv.gz"
+    packed.write_bytes(gzip.compress(plain.read_bytes()))
+
+    plain_profiles, plain_stats = load_profiles(plain, experiments, OXYGEN_GUILDS)
+    packed_profiles, packed_stats = load_profiles(packed, experiments, OXYGEN_GUILDS)
+    assert plain_stats.kept_profiles == 4
+    assert packed_profiles == plain_profiles
+    assert packed_stats == plain_stats
+
+    plain_columns = resolve_trait_columns(plain, OXYGEN_GUILDS)
+    assert set(plain_columns) == set(OXYGEN_GUILDS)
+    assert resolve_trait_columns(packed, OXYGEN_GUILDS) == plain_columns
+
+
+def test_guild_correlation_table_and_cli_label_nominal_p_values_with_test_counts(
+    tmp_path: Path,
+    corpus: tuple[Path, Path],
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """#1411: guild correlation TSV and stdout label McNemar and Spearman p-values as nominal."""
+    import csv
+    from dataclasses import replace
+
+    from bsdbng import guild_maps
+    from bsdbng.guild_maps import write_outputs
+    from bsdbng.trait_guilds import drop_zero_total_pairs
+
+    four_pair_profiles = _constant_series_profiles(hold_aerobe_inc_constant=True)
+    four_pair_corr = compute_correlation(four_pair_profiles)
+    assert len(four_pair_corr.spearman) == 4
+    assert four_pair_corr.status == "tested"
+    matrix = build_matrix(four_pair_profiles, max_conditions=10, max_body_sites=10, min_studies=1)
+    exclusion = drop_zero_total_pairs(four_pair_profiles)
+    four_dir = tmp_path / "four_pairs"
+    four_dir.mkdir()
+    write_outputs(matrix, four_pair_corr, four_dir, "2026-04-24_00:41_UTC", exclusion=exclusion)
+
+    with (four_dir / "guild_aerobe_anaerobe_correlation.tsv").open(encoding="utf-8") as handle:
+        reader = csv.DictReader(handle, delimiter="\t")
+        assert reader.fieldnames == [
+            "statistic",
+            "comparison",
+            "value",
+            "p_value",
+            "n",
+            "bugsigdb_vintage",
+            "p_value_type",
+            "n_tests",
+        ]
+        four_rows = list(reader)
+
+    non_test_rows = [
+        row
+        for row in four_rows
+        if row["statistic"]
+        in {"excluded_experiment_pairs", "studies_shifted", "discordant_studies"}
+    ]
+    assert len(non_test_rows) == 7
+    assert {(row["p_value_type"], row["n_tests"]) for row in non_test_rows} == {("", "")}
+
+    (mcnemar_row,) = [row for row in four_rows if row["statistic"] == "mcnemar_odds_ratio"]
+    assert (mcnemar_row["p_value_type"], mcnemar_row["n_tests"]) == ("nominal", "5")
+
+    spearman_four = [row for row in four_rows if row["statistic"] == "spearman_rho_across_studies"]
+    assert len(spearman_four) == 4
+    assert {(row["p_value_type"], row["n_tests"]) for row in spearman_four} == {("nominal", "5")}
+
+    seven_pair_profiles = _constant_series_profiles(hold_aerobe_inc_constant=False)
+    seven_pair_corr = compute_correlation(seven_pair_profiles)
+    assert len(seven_pair_corr.spearman) == 7
+    seven_dir = tmp_path / "seven_pairs"
+    seven_dir.mkdir()
+    write_outputs(matrix, seven_pair_corr, seven_dir, "2026-04-24_00:41_UTC")
+    with (seven_dir / "guild_aerobe_anaerobe_correlation.tsv").open(encoding="utf-8") as handle:
+        seven_rows = list(csv.DictReader(handle, delimiter="\t"))
+    (seven_mcnemar,) = [row for row in seven_rows if row["statistic"] == "mcnemar_odds_ratio"]
+    assert (seven_mcnemar["p_value_type"], seven_mcnemar["n_tests"]) == ("nominal", "8")
+    spearman_seven = [
+        row for row in seven_rows if row["statistic"] == "spearman_rho_across_studies"
+    ]
+    assert len(spearman_seven) == 7
+    assert {(row["p_value_type"], row["n_tests"]) for row in spearman_seven} == {("nominal", "8")}
+
+    partial_corr = replace(
+        four_pair_corr,
+        spearman={
+            "aerobe_inc_vs_dec": (-0.5, 0.25, 3),
+            "anaerobe_inc_vs_dec": (0.0, float("nan"), 3),
+        },
+    )
+    partial_dir = tmp_path / "partial_spearman"
+    partial_dir.mkdir()
+    write_outputs(matrix, partial_corr, partial_dir, "2026-04-24_00:41_UTC")
+    with (partial_dir / "guild_aerobe_anaerobe_correlation.tsv").open(encoding="utf-8") as handle:
+        partial_rows = list(csv.DictReader(handle, delimiter="\t"))
+    (partial_mcnemar,) = [row for row in partial_rows if row["statistic"] == "mcnemar_odds_ratio"]
+    assert (partial_mcnemar["p_value_type"], partial_mcnemar["n_tests"]) == ("nominal", "2")
+    partial_spearman = {
+        row["comparison"]: (row["p_value"], row["p_value_type"], row["n_tests"])
+        for row in partial_rows
+        if row["statistic"] == "spearman_rho_across_studies"
+    }
+    assert partial_spearman == {
+        "aerobe_inc_vs_dec": ("0.25", "nominal", "2"),
+        "anaerobe_inc_vs_dec": ("", "not_tested", "2"),
+    }
+
+    tied_profiles = [
+        Profile(
+            study_id="bsdb:1",
+            experiment_id="bsdb:1-1",
+            inc_dec=direction,
+            guild_counts={"aerobe": 5, "anaerobe": 5},
+            total=20,
+            condition="c",
+            body_site="s",
+        )
+        for direction in ("inc", "dec")
+    ]
+    tied_corr = compute_correlation(tied_profiles)
+    assert tied_corr.mcnemar_p is None
+    assert tied_corr.status == "no_studies"
+    tied_dir = tmp_path / "tied"
+    tied_dir.mkdir()
+    write_outputs(matrix, tied_corr, tied_dir, "2026-04-24_00:41_UTC")
+    with (tied_dir / "guild_aerobe_anaerobe_correlation.tsv").open(encoding="utf-8") as handle:
+        (tied_mcnemar,) = [
+            row
+            for row in csv.DictReader(handle, delimiter="\t")
+            if row["statistic"] == "mcnemar_odds_ratio"
+        ]
+    assert (
+        tied_mcnemar["p_value"],
+        tied_mcnemar["p_value_type"],
+        tied_mcnemar["n_tests"],
+    ) == ("", "not_tested", "0")
+
+    profiles_path, experiments_path = corpus
+    cli_out = tmp_path / "cli_out"
+    monkeypatch.setattr(
+        guild_maps,
+        "write_figure",
+        lambda _matrix, path, _vintage, **_kwargs: path,
+    )
+    monkeypatch.setattr(
+        "sys.argv",
+        [
+            "bsdbng-guild-maps",
+            "--profile-input",
+            str(profiles_path),
+            "--experiments-input",
+            str(experiments_path),
+            "--output-dir",
+            str(cli_out),
+            "--min-studies",
+            "1",
+        ],
+    )
+    guild_maps.main()
+    stdout = capsys.readouterr().out
+    assert (
+        "McNemar (exact, paired signs): discordant 2/0, "
+        "odds ratio undefined (nominal p=0.5, 1 nominal test) over 2 studies [tested]"
+    ) in stdout

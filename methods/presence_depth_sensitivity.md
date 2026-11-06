@@ -16,8 +16,10 @@ the focal table retain these primary full-family values in `q_by` and `q_bh`,
 with `family_size` identifying the full number of candidates. The focal table's
 `full_family_id` names that source family; its `family_id` names the additional
 six-trait family, whose results appear only in `q_by_six_trait`,
-`q_bh_six_trait`, and `family_size_six_trait`. The six-trait BH comparison matches
-the Table 1 family. Missing focal features retain unavailable slots.
+`q_bh_six_trait`, and `family_size_six_trait`. The six-trait BH comparison uses
+the focal Table 1 membership and procedure within this sensitivity's declared
+representation and test; it is not the same estimand or population as every
+Table 1 result. Missing focal features retain unavailable slots.
 Family declarations and correction records use the authoritative LinkML
 multiple-testing v1.1 models and `mtp.multiple_testing`; they are replay-verified
 against their declared inputs before writing. The shared policy also reports BY
@@ -82,7 +84,7 @@ at the study level: the sandwich covariance uses squared residuals divided by
 `n_studies - model_rank` degrees of freedom; this is an approximation, not a
 calibrated guarantee. The unadjusted mean uses the same intercept-only HC3
 convention. The sign screen calls `trait_screen.run_screen` on the reconstructed
-paired profile inputs, preserving its nominal full-family BY/BH, effective-m BY
+paired profile inputs, preserving its full-candidate BY/BH, effective-m BY
 sensitivity, exact Clopper-Pearson interval and test-status fields. Its test is
 the positive share among non-tied study mean differences against one half.
 The shared `SIGN_TOLERANCE = 1e-12` classifies absolute study differences at or

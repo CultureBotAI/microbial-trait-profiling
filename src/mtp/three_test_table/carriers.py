@@ -15,6 +15,7 @@ from typing import Any
 
 import pandas as pd
 
+from mtp import madin_source
 from mtp.count_input import parse_nonnegative_integer
 from mtp.label_support_audit import AUDIT_TRAITS
 from mtp.multiplicity.families import rows
@@ -51,7 +52,7 @@ def _empty(
             "carrier_unique_taxa": None,
             "carrier_source_record_count": None,
             "carrier_source_record_status": "unresolved_original_record_identifiers_unavailable",
-            "carrier_madin_status": "not_supplied",
+            "carrier_madin_status": status,
         }
     ).astype(dict.fromkeys(_NULLABLE_COUNTS, "Int64"))
 
@@ -184,24 +185,25 @@ def _core_inventory(
 
 def _validate_support(
     path: Path, digest: str, expected: dict[Cell, int], occurrences: Counter[str]
-) -> dict[Cell, tuple[bool, int]]:
-    support: dict[Cell, tuple[bool, int]] = {}
+) -> dict[Cell, tuple[bool, int, int]]:
+    support: dict[Cell, tuple[bool, int, int]] = {}
     for row in _checked_rows(path, digest, {"taxon_id", "trait_key", "carrier_count"}):
         key = row["taxon_id"], row["trait_key"]
         if key in support or key not in expected:
             raise ValueError("Duplicate or unsupported label-support audit cell")
         count = _count(row, "carrier_count", path)
         inherited = _count(row, "inherited_carrier_count", path)
+        unresolved = _count(row, "unresolved_madin_carriers", path)
         observed = _count(row, "signature_occurrences", path)
         direct_text = row.get("carrier_at_reported_taxon", "").lower()
         if direct_text not in {"true", "false"}:
             raise ValueError("Invalid direct-carrier boolean")
         direct = direct_text == "true"
-        if count != expected[key] or count != inherited + int(direct):
+        if count != expected[key] or count != inherited + int(direct) or unresolved > count:
             raise ValueError("Label-support carrier counts differ from the core matrix")
         if observed != occurrences[key[0]]:
             raise ValueError("Label-support signature occurrence count differs from bound scope")
-        support[key] = direct, inherited
+        support[key] = direct, inherited, unresolved
     if set(support) != set(expected):
         raise ValueError("Label-support audit is missing positive core matrix cells")
     return support
@@ -211,9 +213,10 @@ def _validate_evidence(
     path: Path,
     digest: str,
     expected: dict[Cell, int],
-    support: dict[Cell, tuple[bool, int]],
+    support: dict[Cell, tuple[bool, int, int]],
     occurrences: Counter[str],
-) -> dict[str, int]:
+    madin_status: str,
+) -> dict[str, tuple[int, int, int]]:
     """Check unique evidence per cell with bounded memory; scratch follows durable TMPDIR."""
     with (
         tempfile.TemporaryDirectory(prefix="mtp-carriers-") as scratch,
@@ -222,39 +225,53 @@ def _validate_evidence(
     ):
         db.execute(
             "CREATE TABLE evidence (taxon TEXT, trait TEXT, carrier TEXT, selected INTEGER, "
-            "PRIMARY KEY (taxon, trait, carrier)) WITHOUT ROWID"
+            "resolution TEXT, PRIMARY KEY (taxon, trait, carrier)) WITHOUT ROWID"
         )
         for row in _checked_rows(
-            path, digest, {"reported_taxon_id", "trait_key", "carrier_taxon_id"}
+            path,
+            digest,
+            {"reported_taxon_id", "trait_key", "carrier_taxon_id", "madin_resolution"},
         ):
             key = row["reported_taxon_id"], row["trait_key"]
             carrier = row["carrier_taxon_id"]
-            if key not in expected or not _valid_taxon(carrier):
+            resolution = row["madin_resolution"]
+            if (
+                key not in expected
+                or not _valid_taxon(carrier)
+                or resolution not in {"resolved", "unknown", "not_applicable"}
+            ):
                 raise ValueError("Orphan or malformed label-support carrier evidence")
             try:
                 db.execute(
-                    "INSERT INTO evidence VALUES (?, ?, ?, ?)",
-                    (*key, carrier, int(occurrences[key[0]] > 0)),
+                    "INSERT INTO evidence VALUES (?, ?, ?, ?, ?)",
+                    (*key, carrier, int(occurrences[key[0]] > 0), resolution),
                 )
             except sqlite3.IntegrityError as error:
                 raise ValueError("Duplicate label-support carrier evidence") from error
         seen: set[Cell] = set()
-        for taxon, trait, count, direct in db.execute(
-            "SELECT taxon, trait, COUNT(*), MAX(taxon = carrier) "
+        for taxon, trait, count, direct, unresolved, resolved in db.execute(
+            "SELECT taxon, trait, COUNT(*), MAX(taxon = carrier), "
+            "SUM(resolution = 'unknown'), SUM(resolution = 'resolved') "
             "FROM evidence GROUP BY taxon, trait"
         ):
             key = taxon, trait
             if count != expected[key] or bool(direct) != support[key][0]:
                 raise ValueError("Label-support carrier evidence disagrees with support counts")
+            if unresolved != support[key][2] or (
+                madin_status != "pinned_verified" and resolved > 0
+            ):
+                raise ValueError("Label-support carrier evidence disagrees with support counts")
             seen.add(key)
         if seen != set(expected):
             raise ValueError("Label-support carrier evidence is missing positive cells")
-        return dict(
-            db.execute(
-                "SELECT trait, COUNT(DISTINCT carrier) FROM evidence "
-                "WHERE selected = 1 GROUP BY trait"
+        return {
+            trait: (carriers, madin_rows, unresolved_rows)
+            for trait, carriers, madin_rows, unresolved_rows in db.execute(
+                "SELECT trait, COUNT(DISTINCT carrier), "
+                "SUM(resolution != 'not_applicable'), SUM(resolution = 'unknown') "
+                "FROM evidence WHERE selected = 1 GROUP BY trait"
             )
-        )
+        }
 
 
 def carrier_table(
@@ -317,9 +334,31 @@ def carrier_table(
     )
     if len(support) != record.get("support_cells"):
         raise ValueError("Label-support audit cell count differs from inventory")
+    audit_madin_status = record.get("madin_status")
+    if audit_madin_status not in {
+        "pinned_verified",
+        "not_supplied_source_support_unknown",
+    } or (audit_madin_status == "pinned_verified") != ("madin" in inputs):
+        raise ValueError("Unsupported label-support audit provenance or scope")
+    if audit_madin_status == "pinned_verified":
+        madin_input = _mapping(inputs.get("madin"), "input madin")
+        size_bytes = madin_input.get("size_bytes")
+        sha256 = madin_input.get("sha256")
+        if (
+            isinstance(size_bytes, bool)
+            or not isinstance(size_bytes, int)
+            or not isinstance(sha256, str)
+        ):
+            raise ValueError("Unsupported label-support audit provenance or scope")
+        madin_source.verify_madin_record("madin", size_bytes, sha256)
     evidence_path = root / "carrier_source_evidence.tsv"
     carriers = _validate_evidence(
-        evidence_path, outputs[evidence_path.name]["sha256"], expected, support, occurrences
+        evidence_path,
+        outputs[evidence_path.name]["sha256"],
+        expected,
+        support,
+        occurrences,
+        audit_madin_status,
     )
     table = _empty(features, "not_in_focal_audit", coverage)
     for index, feature in enumerate(features):
@@ -330,13 +369,21 @@ def carrier_table(
             for (taxon, trait), value in support.items()
             if trait == feature and occurrences[taxon] > 0
         ]
+        unique_carriers, madin_rows, unresolved_rows = carriers.get(feature, (0, 0, 0))
         table.loc[index, "carrier_status"] = "audit_hash_bound_focal_coverage"
-        table.loc[index, "carrier_direct_reported_taxa"] = sum(direct for direct, _ in cells)
+        table.loc[index, "carrier_direct_reported_taxa"] = sum(direct for direct, _, _ in cells)
         table.loc[index, "carrier_inherited_reported_taxa"] = sum(
-            inherited > 0 for _, inherited in cells
+            inherited > 0 for _, inherited, _ in cells
         )
-        table.loc[index, "carrier_unique_taxa"] = carriers.get(feature, 0)
-    table["carrier_madin_status"] = record.get("madin_status", "unresolved")
+        table.loc[index, "carrier_unique_taxa"] = unique_carriers
+        if madin_rows == 0:
+            table.loc[index, "carrier_madin_status"] = "not_applicable"
+        elif audit_madin_status != "pinned_verified":
+            table.loc[index, "carrier_madin_status"] = audit_madin_status
+        elif unresolved_rows > 0:
+            table.loc[index, "carrier_madin_status"] = "unresolved"
+        else:
+            table.loc[index, "carrier_madin_status"] = "pinned_verified"
     if file_sha256(manifest) != manifest_digest:
         raise ValueError("Label-support provenance changed while reading the audit")
     return table, tuple(sorted(paths))

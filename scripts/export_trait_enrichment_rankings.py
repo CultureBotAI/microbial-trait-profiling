@@ -328,14 +328,14 @@ def detect_metadata(path: Path) -> dict[str, Any]:
         for line in handle:
             line = line.strip()
             # Text report format
-            if line.startswith("p <= "):
+            if line.startswith(("p <= ", "nominal p <= ")):
                 meta["stat_type"] = "p_value"
                 val = line.split("<=")[1]
                 if "(Depletion)" in val:
                     meta["tail"] = "lower"
                     val = val.replace("(Depletion)", "")
                 meta["threshold"] = float(val.strip())
-            elif line.startswith("p < "):
+            elif line.startswith(("p < ", "nominal p < ")):
                 meta["stat_type"] = "p_value"
                 val = line.split("<")[1]
                 if "(Depletion)" in val:
@@ -364,7 +364,7 @@ def detect_metadata(path: Path) -> dict[str, Any]:
                 meta["tail"] = line.split(": ")[1].strip().lower()
             elif line.startswith("Tests performed: "):
                 meta["tests_performed"] = int(line.split(": ")[1].strip())
-            elif line.startswith("Significant hits: "):
+            elif line.startswith(("Significant hits: ", "Nominal hits: ")):
                 meta["significant_hits"] = int(line.split(": ")[1].strip())
             elif line.startswith("Result status: "):
                 meta["result_status"] = line.split(": ")[1].strip()
@@ -424,15 +424,16 @@ def parse_results_tsv(
             sig_mask = (df[col] <= threshold) & (df["fold"] >= min_fold)
 
     fold_desc = f"max_fold={max_fold}" if tail == "lower" else f"min_fold={min_fold}"
+    hits_label = "nominal hits" if stat_type == "p_value" else "significant hits"
     if unfiltered:
         print(
-            f"Loaded {len(df)} all-result rows ({sig_mask.sum()} significant hits) "
+            f"Loaded {len(df)} all-result rows ({sig_mask.sum()} {hits_label}) "
             f"(source={path.name}, threshold={threshold}, {fold_desc}, tail={tail})"
         )
     else:
         df = df[sig_mask]
         print(
-            f"Filtered to {len(df)} significant hits "
+            f"Filtered to {len(df)} {hits_label} "
             f"(source={path.name}, threshold={threshold}, {fold_desc}, tail={tail})"
         )
 
@@ -490,6 +491,8 @@ def parse_report(
                     (
                         "p < ",
                         "p <= ",
+                        "nominal p < ",
+                        "nominal p <= ",
                         "FDR q < ",
                         "FDR q <= ",
                         "Min Fold >= ",
@@ -497,6 +500,7 @@ def parse_report(
                         "Tail: ",
                         "Tests performed: ",
                         "Significant hits: ",
+                        "Nominal hits: ",
                         "Result status: ",
                     )
                 )
@@ -526,9 +530,9 @@ def parse_report(
                 if "mediadive.medium:" in trait:
                     continue
 
-                # Set whichever statistic we found, and default the other to 1.0
+                # A nominal report supplies no adjusted probability.
                 p_value = val if stat_type == "p_value" else 1.0
-                fdr_q = val if stat_type == "fdr_q" else 1.0
+                fdr_q = val if stat_type == "fdr_q" else float("nan")
 
                 trait_tot = trait_totals.get(trait, 0) if trait_totals else 0
                 rows.append(
@@ -591,8 +595,11 @@ def build_overall_table(
     complete_results: bool = False,
 ) -> pd.DataFrame:
     _ = total_profiles, trait_totals  # Legacy arguments; parsed rows carry authoritative K.
-    if fdr_scope not in {"global", "profile"}:
-        raise ValueError(f"Unsupported fdr_scope: {fdr_scope!r}; expected 'global' or 'profile'.")
+    allowed_scopes = (
+        {"global", "profile", "none"} if stat_type == "p_value" else {"global", "profile"}
+    )
+    if fdr_scope not in allowed_scopes:
+        raise ValueError(f"Unsupported fdr_scope: {fdr_scope!r} for statistic {stat_type!r}.")
     columns = overall_columns(stat_type, censored=bool(max_traits), body_site_group=body_site_group)
     if frame.empty:
         return pd.DataFrame(columns=columns)
@@ -990,6 +997,9 @@ def main(argv: list[str] | None = None) -> int:
     except (FileNotFoundError, MalformedResultsError) as exc:
         return _fail(str(exc))
 
+    # A requested FDR scope cannot turn nominal calls into adjusted results.
+    if stat_type == "p_value":
+        fdr_scope = "none"
     frame = rows_to_frame(rows, max_traits)
 
     overall = build_overall_table(
@@ -1052,8 +1062,10 @@ def main(argv: list[str] | None = None) -> int:
         ("Tail", tail),
         ("Stat-Type", stat_type),
         ("FDR-Scope", fdr_scope),
-        ("Stat-Threshold", stat_threshold),
     ]
+    if stat_type == "p_value":
+        common.extend([("Threshold-Statistic", "nominal p"), ("Hit-Statistic", "nominal p")])
+    common.append(("Stat-Threshold", stat_threshold))
     if tail == "lower":
         common.append(("Max-Fold", max_fold))
     else:
@@ -1105,7 +1117,8 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"Result status: {result_status}")
     print(f"Tests performed: {na(tests_performed)}")
-    print(f"Analyzer significant hits: {na(analyzer_hits)}")
+    hits_label = "nominal hits" if stat_type == "p_value" else "significant hits"
+    print(f"Analyzer {hits_label}: {na(analyzer_hits)}")
     print(f"Input rows parsed: {len(frame)}")
     print(f"Unique traits: {frame['trait'].nunique()}")
     print(f"Unique profiles: {frame['profile_id'].nunique()}")

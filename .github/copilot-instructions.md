@@ -55,24 +55,35 @@ is broken and we need to fix it — not paper over it.
 
 ## Required workflow for every change
 
-Every change requires an issue, a linked branch, and a linked PR:
+Every change requires an issue, a branch named for it, and a PR that
+references it:
 
 1. **Create or identify a GitHub issue** before writing any code.
-2. **Create a branch linked to the issue** using `gh issue develop`:
+2. **Create a plain branch named for the issue**, starting from `origin/main`:
    ```bash
-   gh issue develop <number> --repo CultureBotAI/microbial-trait-profiling --checkout
+   git fetch origin
+   git switch -c <number>-<short-slug> --no-track origin/main
    ```
-   This formally links the branch to the issue in GitHub's Development
-   sidebar. Do not create branches manually with `git checkout -b`.
-3. **Push and open a PR** after the first commit. The PR body must
-   include `Closes #<number>` to formally link the PR to the issue.
+   Do not use `gh issue develop`. It records a link in the issue's
+   Development sidebar, and GitHub closes every linked issue when the PR
+   merges into `main`, even an issue the PR only partly addresses (#1317).
+   `--no-track` keeps the new branch from treating `main` as its
+   upstream; set the upstream on the first push with
+   `git push -u origin <branch>`.
+3. **Push and open a PR** after the first commit. Reference the issue in
+   the PR body: `Closes #<number>` only when the PR fully resolves it,
+   `Refs #<number>` for partial work. Choose before opening the PR, and
+   before merging check which issues the PR will close (its Development
+   sidebar, or `closingIssuesReferences` in the GraphQL API): a link can
+   outlast a later edit of the body. Remove any link to an issue the PR
+   only partly addresses.
 4. **Run `just check`** — all checks must pass before requesting review (`just security` exports `--all-extras --group dev --group qa`, matching CI's extras and dependency groups; host-specific environment markers can select different packages, so the Linux CI audit must also pass).
 5. **Wait for CI and Copilot review.** Address all review comments.
 6. **Do not merge your own PR** unless you are the repo owner.
 
-No commits without an issue. No branches without a linked issue.
-No PRs without a linked issue. No merging without CI green and
-review addressed.
+No commits without an issue. No branches without an issue.
+No PRs that do not reference their issue. No merging without CI green
+and review addressed.
 
 ## What agents should do
 
@@ -107,7 +118,7 @@ Every data pipeline step must be checked for silent data loss or corruption:
 
 ## Biological interpretation and review
 
-Every biological claim, figure caption, and summary text generated in this repository must adhere to the project-wide biological interpretation guide in [`methods/biological_interpretation.md`](methods/biological_interpretation.md) and trait semantics in [`docs/table1_trait_semantics_audit.md`](docs/table1_trait_semantics_audit.md):
+Every biological claim, figure caption, and summary text generated in this repository must adhere to the project-wide biological interpretation guide in [`methods/biological_interpretation.md`](../methods/biological_interpretation.md) and trait semantics in [`docs/table1_trait_semantics_audit.md`](../docs/table1_trait_semantics_audit.md):
 
 - **Distinguish annotation from measurement**: BugSigDB signatures record reported taxon abundance shifts from literature; KG-Microbe records organism-level trait annotations from microbiological databases. We measure the alignment between reported taxa and trait annotations, not in vivo physiological activity, cell density, or metabolite flux.
 - **Directional terminology**: Use precise terms corresponding to the specific pipeline quantity:
@@ -115,7 +126,7 @@ Every biological claim, figure caption, and summary text generated in this repos
   - *Study fraction difference*: $\Delta = f_{\text{increased}} - f_{\text{decreased}}$ (paired within study).
   - *Log-ratio direction*: $\ln(\text{trait}_A / \text{trait}_B)$ paired shift between increased and decreased sets.
   - *ORA enrichment/depletion*: statistical over- or under-representation of trait-bearing taxa relative to background.
-- **No speculative causal or clinical leaps**: Never assert that microbes "produce more SCFA", "cause inflammation", or "drive disease" based solely on trait-annotation enrichment or sign tests without direct physiological validation (see [`methods/validation_feasibility.md`](methods/validation_feasibility.md)).
+- **No speculative causal or clinical leaps**: Never assert that microbes "produce more SCFA", "cause inflammation", or "drive disease" based solely on trait-annotation enrichment or sign tests without direct physiological validation (see [`methods/validation_feasibility.md`](../methods/validation_feasibility.md)).
 - **Defensible wording**: State findings as "taxa annotated as [trait] were more frequently reported increased than decreased" or "enriched among increased taxa". Do not use uncalibrated terms like "dysbiosis signature" or "pathogenic shift".
 
 ## After a release

@@ -58,6 +58,11 @@ threshold is imposed by this report.
 
 Each invocation defines its own 15-pair family. Running several body-site strata
 does not establish FDR control across the union of those separate runs.
+The registry ID is `mt-core-jed-log-ratio-sign`: all unordered requested-trait
+pairs, including untestable members, under BY. The counts above describe this
+six-trait invocation; recover the executed size from the complete
+`trait_log_ratio_stats.tsv` inventory and `trait_log_ratio_provenance.json`
+testing-family declaration. Unadjusted `sign_p` values are nominal.
 
 ## Reproduction and interpretation
 

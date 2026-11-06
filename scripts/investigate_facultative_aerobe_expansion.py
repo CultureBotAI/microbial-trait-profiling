@@ -32,22 +32,19 @@ from mtp.human_host_corpus import (
     excluded_host_summary,
     join_human_host_profiles,
 )
+from mtp.trait_guilds import OXYGEN_GUILDS
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VIS_DIR = REPO_ROOT / "trait-visualization"
 OUTPUT_DIR = VIS_DIR / "trait-profile-investigation" / "aerobe-enrichment-v2"
 PROFILE_MATRIX_PATH = REPO_ROOT / "data/derived/study_trait_profiles_wide.tsv"
 
-GUILD_TRAITS = {
-    "METPO:1000608": "facultatively aerobic",
+_AEROBE_TRAIT_LABELS = {
     "METPO:1000602": "aerobic",
     "METPO:1000604": "microaerophilic",
 }
+GUILD_TRAITS = {trait_id: _AEROBE_TRAIT_LABELS[trait_id] for trait_id in OXYGEN_GUILDS["aerobe"]}
 GUILD_TRAIT_SELECTION_JUSTIFICATIONS = {
-    "METPO:1000608": (
-        "Primary facultatively aerobic concept; selected as one core trait for the "
-        "increased-profile aerobe v2 oxygen-tolerance trait set."
-    ),
     "METPO:1000602": (
         "Oxygen-positive growth trait; selected to capture taxa whose profile signal is "
         "consistent with aerobic oxygen tolerance."
@@ -57,11 +54,7 @@ GUILD_TRAIT_SELECTION_JUSTIFICATIONS = {
         "without broadening the score to unrelated metabolic traits."
     ),
 }
-KG_MICROBE_TAXON_UNIVERSE_TRAITS = {
-    "METPO:1000608": "facultatively aerobic",
-    "METPO:1000602": "aerobic",
-    "METPO:1000604": "microaerophilic",
-}
+KG_MICROBE_TAXON_UNIVERSE_TRAITS = dict(GUILD_TRAITS)
 KG_MICROBE_TAXON_UNIVERSE_ASSOCIATED_TRAITS: dict[str, str] = {}
 
 TARGET_TAXA = {
@@ -103,7 +96,7 @@ INFERRED_GUILD_TOP_TAXA_PER_GROUP = 12
 MIN_KG_MICROBE_UNIVERSE_CORE_TRAITS = 1
 GUILD_SPECIFIC_NOTE = (
     "Guild-specific: yes - uses the aerobe v2 trait-enrichment score "
-    "(facultatively aerobic, aerobic, microaerophilic)."
+    f"({', '.join(GUILD_TRAITS.values())})."
 )
 NON_GUILD_SPECIFIC_TARGET_TAXA_NOTE = (
     "Guild-specific: no - fixed target-taxon count view; "
@@ -252,7 +245,9 @@ def paired_t_test_p_value(
     return max(0.0, min(1.0, p_value))
 
 
-def paired_guild_enrichment_stats(group: pd.DataFrame) -> dict[str, float | int]:
+def paired_guild_enrichment_stats(
+    group: pd.DataFrame, *, run_test: bool = True
+) -> dict[str, float | int]:
     """Calculate paired inc-vs-dec trait enrichment within study/experiment."""
     paired = group.pivot_table(
         index=["study_id", "experiment_id"],
@@ -277,7 +272,8 @@ def paired_guild_enrichment_stats(group: pd.DataFrame) -> dict[str, float | int]
     smd = math.nan
     p_value = math.nan
     if (
-        pair_count >= MIN_PAIRED_SMD_PROFILE_PAIRS
+        run_test
+        and pair_count >= MIN_PAIRED_SMD_PROFILE_PAIRS
         and not pd.isna(difference_sd)
         and difference_sd > 0
     ):
@@ -420,19 +416,33 @@ def summarize_group(metadata: pd.DataFrame, group_column: str, min_profiles: int
             "increased_mean_oxygen_tolerance_z": inc["oxygen_tolerance_z_mean"].mean(),
         }
         if group_column == "condition":
-            record.update(paired_guild_enrichment_stats(group))
+            record.update(
+                paired_guild_enrichment_stats(
+                    group, run_test=not is_excluded_condition_label(group_value)
+                )
+            )
         records.append(record)
-    return pd.DataFrame(records).sort_values(
+    summary = pd.DataFrame(records).sort_values(
         ["increased_mean_guild_z", "profile_count"],
         ascending=[False, False],
     )
+    if group_column == "condition" and not summary.empty:
+        tested = summary["paired_t_test_p_value"].notna()
+        summary["p_value_type"] = np.where(tested, "nominal", "not_tested")
+        summary["n_tests"] = int(tested.sum())
+    return summary
 
 
 def remove_excluded_condition_labels(condition_summary: pd.DataFrame) -> pd.DataFrame:
     """Remove broad study-design labels from condition summaries."""
-    return condition_summary[
+    filtered = condition_summary[
         ~condition_summary["condition"].map(is_excluded_condition_label)
     ].copy()
+    if "paired_t_test_p_value" in filtered.columns:
+        tested = filtered["paired_t_test_p_value"].notna()
+        filtered["p_value_type"] = np.where(tested, "nominal", "not_tested")
+        filtered["n_tests"] = int(tested.sum())
+    return filtered
 
 
 def is_excluded_condition_label(value: object) -> bool:
@@ -466,6 +476,13 @@ def select_top_conditions(condition_summary: pd.DataFrame, limit: int) -> pd.Dat
         top_conditions = condition_summary[condition_summary["increased_profile_count"] >= 3].head(
             limit
         )
+    top_conditions = top_conditions.copy()
+    top_conditions["n_shown"] = len(top_conditions)
+    top_conditions["n_shown_tested"] = (
+        int(top_conditions["paired_t_test_p_value"].notna().sum())
+        if "paired_t_test_p_value" in top_conditions.columns
+        else 0
+    )
     return top_conditions
 
 
@@ -473,7 +490,23 @@ def paired_smd_label(row: Any) -> str:
     pair_count = int(row.paired_profile_pair_count)
     smd = row.paired_standardized_mean_difference
     p_value = row.paired_t_test_p_value
-    p_text = "p=NA" if pd.isna(p_value) else f"p={p_value:.3g}"
+    if pd.isna(p_value):
+        p_text = "p=NA (not tested)"
+    else:
+        n_tests = int(row.n_tests)
+        n_shown = getattr(row, "n_shown", None)
+        if n_shown is not None and not pd.isna(n_shown):
+            n_shown_tested = int(row.n_shown_tested)
+            p_text = (
+                f"nominal p={p_value:.3g} "
+                f"(one of {n_tests} condition tests; shown: top {int(n_shown)} by guild-z "
+                f"difference, {n_shown_tested} of them tested)"
+            )
+        else:
+            p_text = (
+                f"nominal p={p_value:.3g} "
+                f"({n_tests} condition tests after excluding broad study-design labels)"
+            )
     if pd.isna(smd):
         return f"paired d=NA, {p_text}, n={pair_count}"
     return f"paired d={smd:.2f}, {p_text}, n={pair_count}"
@@ -591,8 +624,6 @@ def build_guild_trait_selection(study_trait_metadata: pd.DataFrame) -> pd.DataFr
 
 def load_profile_taxa_occurrences(scored_profiles: pd.DataFrame) -> pd.DataFrame:
     """Load all taxon/profile occurrences and join scored profile metadata."""
-    from mtp.population_tables import orient_and_filter_taxa_df
-
     taxa = read_tsv(
         REPO_ROOT / "data/derived/bugsigdb_taxa.tsv",
         usecols=[
@@ -605,7 +636,6 @@ def load_profile_taxa_occurrences(scored_profiles: pd.DataFrame) -> pd.DataFrame
             "taxonomic_rank",
         ],
     )
-    taxa = orient_and_filter_taxa_df(taxa, filter_to_selection=True)
     taxa["profile_id"] = taxa.apply(profile_id_from_taxa_row, axis=1)
     taxa = taxa.drop_duplicates(subset=["taxon_id", "profile_id"])
     profile_columns = [
@@ -1022,8 +1052,6 @@ def load_target_taxa_occurrences(
     scored_profiles: pd.DataFrame,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Return target-taxon occurrences in human-host profiles and those set aside (#587)."""
-    from mtp.population_tables import orient_and_filter_taxa_df
-
     taxa = read_tsv(
         REPO_ROOT / "data/derived/bugsigdb_taxa.tsv",
         usecols=[
@@ -1036,7 +1064,6 @@ def load_target_taxa_occurrences(
             "taxonomic_rank",
         ],
     )
-    taxa = orient_and_filter_taxa_df(taxa, filter_to_selection=True, preserve_non_corpus_rows=True)
     taxa = taxa[taxa["taxon_id"].isin(TARGET_TAXA)].copy()
     taxa["profile_id"] = taxa.apply(profile_id_from_taxa_row, axis=1)
     taxa = taxa.drop_duplicates(subset=["taxon_id", "profile_id"])
@@ -1700,7 +1727,7 @@ def write_summary_report(
         "| plot | guild-specific? | basis |",
         "| --- | --- | --- |",
         "| `condition_increased_guild_signal.png` | yes | v2 trait-enrichment score by condition |",
-        "| `guild_trait_direction_shift.png` | yes | the three selected v2 traits |",
+        "| `guild_trait_direction_shift.png` | yes | the two selected v2 traits |",
         "| `anatomical_sites_diagram.png` | yes | v2 trait-enrichment score by body-site group |",
         "| `candidate_taxa_increased_profile_tendency.png` | no | "
         "fixed target-taxon direction counts |",
@@ -1764,13 +1791,25 @@ def write_summary_report(
         ]
     )
 
+    filtered_conditions = remove_excluded_condition_labels(condition_summary)
+    n_tested_conditions = (
+        int(filtered_conditions["paired_t_test_p_value"].notna().sum())
+        if "paired_t_test_p_value" in filtered_conditions.columns
+        else 0
+    )
+    n_shown_conditions = len(top_conditions)
+    n_shown_tested_conditions = (
+        int(top_conditions["paired_t_test_p_value"].notna().sum())
+        if "paired_t_test_p_value" in top_conditions.columns
+        else 0
+    )
     lines.extend(
         [
             "",
             "## Contexts With Aerobe v2 Trait Enrichment in Increased Profiles",
             "",
             "| condition | profiles | studies | increased - decreased z | paired d | "
-            "paired p | matched pairs | increased mean trait z |",
+            "nominal paired p | matched pairs | increased mean trait z |",
             "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
         ]
     )
@@ -1790,7 +1829,12 @@ def write_summary_report(
     lines.extend(
         [
             "",
-            "Paired d and paired p are blank for conditions with fewer than "
+            "Reported paired p values are uncorrected two-sided paired t-test nominal p-values "
+            f"across {n_tested_conditions} tested conditions after excluding broad study-design "
+            f"labels in `condition_guild_summary.tsv` (shown above: top {n_shown_conditions} "
+            f"eligible conditions by guild-z difference, {n_shown_tested_conditions} of them "
+            "tested). "
+            "Paired d and nominal paired p are blank for conditions with fewer than "
             f"{MIN_PAIRED_SMD_PROFILE_PAIRS} matched increased/decreased profile pairs, or with "
             "zero variance among the paired differences.",
             "",

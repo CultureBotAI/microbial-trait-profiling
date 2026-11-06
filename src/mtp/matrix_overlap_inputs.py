@@ -41,8 +41,12 @@ def normalize_direction(value: object) -> str:
 def validated_matrix(matrix: pd.DataFrame, columns: pd.DataFrame) -> pd.DataFrame:
     identifiers(matrix, ["taxon_id"], "matrix taxon", unique=True)
     identifiers(columns, ["column_id"], "feature", unique=True)
-    if not set(columns.column_id).issubset(matrix.columns):
+    matrix_features = set(matrix.columns) - MATRIX_METADATA
+    declared_features = set(columns.column_id)
+    if not declared_features.issubset(matrix_features):
         raise ValueError("Feature metadata column identity is absent from the matrix")
+    if missing_metadata := matrix_features - declared_features:
+        raise ValueError(f"Matrix features lack metadata: {sorted(missing_metadata)}")
     result = matrix.copy()
     for name in matrix.columns:
         if name in MATRIX_METADATA:
@@ -81,6 +85,8 @@ class PopulationInputs:
     input_occurrence_rows: int
     excluded_occurrence_rows: int
     excluded_profile_keys: int
+    input_experiments: int
+    excluded_experiments: int
 
 
 def population_inputs(
@@ -129,6 +135,8 @@ def population_inputs(
         len(tier_taxa),
         len(excluded),
         len(excluded[PROFILE_KEYS].drop_duplicates()),
+        len(tier12_experiments),
+        int((~selected_experiments).sum()),
     )
 
 

@@ -25,7 +25,11 @@ and require fresh tables; the historical values below are not regenerated basis 
 An empty union has undefined Jaccard, recorded as JSON `null` or a blank TSV
 cell. A nonempty union with no shared taxa has Jaccard zero. Matrix cells must be
 finite, nonnegative numbers; malformed values are refused rather than converted
-to absence of annotation.
+to absence of annotation. Every matrix feature column must have exactly one
+feature-metadata row, and every metadata feature must occur in the matrix. The
+three taxon metadata columns (`taxon_id`, `taxon_name`, `taxonomic_rank`) are not
+features. Unmapped matrix features are refused even when their values are all
+zero; they cannot silently disappear from the labeling denominator (#1175).
 
 ### Historical Focal Pairs (`tier12-phenotype`, raw-object ten-trait list, $N_{\text{matrix}} = 5,829$)
 
@@ -77,6 +81,15 @@ active-experiment metadata and reported taxa with no matching experiment
 metadata are refused. A repeated reported-taxon occurrence is allowed and is
 deduplicated only for the stated mention statistic.
 
+Valid Tier 1+2 experiment-metadata rows without any active directional profile
+are also excluded, independently of whether they have reported-taxon rows.
+`tier12_input_experiments` counts all supplied unique `(study_id, experiment_id)`
+keys, and `tier12_excluded_experiments_without_active_profiles` counts those
+absent from the active profile keys. These diagnostics precede disease or site
+selection; `tier12_experiments` remains the active experiment count. An active
+profile missing either Tier 1+2 or full-source experiment metadata is refused,
+even if the other metadata table contains its key (#1175).
+
 Ratios with zero denominators and medians of empty groups are undefined, emitted
 as JSON `null` and blank TSV cells. Counts still describe the empty group; an
 undefined summary is not reported as a biological zero.
@@ -112,6 +125,18 @@ counts use the literal raw body-site value `Feces`. Case variants, surrounding
 whitespace, aliases and multi-site strings do not qualify. No compartment
 normalization is applied.
 
+Case variants of the human host label are detected and reported, not admitted
+to the human population. `source_host_case_variant_experiments` counts unique
+full-source experiment keys whose stripped host equals `Homo sapiens` only
+after case folding; `source_host_case_variant_profile_keys` counts their
+distinct reported `(study_id, experiment_id, inc_dec)` keys after direction
+normalization. Repeated taxon rows do not inflate the profile-key count. Both
+counts precede sequencing, disease and site selection, so a variant-host
+experiment without reported taxa contributes only to the experiment count.
+An exact-case host with surrounding whitespace remains accepted; an exact-case
+human experiment excluded for sequencing type is not a host-case variant.
+These are source-input diagnostics, not additional retained profiles (#1175).
+
 ---
 
 ## 4. Parkinson's Disease Stool Study Taxon Overlap (`parkinsons_stool_study_overlap_summary.tsv`)
@@ -127,6 +152,12 @@ rows must additionally belong to the active profile keys. Its summary records
 `input_occurrence_rows`, `excluded_outside_active_profile_rows` and
 `excluded_outside_active_profile_keys` before disease/site selection. The human
 export scope applies the shared host predicate with no sequencing restriction.
+The Tier 1+2 row also records `input_experiments` and
+`excluded_experiments_without_active_profiles` before disease/site selection.
+Only the `export_human_hosts` row records the two
+`source_host_case_variant_*` diagnostics defined above, across the full source
+export before selecting Parkinson's disease or stool. The other scopes do not
+apply that host filter and have no values for these diagnostics.
 When fewer than two studies provide taxon sets, no pairwise mean, median,
 minimum or maximum is estimated; these fields are JSON `null` or blank TSV
 cells. Pair and study counts remain explicit. The overlaps are descriptive;

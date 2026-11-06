@@ -51,6 +51,7 @@ TIE_TOLERANCE = 1e-12
 CONFIDENCE_LEVEL = 0.95
 MIN_STUDIES = 30
 REPORT_Q = 0.05
+NOMINAL_P_THRESHOLD = 0.05
 
 TESTED = "tested"
 ALL_TIED = "all_tied"
@@ -604,11 +605,19 @@ def _estimate_agreement(baseline: Row, restricted: Row, overlap: bool | None) ->
     return "shifted and side reversed" if reversed_side else "shifted"
 
 
-def _detection_change(baseline: Row, restricted: Row) -> str:
+def _detection_change(
+    baseline: Row,
+    restricted: Row,
+    *,
+    report_q: float | None = None,
+    nominal_p_threshold: float | None = None,
+) -> str:
     """Split a lost detection into one lost at the correction and one lost before it."""
-    detected = baseline.q_value is not None and baseline.q_value <= REPORT_Q
-    restricted_detected = restricted.q_value is not None and restricted.q_value <= REPORT_Q
-    restricted_raw = restricted.p_value is not None and restricted.p_value <= REPORT_Q
+    q_cutoff = REPORT_Q if report_q is None else report_q
+    p_cutoff = NOMINAL_P_THRESHOLD if nominal_p_threshold is None else nominal_p_threshold
+    detected = baseline.q_value is not None and baseline.q_value <= q_cutoff
+    restricted_detected = restricted.q_value is not None and restricted.q_value <= q_cutoff
+    restricted_raw = restricted.p_value is not None and restricted.p_value <= p_cutoff
     if detected and restricted_detected:
         return "retained"
     if detected and restricted_raw:
@@ -1148,6 +1157,12 @@ def write_outputs(
         "scenario_status": {name: dict(counts) for name, counts in sorted(by_scenario.items())},
         "population_comparison_summary": dict(
             Counter(item.detection_change for item in population)
+        ),
+        "population_detection_change_rule": (
+            f"Compares baseline corrected q <= {REPORT_Q} against restricted corrected "
+            f"q <= {REPORT_Q} and restricted nominal (uncorrected) p <= {NOMINAL_P_THRESHOLD}; "
+            f"'lost at correction' means baseline corrected q <= {REPORT_Q}, restricted "
+            f"nominal p <= {NOMINAL_P_THRESHOLD}, and restricted corrected q > {REPORT_Q}."
         ),
         "population_estimate_agreement": dict(
             Counter(item.estimate_agreement for item in population)

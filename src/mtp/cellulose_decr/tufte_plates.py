@@ -1,4 +1,9 @@
-"""Generate the Tufte analytical plates, standalone SVGs, and 16-slide HTML deck (#550, #1127).
+"""Audit-only reproduction of retired historical cellulose plates and deck (#1572).
+
+The historical numbers are unverified; these are not current analysis outputs.
+Generation requires explicit ``--audit-retired`` / ``audit_retired=True`` and
+every canvas, standalone SVG and HTML slide carries a retirement warning.
+Rebuilding the plates from current rerun data is pending under #1670.
 
 Reproduces the October 16 worked-example Tufte analytical plates and 16-slide deck
 (preserved for the ``tufte-plate`` skill snapshot, ``figure-wizard#19``) with the
@@ -13,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import functools
+import re
 from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Any
@@ -33,6 +39,7 @@ __all__ = [
     "PLATE2_DOT_X",
     "PLATE2_ROLE_X",
     "PLATE_STEMS",
+    "RETIREMENT_BANNER",
     "STANDALONE_SVGS",
     "build_plate1_convergence_slope_and_overlap",
     "build_plate2_core_guild_dot_table",
@@ -62,6 +69,8 @@ SLATE = "#2b4c6f"
 OCHRE = "#8c5a2b"
 TEAL = "#3b6e5c"
 WARM_GRAY = "#8c867c"
+
+RETIREMENT_BANNER = "RETIRED: historical, unverified numbers (#1572)"
 
 SERIF_STACK = [
     "Palatino",
@@ -398,7 +407,63 @@ def _with_tufte_rcparams(builder: Callable[[], Figure]) -> Callable[[], Figure]:
     @functools.wraps(builder)
     def _wrapped() -> Figure:
         with matplotlib.rc_context(_tufte_rcparams()):
-            return builder()
+            figure = builder()
+            # Use the existing blank top margin; preserve all archived positions.
+            figure.text(
+                0.03,
+                0.994,
+                RETIREMENT_BANNER,
+                fontsize=11,
+                fontweight="bold",
+                color=CRIMSON,
+                ha="left",
+                va="top",
+                gid="retirement-banner",
+            )
+            return figure
+
+    return _wrapped
+
+
+def _with_retirement_svg(renderer: Callable[[], str]) -> Callable[[], str]:
+    """Add a separate warning band above the original SVG coordinate space."""
+
+    @functools.wraps(renderer)
+    def _wrapped() -> str:
+        svg = renderer()
+        root = re.search(r"<svg\b[^>]*>", svg)
+        if root is None:
+            raise ValueError("Historical SVG has no root for its retirement banner")
+        header = root.group()
+        bounds = re.search(r'viewBox="0 0 ([0-9.]+) ([0-9.]+)"', header)
+        if bounds is None:
+            raise ValueError("Historical SVG has unexpected retirement-band coordinates")
+        width, height = map(float, bounds.groups())
+        band = 44
+        header = header.replace(bounds.group(), f'viewBox="0 -{band} {width:g} {height + band:g}"')
+
+        def expanded_height(match: re.Match[str]) -> str:
+            return f'height="{height + band:g}{match.group(1) or ""}"'
+
+        header, replacements = re.subn(
+            r'height="[0-9.]+(pt|px)?"',
+            expanded_height,
+            header,
+        )
+        if replacements != 1:
+            raise ValueError("Historical SVG height cannot accommodate its retirement banner")
+        banner = (
+            f'\n<rect x="0" y="-{band}" width="{width:g}" height="{band}" fill="{PAPER_BG}"/>'
+            f'\n<text x="24" y="-16" font-size="18" font-family="sans-serif" '
+            f'font-weight="bold" fill="{CRIMSON}" class="retirement-banner">'
+            f"{RETIREMENT_BANNER}</text>\n"
+        )
+        closing = svg.rfind("</svg>")
+        if closing < root.end():
+            raise ValueError("Historical SVG has no closing root for its retirement banner")
+        # Append the warning so archival text extraction keeps its original order.
+        # Its negative coordinates still place it above all original content.
+        return svg[: root.start()] + header + svg[root.end() : closing] + banner + svg[closing:]
 
     return _wrapped
 
@@ -438,7 +503,7 @@ def build_plate1_convergence_slope_and_overlap() -> Figure:
     """Build Plate I: Cross-Disease Taxonomic Convergence (Slopegraph + Sharing Tiers)."""
     fig = _make_tufte_plate(
         (13.2, 7.6),
-        "PLATE I  ·  CROSS-DISEASE TAXONOMIC CONVERGENCE",
+        "PLATE I  ·  CROSS-DISEASE TAXONOMIC CONVERGENCE · October 16 worked example",
         "Three Distinct Diseases Lose the Same Gut Fiber-Digesting Bacteria",
         "Parkinson\u2019s disease (brain), HIV infection (immune system), and colorectal cancer "
         "(colon tumor) have different causes, yet across 90 stool studies, half of the "
@@ -506,12 +571,18 @@ def build_plate1_convergence_slope_and_overlap() -> Figure:
         ax_slope.text(x_pos, 7.2, l1, fontsize=8.8, fontweight=fw, color=col, ha="center")
         ax_slope.text(x_pos, 4.4, l2, fontsize=8.8, fontweight=fw, color=col, ha="center")
 
+    n_pair_tests = sum("vs." in label for label, *_ in series)
+    n_perm_tests = sum("mean" in label for label, *_ in series)
+    n_nominal_tests = n_pair_tests + n_perm_tests
     ax_slope.text(
         0.0,
         -0.02,
-        "If fiber-digesting bacteria were lost at the same rate as other stool bacteria,\n"
-        "only ~20% would overlap between diseases. Observed overlap is 50.4%\n"
-        "(exact hypergeometric p < 10⁻¹⁰ for every pair; random-guild permutation p = 0.011).",
+        "(p-values nominal) If fiber-digesting bacteria were lost at the same rate "
+        "as other stool bacteria,\n"
+        f"only ~20% would overlap between diseases. Observed overlap is 50.4% "
+        f"({n_nominal_tests} nominal tests shown:\n"
+        f"exact hypergeometric p < 10⁻¹⁰ per pair, {n_pair_tests} tests; "
+        f"random-guild permutation p = 0.011, {n_perm_tests} test).",
         transform=ax_slope.transAxes,
         fontsize=8.3,
         color=MUTED,
@@ -722,15 +793,28 @@ def build_plate1_convergence_slope_and_overlap() -> Figure:
 @_with_tufte_rcparams
 def build_plate2_core_guild_dot_table() -> Figure:
     """Build Plate II: The Shared Fiber-Degrading Guild at Genus & Species Resolution (#550)."""
+    slope_items = [
+        ("PD vs. CRC", 57.4, 62.5, CRIMSON, 0.58, 0.635),
+        ("3-Pair Mean", 50.4, 52.2, INK, 0.50, 0.520),
+        ("PD vs. HIV", 48.8, 47.4, SLATE, 0.48, 0.478),
+        ("HIV vs. CRC", 45.0, 46.7, OCHRE, 0.44, 0.440),
+    ]
+    n_pair_tests = sum("vs." in label for label, *_ in slope_items)
+    pdcrc_note = "PD\u2013CRC exact nominal p = 5.98 \u00d7 10⁻¹⁰"
+    n_pdcrc_shown = len(re.findall(r"\bnominal\s+p\s*=", pdcrc_note))
+    core_header_stat = "17.1\u00d7 over random expectation, nominal p = 3.5 \u00d7 10⁻¹²"
+    n_core_tests = len(re.findall(r"\bnominal\s+p\s*=", core_header_stat))
     fig = _make_tufte_plate(
         (13.8, 8.0),
-        "PLATE II  ·  THE SHARED FIBER-DEGRADING GUILD AT GENUS & SPECIES RESOLUTION",
+        "PLATE II  ·  THE SHARED FIBER-DEGRADING GUILD AT GENUS & SPECIES RESOLUTION"
+        " · historical (#1416)",
         "Nine Butyrate- and Fiber-Degrading Genera Decrease Across All Three Diseases",
         "Removing broad family and order labels to compare only specific genera and species "
         "(93 background taxa) strengthens the overlap: 62.5% of lost fiber-digesting genera "
         "and species are shared between Parkinson\u2019s disease and colorectal cancer.",
         "Source: Genus + Species sensitivity analysis (N = 93 stool decreased genera/species; "
-        "22 cellulose-annotated). PD\u2013CRC exact p = 5.98 \u00d7 10⁻¹⁰.",
+        f"22 cellulose-annotated). {pdcrc_note} "
+        f"({n_pdcrc_shown}/{n_pair_tests} tests).",
         "Plate II  ·  data/analysis/cellulose_decr",
     )
 
@@ -778,7 +862,7 @@ def build_plate2_core_guild_dot_table() -> Figure:
         x_taxon,
         0.912,
         "NINE CORE GENERA REPORTED DECREASED IN ALL THREE DISEASES "
-        "(17.1\u00d7 over random expectation, p = 3.5 \u00d7 10⁻¹²)",
+        f"({core_header_stat}, {n_core_tests} core test)",
         fontsize=8.2,
         fontweight="bold",
         color=CRIMSON,
@@ -983,12 +1067,6 @@ def build_plate2_core_guild_dot_table() -> Figure:
         ha="center",
     )
 
-    slope_items = [
-        ("PD vs. CRC", 57.4, 62.5, CRIMSON, 0.58, 0.635),
-        ("3-Pair Mean", 50.4, 52.2, INK, 0.50, 0.520),
-        ("PD vs. HIV", 48.8, 47.4, SLATE, 0.48, 0.478),
-        ("HIV vs. CRC", 45.0, 46.7, OCHRE, 0.44, 0.440),
-    ]
     for label, v1, v2, col, y1, y2 in slope_items:
         ax_side.plot([0.18, 0.58], [y1, y2], color=col, linewidth=1.6)
         ax_side.scatter([0.18, 0.58], [y1, y2], color=col, s=24, zorder=4)
@@ -1035,13 +1113,87 @@ def build_plate2_core_guild_dot_table() -> Figure:
 # --------------------------------------------------------------------------- Plate III
 
 
+PLATE3_DIRECTION_ROWS = (
+    (
+        "Stool (All 3 Diseases Combined)",
+        73.1,
+        65.1,
+        80.1,
+        "106 dec vs. 39 inc,\nnominal p = 2.4 \u00d7 10⁻⁸",
+        0.76,
+        True,
+        CRIMSON,
+    ),
+    (
+        "· Colorectal cancer stool",
+        81.1,
+        64.8,
+        92.0,
+        "30 dec vs. 7 inc,\nnominal p = 1.9 \u00d7 10⁻⁴",
+        0.64,
+        False,
+        CRIMSON,
+    ),
+    (
+        "· HIV infection stool",
+        76.0,
+        54.9,
+        90.6,
+        "19 dec vs. 6 inc,\nnominal p = 0.015",
+        0.53,
+        False,
+        CRIMSON,
+    ),
+    (
+        "· Parkinson\u2019s disease stool",
+        68.7,
+        57.6,
+        78.4,
+        "57 dec vs. 26 inc,\nnominal p = 8.8 \u00d7 10⁻⁴",
+        0.42,
+        False,
+        CRIMSON,
+    ),
+    (
+        "Gut Wall Biopsy (Colon Mucosa)",
+        48.1,
+        28.7,
+        68.1,
+        "13 dec vs. 14 inc,\nnominal p = 1.00",
+        0.26,
+        True,
+        MUTED,
+    ),
+    (
+        "· Colorectal tumor biopsy",
+        35.3,
+        14.2,
+        61.7,
+        "6 dec vs. 11 inc,\nnominal p = 0.33",
+        0.15,
+        False,
+        MUTED,
+    ),
+    (
+        "Mouth & Saliva (Oral Cavity)",
+        45.5,
+        16.7,
+        76.6,
+        "5 dec vs. 6 inc,\nnominal p = 1.00",
+        0.04,
+        True,
+        MUTED,
+    ),
+)
+
+
 @_with_tufte_rcparams
 def build_plate3_why_only_stool() -> Figure:
     """Build Plate III: Anatomical & Ecological Specificity (#550)."""
     # Item 2 (#550): Cite the real committed table compartment_jaccard_and_direction_stats.tsv
     fig = _make_tufte_plate(
         (13.0, 7.5),
-        "PLATE III  ·  ANATOMICAL & ECOLOGICAL SPECIFICITY",
+        "PLATE III  ·  ANATOMICAL & ECOLOGICAL SPECIFICITY · October 16 worked example",
         "Shared Loss Appears in Stool, Not in Tissue Biopsies or the Mouth",
         "Cellulose-fermenting bacteria inhabit the anaerobic lumen of the lower colon where "
         "dietary plant fiber collects. In stool, 73.1% of experiments show a decrease; in colon "
@@ -1053,11 +1205,14 @@ def build_plate3_why_only_stool() -> Figure:
     )
 
     ax_left = fig.add_axes((0.03, 0.21, 0.47, 0.62), facecolor=PAPER_BG)
+
+    direction_rows = list(PLATE3_DIRECTION_ROWS)
+
     _add_panel_header(
         ax_left,
         "A. Direction Within Studies: % of Experiments Where Fiber Bacteria Decrease",
         "Comparing stool against colon wall biopsies and saliva relative to a 50% "
-        "binomial baseline",
+        f"binomial baseline\n({len(direction_rows)} nominal binomial sign tests)",
         y_title=0.985,
         y_subtitle=0.920,
         title_size=10.6,
@@ -1065,79 +1220,6 @@ def build_plate3_why_only_stool() -> Figure:
     )
 
     ax_left.axvline(50.0, ymin=0.0, ymax=0.84, color=MUTED, linestyle="--", linewidth=0.9, zorder=2)
-
-    direction_rows = [
-        (
-            "Stool (All 3 Diseases Combined)",
-            73.1,
-            65.1,
-            80.1,
-            "106 dec vs. 39 inc, p = 2.4 \u00d7 10⁻⁸",
-            0.76,
-            True,
-            CRIMSON,
-        ),
-        (
-            "· Colorectal cancer stool",
-            81.1,
-            64.8,
-            92.0,
-            "30 dec vs. 7 inc, p = 1.9 \u00d7 10⁻⁴",
-            0.64,
-            False,
-            CRIMSON,
-        ),
-        (
-            "· HIV infection stool",
-            76.0,
-            54.9,
-            90.6,
-            "19 dec vs. 6 inc, p = 0.015",
-            0.53,
-            False,
-            CRIMSON,
-        ),
-        (
-            "· Parkinson\u2019s disease stool",
-            68.7,
-            57.6,
-            78.4,
-            "57 dec vs. 26 inc, p = 8.8 \u00d7 10⁻⁴",
-            0.42,
-            False,
-            CRIMSON,
-        ),
-        (
-            "Gut Wall Biopsy (Colon Mucosa)",
-            48.1,
-            28.7,
-            68.1,
-            "13 dec vs. 14 inc, p = 1.00",
-            0.26,
-            True,
-            MUTED,
-        ),
-        (
-            "· Colorectal tumor biopsy",
-            35.3,
-            14.2,
-            61.7,
-            "6 dec vs. 11 inc, p = 0.33",
-            0.15,
-            False,
-            MUTED,
-        ),
-        (
-            "Mouth & Saliva (Oral Cavity)",
-            45.5,
-            16.7,
-            76.6,
-            "5 dec vs. 6 inc, p = 1.00",
-            0.04,
-            True,
-            MUTED,
-        ),
-    ]
 
     for label, pct, ci_lo, ci_hi, stats_str, y_pos, is_bold, col in direction_rows:
         fw = "bold" if is_bold else "normal"
@@ -1378,7 +1460,8 @@ def build_plate4_trait_landscape_and_four_pairs() -> Figure:
     """Build Plate IV: Functional Pathway Benchmark & Literature-Supported Signatures (#550)."""
     fig = _make_tufte_plate(
         (13.6, 7.8),
-        "PLATE IV  ·  FUNCTIONAL PATHWAY BENCHMARK & LITERATURE-SUPPORTED SIGNATURES",
+        "PLATE IV  ·  FUNCTIONAL PATHWAY BENCHMARK & LITERATURE-SUPPORTED SIGNATURES"
+        " · historical (#1416)",
         "Plant-Fiber Breakdown Ranks First Among Metabolic Pathways as Salt-Tolerant Taxa Increase",
         "Across all 90 microbial functional traits tested in stool, the three plant-polysaccharide "
         "pathways (cellulose, xylan, chitin) rank #1, #2, and #3 among metabolic pathways for "
@@ -1475,25 +1558,13 @@ def build_plate4_trait_landscape_and_four_pairs() -> Figure:
     _apply_range_frame(ax_top, x_bounds=(14.8, 67.0))
 
     ax_bot = fig.add_axes((0.03, 0.08, 0.94, 0.38), facecolor=PAPER_BG)
-    _add_panel_header(
-        ax_bot,
-        "B. Four Highlighted Condition-Trait Signatures and Independent Literature Support",
-        "Difference in share of stool profiles with positive trait annotation "
-        "(Increased minus Decreased; percentage points, pp)",
-        y_title=0.985,
-        y_subtitle=0.895,
-        title_size=11.0,
-        subtitle_size=8.8,
-    )
-
-    ax_bot.axvline(0.0, ymin=0.0, ymax=0.82, color=MUTED, linestyle="--", linewidth=0.9, zorder=2)
 
     # Item 3 (#550): Cite Nishiwaki 2020 (Mov Disord, PMID 32472608), matching Slide 15 & audit doc.
     four_pairs = [
         (
             "1. Parkinson\u2019s Disease  ·  Cellulose Breakdown Decreased",
             -27.4,
-            "\u221227.4 pp  (52 stool studies, BH q = 0.0077; 57 Down vs 26 Up, p = "
+            "\u221227.4 pp  (52 stool studies, BH q = 0.0077; 57 Down vs 26 Up, nominal p = "
             "8.8 \u00d7 10⁻⁴)",
             "Depletion of Roseburia, Lachnospiraceae, Blautia, Ruminococcus; "
             "reported by Wallen 2022, Romano 2021, Nishiwaki 2020.",
@@ -1503,7 +1574,7 @@ def build_plate4_trait_landscape_and_four_pairs() -> Figure:
         (
             "2. HIV Infection  ·  Cellulose Breakdown Decreased",
             -53.7,
-            "\u221253.7 pp  (18 stool studies, BH q = 0.0080; 19 Down vs 6 Up, p = 0.0146)",
+            "\u221253.7 pp  (18 stool studies, BH q = 0.0080; 19 Down vs 6 Up, nominal p = 0.0146)",
             "Depletion of fiber-fermenting Bacteroides, Clostridia & Lachnospiraceae; "
             "reported by Vujkovic-Cvijin 2013, Noguera-Julian 2016.",
             0.50,
@@ -1512,7 +1583,7 @@ def build_plate4_trait_landscape_and_four_pairs() -> Figure:
         (
             "3. Colorectal Cancer  ·  Cellulose Breakdown Decreased",
             -36.9,
-            "\u221236.9 pp  (30 stool studies, BH q = 0.0336; 30 Down vs 7 Up, p = "
+            "\u221236.9 pp  (30 stool studies, BH q = 0.0336; 30 Down vs 7 Up, nominal p = "
             "1.9 \u00d7 10⁻⁴)",
             "Depletion of Roseburia, Blautia, Lachnospira, R. champanellensis; "
             "reported by Wirbel 2019, Thomas 2019, Yang 2021.",
@@ -1522,7 +1593,7 @@ def build_plate4_trait_landscape_and_four_pairs() -> Figure:
         (
             "4. Parkinson\u2019s Disease  ·  Moderately Halophilic Increased (METPO:1000623)",
             24.4,
-            "+24.4 pp  (52 stool studies, BH q = 0.0265; Wilcoxon 33 Up vs 8 Down, p "
+            "+24.4 pp  (52 stool studies, BH q = 0.0265; Wilcoxon 33 Up vs 8 Down, nominal p "
             "= 1.7 \u00d7 10⁻⁴)",
             "Increase of osmotolerant/stress-tolerant Lactobacillus, Bifidobacterium, "
             "Enterococcus, Alistipes; Vandeputte 2016, Maini Rekdal 2019.",
@@ -1530,6 +1601,20 @@ def build_plate4_trait_landscape_and_four_pairs() -> Figure:
             SLATE,
         ),
     ]
+
+    _add_panel_header(
+        ax_bot,
+        "B. Four Highlighted Condition-Trait Signatures and Independent Literature Support",
+        "Difference in share of stool profiles with positive trait annotation "
+        "(Increased minus Decreased; percentage points, pp)\n"
+        f"BH q: family not recorded (#1525); {len(four_pairs)} nominal tests shown",
+        y_title=0.985,
+        y_subtitle=0.895,
+        title_size=11.0,
+        subtitle_size=8.8,
+    )
+
+    ax_bot.axvline(0.0, ymin=0.0, ymax=0.82, color=MUTED, linestyle="--", linewidth=0.9, zorder=2)
 
     for title_str, delta_pp, stats_line, lit_line, y_pos, col in four_pairs:
         ax_bot.text(-55.5, y_pos + 0.055, title_str, fontsize=8.4, fontweight="bold", color=INK)
@@ -1562,7 +1647,8 @@ def build_plate5_three_statistical_arms() -> Figure:
     """Build Plate V: Statistical Architecture (One Matrix, Three Statistical Questions)."""
     fig = _make_tufte_plate(
         (13.6, 8.2),
-        "PLATE V  ·  STATISTICAL ARCHITECTURE (METHODS/THREE_ARM_STATISTICS.MD)",
+        "PLATE V  ·  STATISTICAL ARCHITECTURE (METHODS/THREE_ARM_STATISTICS.MD)"
+        " · historical (#1416)",
         "One Matrix, Three Statistical Questions: Composition, Enrichment, and Study Direction",
         "All three arms start from the same paired human trait matrix (2,335 experiments across "
         "959 studies and 317 non-MediaDive traits), but test different sampling units, "
@@ -1991,7 +2077,8 @@ def build_plate6_combining_results_integrated_evidence() -> Figure:
     """Build Plate VI: Result Integration & Evidence Contract."""
     fig = _make_tufte_plate(
         (13.6, 8.2),
-        "PLATE VI  ·  RESULT INTEGRATION & EVIDENCE CONTRACT (METHODS/INTEGRATED_EVIDENCE.MD)",
+        "PLATE VI  ·  RESULT INTEGRATION & EVIDENCE CONTRACT (METHODS/INTEGRATED_EVIDENCE.MD)"
+        " · historical (#1416)",
         "How Results Are Combined: Shared Comparison Basis and the Integrated Evidence Contract",
         "Rather than pooling incompatible p-values across sampling units, the pipeline aligns "
         "corpus denominators and records each method, threshold family, and grid-cell state "
@@ -2300,7 +2387,7 @@ def build_plate6_combining_results_integrated_evidence() -> Figure:
 
     cell_states = [
         (
-            "drawn (316 cells, 16.9%)   [test_status = tested / all_tied]",
+            "drawn (316 cells, 16.9%)   [test_status = untested]",
             "≥ 3 studies with trait signal; rendered on map (26 cells have BH q ≤ "
             "0.05 '*', 4 have q ≤ 0.001)",
             0.51,
@@ -2329,17 +2416,26 @@ def build_plate6_combining_results_integrated_evidence() -> Figure:
         ax_c.text(0.595, sy, stitle, fontsize=7.8, fontweight="bold", color=col)
         ax_c.text(0.595, sy - 0.045, sbody, fontsize=7.35, color=MUTED)
 
+    ax_c.text(
+        0.595,
+        0.42,
+        "historical claim (#1416); cells untested; family not recorded (#1526)",
+        fontsize=7.35,
+        color=MUTED,
+    )
+
     return fig
 
 
 # ---------------------------------------------------------------------- Standalone SVGs (fig7-fig9)
 
 
+@_with_retirement_svg
 def render_fig7_svg() -> str:
     """Return the standalone SVG string for Plate VII
     (fig7_tufte_convergence_network_and_venn.svg).
     """
-    return "\n".join(
+    svg = "\n".join(
         [
             '<?xml version="1.0" encoding="utf-8" standalone="no"?>',
             '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"',
@@ -2377,7 +2473,8 @@ def render_fig7_svg() -> str:
             '  <rect x="0" y="0" width="1400" height="770" fill="#FCFBF7"/>',
             "",
             '  <text x="32" y="25" class="kicker">PLATE VII  ·  CROSS-DISEASE TAXONOMIC '
-            "CONVERGENCE &amp; 3-WAY VENN PARTITION (METPO:2000103 | GO:0030245)</text>",
+            "CONVERGENCE &amp; 3-WAY VENN PARTITION (METPO:2000103 | GO:0030245)"
+            " · October 16 worked example</text>",
             '  <text x="32" y="52" class="title">Three Etiologically Distinct Diseases L'
             "ose the Same Fecal Cellulose-Annotated Guild</text>",
             '  <text x="32" y="75" class="subtitle">Across neurodegenerative (PD, 46 stu'
@@ -2816,6 +2913,7 @@ def render_fig7_svg() -> str:
             '    <text x="626" y="693" font-size="9.5" font-style="italic" fill="#4A4'
             '742">Disease totals:  |PD| = 17 + 10 + 4 + 9 = 40 taxa   ·   |CRC| = 17 + 10 + 1'
             " + 6 = 34 taxa   ·   |HIV| = 17 + 4 + 1 + 2 = 24 taxa.</text>",
+            '    <text x="626" y="709" font-size="9.5" fill="#4A4742">__FIG7_NOMINAL_NOTE__</text>',
             "  </g>",
             "",
             '  <line x1="32" y1="724" x2="1368" y2="724" stroke="#D6D1C7" stroke-width="0.85"/>',
@@ -2829,11 +2927,28 @@ def render_fig7_svg() -> str:
             "",
         ]
     )
+    n_nominal_p = len(
+        {
+            re.sub(r"\s+", " ", m.group(0))
+            for line in svg.splitlines()
+            for m in re.finditer(
+                r"(?:(?:Fisher|hyp|perm|U₄)\s+)?\bp\s*(?:=|&lt;|<|≤|≥|>)\s*[0-9.]+"
+                r"(?:\s*\u00d7\s*10⁻[⁰¹²³⁴⁵⁶⁷⁸⁹]+|⁻[⁰¹²³⁴⁵⁶⁷⁸⁹]+)?",
+                line,
+            )
+        }
+    )
+    return svg.replace(
+        "__FIG7_NOMINAL_NOTE__",
+        f"BH q: family not recorded (#1525); p-values nominal ({n_nominal_p} tests shown); "
+        "benchmark/percentile: historical (#1416).",
+    )
 
 
+@_with_retirement_svg
 def render_fig8_svg() -> str:
     """Return the standalone SVG for Slide 15 / fig8 with wrapped lines inside boxes (#550)."""
-    return "\n".join(
+    svg = "\n".join(
         [
             '<svg viewBox="0 0 1500 740" width="1500" height="740" xmlns="http://www.w3'
             ".org/2000/svg\" style=\"font-family:'Palatino','Georgia',serif\">",
@@ -2843,8 +2958,7 @@ def render_fig8_svg() -> str:
             '      <rect x="15" y="10" width="1470" height="124" rx="8" fill="#F4F1'
             'EA" stroke="#D8D2C5" stroke-width="1.2"/>',
             '      <text x="35" y="34" font-size="15.5" font-weight="bold" fill="#181'
-            '715">OPPOSITE STOOL TRAIT DIRECTIONS IN HUMAN SIGNATURES (BugSigDB \u00d7 KG-Mic'
-            "robe)</text>",
+            '715">__FIG8_BANNER_TITLE__</text>',
             '      <text x="35" y="55" font-size="12.5" font-style="italic" fill="#4A'
             '4843">Interpretation note: BugSigDB records reported taxon abundance shifts; KG-'
             "Microbe maps taxa to curated trait annotations (trait-annotation alignment, not d"
@@ -2884,7 +2998,7 @@ def render_fig8_svg() -> str:
             "resentation of osmotolerant and stress-tolerant taxa (+24.4 pp, BH q = 0.0265;</t"
             "ext>",
             '      <text x="825" y="116" font-size="11.0" fill="#181715">paired within'
-            "-study Wilcoxon 33 Up vs. 8 Down, p = 1.67 \u00d7 10⁻⁴)</text>",
+            "-study Wilcoxon 33 Up vs. 8 Down, nominal p = 1.67 \u00d7 10⁻⁴)</text>",
             "",
             "      <!-- Four Detailed Cards (2x2 Grid, each width=725) -->",
             "      <!-- Card 1: PD Cellulose Decrease -->",
@@ -2902,10 +3016,12 @@ def render_fig8_svg() -> str:
             '81715">MTP Stool Signal (46 Decreased Studies / 52 Total, 83 Paired Signature Ex'
             "periments):</text>",
             '        <text x="16" y="74" font-size="11.2" fill="#33312E">• Present in '
-            "27.5% of Increased (36/131) vs. 54.8% of Decreased profiles (68/124; Fisher p = 1"
+            "27.5% of Increased (36/131) vs. 54.8% of Decreased profiles (68/124; Fisher "
+            "nominal p = 1"
             ".28 \u00d7 10⁻⁵)</text>",
             '        <text x="16" y="91" font-size="11.2" fill="#33312E">• Within-stud'
-            "y experiment sign test: 57 Decreased vs. 26 Increased (68.7% decrease, binomial p"
+            "y experiment sign test: 57 Decreased vs. 26 Increased (68.7% decrease, binomial "
+            "nominal p"
             " = 8.78 \u00d7 10⁻⁴)</text>",
             '        <text x="16" y="108" font-size="11.2" fill="#33312E">• Top deplet'
             "ed core genera: Roseburia (18 studies), Blautia (12), Clostridium (7),</text>",
@@ -2950,10 +3066,12 @@ def render_fig8_svg() -> str:
             '81715">MTP Stool Signal (17 Decreased Studies / 18 Total, 25 Paired Signature Ex'
             "periments):</text>",
             '        <text x="16" y="74" font-size="11.2" fill="#33312E">• Present in '
-            "19.2% of Increased (10/52) vs. 72.9% of Decreased profiles (35/48; Fisher p = 6.2"
+            "19.2% of Increased (10/52) vs. 72.9% of Decreased profiles (35/48; Fisher nominal "
+            "p = 6.2"
             "3 \u00d7 10⁻⁸)</text>",
             '        <text x="16" y="91" font-size="11.2" fill="#33312E">• Within-stud'
-            "y experiment sign test: 19 Decreased vs. 6 Increased (76.0% decrease, binomial p "
+            "y experiment sign test: 19 Decreased vs. 6 Increased (76.0% decrease, binomial "
+            "nominal p "
             "= 0.0146)</text>",
             '        <text x="16" y="108" font-size="11.2" fill="#33312E">• Top deplet'
             "ed core genera: Bacteroides (7 studies), Clostridium (4), Ruminococcus (4),</text"
@@ -2997,10 +3115,12 @@ def render_fig8_svg() -> str:
             '81715">MTP Stool Signal (27 Decreased Studies / 30 Total, 37 Paired Signature Ex'
             "periments):</text>",
             '        <text x="16" y="74" font-size="11.2" fill="#33312E">• Present in '
-            "26.9% of Increased (18/67) vs. 63.8% of Decreased profiles (37/58; Fisher p = 3.7"
+            "26.9% of Increased (18/67) vs. 63.8% of Decreased profiles (37/58; Fisher nominal "
+            "p = 3.7"
             "4 \u00d7 10⁻⁵)</text>",
             '        <text x="16" y="91" font-size="11.2" fill="#33312E">• Within-stud'
-            "y experiment sign test: 30 Decreased vs. 7 Increased (81.1% decrease, binomial p "
+            "y experiment sign test: 30 Decreased vs. 7 Increased (81.1% decrease, binomial "
+            "nominal p "
             "= 1.91 \u00d7 10⁻⁴)</text>",
             '        <text x="16" y="108" font-size="11.2" fill="#33312E">• Top deplet'
             "ed core genera: Lachnospira (6 studies), Roseburia (5), Blautia (5),</text>",
@@ -3044,10 +3164,12 @@ def render_fig8_svg() -> str:
             '81715">MTP Stool Signal (43 Increased Studies / 52 Total, Paired Within-Study Wi'
             "lcoxon Test):</text>",
             '        <text x="16" y="74" font-size="11.2" fill="#33312E">• Present in '
-            "52.7% of Increased (69/131) vs. 28.2% of Decreased profiles (35/124; Fisher p = 7"
+            "52.7% of Increased (69/131) vs. 28.2% of Decreased profiles (35/124; Fisher "
+            "nominal p = 7"
             ".76 \u00d7 10⁻⁵)</text>",
             '        <text x="16" y="91" font-size="11.2" fill="#33312E">• Paired with'
-            "in-study fraction difference: 33 Studies Up vs. 8 Down (4 tied; Wilcoxon p = 1.67"
+            "in-study fraction difference: 33 Studies Up vs. 8 Down (4 tied; Wilcoxon nominal "
+            "p = 1.67"
             " \u00d7 10⁻⁴)</text>",
             '        <text x="16" y="108" font-size="11.2" fill="#33312E">• Top increa'
             "sed osmotolerant/stress-tolerant taxa: Akkermansia, Bifidobacterium,</text>",
@@ -3078,8 +3200,21 @@ def render_fig8_svg() -> str:
             "    </svg>",
         ]
     )
+    cards = re.findall(r'<g transform="translate\([^"]+">(.*?)</g>', svg, re.DOTALL)
+    n_cards = len(cards)
+    n_card_tests = sum(
+        len(re.findall(r"\bnominal\s+p\s*(?:=|&lt;|<|≤|≥|>)", card)) for card in cards
+    )
+    per_card = n_card_tests // n_cards
+    return svg.replace(
+        "__FIG8_BANNER_TITLE__",
+        "OPPOSITE STOOL TRAIT DIRECTIONS IN HUMAN SIGNATURES (BugSigDB \u00d7 KG-Microbe) "
+        f"· historical (#1416); BH q: family not recorded (#1525); "
+        f"{n_card_tests} nominal tests ({per_card}/card)",
+    )
 
 
+@_with_retirement_svg
 def render_fig9_svg() -> str:
     """Return the standalone SVG string for Slide 16 / fig9
     (fig9_set_theory_17_core_vs_pairwise.svg).
@@ -3098,6 +3233,8 @@ def render_fig9_svg() -> str:
             '      <text x="40" y="76" font-size="13.5" font-style="italic" fill="#4A'
             '4843">When a Venn diagram partitions the 49 union taxa into non-overlapping subs'
             "ets:</text>",
+            '      <text x="40" y="100" font-size="11" fill="#4A4843">'
+            "October 16 worked example</text>",
             "",
             '      <circle cx="290" cy="295" r="145" fill="#9E2A2B" fill-opacity="0.1'
             '6" stroke="#9E2A2B" stroke-width="2.5"/>',
@@ -3258,7 +3395,7 @@ def render_slide_deck_html() -> str:
     """Return the complete 16-slide HTML presentation deck (#550)."""
     fig8_inline = render_fig8_svg().strip()
     fig9_inline = render_fig9_svg().strip()
-    return "\n".join(
+    raw_html = "\n".join(
         [
             "<!DOCTYPE html>",
             '<html lang="en">',
@@ -3496,7 +3633,8 @@ def render_slide_deck_html() -> str:
             "  <h1>Cellulose-Catabolizing Gut Microbiota Convergence, Four Highlighted Trait S"
             "ignatures, and Three-Arm Statistical Integration</h1>",
             '  <p class="lead">',
-            "    Combined vector-graphics deck containing <b>Set 3 (Six Edward Tufte Analytica"
+            "    October 16 worked example. Combined vector-graphics deck containing "
+            "<b>Set 3 (Six Edward Tufte Analytica"
             "l Plates)</b>,",
             "    <b>Set 2 (Four Graphical Summary Figures)</b>, <b>Set 1 (Three Statistical Re"
             "ference Figures)</b>,",
@@ -3509,18 +3647,20 @@ def render_slide_deck_html() -> str:
             '      <div class="num">50.4%</div>',
             '      <div class="lbl"><b>Mean Pairwise Jaccard Similarity</b><br/>Across PD, H'
             "IV &amp; CRC stool (<i>d</i> = 0.4957; 2.5\u00d7 gut baseline of 20.1%, permutati"
-            "on <i>p</i> = 0.011)</div>",
+            "on nominal <i>p</i> = 0.011)</div>",
             "    </div>",
             '    <div class="cover-card">',
             '      <div class="num">17 / 49</div>',
             '      <div class="lbl"><b>3-Disease Core Guild (34.7%)</b><br/>10.6\u00d7 over '
-            "random expectation (<i>p</i> = 6.2 \u00d7 10⁻¹⁶); 9 core genera (17.1\u00d7 at Ge"
-            "nus+Species, <i>p</i> = 3.5 \u00d7 10⁻¹²)</div>",
+            "random expectation (nominal <i>p</i> = 6.2 \u00d7 10⁻¹⁶); 9 core genera "
+            "(17.1\u00d7 at Ge"
+            "nus+Species, nominal <i>p</i> = 3.5 \u00d7 10⁻¹²)</div>",
             "    </div>",
             '    <div class="cover-card">',
             '      <div class="num">73.1%</div>',
             '      <div class="lbl"><b>Stool Decrease Direction</b><br/>106 decrease vs. 39 '
-            "increase experiments in stool (<i>p</i> = 2.4 \u00d7 10⁻⁸); absent in mucosa (48."
+            "increase experiments in stool (nominal <i>p</i> = 2.4 \u00d7 10⁻⁸); absent in "
+            "mucosa (48."
             "1%) &amp; oral (45.5%)</div>",
             "    </div>",
             '    <div class="cover-card">',
@@ -3534,14 +3674,15 @@ def render_slide_deck_html() -> str:
             '  <div class="cover-toc">',
             '    <div class="cover-toc-item"><b>Slides 2\u20137 · Set 3 (Edward Tufte Plates'
             " I\u2013VI):</b> Convergence slopegraph, 9-genus dot-bar table, body-site tests, "
-            "90-trait benchmark, the 3 statistical arms, and the 1,912-row integrated evidence"
+            "90-trait benchmark (historical (#1416)), the 3 statistical arms, "
+            "and the 1,912-row integrated evidence"
             " contract.</div>",
             '    <div class="cover-toc-item"><b>Slides 8\u201311 · Set 2 (Graphical Summary)'
             ":</b> Convergence triangle &amp; Venn partition, fine-rank sensitivity, stool vs."
             " biopsy directions, and functional pathway rankings.</div>",
             '    <div class="cover-toc-item"><b>Slides 12\u201314 · Set 1 (Statistical Refer'
             "ence):</b> Jaccard matrices against 5 null models, compartment sign tests, and 90"
-            "-trait empirical distributions.</div>",
+            "-trait empirical distributions (historical (#1416)).</div>",
             '    <div class="cover-toc-item"><b>Slides 15\u201316 · Literature &amp; Set-The'
             "ory Reference:</b> Vector tables covering 17 peer-reviewed citations and the 2-wa"
             "y vs. 3-way Venn partition.</div>",
@@ -3556,8 +3697,9 @@ def render_slide_deck_html() -> str:
             '      <div class="title-block">',
             "        <h2>Plate I: Three Distinct Diseases Lose the Same Gut Fiber-Digesting "
             "Bacteria</h2>",
-            '        <p class="subtitle">Slopegraph and mutually exclusive set partition vs.'
-            " full pairwise overlaps across 90 human stool studies</p>",
+            '        <p class="subtitle" style="white-space:normal">'
+            "Slopegraph and mutually exclusive set partition vs."
+            " full pairwise overlaps across 90 human stool studies · October 16 worked example</p>",
             "      </div>",
             "    </div>",
             '    <div class="header-right">',
@@ -3577,7 +3719,7 @@ def render_slide_deck_html() -> str:
             '    <div class="footer-col"><b>Slopegraph:</b> Compares random chance (11%'
             "\u201315%), all 530 stool decreased bacteria (18%\u201324%), and the 49 cellulose"
             "-catabolizing bacteria (45.0%\u201357.4%; mean 50.4%, 2.5\u00d7 gut baseline, per"
-            "mutation <i>p</i> = 0.011).</div>",
+            "mutation nominal <i>p</i> = 0.011).</div>",
             '    <div class="footer-col"><b>Set partition:</b> Splitting the 49 lost taxa in'
             "to mutually exclusive tiers shows 17 (34.7%) lost in all 3 diseases and 15 (30.6%"
             ") in only 2 diseases. Every complete 2-disease intersection (27, 21, 18) includes"
@@ -3593,8 +3735,9 @@ def render_slide_deck_html() -> str:
             '      <div class="title-block">',
             "        <h2>Plate II: Nine Butyrate- and Fiber-Degrading Genera Decrease Across A"
             "ll Three Diseases</h2>",
-            '        <p class="subtitle">Taxonomic dot-bar table and Genus + Species sensiti'
-            "vity test (N = 93 stool background taxa)</p>",
+            '        <p class="subtitle" style="white-space:normal">'
+            "Taxonomic dot-bar table and Genus + Species sensiti"
+            "vity test (N = 93 stool background taxa) · historical (#1416)</p>",
             "      </div>",
             "    </div>",
             '    <div class="header-right">',
@@ -3618,8 +3761,9 @@ def render_slide_deck_html() -> str:
             "and <i>Eubacterium</i> (4: 1·1·2) decrease across PD, HIV, and CRC.</div>",
             '    <div class="footer-col"><b>Rank sensitivity:</b> Restricting to Genus + Spe'
             "cies (N = 93 stool background taxa, 22 cellulose-annotated) increases PD\u2013CRC"
-            " Jaccard similarity to <b>62.5%</b> (<i>p</i> = 5.98 \u00d7 10⁻¹⁰) and 3-way core"
-            " enrichment to <b>17.1\u00d7</b> (<i>p</i> = 3.5 \u00d7 10⁻¹²).</div>",
+            " Jaccard similarity to <b>62.5%</b> (nominal <i>p</i> = 5.98 \u00d7 10⁻¹⁰) and "
+            "3-way core"
+            " enrichment to <b>17.1\u00d7</b> (nominal <i>p</i> = 3.5 \u00d7 10⁻¹²).</div>",
             "  </footer>",
             "</section>",
             "",
@@ -3631,8 +3775,10 @@ def render_slide_deck_html() -> str:
             '      <div class="title-block">',
             "        <h2>Plate III: Shared Loss Appears in Stool, Not in Tissue Biopsies or th"
             "e Mouth</h2>",
-            '        <p class="subtitle">Range-frame dot plots of within-study directional s'
-            "ign tests and cross-disease Jaccard similarity by body site</p>",
+            '        <p class="subtitle" style="white-space:normal">'
+            "Range-frame dot plots of within-study directional s"
+            "ign tests and cross-disease Jaccard similarity by body site · October 16 worked "
+            "example</p>",
             "      </div>",
             "    </div>",
             '    <div class="header-right">',
@@ -3649,9 +3795,11 @@ def render_slide_deck_html() -> str:
             "",
             '  <footer class="slide-footer">',
             '    <div class="footer-col"><b>Within-study direction:</b> In stool, 73.1% of s'
-            "ignature experiments report a decrease (106 decrease vs. 39 increase, binomial <i"
-            ">p</i> = 2.4 \u00d7 10⁻⁸). Mucosal biopsies (48.1%, <i>p</i> = 1.00) and oral sam"
-            "ples (45.5%, <i>p</i> = 1.00) show no directional bias.</div>",
+            "ignature experiments report a decrease (106 decrease vs. 39 increase, binomial "
+            "nominal <i"
+            ">p</i> = 2.4 \u00d7 10⁻⁸). Mucosal biopsies (48.1%, nominal <i>p</i> = 1.00) and "
+            "oral sam"
+            "ples (45.5%, nominal <i>p</i> = 1.00) show no directional bias.</div>",
             '    <div class="footer-col"><b>Colonic niche:</b> Insoluble plant cellulose rea'
             "ches the anaerobic lumen of the lower colon sampled by stool, whereas mucosal bio"
             "psies sample biofilm bacteria attached to the gut wall.</div>",
@@ -3666,8 +3814,10 @@ def render_slide_deck_html() -> str:
             '      <div class="title-block">',
             "        <h2>Plate IV: Plant-Fiber Breakdown Ranks First Among Metabolic Pathways "
             "as Salt-Tolerant Taxa Increase</h2>",
-            '        <p class="subtitle">90-trait range-frame distribution strip and the fou'
-            "r highlighted condition-trait signatures with literature citations</p>",
+            '        <p class="subtitle" style="white-space:normal">'
+            "90-trait range-frame distribution strip and the fou"
+            "r highlighted condition-trait signatures with literature citations · historical "
+            "(#1416)</p>",
             "      </div>",
             "    </div>",
             '    <div class="header-right">',
@@ -3691,8 +3841,9 @@ def render_slide_deck_html() -> str:
             '    <div class="footer-col"><b>Four highlighted pairs:</b> Cellulose catabolism'
             " decreases in PD (\u221227.4 pp, <i>q</i> = 0.0077), HIV (\u221253.7 pp, <i>q</i>"
             " = 0.0080), and CRC (\u221236.9 pp, <i>q</i> = 0.0336), while halotolerance incre"
-            "ases in PD (+24.4 pp, Fisher BH <i>q</i> = 0.0265; paired Wilcoxon <i>p</i> = 1.6"
-            "7 \u00d7 10⁻⁴).</div>",
+            "ases in PD (+24.4 pp, Fisher BH <i>q</i> = 0.0265; paired Wilcoxon nominal "
+            "<i>p</i> = 1.6"
+            "7 \u00d7 10⁻⁴). BH q: family not recorded (#1525).</div>",
             "  </footer>",
             "</section>",
             "",
@@ -3704,8 +3855,9 @@ def render_slide_deck_html() -> str:
             '      <div class="title-block">',
             "        <h2>Plate V: One Matrix, Three Statistical Questions: Composition, "
             "Enrichment, and Study Direction</h2>",
-            '        <p class="subtitle">Filter cascade, 100-fold sample-size scale across s'
-            "ampling units, and Table 1 fraction and log-ratio results</p>",
+            '        <p class="subtitle" style="white-space:normal">'
+            "Filter cascade, 100-fold sample-size scale across s"
+            "ampling units, and Table 1 fraction and log-ratio results · historical (#1416)</p>",
             "      </div>",
             "    </div>",
             '    <div class="header-right">',
@@ -3743,8 +3895,10 @@ def render_slide_deck_html() -> str:
             '      <div class="title-block">',
             "        <h2>Plate VI: How Results Are Combined: Shared Comparison Basis and the "
             "Integrated Evidence Contract</h2>",
-            '        <p class="subtitle">Denominator alignment (317 non-MediaDive traits), s'
-            "tudy-equal weighting, and the 1,912-row integrated_evidence.tsv schema</p>",
+            '        <p class="subtitle" style="white-space:normal">'
+            "Denominator alignment (317 non-MediaDive traits), s"
+            "tudy-equal weighting, and the 1,912-row integrated_evidence.tsv schema "
+            "· historical (#1416)</p>",
             "      </div>",
             "    </div>",
             '    <div class="header-right">',
@@ -3780,8 +3934,10 @@ def render_slide_deck_html() -> str:
             '      <div class="title-block">',
             "        <h2>Graphical Summary 1: Cross-Disease Convergence Network and 3-Way Venn"
             " Partition</h2>",
-            '        <p class="subtitle">Disease triangle network, pairwise Jaccard '
-            "similarity gauge, and 49-taxon union breakdown across PD, HIV, and CRC</p>",
+            '        <p class="subtitle" style="white-space:normal">'
+            "Disease triangle network, pairwise Jaccard "
+            "similarity gauge, and 49-taxon union breakdown across PD, HIV, and CRC "
+            "· text: October 16 worked example; figure drawn from current tables</p>",
             "      </div>",
             "    </div>",
             '    <div class="header-right">',
@@ -3804,8 +3960,9 @@ def render_slide_deck_html() -> str:
             "ase in all three.</div>",
             '    <div class="footer-col"><b>Pairwise Jaccard overlap:</b> Mean pairwise Jacc'
             "ard similarity is 50.4% (vs. 20.1% across all 530 stool decreased taxa; random-gu"
-            "ild permutation <i>p</i> = 0.0110; 3-way core 10.6\u00d7 over random expectation,"
-            " <i>p</i> = 6.2 \u00d7 10⁻¹⁶).</div>",
+            "ild permutation nominal <i>p</i> = 0.0110; 3-way core 10.6\u00d7 over random "
+            "expectation,"
+            " nominal <i>p</i> = 6.2 \u00d7 10⁻¹⁶).</div>",
             "  </footer>",
             "</section>",
             "",
@@ -3817,8 +3974,10 @@ def render_slide_deck_html() -> str:
             '      <div class="title-block">',
             "        <h2>Graphical Summary 2: Taxonomic Rollup Sensitivity at Genus and Specie"
             "s Ranks</h2>",
-            '        <p class="subtitle">Fine-rank sensitivity comparison (N = 93 Genus + Sp'
-            "ecies) and shared 17-taxon Genus/Species guild scorecard</p>",
+            '        <p class="subtitle" style="white-space:normal">'
+            "Fine-rank sensitivity comparison (N = 93 Genus + Sp"
+            "ecies) and shared 17-taxon Genus/Species guild scorecard "
+            "· text: October 16 worked example; figure drawn from current tables</p>",
             "      </div>",
             "    </div>",
             '    <div class="header-right">',
@@ -3837,9 +3996,10 @@ def render_slide_deck_html() -> str:
             '    <div class="footer-col"><b>Fine-rank test:</b> Removing family, order, and '
             "phylum rollups and testing only Genus + Species (N = 93) reduces mean Jaccard dis"
             "tance to <i>d<sub>J</sub></i> = 0.478 (<i>J</i> = 52.2%) and increases PD\u2013CR"
-            "C similarity to 62.5% (<i>p</i> = 5.98 \u00d7 10⁻¹⁰).</div>",
+            "C similarity to 62.5% (nominal <i>p</i> = 5.98 \u00d7 10⁻¹⁰).</div>",
             '    <div class="footer-col"><b>Core genera:</b> Nine genera decrease across all'
-            " three diseases (17.1\u00d7 over random expectation, <i>p</i> = 3.5 \u00d7 10⁻¹²)"
+            " three diseases (17.1\u00d7 over random expectation, nominal <i>p</i> = 3.5 "
+            "\u00d7 10⁻¹²)"
             ", led by <i>Roseburia</i>, <i>Blautia</i>, <i>Clostridium</i>, <i>Bacteroides</i>"
             ", and <i>Ruminococcus</i>.</div>",
             "  </footer>",
@@ -3853,8 +4013,10 @@ def render_slide_deck_html() -> str:
             '      <div class="title-block">',
             "        <h2>Graphical Summary 3: Both Depletion and Taxonomic Convergence Are Spe"
             "cific to Stool</h2>",
-            '        <p class="subtitle">Diverging butterfly chart of paired experiment dire'
-            "ctions and cross-compartment Jaccard overlap</p>",
+            '        <p class="subtitle" style="white-space:normal">'
+            "Diverging butterfly chart of paired experiment dire"
+            "ctions and cross-compartment Jaccard overlap "
+            "· text: October 16 worked example; figure drawn from current tables</p>",
             "      </div>",
             "    </div>",
             '    <div class="header-right">',
@@ -3890,8 +4052,10 @@ def render_slide_deck_html() -> str:
             '      <div class="title-block">',
             "        <h2>Graphical Summary 4: Cellulose Catabolism Ranks #1 Among GO Processes"
             ", Pathways, and Chemical Traits</h2>",
-            '        <p class="subtitle">Functional pathway ranking and top 10 convergent no'
-            "n-MediaDive traits across 90 microbial traits in stool</p>",
+            '        <p class="subtitle" style="white-space:normal">'
+            "Functional pathway ranking and top 10 convergent no"
+            "n-MediaDive traits across 90 microbial traits in stool "
+            "· text: historical (#1416); figure drawn from current tables</p>",
             "      </div>",
             "    </div>",
             '    <div class="header-right">',
@@ -3927,8 +4091,10 @@ def render_slide_deck_html() -> str:
             '      <div class="title-block">',
             "        <h2>Statistical Figure 1: Pairwise and 3-Way Jaccard Convergence Against "
             "Five Null Models</h2>",
-            '        <p class="subtitle">Quantitative reference for PD (40 taxa), HIV (24 ta'
-            "xa), and CRC (34 taxa) stool cellulose-catabolism signatures</p>",
+            '        <p class="subtitle" style="white-space:normal">'
+            "Quantitative reference for PD (40 taxa), HIV (24 ta"
+            "xa), and CRC (34 taxa) stool cellulose-catabolism signatures "
+            "· text: October 16 worked example; figure drawn from current tables</p>",
             "      </div>",
             "    </div>",
             '    <div class="header-right">',
@@ -3945,9 +4111,12 @@ def render_slide_deck_html() -> str:
             "",
             '  <footer class="slide-footer">',
             '    <div class="footer-col"><b>Exact and Monte Carlo tests:</b> PD\u2013CRC (<i'
-            ">J</i> = 0.5745, <i>d</i> = 0.4255, hypergeometric <i>p</i> = 2.66 \u00d7 10⁻¹³),"
-            " PD\u2013HIV (<i>J</i> = 0.4884, <i>d</i> = 0.5116, <i>p</i> = 8.43 \u00d7 10⁻¹²)"
-            ", HIV\u2013CRC (<i>J</i> = 0.4500, <i>d</i> = 0.5500, <i>p</i> = 6.72 \u00d7 10⁻¹"
+            ">J</i> = 0.5745, <i>d</i> = 0.4255, hypergeometric nominal <i>p</i> = 2.66 \u00d7 "
+            "10⁻¹³),"
+            " PD\u2013HIV (<i>J</i> = 0.4884, <i>d</i> = 0.5116, nominal <i>p</i> = 8.43 "
+            "\u00d7 10⁻¹²)"
+            ", HIV\u2013CRC (<i>J</i> = 0.4500, <i>d</i> = 0.5500, nominal <i>p</i> = 6.72 "
+            "\u00d7 10⁻¹"
             "¹).</div>",
             '    <div class="footer-col"><b>Study-label permutation null:</b> Permuting dise'
             "ase labels across all 90 stool studies (10,000 iterations) shows that cross-disea"
@@ -3963,8 +4132,10 @@ def render_slide_deck_html() -> str:
             '      <div class="title-block">',
             "        <h2>Statistical Figure 2: Anatomical Compartment Specificity and "
             "Sensitivity Across Taxonomic Ranks</h2>",
-            '        <p class="subtitle">Within-study binomial sign tests, cross-disease Jac'
-            "card similarity across 4 body compartments, and rank sensitivity</p>",
+            '        <p class="subtitle" style="white-space:normal">'
+            "Within-study binomial sign tests, cross-disease Jac"
+            "card similarity across 4 body compartments, and rank sensitivity "
+            "· text: October 16 worked example; figure drawn from current tables</p>",
             "      </div>",
             "    </div>",
             '    <div class="header-right">',
@@ -3985,8 +4156,10 @@ def render_slide_deck_html() -> str:
             "f 121 studies (46 PD, 17 HIV, 27 CRC) and 145 directional experiments, whereas GI"
             " mucosa has 15 studies (2 PD, 6 HIV, 7 CRC) and oral sites have 9 studies.</div>",
             '    <div class="footer-col"><b>Compartment sign tests:</b> Significant decrease'
-            " bias occurs only in stool (PD <i>p</i> = 8.8 \u00d7 10⁻⁴, HIV <i>p</i> = 0.015, "
-            "CRC <i>p</i> = 1.9 \u00d7 10⁻⁴); mucosal and oral tests have <i>p</i> ≥ 0.33.</di"
+            " bias occurs only in stool (PD nominal <i>p</i> = 8.8 \u00d7 10⁻⁴, HIV nominal "
+            "<i>p</i> = 0.015, "
+            "CRC nominal <i>p</i> = 1.9 \u00d7 10⁻⁴); mucosal and oral tests have nominal "
+            "<i>p</i> ≥ 0.33.</di"
             "v>",
             "  </footer>",
             "</section>",
@@ -3999,8 +4172,10 @@ def render_slide_deck_html() -> str:
             '      <div class="title-block">',
             "        <h2>Statistical Figure 3: 17-Taxon Core Presence Matrix and 90-Trait Func"
             "tional Guild Benchmark</h2>",
-            '        <p class="subtitle">Study-count matrix across the 17 three-way core tax'
-            "a and empirical ranking across all 90 non-MediaDive functional traits</p>",
+            '        <p class="subtitle" style="white-space:normal">'
+            "Study-count matrix across the 17 three-way core tax"
+            "a and empirical ranking across all 90 non-MediaDive functional traits "
+            "· text: historical (#1416); figure drawn from current tables</p>",
             "      </div>",
             "    </div>",
             '    <div class="header-right">',
@@ -4036,8 +4211,10 @@ def render_slide_deck_html() -> str:
             '      <div class="title-block">',
             "        <h2>Published Literature Support for the Four Highlighted Condition-Trait"
             " Signatures</h2>",
-            '        <p class="subtitle">Comparing microbial-trait-profiling (MTP) stool sig'
-            "natures against 17 peer-reviewed metagenomic and physiological studies</p>",
+            '        <p class="subtitle" style="white-space:normal">'
+            "Comparing microbial-trait-profiling (MTP) stool sig"
+            "natures against 17 peer-reviewed metagenomic and physiological studies "
+            "· historical (#1416)</p>",
             "      </div>",
             "    </div>",
             '    <div class="header-right">',
@@ -4072,9 +4249,10 @@ def render_slide_deck_html() -> str:
             '      <div class="title-block">',
             "        <h2>Why Mutually Exclusive 2-Way Slices Have Fewer Taxa Than the 3-Way Co"
             "re</h2>",
-            '        <p class="subtitle">Comparing full pairwise intersections '
+            '        <p class="subtitle" style="white-space:normal">'
+            "Comparing full pairwise intersections "
             "|A ∩ B| (which include the 3-way core) against 2-way-only Venn "
-            "slices</p>",
+            "slices · October 16 worked example</p>",
             "      </div>",
             "    </div>",
             '    <div class="header-right">',
@@ -4105,6 +4283,82 @@ def render_slide_deck_html() -> str:
             "",
         ]
     )
+    html = _annotate_deck_nominal_counts_and_footer_labels(raw_html)
+    # Add 36 px to both the page and top padding, preserving the content box.
+    retirement_style = """
+      @page { size: 1600px 1036px; }
+      .slide { height: 1036px; padding-top: 56px; }
+      .cover-slide { padding-top: 100px; }
+      .slide > .retirement-banner {
+        position: absolute; top: 0; left: 0; width: 100%; height: 36px;
+        padding: 7px 28px; background: #fbfaf7; color: #9e2a2b;
+        font-family: sans-serif; font-size: 18px; line-height: 22px; font-weight: bold;
+      }
+    """
+    html = html.replace("</style>", retirement_style + "</style>", 1)
+    return re.sub(
+        r"(<section\b[^>]*>)",
+        lambda match: f'{match.group()}\n<div class="retirement-banner">{RETIREMENT_BANNER}</div>',
+        html,
+    )
+
+
+def _annotate_deck_nominal_counts_and_footer_labels(html_text: str) -> str:
+    """Attach computed nominal test counts and per-slide footer run labels (#1533)."""
+    screen_trigger_re = re.compile(
+        r"(?<![.\d,])(?:317\s+non-MediaDive|66,240\s+enrichments|1,912\s+rows)"
+    )
+
+    def _add_nominal_count(match: re.Match[str]) -> str:
+        open_tag, inner, close_tag = match.group(1), match.group(2), match.group(3)
+        n_nom = len(re.findall(r"\bnominal\s+(?:<i>)?p(?:</i>)?\s*(?:=|≤|≥|<|>|&lt;|&gt;)", inner))
+        if n_nom == 0:
+            return match.group(0)
+        if "mucosal and oral tests have nominal" in inner:
+            n_non_stool = sum("stool" not in row[0].lower() for row in PLATE3_DIRECTION_ROWS)
+            n_nom += n_non_stool - 1
+        noun = "test" if n_nom == 1 else "tests"
+        suffix = f" ({n_nom} nominal {noun} shown)"
+        if inner.endswith(")."):
+            return f"{open_tag}{inner[:-1]};{suffix}.{close_tag}"
+        if inner.endswith(")"):
+            return f"{open_tag}{inner};{suffix}{close_tag}"
+        if inner.endswith("."):
+            return f"{open_tag}{inner[:-1]}{suffix}.{close_tag}"
+        return f"{open_tag}{inner}{suffix}{close_tag}"
+
+    def _annotate_section(sec_match: re.Match[str]) -> str:
+        sec = sec_match.group(0)
+        sub_m = re.search(r'<p class="subtitle"[^>]*>.*?·\s*([^<]+)</p>', sec, re.DOTALL)
+        if sub_m is not None:
+            run_label = " ".join(sub_m.group(1).split())
+            if ";" not in run_label:
+
+                def _label_col(col_match: re.Match[str]) -> str:
+                    col = col_match.group(0)
+                    if not screen_trigger_re.search(col):
+                        return col
+                    return re.sub(
+                        r'(<div class="footer-col"><b>)([^<:]+)(:</b>)',
+                        lambda m: f"{m.group(1)}{m.group(2)} \u2014 {run_label}{m.group(3)}",
+                        col,
+                        count=1,
+                    )
+
+                sec = re.sub(
+                    r'<div class="footer-col">.*?</div>',
+                    _label_col,
+                    sec,
+                    flags=re.DOTALL,
+                )
+        return re.sub(
+            r'(<div class="(?:lbl|footer-col)">)(.*?)(</div>)',
+            _add_nominal_count,
+            sec,
+            flags=re.DOTALL,
+        )
+
+    return re.sub(r"<section\b.*?</section>", _annotate_section, html_text, flags=re.DOTALL)
 
 
 # --------------------------------------------------------------------------- Orchestration & CLI
@@ -4114,8 +4368,14 @@ def generate_tufte_plates_and_deck(
     analysis_dir: Path = ANALYSIS_DIR,
     *,
     dpi: int = 300,
+    audit_retired: bool = False,
 ) -> list[Path]:
-    """Generate all Tufte plates, standalone SVGs, combined PDF, and 16-slide HTML deck (#550)."""
+    """Reproduce retired historical products only after explicit audit opt-in (#1572)."""
+    if audit_retired is not True:
+        raise ValueError(
+            f"{RETIREMENT_BANNER}. Use --audit-retired or audit_retired=True for audit only; "
+            "replacement from current rerun data is pending under #1670."
+        )
     tufte_dir = analysis_dir / "figures_tufte"
     tufte_dir.mkdir(parents=True, exist_ok=True)
 
@@ -4168,10 +4428,20 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     """Parse command-line arguments for Tufte plate and deck generation (#617, #1127)."""
     parser = argparse.ArgumentParser(
         description=(
-            "Generate the Edward Tufte analytical plates (fig1\u2013fig6), standalone vector SVGs "
+            f"{RETIREMENT_BANNER}. Replacement from current rerun data is pending under #1670. "
+            "Audit-only reproduction of analytical plates (fig1\u2013fig6), standalone vector SVGs "
             "(fig7\u2013fig9), combined PDF packet, and 16-slide HTML deck under analysis_dir."
         ),
         allow_abbrev=False,
+    )
+    parser.add_argument(
+        "--audit-retired",
+        action="store_true",
+        required=True,
+        help=(
+            "Explicitly opt in to retired, unverified historical outputs (#1572); "
+            "replacement #1670."
+        ),
     )
     parser.add_argument(
         "--analysis-dir",
@@ -4196,7 +4466,9 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
 def main(argv: Sequence[str] | None = None) -> int:
     """CLI entry point for generating the Tufte plates and HTML slide deck."""
     args = parse_args(argv)
-    generate_tufte_plates_and_deck(args.analysis_dir, dpi=args.dpi)
+    generate_tufte_plates_and_deck(
+        args.analysis_dir, dpi=args.dpi, audit_retired=args.audit_retired
+    )
     return 0
 
 

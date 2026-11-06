@@ -214,16 +214,17 @@ def _nitrate(t: float, p: float, q: float, studies: int) -> list[dict[str, str]]
         (
             (-2.30, 0.0252, 0.979),
             "Saliva's nitrate reduction has the opposite sign to Feces' at a nominal p only "
-            "(t = -2.30, p = 0.025, q = 0.98; Feces t = +3.97, q = 0.0013)",
+            "(t = -2.30, nominal p = 0.025, q = 0.98 over 1 saliva test; Feces t = +3.97, "
+            "q = 0.0013 over 1 feces test)",
         ),
         ((2.5, 0.001, 0.01), "the same sign as Feces' at BH q ≤ 0.05"),
-        ((-1.0, 0.32, 0.99), "the opposite sign to Feces' without reaching p ≤ 0.05"),
+        ((-1.0, 0.32, 0.99), "the opposite sign to Feces' without reaching nominal p ≤ 0.05"),
     ],
 )
 def test_plate_two_caveat_reads_saliva_and_feces(
     saliva: tuple[float, float, float], expected: str
 ) -> None:
-    """A nominal saliva sign is not headlined as a site difference (#607)."""
+    """A nominal saliva sign is not headlined as a site difference (#607, #1558)."""
     metrics = {
         "paired_contrasts": {
             "feces": _nitrate(3.97, 8.04e-5, 0.00126, 594),
@@ -235,6 +236,48 @@ def test_plate_two_caveat_reads_saliva_and_feces(
     assert caveat.startswith("Without Feces (365 studies), 0 of 1 trait pass study BH q ≤ 0.05")
     assert expected in caveat
     assert caveat.endswith("and no test compares the two sites.")
+
+    multi_metrics = {
+        "paired_contrasts": {
+            "feces": [
+                *_nitrate(3.97, 8.04e-5, 0.00126, 594),
+                _paired(
+                    "aerobic METPO:1000602", 0.01, 0.2, trait="METPO:1000602", study_count="594"
+                ),
+                _paired("coccus METPO:1000668", 0.5, 0.1, trait="METPO:1000668", study_count="594"),
+                _paired("unrun U:1", "NaN", 0.0, trait="U:1", study_count="594"),
+            ],
+            "feces_excluded": _nitrate(-1.14, 0.256, 0.994, 365),
+            "saliva": [
+                *_nitrate(-2.30, 0.0252, 0.979, 55),
+                _paired("aerobic METPO:1000602", 0.4, 0.1, trait="METPO:1000602", study_count="55"),
+                _paired("unrun U:1", "NaN", 0.0, trait="U:1", study_count="55"),
+                _paired(
+                    "padded P:1",
+                    1.0,
+                    0.0,
+                    trait="P:1",
+                    study_count="55",
+                    study_p_value="1.0",
+                    study_test_status="not_tested",
+                ),
+                _paired(
+                    "padded P:2",
+                    1.0,
+                    0.0,
+                    trait="P:2",
+                    study_count="55",
+                    study_p_value="NaN",
+                ),
+            ],
+        }
+    }
+    multi_caveat = deck.paired_contrast_caveat(multi_metrics)
+    # The producer fills a missing study p with 1 before BH, so the two padded saliva traits
+    # stay in the family the q was computed over; they are counted and flagged (#1568).
+    assert "nominal p = 0.025, q = 0.98 over 4 saliva tests, 2 not tested;" in multi_caveat
+    assert "Feces t = +3.97, q = 0.0013 over 3 feces tests)" in multi_caveat
+    assert "in Saliva (55 studies), 0 of 4." in multi_caveat
 
 
 def test_plate_two_caveat_needs_the_nitrate_rows() -> None:
@@ -296,24 +339,39 @@ def _model(coefficient: float, p: float) -> dict[str, str]:
 @pytest.mark.parametrize(
     ("model", "positive", "verdict"),
     [
-        ((0.4098, 0.08004), (0.1859, 0.0553), "a PD-specific direction is not shown at p < 0.05"),
-        ((0.41, 0.01), (0.19, 0.02), "a PD-specific direction is shown at p < 0.05."),
-        ((0.41, 0.01), (0.19, 0.2), "is shown at p < 0.05 for one measure only"),
-        ((-0.41, 0.04), (0.19, 0.2), "points the other way"),
+        (
+            (0.4098, 0.08004),
+            (0.1859, 0.0553),
+            "a PD-specific direction is not shown at nominal p < 0.05.",
+        ),
+        ((0.41, 0.01), (0.19, 0.02), "a PD-specific direction is shown at nominal p < 0.05."),
+        ((0.41, 0.01), (0.19, 0.2), "is shown at nominal p < 0.05 for one measure only."),
+        ((-0.41, 0.04), (0.19, 0.2), "points the other way."),
     ],
 )
 def test_pd_direction_caveat_quotes_the_clustered_model(
     model: tuple[float, float], positive: tuple[float, float], verdict: str
 ) -> None:
-    """The figure's title says direction-specific; the clustered model decides (#590, #608)."""
+    """The figure's title says direction-specific; the clustered model decides (#590, #608,
+    #1430, #1566)."""
     caveat = deck.pd_direction_caveat(_model(*model), _model(*positive))
+    assert "(pd_cellulose_interaction_model.tsv, 2 nominal tests shown)" in caveat
+    assert "of its" not in caveat
     assert f"{model[0]:+.2f} cellulose z" in caveat
+    assert f"nominal p = {deck.p_text(model[1])}" in caveat
+    assert f"nominal p = {deck.p_text(positive[1])}" in caveat
     assert "the share of profiles with cellulose z > 0" in caveat
     assert verdict in caveat
+    assert ", p = " not in caveat
+    assert "at p < 0.05" not in caveat
+
+    eight_rows = [_model(0.1, 0.2) for _ in range(6)] + [_model(*model), _model(*positive)]
+    caveat_eight = deck.pd_direction_caveat(_model(*model), _model(*positive), eight_rows)
+    assert "(pd_cellulose_interaction_model.tsv, 2 of its 8 nominal tests shown)" in caveat_eight
 
 
 def test_pd_direction_caveat_gives_the_share_in_percentage_points() -> None:
-    """The positive-z outcome is 0/1, so its term is a share, with its interval (#617)."""
+    """The positive-z outcome is 0/1, so its term is a share, with its interval (#617, #1430)."""
     model = {"coefficient": "0.4098", "ci_low": "-0.0492", "ci_high": "0.8687", "p_value": "0.08"}
     positive = {
         "coefficient": "0.1859",
@@ -321,9 +379,107 @@ def test_pd_direction_caveat_gives_the_share_in_percentage_points() -> None:
         "ci_high": "0.3761",
         "p_value": "0.0553",
     }
-    assert "+18.6 percentage points (95% CI -0.4 to +37.6, p = 0.055)" in (
-        deck.pd_direction_caveat(model, positive)
-    )
+    caveat = deck.pd_direction_caveat(model, positive)
+    assert "(pd_cellulose_interaction_model.tsv, 2 nominal tests shown)" in caveat
+    assert "+0.41 cellulose z (95% CI -0.05 to +0.87, nominal p = 0.080)" in caveat
+    assert "+18.6 percentage points (95% CI -0.4 to +37.6, nominal p = 0.055)" in caveat
+
+
+@pytest.mark.parametrize(
+    ("unrun", "expected_pos_clause", "expected_z_clause"),
+    [
+        (
+            {
+                "coefficient": "",
+                "ci_low": "",
+                "ci_high": "",
+                "p_value": "",
+                "p_value_type": "not_tested",
+            },
+            "and not estimable (not tested) in the share of profiles",
+            "is not estimable for cellulose z (not tested), and ",
+        ),
+        (
+            {
+                "coefficient": "NaN",
+                "ci_low": "NaN",
+                "ci_high": "NaN",
+                "p_value": "NaN",
+                "p_value_type": "not_tested",
+            },
+            "and not estimable (not tested) in the share of profiles",
+            "is not estimable for cellulose z (not tested), and ",
+        ),
+        (
+            {
+                "coefficient": "0.2334",
+                "ci_low": "0.2334",
+                "ci_high": "0.2334",
+                "p_value": "",
+                "p_value_type": "not_tested",
+            },
+            "and +23.3 percentage points (95% CI +23.3 to +23.3, not tested) "
+            "in the share of profiles",
+            "is +0.23 cellulose z (95% CI +0.23 to +0.23, not tested), and ",
+        ),
+        (
+            {
+                "coefficient": "0.2334",
+                "ci_low": "0.03",
+                "ci_high": "0.43",
+                "p_value": "NA",
+            },
+            "and +23.3 percentage points (95% CI +3.0 to +43.0, not tested) "
+            "in the share of profiles",
+            "is +0.23 cellulose z (95% CI +0.03 to +0.43, not tested), and ",
+        ),
+        (
+            {
+                "coefficient": "0.1859",
+                "ci_low": "-0.2741",
+                "ci_high": "0.6459",
+                "p_value": "0.01",
+                "p_value_type": "not_tested",
+            },
+            "and +18.6 percentage points (95% CI -27.4 to +64.6, not tested) "
+            "in the share of profiles",
+            "is +0.19 cellulose z (95% CI -0.27 to +0.65, not tested), and ",
+        ),
+    ],
+)
+def test_pd_direction_caveat_excludes_unrun_test_from_count(
+    unrun: dict[str, str],
+    expected_pos_clause: str,
+    expected_z_clause: str,
+) -> None:
+    """An unrun interaction test is excluded from the nominal test count (#1430, #1560, #1561,
+    #1562, #1563, #1566)."""
+    tested_nonsig = _model(0.4098, 0.08004)
+    tested_sig = _model(0.41, 0.01)
+
+    caveat_nonsig = deck.pd_direction_caveat(tested_nonsig, unrun)
+    assert "(pd_cellulose_interaction_model.tsv, 1 nominal test shown)" in caveat_nonsig
+    assert "of its" not in caveat_nonsig
+    assert "nominal p = 0.080" in caveat_nonsig
+    assert expected_pos_clause in caveat_nonsig
+    assert caveat_nonsig.endswith("so only one measure was tested.")
+    assert "nan" not in caveat_nonsig.lower()
+
+    eight_with_one_unrun = [_model(0.1, 0.2) for _ in range(6)] + [tested_nonsig, unrun]
+    caveat_seven = deck.pd_direction_caveat(tested_nonsig, unrun, eight_with_one_unrun)
+    assert "(pd_cellulose_interaction_model.tsv, 1 of its 7 nominal tests shown)" in caveat_seven
+
+    caveat_sig = deck.pd_direction_caveat(unrun, tested_sig)
+    assert "(pd_cellulose_interaction_model.tsv, 1 nominal test shown)" in caveat_sig
+    assert expected_z_clause in caveat_sig
+    assert "nominal p = 0.010) in the share of profiles" in caveat_sig
+    assert caveat_sig.endswith("so only one measure was tested.")
+
+    caveat_none = deck.pd_direction_caveat(unrun, unrun)
+    assert "(pd_cellulose_interaction_model.tsv, 0 nominal tests shown)" in caveat_none
+    assert "of its" not in caveat_none
+    assert "nominal p =" not in caveat_none
+    assert caveat_none.endswith("so neither measure was tested.")
 
 
 def test_p_values_do_not_round_across_the_threshold() -> None:
@@ -453,11 +609,22 @@ def test_plate_four_callout_names_definition_dependence_and_fits(tmp_path: Path)
     fragile = (
         "the HIV result depends on the condition definition (study-level p 0.0020\N{EN DASH}0.18)"
     )
-    callout = plates.cellulose_decr_notes(_cellulose_repo(tmp_path, fragile))["plate4_callout"]
+    notes = plates.cellulose_decr_notes(_cellulose_repo(tmp_path, fragile))
+    callout = notes["plate4_callout"]
     lines = callout.splitlines()
     assert max(len(line) for line in lines) <= 88
     assert sum(line.startswith("• ") for line in lines) == 3
-    assert f"• Cellulose deep-dive: {fragile}" in " ".join(line.strip() for line in lines)
+    joined = " ".join(line.strip() for line in lines)
+    assert f"• Cellulose deep-dive: {fragile}" in joined
+    assert "OR 13.6, nominal p=1.2e-04" in joined
+    assert "disease-vs-healthy studies nominal p=0.0069 (2/56 tests)" in joined
+    assert (
+        "whole-signature null nominal p=0.19 (mean d_J), nominal p=0.73 (core; 2/5 tests)" in joined
+    )
+    assert notes["crc_source"] == (
+        "CRC cellulose stool vs GI: OR 13.6, nominal p=1.2e-04; "
+        "disease-vs-healthy studies nominal p=0.0069 (2/56 tests) (cellulose_decr)."
+    )
 
 
 def test_plate_four_callout_without_definition_dependence(tmp_path: Path) -> None:
@@ -883,10 +1050,18 @@ def test_plate_one_slide_text_reads_the_tables() -> None:
     }
     takeaway, caveat = deck.plate_one_text(metrics)
     assert "602 fecal studies" in takeaway
-    assert "408 fecal study Wilcoxon tests" in takeaway
+    assert "408 fecal study Wilcoxon tests run" in takeaway
     assert caveat.startswith("5 of 6 traits pass study-level BH")
     assert "(median 1 study per cell), 1 individual profile cell is selected after BH" in caveat
-    assert "p = 0.00017 (BH q = 0.056)" in caveat
+    assert "nominal Wilcoxon p = 0.00017 (in the 408-test screen; BH q = 0.056)" in caveat
+
+    with_untested = {**metrics, "pd_net_tested": 405, "pd_net_untested": 3}
+    u_takeaway, u_caveat = deck.plate_one_text(with_untested)
+    assert "405 fecal study Wilcoxon tests run" in u_takeaway
+    assert (
+        "nominal Wilcoxon p = 0.00017 (in the 408-test screen, 3 not tested; BH q = 0.056)"
+        in u_caveat
+    )
 
 
 def test_prior_link_says_when_the_study_is_in_the_corpus() -> None:
@@ -1204,17 +1379,55 @@ def test_cover_quotes_the_comparison_table() -> None:
         "Arm 3 study-level Table 1: all 6 traits pass BH q &lt; 0.01 across the 939 studies with "
         "a nonzero annotation total (in the 572 such disease-vs-healthy oriented studies, the "
         "cellulose annotation share is larger in the decreased signature in 288 of 475 scored "
-        "studies (60.6%; 97 tied), p = 4.1 \N{MULTIPLICATION SIGN} 10⁻⁶, and 3 log-ratios pass "
-        "BY q ≤ 0.05: FA/CEL, CEL/SPH and CEL/ARS)"
+        "studies (60.6%; 97 tied), nominal p = 4.1 \N{MULTIPLICATION SIGN} 10⁻⁶ (one of the 6 "
+        "Table 1 sign tests), and 3 log-ratios pass BY q ≤ 0.05: FA/CEL, CEL/SPH and CEL/ARS)"
+    )
+    signs_five = _signs(ALL_PASSING)
+    ori = signs_five[ORIENTED]
+    ori_fracs = dict(ori.fractions)
+    ori_fracs["coccus_shaped"] = replace(ori_fracs["coccus_shaped"], p_value=float("nan"))
+    five_pop = {**signs_five, ORIENTED: replace(ori, fractions=ori_fracs)}
+    assert "one of the 5 Table 1 sign tests" in deck.cover_table1_text({"table1": five_pop})
+
+
+def test_mcnemar_text_labels_its_single_nominal_test() -> None:
+    from mtp.quoted_results import McNemar
+
+    test = McNemar(399, 255, 1.56, 1.95e-8)
+    assert deck.mcnemar_text({"mcnemar": test}) == (
+        "oxygen-guild McNemar OR = 1.560 (399 vs 255 discordant studies, "
+        "nominal p = 1.9 \N{MULTIPLICATION SIGN} 10⁻⁸, 1 test)"
+    )
+    guild_slide = {
+        "figure_file_path": "data/derived/guild_maps/guild_condition_body_site_heatmap.png",
+        "title": "Oxygen-guild discordance is asymmetric across studies",
+        "takeaway": (
+            "Discordant study counts are 420 versus 290: paired odds ratio 1.448; "
+            "exact McNemar p = 1.21 \N{MULTIPLICATION SIGN} 10⁻⁶."
+        ),
+        "caveat": "The saved image is an unversioned local output.",
+    }
+    _, takeaway, _ = deck.update_previous_slide_text(
+        guild_slide, {"contrasts_by_key": {}, "mcnemar": test}
+    )
+    assert takeaway == (
+        "Discordant study counts are 399 versus 255: paired odds ratio 1.560; "
+        "exact McNemar nominal p = 1.9 \N{MULTIPLICATION SIGN} 10⁻⁸, 1 test."
     )
 
 
 def test_oriented_cellulose_text_reads_both_populations() -> None:
     assert deck.oriented_cellulose_text({"table1": _signs(ALL_PASSING)}) == (
         "the cellulose catabolism annotation share is larger in the decreased signature in "
-        "57.0% of scored studies (BH q = 0.0020) and in 60.6% of the oriented ones (p = "
-        "4.1e-06, BH q = 0.0020), BH over the six Table 1 traits"
+        "57.0% of scored studies (BH q = 0.0020) and in 60.6% of the oriented ones (nominal p = "
+        "4.1e-06, one of the 6 Table 1 sign tests; BH q = 0.0020), BH over the six Table 1 traits"
     )
+    signs_five = _signs(ALL_PASSING)
+    ori = signs_five[ORIENTED]
+    ori_fracs = dict(ori.fractions)
+    ori_fracs["coccus_shaped"] = replace(ori_fracs["coccus_shaped"], p_value=float("nan"))
+    five_pop = {**signs_five, ORIENTED: replace(ori, fractions=ori_fracs)}
+    assert "one of the 5 Table 1 sign tests" in deck.oriented_cellulose_text({"table1": five_pop})
 
 
 def test_direction_shift_slide_quotes_its_map_and_the_oriented_subset() -> None:
@@ -1230,8 +1443,9 @@ def test_direction_shift_slide_quotes_its_map_and_the_oriented_subset() -> None:
         }
         for trait in CODES
     }
-    metrics = {
-        "table1": _signs(ALL_PASSING),
+    signs = _signs(ALL_PASSING)
+    metrics: dict[str, Any] = {
+        "table1": signs,
         "table1_shift": shift,
         "contrast_classifier": "contrast-orientation-v4",
     }
@@ -1244,9 +1458,22 @@ def test_direction_shift_slide_quotes_its_map_and_the_oriented_subset() -> None:
         "here, the cellulose share is larger in the decreased signature in 288 of 475 scored "
         "studies (60.6%; 97 tied)"
     )
-    assert f"{oriented}, p = 4.1e-06, BH q = 0.0020." in takeaway
+    assert (
+        f"{oriented}, nominal p = 4.1e-06 (one of the 6 Table 1 sign tests), BH q = 0.0020."
+        in takeaway
+    )
     assert "contrast-orientation-v4" in caveat
     assert "317" not in takeaway + caveat
+
+    ori = signs[ORIENTED]
+    ori_fracs = dict(ori.fractions)
+    ori_fracs["coccus_shaped"] = replace(ori_fracs["coccus_shaped"], p_value=float("nan"))
+    five_metrics = {
+        **metrics,
+        "table1": {**signs, ORIENTED: replace(ori, fractions=ori_fracs)},
+    }
+    _, five_takeaway, _ = deck.direction_shift_text(five_metrics)
+    assert "one of the 5 Table 1 sign tests" in five_takeaway
 
 
 def test_sci_writes_out_powers_of_ten() -> None:
@@ -2029,9 +2256,15 @@ def _zero_trait_rows() -> list[dict[str, str]]:
         ("8", "NCBITaxon:35493", "Streptophyta", "phylum", "14", "11", "14"),
         ("9", "NCBITaxon:81850", "Lactobacillaceae", "family", "12", "12", "12"),
     ]
+    # Lineage is explicit; the producer has no default, so missing lineage is
+    # never read as bacteria (#957, #1270).
+    eukaryota = producer.TaxonomyState("eukaryota", "resolved_root", ("NCBITaxon:2759",))
+    bacteria = producer.TaxonomyState("bacteria", "resolved_root", ("NCBITaxon:2",))
+    eukaryotic_taxa = {"NCBITaxon:5476", "NCBITaxon:35493"}
     rows: list[dict[str, str]] = []
     for rank_idx, taxon_id, taxon_name, tax_rank, occs, studies, profiles in specs:
-        cat, rem = producer.diagnose_zero_trait_taxon(taxon_id, taxon_name, tax_rank)
+        taxonomy = eukaryota if taxon_id in eukaryotic_taxa else bacteria
+        cat, rem = producer.diagnose_zero_trait_taxon(taxon_id, taxon_name, tax_rank, taxonomy)
         rows.append(
             {
                 "zero_trait_rank": rank_idx,
@@ -3114,7 +3347,10 @@ def test_plate6_candidatus_label_preserves_direct_evidence_caution() -> None:
     """Candidatus producer diagnosis maps to direct-evidence caution, not MAG inference (#925)."""
     producer = _load("create_taxa_coverage_histogram")
     category, remediation = producer.diagnose_zero_trait_taxon(
-        "fixture:candidatus", "Candidatus test lineage", "species"
+        "fixture:candidatus",
+        "Candidatus test lineage",
+        "species",
+        producer.TaxonomyState("bacteria", "resolved_root", ("NCBITaxon:2",)),
     )
     for row in (
         {"diagnosis_category": category, "suggested_remediation": remediation},
@@ -3755,7 +3991,8 @@ def test_deck_and_plates_derive_corpus_and_trait_counts_from_tables(
         encoding="utf-8",
     )
     (p_derived / "trait_enrichment_traits_overall_ranked.tsv").write_text(
-        "trait\tinc_hits\tdec_hits\thit_rows\n" + "".join(f"T{i}\t10\t2\t12\n" for i in range(344)),
+        "# Stat-Type: fdr_q\ntrait\tinc_hits\tdec_hits\thit_rows\n"
+        + "".join(f"T{i}\t10\t2\t12\n" for i in range(344)),
         encoding="utf-8",
     )
     for ora_name in (plates.ORA_ENRICHMENT, plates.ORA_DEPLETION):
@@ -3771,9 +4008,17 @@ def test_deck_and_plates_derive_corpus_and_trait_counts_from_tables(
         "mcnemar_odds_ratio\taerobe_up_anaerobe_down_vs_reverse\t1.56\t1.95e-08\n",
         encoding="utf-8",
     )
-    comp_rows = _comparison(ALL_STUDIES, 908, ALL_PASSING, (333, 441)) + _comparison(
-        ORIENTED, 570, ALL_PASSING, (187, 288)
-    )
+    comp_rows = [
+        {**r, "p_value": "NaN", "q_value": "1.0"}
+        if r["population"] == ORIENTED
+        and r["comparison"] == "fraction"
+        and r["numerator"] == "coccus_shaped"
+        else r
+        for r in (
+            _comparison(ALL_STUDIES, 908, ALL_PASSING, (333, 441))
+            + _comparison(ORIENTED, 570, ALL_PASSING, (187, 288))
+        )
+    ]
     comp_p = plate_repo / plates.COMPARISON
     comp_p.parent.mkdir(parents=True, exist_ok=True)
     comp_cols = list(comp_rows[0])
@@ -3909,7 +4154,22 @@ def test_deck_and_plates_derive_corpus_and_trait_counts_from_tables(
     assert plates.build_methods_plate2(plate_repo, plate_repo).exists()
     mp2_fig = closed.pop()
     try:
-        mp2_fig.canvas.draw()
+        for check_dpi in (100, 220):
+            mp2_fig.set_dpi(check_dpi)
+            mp2_fig.canvas.draw()
+            ax_mp2 = mp2_fig.axes[0]
+            mc_patch = next(
+                p
+                for p in ax_mp2.patches
+                if isinstance(p, plates.mpatches.FancyBboxPatch)
+                and abs(p.get_x() - 69.8) < 1e-3
+                and abs(p.get_y() - 53.5) < 1e-3
+            )
+            mc_bbox = mc_patch.get_window_extent()
+            mc_sub = next(t for t in ax_mp2.texts if "discordant studies:" in t.get_text())
+            mc_s_bbox = mc_sub.get_window_extent()
+            assert mc_s_bbox.x0 >= mc_bbox.x0
+            assert mc_s_bbox.x1 <= mc_bbox.x1
         mp2_text = "\n".join(
             [
                 *(t.get_text() for t in mp2_fig.texts),
@@ -3921,16 +4181,43 @@ def test_deck_and_plates_derive_corpus_and_trait_counts_from_tables(
             "2\N{MULTIPLICATION SIGN}2 Hypergeometric Over-Representation (M = 5,999 Taxa)"
             in mp2_text
         )
+        assert (
+            "654 discordant studies: 399 Aerobe↑/Anaerobe↓\n"
+            "vs 255 opposite (OR = 1.56, nominal p = 1.9 \N{MULTIPLICATION SIGN} "
+            "10\N{SUPERSCRIPT MINUS}\N{SUPERSCRIPT EIGHT}, 1 test)" in mp2_text
+        )
+        assert "1.56, p =" not in mp2_text
         assert "Pass conservative 344-trait\nBenjamini\N{EN DASH}Yekutieli q ≤ 0.05" in mp2_text
         assert "Aggregated across N = 908 unique studies" in mp2_text
         assert "344-trait BH/BY screen (fixes 0.354 screening bias)" in mp2_text
         assert "344 traits pass BH₃₄₄ ≤ 0.05" in mp2_text
         assert "+ Arm 3 BH₃₄₄ ≤ 0.05 + Arm 2 ORA" in mp2_text
         assert "344 Biological Traits" in mp2_text
+        assert "Cellulose ↓ nominal p=4.1e-06 (1/5 tests)" in mp2_text
         assert "5,829" not in mp2_text
         assert "317" not in mp2_text
     finally:
         real_close(mp2_fig)
+
+    # Exercise the real Plate II and VII call sites, not just read_tsv's guard
+    # helper. Dropping adjusted_ora=True at either builder must fail (#1502).
+    ranked_path = p_derived / "trait_enrichment_traits_overall_ranked.tsv"
+    adjusted_rankings = ranked_path.read_text(encoding="utf-8")
+    ranked_path.write_text(
+        adjusted_rankings.replace("# Stat-Type: fdr_q", "# Stat-Type: p_value"),
+        encoding="utf-8",
+    )
+    try:
+        for builder in (plates.build_methods_plate2, plates.build_plate7):
+            existing_figures = set(plates.plt.get_fignums())
+            try:
+                with pytest.raises(ValueError, match="Nominal ORA input is not FDR-controlled"):
+                    builder(plate_repo, plate_repo)
+            finally:
+                for number in set(plates.plt.get_fignums()) - existing_figures:
+                    real_close(number)
+    finally:
+        ranked_path.write_text(adjusted_rankings, encoding="utf-8")
 
     # Mismatched trait_direction_screen.tsv row count raises ValueError:
     (screen_dir / "trait_direction_screen.tsv").write_text(
@@ -4015,3 +4302,564 @@ def test_committed_phenotype_coverage_tables_drive_deck_and_plate6(tmp_path: Pat
     assert len(mod_traits) == 60
     assert len(pooled_stats) == 340
     assert {r["retained_trait_count"] for r in pooled_stats} == {"344"}
+
+
+def test_pd_network_slide_and_cover_label_nominal_p_and_exclude_unrun_tests(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """PD network slide and cover label Wilcoxon p nominal and exclude unrun tests (#1430)."""
+    rank_rows = _coverage_rank_rows()
+    zero_rows = _zero_trait_rows()
+    metrics = _mock_rerun_repo_for_deck(tmp_path, monkeypatch, rank_rows, zero_rows)
+
+    base_read_tsv = deck.read_tsv
+    # Place a tested row with q_value NaN FIRST in file order (#1562), outside the BH family:
+    outside_nan_q_row = {
+        "condition": "HIV infection",
+        "trait": "rod shaped",
+        "mean_contrast": "0.100",
+        "paired_study_count": "3",
+        "positive_study_count": "2",
+        "negative_study_count": "1",
+        "p_value": "0.03",
+        "q_value": "NaN",
+        "passes_min_paired_studies": "False",
+    }
+    net_rows = [
+        outside_nan_q_row,
+        {
+            "condition": "Parkinson's disease",
+            "trait": "moderately halophilic",
+            "mean_contrast": "0.312",
+            "paired_study_count": "17",
+            "positive_study_count": "14",
+            "negative_study_count": "3",
+            "p_value": "0.000167",
+            "q_value": "0.0561",
+            "passes_min_paired_studies": "True",
+        },
+        {
+            "condition": "Parkinson's disease",
+            "trait": "cellulose catabolic process",
+            "mean_contrast": "-0.120",
+            "paired_study_count": "17",
+            "positive_study_count": "5",
+            "negative_study_count": "12",
+            "p_value": "0.01",
+            "q_value": "0.10",
+            "passes_min_paired_studies": "True",
+        },
+    ]
+    monkeypatch.setattr(
+        deck,
+        "read_tsv",
+        lambda p, quoted=True: (
+            list(net_rows)
+            if p.name == "pd_condition_taxon_trait_network_condition_trait_tests.tsv"
+            else base_read_tsv(p, quoted)
+        ),
+    )
+
+    loaded = deck.load_rerun_metrics(tmp_path)
+    loaded["plate_counts"] = metrics["plate_counts"]
+    loaded["cellulose_statements"] = metrics["cellulose_statements"]
+    assert loaded["pd_net_total"] == 2
+    assert loaded["pd_net_tested"] == 2
+    assert loaded["pd_net_untested"] == 0
+    assert loaded["pd_net_lead"] is loaded["pd_halo_wilcoxon"]
+
+    net_slide = {
+        "figure_file_path": (
+            "trait-visualization/trait-profile-investigation/PD-cellulose/"
+            "pd_condition_taxon_trait_network.png"
+        ),
+        "title": "",
+        "takeaway": "",
+        "caveat": "",
+    }
+    title, takeaway, _ = deck.update_previous_slide_text(net_slide, loaded)
+    assert title == "PD halophily leads the 2-test study-level fecal screen (BH q = 0.0561)"
+    assert takeaway == (
+        "PD moderately halophilic scores change by +0.312 across 17 paired studies "
+        "(14 up vs 3 down, nominal p = 1.67e-04, BH q = 0.0561); "
+        "no taxon survives the separate 1-test family."
+    )
+    assert ", p = " not in takeaway
+
+    cover_text = deck.cover_wilcoxon_text(loaded)
+    assert cover_text == (
+        "In the 2-test fecal study Wilcoxon screen, PD moderately halophilic leads "
+        "(+0.312 mean contrast across 17 studies, 14↑:3↓, nominal p = 1.67e-04, BH q = 0.0561)."
+    )
+    assert ", p = " not in cover_text
+
+    # An unrun test row inside the BH family is included in pd_net_total and reported as
+    # "(1 not tested)" in the network title, the cover, and the PD caveat (#1559, #1562):
+    for unrun_row in (
+        {"condition": "HIV infection", "trait": "coccus shaped", "p_value": "", "q_value": ""},
+        {"condition": "HIV infection", "trait": "coccus shaped", "p_value": "NA", "q_value": ""},
+        {
+            "condition": "HIV infection",
+            "trait": "coccus shaped",
+            "p_value": "NaN",
+            "p_value_type": "not_tested",
+            "q_value": "NaN",
+            "passes_min_paired_studies": "True",
+        },
+    ):
+        net_rows_with_unrun = [*net_rows, unrun_row]
+        model_extra = [
+            *({"outcome": "cellulose_z", "term": f"t{i}", "p_value": "0.2"} for i in range(5)),
+            {"outcome": "cellulose_z", "term": "extra_unrun", **unrun_row},
+        ]
+        monkeypatch.setattr(
+            deck,
+            "read_tsv",
+            lambda p, quoted=True, _rows=net_rows_with_unrun, _me=model_extra: (
+                list(_rows)
+                if p.name == "pd_condition_taxon_trait_network_condition_trait_tests.tsv"
+                else [*base_read_tsv(p, quoted), *_me]
+                if p.name == "pd_cellulose_interaction_model.tsv"
+                else base_read_tsv(p, quoted)
+            ),
+        )
+        with_unrun = deck.load_rerun_metrics(tmp_path)
+        with_unrun["plate_counts"] = metrics["plate_counts"]
+        with_unrun["cellulose_statements"] = metrics["cellulose_statements"]
+        assert with_unrun["pd_net_total"] == 3
+        assert with_unrun["pd_net_tested"] == 2
+        assert with_unrun["pd_net_untested"] == 1
+        assert with_unrun["pd_net_lead"] is with_unrun["pd_halo_wilcoxon"]
+        assert "(pd_cellulose_interaction_model.tsv, 2 of its 7 nominal tests shown)" in (
+            deck.pd_direction_caveat(
+                with_unrun["pd_interaction"], with_unrun["pd_interaction_positive"]
+            )
+        )
+        u_title, u_takeaway, _ = deck.update_previous_slide_text(dict(net_slide), with_unrun)
+        assert u_title == (
+            "PD halophily leads the 3-test study-level fecal screen (1 not tested; BH q = 0.0561)"
+        )
+        assert "nominal p = 1.67e-04, BH q = 0.0561" in u_takeaway
+        assert (
+            "In the 3-test fecal study Wilcoxon screen (1 not tested), PD moderately halophilic "
+            "leads" in deck.cover_wilcoxon_text(with_unrun)
+        )
+        lollipop = next(
+            s
+            for s in deck.get_new_slides_metadata(with_unrun)
+            if s.get("analysis") == "pd_six_trait_direction_lollipop"
+        )
+        assert (
+            "In the 3-test study-level Wilcoxon screen (1 not tested), PD halophily has BH q ="
+            in lollipop["caveat"]
+        )
+        p1_takeaway, p1_caveat = deck.plate_one_text(with_unrun)
+        assert "2 fecal study Wilcoxon tests run" in p1_takeaway
+        assert (
+            "nominal Wilcoxon p = 0.00017 (in the 3-test screen, 1 not tested; BH q = 0.056)"
+            in p1_caveat
+        )
+
+    net_rows_three = [
+        *net_rows,
+        {
+            "condition": "HIV infection",
+            "trait": "coccus shaped",
+            "mean_contrast": "0.050",
+            "paired_study_count": "10",
+            "positive_study_count": "6",
+            "negative_study_count": "4",
+            "p_value": "0.20",
+            "q_value": "0.40",
+        },
+    ]
+    monkeypatch.setattr(
+        deck,
+        "read_tsv",
+        lambda p, quoted=True: (
+            list(net_rows_three)
+            if p.name == "pd_condition_taxon_trait_network_condition_trait_tests.tsv"
+            else base_read_tsv(p, quoted)
+        ),
+    )
+    with_three = deck.load_rerun_metrics(tmp_path)
+    assert with_three["pd_net_total"] == 3
+    t_title, _, _ = deck.update_previous_slide_text(dict(net_slide), with_three)
+    assert "3-test study-level fecal screen" in t_title
+    assert "In the 3-test fecal study Wilcoxon screen" in deck.cover_wilcoxon_text(with_three)
+
+    # When another row has a smaller q_value, halophily is "in" / "has" rather than "leads":
+    not_lead = {**with_three, "pd_net_lead": net_rows_three[2]}
+    nl_title, _, _ = deck.update_previous_slide_text(dict(net_slide), not_lead)
+    assert nl_title == "PD halophily in the 3-test study-level fecal screen (BH q = 0.0561)"
+    assert deck.cover_wilcoxon_text(not_lead).startswith(
+        "In the 3-test fecal study Wilcoxon screen, PD moderately halophilic has ("
+    )
+
+    # Verify build_deck renders cover_wilcoxon_text into selected_figures_v6.html:
+    monkeypatch.setattr(deck, "load_rerun_metrics", lambda _r: dict(loaded))
+    monkeypatch.setattr(
+        deck,
+        "load_cellulose_captions",
+        lambda _r: {"statements": {"overlap": "test overlap", "fragile": ""}},
+    )
+    monkeypatch.setattr(deck, "cellulose_revision", lambda _r: "deadbeef")
+    monkeypatch.setattr(deck, "plate_revision", lambda _r: "deadbeef")
+    monkeypatch.setattr(deck, "extract_committed_figures", lambda _p: None)
+    monkeypatch.setattr(deck, "placed_slides", lambda *_a, **_kw: [])
+    monkeypatch.setattr(deck, "cellulose_decr_slides", lambda *_a, **_kw: [])
+    monkeypatch.setattr(deck, "get_remaining_appendix_slides", lambda *_a, **_kw: [])
+    monkeypatch.setattr(deck, "check_coverage_table_sync", lambda *_a, **_kw: None)
+    monkeypatch.setattr(deck, "REPO_ROOT", tmp_path)
+    (tmp_path / "Justfile").write_text("", encoding="utf-8")
+    plates_prov = tmp_path / deck.PLATES_DIR / "plates_provenance.json"
+    plates_prov.parent.mkdir(parents=True, exist_ok=True)
+    plates_prov.write_text(json.dumps({"counts": metrics["plate_counts"]}), encoding="utf-8")
+    cell_fig_prov = tmp_path / deck.CELLULOSE_DIR / "figures" / "figures_provenance.json"
+    cell_fig_prov.parent.mkdir(parents=True, exist_ok=True)
+    cell_fig_prov.write_text("{}", encoding="utf-8")
+    cell_prov = tmp_path / deck.CELLULOSE_DIR / "cellulose_decr_provenance.json"
+    cell_prov.write_text(
+        json.dumps({"contrast_classifier_version": loaded["contrast_classifier"]}),
+        encoding="utf-8",
+    )
+    prev_slides_dir = tmp_path / deck.DECK_DIR / "slides"
+    prev_slides_dir.mkdir(parents=True, exist_ok=True)
+    for m_name in ("slide_manifest_v1.tsv", "slide_manifest_v2.tsv"):
+        (prev_slides_dir / m_name).write_text(
+            "slide\tfigure_file_path\tdeck_section\tcode_path\n",
+            encoding="utf-8",
+        )
+    prov_src = tmp_path / deck.DECK_DIR / "provenance" / deck.PROVENANCE_NAME
+    prov_src.parent.mkdir(parents=True, exist_ok=True)
+    prov_src.write_text("figures: []\nstatistical_results: []\n", encoding="utf-8")
+    deck.build_deck(
+        tmp_path,
+        tmp_path / "out_slides",
+        tmp_path / "out_prov",
+        trees={},
+        allow_unverified=True,
+    )
+    rendered_html = (tmp_path / "out_slides" / "selected_figures_v6.html").read_text(
+        encoding="utf-8"
+    )
+    assert deck.cover_wilcoxon_text(loaded) in rendered_html
+
+
+def test_generate_tufte_plates_nominal_p_displays_state_computed_test_counts(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Every uncorrected p display in generate_tufte_plates.py states its test count (#1533)."""
+    rows_a = {"a": {"study_p_value": "0.01", "study_q_value": "0.02"}}
+    rows_b = {
+        "a": {"study_p_value": "0.01", "study_q_value": "0.02"},
+        "b": {"study_p_value": "0.20", "study_q_value": "0.40"},
+        "c": {"study_p_value": "NaN", "study_q_value": "NaN"},
+        "d": {"study_p_value": "", "study_q_value": "1.0", "study_test_status": "not_tested"},
+    }
+    assert plates.study_bh_family_size(rows_a) == 1
+    assert plates.study_bh_family_size(rows_b) == 3
+
+    real_close = plates.plt.close
+    closed: list[Any] = []
+    monkeypatch.setattr(plates.plt, "close", lambda fig: closed.append(fig))
+    monkeypatch.setattr(
+        plates.plt.Figure, "savefig", lambda _self, path, *_a, **_kw: Path(path).write_text("ok")
+    )
+    monkeypatch.setattr(plates, "trait_labels", lambda _repo: {})
+    monkeypatch.setattr(
+        plates, "REPO_ROOT", _cellulose_repo(tmp_path / "cell_root", "HIV definition-dependent")
+    )
+    base_read_tsv = plates.read_tsv
+
+    def _assert_inside_canvas(fig: Any) -> None:
+        fig.set_dpi(100)
+        fig.canvas.draw()
+        fig_box = fig.bbox
+        for artist in [
+            *fig.texts,
+            *(
+                getattr(ax, attr)
+                for ax in fig.axes
+                for attr in ("title", "_left_title", "_right_title")
+            ),
+        ]:
+            if artist.get_text():
+                box = artist.get_window_extent()
+                assert box.x0 >= fig_box.x0 - 0.5, artist.get_text()
+                assert box.x1 <= fig_box.x1 + 0.5, artist.get_text()
+                assert box.y0 >= fig_box.y0 - 0.5, artist.get_text()
+                assert box.y1 <= fig_box.y1 + 0.5, artist.get_text()
+
+    # Plate 2 (26 rows shown; 1 untested padded-q trait in pooled BH family):
+    def _p2_read_tsv(path: Path, *, adjusted_ora: bool = False) -> list[dict[str, str]]:
+        rows: list[dict[str, str]] = base_read_tsv(path, adjusted_ora=adjusted_ora)
+        if path.name == "trait_profile_paired_contrast_trait_stats_pooled.tsv":
+            return [
+                *rows,
+                {
+                    **rows[0],
+                    "trait": "UNTESTED:1",
+                    "study_mean_increased_minus_decreased": "",
+                    "study_p_value": "",
+                    "study_q_value": "1.0",
+                    "study_test_status": "not_tested",
+                },
+            ]
+        return rows
+
+    orig_p2_rows = plates.PLATE2_TRAIT_ROWS
+    monkeypatch.setattr(plates, "PLATE2_TRAIT_ROWS", orig_p2_rows[:-1])
+    monkeypatch.setattr(plates, "read_tsv", _p2_read_tsv)
+    assert plates.build_plate2(REPO, tmp_path).exists()
+    monkeypatch.setattr(plates, "read_tsv", base_read_tsv)
+    monkeypatch.setattr(plates, "PLATE2_TRAIT_ROWS", orig_p2_rows)
+    p2_fig = closed.pop()
+    try:
+        p2_text = "\n".join(
+            [
+                *(t.get_text() for t in p2_fig.texts),
+                *(ax.get_title(loc) for ax in p2_fig.axes for loc in ("center", "left", "right")),
+                *(t.get_text() for ax in p2_fig.axes for t in ax.texts),
+            ]
+        )
+        assert "† nominal p ≤ 0.05 (26 rows shown)" in p2_text
+        assert "/341 traits study BH q ≤ 0.05)" in p2_text
+    finally:
+        real_close(p2_fig)
+
+    # Plate 4 (10 of 11 lead rows; 1 drawn Panel A Wilcoxon row untested -> 82 cells, 395 tests):
+    def _p4_read_tsv(path: Path, *, adjusted_ora: bool = False) -> list[dict[str, str]]:
+        rows: list[dict[str, str]] = base_read_tsv(path, adjusted_ora=adjusted_ora)
+        if path.name == "pd_ecological_reporter_combined_condition_trait_summary.tsv":
+            return [
+                r
+                for r in rows
+                if not (
+                    r.get("condition") == "HIV infection"
+                    and r.get("trait") == "cellulose catabolic process"
+                )
+            ]
+        if path.name == "pd_condition_taxon_trait_network_condition_trait_tests.tsv":
+            out = []
+            for r in rows:
+                if (
+                    r.get("condition") == "COVID-19"
+                    and r.get("trait") == "cellulose catabolic process"
+                ):
+                    out.append({**r, "p_value": "0.020", "q_value": "0.250"})
+                elif r.get("condition") == "Stroke" and r.get("trait") == "coccus shaped":
+                    out.append({**r, "p_value": "", "q_value": "1.0"})
+                else:
+                    out.append(r)
+            return out
+        return rows
+
+    monkeypatch.setattr(plates, "read_tsv", _p4_read_tsv)
+    assert plates.build_plate4(REPO, tmp_path).exists()
+    monkeypatch.setattr(plates, "read_tsv", base_read_tsv)
+    p4_fig = closed.pop()
+    try:
+        _assert_inside_canvas(p4_fig)
+        p4_text = "\n".join(
+            [
+                *(t.get_text() for t in p4_fig.texts),
+                *(ax.get_title(loc) for ax in p4_fig.axes for loc in ("center", "left", "right")),
+                *(t.get_text() for ax in p4_fig.axes for t in ax.texts),
+            ]
+        )
+        assert "*nominal p≤0.05 (82 Wilcoxon tests) / CI≠0" in p4_text
+        assert (
+            "COVID-19; 10 shown)\nStudy win/loss, Profile Fisher FDR (★), "
+            "Study Wilcoxon nominal p/BH q (395 tests)"
+        ) in p4_text
+        assert "Wilc nominal p=0.020" in p4_text
+        assert "Wilc p=" not in p4_text
+    finally:
+        real_close(p4_fig)
+
+    # Plate 5 (footer wrapped inside canvas and clear of xlabels):
+    def _p5_read_tsv(path: Path, *, adjusted_ora: bool = False) -> list[dict[str, str]]:
+        if path.name == "guild_aerobe_anaerobe_correlation.tsv":
+            return [
+                {
+                    "statistic": "discordant_studies",
+                    "comparison": "aerobe_up_anaerobe_down",
+                    "value": "399",
+                    "p_value": "",
+                },
+                {
+                    "statistic": "discordant_studies",
+                    "comparison": "anaerobe_up_aerobe_down",
+                    "value": "255",
+                    "p_value": "",
+                },
+                {
+                    "statistic": "mcnemar_odds_ratio",
+                    "comparison": "aerobe_up_anaerobe_down_vs_reverse",
+                    "value": "1.56",
+                    "p_value": "1.95e-08",
+                },
+            ]
+        rows: list[dict[str, str]] = base_read_tsv(path, adjusted_ora=adjusted_ora)
+        return rows
+
+    monkeypatch.setattr(plates, "read_tsv", _p5_read_tsv)
+    assert plates.build_plate5(REPO, tmp_path).exists()
+    monkeypatch.setattr(plates, "read_tsv", base_read_tsv)
+    p5_fig = closed.pop()
+    try:
+        _assert_inside_canvas(p5_fig)
+        footer_box = p5_fig.texts[2].get_window_extent()
+        for ax in p5_fig.axes:
+            xlabel_box = ax.xaxis.label.get_window_extent()
+            assert not footer_box.overlaps(xlabel_box)
+            assert xlabel_box.y0 - footer_box.y1 >= 6.0
+        assert "st., nominal p = 1.9e-08, 1 test);\n" in p5_fig.texts[2].get_text()
+        assert "(2/56 tests) (cellulose_decr)." in p5_fig.texts[2].get_text()
+    finally:
+        real_close(p5_fig)
+
+    # Plate 7 (5 of 6 oriented Table 1 fraction tests have non-NaN p_value):
+    p7_repo = tmp_path / "p7_repo"
+    p7_paired = p7_repo / "trait-visualization" / "trait-profile-investigation"
+    p7_paired.mkdir(parents=True)
+    t1_specs = [
+        ("METPO:1000608", "facultatively aerobic", "4.0", "0.20"),
+        ("METPO:2000103|GO:0030245", "cellulose catabolic process", "-3.5", "-0.18"),
+        ("METPO:1000668", "coccus shaped", "3.2", "0.15"),
+        ("METPO:1000683", "sphere shaped", "3.1", "0.14"),
+        ("METPO:2000103|pathways:arsenate_reduction", "arsenate reduction", "2.9", "0.12"),
+        ("METPO:1000623", "moderately halophilic", "2.8", "0.11"),
+        ("METPO:1000603", "anaerobic", "-3.8", "-0.22"),
+    ]
+    (p7_paired / "trait_profile_paired_contrast_trait_stats_pooled.tsv").write_text(
+        "trait\ttrait_label\tstudy_count\tstudy_t_statistic\tstudy_q_value\t"
+        "study_mean_increased_minus_decreased\n"
+        + "".join(
+            f"{tid}\t{lbl}\t908\t{t_st}\t0.001\t{mean_d}\n" for tid, lbl, t_st, mean_d in t1_specs
+        ),
+        encoding="utf-8",
+    )
+    p7_derived = p7_repo / "data" / "derived"
+    (p7_derived / "trait_screen").mkdir(parents=True)
+    (p7_derived / "trait_enrichment_traits_overall_ranked.tsv").write_text(
+        "# Stat-Type: fdr_q\ntrait\tinc_hits\tdec_hits\thit_rows\n"
+        + "".join(
+            f"{tid}\t{10 if float(t_st) > 0 else 2}\t{2 if float(t_st) > 0 else 10}\t12\n"
+            for tid, _lbl, t_st, _mean_d in t1_specs
+        ),
+        encoding="utf-8",
+    )
+    (p7_derived / "trait_screen" / "trait_direction_screen.tsv").write_text(
+        "trait\tbh_q_nominal\tby_q_nominal\tstudies_up\tstudies_down\tshare_up\n"
+        + "".join(
+            f"{tid}\t0.001\t0.002\t{300 if float(t_st) > 0 else 200}\t"
+            f"{200 if float(t_st) > 0 else 300}\t{0.60 if float(t_st) > 0 else 0.40}\n"
+            for tid, _lbl, t_st, _mean_d in t1_specs
+        ),
+        encoding="utf-8",
+    )
+    comp_rows = [
+        {**r, "share_up": "0.393684", "p_value": "NaN", "q_value": "1.0"}
+        if r["population"] == ORIENTED
+        and r["comparison"] == "fraction"
+        and r["numerator"] == "coccus_shaped"
+        else {**r, "share_up": "0.393684"}
+        for r in (
+            _comparison(ALL_STUDIES, 908, ALL_PASSING, (333, 441))
+            + _comparison(ORIENTED, 570, ALL_PASSING, (187, 288))
+        )
+    ]
+    comp_p = p7_repo / plates.COMPARISON
+    comp_p.parent.mkdir(parents=True, exist_ok=True)
+    comp_cols = list(comp_rows[0])
+    comp_p.write_text(
+        "\t".join(comp_cols)
+        + "\n"
+        + "\n".join("\t".join(r[c] for c in comp_cols) for r in comp_rows)
+        + "\n",
+        encoding="utf-8",
+    )
+    cal_p = p7_repo / plates.CALIBRATION_CRITERIA
+    cal_p.parent.mkdir(parents=True, exist_ok=True)
+    cal_p.write_text(
+        "criterion\tprocedure\treplicates_recorded\treplicates_required\testimate\n"
+        "per_test_level\tscreened_fraction_sign_test\t200\t200\t0.354\n",
+        encoding="utf-8",
+    )
+
+    assert plates.build_plate7(p7_repo, tmp_path).exists()
+    p7_fig = closed.pop()
+    try:
+        _assert_inside_canvas(p7_fig)
+        p7_text = "\n".join(
+            [
+                *(t.get_text() for t in p7_fig.texts),
+                *(ax.get_title(loc) for ax in p7_fig.axes for loc in ("center", "left", "right")),
+                *(t.get_text() for ax in p7_fig.axes for t in ax.texts),
+            ]
+        )
+        assert "(nominal p = 4.1e-06, BH₆ q = 0.0020; 5 Table 1 tests)" in p7_text
+        assert "○ Oriented 550-st. Table 1 (5 tests; Cell. ↓ nominal p=4.1e-06)" in p7_text
+        assert "(nominal p=4.1e-06)" in p7_text
+        assert (
+            "Oriented 550-study filter (○, 5 Table 1 nominal tests): "
+            "Cellulose 39.4%↑/60.6%↓ (nominal p=4.1e-06, BH₆ q=0.0020)"
+        ) in p7_text
+    finally:
+        real_close(p7_fig)
+
+
+def test_plate5_labels_mcnemar_nominal_p_with_one_test(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#1462: Plate 5 footer labels McNemar p as 'nominal p = ..., 1 test' from the guild table."""
+    guild_corr = tmp_path / plates.GUILD_CORRELATION
+    guild_corr.parent.mkdir(parents=True, exist_ok=True)
+    guild_corr.write_text(
+        "statistic\tcomparison\tvalue\tp_value\n"
+        "discordant_studies\taerobe_up_anaerobe_down\t412\t\n"
+        "discordant_studies\tanaerobe_up_aerobe_down\t248\t\n"
+        "mcnemar_odds_ratio\taerobe_up_anaerobe_down_vs_reverse\t1.661\t2.4e-07\n",
+        encoding="utf-8",
+    )
+    sw_dir = (
+        tmp_path / "trait-visualization" / "trait-profile-investigation" / "taxa-oxygen-switches"
+    )
+    sw_dir.mkdir(parents=True, exist_ok=True)
+    (sw_dir / "condition_oxygen_switch_scores.tsv").write_text(
+        "condition\tbody_site_display\taerobe_up_anaerobe_down_score\trank_score\t"
+        "aerobic_only_study_count\tanaerobic_only_study_count\n"
+        "Colorectal cancer\tFeces\t0.85\t1.50\t12\t10\n"
+        "Periodontitis\tOral\t-0.65\t1.10\t4\t9\n",
+        encoding="utf-8",
+    )
+    (sw_dir / "taxa_cross_disease_switch_summary.tsv").write_text(
+        "taxon_name\ttaxonomic_rank\tincreased_side_profiles\tdecreased_side_profiles\t"
+        "switch_score\ttop_increased_conditions\ttop_decreased_conditions\n"
+        "Streptococcus\tgenus\t40\t30\t70\tParkinson's disease (12)\tColorectal cancer (9)\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(plates, "cellulose_decr_notes", lambda _r: {"crc_source": "CRC note"})
+    monkeypatch.setattr(plates, "pd_split", lambda _rows: "PD split note")
+    monkeypatch.setattr(plates, "crc_oxygen_split", lambda _rows: "CRC split")
+    monkeypatch.setattr(
+        plates.plt.Figure,
+        "savefig",
+        lambda _self, path, **_kw: Path(path).write_bytes(b""),
+    )
+    real_close = plates.plt.close
+    closed: list[Any] = []
+    monkeypatch.setattr(plates.plt, "close", lambda fig: closed.append(fig))
+    assert plates.build_plate5(tmp_path, tmp_path).exists()
+    p5_fig = closed.pop()
+    try:
+        p5_text = "\n".join(t.get_text() for t in p5_fig.texts)
+        assert (
+            "Pooled McNemar OR = 1.661 (412 vs 248 st., nominal p = 2.4e-07, 1 test);\nCRC note"
+            in p5_text
+        )
+        assert "st., p =" not in p5_text
+    finally:
+        real_close(p5_fig)

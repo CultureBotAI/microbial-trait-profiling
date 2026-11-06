@@ -4,7 +4,7 @@ Implementation issue: [#629](https://github.com/CultureBotAI/microbial-trait-pro
 Implementation PR: [#634](https://github.com/CultureBotAI/microbial-trait-profiling/pull/634).
 Branch: `629-execution-checked-linkml-workflow`, based on main. The original
 working checkout and its existing analysis/figure changes were preserved;
-implementation and verification use `/private/tmp/mtp-workflow-629`.
+implementation and verification use `<temp dir>/mtp-workflow-629`.
 
 ## Delivered behavior
 
@@ -57,7 +57,7 @@ does not retroactively certify the KG download or infer its release from a path.
 The production ingest was independently reconciled to the raw snapshot with
 [`audit_production_ingest_629.py`](../../scripts/adhoc/audit_production_ingest_629.py).
 The complete audit is saved locally at
-`/private/tmp/mtp-workflow-629/.tmp/production-ingest-audit.json`.
+`<temp dir>/mtp-workflow-629/.tmp/production-ingest-audit.json`.
 
 | Quantity | Raw snapshot | Emitted study YAML |
 | --- | ---: | ---: |
@@ -106,10 +106,10 @@ The published artifacts from production attempt
 `run-78d44d233b3f43348f50693774f375b4` were independently audited with
 [`audit_core_profile_coverage_629.py`](../../scripts/adhoc/audit_core_profile_coverage_629.py).
 Its input manifest is
-`/private/tmp/mtp-workflow-629/.tmp/core-production/run-78d44d233b3f43348f50693774f375b4/run.json`
+`<temp dir>/mtp-workflow-629/.tmp/core-production/run-78d44d233b3f43348f50693774f375b4/run.json`
 (SHA-256 `1efa9620f5fe8217b6dab57717706fff948da11dae7d415bb1d6aba2cdafdcc4`);
 the saved results are
-`/private/tmp/mtp-workflow-629/.tmp/production-profile-audit.json`.
+`<temp dir>/mtp-workflow-629/.tmp/production-profile-audit.json`.
 These figures describe that completed attempt; final code and provenance
 verification are recorded separately below.
 
@@ -162,7 +162,7 @@ or microbial abundance in the sample.
 
 The saved numerical comparison for production attempt
 `run-78d44d233b3f43348f50693774f375b4` is
-`/private/tmp/mtp-workflow-629/.tmp/validation/production-comparison.json`.
+`<temp dir>/mtp-workflow-629/.tmp/validation/production-comparison.json`.
 It compares actual table values with the original checkout's existing outputs;
 the historical artifacts remain `imported_unverified` because matching values
 do not establish their producing inputs or execution history.
@@ -177,7 +177,7 @@ The count-profile expansion was independently joined to the published host
 metadata and feature catalog with
 [`audit_legacy_count_expansion_629.py`](../../scripts/adhoc/audit_legacy_count_expansion_629.py),
 with complete results at
-`/private/tmp/mtp-workflow-629/.tmp/validation/legacy-count-expansion-audit.json`.
+`<temp dir>/mtp-workflow-629/.tmp/validation/legacy-count-expansion-audit.json`.
 Every added row is nonhuman, with no missing host labels: for example, 865
 profiles are from mouse experiments, 165 from rat experiments and 111 from
 dog experiments. The baseline's 5,829 keys are exactly the current product's
@@ -218,7 +218,7 @@ separate production execution and comparison above use actual local inputs.
 
 A second full production execution completed as
 `run-49a0c712ad3d4fc59d10804951fe511a`, at
-`/private/tmp/mtp-workflow-629/.tmp/core-production-final/run-49a0c712ad3d4fc59d10804951fe511a/run.json`.
+`<temp dir>/mtp-workflow-629/.tmp/core-production-final/run-49a0c712ad3d4fc59d10804951fe511a/run.json`.
 It records commit `3218b146a53db9d16ff3a85f33d36b8a55eeb3fc`; its matrix and both
 profile files are byte-identical to the first execution. Its conservative
 `git_dirty=true` value exposed the tracked-directory-symlink classification bug
@@ -235,7 +235,7 @@ verified bundle. It read 7,329 profiles, excluded 1,500 nonhuman and 1,159
 unpaired profiles, retained 4,670 profiles from 2,335 experiments, and used
 317 nonmedia feature columns. Its statistics, provenance and checked core
 consumption record are under
-`/private/tmp/mtp-workflow-629/.tmp/consumer-smoke/production-composition/`.
+`<temp dir>/mtp-workflow-629/.tmp/consumer-smoke/production-composition/`.
 The provenance records the run's actual KG hashes and leaves KG release
 identity explicitly unverified.
 

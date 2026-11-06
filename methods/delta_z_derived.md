@@ -44,6 +44,8 @@ For each retained trait, `sdz_up` counts supplied study-mean contrasts greater
 than `1e-12`; `sdz_down` counts values less than `-1e-12`. All remaining study
 means are tied for this summary. Active studies equal up plus down. The support
 reference counts traits with at least 50 active studies, including exactly 50.
+This threshold classifies activity; it does not round the supplied contrasts,
+change their means, or define zero for every downstream statistical test.
 
 These counts appear beside `noel_studies_up` and `noel_studies_down`. The former
 sign the mean transformed contrast; Noel signs the mean raw-fraction
@@ -53,7 +55,14 @@ experiment-weighted and study-weighted means and ranks remain labelled.
 
 ## Row 2: oxygen-label quadrants
 
-The x trait is `METPO:1000608`, facultatively aerobic. The y trait is
+The x trait is `METPO:1000608`. Recorded and verified tables in `delta_z_derived`
+and `three_test_table` keep the KG node label `facultatively aerobic` because
+readers compare labels with the core; they do not record member arrays themselves
+and instead read `trait_member_ids_json` from the core's `feature_metadata` when
+resolving policy membership (#1250, #1259). While human-facing renders in other
+modules apply `display_trait_label` to display `facultative (aerobe or anaerobe)`
+(#1138), no current renderer of `delta_z_derived` or `three_test_table` rows
+applies the display label yet (#1246, #1250). The y trait is
 `METPO:1000607`, obligately anaerobic. `METPO:1000603` is anaerobic and is never
 substituted for the y trait.
 
@@ -147,6 +156,15 @@ and retain missing inference when every study mean is zero. Conditions are still
 selected by comparison count; this sensitivity does not select a new disease
 set, recalibrate the comparison-level p-values, or establish a corrected family.
 
+The study sensitivity deliberately retains **exact zero**, matching the recorded
+nominal Wilcoxon policy of the comparison table. Row 1's `1e-12` threshold is an
+activity classifier for the supplied study ledger; it is not a rounding rule for
+within-cell study means. Applying that threshold to this test would change its
+nonzero support and potentially its signed ranks, selected method and p-value.
+A small nonzero study mean can therefore be tied for the activity summary but
+still contribute a signed rank to the sensitivity test. Neither policy modifies
+the supplied ledgers or thresholds the reported effect estimates.
+
 ## Row 5: body site by condition
 
 Export every exact `(body_site, condition, trait)` cell represented in the
@@ -178,8 +196,14 @@ parent and upstream identities, hashes, scope, population, direction, policies,
 trait-list identity when applicable, producer identity, numerical environment,
 and output hashes. Inputs and producer identity are checked again before
 publication. Outputs must be durable and disjoint from source bundles.
-Exclusive atomic publication refuses an existing destination and cleans only
-staging created by this run.
+Exclusive atomic publication refuses an existing destination. A failed run
+removes its staging directory and newly created empty parent directories,
+checking device and inode identity before cleanup. Pre-existing directories,
+replaced directories and nonempty parents are retained. This is ownership
+tracking for cooperative execution, not a guarantee against arbitrary concurrent
+filesystem changes. Output paths with dangling symlinks or `..` through missing
+components are refused before loading inputs or probing publication. Existing
+directory and symlink paths containing `..` keep filesystem resolution semantics.
 
 Development qualification uses the verified F units read-only. Generated
 results remain outside version control until the selected main basis P.

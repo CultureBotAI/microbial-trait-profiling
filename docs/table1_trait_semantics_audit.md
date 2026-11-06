@@ -96,8 +96,10 @@ The existence of two sibling terms in METPO is an artifact of upstream multi-sou
 3. **Profile-Level Nonzero Support & Correlation ($N=5,629$ human 16S/WMS profiles, with no Tier 1+2, pairing or disease-orientation filter, of the committed `phenotype` table, §3):**
    - Coccus nonzero profiles: **4,386** (77.9%)
    - Sphere nonzero profiles: **3,490** (62.0%)
-   - Pearson correlation across the raw profile counts of all 5,629 profiles: $r = 0.807$ ($p < 10^{-300}$).
-   - Spearman rank correlation, same counts: $\rho = 0.915$ ($p < 10^{-300}$).
+   - Pearson correlation across the raw profile counts of all 5,629 profiles: $r = 0.807$ (nominal diagnostic $p < 10^{-300}$).
+   - Spearman rank correlation, same counts: $\rho = 0.915$ (nominal diagnostic $p < 10^{-300}$).
+   - These are two displayed correlation diagnostics from the historical source
+     binding in §3, not a corrected trait screen or evidence for a causal mechanism.
 
 #### Explicit Grouping Decision: Keep Separate
 - **Decision:** **Do NOT merge `METPO:1000668` and `METPO:1000683` in the primary analysis.**
@@ -174,7 +176,7 @@ Microbial reduction of arsenate ($As^{5+}$) to arsenite ($As^{3+}$) proceeds via
 
 | Feature Key | Grouping Decision | Approved Phrasing | Unsupported Interpretations |
 | :--- | :--- | :--- | :--- |
-| `METPO:1000608` | **Keep separate** | "Taxa annotated as facultatively aerobic (capable of growth in both the presence and absence of oxygen)." | Do not infer anaerobic nitrate/tetrathionate respiration, *nar*/*nap*/*ttr* expression, or host mucosal inflammation. |
+| `METPO:1000608` | **Historical (pre-#1124): Keep separate**; unified post-#1124 (`METPO:1000605`, `METPO:1000608`, `METPO:1000612`) under label `"facultative (aerobe or anaerobe)"` (#1138) | Historical (pre-#1124): "Taxa annotated as facultatively aerobic (capable of growth in both the presence and absence of oxygen)." Post-#1124 union: "Taxa annotated as facultative (aerobe or anaerobe) (annotation for growth with or without oxygen)." | Do not infer anaerobic nitrate/tetrathionate respiration, *nar*/*nap*/*ttr* expression, or host mucosal inflammation. |
 | `METPO:2000103\|GO:0030245` | **Keep separate** | "Taxa annotated with pathway capability for cellulose catabolic processes." | Do not infer active in vivo cellulose breakdown in patients. Do not equate cellulose catabolism with butyrate or SCFA production. |
 | `METPO:1000668` | **Keep separate** | "Taxa annotated with coccus-shaped cell morphology (primarily derived from Madin et al. isolate compilation)." | Do not merge with sphere-shaped by naive string replacement. Do not claim biological non-equivalence without noting source database divergence. |
 | `METPO:1000683` | **Keep separate** | "Taxa annotated with sphere-shaped cell morphology (derived from BactoTraits records and, under the primary `phenotype` scope, BacDive strain records)." | Do not treat as biologically distinct morphology from coccus. Do not sum profile counts without deduplicating shared taxa. |
@@ -195,5 +197,5 @@ Issue [#178](https://github.com/CultureBotAI/bsdbng/issues/178) defines the shar
 ### 6.2 Handoff to Issue #179 (Project-Wide Biological Interpretation)
 Issue [#179](https://github.com/CultureBotAI/bsdbng/issues/179) governs biological interpretation across the manuscript, figures, and automated reports. The boundaries established here provide canonical examples:
 - *Evidence chain:* Source literature $\to$ curated isolate traits $\to$ NCBI taxonomy rollup $\to$ BugSigDB signature overlap $\to$ hypergeometric statistic.
-- *Defensible claims:* A significant shift indicates a higher proportion of taxa in a differential abundance signature possessing the recorded trait annotation.
+- *Defensible claims:* State the direction and estimand of the reported annotation contrast. Any significance claim must supply its q, registry family definition and ID, executed family size, procedure and threshold under the [MT policy](../methods/multiple_testing_policy.md). A result read from p alone is nominal. A significant contrast does not by itself identify higher abundance, a mechanism or a causal direction.
 - *Prohibited claims:* Statistical enrichment in a differential signature does not demonstrate in vivo metabolic fluxes, gene expression levels, environmental chemical exposure, or host causation.

@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import csv
 import importlib.util
+import math
 from collections import defaultdict
 from collections.abc import Sequence
 from dataclasses import dataclass, field, replace
@@ -102,8 +103,8 @@ class GuildMatrix:
     # Body sites whose column block was backed by too few conditions to read as a
     # site-level pattern, removed with all of their columns.
     dropped_body_sites: list[str]
-    # True where the body site was sampled for that condition but no taxon in the
-    # profile carried any trait of that guild. Without this, an all-zero cell is
+    # True where the body site was sampled but profiles have no recorded annotation
+    # signal for the selected guild or trait. Without this, an all-zero cell is
     # drawn in the same colour as a genuinely low fraction.
     sampled_no_signal: list[list[bool]]
     # Keep the build's visibility policy when cutting a focus panel. The masks
@@ -716,9 +717,27 @@ def write_outputs(
     written = write_matrix_outputs(matrix, output_dir)
     stats_path = output_dir / "guild_aerobe_anaerobe_correlation.tsv"
 
+    n_mcnemar_tests = (
+        1 if correlation.mcnemar_p is not None and math.isfinite(correlation.mcnemar_p) else 0
+    )
+    n_spearman_tests = sum(
+        1 for _, p_val, _ in correlation.spearman.values() if math.isfinite(p_val)
+    )
+    n_tests = n_mcnemar_tests + n_spearman_tests
     with stats_path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.writer(handle, delimiter="\t", lineterminator="\n")
-        writer.writerow(["statistic", "comparison", "value", "p_value", "n", "bugsigdb_vintage"])
+        writer.writerow(
+            [
+                "statistic",
+                "comparison",
+                "value",
+                "p_value",
+                "n",
+                "bugsigdb_vintage",
+                "p_value_type",
+                "n_tests",
+            ]
+        )
         if exclusion is not None:
             writer.writerow(
                 [
@@ -728,10 +747,23 @@ def write_outputs(
                     "",
                     exclusion.studies_after,
                     vintage or "",
+                    "",
+                    "",
                 ]
             )
         for key, count in sorted(correlation.table.items()):
-            writer.writerow(["studies_shifted", key, count, "", correlation.studies, vintage or ""])
+            writer.writerow(
+                [
+                    "studies_shifted",
+                    key,
+                    count,
+                    "",
+                    correlation.studies,
+                    vintage or "",
+                    "",
+                    "",
+                ]
+            )
         up_down, down_up = correlation.discordant
         writer.writerow(
             [
@@ -741,6 +773,8 @@ def write_outputs(
                 "",
                 up_down + down_up,
                 vintage or "",
+                "",
+                "",
             ]
         )
         writer.writerow(
@@ -751,6 +785,8 @@ def write_outputs(
                 "",
                 up_down + down_up,
                 vintage or "",
+                "",
+                "",
             ]
         )
         writer.writerow(
@@ -761,17 +797,22 @@ def write_outputs(
                 "" if correlation.mcnemar_p is None else f"{correlation.mcnemar_p:.6g}",
                 up_down + down_up,
                 vintage or "",
+                "nominal" if n_mcnemar_tests > 0 else "not_tested",
+                n_tests,
             ]
         )
         for pair, (rho, p_value, n_studies) in sorted(correlation.spearman.items()):
+            tested = math.isfinite(p_value)
             writer.writerow(
                 [
                     "spearman_rho_across_studies",
                     pair,
                     f"{rho:.6f}",
-                    f"{p_value:.6g}",
+                    f"{p_value:.6g}" if tested else "",
                     n_studies,
                     vintage or "",
+                    "nominal" if tested else "not_tested",
+                    n_tests,
                 ]
             )
 
@@ -989,8 +1030,8 @@ def write_figure(
     than an order of magnitude, so they are drawn on per-trait ranges instead and each
     colour bar carries its own maximum.
 
-    Cells where the site was sampled but carried no trait of the group are filled
-    dark grey, so an absent trait is distinguishable from a small fraction. With
+    Cells where the site was sampled but no group annotations were recorded are filled
+    dark grey, so zero mapped signal is distinguishable from a small fraction. With
     ``mark_no_signal`` off they are left blank instead: the shading dominates the
     figure where the traits are rare, and the state is still recorded in the
     emitted cell-status table.
@@ -1129,9 +1170,7 @@ def write_figure(
         f"Rows clustered by Euclidean distance into {n_clusters} groups, separated by blank rows."
     )
     if mark_no_signal:
-        cluster_note += (
-            f" Dark grey = site sampled for that condition but no taxon carried the {group_noun}."
-        )
+        cluster_note += f" Dark grey = sampled, with no recorded {group_noun} annotation signal."
     # Broken into explicit lines: as one run the subtitle overflows the plotting
     # area and is clipped by the right-hand colour bars.
     lines = [
@@ -1142,7 +1181,8 @@ def write_figure(
         cluster_note,
         *_coverage_note(matrix),
         *([note] if note else []),
-        f"BugSigDB {vintage or 'vintage unknown'}.",
+        "Annotation shares do not measure patient traits or exposure.",
+        f"BugSigDB {vintage or 'vintage unknown'}. Directions are curated signature labels.",
     ]
     title_layout: dict[str, object] = {"text": f"{title}<br><sub>{'<br>'.join(lines)}</sub>"}
     # The title block hangs from the top of the figure, and the plotting area starts
@@ -1351,7 +1391,7 @@ def write_body_site_panels(
     if range_quantile < 1.0:
         range_note += f", cut at the {range_quantile:.0%} quantile of observed cells"
     grey_note = (
-        f" Dark grey = site sampled for that condition but no taxon carried the {group_noun}."
+        f" Dark grey = sampled, with no recorded {group_noun} annotation signal."
         if mark_no_signal
         else ""
     )
@@ -1364,7 +1404,8 @@ def write_body_site_panels(
         f"blank row here was drawn in another body site.{grey_note}",
         *_coverage_note(matrix),
         *([note] if note else []),
-        f"BugSigDB {vintage or 'vintage unknown'}.",
+        "Annotation shares do not measure patient traits or exposure.",
+        f"BugSigDB {vintage or 'vintage unknown'}. Directions are curated signature labels.",
     ]
     # Sized from the subtitle and the site titles under it, as in ``write_figure``.
     # A fixed 400 pixels with the title centred in it let a panel's last subtitle
@@ -1594,7 +1635,11 @@ def main() -> int:
 
     up_down, down_up = correlation.discordant
     ratio = "undefined" if correlation.odds_ratio is None else f"{correlation.odds_ratio:.3f}"
-    p_text = "not tested" if correlation.mcnemar_p is None else f"p={correlation.mcnemar_p:.3g}"
+    p_text = (
+        "not tested"
+        if correlation.mcnemar_p is None
+        else f"nominal p={correlation.mcnemar_p:.3g}, 1 nominal test"
+    )
     print(
         f"\nMcNemar (exact, paired signs): discordant {up_down}/{down_up}, "
         f"odds ratio {ratio} ({p_text}) over {correlation.studies} studies "

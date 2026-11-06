@@ -358,7 +358,11 @@ def _pair_population(sources: VerifiedSources) -> tuple[set[tuple[str, str]], in
         metadata[key] = row["host_species"]
     directions: dict[tuple[str, str], set[str]] = {}
     profiles = 0
-    for profile_row in profile_count_reader(sources.product("count_profiles")):
+    profile_path = sources.product("count_profiles")
+    profile_raw = profile_path.read_bytes()
+    if hashlib.sha256(profile_raw).hexdigest() != sources.expected_digest(profile_path):
+        raise ValueError("Completed-table consumed count_profiles hash differs from its binding")
+    for profile_row in profile_count_reader(profile_path, raw_bytes=profile_raw):
         study, experiment, direction = profile_row.key
         key = study, experiment
         if key not in metadata or direction not in {"inc", "dec"}:
@@ -547,7 +551,9 @@ def load_completed_table(
         if path in resolved_targets and resolved_targets[path] != target:
             raise ValueError(f"Completed-table source alias target changed: {path.name}")
         resolved_targets[path] = target
-    sources = bind_recorded_hashes(open_verified_sources(comparison), comparison_hash)
+    sources = bind_recorded_hashes(
+        open_verified_sources(comparison, manifest_bytes=comparison_raw), comparison_hash
+    )
     _check_contract(record, sources, comparison_hash)
     snapshots: dict[Path, dict[str, Any]] = {}
     _remember_path(

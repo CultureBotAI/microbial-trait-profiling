@@ -1,0 +1,2 @@
+id	subject	predicate	object	relation	agent_type	agent_type	knowledge_level	knowledge_source	meta	primary_knowledge_source
+urn:uuid:3e65a2cc-1904-4020-9ca7-1b766bf3b79e	NCBITaxon:biotype	biolink:subclass_of	OBO:NCBITaxon#_taxonomic_rank	rdfs:subClassOf	manual_agent		knowledge_assertion	Graph		

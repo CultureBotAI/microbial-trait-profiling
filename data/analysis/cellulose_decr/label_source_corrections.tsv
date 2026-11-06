@@ -1,0 +1,62 @@
+study_id	experiment_id	condition_study_modal	body_site_study_modal	condition_experiment	body_site_experiment
+bsdb:25699023	bsdb:25699023-3	Colorectal cancer	Colorectal mucosa	Sigmoid neoplasm	Colorectal mucosa
+bsdb:25758642	bsdb:25758642-1	Colorectal cancer	Feces	Colorectal adenoma	Feces
+bsdb:26179554	bsdb:26179554-1	Parkinson's disease	Colonic mucosa	Parkinson's disease	Feces
+bsdb:26397137	bsdb:26397137-1	Colorectal cancer	Intestine	Colorectal cancer	Feces
+bsdb:26515465	bsdb:26515465-1	Colorectal cancer	Intestine	Colorectal adenoma	Intestine
+bsdb:26515465	bsdb:26515465-7	Colorectal cancer	Intestine	Colorectal adenoma	Intestine
+bsdb:28843021	bsdb:28843021-1	Parkinson's disease	Feces	Parkinson's disease	Nasal cavity
+bsdb:28843021	bsdb:28843021-2	Parkinson's disease	Feces	REM sleep behavior disorder	Nasal cavity
+bsdb:28843021	bsdb:28843021-4	Parkinson's disease	Feces	REM sleep behavior disorder	Feces
+bsdb:28944067	bsdb:28944067-2	Colorectal cancer	Mucosa of ascending colon	Colorectal cancer	Colon
+bsdb:28944067	bsdb:28944067-3	Colorectal cancer	Mucosa of ascending colon	Colorectal cancer	Feces
+bsdb:29375539	bsdb:29375539-1	Colorectal cancer	Colorectum	Colorectal cancer	Feces
+bsdb:29375539	bsdb:29375539-2	Colorectal cancer	Colorectum	Colorectal cancer	Saliva
+bsdb:29808701	bsdb:29808701-1	Coinfection,Age	Saliva	HIV infection	Saliva
+bsdb:30782659	bsdb:30782659-3	Human papilloma virus infection	Uterine cervix	HIV infection	Uterine cervix
+bsdb:30794590	bsdb:30794590-3	Colorectal cancer	Intestine	Colorectal adenoma	Intestine
+bsdb:31428073	bsdb:31428073-1	Colorectal cancer	Saliva	Digestive system cancer	Saliva
+bsdb:31428073	bsdb:31428073-2	Colorectal cancer	Saliva	Tongue neoplasm	Saliva
+bsdb:31428073	bsdb:31428073-3	Colorectal cancer	Saliva	Esophageal cancer	Saliva
+bsdb:31428073	bsdb:31428073-5	Colorectal cancer	Saliva	Gastric cancer	Saliva
+bsdb:31682463	bsdb:31682463-1	Abnormality on pulmonary function testing	Saliva	HIV infection	Saliva
+bsdb:31815177	bsdb:31815177-5	Parkinson's disease	Feces	Phenotypic sex	Feces
+bsdb:33052235	bsdb:33052235-2	Colorectal cancer	Oral cavity	Colorectal adenoma	Oral cavity
+bsdb:33293403	bsdb:33293403-4	Sleep Disorder	Feces	Parkinson's disease	Feces
+bsdb:33324725	bsdb:33324725-1	Response to antiviral drug	Rectum	HIV infection	Rectum
+bsdb:33324725	bsdb:33324725-4	Response to antiviral drug	Rectum	HIV infection	Rectum
+bsdb:33828220	bsdb:33828220-2	HIV infection	Feces	Response to antiviral drug	Feces
+bsdb:34442626	bsdb:34442626-1	Intestinal polyp	Feces	Colorectal cancer	Feces
+bsdb:36494405	bsdb:36494405-12	Lewy body dementia	Feces	Parkinson's disease	Feces
+bsdb:36494405	bsdb:36494405-13	Lewy body dementia	Feces	Parkinson's disease	Feces
+bsdb:36494405	bsdb:36494405-14	Lewy body dementia	Feces	Parkinson's disease	Feces
+bsdb:36494405	bsdb:36494405-5	Lewy body dementia	Feces	Parkinson's disease	Feces
+bsdb:36604616	bsdb:36604616-2	HIV infection	Feces	Birth weight	Feces
+bsdb:36604616	bsdb:36604616-3	HIV infection	Feces	Viral load	Feces
+bsdb:36795141	bsdb:36795141-2	Parkinson's disease	Duodenal mucosa	Parkinson's disease	Mucosa of sigmoid colon
+bsdb:36959686	bsdb:36959686-4	Colorectal cancer,Diabetes mellitus	Feces	Colorectal cancer	Feces
+bsdb:37182146	bsdb:37182146-2	Colorectal adenoma	Feces	Colorectal cancer	Feces
+bsdb:37182146	bsdb:37182146-5	Colorectal adenoma	Feces	Colorectal cancer	Feces
+bsdb:37483698	bsdb:37483698-4	Colorectal cancer	Colorectal mucosa	Population	Colorectal mucosa
+bsdb:37483698	bsdb:37483698-5	Colorectal cancer	Colorectal mucosa	Population	Colorectal mucosa
+bsdb:37483698	bsdb:37483698-6	Colorectal cancer	Colorectal mucosa	Population	Colorectal mucosa
+bsdb:37483698	bsdb:37483698-7	Colorectal cancer	Colorectal mucosa	Population	Colorectal mucosa
+bsdb:37597851	bsdb:37597851-1	Colorectal cancer	Feces	Mismatch repair cancer syndrome	Feces
+bsdb:37721699	bsdb:37721699-1	Chlamydia trachomatis infectious disease	Vagina	HIV infection	Vagina
+bsdb:37721699	bsdb:37721699-2	Chlamydia trachomatis infectious disease	Vagina	HIV infection	Vagina
+bsdb:38310301	bsdb:38310301-1	Response to antiviral drug	Feces	HIV infection	Feces
+bsdb:38383483	bsdb:38383483-2	HIV infection	Colon	HIV infection	Ileum
+bsdb:38383483	bsdb:38383483-3	HIV infection	Colon	HIV infection	Feces
+bsdb:38383483	bsdb:38383483-4	HIV infection	Colon	Aging	Colon,Feces
+bsdb:38383483	bsdb:38383483-5	HIV infection	Colon	Aging	Ileum,Feces
+bsdb:38383483	bsdb:38383483-6	HIV infection	Colon	HIV infection	Feces
+bsdb:38383483	bsdb:38383483-7	HIV infection	Colon	HIV infection	Ileum
+bsdb:38582855	bsdb:38582855-2	Parkinson's disease	Feces	Cognitive impairment	Feces
+bsdb:39443634	bsdb:39443634-1	Parkinson's disease	Feces	Parkinson's disease	Saliva
+bsdb:39443634	bsdb:39443634-3	Parkinson's disease	Feces	Parkinson's disease	Saliva
+bsdb:39443634	bsdb:39443634-4	Parkinson's disease	Feces	Parkinson's disease	Saliva
+bsdb:39443634	bsdb:39443634-5	Parkinson's disease	Feces	Parkinson's disease	Saliva
+bsdb:40180909	bsdb:40180909-3	Response to diet	Feces	Parkinson's disease	Feces
+bsdb:40983606	bsdb:40983606-2	Sleep duration	Feces	Colorectal cancer	Feces
+bsdb:41011452	bsdb:41011452-3	HIV infection	Saliva	HIV infection,Oral candidiasis	Saliva
+bsdb:41011452	bsdb:41011452-4	HIV infection	Saliva	HIV infection,Human papilloma virus infection	Saliva

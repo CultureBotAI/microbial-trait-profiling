@@ -30,12 +30,30 @@ the recorded-arm-path fix in #829; phenotype-scope comparisons require the
 corrected scope producer in #828. No 317- or 344-feature assumption
 is embedded in the adapter.
 
-| Family | Independently declared inventory | Imported primary p |
+The [MT policy](../methods/multiple_testing_policy.md) designates BY primary
+and BH comparison for each additive family below. Both use the same declared
+inventory at the inclusive thresholds q ≤ 0.05 and q ≤ 0.001. Imported raw
+p-values are nominal; a nominal display must report its displayed test count.
+The registry IDs are documentation identifiers; the output directories retain
+their original names.
+
+| Registry family ID / output directory | Independently declared inventory | Imported nominal p |
 |---|---|---|
-| Noel full screen | Every retained non-MediaDive qualified feature | `binomial_p` |
-| Jed ratios | All 15 ordered numerator/reference pairs, with resolved qualified feature groups and study eligibility identities | `sign_p` |
-| Native pooled composition | Core paired human profiles; support at least 6 and at most `max(2, floor(.95*n))`, nonzero fraction variance, no trait-count cap | `study_p_value` |
-| Ilyas joint ORA | Paired profiles with N>0, retained features with background K>0, both upper and lower tails | `p_value` |
+| `mt-core-multiplicity-noel` / `noel-full-screen` | Every retained non-MediaDive qualified feature | `binomial_p` |
+| `mt-core-multiplicity-jed` / `jed-15-log-ratios` | All 15 declared focal numerator/reference pairs, with resolved qualified feature groups and study eligibility identities | `sign_p` |
+| `mt-core-multiplicity-native` / `native-pooled-composition` | Core paired human profiles; support at least 6 and at most `max(2, floor(.95*n))`, nonzero fraction variance, no trait-count cap | `study_p_value` |
+| `mt-core-multiplicity-ora-joint` / `ilyas-joint-ora` | Paired profiles with N>0, retained features with background K>0, both upper and lower tails | `p_value` |
+
+For every quoted q, identify the family above and read its executed size from
+`families[].metadata.expected_family_size` in `multiplicity_run.json`, selecting
+the entry by `metadata.family_id`. Cross-check it against the matching
+`families[].declared_tests` in `migration.json` (keyed by `family`) and the
+number of records in that family's `declared.jsonl`.
+Bind the quote to that verified manifest's source hashes and run identity.
+The ratio directory name is not a substitute for counting the run's declared
+members. For the selected native family, also report the unfiltered
+`families[].metadata.retained_feature_count` and its support/variance rule; correction within that
+selected family does not repair selection (policy R6).
 
 The native transformed-composition filter is reconstructed from core inputs,
 not inferred from selected result rows. Its retained vocabulary size is separate
@@ -152,16 +170,26 @@ tracked in #984. Neither deferred item is implied complete by these guards.
 
 `migration.json` and the per-family migration tables distinguish three changes:
 
-1. ORA membership changes from two native tail families to one joint family.
-   Compare native BH with joint BH at a common threshold.
+1. ORA membership changes from `mt-core-ora-upper-global` and
+   `mt-core-ora-lower-global` (BH separately across all eligible profile–trait
+   tests within each tail) to `mt-core-multiplicity-ora-joint` above.
+   Compare native BH with joint BH at a common threshold and quote each
+   family's own executed size, not a pooled size for either native tail.
 2. Compare BH and BY within the same complete family at q <= 0.05.
 3. Compare BY q <= 0.05 with BY q <= 0.001 without changing family or method.
 
 Native ORA hit flags also use fold cutoffs; these are separate from multiplicity
-rejection. The native bounds are inclusive: enrichment accepts fold 1.5 and
-depletion accepts fold 0.5 when the native q threshold also passes.
+rejection. In the verified workflow, the two native BH tail families use
+q ≤ 0.001; enrichment requires fold ≥ 1.5 and depletion fold ≤ 0.5. Each tail's
+`Total-Tests-Performed` header in its complete all-results export supplies its family
+size. These native directional views are not the joint-tail BY screen.
 
-`native_reject_005` counts tested members with native q <= 0.05.
+`native_reject_005` counts tested members with native q <= 0.05 in their native
+family. Those are `mt-core-noel-sign-nominal` (BY across the declared retained
+catalog), `mt-core-jed-log-ratio-sign` (BY across declared focal ratios),
+`mt-core-native-study-t` (BH across the support/variance-selected traits), and
+the two native ORA BH tail families above. This migration counter is not a
+shared correction across arms or a replacement for their native hit thresholds.
 `native_reported_hits` separately counts explicit native `is_significant=true`
 flags, and is available only when every member exports a nonblank boolean flag.
 Its companion `native_reported_hits_status` is:
@@ -212,10 +240,19 @@ selection, transformations and statistical functions, independently of the adapt
 
 The related `three-test-table` stage produces a per-trait table and reusable
 experiment/study delta-z ledgers from the same verified comparison sources.
-Its full-retained-family study t-test and secondary Wilcoxon are separate from
-the native selected-family composition results above. Its ORA column summarizes
-enrichment preference and remains explicitly uncalibrated. It preserves native
-votes, reports eligibility and profile support, and checks overlapping native
+Its full-retained-family study t-test (`mt-core-three-test-catalog-t`) and
+secondary Wilcoxon (`mt-core-three-test-catalog-wilcoxon`) each use BY primary
+and BH comparison across all retained traits, separately per test. Its derived
+ORA direction family (`mt-core-three-test-ora-direction`) uses BY primary and
+BH comparison across the retained catalog; it summarizes enrichment preference
+and remains explicitly uncalibrated. These tables export q-values; a display
+must state its chosen threshold alongside the procedure and family. Read
+`composition_family_size` and `ora_direction_family_size` from the producing
+run's `per_trait_evidence.tsv`; `three_test_run.json` records the retained
+catalog's `family_size`, `test_families`, input bindings and output inventory.
+Use those matching records when quoting a q.
+These are separate from the native selected-family composition results above.
+The stage preserves native votes, reports eligibility and profile support, and checks overlapping native
 and full-family effect estimates without comparing their differently corrected
 q values. See [the declared methods and commands](../methods/three_test_table.md).
 Use `three-test-verify` to replay that stage from its recorded producer checkout

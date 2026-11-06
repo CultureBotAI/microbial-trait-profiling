@@ -28,7 +28,11 @@ from typing import Any
 
 import pandas as pd
 
-from mtp.human_host_corpus import CORPUS_SEQUENCING_TYPES, experiment_in_profile_population
+from mtp.human_host_corpus import (
+    CORPUS_SEQUENCING_TYPES,
+    HUMAN_HOST_SPECIES,
+    experiment_in_profile_population,
+)
 from mtp.matrix_overlap_inputs import (
     EXPERIMENT_KEYS,
     PROFILE_KEYS,
@@ -158,6 +162,26 @@ def _pct(numerator: int, denominator: int) -> float | None:
 
 def _median_or_none(values: Sequence[int | float]) -> float | None:
     return float(statistics.median(values)) if values else None
+
+
+def _host_case_variant_counts(
+    source_experiments: pd.DataFrame, source_taxa: pd.DataFrame
+) -> dict[str, int]:
+    """Count source host case variants excluded by the unchanged human-host rule.
+
+    These source-level diagnostics precede sequencing, disease and site selection;
+    an experiment without taxon occurrences contributes only to the experiment count.
+    """
+    hosts = source_experiments["host_species"].fillna("").astype(str).str.strip()
+    variant_mask = hosts.str.casefold().eq(HUMAN_HOST_SPECIES.casefold()) & ~hosts.eq(
+        HUMAN_HOST_SPECIES
+    )
+    variants = source_experiments.loc[variant_mask]
+    profile_keys = select_experiments(source_taxa[PROFILE_KEYS], variants).drop_duplicates()
+    return {
+        "source_host_case_variant_experiments": len(variants),
+        "source_host_case_variant_profile_keys": len(profile_keys),
+    }
 
 
 def compute_tier12_coverage_and_cascade(
@@ -521,12 +545,15 @@ def compute_tier12_coverage_and_cascade(
         "tier12_input_occurrence_rows": population.input_occurrence_rows,
         "tier12_excluded_occurrence_rows": population.excluded_occurrence_rows,
         "tier12_excluded_profile_keys": population.excluded_profile_keys,
+        "tier12_input_experiments": population.input_experiments,
+        "tier12_excluded_experiments_without_active_profiles": population.excluded_experiments,
         "tier12_studies": tier12_studies,
         "tier12_experiments": tier12_experiments_count,
         "tier12_signatures": tier12_signatures,
         "tier12_conditions": tier12_conditions,
         "tier12_stool_studies": tier12_stool_studies,
         "tier12_stool_experiments": tier12_stool_experiments,
+        **_host_case_variant_counts(src_exp, src_taxa),
     }
     return coverage_rows, cascade_rows, summary
 
@@ -678,6 +705,8 @@ def compute_parkinsons_stool_overlap(
             "input_occurrence_rows": population.input_occurrence_rows,
             "excluded_outside_active_profile_rows": population.excluded_occurrence_rows,
             "excluded_outside_active_profile_keys": population.excluded_profile_keys,
+            "input_experiments": population.input_experiments,
+            "excluded_experiments_without_active_profiles": population.excluded_experiments,
         }
     )
 
@@ -704,6 +733,7 @@ def compute_parkinsons_stool_overlap(
         experiments_df=human_source_exp,
         taxa_df=source_taxa,
     )
+    human_summary.update(_host_case_variant_counts(source_experiments, source_taxa))
 
     exact_summary, exact_pairs = _compute_scope_study_overlap(
         scope="full_export_exact_condition",

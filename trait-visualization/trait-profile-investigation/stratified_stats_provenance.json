@@ -1,0 +1,152 @@
+{
+  "schema_version": "1.1",
+  "analysis": "legacy_native_pooled_and_body_site_group_composition",
+  "verification_status": "legacy_inputs_hashed_not_core_verified",
+  "created_at": "2026-10-23T23:38:09.131850+00:00",
+  "producer": {
+    "path": "scripts/create_trait_profile_infographic.py",
+    "sha256": "f86f71f8d2d7eb221a6d3c3df3af0950012e6d7714b6957c3b0e53f6b11e45cf",
+    "size_bytes": 68108
+  },
+  "inputs": {
+    "profiles": {
+      "path": "data/derived/study_trait_profiles_wide.tsv",
+      "sha256": "43b2e2302b0edf4836a21e247329a6cbf3245036d350ab533325596de897f4d0",
+      "size_bytes": 30625375
+    },
+    "pair_metadata": {
+      "path": "trait-visualization/study_trait_profile_paired_enrichment_metadata.tsv",
+      "sha256": "d3401ad85ff2d856d54f59f4bb7a1240eccf35837178e51979344cdfb7bedcc3",
+      "size_bytes": 1590427
+    },
+    "trait_labels": {
+      "path": "data/derived/taxa_trait_matrix_columns.tsv",
+      "sha256": "1fa4b63dac02a18386915418ed54d4d4c70aecc5e96f4dfd3a97f99d3fc68a59",
+      "size_bytes": 553233
+    }
+  },
+  "parameters": {
+    "min_pairs": 50,
+    "max_traits": null,
+    "min_profile_support": 6,
+    "max_profile_support_fraction": 0.95,
+    "site_grouping": "body_site_group from source-bound heatmap pair metadata",
+    "pooled_population": "all matched pairs in source-bound heatmap metadata",
+    "heatmap_selection": {
+      "max_profiles": 0,
+      "max_body_site_categories": 8,
+      "max_condition_categories": 8,
+      "min_traits": 0,
+      "min_total_signal": 0,
+      "max_traits": 60,
+      "min_profile_support": 6,
+      "max_profile_support_fraction": 0.95,
+      "display_max_rows": 320,
+      "paired_display_max_rows": 320,
+      "host": "Homo sapiens",
+      "sequencing_types": "16S,WMS"
+    },
+    "heatmap_selection_status": "recorded",
+    "strain_rollup_status": "unverified; awaiting upstream scope contract (#847)",
+    "multiple_testing": "BH separately within each selected stratum family"
+  },
+  "pair_denominator_audit": {
+    "n_experiments": 2257,
+    "n_nonzero_experiments": 2214,
+    "n_zero_total_experiments": 43,
+    "n_zero_total_excluded": 0,
+    "n_nonzero_studies": 923,
+    "n_studies_without_nonzero_experiments": 9,
+    "n_zero_total_profiles": 62,
+    "retained_trait_count": 344,
+    "zero_total_policy": "included_in_historical_native_composition",
+    "denominator_definition": "sum of all retained non-MediaDive trait columns before selection"
+  },
+  "outputs": [
+    {
+      "path": "trait-visualization/trait-profile-investigation/trait_profile_paired_contrast_trait_stats_pooled.tsv",
+      "sha256": "46dfce6b13775f19603ea48943f709ee9f12a8d6f0f4c297dbfc9d4494aaa132",
+      "size_bytes": 397099
+    },
+    {
+      "path": "trait-visualization/trait-profile-investigation/trait_profile_paired_contrast_trait_stats.tsv",
+      "sha256": "46dfce6b13775f19603ea48943f709ee9f12a8d6f0f4c297dbfc9d4494aaa132",
+      "size_bytes": 397099
+    },
+    {
+      "path": "trait-visualization/trait-profile-investigation/trait_profile_paired_contrast_trait_stats_manifest.tsv",
+      "sha256": "1ebe8e95e285c767404bf2a257e9facda0c7f511121cf1d640bd099ac6e8ff1d",
+      "size_bytes": 761
+    },
+    {
+      "path": "trait-visualization/trait-profile-investigation/trait_profile_paired_contrast_trait_stats_feces.tsv",
+      "sha256": "55751cb6e8ddce95b4d6b90765c57fc3715260f4cdee9315a21aece1ae16bc7f",
+      "size_bytes": 279068
+    },
+    {
+      "path": "trait-visualization/trait-profile-investigation/trait_profile_paired_contrast_trait_stats_feces_excluded.tsv",
+      "sha256": "4e721398f50f9edbe3676f92fc71413634fda8e6a043e4b227a3834cab66c499",
+      "size_bytes": 269803
+    },
+    {
+      "path": "trait-visualization/trait-profile-investigation/trait_profile_paired_contrast_trait_stats_other.tsv",
+      "sha256": "0ea5b54b54dbd4298fc52de61a26983b7abbc97715a2d680fe39c11950e8a4b8",
+      "size_bytes": 258267
+    },
+    {
+      "path": "trait-visualization/trait-profile-investigation/trait_profile_paired_contrast_trait_stats_saliva.tsv",
+      "sha256": "b7f7ae3866c2bf0732dcd73ae71110efaa4344c3a6ab21cb18009cb469c7d7d8",
+      "size_bytes": 251489
+    }
+  ],
+  "not_regenerated": [
+    {
+      "path": "trait-visualization/trait-profile-investigation/trait_profile_paired_contrast_body_site_summary.tsv",
+      "sha256": "277eaa83a8710d65df4a1eb0495ed2fa963ed7014746f0b810695ddb2c96b834",
+      "size_bytes": 1232,
+      "reason": "not refreshed by pooled/site statistics mode"
+    },
+    {
+      "path": "trait-visualization/trait-profile-investigation/trait_profile_paired_contrast_condition_summary.tsv",
+      "sha256": "0b013c9f62b194729fcb454e58f9e0e6c823223010cba0049ca95953ac49ac64",
+      "size_bytes": 8062,
+      "reason": "not refreshed by pooled/site statistics mode"
+    },
+    {
+      "path": "trait-visualization/trait-profile-investigation/trait_profile_paired_contrast_infographic.png",
+      "sha256": "286d6d803a89419a75ca6a83860b8ba58c43691550499cde241b2d0b2745d342",
+      "size_bytes": 711074,
+      "reason": "not refreshed by pooled/site statistics mode"
+    },
+    {
+      "path": "trait-visualization/trait-profile-investigation/trait_profile_paired_contrast_trait_stats_caecum.tsv",
+      "sha256": "3e4c247b212ac187f313cf1c5617961dae48479c44c3a5d23d18a0f3a61fce88",
+      "size_bytes": 115335,
+      "reason": "not refreshed by pooled/site statistics mode"
+    },
+    {
+      "path": "trait-visualization/trait-profile-investigation/trait_profile_paired_contrast_trait_stats_colon.tsv",
+      "sha256": "631e6ca6011518f592dc7e174a73b60d364e40e80326e8ae5660420442c1db66",
+      "size_bytes": 116381,
+      "reason": "not refreshed by pooled/site statistics mode"
+    },
+    {
+      "path": "trait-visualization/trait-profile-investigation/trait_profile_paired_contrast_trait_stats_mouth.tsv",
+      "sha256": "cea1725a0c25c670619a90c98de07da5eb19ed32edb07464c9c7a8dacacf850c",
+      "size_bytes": 110388,
+      "reason": "not refreshed by pooled/site statistics mode"
+    },
+    {
+      "path": "trait-visualization/trait-profile-investigation/trait_profile_paired_contrast_trait_stats_subgingival_dental_plaque.tsv",
+      "sha256": "1ce946099382f1396e59bd92a513922854eac7f19501c915b321ee2179508d6b",
+      "size_bytes": 111473,
+      "reason": "not refreshed by pooled/site statistics mode"
+    },
+    {
+      "path": "trait-visualization/trait-profile-investigation/trait_profile_paired_contrast_trait_stats_vagina.tsv",
+      "sha256": "b370c764fb7e9f515f6ed09591ffed90778d0ef2c9af78fda1f7ba7eb5791cd9",
+      "size_bytes": 113824,
+      "reason": "not refreshed by pooled/site statistics mode"
+    }
+  ]
+}

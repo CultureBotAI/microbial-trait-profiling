@@ -13,6 +13,7 @@ import pandas as pd
 from matplotlib.patches import FancyArrowPatch, FancyBboxPatch, Rectangle
 
 from mtp.human_host_corpus import CORPUS_SEQUENCING_TYPES
+from mtp.trait_guilds import OXYGEN_GUILDS
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VIS_DIR = REPO_ROOT / "trait-visualization"
@@ -34,14 +35,17 @@ HUMAN_HOST_SPECIES = "Homo sapiens"
 # The profile corpus keeps 16S and shotgun (WMS) experiments only (#742)
 SEQUENCING_TYPES_TEXT = " or ".join(CORPUS_SEQUENCING_TYPES)
 
-AEROBE_GUILD_TRAITS = {
-    "METPO:1000608": "facultatively aerobic",
+_OXYGEN_TRAIT_LABELS = {
     "METPO:1000602": "aerobic",
     "METPO:1000604": "microaerophilic",
-}
-ANAEROBE_GUILD_TRAITS = {
     "METPO:1000603": "anaerobic",
     "METPO:1000607": "obligately anaerobic",
+}
+AEROBE_GUILD_TRAITS = {
+    trait_id: _OXYGEN_TRAIT_LABELS[trait_id] for trait_id in OXYGEN_GUILDS["aerobe"]
+}
+ANAEROBE_GUILD_TRAITS = {
+    trait_id: _OXYGEN_TRAIT_LABELS[trait_id] for trait_id in OXYGEN_GUILDS["anaerobe"]
 }
 ANAEROBE_GUILD_TRAIT_DEFINITIONS = {
     "METPO:1000603": (
@@ -206,10 +210,6 @@ def get_trait_profile_input_counts() -> dict[str, int]:
         STUDY_TRAIT_PROFILE_WIDE_TSV,
         usecols=PROFILE_METADATA_COLUMNS,
     )
-    from mtp.population_tables import is_canonical_derived_path, orient_and_filter_profiles_df
-
-    if is_canonical_derived_path(STUDY_TRAIT_PROFILE_WIDE_TSV, "study_trait_profiles_wide.tsv"):
-        metadata = orient_and_filter_profiles_df(metadata, filter_to_selection=True)
     return {
         "raw_profile_count": len(metadata),
         "raw_profile_study_count": metadata["study_id"].nunique(),
@@ -1712,8 +1712,7 @@ def create_diagram(
             title="Aerobe v2 increased-profile trait set",
             body=(
                 "Focus direction: increased profiles\n"
-                "Trait score: mean of facultatively aerobic, aerobic, and "
-                "microaerophilic z-scores\n"
+                "Trait score: mean of aerobic and microaerophilic z-scores\n"
                 "Condition summary table: "
                 f"{format_count(counts['facultative_condition_count'])} BugSigDB "
                 "condition-label rows (not experiments)\n"

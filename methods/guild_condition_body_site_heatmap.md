@@ -5,6 +5,13 @@ Figure: `guild_condition_body_site_heatmap.png`. Produced by
 differs from the composition and enrichment arms is set out in
 [`three_arm_statistics.md`](three_arm_statistics.md).
 
+Interpret all outputs using the [shared guide](biological_interpretation.md).
+Guild labels summarize annotations, not measured oxygen exposure or respiration.
+`inc`/`dec` refer to curated comparison directions; human host and pairing do not
+verify disease/control orientation (#188). Heatmap cells are descriptive means
+without cell-level confidence intervals; use the support and status tables, and
+do not assign the pooled statistical test to individual cells.
+
 ## Input corpus
 
 BugSigDB differential-abundance signatures were ingested from the full_dump.csv
@@ -17,10 +24,14 @@ as increased, or as decreased, in one experiment, summed over the METPO traits
 those taxa carry (a taxonomic rollup, so one reported taxon can contribute many
 assertion counts).
 
-Two oxygen guilds were defined a priori and were not selected from the data. The
-aerobe guild is METPO:1000602 (aerobic), METPO:1000604 (microaerophilic), and
-METPO:1000608 (facultatively aerobic); the anaerobe guild is METPO:1000603
-(anaerobic) and METPO:1000607 (obligately anaerobic). The term labels were
+The figure pools the oxygen annotations into two guilds. This repository has no
+record of where or when the guilds were first declared (#294). Their membership
+was revised once (#1237), to separate facultative from aerobe annotations, on
+semantic grounds and not because of results. The aerobe guild is
+METPO:1000602 (aerobic) and METPO:1000604 (microaerophilic); the anaerobe guild is
+METPO:1000603 (anaerobic) and METPO:1000607 (obligately anaerobic). The facultative
+column METPO:1000608 is in neither guild, under both trait-key policies. The term
+labels were
 checked against the merged KG-Microbe node table rather than taken from prior
 analysis code, and the check is re-runnable: `just verify-trait-terms` looks every
 grouped identifier up in `data/kg-microbe/merged-kg_nodes.tsv` and fails on a
@@ -32,12 +43,22 @@ term as missing when the real finding is that the build is not the pinned one
 pinned build (nodes MD5 `dd76b4656f9341db25a7c4afa96cd58e`, fetched 2026-04-21)
 all twelve grouped identifiers carry their expected label, `pathways:arsenate_reduction`
 included. A label
-check cannot validate the grouping itself. Placing microaerophilic and
-facultatively aerobic organisms in the aerobe guild is an a priori decision: both
-tolerate oxygen, but neither is an obligate aerobe, and a guild of strict aerobes
-alone would be a different quantity. METPO:1000608 (facultatively aerobic) is also
-one of the six Table 1 traits, so this figure and the Table 1 figures share
-evidence and are not independent of each other.
+check cannot validate the grouping itself. Placing microaerophilic annotations in
+the aerobe guild is a grouping choice: microaerophilic is not obligately aerobic,
+and a guild of strict-aerobe annotations alone would be a different quantity.
+
+Aerobe and facultative annotations are kept distinct. Earlier revisions placed
+METPO:1000608 (facultatively aerobic) in the aerobe guild. Under the
+`facultative_union_v1` trait-key policy that column also carries the facultatively
+anaerobic assertions of METPO:1000605 and METPO:1000612
+([`trait_key_policy.md`](trait_key_policy.md)), so taxa annotated only as
+facultative anaerobes counted toward the aerobe guild. The repository owner
+decided that the column is in neither oxygen guild under either policy, raw or
+union, and that no separate facultative guild is drawn (#1237). METPO:1000608 is
+reported on its own as one of the six Table 1 traits instead. Its annotation
+counts still enter every profile's denominator, as every retained trait column
+does, so this figure and the Table 1 figures no longer share a numerator term but
+still share profile denominators, and are not independent of each other.
 
 Three input filters were applied once, upstream, so that the figure operates on a
 single corpus definition. Non-human samples were excluded on the per-experiment
@@ -92,7 +113,11 @@ carries as commit 35ece98 (#808): the corpus cascade, the zero-total exclusion,
 the multi-experiment share, the pooled labels, the row cuts and clusters, the
 cell census, the McNemar and the rank correlations. The figure's numbers from
 before #783, given for comparison, are from main's code at 65850b0 on the same
-inputs.
+inputs. Both commits placed METPO:1000608 in the aerobe guild. The numbers that
+depend on the guild numerators (the row clusters, the cell census, the McNemar
+and the rank correlations) were measured with that definition and have not been
+regenerated since #1237 removed it. The corpus cascade, the zero-total exclusion
+and the pooled labels do not depend on guild membership.
 
 
 ## Cell values and axes
@@ -133,8 +158,9 @@ to a cell in the other, while the hue still identifies which guild is being read
 
 A condition whose every cell was masked would render as a blank row and is
 dropped before clustering; the dropped labels are listed on each run. A row that
-keeps only dark-grey cells is retained, because "sampled, but no taxon carried
-the guild trait" is a result rather than an absence. On the run described here 9
+keeps only dark-grey cells is retained, because "sampled, but no recorded guild
+annotation signal" distinguishes mapped zero signal from unsampled cells.
+On the run described here 9
 conditions were dropped (Atopic asthma, Cervical cancer, Head and neck squamous
 cell carcinoma, Helminthiasis, Metabolic toxicity, Phenylketonuria, Population,
 Psoriasis vulgaris, Smoking behaviour measurement), leaving 52 rows.
@@ -164,10 +190,10 @@ Cells fall into four states, recorded per cell in a companion status table so th
 distinction is machine-readable rather than only visual. A cell carries a value
 when at least the minimum number of studies support it and at least one study has
 non-zero guild signal. A cell is filled dark grey when the body site was sampled
-for that condition but no taxon in those profiles carried any trait of that
-guild; previously such a cell was drawn as a fraction of zero and was
-indistinguishable from a genuinely small fraction, which understated how often a
-guild is simply absent. Since #783 every profile behind a dark-grey cell carries
+for that condition but there is no recorded guild annotation signal under the
+selected sources and mappings. Previously such a cell was drawn as a fraction
+of zero and was indistinguishable from a genuinely small fraction. This state
+does not establish biological absence. Since #783 every profile behind a dark-grey cell carries
 some retained annotation. Before, a profile with none at all scored share 0 and
 shaded cells too: 8 of this corpus's 20 dark-grey cells were backed only by
 such profiles. A cell is left blank when the site was sampled by fewer
@@ -191,9 +217,9 @@ independent samples, so the test is an **exact McNemar** — a two-sided binomia
 on the discordant studies. Of the 912 studies with both signs (697 discordant),
 410 have the higher aerobe share and the lower anaerobe share in the increased
 signatures and 287 the reverse, giving a paired odds ratio of 1.429 with
-p = 3.6e-06. That is the same test on the same population as the
+nominal p = 3.6e-06. That is the same test on the same population as the
 integrated evidence table's McNemar row. Before the zero-total exclusion (#783)
-this figure reported 410 and 284, p = 2.0e-06, over 932 studies. (An earlier draft applied Fisher's exact test to the
+this figure reported 410 and 284, nominal p = 2.0e-06, over 932 studies. (An earlier draft applied Fisher's exact test to the
 marginal two-by-two; that assumes independent rows, and on this data it was
 anticonservative by roughly three orders of magnitude and inflated the odds
 ratio by a fifth.) Counting studies with any non-zero guild signal instead of
@@ -228,14 +254,17 @@ On this corpus the five such studies were all zero-total pairs, which the
 exclusion above already removes, so all 922 studies are ranked. Over those 922
 studies, aerobe and anaerobe fractions correlate negatively within the same
 direction, rho = -0.719 on the increased side and -0.740 on the decreased side,
-and the two guilds' per-study contrasts correlate at rho = -0.737. These are
-largely the structural artefact described above - two shares of one denominator -
-and are not to be read as support. Studies are still not fully independent where
+and the two guilds' per-study contrasts correlate at rho = -0.737. Shared
+denominators can contribute to these correlations; the coefficients do not
+quantify how much is structural or establish a biological mechanism.
+Studies are still not fully independent where
 they share cohorts, which this computation does not model.
 
-The McNemar test is a single test and needs no correction. The seven Spearman
-p-values are reported uncorrected, and should be read as descriptive rather than
-as a screened set; they are not the basis of any claim in the manuscript.
+The McNemar result is one nominal test with no adjusted q. The seven Spearman
+p-values are also nominal and uncorrected, and should be read as descriptive
+rather than as a screened set; they are not the basis of any claim in the
+manuscript. Reporting one McNemar result does not correct selection of the guild
+hypothesis or establish FDR control across these diagnostics.
 
 ## Reproducing
 

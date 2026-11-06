@@ -23,17 +23,20 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import operator
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, SupportsFloat, SupportsIndex
 
 import numpy as np
 import pandas as pd
 from scipy import stats
 
 from mtp.composition_denominators import MEDIADIVE_MARKER, trait_fractions
+from mtp.enrichment_stats import benjamini_hochberg
 from mtp.paths import DERIVED_DATA_DIR
+from mtp.trait_key_policy import display_trait_label, read_recorded_member_ids
 from mtp.trait_lists import (
     DeclaredTraitList,
     file_sha256,
@@ -46,6 +49,7 @@ from mtp.trait_screen import effective_family_size
 DEFAULT_PROFILES_PATH = DERIVED_DATA_DIR / "study_trait_profiles_wide.tsv"
 DEFAULT_COLUMNS_PATH = DERIVED_DATA_DIR / "taxa_trait_matrix_columns.tsv"
 DEFAULT_OUTPUT_DIR = DERIVED_DATA_DIR / "density_adjustment"
+DENSITY_PROVENANCE_FILENAME = "density_adjustment_provenance.json"
 TRAIT_LIST_PROVENANCE_FILENAME = "trait_list_provenance.json"
 
 # The six canonical Table 1 traits
@@ -57,6 +61,21 @@ TABLE_1_TRAITS: dict[str, str] = {
     "METPO:2000103|pathways:arsenate_reduction": "arsenate reduction",
     "METPO:1000623": "moderately halophilic",
 }
+
+
+def table1_traits_for_columns(columns_path: Path | None) -> dict[str, str]:
+    """Return Table 1 trait labels resolved against recorded column member metadata."""
+    resolved = columns_path
+    if resolved is not None and not resolved.exists():
+        gz_candidate = resolved.with_name(f"{resolved.name}.gz")
+        if gz_candidate.exists():
+            resolved = gz_candidate
+    members = read_recorded_member_ids(resolved)
+    return {
+        trait_id: display_trait_label(trait_id, label, members.get(trait_id))
+        for trait_id, label in TABLE_1_TRAITS.items()
+    }
+
 
 # The specific test case pair identified in Issue #264
 TEST_PAIR_A = "METPO:1000608"  # facultatively aerobic
@@ -117,6 +136,11 @@ class Table1TraitEffect:
     (|adj| - |raw|) / |raw| x 100, negative exactly when the effect shrank, and
     ``sign_flipped`` marks an adjusted mean of the opposite sign (#1084). A mean
     within 1e-9 of zero has no sign, and a raw one leaves the magnitude change NaN.
+
+    ``raw_wilcoxon_bh_q`` and ``adj_wilcoxon_bh_q`` are Benjamini-Hochberg q-values of
+    the raw and adjusted p, corrected separately over the ``bh_family_size`` reported
+    traits; ``status`` reads significance from them (#1321). An untestable trait (NaN p)
+    stays in the family at p = 1 and has a NaN q.
     """
 
     trait_id: str
@@ -129,10 +153,14 @@ class Table1TraitEffect:
     status: str
     magnitude_change_pct: float
     sign_flipped: bool
+    raw_wilcoxon_bh_q: float
+    adj_wilcoxon_bh_q: float
+    bh_family_size: int
 
 
-# Statuses whose raw and adjusted paired contrasts are both significant (Wilcoxon p <= 0.05)
-# in the same direction (#1084, #1097, #1098); deck figure 4 draws only these as surviving.
+# Statuses whose raw and adjusted paired contrasts are both significant (BH q <= 0.05 over
+# the reported traits, #1321) in the same direction (#1084, #1097, #1098); deck figure 4
+# draws only these as surviving.
 SIGNIFICANT_POST_ADJUSTMENT_STATUSES = frozenset(
     {"enhanced (significant, larger magnitude)", "survived (significant post-adjustment)"}
 )
@@ -140,35 +168,141 @@ SIGNIFICANT_POST_ADJUSTMENT_STATUSES = frozenset(
 # A paired mean difference within this of zero has no sign (#1097).
 _ZERO_MEAN = 1e-9
 
+# Inclusive BH q threshold for every significance decision in a status (#1321).
+_SIGNIFICANCE_Q = 0.05
+
+
+def family_bh_q_values(
+    p_values: Sequence[float] | np.ndarray, family_size: SupportsIndex
+) -> list[float]:
+    """Benjamini-Hochberg q-values of ``p_values`` over a family of ``family_size`` traits.
+
+    The family is every reported trait, not only the testable ones: an undefined (NaN) p
+    is held at 1.0 for the correction and its q is exported as NaN (#1321). Every member
+    must be supplied, as a p or a NaN: as in methods/multiple_testing.md, an omitted
+    declared member is an error, not a silent p = 1 member (#1324). NumPy values are
+    accepted and Python floats returned (#1330).
+    """
+    family_size = operator.index(family_size)
+    if family_size != len(p_values):
+        raise ValueError(
+            f"family_size ({family_size}) differs from the {len(p_values)} p-values given; "
+            "pass NaN for an untestable member"
+        )
+    if len(p_values) == 0:
+        return []
+    held = [1.0 if math.isnan(p) else float(p) for p in p_values]
+    adjusted = benjamini_hochberg(held, family_size=family_size)
+    return [float("nan") if math.isnan(p) else q for p, q in zip(p_values, adjusted, strict=True)]
+
+
+def q_value_provenance(family_size: SupportsIndex) -> dict[str, object]:
+    """Machine-readable record of the q-value family behind the statuses (#1321).
+
+    ``family_size`` is stored as a Python int, so a NumPy count serializes (#1330).
+    """
+    return {
+        "procedure": "benjamini_hochberg",
+        "family": "every reported trait",
+        "family_size": operator.index(family_size),
+        "corrected_separately": ["raw_wilcoxon_p", "adj_wilcoxon_p"],
+        "untestable_p_held_at": 1.0,
+        "label_threshold_q": _SIGNIFICANCE_Q,
+    }
+
+
+def q_value_statement(family_size: SupportsIndex) -> list[str]:
+    """Report lines stating the q-value family the statuses are read from (#1321)."""
+    family_size = operator.index(family_size)
+    if family_size < 1:
+        raise ValueError(f"a q-value family needs at least one reported trait, not {family_size}")
+    return [
+        f"Significance: Benjamini-Hochberg q <= {_SIGNIFICANCE_Q:g} over all {family_size} "
+        "reported traits, raw and adjusted",
+        "Wilcoxon p corrected separately; a trait with ten or fewer non-zero pairs stays in",
+        "the family at p = 1 and has no q.",
+    ]
+
+
+def format_q_value(q: SupportsFloat) -> str:
+    """Format a BH q with three significant digits, or more when needed (#1325).
+
+    A q on one side of the 0.05 threshold never displays on the other: 0.05004 prints
+    as 5.004e-02, not 5.00e-02. An undefined q reads NA. A NumPy scalar, as read back
+    from the effects TSV, is converted first so the side test compares Python bools
+    (#1330).
+    """
+    q = float(q)
+    if math.isnan(q):
+        return "NA"
+    significant = q <= _SIGNIFICANCE_Q
+    for decimals in range(2, 17):
+        text = f"{q:.{decimals}e}"
+        if (float(text) <= _SIGNIFICANCE_Q) == significant:
+            return text
+    return repr(q)
+
+
+def format_p_and_q(p: SupportsFloat, q: SupportsFloat) -> str:
+    """Label a nominal Wilcoxon p and its BH q; undefined values read NA."""
+    p = float(p)
+    p_text = "NA" if math.isnan(p) else f"{p:.2e}"
+    return f"nominal p={p_text}, q={format_q_value(q)}"
+
+
+def nominal_test_count_statement(effects: Sequence[Table1TraitEffect]) -> str:
+    """Count finite p-values in each displayed column, separately from the BH family."""
+    raw_count = sum(math.isfinite(effect.raw_wilcoxon_p) for effect in effects)
+    adjusted_count = sum(math.isfinite(effect.adj_wilcoxon_p) for effect in effects)
+    return f"Finite nominal Wilcoxon tests shown: raw={raw_count}; PC1-adjusted={adjusted_count}."
+
+
+def format_paired_regression_test(p: SupportsFloat) -> str:
+    """Label the near-twin diagnostic and count its finite test without imputing p."""
+    value = float(p)
+    count = int(math.isfinite(value))
+    p_text = f"{value:.2e}" if count else "NA"
+    test_word = "test" if count == 1 else "tests"
+    untested = "; untested" if count == 0 else ""
+    return (
+        f"nominal p={p_text}; {count} finite paired-regression {test_word} shown; "
+        f"diagnostic{untested}"
+    )
+
 
 def _sign_flipped(raw_mean: float, adj_mean: float) -> bool:
     """Whether two means clearly away from zero have opposite signs."""
     return min(abs(raw_mean), abs(adj_mean)) > _ZERO_MEAN and raw_mean * adj_mean < 0
 
 
-def adjustment_status(raw_mean: float, raw_p: float, adj_mean: float, adj_p: float) -> str:
+def adjustment_status(
+    raw_mean: SupportsFloat, raw_q: SupportsFloat, adj_mean: SupportsFloat, adj_q: SupportsFloat
+) -> str:
     """Classify a trait by raw and adjusted significance and by the change in effect magnitude.
 
-    Significance comes from the Wilcoxon p-values; "enhanced" and "attenuated" compare
-    |adj| with |raw| (#1084). A reversed sign and a raw mean of zero, where the
-    magnitude change is undefined, each get their own status (#1097), and a significant
-    adjusted contrast whose raw contrast was nonsignificant (or had <= 10 non-zero pairs)
-    is classified as "significant only post-adjustment" rather than "survived" or
-    "enhanced" (#1098).
+    Significance is BH q <= 0.05, from the q-values of the raw and adjusted Wilcoxon p over
+    the reported traits (#1321); "enhanced" and "attenuated" compare |adj| with |raw|
+    (#1084). A reversed sign and a raw mean of zero, where the magnitude change is
+    undefined, each get their own status (#1097), and a significant adjusted contrast
+    whose raw contrast was nonsignificant (or had <= 10 non-zero pairs, so no q) is
+    classified as "significant only post-adjustment" rather than "survived" or
+    "enhanced" (#1098). Arguments are converted to float first, so a NumPy scalar is
+    compared exactly as ``format_q_value`` displays it (#1330).
     """
-    if math.isnan(adj_p):
+    raw_mean, raw_q, adj_mean, adj_q = (float(v) for v in (raw_mean, raw_q, adj_mean, adj_q))
+    if math.isnan(adj_q):
         return "insufficient non-zero pairs"
     if abs(raw_mean) <= _ZERO_MEAN:
-        if adj_p <= 0.05:
+        if adj_q <= _SIGNIFICANCE_Q:
             return "undefined magnitude change (raw mean zero, significant post-adjustment)"
         return "undefined magnitude change (raw mean zero, nonsignificant post-adjustment)"
     if _sign_flipped(raw_mean, adj_mean):
-        if adj_p <= 0.05:
+        if adj_q <= _SIGNIFICANCE_Q:
             return "reversed (significant post-adjustment)"
         return "reversed (nonsignificant post-adjustment)"
-    raw_significant = not math.isnan(raw_p) and raw_p <= 0.05
+    raw_significant = not math.isnan(raw_q) and raw_q <= _SIGNIFICANCE_Q
     larger = abs(adj_mean) > abs(raw_mean)
-    if adj_p <= 0.05:
+    if adj_q <= _SIGNIFICANCE_Q:
         if not raw_significant:
             return "significant only post-adjustment"
         if larger:
@@ -466,10 +600,16 @@ def evaluate_table1_paired_effects(
     """Evaluate paired experiment contrasts (inc - dec) before and after PC1 adjustment.
 
     ``traits`` maps the reported trait identifiers to labels, in report order. PC1 is
-    fit on every non-MediaDive trait whatever is reported, so a trait's row does not
-    depend on which other traits are listed (#1054).
+    fit on every non-MediaDive trait whatever is reported, so a trait's means and
+    p-values do not depend on which other traits are listed (#1054). Its BH q-values,
+    and the status read from them, do: every trait in ``traits`` is one member of the
+    correction family, testable or not (#1321), so every trait must be a column of
+    ``non_media_cols``: one that cannot have a row is an error (#1324).
     """
-    t1_keys = [k for k in traits if k in non_media_cols]
+    absent = [trait_id for trait_id in traits if trait_id not in non_media_cols]
+    if absent:
+        raise ValueError(f"Reported traits are not non-MediaDive trait columns: {absent}")
+    t1_keys = list(traits)
     has_paired_directions = (
         not profiles_df.empty
         and "study_id" in profiles_df.columns
@@ -506,10 +646,8 @@ def evaluate_table1_paired_effects(
             aggfunc="mean",
         ).dropna()
 
-    results: list[Table1TraitEffect] = []
+    measured: list[dict[str, Any]] = []
     for trait_id in t1_keys:
-        label = traits[trait_id]
-
         can_eval = (
             has_paired_directions
             and not pvt_raw.empty
@@ -557,23 +695,38 @@ def evaluate_table1_paired_effects(
             else float("nan")
         )
 
-        results.append(
-            Table1TraitEffect(
-                trait_id=trait_id,
-                trait_label=label,
-                raw_mean_diff=raw_mean,
-                raw_wilcoxon_p=raw_p,
-                adj_mean_diff=adj_mean,
-                adj_wilcoxon_p=adj_p,
-                relative_change_pct=rel_change,
-                # General statistical criteria rather than hardcoded trait IDs (#383)
-                status=adjustment_status(raw_mean, raw_p, adj_mean, adj_p),
-                magnitude_change_pct=magnitude_change,
-                sign_flipped=_sign_flipped(raw_mean, adj_mean),
-            )
+        measured.append(
+            {
+                "trait_id": trait_id,
+                "trait_label": traits[trait_id],
+                "raw_mean_diff": raw_mean,
+                "raw_wilcoxon_p": raw_p,
+                "adj_mean_diff": adj_mean,
+                "adj_wilcoxon_p": adj_p,
+                "relative_change_pct": rel_change,
+                "magnitude_change_pct": magnitude_change,
+            }
         )
 
-    return results
+    # The family is every reported trait, one row each (#1321, #1324): a trait with too
+    # few pairs stays a member at p = 1.
+    family_size = len(traits)
+    raw_q = family_bh_q_values([row["raw_wilcoxon_p"] for row in measured], family_size)
+    adj_q = family_bh_q_values([row["adj_wilcoxon_p"] for row in measured], family_size)
+    return [
+        Table1TraitEffect(
+            **row,
+            # General statistical criteria rather than hardcoded trait IDs (#383)
+            status=adjustment_status(
+                row["raw_mean_diff"], row_raw_q, row["adj_mean_diff"], row_adj_q
+            ),
+            sign_flipped=_sign_flipped(row["raw_mean_diff"], row["adj_mean_diff"]),
+            raw_wilcoxon_bh_q=row_raw_q,
+            adj_wilcoxon_bh_q=row_adj_q,
+            bh_family_size=family_size,
+        )
+        for row, row_raw_q, row_adj_q in zip(measured, raw_q, adj_q, strict=True)
+    ]
 
 
 def evaluate_conditional_twin_test(
@@ -731,6 +884,59 @@ def declared_density_traits(
     return trait_labels(non_media, trait_list.trait_ids)
 
 
+def density_provenance(
+    trait_ids: Sequence[str],
+    *,
+    profiles_path: Path,
+    columns_path: Path,
+    code_commit: str,
+    trait_list: DeclaredTraitList | None = None,
+) -> dict[str, object]:
+    """Record the reported traits, the inputs and the q-value family (#1321, #1327)."""
+    # The loaders above fall back to a .gz sibling; hash the file they actually read.
+    resolved_profiles, resolved_columns = (
+        path if path.exists() else path.with_name(f"{path.name}.gz")
+        for path in (profiles_path, columns_path)
+    )
+    ids = list(trait_ids) if trait_list is None else list(trait_list.trait_ids)
+    trait_fields: dict[str, object] = (
+        {"trait_count": len(ids), "trait_ids": ids}
+        if trait_list is None
+        else trait_list.provenance()
+    )
+    return {
+        **trait_fields,
+        "reported_table": "table1_density_adjusted_effects.tsv",
+        "pc1_fit_traits": "every non-MediaDive trait column, independent of the list",
+        "q_values": q_value_provenance(len(ids)),
+        "profiles_file": resolved_profiles.name,
+        "profiles_sha256": file_sha256(resolved_profiles),
+        "columns_file": resolved_columns.name,
+        "columns_sha256": file_sha256(resolved_columns),
+        "code_commit": code_commit,
+    }
+
+
+def write_density_provenance(
+    output_dir: Path,
+    trait_ids: Sequence[str],
+    *,
+    profiles_path: Path,
+    columns_path: Path,
+    code_commit: str,
+) -> Path:
+    """Record the default reported traits, the inputs and the q-value family (#1327)."""
+    provenance = density_provenance(
+        trait_ids,
+        profiles_path=profiles_path,
+        columns_path=columns_path,
+        code_commit=code_commit,
+    )
+    path = output_dir / DENSITY_PROVENANCE_FILENAME
+    path.write_text(json.dumps(provenance, indent=2) + "\n", encoding="utf-8")
+    return path
+
+
 def write_trait_list_provenance(
     output_dir: Path,
     trait_list: DeclaredTraitList,
@@ -739,22 +945,14 @@ def write_trait_list_provenance(
     columns_path: Path,
     code_commit: str,
 ) -> Path:
-    """Record the declared list, its hash and the inputs it was evaluated on."""
-    # The loaders above fall back to a .gz sibling; hash the file they actually read.
-    resolved_profiles, resolved_columns = (
-        path if path.exists() else path.with_name(f"{path.name}.gz")
-        for path in (profiles_path, columns_path)
+    """Record the declared list, its hash, the inputs and the q-value family (#1321)."""
+    provenance = density_provenance(
+        trait_list.trait_ids,
+        profiles_path=profiles_path,
+        columns_path=columns_path,
+        code_commit=code_commit,
+        trait_list=trait_list,
     )
-    provenance = {
-        **trait_list.provenance(),
-        "reported_table": "table1_density_adjusted_effects.tsv",
-        "pc1_fit_traits": "every non-MediaDive trait column, independent of the list",
-        "profiles_file": resolved_profiles.name,
-        "profiles_sha256": file_sha256(resolved_profiles),
-        "columns_file": resolved_columns.name,
-        "columns_sha256": file_sha256(resolved_columns),
-        "code_commit": code_commit,
-    }
     path = output_dir / TRAIT_LIST_PROVENANCE_FILENAME
     path.write_text(json.dumps(provenance, indent=2) + "\n", encoding="utf-8")
     return path
@@ -832,9 +1030,15 @@ def run_density_audit(
       output_dir / 'density_adjustment_summary.tsv'
       output_dir / 'table1_density_adjusted_effects.tsv'
       output_dir / 'density_adjustment_report.txt'
+      output_dir / 'density_adjustment_provenance.json' (default six-trait runs, #1327)
+      output_dir / 'trait_list_provenance.json' (declared-list runs, #1054)
 
     With a declared ``trait_list`` the effects table reports those traits instead of
-    the six Table 1 traits, and ``trait_list_provenance.json`` records the list (#1054).
+    the six Table 1 traits, and ``trait_list_provenance.json`` records the list (#1054);
+    default runs record the same provenance schema (without the list-file fields) in
+    ``density_adjustment_provenance.json`` (#1327).
+    Statuses read BH q-values over the reported traits: the six, or the declared list;
+    the table's ``bh_family_size`` column records the family size (#1321).
     A list run never writes into default or arm density directories, or replaces
     an existing canonical density table. Its destination is checked before any
     input reads or directory creation (#1083, #1093).
@@ -843,9 +1047,20 @@ def run_density_audit(
         _validate_declared_density_output(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
     profiles_df, non_media_cols = load_non_media_profile_matrix(profiles_path, columns_path)
+    table1_traits = table1_traits_for_columns(columns_path)
+    if trait_list is None:
+        absent = [trait_id for trait_id in table1_traits if trait_id not in non_media_cols]
+        if absent:
+            # As a declared list does: a Table 1 trait without a column has no row,
+            # so it can be neither reported nor a member of the q-value family (#1324).
+            raise ValueError(
+                f"Table 1 traits are not non-MediaDive trait columns of {columns_path.name}: "
+                f"{absent}"
+            )
     reported_traits = (
-        TABLE_1_TRAITS if trait_list is None else declared_density_traits(columns_path, trait_list)
+        table1_traits if trait_list is None else declared_density_traits(columns_path, trait_list)
     )
+    test_pair_a_label = reported_traits.get(TEST_PAIR_A, table1_traits[TEST_PAIR_A])
     raw_matrix = np.nan_to_num(profiles_df[non_media_cols].to_numpy(dtype=float), nan=0.0)
 
     # 1. Baseline metrics (Pearson & Spearman)
@@ -934,7 +1149,7 @@ def run_density_audit(
             "",
             "2. DENSITY AXIS ADJUSTMENT: SEPARATING BIOLOGY FROM CURATION EFFORT",
             "-" * 80,
-            "Test Case Pair: facultatively aerobic x moderately halophilic",
+            f"Test Case Pair: {test_pair_a_label} x moderately halophilic",
             f"  Baseline Pearson r: {raw_pearson.test_pair_r:+.4f}",
             f"  Post-PC1 regression r: {adj_pc1_pearson.test_pair_r:+.4f} "
             f"(attenuation: {adj_pc1_pearson.test_pair_r - raw_pearson.test_pair_r:+.4f})",
@@ -948,16 +1163,18 @@ def run_density_audit(
             f"3. {reported_traits_heading(trait_list)} "
             f"(PAIRED EXPERIMENTS N={twin_summary.n_paired_experiments:,})",
             "-" * 80,
+            *q_value_statement(len(reported_traits)),
+            nominal_test_count_statement(t1_effects),
         ]
     )
 
     for eff in t1_effects:
-        p_raw_str = f"p={eff.raw_wilcoxon_p:.2e}" if not math.isnan(eff.raw_wilcoxon_p) else "p=NA"
-        p_adj_str = f"p={eff.adj_wilcoxon_p:.2e}" if not math.isnan(eff.adj_wilcoxon_p) else "p=NA"
         report_lines.append(
             f"  {eff.trait_label:<30s} | "
-            f"Raw mean: {eff.raw_mean_diff:+.3f} ({p_raw_str}) | "
-            f"Adj mean: {eff.adj_mean_diff:+.3f} ({p_adj_str}) | "
+            f"Raw mean: {eff.raw_mean_diff:+.3f} "
+            f"({format_p_and_q(eff.raw_wilcoxon_p, eff.raw_wilcoxon_bh_q)}) | "
+            f"Adj mean: {eff.adj_mean_diff:+.3f} "
+            f"({format_p_and_q(eff.adj_wilcoxon_p, eff.adj_wilcoxon_bh_q)}) | "
             f"{eff.status}"
         )
 
@@ -977,7 +1194,7 @@ def run_density_audit(
             f"r = {twin_summary.paired_correlation:+.4f} | "
             f"Paired VIF: {twin_summary.vif_paired:.2f}",
             f"Paired regression slope: {twin_summary.paired_slope_a_on_b:.4f} "
-            f"(p={twin_summary.paired_slope_pvalue:.2e})",
+            f"({format_paired_regression_test(twin_summary.paired_slope_pvalue)})",
             "",
             "5. METHODOLOGICAL FINDINGS SUMMARY",
             "-" * 80,
@@ -985,8 +1202,8 @@ def run_density_audit(
             f"({raw_pearson.pc1_variance_pct:.2f}% variance explained).",
             f"2. Method A (PC1 regression) centers median pairwise correlation from "
             f"{raw_pearson.median_pairwise_r:+.4f} to {adj_pc1_pearson.median_pairwise_r:+.4f}.",
-            "3. Test case pair (facultatively aerobic x moderately halophilic) correlation "
-            f"attenuates from r={raw_pearson.test_pair_r:+.4f} "
+            f"3. Test case pair ({test_pair_a_label} x moderately halophilic) "
+            f"correlation attenuates from r={raw_pearson.test_pair_r:+.4f} "
             f"to r={adj_pc1_pearson.test_pair_r:+.4f}.",
             f"4. Near-twins ({twin_summary.trait_a_label} and {twin_summary.trait_b_label}) show "
             f"profile VIF = {twin_summary.vif_profile:.2f} "
@@ -999,11 +1216,20 @@ def run_density_audit(
     report_text = "\n".join(report_lines) + "\n"
     report_out.write_text(report_text, encoding="utf-8")
 
+    default_provenance_out = None
     provenance_out = None
     if trait_list is None:
         # A default rerun into a reused directory must not keep a list it did not use.
         (output_dir / TRAIT_LIST_PROVENANCE_FILENAME).unlink(missing_ok=True)
+        default_provenance_out = write_density_provenance(
+            output_dir,
+            list(reported_traits),
+            profiles_path=profiles_path,
+            columns_path=columns_path,
+            code_commit=code_commit,
+        )
     else:
+        (output_dir / DENSITY_PROVENANCE_FILENAME).unlink(missing_ok=True)
         provenance_out = write_trait_list_provenance(
             output_dir,
             trait_list,
@@ -1018,11 +1244,15 @@ def run_density_audit(
         "adj_pc1_pearson": adj_pc1_pearson,
         "adj_comp_pearson": adj_comp_pearson,
         "table1_effects": t1_effects,
+        "bh_family_size": len(reported_traits),
+        "q_values": q_value_provenance(len(reported_traits)),
         "twin_summary": twin_summary,
         "summary_tsv": summary_out,
         "table1_tsv": t1_out,
         "report_txt": report_out,
+        "density_provenance": default_provenance_out,
         "trait_list_provenance": provenance_out,
+        "provenance": default_provenance_out or provenance_out,
     }
 
 

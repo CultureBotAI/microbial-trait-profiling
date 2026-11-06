@@ -135,13 +135,17 @@ SELECTION_NOTE = (
     "correcting within them is not independent confirmation"
 )
 #: The guild rows carried "fixed a priori", which nothing in this repository
-#: establishes and which is not true of the aerobe guild in any case:
-#: METPO:1000608 is both a member of it and one of the six traits the
-#: composition arm selected on this corpus (#294).
+#: establishes: there is no record of where or when the guilds were declared (#294).
+#: The note also said the aerobe guild contains METPO:1000608, one of the six
+#: traits the composition arm selected on this corpus. Since #1237 neither oxygen
+#: guild contains it, under either trait-key policy, and the note says the
+#: membership was revised once, on semantic grounds and not because of results.
 GUILD_SELECTION_NOTE = (
     "the two oxygen guilds are the groupings both arms use, with no record in this "
-    "repository of where or when they were declared; the aerobe guild contains "
-    "METPO:1000608, which is also one of the six traits selected on this corpus"
+    "repository of where or when they were declared; their membership was revised "
+    "once (#1237), on semantic grounds and not because of results, to separate "
+    "facultative from aerobe annotations; neither guild contains METPO:1000608, one "
+    "of the six traits selected on this corpus"
 )
 #: No single cutoff is native to all three families collected here, so each row
 #: is decided at both and each threshold names where it comes from (#294). The
@@ -2101,7 +2105,8 @@ DICTIONARY: tuple[tuple[str, str], ...] = (
     ),
     (
         "p_value / q_value / correction_method / family_id / family_size",
-        "the test and the family it was corrected in; families are not comparable",
+        "p_value is nominal; q_value is corrected within its declared family; "
+        "families are not comparable",
     ),
     (
         "q_threshold / effect_threshold / support_threshold",
@@ -2272,6 +2277,11 @@ def write_view(
             )
             lines.append(f"| {display} | {test_status} | {count} |")
 
+    nominal_tests_shown = sum(
+        record.p_value is not None and math.isfinite(record.p_value)
+        for record in records
+        if not is_cell_row(record)
+    )
     lines += [
         "",
         "Native ORA rows summarize tested profiles (`tested_profiles_summarized`).",
@@ -2280,7 +2290,11 @@ def write_view(
         "",
         "## Records",
         "",
-        "| Method | Feature | Level | Effect | Units | p | q (family) | Decision | Test state |",
+        f"Finite nominal tests shown in the Records table: {nominal_tests_shown}. "
+        "This displayed-row count is not a correction family size.",
+        "",
+        "| Method | Feature | Level | Effect | Units | nominal p | q (family) | "
+        "Decision | Test state |",
         "| --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     ]
     for record in records:

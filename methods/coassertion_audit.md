@@ -29,7 +29,9 @@ These are declared class or guild memberships, without added ontology ancestry.
 The facultative member uses the local `facultative_union_v1` mapping described in
 [`trait_key_policy.md`](trait_key_policy.md); its historical pair identifier remains
 unchanged. The other three class pairs retain their literal members. All four
-are separate from the broader canonical guild pair.
+are separate from the broader canonical guild pair. The aerobe guild is
+`METPO:1000602` and `METPO:1000604`; since #1237 it no longer includes
+`METPO:1000608`, so the facultative union is in neither side of the guild pair.
 The audit records the actual KG labels for every class and fails if their
 metadata are missing. A missing taxon name remains explicitly missing.
 
@@ -47,7 +49,9 @@ used KG edges with SHA-256
 also recorded in `methods/table1-native-results/contribution_manifest.json`.
 The counts below are distinct NCBITaxon carrier nodes before ancestor closure,
 under the historical raw-object policy. In particular, the facultative row used
-only `METPO:1000605`; it is not a result for the current union. Regenerate the
+only `METPO:1000605`; it is not a result for the current union. The guild row used
+the aerobe guild of that time, which included `METPO:1000608` (facultatively
+aerobic); it is not a result for the guild as defined since #1237. Regenerate the
 run-bound audit before using these numbers for basis P.
 
 | Pair | off | phenotype | virtual full |

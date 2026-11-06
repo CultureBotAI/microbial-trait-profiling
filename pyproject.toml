@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=82.0.1", "wheel"]
+requires = ["setuptools>=84.2.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -20,11 +20,11 @@ authors = [
 dependencies = [
   "gitpython>=3.2.1",
   "httpx>=0.28.0",
-  "linkml>=1.11.0",
-  "linkml-runtime>=1.8.3",
+  "linkml>=1.12.1",
+  "linkml-runtime>=1.12.1",
   # numpy arrives with scipy either way; it is declared because `mtp.enrichment_stats`
   # and `mtp.calibration` import it directly.
-  "numpy>=2.0",
+  "numpy>=2.4.6",
   "pandas>=3.0.6",
   "plotly>=7.1.0",
   "pydantic>=2.13.0",
@@ -75,6 +75,8 @@ mongo = [
 
 [dependency-groups]
 dev = [
+  # tests/test_sync_agent_docs.py checks the link rewriter against CommonMark (#1434).
+  "markdown-it-py>=4.0.0",
   "mypy>=1.15.0",
   "pandas-stubs>=3.0.5.260914",
   "pre-commit>=4.6.2",

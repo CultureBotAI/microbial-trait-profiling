@@ -156,19 +156,11 @@ evidence-resolve archive original:
 rerun-core output raw edges nodes *ARGS:
 	uv run python -m mtp.workflow prepare-core "$@"
 
-# Prepare a 548-study (disease_vs_healthy_tier1_2_subject_controls) core run.
+# Historical 548-study rule, not a fixed count. Explicit sources; just 1.39-compatible.
+# Optional positional values name the strain scope and source mode, respectively.
 [positional-arguments]
-rerun-core-548 output raw="data/raw/full_dump.csv" edges="data/kg-microbe/merged-kg_edges.tsv" nodes="data/kg-microbe/merged-kg_nodes.tsv" *ARGS:
-	uv run python -m mtp.workflow prepare-core "$1" "$2" "$3" "$4" --contrast-population disease_vs_healthy_tier1_2_subject_controls "${@:5}"
-
-# Prepare core and run all three analysis arms (Ilyas, Noel, Jed with figures) on the 548-study subset.
-[positional-arguments]
-rerun-all-548 output raw="data/raw/full_dump.csv" edges="data/kg-microbe/merged-kg_edges.tsv" nodes="data/kg-microbe/merged-kg_nodes.tsv" *ARGS:
-	just rerun-core-548 "$1/core" "$2" "$3" "$4" "${@:5}"
-	just rerun-ilyas "$1/core/run.json" "$1/ilyas"
-	just rerun-noel "$1/core/run.json" "$1/noel"
-	just rerun-jed "$1/core/run.json" "$1/jed" --figures
-	just rerun-compare "$1/core/run.json" "$1/noel/arm_run.json" "$1/jed/arm_run.json" "$1/ilyas/arm_run.json" "$1/comparison"
+rerun-core-548 output raw edges nodes strain_rollup="phenotype" source_mode="pinned":
+	uv run python -m mtp.workflow prepare-core "$1" "$2" "$3" "$4" "$6" --strain-rollup "$5" --contrast-population disease_vs_healthy_tier1_2_subject_controls
 
 # Standard ORA, depletion, rankings, strata, calibration and optional figures.
 [positional-arguments]
@@ -356,8 +348,8 @@ six-shared-trait-high-support-sankeys:
 trait-heatmaps:
 	uv run python scripts/create_clustered_heatmap.py
 	uv run python scripts/create_condition_taxon_heatmap.py
-	uv run python scripts/create_taxa_guild_heatmap.py --direction-basis disease_vs_comparison
-	uv run python scripts/create_study_trait_profile_heatmap.py --direction-basis disease_vs_comparison
+	uv run python scripts/create_taxa_guild_heatmap.py --direction-basis group_1_vs_group_0
+	uv run python scripts/create_study_trait_profile_heatmap.py --direction-basis group_1_vs_group_0
 	uv run python scripts/create_condition_trait_module_heatmap.py
 
 trait-visualization:
@@ -473,26 +465,25 @@ cellulose-decr *ARGS:
 cellulose-decr-figures *ARGS:
 	#!/usr/bin/env bash
 	set -euo pipefail
-	help_only=0
 	for arg in "$@"; do
 		case "$arg" in
 			--analysis-dir* | --code-commit*)
 				echo "the recipe records this checkout and its commit; drop $arg" >&2
 				exit 1
 				;;
-			-h | --help)
-				help_only=1
-				;;
 		esac
 	done
 	commit="$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} data/analysis/cellulose_decr && git diff --cached --quiet -- {{code_paths}} data/analysis/cellulose_decr || echo +dirty)"
+	uv run python -m mtp.cellulose_decr.retired_outputs warn
 	uv run python -m mtp.cellulose_decr.figures --code-commit "$commit" "$@"
-	if [ "$help_only" -eq 0 ]; then
-		uv run python -m mtp.cellulose_decr.tufte_plates --code-commit "$commit" "$@"
-	fi
 
-# Draw the Tufte plates (figures_tufte/) and 16-slide deck (cellulose_decr_slide_deck.html)
-# in data/analysis/cellulose_decr/ (#550). Also invoked by `just cellulose-decr-figures`.
+# Preview exactly the 23 retired files; pass --delete for explicit removal (#1705).
+[positional-arguments]
+cellulose-decr-cleanup-retired *ARGS:
+	uv run python -m mtp.cellulose_decr.retired_outputs cleanup "$@"
+
+# Audit-only historical plates/deck: requires --audit-retired (#1572).
+# Unverified numbers; replacement from current rerun data is pending under #1670.
 [positional-arguments]
 cellulose-decr-tufte *ARGS:
 	uv run python -m mtp.cellulose_decr.tufte_plates "$@"
@@ -512,8 +503,8 @@ cellulose-decr-selection-scan run output *ARGS:
 # on a Tier 1+2 x off core, in either order, and a new or empty OUTPUT directory.
 # Both scans are verified and written together, so neither scope is reported alone.
 [positional-arguments]
-cellulose-decr-selection-scan-scopes scan_a scan_b output:
-	uv run python -m mtp.cellulose_decr.selection_scan_scopes --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" --scan "$1" --scan "$2" --output-dir "$3"
+cellulose-decr-selection-scan-scopes scan_a scan_b output *ARGS:
+	uv run python -m mtp.cellulose_decr.selection_scan_scopes --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" --scan "$1" --scan "$2" --output-dir "$3" "${@:4}"
 
 # The two methods plates and seven Tufte plates of the selected-figure deck, drawn
 # from the rerun tables into this checkout's data/derived/tufte_plates/ (#573). Plates IV
@@ -717,13 +708,23 @@ taxa-coverage *ARGS:
 # Regenerate taxa-coverage histograms filtered to the 548-study Tier 1+2 healthy/disease subset.
 [positional-arguments]
 taxa-coverage-548 *ARGS:
-	uv run python scripts/create_taxa_coverage_histogram.py --strain-rollup phenotype --contrast-population disease_vs_healthy_tier1_2_subject_controls --output-dir trait-visualization/trait-profile-investigation/taxa-coverage "$@"
+	uv run python scripts/create_taxa_coverage_histogram.py --strain-rollup phenotype --contrast-population disease_vs_healthy_tier1_2_subject_controls --raw-dump data/raw/full_dump.csv --output-dir trait-visualization/trait-profile-investigation/taxa-coverage "$@"
+
+# Isolate one synthetic population-guard mutation; canonical source stays untouched (#1176).
+[positional-arguments]
+probe-matrix-population-guard case output:
+	uv run python scripts/adhoc/issue1176_probe_population_guard.py "$1" --output-dir "$2"
 
 # Compute matrix trait overlap, Tier 1+2 coverage by rank and filter cascade, and Parkinson's
 # stool study overlap from a verified core run (#1053).
 [positional-arguments]
 matrix-overlap-coverage *ARGS:
 	uv run python -m mtp.matrix_overlap_coverage --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" "$@"
+
+# Isolated synthetic guard proofs; production source is never rewritten (#1175).
+[positional-arguments]
+probe-matrix-follow-up-guards guard mode output:
+	uv run python scripts/adhoc/issue1175_probe_followup_guards.py "$1" "$2" --output-dir "$3"
 
 # After an intended input change, such as a BugSigDB release or a new KG pin, refresh the
 # committed copy with `just study-trait-profiles-refresh-gz` and commit it (#667).
@@ -942,7 +943,8 @@ audit-trait-density *ARGS:
 
 # Density-adjusted paired effects for a declared TRAIT_LIST (one identifier per line) on one
 # run's PROFILES and COLUMNS, into OUTPUT; PC1 is still fit on every non-MediaDive trait and
-# trait_list_provenance.json records the list's SHA-256 (#1054). Without a list: audit-trait-density.
+# trait_list_provenance.json records the list's SHA-256 (#1054). Statuses read BH q-values over
+# the declared list (#1321). Without a list: audit-trait-density.
 [positional-arguments]
 density-adjustment-trait-list trait_list profiles columns output *ARGS:
 	bash scripts/guard_output_root.sh "$4" uv run python -m mtp.density_adjustment --code-commit "$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)" --trait-list "$1" --profiles "$2" --columns "$3" --output-dir "$4" "${@:5}"
@@ -964,7 +966,7 @@ security:
 	uv export --quiet --frozen --all-extras --group dev --group qa --format requirements-txt \
 	  --no-emit-project --no-emit-workspace \
 	  --output-file "$reqfile" && \
-	uv run pip-audit -r "$reqfile" --disable-pip \
+	uv run python scripts/run_pip_audit.py -r "$reqfile" --disable-pip \
 	  --cache-dir "$tmpdir/pip-audit-cache"
 
 # Audit locked packages selected for Linux x86_64 / Python 3.11, on any host.
@@ -977,7 +979,7 @@ security-linux:
 	uv run --locked --group qa uv pip compile "$audit_tmp/requirements.txt" \
 	  --python-platform x86_64-unknown-linux-gnu --python-version 3.11 --no-deps \
 	  --no-header --no-annotate --output-file "$audit_tmp/requirements-linux.txt" && \
-	uv run --locked --group qa pip-audit -r "$audit_tmp/requirements-linux.txt" \
+	uv run --locked --group qa python scripts/run_pip_audit.py -r "$audit_tmp/requirements-linux.txt" \
 	  --disable-pip --no-deps --cache-dir "$audit_tmp/pip-audit-cache"
 
 precommit:
@@ -1190,6 +1192,19 @@ audit-coassertions *ARGS:
 [positional-arguments]
 three-test-table *ARGS:
 	uv run python -m mtp.three_test_table run "$@"
+
+# Publication figures from pinned completed sidecars; source runs stay read-only (#1046).
+[positional-arguments]
+publication-figures *ARGS:
+	uv run python -m mtp.publication_figures "$@"
+
+# Slice 2: saved rank sensitivity, candidate-triple distribution and nine-trait overlap.
+[positional-arguments]
+publication-figures-slice2 *ARGS:
+	uv run python -m mtp.publication_figures.slice2 "$@"
+
+test-publication-figures:
+	uv run pytest tests/test_publication_figure_*.py -v
 
 # Read pinned completed Delta-z ledgers; derive votes, oxygen quadrants and site/disease cells.
 [positional-arguments]

@@ -29,6 +29,9 @@ def figure_commands(tmp_path: Path, request: pytest.FixtureRequest) -> list[Comm
             "reported_taxa",
             "taxa_matrix",
             "study_table",
+            "kg_edges",
+            "kg_nodes",
+            "source_identity",
         )
     }
     context = ArmContext(
@@ -46,7 +49,7 @@ def figure_commands(tmp_path: Path, request: pytest.FixtureRequest) -> list[Comm
     commands = [
         command for command in jed.build_commands(context) if "--direction-basis" in command.argv
     ]
-    assert len(commands) == 2
+    assert len(commands) == 3
     return commands
 
 
@@ -81,10 +84,10 @@ def test_every_direction_aware_jed_figure_has_registered_parser(
 ) -> None:
     for command in figure_commands:
         relative = Path(command.argv[1]).relative_to(REPO_ROOT).as_posix()
-        assert relative in runtime.DIRECTION_REQUIRED_SCRIPTS
+        assert relative in runtime.DIRECTION_REQUIRED_SCRIPTS | runtime.FULL_PARSER_SCRIPTS
 
 
-@pytest.mark.parametrize("index", [0, 1])
+@pytest.mark.parametrize("index", [0, 1, 2])
 @pytest.mark.parametrize("form", ["split", "equals", "abbreviated", "repeated"])
 def test_real_figure_parser_and_verifier_agree_on_effective_basis(
     figure_commands: list[Command], index: int, form: str, monkeypatch: pytest.MonkeyPatch
@@ -107,7 +110,7 @@ def test_real_figure_parser_and_verifier_agree_on_effective_basis(
     assert runtime._step_direction_basis(changed, REPO_ROOT) == basis
 
 
-@pytest.mark.parametrize("index", [0, 1])
+@pytest.mark.parametrize("index", [0, 1, 2])
 @pytest.mark.parametrize("suffix", [["--bogus-option"], ["--", "--direction-basis", "other"]])
 def test_verifier_rejects_arguments_rejected_by_real_figure_parser(
     figure_commands: list[Command],
@@ -124,7 +127,7 @@ def test_verifier_rejects_arguments_rejected_by_real_figure_parser(
         runtime._step_direction_basis(changed, REPO_ROOT)
 
 
-@pytest.mark.parametrize("index", [0, 1])
+@pytest.mark.parametrize("index", [0, 1, 2])
 @pytest.mark.parametrize("tamper", ["missing", "abbreviated_opposite"])
 def test_case_changed_registered_script_cannot_bypass_direction_validation(
     figure_commands: list[Command], index: int, tamper: str
@@ -143,7 +146,7 @@ def test_case_changed_registered_script_cannot_bypass_direction_validation(
         runtime._step_direction_basis(replace(command, argv=tuple(argv)), REPO_ROOT)
 
 
-@pytest.mark.parametrize("index", [0, 1])
+@pytest.mark.parametrize("index", [0, 1, 2])
 def test_verifier_rejects_help_without_printing(
     figure_commands: list[Command], index: int, capsys: pytest.CaptureFixture[str]
 ) -> None:

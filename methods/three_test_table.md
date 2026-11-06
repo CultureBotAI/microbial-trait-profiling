@@ -6,6 +6,19 @@ comparison. It preserves distinct estimands, populations and correction families
 and reconciliation evidence. Tracked result tables wait for the selected new main
 basis P. No generated table changes any native arm call.
 
+The registry distinguishes `mt-core-three-test-catalog-t`,
+`mt-core-three-test-catalog-wilcoxon` and `mt-core-three-test-ora-direction`:
+each tests every retained catalog trait separately, with BY primary and BH
+reported alongside it. Read the executed sizes from `composition_family_size`
+and `ora_direction_family_size` in `per_trait_evidence.tsv` and the bound
+`three_test_run.json` `family_size`. Native Noel's separate full-catalog family
+is `mt-core-noel-sign-nominal` (`noel_family_size`); the historical word
+`nominal` in that identifier means the full candidate count, not uncorrected p.
+The support/variance-selected comparison is
+`mt-core-three-test-native-selected` (`native_selected_family_size`), which
+retains its BH-primary designation. Its q-values are not full-catalog q-values.
+These registry IDs describe the families; historical output IDs remain unchanged.
+
 ## Declared composition quantities
 
 The denominator is every retained non-MediaDive annotation column. With annotation
@@ -93,13 +106,17 @@ replication from the two calculations.
 ## ORA declaration: ora-study-enrichment-direction-v1
 
 Declared before computation; accepted through the coordination review on 2026-10-25.
-Use only the complete native upper-tail export's `is_significant` flag: global
-separate-tail BH q <=0.001 and fold >=1.5. Count increased and decreased enriched
+Use only the complete native upper-tail export's `is_significant` flag:
+`mt-core-ora-upper-global`, global BH over all eligible profile × trait tests
+in that tail, q <=0.001 and fold >=1.5. Count increased and decreased enriched
 lists separately, retaining explicit zeros after family completeness validation.
 For K=0, enrichment and depletion counts are blank because no native test exists;
 these are not observed zero-hit counts.
-Lower-tail depletion counts (native q <=0.001 and fold <=0.5) are separate columns;
+Lower-tail depletion counts (`mt-core-ora-lower-global`, separate-tail BH
+q <=0.001 and fold <=0.5) are separate columns;
 enrichment among decreased lists is not depletion.
+The executed per-tail family size is `ora_native_tests_per_tail`; these two
+native families are distinct from the joint-tail multiplicity sidecar family.
 
 For each trait, use experiment pairs for which both directions have N>0 and the
 trait has background K>0. Let H(e,d,t) be the binary native enrichment flag. For
@@ -147,10 +164,11 @@ mixed-signal FDR control or pooled trait significance.
 
 ## Native votes and label support
 
-Reuse Noel's raw-fraction study votes, exact binomial p and nominal full-family BY.
+Reuse Noel's raw-fraction study votes, nominal exact binomial p and full-family BY q.
 Ties use its native tolerance 1e-12. Noel excludes a complete experiment pair if
 one retained annotation total is zero; preserve this eligibility difference from
-historical transformed composition. Effective-family BY is not the nominal result.
+historical transformed composition. Effective-size BY is a sensitivity bound
+without an FDR guarantee, not the full-candidate result.
 
 Label-support imports retain the existing audit's 14-trait `AUDIT_TRAITS`
 coverage (`focal_and_selected_oxygen_traits_only`) by default, and extend to
@@ -161,11 +179,25 @@ is not a source record. Report direct-at-reported-taxon and inherited support
 only for supported, reconciled audit traits; mark unsupported traits explicitly.
 Direct and inherited reported-taxon counts can overlap. Unique carrier IDs are
 deduplicated across reported ancestors and descendants. The importer checks the
-audit's bound inputs, complete focal matrix cells, signature occurrences and
-carrier-count coherence; it does not independently reconstruct the KG annotations.
-Do not equate unique source names or carrier taxa with original record counts.
-Madin source resolution requires its separately pinned table. Missing original
-record identifiers remain unresolved.
+audit's bound inputs, complete focal matrix cells, signature occurrences,
+carrier-count coherence, and per-cell reconciliation between
+`unresolved_madin_carriers` in `taxon_trait_label_support.tsv` and
+`madin_resolution` in `carrier_source_evidence.tsv`; it does not independently
+reconstruct the KG annotations. Do not equate unique source names or carrier
+taxa with original record counts. Madin source resolution requires its
+separately pinned table, and `carrier_madin_status` is reported per trait
+(#1151): `not_supplied` when no label-support sidecar is supplied,
+`not_in_focal_audit` for traits outside the audited catalog, `not_applicable`
+for audited traits with no bound `infores:madin_etal` carrier evidence rows,
+`not_supplied_source_support_unknown` when bound `infores:madin_etal` carriers
+exist without `--madin-csv`, `unresolved` when `--madin-csv` was verified but
+at least one bound `infores:madin_etal` carrier row remained
+`madin_resolution=unknown`, and `pinned_verified` when every bound
+`infores:madin_etal` carrier row resolved (`madin_resolution=resolved`; this
+per-trait `pinned_verified` reuses the audit-wide `provenance.json`
+`madin_status` name with a narrower meaning requiring all bound
+`infores:madin_etal` carriers of that trait to resolve).
+Missing original record identifiers remain unresolved.
 
 `METPO:1000603` means anaerobic; `METPO:1000607` means obligately anaerobic.
 The anaerobe guild combines both. Preserve qualified trait IDs; never substitute
@@ -281,6 +313,17 @@ Verification checks the exact output inventory and regenerates results from the
 verified source bundles. It compares the complete record, including numerical
 environment and implementation identity. Editing both a table and its local
 output checksum therefore does not make an altered result pass replay.
+
+The completed-table reader used by downstream consumers verifies stored evidence
+without replaying its statistics. It constructs the verified `ComparisonRun` from
+the same immutable manifest buffer whose hash is bound to the parent record.
+The core, arms, analysis bases and comparison outputs still undergo native
+verification. For population validation, it hashes the raw `count_profiles`
+buffer against its upstream identity and gives that buffer to the shared strict
+count reader for both header and row parsing. Gzip inputs retain their compressed
+byte identity. Final path, alias-target and hash checks remain mandatory before
+publication. For the comparison manifest and `count_profiles`, restoring a
+transiently replaced file cannot authorize different parsed bytes.
 
 `just test-three-test-table` covers synthetic contracts. The separate
 `test-three-test-off-reproduction` recipe requires a completed, verified historical

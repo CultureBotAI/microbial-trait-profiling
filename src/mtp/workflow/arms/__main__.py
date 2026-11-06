@@ -32,7 +32,15 @@ def build_parser() -> argparse.ArgumentParser:
             type=int,
             help="Override stochastic-stage seeds; otherwise preserve stage defaults",
         )
-        arm.add_argument(
+        figures = arm.add_mutually_exclusive_group()
+        figures.add_argument(
+            "--figures",
+            dest="no_figures",
+            action="store_false",
+            default=False,
+            help="Include optional figure rendering (the default)",
+        )
+        figures.add_argument(
             "--no-figures",
             action="store_true",
             help="Run analysis and calibration without optional figure rendering",

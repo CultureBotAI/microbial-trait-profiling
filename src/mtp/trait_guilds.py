@@ -10,12 +10,21 @@ from __future__ import annotations
 import csv
 import sys
 from collections import defaultdict
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TextIO
 
+from mtp.count_input import (
+    COMPLETE_COUNT_MODE,
+    COUNT_INPUT_MODES,
+    LEGACY_SPARSE_ZERO_MODE,
+    CountInputMode,
+    open_input_text,
+    profile_count_reader,
+)
 from mtp.paths import DERIVED_DATA_DIR, RAW_DATA_DIR
+from mtp.trait_key_policy import display_trait_label, read_recorded_member_ids
 
 DEFAULT_PROFILE_PATH = DERIVED_DATA_DIR / "study_trait_profiles_wide.tsv"
 DEFAULT_EXPERIMENTS_PATH = DERIVED_DATA_DIR / "experiments.tsv"
@@ -27,11 +36,23 @@ PROFILE_METADATA_COLUMNS = frozenset(
 )
 HUMAN_HOST_SPECIES = "Homo sapiens"
 MEDIADIVE_MARKER = "mediadive.medium"
+# How count_input.parse_nonnegative_integer frames a blank-count error.
+_READER_MISSING_COUNT_PREFIX = "Missing count in "
+_MISSING_COUNT_SUFFIX = "; missing is not an observed zero"
 
-# Oxygen guilds, fixed a priori and identical to both analysis arms. Labels were
-# verified against data/kg-microbe/merged-kg_nodes.tsv.
+# Oxygen guilds, identical in both analysis arms. This repository has no record of
+# where or when they were first declared (#294). Labels were verified against
+# data/kg-microbe/merged-kg_nodes.tsv. The membership was revised once, on semantic
+# grounds and not because of results: aerobe and facultative annotations are
+# distinct, so METPO:1000608 is in neither guild under either trait-key policy
+# (owner decision, #1237). Under facultative_union_v1 that column
+# also carries the facultatively anaerobic assertions of METPO:1000605 and
+# METPO:1000612, which an aerobe guild holding it counted as aerobe annotations. The
+# column is still one of the six Table 1 traits below, reported on its own, and
+# still counts in every profile total. No term is in two groups of TABLE1_TRAITS and
+# OXYGEN_GUILDS, which the calibration's injection headroom relies on (#1345).
 OXYGEN_GUILDS: dict[str, tuple[str, ...]] = {
-    "aerobe": ("METPO:1000602", "METPO:1000604", "METPO:1000608"),
+    "aerobe": ("METPO:1000602", "METPO:1000604"),
     "anaerobe": ("METPO:1000603", "METPO:1000607"),
 }
 
@@ -68,6 +89,26 @@ TABLE1_TRAIT_LABELS: dict[str, str] = {
     "arsenate_reduction": "arsenate reduction (pathways:arsenate_reduction)",
     "moderately_halophilic": "moderately halophilic (METPO:1000623)",
 }
+
+
+def table1_trait_label(
+    trait_name: str,
+    column_metadata_path: Path | None = None,
+    member_ids_by_trait: Mapping[str, Sequence[str] | str] | None = None,
+) -> str:
+    """Return the display label for a Table 1 trait slug from recorded member IDs."""
+    base_label = TABLE1_TRAIT_LABELS[trait_name]
+    terms = TABLE1_TRAITS.get(trait_name, ())
+    if not terms:
+        return base_label
+    term_id = terms[0]
+    members = (
+        dict(member_ids_by_trait)
+        if member_ids_by_trait is not None
+        else read_recorded_member_ids(column_metadata_path)
+    )
+    return display_trait_label(term_id, base_label, members.get(term_id))
+
 
 TABLE1_TRAIT_COLORS: dict[str, str] = {
     "facultatively_aerobic": "#0072b2",
@@ -118,6 +159,8 @@ class CorpusStats:
     trait_columns_used: int
     kept_experiments: int
     kept_profiles: int
+    count_input_mode: CountInputMode = COMPLETE_COUNT_MODE
+    blank_counts_interpreted_as_zero: int = 0
 
 
 @dataclass(frozen=True)
@@ -304,7 +347,7 @@ def _select_trait_columns(
 
 def _read_profile_header(profile_path: Path) -> list[str]:
     """Return the profile matrix header, rejecting a file that is not one."""
-    with profile_path.open(encoding="utf-8", newline="") as handle:
+    with open_input_text(profile_path) as handle:
         header = next(csv.reader(handle, delimiter="\t"), None)
     if header is None:
         msg = f"{profile_path} is empty"
@@ -333,6 +376,26 @@ def resolve_trait_columns(
     return selection.matched_columns
 
 
+def _resolve_count_input_mode(
+    count_input_mode: CountInputMode | None,
+    reject_missing_counts: bool | None,
+) -> CountInputMode:
+    """Resolve the effective count-input mode, rejecting conflicting options (#1298)."""
+    if count_input_mode is not None and count_input_mode not in COUNT_INPUT_MODES:
+        raise ValueError(f"Unsupported count input mode: {count_input_mode!r}")
+    if reject_missing_counts is None:
+        return COMPLETE_COUNT_MODE if count_input_mode is None else count_input_mode
+    flag_mode: CountInputMode = (
+        COMPLETE_COUNT_MODE if reject_missing_counts else LEGACY_SPARSE_ZERO_MODE
+    )
+    if count_input_mode is not None and count_input_mode != flag_mode:
+        raise ValueError(
+            f"Conflicting count input options: count_input_mode={count_input_mode!r} "
+            f"disagrees with reject_missing_counts={reject_missing_counts!r}"
+        )
+    return flag_mode
+
+
 def load_profiles(
     profile_path: Path = DEFAULT_PROFILE_PATH,
     experiments_path: Path = DEFAULT_EXPERIMENTS_PATH,
@@ -340,39 +403,46 @@ def load_profiles(
     *,
     human_only: bool = True,
     paired_only: bool = True,
-    reject_missing_counts: bool = False,
+    count_input_mode: CountInputMode | None = None,
+    reject_missing_counts: bool | None = None,
 ) -> tuple[list[Profile], CorpusStats]:
-    """Load profile rows joined to experiment metadata, with corpus filters applied."""
+    """Load profile rows joined to experiment metadata, with corpus filters applied.
+
+    Count cells are validated according to ``count_input_mode`` (defaulting to
+    ``"complete"``, which rejects blank count cells; ``"legacy_sparse_zero"``
+    interprets blank cells as ``0``) or its boolean alias
+    ``reject_missing_counts`` (``True`` for ``"complete"``, ``False`` for
+    ``"legacy_sparse_zero"``). Passing both options with disagreeing values
+    raises ``ValueError``.
+    """
+    effective_mode = _resolve_count_input_mode(count_input_mode, reject_missing_counts)
     guild_map = OXYGEN_GUILDS if guilds is None else guilds
     metadata = ExperimentMetadata.load(experiments_path)
 
-    with profile_path.open(encoding="utf-8", newline="") as handle:
-        reader = csv.reader(handle, delimiter="\t")
-        header = next(reader, None)
-        if header is None:
-            msg = f"{profile_path} is empty"
-            raise ValueError(msg)
-        if header[:3] != list(PROFILE_ID_COLUMNS):
-            msg = f"{profile_path} must start with {PROFILE_ID_COLUMNS}"
-            raise ValueError(msg)
+    count_reader = profile_count_reader(profile_path, mode=effective_mode)
+    header = list(count_reader.header)
+    selection = _select_trait_columns(header, guild_map)
+    total_positions = selection.total_positions
+    trait_columns = frozenset(header[i] for i in total_positions)
+    guild_positions = selection.guild_positions
+    mediadive_excluded = selection.mediadive_excluded
 
-        selection = _select_trait_columns(header, guild_map)
-        total_positions = selection.total_positions
-        guild_positions = selection.guild_positions
-        mediadive_excluded = selection.mediadive_excluded
+    profile_rows = 0
+    unmatched = 0
+    dropped_non_human = 0
+    candidates: list[Profile] = []
+    count_offset = len(PROFILE_ID_COLUMNS)
 
-        profile_rows = 0
-        unmatched = 0
-        dropped_non_human = 0
-        candidates: list[Profile] = []
-
-        for row in reader:
-            if not row:
-                continue
+    try:
+        for parsed_row in count_reader:
             profile_rows += 1
-            study_id, experiment_id, inc_dec = row[0], row[1], row[2]
+            study_id, experiment_id, inc_dec = parsed_row.key
             if inc_dec not in DIRECTIONS:
-                continue
+                msg = (
+                    f"Unknown profile direction in {profile_path}:{parsed_row.line_number}: "
+                    f"{inc_dec!r}; expected one of {DIRECTIONS}"
+                )
+                raise ValueError(msg)
 
             meta = metadata.get(study_id, experiment_id)
             if meta is None:
@@ -382,17 +452,9 @@ def load_profiles(
                 dropped_non_human += 1
                 continue
 
-            if reject_missing_counts:
-                for i in total_positions:
-                    if i >= len(row) or not row[i].strip():
-                        msg = (
-                            f"Missing trait count for {study_id}, {experiment_id}, {inc_dec}: "
-                            f"{header[i]}; missing is not zero"
-                        )
-                        raise ValueError(msg)
-            values = [int(row[i]) if row[i].strip() else 0 for i in total_positions]
+            values = [parsed_row.counts[i - count_offset] for i in total_positions]
             guild_counts = {
-                guild: sum(int(row[i]) if row[i].strip() else 0 for i in positions)
+                guild: sum(parsed_row.counts[i - count_offset] for i in positions)
                 for guild, positions in guild_positions.items()
             }
             candidates.append(
@@ -406,9 +468,23 @@ def load_profiles(
                     total=sum(values),
                 )
             )
+    except ValueError as exc:
+        # Relabel only the strict reader's missing-count error on retained trait
+        # columns, matched as a prefix and suffix: a path that contains the
+        # phrase must not relabel any other error (#1300), and metadata or
+        # MediaDive columns keep the neutral "Missing count" noun (#1302).
+        message = str(exc)
+        if message.startswith(_READER_MISSING_COUNT_PREFIX) and any(
+            message.endswith(f", column {column!r}{_MISSING_COUNT_SUFFIX}")
+            for column in trait_columns
+        ):
+            detail = message.removeprefix(_READER_MISSING_COUNT_PREFIX)
+            raise ValueError(f"Missing trait count in {detail}") from exc
+        raise
 
     kept, dropped_unpaired = _apply_pair_filter(candidates, paired_only=paired_only)
     experiments_seen = len({(p.study_id, p.experiment_id) for p in candidates})
+    reader_summary = count_reader.summary
     stats = CorpusStats(
         profile_rows=profile_rows,
         experiments_seen=experiments_seen,
@@ -419,6 +495,8 @@ def load_profiles(
         trait_columns_used=len(total_positions),
         kept_experiments=len({(p.study_id, p.experiment_id) for p in kept}),
         kept_profiles=len(kept),
+        count_input_mode=reader_summary.mode,
+        blank_counts_interpreted_as_zero=reader_summary.blank_counts_interpreted_as_zero,
     )
     return kept, stats
 
@@ -448,6 +526,8 @@ def format_stats_report(stats: CorpusStats, vintage: str | None) -> str:
         f"Trait columns used:          {stats.trait_columns_used}",
         f"Experiments kept:            {stats.kept_experiments}",
         f"Profiles kept:               {stats.kept_profiles}",
+        f"Count input mode:            {stats.count_input_mode}",
+        f"Blank counts used as zero:   {stats.blank_counts_interpreted_as_zero}",
     ]
     return "\n".join(lines)
 

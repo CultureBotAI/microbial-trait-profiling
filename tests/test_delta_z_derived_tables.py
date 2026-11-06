@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import math
+from typing import Literal
 
 import numpy as np
 import pandas as pd
 import pytest
+from numpy.typing import NDArray
 from scipy import __version__ as SCIPY_VERSION
 from scipy import stats
 
@@ -572,6 +574,73 @@ def test_study_sensitivity_retains_within_study_cancellation_as_an_exact_zero() 
     assert row["wilcoxon_zero_studies"] == 1
     assert row["wilcoxon_method"] == "permutation"
     assert row["wilcoxon_p"] == 1.0
+
+
+def test_study_sensitivity_exact_zero_is_distinct_from_activity_threshold() -> None:
+    inputs = _cell_inputs([0.0, 0.5e-12, 1e-12, 2e-12])
+    before = tuple(frame.copy(deep=True) for frame in inputs)
+    result = build_tables(*inputs, [SHIFT])
+    activity = result.trait_summary.set_index("trait").loc[SHIFT]
+    sensitivity = result.stool_study_sensitivity.iloc[0]
+    assert activity["sdz_active_studies"] == 1
+    assert activity["sdz_up"] == 1
+    assert activity["sdz_down"] == 0
+    assert activity["sdz_tied"] == 3
+    assert sensitivity["n_studies"] == sensitivity["n_comparisons"] == 4
+    assert sensitivity["wilcoxon_nonzero_studies"] == 3, "Exact-zero study support must be retained"
+    assert sensitivity["wilcoxon_zero_studies"] == 1
+    assert sensitivity["wilcoxon_statistic"] == 0.0
+    # All three nonzero ranks have the same sign: two extreme assignments / 2**3.
+    assert sensitivity["wilcoxon_p"] == 0.25
+    assert sensitivity["wilcoxon_method"] == "permutation"
+    assert sensitivity["wilcoxon_method_contract"] == REVIEWED_SCIPY_CONTRACTS[SCIPY_VERSION]
+    assert sensitivity["mean_delta_z"] == pytest.approx(0.875e-12, rel=1e-15, abs=0)
+    assert result.stool_disease_shifts.iloc[0]["wilcoxon_nonzero_comparisons"] == 3
+    for original, after in zip(before, inputs, strict=True):
+        pd.testing.assert_frame_equal(original, after)
+
+
+@pytest.mark.parametrize("sign", [-1.0, 1.0])
+def test_study_sensitivity_preserves_signed_nextafter_activity_boundaries(sign: float) -> None:
+    values = [
+        0.0,
+        sign * np.nextafter(1e-12, 0.0),
+        sign * 1e-12,
+        sign * np.nextafter(1e-12, np.inf),
+    ]
+    result = build_tables(*_cell_inputs(values), [SHIFT])
+    activity = result.trait_summary.set_index("trait").loc[SHIFT]
+    sensitivity = result.stool_study_sensitivity.iloc[0]
+    assert activity["sdz_up"] == int(sign > 0)
+    assert activity["sdz_down"] == int(sign < 0)
+    assert activity["sdz_active_studies"] == 1
+    assert activity["sdz_tied"] == 3
+    assert sensitivity["wilcoxon_nonzero_studies"] == 3
+    assert sensitivity["wilcoxon_zero_studies"] == 1
+    assert sensitivity["wilcoxon_statistic"] == 0.0
+    assert sensitivity["wilcoxon_p"] == 0.25
+    assert sensitivity["wilcoxon_method"] == "permutation"
+
+
+def test_exact_zero_contract_rejects_in_memory_tolerance_unification(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Exercise the plausible study-only dead-band change without editing source files."""
+    original = tables_module._wilcoxon
+    changed: list[int] = []
+
+    def unified(
+        values: NDArray[np.float64], *, unit: Literal["comparison", "study"] = "comparison"
+    ) -> dict[str, object]:
+        if unit == "study":
+            values = np.where(np.abs(values) <= 1e-12, 0.0, values)
+            changed.append(int(np.count_nonzero(values)))
+        return original(values, unit=unit)
+
+    monkeypatch.setattr(tables_module, "_wilcoxon", unified)
+    with pytest.raises(AssertionError, match="Exact-zero study support must be retained"):
+        test_study_sensitivity_exact_zero_is_distinct_from_activity_threshold()
+    assert changed == [1]
 
 
 def test_study_sensitivity_empty_population_keeps_its_schema() -> None:

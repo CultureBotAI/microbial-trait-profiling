@@ -8,15 +8,18 @@ import json
 from collections.abc import Callable
 from dataclasses import replace
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 import pytest
 
-from mtp import label_support_audit, madin_source
+from mtp import label_support_audit, madin_source, trait_key_policy
 from mtp.label_support_audit import (
     AUDIT_TRAITS,
+    COASSERTION_PAIRS,
     MADIN_SOURCE,
     bind_occurrences,
+    build_coassertion_census,
     build_label_support_tables,
     load_kg_provenance_graph,
     load_madin_subsources,
@@ -147,7 +150,13 @@ def inputs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Path]:
     return paths
 
 
-def run_audit(inputs: dict[str, Path], output: Path, *, madin: bool = True) -> None:
+def run_audit(
+    inputs: dict[str, Path],
+    output: Path,
+    *,
+    madin: bool = True,
+    columns: Path | None = None,
+) -> None:
     arguments = [
         argument
         for name in ("taxa", "matrix", "profiles", "edges", "nodes")
@@ -155,6 +164,8 @@ def run_audit(inputs: dict[str, Path], output: Path, *, madin: bool = True) -> N
     ]
     if madin:
         arguments.extend(["--madin-csv", str(inputs["madin"])])
+    if columns is not None:
+        arguments.extend(["--columns", str(columns)])
     # Tests write to temporary storage, which the sidecar refuses without the opt-in
     arguments.append("--allow-temporary-output")
     assert main([*arguments, "--output-dir", str(output), "--strain-rollup", "off"]) == 0
@@ -206,8 +217,11 @@ def test_sidecar_records_sources_reconciliations_and_study_means(
     dual = census[
         (census["label_pair"] == "aerobe_guild_and_anaerobe_guild") & (census["rank"] == "genus")
     ].iloc[0]
+    # Genus 20 carries anaerobic and facultative counts. The facultative column is
+    # in no oxygen guild (#1237), so genus 20 is anaerobe-only, like genus 10.
     assert dual["taxa_with_either"] == 2
-    assert dual["taxa_with_both"] == 1
+    assert dual["taxa_with_both"] == 0
+    assert dual["side_a_count_mass"] == 0
     provenance = json.loads((output / "provenance.json").read_text())
     assert provenance["scope"]["profile_counts_reconciled"] is True
     assert provenance["inputs"]["madin"]["sha256"] == file_sha256(inputs["madin"])
@@ -215,6 +229,62 @@ def test_sidecar_records_sources_reconciliations_and_study_means(
         assert entry["sha256"] == file_sha256(output / name)
     assert "table1_trait_semantic_audit.tsv" not in provenance["outputs"]
     assert "/Users/" not in (output / "provenance.json").read_text()
+
+
+def test_coassertion_census_counts_a_taxon_on_both_sides_of_a_pair() -> None:
+    """The both-sides count is tested at a non-zero value (#1345).
+
+    Genus 1 carries aerobic and anaerobic counts, so it is on both sides of the oxygen
+    guild pair and of the aerobic/anaerobic pair. Genus 2 is anaerobic with a
+    facultative count and genus 3 is facultative only. METPO:1000608 is in neither
+    oxygen guild (#1237), so neither of them is on the aerobe side. Genus 4 is on the
+    aerobe side only (microaerophilic), so a "both" that reads one side alone counts
+    two taxa instead of one, whichever side it reads (#1352).
+    """
+    columns = sorted(
+        {term for _, left, right in COASSERTION_PAIRS for term in (*left, *right)} | {FAC}
+    )
+    carried = {
+        "NCBITaxon:1": {"METPO:1000602": 2, ANA: 1},
+        "NCBITaxon:2": {ANA: 3, FAC: 4},
+        "NCBITaxon:3": {FAC: 5},
+        "NCBITaxon:4": {"METPO:1000604": 1},
+    }
+    matrix = pd.DataFrame(
+        [
+            {"taxon_id": taxon, "taxonomic_rank": "genus", **dict.fromkeys(columns, 0), **counts}
+            for taxon, counts in carried.items()
+        ]
+    )
+    # Genus 1 is reported twice, the other three once each.
+    occurrences = pd.DataFrame(
+        {
+            "taxon_id": [
+                "NCBITaxon:1",
+                "NCBITaxon:1",
+                "NCBITaxon:2",
+                "NCBITaxon:3",
+                "NCBITaxon:4",
+            ]
+        }
+    )
+    census = pd.DataFrame(build_coassertion_census(matrix, occurrences))
+    genus = census[census["rank"] == "genus"].set_index("label_pair")
+
+    guild = genus.loc["aerobe_guild_and_anaerobe_guild"]
+    assert guild["status"] == "assessed"
+    assert guild["unique_reported_taxa"] == 4
+    assert guild["taxa_with_either"] == 3
+    assert guild["taxa_with_both"] == 1
+    assert guild["fraction_both_of_either"] == pytest.approx(1 / 3)
+    assert guild["occurrences_with_either"] == 4
+    assert guild["occurrences_with_both"] == 2
+    assert guild["side_a_count_mass"] == 5
+    assert guild["side_b_count_mass"] == 5
+    assert guild["side_a_coasserted_mass_fraction"] == pytest.approx(4 / 5)
+    assert guild["side_b_coasserted_mass_fraction"] == pytest.approx(2 / 5)
+    assert genus.loc["aerobic_and_anaerobic", "taxa_with_both"] == 1
+    assert genus.loc["coccus_sphere_and_rod_bacillus", "taxa_with_either"] == 0
 
 
 def test_optional_madin_is_unknown_not_negative(inputs: dict[str, Path], tmp_path: Path) -> None:
@@ -781,4 +851,520 @@ def test_trait_list_rejects_file_changed_during_execution(
             strain_rollup="off",
             trait_list=trait_list_path,
         )
+    assert not output.exists()
+
+
+def test_madin_rules_resolve_declared_headline_and_strictly_anaerobic_traits(
+    inputs: dict[str, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Cover the six #1151/#1155/#1066 Madin rules, comma-joined rows, and _dark lookalikes."""
+    pinned_cases = (
+        ("METPO:2000103|GO:0046274", 701347, "gold", "lignin_degradation", "", "gold_patric_only"),
+        (
+            "METPO:2000103|pathways:ligninolysis",
+            124798,
+            "faprotax",
+            "ligninolysis",
+            "",
+            "includes_other_sources",
+        ),
+        (
+            "METPO:2000103|pathways:thiosulfate_oxidation",
+            36861,
+            "amend-shock",
+            "thiosulfate_oxidation, denitrification",
+            "",
+            "includes_other_sources",
+        ),
+        (
+            "METPO:2000103|GO:0045493",
+            515440,
+            "faprotax",
+            "xylan_degradation",
+            "",
+            "includes_other_sources",
+        ),
+        ("METPO:1000845", 2325, "amend-shock", "acetogenesis", "", "includes_other_sources"),
+        ("METPO:1000611", 349095, "gold", "", "strictly anaerobic", "gold_patric_only"),
+    )
+    for non_madin_trait in ("METPO:1000683", "METPO:1000681", HIGH_TEMP):
+        assert non_madin_trait not in label_support_audit.MADIN_RULES
+
+    madin_rows = pd.read_csv(inputs["madin"]).to_dict("records")
+    edge_lines = []
+    node_lines = []
+    declared_traits = []
+    for trait_key, tax_id, data_source, pathway_token, metabolism_token, _ in pinned_cases:
+        madin_rows.append(
+            {
+                "tax_id": tax_id,
+                "data_source": data_source,
+                "pathways": pathway_token,
+                "metabolism": metabolism_token,
+                "cell_shape": "",
+            }
+        )
+        taxon_curie = f"NCBITaxon:{tax_id}"
+        predicate, obj = (
+            trait_key.split("|", 1) if "|" in trait_key else ("biolink:has_phenotype", trait_key)
+        )
+        edge_lines.append(
+            f"edge-sub-{tax_id}\t{taxon_curie}\tbiolink:subclass_of\tNCBITaxon:10\tinfores:ncbi\n"
+        )
+        edge_lines.append(
+            f"edge-trait-{tax_id}\t{taxon_curie}\t{predicate}\t{obj}\t{MADIN_SOURCE}\n"
+        )
+        node_lines.append(f"{taxon_curie}\tPinned carrier {tax_id}\n")
+        node_lines.append(f"{obj}\tLabel for {obj}\n")
+        if trait_key not in AUDIT_TRAITS:
+            declared_traits.append(trait_key)
+
+    # Real pinned row with only thiosulfate_oxidation_dark (364030, Thiomonas arsenivorans):
+    # must NOT substring-match thiosulfate_oxidation (#1200).
+    dark_only_tax_id = 364030
+    thiosulfate_key = "METPO:2000103|pathways:thiosulfate_oxidation"
+    madin_rows.append(
+        {
+            "tax_id": dark_only_tax_id,
+            "data_source": "faprotax",
+            "pathways": "thiosulfate_oxidation_dark",
+            "metabolism": "",
+            "cell_shape": "",
+        }
+    )
+    edge_lines.append(
+        f"edge-sub-{dark_only_tax_id}\tNCBITaxon:{dark_only_tax_id}\tbiolink:subclass_of\tNCBITaxon:20\tinfores:ncbi\n"
+    )
+    edge_lines.append(
+        f"edge-trait-{dark_only_tax_id}\tNCBITaxon:{dark_only_tax_id}\tMETPO:2000103\tpathways:thiosulfate_oxidation\t{MADIN_SOURCE}\n"
+    )
+    node_lines.append(f"NCBITaxon:{dark_only_tax_id}\tThiomonas arsenivorans\n")
+
+    pd.DataFrame(madin_rows).to_csv(inputs["madin"], index=False)
+    monkeypatch.setattr(
+        madin_source,
+        "MADIN_PIN",
+        replace(
+            madin_source.MADIN_PIN,
+            sha256=file_sha256(inputs["madin"]),
+            size_bytes=inputs["madin"].stat().st_size,
+        ),
+    )
+    subsources = load_madin_subsources(inputs["madin"])
+    for trait_key, tax_id, data_source, _, _, _ in pinned_cases:
+        assert subsources.get(trait_key, {}).get(f"NCBITaxon:{tax_id}") == {data_source}
+    assert f"NCBITaxon:{dark_only_tax_id}" not in subsources.get(thiosulfate_key, {})
+
+    with inputs["edges"].open("a", encoding="utf-8") as handle:
+        handle.writelines(edge_lines)
+    with inputs["nodes"].open("a", encoding="utf-8") as handle:
+        handle.writelines(node_lines)
+
+    matrix = pd.read_csv(inputs["matrix"], sep="\t")
+    for trait_key, _, _, _, _, _ in pinned_cases:
+        matrix[trait_key] = [
+            1
+            if tid == "NCBITaxon:10" or (trait_key == thiosulfate_key and tid == "NCBITaxon:20")
+            else 0
+            for tid in matrix["taxon_id"]
+        ]
+    matrix.to_csv(inputs["matrix"], sep="\t", index=False)
+    count_lookup = matrix.set_index("taxon_id")
+    taxa = pd.read_csv(inputs["taxa"], sep="\t")
+    profiles = pd.read_csv(inputs["profiles"], sep="\t")
+    for trait_key, _, _, _, _, _ in pinned_cases:
+        totals = []
+        for _, row in profiles.iterrows():
+            direction = "increased" if row["inc_dec"] == "inc" else "decreased"
+            group = taxa[
+                (taxa["study_id"] == row["study_id"])
+                & (taxa["experiment_id"] == row["experiment_id"])
+                & (taxa["direction"] == direction)
+            ]
+            totals.append(int(count_lookup.loc[group["taxon_id"], trait_key].sum()))
+        profiles[trait_key] = totals
+    profiles.to_csv(inputs["profiles"], sep="\t", index=False)
+
+    trait_list_path = tmp_path / "headline_and_pathway_traits.txt"
+    trait_list_path.write_text("\n".join(declared_traits) + "\n", encoding="utf-8")
+    output = tmp_path / "audit_madin_rules"
+    run_label_support_audit(
+        taxa_path=inputs["taxa"],
+        matrix_path=inputs["matrix"],
+        profiles_path=inputs["profiles"],
+        edges_path=inputs["edges"],
+        nodes_path=inputs["nodes"],
+        madin_csv=inputs["madin"],
+        output_dir=output,
+        strain_rollup="off",
+        trait_list=trait_list_path,
+    )
+    support = pd.read_csv(output / "taxon_trait_label_support.tsv", sep="\t", keep_default_na=False)
+    evidence = pd.read_csv(output / "carrier_source_evidence.tsv", sep="\t", keep_default_na=False)
+    for trait_key, tax_id, data_source, _, _, expected_status in pinned_cases:
+        s_row = support[
+            (support["taxon_id"] == "NCBITaxon:10") & (support["trait_key"] == trait_key)
+        ].iloc[0]
+        assert int(s_row["unresolved_madin_carriers"]) == 0
+        assert s_row["madin_subsources"] == data_source
+        assert s_row["source_status"] == expected_status
+        e_row = evidence[
+            (evidence["reported_taxon_id"] == "NCBITaxon:10")
+            & (evidence["trait_key"] == trait_key)
+            & (evidence["carrier_taxon_id"] == f"NCBITaxon:{tax_id}")
+        ].iloc[0]
+        assert e_row["madin_resolution"] == "resolved"
+        assert e_row["madin_subsources"] == data_source
+
+    dark_support = support[
+        (support["taxon_id"] == "NCBITaxon:20") & (support["trait_key"] == thiosulfate_key)
+    ].iloc[0]
+    assert int(dark_support["unresolved_madin_carriers"]) == 1
+    assert dark_support["madin_subsources"] == ""
+    assert dark_support["source_status"] == "unknown"
+    dark_evidence = evidence[
+        (evidence["reported_taxon_id"] == "NCBITaxon:20")
+        & (evidence["trait_key"] == thiosulfate_key)
+        & (evidence["carrier_taxon_id"] == f"NCBITaxon:{dark_only_tax_id}")
+    ].iloc[0]
+    assert dark_evidence["madin_resolution"] == "unknown"
+    assert dark_evidence["madin_subsources"] == ""
+
+
+def test_run_label_support_audit_empty_support_and_evidence_fallback_columns(
+    inputs: dict[str, Path], tmp_path: Path
+) -> None:
+    """When no audited trait has carriers, empty support and evidence TSVs include Madin columns."""
+    matrix = pd.read_csv(inputs["matrix"], sep="\t")
+    for col in list(matrix.columns[3:]):
+        matrix[col] = 0
+    matrix[HIGH_TEMP] = [
+        1 if tid in ("NCBITaxon:10", "NCBITaxon:20") else 0 for tid in matrix["taxon_id"]
+    ]
+    matrix.to_csv(inputs["matrix"], sep="\t", index=False)
+
+    profiles = pd.read_csv(inputs["profiles"], sep="\t")
+    for col in list(profiles.columns[3:]):
+        profiles[col] = 0
+    profiles[HIGH_TEMP] = 1
+    profiles.to_csv(inputs["profiles"], sep="\t", index=False)
+
+    edges = pd.read_csv(inputs["edges"], sep="\t")
+    edges = edges[edges["predicate"] == "biolink:subclass_of"].copy()
+    extra_edges = pd.DataFrame(
+        [
+            {
+                "id": "edge-ht-10",
+                "subject": "NCBITaxon:10",
+                "predicate": "biolink:has_phenotype",
+                "object": HIGH_TEMP,
+                "primary_knowledge_source": "infores:bacdive",
+            },
+            {
+                "id": "edge-ht-20",
+                "subject": "NCBITaxon:20",
+                "predicate": "biolink:has_phenotype",
+                "object": HIGH_TEMP,
+                "primary_knowledge_source": "infores:bacdive",
+            },
+        ]
+    )
+    pd.concat([edges, extra_edges], ignore_index=True).to_csv(
+        inputs["edges"], sep="\t", index=False
+    )
+    with inputs["nodes"].open("a", encoding="utf-8") as handle:
+        handle.write(f"{HIGH_TEMP}\ttemperature optimum high\n")
+
+    output = tmp_path / "audit_empty_support_and_evidence"
+    run_label_support_audit(
+        taxa_path=inputs["taxa"],
+        matrix_path=inputs["matrix"],
+        profiles_path=inputs["profiles"],
+        edges_path=inputs["edges"],
+        nodes_path=inputs["nodes"],
+        madin_csv=None,
+        output_dir=output,
+        strain_rollup="off",
+    )
+    support = pd.read_csv(output / "taxon_trait_label_support.tsv", sep="\t")
+    evidence = pd.read_csv(output / "carrier_source_evidence.tsv", sep="\t")
+    assert support.empty
+    assert evidence.empty
+    assert list(support.columns) == [
+        "taxon_id",
+        "trait_key",
+        "carrier_count",
+        "unresolved_madin_carriers",
+    ]
+    assert list(evidence.columns) == [
+        "reported_taxon_id",
+        "trait_key",
+        "carrier_taxon_id",
+        "madin_resolution",
+    ]
+
+
+def write_facultative_metadata(path: Path, *, union: bool) -> None:
+    """Write contrasting display evidence without changing any count input (#1331)."""
+    pd.DataFrame(
+        [
+            {
+                "column_id": FAC,
+                "object_id": FAC,
+                "object_name": "facultatively aerobic",
+                "column_label": "facultatively aerobic",
+                "trait_member_ids_json": json.dumps(
+                    ["METPO:1000605", FAC, "METPO:1000612"] if union else [FAC]
+                ),
+            }
+        ]
+    ).to_csv(path, sep="\t", index=False)
+
+
+def assert_facultative_audit_label(output: Path, expected: str) -> None:
+    support = pd.read_csv(output / "taxon_trait_label_support.tsv", sep="\t")
+    labels = support.loc[support["trait_key"] == FAC, "trait_label"]
+    assert not labels.empty
+    assert set(labels) == {expected}
+
+
+@pytest.mark.parametrize("present", [False, True], ids=["absent", "present"])
+def test_column_metadata_default_inventory_records_present_or_absent(
+    inputs: dict[str, Path], tmp_path: Path, present: bool
+) -> None:
+    """The default sibling's presence and exact identity determine its label claim."""
+    columns = inputs["matrix"].with_name("taxa_trait_matrix_columns.tsv")
+    if present:
+        write_facultative_metadata(columns, union=True)
+    output = tmp_path / "metadata-inventory"
+    run_audit(inputs, output)
+    provenance = json.loads((output / "provenance.json").read_text(encoding="utf-8"))
+    expected: dict[str, str | int] = (
+        {
+            "path": columns.name,
+            "sha256": file_sha256(columns),
+            "size_bytes": columns.stat().st_size,
+        }
+        if present
+        else {"path": columns.name, "status": "absent"}
+    )
+    expected.update(selection="sibling_default", member_id_rows=int(present))
+    assert provenance["inputs"]["column_metadata"] == expected
+    assert_facultative_audit_label(
+        output, "facultative (aerobe or anaerobe)" if present else "facultatively aerobic"
+    )
+
+
+@pytest.mark.parametrize(
+    ("selection", "change"),
+    [
+        ("sibling_default", "modify"),
+        ("sibling_default", "same-size"),
+        ("sibling_default", "add"),
+        ("sibling_default", "delete"),
+        ("explicit", "modify"),
+        ("explicit", "same-size"),
+        ("explicit", "delete"),
+    ],
+)
+def test_column_metadata_change_after_label_read_refuses_publication(
+    inputs: dict[str, Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    selection: str,
+    change: str,
+) -> None:
+    """A valid post-read metadata change must fail the late input check, before writes."""
+    columns = (
+        tmp_path / "explicit metadata.tsv"
+        if selection == "explicit"
+        else inputs["matrix"].with_name("taxa_trait_matrix_columns.tsv")
+    )
+    if change != "add":
+        write_facultative_metadata(columns, union=True)
+    original_build = build_label_support_tables
+    visited: list[str] = []
+
+    def build_then_change(*args: Any, **kwargs: Any) -> Any:
+        result = original_build(*args, **kwargs)
+        visited.append(change)
+        if change == "delete":
+            columns.unlink()
+        elif change == "same-size":
+            original = columns.read_bytes()
+            changed = original.replace(b"METPO:1000605", b"METPO:1000606")
+            assert changed != original
+            assert len(changed) == len(original)
+            columns.write_bytes(changed)
+        else:
+            write_facultative_metadata(columns, union=change == "add")
+        return result
+
+    monkeypatch.setattr(label_support_audit, "build_label_support_tables", build_then_change)
+    output = tmp_path / "metadata-change"
+    with pytest.raises(ValueError, match="changed during execution"):
+        run_audit(inputs, output, columns=columns if selection == "explicit" else None)
+    assert visited == [change]
+    assert not output.exists()
+
+
+@pytest.mark.parametrize("explicit_union", [False, True], ids=["explicit-raw", "explicit-union"])
+def test_column_metadata_cli_explicit_path_overrides_conflicting_sibling(
+    inputs: dict[str, Path], tmp_path: Path, explicit_union: bool
+) -> None:
+    """The CLI-selected file controls both rendered labels and the native input pin."""
+    sibling = inputs["matrix"].with_name("taxa_trait_matrix_columns.tsv")
+    explicit = tmp_path / "selected metadata.tsv"
+    write_facultative_metadata(sibling, union=not explicit_union)
+    write_facultative_metadata(explicit, union=explicit_union)
+    output = tmp_path / "explicit-metadata"
+    run_audit(inputs, output, columns=explicit)
+    provenance = json.loads((output / "provenance.json").read_text(encoding="utf-8"))
+    assert provenance["inputs"]["column_metadata"] == {
+        "path": explicit.name,
+        "sha256": file_sha256(explicit),
+        "size_bytes": explicit.stat().st_size,
+        "selection": "explicit",
+        "member_id_rows": 1,
+    }
+    assert provenance["inputs"]["column_metadata"]["sha256"] != file_sha256(sibling)
+    assert_facultative_audit_label(
+        output, "facultative (aerobe or anaerobe)" if explicit_union else "facultatively aerobic"
+    )
+
+
+@pytest.mark.parametrize("interface", ["api", "cli"])
+def test_column_metadata_explicit_missing_refuses_sibling_fallback(
+    inputs: dict[str, Path], tmp_path: Path, interface: str
+) -> None:
+    """An explicitly requested missing file is an error even when a sibling exists."""
+    sibling = inputs["matrix"].with_name("taxa_trait_matrix_columns.tsv")
+    write_facultative_metadata(sibling, union=True)
+    missing = tmp_path / "missing-specified.tsv"
+    output = tmp_path / "missing-metadata"
+    if interface == "cli":
+        with pytest.raises(FileNotFoundError, match="missing-specified"):
+            run_audit(inputs, output, columns=missing)
+    else:
+        with pytest.raises(FileNotFoundError, match="missing-specified"):
+            run_label_support_audit(
+                taxa_path=inputs["taxa"],
+                matrix_path=inputs["matrix"],
+                profiles_path=inputs["profiles"],
+                edges_path=inputs["edges"],
+                nodes_path=inputs["nodes"],
+                madin_csv=inputs["madin"],
+                output_dir=output,
+                strain_rollup="off",
+                column_metadata_path=missing,
+            )
+    assert not output.exists()
+
+
+@pytest.mark.parametrize(
+    ("metadata_kind", "expected_rows", "union_label"),
+    [
+        ("missing-member-column", 0, False),
+        ("empty-members", 0, False),
+        ("members-without-id", 0, False),
+        ("raw", 1, False),
+        ("union", 1, True),
+        ("distinct-aliases", 1, True),
+        ("repeated-source-rows", 2, True),
+    ],
+)
+def test_column_metadata_records_source_member_rows_not_mapping_alias_count(
+    inputs: dict[str, Path],
+    tmp_path: Path,
+    metadata_kind: str,
+    expected_rows: int,
+    union_label: bool,
+) -> None:
+    columns = inputs["matrix"].with_name("taxa_trait_matrix_columns.tsv")
+    write_facultative_metadata(columns, union=union_label)
+    metadata = pd.read_csv(columns, sep="\t", keep_default_na=False)
+    if metadata_kind == "missing-member-column":
+        metadata = metadata.drop(columns="trait_member_ids_json")
+    elif metadata_kind == "empty-members":
+        metadata = pd.concat([metadata, metadata], ignore_index=True)
+        metadata["trait_member_ids_json"] = ["", "[]"]
+    elif metadata_kind == "members-without-id":
+        metadata[["column_id", "object_id"]] = ""
+    elif metadata_kind == "distinct-aliases":
+        metadata["column_id"] = f"biolink:has_phenotype|{FAC}"
+    elif metadata_kind == "repeated-source-rows":
+        metadata = pd.concat([metadata, metadata], ignore_index=True)
+    metadata.to_csv(columns, sep="\t", index=False)
+    output = tmp_path / "member-row-audit"
+    run_audit(inputs, output)
+    provenance = json.loads((output / "provenance.json").read_text(encoding="utf-8"))
+    assert provenance["inputs"]["column_metadata"] == {
+        "path": columns.name,
+        "sha256": file_sha256(columns),
+        "size_bytes": columns.stat().st_size,
+        "selection": "sibling_default",
+        "member_id_rows": expected_rows,
+    }
+    assert_facultative_audit_label(
+        output, "facultative (aerobe or anaerobe)" if union_label else "facultatively aerobic"
+    )
+
+
+@pytest.mark.parametrize("union", [False, True], ids=["raw", "union"])
+def test_explicit_and_default_same_metadata_preserve_all_five_table_bytes(
+    inputs: dict[str, Path], tmp_path: Path, union: bool
+) -> None:
+    columns = inputs["matrix"].with_name("taxa_trait_matrix_columns.tsv")
+    write_facultative_metadata(columns, union=union)
+    original = columns.read_bytes()
+    default_output, explicit_output = tmp_path / "default", tmp_path / "explicit"
+    run_audit(inputs, default_output)
+    run_audit(inputs, explicit_output, columns=columns)
+    tables = {
+        "taxon_trait_label_support.tsv",
+        "focal_taxa_trait_support.tsv",
+        "carrier_source_evidence.tsv",
+        "support_threshold_sensitivity.tsv",
+        "coasserted_label_census.tsv",
+    }
+    assert {path.name for path in default_output.glob("*.tsv")} == tables
+    assert {path.name for path in explicit_output.glob("*.tsv")} == tables
+    for name in tables:
+        assert (default_output / name).read_bytes() == (explicit_output / name).read_bytes()
+    for output, selection in ((default_output, "sibling_default"), (explicit_output, "explicit")):
+        record = json.loads((output / "provenance.json").read_text(encoding="utf-8"))
+        assert record["inputs"]["column_metadata"]["selection"] == selection
+        assert record["inputs"]["column_metadata"]["member_id_rows"] == 1
+        assert_facultative_audit_label(
+            output, "facultative (aerobe or anaerobe)" if union else "facultatively aerobic"
+        )
+    assert columns.read_bytes() == original
+
+
+def test_audit_inventories_trait_key_policy_code(inputs: dict[str, Path], tmp_path: Path) -> None:
+    output = tmp_path / "policy-code"
+    run_audit(inputs, output)
+    provenance = json.loads((output / "provenance.json").read_text(encoding="utf-8"))
+    policy_path = Path(trait_key_policy.__file__)
+    assert provenance["trait_key_policy_code"] == {
+        "path": str(policy_path.relative_to(REPO_ROOT)),
+        "sha256": file_sha256(policy_path),
+        "size_bytes": policy_path.stat().st_size,
+    }
+
+
+@pytest.mark.parametrize("invalid", ["directory", "dangling-symlink"])
+def test_column_metadata_default_invalid_path_is_not_an_absent_input(
+    inputs: dict[str, Path], tmp_path: Path, invalid: str
+) -> None:
+    """Only an actually absent sibling may use the recorded-absence fallback."""
+    columns = inputs["matrix"].with_name("taxa_trait_matrix_columns.tsv")
+    if invalid == "directory":
+        columns.mkdir()
+    else:
+        columns.symlink_to(tmp_path / "absent-target.tsv")
+    output = tmp_path / "invalid-metadata"
+    expected_error = IsADirectoryError if invalid == "directory" else FileNotFoundError
+    with pytest.raises(expected_error, match="taxa_trait_matrix_columns"):
+        run_audit(inputs, output)
     assert not output.exists()

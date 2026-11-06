@@ -17,6 +17,7 @@ from mtp.integrated_evidence import native_composition_records
 from mtp.paths import REPO_ROOT, file_sha256
 from mtp.trait_guilds import TABLE1_TRAITS
 from mtp.workflow.consumers import CoreBundle, open_core_bundle, verify_consumer_record
+from mtp.workflow.downstream_contracts import get_standard_analysis_spec
 from mtp.workflow.operations import OPERATIONS, validate_execution_product
 from mtp.workflow.runtime import execute_workflow
 
@@ -30,6 +31,90 @@ infographic = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(infographic)
 
 
+def test_manifest_policy_matches_native_support_variance_selected_bh_family(tmp_path: Path) -> None:
+    """Bind the declaration to main's real default selection (#1417, #1496)."""
+    from scipy.stats import false_discovery_control
+
+    rows = []
+    for i in range(6):
+        for direction in ("inc", "dec"):
+            counts = {
+                "METPO:A": 3 + i if direction == "inc" else int(i == 0),
+                "METPO:B": 2 + i if direction == "inc" else 2 * int(i == 1),
+                "METPO:C": 3 + i if direction == "dec" else int(i == 0),
+                "METPO:D": (5 + i + int(direction == "inc")) if i < 4 else 0,
+                # A retained id with a MediaDive label reaches the label filter;
+                # a MediaDive id alone is already removed by denominator loading.
+                "METPO:media_label": 2 + i if direction == "inc" else int(i == 0),
+                "METPO:rare": int(i == 0 and direction == "inc"),
+                "METPO:constant": 5,
+                "METPO:zero": 0,
+            }
+            counts["METPO:ubiquitous"] = 100 - sum(counts.values())
+            rows.append(
+                {
+                    "study_id": f"s{i}",
+                    "experiment_id": "e1",
+                    "inc_dec": direction,
+                    **counts,
+                    "mediadive.medium:1": 10 + i,
+                }
+            )
+    profiles = pd.DataFrame(rows)
+    profiles_path, pairs_path, labels_path = (
+        tmp_path / name for name in ("profiles.tsv", "pairs.tsv", "labels.tsv")
+    )
+    profiles.to_csv(profiles_path, sep="\t", index=False)
+    pd.DataFrame(
+        {
+            "study_id": [f"s{i}" for i in range(6)],
+            "increased_profile_ids": [f"s{i}|e1|inc" for i in range(6)],
+            "decreased_profile_ids": [f"s{i}|e1|dec" for i in range(6)],
+        }
+    ).to_csv(pairs_path, sep="\t")
+    traits = list(profiles.columns[3:])
+    labels = ["mediadive.medium:label-decoy" if t == "METPO:media_label" else t for t in traits]
+    pd.DataFrame(
+        {
+            "column_id": traits,
+            "column_label": labels,
+            "object_name": labels,
+            "object_category": ["biolink:OntologyClass"] * len(traits),
+        }
+    ).to_csv(labels_path, sep="\t", index=False)
+    output = tmp_path / "output"
+    infographic.main(
+        [
+            "--stats-only",
+            "--profiles",
+            str(profiles_path),
+            "--pair-metadata",
+            str(pairs_path),
+            "--trait-labels",
+            str(labels_path),
+            "--output-dir",
+            str(output),
+        ]
+    )
+    result = pd.read_csv(output / "trait_profile_paired_contrast_trait_stats_pooled.tsv", sep="\t")
+    assert set(result["trait"]) == {"METPO:A", "METPO:B", "METPO:C", "METPO:D"}
+    assert set(result["correction_family_size"]) == {4}
+    assert set(result["retained_trait_count"]) == {9}
+    assert (result["correction_family_size"] < result["retained_trait_count"]).all()
+    assert not result["trait_label"].str.contains("mediadive", case=False).any()
+    assert set(result["correction_method"]) == {"BH"}
+    for p_column, q_column in (("p_value", "q_value"), ("study_p_value", "study_q_value")):
+        assert result[q_column].tolist() == pytest.approx(
+            false_discovery_control(result[p_column].fillna(1.0), method="bh")
+        )
+        assert (result[q_column] < 0.05).any()
+    spec = get_standard_analysis_spec("jed_pooled_contrast_fraction_diff_v1")
+    assert (
+        spec.multiple_testing_policy
+        == "BH_q_across_support_and_variance_selected_non_MediaDive_traits"
+    )
+
+
 def output_inventory(root: Path) -> dict[str, str]:
     """Include ignored and untracked outputs in the test's non-mutation check."""
     return {
@@ -37,6 +122,126 @@ def output_inventory(root: Path) -> dict[str, str]:
         for path in sorted(root.rglob("*"))
         if path.is_file()
     }
+
+
+def test_manifest_spec_matches_native_transformed_study_primary_statistic(tmp_path: Path) -> None:
+    """Bind the declaration to independent study values and their consumer (#1604)."""
+    from scipy.stats import false_discovery_control
+    from scipy.stats import t as student_t
+
+    profiles = pd.DataFrame(
+        {
+            "METPO:1": [2, 2, 0, 3, 1, 0],
+            "METPO:2": [0, 0, 0, 1, 4, 0],
+            # This retained but unselected trait must remain in every denominator.
+            "METPO:background": [3, 3, 0, 2, 4, 0],
+            "mediadive.medium:1": [0, 0, 100, 0, 0, 0],
+        },
+        index=["s1|e1|inc", "s1|e1|dec", "s1|e2|inc", "s1|e2|dec", "s2|e1|inc", "s2|e1|dec"],
+    )
+    metadata = pd.DataFrame(
+        {
+            "study_id": ["s1", "s1", "s2"],
+            "increased_profile_ids": ["s1|e1|inc", "s1|e2|inc", "s2|e1|inc"],
+            "decreased_profile_ids": ["s1|e1|dec", "s1|e2|dec", "s2|e1|dec"],
+        },
+        index=["p1", "p2", "p3"],
+    )
+    selected = pd.Index(["METPO:1", "METPO:2"])
+    counts = profiles[["METPO:1", "METPO:2", "METPO:background"]].to_numpy(dtype=float)
+    totals = counts.sum(axis=1, keepdims=True)
+    fractions = np.divide(counts, totals, out=np.zeros_like(counts), where=totals != 0)
+    logged = np.log1p(1000 * fractions[:, :2])
+    expected_z = (logged - logged.mean(axis=0)) / logged.std(axis=0, ddof=0)
+    zscores = infographic.build_zscore_matrix(profiles, selected)
+    np.testing.assert_allclose(zscores.to_numpy(), expected_z)
+    # Zero-total fractions are zero before standardization, not generally afterwards.
+    assert np.count_nonzero(fractions[[2, 5]]) == 0
+    assert np.count_nonzero(expected_z[[2, 5]]) > 0
+
+    expected_pairs = expected_z[[0, 2, 4]] - expected_z[[1, 3, 5]]
+    matrix = infographic.build_pair_matrix_from_profiles(zscores, metadata)
+    np.testing.assert_allclose(matrix.loc[metadata.index, selected], expected_pairs)
+    assert not np.allclose(expected_pairs, fractions[[0, 2, 4], :2] - fractions[[1, 3, 5], :2])
+
+    audit = infographic.pair_denominator_summary(profiles, metadata)
+    result = (
+        infographic.compute_trait_stats(
+            matrix,
+            study_ids=metadata["study_id"],
+            selected_profile_count=len(profiles),
+            denominator_summary=audit,
+        )
+        .set_index("trait")
+        .loc[selected]
+    )
+    expected_mean = expected_pairs.mean(axis=0)
+    expected_t = expected_mean / (expected_pairs.std(axis=0, ddof=1) / np.sqrt(3))
+    expected_p = 2 * student_t.sf(np.abs(expected_t), df=2)
+    np.testing.assert_allclose(result["mean_increased_minus_decreased"], expected_mean)
+    np.testing.assert_allclose(result["t_statistic"], expected_t)
+    np.testing.assert_allclose(result["p_value"], expected_p)
+    assert result["pair_count"].eq(3).all()
+    assert result["study_count"].eq(2).all()
+    assert result["n_zero_total_experiments"].eq(2).all()
+    assert result["n_zero_total_excluded"].eq(0).all()
+    assert result["zero_total_policy"].eq("included_in_historical_native_composition").all()
+
+    # s1 contributes two contrasts and s2 one: equal study and contrast weights
+    # must produce different effects, t statistics and probabilities here.
+    study_means = np.vstack([expected_pairs[:2].mean(axis=0), expected_pairs[2]])
+    expected_study_mean = study_means.mean(axis=0)
+    expected_study_t = expected_study_mean / (study_means.std(axis=0, ddof=1) / np.sqrt(2))
+    expected_study_p = 2 * student_t.sf(np.abs(expected_study_t), df=1)
+    expected_study_q = false_discovery_control(expected_study_p, method="bh")
+    expected_pair_q = false_discovery_control(expected_p, method="bh")
+    assert not np.allclose(expected_study_mean, expected_mean)
+    assert not np.allclose(expected_study_p, expected_p)
+    np.testing.assert_allclose(result["study_mean_increased_minus_decreased"], expected_study_mean)
+    np.testing.assert_allclose(result["study_t_statistic"], expected_study_t)
+    np.testing.assert_allclose(result["study_p_value"], expected_study_p)
+    np.testing.assert_allclose(result["study_q_value"], expected_study_q)
+    np.testing.assert_allclose(result["q_value"], expected_pair_q)
+
+    # Map the six overlay names onto the two synthetic columns without changing
+    # the producer's two-trait BH family, then read its actual saved output.
+    columns = {
+        feature: [(terms[0], str(selected[i % len(selected)]))]
+        for i, (feature, terms) in enumerate(TABLE1_TRAITS.items())
+    }
+    output = tmp_path / "native.tsv"
+    result.rename_axis("trait").reset_index().to_csv(output, sep="\t", index=False)
+    records = native_composition_records(
+        output,
+        columns=columns,
+        q_threshold=0.05,
+        strict_q_threshold=0.001,
+        profile_sha256="synthetic",
+    )
+    assert len(records) == len(columns)
+    for record in records:
+        index = list(selected).index(record.trait_columns)
+        assert record.inference_level == "study"
+        assert record.testable_units == record.unique_studies == 2
+        assert record.paired_experiments == 3
+        assert record.family_id == "native_composition_pooled_study"
+        assert record.family_size == len(selected)
+        assert record.effect_value == pytest.approx(expected_study_mean[index])
+        assert record.p_value == pytest.approx(expected_study_p[index])
+        assert record.q_value == pytest.approx(expected_study_q[index])
+        assert record.native_pair_p_value == pytest.approx(expected_p[index])
+        assert record.native_pair_q_value == pytest.approx(expected_pair_q[index])
+
+    spec = get_standard_analysis_spec("jed_pooled_contrast_fraction_diff_v1")
+    assert spec.estimand == "study_mean_standardized_log1p_trait_fraction_shift"
+    assert spec.kernel == "two_sided_one_sample_t_test"
+    assert result["test_method"].eq(spec.kernel).all()
+    assert spec.transformation == (
+        "profile_column_zscore_ddof0_of_log1p_1000_trait_fraction_then_inc_minus_dec"
+    )
+    assert spec.eligibility_rule == "paired_human_16S_WMS_retaining_zero_total_as_zero_fraction"
+    assert spec.sampling_unit == "study" == records[0].inference_level
+    assert spec.weighting == "equal_study_weight_of_within_study_mean_contrasts"
 
 
 @pytest.fixture
