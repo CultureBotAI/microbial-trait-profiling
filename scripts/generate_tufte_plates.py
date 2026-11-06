@@ -255,10 +255,26 @@ def oriented_cellulose_pairs_text(
     return f"Oriented subset: the same {counted}{nearest}"
 
 
+def has_value(value: str | None) -> bool:
+    """Whether a TSV cell holds a numeric value rather than an empty/NA/NaN marker."""
+    if value is None:
+        return False
+    text = value.strip()
+    return bool(text) and text.lower() not in {"na", "nan"}
+
+
 def study_bh_count(rows: dict[str, dict[str, str]]) -> int:
     """Traits passing study-level BH q ≤ 0.05 in one stratum's paired-contrast table."""
     return sum(
         1 for r in rows.values() if r.get("study_q_value") and float(r["study_q_value"]) <= 0.05
+    )
+
+
+def study_tested_count(rows: Mapping[str, Mapping[str, str]]) -> int:
+    """Traits with a tested study-level p-value in one stratum's paired-contrast table."""
+    return sum(
+        has_value(r.get("study_p_value")) or has_value(r.get("study_q_value"))
+        for r in rows.values()
     )
 
 
@@ -395,18 +411,28 @@ def cellulose_decr_notes(repo: Path) -> dict[str, str]:
 
     stool = crc("all_contrasts", "experiment")
     healthy = crc("disease_vs_healthy_oriented", "study")
+    n_interaction = sum(has_value(row.get("fisher_p_two_sided")) for row in rows)
+    shown_interaction = sum(has_value(r.get("fisher_p_two_sided")) for r in (stool, healthy))
     summary = read_json(repo / CELLULOSE_DIR / "cellulose_decr_summary.json")
     observed = summary["observed"]
     u6 = summary["null_models"]["U6"]
+    n_u6 = len(u6.get("pairs", {})) + sum(isinstance(v, Mapping) and "p" in v for v in u6.values())
+    shown_u6 = sum("p" in u6[k] for k in ("mean_pairwise_jaccard_distance", "three_way_core"))
     counts = f"stool {stool['a_down']}↓:{stool['a_up']}↑ vs GI {stool['b_down']}↓:{stool['b_up']}↑"
-    odds = f"OR {float(stool['conditional_or']):.1f}, p={fmt_p(float(stool['fisher_p_two_sided']))}"
-    healthy_p = f"disease-vs-healthy studies p={fmt_p(float(healthy['fisher_p_two_sided']))}"
+    odds = (
+        f"OR {float(stool['conditional_or']):.1f}, "
+        f"nominal p={fmt_p(float(stool['fisher_p_two_sided']))}"
+    )
+    healthy_p = (
+        f"disease-vs-healthy studies nominal p={fmt_p(float(healthy['fisher_p_two_sided']))} "
+        f"({shown_interaction}/{n_interaction} tests)"
+    )
     bullets = [
         f"CRC cellulose, paired experiments: {counts} · {odds} · {healthy_p}",
         f"Stool overlap: {observed['three_way_core']} of {observed['three_way_union']} taxa in "
         "all three · whole-signature null "
-        f"p={fmt_p(float(u6['mean_pairwise_jaccard_distance']['p']))} (mean d_J), "
-        f"{fmt_p(float(u6['three_way_core']['p']))} (core)",
+        f"nominal p={fmt_p(float(u6['mean_pairwise_jaccard_distance']['p']))} (mean d_J), "
+        f"nominal p={fmt_p(float(u6['three_way_core']['p']))} (core; {shown_u6}/{n_u6} tests)",
     ]
     if fragile:
         # Plate IV stars HIV cellulose from the profile-level Fisher test (#590).
@@ -1551,11 +1577,12 @@ def build_methods_plate2(repo: Path, out_dir: Path) -> Path:
             83.25, by + 3.2, bsub, fontsize=7.7, color=MUTED, ha="center", va="center", zorder=4
         )
 
+    n_oriented_frac = sum(not math.isnan(t.p_value) for t in oriented.fractions.values())
     ax.text(
         83.25,
         30.5,
         f"{arm3}\nOriented ({oriented.tested_studies:,} st.): Cellulose ↓ "
-        f"p={fmt_p(oriented.fractions[CELLULOSE].p_value)} · "
+        f"nominal p={fmt_p(oriented.fractions[CELLULOSE].p_value)} (1/{n_oriented_frac} tests) · "
         f"{len(oriented.ratio_survivors())} LR BY hits",
         fontsize=8.0,
         fontweight="bold",
@@ -1717,10 +1744,6 @@ CONDITION_SHORT = {
     "HIV infection": "HIV",
     "Colorectal cancer": "CRC",
 }
-
-
-def has_value(value: str | None) -> bool:
-    return value not in (None, "", "NA", "nan")
 
 
 def plate1_summary(
@@ -2246,8 +2269,8 @@ def build_plate2(repo: Path, out_dir: Path) -> Path:
         0.03,
         0.922,
         "Study-level paired contrasts (mean Δz ± 95% CI) · ** study BH q ≤ 0.005 · * q ≤ 0.05 · "
-        f"† nominal p ≤ 0.05 · Feces ({stratum_size(feces)[0]:,} studies) carries most of the "
-        "pooled signal; "
+        f"† nominal p ≤ 0.05 ({len(trait_rows_spec)} rows shown) · Feces "
+        f"({stratum_size(feces)[0]:,} studies) carries most of the pooled signal; "
         f"{study_bh_count(nonfeces)} traits pass BH without Feces and {study_bh_count(saliva)} "
         "in Saliva",
         fontsize=9.0,
@@ -2257,25 +2280,25 @@ def build_plate2(repo: Path, out_dir: Path) -> Path:
     strata = [
         (
             f"Pooled All Sites\n({stratum_text(pooled)}\n"
-            f"{study_bh_count(pooled)} traits study BH q ≤ 0.05)",
+            f"{study_bh_count(pooled)}/{study_tested_count(pooled)} traits study BH q ≤ 0.05)",
             pooled,
             (-0.38, 0.72),
         ),
         (
             f"Feces Only\n({stratum_text(feces)}\n"
-            f"{study_bh_count(feces)} traits study BH q ≤ 0.05)",
+            f"{study_bh_count(feces)}/{study_tested_count(feces)} traits study BH q ≤ 0.05)",
             feces,
             (-0.44, 0.78),
         ),
         (
             f"Feces Excluded\n({stratum_text(nonfeces)}\n"
-            f"{study_bh_count(nonfeces)} traits study BH q ≤ 0.05)",
+            f"{study_bh_count(nonfeces)}/{study_tested_count(nonfeces)} traits study BH q ≤ 0.05)",
             nonfeces,
             (-0.40, 0.56),
         ),
         (
             f"Saliva Only\n({stratum_text(saliva)}\n"
-            f"{study_bh_count(saliva)} traits study BH q ≤ 0.05)",
+            f"{study_bh_count(saliva)}/{study_tested_count(saliva)} traits study BH q ≤ 0.05)",
             saliva,
             (-0.78, 0.92),
         ),
@@ -2908,6 +2931,7 @@ def build_plate4(repo: Path, out_dir: Path) -> Path:
     ax.set_ylim(-0.5, n_r - 0.5)
     ax.invert_yaxis()
 
+    n_panel_a_cells = 0
     for r_idx, (cond_raw, _cond_disp) in enumerate(conditions):
         for c_idx, (tr_raw, _tr_disp) in enumerate(traits_cols):
             er = by_eco.get((cond_raw, tr_raw), {})
@@ -2916,6 +2940,7 @@ def build_plate4(repo: Path, out_dir: Path) -> Path:
 
             if not er or er.get("study_weighted_mean_contrast") in (None, "", "NA"):
                 continue
+            n_panel_a_cells += 1
 
             mean_z = float(er["study_weighted_mean_contrast"])
             ci_excl = er.get("ci_excludes_zero") == "True"
@@ -2976,7 +3001,8 @@ def build_plate4(repo: Path, out_dir: Path) -> Path:
     ax.set_yticklabels([c[1] for c in conditions], fontsize=8.4, fontweight="bold")
     ax.set_title(
         "A. Fecal Cohort \N{MULTIPLICATION SIGN} Trait Mean Paired Shift Δz\n★ Gold border = "
-        "Fisher BH q≤0.05 · **Wilcoxon BH q≤0.05 · *p≤0.05 / CI≠0",
+        "Fisher BH q≤0.05 · **Wilcoxon BH q≤0.05 · "
+        f"*nominal p≤0.05 / CI≠0 ({n_panel_a_cells} cells)",
         fontsize=9.3,
         fontweight="bold",
         loc="left",
@@ -3056,7 +3082,7 @@ def build_plate4(repo: Path, out_dir: Path) -> Path:
         if w_q <= 0.10:
             stat_parts.append(f"Wilc q={w_q:.3f}")
         elif w_p <= 0.05:
-            stat_parts.append(f"Wilc p={w_p:.3f}")
+            stat_parts.append(f"Wilc nominal p={w_p:.3f}")
 
         ax_lead.text(
             4.40,
@@ -3097,9 +3123,12 @@ def build_plate4(repo: Path, out_dir: Path) -> Path:
         fontsize=8.5,
         fontweight="bold",
     )
+    n_lead_rows = sum(1 for cond_raw, tr_raw, _ in lead_specs if by_eco.get((cond_raw, tr_raw)))
+    n_wilc_tests = sum(has_value(r.get("p_value")) for r in wilc_tests)
     ax_lead.set_title(
         "B. Lead Fecal Disease \N{MULTIPLICATION SIGN} Trait Contrasts (PD, CRC, HIV, "
-        "COVID-19)\nStudy win/loss counts, Profile Fisher FDR (★), Study Wilcoxon p/q",
+        f"COVID-19; {n_lead_rows} shown)\nStudy win/loss counts, Profile Fisher FDR (★), "
+        f"Study Wilcoxon nominal p/BH q ({n_wilc_tests} tests)",
         fontsize=8.35,
         fontweight="bold",
         loc="left",
@@ -4123,6 +4152,7 @@ def build_plate7(repo: Path, out_dir: Path) -> Path:
     signs = table1_signs(repo)
     every, oriented = signs[ALL_STUDIES], signs[ORIENTED]
     cellulose, cellulose_all = oriented.fractions[CELLULOSE], every.fractions[CELLULOSE]
+    n_oriented_t1 = sum(not math.isnan(t.p_value) for t in oriented.fractions.values())
     orient_t1 = {
         r["numerator"]: r
         for r in orient_rows
@@ -4176,8 +4206,9 @@ def build_plate7(repo: Path, out_dir: Path) -> Path:
         0.916,
         f"Full {len(arm3_screen_rows)}-trait BH/BY screen (correcting {screening_bias(repo)} "
         f"post-selection bias) yields {concordant} three-arm concordant traits; Cellulose is "
-        f"{cellulose.share_down:.1%}↓ in the {oriented.tested_studies:,} oriented studies (p = "
-        f"{fmt_p(cellulose.p_value)}, BH₆ q = {fmt_p(cellulose.q_value)}) and "
+        f"{cellulose.share_down:.1%}↓ in the {oriented.tested_studies:,} oriented studies "
+        f"(nominal p = {fmt_p(cellulose.p_value)}, BH₆ q = {fmt_p(cellulose.q_value)}; "
+        f"{n_oriented_t1} Table 1 tests) and "
         f"{cellulose_all.share_down:.1%}↓ in all {every.tested_studies:,}.",
         fontsize=8.9,
         color=MUTED,
@@ -4307,7 +4338,8 @@ def build_plate7(repo: Path, out_dir: Path) -> Path:
         0.97,
         0.04,
         f"◆ ★ Original 6 Table 1 traits ({groups['table1_concordant']} with all 3 arms ✓)\n"
-        f"○ Oriented {oriented.tested_studies}-st. Table 1 (Cell. ↓ p={fmt_p(cellulose.p_value)})\n"
+        f"○ Oriented {oriented.tested_studies}-st. Table 1 ({n_oriented_t1} tests; "
+        f"Cell. ↓ nominal p={fmt_p(cellulose.p_value)})\n"
         f"● {groups['three_arm_additional']} Additional 3-Arm Study-FDR traits (✓)\n"
         f"▲ {groups['ora_inverted']} with Arms 1 & 3 agreeing, ORA opposite"
         + (
@@ -4413,7 +4445,7 @@ def build_plate7(repo: Path, out_dir: Path) -> Path:
                     lw=1.4,
                     zorder=5,
                 )
-                or_badge = f" · Or.{oriented.tested_studies}:{or_pct:.1f}% (p={or_p:.1e})"
+                or_badge = f" · Or.{oriented.tested_studies}:{or_pct:.1f}% (nominal p={or_p:.1e})"
 
         prefix = PREFIXES[tr["group"]] or "• "
         arrow = "↑" if tr["paired_dir"] == "inc" else "↓"
@@ -4454,9 +4486,9 @@ def build_plate7(repo: Path, out_dir: Path) -> Path:
         f"Table 1 ★ + {groups['three_arm_additional']} Expanded 3-Arm ✓ + "
         f"{groups['ora_inverted']} ORA-Inv. ▲"
         + (f" + {groups['not_concordant']} Discordant ■" if groups["not_concordant"] else "")
-        + f")\nOriented {oriented.tested_studies:,}-study filter (○): "
-        f"Cellulose {cellulose.share_up:.1%}↑ / {cellulose.share_down:.1%}↓ (p = "
-        f"{fmt_p(cellulose.p_value)}, BH₆ q = {fmt_p(cellulose.q_value)})",
+        + f")\nOriented {oriented.tested_studies:,}-study filter (○, {n_oriented_t1} Table 1 "
+        f"nominal tests): Cellulose {cellulose.share_up:.1%}↑ / {cellulose.share_down:.1%}↓ "
+        f"(nominal p = {fmt_p(cellulose.p_value)}, BH₆ q = {fmt_p(cellulose.q_value)})",
         fontsize=8.35,
         fontweight="bold",
         loc="left",
