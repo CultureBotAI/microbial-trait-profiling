@@ -123,7 +123,7 @@ def test_producer_declares_actual_correction_and_preserves_probabilities(
     if mode == "none":
         assert all(row["fdr_q"] == "" for row in rows + selected_rows)
         assert [float(row["p_value"]) for row in rows] == pytest.approx(sorted(expected_p.values()))
-        assert report.read_text().startswith("p <= 1")
+        assert report.read_text().startswith("nominal p <= 1")
         assert "FDR" not in report.read_text()
         with pytest.raises(ValueError, match="not FDR-controlled"):
             OraCalls.from_header(complete.read_text().splitlines())

@@ -146,6 +146,34 @@ def test_refresh_audit_accepts_only_new_fingerprints(refresh_manifest: Path) -> 
 
 
 @pytest.mark.parametrize(
+    "refresh_manifest",
+    [
+        {"scope": scope, "tail": tail}
+        for scope in ("global", "profile")
+        for tail in ("upper", "lower")
+    ],
+    indirect=True,
+)
+def test_fdr_refresh_accepts_the_legacy_metadata_contract(refresh_manifest: Path) -> None:
+    """Actual FDR producer output must remain compatible with the pre-label audit (#1618)."""
+    historical = refresh_manifest.parent / "historical.tsv"
+    # These labels did not exist in historical FDR exports. Unlike the common
+    # fixture's same-producer copy, this preserves that older header contract.
+    historical.write_bytes(
+        b"".join(
+            line
+            for line in historical.read_bytes().splitlines(keepends=True)
+            if not line.startswith((b"# Threshold-Statistic:", b"# Hit-Statistic:"))
+        )
+    )
+    pair = json.loads(refresh_manifest.read_text(encoding="utf-8"))["pairs"][0]
+    result = audit_pair(pair, refresh_manifest.parent)
+    assert result["passed"], result["errors"]
+    assert result["table_body_equal"]
+    assert set(result["metadata_changes"]) == {"Profiles-SHA256", "Taxa-Matrix-SHA256"}
+
+
+@pytest.mark.parametrize(
     ("mutation", "message"),
     [
         ("body", "Table body bytes differ"),
@@ -597,3 +625,139 @@ def test_nominal_refresh_audit_keeps_format_change_visible(tmp_path: Path) -> No
     assert not result["table_body_equal"]
     assert "Table body bytes differ" in errors
     assert "Unexpected metadata change: FDR-Scope" in errors
+
+
+def _set_refresh_metadata(path: Path, updates: dict[str, str | None]) -> None:
+    """Change metadata only, preserving the exact independent fixture body bytes."""
+    prefixes = tuple(f"# {key}:".encode() for key in updates)
+    retained = b"".join(
+        line
+        for line in path.read_bytes().splitlines(keepends=True)
+        if not line.startswith(prefixes)
+    )
+    added = b"".join(
+        f"# {key}: {value}\n".encode() for key, value in updates.items() if value is not None
+    )
+    path.write_bytes(added + retained)
+
+
+@pytest.mark.parametrize("scope", ["none", "global", "profile"])
+@pytest.mark.parametrize("stat_type", [None, "p_value"])
+@pytest.mark.parametrize(
+    "labels",
+    [("Threshold-Statistic",), ("Hit-Statistic",), ("Threshold-Statistic", "Hit-Statistic")],
+)
+def test_nominal_refresh_audit_accepts_additive_statistic_labels(
+    tmp_path: Path, scope: str, stat_type: str | None, labels: tuple[str, ...]
+) -> None:
+    """Only correct, newly introduced nominal labels may join the fingerprint delta (#1632)."""
+    pair = _nominal_refresh_pair(tmp_path, scope)
+    historical = tmp_path / "historical.tsv"
+    current = tmp_path / "current.tsv"
+    for path in (historical, current):
+        _set_refresh_metadata(path, {"Stat-Type": stat_type})
+    before = file_sha256(historical)
+    _set_refresh_metadata(current, dict.fromkeys(labels, "nominal p"))
+    result = audit_pair(pair, tmp_path)
+    assert result["passed"], result["errors"]
+    assert result["table_body_equal"]
+    assert set(result["metadata_changes"]) == {
+        "Profiles-SHA256",
+        "Taxa-Matrix-SHA256",
+        *labels,
+    }
+    assert file_sha256(historical) == before
+    for key in labels:
+        assert result["metadata_changes"][key] == {"historical": None, "current": "nominal p"}
+
+
+@pytest.mark.parametrize(
+    "refresh_manifest",
+    [{"fdr": "False", "tail": tail} for tail in ("upper", "lower")],
+    indirect=True,
+)
+def test_nominal_refresh_audit_accepts_legacy_producer_headers(refresh_manifest: Path) -> None:
+    """Exercise both real producer tails with historical headers lacking only the new labels."""
+    historical = refresh_manifest.parent / "historical.tsv"
+    _set_refresh_metadata(historical, {"Threshold-Statistic": None, "Hit-Statistic": None})
+    before = file_sha256(historical)
+    pair = json.loads(refresh_manifest.read_text(encoding="utf-8"))["pairs"][0]
+    result = audit_pair(pair, refresh_manifest.parent)
+    assert result["passed"], result["errors"]
+    assert result["table_body_equal"]
+    assert set(result["metadata_changes"]) == {
+        "Profiles-SHA256",
+        "Taxa-Matrix-SHA256",
+        "Threshold-Statistic",
+        "Hit-Statistic",
+    }
+    assert file_sha256(historical) == before
+
+
+@pytest.mark.parametrize("key", ["Threshold-Statistic", "Hit-Statistic"])
+@pytest.mark.parametrize("value", ["FDR q", "p_value", "unknown"])
+def test_nominal_refresh_audit_rejects_invalid_additive_labels(
+    tmp_path: Path, key: str, value: str
+) -> None:
+    pair = _nominal_refresh_pair(tmp_path, "none")
+    _set_refresh_metadata(tmp_path / "current.tsv", {key: value})
+    result = audit_pair(pair, tmp_path)
+    assert not result["passed"]
+    assert result["table_body_equal"]
+    assert f"Unexpected metadata change: {key}" in result["errors"]
+
+
+@pytest.mark.parametrize("key", ["Threshold-Statistic", "Hit-Statistic"])
+@pytest.mark.parametrize("new_value", [None, "nominal p"])
+def test_nominal_refresh_audit_rejects_replacing_existing_labels(
+    tmp_path: Path, key: str, new_value: str | None
+) -> None:
+    pair = _nominal_refresh_pair(tmp_path, "none")
+    _set_refresh_metadata(tmp_path / "historical.tsv", {key: "FDR q"})
+    _set_refresh_metadata(tmp_path / "current.tsv", {key: new_value})
+    result = audit_pair(pair, tmp_path)
+    assert not result["passed"]
+    assert result["table_body_equal"]
+    assert f"Unexpected metadata change: {key}" in result["errors"]
+
+
+@pytest.mark.parametrize("key", ["Threshold-Statistic", "Hit-Statistic"])
+@pytest.mark.parametrize("scope", ["global", "profile"])
+def test_nominal_refresh_audit_rejects_additive_labels_with_fdr_enabled(
+    tmp_path: Path, key: str, scope: str
+) -> None:
+    pair = _nominal_refresh_pair(tmp_path, scope)
+    for filename in ("historical.tsv", "current.tsv"):
+        _set_refresh_metadata(tmp_path / filename, {"FDR": "True"})
+    _set_refresh_metadata(tmp_path / "current.tsv", {key: "nominal p"})
+    result = audit_pair(pair, tmp_path)
+    assert not result["passed"]
+    assert result["table_body_equal"]
+    assert f"Unexpected metadata change: {key}" in result["errors"]
+
+
+@pytest.mark.parametrize("key", ["Threshold-Statistic", "Hit-Statistic"])
+@pytest.mark.parametrize("stat_type", ["fdr_q", "unknown"])
+def test_nominal_refresh_audit_rejects_additive_labels_with_contradictory_stat_type(
+    tmp_path: Path, key: str, stat_type: str
+) -> None:
+    pair = _nominal_refresh_pair(tmp_path, "none")
+    for filename in ("historical.tsv", "current.tsv"):
+        _set_refresh_metadata(tmp_path / filename, {"Stat-Type": stat_type})
+    _set_refresh_metadata(tmp_path / "current.tsv", {key: "nominal p"})
+    result = audit_pair(pair, tmp_path)
+    assert not result["passed"]
+    assert result["table_body_equal"]
+    assert f"Unexpected metadata change: {key}" in result["errors"]
+
+
+def test_nominal_refresh_audit_keeps_unrelated_metadata_strict(tmp_path: Path) -> None:
+    pair = _nominal_refresh_pair(tmp_path, "none")
+    _set_refresh_metadata(
+        tmp_path / "current.tsv",
+        {"Threshold-Statistic": "nominal p", "Hit-Statistic": "nominal p", "Unknown": "nominal p"},
+    )
+    result = audit_pair(pair, tmp_path)
+    assert not result["passed"]
+    assert result["table_body_equal"]
+    assert "Unexpected metadata change: Unknown" in result["errors"]
