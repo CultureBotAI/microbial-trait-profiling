@@ -244,10 +244,27 @@ def format_q_value(q: SupportsFloat) -> str:
 
 
 def format_p_and_q(p: SupportsFloat, q: SupportsFloat) -> str:
-    """Format a Wilcoxon p and its BH q for a report line; undefined values read NA."""
+    """Label a nominal Wilcoxon p and its BH q; undefined values read NA."""
     p = float(p)
     p_text = "NA" if math.isnan(p) else f"{p:.2e}"
-    return f"p={p_text}, q={format_q_value(q)}"
+    return f"nominal p={p_text}, q={format_q_value(q)}"
+
+
+def nominal_test_count_statement(effects: Sequence[Table1TraitEffect]) -> str:
+    """Count finite p-values in each displayed column, separately from the BH family."""
+    raw_count = sum(math.isfinite(effect.raw_wilcoxon_p) for effect in effects)
+    adjusted_count = sum(math.isfinite(effect.adj_wilcoxon_p) for effect in effects)
+    return f"Finite nominal Wilcoxon tests shown: raw={raw_count}; PC1-adjusted={adjusted_count}."
+
+
+def format_paired_regression_test(p: SupportsFloat) -> str:
+    """Label the near-twin diagnostic and count its finite test without imputing p."""
+    value = float(p)
+    count = int(math.isfinite(value))
+    untested = "; untested" if count == 0 else ""
+    return (
+        f"nominal p={value:.2e}; {count} finite paired-regression tests shown; diagnostic{untested}"
+    )
 
 
 def _sign_flipped(raw_mean: float, adj_mean: float) -> bool:
@@ -1144,6 +1161,7 @@ def run_density_audit(
             f"(PAIRED EXPERIMENTS N={twin_summary.n_paired_experiments:,})",
             "-" * 80,
             *q_value_statement(len(reported_traits)),
+            nominal_test_count_statement(t1_effects),
         ]
     )
 
@@ -1173,7 +1191,7 @@ def run_density_audit(
             f"r = {twin_summary.paired_correlation:+.4f} | "
             f"Paired VIF: {twin_summary.vif_paired:.2f}",
             f"Paired regression slope: {twin_summary.paired_slope_a_on_b:.4f} "
-            f"(p={twin_summary.paired_slope_pvalue:.2e})",
+            f"({format_paired_regression_test(twin_summary.paired_slope_pvalue)})",
             "",
             "5. METHODOLOGICAL FINDINGS SUMMARY",
             "-" * 80,

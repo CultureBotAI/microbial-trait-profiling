@@ -185,7 +185,7 @@ def test_family_bh_q_values_accepts_a_numpy_array() -> None:
 def test_q_text_never_rounds_across_the_threshold(q: float, text: str) -> None:
     """A q just above 0.05 must not display as 0.05 next to a nonsignificant label (#1325)."""
     assert density_module.format_q_value(q) == text
-    assert density_module.format_p_and_q(0.01, q) == f"p=1.00e-02, q={text}"
+    assert density_module.format_p_and_q(0.01, q) == f"nominal p=1.00e-02, q={text}"
     if not math.isnan(q):
         assert (float(text) <= 0.05) is (q <= 0.05)
 
@@ -205,7 +205,7 @@ def test_q_text_formats_numpy_scalars_as_numbers(scalar: Any, q: float, text: st
     """A q read back from the TSV is a NumPy scalar; it printed as its repr (#1330)."""
     value = scalar(q)
     assert density_module.format_q_value(value) == text
-    assert density_module.format_p_and_q(scalar(0.01), value) == f"p=1.00e-02, q={text}"
+    assert density_module.format_p_and_q(scalar(0.01), value) == f"nominal p=1.00e-02, q={text}"
 
 
 def test_float32_q_at_the_threshold_displays_on_the_side_of_its_label() -> None:
