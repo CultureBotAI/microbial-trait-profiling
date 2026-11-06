@@ -3915,9 +3915,17 @@ def test_deck_and_plates_derive_corpus_and_trait_counts_from_tables(
         "mcnemar_odds_ratio\taerobe_up_anaerobe_down_vs_reverse\t1.56\t1.95e-08\n",
         encoding="utf-8",
     )
-    comp_rows = _comparison(ALL_STUDIES, 908, ALL_PASSING, (333, 441)) + _comparison(
-        ORIENTED, 570, ALL_PASSING, (187, 288)
-    )
+    comp_rows = [
+        {**r, "p_value": "NaN", "q_value": "1.0"}
+        if r["population"] == ORIENTED
+        and r["comparison"] == "fraction"
+        and r["numerator"] == "coccus_shaped"
+        else r
+        for r in (
+            _comparison(ALL_STUDIES, 908, ALL_PASSING, (333, 441))
+            + _comparison(ORIENTED, 570, ALL_PASSING, (187, 288))
+        )
+    ]
     comp_p = plate_repo / plates.COMPARISON
     comp_p.parent.mkdir(parents=True, exist_ok=True)
     comp_cols = list(comp_rows[0])
@@ -4071,7 +4079,7 @@ def test_deck_and_plates_derive_corpus_and_trait_counts_from_tables(
         assert "344 traits pass BH₃₄₄ ≤ 0.05" in mp2_text
         assert "+ Arm 3 BH₃₄₄ ≤ 0.05 + Arm 2 ORA" in mp2_text
         assert "344 Biological Traits" in mp2_text
-        assert "Cellulose ↓ nominal p=4.1e-06 (1/6 tests)" in mp2_text
+        assert "Cellulose ↓ nominal p=4.1e-06 (1/5 tests)" in mp2_text
         assert "5,829" not in mp2_text
         assert "317" not in mp2_text
     finally:
@@ -4433,9 +4441,10 @@ def test_generate_tufte_plates_nominal_p_displays_state_computed_test_counts(
         "a": {"study_p_value": "0.01", "study_q_value": "0.02"},
         "b": {"study_p_value": "0.20", "study_q_value": "0.40"},
         "c": {"study_p_value": "NaN", "study_q_value": "NaN"},
+        "d": {"study_p_value": "", "study_q_value": "1.0", "study_test_status": "not_tested"},
     }
-    assert plates.study_tested_count(rows_a) == 1
-    assert plates.study_tested_count(rows_b) == 2
+    assert plates.study_bh_family_size(rows_a) == 1
+    assert plates.study_bh_family_size(rows_b) == 3
 
     real_close = plates.plt.close
     closed: list[Any] = []
@@ -4447,9 +4456,50 @@ def test_generate_tufte_plates_nominal_p_displays_state_computed_test_counts(
     monkeypatch.setattr(
         plates, "REPO_ROOT", _cellulose_repo(tmp_path / "cell_root", "HIV definition-dependent")
     )
+    base_read_tsv = plates.read_tsv
 
-    # Plate 2:
+    def _assert_inside_canvas(fig: Any) -> None:
+        fig.set_dpi(100)
+        fig.canvas.draw()
+        fig_box = fig.bbox
+        for artist in [
+            *fig.texts,
+            *(
+                getattr(ax, attr)
+                for ax in fig.axes
+                for attr in ("title", "_left_title", "_right_title")
+            ),
+        ]:
+            if artist.get_text():
+                box = artist.get_window_extent()
+                assert box.x0 >= fig_box.x0 - 0.5, artist.get_text()
+                assert box.x1 <= fig_box.x1 + 0.5, artist.get_text()
+                assert box.y0 >= fig_box.y0 - 0.5, artist.get_text()
+                assert box.y1 <= fig_box.y1 + 0.5, artist.get_text()
+
+    # Plate 2 (26 rows shown; 1 untested padded-q trait in pooled BH family):
+    def _p2_read_tsv(path: Path, *, adjusted_ora: bool = False) -> list[dict[str, str]]:
+        rows: list[dict[str, str]] = base_read_tsv(path, adjusted_ora=adjusted_ora)
+        if path.name == "trait_profile_paired_contrast_trait_stats_pooled.tsv":
+            return [
+                *rows,
+                {
+                    **rows[0],
+                    "trait": "UNTESTED:1",
+                    "study_mean_increased_minus_decreased": "",
+                    "study_p_value": "",
+                    "study_q_value": "1.0",
+                    "study_test_status": "not_tested",
+                },
+            ]
+        return rows
+
+    orig_p2_rows = plates.PLATE2_TRAIT_ROWS
+    monkeypatch.setattr(plates, "PLATE2_TRAIT_ROWS", orig_p2_rows[:-1])
+    monkeypatch.setattr(plates, "read_tsv", _p2_read_tsv)
     assert plates.build_plate2(REPO, tmp_path).exists()
+    monkeypatch.setattr(plates, "read_tsv", base_read_tsv)
+    monkeypatch.setattr(plates, "PLATE2_TRAIT_ROWS", orig_p2_rows)
     p2_fig = closed.pop()
     try:
         p2_text = "\n".join(
@@ -4459,24 +4509,36 @@ def test_generate_tufte_plates_nominal_p_displays_state_computed_test_counts(
                 *(t.get_text() for ax in p2_fig.axes for t in ax.texts),
             ]
         )
-        assert "† nominal p ≤ 0.05 (27 rows shown)" in p2_text
-        assert "/340 traits study BH q ≤ 0.05)" in p2_text
+        assert "† nominal p ≤ 0.05 (26 rows shown)" in p2_text
+        assert "/341 traits study BH q ≤ 0.05)" in p2_text
     finally:
         real_close(p2_fig)
 
-    # Plate 4 (with one lead row having nominal w_p <= 0.05 and w_q > 0.10):
-    base_read_tsv = plates.read_tsv
-
+    # Plate 4 (10 of 11 lead rows present; 1 Panel A Wilcoxon row untested -> 83 cells, 395 tests):
     def _p4_read_tsv(path: Path, *, adjusted_ora: bool = False) -> list[dict[str, str]]:
         rows: list[dict[str, str]] = base_read_tsv(path, adjusted_ora=adjusted_ora)
-        if path.name == "pd_condition_taxon_trait_network_condition_trait_tests.tsv":
+        if path.name == "pd_ecological_reporter_combined_condition_trait_summary.tsv":
             return [
-                {**r, "p_value": "0.020", "q_value": "0.250"}
-                if r.get("condition") == "COVID-19"
-                and r.get("trait") == "cellulose catabolic process"
-                else r
+                r
                 for r in rows
+                if not (
+                    r.get("condition") == "HIV infection"
+                    and r.get("trait") == "cellulose catabolic process"
+                )
             ]
+        if path.name == "pd_condition_taxon_trait_network_condition_trait_tests.tsv":
+            out = []
+            for r in rows:
+                if (
+                    r.get("condition") == "COVID-19"
+                    and r.get("trait") == "cellulose catabolic process"
+                ):
+                    out.append({**r, "p_value": "0.020", "q_value": "0.250"})
+                elif r.get("condition") == "Obesity" and r.get("trait") == "coccus shaped":
+                    out.append({**r, "p_value": "", "q_value": "1.0"})
+                else:
+                    out.append(r)
+            return out
         return rows
 
     monkeypatch.setattr(plates, "read_tsv", _p4_read_tsv)
@@ -4484,6 +4546,7 @@ def test_generate_tufte_plates_nominal_p_displays_state_computed_test_counts(
     monkeypatch.setattr(plates, "read_tsv", base_read_tsv)
     p4_fig = closed.pop()
     try:
+        _assert_inside_canvas(p4_fig)
         p4_text = "\n".join(
             [
                 *(t.get_text() for t in p4_fig.texts),
@@ -4491,17 +4554,56 @@ def test_generate_tufte_plates_nominal_p_displays_state_computed_test_counts(
                 *(t.get_text() for ax in p4_fig.axes for t in ax.texts),
             ]
         )
-        assert "*nominal p≤0.05 / CI≠0 (98 cells)" in p4_text
+        assert "*nominal p≤0.05 (83 Wilcoxon tests) / CI≠0" in p4_text
         assert (
-            "COVID-19; 11 shown)\nStudy win/loss counts, Profile Fisher FDR (★), "
-            "Study Wilcoxon nominal p/BH q (396 tests)"
+            "COVID-19; 10 shown)\nStudy win/loss, Fisher FDR (★), "
+            "Wilcoxon nominal p/BH q (395 tests)"
         ) in p4_text
         assert "Wilc nominal p=0.020" in p4_text
         assert "Wilc p=" not in p4_text
     finally:
         real_close(p4_fig)
 
-    # Plate 7:
+    # Plate 5 (footer wrapped inside canvas and clear of xlabels):
+    def _p5_read_tsv(path: Path, *, adjusted_ora: bool = False) -> list[dict[str, str]]:
+        if path.name == "guild_aerobe_anaerobe_correlation.tsv":
+            return [
+                {
+                    "statistic": "discordant_studies",
+                    "comparison": "aerobe_up_anaerobe_down",
+                    "value": "399",
+                    "p_value": "",
+                },
+                {
+                    "statistic": "discordant_studies",
+                    "comparison": "anaerobe_up_aerobe_down",
+                    "value": "255",
+                    "p_value": "",
+                },
+                {
+                    "statistic": "mcnemar_odds_ratio",
+                    "comparison": "aerobe_up_anaerobe_down_vs_reverse",
+                    "value": "1.56",
+                    "p_value": "1.95e-08",
+                },
+            ]
+        rows: list[dict[str, str]] = base_read_tsv(path, adjusted_ora=adjusted_ora)
+        return rows
+
+    monkeypatch.setattr(plates, "read_tsv", _p5_read_tsv)
+    assert plates.build_plate5(REPO, tmp_path).exists()
+    monkeypatch.setattr(plates, "read_tsv", base_read_tsv)
+    p5_fig = closed.pop()
+    try:
+        _assert_inside_canvas(p5_fig)
+        footer_box = p5_fig.texts[2].get_window_extent()
+        for ax in p5_fig.axes:
+            assert not footer_box.overlaps(ax.xaxis.label.get_window_extent())
+        assert "(2/56 tests) (cellulose_decr)." in p5_fig.texts[2].get_text()
+    finally:
+        real_close(p5_fig)
+
+    # Plate 7 (5 of 6 oriented Table 1 fraction tests have non-NaN p_value):
     p7_repo = tmp_path / "p7_repo"
     p7_paired = p7_repo / "trait-visualization" / "trait-profile-investigation"
     p7_paired.mkdir(parents=True)
@@ -4542,7 +4644,11 @@ def test_generate_tufte_plates_nominal_p_displays_state_computed_test_counts(
         encoding="utf-8",
     )
     comp_rows = [
-        {**r, "share_up": "0.393684"}
+        {**r, "share_up": "0.393684", "p_value": "NaN", "q_value": "1.0"}
+        if r["population"] == ORIENTED
+        and r["comparison"] == "fraction"
+        and r["numerator"] == "coccus_shaped"
+        else {**r, "share_up": "0.393684"}
         for r in (
             _comparison(ALL_STUDIES, 908, ALL_PASSING, (333, 441))
             + _comparison(ORIENTED, 570, ALL_PASSING, (187, 288))
@@ -4569,6 +4675,7 @@ def test_generate_tufte_plates_nominal_p_displays_state_computed_test_counts(
     assert plates.build_plate7(p7_repo, tmp_path).exists()
     p7_fig = closed.pop()
     try:
+        _assert_inside_canvas(p7_fig)
         p7_text = "\n".join(
             [
                 *(t.get_text() for t in p7_fig.texts),
@@ -4576,12 +4683,12 @@ def test_generate_tufte_plates_nominal_p_displays_state_computed_test_counts(
                 *(t.get_text() for ax in p7_fig.axes for t in ax.texts),
             ]
         )
-        assert "(nominal p = 4.1e-06, BH₆ q = 0.0020; 6 Table 1 tests)" in p7_text
-        assert "○ Oriented 550-st. Table 1 (6 tests; Cell. ↓ nominal p=4.1e-06)" in p7_text
+        assert "(nominal p = 4.1e-06, BH₆ q = 0.0020; 5 Table 1 tests)" in p7_text
+        assert "○ Oriented 550-st. Table 1 (5 tests; Cell. ↓ nominal p=4.1e-06)" in p7_text
         assert "(nominal p=4.1e-06)" in p7_text
         assert (
-            "(○, 6 Table 1 nominal tests): Cellulose 39.4%↑ / 60.6%↓ "
-            "(nominal p = 4.1e-06, BH₆ q = 0.0020)"
+            "Oriented 550 st. (○, 5 Table 1 tests): Cellulose 39.4%↑/60.6%↓ "
+            "(nominal p=4.1e-06, BH₆ q=0.0020)"
         ) in p7_text
     finally:
         real_close(p7_fig)

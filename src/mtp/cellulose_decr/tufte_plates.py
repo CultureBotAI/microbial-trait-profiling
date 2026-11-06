@@ -515,10 +515,10 @@ def build_plate1_convergence_slope_and_overlap() -> Figure:
         -0.02,
         "(p-values nominal) If fiber-digesting bacteria were lost at the same rate "
         "as other stool bacteria,\n"
-        "only ~20% would overlap between diseases. Observed overlap is 50.4%\n"
-        f"(exact hypergeometric p < 10⁻¹⁰ for every pair, {n_pair_tests} tests; "
-        f"random-guild permutation p = 0.011, {n_perm_tests} test; "
-        f"{n_nominal_tests} nominal tests shown).",
+        f"only ~20% would overlap between diseases. Observed overlap is 50.4% "
+        f"({n_nominal_tests} nominal tests shown:\n"
+        f"exact hypergeometric p < 10⁻¹⁰ per pair, {n_pair_tests} tests; "
+        f"random-guild permutation p = 0.011, {n_perm_tests} test).",
         transform=ax_slope.transAxes,
         fontsize=8.3,
         color=MUTED,
@@ -736,7 +736,10 @@ def build_plate2_core_guild_dot_table() -> Figure:
         ("HIV vs. CRC", 45.0, 46.7, OCHRE, 0.44, 0.440),
     ]
     n_pair_tests = sum("vs." in label for label, *_ in slope_items)
-    n_core_tests = sum("Mean" in label for label, *_ in slope_items)
+    pdcrc_note = "PD\u2013CRC exact nominal p = 5.98 \u00d7 10⁻¹⁰"
+    n_pdcrc_shown = len(re.findall(r"\bnominal\s+p\s*=", pdcrc_note))
+    core_header_stat = "17.1\u00d7 over random expectation, nominal p = 3.5 \u00d7 10⁻¹²"
+    n_core_tests = len(re.findall(r"\bnominal\s+p\s*=", core_header_stat))
     fig = _make_tufte_plate(
         (13.8, 8.0),
         "PLATE II  ·  THE SHARED FIBER-DEGRADING GUILD AT GENUS & SPECIES RESOLUTION"
@@ -746,8 +749,8 @@ def build_plate2_core_guild_dot_table() -> Figure:
         "(93 background taxa) strengthens the overlap: 62.5% of lost fiber-digesting genera "
         "and species are shared between Parkinson\u2019s disease and colorectal cancer.",
         "Source: Genus + Species sensitivity analysis (N = 93 stool decreased genera/species; "
-        f"22 cellulose-annotated). PD\u2013CRC exact nominal p = 5.98 \u00d7 10⁻¹⁰ "
-        f"({n_core_tests}/{n_pair_tests} tests).",
+        f"22 cellulose-annotated). {pdcrc_note} "
+        f"({n_pdcrc_shown}/{n_pair_tests} tests).",
         "Plate II  ·  data/analysis/cellulose_decr",
     )
 
@@ -795,8 +798,7 @@ def build_plate2_core_guild_dot_table() -> Figure:
         x_taxon,
         0.912,
         "NINE CORE GENERA REPORTED DECREASED IN ALL THREE DISEASES "
-        f"(17.1\u00d7 over random expectation, nominal p = 3.5 \u00d7 10⁻¹², "
-        f"{n_core_tests} core test)",
+        f"({core_header_stat}, {n_core_tests} core test)",
         fontsize=8.2,
         fontweight="bold",
         color=CRIMSON,
@@ -1047,6 +1049,80 @@ def build_plate2_core_guild_dot_table() -> Figure:
 # --------------------------------------------------------------------------- Plate III
 
 
+PLATE3_DIRECTION_ROWS = (
+    (
+        "Stool (All 3 Diseases Combined)",
+        73.1,
+        65.1,
+        80.1,
+        "106 dec vs. 39 inc,\nnominal p = 2.4 \u00d7 10⁻⁸",
+        0.76,
+        True,
+        CRIMSON,
+    ),
+    (
+        "· Colorectal cancer stool",
+        81.1,
+        64.8,
+        92.0,
+        "30 dec vs. 7 inc,\nnominal p = 1.9 \u00d7 10⁻⁴",
+        0.64,
+        False,
+        CRIMSON,
+    ),
+    (
+        "· HIV infection stool",
+        76.0,
+        54.9,
+        90.6,
+        "19 dec vs. 6 inc,\nnominal p = 0.015",
+        0.53,
+        False,
+        CRIMSON,
+    ),
+    (
+        "· Parkinson\u2019s disease stool",
+        68.7,
+        57.6,
+        78.4,
+        "57 dec vs. 26 inc,\nnominal p = 8.8 \u00d7 10⁻⁴",
+        0.42,
+        False,
+        CRIMSON,
+    ),
+    (
+        "Gut Wall Biopsy (Colon Mucosa)",
+        48.1,
+        28.7,
+        68.1,
+        "13 dec vs. 14 inc,\nnominal p = 1.00",
+        0.26,
+        True,
+        MUTED,
+    ),
+    (
+        "· Colorectal tumor biopsy",
+        35.3,
+        14.2,
+        61.7,
+        "6 dec vs. 11 inc,\nnominal p = 0.33",
+        0.15,
+        False,
+        MUTED,
+    ),
+    (
+        "Mouth & Saliva (Oral Cavity)",
+        45.5,
+        16.7,
+        76.6,
+        "5 dec vs. 6 inc,\nnominal p = 1.00",
+        0.04,
+        True,
+        MUTED,
+    ),
+)
+
+
 @_with_tufte_rcparams
 def build_plate3_why_only_stool() -> Figure:
     """Build Plate III: Anatomical & Ecological Specificity (#550)."""
@@ -1066,78 +1142,7 @@ def build_plate3_why_only_stool() -> Figure:
 
     ax_left = fig.add_axes((0.03, 0.21, 0.47, 0.62), facecolor=PAPER_BG)
 
-    direction_rows = [
-        (
-            "Stool (All 3 Diseases Combined)",
-            73.1,
-            65.1,
-            80.1,
-            "106 dec vs. 39 inc,\nnominal p = 2.4 \u00d7 10⁻⁸",
-            0.76,
-            True,
-            CRIMSON,
-        ),
-        (
-            "· Colorectal cancer stool",
-            81.1,
-            64.8,
-            92.0,
-            "30 dec vs. 7 inc,\nnominal p = 1.9 \u00d7 10⁻⁴",
-            0.64,
-            False,
-            CRIMSON,
-        ),
-        (
-            "· HIV infection stool",
-            76.0,
-            54.9,
-            90.6,
-            "19 dec vs. 6 inc,\nnominal p = 0.015",
-            0.53,
-            False,
-            CRIMSON,
-        ),
-        (
-            "· Parkinson\u2019s disease stool",
-            68.7,
-            57.6,
-            78.4,
-            "57 dec vs. 26 inc,\nnominal p = 8.8 \u00d7 10⁻⁴",
-            0.42,
-            False,
-            CRIMSON,
-        ),
-        (
-            "Gut Wall Biopsy (Colon Mucosa)",
-            48.1,
-            28.7,
-            68.1,
-            "13 dec vs. 14 inc,\nnominal p = 1.00",
-            0.26,
-            True,
-            MUTED,
-        ),
-        (
-            "· Colorectal tumor biopsy",
-            35.3,
-            14.2,
-            61.7,
-            "6 dec vs. 11 inc,\nnominal p = 0.33",
-            0.15,
-            False,
-            MUTED,
-        ),
-        (
-            "Mouth & Saliva (Oral Cavity)",
-            45.5,
-            16.7,
-            76.6,
-            "5 dec vs. 6 inc,\nnominal p = 1.00",
-            0.04,
-            True,
-            MUTED,
-        ),
-    ]
+    direction_rows = list(PLATE3_DIRECTION_ROWS)
 
     _add_panel_header(
         ax_left,
@@ -2857,8 +2862,16 @@ def render_fig7_svg() -> str:
             "",
         ]
     )
-    n_nominal_p = sum(
-        len(re.findall(r"\bp\s*(?:=|&lt;|<|≤|≥|>)", line)) for line in svg.splitlines()
+    n_nominal_p = len(
+        {
+            re.sub(r"\s+", " ", m.group(0))
+            for line in svg.splitlines()
+            for m in re.finditer(
+                r"(?:(?:Fisher|hyp|perm|U₄)\s+)?\bp\s*(?:=|&lt;|<|≤|≥|>)\s*[0-9.]+"
+                r"(?:\s*\u00d7\s*10⁻[⁰¹²³⁴⁵⁶⁷⁸⁹]+|⁻[⁰¹²³⁴⁵⁶⁷⁸⁹]+)?",
+                line,
+            )
+        }
     )
     return svg.replace(
         "__FIG7_NOMINAL_NOTE__",
@@ -4208,14 +4221,24 @@ def render_slide_deck_html() -> str:
 
 def _annotate_deck_nominal_counts_and_footer_labels(html_text: str) -> str:
     """Attach computed nominal test counts and per-slide footer run labels (#1533)."""
+    screen_trigger_re = re.compile(
+        r"(?<![.\d,])(?:317\s+non-MediaDive|66,240\s+enrichments|1,912\s+rows)"
+    )
 
     def _add_nominal_count(match: re.Match[str]) -> str:
         open_tag, inner, close_tag = match.group(1), match.group(2), match.group(3)
         n_nom = len(re.findall(r"\bnominal\s+(?:<i>)?p(?:</i>)?\s*(?:=|≤|≥|<|>|&lt;|&gt;)", inner))
         if n_nom == 0:
             return match.group(0)
+        if "mucosal and oral tests have nominal" in inner:
+            n_non_stool = sum("stool" not in row[0].lower() for row in PLATE3_DIRECTION_ROWS)
+            n_nom += n_non_stool - 1
         noun = "test" if n_nom == 1 else "tests"
         suffix = f" ({n_nom} nominal {noun} shown)"
+        if inner.endswith(")."):
+            return f"{open_tag}{inner[:-1]};{suffix}.{close_tag}"
+        if inner.endswith(")"):
+            return f"{open_tag}{inner};{suffix}{close_tag}"
         if inner.endswith("."):
             return f"{open_tag}{inner[:-1]}{suffix}.{close_tag}"
         return f"{open_tag}{inner}{suffix}{close_tag}"
@@ -4223,15 +4246,26 @@ def _annotate_deck_nominal_counts_and_footer_labels(html_text: str) -> str:
     def _annotate_section(sec_match: re.Match[str]) -> str:
         sec = sec_match.group(0)
         sub_m = re.search(r'<p class="subtitle"[^>]*>.*?·\s*([^<]+)</p>', sec, re.DOTALL)
-        if sub_m is not None and re.search(
-            r"\b(?:317|66,240|1,912)\b", sec.split("<footer", 1)[-1]
-        ):
+        if sub_m is not None:
             run_label = " ".join(sub_m.group(1).split())
             if ";" not in run_label:
+
+                def _label_col(col_match: re.Match[str]) -> str:
+                    col = col_match.group(0)
+                    if not screen_trigger_re.search(col):
+                        return col
+                    return re.sub(
+                        r'(<div class="footer-col"><b>)([^<:]+)(:</b>)',
+                        lambda m: f"{m.group(1)}{m.group(2)} \u2014 {run_label}{m.group(3)}",
+                        col,
+                        count=1,
+                    )
+
                 sec = re.sub(
-                    r'(<div class="footer-col"><b>)([^<:]+)(:</b>)',
-                    rf"\1\2 ({run_label})\3",
+                    r'<div class="footer-col">.*?</div>',
+                    _label_col,
                     sec,
+                    flags=re.DOTALL,
                 )
         return re.sub(
             r'(<div class="(?:lbl|footer-col)">)(.*?)(</div>)',

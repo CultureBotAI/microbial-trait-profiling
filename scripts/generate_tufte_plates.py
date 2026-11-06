@@ -270,8 +270,8 @@ def study_bh_count(rows: dict[str, dict[str, str]]) -> int:
     )
 
 
-def study_tested_count(rows: Mapping[str, Mapping[str, str]]) -> int:
-    """Traits with a tested study-level p-value in one stratum's paired-contrast table."""
+def study_bh_family_size(rows: Mapping[str, Mapping[str, str]]) -> int:
+    """Traits in one stratum's study-level BH family (tested p or padded q present)."""
     return sum(
         has_value(r.get("study_p_value")) or has_value(r.get("study_q_value"))
         for r in rows.values()
@@ -2145,6 +2145,67 @@ def build_plate1(repo: Path, out_dir: Path) -> Path:
 # ==============================================================================
 # PLATE 2: Beyond Table 1 — The 28-Trait Functional Guild Dichotomy & Anatomy
 # ==============================================================================
+PLATE2_TRAIT_ROWS: list[tuple[str, str, str]] = [
+    # Increased Guilds
+    # A display group of oxygen-related rows, not an oxygen guild: METPO:1000608
+    # is in neither guild (#1237); its ★ marks it as a Table 1 trait.
+    ("METPO:1000608", "[O₂]  Facultatively aerobic ★", "O₂ / Aerotolerance"),
+    ("METPO:1000606", "Microaerophilic", "O₂ / Aerotolerance"),
+    ("METPO:1000602", "Aerobic", "O₂ / Aerotolerance"),
+    ("METPO:1000623", "[Halophily]  Moderately halophilic ★", "Halotolerance / Osmotic"),
+    ("METPO:1000467", "NaCl optimum mid2", "Halotolerance / Osmotic"),
+    ("METPO:1000627", "Euryhaline", "Halotolerance / Osmotic"),
+    (
+        "METPO:2000103|pathways:arsenate_reduction",
+        "[Redox]  Arsenate reduction ★",
+        "Redox",
+    ),
+    (
+        "METPO:2000103|pathways:trithionate_oxidation",
+        "Trithionate oxidation",
+        "Redox",
+    ),
+    (
+        "METPO:2000103|pathways:thiosulfate_oxidation",
+        "Thiosulfate oxidation",
+        "Redox",
+    ),
+    (
+        "METPO:2000103|pathways:thiosulfate_oxidation_dark",
+        "Thiosulfate oxidation (dark)",
+        "Redox",
+    ),
+    ("METPO:2000103|pathways:nitrate_reduction", "Nitrate reduction", "Redox"),
+    (
+        "METPO:2000103|pathways:methane_oxidation",
+        "Methane oxidation",
+        "Redox",
+    ),
+    ("METPO:1000668", "[Morphology]  Coccus shaped ★", "Morphology"),
+    ("METPO:1000683", "Sphere shaped ★", "Morphology"),
+    # Carbon sources and lignin catabolism; the tag sits on the shortest label so the
+    # row fits the left margin.
+    ("METPO:2000006|CHEBI:25115", "[Carbon use]  Malate", "Carbon use"),
+    ("METPO:2000006|CHEBI:28260", "Galactose", "Carbon use"),
+    ("METPO:2000006|CHEBI:17596", "Inosine", "Carbon use"),
+    ("METPO:2000006|CHEBI:16808", "2-Dehydro-D-gluconate", "Carbon use"),
+    ("METPO:2000006|CHEBI:320055", "Methyl β-D-glucopyranoside", "Carbon use"),
+    ("METPO:2000103|GO:0046274", "Lignin catabolic process", "Carbon use"),
+    ("METPO:2000103|pathways:mtbe_degradation", "MTBE degradation", "Carbon use"),
+    # Decreased Guilds
+    (
+        "METPO:2000103|GO:0030245",
+        "[Plant glycan ↓]  Cellulose catabolic process ★",
+        "Plant glycan ↓",
+    ),
+    ("METPO:2000103|GO:0045493", "Xylan catabolic process", "Plant glycan ↓"),
+    ("METPO:2000006|CHEBI:16634", "Raffinose", "Plant glycan ↓"),
+    ("METPO:1000429", "[Anaerobic / low GC ↓]  GC low", "Anaerobic / low GC ↓"),
+    ("METPO:1000607", "Obligately anaerobic", "Anaerobic / low GC ↓"),
+    ("METPO:1000845", "Acetogenesis", "Anaerobic / low GC ↓"),
+]
+
+
 def build_plate2(repo: Path, out_dir: Path) -> Path:
     pooled = {
         r["trait"]: r
@@ -2176,65 +2237,7 @@ def build_plate2(repo: Path, out_dir: Path) -> Path:
     }
 
     labels = trait_labels(repo)
-    trait_rows_spec = [
-        # Increased Guilds
-        # A display group of oxygen-related rows, not an oxygen guild: METPO:1000608
-        # is in neither guild (#1237); its ★ marks it as a Table 1 trait.
-        ("METPO:1000608", "[O₂]  Facultatively aerobic ★", "O₂ / Aerotolerance"),
-        ("METPO:1000606", "Microaerophilic", "O₂ / Aerotolerance"),
-        ("METPO:1000602", "Aerobic", "O₂ / Aerotolerance"),
-        ("METPO:1000623", "[Halophily]  Moderately halophilic ★", "Halotolerance / Osmotic"),
-        ("METPO:1000467", "NaCl optimum mid2", "Halotolerance / Osmotic"),
-        ("METPO:1000627", "Euryhaline", "Halotolerance / Osmotic"),
-        (
-            "METPO:2000103|pathways:arsenate_reduction",
-            "[Redox]  Arsenate reduction ★",
-            "Redox",
-        ),
-        (
-            "METPO:2000103|pathways:trithionate_oxidation",
-            "Trithionate oxidation",
-            "Redox",
-        ),
-        (
-            "METPO:2000103|pathways:thiosulfate_oxidation",
-            "Thiosulfate oxidation",
-            "Redox",
-        ),
-        (
-            "METPO:2000103|pathways:thiosulfate_oxidation_dark",
-            "Thiosulfate oxidation (dark)",
-            "Redox",
-        ),
-        ("METPO:2000103|pathways:nitrate_reduction", "Nitrate reduction", "Redox"),
-        (
-            "METPO:2000103|pathways:methane_oxidation",
-            "Methane oxidation",
-            "Redox",
-        ),
-        ("METPO:1000668", "[Morphology]  Coccus shaped ★", "Morphology"),
-        ("METPO:1000683", "Sphere shaped ★", "Morphology"),
-        # Carbon sources and lignin catabolism; the tag sits on the shortest label so the
-        # row fits the left margin.
-        ("METPO:2000006|CHEBI:25115", "[Carbon use]  Malate", "Carbon use"),
-        ("METPO:2000006|CHEBI:28260", "Galactose", "Carbon use"),
-        ("METPO:2000006|CHEBI:17596", "Inosine", "Carbon use"),
-        ("METPO:2000006|CHEBI:16808", "2-Dehydro-D-gluconate", "Carbon use"),
-        ("METPO:2000006|CHEBI:320055", "Methyl β-D-glucopyranoside", "Carbon use"),
-        ("METPO:2000103|GO:0046274", "Lignin catabolic process", "Carbon use"),
-        ("METPO:2000103|pathways:mtbe_degradation", "MTBE degradation", "Carbon use"),
-        # Decreased Guilds
-        (
-            "METPO:2000103|GO:0030245",
-            "[Plant glycan ↓]  Cellulose catabolic process ★",
-            "Plant glycan ↓",
-        ),
-        ("METPO:2000103|GO:0045493", "Xylan catabolic process", "Plant glycan ↓"),
-        ("METPO:2000006|CHEBI:16634", "Raffinose", "Plant glycan ↓"),
-        ("METPO:1000429", "[Anaerobic / low GC ↓]  GC low", "Anaerobic / low GC ↓"),
-        ("METPO:1000607", "Obligately anaerobic", "Anaerobic / low GC ↓"),
-        ("METPO:1000845", "Acetogenesis", "Anaerobic / low GC ↓"),
-    ]
+    trait_rows_spec = list(PLATE2_TRAIT_ROWS)
     check_plate_two_rows([trait for trait, _, _ in trait_rows_spec], pooled)
     check_plate_two_directions(trait_rows_spec, pooled)
     # Every row takes the label its column has in taxa_trait_matrix_columns.tsv (#607).
@@ -2280,25 +2283,26 @@ def build_plate2(repo: Path, out_dir: Path) -> Path:
     strata = [
         (
             f"Pooled All Sites\n({stratum_text(pooled)}\n"
-            f"{study_bh_count(pooled)}/{study_tested_count(pooled)} traits study BH q ≤ 0.05)",
+            f"{study_bh_count(pooled)}/{study_bh_family_size(pooled)} traits study BH q ≤ 0.05)",
             pooled,
             (-0.38, 0.72),
         ),
         (
             f"Feces Only\n({stratum_text(feces)}\n"
-            f"{study_bh_count(feces)}/{study_tested_count(feces)} traits study BH q ≤ 0.05)",
+            f"{study_bh_count(feces)}/{study_bh_family_size(feces)} traits study BH q ≤ 0.05)",
             feces,
             (-0.44, 0.78),
         ),
         (
             f"Feces Excluded\n({stratum_text(nonfeces)}\n"
-            f"{study_bh_count(nonfeces)}/{study_tested_count(nonfeces)} traits study BH q ≤ 0.05)",
+            f"{study_bh_count(nonfeces)}/{study_bh_family_size(nonfeces)} "
+            "traits study BH q ≤ 0.05)",
             nonfeces,
             (-0.40, 0.56),
         ),
         (
             f"Saliva Only\n({stratum_text(saliva)}\n"
-            f"{study_bh_count(saliva)}/{study_tested_count(saliva)} traits study BH q ≤ 0.05)",
+            f"{study_bh_count(saliva)}/{study_bh_family_size(saliva)} traits study BH q ≤ 0.05)",
             saliva,
             (-0.78, 0.92),
         ),
@@ -2931,7 +2935,7 @@ def build_plate4(repo: Path, out_dir: Path) -> Path:
     ax.set_ylim(-0.5, n_r - 0.5)
     ax.invert_yaxis()
 
-    n_panel_a_cells = 0
+    n_panel_a_wilc = 0
     for r_idx, (cond_raw, _cond_disp) in enumerate(conditions):
         for c_idx, (tr_raw, _tr_disp) in enumerate(traits_cols):
             er = by_eco.get((cond_raw, tr_raw), {})
@@ -2940,7 +2944,8 @@ def build_plate4(repo: Path, out_dir: Path) -> Path:
 
             if not er or er.get("study_weighted_mean_contrast") in (None, "", "NA"):
                 continue
-            n_panel_a_cells += 1
+            if wr and has_value(wr.get("p_value")):
+                n_panel_a_wilc += 1
 
             mean_z = float(er["study_weighted_mean_contrast"])
             ci_excl = er.get("ci_excludes_zero") == "True"
@@ -3002,7 +3007,7 @@ def build_plate4(repo: Path, out_dir: Path) -> Path:
     ax.set_title(
         "A. Fecal Cohort \N{MULTIPLICATION SIGN} Trait Mean Paired Shift Δz\n★ Gold border = "
         "Fisher BH q≤0.05 · **Wilcoxon BH q≤0.05 · "
-        f"*nominal p≤0.05 / CI≠0 ({n_panel_a_cells} cells)",
+        f"*nominal p≤0.05 ({n_panel_a_wilc} Wilcoxon tests) / CI≠0",
         fontsize=9.3,
         fontweight="bold",
         loc="left",
@@ -3127,8 +3132,8 @@ def build_plate4(repo: Path, out_dir: Path) -> Path:
     n_wilc_tests = sum(has_value(r.get("p_value")) for r in wilc_tests)
     ax_lead.set_title(
         "B. Lead Fecal Disease \N{MULTIPLICATION SIGN} Trait Contrasts (PD, CRC, HIV, "
-        f"COVID-19; {n_lead_rows} shown)\nStudy win/loss counts, Profile Fisher FDR (★), "
-        f"Study Wilcoxon nominal p/BH q ({n_wilc_tests} tests)",
+        f"COVID-19; {n_lead_rows} shown)\nStudy win/loss, Fisher FDR (★), "
+        f"Wilcoxon nominal p/BH q ({n_wilc_tests} tests)",
         fontsize=8.35,
         fontweight="bold",
         loc="left",
@@ -3439,7 +3444,7 @@ def build_plate5(repo: Path, out_dir: Path) -> Path:
         f"{RERUN_SOURCE} · condition_oxygen_switch_scores.tsv, "
         "taxa_cross_disease_switch_summary.tsv. Pooled McNemar OR = "
         f"{mcnemar.odds_ratio:.3f} ({mcnemar.aerobe_up_anaerobe_down} vs "
-        f"{mcnemar.anaerobe_up_aerobe_down} st., p = {fmt_p(mcnemar.p_value)}); "
+        f"{mcnemar.anaerobe_up_aerobe_down} st., p = {fmt_p(mcnemar.p_value)});\n"
         f"{cellulose['crc_source']}",
         fontsize=7.8,
         color=MUTED,
@@ -4486,9 +4491,9 @@ def build_plate7(repo: Path, out_dir: Path) -> Path:
         f"Table 1 ★ + {groups['three_arm_additional']} Expanded 3-Arm ✓ + "
         f"{groups['ora_inverted']} ORA-Inv. ▲"
         + (f" + {groups['not_concordant']} Discordant ■" if groups["not_concordant"] else "")
-        + f")\nOriented {oriented.tested_studies:,}-study filter (○, {n_oriented_t1} Table 1 "
-        f"nominal tests): Cellulose {cellulose.share_up:.1%}↑ / {cellulose.share_down:.1%}↓ "
-        f"(nominal p = {fmt_p(cellulose.p_value)}, BH₆ q = {fmt_p(cellulose.q_value)})",
+        + f")\nOriented {oriented.tested_studies:,} st. (○, {n_oriented_t1} Table 1 "
+        f"tests): Cellulose {cellulose.share_up:.1%}↑/{cellulose.share_down:.1%}↓ "
+        f"(nominal p={fmt_p(cellulose.p_value)}, BH₆ q={fmt_p(cellulose.q_value)})",
         fontsize=8.35,
         fontweight="bold",
         loc="left",
