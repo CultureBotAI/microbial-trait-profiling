@@ -24,6 +24,19 @@ directly: make the null true, run the whole procedure, and count rejections.
 | `guild_mcnemar` | among studies whose guild signs disagree, either direction is equally likely | study | one test | 0.05 |
 | `screened_fraction_sign_test` | as the first, but the three traits furthest from an even split are chosen inside the replicate and corrected over those three | study | BH over the three selected | none claimed |
 
+These are diagnostic evaluations of the claimed rates, not new primary
+discoveries. The registry families are `mt-core-calibration-fraction-replicate`
+(complete focal traits, BH), `mt-core-calibration-log-ratio-replicate`
+(complete focal pairs, BY) and `mt-core-calibration-screened-fraction`
+(the selected negative control, BH). Each replicate has its own family.
+`calibration_replicates.tsv` records `tests_evaluated`, a testable-count
+diagnostic, not the complete declared family size including reserved
+untestable members. Recover that complete membership from the configured focal
+trait or unordered-pair inventory; for the negative control, also apply its
+declared selection rule. Do not substitute the testable count for the R1 size.
+All uncorrected p-values and raw-p rejection thresholds here are nominal
+diagnostics. The single guild McNemar test has no adjusted q-value.
+
 The last is not a published procedure. It stands in for the step that produced the
 six Table 1 traits - a selection made on this same corpus - to illustrate what
 selecting and then testing the selection costs. It selects on the test's own

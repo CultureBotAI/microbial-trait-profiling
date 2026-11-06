@@ -180,6 +180,13 @@ for each ratio family, separately by scenario, scope, representation and populat
 All declared family members count toward multiplicity; unavailable values remain
 missing. There is no simultaneous guarantee across scenarios or scopes.
 
+The registry names these `mt-supp-taxon-influence-shared-fraction` (BH),
+`mt-supp-taxon-influence-native-noel-zero-fraction` (BH), and
+`mt-supp-taxon-influence-shared-log2-ratio` (BY). The zero-total fraction
+sensitivity is not Noel's full-catalog BY screen. Count all declared feature
+rows in the corresponding scenario/scope/representation/population of
+`effects.tsv.gz` for the run's family size, including untestable members.
+
 These intervals are conditional on the observed data, selected features and protocol;
 they are not full-pipeline calibrated guarantees (#182). Constant/tied, opposite,
 null, unsupported and untestable outputs remain visible. Loss of significance alone

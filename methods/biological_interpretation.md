@@ -150,7 +150,10 @@ unit and scoped claim and link the full evidence record.
   vintage and relevant corpus restrictions. Report pooled `Other` constituents,
   exclusions, pairing, zero-signal/zero-denominator policies and coverage gaps.
 - **Effect and uncertainty:** effect value, units, interval and interval method;
-  p/q, null, thresholds and correction family where inference is made. If no
+  nominal p, null, and q with its family ID/definition, executed size, BH/BY
+  procedure and threshold where inference is made
+  ([multiple-testing policy](multiple_testing_policy.md), R1–R3/R8). A display
+  of nominal p also states how many tests it shows. If no
   interval was computed, say so and keep the summary descriptive. Never invent
   uncertainty or treat a significance marker as an effect size.
 - **Support and inference level:** unique studies, matched experiments/profiles,

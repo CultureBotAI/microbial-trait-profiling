@@ -35,6 +35,13 @@ Wilcoxon statistic, p-values, BH/BY values and support counts before computing
 the new secondary test. All retained traits remain in the correction family;
 untestable traits contribute internal p=1 and have blank reported inference.
 
+The two registry families are `mt-core-wilcoxon-audit-legacy` and
+`mt-core-wilcoxon-audit-updated`: each contains every retained parent-ledger
+trait, with BH and BY as diagnostic comparisons and no primary inferential
+procedure. The audit records the executed size in `summary.family_size` of
+`wilcoxon_audit_run.json`. The q <= 0.05 flags below describe changes within
+these separate families; they are not a new pooled discovery family.
+
 ## What is verified
 
 The verification scope is

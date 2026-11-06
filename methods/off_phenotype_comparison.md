@@ -34,12 +34,19 @@ phenotype-only. Labels remain separately recorded for each scope.
 
 The shared-trait table places every parent evidence column side by side with
 `off_` and `phenotype_` prefixes. Original parent evidence files are also copied
-byte-for-byte. Preserve native Noel study votes and nominal BY q values, the
+byte-for-byte. Preserve native Noel study votes and full-candidate BY q values, the
 full-family study-mean t-test and its BY q values, support, explicit statuses,
 and all six signed/magnitude ranks. Each test retains its own full family
 within its original scope. Never correct again on the shared intersection or
 across different tests, and never rank the intersection as though it were the
 original candidate family.
+
+The sign-test family is `mt-core-noel-sign-nominal`; its `nominal` suffix
+refers to the full candidate inventory, not an uncorrected probability. The
+study-mean t-test family is `mt-core-three-test-catalog-t`. Both use BY over
+their own complete retained catalog within each scope. Read each parent's
+`noel_family_size` or `composition_family_size` from its bound
+`per_trait_evidence.tsv`; the copied/prefixed records preserve those sizes.
 
 `study_mean_delta_z` gives every study equal weight. Its
 `study_mean_delta_z_ci95_low` and `study_mean_delta_z_ci95_high` columns are the
@@ -61,8 +68,9 @@ merely a change in multiple-testing correction.
 
 There is no cross-test combined ranking. Export ten separate views:
 
-- Native Noel nominal BY q <= 0.05, using its original eligible study votes.
-- Full-family study-mean t-test BY q <= 0.05.
+- Native Noel full-candidate BY q <= 0.05 (`mt-core-noel-sign-nominal`),
+  using its original eligible study votes.
+- Full-family study-mean t-test BY q <= 0.05 (`mt-core-three-test-catalog-t`).
 - Top 5 and top 10 positive comparison means, and top 5 and top 10 negative
   comparison means, each for all traits and for traits with >=50 active studies.
 

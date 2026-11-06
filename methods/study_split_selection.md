@@ -26,6 +26,11 @@ The retained core vocabulary defines the candidate screen size; the selected
 family size is the number of selected triples times two. These are different
 quantities and both are recorded. Changing the strain scope changes the core
 vocabulary, rather than a hard-coded family size.
+This is `mt-supp-study-split-u6`: the two overlap statistics for every frozen
+selected triple within one split, including untestable members. Read its actual
+membership and size from that split's correction record in `split_results.json`.
+The BY-primary and companion BH rejection flags use q <=0.05 and q <=0.001;
+no family is formed by pooling repeated splits.
 
 The shared v1.2 family record copies the verified strain scope, ordered feature-filter
 identity and source profile representation. Each member names its exact three

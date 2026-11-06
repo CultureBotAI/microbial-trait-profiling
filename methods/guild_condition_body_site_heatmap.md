@@ -217,9 +217,9 @@ independent samples, so the test is an **exact McNemar** — a two-sided binomia
 on the discordant studies. Of the 912 studies with both signs (697 discordant),
 410 have the higher aerobe share and the lower anaerobe share in the increased
 signatures and 287 the reverse, giving a paired odds ratio of 1.429 with
-p = 3.6e-06. That is the same test on the same population as the
+nominal p = 3.6e-06. That is the same test on the same population as the
 integrated evidence table's McNemar row. Before the zero-total exclusion (#783)
-this figure reported 410 and 284, p = 2.0e-06, over 932 studies. (An earlier draft applied Fisher's exact test to the
+this figure reported 410 and 284, nominal p = 2.0e-06, over 932 studies. (An earlier draft applied Fisher's exact test to the
 marginal two-by-two; that assumes independent rows, and on this data it was
 anticonservative by roughly three orders of magnitude and inflated the odds
 ratio by a fifth.) Counting studies with any non-zero guild signal instead of
@@ -254,14 +254,17 @@ On this corpus the five such studies were all zero-total pairs, which the
 exclusion above already removes, so all 922 studies are ranked. Over those 922
 studies, aerobe and anaerobe fractions correlate negatively within the same
 direction, rho = -0.719 on the increased side and -0.740 on the decreased side,
-and the two guilds' per-study contrasts correlate at rho = -0.737. These are
-largely the structural artefact described above - two shares of one denominator -
-and are not to be read as support. Studies are still not fully independent where
+and the two guilds' per-study contrasts correlate at rho = -0.737. Shared
+denominators can contribute to these correlations; the coefficients do not
+quantify how much is structural or establish a biological mechanism.
+Studies are still not fully independent where
 they share cohorts, which this computation does not model.
 
-The McNemar test is a single test and needs no correction. The seven Spearman
-p-values are reported uncorrected, and should be read as descriptive rather than
-as a screened set; they are not the basis of any claim in the manuscript.
+The McNemar result is one nominal test with no adjusted q. The seven Spearman
+p-values are also nominal and uncorrected, and should be read as descriptive
+rather than as a screened set; they are not the basis of any claim in the
+manuscript. Reporting one McNemar result does not correct selection of the guild
+hypothesis or establish FDR control across these diagnostics.
 
 ## Reproducing
 

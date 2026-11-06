@@ -15,6 +15,15 @@ The [three-framework comparison](three_arm_statistics.md) describes Jed's and
 Ilyas's different hypotheses. The [log-ratio methods](table1_paired_log_ratios.md)
 define eligibility, study weighting, ties and the correction family.
 
+The dated snapshot's fraction q-values use `mt-supp-table1-direction` (BH
+over the six requested traits); its ratio q-values use
+`mt-core-jed-log-ratio-sign` (BY over the 15 unordered requested pairs).
+These are separate focal families, not the full-catalog Noel screen. Their
+executed membership is in the complete fraction/ratio tables from the pinned
+inputs below; table p columns are nominal. The historical manuscript q in the
+warning above is a quoted comparator, with no execution-family binding in this
+note, and must not be reused as a newly verified result.
+
 ## Corpus and reproduction
 
 Both recipes used the same pinned profile and experiment files: 7,329 profile rows
