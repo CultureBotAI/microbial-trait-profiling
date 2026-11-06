@@ -4,10 +4,14 @@ What the guard matches:
 
 - user homes: macOS ``Users`` and Linux ``home`` directories followed by a user name,
   with or without a trailing slash (a JSON value can end at the name), and Windows
-  homes after a drive letter with back, forward or JSON-escaped separators;
+  homes after a drive letter with back, forward, mixed or JSON-escaped separators;
 - macOS temp roots: the per-user ``var/folders`` directory, with or without the
   ``/private`` prefix (``$TMPDIR`` and ``tempfile.gettempdir()`` give it without),
   and ``tmp`` under ``/private``.
+
+The home pattern has no left anchor on purpose (#1691): an anchor would miss a home
+reached through the macOS firmlink root (``System/Volumes/Data``), a form that disk
+tools print. A false positive inside a URL fails loudly, which is the safer error.
 
 What it deliberately leaves out, tracked in #1682: a bare ``tmp`` directory at the
 root (the tree uses it in synthetic examples), ``~``-relative homes and external
@@ -19,18 +23,26 @@ scans this file too (#1674).
 Every tracked path is accounted for (#1676): it is scanned, skipped for a binary
 suffix, or skipped as larger than ``MAX_SCAN_BYTES`` and named in ``SKIPPED_LARGE``.
 A tracked text file with NUL bytes or invalid UTF-8 fails the guard instead of being
-skipped. Symlinks are scanned through their target string, and files missing from
-the working tree (a sparse checkout) are read from the index.
+skipped, and a file with a binary suffix must really be binary (#1692). Every index
+version of a path is scanned (all conflict stages, symlink targets and files missing
+from the working tree), and so is the working-tree file when it differs (#1689).
+
+Git runs without any inherited ``GIT_*`` variable (#1687): a hook exports ``GIT_DIR``,
+which would otherwise point the synthetic-repository tests at the caller's index.
 """
 
 from __future__ import annotations
 
+import collections
 import functools
 import os
 import re
 import subprocess
+from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
+
+import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 MAX_SCAN_BYTES = 5_000_000
@@ -139,9 +151,21 @@ SYNTHETIC_FIXTURE_FILES: dict[str, str] = {
     "tests/test_three_test_stage.py": "synthetic temp-root paths used to test rejection",
 }
 
+# Hits per family that each exempt file holds today (#1678). Counts, not hashes, so that
+# detect-secrets has nothing to flag; any added or removed local path changes a count.
+EXPECTED_EXEMPT_HIT_COUNTS: dict[str, dict[str, int]] = {
+    "data/derived/integrated_evidence/integrated_evidence_assessments.tsv": {"user_home": 2},
+    "data/derived/integrated_evidence/integrated_evidence_provenance.json": {"user_home": 8},
+    "docs/reviews/2026-10-19-ora-provenance-refresh-audit.json": {"temp_root": 13, "user_home": 8},
+    "docs/reviews/2026-10-19-ora-provenance-refresh-inputs.json": {"temp_root": 12, "user_home": 8},
+    "tests/test_output_roots.py": {"temp_root": 3},
+    "tests/test_three_test_stage.py": {"temp_root": 1},
+}
+
 # Each alternative is written so that its own source text does not match (#1674).
-_USER_HOME_SOURCE = r"/(?:Users|home)/[A-Za-z0-9._-]+(?![A-Za-z0-9._-])|[A-Za-z]:[\\/]+Users[\\/]+"
-# The trailing slash is a lookahead, so a user home directly after a temp root is still found.
+_USER_HOME_SOURCE = r"/(?:Users|home)/[A-Za-z0-9._-]+|[A-Za-z]:[\\/]+Users[\\/]+"
+# The optional prefix only widens the reported match. The trailing slash is a lookahead,
+# so a user home directly after a temp root is still found.
 _TEMP_ROOT_SOURCE = r"(?:/private)?/var/(?:folders)(?=/)|/private/(?:tmp)(?=/)"
 
 USER_HOME_PATTERN: re.Pattern[str] = re.compile(_USER_HOME_SOURCE)
@@ -154,16 +178,22 @@ ABSOLUTE_LOCAL_PATH_PATTERN: re.Pattern[str] = re.compile(
 USER_HOME = "user_home"
 TEMP_ROOT = "temp_root"
 
+NUL_REASON = "NUL byte in a file without a binary suffix"
+UTF8_REASON = "not valid UTF-8"
+
 
 @dataclass(frozen=True)
 class TrackedCorpus:
-    """Every tracked path, sorted into what was scanned and why the rest was not."""
+    """Every tracked path, sorted into what was scanned and why the rest was not.
+
+    `texts` holds one `(path, text)` record per distinct version of a scanned path.
+    """
 
     texts: tuple[tuple[str, str], ...]
     binary_suffix: frozenset[str]
     large: frozenset[str]
     unscannable: dict[str, str]
-    from_index: frozenset[str]
+    working_tree_versions: frozenset[str]
 
     @property
     def scanned(self) -> frozenset[str]:
@@ -185,12 +215,19 @@ class Hit:
         return f"L{self.line_no} {self.family} ({self.matched}): {self.snippet}"
 
 
+def _git_env() -> dict[str, str]:
+    """Return an environment with no inherited `GIT_*` variable and no user or system config."""
+    env = {key: value for key, value in os.environ.items() if not key.startswith("GIT_")}
+    env["GIT_CONFIG_GLOBAL"] = os.devnull
+    env["GIT_CONFIG_NOSYSTEM"] = "1"
+    return env
+
+
 def _git(root: Path, *args: str, stdin: bytes | None = None) -> bytes:
-    """Run git in `root` without the user's global or system configuration."""
-    env = {**os.environ, "GIT_CONFIG_GLOBAL": os.devnull, "GIT_CONFIG_NOSYSTEM": "1"}
+    """Run git in `root` and return its standard output."""
     completed = subprocess.run(
         ["git", "-C", str(root), *args],
-        env=env,
+        env=_git_env(),
         input=stdin,
         capture_output=True,
         check=True,
@@ -199,7 +236,7 @@ def _git(root: Path, *args: str, stdin: bytes | None = None) -> bytes:
 
 
 def _index_entries(root: Path) -> list[tuple[str, str, str]]:
-    """Return `(path, mode, object_id)` for every index entry."""
+    """Return `(path, mode, object_id)` for every index entry, including conflict stages."""
     entries: list[tuple[str, str, str]] = []
     for record in _git(root, "ls-files", "-s", "-z").split(b"\0"):
         if not record:
@@ -223,69 +260,106 @@ def _blob_sizes(root: Path, object_ids: list[str]) -> dict[str, int]:
     return sizes
 
 
-def _read_blobs(root: Path, object_ids: list[str]) -> dict[str, bytes]:
-    """Return the content of each blob, read in one `git cat-file --batch` call."""
+def _iter_blobs(root: Path, object_ids: list[str]) -> Iterator[tuple[str, bytes]]:
+    """Yield `(object_id, content)` one blob at a time from a single `git cat-file --batch`."""
     if not object_ids:
-        return {}
-    output = _git(root, "cat-file", "--batch", stdin=("\n".join(object_ids) + "\n").encode())
-    blobs: dict[str, bytes] = {}
-    position = 0
-    for _ in object_ids:
-        header_end = output.index(b"\n", position)
-        object_id, _object_type, size_text = output[position:header_end].decode("ascii").split(" ")
-        start = header_end + 1
-        blobs[object_id] = output[start : start + int(size_text)]
-        position = start + int(size_text) + 1
-    return blobs
+        return
+    with subprocess.Popen(
+        ["git", "-C", str(root), "cat-file", "--batch"],
+        env=_git_env(),
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+    ) as process:
+        assert process.stdin is not None
+        assert process.stdout is not None
+        for object_id in object_ids:
+            process.stdin.write(object_id.encode("ascii") + b"\n")
+            process.stdin.flush()
+            header = process.stdout.readline().decode("ascii").split(" ")
+            assert len(header) == 3, f"git cat-file could not read {object_id}: {header}"
+            size = int(header[2])
+            content = process.stdout.read(size)
+            terminator = process.stdout.read(1)
+            assert len(content) == size, f"Short read of {object_id}"
+            assert terminator == b"\n", f"Missing record terminator after {object_id}"
+            yield object_id, content
+        process.stdin.close()
+    assert process.returncode == 0, f"git cat-file exited {process.returncode}"
+
+
+def _unreadable_reason(data: bytes) -> str | None:
+    """Return why `data` cannot be scanned as text, or None if it can."""
+    if b"\0" in data:
+        return NUL_REASON
+    try:
+        data.decode("utf-8")
+    except UnicodeDecodeError:
+        return UTF8_REASON
+    return None
 
 
 def _read_tracked(root: Path, max_bytes: int) -> TrackedCorpus:
-    """Read every tracked path under `root` and sort it into scanned or skipped."""
-    contents: dict[str, bytes] = {}
-    from_index: dict[str, str] = {}
+    """Read every version of every tracked path under `root` and sort it."""
     binary_suffix: set[str] = set()
     large: set[str] = set()
     unscannable: dict[str, str] = {}
+    index_versions: dict[str, list[str]] = {}
     for rel_path, mode, object_id in _index_entries(root):
         if mode == "160000":
             unscannable[rel_path] = "submodule"
-            continue
-        if Path(rel_path).suffix.lower() in BINARY_SUFFIXES:
+        elif Path(rel_path).suffix.lower() in BINARY_SUFFIXES:
             binary_suffix.add(rel_path)
-            continue
-        path = root / rel_path
-        if mode != "120000" and path.is_file() and not path.is_symlink():
-            if path.stat().st_size > max_bytes:
-                large.add(rel_path)
-                continue
-            contents[rel_path] = path.read_bytes()
         else:
-            from_index[rel_path] = object_id
-    sizes = _blob_sizes(root, sorted(set(from_index.values())))
-    for rel_path, object_id in list(from_index.items()):
-        if sizes[object_id] > max_bytes:
-            large.add(rel_path)
-            del from_index[rel_path]
-    blobs = _read_blobs(root, sorted(set(from_index.values())))
-    for rel_path, object_id in from_index.items():
-        contents[rel_path] = blobs[object_id]
+            index_versions.setdefault(rel_path, []).append(object_id)
 
+    sizes = _blob_sizes(root, sorted({oid for oids in index_versions.values() for oid in oids}))
+    working_files: dict[str, Path] = {}
+    for rel_path, object_ids in index_versions.items():
+        path = root / rel_path
+        working = path if path.is_file() and not path.is_symlink() else None
+        working_size = working.stat().st_size if working is not None else 0
+        if working_size > max_bytes or any(sizes[oid] > max_bytes for oid in object_ids):
+            large.add(rel_path)
+        elif working is not None:
+            working_files[rel_path] = working
+
+    readable = {path: oids for path, oids in index_versions.items() if path not in large}
+    blobs = dict(_iter_blobs(root, sorted({oid for oids in readable.values() for oid in oids})))
     texts: list[tuple[str, str]] = []
-    for rel_path, data in sorted(contents.items()):
-        if b"\0" in data:
-            unscannable[rel_path] = "NUL byte in a file without a binary suffix"
+    extra_versions: set[str] = set()
+    for rel_path in sorted(readable):
+        versions = [blobs[oid] for oid in readable[rel_path]]
+        if rel_path in working_files:
+            working_data = working_files[rel_path].read_bytes()
+            if working_data not in versions:
+                versions.append(working_data)
+                extra_versions.add(rel_path)
+        reasons = [reason for reason in map(_unreadable_reason, versions) if reason]
+        if reasons:
+            unscannable[rel_path] = reasons[0]
+            extra_versions.discard(rel_path)
             continue
-        try:
-            texts.append((rel_path, data.decode("utf-8")))
-        except UnicodeDecodeError:
-            unscannable[rel_path] = "not valid UTF-8"
+        texts.extend((rel_path, data.decode("utf-8")) for data in dict.fromkeys(versions))
     return TrackedCorpus(
         texts=tuple(texts),
         binary_suffix=frozenset(binary_suffix),
         large=frozenset(large),
         unscannable=unscannable,
-        from_index=frozenset(from_index),
+        working_tree_versions=frozenset(extra_versions),
     )
+
+
+def _text_files_with_binary_suffix(root: Path) -> list[str]:
+    """Return tracked paths that have a binary suffix but whose index content is text."""
+    paths_by_object: dict[str, list[str]] = {}
+    for rel_path, mode, object_id in _index_entries(root):
+        if mode != "160000" and Path(rel_path).suffix.lower() in BINARY_SUFFIXES:
+            paths_by_object.setdefault(object_id, []).append(rel_path)
+    found: list[str] = []
+    for object_id, data in _iter_blobs(root, sorted(paths_by_object)):
+        if _unreadable_reason(data) is None:
+            found.extend(paths_by_object[object_id])
+    return sorted(found)
 
 
 @functools.lru_cache(maxsize=1)
@@ -295,10 +369,9 @@ def _tracked_corpus() -> TrackedCorpus:
 
 
 def _scan_records(records: tuple[tuple[str, str], ...]) -> dict[str, tuple[Hit, ...]]:
-    """Scan `(rel_path, text)` records once for both path families."""
-    hits: dict[str, tuple[Hit, ...]] = {}
+    """Scan `(rel_path, text)` records once for both path families; versions are merged."""
+    hits: dict[str, list[Hit]] = {}
     for rel_path, text in records:
-        file_hits: list[Hit] = []
         for match in ABSOLUTE_LOCAL_PATH_PATTERN.finditer(text):
             family = USER_HOME if match.group(USER_HOME) is not None else TEMP_ROOT
             line_start = text.rfind("\n", 0, match.start()) + 1
@@ -307,10 +380,8 @@ def _scan_records(records: tuple[tuple[str, str], ...]) -> dict[str, tuple[Hit, 
             if len(snippet) > 120:
                 snippet = snippet[:117] + "..."
             line_no = text.count("\n", 0, match.start()) + 1
-            file_hits.append(Hit(family, line_no, match.group(0), snippet))
-        if file_hits:
-            hits[rel_path] = tuple(file_hits)
-    return hits
+            hits.setdefault(rel_path, []).append(Hit(family, line_no, match.group(0), snippet))
+    return {path: tuple(path_hits) for path, path_hits in hits.items()}
 
 
 @functools.lru_cache(maxsize=1)
@@ -326,6 +397,7 @@ def _unexpected_hits(
 
     `ALLOWLIST` exempts the four provenance records from both families.
     `SYNTHETIC_FIXTURE_FILES` exempts only temp-root hits, never user-home hits.
+    `EXPECTED_EXEMPT_HIT_COUNTS` pins how many hits each exempt file may hold.
     """
     unexpected: dict[str, list[Hit]] = {}
     for path, file_hits in hits.items():
@@ -340,12 +412,49 @@ def _unexpected_hits(
     return unexpected
 
 
+def _exempt_count_mismatches(
+    records: tuple[tuple[str, str], ...],
+) -> dict[str, list[dict[str, int]]]:
+    """Return, per exempt path, the family counts of each version that differs from its pin."""
+    mismatches: dict[str, list[dict[str, int]]] = {}
+    for rel_path, text in records:
+        if rel_path not in EXPECTED_EXEMPT_HIT_COUNTS:
+            continue
+        version_hits = _scan_records(((rel_path, text),)).get(rel_path, ())
+        counts = dict(collections.Counter(hit.family for hit in version_hits))
+        if counts != EXPECTED_EXEMPT_HIT_COUNTS[rel_path]:
+            mismatches.setdefault(rel_path, []).append(counts)
+    return mismatches
+
+
 def _format_unexpected(unexpected: dict[str, list[Hit]]) -> str:
     """Render unexpected hits, three per file, for an assertion message."""
     return "\n".join(
         f"  {path}: {[str(hit) for hit in hits[:3]]} (total {len(hits)})"
         for path, hits in sorted(unexpected.items())
     )
+
+
+def _build_synthetic_repo(repo: Path) -> Path:
+    """Create a git repository with one entry of each kind the reader must handle."""
+    repo.mkdir()
+    _git(repo, "init", "-q")
+    (repo / "plain.md").write_text("no local paths here\n", encoding="utf-8")
+    (repo / "sparse.md").write_text("cwd=/" + "home/bob\n", encoding="utf-8")
+    (repo / "cleaned.md").write_text("cwd=/" + "home/bob\n", encoding="utf-8")
+    (repo / "figure.png").write_bytes(b"\x89PNG\0binary")
+    (repo / "fake.png").write_text("text under a binary suffix\n", encoding="utf-8")
+    (repo / "big.tsv").write_text("x" * 30_000, encoding="utf-8")
+    (repo / "big_sparse.tsv").write_text("y" * 30_000, encoding="utf-8")
+    (repo / "nul.txt").write_bytes(b"text\0more")
+    (repo / "late_nul.txt").write_bytes(b"a" * 9_000 + b"\0")
+    (repo / "latin1.txt").write_bytes(b"A\xe9B")  # Latin-1 e-acute: not valid UTF-8
+    os.symlink("/" + "Users/alice/data", repo / "link")
+    _git(repo, "add", "-A")
+    (repo / "sparse.md").unlink()
+    (repo / "big_sparse.tsv").unlink()
+    (repo / "cleaned.md").write_text("cleaned in the working tree only\n", encoding="utf-8")
+    return repo
 
 
 # Samples are assembled from pieces so that this file's own text does not match (#1674).
@@ -356,6 +465,8 @@ FAMILY_SAMPLES: tuple[tuple[str, str], ...] = (
     (USER_HOME, "cwd=/" + "home/bob"),
     (USER_HOME, "C:\\" + "Users\\carol\\Documents\\file.tsv"),
     (USER_HOME, "C:/" + "Users/carol/Documents/file.tsv"),
+    (USER_HOME, "C:/" + "Users\\carol\\file.tsv"),
+    (USER_HOME, "C:\\" + "Users/carol/file.tsv"),
     (USER_HOME, '{"path": "C:\\\\' + 'Users\\\\carol\\\\file.tsv"}'),
     (TEMP_ROOT, "/" + "private/var" + "/" + "folders/ab/cd1234/T/run/out.json"),
     (TEMP_ROOT, "/" + "var/folders/ab/cd1234/T/run/out.json"),
@@ -412,39 +523,53 @@ def test_user_home_after_a_temp_root_is_still_reported() -> None:
 
 
 def test_read_tracked_accounts_for_every_kind_of_entry(tmp_path: Path) -> None:
-    """Sparse, symlinked, binary, large and undecodable entries are each accounted for."""
-    repo = tmp_path / "repo"
-    repo.mkdir()
-    _git(repo, "init", "-q")
-    (repo / "plain.md").write_text("no local paths here\n", encoding="utf-8")
-    (repo / "sparse.md").write_text("cwd=/" + "home/bob\n", encoding="utf-8")
-    (repo / "figure.png").write_bytes(b"\x89PNG\0binary")
-    (repo / "big.tsv").write_text("x" * 64, encoding="utf-8")
-    (repo / "nul.txt").write_bytes(b"text\0more")
-    (repo / "latin1.txt").write_bytes(b"A\xe9B")  # Latin-1 e-acute: not valid UTF-8
-    os.symlink("/" + "Users/alice/data", repo / "link")
-    _git(repo, "add", "-A")
-    (repo / "sparse.md").unlink()
+    """Sparse, cleaned, symlinked, binary, large and undecodable entries are each accounted for."""
+    repo = _build_synthetic_repo(tmp_path / "repo")
 
-    corpus = _read_tracked(repo, max_bytes=32)
+    corpus = _read_tracked(repo, max_bytes=20_000)
 
-    assert corpus.scanned == {"plain.md", "sparse.md", "link"}
-    assert corpus.from_index == {"sparse.md", "link"}
-    assert corpus.binary_suffix == {"figure.png"}
-    assert corpus.large == {"big.tsv"}
+    assert corpus.scanned == {"plain.md", "sparse.md", "cleaned.md", "link"}
+    assert corpus.working_tree_versions == {"cleaned.md"}
+    assert corpus.binary_suffix == {"figure.png", "fake.png"}
+    assert corpus.large == {"big.tsv", "big_sparse.tsv"}
     assert corpus.unscannable == {
-        "nul.txt": "NUL byte in a file without a binary suffix",
-        "latin1.txt": "not valid UTF-8",
+        "nul.txt": NUL_REASON,
+        "late_nul.txt": NUL_REASON,
+        "latin1.txt": UTF8_REASON,
     }
     hits = _scan_records(corpus.texts)
     assert {path: [hit.family for hit in path_hits] for path, path_hits in hits.items()} == {
         "sparse.md": [USER_HOME],
+        "cleaned.md": [USER_HOME],
         "link": [USER_HOME],
     }
+    assert _text_files_with_binary_suffix(repo) == ["fake.png"]
+
+
+def test_git_ignores_an_inherited_git_dir_and_index(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A hook's `GIT_DIR` and `GIT_INDEX_FILE` must not redirect the synthetic repo (#1687)."""
+    caller = tmp_path / "caller"
+    caller.mkdir()
+    _git(caller, "init", "-q")
+    (caller / "kept.md").write_text("kept\n", encoding="utf-8")
+    _git(caller, "add", "kept.md")
+    caller_index = caller / ".git" / "index"
+    before = caller_index.read_bytes()
+    monkeypatch.setenv("GIT_DIR", str(caller / ".git"))
+    monkeypatch.setenv("GIT_INDEX_FILE", str(caller_index))
+    monkeypatch.setenv("GIT_WORK_TREE", str(caller))
+
+    corpus = _read_tracked(_build_synthetic_repo(tmp_path / "repo"), max_bytes=20_000)
+
+    assert caller_index.read_bytes() == before
+    assert "kept.md" not in corpus.scanned
+    assert "plain.md" in corpus.scanned
 
 
 def test_every_tracked_path_is_scanned_or_skipped_by_name() -> None:
-    """The scan covers the whole tree; each skip is a binary suffix or a named large file."""
+    """The scan covers the whole tree; each skip is a binary file or a named large file."""
     corpus = _tracked_corpus()
     assert not corpus.unscannable, f"Tracked text files the guard cannot read: {corpus.unscannable}"
     assert corpus.large == SKIPPED_LARGE, (
@@ -456,6 +581,8 @@ def test_every_tracked_path_is_scanned_or_skipped_by_name() -> None:
     tracked = {path for path, _, _ in _index_entries(REPO_ROOT)}
     accounted = corpus.scanned | corpus.binary_suffix | corpus.large
     assert accounted == tracked, f"Unaccounted tracked paths: {sorted(tracked ^ accounted)}"
+    text_as_binary = _text_files_with_binary_suffix(REPO_ROOT)
+    assert not text_as_binary, f"Text files skipped for a binary suffix: {text_as_binary}"
 
 
 def test_allowlist_has_exact_four_provenance_records_with_reason_and_issue() -> None:
@@ -484,6 +611,24 @@ def test_synthetic_fixture_files_have_exact_two_test_files_with_reason() -> None
         families = {hit.family for hit in hits.get(rel_path, ())}
         assert TEMP_ROOT in families, f"Stale fixture exemption (no temp-root hits): {rel_path}"
         assert USER_HOME not in families, f"Fixture file contains user-home path: {rel_path}"
+
+
+def test_exempt_files_hold_exactly_their_recorded_hit_counts() -> None:
+    """Each version of an exempt file holds exactly its pinned hits per family (#1678).
+
+    A new local path added to an exempt file changes a count and fails here, so the
+    per-file exemptions cannot silently absorb new paths.
+    """
+    assert set(EXPECTED_EXEMPT_HIT_COUNTS) == set(ALLOWLIST) | set(SYNTHETIC_FIXTURE_FILES)
+    mismatches = _exempt_count_mismatches(_tracked_corpus().texts)
+    assert not mismatches, f"Exempt files whose hit counts changed: {mismatches}"
+    one_more = (
+        ("tests/test_three_test_stage.py", "/" + "var/folders/a/T/x\n/" + "private/tmp/y\n"),
+        ("tests/test_output_roots.py", ("/" + "private/tmp/a\n") * 3),
+    )
+    assert _exempt_count_mismatches(one_more) == {
+        "tests/test_three_test_stage.py": [{TEMP_ROOT: 2}],
+    }
 
 
 def test_exemptions_do_not_widen_to_unknown_temp_files_or_user_home_in_fixtures() -> None:
