@@ -435,3 +435,63 @@ def test_present_assessment_is_hash_checked_for_each_input_origin(
     (path.parent.parent / "assessment.tsv").write_text("changed bytes\n")
     with pytest.raises(ValueError, match=r"hash|SHA"):
         api.verify_integrated_provenance(path)
+
+
+def test_absent_input_origin_cannot_carry_a_hash_bound_path(
+    complete_record: tuple[Path, dict[str, Any]], api: ModuleType
+) -> None:
+    path, record = complete_record
+    record["assessment_status"]["calibration"]["source"].update(
+        input_origin="absent", supplied=False
+    )
+    path.write_text(json.dumps(record))
+    with pytest.raises(ValueError, match="Absent input origin has a present source"):
+        api.verify_integrated_provenance(path)
+
+
+@pytest.mark.parametrize("location", ["native", "assessment"])
+def test_unreadable_binding_cannot_bypass_a_recorded_hash(
+    complete_record: tuple[Path, dict[str, Any]], api: ModuleType, location: str
+) -> None:
+    path, record = complete_record
+    source = (
+        record["native_sources"]["arm1"]
+        if location == "native"
+        else record["assessment_status"]["calibration"]["source"]
+    )
+    source["binding"] = "unreadable"
+    path.write_text(json.dumps(record))
+    with pytest.raises(ValueError, match="Unreadable source has contradictory reference fields"):
+        api.verify_integrated_provenance(path)
+
+
+def test_unreadable_binding_is_reserved_for_assessment_sources(
+    complete_record: tuple[Path, dict[str, Any]], api: ModuleType
+) -> None:
+    path, record = complete_record
+    record["native_sources"]["arm1"].update(binding="unreadable", sha256=None)
+    path.write_text(json.dumps(record))
+    with pytest.raises(ValueError, match="Unreadable source has contradictory reference fields"):
+        api.verify_integrated_provenance(path)
+
+
+@pytest.mark.parametrize("locator", ["parent", "noncanonical", "symlink"])
+def test_unreadable_assessment_still_validates_its_locator(
+    complete_record: tuple[Path, dict[str, Any]], api: ModuleType, locator: str
+) -> None:
+    path, record = complete_record
+    source = record["assessment_status"]["calibration"]["source"]
+    if locator == "symlink":
+        root = path.parent.parent
+        outside = root.parent / "outside.tsv"
+        outside.write_text("not part of the bundle\n")
+        (root / "linked.tsv").symlink_to(outside)
+        source_path = "linked.tsv"
+        expected = "Source path escapes the declared provenance root"
+    else:
+        source_path = "../outside.tsv" if locator == "parent" else "./assessment.tsv"
+        expected = "Source path must be a canonical root-relative file path"
+    source.update(binding="unreadable", sha256=None, path=source_path)
+    path.write_text(json.dumps(record))
+    with pytest.raises(ValueError, match=expected):
+        api.verify_integrated_provenance(path)

@@ -14,7 +14,6 @@ No machine path is serialized to reconnect otherwise unrelated trees.
 from __future__ import annotations
 
 import os
-import pwd
 import re
 import tempfile
 from collections.abc import Iterable, Mapping
@@ -42,39 +41,67 @@ _ROOT_GUIDANCE = (
 
 
 def assert_portable_text(text: str) -> None:
-    """Refuse leaked machine prefixes; never silently redact source metadata."""
+    """Refuse machine prefixes without interpreting the reader's account name."""
     if _LOCAL_PATH.search(text) or _SLASHLESS_LOCAL_PATH.search(text):
         raise ValueError("Provenance contains a local path or local prefix. " + _ROOT_GUIDANCE)
-    folded = text.casefold()
-    if any(name in folded for name in _account_names()):
+
+
+def assert_portable_path_text(text: str) -> None:
+    """Writer-only account check on path strings, never on scientific metadata.
+
+    Whole non-alphanumeric-delimited tokens catch path segments and dash/underscore
+    scratch names. Substrings, the generic root login and names shorter than four
+    characters are not sufficiently identifying to reject a publication path.
+    """
+    assert_portable_text(text)
+    if any(
+        len(name) >= 4
+        and name != "root"
+        and re.search(r"(?<![a-z0-9])" + re.escape(name) + r"(?![a-z0-9])", text.casefold())
+        for name in _account_names()
+    ):
         raise ValueError("Provenance contains a local account name. " + _ROOT_GUIDANCE)
+
+
+def _home_path() -> Path:
+    try:
+        return Path.home()
+    except RuntimeError as exc:
+        raise ValueError(
+            "Cannot determine the home directory for provenance privacy checks"
+        ) from exc
+
+
+def _password_entry() -> tuple[str, str] | None:
+    """The password database is an additional authority only where available."""
+    try:
+        import pwd
+    except ImportError:
+        return None
+    try:
+        account = pwd.getpwuid(os.getuid())
+    except (KeyError, AttributeError):
+        return None
+    return account.pw_name, account.pw_dir
 
 
 def _account_names() -> set[str]:
     """Inspect every account authority, not just the first populated environment key."""
     names = {os.environ.get(key, "") for key in ("LOGNAME", "USER", "LNAME", "USERNAME")}
-    names.add(Path.home().name)
-    try:
-        account = pwd.getpwuid(os.getuid())
-    except KeyError:
-        # A container may have a numeric UID without a password-database entry.
-        pass
-    else:
-        names.update((account.pw_name, Path(account.pw_dir).name))
+    names.add(_home_path().name)
+    account = _password_entry()
+    if account is not None:
+        names.update((account[0], Path(account[1]).name))
     return {name.casefold() for name in names if name}
 
 
 def _private_roots() -> set[Path]:
     """Runtime home/temp boundaries and platform prefixes must stay above a bundle."""
-    roots = {Path.home(), Path(tempfile.gettempdir())}
+    roots = {_home_path(), Path(tempfile.gettempdir())}
     roots.update(Path(value) for key in ("TMPDIR", "TEMP", "TMP") if (value := os.getenv(key)))
-    try:
-        account = pwd.getpwuid(os.getuid())
-    except KeyError:
-        pass
-    else:
-        if account.pw_dir:
-            roots.add(Path(account.pw_dir))
+    account = _password_entry()
+    if account is not None and account[1]:
+        roots.add(Path(account[1]))
     anchor = Path(Path.cwd().anchor)
     roots.update(
         anchor.joinpath(*parts)
@@ -165,6 +192,8 @@ class PortablePaths:
         if root is not None:
             _require_root_directory(base)
         _validate_root(base, paths)
+        for path in paths:
+            assert_portable_path_text(path.relative_to(base).as_posix())
         return cls(record, base)
 
     @property
@@ -181,6 +210,7 @@ class PortablePaths:
         _validate_root(self.root, [resolved])
         value = resolved.relative_to(self.root).as_posix()
         _canonical_reference(value)
+        assert_portable_path_text(value)
         return value
 
 

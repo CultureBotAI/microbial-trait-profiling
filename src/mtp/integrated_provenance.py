@@ -19,6 +19,7 @@ from pathlib import Path, PureWindowsPath
 from mtp.provenance_paths import (
     assert_portable_text,
     resolve_provenance_root,
+    resolve_reference,
     verify_reference,
 )
 
@@ -117,6 +118,21 @@ def verify_integrated_provenance(
             raise ValueError(f"Recorded source reference lacks a path: {location}")
         path = value["path"]
         digest = value.get("sha256")
+        if value.get("binding") == "unreadable":
+            if (
+                not location.startswith("assessment_status.")
+                or not location.endswith(".source")
+                or not isinstance(path, str)
+                or digest is not None
+            ):
+                raise ValueError(
+                    f"Unreadable source has contradictory reference fields: {location}"
+                )
+            # Validate the locator even though there were no readable bytes to
+            # attest. It remains explicitly unverified, including after relocation.
+            resolve_reference(record_path, path, path_basis=basis, provenance_root=provenance_root)
+            skip(location, "unreadable")
+            return
         if path is None:
             binding = value.get("binding")
             if digest is not None or binding not in (None, "not_supplied", "missing"):

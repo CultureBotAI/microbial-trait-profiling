@@ -12,6 +12,7 @@ from typing import Any
 
 import pytest
 
+from mtp.paths import file_sha256
 from mtp.provenance_paths import assert_portable_text
 from test_ora_portable_provenance import assigned_source as assigned_source
 from test_ora_portable_provenance import attest_sources, legacy_manifest
@@ -242,3 +243,76 @@ def test_actual_cli_refuses_temp_boundary_but_accepts_deeper_source_root(tmp_pat
     assert account.casefold() not in text.casefold()
     assert str(source_root) not in text
     assert_portable_text(text)
+
+
+@pytest.mark.parametrize("account", ["root", "ci", "app"])
+def test_actual_cli_accepts_root_and_short_accounts_in_nonpath_fields(
+    tmp_path: Path, account: str
+) -> None:
+    """Both writers accept ordinary record text under container-style identities (#1773)."""
+    root = tmp_path / "bundle"
+    manifest = legacy_manifest(root)
+    original = json.loads(manifest.read_text())
+    original["pairs"][0]["label"] = account
+    manifest.write_text(json.dumps(original))
+    home = tmp_path / "runtime-home"
+    temporary = tmp_path / "runtime-temp"
+    home.mkdir()
+    temporary.mkdir()
+    env = {
+        **os.environ,
+        **dict.fromkeys(("USER", "LOGNAME", "LNAME", "USERNAME"), account),
+        **{key: str(temporary) for key in ("TMPDIR", "TEMP", "TMP")},
+        "HOME": str(home),
+        "PYTHONPATH": str(Path(__file__).resolve().parents[1] / "src"),
+        "PYTHONDONTWRITEBYTECODE": "1",
+    }
+    audit = root / "audit" / "report.json"
+    converted = root / "records" / "portable.json"
+    for output, options in (
+        (audit, []),
+        (converted, ["--write-portable-manifest", "--expected-audit", str(audit)]),
+    ):
+        result = subprocess.run(
+            [
+                sys.executable,
+                "-B",
+                str(_AUDIT.__file__),
+                "--manifest",
+                str(manifest),
+                "--output",
+                str(output),
+                *options,
+            ],
+            env=env,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 0, result.stderr
+        assert output.is_file()
+        assert output.stat().st_size > 0
+        text = output.read_text()
+        record = json.loads(text)
+        assert record["path_basis"] == {"kind": "root-relative-v1", "root": ".."}
+        assert record["pairs"][0]["label"] == account
+        assert str(root) not in text
+        assert_portable_text(text)
+    report = json.loads(audit.read_text())
+    assert report["passed"] is True
+    assert report["pairs"][0]["current"]["sha256"] == file_sha256(root / "inputs/current.tsv")
+    portable = json.loads(converted.read_text())
+    assert portable["converted_from"] == {
+        "manifest_sha256": file_sha256(manifest),
+        "audit_sha256": file_sha256(audit),
+    }
+    for role, filename in (
+        ("historical", "historical.tsv"),
+        ("current", "current.tsv"),
+        ("profiles", "profiles.tsv"),
+        ("taxa_matrix", "matrix.tsv"),
+    ):
+        assert portable["pairs"][0][role] == {
+            "path": "inputs/" + filename,
+            "sha256": file_sha256(root / "inputs" / filename),
+        }

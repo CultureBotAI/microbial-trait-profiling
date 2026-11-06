@@ -333,7 +333,7 @@ def test_explicit_source_root_can_keep_report_outside_source_tree(
     assert str(root) not in text
 
 
-def test_checkout_sources_and_external_output_infer_a_safe_source_root(
+def test_external_output_requires_an_explicit_safe_source_root(
     portable_case: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     root, _ = portable_case
@@ -344,10 +344,12 @@ def test_checkout_sources_and_external_output_infer_a_safe_source_root(
     record_path = output / "integrated_evidence_provenance.json"
     with pytest.raises(ValueError, match="below a home or temporary root"):
         provenance_paths.PortablePaths.create(record_path, [root / "pooled.tsv"])
-    try:
-        result = integrated_evidence.main(_arguments(root, output))
-    except ValueError as error:
-        raise AssertionError("An external report must infer its safe source tree") from error
+    with pytest.raises(ValueError, match="Choose --provenance-root") as error:
+        integrated_evidence.main(_arguments(root, output))
+    assert str(root) not in str(error.value)
+    assert str(output) not in str(error.value)
+    assert not output.exists()
+    result = integrated_evidence.main([*_arguments(root, output), "--provenance-root", str(root)])
     assert result == 0
     text = record_path.read_text()
     record = json.loads(text)
@@ -364,6 +366,55 @@ def test_checkout_sources_and_external_output_infer_a_safe_source_root(
     (root / "review.tsv").write_text("changed reviewed bytes\n")
     with pytest.raises(ValueError, match=r"hash|SHA"):
         verify_integrated_provenance(record_path, provenance_root=root)
+
+
+@pytest.mark.parametrize("account", ["root", "ci", "app", "sample", "variance"])
+def test_real_producer_accepts_account_names_in_nonpath_record_text(
+    portable_case: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch, account: str
+) -> None:
+    root, _ = portable_case
+    monkeypatch.setattr(provenance_paths, "_account_names", lambda: {account})
+    output = root / "ordinary-record"
+    try:
+        result = integrated_evidence.main(_arguments(root, output))
+    except ValueError as error:
+        raise AssertionError("An account name in ordinary record prose must be accepted") from error
+    assert result == 0
+    record_path = output / "integrated_evidence_provenance.json"
+    assert verify_integrated_provenance(record_path)["verified_reference_count"] == 5
+
+
+def test_verification_does_not_apply_the_readers_account_name(
+    portable_case: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _, output = portable_case
+    record_path = output / "integrated_evidence_provenance.json"
+    original = record_path.read_bytes()
+    # The writer's review.tsv is unrelated to a reader whose login is "review".
+    monkeypatch.setattr(provenance_paths, "_account_names", lambda: {"review"})
+    try:
+        result = verify_integrated_provenance(record_path)
+    except ValueError as error:
+        raise AssertionError(
+            "Reader account names must not reject portable source records"
+        ) from error
+    assert result["verified_reference_count"] == 5
+    assert record_path.read_bytes() == original
+
+
+@pytest.mark.parametrize("locator", ["review", "protocol"])
+def test_producer_relative_locators_reject_writer_account_tokens(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, locator: str
+) -> None:
+    monkeypatch.setattr(provenance_paths, "_account_names", lambda: {"fixtureperson"})
+    value = "methods/pytest-of-FIXTUREPERSON/assessment.tsv"
+    source: dict[str, object] = (
+        {"review": {"path": value}} if locator == "review" else {"protocol": value}
+    )
+    status = integrated_evidence.AssessmentStatus("#1773", {}, "pending", source=source)
+    paths = provenance_paths.PortablePaths.create(tmp_path / "record.json", [])
+    with pytest.raises(ValueError, match="local account name"):
+        integrated_evidence._portable_status(status, paths)
 
 
 def test_inference_still_refuses_sources_split_across_a_private_boundary(

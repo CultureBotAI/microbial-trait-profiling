@@ -136,3 +136,86 @@ def test_unreadable_checkout_default_retains_its_source_bytes(
     candidate.write_bytes(b"changed source bytes\n")
     with pytest.raises(ValueError, match=r"hash|SHA"):
         verify_integrated_provenance(record_path)
+
+
+@pytest.mark.parametrize("supplied", [False, True])
+@pytest.mark.parametrize("failure", ["directory", "permission"])
+def test_unreadable_assessment_locator_is_preserved_without_a_digest(
+    portable_case: tuple[Path, Path],
+    monkeypatch: pytest.MonkeyPatch,
+    supplied: bool,
+    failure: str,
+) -> None:
+    root, _ = portable_case
+    candidate = root / "unreadable-assessment"
+    if failure == "directory":
+        candidate.mkdir()
+    else:
+        candidate.write_text("not accessible\n")
+        original_read = Path.read_text
+        original_hash = integrated_evidence._sha256
+
+        def denied_read(self: Path, encoding: str | None = None, errors: str | None = None) -> str:
+            if self == candidate:
+                raise PermissionError("Synthetic read refusal")
+            return original_read(self, encoding=encoding, errors=errors)
+
+        def denied_hash(path: Path) -> str:
+            if path == candidate:
+                raise PermissionError("Synthetic hash refusal")
+            return original_hash(path)
+
+        monkeypatch.setattr(Path, "read_text", denied_read)
+        monkeypatch.setattr(integrated_evidence, "_sha256", denied_hash)
+    output = root / f"unreadable-{failure}-{supplied}"
+    arguments = _arguments(root, output)
+    index = arguments.index("--sensitivity-status")
+    if supplied:
+        arguments[index + 1] = str(candidate)
+    else:
+        del arguments[index : index + 2]
+        monkeypatch.setattr(integrated_evidence, "DEFAULT_SENSITIVITY_STATUS", candidate)
+    try:
+        result = integrated_evidence.main(arguments)
+    except OSError as error:
+        raise AssertionError("Unreadable assessments must remain nonfatal") from error
+    assert result == 0
+    record_path = output / "integrated_evidence_provenance.json"
+    record = json.loads(record_path.read_text())
+    assessment = record["assessment_status"]["sensitivity_status"]
+    assert assessment["status_for_a_procedure_it_is_silent_about"] == "unreadable #183"
+    assert assessment["source"] == {
+        "path": candidate.name,
+        "sha256": None,
+        "binding": "unreadable",
+        "supplied": supplied,
+        "input_origin": "supplied" if supplied else "checkout_default",
+    }
+    verification = verify_integrated_provenance(record_path)
+    assert verification["verified_reference_count"] == 5
+    skipped = verification["skipped_references"]
+    assert isinstance(skipped, list)
+    assert {
+        "location": "assessment_status.sensitivity_status.source",
+        "reason": "unreadable",
+    } in skipped
+
+
+@pytest.mark.parametrize("key", sorted(integrated_evidence.ASSESSMENTS))
+def test_each_assessment_retains_an_unreadable_directory_without_hashing_it(
+    tmp_path: Path, key: str
+) -> None:
+    candidate = tmp_path / "unreadable-directory"
+    candidate.mkdir()
+    try:
+        status = integrated_evidence.read_status(candidate, key, "#1775", supplied=True)
+    except OSError as error:
+        raise AssertionError("Every assessment must retain an unreadable verdict") from error
+    assert status.default == "unreadable #1775"
+    assert status.source == {
+        "path": str(candidate.resolve()),
+        "sha256": None,
+        "binding": "unreadable",
+        "supplied": True,
+        "input_origin": "supplied",
+    }

@@ -32,7 +32,6 @@ import argparse
 import csv
 import json
 import math
-import os
 import re
 import statistics
 from collections.abc import Iterable, Mapping, Sequence
@@ -54,7 +53,7 @@ from mtp.guild_maps import (
     compute_correlation,
 )
 from mtp.paths import DERIVED_DATA_DIR, REPO_ROOT, file_sha256
-from mtp.provenance_paths import PortablePaths, assert_portable_text
+from mtp.provenance_paths import PortablePaths, assert_portable_path_text, assert_portable_text
 from mtp.table1_trait_maps import SHIFT_FAMILY_ID, compute_direction_shifts
 from mtp.trait_composition import ANALYSIS_VERSION as LOG_RATIO_VERSION
 from mtp.trait_composition import compute_log_ratio_shifts
@@ -1657,7 +1656,12 @@ def read_status(
     default is still consumed and hash-bound; a missing default is not evidence
     supplied by the caller.
     """
-    status = _read_status(path, key, issue, expected_input_sha256=expected_input_sha256)
+    try:
+        status = _read_status(path, key, issue, expected_input_sha256=expected_input_sha256)
+    except OSError:
+        # An influence assessment also hashes its source inside _read_status.
+        # Filesystem failures remain an unreadable verdict for every assessment.
+        status = AssessmentStatus(issue=issue, verdicts={}, default=f"unreadable {issue}")
     if supplied is None:
         return status
     if not isinstance(supplied, bool) or (supplied and path is None):
@@ -1665,9 +1669,13 @@ def read_status(
     origin = "absent" if path is None else "supplied" if supplied else "checkout_default"
     source = dict(status.source)
     if not source and path is not None:
-        # An unreadable verdict still consumed this file. Keep that byte identity
-        # when adding selection metadata, as the influence reader already does.
-        source = {"path": str(path.resolve()), "sha256": _sha256(path)}
+        source = {"path": str(path.resolve())}
+        try:
+            source["sha256"] = _sha256(path)
+        except OSError:
+            # A directory or permission-denied input supplied no readable bytes.
+            # Retain its locator and selection, without claiming a byte binding.
+            source.update(sha256=None, binding="unreadable")
     if source.get("path") is None and not supplied:
         source["binding"] = "not_supplied"
     source.update(supplied=supplied, input_origin=origin)
@@ -1895,26 +1903,6 @@ def _native_source_record(path: Path, *, supplied: bool, paths: PortablePaths) -
     }
 
 
-def _provenance_paths(record: Path, sources: Sequence[Path], *, root: Path | None) -> PortablePaths:
-    """Keep a safe record-relative tree, or bind an external report to its source tree.
-
-    A report outside the source tree must not pull the common root up through
-    private directories. The source-only candidate receives every normal root
-    and reference check and declares supplied-root-v1; its verifier needs that
-    source root. An explicit root is never replaced, and genuinely split source
-    trees still fail closed.
-    """
-    if root is not None:
-        return PortablePaths.create(record, sources, root=root)
-    try:
-        return PortablePaths.create(record, sources)
-    except ValueError:
-        if not sources:
-            raise
-    source_root = Path(os.path.commonpath([source.resolve().parent for source in sources]))
-    return PortablePaths.create(record, sources, root=source_root)
-
-
 def _metadata_paths(value: object) -> Iterable[Path]:
     """Find explicit absolute locators, including JSON-encoded assessment detail."""
     if isinstance(value, Mapping):
@@ -1937,7 +1925,14 @@ def _metadata_paths(value: object) -> Iterable[Path]:
 def _portable_metadata(value: object, paths: PortablePaths) -> object:
     """Re-encode locators, preserving source hashes and substantive metadata."""
     if isinstance(value, Mapping):
-        return {key: _portable_metadata(item, paths) for key, item in value.items()}
+        converted = {key: _portable_metadata(item, paths) for key, item in value.items()}
+        # Upstream relative locators bypass encode because their producer scope
+        # must be retained. Apply the writer privacy check to those path fields.
+        for key in ("path", "producer_relative_path", "protocol"):
+            locator = converted.get(key)
+            if isinstance(locator, str):
+                assert_portable_path_text(locator)
+        return converted
     if isinstance(value, (list, tuple)):
         return [_portable_metadata(item, paths) for item in value]
     if isinstance(value, str):
@@ -2916,7 +2911,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
     if bundle is not None:
         source_paths.append(bundle.path("ora_profiles"))
-    portable = _provenance_paths(provenance_path, source_paths, root=args.provenance_root)
+    portable = PortablePaths.create(provenance_path, source_paths, root=args.provenance_root)
     statuses = {key: _portable_status(status, portable) for key, status in statuses.items()}
     records = apply_statuses(records, statuses)
     summary = summarize(records)

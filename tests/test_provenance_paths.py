@@ -84,8 +84,12 @@ def test_declared_root_rejects_symlink_escape(tmp_path: Path, api: ModuleType) -
         api.resolve_reference(
             root / "record.json", "alias.tsv", path_basis={"kind": "root-relative-v1", "root": "."}
         )
-    with pytest.raises(ValueError, match=r"root|outside"):
+    with pytest.raises(
+        ValueError, match=r"^Source is outside the declared provenance root\."
+    ) as error:
         api.PortablePaths.create(root / "record.json", [outside], root=root)
+    assert str(root) not in str(error.value)
+    assert str(outside) not in str(error.value)
 
 
 @pytest.mark.parametrize("absolute", [False, True])
@@ -139,6 +143,8 @@ def test_filesystem_root_is_never_an_explicit_publication_root(api: ModuleType) 
     "components",
     [
         ("Users", "example-user", "data.tsv"),
+        ("uSeRs", "example-user", "data.tsv"),
+        ("HOME", "example-user", "data.tsv"),
         ("home", "example-user", "data.tsv"),
         ("private", "tmp", "run", "data.tsv"),
     ],
