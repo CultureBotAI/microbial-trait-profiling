@@ -2146,14 +2146,18 @@ def plot_combined_direction_sankey(
 
 
 def _extract_bh_family_size(raw_size: object) -> int | None:
-    """Return a positive integer BH family size when recorded, else None."""
+    """Return a positive whole-number BH family size when recorded, else None.
+
+    A blank, zero, negative or fractional size is treated as not recorded rather than
+    rounded into a plausible count (#1743).
+    """
     if isinstance(raw_size, pd.Series) or raw_size is None or pd.isna(raw_size):
         return None
     try:
         numeric = float(str(raw_size))
     except (TypeError, ValueError):
         return None
-    if not math.isfinite(numeric) or int(numeric) <= 0:
+    if not math.isfinite(numeric) or numeric <= 0 or not numeric.is_integer():
         return None
     return int(numeric)
 
@@ -2163,10 +2167,7 @@ def _format_paired_q_value_family(raw_size: object) -> str:
     size = _extract_bh_family_size(raw_size)
     if size is None:
         return "family size not recorded"
-    return (
-        f"pooled pair-level BH over {size} traits "
-        "in the pooled pair-level BH family (stratum-selected)"
-    )
+    return f"pooled pair-level BH over {size} support/variance-selected traits"
 
 
 def build_trait_summary(

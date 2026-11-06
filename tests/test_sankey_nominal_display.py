@@ -57,7 +57,7 @@ SUMMARY_NEW_COLUMNS = [
     "paired_q_value_family",
 ]
 EXPECTED_FAMILY_340 = (
-    "pooled pair-level BH over 340 traits in the pooled pair-level BH family (stratum-selected)"
+    "pooled pair-level BH over 340 support/variance-selected traits"
 )
 MIXED_P = (0.0, 1.0, math.nan, math.inf, -math.inf, 0.125)
 
@@ -154,7 +154,7 @@ def test_selection_uses_explicit_correction_family_size_when_present() -> None:
 
     assert result["bh_family_size"].tolist() == [312] * len(result)
     assert result["paired_q_value_family"].tolist() == [
-        "pooled pair-level BH over 312 traits in the pooled pair-level BH family (stratum-selected)"
+        "pooled pair-level BH over 312 support/variance-selected traits"
     ] * len(result)
 
 
@@ -239,6 +239,36 @@ def test_build_trait_summary_appends_family_columns_additively() -> None:
     assert missing_summary["paired_q_value_family"].tolist() == ["family size not recorded"] * len(
         sankeys.SHARED_TRAITS
     )
+
+    # A blank recorded size is not filled from the row count (#1743).
+    blank_summary = sankeys.build_trait_summary(
+        metadata, raw_counts, zscores, supplied.assign(correction_family_size="")
+    )
+    assert blank_summary["bh_family_size"].isna().all()
+    assert set(blank_summary["paired_q_value_family"]) == {"family size not recorded"}
+
+
+@pytest.mark.parametrize("raw", [0, "0", -3, 340.7, "1.5", "abc", float("inf")])
+def test_family_size_parser_rejects_sizes_that_are_not_positive_whole_numbers(raw: object) -> None:
+    """Zero, negative, fractional or non-numeric sizes read as not recorded (#1743)."""
+    assert sankeys._extract_bh_family_size(raw) is None
+    assert sankeys._format_paired_q_value_family(raw) == "family size not recorded"
+
+
+@pytest.mark.parametrize(("raw", "size"), [(340, 340), ("340", 340), (340.0, 340), ("340.0", 340)])
+def test_family_size_parser_accepts_whole_sizes(raw: object, size: int) -> None:
+    assert sankeys._extract_bh_family_size(raw) == size
+
+
+def test_sankey_methods_paragraph_names_the_selection_q_family() -> None:
+    """The six-trait selection's q names its family (#1744)."""
+    methods = (Path(__file__).resolve().parents[1] / "trait-visualization/figure_methods.md").read_text(
+        encoding="utf-8"
+    )
+    assert (
+        "using `q_value <= 0.001`, where `q_value` is the pooled pair-level BH q over the "
+        "support/variance-selected traits of that table (its `correction_family_size`)"
+    ) in " ".join(methods.split())
 
 
 def test_selection_count_follows_exported_traits(monkeypatch: pytest.MonkeyPatch) -> None:

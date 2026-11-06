@@ -1485,7 +1485,9 @@ cell tables, and output manifests.
 
 The six traits were selected from the pooled paired-profile contrast statistics
 in `trait-profile-investigation/trait_profile_paired_contrast_trait_stats.tsv`
-using `q_value <= 0.001`. The selected traits are facultatively aerobic
+using `q_value <= 0.001`, where `q_value` is the pooled pair-level BH q over the
+support/variance-selected traits of that table (its `correction_family_size`).
+The selected traits are facultatively aerobic
 (`METPO:1000608`), cellulose catabolic process
 (`METPO:2000103|GO:0030245`), coccus shaped (`METPO:1000668`), sphere shaped
 (`METPO:1000683`), arsenate reduction

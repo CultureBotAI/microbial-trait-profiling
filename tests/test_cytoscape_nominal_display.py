@@ -304,7 +304,12 @@ def test_generated_manifest_and_pages_append_finite_counts(
     )
     with tracked_manifest_path.open("r", encoding="utf-8") as handle:
         tracked_header = handle.readline().rstrip("\n").split("\t")
-    assert tracked_header == LEGACY_MANIFEST_COLUMNS
+    # The committed manifest predates the two count columns; after regeneration it carries
+    # them at the end. Either is valid; any other order or set is not (#1741).
+    assert tracked_header in (
+        LEGACY_MANIFEST_COLUMNS,
+        [*LEGACY_MANIFEST_COLUMNS, "finite_test_count", "displayed_finite_test_count"],
+    )
     assert manifest["tested_cell_count"].tolist() == [9] * len(manifest)
     assert manifest["finite_test_count"].tolist() == [7] * len(manifest)
     assert manifest["displayed_finite_test_count"].tolist() == [3] * len(manifest)
