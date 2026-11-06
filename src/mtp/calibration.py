@@ -78,9 +78,14 @@ Q_THRESHOLD = 0.05
 P_VALUE_DIAGNOSTICS_ROLE = "calibration_diagnostic"
 P_VALUE_DIAGNOSTICS_CORRECTION = "none (nominal)"
 P_VALUE_DIAGNOSTICS_NOTE = (
-    f"rejections_p, rejection_rate_p, null_tests_rejected_p (at nominal p <= {ALPHA}), "
-    "smallest_observed_p, attainable_p_below_alpha, and attainable_p_above_alpha "
-    "are uncorrected nominal p-value calibration diagnostics, not inferential results"
+    "On per-test rows, rejections_p, rejection_rate_p, rejection_rate_p_ci_low, "
+    "rejection_rate_p_ci_high, smallest_observed_p, attainable_p_below_alpha, "
+    "attainable_p_above_alpha, exact_size_at_median_scored, and replicate-level "
+    f"null_tests_rejected_p (at nominal p <= {ALPHA}) are uncorrected nominal "
+    "p-value calibration diagnostics, not inferential results; on FAMILY rows, "
+    "rejections_p, rejection_rate_p, rejection_rate_p_ci_low, and "
+    f"rejection_rate_p_ci_high count replicates with any q <= {Q_THRESHOLD} "
+    "(a corrected family-wise rate, matching rejections_q)"
 )
 #: One-sided 95% bound: the criteria ask whether a rate is demonstrably below a
 #: tolerance, not whether its two-sided interval happens to cover the nominal level.

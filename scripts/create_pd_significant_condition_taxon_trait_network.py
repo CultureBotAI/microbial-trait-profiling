@@ -1592,6 +1592,8 @@ def write_methods_summary(
     tested_trait_count = int(
         (trait_tests["passes_min_paired_studies"] & trait_tests["p_value"].notna()).sum()
     )
+    total_finite_taxon_count = int(taxon_tests["p_value"].notna().sum())
+    total_finite_trait_count = int(trait_tests["p_value"].notna().sum())
     pd_trait_test_count = int(
         (trait_tests["condition"].eq(PD_CONDITION) & trait_tests["p_value"].notna()).sum()
     )
@@ -1646,10 +1648,12 @@ def write_methods_summary(
         ),
         (
             "- Reported `p_value` columns and Panel C `nominal p` labels are nominal "
-            f"(uncorrected) across the `{tested_taxon_count}` tested "
-            f"(`{eligible_taxon_test_count}` BH-family) condition-taxon tests and "
-            f"`{tested_trait_count}` tested (`{eligible_trait_test_count}` BH-family) "
-            "condition-trait tests; "
+            f"(uncorrected) across `{total_finite_taxon_count}` finite nominal p-values "
+            f"in the condition-taxon table (`{tested_taxon_count}` support-eligible with "
+            f"finite nominal p in the `{eligible_taxon_test_count}`-row BH family) and "
+            f"`{total_finite_trait_count}` finite nominal p-values in the condition-trait "
+            f"table (`{tested_trait_count}` support-eligible with finite nominal p in the "
+            f"`{eligible_trait_test_count}`-row BH family); "
             "`q_value` is Benjamini-Hochberg adjusted globally within the complete "
             "condition-taxon family and within the complete condition-trait family "
             "(holding untestable support rows at `p = 1.0`)."
@@ -1657,8 +1661,8 @@ def write_methods_summary(
         (
             "- In the edge export, `displayed_p_value_count` counts finite p-values in "
             "exported edges separately by inferential edge class; `n_tests` is the "
-            "number of finite p-values (tests run) in the source table, including rows "
-            "outside support eligibility that are not in the BH family, "
+            "number of finite nominal p-values across every row of the source table, "
+            "including rows outside support eligibility that are not in the BH family, "
             "and `bh_family_size` preserves its support-eligible padded BH family. "
             "Annotation edges have no inferential counts."
         ),

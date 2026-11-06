@@ -561,16 +561,19 @@ def test_composition_null_pvalues_are_marked_as_uncorrected_calibration_diagnost
     tmp_path: Path,
     synthetic_paired_profiles: pd.DataFrame,
 ) -> None:
-    """#1410, #1485, #1488, #1584: composition artifacts carry composition-specific nominal note."""
+    """#1410, #1485, #1488, #1584, #1734: composition artifacts carry bound nominal note."""
+    import re
+
     import mtp.calibration as cal
     import mtp.composition_calibration.composition as comp
     from mtp.composition_calibration.composition import save_composition_calibration_artifacts
 
-    traits = ["trait_A", "trait_B", "trait_C"]
+    profiles = synthetic_paired_profiles.assign(**{"METPO:1000608": [9, 1, 9, 1, 6, 1, 4, 1, 5, 5]})
+    traits = ["trait_A", "trait_B", "trait_C", "METPO:1000608"]
     summary_dict, summary_df, replicates_df, null_pvals_df, table1_df = run_composition_calibration(
-        profiles_df=synthetic_paired_profiles,
+        profiles_df=profiles,
         trait_columns=traits,
-        replicates=3,
+        replicates=10,
         seed=182,
         stream=STREAM,
     )
@@ -595,6 +598,8 @@ def test_composition_null_pvalues_are_marked_as_uncorrected_calibration_diagnost
         "are uncorrected nominal p-value calibration diagnostics, not inferential results"
     )
     assert str(comp.P_VALUE_DIAGNOSTICS_NOTE) == expected_note
+    assert comp.NOMINAL_ALPHAS == (0.05, 0.01, 0.001)
+    assert pytest.approx(0.05) == comp.NULL_TYPE_I_ALPHA
     assert "ALPHA" not in comp.P_VALUE_DIAGNOSTICS_NOTE
     for sign_test_only_token in (
         "rejections_p",
@@ -608,6 +613,32 @@ def test_composition_null_pvalues_are_marked_as_uncorrected_calibration_diagnost
     assert summary_dict["p_value_diagnostics_role"] == cal.P_VALUE_DIAGNOSTICS_ROLE
     assert summary_dict["p_value_diagnostics_correction"] == cal.P_VALUE_DIAGNOSTICS_CORRECTION
     assert summary_dict["p_value_diagnostics"] == expected_note
+
+    note_match = re.search(
+        r"null_type_i_alpha_05 \(at nominal p <= ([0-9.]+)\), and type_i_error_metrics "
+        r"\(at nominal p <= ([0-9., ]+)\)",
+        str(summary_dict["p_value_diagnostics"]),
+    )
+    assert note_match is not None
+    note_null_alpha = float(note_match.group(1))
+    note_metric_alphas = tuple(float(tok.strip()) for tok in note_match.group(2).split(","))
+    metric_alphas = tuple(
+        float(entry["nominal_alpha"]) for entry in summary_dict["type_i_error_metrics"].values()
+    )
+    assert metric_alphas == note_metric_alphas == comp.NOMINAL_ALPHAS
+    assert note_null_alpha == pytest.approx(comp.NULL_TYPE_I_ALPHA)
+
+    anaerobe_null_ps = null_pvals_df.loc[
+        null_pvals_df["trait"] == "METPO:1000608", "null_p_value"
+    ].to_numpy(dtype=float)
+    assert np.any((anaerobe_null_ps > 0.01) & (anaerobe_null_ps <= 0.05))
+    anaerobe_null_type_i = float(
+        table1_df.loc[table1_df["trait_id"] == "METPO:1000608", "null_type_i_alpha_05"].iloc[0]
+    )
+    assert anaerobe_null_type_i == pytest.approx(
+        float(np.mean(anaerobe_null_ps <= note_null_alpha))
+    )
+    assert anaerobe_null_type_i != pytest.approx(float(np.mean(anaerobe_null_ps <= 0.01)))
 
     saved = save_composition_calibration_artifacts(
         summary_dict, summary_df, replicates_df, null_pvals_df, table1_df, tmp_path

@@ -443,3 +443,32 @@ def test_decile_percentage_heading_aligns_with_values(
     lines = txt.read_text(encoding="utf-8").splitlines()
     index = next(i for i, line in enumerate(lines) if line.startswith("Decile"))
     assert lines[index].index("% ") == lines[index + 1].index("100.0")
+
+
+def test_empty_strata_results_uses_explicit_report_labels(tmp_path: Path) -> None:
+    report_dir = tmp_path / "reports"
+    summary, text = generate_sensitivity_reports({}, report_dir)
+    summary_text = summary.read_text(encoding="utf-8")
+    report_text = text.read_text(encoding="utf-8")
+    assert "# Evaluated-Strata: \n" in summary_text
+    assert (
+        "Hits (statistic not declared): traits with any test passing the analyzer's thresholds."
+        in report_text
+    )
+    assert (
+        "Support-state names retain 'significant'; interpret each stratum using "
+        "its hit statistic and FDR scope above." in report_text
+    )
+    density = pd.read_csv(report_dir / "annotation_density_deciles.tsv", sep="\t")
+    assert density.empty
+    assert list(density.columns) == [
+        "decile",
+        "min_trait_total",
+        "max_trait_total",
+        "total_traits",
+        "significant_traits",
+        "pct_significant",
+        "threshold_statistic",
+        "hit_statistic",
+        "fdr_scope",
+    ]
