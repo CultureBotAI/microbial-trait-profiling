@@ -284,7 +284,7 @@ def _condition_profiles_for_nominal_test() -> pd.DataFrame:
         ("Ulcerative colitis", 5, 0.95, -0.25),
         ("Exposure", 5, 1.6, -0.5),
         ("Blood measurement", 5, 1.5, -0.45),
-        ("Rare condition", 4, 0.9, -0.2),
+        ("Rare condition", 4, 1.35, -0.38),
     ]
     for cond_idx, (condition, pair_count, inc_base, dec_base) in enumerate(specs):
         for pair_idx in range(pair_count):
@@ -311,7 +311,7 @@ def _condition_profiles_for_nominal_test() -> pd.DataFrame:
 def test_condition_summary_and_labels_report_nominal_paired_t_test_counts(
     module: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """#1414, #1458: excluded labels are filtered before paired t-tests and top-k/N is stated."""
+    """#1414, #1458, #1614: excluded labels are filtered and shown/tested counts are stated."""
     metadata = _condition_profiles_for_nominal_test()
     raw_summary = module.summarize_group(metadata, "condition", min_profiles=5)
     assert list(raw_summary.columns[-2:]) == ["p_value_type", "n_tests"]
@@ -351,20 +351,33 @@ def test_condition_summary_and_labels_report_nominal_paired_t_test_counts(
         module.paired_smd_label(without_n_tests)
 
     top2 = module.select_top_conditions(raw_summary, limit=2)
-    assert len(top2) == 2
+    assert list(top2["condition"]) == ["Parkinson's disease", "Rare condition"]
     assert set(top2["n_shown"]) == {2}
+    assert set(top2["n_shown_tested"]) == {1}
     assert set(top2["n_tests"]) == {3}
     top_pd_row = next(
         row for row in top2.itertuples(index=False) if row.condition == "Parkinson's disease"
     )
+    top_rare_row = next(
+        row for row in top2.itertuples(index=False) if row.condition == "Rare condition"
+    )
     top_pd_label = module.paired_smd_label(top_pd_row)
-    assert "(top 2 of 3 condition tests, by effect size)" in top_pd_label
+    assert (
+        "(one of 3 condition tests; shown: top 2 by guild-z difference, 1 of them tested)"
+        in top_pd_label
+    )
+    assert module.paired_smd_label(top_rare_row) == "paired d=NA, p=NA (not tested), n=4"
 
     monkeypatch.setattr(module, "OUTPUT_DIR", tmp_path)
     empty_occ = pd.DataFrame(columns=["inc_dec", "profile_id", "study_id", "exclusion_reason"])
+    crohn_dict = next(
+        row._asdict()
+        for row in filtered.itertuples(index=False)
+        if row.condition == "Crohn's disease"
+    )
     extra_rows = []
     for extra_idx in range(6):
-        base = filtered.iloc[0].to_dict()
+        base = dict(crohn_dict)
         base["condition"] = f"Extra disease {extra_idx}"
         extra_rows.append(base)
     nine_cond_summary = pd.concat([raw_summary, pd.DataFrame(extra_rows)], ignore_index=True)
@@ -474,5 +487,6 @@ def test_condition_summary_and_labels_report_nominal_paired_t_test_counts(
     assert (
         "Reported paired p values are uncorrected two-sided paired t-test nominal p-values "
         "across 9 tested conditions after excluding broad study-design labels in "
-        "`condition_guild_summary.tsv` (top 8 of 9, by effect size, shown above)."
+        "`condition_guild_summary.tsv` (shown above: top 8 eligible conditions by guild-z "
+        "difference, 7 of them tested)."
     ) in readme

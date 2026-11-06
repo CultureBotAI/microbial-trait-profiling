@@ -18,6 +18,7 @@ from mtp.deck_visualizations import (
     lead_consistency_status,
     load_profile_data,
     main,
+    wilcoxon_signed_rank_diff,
 )
 
 __all__ = [
@@ -34,6 +35,7 @@ __all__ = [
     "lead_consistency_status",
     "load_profile_data",
     "main",
+    "wilcoxon_signed_rank_diff",
 ]
 
 sys.modules[__name__] = _target

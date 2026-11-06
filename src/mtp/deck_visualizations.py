@@ -15,6 +15,7 @@ import argparse
 import io
 import math
 import sys
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
@@ -622,33 +623,60 @@ def generate_figure2_calibrated_ora_infographic(
     return output_path
 
 
+def wilcoxon_signed_rank_diff(shifts: Sequence[float] | pd.Series) -> float:
+    """Return Wilcoxon signed-rank sum difference (W+ minus W-) on non-zero shifts (#1615)."""
+    arr = np.asarray(shifts, dtype=float)
+    if arr.size == 0 or not np.all(np.isfinite(arr)):
+        return math.nan
+    nonzero = arr[arr != 0]
+    if nonzero.size == 0:
+        return 0.0
+    ranks = stats.rankdata(np.abs(nonzero))
+    return float(ranks[nonzero > 0].sum() - ranks[nonzero < 0].sum())
+
+
 def lead_consistency_status(
     target_dir: str,
-    mean_shift: float,
+    wilcoxon_shift: float | Sequence[float] | pd.Series,
     w_pval: float,
     frac: float,
     pval: float,
 ) -> str:
-    """Classify Figure 3 lead consistency from observed shift direction and nominal p-values."""
+    """Classify Figure 3 lead consistency from Wilcoxon and sign tests (#1413, #1615, #1616).
+
+    The Wilcoxon direction comes from its signed-rank sum difference (W+ minus W-).
+    When the two tests are significant (nominal p < 0.05) in opposite directions,
+    "Discordant (nominal p < 0.05)" takes precedence over "Concordant (nominal p < 0.05)"
+    because significant opposite-direction evidence refutes multi-scale concordance.
+    When neither test is significant and the two tests point in opposite directions,
+    the status is "Mixed".
+    """
     if target_dir not in ("Decreased", "Increased"):
         raise ValueError(f"Unexpected target_dir: {target_dir!r}")
     if not math.isfinite(pval) and not math.isfinite(w_pval):
         return "Not tested"
+    w_dir = (
+        float(wilcoxon_shift)
+        if isinstance(wilcoxon_shift, (int, float, np.floating))
+        else wilcoxon_signed_rank_diff(wilcoxon_shift)
+    )
     expected_sign = -1.0 if target_dir == "Decreased" else 1.0
-    w_tested = math.isfinite(w_pval) and math.isfinite(mean_shift)
+    w_tested = math.isfinite(w_pval) and math.isfinite(w_dir)
     b_tested = math.isfinite(pval) and math.isfinite(frac)
-    w_aligned = w_tested and mean_shift * expected_sign > 0
-    w_opposite = w_tested and mean_shift * expected_sign < 0
+    w_aligned = w_tested and w_dir * expected_sign > 0
+    w_opposite = w_tested and w_dir * expected_sign < 0
     b_aligned = b_tested and frac > 0.5
     b_opposite = b_tested and frac < 0.5
     if (w_opposite and w_pval < 0.05) or (b_opposite and pval < 0.05):
         return "Discordant (nominal p < 0.05)"
+    if (w_aligned and w_pval < 0.05) or (b_aligned and pval < 0.05):
+        return "Concordant (nominal p < 0.05)"
+    if (w_aligned and b_opposite) or (w_opposite and b_aligned):
+        return "Mixed"
     if w_opposite or b_opposite:
         return "Opposite Direction"
     if not w_aligned and not b_aligned:
         return "No Net Shift"
-    if (w_aligned and w_pval < 0.05) or (b_aligned and pval < 0.05):
-        return "Concordant (nominal p < 0.05)"
     return "Directionally Aligned"
 
 
@@ -757,7 +785,8 @@ def generate_figure3_lead_findings_ora_evidence(
             else f"0/0 studies ({p_str})"
         )
 
-        status = lead_consistency_status(target_dir, mean_shift, w_pval, frac, pval)
+        w_shift = wilcoxon_signed_rank_diff(s_series)
+        status = lead_consistency_status(target_dir, w_shift, w_pval, frac, pval)
         binom_cell = (
             f"{success}/{non_ties} non-tied ({frac * 100:.1f}%)<br>({p_str})"
             if non_ties > 0

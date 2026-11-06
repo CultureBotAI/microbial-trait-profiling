@@ -478,6 +478,11 @@ def select_top_conditions(condition_summary: pd.DataFrame, limit: int) -> pd.Dat
         )
     top_conditions = top_conditions.copy()
     top_conditions["n_shown"] = len(top_conditions)
+    top_conditions["n_shown_tested"] = (
+        int(top_conditions["paired_t_test_p_value"].notna().sum())
+        if "paired_t_test_p_value" in top_conditions.columns
+        else 0
+    )
     return top_conditions
 
 
@@ -491,9 +496,11 @@ def paired_smd_label(row: Any) -> str:
         n_tests = int(row.n_tests)
         n_shown = getattr(row, "n_shown", None)
         if n_shown is not None and not pd.isna(n_shown):
+            n_shown_tested = int(row.n_shown_tested)
             p_text = (
                 f"nominal p={p_value:.3g} "
-                f"(top {int(n_shown)} of {n_tests} condition tests, by effect size)"
+                f"(one of {n_tests} condition tests; shown: top {int(n_shown)} by guild-z "
+                f"difference, {n_shown_tested} of them tested)"
             )
         else:
             p_text = (
@@ -1791,6 +1798,11 @@ def write_summary_report(
         else 0
     )
     n_shown_conditions = len(top_conditions)
+    n_shown_tested_conditions = (
+        int(top_conditions["paired_t_test_p_value"].notna().sum())
+        if "paired_t_test_p_value" in top_conditions.columns
+        else 0
+    )
     lines.extend(
         [
             "",
@@ -1819,8 +1831,9 @@ def write_summary_report(
             "",
             "Reported paired p values are uncorrected two-sided paired t-test nominal p-values "
             f"across {n_tested_conditions} tested conditions after excluding broad study-design "
-            f"labels in `condition_guild_summary.tsv` (top {n_shown_conditions} of "
-            f"{n_tested_conditions}, by effect size, shown above). "
+            f"labels in `condition_guild_summary.tsv` (shown above: top {n_shown_conditions} "
+            f"eligible conditions by guild-z difference, {n_shown_tested_conditions} of them "
+            "tested). "
             "Paired d and nominal paired p are blank for conditions with fewer than "
             f"{MIN_PAIRED_SMD_PROFILE_PAIRS} matched increased/decreased profile pairs, or with "
             "zero variance among the paired differences.",
