@@ -480,7 +480,10 @@ def read_manifest(
     provenance_root: Path | None = None,
 ) -> tuple[list[dict[str, str]], str, dict[str, dict[str, str]]]:
     """Resolve old paths or verify versioned source references from one buffer."""
-    payload = manifest.read_bytes()
+    try:
+        payload = manifest.read_bytes()
+    except OSError as exc:
+        raise ValueError("Inputs manifest is missing or cannot be read") from exc
     raw = json.loads(payload)
     if not isinstance(raw, dict) or set(raw) not in (
         {"pairs"},
@@ -523,9 +526,14 @@ def read_manifest(
                 reference = pair[key]
                 if not isinstance(reference, dict):
                     raise ValueError(f"Portable {key} must provide path and sha256")
-                path = verify_reference(
-                    manifest, reference, path_basis=basis, provenance_root=provenance_root
-                )
+                try:
+                    path = verify_reference(
+                        manifest, reference, path_basis=basis, provenance_root=provenance_root
+                    )
+                except ValueError as exc:
+                    message = f"Pair {pair['label']} source {key}: {exc}"
+                    assert_portable_text(message)
+                    raise ValueError(message) from exc
                 fingerprints[key] = reference["sha256"]
             else:
                 value = pair[key]
@@ -538,11 +546,60 @@ def read_manifest(
         resolved.append(entry)
         if portable:
             expected_hashes[pair["label"]] = fingerprints
+    require_source_presence(resolved)
     return resolved, hashlib.sha256(payload).hexdigest(), expected_hashes
 
 
 def source_paths(pairs: list[dict[str, str]]) -> list[Path]:
     return [Path(pair[key]) for pair in pairs for key in PAIR_FIELDS - {"label"}]
+
+
+def require_source_presence(pairs: list[dict[str, str]]) -> None:
+    """Count missing file references before legacy source roots are considered."""
+    missing = []
+    total = 0
+    for pair in pairs:
+        for role in sorted(PAIR_FIELDS - {"label"}):
+            total += 1
+            try:
+                present = Path(pair[role]).is_file()
+            except OSError:
+                present = False
+            if not present:
+                missing.append(f"{pair['label']}:{role}")
+    if missing:
+        message = (
+            f"{len(missing)} of {total} referenced source files are missing or not files; "
+            "pair:role = "
+            + ", ".join(missing)
+            + ". Recover and verify the original bytes before auditing or converting."
+        )
+        assert_portable_text(message)
+        raise ValueError(message)
+
+
+def portable_context(
+    manifest: Path,
+    output: Path,
+    pairs: list[dict[str, str]],
+    *,
+    root: Path | None,
+) -> PortablePaths:
+    """Name an out-of-root input by role without disclosing its machine location."""
+    if root is not None:
+        # Validate directory existence and root safety before role containment.
+        validated = PortablePaths.create(output, [], root=root)
+        if not manifest.resolve().is_relative_to(validated.root):
+            raise ValueError(
+                "Input manifest is outside the declared provenance root (--provenance-root)"
+            )
+        for pair in pairs:
+            for role in sorted(PAIR_FIELDS - {"label"}):
+                if not Path(pair[role]).is_relative_to(validated.root):
+                    message = f"Pair {pair['label']} source {role} is outside --provenance-root"
+                    assert_portable_text(message)
+                    raise ValueError(message)
+    return PortablePaths.create(output, [manifest, *source_paths(pairs)], root=root)
 
 
 def protect_output(manifest: Path, output: Path, pairs: list[dict[str, str]]) -> None:
@@ -625,7 +682,7 @@ def write_portable_manifest(
         expected_hashes = attested
     elif not expected_hashes:
         raise ValueError("Legacy conversion requires --expected-audit from the original refresh")
-    context = PortablePaths.create(output, [manifest, *source_paths(pairs)], root=root)
+    context = portable_context(manifest, output, pairs, root=root)
     portable_pairs: list[dict[str, object]] = []
     for pair in pairs:
         fingerprints = {key: file_sha256(Path(pair[key])) for key in PAIR_FIELDS - {"label"}}
@@ -662,7 +719,7 @@ def audit_manifest(
     pairs, manifest_sha256, expected_hashes = read_manifest(manifest, provenance_root=root)
     protect_output(manifest, output, pairs)
     paths = [manifest.resolve(), *source_paths(pairs)]
-    context = PortablePaths.create(output, paths, root=root)
+    context = portable_context(manifest, output, pairs, root=root)
     results = []
     for pair in pairs:
         try:

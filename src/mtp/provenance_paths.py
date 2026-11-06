@@ -14,7 +14,9 @@ No machine path is serialized to reconnect otherwise unrelated trees.
 from __future__ import annotations
 
 import os
+import pwd
 import re
+import tempfile
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath, PureWindowsPath
@@ -25,11 +27,13 @@ _KIND = "root-relative-v1"
 _SUPPLIED_KIND = "supplied-root-v1"
 _LOCAL_PATH = re.compile(
     r"/(?:Users|home)/[A-Za-z0-9._-]+|[A-Za-z]:[\\/]+Users[\\/]+"
-    r"|(?:/private)?/var/(?:folders)(?=/)|/private/(?:tmp)(?=/)"
+    r"|(?:/private)?/var/(?:folders)(?=/)|/private/(?:tmp)(?=/)",
+    re.IGNORECASE,
 )
 _SLASHLESS_LOCAL_PATH = re.compile(
     r"(?<![\w])(?:(?:Users|home)/[A-Za-z0-9._-]+"
-    r"|(?:private/)?var/folders(?=/)|private/tmp(?=/))"
+    r"|(?:private/)?var/folders(?=/)|private/tmp(?=/))",
+    re.IGNORECASE,
 )
 _ROOT_GUIDANCE = (
     "Choose --provenance-root below the home or temporary-directory prefix; "
@@ -41,17 +45,79 @@ def assert_portable_text(text: str) -> None:
     """Refuse leaked machine prefixes; never silently redact source metadata."""
     if _LOCAL_PATH.search(text) or _SLASHLESS_LOCAL_PATH.search(text):
         raise ValueError("Provenance contains a local path or local prefix. " + _ROOT_GUIDANCE)
+    folded = text.casefold()
+    if any(name in folded for name in _account_names()):
+        raise ValueError("Provenance contains a local account name. " + _ROOT_GUIDANCE)
+
+
+def _account_names() -> set[str]:
+    """Inspect every account authority, not just the first populated environment key."""
+    names = {os.environ.get(key, "") for key in ("LOGNAME", "USER", "LNAME", "USERNAME")}
+    names.add(Path.home().name)
+    try:
+        account = pwd.getpwuid(os.getuid())
+    except KeyError:
+        # A container may have a numeric UID without a password-database entry.
+        pass
+    else:
+        names.update((account.pw_name, Path(account.pw_dir).name))
+    return {name.casefold() for name in names if name}
+
+
+def _private_roots() -> set[Path]:
+    """Runtime home/temp boundaries and platform prefixes must stay above a bundle."""
+    roots = {Path.home(), Path(tempfile.gettempdir())}
+    roots.update(Path(value) for key in ("TMPDIR", "TEMP", "TMP") if (value := os.getenv(key)))
+    try:
+        account = pwd.getpwuid(os.getuid())
+    except KeyError:
+        pass
+    else:
+        if account.pw_dir:
+            roots.add(Path(account.pw_dir))
+    anchor = Path(Path.cwd().anchor)
+    roots.update(
+        anchor.joinpath(*parts)
+        for parts in (
+            ("tmp",),
+            ("private", "tmp"),
+            ("var", "tmp"),
+            ("private", "var", "tmp"),
+            ("var", "folders"),
+            ("private", "var", "folders"),
+        )
+    )
+    return {root.resolve() for root in roots}
+
+
+def _require_root_directory(root: Path) -> None:
+    if not root.exists():
+        raise ValueError("--provenance-root does not exist; choose an existing source directory")
+    if not root.is_dir():
+        raise ValueError("--provenance-root is not a directory")
 
 
 def _validate_root(root: Path, sources: Iterable[Path]) -> None:
     """Never expose a home/temp prefix by removing only its leading slash."""
     if root == root.parent:
         raise ValueError("The filesystem root is not a provenance root. " + _ROOT_GUIDANCE)
+    # A case alias can name the same directory on macOS. Be conservative on
+    # case-sensitive filesystems too rather than make publication depend on it.
+    folded_root = PurePosixPath(root.as_posix().casefold())
+    if any(
+        PurePosixPath(boundary.as_posix().casefold()).is_relative_to(folded_root)
+        for boundary in _private_roots()
+    ):
+        raise ValueError(
+            "Provenance root must be below a home or temporary root. " + _ROOT_GUIDANCE
+        )
+    if any(match.end() == len(root.as_posix()) for match in _LOCAL_PATH.finditer(root.as_posix())):
+        raise ValueError("Provenance root equals a private home/temp prefix. " + _ROOT_GUIDANCE)
     for source in sources:
         if not source.is_relative_to(root):
             raise ValueError("Source is outside the declared provenance root. " + _ROOT_GUIDANCE)
         if any(
-            match.end() > len(root.as_posix()) for match in _LOCAL_PATH.finditer(source.as_posix())
+            match.end() >= len(root.as_posix()) for match in _LOCAL_PATH.finditer(source.as_posix())
         ):
             raise ValueError(
                 "Provenance root leaves a local prefix in a reference. " + _ROOT_GUIDANCE
@@ -96,9 +162,9 @@ class PortablePaths:
             if root is not None
             else Path(os.path.commonpath([record.parent, *(path.parent for path in paths)]))
         )
+        if root is not None:
+            _require_root_directory(base)
         _validate_root(base, paths)
-        if root is not None and not base.is_dir():
-            raise ValueError("--provenance-root must name an existing directory")
         return cls(record, base)
 
     @property
@@ -136,9 +202,8 @@ def resolve_provenance_root(
         if provenance_root is None:
             raise ValueError("This record requires --provenance-root to resolve its sources")
         base = provenance_root.resolve()
+        _require_root_directory(base)
         _validate_root(base, [])
-        if not base.is_dir():
-            raise ValueError("--provenance-root must name an existing directory")
         return base
     root = path_basis.get("root")
     if (

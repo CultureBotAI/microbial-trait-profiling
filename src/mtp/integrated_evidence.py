@@ -32,6 +32,7 @@ import argparse
 import csv
 import json
 import math
+import os
 import re
 import statistics
 from collections.abc import Iterable, Mapping, Sequence
@@ -1647,6 +1648,38 @@ def read_status(
     issue: str,
     *,
     expected_input_sha256: Mapping[str, str] | None = None,
+    supplied: bool | None = None,
+) -> AssessmentStatus:
+    """Read an assessment and retain how the caller selected its input.
+
+    ``main`` captures ``supplied`` before inserting checkout defaults. Direct
+    callers that omit it retain the historical source shape. A present checkout
+    default is still consumed and hash-bound; a missing default is not evidence
+    supplied by the caller.
+    """
+    status = _read_status(path, key, issue, expected_input_sha256=expected_input_sha256)
+    if supplied is None:
+        return status
+    if not isinstance(supplied, bool) or (supplied and path is None):
+        raise ValueError("Assessment input selection has an invalid supplied flag")
+    origin = "absent" if path is None else "supplied" if supplied else "checkout_default"
+    source = dict(status.source)
+    if not source and path is not None:
+        # An unreadable verdict still consumed this file. Keep that byte identity
+        # when adding selection metadata, as the influence reader already does.
+        source = {"path": str(path.resolve()), "sha256": _sha256(path)}
+    if source.get("path") is None and not supplied:
+        source["binding"] = "not_supplied"
+    source.update(supplied=supplied, input_origin=origin)
+    return replace(status, source=source)
+
+
+def _read_status(
+    path: Path | None,
+    key: str,
+    issue: str,
+    *,
+    expected_input_sha256: Mapping[str, str] | None = None,
 ) -> AssessmentStatus:
     """Read one assessment's state from its own output, or say it is pending.
 
@@ -1860,6 +1893,26 @@ def _native_source_record(path: Path, *, supplied: bool, paths: PortablePaths) -
         "supplied": supplied,
         "binding": "present" if present else "missing" if supplied else "not_supplied",
     }
+
+
+def _provenance_paths(record: Path, sources: Sequence[Path], *, root: Path | None) -> PortablePaths:
+    """Keep a safe record-relative tree, or bind an external report to its source tree.
+
+    A report outside the source tree must not pull the common root up through
+    private directories. The source-only candidate receives every normal root
+    and reference check and declares supplied-root-v1; its verifier needs that
+    source root. An explicit root is never replaced, and genuinely split source
+    trees still fail closed.
+    """
+    if root is not None:
+        return PortablePaths.create(record, sources, root=root)
+    try:
+        return PortablePaths.create(record, sources)
+    except ValueError:
+        if not sources:
+            raise
+    source_root = Path(os.path.commonpath([source.resolve().parent for source in sources]))
+    return PortablePaths.create(record, sources, root=source_root)
 
 
 def _metadata_paths(value: object) -> Iterable[Path]:
@@ -2587,6 +2640,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     parser.add_argument("--code-commit", help="Source revision, supplied by the Justfile recipe")
     args = parser.parse_args(argv)
+    assessment_supplied = {
+        name: getattr(args, name) is not None
+        for name in (
+            "calibration_status",
+            "sensitivity_status",
+            "orientation_provenance",
+            "coverage_status",
+            "influence_status",
+        )
+    }
 
     bundle = bind_count_arguments(args)
     if bundle is not None:
@@ -2774,24 +2837,28 @@ def main(argv: Sequence[str] | None = None) -> int:
             "calibration_status",
             "#182",
             expected_input_sha256=assessment_inputs,
+            supplied=assessment_supplied["calibration_status"],
         ),
         "sensitivity_status": read_status(
             args.sensitivity_status,
             "sensitivity_status",
             "#183",
             expected_input_sha256=assessment_inputs,
+            supplied=assessment_supplied["sensitivity_status"],
         ),
         "coverage_status": read_status(
             args.coverage_status,
             "coverage_status",
             "#184",
             expected_input_sha256=assessment_inputs,
+            supplied=assessment_supplied["coverage_status"],
         ),
         "orientation_status": read_status(
             args.orientation_provenance,
             "orientation_status",
             "#188",
             expected_input_sha256=assessment_inputs,
+            supplied=assessment_supplied["orientation_provenance"],
         ),
         "taxon_influence_status": read_status(
             args.influence_status,
@@ -2801,6 +2868,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "study_trait_profiles_wide.tsv": _sha256(args.profile_input),
                 "experiments.tsv": _sha256(args.experiments_input),
             },
+            supplied=assessment_supplied["influence_status"],
         ),
     }
     if args.require_complete_sources:
@@ -2848,7 +2916,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
     if bundle is not None:
         source_paths.append(bundle.path("ora_profiles"))
-    portable = PortablePaths.create(provenance_path, source_paths, root=args.provenance_root)
+    portable = _provenance_paths(provenance_path, source_paths, root=args.provenance_root)
     statuses = {key: _portable_status(status, portable) for key, status in statuses.items()}
     records = apply_statuses(records, statuses)
     summary = summarize(records)

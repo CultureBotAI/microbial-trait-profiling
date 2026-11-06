@@ -330,3 +330,108 @@ def test_external_root_requires_and_accepts_explicit_cli_binding(
         api.verify_integrated_provenance(external)
     assert api.main([str(external), "--provenance-root", str(root)]) == 0
     assert json.loads(capsys.readouterr().out)["verified_reference_count"] == 6
+
+
+def test_declared_record_scans_non_reference_metadata_for_local_paths(
+    complete_record: tuple[Path, dict[str, Any]], api: ModuleType
+) -> None:
+    """N25: valid file references cannot mask a leak in an unrelated scalar."""
+    path, record = complete_record
+    record["producer_note"] = str(Path("/") / "home" / "fixture-person" / "work")
+    path.write_text(json.dumps(record))
+    with pytest.raises(ValueError, match="Provenance contains"):
+        api.verify_integrated_provenance(path)
+
+
+def test_otherwise_valid_record_requires_supported_version(
+    complete_record: tuple[Path, dict[str, Any]], api: ModuleType
+) -> None:
+    """N26: every reference remains valid, leaving only the version check."""
+    path, record = complete_record
+    record["version"] = "integrated-evidence-v999"
+    path.write_text(json.dumps(record))
+    with pytest.raises(ValueError, match="Unsupported integrated provenance record version"):
+        api.verify_integrated_provenance(path)
+
+
+def test_legacy_missing_binding_requires_true_supplied_flag(
+    complete_record: tuple[Path, dict[str, Any]], api: ModuleType
+) -> None:
+    """N28: use a legacy availability shape, with no newer origin cross-check."""
+    path, record = complete_record
+    del record["native_sources"]["missing"]["supplied"]
+    path.write_text(json.dumps(record))
+    with pytest.raises(ValueError, match="Missing source does not declare supplied=true"):
+        api.verify_integrated_provenance(path)
+
+
+def test_declared_basis_rejects_unscoped_protocol_in_nested_metadata(
+    complete_record: tuple[Path, dict[str, Any]], api: ModuleType
+) -> None:
+    """N29: nested metadata bypasses the direct assessment-field shape check."""
+    path, record = complete_record
+    record["extra_metadata"] = json.dumps({"upstream": {"protocol": "methods/protocol.json"}})
+    path.write_text(json.dumps(record))
+    with pytest.raises(ValueError, match="Protocol locator lacks an explicit reference scope"):
+        api.verify_integrated_provenance(path)
+
+
+def test_missing_checkout_default_is_distinguished_from_absence(
+    complete_record: tuple[Path, dict[str, Any]], api: ModuleType
+) -> None:
+    path, record = complete_record
+    record["assessment_status"]["defaulted"] = {
+        "source": {
+            "path": None,
+            "binding": "not_supplied",
+            "supplied": False,
+            "input_origin": "checkout_default",
+        }
+    }
+    path.write_text(json.dumps(record))
+    result = api.verify_integrated_provenance(path)
+    assert {
+        "location": "assessment_status.defaulted.source",
+        "reason": "defaulted_but_missing",
+    } in result["skipped_references"]
+
+
+@pytest.mark.parametrize(
+    ("origin", "supplied"),
+    [
+        (None, False),
+        ("unknown", False),
+        ("supplied", False),
+        ("absent", True),
+        ("supplied", 1),
+        ("checkout_default", 0),
+        ("absent", "False"),
+        ("absent", None),
+    ],
+)
+def test_invalid_or_contradictory_input_origin_is_refused(
+    complete_record: tuple[Path, dict[str, Any]], origin: object, supplied: object, api: ModuleType
+) -> None:
+    path, record = complete_record
+    record["assessment_status"]["unsupplied"]["source"].update(
+        input_origin=origin, supplied=supplied
+    )
+    path.write_text(json.dumps(record))
+    with pytest.raises(ValueError, match=r"origin|selection"):
+        api.verify_integrated_provenance(path)
+
+
+@pytest.mark.parametrize("origin", ["supplied", "checkout_default"])
+def test_present_assessment_is_hash_checked_for_each_input_origin(
+    complete_record: tuple[Path, dict[str, Any]], origin: str, api: ModuleType
+) -> None:
+    path, record = complete_record
+    record["assessment_status"]["calibration"]["source"].update(
+        input_origin=origin, supplied=origin == "supplied"
+    )
+    path.write_text(json.dumps(record))
+    result = api.verify_integrated_provenance(path)
+    assert "assessment_status.calibration.source" in result["verified_references"]
+    (path.parent.parent / "assessment.tsv").write_text("changed bytes\n")
+    with pytest.raises(ValueError, match=r"hash|SHA"):
+        api.verify_integrated_provenance(path)

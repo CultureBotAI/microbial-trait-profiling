@@ -11,7 +11,8 @@ import pytest
 
 import test_integrated_evidence as fixtures
 import test_integrated_native_sources as native_fixtures
-from mtp import integrated_evidence
+from mtp import integrated_evidence, provenance_paths
+from mtp.integrated_provenance import verify_integrated_provenance
 from mtp.paths import file_sha256
 from test_no_absolute_local_paths import ABSOLUTE_LOCAL_PATH_PATTERN
 
@@ -330,3 +331,66 @@ def test_explicit_source_root_can_keep_report_outside_source_tree(
     assert record["path_basis"] == {"kind": "supplied-root-v1"}
     assert record["native_sources"]["arm1_pooled_stats"]["path"] == "pooled.tsv"
     assert str(root) not in text
+
+
+def test_checkout_sources_and_external_output_infer_a_safe_source_root(
+    portable_case: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root, _ = portable_case
+    output = root.parent / "temporary-output" / "report"
+    # Model separate checkout and temp trees without creating machine-root files.
+    # Their common ancestor is a private boundary and cannot be published.
+    monkeypatch.setattr(provenance_paths, "_private_roots", lambda: {root.parent.resolve()})
+    record_path = output / "integrated_evidence_provenance.json"
+    with pytest.raises(ValueError, match="below a home or temporary root"):
+        provenance_paths.PortablePaths.create(record_path, [root / "pooled.tsv"])
+    try:
+        result = integrated_evidence.main(_arguments(root, output))
+    except ValueError as error:
+        raise AssertionError("An external report must infer its safe source tree") from error
+    assert result == 0
+    text = record_path.read_text()
+    record = json.loads(text)
+    assert record["path_basis"] == {"kind": "supplied-root-v1"}
+    assert record["native_sources"]["arm1_pooled_stats"]["path"] == "pooled.tsv"
+    assert str(root) not in text
+    assert str(output) not in text
+    with pytest.raises(ValueError, match="requires --provenance-root"):
+        verify_integrated_provenance(record_path)
+    assert (
+        verify_integrated_provenance(record_path, provenance_root=root)["verified_reference_count"]
+        == 5
+    )
+    (root / "review.tsv").write_text("changed reviewed bytes\n")
+    with pytest.raises(ValueError, match=r"hash|SHA"):
+        verify_integrated_provenance(record_path, provenance_root=root)
+
+
+def test_inference_still_refuses_sources_split_across_a_private_boundary(
+    portable_case: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root, _ = portable_case
+    external = root.parent / "other-source-tree"
+    external.mkdir()
+    review = external / "review.tsv"
+    review.write_text("other reviewed bytes\n")
+    orientation = root / "orientation.json"
+    payload = json.loads(orientation.read_text())
+    payload["review"].update(path=str(review), sha256=file_sha256(review))
+    orientation.write_text(json.dumps(payload))
+    monkeypatch.setattr(provenance_paths, "_private_roots", lambda: {root.parent.resolve()})
+    output = root / "refused-cross-tree"
+    with pytest.raises(ValueError, match="below a home or temporary root"):
+        integrated_evidence.main(_arguments(root, output))
+    assert not output.exists()
+
+
+def test_invalid_supplied_root_is_not_replaced_by_inference(
+    portable_case: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root, _ = portable_case
+    monkeypatch.setattr(provenance_paths, "_private_roots", lambda: {root.parent.resolve()})
+    output = root / "refused-explicit-root"
+    with pytest.raises(ValueError, match="below a home or temporary root"):
+        integrated_evidence.main([*_arguments(root, output), "--provenance-root", str(root.parent)])
+    assert not output.exists()

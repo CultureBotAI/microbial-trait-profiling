@@ -38,6 +38,28 @@ def _relative_locator(value: object) -> bool:
     )
 
 
+def _input_origin(value: Mapping[str, object], location: str) -> str | None:
+    """Validate selection metadata when present; old records have no such field."""
+    if "input_origin" not in value:
+        return None
+    origin = value["input_origin"]
+    supplied = value.get("supplied")
+    if (
+        not isinstance(origin, str)
+        or origin not in {"supplied", "checkout_default", "absent"}
+        or not isinstance(supplied, bool)
+        or supplied != (origin == "supplied")
+    ):
+        raise ValueError(f"Invalid assessment input origin or supplied flag: {location}")
+    if origin == "absent" and value.get("path") is not None:
+        raise ValueError(f"Absent input origin has a present source: {location}")
+    if value.get("path") is None:
+        expected_binding = "missing" if supplied else "not_supplied"
+        if value.get("binding") != expected_binding:
+            raise ValueError(f"Input origin contradicts unavailable source binding: {location}")
+    return origin
+
+
 def verify_integrated_provenance(
     record_path: Path,
     *,
@@ -82,6 +104,7 @@ def verify_integrated_provenance(
         skipped.append({"location": location, "reason": reason})
 
     def reference(value: Mapping[str, object], location: str) -> None:
+        origin = _input_origin(value, location)
         if "producer_relative_path" in value:
             if "path" in value or not _relative_locator(value["producer_relative_path"]):
                 raise ValueError(f"Ambiguous producer-scoped reference: {location}")
@@ -107,7 +130,10 @@ def verify_integrated_provenance(
             elif binding == "not_supplied":
                 if value.get("supplied") is True:
                     raise ValueError(f"Source is both supplied and not supplied: {location}")
-                skip(location, "not_supplied")
+                skip(
+                    location,
+                    "defaulted_but_missing" if origin == "checkout_default" else "not_supplied",
+                )
             else:
                 # Older native-source records omitted a presence declaration.
                 skip(location, "unavailable_at_recording")

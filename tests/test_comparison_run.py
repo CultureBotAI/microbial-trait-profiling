@@ -625,7 +625,12 @@ def test_every_evidence_input_is_the_file_its_arm_step_recorded(stage: dict[str,
             == Path(expected[option]).resolve()
         )
     # Nothing produces the #184 coverage status, so it is recorded as not supplied.
-    assert statuses["coverage_status"]["source"] == {"path": None, "binding": "not_supplied"}
+    assert statuses["coverage_status"]["source"] == {
+        "path": None,
+        "binding": "not_supplied",
+        "input_origin": "absent",
+        "supplied": False,
+    }
 
 
 def test_the_ledger_lists_the_studies_integrated_evidence_kept(stage: dict[str, Path]) -> None:

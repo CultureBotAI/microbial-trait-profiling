@@ -76,6 +76,10 @@ def test_integrated_core_binds_outputs_and_does_not_read_checkout_assessments(
     assert all(
         not item["verdicts_by_procedure"] for item in provenance["assessment_status"].values()
     )
+    for item in provenance["assessment_status"].values():
+        assert item["source"].get("input_origin") == "absent"
+        assert item["source"].get("supplied") is False
+        assert item["source"]["binding"] == "not_supplied"
     assert all(source["sha256"] is None for source in provenance["native_sources"].values())
     provenance_path = output / "integrated_evidence_provenance.json"
     assert provenance["path_basis"]["kind"] == "root-relative-v1"
