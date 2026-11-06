@@ -7,7 +7,9 @@ from __future__ import annotations
 
 import hashlib
 import importlib
+import inspect
 import json
+import math
 import re
 import shutil
 import xml.etree.ElementTree as ET
@@ -20,6 +22,7 @@ import matplotlib
 import pandas as pd
 import pytest
 from matplotlib.backends.backend_pdf import PdfPages
+from matplotlib.colors import to_rgba
 from matplotlib.figure import Figure
 from matplotlib.text import Text
 from PIL import Image, ImageChops
@@ -310,6 +313,15 @@ HISTORICAL_SVG_STEMS = (
 )
 
 
+@pytest.fixture(scope="module", autouse=True)
+def retirement_import_origin() -> None:
+    from mtp.cellulose_decr import tufte_plates
+
+    assert Path(tufte_plates.__file__).resolve() == (
+        Path(__file__).resolve().parents[1] / "src/mtp/cellulose_decr/tufte_plates.py"
+    )
+
+
 @dataclass(frozen=True)
 class RetirementSave:
     kind: Literal["standalone", "packet", "packet_figure"]
@@ -334,7 +346,27 @@ def _retirement_artist(figure: Figure) -> Text:
     banner = banners[0]
     assert banner.get_text().strip(), "Banner empty before a real save"
     assert banner.get_visible(), "Banner hidden before a real save"
+    foreground = to_rgba(banner.get_color(), alpha=banner.get_alpha())
+    assert foreground[3] > 0, "Banner has no opaque paint before a real save"
+    assert foreground[:3] != figure.get_facecolor()[:3], "Banner paint matches its canvas"
     return banner
+
+
+def _assert_retirement_save_crop(kwargs: dict[str, Any]) -> None:
+    """Pin effective Matplotlib defaults and explicit kwargs before a real export."""
+    bbox = kwargs.get("bbox_inches")
+    if bbox is None:
+        bbox = matplotlib.rcParams["savefig.bbox"]
+    if bbox is not None:
+        assert isinstance(bbox, str), "Historical export uses an unverified explicit crop"
+        assert bbox == "tight", "Historical export must preserve the canvas or tight bounds"
+    pad = kwargs.get("pad_inches")
+    if pad is None:
+        pad = matplotlib.rcParams["savefig.pad_inches"]
+    assert isinstance(pad, (int, float)), "Historical export padding must be numeric"
+    assert not isinstance(pad, bool)
+    assert math.isfinite(pad), "Historical export padding must be finite"
+    assert pad >= 0, "Negative export padding can crop away the retirement banner"
 
 
 def _retirement_save(
@@ -382,6 +414,7 @@ def retirement_export(tmp_path_factory: pytest.TempPathFactory) -> RetirementExp
         *args: Any,
         **kwargs: Any,
     ) -> None:
+        _assert_retirement_save_crop(kwargs)
         if isinstance(destination, PdfPages):
             saves.append(_retirement_save(figure, "packet_figure", "packet page", "pdf"))
             figure_savefig(figure, destination, *args, **kwargs)
@@ -412,6 +445,7 @@ def retirement_export(tmp_path_factory: pytest.TempPathFactory) -> RetirementExp
             figure.set_dpi(original_dpi)
 
     def checked_packet_savefig(packet: PdfPages, figure: Figure, **kwargs: Any) -> None:
+        _assert_retirement_save_crop(kwargs)
         before = pagecount(packet)
         page = before + 1
         saves.append(_retirement_save(figure, "packet", f"packet page {page}", "pdf"))
@@ -546,21 +580,62 @@ def test_written_png_pixels_contain_the_retirement_band(
 
 
 def _written_css_properties(html_text: str, selectors: set[str]) -> dict[str, str]:
-    """Apply source-order declarations for the deck's flat, equally specific classes."""
+    """Resolve known flat class rules by importance, class specificity and source order."""
     css = "\n".join(re.findall(r"<style[^>]*>(.*?)</style>", html_text, re.DOTALL))
     properties: dict[str, str] = {}
-    for selector, body in re.findall(r"([^{}]+)\{([^{}]*)\}", css):
-        if selector.strip() not in selectors:
+    priorities: dict[str, tuple[bool, int, int]] = {}
+    order = 0
+    for selector_list, body in re.findall(r"([^{}]+)\{([^{}]*)\}", css):
+        matching = [
+            selector.strip()
+            for selector in selector_list.split(",")
+            if selector.strip() in selectors
+        ]
+        if not matching:
             continue
+        specificity = max(selector.count(".") for selector in matching)
         for declaration in body.split(";"):
             name, separator, value = declaration.partition(":")
             if not separator:
                 continue
-            name, value = name.strip(), value.strip()
-            properties[name] = value
+            name, value = name.strip().lower(), value.strip()
+            important = value.lower().endswith("!important")
+            if important:
+                value = value[: -len("!important")].rstrip()
+            order += 1
+            priority = (important, specificity, order)
+            expanded = {name: value}
             if name == "padding":
-                properties["padding-top"] = value.split()[0]
+                expanded["padding-top"] = value.split()[0]
+            if name == "background":
+                expanded["background-color"] = value
+            for property_name, property_value in expanded.items():
+                if property_name not in priorities or priority >= priorities[property_name]:
+                    properties[property_name] = property_value
+                    priorities[property_name] = priority
     return properties
+
+
+def _assert_html_banner_style(html_text: str) -> None:
+    banner = _written_css_properties(
+        html_text,
+        {".retirement-banner", ".slide .retirement-banner", ".slide > .retirement-banner"},
+    )
+    assert not ({"visibility", "display", "opacity"} & banner.keys()), (
+        "Retirement banner CSS must not set visibility, display or opacity"
+    )
+    foreground = to_rgba(banner["color"])
+    background = to_rgba(banner["background-color"])
+    assert foreground[3] > 0, "HTML retirement text has no opaque paint"
+    assert background[3] > 0, "HTML retirement band has no opaque background"
+    assert foreground[:3] != background[:3], "HTML retirement paint matches its background"
+
+
+def test_html_banner_style_cannot_hide_warning() -> None:
+    """Check producer CSS directly, without rendering the full 23-file historical export."""
+    from mtp.cellulose_decr import tufte_plates
+
+    _assert_html_banner_style(tufte_plates.render_slide_deck_html())
 
 
 def _css_pixels(value: str) -> float:
@@ -570,11 +645,36 @@ def _css_pixels(value: str) -> float:
 
 def test_written_html_banners_keep_original_slide_content_clear(generated_tufte_dir: Path) -> None:
     html_text = (generated_tufte_dir / "cellulose_decr_slide_deck.html").read_text()
+    _assert_html_banner_style(html_text)
     sections = re.findall(r"<section\b.*?</section>", html_text, re.DOTALL)
     assert len(sections) == 16
     for number, section in enumerate(sections, start=1):
         banners = re.findall(r'<div class="retirement-banner">(.*?)</div>', section)
-        assert banners == [RETIREMENT_BANNER], f"Written slide {number} lost its banner"
+        references = [
+            route
+            for route in re.findall(r'<img\b[^>]*\bsrc="([^"]+)"', section)
+            if route.startswith("figures_tufte/")
+        ]
+        expected_references = (
+            [f"figures_tufte/{HISTORICAL_PLATE_STEMS[number - 2]}.svg"] if 2 <= number <= 7 else []
+        )
+        assert references == expected_references, (
+            f"Written slide {number}: historical image changed"
+        )
+        assert banners == ([] if expected_references else [RETIREMENT_BANNER]), number
+        embedded_svgs = [
+            ET.fromstring((generated_tufte_dir / route).read_text(encoding="utf-8"))
+            for route in references
+        ]
+        embedded_svgs.extend(
+            ET.fromstring(raw_svg) for raw_svg in re.findall(r"<svg\b.*?</svg>", section, re.DOTALL)
+        )
+        embedded_banners = sum(
+            " ".join("".join(node.itertext()).split()) == RETIREMENT_BANNER
+            for svg in embedded_svgs
+            for node in svg.findall(".//{*}text")
+        )
+        assert len(banners) + embedded_banners == 1, f"Written slide {number}: warning count"
     banner = _written_css_properties(html_text, {".slide > .retirement-banner"})
     slide = _written_css_properties(html_text, {".slide"})
     cover = _written_css_properties(html_text, {".slide", ".cover-slide"})
@@ -585,6 +685,28 @@ def test_written_html_banners_keep_original_slide_content_clear(generated_tufte_
     assert _css_pixels(cover["padding-top"]) >= banner_height + 64
     assert _css_pixels(slide["height"]) >= 1000 + banner_height
     assert _css_pixels(page["size"].split()[1]) >= _css_pixels(slide["height"])
+
+
+@pytest.mark.parametrize(
+    ("slide", "renderer_name"), [(15, "render_fig8_svg"), (16, "render_fig9_svg")]
+)
+def test_written_inline_svgs_preserve_undecorated_content_and_original_size(
+    generated_tufte_dir: Path, slide: int, renderer_name: str
+) -> None:
+    from mtp.cellulose_decr import tufte_plates
+
+    html = (generated_tufte_dir / "cellulose_decr_slide_deck.html").read_text(encoding="utf-8")
+    sections = re.findall(r"<section\b.*?</section>", html, re.DOTALL)
+    inline_svgs = re.findall(r"<svg\b.*?</svg>", sections[slide - 1], re.DOTALL)
+    assert len(inline_svgs) == 1
+    inline = ET.fromstring(inline_svgs[0])
+    assert list(map(float, inline.attrib["viewBox"].split())) == [0, 0, 1500, 740]
+    assert float(inline.attrib["width"]) == 1500
+    assert float(inline.attrib["height"]) == 740
+    assert RETIREMENT_BANNER not in "".join(inline.itertext())
+    renderer = getattr(tufte_plates, renderer_name)
+    undecorated = cast(Callable[[], str], inspect.unwrap(renderer))
+    assert inline_svgs[0].strip() == undecorated().strip()
 
 
 def test_plate2_species_roles_do_not_overlap_disease_dots(generated_tufte_dir: Path) -> None:
@@ -672,10 +794,13 @@ def test_slide15_literature_svg_text_fits_inside_boxes(generated_tufte_dir: Path
     import re
     import xml.etree.ElementTree as ET
 
+    from mtp.cellulose_decr import tufte_plates
+
     fig8_path = generated_tufte_dir / "figures_tufte" / "fig8_literature_support_four_pairs.svg"
     fig8_svg = fig8_path.read_text(encoding="utf-8")
     deck_html = (generated_tufte_dir / "cellulose_decr_slide_deck.html").read_text(encoding="utf-8")
-    assert fig8_svg.strip() in deck_html
+    undecorated_fig8 = cast(Callable[[], str], inspect.unwrap(tufte_plates.render_fig8_svg))
+    assert undecorated_fig8().strip() in deck_html
 
     root = ET.fromstring(fig8_svg)
     ns = {"svg": "http://www.w3.org/2000/svg"}

@@ -330,6 +330,16 @@ Older unmarked copies trigger a warning; preview their exact-file cleanup with
 `just cellulose-decr-cleanup-retired`, then add `--delete` to remove only the 23
 historical files while keeping current figures and directories.
 
+The historical numeric snapshot source blob is
+`0672ee7de26a55fee32f4b9c51e21408d45e5c2d` (#1717). The capture helper pins its
+Git abbreviation `0672ee7d`; a missing or ambiguous object is an error. The
+fixture retains `92539eb` as the historical review commit, but reproduction reads
+the blob directly, not that PR commit or current producer code. Extraction omits
+only the exact retirement banner; historical numbers remain pinned. The helper
+refuses existing output files. Full-clone tests resolve the abbreviation and
+check the full object ID against this record; they skip only outside Git or in a
+shallow checkout.
+
 **Building the inputs.**
 
 - BugSigDB: `just download`, `just ingest` and `just study-tsvs`.

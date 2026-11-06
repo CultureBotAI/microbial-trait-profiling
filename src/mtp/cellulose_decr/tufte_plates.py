@@ -18,10 +18,11 @@ from __future__ import annotations
 
 import argparse
 import functools
+import inspect
 import re
 from collections.abc import Callable, Sequence
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -3393,8 +3394,10 @@ def render_fig9_svg() -> str:
 
 def render_slide_deck_html() -> str:
     """Return the complete 16-slide HTML presentation deck (#550)."""
-    fig8_inline = render_fig8_svg().strip()
-    fig9_inline = render_fig9_svg().strip()
+    # The slide's own warning covers these inline diagrams. Keep their original
+    # 1500 x 740 viewBox instead of shrinking content to fit an extra SVG band (#1708).
+    fig8_inline = cast(Callable[[], str], inspect.unwrap(render_fig8_svg))().strip()
+    fig9_inline = cast(Callable[[], str], inspect.unwrap(render_fig9_svg))().strip()
     raw_html = "\n".join(
         [
             "<!DOCTYPE html>",
@@ -4296,10 +4299,28 @@ def render_slide_deck_html() -> str:
       }
     """
     html = html.replace("</style>", retirement_style + "</style>", 1)
+    plate_routes = {f"figures_tufte/{stem}.svg" for stem in PLATE_STEMS}
+
+    def add_slide_warning(match: re.Match[str]) -> str:
+        section = match.group()
+        images = re.findall(r'<img\b[^>]*\bsrc="([^"]+)"', section)
+        # These six saved plate SVGs already carry the warning on their canvas.
+        if any(source in plate_routes for source in images):
+            return section
+        return re.sub(
+            r"(<section\b[^>]*>)",
+            lambda opening: (
+                f'{opening.group()}\n<div class="retirement-banner">{RETIREMENT_BANNER}</div>'
+            ),
+            section,
+            count=1,
+        )
+
     return re.sub(
-        r"(<section\b[^>]*>)",
-        lambda match: f'{match.group()}\n<div class="retirement-banner">{RETIREMENT_BANNER}</div>',
+        r"<section\b.*?</section>",
+        add_slide_warning,
         html,
+        flags=re.DOTALL,
     )
 
 

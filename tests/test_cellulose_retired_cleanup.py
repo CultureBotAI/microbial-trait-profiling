@@ -31,6 +31,14 @@ EXPECTED = {
 ROOT = Path(__file__).resolve().parents[1]
 
 
+@pytest.fixture(autouse=True)
+def _local_import() -> None:
+    assert (
+        Path(retired_outputs.__file__).resolve()
+        == ROOT / "src/mtp/cellulose_decr/retired_outputs.py"
+    )
+
+
 def seed(analysis: Path) -> set[Path]:
     """Mix the complete retired set with deliberately adjacent current products."""
     current = {
@@ -132,7 +140,10 @@ def test_real_cleanup_recipe_is_dry_by_default_and_preserves_current_files(
 @pytest.mark.parametrize(
     "kind", ["file-symlink", "dangling-symlink", "directory", "parent-symlink", "nested-parent"]
 )
-def test_delete_refuses_unsafe_paths_before_removing_any_file(tmp_path: Path, kind: str) -> None:
+@pytest.mark.parametrize("delete", [False, True], ids=["preview", "delete"])
+def test_cleanup_refuses_unsafe_paths_before_reporting_or_removing_any_file(
+    tmp_path: Path, kind: str, delete: bool, capsys: pytest.CaptureFixture[str]
+) -> None:
     analysis = tmp_path / "analysis"
     seed(analysis)
     target = analysis / "cellulose_decr_slide_deck.html"
@@ -153,7 +164,10 @@ def test_delete_refuses_unsafe_paths_before_removing_any_file(tmp_path: Path, ki
         analysis.rename(tmp_path / "real-analysis")
         analysis.symlink_to(tmp_path / "real-analysis", target_is_directory=True)
     with pytest.raises(ValueError, match=r"regular|symlink"):
-        retired_outputs.main(["cleanup", "--analysis-dir", str(analysis), "--delete"])
+        retired_outputs.main(
+            ["cleanup", "--analysis-dir", str(analysis), *(["--delete"] if delete else [])]
+        )
+    assert capsys.readouterr().out == "", "Refused cleanup must not promise any deletion"
     assert outside.read_text() == "external data"
     for relative in EXPECTED - {Path("cellulose_decr_slide_deck.html")}:
         assert (analysis / relative).is_file()

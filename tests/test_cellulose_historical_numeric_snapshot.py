@@ -1,8 +1,10 @@
 """Keep the retained audit display's historical numbers fixed (#1709).
 
-The fixture comes from reviewed retirement commit 92539eb, not current analyses.
-It preserves displayed numeric tokens, including historical caveats and warnings;
-it does not certify the scientific correctness of those unverified numbers.
+The fixture's baseline_commit records original review provenance at 92539eb.
+Its capture helper executes only the pinned source blob beginning 0672ee7d,
+which survives squash merges; current producer code cannot rebaseline it.
+It preserves historical numeric tokens, caveats and warnings while excluding
+only the exact retirement banner. It does not certify scientific correctness.
 Artists are constructed without raster rendering or writing figure products.
 """
 
@@ -36,14 +38,23 @@ SVG_RENDERERS = ("render_fig7_svg", "render_fig8_svg", "render_fig9_svg")
 SLIDES = tuple(f"slide-{number:02d}" for number in range(1, 17))
 FIXTURE = Path(__file__).parent / "fixtures/cellulose_historical_numeric_snapshot.json"
 NUMBER = re.compile(r"[+-]?(?:\d+(?:,\d{3})*(?:\.\d+)?|\.\d+)(?:[eE][+-]?\d+)?")
+EXCLUDED_RETIREMENT_BANNER = "RETIRED: historical, unverified numbers (#1572)"
 Snapshot = dict[str, dict[str, list[str]]]
 
 
+@pytest.fixture(autouse=True)
+def _local_import() -> None:
+    assert Path(tufte_plates.__file__).resolve() == (
+        Path(__file__).resolve().parents[1] / "src/mtp/cellulose_decr/tufte_plates.py"
+    )
+
+
 def numeric_tokens(texts: Iterable[str]) -> list[str]:
-    """Preserve numeric spelling/order; normalize superscripts and Unicode minus."""
+    """Exclude the exact retirement banner, then preserve ordered normalized numbers."""
     tokens: list[str] = []
     for text in texts:
-        plain = unicodedata.normalize("NFKC", text).replace("\N{MINUS SIGN}", "-")
+        historical = text.replace(EXCLUDED_RETIREMENT_BANNER, "")
+        plain = unicodedata.normalize("NFKC", historical).replace("\N{MINUS SIGN}", "-")
         tokens.extend(NUMBER.findall(plain))
     return tokens
 
@@ -191,3 +202,39 @@ def test_markup_numeric_tokens_exclude_layout_and_keep_nested_visible_text() -> 
         "<script>const count = 999;</script></section>"
     )
     assert html_numeric_tokens(html) == {"slide-01": ["17", "2.4", "10", "-8"]}
+
+
+def test_numeric_tokens_exclude_only_the_exact_retirement_banner() -> None:
+    banner = "RETIRED: historical, unverified numbers (#1572)"
+    assert numeric_tokens(
+        [
+            f"n=1572; {banner}; 16 slides",
+            banner + banner,
+            "RETIRED: historical, unverified numbers (#1708)",
+            "historical sample count: 1572",
+        ]
+    ) == ["1572", "16", "1708", "1572"]
+
+
+def test_figure_numeric_tokens_exclude_banner_but_retain_same_number_in_data() -> None:
+    figure = Figure()
+    figure.text(0.1, 0.9, "RETIRED: historical, unverified numbers (#1572)")
+    figure.text(0.1, 0.5, "n=1572; p=0.05")
+    assert figure_numeric_tokens(figure) == ["1572", "0.05"]
+
+
+def test_markup_numeric_tokens_ignore_single_and_duplicate_exact_banners() -> None:
+    banner = "RETIRED: historical, unverified numbers (#1572)"
+    svg = (
+        '<svg xmlns="http://www.w3.org/2000/svg">'
+        f"<text>{banner}</text><text>n=1572; p=0.05</text></svg>"
+    )
+    assert svg_numeric_tokens(svg) == ["1572", "0.05"]
+    html = (
+        f'<section class="slide"><div>{banner}</div><p>n=1572</p></section>'
+        f'<section class="slide"><div>{banner}</div>{svg}</section>'
+    )
+    assert html_numeric_tokens(html) == {
+        "slide-01": ["1572"],
+        "slide-02": ["1572", "0.05"],
+    }
