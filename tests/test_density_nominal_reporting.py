@@ -190,6 +190,7 @@ def test_p_and_q_labels_nominal_without_changing_numeric_text(
             1,
         ),
         ([float("nan")] * 6, [float("nan")] * 6, 0, 0),
+        ([float("nan")] * 5 + [0.03], [float("nan")] * 5 + [0.04], 1, 1),
     ],
 )
 def test_reports_count_finite_nominal_wilcoxon_values_in_each_displayed_column(
@@ -218,16 +219,24 @@ def test_reports_count_finite_nominal_wilcoxon_values_in_each_displayed_column(
 
 
 @pytest.mark.parametrize(
-    ("slope_p", "count"),
-    [(0.0, 1), (0.0125, 1), (1.0, 1), (float("nan"), 0), (float("inf"), 0), (-float("inf"), 0)],
+    ("slope_p", "count", "p_text", "test_word"),
+    [
+        (0.0, 1, "0.00e+00", "test"),
+        (0.0125, 1, "1.25e-02", "test"),
+        (1.0, 1, "1.00e+00", "test"),
+        (float("nan"), 0, "NA", "tests"),
+        (float("inf"), 0, "NA", "tests"),
+        (-float("inf"), 0, "NA", "tests"),
+    ],
 )
 def test_reports_label_paired_slope_and_count_only_its_finite_test(
-    render_report: ReportRenderer, slope_p: float, count: int
+    render_report: ReportRenderer, slope_p: float, count: int, p_text: str, test_word: str
 ) -> None:
     effects = _effects([0.01] * 6, [float("nan")] * 6)
     report, _ = render_report(effects, slope_p)
+    assert "Finite nominal Wilcoxon tests shown: raw=6; PC1-adjusted=0." in report
     line = next(line for line in report.splitlines() if line.startswith("Paired regression slope:"))
     assert line.startswith("Paired regression slope: -0.3125 ")
-    assert f"nominal p={slope_p:.2e}; {count} finite paired-regression tests shown" in line
+    assert f"nominal p={p_text}; {count} finite paired-regression {test_word} shown" in line
     assert "; diagnostic" in line
     assert ("untested" in line) is (count == 0)

@@ -261,9 +261,12 @@ def format_paired_regression_test(p: SupportsFloat) -> str:
     """Label the near-twin diagnostic and count its finite test without imputing p."""
     value = float(p)
     count = int(math.isfinite(value))
+    p_text = f"{value:.2e}" if count else "NA"
+    test_word = "test" if count == 1 else "tests"
     untested = "; untested" if count == 0 else ""
     return (
-        f"nominal p={value:.2e}; {count} finite paired-regression tests shown; diagnostic{untested}"
+        f"nominal p={p_text}; {count} finite paired-regression {test_word} shown; "
+        f"diagnostic{untested}"
     )
 
 
