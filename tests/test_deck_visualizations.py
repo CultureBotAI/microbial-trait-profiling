@@ -773,3 +773,217 @@ def test_analyze_pd_trait_profiles_labels_nominal_p_values_and_test_counts(
     assert "Mann-Whitney not tested (1 profile-level tests, 2 tests in table)." in readme_mixed
     assert "Wilcoxon not tested (1 paired-contrast tests, 2 tests in table)." in readme_mixed
     assert "p=NA" not in readme_mixed
+
+
+def test_figure3_lead_concordance_depends_on_shift_sign(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#1413, #1615, #1616: Figure 3 lead status uses Wilcoxon direction, Mixed, and < 0.05 pins."""
+    import math
+
+    import plotly.graph_objects as go
+    from scipy import stats
+
+    from mtp.deck_visualizations import lead_consistency_status, wilcoxon_signed_rank_diff
+
+    assert (
+        lead_consistency_status("Decreased", -2.5, 0.008, 0.9, 0.015)
+        == "Concordant (nominal p < 0.05)"
+    )
+    assert (
+        lead_consistency_status("Decreased", 2.5, 0.008, 0.1, 0.015)
+        == "Discordant (nominal p < 0.05)"
+    )
+    assert (
+        lead_consistency_status("Increased", -2.5, 0.008, 0.6, 0.5)
+        == "Discordant (nominal p < 0.05)"
+    )
+    assert (
+        lead_consistency_status("Increased", 0.5, 0.4, 0.1, 0.015)
+        == "Discordant (nominal p < 0.05)"
+    )
+    assert lead_consistency_status("Decreased", -0.5, 0.4, 3 / 7, 1.0) == "Mixed"
+    assert lead_consistency_status("Decreased", 0.5, 0.4, 4 / 7, 1.0) == "Mixed"
+    assert lead_consistency_status("Decreased", 0.5, 0.4, 3 / 7, 1.0) == "Opposite Direction"
+    assert lead_consistency_status("Decreased", 0.5, 0.4, 0.5, 1.0) == "Opposite Direction"
+    assert lead_consistency_status("Decreased", 0.0, 1.0, 3 / 7, 1.0) == "Opposite Direction"
+    assert lead_consistency_status("Decreased", -0.5, 0.4, 4 / 7, 1.0) == "Directionally Aligned"
+    assert lead_consistency_status("Decreased", -0.5, 0.4, 0.5, 1.0) == "Directionally Aligned"
+    assert lead_consistency_status("Decreased", 0.0, 1.0, 0.5, 1.0) == "No Net Shift"
+    assert (
+        lead_consistency_status("Decreased", float("nan"), float("nan"), float("nan"), float("nan"))
+        == "Not tested"
+    )
+    with pytest.raises(ValueError, match="Unexpected target_dir"):
+        lead_consistency_status("Flat", 0.0, 1.0, 0.5, 1.0)
+
+    # #1616: boundary pins at nominal p = 0.049, 0.050, 0.051 for both tests and both directions,
+    # plus precedence when the two tests are significant in opposite directions.
+    assert (
+        lead_consistency_status("Increased", 1.0, 0.049, 0.6, 0.50)
+        == "Concordant (nominal p < 0.05)"
+    )
+    assert lead_consistency_status("Increased", 1.0, 0.050, 0.6, 0.50) == "Directionally Aligned"
+    assert lead_consistency_status("Increased", 1.0, 0.051, 0.6, 0.50) == "Directionally Aligned"
+    assert (
+        lead_consistency_status("Increased", 1.0, 0.50, 0.8, 0.049)
+        == "Concordant (nominal p < 0.05)"
+    )
+    assert lead_consistency_status("Increased", 1.0, 0.50, 0.8, 0.050) == "Directionally Aligned"
+    assert lead_consistency_status("Increased", 1.0, 0.50, 0.8, 0.051) == "Directionally Aligned"
+    assert (
+        lead_consistency_status("Increased", -1.0, 0.049, 0.4, 0.50)
+        == "Discordant (nominal p < 0.05)"
+    )
+    assert lead_consistency_status("Increased", -1.0, 0.050, 0.4, 0.50) == "Opposite Direction"
+    assert lead_consistency_status("Increased", -1.0, 0.051, 0.4, 0.50) == "Opposite Direction"
+    assert (
+        lead_consistency_status("Increased", -1.0, 0.50, 0.2, 0.049)
+        == "Discordant (nominal p < 0.05)"
+    )
+    assert lead_consistency_status("Increased", -1.0, 0.50, 0.2, 0.050) == "Opposite Direction"
+    assert lead_consistency_status("Increased", -1.0, 0.50, 0.2, 0.051) == "Opposite Direction"
+    assert (
+        lead_consistency_status("Increased", 2.0, 0.001, 0.1, 0.001)
+        == "Discordant (nominal p < 0.05)"
+    )
+    assert (
+        lead_consistency_status("Increased", -2.0, 0.001, 0.9, 0.001)
+        == "Discordant (nominal p < 0.05)"
+    )
+
+    # #1615: reviewer's outlier and mixed study-shift vectors.
+    outlier_inc = [0.1] * 20 + [-5.0]
+    assert sum(outlier_inc) / len(outlier_inc) < 0
+    assert wilcoxon_signed_rank_diff(outlier_inc) == pytest.approx(189.0)
+    assert (
+        lead_consistency_status(
+            "Increased",
+            wilcoxon_signed_rank_diff(outlier_inc),
+            float(stats.wilcoxon(outlier_inc).pvalue),
+            20 / 21,
+            float(stats.binomtest(20, 21, p=0.5).pvalue),
+        )
+        == "Concordant (nominal p < 0.05)"
+    )
+    outlier_dec = [-0.1] * 20 + [5.0]
+    assert sum(outlier_dec) / len(outlier_dec) > 0
+    assert wilcoxon_signed_rank_diff(outlier_dec) == pytest.approx(-189.0)
+    assert (
+        lead_consistency_status(
+            "Decreased",
+            wilcoxon_signed_rank_diff(outlier_dec),
+            float(stats.wilcoxon(outlier_dec).pvalue),
+            20 / 21,
+            float(stats.binomtest(20, 21, p=0.5).pvalue),
+        )
+        == "Concordant (nominal p < 0.05)"
+    )
+    mixed_inc = [3.0] * 9 + [-0.1] * 11
+    assert wilcoxon_signed_rank_diff(mixed_inc) == pytest.approx(78.0)
+    assert (
+        lead_consistency_status(
+            "Increased",
+            wilcoxon_signed_rank_diff(mixed_inc),
+            float(stats.wilcoxon(mixed_inc).pvalue),
+            9 / 20,
+            float(stats.binomtest(9, 20, p=0.5).pvalue),
+        )
+        == "Mixed"
+    )
+    assert wilcoxon_signed_rank_diff([0.0, 0.0]) == 0.0
+    assert math.isnan(wilcoxon_signed_rank_diff([]))
+
+    figures: list[Any] = []
+
+    def _capture(fig: Any, path: str, **_kw: Any) -> None:
+        figures.append(fig)
+        Path(path).write_bytes(b"")
+
+    monkeypatch.setattr(go.Figure, "write_image", _capture)
+
+    trait_cols = list(TABLE_1_TRAITS.keys())
+    exp_rows = []
+    prof_rows = []
+    # 21 PD studies:
+    # - Cellulose (expected Decreased) shifted UP in all 21 (opposite, p < 0.05 -> Discordant);
+    # - Moderately halophilic (expected Increased) has 20 studies at +0.1 and 1 outlier at -5.0
+    #   (negative mean -0.14, but W+ > W- and 20/21 sign test -> Concordant, #1615).
+    for idx in range(21):
+        s_id = f"study_pd_{idx}"
+        e_id = f"exp_pd_{idx}"
+        exp_rows.append((s_id, e_id, "Parkinson's disease", "Feces", "Homo sapiens"))
+        inc_vals = dict.fromkeys(trait_cols, 5.0)
+        dec_vals = dict.fromkeys(trait_cols, 5.0)
+        inc_vals["METPO:2000103|GO:0030245"] = 10.0 + idx * 0.1
+        dec_vals["METPO:2000103|GO:0030245"] = 1.0
+        halo_shift = 0.1 if idx < 20 else -5.0
+        inc_vals["METPO:1000623"] = 5.0 + halo_shift
+        dec_vals["METPO:1000623"] = 5.0
+        prof_rows.append({"study_id": s_id, "experiment_id": e_id, "inc_dec": "inc", **inc_vals})
+        prof_rows.append({"study_id": s_id, "experiment_id": e_id, "inc_dec": "dec", **dec_vals})
+
+    # 2 HIV studies: Cellulose (expected Decreased) shifted UP
+    # (opposite, p >= 0.05 -> Opposite Direction).
+    for idx in range(2):
+        s_id = f"study_hiv_{idx}"
+        e_id = f"exp_hiv_{idx}"
+        exp_rows.append((s_id, e_id, "HIV infection", "Feces", "Homo sapiens"))
+        inc_vals = dict.fromkeys(trait_cols, 5.0)
+        dec_vals = dict.fromkeys(trait_cols, 5.0)
+        inc_vals["METPO:2000103|GO:0030245"] = 8.0 + idx * 0.1
+        dec_vals["METPO:2000103|GO:0030245"] = 1.0
+        prof_rows.append({"study_id": s_id, "experiment_id": e_id, "inc_dec": "inc", **inc_vals})
+        prof_rows.append({"study_id": s_id, "experiment_id": e_id, "inc_dec": "dec", **dec_vals})
+
+    # 20 CRC studies: Cellulose (expected Decreased) has 9 studies at -3.0 and 11 at +0.1
+    # (Wilcoxon aligned W- > W+ p = 0.13, sign test 9/20 opposite p = 0.82 -> Mixed, #1615).
+    for idx in range(20):
+        s_id = f"study_crc_{idx}"
+        e_id = f"exp_crc_{idx}"
+        exp_rows.append((s_id, e_id, "Colorectal cancer", "Feces", "Homo sapiens"))
+        inc_vals = dict.fromkeys(trait_cols, 5.0)
+        dec_vals = dict.fromkeys(trait_cols, 5.0)
+        crc_shift = -3.0 if idx < 9 else 0.1
+        inc_vals["METPO:2000103|GO:0030245"] = 5.0 + crc_shift
+        dec_vals["METPO:2000103|GO:0030245"] = 5.0
+        prof_rows.append({"study_id": s_id, "experiment_id": e_id, "inc_dec": "inc", **inc_vals})
+        prof_rows.append({"study_id": s_id, "experiment_id": e_id, "inc_dec": "dec", **dec_vals})
+
+    exp_path = tmp_path / "exp_sign.tsv"
+    prof_path = tmp_path / "prof_sign.tsv"
+    pd.DataFrame(
+        exp_rows,
+        columns=["study_id", "experiment_id", "condition", "body_site", "host_species"],
+    ).to_csv(exp_path, sep="\t", index=False)
+    pd.DataFrame(prof_rows).to_csv(prof_path, sep="\t", index=False)
+
+    generate_figure3_lead_findings_ora_evidence(
+        profiles_path=prof_path,
+        experiments_path=exp_path,
+        output_path=tmp_path / "fig3_sign.png",
+    )
+    fig = figures.pop()
+    table_trace = next(trace for trace in fig.data if trace.type == "table")
+    mean_cells = list(table_trace.cells.values[2])
+    statuses = list(table_trace.cells.values[4])
+    assert "Mean: -0.14" in mean_cells[3]
+    assert statuses == [
+        "Discordant (nominal p < 0.05)",
+        "Opposite Direction",
+        "Mixed",
+        "Concordant (nominal p < 0.05)",
+    ]
+
+    import mtp.deck_visualizations as dv
+
+    monkeypatch.setattr(dv, "EXPLORATORY_LEADS", dv.EXPLORATORY_LEADS[:3])
+    generate_figure3_lead_findings_ora_evidence(
+        profiles_path=prof_path,
+        experiments_path=exp_path,
+        output_path=tmp_path / "fig3_sign_3.png",
+    )
+    fig3 = figures.pop()
+    table3 = next(trace for trace in fig3.data if trace.type == "table")
+    assert list(table3.cells.fill.color[0]) == ["#ffffff", "#f8f9fa", "#ffffff"]
+    assert list(table3.cells.fill.color[4]) == ["#e8f5e9", "#e8f5e9", "#e8f5e9"]
