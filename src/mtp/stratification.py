@@ -17,6 +17,7 @@ Addresses Issue #118:
 from __future__ import annotations
 
 import argparse
+import gzip
 import importlib.util
 import sys
 from dataclasses import dataclass
@@ -55,6 +56,13 @@ ANNOTATION_DENSITY_NOTE = (
     "The annotation-density diagnostic is descriptive. Background counts alone do not establish "
     "the direction or magnitude of calibration bias, and a proposed density-matched permutation "
     "needs a justified null and exchangeability assumptions."
+)
+
+BEST_STAT_NOTE = (
+    "Each *_best_stat retains the minimum q when available, otherwise the minimum nominal p; "
+    "its *_best_stat_type is fdr_q, p_value, or unavailable. Historical nominal tables with q "
+    "copied from p are labelled p_value. These minima summarize eligible profile-level tests, "
+    "not a new trait-level FDR family."
 )
 
 
@@ -348,6 +356,49 @@ def compute_annotation_density_deciles(
     return pd.DataFrame(rows)
 
 
+def _read_tested_summary(path: Path) -> tuple[pd.DataFrame, str | None]:
+    """Read the complete table's own statistic metadata, not ranking metadata."""
+    stat_type = None
+    with (
+        gzip.open(path, "rt", encoding="utf-8")
+        if path.suffix == ".gz"
+        else path.open(encoding="utf-8")
+    ) as stream:
+        while True:
+            start = stream.tell()
+            line = stream.readline()
+            if line and not line.strip():
+                continue
+            if not line.startswith("#"):
+                stream.seek(start)
+                break
+            if line.startswith("# Stat-Type:"):
+                value = line.split(":", 1)[1].strip()
+                if stat_type is not None or value not in {"fdr_q", "p_value"}:
+                    raise ValueError(f"Invalid or duplicate Stat-Type in {path}: {value!r}")
+                stat_type = value
+        return pd.read_csv(stream, sep="\t", comment="#"), stat_type
+
+
+def _extract_q_or_p(row: pd.Series | None, stat_type: str | None) -> tuple[float, str]:
+    """Preserve the historical numeric choice while identifying its actual type."""
+    if row is None:
+        return np.nan, "unavailable"
+    q = row.get("best_qvalue", np.nan)
+    p = row.get("best_pvalue", np.nan)
+    if pd.notna(q):
+        if stat_type == "p_value":
+            # Before #1409, --no-fdr copied raw p into the q field. Only the
+            # documented identical alias can be called nominal without changing a value.
+            if pd.isna(p) or float(q) != float(p):
+                raise ValueError("nominal Stat-Type contradicts best_qvalue: expected copied p")
+            return float(q), "p_value"
+        return float(q), "fdr_q"
+    if pd.notna(p):
+        return float(p), "p_value"
+    return np.nan, "unavailable"
+
+
 def build_sensitivity_summary_table(
     stratum_outputs: dict[str, StratumOutputs],
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -357,11 +408,12 @@ def build_sensitivity_summary_table(
         (per_trait_df, strata_summary_df)
     """
     overall_dfs: dict[str, pd.DataFrame] = {}
+    stat_types: dict[str, str | None] = {}
     meta_records: list[dict[str, Any]] = []
 
     for stratum, outputs in stratum_outputs.items():
         if outputs.tested_traits_tsv is not None and outputs.tested_traits_tsv.exists():
-            df = pd.read_csv(outputs.tested_traits_tsv, sep="\t", comment="#")
+            df, stat_types[stratum] = _read_tested_summary(outputs.tested_traits_tsv)
             overall_dfs[stratum] = df
         else:
             overall_dfs[stratum] = pd.DataFrame()
@@ -450,18 +502,9 @@ def build_sensitivity_summary_table(
             float(fe_row["mean_fold"]) if fe_row is not None and "mean_fold" in fe_row else np.nan
         )
 
-        def _extract_q_or_p(row: Any) -> float:
-            if row is None:
-                return np.nan
-            if "best_qvalue" in row and pd.notna(row["best_qvalue"]):
-                return float(row["best_qvalue"])
-            if "best_pvalue" in row and pd.notna(row["best_pvalue"]):
-                return float(row["best_pvalue"])
-            return np.nan
-
-        p_q = _extract_q_or_p(p_row)
-        f_q = _extract_q_or_p(f_row)
-        fe_q = _extract_q_or_p(fe_row)
+        p_stat, p_type = _extract_q_or_p(p_row, stat_types.get("pooled"))
+        f_stat, f_type = _extract_q_or_p(f_row, stat_types.get("feces"))
+        fe_stat, fe_type = _extract_q_or_p(fe_row, stat_types.get("feces_excluded"))
 
         def _state(row: pd.Series | None, stratum: str) -> str:
             if row is not None:
@@ -512,19 +555,22 @@ def build_sensitivity_summary_table(
                 "trait_total_pooled": p_trait_tot,
                 "pooled_n_tested": p_tested,
                 "pooled_prevalence": p_prev,
-                "pooled_best_stat": p_q,
+                "pooled_best_stat": p_stat,
+                "pooled_best_stat_type": p_type,
                 "pooled_mean_fold": p_fold,
                 "pooled_significant": p_sig,
                 "pooled_test_status": p_state,
                 "feces_n_tested": f_tested,
                 "feces_prevalence": f_prev,
-                "feces_best_stat": f_q,
+                "feces_best_stat": f_stat,
+                "feces_best_stat_type": f_type,
                 "feces_mean_fold": f_fold,
                 "feces_significant": f_sig,
                 "feces_test_status": f_state,
                 "feces_excluded_n_tested": fe_tested,
                 "feces_excluded_prevalence": fe_prev,
-                "feces_excluded_best_stat": fe_q,
+                "feces_excluded_best_stat": fe_stat,
+                "feces_excluded_best_stat_type": fe_type,
                 "feces_excluded_mean_fold": fe_fold,
                 "feces_excluded_significant": fe_sig,
                 "feces_excluded_test_status": fe_state,
@@ -565,6 +611,7 @@ def generate_sensitivity_reports(
     with tsv_path.open("w", encoding="utf-8", newline="") as f:
         f.write(f"# Note: {PRECAUTIONARY_NOTE}\n")
         f.write(f"# Diagnostic: {ANNOTATION_DENSITY_NOTE}\n")
+        f.write(f"# Best-Statistic: {BEST_STAT_NOTE}\n")
         f.write(f"# Evaluated-Strata: {','.join(stratum_outputs.keys())}\n")
         per_trait_df.to_csv(f, sep="\t", index=False)
 
@@ -585,6 +632,8 @@ def generate_sensitivity_reports(
         f"IMPORTANT: {PRECAUTIONARY_NOTE}",
         "",
         f"DIAGNOSTIC NOTE: {ANNOTATION_DENSITY_NOTE}",
+        "",
+        BEST_STAT_NOTE,
         "",
         "2. STRATUM PROFILE AND TEST COUNTS",
         "-" * 80,

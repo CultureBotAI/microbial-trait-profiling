@@ -31,6 +31,20 @@ Outputs have different purposes:
 - `stratification_sensitivity_summary.tsv` compares complete trait summaries.
   Discovery proportions are descriptive, not effect sizes; the reported mean
   fold contrasts now cover all eligible tests, avoiding selection on discoveries.
+  The existing `pooled_best_stat`, `feces_best_stat`, and
+  `feces_excluded_best_stat` values are unchanged: minimum q when available,
+  otherwise minimum nominal p. Each has a companion `*_best_stat_type` column
+  containing `fdr_q`, `p_value`, or `unavailable` (#1418). These minima describe
+  eligible profile-level tests; they do not define a trait-level FDR family.
+
+Statistic types use the complete tested table's own `Stat-Type` header.
+Historical nominal tables copied raw p into the q field; identical copies are
+labelled `p_value`, as are the empty-q nominal tables produced after #1409.
+Contradictory nominal q/p values or invalid/duplicate `Stat-Type` declarations
+are refused. When the header is absent, the available column name identifies
+the statistic. A missing q falls back to p even in a corrected table; missing
+values or unavailable traits/analyses are labelled `unavailable`. Type columns
+are additive; support states and numerical summaries retain their definitions.
 
 `tested_nonsignificant` means tests were performed and none passed the analyzer's
 selection rule. It is distinct from `zero_eligible_tests`, `unavailable_trait`,

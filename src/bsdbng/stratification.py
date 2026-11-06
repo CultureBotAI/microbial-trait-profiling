@@ -5,6 +5,7 @@ from typing import Any
 
 from mtp.stratification import (
     ANNOTATION_DENSITY_NOTE,
+    BEST_STAT_NOTE,
     DEFAULT_EXPERIMENTS_PATH,
     DEFAULT_OUTPUT_DIR,
     DEFAULT_PROFILES_PATH,
@@ -26,6 +27,7 @@ from mtp.stratification import (
 
 __all__ = [
     "ANNOTATION_DENSITY_NOTE",
+    "BEST_STAT_NOTE",
     "DEFAULT_EXPERIMENTS_PATH",
     "DEFAULT_OUTPUT_DIR",
     "DEFAULT_PROFILES_PATH",

@@ -674,7 +674,7 @@
       "consumers": [
         {
           "path": "src/mtp/stratification.py",
-          "function": "build_sensitivity_summary_table._extract_q_or_p"
+          "function": "_extract_q_or_p"
         },
         {
           "path": "src/mtp/stratification.py",
@@ -736,7 +736,7 @@
       "consumers": [
         {
           "path": "src/mtp/stratification.py",
-          "function": "build_sensitivity_summary_table._extract_q_or_p"
+          "function": "_extract_q_or_p"
         },
         {
           "path": "src/mtp/stratification.py",
@@ -798,7 +798,7 @@
       "consumers": [
         {
           "path": "src/mtp/stratification.py",
-          "function": "build_sensitivity_summary_table._extract_q_or_p"
+          "function": "_extract_q_or_p"
         },
         {
           "path": "src/mtp/stratification.py",
