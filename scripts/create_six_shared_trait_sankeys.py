@@ -239,6 +239,8 @@ def build_zscore_matrix(
 def load_q_significance() -> pd.DataFrame:
     """Load pooled paired-contrast q statistics for the six traits."""
     stats = read_tsv(TRAIT_STATS_PATH)
+    if "correction_family_size" not in stats.columns:
+        stats = stats.assign(correction_family_size=len(stats))
     stats = stats[stats["trait"].isin([trait.trait_id for trait in SHARED_TRAITS])].copy()
     numeric_columns = [
         "q_value",
@@ -249,6 +251,7 @@ def load_q_significance() -> pd.DataFrame:
         "pair_count",
         "profile_count",
         "n_profiles_where_annotated",
+        "correction_family_size",
     ]
     for column in numeric_columns:
         stats[column] = pd.to_numeric(stats[column], errors="coerce")
@@ -2184,20 +2187,46 @@ def build_trait_summary(
     return pd.DataFrame.from_records(records)
 
 
-def selection_display_metadata(selection: pd.DataFrame) -> pd.DataFrame:
-    """Label raw p and count finite tests in these displayed selection rows."""
+def selection_display_metadata(
+    selection: pd.DataFrame,
+    *,
+    default_bh_family_size: int | None = None,
+) -> pd.DataFrame:
+    """Label raw p, count finite tests in displayed rows, and preserve the BH family."""
     output = selection.copy()
     finite = np.isfinite(pd.to_numeric(output["paired_p_value"], errors="coerce")).fillna(False)
     output["paired_p_value_type"] = np.where(finite, "nominal", "not_tested")
     output["displayed_nominal_test_count"] = int(finite.sum())
+    if "bh_family_size" not in output.columns:
+        fallback_size = len(output) if default_bh_family_size is None else default_bh_family_size
+        output["bh_family_size"] = int(fallback_size)
+    else:
+        output["bh_family_size"] = pd.to_numeric(output["bh_family_size"], errors="raise").astype(
+            int
+        )
+    output["paired_q_value_family"] = [
+        f"pooled pair-level BH over {int(size)} retained catalog traits"
+        for size in output["bh_family_size"]
+    ]
     return output
 
 
 def build_trait_selection(q_stats: pd.DataFrame) -> pd.DataFrame:
     """Write a minimal trait-selection audit table."""
     records: list[dict[str, object]] = []
+    family_sizes = (
+        pd.to_numeric(q_stats["correction_family_size"], errors="coerce")
+        if "correction_family_size" in q_stats.columns
+        else pd.Series(dtype=float)
+    )
     for trait in SHARED_TRAITS:
         row = q_stats.loc[trait.trait_id]
+        raw_size = family_sizes.get(trait.trait_id, float("nan"))
+        family_size = (
+            len(q_stats)
+            if isinstance(raw_size, pd.Series) or raw_size is None or pd.isna(raw_size)
+            else int(raw_size)
+        )
         records.append(
             {
                 "trait_id": trait.trait_id,
@@ -2208,9 +2237,28 @@ def build_trait_selection(q_stats: pd.DataFrame) -> pd.DataFrame:
                 "paired_p_value": row["p_value"],
                 "paired_mean_increased_minus_decreased": row["mean_increased_minus_decreased"],
                 "paired_direction": row["direction"],
+                "bh_family_size": family_size,
             }
         )
-    return selection_display_metadata(pd.DataFrame.from_records(records))
+    selection = selection_display_metadata(
+        pd.DataFrame.from_records(records),
+        default_bh_family_size=len(q_stats),
+    )
+    ordered_columns = [
+        "trait_id",
+        "trait_name",
+        "slug",
+        "base_color",
+        "paired_q_value",
+        "paired_p_value",
+        "paired_mean_increased_minus_decreased",
+        "paired_direction",
+        "paired_p_value_type",
+        "displayed_nominal_test_count",
+        "bh_family_size",
+        "paired_q_value_family",
+    ]
+    return selection[ordered_columns]
 
 
 def write_direction_outputs(

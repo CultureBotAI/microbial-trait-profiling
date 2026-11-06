@@ -1650,15 +1650,15 @@ Four trait-pattern heatmaps are written:
 and
 `six_shared_traits_decreased_individual_conditions_condition_body_site_trait_pattern_heatmap.png`.
 Rows are condition/body-site pairs and columns are the six shared traits. The
-color value is Fisher evidence, `-log10(p)`, from a one-sided Fisher exact test
-asking whether focus positive-z support exceeds comparator positive-z support.
-This makes darker cells correspond to smaller p-values. A cell is shown for
-exploratory review only when `p < 0.01`, with at least 3 positive-z focus
-profiles and at least 2 positive-z focus-profile studies. Rows are ranked by
-significant trait recurrence, BH-selected recurrence, p-value evidence, and
-support, with at most 24 rows displayed. The companion table retains the
-original support-strength components as `n`, `signal`, and `strength` columns,
-and also records BH q-values computed within each heatmap view.
+color value is nominal Fisher evidence, `-log10(p)`, from a one-sided Fisher
+exact test asking whether focus positive-z support exceeds comparator positive-z
+support. This makes darker cells correspond to smaller nominal p-values. A cell
+is shown for exploratory review only when `nominal Fisher p < 0.01`, with at
+least 3 positive-z focus profiles and at least 2 positive-z focus-profile
+studies. Rows are ranked by nominal-p recurrence, BH-selected recurrence,
+nominal p-value evidence, and support, with at most 24 rows displayed. The
+companion table retains the original support-strength components as `n`,
+`signal`, and `strength` columns, and also records BH q-values computed within each heatmap view over all candidate cells (untested held at p = 1).
 
 Two primary signed direction contrast heatmaps are written:
 `six_shared_traits_grouped_condition_body_site_signed_direction_contrast_heatmap.png`

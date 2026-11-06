@@ -1323,9 +1323,10 @@ def heatmap_test_count_caption(
     *,
     value_column: str,
 ) -> str:
-    """Name the source-view denominator and the displayed subset separately."""
+    """Name the BH family, the source-view denominator, and the displayed subset."""
     counts = heatmap_test_counts(cells, row_labels, trait_order, value_column=value_column)
     return (
+        f"BH over all {len(cells)} candidate cells (untested held at p = 1); "
         f"{counts['finite_test_count']} finite Fisher tests in the source view; "
         f"{counts['displayed_finite_test_count']} finite tested cells shown."
     )
@@ -1986,7 +1987,16 @@ def append_readme_section(output_dir: Path, manifest: pd.DataFrame) -> None:
         f"`{CONTRAST_PAGES_FILENAME}` records their paths and counts; `heatmap_page` in "
         "the contrast table locates each displayed row. Grouped pages follow the clustered "
         "order; individual pages retain the ranked order. The original PNGs show full overviews.",
-        f"- BH q-values are computed within each heatmap view. "
+        "- BH q-values are computed within each heatmap view ("
+        + "; ".join(
+            f"{view_label}: BH over all {tested_count} candidate cells (untested held at p = 1)"
+            for view_label, tested_count in zip(
+                manifest["view_label"].astype(str),
+                pd.to_numeric(manifest["tested_cell_count"], errors="raise").astype(int),
+                strict=True,
+            )
+        )
+        + "). "
         f"`selected_after_bh=True` marks supported cells with q<={Q_VALUE_CUTOFF:g}; "
         "those cells receive the dark border and are also collected in the BH-selected cell "
         "table. `nominal_p_value_selected` is the explicit nominal flag; "
@@ -1998,6 +2008,8 @@ def append_readme_section(output_dir: Path, manifest: pd.DataFrame) -> None:
         "Those pooled quantities are therefore not mixed into this profile-level positive-z "
         "prevalence contrast; the estimands and sampling units remain explicitly separate.",
         "- The legacy `tested_cell_count` counts candidate cells, including untestable cells. "
+        "Each view's BH q-value family is all `tested_cell_count` candidate cells "
+        "(untested held at p = 1), not `finite_test_count` or `displayed_finite_test_count`. "
         "`finite_test_count` counts finite Fisher p-values across the source view. "
         "`displayed_finite_test_count` counts finite tests with finite plotted values in the "
         "selected rows and trait columns, once per matrix cell; page counts use that page's rows. "
@@ -2149,6 +2161,66 @@ def append_readme_section(output_dir: Path, manifest: pd.DataFrame) -> None:
     if suffix:
         updated += "\n" + suffix + "\n"
     readme_path.write_text(updated, encoding="utf-8")
+
+
+MANIFEST_COLUMNS: tuple[str, ...] = (
+    "view_key",
+    "view_label",
+    "heatmap_type",
+    "focus_direction",
+    "condition_mode",
+    "row_count",
+    "displayed_cell_count",
+    "nominal_p_value_cell_count",
+    "significant_cell_count",
+    "bh_selected_cell_count",
+    "tested_cell_count",
+    "min_positive_profiles",
+    "min_studies",
+    "p_value_cutoff",
+    "q_value_cutoff",
+    "color_value",
+    "png_path",
+    "source_display_edges_path",
+    "condition_label_count",
+    "anatomy_group_count",
+    "absolute_effect_cutoff",
+    "display_rule",
+    "filled_fraction",
+    "page_count",
+    "clustered_png_path",
+    "preview_png_path",
+    "primary_row_order",
+    "cluster_metric",
+    "cluster_linkage",
+    "cluster_min_shared_traits",
+    "cluster_input_order",
+    "undefined_cluster_distance",
+    "clustered_row_count",
+    "insufficient_overlap_row_count",
+    "spearman_pair_count",
+    "undefined_spearman_pair_count",
+    "undefined_spearman_pair_fraction",
+    "distinct_spearman_distance_count",
+    "distance_tie_excess_count",
+    "distance_tie_fraction",
+    "linkage_pair_count",
+    "linkage_undefined_spearman_pair_count",
+    "linkage_undefined_spearman_pair_fraction",
+    "linkage_distinct_distance_count",
+    "linkage_distance_tie_excess_count",
+    "linkage_distance_tie_fraction",
+    "dendrogram_cut_applied",
+    "dendrogram_branch_label_rule",
+    "estimand_scope_note",
+    "cluster_tree_nodes_path",
+    "cluster_tree_leaves_path",
+    "cluster_comparison_path",
+    "source_increased_edges_path",
+    "source_decreased_edges_path",
+    "finite_test_count",
+    "displayed_finite_test_count",
+)
 
 
 def write_six_shared_trait_cytoscape_heatmaps(
@@ -2393,7 +2465,7 @@ def write_six_shared_trait_cytoscape_heatmaps(
         clusterings["individual_conditions"],
         rollup_map,
     )
-    manifest = pd.DataFrame.from_records(manifest_records)
+    manifest = pd.DataFrame.from_records(manifest_records, columns=MANIFEST_COLUMNS)
     selected_cells = pd.concat(
         [
             pattern_table.assign(heatmap_type="trait_pattern"),
