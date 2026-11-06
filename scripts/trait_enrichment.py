@@ -235,6 +235,8 @@ def main(argv: list[str] | None = None) -> None:
 
     args = parse_args(argv)
     statistic_key = "fdr_q" if args.fdr else "p_value"
+    statistic_label = "FDR q" if args.fdr else "nominal p"
+    hits_label = "Significant hits" if args.fdr else "Nominal hits"
     correction_family = args.fdr_scope if args.fdr else "none"
     bundle = None
     if args.core_run is not None:
@@ -477,10 +479,14 @@ def main(argv: list[str] | None = None) -> None:
                     }
                 )
 
+    p_threshold: float = args.p_threshold
+    min_fold: float = args.min_fold
+    max_fold: float = args.max_fold
+
     def is_hit(stat: float, fold_val: float) -> bool:
         if args.tail == "upper":
-            return (stat <= args.p_threshold) and (fold_val >= args.min_fold)
-        return (stat <= args.p_threshold) and (fold_val <= args.max_fold)
+            return (stat <= p_threshold) and (fold_val >= min_fold)
+        return (stat <= p_threshold) and (fold_val <= max_fold)
 
     # Apply global FDR correction if requested
     if args.fdr:
@@ -519,6 +525,9 @@ def main(argv: list[str] | None = None) -> None:
             out_fh.write("# Testable-Set: K>0 & N>0\n")
             out_fh.write(f"# FDR: {args.fdr}\n")
             out_fh.write(f"# FDR-Scope: {correction_family}\n")
+            if not args.fdr:
+                out_fh.write(f"# Threshold-Statistic: {statistic_label}\n")
+                out_fh.write(f"# Hit-Statistic: {statistic_label}\n")
             out_fh.write(f"# P-Threshold: {args.p_threshold}\n")
             if args.tail == "upper":
                 out_fh.write(f"# Min-Fold: {args.min_fold}\n")
@@ -586,6 +595,9 @@ def main(argv: list[str] | None = None) -> None:
             out_fh.write("# Testable-Set: K>0 & N>0\n")
             out_fh.write(f"# FDR: {args.fdr}\n")
             out_fh.write(f"# FDR-Scope: {correction_family}\n")
+            if not args.fdr:
+                out_fh.write(f"# Threshold-Statistic: {statistic_label}\n")
+                out_fh.write(f"# Hit-Statistic: {statistic_label}\n")
             out_fh.write(f"# P-Threshold: {args.p_threshold}\n")
             if args.tail == "upper":
                 out_fh.write(f"# Min-Fold: {args.min_fold}\n")
@@ -650,10 +662,7 @@ def main(argv: list[str] | None = None) -> None:
     # Generate text report
     report_lines: list[str] = []
     tail_suffix = " (Depletion)" if args.tail == "lower" else ""
-    if args.fdr:
-        report_lines.append(f"FDR q <= {args.p_threshold:g}{tail_suffix}")
-    else:
-        report_lines.append(f"p <= {args.p_threshold:g}{tail_suffix}")
+    report_lines.append(f"{statistic_label} <= {args.p_threshold:g}{tail_suffix}")
     if args.tail == "upper":
         if args.min_fold > 0:
             report_lines.append(f"Min Fold >= {args.min_fold:g}")
@@ -665,7 +674,7 @@ def main(argv: list[str] | None = None) -> None:
     else:
         report_lines.append("Max traits per profile: unlimited")
     report_lines.append(f"Tests performed: {len(all_hits)}")
-    report_lines.append(f"Significant hits: {len(significant_hits)}")
+    report_lines.append(f"{hits_label}: {len(significant_hits)}")
     report_lines.append(f"Result status: {result_status}")
     report_lines.append("")
 
@@ -730,7 +739,7 @@ def main(argv: list[str] | None = None) -> None:
         )
     print(f"Background taxa universe M: {background_taxa_universe}")
     print(f"Total tests performed: {len(all_hits)}")
-    print(f"Significant hits: {len(significant_hits)}")
+    print(f"{hits_label}: {len(significant_hits)}")
     print(f"Result status: {result_status}")
     print(f"Rows with hits: {rows_with_hits}")
     print(f"Wrote report: {args.output}")

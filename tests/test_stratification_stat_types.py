@@ -80,6 +80,14 @@ def test_statistic_type_tracks_the_preserved_value(
     frame, strata = build_sensitivity_summary_table({"pooled": outputs})
     row = frame.iloc[0]
     assert row["pooled_best_stat_type"] == kind
+    assert (
+        row["pooled_best_stat_basis"]
+        == {
+            "fdr_q": "FDR q",
+            "p_value": "nominal p",
+            "unavailable": "unavailable",
+        }[kind]
+    )
     if expected is None:
         assert pd.isna(row["pooled_best_stat"])
     else:
@@ -91,6 +99,7 @@ def test_statistic_type_tracks_the_preserved_value(
     for stratum in ("feces", "feces_excluded"):
         assert pd.isna(row[f"{stratum}_best_stat"])
         assert row[f"{stratum}_best_stat_type"] == "unavailable"
+        assert row[f"{stratum}_best_stat_basis"] == "unavailable"
 
 
 def test_types_are_per_value_and_persist_in_reports(tmp_path: Path) -> None:
@@ -104,6 +113,9 @@ def test_types_are_per_value_and_persist_in_reports(tmp_path: Path) -> None:
     assert [row[f"{s}_best_stat_type"] for s in outputs] == ["fdr_q", "p_value", "unavailable"]
     assert row["pooled_best_stat"] == 0.4
     assert row["feces_best_stat"] == 0.02
+    assert row["feces_best_stat_basis"] == "nominal p"
+    # The hit rule is read independently from the ranking metadata.
+    assert row["feces_significance_basis"] == "FDR q"
     assert pd.isna(row["feces_excluded_best_stat"])
     assert row["support_status"] == "both_strata_significant"
     assert row["delta_mean_fold"] == 0
@@ -125,8 +137,23 @@ def test_types_are_per_value_and_persist_in_reports(tmp_path: Path) -> None:
         support_status="both_strata_significant", delta_mean_fold=0.0, delta_prevalence=0.0
     )
     exported = pd.read_csv(tsv, sep="\t", comment="#")
-    legacy = exported.drop(columns=[f"{s}_best_stat_type" for s in outputs])
+    legacy = exported.drop(
+        columns=[
+            f"{stratum}_{suffix}"
+            for stratum in outputs
+            for suffix in ("best_stat_type", "best_stat_basis", "significance_basis", "fdr_scope")
+        ]
+    )
     pd.testing.assert_frame_equal(legacy, pd.DataFrame([expected]))
+    for stratum, basis in zip(outputs, ["FDR q", "nominal p", "unavailable"], strict=True):
+        assert row[f"{stratum}_best_stat_basis"] == basis
+        assert row[f"{stratum}_significance_basis"] == "FDR q"
+        assert row[f"{stratum}_fdr_scope"] == "unknown"
+    assert set(exported.columns) == set(expected) | {
+        f"{stratum}_{suffix}"
+        for stratum in outputs
+        for suffix in ("best_stat_type", "best_stat_basis", "significance_basis", "fdr_scope")
+    }
     assert "best_stat_type" in tsv.read_text()
     assert "best_stat_type" in txt.read_text()
 

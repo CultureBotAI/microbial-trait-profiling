@@ -2,7 +2,9 @@
 
 Inputs: a JSON manifest of historical/current TSV pairs and their explicit profile
 and taxa-matrix inputs. Output: a JSON audit; nonzero exit on unexpected changes.
-Only new input fingerprint metadata is allowed. Historical exports are read-only.
+Only new input fingerprints and correct additive nominal statistic labels are
+allowed. Historical exports are read-only. Added labels must be absent from the
+historical header and agree with both exports' FDR and optional Stat-Type fields.
 Input eligibility, taxon/background counts and profile/trait completeness are
 checked independently (#725); p/q values and effect estimates are not recalculated.
 Nominal exports may use blank q with scope/family none, or the historical copied-p
@@ -401,8 +403,18 @@ def audit_pair(pair: dict[str, str], base: Path) -> dict[str, object]:
     )
     if not body_equal:
         errors.append("Table body bytes differ")
+    nominal_metadata = all(
+        metadata.get("FDR") == "False" and metadata.get("Stat-Type") in {None, "p_value"}
+        for metadata in (old_meta, new_meta)
+    )
     for key in changes:
-        if key not in FINGERPRINTS or key in old_meta:
+        new_nominal_label = (
+            nominal_metadata
+            and key in {"Threshold-Statistic", "Hit-Statistic"}
+            and key not in old_meta
+            and new_meta.get(key) == "nominal p"
+        )
+        if not new_nominal_label and (key not in FINGERPRINTS or key in old_meta):
             errors.append(f"Unexpected metadata change: {key}")
     for key, input_key in FINGERPRINTS.items():
         if new_meta.get(key) != inputs[input_key]["sha256"]:

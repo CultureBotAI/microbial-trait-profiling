@@ -15,9 +15,10 @@ import argparse
 import io
 import math
 import sys
-from collections.abc import Sequence
+from collections.abc import Iterator, Sequence
+from contextlib import ExitStack
 from pathlib import Path
-from typing import Any
+from typing import Any, TextIO
 
 import numpy as np
 import pandas as pd
@@ -336,6 +337,68 @@ def generate_figure1_condition_anatomy_ora_heatmap(
     return output_path
 
 
+class _OraTableReader:
+    """Validate metadata, then stream its table without reopening the source."""
+
+    def __init__(self, source: TextIO) -> None:
+        self._source = source
+        self._table_header = ""
+        refuse_nominal_ora(self._metadata_lines())
+
+    def _metadata_lines(self) -> Iterator[str]:
+        for line in self._source:
+            if line.strip() and not line.startswith("#"):
+                self._table_header = line
+            yield line
+
+    def readable(self) -> bool:
+        return True
+
+    @property
+    def mode(self) -> str:
+        return self._source.mode
+
+    @property
+    def closed(self) -> bool:
+        return self._source.closed
+
+    def seekable(self) -> bool:
+        return False
+
+    def seek(self, offset: int, whence: int = 0) -> int:
+        raise io.UnsupportedOperation(f"Validated ORA stream cannot seek ({offset}, {whence})")
+
+    def tell(self) -> int:
+        raise io.UnsupportedOperation("Validated ORA stream has no seek position")
+
+    def fileno(self) -> int:
+        raise io.UnsupportedOperation("Validated ORA stream cannot bypass its header buffer")
+
+    def __iter__(self) -> Iterator[str]:
+        return self
+
+    def __next__(self) -> str:
+        line = self.readline()
+        if not line:
+            raise StopIteration
+        return line
+
+    def readline(self, size: int = -1) -> str:
+        if not self._table_header:
+            return self._source.readline(size)
+        length = len(self._table_header) if size < 0 else size
+        line, self._table_header = self._table_header[:length], self._table_header[length:]
+        return line
+
+    def read(self, size: int = -1) -> str:
+        if size < 0:
+            prefix, self._table_header = self._table_header, ""
+            return prefix + self._source.read()
+        prefix = self._table_header[:size]
+        self._table_header = self._table_header[size:]
+        return prefix + self._source.read(size - len(prefix))
+
+
 def generate_figure2_calibrated_ora_infographic(
     taxa_matrix_path: Path,
     experiments_path: Path,
@@ -345,14 +408,41 @@ def generate_figure2_calibrated_ora_infographic(
     columns_path: Path | None = None,
 ) -> Path:
     """Render Calibrated ORA Infographic & Governance Summary."""
-    # Validate the same buffers used below, including a supplied depletion file
-    # even if the enrichment rows later provide all displayed decreased hits.
-    ora_text: dict[Path, str] = {}
-    for source in (enrichment_results_path, depletion_results_path):
-        if source is not None and source.exists():
-            text = source.read_text(encoding="utf-8")
-            refuse_nominal_ora(io.StringIO(text))
-            ora_text[source] = text
+    # Validate every supplied header before reading the matrix, including an
+    # unused depletion source. Keep these same handles for any needed parsing.
+    with ExitStack() as stack:
+        ora_readers: dict[Path, _OraTableReader] = {}
+        for source in (enrichment_results_path, depletion_results_path):
+            if source is not None and source not in ora_readers and source.exists():
+                handle = stack.enter_context(source.open(encoding="utf-8"))
+                ora_readers[source] = _OraTableReader(handle)
+        return _render_figure2_calibrated_ora_infographic(
+            taxa_matrix_path,
+            experiments_path,
+            output_path,
+            enrichment_results_path,
+            depletion_results_path,
+            columns_path,
+            ora_readers,
+        )
+
+
+def _render_figure2_calibrated_ora_infographic(
+    taxa_matrix_path: Path,
+    experiments_path: Path,
+    output_path: Path,
+    enrichment_results_path: Path | None,
+    depletion_results_path: Path | None,
+    columns_path: Path | None,
+    ora_readers: dict[Path, _OraTableReader],
+) -> Path:
+    """Render using validated streams, parsing each needed table only once."""
+    ora_tables: dict[Path, pd.DataFrame] = {}
+
+    def read_table(path: Path) -> pd.DataFrame:
+        if path not in ora_tables:
+            ora_tables[path] = pd.read_csv(ora_readers[path], sep="\t", comment="#")
+        return ora_tables[path]
 
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
@@ -387,8 +477,8 @@ def generate_figure2_calibrated_ora_infographic(
     top_dep_labels: list[str] = []
     top_dep_counts: list[int] = []
 
-    if enrichment_results_path and enrichment_results_path.exists():
-        enc_df = pd.read_csv(io.StringIO(ora_text[enrichment_results_path]), sep="\t", comment="#")
+    if enrichment_results_path is not None and enrichment_results_path in ora_readers:
+        enc_df = read_table(enrichment_results_path)
         trait_col = (
             "trait"
             if "trait" in enc_df.columns
@@ -427,8 +517,12 @@ def generate_figure2_calibrated_ora_infographic(
             top_dep_labels = list(t_counts.index)
             top_dep_counts = [int(v) for v in t_counts.values]
 
-    if not top_dep_labels and depletion_results_path and depletion_results_path.exists():
-        dep_df = pd.read_csv(io.StringIO(ora_text[depletion_results_path]), sep="\t", comment="#")
+    if (
+        not top_dep_labels
+        and depletion_results_path is not None
+        and depletion_results_path in ora_readers
+    ):
+        dep_df = read_table(depletion_results_path)
         trait_col = (
             "trait"
             if "trait" in dep_df.columns
