@@ -4965,16 +4965,16 @@
       ],
       "area": "Custom anatomical-site ORA",
       "hypotheses": "One profile x retained annotated trait within a user-requested anatomical site.",
-      "family_definition": "Global BH over profile x eligible trait tests within each requested site; --fdr-scope profile or --no-fdr can override.",
+      "family_definition": "Default global BH over profile x eligible trait tests within each requested site; --fdr-scope profile uses a separate BH family per profile. --no-fdr performs no correction and records scope none regardless of the requested FDR scope.",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "Select profiles for the user-requested site through stratification, pass that partition and the supplied taxa background to run_stratum_enrichment, then honor its global/profile/no-fdr option.",
+        "selection_rule": "Select profiles for the user-requested site through stratification and pass that partition and the supplied taxa background to run_stratum_enrichment. Test traits with positive background count in profiles with positive retained count; use global/profile BH or nominal p-value selection when --no-fdr is set.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BH",
       "comparison_procedure": [],
       "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
-      "threshold": "Configured p-threshold interpreted as q when FDR enabled, with configured min-fold.",
+      "threshold": "fdr_q <= configured p-threshold when FDR is enabled; p_value <= configured p-threshold in nominal --no-fdr mode. Both require fold >= configured min-fold for the upper-tail enrichment run.",
       "outputs": [
         {
           "file": "trait_enrichment_all_results_<site>.tsv",
@@ -4994,10 +4994,8 @@
         "R5",
         "R7"
       ],
-      "deliberate_difference": "BH preserves the default native global ORA procedure for each user-selected site so anatomical sensitivity remains comparable to its native producer; explicit profile/no-fdr overrides must be reported separately (methods/multiple_testing_policy.md R4).",
-      "open_issue": [
-        1409
-      ],
+      "deliberate_difference": "BH preserves the default native global ORA procedure for each user-selected site; profile-scope BH is an explicit override. Nominal --no-fdr outputs use p_value with blank fdr_q, correction_family=none and FDR-Scope: none metadata; they perform no FDR correction and must remain separately labelled (methods/multiple_testing_policy.md R4).",
+      "open_issue": [],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
         {
