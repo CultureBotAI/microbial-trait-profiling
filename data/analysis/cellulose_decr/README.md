@@ -599,13 +599,15 @@ stay out of git outside `trait-visualization/`.
   supplemental SVG figures (`fig7_tufte_convergence_network_and_venn.svg`,
   `fig8_literature_support_four_pairs.svg`, `fig9_set_theory_17_core_vs_pairwise.svg`),
   the combined `cellulose_decr_tufte_figures.pdf` in `figures_tufte/`, and the
-  16-slide HTML deck `cellulose_decr_slide_deck.html`. Every historical plate,
+  16-slide HTML deck `cellulose_decr_slide_deck.html`. Every newly generated audit plate,
   standalone SVG and HTML slide carries the banner
   `RETIRED: historical, unverified numbers (#1572)`. Audit opt-in does not validate
   or recompute the historical numbers. Source snapshots and source-pin tests are
   retained as evidence. A replacement built from current rerun data is pending
   under [#1670](https://github.com/CultureBotAI/microbial-trait-profiling/issues/1670).
   The separate seven-plate generator, `scripts/generate_tufte_plates.py`, is unaffected.
+  Older unmarked copies trigger a warning: preview with `just cellulose-decr-cleanup-retired`,
+  then add `--delete` to remove only the 23 historical files, preserving current figures.
 
 Reruns of the current figures on the same tables give identical bytes.
 

@@ -8,14 +8,21 @@ from __future__ import annotations
 import hashlib
 import importlib
 import json
+import re
 import shutil
+import xml.etree.ElementTree as ET
 from collections.abc import Callable
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from pathlib import Path
+from typing import Any, Literal, cast
 
+import matplotlib
 import pandas as pd
 import pytest
+from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.figure import Figure
+from matplotlib.text import Text
+from PIL import Image, ImageChops
 
 from mtp.cellulose_decr import figures
 from mtp.cellulose_decr.analysis import (
@@ -286,15 +293,142 @@ def test_the_figures_are_drawn_in_their_style(
 
 # ----------------------------------------------------------------------- tufte plates & deck (#550)
 
+RETIREMENT_BANNER = "RETIRED: historical, unverified numbers (#1572)"
+HISTORICAL_PLATE_STEMS = (
+    "fig1_tufte_convergence_slope_and_overlap",
+    "fig2_tufte_core_guild_dot_table",
+    "fig3_tufte_why_only_stool",
+    "fig4_tufte_trait_landscape_and_four_pairs",
+    "fig5_tufte_three_statistical_arms",
+    "fig6_tufte_combining_results_integrated_evidence",
+)
+HISTORICAL_SVG_STEMS = (
+    *HISTORICAL_PLATE_STEMS,
+    "fig7_tufte_convergence_network_and_venn",
+    "fig8_literature_support_four_pairs",
+    "fig9_set_theory_17_core_vs_pairwise",
+)
+
+
+@dataclass(frozen=True)
+class RetirementSave:
+    kind: Literal["standalone", "packet", "packet_figure"]
+    name: str
+    format: str
+    text: str
+    visible: bool
+    bounds: tuple[float, float, float, float]
+    canvas: tuple[float, float, float, float]
+
+
+@dataclass(frozen=True)
+class RetirementExport:
+    directory: Path
+    saves: tuple[RetirementSave, ...]
+    png_without_banner: dict[str, Path]
+
+
+def _retirement_artist(figure: Figure) -> Text:
+    banners = [text for text in figure.texts if text.get_text() == RETIREMENT_BANNER]
+    assert len(banners) == 1, "A real save must receive exactly one retirement banner"
+    banner = banners[0]
+    assert banner.get_text().strip(), "Banner empty before a real save"
+    assert banner.get_visible(), "Banner hidden before a real save"
+    return banner
+
+
+def _retirement_save(
+    figure: Figure,
+    kind: Literal["standalone", "packet", "packet_figure"],
+    name: str,
+    format_name: str,
+) -> RetirementSave:
+    banner = _retirement_artist(figure)
+    figure.draw_without_rendering()
+    bounds = banner.get_window_extent()
+    assert bounds.width > 0, f"{name}: empty banner width"
+    assert bounds.height > 0, f"{name}: empty banner height"
+    assert figure.bbox.contains(bounds.x0, bounds.y0), f"{name}: banner starts outside canvas"
+    assert figure.bbox.contains(bounds.x1, bounds.y1), f"{name}: banner ends outside canvas"
+    return RetirementSave(
+        kind,
+        name,
+        format_name,
+        banner.get_text(),
+        banner.get_visible(),
+        (bounds.x0, bounds.y0, bounds.x1, bounds.y1),
+        (figure.bbox.x0, figure.bbox.y0, figure.bbox.x1, figure.bbox.y1),
+    )
+
 
 @pytest.fixture(scope="module")
-def generated_tufte_dir(tmp_path_factory: pytest.TempPathFactory) -> Path:
-    """Generate all Tufte plates, standalone SVGs, and the 16-slide HTML deck once (#550)."""
+def retirement_export(tmp_path_factory: pytest.TempPathFactory) -> RetirementExport:
+    """Call the real writer once, checking each save and retaining PNG controls (#1706)."""
     from mtp.cellulose_decr import tufte_plates
 
     out_dir = tmp_path_factory.mktemp("cellulose_decr_tufte")
-    assert tufte_plates.main(["--audit-retired", "--analysis-dir", str(out_dir)]) == 0
-    return out_dir
+    reference_dir = tmp_path_factory.mktemp("cellulose_decr_without_banner")
+    saves: list[RetirementSave] = []
+    png_without_banner: dict[str, Path] = {}
+    # Matplotlib's PDF backend passes PdfPages through Figure.savefig internally;
+    # its public filename annotation omits that supported internal destination.
+    figure_savefig = cast(Callable[..., None], Figure.savefig)
+    packet_savefig = cast(Callable[..., None], PdfPages.savefig)
+    pagecount = cast(Callable[[PdfPages], int], PdfPages.get_pagecount)
+
+    def checked_figure_savefig(
+        figure: Figure,
+        destination: Any,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        if isinstance(destination, PdfPages):
+            saves.append(_retirement_save(figure, "packet_figure", "packet page", "pdf"))
+            figure_savefig(figure, destination, *args, **kwargs)
+            return
+        assert isinstance(destination, Path), "Unexpected destination from the historical writer"
+        format_name = destination.suffix.removeprefix(".")
+        saves.append(_retirement_save(figure, "standalone", destination.name, format_name))
+        figure_savefig(figure, destination, *args, **kwargs)
+        if format_name != "png":
+            return
+
+        # Check before changing visibility: never repair an already-hidden banner.
+        banner = _retirement_artist(figure)
+        original_visibility, original_dpi = banner.get_visible(), figure.dpi
+        try:
+            figure.set_dpi(float(kwargs["dpi"]))
+            figure.draw_without_rendering()
+            # Freeze the visible export's tight crop before removing its text.
+            # Otherwise tight cropping would move the original kicker into this band.
+            crop = figure.get_tightbbox().padded(float(matplotlib.rcParams["savefig.pad_inches"]))
+            reference_kwargs = {**kwargs, "bbox_inches": crop, "pad_inches": 0}
+            reference = reference_dir / destination.name
+            banner.set_visible(False)
+            figure_savefig(figure, reference, *args, **reference_kwargs)
+            png_without_banner[destination.stem] = reference
+        finally:
+            banner.set_visible(original_visibility)
+            figure.set_dpi(original_dpi)
+
+    def checked_packet_savefig(packet: PdfPages, figure: Figure, **kwargs: Any) -> None:
+        before = pagecount(packet)
+        page = before + 1
+        saves.append(_retirement_save(figure, "packet", f"packet page {page}", "pdf"))
+        packet_savefig(packet, figure, **kwargs)
+        assert pagecount(packet) == page, f"Packet page {page} was not written"
+
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(Figure, "savefig", checked_figure_savefig)
+        patch.setattr(PdfPages, "savefig", checked_packet_savefig)
+        assert tufte_plates.main(["--audit-retired", "--analysis-dir", str(out_dir)]) == 0
+    return RetirementExport(out_dir, tuple(saves), png_without_banner)
+
+
+@pytest.fixture(scope="module")
+def generated_tufte_dir(retirement_export: RetirementExport) -> Path:
+    """Share the one real 23-file export with the existing artifact tests."""
+    return retirement_export.directory
 
 
 def test_tufte_plates_and_slide_deck_generation(generated_tufte_dir: Path) -> None:
@@ -323,6 +457,134 @@ def test_tufte_plates_and_slide_deck_generation(generated_tufte_dir: Path) -> No
     assert deck_html.stat().st_size > 0
     html_text = deck_html.read_text(encoding="utf-8")
     assert html_text.count('<section class="slide') == 16
+
+
+def test_written_outputs_check_banner_at_every_real_save(
+    retirement_export: RetirementExport,
+) -> None:
+    """All 18 standalone saves and six packet pages reach the actual writers.
+
+    This checks PDF writer inputs and complete saved files. Extracting text from
+    PDF bytes is deliberately outside this test's dependency-free scope (#1706).
+    """
+    standalone = [save for save in retirement_export.saves if save.kind == "standalone"]
+    packet = [save for save in retirement_export.saves if save.kind == "packet"]
+    packet_figures = [save for save in retirement_export.saves if save.kind == "packet_figure"]
+    assert len(standalone) == 18
+    assert {save.name for save in standalone} == {
+        f"{stem}.{extension}"
+        for stem in HISTORICAL_PLATE_STEMS
+        for extension in ("svg", "pdf", "png")
+    }
+    for extension in ("svg", "pdf", "png"):
+        assert sum(save.format == extension for save in standalone) == 6
+    assert [save.name for save in packet] == [f"packet page {page}" for page in range(1, 7)]
+    assert len(packet_figures) == 6
+    assert all(save.format == "pdf" for save in (*packet, *packet_figures))
+    for save in retirement_export.saves:
+        assert save.text == RETIREMENT_BANNER, save.name
+        assert save.visible, save.name
+        x0, y0, x1, y1 = save.bounds
+        left, bottom, right, top = save.canvas
+        assert left <= x0 < x1 <= right, save.name
+        assert bottom <= y0 < y1 <= top, save.name
+    pdf_names = [f"{stem}.pdf" for stem in HISTORICAL_PLATE_STEMS]
+    pdf_names.append("cellulose_decr_tufte_figures.pdf")
+    for name in pdf_names:
+        data = (retirement_export.directory / "figures_tufte" / name).read_bytes()
+        assert len(data) > 100, f"{name}: missing PDF content"
+        assert data.startswith(b"%PDF-"), f"{name}: missing PDF header"
+        assert data.rstrip().endswith(b"%%EOF"), f"{name}: incomplete PDF file"
+
+
+@pytest.mark.parametrize("stem", HISTORICAL_SVG_STEMS)
+def test_written_svg_has_retirement_text(generated_tufte_dir: Path, stem: str) -> None:
+    root = ET.fromstring((generated_tufte_dir / "figures_tufte" / f"{stem}.svg").read_text())
+    texts = [" ".join("".join(node.itertext()).split()) for node in root.findall(".//{*}text")]
+    assert texts.count(RETIREMENT_BANNER) == 1, stem
+
+
+def _ink_mask(image: Image.Image) -> Image.Image:
+    rgb = image.convert("RGB")
+    background = Image.new("RGB", rgb.size, "#fbfaf7")
+    difference = ImageChops.difference(rgb, background)
+    return difference.convert("L").point(lambda value: 255 if value > 32 else 0)
+
+
+def _first_ink_band_bounds(image: Image.Image) -> tuple[int, int, int, int]:
+    """Locate the saved image's first text line, retaining its canvas coordinates."""
+    mask = _ink_mask(image)
+    rows = mask.getprojection()[1]
+    top = next((index for index, occupied in enumerate(rows) if occupied), None)
+    assert top is not None, "Saved image has no visible ink"
+    bottom = next((index for index in range(top, len(rows)) if not rows[index]), len(rows))
+    band = mask.crop((0, top, mask.width, bottom))
+    bounds = band.getbbox()
+    assert bounds is not None
+    return (bounds[0], top + bounds[1], bounds[2], top + bounds[3])
+
+
+@pytest.mark.parametrize("stem", HISTORICAL_PLATE_STEMS)
+def test_written_png_pixels_contain_the_retirement_band(
+    retirement_export: RetirementExport,
+    stem: str,
+) -> None:
+    """The saved PNG has ink where the same saved band without the banner is blank."""
+    path = retirement_export.directory / "figures_tufte" / f"{stem}.png"
+    with (
+        Image.open(path) as saved,
+        Image.open(retirement_export.png_without_banner[stem]) as control,
+    ):
+        assert saved.size == control.size, "The no-banner reference must preserve the actual crop"
+        bounds = _first_ink_band_bounds(saved)
+        visible_band = saved.crop(bounds).convert("RGB")
+        removed_band = control.crop(bounds).convert("RGB")
+    visible_ink = _ink_mask(visible_band)
+    assert sum(visible_ink.histogram()[1:]) > 100, f"{stem}: saved banner has no substantial ink"
+    assert _ink_mask(removed_band).getbbox() is None, f"{stem}: control band contains other content"
+    assert ImageChops.difference(visible_band, removed_band).getbbox() is not None, stem
+
+
+def _written_css_properties(html_text: str, selectors: set[str]) -> dict[str, str]:
+    """Apply source-order declarations for the deck's flat, equally specific classes."""
+    css = "\n".join(re.findall(r"<style[^>]*>(.*?)</style>", html_text, re.DOTALL))
+    properties: dict[str, str] = {}
+    for selector, body in re.findall(r"([^{}]+)\{([^{}]*)\}", css):
+        if selector.strip() not in selectors:
+            continue
+        for declaration in body.split(";"):
+            name, separator, value = declaration.partition(":")
+            if not separator:
+                continue
+            name, value = name.strip(), value.strip()
+            properties[name] = value
+            if name == "padding":
+                properties["padding-top"] = value.split()[0]
+    return properties
+
+
+def _css_pixels(value: str) -> float:
+    assert re.fullmatch(r"[0-9.]+px", value), f"Expected explicit pixel dimensions, got {value!r}"
+    return float(value.removesuffix("px"))
+
+
+def test_written_html_banners_keep_original_slide_content_clear(generated_tufte_dir: Path) -> None:
+    html_text = (generated_tufte_dir / "cellulose_decr_slide_deck.html").read_text()
+    sections = re.findall(r"<section\b.*?</section>", html_text, re.DOTALL)
+    assert len(sections) == 16
+    for number, section in enumerate(sections, start=1):
+        banners = re.findall(r'<div class="retirement-banner">(.*?)</div>', section)
+        assert banners == [RETIREMENT_BANNER], f"Written slide {number} lost its banner"
+    banner = _written_css_properties(html_text, {".slide > .retirement-banner"})
+    slide = _written_css_properties(html_text, {".slide"})
+    cover = _written_css_properties(html_text, {".slide", ".cover-slide"})
+    page = _written_css_properties(html_text, {"@page"})
+    banner_height = _css_pixels(banner["height"])
+    assert banner_height == 36
+    assert _css_pixels(slide["padding-top"]) >= banner_height + 20
+    assert _css_pixels(cover["padding-top"]) >= banner_height + 64
+    assert _css_pixels(slide["height"]) >= 1000 + banner_height
+    assert _css_pixels(page["size"].split()[1]) >= _css_pixels(slide["height"])
 
 
 def test_plate2_species_roles_do_not_overlap_disease_dots(generated_tufte_dir: Path) -> None:

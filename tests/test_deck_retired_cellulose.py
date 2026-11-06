@@ -200,3 +200,94 @@ def test_absolute_retired_assets_are_excluded_from_both_roots(
         checkout=checkout,
     )
     assert [entry["figure_file_path"] for entry in entries] == list(preserved)
+
+
+@pytest.mark.parametrize("version", ["v1", "v2"])
+@pytest.mark.parametrize("section", ["Main", "Appendix"])
+def test_symlink_aliases_to_retired_assets_are_excluded_from_both_roots(
+    deck: ModuleType,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    version: str,
+    section: str,
+) -> None:
+    """Resolve file and directory links while retaining links to current figures."""
+    input_root = tmp_path / "input"
+    checkout = tmp_path / "checkout"
+    retired_aliases: list[str] = []
+    preserved_aliases: list[str] = []
+    for root in (input_root, checkout):
+        for relative in HISTORICAL_OUTPUTS:
+            target = root / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text("legacy artifact fixture", encoding="utf-8")
+        directory_alias = root / "retired-directory-alias"
+        directory_alias.symlink_to(root / CELLULOSE, target_is_directory=True)
+        for relative in HISTORICAL_OUTPUTS:
+            file_alias = root / "file-aliases" / Path(relative).name
+            file_alias.parent.mkdir(parents=True, exist_ok=True)
+            file_alias.symlink_to(root / relative)
+            retired_aliases.extend(
+                (
+                    str(file_alias),
+                    str(directory_alias / Path(relative).relative_to(CELLULOSE)),
+                )
+            )
+        for index, relative in enumerate((PRESERVED[0], PRESERVED[2])):
+            target = root / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text("current figure fixture", encoding="utf-8")
+            alias = root / f"current-figure-alias-{index}{target.suffix}"
+            alias.symlink_to(target)
+            preserved_aliases.append(str(alias))
+
+    preserved = (*PRESERVED, *preserved_aliases)
+    entries = selected_inherited_entries(
+        deck,
+        input_root,
+        monkeypatch,
+        version,
+        section,
+        (*retired_aliases, *preserved),
+        checkout=checkout,
+    )
+    assert [entry["figure_file_path"] for entry in entries] == list(preserved)
+
+
+@pytest.mark.parametrize("version", ["v1", "v2"])
+@pytest.mark.parametrize("section", ["Main", "Appendix"])
+def test_retirement_filter_preserves_paths_outside_exact_root_and_name_scope(
+    deck: ModuleType,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    version: str,
+    section: str,
+) -> None:
+    """Pin the existing two-root, 23-name, case-sensitive policy without widening it."""
+    input_root = tmp_path / "input"
+    checkout = tmp_path / "checkout"
+    third_root = tmp_path / "other-checkout"
+    preserved = (
+        *(str(third_root / relative) for relative in HISTORICAL_OUTPUTS),
+        *(
+            str(root / relative)
+            for root in (input_root, checkout)
+            for relative in (
+                HISTORICAL_OUTPUTS[0].replace("cellulose_decr/", "Cellulose_decr/"),
+                HISTORICAL_OUTPUTS[0].replace(".svg", ".SVG"),
+                f"{CELLULOSE}/figures_tufte/unlisted_figure.svg",
+            )
+        ),
+    )
+    assert len(HISTORICAL_OUTPUTS) == 23
+    assert frozenset(HISTORICAL_OUTPUTS) == deck.RETIRED_CELLULOSE_OUTPUTS
+    entries = selected_inherited_entries(
+        deck,
+        input_root,
+        monkeypatch,
+        version,
+        section,
+        preserved,
+        checkout=checkout,
+    )
+    assert [entry["figure_file_path"] for entry in entries] == list(preserved)

@@ -4133,7 +4133,8 @@ def placed_slides(
     return placed
 
 
-# Historical outputs must not return through a user's earlier deck manifests (#1572).
+# These 23 exact, case-sensitive relative names define the historical outputs (#1572).
+# The inherited-manifest filter resolves them under the input and checkout roots.
 # Current CELLULOSE figures and data/derived/tufte_plates/ remain eligible.
 RETIRED_CELLULOSE_OUTPUTS = frozenset(
     f"{CELLULOSE_DIR}/figures_tufte/{stem}.{extension}"
@@ -4170,6 +4171,10 @@ def build_deck(
     ``trees`` holds the blob ids of the revisions the slides cite. A file that differs from
     its revision stops the build unless ``allow_unverified``; the deck is then a review
     build, like one with a ``review`` reason, and the files that differ are not linked.
+
+    Inherited v1/v2 Main and Appendix entries are excluded when their resolved paths
+    match one of the 23 exact, case-sensitive historical names under the input root
+    ``repo`` or the checkout root ``REPO_ROOT``. This includes symlink aliases.
     """
     if trees is None and not allow_unverified:
         raise SystemExit("no git listings to check the slides against; pass --allow-unverified")
@@ -4220,8 +4225,8 @@ def build_deck(
     for manifest_path in (v1_manifest_path, v2_manifest_path):
         if not manifest_path.exists():
             raise FileNotFoundError(f"missing earlier deck manifest {manifest_path}")
-    # Match filesystem identities under both input and checkout roots. This also catches
-    # absolute paths, dot segments and symlink aliases without reading asset contents.
+    # Compare resolved paths for the 23 exact, case-sensitive names under the input and
+    # checkout roots, including absolute paths, dot segments and symlink aliases.
     # Filter both inputs before either Main or Appendix can inherit an old entry.
     retired_paths = {
         (root / relative).resolve()

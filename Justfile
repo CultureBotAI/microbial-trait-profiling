@@ -474,7 +474,13 @@ cellulose-decr-figures *ARGS:
 		esac
 	done
 	commit="$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} data/analysis/cellulose_decr && git diff --cached --quiet -- {{code_paths}} data/analysis/cellulose_decr || echo +dirty)"
+	uv run python -m mtp.cellulose_decr.retired_outputs warn
 	uv run python -m mtp.cellulose_decr.figures --code-commit "$commit" "$@"
+
+# Preview exactly the 23 retired files; pass --delete for explicit removal (#1705).
+[positional-arguments]
+cellulose-decr-cleanup-retired *ARGS:
+	uv run python -m mtp.cellulose_decr.retired_outputs cleanup "$@"
 
 # Audit-only historical plates/deck: requires --audit-retired (#1572).
 # Unverified numbers; replacement from current rerun data is pending under #1670.

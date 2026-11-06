@@ -165,8 +165,9 @@ def test_default_figure_recipe_only_invokes_current_renderer(tmp_path: Path) -> 
     )
     assert result.returncode == 0, result.stderr
     calls = log.read_text().splitlines()
-    assert len(calls) == 1
-    assert "-m mtp.cellulose_decr.figures " in calls[0]
+    assert len(calls) == 2
+    assert calls[0] == "run python -m mtp.cellulose_decr.retired_outputs warn"
+    assert "-m mtp.cellulose_decr.figures " in calls[1]
 
 
 def test_historical_recipe_does_not_supply_audit_permission_implicitly() -> None:

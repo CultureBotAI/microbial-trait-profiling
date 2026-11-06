@@ -319,13 +319,16 @@ historical display, with explicit opt-in:
 just cellulose-decr-tufte --audit-retired
 ```
 
-Every historical plate, standalone SVG and HTML slide carries the banner
+Every newly generated audit plate, standalone SVG and HTML slide carries the banner
 `RETIRED: historical, unverified numbers (#1572)`. Opting in reproduces the
 historical display; it does not validate its numbers or recompute them from current
 data. The tracked source snapshots and their source-pin tests remain audit evidence.
 A replacement built from current rerun data is pending under
 [#1670](https://github.com/CultureBotAI/microbial-trait-profiling/issues/1670).
 The separate seven-plate generator, `scripts/generate_tufte_plates.py`, is unaffected.
+Older unmarked copies trigger a warning; preview their exact-file cleanup with
+`just cellulose-decr-cleanup-retired`, then add `--delete` to remove only the 23
+historical files while keeping current figures and directories.
 
 **Building the inputs.**
 
