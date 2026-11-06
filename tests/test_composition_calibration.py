@@ -555,3 +555,53 @@ def test_zero_total_paired_studies_do_not_desynchronize_flip_assignments(
             )
         }
         assert df_nonzero_flipped == expected_nonzero_flipped
+
+
+def test_composition_null_pvalues_are_marked_as_uncorrected_calibration_diagnostics(
+    tmp_path: Path,
+    synthetic_paired_profiles: pd.DataFrame,
+) -> None:
+    """#1410, #1485, #1488: null_p_value and saved artifacts carry unified diagnostic labels."""
+    import mtp.calibration as cal
+    from mtp.composition_calibration.composition import save_composition_calibration_artifacts
+
+    traits = ["trait_A", "trait_B", "trait_C"]
+    summary_dict, summary_df, replicates_df, null_pvals_df, table1_df = run_composition_calibration(
+        profiles_df=synthetic_paired_profiles,
+        trait_columns=traits,
+        replicates=3,
+        seed=182,
+        stream=STREAM,
+    )
+    expected_cols = {
+        "null_p_value",
+        "null_t_statistic",
+        "replicate",
+        "trait",
+        "p_value_diagnostics_role",
+        "p_value_diagnostics_correction",
+        "n_tests",
+    }
+    assert expected_cols <= set(null_pvals_df.columns)
+    assert set(null_pvals_df["p_value_diagnostics_role"]) == {cal.P_VALUE_DIAGNOSTICS_ROLE}
+    assert set(null_pvals_df["p_value_diagnostics_correction"]) == {
+        cal.P_VALUE_DIAGNOSTICS_CORRECTION
+    }
+    assert set(null_pvals_df["n_tests"]) == {len(traits)}
+    assert summary_dict["p_value_diagnostics_role"] == cal.P_VALUE_DIAGNOSTICS_ROLE
+    assert summary_dict["p_value_diagnostics_correction"] == cal.P_VALUE_DIAGNOSTICS_CORRECTION
+    assert summary_dict["p_value_diagnostics"] == cal.P_VALUE_DIAGNOSTICS_NOTE
+
+    saved = save_composition_calibration_artifacts(
+        summary_dict, summary_df, replicates_df, null_pvals_df, table1_df, tmp_path
+    )
+    written_null = pd.read_csv(saved["null_pvalues_tsv"], sep="\t")
+    assert expected_cols <= set(written_null.columns)
+    assert set(written_null["p_value_diagnostics_role"]) == {"calibration_diagnostic"}
+    assert set(written_null["p_value_diagnostics_correction"]) == {"none (nominal)"}
+    assert set(written_null["n_tests"]) == {len(traits)}
+
+    written_summary = json.loads(saved["summary_json"].read_text(encoding="utf-8"))
+    assert written_summary["p_value_diagnostics_role"] == "calibration_diagnostic"
+    assert written_summary["p_value_diagnostics_correction"] == "none (nominal)"
+    assert written_summary["p_value_diagnostics"] == cal.P_VALUE_DIAGNOSTICS_NOTE

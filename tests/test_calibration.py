@@ -6,6 +6,7 @@ import json
 from collections.abc import Sequence
 from dataclasses import replace
 from itertools import combinations
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -846,3 +847,93 @@ def test_a_p_or_q_exactly_at_the_threshold_counts_as_a_rejection() -> None:
     assert (by_label["a"]["rejections_p"], by_label["a"]["rejections_q"]) == (1, 1)
     assert (by_label["b"]["rejections_p"], by_label["b"]["rejections_q"]) == (0, 0)
     assert by_label["FAMILY"]["rejections_q"] == 1
+
+
+def test_calibration_summary_marks_p_value_columns_as_uncorrected_diagnostics(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#1410, #1483, #1485, #1488: raw-p columns and status JSON carry nominal diagnostic labels."""
+    import csv
+
+    import mtp.calibration as cal
+
+    runs = [[Outcome("p", "a", 0.02, 0.04, scored=40)]]
+    rows = summarize(runs, _scenario(), None)
+    row = next(r for r in rows if r["label"] == "a")
+    family = next(r for r in rows if r["label"] == "FAMILY")
+    assert "rejections_p" in row
+    assert "rejection_rate_p" in row
+    assert "smallest_observed_p" in row
+    assert "attainable_p_below_alpha" in row
+    assert "attainable_p_above_alpha" in row
+    assert row["p_value_diagnostics_role"] == "calibration_diagnostic"
+    assert row["p_value_diagnostics_correction"] == "none (nominal)"
+    assert "p_value_diagnostics_role" not in family
+    assert "p_value_diagnostics_correction" not in family
+
+    (rep_row,) = replicate_counts(runs, _scenario(), None)
+    assert rep_row["null_tests_rejected_p"] == 1
+    assert rep_row["p_value_diagnostics_role"] == "calibration_diagnostic"
+    assert rep_row["p_value_diagnostics_correction"] == "none (nominal)"
+
+    note = str(cal.P_VALUE_DIAGNOSTICS_NOTE)
+    for token in (
+        "rejections_p",
+        "rejection_rate_p",
+        "null_tests_rejected_p (at nominal p <= ALPHA)",
+        "smallest_observed_p",
+        "attainable_p_below_alpha",
+        "attainable_p_above_alpha",
+        "null_p_value",
+        "are uncorrected nominal p-value calibration diagnostics, not inferential results",
+    ):
+        assert token in note
+
+    monkeypatch.setattr(
+        cal,
+        "load_profiles",
+        lambda *_a, **_k: (_corpus(studies=10), Outcome("p", "a", 0.02, 0.04)),
+    )
+    monkeypatch.setattr(cal, "read_bugsigdb_vintage", lambda *_a: "2026-04-24")
+    monkeypatch.setattr(
+        cal, "write_stats_report", lambda *_a: (tmp_path / "s.md", tmp_path / "s.tsv")
+    )
+    monkeypatch.setattr(cal, "file_sha256", lambda *_a: "0" * 64)
+    monkeypatch.setattr(cal, "SHARED_FLIP_REPLICATES", 1)
+    monkeypatch.setattr(cal, "SCENARIOS", (cal.NULL_SCENARIOS[0],))
+    monkeypatch.setattr(cal, "procedures_for", lambda: {"fraction_sign_test": fraction_sign_test})
+
+    assert (
+        cal.main(
+            [
+                "--output-dir",
+                str(tmp_path),
+                "--replicates",
+                "1",
+                "--power-replicates",
+                "1",
+                "--seed",
+                "1",
+            ]
+        )
+        == 0
+    )
+    status = json.loads((tmp_path / "calibration_status.json").read_text(encoding="utf-8"))
+    assert status["p_value_diagnostics"] == cal.P_VALUE_DIAGNOSTICS_NOTE
+
+    with (tmp_path / "calibration_results.tsv").open(encoding="utf-8") as handle:
+        written_results = list(csv.DictReader(handle, delimiter="\t"))
+    non_family = [r for r in written_results if r["label"] != "FAMILY"]
+    family_rows = [r for r in written_results if r["label"] == "FAMILY"]
+    assert non_family
+    assert family_rows
+    assert {r["p_value_diagnostics_role"] for r in non_family} == {"calibration_diagnostic"}
+    assert {r["p_value_diagnostics_correction"] for r in non_family} == {"none (nominal)"}
+    assert {r["p_value_diagnostics_role"] for r in family_rows} == {""}
+    assert {r["p_value_diagnostics_correction"] for r in family_rows} == {""}
+
+    with (tmp_path / "calibration_replicates.tsv").open(encoding="utf-8") as handle:
+        written_replicates = list(csv.DictReader(handle, delimiter="\t"))
+    assert written_replicates
+    assert {r["p_value_diagnostics_role"] for r in written_replicates} == {"calibration_diagnostic"}
+    assert {r["p_value_diagnostics_correction"] for r in written_replicates} == {"none (nominal)"}

@@ -37,6 +37,11 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
+from mtp.calibration import (
+    P_VALUE_DIAGNOSTICS_CORRECTION,
+    P_VALUE_DIAGNOSTICS_NOTE,
+    P_VALUE_DIAGNOSTICS_ROLE,
+)
 from mtp.composition_calibration.adapters.jed_composition import (
     DEFAULT_PSEUDOCOUNT_SCALE,
     JedCompositionAdapter,
@@ -307,6 +312,9 @@ def run_composition_calibration(
                     "null_t_statistic": t_r[t_idx],
                     "replicate": rep,
                     "trait": trait_name,
+                    "p_value_diagnostics_role": P_VALUE_DIAGNOSTICS_ROLE,
+                    "p_value_diagnostics_correction": P_VALUE_DIAGNOSTICS_CORRECTION,
+                    "n_tests": m,
                 }
             )
 
@@ -418,6 +426,9 @@ def run_composition_calibration(
         "n_pairs": contrast_data.n_pairs,
         "n_traits": m,
         "pseudocount_scale": pseudocount_scale,
+        "p_value_diagnostics_role": P_VALUE_DIAGNOSTICS_ROLE,
+        "p_value_diagnostics_correction": P_VALUE_DIAGNOSTICS_CORRECTION,
+        "p_value_diagnostics": P_VALUE_DIAGNOSTICS_NOTE,
         "type_i_error_metrics": type_i_metrics,
         "observed_calls": {f"{k[0]}_q_{k[1]}": v for k, v in observed_calls.items()},
         "summary": [asdict(row) for row in summary_rows],

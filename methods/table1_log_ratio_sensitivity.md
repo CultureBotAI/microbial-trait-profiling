@@ -108,14 +108,16 @@ so none of them establishes a reversal.
 *Eligible counts and correction.* Detection at q <= 0.05 is lost on 24 rows, in
 two patterns:
 
-- **Five rows lose only the correction.** They keep a raw p <= 0.05 and fail
-  q <= 0.05 once the family is 30 rows under BY. Moderately halophilic on the
+- **Five rows lose only the correction (`lost at correction`).** They keep a
+  nominal (uncorrected) p <= 0.05 and fail corrected q <= 0.05 once the family is
+  30 rows under BY (so `lost at correction` compares the restricted run's nominal p
+  with its corrected q). Moderately halophilic on the
   arsenate reduction/moderately halophilic pairs is the clearest: share 0.588
   (0.525 to 0.649) on 255 studies, *above* its own baseline of 0.572 (0.538 to
   0.605) on 939, with p = 0.0058 and BY q = 0.0985. Facultatively aerobic on the
   facultatively aerobic/moderately halophilic pairs is the same case: 0.554 (0.513
   to 0.595) on 582 studies, p = 0.0101, q = 0.150.
-- **Nineteen rows lose p <= 0.05 before any correction.** On these rows the
+- **Nineteen rows lose nominal (uncorrected) p <= 0.05 before any correction (`lost before correction`).** On these rows the
   eligible n falls to between a quarter and three quarters of 939, and eighteen of
   the nineteen intervals overlap their baseline.
 
