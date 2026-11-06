@@ -127,7 +127,6 @@ def test_missing_metadata_and_unavailable_analysis_are_not_called_corrected(tmp_
     ("stat_type", "scope", "basis", "hit_label"),
     [
         ("p_value", "none", "nominal p", "Nominal hits"),
-        ("fdr_q", "profile", "FDR q", "FDR hits"),
         (None, None, "unknown", "Hits (statistic not declared)"),
     ],
 )
@@ -163,7 +162,8 @@ def test_written_reports_and_density_counts_label_the_pooled_hit_basis(
         "Support-state names retain 'significant'; interpret each stratum using "
         "its hit statistic and FDR scope above." in report
     )
-    assert f"{hit_label:<24} {'% Hits':<8}" in report
+    hit_width = max(24, len(hit_label))
+    assert f"{hit_label:<{hit_width}} {'% Hits':<8}" in report
     density = pd.read_csv(report_dir / "annotation_density_deciles.tsv", sep="\t")
     assert density["threshold_statistic"].tolist() == [basis]
     assert density["hit_statistic"].tolist() == [basis]
@@ -262,3 +262,87 @@ def test_missing_tested_table_resets_parsed_labels_and_explains_unavailable_hits
     )
     assert "declared unavailable" not in report
     assert pd.read_csv(report_dir / "annotation_density_deciles.tsv", sep="\t").empty
+
+
+@pytest.mark.parametrize("scope", ["global", "profile"])
+@pytest.mark.parametrize("empty", [False, True], ids=["tested", "empty"])
+def test_fdr_report_exports_retain_historical_schema_and_text(
+    tmp_path: Path, scope: str, empty: bool
+) -> None:
+    outputs = {
+        name: _outputs(tmp_path, name, "fdr_q", scope)
+        for name in ("pooled", "feces", "feces_excluded")
+    }
+    if empty:
+        for output in outputs.values():
+            assert output.tested_traits_tsv is not None
+            table = pd.read_csv(output.tested_traits_tsv, sep="\t")
+            table.iloc[:0].to_csv(output.tested_traits_tsv, sep="\t", index=False)
+    reports = tmp_path / "reports"
+    tsv, txt = generate_sensitivity_reports(outputs, reports)
+    density = pd.read_csv(reports / "annotation_density_deciles.tsv", sep="\t")
+    assert list(density.columns) == [
+        "decile",
+        "min_trait_total",
+        "max_trait_total",
+        "total_traits",
+        "significant_traits",
+        "pct_significant",
+    ]
+    assert len(density) == (0 if empty else 1)
+    summary = tsv.read_text(encoding="utf-8")
+    comments = [line for line in summary.splitlines() if line.startswith("#")]
+    assert len(comments) == 3
+    assert comments[2] == "# Evaluated-Strata: pooled,feces,feces_excluded"
+    assert "-Threshold-Statistic:" not in summary
+    assert "-Hit-Statistic:" not in summary
+    assert "-FDR-Scope:" not in summary
+    if not empty:
+        traits = pd.read_csv(tsv, sep="\t", comment="#")
+        expected_columns = ["trait", "trait_total_pooled"]
+        for name in ("pooled", "feces", "feces_excluded"):
+            expected_columns.extend(
+                f"{name}_{suffix}"
+                for suffix in (
+                    "n_tested",
+                    "prevalence",
+                    "best_stat",
+                    "mean_fold",
+                    "significant",
+                    "test_status",
+                )
+            )
+        expected_columns.extend(["support_status", "delta_mean_fold", "delta_prevalence"])
+        assert list(traits.columns) == expected_columns
+        assert traits["pooled_best_stat"].tolist() == [0.02]
+        assert traits["support_status"].tolist() == ["both_strata_significant"]
+    report = txt.read_text(encoding="utf-8")
+    assert "Sig Traits: any test passing the analyzer's declared p/q and fold thresholds." in report
+    assert "Hit statistic:" not in report
+    assert "Support-state names retain" not in report
+    assert f"{'Sig Traits':<12} {'% Sig':<8}" in report
+    if not empty:
+        assert f"{1:<8} {20:<8} {20:<8} {1:<14} {1:<12} {100.0:<8.1f}%" in report
+
+
+def test_nominal_nonpooled_stratum_keeps_the_mixed_report_labels(tmp_path: Path) -> None:
+    outputs = {
+        "pooled": _outputs(tmp_path, "pooled", "fdr_q", "global"),
+        "feces": _outputs(tmp_path, "feces", "p_value", "none"),
+    }
+    summary, text = generate_sensitivity_reports(outputs, tmp_path / "reports")
+    assert "# feces-Hit-Statistic: nominal p\n" in summary.read_text(encoding="utf-8")
+    assert "# pooled-Hit-Statistic: FDR q\n" in summary.read_text(encoding="utf-8")
+    assert "Hit statistic: nominal p | FDR scope: none" in text.read_text(encoding="utf-8")
+
+
+@pytest.mark.parametrize("stat_type", [None, "p_value", "fdr_q"])
+def test_decile_percentage_heading_aligns_with_values(
+    tmp_path: Path, stat_type: str | None
+) -> None:
+    scope = {"p_value": "none", "fdr_q": "global"}.get(stat_type or "")
+    output = _outputs(tmp_path, "pooled", stat_type, scope)
+    _, txt = generate_sensitivity_reports({"pooled": output}, tmp_path / "reports")
+    lines = txt.read_text(encoding="utf-8").splitlines()
+    index = next(i for i, line in enumerate(lines) if line.startswith("Decile"))
+    assert lines[index].index("% ") == lines[index + 1].index("100.0")

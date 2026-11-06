@@ -588,6 +588,21 @@ def generate_sensitivity_reports(
     txt_path = output_dir / "stratification_sensitivity_summary.txt"
 
     per_trait_df, strata_summary_df = build_sensitivity_summary_table(stratum_outputs)
+    # Preserve historical FDR report bytes for the core-strata refresh audit.
+    # Mixed, undeclared and unavailable inputs still need explicit basis labels.
+    legacy_fdr = (
+        not strata_summary_df.empty
+        and strata_summary_df["stat_type"].eq("fdr_q").all()
+        and strata_summary_df["fdr_scope"].isin(["global", "profile"]).all()
+    )
+    if legacy_fdr:
+        per_trait_df = per_trait_df.drop(
+            columns=[
+                column
+                for column in per_trait_df.columns
+                if column.endswith(("_best_stat_basis", "_significance_basis", "_fdr_scope"))
+            ]
+        )
 
     # Use the complete eligible universe, never the discovery-filtered ranking.
     pooled_df = pd.DataFrame()
@@ -603,8 +618,9 @@ def generate_sensitivity_reports(
         (row for _, row in strata_summary_df.iterrows() if row["stratum"] == "pooled"),
         pd.Series(dtype=object),
     )
-    for field in ("threshold_statistic", "hit_statistic", "fdr_scope"):
-        decile_df[field] = pooled_metadata.get(field, "unavailable")
+    if not legacy_fdr:
+        for field in ("threshold_statistic", "hit_statistic", "fdr_scope"):
+            decile_df[field] = pooled_metadata.get(field, "unavailable")
     decile_df.to_csv(output_dir / "annotation_density_deciles.tsv", sep="\t", index=False)
 
     # Write TSV with metadata comments
@@ -612,10 +628,11 @@ def generate_sensitivity_reports(
         f.write(f"# Note: {PRECAUTIONARY_NOTE}\n")
         f.write(f"# Diagnostic: {ANNOTATION_DENSITY_NOTE}\n")
         f.write(f"# Evaluated-Strata: {','.join(stratum_outputs.keys())}\n")
-        for _, row in strata_summary_df.iterrows():
-            f.write(f"# {row['stratum']}-Threshold-Statistic: {row['threshold_statistic']}\n")
-            f.write(f"# {row['stratum']}-Hit-Statistic: {row['hit_statistic']}\n")
-            f.write(f"# {row['stratum']}-FDR-Scope: {row['fdr_scope']}\n")
+        if not legacy_fdr:
+            for _, row in strata_summary_df.iterrows():
+                f.write(f"# {row['stratum']}-Threshold-Statistic: {row['threshold_statistic']}\n")
+                f.write(f"# {row['stratum']}-Hit-Statistic: {row['hit_statistic']}\n")
+                f.write(f"# {row['stratum']}-FDR-Scope: {row['fdr_scope']}\n")
         per_trait_df.to_csv(f, sep="\t", index=False)
 
     # Write comprehensive text report
@@ -647,7 +664,10 @@ def generate_sensitivity_reports(
             f"Ranked Traits: {row['ranked_traits']:<5} | "
             f"Tested Traits: {row['tested_traits']} | Untested Traits: {row['untested_traits']}"
         )
-        txt_lines.append(f"  Hit statistic: {row['hit_statistic']} | FDR scope: {row['fdr_scope']}")
+        if not legacy_fdr:
+            txt_lines.append(
+                f"  Hit statistic: {row['hit_statistic']} | FDR scope: {row['fdr_scope']}"
+            )
 
     pooled_basis = str(pooled_metadata.get("hit_statistic", "unavailable"))
     hit_label = {"nominal p": "Nominal hits", "FDR q": "FDR hits"}.get(
@@ -658,6 +678,14 @@ def generate_sensitivity_reports(
         if pooled_basis in {"nominal p", "FDR q"}
         else "the analyzer's thresholds"
     )
+    hit_description = f"{hit_label}: traits with any test passing {threshold_description}."
+    hit_width = max(24, len(hit_label))
+    percentage_label = "% Hits"
+    if legacy_fdr:
+        hit_label, hit_width, percentage_label = "Sig Traits", 12, "% Sig"
+        hit_description = (
+            "Sig Traits: any test passing the analyzer's declared p/q and fold thresholds."
+        )
 
     txt_lines.extend(
         [
@@ -666,12 +694,12 @@ def generate_sensitivity_reports(
             "-" * 80,
             "Traits binned by background annotation count (trait_total) deciles:",
             "Universe: all eligible tested traits, including traits with zero discoveries.",
-            f"{hit_label}: traits with any test passing {threshold_description}.",
+            hit_description,
             "Untested traits and unavailable analyses are excluded; "
             "empty diagnostics are not zero discovery rates.",
             (
                 f"{'Decile':<8} {'Min K':<8} {'Max K':<8} {'Total Traits':<14} "
-                f"{hit_label:<24} {'% Hits':<8}"
+                f"{hit_label:<{hit_width}} {percentage_label:<8}"
             ),
         ]
     )
@@ -679,7 +707,7 @@ def generate_sensitivity_reports(
     for _, d in decile_df.iterrows():
         txt_lines.append(
             f"{int(d['decile']):<8} {int(d['min_trait_total']):<8} {int(d['max_trait_total']):<8} "
-            f"{int(d['total_traits']):<14} {int(d['significant_traits']):<24} "
+            f"{int(d['total_traits']):<14} {int(d['significant_traits']):<{hit_width}} "
             f"{d['pct_significant']:<8.1f}%"
         )
 
@@ -689,10 +717,13 @@ def generate_sensitivity_reports(
             "4. CROSS-STRATUM CONCORDANCE & SUPPORT STATES",
             "-" * 80,
             f"Total evaluated traits across all strata: {len(per_trait_df)}",
-            "Support-state names retain 'significant'; interpret each stratum using "
-            "its hit statistic and FDR scope above.",
         ]
     )
+    if not legacy_fdr:
+        txt_lines.append(
+            "Support-state names retain 'significant'; interpret each stratum using "
+            "its hit statistic and FDR scope above."
+        )
     for status, count in sorted(support_counts.items(), key=lambda x: -x[1]):
         pct = count / len(per_trait_df) * 100.0 if len(per_trait_df) > 0 else 0.0
         txt_lines.append(f"  - {status:<32}: {count:>4} ({pct:>5.1f}%)")
