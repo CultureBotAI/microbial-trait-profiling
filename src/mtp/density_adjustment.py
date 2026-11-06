@@ -849,8 +849,14 @@ def evaluate_conditional_twin_test(
     if n_paired >= 2 and std_delta_b > 0.0:
         res_paired = stats.linregress(delta_b, delta_a)
         slope_paired = float(res_paired.slope)
-        # Require >= 3 pairs for regression p (N=2 fits two points with 0 residual df, #1660).
-        pval_paired_slope = float(res_paired.pvalue) if n_paired >= 3 else float("nan")
+        # A regression p needs residual variation: >= 3 pairs (N=2 fits two points with
+        # 0 residual df, #1660) and a nonzero standard error (an exact fit makes scipy's
+        # p an artefact of its internal constant, #1713).
+        pval_paired_slope = (
+            float(res_paired.pvalue)
+            if n_paired >= 3 and float(res_paired.stderr) > 0.0
+            else float("nan")
+        )
     else:
         slope_paired = 0.0
         pval_paired_slope = float("nan")

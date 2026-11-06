@@ -781,6 +781,13 @@ def test_evaluate_conditional_twin_test_constant_and_unpaired() -> None:
     assert np.isfinite(summary_three.paired_slope_pvalue)
     assert 0.0 < summary_three.paired_slope_pvalue < 1.0
 
+    # Three pairs on an exact line (delta_A = 3 delta_B + 2): stderr is 0, so no p (#1713)
+    collinear_df = three_pair_df.assign(**{TWIN_A: [10.0, 2.0, 22.0, 5.0, 38.0, 6.0]})
+    summary_exact = evaluate_conditional_twin_test(collinear_df, TWIN_A, TWIN_B)
+    assert summary_exact.n_paired_experiments == 3
+    assert summary_exact.paired_slope_a_on_b == pytest.approx(3.0)
+    assert np.isnan(summary_exact.paired_slope_pvalue)
+
 
 def test_evaluate_table1_paired_effects_missing_keys_and_mismatched_shape() -> None:
     """Verify evaluate_table1_paired_effects handles missing IDs or shape mismatches safely."""
