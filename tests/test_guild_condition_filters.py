@@ -363,8 +363,8 @@ def test_condition_summary_and_labels_report_nominal_paired_t_test_counts(
     )
     top_pd_label = module.paired_smd_label(top_pd_row)
     assert (
-        "(one of 3 condition tests; shown: top 2 by guild-z difference, 1 of them tested)"
-        in top_pd_label
+        "(one of 3 condition tests; shown: top 2 eligible conditions by guild-z difference, "
+        "1 of them tested)" in top_pd_label
     )
     assert module.paired_smd_label(top_rare_row) == "paired d=NA, p=NA (not tested), n=4"
 

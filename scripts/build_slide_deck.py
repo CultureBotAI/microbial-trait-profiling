@@ -992,10 +992,17 @@ def paired_contrast_text(metrics: dict) -> str:
         )
     if level:
         sides.append(f"in {len(level)} the mean Δz is 0")
-    tested = len(tested_rows(contrasts["pooled"]))
+    pooled = contrasts["pooled"]
+    tested = len(tested_rows(pooled))
+    untested = len(untested_family_rows(pooled))
     feces = len(study_bh_rows(contrasts["feces"]))
+    scope = (
+        f"Of {plural(tested, 'trait')} in the pooled study BH family ({untested} not tested)"
+        if untested
+        else f"Of {plural(tested, 'trait')} tested pooled"
+    )
     head = (
-        f"Of {plural(tested, 'trait')} tested pooled, {len(passing)} "
+        f"{scope}, {len(passing)} "
         f"{'passes' if len(passing) == 1 else 'pass'} study-level BH q ≤ 0.05 ({feces} in Feces)"
     )
     return f"{head}: {'; '.join(sides)}." if sides else f"{head}."
@@ -1025,16 +1032,20 @@ def paired_contrast_caveat(metrics: dict) -> str:
     else:
         support = "without reaching nominal p ≤ 0.05"
     excluded = contrasts["feces_excluded"]
+    excluded_family = len(tested_rows(excluded))
     saliva_family = len(tested_rows(contrasts["saliva"]))
     feces_family = len(tested_rows(contrasts["feces"]))
 
-    def untested_note(stratum: str) -> str:
+    def untested_note(stratum: str, *, paren: bool = False) -> str:
         untested = len(untested_family_rows(contrasts[stratum]))
-        return f", {untested} not tested" if untested else ""
+        if not untested:
+            return ""
+        return f" ({untested} not tested)" if paren else f", {untested} not tested"
 
     return (
         f"Without Feces ({studies('feces_excluded')} studies), {len(study_bh_rows(excluded))} "
-        f"of {plural(len(tested_rows(excluded)), 'trait')} pass study BH q ≤ 0.05; in "
+        f"of {plural(excluded_family, 'trait')}{untested_note('feces_excluded', paren=True)} "
+        f"pass study BH q ≤ 0.05; in "
         f"Saliva ({studies('saliva')} studies), {len(study_bh_rows(contrasts['saliva']))} of "
         f"{saliva_family}. Saliva's nitrate reduction has {sign} "
         f"Feces' {support} (t = {t_saliva:+.2f}, nominal p = "
@@ -1805,6 +1816,14 @@ def update_previous_slide_text(row: dict[str, str], metrics: dict) -> tuple[str,
     elif fig_path == "data/derived/guild_maps/guild_condition_body_site_heatmap.png":
         test = metrics.get("mcnemar")
         if test:
+            asymmetric = (
+                test.p_value < 0.05 and test.aerobe_up_anaerobe_down != test.anaerobe_up_aerobe_down
+            )
+            title = (
+                "Oxygen-guild discordance is asymmetric across studies"
+                if asymmetric
+                else "Oxygen-guild discordance across studies"
+            )
             takeaway = (
                 f"Discordant study counts are {test.aerobe_up_anaerobe_down} versus "
                 f"{test.anaerobe_up_aerobe_down}: paired odds ratio {test.odds_ratio:.3f}; "
@@ -1837,7 +1856,8 @@ def _nominal_p_clause(row: Mapping[str, str]) -> str:
 
 def _estimable_effect(row: Mapping[str, str]) -> bool:
     return (
-        _has_finite(row, "coefficient")
+        _has_p(row)
+        and _has_finite(row, "coefficient")
         and _has_finite(row, "ci_low")
         and _has_finite(row, "ci_high")
     )
@@ -1852,7 +1872,7 @@ def pd_direction_caveat(
 
     ``model`` is the cellulose z-score outcome; ``positive`` the share of profiles with a
     positive z-score, which the figure's right panel plots (#590, #608, #1430, #1560, #1561,
-    #1563, #1566).
+    #1563, #1566, #1587, #1589).
     """
     rows = (model, positive)
     tested = [r for r in rows if _has_p(r)]
@@ -1864,7 +1884,7 @@ def pd_direction_caveat(
         total = None
     count = (
         f"{len(tested)} of its {plural(total, 'nominal test')} shown"
-        if total is not None
+        if total
         else f"{plural(len(tested), 'nominal test')} shown"
     )
     shown = [
@@ -1898,6 +1918,8 @@ def pd_direction_caveat(
         f"{signed(float(model['ci_low']), 2)} to {signed(float(model['ci_high']), 2)}, "
         f"{_nominal_p_clause(model)})"
         if _estimable_effect(model)
+        else f"{signed(float(model['coefficient']), 2)} cellulose z (CI and test not estimable)"
+        if _has_finite(model, "coefficient")
         else f"not estimable for cellulose z ({_nominal_p_clause(model)})"
     )
     pos_clause = (
@@ -1905,6 +1927,9 @@ def pd_direction_caveat(
         f"{signed(100 * float(positive['ci_low']))} to {signed(100 * float(positive['ci_high']))}"
         f", {_nominal_p_clause(positive)})"
         if _estimable_effect(positive)
+        else f"{signed(100 * float(positive['coefficient']))} percentage points "
+        "(CI and test not estimable)"
+        if _has_finite(positive, "coefficient")
         else f"not estimable ({_nominal_p_clause(positive)})"
     )
     return (
@@ -2867,7 +2892,8 @@ def get_remaining_appendix_slides(
             )
             caveat = (
                 "Exploratory PD diagnostic; evaluate alongside the "
-                f"{metrics['pd_net_total']}-test study-level fecal Wilcoxon screen."
+                f"{metrics['pd_net_total']}-test study-level fecal Wilcoxon "
+                f"screen{_pd_untested_note(metrics)}."
             )
             if png_path.name == "pd_cellulose_direction_specificity.png":
                 # The study-clustered model of the interaction the figure plots (#590, #599)

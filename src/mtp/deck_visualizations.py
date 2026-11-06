@@ -736,14 +736,16 @@ def lead_consistency_status(
     frac: float,
     pval: float,
 ) -> str:
-    """Classify Figure 3 lead consistency from Wilcoxon and sign tests (#1413, #1615, #1616).
+    """Classify Figure 3 lead consistency from Wilcoxon and sign tests (#1413, #1615, #1616, #1643).
 
     The Wilcoxon direction comes from its signed-rank sum difference (W+ minus W-).
     When the two tests are significant (nominal p < 0.05) in opposite directions,
     "Discordant (nominal p < 0.05)" takes precedence over "Concordant (nominal p < 0.05)"
     because significant opposite-direction evidence refutes multi-scale concordance.
-    When neither test is significant and the two tests point in opposite directions,
-    the status is "Mixed".
+    When one test is significant (nominal p < 0.05) in the expected direction and the
+    other points the opposite way without reaching significance, "Concordant (nominal p < 0.05)"
+    takes precedence over "Mixed". When neither test is significant and the two tests
+    point in opposite directions, the status is "Mixed".
     """
     if target_dir not in ("Decreased", "Increased"):
         raise ValueError(f"Unexpected target_dir: {target_dir!r}")
