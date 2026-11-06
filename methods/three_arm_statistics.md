@@ -10,6 +10,14 @@ smaller p-value in one arm does not establish stronger biological evidence than 
 larger p-value in another. This note compares what each asks and what joint
 interpretation requires; agreement on shared data is not independent replication.
 
+This note preserves historical run descriptions and the original shared-comparison
+proposal. Its quoted family sizes and results are not current defaults. The
+[project policy](multiple_testing_policy.md) and
+[family registry](multiple_testing_families.yaml) govern new reporting: every q
+names its family, executed size, procedure and declared threshold; a p-value alone
+is nominal. The [Vintage](#vintage) section identifies the available historical
+sources and the remaining gaps in their run attribution.
+
 The shared input has one row per study, experiment, and direction, and one column
 per trait; a cell is the number of taxonomically rolled-up trait assertions for
 that trait in that profile — one reported taxon can contribute many counts via
@@ -24,13 +32,16 @@ an exploratory sensitivity, not a causal correction or a replacement arm result.
 
 ## What each arm asks
 
-**Composition arm.** Within one experiment, is a trait's share of the signal
+**Composition arm, historical per-pair test.** Within one experiment, is a trait's share of the signal
 higher on the increased side than on the decreased side? The unit of observation
 is a matched study/experiment pair, and the quantity tested is a difference
-between the two sides of the same pair.
+between the two sides of the same pair. Current native exports also contain a
+separate study-mean t-test, which the infographic and integrated-evidence consumer
+use as primary when available. Its study-weighted hypothesis and correction family
+must not be described as the historical per-pair test.
 
 **Enrichment arm.** Taking one profile on its own, does a trait appear more often
-than its frequency across the whole corpus would predict? In the production run
+than its frequency across the whole corpus would predict? In the historical production run
 (`just analyze`) the unit is a distinct reported taxon, drawn against a background
 of the 5,829 BugSigDB-reported taxa in the trait matrix, and the comparison is
 against that background rather than against the profile's own counterpart.
@@ -70,7 +81,7 @@ here; the first comparison displays every declared candidate in manifest order.
 | Base population | Human experiments with exactly one increased and one decreased profile and consistent pair metadata. Reject ambiguous keys and malformed, missing or negative counts; never silently coerce them to zero. Record all filtering and available annotation-coverage information. Unknown coverage remains flagged. |
 | Analysis scope | The initial comparison pools the full base population. A body-site or condition-by-body-site analysis is a separately identified scope using exact source labels and its own eligible-pair list. Missing labels remain explicit. Heatmap top-N cuts, masking and an Other display group never define the analysis population. |
 | Candidate families | Keep the six traits named in Table 1 and all 15 unordered pairs as separate feature types for the matched-corpus Table 1-trait analog sensitivity analysis. Freeze the source qualifiers and ID mapping in `TABLE1_TRAITS`; orient every ratio in that declared trait order, with an explicit numerator and reference. A larger trait screen requires its own candidate manifest: the directional arm's full-trait screen declares one in [`trait_screen_manifest.json`](trait_screen_manifest.json) and is corrected in its own family, separate from the six (#255). |
-| Fraction denominator | For each profile, sum every column in the declared non-MediaDive trait universe, including traits outside Table 1. That is 317 retained columns in the matrix identified below, built without BacDive strain records (`off`), with 2,333 MediaDive columns excluded; under the primary `phenotype` scope it is 344, as the strain rollup scope sets the universe (see below). Selecting six traits or a ratio must not redefine this total. |
+| Fraction denominator | For each profile, sum every column in the declared non-MediaDive trait universe, including traits outside Table 1. Historical examples below report 317 retained columns under `off`, with 2,333 MediaDive columns excluded, and 344 under `phenotype` in the scope audit. These are run-specific observations; take the actual universe from the run's retained-column inventory. Selecting six traits or a ratio must not redefine this total. |
 | ORA background | For the harmonized baseline, fix the background to all valid profiles in the full paired human base population, using that same retained-column universe. Record its trait totals, grand total and contributing profile IDs. Do not rebuild it from a displayed stratum or a ratio's positive-count subset. Alternative backgrounds are separately versioned sensitivity scenarios. |
 | Weighting | Average eligible experiment contrasts within a study, then give each eligible study equal weight within the declared scope. Pool a study's experiments directly across conditions; do not count each condition-study group as another study. Identify shared cohorts where known when assessing independence and uncertainty. |
 
@@ -109,12 +120,13 @@ run at main 8b280a3.
 | `off` | Sensitivity; continuity with every result before #788 | 317 | 1,198,119 | Nothing |
 | `full` | Exploratory; its own correction family, never headline claims | 4,224 | 3,945,417 | Every strain edge that does not assert an absence, mostly CHEBI, API-assay, EC and GO relations; every negated key is dropped |
 
-Moving the primary from `off` to `phenotype` changes every arm at its next rerun, not only
-the new traits:
+The historical scope audit at main 8b280a3 compared `off` with `phenotype` as follows.
+These are observations from that audit, not predicted counts for the next rerun:
 
-- **Multiple testing.** The full-trait screen's BY and BH families grow from m = 317 to
-  m = 344. The ORA family grows with the trait count, as profiles × traits, and the
-  calibrations are rerun at the new m.
+- **Multiple testing.** The retained-catalog counts were m = 317 and m = 344.
+  A full-trait screen uses its executed catalog; each ORA tail uses its eligible
+  profiles × traits. The matrix audit does not establish completed screen, ORA
+  or calibration runs. Calibrations must use the corresponding executed families.
 - **Denominators.** Every profile's fraction sums 344 retained columns. The retained count
   mass summed over reported taxa rises by 11.4% (136,906). The 27 new traits add only 6.8%
   of that rise. Most of it comes from existing traits that strain records also assert:
@@ -240,8 +252,8 @@ aggregation. Enrichment on both sides can coexist with a small paired contrast.
 
 ## Side by side
 
-The table describes the inspected native analyses: for enrichment, the
-production run, with the Table 1 native reruns' assertion urn noted where it
+The table describes the inspected historical native analyses: for enrichment, the
+historical production run, with the Table 1 native reruns' assertion urn noted where it
 differs. The last two rows identify
 their contribution to the shared basis above. Historical selection settings are
 reported for provenance; they are not the thresholds chosen for harmonized
@@ -255,13 +267,23 @@ framework, described under [Compositionality](#compositionality).
 | Transformation | fractions, x1000, log1p, per-trait z-score | none; each taxon counts once per trait it bears | fractions, study mean per direction, sign of the difference |
 | Test | one-sample t against 0, two-sided | hypergeometric upper tail, one-tailed | exact binomial against 0.5, two-sided |
 | Paired | yes, by construction | no; increased and decreased tested separately | yes, then reduced to one sign per study |
-| Native multiple testing | Benjamini-Hochberg within each output table | Benjamini-Hochberg across every test in the inspected run | Benjamini-Yekutieli across all retained traits (317 under `off`, 344 under `phenotype`), reported at the nominal and the effective family size (#255, #265); the six-trait Benjamini-Hochberg family is retained separately for the published Table 1 numbers |
-| Historical selection/display rule | no significance cutoff; the figure takes the top ten by p | q at most 0.001 and fold at least 1.5 | no display cutoff; q reported per trait |
+| Native multiple testing | Benjamini-Hochberg within each stratum's per-pair trait family (`mt-core-native-pair-t`); the separate current study-mean family is `mt-core-native-study-t` | Benjamini-Hochberg across eligible profile–trait tests separately per tail (`mt-core-ora-upper-global`, `mt-core-ora-lower-global`) | Benjamini-Yekutieli across the executed full retained-trait family (`mt-core-noel-sign-nominal`); effective-multiplier values (`mt-core-noel-sign-effective`, #255, #265) are sensitivity bounds with no FDR guarantee. The six-trait BH family (`mt-supp-table1-direction`) remains separate |
+| Historical selection/display rule | no significance cutoff; the figure takes the top ten by nominal p | upper-tail global-family BH q at most 0.001 and fold at least 1.5 | no display cutoff; full-candidate BY q reported per trait |
 | Typical n per test | 2,257 pairs, identical for every trait | a mean of 9.05 taxa per profile against 5,829 background taxa in the production run; tens of thousands of assertions per profile in the Table 1 native reruns | 2 to 905 of the 922 nonzero studies (932 total) across the 317 `off`-scope candidates, 606 to 898 for the six of Table 1 (ties excluded) |
 | Strength | Uses matched contrasts and their magnitudes; screens many traits | Locates profile-specific excess relative to a declared corpus background | Gives each study one directional vote; exact test without a normality assumption for magnitudes |
 | Main limitations | Repeated experiments within studies are not independent; denominator and transformation affect the estimand | Nested taxa inherit the same annotations, so draws are not independent; coverage and background composition affect calls | Discards magnitude, excludes ties, and remains denominator-dependent; support varies by orders of magnitude across the 317 `off`-scope candidates, so a lopsided share on few studies is not a finding |
 | Contribution to the shared comparison | Supply matched source counts and native transformed effects; reconcile the denominator, then report the common study-weighted fraction/ratio quantities | Supply profile counts, fixed-background folds and native profile evidence; provide separate descriptive increased/decreased study summaries | Supply study-level direction and coverage for the shared fraction quantities and all 15 explicitly referenced ratios |
 | Meaning of disagreement | A mean contrast can be large despite inconsistent study signs | Background enrichment can occur on both sides without a paired shift | Consistent small shifts can coexist with a small mean; ratio directions also depend on the named reference |
+
+For a new run, obtain each native family's size from its complete output inventory
+and eligibility rules in the registry. Native composition first selects traits by
+support and variance, separately per stratum; retain the selected and unfiltered
+counts. Its pair and study p vectors are corrected separately, including declared
+untestable slots. Within-selected-family BH does not adjust for that selection.
+Native ORA counts eligible profiles by eligible traits independently for each tail;
+it does not provide a joint-tail FDR guarantee. Noel's full-screen family retains
+all declared candidates, including untestable slots. No historical count in this
+note can substitute for those execution inventories.
 
 The core paired analyses restrict to human samples and experiments carrying both
 directions, at different points in the pipeline. The enrichment branch filters
@@ -302,6 +324,14 @@ or repair invalid p-values
 ([SciPy's FDR assumptions](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.false_discovery_control.html)).
 No top-k list or agreement count is a combined significance test.
 
+The policy's threshold rule preserves each existing family's declared thresholds;
+its default for a new family does not overwrite native ORA's stricter q/fold rule
+or create a rejection rule in a producer that only exports q. Additive multiplicity
+results have their own families and thresholds, including a joint-tail ORA family;
+they must be labeled as recomputed rather than as native calls. See
+[the additive contract](multiple_testing.md) and
+[adapter families](../docs/multiple_testing_sidecars.md).
+
 Rank and selection stability should resample whole studies, or shared-cohort
 blocks where appropriate, retaining their paired annotation vectors and rerunning
 the relevant filtering, background and analysis steps. This assesses stability;
@@ -314,15 +344,18 @@ decision require the method-appropriate nulls and selection-aware calibration in
 The three tests count different things, so their sample sizes differ by orders of
 magnitude and their p-values cannot be ranked against one another.
 
-The enrichment arm's production urn is built from taxa. Each of the 4,514
+The inspected historical enrichment run's production urn is built from taxa. Each of the 4,514
 testable paired human profiles is a draw of its distinct reported taxa (mean 9.05
 per profile) from the 5,829 BugSigDB-reported taxa of `taxa_trait_matrix.tsv`; a
 taxon counts as trait-bearing if the matrix marks it so, including positivity
 inherited from descendants at any rank. Over the 317 non-MediaDive traits of that run (`off`) that is
-1,430,938 tests, which at Benjamini-Hochberg q at most 0.001 and fold at least 1.5
-call 66,064 enrichments; the lower-tail run at fold at most 0.5 calls 3
+1,430,938 tests per tail. The upper-tail family (`mt-core-ora-upper-global`) at
+Benjamini-Hochberg q at most 0.001 and fold at least 1.5
+called 66,064 enrichments; the separately corrected lower-tail family
+(`mt-core-ora-lower-global`) at fold at most 0.5 called 3
 depletions (`data/derived/trait_enrichment_all_results.tsv` and
-`trait_depletion_all_results.tsv` headers). An earlier assertion-level run,
+`trait_depletion_all_results.tsv` headers). The lower-tail run's q threshold is
+not recorded here. An earlier assertion-level run,
 with a mean of 23,686.87 assertions per testable profile and 556,516 tests,
 produced many p- and q-values of numerically zero; that sampling-unit problem is
 #131, now closed. The taxon urn removes the repeated counting of one organism, but
@@ -336,14 +369,16 @@ signature, from any host. 645 of those taxa occur only in non-human samples, and
 the share of all reported taxa that bear the trait, and each profile's own taxa
 are part of its background.
 
-The composition arm's n is the number of matched pairs, in the hundreds to low
+The historical per-pair composition test's n is the number of matched pairs, in the hundreds to low
 thousands. For a nonconstant trait, column centering cancels in an
 increased-minus-decreased difference, and its common positive scale factor
 cancels in the t-statistic. Thus z-scoring sets the reported effect's units while
 leaving that t-test unchanged. The `log1p` step does change the tested values and can move the
-p-values. Its Benjamini-Hochberg correction runs within each output table, so the
-pooled, faecal, faeces-excluded, and per-body-site tables are each corrected
-independently and no correction spans them.
+nominal p-values. The historical per-pair Benjamini-Hochberg family
+(`mt-core-native-pair-t`) runs separately within the pooled, faecal,
+faeces-excluded, and per-body-site tables; no correction spans them. The current
+study-mean tests use a separate BH family in each stratum
+(`mt-core-native-study-t`), even when both sets of columns occur in the same table.
 
 The directional-consistency arm's n is the number of studies with a non-tied
 contrast. Reducing each study to a sign discards contrast magnitude and avoids a
@@ -356,8 +391,9 @@ its sample size both affect significance.
 
 ## Overlap, complementarity and integration
 
-Jed and Noel both compare increased with decreased signatures; Jed retains
-contrast magnitude at the experiment level, whereas Noel tests consistency of
+Jed and Noel both compare increased with decreased signatures; the historical
+Jed per-pair test retains experiment-contrast magnitude, and the current primary
+native test averages those contrasts within study. Noel tests consistency of
 study-level direction. Ilyas asks whether either profile is unusual relative to
 the background. Both sides can be enriched relative to that background while
 their paired difference is small. A large mean difference can also coexist with
@@ -416,7 +452,9 @@ The profile total cancels, so changing unrelated components does not change that
 ratio. All 15 Table 1 pairs are reported, with positive-count eligibility,
 excluded experiments/studies, ties, effect magnitudes, exact binomial intervals
 for directional proportions, and Benjamini-Yekutieli adjustment across the full
-pair family. These are different, conditional hypotheses, not corrected versions
+pair family (`mt-core-jed-log-ratio-sign`). The producer displays q without a
+rejection cutoff; read the actual pair inventory from the run. These are different,
+conditional hypotheses, not corrected versions
 of the six original fraction hypotheses or independent replication.
 
 The [pinned-corpus validation table](table1_log_ratio_validation.md) reports all
@@ -443,14 +481,23 @@ regenerations (`3afeecd` and `c75744a` respectively). Matching the source dump i
 necessary for harmonized comparisons, but not sufficient: input fingerprints,
 filters, trait identities, denominators and tested populations must also align.
 
+The directional snapshot is not identified here by a complete execution manifest.
+The matrix and filtering paragraphs below also contain observations from different
+revisions (including conflicting MediaDive and host-filter counts). They are
+preserved as historical evidence, not reconciled numerical results. Until their
+run attribution is recovered, do not combine them into a current family-size or
+population claim. This documentation correction changes no reported value.
+
 ### The matrix the counts in this note were measured on
 
 Naming the dump does not identify the matrix. The matrix every arm consumes is a
-**join** of the BugSigDB dump with a KG-Microbe build, and the KG side is pinned
-by Drive file id and checksum but carries **no release tag**, so two runs can both
-be "on pinned v1.3.1" and read different matrices. That is what produced the
-disagreement this section was rewritten to settle (#222): an earlier revision of
-this note reported 2,290 MediaDive columns, and the run below measures 2,333.
+**join** of the BugSigDB dump with a KG-Microbe build. In the historical discussion
+under #222, the KG side was pinned by Drive file id and checksum but carried
+**no release tag**, so runs using the same BugSigDB version could read different
+matrices. A source vintage alone does not bind the KG bytes, profile population or
+trait inventory. This section retains mixed historical observations: 2,290 and 2,333
+MediaDive columns were reported for different revisions. The table and subsequent
+paragraphs do not establish a single reconciled matrix or filter cascade.
 
 | | |
 |---|---|
@@ -463,33 +510,37 @@ this note reported 2,290 MediaDive columns, and the run below measures 2,333.
 | KG-Microbe edges | declared md5 `555ecf5ba5d89288cdc44e368375374f` (declared by `data/kg-microbe/provenance.json` sidecar) |
 | KG-Microbe release | `20260120` (pinned Drive build folder in `scripts/download_kg_microbe.py`) |
 
-Filter cascade on that matrix: 5,629 profile rows read (0 unmatched in the
+The recorded filter-cascade paragraph reports: 5,629 profile rows read (0 unmatched in the
 metadata join), **0 rows dropped as non-human** (already restricted to human 16S
 and WMS profiles under `count_input_16s_wms_v1`), leaving 3,372 human
 experiments after the host filter, of which 1,115 are dropped as unpaired,
-leaving **2,257 experiments, 4,514 profiles and 932 studies**. Every recipe prints
-this block and writes it to a `corpus_identity.json` beside its outputs, so a
-number can be traced to the file it came from rather than to a vintage string.
+leaving **2,257 experiments, 4,514 profiles and 932 studies**. These preserved
+counts require reconciliation with the earlier observations below before reuse.
+For an actual run, its `corpus_identity.json` must bind the cascade to the input
+file rather than to a vintage string.
 
 Two further points, because matching one field does not establish the rest:
 
-- The 317 **retained column names** (`off`) are identical between this matrix and the
+- The earlier comparison reported identical 317 **retained column names** (`off`) between its matrix and the
   `study_trait_profiles_wide.tsv.gz` committed when this comparison was made, an
   `off` table. (The `.gz` committed since the final rerun at 511c891 is the
   `phenotype` table: 5,629 rows, 344 retained columns.) That does **not** make them
-  the same corpus. The `.gz` then held 12,108 rows to this matrix's 7,329, the 7,329 are a
+  the same corpus. That earlier comparison reported 12,108 rows in the `.gz`
+  versus 7,329 in its other matrix; those 7,329 were a
   strict subset of them, and of those shared rows **one differs**:
   `bsdb:25487798-1 inc` disagrees on 81 of the 317 retained columns, its retained
   total 12,587 here against 12,931 there. So the populations differ by design and
   the values differ in one place.
-- Earlier revisions of the per-figure notes stated that the v1.3.1 wide matrix is
+- Earlier revisions of the per-figure notes stated that the v1.3.1 wide matrix was
   "already human-only upstream, so the host filter drops 0 rows". That is not true
-  of this matrix: the host filter drops 1,500 rows. Those notes have been
-  regenerated from the run described here.
+  of the earlier comparison's matrix: its recorded host-filter drop was 1,500 rows.
+  That observation is not a verified cascade for the matrix table above, and this
+  note does not establish that later notes were regenerated from the same execution.
 
-**Which corpus the project should standardise on is still open** — the committed
-`.gz` or a regeneration — and belongs with #115. Until it is settled, each note
-states the matrix it was measured on rather than implying there is only one.
+At the time of these observations, the choice between the committed `.gz` and a
+regeneration was recorded under #115. That historical discussion is not a current
+corpus decision. Report the verified run's input identity rather than implying
+there is only one matrix associated with the source vintage.
 
 ## Provenance of this note
 

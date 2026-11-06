@@ -851,3 +851,98 @@ def test_family_status_keeps_the_two_families_of_one_scenario_apart(tmp_path: Pa
     for name, counts in families.items():
         sizes = {row.family_size for row in rows if row.family == name}
         assert sizes == {counts["family_size"]}
+
+
+def test_detection_change_uses_nominal_p_threshold_and_documents_nominal_vs_corrected_q(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#1419, #1485, #1486: _detection_change uses NOMINAL_P_THRESHOLD and pins rule + doc text."""
+    import mtp.log_ratio_sensitivity as mtp_lrs
+
+    assert pytest.approx(0.05) == mtp_lrs.NOMINAL_P_THRESHOLD
+    shim_src = (PROTOCOL_PATH.parent.parent / "src/bsdbng/log_ratio_sensitivity.py").read_text(
+        encoding="utf-8"
+    )
+    assert "    NOMINAL_P_THRESHOLD,\n" in shim_src
+    assert '    "NOMINAL_P_THRESHOLD",\n' in shim_src
+
+    base = Row(
+        scenario="S1",
+        comparison="fraction",
+        numerator="t",
+        reference="",
+        population="all",
+        effect_units="u",
+        studies_total=100,
+        studies_eligible=100,
+        studies_partially_observed=0,
+        pairs_total=100,
+        pairs_eligible=100,
+        studies_up=60,
+        studies_down=40,
+        studies_tied=0,
+        mean_effect=0.1,
+        median_effect=0.1,
+        share_up=0.6,
+        ci_low=0.5,
+        ci_high=0.7,
+        p_value=0.001,
+        status=TESTED,
+        q_value=0.004,
+    )
+    restricted_row = replace(base, scenario="S3", p_value=0.02, q_value=0.03)
+    assert (
+        _detection_change(base, restricted_row, report_q=0.05, nominal_p_threshold=0.01)
+        == "retained"
+    )
+    assert (
+        _detection_change(base, restricted_row, report_q=0.01, nominal_p_threshold=0.05)
+        == "lost at correction"
+    )
+    assert (
+        _detection_change(base, restricted_row, report_q=0.01, nominal_p_threshold=0.01)
+        == "lost before correction"
+    )
+
+    lost_at_corr = replace(base, scenario="S3", p_value=0.02, q_value=0.4)
+    monkeypatch.setattr(mtp_lrs, "NOMINAL_P_THRESHOLD", 0.01)
+    assert _detection_change(base, lost_at_corr) == "lost before correction"
+    monkeypatch.setattr(mtp_lrs, "NOMINAL_P_THRESHOLD", 0.05)
+    assert _detection_change(base, lost_at_corr) == "lost at correction"
+
+    pairs = complete_pairs(_signal_corpus(), TRAITS)
+    rows = run_scenarios(pairs, TRAITS, min_studies=1)
+    written = write_outputs(
+        rows,
+        leave_one_study_out(pairs, TRAITS),
+        [],
+        [],
+        tmp_path,
+        {},
+        population=population_comparison(rows, TRAITS),
+        stratum_influence=[],
+        strata_below_minimum=0,
+        label_counts=label_accounting(pairs),
+    )
+    status = json.loads(
+        next(p for p in written if p.name == "sensitivity_status.json").read_text(encoding="utf-8")
+    )
+    rule = str(status["population_detection_change_rule"])
+    assert rule == (
+        "Compares baseline corrected q <= 0.05 against restricted corrected "
+        "q <= 0.05 and restricted nominal (uncorrected) p <= 0.05; "
+        "'lost at correction' means baseline corrected q <= 0.05, restricted "
+        "nominal p <= 0.05, and restricted corrected q > 0.05."
+    )
+
+    doc_text = " ".join(
+        (PROTOCOL_PATH.parent / "table1_log_ratio_sensitivity.md")
+        .read_text(encoding="utf-8")
+        .split()
+    )
+    assert "nominal (uncorrected) p <= 0.05" in doc_text
+    assert "compares the restricted run's nominal p with its corrected q" in doc_text
+    assert (
+        "Nineteen rows lose nominal (uncorrected) p <= 0.05 before any correction "
+        "(`lost before correction`)." in doc_text
+    )

@@ -2105,7 +2105,8 @@ DICTIONARY: tuple[tuple[str, str], ...] = (
     ),
     (
         "p_value / q_value / correction_method / family_id / family_size",
-        "the test and the family it was corrected in; families are not comparable",
+        "p_value is nominal; q_value is corrected within its declared family; "
+        "families are not comparable",
     ),
     (
         "q_threshold / effect_threshold / support_threshold",
@@ -2276,6 +2277,11 @@ def write_view(
             )
             lines.append(f"| {display} | {test_status} | {count} |")
 
+    nominal_tests_shown = sum(
+        record.p_value is not None and math.isfinite(record.p_value)
+        for record in records
+        if not is_cell_row(record)
+    )
     lines += [
         "",
         "Native ORA rows summarize tested profiles (`tested_profiles_summarized`).",
@@ -2284,7 +2290,11 @@ def write_view(
         "",
         "## Records",
         "",
-        "| Method | Feature | Level | Effect | Units | p | q (family) | Decision | Test state |",
+        f"Finite nominal tests shown in the Records table: {nominal_tests_shown}. "
+        "This displayed-row count is not a correction family size.",
+        "",
+        "| Method | Feature | Level | Effect | Units | nominal p | q (family) | "
+        "Decision | Test state |",
         "| --- | --- | --- | --- | --- | --- | --- | --- | --- |",
     ]
     for record in records:

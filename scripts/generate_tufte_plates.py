@@ -1512,7 +1512,7 @@ def build_methods_plate2(repo: Path, out_dir: Path) -> Path:
             "2. Coupled Oxygen-Guild McNemar Test",
             f"{mcnemar.discordant:,} discordant studies: {mcnemar.aerobe_up_anaerobe_down} "
             f"Aerobe↑/Anaerobe↓\nvs {mcnemar.anaerobe_up_aerobe_down} opposite (OR = "
-            f"{mcnemar.odds_ratio:.2f}, p = {sci(mcnemar.p_value)})",
+            f"{mcnemar.odds_ratio:.2f}, nominal p = {sci(mcnemar.p_value)}, 1 test)",
             "#fef9ec",
         ),
         (
@@ -3410,7 +3410,7 @@ def build_plate5(repo: Path, out_dir: Path) -> Path:
         f"{RERUN_SOURCE} · condition_oxygen_switch_scores.tsv, "
         "taxa_cross_disease_switch_summary.tsv. Pooled McNemar OR = "
         f"{mcnemar.odds_ratio:.3f} ({mcnemar.aerobe_up_anaerobe_down} vs "
-        f"{mcnemar.anaerobe_up_aerobe_down} st., p = {fmt_p(mcnemar.p_value)}); "
+        f"{mcnemar.anaerobe_up_aerobe_down} st., nominal p = {fmt_p(mcnemar.p_value)}, 1 test); "
         f"{cellulose['crc_source']}",
         fontsize=7.8,
         color=MUTED,

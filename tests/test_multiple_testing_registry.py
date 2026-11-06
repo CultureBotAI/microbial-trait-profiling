@@ -313,6 +313,343 @@ def literal_procedures(call: ast.Call, target: str) -> set[str]:
     return set()
 
 
+Fact = tuple[str, str]
+
+
+def visible_by_derivation(unit: Unit, scope: str) -> bool:
+    """Recognize local BH * H_m followed by clip, with the same visible extent.
+
+    This deliberately small recognizer is an anchor-level witness, not output
+    lineage or a general Python interpreter. Opaque helpers and mutating calls
+    are outside its model. Facts exist only while this one bounded AST is live.
+    """
+    function = unit.functions[scope]
+    witnessed = False
+
+    def local_nodes(root: ast.AST) -> Iterator[ast.AST]:
+        pending = [root]
+        while pending:
+            node = pending.pop()
+            yield node
+            if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef):
+                continue
+            pending.extend(ast.iter_child_nodes(node))
+
+    module_writes = set()
+    for node in local_nodes(unit.tree):
+        if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store | ast.Del):
+            module_writes.add(node.id)
+        elif isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef):
+            module_writes.add(node.name)
+
+    def number(node: ast.AST, value: int) -> bool:
+        return (
+            isinstance(node, ast.Constant)
+            and type(node.value) in {int, float}
+            and node.value == value
+        )
+
+    def target(call: ast.Call, env: dict[str, Fact]) -> str:
+        # A locally rebound callable is not the imported primitive.
+        root = dotted(call.func, unit.limits).split(".")[0]
+        return "" if root in env or root in module_writes else unit.resolve(call.func, scope)
+
+    def extent(call: ast.Call, env: dict[str, Fact], expected: str) -> str | None:
+        if target(call, env) != expected or call.keywords or len(call.args) not in {2, 3}:
+            return None
+        start, stop = call.args[:2]
+        if not number(start, 1) or (len(call.args) == 3 and not number(call.args[2], 1)):
+            return None
+        if (
+            not isinstance(stop, ast.BinOp)
+            or not isinstance(stop.op, ast.Add)
+            or not number(stop.right, 1)
+        ):
+            return None
+        size = expression(stop.left, env)
+        return size[1] if size is not None and size[0] == "size" else None
+
+    def harmonic(call: ast.Call, env: dict[str, Fact]) -> Fact | None:
+        if len(call.args) != 1 or call.keywords:
+            return None
+        value = call.args[0]
+        family = None
+        if (
+            target(call, env) == "numpy.sum"
+            and isinstance(value, ast.BinOp)
+            and isinstance(value.op, ast.Div)
+            and number(value.left, 1)
+            and isinstance(value.right, ast.Call)
+        ):
+            family = extent(value.right, env, "numpy.arange")
+        elif (
+            target(call, env) == "sum"
+            and isinstance(value, ast.GeneratorExp)
+            and len(value.generators) == 1
+        ):
+            generator = value.generators[0]
+            term = value.elt
+            if (
+                not generator.ifs
+                and not generator.is_async
+                and isinstance(generator.target, ast.Name)
+                and isinstance(generator.iter, ast.Call)
+                and isinstance(term, ast.BinOp)
+                and isinstance(term.op, ast.Div)
+                and number(term.left, 1)
+                and isinstance(term.right, ast.Name)
+                and term.right.id == generator.target.id
+            ):
+                family = extent(generator.iter, env, "range")
+        return ("harmonic", family) if family is not None else None
+
+    def expression(node: ast.AST, env: dict[str, Fact]) -> Fact | None:
+        if isinstance(node, ast.Name):
+            return env.get(node.id, ("vector", node.id))
+        if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Mult):
+            left, right = expression(node.left, env), expression(node.right, env)
+            if left and right and {left[0], right[0]} == {"BH", "harmonic"} and left[1] == right[1]:
+                return ("scaled", left[1])
+        if not isinstance(node, ast.Call):
+            return None
+        name = target(node, env)
+        if name == "float" and len(node.args) == 1 and not node.keywords:
+            value = expression(node.args[0], env)
+            return value if value and value[0] == "harmonic" else None
+        if name in {"numpy.sum", "sum"}:
+            return harmonic(node, env)
+        if name == "len" and len(node.args) == 1 and not node.keywords:
+            value = expression(node.args[0], env)
+            return ("size", value[1]) if value and value[0] in {"vector", "array"} else None
+        if (
+            name == "numpy.ones"
+            and len(node.args) == 1
+            and all(k.arg == "dtype" for k in node.keywords)
+        ):
+            value = expression(node.args[0], env)
+            return ("array", value[1]) if value and value[0] == "size" else None
+        if (
+            name.rsplit(".", 1)[-1] == "benjamini_hochberg"
+            and len(node.args) == 1
+            and not node.keywords
+        ):
+            value = expression(node.args[0], env)
+            return ("BH", value[1]) if value and value[0] in {"vector", "array"} else None
+        if name == "numpy.clip" and len(node.args) == 3 and not node.keywords:
+            value = expression(node.args[0], env)
+            if (
+                value
+                and value[0] == "scaled"
+                and number(node.args[1], 0)
+                and number(node.args[2], 1)
+            ):
+                return ("BY", value[1])
+        return None
+
+    def assign(node: ast.AST, value: Fact | None, env: dict[str, Fact]) -> None:
+        if isinstance(node, ast.Name):
+            env[node.id] = value or ("vector", f"{node.id}:{node.lineno}:{node.col_offset}")
+        elif isinstance(node, ast.Subscript | ast.Attribute):
+            # Only a direct write into a known fixed-size allocation preserves
+            # extent. Other writes may mutate a view of any tracked BH result.
+            if (
+                isinstance(node, ast.Subscript)
+                and isinstance(node.value, ast.Name)
+                and env.get(node.value.id, ("unknown", ""))[0] == "array"
+                and not isinstance(node.ctx, ast.Del)
+            ):
+                return
+            root = node.value
+            while isinstance(root, ast.Subscript | ast.Attribute):
+                root = root.value
+            previous = expression(root, env)
+            if isinstance(root, ast.Name):
+                env[root.id] = ("unknown", root.id)
+            for alias, fact in list(env.items()):
+                if fact == previous or fact[0] in {"BH", "scaled", "BY"}:
+                    env[alias] = ("unknown", alias)
+        elif isinstance(node, ast.Tuple | ast.List):
+            for element in node.elts:
+                assign(element, None, env)
+
+    def invalidate_aliases(node: ast.AST, env: dict[str, Fact]) -> None:
+        if isinstance(node, ast.Name):
+            previous = env.get(node.id, ("vector", node.id))
+            for alias, fact in list(env.items()):
+                if fact == previous:
+                    env[alias] = ("unknown", f"{alias}:{node.lineno}")
+        else:
+            assign(node, None, env)
+
+    def intersection(left: dict[str, Fact], right: dict[str, Fact]) -> dict[str, Fact]:
+        # Keep invalidated names present, so an earlier fact cannot reappear
+        # through the fallback for an unbound parameter.
+        return {
+            name: left[name]
+            if name in left and left.get(name) == right.get(name)
+            else ("unknown", name)
+            for name in left.keys() | right.keys()
+        }
+
+    def invalidate_bindings(statement: ast.stmt, env: dict[str, Fact]) -> None:
+        """Special bindings are unknown, including those inside unsupported blocks."""
+        for node in local_nodes(statement):
+            names: list[str] = []
+            if isinstance(node, ast.NamedExpr) and isinstance(node.target, ast.Name):
+                names.append(node.target.id)
+            elif isinstance(node, ast.Import | ast.ImportFrom):
+                names.extend(
+                    alias.asname
+                    or (alias.name.split(".")[0] if isinstance(node, ast.Import) else alias.name)
+                    for alias in node.names
+                )
+            elif isinstance(node, ast.MatchAs | ast.MatchStar) and node.name:
+                names.append(node.name)
+            elif isinstance(node, ast.MatchMapping) and node.rest:
+                names.append(node.rest)
+            elif isinstance(node, ast.ExceptHandler) and node.name:
+                names.append(node.name)
+            elif isinstance(node, ast.Global | ast.Nonlocal):
+                names.extend(node.names)
+            elif isinstance(node, ast.Delete):
+                for item in node.targets:
+                    if isinstance(item, ast.Name):
+                        names.append(item.id)
+                    else:
+                        assign(item, None, env)
+            for name in names:
+                env[name] = ("unknown", name)
+
+    def terminates(body: list[ast.stmt]) -> bool:
+        for statement in body:
+            if isinstance(statement, ast.Return | ast.Raise | ast.Break | ast.Continue):
+                return True
+            if isinstance(statement, ast.With | ast.AsyncWith) and terminates(statement.body):
+                return True
+            if isinstance(statement, ast.If):
+                if isinstance(statement.test, ast.Constant):
+                    branch = statement.body if statement.test.value else statement.orelse
+                    if terminates(branch):
+                        return True
+                elif terminates(statement.body) and terminates(statement.orelse):
+                    return True
+        return False
+
+    loop_paths: list[tuple[list[dict[str, Fact]], list[dict[str, Fact]]]] = []
+
+    def statements(
+        body: list[ast.stmt], env: dict[str, Fact], *, credit: bool = True
+    ) -> dict[str, Fact]:
+        nonlocal witnessed
+        for statement in body:
+            invalidate_bindings(statement, env)
+            if isinstance(statement, ast.Assign | ast.AnnAssign):
+                value = expression(statement.value, env) if statement.value is not None else None
+                targets = (
+                    statement.targets if isinstance(statement, ast.Assign) else [statement.target]
+                )
+                for item in targets:
+                    assign(item, value, env)
+                if (
+                    credit
+                    and value
+                    and value[0] == "BY"
+                    and any(isinstance(item, ast.Name) for item in targets)
+                ):
+                    witnessed = True
+            elif isinstance(statement, ast.AugAssign):
+                invalidate_aliases(statement.target, env)
+            elif isinstance(statement, ast.Return):
+                if statement.value is not None:
+                    value = expression(statement.value, env)
+                    if credit and value and value[0] == "BY":
+                        witnessed = True
+                break
+            elif isinstance(statement, ast.Raise | ast.Break | ast.Continue):
+                if loop_paths and isinstance(statement, ast.Break | ast.Continue):
+                    exits = loop_paths[-1][0 if isinstance(statement, ast.Break) else 1]
+                    exits.append(env.copy())
+                break
+            elif isinstance(statement, ast.If):
+                if isinstance(statement.test, ast.Constant):
+                    branch = statement.body if statement.test.value else statement.orelse
+                    env = statements(branch, env, credit=credit)
+                    if terminates(branch):
+                        break
+                else:
+                    env = intersection(
+                        statements(statement.body, env.copy(), credit=credit),
+                        statements(statement.orelse, env.copy(), credit=credit),
+                    )
+                    if terminates(statement.body) and terminates(statement.orelse):
+                        break
+            elif isinstance(statement, ast.For | ast.AsyncFor | ast.While):
+                if (
+                    isinstance(statement, ast.While)
+                    and isinstance(statement.test, ast.Constant)
+                    and not statement.test.value
+                ):
+                    env = statements(statement.orelse, env, credit=credit)
+                    continue
+                # The descending intersection reaches a fixed point before
+                # any loop-body calculation is allowed to supply a witness.
+                entry = env.copy()
+                while True:
+                    inside = entry.copy()
+                    if isinstance(statement, ast.For | ast.AsyncFor):
+                        assign(statement.target, None, inside)
+                    break_paths: list[dict[str, Fact]] = []
+                    continue_paths: list[dict[str, Fact]] = []
+                    loop_paths.append((break_paths, continue_paths))
+                    inside = statements(statement.body, inside, credit=False)
+                    loop_paths.pop()
+                    updated = intersection(entry, inside)
+                    for continued in continue_paths:
+                        updated = intersection(updated, continued)
+                    if updated == entry:
+                        break
+                    entry = updated
+                inside = entry.copy()
+                if isinstance(statement, ast.For | ast.AsyncFor):
+                    assign(statement.target, None, inside)
+                break_paths, continue_paths = [], []
+                loop_paths.append((break_paths, continue_paths))
+                inside = statements(statement.body, inside, credit=credit)
+                loop_paths.pop()
+                normal = intersection(env, inside)
+                for continued in continue_paths:
+                    normal = intersection(normal, continued)
+                # A break skips the loop's else clause, so break states join after it.
+                env = statements(statement.orelse, normal, credit=credit)
+                for exited in break_paths:
+                    env = intersection(env, exited)
+            elif isinstance(statement, ast.With | ast.AsyncWith):
+                for context_item in statement.items:
+                    if context_item.optional_vars is not None:
+                        assign(context_item.optional_vars, None, env)
+                env = statements(statement.body, env, credit=credit)
+                if terminates(statement.body):
+                    break
+            elif isinstance(statement, ast.Try | ast.Match):
+                # Unsupported control flow must not lend assignments to a
+                # later derivation; do not claim witnesses inside these blocks.
+                for node in local_nodes(statement):
+                    if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):
+                        env[node.id] = ("unknown", node.id)
+                    elif isinstance(node, ast.Subscript | ast.Attribute) and isinstance(
+                        node.ctx, ast.Store | ast.Del
+                    ):
+                        assign(node, None, env)
+            # Nested functions/classes belong to their own qualified anchors.
+        return env
+
+    args = function.args
+    parameters = [*args.posonlyargs, *args.args, *args.kwonlyargs]
+    parameters.extend(arg for arg in (args.vararg, args.kwarg) if arg is not None)
+    statements(function.body, {arg.arg: ("vector", arg.arg) for arg in parameters})
+    return witnessed
+
+
 @dataclass
 class CompactUnit:
     """The only per-file state retained after parsing: strings and small scalars."""
@@ -322,6 +659,7 @@ class CompactUnit:
     functions: tuple[str, ...]
     dependencies: dict[str, set[str]]
     calls: list[tuple[str, str, tuple[str, ...], int]]
+    derived: tuple[str, ...]
 
 
 def check_ast_budget(tree: ast.AST, limits: Limits) -> None:
@@ -351,13 +689,25 @@ def summarize_source(path: str, source: str, budget: SummaryBudget) -> CompactUn
     for function in unit.functions:
         budget.charge(path, function)
     calls = []
+    bh_scopes: set[str] = set()
+    clip_scopes: set[str] = set()
     for function, call in unit.calls:
         target = unit.resolve(call.func, function)
         procedures = tuple(sorted(literal_procedures(call, target)))
         budget.charge(path, function, target, *procedures)
         calls.append((function, target, procedures, call.lineno))
+        if target.rsplit(".", 1)[-1] == "benjamini_hochberg":
+            bh_scopes.add(function)
+        if target == "numpy.clip":
+            clip_scopes.add(function)
+    candidates = bh_scopes & clip_scopes
+    derived = tuple(
+        name for name in unit.functions if name in candidates and visible_by_derivation(unit, name)
+    )
+    for name in derived:
+        budget.charge(path, name, "BY")
     return CompactUnit(
-        path, module, tuple(unit.functions), function_dependencies(unit, budget), calls
+        path, module, tuple(unit.functions), function_dependencies(unit, budget), calls, derived
     )
 
 
@@ -393,6 +743,10 @@ def discover(
                 sites.setdefault((summary.path, function), {"procedures": set(), "calls": []})[
                     "definition"
                 ] = True
+        for function in summary.derived:
+            key = (summary.path, function)
+            if key in sites:
+                sites[key]["derived_procedures"] = {"BY"}
     return sites, anchors
 
 
@@ -504,7 +858,7 @@ def family_procedure_errors(
 ) -> list[str]:
     """Check each family's own declarations, without borrowing from other families.
 
-    Arithmetic derivations are explicit reviewed metadata, not AST inference.
+    Arithmetic declarations need a visible derivation at their own anchor.
     Dynamic calls and helper definitions do not provide an exhaustive literal set.
     """
     errors = []
@@ -530,9 +884,15 @@ def family_procedure_errors(
                 errors.append(f"{identity}: derived procedures need an all-literal site: {key}")
             continue
         literal = {method for call in site["calls"] for method in call["procedures"]}
+        visible = site.get("derived_procedures", set())
+        if unsupported := derived.keys() - visible:
+            errors.append(
+                f"{identity}: derived procedures lack visible arithmetic at {key}: "
+                f"{sorted(unsupported)}"
+            )
         if redundant := derived.keys() & literal:
             errors.append(f"{identity}: derived procedures already literal: {sorted(redundant)}")
-        if extra := set(anchor["procedures"]) - literal - derived.keys() - {"none"}:
+        if extra := set(anchor["procedures"]) - literal - (derived.keys() & visible) - {"none"}:
             errors.append(
                 f"{identity}: procedures absent from all-literal site {key}: {sorted(extra)}"
             )
@@ -895,7 +1255,8 @@ def test_compact_file_summary_retains_no_ast_or_source() -> None:
     assert summary.functions == ("screen",)
     assert summary.calls == [("screen", "false_discovery_control", ("BY",), 2)]
     assert summary.dependencies == {"x.screen": {"false_discovery_control"}}
-    assert set(vars(summary)) == {"path", "module", "functions", "dependencies", "calls"}
+    assert summary.derived == ()
+    assert set(vars(summary)) == {"path", "module", "functions", "dependencies", "calls", "derived"}
 
 
 def test_streamed_source_input_matches_small_mapping_input() -> None:

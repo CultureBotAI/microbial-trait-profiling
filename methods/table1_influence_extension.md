@@ -101,6 +101,15 @@ six-test adjusted values do not control selection of the six traits or searching
 across lineages, scopes and omissions. They supplement the full-family
 multiple-testing sidecar; they do not replace it.
 
+The registry separates `mt-supp-influence-extension-baseline-loso` (each
+scope and omitted study) from `mt-supp-influence-extension-lineage-panel`
+(each scenario, scope and before/after/matched population). Both contain the
+complete focal trait list and report BH/BY as diagnostic comparisons, with no
+primary inferential designation. Read `family_size` from
+`baseline_fractions.tsv`, `fraction_study_loso.tsv.gz` and
+`lineage_fraction_effects.tsv`; q <=0.05 is a diagnostic status within each
+such family, not control over the search across omissions or lineages.
+
 Effect-reduction ratios are undefined when the absolute before-effect is at most
 the shared `1e-12` tie tolerance, including floating-point cancellation residue.
 The effect itself is retained; this rule prevents an effectively zero denominator

@@ -138,7 +138,7 @@ not by line number. An entry gives:
 | `conformance_status`, `open_issue` | Whether the family conforms, and the issue that tracks it if not. |
 | `inventory_ids`, `joint_status_outputs` | The inventory records behind the entry, and outputs that combine several families' calls. |
 | `launcher` | A family flag: the family's anchor starts its computation without itself making the correction call. |
-| `derived_procedures` | A procedure obtained arithmetically at an anchor rather than by a literal call (for example BY computed from BH), with its reason. |
+| `derived_procedures` | BY computed from a literal BH result in the supported form (see Enforcement), with its reason. |
 | `size_source.unfiltered_count_rule` | For a selected family, how to count the unfiltered inventory (R6). |
 
 The registry also pins `literal_procedure_counts`: for each discovered function, how many
@@ -167,6 +167,11 @@ wrapper functions. Among other checks, it fails when:
   between two calls that keeps the counts is not;
 - a family's declared primary or comparison procedure does not appear among its own
   anchors' procedures, or a site where every call is literal lacks a declared procedure;
+- a `derived_procedures` claim lacks supported arithmetic in its anchor. The supported
+  form is a literal BH result multiplied by the same vector length's harmonic sum and
+  clipped to [0, 1] to derive BY. A reason alone does not establish the derivation.
+  The arithmetic is checked only where an anchor claims it in `derived_procedures`;
+  an undeclared arithmetic derivation does not cause a registration failure;
 - a launcher is declared where none is needed, or a selected family's selection rule merely
   repeats its definition or lacks an unfiltered-count rule;
 - an entry is malformed. That is: a required field is missing or empty; a procedure is
@@ -175,8 +180,18 @@ wrapper functions. Among other checks, it fails when:
   in the source; or an `open_issue` value is not an integer. The test runs offline, so it
   does not check that an issue exists.
 
-Discovery reads files lazily and keeps compact per-file summaries. Bounded alias
-expansion, together with cycle and size limits, keeps it fast and its memory small.
+Discovery reads files lazily and keeps compact per-file summaries. Alias expansion,
+source size and summary size have explicit limits. The derivation recognizer runs only
+in functions whose own resolved calls include both `benjamini_hochberg` and
+`numpy.clip`. Its repeated subtree walks and nested-loop re-analysis are not separately
+bounded; the work can double with each additional loop nesting level (#1581).
+Derivation facts are reduced while each file's AST is resident; the summaries retain
+neither the AST nor source text. The check establishes a supported calculation in an
+anchor, not the ancestry of each family's output. At `run_composition_calibration`,
+the observed family's derived BY is accepted on the strength of the null-replicate
+calculation; the observed arithmetic is not checked. A calculation in a shared anchor
+can therefore satisfy several families' claims without establishing each output's
+derivation.
 
 The test checks registration, anchors and literal procedures. It recognises a correction
 by the name of the function it calls, so it does not detect any of these (#1443):
@@ -189,14 +204,29 @@ by the name of the function it calls, so it does not detect any of these (#1443)
   reported as a correction even when it is not one.
 
 Within a registered function, it also does not detect:
-- a procedure chosen from a variable or a loop, or BY derived arithmetically from BH;
+- a procedure chosen from a variable or a loop;
+- BY derived arithmetically from BH where no anchor claims it in
+  `derived_procedures`; the arithmetic check validates claims rather than discovering
+  all derived procedures;
+- arithmetic outside the supported local BH-to-BY form. Opaque helper results,
+  mutation through calls (including closures), and alternative forms such as
+  `np.minimum`, a list-comprehension harmonic sum or a `pd.Series` wrapper are not
+  interpreted. Derivations inside unsupported `try` or `match` blocks, or stored only
+  through a subscript or attribute rather than a local name, are not credited.
+  Escaping `break` or `continue` paths inside those unsupported blocks are not propagated;
+- other binding forms, including starred targets, `def`/`class` rebinding (including
+  decorated definitions), `global`
+  writes from another function and context managers that suppress a `raise`, are not
+  modelled;
+- whether a witnessed calculation reaches an output or is subsequently used. The
+  check rejects constant-false branches, discarded expression statements and calculations
+  after explicit block terminators, but does not prove general reachability or evaluate
+  nonconstant conditions or loop exit/else path feasibility;
 - a swap between two calls that keeps the per-function counts, for example exchanging the
   BH and BY calls that fill the screen's reported columns;
 - a new family added as loop data that makes no new call;
 - a family deleted from the registry, or never registered, when its function also hosts
   another registered family;
-- a procedure claimed through `derived_procedures` that the code does not in fact derive.
-  The guard accepts any such entry that gives a reason (#1490);
 - a primary and comparison procedure exchanged, when the function makes both calls.
 
 These need source review. The test does not show that a correction is statistically valid,

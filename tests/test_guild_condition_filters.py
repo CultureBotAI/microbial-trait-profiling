@@ -281,8 +281,10 @@ def _condition_profiles_for_nominal_test() -> pd.DataFrame:
     specs = [
         ("Parkinson's disease", 5, 1.4, -0.4),
         ("Crohn's disease", 5, 1.1, -0.3),
+        ("Ulcerative colitis", 5, 0.95, -0.25),
         ("Exposure", 5, 1.6, -0.5),
-        ("Rare condition", 4, 0.9, -0.2),
+        ("Blood measurement", 5, 1.5, -0.45),
+        ("Rare condition", 4, 1.35, -0.38),
     ]
     for cond_idx, (condition, pair_count, inc_base, dec_base) in enumerate(specs):
         for pair_idx in range(pair_count):
@@ -309,24 +311,30 @@ def _condition_profiles_for_nominal_test() -> pd.DataFrame:
 def test_condition_summary_and_labels_report_nominal_paired_t_test_counts(
     module: ModuleType, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """#1414: condition summaries, bar labels, and README report nominal paired t-test counts."""
+    """#1414, #1458, #1614: excluded labels are filtered and shown/tested counts are stated."""
     metadata = _condition_profiles_for_nominal_test()
     raw_summary = module.summarize_group(metadata, "condition", min_profiles=5)
     assert list(raw_summary.columns[-2:]) == ["p_value_type", "n_tests"]
     raw_by_cond = raw_summary.set_index("condition")
     assert raw_by_cond.loc["Parkinson's disease", "p_value_type"] == "nominal"
     assert raw_by_cond.loc["Crohn's disease", "p_value_type"] == "nominal"
-    assert raw_by_cond.loc["Exposure", "p_value_type"] == "nominal"
+    assert raw_by_cond.loc["Ulcerative colitis", "p_value_type"] == "nominal"
+    assert raw_by_cond.loc["Exposure", "p_value_type"] == "not_tested"
+    assert math.isnan(raw_by_cond.loc["Exposure", "paired_t_test_p_value"])
+    assert raw_by_cond.loc["Blood measurement", "p_value_type"] == "not_tested"
+    assert math.isnan(raw_by_cond.loc["Blood measurement", "paired_t_test_p_value"])
     assert raw_by_cond.loc["Rare condition", "p_value_type"] == "not_tested"
     assert set(raw_summary["n_tests"]) == {3}
 
     filtered = module.remove_excluded_condition_labels(raw_summary)
     assert "Exposure" not in set(filtered["condition"])
+    assert "Blood measurement" not in set(filtered["condition"])
     filtered_by_cond = filtered.set_index("condition")
     assert filtered_by_cond.loc["Parkinson's disease", "p_value_type"] == "nominal"
     assert filtered_by_cond.loc["Crohn's disease", "p_value_type"] == "nominal"
+    assert filtered_by_cond.loc["Ulcerative colitis", "p_value_type"] == "nominal"
     assert filtered_by_cond.loc["Rare condition", "p_value_type"] == "not_tested"
-    assert set(filtered["n_tests"]) == {2}
+    assert set(filtered["n_tests"]) == {3}
 
     pd_row = next(
         row for row in filtered.itertuples(index=False) if row.condition == "Parkinson's disease"
@@ -336,14 +344,43 @@ def test_condition_summary_and_labels_report_nominal_paired_t_test_counts(
     )
     pd_label = module.paired_smd_label(pd_row)
     assert "nominal p=" in pd_label
-    assert "(2 condition tests)" in pd_label
+    assert "(3 condition tests after excluding broad study-design labels)" in pd_label
     assert module.paired_smd_label(rare_row) == "paired d=NA, p=NA (not tested), n=4"
     without_n_tests = next(filtered.drop(columns=["n_tests"]).itertuples(index=False))
     with pytest.raises(AttributeError):
         module.paired_smd_label(without_n_tests)
 
+    top2 = module.select_top_conditions(raw_summary, limit=2)
+    assert list(top2["condition"]) == ["Parkinson's disease", "Rare condition"]
+    assert set(top2["n_shown"]) == {2}
+    assert set(top2["n_shown_tested"]) == {1}
+    assert set(top2["n_tests"]) == {3}
+    top_pd_row = next(
+        row for row in top2.itertuples(index=False) if row.condition == "Parkinson's disease"
+    )
+    top_rare_row = next(
+        row for row in top2.itertuples(index=False) if row.condition == "Rare condition"
+    )
+    top_pd_label = module.paired_smd_label(top_pd_row)
+    assert (
+        "(one of 3 condition tests; shown: top 2 by guild-z difference, 1 of them tested)"
+        in top_pd_label
+    )
+    assert module.paired_smd_label(top_rare_row) == "paired d=NA, p=NA (not tested), n=4"
+
     monkeypatch.setattr(module, "OUTPUT_DIR", tmp_path)
     empty_occ = pd.DataFrame(columns=["inc_dec", "profile_id", "study_id", "exclusion_reason"])
+    crohn_dict = next(
+        row._asdict()
+        for row in filtered.itertuples(index=False)
+        if row.condition == "Crohn's disease"
+    )
+    extra_rows = []
+    for extra_idx in range(6):
+        base = dict(crohn_dict)
+        base["condition"] = f"Extra disease {extra_idx}"
+        extra_rows.append(base)
+    nine_cond_summary = pd.concat([raw_summary, pd.DataFrame(extra_rows)], ignore_index=True)
     if module is aerobe:
         module.write_summary_report(
             direction_summary=pd.DataFrame(
@@ -360,7 +397,7 @@ def test_condition_summary_and_labels_report_nominal_paired_t_test_counts(
                     "increased_minus_decreased_guild_z": [0.1],
                 }
             ),
-            condition_summary=raw_summary,
+            condition_summary=nine_cond_summary,
             taxa_summary=pd.DataFrame(
                 {
                     "target_taxon_name": ["Escherichia coli"],
@@ -409,7 +446,7 @@ def test_condition_summary_and_labels_report_nominal_paired_t_test_counts(
                     "decreased_minus_increased_guild_z": [0.4],
                 }
             ),
-            condition_summary=raw_summary,
+            condition_summary=nine_cond_summary,
             taxa_summary=pd.DataFrame(
                 {
                     "target_taxon_name": ["Faecalibacterium prausnitzii"],
@@ -449,5 +486,7 @@ def test_condition_summary_and_labels_report_nominal_paired_t_test_counts(
     assert "| nominal paired p |" in readme
     assert (
         "Reported paired p values are uncorrected two-sided paired t-test nominal p-values "
-        "across 2 tested conditions in `condition_guild_summary.tsv`."
+        "across 9 tested conditions after excluding broad study-design labels in "
+        "`condition_guild_summary.tsv` (shown above: top 8 eligible conditions by guild-z "
+        "difference, 7 of them tested)."
     ) in readme

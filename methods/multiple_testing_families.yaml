@@ -674,7 +674,7 @@
       "consumers": [
         {
           "path": "src/mtp/stratification.py",
-          "function": "build_sensitivity_summary_table._extract_q_or_p"
+          "function": "_extract_q_or_p"
         },
         {
           "path": "src/mtp/stratification.py",
@@ -736,7 +736,7 @@
       "consumers": [
         {
           "path": "src/mtp/stratification.py",
-          "function": "build_sensitivity_summary_table._extract_q_or_p"
+          "function": "_extract_q_or_p"
         },
         {
           "path": "src/mtp/stratification.py",
@@ -798,7 +798,7 @@
       "consumers": [
         {
           "path": "src/mtp/stratification.py",
-          "function": "build_sensitivity_summary_table._extract_q_or_p"
+          "function": "_extract_q_or_p"
         },
         {
           "path": "src/mtp/stratification.py",
@@ -1514,7 +1514,7 @@
       ],
       "deliberate_difference": "Each replicate/observed invocation preserves its source procedure and family; calibration evaluates diagnostic error rates rather than pooling replicates into a biological screen.",
       "open_issue": [
-        1410
+        1482
       ],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -1634,7 +1634,7 @@
       ],
       "deliberate_difference": "Each replicate/observed invocation preserves its source procedure and family; calibration evaluates diagnostic error rates rather than pooling replicates into a biological screen.",
       "open_issue": [
-        1410
+        1482
       ],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -3620,7 +3620,7 @@
       ],
       "deliberate_difference": "BH preserves the focal-fraction procedure in S1 while restricting observations to positive totals on both sides; this isolates eligibility changes from correction-method changes (methods/multiple_testing_policy.md R4).",
       "open_issue": [
-        1419
+        1482
       ],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -3742,7 +3742,7 @@
       ],
       "deliberate_difference": "Each declared eligibility scenario has its own ratio/fraction family. Influence checks replace the focal p within the held family; there is no correction across omissions.",
       "open_issue": [
-        1419
+        1482
       ],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -4374,7 +4374,7 @@
       "family_definition": "All nonmissing p_value entries in concatenated direction_summary_rows + convergence_summary_rows + interaction_summary_rows; not the full underlying exploratory test inventory",
       "size_source": {
         "kind": "selected_rows",
-        "selection_rule": "Concatenate direction_summary_rows, convergence_summary_rows and interaction_summary_rows in main; pass their p_value column to benjamini_hochberg, which removes missing p from the correction vector.",
+        "selection_rule": "Concatenate direction_summary_rows, convergence_summary_rows and interaction_summary_rows in significant_results_summary_table; pass their p_value column to benjamini_hochberg, which removes missing p from the correction vector.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size.",
         "unfiltered_count_rule": "Count all concatenated summary rows, including missing p_value, before the helper's nonmissing filter; recover this from the summary table row count. This is the unfiltered summary table, not the complete underlying exploratory test inventory, which this producer does not export as one family."
       },
@@ -4403,15 +4403,15 @@
         "R6",
         "R3"
       ],
-      "deliberate_difference": "BH is retained as the existing exploratory correction over nonmissing cellulose summary-table p values; it does not correct the prior summary selection or the complete underlying scan, and nominal tier labels remain tracked in #1412 (methods/multiple_testing_policy.md R4/R6).",
+      "deliberate_difference": "BH is retained as the existing exploratory correction over nonmissing cellulose summary-table p values; it does not correct the prior summary selection or the complete underlying scan, while significance_tier is labelled as a nominal p-value tier alongside bh_family_size, bh_unfiltered_summary_rows and bh_selection_rule (methods/multiple_testing_policy.md R4/R6).",
       "open_issue": [
-        1412
+        1482
       ],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
         {
           "path": "src/mtp/cellulose_decr/analysis.py",
-          "function": "main",
+          "function": "significant_results_summary_table",
           "procedures": [
             "BH"
           ]
@@ -4965,16 +4965,16 @@
       ],
       "area": "Custom anatomical-site ORA",
       "hypotheses": "One profile x retained annotated trait within a user-requested anatomical site.",
-      "family_definition": "Global BH over profile x eligible trait tests within each requested site; --fdr-scope profile or --no-fdr can override.",
+      "family_definition": "Default global BH over profile x eligible trait tests within each requested site; --fdr-scope profile uses a separate BH family per profile. --no-fdr performs no correction and records scope none regardless of the requested FDR scope.",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "Select profiles for the user-requested site through stratification, pass that partition and the supplied taxa background to run_stratum_enrichment, then honor its global/profile/no-fdr option.",
+        "selection_rule": "Select profiles for the user-requested site through stratification and pass that partition and the supplied taxa background to run_stratum_enrichment. Test traits with positive background count in profiles with positive retained count; use global/profile BH or nominal p-value selection when --no-fdr is set.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BH",
       "comparison_procedure": [],
       "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
-      "threshold": "Configured p-threshold interpreted as q when FDR enabled, with configured min-fold.",
+      "threshold": "fdr_q <= configured p-threshold when FDR is enabled; p_value <= configured p-threshold in nominal --no-fdr mode. Both require fold >= configured min-fold for the upper-tail enrichment run.",
       "outputs": [
         {
           "file": "trait_enrichment_all_results_<site>.tsv",
@@ -4994,10 +4994,8 @@
         "R5",
         "R7"
       ],
-      "deliberate_difference": "BH preserves the default native global ORA procedure for each user-selected site so anatomical sensitivity remains comparable to its native producer; explicit profile/no-fdr overrides must be reported separately (methods/multiple_testing_policy.md R4).",
-      "open_issue": [
-        1409
-      ],
+      "deliberate_difference": "BH preserves the default native global ORA procedure for each user-selected site; profile-scope BH is an explicit override. Nominal --no-fdr outputs use p_value with blank fdr_q, correction_family=none and FDR-Scope: none metadata; they perform no FDR correction and must remain separately labelled (methods/multiple_testing_policy.md R4).",
+      "open_issue": [],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
         {
@@ -5177,7 +5175,7 @@
       ],
       "deliberate_difference": "Each replicate/observed invocation preserves its source procedure and family; calibration evaluates diagnostic error rates rather than pooling replicates into a biological screen.",
       "open_issue": [
-        1410
+        1482
       ],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -5242,7 +5240,7 @@
       ],
       "deliberate_difference": "Each resampled corpus launches the native focal-ratio BY family independently; this diagnoses the ratio procedure's rejection rate rather than pooling replicate p values (methods/multiple_testing_policy.md R3/R4).",
       "open_issue": [
-        1410
+        1482
       ],
       "conformance_status": "See linked issues and declared differences; this registry does not certify all output consumers.",
       "anchors": [
@@ -5537,7 +5535,7 @@
     },
     {
       "path": "src/mtp/cellulose_decr/analysis.py",
-      "function": "main",
+      "function": "significant_results_summary_table",
       "counts": {
         "BH": 1
       }

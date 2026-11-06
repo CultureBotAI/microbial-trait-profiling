@@ -516,6 +516,17 @@ def test_run_stratification_pipeline_e2e(tmp_path: Path) -> None:
     assert PRECAUTIONARY_NOTE in txt_content
     assert ANNOTATION_DENSITY_NOTE in txt_content
 
+    summary = pd.read_csv(tsv_path, sep="\t", comment="#")
+    for stratum in PRIMARY_STRATA:
+        assert summary[f"{stratum}_best_stat_type"].eq("p_value").all()
+        tested_path = _stratum_outs[stratum].tested_traits_tsv
+        assert tested_path is not None
+        tested = pd.read_csv(tested_path, sep="\t", comment="#").set_index("trait")
+        assert (
+            summary.set_index("trait")[f"{stratum}_best_stat"].to_dict()
+            == tested["best_pvalue"].to_dict()
+        )
+
 
 def test_run_stratification_pipeline_single_site(tmp_path: Path) -> None:
     """Verify run_stratification_pipeline with a single specific site (analyze-site)."""

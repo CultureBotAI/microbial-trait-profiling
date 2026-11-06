@@ -297,6 +297,12 @@ establish biological absence. Each trait then gets a
 two-sided exact binomial test against a half-and-half null with an exact
 binomial 95 per cent interval, and the six p-values are Benjamini-Hochberg
 corrected together as one family.
+This focal family is `mt-supp-table1-direction`, containing every requested
+trait-order entry, including unscored slots. The run's
+`table1_traits_direction_shift.tsv` carries `family_id`, `family_size` and
+`correction_method`. All q-values in the following historical six-trait
+paragraph are BH within that family, not full-catalog Noel BY values;
+unadjusted binomial p-values are nominal.
 
 One boundary case is dropped rather than scored: a profile with no retained
 annotation has no defined fraction, so its whole experiment pair is left out

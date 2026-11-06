@@ -1013,12 +1013,21 @@ def plot_top_traits(ax: plt.Axes, trait_stats: pd.DataFrame) -> None:
     labels = [trait_label(label, 38) for label in top_traits["trait_label"]]
     bars = ax.barh(labels, top_traits[score_col], color=colors, edgecolor="white")
     ax.set_title("A. Top Profile-Differentiating Traits", fontsize=14, fontweight="bold", pad=22)
-    if score_col == "study_minus_log10_p":
-        ax.set_xlabel(
-            "-log10(study-level p) from paired increased-minus-decreased profile contrast"
-        )
-    else:
-        ax.set_xlabel("-log10(p) from paired increased-minus-decreased profile contrast")
+    unit = "study-level" if score_col == "study_minus_log10_p" else "contrast-level"
+    p_col = "study_p_value" if score_col == "study_minus_log10_p" else "p_value"
+    count_col = p_col if p_col in trait_stats.columns else score_col
+    count_label = "tests" if count_col == p_col else "scores"
+    supplied_count = int(np.isfinite(pd.to_numeric(trait_stats[count_col], errors="coerce")).sum())
+    shown_count = int(np.isfinite(pd.to_numeric(top_traits[count_col], errors="coerce")).sum())
+    axis_lines = [
+        f"-log10({unit} p; nominal)",
+        "Paired increased-minus-decreased profile contrasts",
+        f"{shown_count} finite {count_label} shown / "
+        f"{supplied_count} finite {count_label} supplied",
+    ]
+    if count_col != p_col:
+        axis_lines.append("Raw p-values unavailable; counts use -log10(p) scores")
+    ax.set_xlabel("\n".join(axis_lines), fontsize=9)
     ax.grid(axis="x", color=SLATE_200, linewidth=0.8)
     ax.set_axisbelow(True)
     ax.tick_params(axis="y", labelsize=9)
@@ -1245,6 +1254,17 @@ def plot_story_box(
         else "mean_increased_minus_decreased"
     )
     q_col = "study_q_value" if "study_q_value" in trait_stats.columns else "q_value"
+    q_unit = "study" if q_col == "study_q_value" else "contrast"
+    p_basis = (
+        "study means of paired contrasts"
+        if "study_minus_log10_p" in trait_stats.columns
+        else "paired experiment contrasts"
+    )
+    q_basis = (
+        "study means of paired contrasts"
+        if q_col == "study_q_value"
+        else "paired experiment contrasts"
+    )
     top_increased = trait_stats[trait_stats[mean_col] > 0].iloc[0]
     top_decreased = trait_stats[trait_stats[mean_col] < 0].iloc[0]
     top_condition = condition_summary.iloc[0]
@@ -1266,10 +1286,10 @@ def plot_story_box(
             (
                 f"{trait_label(top_increased.trait_label, 42)} is enriched in inc "
                 f"profiles (mean {inc_mean:+.2f}, "
-                f"study q={format_q(float(inc_q))}); "
+                f"{q_unit} q={format_q(float(inc_q))}); "
                 f"{trait_label(top_decreased.trait_label, 42)} is enriched in dec "
                 f"profiles (mean {dec_mean:+.2f}, "
-                f"study q={format_q(float(dec_q))})."
+                f"{q_unit} q={format_q(float(dec_q))})."
             ),
         ),
         (
@@ -1291,9 +1311,9 @@ def plot_story_box(
         (
             "Caveat",
             (
-                "P-values and q-values reflect study-averaged paired profile contrasts "
-                "over selected traits, serving as descriptive screens rather than new "
-                "differential abundance tests."
+                f"Nominal p-values in A describe {p_basis}; "
+                f"BH-adjusted q-values here describe {q_basis}. "
+                "These are selected-trait screens, not differential abundance tests."
             ),
         ),
     ]

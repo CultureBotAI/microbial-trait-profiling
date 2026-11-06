@@ -1,4 +1,6 @@
+import csv
 import importlib.util
+import math
 import sys
 from pathlib import Path
 
@@ -16,6 +18,24 @@ assert SPEC.loader is not None
 network = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = network
 SPEC.loader.exec_module(network)
+
+LEGACY_EDGE_COLUMNS = [
+    "source",
+    "target",
+    "source_layer",
+    "target_layer",
+    "edge_class",
+    "evidence_type",
+    "direction",
+    "effect",
+    "p_value",
+    "q_value",
+    "study_support",
+    "annotation_count",
+    "statistically_significant",
+    "line_style",
+]
+EDGE_METADATA_COLUMNS = ["p_value_type", "n_tests", "bh_family_size", "displayed_p_value_count"]
 
 
 def test_benjamini_hochberg_adjusts_complete_family() -> None:
@@ -176,6 +196,9 @@ def test_annotation_edges_are_explicitly_noninferential() -> None:
             "reported_study_count": [8],
             "test": ["paired taxon test"],
             "selected_after_bh": [True],
+            "p_value_type": ["nominal"],
+            "n_tests": [1],
+            "bh_family_size": [1],
         }
     )
     trait_tests = pd.DataFrame(
@@ -190,6 +213,9 @@ def test_annotation_edges_are_explicitly_noninferential() -> None:
             "paired_study_count": [8],
             "test": ["paired trait test"],
             "selected_after_bh": [True],
+            "p_value_type": ["nominal"],
+            "n_tests": [1],
+            "bh_family_size": [1],
         }
     )
     annotated_taxa = pd.DataFrame(
@@ -214,12 +240,14 @@ def test_annotation_edges_are_explicitly_noninferential() -> None:
     annotation = edges[edges["edge_class"].eq("KG-Microbe annotation provenance")].iloc[0]
     assert annotation["line_style"] == "dashed"
     assert not bool(annotation["statistically_significant"])
+    assert annotation["p_value_type"] == "not_inferential"
+    assert annotation[["p_value", "q_value", *EDGE_METADATA_COLUMNS[1:]]].isna().all()
     assert pd.isna(annotation["q_value"])
     assert "species" in set(nodes["layer"])
     assert selected_taxa["taxon_id"].tolist() == ["taxon-1"]
 
 
-def test_build_network_tables_handles_empty_fdr_selection() -> None:
+def test_build_network_tables_handles_empty_fdr_selection(tmp_path: Path) -> None:
     taxon_tests = pd.DataFrame(
         {
             "condition": ["Condition A"],
@@ -233,6 +261,9 @@ def test_build_network_tables_handles_empty_fdr_selection() -> None:
             "reported_study_count": [8],
             "test": ["paired taxon test"],
             "selected_after_bh": [False],
+            "p_value_type": ["nominal"],
+            "n_tests": [1],
+            "bh_family_size": [1],
         }
     )
     trait_tests = pd.DataFrame(
@@ -247,6 +278,9 @@ def test_build_network_tables_handles_empty_fdr_selection() -> None:
             "paired_study_count": [45],
             "test": ["paired trait test"],
             "selected_after_bh": [False],
+            "p_value_type": ["nominal"],
+            "n_tests": [1],
+            "bh_family_size": [1],
         }
     )
     annotated_taxa = pd.DataFrame(
@@ -272,7 +306,162 @@ def test_build_network_tables_handles_empty_fdr_selection() -> None:
     assert list(nodes.columns) == network.NODE_COLUMNS
     assert edges.empty
     assert list(edges.columns) == network.EDGE_COLUMNS
+    assert list(edges.columns) == LEGACY_EDGE_COLUMNS + EDGE_METADATA_COLUMNS
     assert selected_taxa.empty
+    output = tmp_path / "empty_edges.tsv"
+    network.write_tsv(edges, output)
+    restored = pd.read_csv(output, sep="\t")
+    assert restored.empty
+    assert list(restored.columns) == LEGACY_EDGE_COLUMNS + EDGE_METADATA_COLUMNS
+
+
+def _edge_export_inputs() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Keep source finite counts, padded BH sizes, and displayed counts distinct (#1430)."""
+    taxon_tests = pd.DataFrame(
+        {
+            "condition": [f"Condition {letter}" for letter in "ABCDEF"],
+            "taxon_id": ["taxon-1", "taxon-1", "taxon-2", "taxon-3", "taxon-4", "taxon-5"],
+            "taxon_name": [
+                "Taxon one",
+                "Taxon one",
+                "Taxon two",
+                "Taxon three",
+                "Taxon four",
+                "Taxon five",
+            ],
+            "taxonomic_rank": ["species"] * 6,
+            "direction": ["increased"] * 6,
+            "directional_difference_fraction": [0.8, 0.7, 0.2, 0.0, 0.0, 0.1],
+            "p_value": [0.001, 0.002, 0.2, float("nan"), float("nan"), 0.8],
+            "q_value": [0.005, 0.005, 1 / 3, float("nan"), float("nan"), float("nan")],
+            "reported_study_count": [8, 8, 8, 8, 8, 2],
+            "test": ["paired taxon test"] * 6,
+            "selected_after_bh": [True, True, False, False, False, False],
+            "passes_min_taxon_studies": [True, True, True, True, True, False],
+            "p_value_type": [
+                "nominal",
+                "nominal",
+                "nominal",
+                "not_tested",
+                "not_tested",
+                "nominal",
+            ],
+            "n_tests": [4] * 6,
+            "bh_family_size": pd.array([5, 5, 5, 5, 5, pd.NA], dtype="Int64"),
+        }
+    )
+    trait_tests = pd.DataFrame(
+        {
+            "condition": [f"Condition {letter}" for letter in "ABCDE"],
+            "trait_id": ["trait-1"] * 5,
+            "trait": ["Trait one"] * 5,
+            "direction": ["increased"] * 5,
+            "mean_contrast": [0.7, 0.2, 0.0, 0.0, 0.1],
+            "p_value": [0.001, 0.2, float("nan"), float("nan"), 0.8],
+            "q_value": [0.004, 0.4, float("nan"), float("nan"), float("nan")],
+            "paired_study_count": [8, 8, 8, 8, 2],
+            "test": ["paired trait test"] * 5,
+            "selected_after_bh": [True, False, False, False, False],
+            "passes_min_paired_studies": [True, True, True, True, False],
+            "p_value_type": ["nominal", "nominal", "not_tested", "not_tested", "nominal"],
+            "n_tests": [3] * 5,
+            "bh_family_size": pd.array([4, 4, 4, 4, pd.NA], dtype="Int64"),
+        }
+    )
+    annotations = pd.DataFrame(
+        {
+            "taxon_id": ["taxon-1"],
+            "taxon_name": ["Taxon one"],
+            "taxonomic_rank": ["species"],
+            "trait-1": [3],
+            "trait-2": [2],
+        }
+    )
+    traits = pd.DataFrame(
+        {"trait_id": ["trait-1", "trait-2"], "trait_label": ["Trait one", "Trait two"]}
+    )
+    return taxon_tests, trait_tests, annotations, traits
+
+
+@pytest.mark.parametrize("kind", ["taxon", "trait"])
+@pytest.mark.parametrize("selected_untestable", [False, True])
+def test_network_edges_preserve_source_statistic_and_separate_test_counts(
+    kind: str, selected_untestable: bool
+) -> None:
+    taxon_tests, trait_tests, annotations, traits = _edge_export_inputs()
+    if selected_untestable:
+        # The exporter preserves caller selection, even when an upstream test is unavailable.
+        # A displayed-test count must count finite p entries, not every exported row.
+        taxon_tests.loc[3, "selected_after_bh"] = True
+        trait_tests.loc[2, "selected_after_bh"] = True
+    original_taxa, original_traits = taxon_tests.copy(deep=True), trait_tests.copy(deep=True)
+    _, edges, selected_taxa = network.build_network_tables(
+        taxon_tests, trait_tests, annotations, traits
+    )
+    source = taxon_tests if kind == "taxon" else trait_tests
+    selected = source.loc[source["selected_after_bh"]]
+    edge_class = f"FDR-significant condition-{kind} " + (
+        "direction" if kind == "taxon" else "contrast"
+    )
+    actual = edges.loc[edges["edge_class"].eq(edge_class)].set_index("source")
+    expected_displayed = sum(math.isfinite(float(value)) for value in selected["p_value"])
+    expected_source_tests = sum(math.isfinite(float(value)) for value in source["p_value"])
+    support = "passes_min_taxon_studies" if kind == "taxon" else "passes_min_paired_studies"
+    expected_bh_size = int(source[support].sum())
+    assert len({expected_displayed, expected_source_tests, expected_bh_size}) == 3
+    assert actual["displayed_p_value_count"].tolist() == [expected_displayed] * len(selected)
+    assert actual["n_tests"].tolist() == [expected_source_tests] * len(selected)
+    assert actual["bh_family_size"].tolist() == [expected_bh_size] * len(selected)
+    assert list(edges.columns) == LEGACY_EDGE_COLUMNS + EDGE_METADATA_COLUMNS
+    assert actual.index.tolist() == [f"condition::{value}" for value in selected["condition"]]
+    effect_column = "directional_difference_fraction" if kind == "taxon" else "mean_contrast"
+    support_column = "reported_study_count" if kind == "taxon" else "paired_study_count"
+    for _, row in selected.iterrows():
+        edge = actual.loc[f"condition::{row['condition']}"]
+        assert edge["target"] == f"{kind}::{row[f'{kind}_id']}"
+        assert edge["p_value_type"] == row["p_value_type"]
+        assert edge["n_tests"] == row["n_tests"]
+        assert edge["bh_family_size"] == row["bh_family_size"]
+        for field in ("p_value", "q_value"):
+            assert pd.isna(edge[field]) if pd.isna(row[field]) else edge[field] == row[field]
+        assert edge["effect"] == row[effect_column]
+        assert edge["study_support"] == row[support_column]
+        assert edge["evidence_type"] == row["test"]
+        assert edge["direction"] == row["direction"]
+        assert edge["line_style"] == "solid"
+        assert bool(edge["statistically_significant"])
+    pd.testing.assert_frame_equal(selected_taxa, original_taxa[original_taxa["selected_after_bh"]])
+    pd.testing.assert_frame_equal(taxon_tests, original_taxa)
+    pd.testing.assert_frame_equal(trait_tests, original_traits)
+
+
+def test_network_edge_metadata_roundtrip_keeps_annotations_noninferential(tmp_path: Path) -> None:
+    taxon_tests, trait_tests, annotations, traits = _edge_export_inputs()
+    _, edges, _ = network.build_network_tables(taxon_tests, trait_tests, annotations, traits)
+    path = tmp_path / "edges.tsv"
+    network.write_tsv(edges, path)
+    with path.open(encoding="utf-8", newline="") as handle:
+        reader = csv.DictReader(handle, delimiter="\t")
+        assert reader.fieldnames == LEGACY_EDGE_COLUMNS + EDGE_METADATA_COLUMNS
+        rows = list(reader)
+    annotation_rows = [
+        row for row in rows if row["edge_class"] == "KG-Microbe annotation provenance"
+    ]
+    assert len(annotation_rows) == 2
+    for row in annotation_rows:
+        assert row["p_value_type"] == "not_inferential"
+        assert all(
+            row[field] == "NA" for field in ("p_value", "q_value", *EDGE_METADATA_COLUMNS[1:])
+        )
+        assert row["statistically_significant"] == "False"
+        assert row["line_style"] == "dashed"
+    inferential = [row for row in rows if row not in annotation_rows]
+    assert len(inferential) == 3
+    assert all(row["p_value_type"] == "nominal" for row in inferential)
+    for row in inferential:
+        kind = "taxon" if "condition-taxon" in row["edge_class"] else "trait"
+        expected = {"taxon": (4, 5, 2), "trait": (3, 4, 1)}[kind]
+        assert tuple(float(row[field]) for field in EDGE_METADATA_COLUMNS[1:]) == expected
 
 
 def test_network_tables_figure_and_methods_label_nominal_p_values(
@@ -424,6 +613,13 @@ def test_network_tables_figure_and_methods_label_nominal_p_values(
     assert trait_tests.loc[~trait_tests["passes_min_paired_studies"], "bh_family_size"].isna().all()
 
     nodes, edges, _ = network.build_network_tables(taxon_tests, trait_tests, annotated_taxa, traits)
+    for kind, source in (("taxon", taxon_tests), ("trait", trait_tests)):
+        inferential = edges[edges["edge_class"].str.startswith(f"FDR-significant condition-{kind}")]
+        selected = source[source["selected_after_bh"]]
+        assert inferential["p_value_type"].tolist() == selected["p_value_type"].tolist()
+        assert inferential["n_tests"].tolist() == selected["n_tests"].tolist()
+        assert inferential["bh_family_size"].tolist() == selected["bh_family_size"].tolist()
+        assert inferential["displayed_p_value_count"].tolist() == [1]
     import matplotlib.figure
 
     captured_texts: list[str] = []
@@ -447,6 +643,15 @@ def test_network_tables_figure_and_methods_label_nominal_p_values(
     methods_path = tmp_path / "methods.md"
     network.write_methods_summary(eligibility, taxon_tests, trait_tests, nodes, edges, methods_path)
     methods_text = methods_path.read_text(encoding="utf-8")
+    for fragment in (
+        "`displayed_p_value_count` counts finite p-values in exported edges separately by "
+        "inferential edge class",
+        "`n_tests` preserves the source table count (including finite tests outside support "
+        "eligibility)",
+        "`bh_family_size` preserves its support-eligible padded BH family",
+        "Annotation edges have no inferential counts.",
+    ):
+        assert fragment in methods_text
     assert (
         "Reported `p_value` columns and Panel C `nominal p` labels are nominal "
         "(uncorrected) across the `1` tested (`2` BH-family) condition-taxon tests and "

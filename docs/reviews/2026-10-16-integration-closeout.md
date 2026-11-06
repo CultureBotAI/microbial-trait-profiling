@@ -13,7 +13,8 @@ Adversarial review also found the calibration and download defects below.
   non-MediaDive universe before selecting the tested traits. Selecting one
   trait previously made every positive fraction one. Regression tests compare
   subset and full-universe scores and raw inference, including numeric metadata
-  and zero-signal profiles. The tested family still controls its own BH correction.
+  and zero-signal profiles. BH adjustment remains within the tested family;
+  this does not establish error control for selecting that family.
 - **#535:** A matching pinned download URL or HTTP 304 does not establish local
   file integrity. Cached BugSigDB dump bytes now pass the pinned size/checksum
   verification before reuse. Corruption raises `IntegrityError`; an explicit
@@ -65,6 +66,14 @@ their effects, p/q values, support fields, flags and missingness within the
 declared export precision. The oral subset retains 381 records and has zero
 BH-selected cells and one nominal-positive cell. This is a preservation check,
 not a new calibration or an endorsement of causal interpretation.
+
+For citation under the later [multiple-testing policy](../../methods/multiple_testing_policy.md),
+these historical border decisions belong to `mt-script-heatmap-direction-fisher`:
+BH across the union of increased/decreased condition–body-site–trait cells within
+one condition mode, before the oral display subset is selected. The registry
+records the border's q and support thresholds. The displayed oral-record count
+is not that correction family's size; recover the executed family inventory
+from the cited historical source before quoting a q-value or rejection claim.
 
 ## Preserved PR history and provenance correction
 

@@ -7,6 +7,7 @@ import pandas as pd
 import pytest
 
 from mtp.stratification import (
+    BEST_STAT_NOTE,
     StratumOutputs,
     build_sensitivity_summary_table,
     generate_sensitivity_reports,
@@ -266,7 +267,7 @@ def test_missing_tested_table_resets_parsed_labels_and_explains_unavailable_hits
 
 @pytest.mark.parametrize("scope", ["global", "profile"])
 @pytest.mark.parametrize("empty", [False, True], ids=["tested", "empty"])
-def test_fdr_report_exports_retain_historical_schema_and_text(
+def test_fdr_report_exports_retain_post_1489_schema_and_text(
     tmp_path: Path, scope: str, empty: bool
 ) -> None:
     outputs = {
@@ -292,8 +293,9 @@ def test_fdr_report_exports_retain_historical_schema_and_text(
     assert len(density) == (0 if empty else 1)
     summary = tsv.read_text(encoding="utf-8")
     comments = [line for line in summary.splitlines() if line.startswith("#")]
-    assert len(comments) == 3
-    assert comments[2] == "# Evaluated-Strata: pooled,feces,feces_excluded"
+    assert len(comments) == 4
+    assert comments[2] == f"# Best-Statistic: {BEST_STAT_NOTE}"
+    assert comments[3] == "# Evaluated-Strata: pooled,feces,feces_excluded"
     assert "-Threshold-Statistic:" not in summary
     assert "-Hit-Statistic:" not in summary
     assert "-FDR-Scope:" not in summary
@@ -307,6 +309,7 @@ def test_fdr_report_exports_retain_historical_schema_and_text(
                     "n_tested",
                     "prevalence",
                     "best_stat",
+                    "best_stat_type",
                     "mean_fold",
                     "significant",
                     "test_status",
@@ -315,8 +318,11 @@ def test_fdr_report_exports_retain_historical_schema_and_text(
         expected_columns.extend(["support_status", "delta_mean_fold", "delta_prevalence"])
         assert list(traits.columns) == expected_columns
         assert traits["pooled_best_stat"].tolist() == [0.02]
+        for name in outputs:
+            assert traits[f"{name}_best_stat_type"].tolist() == ["fdr_q"]
         assert traits["support_status"].tolist() == ["both_strata_significant"]
     report = txt.read_text(encoding="utf-8")
+    assert BEST_STAT_NOTE in report
     assert "Sig Traits: any test passing the analyzer's declared p/q and fold thresholds." in report
     assert "Hit statistic:" not in report
     assert "Support-state names retain" not in report
