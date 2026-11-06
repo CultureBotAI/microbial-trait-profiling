@@ -299,7 +299,7 @@ def finalize_inferential_cells(cells: pd.DataFrame) -> pd.DataFrame:
     output.loc[
         support & finite_p & ~output["passes_nominal_p_value_cutoff"],
         "blank_reason",
-    ] = f"Fisher p>={P_VALUE_CUTOFF:g}"
+    ] = f"nominal Fisher p>={P_VALUE_CUTOFF:g}"
 
     if "increased_minus_decreased_positive_fraction" in output:
         delta = pd.to_numeric(
@@ -1292,6 +1292,45 @@ def flag_matrix(
     return matrix.reindex(index=row_labels, columns=trait_ids).fillna(False).astype(bool)
 
 
+def heatmap_test_counts(
+    cells: pd.DataFrame,
+    row_labels: list[str],
+    trait_order: pd.DataFrame,
+    *,
+    value_column: str,
+) -> dict[str, int]:
+    """Separate finite source tests from finite tests represented in this matrix."""
+    finite_p = np.isfinite(pd.to_numeric(cells["fisher_p_value"], errors="coerce"))
+    represented = (
+        finite_p
+        & cells["displayed_in_heatmap"].astype(bool)
+        & cells["condition_body_site_pair"].isin(row_labels)
+        & cells["trait_id"].isin(trait_order["trait_id"])
+        & np.isfinite(pd.to_numeric(cells[value_column], errors="coerce"))
+    )
+    return {
+        "finite_test_count": int(finite_p.sum()),
+        "displayed_finite_test_count": len(
+            cells.loc[represented, ["condition_body_site_pair", "trait_id"]].drop_duplicates()
+        ),
+    }
+
+
+def heatmap_test_count_caption(
+    cells: pd.DataFrame,
+    row_labels: list[str],
+    trait_order: pd.DataFrame,
+    *,
+    value_column: str,
+) -> str:
+    """Name the source-view denominator and the displayed subset separately."""
+    counts = heatmap_test_counts(cells, row_labels, trait_order, value_column=value_column)
+    return (
+        f"{counts['finite_test_count']} finite Fisher tests in the source view; "
+        f"{counts['displayed_finite_test_count']} finite tested cells shown."
+    )
+
+
 def annotation_matrix(
     cells: pd.DataFrame,
     row_labels: list[str],
@@ -1309,7 +1348,7 @@ def annotation_matrix(
         if row.trait_id not in annotations.columns:
             continue
         p_text = format_p_value(row.fisher_p_value)
-        p_label = f"p{p_text}" if p_text.startswith("<") else f"p={p_text}"
+        p_label = f"nominal p{p_text}" if p_text.startswith("<") else f"nominal p={p_text}"
         if mode == "pattern":
             annotations.loc[row.condition_body_site_pair, row.trait_id] = (
                 f"n={row.focus_positive_profile_count}\n{p_label}"
@@ -1650,10 +1689,12 @@ def write_pattern_heatmap(
     )
     displayed_cells = int(cells["displayed_in_heatmap"].sum())
     subtitle = (
-        "Approach 2: rows are condition/body-site pairs and columns are the six "
-        "traits. Cell color is Fisher evidence, -log10(p), so darker cells have "
-        "smaller p-values. Cells are shown for exploratory review only when nominal Fisher "
-        f"p < {P_VALUE_CUTOFF:g}, n>=3, and s>=2; BH q-values are written to the TSV."
+        "Color is nominal Fisher evidence, -log10(p); darker cells have smaller nominal p. "
+        f"Exploratory cells require nominal Fisher p < {P_VALUE_CUTOFF:g}, "
+        "n>=3 positive-z profiles and s>=2 studies; BH q-values are in the TSV. "
+        + heatmap_test_count_caption(
+            cells, row_labels, trait_order, value_column="plot_minus_log10_fisher_p_value"
+        )
     )
     plot_matrix_heatmap(
         matrix,
@@ -1662,7 +1703,7 @@ def write_pattern_heatmap(
         output_path,
         title=f"Condition/body-site trait pattern: {view.view_label}",
         subtitle=subtitle,
-        colorbar_label=f"Fisher evidence (-log10 p, capped at {MAX_MINUS_LOG10_P:g})",
+        colorbar_label=f"nominal Fisher evidence (-log10 p, capped at {MAX_MINUS_LOG10_P:g})",
         cmap_name="YlGnBu",
         vmin=0.0,
         vmax=MAX_MINUS_LOG10_P,
@@ -1706,15 +1747,19 @@ def write_contrast_heatmap(
     bh_selected_cell_count = int(cells["selected_after_bh"].sum())
     legend = summarize_contrast_legend(cells, row_labels, mode)
     subtitle = (
-        "Color and numbers show increased minus decreased positive-z fractions. "
-        "Red favors increased profiles; blue favors decreased profiles. "
-        f"A dark border marks BH-adjusted q <= {Q_VALUE_CUTOFF:g} "
-        f"({bh_selected_cell_count} cells); "
+        "Increased minus decreased positive-z fractions; red favors increased, blue decreased. "
+        f"BH-adjusted q <= {Q_VALUE_CUTOFF:g} borders "
+        f"({bh_selected_cell_count} source-view cells); "
         f"{nominal_p_value_cell_count} cells met nominal Fisher p < {P_VALUE_CUTOFF:g}. "
-        f"Shown cells require |effect|>{SIGNED_EFFECT_ABS_CUTOFF:g}, >=3 positive-z profiles "
-        "in either direction, and >=2 total studies. Gray = unavailable, insufficient support, "
-        "or below the effect cutoff. "
-        "Raw p and BH q are in the TSV."
+        f"Cells require |effect|>{SIGNED_EFFECT_ABS_CUTOFF:g}, >=3 positive-z profiles "
+        "in either direction and >=2 studies; gray = unavailable or fails support/effect. "
+        "Nominal p and BH q are in the TSV. "
+    )
+    count_caption = heatmap_test_count_caption(
+        cells,
+        row_labels,
+        trait_order,
+        value_column="increased_minus_decreased_positive_fraction",
     )
     clustering = build_spearman_clustering(
         matrix,
@@ -1731,7 +1776,7 @@ def write_contrast_heatmap(
             trait_order,
             output_path,
             title=f"Signed direction contrast: {mode.label}",
-            subtitle=subtitle,
+            subtitle=subtitle + count_caption,
             colorbar_label="Increased - decreased positive-z fraction",
             cmap_name="RdBu_r",
             vmin=-1.0,
@@ -1749,7 +1794,13 @@ def write_contrast_heatmap(
             trait_order,
             contrast_page_path(output_path, page),
             title=f"Signed direction contrast: {mode.label} ({page}/{len(pages)})",
-            subtitle=subtitle,
+            subtitle=subtitle
+            + heatmap_test_count_caption(
+                cells,
+                labels,
+                trait_order,
+                value_column="increased_minus_decreased_positive_fraction",
+            ),
             colorbar_label="Increased - decreased positive-z fraction",
             cmap_name="RdBu_r",
             vmin=-1.0,
@@ -1777,7 +1828,7 @@ def write_contrast_heatmap(
         f"interpreted. {condition_label_source} "
         f"Gray cells remain missing; dark borders mark BH-adjusted q <= {Q_VALUE_CUTOFF:g} "
         f"({bh_selected_cell_count} cells), versus {nominal_p_value_cell_count} cells at "
-        f"nominal Fisher p < {P_VALUE_CUTOFF:g}."
+        f"nominal Fisher p < {P_VALUE_CUTOFF:g}. " + count_caption
     )
     plot_clustered_contrast_heatmap(
         clustering,
@@ -1896,12 +1947,12 @@ def append_readme_section(output_dir: Path, manifest: pd.DataFrame) -> None:
         "Finite effects above the display cutoff that miss either statistical cutoff remain "
         "colored and numbered. In "
         "trait-pattern heatmaps only, gray can also mean that the raw one-sided Fisher test "
-        f"did not pass p<{P_VALUE_CUTOFF:g}.",
+        f"did not pass nominal Fisher p<{P_VALUE_CUTOFF:g}.",
         "",
         "- `trait_pattern`: Approach 2. Rows are condition/body-site pairs and "
-        "columns are the six traits. Cell color is Fisher evidence, `-log10(p)`, "
+        "columns are the six traits. Cell color is nominal Fisher evidence, `-log10(p)`, "
         "rendered with a yellow-to-blue sequential palette so darker cells have "
-        f"smaller p-values. Cells require Fisher p<{P_VALUE_CUTOFF:g}, n>=3, "
+        f"smaller nominal p-values. Cells require nominal Fisher p<{P_VALUE_CUTOFF:g}, n>=3, "
         "and s>=2 for exploratory display.",
         "- `signed_direction_contrast`: Approach 4. Rows are condition/body-site "
         "pairs and columns are traits. Cell color and numbers are "
@@ -1946,11 +1997,16 @@ def append_readme_section(output_dir: Path, manifest: pd.DataFrame) -> None:
         "and log-ratio quantities, but no condition-by-anatomy replacement for this heatmap. "
         "Those pooled quantities are therefore not mixed into this profile-level positive-z "
         "prevalence contrast; the estimands and sampling units remain explicitly separate.",
+        "- The legacy `tested_cell_count` counts candidate cells, including untestable cells. "
+        "`finite_test_count` counts finite Fisher p-values across the source view. "
+        "`displayed_finite_test_count` counts finite tests with finite plotted values in the "
+        "selected rows and trait columns, once per matrix cell; page counts use that page's rows. "
+        "These denominators differ from the nominal-cutoff and BH-selected hit counts.",
         "",
         "| heatmap | type | primary PNG | clustered diagnostic PNG | displayed cells | "
-        "nominal p<0.01 cells | BH-selected cells | tested cells | rows | condition labels | "
-        "anatomy groups |",
-        "| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+        "nominal p<0.01 cells | BH-selected cells | candidate cells | rows | condition labels | "
+        "anatomy groups | finite tests (source view) | finite tested cells shown |",
+        "| --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
     ]
     for row in manifest.itertuples(index=False):
         clustered_path = getattr(row, "clustered_png_path", pd.NA)
@@ -1960,12 +2016,17 @@ def append_readme_section(output_dir: Path, manifest: pd.DataFrame) -> None:
         anatomy_count = getattr(row, "anatomy_group_count", pd.NA)
         condition_text = "" if pd.isna(condition_count) else str(int(condition_count))
         anatomy_text = "" if pd.isna(anatomy_count) else str(int(anatomy_count))
+        finite_count = getattr(row, "finite_test_count", pd.NA)
+        shown_count = getattr(row, "displayed_finite_test_count", pd.NA)
+        finite_text = "" if pd.isna(finite_count) else str(int(finite_count))
+        shown_text = "" if pd.isna(shown_count) else str(int(shown_count))
         lines.append(
             f"| {row.view_label} | {row.heatmap_type} | `{row.png_path}` | "
             f"{clustered_text} | "
             f"{row.displayed_cell_count} | {int(nominal_count)} | "
             f"{row.bh_selected_cell_count} | "
-            f"{row.tested_cell_count} | {row.row_count} | {condition_text} | {anatomy_text} |"
+            f"{row.tested_cell_count} | {row.row_count} | {condition_text} | {anatomy_text} | "
+            f"{finite_text} | {shown_text} |"
         )
     clustered_rows = manifest[manifest["heatmap_type"] == "signed_direction_contrast"]
     if not clustered_rows.empty:
@@ -2139,6 +2200,12 @@ def write_six_shared_trait_cytoscape_heatmaps(
                 "color_value": "-log10(fisher_p_value)",
                 "png_path": relative_path(output_path, repo_root),
                 "source_display_edges_path": view.source_display_edges_path,
+                **heatmap_test_counts(
+                    cells,
+                    select_pattern_rows(cells),
+                    trait_order,
+                    value_column="plot_minus_log10_fisher_p_value",
+                ),
             }
         )
 
@@ -2207,6 +2274,12 @@ def write_six_shared_trait_cytoscape_heatmaps(
                     "png_path": relative_path(
                         contrast_page_path(outputs.overview_path, page),
                         repo_root,
+                    ),
+                    **heatmap_test_counts(
+                        cells,
+                        labels,
+                        trait_order,
+                        value_column="increased_minus_decreased_positive_fraction",
                     ),
                 }
             )
@@ -2301,6 +2374,12 @@ def write_six_shared_trait_cytoscape_heatmaps(
                 "source_display_edges_path": "",
                 "source_increased_edges_path": relative_path(increased_path, repo_root),
                 "source_decreased_edges_path": relative_path(decreased_path, repo_root),
+                **heatmap_test_counts(
+                    cells,
+                    outputs.row_labels,
+                    trait_order,
+                    value_column="increased_minus_decreased_positive_fraction",
+                ),
             }
         )
 
@@ -2350,6 +2429,8 @@ def write_six_shared_trait_cytoscape_heatmaps(
                 "significant_cell_count",
                 "bh_selected_cell_count",
                 "png_path",
+                "finite_test_count",
+                "displayed_finite_test_count",
             ],
         ),
         output_dir / CONTRAST_PAGES_FILENAME,
