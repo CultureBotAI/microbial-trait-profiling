@@ -16,6 +16,29 @@ from mtp.paths import file_sha256
 from test_no_absolute_local_paths import ABSOLUTE_LOCAL_PATH_PATTERN
 
 
+def _arguments(root: Path, output: Path) -> list[str]:
+    return [
+        "--profile-input",
+        str(root / "study_trait_profiles_wide.tsv"),
+        "--experiments-input",
+        str(root / "experiments.tsv"),
+        "--full-dump-input",
+        str(root / "dump.csv"),
+        "--calibration-status",
+        str(root / "calibration.json"),
+        "--orientation-provenance",
+        str(root / "orientation.json"),
+        "--sensitivity-status",
+        str(root / "missing-sensitivity.json"),
+        "--influence-status",
+        str(root / "influence.json"),
+        "--output-dir",
+        str(output),
+        "--arm1-pooled-stats",
+        str(root / "pooled.tsv"),
+    ]
+
+
 @pytest.fixture
 def portable_case(tmp_path: Path, request: pytest.FixtureRequest) -> tuple[Path, Path]:
     root = tmp_path / "original"
@@ -64,26 +87,7 @@ def portable_case(tmp_path: Path, request: pytest.FixtureRequest) -> tuple[Path,
         encoding="utf-8",
     )
     output = root / "out"
-    arguments = [
-        "--profile-input",
-        str(profiles),
-        "--experiments-input",
-        str(experiments),
-        "--full-dump-input",
-        str(dump),
-        "--calibration-status",
-        str(calibration),
-        "--orientation-provenance",
-        str(orientation),
-        "--sensitivity-status",
-        str(root / "missing-sensitivity.json"),
-        "--influence-status",
-        str(influence),
-        "--output-dir",
-        str(output),
-        "--arm1-pooled-stats",
-        str(native),
-    ]
+    arguments = _arguments(root, output)
     try:
         result = integrated_evidence.main(arguments)
     except ValueError as exc:
@@ -109,6 +113,8 @@ def test_saved_json_and_assessments_are_portable(portable_case: tuple[Path, Path
     assert provenance["native_sources"]["arm1_pooled_stats"] == {
         "path": "pooled.tsv",
         "sha256": file_sha256(root / "pooled.tsv"),
+        "supplied": True,
+        "binding": "present",
     }
     statuses = provenance["assessment_status"]
     source = statuses["orientation_status"]["source"]
@@ -117,6 +123,14 @@ def test_saved_json_and_assessments_are_portable(portable_case: tuple[Path, Path
     assert source["review"]["sha256"] == file_sha256(root / "review.tsv")
     assert statuses["calibration_status"]["source"]["binding"] == "matched"
     assert statuses["sensitivity_status"]["source"]["path"] is None
+    assert statuses["sensitivity_status"]["source"]["binding"] == "missing"
+    assert statuses["sensitivity_status"]["source"]["supplied"] is True
+    assert provenance["native_sources"]["full_screen"] == {
+        "path": None,
+        "sha256": None,
+        "supplied": False,
+        "binding": "not_supplied",
+    }
     with (output / "integrated_evidence_assessments.tsv").open() as handle:
         rows = list(csv.DictReader(handle, delimiter="\t"))
     sources = {row["state_value"] for row in rows if row["state_variable"] == "path"}
@@ -194,3 +208,125 @@ def test_json_encoded_influence_detail_rebases_only_locations(tmp_path: Path) ->
         "source": {"path": "evidence.json", "sha256": file_sha256(evidence)},
         "count": 7,
     }
+
+
+@pytest.mark.parametrize("key", ["coverage_status", "taxon_influence_status"])
+def test_missing_assessment_is_distinct_from_not_supplied(tmp_path: Path, key: str) -> None:
+    absent = integrated_evidence.read_status(None, key, "#1757")
+    missing = integrated_evidence.read_status(tmp_path / "absent.json", key, "#1757")
+    assert absent.source == {"path": None, "binding": "not_supplied"}
+    assert missing.source == {"path": None, "binding": "missing", "supplied": True}
+    if key == "taxon_influence_status":
+        assert "not supplied" in absent.default
+        assert "supplied influence evidence missing" in missing.default
+
+
+def test_missing_native_records_do_not_add_a_location_to_root_inference(tmp_path: Path) -> None:
+    from mtp.provenance_paths import PortablePaths
+
+    helper = getattr(integrated_evidence, "_native_source_record", None)
+    assert callable(helper), "Native source availability must be explicit"
+    root = tmp_path / "sources"
+    root.mkdir()
+    paths = PortablePaths.create(root / "record.json", [])
+    missing = tmp_path / "outside" / "missing.tsv"
+    assert helper(missing, supplied=True, paths=paths) == {
+        "path": None,
+        "sha256": None,
+        "supplied": True,
+        "binding": "missing",
+    }
+    assert helper(missing, supplied=False, paths=paths) == {
+        "path": None,
+        "sha256": None,
+        "supplied": False,
+        "binding": "not_supplied",
+    }
+
+
+def test_unreadable_supplied_assessment_retains_source_identity(
+    portable_case: tuple[Path, Path],
+) -> None:
+    root, output = portable_case
+    record = json.loads((output / "integrated_evidence_provenance.json").read_text())
+    source = record["assessment_status"]["taxon_influence_status"]["source"]
+    assert source["path"] == "influence.json"
+    assert source["sha256"] == file_sha256(root / "influence.json")
+    assert source["binding"] == "supplied"
+
+
+@pytest.mark.parametrize("absolute", [False, True])
+def test_calibration_protocol_locator_has_explicit_scope(tmp_path: Path, absolute: bool) -> None:
+    from mtp.provenance_paths import PortablePaths
+
+    protocol = tmp_path / "protocol.json"
+    protocol.write_text("{}\n")
+    digest = file_sha256(protocol)
+    status = integrated_evidence.AssessmentStatus(
+        "#182",
+        {},
+        "pending",
+        source={
+            "protocol": str(protocol) if absolute else "methods/protocol.json",
+            "protocol_sha256": digest,
+        },
+    )
+    converted = integrated_evidence._portable_status(
+        status, PortablePaths.create(tmp_path / "record.json", [protocol])
+    )
+    assert converted.source["protocol"] == {
+        "path" if absolute else "producer_relative_path": "protocol.json"
+        if absolute
+        else "methods/protocol.json",
+        "sha256": digest,
+    }
+    assert converted.source["protocol_sha256"] == digest
+
+
+def test_declared_provenance_root_is_used_by_integrated_cli(
+    portable_case: tuple[Path, Path],
+) -> None:
+    root, _ = portable_case
+    output = root / "declared" / "out"
+    try:
+        result = integrated_evidence.main(
+            [*_arguments(root, output), "--provenance-root", str(root.parent)]
+        )
+    except SystemExit as error:
+        raise AssertionError(
+            "The integrated CLI must accept an explicit provenance root"
+        ) from error
+    assert result == 0
+    record = json.loads((output / "integrated_evidence_provenance.json").read_text())
+    assert record["path_basis"] == {"kind": "root-relative-v1", "root": "../../.."}
+    assert record["native_sources"]["arm1_pooled_stats"]["path"] == "original/pooled.tsv"
+
+
+def test_final_provenance_backstop_rejects_an_unencoded_field(
+    portable_case: tuple[Path, Path],
+) -> None:
+    root, _ = portable_case
+    output = root / "refused"
+    leaked = str(Path("/") / "home" / "fixture-user" / "revision")
+    with pytest.raises(ValueError, match="Provenance contains"):
+        integrated_evidence.main([*_arguments(root, output), "--code-commit", leaked])
+    assert not (output / "integrated_evidence_provenance.json").exists()
+
+
+def test_explicit_source_root_can_keep_report_outside_source_tree(
+    portable_case: tuple[Path, Path],
+) -> None:
+    root, _ = portable_case
+    output = root.parent / "external-report"
+    try:
+        result = integrated_evidence.main(
+            [*_arguments(root, output), "--provenance-root", str(root)]
+        )
+    except SystemExit as error:
+        raise AssertionError("The integrated CLI must accept an external source root") from error
+    assert result == 0
+    text = (output / "integrated_evidence_provenance.json").read_text()
+    record = json.loads(text)
+    assert record["path_basis"] == {"kind": "supplied-root-v1"}
+    assert record["native_sources"]["arm1_pooled_stats"]["path"] == "pooled.tsv"
+    assert str(root) not in text

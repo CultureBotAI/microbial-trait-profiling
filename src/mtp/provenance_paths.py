@@ -5,6 +5,10 @@ Every reference is a canonical POSIX path beneath that root. Relocation preserve
 this tree, not an original machine prefix. Existing records without a declaration
 retain their absolute or record-directory-relative path semantics. Hashes bind
 file bytes independently of the location spelling.
+
+An explicitly supplied source root can also support a record outside that tree.
+That record carries only ``supplied-root-v1``; readers must supply its root again.
+No machine path is serialized to reconnect otherwise unrelated trees.
 """
 
 from __future__ import annotations
@@ -18,18 +22,41 @@ from pathlib import Path, PurePosixPath, PureWindowsPath
 from mtp.paths import file_sha256
 
 _KIND = "root-relative-v1"
+_SUPPLIED_KIND = "supplied-root-v1"
 _LOCAL_PATH = re.compile(
     r"/(?:Users|home)/[A-Za-z0-9._-]+|[A-Za-z]:[\\/]+Users[\\/]+"
     r"|(?:/private)?/var/(?:folders)(?=/)|/private/(?:tmp)(?=/)"
+)
+_SLASHLESS_LOCAL_PATH = re.compile(
+    r"(?<![\w])(?:(?:Users|home)/[A-Za-z0-9._-]+"
+    r"|(?:private/)?var/folders(?=/)|private/tmp(?=/))"
+)
+_ROOT_GUIDANCE = (
+    "Choose --provenance-root below the home or temporary-directory prefix; "
+    "all bound sources must be beneath it. Stage verified copies together if needed."
 )
 
 
 def assert_portable_text(text: str) -> None:
     """Refuse leaked machine prefixes; never silently redact source metadata."""
-    if _LOCAL_PATH.search(text):
-        raise ValueError(
-            "Provenance contains an absolute local path; declare portable source paths"
-        )
+    if _LOCAL_PATH.search(text) or _SLASHLESS_LOCAL_PATH.search(text):
+        raise ValueError("Provenance contains a local path or local prefix. " + _ROOT_GUIDANCE)
+
+
+def _validate_root(root: Path, sources: Iterable[Path]) -> None:
+    """Never expose a home/temp prefix by removing only its leading slash."""
+    if root == root.parent:
+        raise ValueError("The filesystem root is not a provenance root. " + _ROOT_GUIDANCE)
+    for source in sources:
+        if not source.is_relative_to(root):
+            raise ValueError("Source is outside the declared provenance root. " + _ROOT_GUIDANCE)
+        if any(
+            match.end() > len(root.as_posix()) for match in _LOCAL_PATH.finditer(source.as_posix())
+        ):
+            raise ValueError(
+                "Provenance root leaves a local prefix in a reference. " + _ROOT_GUIDANCE
+            )
+        assert_portable_text("/" + source.relative_to(root).as_posix())
 
 
 def _canonical_reference(value: str) -> PurePosixPath:
@@ -69,14 +96,15 @@ class PortablePaths:
             if root is not None
             else Path(os.path.commonpath([record.parent, *(path.parent for path in paths)]))
         )
-        if not record.parent.is_relative_to(base) or any(
-            not path.is_relative_to(base) for path in paths
-        ):
-            raise ValueError("Source or output is outside the declared provenance root")
+        _validate_root(base, paths)
+        if root is not None and not base.is_dir():
+            raise ValueError("--provenance-root must name an existing directory")
         return cls(record, base)
 
     @property
     def declaration(self) -> dict[str, str]:
+        if not self.record.parent.is_relative_to(self.root):
+            return {"kind": _SUPPLIED_KIND}
         return {
             "kind": _KIND,
             "root": os.path.relpath(self.root, self.record.parent).replace(os.sep, "/"),
@@ -84,25 +112,34 @@ class PortablePaths:
 
     def encode(self, path: Path) -> str:
         resolved = path.resolve()
-        if not resolved.is_relative_to(self.root):
-            raise ValueError("Source path is outside the declared provenance root")
+        _validate_root(self.root, [resolved])
         value = resolved.relative_to(self.root).as_posix()
         _canonical_reference(value)
         return value
 
 
-def resolve_reference(
+def resolve_provenance_root(
     record_path: Path,
-    path: str,
     *,
     path_basis: Mapping[str, object] | None,
-) -> Path:
-    """Resolve legacy locations or strictly checked declared-root references."""
-    if not isinstance(path, str) or not path:
-        raise ValueError("Source path must be a nonempty string")
+    provenance_root: Path | None = None,
+) -> Path | None:
+    """Validate a root declaration even when a record has no present sources."""
     parent = record_path.resolve().parent
     if path_basis is None:
-        return (parent / path).resolve()
+        return None
+    if not isinstance(path_basis, Mapping):
+        raise ValueError("Invalid portable path basis declaration")
+    if path_basis.get("kind") == _SUPPLIED_KIND:
+        if set(path_basis) != {"kind"}:
+            raise ValueError("Invalid supplied-root declaration")
+        if provenance_root is None:
+            raise ValueError("This record requires --provenance-root to resolve its sources")
+        base = provenance_root.resolve()
+        _validate_root(base, [])
+        if not base.is_dir():
+            raise ValueError("--provenance-root must name an existing directory")
+        return base
     root = path_basis.get("root")
     if (
         set(path_basis) != {"kind", "root"}
@@ -112,9 +149,31 @@ def resolve_reference(
     ):
         raise ValueError("Invalid portable path basis/root declaration")
     base = (parent / root).resolve()
+    _validate_root(base, [])
+    if provenance_root is not None and provenance_root.resolve() != base:
+        raise ValueError("--provenance-root conflicts with the record-relative root")
+    return base
+
+
+def resolve_reference(
+    record_path: Path,
+    path: str,
+    *,
+    path_basis: Mapping[str, object] | None,
+    provenance_root: Path | None = None,
+) -> Path:
+    """Resolve legacy locations or strictly checked declared-root references."""
+    if not isinstance(path, str) or not path:
+        raise ValueError("Source path must be a nonempty string")
+    base = resolve_provenance_root(
+        record_path, path_basis=path_basis, provenance_root=provenance_root
+    )
+    if base is None:
+        return (record_path.resolve().parent / path).resolve()
     result = (base / _canonical_reference(path)).resolve()
     if not result.is_relative_to(base):
         raise ValueError("Source path escapes the declared provenance root")
+    _validate_root(base, [result])
     return result
 
 
@@ -123,6 +182,7 @@ def verify_reference(
     reference: Mapping[str, object],
     *,
     path_basis: Mapping[str, object] | None,
+    provenance_root: Path | None = None,
 ) -> Path:
     """Resolve a recorded source and reject missing or different file bytes."""
     path, digest = reference.get("path"), reference.get("sha256")
@@ -130,7 +190,13 @@ def verify_reference(
         raise ValueError("Source path must be a string")
     if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
         raise ValueError("Source SHA-256 digest must be 64 lowercase hexadecimal characters")
-    resolved = resolve_reference(record_path, path, path_basis=path_basis)
-    if file_sha256(resolved) != digest:
+    resolved = resolve_reference(
+        record_path, path, path_basis=path_basis, provenance_root=provenance_root
+    )
+    try:
+        actual = file_sha256(resolved)
+    except OSError as exc:
+        raise ValueError("Recorded source is missing or unavailable to read") from exc
+    if actual != digest:
         raise ValueError("Source hash does not match the recorded SHA-256 digest")
     return resolved

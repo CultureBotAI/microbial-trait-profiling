@@ -1656,19 +1656,37 @@ def read_status(
     JSON array and passed a nested object straight through into a status column
     (#294).
     """
-    if key == "taxon_influence_status":
+    influence_source = key == "taxon_influence_status"
+    if path is None or not path.exists():
+        missing_default = f"pending {issue}"
+        if influence_source:
+            missing_default += (
+                ": influence evidence not supplied"
+                if path is None
+                else ": supplied influence evidence missing"
+            )
+        return AssessmentStatus(
+            issue=issue,
+            verdicts={},
+            default=missing_default,
+            source=(
+                {"path": None, "binding": "not_supplied"}
+                if path is None
+                else {"path": None, "binding": "missing", "supplied": True}
+            ),
+        )
+    if influence_source:
         from mtp.influence_assessment import read_influence_assessment
 
         influence = read_influence_assessment(
             path, issue, expected_input_sha256=expected_input_sha256
         )
-        return AssessmentStatus(issue, influence.verdicts, influence.default, influence.detail)
-    if path is None or not path.exists():
         return AssessmentStatus(
-            issue=issue,
-            verdicts={},
-            default=f"pending {issue}",
-            source={"path": None, "binding": "not_supplied"},
+            issue,
+            influence.verdicts,
+            influence.default,
+            influence.detail,
+            source={"path": str(path.resolve()), "sha256": _sha256(path), "binding": "supplied"},
         )
     try:
         content = json.loads(path.read_text(encoding="utf-8"))
@@ -1833,6 +1851,17 @@ def assessed_procedure(method: str) -> str:
     return ASSESSED_PROCEDURE.get(method, method)
 
 
+def _native_source_record(path: Path, *, supplied: bool, paths: PortablePaths) -> dict[str, object]:
+    """Describe availability without letting absent candidates determine the root."""
+    present = path.is_file()
+    return {
+        "path": paths.encode(path) if present else None,
+        "sha256": _sha256(path) if present else None,
+        "supplied": supplied,
+        "binding": "present" if present else "missing" if supplied else "not_supplied",
+    }
+
+
 def _metadata_paths(value: object) -> Iterable[Path]:
     """Find explicit absolute locators, including JSON-encoded assessment detail."""
     if isinstance(value, Mapping):
@@ -1885,6 +1914,14 @@ def _portable_status(status: AssessmentStatus, paths: PortablePaths) -> Assessme
             if not isinstance(converted, dict):
                 raise ValueError("Assessment review metadata must be an object")
             converted["producer_relative_path"] = converted.pop("path")
+    protocol = status.source.get("protocol")
+    if isinstance(protocol, str):
+        source["protocol"] = {
+            "path" if Path(protocol).is_absolute() else "producer_relative_path": (
+                source["protocol"] if Path(protocol).is_absolute() else protocol
+            ),
+            "sha256": status.source.get("protocol_sha256"),
+        }
     detail = tuple(
         (
             kind,
@@ -2502,6 +2539,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--full-dump-input", type=Path)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
     parser.add_argument(
+        "--provenance-root",
+        type=Path,
+        help="Safe common source root for portable provenance; an external report "
+        "requires the same root to be supplied again for verification",
+    )
+    parser.add_argument(
         "--q-threshold",
         type=float,
         default=DEFAULT_OVERLAY_Q,
@@ -2784,6 +2827,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         "full_screen": screen_path,
         "full_screen_provenance": screen_provenance_path,
     }
+    native_supplied = {
+        "arm1_pooled_stats": args.arm1_pooled_stats is not None,
+        "arm2_enrichment": args.arm2_enrichment_results is not None,
+        "arm2_depletion": args.arm2_depletion_results is not None,
+        "full_screen": args.full_screen is not None,
+        "full_screen_provenance": args.full_screen_provenance is not None,
+    }
     source_paths = [path for path in native_paths.values() if path.is_file()]
     for status in statuses.values():
         source_paths.extend(_metadata_paths(status.source))
@@ -2798,7 +2848,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
     if bundle is not None:
         source_paths.append(bundle.path("ora_profiles"))
-    portable = PortablePaths.create(provenance_path, source_paths)
+    portable = PortablePaths.create(provenance_path, source_paths, root=args.provenance_root)
     statuses = {key: _portable_status(status, portable) for key, status in statuses.items()}
     records = apply_statuses(records, statuses)
     summary = summarize(records)
@@ -2866,10 +2916,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             else None
         ),
         "native_sources": {
-            key: {
-                "path": portable.encode(path) if path.is_file() else None,
-                "sha256": _sha256(path) if path.is_file() else None,
-            }
+            key: _native_source_record(path, supplied=native_supplied[key], paths=portable)
             for key, path in native_paths.items()
         },
         "corpus": asdict(stats),

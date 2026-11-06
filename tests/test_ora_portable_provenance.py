@@ -37,6 +37,16 @@ def legacy_manifest(root: Path, *, absolute: bool = False) -> Path:
     return manifest
 
 
+def attest_sources(manifest: Path) -> Path:
+    """Retain the source hashes established before a manifest conversion."""
+    audit = manifest.with_name("expected-audit.json")
+    if not audit.exists():
+        result = _AUDIT.audit_manifest(manifest, audit)
+        assert result["passed"]
+        audit.write_text(json.dumps(result), encoding="utf-8")
+    return audit
+
+
 def assert_portable(path: Path, original_root: Path) -> dict[str, Any]:
     payload = path.read_text(encoding="utf-8")
     assert not ABSOLUTE_LOCAL_PATH_PATTERN.search(payload), payload
@@ -97,7 +107,9 @@ def test_portable_manifest_pins_sources_and_survives_relocation(tmp_path: Path) 
     root = tmp_path / "original"
     manifest = legacy_manifest(root, absolute=True)
     portable = root / "records" / "inputs.json"
-    _AUDIT.write_portable_manifest(manifest, portable, root=root)
+    _AUDIT.write_portable_manifest(
+        manifest, portable, root=root, expected_audit=attest_sources(manifest)
+    )
     declared = assert_portable(portable, root)
     pair = declared["pairs"][0]
     for key, filename in (
@@ -126,7 +138,7 @@ def test_portable_manifest_pins_sources_and_survives_relocation(tmp_path: Path) 
 def test_portable_manifest_refuses_same_size_changed_source(tmp_path: Path, source: str) -> None:
     manifest = legacy_manifest(tmp_path)
     portable = tmp_path / "portable.json"
-    _AUDIT.write_portable_manifest(manifest, portable)
+    _AUDIT.write_portable_manifest(manifest, portable, expected_audit=attest_sources(manifest))
     target = tmp_path / "inputs" / source
     old = target.read_bytes()
     # Same-size byte substitution: the manifest's hash, not a size-only check,
@@ -144,10 +156,10 @@ def test_portable_manifest_refuses_same_size_changed_source(tmp_path: Path, sour
 def test_portable_manifest_existing_output_refusal(tmp_path: Path) -> None:
     manifest = legacy_manifest(tmp_path)
     portable = tmp_path / "records" / "portable.json"
-    _AUDIT.write_portable_manifest(manifest, portable)
+    _AUDIT.write_portable_manifest(manifest, portable, expected_audit=attest_sources(manifest))
     before = portable.read_bytes()
     with pytest.raises(FileExistsError):
-        _AUDIT.write_portable_manifest(manifest, portable)
+        _AUDIT.write_portable_manifest(manifest, portable, expected_audit=attest_sources(manifest))
     assert portable.read_bytes() == before
     assert_portable(portable, tmp_path)
 
@@ -164,6 +176,10 @@ def test_portable_manifest_conversion_cli(tmp_path: Path) -> None:
             "--output",
             str(portable),
             "--write-portable-manifest",
+            "--expected-audit",
+            str(attest_sources(manifest)),
+            "--provenance-root",
+            str(tmp_path),
         ],
         capture_output=True,
         text=True,
@@ -181,7 +197,7 @@ def test_portable_manifest_rejects_noncanonical_source_reference(
 ) -> None:
     manifest = legacy_manifest(tmp_path)
     portable = tmp_path / "portable.json"
-    _AUDIT.write_portable_manifest(manifest, portable)
+    _AUDIT.write_portable_manifest(manifest, portable, expected_audit=attest_sources(manifest))
     raw = json.loads(portable.read_text(encoding="utf-8"))
     raw["pairs"][0]["current"]["path"] = reference
     portable.write_text(json.dumps(raw), encoding="utf-8")
@@ -196,7 +212,9 @@ def test_portable_reference_refuses_same_bytes_reached_through_outside_symlink(
     root = tmp_path / "bundle"
     manifest = legacy_manifest(root)
     portable = root / "portable.json"
-    _AUDIT.write_portable_manifest(manifest, portable, root=root)
+    _AUDIT.write_portable_manifest(
+        manifest, portable, root=root, expected_audit=attest_sources(manifest)
+    )
     source = root / "inputs/current.tsv"
     external = tmp_path / "outside.tsv"
     external.write_bytes(source.read_bytes())
@@ -213,7 +231,9 @@ def test_manifest_writer_refuses_sources_outside_explicit_root(tmp_path: Path) -
     narrow.mkdir()
     output = narrow / "portable.json"
     with pytest.raises(ValueError, match="outside the declared provenance root"):
-        _AUDIT.write_portable_manifest(manifest, output, root=narrow)
+        _AUDIT.write_portable_manifest(
+            manifest, output, root=narrow, expected_audit=attest_sources(manifest)
+        )
     assert not output.exists()
 
 
@@ -223,7 +243,7 @@ def test_audit_retains_manifest_hash_after_reference_verification(
 ) -> None:
     manifest = legacy_manifest(tmp_path)
     portable = tmp_path / "portable.json"
-    _AUDIT.write_portable_manifest(manifest, portable)
+    _AUDIT.write_portable_manifest(manifest, portable, expected_audit=attest_sources(manifest))
     target = tmp_path / "inputs" / source
     before = target.read_bytes()
     changed = (

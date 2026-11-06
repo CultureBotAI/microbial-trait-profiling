@@ -120,13 +120,18 @@ core-ora run output *ARGS:
 	  --p-threshold 0.001 --min-fold 1.5 --max-fold 0.5 --fdr-scope global "${@:4}"
 
 [positional-arguments]
-audit-ora-refresh manifest output:
-	uv run python scripts/adhoc/issue720_audit_ora_refresh.py --manifest "$1" --output "$2"
+audit-ora-refresh manifest output *ARGS:
+	uv run python scripts/adhoc/issue720_audit_ora_refresh.py --manifest "$1" --output "$2" "${@:3}"
 
 # Write a new portable, hash-bound inputs manifest; leave historical records intact.
 [positional-arguments]
-ora-refresh-inputs manifest output:
-	uv run python scripts/adhoc/issue720_audit_ora_refresh.py --manifest "$1" --output "$2" --write-portable-manifest
+ora-refresh-inputs manifest output *ARGS:
+	uv run python scripts/adhoc/issue720_audit_ora_refresh.py --manifest "$1" --output "$2" --write-portable-manifest "${@:3}"
+
+# Read-only verification of every source reference in the integrated record.
+[positional-arguments]
+verify-integrated-provenance record *ARGS:
+	uv run python -m mtp.integrated_provenance "$1" "${@:2}"
 
 # Bind all anatomical partitions and summaries to the same verified ORA core.
 [positional-arguments]

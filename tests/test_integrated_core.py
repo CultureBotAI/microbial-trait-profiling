@@ -56,7 +56,13 @@ def test_integrated_core_binds_outputs_and_does_not_read_checkout_assessments(
     core_manifest: Path, tmp_path: Path
 ) -> None:
     output = tmp_path / "integrated"
-    assert main(["--core-run", str(core_manifest), "--output-dir", str(output)]) == 0
+    try:
+        result = main(["--core-run", str(core_manifest), "--output-dir", str(output)])
+    except ValueError as error:
+        raise AssertionError(
+            "A valid synthetic core must publish portable eligibility evidence"
+        ) from error
+    assert result == 0
     record = verify_consumer_record(output / "core_consumption.json")
     provenance = json.loads((output / "integrated_evidence_provenance.json").read_text())
     assert provenance["core_run_id"] == record.run_id
@@ -73,6 +79,10 @@ def test_integrated_core_binds_outputs_and_does_not_read_checkout_assessments(
     assert all(source["sha256"] is None for source in provenance["native_sources"].values())
     provenance_path = output / "integrated_evidence_provenance.json"
     assert provenance["path_basis"]["kind"] == "root-relative-v1"
+    assert not Path(provenance["ora_eligibility_source"]["path"]).is_absolute()
+    assert not ABSOLUTE_LOCAL_PATH_PATTERN.search(
+        "/" + provenance["ora_eligibility_source"]["path"]
+    )
     assert (
         verify_reference(
             provenance_path,

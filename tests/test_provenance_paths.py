@@ -108,3 +108,105 @@ def test_source_hash_must_be_well_formed(tmp_path: Path, api: ModuleType, digest
             {"path": source.name, "sha256": digest},
             path_basis={"kind": "root-relative-v1", "root": "."},
         )
+
+
+def test_cross_top_level_inference_cannot_publish_machine_prefixes(api: ModuleType) -> None:
+    anchor = Path(Path.cwd().anchor)
+    record = anchor / "Users" / "example-user" / "records" / "record.json"
+    source = anchor / "private" / "tmp" / "input.tsv"
+    with pytest.raises(ValueError, match="--provenance-root"):
+        api.PortablePaths.create(record, [source])
+
+
+@pytest.mark.parametrize("root_parts", [("Users",), ("private",)])
+def test_explicit_root_cannot_leave_local_prefix_components(
+    api: ModuleType, root_parts: tuple[str, ...]
+) -> None:
+    anchor = Path(Path.cwd().anchor)
+    root = anchor.joinpath(*root_parts)
+    suffix = ("example-user", "source.tsv") if root_parts == ("Users",) else ("tmp", "source.tsv")
+    with pytest.raises(ValueError, match=r"root|local prefix"):
+        api.PortablePaths.create(root / "record.json", [root.joinpath(*suffix)], root=root)
+
+
+def test_filesystem_root_is_never_an_explicit_publication_root(api: ModuleType) -> None:
+    root = Path(Path.cwd().anchor)
+    with pytest.raises(ValueError, match="--provenance-root"):
+        api.PortablePaths.create(root / "record.json", [root / "data.tsv"], root=root)
+
+
+@pytest.mark.parametrize(
+    "components",
+    [
+        ("Users", "example-user", "data.tsv"),
+        ("home", "example-user", "data.tsv"),
+        ("private", "tmp", "run", "data.tsv"),
+    ],
+)
+def test_text_backstop_detects_slashless_machine_prefixes(
+    api: ModuleType, components: tuple[str, ...]
+) -> None:
+    text = json.dumps({"path": "/".join(components)})
+    with pytest.raises(ValueError, match=r"local path|local prefix"):
+        api.assert_portable_text(text)
+
+
+def test_absolute_reference_inside_root_is_still_noncanonical(
+    tmp_path: Path, api: ModuleType
+) -> None:
+    with pytest.raises(ValueError, match="canonical root-relative"):
+        api.resolve_reference(
+            tmp_path / "record.json",
+            str(tmp_path / "source.tsv"),
+            path_basis={"kind": "root-relative-v1", "root": "."},
+        )
+
+
+def test_explicit_source_root_supports_an_external_report_without_disclosure(
+    tmp_path: Path, api: ModuleType
+) -> None:
+    root = tmp_path / "source-tree"
+    root.mkdir()
+    source = root / "source.tsv"
+    source.write_text("retained bytes\n")
+    record = tmp_path / "elsewhere" / "record.json"
+    paths = api.PortablePaths.create(record, [source], root=root)
+    assert paths.declaration == {"kind": "supplied-root-v1"}
+    ref = {"path": paths.encode(source), "sha256": file_sha256(source)}
+    assert ref["path"] == "source.tsv"
+    assert str(tmp_path) not in json.dumps({"path_basis": paths.declaration, "source": ref})
+    with pytest.raises(ValueError, match="--provenance-root"):
+        api.verify_reference(record, ref, path_basis=paths.declaration)
+    assert (
+        api.verify_reference(record, ref, path_basis=paths.declaration, provenance_root=root)
+        == source
+    )
+    relocated = tmp_path / "relocated-inputs"
+    root.rename(relocated)
+    assert (
+        api.verify_reference(record, ref, path_basis=paths.declaration, provenance_root=relocated)
+        == relocated / source.name
+    )
+
+
+def test_explicit_resolution_cannot_override_a_record_relative_root(
+    tmp_path: Path, api: ModuleType
+) -> None:
+    elsewhere = tmp_path / "elsewhere"
+    elsewhere.mkdir()
+    with pytest.raises(ValueError, match=r"match|conflict"):
+        api.resolve_reference(
+            tmp_path / "record.json",
+            "source.tsv",
+            path_basis={"kind": "root-relative-v1", "root": "."},
+            provenance_root=elsewhere,
+        )
+
+
+def test_missing_reference_is_a_clear_verification_error(tmp_path: Path, api: ModuleType) -> None:
+    with pytest.raises(ValueError, match=r"missing|read|unavailable"):
+        api.verify_reference(
+            tmp_path / "record.json",
+            {"path": "missing.tsv", "sha256": file_sha256(__file__)},
+            path_basis={"kind": "root-relative-v1", "root": "."},
+        )

@@ -12,7 +12,10 @@ representation with global/profile scope. Each format is validated independently
 switching formats still changes body bytes and fails the refresh-parity audit.
 New audit records use a declared relative root. ``--write-portable-manifest``
 converts an existing inputs manifest to that format and pins every source hash;
-the legacy manifest format remains readable. No analysis is rerun by conversion.
+the legacy manifest format remains readable. Legacy conversion requires the
+original attesting ``--expected-audit``. ``--provenance-root`` declares the safe
+source tree; stage verified inputs together if their old trees cannot be encoded
+safely. No analysis is rerun by conversion.
 """
 
 from __future__ import annotations
@@ -473,12 +476,25 @@ def audit_pair(
 
 def read_manifest(
     manifest: Path,
+    *,
+    provenance_root: Path | None = None,
 ) -> tuple[list[dict[str, str]], str, dict[str, dict[str, str]]]:
     """Resolve old paths or verify versioned source references from one buffer."""
     payload = manifest.read_bytes()
     raw = json.loads(payload)
-    if not isinstance(raw, dict) or set(raw) not in ({"pairs"}, {"pairs", "path_basis"}):
-        raise ValueError("Manifest must contain pairs and optionally path_basis")
+    if not isinstance(raw, dict) or set(raw) not in (
+        {"pairs"},
+        {"pairs", "path_basis"},
+        {"pairs", "path_basis", "converted_from"},
+    ):
+        raise ValueError("Manifest must contain pairs and optionally path_basis/converted_from")
+    if "converted_from" in raw:
+        origin = raw["converted_from"]
+        if not isinstance(origin, dict) or set(origin) != {"manifest_sha256", "audit_sha256"}:
+            raise ValueError("converted_from must declare manifest_sha256 and audit_sha256")
+        _digest(origin["manifest_sha256"], "converted_from manifest")
+        if origin["audit_sha256"] is not None:
+            _digest(origin["audit_sha256"], "converted_from audit")
     portable = "path_basis" in raw
     basis = raw.get("path_basis")
     if portable and not isinstance(basis, dict):
@@ -507,13 +523,17 @@ def read_manifest(
                 reference = pair[key]
                 if not isinstance(reference, dict):
                     raise ValueError(f"Portable {key} must provide path and sha256")
-                path = verify_reference(manifest, reference, path_basis=basis)
+                path = verify_reference(
+                    manifest, reference, path_basis=basis, provenance_root=provenance_root
+                )
                 fingerprints[key] = reference["sha256"]
             else:
                 value = pair[key]
                 if not isinstance(value, str) or not value.strip():
                     raise ValueError(f"Legacy {key} must be a nonempty path")
-                path = resolve_reference(manifest, value, path_basis=None)
+                path = resolve_reference(
+                    manifest, value, path_basis=None, provenance_root=provenance_root
+                )
             entry[key] = str(path)
         resolved.append(entry)
         if portable:
@@ -534,13 +554,78 @@ def protect_output(manifest: Path, output: Path, pairs: list[dict[str, str]]) ->
         raise ValueError("Audit output must not overwrite manifest")
 
 
+def _digest(value: object, name: str) -> str:
+    if (
+        not isinstance(value, str)
+        or len(value) != 64
+        or any(character not in "0123456789abcdef" for character in value)
+    ):
+        raise ValueError(f"{name} must provide a valid SHA-256 digest")
+    return value
+
+
+def _attested_hashes(
+    expected_audit: Path,
+    manifest_sha256: str,
+    labels: set[str],
+) -> tuple[dict[str, dict[str, str]], str]:
+    """Use exactly the audit buffer whose hash is recorded in converted_from."""
+    payload = expected_audit.read_bytes()
+    audit = json.loads(payload)
+    if not isinstance(audit, dict) or audit.get("passed") is not True:
+        raise ValueError("Expected audit must attest a successful refresh")
+    if audit.get("manifest_sha256") != manifest_sha256:
+        raise ValueError("Expected audit manifest SHA-256 differs from the supplied manifest")
+    audited_pairs = audit.get("pairs")
+    if not isinstance(audited_pairs, list) or not audited_pairs:
+        raise ValueError("Expected audit must contain nonempty pairs")
+    result: dict[str, dict[str, str]] = {}
+    for pair in audited_pairs:
+        if (
+            not isinstance(pair, dict)
+            or not isinstance(pair.get("label"), str)
+            or pair["label"] in result
+            or pair.get("passed") is not True
+        ):
+            raise ValueError("Expected audit has an invalid, failed or duplicate pair")
+        inputs = pair.get("inputs")
+        if not isinstance(inputs, dict):
+            raise ValueError("Expected audit pair must attest its inputs")
+        hashes: dict[str, str] = {}
+        for key in ("historical", "current", "profiles", "taxa_matrix"):
+            reference = pair.get(key) if key in {"historical", "current"} else inputs.get(key)
+            if not isinstance(reference, dict):
+                raise ValueError(f"Expected audit lacks {key} SHA-256")
+            hashes[key] = _digest(reference.get("sha256"), f"Expected audit {key}")
+        result[pair["label"]] = hashes
+    if set(result) != labels:
+        raise ValueError("Expected audit pair labels differ from the supplied manifest")
+    return result, hashlib.sha256(payload).hexdigest()
+
+
 def write_portable_manifest(
-    manifest: Path, output: Path, *, root: Path | None = None
+    manifest: Path,
+    output: Path,
+    *,
+    root: Path | None = None,
+    expected_audit: Path | None = None,
 ) -> dict[str, object]:
     """Write a new source-hash-bound manifest without modifying a historical record."""
-    pairs, _, expected_hashes = read_manifest(manifest)
+    pairs, manifest_sha256, expected_hashes = read_manifest(manifest, provenance_root=root)
     protect_output(manifest, output, pairs)
-    context = PortablePaths.create(output, source_paths(pairs), root=root)
+    audit_sha256: str | None = None
+    if expected_audit is not None:
+        if same_path(expected_audit, output):
+            raise ValueError("Conversion output must not overwrite the expected audit")
+        attested, audit_sha256 = _attested_hashes(
+            expected_audit, manifest_sha256, {pair["label"] for pair in pairs}
+        )
+        if expected_hashes and attested != expected_hashes:
+            raise ValueError("Expected audit SHA-256 declarations differ from portable manifest")
+        expected_hashes = attested
+    elif not expected_hashes:
+        raise ValueError("Legacy conversion requires --expected-audit from the original refresh")
+    context = PortablePaths.create(output, [manifest, *source_paths(pairs)], root=root)
     portable_pairs: list[dict[str, object]] = []
     for pair in pairs:
         fingerprints = {key: file_sha256(Path(pair[key])) for key in PAIR_FIELDS - {"label"}}
@@ -555,7 +640,11 @@ def write_portable_manifest(
                 },
             }
         )
-    result: dict[str, object] = {"path_basis": context.declaration, "pairs": portable_pairs}
+    result: dict[str, object] = {
+        "path_basis": context.declaration,
+        "pairs": portable_pairs,
+        "converted_from": {"manifest_sha256": manifest_sha256, "audit_sha256": audit_sha256},
+    }
     text = json.dumps(result, indent=2) + "\n"
     assert_portable_text(text)
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -564,11 +653,16 @@ def write_portable_manifest(
     return result
 
 
-def audit_manifest(manifest: Path, output: Path) -> dict[str, object]:
-    pairs, manifest_sha256, expected_hashes = read_manifest(manifest)
+def audit_manifest(
+    manifest: Path,
+    output: Path,
+    *,
+    root: Path | None = None,
+) -> dict[str, object]:
+    pairs, manifest_sha256, expected_hashes = read_manifest(manifest, provenance_root=root)
     protect_output(manifest, output, pairs)
     paths = [manifest.resolve(), *source_paths(pairs)]
-    context = PortablePaths.create(output, paths)
+    context = PortablePaths.create(output, paths, root=root)
     results = []
     for pair in pairs:
         try:
@@ -602,6 +696,22 @@ def main() -> int:
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument(
+        "--provenance-root",
+        type=Path,
+        help=(
+            "Safe root containing sources and input manifest; "
+            "stage verified inputs together if needed"
+        ),
+    )
+    parser.add_argument(
+        "--expected-audit",
+        type=Path,
+        help=(
+            "Original successful audit attesting source hashes; "
+            "required for legacy manifest conversion"
+        ),
+    )
+    parser.add_argument(
         "--write-portable-manifest",
         action="store_true",
         help="Convert the supplied inputs manifest to portable hash-bound references; do not audit",
@@ -609,10 +719,17 @@ def main() -> int:
     args = parser.parse_args()
     try:
         if args.write_portable_manifest:
-            write_portable_manifest(args.manifest, args.output)
+            write_portable_manifest(
+                args.manifest,
+                args.output,
+                root=args.provenance_root,
+                expected_audit=args.expected_audit,
+            )
             print(f"Portable ORA inputs manifest written: {args.output}")
             return 0
-        result = audit_manifest(args.manifest, args.output)
+        if args.expected_audit is not None:
+            raise ValueError("--expected-audit is only used with --write-portable-manifest")
+        result = audit_manifest(args.manifest, args.output, root=args.provenance_root)
     except (OSError, ValueError) as exc:
         parser.error(str(exc))
     args.output.parent.mkdir(parents=True, exist_ok=True)
