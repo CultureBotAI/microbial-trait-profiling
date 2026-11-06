@@ -99,7 +99,7 @@ def _expected_labels_from_tested(directory: Path) -> dict[str, _StratumTruth]:
             continue
         df, meta = _read_tested_summary(tested_path)
         stat_type = meta.stat_type
-        fdr_scope = meta.fdr_scope or ("none" if stat_type == "p_value" else "unknown")
+        fdr_scope = "none" if stat_type == "p_value" else (meta.fdr_scope or "unknown")
         stat_threshold = meta.stat_threshold
         hit_statistic = {"p_value": "nominal p", "fdr_q": "FDR q"}.get(
             stat_type or "unknown", "unknown"

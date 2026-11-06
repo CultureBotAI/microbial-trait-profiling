@@ -511,7 +511,7 @@ def build_sensitivity_summary_table(
 
         if tested_meta.has_header:
             stat_type = tested_meta.stat_type or "unknown"
-            fdr_scope = tested_meta.fdr_scope or ("none" if stat_type == "p_value" else "unknown")
+            fdr_scope = "none" if stat_type == "p_value" else (tested_meta.fdr_scope or "unknown")
             stat_threshold = tested_meta.stat_threshold or "unknown"
         else:
             stat_type = ranked_stat_type

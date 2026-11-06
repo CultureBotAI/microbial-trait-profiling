@@ -121,7 +121,7 @@ def test_statistic_type_tracks_the_preserved_value(
     assert row["pooled_best_stat_type"] == kind
     assert row["pooled_best_stat_scope"] == expected_scope
     if metadata is not None:
-        expected_stratum_scope = scope or ("none" if metadata == "p_value" else "unknown")
+        expected_stratum_scope = "none" if metadata == "p_value" else (scope or "unknown")
         assert row["pooled_fdr_scope"] == expected_stratum_scope
         assert strata.iloc[0]["fdr_scope"] == expected_stratum_scope
     assert (
@@ -320,7 +320,7 @@ def test_fdr_reports_from_complete_tested_tables_emit_call_basis_and_scope_label
 
 
 @pytest.mark.parametrize("fdr_scope", [None, "none", "global", "profile"])
-@pytest.mark.parametrize(("q", "p"), [(0.4, 0.02), (0.4, None)])
+@pytest.mark.parametrize(("q", "p"), [(0.4, 0.02), (0.02 + 1e-12, 0.02), (0.4, None)])
 def test_nominal_metadata_cannot_relabel_a_different_q(
     tmp_path: Path,
     fdr_scope: str | None,
@@ -353,14 +353,27 @@ def test_pre_1465_nominal_tested_table_header_and_copied_q_summarise_cleanly(
         "# Body-Site-Group: pooled\n"
     )
     outputs.tested_traits_tsv.write_text(pre_1465_header + body, encoding="utf-8")
-    tsv, _ = generate_sensitivity_reports({"pooled": outputs}, tmp_path / "reports")
+    (tmp_path / "trait_enrichment_traits_tested_pooled.tsv").write_text(
+        pre_1465_header + body, encoding="utf-8"
+    )
+    report_dir = tmp_path / "reports"
+    tsv, txt = generate_sensitivity_reports({"pooled": outputs}, report_dir)
+    tsv_text = tsv.read_text(encoding="utf-8")
+    txt_text = txt.read_text(encoding="utf-8")
     row = pd.read_csv(tsv, sep="\t", comment="#").iloc[0]
     assert row["pooled_best_stat"] == 0.02
     assert row["pooled_best_stat_type"] == "p_value"
     assert row["pooled_best_stat_scope"] == "none"
     assert row["pooled_best_stat_basis"] == "nominal p"
     assert row["pooled_significance_basis"] == "nominal p"
-    assert row["pooled_fdr_scope"] == scope
+    assert row["pooled_fdr_scope"] == "none"
+    assert "# pooled-FDR-Scope: none\n" in tsv_text
+    assert "Hit statistic: nominal p | FDR scope: none" in txt_text
+    deciles = pd.read_csv(report_dir / "annotation_density_deciles.tsv", sep="\t")
+    assert deciles["fdr_scope"].tolist() == ["none"]
+    issue727 = _load_issue727_compare()
+    truth = issue727._expected_labels_from_tested(tmp_path)
+    assert truth["pooled"].fdr_scope == "none"
 
 
 @pytest.mark.parametrize(
@@ -453,24 +466,32 @@ def test_out_of_range_p_threshold_is_refused_before_ora_runs(
     tmp_path: Path, bad_threshold: float
 ) -> None:
     out_dir = tmp_path / "out"
-    with pytest.raises(ValueError, match=r"out of range"):
-        parse_args(["--p-threshold", str(bad_threshold)])
-    with pytest.raises(ValueError, match=r"out of range"):
-        run_stratum_enrichment(
+    for call in (
+        lambda: parse_args(["--p-threshold", str(bad_threshold)]),
+        lambda: run_stratum_enrichment(
             stratum="pooled",
             profiles_tsv=tmp_path / "missing_profiles.tsv",
             output_dir=out_dir,
             p_threshold=bad_threshold,
             taxa_matrix=tmp_path / "missing_matrix.tsv",
-        )
-    with pytest.raises(ValueError, match=r"out of range"):
-        run_stratification_pipeline(
+        ),
+        lambda: run_stratification_pipeline(
             profiles_path=tmp_path / "missing_profiles.tsv",
             experiments_path=tmp_path / "missing_experiments.tsv",
             output_dir=out_dir,
             p_threshold=bad_threshold,
             taxa_matrix=tmp_path / "missing_matrix.tsv",
-        )
+        ),
+    ):
+        try:
+            with pytest.raises(ValueError, match=r"out of range"):
+                call()
+        except Exception as exc:
+            if isinstance(exc, AssertionError):
+                raise
+            raise AssertionError(
+                f"Expected ValueError('out of range') before I/O, got {type(exc).__name__}: {exc}"
+            ) from exc
     assert not out_dir.exists()
 
 
@@ -723,10 +744,21 @@ def test_core_strata_comparison_accepts_additive_stat_and_scope_labels(
         ("annotation_density_deciles.tsv", "100.0", "50.0"),
         ("annotation_density_deciles.tsv", "FDR q\tFDR q\tglobal", "FDR q\tFDR q\tinvalid_scope"),
         ("annotation_density_deciles.tsv", "FDR q\tFDR q\tglobal", "FDR q\tnominal p\tglobal"),
+        ("annotation_density_deciles.tsv", "FDR q\tFDR q\tglobal", "nominal p\tnominal p\tglobal"),
         ("annotation_density_deciles.tsv", "FDR q\tFDR q\tglobal", "nominal p\tnominal p\tnone"),
         ("annotation_density_deciles.tsv", "FDR q\tFDR q\tglobal", "FDR q\tFDR q\tprofile"),
         ("stratification_sensitivity_summary.txt", "100.0   %", "50.0    %"),
         ("stratification_sensitivity_summary.txt", "FDR scope: global", "FDR scope: invalid"),
+        (
+            "stratification_sensitivity_summary.txt",
+            "Hit statistic: FDR q | FDR scope: global",
+            "Hit statistic: nominal p | FDR scope: global",
+        ),
+        (
+            "stratification_sensitivity_summary.txt",
+            "Hit statistic: FDR q | FDR scope: global",
+            "Hit statistic: FDR q | FDR scope: profile",
+        ),
         (
             "stratification_sensitivity_summary.txt",
             "Hit statistic: FDR q | FDR scope: global",

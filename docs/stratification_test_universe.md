@@ -69,8 +69,9 @@ Statistic types and scopes use the complete tested table's own `Stat-Type`,
 `FDR-Scope`, and `Stat-Threshold` headers.
 Historical nominal tables before #1465 declared `Stat-Type: p_value` alongside
 `FDR-Scope: global` (or `profile`) and copied raw p into the q field; identical
-copies and empty-q nominal tables are accepted and labelled `p_value` with
-`*_best_stat_scope: none` (#1489, #1761).
+copies and empty-q nominal tables are accepted and labelled `p_value` with both
+value scope (`*_best_stat_scope`) and stratum scope (`*_fdr_scope`,
+`# <stratum>-FDR-Scope:`, and decile `fdr_scope`) set to `none` (#1489, #1761, #1770).
 Contradictory nominal q/p values (`best_qvalue != best_pvalue`), `Stat-Type: fdr_q`
 with `FDR-Scope: none`, invalid or duplicate `Stat-Type` / `FDR-Scope` /
 `Stat-Threshold` declarations, out-of-range `--p-threshold` values outside
