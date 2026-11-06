@@ -53,7 +53,11 @@ def complete_record(tmp_path: Path) -> tuple[Path, dict[str, Any]]:
                     "metadata": json.dumps({"nested_source": references["nested"]}),
                 }
             },
-            "unsupplied": {"source": {"path": None, "binding": "not_supplied"}},
+            "unsupplied": {
+                "verdicts_by_procedure": {},
+                "status_for_a_procedure_it_is_silent_about": "pending #184",
+                "source": {"path": None, "binding": "not_supplied"},
+            },
         },
     }
     output = root / "record/provenance.json"
@@ -381,12 +385,14 @@ def test_missing_checkout_default_is_distinguished_from_absence(
 ) -> None:
     path, record = complete_record
     record["assessment_status"]["defaulted"] = {
+        "verdicts_by_procedure": {},
+        "status_for_a_procedure_it_is_silent_about": "pending #184",
         "source": {
             "path": None,
             "binding": "not_supplied",
             "supplied": False,
             "input_origin": "checkout_default",
-        }
+        },
     }
     path.write_text(json.dumps(record))
     result = api.verify_integrated_provenance(path)
@@ -454,11 +460,14 @@ def test_unreadable_binding_cannot_bypass_a_recorded_hash(
     complete_record: tuple[Path, dict[str, Any]], api: ModuleType, location: str
 ) -> None:
     path, record = complete_record
-    source = (
-        record["native_sources"]["arm1"]
-        if location == "native"
-        else record["assessment_status"]["calibration"]["source"]
-    )
+    if location == "native":
+        source = record["native_sources"]["arm1"]
+    else:
+        assessment = record["assessment_status"]["calibration"]
+        original_digest = assessment["source"]["sha256"]
+        _mark_assessment_unavailable(assessment, "unreadable")
+        source = assessment["source"]
+        source["sha256"] = original_digest
     source["binding"] = "unreadable"
     path.write_text(json.dumps(record))
     with pytest.raises(ValueError, match="Unreadable source has contradictory reference fields"):
@@ -480,7 +489,9 @@ def test_unreadable_assessment_still_validates_its_locator(
     complete_record: tuple[Path, dict[str, Any]], api: ModuleType, locator: str
 ) -> None:
     path, record = complete_record
-    source = record["assessment_status"]["calibration"]["source"]
+    assessment = record["assessment_status"]["calibration"]
+    _mark_assessment_unavailable(assessment, "unreadable")
+    source = assessment["source"]
     if locator == "symlink":
         root = path.parent.parent
         outside = root.parent / "outside.tsv"
@@ -494,4 +505,153 @@ def test_unreadable_assessment_still_validates_its_locator(
     source.update(binding="unreadable", sha256=None, path=source_path)
     path.write_text(json.dumps(record))
     with pytest.raises(ValueError, match=expected):
+        api.verify_integrated_provenance(path)
+
+
+def _mark_assessment_unavailable(assessment: dict[str, Any], binding: str) -> None:
+    """Build an honest skipped assessment, without changing unrelated record fields."""
+    source = {
+        key: value
+        for key, value in assessment["source"].items()
+        if key in {"path", "sha256", "binding", "supplied", "input_origin"}
+    }
+    assessment["source"] = source
+    source.update(binding=binding, sha256=None)
+    if binding != "unreadable":
+        source["path"] = None
+        source["supplied"] = binding == "missing"
+        source["input_origin"] = "supplied" if binding == "missing" else "checkout_default"
+    assessment["verdicts_by_procedure"] = {}
+    state = "unreadable" if binding == "unreadable" else "pending"
+    assessment["status_for_a_procedure_it_is_silent_about"] = f"{state} #182"
+
+
+@pytest.mark.parametrize("binding", ["unreadable", "missing", "not_supplied"])
+@pytest.mark.parametrize("contradiction", ["verdict", "default"])
+def test_verified_assessment_cannot_be_downgraded_while_retaining_read_status(
+    portable_case: tuple[Path, Path], binding: str, contradiction: str, api: ModuleType
+) -> None:
+    root, output = portable_case
+    path = output / "integrated_evidence_provenance.json"
+    record = json.loads(path.read_text())
+    assessment = record["assessment_status"]["calibration_status"]
+    (root / "calibration.json").write_text("different input bytes\n")
+    with pytest.raises(ValueError, match="hash does not match"):
+        api.verify_integrated_provenance(path)
+    _mark_assessment_unavailable(assessment, binding)
+    if contradiction == "verdict":
+        assessment["verdicts_by_procedure"] = {"guild_mcnemar": "calibrated #182"}
+    else:
+        assessment["status_for_a_procedure_it_is_silent_about"] = "calibrated #182"
+    path.write_text(json.dumps(record))
+    with pytest.raises(ValueError, match="Assessment source binding contradicts its status"):
+        api.verify_integrated_provenance(path)
+
+
+@pytest.mark.parametrize("binding", ["unreadable", "missing", "not_supplied"])
+def test_honest_unavailable_assessment_retains_an_explicit_skip(
+    portable_case: tuple[Path, Path], binding: str, api: ModuleType
+) -> None:
+    root, output = portable_case
+    path = output / "integrated_evidence_provenance.json"
+    record = json.loads(path.read_text())
+    _mark_assessment_unavailable(record["assessment_status"]["calibration_status"], binding)
+    (root / "calibration.json").write_text("unattested bytes\n")
+    path.write_text(json.dumps(record))
+    result = api.verify_integrated_provenance(path)
+    assert result["verified_reference_count"] == 4
+    reason = {
+        "unreadable": "unreadable",
+        "missing": "supplied_but_missing",
+        "not_supplied": "defaulted_but_missing",
+    }[binding]
+    assert {"location": "assessment_status.calibration_status.source", "reason": reason} in result[
+        "skipped_references"
+    ]
+
+
+@pytest.mark.parametrize("binding", ["missing", "not_supplied"])
+def test_unavailable_assessment_binding_cannot_keep_a_present_locator(
+    portable_case: tuple[Path, Path], binding: str, api: ModuleType
+) -> None:
+    _, output = portable_case
+    path = output / "integrated_evidence_provenance.json"
+    record = json.loads(path.read_text())
+    assessment = record["assessment_status"]["calibration_status"]
+    original = dict(assessment["source"])
+    _mark_assessment_unavailable(assessment, binding)
+    assessment["source"].update(path=original["path"], sha256=original["sha256"])
+    path.write_text(json.dumps(record))
+    with pytest.raises(ValueError, match="Unavailable source has contradictory reference fields"):
+        api.verify_integrated_provenance(path)
+
+
+@pytest.mark.parametrize(
+    "missing", ["verdicts_by_procedure", "status_for_a_procedure_it_is_silent_about"]
+)
+def test_unreadable_assessment_must_declare_its_status(
+    portable_case: tuple[Path, Path], missing: str, api: ModuleType
+) -> None:
+    _, output = portable_case
+    path = output / "integrated_evidence_provenance.json"
+    record = json.loads(path.read_text())
+    assessment = record["assessment_status"]["calibration_status"]
+    _mark_assessment_unavailable(assessment, "unreadable")
+    assessment.pop(missing)
+    path.write_text(json.dumps(record))
+    with pytest.raises(ValueError, match="Assessment source binding contradicts its status"):
+        api.verify_integrated_provenance(path)
+
+
+@pytest.mark.parametrize("locator", ["producer_relative_path", "review", "protocol", "metadata"])
+def test_unreadable_source_cannot_keep_locators_from_parsed_content(
+    portable_case: tuple[Path, Path], locator: str, api: ModuleType
+) -> None:
+    root, output = portable_case
+    path = output / "integrated_evidence_provenance.json"
+    record = json.loads(path.read_text())
+    assessment = record["assessment_status"]["calibration_status"]
+    _mark_assessment_unavailable(assessment, "unreadable")
+    source = assessment["source"]
+    if locator == "producer_relative_path":
+        # Legacy-shaped fields isolate the skip that precedes unreadable handling.
+        source.pop("path")
+        source.pop("input_origin")
+        source[locator] = "methods/upstream.tsv"
+    else:
+        reference = {"path": "review.tsv", "sha256": file_sha256(root / "review.tsv")}
+        source[locator] = json.dumps({"source": reference}) if locator == "metadata" else reference
+    path.write_text(json.dumps(record))
+    with pytest.raises(ValueError, match="Unavailable assessment source retains read metadata"):
+        api.verify_integrated_provenance(path)
+
+
+@pytest.mark.parametrize("value", [None, [], "", False])
+def test_unavailable_assessment_verdicts_must_be_an_empty_object(
+    portable_case: tuple[Path, Path], value: object, api: ModuleType
+) -> None:
+    _, output = portable_case
+    path = output / "integrated_evidence_provenance.json"
+    record = json.loads(path.read_text())
+    assessment = record["assessment_status"]["calibration_status"]
+    _mark_assessment_unavailable(assessment, "unreadable")
+    assessment["verdicts_by_procedure"] = value
+    path.write_text(json.dumps(record))
+    with pytest.raises(ValueError, match="Assessment source binding contradicts its status"):
+        api.verify_integrated_provenance(path)
+
+
+@pytest.mark.parametrize("binding", ["unreadable", "missing", "not_supplied"])
+def test_unavailable_assessment_default_requires_the_state_word(
+    portable_case: tuple[Path, Path], binding: str, api: ModuleType
+) -> None:
+    _, output = portable_case
+    path = output / "integrated_evidence_provenance.json"
+    record = json.loads(path.read_text())
+    assessment = record["assessment_status"]["calibration_status"]
+    _mark_assessment_unavailable(assessment, binding)
+    state = "unreadable" if binding == "unreadable" else "pending"
+    assessment["status_for_a_procedure_it_is_silent_about"] = f"{state}ish #182"
+    path.write_text(json.dumps(record))
+    with pytest.raises(ValueError, match="Assessment source binding contradicts its status"):
         api.verify_integrated_provenance(path)

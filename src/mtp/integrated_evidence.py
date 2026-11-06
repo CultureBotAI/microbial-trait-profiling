@@ -1926,12 +1926,18 @@ def _portable_metadata(value: object, paths: PortablePaths) -> object:
     """Re-encode locators, preserving source hashes and substantive metadata."""
     if isinstance(value, Mapping):
         converted = {key: _portable_metadata(item, paths) for key, item in value.items()}
-        # Upstream relative locators bypass encode because their producer scope
-        # must be retained. Apply the writer privacy check to those path fields.
+        # Upstream relative file locators bypass encode because their producer
+        # scope is retained. Absolute locators were already encoded with actual
+        # file/directory classification; do not discard that context here.
         for key in ("path", "producer_relative_path", "protocol"):
             locator = converted.get(key)
-            if isinstance(locator, str):
-                assert_portable_path_text(locator)
+            original = value.get(key)
+            if (
+                isinstance(locator, str)
+                and isinstance(original, str)
+                and not Path(original).is_absolute()
+            ):
+                assert_portable_path_text(locator, file_locator=True)
         return converted
     if isinstance(value, (list, tuple)):
         return [_portable_metadata(item, paths) for item in value]

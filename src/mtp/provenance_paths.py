@@ -46,18 +46,28 @@ def assert_portable_text(text: str) -> None:
         raise ValueError("Provenance contains a local path or local prefix. " + _ROOT_GUIDANCE)
 
 
-def assert_portable_path_text(text: str) -> None:
+def assert_portable_path_text(text: str, *, file_locator: bool = False) -> None:
     """Writer-only account check on path strings, never on scientific metadata.
 
     Whole non-alphanumeric-delimited tokens catch path segments and dash/underscore
-    scratch names. Substrings, the generic root login and names shorter than four
-    characters are not sufficiently identifying to reject a publication path.
+    scratch names. The generic root login and single-character names are exempt.
+    Known file-format suffixes are ignored only for known or schema-declared file
+    locators; every directory component and the filename stem remain checked.
     """
     assert_portable_text(text)
+    identifying = text.casefold()
+    if file_locator:
+        # Use the literal leaf: normalizing a trailing slash or '/.' would
+        # mistake a directory spelling for a filename and trim the wrong bytes.
+        basename = identifying.rsplit("/", 1)[-1]
+        for suffix in (".tsv.gz", ".json.gz", ".tsv", ".json"):
+            if basename.endswith(suffix) and len(basename) > len(suffix):
+                identifying = identifying[: -len(suffix)]
+                break
     if any(
-        len(name) >= 4
+        len(name) >= 2
         and name != "root"
-        and re.search(r"(?<![a-z0-9])" + re.escape(name) + r"(?![a-z0-9])", text.casefold())
+        and re.search(r"(?<![a-z0-9])" + re.escape(name) + r"(?![a-z0-9])", identifying)
         for name in _account_names()
     ):
         raise ValueError("Provenance contains a local account name. " + _ROOT_GUIDANCE)
@@ -193,7 +203,9 @@ class PortablePaths:
             _require_root_directory(base)
         _validate_root(base, paths)
         for path in paths:
-            assert_portable_path_text(path.relative_to(base).as_posix())
+            assert_portable_path_text(
+                path.relative_to(base).as_posix(), file_locator=path.is_file()
+            )
         return cls(record, base)
 
     @property
@@ -210,7 +222,7 @@ class PortablePaths:
         _validate_root(self.root, [resolved])
         value = resolved.relative_to(self.root).as_posix()
         _canonical_reference(value)
-        assert_portable_path_text(value)
+        assert_portable_path_text(value, file_locator=resolved.is_file())
         return value
 
 

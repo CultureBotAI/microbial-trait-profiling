@@ -260,8 +260,8 @@ def test_reader_account_does_not_reject_another_writers_reference(
         raise AssertionError("The reader's account must not reject a writer's reference") from error
 
 
-@pytest.mark.parametrize("name", ["root", "ci", "app"])
-def test_generic_and_short_account_tokens_are_not_identifying(
+@pytest.mark.parametrize("name", ["root", "x"])
+def test_generic_and_single_character_account_tokens_are_not_identifying(
     tmp_path: Path,
     api: ModuleType,
     monkeypatch: pytest.MonkeyPatch,
@@ -273,7 +273,98 @@ def test_generic_and_short_account_tokens_are_not_identifying(
         paths = api.PortablePaths.create(tmp_path / "record.json", [source])
         assert paths.encode(source) == name + "/input.tsv"
     except ValueError as error:
-        raise AssertionError("Generic and short names are not identifying path tokens") from error
+        raise AssertionError("Generic and single-character names are exempt path tokens") from error
+
+
+@pytest.mark.parametrize("name", ["al", "ana", "joan"])
+@pytest.mark.parametrize(
+    "template", ["-Users-{}-proj", "-home-{}-x", "pytest-of-{}", "{}_scratch", "{}.backup"]
+)
+@pytest.mark.parametrize("operation", ["create", "encode"])
+def test_short_account_tokens_are_refused_in_scratch_paths(
+    tmp_path: Path,
+    api: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+    name: str,
+    template: str,
+    operation: str,
+) -> None:
+    monkeypatch.setattr(api, "_account_names", lambda: {name})
+    source = tmp_path / template.format(name.upper()) / "input.tsv"
+    paths = api.PortablePaths(tmp_path / "record.json", tmp_path)
+
+    def exercise() -> None:
+        if operation == "create":
+            api.PortablePaths.create(paths.record, [source], root=tmp_path)
+        else:
+            paths.encode(source)
+
+    with pytest.raises(ValueError, match="local account name"):
+        exercise()
+
+
+@pytest.mark.parametrize("spelling", ["realana", "anas-drive"])
+def test_each_account_token_boundary_is_required(
+    tmp_path: Path,
+    api: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+    spelling: str,
+) -> None:
+    monkeypatch.setattr(api, "_account_names", lambda: {"ana"})
+    source = tmp_path / spelling / "input.tsv"
+    try:
+        paths = api.PortablePaths.create(tmp_path / "record.json", [source])
+        assert paths.encode(source) == spelling + "/input.tsv"
+    except ValueError as error:
+        raise AssertionError("Both account-token boundaries must match") from error
+
+
+@pytest.mark.parametrize("name", ["tsv", "json"])
+@pytest.mark.parametrize("compressed", [False, True])
+def test_known_file_format_suffix_is_not_an_account_token(
+    tmp_path: Path,
+    api: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+    name: str,
+    compressed: bool,
+) -> None:
+    monkeypatch.setattr(api, "_account_names", lambda: {name})
+    filename = "input." + name.upper() + (".gz" if compressed else "")
+    source = tmp_path / filename
+    source.write_text("fixture bytes\n")
+    try:
+        paths = api.PortablePaths.create(tmp_path / "record.json", [source])
+        assert paths.encode(source) == filename
+    except ValueError as error:
+        raise AssertionError("A known file-format suffix is not an account locator") from error
+
+
+@pytest.mark.parametrize("name", ["tsv", "json"])
+@pytest.mark.parametrize("layout", ["parent", "stem", "directory", "unknown", "backup"])
+def test_format_names_are_still_checked_outside_known_file_suffixes(
+    tmp_path: Path,
+    api: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+    name: str,
+    layout: str,
+) -> None:
+    monkeypatch.setattr(api, "_account_names", lambda: {name})
+    if layout == "parent":
+        source = tmp_path / name / "input.tsv"
+        source.parent.mkdir()
+        source.write_text("bytes\n")
+    elif layout == "stem":
+        source = tmp_path / (name + ".tsv")
+        source.write_text("bytes\n")
+    elif layout == "backup":
+        source = tmp_path / (name + ".backup")
+        source.write_text("bytes\n")
+    else:
+        source = tmp_path / ("input." + name)
+        if layout == "directory":
+            source.mkdir()
+    with pytest.raises(ValueError, match="local account name"):
+        api.PortablePaths.create(tmp_path / "record.json", [source], root=tmp_path)
 
 
 @pytest.mark.parametrize("variable", ["TMPDIR", "TEMP", "TMP"])
@@ -345,4 +436,25 @@ def test_another_account_home_cannot_start_below_the_root(
         ValueError, match=r"^Provenance root leaves a local prefix in a reference\."
     ) as error:
         api.PortablePaths.create(root / "record.json", [source], root=root)
+    assert str(root) not in str(error.value)
+
+
+@pytest.mark.parametrize("prefix", ["Users", "home"])
+def test_reader_refuses_a_home_prefix_crossing_below_the_root(
+    tmp_path: Path,
+    private_environment: dict[str, Path],
+    api: ModuleType,
+    prefix: str,
+) -> None:
+    root = tmp_path / "not-runtime-home" / prefix
+    assert root not in private_environment.values()
+    root.mkdir(parents=True)
+    with pytest.raises(
+        ValueError, match=r"^Provenance root leaves a local prefix in a reference\."
+    ) as error:
+        api.resolve_reference(
+            root / "record.json",
+            "anotherresident/source.tsv",
+            path_basis={"kind": "root-relative-v1", "root": "."},
+        )
     assert str(root) not in str(error.value)

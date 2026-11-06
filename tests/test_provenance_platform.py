@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import builtins
 import importlib.util
+import os
 import sys
 from pathlib import Path
 from types import ModuleType
@@ -65,3 +66,24 @@ def test_unknown_home_is_an_actionable_privacy_refusal(
             exercise()
     except RuntimeError as error:
         raise AssertionError("An unconfigured home must produce a controlled ValueError") from error
+
+
+def test_a_missing_password_entry_does_not_block_a_configured_writer(
+    tmp_path: Path,
+    api: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    password_module = ModuleType("pwd")
+
+    def missing_entry(uid: int) -> None:
+        raise KeyError(uid)
+
+    monkeypatch.setattr(password_module, "getpwuid", missing_entry, raising=False)
+    monkeypatch.setitem(sys.modules, "pwd", password_module)
+    monkeypatch.setattr(os, "getuid", lambda: 987, raising=False)
+    try:
+        assert api._password_entry() is None
+        paths = api.PortablePaths.create(tmp_path / "record.json", [tmp_path / "input.tsv"])
+        assert paths.encode(tmp_path / "input.tsv") == "input.tsv"
+    except KeyError as error:
+        raise AssertionError("A numeric UID without a password entry must be supported") from error

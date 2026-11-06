@@ -61,6 +61,38 @@ def _input_origin(value: Mapping[str, object], location: str) -> str | None:
     return origin
 
 
+def _assessment_source_state(assessment: Mapping[str, object], location: str) -> None:
+    """A skipped assessment cannot retain claims that require reading its input.
+
+    This is an implication from an unavailable source, not from an unreadable
+    verdict: malformed but readable JSON remains hash-bound and verifiable.
+    Legacy records without an explicit availability binding keep their contract.
+    """
+    source = assessment.get("source")
+    if not isinstance(source, Mapping):
+        return  # The normal reference walk reports the malformed source object.
+    binding = source.get("binding")
+    if binding not in ("unreadable", "missing", "not_supplied"):
+        return
+    if set(source) - {"path", "sha256", "binding", "supplied", "input_origin"}:
+        raise ValueError(f"Unavailable assessment source retains read metadata: {location}")
+    if binding == "unreadable":
+        if not isinstance(source.get("path"), str) or source.get("sha256") is not None:
+            raise ValueError(f"Unreadable source has contradictory reference fields: {location}")
+    elif source.get("path") is not None or source.get("sha256") is not None:
+        raise ValueError(f"Unavailable source has contradictory reference fields: {location}")
+    verdicts = assessment.get("verdicts_by_procedure")
+    default = assessment.get("status_for_a_procedure_it_is_silent_about")
+    state = "unreadable" if binding == "unreadable" else "pending"
+    if (
+        not isinstance(verdicts, dict)
+        or bool(verdicts)
+        or not isinstance(default, str)
+        or not (default == state or default.startswith(state + " "))
+    ):
+        raise ValueError(f"Assessment source binding contradicts its status: {location}")
+
+
 def verify_integrated_provenance(
     record_path: Path,
     *,
@@ -94,6 +126,7 @@ def verify_integrated_provenance(
         assessment = _object(value, f"assessment_status.{key}")
         if "source" not in assessment:
             raise ValueError(f"Integrated assessment source is absent: {key}")
+        _assessment_source_state(assessment, f"assessment_status.{key}.source")
         forced.add(f"assessment_status.{key}.source")
     if record["ora_eligibility_source"] is not None:
         forced.add("ora_eligibility_source")

@@ -384,6 +384,69 @@ def test_real_producer_accepts_account_names_in_nonpath_record_text(
     assert verify_integrated_provenance(record_path)["verified_reference_count"] == 5
 
 
+@pytest.mark.parametrize("template", ["-Users-{}-proj", "pytest-of-{}"])
+def test_real_producer_refuses_short_writer_names_in_source_directories(
+    portable_case: tuple[Path, Path],
+    monkeypatch: pytest.MonkeyPatch,
+    template: str,
+) -> None:
+    root, _ = portable_case
+    directory = root / template.format("ANA")
+    directory.mkdir()
+    native = directory / "pooled.tsv"
+    native.write_bytes((root / "pooled.tsv").read_bytes())
+    output = root / "refused-short-account"
+    arguments = _arguments(root, output)
+    arguments[arguments.index("--arm1-pooled-stats") + 1] = str(native)
+    monkeypatch.setattr(provenance_paths, "_account_names", lambda: {"ana"})
+    with pytest.raises(ValueError, match="local account name"):
+        integrated_evidence.main(arguments)
+    assert not output.exists()
+
+
+@pytest.mark.parametrize("locator", ["review", "protocol"])
+def test_declared_upstream_file_locator_keeps_its_format_suffix(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    locator: str,
+) -> None:
+    monkeypatch.setattr(provenance_paths, "_account_names", lambda: {"json"})
+    value = "methods/assessment.json"
+    source: dict[str, object] = (
+        {"review": {"path": value}} if locator == "review" else {"protocol": value}
+    )
+    status = integrated_evidence.AssessmentStatus("#1778", {}, "pending", source=source)
+    paths = provenance_paths.PortablePaths.create(tmp_path / "record.json", [])
+    try:
+        converted = integrated_evidence._portable_status(status, paths)
+    except ValueError as error:
+        raise AssertionError("An upstream file format must not be treated as a login") from error
+    reference = converted.source[locator]
+    assert isinstance(reference, dict)
+    assert reference["producer_relative_path"] == value
+
+
+@pytest.mark.parametrize("locator", ["review", "protocol"])
+@pytest.mark.parametrize("suffix", ["/", "/."])
+@pytest.mark.parametrize("account", ["tsv", "json"])
+def test_upstream_directory_spelling_cannot_use_a_file_suffix_exception(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    locator: str,
+    suffix: str,
+    account: str,
+) -> None:
+    monkeypatch.setattr(provenance_paths, "_account_names", lambda: {account})
+    value = "methods/data." + account + suffix
+    source: dict[str, object] = (
+        {"review": {"path": value}} if locator == "review" else {"protocol": value}
+    )
+    status = integrated_evidence.AssessmentStatus("#1778", {}, "pending", source=source)
+    paths = provenance_paths.PortablePaths.create(tmp_path / "record.json", [])
+    with pytest.raises(ValueError, match="local account name"):
+        integrated_evidence._portable_status(status, paths)
+
+
 def test_verification_does_not_apply_the_readers_account_name(
     portable_case: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
 ) -> None:
