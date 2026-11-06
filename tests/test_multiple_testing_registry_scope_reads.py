@@ -3,10 +3,12 @@
 The resolver does not implement declaration-aware lexical lookup. An explicit
 ``global`` or ``nonlocal`` therefore invalidates the declared name, including
 callables; it is not evidence that the runtime object is the imported primitive.
-Undeclared free vectors retain the existing bounded name/extent model. Enclosing
-parameters and loop targets can also be credited as imported callables when no
-declaration intervenes. These tests pin existing behavior, including that known
-acceptance limitation; they do not establish the runtime callable's identity.
+Undeclared free vectors retain the existing bounded name/extent model. Only an
+enclosing import or plain ``name = dotted.name`` assignment is modelled; enclosing
+parameters, loop targets and other assignment forms (a call value, an annotation,
+a tuple target) can still be credited as imported callables when no declaration
+intervenes. These tests pin existing behavior, including that known acceptance
+limitation; they do not establish the runtime callable's identity.
 """
 
 from __future__ import annotations
@@ -77,6 +79,19 @@ def test_undeclared_enclosing_callable_parameters_are_known_acceptances(callable
 def test_undeclared_enclosing_numpy_loop_target_is_a_known_acceptance() -> None:
     function = "def screen(p):\n" + indent(EXTENT + RESULT, "    ") + "return screen\n"
     source = IMPORTS + "def outer(mods):\n    for np in mods:\n" + indent(function, "        ")
+    assert derived(source) == ("outer.screen",)
+
+
+@pytest.mark.parametrize(
+    "binding",
+    ["np = load(fake)", "np: object = fake", "np, other = fake, 1"],
+    ids=["call-value", "annotated", "tuple-target"],
+)
+def test_other_enclosing_numpy_assignments_are_known_acceptances(binding: str) -> None:
+    # Only an import or a plain `name = dotted.name` assignment is modelled as an
+    # enclosing binding (#1699); these forms still let the module import be credited.
+    function = "def screen(p):\n" + indent(EXTENT + RESULT, "    ") + "return screen\n"
+    source = IMPORTS + "def outer(fake):\n" + indent(binding + "\n" + function, "    ")
     assert derived(source) == ("outer.screen",)
 
 

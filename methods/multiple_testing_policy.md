@@ -232,11 +232,13 @@ Within a registered function, it also does not detect:
   Escaping `break` or `continue` paths inside those unsupported blocks are not propagated;
 - other binding forms, including starred targets, `def`/`class` rebinding (including
   decorated definitions), `global` writes from another function and context managers
-  that suppress a `raise`, are not modelled. An enclosing function's parameter,
-  loop variable or other non-assignment binding that shadows an imported callable
-  is also not modelled: an undeclared read may be falsely credited as the module
-  import. Known-acceptance tests pin this limitation; lexical-resolution repair is
-  follow-up work (#1684);
+  that suppress a `raise`, are not modelled. An enclosing function's binding that
+  shadows an imported callable is modelled only when it is an import or a plain
+  assignment from a name or dotted name (`np = fake`); its parameters, loop
+  variables, annotated or tuple assignments and assignments from any other
+  expression (`np = load(fake)`, for example) are not, so an undeclared read may be
+  falsely credited as the module import. Known-acceptance tests pin this limitation;
+  lexical-resolution repair is follow-up work (#1684, #1699);
 - whether a witnessed calculation reaches an output or is subsequently used. The
   check rejects constant-false branches, discarded expression statements and calculations
   after explicit block terminators, but does not prove general reachability or evaluate
