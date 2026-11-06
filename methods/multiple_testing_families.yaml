@@ -1158,7 +1158,7 @@
           "path": "src/mtp/composition_calibration/adapters/jed_composition.py",
           "function": "JedCompositionAdapter.run_inference",
           "derived_procedures": {
-            "BY": "Reviewed arithmetic: clip(benjamini_hochberg(p_array) * sum(1/i for i=1..len(p_array)), 0, 1), when correction is by. The guard checks the declaration, not the formula."
+            "BY": "Reviewed arithmetic: clip(benjamini_hochberg(p_array) * sum(1/i for i=1..len(p_array)), 0, 1), when correction is by. The guard checks a visible BH * H_m -> clip[0, 1] calculation at this anchor (#1490); the per-output link is source-reviewed."
           },
           "procedures": [
             "BH",
@@ -1575,7 +1575,7 @@
           "path": "src/mtp/composition_calibration/composition.py",
           "function": "run_composition_calibration",
           "derived_procedures": {
-            "BY": "Reviewed observed arithmetic: obs_by = clip(obs_bh * harmonic_sum, 0, 1); harmonic_sum is sum(1/i for i=1..n_traits). The guard checks the declaration, not the formula."
+            "BY": "Reviewed observed arithmetic: obs_by = clip(obs_bh * harmonic_sum, 0, 1); harmonic_sum is sum(1/i for i=1..n_traits). The guard checks a visible BH * H_m -> clip[0, 1] calculation at this shared anchor (#1490), supplied by the null-replicate calculation. The observed arithmetic is not checked: obs_bh comes from the adapter's q_value column; the per-output link is source-reviewed (#1579)."
           },
           "procedures": [
             "BH",
@@ -1642,7 +1642,7 @@
           "path": "src/mtp/composition_calibration/composition.py",
           "function": "run_composition_calibration",
           "derived_procedures": {
-            "BY": "Reviewed null arithmetic: by_r = clip(benjamini_hochberg(p_r) * harmonic_sum, 0, 1); harmonic_sum is sum(1/i for i=1..n_traits). The guard checks the declaration, not the formula."
+            "BY": "Reviewed null arithmetic: by_r = clip(benjamini_hochberg(p_r) * harmonic_sum, 0, 1); harmonic_sum is sum(1/i for i=1..n_traits). The guard checks a visible BH * H_m -> clip[0, 1] calculation in the null-replicate loop at this shared anchor (#1490); the per-output link is source-reviewed."
           },
           "procedures": [
             "BH",

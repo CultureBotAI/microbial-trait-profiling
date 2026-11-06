@@ -40,6 +40,7 @@ class Limits:
     summary_bytes: int = 33_554_432
     name_characters: int = 4_096
     alias_steps: int = 64
+    derivation_steps: int = 100_000
 
 
 DEFAULT_LIMITS = Limits()
@@ -325,14 +326,33 @@ def visible_by_derivation(unit: Unit, scope: str) -> bool:
     """
     function = unit.functions[scope]
     witnessed = False
+    work = 0
+
+    def charge(amount: int = 1) -> None:
+        nonlocal work
+        work += amount
+        if work > unit.limits.derivation_steps:
+            raise DiscoveryLimitError(
+                f"derivation work budget exceeded: {unit.path}:{scope} "
+                f"(limit {unit.limits.derivation_steps})"
+            )
+
+    def copy_env(env: dict[str, Fact]) -> dict[str, Fact]:
+        charge(len(env))
+        return env.copy()
 
     def local_nodes(root: ast.AST) -> Iterator[ast.AST]:
         pending = [root]
         while pending:
+            charge()
             node = pending.pop()
             yield node
             if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef):
                 continue
+            for _, value in ast.iter_fields(node):
+                if isinstance(value, list):
+                    # iter_child_nodes scans string entries too (e.g. globals).
+                    charge(len(value))
             pending.extend(ast.iter_child_nodes(node))
 
     module_writes = set()
@@ -404,6 +424,7 @@ def visible_by_derivation(unit: Unit, scope: str) -> bool:
         return ("harmonic", family) if family is not None else None
 
     def expression(node: ast.AST, env: dict[str, Fact]) -> Fact | None:
+        charge()
         if isinstance(node, ast.Name):
             return env.get(node.id, ("vector", node.id))
         if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Mult):
@@ -447,6 +468,7 @@ def visible_by_derivation(unit: Unit, scope: str) -> bool:
         return None
 
     def assign(node: ast.AST, value: Fact | None, env: dict[str, Fact]) -> None:
+        charge()
         if isinstance(node, ast.Name):
             env[node.id] = value or ("vector", f"{node.id}:{node.lineno}:{node.col_offset}")
         elif isinstance(node, ast.Subscript | ast.Attribute):
@@ -465,6 +487,7 @@ def visible_by_derivation(unit: Unit, scope: str) -> bool:
             previous = expression(root, env)
             if isinstance(root, ast.Name):
                 env[root.id] = ("unknown", root.id)
+            charge(len(env))
             for alias, fact in list(env.items()):
                 if fact == previous or fact[0] in {"BH", "scaled", "BY"}:
                     env[alias] = ("unknown", alias)
@@ -475,6 +498,7 @@ def visible_by_derivation(unit: Unit, scope: str) -> bool:
     def invalidate_aliases(node: ast.AST, env: dict[str, Fact]) -> None:
         if isinstance(node, ast.Name):
             previous = env.get(node.id, ("vector", node.id))
+            charge(len(env))
             for alias, fact in list(env.items()):
                 if fact == previous:
                     env[alias] = ("unknown", f"{alias}:{node.lineno}")
@@ -484,6 +508,7 @@ def visible_by_derivation(unit: Unit, scope: str) -> bool:
     def intersection(left: dict[str, Fact], right: dict[str, Fact]) -> dict[str, Fact]:
         # Keep invalidated names present, so an earlier fact cannot reappear
         # through the fallback for an unbound parameter.
+        charge(len(left) + len(right))
         return {
             name: left[name]
             if name in left and left.get(name) == right.get(name)
@@ -498,6 +523,7 @@ def visible_by_derivation(unit: Unit, scope: str) -> bool:
             if isinstance(node, ast.NamedExpr) and isinstance(node.target, ast.Name):
                 names.append(node.target.id)
             elif isinstance(node, ast.Import | ast.ImportFrom):
+                charge(len(node.names))
                 names.extend(
                     alias.asname
                     or (alias.name.split(".")[0] if isinstance(node, ast.Import) else alias.name)
@@ -510,18 +536,24 @@ def visible_by_derivation(unit: Unit, scope: str) -> bool:
             elif isinstance(node, ast.ExceptHandler) and node.name:
                 names.append(node.name)
             elif isinstance(node, ast.Global | ast.Nonlocal):
-                names.extend(node.names)
+                # Declaration-aware resolution of enclosing/callable bindings
+                # is outside this recognizer; pin conservative rejection (#1609).
+                names = node.names
             elif isinstance(node, ast.Delete):
                 for item in node.targets:
                     if isinstance(item, ast.Name):
                         names.append(item.id)
                     else:
                         assign(item, None, env)
+            # Global/nonlocal names are string fields, not child AST nodes.
+            # Repeated declarations can do much work while adding only one fact.
+            charge(len(names))
             for name in names:
                 env[name] = ("unknown", name)
 
     def terminates(body: list[ast.stmt]) -> bool:
         for statement in body:
+            charge()
             if isinstance(statement, ast.Return | ast.Raise | ast.Break | ast.Continue):
                 return True
             if isinstance(statement, ast.With | ast.AsyncWith) and terminates(statement.body):
@@ -542,6 +574,7 @@ def visible_by_derivation(unit: Unit, scope: str) -> bool:
     ) -> dict[str, Fact]:
         nonlocal witnessed
         for statement in body:
+            charge()
             invalidate_bindings(statement, env)
             if isinstance(statement, ast.Assign | ast.AnnAssign):
                 value = expression(statement.value, env) if statement.value is not None else None
@@ -568,7 +601,7 @@ def visible_by_derivation(unit: Unit, scope: str) -> bool:
             elif isinstance(statement, ast.Raise | ast.Break | ast.Continue):
                 if loop_paths and isinstance(statement, ast.Break | ast.Continue):
                     exits = loop_paths[-1][0 if isinstance(statement, ast.Break) else 1]
-                    exits.append(env.copy())
+                    exits.append(copy_env(env))
                 break
             elif isinstance(statement, ast.If):
                 if isinstance(statement.test, ast.Constant):
@@ -578,8 +611,8 @@ def visible_by_derivation(unit: Unit, scope: str) -> bool:
                         break
                 else:
                     env = intersection(
-                        statements(statement.body, env.copy(), credit=credit),
-                        statements(statement.orelse, env.copy(), credit=credit),
+                        statements(statement.body, copy_env(env), credit=credit),
+                        statements(statement.orelse, copy_env(env), credit=credit),
                     )
                     if terminates(statement.body) and terminates(statement.orelse):
                         break
@@ -593,9 +626,10 @@ def visible_by_derivation(unit: Unit, scope: str) -> bool:
                     continue
                 # The descending intersection reaches a fixed point before
                 # any loop-body calculation is allowed to supply a witness.
-                entry = env.copy()
+                entry = copy_env(env)
                 while True:
-                    inside = entry.copy()
+                    charge()
+                    inside = copy_env(entry)
                     if isinstance(statement, ast.For | ast.AsyncFor):
                         assign(statement.target, None, inside)
                     break_paths: list[dict[str, Fact]] = []
@@ -609,7 +643,7 @@ def visible_by_derivation(unit: Unit, scope: str) -> bool:
                     if updated == entry:
                         break
                     entry = updated
-                inside = entry.copy()
+                inside = copy_env(entry)
                 if isinstance(statement, ast.For | ast.AsyncFor):
                     assign(statement.target, None, inside)
                 break_paths, continue_paths = [], []

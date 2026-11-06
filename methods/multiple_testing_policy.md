@@ -183,8 +183,19 @@ wrapper functions. Among other checks, it fails when:
 Discovery reads files lazily and keeps compact per-file summaries. Alias expansion,
 source size and summary size have explicit limits. The derivation recognizer runs only
 in functions whose own resolved calls include both `benjamini_hochberg` and
-`numpy.clip`. Its repeated subtree walks and nested-loop re-analysis are not separately
-bounded; the work can double with each additional loop nesting level (#1581).
+`numpy.clip`. A separate per-function `Limits.derivation_steps` budget defaults to
+100,000 work units (#1581). It charges AST visits, expression/statement analysis,
+loop fixed-point passes, declaration-name processing, and the sizes of copied,
+joined or invalidated fact environments before doing that work. Exceeding the budget
+refuses discovery with the source path, anchor and limit; it does not silently skip
+the anchor or credit a partial witness. This deterministic work bound is not a
+wall-time or RSS guarantee.
+`global` and `nonlocal` declarations conservatively invalidate the declared names
+(#1609), including read-only vectors: declaration-aware resolution of enclosing
+bindings is outside the recognizer. An undeclared free-vector read may be accepted;
+this is a documented false-negative boundary, not proof that a declared read is
+invalid Python or invalid arithmetic. Removing the invalidation would also admit
+declared callable bindings that the recognizer cannot verify.
 Derivation facts are reduced while each file's AST is resident; the summaries retain
 neither the AST nor source text. The check establishes a supported calculation in an
 anchor, not the ancestry of each family's output. At `run_composition_calibration`,
