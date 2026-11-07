@@ -239,7 +239,9 @@ def test_generated_pooled_source_is_checked_before_creating_or_running_anything(
     assert not planned.exists()
 
 
-@pytest.mark.parametrize("category", ["core-product", "arm-evidence", "manual-pooled"])
+@pytest.mark.parametrize(
+    "category", ["core-product", "arm-evidence", "assessment", "manual-pooled"]
+)
 def test_comparison_checks_each_source_category_before_writing(
     inputs: Inputs, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, category: str
 ) -> None:
@@ -251,6 +253,9 @@ def test_comparison_checks_each_source_category_before_writing(
     elif category == "arm-evidence":
         _, arm, step, name = comparison.ARM_EVIDENCE_INPUTS[0]
         inputs.evidence[(arm, step, name)] = outside
+    elif category == "assessment":
+        # Jed's sensitivity status is located only through the assessment selector.
+        inputs.evidence[("jed", "composition_sensitivity", "sensitivity_status.json")] = outside
     else:
         inputs = replace(inputs, pooled=outside)
     output = tmp_path / "comparison-output"
