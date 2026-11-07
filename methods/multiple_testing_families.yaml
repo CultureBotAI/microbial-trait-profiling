@@ -720,7 +720,7 @@
       "family_definition": "Default global BH over the eligible profile x trait family within feces stratum, with each stratum corrected separately; --fdr-scope profile uses a separate BH family per profile. --no-fdr performs no correction and records scope none regardless of the requested FDR scope.",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "Partition profiles into the feces stratum using stratification's body-site rules, then invoke run_stratum_enrichment; retain N>0 profiles and K>0 traits before report filtering.",
+        "selection_rule": "Partition profiles into the feces stratum using stratification's body-site rules, then invoke run_stratum_enrichment; retain profiles with positive taxa_count (the number of distinct matrix-matched reported taxa, including matched taxa with no retained annotation) and positive-background traits before report filtering.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BH",
@@ -782,7 +782,7 @@
       "family_definition": "Default global BH over the eligible profile x trait family within feces_excluded stratum, with each stratum corrected separately; --fdr-scope profile uses a separate BH family per profile. --no-fdr performs no correction and records scope none regardless of the requested FDR scope.",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "Partition profiles into feces_excluded using stratification's body-site rules, then invoke run_stratum_enrichment; retain N>0 profiles and K>0 traits before report filtering.",
+        "selection_rule": "Partition profiles into feces_excluded using stratification's body-site rules, then invoke run_stratum_enrichment; retain profiles with positive taxa_count (the number of distinct matrix-matched reported taxa, including matched taxa with no retained annotation) and positive-background traits before report filtering.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BH",
