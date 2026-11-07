@@ -464,6 +464,96 @@ def test_network_edge_metadata_roundtrip_keeps_annotations_noninferential(tmp_pa
         assert tuple(float(row[field]) for field in EDGE_METADATA_COLUMNS[1:]) == expected
 
 
+def _asymmetric_landscape_inputs() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+    """Six taxon rows: five supported, four finite p, three plotted (#1540)."""
+    taxon_tests, trait_tests, annotations, traits = _edge_export_inputs()
+    for frame in (taxon_tests, trait_tests):
+        frame.loc[frame["condition"].eq("Condition A"), "condition"] = network.PD_CONDITION
+    traits = traits.assign(trait_order=[0, 1])
+    assert len(taxon_tests) == 6
+    assert int(taxon_tests["passes_min_taxon_studies"].sum()) == 5
+    assert sum(math.isfinite(float(value)) for value in taxon_tests["p_value"]) == 4
+    return taxon_tests, trait_tests, annotations, traits
+
+
+@pytest.mark.parametrize("surface", ["panel_title", "figure_subtitle"])
+def test_landscape_labels_describe_shown_tests_not_all_supported_rows(
+    surface: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Read the actual figure texts; save interception avoids a raster render."""
+    import matplotlib.figure
+    import numpy as np
+
+    taxon_tests, trait_tests, _, traits = _asymmetric_landscape_inputs()
+    original_taxa, original_traits = taxon_tests.copy(deep=True), trait_tests.copy(deep=True)
+    titles: list[str] = []
+    figure_texts: list[str] = []
+    plotted_taxon_counts: list[int] = []
+
+    def capture_savefig(
+        self: matplotlib.figure.Figure, path: Path, *_args: object, **_kwargs: object
+    ) -> None:
+        Path(path).write_text("", encoding="utf-8")
+        titles.append(self.axes[0].get_title(loc="left"))
+        figure_texts.extend(text.get_text() for text in self.texts)
+        plotted_taxon_counts.append(
+            sum(
+                np.asarray(collection.get_offsets()).shape[0]
+                for collection in self.axes[0].collections
+            )
+        )
+
+    monkeypatch.setattr(matplotlib.figure.Figure, "savefig", capture_savefig)
+    network.plot_fdr_evidence_landscape(
+        taxon_tests, trait_tests, traits, tmp_path / "landscape.png"
+    )
+
+    # Both saved formats show the same three tests; the two supported untested
+    # rows stay in the input family, and the finite unsupported row is not shown.
+    assert plotted_taxon_counts == [3, 3]
+    pd.testing.assert_frame_equal(taxon_tests, original_taxa)
+    pd.testing.assert_frame_equal(trait_tests, original_traits)
+    if surface == "panel_title":
+        assert titles == ["A  Condition-taxon evidence (3 tested comparisons shown)"] * 2
+    else:
+        assert figure_texts
+        assert "All eligible tests are shown." not in "\n".join(figure_texts)
+        assert any(
+            "Tests with available q-values and effects are shown." in text for text in figure_texts
+        )
+
+
+def test_methods_keep_supported_bh_family_separate_from_finite_and_shown_counts(
+    tmp_path: Path,
+) -> None:
+    """The asymmetric family kills a support-count-to-finite-count substitution (#1540)."""
+    taxon_tests, trait_tests, annotations, traits = _asymmetric_landscape_inputs()
+    eligibility = pd.DataFrame(
+        {
+            "condition": taxon_tests["condition"],
+            "passes_min_paired_studies": [True, True, True, True, True, False],
+            "displayed_in_network": [True, True, False, False, False, False],
+        }
+    )
+    nodes, edges, _ = network.build_network_tables(taxon_tests, trait_tests, annotations, traits)
+    output = tmp_path / "methods.md"
+    network.write_methods_summary(eligibility, taxon_tests, trait_tests, nodes, edges, output)
+    methods = output.read_text(encoding="utf-8")
+
+    assert (
+        "The resulting condition-taxon test family contained `5` eligible comparisons "
+        "(`3` with finite nominal p), and the condition-trait test family contained "
+        "`4` eligible condition-trait comparisons (`2` with finite nominal p; "
+        "`1` PD trait comparisons shown in Panel C)."
+    ) in methods
+    assert (
+        "across `4` finite nominal p-values in the condition-taxon table "
+        "(`3` support-eligible with finite nominal p in the `5`-row BH family) and "
+        "`3` finite nominal p-values in the condition-trait table "
+        "(`2` support-eligible with finite nominal p in the `4`-row BH family)"
+    ) in methods
+
+
 def test_network_tables_figure_and_methods_label_nominal_p_values(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
