@@ -45,12 +45,11 @@ def build_parser() -> argparse.ArgumentParser:
             action="store_true",
             help="Run analysis and calibration without optional figure rendering",
         )
-        if name == "noel":
-            arm.add_argument(
-                "--provenance-root",
-                type=Path,
-                help="Root for integrated-evidence provenance; must contain all bound inputs",
-            )
+        arm.add_argument(
+            "--provenance-root",
+            type=Path,
+            help="Noel only: safe source root for integrated-evidence provenance",
+        )
         add_temporary_output_option(arm)
     verify = commands.add_parser(
         "verify", help="Verify a completed arm execution and its core bindings"
@@ -108,6 +107,8 @@ def main(argv: list[str] | None = None) -> int:
         cmp_record = verify_comparison_run(args.record)
         print(f"Verified {cmp_record.id}: cross-arm bindings, analysis bases and complete outputs")
         return 0
+    if args.provenance_root is not None and args.command != "noel":
+        parser.error("--provenance-root is supported only for the Noel arm")
     if args.replicates is not None and args.replicates < 1:
         parser.error("--replicates must be positive")
     require_durable_output(parser, args.output, allowed=args.allow_temporary_output)

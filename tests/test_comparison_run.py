@@ -11,6 +11,7 @@ import csv
 import inspect
 import json
 import random
+import re
 import shutil
 import sys
 from collections.abc import Callable
@@ -33,7 +34,7 @@ from mtp.integrated_provenance import verify_integrated_provenance
 from mtp.multiplicity import sources as multiplicity_sources
 from mtp.multiplicity.stage import run_post_arm
 from mtp.paths import REPO_ROOT
-from mtp.provenance_paths import verify_reference
+from mtp.provenance_paths import PortablePaths, verify_reference
 from mtp.three_test_table import stage as three_test_stage
 from mtp.workflow import comparison
 from mtp.workflow import consumers as workflow_consumers
@@ -433,8 +434,7 @@ def test_comparison_rejects_a_root_that_excludes_bound_sources(
             arm1_pooled_stats=pooled,
             provenance_root=stage["core"].parent,
         )
-    assert not (output / "comparison_run.json").exists()
-    assert not (output / "integrated_evidence/integrated_evidence_provenance.json").exists()
+    assert not output.exists()
 
 
 def test_external_comparison_root_must_also_contain_generated_pooled_stats(
@@ -452,11 +452,65 @@ def test_external_comparison_root_must_also_contain_generated_pooled_stats(
             output,
             provenance_root=root,
         )
-    assert (
-        output / "arm1_pooled_stats/trait_profile_paired_contrast_trait_stats_pooled.tsv"
-    ).is_file()
-    assert not (output / "comparison_run.json").exists()
-    assert not (output / "integrated_evidence/integrated_evidence_provenance.json").exists()
+    assert not output.exists()
+
+
+@pytest.mark.parametrize(
+    "root_kind", ["missing", "file", "home", "temporary", "filesystem", "excludes-sources"]
+)
+def test_invalid_comparison_root_leaves_no_output_and_same_path_retry_verifies(
+    stage: dict[str, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch, root_kind: str
+) -> None:
+    """Use real producer policy, source verification and comparison execution (#1817)."""
+    root, pooled = _external_comparison_sources(stage, tmp_path, monkeypatch)
+    non_directory = tmp_path / "root-is-a-file"
+    non_directory.write_text("not a directory\n", encoding="utf-8")
+    invalid = {
+        "missing": tmp_path / "missing-root",
+        "file": non_directory,
+        "home": Path.home(),
+        "temporary": tmp_path.parent,
+        "filesystem": Path(tmp_path.anchor),
+        "excludes-sources": stage["core"].parent,
+    }[root_kind]
+    output = tmp_path / "retry-the-same-output"
+    record_path = output / "integrated_evidence/integrated_evidence_provenance.json"
+    with pytest.raises(
+        ValueError,
+        match=r"^(?:--provenance-root|Provenance root|The filesystem root|Source is outside)",
+    ) as producer_refusal:
+        PortablePaths.create(record_path, [pooled], root=invalid)
+    assert not output.exists()
+
+    with pytest.raises(
+        ValueError, match="^" + re.escape(str(producer_refusal.value)) + "$"
+    ) as workflow_refusal:
+        execute_comparison_run(
+            stage["core"],
+            stage["noel"],
+            stage["jed"],
+            stage["ilyas"],
+            output,
+            arm1_pooled_stats=pooled,
+            provenance_root=invalid,
+        )
+    assert str(workflow_refusal.value) == str(producer_refusal.value)
+    assert not output.exists(), "A refused root must not occupy the requested output"
+
+    completed = execute_comparison_run(
+        stage["core"],
+        stage["noel"],
+        stage["jed"],
+        stage["ilyas"],
+        output,
+        arm1_pooled_stats=pooled,
+        provenance_root=root,
+    )
+    assert verify_comparison_run(output) == completed
+    provenance = verify_integrated_provenance(record_path, provenance_root=root)
+    references = provenance["verified_references"]
+    assert isinstance(references, list)
+    assert "native_sources.arm1_pooled_stats" in references
 
 
 @pytest.mark.parametrize("entrypoint", ["comparison", "sources"])

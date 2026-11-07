@@ -117,13 +117,25 @@ def test_omitted_option_preserves_existing_execution_defaults(
 
 
 @pytest.mark.parametrize("arm", ["jed", "ilyas"])
+@pytest.mark.parametrize("spelling", ["separate", "equals", "abbreviated"])
 def test_other_arm_clis_refuse_the_option_without_executing(
-    tmp_path: Path, calls: list[Call], arm: str
+    tmp_path: Path,
+    calls: list[Call],
+    capsys: pytest.CaptureFixture[str],
+    arm: str,
+    spelling: str,
 ) -> None:
     output = tmp_path / "fresh output"
+    root = str(tmp_path / "sources")
+    option = {
+        "separate": ["--provenance-root", root],
+        "equals": ["--provenance-root=" + root],
+        "abbreviated": ["--prov", root],
+    }[spelling]
     with pytest.raises(SystemExit) as stopped:
-        cli.main([*_arguments(arm, tmp_path), "--provenance-root", str(tmp_path / "sources")])
+        cli.main([*_arguments(arm, tmp_path), *option])
     assert stopped.value.code == 2
+    assert "--provenance-root is supported only for the Noel arm" in capsys.readouterr().err
     assert calls == []
     assert not output.exists()
 
@@ -258,8 +270,9 @@ def test_real_integrated_parser_accepts_the_explicit_noel_root(
     assert parsed.value.namespace.provenance_root == root
 
 
+@pytest.mark.parametrize("explicit", [False, True], ids=["omitted", "explicit"])
 def test_comparison_forwards_its_root_to_the_real_integrated_parser(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, explicit: bool
 ) -> None:
     """Pin argument routing only; verified execution is covered by the real E2E suite."""
     _root_keyword(comparison.execute_comparison_run)
@@ -274,6 +287,7 @@ def test_comparison_forwards_its_root_to_the_real_integrated_parser(
         run_id="fixture-core",
         contrast_population="all_paired",
         direction_basis="group_1_vs_group_0",
+        artifacts=[],
     )
     arms = {
         path: SimpleNamespace(
@@ -314,20 +328,23 @@ def test_comparison_forwards_its_root_to_the_real_integrated_parser(
         raise _Parsed(parse_args(parser, args, namespace))
 
     monkeypatch.setattr(argparse.ArgumentParser, "parse_args", capture)
-    supplied = sources / "unused" / ".."
+    supplied = sources / "unused" / ".." if explicit else None
     output = tmp_path / "comparison output"
-    with pytest.raises(_Parsed) as parsed:
-        comparison.execute_comparison_run(
-            paths["core"],
-            paths["noel"],
-            paths["jed"],
-            paths["ilyas"],
-            output,
-            arm1_pooled_stats=pooled,
-            provenance_root=supplied,
-        )
+    try:
+        with pytest.raises(_Parsed) as parsed:
+            comparison.execute_comparison_run(
+                paths["core"],
+                paths["noel"],
+                paths["jed"],
+                paths["ilyas"],
+                output,
+                arm1_pooled_stats=pooled,
+                provenance_root=supplied,
+            )
+    except (ValueError, OSError) as error:
+        raise AssertionError("Valid argument routing must reach the integrated parser") from error
     arguments = parsed.value.namespace
-    assert arguments.provenance_root == supplied.resolve()
+    assert arguments.provenance_root == (supplied.resolve() if supplied is not None else None)
     assert arguments.core_run == paths["core"].resolve()
     assert arguments.arm1_pooled_stats == pooled.resolve()
     assert arguments.output_dir == output.resolve() / "integrated_evidence"
@@ -339,23 +356,28 @@ class _Planned(Exception):
     """Stop the real runtime at its planner, before execution or record creation."""
 
 
+@pytest.mark.parametrize("explicit", [False, True], ids=["omitted", "explicit"])
 def test_noel_execution_passes_the_normalized_root_to_its_context(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, context: ArmContext, explicit: bool
 ) -> None:
     _root_keyword(runtime.execute_arm)
     _require_context_option()
     bundle = SimpleNamespace(
         run=SimpleNamespace(
-            artifacts=[],
+            artifacts=[SimpleNamespace(product_id=name) for name in context.products],
             parameters=[],
             contrast_population="all_paired",
             direction_basis="group_1_vs_group_0",
-        )
+        ),
+        path=lambda product: context.products[product],
     )
+    for path in (context.manifest, *context.products.values()):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("synthetic routing input\n", encoding="utf-8")
     monkeypatch.setattr(runtime, "open_core_bundle", lambda *_args, **_kwargs: bundle)
     monkeypatch.setattr(runtime, "preflight_consumer_outputs", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(runtime, "repository_state", lambda _root: ("a" * 40, False))
-    supplied = tmp_path / "source root" / ".."
+    supplied = tmp_path / "source root" / ".." if explicit else None
     captured: list[ArmContext] = []
 
     def plan(context: ArmContext) -> list[Command]:
@@ -363,14 +385,34 @@ def test_noel_execution_passes_the_normalized_root_to_its_context(
         raise _Planned
 
     output = tmp_path / "fresh output"
-    with pytest.raises(_Planned):
-        runtime.execute_arm(
-            "noel",
-            tmp_path / "run.json",
-            output,
-            plan,
-            provenance_root=supplied,
-        )
+    try:
+        with pytest.raises(_Planned):
+            runtime.execute_arm(
+                "noel",
+                context.manifest,
+                output,
+                plan,
+                provenance_root=supplied,
+            )
+    except (ValueError, OSError) as error:
+        raise AssertionError("Valid Noel root routing must reach its planner") from error
     assert len(captured) == 1
-    assert captured[0].provenance_root == supplied.resolve()
+    expected = supplied.resolve() if supplied is not None else None
+    assert captured[0].provenance_root == expected
     assert not output.exists()
+    command = next(
+        item for item in noel.build_commands(captured[0]) if item.id == "integrated_evidence"
+    )
+    parse_args = argparse.ArgumentParser.parse_args
+
+    def capture(
+        parser: argparse.ArgumentParser,
+        args: Sequence[str] | None = None,
+        namespace: argparse.Namespace | None = None,
+    ) -> argparse.Namespace:
+        raise _Parsed(parse_args(parser, args, namespace))
+
+    monkeypatch.setattr(argparse.ArgumentParser, "parse_args", capture)
+    with pytest.raises(_Parsed) as parsed:
+        integrated_evidence.main(list(command.argv[3:]))
+    assert parsed.value.namespace.provenance_root == expected

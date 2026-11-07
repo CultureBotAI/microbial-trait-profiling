@@ -37,6 +37,7 @@ from mtp.workflow.downstream_contracts import (
     build_eligibility_ledger,
 )
 from mtp.workflow.operations import run_strain_rollup
+from mtp.workflow.provenance import preflight_provenance_root
 from mtp.workflow.runtime import artifact_path, repository_state
 from mtp.workflow.verification import verify_core_run
 
@@ -634,11 +635,29 @@ def execute_comparison_run(
     ledger_fraction = shared_basis_ledger(table1_spec, core_run, contrast_population)
     analysis_bases = core_analysis_bases(core_run)
 
+    stats_dir = output / "arm1_pooled_stats"
+    pooled_stats_path = (
+        arm1_pooled_stats.resolve()
+        if arm1_pooled_stats is not None
+        else stats_dir / "trait_profile_paired_contrast_trait_stats_pooled.tsv"
+    )
+    if provenance_root is not None:
+        known_sources = [
+            core_manifest,
+            *(artifact_path(core_run, item.product_id) for item in core_run.artifacts or []),
+            *(Path(value) for value in evidence_inputs[1::2]),
+        ]
+        if arm1_pooled_stats is not None:
+            known_sources.append(pooled_stats_path)
+        preflight_provenance_root(
+            output / "integrated_evidence/integrated_evidence_provenance.json",
+            known_sources,
+            root=provenance_root,
+            planned_files=() if arm1_pooled_stats is not None else (pooled_stats_path,),
+        )
+
     output.mkdir(parents=True, exist_ok=False)
-    if arm1_pooled_stats is not None:
-        pooled_stats_path = arm1_pooled_stats.resolve()
-    else:
-        stats_dir = output / "arm1_pooled_stats"
+    if arm1_pooled_stats is None:
         cmd = [
             sys.executable,
             str(REPO_ROOT / "scripts" / "create_trait_profile_infographic.py"),
@@ -649,7 +668,6 @@ def execute_comparison_run(
             str(stats_dir),
         ]
         asyncio.run(_exec_command(cmd, REPO_ROOT))
-        pooled_stats_path = stats_dir / "trait_profile_paired_contrast_trait_stats_pooled.tsv"
 
     integrated_dir = output / "integrated_evidence"
     from mtp.integrated_evidence import main as integrated_evidence_main
