@@ -539,7 +539,8 @@ def test_main_exports_each_standalone_scope_without_nesting_caption_counts(
     monkeypatch.setattr(figures, "save", saved_figure)
     assert figures.main(["--analysis-dir", str(tmp_path)]) == 0
     saved = json.loads((tmp_path / "figures" / "figure_captions.json").read_text())
-    _scope(saved["statements"][statement_name], finite, 0)
+    assert "Nominal p-values:" not in saved["statements"][statement_name]
+    _scope(saved["statement_scopes"][statement_name], finite, 0)
     caption_counts = {
         "figures_graphical/fig1_overlap_and_null_models.svg": 6,
         "figures_graphical/fig3_direction_by_body_site.svg": 16,

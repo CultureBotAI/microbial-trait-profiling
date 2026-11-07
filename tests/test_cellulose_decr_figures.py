@@ -70,8 +70,9 @@ def test_figures_draw_from_the_committed_tables(tmp_path: Path) -> None:
     assert overlap["title"].startswith(
         f"{observed['three_way_core']} of {observed['three_way_union']} "
     )
-    assert captions["statements"]["overlap"] == (
-        overlap["title"] + ". Nominal p-values: 2 finite endpoints; 0 unavailable. "
+    assert captions["statements"]["overlap"] == overlap["title"]
+    assert captions["statement_scopes"]["overlap"] == (
+        "Nominal p-values: 2 finite endpoints; 0 unavailable. "
         "This display scope is not a correction family."
     )
     # PD, CRC and the pooled result keep p < 0.05 under every condition definition; HIV

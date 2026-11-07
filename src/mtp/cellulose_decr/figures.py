@@ -670,7 +670,7 @@ def graphical_convergence(results: Results) -> Figure:
         "process; any rank, annotations rolled up from descendants) in at least one decreased "
         "stool signature of the condition. Overlap counts reported taxonomic labels, not "
         "consistent loss: a taxon counts once it is reported decreased in any study. Monte Carlo "
-        "p from "
+        "nominal p from "
         f"{u6['iterations']:,} draws. {vintage_note(results)} "
         f"{nominal_scope(null_endpoints_map(results, [key for key, _ in NULL_ROWS]))}",
     )
@@ -1336,7 +1336,7 @@ def detailed_nulls(results: Results) -> Figure:
             if column in ("u1", "u2", "u3"):
                 exact = not name.startswith("Mean")
                 p = row[f"{column}_hypergeom_p" if exact else f"{column}_mc_p"]
-                p_text = f"exact\n{nominal_p(p)}" if exact else mc_p(p, nulls[key]["iterations"])
+                p_text = f"exact {nominal_p(p)}" if exact else mc_p(p, nulls[key]["iterations"])
             else:
                 p = row[f"{column}_p"]
                 p_text = mc_p(p, nulls[key]["iterations"])
@@ -1364,7 +1364,9 @@ def detailed_nulls(results: Results) -> Figure:
             ax.text(
                 x,
                 y - 0.035,
-                p_text.replace("p = ", "p "),
+                p_text.replace("p = ", "p\n")
+                .replace("p ≤ ", "p ≤\n")
+                .replace("p unavailable", "p\nunavailable"),
                 ha="center",
                 va="center",
                 fontsize=7.4,
@@ -1653,7 +1655,7 @@ def detailed_compartments(results: Results) -> Figure:
 
     # C. Interaction tests
     inter = results.interaction
-    ax = fig.add_axes((0.22, 0.115, 0.40, 0.18))
+    ax = fig.add_axes((0.22, 0.135, 0.40, 0.16))
     panel_title(ax, "C. Stool against each other compartment, all contrasts")
     picked = inter[
         inter["contrast_population"].eq("all_contrasts")
@@ -2242,7 +2244,11 @@ def caption_direction(results: Results) -> Caption:
     return Caption(
         title=title,
         takeaway=f"Exact condition labels, down : up : tied studies: {counts}.",
-        caveat=f"{ranges}{crc_compartment_statement(results)}. {nominal_scope(endpoints)}",
+        caveat=(
+            f"{ranges}{crc_compartment_statement(results)}. "
+            "Scope including the scenario endpoints behind the verdicts: "
+            f"{nominal_scope(endpoints)}"
+        ),
         evidence="condition_definition_sensitivity.tsv",
     )
 
@@ -2422,13 +2428,24 @@ def main(argv: Sequence[str] | None = None) -> int:
         outputs.append(combined[folder])
     # Slide text for decks, from the same tables (scripts/build_slide_deck.py; #556).
     captions_path = args.analysis_dir / "figures" / "figure_captions.json"
-    statements = {
-        "overlap": overlap_statement(results, include_scope=True),
-        "crc_compartments": crc_compartment_statement(results, include_scope=True),
-        "fragile": fragile_statement(results, include_scope=True),
+    statement_writers = {
+        "overlap": overlap_statement,
+        "crc_compartments": crc_compartment_statement,
+        "fragile": fragile_statement,
+    }
+    statements = {name: writer(results) for name, writer in statement_writers.items()}
+    # Decks splice these clauses into their own sentences. Keep the standalone
+    # scope metadata alongside them, with exactly the same endpoint selection.
+    statement_scopes = {
+        name: writer(results, include_scope=True).removeprefix(f"{statements[name]}. ")
+        for name, writer in statement_writers.items()
     }
     captions_path.write_text(
-        json.dumps({"figures": captions, "statements": statements}, indent=1, ensure_ascii=False)
+        json.dumps(
+            {"figures": captions, "statements": statements, "statement_scopes": statement_scopes},
+            indent=1,
+            ensure_ascii=False,
+        )
         + "\n",
         encoding="utf-8",
     )
