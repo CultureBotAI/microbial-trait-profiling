@@ -194,6 +194,15 @@ the developer to simplify the function or review and raise `Limits.derivation_st
 it does not silently skip the anchor or credit a partial witness. This deterministic
 per-function work bound is not a
 wall-time or RSS guarantee.
+The additional `Limits.file_derivation_steps` allowance is shared by all candidate
+functions in one file, including those that yield no BY witness (#1685). Its
+1,000,000-unit default matches the existing allowance for one function; the two
+limits apply independently. A new allowance starts for each file. Exhausting it
+refuses the whole discovery before returning a partial summary, with the file,
+current anchor, attempted work and limit. The existing file-count limit also
+bounds admitted derivation work over the scan by the file count times this
+allowance. This does not replace the separate source, AST and summary limits or
+measure parsing, graph work, elapsed time or RSS.
 `global` and `nonlocal` declarations conservatively invalidate the declared names
 (#1609), including read-only vectors: declaration-aware resolution of enclosing
 bindings is outside the recognizer. Rejecting a declared read even when its Python

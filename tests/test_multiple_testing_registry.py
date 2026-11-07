@@ -41,6 +41,7 @@ class Limits:
     name_characters: int = 4_096
     alias_steps: int = 64
     derivation_steps: int = 1_000_000
+    file_derivation_steps: int = 1_000_000
 
 
 DEFAULT_LIMITS = Limits()
@@ -49,6 +50,23 @@ Sources = Mapping[str, str] | Iterable[tuple[str, str]]
 
 class DiscoveryLimitError(ValueError):
     """Refuse a scan before its declared static-work budget is exceeded."""
+
+
+@dataclass
+class FileDerivationBudget:
+    """Share a work allowance across candidates while one file's AST is live."""
+
+    limit: int
+    work: int = 0
+
+    def charge(self, amount: int, path: str, scope: str) -> None:
+        self.work += amount
+        if self.work > self.limit:
+            raise DiscoveryLimitError(
+                f"per-file derivation work budget exceeded: {path}:{scope} "
+                f"(attempted {self.work}, limit {self.limit}). "
+                "Simplify the file or review and raise Limits.file_derivation_steps."
+            )
 
 
 @dataclass
@@ -317,7 +335,9 @@ def literal_procedures(call: ast.Call, target: str) -> set[str]:
 Fact = tuple[str, str]
 
 
-def visible_by_derivation(unit: Unit, scope: str) -> bool:
+def visible_by_derivation(
+    unit: Unit, scope: str, *, file_budget: FileDerivationBudget | None = None
+) -> bool:
     """Recognize local BH * H_m followed by clip, with the same visible extent.
 
     This deliberately small recognizer is an anchor-level witness, not output
@@ -337,6 +357,8 @@ def visible_by_derivation(unit: Unit, scope: str) -> bool:
                 f"(attempted {work}, limit {unit.limits.derivation_steps}). "
                 "Simplify the function or review and raise Limits.derivation_steps."
             )
+        if file_budget is not None:
+            file_budget.charge(amount, unit.path, scope)
 
     def copy_env(env: dict[str, Fact]) -> dict[str, Fact]:
         charge(len(env))
@@ -736,8 +758,11 @@ def summarize_source(path: str, source: str, budget: SummaryBudget) -> CompactUn
         if target == "numpy.clip":
             clip_scopes.add(function)
     candidates = bh_scopes & clip_scopes
+    file_budget = FileDerivationBudget(limits.file_derivation_steps)
     derived = tuple(
-        name for name in unit.functions if name in candidates and visible_by_derivation(unit, name)
+        name
+        for name in unit.functions
+        if name in candidates and visible_by_derivation(unit, name, file_budget=file_budget)
     )
     for name in derived:
         budget.charge(path, name, "BY")
