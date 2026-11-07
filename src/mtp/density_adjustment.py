@@ -197,7 +197,7 @@ def family_bh_q_values(
 
 
 def q_value_provenance(family_size: SupportsIndex) -> dict[str, object]:
-    """Machine-readable record of the q-value family behind the statuses (#1321).
+    """Machine-readable record of the q-value family behind the statuses (#1321, #1661).
 
     ``family_size`` is stored as a Python int, so a NumPy count serializes (#1330).
     """
@@ -205,6 +205,7 @@ def q_value_provenance(family_size: SupportsIndex) -> dict[str, object]:
         "procedure": "benjamini_hochberg",
         "family": "every reported trait",
         "family_size": operator.index(family_size),
+        "p_value_type": "nominal",
         "corrected_separately": ["raw_wilcoxon_p", "adj_wilcoxon_p"],
         "untestable_p_held_at": 1.0,
         "label_threshold_q": _SIGNIFICANCE_Q,
@@ -729,6 +730,10 @@ def evaluate_table1_paired_effects(
     ]
 
 
+# 1 - r^2 at or below this is an exact fit up to rounding (#1713).
+_EXACT_FIT_RESIDUAL_SHARE = 64 * float(np.finfo(float).eps)
+
+
 def evaluate_conditional_twin_test(
     profiles_df: pd.DataFrame,
     trait_a: str = TWIN_A,
@@ -848,7 +853,16 @@ def evaluate_conditional_twin_test(
     if n_paired >= 2 and std_delta_b > 0.0:
         res_paired = stats.linregress(delta_b, delta_a)
         slope_paired = float(res_paired.slope)
-        pval_paired_slope = float(res_paired.pvalue)
+        # A regression p needs residual variation: >= 3 pairs (N=2 fits two points with
+        # 0 residual df, #1660) and residual variance above rounding noise. On an exact
+        # line scipy's p is an artefact of its internal constant, and rounding can leave a
+        # tiny positive stderr, so the test is on 1 - r^2 (noise <= ~1e-15), not stderr (#1713).
+        residual_share = 1.0 - float(res_paired.rvalue) ** 2
+        pval_paired_slope = (
+            float(res_paired.pvalue)
+            if n_paired >= 3 and residual_share > _EXACT_FIT_RESIDUAL_SHARE
+            else float("nan")
+        )
     else:
         slope_paired = 0.0
         pval_paired_slope = float("nan")

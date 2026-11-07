@@ -223,6 +223,7 @@ def test_q_value_records_accept_numpy_integers() -> None:
     record = density_module.q_value_provenance(np.int64(6))
     assert json.loads(json.dumps(record))["family_size"] == 6
     assert type(record["family_size"]) is int
+    assert record["p_value_type"] == "nominal"
     assert "over all 6 reported traits" in density_module.q_value_statement(np.int64(6))[0]
     q = density_module.family_bh_q_values(
         np.array([0.01, np.nan], dtype=np.float32), family_size=np.int64(2)
@@ -449,6 +450,7 @@ def test_tsv_reports_q_values_over_the_six_traits_and_the_declared_list(tmp_path
         "procedure": "benjamini_hochberg",
         "family": "every reported trait",
         "family_size": 8,
+        "p_value_type": "nominal",
         "corrected_separately": ["raw_wilcoxon_p", "adj_wilcoxon_p"],
         "untestable_p_held_at": 1.0,
         "label_threshold_q": 0.05,
@@ -513,6 +515,7 @@ def test_default_run_records_machine_readable_provenance_matching_trait_list_sch
         "procedure": "benjamini_hochberg",
         "family": "every reported trait",
         "family_size": 6,
+        "p_value_type": "nominal",
         "corrected_separately": ["raw_wilcoxon_p", "adj_wilcoxon_p"],
         "untestable_p_held_at": 1.0,
         "label_threshold_q": 0.05,
