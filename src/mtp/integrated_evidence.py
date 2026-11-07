@@ -2727,9 +2727,9 @@ def _provenance_sources(
 ) -> list[Path]:
     """Collect locators the portable record binds, excluding hash-only core inputs.
 
-    Workflows can check existing direct assessment inputs before reading their
-    contents. The producer instead supplies parsed statuses, including metadata
-    and diagnostic locators that are only known after assessment parsing.
+    Direct assessment inputs can be checked before reading their contents. Parsed
+    statuses add the metadata and diagnostic locators retained by the semantic
+    readers; the producer and workflow preflight use the same collection rule.
     """
     source_paths = [path for path in native_paths.values() if path.is_file()]
     source_paths.extend(path for path in assessment_paths if path is not None and path.exists())
@@ -2747,6 +2747,67 @@ def _provenance_sources(
     if ora_profiles is not None:
         source_paths.append(ora_profiles)
     return source_paths
+
+
+def _read_assessment_statuses(
+    args: argparse.Namespace,
+    *,
+    profile_input: Path,
+    experiments_input: Path,
+    full_dump_input: Path,
+    supplied: Mapping[str, bool],
+) -> dict[str, AssessmentStatus]:
+    """Read selected assessments with the producer's exact input identities.
+
+    Retained source metadata and detail come from the semantic status readers,
+    not a raw JSON scan. Influence readers also validate native/review artifacts;
+    this preparation is not restricted to reading the status JSON itself.
+    """
+    assessment_inputs = {
+        "profile_sha256": _sha256(profile_input),
+        "experiments_sha256": _sha256(experiments_input),
+        "full_dump_sha256": _sha256(full_dump_input) if full_dump_input.is_file() else "",
+    }
+    return {
+        "calibration_status": read_status(
+            args.calibration_status,
+            "calibration_status",
+            "#182",
+            expected_input_sha256=assessment_inputs,
+            supplied=supplied["calibration_status"],
+        ),
+        "sensitivity_status": read_status(
+            args.sensitivity_status,
+            "sensitivity_status",
+            "#183",
+            expected_input_sha256=assessment_inputs,
+            supplied=supplied["sensitivity_status"],
+        ),
+        "coverage_status": read_status(
+            args.coverage_status,
+            "coverage_status",
+            "#184",
+            expected_input_sha256=assessment_inputs,
+            supplied=supplied["coverage_status"],
+        ),
+        "orientation_status": read_status(
+            args.orientation_provenance,
+            "orientation_status",
+            "#188",
+            expected_input_sha256=assessment_inputs,
+            supplied=supplied["orientation_provenance"],
+        ),
+        "taxon_influence_status": read_status(
+            args.influence_status,
+            "taxon_influence_status",
+            "#190",
+            expected_input_sha256={
+                "study_trait_profiles_wide.tsv": _sha256(profile_input),
+                "experiments.tsv": _sha256(experiments_input),
+            },
+            supplied=supplied["influence_status"],
+        ),
+    }
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -2928,53 +2989,13 @@ def main(argv: Sequence[str] | None = None) -> int:
                 + ", ".join(missing_rows)
             )
 
-    assessment_inputs = {
-        "profile_sha256": _sha256(args.profile_input),
-        "experiments_sha256": _sha256(args.experiments_input),
-        "full_dump_sha256": (
-            _sha256(args.full_dump_input) if args.full_dump_input.is_file() else ""
-        ),
-    }
-    statuses = {
-        "calibration_status": read_status(
-            args.calibration_status,
-            "calibration_status",
-            "#182",
-            expected_input_sha256=assessment_inputs,
-            supplied=assessment_supplied["calibration_status"],
-        ),
-        "sensitivity_status": read_status(
-            args.sensitivity_status,
-            "sensitivity_status",
-            "#183",
-            expected_input_sha256=assessment_inputs,
-            supplied=assessment_supplied["sensitivity_status"],
-        ),
-        "coverage_status": read_status(
-            args.coverage_status,
-            "coverage_status",
-            "#184",
-            expected_input_sha256=assessment_inputs,
-            supplied=assessment_supplied["coverage_status"],
-        ),
-        "orientation_status": read_status(
-            args.orientation_provenance,
-            "orientation_status",
-            "#188",
-            expected_input_sha256=assessment_inputs,
-            supplied=assessment_supplied["orientation_provenance"],
-        ),
-        "taxon_influence_status": read_status(
-            args.influence_status,
-            "taxon_influence_status",
-            "#190",
-            expected_input_sha256={
-                "study_trait_profiles_wide.tsv": _sha256(args.profile_input),
-                "experiments.tsv": _sha256(args.experiments_input),
-            },
-            supplied=assessment_supplied["influence_status"],
-        ),
-    }
+    statuses = _read_assessment_statuses(
+        args,
+        profile_input=args.profile_input,
+        experiments_input=args.experiments_input,
+        full_dump_input=args.full_dump_input,
+        supplied=assessment_supplied,
+    )
     if args.require_complete_sources:
         # A status that cannot be read, or that belongs to other input bytes, is no more
         # complete than a missing one (#844). A status that declares no input hashes is

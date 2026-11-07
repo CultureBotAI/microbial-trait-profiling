@@ -824,6 +824,10 @@ classes:
         ifabsent: string(group_1_vs_group_0)
         title: Direction basis
         description: Upstream direction semantics; disease-oriented inputs must not be reversed a second time.
+      provenance_root_supplied:
+        range: boolean
+        title: Provenance root supplied
+        description: Whether this execution received an explicit provenance root; new runs record true or false without a root locator. Absent historical values mean unrecorded, not false.
       scope:
         required: true
         pattern: ^standard_analysis_calibration_and_optional_figures$
@@ -1226,6 +1230,10 @@ classes:
         required: true
         title: Direction basis
         description: Shared direction basis verified across core and all three arms.
+      provenance_root_supplied:
+        range: boolean
+        title: Provenance root supplied
+        description: Whether this execution received an explicit provenance root; new runs record true or false without a root locator. Absent historical values mean unrecorded, not false.
       status:
         range: ExecutionStatus
         required: true

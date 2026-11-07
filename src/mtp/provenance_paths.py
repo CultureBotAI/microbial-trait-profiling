@@ -27,7 +27,7 @@ _KIND = "root-relative-v1"
 _SUPPLIED_KIND = "supplied-root-v1"
 _LOCAL_PATH = compile_absolute_local_paths(flags=re.IGNORECASE, classified=False)
 _SLASHLESS_LOCAL_PATH = re.compile(
-    r"(?<![\w])(?:(?:Users|home)/[A-Za-z0-9._-]+"
+    r"(?<![\w-])(?:(?:Users|home)/[A-Za-z0-9._-]+"
     r"|(?:private/)?var/folders(?=/)|private/tmp(?=/))",
     re.IGNORECASE,
 )

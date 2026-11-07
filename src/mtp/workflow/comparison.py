@@ -661,6 +661,8 @@ def execute_comparison_run(
             ie_argv,
             count_profiles=artifact_path(core_run, "count_profiles"),
             ora_profiles=artifact_path(core_run, "ora_profiles"),
+            experiments=artifact_path(core_run, "experiments"),
+            full_dump=artifact_path(core_run, "raw_dump"),
             root=provenance_root,
             planned_files=() if arm1_pooled_stats is not None else (pooled_stats_path,),
         )
@@ -697,6 +699,7 @@ def execute_comparison_run(
         id=f"comparison-{contrast_population}-{uuid.uuid4().hex[:12]}",
         contrast_population=contrast_population,
         direction_basis=direction_basis,
+        provenance_root_supplied=provenance_root is not None,
         status=ExecutionStatus.completed,
         started_at=started_at,
         ended_at=ended_at,

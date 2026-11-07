@@ -146,6 +146,81 @@ class ReachedNextStage(Exception):
 
 
 @pytest.mark.parametrize("workflow", ["comparison", "noel"])
+def test_workflow_metadata_preflight_receives_verified_core_identities(
+    inputs: Inputs,
+    monkeypatch: pytest.MonkeyPatch,
+    workflow: str,
+) -> None:
+    """Route verified identities into the semantic reader, before output creation."""
+    output = inputs.root / f"{workflow}-metadata-output"
+    seen: list[tuple[Path, Path, Path]] = []
+
+    def capture(
+        _args: object,
+        *,
+        profile_input: Path,
+        experiments_input: Path,
+        full_dump_input: Path,
+        supplied: object,
+    ) -> dict[str, integrated_evidence.AssessmentStatus]:
+        seen.append((profile_input, experiments_input, full_dump_input))
+        assert profile_input == inputs.products["count_profiles"]
+        assert experiments_input == inputs.products["experiments"]
+        assert full_dump_input == inputs.products["raw_dump"]
+        assert isinstance(supplied, dict)
+        raise ReachedNextStage
+
+    def planner(context: ArmContext) -> list[Command]:
+        # The semantic reader is intercepted; no status or science is fabricated.
+        return [
+            Command(
+                "integrated_evidence",
+                (
+                    sys.executable,
+                    "-m",
+                    "mtp.integrated_evidence",
+                    "--core-run",
+                    str(context.manifest),
+                    "--coverage-status",
+                    str(context.products["experiments"]),
+                ),
+                (context.manifest, context.products["experiments"]),
+                (output / "integrated_evidence/result.tsv",),
+            )
+        ]
+
+    monkeypatch.setattr(integrated_evidence, "_read_assessment_statuses", capture)
+
+    def invoke() -> None:
+        if workflow == "comparison":
+            invoke_comparison(inputs, output, inputs.root)
+        else:
+            runtime.execute_arm(
+                "noel",
+                inputs.manifests["core"],
+                output,
+                planner,
+                provenance_root=inputs.root,
+            )
+
+    try:
+        with pytest.raises(ReachedNextStage):
+            invoke()
+    except TypeError as error:
+        raise AssertionError(
+            "Every workflow must forward the required verified identity paths"
+        ) from error
+    assert seen == [
+        (
+            inputs.products["count_profiles"],
+            inputs.products["experiments"],
+            inputs.products["raw_dump"],
+        )
+    ]
+    assert not output.exists()
+
+
+@pytest.mark.parametrize("workflow", ["comparison", "noel"])
 @pytest.mark.parametrize(
     "kind",
     ["missing", "file", "home", "temporary-boundary", "filesystem-root", "excludes-sources"],
@@ -571,6 +646,8 @@ def test_future_native_child_of_an_earlier_output_directory_is_checked(
             ["--core-run", str(inputs.manifests["core"]), "--full-screen", str(selected)],
             count_profiles=inputs.products["count_profiles"],
             ora_profiles=inputs.products["ora_profiles"],
+            experiments=inputs.products["experiments"],
+            full_dump=inputs.products["raw_dump"],
             root=inputs.root,
             planned_files=(previous_output,),
         )

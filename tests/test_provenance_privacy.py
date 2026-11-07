@@ -45,6 +45,80 @@ def private_environment(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict
     return {"home": home, "passwd_home": passwd_home, "temporary": temporary}
 
 
+@pytest.mark.parametrize(
+    "directory", ["noel-delta-home", "noel-delta-HOME", "noel-delta-house", "homework"]
+)
+@pytest.mark.parametrize("operation", ["create", "encode"])
+def test_hyphenated_directory_is_not_a_slashless_home_prefix(
+    private_environment: dict[str, Path], api: ModuleType, directory: str, operation: str
+) -> None:
+    """The encoded child, rather than the discarded source root, contains the name (#1843)."""
+    root = private_environment["temporary"] / "bundle"
+    source = root / directory / "input.tsv"
+    source.parent.mkdir(parents=True)
+    source.write_text("retained source bytes\n", encoding="utf-8")
+    record = root / "records" / "provenance.json"
+    record.parent.mkdir()
+    try:
+        paths = (
+            api.PortablePaths.create(record, [source], root=root)
+            if operation == "create"
+            else api.PortablePaths(record.resolve(), root.resolve())
+        )
+        reference = {"path": paths.encode(source), "sha256": file_sha256(source)}
+        payload = {"path_basis": paths.declaration, "source": reference}
+        text = json.dumps(payload)
+        api.assert_portable_text(text)
+        record.write_text(text, encoding="utf-8")
+        restored = json.loads(record.read_text(encoding="utf-8"))
+        actual = api.verify_reference(record, restored["source"], path_basis=restored["path_basis"])
+    except ValueError as error:
+        raise AssertionError("An internal hyphen does not begin a local home prefix") from error
+    assert reference["path"] == directory + "/input.tsv"
+    assert restored["source"] == reference
+    assert actual == source.resolve()
+    assert file_sha256(actual) == reference["sha256"]
+
+
+@pytest.mark.parametrize(
+    "parts",
+    [
+        ("HOME", "anotheraccount", "input.tsv"),
+        ("Users", "anotheraccount", "input.tsv"),
+        ("private", "tmp", "run", "input.tsv"),
+        ("var", "folders", "run", "input.tsv"),
+    ],
+)
+@pytest.mark.parametrize("context", ["bare", "json", "prose", "absolute"])
+def test_real_local_prefixes_remain_private_in_text_contexts(
+    api: ModuleType, parts: tuple[str, ...], context: str
+) -> None:
+    """Narrowing the hyphen case must retain quoted and whitespace backstops (#1843)."""
+    relative = "/".join(parts)
+    if context == "json":
+        text = json.dumps({"source": {"path": relative}})
+    elif context == "prose":
+        text = "Unable to read " + relative + "; retry."
+    elif context == "absolute":
+        text = "/" + relative
+    else:
+        text = relative
+    with pytest.raises(ValueError, match="Provenance contains a local path or local prefix"):
+        api.assert_portable_text(text)
+
+
+def test_hyphenated_home_still_identifies_an_account_actually_named_home(
+    private_environment: dict[str, Path], api: ModuleType, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The prefix fix cannot relax the separate writer account-token boundary (#1843)."""
+    root = private_environment["temporary"] / "bundle"
+    root.mkdir()
+    source = root / "noel-delta-home" / "input.tsv"
+    monkeypatch.setattr(api, "_account_names", lambda: {"home"})
+    with pytest.raises(ValueError, match="Provenance contains a local account name"):
+        api.PortablePaths.create(root / "record.json", [source], root=root)
+
+
 @pytest.mark.parametrize("boundary", ["home", "passwd_home", "temporary"])
 @pytest.mark.parametrize("ancestor", [False, True])
 @pytest.mark.parametrize("reader", [False, True])

@@ -500,6 +500,8 @@ def execute_arm(
                     command.argv[3:],
                     count_profiles=context.products["count_profiles"],
                     ora_profiles=context.products["ora_profiles"],
+                    experiments=context.products["experiments"],
+                    full_dump=context.products["raw_dump"],
                     root=provenance_root,
                     planned_files=previous_outputs,
                 )
@@ -520,6 +522,7 @@ def execute_arm(
         profile_product=profile,
         contrast_population=bundle.run.contrast_population,
         direction_basis=bundle.run.direction_basis,
+        provenance_root_supplied=provenance_root is not None,
         git_commit=commit,
         git_dirty=dirty,
         repository_path=str(repository),

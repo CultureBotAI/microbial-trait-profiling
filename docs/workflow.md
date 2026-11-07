@@ -303,10 +303,15 @@ profiles and experiments are hashed without locators; they need not lie beneath
 this root. Noel checks ORA profiles and its output
 layout before planning, then checks sources selected by the actual integrated-evidence
 arguments and earlier planned outputs before execution. Missing optional assessments
-that no earlier step produces do not acquire locators. Both checks share the producer's
-source selector and path policy. The final producer still validates
-actual files and references inside metadata; preflight cannot guarantee that
-later filesystem changes or newly produced metadata will be acceptable.
+that no earlier step produces do not acquire locators. Existing assessment files are
+parsed with the producer's status reader and the verified core input identities;
+the check includes the metadata and diagnostic locators that reader retains. This
+also uses the native influence reader where applicable, rather than scanning JSON
+strings for paths. Both checks share the producer's source selector and path policy.
+The workflow preflight requires `--core-run`; the standalone integrated-evidence CLI
+still supports its existing no-core inputs. The final producer rechecks actual files
+and references inside metadata; preflight cannot guarantee that later filesystem
+changes or newly produced metadata will be acceptable.
 
 Noel's own outputs are bound sources, so its root must contain its located core
 and native inputs and arm output. The option can select an accepted root at or above the
@@ -322,9 +327,20 @@ outside its supplied root declares `supplied-root-v1`; verifying its source
 references requires `just verify-integrated-provenance RECORD
 --provenance-root ROOT`. Noel retains the option in its hash-bound command plan.
 Omitting it preserves the existing commands, parameters and root inference.
-The comparison manifest does not separately declare that this option was supplied;
-a portable workflow-level flag remains a schema follow-up (#1820). Noel's plan
-and the integrated record retain their existing provenance conventions.
+New `ArmRun` and `ComparisonRun` records also declare `provenance_root_supplied`
+as `true` or `false`, including `false` for Jed and Ilyas, which do not accept the
+option. This field contains only the execution decision, never a root locator.
+An absent or null field on a historical record means unrecorded, not false; old
+records remain readable without rewriting them. The declaration does not identify
+which root was used or replace the integrated record's path basis and verification
+requirements. Noel's plan and the integrated record retain their existing
+provenance conventions.
+
+An internal hyphen in an ordinary directory name such as `noel-delta-home` does
+not start a local home prefix. Actual home prefixes, including quoted or embedded
+ones, remain refused. The separate writer-account check still refuses a directory
+containing the writer's account token, including two- and three-character names
+(the generic `root` login and single-character names retain their existing exemptions).
 
 Verification derives each analysis basis again from the verified core: its recorded
 strain rollup scope, its feature catalog and the retained features of its count and ORA
