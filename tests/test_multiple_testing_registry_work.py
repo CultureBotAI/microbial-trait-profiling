@@ -18,6 +18,8 @@ from test_multiple_testing_registry import (
 )
 from test_multiple_testing_registry_derived import PREFIX, source
 
+DERIVATION_HEADROOM_DIVISOR = 16
+
 
 def nested_derivation(depth: int) -> str:
     body = PREFIX + "result = np.clip(q * harmonic_sum, 0, 1)\n"
@@ -56,11 +58,18 @@ def check_repository_derivation_headroom(root: Path) -> None:
         if "BY" in anchor.get("derived_procedures", {})
     }
     assert anchors, "The registry must supply real derived-BY headroom cases"
-    limits = replace(DEFAULT_LIMITS, derivation_steps=DEFAULT_LIMITS.derivation_steps // 16)
+    limits = replace(
+        DEFAULT_LIMITS,
+        derivation_steps=DEFAULT_LIMITS.derivation_steps // DERIVATION_HEADROOM_DIVISOR,
+    )
     discovered, _ = discover(repository_sources(root), limits=limits)
     # Claims provide a non-vacuity check, never the source-selection rule.
     for anchor in sorted(anchors):
-        assert "BY" in discovered[anchor].get("derived_procedures", set()), anchor
+        name = f"{anchor[0]}:{anchor[1]}"
+        assert anchor in discovered, f"Missing derived-BY headroom anchor: {name}"
+        assert "BY" in discovered[anchor].get("derived_procedures", set()), (
+            f"Uncredited derived-BY headroom anchor: {name}"
+        )
 
 
 def test_all_repository_candidates_use_at_most_sixteenth_of_default_budget() -> None:

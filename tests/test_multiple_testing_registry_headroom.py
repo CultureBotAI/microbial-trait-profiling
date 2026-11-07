@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 from dataclasses import replace
 from pathlib import Path
+from typing import Any
 
 import pytest
 import yaml
@@ -93,3 +94,98 @@ def test_cheap_unclaimed_candidates_remain_eligible_for_headroom_checking(
         raise AssertionError(
             "An unclaimed candidate with ample headroom must be accepted"
         ) from error
+
+
+def test_declared_headroom_divisor_is_exactly_sixteen() -> None:
+    assert getattr(work, "DERIVATION_HEADROOM_DIVISOR", None) == 16
+
+
+def test_headroom_discovery_uses_exactly_one_sixteenth(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    sources, _ = repository_fixture(tmp_path, "scripts", depth=0, claimed=False)
+    calls: list[tuple[dict[str, str], guard.Limits]] = []
+    original = guard.discover
+
+    def record_discovery(
+        inputs: guard.Sources, *, limits: guard.Limits = guard.DEFAULT_LIMITS
+    ) -> tuple[dict[tuple[str, str], dict[str, Any]], set[tuple[str, str]]]:
+        materialized = dict(inputs)
+        calls.append((materialized, limits))
+        return original(materialized, limits=limits)
+
+    monkeypatch.setattr(work, "discover", record_discovery)
+    work.check_repository_derivation_headroom(tmp_path)
+    assert calls == [
+        (
+            sources,
+            replace(
+                guard.DEFAULT_LIMITS,
+                derivation_steps=guard.DEFAULT_LIMITS.derivation_steps // 16,
+            ),
+        )
+    ]
+
+
+def test_depth_seven_candidate_fits_fifteenth_but_exceeds_headroom(tmp_path: Path) -> None:
+    # This narrower witness distinguishes a sixteenth from even a fifteenth;
+    # the original depth-eight fixture cannot distinguish an eighth.
+    sources, extra_path = repository_fixture(tmp_path, "scripts", depth=7, claimed=False)
+    fifteenth = replace(
+        guard.DEFAULT_LIMITS, derivation_steps=guard.DEFAULT_LIMITS.derivation_steps // 15
+    )
+    try:
+        discovered, _ = guard.discover(sources, limits=fifteenth)
+    except guard.DiscoveryLimitError as error:
+        raise AssertionError("The boundary control must fit the fifteenth budget") from error
+    assert discovered[(extra_path, "screen")]["derived_procedures"] == {"BY"}
+    with pytest.raises(
+        guard.DiscoveryLimitError,
+        match=rf"derivation work budget exceeded: {re.escape(extra_path)}:screen ",
+    ):
+        work.check_repository_derivation_headroom(tmp_path)
+
+
+def test_missing_claimed_anchor_is_reported_by_an_assertion(tmp_path: Path) -> None:
+    repository_fixture(tmp_path, "scripts", depth=0, claimed=False)
+    (tmp_path / "src/x.py").write_text("def unrelated(value):\n    return value\n")
+    discovered, _ = guard.discover(guard.repository_sources(tmp_path))
+    assert ("src/x.py", "screen") not in discovered
+    try:
+        with pytest.raises(
+            AssertionError, match=r"Missing derived-BY headroom anchor: src/x\.py:screen"
+        ):
+            work.check_repository_derivation_headroom(tmp_path)
+    except KeyError as error:
+        raise AssertionError(
+            "A missing claimed anchor must produce a named assertion, not KeyError"
+        ) from error
+
+
+def test_present_but_uncredited_claim_names_its_anchor(tmp_path: Path) -> None:
+    repository_fixture(tmp_path, "scripts", depth=0, claimed=False)
+    (tmp_path / "src/x.py").write_text(
+        "from mtp.enrichment_stats import benjamini_hochberg\n"
+        "def screen(p):\n    return benjamini_hochberg(p)\n"
+    )
+    discovered, _ = guard.discover(guard.repository_sources(tmp_path))
+    assert ("src/x.py", "screen") in discovered
+    assert "BY" not in discovered[("src/x.py", "screen")].get("derived_procedures", set())
+    with pytest.raises(
+        AssertionError, match=r"Uncredited derived-BY headroom anchor: src/x\.py:screen"
+    ):
+        work.check_repository_derivation_headroom(tmp_path)
+
+
+def test_headroom_requires_at_least_one_declared_derived_anchor(tmp_path: Path) -> None:
+    repository_fixture(tmp_path, "scripts", depth=0, claimed=False)
+    registry_path = tmp_path / guard.REGISTRY.relative_to(guard.ROOT)
+    registry = yaml.safe_load(registry_path.read_text(encoding="utf-8"))
+    for family in registry["families"]:
+        for anchor in family["anchors"]:
+            anchor.pop("derived_procedures", None)
+    registry_path.write_text(yaml.safe_dump(registry), encoding="utf-8")
+    with pytest.raises(
+        AssertionError, match="The registry must supply real derived-BY headroom cases"
+    ):
+        work.check_repository_derivation_headroom(tmp_path)
