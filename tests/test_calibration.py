@@ -858,7 +858,9 @@ def test_calibration_summary_marks_p_value_columns_as_uncorrected_diagnostics(
 
     import mtp.calibration as cal
 
-    runs = [[Outcome("p", "a", 0.02, 0.04, scored=40)]]
+    # #1746: p <= 0.05 < q distinguishes nominal per-test rejections_p (1) from
+    # corrected FAMILY rejections_p / rejections_q (0).
+    runs = [[Outcome("p", "a", 0.02, 0.12, scored=40)]]
     rows = summarize(runs, _scenario(), None)
     row = next(r for r in rows if r["label"] == "a")
     family = next(r for r in rows if r["label"] == "FAMILY")
@@ -870,17 +872,48 @@ def test_calibration_summary_marks_p_value_columns_as_uncorrected_diagnostics(
     assert "attainable_p_below_alpha" in row
     assert "attainable_p_above_alpha" in row
     assert "exact_size_at_median_scored" in row
+    assert row["rejections_p"] == 1
+    assert row["rejection_rate_p"] == pytest.approx(1.0)
+    assert row["rejections_q"] == 0
+    assert row["rejection_rate_q"] == pytest.approx(0.0)
     assert row["p_value_diagnostics_role"] == "calibration_diagnostic"
     assert row["p_value_diagnostics_correction"] == "none (nominal)"
     assert "p_value_diagnostics_role" not in family
     assert "p_value_diagnostics_correction" not in family
+    assert family["rejections_p"] == 0
+    assert family["rejections_q"] == 0
+    assert family["rejection_rate_p"] == pytest.approx(0.0)
+    assert family["rejection_rate_q"] == pytest.approx(0.0)
+    # The FAMILY interval counts replicates with any q <= 0.05, not nominal p (#1794).
+    assert (family["rejection_rate_p_ci_low"], family["rejection_rate_p_ci_high"]) == (
+        pytest.approx(cal._interval(0, 1))
+    )
     assert family["rejections_p"] == family["rejections_q"]
     assert family["rejection_rate_p"] == family["rejection_rate_q"]
 
     (rep_row,) = replicate_counts(runs, _scenario(), None)
     assert rep_row["null_tests_rejected_p"] == 1
+    assert rep_row["family_rejected_q"] == 0
     assert rep_row["p_value_diagnostics_role"] == "calibration_diagnostic"
     assert rep_row["p_value_diagnostics_correction"] == "none (nominal)"
+
+    mixed_runs = [
+        [Outcome("p", "a", 0.02, 0.12, scored=40)],
+        [Outcome("p", "a", 0.02, 0.04, scored=40)],
+    ]
+    mixed_rows = summarize(mixed_runs, _scenario(), None)
+    mixed_row = next(r for r in mixed_rows if r["label"] == "a")
+    mixed_family = next(r for r in mixed_rows if r["label"] == "FAMILY")
+    assert mixed_row["rejections_p"] == 2
+    assert mixed_row["rejections_q"] == 1
+    assert mixed_family["rejections_p"] == 1
+    assert mixed_family["rejections_q"] == 1
+    assert mixed_family["rejection_rate_p"] == pytest.approx(0.5)
+    assert mixed_family["rejection_rate_q"] == pytest.approx(0.5)
+    assert (
+        mixed_family["rejection_rate_p_ci_low"],
+        mixed_family["rejection_rate_p_ci_high"],
+    ) == pytest.approx(cal._interval(1, 2))
 
     note = str(cal.P_VALUE_DIAGNOSTICS_NOTE)
     assert note == (
