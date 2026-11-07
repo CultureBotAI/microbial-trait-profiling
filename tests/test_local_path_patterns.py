@@ -16,6 +16,7 @@ from mtp import provenance_paths as writer
 
 ROOT = Path(__file__).resolve().parents[1]
 HOME = "/" + "Users" + "/" + "example"
+DOTTED_HOME = "/" + "Users" + "/" + "first.last"
 LINUX_HOME = "/" + "home" + "/" + "example"
 TEMP = "/" + "private" + "/" + "var" + "/" + "folders"
 WINDOWS = "C:" + "\\" + "Users" + "\\"
@@ -24,6 +25,7 @@ ESCAPED_WINDOWS = "C:" + "\\\\" + "Users" + "\\\\"
 MatchRow = tuple[tuple[int, int], str, str | None]
 CANONICAL_CASES = (
     pytest.param("a " + HOME + "/data", [((2, 16), HOME, "user_home")], id="macos"),
+    pytest.param(DOTTED_HOME + "/data", [((0, 17), DOTTED_HOME, "user_home")], id="dotted-name"),
     pytest.param(LINUX_HOME, [((0, 13), LINUX_HOME, "user_home")], id="linux-name-end"),
     pytest.param(
         "/" + "System/Volumes/Data" + HOME,
@@ -143,6 +145,48 @@ def test_provenance_keeps_its_additional_case_and_slashless_checks(text: str) ->
         writer.assert_portable_text(text)
 
 
+def test_shared_posix_matches_keep_their_slashless_provenance_rejection() -> None:
+    """Check the relation on current spellings and candidates for future root changes."""
+    shared = shared_module()
+    absolute = shared.compile_absolute_local_paths(flags=re.IGNORECASE, classified=True)
+    home_roots = ("Users", "home", "people", "accounts", "Volumes", "mnt", "media")
+    names = ("example", "first.last", "dash-name", "under_score", "mixed.4_-")
+    temp_roots = (
+        ("var", "folders"),
+        ("private", "var", "folders"),
+        ("private", "tmp"),
+        ("var", "tmp"),
+        ("tmp",),
+    )
+    candidates = ["/" + root + "/" + name for root in home_roots for name in names]
+    candidates.extend("/" + "/".join(parts) for parts in temp_roots)
+    checked = 0
+    families: set[str | None] = set()
+    for candidate in candidates:
+        for spelling in (candidate, candidate.upper()):
+            for suffix in ("", "/", "/leaf"):
+                text = spelling + suffix
+                for match in absolute.finditer(text):
+                    if not match.group(0).startswith("/"):
+                        continue  # A drive-qualified Windows path has no leading slash to remove.
+                    # Keep the original suffix: temp-root matches rely on its next slash.
+                    slashless = "tag " + match.group(0)[1:] + text[match.end() :]
+                    found = writer._SLASHLESS_LOCAL_PATH.search(slashless)
+                    assert found is not None, (
+                        f"Shared POSIX match lost after slash removal: {text!r}"
+                    )
+                    assert found.span() == (4, 4 + len(match.group(0)) - 1)
+                    with pytest.raises(
+                        ValueError, match="Provenance contains a local path or local prefix"
+                    ):
+                        writer.assert_portable_text(slashless)
+                    checked += 1
+                    families.add(match.lastgroup)
+    # Ten current home spellings in two cases with three suffixes, plus temp cases.
+    assert checked >= 60
+    assert families == {"user_home", "temp_root"}
+
+
 @pytest.mark.parametrize(
     "text",
     [
@@ -228,6 +272,27 @@ def test_guard_uses_the_shared_compiler_result_for_scanning(
     assert consumer._scan_records((("example.json", "fixture", "SHARED_HOME_MARKER"),)) == {}
 
 
+@pytest.mark.parametrize(
+    ("source_name", "pattern_name", "marker"),
+    [
+        ("USER_HOME_SOURCE", "USER_HOME_PATTERN", "shared_home_source_marker"),
+        ("TEMP_ROOT_SOURCE", "MACOS_TEMP_ROOT_PATTERN", "shared_temp_source_marker"),
+    ],
+)
+def test_guard_family_patterns_use_the_shared_source_value(
+    monkeypatch: pytest.MonkeyPatch, source_name: str, pattern_name: str, marker: str
+) -> None:
+    shared = shared_module()
+    monkeypatch.setattr(shared, source_name, marker)
+    consumer = isolated_consumer(
+        "tests/test_no_absolute_local_paths.py", "_guard_family_source_connection", monkeypatch
+    )
+    pattern = getattr(consumer, pattern_name)
+    assert pattern.pattern == marker
+    assert matches(pattern, "prefix " + marker) == [((7, 7 + len(marker)), marker, None)]
+    assert matches(pattern, marker.upper()) == []
+
+
 def test_provenance_uses_the_shared_compiler_result_for_refusal(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -246,3 +311,7 @@ def test_shared_pattern_module_and_tests_do_not_match_the_guard() -> None:
     names = ("src/mtp/local_path_patterns.py", "tests/test_local_path_patterns.py")
     records = tuple((name, "fixture", (ROOT / name).read_text(encoding="utf-8")) for name in names)
     assert guard._scan_records(records) == {}
+
+
+def test_shared_pattern_module_is_a_required_guard_input() -> None:
+    assert "src/mtp/local_path_patterns.py" in guard.REQUIRED_SCANNED

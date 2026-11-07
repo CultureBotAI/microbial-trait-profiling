@@ -91,6 +91,7 @@ REQUIRED_SCANNED: frozenset[str] = frozenset(
         "docs/reviews/2026-10-19-ora-provenance-refresh.md",
         "pyproject.toml",
         "src/mtp/__init__.py",
+        "src/mtp/local_path_patterns.py",
         "tests/test_no_absolute_local_paths.py",
     }
 )
