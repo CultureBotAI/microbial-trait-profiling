@@ -76,7 +76,7 @@ def test_headroom_refuses_a_candidate_that_fits_the_full_and_quarter_budgets(
     assert quarter_discovered[(extra_path, "screen")]["derived_procedures"] == {"BY"}
     with pytest.raises(
         guard.DiscoveryLimitError,
-        match=rf"derivation work budget exceeded: {re.escape(extra_path)}:screen ",
+        match=rf"^derivation work budget exceeded: {re.escape(extra_path)}:screen ",
     ):
         work.check_repository_derivation_headroom(tmp_path)
 
@@ -122,6 +122,7 @@ def test_headroom_discovery_uses_exactly_one_sixteenth(
             replace(
                 guard.DEFAULT_LIMITS,
                 derivation_steps=guard.DEFAULT_LIMITS.derivation_steps // 16,
+                file_derivation_steps=guard.DEFAULT_LIMITS.file_derivation_steps // 16,
             ),
         )
     ]
@@ -141,7 +142,70 @@ def test_depth_seven_candidate_fits_fifteenth_but_exceeds_headroom(tmp_path: Pat
     assert discovered[(extra_path, "screen")]["derived_procedures"] == {"BY"}
     with pytest.raises(
         guard.DiscoveryLimitError,
-        match=rf"derivation work budget exceeded: {re.escape(extra_path)}:screen ",
+        match=rf"^derivation work budget exceeded: {re.escape(extra_path)}:screen ",
+    ):
+        work.check_repository_derivation_headroom(tmp_path)
+
+
+def multiple_candidate_repository_fixture(root: Path, copies: int) -> tuple[dict[str, str], str]:
+    """Put independently named candidates in one ignored, unclaimed source file."""
+    sources, extra_path = repository_fixture(root, "scripts", depth=6, claimed=False)
+    header, separator, function = sources[extra_path].partition("def screen")
+    assert separator == "def screen"
+    sources[extra_path] = header + "".join(
+        f"def screen_{index}" + function for index in range(copies)
+    )
+    (root / extra_path).write_text(sources[extra_path], encoding="utf-8")
+    assert dict(guard.repository_sources(root)) == sources
+    return sources, extra_path
+
+
+def test_two_candidates_in_one_file_retain_both_sixteenth_allowances(tmp_path: Path) -> None:
+    sources, extra_path = multiple_candidate_repository_fixture(tmp_path, 2)
+    limits = replace(
+        guard.DEFAULT_LIMITS,
+        derivation_steps=guard.DEFAULT_LIMITS.derivation_steps // 16,
+        file_derivation_steps=guard.DEFAULT_LIMITS.file_derivation_steps // 16,
+    )
+    try:
+        discovered, _ = guard.discover(sources, limits=limits)
+    except guard.DiscoveryLimitError as error:
+        raise AssertionError("Two candidates must fit both sixteenth allowances") from error
+    assert {anchor: site["derived_procedures"] for anchor, site in discovered.items()} == {
+        ("src/x.py", "screen"): {"BY"},
+        (extra_path, "screen_0"): {"BY"},
+        (extra_path, "screen_1"): {"BY"},
+    }
+    try:
+        work.check_repository_derivation_headroom(tmp_path)
+    except guard.DiscoveryLimitError as error:
+        raise AssertionError("The headroom helper must admit the two-candidate file") from error
+
+
+def test_file_headroom_refuses_three_individually_small_candidates(tmp_path: Path) -> None:
+    # Each candidate fits the function sixteenth; together they fit a file eighth
+    # but exceed a file sixteenth. No expected work count is read from the checker.
+    sources, extra_path = multiple_candidate_repository_fixture(tmp_path, 3)
+    limits = replace(
+        guard.DEFAULT_LIMITS,
+        derivation_steps=guard.DEFAULT_LIMITS.derivation_steps // 16,
+        file_derivation_steps=guard.DEFAULT_LIMITS.file_derivation_steps // 8,
+    )
+    try:
+        discovered, _ = guard.discover(sources, limits=limits)
+    except guard.DiscoveryLimitError as error:
+        raise AssertionError(
+            "Three candidates must fit the function sixteenth and file eighth"
+        ) from error
+    assert {anchor: site["derived_procedures"] for anchor, site in discovered.items()} == {
+        ("src/x.py", "screen"): {"BY"},
+        (extra_path, "screen_0"): {"BY"},
+        (extra_path, "screen_1"): {"BY"},
+        (extra_path, "screen_2"): {"BY"},
+    }
+    with pytest.raises(
+        guard.DiscoveryLimitError,
+        match=rf"^per-file derivation work budget exceeded: {re.escape(extra_path)}:screen_2 ",
     ):
         work.check_repository_derivation_headroom(tmp_path)
 

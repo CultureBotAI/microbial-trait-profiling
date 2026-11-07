@@ -51,7 +51,7 @@ def test_ordinary_derivations_still_provide_a_witness(text: str) -> None:
 
 
 def check_repository_derivation_headroom(root: Path) -> None:
-    """Reserve headroom for every analysed candidate, including unclaimed ones."""
+    """Reserve function and file headroom, including unclaimed candidates."""
     registry = yaml.safe_load((root / REGISTRY.relative_to(ROOT)).read_text(encoding="utf-8"))
     anchors: set[tuple[str, str]] = {
         (anchor["path"], anchor["function"])
@@ -63,6 +63,7 @@ def check_repository_derivation_headroom(root: Path) -> None:
     limits = replace(
         DEFAULT_LIMITS,
         derivation_steps=DEFAULT_LIMITS.derivation_steps // DERIVATION_HEADROOM_DIVISOR,
+        file_derivation_steps=DEFAULT_LIMITS.file_derivation_steps // DERIVATION_HEADROOM_DIVISOR,
     )
     discovered, _ = discover(repository_sources(root), limits=limits)
     # Claims provide a non-vacuity check, never the source-selection rule.
