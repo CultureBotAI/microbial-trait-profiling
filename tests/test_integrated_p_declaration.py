@@ -2,18 +2,21 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import re
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import replace
 from pathlib import Path
 
 import mtp.integrated_evidence as evidence
+from mtp.integrated_provenance import verify_integrated_provenance
 
 FULL_TABLE = "integrated_evidence.tsv"
 METHOD_TABLE = "integrated_evidence_method_results.tsv"
 VALUE_POLICY = {
     "finite": "nominal",
-    "missing_or_nonfinite": "not_tested",
+    "missing_or_nonfinite": "no_finite_value",
     "correction": "none",
 }
 
@@ -150,6 +153,50 @@ def test_dictionary_explains_both_nominal_columns_and_the_missing_value_policy()
     assert re.search(r"\bnative_pair_q_value\b[^;.]*\bcorrected\b", secondary)
     policy = meanings.get("nominal_p_columns (provenance)")
     assert policy is not None, "The provenance declaration needs its own dictionary entry"
-    assert re.search(r"\bnot_tested\b[^.]*\bno finite\b", policy)
+    assert re.search(r"\bno_finite_value\b[^.]*\bno finite\b", policy)
     assert "export" in policy
     assert re.search(r"\bnot\b[^.]*\b(?:why|reason)\b", policy)
+
+
+def test_nominal_p_metadata_does_not_become_a_provenance_source(tmp_path: Path) -> None:
+    rows = [_record("primary", 0.0, None), _record("secondary", None, 0.5)]
+    declaration = _declare(rows, rows)
+    pending: list[object] = [declaration]
+    while pending:
+        value = pending.pop()
+        if isinstance(value, Mapping):
+            assert {"path", "sha256", "producer_relative_path"}.isdisjoint(value), (
+                "Nominal-p metadata must not use keys that identify provenance sources"
+            )
+            pending.extend(value.values())
+        elif isinstance(value, list):
+            pending.extend(value)
+
+    source = tmp_path / "source.tsv"
+    source_bytes = b"fixture\tvalue\nkept\t1\n"
+    source.write_bytes(source_bytes)
+    base_record = {
+        "version": "integrated-evidence-v2",
+        "native_sources": {
+            "fixture": {
+                "path": source.name,
+                "sha256": hashlib.sha256(source_bytes).hexdigest(),
+            }
+        },
+        "ora_eligibility_source": None,
+        "assessment_status": {},
+    }
+    path = tmp_path / "provenance.json"
+    expected_inventory = {
+        "verified_reference_count": 1,
+        "verified_references": ["native_sources.fixture"],
+        "skipped_reference_count": 0,
+        "skipped_references": [],
+    }
+    for record in (base_record, {**base_record, "nominal_p_columns": declaration}):
+        path.write_text(json.dumps(record), encoding="utf-8")
+        try:
+            verified = verify_integrated_provenance(path)
+        except ValueError as exc:
+            raise AssertionError("Count-only metadata must preserve source verification") from exc
+        assert {key: verified[key] for key in expected_inventory} == expected_inventory

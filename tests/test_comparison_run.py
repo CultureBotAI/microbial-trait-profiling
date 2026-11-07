@@ -325,7 +325,7 @@ def test_saved_nominal_p_declaration_matches_both_real_comparison_exports(
         "version": "nominal-p-columns-v1",
         "value_policy": {
             "finite": "nominal",
-            "missing_or_nonfinite": "not_tested",
+            "missing_or_nonfinite": "no_finite_value",
             "correction": "none",
         },
         "tables": tables,

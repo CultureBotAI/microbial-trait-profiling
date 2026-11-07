@@ -2240,7 +2240,7 @@ def nominal_p_columns(
     """Declare nominal p availability in the final exports, independently per column.
 
     Counts describe exported values, not correction families or numbers of tests.
-    ``not_tested`` means no finite value is exported in that column, without
+    ``no_finite_value`` means no finite value is exported in that column, without
     diagnosing why it is absent. Existing row-level test_status is unchanged.
     Secondary pair p values need not share the primary study test's availability.
     """
@@ -2259,12 +2259,14 @@ def nominal_p_columns(
                 "finite_nominal_rows": finite,
                 "missing_or_nonfinite_rows": len(rows) - finite,
             }
+        # Keep these count-only mappings free of path, sha256 and producer_relative_path:
+        # the provenance verifier treats any mapping with those keys as a source reference.
         tables[name] = {"row_count": len(rows), "columns": columns}
     return {
         "version": "nominal-p-columns-v1",
         "value_policy": {
             "finite": "nominal",
-            "missing_or_nonfinite": "not_tested",
+            "missing_or_nonfinite": "no_finite_value",
             "correction": "none",
         },
         "tables": tables,
@@ -2388,7 +2390,7 @@ DICTIONARY: tuple[tuple[str, str], ...] = (
     (
         "nominal_p_columns (provenance)",
         "the provenance declares both p columns independently for each TSV export; finite "
-        "values are nominal and not_tested means no finite value is exported in that column, "
+        "values are nominal and no_finite_value means no finite value is exported in that column, "
         "not why it is unavailable. Row-level test_status remains a separate field. "
         "These exported-value counts are not correction family sizes or counts of tests",
     ),
