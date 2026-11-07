@@ -2234,6 +2234,43 @@ def write_table(records: Sequence[Record], path: Path) -> Path:
     return path
 
 
+def nominal_p_columns(
+    records: Sequence[Record], method_records: Sequence[Record]
+) -> dict[str, object]:
+    """Declare nominal p availability in the final exports, independently per column.
+
+    Counts describe exported values, not correction families or numbers of tests.
+    ``not_tested`` means no finite value is exported in that column, without
+    diagnosing why it is absent. Existing row-level test_status is unchanged.
+    Secondary pair p values need not share the primary study test's availability.
+    """
+    tables = {}
+    for name, rows in (
+        ("integrated_evidence.tsv", records),
+        ("integrated_evidence_method_results.tsv", method_records),
+    ):
+        columns = {}
+        for column in ("p_value", "native_pair_p_value"):
+            finite = sum(
+                value is not None and math.isfinite(value)
+                for value in (getattr(record, column) for record in rows)
+            )
+            columns[column] = {
+                "finite_nominal_rows": finite,
+                "missing_or_nonfinite_rows": len(rows) - finite,
+            }
+        tables[name] = {"row_count": len(rows), "columns": columns}
+    return {
+        "version": "nominal-p-columns-v1",
+        "value_policy": {
+            "finite": "nominal",
+            "missing_or_nonfinite": "not_tested",
+            "correction": "none",
+        },
+        "tables": tables,
+    }
+
+
 def write_tidy_tsv(
     rows: Sequence[Mapping[str, object]], fieldnames: Sequence[str], path: Path
 ) -> Path:
@@ -2344,8 +2381,16 @@ DICTIONARY: tuple[tuple[str, str], ...] = (
     ),
     (
         "statistical_test / native_pair_p_value / native_pair_q_value",
-        "actual native test; composition pair-level values are secondary to study-level "
-        "inference and use a separate BH family of the same size",
+        "actual native test; native_pair_p_value is nominal; native_pair_q_value is "
+        "corrected within its declared family; composition pair-level values are secondary "
+        "to study-level inference and use a separate BH family of the same size",
+    ),
+    (
+        "nominal_p_columns (provenance)",
+        "the provenance declares both p columns independently for each TSV export; finite "
+        "values are nominal and not_tested means no finite value is exported in that column, "
+        "not why it is unavailable. Row-level test_status remains a separate field. "
+        "These exported-value counts are not correction family sizes or counts of tests",
     ),
     (
         "n_nonzero_experiments / n_zero_total_experiments / n_zero_total_excluded",
@@ -2920,6 +2965,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     portable = PortablePaths.create(provenance_path, source_paths, root=args.provenance_root)
     statuses = {key: _portable_status(status, portable) for key, status in statuses.items()}
     records = apply_statuses(records, statuses)
+    method_records = [record for record in records if not is_cell_row(record)]
     summary = summarize(records)
     families = family_inventory(records)
     feature_rows = feature_column_rows(records, columns)
@@ -2931,10 +2977,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     assert_portable_text(json.dumps([status.source for status in statuses.values()]))
     written = [
         write_table(records, output / "integrated_evidence.tsv"),
-        write_table(
-            [record for record in records if not is_cell_row(record)],
-            output / "integrated_evidence_method_results.tsv",
-        ),
+        write_table(method_records, output / "integrated_evidence_method_results.tsv"),
         write_tidy_tsv(
             feature_rows,
             ("feature", "term_id", "matrix_column"),
@@ -2966,6 +3009,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     ]
     provenance = {
         "version": VERSION,
+        "nominal_p_columns": nominal_p_columns(records, method_records),
         "path_basis": portable.declaration,
         "bugsigdb_vintage": vintage,
         "code_commit": args.code_commit,

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import csv
 import json
+import math
 import random
 import shutil
 import sys
@@ -28,6 +29,7 @@ from mtp.datamodel.workflow_pydantic import (
     WorkflowRun,
 )
 from mtp.integrated_evidence import main as integrated_evidence_main
+from mtp.integrated_provenance import verify_integrated_provenance
 from mtp.multiplicity import sources as multiplicity_sources
 from mtp.multiplicity.stage import run_post_arm
 from mtp.paths import REPO_ROOT
@@ -291,6 +293,46 @@ def test_every_file_the_stage_reads_is_declared_by_its_arm_plan(tmp_path: Path) 
 
 def test_compare_stage_runs_on_arm_runs_and_verifies(stage: dict[str, Path]) -> None:
     assert arms_main(["verify-comparison", str(stage["comparison"])]) == 0
+
+
+def test_saved_nominal_p_declaration_matches_both_real_comparison_exports(
+    stage: dict[str, Path],
+) -> None:
+    directory = stage["comparison"] / "integrated_evidence"
+    provenance_path = directory / "integrated_evidence_provenance.json"
+    provenance = json.loads(provenance_path.read_text(encoding="utf-8"))
+    assert "nominal_p_columns" in provenance, "The producer must save its p-column contract"
+    tables = {}
+    for name in ("integrated_evidence.tsv", "integrated_evidence_method_results.tsv"):
+        with (directory / name).open(encoding="utf-8", newline="") as handle:
+            reader = csv.DictReader(handle, delimiter="\t")
+            assert {"p_value", "native_pair_p_value"} <= set(reader.fieldnames or [])
+            rows = list(reader)
+        columns = {}
+        for column in ("p_value", "native_pair_p_value"):
+            # Parse the exported cells independently of the producer's Record helper.
+            finite = 0
+            for row in rows:
+                text = row[column].strip()
+                if text and math.isfinite(float(text)):
+                    finite += 1
+            columns[column] = {
+                "finite_nominal_rows": finite,
+                "missing_or_nonfinite_rows": len(rows) - finite,
+            }
+        tables[name] = {"row_count": len(rows), "columns": columns}
+    assert provenance["nominal_p_columns"] == {
+        "version": "nominal-p-columns-v1",
+        "value_policy": {
+            "finite": "nominal",
+            "missing_or_nonfinite": "not_tested",
+            "correction": "none",
+        },
+        "tables": tables,
+    }
+    verified = verify_integrated_provenance(provenance_path)
+    assert verified["verified_references"]
+    assert verify_comparison_run(stage["comparison"]).core_run_id == _comparison(stage).core_run_id
 
 
 @pytest.mark.parametrize("entrypoint", ["comparison", "sources"])
