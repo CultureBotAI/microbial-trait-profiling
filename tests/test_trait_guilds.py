@@ -1655,26 +1655,49 @@ def test_guild_correlation_table_and_cli_label_nominal_p_values_with_test_counts
         tied_mcnemar["n_tests"],
     ) == ("", "not_tested", "0")
 
+    for label, nonfinite_p in (
+        ("nan", float("nan")),
+        ("pos_inf", float("inf")),
+        ("neg_inf", -float("inf")),
+    ):
+        nonfinite_corr = replace(
+            four_pair_corr,
+            mcnemar_p=nonfinite_p,
+            spearman={"aerobe_inc_vs_dec": (-0.5, 0.25, 3)},
+        )
+        nonfinite_dir = tmp_path / f"nonfinite_mcnemar_{label}"
+        nonfinite_dir.mkdir()
+        write_outputs(matrix, nonfinite_corr, nonfinite_dir, "2026-04-24_00:41_UTC")
+        with (nonfinite_dir / "guild_aerobe_anaerobe_correlation.tsv").open(
+            encoding="utf-8"
+        ) as handle:
+            nonfinite_rows = list(csv.DictReader(handle, delimiter="\t"))
+        (nonfinite_row,) = [
+            row for row in nonfinite_rows if row["statistic"] == "mcnemar_odds_ratio"
+        ]
+        assert (
+            nonfinite_row["comparison"],
+            nonfinite_row["p_value"],
+            nonfinite_row["p_value_type"],
+            nonfinite_row["n_tests"],
+        ) == ("aerobe_vs_anaerobe_paired_signs (not_tested)", "", "not_tested", "1")
+
     nan_mcnemar_corr = replace(
         four_pair_corr,
         mcnemar_p=float("nan"),
         spearman={"aerobe_inc_vs_dec": (-0.5, 0.25, 3)},
     )
-    nan_mcnemar_dir = tmp_path / "nan_mcnemar"
-    nan_mcnemar_dir.mkdir()
-    write_outputs(matrix, nan_mcnemar_corr, nan_mcnemar_dir, "2026-04-24_00:41_UTC")
-    with (nan_mcnemar_dir / "guild_aerobe_anaerobe_correlation.tsv").open(
-        encoding="utf-8"
-    ) as handle:
-        nan_mcnemar_rows = list(csv.DictReader(handle, delimiter="\t"))
-    (nan_mcnemar_row,) = [
-        row for row in nan_mcnemar_rows if row["statistic"] == "mcnemar_odds_ratio"
-    ]
-    assert (
-        nan_mcnemar_row["p_value"],
-        nan_mcnemar_row["p_value_type"],
-        nan_mcnemar_row["n_tests"],
-    ) == ("", "not_tested", "1")
+
+    with monkeypatch.context() as mp:
+        mp.setattr(
+            guild_maps,
+            "binomtest",
+            lambda *_a, **_k: type("_R", (), {"pvalue": float("nan")})(),
+        )
+        computed_nan_corr = compute_correlation(four_pair_profiles)
+    assert computed_nan_corr.mcnemar_p is not None
+    assert isnan(computed_nan_corr.mcnemar_p)
+    assert computed_nan_corr.status == "not_tested"
 
     profiles_path, experiments_path = corpus
     cli_out = tmp_path / "cli_out"
@@ -1713,7 +1736,7 @@ def test_guild_correlation_table_and_cli_label_nominal_p_values_with_test_counts
     nan_stdout = capsys.readouterr().out
     assert (
         "McNemar (exact, paired signs): discordant 2/1, "
-        "odds ratio 2.000 (not tested) over 4 studies [tested]"
+        "odds ratio 2.000 (not tested) over 4 studies [not_tested]"
     ) in nan_stdout
 
     methods_text = " ".join(

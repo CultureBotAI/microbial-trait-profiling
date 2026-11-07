@@ -595,6 +595,8 @@ def compute_correlation(profiles: list[Profile]) -> CorrelationResult:
         status = "no_studies"
     elif not n_discordant:
         status = "all_tied"
+    elif mcnemar_p is None or not math.isfinite(mcnemar_p):
+        status = "not_tested"
     else:
         status = "tested"
 
@@ -701,6 +703,15 @@ def write_matrix_outputs(
     return [values_path, counts_path, status_path, clusters_path]
 
 
+def _mcnemar_status(correlation: CorrelationResult) -> str:
+    """Never report a non-finite McNemar p as 'tested' (#1751)."""
+    if correlation.status == "tested" and (
+        correlation.mcnemar_p is None or not math.isfinite(correlation.mcnemar_p)
+    ):
+        return "not_tested"
+    return correlation.status
+
+
 def write_outputs(
     matrix: GuildMatrix,
     correlation: CorrelationResult,
@@ -792,7 +803,7 @@ def write_outputs(
         writer.writerow(
             [
                 "mcnemar_odds_ratio",
-                f"aerobe_vs_anaerobe_paired_signs ({correlation.status})",
+                f"aerobe_vs_anaerobe_paired_signs ({_mcnemar_status(correlation)})",
                 "" if correlation.odds_ratio is None else f"{correlation.odds_ratio:.6f}",
                 ""
                 if correlation.mcnemar_p is None or not math.isfinite(correlation.mcnemar_p)
@@ -1645,7 +1656,7 @@ def main() -> int:
     print(
         f"\nMcNemar (exact, paired signs): discordant {up_down}/{down_up}, "
         f"odds ratio {ratio} ({p_text}) over {correlation.studies} studies "
-        f"[{correlation.status}]"
+        f"[{_mcnemar_status(correlation)}]"
     )
     if correlation.excluded_no_annotation:
         print(
