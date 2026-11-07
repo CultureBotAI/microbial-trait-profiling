@@ -3175,7 +3175,6 @@ def write_trait_list_contrasts(
 
 
 def main() -> None:
-    reset_output_dir()
     metadata = load_profile_metadata()
     raw_trait_counts = load_raw_trait_counts(SHARED_TRAITS, metadata)
     zscores = build_zscore_matrix(raw_trait_counts, metadata)
@@ -3183,6 +3182,7 @@ def main() -> None:
 
     summary = build_trait_summary(metadata, raw_trait_counts, zscores, q_stats)
     trait_selection = build_trait_selection(q_stats)
+    reset_output_dir()
     summary.to_csv(OUTPUT_DIR / "six_shared_trait_summary.tsv", sep="\t", index=False)
     trait_selection.to_csv(
         OUTPUT_DIR / "six_shared_trait_selection.tsv",

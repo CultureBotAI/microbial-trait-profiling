@@ -329,8 +329,10 @@ def test_family_size_parser_accepts_whole_sizes(raw: object, size: int) -> None:
     assert sankeys._extract_bh_family_size(raw) == size
 
 
-def test_retained_trait_count_below_family_size_is_refused() -> None:
-    """A retained count smaller than the selected BH family is refused with ValueError (#1812)."""
+def test_retained_trait_count_below_family_size_is_refused(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Refuse retained count below family size with ValueError (#1812, #1872, #1873, #1874)."""
     with pytest.raises(ValueError, match=r"300.*340"):
         sankeys._format_paired_q_value_family(340, 300)
     with pytest.raises(ValueError, match=r"339.*340.*METPO:1000608"):
@@ -339,10 +341,32 @@ def test_retained_trait_count_below_family_size_is_refused() -> None:
         f"pooled pair-level BH over 340 support/variance-selected traits "
         f"(of 340 retained; {SELECTION_RULE_NOTE})"
     )
-    assert sankeys._format_paired_q_value_family(340, 340) == expected_equal
-    assert sankeys._extract_retained_trait_count(340, 340, trait_id="METPO:1000608") == 340
-    assert sankeys._extract_retained_trait_count(344, 340, trait_id="METPO:1000608") == 344
-    assert sankeys._extract_retained_trait_count(None, 340, trait_id="METPO:1000608") is None
+    equal_stats = supplied_stats(MIXED_P, correction_family_size=340, retained_trait_count=340)
+    metadata = pd.DataFrame({"inc_dec": ["inc", "dec", "inc"]}, index=["p1", "p2", "p3"])
+    raw_counts = pd.DataFrame(
+        {trait.trait_id: [1, 0, 2] for trait in sankeys.SHARED_TRAITS},
+        index=metadata.index,
+    )
+    zscores = pd.DataFrame(
+        {trait.trait_id: [0.5, -0.5, 1.2] for trait in sankeys.SHARED_TRAITS},
+        index=metadata.index,
+    )
+    try:
+        assert sankeys._format_paired_q_value_family(340, 340) == expected_equal
+        assert sankeys._extract_retained_trait_count(340, 340, trait_id="METPO:1000608") == 340
+        assert sankeys._extract_retained_trait_count(344, 340, trait_id="METPO:1000608") == 344
+        assert sankeys._extract_retained_trait_count(None, 340, trait_id="METPO:1000608") is None
+        equal_selection = sankeys.build_trait_selection(equal_stats)
+        equal_summary = sankeys.build_trait_summary(metadata, raw_counts, zscores, equal_stats)
+    except ValueError as exc:
+        pytest.fail(f"consistent counts refused: {exc}")
+
+    assert equal_selection["bh_unfiltered_trait_count"].dropna().tolist() == [340] * len(
+        sankeys.SHARED_TRAITS
+    )
+    assert equal_selection["paired_q_value_family"].tolist() == [expected_equal] * len(
+        sankeys.SHARED_TRAITS
+    )
 
     inconsistent_stats = supplied_stats(
         MIXED_P, correction_family_size=340, retained_trait_count=300
@@ -363,14 +387,27 @@ def test_retained_trait_count_below_family_size_is_refused() -> None:
     ):
         sankeys.load_q_significance()
 
-    equal_stats = supplied_stats(MIXED_P, correction_family_size=340, retained_trait_count=340)
-    equal_selection = sankeys.build_trait_selection(equal_stats)
-    assert equal_selection["bh_unfiltered_trait_count"].dropna().tolist() == [340] * len(
-        sankeys.SHARED_TRAITS
+    # #1874: Every displayed row must be checked, not only the first row.
+    third_trait_id = sankeys.SHARED_TRAITS[2].trait_id
+    single_row_inconsistent = (
+        supplied_stats(MIXED_P, correction_family_size=340, retained_trait_count=344)
+        .reset_index()
+        .assign(
+            positive_pair_fraction=0.5,
+            negative_pair_fraction=0.5,
+            pair_count=10,
+            profile_count=20,
+            n_profiles_where_annotated=15,
+        )
     )
-    assert equal_selection["paired_q_value_family"].tolist() == [expected_equal] * len(
-        sankeys.SHARED_TRAITS
-    )
+    single_row_inconsistent.loc[
+        single_row_inconsistent["trait"] == third_trait_id, "retained_trait_count"
+    ] = 300
+    with (
+        patch.object(sankeys, "read_tsv", return_value=single_row_inconsistent),
+        pytest.raises(ValueError, match=rf"300.*340.*{third_trait_id}"),
+    ):
+        sankeys.load_q_significance()
 
     slice_without = (
         equal_selection.drop(
@@ -390,25 +427,40 @@ def test_retained_trait_count_below_family_size_is_refused() -> None:
             slice_without.assign(bh_family_size=340, bh_unfiltered_trait_count=300)
         )
 
-    metadata = pd.DataFrame({"inc_dec": ["inc", "dec", "inc"]}, index=["p1", "p2", "p3"])
-    raw_counts = pd.DataFrame(
-        {trait.trait_id: [1, 0, 2] for trait in sankeys.SHARED_TRAITS},
-        index=metadata.index,
-    )
-    zscores = pd.DataFrame(
-        {trait.trait_id: [0.5, -0.5, 1.2] for trait in sankeys.SHARED_TRAITS},
-        index=metadata.index,
-    )
     with pytest.raises(ValueError, match=r"300.*340.*METPO:1000608"):
         sankeys.build_trait_summary(metadata, raw_counts, zscores, inconsistent_stats)
 
-    equal_summary = sankeys.build_trait_summary(metadata, raw_counts, zscores, equal_stats)
     assert equal_summary["bh_unfiltered_trait_count"].dropna().tolist() == [340] * len(
         sankeys.SHARED_TRAITS
     )
     assert equal_summary["paired_q_value_family"].tolist() == [expected_equal] * len(
         sankeys.SHARED_TRAITS
     )
+
+    # #1872: main() must validate inputs before reset_output_dir() empties OUTPUT_DIR.
+    out_dir = tmp_path / "six-shared-traits"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    preserved_files = {
+        "README.md": "# Existing Sankey README\n",
+        "six_shared_trait_selection.tsv": "trait_id\tpaired_q_value\nMETPO:1000608\t1e-6\n",
+        "six_shared_trait_summary.tsv": "trait_id\tprofile_count\nMETPO:1000608\t20\n",
+    }
+    for filename, content in preserved_files.items():
+        (out_dir / filename).write_text(content, encoding="utf-8")
+
+    monkeypatch.setattr(sankeys, "INVESTIGATION_DIR", tmp_path)
+    monkeypatch.setattr(sankeys, "OUTPUT_DIR", out_dir)
+    monkeypatch.setattr(sankeys, "load_profile_metadata", lambda: metadata)
+    monkeypatch.setattr(sankeys, "load_raw_trait_counts", lambda _traits, _meta: raw_counts)
+    monkeypatch.setattr(sankeys, "build_zscore_matrix", lambda _counts, _meta: zscores)
+    monkeypatch.setattr(sankeys, "read_tsv", lambda _path: single_row_inconsistent)
+
+    with pytest.raises(ValueError, match=rf"300.*340.*{third_trait_id}"):
+        sankeys.main()
+
+    assert sorted(p.name for p in out_dir.iterdir()) == sorted(preserved_files)
+    for filename, content in preserved_files.items():
+        assert (out_dir / filename).read_text(encoding="utf-8") == content
 
 
 def test_sankey_methods_paragraph_names_the_selection_q_family() -> None:
