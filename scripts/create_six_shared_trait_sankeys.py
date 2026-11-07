@@ -241,6 +241,8 @@ def load_q_significance() -> pd.DataFrame:
     stats = read_tsv(TRAIT_STATS_PATH)
     if "correction_family_size" not in stats.columns:
         stats = stats.assign(correction_family_size=float("nan"))
+    if "retained_trait_count" not in stats.columns:
+        stats = stats.assign(retained_trait_count=float("nan"))
     stats = stats[stats["trait"].isin([trait.trait_id for trait in SHARED_TRAITS])].copy()
     numeric_columns = [
         "q_value",
@@ -252,6 +254,7 @@ def load_q_significance() -> pd.DataFrame:
         "profile_count",
         "n_profiles_where_annotated",
         "correction_family_size",
+        "retained_trait_count",
     ]
     for column in numeric_columns:
         stats[column] = pd.to_numeric(stats[column], errors="coerce")
@@ -2162,12 +2165,24 @@ def _extract_bh_family_size(raw_size: object) -> int | None:
     return int(numeric)
 
 
-def _format_paired_q_value_family(raw_size: object) -> str:
-    """Format the pooled pair-level BH family label or report when unrecorded."""
+SELECTION_RULE_NOTE = (
+    "select_stratum_traits support, positive-variance, and MediaDive-exclusion filter"
+)
+
+
+def _format_paired_q_value_family(raw_size: object, raw_retained: object = None) -> str:
+    """Format the pooled pair-level BH family label or report when unrecorded (#1742)."""
     size = _extract_bh_family_size(raw_size)
     if size is None:
         return "family size not recorded"
-    return f"pooled pair-level BH over {size} support/variance-selected traits"
+    retained = _extract_bh_family_size(raw_retained)
+    retained_clause = (
+        f"of {retained} retained" if retained is not None else "retained count not recorded"
+    )
+    return (
+        f"pooled pair-level BH over {size} support/variance-selected traits "
+        f"({retained_clause}; {SELECTION_RULE_NOTE})"
+    )
 
 
 def build_trait_summary(
@@ -2183,11 +2198,17 @@ def build_trait_summary(
         if "correction_family_size" in q_stats.columns
         else pd.Series(dtype=float)
     )
+    retained_counts = (
+        pd.to_numeric(q_stats["retained_trait_count"], errors="coerce")
+        if "retained_trait_count" in q_stats.columns
+        else pd.Series(dtype=float)
+    )
     for trait in SHARED_TRAITS:
         counts = raw_trait_counts[trait.trait_id]
         z = zscores[trait.trait_id]
         q_row = q_stats.loc[trait.trait_id]
         family_size = _extract_bh_family_size(family_sizes.get(trait.trait_id, float("nan")))
+        retained_count = _extract_bh_family_size(retained_counts.get(trait.trait_id, float("nan")))
         record = {
             "trait_id": trait.trait_id,
             "trait_label": trait.label,
@@ -2214,12 +2235,16 @@ def build_trait_summary(
                 ((metadata["inc_dec"] == "dec") & (z > 0)).sum()
             ),
             "bh_family_size": pd.NA if family_size is None else family_size,
-            "paired_q_value_family": _format_paired_q_value_family(family_size),
+            "bh_unfiltered_trait_count": pd.NA if retained_count is None else retained_count,
+            "paired_q_value_family": _format_paired_q_value_family(family_size, retained_count),
         }
         records.append(record)
     summary = pd.DataFrame.from_records(records)
     summary["bh_family_size"] = pd.Series(
         summary["bh_family_size"], index=summary.index, dtype="Int64"
+    )
+    summary["bh_unfiltered_trait_count"] = pd.Series(
+        summary["bh_unfiltered_trait_count"], index=summary.index, dtype="Int64"
     )
     return summary
 
@@ -2228,6 +2253,7 @@ def selection_display_metadata(
     selection: pd.DataFrame,
     *,
     default_bh_family_size: int | None = None,
+    default_bh_unfiltered_trait_count: int | None = None,
 ) -> pd.DataFrame:
     """Label raw p, count finite tests in displayed rows, and preserve the BH family."""
     output = selection.copy()
@@ -2248,8 +2274,29 @@ def selection_display_metadata(
             index=output.index,
             dtype="Int64",
         )
+    if "bh_unfiltered_trait_count" not in output.columns:
+        parsed_default_retained = _extract_bh_family_size(default_bh_unfiltered_trait_count)
+        output["bh_unfiltered_trait_count"] = pd.Series(
+            [pd.NA if parsed_default_retained is None else parsed_default_retained] * len(output),
+            index=output.index,
+            dtype="Int64",
+        )
+    else:
+        parsed_retained = [
+            _extract_bh_family_size(val) for val in output["bh_unfiltered_trait_count"].tolist()
+        ]
+        output["bh_unfiltered_trait_count"] = pd.Series(
+            [pd.NA if val is None else val for val in parsed_retained],
+            index=output.index,
+            dtype="Int64",
+        )
     output["paired_q_value_family"] = [
-        _format_paired_q_value_family(size) for size in output["bh_family_size"].tolist()
+        _format_paired_q_value_family(size, retained)
+        for size, retained in zip(
+            output["bh_family_size"].tolist(),
+            output["bh_unfiltered_trait_count"].tolist(),
+            strict=True,
+        )
     ]
     return output
 
@@ -2262,9 +2309,15 @@ def build_trait_selection(q_stats: pd.DataFrame) -> pd.DataFrame:
         if "correction_family_size" in q_stats.columns
         else pd.Series(dtype=float)
     )
+    retained_counts = (
+        pd.to_numeric(q_stats["retained_trait_count"], errors="coerce")
+        if "retained_trait_count" in q_stats.columns
+        else pd.Series(dtype=float)
+    )
     for trait in SHARED_TRAITS:
         row = q_stats.loc[trait.trait_id]
         family_size = _extract_bh_family_size(family_sizes.get(trait.trait_id, float("nan")))
+        retained_count = _extract_bh_family_size(retained_counts.get(trait.trait_id, float("nan")))
         records.append(
             {
                 "trait_id": trait.trait_id,
@@ -2276,6 +2329,7 @@ def build_trait_selection(q_stats: pd.DataFrame) -> pd.DataFrame:
                 "paired_mean_increased_minus_decreased": row["mean_increased_minus_decreased"],
                 "paired_direction": row["direction"],
                 "bh_family_size": pd.NA if family_size is None else family_size,
+                "bh_unfiltered_trait_count": pd.NA if retained_count is None else retained_count,
             }
         )
     selection = selection_display_metadata(pd.DataFrame.from_records(records))
@@ -2291,6 +2345,7 @@ def build_trait_selection(q_stats: pd.DataFrame) -> pd.DataFrame:
         "paired_p_value_type",
         "displayed_nominal_test_count",
         "bh_family_size",
+        "bh_unfiltered_trait_count",
         "paired_q_value_family",
     ]
     return selection[ordered_columns]

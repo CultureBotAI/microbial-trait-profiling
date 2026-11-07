@@ -258,6 +258,12 @@ def nominal_test_count_statement(effects: Sequence[Table1TraitEffect]) -> str:
     return f"Finite nominal Wilcoxon tests shown: raw={raw_count}; PC1-adjusted={adjusted_count}."
 
 
+def format_paired_regression_slope(slope: SupportsFloat) -> str:
+    """Format the near-twin paired regression slope, or NA when not estimable (#1714)."""
+    value = float(slope)
+    return f"{value:.4f}" if math.isfinite(value) else "NA"
+
+
 def format_paired_regression_test(p: SupportsFloat) -> str:
     """Label the near-twin diagnostic and count its finite test without imputing p."""
     value = float(p)
@@ -885,7 +891,7 @@ def evaluate_conditional_twin_test(
                 else float("nan")
             )
     else:
-        slope_paired = 0.0
+        slope_paired = float("nan")
         pval_paired_slope = float("nan")
 
     return ConditionalTwinSummary(
@@ -1315,7 +1321,8 @@ def run_density_audit(
             f"r = {format_report_number(twin_summary.paired_correlation, '+.4f')} | "
             "Paired VIF: "
             f"{format_report_number(twin_summary.vif_paired, '.2f', allow_positive_infinity=True)}",
-            f"Paired regression slope: {twin_summary.paired_slope_a_on_b:.4f} "
+            f"Paired regression slope: "
+            f"{format_paired_regression_slope(twin_summary.paired_slope_a_on_b)} "
             f"({format_paired_regression_test(twin_summary.paired_slope_pvalue)})",
             "",
             "5. METHODOLOGICAL FINDINGS SUMMARY",

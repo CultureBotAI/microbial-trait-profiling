@@ -733,6 +733,7 @@ def test_evaluate_conditional_twin_test_constant_and_unpaired() -> None:
     assert np.isnan(summary_const.vif_profile)
     assert np.isnan(summary_const.profile_partial_r_depth)
     assert np.isnan(summary_const.profile_slope_a_on_b)
+    assert np.isnan(summary_const.paired_slope_a_on_b)
     assert np.isnan(summary_const.paired_slope_pvalue)
 
     # Zero partial-correlation denominator (all traits moving linearly with depth, #1791):
@@ -779,8 +780,38 @@ def test_evaluate_conditional_twin_test_constant_and_unpaired() -> None:
     assert summary_unpaired.n_paired_experiments == 0
     assert np.isnan(summary_unpaired.paired_correlation)
     assert np.isnan(summary_unpaired.vif_paired)
-    assert summary_unpaired.paired_slope_a_on_b == 0.0
+    assert np.isnan(summary_unpaired.paired_slope_a_on_b)
     assert np.isnan(summary_unpaired.paired_slope_pvalue)
+
+    # Single paired experiment with non-zero delta_b: slope is not estimable (#1714)
+    one_pair_df = pd.DataFrame(
+        {
+            "study_id": ["s1", "s1"],
+            "experiment_id": ["e1", "e1"],
+            "inc_dec": ["inc", "dec"],
+            TWIN_A: [10.0, 2.0],
+            TWIN_B: [7.0, 3.0],
+        }
+    )
+    summary_one = evaluate_conditional_twin_test(one_pair_df, TWIN_A, TWIN_B)
+    assert summary_one.n_paired_experiments == 1
+    assert np.isnan(summary_one.paired_slope_a_on_b)
+    assert np.isnan(summary_one.paired_slope_pvalue)
+
+    # >= 2 paired experiments with constant delta_b and varying delta_a: slope is NaN (#1714)
+    const_db_df = pd.DataFrame(
+        {
+            "study_id": ["s1", "s1", "s2", "s2", "s3", "s3"],
+            "experiment_id": ["e1", "e1", "e2", "e2", "e3", "e3"],
+            "inc_dec": ["inc", "dec"] * 3,
+            TWIN_A: [10.0, 2.0, 20.0, 5.0, 35.0, 8.0],
+            TWIN_B: [7.0, 3.0, 9.0, 5.0, 12.0, 8.0],
+        }
+    )
+    summary_const_db = evaluate_conditional_twin_test(const_db_df, TWIN_A, TWIN_B)
+    assert summary_const_db.n_paired_experiments == 3
+    assert np.isnan(summary_const_db.paired_slope_a_on_b)
+    assert np.isnan(summary_const_db.paired_slope_pvalue)
 
     # Two paired experiments: slope is defined, but regression p requires >= 3 pairs (#1660)
     two_pair_df = pd.DataFrame(

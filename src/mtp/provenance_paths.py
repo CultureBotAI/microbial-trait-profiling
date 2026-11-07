@@ -20,15 +20,12 @@ from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath, PureWindowsPath
 
+from mtp.local_path_patterns import compile_absolute_local_paths
 from mtp.paths import file_sha256
 
 _KIND = "root-relative-v1"
 _SUPPLIED_KIND = "supplied-root-v1"
-_LOCAL_PATH = re.compile(
-    r"/(?:Users|home)/[A-Za-z0-9._-]+|[A-Za-z]:[\\/]+Users[\\/]+"
-    r"|(?:/private)?/var/(?:folders)(?=/)|/private/(?:tmp)(?=/)",
-    re.IGNORECASE,
-)
+_LOCAL_PATH = compile_absolute_local_paths(flags=re.IGNORECASE, classified=False)
 _SLASHLESS_LOCAL_PATH = re.compile(
     r"(?<![\w])(?:(?:Users|home)/[A-Za-z0-9._-]+"
     r"|(?:private/)?var/folders(?=/)|private/tmp(?=/))",
