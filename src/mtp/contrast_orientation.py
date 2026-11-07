@@ -43,11 +43,13 @@ import argparse
 import csv
 import difflib
 import hashlib
+import inspect
 import json
 import re
 from collections import Counter
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass, replace
+from itertools import combinations
 from pathlib import Path
 
 from mtp.paths import DERIVED_DATA_DIR, REPO_ROOT, file_sha256
@@ -1748,6 +1750,15 @@ def control_tier_counts(
     ]
 
 
+def _declared_ratio_pairs() -> list[tuple[str, str]]:
+    bound = inspect.signature(compute_log_ratio_shifts).bind_partial([])
+    bound.apply_defaults()
+    traits: Sequence[str] = bound.arguments.get("traits", tuple(TABLE1_TRAITS))
+    if len(traits) < 2 or len(set(traits)) != len(traits):
+        raise ValueError("Provide at least two distinct traits")
+    return list(combinations(traits, 2))
+
+
 def comparison_rows(
     populations: Sequence[tuple[str, Sequence[Profile]]],
 ) -> list[dict[str, object]]:
@@ -1756,14 +1767,16 @@ def comparison_rows(
     Each population keeps the native families of the two analyses: Benjamini-Hochberg
     over the declared fractions and Benjamini-Yekutieli over the declared ratios.
     Labels count each returned family, including untestable members held at p=1
-    internally; displayed missing p/q values do not remove family members.
+    internally; displayed missing p/q values do not remove family members. A
+    population with no paired profiles emits untestable rows across both families.
     Nothing historical is overwritten.
     """
     rows: list[dict[str, object]] = []
     for population, profiles in populations:
-        studies = len({p.study_id for p in profiles})
-        experiments = len({(p.study_id, p.experiment_id) for p in profiles})
-        shifts = compute_direction_shifts(list(profiles))
+        profile_list = list(profiles)
+        studies = len({p.study_id for p in profile_list})
+        experiments = len({(p.study_id, p.experiment_id) for p in profile_list})
+        shifts = compute_direction_shifts(profile_list)
         for shift in shifts.shifts:
             rows.append(
                 {
@@ -1786,7 +1799,32 @@ def comparison_rows(
                     "family": f"Benjamini-Hochberg over {len(shifts.shifts)} fractions",
                 }
             )
-        ratios = compute_log_ratio_shifts(list(profiles))
+        if not profile_list:
+            ratio_pairs = _declared_ratio_pairs()
+            for numerator, reference in ratio_pairs:
+                rows.append(
+                    {
+                        "population": population,
+                        "comparison": "log_ratio",
+                        "numerator": numerator,
+                        "reference": reference,
+                        "population_studies": studies,
+                        "population_experiments": experiments,
+                        "studies_scored": 0,
+                        "studies_up": 0,
+                        "studies_down": 0,
+                        "studies_tied": 0,
+                        "share_up": None,
+                        "ci_low": None,
+                        "ci_high": None,
+                        "mean_effect": None,
+                        "p_value": None,
+                        "q_value": None,
+                        "family": f"Benjamini-Yekutieli over {len(ratio_pairs)} ratios",
+                    }
+                )
+            continue
+        ratios = compute_log_ratio_shifts(profile_list)
         for summary in ratios.summaries:
             rows.append(
                 {

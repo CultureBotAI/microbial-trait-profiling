@@ -1152,6 +1152,154 @@ def test_comparison_rows_use_executed_families_including_untestable_members(
         assert (finite_count == 0) is all_tied
 
 
+def test_comparison_rows_emit_untestable_rows_for_an_empty_population_without_changing_others(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """An empty population emits untestable rows across both families without aborting (#1838)."""
+    traits = tuple(TABLE1_TRAITS)
+    profiles = [
+        Profile(
+            f"bsdb:{study}",
+            f"bsdb:{study}-1",
+            direction,
+            "C",
+            "Feces",
+            {
+                trait: (4 if (index % 2 == 0) == (direction == "inc") else 1)
+                for index, trait in enumerate(traits)
+            },
+            10,
+        )
+        for study in range(1, 5)
+        for direction in ("inc", "dec")
+    ]
+    baseline = comparison_rows([("populated", profiles)])
+    combined = comparison_rows([("empty_before", []), ("populated", profiles), ("empty_after", [])])
+    assert [row for row in combined if row["population"] == "populated"] == baseline
+
+    expected_pairs = list(itertools.combinations(traits, 2))
+    for empty_name in ("empty_before", "empty_after"):
+        empty_rows = [row for row in combined if row["population"] == empty_name]
+        fraction_rows = [row for row in empty_rows if row["comparison"] == "fraction"]
+        ratio_rows = [row for row in empty_rows if row["comparison"] == "log_ratio"]
+        assert len(fraction_rows) == len(traits)
+        assert len(ratio_rows) == len(expected_pairs)
+        assert [row["numerator"] for row in fraction_rows] == list(traits)
+        assert {row["reference"] for row in fraction_rows} == {""}
+        assert [(row["numerator"], row["reference"]) for row in ratio_rows] == expected_pairs
+        assert {row["family"] for row in fraction_rows} == {
+            f"Benjamini-Hochberg over {len(traits)} fractions"
+        }
+        assert {row["family"] for row in ratio_rows} == {
+            f"Benjamini-Yekutieli over {len(expected_pairs)} ratios"
+        }
+        for row in empty_rows:
+            assert (
+                row["population_studies"],
+                row["population_experiments"],
+                row["studies_scored"],
+                row["studies_up"],
+                row["studies_down"],
+                row["studies_tied"],
+                row["share_up"],
+                row["ci_low"],
+                row["ci_high"],
+                row["mean_effect"],
+                row["p_value"],
+                row["q_value"],
+            ) == (0, 0, 0, 0, 0, 0, None, None, None, None, None, None)
+
+    # Custom executed families on an empty population also preserve their declared sizes.
+    custom_fractions = traits[:3]
+    custom_ratios = traits[:4]
+    with monkeypatch.context() as patch:
+        patch.setattr(
+            "mtp.contrast_orientation.compute_direction_shifts",
+            partial(compute_direction_shifts, trait_order=custom_fractions),
+        )
+        patch.setattr(
+            "mtp.contrast_orientation.compute_log_ratio_shifts",
+            partial(compute_log_ratio_shifts, traits=custom_ratios),
+        )
+        custom_rows = comparison_rows([("custom_empty", [])])
+    custom_frac = [row for row in custom_rows if row["comparison"] == "fraction"]
+    custom_rat = [row for row in custom_rows if row["comparison"] == "log_ratio"]
+    assert len(custom_frac) == 3
+    assert len(custom_rat) == 6
+    assert {row["family"] for row in custom_frac} == {"Benjamini-Hochberg over 3 fractions"}
+    assert {row["family"] for row in custom_rat} == {"Benjamini-Yekutieli over 6 ratios"}
+    assert [(row["numerator"], row["reference"]) for row in custom_rat] == list(
+        itertools.combinations(custom_ratios, 2)
+    )
+
+    # Invalid ratio trait list still raises on an empty population; unpaired profiles still raise.
+    for bad_traits in (("only_one",), (traits[0], traits[0])):
+        with monkeypatch.context() as patch:
+            patch.setattr(
+                "mtp.contrast_orientation.compute_log_ratio_shifts",
+                partial(compute_log_ratio_shifts, traits=bad_traits),
+            )
+            with pytest.raises(ValueError, match="Provide at least two distinct traits"):
+                comparison_rows([("invalid_traits", [])])
+    with pytest.raises(ValueError, match="1 increased vs 0 decreased profiles"):
+        comparison_rows([("unpaired_study", [profiles[0]])])
+    with pytest.raises(ValueError, match="Unpaired experiment"):
+        comparison_rows(
+            [
+                (
+                    "unpaired_experiment",
+                    [profiles[0], replace(profiles[1], experiment_id="bsdb:1-2")],
+                )
+            ]
+        )
+
+    # CLI writes disease_control_comparison.tsv even when Tier 1 and strong subsets are empty.
+    dump, profile_tsv, experiments_tsv = _write_corpus(tmp_path)
+    dump.write_text(
+        dump.read_text(encoding="utf-8").replace("Healthy controls", "Non-colorectal cancer"),
+        encoding="utf-8",
+    )
+    output = tmp_path / "out_tier2_only"
+    assert (
+        main(
+            [
+                "--full-dump-input",
+                str(dump),
+                "--profile-input",
+                str(profile_tsv),
+                "--experiments-input",
+                str(experiments_tsv),
+                "--output-dir",
+                str(output),
+                "--code-commit",
+                "abc123",
+            ]
+        )
+        == 0
+    )
+    written = list(
+        csv.DictReader(
+            (output / "disease_control_comparison.tsv").open(encoding="utf-8"), delimiter="\t"
+        )
+    )
+    for empty_tier in (
+        "disease_vs_healthy_strong_evidence",
+        "disease_vs_healthy_tier1_healthy_normal",
+    ):
+        tier_rows = [row for row in written if row["population"] == empty_tier]
+        assert len(tier_rows) == len(traits) + len(expected_pairs)
+        assert {row["population_studies"] for row in tier_rows} == {"0"}
+        assert {row["population_experiments"] for row in tier_rows} == {"0"}
+        assert {row["studies_scored"] for row in tier_rows} == {"0"}
+        assert {row["p_value"] for row in tier_rows} == {""}
+        assert {row["q_value"] for row in tier_rows} == {""}
+    populated_tier = [
+        row for row in written if row["population"] == "disease_vs_healthy_tier1_2_subject_controls"
+    ]
+    assert {row["population_studies"] for row in populated_tier} == {"1"}
+    assert {row["population_experiments"] for row in populated_tier} == {"1"}
+
+
 def _write_corpus(tmp_path: Path) -> tuple[Path, Path, Path]:
     """A two-experiment corpus: one disease-versus-healthy, one treatment contrast."""
     dump = tmp_path / "full_dump.csv"
