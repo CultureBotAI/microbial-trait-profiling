@@ -27,7 +27,12 @@ from pathlib import Path
 import pytest
 
 WORKTREE = Path(__file__).resolve().parents[2]
-ASSERTION_MARKERS = ("AssertionError", "Failed: DID NOT RAISE", "Regex pattern did not match")
+ASSERTION_MARKERS = (
+    "AssertionError",
+    "Failed: DID NOT RAISE",
+    "Regex pattern did not match",
+    "ValueError: retained_trait_count",
+)
 ERROR_MARKERS = (
     "ImportError",
     "ModuleNotFoundError",
@@ -84,16 +89,72 @@ MUTANTS: list[tuple[str, str, str, str]] = [
         "S5_build_trait_summary_passes_none_for_retained_in_family_label",
         "scripts/create_six_shared_trait_sankeys.py",
         (
-            '            "paired_q_value_family": '
-            "_format_paired_q_value_family(family_size, retained_count),"
+            '            "paired_q_value_family": _format_paired_q_value_family(\n'
+            "                family_size, retained_count, trait_id=trait.trait_id\n"
+            "            ),"
         ),
-        '            "paired_q_value_family": _format_paired_q_value_family(family_size, None),',
+        (
+            '            "paired_q_value_family": _format_paired_q_value_family(\n'
+            "                family_size, None, trait_id=trait.trait_id\n"
+            "            ),"
+        ),
     ),
     (
         "S6_methods_attaches_after_filter_to_retained_count_1811",
         "trait-visualization/figure_methods.md",
         "of 344 retained non-MediaDive traits in\n`retained_trait_count` before the",
         "of 344 unfiltered retained traits in\n`retained_trait_count` after the",
+    ),
+    (
+        "S7_retained_below_family_size_accepted_1812",
+        "scripts/create_six_shared_trait_sankeys.py",
+        "    if retained is not None and family_size is not None and retained < family_size:",
+        "    if False:",
+    ),
+    (
+        "S8_retained_equal_family_size_rejected_1812",
+        "scripts/create_six_shared_trait_sankeys.py",
+        "    if retained is not None and family_size is not None and retained < family_size:",
+        "    if retained is not None and family_size is not None and retained <= family_size:",
+    ),
+    (
+        "S9_format_paired_q_value_family_skips_consistency_check_1812",
+        "scripts/create_six_shared_trait_sankeys.py",
+        "    retained = _extract_retained_trait_count(raw_retained, size, trait_id=trait_id)",
+        "    retained = _extract_bh_family_size(raw_retained)",
+    ),
+    (
+        "S10_load_q_significance_skips_retained_consistency_check_1812",
+        "scripts/create_six_shared_trait_sankeys.py",
+        (
+            "    for row in stats.itertuples(index=False):\n"
+            "        _extract_retained_trait_count(\n"
+            "            row.retained_trait_count,\n"
+            "            row.correction_family_size,\n"
+            "            trait_id=str(row.trait),\n"
+            "        )"
+        ),
+        "    pass",
+    ),
+    (
+        "S11_build_trait_summary_drops_trait_id_on_refusal_1812",
+        "scripts/create_six_shared_trait_sankeys.py",
+        (
+            '            "paired_q_value_family": _format_paired_q_value_family(\n'
+            "                family_size, retained_count, trait_id=trait.trait_id\n"
+            "            ),"
+        ),
+        (
+            '            "paired_q_value_family": _format_paired_q_value_family(\n'
+            "                family_size, retained_count\n"
+            "            ),"
+        ),
+    ),
+    (
+        "S12_selection_display_metadata_drops_trait_id_on_refusal_1812",
+        "scripts/create_six_shared_trait_sankeys.py",
+        "        _format_paired_q_value_family(size, retained, trait_id=str(trait_id))",
+        "        _format_paired_q_value_family(size, retained)",
     ),
 ]
 

@@ -329,6 +329,88 @@ def test_family_size_parser_accepts_whole_sizes(raw: object, size: int) -> None:
     assert sankeys._extract_bh_family_size(raw) == size
 
 
+def test_retained_trait_count_below_family_size_is_refused() -> None:
+    """A retained count smaller than the selected BH family is refused with ValueError (#1812)."""
+    with pytest.raises(ValueError, match=r"300.*340"):
+        sankeys._format_paired_q_value_family(340, 300)
+    with pytest.raises(ValueError, match=r"339.*340.*METPO:1000608"):
+        sankeys._format_paired_q_value_family(340, 339, trait_id="METPO:1000608")
+    expected_equal = (
+        f"pooled pair-level BH over 340 support/variance-selected traits "
+        f"(of 340 retained; {SELECTION_RULE_NOTE})"
+    )
+    assert sankeys._format_paired_q_value_family(340, 340) == expected_equal
+    assert sankeys._extract_retained_trait_count(340, 340, trait_id="METPO:1000608") == 340
+    assert sankeys._extract_retained_trait_count(344, 340, trait_id="METPO:1000608") == 344
+    assert sankeys._extract_retained_trait_count(None, 340, trait_id="METPO:1000608") is None
+
+    inconsistent_stats = supplied_stats(
+        MIXED_P, correction_family_size=340, retained_trait_count=300
+    )
+    with pytest.raises(ValueError, match=r"300.*340.*METPO:1000608"):
+        sankeys.build_trait_selection(inconsistent_stats)
+
+    raw_inconsistent = inconsistent_stats.reset_index().assign(
+        positive_pair_fraction=0.5,
+        negative_pair_fraction=0.5,
+        pair_count=10,
+        profile_count=20,
+        n_profiles_where_annotated=15,
+    )
+    with (
+        patch.object(sankeys, "read_tsv", return_value=raw_inconsistent),
+        pytest.raises(ValueError, match=r"300.*340.*METPO:1000608"),
+    ):
+        sankeys.load_q_significance()
+
+    equal_stats = supplied_stats(MIXED_P, correction_family_size=340, retained_trait_count=340)
+    equal_selection = sankeys.build_trait_selection(equal_stats)
+    assert equal_selection["bh_unfiltered_trait_count"].dropna().tolist() == [340] * len(
+        sankeys.SHARED_TRAITS
+    )
+    assert equal_selection["paired_q_value_family"].tolist() == [expected_equal] * len(
+        sankeys.SHARED_TRAITS
+    )
+
+    slice_without = (
+        equal_selection.drop(
+            columns=["bh_family_size", "bh_unfiltered_trait_count", "paired_q_value_family"]
+        )
+        .iloc[[0]]
+        .copy()
+    )
+    with pytest.raises(ValueError, match=r"300.*340.*METPO:1000608"):
+        sankeys.selection_display_metadata(
+            slice_without,
+            default_bh_family_size=340,
+            default_bh_unfiltered_trait_count=300,
+        )
+    with pytest.raises(ValueError, match=r"300.*340.*METPO:1000608"):
+        sankeys.selection_display_metadata(
+            slice_without.assign(bh_family_size=340, bh_unfiltered_trait_count=300)
+        )
+
+    metadata = pd.DataFrame({"inc_dec": ["inc", "dec", "inc"]}, index=["p1", "p2", "p3"])
+    raw_counts = pd.DataFrame(
+        {trait.trait_id: [1, 0, 2] for trait in sankeys.SHARED_TRAITS},
+        index=metadata.index,
+    )
+    zscores = pd.DataFrame(
+        {trait.trait_id: [0.5, -0.5, 1.2] for trait in sankeys.SHARED_TRAITS},
+        index=metadata.index,
+    )
+    with pytest.raises(ValueError, match=r"300.*340.*METPO:1000608"):
+        sankeys.build_trait_summary(metadata, raw_counts, zscores, inconsistent_stats)
+
+    equal_summary = sankeys.build_trait_summary(metadata, raw_counts, zscores, equal_stats)
+    assert equal_summary["bh_unfiltered_trait_count"].dropna().tolist() == [340] * len(
+        sankeys.SHARED_TRAITS
+    )
+    assert equal_summary["paired_q_value_family"].tolist() == [expected_equal] * len(
+        sankeys.SHARED_TRAITS
+    )
+
+
 def test_sankey_methods_paragraph_names_the_selection_q_family() -> None:
     """The six-trait selection's q names its family, retained count, and rule (#1742, #1811)."""
     methods = (
