@@ -25,6 +25,7 @@ class ArmContext:
     direction_basis: str = "group_1_vs_group_0"
     # The core's recorded BacDive strain rollup scope; a core from before #788 is off
     strain_rollup: StrainRollup = "off"
+    provenance_root: Path | None = None
 
 
 @dataclass(frozen=True)
