@@ -37,7 +37,7 @@ from mtp.workflow.downstream_contracts import (
     build_eligibility_ledger,
 )
 from mtp.workflow.operations import run_strain_rollup
-from mtp.workflow.provenance import preflight_provenance_root
+from mtp.workflow.provenance import preflight_integrated_sources
 from mtp.workflow.runtime import artifact_path, repository_state
 from mtp.workflow.verification import verify_core_run
 
@@ -641,17 +641,26 @@ def execute_comparison_run(
         if arm1_pooled_stats is not None
         else stats_dir / "trait_profile_paired_contrast_trait_stats_pooled.tsv"
     )
+    integrated_dir = output / "integrated_evidence"
+    ie_argv = [
+        "--core-run",
+        str(core_manifest),
+        "--output-dir",
+        str(integrated_dir),
+        "--arm1-pooled-stats",
+        str(pooled_stats_path),
+        *evidence_inputs,
+        "--code-commit",
+        effective_commit,
+        "--require-complete-sources",
+    ]
     if provenance_root is not None:
-        known_sources = [
-            core_manifest,
-            *(artifact_path(core_run, item.product_id) for item in core_run.artifacts or []),
-            *(Path(value) for value in evidence_inputs[1::2]),
-        ]
-        if arm1_pooled_stats is not None:
-            known_sources.append(pooled_stats_path)
-        preflight_provenance_root(
-            output / "integrated_evidence/integrated_evidence_provenance.json",
-            known_sources,
+        ie_argv.extend(("--provenance-root", str(provenance_root.resolve())))
+        preflight_integrated_sources(
+            integrated_dir / "integrated_evidence_provenance.json",
+            ie_argv,
+            count_profiles=artifact_path(core_run, "count_profiles"),
+            ora_profiles=artifact_path(core_run, "ora_profiles"),
             root=provenance_root,
             planned_files=() if arm1_pooled_stats is not None else (pooled_stats_path,),
         )
@@ -669,23 +678,8 @@ def execute_comparison_run(
         ]
         asyncio.run(_exec_command(cmd, REPO_ROOT))
 
-    integrated_dir = output / "integrated_evidence"
     from mtp.integrated_evidence import main as integrated_evidence_main
 
-    ie_argv = [
-        "--core-run",
-        str(core_manifest),
-        "--output-dir",
-        str(integrated_dir),
-        "--arm1-pooled-stats",
-        str(pooled_stats_path),
-        *evidence_inputs,
-        "--code-commit",
-        effective_commit,
-        "--require-complete-sources",
-    ]
-    if provenance_root is not None:
-        ie_argv.extend(("--provenance-root", str(provenance_root.resolve())))
     integrated_evidence_main(ie_argv)
 
     provenance = json.loads(

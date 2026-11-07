@@ -41,7 +41,7 @@ from mtp.workflow.consumers import (
     preflight_consumer_outputs,
 )
 from mtp.workflow.operations import run_strain_rollup
-from mtp.workflow.provenance import preflight_provenance_root
+from mtp.workflow.provenance import preflight_integrated_sources, preflight_provenance_root
 from mtp.workflow.runtime import (
     artifact_path,
     content_hash,
@@ -484,7 +484,7 @@ def execute_arm(
     if provenance_root is not None:
         preflight_provenance_root(
             output / "integrated_evidence/integrated_evidence_provenance.json",
-            (manifest, *context.products.values(), output),
+            (context.products["ora_profiles"], output),
             root=provenance_root,
         )
     commands = planner(context)
@@ -492,18 +492,18 @@ def execute_arm(
     if provenance_root is not None:
         # Only this command publishes integrated evidence; earlier steps have their
         # own protocols and must not acquire unrelated root-containment rules.
-        planned_inputs = tuple(
-            path
-            for command in commands
-            if command.id == "integrated_evidence"
-            for path in command.inputs
-        )
-        preflight_provenance_root(
-            output / "integrated_evidence/integrated_evidence_provenance.json",
-            (path for path in planned_inputs if path.exists()),
-            root=provenance_root,
-            planned_files=(path for path in planned_inputs if not path.exists()),
-        )
+        previous_outputs: list[Path] = []
+        for command in commands:
+            if command.id == "integrated_evidence":
+                preflight_integrated_sources(
+                    output / "integrated_evidence/integrated_evidence_provenance.json",
+                    command.argv[3:],
+                    count_profiles=context.products["count_profiles"],
+                    ora_profiles=context.products["ora_profiles"],
+                    root=provenance_root,
+                    planned_files=previous_outputs,
+                )
+            previous_outputs.extend(command.outputs)
     if any(command.argv[0] != sys.executable for command in commands):
         raise ValueError("Commands must use this Python executable")
     plan = [_definition(command) for command in commands]

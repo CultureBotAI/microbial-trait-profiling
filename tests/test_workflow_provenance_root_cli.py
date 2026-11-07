@@ -182,6 +182,7 @@ def context(tmp_path: Path) -> ArmContext:
         name: tmp_path / "core" / filename
         for name, filename in {
             "count_profiles": "study_trait_profiles_wide.tsv",
+            "ora_profiles": "study_trait_profiles_ora_wide.tsv",
             "experiments": "experiments.tsv",
             "raw_dump": "full_dump.csv",
             "feature_metadata": "taxa_trait_matrix_columns.tsv",
@@ -283,11 +284,20 @@ def test_comparison_forwards_its_root_to_the_real_integrated_parser(
         path.write_text("fixture bytes for routing only\n", encoding="utf-8")
     pooled = sources / "pooled statistics.tsv"
     pooled.write_text("fixture statistics for routing only\n", encoding="utf-8")
+    products = {
+        "count_profiles": sources / "study_trait_profiles_wide.tsv",
+        "ora_profiles": sources / "study_trait_profiles_ora_wide.tsv",
+    }
+    for path in products.values():
+        path.write_text("fixture profile bytes for routing only\n", encoding="utf-8")
     core = SimpleNamespace(
         run_id="fixture-core",
         contrast_population="all_paired",
         direction_basis="group_1_vs_group_0",
-        artifacts=[],
+        artifacts=[
+            SimpleNamespace(product_id=name, path=str(path.resolve()))
+            for name, path in products.items()
+        ],
     )
     arms = {
         path: SimpleNamespace(
@@ -327,7 +337,14 @@ def test_comparison_forwards_its_root_to_the_real_integrated_parser(
     ) -> argparse.Namespace:
         raise _Parsed(parse_args(parser, args, namespace))
 
-    monkeypatch.setattr(argparse.ArgumentParser, "parse_args", capture)
+    real_integrated_main = integrated_evidence.main
+
+    def capture_main(argv: Sequence[str] | None = None) -> int:
+        with monkeypatch.context() as producer_patch:
+            producer_patch.setattr(argparse.ArgumentParser, "parse_args", capture)
+            return real_integrated_main(argv)
+
+    monkeypatch.setattr(integrated_evidence, "main", capture_main)
     supplied = sources / "unused" / ".." if explicit else None
     output = tmp_path / "comparison output"
     try:

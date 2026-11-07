@@ -35,7 +35,7 @@ from mtp.integrated_provenance import verify_integrated_provenance
 from mtp.multiplicity import sources as multiplicity_sources
 from mtp.multiplicity.stage import run_post_arm
 from mtp.paths import REPO_ROOT
-from mtp.provenance_paths import PortablePaths, verify_reference
+from mtp.provenance_paths import PortablePaths, resolve_provenance_root, verify_reference
 from mtp.three_test_table import stage as three_test_stage
 from mtp.workflow import comparison
 from mtp.workflow import consumers as workflow_consumers
@@ -59,7 +59,7 @@ from mtp.workflow.downstream_contracts import STANDARD_ANALYSIS_SPECS, build_eli
 from mtp.workflow.locations import LocationResolver
 from mtp.workflow.models import ContrastPopulation
 from mtp.workflow.operations import OPERATIONS, validate_execution_product
-from mtp.workflow.runtime import execute_workflow
+from mtp.workflow.runtime import artifact_path, execute_workflow
 from mtp.workflow.verification import verify_core_run
 
 INFLUENCE_FIXTURE = REPO_ROOT / "scripts" / "adhoc" / "issue844_influence_assessment_fixture.py"
@@ -236,15 +236,25 @@ def _consumed_plan(arm: str) -> Planner:
 def stage(tmp_path_factory: pytest.TempPathFactory) -> dict[str, Path]:
     """One verified core, three verified arm runs and the comparison run over them."""
     root = tmp_path_factory.mktemp("comparison-stage")
+    external = tmp_path_factory.mktemp("comparison-external-inputs")
+    sources = _write_inputs(external / "raw")
     core = execute_workflow(
         REPO_ROOT / "workflows" / "bugsigdb_core.yaml",
-        _write_inputs(root / "raw"),
+        sources,
         root / "core",
         OPERATIONS,
         parameter_overrides={"source_mode": "fixture"},
         validator=validate_execution_product,
         repository_root=REPO_ROOT,
     )
+    assert external.parent == root.parent
+    assert not external.is_relative_to(root)
+    assert {
+        item.product_id
+        for item in core.artifacts or []
+        if not artifact_path(core, item.product_id).resolve().is_relative_to(root)
+    } == {"raw_dump", "kg_edges", "kg_nodes"}
+    assert {name: artifact_path(core, name) for name in sources} == sources
     paths = {"core": Path(core.manifest_path), "comparison": root / "comparison"}
     for arm in ("noel", "jed", "ilyas"):
         record = execute_arm(
@@ -318,6 +328,12 @@ def _external_comparison_sources(
     assert all(
         stage[name].resolve().is_relative_to(root) for name in ("core", "noel", "jed", "ilyas")
     )
+    core = verify_core_run(stage["core"])
+    assert {
+        item.product_id
+        for item in core.artifacts or []
+        if not artifact_path(core, item.product_id).resolve().is_relative_to(root)
+    } == {"raw_dump", "kg_edges", "kg_nodes"}
     return root, pooled
 
 
@@ -410,12 +426,101 @@ def test_comparison_forwards_a_safe_source_root_to_an_external_real_report(
         "ora_eligibility_source",
     } <= set(references)
     assert verify_comparison_run(output).core_run_id == _comparison(stage).core_run_id
+    for name in (
+        "integrated_evidence.tsv",
+        "integrated_evidence_method_results.tsv",
+        "integrated_evidence_features.tsv",
+        "integrated_evidence_families.tsv",
+        "integrated_evidence_assessments.tsv",
+    ):
+        assert (output / "integrated_evidence" / name).read_bytes() == (
+            stage["comparison"] / "integrated_evidence" / name
+        ).read_bytes(), name
     with pytest.raises(ValueError, match="requires --provenance-root"):
         verify_integrated_provenance(record_path)
     wrong = tmp_path / "wrong-source-root"
     wrong.mkdir()
     with pytest.raises(ValueError, match="Invalid source reference"):
         verify_integrated_provenance(record_path, provenance_root=wrong)
+
+
+def test_noel_supplied_root_accepts_external_raw_and_kg_with_real_integrated_step(
+    stage: dict[str, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root, _ = _external_comparison_sources(stage, tmp_path, monkeypatch)
+    output = root / "noel-supplied-root"
+
+    def plan(context: ArmContext) -> list[Command]:
+        commands = noel.build_commands(context)
+        integrated = [command for command in commands if command.id == "integrated_evidence"]
+        assert len(integrated) == 1
+        return [
+            *(command for command in commands if command.id in CONSUMED_STEPS["noel"]),
+            _influence_stand_in(context),
+            *integrated,
+        ]
+
+    try:
+        completed = execute_arm(
+            "noel",
+            stage["core"],
+            output,
+            plan,
+            replicates=2,
+            seed=0,
+            figures=False,
+            provenance_root=root,
+        )
+    except (ValueError, OSError) as error:
+        raise AssertionError(
+            "The real Noel integrated step must accept raw/KG inputs outside its source root"
+        ) from error
+    manifest = output / "arm_run.json"
+    assert manifest.is_file()
+    assert verify_arm(manifest) == completed
+    assert completed.status == "completed"
+    assert {step.id for step in completed.steps or []} == {
+        *CONSUMED_STEPS["noel"],
+        "native_taxon_influence",
+        "integrated_evidence",
+    }
+    definition = next(item for item in completed.plan if item.id == "integrated_evidence")
+    root_option = definition.argv.index("--provenance-root")
+    assert definition.argv[root_option + 1] == str(root)
+    integrated_directory = output / "integrated_evidence"
+    record_path = integrated_directory / "integrated_evidence_provenance.json"
+    raw = record_path.read_text(encoding="utf-8")
+    record = json.loads(raw)
+    assert record["path_basis"] == {"kind": "root-relative-v1", "root": "../.."}
+    assert resolve_provenance_root(record_path, path_basis=record["path_basis"]) == root
+    assert str(root) not in raw
+    core = verify_core_run(stage["core"])
+    for source, expected in (
+        (
+            record["native_sources"]["full_screen"],
+            output / "trait_direction_screen" / "trait_direction_screen.tsv",
+        ),
+        (record["ora_eligibility_source"], artifact_path(core, "ora_profiles")),
+    ):
+        assert source["path"] == expected.relative_to(root).as_posix()
+        assert (
+            verify_reference(record_path, source, path_basis=record["path_basis"])
+            == expected.resolve()
+        )
+    verified = verify_integrated_provenance(record_path)
+    assert verify_integrated_provenance(record_path, provenance_root=root) == verified
+    references = verified["verified_references"]
+    assert isinstance(references, list)
+    assert {
+        "native_sources.full_screen",
+        "native_sources.full_screen_provenance",
+        "assessment_status.calibration_status.source",
+        "assessment_status.orientation_status.source",
+        "assessment_status.taxon_influence_status.source",
+        "ora_eligibility_source",
+    } <= set(references)
+    assert (integrated_directory / "integrated_evidence.tsv").stat().st_size > 0
+    assert (integrated_directory / "core_consumption.json").is_file()
 
 
 def test_comparison_rejects_a_root_that_excludes_bound_sources(

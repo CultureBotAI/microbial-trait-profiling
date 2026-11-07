@@ -296,16 +296,20 @@ privacy and containment checks still apply. Jed and Ilyas reject this option
 with "supported only for the Noel arm" before execution; their plans do not
 invoke that producer.
 
-A supplied root is checked against known core and arm inputs, including the
-planned pooled-statistics file, before the comparison creates its output.
-Noel checks its core and output layout before planning or creating its output,
-then checks the integrated-evidence command's declared inputs before execution.
-The checks use the producer's path policy. The final producer still validates
+A supplied root is checked against the producer's located sources, including ORA
+profiles, existing native tables and assessment files, and the planned pooled-statistics
+file, before the comparison creates its output. Raw BugSigDB and KG inputs, count
+profiles and experiments are hashed without locators; they need not lie beneath
+this root. Noel checks ORA profiles and its output
+layout before planning, then checks sources selected by the actual integrated-evidence
+arguments and earlier planned outputs before execution. Missing optional assessments
+that no earlier step produces do not acquire locators. Both checks share the producer's
+source selector and path policy. The final producer still validates
 actual files and references inside metadata; preflight cannot guarantee that
 later filesystem changes or newly produced metadata will be acceptable.
 
-Noel's own outputs are bound sources, so its root must contain both the core
-inputs and arm output. The option can select an accepted root at or above the
+Noel's own outputs are bound sources, so its root must contain its located core
+and native inputs and arm output. The option can select an accepted root at or above the
 inferred root, for example to align with a bundle root; it cannot make a layout
 that inference refuses acceptable. Inputs and outputs with no safe common
 ancestor remain unsupported. The comparison can use a report outside its
