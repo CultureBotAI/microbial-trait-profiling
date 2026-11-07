@@ -230,6 +230,13 @@ Within a registered function, it also does not detect:
   interpreted. Derivations inside unsupported `try` or `match` blocks, or stored only
   through a subscript or attribute rather than a local name, are not credited.
   Escaping `break` or `continue` paths inside those unsupported blocks are not propagated;
+- mutation through an alias whose identity the recognizer does not track. This includes
+  aliases bound outside the function (in the module, an enclosing function or the caller),
+  tuple unpacking, `or` or conditional expressions, walrus bindings, aliases joined across
+  branches or loops, `for`/`with` targets, aliases created inside unsupported `try`/`match`
+  blocks, container or object holders, and `cast`. A write through one of these aliases
+  may leave a stale vector extent credited as a BY derivation; resolving these aliases
+  remains follow-up work (#1796, #1798);
 - other binding forms, including starred targets, `def`/`class` rebinding (including
   decorated definitions), `global` writes from another function and context managers
   that suppress a `raise`, are not modelled. An enclosing function's binding that
