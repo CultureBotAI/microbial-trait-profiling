@@ -67,14 +67,35 @@ def observed(unit: guard.Unit, counts: dict[str, int]) -> bool:
     [
         # Both branches copy the two parameter facts: 2 + 2.
         pytest.param(TWO_FACT_BRANCH, "env_copy", 4, id="environment-copy"),
+        # Both branches now copy three parameter facts: 3 + 3.
+        pytest.param(
+            "def screen(p, q, r):\n    if flag:\n        pass\n",
+            "env_copy",
+            6,
+            id="environment-copy-three-facts",
+        ),
         # The join reads both two-fact inputs: 2 + 2.
         pytest.param(TWO_FACT_BRANCH, "env_join", 4, id="environment-join"),
+        # The join now reads two three-fact inputs: 3 + 3.
+        pytest.param(
+            "def screen(p, q, r):\n    if flag:\n        pass\n",
+            "env_join",
+            6,
+            id="environment-join-three-facts",
+        ),
         # A pass changes no fact, so the first fixed-point pass is stable.
         pytest.param(
             "def screen(p):\n    while flag:\n        pass\n",
             "loop_pass",
             1,
             id="loop-pass",
+        ),
+        # The first pass changes p; a second pass establishes the fixed point.
+        pytest.param(
+            "def screen(p):\n    while flag:\n        p = 1\n",
+            "loop_pass",
+            2,
+            id="loop-pass-two-iterations",
         ),
         # Exactly three statements, including the bare return.
         pytest.param(
@@ -99,12 +120,40 @@ def observed(unit: guard.Unit, counts: dict[str, int]) -> bool:
             3,
             id="write-alias-scan",
         ),
+        # Three parameters plus alias make the write scan four facts.
+        pytest.param(
+            "def screen(p, q, r):\n    alias = p\n    alias[0] = 1\n",
+            "write_alias_scan",
+            4,
+            id="write-alias-scan-four-facts",
+        ),
+        # q and alias plus the remembered free origin p are three scan facts.
+        pytest.param(
+            "def screen(q):\n    alias = p\n    alias[0] = 1\n",
+            "write_alias_scan",
+            3,
+            id="write-alias-scan-free-origin",
+        ),
         # The same three facts must be inspected after augmented assignment.
         pytest.param(
             "def screen(p, q):\n    alias = p\n    alias += []\n",
             "alias_invalidation",
             3,
             id="alias-invalidation",
+        ),
+        # Three parameters and alias require four invalidation inspections.
+        pytest.param(
+            "def screen(p, q, r):\n    alias = p\n    alias += []\n",
+            "alias_invalidation",
+            4,
+            id="alias-invalidation-four-facts",
+        ),
+        # The remembered free origin p joins q and alias before this scan.
+        pytest.param(
+            "def screen(q):\n    alias = p\n    alias += []\n",
+            "alias_invalidation",
+            3,
+            id="alias-invalidation-free-origin",
         ),
         # Both branch statements are inspected to decide whether it terminates.
         pytest.param(
@@ -127,6 +176,13 @@ def observed(unit: guard.Unit, counts: dict[str, int]) -> bool:
             2,
             id="import-names",
         ),
+        # Three imported names each incur an import and a binding charge.
+        pytest.param(
+            "def screen():\n    import a as x, b as y, c as z\n",
+            "import_names",
+            3,
+            id="import-names-three-entries",
+        ),
     ],
 )
 def test_each_overlapping_charge_remains_observable(
@@ -137,7 +193,7 @@ def test_each_overlapping_charge_remains_observable(
     assert counts.get(category, 0) == expected
     if category == "import_names":
         # Shared binding accounting includes imports as well as declarations.
-        assert counts.get("declared_names", 0) == 2
+        assert counts.get("declared_names", 0) == expected
 
 
 def test_one_return_has_eight_independently_counted_units() -> None:
@@ -209,7 +265,10 @@ def test_fresh_counters_and_unhooked_calls_retain_no_previous_state() -> None:
 def test_reused_counter_accumulates_without_sharing_the_per_invocation_limit() -> None:
     counts: dict[str, int] = {}
     assert observed(parsed_unit(ONE_RETURN, limit=8), counts) is False
-    assert observed(parsed_unit(ONE_RETURN, limit=8), counts) is False
+    try:
+        assert observed(parsed_unit(ONE_RETURN, limit=8), counts) is False
+    except guard.DiscoveryLimitError as error:
+        raise AssertionError("a reused report must not share the budget") from error
     # Each invocation uses eight units; the caller's report accumulates sixteen.
     assert {key: value for key, value in counts.items() if value} == {
         "walk_node": 10,
