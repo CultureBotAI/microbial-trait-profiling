@@ -984,3 +984,105 @@ def test_calibration_summary_marks_p_value_columns_as_uncorrected_diagnostics(
     assert written_replicates
     assert {r["p_value_diagnostics_role"] for r in written_replicates} == {"calibration_diagnostic"}
     assert {r["p_value_diagnostics_correction"] for r in written_replicates} == {"none (nominal)"}
+
+
+def test_a_nonfinite_mcnemar_p_is_not_counted_as_a_tested_replicate(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A non-finite McNemar p must not be passed or counted as a tested replicate (#1808)."""
+    from types import SimpleNamespace
+
+    import mtp.calibration as cal
+    import mtp.guild_maps as gm
+
+    profiles: list[Profile] = []
+    for study in range(4):
+        for direction in ("inc", "dec"):
+            aerobe = 6 if (direction == "inc") == (study > 0) else 4
+            profiles.append(
+                Profile(
+                    study_id=f"s{study}",
+                    experiment_id=f"s{study}-1",
+                    inc_dec=direction,
+                    condition="C",
+                    body_site="Feces",
+                    guild_counts={"aerobe": aerobe, "anaerobe": 10 - aerobe},
+                    total=10,
+                )
+            )
+    baseline = compute_correlation(drop_zero_total_pairs(profiles).profiles)
+    assert baseline.status == "tested"
+    assert baseline.discordant == (3, 1)
+    scenario = _scenario("complete_null_study_flip")
+
+    for bad_p in (float("nan"), float("inf"), float("-inf")):
+        with monkeypatch.context() as patch:
+            patch.setattr(gm, "binomtest", lambda *_a, _p=bad_p, **_k: SimpleNamespace(pvalue=_p))
+            (outcome,) = guild_mcnemar_with()(profiles)
+        assert outcome.p_value is None
+        assert outcome.q_value is None
+        assert outcome.scored == sum(baseline.discordant)
+
+        rows = summarize([[outcome]], scenario, None)
+        summary = next(r for r in rows if r["label"] == "aerobe_vs_anaerobe")
+        family = next(r for r in rows if r["label"] == "FAMILY")
+        assert summary["replicates_tested"] == 0
+        assert summary["rejections_p"] == 0
+        assert summary["rejection_rate_p"] is None
+        assert summary["rejections_q"] == 0
+        assert summary["rejection_rate_q"] is None
+        assert summary["smallest_observed_p"] is None
+        assert family["rejections_p"] == 0
+        assert family["rejections_q"] == 0
+
+        (replicate,) = replicate_counts([[outcome]], scenario, None)
+        assert replicate["tests_evaluated"] == 0
+        assert replicate["null_tests_evaluated"] == 0
+        assert replicate["null_tests_rejected_p"] == 0
+        assert replicate["family_rejected_q"] == 0
+
+    for overridden in (
+        replace(baseline, status="tested", mcnemar_p=float("nan")),
+        replace(baseline, status="tested", mcnemar_p=float("inf")),
+        replace(baseline, status="tested", mcnemar_p=None),
+        replace(baseline, status="not_tested", mcnemar_p=0.25),
+    ):
+        with monkeypatch.context() as patch:
+            patch.setattr(cal, "compute_correlation", lambda *_a, _c=overridden, **_k: _c)
+            (outcome,) = guild_mcnemar_with()(profiles)
+        assert outcome.p_value is None
+        assert outcome.q_value is None
+
+    for bad_p in (float("nan"), float("inf"), float("-inf")):
+        direct = Outcome("guild_mcnemar", "aerobe_vs_anaerobe", bad_p, bad_p, scored=4)
+        rows = summarize([[direct]], scenario, None)
+        summary = next(r for r in rows if r["label"] == "aerobe_vs_anaerobe")
+        family = next(r for r in rows if r["label"] == "FAMILY")
+        assert summary["replicates_tested"] == 0
+        assert summary["rejections_p"] == 0
+        assert summary["rejections_q"] == 0
+        assert summary["smallest_observed_p"] is None
+        assert family["rejections_p"] == 0
+        assert family["rejections_q"] == 0
+
+        (replicate,) = replicate_counts([[direct]], scenario, None)
+        assert replicate["tests_evaluated"] == 0
+        assert replicate["null_tests_evaluated"] == 0
+        assert replicate["null_tests_rejected_p"] == 0
+        assert replicate["family_rejected_q"] == 0
+
+        bad_q = Outcome("guild_mcnemar", "aerobe_vs_anaerobe", 0.01, bad_p, scored=4)
+        rows_q = summarize([[bad_q]], scenario, None)
+        summary_q = next(r for r in rows_q if r["label"] == "aerobe_vs_anaerobe")
+        family_q = next(r for r in rows_q if r["label"] == "FAMILY")
+        assert summary_q["replicates_tested"] == 1
+        assert summary_q["rejections_p"] == 1
+        assert summary_q["rejections_q"] == 0
+        assert family_q["rejections_p"] == 0
+        assert family_q["rejections_q"] == 0
+
+        (replicate_q,) = replicate_counts([[bad_q]], scenario, None)
+        assert replicate_q["tests_evaluated"] == 1
+        assert replicate_q["null_tests_evaluated"] == 1
+        assert replicate_q["null_tests_rejected_p"] == 1
+        assert replicate_q["family_rejected_q"] == 0

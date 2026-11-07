@@ -574,7 +574,19 @@ def guild_records(
     profiles = drop_zero_total_pairs(profiles).profiles
     correlation = compute_correlation(list(profiles))
     up_down, down_up = correlation.discordant
-    status = TESTED if up_down + down_up else INSUFFICIENT
+    mcnemar_p = (
+        correlation.mcnemar_p
+        if correlation.status == "tested"
+        and correlation.mcnemar_p is not None
+        and math.isfinite(correlation.mcnemar_p)
+        else None
+    )
+    if not (up_down + down_up):
+        status = INSUFFICIENT
+    elif mcnemar_p is None:
+        status = "not_tested"
+    else:
+        status = TESTED
     records = [
         Record(
             method="oxygen_guild_mcnemar",
@@ -614,7 +626,7 @@ def guild_records(
             interval_low=None,
             interval_high=None,
             interval_type="unavailable",
-            p_value=correlation.mcnemar_p,
+            p_value=mcnemar_p,
             q_value=None,
             correction_method="none; a single uncorrected test, so no q is computed",
             family_id="guild_mcnemar",

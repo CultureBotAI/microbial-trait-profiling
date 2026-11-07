@@ -230,12 +230,19 @@ def guild_mcnemar_with() -> Procedure:
     def procedure(profiles: Sequence[Profile]) -> list[Outcome]:
         eligible = drop_zero_total_pairs(profiles).profiles
         correlation = compute_correlation(eligible)
+        mcnemar_p = (
+            correlation.mcnemar_p
+            if correlation.status == "tested"
+            and correlation.mcnemar_p is not None
+            and math.isfinite(correlation.mcnemar_p)
+            else None
+        )
         return [
             Outcome(
                 "guild_mcnemar",
                 "aerobe_vs_anaerobe",
-                correlation.mcnemar_p,
-                correlation.mcnemar_p,
+                mcnemar_p,
+                mcnemar_p,
                 scored=sum(correlation.discordant),
             )
         ]
@@ -559,10 +566,23 @@ def summarize(
                 )
                 for run in runs
             ]
-            present = [o for o in tested if o is not None and o.selected and o.p_value is not None]
-            rejected_p = sum(1 for o in present if o.p_value is not None and o.p_value <= ALPHA)
+            present = [
+                o
+                for o in tested
+                if o is not None
+                and o.selected
+                and o.p_value is not None
+                and math.isfinite(o.p_value)
+            ]
+            rejected_p = sum(
+                1
+                for o in present
+                if o.p_value is not None and math.isfinite(o.p_value) and o.p_value <= ALPHA
+            )
             rejected_q = sum(
-                1 for o in present if o.q_value is not None and o.q_value <= Q_THRESHOLD
+                1
+                for o in present
+                if o.q_value is not None and math.isfinite(o.q_value) and o.q_value <= Q_THRESHOLD
             )
             low, high = _interval(rejected_p, len(present))
             q_low, q_high = _interval(rejected_q, len(present))
@@ -608,7 +628,10 @@ def summarize(
                 for o in run
                 if o.procedure == procedure
                 and o.selected
+                and o.p_value is not None
+                and math.isfinite(o.p_value)
                 and o.q_value is not None
+                and math.isfinite(o.q_value)
                 and o.q_value <= Q_THRESHOLD
             ]
             any_rejection += bool(calls)
@@ -658,7 +681,7 @@ def replicate_counts(
     for procedure in procedures:
         for index, run in enumerate(runs):
             mine = [o for o in run if o.procedure == procedure and o.selected]
-            tested = [o for o in mine if o.p_value is not None]
+            tested = [o for o in mine if o.p_value is not None and math.isfinite(o.p_value)]
             null_tested = [o for o in tested if not _is_injected(o.label, injected)]
             rows.append(
                 {
@@ -668,12 +691,19 @@ def replicate_counts(
                     "tests_evaluated": len(tested),
                     "null_tests_evaluated": len(null_tested),
                     "null_tests_rejected_p": sum(
-                        1 for o in null_tested if o.p_value is not None and o.p_value <= ALPHA
+                        1
+                        for o in null_tested
+                        if o.p_value is not None and math.isfinite(o.p_value) and o.p_value <= ALPHA
                     ),
                     "p_value_diagnostics_role": P_VALUE_DIAGNOSTICS_ROLE,
                     "p_value_diagnostics_correction": P_VALUE_DIAGNOSTICS_CORRECTION,
                     "family_rejected_q": int(
-                        any(o.q_value is not None and o.q_value <= Q_THRESHOLD for o in mine)
+                        any(
+                            o.q_value is not None
+                            and math.isfinite(o.q_value)
+                            and o.q_value <= Q_THRESHOLD
+                            for o in tested
+                        )
                     ),
                 }
             )
