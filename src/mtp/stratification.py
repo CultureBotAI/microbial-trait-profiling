@@ -89,6 +89,12 @@ def _validate_strata(strata: list[str] | tuple[str, ...]) -> None:
             raise ValueError(f"Invalid stratum name: {name!r}")
 
 
+def _validate_p_threshold(p_threshold: float) -> None:
+    """Require a finite significance threshold in (0, 1] before running ORA (#1764)."""
+    if not np.isfinite(p_threshold) or p_threshold <= 0.0 or p_threshold > 1.0:
+        raise ValueError(f"p_threshold out of range (0, 1]: {p_threshold!r}")
+
+
 def partition_profiles(
     profiles_path: Path,
     experiments_path: Path,
@@ -240,6 +246,7 @@ def run_stratum_enrichment(
     taxa_matrix: Path | None = None,
 ) -> StratumOutputs:
     """Execute ORA enrichment and rankings export for one stratum."""
+    _validate_p_threshold(p_threshold)
     output_dir.mkdir(parents=True, exist_ok=True)
     outputs = _stratum_outputs(stratum, profiles_tsv, output_dir)
 
@@ -356,9 +363,26 @@ def compute_annotation_density_deciles(
     return pd.DataFrame(rows)
 
 
-def _read_tested_summary(path: Path) -> tuple[pd.DataFrame, str | None]:
-    """Read the complete table's own statistic metadata, not ranking metadata."""
-    stat_type = None
+@dataclass(frozen=True)
+class _TestedTableMetadata:
+    stat_type: str | None = None
+    fdr_scope: str | None = None
+    stat_threshold: str | None = None
+
+    @property
+    def has_header(self) -> bool:
+        return (
+            self.stat_type is not None
+            or self.fdr_scope is not None
+            or self.stat_threshold is not None
+        )
+
+
+def _read_tested_summary(path: Path) -> tuple[pd.DataFrame, _TestedTableMetadata]:
+    """Read the complete table's own statistic, scope, and threshold metadata."""
+    stat_type: str | None = None
+    fdr_scope: str | None = None
+    stat_threshold: str | None = None
     with (
         gzip.open(path, "rt", encoding="utf-8")
         if path.suffix == ".gz"
@@ -374,16 +398,55 @@ def _read_tested_summary(path: Path) -> tuple[pd.DataFrame, str | None]:
                 break
             if line.startswith("# Stat-Type:"):
                 value = line.split(":", 1)[1].strip()
-                if stat_type is not None or value not in {"fdr_q", "p_value"}:
-                    raise ValueError(f"Invalid or duplicate Stat-Type in {path}: {value!r}")
+                if stat_type is not None:
+                    raise ValueError(f"Duplicate Stat-Type in {path}: {value!r}")
+                if value not in {"fdr_q", "p_value"}:
+                    raise ValueError(f"Invalid Stat-Type in {path}: {value!r}")
                 stat_type = value
-        return pd.read_csv(stream, sep="\t", comment="#"), stat_type
+            elif line.startswith("# FDR-Scope:"):
+                value = line.split(":", 1)[1].strip()
+                if fdr_scope is not None:
+                    raise ValueError(f"Duplicate FDR-Scope in {path}: {value!r}")
+                if value not in {"global", "profile", "none"}:
+                    raise ValueError(f"Invalid FDR-Scope in {path}: {value!r}")
+                fdr_scope = value
+            elif line.startswith("# Stat-Threshold:"):
+                value = line.split(":", 1)[1].strip()
+                if stat_threshold is not None:
+                    raise ValueError(f"Duplicate Stat-Threshold in {path}: {value!r}")
+                try:
+                    parsed_threshold = float(value)
+                except ValueError as exc:
+                    raise ValueError(f"Invalid Stat-Threshold in {path}: {value!r}") from exc
+                if (
+                    not np.isfinite(parsed_threshold)
+                    or parsed_threshold <= 0.0
+                    or parsed_threshold > 1.0
+                ):
+                    raise ValueError(f"Stat-Threshold out of range (0, 1] in {path}: {value!r}")
+                stat_threshold = value
+        if stat_type == "fdr_q" and fdr_scope == "none":
+            raise ValueError(
+                f"Contradictory Stat-Type {stat_type!r} and FDR-Scope {fdr_scope!r} in {path}"
+            )
+        return (
+            pd.read_csv(stream, sep="\t", comment="#"),
+            _TestedTableMetadata(
+                stat_type=stat_type,
+                fdr_scope=fdr_scope,
+                stat_threshold=stat_threshold,
+            ),
+        )
 
 
-def _extract_q_or_p(row: pd.Series | None, stat_type: str | None) -> tuple[float, str]:
-    """Preserve the historical numeric choice while identifying its actual type."""
+def _extract_q_or_p(
+    row: pd.Series | None,
+    stat_type: str | None,
+    fdr_scope: str | None = None,
+) -> tuple[float, str, str]:
+    """Preserve the historical numeric choice while identifying its type and family scope."""
     if row is None:
-        return np.nan, "unavailable"
+        return np.nan, "unavailable", "unavailable"
     q = row.get("best_qvalue", np.nan)
     p = row.get("best_pvalue", np.nan)
     if pd.notna(q):
@@ -392,11 +455,17 @@ def _extract_q_or_p(row: pd.Series | None, stat_type: str | None) -> tuple[float
             # documented identical alias can be called nominal without changing a value.
             if pd.isna(p) or float(q) != float(p):
                 raise ValueError("nominal Stat-Type contradicts best_qvalue: expected copied p")
-            return float(q), "p_value"
-        return float(q), "fdr_q"
+            return float(q), "p_value", "none"
+        if stat_type is None and pd.notna(p) and float(q) == float(p):
+            raise ValueError(
+                "Missing Stat-Type header with best_qvalue == best_pvalue: "
+                "cannot distinguish fdr_q from copied nominal p"
+            )
+        resolved_scope = fdr_scope if fdr_scope in {"global", "profile"} else "unknown"
+        return float(q), "fdr_q", resolved_scope
     if pd.notna(p):
-        return float(p), "p_value"
-    return np.nan, "unavailable"
+        return float(p), "p_value", "none"
+    return np.nan, "unavailable", "unavailable"
 
 
 def build_sensitivity_summary_table(
@@ -408,21 +477,24 @@ def build_sensitivity_summary_table(
         (per_trait_df, strata_summary_df)
     """
     overall_dfs: dict[str, pd.DataFrame] = {}
-    stat_types: dict[str, str | None] = {}
+    tested_meta_by_stratum: dict[str, _TestedTableMetadata] = {}
     meta_records: list[dict[str, Any]] = []
 
     for stratum, outputs in stratum_outputs.items():
+        tested_meta = _TestedTableMetadata()
         if outputs.tested_traits_tsv is not None and outputs.tested_traits_tsv.exists():
-            df, stat_types[stratum] = _read_tested_summary(outputs.tested_traits_tsv)
+            df, tested_meta = _read_tested_summary(outputs.tested_traits_tsv)
             overall_dfs[stratum] = df
         else:
             overall_dfs[stratum] = pd.DataFrame()
+        tested_meta_by_stratum[stratum] = tested_meta
 
         # Read comment header metadata
         n_testable = 0
         n_ranked = 0
-        stat_type = "unknown"
-        fdr_scope = "unknown"
+        ranked_stat_type = "unknown"
+        ranked_fdr_scope = "unknown"
+        ranked_stat_threshold = "unknown"
         if outputs.overall_ranked_tsv.exists():
             with outputs.overall_ranked_tsv.open("r", encoding="utf-8") as f:
                 for line in f:
@@ -431,13 +503,24 @@ def build_sensitivity_summary_table(
                     elif line.startswith("# Ranked-Traits:"):
                         n_ranked = int(line.split(":", 1)[1].strip())
                     elif line.startswith("# Stat-Type:"):
-                        stat_type = line.split(":", 1)[1].strip() or "unknown"
+                        ranked_stat_type = line.split(":", 1)[1].strip() or "unknown"
                     elif line.startswith("# FDR-Scope:"):
-                        fdr_scope = line.split(":", 1)[1].strip() or "unknown"
+                        ranked_fdr_scope = line.split(":", 1)[1].strip() or "unknown"
+                    elif line.startswith("# Stat-Threshold:"):
+                        ranked_stat_threshold = line.split(":", 1)[1].strip() or "unknown"
+
+        if tested_meta.has_header:
+            stat_type = tested_meta.stat_type or "unknown"
+            fdr_scope = "none" if stat_type == "p_value" else (tested_meta.fdr_scope or "unknown")
+            stat_threshold = tested_meta.stat_threshold or "unknown"
+        else:
+            stat_type = ranked_stat_type
+            fdr_scope = ranked_fdr_scope
+            stat_threshold = ranked_stat_threshold
 
         hit_statistic = {"p_value": "nominal p", "fdr_q": "FDR q"}.get(stat_type, "unknown")
         if outputs.tested_traits_tsv is None or not outputs.tested_traits_tsv.exists():
-            stat_type = fdr_scope = hit_statistic = "unavailable"
+            stat_type = fdr_scope = hit_statistic = stat_threshold = "unavailable"
 
         meta_records.append(
             {
@@ -448,6 +531,8 @@ def build_sensitivity_summary_table(
                 "threshold_statistic": hit_statistic,
                 "hit_statistic": hit_statistic,
                 "fdr_scope": fdr_scope,
+                "stat_threshold": stat_threshold,
+                "tested_has_header": tested_meta.has_header,
                 "tested_traits": int(
                     overall_dfs[stratum].get("n_profiles_tested", pd.Series(dtype=int)).gt(0).sum()
                 ),
@@ -517,9 +602,17 @@ def build_sensitivity_summary_table(
             float(fe_row["mean_fold"]) if fe_row is not None and "mean_fold" in fe_row else np.nan
         )
 
-        p_stat, p_type = _extract_q_or_p(p_row, stat_types.get("pooled"))
-        f_stat, f_type = _extract_q_or_p(f_row, stat_types.get("feces"))
-        fe_stat, fe_type = _extract_q_or_p(fe_row, stat_types.get("feces_excluded"))
+        pooled_meta = tested_meta_by_stratum.get("pooled", _TestedTableMetadata())
+        feces_meta = tested_meta_by_stratum.get("feces", _TestedTableMetadata())
+        feces_ex_meta = tested_meta_by_stratum.get("feces_excluded", _TestedTableMetadata())
+
+        p_stat, p_type, p_scope = _extract_q_or_p(
+            p_row, pooled_meta.stat_type, pooled_meta.fdr_scope
+        )
+        f_stat, f_type, f_scope = _extract_q_or_p(f_row, feces_meta.stat_type, feces_meta.fdr_scope)
+        fe_stat, fe_type, fe_scope = _extract_q_or_p(
+            fe_row, feces_ex_meta.stat_type, feces_ex_meta.fdr_scope
+        )
 
         def _state(row: pd.Series | None, stratum: str) -> str:
             if row is not None:
@@ -568,10 +661,10 @@ def build_sensitivity_summary_table(
         # Historical nominal tables can carry a copied p in the q column.
         # Missing metadata cannot establish the basis of an existing hit count.
         metric_labels: dict[str, str] = {}
-        for name, source_row, best_type in (
-            ("pooled", p_row, p_type),
-            ("feces", f_row, f_type),
-            ("feces_excluded", fe_row, fe_type),
+        for name, source_row, best_type, best_scope in (
+            ("pooled", p_row, p_type, p_scope),
+            ("feces", f_row, f_type, f_scope),
+            ("feces_excluded", fe_row, fe_type, fe_scope),
         ):
             best_basis = {"fdr_q": "FDR q", "p_value": "nominal p"}.get(best_type, "unavailable")
             metadata = metadata_by_stratum.get(name, {})
@@ -580,6 +673,7 @@ def build_sensitivity_summary_table(
                 if source_row is not None and source_row["n_profiles_tested"] > 0
                 else "unavailable"
             )
+            metric_labels[f"{name}_best_stat_scope"] = best_scope
             metric_labels[f"{name}_best_stat_basis"] = best_basis
             metric_labels[f"{name}_significance_basis"] = hit_basis
             metric_labels[f"{name}_fdr_scope"] = str(metadata.get("fdr_scope", "unavailable"))
@@ -630,11 +724,12 @@ def generate_sensitivity_reports(
     txt_path = output_dir / "stratification_sensitivity_summary.txt"
 
     per_trait_df, strata_summary_df = build_sensitivity_summary_table(stratum_outputs)
-    # Preserve post-#1489 FDR report bytes, including best-statistic types and note,
-    # for the core-strata refresh audit.
-    # Mixed, undeclared and unavailable inputs still need explicit basis labels.
+    # Preserve post-#1489 FDR report bytes when tested tables lack header metadata.
+    # Complete tested tables with headers, mixed, undeclared, and unavailable inputs
+    # emit explicit basis and scope labels (#1507, #1508).
     legacy_fdr = (
         not strata_summary_df.empty
+        and not strata_summary_df["tested_has_header"].any()
         and strata_summary_df["stat_type"].eq("fdr_q").all()
         and strata_summary_df["fdr_scope"].isin(["global", "profile"]).all()
     )
@@ -643,7 +738,9 @@ def generate_sensitivity_reports(
             columns=[
                 column
                 for column in per_trait_df.columns
-                if column.endswith(("_best_stat_basis", "_significance_basis", "_fdr_scope"))
+                if column.endswith(
+                    ("_best_stat_scope", "_best_stat_basis", "_significance_basis", "_fdr_scope")
+                )
             ]
         )
 
@@ -677,6 +774,8 @@ def generate_sensitivity_reports(
                 f.write(f"# {row['stratum']}-Threshold-Statistic: {row['threshold_statistic']}\n")
                 f.write(f"# {row['stratum']}-Hit-Statistic: {row['hit_statistic']}\n")
                 f.write(f"# {row['stratum']}-FDR-Scope: {row['fdr_scope']}\n")
+                if row["stat_threshold"] not in {"unknown", "unavailable"}:
+                    f.write(f"# {row['stratum']}-Stat-Threshold: {row['stat_threshold']}\n")
         per_trait_df.to_csv(f, sep="\t", index=False)
 
     # Write comprehensive text report
@@ -808,6 +907,7 @@ def run_stratification_pipeline(
 ) -> tuple[dict[str, StratumOutputs], Path, Path]:
     """Execute the full background stratification pipeline."""
     _validate_strata(strata)
+    _validate_p_threshold(p_threshold)
     bundle = open_core_bundle(core_run, "ora_profiles") if core_run is not None else None
     bindings = {
         "profiles": (profiles_path, "ora_profiles", DEFAULT_PROFILES_PATH),
@@ -955,7 +1055,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         type=Path,
         help="Path to taxa_trait_matrix.tsv (default: data/derived/taxa_trait_matrix.tsv).",
     )
-    return parser.parse_args(argv)
+    args = parser.parse_args(argv)
+    _validate_p_threshold(args.p_threshold)
+    return args
 
 
 def main(argv: list[str] | None = None) -> int:

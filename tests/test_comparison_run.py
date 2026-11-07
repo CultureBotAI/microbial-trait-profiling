@@ -31,6 +31,7 @@ from mtp.integrated_evidence import main as integrated_evidence_main
 from mtp.multiplicity import sources as multiplicity_sources
 from mtp.multiplicity.stage import run_post_arm
 from mtp.paths import REPO_ROOT
+from mtp.provenance_paths import verify_reference
 from mtp.three_test_table import stage as three_test_stage
 from mtp.workflow import comparison
 from mtp.workflow import consumers as workflow_consumers
@@ -597,13 +598,21 @@ def test_every_evidence_input_is_the_file_its_arm_step_recorded(stage: dict[str,
     provenance = _provenance(stage)
     native = provenance["native_sources"]
     assert isinstance(native, dict)
+    basis = provenance["path_basis"]
+    assert isinstance(basis, dict)
+    provenance_path = (
+        stage["comparison"] / "integrated_evidence/integrated_evidence_provenance.json"
+    )
     for key, option in (
         ("arm2_enrichment", "--arm2-enrichment-results"),
         ("arm2_depletion", "--arm2-depletion-results"),
         ("full_screen", "--full-screen"),
         ("full_screen_provenance", "--full-screen-provenance"),
     ):
-        assert native[key]["path"] == expected[option]
+        assert (
+            verify_reference(provenance_path, native[key], path_basis=basis)
+            == Path(expected[option]).resolve()
+        )
     statuses = provenance["assessment_status"]
     assert isinstance(statuses, dict)
     for key, option in (
@@ -611,9 +620,17 @@ def test_every_evidence_input_is_the_file_its_arm_step_recorded(stage: dict[str,
         ("orientation_status", "--orientation-provenance"),
         ("sensitivity_status", "--sensitivity-status"),
     ):
-        assert statuses[key]["source"]["path"] == expected[option]
+        assert (
+            verify_reference(provenance_path, statuses[key]["source"], path_basis=basis)
+            == Path(expected[option]).resolve()
+        )
     # Nothing produces the #184 coverage status, so it is recorded as not supplied.
-    assert statuses["coverage_status"]["source"] == {"path": None, "binding": "not_supplied"}
+    assert statuses["coverage_status"]["source"] == {
+        "path": None,
+        "binding": "not_supplied",
+        "input_origin": "absent",
+        "supplied": False,
+    }
 
 
 def test_the_ledger_lists_the_studies_integrated_evidence_kept(stage: dict[str, Path]) -> None:

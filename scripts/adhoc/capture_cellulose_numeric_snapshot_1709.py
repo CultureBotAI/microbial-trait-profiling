@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
-"""Capture the reviewed historical audit-number fixture for #1709, 2026-11-06.
+"""Capture the reviewed historical audit-number fixture for #1709/#1717, 2026-11-06.
 
-Inputs: the Git source blob at retirement commit 92539eb and the committed numeric
-extractors in tests/test_cellulose_historical_numeric_snapshot.py.
+Inputs: the pinned Git source blob and the committed numeric extractors in
+tests/test_cellulose_historical_numeric_snapshot.py. Commit 92539eb records the
+original review provenance; it is not resolved or imported. The full blob id
+survives squash merges and is the only source of historical code executed here.
 Output: exclusively create the requested JSON fixture; never update an existing
 snapshot. Construct six artist trees and three SVG/16-slide strings; do not save
 or rasterize figures, import analysis outputs, or regenerate scientific data.
-Run only in the scheduled serial lane. The default source is deliberately fixed:
+Run only in the scheduled serial lane. The source is deliberately fixed:
 changing current producer code cannot silently rebaseline historical numbers.
+Extraction excludes only the exact retirement banner, preserving historical
+numbers and all other warnings even when they contain the same issue number.
 """
 
 from __future__ import annotations
@@ -30,6 +34,8 @@ from matplotlib.figure import Figure
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = "src/mtp/cellulose_decr/tufte_plates.py"
 REVIEWED_COMMIT = "92539eb"
+# Full object ID is recorded in methods/cellulose_decr.md. Ambiguity is an error.
+REVIEWED_SOURCE_BLOB = "0672ee7d"
 EXTRACTORS = ROOT / "tests/test_cellulose_historical_numeric_snapshot.py"
 DEFAULT_OUTPUT = ROOT / "tests/fixtures/cellulose_historical_numeric_snapshot.json"
 MAX_SOURCE_BYTES = 512 * 1024
@@ -56,20 +62,32 @@ def load_extractors() -> ModuleType:
     return module
 
 
-@contextmanager
-def reviewed_module() -> Iterator[ModuleType]:
-    """Import a bounded copy of the immutable Git blob in configured temporary storage."""
+def read_reviewed_source() -> bytes:
+    """Read the immutable source blob directly, without resolving historical commits."""
     repository = Repo(ROOT)
     try:
-        blob = repository.commit(REVIEWED_COMMIT).tree / SOURCE
+        blob = repository.rev_parse(REVIEWED_SOURCE_BLOB)
+        require(
+            blob.type == "blob" and blob.hexsha.startswith(REVIEWED_SOURCE_BLOB),
+            "Resolved object is not the pinned source blob",
+        )
         payload = blob.data_stream.read(MAX_SOURCE_BYTES + 1)
     finally:
         repository.close()
+    if not isinstance(payload, bytes):
+        raise ValueError("Historical source blob did not return bytes")
     require(0 < len(payload) <= MAX_SOURCE_BYTES, "Historical source exceeds bounded size")
+    return payload
+
+
+@contextmanager
+def reviewed_module() -> Iterator[ModuleType]:
+    """Import a bounded copy of the immutable Git blob in configured temporary storage."""
+    payload = read_reviewed_source()
     with TemporaryDirectory(prefix="cellulose-numeric-") as temporary:
         filename = Path(temporary) / "tufte_plates.py"
         filename.write_bytes(payload)
-        spec = importlib.util.spec_from_file_location("_cellulose_historical_92539eb", filename)
+        spec = importlib.util.spec_from_file_location("_cellulose_historical_source_blob", filename)
         if spec is None or spec.loader is None:
             raise ValueError("Historical module specification or loader is missing")
         module = importlib.util.module_from_spec(spec)
@@ -139,6 +157,7 @@ def main() -> int:
         json.dumps(
             {
                 "baseline_commit": REVIEWED_COMMIT,
+                "source_blob": REVIEWED_SOURCE_BLOB,
                 "output_bytes": args.output.stat().st_size,
                 "outputs_per_group": {group: len(outputs) for group, outputs in snapshot.items()},
                 "numeric_tokens_per_group": {

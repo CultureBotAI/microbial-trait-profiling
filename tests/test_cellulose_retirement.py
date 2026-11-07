@@ -2,15 +2,18 @@
 
 from __future__ import annotations
 
+import inspect
 import os
 import re
 import subprocess
 import xml.etree.ElementTree as ET
 from collections.abc import Callable
 from pathlib import Path
+from typing import cast
 
 import matplotlib.pyplot as plt
 import pytest
+from matplotlib.colors import to_rgba
 from matplotlib.figure import Figure
 from matplotlib.text import Text
 
@@ -26,6 +29,21 @@ BUILDERS = (
     tufte_plates.build_plate5_three_statistical_arms,
     tufte_plates.build_plate6_combining_results_integrated_evidence,
 )
+PLATE_SLIDE_ROUTES = {
+    2: "figures_tufte/fig1_tufte_convergence_slope_and_overlap.svg",
+    3: "figures_tufte/fig2_tufte_core_guild_dot_table.svg",
+    4: "figures_tufte/fig3_tufte_why_only_stool.svg",
+    5: "figures_tufte/fig4_tufte_trait_landscape_and_four_pairs.svg",
+    6: "figures_tufte/fig5_tufte_three_statistical_arms.svg",
+    7: "figures_tufte/fig6_tufte_combining_results_integrated_evidence.svg",
+}
+
+
+@pytest.fixture(scope="module", autouse=True)
+def retirement_import_origin() -> None:
+    assert Path(tufte_plates.__file__).resolve() == (
+        ROOT / "src/mtp/cellulose_decr/tufte_plates.py"
+    )
 
 
 def test_python_writer_refuses_without_opt_in_before_directory_creation(
@@ -126,6 +144,15 @@ def test_standalone_svg_banner_extends_canvas_above_original_coordinates(
     svg = ET.fromstring(renderer())
     banners = [node for node in svg.iter() if node.text == BANNER]
     assert len(banners) == 1
+    foreground = to_rgba(banners[0].attrib["fill"])
+    backgrounds = [node for node in svg.findall("{*}rect") if float(node.attrib.get("y", "0")) < 0]
+    assert len(backgrounds) == 1
+    background = to_rgba(backgrounds[0].attrib["fill"])
+    assert foreground[3] > 0, "SVG retirement text has no opaque paint"
+    assert background[3] > 0, "SVG retirement band has no opaque background"
+    assert foreground[:3] != background[:3], "SVG retirement paint matches its background"
+    assert float(banners[0].attrib.get("opacity", "1")) > 0
+    assert float(banners[0].attrib.get("fill-opacity", "1")) > 0
     x, y, output_width, output_height = map(float, svg.attrib["viewBox"].split())
     assert x == 0
     assert output_width == width
@@ -139,9 +166,45 @@ def test_each_of_sixteen_html_slides_has_its_own_retirement_banner() -> None:
     html = tufte_plates.render_slide_deck_html()
     sections = re.findall(r"<section\b.*?</section>", html, re.DOTALL)
     assert len(sections) == 16
-    for section in sections:
+    assert html.count('<div class="retirement-banner">') == 16
+    for number, section in enumerate(sections, start=1):
         banners = re.findall(r'<div class="retirement-banner">(.*?)</div>', section)
-        assert banners == [BANNER]
+        references = [
+            route
+            for route in re.findall(r'<img\b[^>]*\bsrc="([^"]+)"', section)
+            if route.startswith("figures_tufte/")
+        ]
+        expected_references = [PLATE_SLIDE_ROUTES[number]] if number in PLATE_SLIDE_ROUTES else []
+        assert references == expected_references, f"Slide {number}: unexpected historical image"
+        assert banners == [BANNER], number
+        inline_banners = sum(
+            " ".join("".join(node.itertext()).split()) == BANNER
+            for raw_svg in re.findall(r"<svg\b.*?</svg>", section, re.DOTALL)
+            for node in ET.fromstring(raw_svg).findall(".//{*}text")
+        )
+        # Referenced plate files are separate products. The HTML must warn even
+        # when those files are unavailable, without duplicating an inline warning.
+        assert len(banners) + inline_banners == 1, number
+
+
+@pytest.mark.parametrize(
+    ("slide", "renderer"), [(15, tufte_plates.render_fig8_svg), (16, tufte_plates.render_fig9_svg)]
+)
+def test_inline_historical_svgs_keep_original_size_without_a_second_banner(
+    slide: int, renderer: Callable[[], str]
+) -> None:
+    sections = re.findall(
+        r"<section\b.*?</section>", tufte_plates.render_slide_deck_html(), re.DOTALL
+    )
+    inline_svgs = re.findall(r"<svg\b.*?</svg>", sections[slide - 1], re.DOTALL)
+    assert len(inline_svgs) == 1
+    inline = ET.fromstring(inline_svgs[0])
+    assert list(map(float, inline.attrib["viewBox"].split())) == [0, 0, 1500, 740]
+    assert float(inline.attrib["width"]) == 1500
+    assert float(inline.attrib["height"]) == 740
+    assert BANNER not in "".join(inline.itertext())
+    undecorated = cast(Callable[[], str], inspect.unwrap(renderer))
+    assert inline_svgs[0].strip() == undecorated().strip()
 
 
 def test_default_figure_recipe_only_invokes_current_renderer(tmp_path: Path) -> None:

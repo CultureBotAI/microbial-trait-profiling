@@ -256,6 +256,33 @@ def test_actual_input_identity_and_only_in_population_review_are_retained(
     )
 
 
+def test_checkout_review_uses_producer_relative_locator_with_original_hash(
+    inputs: dict[str, Path],
+) -> None:
+    review = REPO_ROOT / "methods" / "contrast_orientation_review.tsv"
+    original_bytes = review.read_bytes()
+    original_hash = file_sha256(review)
+    record = json.loads(_run({**inputs, "review_input": review}).read_text(encoding="utf-8"))
+    assert record["review"]["path"] == "methods/contrast_orientation_review.tsv"
+    assert record["review"]["sha256"] == original_hash
+    assert review.read_bytes() == original_bytes
+
+
+def test_external_review_keeps_absolute_locator_and_original_hash(
+    inputs: dict[str, Path],
+) -> None:
+    review = inputs["review_input"]
+    assert not review.resolve().is_relative_to(REPO_ROOT.resolve())
+    original_bytes = review.read_bytes()
+    original_hash = file_sha256(review)
+    record = json.loads(_run(inputs).read_text(encoding="utf-8"))
+    assert record["review"]["path"] == str(review.resolve())
+    assert record["review"]["sha256"] == original_hash
+    assert review.read_bytes() == original_bytes
+    assert record["review"]["reviewed_experiments"] == 1
+    assert record["review"]["reviewed_experiments_outside_population"] == 1
+
+
 def test_missing_hand_review_stays_explicitly_unreviewed(inputs: dict[str, Path]) -> None:
     inputs["review_input"].unlink()
     record = json.loads(_run(inputs).read_text(encoding="utf-8"))

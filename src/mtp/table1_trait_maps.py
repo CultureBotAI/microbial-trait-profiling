@@ -596,6 +596,19 @@ def write_shift_table(
     return [shifts_path, spearman_path]
 
 
+# Subtitle paragraphs wrap at this many characters (#1276).
+_SUBTITLE_WRAP_WIDTH = 150
+
+
+def _spearman_subtitle_sentence(n_spearman_tests: int) -> str:
+    """The shift figure's correlation sentence; it must stay on one wrapped line (#1520, #1750)."""
+    return (
+        f"Trait-trait correlations (companion TSV reports nominal Spearman p across "
+        f"{n_spearman_tests} tested trait pairs); fractions and contrasts are "
+        "denominator-dependent."
+    )
+
+
 def build_shift_figure(
     result: ShiftResult,
     vintage: str | None,
@@ -735,14 +748,14 @@ def build_shift_figure(
         "are excluded from a trait's test, so the denominators differ between traits.",
         "Error bars are exact binomial 95% intervals; q is Benjamini-Hochberg across the "
         "six traits.",
-        f"Contrast correlations (companion TSV reports nominal Spearman p across "
-        f"{n_spearman_tests} tested trait pairs); fractions and contrasts remain "
-        "denominator-dependent.",
+        _spearman_subtitle_sentence(n_spearman_tests),
         "Directions are curated signature labels. "
         "Shared annotations do not establish patient-level change or independent validation.",
         f"BugSigDB {vintage or 'vintage unknown'}.",
     ]
-    subtitle_lines = [line for text in subtitle_paragraphs for line in textwrap.wrap(text, 150)]
+    subtitle_lines = [
+        line for text in subtitle_paragraphs for line in textwrap.wrap(text, _SUBTITLE_WRAP_WIDTH)
+    ]
     # Reserve title space per wrapped line, retaining the previous 380 px plot
     # height and bottom margin instead of compressing the six trait rows (#1276).
     top = 100 + 22 * len(subtitle_lines)

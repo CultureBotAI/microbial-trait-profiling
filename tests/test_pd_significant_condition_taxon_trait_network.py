@@ -489,7 +489,7 @@ def test_network_tables_figure_and_methods_label_nominal_p_values(
             )
             zscore_rows.append({"trait-1": value})
     for index in range(2):
-        for direction, value in [("inc", 0.5), ("dec", 0.5)]:
+        for direction, value in [("inc", 1.0), ("dec", 0.0)]:
             profile_id = f"other-study-{index}|experiment-{index}|{direction}"
             indices.append(profile_id)
             metadata_rows.append(
@@ -598,14 +598,14 @@ def test_network_tables_figure_and_methods_label_nominal_p_values(
     trait_by_cond = trait_tests.set_index("condition")
     assert trait_by_cond.loc[network.PD_CONDITION, "p_value_type"] == "nominal"
     assert trait_by_cond.loc[network.PD_CONDITION, "q_value"] == pytest.approx(0.015625)
-    assert trait_by_cond.loc["Condition B", "p_value_type"] == "not_tested"
-    assert pd.isna(trait_by_cond.loc["Condition B", "p_value"])
+    assert trait_by_cond.loc["Condition B", "p_value_type"] == "nominal"
+    assert trait_by_cond.loc["Condition B", "p_value"] == pytest.approx(0.5)
     assert pd.isna(trait_by_cond.loc["Condition B", "q_value"])
     assert trait_by_cond.loc["Condition C", "p_value_type"] == "not_tested"
     assert pd.isna(trait_by_cond.loc["Condition C", "p_value"])
     assert pd.isna(trait_by_cond.loc["Condition C", "q_value"])
     assert len(trait_tests) == 3
-    assert trait_tests["n_tests"].tolist() == [1, 1, 1]
+    assert trait_tests["n_tests"].tolist() == [2, 2, 2]
     assert trait_tests.loc[trait_tests["passes_min_paired_studies"], "bh_family_size"].tolist() == [
         2,
         2,
@@ -643,19 +643,25 @@ def test_network_tables_figure_and_methods_label_nominal_p_values(
     methods_path = tmp_path / "methods.md"
     network.write_methods_summary(eligibility, taxon_tests, trait_tests, nodes, edges, methods_path)
     methods_text = methods_path.read_text(encoding="utf-8")
-    for fragment in (
-        "`displayed_p_value_count` counts finite p-values in exported edges separately by "
-        "inferential edge class",
-        "`n_tests` preserves the source table count (including finite tests outside support "
-        "eligibility)",
-        "`bh_family_size` preserves its support-eligible padded BH family",
-        "Annotation edges have no inferential counts.",
-    ):
-        assert fragment in methods_text
     assert (
-        "Reported `p_value` columns and Panel C `nominal p` labels are nominal "
-        "(uncorrected) across the `1` tested (`2` BH-family) condition-taxon tests and "
-        "`1` tested (`2` BH-family) condition-trait tests"
+        "- In the edge export, `displayed_p_value_count` counts finite p-values in "
+        "exported edges separately by inferential edge class; `n_tests` is the number "
+        "of finite nominal p-values across every row of the source table, including rows "
+        "outside support eligibility that are not in the BH family, and `bh_family_size` "
+        "preserves its support-eligible padded BH family. Annotation edges have no "
+        "inferential counts."
+    ) in methods_text
+    assert "preserves the source table count" not in methods_text
+    assert "(tests run)" not in methods_text
+    assert (
+        "- Reported `p_value` columns and Panel C `nominal p` labels are nominal "
+        "(uncorrected) across `2` finite nominal p-values in the condition-taxon table "
+        "(`1` support-eligible with finite nominal p in the `2`-row BH family) and "
+        "`2` finite nominal p-values in the condition-trait table "
+        "(`1` support-eligible with finite nominal p in the `2`-row BH family); "
+        "`q_value` is Benjamini-Hochberg adjusted globally within the complete "
+        "condition-taxon family and within the complete condition-trait family "
+        "(holding untestable support rows at `p = 1.0`)."
     ) in methods_text
     assert (
         "`2` eligible condition-trait comparisons (`1` with finite nominal p; "

@@ -12,10 +12,12 @@ import pytest
 
 from mtp.integrated_evidence import _protect_source_files, main, ora_testable_profile_keys
 from mtp.paths import REPO_ROOT, file_sha256
+from mtp.provenance_paths import verify_reference
 from mtp.trait_guilds import OXYGEN_GUILDS, TABLE1_TRAITS
 from mtp.workflow.consumers import open_core_bundle, verify_consumer_record
 from mtp.workflow.operations import OPERATIONS, validate_execution_product
 from mtp.workflow.runtime import execute_workflow
+from test_no_absolute_local_paths import ABSOLUTE_LOCAL_PATH_PATTERN
 
 
 @pytest.fixture
@@ -54,7 +56,13 @@ def test_integrated_core_binds_outputs_and_does_not_read_checkout_assessments(
     core_manifest: Path, tmp_path: Path
 ) -> None:
     output = tmp_path / "integrated"
-    assert main(["--core-run", str(core_manifest), "--output-dir", str(output)]) == 0
+    try:
+        result = main(["--core-run", str(core_manifest), "--output-dir", str(output)])
+    except ValueError as error:
+        raise AssertionError(
+            "A valid synthetic core must publish portable eligibility evidence"
+        ) from error
+    assert result == 0
     record = verify_consumer_record(output / "core_consumption.json")
     provenance = json.loads((output / "integrated_evidence_provenance.json").read_text())
     assert provenance["core_run_id"] == record.run_id
@@ -68,7 +76,27 @@ def test_integrated_core_binds_outputs_and_does_not_read_checkout_assessments(
     assert all(
         not item["verdicts_by_procedure"] for item in provenance["assessment_status"].values()
     )
+    for item in provenance["assessment_status"].values():
+        assert item["source"].get("input_origin") == "absent"
+        assert item["source"].get("supplied") is False
+        assert item["source"]["binding"] == "not_supplied"
     assert all(source["sha256"] is None for source in provenance["native_sources"].values())
+    provenance_path = output / "integrated_evidence_provenance.json"
+    assert provenance["path_basis"]["kind"] == "root-relative-v1"
+    assert not Path(provenance["ora_eligibility_source"]["path"]).is_absolute()
+    assert not ABSOLUTE_LOCAL_PATH_PATTERN.search(
+        "/" + provenance["ora_eligibility_source"]["path"]
+    )
+    assert (
+        verify_reference(
+            provenance_path,
+            provenance["ora_eligibility_source"],
+            path_basis=provenance["path_basis"],
+        )
+        == open_core_bundle(core_manifest).path("ora_profiles").resolve()
+    )
+    for filename in (provenance_path.name, "integrated_evidence_assessments.tsv"):
+        assert not ABSOLUTE_LOCAL_PATH_PATTERN.search((output / filename).read_text())
 
 
 def test_integrated_core_rejects_conflicting_input_before_output(
@@ -250,6 +278,13 @@ def test_integrated_core_reads_actual_ora_test_cohort(
     assert all(row["test_status"] == "tested_profiles_summarized" for row in records)
     provenance = json.loads((output / "integrated_evidence_provenance.json").read_text())
     assert provenance["ora_eligibility_source"]["product_id"] == "ora_profiles"
-    assert provenance["ora_eligibility_source"]["path"] == str(ora_path)
+    assert (
+        verify_reference(
+            output / "integrated_evidence_provenance.json",
+            provenance["ora_eligibility_source"],
+            path_basis=provenance["path_basis"],
+        )
+        == ora_path.resolve()
+    )
     assert provenance["ora_eligibility_source"]["sha256"] == file_sha256(ora_path)
     verify_consumer_record(output / "core_consumption.json")
