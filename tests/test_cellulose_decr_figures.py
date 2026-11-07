@@ -70,7 +70,10 @@ def test_figures_draw_from_the_committed_tables(tmp_path: Path) -> None:
     assert overlap["title"].startswith(
         f"{observed['three_way_core']} of {observed['three_way_union']} "
     )
-    assert overlap["title"] == captions["statements"]["overlap"]
+    assert captions["statements"]["overlap"] == (
+        overlap["title"] + ". Nominal p-values: 2 finite endpoints; 0 unavailable. "
+        "This display scope is not a correction family."
+    )
     # PD, CRC and the pooled result keep p < 0.05 under every condition definition; HIV
     # does not (SIGNIFICANT_RESULTS_SUMMARY.md, Table A2).
     direction = captions["figures"]["figures_graphical/fig3_direction_by_body_site.svg"]
@@ -79,7 +82,10 @@ def test_figures_draw_from_the_committed_tables(tmp_path: Path) -> None:
     )
     assert "HIV 10 : 2 : 2" in direction["takeaway"]
     assert captions["statements"]["fragile"].startswith("the HIV result depends")
-    assert captions["statements"]["crc_compartments"] in direction["caveat"]
+    assert (
+        captions["statements"]["crc_compartments"].split(". Nominal p-values:")[0]
+        in (direction["caveat"])
+    )
 
 
 # --------------------------------------------------------------------------- captions
@@ -126,7 +132,7 @@ def test_direction_caption_follows_the_direction_not_only_p(results: figures.Res
     assert "the increased signature does in CRC only under some" in (
         figures.caption_direction(edited).title
     )
-    assert "CRC: p from " in figures.caption_direction(edited).caveat
+    assert "CRC: nominal p from " in figures.caption_direction(edited).caveat
     fragile = figures.fragile_statement(edited)
     assert fragile.startswith("the HIV and CRC results depend")
     # Quoted beside decreased-direction claims, it must say which way CRC goes (#608).
@@ -145,7 +151,7 @@ def test_mixed_direction_is_named_not_only_its_p_range(results: figures.Results)
     assert figures.direction_verdicts(edited)["HIV"].kind == "mixed"
     caption = figures.caption_direction(edited)
     assert "HIV changes direction with the definition" in caption.title
-    assert "HIV: p from " in caption.caveat
+    assert "HIV: nominal p from " in caption.caveat
     assert " in opposite directions across " in caption.caveat
     assert figures.fragile_statement(edited).endswith(" in opposite directions)")
 
@@ -158,10 +164,10 @@ def test_fragile_pooled_result_starts_its_sentence_and_is_named(
         table.loc[rows[1:], "binom_p_two_sided"] = 0.5
 
     edited = _with_scenarios(results, pooled_under_one)
-    assert "All three pooled: p from " in figures.caption_direction(edited).caveat
+    assert "All three pooled: nominal p from " in figures.caption_direction(edited).caveat
     statement = figures.fragile_statement(edited)
     assert statement.startswith("the HIV and pooled results depend on the condition definition")
-    assert "(study-level p HIV " in statement
+    assert "(study-level nominal p HIV " in statement
     assert "; pooled " in statement
 
 
@@ -170,7 +176,7 @@ def test_direction_caption_without_significance_or_data(results: figures.Results
         table["binom_p_two_sided"] = 0.5
 
     title = figures.caption_direction(_with_scenarios(results, no_significance)).title
-    assert title.endswith("in no condition at p < 0.05")
+    assert title.endswith("in no condition at nominal p < 0.05")
     assert " not " not in title
 
     def no_hiv(table: pd.DataFrame) -> None:
@@ -187,7 +193,7 @@ def test_direction_caption_without_significance_or_data(results: figures.Results
         (0.19, 0.73, "random sets of whole stool signatures overlap about as much"),
         (0.01, 0.02, "they overlap more than random sets of whole stool signatures"),
         (0.99, 0.98, "they overlap less than random sets of whole stool signatures"),
-        (0.04, 0.73, "mean-distance p = 0.040 and core p = 0.73"),
+        (0.04, 0.73, "mean-distance nominal p = 0.040 and core nominal p = 0.73"),
     ],
 )
 def test_overlap_statement_reads_both_u6_endpoints(

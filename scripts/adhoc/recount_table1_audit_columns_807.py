@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import math
 from pathlib import Path
 
 import pandas as pd
@@ -38,6 +39,12 @@ SIX = {
     "METPO:1000623": "moderately halophilic",
 }
 COCCUS, SPHERE = "METPO:1000668", "METPO:1000683"
+
+
+def _p_value_label(p_value: float | None) -> str:
+    if p_value is None or not math.isfinite(p_value):
+        return "p unavailable"
+    return f"nominal p={p_value:.3g}"
 
 
 def recount(matrix_path: Path, profiles_path: Path, benchmark_path: Path) -> None:
@@ -71,8 +78,16 @@ def recount(matrix_path: Path, profiles_path: Path, benchmark_path: Path) -> Non
     pearson = stats.pearsonr(profiles[COCCUS], profiles[SPHERE])
     spearman = stats.spearmanr(profiles[COCCUS], profiles[SPHERE])
     print(
-        f"coccus vs sphere profile counts: Pearson r={pearson[0]:.3f} (p={pearson[1]:.3g}); "
-        f"Spearman rho={spearman[0]:.3f} (p={spearman[1]:.3g})"
+        f"coccus vs sphere profile counts: Pearson r={pearson[0]:.3f} "
+        f"({_p_value_label(pearson[1])}); "
+        f"Spearman rho={spearman[0]:.3f} ({_p_value_label(spearman[1])})"
+    )
+    finite_p_values = sum(
+        p_value is not None and math.isfinite(p_value) for p_value in (pearson[1], spearman[1])
+    )
+    print(
+        f"Correlation comparisons: 2; finite nominal p-values: {finite_p_values}; "
+        f"unavailable p-values: {2 - finite_p_values}; no multiplicity correction."
     )
 
 
