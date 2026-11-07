@@ -33,6 +33,11 @@ def build_commands(context: ArmContext) -> list[Command]:
     commit_args = ("--code-commit", context.code_commit)
     seed_args = () if context.seed is None else ("--seed", str(context.seed))
     replicate_args = () if context.replicates is None else ("--replicates", str(context.replicates))
+    provenance_args = (
+        ()
+        if context.provenance_root is None
+        else ("--provenance-root", str(context.provenance_root))
+    )
 
     def command(
         name: str,
@@ -291,6 +296,7 @@ def build_commands(context: ArmContext) -> list[Command]:
                 "--influence-status",
                 str(influence / "native_manifest.json"),
                 *commit_args,
+                *provenance_args,
             ),
             (
                 context.manifest,
