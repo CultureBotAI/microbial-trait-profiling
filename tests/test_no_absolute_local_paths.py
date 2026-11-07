@@ -46,6 +46,16 @@ from pathlib import Path
 
 import pytest
 
+from mtp.local_path_patterns import (
+    TEMP_ROOT_SOURCE as _TEMP_ROOT_SOURCE,
+)
+from mtp.local_path_patterns import (
+    USER_HOME_SOURCE as _USER_HOME_SOURCE,
+)
+from mtp.local_path_patterns import (
+    compile_absolute_local_paths,
+)
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 MAX_SCAN_BYTES = 5_000_000
 BINARY_SUFFIXES: frozenset[str] = frozenset(
@@ -164,18 +174,11 @@ EXPECTED_EXEMPT_HIT_COUNTS: dict[str, dict[str, int]] = {
     "tests/test_three_test_stage.py": {"temp_root": 1},
 }
 
-# Each alternative is written so that its own source text does not match (#1674).
-_USER_HOME_SOURCE = r"/(?:Users|home)/[A-Za-z0-9._-]+|[A-Za-z]:[\\/]+Users[\\/]+"
-# The optional prefix only widens the reported match. The trailing slash is a lookahead,
-# so a user home directly after a temp root is still found.
-_TEMP_ROOT_SOURCE = r"(?:/private)?/var/(?:folders)(?=/)|/private/(?:tmp)(?=/)"
-
 USER_HOME_PATTERN: re.Pattern[str] = re.compile(_USER_HOME_SOURCE)
 MACOS_TEMP_ROOT_PATTERN: re.Pattern[str] = re.compile(_TEMP_ROOT_SOURCE)
-# Both families in one pass; the named group says which family a match belongs to.
-ABSOLUTE_LOCAL_PATH_PATTERN: re.Pattern[str] = re.compile(
-    f"(?P<user_home>{_USER_HOME_SOURCE})|(?P<temp_root>{_TEMP_ROOT_SOURCE})"
-)
+# Both families in one pass; preserve case-sensitive named matches for diagnostics.
+ABSOLUTE_LOCAL_PATH_PATTERN = compile_absolute_local_paths(flags=0, classified=True)
+
 
 USER_HOME = "user_home"
 TEMP_ROOT = "temp_root"
