@@ -183,8 +183,24 @@ wrapper functions. Among other checks, it fails when:
 Discovery reads files lazily and keeps compact per-file summaries. Alias expansion,
 source size and summary size have explicit limits. The derivation recognizer runs only
 in functions whose own resolved calls include both `benjamini_hochberg` and
-`numpy.clip`. Its repeated subtree walks and nested-loop re-analysis are not separately
-bounded; the work can double with each additional loop nesting level (#1581).
+`numpy.clip`. A separate per-function `Limits.derivation_steps` budget defaults to
+1,000,000 work units (#1581, #1683). A registry-driven test requires every anchor
+claiming derived BY to fit within one quarter of the default budget. It charges
+AST visits, expression/statement analysis,
+loop fixed-point passes, declaration-name processing, and the sizes of copied,
+joined or invalidated fact environments before doing that work. Exceeding the budget
+refuses discovery with the source path, anchor, attempted work and limit, and asks
+the developer to simplify the function or review and raise `Limits.derivation_steps`;
+it does not silently skip the anchor or credit a partial witness. This deterministic
+per-function work bound is not a
+wall-time or RSS guarantee.
+`global` and `nonlocal` declarations conservatively invalidate the declared names
+(#1609), including read-only vectors: declaration-aware resolution of enclosing
+bindings is outside the recognizer. Rejecting a declared read even when its Python
+and arithmetic are valid is the false-negative boundary. An undeclared free-vector
+read may be accepted. Keeping the invalidation also rejects declared callable
+bindings that the recognizer cannot verify; it does not establish correct lookup
+for undeclared enclosing callables (#1684).
 Derivation facts are reduced while each file's AST is resident; the summaries retain
 neither the AST nor source text. The check establishes a supported calculation in an
 anchor, not the ancestry of each family's output. At `run_composition_calibration`,
@@ -215,9 +231,15 @@ Within a registered function, it also does not detect:
   through a subscript or attribute rather than a local name, are not credited.
   Escaping `break` or `continue` paths inside those unsupported blocks are not propagated;
 - other binding forms, including starred targets, `def`/`class` rebinding (including
-  decorated definitions), `global`
-  writes from another function and context managers that suppress a `raise`, are not
-  modelled;
+  decorated definitions), `global` writes from another function and context managers
+  that suppress a `raise`, are not modelled. An enclosing function's binding that
+  shadows an imported callable is modelled only when it is an import or a plain
+  assignment from a name or dotted name (`np = fake`); its parameters, loop
+  variables, annotated or tuple assignments, assignments from any other
+  expression (`np = load(fake)`, for example) and every other binding form (a
+  walrus, `with ... as`, a `match` capture) are not, so an undeclared read may be
+  falsely credited as the module import. Known-acceptance tests pin this limitation;
+  lexical-resolution repair is follow-up work (#1684, #1699, #1711);
 - whether a witnessed calculation reaches an output or is subsequently used. The
   check rejects constant-false branches, discarded expression statements and calculations
   after explicit block terminators, but does not prove general reachability or evaluate
