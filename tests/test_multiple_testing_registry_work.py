@@ -98,8 +98,8 @@ def test_module_ast_walk_counts_toward_derivation_budget() -> None:
         discover({"src/x.py": text}, limits=limits)
 
 
-def test_declared_names_are_charged_even_when_they_share_one_fact() -> None:
-    """Global names are strings, not child AST nodes; duplicates keep env tiny."""
+def test_repeated_declarations_exceed_combined_walk_and_binding_budget() -> None:
+    """Aggregate refusal includes overlapping walk and binding charges."""
     limits = replace(DEFAULT_LIMITS, derivation_steps=500)
     names = ", ".join(["sentinel"] * 1000)
     text = source(f"global {names}\n" + PREFIX + "return np.clip(q * harmonic_sum, 0, 1)\n")
