@@ -884,6 +884,10 @@ def test_calibration_summary_marks_p_value_columns_as_uncorrected_diagnostics(
     assert family["rejections_q"] == 0
     assert family["rejection_rate_p"] == pytest.approx(0.0)
     assert family["rejection_rate_q"] == pytest.approx(0.0)
+    # The FAMILY interval counts replicates with any q <= 0.05, not nominal p (#1794).
+    assert (family["rejection_rate_p_ci_low"], family["rejection_rate_p_ci_high"]) == (
+        pytest.approx(cal._interval(0, 1))
+    )
     assert family["rejections_p"] == family["rejections_q"]
     assert family["rejection_rate_p"] == family["rejection_rate_q"]
 
@@ -906,6 +910,10 @@ def test_calibration_summary_marks_p_value_columns_as_uncorrected_diagnostics(
     assert mixed_family["rejections_q"] == 1
     assert mixed_family["rejection_rate_p"] == pytest.approx(0.5)
     assert mixed_family["rejection_rate_q"] == pytest.approx(0.5)
+    assert (
+        mixed_family["rejection_rate_p_ci_low"],
+        mixed_family["rejection_rate_p_ci_high"],
+    ) == pytest.approx(cal._interval(1, 2))
 
     note = str(cal.P_VALUE_DIAGNOSTICS_NOTE)
     assert note == (
