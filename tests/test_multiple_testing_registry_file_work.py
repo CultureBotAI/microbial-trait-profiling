@@ -55,8 +55,7 @@ def accepted(
 
 
 def assert_file_refusal(message: str, attempted: int, limit: int) -> None:
-    assert "file" in message.lower()
-    assert "derivation work budget" in message
+    assert message.startswith("per-file derivation work budget exceeded: ")
     assert "src/two.py:second" in message
     assert re.search(rf"\battempted {attempted}\b", message)
     assert re.search(rf"\blimit {limit}\b", message)
@@ -102,8 +101,7 @@ def test_zero_file_allowance_refuses_the_first_attempted_candidate_node() -> Non
     with pytest.raises(guard.DiscoveryLimitError) as stopped:
         guard.discover({"src/two.py": TWO_CANDIDATES}, limits=configured(0))
     message = str(stopped.value)
-    assert "file" in message.lower()
-    assert "derivation work budget" in message
+    assert message.startswith("per-file derivation work budget exceeded: ")
     assert "src/two.py:first" in message
     assert "attempted 1, limit 0" in message
 
