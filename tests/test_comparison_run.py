@@ -8,6 +8,7 @@ has no annotated taxon on its decreased side, so the shared-basis exclusion drop
 from __future__ import annotations
 
 import csv
+import inspect
 import json
 import random
 import shutil
@@ -28,6 +29,7 @@ from mtp.datamodel.workflow_pydantic import (
     WorkflowRun,
 )
 from mtp.integrated_evidence import main as integrated_evidence_main
+from mtp.integrated_provenance import verify_integrated_provenance
 from mtp.multiplicity import sources as multiplicity_sources
 from mtp.multiplicity.stage import run_post_arm
 from mtp.paths import REPO_ROOT
@@ -291,6 +293,170 @@ def test_every_file_the_stage_reads_is_declared_by_its_arm_plan(tmp_path: Path) 
 
 def test_compare_stage_runs_on_arm_runs_and_verifies(stage: dict[str, Path]) -> None:
     assert arms_main(["verify-comparison", str(stage["comparison"])]) == 0
+
+
+def _external_comparison_sources(
+    stage: dict[str, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> tuple[Path, Path]:
+    """Use genuine sibling source/report trees with a private common ancestor."""
+    root = stage["comparison"].parent.resolve()
+    boundary = tmp_path.parent.resolve()
+    assert root.parent == boundary
+    assert not tmp_path.resolve().is_relative_to(root)
+    # Environment configuration exercises the real root check: no producer,
+    # PortablePaths, core verifier or arm verifier is replaced.
+    monkeypatch.setenv("TMPDIR", str(boundary))
+    pooled = (
+        stage["comparison"]
+        / "arm1_pooled_stats"
+        / "trait_profile_paired_contrast_trait_stats_pooled.tsv"
+    )
+    assert pooled.is_file()
+    assert pooled.resolve().is_relative_to(root)
+    assert all(
+        stage[name].resolve().is_relative_to(root) for name in ("core", "noel", "jed", "ilyas")
+    )
+    return root, pooled
+
+
+def _require_comparison_root_argument() -> None:
+    parameter = inspect.signature(execute_comparison_run).parameters.get("provenance_root")
+    assert parameter is not None, "The comparison API must accept a provenance root"
+    assert parameter.kind == inspect.Parameter.KEYWORD_ONLY
+    assert parameter.default is None
+
+
+@pytest.mark.parametrize("entrypoint", ["cli", "api"])
+def test_comparison_forwards_a_safe_source_root_to_an_external_real_report(
+    stage: dict[str, Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    entrypoint: str,
+) -> None:
+    root, pooled = _external_comparison_sources(stage, tmp_path, monkeypatch)
+    refused = tmp_path / "without-root"
+    with pytest.raises(ValueError, match="Provenance root must be below a home or temporary root"):
+        execute_comparison_run(
+            stage["core"],
+            stage["noel"],
+            stage["jed"],
+            stage["ilyas"],
+            refused,
+            arm1_pooled_stats=pooled,
+        )
+    assert not (refused / "comparison_run.json").exists()
+    assert not (refused / "integrated_evidence/integrated_evidence_provenance.json").exists()
+
+    output = tmp_path / "with-root"
+    if entrypoint == "api":
+        _require_comparison_root_argument()
+    try:
+        if entrypoint == "cli":
+            arguments = [str(stage[name]) for name in ("core", "noel", "jed", "ilyas")]
+            assert (
+                arms_main(
+                    [
+                        "compare",
+                        *arguments,
+                        str(output),
+                        "--arm1-pooled-stats",
+                        str(pooled),
+                        "--provenance-root",
+                        str(root),
+                        "--allow-temporary-output",
+                    ]
+                )
+                == 0
+            )
+        else:
+            execute_comparison_run(
+                stage["core"],
+                stage["noel"],
+                stage["jed"],
+                stage["ilyas"],
+                output,
+                arm1_pooled_stats=pooled,
+                provenance_root=root,
+            )
+    except (SystemExit, ValueError) as error:
+        raise AssertionError(
+            "A supplied safe root must reach the real integrated producer"
+        ) from error
+
+    record_path = output / "integrated_evidence/integrated_evidence_provenance.json"
+    raw = record_path.read_text(encoding="utf-8")
+    record = json.loads(raw)
+    assert record["path_basis"] == {"kind": "supplied-root-v1"}
+    assert str(root) not in raw
+    assert (
+        verify_reference(
+            record_path,
+            record["native_sources"]["arm1_pooled_stats"],
+            path_basis=record["path_basis"],
+            provenance_root=root,
+        )
+        == pooled.resolve()
+    )
+    verified = verify_integrated_provenance(record_path, provenance_root=root)
+    references = verified["verified_references"]
+    assert isinstance(references, list)
+    assert {
+        "native_sources.arm1_pooled_stats",
+        "native_sources.arm2_enrichment",
+        "native_sources.full_screen",
+        "assessment_status.orientation_status.source",
+        "ora_eligibility_source",
+    } <= set(references)
+    assert verify_comparison_run(output).core_run_id == _comparison(stage).core_run_id
+    with pytest.raises(ValueError, match="requires --provenance-root"):
+        verify_integrated_provenance(record_path)
+    wrong = tmp_path / "wrong-source-root"
+    wrong.mkdir()
+    with pytest.raises(ValueError, match="Invalid source reference"):
+        verify_integrated_provenance(record_path, provenance_root=wrong)
+
+
+def test_comparison_rejects_a_root_that_excludes_bound_sources(
+    stage: dict[str, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _, pooled = _external_comparison_sources(stage, tmp_path, monkeypatch)
+    _require_comparison_root_argument()
+    output = tmp_path / "excludes-arm-sources"
+    # The core directory exists, but arm outputs and manual pooled stats lie outside it.
+    with pytest.raises(ValueError, match="Source is outside the declared provenance root"):
+        execute_comparison_run(
+            stage["core"],
+            stage["noel"],
+            stage["jed"],
+            stage["ilyas"],
+            output,
+            arm1_pooled_stats=pooled,
+            provenance_root=stage["core"].parent,
+        )
+    assert not (output / "comparison_run.json").exists()
+    assert not (output / "integrated_evidence/integrated_evidence_provenance.json").exists()
+
+
+def test_external_comparison_root_must_also_contain_generated_pooled_stats(
+    stage: dict[str, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root, _ = _external_comparison_sources(stage, tmp_path, monkeypatch)
+    _require_comparison_root_argument()
+    output = tmp_path / "generated-stats-outside-root"
+    with pytest.raises(ValueError, match="Source is outside the declared provenance root"):
+        execute_comparison_run(
+            stage["core"],
+            stage["noel"],
+            stage["jed"],
+            stage["ilyas"],
+            output,
+            provenance_root=root,
+        )
+    assert (
+        output / "arm1_pooled_stats/trait_profile_paired_contrast_trait_stats_pooled.tsv"
+    ).is_file()
+    assert not (output / "comparison_run.json").exists()
+    assert not (output / "integrated_evidence/integrated_evidence_provenance.json").exists()
 
 
 @pytest.mark.parametrize("entrypoint", ["comparison", "sources"])

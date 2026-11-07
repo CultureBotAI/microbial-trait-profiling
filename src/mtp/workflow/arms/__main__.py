@@ -45,6 +45,12 @@ def build_parser() -> argparse.ArgumentParser:
             action="store_true",
             help="Run analysis and calibration without optional figure rendering",
         )
+        if name == "noel":
+            arm.add_argument(
+                "--provenance-root",
+                type=Path,
+                help="Root for integrated-evidence provenance; must contain all bound inputs",
+            )
         add_temporary_output_option(arm)
     verify = commands.add_parser(
         "verify", help="Verify a completed arm execution and its core bindings"
@@ -63,6 +69,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--arm1-pooled-stats",
         type=Path,
         help="Optional precomputed trait_profile_paired_contrast_trait_stats_pooled.tsv",
+    )
+    compare.add_argument(
+        "--provenance-root",
+        type=Path,
+        help="Root for integrated-evidence provenance; must contain all bound inputs",
     )
     add_temporary_output_option(compare)
     verify_cmp = commands.add_parser(
@@ -89,6 +100,7 @@ def main(argv: list[str] | None = None) -> int:
             args.ilyas_run,
             args.output,
             arm1_pooled_stats=args.arm1_pooled_stats,
+            provenance_root=args.provenance_root,
         )
         print(cmp_record.manifest_path)
         return 0
@@ -112,6 +124,7 @@ def main(argv: list[str] | None = None) -> int:
         replicates=args.replicates,
         seed=args.seed,
         figures=not args.no_figures,
+        provenance_root=getattr(args, "provenance_root", None),
     )
     print(record.manifest_path)
     return 0

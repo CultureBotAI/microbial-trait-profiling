@@ -435,8 +435,11 @@ def execute_arm(
     seed: int | None = None,
     figures: bool = True,
     repository: Path = REPO_ROOT,
+    provenance_root: Path | None = None,
 ) -> ArmRun:
     """Verify sources, execute the complete selected plan, and retain failed attempts."""
+    if provenance_root is not None and arm != "noel":
+        raise ValueError("--provenance-root is supported only for the Noel arm")
     if output.is_symlink():
         raise ValueError(f"Output must not be a symlink: {output}")
     repository, manifest, output = repository.resolve(), manifest.resolve(), output.resolve()
@@ -475,6 +478,7 @@ def execute_arm(
         contrast_population=ContrastPopulation(bundle.run.contrast_population).value,
         direction_basis=DirectionBasis(bundle.run.direction_basis).value,
         strain_rollup=run_strain_rollup(bundle.run),
+        provenance_root=provenance_root.resolve() if provenance_root is not None else None,
     )
     commands = planner(context)
     _validate_plan(commands, context)

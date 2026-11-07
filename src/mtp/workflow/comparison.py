@@ -560,6 +560,7 @@ def execute_comparison_run(
     *,
     arm1_pooled_stats: Path | None = None,
     code_commit: str | None = None,
+    provenance_root: Path | None = None,
 ) -> ComparisonRun:
     """Execute a complete cross-arm comparison stage from verified core and arm manifests (#776)."""
     output = output.resolve()
@@ -665,6 +666,8 @@ def execute_comparison_run(
         effective_commit,
         "--require-complete-sources",
     ]
+    if provenance_root is not None:
+        ie_argv.extend(("--provenance-root", str(provenance_root.resolve())))
     integrated_evidence_main(ie_argv)
 
     provenance = json.loads(

@@ -288,6 +288,21 @@ just rerun-compare /absolute/path/core-runs/run-ID/run.json \
 just rerun-verify-comparison /absolute/path/reruns/comparison
 ```
 
+Noel and comparison reruns accept an optional `--provenance-root ROOT` for their
+integrated-evidence records (#1780). For example, append it to `just rerun-noel`
+or `just rerun-compare`. The root must be an existing safe source directory
+containing every input that the integrated-evidence producer binds. Its existing
+privacy and containment checks still apply. Jed and Ilyas reject this option;
+their arm plans do not invoke that producer.
+
+For a comparison report outside the source tree, supply `--arm1-pooled-stats`
+from inside the declared root. Otherwise the comparison creates that source
+inside its output directory, which must then also lie beneath the root. A report
+outside its supplied root declares `supplied-root-v1`; verifying its source
+references requires `just verify-integrated-provenance RECORD
+--provenance-root ROOT`. Noel retains the option in its hash-bound command plan.
+Omitting it preserves the existing commands, parameters and root inference.
+
 Verification derives each analysis basis again from the verified core: its recorded
 strain rollup scope, its feature catalog and the retained features of its count and ORA
 profile tables. A record whose bases differ, in any field, number or order, is refused
