@@ -1211,6 +1211,8 @@ def write_interpretations(
     )
     term_noun = "term" if n_non_intercept_terms == 1 else "terms"
     availability_verb = "has" if n_non_intercept_terms == 1 else "have"
+    model_term_noun = "term" if n_model_tests == 1 else "terms"
+    model_availability_verb = "has" if n_model_tests == 1 else "have"
     plotted_scope = (
         f"{n_non_intercept_terms} of the {len(displayed_model)} plotted cellulose-z terms "
         f"{availability_verb} a nominal test"
@@ -1218,7 +1220,7 @@ def write_interpretations(
     interaction_context = (
         f", and the interval {interval} zero. This is the interaction's nominal p, one of "
         f"{n_non_intercept_terms} non-intercept model {term_noun} tested in the figure "
-        f"({n_model_tests} terms across {n_outcomes} outcomes in "
+        f"({n_model_tests} {model_term_noun} across {n_outcomes} outcomes in "
         "`pd_cellulose_interaction_model.tsv`), not corrected for "
         if interaction_tested
         else f". The interaction was not tested; {plotted_scope} "
@@ -1228,11 +1230,12 @@ def write_interpretations(
     model_test_scope = (
         f"uncorrected across {n_non_intercept_terms} non-intercept model {term_noun} plotted in "
         f"`pd_cellulose_enrichment_test.png` and "
-        f"{n_model_tests} terms across {n_outcomes} outcomes in "
+        f"{n_model_tests} {model_term_noun} across {n_outcomes} outcomes in "
         "`pd_cellulose_interaction_model.tsv`"
         if interaction_tested
         else f"{plotted_scope} in `pd_cellulose_enrichment_test.png`; "
-        f"{n_model_tests} of the {len(model_table)} table terms have a nominal test across "
+        f"{n_model_tests} of the {len(model_table)} table terms {model_availability_verb} "
+        "a nominal test across "
         f"{n_outcomes} outcomes in `pd_cellulose_interaction_model.tsv`"
     )
     model_scope_separator = ", " if interaction_tested else "; "
@@ -1241,6 +1244,46 @@ def write_interpretations(
         "cellulose annotation beyond the main PD and direction effects."
         if interaction_tested
         else ""
+    )
+    comparison_rates = (
+        "Among decreased fecal profiles, cellulose z > 0 in "
+        f"`{dec_vs_other.positive_z_rate:.1%}` of PD profiles and "
+        f"`{dec_other.positive_z_rate:.1%}` of other profiles; among increased fecal "
+        f"profiles, in `{inc_vs_other.positive_z_rate:.1%}` and "
+        f"`{inc_other.positive_z_rate:.1%}`."
+        if dec_vs_other.p_value_type == "nominal" and inc_vs_other.p_value_type == "nominal"
+        else " ".join(
+            (
+                f"Among {direction} fecal profiles, cellulose z > 0 in "
+                f"`{pd_row.positive_z_rate:.1%}` of PD profiles and "
+                f"`{other_row.positive_z_rate:.1%}` of other profiles."
+                if pd_row.p_value_type == "nominal"
+                else f"The {direction}-direction PD-vs-other comparison was not tested."
+            )
+            for direction, pd_row, other_row in (
+                ("decreased", dec_vs_other, dec_other),
+                ("increased", inc_vs_other, inc_other),
+            )
+        )
+    )
+    direction_noun = "direction" if n_directions == 1 else "directions"
+    direction_scope = (
+        f"uncorrected across {n_directions} {direction_noun} x {n_tests_per_direction} tests = "
+        f"{n_direction_tests} nominal tests in `pd_cellulose_vs_other_feces_summary.tsv`"
+    )
+    odds_ratio_text = (
+        f"an odds ratio of `{dec_vs_other.pd_vs_other_positive_z_odds_ratio:.2f}`"
+        if not np.isnan(dec_vs_other.pd_vs_other_positive_z_odds_ratio)
+        else "an odds ratio that is not estimable"
+    )
+    comparison_test = (
+        f"The decreased-direction PD-vs-other Fisher test gives {odds_ratio_text} and "
+        f"`nominal p={dec_vs_other.pd_vs_other_fisher_p:.3g}` "
+        f"(two-sided Mann-Whitney `nominal p={dec_vs_other.pd_vs_other_mannwhitney_p:.3g}`; "
+        f"{direction_scope}). It treats the profiles of one "
+        "study as independent, so the study-clustered model below is the better guide."
+        if dec_vs_other.p_value_type == "nominal"
+        else f"The decreased-direction PD-vs-other comparison was not tested ({direction_scope})."
     )
 
     lines = [
@@ -1308,24 +1351,9 @@ def write_interpretations(
         "",
         "## PD vs Other Fecal Profiles",
         "",
-        (
-            "Among decreased fecal profiles, cellulose z > 0 in "
-            f"`{dec_vs_other.positive_z_rate:.1%}` of PD profiles and "
-            f"`{dec_other.positive_z_rate:.1%}` of other profiles; among increased fecal "
-            f"profiles, in `{inc_vs_other.positive_z_rate:.1%}` and "
-            f"`{inc_other.positive_z_rate:.1%}`."
-        ),
+        comparison_rates,
         "",
-        (
-            f"The decreased-direction PD-vs-other Fisher test gives an odds ratio "
-            f"of `{dec_vs_other.pd_vs_other_positive_z_odds_ratio:.2f}` and "
-            f"`nominal p={dec_vs_other.pd_vs_other_fisher_p:.3g}` "
-            f"(two-sided Mann-Whitney `nominal p={dec_vs_other.pd_vs_other_mannwhitney_p:.3g}`; "
-            f"uncorrected across {n_directions} directions x {n_tests_per_direction} tests = "
-            f"{n_direction_tests} nominal tests in "
-            "`pd_cellulose_vs_other_feces_summary.tsv`). It treats the profiles of one "
-            "study as independent, so the study-clustered model below is the better guide."
-        ),
+        comparison_test,
         "",
         (
             f"The feces-only linear model includes PD, decreased direction, and the "

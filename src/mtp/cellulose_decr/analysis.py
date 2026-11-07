@@ -1771,14 +1771,72 @@ def tier(value: float) -> str:
     return "not significant (nominal p >= 0.05)"
 
 
-def definition_range(scenarios: pd.DataFrame, population_name: str, short: str, unit: str) -> str:
-    """How far a feces direction p moves across the condition-definition scenarios."""
+def _nominal_p(value: float) -> str:
+    """Format a narrative endpoint without changing its stored numeric value."""
+    return f"{value:.3g}" if math.isfinite(value) else "unavailable"
+
+
+def _nominal_scope(values: Sequence[float]) -> str:
+    finite = sum(math.isfinite(value) for value in values)
+    return (
+        f"Nominal narrative endpoints: {finite} finite; {len(values) - finite} unavailable; "
+        "not a correction family."
+    )
+
+
+def _scenario_endpoints(chosen: pd.DataFrame, column: str) -> list[float]:
+    """Count each selected scenario once, independently of equal p-values.
+
+    Callers have already selected population, condition, unit and compartment.
+    A caller without a scenario column supplies one condition definition for that
+    scope. Repeated copies must agree; an index is not a new scientific endpoint.
+    """
+    if chosen.empty:
+        return []
+    groups = (
+        [group for _, group in chosen.groupby("scenario", sort=False, dropna=False)]
+        if "scenario" in chosen.columns
+        else [chosen]
+    )
+    values = []
+    for group in groups:
+        endpoints = [float(value) for value in group[column]]
+        first = endpoints[0]
+        if any(
+            value != first and not (math.isnan(value) and math.isnan(first))
+            for value in endpoints[1:]
+        ):
+            raise ValueError("Conflicting nominal p-values for one scenario endpoint")
+        values.append(first)
+    return values
+
+
+def _nominal_range(values: Sequence[float]) -> str:
+    finite = [value for value in values if math.isfinite(value)]
+    if finite:
+        return f"{_nominal_p(min(finite))} to {_nominal_p(max(finite))}"
+    return "unavailable" if values else "unavailable (no condition definitions)"
+
+
+def _range_statement(test: str, values: Sequence[float]) -> str:
+    connector = " from " if any(math.isfinite(value) for value in values) else ": "
+    return f"nominal {test} p-values range{connector}{_nominal_range(values)}"
+
+
+def _direction_endpoints(
+    scenarios: pd.DataFrame, population_name: str, short: str, unit: str
+) -> list[float]:
     chosen = scenarios[
         scenarios["contrast_population"].eq(population_name)
         & scenarios["short_condition"].eq(short)
         & scenarios["unit"].eq(unit)
-    ]["binom_p_two_sided"]
-    return f"{fmt_p(float(chosen.min()))} to {fmt_p(float(chosen.max()))}"
+    ]
+    return _scenario_endpoints(chosen, "binom_p_two_sided")
+
+
+def definition_range(scenarios: pd.DataFrame, population_name: str, short: str, unit: str) -> str:
+    """How far a feces direction p moves across the condition-definition scenarios."""
+    return _nominal_range(_direction_endpoints(scenarios, population_name, short, unit))
 
 
 def direction_summary_rows(
@@ -1798,14 +1856,18 @@ def direction_summary_rows(
                     row["paired_exp_tied"],
                 )
                 share, p = row["share_down_untied"], row["binom_p_two_sided"]
-                extra = f"Wilcoxon 2-sided p = {fmt_p(row['wilcoxon_p_two_sided'])}"
+                wilcoxon = row["wilcoxon_p_two_sided"]
+                extra = f"Wilcoxon 2-sided nominal p = {_nominal_p(wilcoxon)}"
             else:
                 down, up, tied = row["study_down"], row["study_up"], row["study_tied"]
                 share, p = row["study_share_down_untied"], row["study_binom_p_two_sided"]
-                study_p = fmt_p(row["study_wilcoxon_p_two_sided"])
-                extra = f"Wilcoxon 2-sided p on study means = {study_p}"
+                wilcoxon = row["study_wilcoxon_p_two_sided"]
+                extra = f"Wilcoxon 2-sided nominal p on study means = {_nominal_p(wilcoxon)}"
             population_name = row["contrast_population"]
-            spread = definition_range(scenarios, population_name, row["short_condition"], unit)
+            endpoints = _direction_endpoints(
+                scenarios, population_name, row["short_condition"], unit
+            )
+            spread = _range_statement("sign-test", endpoints)
             units = "experiments" if unit == "experiment" else "studies"
             mean_delta = row["mean_paired_delta_inc_minus_dec"]
             effect = (
@@ -1837,9 +1899,11 @@ def direction_summary_rows(
                         "Taxa annotated with cellulose catabolic process formed a larger "
                         "annotation share in the decreased than in the increased signature in "
                         f"{share:.1%} of untied {units}; {extra}. Across the condition "
-                        "definitions of condition_definition_sensitivity.tsv this p runs from "
+                        "definitions of condition_definition_sensitivity.tsv, "
                         f"{spread}. Describes curated signature annotations, not measured "
-                        "cellulose degradation."
+                        "cellulose degradation. Endpoint counts include all distinct condition "
+                        "definitions represented by the range. "
+                        f"{_nominal_scope([wilcoxon, *endpoints])}"
                     ),
                 }
             )
@@ -1850,6 +1914,9 @@ def convergence_summary_rows(pairwise: pd.DataFrame) -> list[dict[str, Any]]:
     rows = []
     for _, row in pairwise.iterrows():
         if row["endpoint"] == "pairwise_jaccard_distance":
+            scope = _nominal_scope(
+                [row["u1_hypergeom_p"], row["u5_emp_weighted_p"], row["u6_signature_perm_p"]]
+            )
             rows.append(
                 {
                     "result_category": "2_cross_condition_overlap",
@@ -1872,16 +1939,20 @@ def convergence_summary_rows(pairwise: pd.DataFrame) -> list[dict[str, Any]]:
                     "p_value": row["u6_signature_perm_p"],
                     "significance_tier": tier(row["u6_signature_perm_p"]),
                     "summary_interpretation": (
-                        f"U1 exact p = {fmt_p(row['u1_hypergeom_p'])}; "
-                        f"U5 p = {fmt_p(row['u5_emp_weighted_p'])}; "
-                        "U6 (whole-signature permutation) p = "
-                        f"{fmt_p(row['u6_signature_perm_p'])}. Overlap of taxonomic labels "
-                        "ever reported decreased, not consistent loss."
+                        f"U1 exact nominal p = {_nominal_p(row['u1_hypergeom_p'])}; "
+                        f"U5 nominal p = {_nominal_p(row['u5_emp_weighted_p'])}; "
+                        "U6 (whole-signature permutation) nominal p = "
+                        f"{_nominal_p(row['u6_signature_perm_p'])}. Overlap of taxonomic labels "
+                        "ever reported decreased, not consistent loss. "
+                        f"{scope}"
                     ),
                 }
             )
         else:
             endpoint = row["endpoint"]
+            scope = _nominal_scope(
+                [row["u4_shared_trait_p"], row["u5_emp_weighted_p"], row["u6_signature_perm_p"]]
+            )
             observed = (
                 f"mean d_J = {row['jaccard_distance']:.4f}"
                 if endpoint == "mean_pairwise_jaccard_distance"
@@ -1898,8 +1969,9 @@ def convergence_summary_rows(pairwise: pd.DataFrame) -> list[dict[str, Any]]:
                     ),
                     "observed_statistic": observed,
                     "null_or_reference_expectation": (
-                        f"U4 {row['u4_shared_trait_p']:.3g}; U5 {row['u5_emp_weighted_p']:.3g}; "
-                        f"U6 {row['u6_signature_perm_p']:.3g} (p-values)"
+                        f"U4 {_nominal_p(row['u4_shared_trait_p'])}; "
+                        f"U5 {_nominal_p(row['u5_emp_weighted_p'])}; "
+                        f"U6 {_nominal_p(row['u6_signature_perm_p'])} (nominal p-values)"
                     ),
                     "effect_size_metric": (
                         f"U6 expected {row['u6_signature_perm_expected_jaccard_distance']:.4f}"
@@ -1911,22 +1983,29 @@ def convergence_summary_rows(pairwise: pd.DataFrame) -> list[dict[str, Any]]:
                     "significance_tier": tier(row["u6_signature_perm_p"]),
                     "summary_interpretation": (
                         "U6 keeps each study's co-reported taxa together; U1-U3 treat taxa "
-                        "as independent draws, which overstates significance."
+                        "as independent draws, which overstates significance. "
+                        f"{scope}"
                     ),
                 }
             )
     return rows
 
 
-def interaction_range(scenarios: pd.DataFrame, population_name: str, short: str, unit: str) -> str:
-    """How far a Feces-vs-GI p moves across the condition-definition scenarios (#673)."""
+def _interaction_endpoints(
+    scenarios: pd.DataFrame, population_name: str, short: str, unit: str
+) -> list[float]:
     chosen = scenarios[
         scenarios["contrast_population"].eq(population_name)
         & scenarios["short_condition"].eq(short)
         & scenarios["unit"].eq(unit)
         & scenarios["compartment_b"].eq(NON_FECAL_GI)
-    ]["fisher_p_two_sided"]
-    return f"{fmt_p(float(chosen.min()))} to {fmt_p(float(chosen.max()))}"
+    ]
+    return _scenario_endpoints(chosen, "fisher_p_two_sided")
+
+
+def interaction_range(scenarios: pd.DataFrame, population_name: str, short: str, unit: str) -> str:
+    """How far a Feces-vs-GI p moves across the condition-definition scenarios (#673)."""
+    return _nominal_range(_interaction_endpoints(scenarios, population_name, short, unit))
 
 
 def interaction_summary_rows(
@@ -1953,7 +2032,10 @@ def interaction_summary_rows(
             if stratified
             else row["studies_in_both_compartments"]
         )
-        spread = interaction_range(scenarios, population_name, row["short_condition"], row["unit"])
+        endpoints = _interaction_endpoints(
+            scenarios, population_name, row["short_condition"], row["unit"]
+        )
+        spread = _range_statement("exact conditional" if stratified else "Fisher exact", endpoints)
         estimate = (
             f"common odds ratio (conditional MLE) = {row['conditional_or']:.2f} "
             f"(95% CI {row['conditional_or_ci95_low']:.2f}-{row['conditional_or_ci95_high']:.2f})"
@@ -1981,7 +2063,9 @@ def interaction_summary_rows(
                 "significance_tier": tier(row["fisher_p_two_sided"]),
                 "summary_interpretation": (
                     f"{interaction_interpretation(row, shared)} Across the condition definitions "
-                    f"of condition_definition_interaction.tsv this p runs from {spread}."
+                    f"of condition_definition_interaction.tsv, {spread}. Endpoint counts include "
+                    "all distinct condition definitions represented by the range. "
+                    f"{_nominal_scope(endpoints)}"
                 ),
             }
         )
