@@ -16,6 +16,7 @@ from typing import Any
 
 import pytest
 
+from mtp import provenance_paths
 from mtp.cellulose_decr import selection_scan as scanner
 from mtp.cellulose_decr import study_split_run as runner
 from mtp.cellulose_decr.study_split import Protocol, run_splits
@@ -310,12 +311,24 @@ def test_execution_identity_is_captured_before_second_core_verification(
 
 
 @pytest.mark.parametrize("scope", ["off", "phenotype"])
-def test_real_arm_comparison_and_split_source_verification(tmp_path: Path, scope: str) -> None:
+def test_real_arm_comparison_and_split_source_verification(
+    tmp_path: Path, scope: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Exercise the public verified source boundary without substituting its verifier."""
+    from mtp.integrated_provenance import verify_integrated_provenance
+    from mtp.workflow.arms.noel import build_commands
     from mtp.workflow.arms.runtime import execute_arm
+    from mtp.workflow.arms.types import ArmContext, Command
     from mtp.workflow.comparison import execute_comparison_run, verify_comparison_run
     from test_comparison_run import _consumed_plan, _write_inputs
 
+    private_roots = provenance_paths._private_roots()
+    # Emulate Linux's disjoint checkout/temp trees even when both happen to
+    # share a safe ancestor on the developer's filesystem. A comparison must
+    # not infer a root above the checkout to reach a nested review locator.
+    monkeypatch.setattr(
+        provenance_paths, "_private_roots", lambda: private_roots | {REPO_ROOT.resolve()}
+    )
     inputs = _write_inputs(tmp_path / "inputs")
     with inputs["kg_edges"].open(newline="") as handle:
         edges = list(csv.DictReader(handle, delimiter="\t"))
@@ -374,13 +387,20 @@ def test_real_arm_comparison_and_split_source_verification(tmp_path: Path, scope
         repository_root=REPO_ROOT,
     )
     core_path = Path(core.manifest_path)
+
+    def noel_with_integration(context: ArmContext) -> list[Command]:
+        commands = _consumed_plan("noel")(context)
+        integration = [item for item in build_commands(context) if item.id == "integrated_evidence"]
+        assert len(integration) == 1
+        return [*commands, *integration]
+
     arms = {
         arm: Path(
             execute_arm(
                 arm,
                 core_path,
                 tmp_path / arm,
-                _consumed_plan(arm),
+                noel_with_integration if arm == "noel" else _consumed_plan(arm),
                 replicates=2,
                 seed=0,
                 figures=False,
@@ -393,6 +413,20 @@ def test_real_arm_comparison_and_split_source_verification(tmp_path: Path, scope
     )
     comparison_path = Path(comparison.manifest_path)
     assert verify_comparison_run(comparison_path).id == comparison.id
+    for directory in (tmp_path / "noel", comparison_path.parent):
+        provenance = directory / "integrated_evidence" / "integrated_evidence_provenance.json"
+        record = json.loads(provenance.read_text())
+        review = record["assessment_status"]["orientation_status"]["source"]["review"]
+        assert review["producer_relative_path"] == "methods/contrast_orientation_review.tsv"
+        assert "path" not in review
+        assert review["sha256"] == file_sha256(REPO_ROOT / review["producer_relative_path"])
+        verified = verify_integrated_provenance(provenance)
+        skipped = verified["skipped_references"]
+        assert isinstance(skipped, list)
+        assert {
+            "location": "assessment_status.orientation_status.source.review",
+            "reason": "producer_relative_path",
+        } in skipped
     protocol = Protocol(splits=2, min_studies=1, permutations=19)
     output = tmp_path / "split-sidecar"
     manifest = runner.execute(comparison_path, output, protocol)

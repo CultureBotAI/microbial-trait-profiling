@@ -21,7 +21,7 @@ from mtp.contrast_orientation import (
     read_review,
     write_manifest,
 )
-from mtp.paths import file_sha256
+from mtp.paths import REPO_ROOT, file_sha256
 from mtp.trait_guilds import TABLE1_TRAITS, load_profiles, read_bugsigdb_vintage
 from mtp.workflow.consumers import open_core_bundle, preflight_consumer_outputs
 from mtp.workflow.population import ORIENTED_DIRECTION_BASIS, POPULATIONS
@@ -126,6 +126,8 @@ def write_assessment(
     _write_table(output / "contrast_class_counts.tsv", counts)
     _write_table(output / "contrast_control_tier_counts.tsv", tiers)
     _write_table(output / "disease_control_comparison.tsv", comparisons)
+    review_path = review_input.resolve()
+    repository_root = REPO_ROOT.resolve()
     provenance = {
         "assessment_version": ASSESSMENT_VERSION,
         "classifier_version": CLASSIFIER_VERSION,
@@ -172,7 +174,9 @@ def write_assessment(
         "class_counts": counts,
         "control_tier_counts": tiers,
         "review": {
-            "path": str(review_input.resolve()),
+            "path": str(review_path.relative_to(repository_root))
+            if review_path.is_relative_to(repository_root)
+            else str(review_path),
             "sha256": file_sha256(review_input) if review_input.is_file() else None,
             "scope": "hand-reviewed experiments intersecting the analysed human paired population",
             "reviewed_experiments": len(corpus_review),

@@ -27,7 +27,10 @@ The refresh reuses the core and native inputs at the paths listed here. Full
 future revalidation requires retaining those inputs; the new output directory
 is not a self-contained archival copy of the core and other analysis arms.
 
-The production commands use these bindings. The three inputs were checkouts under `<temp dir>`; replace `/path/to` with yours (`OUTPUT` must be a fresh directory):
+The recorded production commands at revision `b284b29` used these bindings.
+The three inputs were checkouts under `<temp dir>`; the paths below are redacted
+(`OUTPUT` must be a fresh directory). These historical commands describe the
+execution; the current portable audit procedure follows separately.
 
 ```bash
 CORE=/path/to/mtp-workflow-629/.tmp/core-production-final/run-49a0c712ad3d4fc59d10804951fe511a
@@ -59,13 +62,47 @@ just integrated-evidence \
 just core-verify-consumer "$OUTPUT/enrichment/report.core_consumption.json"
 just core-verify-consumer "$OUTPUT/depletion/report.core_consumption.json"
 just core-verify-consumer "$OUTPUT/integrated_with_assessments/core_consumption.json"
-
-# The committed manifest contains this execution's absolute paths.
-# Update its current/partition paths if reproducing into another fresh directory.
-just audit-ora-refresh \
-  docs/reviews/2026-10-19-ora-provenance-refresh-inputs.json \
-  "$OUTPUT/audit.json"
 ```
+
+### Auditing a split layout with the current portable writer
+
+The current writer requires one safe source root containing the input manifest
+and every referenced source. A report can live elsewhere when
+`--provenance-root` is supplied. The filesystem root, a home directory or the
+temporary-directory root is not a valid shortcut for joining unrelated trees.
+
+Before auditing, recover all source files and check each historical, current,
+profiles and taxa-matrix file against the corresponding SHA-256 in the saved
+[audit](2026-10-19-ora-provenance-refresh-audit.json). Stage verified copies
+together beneath a fresh source directory whose names do not disclose an
+account name. Preserve the original manifest and audit. Create a separate
+`inputs.json` inside the staged source tree, retaining the five pair labels and
+four source roles but using paths relative to that directory. Then run:
+
+```bash
+STAGE=/path/to/restored-ora-source-tree
+REPORTS=/path/to/new-ora-audit-reports
+
+just audit-ora-refresh \
+  "$STAGE/inputs.json" \
+  "$REPORTS/audit.json" \
+  --provenance-root "$STAGE"
+```
+
+With `REPORTS` outside `STAGE`, the new report declares `supplied-root-v1` and
+records source paths relative to `STAGE`; readers must receive that source root
+again. The new manifest and audit describe this staged verification, not a
+change to the historical execution. Manifest conversion via
+`just ora-refresh-inputs` additionally requires `--expected-audit`: that audit
+must bind the exact manifest bytes being converted and every source hash. An
+edited copy of the historical manifest cannot use the original audit as its
+conversion attestation, because editing paths changes its manifest hash. Do
+not rewrite that attestation to make it match.
+
+At the 2026-11-06 input-presence check, **12 of the 20 historical pair/source
+references were absent**. This example is therefore a recovery procedure;
+the historical audit cannot currently be repeated here. Changing the root or
+regenerating replacement results does not recover the missing attested bytes.
 
 Global BH uses q ≤ 0.001, enrichment fold ≥ 1.5 and depletion fold ≤ 0.5,
 independently within each eligible profile–trait family in the table below.

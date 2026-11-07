@@ -155,7 +155,11 @@ def _read(path: Path | None) -> AssessmentStatus:
 @pytest.mark.parametrize("supplied", [False, True])
 def test_absent_evidence_does_not_assert_analysis_never_ran(tmp_path: Path, supplied: bool) -> None:
     status = _read(tmp_path / "missing.json" if supplied else None)
-    assert status.default == "pending #190: influence evidence not supplied"
+    assert status.default == (
+        "pending #190: supplied influence evidence missing"
+        if supplied
+        else "pending #190: influence evidence not supplied"
+    )
     assert not status.verdicts
 
 
