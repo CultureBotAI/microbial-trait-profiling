@@ -457,8 +457,10 @@ def native_summary(base: Base, composition: list[Record], ora: list[Record]) -> 
         "## Composition",
         "",
         "Native effects are experiment-weighted increased-minus-decreased z-score contrasts. "
-        "Native p-values test the mean; native BH families contain all supported variable "
-        "traits, not just Table 1. Zero-total profiles remain as zero fractions. "
+        "Native p-values test the mean; native BH families contain finite p-values among "
+        "selected supported variable traits, not just Table 1. Selected untestable traits "
+        "receive q = 1.0 outside the correction vector. "
+        "Zero-total profiles remain as zero fractions. "
         "Study-weighted comparisons, sign tests and conditional intervals are separately "
         "labeled in native_composition_comparison.tsv. Refitted scales and fixed baseline "
         "SD comparisons must not be conflated.",
