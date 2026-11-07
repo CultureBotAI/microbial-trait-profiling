@@ -422,7 +422,7 @@ def test_write_consolidated_report_dynamic_numbers(tmp_path: Path) -> None:
 
     # Assert dynamic formatting
     assert "N=1,234" in content
-    assert "VIF ~ 6.12" in content
+    assert "VIF = 6.12" in content
     # Section 6 reads the BH q-values and labels of the reported effects (#1321).
     assert (
         "After PC1 regression the facultatively aerobic paired contrast is labelled "
@@ -450,3 +450,70 @@ def test_write_consolidated_report_dynamic_numbers(tmp_path: Path) -> None:
                 density_res={**density_res, "table1_effects": bad_effects},
                 ontology_res=ontology_res,
             )
+
+
+def test_ontology_redundancy_audit_counts_observed_clusters_only(tmp_path: Path) -> None:
+    """#1402: n_clusters counts clusters with at least one redundant pair present in the inputs."""
+    traits = ["METPO:1000668", "METPO:1000683", "METPO:1000608"]
+    profiles = tmp_path / "profiles.tsv"
+    columns = tmp_path / "columns.tsv"
+    pd.DataFrame(
+        {
+            "study_id": ["s1", "s1", "s2", "s2"],
+            "experiment_id": ["e1", "e1", "e2", "e2"],
+            "inc_dec": ["inc", "dec", "inc", "dec"],
+            "METPO:1000668": [2.0, 4.0, 6.0, 8.0],
+            "METPO:1000683": [1.0, 2.0, 3.0, 4.0],
+            "METPO:1000608": [5.0, 1.0, 2.0, 3.0],
+        }
+    ).to_csv(profiles, sep="\t", index=False)
+    pd.DataFrame(
+        {
+            "column_id": traits,
+            "column_label": ["coccus shaped", "sphere shaped", "facultatively aerobic"],
+            "object_name": ["coccus shaped", "sphere shaped", "facultatively aerobic"],
+            "object_category": ["biolink:PhenotypicQuality"] * len(traits),
+        }
+    ).to_csv(columns, sep="\t", index=False)
+
+    res = run_ontology_redundancy_audit(
+        profiles_path=profiles,
+        columns_path=columns,
+        output_dir=tmp_path / "out",
+    )
+    assert res["n_redundant_pairs"] == 1
+    assert res["n_clusters"] == 1
+    assert res["n_collapsed_features"] == 1
+    summary_df = pd.read_csv(res["summary_tsv"], sep="\t").set_index("metric")["value"].to_dict()
+    assert summary_df["redundant_clusters_count"] == 1.0
+    assert summary_df["redundant_pairs_count"] == 1.0
+
+    # Zero observed pairs -> 0 observed clusters
+    no_pair_traits = ["METPO:1000668", "METPO:1000608"]
+    profiles_zero = tmp_path / "profiles_zero.tsv"
+    columns_zero = tmp_path / "columns_zero.tsv"
+    pd.DataFrame(
+        {
+            "study_id": ["s1", "s1", "s2", "s2"],
+            "experiment_id": ["e1", "e1", "e2", "e2"],
+            "inc_dec": ["inc", "dec", "inc", "dec"],
+            "METPO:1000668": [2.0, 4.0, 6.0, 8.0],
+            "METPO:1000608": [5.0, 1.0, 2.0, 3.0],
+        }
+    ).to_csv(profiles_zero, sep="\t", index=False)
+    pd.DataFrame(
+        {
+            "column_id": no_pair_traits,
+            "column_label": ["coccus shaped", "facultatively aerobic"],
+            "object_name": ["coccus shaped", "facultatively aerobic"],
+            "object_category": ["biolink:PhenotypicQuality"] * len(no_pair_traits),
+        }
+    ).to_csv(columns_zero, sep="\t", index=False)
+
+    res_zero = run_ontology_redundancy_audit(
+        profiles_path=profiles_zero,
+        columns_path=columns_zero,
+        output_dir=tmp_path / "out_zero",
+    )
+    assert res_zero["n_redundant_pairs"] == 0
+    assert res_zero["n_clusters"] == 0

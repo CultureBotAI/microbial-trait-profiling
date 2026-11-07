@@ -425,7 +425,11 @@ def run_ontology_redundancy_audit(
 
     # 7. Summary metrics of redundant pairs
     n_redundant_pairs = len(df_pairs)
-    n_clusters = len(clusters)
+    n_clusters = (
+        int(df_pairs["cluster_id"].nunique())
+        if "cluster_id" in df_pairs.columns and not df_pairs.empty
+        else 0
+    )
     n_collapsed_features = len(non_media_cols) - len(cols_max)
     bounded_trait_space = len(cols_max)
 
