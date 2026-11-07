@@ -330,16 +330,21 @@ def test_family_size_parser_accepts_whole_sizes(raw: object, size: int) -> None:
 
 
 def test_sankey_methods_paragraph_names_the_selection_q_family() -> None:
-    """The six-trait selection's q names its family, retained count, and rule (#1742, #1744)."""
+    """The six-trait selection's q names its family, retained count, and rule (#1742, #1811)."""
     methods = (
         Path(__file__).resolve().parents[1] / "trait-visualization/figure_methods.md"
     ).read_text(encoding="utf-8")
+    normalized = " ".join(methods.split())
+    assert "`retained_trait_count` after the" not in normalized
     assert (
         "using `q_value <= 0.001`, where `q_value` is the pooled pair-level BH q over the "
-        "340 support/variance-selected traits of that table (its `correction_family_size`, "
-        "of 344 unfiltered retained traits in `retained_trait_count` after the "
-        "`select_stratum_traits` support, positive-variance, and MediaDive-exclusion filter)"
-    ) in " ".join(methods.split())
+        "340 support/variance-selected traits that `select_stratum_traits` kept in that "
+        "table (its `correction_family_size`, of 344 retained non-MediaDive traits in "
+        "`retained_trait_count` before the `select_stratum_traits` support-bounds, "
+        "positive-variance, and MediaDive-exclusion filter; the selection keeps traits "
+        "annotated in at least 6 and at most 95% of profiles with positive composition "
+        "variance)."
+    ) in normalized
 
 
 def test_selection_count_follows_exported_traits(monkeypatch: pytest.MonkeyPatch) -> None:

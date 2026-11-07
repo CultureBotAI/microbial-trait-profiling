@@ -1486,10 +1486,12 @@ cell tables, and output manifests.
 The six traits were selected from the pooled paired-profile contrast statistics
 in `trait-profile-investigation/trait_profile_paired_contrast_trait_stats.tsv`
 using `q_value <= 0.001`, where `q_value` is the pooled pair-level BH q over the
-340 support/variance-selected traits of that table (its `correction_family_size`,
-of 344 unfiltered retained traits in `retained_trait_count` after the
-`select_stratum_traits` support, positive-variance, and MediaDive-exclusion
-filter).
+340 support/variance-selected traits that `select_stratum_traits` kept in that
+table (its `correction_family_size`, of 344 retained non-MediaDive traits in
+`retained_trait_count` before the `select_stratum_traits` support-bounds,
+positive-variance, and MediaDive-exclusion filter; the selection keeps traits
+annotated in at least 6 and at most 95% of profiles with positive composition
+variance).
 The selected traits are facultatively aerobic
 (`METPO:1000608`), cellulose catabolic process
 (`METPO:2000103|GO:0030245`), coccus shaped (`METPO:1000668`), sphere shaped

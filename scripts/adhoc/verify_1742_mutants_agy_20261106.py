@@ -40,9 +40,10 @@ ERROR_MARKERS = (
     "ERROR collecting",
 )
 
-MUTANTS: list[tuple[str, str, str]] = [
+MUTANTS: list[tuple[str, str, str, str]] = [
     (
         "S1_format_paired_q_value_family_drops_retained_and_rule",
+        "scripts/create_six_shared_trait_sankeys.py",
         (
             "    return (\n"
             '        f"pooled pair-level BH over {size} support/variance-selected traits "\n'
@@ -53,11 +54,13 @@ MUTANTS: list[tuple[str, str, str]] = [
     ),
     (
         "S2_format_paired_q_value_family_ignores_raw_retained",
+        "scripts/create_six_shared_trait_sankeys.py",
         "    retained = _extract_bh_family_size(raw_retained)",
         "    retained = None",
     ),
     (
         "S3_build_trait_selection_unfiltered_count_always_na",
+        "scripts/create_six_shared_trait_sankeys.py",
         (
             '                "bh_unfiltered_trait_count": pd.NA '
             "if retained_count is None else retained_count,"
@@ -66,6 +69,7 @@ MUTANTS: list[tuple[str, str, str]] = [
     ),
     (
         "S4_build_trait_summary_unfiltered_count_always_na",
+        "scripts/create_six_shared_trait_sankeys.py",
         (
             '            "bh_family_size": pd.NA if family_size is None else family_size,\n'
             '            "bh_unfiltered_trait_count": pd.NA '
@@ -78,11 +82,18 @@ MUTANTS: list[tuple[str, str, str]] = [
     ),
     (
         "S5_build_trait_summary_passes_none_for_retained_in_family_label",
+        "scripts/create_six_shared_trait_sankeys.py",
         (
             '            "paired_q_value_family": '
             "_format_paired_q_value_family(family_size, retained_count),"
         ),
         '            "paired_q_value_family": _format_paired_q_value_family(family_size, None),',
+    ),
+    (
+        "S6_methods_attaches_after_filter_to_retained_count_1811",
+        "trait-visualization/figure_methods.md",
+        "of 344 retained non-MediaDive traits in\n`retained_trait_count` before the",
+        "of 344 unfiltered retained traits in\n`retained_trait_count` after the",
     ),
 ]
 
@@ -145,11 +156,11 @@ def _pytest_worker(tmp_root_str: str, out_file_str: str) -> None:
 
 def main() -> int:
     ctx = multiprocessing.get_context("spawn")
-    for name, target, replacement in MUTANTS:
+    for name, rel_path, target, replacement in MUTANTS:
         with tempfile.TemporaryDirectory(prefix=f"mutant_{name}_") as tmp_dir:
             tmp_root = Path(tmp_dir)
             _make_scratch_tree(tmp_root)
-            file_path = tmp_root / "scripts" / "create_six_shared_trait_sankeys.py"
+            file_path = tmp_root / rel_path
             text = file_path.read_text(encoding="utf-8")
             count = text.count(target)
             if count != 1:
@@ -186,7 +197,7 @@ def main() -> int:
                 print(f"FAIL [{name}]: no assertion failure marker in output\n{out}")
                 return 1
             print(f"KILLED [{name}]: rc=1 assertion failure verified from scratch copy")
-    print("ALL 5 #1742 MUTANTS KILLED CLEANLY.")
+    print(f"ALL {len(MUTANTS)} #1742/#1811 MUTANTS KILLED CLEANLY.")
     return 0
 
 
