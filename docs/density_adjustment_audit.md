@@ -8,6 +8,7 @@
 - Summary Metrics: `data/derived/density_adjustment/density_adjustment_summary.tsv`  
 - Table 1 Adjusted Effects: `data/derived/density_adjustment/table1_density_adjusted_effects.tsv`  
 - Text Report: `data/derived/density_adjustment/density_adjustment_report.txt`  
+- Provenance JSON: `data/derived/density_adjustment/density_adjustment_provenance.json`  
 - Ontology Redundancy Pairs: `data/derived/density_adjustment/ontology_redundancy_pairs.tsv`  
 - Ontology Redundancy Summary: `data/derived/density_adjustment/ontology_redundancy_summary.tsv`  
 - Ontology Collapsing Comparison: `data/derived/density_adjustment/ontology_collapsing_comparison.tsv`  
