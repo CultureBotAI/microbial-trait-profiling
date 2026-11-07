@@ -63,20 +63,19 @@ def warn(analysis_dir: Path) -> None:
 
 
 def cleanup(analysis_dir: Path, *, delete: bool = False) -> list[Path]:
-    """List exact targets; --delete requires regular files and non-symlink parents.
+    """Preview or delete exact regular-file targets with non-symlink parents.
 
-    Validate every candidate before removing any, so an unsafe target refuses the
-    whole operation. The caller must not concurrently replace files during cleanup.
+    Validate every candidate before reporting or removing any, so an unsafe target
+    refuses both modes (#1718). The caller must not concurrently replace files.
     Empty directories and all unlisted files are preserved.
     """
     paths = existing_outputs(analysis_dir)
-    if delete:
-        for path in paths:
-            if not stat.S_ISREG(path.lstat().st_mode):
-                raise ValueError(f"Cleanup requires a regular non-symlink file: {path}")
-            for parent in (path.parent, *path.parent.parents):
-                if parent.is_symlink():
-                    raise ValueError(f"Cleanup refuses a symlink parent: {parent}")
+    for path in paths:
+        if not stat.S_ISREG(path.lstat().st_mode):
+            raise ValueError(f"Cleanup requires a regular non-symlink file: {path}")
+        for parent in (path.parent, *path.parent.parents):
+            if parent.is_symlink():
+                raise ValueError(f"Cleanup refuses a symlink parent: {parent}")
     for path in paths:
         print(f"{'DELETE' if delete else 'WOULD DELETE'} {path}")
         if delete:
