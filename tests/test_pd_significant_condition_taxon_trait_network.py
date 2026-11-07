@@ -476,6 +476,46 @@ def _asymmetric_landscape_inputs() -> tuple[pd.DataFrame, pd.DataFrame, pd.DataF
     return taxon_tests, trait_tests, annotations, traits
 
 
+def test_empty_network_badge_counts_eligible_comparisons_including_untested_rows(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Five supported comparisons are not the three supported finite tests (#1845)."""
+    import matplotlib.figure
+
+    taxon_tests, trait_tests, annotations, traits = _asymmetric_landscape_inputs()
+    taxon_tests = taxon_tests.assign(selected_after_bh=False)
+    trait_tests = trait_tests.assign(selected_after_bh=False)
+    assert int(taxon_tests["passes_min_taxon_studies"].sum()) == 5
+    assert (
+        int((taxon_tests["passes_min_taxon_studies"] & taxon_tests["p_value"].notna()).sum()) == 3
+    )
+    original_taxa = taxon_tests.copy(deep=True)
+    original_traits = trait_tests.copy(deep=True)
+    nodes, edges, _ = network.build_network_tables(taxon_tests, trait_tests, annotations, traits)
+    assert nodes.empty
+    assert edges.empty
+    saved_texts: list[list[str]] = []
+
+    def capture_savefig(
+        self: matplotlib.figure.Figure, path: Path, *_args: object, **_kwargs: object
+    ) -> None:
+        Path(path).write_text("", encoding="utf-8")
+        saved_texts.append([text.get_text() for text in self.axes[0].texts])
+
+    monkeypatch.setattr(matplotlib.figure.Figure, "savefig", capture_savefig)
+    network.plot_significant_network(
+        nodes, edges, taxon_tests, trait_tests, traits, tmp_path / "empty-network.png"
+    )
+
+    assert len(saved_texts) == 2
+    for texts in saved_texts:
+        assert texts.count("5\neligible comparisons") == 1
+        assert not any("eligible tests" in text for text in texts)
+        assert "3\neligible comparisons" not in texts
+    pd.testing.assert_frame_equal(taxon_tests, original_taxa)
+    pd.testing.assert_frame_equal(trait_tests, original_traits)
+
+
 @pytest.mark.parametrize("surface", ["panel_title", "figure_subtitle"])
 def test_landscape_labels_describe_shown_tests_not_all_supported_rows(
     surface: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch

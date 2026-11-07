@@ -911,7 +911,7 @@ def plot_significant_network(
             ),
             (
                 0.50,
-                f"{eligible_taxon_test_count}\neligible tests",
+                f"{eligible_taxon_test_count}\neligible comparisons",
                 "genus and species\nkept separate",
                 "#475569",
             ),

@@ -140,6 +140,8 @@ ORIENTED = "disease_vs_healthy_oriented"
 STRONG = "disease_vs_healthy_strong_evidence"
 NO_MSM = "disease_vs_healthy_oriented_excl_msm_mention"
 POPULATIONS = (ALL_CONTRASTS, ORIENTED, STRONG)
+_INTERACTION_POPULATIONS = (ALL_CONTRASTS, ORIENTED)
+_INTERACTION_UNITS = ("experiment", "study")
 
 INPUTS = {
     "profile_metadata": "trait-visualization/study_trait_profile_study_metadata.tsv",
@@ -1176,7 +1178,7 @@ def interaction_table(corpus: Corpus) -> pd.DataFrame:
     """
     rows = []
     nan = float("nan")
-    for name in (ALL_CONTRASTS, ORIENTED):
+    for name in _INTERACTION_POPULATIONS:
         profiles, _ = population(corpus, name)
         target = profiles[profiles["condition"].isin(CONDITIONS.values())]
         by_condition: dict[tuple[str, str], list[list[list[int]]]] = {}
@@ -1187,7 +1189,7 @@ def interaction_table(corpus: Corpus) -> pd.DataFrame:
             feces = in_condition[in_condition["compartment"].eq(FECES)]
             for other in COMPARTMENTS[1:]:
                 rest = in_condition[in_condition["compartment"].eq(other)]
-                for unit in ("experiment", "study"):
+                for unit in _INTERACTION_UNITS:
                     table = [
                         direction_counts(paired_deltas(feces), unit),
                         direction_counts(paired_deltas(rest), unit),
@@ -2042,8 +2044,8 @@ SUMMARY_BH_SELECTION_RULE = (
     "jaccard_PD_vs_HIV, jaccard_PD_vs_CRC, jaccard_HIV_vs_CRC, plus "
     "mean_pairwise_jaccard_distance and three_way_core), and "
     f"interaction_summary_rows ({FECES} vs {NON_FECAL_GI} for CRC and "
-    f"{POOLED_STRATIFIED}; {ALL_CONTRASTS} and {ORIENTED}, "
-    "experiment and study units); apply Benjamini-Hochberg over "
+    f"{POOLED_STRATIFIED}; {' and '.join(_INTERACTION_POPULATIONS)}, "
+    f"{' and '.join(_INTERACTION_UNITS)} units); apply Benjamini-Hochberg over "
     "the non-missing p_value entries in this selected summary table. Correcting "
     "within this selected summary table does not repair selection from the larger "
     "exploratory tables."
