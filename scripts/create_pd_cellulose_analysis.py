@@ -960,6 +960,9 @@ def plot_enrichment_test(
         {"is_pd": 2, "is_decreased": 1, "pd_x_decreased": 0}
     )
     plot_frame = plot_frame.sort_values("order")
+    tested_terms = int(plot_frame["p_value_type"].eq("nominal").sum())
+    term_noun = "term" if tested_terms == 1 else "terms"
+    test_noun = "test" if tested_terms == 1 else "tests"
     y = np.arange(len(plot_frame))
     colors = [
         CELLULOSE_COLOR if term == "pd_x_decreased" else SLATE_500 for term in plot_frame["term"]
@@ -968,24 +971,38 @@ def plot_enrichment_test(
     for y_pos, row, color in zip(y, plot_frame.itertuples(index=False), colors, strict=True):
         ax.plot([row.ci_low, row.ci_high], [y_pos, y_pos], color=color, linewidth=2.2)
         ax.scatter(row.coefficient, y_pos, s=90, color=color, edgecolor="white", zorder=3)
-        p_label = "nominal p<0.001" if row.p_value < 0.001 else f"nominal p={row.p_value:.3f}"
+        p_label = (
+            "not tested"
+            if row.p_value_type != "nominal"
+            else "nominal p<0.001"
+            if row.p_value < 0.001
+            else f"nominal p={row.p_value:.3f}"
+        )
+        coefficient_label = (
+            f"{row.coefficient:+.2f}" if np.isfinite(row.coefficient) else "not estimable"
+        )
         ax.text(
-            row.coefficient,
+            row.coefficient if np.isfinite(row.coefficient) else 0.0,
             y_pos + 0.20,
-            f"{row.coefficient:+.2f}, {p_label}",
+            f"{coefficient_label}, {p_label}",
             ha="center",
             va="bottom",
             fontsize=8.4,
             color=SLATE_700,
+            bbox=(
+                {"facecolor": "white", "edgecolor": "none", "pad": 0.2}
+                if not np.isfinite(row.coefficient)
+                else None
+            ),
         )
     # Headroom keeps the top estimate's label below the panel title.
     ax.set_ylim(-0.5, len(plot_frame) - 0.2)
     ax.set_yticks(y, plot_frame["term_label"])
     ax.set_xlabel(
-        f"OLS coefficient on cellulose z-score (nominal p, {len(plot_frame)} model terms tested)"
+        f"OLS coefficient on cellulose z-score (nominal p, {tested_terms} model {term_noun} tested)"
     )
     ax.set_title(
-        f"Study-clustered interaction model ({len(plot_frame)} nominal tests)",
+        f"Study-clustered interaction model ({tested_terms} nominal {test_noun})",
         fontweight="bold",
     )
     ax.grid(axis="x", color=SLATE_200, linewidth=0.8)
@@ -1157,16 +1174,74 @@ def write_interpretations(
         "taxon_name",
     ].tolist()
 
-    n_non_intercept_terms = int(
-        model_table.loc[~model_table["term"].eq("intercept"), "term"].nunique()
-    )
+    displayed_model = model_table[
+        model_table["outcome"].eq("cellulose_z") & ~model_table["term"].eq("intercept")
+    ]
+    n_non_intercept_terms = int(displayed_model["p_value_type"].eq("nominal").sum())
     n_outcomes = int(model_table["outcome"].nunique())
-    n_model_tests = int(model_table["p_value"].notna().sum())
+    n_model_tests = int(model_table["p_value_type"].eq("nominal").sum())
     n_directions = int(
         pd_vs_other.loc[pd_vs_other["p_value_type"].eq("nominal"), "direction"].nunique()
     )
     n_tests_per_direction = 2
     n_direction_tests = int(pd_vs_other["n_tests"].iloc[0])
+    interaction_tested = interaction.p_value_type == "nominal"
+    interaction_effect = (
+        f"`{interaction.coefficient:+.3f}` cellulose z"
+        if np.isfinite(interaction.coefficient)
+        else "not estimable"
+    )
+    interaction_coefficient = (
+        f"`{interaction.coefficient:.3f}`"
+        if np.isfinite(interaction.coefficient)
+        else "not estimable"
+    )
+    interaction_p_label = (
+        f"nominal p={interaction.p_value:.3g}" if interaction_tested else "not tested"
+    )
+    interaction_summary_ci = (
+        f"95% CI `{interaction.ci_low:+.3f}` to `{interaction.ci_high:+.3f}`, "
+        if interaction_tested
+        else ""
+    )
+    interaction_model_ci = (
+        f"95% CI `{interaction.ci_low:.3f}` to `{interaction.ci_high:.3f}`, "
+        if interaction_tested
+        else ""
+    )
+    term_noun = "term" if n_non_intercept_terms == 1 else "terms"
+    availability_verb = "has" if n_non_intercept_terms == 1 else "have"
+    plotted_scope = (
+        f"{n_non_intercept_terms} of the {len(displayed_model)} plotted cellulose-z terms "
+        f"{availability_verb} a nominal test"
+    )
+    interaction_context = (
+        f", and the interval {interval} zero. This is the interaction's nominal p, one of "
+        f"{n_non_intercept_terms} non-intercept model {term_noun} tested in the figure "
+        f"({n_model_tests} terms across {n_outcomes} outcomes in "
+        "`pd_cellulose_interaction_model.tsv`), not corrected for "
+        if interaction_tested
+        else f". The interaction was not tested; {plotted_scope} "
+        f"({n_model_tests} of the {len(model_table)} terms across {n_outcomes} outcomes in "
+        "`pd_cellulose_interaction_model.tsv`), none corrected for "
+    )
+    model_test_scope = (
+        f"uncorrected across {n_non_intercept_terms} non-intercept model {term_noun} plotted in "
+        f"`pd_cellulose_enrichment_test.png` and "
+        f"{n_model_tests} terms across {n_outcomes} outcomes in "
+        "`pd_cellulose_interaction_model.tsv`"
+        if interaction_tested
+        else f"{plotted_scope} in `pd_cellulose_enrichment_test.png`; "
+        f"{n_model_tests} of the {len(model_table)} table terms have a nominal test across "
+        f"{n_outcomes} outcomes in `pd_cellulose_interaction_model.tsv`"
+    )
+    model_scope_separator = ", " if interaction_tested else "; "
+    interaction_question = (
+        " It tests whether the decreased direction has an extra PD-associated shift in "
+        "cellulose annotation beyond the main PD and direction effects."
+        if interaction_tested
+        else ""
+    )
 
     lines = [
         "# Parkinson's Disease and Cellulose Catabolic Process",
@@ -1189,14 +1264,10 @@ def write_interpretations(
             "A study-clustered model asks whether the decreased-minus-increased difference "
             "is larger in PD than in other fecal profiles: the extra PD effect in decreased "
             "profiles is "
-            f"`{interaction.coefficient:+.3f}` cellulose z (95% CI "
-            f"`{interaction.ci_low:+.3f}` to `{interaction.ci_high:+.3f}`, "
-            f"`nominal p={interaction.p_value:.3g}`, {int(interaction.cluster_count)} study "
-            f"clusters), and the interval {interval} zero. This is the interaction's nominal p, "
-            f"one of {n_non_intercept_terms} non-intercept model terms tested in the figure "
-            f"({n_model_tests} terms across {n_outcomes} outcomes in "
-            "`pd_cellulose_interaction_model.tsv`), not "
-            "corrected for the other conditions and traits examined; the corrected screen "
+            f"{interaction_effect} ({interaction_summary_ci}"
+            f"`{interaction_p_label}`, {int(interaction.cluster_count)} study "
+            f"clusters){interaction_context}"
+            "the other conditions and traits examined; the corrected screen "
             "of every eligible fecal condition-trait contrast is described in "
             "`pd_condition_taxon_trait_network_methods.md`."
         ),
@@ -1259,16 +1330,9 @@ def write_interpretations(
         (
             f"The feces-only linear model includes PD, decreased direction, and the "
             f"PD-by-decreased interaction, with standard errors clustered by study. The "
-            f"cellulose z-score interaction term is `{interaction.coefficient:.3f}` "
-            f"(95% CI `{interaction.ci_low:.3f}` to `{interaction.ci_high:.3f}`, "
-            f"`nominal p={interaction.p_value:.3g}`, uncorrected across "
-            f"{n_non_intercept_terms} non-intercept "
-            f"model terms plotted in `pd_cellulose_enrichment_test.png` and "
-            f"{n_model_tests} terms across {n_outcomes} outcomes in "
-            "`pd_cellulose_interaction_model.tsv`). "
-            "It tests whether the decreased direction has "
-            "an extra PD-associated shift in cellulose annotation beyond the main PD and "
-            "direction effects."
+            f"cellulose z-score interaction term is {interaction_coefficient} "
+            f"({interaction_model_ci}`{interaction_p_label}`{model_scope_separator}"
+            f"{model_test_scope}).{interaction_question}"
         ),
         "",
         "See `pd_cellulose_enrichment_test.png` and `pd_cellulose_interaction_model.tsv`.",
