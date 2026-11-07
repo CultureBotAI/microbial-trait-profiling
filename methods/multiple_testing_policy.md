@@ -184,9 +184,11 @@ Discovery reads files lazily and keeps compact per-file summaries. Alias expansi
 source size and summary size have explicit limits. The derivation recognizer runs only
 in functions whose own resolved calls include both `benjamini_hochberg` and
 `numpy.clip`. A separate per-function `Limits.derivation_steps` budget defaults to
-1,000,000 work units (#1581, #1683). A registry-driven test requires every anchor
-claiming derived BY to fit within one quarter of the default budget. It charges
-AST visits, expression/statement analysis,
+1,000,000 work units (#1581, #1683). A headroom test scans all Python sources under
+`src/` and `scripts/`, including ignored files, and requires every analysed candidate
+to fit within one sixteenth of that default, whether or not it claims derived BY
+(#1700). Registry claims supply a non-vacuity check, not the source-selection rule.
+The recognizer charges AST visits, expression/statement analysis,
 loop fixed-point passes, declaration-name processing, and the sizes of copied,
 joined or invalidated fact environments before doing that work. Exceeding the budget
 refuses discovery with the source path, anchor, attempted work and limit, and asks
