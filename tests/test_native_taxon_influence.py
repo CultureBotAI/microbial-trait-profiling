@@ -161,6 +161,9 @@ def test_constant_paired_effect_is_not_a_significant_native_result() -> None:
     assert records["A"]["p"] == ""
     assert records["A"]["q"] == 1
     assert not records["A"]["significant_0.05"]
+    assert {trait for trait, row in records.items() if row["selected"]} == {"A", "B"}
+    assert {row["family_selected_traits"] for row in records.values()} == {2}
+    assert {row["family_tests"] for row in records.values()} == {0}
 
 
 def test_ora_global_families_include_non_display_traits_and_depletion_zeros() -> None:
@@ -334,6 +337,12 @@ def test_native_exports_end_to_end_with_an_empty_stratum(tmp_path: Path) -> None
     assert "protocol 190-native-v2" in summary_text
     assert "0 rule-declared exclusion scenarios" in summary_text
     assert "within the rule-declared panel" in summary_text
+    assert (
+        "Native p-values test the mean; native BH families contain finite p-values among "
+        "selected supported variable traits, not just Table 1. Selected untestable traits "
+        "receive q = 1.0 outside the correction vector."
+    ) in summary_text
+    assert "native BH families contain all supported variable traits" not in summary_text
     protocol_file = (
         Path(__file__).resolve().parents[1] / "methods" / "table1_native_influence_protocol.json"
     )

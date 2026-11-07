@@ -105,7 +105,7 @@ the historical audit cannot currently be repeated here. Changing the root or
 regenerating replacement results does not recover the missing attested bytes.
 
 Global BH uses q ≤ 0.001, enrichment fold ≥ 1.5 and depletion fold ≤ 0.5,
-independently within each eligible profile–trait family in the table below.
+independently within each eligible profile–trait family in the exports listed below.
 Upper and lower tails are separate families; each stratified enrichment run
 also has its own family. The `mt-*` names map this historical execution to the
 later [registry](../../methods/multiple_testing_families.yaml), without changing

@@ -9,6 +9,7 @@ import json
 import re
 from collections import Counter
 from dataclasses import asdict, replace
+from functools import partial
 from pathlib import Path
 
 import pytest
@@ -52,6 +53,8 @@ from bsdbng.contrast_orientation import (
 )
 from bsdbng.trait_guilds import TABLE1_TRAITS, Profile
 from mtp.contrast_orientation import _acronym_spelled_out
+from mtp.table1_trait_maps import compute_direction_shifts
+from mtp.trait_composition import compute_log_ratio_shifts
 
 #: The record that the regression tables and most tests below change a few fields of. The
 #: classifier-version guard (#793) classifies the regression tables built on it, so an edit
@@ -1071,6 +1074,82 @@ def test_comparison_rows_report_both_analyses_for_each_population() -> None:
         "Benjamini-Hochberg over 6 fractions",
         "Benjamini-Yekutieli over 15 ratios",
     }
+
+
+@pytest.mark.parametrize(("fraction_count", "ratio_count"), [(3, 4), (4, 3)])
+@pytest.mark.parametrize("all_tied", [False, True])
+def test_comparison_rows_use_executed_families_including_untestable_members(
+    monkeypatch: pytest.MonkeyPatch,
+    fraction_count: int,
+    ratio_count: int,
+    all_tied: bool,
+) -> None:
+    """Labels follow each real kernel's complete family, including internal p=1s."""
+    traits = tuple(TABLE1_TRAITS)
+    fractions = traits[:fraction_count]
+    ratios = traits[:ratio_count]
+    profiles = [
+        Profile(
+            f"bsdb:{study}",
+            f"bsdb:{study}-1",
+            direction,
+            "C",
+            "Feces",
+            {
+                trait: (
+                    0
+                    if index == 0
+                    else 4
+                    if all_tied or (index == 1) == (direction == "inc")
+                    else 1
+                )
+                for index, trait in enumerate(traits)
+            },
+            10,
+        )
+        for study in range(1, 5)
+        for direction in ("inc", "dec")
+    ]
+    expected_fractions = compute_direction_shifts(profiles, trait_order=fractions)
+    expected_ratios = compute_log_ratio_shifts(profiles, traits=ratios)
+    monkeypatch.setattr(
+        "mtp.contrast_orientation.compute_direction_shifts",
+        partial(compute_direction_shifts, trait_order=fractions),
+    )
+    monkeypatch.setattr(
+        "mtp.contrast_orientation.compute_log_ratio_shifts",
+        partial(compute_log_ratio_shifts, traits=ratios),
+    )
+
+    rows = comparison_rows([("synthetic", profiles)])
+    fraction_rows = [row for row in rows if row["comparison"] == "fraction"]
+    ratio_rows = [row for row in rows if row["comparison"] == "log_ratio"]
+    pair_count = len(list(itertools.combinations(ratios, 2)))
+    assert len(fraction_rows) == fraction_count
+    assert len(ratio_rows) == pair_count
+    assert {row["family"] for row in fraction_rows} == {
+        f"Benjamini-Hochberg over {fraction_count} fractions"
+    }
+    assert {row["family"] for row in ratio_rows} == {
+        f"Benjamini-Yekutieli over {pair_count} ratios"
+    }
+    for actual, expected in zip(fraction_rows, expected_fractions.shifts, strict=True):
+        assert (actual["numerator"], actual["p_value"], actual["q_value"]) == (
+            expected.trait,
+            expected.p_value,
+            expected.q_value,
+        )
+    for actual, ratio in zip(ratio_rows, expected_ratios.summaries, strict=True):
+        assert (
+            actual["numerator"],
+            actual["reference"],
+            actual["p_value"],
+            actual["q_value"],
+        ) == (ratio.numerator, ratio.reference, ratio.sign_p, ratio.by_q)
+    for family in (fraction_rows, ratio_rows):
+        finite_count = sum(row["p_value"] is not None for row in family)
+        assert finite_count < len(family)
+        assert (finite_count == 0) is all_tied
 
 
 def _write_corpus(tmp_path: Path) -> tuple[Path, Path, Path]:
