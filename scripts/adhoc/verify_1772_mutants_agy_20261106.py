@@ -56,7 +56,7 @@ MUTANTS: list[tuple[str, str, str]] = [
         '    if p_val is not None:\n        return "fdr_q"',
     ),
     (
-        "C3_nominal_fdr_none_scope_left_global",
+        "C3_nominal_scope_from_header_C03",
         '            stat_type: str | None = "p_value"\n            fdr_scope = "none"',
         (
             '            stat_type: str | None = "p_value"\n'
@@ -64,14 +64,52 @@ MUTANTS: list[tuple[str, str, str]] = [
         ),
     ),
     (
-        "C4_untested_trait_sig_basis_not_unavailable",
+        "C4_untested_trait_sig_basis_not_unavailable_C07",
         'hit_statistic if int(row[col_idx["n_profiles_tested"]]) > 0 else "unavailable"',
         "hit_statistic",
     ),
     (
-        "C5_p_threshold_header_ignored",
-        'stat_threshold = comments.get("Stat-Threshold") or comments.get("P-Threshold")',
-        'stat_threshold = comments.get("Stat-Threshold")',
+        "C5_row_rule_skips_copied_p_check_C04",
+        "            if p_val is None or q_val != p_val:\n"
+        '                raise ValueError("nominal Stat-Type contradicts best_qvalue: '
+        'expected copied p")\n',
+        "",
+    ),
+    (
+        "C6_row_rule_skips_missing_type_check_C05",
+        "        if stat_type is None and p_val is not None and q_val == p_val:",
+        "        if False:",
+    ),
+    (
+        "C7_row_q_wins_under_nominal_C06",
+        '        if stat_type == "p_value":\n            if p_val is None',
+        "        if False:\n            if p_val is None",
+    ),
+    (
+        "C8_fdr_scope_unknown_for_fdr_C08",
+        '            fdr_scope = raw_scope if raw_scope in {"global", "profile"} else "unknown"\n'
+        "        else:",
+        '            fdr_scope = "unknown"\n        else:',
+    ),
+    (
+        "C9_contradictory_fdr_q_and_scope_none_check_dropped",
+        '            if raw_scope == "none":\n'
+        "                raise ValueError(\n"
+        "                    f\"Contradictory Stat-Type 'fdr_q' and FDR-Scope 'none' "
+        'in {tested_path}"\n'
+        "                )",
+        "            if False:\n                pass",
+    ),
+    (
+        "C10_reimport_producer_helpers_C12",
+        "    BEST_STAT_NOTE,\n    PRIMARY_STRATA,\n)",
+        "    BEST_STAT_NOTE,\n    PRIMARY_STRATA,\n"
+        "    _extract_q_or_p,\n    _read_tested_summary,\n)",
+    ),
+    (
+        "C11_stat_type_p_value_branch_dropped_C01",
+        '        if raw_stat_type == "p_value":',
+        "        if False:",
     ),
 ]
 
@@ -84,21 +122,20 @@ def _make_scratch_tree(tmp_root: Path) -> None:
         WORKTREE / "tests" / "test_stratification_stat_types.py",
         tmp_root / "tests" / "test_stratification_stat_types.py",
     )
-    conftest = """import importlib.util
+    conftest = """import sys
 from pathlib import Path
 import mtp.stratification
 
-def pytest_sessionstart(session):
+def pytest_sessionfinish(session, exitstatus):
     root = Path(__file__).resolve().parents[1]
     actual_strata = Path(mtp.stratification.__file__).resolve()
     expected_strata = (root / "src" / "mtp" / "stratification.py").resolve()
     if actual_strata != expected_strata:
         raise RuntimeError(f"Import origin mismatch: {actual_strata} != {expected_strata}")
     script_path = (root / "scripts" / "adhoc" / "issue727_compare_core_strata.py").resolve()
-    spec = importlib.util.spec_from_file_location("issue727_compare_core_strata", script_path)
-    assert spec is not None and spec.loader is not None
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
+    mod = sys.modules.get("issue727_compare_core_strata")
+    if mod is None or mod.__file__ is None:
+        raise RuntimeError("issue727_compare_core_strata was not imported by the test")
     actual_script = Path(mod.__file__).resolve()
     if actual_script != script_path:
         raise RuntimeError(f"Script origin mismatch: {actual_script} != {script_path}")
@@ -178,7 +215,7 @@ def main() -> int:
                 print(f"FAIL [{name}]: no assertion failure marker in output\n{out}")
                 return 1
             print(f"KILLED [{name}]: rc=1 assertion failure verified from scratch copy")
-    print("ALL 5 #1772 MUTANTS KILLED CLEANLY.")
+    print(f"ALL {len(MUTANTS)} #1772/#1813/#1814 MUTANTS KILLED CLEANLY.")
     return 0
 
 

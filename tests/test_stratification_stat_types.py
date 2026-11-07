@@ -2,6 +2,7 @@
 
 import gzip
 import importlib.util
+import sys
 from dataclasses import replace
 from pathlib import Path
 from types import ModuleType
@@ -31,6 +32,7 @@ def _load_issue727_compare() -> ModuleType:
     assert spec is not None
     assert spec.loader is not None
     module = importlib.util.module_from_spec(spec)
+    sys.modules["issue727_compare_core_strata"] = module
     spec.loader.exec_module(module)
     return module
 
@@ -932,11 +934,11 @@ def test_core_strata_comparison_derives_expected_labels_without_producer_helpers
     result = issue727.compare(before, after)
     assert result["passed"] is True
 
-    # Historical --no-fdr tested table (# FDR: none + legacy # FDR-Scope: global + # P-Threshold)
+    # Pre-#1465 nominal tested table (# Stat-Type: p_value + legacy # FDR-Scope: global + copied q)
     hist_dir = tmp_path / "hist_nominal"
     hist_dir.mkdir()
     (hist_dir / "trait_enrichment_traits_tested_pooled.tsv").write_text(
-        "# FDR: none\n# FDR-Scope: global\n# P-Threshold: 0.01\n"
+        "# Stat-Type: p_value\n# FDR-Scope: global\n# Stat-Threshold: 0.01\n"
         "trait\ttrait_total\tn_profiles_tested\tn_significant\tprevalence\t"
         "best_qvalue\tbest_pvalue\tmean_fold\ttest_status\n"
         "trait-a\t50\t2\t1\t0.5\t0.004\t0.004\t2.0\tsignificant\n"
@@ -959,3 +961,64 @@ def test_core_strata_comparison_derives_expected_labels_without_producer_helpers
         "trait-b": "nominal p",
         "trait-c": "unavailable",
     }
+
+    # #1813, #1814: unproduced # FDR / # P-Threshold headers do not substitute for Stat-Type,
+    # and all parser refusal branches raise ValueError.
+    refusal_cases = [
+        (
+            "no_stat_type_with_fdr_none_and_copied_q",
+            "# FDR: none\n# FDR-Scope: global\n# P-Threshold: 0.01\n"
+            "trait\ttrait_total\tn_profiles_tested\tn_significant\tprevalence\t"
+            "best_qvalue\tbest_pvalue\tmean_fold\ttest_status\n"
+            "trait-a\t50\t2\t1\t0.5\t0.004\t0.004\t2.0\tsignificant\n",
+            "Missing Stat-Type header with best_qvalue == best_pvalue",
+        ),
+        (
+            "nominal_stat_type_with_mismatched_q",
+            "# Stat-Type: p_value\n# FDR-Scope: none\n# Stat-Threshold: 0.01\n"
+            "trait\ttrait_total\tn_profiles_tested\tn_significant\tprevalence\t"
+            "best_qvalue\tbest_pvalue\tmean_fold\ttest_status\n"
+            "trait-a\t50\t2\t1\t0.5\t0.008\t0.004\t2.0\tsignificant\n",
+            "nominal Stat-Type contradicts best_qvalue: expected copied p",
+        ),
+        (
+            "contradictory_fdr_q_and_scope_none",
+            "# Stat-Type: fdr_q\n# FDR-Scope: none\n# Stat-Threshold: 0.01\n"
+            "trait\ttrait_total\tn_profiles_tested\tn_significant\tprevalence\t"
+            "best_qvalue\tbest_pvalue\tmean_fold\ttest_status\n"
+            "trait-a\t50\t2\t1\t0.5\t0.004\t0.001\t2.0\tsignificant\n",
+            "Contradictory Stat-Type 'fdr_q' and FDR-Scope 'none'",
+        ),
+        (
+            "invalid_stat_type",
+            "# Stat-Type: bogus\n# FDR-Scope: global\n# Stat-Threshold: 0.01\n"
+            "trait\ttrait_total\tn_profiles_tested\tn_significant\tprevalence\t"
+            "best_qvalue\tbest_pvalue\tmean_fold\ttest_status\n"
+            "trait-a\t50\t2\t1\t0.5\t0.004\t0.001\t2.0\tsignificant\n",
+            "Invalid Stat-Type",
+        ),
+        (
+            "invalid_fdr_scope",
+            "# Stat-Type: fdr_q\n# FDR-Scope: bogus\n# Stat-Threshold: 0.01\n"
+            "trait\ttrait_total\tn_profiles_tested\tn_significant\tprevalence\t"
+            "best_qvalue\tbest_pvalue\tmean_fold\ttest_status\n"
+            "trait-a\t50\t2\t1\t0.5\t0.004\t0.001\t2.0\tsignificant\n",
+            "Invalid FDR-Scope",
+        ),
+        (
+            "out_of_range_stat_threshold",
+            "# Stat-Type: fdr_q\n# FDR-Scope: global\n# Stat-Threshold: 1.5\n"
+            "trait\ttrait_total\tn_profiles_tested\tn_significant\tprevalence\t"
+            "best_qvalue\tbest_pvalue\tmean_fold\ttest_status\n"
+            "trait-a\t50\t2\t1\t0.5\t0.004\t0.001\t2.0\tsignificant\n",
+            "Stat-Threshold out of range",
+        ),
+    ]
+    for case_name, content, expected_match in refusal_cases:
+        case_dir = tmp_path / f"refusal_{case_name}"
+        case_dir.mkdir()
+        (case_dir / "trait_enrichment_traits_tested_pooled.tsv").write_text(
+            content, encoding="utf-8"
+        )
+        with pytest.raises(ValueError, match=expected_match):
+            issue727._expected_labels_from_tested(case_dir)

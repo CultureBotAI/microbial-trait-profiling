@@ -1,9 +1,11 @@
-"""Compare core-bound strata with the preserved direct-path outputs (#727, #1511).
+"""Compare core-bound strata with the preserved direct-path outputs (#727, #1511, #1772).
 
 Inputs: historical and regenerated stratification directories. Output: JSON to
 stdout with exact file comparisons and complete/disjoint partition accounting.
 Only output-directory references and validated additive statistic/scope/basis
-labels in the three cross-stratum summary reports may differ.
+labels in the three cross-stratum summary reports may differ. Expected stratum
+and row labels are derived directly from the raw tested-table comments and rows
+without calling producer helpers in ``mtp.stratification``.
 """
 
 from __future__ import annotations
@@ -132,26 +134,18 @@ def _expected_labels_from_tested(directory: Path) -> dict[str, _StratumTruth]:
         raw_stat_type = comments.get("Stat-Type")
         if raw_stat_type is not None and raw_stat_type not in {"fdr_q", "p_value"}:
             raise ValueError(f"Invalid Stat-Type in {tested_path}: {raw_stat_type!r}")
-        raw_fdr = comments.get("FDR")
-        if raw_fdr is not None and raw_fdr not in {"bh", "none"}:
-            raise ValueError(f"Invalid FDR in {tested_path}: {raw_fdr!r}")
         raw_scope = comments.get("FDR-Scope")
         if raw_scope is not None and raw_scope not in {"global", "profile", "none"}:
             raise ValueError(f"Invalid FDR-Scope in {tested_path}: {raw_scope!r}")
-        stat_threshold = comments.get("Stat-Threshold") or comments.get("P-Threshold")
+        stat_threshold = comments.get("Stat-Threshold")
         if stat_threshold is not None and not _valid_probability(stat_threshold):
             raise ValueError(
                 f"Stat-Threshold out of range (0, 1] in {tested_path}: {stat_threshold!r}"
             )
-        if raw_stat_type == "p_value" or raw_fdr == "none":
-            if raw_stat_type == "fdr_q" or raw_fdr == "bh":
-                raise ValueError(
-                    f"Contradictory Stat-Type {raw_stat_type!r} and FDR {raw_fdr!r} "
-                    f"in {tested_path}"
-                )
+        if raw_stat_type == "p_value":
             stat_type: str | None = "p_value"
             fdr_scope = "none"
-        elif raw_stat_type == "fdr_q" or raw_fdr == "bh":
+        elif raw_stat_type == "fdr_q":
             if raw_scope == "none":
                 raise ValueError(
                     f"Contradictory Stat-Type 'fdr_q' and FDR-Scope 'none' in {tested_path}"
