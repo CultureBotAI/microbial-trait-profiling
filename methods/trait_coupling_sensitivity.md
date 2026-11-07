@@ -182,14 +182,14 @@ flowchart TD
     B --> D["Evaluated in #260 (LOTO / LCO)"]
     C --> E["Evaluated in #264 / #189"]
     D --> F["Composition |Delta| <= 0.000636 (LOTO) / <= 0.001008 (LCO)<br/>Twin LOTO |Delta| <= 0.000268 < 0.002040 (passes rule)<br/>Directional |Delta| <= 0.002736; ORA |Delta| <= 0.024908"]
-    E --> G["Historical binarized-profile VIF = 5.88 (raw-count profile VIF = 2.74, paired VIF = 2.34)<br/>Curators assign coccus and sphere to same taxa<br/>Fails semantic independence"]
+    E --> G["Historical binarized-profile VIF = 5.88 (raw-count profile VIF = 2.74, paired VIF = 2.34)<br/>Coccus and sphere are annotated to the same taxa<br/>Fails semantic independence"]
 ```
 
 1. **Denominator Coupling is Structurally Robust:**
    Because total non-MediaDive counts are distributed across $317$ `off`-scope columns ($415,436$ total profile annotations), removing any single trait—even a high-annotation trait like *coccus shaped* ($14,689$ counts across $3,004$ nonzero profiles)—shrinks the profile denominator smoothly without tilting the relative composition of remaining traits. The effect sizes and rankings in Table 1 are not artifacts of denominator closure.
 
 2. **Semantic Redundancy Remains the Binding Constraint:**
-   While *coccus* and *sphere* are stable under denominator coupling, they remain **semantically redundant** in METPO ontology mappings (historical binarized-profile $r = +0.911$, VIF = $5.88$; raw-count profile $r = +0.7970$, VIF = $2.74$, paired VIF = $2.34$). Curators assign both labels to spherical cells. Therefore, *coccus* and *sphere* cannot be claimed as independent biological mechanisms in the narrative, but this is due to **ontological overlap** ([#189](https://github.com/CultureBotAI/microbial-trait-profiling/issues/189), [#264](https://github.com/CultureBotAI/microbial-trait-profiling/issues/264)), **not denominator distortion** ([#260](https://github.com/CultureBotAI/microbial-trait-profiling/issues/260)).
+   While *coccus* and *sphere* are stable under denominator coupling, they remain **semantically redundant** in METPO ontology mappings (historical binarized-profile $r = +0.911$, VIF = $5.88$; raw-count profile $r = +0.7970$, VIF = $2.74$, paired VIF = $2.34$). Both labels are annotated to the same taxa in the trait matrix. Therefore, *coccus* and *sphere* cannot be claimed as independent biological mechanisms in the narrative, but this is due to **ontological overlap** ([#189](https://github.com/CultureBotAI/microbial-trait-profiling/issues/189), [#264](https://github.com/CultureBotAI/microbial-trait-profiling/issues/264)), **not denominator distortion** ([#260](https://github.com/CultureBotAI/microbial-trait-profiling/issues/260)).
 
 ---
 

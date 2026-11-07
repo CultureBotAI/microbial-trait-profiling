@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import hashlib
 import importlib.util
 import json
@@ -859,6 +860,58 @@ def test_evaluate_conditional_twin_test_constant_and_unpaired() -> None:
     assert np.isnan(summary_noise.paired_correlation)
     assert np.isnan(summary_noise.vif_paired)
 
+    # Large-operand decimal-constant deltas (#1824): rounding noise in inc - dec scales
+    # with operand magnitude (~1000), not |delta_a| (0.1) or |delta_b| (<= 1.1).
+    large_operand_noise_df = pd.DataFrame(
+        {
+            "study_id": ["s1", "s1", "s2", "s2", "s3", "s3", "s4", "s4"],
+            "experiment_id": ["e1", "e1", "e2", "e2", "e3", "e3", "e4", "e4"],
+            "inc_dec": ["inc", "dec"] * 4,
+            TWIN_A: [1000.3, 1000.2, 1000.4, 1000.3, 1000.7, 1000.6, 1000.9, 1000.8],
+            TWIN_B: [0.2, 0.1, 0.5, 0.2, 1.0, 0.3, 1.5, 0.4],
+        }
+    )
+    summary_large_ops = evaluate_conditional_twin_test(large_operand_noise_df, TWIN_A, TWIN_B)
+    assert summary_large_ops.n_paired_experiments == 4
+    assert summary_large_ops.paired_slope_a_on_b == 0.0
+    assert f"{summary_large_ops.paired_slope_a_on_b:.4f}" == "0.0000"
+    assert np.isnan(summary_large_ops.paired_slope_pvalue)
+    assert np.isnan(summary_large_ops.paired_correlation)
+    assert np.isnan(summary_large_ops.vif_paired)
+
+    # Genuine small relative slope of 1e-9 (#1824): must stay non-constant.
+    small_slope_b = [1.0, 2.0, 3.0, 4.0, 5.0]
+    small_slope_df = pd.DataFrame(
+        {
+            "study_id": [f"s{i}" for i in range(5) for _ in range(2)],
+            "experiment_id": [f"e{i}" for i in range(5) for _ in range(2)],
+            "inc_dec": ["inc", "dec"] * 5,
+            TWIN_A: [v for b in small_slope_b for v in (5.0 + 1e-9 * b, 0.0)],
+            TWIN_B: [v for b in small_slope_b for v in (b, 0.0)],
+        }
+    )
+    summary_small_slope = evaluate_conditional_twin_test(small_slope_df, TWIN_A, TWIN_B)
+    assert summary_small_slope.paired_slope_a_on_b == pytest.approx(1e-9, rel=1e-4)
+    assert summary_small_slope.paired_correlation == pytest.approx(1.0)
+    assert np.isinf(summary_small_slope.vif_paired)
+
+    # All-zero delta_A with varying delta_B (#1824): std_delta_a == 0.0 <= 0.0 must be
+    # treated as constant so paired r, VIF, and p are NaN (never p = 1.0 from linregress).
+    all_zero_delta_a_df = pd.DataFrame(
+        {
+            "study_id": ["s1", "s1", "s2", "s2", "s3", "s3", "s4", "s4"],
+            "experiment_id": ["e1", "e1", "e2", "e2", "e3", "e3", "e4", "e4"],
+            "inc_dec": ["inc", "dec"] * 4,
+            TWIN_A: [0.0] * 8,
+            TWIN_B: [2.0, 1.0, 5.0, 2.0, 10.0, 3.0, 15.0, 4.0],
+        }
+    )
+    summary_zero_a = evaluate_conditional_twin_test(all_zero_delta_a_df, TWIN_A, TWIN_B)
+    assert summary_zero_a.paired_slope_a_on_b == 0.0
+    assert np.isnan(summary_zero_a.paired_slope_pvalue)
+    assert np.isnan(summary_zero_a.paired_correlation)
+    assert np.isnan(summary_zero_a.vif_paired)
+
 
 def test_evaluate_table1_paired_effects_missing_keys_and_mismatched_shape() -> None:
     """Verify evaluate_table1_paired_effects handles missing IDs or shape mismatches safely."""
@@ -1120,6 +1173,10 @@ def test_density_audit_reports_a_declared_trait_list_without_changing_shared_row
     )
     assert "3. SURVIVAL OF CONVERGENT SIX TRAIT SIGNALS" in default_report
     assert "Trait list:" not in default_report
+    twin_out = results["twin_summary"]
+    assert f"{twin_out.vif_profile:.2f}" != f"{twin_out.vif_paired:.2f}"
+    assert f"Variance Inflation Factor (VIF): {twin_out.vif_profile:.2f}" in default_report
+    assert f"Paired VIF: {twin_out.vif_paired:.2f}" in default_report
 
     provenance = json.loads(
         (tmp_path / "declared" / TRAIT_LIST_PROVENANCE_FILENAME).read_text(encoding="utf-8")
@@ -1192,18 +1249,24 @@ def test_declared_trait_list_run_drops_a_stray_default_provenance_record(tmp_pat
 
 
 def test_density_provenance_rejects_mismatched_trait_ids_for_declared_list(tmp_path: Path) -> None:
-    """#1399: density_provenance raises ValueError if trait_ids differ from trait_list.trait_ids."""
+    """#1399, #1825: density_provenance raises ValueError if trait_ids differ in length,
+    membership, or order from trait_list.trait_ids."""
     profiles, columns = _write_density_fixture(tmp_path)
-    list_path = _write_trait_list(tmp_path / "traits.txt", ["METPO:1000605"])
+    list_path = _write_trait_list(tmp_path / "traits.txt", ["METPO:1000605", "METPO:1000608"])
     declared = load_trait_list(list_path)
-    with pytest.raises(ValueError, match="do not match"):
-        density_module.density_provenance(
-            list(TABLE_1_TRAITS),
-            profiles_path=profiles,
-            columns_path=columns,
-            code_commit="abc",
-            trait_list=declared,
-        )
+    for mismatched_ids in (
+        list(TABLE_1_TRAITS),
+        ["METPO:1000605", "METPO:1000623"],
+        ["METPO:1000608", "METPO:1000605"],
+    ):
+        with pytest.raises(ValueError, match="do not match"):
+            density_module.density_provenance(
+                mismatched_ids,
+                profiles_path=profiles,
+                columns_path=columns,
+                code_commit="abc",
+                trait_list=declared,
+            )
 
 
 @pytest.mark.parametrize(
@@ -1397,6 +1460,26 @@ def test_module_report_omits_fixed_claims_and_formats_unavailable_sentinels_as_n
     assert "Variance Inflation Factor (VIF): NA" in report
     assert "Profile OLS regression slope (coccus ~ sphere): NA" in report
     assert "Paired contrasts (N=4): r = NA | Paired VIF: NA" in report
+
+    # #1825: positive infinity formats as 'inf', and format_metric_diff checks finiteness
+    # even when >= 2 traits vary.
+    assert (
+        density_module.format_report_number(float("inf"), ".2f", allow_positive_infinity=True)
+        == "inf"
+    )
+    varying_nan_pair = dataclasses.replace(
+        res["raw_pearson"], constant_traits_excluded=0, test_pair_r=float("nan")
+    )
+    varying_finite_pair = dataclasses.replace(
+        res["adj_pc1_pearson"], constant_traits_excluded=0, test_pair_r=0.25
+    )
+    assert density_module.format_metric_diff(varying_nan_pair, varying_finite_pair) == "NA"
+    assert density_module.format_metric_diff(varying_finite_pair, varying_nan_pair) == "NA"
+
+    # #1827: module docstring describes the primary annotation density axis, not curation cause.
+    module_doc = density_module.__doc__ or ""
+    assert "Adjusts for the curation density axis" not in module_doc
+    assert "Adjusts for the primary annotation density axis:" in module_doc
 
 
 def test_trait_list_runs_never_write_the_six_trait_density_directory(

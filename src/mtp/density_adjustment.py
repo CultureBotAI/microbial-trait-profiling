@@ -6,7 +6,7 @@ Addresses Issue #264, Issue #352, and follow-ups #375-#383:
    - Dominant annotation density axis: PC1 and top principal components variance explained.
    - Effective number of independent tests: Li & Ji (2005), Galwey (2009), Cheverud/Nyholt (2004).
      (Note: Cheverud/Nyholt is reported for completeness but excluded as unreliable per #325, #357).
-2. Adjusts for the curation density axis:
+2. Adjusts for the primary annotation density axis:
    - Method A: Profile-level PC1 regression / residualization.
    - Method B: Profile composition normalization (Total Sum Scaling / profile
      annotation depth normalization).
@@ -837,16 +837,24 @@ def evaluate_conditional_twin_test(
     )
 
     if can_eval_paired:
-        delta_a = (pvt[(trait_a, "inc")] - pvt[(trait_a, "dec")]).to_numpy(dtype=float)
+        inc_a = pvt[(trait_a, "inc")].to_numpy(dtype=float)
+        dec_a = pvt[(trait_a, "dec")].to_numpy(dtype=float)
+        delta_a = inc_a - dec_a
         delta_b = (pvt[(trait_b, "inc")] - pvt[(trait_b, "dec")]).to_numpy(dtype=float)
     else:
+        inc_a = np.array([], dtype=float)
+        dec_a = np.array([], dtype=float)
         delta_a = np.array([], dtype=float)
         delta_b = np.array([], dtype=float)
 
     n_paired = len(delta_a)
     std_delta_a = float(np.std(delta_a)) if n_paired > 0 else 0.0
     std_delta_b = float(np.std(delta_b)) if n_paired > 0 else 0.0
-    max_abs_delta_a = float(np.max(np.abs(delta_a))) if n_paired > 0 else 0.0
+    max_abs_delta_a = (
+        float(max(np.max(np.abs(delta_a)), np.max(np.abs(inc_a)), np.max(np.abs(dec_a))))
+        if n_paired > 0
+        else 0.0
+    )
     delta_a_is_constant = std_delta_a <= _EXACT_FIT_RESIDUAL_SHARE * max_abs_delta_a
 
     if n_paired >= 2 and not delta_a_is_constant and std_delta_b > 0.0:

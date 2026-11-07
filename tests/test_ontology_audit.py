@@ -517,3 +517,42 @@ def test_ontology_redundancy_audit_counts_observed_clusters_only(tmp_path: Path)
     )
     assert res_zero["n_redundant_pairs"] == 0
     assert res_zero["n_clusters"] == 0
+
+    # Multiple redundant pairs in one cluster (#1825 K02): motility has survivor METPO:1000702
+    # plus three collapsed traits (3 pairs in 1 cluster when 3 members are present).
+    multi_pair_traits = ["METPO:1000702", "METPO:1000705", "METPO:1000704", "METPO:1000608"]
+    profiles_multi = tmp_path / "profiles_multi.tsv"
+    columns_multi = tmp_path / "columns_multi.tsv"
+    pd.DataFrame(
+        {
+            "study_id": ["s1", "s1", "s2", "s2"],
+            "experiment_id": ["e1", "e1", "e2", "e2"],
+            "inc_dec": ["inc", "dec", "inc", "dec"],
+            "METPO:1000702": [3.0, 6.0, 9.0, 12.0],
+            "METPO:1000705": [2.0, 4.0, 6.0, 8.0],
+            "METPO:1000704": [1.0, 2.0, 3.0, 4.0],
+            "METPO:1000608": [5.0, 1.0, 2.0, 3.0],
+        }
+    ).to_csv(profiles_multi, sep="\t", index=False)
+    pd.DataFrame(
+        {
+            "column_id": multi_pair_traits,
+            "column_label": [
+                "motile",
+                "axially filamented",
+                "flagellated",
+                "facultatively aerobic",
+            ],
+            "object_name": ["motile", "axially filamented", "flagellated", "facultatively aerobic"],
+            "object_category": ["biolink:PhenotypicQuality"] * len(multi_pair_traits),
+        }
+    ).to_csv(columns_multi, sep="\t", index=False)
+
+    res_multi = run_ontology_redundancy_audit(
+        profiles_path=profiles_multi,
+        columns_path=columns_multi,
+        output_dir=tmp_path / "out_multi",
+    )
+    assert res_multi["n_redundant_pairs"] == 3
+    assert res_multi["n_clusters"] == 1
+    assert res_multi["n_collapsed_features"] == 2

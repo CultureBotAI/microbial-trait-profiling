@@ -317,7 +317,7 @@ def write_consolidated_report(
             f"{format_correlation_metric(raw, 'pc1_variance_pct', '.2f', suffix='%')}; "
             "collapsed deduplicated PC1 variance explained = "
             f"{format_correlation_metric(max_m, 'pc1_variance_pct', '.2f', suffix='%')};",
-            "  collapsed + PC1 regression variance explained = "
+            "  collapsed + PC1 regression PC1 variance explained = "
             f"{format_correlation_metric(adj_col_m, 'pc1_variance_pct', '.2f', suffix='%')}).",
             "  These descriptive comparisons summarize the annotation matrices without",
             "  attributing the correlation axis to curation effort or ontology redundancy.",
@@ -346,6 +346,14 @@ def write_consolidated_report(
     paired_r = _conclusion_number(twin.paired_correlation, "+.4f")
     profile_vif = _conclusion_number(twin.vif_profile, ".2f", allow_positive_infinity=True)
     paired_vif = _conclusion_number(twin.vif_paired, ".2f", allow_positive_infinity=True)
+    collapsed_summary = (
+        f"{n_collapsed} {_plural(n_collapsed, 'feature', 'features')} "
+        f"removed without a present cluster survivor across {n_clusters} "
+        f"{_plural(n_clusters, 'cluster', 'clusters')}"
+        if n_collapsed > 0 and n_clusters == 0
+        else f"{n_collapsed} {_plural(n_collapsed, 'feature', 'features')} "
+        f"collapsed into {n_clusters} {_plural(n_clusters, 'cluster', 'clusters')}"
+    )
     lines.extend(
         [
             "1. Median pairwise Pearson r across profile trait annotations: "
@@ -362,9 +370,7 @@ def write_consolidated_report(
             f"(N={twin.n_paired_experiments:,}): r = {paired_r}, VIF = {paired_vif}.",
             "   Joint-model coefficient stability was not evaluated.",
             f"5. Ontology redundancy accounts for {n_pairs} "
-            f"redundant {_plural(n_pairs, 'pair', 'pairs')} ({n_collapsed} "
-            f"{_plural(n_collapsed, 'feature', 'features')} "
-            f"collapsed into {n_clusters} {_plural(n_clusters, 'cluster', 'clusters')}),",
+            f"redundant {_plural(n_pairs, 'pair', 'pairs')} ({collapsed_summary}),",
             f"   bounding distinct trait space to {bounded_space} "
             f"{_plural(bounded_space, 'feature', 'features')}.",
             f"   PC1 variance explained (%): raw = {raw_pc1}; collapsed native = {native_pc1};",

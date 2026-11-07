@@ -119,6 +119,105 @@ MUTANTS: list[tuple[str, str, str, str, str]] = [
         "delta_a_is_constant = False",
         "tests/test_density_adjustment.py::test_evaluate_conditional_twin_test_constant_and_unpaired",
     ),
+    (
+        "N12_threshold_strict_less_T01",
+        "src/mtp/density_adjustment.py",
+        "delta_a_is_constant = std_delta_a <= _EXACT_FIT_RESIDUAL_SHARE * max_abs_delta_a",
+        "delta_a_is_constant = std_delta_a < _EXACT_FIT_RESIDUAL_SHARE * max_abs_delta_a",
+        "tests/test_density_adjustment.py::test_evaluate_conditional_twin_test_constant_and_unpaired",
+    ),
+    (
+        "N13_threshold_too_generous_T02",
+        "src/mtp/density_adjustment.py",
+        "delta_a_is_constant = std_delta_a <= _EXACT_FIT_RESIDUAL_SHARE * max_abs_delta_a",
+        "delta_a_is_constant = std_delta_a <= 1e-6 * max_abs_delta_a",
+        "tests/test_density_adjustment.py::test_evaluate_conditional_twin_test_constant_and_unpaired",
+    ),
+    (
+        "N14_threshold_absolute_not_relative_T03",
+        "src/mtp/density_adjustment.py",
+        "delta_a_is_constant = std_delta_a <= _EXACT_FIT_RESIDUAL_SHARE * max_abs_delta_a",
+        "delta_a_is_constant = std_delta_a <= _EXACT_FIT_RESIDUAL_SHARE",
+        "tests/test_density_adjustment.py::test_evaluate_conditional_twin_test_constant_and_unpaired",
+    ),
+    (
+        "N15_threshold_scaled_by_delta_b_T04",
+        "src/mtp/density_adjustment.py",
+        "delta_a_is_constant = std_delta_a <= _EXACT_FIT_RESIDUAL_SHARE * max_abs_delta_a",
+        (
+            "delta_a_is_constant = std_delta_a <= _EXACT_FIT_RESIDUAL_SHARE * "
+            "(float(np.max(np.abs(delta_b))) if n_paired else 0.0)"
+        ),
+        "tests/test_density_adjustment.py::test_evaluate_conditional_twin_test_constant_and_unpaired",
+    ),
+    (
+        "N16_threshold_scaled_by_delta_a_without_operands_1824",
+        "src/mtp/density_adjustment.py",
+        "float(max(np.max(np.abs(delta_a)), np.max(np.abs(inc_a)), np.max(np.abs(dec_a))))",
+        "float(np.max(np.abs(delta_a)))",
+        "tests/test_density_adjustment.py::test_evaluate_conditional_twin_test_constant_and_unpaired",
+    ),
+    (
+        "N17_refuse_only_on_length_P01",
+        "src/mtp/density_adjustment.py",
+        "if trait_list is not None and ids != list(trait_list.trait_ids):",
+        "if trait_list is not None and len(ids) != len(trait_list.trait_ids):",
+        "tests/test_density_adjustment.py::test_density_provenance_rejects_mismatched_trait_ids_for_declared_list",
+    ),
+    (
+        "N18_refuse_only_on_set_P02",
+        "src/mtp/density_adjustment.py",
+        "if trait_list is not None and ids != list(trait_list.trait_ids):",
+        "if trait_list is not None and set(ids) != set(trait_list.trait_ids):",
+        "tests/test_density_adjustment.py::test_density_provenance_rejects_mismatched_trait_ids_for_declared_list",
+    ),
+    (
+        "N19_clusters_equal_pair_count_K02",
+        "src/mtp/ontology_audit.py",
+        'int(df_pairs["cluster_id"].nunique())\n'
+        '        if "cluster_id" in df_pairs.columns and not df_pairs.empty\n'
+        "        else 0",
+        "len(df_pairs)",
+        "tests/test_ontology_audit.py::test_ontology_redundancy_audit_counts_observed_clusters_only",
+    ),
+    (
+        "N20_positive_inf_prints_na_F02",
+        "src/mtp/density_adjustment.py",
+        '    if allow_positive_infinity and value == math.inf:\n        return "inf"\n',
+        "",
+        "tests/test_density_consolidated_conclusions.py::test_conclusions_distinguish_undefined_from_infinite_diagnostics",
+    ),
+    (
+        "N21_metric_diff_nonfinite_unchecked_F05",
+        "src/mtp/density_adjustment.py",
+        (
+            "    if not (math.isfinite(after_val) and math.isfinite(before_val)):\n"
+            '        return "NA"\n'
+        ),
+        "",
+        "tests/test_density_consolidated_conclusions.py::test_conclusions_distinguish_undefined_from_infinite_diagnostics",
+    ),
+    (
+        "N22_module_section4_vif_swapped_F07",
+        "src/mtp/density_adjustment.py",
+        'f"Variance Inflation Factor (VIF): {twin_vif_prof}",',
+        'f"Variance Inflation Factor (VIF): {twin_vif_pair}",',
+        "tests/test_density_adjustment.py::test_density_audit_reports_a_declared_trait_list_without_changing_shared_rows",
+    ),
+    (
+        "N23_orphan_collapsed_into_zero_clusters_1826",
+        "scripts/audit_trait_density_correlation.py",
+        "if n_collapsed > 0 and n_clusters == 0",
+        "if False and n_collapsed > 0 and n_clusters == 0",
+        "tests/test_density_consolidated_conclusions.py::test_consolidated_report_pluralizes_singular_and_plural_counts",
+    ),
+    (
+        "N24_section5_missing_pc1_label_1827",
+        "scripts/audit_trait_density_correlation.py",
+        '"  collapsed + PC1 regression PC1 variance explained = "',
+        '"  collapsed + PC1 regression variance explained = "',
+        "tests/test_density_consolidated_conclusions.py::test_conclusions_report_observed_correlations_and_pc1_changes",
+    ),
 ]
 
 
@@ -199,7 +298,12 @@ def main() -> int:
             rc = int(rc_str)
             has_origin = "PYTEST_ORIGIN_OK" in combined
             has_failed_summary = " failed" in combined
-            has_no_error = " error" not in combined.lower() and "ImportError" not in combined
+            has_no_error = (
+                "=== ERRORS ===" not in combined
+                and " error in " not in combined.lower()
+                and " errors in " not in combined.lower()
+                and "ImportError" not in combined
+            )
             has_assertion = "AssertionError" in combined or "Failed: DID NOT RAISE" in combined
             if rc != 1 or not (
                 has_origin and has_failed_summary and has_no_error and has_assertion

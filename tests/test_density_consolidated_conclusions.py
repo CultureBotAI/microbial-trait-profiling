@@ -257,7 +257,9 @@ def test_conclusions_report_observed_correlations_and_pc1_changes(
         ("adj_collapsed_metrics", adjusted_pc1),
     ):
         ontology[key] = replace(ontology[key], pc1_variance_pct=value)
-    conclusions = _conclusions(audit_script, tmp_path, density, ontology)
+    content, conclusions = _report_and_conclusions(audit_script, tmp_path, density, ontology)
+    assert (f"collapsed + PC1 regression PC1 variance explained = {adjusted_pc1:.2f}%).") in content
+    assert "collapsed + PC1 regression variance explained" not in content
     correlation = _point(conclusions, 1)
     assert "raw = -0.0234; post-PC1 regression = -0.0456." in correlation
     assert f"Raw PC1 variance explained (%) = {raw_pc1:.2f}." in correlation
@@ -283,9 +285,11 @@ def test_conclusions_distinguish_undefined_from_infinite_diagnostics(
     tmp_path: Path, audit_script: ModuleType, unavailable: float
 ) -> None:
     density, ontology = synthetic_results("undefined")
-    density["raw_pearson"] = _metrics(unavailable, unavailable)
+    density["raw_pearson"] = replace(_metrics(unavailable, unavailable), test_pair_r=unavailable)
     density["raw_spearman"] = _metrics(unavailable, unavailable)
-    density["adj_pc1_pearson"] = _metrics(unavailable, unavailable)
+    density["adj_pc1_pearson"] = replace(
+        _metrics(unavailable, unavailable), test_pair_r=unavailable
+    )
     density["twin_summary"] = replace(
         density["twin_summary"],
         profile_correlation=unavailable,
@@ -302,6 +306,9 @@ def test_conclusions_distinguish_undefined_from_infinite_diagnostics(
     assert re.search(r"profile.{0,100}VIF\s*=\s*NA", twin, re.I)
     assert re.search(r"paired.{0,60}r\s*=\s*-1\.0000", twin, re.I)
     assert re.search(r"paired.{0,100}VIF\s*=\s*inf", twin, re.I)
+    assert "Variance Inflation Factor (VIF): NA" in content
+    assert "Paired VIF: inf" in content
+    assert "Post-PC1 regression r: NA (change: NA)" in content
     assert "Profile OLS regression slope (coccus ~ sphere): NA" in content
     assert "NA" in _point(conclusions, 1)
     assert "NA" in _point(conclusions, 5)
@@ -428,10 +435,30 @@ def test_consolidated_report_pluralizes_singular_and_plural_counts(
     assert "1 redundant pair (1 feature collapsed into 1 cluster)" in collapse
     assert "bounding distinct trait space to 1 feature." in collapse
 
+    # #1826: when a collapsed member (e.g. sphere) is present without its cluster survivor
+    # (coccus), n_redundant_pairs == 0 and n_clusters == 0 while n_collapsed_features == 1;
+    # item 5 must not say '1 feature collapsed into 0 clusters'.
+    orphan_ontology = {
+        **ontology,
+        "n_redundant_pairs": 0,
+        "n_clusters": 0,
+        "n_collapsed_features": 1,
+        "bounded_trait_space": 2,
+    }
+    orphan_content, orphan_conclusions = _report_and_conclusions(
+        audit_script, tmp_path, density, orphan_ontology
+    )
+    orphan_collapse = _point(orphan_conclusions, 5)
+    assert "collapsed into 0 clusters" not in orphan_content
+    assert (
+        "0 redundant pairs (1 feature removed without a present cluster survivor across 0 clusters)"
+        in orphan_collapse
+    )
+
 
 def test_density_interpretation_and_audit_docs_qualify_historical_vif_and_list_provenance() -> None:
-    """#1391, #1392, #1400: docs qualify historical binarized VIF 5.88, omit severity claims,
-    and list density_adjustment_provenance.json."""
+    """#1391, #1392, #1400, #1827: docs qualify historical binarized VIF 5.88, omit severity and
+    curation-mechanism claims, and list density_adjustment_provenance.json."""
     repo_root = Path(__file__).resolve().parents[1]
     bio_audit = (repo_root / "methods/biological_interpretation_audit.md").read_text(
         encoding="utf-8"
@@ -444,6 +471,8 @@ def test_density_interpretation_and_audit_docs_qualify_historical_vif_and_list_p
     coupling_doc = (repo_root / "methods/trait_coupling_sensitivity.md").read_text(encoding="utf-8")
     assert "historical binarized-profile r = +0.911" in coupling_doc
     assert "Historical binarized-profile VIF = 5.88" in coupling_doc
+    assert "Curators assign" not in coupling_doc
+    assert "Coccus and sphere are annotated to the same taxa" in coupling_doc
 
     density_doc = (repo_root / "docs/density_adjustment_audit.md").read_text(encoding="utf-8")
     assert "data/derived/density_adjustment/density_adjustment_provenance.json" in density_doc
