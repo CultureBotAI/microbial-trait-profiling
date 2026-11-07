@@ -10,6 +10,7 @@ from __future__ import annotations
 import csv
 import inspect
 import json
+import math
 import random
 import re
 import shutil
@@ -511,6 +512,46 @@ def test_invalid_comparison_root_leaves_no_output_and_same_path_retry_verifies(
     references = provenance["verified_references"]
     assert isinstance(references, list)
     assert "native_sources.arm1_pooled_stats" in references
+
+
+def test_saved_nominal_p_declaration_matches_both_real_comparison_exports(
+    stage: dict[str, Path],
+) -> None:
+    directory = stage["comparison"] / "integrated_evidence"
+    provenance_path = directory / "integrated_evidence_provenance.json"
+    provenance = json.loads(provenance_path.read_text(encoding="utf-8"))
+    assert "nominal_p_columns" in provenance, "The producer must save its p-column contract"
+    tables = {}
+    for name in ("integrated_evidence.tsv", "integrated_evidence_method_results.tsv"):
+        with (directory / name).open(encoding="utf-8", newline="") as handle:
+            reader = csv.DictReader(handle, delimiter="\t")
+            assert {"p_value", "native_pair_p_value"} <= set(reader.fieldnames or [])
+            rows = list(reader)
+        columns = {}
+        for column in ("p_value", "native_pair_p_value"):
+            # Parse the exported cells independently of the producer's Record helper.
+            finite = 0
+            for row in rows:
+                text = row[column].strip()
+                if text and math.isfinite(float(text)):
+                    finite += 1
+            columns[column] = {
+                "finite_nominal_rows": finite,
+                "missing_or_nonfinite_rows": len(rows) - finite,
+            }
+        tables[name] = {"row_count": len(rows), "columns": columns}
+    assert provenance["nominal_p_columns"] == {
+        "version": "nominal-p-columns-v1",
+        "value_policy": {
+            "finite": "nominal",
+            "missing_or_nonfinite": "no_finite_value",
+            "correction": "none",
+        },
+        "tables": tables,
+    }
+    verified = verify_integrated_provenance(provenance_path)
+    assert verified["verified_references"]
+    assert verify_comparison_run(stage["comparison"]).core_run_id == _comparison(stage).core_run_id
 
 
 @pytest.mark.parametrize("entrypoint", ["comparison", "sources"])

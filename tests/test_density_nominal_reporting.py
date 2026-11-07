@@ -258,6 +258,23 @@ def test_reports_count_finite_nominal_wilcoxon_values_in_each_displayed_column(
 
 
 @pytest.mark.parametrize(
+    ("slope", "expected"),
+    [
+        (0.0, "0.0000"),
+        (-0.3125, "-0.3125"),
+        (1.5, "1.5000"),
+        (float("nan"), "NA"),
+        (float("inf"), "NA"),
+        (-float("inf"), "NA"),
+        (np.float64("nan"), "NA"),
+    ],
+)
+def test_format_paired_regression_slope(slope: float, expected: str) -> None:
+    """#1714: finite paired regression slopes format to 4 decimals; non-finite format as NA."""
+    assert density.format_paired_regression_slope(slope) == expected
+
+
+@pytest.mark.parametrize(
     ("slope_p", "count", "p_text", "test_word"),
     [
         (0.0, 1, "0.00e+00", "test"),
@@ -279,6 +296,126 @@ def test_reports_label_paired_slope_and_count_only_its_finite_test(
     assert f"nominal p={p_text}; {count} finite paired-regression {test_word} shown" in line
     assert "; diagnostic" in line
     assert ("untested" in line) is (count == 0)
+
+
+@pytest.mark.parametrize("writer", ["module", "consolidated"])
+@pytest.mark.parametrize("case", ["zero_pairs", "one_pair", "constant_delta_b", "zero_slope"])
+def test_unmocked_undefined_vs_zero_paired_slope_report_and_readers(
+    tmp_path: Path, audit_script: ModuleType, writer: str, case: str
+) -> None:
+    """#1714: <2 pairs or constant delta_b give NaN slope printed as NA;
+    a true zero slope (constant delta_a with varying delta_b) still prints 0.0000;
+    TSV and JSON outputs remain readable."""
+    traits = list(density.TABLE_1_TRAITS)
+    rows: list[dict[str, object]] = []
+    if case == "zero_pairs":
+        for idx in range(3):
+            base = {trait_id: float(5 + idx) for trait_id in traits}
+            rows.append(
+                {
+                    "study_id": f"study-{idx}",
+                    "experiment_id": f"exp-{idx}",
+                    "inc_dec": "inc",
+                    **base,
+                }
+            )
+    elif case == "one_pair":
+        for direction, da, db in (("inc", 4.0, 2.0), ("dec", 0.0, 0.0)):
+            base = dict.fromkeys(traits, 5.0)
+            base[density.TWIN_A] += da
+            base[density.TWIN_B] += db
+            rows.append(
+                {
+                    "study_id": "study-0",
+                    "experiment_id": "exp-0",
+                    "inc_dec": direction,
+                    **base,
+                }
+            )
+    elif case == "constant_delta_b":
+        for exp_idx, da in enumerate((2.0, 9.0, 15.0)):
+            for direction in ("inc", "dec"):
+                base = {trait_id: float(5 + exp_idx) for trait_id in traits}
+                if direction == "inc":
+                    base[density.TWIN_A] += da
+                    base[density.TWIN_B] += 3.0
+                rows.append(
+                    {
+                        "study_id": f"study-{exp_idx}",
+                        "experiment_id": f"exp-{exp_idx}",
+                        "inc_dec": direction,
+                        **base,
+                    }
+                )
+    else:
+        for exp_idx, db in enumerate((1.0, 3.0, 6.0)):
+            for direction in ("inc", "dec"):
+                base = {trait_id: float(5 + exp_idx) for trait_id in traits}
+                if direction == "inc":
+                    base[density.TWIN_A] += 4.0
+                    base[density.TWIN_B] += db
+                rows.append(
+                    {
+                        "study_id": f"study-{exp_idx}",
+                        "experiment_id": f"exp-{exp_idx}",
+                        "inc_dec": direction,
+                        **base,
+                    }
+                )
+
+    profiles = tmp_path / f"profiles_{writer}_{case}.tsv"
+    columns = tmp_path / f"columns_{writer}_{case}.tsv"
+    pd.DataFrame(rows).to_csv(profiles, sep="\t", index=False)
+    pd.DataFrame(
+        {
+            "column_id": traits,
+            "column_label": list(density.TABLE_1_TRAITS.values()),
+            "object_name": list(density.TABLE_1_TRAITS.values()),
+            "object_category": ["biolink:PhenotypicQuality"] * len(traits),
+        }
+    ).to_csv(columns, sep="\t", index=False)
+
+    out_dir = tmp_path / f"out_{writer}_{case}"
+    result = density.run_density_audit(profiles, columns, out_dir)
+    if writer == "consolidated":
+        ontology = {
+            "n_redundant_pairs": 0,
+            "n_clusters": 0,
+            "n_collapsed_features": 0,
+            "bounded_trait_space": len(traits),
+            "native_metrics": result["raw_pearson"],
+            "max_metrics": result["raw_pearson"],
+            "adj_collapsed_metrics": result["adj_pc1_pearson"],
+        }
+        report_path = audit_script.write_consolidated_report(out_dir, result, ontology)
+    else:
+        report_path = result["report_txt"]
+
+    summary_df = pd.read_csv(result["summary_tsv"], sep="\t")
+    table1_df = pd.read_csv(result["table1_tsv"], sep="\t")
+    provenance = json.loads(result["provenance"].read_text(encoding="utf-8"))
+    assert len(summary_df) == 4
+    assert len(table1_df) == len(traits)
+    assert provenance["q_values"]["p_value_type"] == "nominal"
+
+    twin = result["twin_summary"]
+    report = report_path.read_text(encoding="utf-8")
+    slope_line = next(
+        line for line in report.splitlines() if line.startswith("Paired regression slope:")
+    )
+    if case == "zero_slope":
+        assert twin.paired_slope_a_on_b == pytest.approx(0.0)
+        assert slope_line == (
+            "Paired regression slope: 0.0000 "
+            "(nominal p=NA; 0 finite paired-regression tests shown; diagnostic; untested)"
+        )
+    else:
+        assert math.isnan(twin.paired_slope_a_on_b)
+        assert math.isnan(twin.paired_slope_pvalue)
+        assert slope_line == (
+            "Paired regression slope: NA "
+            "(nominal p=NA; 0 finite paired-regression tests shown; diagnostic; untested)"
+        )
 
 
 @pytest.mark.parametrize("writer", ["module", "consolidated"])

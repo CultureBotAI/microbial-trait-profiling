@@ -184,9 +184,11 @@ Discovery reads files lazily and keeps compact per-file summaries. Alias expansi
 source size and summary size have explicit limits. The derivation recognizer runs only
 in functions whose own resolved calls include both `benjamini_hochberg` and
 `numpy.clip`. A separate per-function `Limits.derivation_steps` budget defaults to
-1,000,000 work units (#1581, #1683). A registry-driven test requires every anchor
-claiming derived BY to fit within one quarter of the default budget. It charges
-AST visits, expression/statement analysis,
+1,000,000 work units (#1581, #1683). A headroom test scans all Python sources under
+`src/` and `scripts/`, including ignored files, and requires every analysed candidate
+to fit within one sixteenth of that default, whether or not it claims derived BY
+(#1700). Registry claims supply a non-vacuity check, not the source-selection rule.
+The recognizer charges AST visits, expression/statement analysis,
 loop fixed-point passes, declaration-name processing, and the sizes of copied,
 joined or invalidated fact environments before doing that work. Exceeding the budget
 refuses discovery with the source path, anchor, attempted work and limit, and asks
@@ -230,6 +232,13 @@ Within a registered function, it also does not detect:
   interpreted. Derivations inside unsupported `try` or `match` blocks, or stored only
   through a subscript or attribute rather than a local name, are not credited.
   Escaping `break` or `continue` paths inside those unsupported blocks are not propagated;
+- mutation through an alias whose identity the recognizer does not track. This includes
+  aliases bound outside the function (in the module, an enclosing function or the caller),
+  tuple unpacking, `or` or conditional expressions, walrus bindings, aliases joined across
+  branches or loops, `for`/`with` targets, aliases created inside unsupported `try`/`match`
+  blocks, container or object holders, and `cast`. A write through one of these aliases
+  may leave a stale vector extent credited as a BY derivation; resolving these aliases
+  remains follow-up work (#1796, #1798);
 - other binding forms, including starred targets, `def`/`class` rebinding (including
   decorated definitions), `global` writes from another function and context managers
   that suppress a `raise`, are not modelled. An enclosing function's binding that
