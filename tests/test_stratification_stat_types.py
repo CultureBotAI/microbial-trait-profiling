@@ -891,3 +891,71 @@ def test_core_strata_comparison_standalone_domain_and_consistency_guards(tmp_pat
     assert not issue727._summary_txt_scientifically_equal(
         txt_before, bad_txt, before, after, truth=None
     )
+
+
+def test_core_strata_comparison_derives_expected_labels_without_producer_helpers(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#1772: _expected_labels_from_tested must not call producer helpers in mtp.stratification."""
+    import mtp.stratification as strata_mod
+
+    issue727 = _load_issue727_compare()
+    assert not hasattr(issue727, "_read_tested_summary")
+    assert not hasattr(issue727, "_extract_q_or_p")
+
+    before = tmp_path / "before"
+    after = tmp_path / "after"
+    _assemble_24_strata_products(before, include_stat_type_col=False, include_full_labels=False)
+    _assemble_24_strata_products(after, include_stat_type_col=True, include_full_labels=True)
+
+    def _forbid_producer_helper(*_args: object, **_kwargs: object) -> object:
+        raise AssertionError("issue727_compare_core_strata must not call producer helpers (#1772)")
+
+    monkeypatch.setattr(strata_mod, "_read_tested_summary", _forbid_producer_helper)
+    monkeypatch.setattr(strata_mod, "_extract_q_or_p", _forbid_producer_helper)
+
+    truth = issue727._expected_labels_from_tested(after)
+    pooled_truth = truth["pooled"]
+    assert pooled_truth.stat_type == "fdr_q"
+    assert pooled_truth.fdr_scope == "global"
+    assert pooled_truth.stat_threshold == "0.001"
+    assert pooled_truth.hit_statistic == "FDR q"
+    assert pooled_truth.trait_types == {
+        "trait-a": "fdr_q",
+        "trait-fallback": "p_value",
+    }
+    assert pooled_truth.trait_sig_basis == {
+        "trait-a": "FDR q",
+        "trait-fallback": "FDR q",
+    }
+
+    result = issue727.compare(before, after)
+    assert result["passed"] is True
+
+    # Historical --no-fdr tested table (# FDR: none + legacy # FDR-Scope: global + # P-Threshold)
+    hist_dir = tmp_path / "hist_nominal"
+    hist_dir.mkdir()
+    (hist_dir / "trait_enrichment_traits_tested_pooled.tsv").write_text(
+        "# FDR: none\n# FDR-Scope: global\n# P-Threshold: 0.01\n"
+        "trait\ttrait_total\tn_profiles_tested\tn_significant\tprevalence\t"
+        "best_qvalue\tbest_pvalue\tmean_fold\ttest_status\n"
+        "trait-a\t50\t2\t1\t0.5\t0.004\t0.004\t2.0\tsignificant\n"
+        "trait-b\t20\t1\t0\t0.0\t\t0.08\t1.3\ttested_not_significant\n"
+        "trait-c\t5\t0\t0\t\t\t\t\tuntested\n",
+        encoding="utf-8",
+    )
+    hist_truth = issue727._expected_labels_from_tested(hist_dir)["pooled"]
+    assert hist_truth.stat_type == "p_value"
+    assert hist_truth.fdr_scope == "none"
+    assert hist_truth.stat_threshold == "0.01"
+    assert hist_truth.hit_statistic == "nominal p"
+    assert hist_truth.trait_types == {
+        "trait-a": "p_value",
+        "trait-b": "p_value",
+        "trait-c": "unavailable",
+    }
+    assert hist_truth.trait_sig_basis == {
+        "trait-a": "nominal p",
+        "trait-b": "nominal p",
+        "trait-c": "unavailable",
+    }
