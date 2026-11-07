@@ -794,7 +794,9 @@ def write_outputs(
                 "mcnemar_odds_ratio",
                 f"aerobe_vs_anaerobe_paired_signs ({correlation.status})",
                 "" if correlation.odds_ratio is None else f"{correlation.odds_ratio:.6f}",
-                "" if correlation.mcnemar_p is None else f"{correlation.mcnemar_p:.6g}",
+                ""
+                if correlation.mcnemar_p is None or not math.isfinite(correlation.mcnemar_p)
+                else f"{correlation.mcnemar_p:.6g}",
                 up_down + down_up,
                 vintage or "",
                 "nominal" if n_mcnemar_tests > 0 else "not_tested",
@@ -1637,7 +1639,7 @@ def main() -> int:
     ratio = "undefined" if correlation.odds_ratio is None else f"{correlation.odds_ratio:.3f}"
     p_text = (
         "not tested"
-        if correlation.mcnemar_p is None
+        if correlation.mcnemar_p is None or not math.isfinite(correlation.mcnemar_p)
         else f"nominal p={correlation.mcnemar_p:.3g}, 1 nominal test"
     )
     print(

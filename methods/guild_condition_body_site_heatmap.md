@@ -263,7 +263,9 @@ they share cohorts, which this computation does not model.
 The McNemar result is one nominal test with no adjusted q. The seven Spearman
 p-values are also nominal and uncorrected, and should be read as descriptive
 rather than as a screened set; they are not the basis of any claim in the
-manuscript. Reporting one McNemar result does not correct selection of the guild
+manuscript. `guild_aerobe_anaerobe_correlation.tsv` appends `p_value_type`
+(`nominal` or `not_tested`, blank on non-test count rows) and `n_tests` (the
+table-wide count of finite McNemar and Spearman tests). Reporting one McNemar result does not correct selection of the guild
 hypothesis or establish FDR control across these diagnostics.
 
 ## Reproducing
