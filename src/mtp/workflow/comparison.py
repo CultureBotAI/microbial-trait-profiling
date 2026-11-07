@@ -433,9 +433,16 @@ def shared_basis_ledger(
     It loads the core's count profiles with integrated evidence's guilds and filters and
     applies the same whole-pair zero-total exclusion, so the ledger exists before the
     stage writes anything. ``reconcile_ledger`` then checks what integrated evidence wrote.
+    Only the Noel study eligibility rule uses this shared basis; retaining zero totals
+    or requiring positive trait-ratio terms needs a different ledger (#1611). This
+    basis precedes the sign tests' trait-specific removal of tied study differences.
     """
     if spec.sampling_unit != "study":
         raise ValueError(f"No shared-basis ledger for {spec.sampling_unit!r} units: {spec.id}")
+    if spec.eligibility_rule != "paired_human_16S_WMS_nonzero_directional_difference_studies":
+        raise ValueError(
+            f"No shared-basis ledger for eligibility rule {spec.eligibility_rule!r}: {spec.id}"
+        )
     profiles, _ = load_profiles(
         artifact_path(core_run, "count_profiles"),
         artifact_path(core_run, "experiments"),
