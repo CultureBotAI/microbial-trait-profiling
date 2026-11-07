@@ -1,9 +1,11 @@
-"""Compare core-bound strata with the preserved direct-path outputs (#727, #1511).
+"""Compare core-bound strata with the preserved direct-path outputs (#727, #1511, #1772).
 
 Inputs: historical and regenerated stratification directories. Output: JSON to
 stdout with exact file comparisons and complete/disjoint partition accounting.
 Only output-directory references and validated additive statistic/scope/basis
-labels in the three cross-stratum summary reports may differ.
+labels in the three cross-stratum summary reports may differ. Expected stratum
+and row labels are derived directly from the raw tested-table comments and rows
+without calling producer helpers in ``mtp.stratification``.
 """
 
 from __future__ import annotations
@@ -20,8 +22,6 @@ from mtp.paths import file_sha256
 from mtp.stratification import (
     BEST_STAT_NOTE,
     PRIMARY_STRATA,
-    _extract_q_or_p,
-    _read_tested_summary,
 )
 
 ALLOWED_BASIS_VALUES = {"FDR q", "nominal p", "unknown", "unavailable"}
@@ -91,27 +91,91 @@ class _StratumTruth(NamedTuple):
     trait_sig_basis: dict[str, str]
 
 
+def _parse_optional_finite(raw: str) -> float | None:
+    stripped = raw.strip()
+    if not stripped:
+        return None
+    try:
+        parsed = float(stripped)
+    except ValueError:
+        return None
+    return parsed if math.isfinite(parsed) else None
+
+
+def _independent_row_stat_type(
+    q_val: float | None, p_val: float | None, stat_type: str | None
+) -> str:
+    if q_val is not None:
+        if stat_type == "p_value":
+            if p_val is None or q_val != p_val:
+                raise ValueError("nominal Stat-Type contradicts best_qvalue: expected copied p")
+            return "p_value"
+        if stat_type is None and p_val is not None and q_val == p_val:
+            raise ValueError(
+                "Missing Stat-Type header with best_qvalue == best_pvalue: "
+                "cannot distinguish fdr_q from copied nominal p"
+            )
+        return "fdr_q"
+    if p_val is not None:
+        return "p_value"
+    return "unavailable"
+
+
 def _expected_labels_from_tested(directory: Path) -> dict[str, _StratumTruth]:
     truth: dict[str, _StratumTruth] = {}
     for stratum in PRIMARY_STRATA:
         tested_path = directory / f"trait_enrichment_traits_tested_{stratum}.tsv"
         if not tested_path.exists():
             continue
-        df, meta = _read_tested_summary(tested_path)
-        stat_type = meta.stat_type
-        fdr_scope = "none" if stat_type == "p_value" else (meta.fdr_scope or "unknown")
-        stat_threshold = meta.stat_threshold
+        parsed = _split_comments_and_csv(tested_path)
+        if parsed is None:
+            raise ValueError(f"Malformed tested traits table: {tested_path}")
+        comments, header, rows = parsed
+        raw_stat_type = comments.get("Stat-Type")
+        if raw_stat_type is not None and raw_stat_type not in {"fdr_q", "p_value"}:
+            raise ValueError(f"Invalid Stat-Type in {tested_path}: {raw_stat_type!r}")
+        raw_scope = comments.get("FDR-Scope")
+        if raw_scope is not None and raw_scope not in {"global", "profile", "none"}:
+            raise ValueError(f"Invalid FDR-Scope in {tested_path}: {raw_scope!r}")
+        stat_threshold = comments.get("Stat-Threshold")
+        if stat_threshold is not None and not _valid_probability(stat_threshold):
+            raise ValueError(
+                f"Stat-Threshold out of range (0, 1] in {tested_path}: {stat_threshold!r}"
+            )
+        if raw_stat_type == "p_value":
+            stat_type: str | None = "p_value"
+            fdr_scope = "none"
+        elif raw_stat_type == "fdr_q":
+            if raw_scope == "none":
+                raise ValueError(
+                    f"Contradictory Stat-Type 'fdr_q' and FDR-Scope 'none' in {tested_path}"
+                )
+            stat_type = "fdr_q"
+            fdr_scope = raw_scope if raw_scope in {"global", "profile"} else "unknown"
+        else:
+            stat_type = None
+            fdr_scope = raw_scope if raw_scope in {"global", "profile", "none"} else "unknown"
         hit_statistic = {"p_value": "nominal p", "fdr_q": "FDR q"}.get(
             stat_type or "unknown", "unknown"
         )
+        col_idx = {col: idx for idx, col in enumerate(header)}
         trait_types: dict[str, str] = {}
         trait_sig_basis: dict[str, str] = {}
-        for _, row in df.iterrows():
-            _val, best_type, _best_scope = _extract_q_or_p(row, meta.stat_type, meta.fdr_scope)
-            trait_name = str(row["trait"])
-            trait_types[trait_name] = best_type
+        for row in rows:
+            trait_name = row[col_idx["trait"]]
+            q_val = (
+                _parse_optional_finite(row[col_idx["best_qvalue"]])
+                if "best_qvalue" in col_idx
+                else None
+            )
+            p_val = (
+                _parse_optional_finite(row[col_idx["best_pvalue"]])
+                if "best_pvalue" in col_idx
+                else None
+            )
+            trait_types[trait_name] = _independent_row_stat_type(q_val, p_val, stat_type)
             trait_sig_basis[trait_name] = (
-                hit_statistic if int(row["n_profiles_tested"]) > 0 else "unavailable"
+                hit_statistic if int(row[col_idx["n_profiles_tested"]]) > 0 else "unavailable"
             )
         truth[stratum] = _StratumTruth(
             stat_type=stat_type,

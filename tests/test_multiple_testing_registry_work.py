@@ -1,7 +1,8 @@
-"""Bound derivation analysis and preserve real-anchor budget headroom (#1581, #1683)."""
+"""Bound derivation analysis and preserve candidate headroom (#1581, #1683, #1700)."""
 
 import re
 from dataclasses import replace
+from pathlib import Path
 from textwrap import indent
 
 import pytest
@@ -13,8 +14,11 @@ from test_multiple_testing_registry import (
     ROOT,
     DiscoveryLimitError,
     discover,
+    repository_sources,
 )
 from test_multiple_testing_registry_derived import PREFIX, source
+
+DERIVATION_HEADROOM_DIVISOR = 16
 
 
 def nested_derivation(depth: int) -> str:
@@ -46,9 +50,9 @@ def test_ordinary_derivations_still_provide_a_witness(text: str) -> None:
     assert discovered[("src/x.py", "screen")]["derived_procedures"] == {"BY"}
 
 
-def test_real_derived_by_anchors_use_at_most_quarter_of_default_budget() -> None:
-    """Use current registry claims, deduplicating anchors shared across families."""
-    registry = yaml.safe_load(REGISTRY.read_text(encoding="utf-8"))
+def check_repository_derivation_headroom(root: Path) -> None:
+    """Reserve headroom for every analysed candidate, including unclaimed ones."""
+    registry = yaml.safe_load((root / REGISTRY.relative_to(ROOT)).read_text(encoding="utf-8"))
     anchors: set[tuple[str, str]] = {
         (anchor["path"], anchor["function"])
         for family in registry["families"]
@@ -56,13 +60,27 @@ def test_real_derived_by_anchors_use_at_most_quarter_of_default_budget() -> None
         if "BY" in anchor.get("derived_procedures", {})
     }
     assert anchors, "The registry must supply real derived-BY headroom cases"
-    sources = {
-        path: (ROOT / path).read_text(encoding="utf-8") for path in sorted({p for p, _ in anchors})
-    }
-    limits = replace(DEFAULT_LIMITS, derivation_steps=DEFAULT_LIMITS.derivation_steps // 4)
-    discovered, _ = discover(sources, limits=limits)
+    limits = replace(
+        DEFAULT_LIMITS,
+        derivation_steps=DEFAULT_LIMITS.derivation_steps // DERIVATION_HEADROOM_DIVISOR,
+    )
+    discovered, _ = discover(repository_sources(root), limits=limits)
+    # Claims provide a non-vacuity check, never the source-selection rule.
     for anchor in sorted(anchors):
-        assert "BY" in discovered[anchor].get("derived_procedures", set()), anchor
+        name = f"{anchor[0]}:{anchor[1]}"
+        assert anchor in discovered, f"Missing derived-BY headroom anchor: {name}"
+        assert "BY" in discovered[anchor].get("derived_procedures", set()), (
+            f"Uncredited derived-BY headroom anchor: {name}"
+        )
+
+
+def test_all_repository_candidates_use_at_most_sixteenth_of_default_budget() -> None:
+    try:
+        check_repository_derivation_headroom(ROOT)
+    except DiscoveryLimitError as error:
+        raise AssertionError(
+            "Every repository candidate must retain the declared headroom"
+        ) from error
 
 
 def test_custom_work_budget_refuses_before_a_witness_is_credited() -> None:

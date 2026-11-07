@@ -490,6 +490,14 @@ def visible_by_derivation(
                 return ("BY", value[1])
         return None
 
+    def remember_mutated_origin(previous: Fact | None, env: dict[str, Fact]) -> None:
+        # A free vector read may exist only through its aliases. Include its
+        # original name in the mutation scan so a later read cannot recreate
+        # the old extent. Position-tagged local assignments have no free origin;
+        # an original name already rebound or invalidated must keep its fact.
+        if previous and previous[0] == "vector" and previous[1].isidentifier():
+            env.setdefault(previous[1], previous)
+
     def assign(node: ast.AST, value: Fact | None, env: dict[str, Fact]) -> None:
         charge()
         if isinstance(node, ast.Name):
@@ -508,6 +516,7 @@ def visible_by_derivation(
             while isinstance(root, ast.Subscript | ast.Attribute):
                 root = root.value
             previous = expression(root, env)
+            remember_mutated_origin(previous, env)
             if isinstance(root, ast.Name):
                 env[root.id] = ("unknown", root.id)
             charge(len(env))
@@ -521,6 +530,7 @@ def visible_by_derivation(
     def invalidate_aliases(node: ast.AST, env: dict[str, Fact]) -> None:
         if isinstance(node, ast.Name):
             previous = env.get(node.id, ("vector", node.id))
+            remember_mutated_origin(previous, env)
             charge(len(env))
             for alias, fact in list(env.items()):
                 if fact == previous:
@@ -691,6 +701,8 @@ def visible_by_derivation(
                 # Unsupported control flow must not lend assignments to a
                 # later derivation; do not claim witnesses inside these blocks.
                 for node in local_nodes(statement):
+                    if isinstance(node, ast.AugAssign):
+                        invalidate_aliases(node.target, env)
                     if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):
                         env[node.id] = ("unknown", node.id)
                     elif isinstance(node, ast.Subscript | ast.Attribute) and isinstance(
