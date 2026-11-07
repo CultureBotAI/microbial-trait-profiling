@@ -2234,6 +2234,45 @@ def write_table(records: Sequence[Record], path: Path) -> Path:
     return path
 
 
+def nominal_p_columns(
+    records: Sequence[Record], method_records: Sequence[Record]
+) -> dict[str, object]:
+    """Declare nominal p availability in the final exports, independently per column.
+
+    Counts describe exported values, not correction families or numbers of tests.
+    ``no_finite_value`` means no finite value is exported in that column, without
+    diagnosing why it is absent. Existing row-level test_status is unchanged.
+    Secondary pair p values need not share the primary study test's availability.
+    """
+    tables = {}
+    for name, rows in (
+        ("integrated_evidence.tsv", records),
+        ("integrated_evidence_method_results.tsv", method_records),
+    ):
+        columns = {}
+        for column in ("p_value", "native_pair_p_value"):
+            finite = sum(
+                value is not None and math.isfinite(value)
+                for value in (getattr(record, column) for record in rows)
+            )
+            columns[column] = {
+                "finite_nominal_rows": finite,
+                "missing_or_nonfinite_rows": len(rows) - finite,
+            }
+        # Keep these count-only mappings free of path, sha256 and producer_relative_path:
+        # the provenance verifier treats any mapping with those keys as a source reference.
+        tables[name] = {"row_count": len(rows), "columns": columns}
+    return {
+        "version": "nominal-p-columns-v1",
+        "value_policy": {
+            "finite": "nominal",
+            "missing_or_nonfinite": "no_finite_value",
+            "correction": "none",
+        },
+        "tables": tables,
+    }
+
+
 def write_tidy_tsv(
     rows: Sequence[Mapping[str, object]], fieldnames: Sequence[str], path: Path
 ) -> Path:
@@ -2344,8 +2383,16 @@ DICTIONARY: tuple[tuple[str, str], ...] = (
     ),
     (
         "statistical_test / native_pair_p_value / native_pair_q_value",
-        "actual native test; composition pair-level values are secondary to study-level "
-        "inference and use a separate BH family of the same size",
+        "actual native test; native_pair_p_value is nominal; native_pair_q_value is "
+        "corrected within its declared family; composition pair-level values are secondary "
+        "to study-level inference and use a separate BH family of the same size",
+    ),
+    (
+        "nominal_p_columns (provenance)",
+        "the provenance declares both p columns independently for each TSV export; finite "
+        "values are nominal and no_finite_value means no finite value is exported in that column, "
+        "not why it is unavailable. Row-level test_status remains a separate field. "
+        "These exported-value counts are not correction family sizes or counts of tests",
     ),
     (
         "n_nonzero_experiments / n_zero_total_experiments / n_zero_total_excluded",
@@ -2579,14 +2626,11 @@ def write_view(
 _sha256 = file_sha256
 
 
-def main(argv: Sequence[str] | None = None) -> int:
-    from mtp.workflow.consumers import (
-        bind_count_arguments,
-        preflight_consumer_outputs,
-        write_consumer_record,
-    )
-
-    parser = argparse.ArgumentParser(description=__doc__)
+def _build_parser(
+    parser_class: type[argparse.ArgumentParser] = argparse.ArgumentParser,
+) -> argparse.ArgumentParser:
+    """Share the producer's CLI selection with workflow preflight checks."""
+    parser = parser_class(description=__doc__)
     parser.add_argument("--core-run", type=Path, help="Verified count-profile core execution")
     parser.add_argument("--profile-input", type=Path)
     parser.add_argument("--experiments-input", type=Path)
@@ -2640,6 +2684,79 @@ def main(argv: Sequence[str] | None = None) -> int:
         "inputs, or source_not_supplied placeholder rows (#776, #814, #844)",
     )
     parser.add_argument("--code-commit", help="Source revision, supplied by the Justfile recipe")
+    return parser
+
+
+def _native_source_paths(args: argparse.Namespace) -> dict[str, Path]:
+    """Select native inputs after the profile argument has been core-bound/defaulted."""
+    input_dir = args.profile_input.parent
+    arm1_path = (
+        args.arm1_pooled_stats or input_dir / "trait_profile_paired_contrast_trait_stats_pooled.tsv"
+    )
+    if (
+        args.arm1_pooled_stats is None
+        and not arm1_path.exists()
+        and args.profile_input.resolve() == DEFAULT_PROFILE_PATH.resolve()
+    ):
+        arm1_path = (
+            REPO_ROOT
+            / "trait-visualization/trait-profile-investigation"
+            / "trait_profile_paired_contrast_trait_stats_pooled.tsv"
+        )
+    screen_path = args.full_screen or input_dir / "trait_screen/trait_direction_screen.tsv"
+    return {
+        "arm1_pooled_stats": arm1_path,
+        "arm2_enrichment": (
+            args.arm2_enrichment_results or input_dir / "trait_enrichment_all_results.tsv"
+        ),
+        "arm2_depletion": args.arm2_depletion_results
+        or input_dir / "trait_depletion_all_results.tsv",
+        "full_screen": screen_path,
+        "full_screen_provenance": (
+            args.full_screen_provenance or screen_path.parent / "trait_screen_provenance.json"
+        ),
+    }
+
+
+def _provenance_sources(
+    native_paths: Mapping[str, Path],
+    *,
+    assessment_paths: Iterable[Path | None] = (),
+    statuses: Iterable[AssessmentStatus] = (),
+    ora_profiles: Path | None = None,
+) -> list[Path]:
+    """Collect locators the portable record binds, excluding hash-only core inputs.
+
+    Workflows can check existing direct assessment inputs before reading their
+    contents. The producer instead supplies parsed statuses, including metadata
+    and diagnostic locators that are only known after assessment parsing.
+    """
+    source_paths = [path for path in native_paths.values() if path.is_file()]
+    source_paths.extend(path for path in assessment_paths if path is not None and path.exists())
+    for status in statuses:
+        source_paths.extend(_metadata_paths(status.source))
+        source_paths.extend(_metadata_paths(status.detail))
+        source_paths.extend(_diagnostic_paths(status.default))
+        for verdict in status.verdicts.values():
+            source_paths.extend(_diagnostic_paths(verdict))
+        source_paths.extend(
+            Path(value)
+            for kind, _, variable, value in status.detail
+            if kind == "source" and variable == "path"
+        )
+    if ora_profiles is not None:
+        source_paths.append(ora_profiles)
+    return source_paths
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    from mtp.workflow.consumers import (
+        bind_count_arguments,
+        preflight_consumer_outputs,
+        write_consumer_record,
+    )
+
+    parser = _build_parser()
     args = parser.parse_args(argv)
     assessment_supplied = {
         name: getattr(args, name) is not None
@@ -2684,26 +2801,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     vintage = read_bugsigdb_vintage(args.full_dump_input)
     write_stats_report(stats, vintage)
     source = f"{args.profile_input.name}@{_sha256(args.profile_input)[:12]}"
-    input_dir = args.profile_input.parent
-    arm1_path = (
-        args.arm1_pooled_stats or input_dir / "trait_profile_paired_contrast_trait_stats_pooled.tsv"
-    )
-    if (
-        args.arm1_pooled_stats is None
-        and not arm1_path.exists()
-        and args.profile_input.resolve() == DEFAULT_PROFILE_PATH.resolve()
-    ):
-        arm1_path = (
-            REPO_ROOT
-            / "trait-visualization/trait-profile-investigation"
-            / "trait_profile_paired_contrast_trait_stats_pooled.tsv"
-        )
-    enrichment_path = args.arm2_enrichment_results or input_dir / "trait_enrichment_all_results.tsv"
-    depletion_path = args.arm2_depletion_results or input_dir / "trait_depletion_all_results.tsv"
-    screen_path = args.full_screen or input_dir / "trait_screen/trait_direction_screen.tsv"
-    screen_provenance_path = (
-        args.full_screen_provenance or screen_path.parent / "trait_screen_provenance.json"
-    )
+    native_paths = _native_source_paths(args)
+    arm1_path = native_paths["arm1_pooled_stats"]
+    enrichment_path = native_paths["arm2_enrichment"]
+    depletion_path = native_paths["arm2_depletion"]
+    screen_path = native_paths["full_screen"]
+    screen_provenance_path = native_paths["full_screen_provenance"]
     _protect_source_files(
         args.output_dir,
         (
@@ -2889,13 +2992,6 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
     output = args.output_dir
     provenance_path = output / "integrated_evidence_provenance.json"
-    native_paths = {
-        "arm1_pooled_stats": arm1_path,
-        "arm2_enrichment": enrichment_path,
-        "arm2_depletion": depletion_path,
-        "full_screen": screen_path,
-        "full_screen_provenance": screen_provenance_path,
-    }
     native_supplied = {
         "arm1_pooled_stats": args.arm1_pooled_stats is not None,
         "arm2_enrichment": args.arm2_enrichment_results is not None,
@@ -2903,23 +2999,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         "full_screen": args.full_screen is not None,
         "full_screen_provenance": args.full_screen_provenance is not None,
     }
-    source_paths = [path for path in native_paths.values() if path.is_file()]
-    for status in statuses.values():
-        source_paths.extend(_metadata_paths(status.source))
-        source_paths.extend(_metadata_paths(status.detail))
-        source_paths.extend(_diagnostic_paths(status.default))
-        for verdict in status.verdicts.values():
-            source_paths.extend(_diagnostic_paths(verdict))
-        source_paths.extend(
-            Path(value)
-            for kind, _, variable, value in status.detail
-            if kind == "source" and variable == "path"
-        )
-    if bundle is not None:
-        source_paths.append(bundle.path("ora_profiles"))
+    source_paths = _provenance_sources(
+        native_paths,
+        statuses=statuses.values(),
+        ora_profiles=bundle.path("ora_profiles") if bundle is not None else None,
+    )
     portable = PortablePaths.create(provenance_path, source_paths, root=args.provenance_root)
     statuses = {key: _portable_status(status, portable) for key, status in statuses.items()}
     records = apply_statuses(records, statuses)
+    method_records = [record for record in records if not is_cell_row(record)]
     summary = summarize(records)
     families = family_inventory(records)
     feature_rows = feature_column_rows(records, columns)
@@ -2931,10 +3019,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     assert_portable_text(json.dumps([status.source for status in statuses.values()]))
     written = [
         write_table(records, output / "integrated_evidence.tsv"),
-        write_table(
-            [record for record in records if not is_cell_row(record)],
-            output / "integrated_evidence_method_results.tsv",
-        ),
+        write_table(method_records, output / "integrated_evidence_method_results.tsv"),
         write_tidy_tsv(
             feature_rows,
             ("feature", "term_id", "matrix_column"),
@@ -2966,6 +3051,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     ]
     provenance = {
         "version": VERSION,
+        "nominal_p_columns": nominal_p_columns(records, method_records),
         "path_basis": portable.declaration,
         "bugsigdb_vintage": vintage,
         "code_commit": args.code_commit,

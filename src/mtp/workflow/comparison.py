@@ -37,6 +37,7 @@ from mtp.workflow.downstream_contracts import (
     build_eligibility_ledger,
 )
 from mtp.workflow.operations import run_strain_rollup
+from mtp.workflow.provenance import preflight_integrated_sources
 from mtp.workflow.runtime import artifact_path, repository_state
 from mtp.workflow.verification import verify_core_run
 
@@ -560,6 +561,7 @@ def execute_comparison_run(
     *,
     arm1_pooled_stats: Path | None = None,
     code_commit: str | None = None,
+    provenance_root: Path | None = None,
 ) -> ComparisonRun:
     """Execute a complete cross-arm comparison stage from verified core and arm manifests (#776)."""
     output = output.resolve()
@@ -633,26 +635,13 @@ def execute_comparison_run(
     ledger_fraction = shared_basis_ledger(table1_spec, core_run, contrast_population)
     analysis_bases = core_analysis_bases(core_run)
 
-    output.mkdir(parents=True, exist_ok=False)
-    if arm1_pooled_stats is not None:
-        pooled_stats_path = arm1_pooled_stats.resolve()
-    else:
-        stats_dir = output / "arm1_pooled_stats"
-        cmd = [
-            sys.executable,
-            str(REPO_ROOT / "scripts" / "create_trait_profile_infographic.py"),
-            "--stats-only",
-            "--core-run",
-            str(core_manifest),
-            "--output-dir",
-            str(stats_dir),
-        ]
-        asyncio.run(_exec_command(cmd, REPO_ROOT))
-        pooled_stats_path = stats_dir / "trait_profile_paired_contrast_trait_stats_pooled.tsv"
-
+    stats_dir = output / "arm1_pooled_stats"
+    pooled_stats_path = (
+        arm1_pooled_stats.resolve()
+        if arm1_pooled_stats is not None
+        else stats_dir / "trait_profile_paired_contrast_trait_stats_pooled.tsv"
+    )
     integrated_dir = output / "integrated_evidence"
-    from mtp.integrated_evidence import main as integrated_evidence_main
-
     ie_argv = [
         "--core-run",
         str(core_manifest),
@@ -665,6 +654,32 @@ def execute_comparison_run(
         effective_commit,
         "--require-complete-sources",
     ]
+    if provenance_root is not None:
+        ie_argv.extend(("--provenance-root", str(provenance_root.resolve())))
+        preflight_integrated_sources(
+            integrated_dir / "integrated_evidence_provenance.json",
+            ie_argv,
+            count_profiles=artifact_path(core_run, "count_profiles"),
+            ora_profiles=artifact_path(core_run, "ora_profiles"),
+            root=provenance_root,
+            planned_files=() if arm1_pooled_stats is not None else (pooled_stats_path,),
+        )
+
+    output.mkdir(parents=True, exist_ok=False)
+    if arm1_pooled_stats is None:
+        cmd = [
+            sys.executable,
+            str(REPO_ROOT / "scripts" / "create_trait_profile_infographic.py"),
+            "--stats-only",
+            "--core-run",
+            str(core_manifest),
+            "--output-dir",
+            str(stats_dir),
+        ]
+        asyncio.run(_exec_command(cmd, REPO_ROOT))
+
+    from mtp.integrated_evidence import main as integrated_evidence_main
+
     integrated_evidence_main(ie_argv)
 
     provenance = json.loads(

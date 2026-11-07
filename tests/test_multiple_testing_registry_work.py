@@ -1,7 +1,8 @@
-"""Bound derivation analysis and preserve real-anchor budget headroom (#1581, #1683)."""
+"""Bound derivation analysis and preserve candidate headroom (#1581, #1683, #1700)."""
 
 import re
 from dataclasses import replace
+from pathlib import Path
 from textwrap import indent
 
 import pytest
@@ -13,8 +14,11 @@ from test_multiple_testing_registry import (
     ROOT,
     DiscoveryLimitError,
     discover,
+    repository_sources,
 )
 from test_multiple_testing_registry_derived import PREFIX, source
+
+DERIVATION_HEADROOM_DIVISOR = 16
 
 
 def nested_derivation(depth: int) -> str:
@@ -34,7 +38,9 @@ def test_default_budget_refuses_small_exponential_loop_tree() -> None:
     """This source is tiny; an AST-size limit alone cannot bound re-analysis."""
     text = nested_derivation(12)
     assert len(text) < 3000
-    with pytest.raises(DiscoveryLimitError, match=r"derivation work budget.*src/x.py.*screen"):
+    with pytest.raises(
+        DiscoveryLimitError, match=r"^derivation work budget exceeded:.*src/x.py.*screen"
+    ):
         discover({"src/x.py": text})
 
 
@@ -44,9 +50,9 @@ def test_ordinary_derivations_still_provide_a_witness(text: str) -> None:
     assert discovered[("src/x.py", "screen")]["derived_procedures"] == {"BY"}
 
 
-def test_real_derived_by_anchors_use_at_most_quarter_of_default_budget() -> None:
-    """Use current registry claims, deduplicating anchors shared across families."""
-    registry = yaml.safe_load(REGISTRY.read_text(encoding="utf-8"))
+def check_repository_derivation_headroom(root: Path) -> None:
+    """Reserve function and file headroom, including unclaimed candidates."""
+    registry = yaml.safe_load((root / REGISTRY.relative_to(ROOT)).read_text(encoding="utf-8"))
     anchors: set[tuple[str, str]] = {
         (anchor["path"], anchor["function"])
         for family in registry["families"]
@@ -54,18 +60,33 @@ def test_real_derived_by_anchors_use_at_most_quarter_of_default_budget() -> None
         if "BY" in anchor.get("derived_procedures", {})
     }
     assert anchors, "The registry must supply real derived-BY headroom cases"
-    sources = {
-        path: (ROOT / path).read_text(encoding="utf-8") for path in sorted({p for p, _ in anchors})
-    }
-    limits = replace(DEFAULT_LIMITS, derivation_steps=DEFAULT_LIMITS.derivation_steps // 4)
-    discovered, _ = discover(sources, limits=limits)
+    limits = replace(
+        DEFAULT_LIMITS,
+        derivation_steps=DEFAULT_LIMITS.derivation_steps // DERIVATION_HEADROOM_DIVISOR,
+        file_derivation_steps=DEFAULT_LIMITS.file_derivation_steps // DERIVATION_HEADROOM_DIVISOR,
+    )
+    discovered, _ = discover(repository_sources(root), limits=limits)
+    # Claims provide a non-vacuity check, never the source-selection rule.
     for anchor in sorted(anchors):
-        assert "BY" in discovered[anchor].get("derived_procedures", set()), anchor
+        name = f"{anchor[0]}:{anchor[1]}"
+        assert anchor in discovered, f"Missing derived-BY headroom anchor: {name}"
+        assert "BY" in discovered[anchor].get("derived_procedures", set()), (
+            f"Uncredited derived-BY headroom anchor: {name}"
+        )
+
+
+def test_all_repository_candidates_use_at_most_sixteenth_of_default_budget() -> None:
+    try:
+        check_repository_derivation_headroom(ROOT)
+    except DiscoveryLimitError as error:
+        raise AssertionError(
+            "Every repository candidate must retain the declared headroom"
+        ) from error
 
 
 def test_custom_work_budget_refuses_before_a_witness_is_credited() -> None:
     limits = replace(DEFAULT_LIMITS, derivation_steps=1)
-    with pytest.raises(DiscoveryLimitError, match="derivation work budget") as stopped:
+    with pytest.raises(DiscoveryLimitError, match=r"^derivation work budget exceeded:") as stopped:
         discover(
             {"src/x.py": source(PREFIX + "return np.clip(q * harmonic_sum, 0, 1)\n")}, limits=limits
         )
@@ -82,7 +103,7 @@ def test_custom_work_budget_refuses_before_a_witness_is_credited() -> None:
 def test_environment_work_counts_toward_budget() -> None:
     """Copies and joins cost more than visiting the short sequence of if nodes."""
     limits = replace(DEFAULT_LIMITS, derivation_steps=5_000)
-    with pytest.raises(DiscoveryLimitError, match="derivation work budget"):
+    with pytest.raises(DiscoveryLimitError, match=r"^derivation work budget exceeded:"):
         discover({"src/x.py": branching_derivation(70, 30)}, limits=limits)
 
 
@@ -94,7 +115,7 @@ def test_non_candidate_does_not_use_derivation_budget() -> None:
 def test_module_ast_walk_counts_toward_derivation_budget() -> None:
     limits = replace(DEFAULT_LIMITS, derivation_steps=500)
     text = "0\n" * 300 + source(PREFIX + "return np.clip(q * harmonic_sum, 0, 1)\n")
-    with pytest.raises(DiscoveryLimitError, match="derivation work budget"):
+    with pytest.raises(DiscoveryLimitError, match=r"^derivation work budget exceeded:"):
         discover({"src/x.py": text}, limits=limits)
 
 
@@ -103,7 +124,7 @@ def test_repeated_declarations_exceed_combined_walk_and_binding_budget() -> None
     limits = replace(DEFAULT_LIMITS, derivation_steps=500)
     names = ", ".join(["sentinel"] * 1000)
     text = source(f"global {names}\n" + PREFIX + "return np.clip(q * harmonic_sum, 0, 1)\n")
-    with pytest.raises(DiscoveryLimitError, match="derivation work budget"):
+    with pytest.raises(DiscoveryLimitError, match=r"^derivation work budget exceeded:"):
         discover({"src/x.py": text}, limits=limits)
 
 
@@ -112,7 +133,7 @@ def test_module_walk_charges_non_ast_list_entries() -> None:
     limits = replace(DEFAULT_LIMITS, derivation_steps=500)
     names = ", ".join(["sentinel"] * 1000)
     text = f"global {names}\n" + source(PREFIX + "return np.clip(q * harmonic_sum, 0, 1)\n")
-    with pytest.raises(DiscoveryLimitError, match="derivation work budget"):
+    with pytest.raises(DiscoveryLimitError, match=r"^derivation work budget exceeded:"):
         discover({"src/x.py": text}, limits=limits)
 
 
@@ -120,5 +141,5 @@ def test_witness_does_not_excuse_later_over_budget_work() -> None:
     limits = replace(DEFAULT_LIMITS, derivation_steps=500)
     body = PREFIX + "result = np.clip(q * harmonic_sum, 0, 1)\n"
     body += "global " + ", ".join(["sentinel"] * 1000) + "\nreturn result\n"
-    with pytest.raises(DiscoveryLimitError, match="derivation work budget"):
+    with pytest.raises(DiscoveryLimitError, match=r"^derivation work budget exceeded:"):
         discover({"src/x.py": source(body)}, limits=limits)

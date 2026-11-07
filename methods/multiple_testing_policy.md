@@ -184,9 +184,13 @@ Discovery reads files lazily and keeps compact per-file summaries. Alias expansi
 source size and summary size have explicit limits. The derivation recognizer runs only
 in functions whose own resolved calls include both `benjamini_hochberg` and
 `numpy.clip`. A separate per-function `Limits.derivation_steps` budget defaults to
-1,000,000 work units (#1581, #1683). A registry-driven test requires every anchor
-claiming derived BY to fit within one quarter of the default budget. It charges
-AST visits, expression/statement analysis,
+1,000,000 work units (#1581, #1683). A headroom test scans all Python sources under
+`src/` and `scripts/`, including ignored files, and requires every analysed candidate
+to fit within one sixteenth of that default, whether or not it claims derived BY
+(#1700). The same check requires the combined candidate work in each file to fit
+within one sixteenth of `Limits.file_derivation_steps` (#1806).
+Registry claims supply a non-vacuity check, not the source-selection rule.
+The recognizer charges AST visits, expression/statement analysis,
 loop fixed-point passes, declaration-name processing, and the sizes of copied,
 joined or invalidated fact environments before doing that work. Exceeding the budget
 refuses discovery with the source path, anchor, attempted work and limit, and asks
@@ -194,6 +198,16 @@ the developer to simplify the function or review and raise `Limits.derivation_st
 it does not silently skip the anchor or credit a partial witness. This deterministic
 per-function work bound is not a
 wall-time or RSS guarantee.
+The additional `Limits.file_derivation_steps` allowance is shared by all candidate
+functions in one file, including those that yield no BY witness (#1685). Its
+1,000,000-unit default matches the existing allowance for one function; the two
+limits apply independently. If one charge exceeds both limits, the per-function
+refusal takes precedence. A new allowance starts for each file. Exhausting it
+refuses the whole discovery before returning a partial summary, with the file,
+current anchor, attempted work and limit. The existing file-count limit also
+bounds admitted derivation work over the scan by the file count times this
+allowance. This does not replace the separate source, AST and summary limits or
+measure parsing, graph work, elapsed time or RSS.
 `global` and `nonlocal` declarations conservatively invalidate the declared names
 (#1609), including read-only vectors: declaration-aware resolution of enclosing
 bindings is outside the recognizer. Rejecting a declared read even when its Python
@@ -230,6 +244,13 @@ Within a registered function, it also does not detect:
   interpreted. Derivations inside unsupported `try` or `match` blocks, or stored only
   through a subscript or attribute rather than a local name, are not credited.
   Escaping `break` or `continue` paths inside those unsupported blocks are not propagated;
+- mutation through an alias whose identity the recognizer does not track. This includes
+  aliases bound outside the function (in the module, an enclosing function or the caller),
+  tuple unpacking, `or` or conditional expressions, walrus bindings, aliases joined across
+  branches or loops, `for`/`with` targets, aliases created inside unsupported `try`/`match`
+  blocks, container or object holders, and `cast`. A write through one of these aliases
+  may leave a stale vector extent credited as a BY derivation; resolving these aliases
+  remains follow-up work (#1796, #1798);
 - other binding forms, including starred targets, `def`/`class` rebinding (including
   decorated definitions), `global` writes from another function and context managers
   that suppress a `raise`, are not modelled. An enclosing function's binding that

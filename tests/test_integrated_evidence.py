@@ -1268,6 +1268,13 @@ def test_main_writes_every_artifact_and_its_provenance(tmp_path: Path) -> None:
 
     # Every declared field is exported, under its own name.
     assert list(rows[0]) == [field.name for field in fields(Record)]
+    assert "nominal_p_columns" in provenance, "The saved record must declare its p columns"
+    declaration = provenance["nominal_p_columns"]
+    assert declaration["version"] == "nominal-p-columns-v1"
+    assert set(declaration["tables"]) == {
+        "integrated_evidence.tsv",
+        "integrated_evidence_method_results.tsv",
+    }
 
     # The corpus cascade: one mouse study and one unpaired increased side are
     # dropped by the loader, and the zero-total pair by the shared basis.

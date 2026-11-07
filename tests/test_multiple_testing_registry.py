@@ -41,6 +41,7 @@ class Limits:
     name_characters: int = 4_096
     alias_steps: int = 64
     derivation_steps: int = 1_000_000
+    file_derivation_steps: int = 1_000_000
 
 
 DEFAULT_LIMITS = Limits()
@@ -49,6 +50,23 @@ Sources = Mapping[str, str] | Iterable[tuple[str, str]]
 
 class DiscoveryLimitError(ValueError):
     """Refuse a scan before its declared static-work budget is exceeded."""
+
+
+@dataclass
+class FileDerivationBudget:
+    """Share a work allowance across candidates while one file's AST is live."""
+
+    limit: int
+    work: int = 0
+
+    def charge(self, amount: int, path: str, scope: str) -> None:
+        self.work += amount
+        if self.work > self.limit:
+            raise DiscoveryLimitError(
+                f"per-file derivation work budget exceeded: {path}:{scope} "
+                f"(attempted {self.work}, limit {self.limit}). "
+                "Simplify the file or review and raise Limits.file_derivation_steps."
+            )
 
 
 @dataclass
@@ -318,7 +336,11 @@ Fact = tuple[str, str]
 
 
 def visible_by_derivation(
-    unit: Unit, scope: str, *, work_counts: dict[str, int] | None = None
+    unit: Unit,
+    scope: str,
+    *,
+    work_counts: dict[str, int] | None = None,
+    file_budget: FileDerivationBudget | None = None,
 ) -> bool:
     """Recognize local BH * H_m followed by clip, with the same visible extent.
 
@@ -345,6 +367,8 @@ def visible_by_derivation(
                 f"(attempted {work}, limit {unit.limits.derivation_steps}). "
                 "Simplify the function or review and raise Limits.derivation_steps."
             )
+        if file_budget is not None:
+            file_budget.charge(amount, unit.path, scope)
 
     def copy_env(env: dict[str, Fact]) -> dict[str, Fact]:
         charge("env_copy", len(env))
@@ -476,6 +500,14 @@ def visible_by_derivation(
                 return ("BY", value[1])
         return None
 
+    def remember_mutated_origin(previous: Fact | None, env: dict[str, Fact]) -> None:
+        # A free vector read may exist only through its aliases. Include its
+        # original name in the mutation scan so a later read cannot recreate
+        # the old extent. Position-tagged local assignments have no free origin;
+        # an original name already rebound or invalidated must keep its fact.
+        if previous and previous[0] == "vector" and previous[1].isidentifier():
+            env.setdefault(previous[1], previous)
+
     def assign(node: ast.AST, value: Fact | None, env: dict[str, Fact]) -> None:
         charge("assignment")
         if isinstance(node, ast.Name):
@@ -494,6 +526,7 @@ def visible_by_derivation(
             while isinstance(root, ast.Subscript | ast.Attribute):
                 root = root.value
             previous = expression(root, env)
+            remember_mutated_origin(previous, env)
             if isinstance(root, ast.Name):
                 env[root.id] = ("unknown", root.id)
             charge("write_alias_scan", len(env))
@@ -507,6 +540,7 @@ def visible_by_derivation(
     def invalidate_aliases(node: ast.AST, env: dict[str, Fact]) -> None:
         if isinstance(node, ast.Name):
             previous = env.get(node.id, ("vector", node.id))
+            remember_mutated_origin(previous, env)
             charge("alias_invalidation", len(env))
             for alias, fact in list(env.items()):
                 if fact == previous:
@@ -677,6 +711,8 @@ def visible_by_derivation(
                 # Unsupported control flow must not lend assignments to a
                 # later derivation; do not claim witnesses inside these blocks.
                 for node in local_nodes(statement):
+                    if isinstance(node, ast.AugAssign):
+                        invalidate_aliases(node.target, env)
                     if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):
                         env[node.id] = ("unknown", node.id)
                     elif isinstance(node, ast.Subscript | ast.Attribute) and isinstance(
@@ -744,8 +780,11 @@ def summarize_source(path: str, source: str, budget: SummaryBudget) -> CompactUn
         if target == "numpy.clip":
             clip_scopes.add(function)
     candidates = bh_scopes & clip_scopes
+    file_budget = FileDerivationBudget(limits.file_derivation_steps)
     derived = tuple(
-        name for name in unit.functions if name in candidates and visible_by_derivation(unit, name)
+        name
+        for name in unit.functions
+        if name in candidates and visible_by_derivation(unit, name, file_budget=file_budget)
     )
     for name in derived:
         budget.charge(path, name, "BY")

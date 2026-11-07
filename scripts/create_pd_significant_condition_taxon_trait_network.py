@@ -911,7 +911,7 @@ def plot_significant_network(
             ),
             (
                 0.50,
-                f"{eligible_taxon_test_count}\neligible tests",
+                f"{eligible_taxon_test_count}\neligible comparisons",
                 "genus and species\nkept separate",
                 "#475569",
             ),
@@ -1297,7 +1297,7 @@ def plot_fdr_evidence_landscape(
     traits: pd.DataFrame,
     output_path: Path,
 ) -> None:
-    """Show all eligible tests with significant, exploratory, and background tiers."""
+    """Show tests with available q-values and effects, grouped by evidence tier."""
     taxon_plot = _plot_ready_tests(
         taxon_tests[taxon_tests["passes_min_taxon_studies"]],
         "directional_difference_fraction",
@@ -1336,7 +1336,7 @@ def plot_fdr_evidence_landscape(
         rank_column="taxonomic_rank",
     )
     ax_taxon.set_title(
-        f"A  Condition-taxon evidence ({len(taxon_plot)} eligible tests)",
+        f"A  Condition-taxon evidence ({len(taxon_plot)} tested comparisons shown)",
         loc="left",
         fontsize=12,
         fontweight="bold",
@@ -1550,7 +1550,8 @@ def plot_fdr_evidence_landscape(
         0.035,
         0.935,
         (
-            "All eligible tests are shown. Global BH correction is applied separately "
+            "Tests with available q-values and effects are shown. "
+            "Global BH correction is applied separately "
             "to the condition-taxon and condition-trait families.\nOnly filled points "
             "are FDR-significant; hollow amber points are exploratory and are not "
             "claimed as discoveries."
