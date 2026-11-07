@@ -288,6 +288,44 @@ just rerun-compare /absolute/path/core-runs/run-ID/run.json \
 just rerun-verify-comparison /absolute/path/reruns/comparison
 ```
 
+Noel and comparison reruns accept an optional `--provenance-root ROOT` for their
+integrated-evidence records (#1780). For example, append it to `just rerun-noel`
+or `just rerun-compare`. The root must be an existing safe source directory
+containing every input that the integrated-evidence producer binds. Its existing
+privacy and containment checks still apply. Jed and Ilyas reject this option
+with "supported only for the Noel arm" before execution; their plans do not
+invoke that producer.
+
+A supplied root is checked against the producer's located sources, including ORA
+profiles, existing native tables and assessment files, and the planned pooled-statistics
+file, before the comparison creates its output. Raw BugSigDB and KG inputs, count
+profiles and experiments are hashed without locators; they need not lie beneath
+this root. Noel checks ORA profiles and its output
+layout before planning, then checks sources selected by the actual integrated-evidence
+arguments and earlier planned outputs before execution. Missing optional assessments
+that no earlier step produces do not acquire locators. Both checks share the producer's
+source selector and path policy. The final producer still validates
+actual files and references inside metadata; preflight cannot guarantee that
+later filesystem changes or newly produced metadata will be acceptable.
+
+Noel's own outputs are bound sources, so its root must contain its located core
+and native inputs and arm output. The option can select an accepted root at or above the
+inferred root, for example to align with a bundle root; it cannot make a layout
+that inference refuses acceptable. Inputs and outputs with no safe common
+ancestor remain unsupported. The comparison can use a report outside its
+source tree, as described below.
+
+For a comparison report outside the source tree, supply `--arm1-pooled-stats`
+from inside the declared root. Otherwise the comparison creates that source
+inside its output directory, which must then also lie beneath the root. A report
+outside its supplied root declares `supplied-root-v1`; verifying its source
+references requires `just verify-integrated-provenance RECORD
+--provenance-root ROOT`. Noel retains the option in its hash-bound command plan.
+Omitting it preserves the existing commands, parameters and root inference.
+The comparison manifest does not separately declare that this option was supplied;
+a portable workflow-level flag remains a schema follow-up (#1820). Noel's plan
+and the integrated record retain their existing provenance conventions.
+
 Verification derives each analysis basis again from the verified core: its recorded
 strain rollup scope, its feature catalog and the retained features of its count and ORA
 profile tables. A record whose bases differ, in any field, number or order, is refused

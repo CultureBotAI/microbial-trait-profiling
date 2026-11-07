@@ -41,6 +41,7 @@ from mtp.workflow.consumers import (
     preflight_consumer_outputs,
 )
 from mtp.workflow.operations import run_strain_rollup
+from mtp.workflow.provenance import preflight_integrated_sources, preflight_provenance_root
 from mtp.workflow.runtime import (
     artifact_path,
     content_hash,
@@ -435,8 +436,11 @@ def execute_arm(
     seed: int | None = None,
     figures: bool = True,
     repository: Path = REPO_ROOT,
+    provenance_root: Path | None = None,
 ) -> ArmRun:
     """Verify sources, execute the complete selected plan, and retain failed attempts."""
+    if provenance_root is not None and arm != "noel":
+        raise ValueError("--provenance-root is supported only for the Noel arm")
     if output.is_symlink():
         raise ValueError(f"Output must not be a symlink: {output}")
     repository, manifest, output = repository.resolve(), manifest.resolve(), output.resolve()
@@ -475,9 +479,31 @@ def execute_arm(
         contrast_population=ContrastPopulation(bundle.run.contrast_population).value,
         direction_basis=DirectionBasis(bundle.run.direction_basis).value,
         strain_rollup=run_strain_rollup(bundle.run),
+        provenance_root=provenance_root.resolve() if provenance_root is not None else None,
     )
+    if provenance_root is not None:
+        preflight_provenance_root(
+            output / "integrated_evidence/integrated_evidence_provenance.json",
+            (context.products["ora_profiles"], output),
+            root=provenance_root,
+        )
     commands = planner(context)
     _validate_plan(commands, context)
+    if provenance_root is not None:
+        # Only this command publishes integrated evidence; earlier steps have their
+        # own protocols and must not acquire unrelated root-containment rules.
+        previous_outputs: list[Path] = []
+        for command in commands:
+            if command.id == "integrated_evidence":
+                preflight_integrated_sources(
+                    output / "integrated_evidence/integrated_evidence_provenance.json",
+                    command.argv[3:],
+                    count_profiles=context.products["count_profiles"],
+                    ora_profiles=context.products["ora_profiles"],
+                    root=provenance_root,
+                    planned_files=previous_outputs,
+                )
+            previous_outputs.extend(command.outputs)
     if any(command.argv[0] != sys.executable for command in commands):
         raise ValueError("Commands must use this Python executable")
     plan = [_definition(command) for command in commands]

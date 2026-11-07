@@ -1751,11 +1751,13 @@ def control_tier_counts(
 def comparison_rows(
     populations: Sequence[tuple[str, Sequence[Profile]]],
 ) -> list[dict[str, object]]:
-    """Six fraction directions and 15 log-ratios on each population, side by side.
+    """Fraction directions and pairwise log-ratios for each population, side by side.
 
     Each population keeps the native families of the two analyses: Benjamini-Hochberg
-    over six fractions and Benjamini-Yekutieli over 15 ratios. Nothing historical is
-    overwritten.
+    over the declared fractions and Benjamini-Yekutieli over the declared ratios.
+    Labels count each returned family, including untestable members held at p=1
+    internally; displayed missing p/q values do not remove family members.
+    Nothing historical is overwritten.
     """
     rows: list[dict[str, object]] = []
     for population, profiles in populations:
@@ -1781,10 +1783,11 @@ def comparison_rows(
                     "mean_effect": None,
                     "p_value": shift.p_value,
                     "q_value": shift.q_value,
-                    "family": "Benjamini-Hochberg over 6 fractions",
+                    "family": f"Benjamini-Hochberg over {len(shifts.shifts)} fractions",
                 }
             )
-        for summary in compute_log_ratio_shifts(list(profiles)).summaries:
+        ratios = compute_log_ratio_shifts(list(profiles))
+        for summary in ratios.summaries:
             rows.append(
                 {
                     "population": population,
@@ -1803,7 +1806,7 @@ def comparison_rows(
                     "mean_effect": summary.mean_log2_ratio_change,
                     "p_value": summary.sign_p,
                     "q_value": summary.by_q,
-                    "family": "Benjamini-Yekutieli over 15 ratios",
+                    "family": f"Benjamini-Yekutieli over {len(ratios.summaries)} ratios",
                 }
             )
     return rows
