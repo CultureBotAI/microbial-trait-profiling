@@ -75,6 +75,43 @@ MUTANTS: list[tuple[str, str, str]] = [
         "    return correlation.status",
         '    return "not_tested"',
     ),
+    (
+        "M6_helper_overrides_any_status_G07",
+        '    if correlation.status == "tested" and (\n'
+        "        correlation.mcnemar_p is None or not math.isfinite(correlation.mcnemar_p)\n"
+        "    ):",
+        "    if (\n"
+        "        correlation.mcnemar_p is None or not math.isfinite(correlation.mcnemar_p)\n"
+        "    ):",
+    ),
+    (
+        "M7_compute_isnan_only_G02",
+        "    elif mcnemar_p is None or not math.isfinite(mcnemar_p):",
+        "    elif mcnemar_p is None or math.isnan(mcnemar_p):",
+    ),
+    (
+        "M8_compute_spells_untested_G03",
+        '        status = "not_tested"\n',
+        '        status = "untested"\n',
+    ),
+    (
+        "M9_not_tested_checked_before_all_tied_G04",
+        '    elif not n_discordant:\n        status = "all_tied"\n'
+        "    elif mcnemar_p is None or not math.isfinite(mcnemar_p):\n"
+        '        status = "not_tested"\n',
+        "    elif mcnemar_p is None or not math.isfinite(mcnemar_p):\n"
+        '        status = "not_tested"\n'
+        '    elif not n_discordant:\n        status = "all_tied"\n',
+    ),
+    (
+        "M10_helper_isnan_only_G06",
+        '    if correlation.status == "tested" and (\n'
+        "        correlation.mcnemar_p is None or not math.isfinite(correlation.mcnemar_p)\n"
+        "    ):",
+        '    if correlation.status == "tested" and (\n'
+        "        correlation.mcnemar_p is None or math.isnan(correlation.mcnemar_p)\n"
+        "    ):",
+    ),
 ]
 
 
@@ -172,7 +209,7 @@ def main() -> int:
                 print(f"FAIL [{name}]: no assertion failure marker in output\n{out}")
                 return 1
             print(f"KILLED [{name}]: rc=1 assertion failure verified from scratch copy")
-    print("ALL 5 #1751 MUTANTS KILLED CLEANLY.")
+    print(f"ALL {len(MUTANTS)} #1751/#1809 MUTANTS KILLED CLEANLY.")
     return 0
 
 

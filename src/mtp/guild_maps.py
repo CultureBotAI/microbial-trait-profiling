@@ -432,8 +432,11 @@ class CorrelationResult:
     discordant: tuple[int, int]
     spearman: dict[str, tuple[float, float, int]]
     studies: int
-    #: ``tested``, ``all_tied`` (studies scored, none discordant) or
-    #: ``no_studies``. The same vocabulary the Table 1 arm uses.
+    #: ``tested``, ``not_tested`` (discordant studies present, but the McNemar
+    #: p-value is None or non-finite), ``all_tied`` (studies scored, none
+    #: discordant), or ``no_studies``. ``tested``, ``all_tied``, and
+    #: ``no_studies`` match the Table 1 arm; ``not_tested`` is specific to the
+    #: guild McNemar non-finite guard (#1751, #1810).
     status: str
     #: Studies held out of the rank correlations for carrying no guild
     #: annotation on either side. The McNemar already drops them as ties.

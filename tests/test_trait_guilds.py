@@ -1650,10 +1650,50 @@ def test_guild_correlation_table_and_cli_label_nominal_p_values_with_test_counts
             if row["statistic"] == "mcnemar_odds_ratio"
         ]
     assert (
+        tied_mcnemar["comparison"],
         tied_mcnemar["p_value"],
         tied_mcnemar["p_value_type"],
         tied_mcnemar["n_tests"],
-    ) == ("", "not_tested", "0")
+    ) == ("aerobe_vs_anaerobe_paired_signs (no_studies)", "", "not_tested", "0")
+
+    all_tied_profiles = [
+        Profile(
+            study_id="bsdb:1",
+            experiment_id="bsdb:1-1",
+            inc_dec="inc",
+            guild_counts={"aerobe": 8, "anaerobe": 8},
+            total=20,
+            condition="c",
+            body_site="s",
+        ),
+        Profile(
+            study_id="bsdb:1",
+            experiment_id="bsdb:1-1",
+            inc_dec="dec",
+            guild_counts={"aerobe": 2, "anaerobe": 2},
+            total=20,
+            condition="c",
+            body_site="s",
+        ),
+    ]
+    all_tied_corr = compute_correlation(all_tied_profiles)
+    assert all_tied_corr.mcnemar_p is None
+    assert all_tied_corr.status == "all_tied"
+    all_tied_dir = tmp_path / "all_tied"
+    all_tied_dir.mkdir()
+    write_outputs(matrix, all_tied_corr, all_tied_dir, "2026-04-24_00:41_UTC")
+    with (all_tied_dir / "guild_aerobe_anaerobe_correlation.tsv").open(encoding="utf-8") as handle:
+        (all_tied_mcnemar,) = [
+            row
+            for row in csv.DictReader(handle, delimiter="\t")
+            if row["statistic"] == "mcnemar_odds_ratio"
+        ]
+    assert (
+        all_tied_mcnemar["comparison"],
+        all_tied_mcnemar["p_value"],
+        all_tied_mcnemar["p_value_type"],
+        all_tied_mcnemar["n_tests"],
+    ) == ("aerobe_vs_anaerobe_paired_signs (all_tied)", "", "not_tested", "0")
 
     for label, nonfinite_p in (
         ("nan", float("nan")),
@@ -1688,16 +1728,16 @@ def test_guild_correlation_table_and_cli_label_nominal_p_values_with_test_counts
         spearman={"aerobe_inc_vs_dec": (-0.5, 0.25, 3)},
     )
 
-    with monkeypatch.context() as mp:
-        mp.setattr(
-            guild_maps,
-            "binomtest",
-            lambda *_a, **_k: type("_R", (), {"pvalue": float("nan")})(),
-        )
-        computed_nan_corr = compute_correlation(four_pair_profiles)
-    assert computed_nan_corr.mcnemar_p is not None
-    assert isnan(computed_nan_corr.mcnemar_p)
-    assert computed_nan_corr.status == "not_tested"
+    for nonfinite_binom_p in (float("nan"), float("inf"), -float("inf")):
+        with monkeypatch.context() as mp:
+            mp.setattr(
+                guild_maps,
+                "binomtest",
+                lambda *_a, _p=nonfinite_binom_p, **_k: type("_R", (), {"pvalue": _p})(),
+            )
+            computed_nonfinite_corr = compute_correlation(four_pair_profiles)
+        assert computed_nonfinite_corr.mcnemar_p is not None
+        assert computed_nonfinite_corr.status == "not_tested"
 
     profiles_path, experiments_path = corpus
     cli_out = tmp_path / "cli_out"
@@ -1738,6 +1778,30 @@ def test_guild_correlation_table_and_cli_label_nominal_p_values_with_test_counts
         "McNemar (exact, paired signs): discordant 2/1, "
         "odds ratio 2.000 (not tested) over 4 studies [not_tested]"
     ) in nan_stdout
+
+    monkeypatch.setattr(
+        guild_maps,
+        "compute_correlation",
+        lambda _profiles: all_tied_corr,
+    )
+    guild_maps.main()
+    all_tied_stdout = capsys.readouterr().out
+    assert (
+        "McNemar (exact, paired signs): discordant 0/0, "
+        "odds ratio undefined (not tested) over 1 studies [all_tied]"
+    ) in all_tied_stdout
+
+    monkeypatch.setattr(
+        guild_maps,
+        "compute_correlation",
+        lambda _profiles: tied_corr,
+    )
+    guild_maps.main()
+    no_studies_stdout = capsys.readouterr().out
+    assert (
+        "McNemar (exact, paired signs): discordant 0/0, "
+        "odds ratio undefined (not tested) over 1 studies [no_studies]"
+    ) in no_studies_stdout
 
     methods_text = " ".join(
         (Path(__file__).resolve().parents[1] / "methods/guild_condition_body_site_heatmap.md")
