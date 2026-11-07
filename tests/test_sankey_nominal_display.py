@@ -32,6 +32,7 @@ NEW_COLUMNS = [
     "paired_p_value_type",
     "displayed_nominal_test_count",
     "bh_family_size",
+    "bh_unfiltered_trait_count",
     "paired_q_value_family",
 ]
 SUMMARY_OLD_COLUMNS = [
@@ -54,9 +55,20 @@ SUMMARY_OLD_COLUMNS = [
 ]
 SUMMARY_NEW_COLUMNS = [
     "bh_family_size",
+    "bh_unfiltered_trait_count",
     "paired_q_value_family",
 ]
-EXPECTED_FAMILY_340 = "pooled pair-level BH over 340 support/variance-selected traits"
+SELECTION_RULE_NOTE = (
+    "select_stratum_traits support, positive-variance, and MediaDive-exclusion filter"
+)
+EXPECTED_FAMILY_340 = (
+    f"pooled pair-level BH over 340 support/variance-selected traits "
+    f"(of 344 retained; {SELECTION_RULE_NOTE})"
+)
+EXPECTED_FAMILY_340_UNRECORDED_RETAINED = (
+    f"pooled pair-level BH over 340 support/variance-selected traits "
+    f"(retained count not recorded; {SELECTION_RULE_NOTE})"
+)
 MIXED_P = (0.0, 1.0, math.nan, math.inf, -math.inf, 0.125)
 
 
@@ -64,7 +76,9 @@ def supplied_stats(
     p_values: tuple[float, ...],
     *,
     correction_family_size: object = 340,
+    retained_trait_count: object = 344,
     include_family_column: bool = True,
+    include_retained_column: bool = True,
 ) -> pd.DataFrame:
     """Include an extra supplied row that the fixed display does not export."""
     records = [
@@ -75,6 +89,7 @@ def supplied_stats(
             "mean_increased_minus_decreased": (-1) ** index * (index + 0.25),
             "direction": "increased" if index % 2 == 0 else "decreased",
             **({"correction_family_size": correction_family_size} if include_family_column else {}),
+            **({"retained_trait_count": retained_trait_count} if include_retained_column else {}),
         }
         for index, (trait, p) in enumerate(zip(sankeys.SHARED_TRAITS, p_values, strict=True))
     ]
@@ -86,6 +101,7 @@ def supplied_stats(
             "mean_increased_minus_decreased": 99.0,
             "direction": "increased",
             **({"correction_family_size": correction_family_size} if include_family_column else {}),
+            **({"retained_trait_count": retained_trait_count} if include_retained_column else {}),
         }
     )
     return pd.DataFrame.from_records(records).set_index("trait")
@@ -138,7 +154,8 @@ def test_selection_nominal_metadata(
     assert list(result.columns) == OLD_COLUMNS + NEW_COLUMNS
     assert result["paired_p_value_type"].tolist() == expected_types
     assert result["displayed_nominal_test_count"].tolist() == [expected_count] * len(result)
-    assert result["bh_family_size"].tolist() == [340] * len(result)
+    assert result["bh_family_size"].dropna().tolist() == [340] * len(result)
+    assert result["bh_unfiltered_trait_count"].dropna().tolist() == [344] * len(result)
     assert result["paired_q_value_family"].tolist() == [EXPECTED_FAMILY_340] * len(result)
     assert "retained catalog traits" not in " ".join(result["paired_q_value_family"].tolist())
     pd.testing.assert_frame_equal(result[OLD_COLUMNS], existing_selection_columns(supplied))
@@ -146,20 +163,24 @@ def test_selection_nominal_metadata(
 
 
 def test_selection_uses_explicit_correction_family_size_when_present() -> None:
-    supplied = supplied_stats(MIXED_P, correction_family_size=312)
+    supplied = supplied_stats(MIXED_P, correction_family_size=312, retained_trait_count=317)
 
     result = sankeys.build_trait_selection(supplied)
 
-    assert result["bh_family_size"].tolist() == [312] * len(result)
+    assert result["bh_family_size"].dropna().tolist() == [312] * len(result)
+    assert result["bh_unfiltered_trait_count"].dropna().tolist() == [317] * len(result)
     assert result["paired_q_value_family"].tolist() == [
-        "pooled pair-level BH over 312 support/variance-selected traits"
+        f"pooled pair-level BH over 312 support/variance-selected traits "
+        f"(of 317 retained; {SELECTION_RULE_NOTE})"
     ] * len(result)
 
 
 def test_load_q_significance_and_selection_do_not_fallback_to_row_count_when_missing_or_blank() -> (
     None
 ):
-    raw_catalog = supplied_stats(MIXED_P, include_family_column=False).reset_index()
+    raw_catalog = supplied_stats(
+        MIXED_P, include_family_column=False, include_retained_column=False
+    ).reset_index()
     numeric_defaults = {
         "positive_pair_fraction": 0.5,
         "negative_pair_fraction": 0.5,
@@ -172,39 +193,64 @@ def test_load_q_significance_and_selection_do_not_fallback_to_row_count_when_mis
         loaded_without_col = sankeys.load_q_significance()
     assert len(loaded_without_col) == len(sankeys.SHARED_TRAITS)
     assert loaded_without_col["correction_family_size"].isna().all()
+    assert loaded_without_col["retained_trait_count"].isna().all()
     selection_without_col = sankeys.build_trait_selection(loaded_without_col)
     assert selection_without_col["bh_family_size"].isna().all()
+    assert selection_without_col["bh_unfiltered_trait_count"].isna().all()
     assert selection_without_col["paired_q_value_family"].tolist() == [
         "family size not recorded"
     ] * len(sankeys.SHARED_TRAITS)
 
-    raw_blank = raw_without_col.assign(correction_family_size="")
+    raw_blank = raw_without_col.assign(correction_family_size="", retained_trait_count="")
     with patch.object(sankeys, "read_tsv", return_value=raw_blank):
         loaded_blank = sankeys.load_q_significance()
     assert loaded_blank["correction_family_size"].isna().all()
+    assert loaded_blank["retained_trait_count"].isna().all()
     selection_blank = sankeys.build_trait_selection(loaded_blank)
     assert selection_blank["bh_family_size"].isna().all()
+    assert selection_blank["bh_unfiltered_trait_count"].isna().all()
     assert selection_blank["paired_q_value_family"].tolist() == ["family size not recorded"] * len(
         sankeys.SHARED_TRAITS
     )
 
-    raw_with_col = raw_without_col.assign(correction_family_size="340")
+    raw_with_col = raw_without_col.assign(correction_family_size="340", retained_trait_count="344")
     with patch.object(sankeys, "read_tsv", return_value=raw_with_col):
         loaded_with_col = sankeys.load_q_significance()
     assert loaded_with_col["correction_family_size"].tolist() == [340] * len(sankeys.SHARED_TRAITS)
+    assert loaded_with_col["retained_trait_count"].tolist() == [344] * len(sankeys.SHARED_TRAITS)
     selection_with_col = sankeys.build_trait_selection(loaded_with_col)
-    assert selection_with_col["bh_family_size"].tolist() == [340] * len(sankeys.SHARED_TRAITS)
+    assert selection_with_col["bh_family_size"].dropna().tolist() == [340] * len(
+        sankeys.SHARED_TRAITS
+    )
+    assert selection_with_col["bh_unfiltered_trait_count"].dropna().tolist() == [344] * len(
+        sankeys.SHARED_TRAITS
+    )
     assert selection_with_col["paired_q_value_family"].tolist() == [EXPECTED_FAMILY_340] * len(
         sankeys.SHARED_TRAITS
     )
 
+    raw_only_family = raw_without_col.assign(correction_family_size="340")
+    with patch.object(sankeys, "read_tsv", return_value=raw_only_family):
+        loaded_only_family = sankeys.load_q_significance()
+    selection_only_family = sankeys.build_trait_selection(loaded_only_family)
+    assert selection_only_family["bh_family_size"].dropna().tolist() == [340] * len(
+        sankeys.SHARED_TRAITS
+    )
+    assert selection_only_family["bh_unfiltered_trait_count"].isna().all()
+    assert selection_only_family["paired_q_value_family"].tolist() == [
+        EXPECTED_FAMILY_340_UNRECORDED_RETAINED
+    ] * len(sankeys.SHARED_TRAITS)
+
     slice_without = (
-        selection_with_col.drop(columns=["bh_family_size", "paired_q_value_family"])
+        selection_with_col.drop(
+            columns=["bh_family_size", "bh_unfiltered_trait_count", "paired_q_value_family"]
+        )
         .iloc[[0]]
         .copy()
     )
     slice_meta = sankeys.selection_display_metadata(slice_without)
     assert slice_meta["bh_family_size"].isna().all()
+    assert slice_meta["bh_unfiltered_trait_count"].isna().all()
     assert slice_meta["paired_q_value_family"].tolist() == ["family size not recorded"]
 
 
@@ -218,10 +264,13 @@ def test_build_trait_summary_appends_family_columns_additively() -> None:
         {trait.trait_id: [0.5, -0.5, 1.2] for trait in sankeys.SHARED_TRAITS},
         index=metadata.index,
     )
-    supplied = supplied_stats(MIXED_P, correction_family_size=340)
+    supplied = supplied_stats(MIXED_P, correction_family_size=340, retained_trait_count=344)
     summary = sankeys.build_trait_summary(metadata, raw_counts, zscores, supplied)
     assert list(summary.columns) == SUMMARY_OLD_COLUMNS + SUMMARY_NEW_COLUMNS
-    assert summary["bh_family_size"].tolist() == [340] * len(sankeys.SHARED_TRAITS)
+    assert summary["bh_family_size"].dropna().tolist() == [340] * len(sankeys.SHARED_TRAITS)
+    assert summary["bh_unfiltered_trait_count"].dropna().tolist() == [344] * len(
+        sankeys.SHARED_TRAITS
+    )
     assert summary["paired_q_value_family"].tolist() == [EXPECTED_FAMILY_340] * len(
         sankeys.SHARED_TRAITS
     )
@@ -230,20 +279,39 @@ def test_build_trait_summary_appends_family_columns_additively() -> None:
         metadata,
         raw_counts,
         zscores,
-        supplied_stats(MIXED_P, include_family_column=False),
+        supplied_stats(MIXED_P, include_family_column=False, include_retained_column=False),
     )
     assert list(missing_summary.columns) == SUMMARY_OLD_COLUMNS + SUMMARY_NEW_COLUMNS
     assert missing_summary["bh_family_size"].isna().all()
+    assert missing_summary["bh_unfiltered_trait_count"].isna().all()
     assert missing_summary["paired_q_value_family"].tolist() == ["family size not recorded"] * len(
         sankeys.SHARED_TRAITS
     )
 
     # A blank recorded size is not filled from the row count (#1743).
     blank_summary = sankeys.build_trait_summary(
-        metadata, raw_counts, zscores, supplied.assign(correction_family_size="")
+        metadata,
+        raw_counts,
+        zscores,
+        supplied.assign(correction_family_size="", retained_trait_count=""),
     )
     assert blank_summary["bh_family_size"].isna().all()
+    assert blank_summary["bh_unfiltered_trait_count"].isna().all()
     assert set(blank_summary["paired_q_value_family"]) == {"family size not recorded"}
+
+    unrecorded_retained_summary = sankeys.build_trait_summary(
+        metadata,
+        raw_counts,
+        zscores,
+        supplied.assign(retained_trait_count=""),
+    )
+    assert unrecorded_retained_summary["bh_family_size"].tolist() == [340] * len(
+        sankeys.SHARED_TRAITS
+    )
+    assert unrecorded_retained_summary["bh_unfiltered_trait_count"].isna().all()
+    assert unrecorded_retained_summary["paired_q_value_family"].tolist() == [
+        EXPECTED_FAMILY_340_UNRECORDED_RETAINED
+    ] * len(sankeys.SHARED_TRAITS)
 
 
 @pytest.mark.parametrize("raw", [0, "0", -3, 340.7, "1.5", "abc", float("inf")])
@@ -251,6 +319,9 @@ def test_family_size_parser_rejects_sizes_that_are_not_positive_whole_numbers(ra
     """Zero, negative, fractional or non-numeric sizes read as not recorded (#1743)."""
     assert sankeys._extract_bh_family_size(raw) is None
     assert sankeys._format_paired_q_value_family(raw) == "family size not recorded"
+    assert (
+        sankeys._format_paired_q_value_family(340, raw) == EXPECTED_FAMILY_340_UNRECORDED_RETAINED
+    )
 
 
 @pytest.mark.parametrize(("raw", "size"), [(340, 340), ("340", 340), (340.0, 340), ("340.0", 340)])
@@ -259,13 +330,15 @@ def test_family_size_parser_accepts_whole_sizes(raw: object, size: int) -> None:
 
 
 def test_sankey_methods_paragraph_names_the_selection_q_family() -> None:
-    """The six-trait selection's q names its family (#1744)."""
+    """The six-trait selection's q names its family, retained count, and rule (#1742, #1744)."""
     methods = (
         Path(__file__).resolve().parents[1] / "trait-visualization/figure_methods.md"
     ).read_text(encoding="utf-8")
     assert (
         "using `q_value <= 0.001`, where `q_value` is the pooled pair-level BH q over the "
-        "support/variance-selected traits of that table (its `correction_family_size`)"
+        "340 support/variance-selected traits of that table (its `correction_family_size`, "
+        "of 344 unfiltered retained traits in `retained_trait_count` after the "
+        "`select_stratum_traits` support, positive-variance, and MediaDive-exclusion filter)"
     ) in " ".join(methods.split())
 
 
@@ -279,7 +352,8 @@ def test_selection_count_follows_exported_traits(monkeypatch: pytest.MonkeyPatch
     assert result["trait_id"].tolist() == [trait.trait_id for trait in chosen]
     assert result["paired_p_value_type"].tolist() == ["nominal", "not_tested", "nominal"]
     assert result["displayed_nominal_test_count"].tolist() == [2, 2, 2]
-    assert result["bh_family_size"].tolist() == [340] * len(chosen)
+    assert result["bh_family_size"].dropna().tolist() == [340] * len(chosen)
+    assert result["bh_unfiltered_trait_count"].dropna().tolist() == [344] * len(chosen)
     assert result["paired_q_value_family"].tolist() == [EXPECTED_FAMILY_340] * len(chosen)
     pd.testing.assert_frame_equal(result[OLD_COLUMNS], existing_selection_columns(supplied))
 
@@ -307,6 +381,7 @@ def test_individual_selection_export_recounts_shown_tests(
         ]
         assert saved["displayed_nominal_test_count"].tolist() == [int(math.isfinite(p))]
         assert saved["bh_family_size"].tolist() == [340]
+        assert saved["bh_unfiltered_trait_count"].tolist() == [344]
         assert saved["paired_q_value_family"].tolist() == [EXPECTED_FAMILY_340]
         expected = existing_selection_columns(supplied)
         expected = expected.loc[expected["trait_id"] == trait.trait_id].reset_index(drop=True)
