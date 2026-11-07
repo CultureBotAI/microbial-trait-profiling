@@ -27,6 +27,7 @@ from mtp.density_adjustment import (
     CorrelationMetrics,
     add_trait_list_argument,
     format_p_and_q,
+    format_paired_regression_slope,
     format_paired_regression_test,
     format_q_value,
     nominal_test_count_statement,
@@ -242,7 +243,8 @@ def write_consolidated_report(
             f"Profile OLS regression slope (coccus ~ sphere): {twin.profile_slope_a_on_b:.4f}",
             f"Paired contrasts (N={twin.n_paired_experiments}): "
             f"r = {twin.paired_correlation:+.4f} | Paired VIF: {twin.vif_paired:.2f}",
-            f"Paired regression slope: {twin.paired_slope_a_on_b:.4f} "
+            f"Paired regression slope: "
+            f"{format_paired_regression_slope(twin.paired_slope_a_on_b)} "
             f"({format_paired_regression_test(twin.paired_slope_pvalue)})",
             "",
             "5. METPO ONTOLOGY REDUNDANCY AUDIT AND BRANCH COLLAPSING (TASK 2)",
