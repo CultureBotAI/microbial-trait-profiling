@@ -679,6 +679,8 @@ def visible_by_derivation(unit: Unit, scope: str) -> bool:
                 # Unsupported control flow must not lend assignments to a
                 # later derivation; do not claim witnesses inside these blocks.
                 for node in local_nodes(statement):
+                    if isinstance(node, ast.AugAssign):
+                        invalidate_aliases(node.target, env)
                     if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):
                         env[node.id] = ("unknown", node.id)
                     elif isinstance(node, ast.Subscript | ast.Attribute) and isinstance(

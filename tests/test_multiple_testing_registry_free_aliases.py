@@ -133,6 +133,53 @@ def test_parameter_alias_mutation_remains_rejected(mutation: str) -> None:
     assert derived(text) == ()
 
 
+def augmented_flow_source(
+    scope: Literal["parameter", "module", "closure"], container: str, binding: str
+) -> tuple[str, str]:
+    if container == "try":
+        block = "try:\n    alias += [0.5]\nexcept Exception:\n    pass\n"
+    else:
+        block = "match 0:\n    case _:\n        alias += [0.5]\n"
+    body = EXTENT + binding + block + RESULT
+    if scope == "parameter":
+        return IMPORTS + "def screen(p):\n" + indent(body, "    "), "screen"
+    return free_source(scope, body)
+
+
+@pytest.mark.parametrize("scope", ["parameter", "module", "closure"])
+@pytest.mark.parametrize("container", ["try", "match"])
+def test_alias_augmented_assignment_in_unsupported_flow_invalidates_original(
+    scope: Literal["parameter", "module", "closure"], container: str
+) -> None:
+    text, _ = augmented_flow_source(scope, container, "alias = p\n")
+    assert derived(text) == ()
+
+
+@pytest.mark.parametrize("scope", ["parameter", "module", "closure"])
+@pytest.mark.parametrize("container", ["try", "match"])
+def test_unsupported_flow_mutating_an_unrelated_allocation_keeps_the_witness(
+    scope: Literal["parameter", "module", "closure"], container: str
+) -> None:
+    # The same augmented write changes a fresh list, not the vector used for BH.
+    text, anchor = augmented_flow_source(scope, container, "alias = [0.25]\n")
+    assert derived(text) == (anchor,)
+
+
+@pytest.mark.parametrize("scope", ["module", "closure"])
+@pytest.mark.parametrize(
+    "mutation",
+    ["arr = np.ones(m)\ndel arr[0]\n", "m += 1\n"],
+    ids=["separate-allocation", "saved-size"],
+)
+def test_mutating_a_nonvector_fact_does_not_rebind_the_free_vector(
+    scope: Scope, mutation: str
+) -> None:
+    # Both facts carry p's extent key, but neither write changes p. The saved
+    # harmonic sum remains valid even when its earlier size variable is rebound.
+    text, anchor = free_source(scope, EXTENT + mutation + RESULT)
+    assert derived(text) == (anchor,)
+
+
 @pytest.mark.parametrize("scope", ["module", "closure"])
 def test_direct_free_vector_deletion_remains_rejected(scope: Scope) -> None:
     text, _ = free_source(scope, EXTENT + "del p[0]\n" + RESULT)
