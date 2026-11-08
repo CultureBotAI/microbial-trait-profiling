@@ -336,11 +336,26 @@ which root was used or replace the integrated record's path basis and verificati
 requirements. Noel's plan and the integrated record retain their existing
 provenance conventions.
 
-An internal hyphen in an ordinary directory name such as `noel-delta-home` does
-not start a local home prefix. Actual home prefixes, including quoted or embedded
-ones, remain refused. The separate writer-account check still refuses a directory
-containing the writer's account token, including two- and three-character names
-(the generic `root` login and single-character names retain their existing exemptions).
+Forward compatibility is limited: the generated models use `extra="forbid"`, so
+a verifier from before the schema addition in #1884 rejects an `ArmRun` or
+`ComparisonRun` containing `provenance_root_supplied`, even when its value is
+`false`. Verify new records with a checkout that includes this field. This does
+not change the newer verifier's ability to read older records without the field.
+
+A hyphen preceded by a word character in a directory name, such as `x-home` or
+`noel-delta-home`, does not start a local home prefix. Leading or standalone
+hyphens do not grant this exemption. The trade-off is that the text-prefix checks
+also accept site-specific homes beneath parents ending in `-home` or `-Users`,
+such as `/nfs-home/<account>/x.tsv` and `/srv/data-Users/<account>/x.tsv`, and
+temp-like spellings such as `x-private/tmp/...` and `x-var/folders/...`. These
+patterns do not recognize every site's home or temporary-directory layout.
+Standard Unix home prefixes and Windows user-profile prefixes remain refused
+in bare, quoted, JSON and prose text.
+Path locators still undergo the separate root, containment and writer-account
+checks. The writer-account check refuses a directory containing the writer's
+account token, including two- and three-character names; the generic `root` login
+and single-character names retain their existing exemptions. That account check
+does not scan non-locator metadata for names.
 
 Verification derives each analysis basis again from the verified core: its recorded
 strain rollup scope, its feature catalog and the retained features of its count and ORA

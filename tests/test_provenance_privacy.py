@@ -46,7 +46,19 @@ def private_environment(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict
 
 
 @pytest.mark.parametrize(
-    "directory", ["noel-delta-home", "noel-delta-HOME", "noel-delta-house", "homework"]
+    "directory",
+    [
+        "noel-delta-home",
+        "noel-delta-HOME",
+        "noel-delta-house",
+        "homework",
+        "x-home",
+        "x-Users",
+        "nfs-home/anotheraccount",
+        "data-Users/anotheraccount",
+        "x-private/tmp",
+        "x-var/folders",
+    ],
 )
 @pytest.mark.parametrize("operation", ["create", "encode"])
 def test_hyphenated_directory_is_not_a_slashless_home_prefix(
@@ -89,11 +101,13 @@ def test_hyphenated_directory_is_not_a_slashless_home_prefix(
         ("var", "folders", "run", "input.tsv"),
     ],
 )
-@pytest.mark.parametrize("context", ["bare", "json", "prose", "absolute"])
+@pytest.mark.parametrize(
+    "context", ["bare", "json", "prose", "absolute", "equals", "colon", "parenthesis"]
+)
 def test_real_local_prefixes_remain_private_in_text_contexts(
     api: ModuleType, parts: tuple[str, ...], context: str
 ) -> None:
-    """Narrowing the hyphen case must retain quoted and whitespace backstops (#1843)."""
+    """Internal hyphens cannot exempt other delimiters before a prefix (#1896)."""
     relative = "/".join(parts)
     if context == "json":
         text = json.dumps({"source": {"path": relative}})
@@ -101,10 +115,50 @@ def test_real_local_prefixes_remain_private_in_text_contexts(
         text = "Unable to read " + relative + "; retry."
     elif context == "absolute":
         text = "/" + relative
+    elif context == "equals":
+        text = "path=" + relative
+    elif context == "colon":
+        text = "path:" + relative
+    elif context == "parenthesis":
+        text = "(" + relative + ")"
     else:
         text = relative
     with pytest.raises(ValueError, match="Provenance contains a local path or local prefix"):
         api.assert_portable_text(text)
+
+
+@pytest.mark.parametrize("prefix", ["-home", "--home", "x -home", " -home"])
+@pytest.mark.parametrize("account", ["loginperson", "qzx", "ed", "alice"])
+@pytest.mark.parametrize("operation", ["text", "path", "create", "encode"])
+def test_leading_or_standalone_hyphen_does_not_hide_home_prefix(
+    private_environment: dict[str, Path],
+    api: ModuleType,
+    monkeypatch: pytest.MonkeyPatch,
+    prefix: str,
+    account: str,
+    operation: str,
+) -> None:
+    """All twelve reviewed spellings, plus leading space, fail at the prefix check (#1894)."""
+    monkeypatch.setattr(api, "_account_names", lambda: {"loginperson", "qzx", "ed"})
+    relative = prefix + "/" + account + "/input.tsv"
+    root = private_environment["temporary"] / "bundle"
+    source = root / relative
+    source.parent.mkdir(parents=True)
+    source.write_text("retained source bytes\n", encoding="utf-8")
+    record = root / "record.json"
+
+    def exercise() -> None:
+        if operation == "text":
+            api.assert_portable_text(json.dumps({"diagnostic": relative}))
+        elif operation == "path":
+            api.assert_portable_path_text(relative, file_locator=True)
+        elif operation == "create":
+            api.PortablePaths.create(record, [source], root=root)
+        else:
+            api.PortablePaths(record.resolve(), root.resolve()).encode(source)
+
+    with pytest.raises(ValueError, match="Provenance contains a local path or local prefix"):
+        exercise()
 
 
 def test_hyphenated_home_still_identifies_an_account_actually_named_home(
