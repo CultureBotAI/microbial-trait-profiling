@@ -1157,11 +1157,13 @@ def test_comparison_rows_emit_untestable_rows_for_an_empty_population_without_ch
 ) -> None:
     """An empty population emits untestable rows across both families without aborting (#1838)."""
     assert comparison_rows.__doc__ is not None
-    assert "An empty population emits untestable rows across both families." in (
-        " ".join(comparison_rows.__doc__.split())
-    )
+    normalized_doc = " ".join(comparison_rows.__doc__.split())
+    assert "An empty population emits untestable rows across both families." in normalized_doc
     assert "no paired profiles" not in comparison_rows.__doc__.lower()
-    assert "ratio_traits" in comparison_rows.__doc__
+    assert (
+        "(``ratio_traits``, defaulting to ``TABLE1_TRAITS``; every named trait must be a "
+        "known trait in ``TABLE1_TRAITS``)."
+    ) in normalized_doc
     traits = tuple(TABLE1_TRAITS)
     profiles = [
         Profile(
@@ -1313,9 +1315,39 @@ def test_comparison_rows_emit_untestable_rows_for_an_empty_population_without_ch
         (traits[0], "no_such_b"),
         ("no_such_a", traits[0]),
     ):
-        for target_populations in ((), (("empty", ()),), (("populated", profiles),)):
-            with pytest.raises(ValueError, match="Missing trait no_such_"):
+        for target_populations in (
+            (),
+            (("empty", ()),),
+            (("populated", profiles),),
+            (("populated", profiles), ("empty", ())),
+        ):
+            with pytest.raises(
+                ValueError,
+                match=r"Unknown ratio trait no_such_[ab]: ratio_traits must be Table 1 traits",
+            ):
                 comparison_rows(target_populations, ratio_traits=unknown_traits)
+    extra_profiles = [
+        replace(profile, guild_counts={**profile.guild_counts, "extra_profile_column": 3})
+        for profile in profiles
+    ]
+    for extra_ratio_traits in (
+        (traits[0], "extra_profile_column"),
+        ("extra_profile_column", traits[0]),
+    ):
+        for target_populations in (
+            (),
+            (("empty", ()),),
+            (("populated", extra_profiles),),
+            (("populated", extra_profiles), ("empty", ())),
+        ):
+            with pytest.raises(
+                ValueError,
+                match=(
+                    r"Unknown ratio trait extra_profile_column: "
+                    r"ratio_traits must be Table 1 traits"
+                ),
+            ):
+                comparison_rows(target_populations, ratio_traits=extra_ratio_traits)
     with pytest.raises(ValueError, match="1 increased vs 0 decreased profiles"):
         comparison_rows([("unpaired_study", [profiles[0]])])
     with pytest.raises(ValueError, match="Unpaired experiment"):

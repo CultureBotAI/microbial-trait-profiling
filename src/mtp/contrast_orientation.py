@@ -1773,7 +1773,10 @@ def comparison_rows(
     known_ratio_traits = set(TABLE1_TRAITS)
     for trait in declared_ratio_traits:
         if trait not in known_ratio_traits:
-            raise ValueError(f"Missing trait {trait}; missing is not zero")
+            raise ValueError(
+                f"Unknown ratio trait {trait}: ratio_traits must be Table 1 traits "
+                f"({', '.join(TABLE1_TRAITS)})"
+            )
     ratio_pairs = list(combinations(declared_ratio_traits, 2))
     rows: list[dict[str, object]] = []
     for population, profiles in populations:
