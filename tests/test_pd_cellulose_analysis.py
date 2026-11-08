@@ -287,6 +287,7 @@ def _degenerate_consumer_tables(
     *,
     all_untested: bool,
     rank_deficient: bool = False,
+    reverse_directions: bool = False,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     """Use a real clustered model with different test availability across outcomes."""
     metadata_rows = []
@@ -317,6 +318,8 @@ def _degenerate_consumer_tables(
                         value = other_inc_values[study]
                 zscore_rows.append({cellulose.CELLULOSE_ID: value})
     metadata = pd.DataFrame(metadata_rows)
+    if reverse_directions:
+        metadata["inc_dec"] = metadata["inc_dec"].map({"inc": "dec", "dec": "inc"})
     zscores = pd.DataFrame(zscore_rows)
     model, groups = cellulose.build_cellulose_model_tables(metadata, zscores)
     comparisons = cellulose.build_pd_vs_other_cellulose_summary(metadata, zscores)
@@ -399,14 +402,115 @@ def test_degenerate_model_interpretations_distinguish_displayed_and_total_tests(
     )
     expected_tested = 0 if all_untested else 1
     expected_total = 0 if all_untested else (4 if rank_deficient else 5)
-    if rank_deficient:
-        # Isolate model interpretation from the missing other-condition decreased group.
-        comparisons = _degenerate_consumer_tables(all_untested=False)[2]
     if not all_untested and not rank_deficient:
         nominal_non_intercepts = model[
             model["p_value_type"].eq("nominal") & ~model["term"].eq("intercept")
         ]
         assert nominal_non_intercepts["term"].nunique() == 2
+    text = _write_synthetic_interpretations(tmp_path, model, comparisons)
+    assert "nominal p=nan" not in text
+    assert "nominal p=inf" not in text
+    assert "nan%" not in text
+    assert "odds ratio of `nan`" not in text
+    assert "This is the interaction's nominal p" not in text
+    assert "95% CI" not in text
+    assert "interval includes zero" not in text
+    assert "interval excludes zero" not in text
+    availability_verb = "has" if expected_tested == 1 else "have"
+    plotted_scope = (
+        f"{expected_tested} of the 3 plotted cellulose-z terms {availability_verb} a nominal test"
+    )
+    assert f"The interaction was not tested; {plotted_scope}" in text
+    assert f"{expected_total} of the 8 terms across 2 outcomes" in text
+    model_paragraph = next(
+        paragraph
+        for paragraph in text.split("\n\n")
+        if paragraph.startswith("The feces-only linear model")
+    )
+    summary_paragraph = next(
+        paragraph
+        for paragraph in text.split("\n\n")
+        if paragraph.startswith("In PD fecal profiles the mean cellulose annotation z-score")
+    )
+    assert (summary_paragraph + model_paragraph).count("`not tested`") == 2
+    assert f"{plotted_scope} in `pd_cellulose_enrichment_test.png`" in model_paragraph
+    assert (
+        f"{expected_total} of the 8 table terms have a nominal test across 2 outcomes in "
+        "`pd_cellulose_interaction_model.tsv`"
+    ) in model_paragraph
+    assert "uncorrected across" not in model_paragraph
+    assert "It tests whether" not in text
+    comparison_section = text.split("## PD vs Other Fecal Profiles", 1)[1].split(
+        "The feces-only linear model", 1
+    )[0]
+    if all_untested:
+        assert comparisons["p_value_type"].eq("nominal").all()
+        assert comparisons["pd_vs_other_fisher_p"].eq(1.0).all()
+        assert "an odds ratio that is not estimable" in comparison_section
+        assert comparison_section.count("nominal p=1") == 2
+        assert "not tested" not in comparison_section
+        assert "2 directions x 2 tests = 4 nominal tests" in comparison_section
+    if rank_deficient:
+        assert text.count("not estimable") == 2
+        assert "nan" not in text.lower()
+        decreased = comparisons[
+            comparisons["direction"].eq("decreased") & comparisons["group"].eq("PD feces")
+        ].iloc[0]
+        assert decreased.p_value_type == "not_tested"
+        assert decreased.positive_z_rate == 1.0
+        assert "decreased-direction" in comparison_section
+        assert "not tested" in comparison_section
+        assert "odds ratio" not in comparison_section
+        assert "nominal p=" not in comparison_section
+        assert "`100.0%`" not in comparison_section
+        assert "1 direction x 2 tests = 2 nominal tests" in comparison_section
+        assert "1 directions" not in comparison_section
+
+
+def test_interpretations_omit_rates_for_untested_increased_direction(tmp_path: Path) -> None:
+    """The other unavailable direction uses its own model and comparison inputs."""
+    model, _groups, comparisons = _degenerate_consumer_tables(
+        all_untested=False, rank_deficient=True, reverse_directions=True
+    )
+    increased = comparisons[
+        comparisons["direction"].eq("increased") & comparisons["group"].eq("PD feces")
+    ].iloc[0]
+    assert increased.p_value_type == "not_tested"
+    assert increased.positive_z_rate == 1.0
+    text = _write_synthetic_interpretations(tmp_path, model, comparisons)
+    comparison_section = text.split("## PD vs Other Fecal Profiles", 1)[1].split(
+        "The feces-only linear model", 1
+    )[0]
+    assert "increased-direction PD-vs-other comparison was not tested" in comparison_section
+    assert "Among decreased fecal profiles" in comparison_section
+    assert "`100.0%`" not in comparison_section
+    assert "nan" not in comparison_section.lower()
+    assert comparison_section.count("nominal p=") == 2
+    assert "1 direction x 2 tests = 2 nominal tests" in comparison_section
+    assert "1 directions" not in comparison_section
+
+
+def test_interpretations_preserve_tested_infinite_odds_ratio(tmp_path: Path) -> None:
+    """A tested boundary odds estimate is different from an undefined odds ratio."""
+    model, _groups, comparisons = _degenerate_consumer_tables(all_untested=False)
+    decreased = comparisons["direction"].eq("decreased")
+    comparisons.loc[decreased, "pd_vs_other_positive_z_odds_ratio"] = math.inf
+    comparisons.loc[decreased, "pd_vs_other_fisher_p"] = 0.04
+    assert comparisons.loc[decreased, "p_value_type"].eq("nominal").all()
+    text = _write_synthetic_interpretations(tmp_path, model, comparisons)
+    comparison_section = text.split("## PD vs Other Fecal Profiles", 1)[1].split(
+        "The feces-only linear model", 1
+    )[0]
+    assert "an odds ratio of `inf`" in comparison_section
+    assert "nominal p=0.04" in comparison_section
+    assert "not estimable" not in comparison_section
+    assert "not tested" not in comparison_section
+
+
+def _write_synthetic_interpretations(
+    directory: Path, model: pd.DataFrame, comparisons: pd.DataFrame
+) -> str:
+    """Exercise the real writer with small saved-table-shaped context."""
     display = pd.DataFrame(
         [
             {
@@ -431,37 +535,39 @@ def test_degenerate_model_interpretations_distinguish_displayed_and_total_tests(
             "increased_profile_count": [2],
         }
     )
-    output = tmp_path / "interpretations.md"
+    output = directory / "interpretations.md"
     cellulose.write_interpretations(output, display, comparisons, traits, model, drivers)
-    text = output.read_text(encoding="utf-8")
-    assert "nominal p=nan" not in text
-    assert "nominal p=inf" not in text
-    assert text.count("`not tested`") == 2
-    assert "This is the interaction's nominal p" not in text
-    assert "95% CI" not in text
-    assert "interval includes zero" not in text
-    assert "interval excludes zero" not in text
-    availability_verb = "has" if expected_tested == 1 else "have"
-    plotted_scope = (
-        f"{expected_tested} of the 3 plotted cellulose-z terms {availability_verb} a nominal test"
+    return output.read_text(encoding="utf-8")
+
+
+@pytest.mark.parametrize("interaction_tested", [True, False], ids=["tested", "untested"])
+def test_interpretations_use_singular_grammar_for_one_tablewide_nominal_term(
+    tmp_path: Path, interaction_tested: bool
+) -> None:
+    """Writer availability fixtures cover a table-wide count the real cases do not."""
+    model, _groups, comparisons = _degenerate_consumer_tables(all_untested=False)
+    model.loc[:, "p_value_type"] = "not_tested"
+    model.loc[:, "p_value"] = math.nan
+    chosen = (
+        model["outcome"].eq("cellulose_z") & model["term"].eq("pd_x_decreased")
+        if interaction_tested
+        else model["outcome"].eq("cellulose_positive_z") & model["term"].eq("intercept")
     )
-    assert f"The interaction was not tested; {plotted_scope}" in text
-    assert f"{expected_total} of the 8 terms across 2 outcomes" in text
-    model_paragraph = next(
-        paragraph
-        for paragraph in text.split("\n\n")
-        if paragraph.startswith("The feces-only linear model")
-    )
-    assert f"{plotted_scope} in `pd_cellulose_enrichment_test.png`" in model_paragraph
-    assert (
-        f"{expected_total} of the 8 table terms have a nominal test across 2 outcomes in "
-        "`pd_cellulose_interaction_model.tsv`"
-    ) in model_paragraph
-    assert "uncorrected across" not in model_paragraph
-    assert "It tests whether" not in text
-    if rank_deficient:
-        assert text.count("not estimable") == 2
-        assert "nan" not in text.lower()
+    assert int(chosen.sum()) == 1
+    model.loc[chosen, "p_value_type"] = "nominal"
+    model.loc[chosen, ["p_value", "coefficient", "ci_low", "ci_high"]] = [0.04, 0.4, 0.1, 0.7]
+    model.loc[:, "n_tests"] = 1
+    assert int(model["p_value_type"].eq("nominal").sum()) == 1
+    text = _write_synthetic_interpretations(tmp_path, model, comparisons)
+    assert "1 terms across" not in text
+    if interaction_tested:
+        assert "(1 term across 2 outcomes in `pd_cellulose_interaction_model.tsv`)" in text
+        assert "and 1 term across 2 outcomes in `pd_cellulose_interaction_model.tsv`" in text
+        assert "It tests whether" in text
+    else:
+        assert "1 of the 8 table terms has a nominal test across 2 outcomes" in text
+        assert "1 of the 8 table terms have" not in text
+        assert "It tests whether" not in text
 
 
 def test_rank_deficient_and_cluster_degenerate_designs_mark_unestimable_terms_not_tested() -> None:
