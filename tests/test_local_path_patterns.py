@@ -146,11 +146,55 @@ def test_provenance_keeps_its_additional_case_and_slashless_checks(text: str) ->
 
 
 def test_shared_posix_matches_keep_their_slashless_provenance_rejection() -> None:
-    """Check the relation on current spellings and candidates for future root changes."""
+    """Check the two-way relation across pattern roots and name-class characters (#1835)."""
     shared = shared_module()
     absolute = shared.compile_absolute_local_paths(flags=re.IGNORECASE, classified=True)
-    home_roots = ("Users", "home", "people", "accounts", "Volumes", "mnt", "media")
-    names = ("example", "first.last", "dash-name", "under_score", "mixed.4_-")
+    pattern_sources = (
+        shared.USER_HOME_SOURCE,
+        shared.TEMP_ROOT_SOURCE,
+        writer._SLASHLESS_LOCAL_PATH.pattern,
+    )
+    char_classes = [
+        re.compile(cls)
+        for src in (shared.USER_HOME_SOURCE, writer._SLASHLESS_LOCAL_PATH.pattern)
+        for cls in re.findall(r"/(\[[^\]]+\])\+", src)
+    ]
+    assert len(char_classes) == 2
+    name_chars = [
+        ch
+        for code in range(33, 127)
+        if (ch := chr(code)) not in "/\\" and any(cls.fullmatch(ch) for cls in char_classes)
+    ]
+    extracted_roots = [
+        word
+        for src in pattern_sources
+        for word in re.findall(r"[A-Za-z]{2,}", re.sub(r"\[[^\]]+\]", " ", src))
+    ]
+    names = tuple(
+        dict.fromkeys(
+            [
+                "example",
+                f"a{''.join(name_chars)}z",
+                *(f"a{ch}z" for ch in name_chars if not ch.isalnum()),
+            ]
+        )
+    )
+    home_roots = tuple(
+        dict.fromkeys(
+            [
+                "Users",
+                "home",
+                "people",
+                "accounts",
+                "Volumes",
+                "mnt",
+                "media",
+                "srv",
+                *extracted_roots,
+                *names,
+            ]
+        )
+    )
     temp_roots = (
         ("var", "folders"),
         ("private", "var", "folders"),
@@ -161,7 +205,9 @@ def test_shared_posix_matches_keep_their_slashless_provenance_rejection() -> Non
     candidates = ["/" + root + "/" + name for root in home_roots for name in names]
     candidates.extend("/" + "/".join(parts) for parts in temp_roots)
     checked = 0
+    converse_checked = 0
     families: set[str | None] = set()
+    converse_families: set[str | None] = set()
     for candidate in candidates:
         for spelling in (candidate, candidate.upper()):
             for suffix in ("", "/", "/leaf"):
@@ -182,9 +228,27 @@ def test_shared_posix_matches_keep_their_slashless_provenance_rejection() -> Non
                         writer.assert_portable_text(slashless)
                     checked += 1
                     families.add(match.lastgroup)
-    # Ten current home spellings in two cases with three suffixes, plus temp cases.
+
+                slashless_candidate = "tag " + spelling[1:] + suffix
+                for found in writer._SLASHLESS_LOCAL_PATH.finditer(slashless_candidate):
+                    slashed = (
+                        slashless_candidate[: found.start()]
+                        + "/"
+                        + slashless_candidate[found.start() :]
+                    )
+                    found_abs = absolute.search(slashed)
+                    assert found_abs is not None, (
+                        f"Slashless match lost after prepending '/': {slashless_candidate!r}"
+                    )
+                    assert found_abs.span() == (found.start(), found.end() + 1)
+                    assert found_abs.group(0) == "/" + found.group(0)
+                    converse_checked += 1
+                    converse_families.add(found_abs.lastgroup)
+    # Current home spellings and temp cases in both directions.
     assert checked >= 60
+    assert converse_checked >= 60
     assert families == {"user_home", "temp_root"}
+    assert converse_families == {"user_home", "temp_root"}
 
 
 @pytest.mark.parametrize(
