@@ -90,11 +90,13 @@ def observed(unit: guard.Unit, counts: dict[str, int]) -> bool:
             1,
             id="loop-pass",
         ),
-        # The first pass changes p; a second pass establishes the fixed point.
+        # Two passes, then two alias-map entries on the stable second pass.
+        # The cached immutable union is shared, so no element comparison:
+        # 2 passes + 2 map entries.
         pytest.param(
             "def screen(p):\n    while flag:\n        p = 1\n",
             "loop_pass",
-            2,
+            4,
             id="loop-pass-two-iterations",
         ),
         # Exactly three statements, including the bare return.
@@ -111,27 +113,39 @@ def observed(unit: guard.Unit, counts: dict[str, int]) -> bool:
             3,
             id="expression",
         ),
-        # The tuple target and its two names require three assignments.
-        pytest.param("def screen(p):\n    a, b = p\n", "assignment", 3, id="assignment"),
-        # Two parameters plus alias make the write scan three facts.
+        # The tuple target costs one; each name costs one assignment plus
+        # one empty origin-map lookup: 1 + 2 * (1 + 1).
+        pytest.param("def screen(p):\n    a, b = p\n", "assignment", 5, id="assignment"),
+        # A singleton index miss costs lookup 1 + origin scan 2 + bucket 2
+        # + insertion 1 + map 1 + frozen paths 2 + cache entry 3 = 12.
+        # Matching/nonmatching prefix queries cost 21/19; alias reuses p's
+        # query for one. Capture 6 + 3 + 21 + 19 + 1 = 50, then partition 9,
+        # remembrance 1 and final facts 3: 50 + 9 + 1 + 3.
         pytest.param(
             "def screen(p, q):\n    alias = p\n    alias[0] = 1\n",
             "write_alias_scan",
-            3,
+            63,
             id="write-alias-scan",
         ),
-        # Three parameters plus alias make the write scan four facts.
+        # The third parameter adds one inspected name and another unmatched
+        # singleton query: capture 6 + 4 + 21 + 19 + 19 + 1 = 70.
+        # Partition 9 + remembrance 1 + final facts 4 give 70 + 9 + 1 + 4.
         pytest.param(
             "def screen(p, q, r):\n    alias = p\n    alias[0] = 1\n",
             "write_alias_scan",
-            4,
+            84,
             id="write-alias-scan-four-facts",
         ),
-        # q and alias plus the remembered free origin p are three scan facts.
+        # The {p, external/p} origin scan costs 2 + 1 + 10 = 13; its index
+        # costs 1 + 13 + 4 + 2 + 2 + 4 + 3 = 29. The matching query costs
+        # 1 + 29 + 2 + 2 + 2 + 4 = 40; q's unmatched query costs 20.
+        # Capture is 17 + 2 + 20 + 40 = 79. Partition/external work is
+        # 1 + 13 + 13 + 4 + 2 + 1 + 3 = 37; remembering two origins and
+        # scanning final q/alias/p adds five: 79 + 37 + 2 + 3.
         pytest.param(
             "def screen(q):\n    alias = p\n    alias[0] = 1\n",
             "write_alias_scan",
-            3,
+            121,
             id="write-alias-scan-free-origin",
         ),
         # The same three facts must be inspected after augmented assignment.

@@ -333,6 +333,15 @@ def literal_procedures(call: ast.Call, target: str) -> set[str]:
 
 
 Fact = tuple[str, str]
+AliasOrigin = tuple[tuple[str, ...], str]
+
+
+class DerivationEnvironment(dict[str, Fact]):
+    """Arithmetic facts and separately joined possible object references."""
+
+    def __init__(self, facts: Mapping[str, Fact] | None = None) -> None:
+        super().__init__({} if facts is None else facts)
+        self.aliases: dict[str, frozenset[AliasOrigin]] = {}
 
 
 def visible_by_derivation(
@@ -370,9 +379,12 @@ def visible_by_derivation(
         if file_budget is not None:
             file_budget.charge(amount, unit.path, scope)
 
-    def copy_env(env: dict[str, Fact]) -> dict[str, Fact]:
+    def copy_env(env: DerivationEnvironment) -> DerivationEnvironment:
         charge("env_copy", len(env))
-        return env.copy()
+        copied = DerivationEnvironment(env)
+        charge("env_copy", len(env.aliases))
+        copied.aliases = env.aliases.copy()
+        return copied
 
     def local_nodes(root: ast.AST) -> Iterator[ast.AST]:
         pending = [root]
@@ -402,12 +414,12 @@ def visible_by_derivation(
             and node.value == value
         )
 
-    def target(call: ast.Call, env: dict[str, Fact]) -> str:
+    def target(call: ast.Call, env: DerivationEnvironment) -> str:
         # A locally rebound callable is not the imported primitive.
         root = dotted(call.func, unit.limits).split(".")[0]
         return "" if root in env or root in module_writes else unit.resolve(call.func, scope)
 
-    def extent(call: ast.Call, env: dict[str, Fact], expected: str) -> str | None:
+    def extent(call: ast.Call, env: DerivationEnvironment, expected: str) -> str | None:
         if target(call, env) != expected or call.keywords or len(call.args) not in {2, 3}:
             return None
         start, stop = call.args[:2]
@@ -422,7 +434,7 @@ def visible_by_derivation(
         size = expression(stop.left, env)
         return size[1] if size is not None and size[0] == "size" else None
 
-    def harmonic(call: ast.Call, env: dict[str, Fact]) -> Fact | None:
+    def harmonic(call: ast.Call, env: DerivationEnvironment) -> Fact | None:
         if len(call.args) != 1 or call.keywords:
             return None
         value = call.args[0]
@@ -456,7 +468,7 @@ def visible_by_derivation(
                 family = extent(generator.iter, env, "range")
         return ("harmonic", family) if family is not None else None
 
-    def expression(node: ast.AST, env: dict[str, Fact]) -> Fact | None:
+    def expression(node: ast.AST, env: DerivationEnvironment) -> Fact | None:
         charge("expression")
         if isinstance(node, ast.Name):
             return env.get(node.id, ("vector", node.id))
@@ -500,7 +512,379 @@ def visible_by_derivation(
                 return ("BY", value[1])
         return None
 
-    def remember_mutated_origin(previous: Fact | None, env: dict[str, Fact]) -> None:
+    def charge_origins(category: str, possible: frozenset[AliasOrigin]) -> None:
+        charge(category, len(possible))
+        for path, origin in possible:
+            charge(category, len(path) + len(origin))
+            for selector in path:
+                charge(category, len(selector))
+
+    no_origins: frozenset[AliasOrigin] = frozenset()
+    singleton_origins: dict[tuple[str, bool], frozenset[AliasOrigin]] = {}
+    resolved_origins: dict[
+        tuple[str, Fact, int, bool], tuple[frozenset[AliasOrigin], frozenset[AliasOrigin]]
+    ] = {}
+    merged_origins: dict[
+        tuple[int, int],
+        tuple[frozenset[AliasOrigin], frozenset[AliasOrigin], frozenset[AliasOrigin]],
+    ] = {}
+    selected_origins: dict[
+        tuple[int, str], tuple[frozenset[AliasOrigin], frozenset[AliasOrigin]]
+    ] = {}
+    contained_origins: dict[
+        tuple[int, str], tuple[frozenset[AliasOrigin], frozenset[AliasOrigin]]
+    ] = {}
+    subtracted_origins: dict[
+        tuple[int, int],
+        tuple[frozenset[AliasOrigin], frozenset[AliasOrigin], frozenset[AliasOrigin]],
+    ] = {}
+    wrapper_identities: dict[int, tuple[frozenset[AliasOrigin], frozenset[str]]] = {}
+    matched_prefixes: dict[
+        tuple[int, int],
+        tuple[frozenset[AliasOrigin], frozenset[AliasOrigin], frozenset[tuple[str, ...]]],
+    ] = {}
+    reference_indexes: dict[
+        int, tuple[frozenset[AliasOrigin], dict[str, frozenset[tuple[str, ...]]]]
+    ] = {}
+    partitioned_origins: dict[
+        int, tuple[frozenset[AliasOrigin], frozenset[str], frozenset[str]]
+    ] = {}
+
+    def direct_origin(origin: str, *, external: bool = False) -> frozenset[AliasOrigin]:
+        # Per-invocation immutable singletons share the same reference through
+        # copied environments. Charge each lookup and the full construction on
+        # a miss before allocating the string, tuple, set and cache entry.
+        charge("expression")
+        key = origin, external
+        existing = singleton_origins.get(key)
+        if existing is not None:
+            return existing
+        charge("expression", len(origin) + (len("external/") if external else 0) + 4)
+        value = "external/" + origin if external else origin
+        created = frozenset({((), value)})
+        singleton_origins[key] = created
+        return created
+
+    def merge_origins(*groups: frozenset[AliasOrigin]) -> frozenset[AliasOrigin]:
+        merged: frozenset[AliasOrigin] = frozenset()
+        for group in groups:
+            charge("expression")
+            if not group or group is merged:
+                continue
+            if not merged:
+                merged = group
+                continue
+            # Strong input references in each entry prevent identity-key reuse.
+            # These operations depend only on immutable inputs, never on env.
+            charge("expression")
+            left_id, right_id = id(merged), id(group)
+            key = (left_id, right_id) if left_id < right_id else (right_id, left_id)
+            existing = merged_origins.get(key)
+            if existing is not None:
+                merged = existing[2]
+                continue
+            left, right = merged, group
+            # Reuse the larger immutable input when it already contains the
+            # smaller one. A real subset scan and any new union remain charged.
+            if len(group) > len(merged):
+                merged, group = group, merged
+            charge_origins("expression", group)
+            if not group <= merged:
+                charge_origins("expression", merged)
+                charge_origins("expression", group)
+                merged = merged | group
+            charge("expression", 4)
+            merged_origins[key] = left, right, merged
+        return merged
+
+    def named_origins(name: str, env: DerivationEnvironment) -> frozenset[AliasOrigin]:
+        possible = env.aliases.get(name, no_origins)
+        fact = env.get(name, ("vector", name))
+        if fact[0] != "vector":
+            return possible
+        is_free = name not in env
+        # Read the current binding first. Only the ensuing pure computation is
+        # cached; rebinding, free-name materialization and side-map updates all
+        # produce a different key. No environment is retained in this cache.
+        charge("expression")
+        key = name, fact, id(possible), is_free
+        existing = resolved_origins.get(key)
+        if existing is not None:
+            return existing[1]
+        original = possible
+        possible = merge_origins(possible, direct_origin(fact[1]))
+        if is_free:
+            # Retain external uncertainty through local aliases/containers;
+            # inspecting only the eventual write root would lose it.
+            possible = merge_origins(possible, direct_origin(name, external=True))
+        charge("expression", 7)
+        resolved_origins[key] = original, possible
+        return possible
+
+    def select_origins(possible: frozenset[AliasOrigin], selector: str) -> frozenset[AliasOrigin]:
+        charge("expression")
+        if not possible:
+            return possible
+        key = id(possible), selector
+        existing = selected_origins.get(key)
+        if existing is not None:
+            return existing[1]
+        charge_origins("expression", possible)
+        selected = frozenset(
+            (path[1:], origin) for path, origin in possible if path and path[0] == selector
+        )
+        charge("expression", len(selector) + 3)
+        selected_origins[key] = possible, selected
+        return selected
+
+    def contain_origins(possible: frozenset[AliasOrigin], selector: str) -> frozenset[AliasOrigin]:
+        charge("expression")
+        if not possible:
+            return possible
+        key = id(possible), selector
+        existing = contained_origins.get(key)
+        if existing is not None:
+            return existing[1]
+        charge_origins("expression", possible)
+        charge("expression", len(possible) * (len(selector) + 1))
+        contained = frozenset(((selector, *path), origin) for path, origin in possible)
+        charge("expression", len(selector) + 3)
+        contained_origins[key] = possible, contained
+        return contained
+
+    def possible_origins(node: ast.AST, env: DerivationEnvironment) -> frozenset[AliasOrigin]:
+        """Track references, never infer arithmetic from an ambiguous value."""
+        charge("expression")
+        if isinstance(node, ast.Name):
+            return named_origins(node.id, env)
+        if isinstance(node, ast.NamedExpr):
+            return possible_origins(node.value, env)
+        if isinstance(node, ast.BoolOp):
+            possible: frozenset[AliasOrigin] = frozenset()
+            for value in node.values:
+                possible = merge_origins(possible, possible_origins(value, env))
+            return possible
+        if isinstance(node, ast.IfExp):
+            return merge_origins(
+                possible_origins(node.body, env), possible_origins(node.orelse, env)
+            )
+        if isinstance(node, ast.List | ast.Tuple | ast.Set):
+            possible = frozenset()
+            for element in node.elts:
+                possible = merge_origins(possible, possible_origins(element, env))
+            return contain_origins(possible, "[]")
+        if isinstance(node, ast.Dict):
+            possible = frozenset()
+            for value in node.values:
+                possible = merge_origins(possible, possible_origins(value, env))
+            return contain_origins(possible, "[]")
+        if isinstance(node, ast.Subscript):
+            possible = possible_origins(node.value, env)
+            if isinstance(node.slice, ast.Slice):
+                # A shallow copy owns its outer sequence, but retains references
+                # to any objects inside it. Direct vector extents are not shared.
+                charge_origins("expression", possible)
+                return frozenset(item for item in possible if item[0])
+            return select_origins(possible, "[]")
+        if isinstance(node, ast.Attribute):
+            charge("expression", len(node.attr) + 1)
+            return select_origins(possible_origins(node.value, env), "." + node.attr)
+        if isinstance(node, ast.Call):
+            name = target(node, env)
+            if name in {"len", "float", "sum", "numpy.sum", "numpy.ones"}:
+                return frozenset()
+            if name == "typing.cast" and len(node.args) == 2 and not node.keywords:
+                return possible_origins(node.args[1], env)
+            if name == "contextlib.nullcontext" and len(node.args) == 1 and not node.keywords:
+                return possible_origins(node.args[0], env)
+            if name == "types.SimpleNamespace":
+                possible = frozenset()
+                for keyword in node.keywords:
+                    if keyword.arg is not None:
+                        charge("expression", len(keyword.arg) + 1)
+                        possible = merge_origins(
+                            possible,
+                            contain_origins(
+                                possible_origins(keyword.value, env), "." + keyword.arg
+                            ),
+                        )
+                return possible
+            copied = None
+            if name in {"list", "tuple"} and len(node.args) == 1 and not node.keywords:
+                copied = node.args[0]
+            elif (
+                isinstance(node.func, ast.Attribute)
+                and node.func.attr == "copy"
+                and not node.args
+                and not node.keywords
+            ):
+                copied = node.func.value
+            if copied is not None:
+                possible = possible_origins(copied, env)
+                charge_origins("expression", possible)
+                return frozenset(item for item in possible if item[0])
+            # An opaque binding may return an argument. It does not provide an
+            # arithmetic witness, and merely binding it does not invalidate one.
+            possible = frozenset()
+            for argument in node.args:
+                possible = merge_origins(possible, possible_origins(argument, env))
+            for keyword in node.keywords:
+                possible = merge_origins(possible, possible_origins(keyword.value, env))
+            return possible
+        return frozenset()
+
+    def root_identities(references: frozenset[AliasOrigin]) -> frozenset[str]:
+        charge("write_alias_scan")
+        if not references:
+            return frozenset()
+        existing = wrapper_identities.get(id(references))
+        if existing is not None:
+            return existing[1]
+        charge_origins("write_alias_scan", references)
+        identities = frozenset(origin for path, origin in references if not path)
+        charge("write_alias_scan", 3)
+        wrapper_identities[id(references)] = references, identities
+        return identities
+
+    def reference_index(
+        references: frozenset[AliasOrigin],
+    ) -> dict[str, frozenset[tuple[str, ...]]]:
+        charge("write_alias_scan")
+        existing = reference_indexes.get(id(references))
+        if existing is not None:
+            return existing[1]
+        # Index the immutable set once rather than scanning every origin/path
+        # again for each different wrapper queried against that same set.
+        charge_origins("write_alias_scan", references)
+        grouped: dict[str, set[tuple[str, ...]]] = {}
+        for path, origin in references:
+            if origin not in grouped:
+                charge("write_alias_scan", 2)
+                grouped[origin] = set()
+            charge("write_alias_scan")
+            grouped[origin].add(path)
+        charge("write_alias_scan", len(grouped))
+        indexed: dict[str, frozenset[tuple[str, ...]]] = {}
+        for origin, paths in grouped.items():
+            charge("write_alias_scan", len(paths) + 1)
+            indexed[origin] = frozenset(paths)
+        charge("write_alias_scan", 3)
+        reference_indexes[id(references)] = references, indexed
+        return indexed
+
+    def reference_prefixes(
+        root_references: frozenset[AliasOrigin],
+        identities: frozenset[str],
+        references: frozenset[AliasOrigin],
+    ) -> frozenset[tuple[str, ...]]:
+        charge("write_alias_scan")
+        if not identities or not references:
+            return frozenset()
+        key = id(root_references), id(references)
+        existing = matched_prefixes.get(key)
+        if existing is not None:
+            return existing[2]
+        indexed = reference_index(references)
+        charge("write_alias_scan", len(identities))
+        matched: set[tuple[str, ...]] = set()
+        for origin in identities:
+            paths = indexed.get(origin, frozenset())
+            charge("write_alias_scan", len(paths))
+            for path in paths:
+                charge("write_alias_scan", len(path))
+                for selector in path:
+                    charge("write_alias_scan", len(selector))
+            matched.update(paths)
+        charge("write_alias_scan", len(matched) + 1)
+        prefixes = frozenset(matched)
+        charge("write_alias_scan", 4)
+        matched_prefixes[key] = root_references, references, prefixes
+        return prefixes
+
+    def bind_origins(
+        name: str, possible: frozenset[AliasOrigin], env: DerivationEnvironment
+    ) -> None:
+        fact = env.get(name)
+        if possible and fact is not None and fact[0] == "vector":
+            # The arithmetic fact already retains this exact direct identity.
+            # Keep the side map for additional possibilities/contained objects.
+            direct = direct_origin(fact[1])
+            if possible is direct:
+                possible = frozenset()
+            else:
+                charge("assignment")
+                key = id(possible), id(direct)
+                existing = subtracted_origins.get(key)
+                if existing is not None:
+                    possible = existing[2]
+                else:
+                    original = possible
+                    charge_origins("assignment", direct)
+                    if direct <= possible:
+                        charge_origins("assignment", possible)
+                        charge_origins("assignment", direct)
+                        possible = possible - direct
+                    charge("assignment", 4)
+                    subtracted_origins[key] = original, direct, possible
+        charge("assignment")
+        existing_value = env.aliases.get(name)
+        if existing_value is possible or (existing_value is None and not possible):
+            return
+        if possible:
+            charge("assignment", len(possible))
+            env.aliases[name] = possible
+        else:
+            env.aliases.pop(name, None)
+
+    def mutation_origins(node: ast.AST, env: DerivationEnvironment) -> frozenset[str]:
+        possible = possible_origins(node, env)
+        charge("write_alias_scan")
+        if not possible:
+            return frozenset()
+        partition = partitioned_origins.get(id(possible))
+        if partition is None:
+            charge_origins("write_alias_scan", possible)
+            origins = frozenset(
+                origin
+                for path, origin in possible
+                if not path and not origin.startswith("external/")
+            )
+            charge_origins("write_alias_scan", possible)
+            external = frozenset(
+                origin.removeprefix("external/")
+                for path, origin in possible
+                if not path and origin.startswith("external/")
+            )
+            charge("write_alias_scan", 4)
+            partition = possible, origins, external
+            partitioned_origins[id(possible)] = partition
+        _, origins, external = partition
+        if external:
+            # Unknown external objects can alias incoming arguments. The final
+            # syntactic Unit.aliases map cannot establish their temporal identity.
+            # Only free/incoming extent keys are candidates; a local allocation's
+            # position-tagged identity and scalar/array values are not aliases.
+            charge("write_alias_scan", len(env))
+            incoming = {
+                fact[1]
+                for fact in env.values()
+                if fact[0] in {"vector", "size", "harmonic", "BH", "scaled", "BY"}
+                and fact[1].isidentifier()
+            }
+            charge("write_alias_scan", len(external))
+            unresolved = any(not (name in env and env[name][1] != name) for name in external)
+            if unresolved:
+                charge("write_alias_scan", len(origins) + len(incoming))
+                origins = origins | incoming
+        return origins
+
+    def remember_origins(origins: frozenset[str], env: DerivationEnvironment) -> None:
+        charge("write_alias_scan", len(origins))
+        for origin in origins:
+            if origin.isidentifier():
+                env.setdefault(origin, ("vector", origin))
+
+    def remember_mutated_origin(previous: Fact | None, env: DerivationEnvironment) -> None:
         # A free vector read may exist only through its aliases. Include its
         # original name in the mutation scan so a later read cannot recreate
         # the old extent. Position-tagged local assignments have no free origin;
@@ -508,10 +892,16 @@ def visible_by_derivation(
         if previous and previous[0] == "vector" and previous[1].isidentifier():
             env.setdefault(previous[1], previous)
 
-    def assign(node: ast.AST, value: Fact | None, env: dict[str, Fact]) -> None:
+    def assign(
+        node: ast.AST,
+        value: Fact | None,
+        env: DerivationEnvironment,
+        possible: frozenset[AliasOrigin] = frozenset(),
+    ) -> None:
         charge("assignment")
         if isinstance(node, ast.Name):
             env[node.id] = value or ("vector", f"{node.id}:{node.lineno}:{node.col_offset}")
+            bind_origins(node.id, possible, env)
         elif isinstance(node, ast.Subscript | ast.Attribute):
             # Only a direct write into a known fixed-size allocation preserves
             # extent. Other writes may mutate a view of any tracked BH result.
@@ -526,44 +916,143 @@ def visible_by_derivation(
             while isinstance(root, ast.Subscript | ast.Attribute):
                 root = root.value
             previous = expression(root, env)
+            wrapper_aliases: dict[
+                str, tuple[frozenset[AliasOrigin], frozenset[tuple[str, ...]]]
+            ] = {}
+            if isinstance(root, ast.Name):
+                root_references = named_origins(root.id, env)
+                identities = root_identities(root_references)
+                # Mutating a wrapper changes its arithmetic extent, not the
+                # identity shared by its aliases. Retain direct and contained
+                # identity paths, so insertion reaches every known spelling
+                # without invalidating an enclosing wrapper's own extent.
+                charge("write_alias_scan", len(env))
+                for name in env:
+                    references = named_origins(name, env)
+                    prefixes = reference_prefixes(root_references, identities, references)
+                    if prefixes:
+                        wrapper_aliases[name] = references, prefixes
+                if root.id not in wrapper_aliases:
+                    charge("assignment")
+                    wrapper_aliases[root.id] = root_references, frozenset({()})
+            origins = mutation_origins(node.value, env)
             remember_mutated_origin(previous, env)
+            remember_origins(origins, env)
             if isinstance(root, ast.Name):
                 env[root.id] = ("unknown", root.id)
             charge("write_alias_scan", len(env))
             for alias, fact in list(env.items()):
-                if fact == previous or fact[0] in {"BH", "scaled", "BY"}:
+                if (
+                    fact == previous
+                    or fact[0] in {"BH", "scaled", "BY"}
+                    or (fact[0] == "vector" and fact[1] in origins)
+                ):
                     env[alias] = ("unknown", alias)
+            for alias, (references, _) in wrapper_aliases.items():
+                bind_origins(alias, references, env)
+            if not isinstance(node.ctx, ast.Del) and possible and isinstance(root, ast.Name):
+                # The write changes the wrapper, not the inserted object. Keep
+                # possible references for a later write *through* the new slot.
+                selectors: list[str] = []
+                child: ast.AST = node
+                while isinstance(child, ast.Subscript | ast.Attribute):
+                    charge(
+                        "assignment", 3 if isinstance(child, ast.Subscript) else len(child.attr) + 2
+                    )
+                    selector = "[]" if isinstance(child, ast.Subscript) else "." + child.attr
+                    selectors.append(selector)
+                    child = child.value
+                contained = possible
+                for selector in selectors:
+                    contained = contain_origins(contained, selector)
+                for alias, (_, prefixes) in wrapper_aliases.items():
+                    charge("assignment", len(prefixes))
+                    for prefix in prefixes:
+                        at_alias = contained
+                        for selector in reversed(prefix):
+                            at_alias = contain_origins(at_alias, selector)
+                        bind_origins(
+                            alias,
+                            merge_origins(env.aliases.get(alias, frozenset()), at_alias),
+                            env,
+                        )
         elif isinstance(node, ast.Tuple | ast.List):
+            elements = select_origins(possible, "[]")
             for element in node.elts:
-                assign(element, None, env)
+                assign(element, None, env, elements)
 
-    def invalidate_aliases(node: ast.AST, env: dict[str, Fact]) -> None:
+    def invalidate_aliases(node: ast.AST, env: DerivationEnvironment) -> None:
         if isinstance(node, ast.Name):
             previous = env.get(node.id, ("vector", node.id))
+            origins = mutation_origins(node, env)
             remember_mutated_origin(previous, env)
+            remember_origins(origins, env)
             charge("alias_invalidation", len(env))
             for alias, fact in list(env.items()):
-                if fact == previous:
+                if fact == previous or (fact[0] == "vector" and fact[1] in origins):
                     env[alias] = ("unknown", f"{alias}:{node.lineno}")
         else:
             assign(node, None, env)
 
-    def intersection(left: dict[str, Fact], right: dict[str, Fact]) -> dict[str, Fact]:
+    def intersection(
+        left: DerivationEnvironment, right: DerivationEnvironment
+    ) -> DerivationEnvironment:
         # Keep invalidated names present, so an earlier fact cannot reappear
         # through the fallback for an unbound parameter.
         charge("env_join", len(left) + len(right))
-        return {
-            name: left[name]
-            if name in left and left.get(name) == right.get(name)
-            else ("unknown", name)
-            for name in left.keys() | right.keys()
-        }
+        joined = DerivationEnvironment(
+            {
+                name: left[name]
+                if name in left and left.get(name) == right.get(name)
+                else ("unknown", name)
+                for name in dict.fromkeys((*left, *right))
+            }
+        )
+        for name in joined:
+            left_possible = left.aliases.get(name, frozenset())
+            right_possible = right.aliases.get(name, frozenset())
+            same_fact = left.get(name) == right.get(name)
+            if same_fact and not left_possible and not right_possible:
+                continue
+            if not same_fact:
+                if name in left:
+                    left_possible = named_origins(name, left)
+                if name in right:
+                    right_possible = named_origins(name, right)
+            if left_possible is right_possible or not right_possible:
+                possible = left_possible
+            elif not left_possible:
+                possible = right_possible
+            else:
+                possible = merge_origins(left_possible, right_possible)
+            if possible:
+                joined.aliases[name] = possible
+        return joined
 
-    def invalidate_bindings(statement: ast.stmt, env: dict[str, Fact]) -> None:
+    def same_aliases(left: DerivationEnvironment, right: DerivationEnvironment) -> bool:
+        charge("loop_pass", len(left.aliases) + len(right.aliases))
+        if len(left.aliases) != len(right.aliases):
+            return False
+        for name, possible in left.aliases.items():
+            other = right.aliases.get(name)
+            if possible is other:
+                continue
+            if other is None:
+                return False
+            charge_origins("loop_pass", possible)
+            charge_origins("loop_pass", other)
+            if possible != other:
+                return False
+        return True
+
+    def invalidate_bindings(statement: ast.stmt, env: DerivationEnvironment) -> None:
         """Special bindings are unknown, including those inside unsupported blocks."""
         for node in local_nodes(statement):
             names: list[str] = []
             if isinstance(node, ast.NamedExpr) and isinstance(node.target, ast.Name):
+                possible = possible_origins(node.value, env)
+                env[node.target.id] = ("unknown", node.target.id)
+                bind_origins(node.target.id, possible, env)
                 names.append(node.target.id)
             elif isinstance(node, ast.Import | ast.ImportFrom):
                 charge("import_names", len(node.names))
@@ -585,6 +1074,7 @@ def visible_by_derivation(
             elif isinstance(node, ast.Delete):
                 for item in node.targets:
                     if isinstance(item, ast.Name):
+                        env.aliases.pop(item.id, None)
                         names.append(item.id)
                     else:
                         assign(item, None, env)
@@ -610,11 +1100,34 @@ def visible_by_derivation(
                     return True
         return False
 
-    loop_paths: list[tuple[list[dict[str, Fact]], list[dict[str, Fact]]]] = []
+    loop_paths: list[tuple[list[DerivationEnvironment], list[DerivationEnvironment]]] = []
+
+    def bind_expression(
+        node: ast.AST, value: ast.AST, env: DerivationEnvironment, fact: Fact | None
+    ) -> None:
+        if (
+            isinstance(node, ast.Tuple | ast.List)
+            and isinstance(value, ast.Tuple | ast.List)
+            and len(node.elts) == len(value.elts)
+        ):
+            charge("assignment", len(node.elts))
+            evaluated = [
+                (target, expression(item, env), possible_origins(item, env))
+                for target, item in zip(node.elts, value.elts, strict=True)
+            ]
+            for target_node, fact, possible in evaluated:
+                assign(target_node, fact, env, possible)
+        else:
+            possible = (
+                possible_origins(value, env)
+                if fact is None or fact[0] in {"vector", "unknown"}
+                else frozenset()
+            )
+            assign(node, fact, env, possible)
 
     def statements(
-        body: list[ast.stmt], env: dict[str, Fact], *, credit: bool = True
-    ) -> dict[str, Fact]:
+        body: list[ast.stmt], env: DerivationEnvironment, *, credit: bool = True
+    ) -> DerivationEnvironment:
         nonlocal witnessed
         for statement in body:
             charge("statement")
@@ -625,7 +1138,10 @@ def visible_by_derivation(
                     statement.targets if isinstance(statement, ast.Assign) else [statement.target]
                 )
                 for item in targets:
-                    assign(item, value, env)
+                    if statement.value is not None:
+                        bind_expression(item, statement.value, env, value)
+                    else:
+                        assign(item, value, env)
                 if (
                     credit
                     and value
@@ -674,21 +1190,31 @@ def visible_by_derivation(
                     charge("loop_pass")
                     inside = copy_env(entry)
                     if isinstance(statement, ast.For | ast.AsyncFor):
-                        assign(statement.target, None, inside)
-                    break_paths: list[dict[str, Fact]] = []
-                    continue_paths: list[dict[str, Fact]] = []
+                        assign(
+                            statement.target,
+                            None,
+                            inside,
+                            select_origins(possible_origins(statement.iter, inside), "[]"),
+                        )
+                    break_paths: list[DerivationEnvironment] = []
+                    continue_paths: list[DerivationEnvironment] = []
                     loop_paths.append((break_paths, continue_paths))
                     inside = statements(statement.body, inside, credit=False)
                     loop_paths.pop()
                     updated = intersection(entry, inside)
                     for continued in continue_paths:
                         updated = intersection(updated, continued)
-                    if updated == entry:
+                    if updated == entry and same_aliases(updated, entry):
                         break
                     entry = updated
                 inside = copy_env(entry)
                 if isinstance(statement, ast.For | ast.AsyncFor):
-                    assign(statement.target, None, inside)
+                    assign(
+                        statement.target,
+                        None,
+                        inside,
+                        select_origins(possible_origins(statement.iter, inside), "[]"),
+                    )
                 break_paths, continue_paths = [], []
                 loop_paths.append((break_paths, continue_paths))
                 inside = statements(statement.body, inside, credit=credit)
@@ -703,7 +1229,12 @@ def visible_by_derivation(
             elif isinstance(statement, ast.With | ast.AsyncWith):
                 for context_item in statement.items:
                     if context_item.optional_vars is not None:
-                        assign(context_item.optional_vars, None, env)
+                        assign(
+                            context_item.optional_vars,
+                            None,
+                            env,
+                            possible_origins(context_item.context_expr, env),
+                        )
                 env = statements(statement.body, env, credit=credit)
                 if terminates(statement.body):
                     break
@@ -711,10 +1242,22 @@ def visible_by_derivation(
                 # Unsupported control flow must not lend assignments to a
                 # later derivation; do not claim witnesses inside these blocks.
                 for node in local_nodes(statement):
+                    if isinstance(node, ast.Assign | ast.AnnAssign) and node.value is not None:
+                        targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+                        possible = possible_origins(node.value, env)
+                        for item in targets:
+                            if isinstance(item, ast.Name):
+                                bind_origins(
+                                    item.id,
+                                    merge_origins(named_origins(item.id, env), possible),
+                                    env,
+                                )
                     if isinstance(node, ast.AugAssign):
                         invalidate_aliases(node.target, env)
                     if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):
+                        possible = named_origins(node.id, env)
                         env[node.id] = ("unknown", node.id)
+                        bind_origins(node.id, possible, env)
                     elif isinstance(node, ast.Subscript | ast.Attribute) and isinstance(
                         node.ctx, ast.Store | ast.Del
                     ):
@@ -725,7 +1268,10 @@ def visible_by_derivation(
     args = function.args
     parameters = [*args.posonlyargs, *args.args, *args.kwonlyargs]
     parameters.extend(arg for arg in (args.vararg, args.kwarg) if arg is not None)
-    statements(function.body, {arg.arg: ("vector", arg.arg) for arg in parameters})
+    statements(
+        function.body,
+        DerivationEnvironment({arg.arg: ("vector", arg.arg) for arg in parameters}),
+    )
     return witnessed
 
 
