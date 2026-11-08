@@ -650,7 +650,7 @@ def build_paired_enrichment_matrix(
         pair_values.name = pair_id
         rows.append(pair_values)
 
-        pair_metadata: pd.Series | pd.DataFrame = group.iloc[0]
+        first_row = group.iloc[0]
         metadata_rows.append(
             {
                 "pair_id": pair_id,
@@ -663,14 +663,14 @@ def build_paired_enrichment_matrix(
                 "decreased_profile_ids": ";".join(dec_ids),
                 "mean_paired_trait_enrichment": pair_values.mean(),
                 "max_abs_paired_trait_enrichment": pair_values.abs().max(),
-                "body_site": pair_metadata["body_site"],
-                "body_site_group": pair_metadata["body_site_group"],
-                "condition": pair_metadata["condition"],
-                "condition_group": pair_metadata["condition_group"],
-                "location": pair_metadata["location"],
-                "host_species": pair_metadata["host_species"],
-                "title": pair_metadata["title"],
-                "publication_year": pair_metadata["publication_year"],
+                "body_site": first_row["body_site"],
+                "body_site_group": first_row["body_site_group"],
+                "condition": first_row["condition"],
+                "condition_group": first_row["condition_group"],
+                "location": first_row["location"],
+                "host_species": first_row["host_species"],
+                "title": first_row["title"],
+                "publication_year": first_row["publication_year"],
             }
         )
 

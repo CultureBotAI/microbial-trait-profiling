@@ -166,7 +166,7 @@ module = [
 ]
 ignore_errors = true
 
-# pandas, scipy, plotly, seaborn and linkml-store ship no type information; the repo's own code stays strict.
+# scipy, plotly, seaborn and linkml-store ship no type information (pandas is typed by pandas-stubs; seaborn has typeshed stubs, types-seaborn, not a dependency — #1945); the repo's own code stays strict.
 [[tool.mypy.overrides]]
 module = ["pandas", "scipy.*", "plotly.*", "seaborn", "linkml_store", "linkml_store.*"]
 ignore_missing_imports = true
