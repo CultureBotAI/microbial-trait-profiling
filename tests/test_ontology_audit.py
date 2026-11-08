@@ -556,3 +556,105 @@ def test_ontology_redundancy_audit_counts_observed_clusters_only(tmp_path: Path)
     assert res_multi["n_redundant_pairs"] == 3
     assert res_multi["n_clusters"] == 1
     assert res_multi["n_collapsed_features"] == 2
+    assert res_multi["n_orphan_features"] == 0
+
+    # Paired cluster (coccus + sphere) plus orphan-removed member (flagellated without motile,
+    # #1857)
+    mixed_traits = ["METPO:1000668", "METPO:1000683", "METPO:1000704", "METPO:1000608"]
+    profiles_mixed = tmp_path / "profiles_mixed.tsv"
+    columns_mixed = tmp_path / "columns_mixed.tsv"
+    pd.DataFrame(
+        {
+            "study_id": ["s1", "s1", "s2", "s2"],
+            "experiment_id": ["e1", "e1", "e2", "e2"],
+            "inc_dec": ["inc", "dec", "inc", "dec"],
+            "METPO:1000668": [2.0, 4.0, 6.0, 8.0],
+            "METPO:1000683": [1.0, 2.0, 3.0, 4.0],
+            "METPO:1000704": [1.0, 2.0, 3.0, 4.0],
+            "METPO:1000608": [5.0, 1.0, 2.0, 3.0],
+        }
+    ).to_csv(profiles_mixed, sep="\t", index=False)
+    pd.DataFrame(
+        {
+            "column_id": mixed_traits,
+            "column_label": [
+                "coccus shaped",
+                "sphere shaped",
+                "flagellated",
+                "facultatively aerobic",
+            ],
+            "object_name": [
+                "coccus shaped",
+                "sphere shaped",
+                "flagellated",
+                "facultatively aerobic",
+            ],
+            "object_category": ["biolink:PhenotypicQuality"] * len(mixed_traits),
+        }
+    ).to_csv(columns_mixed, sep="\t", index=False)
+
+    res_mixed = run_ontology_redundancy_audit(
+        profiles_path=profiles_mixed,
+        columns_path=columns_mixed,
+        output_dir=tmp_path / "out_mixed",
+    )
+    assert res_mixed["n_redundant_pairs"] == 1
+    assert res_mixed["n_clusters"] == 1
+    assert res_mixed["n_collapsed_features"] == 2
+    assert res_mixed["n_orphan_features"] == 1
+
+    # Multi-orphan case (#1857, PR #1901 review): motility survivor (METPO:1000702) is absent
+    # while two of its collapsed members (METPO:1000705, METPO:1000704) are present alongside
+    # coccus + sphere. The member-member motility pair is in df_pairs, but n_clusters must count
+    # only clusters whose survivor is present (1 cluster: morphology_sphere, not 2).
+    multi_orphan_traits = [
+        "METPO:1000668",
+        "METPO:1000683",
+        "METPO:1000705",
+        "METPO:1000704",
+        "METPO:1000608",
+    ]
+    profiles_multi_orphan = tmp_path / "profiles_multi_orphan.tsv"
+    columns_multi_orphan = tmp_path / "columns_multi_orphan.tsv"
+    pd.DataFrame(
+        {
+            "study_id": ["s1", "s1", "s2", "s2"],
+            "experiment_id": ["e1", "e1", "e2", "e2"],
+            "inc_dec": ["inc", "dec", "inc", "dec"],
+            "METPO:1000668": [2.0, 4.0, 6.0, 8.0],
+            "METPO:1000683": [1.0, 2.0, 3.0, 4.0],
+            "METPO:1000705": [2.0, 4.0, 6.0, 8.0],
+            "METPO:1000704": [1.0, 2.0, 3.0, 4.0],
+            "METPO:1000608": [5.0, 1.0, 2.0, 3.0],
+        }
+    ).to_csv(profiles_multi_orphan, sep="\t", index=False)
+    pd.DataFrame(
+        {
+            "column_id": multi_orphan_traits,
+            "column_label": [
+                "coccus shaped",
+                "sphere shaped",
+                "axially filamented",
+                "flagellated",
+                "facultatively aerobic",
+            ],
+            "object_name": [
+                "coccus shaped",
+                "sphere shaped",
+                "axially filamented",
+                "flagellated",
+                "facultatively aerobic",
+            ],
+            "object_category": ["biolink:PhenotypicQuality"] * len(multi_orphan_traits),
+        }
+    ).to_csv(columns_multi_orphan, sep="\t", index=False)
+
+    res_multi_orphan = run_ontology_redundancy_audit(
+        profiles_path=profiles_multi_orphan,
+        columns_path=columns_multi_orphan,
+        output_dir=tmp_path / "out_multi_orphan",
+    )
+    assert res_multi_orphan["n_redundant_pairs"] == 2
+    assert res_multi_orphan["n_clusters"] == 1
+    assert res_multi_orphan["n_collapsed_features"] == 3
+    assert res_multi_orphan["n_orphan_features"] == 2

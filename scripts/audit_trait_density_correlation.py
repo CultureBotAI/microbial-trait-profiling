@@ -348,14 +348,24 @@ def write_consolidated_report(
     paired_r = _conclusion_number(twin.paired_correlation, "+.4f")
     profile_vif = _conclusion_number(twin.vif_profile, ".2f", allow_positive_infinity=True)
     paired_vif = _conclusion_number(twin.vif_paired, ".2f", allow_positive_infinity=True)
-    collapsed_summary = (
-        f"{n_collapsed} {_plural(n_collapsed, 'feature', 'features')} "
-        f"removed without a present cluster survivor across {n_clusters} "
-        f"{_plural(n_clusters, 'cluster', 'clusters')}"
-        if n_collapsed > 0 and n_clusters == 0
-        else f"{n_collapsed} {_plural(n_collapsed, 'feature', 'features')} "
+    n_orphan = int(ontology_res.get("n_orphan_features", 0))
+    n_collapsed_in_clusters = n_collapsed - n_orphan
+    cluster_summary = (
+        f"{n_collapsed_in_clusters} "
+        f"{_plural(n_collapsed_in_clusters, 'feature', 'features')} "
         f"collapsed into {n_clusters} {_plural(n_clusters, 'cluster', 'clusters')}"
     )
+    orphan_summary = (
+        f"{n_orphan} {_plural(n_orphan, 'feature', 'features')} "
+        f"removed because "
+        f"{_plural(n_orphan, 'its cluster survivor is', 'their cluster survivors are')} absent"
+    )
+    if n_orphan > 0 and n_collapsed_in_clusters > 0:
+        collapsed_summary = f"{cluster_summary}; {orphan_summary}"
+    elif n_orphan > 0:
+        collapsed_summary = orphan_summary
+    else:
+        collapsed_summary = cluster_summary
     lines.extend(
         [
             "1. Median pairwise Pearson r across profile trait annotations: "

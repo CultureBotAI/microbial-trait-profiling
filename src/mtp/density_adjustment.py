@@ -856,6 +856,9 @@ def evaluate_conditional_twin_test(
     n_paired = len(delta_a)
     std_delta_a = float(np.std(delta_a)) if n_paired > 0 else 0.0
     std_delta_b = float(np.std(delta_b)) if n_paired > 0 else 0.0
+    # Scaling by max(|delta_a|, |inc_a|, |dec_a|) sets a floor of 64 * eps * operand
+    # on std(delta_a), treating delta_a ranges within a few hundred ulps of the
+    # operands as rounding noise (unreachable on integer twin counts; #1824, #1858).
     max_abs_delta_a = (
         float(max(np.max(np.abs(delta_a)), np.max(np.abs(inc_a)), np.max(np.abs(dec_a))))
         if n_paired > 0
