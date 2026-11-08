@@ -9,12 +9,13 @@ from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from textwrap import fill, shorten
+from typing import TYPE_CHECKING, Any
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from matplotlib.colors import TwoSlopeNorm
-from matplotlib.patches import Circle, FancyBboxPatch, PathPatch
+from matplotlib.patches import Circle, FancyBboxPatch, PathPatch, Rectangle
 from matplotlib.path import Path as MplPath
 from scipy import stats
 
@@ -30,6 +31,9 @@ from mtp.composition_denominators import (
     retained_trait_counts,
 )
 from mtp.paths import file_sha256
+
+if TYPE_CHECKING:
+    from matplotlib.axes import Axes
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VIS_DIR = REPO_ROOT / "trait-visualization"
@@ -218,7 +222,7 @@ def pair_denominator_summary(
     if not retained.index.is_unique or not pair_metadata.index.is_unique:
         raise ValueError("Profile and pair identifiers must be unique for denominator reporting")
     totals = retained.loc[profile_ids].sum(axis=1)
-    nonzero_pairs: list[object] = []
+    nonzero_pairs: list[Any] = []
     for pair_id, row in pair_metadata.iterrows():
         inc_ids = split_profile_ids(row["increased_profile_ids"])
         dec_ids = split_profile_ids(row["decreased_profile_ids"])
@@ -924,14 +928,14 @@ def write_legacy_stratified_stats(
     return provenance
 
 
-def add_anatomical_outline(ax: plt.Axes) -> None:
+def add_anatomical_outline(ax: Axes) -> None:
     """Draw an original front-facing body-template outline for site callouts."""
     face = "#ffffff"
     edge = SLATE_400
 
     def add_path(
         start: tuple[float, float],
-        segments: list[tuple[tuple[float, float], ...]],
+        segments: Sequence[tuple[tuple[float, float], ...]],
     ) -> None:
         vertices = [start]
         codes = [MplPath.MOVETO]
@@ -959,7 +963,7 @@ def add_anatomical_outline(ax: plt.Axes) -> None:
         return 0.60 - point[0], point[1]
 
     def mirror_segments(
-        segments: list[tuple[tuple[float, float], ...]],
+        segments: Sequence[tuple[tuple[float, float], ...]],
     ) -> list[tuple[tuple[float, float], ...]]:
         return [tuple(mirror_point(point) for point in segment) for segment in segments]
 
@@ -995,7 +999,7 @@ def add_anatomical_outline(ax: plt.Axes) -> None:
     ax.plot([0.320, 0.320], [0.805, 0.770], color=edge, lw=1.0, zorder=2)
 
 
-def plot_top_traits(ax: plt.Axes, trait_stats: pd.DataFrame) -> None:
+def plot_top_traits(ax: Axes, trait_stats: pd.DataFrame) -> None:
     """Plot panel A: traits with strongest paired contrast evidence."""
     top_traits = trait_stats.head(TOP_N_TRAITS).iloc[::-1].copy()
     score_col = (
@@ -1036,12 +1040,8 @@ def plot_top_traits(ax: plt.Axes, trait_stats: pd.DataFrame) -> None:
     ax.spines["bottom"].set_color(SLATE_200)
     ax.legend(
         handles=[
-            plt.Rectangle(
-                (0, 0), 1, 1, color=INCREASED_BLUE, label="Enriched in increased profiles"
-            ),
-            plt.Rectangle(
-                (0, 0), 1, 1, color=DECREASED_RED, label="Enriched in decreased profiles"
-            ),
+            Rectangle((0, 0), 1, 1, color=INCREASED_BLUE, label="Enriched in increased profiles"),
+            Rectangle((0, 0), 1, 1, color=DECREASED_RED, label="Enriched in decreased profiles"),
         ],
         loc="lower right",
         frameon=False,
@@ -1077,7 +1077,7 @@ def plot_top_traits(ax: plt.Axes, trait_stats: pd.DataFrame) -> None:
     ax.set_xlim(0, max_p * 1.38)
 
 
-def plot_condition_summary(ax: plt.Axes, condition_summary: pd.DataFrame) -> None:
+def plot_condition_summary(ax: Axes, condition_summary: pd.DataFrame) -> None:
     """Plot panel B: condition groups with strongest directional contrast load."""
     plot_data = condition_summary.head(TOP_N_CONDITIONS).iloc[::-1].copy()
     labels = [compact_label(label, 40) for label in plot_data["condition"]]
@@ -1117,6 +1117,7 @@ def plot_condition_summary(ax: plt.Axes, condition_summary: pd.DataFrame) -> Non
     )
 
     max_total = float(plot_data["absolute_contrast_load"].max())
+    row: Any
     for y_index, row in enumerate(plot_data.itertuples(index=False)):
         ax.text(
             row.absolute_contrast_load + max_total * 0.015,
@@ -1130,7 +1131,7 @@ def plot_condition_summary(ax: plt.Axes, condition_summary: pd.DataFrame) -> Non
         )
 
 
-def plot_body_site_summary(ax: plt.Axes, body_site_summary: pd.DataFrame) -> None:
+def plot_body_site_summary(ax: Axes, body_site_summary: pd.DataFrame) -> None:
     """Plot panel C: anatomical body-site contrast hotspots."""
     plot_sites = body_site_summary.head(TOP_N_BODY_SITES).copy()
     plot_sites["anchor"] = [anatomical_site_base(site) for site in plot_sites["body_site_group"]]
@@ -1156,6 +1157,7 @@ def plot_body_site_summary(ax: plt.Axes, body_site_summary: pd.DataFrame) -> Non
     # close to their leader lines to stay apart (#620).
     label_ys = np.linspace(0.90, 0.10, len(plot_sites)) if len(plot_sites) > 1 else [0.52]
 
+    row: Any
     for label_y, row in zip(label_ys, plot_sites.itertuples(index=False), strict=False):
         signal = float(row.net_increased_minus_decreased)
         color = cmap(norm(signal))
@@ -1222,7 +1224,7 @@ def format_q(value: float) -> str:
 
 
 def plot_story_box(
-    ax: plt.Axes,
+    ax: Axes,
     trait_stats: pd.DataFrame,
     condition_summary: pd.DataFrame,
     body_site_summary: pd.DataFrame,
