@@ -90,6 +90,20 @@ def test_plain_slot_replacement_keeps_the_original_vector_extent(
 
 
 @pytest.mark.parametrize("scope", SCOPES)
+@pytest.mark.parametrize("slot", ["list-slot", "namespace-attribute"])
+def test_repeated_selection_cache_hit_keeps_the_referent_for_invalidation(
+    scope: aliases.Scope, slot: str
+) -> None:
+    """A select-cache hit must return the selected object, not its container (#1927)."""
+    setup, target = SLOTS[slot]
+    selected = aliases.EXTENT + setup + f"first = {target}\nsecond = {target}\n"
+    control, anchor = aliases.source(scope, selected + aliases.RESULT)
+    changed, _ = aliases.source(scope, selected + "del second[0]\n" + aliases.RESULT)
+    assert aliases.derived(control) == (anchor,)
+    assert aliases.derived(changed) == ()
+
+
+@pytest.mark.parametrize("scope", SCOPES)
 @pytest.mark.parametrize("join", LOOP_JOINS)
 def test_repeated_loop_join_retains_the_possible_alias_until_its_write(
     scope: aliases.Scope, join: str
