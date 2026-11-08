@@ -350,9 +350,10 @@ such as `/nfs-home/<account>/x.tsv` and `/srv/data-Users/<account>/x.tsv`, and
 temp-like spellings such as `x-private/tmp/...` and `x-var/folders/...`. These
 patterns do not recognize every site's home or temporary-directory layout.
 Standard Unix home prefixes and drive-letter Windows user-profile prefixes
-(`<drive>:\Users\...`, `<drive>:/Users/...`) remain refused in bare, quoted, JSON and prose
-text. Driveless and UNC Windows profile paths (`\Users\<account>\...`,
-`\\server\Users\<account>\...`) are not recognized by these text checks (#1830).
+(a drive letter, a colon, then `Users` with either separator) remain refused in
+bare, quoted, JSON and prose text. Driveless and UNC Windows profile paths
+(a leading backslash or a `\\server` share before `Users`) are not recognized by
+these text checks (#1830).
 Path locators still undergo the separate root, containment and writer-account
 checks. The writer-account check refuses a directory containing the writer's
 account token, including two- and three-character names; the generic `root` login
