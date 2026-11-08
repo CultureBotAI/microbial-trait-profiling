@@ -1159,6 +1159,7 @@ def save_traits_vs_organisms_heatmap(
     row_colors.index = display_matrix.index
     row_colors.name = ""
 
+    colorbar_position = (0.02, 0.82, 0.025, 0.12)
     cluster = sns.clustermap(
         display_matrix,
         cmap=sns.color_palette(["#f8fafc", "#155e75"], as_cmap=True),
@@ -1166,12 +1167,12 @@ def save_traits_vs_organisms_heatmap(
         metric="jaccard",
         col_cluster=cluster_columns,
         row_colors=row_colors,
-        linewidths=0.2,
+        linewidths=0.5,
         linecolor="#e2e8f0",
         xticklabels=True,
         yticklabels=True,
         figsize=(18, 16),
-        cbar_pos=(0.02, 0.82, 0.025, 0.12),
+        cbar_pos=colorbar_position,
         dendrogram_ratio=(0.12, 0.10),
         colors_ratio=(0.025, 0.025),
     )
@@ -1179,6 +1180,9 @@ def save_traits_vs_organisms_heatmap(
     cluster.ax_heatmap.set_ylabel("Organism observed in target-condition profiles")
     cluster.ax_heatmap.set_title("")
     cluster.fig.subplots_adjust(top=0.88)
+    # subplots_adjust also moves the colorbar back into the condition strip.
+    # Restore its separate position so tick labels stay on the white margin.
+    cluster.ax_cbar.set_position(colorbar_position)
     cluster.fig.suptitle(
         f"{title}\n"
         "Rows are organisms observed in target BugSigDB profiles; columns are binary "

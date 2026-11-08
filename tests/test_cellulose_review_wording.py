@@ -210,3 +210,5 @@ def test_direction_caption_names_the_verdict_endpoints_without_changing_the_coun
     assert f"Nominal p-values: {endpoint_count} finite endpoints; 0 unavailable." in caveat
     assert "including the scenario endpoints behind the verdicts" in caveat
     assert "not a correction family" in caveat
+    # A single scope lead-in must not produce two consecutive colons (#1885).
+    assert "verdicts: Nominal p-values:" not in caveat
