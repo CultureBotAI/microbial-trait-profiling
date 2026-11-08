@@ -19,6 +19,7 @@ collect_ignore = (
         "test_cellulose_nominal_labels.py",
         "test_cellulose_review_layout.py",
         "test_cellulose_review_wording.py",
+        "test_cellulose_slide_figures.py",
         "test_cellulose_statement_consumers.py",
     ]
 )
