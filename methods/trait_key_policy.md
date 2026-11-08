@@ -93,7 +93,9 @@ the core. Historical arm records without this declaration retain their original
 plan; absence is not reinterpreted as today's union default.
 
 Standalone contribution, PD-contributor, coassertion, label-support and KG-coverage
-recount commands expose `--trait-key-policy`. Their compatibility default is
+recount commands expose `--trait-key-policy`; the `pd-trait-contributors` recipe forwards its
+arguments and `table1-taxon-influence-from` takes a `trait_key_policy` parameter. Their
+compatibility default is
 `facultative_union_v1`; historical raw tables require `raw_object_v1` explicitly.
 Each command records the policy it consumed in its accompanying manifest or
 provenance record (stdout for the recount). These standalone readers do not verify
