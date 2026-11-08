@@ -8,9 +8,10 @@ per-study YAML files validated against a [LinkML](https://linkml.io) schema,
 and aggregates KG-Microbe trait annotations for paired comparisons and
 enrichment analyses.
 
-The Python package is `mtp` (`src/mtp/`, `schema/mtp.yaml`); `bsdbng`
-(`src/bsdbng/`, `schema/bsdbng.yaml`), `BSDBNG_*` environment variables, and
-`bsdbng-*` release asset names are retained as compatibility shims.
+The Python package is `mtp` (`src/mtp/`, `schema/mtp.yaml`). `src/bsdbng/` holds
+compatibility shims for the old import path. The legacy `schema/bsdbng.yaml`, the
+`BSDBNG_*` environment variables (such as `BSDBNG_MONGO_URI`) and the `bsdbng-*`
+release assets keep the `bsdbng` name; they have no `mtp` equivalent.
 
 All biological claims, figure captions, and pipeline interpretations follow the
 project-wide biological interpretation guide in [`methods/biological_interpretation.md`](methods/biological_interpretation.md)

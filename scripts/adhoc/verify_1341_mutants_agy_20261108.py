@@ -90,8 +90,8 @@ MUTANTS: tuple[DocMutant, ...] = (
     DocMutant(
         name="M6_readme_reverts_to_package_remains_bsdbng_463",
         rel_path="README.md",
-        target="The Python package is `mtp` (`src/mtp/`, `schema/mtp.yaml`);",
-        replacement="The Python package remains `bsdbng`;",
+        target="The Python package is `mtp` (`src/mtp/`, `schema/mtp.yaml`).",
+        replacement="The Python package remains `bsdbng`.",
     ),
     DocMutant(
         name="M7_readme_reverts_to_unpinned_1900_plus_studies_463",
