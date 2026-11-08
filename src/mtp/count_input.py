@@ -16,6 +16,7 @@ import gzip
 import io
 import json
 from collections.abc import Iterator, Sequence
+from contextlib import nullcontext
 from dataclasses import dataclass
 from pathlib import Path
 from typing import IO, Literal
@@ -176,6 +177,10 @@ class CountTableReader:
     ``count_columns`` is omitted, every column after ``leading_columns`` is a
     count.  Supplying it explicitly is useful for sidecars that also carry
     nonnumeric status/provenance fields.
+
+    A supplied ``text_stream`` belongs to the caller and is consumed once, with
+    one CSV reader spanning header and rows. Path and raw-byte modes remain
+    repeatable and manage their own handles.
     """
 
     def __init__(
@@ -188,19 +193,30 @@ class CountTableReader:
         exact_columns: Sequence[str] | None = None,
         mode: CountInputMode = COMPLETE_COUNT_MODE,
         raw_bytes: bytes | None = None,
+        text_stream: IO[str] | None = None,
     ) -> None:
         if mode not in COUNT_INPUT_MODES:
             raise ValueError(f"Unsupported count input mode: {mode!r}")
+        if raw_bytes is not None and text_stream is not None:
+            raise ValueError("raw_bytes and text_stream cannot both be supplied")
         self.path = path
         self.leading_columns = tuple(leading_columns)
         self.key_columns = tuple(key_columns)
         self.mode = mode
         self._raw_bytes = raw_bytes
+        self._text_stream = text_stream
+        self._stream_reader = (
+            csv.reader(text_stream, delimiter="\t") if text_stream is not None else None
+        )
+        self._stream_consumed = False
         self._rows = 0
         self._blank_counts = 0
 
-        with self._open_text() as handle:
-            header = next(csv.reader(handle, delimiter="\t"), None)
+        if self._stream_reader is not None:
+            header = next(self._stream_reader, None)
+        else:
+            with self._open_text() as handle:
+                header = next(csv.reader(handle, delimiter="\t"), None)
         if header is None:
             raise ValueError(f"{path} is empty")
         self.header = tuple(header)
@@ -274,14 +290,26 @@ class CountTableReader:
         )
 
     def __iter__(self) -> Iterator[CountTableRow]:
+        if self._stream_reader is not None:
+            if self._stream_consumed:
+                raise ValueError(
+                    f"The provided text_stream for {self.path} may be iterated only once"
+                )
+            self._stream_consumed = True
         self._rows = 0
         self._blank_counts = 0
         seen_keys: dict[tuple[str, ...], int] = {}
-        with self._open_text() as handle:
-            reader = csv.reader(handle, delimiter="\t")
-            header = tuple(next(reader, ()))
-            if header != self.header:
-                raise ValueError(f"{self.path} changed after its header was validated")
+        source = (
+            nullcontext(self._text_stream) if self._text_stream is not None else self._open_text()
+        )
+        with source as handle:
+            if self._stream_reader is not None:
+                reader = self._stream_reader
+            else:
+                reader = csv.reader(handle, delimiter="\t")
+                header = tuple(next(reader, ()))
+                if header != self.header:
+                    raise ValueError(f"{self.path} changed after its header was validated")
             for raw_row in reader:
                 line_number = reader.line_num
                 if len(raw_row) != len(self.header):
@@ -326,7 +354,11 @@ class CountTableReader:
 
 
 def profile_count_reader(
-    path: Path, *, mode: CountInputMode = COMPLETE_COUNT_MODE, raw_bytes: bytes | None = None
+    path: Path,
+    *,
+    mode: CountInputMode = COMPLETE_COUNT_MODE,
+    raw_bytes: bytes | None = None,
+    text_stream: IO[str] | None = None,
 ) -> CountTableReader:
     """Return the shared strict reader for study profile count matrices."""
     return CountTableReader(
@@ -335,11 +367,12 @@ def profile_count_reader(
         key_columns=PROFILE_KEY_COLUMNS,
         mode=mode,
         raw_bytes=raw_bytes,
+        text_stream=text_stream,
     )
 
 
 def taxa_trait_count_reader(
-    path: Path, *, mode: CountInputMode = COMPLETE_COUNT_MODE
+    path: Path, *, mode: CountInputMode = COMPLETE_COUNT_MODE, text_stream: IO[str] | None = None
 ) -> CountTableReader:
     """Return the shared strict reader for taxon-by-trait count matrices."""
     return CountTableReader(
@@ -347,6 +380,7 @@ def taxa_trait_count_reader(
         leading_columns=TAXON_MATRIX_PREFIX,
         key_columns=("taxon_id",),
         mode=mode,
+        text_stream=text_stream,
     )
 
 

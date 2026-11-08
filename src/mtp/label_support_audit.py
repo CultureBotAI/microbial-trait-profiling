@@ -8,15 +8,16 @@ import json
 import re
 from collections import Counter, defaultdict, deque
 from collections.abc import Mapping, Sequence
+from contextlib import AbstractContextManager, nullcontext
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Literal
+from typing import IO, Any, Literal
 
 import numpy as np
 import pandas as pd
 from scipy.stats import binomtest
 
-from mtp import madin_source, trait_guilds, trait_key_policy
+from mtp import audit_input_binding, count_input, madin_source, trait_guilds, trait_key_policy
 from mtp import taxa_trait_matrix as matrix_api
 from mtp.count_input import CountTableReader, profile_count_reader, taxa_trait_count_reader
 from mtp.paths import KG_MICROBE_DIR, REPO_ROOT, file_sha256
@@ -127,6 +128,8 @@ def load_kg_provenance_graph(
     nodes_path: Path,
     *,
     strain_rollup: Scope = "off",
+    edges_stream: IO[str] | None = None,
+    nodes_stream: IO[str] | None = None,
 ) -> dict[str, Any]:
     """Read named KG columns; phenotype requires the shared scope API from #828."""
     parents: defaultdict[str, set[str]] = defaultdict(set)
@@ -138,7 +141,7 @@ def load_kg_provenance_graph(
         lambda: defaultdict(set)
     )
     serialization: dict[str, object] = {}
-    for row in kg_inputs.iter_kg_edges(edges_path, serialization):
+    for row in kg_inputs.iter_kg_edges(edges_path, serialization, text_stream=edges_stream):
         if "primary_knowledge_source" not in row:
             raise ValueError(f"{edges_path.name}: missing required column primary_knowledge_source")
         subject, predicate, obj = (row[key].strip() for key in ("subject", "predicate", "object"))
@@ -181,7 +184,12 @@ def load_kg_provenance_graph(
             children[parent].add(child)
     trait_object_ids = {key.split("|", 1)[-1] for key in sources}
     names = {}
-    with nodes_path.open(encoding="utf-8", newline="") as handle:
+    input_context = (
+        nullcontext(nodes_stream)
+        if nodes_stream is not None
+        else nodes_path.open(encoding="utf-8", newline="")
+    )
+    with input_context as handle:
         reader = csv.DictReader(handle, delimiter="\t")
         _require_columns(reader, {"id", "name"}, nodes_path)
         for row in reader:
@@ -200,12 +208,19 @@ def load_kg_provenance_graph(
     }
 
 
-def load_madin_subsources(path: Path | None) -> dict[str, dict[str, set[str]]]:
+def load_madin_subsources(
+    path: Path | None, *, text_stream: IO[str] | None = None
+) -> dict[str, dict[str, set[str]]]:
     """Resolve declared Madin field/value mappings; omitted input remains unknown."""
     result: defaultdict[str, defaultdict[str, set[str]]] = defaultdict(lambda: defaultdict(set))
     if path is None:
         return {}
-    with path.open(encoding="utf-8", newline="") as handle:
+    input_context = (
+        nullcontext(text_stream)
+        if text_stream is not None
+        else path.open(encoding="utf-8", newline="")
+    )
+    with input_context as handle:
         reader = csv.DictReader(handle)
         _require_columns(reader, {"tax_id", "data_source"}, path)
         if not any(field in (reader.fieldnames or []) for field, _ in MADIN_RULES.values()):
@@ -245,10 +260,19 @@ def _read_counts(reader: CountTableReader) -> pd.DataFrame:
 
 
 def bind_occurrences(
-    taxa_path: Path, matrix: pd.DataFrame, profiles: pd.DataFrame
+    taxa_path: Path,
+    matrix: pd.DataFrame,
+    profiles: pd.DataFrame,
+    *,
+    text_stream: IO[str] | None = None,
 ) -> tuple[pd.DataFrame, Row]:
     """Restrict to exact profile keys, then reconcile all count columns before analysis."""
-    occurrences = pd.read_csv(taxa_path, sep="\t", dtype=str, keep_default_na=False)
+    occurrences = pd.read_csv(
+        taxa_path if text_stream is None else text_stream,
+        sep="\t",
+        dtype=str,
+        keep_default_na=False,
+    )
     required = {"study_id", "experiment_id", "direction", "taxon_id"}
     if missing := required - set(occurrences):
         raise ValueError(f"Occurrence table missing columns: {sorted(missing)}")
@@ -354,6 +378,8 @@ def build_label_support_tables(
     member_ids_by_trait: Mapping[str, tuple[str, ...]] | None = None,
 ) -> tuple[list[Row], list[Row], list[Row]]:
     """Reconcile carrier counts and export source evidence without changing the matrix."""
+    if column_metadata_path is not None and member_ids_by_trait is not None:
+        raise ValueError("Supply either column_metadata_path or member_ids_by_trait, not both")
     support, focal, evidence = [], [], []
     counts = matrix.set_index("taxon_id")
     if member_ids_by_trait is None:
@@ -608,6 +634,15 @@ def _inventory(path: Path, *, allow_absent: bool = False) -> Row:
     return {"path": display, "sha256": file_sha256(path), "size_bytes": path.stat().st_size}
 
 
+def _bound_text(
+    path: Path, record: Row, *, compressed: bool = False
+) -> AbstractContextManager[IO[str]]:
+    """Tie a parser's raw stream to the preflight identity, preserving bounded reads."""
+    return audit_input_binding.verified_input_text(
+        path, record["sha256"], record["size_bytes"], gzip_compressed=compressed
+    )
+
+
 def run_label_support_audit(
     *,
     taxa_path: Path,
@@ -663,14 +698,43 @@ def run_label_support_audit(
         record = provenance_inputs["madin"]
         madin_source.verify_madin_record(madin_csv.name, record["size_bytes"], record["sha256"])
         madin_status = "pinned_verified"
-    matrix = _read_counts(taxa_trait_count_reader(matrix_path))
-    profiles = _read_counts(profile_count_reader(profiles_path))
-    occurrences, scope_facts = bind_occurrences(taxa_path, matrix, profiles)
-    graph = load_kg_provenance_graph(edges_path, nodes_path, strain_rollup=strain_rollup)
-    madin = load_madin_subsources(madin_csv)
-    member_evidence = read_recorded_member_evidence(
-        columns if "sha256" in provenance_inputs["column_metadata"] else None
-    )
+    with _bound_text(
+        matrix_path, provenance_inputs["matrix"], compressed=matrix_path.suffix.lower() == ".gz"
+    ) as stream:
+        matrix = _read_counts(taxa_trait_count_reader(matrix_path, text_stream=stream))
+    with _bound_text(
+        profiles_path,
+        provenance_inputs["profiles"],
+        compressed=profiles_path.suffix.lower() == ".gz",
+    ) as stream:
+        profiles = _read_counts(profile_count_reader(profiles_path, text_stream=stream))
+    with _bound_text(
+        taxa_path, provenance_inputs["taxa"], compressed=taxa_path.suffix.lower() == ".gz"
+    ) as stream:
+        occurrences, scope_facts = bind_occurrences(taxa_path, matrix, profiles, text_stream=stream)
+    with (
+        _bound_text(edges_path, provenance_inputs["kg_edges"]) as edges_stream,
+        _bound_text(nodes_path, provenance_inputs["kg_nodes"]) as nodes_stream,
+    ):
+        graph = load_kg_provenance_graph(
+            edges_path,
+            nodes_path,
+            strain_rollup=strain_rollup,
+            edges_stream=edges_stream,
+            nodes_stream=nodes_stream,
+        )
+    if madin_csv is None:
+        madin = load_madin_subsources(None)
+    else:
+        with _bound_text(madin_csv, provenance_inputs["madin"]) as stream:
+            madin = load_madin_subsources(madin_csv, text_stream=stream)
+    if "sha256" not in provenance_inputs["column_metadata"]:
+        member_evidence = read_recorded_member_evidence(None)
+    else:
+        with _bound_text(
+            columns, provenance_inputs["column_metadata"], compressed=columns.suffix == ".gz"
+        ) as stream:
+            member_evidence = read_recorded_member_evidence(columns, text_stream=stream)
     support, focal, evidence = build_label_support_tables(
         graph,
         matrix,
@@ -705,6 +769,14 @@ def run_label_support_audit(
     provenance_inputs["column_metadata"].update(
         selection="explicit" if column_metadata_path is not None else "sibling_default",
         member_id_rows=member_evidence.member_id_rows,
+        label_changed_trait_ids=sorted(
+            {
+                row["trait_key"]
+                for rows in (support, focal)
+                for row in rows
+                if row["trait_label"] != _trait_label(row["trait_key"], graph["names"])
+            }
+        ),
     )
     output_dir.mkdir(parents=True, exist_ok=True)
     for name, (rows, empty_columns) in tables.items():
@@ -722,6 +794,9 @@ def run_label_support_audit(
         "madin_pin": madin_source.MADIN_PIN.descriptor(),
         "madin_rules": MADIN_RULES,
         "producer": _inventory(Path(__file__)),
+        "input_binding_code": _inventory(Path(audit_input_binding.__file__)),
+        "count_reader_code": _inventory(Path(count_input.__file__)),
+        "input_binding": "raw_bytes_hashed_during_parse_v1",
         "matrix_policy_code": _inventory(Path(matrix_api.__file__)),
         "kg_parser_code": _inventory(Path(kg_inputs.__file__)),
         "trait_definitions_code": _inventory(Path(trait_guilds.__file__)),
