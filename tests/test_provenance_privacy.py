@@ -586,3 +586,40 @@ def test_reader_refuses_a_home_prefix_crossing_below_the_root(
             path_basis={"kind": "root-relative-v1", "root": "."},
         )
     assert str(root) not in str(error.value)
+
+
+@pytest.mark.parametrize("prefix", ["", "C:", "\\", "\\\\server\\share\\"])
+@pytest.mark.parametrize("separator", ["\\", "\\\\"])
+@pytest.mark.parametrize("context", ["bare", "json", "prose"])
+def test_windows_home_spellings_are_refused_in_metadata(
+    api: ModuleType, prefix: str, separator: str, context: str
+) -> None:
+    """Windows home spellings must not depend on the host OS or reader login (#1830)."""
+    value = prefix + "uSeRs" + separator + "otherresident" + separator + "file.tsv"
+    text = (
+        json.dumps({"diagnostic": value})
+        if context == "json"
+        else "Unable to read " + value + "; retry."
+        if context == "prose"
+        else value
+    )
+    with pytest.raises(ValueError, match="Provenance contains a local path or local prefix"):
+        api.assert_portable_text(text)
+
+
+@pytest.mark.parametrize("prefix", ["some", "x_", "x-", "noel-delta-"])
+def test_windows_relative_safe_word_prefixes_remain_accepted(api: ModuleType, prefix: str) -> None:
+    text = prefix + "Users" + "\\" + "otherresident" + "\\" + "file.tsv"
+    try:
+        api.assert_portable_text(text)
+    except ValueError as error:
+        raise AssertionError("A word/internal-hyphen prefix is not a Windows home") from error
+
+
+@pytest.mark.parametrize("prefix", ["-", "--", "x -", "="])
+def test_windows_relative_home_is_not_exempt_after_a_delimiter(
+    api: ModuleType, prefix: str
+) -> None:
+    text = prefix + "Users" + "\\" + "otherresident" + "\\" + "file.tsv"
+    with pytest.raises(ValueError, match="Provenance contains a local path or local prefix"):
+        api.assert_portable_text(text)

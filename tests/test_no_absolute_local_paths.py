@@ -4,7 +4,8 @@ What the guard matches:
 
 - user homes: macOS ``Users`` and Linux ``home`` directories followed by a user name,
   with or without a trailing slash (a JSON value can end at the name), and Windows
-  homes after a drive letter with back, forward, mixed or JSON-escaped separators;
+  homes after a drive letter with back, forward, mixed or JSON-escaped separators,
+  drive-relative homes, rooted/UNC Users components, and relative backslash homes;
 - macOS temp roots: the per-user ``var/folders`` directory, with or without the
   ``/private`` prefix (``$TMPDIR`` and ``tempfile.gettempdir()`` give it without),
   and ``tmp`` under ``/private``.
@@ -513,11 +514,11 @@ FAMILY_SAMPLES: tuple[tuple[str, str], ...] = (
     (USER_HOME, '{"root": "/' + 'Users/alice"}'),
     (USER_HOME, "/" + "home/bob/work/project/file.tsv"),
     (USER_HOME, "cwd=/" + "home/bob"),
-    (USER_HOME, "C:\\" + "Users\\carol\\Documents\\file.tsv"),
+    (USER_HOME, "C:\\" + "Users" + "\\carol\\Documents\\file.tsv"),
     (USER_HOME, "C:/" + "Users/carol/Documents/file.tsv"),
-    (USER_HOME, "C:/" + "Users\\carol\\file.tsv"),
+    (USER_HOME, "C:/" + "Users" + "\\carol\\file.tsv"),
     (USER_HOME, "C:\\" + "Users/carol/file.tsv"),
-    (USER_HOME, '{"path": "C:\\\\' + 'Users\\\\carol\\\\file.tsv"}'),
+    (USER_HOME, '{"path": "C:\\\\' + "Users" + '\\\\carol\\\\file.tsv"}'),
     (TEMP_ROOT, "/" + "private/var" + "/" + "folders/ab/cd1234/T/run/out.json"),
     (TEMP_ROOT, "/" + "var/folders/ab/cd1234/T/run/out.json"),
     (TEMP_ROOT, "/" + "private/tmp/mtp-run/out.json"),

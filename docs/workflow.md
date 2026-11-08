@@ -349,11 +349,29 @@ also accept site-specific homes beneath parents ending in `-home` or `-Users`,
 such as `/nfs-home/<account>/x.tsv` and `/srv/data-Users/<account>/x.tsv`, and
 temp-like spellings such as `x-private/tmp/...` and `x-var/folders/...`. These
 patterns do not recognize every site's home or temporary-directory layout.
-Standard Unix home prefixes and drive-letter Windows user-profile prefixes
-(a drive letter, a colon, then `Users` with either separator) remain refused in
-bare, quoted, JSON and prose text. Driveless and UNC Windows profile paths
-(a leading backslash or a `\\server` share before `Users`) are not recognized by
-these text checks (#1830).
+Standard Unix home prefixes and Windows user-profile prefixes remain refused in
+bare, quoted, JSON and prose text. Windows forms include drive-rooted and
+drive-relative paths, rooted paths without a drive, UNC paths containing a
+backslash-delimited `Users` component, and relative paths with `Users` followed by
+a backslash separator. Single, doubled/JSON-escaped and mixed separators are
+recognized. Relative Windows spellings keep the same word/internal-hyphen
+boundary as slashless Unix spellings: a directory such as `x-Users` is accepted,
+while a leading or standalone hyphen does not exempt `Users`. The repository
+text guard uses these Windows patterns case-sensitively; provenance uses them
+case-insensitively. Custom share layouts without a `Users` component remain
+outside these text checks (#1682).
+
+For the added drive-relative, driveless-rooted, UNC and relative Windows forms,
+a separator must be followed by an account character. A single backslash
+followed by a JSON escape introducer (`n`, `t`, `r`, `b`, `f`, `"`, `/` or `u`)
+is accepted as ambiguous text. Thus a raw relative Windows spelling with `Users`,
+a single backslash and the account `nancy` is accepted; its JSON serialization
+has doubled backslashes and is refused. Uppercase initials such as `Nancy` are
+not JSON escapes and remain refused. A trailing escaped backslash pair without
+an account is accepted. This deliberate false-negative trade-off lets ordinary
+JSON diagnostics mention users before a newline, tab, quote or Unicode escape.
+Serialize real Windows paths as JSON to avoid that raw-text ambiguity. Existing
+drive-rooted Windows and Unix prefix checks retain their previous behavior.
 Path locators still undergo the separate root, containment and writer-account
 checks. The writer-account check refuses a directory containing the writer's
 account token, including two- and three-character names; the generic `root` login
