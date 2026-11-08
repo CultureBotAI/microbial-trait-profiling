@@ -78,6 +78,8 @@ def read_display_edges(path: Path) -> pd.DataFrame:
         "focus_enriched_minus_comparator_guild_z",
         "rank_score",
     ]
+    # These columns stay int64 when complete but become float64 after fillna when a
+    # value is missing, so downstream casts on them say float, not int (#2012).
     for column in numeric_columns:
         frame[column] = pd.to_numeric(frame[column], errors="coerce").fillna(0.0)
     return frame
