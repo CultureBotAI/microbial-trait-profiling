@@ -1,7 +1,7 @@
 ================================================================================
 TRAIT COUPLING SENSITIVITY AUDIT REPORT (Issue #260)
 ================================================================================
-Code commit: 8b280a399d71a36d2f8eec639800f282503eeb93
+Code commit: 0b046fddec68db11dea0d53f6647d0eabcfd6108
 
 1. LEAVE-ONE-TRAIT-OUT (LOTO) - COMPOSITION DELTA EFFECT MATRIX (6 x 6):
    Rows: Dropped Trait | Columns: Evaluated Trait
@@ -68,6 +68,6 @@ a. Denominator Coupling Sensitivity by Analytical Arm:
    In the directional sign-test arm, maximum |Delta share_up| is 0.006553; in the ORA arm, maximum |Delta mean_fold| is 0.073474 as removing high-count traits shrinks the shared background urn M. Note that focal-set BH q-values above are evaluated over m=6 (baseline), m=5 (LOTO), and m=4 (LCO) traits as a sensitivity check rather than full-family Table 1 q-values.
 
 b. Distinction Between Redundancy and Denominator Coupling:
-   Coccus and sphere correlate strongly (r = +0.797, VIF = 2.74, Issue #264) due to semantic/curation redundancy in METPO mappings, NOT denominator distortion.
+   Coccus and sphere annotation counts: profile correlation summary (r = +0.797, VIF = 2.74, Issue #264). These statistics do not establish the cause of the association.
    Because total non-MediaDive annotation counts are distributed across 317 columns (119.80M annotations), removing even a high-annotation trait like coccus (4.43M counts) shrinks the denominator smoothly without tilting relative compositions. Therefore, while coccus and sphere should not be claimed as independent biological mechanisms (due to semantic overlap), their Table 1 statistics are structurally stable.
 ================================================================================
