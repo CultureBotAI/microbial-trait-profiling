@@ -42,28 +42,33 @@ a NUL byte plus the contents must equal the documented Git blob ID. The manifest
 also covers every preserved source file in this folder. These are content
 identity checks, not cryptographic authentication of the historical claims.
 
-## Exact scope of the source pins (#1596)
+## Scope of the source pins (#1596)
 
-These tests bind selected displayed values and labels to identified historical
-sources. They do not pin every numeric token or every repeated occurrence,
+The table below lists what `test_cellulose_tufte_statistics_sources.py` binds to
+identified historical sources; the other test files are summarised after it. These
+tests bind selected displayed values and labels to identified historical sources. They do not pin every numeric token or every repeated occurrence,
 validate confidence-interval geometry, rerun statistical analyses, or establish
 scientific validity. Fixture byte identity protects the source, not all claims
 made by a plate. No broader numeric-token coverage is claimed by this change.
 
 | Test in `test_cellulose_tufte_statistics_sources.py` | Values pinned |
 |---|---|
-| `test_plate_five_shared_corpus_and_cascade_match_the_pinned_methods` | Plate V subtitle and cascade profile, experiment, study and retained-trait counts. |
+| `test_plate_five_shared_corpus_and_cascade_match_the_pinned_methods` | Plate V subtitle and cascade profile, experiment, study and retained-trait counts, including the two cascade drop counts (1,500 non-human rows and 1,159 unpaired rows). |
 | `test_plate_five_fraction_labels_match_the_tracked_validation_rows` | Six selected fraction summaries: proportions, displayed sample counts, q-values and stars; CEL's summary has no sample count. |
 | `test_plate_five_ratio_labels_match_the_tracked_validation_rows` | Four selected ratio summaries (FA/CEL, FA/COC, CEL/SPH, CEL/ARS), plus three displayed effects; no confidence-interval geometry. |
 | `test_plate_five_retained_trait_family_matches_the_matrix_source` | Matrix column counts and the displayed six-trait/fifteen-ratio family sizes. |
-| `test_plate_five_ora_numbers_match_the_historical_export_audit` | Selected pooled ORA profile, test and hit totals, using the separately dated tracked export audit. |
+| `test_plate_five_ora_numbers_match_the_historical_export_audit` | Selected pooled ORA profile, test and hit totals, read from the tracked export audit in docs/reviews/, which is a live document, not a snapshot here (#1993). |
 | `test_plate_six_cell_counts_match_the_historical_inventory` | Four cell-state counts and percentages. |
 | `test_plate_six_total_rows_match_the_historical_methods_snapshot` | Selected overall, method and grid-row totals. |
 | `test_plate_six_method_counts_match_the_historical_methods_snapshot` | Fraction-direction and log-ratio-direction row counts and two q-threshold counts. |
 
-`test_cellulose_tufte_overlap_sources.py` covers selected set and direction labels.
+`test_cellulose_tufte_overlap_sources.py` pins selected set sizes and direction labels
+for Plates I to IV and figures 7 to 9; it is summarised here, not tabulated.
 `test_cellulose_tufte_historical_labels.py` checks historical/nominal-p wording and
-current producer image routes; it does not establish comprehensive numerical
+current producer image routes, and also literal-pins some displayed numbers (for
+example a Plate II p-value and a Plate V enrichment count) as change detectors, not
+as source pins. `test_cellulose_tufte_source_pin_mutations.py` checks that the pins
+above fail on targeted mutations. None of these establishes comprehensive numerical
 provenance. The historical #1573 review's token counts are not a current coverage
 measurement. Its examples outside these pins include repeated union/disease/set
 size sentences in fig7 and fig9, narrative duplicates in Plates I/III/IV, Plate V's

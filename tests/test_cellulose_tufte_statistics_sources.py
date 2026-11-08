@@ -316,5 +316,7 @@ def test_historical_fixture_bytes_equal_the_documented_git_blob(fixture: str) ->
 
 
 def test_plate_five_validation_is_a_documented_historical_fixture() -> None:
-    assert VALIDATION.parent == HISTORICAL, "Plate V must not bind its historical numbers to HEAD"
+    assert VALIDATION.parent == HISTORICAL, (
+        "Plate V's methods-validation numbers must read the historical snapshot, not HEAD"
+    )
     assert _fixture_manifest()[VALIDATION.name][1] == "methods/table1_log_ratio_validation.md"
