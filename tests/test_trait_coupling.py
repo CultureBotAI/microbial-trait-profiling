@@ -606,3 +606,51 @@ def test_cli_main_handles_error(tmp_path: Path) -> None:
     bad_profiles = tmp_path / "does_not_exist.tsv"
     exit_code = module.main([f"--profiles={bad_profiles}"])
     assert exit_code == 1
+
+
+@pytest.mark.parametrize(
+    ("metrics", "summary"),
+    [
+        (
+            {"coccus_sphere_r": 0.0123, "coccus_sphere_vif": 1.25},
+            " (r = +0.012, VIF = 1.25, Issue #264)",
+        ),
+        (
+            {"coccus_sphere_r": -0.65, "coccus_sphere_vif": 1.73},
+            " (r = -0.650, VIF = 1.73, Issue #264)",
+        ),
+        (
+            {"coccus_sphere_r": 0.0, "coccus_sphere_vif": 1.0},
+            " (r = +0.000, VIF = 1.00, Issue #264)",
+        ),
+        (None, " (Issue #264)"),
+    ],
+)
+def test_coupling_correlation_sentence_reports_statistics_without_attributing_cause(
+    metrics: dict[str, float | int] | None, summary: str
+) -> None:
+    """Correlation, including weak/negative/zero values, does not establish a cause (#1856)."""
+    rule = DecisionRuleResult(
+        target_trait_id=COCCUS_ID,
+        target_trait_name="coccus shaped",
+        dropped_trait_id=SPHERE_ID,
+        dropped_trait_name="sphere shaped",
+        delta_effect=0.001,
+        abs_delta_effect=0.001,
+        min_adjacent_distance=0.005,
+        passes_stability_criterion=True,
+        adjacent_distances=[0.005],
+        sorted_effects=[0.01, 0.015],
+        verdict="Passes",
+    )
+    report = build_coupling_report_text(
+        pd.DataFrame(), pd.DataFrame(), [], rule, rule, corpus_metrics=metrics
+    )
+    sentence = next(line for line in report.splitlines() if line.startswith("   Coccus"))
+    assert sentence == (
+        "   Coccus and sphere annotation counts: profile correlation summary"
+        + summary
+        + ". These statistics do not establish the cause of the association."
+    )
+    assert "NOT denominator distortion" not in report
+    assert "due to semantic/curation redundancy" not in report

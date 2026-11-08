@@ -708,8 +708,8 @@ def build_coupling_report_text(
             "",
             "b. Distinction Between Redundancy and Denominator Coupling:",
             (
-                f"   Coccus and sphere correlate strongly{twin_stats_str} due to "
-                f"semantic/curation redundancy in METPO mappings, NOT denominator distortion."
+                f"   Coccus and sphere annotation counts: profile correlation summary"
+                f"{twin_stats_str}. These statistics do not establish the cause of the association."
             ),
             (
                 f"   Because total non-MediaDive annotation counts are distributed across "
