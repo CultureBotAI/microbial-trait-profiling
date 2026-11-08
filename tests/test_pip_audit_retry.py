@@ -432,7 +432,7 @@ def test_restores_vuln_service_connection_error_after_normal_and_exception_runs(
         return spec, []
 
     monkeypatch.setattr(pypi_service_cls, "query", clean_query)
-    cli_mod.VulnServiceConnectionError = interface_mod.ConnectionError
+    monkeypatch.setattr(cli_mod, "VulnServiceConnectionError", interface_mod.ConnectionError)
     exit_code = run_pip_audit.run_pip_audit(
         argv,
         max_attempts=2,
@@ -449,7 +449,7 @@ def test_restores_vuln_service_connection_error_after_normal_and_exception_runs(
         raise service_error_cls("Non-network failure")
 
     monkeypatch.setattr(pypi_service_cls, "query", exploding_query)
-    cli_mod.VulnServiceConnectionError = interface_mod.ConnectionError
+    monkeypatch.setattr(cli_mod, "VulnServiceConnectionError", interface_mod.ConnectionError)
     with pytest.raises(service_error_cls, match="Non-network failure"):
         run_pip_audit.run_pip_audit(
             argv,
@@ -460,8 +460,11 @@ def test_restores_vuln_service_connection_error_after_normal_and_exception_runs(
     assert cli_mod.VulnServiceConnectionError is interface_mod.ConnectionError
     assert cli_mod.VulnServiceConnectionError is vuln_conn_error_cls
 
-    # Also verify recovery when VulnServiceConnectionError was dirty prior to invocation.
-    cli_mod.VulnServiceConnectionError = Exception
+    # A valid caller-owned override must be restored, rather than replaced by a default.
+    class PreviousConnectionError(Exception):
+        """A prior binding that belongs to the caller."""
+
+    monkeypatch.setattr(cli_mod, "VulnServiceConnectionError", PreviousConnectionError)
     with pytest.raises(service_error_cls, match="Non-network failure"):
         run_pip_audit.run_pip_audit(
             argv,
@@ -469,7 +472,7 @@ def test_restores_vuln_service_connection_error_after_normal_and_exception_runs(
             stdout=io.StringIO(),
             stderr=io.StringIO(),
         )
-    assert cli_mod.VulnServiceConnectionError is interface_mod.ConnectionError
+    assert cli_mod.VulnServiceConnectionError is PreviousConnectionError
 
 
 @pytest.mark.parametrize(

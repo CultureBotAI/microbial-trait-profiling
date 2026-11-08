@@ -1,13 +1,15 @@
-"""Run pip-audit with bounded retries on transient network errors (#1113).
+"""Run pip-audit with typed, bounded transient-network retries (#1113, #1185).
 
-Transient vulnerability-feed disconnects (such as PyPI or OSV closing a TLS
-connection mid-read, connection timeouts, or HTTP 408/429/5xx responses) are
-retried with exponential backoff up to a bounded attempt count.
+Only a completed successful audit exits zero. Findings and usage errors retain
+pip-audit's nonzero codes; exhausted transient errors use 3, distinct from
+argparse's 2. Certificate/TLS, proxy, redirect and unclassified HTTP failures
+are not retried, even beneath a broader connection-error wrapper.
 
-Vulnerability findings and non-network failures (such as malformed versions,
-HTTP 4xx client errors, or invalid CLI/source arguments) fail immediately on
-the first attempt without retry, and persistent network failures exit with code
-2 and an explicit diagnostic distinguishing them from vulnerability findings.
+The serial in-process adapter retains exception types instead of classifying
+stderr text. It checks the installed private API before capture and restores
+its actual prior bindings. Console output streams live, preserving retry
+attempts and logging prefixes. See docs/pip_audit_retry.md for the subprocess
+tradeoff and the process-global, single-threaded scope of this adapter.
 """
 
 from __future__ import annotations
@@ -17,75 +19,124 @@ import http.client
 import importlib
 import io
 import logging
+import ssl
 import sys
 import time
 from collections.abc import Callable, Iterator, Sequence
+from functools import partial
+from importlib.metadata import PackageNotFoundError, version
 from typing import Any, TextIO
 
 DEFAULT_MAX_ATTEMPTS = 4
 DEFAULT_INITIAL_BACKOFF_SECONDS = 2.0
 DEFAULT_BACKOFF_FACTOR = 2.0
-NETWORK_FAILURE_EXIT_CODE = 2
+NETWORK_FAILURE_EXIT_CODE = 3
 TRANSIENT_HTTP_STATUS_CODES = frozenset({408, 429})
 
 
-class _UnmatchedVulnServiceConnectionError(Exception):
-    """Sentinel class replacing pip_audit._cli.VulnServiceConnectionError.
+class PipAuditCompatibilityError(RuntimeError):
+    """The installed pip-audit no longer exposes the adapter's required API."""
 
-    pip_audit._cli.audit() catches VulnServiceConnectionError and calls
-    sys.exit(1). Temporarily rebinding that name inside pip_audit._cli lets
-    pip_audit._service.interface.ConnectionError propagate as an exception to
-    our retry loop instead of terminating via SystemExit(1).
-    """
+
+class _UnmatchedVulnServiceConnectionError(Exception):
+    """Leave the real service error uncaught by pip-audit's CLI exit handler."""
+
+
+def _compatibility_error(detail: str) -> PipAuditCompatibilityError:
+    try:
+        installed = version("pip-audit")
+    except PackageNotFoundError:
+        installed = "(distribution metadata unavailable)"
+    return PipAuditCompatibilityError(f"pip-audit {installed}: incompatible adapter API: {detail}")
+
+
+def _import_api(name: str) -> Any:
+    try:
+        return importlib.import_module(name)
+    except ImportError as error:
+        raise _compatibility_error(f"cannot import {name}: {error}") from error
+
+
+def _exception_class(module: Any, name: str) -> type[Exception]:
+    value = getattr(module, name, None)
+    if not isinstance(value, type) or not issubclass(value, Exception):
+        raise _compatibility_error(f"{module.__name__}.{name} is missing or not an exception class")
+    return value
+
+
+def _prepare_pip_audit() -> tuple[Any, type[Exception]]:
+    # Import outside capture: basicConfig must not retain attempt 1's buffer.
+    cli_mod = _import_api("pip_audit._cli")
+    service_mod = _import_api("pip_audit._service.interface")
+    connection_error = _exception_class(service_mod, "ConnectionError")
+    _exception_class(cli_mod, "VulnServiceConnectionError")
+    if not callable(getattr(cli_mod, "audit", None)):
+        raise _compatibility_error("pip_audit._cli.audit is missing or not callable")
+    return cli_mod, connection_error
 
 
 def _iter_exception_chain(exc: BaseException) -> Iterator[BaseException]:
-    """Yield ``exc`` and its linked ``__cause__`` / ``__context__`` chain."""
+    """Visit causes/contexts and structured urllib3 reasons, once per exception."""
     seen: set[int] = set()
-    current: BaseException | None = exc
-    while current is not None and id(current) not in seen:
+    pending = [exc]
+    while pending:
+        current = pending.pop()
+        if id(current) in seen:
+            continue
         seen.add(id(current))
         yield current
-        current = current.__cause__ if current.__cause__ is not None else current.__context__
+        cause = current.__cause__ if current.__cause__ is not None else current.__context__
+        for linked in (getattr(current, "reason", None), cause):
+            if isinstance(linked, BaseException):
+                pending.append(linked)
 
 
 def _is_transient_http_status(status_code: object) -> bool:
-    if not isinstance(status_code, int):
+    if not isinstance(status_code, int) or isinstance(status_code, bool):
         return False
     return status_code in TRANSIENT_HTTP_STATUS_CODES or 500 <= status_code < 600
 
 
-def is_transient_network_error(exc: BaseException) -> bool:
-    """Return True when ``exc`` was caused by a transient network/HTTP failure."""
+def is_transient_network_error(
+    exc: BaseException, *, service_connection_error: type[Exception] | None = None
+) -> bool:
+    """Retry known transient causes only; permanent causes override broad wrappers."""
     requests_exceptions: Any = importlib.import_module("requests.exceptions")
     urllib3_exceptions: Any = importlib.import_module("urllib3.exceptions")
-    pip_audit_interface: Any = importlib.import_module("pip_audit._service.interface")
-
-    vuln_conn_error_cls = pip_audit_interface.ConnectionError
-    http_error_cls = requests_exceptions.HTTPError
-    transient_request_classes = (
-        vuln_conn_error_cls,
+    if service_connection_error is None:
+        service_connection_error = _exception_class(
+            _import_api("pip_audit._service.interface"), "ConnectionError"
+        )
+    chain = list(_iter_exception_chain(exc))
+    permanent_classes = (
+        requests_exceptions.SSLError,
+        requests_exceptions.ProxyError,
+        requests_exceptions.TooManyRedirects,
+        urllib3_exceptions.SSLError,
+        urllib3_exceptions.ProxyError,
+        ssl.SSLError,
+    )
+    if any(isinstance(item, permanent_classes) for item in chain):
+        return False
+    http_errors = [item for item in chain if isinstance(item, requests_exceptions.HTTPError)]
+    if any(
+        not _is_transient_http_status(getattr(getattr(item, "response", None), "status_code", None))
+        for item in http_errors
+    ):
+        return False
+    transient_classes = (
+        service_connection_error,
         requests_exceptions.ConnectionError,
         requests_exceptions.Timeout,
         requests_exceptions.ChunkedEncodingError,
-        requests_exceptions.TooManyRedirects,
-        requests_exceptions.RetryError,
-        urllib3_exceptions.HTTPError,
-        http.client.HTTPException,
+        urllib3_exceptions.ProtocolError,
+        urllib3_exceptions.TimeoutError,
+        http.client.BadStatusLine,
+        http.client.IncompleteRead,
         ConnectionError,
         TimeoutError,
     )
-
-    for item in _iter_exception_chain(exc):
-        if isinstance(item, http_error_cls):
-            response = getattr(item, "response", None)
-            if response is None:
-                return True
-            status_code = getattr(response, "status_code", None)
-            return _is_transient_http_status(status_code)
-        if isinstance(item, transient_request_classes):
-            return True
-    return False
+    return bool(http_errors) or any(isinstance(item, transient_classes) for item in chain)
 
 
 def _format_exception_detail(exc: BaseException) -> str:
@@ -110,36 +161,101 @@ def _normalize_exit_code(code: object) -> int:
     return 1
 
 
-def _invoke_pip_audit_cli(argv: Sequence[str]) -> None:
-    cli_mod: Any = importlib.import_module("pip_audit._cli")
-    pip_audit_interface: Any = importlib.import_module("pip_audit._service.interface")
-    saved_argv = sys.argv[:]
-    sys.argv = ["pip-audit", *argv]
-    cli_mod.VulnServiceConnectionError = _UnmatchedVulnServiceConnectionError
+def _invoke_pip_audit_cli(argv: Sequence[str], *, cli_mod: Any = None) -> None:
+    if cli_mod is None:
+        cli_mod, _ = _prepare_pip_audit()
+    saved_error = _exception_class(cli_mod, "VulnServiceConnectionError")
+    saved_argv = sys.argv
     try:
+        sys.argv = ["pip-audit", *argv]
+        cli_mod.VulnServiceConnectionError = _UnmatchedVulnServiceConnectionError
         raise SystemExit(cli_mod.audit())
     finally:
-        cli_mod.VulnServiceConnectionError = pip_audit_interface.ConnectionError
+        cli_mod.VulnServiceConnectionError = saved_error
         sys.argv = saved_argv
 
 
+class _AttemptStream(io.TextIOBase):
+    """Forward output immediately, optionally retaining stderr for finding labels."""
+
+    def __init__(self, target: TextIO, capture: io.StringIO | None = None) -> None:
+        self.target = target
+        self.capture = capture
+
+    def write(self, text: str) -> int:
+        if self.capture is not None:
+            self.capture.write(text)
+        written = self.target.write(text)
+        self.target.flush()
+        return written
+
+    def flush(self) -> None:
+        self.target.flush()
+
+    def isatty(self) -> bool:
+        return self.target.isatty()
+
+    def fileno(self) -> int:
+        return self.target.fileno()
+
+
 @contextlib.contextmanager
-def _capture_attempt_streams() -> Iterator[tuple[io.StringIO, io.StringIO]]:
-    buf_out = io.StringIO()
-    buf_err = io.StringIO()
-    pip_audit_logger = logging.getLogger("pip_audit")
-    temp_handler = logging.StreamHandler(buf_err)
-    saved_handlers = list(pip_audit_logger.handlers)
-    saved_propagate = pip_audit_logger.propagate
-    pip_audit_logger.handlers = [temp_handler]
-    pip_audit_logger.propagate = False
+def _capture_attempt_streams(stdout: TextIO, stderr: TextIO) -> Iterator[io.StringIO]:
+    captured_error = io.StringIO()
+    live_out = _AttemptStream(stdout)
+    live_err = _AttemptStream(stderr, captured_error)
+    original_out, original_err = sys.stdout, sys.stderr
+    root = logging.getLogger()
+    package = logging.getLogger("pip_audit")
+    restored_streams: list[tuple[Any, Any]] = []
+    added_handlers: list[tuple[logging.Logger, logging.Handler]] = []
+    console_loggers: set[logging.Logger] = set()
+    seen_handlers: set[int] = set()
     try:
-        with contextlib.redirect_stdout(buf_out), contextlib.redirect_stderr(buf_err):
-            yield buf_out, buf_err
+        for logger in (root, package):
+            for handler in logger.handlers:
+                if not isinstance(handler, logging.StreamHandler):
+                    continue
+                if id(handler) in seen_handlers:
+                    console_loggers.add(logger)
+                    continue
+                if handler.stream is original_err or handler.stream is stderr:
+                    destination = live_err
+                elif handler.stream is original_out or handler.stream is stdout:
+                    destination = live_out
+                else:
+                    continue
+                console_loggers.add(logger)
+                if id(handler) not in seen_handlers:
+                    previous = handler.setStream(destination)
+                    restored_streams.append((handler, previous))
+                    seen_handlers.add(id(handler))
+        if root not in console_loggers:
+            handler = logging.StreamHandler(live_err)
+            handler.setFormatter(logging.Formatter(logging.BASIC_FORMAT))
+            if package in console_loggers:
+                # Keep capture/file handlers, without duplicating a package console line.
+                handler.addFilter(
+                    lambda record: (
+                        not (record.name == "pip_audit" or record.name.startswith("pip_audit."))
+                    )
+                )
+            root.addHandler(handler)
+            added_handlers.append((root, handler))
+        if not package.propagate and package not in console_loggers:
+            handler = logging.StreamHandler(live_err)
+            handler.setFormatter(logging.Formatter(logging.BASIC_FORMAT))
+            package.addHandler(handler)
+            added_handlers.append((package, handler))
+        with contextlib.redirect_stdout(live_out), contextlib.redirect_stderr(live_err):
+            yield captured_error
     finally:
-        temp_handler.flush()
-        pip_audit_logger.handlers = saved_handlers
-        pip_audit_logger.propagate = saved_propagate
+        for logger, handler in reversed(added_handlers):
+            logger.removeHandler(handler)
+            handler.flush()
+            handler.close()
+        for handler, previous in reversed(restored_streams):
+            handler.setStream(previous)
 
 
 def run_pip_audit(
@@ -153,7 +269,7 @@ def run_pip_audit(
     stdout: TextIO | None = None,
     stderr: TextIO | None = None,
 ) -> int:
-    """Execute ``pip-audit`` with bounded retries on transient network errors."""
+    """Execute serial attempts without converting an incomplete audit into success."""
     if max_attempts < 1:
         raise ValueError(f"max_attempts must be >= 1, got {max_attempts}")
     if initial_backoff < 0.0:
@@ -161,43 +277,37 @@ def run_pip_audit(
     if backoff_factor < 1.0:
         raise ValueError(f"backoff_factor must be >= 1.0, got {backoff_factor}")
 
-    runner = _invoke_pip_audit_cli if audit_fn is None else audit_fn
+    service_connection_error = None
+    runner: Callable[[Sequence[str]], int | str | None]
+    if audit_fn is None:
+        cli_mod, service_connection_error = _prepare_pip_audit()
+        runner = partial(_invoke_pip_audit_cli, cli_mod=cli_mod)
+    else:
+        runner = audit_fn
     out_stream = sys.stdout if stdout is None else stdout
     err_stream = sys.stderr if stderr is None else stderr
 
     for attempt in range(1, max_attempts + 1):
         try:
-            with _capture_attempt_streams() as (attempt_out, attempt_err):
+            with _capture_attempt_streams(out_stream, err_stream) as attempt_err:
                 result = runner(argv)
                 if result is not None:
                     raise SystemExit(result)
         except SystemExit as exit_exc:
             code = _normalize_exit_code(exit_exc.code)
-            out_text = attempt_out.getvalue()
-            err_text = attempt_err.getvalue()
-            if out_text:
-                out_stream.write(out_text)
-            if err_text:
-                err_stream.write(err_text)
-            if code == 0:
-                return 0
-            if _is_vulnerability_finding_output(err_text):
+            if exit_exc.code is not None and not isinstance(exit_exc.code, int):
+                err_stream.write(f"{exit_exc.code}\n")
+            if code and _is_vulnerability_finding_output(attempt_err.getvalue()):
                 err_stream.write(
                     "[pip-audit] VULNERABILITY FINDING: pip-audit reported known "
                     "vulnerabilities; failing immediately without retry.\n"
                 )
-                return code
             return code
         except Exception as exc:
-            if not is_transient_network_error(exc):
-                out_text = attempt_out.getvalue()
-                err_text = attempt_err.getvalue()
-                if out_text:
-                    out_stream.write(out_text)
-                if err_text:
-                    err_stream.write(err_text)
+            if not is_transient_network_error(
+                exc, service_connection_error=service_connection_error
+            ):
                 raise
-
             detail = _format_exception_detail(exc)
             if attempt < max_attempts:
                 delay = initial_backoff * (backoff_factor ** (attempt - 1))
@@ -205,30 +315,27 @@ def run_pip_audit(
                     f"[pip-audit] NETWORK ERROR (attempt {attempt}/{max_attempts}): "
                     f"{detail}. Retrying in {delay:.1f}s...\n"
                 )
+                err_stream.flush()
                 sleep_fn(delay)
                 continue
-
             err_stream.write(
                 f"[pip-audit] NETWORK FAILURE: pip-audit failed after {max_attempts} "
                 f"attempts due to transient network error ({detail}); "
-                "not a vulnerability finding.\n"
+                "not a vulnerability finding; audit did not complete.\n"
             )
             return NETWORK_FAILURE_EXIT_CODE
         else:
-            out_text = attempt_out.getvalue()
-            err_text = attempt_err.getvalue()
-            if out_text:
-                out_stream.write(out_text)
-            if err_text:
-                err_stream.write(err_text)
             return 0
-
     return NETWORK_FAILURE_EXIT_CODE
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
-    return run_pip_audit(args)
+    try:
+        return run_pip_audit(args)
+    except PipAuditCompatibilityError as error:
+        print(f"[pip-audit] COMPATIBILITY ERROR: {error}", file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":
