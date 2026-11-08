@@ -22,6 +22,7 @@ from mtp.paths import file_sha256
 from mtp.workflow import comparison
 from mtp.workflow.arms import runtime
 from mtp.workflow.arms.types import ArmContext, Command
+from workflow_provenance_fixtures import routing_core
 
 
 @dataclass(frozen=True)
@@ -64,13 +65,7 @@ def inputs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Inputs:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text("synthetic routing input\n", encoding="utf-8")
     monkeypatch.setenv("TMPDIR", str(tmp_path))
-    core = SimpleNamespace(
-        run_id="synthetic-core",
-        contrast_population="all_paired",
-        direction_basis="group_1_vs_group_0",
-        parameters=[],
-        artifacts=[SimpleNamespace(product_id=name) for name in products],
-    )
+    core = routing_core(manifests["core"], products)
     arms = {
         path: SimpleNamespace(
             arm=name,

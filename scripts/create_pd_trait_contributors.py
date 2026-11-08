@@ -7,6 +7,7 @@ attributed to its species and family when the pinned taxonomy gives exactly one 
 
 from __future__ import annotations
 
+import argparse
 import itertools
 import json
 import math
@@ -41,6 +42,12 @@ from mtp.contribution_inputs import Base, Graph, Key, load_base, load_graph, ver
 from mtp.taxa_trait_matrix import PRIMARY_STRAIN_ROLLUP, StrainRollup
 from mtp.taxon_contributions import Ledger, reconcile
 from mtp.trait_guilds import table1_trait_label
+from mtp.trait_key_policy import (
+    DEFAULT_TRAIT_KEY_POLICY,
+    TRAIT_KEY_POLICIES,
+    TraitKeyPolicy,
+    parse_trait_key_policy,
+)
 from mtp.trait_lists import TRAIT_ID_PATTERN
 
 STEM = "pd_trait_contributors"
@@ -113,13 +120,16 @@ def load_contribution_ledger(
     derived_dir: Path,
     protocol_path: Path,
     strain_rollup: StrainRollup,
+    *,
+    trait_key_policy: TraitKeyPolicy = DEFAULT_TRAIT_KEY_POLICY,
 ) -> tuple[Base, Graph, Ledger]:
     """Load the pinned KG and the profile inputs and reconcile them, as `mtp.taxon_contributions`.
 
     The reconciliation rebuilds every taxa-trait matrix and profile count from the KG under
     the strain rollup scope, so a KG or scope that does not reproduce the matrix stops the
-    analysis here.
+    analysis here. The trait-key policy is explicit; it cannot be inferred from columns.
     """
+    trait_key_policy = parse_trait_key_policy(trait_key_policy)
     protocol = json.loads(protocol_path.read_text(encoding="utf-8"))
     verify_kg(kg_dir, protocol["kg_md5"])
     base = load_base(*(derived_dir / name for name in LEDGER_INPUTS))
@@ -129,12 +139,14 @@ def load_contribution_ledger(
         set(base.columns),
         set(base.traits.values()),
         strain_rollup,
+        trait_key_policy=trait_key_policy,
     )
     ledger = reconcile(base, graph)
     if ledger.mismatches:
         msg = (
             f"{len(ledger.mismatches)} taxa-trait matrix or profile counts differ from the KG "
-            f"rebuild under the {strain_rollup} strain rollup scope; check the KG and "
+            f"rebuild under the {strain_rollup} strain rollup scope and {trait_key_policy}; "
+            "check the KG and "
             "data/derived inputs with `just table1-taxon-influence`."
         )
         raise ValueError(msg)
@@ -1355,6 +1367,14 @@ def write_note(
 
 def main() -> None:
     """Build contributor tables from the contribution ledger, then their plots and note."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--trait-key-policy",
+        choices=TRAIT_KEY_POLICIES,
+        default=DEFAULT_TRAIT_KEY_POLICY,
+        help="Trait-key policy of the input matrix; use raw_object_v1 for historical raw products.",
+    )
+    args = parser.parse_args()
     metadata = load_profile_metadata()
     require_current_trait_taxa_evidence(metadata, OUTPUT_DIR)
     # Every path is built from OUTPUT_DIR here, so redirecting it redirects every write.
@@ -1362,7 +1382,11 @@ def main() -> None:
     trait_intervals = read_tsv(OUTPUT_DIR / TRAIT_INTERVALS_NAME)
     check_trait_intervals(trait_intervals, directions)
     base, graph, ledger = load_contribution_ledger(
-        KG_DIR, DERIVED_DIR, KG_PROTOCOL_PATH, STRAIN_ROLLUP
+        KG_DIR,
+        DERIVED_DIR,
+        KG_PROTOCOL_PATH,
+        STRAIN_ROLLUP,
+        trait_key_policy=args.trait_key_policy,
     )
     keys = pd_contribution_profiles(base, metadata)
     counts, coverage_counts = count_contributions(base, graph, ledger, keys)
@@ -1432,6 +1456,7 @@ def main() -> None:
         "method": "Table 1 contribution ledger (#190) restricted to PD fecal profiles",
         "profile_scope": "human PD fecal profiles in experiments with both directions",
         "strain_rollup": STRAIN_ROLLUP,
+        "trait_key_policy": args.trait_key_policy,
         **scope,
         "ranks": list(CONTRIBUTOR_RANKS),
         "rank_statuses": [RESOLVED_STATUS, "unresolved_rank", "ambiguous_rank"],

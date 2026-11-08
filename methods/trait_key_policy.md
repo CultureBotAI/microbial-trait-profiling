@@ -82,3 +82,28 @@ Current runs emit the extended metadata layout even when explicitly selecting
 `raw_object_v1`. Reproducing a historical policy is distinct from reproducing the
 historical output serialization. Historical counts in methods notes remain labelled
 as F references; current union results must be regenerated before use for basis P.
+
+## Downstream KG reconstruction (#1359, #1136)
+
+New arm executions resolve the policy from the verified core, including the
+recognized historical producer identities above, and record it as an arm
+parameter. Noel's contribution-ledger command passes that policy explicitly.
+The arm verifier checks declared policies and effective command arguments against
+the core. Historical arm records without this declaration retain their original
+plan; absence is not reinterpreted as today's union default.
+
+Standalone contribution, PD-contributor, coassertion, label-support and KG-coverage
+recount commands expose `--trait-key-policy`. Their compatibility default is
+`facultative_union_v1`; historical raw tables require `raw_object_v1` explicitly.
+Each command records the policy it consumed in its accompanying manifest or
+provenance record (stdout for the recount). These standalone readers do not verify
+a core execution or infer policy from the retained column vocabulary. Raw and union
+inputs can share that vocabulary while containing different counts. Label-support's
+policy field is additive metadata under its existing `1.0` schema; absence in an
+older record is not evidence of either policy.
+
+`AnalysisBasis` remains unchanged: its feature-catalog hash and core binding retain
+identity, but do not expose a separate policy field. Adding that field would need a
+versioned compatibility contract because comparison verification re-derives and
+compares every basis field, including historical declarations. The new consumer
+records disclose policy without rewriting those declarations.
