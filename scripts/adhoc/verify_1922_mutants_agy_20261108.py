@@ -47,7 +47,8 @@ FOLLOWUP_REL = Path("scripts/analyze_enrichment_infographic_followup.py")
 TEST_SLIDE_REL = Path("tests/test_cellulose_slide_figures.py")
 TEST_FOLLOWUP_REL = Path("tests/test_enrichment_infographic_followup.py")
 
-ASSERTION_MARKERS = ("AssertionError",)
+# pytest.raises reports a missing exception as "Failed: DID NOT RAISE", a test assertion.
+ASSERTION_MARKERS = ("AssertionError", "Failed: DID NOT RAISE")
 ERROR_MARKERS = (
     "KeyError",
     "ImportError",
@@ -146,12 +147,31 @@ MUTANTS: tuple[Mutant, ...] = (
         test_filter="test_companion_heatmap_multi_condition_palette_and_legend_clear_dendrogram",
     ),
     Mutant(
-        name="M8_eighth_colour_wraps_to_first_2005",
+        # Retargeted (lead, #2005 delta 2): with the >8-condition guard in place, dropping a
+        # colour now fails by ValueError, not assertion. The real regression is removing the
+        # guard and restoring the modulo wrap, which the nine-condition test must catch.
+        name="M8_guard_removed_wrap_restored_2005",
         target_rel=FOLLOWUP_REL,
-        old='        "#300012",\n',
-        new="",
+        old=(
+            "    if len(TARGET_CONDITIONS) > len(palette_colors):\n"
+            "        msg = (\n"
+            '            f"The companion heatmap has {len(palette_colors)} '
+            'distinct condition colours; "\n'
+            '            f"{len(TARGET_CONDITIONS)} conditions would reuse one. Use "\n'
+            '            f"--top-paired-conditions {len(palette_colors)} or fewer."\n'
+            "        )\n"
+            "        raise ValueError(msg)\n"
+            "    condition_palette = {\n"
+            "        condition: palette_colors[index] for index, condition in "
+            "enumerate(TARGET_CONDITIONS)\n"
+        ),
+        new=(
+            "    condition_palette = {\n"
+            "        condition: palette_colors[index % len(palette_colors)]\n"
+            "        for index, condition in enumerate(TARGET_CONDITIONS)\n"
+        ),
         test_rel=TEST_FOLLOWUP_REL,
-        test_filter="test_companion_heatmap_multi_condition_palette_and_legend_clear_dendrogram",
+        test_filter="test_companion_heatmap_refuses_more_conditions_than_distinct_colours",
     ),
     Mutant(
         name="M9_fourth_colour_equals_trait_2005",
