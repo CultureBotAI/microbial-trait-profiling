@@ -146,7 +146,7 @@ def test_provenance_keeps_its_additional_case_and_slashless_checks(text: str) ->
 
 
 def test_shared_posix_matches_keep_their_slashless_provenance_rejection() -> None:
-    """Check the two-way relation across pattern roots and name-class characters (#1835)."""
+    """Check the two-way relation across pattern roots and name-class characters (#1835, #1871)."""
     shared = shared_module()
     absolute = shared.compile_absolute_local_paths(flags=re.IGNORECASE, classified=True)
     pattern_sources = (
@@ -168,7 +168,7 @@ def test_shared_posix_matches_keep_their_slashless_provenance_rejection() -> Non
     extracted_roots = [
         word
         for src in pattern_sources
-        for word in re.findall(r"[A-Za-z]{2,}", re.sub(r"\[[^\]]+\]", " ", src))
+        for word in re.findall(r"[A-Za-z0-9_.-]+", re.sub(r"\[[^\]]+\]|\\[A-Za-z]", " ", src))
     ]
     names = tuple(
         dict.fromkeys(
