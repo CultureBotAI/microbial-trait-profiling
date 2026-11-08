@@ -356,6 +356,11 @@ def visible_by_derivation(
     This deliberately small recognizer is an anchor-level witness, not output
     lineage or a general Python interpreter. Opaque helpers and mutating calls
     are outside its model. Facts exist only while this one bounded AST is live.
+    Writes through unrelated parameters/self can refuse a free-vector witness;
+    a post-BH write into an np.float64/np.int64 allocation also refuses it. Only
+    default/unshadowed built-in numeric dtypes get the fixed-size shortcut.
+    These conservative refusals are intentional (#1928), not evidence that the
+    source's arithmetic is incorrect. Literal BH registration is unaffected.
     Optional counters accumulate attempted work in thirteen fixed categories,
     including a charge that exceeds the limit. Reusing a dictionary accumulates
     counts but never shares the per-invocation budget. Overlapping operations
@@ -585,6 +590,10 @@ def visible_by_derivation(
                 continue
             # Strong input references in each entry prevent identity-key reuse.
             # These operations depend only on immutable inputs, never on env.
+            # Defensive lifetime guarantee (#1915, #1929): source fixtures do
+            # not force allocator identity reuse, and other caches can retain
+            # these inputs too. No semantic mutant kill is claimed for dropping
+            # these references; passing probes do not justify dropping them.
             charge("expression")
             left_id, right_id = id(merged), id(group)
             key = (left_id, right_id) if left_id < right_id else (right_id, left_id)
@@ -615,6 +624,10 @@ def visible_by_derivation(
         # Read the current binding first. Only the ensuing pure computation is
         # cached; rebinding, free-name materialization and side-map updates all
         # produce a different key. No environment is retained in this cache.
+        # The free bit is defensive (#1915, #1929): no reachable same-fact,
+        # same-side-map free/materialized collision is established by tests.
+        # Mutation-driven materialization invalidates the fact before rereading;
+        # an explicit alias assignment retains external side references instead.
         charge("expression")
         key = name, fact, id(possible), is_free
         existing = resolved_origins.get(key)
@@ -907,6 +920,8 @@ def visible_by_derivation(
         charge("write_alias_scan", len(origins))
         # Only ordered traversals may insert environment/cache entries. Charge
         # the comparisons (including string lengths) and sorted-list allocation.
+        # The #1929 regression observes insertion order itself. It does not
+        # claim this sort changes current BY credits or real-producer charges.
         charge(
             "write_alias_scan",
             len(origins) + sum(map(len, origins)) * len(origins).bit_length(),
