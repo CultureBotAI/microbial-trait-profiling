@@ -1,13 +1,17 @@
 """Explicit conservative refusals and survivor boundaries (#1915, #1928, #1929).
 
 The namespace-selector witness is already in review_1904. The named-cache free
-bit and merge-cache strong input references remain defensive: no deterministic
-source-level counterexample for removing either is established here. In normal
-invalidation, materializing a free origin is followed by an unknown fact before
-another lookup; explicit alias assignments carry a different side-reference set.
-Other per-invocation caches can also retain merge inputs, and allocator identity
-reuse is not a portable test oracle. These tests do not claim kills for either
-cache mutant. Their retention must not be inferred from passing source probes.
+bit remains defensive: no source-level counterexample for removing it is
+established here. In normal invalidation, materializing a free origin is followed
+by an unknown fact before another lookup; explicit alias assignments carry a
+different side-reference set. No named-cache mutant kill is claimed.
+
+Merge-cache retention is witnessed by uncached container copies (#1969). Slice
+and .copy() results can lose their only strong reference without retention;
+a later merge may then reuse their identity and return stale origins. Each test
+requires refusal of the write and credit of its no-write control, independently
+of allocator behaviour. The demonstrated retention-mutant kill depends on the
+CPython allocator; the refusal contract does not.
 
 The parameter/self writes and NumPy scalar dtype below are deliberately refused,
 even when the particular runtime objects are independent. Refusal is loss of the
@@ -92,6 +96,30 @@ def test_numpy_scalar_dtype_post_bh_write_is_a_documented_refusal(
     assert aliases.derived(changed) == ()
 
 
+# Uncached container copies expose identity reuse if merge inputs are not retained.
+# The refusal oracle is portable; killing a retention mutant depends on allocation.
+MERGE_COPY_SETUP = (
+    "zeta = [0.5]\nother = [None]\nbox1 = [zeta]\nbox2 = [p]\nw1 = box1\nw2 = box2\nw3 = other\n"
+)
+MERGE_COPY_FORMS = {
+    "slice": "c1 = box1[:] if m else other\nc2 = box2[:] if m else other\n",
+    "copy-method": "c1 = box1.copy() if m else other\nc2 = box2.copy() if m else other\n",
+}
+
+
+@pytest.mark.parametrize("scope", aliases.SCOPES)
+@pytest.mark.parametrize("form", sorted(MERGE_COPY_FORMS))
+def test_copied_container_write_after_repeated_merge_is_refused(
+    scope: aliases.Scope, form: str
+) -> None:
+    """A later copied holder must retain its possible reference to the BH vector."""
+    prefix = aliases.EXTENT + MERGE_COPY_SETUP + MERGE_COPY_FORMS[form]
+    control, anchor = aliases.source(scope, prefix + aliases.RESULT)
+    changed, _ = aliases.source(scope, prefix + "alias = c2[0]\ndel alias[0]\n" + aliases.RESULT)
+    assert aliases.derived(control) == (anchor,)
+    assert aliases.derived(changed) == ()
+
+
 def _remembered_order() -> list[str]:
     """Observe real insertion, without changing a fact or forcing allocator reuse."""
     inserted: list[str] = []
@@ -104,7 +132,9 @@ def _remembered_order() -> list[str]:
 
     text, _ = aliases.source(
         "module",
-        aliases.EXTENT + "alias = p if flag else zeta\ndel alias[0]\n" + aliases.RESULT,
+        aliases.EXTENT
+        + "alias = p if flag else (zeta if other_flag else beta)\ndel alias[0]\n"
+        + aliases.RESULT,
     )
     with pytest.MonkeyPatch.context() as patch:
         patch.setattr(guard.DerivationEnvironment, "setdefault", record)
@@ -112,7 +142,7 @@ def _remembered_order() -> list[str]:
     return inserted
 
 
-@pytest.mark.parametrize("seed", ["0", "1"])
+@pytest.mark.parametrize("seed", [str(seed) for seed in range(8)])
 def test_remembered_free_origins_have_a_stable_insertion_order(seed: str) -> None:
     """An intermediate ordering contract, not a claim of changed BY or work cost."""
     assert guard.__file__ is not None
@@ -138,7 +168,7 @@ def test_remembered_free_origins_have_a_stable_insertion_order(seed: str) -> Non
     assert report["seed"] == seed
     assert report["guard_path"] == str(guard_path)
     assert report["guard_sha256"] == hashlib.sha256(guard_path.read_bytes()).hexdigest()
-    assert report["inserted"] == ["p", "zeta"]
+    assert report["inserted"] == ["beta", "p", "zeta"]
 
 
 if __name__ == "__main__":

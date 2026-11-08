@@ -590,10 +590,10 @@ def visible_by_derivation(
                 continue
             # Strong input references in each entry prevent identity-key reuse.
             # These operations depend only on immutable inputs, never on env.
-            # Defensive lifetime guarantee (#1915, #1929): source fixtures do
-            # not force allocator identity reuse, and other caches can retain
-            # these inputs too. No semantic mutant kill is claimed for dropping
-            # these references; passing probes do not justify dropping them.
+            # Uncached container copies need these references: without them,
+            # an input can be freed and its identity reused by a later merge.
+            # The slice/.copy() refusal tests witness this lifetime requirement
+            # (#1969). Their mutant kill depends on allocation; refusal does not.
             charge("expression")
             left_id, right_id = id(merged), id(group)
             key = (left_id, right_id) if left_id < right_id else (right_id, left_id)
