@@ -25,6 +25,9 @@ import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
 
+if TYPE_CHECKING:
+    from matplotlib.axes import Axes
+
 from mtp.paths import file_sha256
 from mtp.quoted_results import (
     CALIBRATION_CRITERIA,
@@ -464,10 +467,6 @@ def setup_tufte_rc() -> None:
     )
 
 
-if TYPE_CHECKING:
-    from matplotlib.axes import Axes
-
-
 def despine(
     ax: Axes, top: bool = True, right: bool = True, left: bool = False, bottom: bool = False
 ) -> None:
@@ -592,7 +591,7 @@ def methods_plate1_coverage_labels(
 
 def build_methods_plate1(repo: Path, out_dir: Path) -> Path:
     fig = plt.figure(figsize=(16.0, 9.0), facecolor=BG_COLOR)
-    ax = fig.add_axes(cast(tuple[float, float, float, float], [0.03, 0.08, 0.94, 0.80]))
+    ax = fig.add_axes((0.03, 0.08, 0.94, 0.80))
     ax.axis("off")
     ax.set_xlim(0, 100)
     ax.set_ylim(0, 100)
@@ -1242,7 +1241,7 @@ def build_methods_plate2(repo: Path, out_dir: Path) -> Path:
         f"({passing('by_q_nominal')} BY)"
     )
     fig = plt.figure(figsize=(16.0, 9.0), facecolor=BG_COLOR)
-    ax = fig.add_axes(cast(tuple[float, float, float, float], [0.03, 0.08, 0.94, 0.80]))
+    ax = fig.add_axes((0.03, 0.08, 0.94, 0.80))
     ax.axis("off")
     ax.set_xlim(0, 100)
     ax.set_ylim(0, 100)
@@ -2057,7 +2056,7 @@ def build_plate1(repo: Path, out_dir: Path) -> Path:
     )
 
     for xi in x_pos:
-        ax_slope.axvline(cast(float, xi), color=LIGHT_RULE, linewidth=0.9, zorder=0)
+        ax_slope.axvline(float(xi), color=LIGHT_RULE, linewidth=0.9, zorder=0)
 
     trait_colors = {
         "facultatively aerobic": "#b8332a",
@@ -2955,12 +2954,12 @@ def build_plate4(repo: Path, out_dir: Path) -> Path:
             ci_excl = er.get("ci_excludes_zero") == "True"
             w_p = float(wr["p_value"]) if wr and wr.get("p_value") else 1.0
             w_q = float(wr["q_value"]) if wr and wr.get("q_value") else 1.0
-            f_q: float | None = (
+            f_q = (
                 float(fr["fisher_q_value"])
                 if fr and fr.get("fisher_q_value") not in (None, "", "NA")
                 else 1.0
             )
-            f_sig = f_q is not None and f_q <= 0.05
+            f_sig = f_q <= 0.05
 
             norm_v = max(-1.6, min(1.6, mean_z)) / 1.6
             if norm_v > 0.06:
@@ -3067,7 +3066,7 @@ def build_plate4(repo: Path, out_dir: Path) -> Path:
         neg_st = int(er.get("negative_study_count", 0))
         w_p = float(wr["p_value"]) if wr and wr.get("p_value") else 1.0
         w_q = float(wr["q_value"]) if wr and wr.get("q_value") else 1.0
-        f_q = (
+        lead_f_q: float | None = (
             float(fr["fisher_q_value"])
             if fr and fr.get("fisher_q_value") not in (None, "", "NA")
             else None
@@ -3079,15 +3078,15 @@ def build_plate4(repo: Path, out_dir: Path) -> Path:
             [mean_z],
             [yp],
             color=col,
-            edgecolor=GOLD_ACCENT if (f_q and f_q <= 0.05) else col,
+            edgecolor=GOLD_ACCENT if (lead_f_q and lead_f_q <= 0.05) else col,
             s=48,
             lw=1.6,
             zorder=4,
         )
 
         stat_parts = [f"{pos_st}↑/{neg_st}↓ st."]
-        if f_q is not None and f_q <= 0.05:
-            stat_parts.append(f"Fisher q={f_q:.3f}★")
+        if lead_f_q is not None and lead_f_q <= 0.05:
+            stat_parts.append(f"Fisher q={lead_f_q:.3f}★")
         if w_q <= 0.10:
             stat_parts.append(f"Wilc q={w_q:.3f}")
         elif w_p <= 0.05:
@@ -3098,7 +3097,7 @@ def build_plate4(repo: Path, out_dir: Path) -> Path:
             yp,
             " · ".join(stat_parts),
             fontsize=7.6,
-            fontweight="bold" if (w_q <= 0.10 or (f_q and f_q <= 0.05)) else "normal",
+            fontweight="bold" if (w_q <= 0.10 or (lead_f_q and lead_f_q <= 0.05)) else "normal",
             color=col,
             ha="right",
             va="center",
