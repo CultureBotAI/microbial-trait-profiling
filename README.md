@@ -8,8 +8,9 @@ per-study YAML files validated against a [LinkML](https://linkml.io) schema,
 and aggregates KG-Microbe trait annotations for paired comparisons and
 enrichment analyses.
 
-The Python package remains `bsdbng`; existing imports, schema identifiers,
-environment variables, and release asset names retain that name for compatibility.
+The Python package is `mtp` (`src/mtp/`, `schema/mtp.yaml`); `bsdbng`
+(`src/bsdbng/`, `schema/bsdbng.yaml`), `BSDBNG_*` environment variables, and
+`bsdbng-*` release asset names are retained as compatibility shims.
 
 All biological claims, figure captions, and pipeline interpretations follow the
 project-wide biological interpretation guide in [`methods/biological_interpretation.md`](methods/biological_interpretation.md)
@@ -45,7 +46,7 @@ cd microbial-trait-profiling
 uv sync --all-extras --group dev --group qa
 just check       # run all checks (should pass on a fresh clone)
 just download    # download BugSigDB data (~28 MB, ~6s)
-just ingest      # parse into per-study YAML (~22s, 1900+ studies)
+just ingest      # parse into per-study YAML for the pinned BugSigDB release (~22s)
 ```
 
 That's it. After `just ingest`, look at `data/studies/` for the output.
@@ -201,7 +202,7 @@ exact-match, trigram similarity, or OpenAI embedding semantic search.
 **One-time setup:**
 
 ```bash
-just mongo-load         # load 1,900+ study YAMLs into MongoDB (~45s)
+just mongo-load         # load study YAMLs into MongoDB (~45s; for the pinned BugSigDB release)
 just index-trigram      # build trigram index (free, ~seconds)
 just index-embeddings   # build OpenAI embedding index (~minutes, $)
 ```
@@ -229,7 +230,7 @@ linkml-store approach.
 1. Pick an [open issue](https://github.com/CultureBotAI/microbial-trait-profiling/issues)
 2. Create a plain branch named for the issue: `git fetch origin`, then `git switch -c <number>-<short-slug> --no-track origin/main` (not `gh issue develop`; see AGENTS.md)
 3. Make your changes
-4. Run `just check` — **all checks must pass before opening a PR**
+4. Run `just check` — **all checks must pass before committing**
 5. Commit and push (`git push -u origin <branch>`)
 6. Open a PR that references the issue: "Closes #30" only if it fully resolves the issue, otherwise "Refs #30"
 
@@ -264,20 +265,20 @@ No DuckDB, no Parquet, no Jupyter notebooks in this repo.
 
 ```
 microbial-trait-profiling/
-  schema/bsdbng.yaml              # LinkML schema (source of truth)
-  src/bsdbng/
-    download.py                    # BugSigDB CSV download with caching
-    ingest.py                      # CSV → per-study YAML pipeline
-    datamodel/bsdbng_pydantic.py   # generated Pydantic models (do not edit)
-    paths.py                       # project path constants
-  tests/                           # pytest tests
+  schema/mtp.yaml                 # LinkML schema (source of truth; legacy: schema/bsdbng.yaml)
+  src/mtp/                        # canonical package (compatibility shims in src/bsdbng/)
+    download.py                   # BugSigDB CSV download with caching
+    ingest.py                     # CSV → per-study YAML pipeline
+    datamodel/mtp_pydantic.py     # generated Pydantic models (do not edit)
+    paths.py                      # project path constants
+  tests/                          # pytest tests
   data/
-    raw/                           # downloaded CSVs (gitignored)
-    studies/                       # per-study YAML output (gitignored)
-    derived/                       # aggregate artifacts (gitignored)
-  Justfile                         # developer commands
-  pyproject.toml                   # project config
-  logs/                            # pipeline timing logs (gitignored)
+    raw/                          # downloaded CSVs (gitignored)
+    studies/                      # per-study YAML output (gitignored)
+    derived/                      # aggregate artifacts (gitignored)
+  Justfile                        # developer commands
+  pyproject.toml                  # project config
+  logs/                           # pipeline timing logs (gitignored)
 ```
 
 ## Schema
@@ -295,7 +296,7 @@ The schema defines four entity types, all inheriting from `NamedThing`:
 - **Signature** — a set of taxa with a shared direction (increased/decreased)
 - **Taxon** — a microbial organism identified by NCBITaxon CURIE
 
-See `schema/bsdbng.yaml` for the full definition.
+See `schema/mtp.yaml` (legacy: `schema/bsdbng.yaml`) for the full definition.
 
 ## Data quality
 
