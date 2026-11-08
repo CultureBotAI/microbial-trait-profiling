@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from pathlib import Path
 from textwrap import shorten
+from typing import cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -433,7 +435,10 @@ def build_condition_switch_scores(condition_oxygen: pd.DataFrame) -> pd.DataFram
     if pivot.empty:
         return pd.DataFrame()
 
-    pivot.columns = [f"{oxygen_class}_{metric}" for metric, oxygen_class in pivot.columns]
+    pivot.columns = [
+        f"{oxygen_class}_{metric}"
+        for metric, oxygen_class in cast(Iterable[tuple[str, str]], pivot.columns)
+    ]
     output = pivot.reset_index()
     for oxygen_class in ["aerobic_only", "anaerobic_only"]:
         for metric in [
