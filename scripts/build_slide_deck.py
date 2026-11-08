@@ -325,7 +325,7 @@ def load_rerun_metrics(repo: Path) -> dict[str, Any]:
     # Index by (analysis_level, condition_label, body_site_group, trait_label)
     by_key = {}
     for row in contrasts:
-        key: Any = (
+        key: tuple[str, str, str, str] | str = (
             row.get("view_key", ""),
             row.get("condition", ""),
             row.get("body_site_group", ""),
@@ -4001,7 +4001,7 @@ def refreshed_hashes(
     files; both are replaced by bare hashes. A missing file keeps its recorded hash.
     """
     old: dict[str, str] = {}
-    path: Any
+    path: str | Path
     for index, value in enumerate(recorded):
         path, sep, sha = value.rpartition(":")
         if sep and re.fullmatch(r"[0-9a-f]{64}", sha):
@@ -4468,7 +4468,7 @@ def build_deck(
 
     checks = trees or {}
     unverified, quoted = check_slides(repo, ordered_entries, checks, TABLES_READ)
-    found: Any
+    found: list[str] | list[tuple[str, str]]
     for plate, found in plate_problems(repo, plate_record, checks, revision).items():
         unverified.setdefault(f"{PLATES_DIR}{plate}", []).extend(
             (f"{PLATES_DIR}{plate}", reason) for reason in found

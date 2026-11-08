@@ -67,6 +67,8 @@ TRAIT_COLORS = {
 
 def read_tsv(path: Path, **kwargs: Any) -> pd.DataFrame:
     """Read a local TSV file."""
+    # The cast holds because no caller passes chunksize= or iterator=True, which would
+    # make read_csv return a TextFileReader instead of a DataFrame (#1941).
     return cast(pd.DataFrame, pd.read_csv(path, sep="\t", **kwargs))
 
 
