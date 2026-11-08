@@ -10,8 +10,15 @@ from typing import Any
 
 import pytest
 
-SCRIPT = Path(__file__).parents[1] / "scripts/adhoc/issue1286_compare_uv_locks.py"
+from mtp.local_path_patterns import compile_absolute_local_paths
+from mtp.provenance_paths import assert_portable_text, resolve_reference, verify_reference
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+SCRIPT = REPO_ROOT / "scripts/adhoc/issue1286_compare_uv_locks.py"
+GUARD_PROBE_SCRIPT = REPO_ROOT / "scripts/adhoc/issue928_guard_isolation.py"
 HELPER = runpy.run_path(str(SCRIPT))
+GUARD_PROBE = runpy.run_path(str(GUARD_PROBE_SCRIPT))
+ABSOLUTE_LOCAL_PATH = compile_absolute_local_paths(flags=0, classified=False)
 LOCK = """version = 1
 revision = 1
 requires-python = ">=3.11"
@@ -39,8 +46,12 @@ def compare(tmp_path: Path, before: str, after: str) -> dict[str, Any]:
     assert paths[1].read_text() == after
     for role, path in zip(("before", "after"), paths, strict=True):
         raw = path.read_bytes()
+        assert result[role]["path"] == path.name
+        assert not Path(result[role]["path"]).is_absolute()
         assert result[role]["sha256"] == hashlib.sha256(raw).hexdigest()
         assert result[role]["size_bytes"] == len(raw)
+    assert result.get("path_basis") == {"kind": "root-relative-v1", "root": "."}
+    assert_portable_text(json.dumps(result))
     return result
 
 
@@ -127,3 +138,132 @@ def test_cli_writes_fresh_report_and_never_overwrites(tmp_path: Path) -> None:
     with pytest.raises(FileExistsError):
         HELPER["main"]([*argv[:-1], str(alias)])
     assert not (tmp_path / "missing.json").exists()
+
+
+def test_compare_locks_uses_portable_provenance_and_refuses_account_paths(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#1290: lock comparator emits portable paths and refuses account-bearing paths."""
+    home = tmp_path / "Users" / "residentacct"
+    workspace = home / "workspace"
+    workspace.mkdir(parents=True)
+    monkeypatch.setattr(Path, "home", lambda: home)
+    monkeypatch.setenv("USER", "residentacct")
+    monkeypatch.setenv("LOGNAME", "residentacct")
+
+    before = workspace / "before.lock"
+    after = workspace / "sub" / "after.lock"
+    after.parent.mkdir()
+    before.write_text(LOCK, encoding="utf-8")
+    after.write_text(LOCK, encoding="utf-8")
+    output = workspace / "reports" / "audit.json"
+    output.parent.mkdir()
+
+    assert (
+        HELPER["main"](["--before", str(before), "--after", str(after), "--output", str(output)])
+        == 0
+    )
+    raw_report = output.read_text(encoding="utf-8")
+    assert ABSOLUTE_LOCAL_PATH.search(raw_report) is None
+    assert "residentacct" not in raw_report.casefold()
+    report = json.loads(raw_report)
+    assert report.get("path_basis") == {"kind": "root-relative-v1", "root": ".."}
+    assert report["before"]["path"] == "before.lock"
+    assert report["after"]["path"] == "sub/after.lock"
+    assert_portable_text(raw_report)
+    assert (
+        verify_reference(output, report["before"], path_basis=report["path_basis"])
+        == before.resolve()
+    )
+    assert (
+        verify_reference(output, report["after"], path_basis=report["path_basis"])
+        == after.resolve()
+    )
+
+    account_input = workspace / "residentacct-locks" / "before.lock"
+    account_input.parent.mkdir()
+    account_input.write_text(LOCK, encoding="utf-8")
+    refused_output = workspace / "reports" / "refused.json"
+    with pytest.raises(ValueError, match="Provenance contains a local account name"):
+        HELPER["main"](
+            [
+                "--before",
+                str(account_input),
+                "--after",
+                str(after),
+                "--output",
+                str(refused_output),
+            ]
+        )
+    assert not refused_output.exists()
+
+    with pytest.raises(ValueError, match=r"Provenance root must be below a home or temporary root"):
+        HELPER["main"](
+            [
+                "--before",
+                str(before),
+                "--after",
+                str(after),
+                "--output",
+                str(refused_output),
+                "--provenance-root",
+                str(home),
+            ]
+        )
+    assert not refused_output.exists()
+
+
+def test_guard_isolation_probe_emits_portable_paths_and_refuses_account_paths(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """#1027: site-stats guard probe emits portable paths and refuses account-bearing paths."""
+    home = tmp_path / "Users" / "probeacct"
+    workspace = home / "workspace"
+    workspace.mkdir(parents=True)
+    monkeypatch.setattr(Path, "home", lambda: home)
+    monkeypatch.setenv("USER", "probeacct")
+    monkeypatch.setenv("LOGNAME", "probeacct")
+
+    account_output = workspace / "probeacct-evidence"
+    with pytest.raises(ValueError, match="Provenance contains a local account name"):
+        GUARD_PROBE["main"](["--output-dir", str(account_output)])
+    assert not account_output.exists()
+
+    with pytest.raises(ValueError, match=r"Provenance root must be below a home or temporary root"):
+        GUARD_PROBE["main"](
+            ["--output-dir", str(home / "evidence"), "--provenance-root", str(home)]
+        )
+    assert not (home / "evidence").exists()
+
+    probe_output = workspace / "guard-evidence"
+    assert GUARD_PROBE["main"](["--output-dir", str(probe_output)]) == 0
+    isolation_path = probe_output / "isolation.json"
+    raw_isolation = isolation_path.read_text(encoding="utf-8")
+    record = json.loads(raw_isolation)
+    assert record["verified"] is True
+    assert record.get("path_basis") == {"kind": "supplied-root-v1"}
+    assert record["canonical_origin"] == "scripts/create_trait_profile_infographic.py"
+    assert record["isolated_origin"] == "infographic_without_guard.py"
+    assert record["checkout_outputs"] == "trait-visualization/trait-profile-investigation"
+    assert not Path(record["canonical_origin"]).is_absolute()
+    assert not Path(record["isolated_origin"]).is_absolute()
+    assert ABSOLUTE_LOCAL_PATH.search(raw_isolation) is None
+    assert "probeacct" not in raw_isolation.casefold()
+    assert str(REPO_ROOT) not in raw_isolation
+    assert str(probe_output) not in raw_isolation
+    assert_portable_text(raw_isolation)
+    assert set(record["source_before"]) == {
+        "scripts/create_trait_profile_infographic.py",
+        "tests/test_trait_profile_infographic.py",
+        "scripts/adhoc/issue928_guard_isolation.py",
+    }
+    assert record["source_before"] == record["source_after"]
+    assert (
+        resolve_reference(
+            isolation_path,
+            record["canonical_origin"],
+            path_basis=record["path_basis"],
+            provenance_root=REPO_ROOT,
+        )
+        == (REPO_ROOT / "scripts/create_trait_profile_infographic.py").resolve()
+    )

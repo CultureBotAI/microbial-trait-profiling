@@ -12,6 +12,7 @@ import importlib.util
 import io
 import json
 import sys
+from collections.abc import Sequence
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 from types import ModuleType
@@ -19,6 +20,7 @@ from types import ModuleType
 import pytest
 
 from mtp.paths import REPO_ROOT, file_sha256
+from mtp.provenance_paths import PortablePaths, assert_portable_path_text, assert_portable_text
 
 ROOT = Path(__file__).resolve().parents[2]
 PRODUCER = ROOT / "scripts/create_trait_profile_infographic.py"
@@ -74,10 +76,11 @@ class Probe:
             self.unexpected.append(report.nodeid)
 
 
-def main() -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-dir", type=Path, required=True)
-    args = parser.parse_args()
+    parser.add_argument("--provenance-root", type=Path, default=None)
+    args = parser.parse_args(argv)
     if REPO_ROOT.resolve() != ROOT:
         raise ValueError(
             "Installed mtp belongs to another checkout; use this checkout's environment"
@@ -89,9 +92,13 @@ def main() -> int:
     output = args.output_dir.resolve()
     if output.is_relative_to(checkout_outputs):
         raise ValueError("Probe evidence must be outside the checkout's investigation outputs")
+    assert_portable_path_text(output.name)
+    if args.provenance_root is not None:
+        PortablePaths.create(output / "isolation.json", [], root=args.provenance_root.resolve())
     before = inventory(checkout_outputs)
     canonical_paths = [PRODUCER, TEST, Path(__file__).resolve()]
-    source_before = {str(path.relative_to(ROOT)): file_sha256(path) for path in canonical_paths}
+    repo_paths = PortablePaths.create(output / "isolation.json", canonical_paths, root=ROOT)
+    source_before = {repo_paths.encode(path): file_sha256(path) for path in canonical_paths}
     guard = (
         "        if not args.stratified_stats_only:\n"
         '            parser.error("--min-stratified-pairs requires --stratified-stats-only")\n'
@@ -102,6 +109,8 @@ def main() -> int:
     output.mkdir(parents=True, exist_ok=False)
     copied = output / "infographic_without_guard.py"
     copied.write_text(text.replace(guard, ""))
+    output_root = args.provenance_root.resolve() if args.provenance_root is not None else output
+    output_paths = PortablePaths.create(output / "isolation.json", [copied], root=output_root)
     mutated = load(copied, "issue950_isolated_infographic")
     # Relocation must not change default paths. The shared fixture redirects these
     # exact declared outputs, including future constants, before main() executes.
@@ -115,7 +124,7 @@ def main() -> int:
             pytest.main(["-q", "-p", "no:cacheprovider", f"{TEST}::{GUARD_TEST}"], plugins=[probe])
         )
     after = inventory(checkout_outputs)
-    source_after = {str(path.relative_to(ROOT)): file_sha256(path) for path in canonical_paths}
+    source_after = {repo_paths.encode(path): file_sha256(path) for path in canonical_paths}
     verified = (
         code == 1
         and len(probe.failed) == 2
@@ -127,8 +136,9 @@ def main() -> int:
         "pytest_exit": code,
         "intended_failed_calls": probe.failed,
         "unexpected_failures": probe.unexpected,
-        "canonical_origin": str(PRODUCER),
-        "isolated_origin": str(copied),
+        "path_basis": repo_paths.declaration,
+        "canonical_origin": repo_paths.encode(PRODUCER),
+        "isolated_origin": output_paths.encode(copied),
         "isolated_sha256": file_sha256(copied),
         "checkout_outputs": checkout_outputs.relative_to(ROOT).as_posix(),
         "before": before,
@@ -137,8 +147,10 @@ def main() -> int:
         "source_after": source_after,
         "verified": verified,
     }
+    isolation_text = json.dumps(record, indent=2) + "\n"
+    assert_portable_text(isolation_text)
     (output / "pytest.log").write_text(captured.getvalue(), encoding="utf-8")
-    (output / "isolation.json").write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
+    (output / "isolation.json").write_text(isolation_text, encoding="utf-8")
     print(json.dumps({"verified": verified, "intended_failed_calls": probe.failed}))
     return int(not verified)
 
