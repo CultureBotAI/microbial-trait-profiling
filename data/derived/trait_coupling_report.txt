@@ -1,7 +1,7 @@
 ================================================================================
 TRAIT COUPLING SENSITIVITY AUDIT REPORT (Issue #260)
 ================================================================================
-Code commit: 651a81a65b106f959198e341558d591d59fc609e
+Code commit: a2b8c28da120f518428dfe8853c18756e4f830a4
 
 1. LEAVE-ONE-TRAIT-OUT (LOTO) - COMPOSITION DELTA EFFECT MATRIX (6 x 6):
    Rows: Dropped Trait | Columns: Evaluated Trait
@@ -54,14 +54,14 @@ Minimum adjacent row distance:   0.003904 (between arsenate reduction and coccus
 Direct Test (Drop Sphere -> Coccus Effect Shift):
   Delta effect(coccus):            +0.000014
   |Delta effect|:                  0.000014
-  Criterion verdict:               Passes stability criterion: |Delta effect| (0.000014) < min adjacent row distance (0.003904). Denominator coupling does not destabilize effect rankings.
+  Criterion verdict:               Passes named-removal criterion: |Delta effect| (0.000014) < baseline min adjacent row distance (0.003904). This compares only the coccus shaped effect after removing sphere shaped; it does not establish stability for other traits or removals.
 
 Reverse Test (Drop Coccus -> Sphere Effect Shift):
   Delta effect(sphere):            +0.003657
   |Delta effect|:                  0.003657
-  Criterion verdict:               Passes stability criterion: |Delta effect| (0.003657) < min adjacent row distance (0.003904). Denominator coupling does not destabilize effect rankings.
+  Criterion verdict:               Passes named-removal criterion: |Delta effect| (0.003657) < baseline min adjacent row distance (0.003904). This compares only the sphere shaped effect after removing coccus shaped; it does not establish stability for other traits or removals.
 
-5. METHODOLOGICAL & BIOLOGICAL SYNTHESIS:
+5. SENSITIVITY SUMMARY:
 --------------------------------------------------------------------------------
 a. Denominator Coupling Sensitivity by Analytical Arm:
    In the composition arm, denominator coupling induced by dropping any single Table 1 trait across all 30 LOTO pairs produces a maximum |Delta effect| of 0.005937 (and up to 0.005322 under LCO; overall composition |Delta effect| <= 0.005937), compared against the tightest Table 1 inter-trait gap of 0.003904.
