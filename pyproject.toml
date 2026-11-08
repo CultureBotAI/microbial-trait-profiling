@@ -166,9 +166,9 @@ module = [
 ]
 ignore_errors = true
 
-# pandas, scipy and plotly ship no type information; the repo's own code stays strict.
+# pandas, scipy, plotly, seaborn and linkml-store ship no type information; the repo's own code stays strict.
 [[tool.mypy.overrides]]
-module = ["pandas", "scipy.*", "plotly.*"]
+module = ["pandas", "scipy.*", "plotly.*", "seaborn", "linkml_store", "linkml_store.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

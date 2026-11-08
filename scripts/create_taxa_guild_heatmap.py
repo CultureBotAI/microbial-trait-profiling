@@ -6,6 +6,7 @@ import argparse
 import csv
 import math
 from pathlib import Path
+from typing import cast
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -313,7 +314,7 @@ def load_trait_labels(columns_path: Path) -> pd.DataFrame:
     columns = pd.read_csv(columns_path, sep="\t", dtype=str).fillna("")
     columns = columns.set_index("column_id", drop=False)
     columns["display_label"] = [
-        format_trait_label(column_id, row) for column_id, row in columns.iterrows()
+        format_trait_label(cast(str, column_id), row) for column_id, row in columns.iterrows()
     ]
     columns["display_category"] = columns["object_category"].str.removeprefix("biolink:")
     columns.loc[columns["display_category"] == "", "display_category"] = "unknown"

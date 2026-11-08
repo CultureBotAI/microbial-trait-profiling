@@ -6,7 +6,9 @@ import argparse
 import csv
 import math
 from collections import Counter, defaultdict
+from collections.abc import Mapping
 from pathlib import Path
+from typing import cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -196,7 +198,7 @@ def load_trait_labels(columns_path: Path) -> pd.DataFrame:
     columns = pd.read_csv(columns_path, sep="\t", dtype=str).fillna("")
     columns = columns.set_index("column_id", drop=False)
     columns["display_label"] = [
-        format_trait_label(column_id, row) for column_id, row in columns.iterrows()
+        format_trait_label(cast(str, column_id), row) for column_id, row in columns.iterrows()
     ]
     columns["display_category"] = columns["object_category"].str.removeprefix("biolink:")
     columns.loc[columns["display_category"] == "", "display_category"] = "unknown"
@@ -457,7 +459,9 @@ def build_plot_matrix(
     """Create column z-scores from log-scaled trait fractions."""
     composition = trait_fractions(selected_profile_matrix).loc[:, selected_traits]
     scaled = (composition * 1000).apply(lambda column: column.map(math.log1p))
-    zscores = (scaled - scaled.mean(axis=0)) / scaled.std(axis=0, ddof=0).replace(0, pd.NA)
+    zscores: pd.DataFrame = (scaled - scaled.mean(axis=0)) / scaled.std(axis=0, ddof=0).replace(
+        0, pd.NA
+    )
     return zscores.fillna(0)
 
 
@@ -472,7 +476,7 @@ def cluster_index(indexed_matrix: pd.DataFrame) -> pd.Index:
         row_linkage = linkage(values, method="average", metric="euclidean")
     except ValueError:
         return indexed_matrix.index
-    return indexed_matrix.index[leaves_list(row_linkage)]
+    return cast(pd.Index, indexed_matrix.index[leaves_list(row_linkage)])
 
 
 def order_profiles_by_direction(
@@ -646,7 +650,7 @@ def build_paired_enrichment_matrix(
         pair_values.name = pair_id
         rows.append(pair_values)
 
-        pair_metadata = group.iloc[0]
+        pair_metadata: pd.Series | pd.DataFrame = group.iloc[0]
         metadata_rows.append(
             {
                 "pair_id": pair_id,
@@ -825,17 +829,23 @@ def build_rendered_paired_enrichment_matrix(
     return display_matrix, display_metadata
 
 
-def palette_for_categories(categories: pd.Series, palette_name: str) -> dict[str, object]:
+def palette_for_categories(
+    categories: pd.Series,
+    palette_name: str,
+) -> dict[str, str | tuple[float, float, float]]:
     """Build a stable palette for row or column annotation categories."""
     ordered = [
         category for category in sorted(categories.unique()) if category not in {"Other", "unknown"}
     ]
-    colors: dict[str, object] = {}
+    colors: dict[str, str | tuple[float, float, float]] = {}
     if ordered:
         colors = dict(
             zip(
                 ordered,
-                sns.color_palette(palette_name, n_colors=len(ordered)),
+                cast(
+                    list[tuple[float, float, float]],
+                    sns.color_palette(palette_name, n_colors=len(ordered)),
+                ),
                 strict=True,
             )
         )
@@ -844,7 +854,10 @@ def palette_for_categories(categories: pd.Series, palette_name: str) -> dict[str
     return colors
 
 
-def legend_handles(palette: dict[str, object], present_categories: pd.Series) -> list[Patch]:
+def legend_handles(
+    palette: Mapping[str, str | tuple[float, float, float]],
+    present_categories: pd.Series,
+) -> list[Patch]:
     """Build legend handles only for categories present in the plot."""
     present = set(present_categories)
     return [Patch(color=color, label=label) for label, color in palette.items() if label in present]
