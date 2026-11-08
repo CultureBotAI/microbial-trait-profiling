@@ -935,6 +935,9 @@ def test_plate6_reads_compact_remediation_and_nonempty_rank_rows(
                 "signature_occurrences": 17,
                 "profile_count": 17,
                 "study_count": 8,
+                "taxonomy_group": "unresolved",
+                "taxonomy_status": "no_recognized_root_path",
+                "taxonomy_root_ids": "[]",
                 "diagnosis_category": "Unresolved Taxonomic Label",
                 "suggested_remediation": (
                     "Review the reported taxonomic label and source assignment before trait "
@@ -950,6 +953,9 @@ def test_plate6_reads_compact_remediation_and_nonempty_rank_rows(
                 "signature_occurrences": 14,
                 "profile_count": 14,
                 "study_count": 11,
+                "taxonomy_group": "unresolved",
+                "taxonomy_status": "not_in_taxonomy_edges",
+                "taxonomy_root_ids": "[]",
                 "diagnosis_category": "Taxonomy Unresolved",
                 "suggested_remediation": (
                     "Review placement in the supplied taxonomy; missing lineage does not "
@@ -965,6 +971,9 @@ def test_plate6_reads_compact_remediation_and_nonempty_rank_rows(
                 "signature_occurrences": 11,
                 "profile_count": 11,
                 "study_count": 5,
+                "taxonomy_group": "viruses",
+                "taxonomy_status": "resolved_root",
+                "taxonomy_root_ids": '["NCBITaxon:10239"]',
                 "diagnosis_category": "Non-Bacterial / Viral Taxon",
                 "suggested_remediation": (
                     "Review viral annotation resources; missing retained annotations do not "
@@ -973,7 +982,20 @@ def test_plate6_reads_compact_remediation_and_nonempty_rank_rows(
             },
         ]
     )
-    pd.concat([zero_df, extra_rows], ignore_index=True).to_csv(zero_path, sep="\t", index=False)
+    merged_zero = pd.concat([zero_df, extra_rows], ignore_index=True)
+    merged_zero.to_csv(zero_path, sep="\t", index=False)
+    by_taxon = merged_zero.set_index("taxon_id")
+    assert tuple(
+        by_taxon.loc["NCBITaxon:155900", ["taxonomy_group", "taxonomy_status", "taxonomy_root_ids"]]
+    ) == ("unresolved", "no_recognized_root_path", "[]")
+    assert tuple(
+        by_taxon.loc[
+            "NCBITaxon:1505663", ["taxonomy_group", "taxonomy_status", "taxonomy_root_ids"]
+        ]
+    ) == ("unresolved", "not_in_taxonomy_edges", "[]")
+    assert tuple(
+        by_taxon.loc["NCBITaxon:10239", ["taxonomy_group", "taxonomy_status", "taxonomy_root_ids"]]
+    ) == ("viruses", "resolved_root", '["NCBITaxon:10239"]')
     captured.clear()
     plate.build_plate6(tmp_path, tmp_path)
     fig_new = captured[0]
@@ -987,6 +1009,94 @@ def test_plate6_reads_compact_remediation_and_nonempty_rank_rows(
     assert "Review taxonomy placement" in panel_c_texts
     assert "Review viral annotation resources" in panel_c_texts
     coverage.plt.close(fig_new)
+
+
+def test_ncbi_bacterial_zero_trait_categories_and_parser_audit_wording(
+    tmp_path: Path,
+) -> None:
+    """Exercise MAG, Candidatus, and Rare/Novel categories end-to-end plus audit wording (#1274)."""
+    experiments = tmp_path / "experiments.tsv"
+    pd.DataFrame(
+        [("s1", "e1", "Homo sapiens", "16S")],
+        columns=["study_id", "experiment_id", "host_species", "sequencing_type"],
+    ).to_csv(experiments, sep="\t", index=False)
+    profiles = tmp_path / "profiles.tsv"
+    pd.DataFrame(
+        [("s1", "e1", "inc", 4, 1)],
+        columns=["study_id", "experiment_id", "inc_dec", "taxa_count", "METPO:1"],
+    ).to_csv(profiles, sep="\t", index=False)
+    matrix = tmp_path / "matrix.tsv"
+    pd.DataFrame(
+        [
+            ("NCBITaxon:100", "Mapped bacterium", "species", 1),
+            ("NCBITaxon:101", "uncultured bacterium", "species", 0),
+            ("NCBITaxon:102", "Candidatus Arthromitus", "genus", 0),
+            ("NCBITaxon:103", "Rare isolate", "species", 0),
+        ],
+        columns=["taxon_id", "taxon_name", "taxonomic_rank", "METPO:1"],
+    ).to_csv(matrix, sep="\t", index=False)
+    taxa = tmp_path / "taxa.tsv"
+    pd.DataFrame(
+        [
+            ("s1", "e1", "sig1", "increased", "NCBITaxon:100", "Mapped bacterium", "species"),
+            ("s1", "e1", "sig1", "increased", "NCBITaxon:101", "uncultured bacterium", "species"),
+            ("s1", "e1", "sig1", "increased", "NCBITaxon:102", "Candidatus Arthromitus", "genus"),
+            ("s1", "e1", "sig1", "increased", "NCBITaxon:103", "Rare isolate", "species"),
+        ],
+        columns=[
+            "study_id",
+            "experiment_id",
+            "signature_id",
+            "direction",
+            "taxon_id",
+            "taxon_name",
+            "taxonomic_rank",
+        ],
+    ).to_csv(taxa, sep="\t", index=False)
+    taxonomy_edges = tmp_path / "taxonomy.tsv"
+    taxonomy_edges.write_text(
+        "id\tsubject\tpredicate\tobject\n"
+        "r0\tNCBITaxon:species\tbiolink:subclass_of\tOBO:NCBITaxon#_taxonomic_rank\n"
+        "e0\tNCBITaxon:100\tbiolink:subclass_of\tNCBITaxon:2\n"
+        "e1\tNCBITaxon:101\tbiolink:subclass_of\tNCBITaxon:2\n"
+        "e2\tNCBITaxon:102\tbiolink:subclass_of\tNCBITaxon:2\n"
+        "e3\tNCBITaxon:103\tbiolink:subclass_of\tNCBITaxon:2\n",
+        encoding="utf-8",
+    )
+    output = tmp_path / "ncbi_coverage"
+    coverage.run_coverage(
+        output_dir=output,
+        tables_only=True,
+        strain_rollup="off",
+        experiments=experiments,
+        profiles=profiles,
+        matrix=matrix,
+        taxa=taxa,
+        taxonomy_edges=taxonomy_edges,
+    )
+    zero = pd.read_csv(output / "top_zero_trait_bugsigdb_taxa.tsv", sep="\t").set_index("taxon_id")
+    assert zero.loc["NCBITaxon:101", "diagnosis_category"] == "Uncultivated / Metagenomic MAG"
+    assert zero.loc["NCBITaxon:102", "diagnosis_category"] == "Candidatus Lineage"
+    assert (
+        zero.loc["NCBITaxon:103", "diagnosis_category"]
+        == "Rare / Novel Isolate (Lacks KG Phenotype)"
+    )
+    for tid in ("NCBITaxon:101", "NCBITaxon:102", "NCBITaxon:103"):
+        assert zero.loc[tid, "taxonomy_group"] == "bacteria"
+        assert zero.loc[tid, "taxonomy_status"] == "resolved_root"
+        assert zero.loc[tid, "taxonomy_root_ids"] == '["NCBITaxon:2"]'
+    provenance = json.loads((output / "provenance.json").read_text(encoding="utf-8"))
+    audit = provenance["taxonomy_diagnosis"]["parser_audit"]
+    assert audit["excluded_records"] == 0
+    assert audit["taxonomy_rank_class_edge_records_skipped"] == 1
+    assert "excluded_records counts malformed KG edge records" in audit["excluded_records_note"]
+    assert (
+        "taxonomy_rank_class_edge_records_skipped counts well-formed ontology rank-class"
+        in audit["excluded_records_note"]
+    )
+    readme = (output / "README.md").read_text(encoding="utf-8")
+    assert "Ontology rank-class edges are skipped during organism-ancestry projection" in readme
+    assert "excluded_records: 0 confirms the strict KG edge parser dropped no record" in readme
 
 
 @pytest.mark.parametrize("all_zero", [False, True])
