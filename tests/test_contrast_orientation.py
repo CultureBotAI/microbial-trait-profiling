@@ -1117,8 +1117,8 @@ def test_comparison_rows_use_executed_families_including_untestable_members(
         partial(compute_direction_shifts, trait_order=fractions),
     )
     monkeypatch.setattr(
-        "mtp.contrast_orientation.compute_log_ratio_shifts",
-        partial(compute_log_ratio_shifts, traits=ratios),
+        "mtp.contrast_orientation.TABLE1_TRAITS",
+        ratios,
     )
 
     rows = comparison_rows([("synthetic", profiles)])
@@ -1156,6 +1156,11 @@ def test_comparison_rows_emit_untestable_rows_for_an_empty_population_without_ch
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     """An empty population emits untestable rows across both families without aborting (#1838)."""
+    assert comparison_rows.__doc__ is not None
+    assert "An empty population emits untestable rows across both families." in (
+        " ".join(comparison_rows.__doc__.split())
+    )
+    assert "no paired profiles" not in comparison_rows.__doc__.lower()
     traits = tuple(TABLE1_TRAITS)
     profiles = [
         Profile(
@@ -1174,7 +1179,12 @@ def test_comparison_rows_emit_untestable_rows_for_an_empty_population_without_ch
         for direction in ("inc", "dec")
     ]
     baseline = comparison_rows([("populated", profiles)])
-    combined = comparison_rows([("empty_before", []), ("populated", profiles), ("empty_after", [])])
+    try:
+        combined = comparison_rows(
+            [("empty_before", []), ("populated", profiles), ("empty_after", [])]
+        )
+    except ValueError as error:
+        pytest.fail(f"an empty population must not abort the table: {error}")
     assert [row for row in combined if row["population"] == "populated"] == baseline
 
     expected_pairs = list(itertools.combinations(traits, 2))
@@ -1209,38 +1219,94 @@ def test_comparison_rows_emit_untestable_rows_for_an_empty_population_without_ch
                 row["q_value"],
             ) == (0, 0, 0, 0, 0, 0, None, None, None, None, None, None)
 
-    # Custom executed families on an empty population also preserve their declared sizes.
+    # Non-default trait list: the empty population's labels and pairs match populated rows (#1888).
     custom_fractions = traits[:3]
     custom_ratios = traits[:4]
+    expected_custom_pairs = list(itertools.combinations(custom_ratios, 2))
     with monkeypatch.context() as patch:
         patch.setattr(
             "mtp.contrast_orientation.compute_direction_shifts",
             partial(compute_direction_shifts, trait_order=custom_fractions),
         )
-        patch.setattr(
-            "mtp.contrast_orientation.compute_log_ratio_shifts",
-            partial(compute_log_ratio_shifts, traits=custom_ratios),
+        patch.setattr("mtp.contrast_orientation.TABLE1_TRAITS", custom_ratios)
+        try:
+            custom_rows = comparison_rows([("custom_populated", profiles), ("custom_empty", [])])
+        except ValueError as error:
+            pytest.fail(f"an empty population must not abort the table: {error}")
+    pop_frac = [
+        row
+        for row in custom_rows
+        if row["population"] == "custom_populated" and row["comparison"] == "fraction"
+    ]
+    pop_rat = [
+        row
+        for row in custom_rows
+        if row["population"] == "custom_populated" and row["comparison"] == "log_ratio"
+    ]
+    custom_frac = [
+        row
+        for row in custom_rows
+        if row["population"] == "custom_empty" and row["comparison"] == "fraction"
+    ]
+    custom_rat = [
+        row
+        for row in custom_rows
+        if row["population"] == "custom_empty" and row["comparison"] == "log_ratio"
+    ]
+    assert len(custom_frac) == len(pop_frac) == 3
+    assert len(custom_rat) == len(pop_rat) == 6
+    assert (
+        {row["family"] for row in custom_frac}
+        == {row["family"] for row in pop_frac}
+        == {"Benjamini-Hochberg over 3 fractions"}
+    )
+    assert (
+        {row["family"] for row in custom_rat}
+        == {row["family"] for row in pop_rat}
+        == {"Benjamini-Yekutieli over 6 ratios"}
+    )
+    assert (
+        [(row["numerator"], row["reference"]) for row in custom_rat]
+        == [(row["numerator"], row["reference"]) for row in pop_rat]
+        == expected_custom_pairs
+    )
+
+    try:
+        explicit_rows = comparison_rows(
+            [("explicit_populated", profiles), ("explicit_empty", [])],
+            ratio_traits=custom_ratios,
         )
-        custom_rows = comparison_rows([("custom_empty", [])])
-    custom_frac = [row for row in custom_rows if row["comparison"] == "fraction"]
-    custom_rat = [row for row in custom_rows if row["comparison"] == "log_ratio"]
-    assert len(custom_frac) == 3
-    assert len(custom_rat) == 6
-    assert {row["family"] for row in custom_frac} == {"Benjamini-Hochberg over 3 fractions"}
-    assert {row["family"] for row in custom_rat} == {"Benjamini-Yekutieli over 6 ratios"}
-    assert [(row["numerator"], row["reference"]) for row in custom_rat] == list(
-        itertools.combinations(custom_ratios, 2)
+    except ValueError as error:
+        pytest.fail(f"an empty population must not abort the table: {error}")
+    explicit_pop_rat = [
+        row
+        for row in explicit_rows
+        if row["population"] == "explicit_populated" and row["comparison"] == "log_ratio"
+    ]
+    explicit_emp_rat = [
+        row
+        for row in explicit_rows
+        if row["population"] == "explicit_empty" and row["comparison"] == "log_ratio"
+    ]
+    assert (
+        {row["family"] for row in explicit_emp_rat}
+        == {row["family"] for row in explicit_pop_rat}
+        == {"Benjamini-Yekutieli over 6 ratios"}
+    )
+    assert (
+        [(row["numerator"], row["reference"]) for row in explicit_emp_rat]
+        == [(row["numerator"], row["reference"]) for row in explicit_pop_rat]
+        == expected_custom_pairs
     )
 
     # Invalid ratio trait list still raises on an empty population; unpaired profiles still raise.
     for bad_traits in (("only_one",), (traits[0], traits[0])):
         with monkeypatch.context() as patch:
-            patch.setattr(
-                "mtp.contrast_orientation.compute_log_ratio_shifts",
-                partial(compute_log_ratio_shifts, traits=bad_traits),
-            )
+            patch.setattr("mtp.contrast_orientation.TABLE1_TRAITS", bad_traits)
             with pytest.raises(ValueError, match="Provide at least two distinct traits"):
                 comparison_rows([("invalid_traits", [])])
+        with pytest.raises(ValueError, match="Provide at least two distinct traits"):
+            comparison_rows([("invalid_traits", [])], ratio_traits=bad_traits)
     with pytest.raises(ValueError, match="1 increased vs 0 decreased profiles"):
         comparison_rows([("unpaired_study", [profiles[0]])])
     with pytest.raises(ValueError, match="Unpaired experiment"):

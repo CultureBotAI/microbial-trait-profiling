@@ -43,7 +43,6 @@ import argparse
 import csv
 import difflib
 import hashlib
-import inspect
 import json
 import re
 from collections import Counter
@@ -1750,27 +1749,26 @@ def control_tier_counts(
     ]
 
 
-def _declared_ratio_pairs() -> list[tuple[str, str]]:
-    bound = inspect.signature(compute_log_ratio_shifts).bind_partial([])
-    bound.apply_defaults()
-    traits: Sequence[str] = bound.arguments.get("traits", tuple(TABLE1_TRAITS))
-    if len(traits) < 2 or len(set(traits)) != len(traits):
-        raise ValueError("Provide at least two distinct traits")
-    return list(combinations(traits, 2))
-
-
 def comparison_rows(
     populations: Sequence[tuple[str, Sequence[Profile]]],
+    *,
+    ratio_traits: Sequence[str] | None = None,
 ) -> list[dict[str, object]]:
     """Fraction directions and pairwise log-ratios for each population, side by side.
 
     Each population keeps the native families of the two analyses: Benjamini-Hochberg
     over the declared fractions and Benjamini-Yekutieli over the declared ratios.
     Labels count each returned family, including untestable members held at p=1
-    internally; displayed missing p/q values do not remove family members. A
-    population with no paired profiles emits untestable rows across both families.
+    internally; displayed missing p/q values do not remove family members. An
+    empty population emits untestable rows across both families.
     Nothing historical is overwritten.
     """
+    declared_ratio_traits = tuple(TABLE1_TRAITS if ratio_traits is None else ratio_traits)
+    if len(declared_ratio_traits) < 2 or len(set(declared_ratio_traits)) != len(
+        declared_ratio_traits
+    ):
+        raise ValueError("Provide at least two distinct traits")
+    ratio_pairs = list(combinations(declared_ratio_traits, 2))
     rows: list[dict[str, object]] = []
     for population, profiles in populations:
         profile_list = list(profiles)
@@ -1800,7 +1798,6 @@ def comparison_rows(
                 }
             )
         if not profile_list:
-            ratio_pairs = _declared_ratio_pairs()
             for numerator, reference in ratio_pairs:
                 rows.append(
                     {
@@ -1824,7 +1821,7 @@ def comparison_rows(
                     }
                 )
             continue
-        ratios = compute_log_ratio_shifts(profile_list)
+        ratios = compute_log_ratio_shifts(profile_list, declared_ratio_traits)
         for summary in ratios.summaries:
             rows.append(
                 {

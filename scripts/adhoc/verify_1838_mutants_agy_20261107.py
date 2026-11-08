@@ -1,22 +1,23 @@
 #!/usr/bin/env python3
-"""Scratch-copy mutation verifier for #1838 (empty population comparison_rows).
+"""Scratch-copy mutation verifier for #1838 and PR #1886 review fixes (#1888-#1890).
 
 Purpose:
   Verify that the empty-population comparison_rows regression test in
   tests/test_contrast_orientation.py kills source-level mutations of
-  _declared_ratio_pairs and comparison_rows in src/mtp/contrast_orientation.py
-  via AssertionError (rc=1) when executed against an isolated scratch copy with
-  verified import origin inside pytest.
+  comparison_rows in src/mtp/contrast_orientation.py (including revert mutants
+  #1889, non-default ratio trait mismatches #1888, and docstring regression #1890)
+  via assertion failure (rc=1) when executed against an isolated scratch copy
+  with verified import origin inside pytest.
 
 Inputs:
   - src/mtp/contrast_orientation.py
   - tests/test_contrast_orientation.py
 
 Outputs:
-  - stdout summary of CONTROL (rc=0) and 10 killed mutants (rc=1, AssertionError,
+  - stdout summary of CONTROL (rc=0) and 14 killed mutants (rc=1, assertion,
     PYTEST_ORIGIN_OK).
 
-Issue: #1838
+Issue: #1838, #1888, #1889, #1890
 Date: 2026-11-07
 """
 
@@ -44,6 +45,7 @@ TEST_CO_NAME = (
 ASSERTION_MARKERS = (
     "AssertionError",
     "Failed: DID NOT RAISE",
+    "Failed: an empty population must not abort the table:",
     "Regex pattern did not match",
 )
 ERROR_MARKERS = (
@@ -71,34 +73,39 @@ class Mutant:
 MUTANTS: tuple[Mutant, ...] = (
     Mutant(
         name="M01_empty_population_skips_log_ratio_rows_entirely",
+        old="        if not profile_list:\n            for numerator, reference in ratio_pairs:",
+        new="        if not profile_list:\n            for numerator, reference in ():",
+    ),
+    Mutant(
+        name="M02_empty_population_uses_hardcoded_table1_instead_of_declared_ratio_traits",
+        old="    ratio_pairs = list(combinations(declared_ratio_traits, 2))",
+        new="    ratio_pairs = list(combinations(TABLE1_TRAITS, 2))",
+    ),
+    Mutant(
+        name="M03_populated_branch_drops_declared_ratio_traits_argument",
+        old="        ratios = compute_log_ratio_shifts(profile_list, declared_ratio_traits)",
+        new="        ratios = compute_log_ratio_shifts(profile_list)",
+    ),
+    Mutant(
+        name="M04_comparison_rows_accepts_duplicate_traits",
         old=(
-            "        if not profile_list:\n"
-            "            ratio_pairs = _declared_ratio_pairs()\n"
-            "            for numerator, reference in ratio_pairs:"
+            "    if len(declared_ratio_traits) < 2 or len(set(declared_ratio_traits)) != len(\n"
+            "        declared_ratio_traits\n"
+            "    ):"
         ),
-        new=(
-            "        if not profile_list:\n"
-            "            ratio_pairs = _declared_ratio_pairs()\n"
-            "            for numerator, reference in ():"
+        new="    if len(declared_ratio_traits) < 2:",
+    ),
+    Mutant(
+        name="M05_comparison_rows_accepts_single_trait",
+        old=(
+            "    if len(declared_ratio_traits) < 2 or len(set(declared_ratio_traits)) != len(\n"
+            "        declared_ratio_traits\n"
+            "    ):"
         ),
+        new="    if len(set(declared_ratio_traits)) != len(declared_ratio_traits):",
     ),
     Mutant(
-        name="M02_empty_population_uses_hardcoded_table1_instead_of_signature_defaults",
-        old='    traits: Sequence[str] = bound.arguments.get("traits", tuple(TABLE1_TRAITS))',
-        new="    traits: Sequence[str] = tuple(TABLE1_TRAITS)",
-    ),
-    Mutant(
-        name="M03_declared_ratio_pairs_accepts_duplicate_traits",
-        old="    if len(traits) < 2 or len(set(traits)) != len(traits):",
-        new="    if len(traits) < 2:",
-    ),
-    Mutant(
-        name="M04_declared_ratio_pairs_accepts_single_trait",
-        old="    if len(traits) < 2 or len(set(traits)) != len(traits):",
-        new="    if len(set(traits)) != len(traits):",
-    ),
-    Mutant(
-        name="M05_empty_population_log_ratio_family_label_hardcoded_15",
+        name="M06_empty_population_log_ratio_family_label_hardcoded_15",
         old=(
             '                        "family": '
             'f"Benjamini-Yekutieli over {len(ratio_pairs)} ratios",'
@@ -106,27 +113,33 @@ MUTANTS: tuple[Mutant, ...] = (
         new='                        "family": "Benjamini-Yekutieli over 15 ratios",',
     ),
     Mutant(
-        name="M06_empty_population_log_ratio_p_value_sentinel_one_instead_of_none",
+        name="M07_empty_population_log_ratio_p_value_sentinel_one_instead_of_none",
         old='                        "p_value": None,\n                        "q_value": None,',
         new='                        "p_value": 1.0,\n                        "q_value": None,',
     ),
     Mutant(
-        name="M07_empty_population_log_ratio_q_value_sentinel_one_instead_of_none",
+        name="M08_empty_population_log_ratio_q_value_sentinel_one_instead_of_none",
         old='                        "p_value": None,\n                        "q_value": None,',
         new='                        "p_value": None,\n                        "q_value": 1.0,',
     ),
     Mutant(
-        name="M08_empty_population_log_ratio_studies_scored_nonzero",
+        name="M09_empty_population_log_ratio_studies_scored_nonzero",
         old='                        "studies_scored": 0,',
         new='                        "studies_scored": 1,',
     ),
     Mutant(
-        name="M09_empty_population_returns_early_dropping_later_populations",
-        old="            continue\n        ratios = compute_log_ratio_shifts(profile_list)",
-        new="            return rows\n        ratios = compute_log_ratio_shifts(profile_list)",
+        name="M10_empty_population_returns_early_dropping_later_populations",
+        old=(
+            "            continue\n"
+            "        ratios = compute_log_ratio_shifts(profile_list, declared_ratio_traits)"
+        ),
+        new=(
+            "            return rows\n"
+            "        ratios = compute_log_ratio_shifts(profile_list, declared_ratio_traits)"
+        ),
     ),
     Mutant(
-        name="M10_empty_population_swaps_numerator_and_reference",
+        name="M11_empty_population_swaps_numerator_and_reference",
         old=(
             '                        "numerator": numerator,\n'
             '                        "reference": reference,'
@@ -134,6 +147,23 @@ MUTANTS: tuple[Mutant, ...] = (
         new=(
             '                        "numerator": reference,\n'
             '                        "reference": numerator,'
+        ),
+    ),
+    Mutant(
+        name="M12_revert_empty_branch_1889",
+        old="        if not profile_list:\n            for numerator, reference in ratio_pairs:",
+        new="        if False:\n            for numerator, reference in ratio_pairs:",
+    ),
+    Mutant(
+        name="M13_empty_check_on_shifts_1889",
+        old="        if not profile_list:\n            for numerator, reference in ratio_pairs:",
+        new="        if not shifts.shifts:\n            for numerator, reference in ratio_pairs:",
+    ),
+    Mutant(
+        name="M14_docstring_reverts_to_no_paired_profiles_1890",
+        old="An\n    empty population emits untestable rows across both families.",
+        new=(
+            "A\n    population with no paired profiles emits untestable rows across both families."
         ),
     ),
 )
