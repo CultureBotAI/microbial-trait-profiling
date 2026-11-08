@@ -13,7 +13,7 @@ import pandas as pd
 import pytest
 from matplotlib.backends.backend_agg import FigureCanvasAgg, RendererAgg
 from matplotlib.collections import QuadMesh
-from matplotlib.colors import to_rgb
+from matplotlib.colors import rgb_to_hsv, to_hex, to_rgb
 from matplotlib.figure import Figure
 from matplotlib.text import Text
 
@@ -133,22 +133,33 @@ def _cie_lightness(rgb: tuple[float, float, float]) -> float:
 def test_companion_heatmap_multi_condition_palette_and_legend_clear_dendrogram(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Multi-condition strip colours stay distinct in lightness and clear the dendrogram (#1922)."""
-    conditions = list(followup.TARGET_CONDITIONS)
+    """Multi-condition strip colours stay distinct and clear all axes (#1922, #2005, #2006)."""
+    conditions = (
+        *followup.TARGET_CONDITIONS,
+        "Multiple sclerosis",
+        "Stroke",
+        "Constipation",
+        "Colorectal cancer",
+        "Parkinson's disease",
+    )[:8]
+    assert len(conditions) == 8
+    monkeypatch.setattr(followup, "TARGET_CONDITIONS", conditions)
     matrix = pd.DataFrame(
-        [[1, 0, 1], [0, 1, 1], [1, 1, 0]],
-        index=["taxon-a", "taxon-b", "taxon-c"],
-        columns=["METPO:1", "METPO:2", "METPO:3"],
+        [[int((i >> j) & 1) for j in range(4)] for i in range(len(conditions))],
+        index=[f"taxon-{i}" for i in range(len(conditions))],
+        columns=["METPO:1", "METPO:2", "METPO:3", "METPO:4"],
     )
     taxa = pd.DataFrame(
         {
-            "taxon_name": ["Taxon A", "Taxon B", "Taxon C"],
-            "target_profile_count": [1, 2, 3],
-            "display_condition": conditions,
+            "taxon_name": [f"Taxon {i}" for i in range(len(conditions))],
+            "target_profile_count": list(range(1, len(conditions) + 1)),
+            "display_condition": list(conditions),
         },
         index=matrix.index,
     )
-    traits = pd.DataFrame({"heatmap_label": ["First", "Second", "Third"]}, index=matrix.columns)
+    traits = pd.DataFrame(
+        {"heatmap_label": ["First", "Second", "Third", "Fourth"]}, index=matrix.columns
+    )
     captured: list[Figure] = []
 
     def at_save(figure: Figure, _path: Path, **_kwargs: object) -> None:
@@ -169,12 +180,55 @@ def test_companion_heatmap_multi_condition_palette_and_legend_clear_dendrogram(
     assert legend is not None
     patches = legend.get_patches()
     assert len(patches) == len(conditions)
-    data_rgbs = [to_rgb("#155e75"), *(to_rgb(patch.get_facecolor()) for patch in patches)]
+    legend_hexes = [to_hex(patch.get_facecolor()) for patch in patches]
+    assert len(set(legend_hexes)) == len(conditions), legend_hexes
+    trait_rgb = to_rgb("#155e75")
+    trait_hue = float(rgb_to_hsv(trait_rgb)[0])
+    palette_rgbs = [to_rgb(patch.get_facecolor()) for patch in patches]
+    for color_hex, color_rgb in zip(legend_hexes, palette_rgbs, strict=True):
+        hue_diff = abs(float(rgb_to_hsv(color_rgb)[0]) - trait_hue)
+        assert min(hue_diff, 1.0 - hue_diff) >= 0.03, color_hex
+    data_rgbs = [trait_rgb, *palette_rgbs]
     lightness = [_cie_lightness(rgb) for rgb in data_rgbs]
     for i in range(len(lightness)):
         for j in range(i + 1, len(lightness)):
             assert abs(lightness[i] - lightness[j]) >= 8.0, (i, j, lightness)
+
+    heatmap_ax = next(axis for axis in figure.axes if axis.get_xlabel() == "Trait")
+    strip_ax = next(
+        axis
+        for axis in figure.axes
+        if axis is not heatmap_ax
+        and axis.collections
+        and len(axis.collections[0].get_facecolor()) == len(conditions)
+    )
+    strip_mesh = cast(QuadMesh, strip_ax.collections[0])
+    strip_hexes = [
+        to_hex(cast(tuple[float, float, float, float], color))
+        for color in strip_mesh.get_facecolor()
+    ]
+    label_to_index = {
+        followup.display_taxon_label(taxon_id, taxa): idx
+        for idx, taxon_id in enumerate(matrix.index)
+    }
+    row_labels = [tick.get_text() for tick in heatmap_ax.get_yticklabels()]
+    assert len(row_labels) == len(conditions)
+    assert strip_hexes == [legend_hexes[label_to_index[label]] for label in row_labels]
+    strip_in_condition_order = [""] * len(conditions)
+    for row_pos, label in enumerate(row_labels):
+        strip_in_condition_order[label_to_index[label]] = strip_hexes[row_pos]
+    assert strip_in_condition_order == legend_hexes
+
     dendrogram_box = dendrogram.get_window_extent(renderer)
+    legend_box = legend.get_window_extent(renderer)
+    assert not legend_box.overlaps(dendrogram_box)
+    for axis in figure.axes:
+        if axis is dendrogram:
+            continue
+        assert not legend_box.overlaps(axis.get_window_extent(renderer))
+        tight_box = axis.get_tightbbox(renderer)
+        assert tight_box is not None
+        assert not legend_box.overlaps(tight_box)
     legend_words = [
         text for text in legend.findobj(Text) if text.get_visible() and text.get_text().strip()
     ]

@@ -1138,8 +1138,9 @@ def save_traits_vs_organisms_heatmap(
         "#eab308",
         "#3b0764",
         "#7f1d1d",
-        "#7c3aed",
+        "#ab7578",
         "#86efac",
+        "#300012",
     ]
     condition_palette = {
         condition: palette_colors[index % len(palette_colors)]

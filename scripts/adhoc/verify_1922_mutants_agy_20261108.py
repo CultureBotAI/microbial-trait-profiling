@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""Scratch-copy mutation verifier for #1921 and #1922 cellulose follow-ups.
+"""Scratch-copy mutation verifier for #1921, #1922, #2005, and #2006.
 
 Purpose:
   Verify that the slide stroke-floor and provenance inventory assertions in
   tests/test_cellulose_slide_figures.py (#1921) and the multi-condition
-  palette/legend assertion in tests/test_enrichment_infographic_followup.py
-  (#1922) kill source-level mutations in src/mtp/cellulose_decr/slide_figures.py,
-  src/mtp/cellulose_decr/figures.py, and
-  scripts/analyze_enrichment_infographic_followup.py via AssertionError (rc=1,
-  no KeyError) when executed against an isolated scratch copy with verified
-  import origin inside pytest.
+  palette/strip/legend assertions in tests/test_enrichment_infographic_followup.py
+  (#1922, #2005, #2006) kill source-level mutations in
+  src/mtp/cellulose_decr/slide_figures.py, src/mtp/cellulose_decr/figures.py,
+  and scripts/analyze_enrichment_infographic_followup.py via AssertionError
+  (rc=1, no KeyError) when executed against an isolated scratch copy with
+  verified import origin inside pytest.
 
 Inputs:
   - src/mtp/cellulose_decr/slide_figures.py
@@ -19,10 +19,10 @@ Inputs:
   - tests/test_enrichment_infographic_followup.py
 
 Outputs:
-  - stdout summary of CONTROL (rc=0) and 6 killed mutants (rc=1, AssertionError,
+  - stdout summary of CONTROL (rc=0) and 12 killed mutants (rc=1, AssertionError,
     PYTEST_ORIGIN_OK).
 
-Issue: #1921, #1922
+Issue: #1921, #1922, #2005, #2006
 Date: 2026-11-08
 """
 
@@ -134,6 +134,54 @@ MUTANTS: tuple[Mutant, ...] = (
         target_rel=FOLLOWUP_REL,
         old='        loc="center right",\n        bbox_to_anchor=(-0.04, 0.5),',
         new='        loc="center",\n        bbox_to_anchor=(-0.08, 0.5),',
+        test_rel=TEST_FOLLOWUP_REL,
+        test_filter="test_companion_heatmap_multi_condition_palette_and_legend_clear_dendrogram",
+    ),
+    Mutant(
+        name="M7_sixth_colour_reverts_to_7c3aed_2005",
+        target_rel=FOLLOWUP_REL,
+        old='        "#ab7578",\n',
+        new='        "#7c3aed",\n',
+        test_rel=TEST_FOLLOWUP_REL,
+        test_filter="test_companion_heatmap_multi_condition_palette_and_legend_clear_dendrogram",
+    ),
+    Mutant(
+        name="M8_eighth_colour_wraps_to_first_2005",
+        target_rel=FOLLOWUP_REL,
+        old='        "#300012",\n',
+        new="",
+        test_rel=TEST_FOLLOWUP_REL,
+        test_filter="test_companion_heatmap_multi_condition_palette_and_legend_clear_dendrogram",
+    ),
+    Mutant(
+        name="M9_fourth_colour_equals_trait_2005",
+        target_rel=FOLLOWUP_REL,
+        old='        "#3b0764",\n',
+        new='        "#155e75",\n',
+        test_rel=TEST_FOLLOWUP_REL,
+        test_filter="test_companion_heatmap_multi_condition_palette_and_legend_clear_dendrogram",
+    ),
+    Mutant(
+        name="M10_legend_over_heatmap_2006",
+        target_rel=FOLLOWUP_REL,
+        old='        loc="center right",\n        bbox_to_anchor=(-0.04, 0.5),',
+        new='        loc="center right",\n        bbox_to_anchor=(4.0, 0.5),',
+        test_rel=TEST_FOLLOWUP_REL,
+        test_filter="test_companion_heatmap_multi_condition_palette_and_legend_clear_dendrogram",
+    ),
+    Mutant(
+        name="M11_strip_ignores_palette_2006",
+        target_rel=FOLLOWUP_REL,
+        old='        lambda condition: condition_palette.get(condition, "#64748b")\n',
+        new='        lambda condition: "#155e75"\n',
+        test_rel=TEST_FOLLOWUP_REL,
+        test_filter="test_companion_heatmap_multi_condition_palette_and_legend_clear_dendrogram",
+    ),
+    Mutant(
+        name="M12_cyan_ramp_palette_2006",
+        target_rel=FOLLOWUP_REL,
+        old='        "#c2410c",\n        "#60a5fa",\n        "#eab308",',
+        new='        "#083344",\n        "#0891b2",\n        "#a5f3fc",',
         test_rel=TEST_FOLLOWUP_REL,
         test_filter="test_companion_heatmap_multi_condition_palette_and_legend_clear_dendrogram",
     ),
