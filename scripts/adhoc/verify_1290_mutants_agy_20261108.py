@@ -14,10 +14,10 @@ Inputs:
   - tests/test_uv_lock_audit.py
 
 Outputs:
-  - stdout summary of CONTROL (rc=0) and 6 killed mutants (rc=1, AssertionError,
+  - stdout summary of CONTROL (rc=0) and 12 killed mutants (rc=1, AssertionError,
     PYTEST_ORIGIN_OK).
 
-Issue: #1290, #1027
+Issue: #1290, #1027, #2018, #2019, #2020, #2021
 Date: 2026-11-08
 """
 
@@ -104,10 +104,45 @@ MUTANTS: tuple[Mutant, ...] = (
         name="M6_guard_probe_skips_provenance_root_precheck_1027",
         rel_path=PROBE_REL,
         old=(
-            "    if args.provenance_root is not None:\n"
-            '        PortablePaths.create(output / "isolation.json", [], '
-            "root=args.provenance_root.resolve())\n"
+            "    repo_root = args.provenance_root.resolve() "
+            "if args.provenance_root is not None else ROOT\n"
         ),
+        new="    repo_root = ROOT\n",
+    ),
+    Mutant(
+        name="M7_lock_record_ignores_output_1290",
+        rel_path=LOCK_REL,
+        old="        output=args.output,\n",
+        new="        output=None,\n",
+    ),
+    Mutant(
+        name="M8_lock_no_result_check_2020",
+        rel_path=LOCK_REL,
+        old="    assert_portable_text(json.dumps(result, ensure_ascii=False, allow_nan=False))\n",
+        new="",
+    ),
+    Mutant(
+        name="M9_lock_ignores_provenance_root_1290",
+        rel_path=LOCK_REL,
+        old="[before, after], root=provenance_root)",
+        new="[before, after], root=None)",
+    ),
+    Mutant(
+        name="M10_guard_probe_skips_log_scrubbing_2018",
+        rel_path=PROBE_REL,
+        old='    (output / "pytest.log").write_text(log_text, encoding="utf-8")\n',
+        new='    (output / "pytest.log").write_text(captured.getvalue(), encoding="utf-8")\n',
+    ),
+    Mutant(
+        name="M11_guard_probe_omits_isolated_path_basis_2019",
+        rel_path=PROBE_REL,
+        old='        "isolated_path_basis": output_paths.declaration,\n',
+        new="",
+    ),
+    Mutant(
+        name="M12_guard_probe_no_isolation_text_check_1027",
+        rel_path=PROBE_REL,
+        old="    assert_portable_text(isolation_text)\n",
         new="",
     ),
 )

@@ -179,11 +179,39 @@ def test_compare_locks_uses_portable_provenance_and_refuses_account_paths(
         verify_reference(output, report["after"], path_basis=report["path_basis"])
         == after.resolve()
     )
+    doc = HELPER["compare_locks"].__doc__ or ""
+    assert "output" in doc
+    assert "path_basis" in doc
+    assert "audit.json" in doc
+
+    local_dep_lock = workspace / "local-dep.lock"
+    local_dep_lock.write_text(
+        LOCK
+        + '\n[[package]]\nname = "local-pkg"\nversion = "0.1.0"\n'
+        + f'source = {{ directory = "{home.as_posix()}/projects/local-pkg" }}\n',
+        encoding="utf-8",
+    )
+    refused_output = workspace / "reports" / "refused.json"
+    with pytest.raises(ValueError, match="Provenance contains a local path or local prefix"):
+        HELPER["compare_locks"](before, local_dep_lock, output=refused_output)
+    assert not refused_output.exists()
+
+    with pytest.raises(ValueError, match="Provenance contains a local path or local prefix"):
+        HELPER["main"](
+            [
+                "--before",
+                str(before),
+                "--after",
+                str(local_dep_lock),
+                "--output",
+                str(refused_output),
+            ]
+        )
+    assert not refused_output.exists()
 
     account_input = workspace / "residentacct-locks" / "before.lock"
     account_input.parent.mkdir()
     account_input.write_text(LOCK, encoding="utf-8")
-    refused_output = workspace / "reports" / "refused.json"
     with pytest.raises(ValueError, match="Provenance contains a local account name"):
         HELPER["main"](
             [
@@ -235,6 +263,33 @@ def test_guard_isolation_probe_emits_portable_paths_and_refuses_account_paths(
         )
     assert not (home / "evidence").exists()
 
+    with pytest.raises(ValueError, match="Source is outside the declared provenance root"):
+        GUARD_PROBE["main"](
+            ["--output-dir", str(workspace / "evidence"), "--provenance-root", str(workspace)]
+        )
+    assert not (workspace / "evidence").exists()
+
+    with pytest.raises(ValueError, match="Provenance contains a local path or local prefix"):
+        GUARD_PROBE["scrub_pytest_log"](
+            f"Wrote: {home.as_posix()}/unreplaced/path.tsv\n",
+            output=workspace / "guard-evidence",
+            repo_root=REPO_ROOT,
+            temp_roots=set(),
+        )
+
+    with monkeypatch.context() as mp:
+        mp.setitem(
+            GUARD_PROBE["main"].__globals__,
+            "inventory",
+            lambda _root: {f"{home.as_posix()}/leaked.tsv": "0" * 64},
+        )
+        mp.setattr(GUARD_PROBE["pytest"], "main", lambda *_args, **_kwargs: 1)
+        leaked_output = workspace / "leaked-inventory"
+        with pytest.raises(ValueError, match="Provenance contains a local path or local prefix"):
+            GUARD_PROBE["main"](["--output-dir", str(leaked_output)])
+        assert not (leaked_output / "isolation.json").exists()
+        assert not (leaked_output / "pytest.log").exists()
+
     probe_output = workspace / "guard-evidence"
     assert GUARD_PROBE["main"](["--output-dir", str(probe_output)]) == 0
     isolation_path = probe_output / "isolation.json"
@@ -242,6 +297,7 @@ def test_guard_isolation_probe_emits_portable_paths_and_refuses_account_paths(
     record = json.loads(raw_isolation)
     assert record["verified"] is True
     assert record.get("path_basis") == {"kind": "supplied-root-v1"}
+    assert record.get("isolated_path_basis") == {"kind": "root-relative-v1", "root": "."}
     assert record["canonical_origin"] == "scripts/create_trait_profile_infographic.py"
     assert record["isolated_origin"] == "infographic_without_guard.py"
     assert record["checkout_outputs"] == "trait-visualization/trait-profile-investigation"
@@ -267,3 +323,19 @@ def test_guard_isolation_probe_emits_portable_paths_and_refuses_account_paths(
         )
         == (REPO_ROOT / "scripts/create_trait_profile_infographic.py").resolve()
     )
+    assert (
+        resolve_reference(
+            isolation_path,
+            record["isolated_origin"],
+            path_basis=record["isolated_path_basis"],
+        )
+        == (probe_output / "infographic_without_guard.py").resolve()
+    )
+    raw_log = (probe_output / "pytest.log").read_text(encoding="utf-8")
+    assert "DID NOT RAISE SystemExit" in raw_log
+    assert "<pytest-tempdir>" in raw_log
+    assert ABSOLUTE_LOCAL_PATH.search(raw_log) is None
+    assert "probeacct" not in raw_log.casefold()
+    assert str(REPO_ROOT) not in raw_log
+    assert str(probe_output) not in raw_log
+    assert_portable_text(raw_log)

@@ -75,7 +75,14 @@ def compare_locks(
     output: Path | None = None,
     provenance_root: Path | None = None,
 ) -> dict[str, Any]:
-    """Hash and parse the same input buffers; report every non-format difference."""
+    """Hash and parse the same input buffers; report every non-format difference.
+
+    ``path_basis`` is computed relative to ``output`` when given, or to an
+    in-memory ``audit.json`` under ``provenance_root`` (or under the common
+    parent of ``before`` and ``after``) when ``output`` is omitted. Callers
+    that persist the returned dictionary must pass the destination file as
+    ``output`` so ``path_basis`` describes the written record.
+    """
     record_path = (
         output
         if output is not None
