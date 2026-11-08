@@ -2,9 +2,10 @@
 
 Purpose:
   Verify that source-level mutants for #1396, #1398, #1399, #1400, #1401, #1402,
-  #1405, #1406, #1407, #1514, #1791, and #1792 are killed by assertion failure
-  (rc=1) in an isolated temporary copy without touching the live worktree files,
-  and that pytest imports the scratch copy (PYTEST_ORIGIN_OK).
+  #1405, #1406, #1407, #1514, #1791, #1792, #1824, #1826, #1827, and #1857 are
+  killed by assertion failure (rc=1) in an isolated temporary copy without
+  touching the live worktree files, and that pytest imports the scratch copy
+  (PYTEST_ORIGIN_OK).
 
 Inputs:
   - src/mtp/density_adjustment.py
@@ -16,10 +17,10 @@ Inputs:
   - tests/test_ontology_audit.py
 
 Outputs:
-  - Exit 0 if all 11 mutants are killed by assertion failure (rc=1) with
+  - Exit 0 if all 28 mutants are killed by assertion failure (rc=1) with
     verified scratch import origin; non-zero otherwise.
 
-Date: 2026-11-06
+Date: 2026-11-07
 """
 
 from __future__ import annotations
@@ -207,8 +208,8 @@ MUTANTS: list[tuple[str, str, str, str, str]] = [
     (
         "N23_orphan_collapsed_into_zero_clusters_1826",
         "scripts/audit_trait_density_correlation.py",
-        "if n_collapsed > 0 and n_clusters == 0",
-        "if False and n_collapsed > 0 and n_clusters == 0",
+        "elif n_orphan > 0:",
+        "elif False:",
         "tests/test_density_consolidated_conclusions.py::test_consolidated_report_pluralizes_singular_and_plural_counts",
     ),
     (
@@ -217,6 +218,34 @@ MUTANTS: list[tuple[str, str, str, str, str]] = [
         '"  collapsed + PC1 regression PC1 variance explained = "',
         '"  collapsed + PC1 regression variance explained = "',
         "tests/test_density_consolidated_conclusions.py::test_conclusions_report_observed_correlations_and_pc1_changes",
+    ),
+    (
+        "N25_mixed_orphan_counted_as_collapsed_1857",
+        "scripts/audit_trait_density_correlation.py",
+        "if n_orphan > 0 and n_collapsed_in_clusters > 0:",
+        "if False:",
+        "tests/test_density_consolidated_conclusions.py::test_consolidated_report_pluralizes_singular_and_plural_counts",
+    ),
+    (
+        "N26_ontology_audit_orphan_count_zero_1857",
+        "src/mtp/ontology_audit.py",
+        '"n_orphan_features": n_orphan_features,',
+        '"n_orphan_features": 0,',
+        "tests/test_ontology_audit.py::test_ontology_redundancy_audit_counts_observed_clusters_only",
+    ),
+    (
+        "N27_coupling_doc_mermaid_reverts_to_same_taxa_1857",
+        "methods/trait_coupling_sensitivity.md",
+        "Coccus and sphere are annotated to largely overlapping taxa",
+        "Coccus and sphere are annotated to the same taxa",
+        "tests/test_density_consolidated_conclusions.py::test_density_interpretation_and_audit_docs_qualify_historical_vif_and_list_provenance",
+    ),
+    (
+        "N28_coupling_doc_prose_reverts_to_same_taxa_1857",
+        "methods/trait_coupling_sensitivity.md",
+        "Both labels are annotated to largely overlapping taxa in the trait matrix.",
+        "Both labels are annotated to the same taxa in the trait matrix.",
+        "tests/test_density_consolidated_conclusions.py::test_density_interpretation_and_audit_docs_qualify_historical_vif_and_list_provenance",
     ),
 ]
 

@@ -431,6 +431,14 @@ def run_ontology_redundancy_audit(
         else 0
     )
     n_collapsed_features = len(non_media_cols) - len(cols_max)
+    non_media_set = set(non_media_cols)
+    n_orphan_features = sum(
+        1
+        for c in clusters
+        if c.surviving_trait not in non_media_set
+        for m in c.collapsed_traits
+        if m in non_media_set
+    )
     bounded_trait_space = len(cols_max)
 
     summary_rows = [
@@ -489,6 +497,7 @@ def run_ontology_redundancy_audit(
         "n_redundant_pairs": n_redundant_pairs,
         "n_clusters": n_clusters,
         "n_collapsed_features": n_collapsed_features,
+        "n_orphan_features": n_orphan_features,
         "bounded_trait_space": bounded_trait_space,
         "raw_metrics": raw_metrics,
         "native_metrics": native_metrics,

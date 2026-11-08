@@ -435,14 +435,17 @@ def test_consolidated_report_pluralizes_singular_and_plural_counts(
     assert "1 redundant pair (1 feature collapsed into 1 cluster)" in collapse
     assert "bounding distinct trait space to 1 feature." in collapse
 
-    # #1826: when a collapsed member (e.g. sphere) is present without its cluster survivor
-    # (coccus), n_redundant_pairs == 0 and n_clusters == 0 while n_collapsed_features == 1;
-    # item 5 must not say '1 feature collapsed into 0 clusters'.
+    # #1826, #1857: when a collapsed member (e.g. sphere) is present without its cluster
+    # survivor (coccus), n_redundant_pairs == 0 and n_clusters == 0 while
+    # n_collapsed_features == 1; item 5 must state that 1 feature was removed because its
+    # cluster survivor is absent, and must count orphan removals separately even when
+    # n_clusters > 0.
     orphan_ontology = {
         **ontology,
         "n_redundant_pairs": 0,
         "n_clusters": 0,
         "n_collapsed_features": 1,
+        "n_orphan_features": 1,
         "bounded_trait_space": 2,
     }
     orphan_content, orphan_conclusions = _report_and_conclusions(
@@ -450,15 +453,49 @@ def test_consolidated_report_pluralizes_singular_and_plural_counts(
     )
     orphan_collapse = _point(orphan_conclusions, 5)
     assert "collapsed into 0 clusters" not in orphan_content
+    assert "across 0 clusters" not in orphan_collapse
     assert (
-        "0 redundant pairs (1 feature removed without a present cluster survivor across 0 clusters)"
+        "0 redundant pairs (1 feature removed because its cluster survivor is absent)"
         in orphan_collapse
     )
 
+    multi_orphan_ontology = {
+        **ontology,
+        "n_redundant_pairs": 0,
+        "n_clusters": 0,
+        "n_collapsed_features": 2,
+        "n_orphan_features": 2,
+        "bounded_trait_space": 2,
+    }
+    _, multi_orphan_conclusions = _report_and_conclusions(
+        audit_script, tmp_path, density, multi_orphan_ontology
+    )
+    assert (
+        "0 redundant pairs (2 features removed because their cluster survivors are absent)"
+        in _point(multi_orphan_conclusions, 5)
+    )
+
+    mixed_ontology = {
+        **ontology,
+        "n_redundant_pairs": 1,
+        "n_clusters": 1,
+        "n_collapsed_features": 2,
+        "n_orphan_features": 1,
+        "bounded_trait_space": 2,
+    }
+    _, mixed_conclusions = _report_and_conclusions(audit_script, tmp_path, density, mixed_ontology)
+    mixed_collapse = _point(mixed_conclusions, 5)
+    assert "2 features collapsed into 1 cluster" not in mixed_collapse
+    assert (
+        "1 redundant pair (1 feature collapsed into 1 cluster; "
+        "1 feature removed because its cluster survivor is absent)"
+    ) in mixed_collapse
+
 
 def test_density_interpretation_and_audit_docs_qualify_historical_vif_and_list_provenance() -> None:
-    """#1391, #1392, #1400, #1827: docs qualify historical binarized VIF 5.88, omit severity and
-    curation-mechanism claims, and list density_adjustment_provenance.json."""
+    """#1391, #1392, #1400, #1827, #1857: docs qualify historical binarized VIF 5.88, omit
+    severity and curation-mechanism claims, state largely overlapping taxa, and list
+    density_adjustment_provenance.json."""
     repo_root = Path(__file__).resolve().parents[1]
     bio_audit = (repo_root / "methods/biological_interpretation_audit.md").read_text(
         encoding="utf-8"
@@ -472,7 +509,11 @@ def test_density_interpretation_and_audit_docs_qualify_historical_vif_and_list_p
     assert "historical binarized-profile r = +0.911" in coupling_doc
     assert "Historical binarized-profile VIF = 5.88" in coupling_doc
     assert "Curators assign" not in coupling_doc
-    assert "Coccus and sphere are annotated to the same taxa" in coupling_doc
+    assert "annotated to the same taxa" not in coupling_doc
+    assert "Coccus and sphere are annotated to largely overlapping taxa" in coupling_doc
+    assert (
+        "Both labels are annotated to largely overlapping taxa in the trait matrix." in coupling_doc
+    )
 
     density_doc = (repo_root / "docs/density_adjustment_audit.md").read_text(encoding="utf-8")
     assert "data/derived/density_adjustment/density_adjustment_provenance.json" in density_doc
