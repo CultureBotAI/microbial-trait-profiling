@@ -26,7 +26,7 @@ from uuid import uuid4
 import httpx
 
 from mtp.paths import REPO_ROOT, file_sha256
-from mtp.workflow.output_roots import require_durable_output, temporary_root
+from mtp.workflow import output_roots
 
 PROVENANCE_FILE = "download_provenance.json"
 
@@ -105,16 +105,13 @@ def verify_madin_record(label: str, size_bytes: int, sha256: str) -> dict[str, o
 def _external_durable_path(path: Path) -> Path:
     """Apply main's temporary-root rule and refuse this working tree before any write."""
     expanded = path.expanduser()
-    lexical = Path(os.path.abspath(expanded))
-    resolved = expanded.resolve()
-    roots = {REPO_ROOT.absolute(), REPO_ROOT.resolve()}
-    for spelling in (lexical, resolved):
-        if temporary := temporary_root(spelling):
-            raise MadinPinError(
-                f"{path} is under temporary storage {temporary}; use a durable data directory"
-            )
-        if any(spelling.is_relative_to(root) for root in roots):
-            raise MadinPinError(f"{path} is inside the repository working tree")
+    try:
+        resolved = output_roots.require_durable_output_path(expanded, allowed=False)
+        checkout_root = output_roots.containing_root(expanded, [REPO_ROOT])
+    except ValueError as error:
+        raise MadinPinError(str(error)) from error
+    if checkout_root is not None:
+        raise MadinPinError(f"{path} is inside the repository working tree")
     return resolved
 
 
@@ -236,7 +233,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
     destination = args.dest_dir.expanduser()
-    require_durable_output(parser, destination, allowed=False)
+    output_roots.require_durable_output(parser, destination, allowed=False)
     try:
         path = download_madin_table(destination)
     except MadinPinError as error:
