@@ -55,9 +55,13 @@ over reported profile occurrences, not distinct taxa, cell counts or abundance.
 Denominator totals repeat for each trait row; within a scenario and direction,
 sum the per-trait removed counts to reconcile that total, not the repeated totals.
 The effects table repeats the removed mass summed across directions and explicitly
-labels `no_removed_annotation_mass`, including a declared lineage absent from the
-source graph. A supported removal with unchanged fraction effects can therefore
-be distinguished from an exclusion that removed no annotations.
+labels `partially_absent_lineage` when only some declared members are present in
+the source graph, and `absent_lineages` when none is present (#1030). Both the effect
+rows and directional mass rows use these statuses, even when a direction removes
+zero mass. When all declared members are present, `removed_annotation_mass` and
+`no_removed_annotation_mass` distinguish their actual contribution in the selected
+scope. The numeric mass and per-lineage accounting remain available alongside the
+status; a missing graph member is not evidence of a tested zero-contribution lineage.
 
 The effect reduction is `1 - effect_after / effect_before`, exported as both
 `effect_reduction_fraction` and `effect_reduction_percent` (100 times that ratio).
@@ -140,3 +144,30 @@ inputs in addition to profiles, matrix, metadata and source identity.
 All effects concern alignment of reported taxon shifts with organism-level
 trait annotations. They do not measure in vivo physiology, metabolite flux,
 patient-level abundance or a causal disease mechanism.
+
+## Verified Noel baseline cross-check (#1029)
+
+Supplying `--noel-run` also requires the verified `taxon_contributions` stage's
+`effects.tsv.gz`, resolved from its declared file or collection inventory.
+The compressed bytes are hashed as they are parsed, and must match that stage's
+recorded digest; reading retains only the baseline family rows. The source summary,
+effects table and arm manifest are bound in the extension's input hashes.
+
+For every protocol scope and all six focal traits, the checker selects
+`scenario=baseline`, `representation=shared_fraction`, `unit=fraction_difference`,
+empty `denominator_trait`, and `correction=BH6`. It compares `before_p` and
+`before_q` with the sidecar's `p` and `q_bh_six`. The Noel table has **no stored BY-six
+column**: the checker independently applies SciPy BY to all six Noel p-values,
+retaining untestable slots at internal p=1, then compares that derived result with
+`q_by_six`. Undefined exported values remain undefined, not zero or one. No native
+composition, ORA, full-screen or zero-total-as-zero family is substituted.
+
+Missing, duplicate or unexpected identities, incompatible family labels, invalid
+probabilities or mismatched missingness fail before the output directory is created.
+Numeric comparisons use relative tolerance `1e-10` and zero absolute tolerance;
+zero versus a nonzero probability cannot pass by an absolute floor. A numeric mismatch
+also fails before publication. `extension_provenance.json` records
+`noel_baseline_check`: source digest, all checked p/q values, family and row counts,
+tolerances and `by_source=derived_from_noel_p_values`. Without `--noel-run`, it records
+`status=not_supplied`; an unchecked recomputation is not reported as agreement with Noel.
+This check changes neither the native analysis nor the declared sensitivity estimators.

@@ -15,6 +15,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from mtp.contribution_inputs import Base, Graph, Key, encoded, load_base, load_graph
+from mtp.datamodel.workflow_pydantic import ArmRun
+from mtp.influence_noel import check_noel_baseline as check_noel_baseline
+from mtp.multiplicity.sources import recorded_arm_output
 from mtp.paths import REPO_ROOT, file_sha256
 from mtp.taxon_contributions import Ledger, Record, reconcile, write_table
 from mtp.taxon_influence import (
@@ -77,6 +80,8 @@ MASS_FIELDS = [
 ]
 IMPLEMENTATIONS = (
     "influence_extension.py",
+    "influence_noel.py",
+    "multiplicity/sources.py",
     "contribution_inputs.py",
     "taxon_contributions.py",
     "taxon_influence.py",
@@ -326,6 +331,13 @@ def _individual_lineage_mass(
     return masses
 
 
+def _removal_status(lineages: list[str], present: set[str], mass: int) -> str:
+    missing = set(lineages) - present
+    if missing:
+        return "absent_lineages" if missing == set(lineages) else "partially_absent_lineage"
+    return "removed_annotation_mass" if mass else "no_removed_annotation_mass"
+
+
 def lineage_effects(
     base: Base,
     graph: Graph,
@@ -389,9 +401,7 @@ def lineage_effects(
                             "before_trait_annotation_mass": before_trait,
                             "after_trait_annotation_mass": after_trait,
                             "removed_trait_annotation_mass": before_trait - after_trait,
-                            "removal_status": "removed_annotation_mass"
-                            if removed_mass
-                            else "no_removed_annotation_mass",
+                            "removal_status": _removal_status(lineages, present, removed_mass),
                         }
                     )
         family = []
@@ -407,9 +417,7 @@ def lineage_effects(
                     **contrasts,
                     "removed_annotation_mass": removed_total,
                     "removed_trait_annotation_mass": removed_focal[trait],
-                    "removal_status": "removed_annotation_mass"
-                    if removed_total
-                    else "no_removed_annotation_mass",
+                    "removal_status": _removal_status(lineages, present, removed_total),
                     "lineage_accounting": encoded(
                         {
                             lineage: {
@@ -513,21 +521,48 @@ def loso_summary(baseline: list[Record], omissions: list[Record]) -> list[Record
     return result
 
 
-def native_summary_source(core_manifest: Path, noel_manifest: Path) -> Path:
-    """Locate the declared native summary through a verified same-core Noel run."""
+def _verified_noel(core_manifest: Path, noel_manifest: Path) -> ArmRun:
     run = verify_arm(noel_manifest)
     if run.arm != "noel" or run.core_manifest_sha256 != file_sha256(core_manifest):
         raise ValueError("Native summary must come from a verified Noel run of this exact core")
-    paths = [
-        Path(artifact.path)
-        for step in run.steps or []
-        if step.id == "native_taxon_influence"
-        for artifact in step.outputs or []
-        if artifact.storage_kind == "file" and Path(artifact.path).name == "native_summary.md"
-    ]
-    if len(paths) != 1:
-        raise ValueError("Verified Noel run must declare exactly one native_summary.md")
-    return paths[0]
+    return run
+
+
+def native_summary_source(core_manifest: Path, noel_manifest: Path) -> Path:
+    """Locate the declared native summary through a verified same-core Noel run."""
+    return recorded_arm_output(
+        _verified_noel(core_manifest, noel_manifest), "native_taxon_influence", "native_summary.md"
+    )
+
+
+def _noel_sources(core_manifest: Path, noel_manifest: Path) -> dict[str, tuple[Path, str]]:
+    """Bind selected outputs to the producing stage's recorded file/collection hashes."""
+    run = _verified_noel(core_manifest, noel_manifest)
+    result = {}
+    for name, stage, filename in (
+        ("native_summary", "native_taxon_influence", "native_summary.md"),
+        ("noel_effects", "taxon_contributions", "effects.tsv.gz"),
+    ):
+        path = recorded_arm_output(run, stage, filename)
+        digests = set()
+        for step in run.steps or []:
+            if step.id != stage:
+                continue
+            for artifact in step.outputs or []:
+                root = Path(artifact.path)
+                if artifact.storage_kind == "file":
+                    if root.resolve() == path:
+                        digests.add(artifact.sha256)
+                else:
+                    digests.update(
+                        entry.sha256
+                        for entry in artifact.inventory
+                        if (root / entry.path).resolve() == path
+                    )
+        if len(digests) != 1:
+            raise ValueError(f"Noel output {filename} lacks one unambiguous recorded digest")
+        result[name] = path, digests.pop()
+    return result
 
 
 def _display_row(row: Record) -> Record:
@@ -659,17 +694,25 @@ def run_extension(core_manifest: Path, output: Path, noel_manifest: Path | None 
             "kg_nodes",
         )
     }
+    noel_sources: dict[str, tuple[Path, str]] = {}
     if noel_manifest is not None:
         native_root = noel_manifest.resolve().parent
         destination = output.resolve()
         if destination.is_relative_to(native_root) or native_root.is_relative_to(destination):
             raise ValueError("Extension output must be outside the immutable Noel arm bundle")
         inputs["noel_manifest"] = noel_manifest.resolve()
-        inputs["native_summary"] = native_summary_source(core_manifest, noel_manifest)
+        noel_sources = _noel_sources(core_manifest, noel_manifest)
+        inputs.update({name: path for name, (path, _) in noel_sources.items()})
     input_hashes = {name: file_sha256(path) for name, path in inputs.items()}
-    native_text = (
-        inputs["native_summary"].read_text(encoding="utf-8") if "native_summary" in inputs else None
-    )
+    for name, (_, digest) in noel_sources.items():
+        if input_hashes[name] != digest:
+            raise ValueError(f"Noel input differs from recorded hash: {name}")
+    native_text = None
+    if "native_summary" in inputs:
+        raw_summary = inputs["native_summary"].read_bytes()
+        if hashlib.sha256(raw_summary).hexdigest() != input_hashes["native_summary"]:
+            raise ValueError("Noel summary consumed bytes differ from recorded hash")
+        native_text = raw_summary.decode("utf-8")
     protocol_sha = PROTOCOL_SHA256
     producer_hashes = implementation_hashes()
     lock_sha = file_sha256(REPO_ROOT / "uv.lock")
@@ -708,6 +751,11 @@ def run_extension(core_manifest: Path, output: Path, noel_manifest: Path | None 
             for row in fraction_family(base, base.profiles, keys)
         )
         omissions.extend({"scope": analysis_scope["id"], **row} for row in study_loso(base, keys))
+    noel_check: Record = {"status": "not_supplied"}
+    if noel_manifest is not None:
+        noel_check = check_noel_baseline(
+            inputs["noel_effects"], noel_sources["noel_effects"][1], baseline
+        )
     summaries = loso_summary(baseline, omissions)
     if input_hashes != {name: file_sha256(path) for name, path in inputs.items()}:
         raise ValueError("Core inputs changed during lineage-extension analysis")
@@ -831,6 +879,7 @@ def run_extension(core_manifest: Path, output: Path, noel_manifest: Path | None 
                 "direction_basis": bundle.run.direction_basis,
                 "strain_rollup": scope,
                 "input_sha256": input_hashes,
+                "noel_baseline_check": noel_check,
                 "retained_features": base.columns,
                 "focal_features": base.traits,
                 "reconciliation_mismatches": 0,
@@ -859,7 +908,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--core-run", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument(
-        "--noel-run", type=Path, help="Include the verified same-core native report"
+        "--noel-run",
+        type=Path,
+        help="Include the verified same-core native report and cross-check its six-trait baseline",
     )
     add_temporary_output_option(parser)
     args = parser.parse_args(argv)
