@@ -336,21 +336,31 @@ Fact = tuple[str, str]
 
 
 def visible_by_derivation(
-    unit: Unit, scope: str, *, file_budget: FileDerivationBudget | None = None
+    unit: Unit,
+    scope: str,
+    *,
+    work_counts: dict[str, int] | None = None,
+    file_budget: FileDerivationBudget | None = None,
 ) -> bool:
     """Recognize local BH * H_m followed by clip, with the same visible extent.
 
     This deliberately small recognizer is an anchor-level witness, not output
     lineage or a general Python interpreter. Opaque helpers and mutating calls
     are outside its model. Facts exist only while this one bounded AST is live.
+    Optional counters accumulate attempted work in thirteen fixed categories,
+    including a charge that exceeds the limit. Reusing a dictionary accumulates
+    counts but never shares the per-invocation budget. Overlapping operations
+    remain separate charges; declared_names includes all special bound names.
     """
     function = unit.functions[scope]
     witnessed = False
     work = 0
 
-    def charge(amount: int = 1) -> None:
+    def charge(category: str, amount: int = 1) -> None:
         nonlocal work
         work += amount
+        if work_counts is not None:
+            work_counts[category] = work_counts.get(category, 0) + amount
         if work > unit.limits.derivation_steps:
             raise DiscoveryLimitError(
                 f"derivation work budget exceeded: {unit.path}:{scope} "
@@ -361,13 +371,13 @@ def visible_by_derivation(
             file_budget.charge(amount, unit.path, scope)
 
     def copy_env(env: dict[str, Fact]) -> dict[str, Fact]:
-        charge(len(env))
+        charge("env_copy", len(env))
         return env.copy()
 
     def local_nodes(root: ast.AST) -> Iterator[ast.AST]:
         pending = [root]
         while pending:
-            charge()
+            charge("walk_node")
             node = pending.pop()
             yield node
             if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef):
@@ -375,7 +385,7 @@ def visible_by_derivation(
             for _, value in ast.iter_fields(node):
                 if isinstance(value, list):
                     # iter_child_nodes scans string entries too (e.g. globals).
-                    charge(len(value))
+                    charge("walk_list", len(value))
             pending.extend(ast.iter_child_nodes(node))
 
     module_writes = set()
@@ -447,7 +457,7 @@ def visible_by_derivation(
         return ("harmonic", family) if family is not None else None
 
     def expression(node: ast.AST, env: dict[str, Fact]) -> Fact | None:
-        charge()
+        charge("expression")
         if isinstance(node, ast.Name):
             return env.get(node.id, ("vector", node.id))
         if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Mult):
@@ -499,7 +509,7 @@ def visible_by_derivation(
             env.setdefault(previous[1], previous)
 
     def assign(node: ast.AST, value: Fact | None, env: dict[str, Fact]) -> None:
-        charge()
+        charge("assignment")
         if isinstance(node, ast.Name):
             env[node.id] = value or ("vector", f"{node.id}:{node.lineno}:{node.col_offset}")
         elif isinstance(node, ast.Subscript | ast.Attribute):
@@ -519,7 +529,7 @@ def visible_by_derivation(
             remember_mutated_origin(previous, env)
             if isinstance(root, ast.Name):
                 env[root.id] = ("unknown", root.id)
-            charge(len(env))
+            charge("write_alias_scan", len(env))
             for alias, fact in list(env.items()):
                 if fact == previous or fact[0] in {"BH", "scaled", "BY"}:
                     env[alias] = ("unknown", alias)
@@ -531,7 +541,7 @@ def visible_by_derivation(
         if isinstance(node, ast.Name):
             previous = env.get(node.id, ("vector", node.id))
             remember_mutated_origin(previous, env)
-            charge(len(env))
+            charge("alias_invalidation", len(env))
             for alias, fact in list(env.items()):
                 if fact == previous:
                     env[alias] = ("unknown", f"{alias}:{node.lineno}")
@@ -541,7 +551,7 @@ def visible_by_derivation(
     def intersection(left: dict[str, Fact], right: dict[str, Fact]) -> dict[str, Fact]:
         # Keep invalidated names present, so an earlier fact cannot reappear
         # through the fallback for an unbound parameter.
-        charge(len(left) + len(right))
+        charge("env_join", len(left) + len(right))
         return {
             name: left[name]
             if name in left and left.get(name) == right.get(name)
@@ -556,7 +566,7 @@ def visible_by_derivation(
             if isinstance(node, ast.NamedExpr) and isinstance(node.target, ast.Name):
                 names.append(node.target.id)
             elif isinstance(node, ast.Import | ast.ImportFrom):
-                charge(len(node.names))
+                charge("import_names", len(node.names))
                 names.extend(
                     alias.asname
                     or (alias.name.split(".")[0] if isinstance(node, ast.Import) else alias.name)
@@ -580,13 +590,13 @@ def visible_by_derivation(
                         assign(item, None, env)
             # Global/nonlocal names are string fields, not child AST nodes.
             # Repeated declarations can do much work while adding only one fact.
-            charge(len(names))
+            charge("declared_names", len(names))
             for name in names:
                 env[name] = ("unknown", name)
 
     def terminates(body: list[ast.stmt]) -> bool:
         for statement in body:
-            charge()
+            charge("terminates")
             if isinstance(statement, ast.Return | ast.Raise | ast.Break | ast.Continue):
                 return True
             if isinstance(statement, ast.With | ast.AsyncWith) and terminates(statement.body):
@@ -607,7 +617,7 @@ def visible_by_derivation(
     ) -> dict[str, Fact]:
         nonlocal witnessed
         for statement in body:
-            charge()
+            charge("statement")
             invalidate_bindings(statement, env)
             if isinstance(statement, ast.Assign | ast.AnnAssign):
                 value = expression(statement.value, env) if statement.value is not None else None
@@ -661,7 +671,7 @@ def visible_by_derivation(
                 # any loop-body calculation is allowed to supply a witness.
                 entry = copy_env(env)
                 while True:
-                    charge()
+                    charge("loop_pass")
                     inside = copy_env(entry)
                     if isinstance(statement, ast.For | ast.AsyncFor):
                         assign(statement.target, None, inside)
