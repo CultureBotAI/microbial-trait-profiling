@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
-"""Verify source-level mutants for #1742, #1811, #1812, and #1872-#1874 in a scratch copy.
+"""Verify source-level mutants for #1742, #1811, #1812, #1872-#1876, and #1908 in a scratch copy.
 
-Purpose: Confirm that every #1742/#1811/#1812/#1872/#1873/#1874 change (recording
-bh_unfiltered_trait_count from retained_trait_count, stating the unfiltered retained
-count and select_stratum_traits selection rule in paired_q_value_family across selection
-and summary tables, refusing retained_trait_count < correction_family_size across every
-displayed row, and validating inputs before reset_output_dir() in main()) is killed by
-an assertion failure in pytest, with import origin verified inside pytest and zero writes
-to the worktree.
+Purpose: Confirm that every #1742/#1811/#1812/#1872/#1873/#1874/#1875/#1876/#1908 change
+(recording bh_unfiltered_trait_count from retained_trait_count, stating the unfiltered
+retained count and select_stratum_traits selection rule in paired_q_value_family across
+selection and summary tables, refusing retained_trait_count < correction_family_size
+across every displayed row with the resolved repo-relative table path or filename fallback
+and regeneration remedy, handling missing or NaN trait_id in selection_display_metadata,
+and validating inputs before reset_output_dir() in main()) is killed by an assertion
+failure in pytest, with import origin verified inside pytest and zero writes to the
+worktree.
 Inputs: Worktree scripts/create_six_shared_trait_sankeys.py,
 trait-visualization/figure_methods.md, and tests/test_sankey_nominal_display.py.
 Outputs: Exit code 0 if the unmutated control passes and all mutants are killed by
 assertions; non-zero otherwise.
-Issue: #1742, #1811, #1812, #1872, #1873, #1874
+Issue: #1742, #1811, #1812, #1872, #1873, #1874, #1875, #1876, #1908
 Date: 2026-11-07
 """
 
@@ -34,6 +36,7 @@ ASSERTION_MARKERS = (
     "AssertionError",
     "Failed: DID NOT RAISE",
     "Failed: consistent counts refused",
+    "Failed: selection_display_metadata without trait_id raised KeyError:",
     "Regex pattern did not match",
 )
 ERROR_MARKERS = (
@@ -156,7 +159,7 @@ MUTANTS: list[tuple[str, str, str, str]] = [
     (
         "S12_selection_display_metadata_drops_trait_id_on_refusal_1812",
         "scripts/create_six_shared_trait_sankeys.py",
-        "        _format_paired_q_value_family(size, retained, trait_id=str(trait_id))",
+        "        _format_paired_q_value_family(size, retained, trait_id=_clean_trait_id(trait_id))",
         "        _format_paired_q_value_family(size, retained)",
     ),
     (
@@ -190,6 +193,65 @@ MUTANTS: list[tuple[str, str, str, str]] = [
             "    summary = build_trait_summary(metadata, raw_trait_counts, zscores, q_stats)\n"
             "    trait_selection = build_trait_selection(q_stats)"
         ),
+    ),
+    (
+        "S15_selection_display_metadata_requires_trait_id_column_1875",
+        "scripts/create_six_shared_trait_sankeys.py",
+        (
+            "    trait_ids = (\n"
+            '        output["trait_id"].tolist() '
+            'if "trait_id" in output.columns else [None] * len(output)\n'
+            "    )"
+        ),
+        '    trait_ids = output["trait_id"].tolist()',
+    ),
+    (
+        "S16_clean_trait_id_stringify_nan_1875",
+        "scripts/create_six_shared_trait_sankeys.py",
+        (
+            "    if isinstance(raw_trait_id, pd.Series) or raw_trait_id is None "
+            "or pd.isna(raw_trait_id):\n"
+            "        return None\n"
+            "    text = str(raw_trait_id).strip()\n"
+            '    if not text or text.lower() == "nan":\n'
+            "        return None"
+        ),
+        (
+            "    if isinstance(raw_trait_id, pd.Series) or raw_trait_id is None:\n"
+            "        return None\n"
+            "    text = str(raw_trait_id).strip()\n"
+            "    if not text:\n"
+            "        return None"
+        ),
+    ),
+    (
+        "S17_refusal_message_omits_table_and_remedy_1876",
+        "scripts/create_six_shared_trait_sankeys.py",
+        (
+            "        msg = (\n"
+            '            f"retained_trait_count ({retained}) cannot be less than "\n'
+            '            f"correction_family_size ({family_size}){for_trait} "\n'
+            '            f"in {_trait_stats_table_label()} (regenerate the trait statistics)"\n'
+            "        )"
+        ),
+        (
+            "        msg = (\n"
+            '            f"retained_trait_count ({retained}) cannot be less than "\n'
+            '            f"correction_family_size ({family_size}){for_trait}"\n'
+            "        )"
+        ),
+    ),
+    (
+        "S18_outside_repo_label_returns_str_path_1908",
+        "scripts/create_six_shared_trait_sankeys.py",
+        "    except ValueError:\n        return TRAIT_STATS_PATH.name",
+        "    except ValueError:\n        return str(TRAIT_STATS_PATH)",
+    ),
+    (
+        "S19_table_label_omits_resolve_on_dotdot_path_1908",
+        "scripts/create_six_shared_trait_sankeys.py",
+        "        return TRAIT_STATS_PATH.resolve().relative_to(REPO_ROOT.resolve()).as_posix()",
+        "        return TRAIT_STATS_PATH.relative_to(REPO_ROOT).as_posix()",
     ),
 ]
 
@@ -314,7 +376,7 @@ def main() -> int:
                 print(f"FAIL [{name}]: no assertion failure marker in output\n{out}")
                 return 1
             print(f"KILLED [{name}]: rc=1 assertion failure verified from scratch copy")
-    print(f"ALL {len(MUTANTS)} #1742/#1811/#1812/#1872/#1873/#1874 MUTANTS KILLED CLEANLY.")
+    print(f"ALL {len(MUTANTS)} #1742/#1811/#1812/#1872-#1876/#1908 MUTANTS KILLED CLEANLY.")
     return 0
 
 

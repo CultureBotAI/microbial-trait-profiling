@@ -2176,6 +2176,24 @@ SELECTION_RULE_NOTE = (
 )
 
 
+def _clean_trait_id(raw_trait_id: object) -> str | None:
+    """Return a non-empty trait identifier when present and not NaN, else None (#1875)."""
+    if isinstance(raw_trait_id, pd.Series) or raw_trait_id is None or pd.isna(raw_trait_id):
+        return None
+    text = str(raw_trait_id).strip()
+    if not text or text.lower() == "nan":
+        return None
+    return text
+
+
+def _trait_stats_table_label() -> str:
+    """Return the repo-relative path or filename of the trait stats table (#1876, #1908)."""
+    try:
+        return TRAIT_STATS_PATH.resolve().relative_to(REPO_ROOT.resolve()).as_posix()
+    except ValueError:
+        return TRAIT_STATS_PATH.name
+
+
 def _extract_retained_trait_count(
     raw_retained: object,
     size: object = None,
@@ -2186,10 +2204,12 @@ def _extract_retained_trait_count(
     retained = _extract_bh_family_size(raw_retained)
     family_size = _extract_bh_family_size(size)
     if retained is not None and family_size is not None and retained < family_size:
-        for_trait = f" for trait {trait_id}" if trait_id else ""
+        cleaned_trait_id = _clean_trait_id(trait_id)
+        for_trait = f" for trait {cleaned_trait_id}" if cleaned_trait_id else ""
         msg = (
             f"retained_trait_count ({retained}) cannot be less than "
-            f"correction_family_size ({family_size}){for_trait}"
+            f"correction_family_size ({family_size}){for_trait} "
+            f"in {_trait_stats_table_label()} (regenerate the trait statistics)"
         )
         raise ValueError(msg)
     return retained
@@ -2322,12 +2342,15 @@ def selection_display_metadata(
             index=output.index,
             dtype="Int64",
         )
+    trait_ids = (
+        output["trait_id"].tolist() if "trait_id" in output.columns else [None] * len(output)
+    )
     output["paired_q_value_family"] = [
-        _format_paired_q_value_family(size, retained, trait_id=str(trait_id))
+        _format_paired_q_value_family(size, retained, trait_id=_clean_trait_id(trait_id))
         for size, retained, trait_id in zip(
             output["bh_family_size"].tolist(),
             output["bh_unfiltered_trait_count"].tolist(),
-            output["trait_id"].tolist(),
+            trait_ids,
             strict=True,
         )
     ]
