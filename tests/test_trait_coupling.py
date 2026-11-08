@@ -443,7 +443,7 @@ def test_build_coupling_report_text_content() -> None:
     assert "2. LEAVE-ONE-TRAIT-OUT (LOTO) - COMPOSITION DELTA Q-VALUE MATRIX (6 x 6):" in text
     assert "3. LEAVE-CLUSTER-OUT (LCO) - DROPPING COCCUS + SPHERE SIMULTANEOUSLY:" in text
     assert "4. FORMAL DECISION RULE EVALUATION:" in text
-    assert "5. METHODOLOGICAL & BIOLOGICAL SYNTHESIS:" in text
+    assert "5. SENSITIVITY SUMMARY:" in text
     assert "facultatively aerobic" in text
     assert "Direct Test (Drop Sphere -> Coccus Effect Shift):" in text
     assert "Reverse Test (Drop Coccus -> Sphere Effect Shift):" in text
@@ -549,7 +549,7 @@ def test_full_coupling_audit_on_synthetic_data(
     assert "2. LEAVE-ONE-TRAIT-OUT (LOTO) - COMPOSITION DELTA Q-VALUE MATRIX" in report
     assert "3. LEAVE-CLUSTER-OUT (LCO) - DROPPING COCCUS + SPHERE SIMULTANEOUSLY:" in report
     assert "4. FORMAL DECISION RULE EVALUATION:" in report
-    assert "5. METHODOLOGICAL & BIOLOGICAL SYNTHESIS:" in report
+    assert "5. SENSITIVITY SUMMARY:" in report
     assert "7 columns (" in report
     assert "maximum |Delta effect|" in report
     assert "maximum |Delta share_up|" in report
@@ -761,3 +761,59 @@ def test_coupling_methods_distinguish_annotation_association_from_a_cause() -> N
     assert "do not establish semantic equivalence or the cause of the association" in section
     assert "does not establish stability across all leave-outs" in section
     assert "does not reorder Table 1 traits" not in text
+
+
+@pytest.mark.parametrize("delta", [0.001, 0.004, -0.005])
+@pytest.mark.parametrize(("target", "dropped"), [(COCCUS_ID, SPHERE_ID), (SPHERE_ID, COCCUS_ID)])
+def test_coupling_section4_verdict_is_limited_to_named_removal(
+    delta: float, target: str, dropped: str
+) -> None:
+    """Both threshold branches and directions stay scoped, including equality (#1976)."""
+    ids = [COCCUS_ID, SPHERE_ID, "other"]
+    names = [TABLE_1_TRAITS.get(trait, trait) for trait in ids]
+    baseline = {
+        trait: ArmResult(trait, name, effect, 1.0, 1.0)
+        for trait, name, effect in zip(ids, names, [0.0, 0.004, 0.02], strict=True)
+    }
+    shifts = pd.DataFrame(np.nan, index=names, columns=names)
+    target_name, dropped_name = TABLE_1_TRAITS[target], TABLE_1_TRAITS[dropped]
+    shifts.loc[dropped_name, target_name] = delta
+    rule = evaluate_decision_rule(baseline, shifts, target, dropped)
+    passes = abs(delta) < 0.004
+    prefix, comparison = ("Passes", "<") if passes else ("Fails", ">=")
+    expected = (
+        f"{prefix} named-removal criterion: |Delta effect| ({abs(delta):.6f}) "
+        f"{comparison} baseline min adjacent row distance (0.004000). "
+        f"This compares only the {target_name} effect after removing {dropped_name}; "
+        "it does not establish stability for other traits or removals."
+    )
+    assert rule.passes_stability_criterion is passes
+    assert rule.verdict == expected
+    report = build_coupling_report_text(shifts, shifts * 0, [], rule, rule)
+    section4 = report.split("4. FORMAL DECISION RULE EVALUATION:", 1)[1].split("5. ", 1)[0]
+    assert section4.count(expected) == 2
+    assert "destabilize effect rankings" not in report
+    assert "destabilizes separate reporting" not in report
+    assert "5. SENSITIVITY SUMMARY:" in report
+    assert "METHODOLOGICAL & BIOLOGICAL SYNTHESIS" not in report
+
+
+def test_coupling_methods_report_historical_bounds_without_grading_or_cause() -> None:
+    """Preserve historical quantities without inventing a mechanism or quality grade (#1978)."""
+    text = (
+        Path(__file__).resolve().parents[1] / "methods/trait_coupling_sensitivity.md"
+    ).read_text()
+    correlation = next(
+        line for line in text.splitlines() if line.startswith("2. **Across-test correlation:**")
+    )
+    assert "Correlations between annotated traits across taxa" in correlation
+    assert "their causes are not established by this audit" in correlation
+    assert "causing" not in correlation
+    composition = next(
+        line for line in text.splitlines() if line.startswith("- **Composition Arm:**")
+    )
+    assert "historical binarized evaluation" in composition
+    assert "0.000636" in composition
+    assert "0.001008" in composition
+    assert "both below the historical minimum adjacent gap of $0.002040$" in composition
+    assert "exceptionally small" not in text

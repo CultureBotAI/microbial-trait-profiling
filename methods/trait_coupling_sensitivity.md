@@ -39,7 +39,7 @@ In [#174](https://github.com/CultureBotAI/microbial-trait-profiling/issues/174) 
 
 Three distinct statistical mechanisms operate under the broad concept of "correlation":
 1. **Within-test dependence:** Co-annotated assertions bundled inside taxa and rolled up along lineages ([#131](https://github.com/CultureBotAI/microbial-trait-profiling/issues/131)).
-2. **Across-test correlation:** Biological co-selection or annotation curation density causing pairwise trait correlations across taxa ([#264](https://github.com/CultureBotAI/microbial-trait-profiling/issues/264)).
+2. **Across-test correlation:** Correlations between annotated traits across taxa; their causes are not established by this audit ([#264](https://github.com/CultureBotAI/microbial-trait-profiling/issues/264)).
 3. **Trait coupling:** Denominator closure ($T_i = \sum_k X_{ik}$) and shared background urns ($M = \text{background\_total}$), where the presence of one trait alters the numerical baseline of every other trait.
 
 Here, we systematically evaluate trait coupling using:
@@ -135,7 +135,7 @@ We evaluated the collective impact of dropping the correlated near-twin cluster 
 | **ORA** | Moderately halophilic | $+1.4883$ | $+1.4988$ | $+0.010487$ | $1.000$ | $1.000$ | $-6.74 \times 10^{-13}$ |
 
 ### Cross-Arm Comparison
-- **Composition Arm:** Shifts are exceptionally small ($|\Delta \text{effect}| \le 0.000636$ in LOTO and $\le 0.001008$ in LCO).
+- **Composition Arm:** In the historical binarized evaluation, maximum absolute shifts are $|\Delta \text{effect}| \le 0.000636$ in LOTO and $\le 0.001008$ in LCO, both below the historical minimum adjacent gap of $0.002040$. These bounds do not describe the current raw-count report.
 - **Directional Arm:** Study share up shifts by at most $|\Delta \text{share\_up}| \le 0.002183$ in LOTO and $\le 0.002736$ in LCO (reflecting shifts in only $1$ to $2$ marginal studies out of $>600$–$900$ scored studies, with *facultatively aerobic* scored studies shifting from $916$ to $917$ under LCO).
 - **ORA Arm:** Mean fold enrichment shifts by up to $|\Delta \text{mean\_fold}| \le 0.024908$ in LOTO and $\le 0.022271$ in LCO, as removing the coccus/sphere cluster reduces the non-MediaDive background annotation pool by $\sim 7.0\%$, modestly raising relative representation of other traits (and shifting *facultatively aerobic* profile-level hits at $q \le 0.05$ from $33$ to $38$ under LCO).
 

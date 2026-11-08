@@ -494,11 +494,10 @@ def evaluate_decision_rule(
     target_trait_id: str = COCCUS_ID,
     dropped_trait_id: str = SPHERE_ID,
 ) -> DecisionRuleResult:
-    """Evaluate the formal stability decision rule.
+    """Compare one named removal's effect change with the baseline adjacent-row gap.
 
-    Criterion:
-        If dropping sphere moves coccus by more than the minimum distance between
-        adjacent Table 1 rows, the two cannot be reported as separate convergent findings.
+    Passing this criterion describes only the evaluated target after the specified
+    removal; it does not establish stability of other traits or removals.
     """
     target_name = TABLE_1_TRAITS.get(target_trait_id, target_trait_id)
     dropped_name = TABLE_1_TRAITS.get(dropped_trait_id, dropped_trait_id)
@@ -519,15 +518,17 @@ def evaluate_decision_rule(
 
     if passes:
         verdict = (
-            f"Passes stability criterion: |Delta effect| ({abs_d_eff:.6f}) < "
-            f"min adjacent row distance ({min_adj_dist:.6f}). Denominator coupling does not "
-            f"destabilize effect rankings."
+            f"Passes named-removal criterion: |Delta effect| ({abs_d_eff:.6f}) < "
+            f"baseline min adjacent row distance ({min_adj_dist:.6f}). "
+            f"This compares only the {target_name} effect after removing {dropped_name}; "
+            "it does not establish stability for other traits or removals."
         )
     else:
         verdict = (
-            f"Fails stability criterion: |Delta effect| ({abs_d_eff:.6f}) >= "
-            f"min adjacent row distance ({min_adj_dist:.6f}). Near-twin coupling destabilizes "
-            f"separate reporting."
+            f"Fails named-removal criterion: |Delta effect| ({abs_d_eff:.6f}) >= "
+            f"baseline min adjacent row distance ({min_adj_dist:.6f}). "
+            f"This compares only the {target_name} effect after removing {dropped_name}; "
+            "it does not establish stability for other traits or removals."
         )
 
     return DecisionRuleResult(
@@ -687,7 +688,7 @@ def build_coupling_report_text(
             f"  |Delta effect|:                  {rule_result_reverse.abs_delta_effect:.6f}",
             f"  Criterion verdict:               {rule_result_reverse.verdict}",
             "",
-            "5. METHODOLOGICAL & BIOLOGICAL SYNTHESIS:",
+            "5. SENSITIVITY SUMMARY:",
             "-" * 80,
             "a. Denominator Coupling Sensitivity by Analytical Arm:",
             (
