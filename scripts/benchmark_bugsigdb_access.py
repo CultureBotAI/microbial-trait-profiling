@@ -18,6 +18,7 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from typing import Any, cast
 
 import httpx
 
@@ -72,9 +73,9 @@ def _download_bytes(url: str, client: httpx.Client) -> tuple[int, float]:
     return size, time.perf_counter() - start
 
 
-def _list_gh_contents(client: httpx.Client, api_url: str) -> list[dict]:
+def _list_gh_contents(client: httpx.Client, api_url: str) -> list[dict[str, Any]]:
     """Fetch a GitHub contents listing, following Link header pagination."""
-    entries: list[dict] = []
+    entries: list[dict[str, Any]] = []
     separator = "&" if "?" in api_url else "?"
     url: str | None = f"{api_url}{separator}per_page=100"
     while url:
@@ -86,10 +87,10 @@ def _list_gh_contents(client: httpx.Client, api_url: str) -> list[dict]:
     return entries
 
 
-def _list_zenodo_files(client: httpx.Client, api_url: str) -> list[dict]:
+def _list_zenodo_files(client: httpx.Client, api_url: str) -> list[dict[str, Any]]:
     response = client.get(api_url, follow_redirects=True)
     response.raise_for_status()
-    return response.json()["files"]
+    return cast(list[dict[str, Any]], response.json()["files"])
 
 
 def benchmark_raw_csv(client: httpx.Client) -> MethodResult:

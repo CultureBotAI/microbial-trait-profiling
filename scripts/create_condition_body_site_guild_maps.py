@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import math
+from collections.abc import Hashable
 from dataclasses import dataclass
 from pathlib import Path
 from textwrap import shorten, wrap
+from typing import TYPE_CHECKING, Any, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -14,6 +16,9 @@ from matplotlib.colors import TwoSlopeNorm
 from matplotlib.lines import Line2D
 from matplotlib.patches import PathPatch
 from matplotlib.path import Path as MplPath
+
+if TYPE_CHECKING:
+    from matplotlib.axes import Axes
 
 from mtp.composition_denominators import (
     DENOMINATOR_DEFINITION,
@@ -462,10 +467,10 @@ def select_display_edges(edges: pd.DataFrame) -> pd.DataFrame:
         ascending=[False, False, False, False],
     )
     per_body_site = candidates.groupby("body_site_group", sort=False).head(2)
-    selected_indices: list[int] = []
+    selected_indices: list[Hashable] = []
     selected_conditions: set[str] = set()
 
-    def add_candidate(index: int, row: pd.Series) -> None:
+    def add_candidate(index: Hashable, row: pd.Series) -> None:
         if index in selected_indices or len(selected_indices) >= MAX_DISPLAY_EDGES:
             return
         condition = str(row["condition"])
@@ -1520,10 +1525,10 @@ def select_v3_display_edges(edges: pd.DataFrame) -> pd.DataFrame:
         ascending=[False, False, False, False],
     )
     per_body_site = candidates.groupby("body_site_group", sort=False).head(2)
-    selected_indices: list[int] = []
+    selected_indices: list[Hashable] = []
     selected_conditions: set[str] = set()
 
-    def add_candidate(index: int, row: pd.Series) -> None:
+    def add_candidate(index: Hashable, row: pd.Series) -> None:
         if index in selected_indices or len(selected_indices) >= V3_MAX_DISPLAY_EDGES:
             return
         condition = str(row["condition"])
@@ -1551,7 +1556,7 @@ def scaled_line_width(values: pd.Series) -> pd.Series:
     scaled = (np.sqrt(counts) - np.sqrt(counts.min())) / (
         np.sqrt(counts.max()) - np.sqrt(counts.min())
     )
-    return 1.2 + scaled * 8.0
+    return cast(pd.Series, 1.2 + scaled * 8.0)
 
 
 def scaled_line_width_from_range(
@@ -1691,11 +1696,11 @@ def weighted_v3_node_stats(edges: pd.DataFrame, node_column: str) -> pd.DataFram
 
 
 def draw_curve(
-    ax: plt.Axes,
+    ax: Axes,
     *,
     start: tuple[float, float],
     end: tuple[float, float],
-    color: str,
+    color: str | tuple[float, float, float, float],
     linewidth: float,
     alpha: float = 0.72,
     zorder: float = 1.0,
@@ -1732,7 +1737,7 @@ def draw_curve(
 
 
 def draw_node(
-    ax: plt.Axes,
+    ax: Axes,
     *,
     x: float,
     y: float,
@@ -1775,7 +1780,7 @@ def draw_node(
 
 
 def draw_node_v3(
-    ax: plt.Axes,
+    ax: Axes,
     *,
     x: float,
     y: float,
@@ -1824,7 +1829,7 @@ def build_condition_sampled_site_notes(
         return notes
 
     displayed_by_condition = {
-        condition: set(group["body_site_group"])
+        cast(str, condition): set(group["body_site_group"])
         for condition, group in display_edges.groupby("condition", sort=False)
     }
     for condition, displayed_sites in displayed_by_condition.items():
@@ -1841,7 +1846,8 @@ def build_condition_sampled_site_notes(
         entries = [
             (
                 f"{compact_label(row.body_site_group, width=18)} "
-                f"profiles={int(row.profile_count)} studies={int(row.study_count)}"
+                f"profiles={int(cast(Any, row.profile_count))} "
+                f"studies={int(cast(Any, row.study_count))}"
             )
             for row in condition_sites.head(MAX_OTHER_SITES_PER_CONDITION).itertuples()
         ]
@@ -1937,14 +1943,14 @@ def plot_condition_body_site_map(
     right_x = 0.68
     for edge, linewidth in zip(display_edges.itertuples(), widths, strict=True):
         signal = (
-            edge.focus_minus_comparator_guild_z
-            if np.isfinite(edge.focus_minus_comparator_guild_z)
-            else edge.focus_mean_guild_z
+            cast(float, edge.focus_minus_comparator_guild_z)
+            if np.isfinite(cast(float, edge.focus_minus_comparator_guild_z))
+            else cast(float, edge.focus_mean_guild_z)
         )
         draw_curve(
             ax,
-            start=(left_x, condition_y[edge.condition]),
-            end=(right_x, body_site_y[edge.body_site_group]),
+            start=(left_x, condition_y[cast(str, edge.condition)]),
+            end=(right_x, body_site_y[cast(str, edge.body_site_group)]),
             color=cmap(norm(signal)),
             linewidth=float(linewidth),
         )
@@ -2216,8 +2222,11 @@ def plot_condition_body_site_map_v3(
             continue
         draw_curve(
             ax,
-            start=(left_x, condition_y[edge.condition] + V3_BACKGROUND_EDGE_Y_OFFSET),
-            end=(right_x, body_site_y[edge.body_site_group] + V3_BACKGROUND_EDGE_Y_OFFSET),
+            start=(left_x, condition_y[cast(str, edge.condition)] + V3_BACKGROUND_EDGE_Y_OFFSET),
+            end=(
+                right_x,
+                body_site_y[cast(str, edge.body_site_group)] + V3_BACKGROUND_EDGE_Y_OFFSET,
+            ),
             color=SLATE_500,
             linewidth=float(linewidth),
             alpha=0.48,
@@ -2226,14 +2235,14 @@ def plot_condition_body_site_map_v3(
 
     for edge, linewidth in zip(display_edges.itertuples(), enriched_widths, strict=True):
         signal = (
-            edge.focus_enriched_minus_comparator_guild_z
-            if np.isfinite(edge.focus_enriched_minus_comparator_guild_z)
-            else edge.focus_enriched_mean_guild_z
+            cast(float, edge.focus_enriched_minus_comparator_guild_z)
+            if np.isfinite(cast(float, edge.focus_enriched_minus_comparator_guild_z))
+            else cast(float, edge.focus_enriched_mean_guild_z)
         )
         draw_curve(
             ax,
-            start=(left_x, condition_y[edge.condition]),
-            end=(right_x, body_site_y[edge.body_site_group]),
+            start=(left_x, condition_y[cast(str, edge.condition)]),
+            end=(right_x, body_site_y[cast(str, edge.body_site_group)]),
             color=cmap(norm(signal)),
             linewidth=float(linewidth),
             alpha=0.76,

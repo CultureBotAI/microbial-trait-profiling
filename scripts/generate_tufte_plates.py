@@ -19,7 +19,7 @@ import textwrap
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from statistics import median
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
 
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
@@ -464,8 +464,12 @@ def setup_tufte_rc() -> None:
     )
 
 
+if TYPE_CHECKING:
+    from matplotlib.axes import Axes
+
+
 def despine(
-    ax: plt.Axes, top: bool = True, right: bool = True, left: bool = False, bottom: bool = False
+    ax: Axes, top: bool = True, right: bool = True, left: bool = False, bottom: bool = False
 ) -> None:
     if top:
         ax.spines["top"].set_visible(False)
@@ -588,7 +592,7 @@ def methods_plate1_coverage_labels(
 
 def build_methods_plate1(repo: Path, out_dir: Path) -> Path:
     fig = plt.figure(figsize=(16.0, 9.0), facecolor=BG_COLOR)
-    ax = fig.add_axes([0.03, 0.08, 0.94, 0.80])
+    ax = fig.add_axes(cast(tuple[float, float, float, float], [0.03, 0.08, 0.94, 0.80]))
     ax.axis("off")
     ax.set_xlim(0, 100)
     ax.set_ylim(0, 100)
@@ -1238,7 +1242,7 @@ def build_methods_plate2(repo: Path, out_dir: Path) -> Path:
         f"({passing('by_q_nominal')} BY)"
     )
     fig = plt.figure(figsize=(16.0, 9.0), facecolor=BG_COLOR)
-    ax = fig.add_axes([0.03, 0.08, 0.94, 0.80])
+    ax = fig.add_axes(cast(tuple[float, float, float, float], [0.03, 0.08, 0.94, 0.80]))
     ax.axis("off")
     ax.set_xlim(0, 100)
     ax.set_ylim(0, 100)
@@ -2053,7 +2057,7 @@ def build_plate1(repo: Path, out_dir: Path) -> Path:
     )
 
     for xi in x_pos:
-        ax_slope.axvline(xi, color=LIGHT_RULE, linewidth=0.9, zorder=0)
+        ax_slope.axvline(cast(float, xi), color=LIGHT_RULE, linewidth=0.9, zorder=0)
 
     trait_colors = {
         "facultatively aerobic": "#b8332a",
@@ -2951,12 +2955,12 @@ def build_plate4(repo: Path, out_dir: Path) -> Path:
             ci_excl = er.get("ci_excludes_zero") == "True"
             w_p = float(wr["p_value"]) if wr and wr.get("p_value") else 1.0
             w_q = float(wr["q_value"]) if wr and wr.get("q_value") else 1.0
-            f_q = (
+            f_q: float | None = (
                 float(fr["fisher_q_value"])
                 if fr and fr.get("fisher_q_value") not in (None, "", "NA")
                 else 1.0
             )
-            f_sig = f_q <= 0.05
+            f_sig = f_q is not None and f_q <= 0.05
 
             norm_v = max(-1.6, min(1.6, mean_z)) / 1.6
             if norm_v > 0.06:
@@ -4027,7 +4031,7 @@ def three_arm_traits(
         study_stat = (
             study_mean if study_mean not in (None, "", "NA") else a1.get("study_t_statistic")
         )
-        a1_diff = float(study_stat) if study_stat not in (None, "", "NA") else 0.0
+        a1_diff = float(cast(str, study_stat)) if study_stat not in (None, "", "NA") else 0.0
         a3_bh_q = (
             float(s_row["bh_q_nominal"])
             if s_row.get("bh_q_nominal") not in (None, "", "NA")

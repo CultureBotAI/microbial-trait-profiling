@@ -3,11 +3,15 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from scipy import stats
+
+if TYPE_CHECKING:
+    from matplotlib.figure import Figure
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 TRAIT_VIS_DIR = REPO_ROOT / "trait-visualization"
@@ -78,7 +82,7 @@ ANAEROBE_CONFIG = AnalysisConfig(
 ANALYSIS_CONFIGS = (AEROBE_CONFIG, ANAEROBE_CONFIG)
 
 
-def clean_text(value: object) -> str:
+def clean_text(value: Any) -> str:
     if pd.isna(value):
         return "unknown"
     text = str(value).strip()
@@ -114,13 +118,13 @@ def join_unique(values: pd.Series) -> str:
     return "; ".join(seen)
 
 
-def fmt_float(value: object, digits: int = 3) -> str:
+def fmt_float(value: Any, digits: int = 3) -> str:
     if pd.isna(value):
         return "NA"
     return f"{float(value):.{digits}f}"
 
 
-def fmt_p_value(value: object) -> str:
+def fmt_p_value(value: Any) -> str:
     if pd.isna(value):
         return "NA"
     p_value = float(value)
@@ -484,7 +488,7 @@ def summarize_target_taxa(taxa: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame.from_records(records)
 
 
-def save_figure(fig: plt.Figure, output_path: Path) -> None:
+def save_figure(fig: Figure, output_path: Path) -> None:
     fig.savefig(output_path, dpi=300, bbox_inches="tight", facecolor="white")
     fig.savefig(output_path.with_suffix(".svg"), bbox_inches="tight", facecolor="white")
     plt.close(fig)
@@ -721,7 +725,7 @@ def write_readme(
     )
     total_test_count = len(finite_tests)
 
-    def _format_readme_test(test_label: str, p_value: object, count_label: str) -> str:
+    def _format_readme_test(test_label: str, p_value: Any, count_label: str) -> str:
         numeric_p = float(pd.to_numeric(p_value, errors="coerce"))
         if math.isfinite(numeric_p):
             return (
