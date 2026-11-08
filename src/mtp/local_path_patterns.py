@@ -16,7 +16,7 @@ import re
 # even when the consumer matches Users case-insensitively.
 _WINDOWS_HOME_TAIL = (
     r'(?:[\\]{2}[\\/]*|[\\](?!(?-i:[\\ntrbf"/u]))|/[\\/]*)'
-    r"(?=[A-Za-z0-9._-])"
+    r"(?=[\w.-])"
 )
 USER_HOME_SOURCE = (
     r"/(?:Users|home)/[A-Za-z0-9._-]+|[A-Za-z]:[\\/]+Users[\\/]+"

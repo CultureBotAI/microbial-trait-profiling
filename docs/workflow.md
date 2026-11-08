@@ -362,16 +362,33 @@ case-insensitively. Custom share layouts without a `Users` component remain
 outside these text checks (#1682).
 
 For the added drive-relative, driveless-rooted, UNC and relative Windows forms,
-a separator must be followed by an account character. A single backslash
+a separator must be followed by a Unicode word character (including an
+underscore), a dot or a hyphen. Both consumers use Unicode string patterns,
+without the ASCII flag. A single backslash
 followed by a JSON escape introducer (`n`, `t`, `r`, `b`, `f`, `"`, `/` or `u`)
 is accepted as ambiguous text. Thus a raw relative Windows spelling with `Users`,
 a single backslash and the account `nancy` is accepted; its JSON serialization
 has doubled backslashes and is refused. Uppercase initials such as `Nancy` are
-not JSON escapes and remain refused. A trailing escaped backslash pair without
+not JSON escapes and are refused. A trailing escaped backslash pair without
 an account is accepted. This deliberate false-negative trade-off lets ordinary
 JSON diagnostics mention users before a newline, tab, quote or Unicode escape.
 Serialize real Windows paths as JSON to avoid that raw-text ambiguity. Existing
 drive-rooted Windows and Unix prefix checks retain their previous behavior.
+
+The opposite trade-off is conservative refusal of some ordinary raw text. Apart
+from the JSON escape introducers above, `Users` followed by a backslash and an
+account character is refused even when it denotes regex source, Markdown or
+LaTeX, a Python repr, or a Windows principal rather than a home directory. Examples
+are `Users` + `\s+` or `\d+`, `Users` + `\_per\_study`, `Active Users` + two
+backslashes + `Total`, `Users` + `\x08`, and `DOMAIN` + backslash + `Users` +
+backslash + `Admins`. Doubly serialized JSON can contain these spellings too.
+Provenance also refuses lowercase `users`; the repository guard keeps its
+case-sensitive rule. Literal test fixtures that need these strings should follow
+`tests/test_no_absolute_local_paths.py`: split the directory token from its
+separators and concatenate at runtime. This preserves the fixture value without
+placing an intact path-like spelling in scanned source; it is not a bypass for
+publishing a local path in a provenance record.
+
 Path locators still undergo the separate root, containment and writer-account
 checks. The writer-account check refuses a directory containing the writer's
 account token, including two- and three-character names; the generic `root` login

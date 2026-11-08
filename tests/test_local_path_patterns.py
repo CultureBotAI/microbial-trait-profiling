@@ -483,3 +483,52 @@ def test_relative_separator_without_an_account_is_not_a_home(separator: str, end
         writer.assert_portable_text(text)
     except ValueError as error:
         raise AssertionError("A separator without an account is not a home path") from error
+
+
+@pytest.mark.parametrize("consumer", ["guard", "provenance"])
+@pytest.mark.parametrize(
+    ("prefix", "account"),
+    [("C:", "Émile"), ("\\", "émile"), ("\\\\server\\share\\", "张伟"), ("", "Émile")],
+    ids=["drive-relative", "rooted", "unc", "relative"],
+)
+@pytest.mark.parametrize("separator", ["\\", "\\\\"], ids=["single", "doubled"])
+def test_unicode_initial_accounts_are_refused_by_both_consumers(
+    consumer: str, prefix: str, account: str, separator: str
+) -> None:
+    text = prefix + "Users" + separator + account + "\\file.tsv"
+    pattern = guard.ABSOLUTE_LOCAL_PATH_PATTERN if consumer == "guard" else writer._LOCAL_PATH
+    assert pattern.flags & re.UNICODE
+    assert not pattern.flags & re.ASCII
+    if consumer == "guard":
+        hits = guard._scan_records((("fixture.json", "fixture", text),))
+        assert hits.get("fixture.json"), "A Unicode account initial must not hide a home prefix"
+        assert {hit.family for hit in hits["fixture.json"]} == {"user_home"}
+    else:
+        refusal = None
+        try:
+            writer.assert_portable_text(text)
+        except ValueError as error:
+            refusal = error
+        assert refusal is not None, "A Unicode account initial must not hide a home prefix"
+        assert "Provenance contains a local path or local prefix" in str(refusal)
+
+
+@pytest.mark.parametrize("consumer", ["guard", "provenance"])
+@pytest.mark.parametrize(
+    "suffix", [r"\s+", r"\_per\_study", r"\x08"], ids=["regex", "markdown", "python-repr"]
+)
+def test_documented_raw_escape_false_positives_are_conservatively_refused(
+    consumer: str, suffix: str
+) -> None:
+    text = "Users" + suffix
+    if consumer == "guard":
+        assert guard.ABSOLUTE_LOCAL_PATH_PATTERN.search(text) is not None
+    else:
+        for prefix in ("Users", "users"):
+            refusal = None
+            try:
+                writer.assert_portable_text(prefix + suffix)
+            except ValueError as error:
+                refusal = error
+            assert refusal is not None, "The documented raw-text refusal is intentional"
+            assert "Provenance contains a local path or local prefix" in str(refusal)
