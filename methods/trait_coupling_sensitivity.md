@@ -44,9 +44,9 @@ Three distinct statistical mechanisms operate under the broad concept of "correl
 
 Here, we systematically evaluate trait coupling using:
 - **Leave-One-Trait-Out (LOTO):** For each canonical Table 1 trait, drop it from the universe, renormalize denominators, and evaluate the $6 \times 6$ matrix of $\Delta \text{effect}$ and $\Delta q$.
-- **Leave-Cluster-Out (LCO):** Drop near-twins (*coccus shaped* + *sphere shaped*) simultaneously to measure collective sensitivity.
+- **Leave-Cluster-Out (LCO):** Drop the *coccus shaped* and *sphere shaped* annotation columns simultaneously to measure collective sensitivity.
 - **Three-Arm Comparison:** Evaluate sensitivity across Paired Composition, Directional Sign-Test, and ORA Hypergeometric arms.
-- **Formal Decision Rule:** Test whether dropping *sphere* alters *coccus* by more than the minimum adjacent inter-trait spacing in Table 1.
+- **Named-removal comparison:** Compare the change in the *coccus* composition effect after dropping *sphere* with the minimum adjacent inter-trait spacing in Table 1.
 
 ---
 
@@ -117,7 +117,7 @@ Rows represent the dropped trait; columns represent the evaluated trait:
 
 ## 4. Leave-Cluster-Out (LCO) Sensitivity
 
-We evaluated the collective impact of dropping the correlated near-twin cluster (*coccus shaped* + *sphere shaped*, carrying $29,119$ combined profile counts — $14,689$ *coccus shaped* and $14,430$ *sphere shaped* — out of $415,436$ total non-MediaDive annotations, or $7.01\%$) simultaneously across all three analytical arms (where Baseline $q$ uses the $m = 6$ focal BH family and LCO $q$ uses the $m = 4$ remaining focal BH family):
+The historical binarized evaluation dropped the *coccus shaped* and *sphere shaped* annotation columns (carrying $29,119$ combined profile counts — $14,689$ *coccus shaped* and $14,430$ *sphere shaped* — out of $415,436$ total non-MediaDive annotations, or $7.01\%$) simultaneously across all three analytical arms (where Baseline $q$ uses the $m = 6$ focal BH family and LCO $q$ uses the $m = 4$ remaining focal BH family):
 
 | Analytical Arm | Trait Name | Baseline Stat | LCO Stat | $\Delta \text{Stat}$ | Baseline $q$ ($m=6$) | LCO $q$ ($m=4$) | $\Delta q$ |
 | :--- | :--- | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -137,14 +137,15 @@ We evaluated the collective impact of dropping the correlated near-twin cluster 
 ### Cross-Arm Comparison
 - **Composition Arm:** In the historical binarized evaluation, maximum absolute shifts are $|\Delta \text{effect}| \le 0.000636$ in LOTO and $\le 0.001008$ in LCO, both below the historical minimum adjacent gap of $0.002040$. These bounds do not describe the current raw-count report.
 - **Directional Arm:** Study share up shifts by at most $|\Delta \text{share\_up}| \le 0.002183$ in LOTO and $\le 0.002736$ in LCO (reflecting shifts in only $1$ to $2$ marginal studies out of $>600$–$900$ scored studies, with *facultatively aerobic* scored studies shifting from $916$ to $917$ under LCO).
-- **ORA Arm:** Mean fold enrichment shifts by up to $|\Delta \text{mean\_fold}| \le 0.024908$ in LOTO and $\le 0.022271$ in LCO, as removing the coccus/sphere cluster reduces the non-MediaDive background annotation pool by $\sim 7.0\%$, modestly raising relative representation of other traits (and shifting *facultatively aerobic* profile-level hits at $q \le 0.05$ from $33$ to $38$ under LCO).
+- **ORA Arm:** In the historical binarized evaluation, mean fold enrichment shifts by up to $|\Delta \text{mean\_fold}| \le 0.024908$ in LOTO and $\le 0.022271$ in LCO. Removing the coccus/sphere columns reduces the non-MediaDive background annotation pool by $\sim 7.0\%$; *facultatively aerobic* profile-level hits at $q \le 0.05$ change from $33$ to $38$ under LCO.
 
 ---
 
-## 5. Formal Stability Decision Rule
+## 5. Named-Removal Reference-Gap Comparison
 
-Issue [#260](https://github.com/CultureBotAI/microbial-trait-profiling/issues/260) states the formal decision rule:
-$$\text{If } |\Delta \text{effect}_{\text{coccus} \mid -\text{sphere}}| > \min_{k} |\text{effect}_{k+1} - \text{effect}_k|, \text{ the two cannot be reported as separate convergent findings.}$$
+For the two removals named in issue [#260](https://github.com/CultureBotAI/microbial-trait-profiling/issues/260), compare the absolute change in the retained annotation's composition effect with the minimum adjacent gap among the baseline focal effects:
+$$|\Delta \text{effect}_{\text{coccus} \mid -\text{sphere}}| \quad \text{versus} \quad \min_{k} |\text{effect}_{k+1} - \text{effect}_k|.$$
+This is a descriptive comparison for named removals. It does not establish biological convergence or stability across all exclusions. The following calculation uses the historical binarized evaluation, not the current raw-count report.
 
 ### Empirical Calculation:
 1. **Table 1 Sorted Baseline Effects:**
@@ -155,12 +156,12 @@ $$\text{If } |\Delta \text{effect}_{\text{coccus} \mid -\text{sphere}}| > \min_{
    $$\Delta_{\min} = 0.002040 \quad (\text{between coccus shaped and arsenate reduction})$$
 4. **Direct Test (Drop Sphere $\rightarrow$ Coccus Shift):**
    $$\Delta \text{effect}_{\text{coccus}} = +0.000237 \implies |\Delta \text{effect}| = 0.000237$$
-   $$\mathbf{0.000237 < 0.002040 \implies \text{PASSES CRITERION}}$$
+   $$0.000237 < 0.002040 \quad \text{(below the historical reference gap)}$$
 5. **Reverse Test (Drop Coccus $\rightarrow$ Sphere Shift):**
    $$\Delta \text{effect}_{\text{sphere}} = +0.000268 \implies |\Delta \text{effect}| = 0.000268$$
-   $$\mathbf{0.000268 < 0.002040 \implies \text{PASSES CRITERION}}$$
+   $$0.000268 < 0.002040 \quad \text{(below the historical reference gap)}$$
 
-### Interpretation of the Decision Rule:
+### Interpretation of the Named-Removal Comparison:
 The shift induced by dropping *sphere* ($0.000237$) is **8.6-fold smaller** than the narrowest gap between adjacent Table 1 rows. For this historical binarized evaluation, the measured coccus shift is below the chosen reference gap. This comparison alone does not establish unchanged rankings for every trait after every exclusion.
 
 ---
@@ -181,15 +182,15 @@ flowchart TD
     A --> C["Annotation overlap inventory"]
     B --> D["Evaluated in #260 (LOTO / LCO)"]
     C --> E["Evaluated in #264 / #189"]
-    D --> F["Composition |Delta| <= 0.000636 (LOTO) / <= 0.001008 (LCO)<br/>Twin LOTO |Delta| <= 0.000268 < 0.002040 (passes rule)<br/>Directional |Delta| <= 0.002736; ORA |Delta| <= 0.024908"]
-    E --> G["Historical binarized-profile VIF = 5.88 (raw-count profile VIF = 2.74, paired VIF = 2.34)<br/>Source-level annotation overlap requires separate assessment<br/>Semantic equivalence and the cause of association are not established"]
+    D --> F["Historical binarized-profile composition |Delta| <= 0.000636 (LOTO) / <= 0.001008 (LCO)<br/>Named coccus/sphere removals: |Delta| <= 0.000268 < historical gap 0.002040<br/>Directional |Delta| <= 0.002736; ORA |Delta| <= 0.024908"]
+    E --> G["Historical binarized-profile VIF = 5.88 (raw-count profile VIF = 2.74, paired VIF = 2.34)<br/>Coccus and sphere are annotated to largely overlapping taxa<br/>Semantic equivalence and the cause of association are not established"]
 ```
 
 1. **Named denominator exclusions:**
-   The historical binarized evaluation distributed non-MediaDive counts across $317$ `off`-scope columns ($415,436$ total profile annotations); *coccus shaped* contributed $14,689$ counts across $3,004$ nonzero profiles. The two named twin comparisons pass the historical criterion shown above. That does not establish stability across all leave-outs or show that relative compositions are unchanged. These binarized-profile quantities must not be substituted for the raw-count results in the linked report.
+   The historical binarized evaluation distributed non-MediaDive counts across $317$ `off`-scope columns ($415,436$ total profile annotations); *coccus shaped* contributed $14,689$ counts across $3,004$ nonzero profiles. The two named coccus/sphere removal shifts are below the historical reference gap shown above. That does not establish stability across all leave-outs or show that relative compositions are unchanged. These binarized-profile quantities must not be substituted for the raw-count results in the linked report.
 
 2. **Annotation-count association:**
-   The coccus–sphere summaries describe association (historical binarized-profile $r = +0.911$, VIF = $5.88$; raw-count profile $r = +0.7970$, VIF = $2.74$, paired VIF = $2.34$). Correlation and VIF do not establish semantic equivalence or the cause of the association. Source assertions and ontology relations require separate assessment ([#189](https://github.com/CultureBotAI/microbial-trait-profiling/issues/189), [#264](https://github.com/CultureBotAI/microbial-trait-profiling/issues/264)); the leave-out audit ([#260](https://github.com/CultureBotAI/microbial-trait-profiling/issues/260)) measures sensitivity to its specified denominator changes. These shared annotation data do not establish independent biological mechanisms.
+   Both labels are annotated to largely overlapping taxa in the trait matrix. This overlap and the correlation/VIF summaries do not establish semantic equivalence or the cause of the association. The coccus–sphere summaries describe association (historical binarized-profile $r = +0.911$, VIF = $5.88$; raw-count profile $r = +0.7970$, VIF = $2.74$, paired VIF = $2.34$). Source assertions and ontology relations require separate assessment ([#189](https://github.com/CultureBotAI/microbial-trait-profiling/issues/189), [#264](https://github.com/CultureBotAI/microbial-trait-profiling/issues/264)); the leave-out audit ([#260](https://github.com/CultureBotAI/microbial-trait-profiling/issues/260)) measures sensitivity to its specified denominator changes. These shared annotation data do not establish independent biological mechanisms.
 
 ---
 

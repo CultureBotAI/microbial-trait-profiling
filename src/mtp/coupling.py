@@ -5,8 +5,8 @@ Addresses Issue #260 (and follow-ups #478, #479):
    - Leave-One-Trait-Out (LOTO): For each of the six canonical Table 1 traits,
      removes it from the trait universe, renormalizes profile denominators,
      and evaluates the resulting delta in effect size and focal-set FDR q-value.
-   - Leave-Cluster-Out (LCO): Removes correlated near-twins (coccus shaped +
-     sphere shaped) simultaneously and evaluates the shifts for remaining traits.
+   - Leave-Cluster-Out (LCO): Removes coccus shaped +
+     sphere shaped simultaneously and evaluates the shifts for remaining traits.
 2. Evaluates sensitivity across all three analytical arms:
    - Composition arm: Paired profile fraction log-ratio contrast, z-score, paired t-test.
    - Directional arm: Study-level sign test over paired contrasts, Clopper-Pearson / binomial test.
@@ -16,7 +16,7 @@ Addresses Issue #260 (and follow-ups #478, #479):
    m = 4 in LCO) on all-profile statistics, rather than full-family Table 1 BH q-values
    across all 317 non-MediaDive (or 2,607 total) columns. Consequently, delta_q combines
    denominator perturbation with the focal BH family-size step.
-3. Evaluates the formal stability decision rule:
+3. Evaluates the named-removal comparison:
    - Tests whether dropping sphere moves coccus by more than the minimum distance
      between adjacent Table 1 rows.
 """
@@ -44,7 +44,7 @@ from mtp.paths import DERIVED_DATA_DIR
 
 DEFAULT_OUTPUT_DIR = DERIVED_DATA_DIR
 
-# Canonical near-twin cluster for Leave-Cluster-Out (LCO)
+# Declared coccus/sphere cluster for Leave-Cluster-Out (LCO)
 COCCUS_ID = "METPO:1000668"
 SPHERE_ID = "METPO:1000683"
 CANONICAL_LCO_CLUSTER: dict[str, str] = {
@@ -573,6 +573,11 @@ def build_coupling_report_text(
     comp_lco_deltas = [abs(r.delta_stat) for r in lco_rows if r.arm == "composition"]
     max_comp_lco = max(comp_lco_deltas, default=0.0)
     max_comp_overall = max(max_comp_loto, max_comp_lco)
+    n_loto_exceed = int(np.count_nonzero(finite_comp_loto > rule_result.min_adjacent_distance))
+    n_lco_exceed = sum(delta > rule_result.min_adjacent_distance for delta in comp_lco_deltas)
+    gap_comparison = (
+        "exceeds" if max_comp_overall > rule_result.min_adjacent_distance else "does not exceed"
+    )
 
     dir_deltas = [abs(r.delta_stat) for r in (loto_rows or []) if r.arm == "directional"] + [
         abs(r.delta_stat) for r in lco_rows if r.arm == "directional"
@@ -696,7 +701,10 @@ def build_coupling_report_text(
                 f"Table 1 trait across all {n_loto_pairs} LOTO pairs produces a maximum "
                 f"|Delta effect| of {max_comp_loto:.6f} (and up to {max_comp_lco:.6f} under LCO; "
                 f"overall composition |Delta effect| <= {max_comp_overall:.6f}), compared against "
-                f"the tightest Table 1 inter-trait gap of {rule_result.min_adjacent_distance:.6f}."
+                f"the tightest Table 1 inter-trait gap of {rule_result.min_adjacent_distance:.6f}. "
+                f"The overall maximum {gap_comparison} that gap; "
+                f"{n_loto_exceed} of {n_loto_pairs} LOTO entries and "
+                f"{n_lco_exceed} of {len(comp_lco_deltas)} LCO entries exceed it."
             ),
             (
                 f"   In the directional sign-test arm, maximum |Delta share_up| is "

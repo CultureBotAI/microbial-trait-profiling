@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from mtp import coupling
 from mtp.coupling import (
     COCCUS_ID,
     DEFAULT_OUTPUT_DIR,
@@ -658,16 +659,23 @@ def test_coupling_correlation_sentence_reports_statistics_without_attributing_ca
 
 
 @pytest.mark.parametrize(
-    ("direct", "reverse", "loto_max", "lco_max", "gap"),
+    ("direct", "reverse", "loto_max", "lco_max", "gap", "n_loto", "n_lco"),
     [
-        (0.000014, 0.003657, 0.005937, 0.005322, 0.003904),
-        (0.02, -0.03, 0.04, 0.06, 0.01),
-        (-0.001, 0.002, 0.003, 0.0025, 0.005),
-        (0.005, -0.005, 0.005, 0.005, 0.005),
+        (0.000014, 0.003657, 0.005937, 0.005322, 0.003904, 1, 1),
+        (0.02, -0.03, 0.04, 0.06, 0.01, 3, 1),
+        (-0.001, 0.002, 0.003, 0.0025, 0.005, 0, 0),
+        (0.005, -0.005, 0.005, 0.005, 0.005, 0, 0),
+        (0.00001, 0.00002, 0.0039042, 0.0039042, 0.0039044, 0, 0),
     ],
 )
 def test_coupling_synthesis_scopes_twin_changes_and_all_leave_outs(
-    direct: float, reverse: float, loto_max: float, lco_max: float, gap: float
+    direct: float,
+    reverse: float,
+    loto_max: float,
+    lco_max: float,
+    gap: float,
+    n_loto: int,
+    n_lco: int,
 ) -> None:
     names = ["coccus shaped", "sphere shaped", "other"]
     shifts = pd.DataFrame(
@@ -712,7 +720,15 @@ def test_coupling_synthesis_scopes_twin_changes_and_all_leave_outs(
         0.0,
         0.0,
     )
-    report = build_coupling_report_text(shifts, shifts * 0, [lco], rule, reverse_rule)
+    # Non-composition shifts must not inflate composition counts or maxima.
+    other_arms = [replace(lco, arm=arm, delta_stat=1000.0) for arm in ("directional", "ora")]
+    report = build_coupling_report_text(shifts, shifts * 0, [lco, *other_arms], rule, reverse_rule)
+    section5a = report.split("a. Denominator Coupling Sensitivity by Analytical Arm:", 1)[1].split(
+        "b. ", 1
+    )[0]
+    comparison = "exceeds" if max(loto_max, lco_max) > gap else "does not exceed"
+    assert f"The overall maximum {comparison} that gap" in section5a
+    assert (f"{n_loto} of 6 LOTO entries and {n_lco} of 1 LCO entries exceed it.") in section5a
     section = report.split("b. ", 1)[1]
     assert section.startswith("Annotation Association and Leave-Out Sensitivity:")
     assert (
@@ -817,3 +833,12 @@ def test_coupling_methods_report_historical_bounds_without_grading_or_cause() ->
     assert "0.001008" in composition
     assert "both below the historical minimum adjacent gap of $0.002040$" in composition
     assert "exceptionally small" not in text
+
+
+def test_coupling_producer_describes_named_removals_without_twin_or_stability_framing() -> None:
+    assert coupling.__doc__ is not None
+    assert "near-twin" not in coupling.__doc__
+    assert "formal stability decision rule" not in coupling.__doc__
+    assert "named-removal comparison" in coupling.__doc__
+    source = Path(coupling.__file__).read_text()
+    assert "# Canonical near-twin cluster" not in source
