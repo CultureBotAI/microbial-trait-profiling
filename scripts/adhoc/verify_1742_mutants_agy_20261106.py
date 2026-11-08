@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
-"""Verify source-level mutants for #1742, #1811, #1812, and #1872-#1876 in a scratch copy.
+"""Verify source-level mutants for #1742, #1811, #1812, #1872-#1876, and #1908 in a scratch copy.
 
-Purpose: Confirm that every #1742/#1811/#1812/#1872/#1873/#1874/#1875/#1876 change
+Purpose: Confirm that every #1742/#1811/#1812/#1872/#1873/#1874/#1875/#1876/#1908 change
 (recording bh_unfiltered_trait_count from retained_trait_count, stating the unfiltered
 retained count and select_stratum_traits selection rule in paired_q_value_family across
 selection and summary tables, refusing retained_trait_count < correction_family_size
-across every displayed row with the table path and regeneration remedy, handling missing
-or NaN trait_id in selection_display_metadata, and validating inputs before
-reset_output_dir() in main()) is killed by an assertion failure in pytest, with import
-origin verified inside pytest and zero writes to the worktree.
+across every displayed row with the resolved repo-relative table path or filename fallback
+and regeneration remedy, handling missing or NaN trait_id in selection_display_metadata,
+and validating inputs before reset_output_dir() in main()) is killed by an assertion
+failure in pytest, with import origin verified inside pytest and zero writes to the
+worktree.
 Inputs: Worktree scripts/create_six_shared_trait_sankeys.py,
 trait-visualization/figure_methods.md, and tests/test_sankey_nominal_display.py.
 Outputs: Exit code 0 if the unmutated control passes and all mutants are killed by
 assertions; non-zero otherwise.
-Issue: #1742, #1811, #1812, #1872, #1873, #1874, #1875, #1876
+Issue: #1742, #1811, #1812, #1872, #1873, #1874, #1875, #1876, #1908
 Date: 2026-11-07
 """
 
@@ -240,6 +241,18 @@ MUTANTS: list[tuple[str, str, str, str]] = [
             "        )"
         ),
     ),
+    (
+        "S18_outside_repo_label_returns_str_path_1908",
+        "scripts/create_six_shared_trait_sankeys.py",
+        "    except ValueError:\n        return TRAIT_STATS_PATH.name",
+        "    except ValueError:\n        return str(TRAIT_STATS_PATH)",
+    ),
+    (
+        "S19_table_label_omits_resolve_on_dotdot_path_1908",
+        "scripts/create_six_shared_trait_sankeys.py",
+        "        return TRAIT_STATS_PATH.resolve().relative_to(REPO_ROOT.resolve()).as_posix()",
+        "        return TRAIT_STATS_PATH.relative_to(REPO_ROOT).as_posix()",
+    ),
 ]
 
 
@@ -363,7 +376,7 @@ def main() -> int:
                 print(f"FAIL [{name}]: no assertion failure marker in output\n{out}")
                 return 1
             print(f"KILLED [{name}]: rc=1 assertion failure verified from scratch copy")
-    print(f"ALL {len(MUTANTS)} #1742/#1811/#1812/#1872-#1876 MUTANTS KILLED CLEANLY.")
+    print(f"ALL {len(MUTANTS)} #1742/#1811/#1812/#1872-#1876/#1908 MUTANTS KILLED CLEANLY.")
     return 0
 
 

@@ -2187,9 +2187,9 @@ def _clean_trait_id(raw_trait_id: object) -> str | None:
 
 
 def _trait_stats_table_label() -> str:
-    """Return the repo-relative path or filename of the trait stats table (#1876)."""
+    """Return the repo-relative path or filename of the trait stats table (#1876, #1908)."""
     try:
-        return TRAIT_STATS_PATH.relative_to(REPO_ROOT).as_posix()
+        return TRAIT_STATS_PATH.resolve().relative_to(REPO_ROOT.resolve()).as_posix()
     except ValueError:
         return TRAIT_STATS_PATH.name
 

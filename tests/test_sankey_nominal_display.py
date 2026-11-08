@@ -333,7 +333,7 @@ def test_family_size_parser_accepts_whole_sizes(raw: object, size: int) -> None:
 def test_retained_trait_count_below_family_size_is_refused(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Refuse retained count below family size with ValueError (#1812, #1872, #1873, #1874)."""
+    """Refuse retained count below family size with ValueError (#1812, #1872-#1876, #1908)."""
     with pytest.raises(ValueError, match=r"300.*340"):
         sankeys._format_paired_q_value_family(340, 300)
     with pytest.raises(ValueError, match=r"339.*340.*METPO:1000608"):
@@ -490,6 +490,29 @@ def test_retained_trait_count_below_family_size_is_refused(
         match=rf"300.*340.*for trait METPO:1000608 {re.escape(expected_table_remedy)}",
     ):
         sankeys.build_trait_summary(metadata, raw_counts, zscores, inconsistent_stats)
+
+    # #1908: A table outside the repository or using a lexical .. path must fall back to the
+    # filename without showing a directory outside the repository.
+    expected_outside_remedy = "in stats.tsv (regenerate the trait statistics)"
+    for outside_path in (
+        tmp_path / "outside-repo" / "stats.tsv",
+        sankeys.REPO_ROOT / ".." / "outside-repo" / "stats.tsv",
+        sankeys.REPO_ROOT / ".." / ".." / "Users" / "someone" / "stats.tsv",
+    ):
+        with (
+            patch.object(sankeys, "TRAIT_STATS_PATH", outside_path),
+            pytest.raises(
+                ValueError,
+                match=rf"300.*340.*for trait METPO:1000608 {re.escape(expected_outside_remedy)}",
+            ) as outside_exc,
+        ):
+            sankeys.build_trait_selection(inconsistent_stats)
+        outside_text = str(outside_exc.value)
+        assert ".." not in outside_text
+        assert "outside-repo" not in outside_text
+        assert "someone" not in outside_text
+        assert str(tmp_path) not in outside_text
+        assert str(sankeys.REPO_ROOT.parent) not in outside_text
 
     assert equal_summary["bh_unfiltered_trait_count"].dropna().tolist() == [340] * len(
         sankeys.SHARED_TRAITS
