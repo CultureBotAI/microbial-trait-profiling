@@ -13,6 +13,7 @@ import pandas as pd
 import pytest
 from matplotlib.backends.backend_agg import FigureCanvasAgg, RendererAgg
 from matplotlib.collections import QuadMesh
+from matplotlib.colors import to_rgb
 from matplotlib.figure import Figure
 from matplotlib.text import Text
 
@@ -120,6 +121,66 @@ def test_companion_heatmap_layout_keeps_every_labelled_binary_cell(
         expected.sort_index().sort_index(axis=1),
         check_dtype=False,
     )
+
+
+def _cie_lightness(rgb: tuple[float, float, float]) -> float:
+    channels = np.asarray(rgb, dtype=float)
+    linear = np.where(channels <= 0.04045, channels / 12.92, ((channels + 0.055) / 1.055) ** 2.4)
+    luminance = float(0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2])
+    return 116.0 * (luminance ** (1.0 / 3.0)) - 16.0 if luminance > 0.008856 else 903.3 * luminance
+
+
+def test_companion_heatmap_multi_condition_palette_and_legend_clear_dendrogram(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Multi-condition strip colours stay distinct in lightness and clear the dendrogram (#1922)."""
+    conditions = list(followup.TARGET_CONDITIONS)
+    matrix = pd.DataFrame(
+        [[1, 0, 1], [0, 1, 1], [1, 1, 0]],
+        index=["taxon-a", "taxon-b", "taxon-c"],
+        columns=["METPO:1", "METPO:2", "METPO:3"],
+    )
+    taxa = pd.DataFrame(
+        {
+            "taxon_name": ["Taxon A", "Taxon B", "Taxon C"],
+            "target_profile_count": [1, 2, 3],
+            "display_condition": conditions,
+        },
+        index=matrix.index,
+    )
+    traits = pd.DataFrame({"heatmap_label": ["First", "Second", "Third"]}, index=matrix.columns)
+    captured: list[Figure] = []
+
+    def at_save(figure: Figure, _path: Path, **_kwargs: object) -> None:
+        draw = cast(Callable[[], None], FigureCanvasAgg(figure).draw)
+        draw()
+        captured.append(figure)
+
+    monkeypatch.setattr(Figure, "savefig", at_save)
+    followup.save_traits_vs_organisms_heatmap(
+        matrix, taxa, traits, tmp_path / "multi.png", cluster_columns=True
+    )
+    assert len(captured) == 1
+    figure = captured[0]
+    get_renderer = cast(Callable[[], RendererAgg], FigureCanvasAgg(figure).get_renderer)
+    renderer = get_renderer()
+    dendrogram = next(axis for axis in figure.axes if axis.get_legend() is not None)
+    legend = dendrogram.get_legend()
+    assert legend is not None
+    patches = legend.get_patches()
+    assert len(patches) == len(conditions)
+    data_rgbs = [to_rgb("#155e75"), *(to_rgb(patch.get_facecolor()) for patch in patches)]
+    lightness = [_cie_lightness(rgb) for rgb in data_rgbs]
+    for i in range(len(lightness)):
+        for j in range(i + 1, len(lightness)):
+            assert abs(lightness[i] - lightness[j]) >= 8.0, (i, j, lightness)
+    dendrogram_box = dendrogram.get_window_extent(renderer)
+    legend_words = [
+        text for text in legend.findobj(Text) if text.get_visible() and text.get_text().strip()
+    ]
+    assert legend_words
+    for word in legend_words:
+        assert not word.get_window_extent(renderer).overlaps(dendrogram_box), word.get_text()
 
 
 def test_targets_below_the_profile_minimum_are_reported_with_their_counts() -> None:
