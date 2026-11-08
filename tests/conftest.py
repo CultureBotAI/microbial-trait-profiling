@@ -12,7 +12,15 @@ from bsdbng.paths import REPO_ROOT
 # The cellulose_decr figure tests import matplotlib, from the viz extra. Without it they
 # are left out rather than failing at collection (#631).
 collect_ignore = (
-    [] if importlib.util.find_spec("matplotlib") else ["test_cellulose_decr_figures.py"]
+    []
+    if importlib.util.find_spec("matplotlib")
+    else [
+        "test_cellulose_decr_figures.py",
+        "test_cellulose_nominal_labels.py",
+        "test_cellulose_review_layout.py",
+        "test_cellulose_review_wording.py",
+        "test_cellulose_statement_consumers.py",
+    ]
 )
 
 # Every real pipeline input and output: raw downloads and their provenance,

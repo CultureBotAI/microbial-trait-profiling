@@ -1661,7 +1661,7 @@ def main() -> None:
             heatmap_title = (
                 f"Companion Heatmap: Our Top Paired-Profile Traits vs Organisms in "
                 f"{condition_source_title}\n"
-                "Traits ranked left-to-right by paired-profile contrast p-value"
+                "Trait columns follow the supplied paired-trait table order"
             )
             heatmap_trait_description = (
                 f"the top {len(preferred_traits)} paired-profile contrast traits from "

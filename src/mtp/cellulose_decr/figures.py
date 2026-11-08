@@ -243,12 +243,52 @@ def sci(value: float) -> str:
     return f"{mantissa:.1f}{TIMES}10{str(exponent).translate(SUPERSCRIPT)}"
 
 
-def mc_p(value: float, iterations: int) -> str:
+def finite_p(value: Any) -> float | None:
+    """A saved finite probability, without inferring why a value is unavailable."""
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return None
+    return number if math.isfinite(number) else None
+
+
+def nominal_p(value: Any) -> str:
+    """Label a saved probability without changing it or implying a correction."""
+    number = finite_p(value)
+    if number is None:
+        return "nominal p unavailable"
+    return f"nominal p = {'0' if number == 0 else sci(number)}"
+
+
+def nominal_scope(endpoints: Mapping[tuple[str, ...], Any]) -> str:
+    """Count selected endpoint identities, rather than equal values or text occurrences."""
+    finite = sum(finite_p(value) is not None for value in endpoints.values())
+    return (
+        f"Nominal p-values: {finite} finite endpoints; {len(endpoints) - finite} unavailable. "
+        "This display scope is not a correction family."
+    )
+
+
+def null_endpoints_map(
+    results: Results, means: Sequence[str], cores: Sequence[str] = ()
+) -> dict[tuple[str, ...], Any]:
+    nulls = results.summary["null_models"]
+    return {
+        ("null", key, endpoint, "monte_carlo"): nulls[key][endpoint]["p"]
+        for endpoint, keys in (("mean_pairwise_jaccard_distance", means), ("three_way_core", cores))
+        for key in keys
+    }
+
+
+def mc_p(value: Any, iterations: int) -> str:
     """Monte Carlo p; at the floor (no draw as extreme) say so instead of a number."""
+    number = finite_p(value)
+    if number is None:
+        return "nominal p unavailable"
     floor = 1 / (iterations + 1)
-    if value <= floor * 1.0001:
-        return f"p ≤ {sci(floor)}"
-    return f"p = {sci(value)}"
+    if number <= floor * 1.0001:
+        return f"nominal p ≤ {sci(floor)}"
+    return nominal_p(number)
 
 
 def wrap(text: str, width: int) -> str:
@@ -369,6 +409,53 @@ def compartment_row(
         & table["short_condition"].eq(short)
     ]
     return only(chosen) if len(chosen) else None
+
+
+def sign_endpoint(
+    results: Results, row: Mapping[str, Any], unit: str
+) -> tuple[tuple[str, ...], Any]:
+    """One saved sign endpoint, aliasing only the documented primary label basis."""
+    basis = {"exact": "exact_labels", "synonyms": "synonyms_merged"}.get(
+        str(results.summary.get("condition_labels")), "primary"
+    )
+    key = (
+        "sign",
+        str(row["contrast_population"]),
+        str(row.get("compartment", "Feces")),
+        str(row["short_condition"]),
+        unit,
+        str(row.get("scenario", basis)),
+    )
+    value = row[
+        "binom_p_two_sided"
+        if unit == "experiment" or "scenario" in row
+        else "study_binom_p_two_sided"
+    ]
+    return key, value
+
+
+def interaction_endpoint(row: Mapping[str, Any]) -> tuple[tuple[str, ...], Any]:
+    return (
+        (
+            "interaction",
+            str(row["contrast_population"]),
+            str(row["short_condition"]),
+            str(row["unit"]),
+            str(row["compartment_b"]),
+            str(row.get("scenario", "primary")),
+        ),
+        row["fisher_p_two_sided"],
+    )
+
+
+def scenario_endpoints(results: Results, shorts: Sequence[str]) -> dict[tuple[str, ...], Any]:
+    table = results.scenarios
+    selected = table[
+        table["contrast_population"].eq(ORIENTED)
+        & table["unit"].eq("study")
+        & table["short_condition"].isin(shorts)
+    ]
+    return dict(sign_endpoint(results, row, "study") for row in records(selected))
 
 
 # --------------------------------------------------------------------------- graphical plates
@@ -583,8 +670,9 @@ def graphical_convergence(results: Results) -> Figure:
         "process; any rank, annotations rolled up from descendants) in at least one decreased "
         "stool signature of the condition. Overlap counts reported taxonomic labels, not "
         "consistent loss: a taxon counts once it is reported decreased in any study. Monte Carlo "
-        "p from "
-        f"{u6['iterations']:,} draws. {vintage_note(results)}",
+        "nominal p from "
+        f"{u6['iterations']:,} draws. {vintage_note(results)} "
+        f"{nominal_scope(null_endpoints_map(results, [key for key, _ in NULL_ROWS]))}",
     )
     return fig
 
@@ -795,6 +883,7 @@ def graphical_compartments(results: Results) -> Figure:
     pooled = compartment_row(results, "all_contrasts", "Feces", "Pooled")
     if pooled is None:
         raise ValueError("no pooled stool row in the compartment table")
+    endpoints = dict(sign_endpoint(results, pooled, unit) for unit in ("experiment", "study"))
     crc_gi = compartment_row(results, "all_contrasts", NON_FECAL_GI, "CRC")
     other_sites = [
         (row["short_condition"], row["compartment"], sum(untied(row, "experiment")))
@@ -819,9 +908,9 @@ def graphical_compartments(results: Results) -> Figure:
         "stool",
         (
             f"Across PD, HIV and CRC stool, {exp_down} of {exp_down + exp_up} untied paired "
-            f"experiments (p = {sci(pooled['binom_p_two_sided'])}) and {study_down} of "
+            f"experiments ({nominal_p(pooled['binom_p_two_sided'])}) and {study_down} of "
             f"{study_down + study_up} untied studies "
-            f"(p = {sci(pooled['study_binom_p_two_sided'])}) "
+            f"({nominal_p(pooled['study_binom_p_two_sided'])}) "
             f"had the larger cellulose annotation share in the decreased signature.{lean} Outside "
             f"stool the largest single-condition stratum is {largest[0]} "
             f"{COMPARTMENT_LABEL[str(largest[1])]} with {largest[2]} untied pairs."
@@ -872,22 +961,26 @@ def graphical_compartments(results: Results) -> Figure:
         s_down, s_up = untied(row, "study")
         lines = []
         if float(row["min_attainable_binom_p_two_sided"]) > 0.05:
-            lines.append(f"studies {s_down}↓ {s_up}↑ · too few pairs for p < 0.05")
+            lines.append(f"studies {s_down}↓ {s_up}↑ · too few pairs for nominal p < 0.05")
         else:
-            lines.append(f"experiments p = {sci(row['binom_p_two_sided'])}")
+            endpoints.update([sign_endpoint(results, row, "experiment")])
+            lines.append(f"experiments {nominal_p(row['binom_p_two_sided'])}")
             study_p = (
-                "too few studies for p < 0.05"
+                "too few studies for nominal p < 0.05"
                 if s_down + s_up == 0 or 2 * 0.5 ** (s_down + s_up) > 0.05
-                else f"p = {sci(row['study_binom_p_two_sided'])}"
+                else nominal_p(row["study_binom_p_two_sided"])
             )
+            if s_down + s_up and 2 * 0.5 ** (s_down + s_up) <= 0.05:
+                endpoints.update([sign_endpoint(results, row, "study")])
             lines.append(f"studies {s_down}↓ {s_up}↑ · {study_p}")
         if compartment == "Feces":
             healthy = compartment_row(results, "disease_vs_healthy_oriented", "Feces", short)
             if healthy is not None:
+                endpoints.update([sign_endpoint(results, healthy, "study")])
                 h_down, h_up = untied(healthy, "study")
                 lines.append(
                     f"disease vs healthy studies {h_down}↓ {h_up}↑, "
-                    f"p = {sci(healthy['study_binom_p_two_sided'])}"
+                    f"{nominal_p(healthy['study_binom_p_two_sided'])}"
                 )
         ax.text(
             limit * 1.03,
@@ -933,10 +1026,11 @@ def graphical_compartments(results: Results) -> Figure:
     x_min = min(0.5, 10 ** math.floor(math.log10(max(min([*finite_low, 1.0]), 1e-3))))
     ys = np.arange(len(chosen))[::-1]
     for y, (_, _, _, label), row in zip(ys, chosen, picked, strict=True):
+        endpoints.update([interaction_endpoint(row)])
         low = float(row["conditional_or_ci95_low"])
         high = float(row["conditional_or_ci95_high"])
         estimate = float(row["conditional_or"])
-        note = f"p = {sci(row['fisher_p_two_sided'])}"
+        note = nominal_p(row["fisher_p_two_sided"])
         if math.isnan(estimate):
             note = f"{note} · {not_estimable(row)}"
         else:
@@ -1001,6 +1095,9 @@ def graphical_compartments(results: Results) -> Figure:
     untreated_hiv = scenario_row(
         results, "named_treated_cases_excluded", "disease_vs_healthy_oriented", "HIV", "study"
     )
+    endpoints.update(
+        sign_endpoint(results, row, "study") for row in (exact_hiv, merged_hiv, untreated_hiv)
+    )
     gi_all = compartment_row(results, "all_contrasts", NON_FECAL_GI, "CRC")
     gi_healthy = compartment_row(results, "disease_vs_healthy_oriented", NON_FECAL_GI, "CRC")
     gi_note = ""
@@ -1014,28 +1111,32 @@ def graphical_compartments(results: Results) -> Figure:
                 & table["unit"].eq("study")
             ]
         )
+        endpoints.update([interaction_endpoint(counted)])
         gi_note = (
             f"only {int(gi_healthy['paired_experiments'])} of {int(gi_all['paired_experiments'])} "
             "paired CRC mucosa/lumen experiments compare patients with controls (counting the "
             "tumour-vs-adjacent-tissue contrasts too, the disease-vs-healthy study row of B "
-            f"gives p = {sci(float(counted['fisher_p_two_sided']))}), "
+            f"gives {nominal_p(counted['fisher_p_two_sided'])}), "
         )
     footnote(
         fig,
         "Paired experiment: one BugSigDB experiment with both an increased and a decreased "
         "signature; the share compared is cellulose annotations over all retained non-MediaDive "
-        "annotations. Ties excluded; p-values are two-sided sign tests, nominal. Study rows take "
+        "annotations. Ties excluded; panel A uses two-sided sign tests and panel B exact "
+        "interaction tests; all p-values are nominal. Study rows take "
         "the sign of each study's mean paired difference. HIV depends on which experiments count: "
         f"disease vs healthy studies {int(exact_hiv['down'])}↓ {int(exact_hiv['up'])}↑ "
-        f"(p = {sci(exact_hiv['binom_p_two_sided'])}) with exact labels, "
+        f"({nominal_p(exact_hiv['binom_p_two_sided'])}) with exact labels, "
         f"{int(merged_hiv['down'])}↓ {int(merged_hiv['up'])}↑ "
-        f"(p = {sci(merged_hiv['binom_p_two_sided'])}) with synonym labels, "
+        f"({nominal_p(merged_hiv['binom_p_two_sided'])}) with synonym labels, "
         f"{int(untreated_hiv['down'])}↓ {int(untreated_hiv['up'])}↑ "
-        f"(p = {sci(untreated_hiv['binom_p_two_sided'])}) when contrasts whose cases are named as "
+        f"({nominal_p(untreated_hiv['binom_p_two_sided'])}) when contrasts whose cases are "
+        "named as "
         "treated are set aside (condition_definition_sensitivity.tsv). The B tests treat units "
         "as independent, "
         f"{gi_note}and the sites differ in sampling effort (C), so a difference between "
-        f"compartments is not evidence of anatomical specificity. {vintage_note(results)}",
+        f"compartments is not evidence of anatomical specificity. {vintage_note(results)} "
+        f"{nominal_scope(endpoints)}",
         width=178,
     )
     return fig
@@ -1188,15 +1289,13 @@ def detailed_nulls(results: Results) -> Figure:
     def core_p(key: str) -> str:
         return mc_p(nulls[key]["three_way_core"]["p"], nulls[key]["iterations"])
 
-    independent = max(
-        float(nulls[key]["mean_pairwise_jaccard_distance"]["p"]) for key in ("U1", "U2", "U3", "U4")
-    )
+    endpoints = null_endpoints_map(results, (), [key for key, _ in NULL_ROWS])
     header(
         fig,
         "Overlap of stool-decreased cellulose-annotated taxa against six null models",
         (
             f"Against nulls that draw taxa independently (U1{DASH}U4) the mean overlap is "
-            f"extreme (every p ≤ {sci(independent)}). Weighting taxa by how often other stool "
+            f"summarized by {independent_nulls(results)}. Weighting taxa by how often other stool "
             f"studies report them (U5) weakens it (mean {mean_p('U5')}; core {core_p('U5')}); "
             "permuting whole study signatures (U6) removes it "
             f"(mean {mean_p('U6')}; core {core_p('U6')})."
@@ -1236,12 +1335,20 @@ def detailed_nulls(results: Results) -> Figure:
             expected = float(row.get(f"{column}_expected_jaccard_distance", float("nan")))
             if column in ("u1", "u2", "u3"):
                 exact = not name.startswith("Mean")
-                p = float(row[f"{column}_hypergeom_p" if exact else f"{column}_mc_p"])
-                p_text = f"exact {sci(p)}" if exact else mc_p(p, nulls[key]["iterations"])
+                p = row[f"{column}_hypergeom_p" if exact else f"{column}_mc_p"]
+                p_text = f"exact {nominal_p(p)}" if exact else mc_p(p, nulls[key]["iterations"])
             else:
-                p = float(row[f"{column}_p"])
+                p = row[f"{column}_p"]
                 p_text = mc_p(p, nulls[key]["iterations"])
-            strong = not math.isnan(p) and p < 0.05
+            endpoint = "mean_pairwise_jaccard_distance" if name.startswith("Mean") else name
+            method = (
+                "exact_hypergeometric"
+                if column in ("u1", "u2", "u3") and not name.startswith("Mean")
+                else "monte_carlo"
+            )
+            endpoints[("null", key, endpoint, method)] = p
+            number = finite_p(p)
+            strong = number is not None and number < 0.05
             ax.add_patch(
                 FancyBboxPatch(
                     (x - 0.45 / n_cols, y - 0.075),
@@ -1257,7 +1364,9 @@ def detailed_nulls(results: Results) -> Figure:
             ax.text(
                 x,
                 y - 0.035,
-                p_text.replace("p = ", "p "),
+                p_text.replace("p = ", "p\n")
+                .replace("p ≤ ", "p ≤\n")
+                .replace("p unavailable", "p\nunavailable"),
                 ha="center",
                 va="center",
                 fontsize=7.4,
@@ -1267,7 +1376,7 @@ def detailed_nulls(results: Results) -> Figure:
         0.125,
         0.475,
         wrap(
-            "Observed values are in the first column. Shaded sand: p < 0.05 (nominal). "
+            "Observed values are in the first column. Shaded sand: nominal p < 0.05. "
             f"U1{DASH}U3 pair p-values are exact hypergeometric tails; all other p are Monte "
             "Carlo. U4 places a random trait on the taxa reported decreased in stool in the "
             "three conditions; U5 draws from the U3 taxa weighted by "
@@ -1359,7 +1468,8 @@ def detailed_nulls(results: Results) -> Figure:
     footnote(
         fig,
         "Names are KG-Microbe matrix taxon names. A taxon bears the annotation when it or a "
-        f"descendant has the KG edge; {direct_core_text(results)}. {vintage_note(results)}",
+        f"descendant has the KG edge; {direct_core_text(results)}. {vintage_note(results)} "
+        f"{nominal_scope(endpoints)}",
     )
     return fig
 
@@ -1545,13 +1655,14 @@ def detailed_compartments(results: Results) -> Figure:
 
     # C. Interaction tests
     inter = results.interaction
-    ax = fig.add_axes((0.22, 0.115, 0.40, 0.18))
+    ax = fig.add_axes((0.22, 0.135, 0.40, 0.16))
     panel_title(ax, "C. Stool against each other compartment, all contrasts")
     picked = inter[
         inter["contrast_population"].eq("all_contrasts")
         & inter["short_condition"].isin(["CRC", POOLED_STRATIFIED])
     ]
     entries = records(picked)
+    endpoints = dict(interaction_endpoint(row) for row in entries)
     ys = np.arange(len(entries))[::-1]
     x_min, x_max = 0.01, 1000.0
     for y, row in zip(ys, entries, strict=True):
@@ -1568,7 +1679,7 @@ def detailed_compartments(results: Results) -> Figure:
         counts = (
             f"{int(row['a_down'])}↓{int(row['a_up'])}↑ vs "
             f"{int(row['b_down'])}↓{int(row['b_up'])}↑ · "
-            f"p = {sci(float(row['fisher_p_two_sided']))}"
+            f"{nominal_p(row['fisher_p_two_sided'])}"
         )
         estimate = float(row["conditional_or"])
         if math.isnan(estimate):
@@ -1625,7 +1736,7 @@ def detailed_compartments(results: Results) -> Figure:
         f"(Clopper{DASH}Pearson for shares; conditional maximum likelihood for odds ratios). "
         "Stratified rows test a common odds ratio across PD, HIV and CRC, so the conditions' "
         "different sampling of the sites does not enter the estimate. "
-        f"{vintage_note(results)}",
+        f"{vintage_note(results)} {nominal_scope(endpoints)}",
     )
     return fig
 
@@ -1810,7 +1921,11 @@ SPAN_DIRECTION = {
 def p_span(verdict: Verdict, before: str, between: str) -> str:
     """A verdict's p range, naming its direction unless that is the decreased signature's."""
     direction = SPAN_DIRECTION.get(verdict.kind, "")
-    return f"{before}{sci(verdict.low)}{between}{sci(verdict.high)}{direction}"
+    if finite_p(verdict.low) is None or finite_p(verdict.high) is None:
+        return f"nominal p unavailable{direction}"
+    low = "0" if verdict.low == 0 else sci(verdict.low)
+    high = "0" if verdict.high == 0 else sci(verdict.high)
+    return f"{before}{low}{between}{high}{direction}"
 
 
 def direction_verdicts(results: Results) -> dict[str, Verdict]:
@@ -1828,7 +1943,10 @@ def direction_verdicts(results: Results) -> dict[str, Verdict]:
         if not rows:
             verdicts[short] = Verdict("no data")
             continue
-        p_values = [float(row["binom_p_two_sided"]) for row in rows]
+        p_values = [
+            value if (value := finite_p(row["binom_p_two_sided"])) is not None else math.nan
+            for row in rows
+        ]
         down = [
             p < ALPHA and int(r["down"]) > int(r["up"]) for p, r in zip(p_values, rows, strict=True)
         ]
@@ -1848,11 +1966,18 @@ def direction_verdicts(results: Results) -> dict[str, Verdict]:
         else:
             kind = "none"
         readings = {(int(row["down"]), int(row["up"]), int(row["tied"])) for row in rows}
-        verdicts[short] = Verdict(kind, min(p_values), max(p_values), len(readings), len(rows))
+        available = [value for value in p_values if math.isfinite(value)]
+        verdicts[short] = Verdict(
+            kind,
+            min(available, default=math.nan),
+            max(available, default=math.nan),
+            len(readings),
+            len(rows),
+        )
     return verdicts
 
 
-def fragile_statement(results: Results) -> str:
+def fragile_statement(results: Results, *, include_scope: bool = False) -> str:
     """The conditions whose result depends on the condition definition, or ''."""
     shown = {
         short: verdict
@@ -1869,13 +1994,16 @@ def fragile_statement(results: Results) -> str:
     else:
         ranges = "; ".join(f"{names[short]} {span}" for short, span in spans.items())
         noun = "results depend"
-    return (
+    statement = (
         f"the {listing(list(names.values()))} {noun} on the condition definition "
-        f"(study-level p {ranges})"
+        f"(study-level nominal p {ranges})"
     )
+    if include_scope:
+        statement += f". {nominal_scope(scenario_endpoints(results, list(shown)))}"
+    return statement
 
 
-def overlap_statement(results: Results) -> str:
+def overlap_statement(results: Results, *, include_scope: bool = False) -> str:
     """The three-way overlap against the whole-signature null (U6), from both endpoints.
 
     U6's mean-distance p is a lower tail (more overlap) and its core p an upper tail (more
@@ -1883,33 +2011,40 @@ def overlap_statement(results: Results) -> str:
     """
     observed = results.summary["observed"]
     u6 = results.summary["null_models"]["U6"]
-    mean_p = float(u6["mean_pairwise_jaccard_distance"]["p"])
-    core_p = float(u6["three_way_core"]["p"])
+    mean_p = finite_p(u6["mean_pairwise_jaccard_distance"]["p"])
+    core_p = finite_p(u6["three_way_core"]["p"])
     shared = (
         f"{observed['three_way_core']} of {observed['three_way_union']} decreased "
         "cellulose-annotated stool taxa are shared by PD, HIV and CRC"
     )
-    if mean_p < ALPHA and core_p < ALPHA:
-        return f"{shared}; they overlap more than random sets of whole stool signatures"
-    if mean_p > 1 - ALPHA and core_p > 1 - ALPHA:
-        return f"{shared}; they overlap less than random sets of whole stool signatures"
-    if ALPHA <= mean_p <= 1 - ALPHA and ALPHA <= core_p <= 1 - ALPHA:
-        return f"{shared}; random sets of whole stool signatures overlap about as much"
-    return (
-        f"{shared}; against random sets of whole stool signatures, mean-distance "
-        f"p = {sci(mean_p)} and core p = {sci(core_p)}"
-    )
+    if mean_p is None or core_p is None:
+        statement = (
+            f"{shared}; against random sets of whole stool signatures, mean-distance "
+            f"{nominal_p(mean_p)} and core {nominal_p(core_p)}"
+        )
+    elif mean_p < ALPHA and core_p < ALPHA:
+        statement = f"{shared}; they overlap more than random sets of whole stool signatures"
+    elif mean_p > 1 - ALPHA and core_p > 1 - ALPHA:
+        statement = f"{shared}; they overlap less than random sets of whole stool signatures"
+    elif ALPHA <= mean_p <= 1 - ALPHA and ALPHA <= core_p <= 1 - ALPHA:
+        statement = f"{shared}; random sets of whole stool signatures overlap about as much"
+    else:
+        statement = (
+            f"{shared}; against random sets of whole stool signatures, mean-distance "
+            f"{nominal_p(mean_p)} and core {nominal_p(core_p)}"
+        )
+    if include_scope:
+        statement += f". {nominal_scope(null_endpoints_map(results, ('U6',), ('U6',)))}"
+    return statement
 
 
-def crc_compartment_statement(results: Results) -> str:
-    """CRC stool against GI mucosa / lumen, by unit and population.
-
-    The tumour-vs-adjacent-tissue contrasts are named only while counting them changes the
-    disease-vs-healthy study result, which then turns on one experiment (#569, #580, #673).
-    """
-    crc = interaction_row(results, ALL_CONTRASTS, "CRC", "experiment")
-    experiments = interaction_row(results, ORIENTED, "CRC", "experiment")
-    studies = interaction_row(results, ORIENTED, "CRC", "study")
+def crc_interactions(results: Results) -> list[dict[str, Any]]:
+    """The three fixed CRC endpoints and the counted-tissue endpoint only when shown."""
+    rows = [
+        interaction_row(results, ALL_CONTRASTS, "CRC", "experiment"),
+        interaction_row(results, ORIENTED, "CRC", "experiment"),
+        interaction_row(results, ORIENTED, "CRC", "study"),
+    ]
     table = results.scenario_interaction
     chosen = table[
         table["scenario"].eq("paired_tissue_counted")
@@ -1918,39 +2053,71 @@ def crc_compartment_statement(results: Results) -> str:
         & table["unit"].eq("study")
         & table["compartment_b"].eq(NON_FECAL_GI)
     ]
-    study_p = float(studies["fisher_p_two_sided"])
-    counted = ""
     if len(chosen):
-        counted_p = float(only(chosen)["fisher_p_two_sided"])
-        if not math.isclose(counted_p, study_p):
-            counted = f" ({sci(counted_p)} counting the tumour-vs-adjacent-tissue contrasts too)"
-    return (
+        counted = only(chosen)
+        counted_p = finite_p(counted["fisher_p_two_sided"])
+        study_p = finite_p(rows[2]["fisher_p_two_sided"])
+        if counted_p is None or study_p is None or not math.isclose(counted_p, study_p):
+            rows.append(counted)
+    return rows
+
+
+def crc_compartment_statement(results: Results, *, include_scope: bool = False) -> str:
+    """CRC stool against GI mucosa / lumen, by unit and population.
+
+    The tumour-vs-adjacent-tissue contrasts are named only while counting them changes the
+    disease-vs-healthy study result, which then turns on one experiment (#569, #580, #673).
+    """
+    rows = crc_interactions(results)
+    crc, experiments, studies = rows[:3]
+    counted = ""
+    if len(rows) == 4:
+        counted = (
+            f" ({nominal_p(rows[3]['fisher_p_two_sided'])} "
+            "counting the tumour-vs-adjacent-tissue contrasts too)"
+        )
+    statement = (
         f"CRC stool vs GI mucosa / lumen, all contrasts: {int(crc['a_down'])}↓ "
         f"{int(crc['a_up'])}↑ vs {int(crc['b_down'])}↓ {int(crc['b_up'])}↑ experiments "
         f"(odds ratio {float(crc['conditional_or']):.1f}, "
-        f"p = {sci(float(crc['fisher_p_two_sided']))}); disease vs healthy: "
-        f"p = {sci(float(experiments['fisher_p_two_sided']))} by experiment, {sci(study_p)} "
+        f"{nominal_p(crc['fisher_p_two_sided'])}); disease vs healthy: "
+        f"{nominal_p(experiments['fisher_p_two_sided'])} by experiment, "
+        f"{nominal_p(studies['fisher_p_two_sided'])} "
         f"by study{counted}. The sites differ in contrast mix and sampling, so this does not "
         "show anatomical specificity"
     )
+    if include_scope:
+        statement += f". {nominal_scope(dict(interaction_endpoint(row) for row in rows))}"
+    return statement
 
 
 def null_endpoints(results: Results, key: str) -> tuple[str, str]:
     """A null's p for the mean distance and for the three-way core."""
     null = results.summary["null_models"][key]
     return (
-        sci(float(null["mean_pairwise_jaccard_distance"]["p"])),
-        sci(float(null["three_way_core"]["p"])),
+        nominal_p(null["mean_pairwise_jaccard_distance"]["p"]),
+        nominal_p(null["three_way_core"]["p"]),
     )
 
 
 def independent_nulls(results: Results) -> str:
-    """'p ≤ x' for the weakest mean-distance p of the independent-draw nulls (U1-U4)."""
+    """Largest available mean-distance p, explicitly retaining missing members."""
     nulls = results.summary["null_models"]
-    worst = max(
-        float(nulls[key]["mean_pairwise_jaccard_distance"]["p"]) for key in ("U1", "U2", "U3", "U4")
-    )
-    return f"p ≤ {sci(worst)}"
+    available = [
+        value
+        for key in ("U1", "U2", "U3", "U4")
+        if (value := finite_p(nulls[key]["mean_pairwise_jaccard_distance"]["p"])) is not None
+    ]
+    if not available:
+        return "nominal p unavailable for all four means"
+    worst = max(available)
+    summary = f"mean nominal p ≤ {'0' if worst == 0 else sci(worst)}"
+    if len(available) < 4:
+        summary += (
+            f" among {len(available)} available means; "
+            f"nominal p unavailable for {4 - len(available)}"
+        )
+    return summary
 
 
 def caption_overlap(results: Results) -> Caption:
@@ -1963,12 +2130,13 @@ def caption_overlap(results: Results) -> Caption:
             f"PD {sizes['PD']}, HIV {sizes['HIV']} and CRC {sizes['CRC']} taxa; mean pairwise "
             f"Jaccard distance {float(observed['mean_pairwise_jaccard_distance']):.3f}. "
             f"Independent-draw nulls (U1{DASH}U4): {independent_nulls(results)}; whole-signature "
-            f"permutation (U6): p = {mean} (mean), {core} (core)."
+            f"permutation (U6): {mean} (mean), {core} (core)."
         ),
         caveat=(
             "A taxon enters a set once any stool study reports it decreased. Many taxa are "
             "reported together in the same signatures whatever the condition, which "
-            "independent-draw nulls ignore."
+            "independent-draw nulls ignore. "
+            f"{nominal_scope(null_endpoints_map(results, ('U1', 'U2', 'U3', 'U4', 'U6'), ('U6',)))}"
         ),
         evidence="pairwise_jaccard_significance.tsv",
     )
@@ -2030,7 +2198,9 @@ def caption_direction(results: Results) -> Caption:
         clauses.append(f"in {listing(groups['every'])} under every condition definition")
     if groups.get("some"):
         clauses.append(f"in {listing(groups['some'])} only under some")
-    title = f"{lead} {'; '.join(clauses)}" if clauses else f"{lead} in no condition at p < 0.05"
+    title = (
+        f"{lead} {'; '.join(clauses)}" if clauses else f"{lead} in no condition at nominal p < 0.05"
+    )
     others = []
     reversed_clauses = []
     if groups.get("opposite"):
@@ -2044,22 +2214,29 @@ def caption_direction(results: Results) -> Caption:
         others.append(f"{listing(groups['mixed'])} {changes} direction with the definition")
     if groups.get("none") and clauses:
         reaches = "reaches" if len(groups["none"]) == 1 else "reach"
-        others.append(f"{listing(groups['none'])} {reaches} p < 0.05 under no definition")
+        others.append(f"{listing(groups['none'])} {reaches} nominal p < 0.05 under no definition")
     if groups.get("no data"):
         others.append(f"no data for {listing(groups['no data'])}")
     if others:
         title = f"{title}; {'; '.join(others)}"
 
     healthy = stool_rows(results, ORIENTED)
+    endpoints = scenario_endpoints(results, list(CAPTION_NAMES))
+    endpoints.update(
+        sign_endpoint(results, healthy[short], "study")
+        for short in CAPTION_NAMES
+        if short in healthy
+    )
+    endpoints.update(interaction_endpoint(row) for row in crc_interactions(results))
     counts = ", ".join(
         f"{'all three' if short == 'Pooled' else short} {int(healthy[short]['study_down'])} : "
         f"{int(healthy[short]['study_up'])} : {int(healthy[short]['study_tied'])} "
-        f"(p = {sci(float(healthy[short]['study_binom_p_two_sided']))})"
+        f"({nominal_p(healthy[short]['study_binom_p_two_sided'])})"
         for short in CAPTION_NAMES
         if short in healthy
     )
     ranges = "".join(
-        f"{sentence(CAPTION_NAMES[short])}: {p_span(v, 'p from ', ' to ')} across "
+        f"{sentence(CAPTION_NAMES[short])}: {p_span(v, 'nominal p from ', ' to ')} across "
         f"{v.readings} distinct readings of the {v.definitions} sensitivity scenarios. "
         for short, v in verdicts.items()
         if v.kind in DEFINITION_DEPENDENT
@@ -2067,7 +2244,11 @@ def caption_direction(results: Results) -> Caption:
     return Caption(
         title=title,
         takeaway=f"Exact condition labels, down : up : tied studies: {counts}.",
-        caveat=f"{ranges}{crc_compartment_statement(results)}.",
+        caveat=(
+            f"{ranges}{crc_compartment_statement(results)}. "
+            "Scope including the scenario endpoints behind the verdicts: "
+            f"{nominal_scope(endpoints)}"
+        ),
         evidence="condition_definition_sensitivity.tsv",
     )
 
@@ -2110,26 +2291,33 @@ def caption_nulls(results: Results) -> Caption:
     u5 = null_endpoints(results, "U5")
     u6 = null_endpoints(results, "U6")
     size_matched = null_endpoints(results, "U6_size_matched")
+    endpoints = null_endpoints_map(
+        results, [key for key, _ in NULL_ROWS], ("U5", "U6", "U6_size_matched")
+    )
     return Caption(
         title="Overlap of stool-decreased cellulose-annotated taxa against six null models",
         takeaway=(
-            f"Independent-draw nulls (U1{DASH}U4): every mean {independent_nulls(results)}. "
+            f"Independent-draw nulls (U1{DASH}U4): {independent_nulls(results)}. "
             f"U5 (prevalence-weighted): {u5[0]} (mean), {u5[1]} (core). U6 (whole signatures): "
             f"{u6[0]}, {u6[1]}; size-matched: {size_matched[0]}, {size_matched[1]}."
         ),
         caveat=(
             f"U1{DASH}U3 pair p-values are exact hypergeometric tails, the others Monte Carlo "
             f"with {iterations:,} draws ({matched:,} kept for the size-matched U6); only U6 "
-            "keeps co-reported taxa together."
+            "keeps co-reported taxa together. "
+            f"{nominal_scope(endpoints)}"
         ),
         evidence="pairwise_jaccard_significance.tsv",
     )
 
 
 def caption_body_sites(results: Results) -> Caption:
+    endpoints: dict[tuple[str, ...], Any] = {}
+
     def odds(population: str, unit: str) -> str:
         row = interaction_row(results, population, POOLED_STRATIFIED, unit)
-        return f"{float(row['conditional_or']):.2f} (p = {sci(float(row['fisher_p_two_sided']))})"
+        endpoints.update([interaction_endpoint(row)])
+        return f"{float(row['conditional_or']):.2f} ({nominal_p(row['fisher_p_two_sided'])})"
 
     table = results.compartments
     elsewhere = [
@@ -2158,7 +2346,7 @@ def caption_body_sites(results: Results) -> Caption:
         caveat=(
             "Experiments within a study are not independent. Outside stool, single conditions "
             f"have at most {max(others, default=0)} untied pairs, except CRC GI mucosa / lumen "
-            f"({crc_gi})."
+            f"({crc_gi}). {nominal_scope(endpoints)}"
         ),
         evidence="compartment_direction_interaction.tsv",
     )
@@ -2240,13 +2428,24 @@ def main(argv: Sequence[str] | None = None) -> int:
         outputs.append(combined[folder])
     # Slide text for decks, from the same tables (scripts/build_slide_deck.py; #556).
     captions_path = args.analysis_dir / "figures" / "figure_captions.json"
-    statements = {
-        "overlap": overlap_statement(results),
-        "crc_compartments": crc_compartment_statement(results),
-        "fragile": fragile_statement(results),
+    statement_writers = {
+        "overlap": overlap_statement,
+        "crc_compartments": crc_compartment_statement,
+        "fragile": fragile_statement,
+    }
+    statements = {name: writer(results) for name, writer in statement_writers.items()}
+    # Decks splice these clauses into their own sentences. Keep the standalone
+    # scope metadata alongside them, with exactly the same endpoint selection.
+    statement_scopes = {
+        name: writer(results, include_scope=True).removeprefix(f"{statements[name]}. ")
+        for name, writer in statement_writers.items()
     }
     captions_path.write_text(
-        json.dumps({"figures": captions, "statements": statements}, indent=1, ensure_ascii=False)
+        json.dumps(
+            {"figures": captions, "statements": statements, "statement_scopes": statement_scopes},
+            indent=1,
+            ensure_ascii=False,
+        )
         + "\n",
         encoding="utf-8",
     )

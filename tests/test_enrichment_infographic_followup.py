@@ -115,3 +115,176 @@ def test_cross_target_check_leaves_out_targets_it_never_queried(
 
     assert set(neighbors["query_condition"]) == {queried}
     assert crosscheck["query_condition"].tolist() == [queried]
+
+
+def _paired_trait_fixture(tmp_path: Path) -> tuple[Path, pd.DataFrame]:
+    """Deliberately disagreeing row, p-value and q-value orders."""
+    path = tmp_path / "paired-traits.tsv"
+    pd.DataFrame(
+        {
+            "trait": ["Third METPO:3", "First METPO:1", "Again METPO:3", "Second METPO:2"],
+            "p_value": [0.8, 0.01, 0.2, 0.4],
+            "q_value": [0.2, 0.7, 0.5, 0.01],
+        }
+    ).to_csv(path, sep="\t", index=False)
+    labels = pd.DataFrame(
+        {
+            "display_name": ["First", "Second", "Third", "Extra"],
+            "display_category": ["phenotype"] * 4,
+        },
+        index=["METPO:1", "METPO:2", "biolink:has_phenotype|METPO:3", "METPO:4"],
+    )
+    return path, labels
+
+
+def test_paired_trait_table_order_ignores_p_and_q_values(tmp_path: Path) -> None:
+    path, labels = _paired_trait_fixture(tmp_path)
+    expected = ["biolink:has_phenotype|METPO:3", "METPO:1", "METPO:2"]
+    assert followup.load_top_paired_traits(path, 3, labels) == expected
+
+    changed = pd.read_csv(path, sep="\t")
+    changed["p_value"] = [0.001, 0.9, 0.6, 0.3]
+    changed["q_value"] = [0.8, 0.04, 0.1, 0.6]
+    changed_path = tmp_path / "changed-p-and-q.tsv"
+    changed.to_csv(changed_path, sep="\t", index=False)
+    assert followup.load_top_paired_traits(changed_path, 3, labels) == expected
+
+
+@pytest.mark.parametrize("fill", [False, True], ids=["no-fill", "fill"])
+def test_main_heatmap_caption_matches_supplied_order_and_clustering(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, fill: bool
+) -> None:
+    path, labels = _paired_trait_fixture(tmp_path)
+    metadata = _profiles(
+        [
+            ("s1|s1-1|inc", "s1", "s1-1", followup.TARGET_CONDITIONS[0]),
+            ("s1|s1-1|dec", "s1", "s1-1", followup.TARGET_CONDITIONS[0]),
+        ]
+    )
+    values = pd.DataFrame(
+        [[3, 1, 0, 20], [0, 2, 4, 10]], index=metadata.index, columns=labels.index
+    )
+    binary = pd.DataFrame(
+        [[1, 1, 0, 1], [0, 1, 1, 1]],
+        index=["taxon-a", "taxon-b"],
+        columns=labels.index,
+    )
+    output = tmp_path / "output"
+    monkeypatch.setattr(followup, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "followup",
+            "--output-dir",
+            str(output),
+            "--artifact-prefix",
+            "fixture_",
+            "--trait-source",
+            "paired-top",
+            "--paired-trait-stats-input",
+            str(path),
+            "--top-paired-traits",
+            "3",
+            "--max-heatmap-traits",
+            "4",
+            *(["--fill-heatmap-traits"] if fill else []),
+        ],
+    )
+    for name in ("load_experiments", "load_studies", "load_profile_labels"):
+        monkeypatch.setattr(followup, name, lambda *_args: pd.DataFrame())
+    monkeypatch.setattr(followup, "load_trait_labels", lambda *_args: labels)
+    monkeypatch.setattr(followup, "load_profiles", lambda *_args: (values, metadata, None))
+    for name in (
+        "summarize_condition_depth",
+        "write_target_title_table",
+        "summarize_autism_labels",
+        "summarize_guild_connections",
+    ):
+        monkeypatch.setattr(followup, name, lambda *_args: pd.DataFrame())
+    monkeypatch.setattr(followup, "dropped_target_conditions", lambda *_args: {})
+    monkeypatch.setattr(
+        followup,
+        "compute_profile_neighbors",
+        lambda *_args: (pd.DataFrame(), pd.DataFrame(), pd.DataFrame()),
+    )
+    monkeypatch.setattr(followup, "write_report", lambda *_args: None)
+    expected_order = ["biolink:has_phenotype|METPO:3", "METPO:1", "METPO:2"]
+
+    def build_matrix(
+        actual_values: pd.DataFrame,
+        actual_metadata: pd.DataFrame,
+        actual_labels: pd.DataFrame,
+        _full_dump_path: Path,
+        _matrix_path: Path,
+        max_traits: int,
+        _max_taxa: int,
+        preferred_traits: list[str],
+        fill_with_high_signal_traits: bool,
+        balance_taxa_by_condition: bool,
+    ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
+        assert preferred_traits == expected_order
+        assert max_traits == (4 if fill else 3)
+        assert fill_with_high_signal_traits is fill
+        assert balance_taxa_by_condition is False
+        selected = followup.select_heatmap_traits(
+            actual_values,
+            actual_metadata,
+            actual_labels,
+            max_traits,
+            preferred_traits,
+            fill_with_high_signal_traits,
+        )
+        return (
+            binary[selected].copy(),
+            pd.DataFrame(index=binary.index),
+            actual_labels.loc[selected],
+        )
+
+    captured: list[tuple[pd.DataFrame, Path, str, bool]] = []
+
+    def capture_heatmap(
+        matrix: pd.DataFrame,
+        taxa_metadata: pd.DataFrame,
+        trait_metadata: pd.DataFrame,
+        output_path: Path,
+        title: str,
+        cluster_columns: bool,
+    ) -> pd.DataFrame:
+        assert taxa_metadata.index.tolist() == matrix.index.tolist()
+        assert trait_metadata.index.tolist() == matrix.columns.tolist()
+        captured.append((matrix.copy(), output_path, title, cluster_columns))
+        return matrix.copy()
+
+    monkeypatch.setattr(followup, "build_traits_vs_organisms_heatmap", build_matrix)
+    monkeypatch.setattr(followup, "save_traits_vs_organisms_heatmap", capture_heatmap)
+    followup.main()
+
+    assert len(captured) == 1
+    matrix, image_path, title, cluster_columns = captured[0]
+    assert image_path == output / "fixture_traits_vs_organisms_heatmap.png"
+    assert matrix.index.tolist() == ["taxon-a", "taxon-b"]
+    assert matrix.columns.tolist() == [*expected_order, *(["METPO:4"] if fill else [])]
+    assert matrix.to_numpy().tolist() == (
+        [[0, 1, 1, 1], [1, 0, 1, 1]] if fill else [[0, 1, 1], [1, 0, 1]]
+    )
+    assert cluster_columns is fill
+    if fill:
+        assert title == (
+            "Companion Heatmap: Relevant Traits vs Organisms in Infographic Outlier Conditions\n"
+            "Trait columns include paired-profile top traits plus high-signal "
+            "target-condition traits"
+        )
+        assert "supplied paired-trait table order" not in title
+    else:
+        assert title == (
+            "Companion Heatmap: Our Top Paired-Profile Traits vs Organisms in "
+            "Infographic Outlier Conditions\n"
+            "Trait columns follow the supplied paired-trait table order"
+        )
+    assert "p-value" not in title
+    assert "q-value" not in title
+    saved_matrix = pd.read_csv(
+        output / "fixture_traits_vs_organisms_heatmap_matrix.tsv", sep="\t", index_col=0
+    )
+    pd.testing.assert_frame_equal(saved_matrix, matrix)
