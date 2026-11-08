@@ -356,3 +356,49 @@ def test_guide_cell_status_labels_match_emitted_code_constants() -> None:
         integrated_evidence.CELL_STATES[guild_maps.CELL_NO_SIGNAL][0],
     }
     assert emitted_zero_signal_labels == {label for label, _, _ in guide_bindings}
+
+
+def test_three_arm_statistics_pins_common_quantity_modules_and_historical_screen_provenance() -> (
+    None
+):
+    """#1265, #1322: three_arm_statistics.md cites shipped modules and pins 344/317 provenance."""
+    raw = (METHODS_DIR / "three_arm_statistics.md").read_text(encoding="utf-8")
+    content = " ".join(raw.split())
+
+    assert "until that work is complete" not in content
+    assert "tracks harmonization and the numerical rerun" not in content
+    assert "tracks this planned sensitivity analysis" not in content
+    assert "specifies the harmonized comparison to implement in" not in content
+
+    assert "src/mtp/composition_denominators.py" in content
+    assert "src/mtp/integrated_evidence.py" in content
+    assert "src/mtp/log_ratio_sensitivity.py" in content
+    assert "src/mtp/trait_guilds.py" in content
+    assert "drop_zero_total_pairs" in content
+    assert (
+        "Noel owns the integrated evidence table in "
+        "[#178](https://github.com/CultureBotAI/microbial-trait-profiling/issues/178), "
+        "implemented in [`src/mtp/integrated_evidence.py`](../src/mtp/integrated_evidence.py)"
+    ) in content
+    assert (
+        "retain their original run-specific denominator definitions from the snapshots in which "
+        "they were produced"
+    ) in content
+
+    assert "344 under `phenotype` in the historical scope audit at main 8b280a3" in content
+    assert "historical run-specific observations" in content
+    assert (
+        "- **Denominators.** In that historical 8b280a3 audit, every profile's fraction sums 344 "
+        "retained columns."
+    ) in content
+    assert (
+        "across the 317 `off`-scope candidates in the historical v1.3.1 screen "
+        "([`trait_direction_screen.md`](trait_direction_screen.md); [Vintage](#vintage)), "
+        "606 to 898 for the six of Table 1 in the historical `off`-scope shift table "
+        "([`table1_trait_condition_body_site_maps.md`](table1_trait_condition_body_site_maps.md), "
+        "ties excluded)"
+    ) in content
+    assert (
+        "across the 317 `off`-scope candidates in that historical screen "
+        "([`trait_direction_screen.md`](trait_direction_screen.md); [Vintage](#vintage))"
+    ) in content
