@@ -243,6 +243,24 @@ Merely binding or reading an alias does not. Rebinding an alias to a fresh objec
 deleting its name, or replacing/removing an outer container element does not by
 itself mutate the contained vector. Recognized shallow copies own their outer
 extent while retaining references to nested objects.
+Recognized copies include a slice, `list(...)`, `tuple(...)`, `.copy()`,
+`copy.copy(...)` and `sorted(...)`; these call forms have one positional input
+and no keywords (the method form has no arguments). Augmented writes through
+container slots or namespace attributes also invalidate the slot's possible
+referent before the store. Namespace attributes retain distinct selectors.
+
+Fresh `numpy.ones` and `numpy.zeros` allocations with one positional shape and
+only an optional `dtype` keyword retain no references to their shape or dtype
+inputs. A shape tied to a recognized family size supplies a fixed-size array
+fact only with the default dtype or an unshadowed built-in `float`, `int` or
+`bool` dtype. Object and unknown dtypes use the ordinary container model so
+later inserted references remain visible. Tuple shapes do not supply that
+arithmetic witness. Other signatures,
+including `like=` dispatch, remain opaque. Names without additional possible
+references use direct identity membership checks during a write scan; names with
+side references retain the full path lookup. State-changing set traversals are
+ordered, with comparison and allocation work charged, so cache construction and
+environment insertion do not depend on the interpreter's hash seed.
 
 A write through an unresolved external origin, including one carried into a
 local alias or container, can conservatively invalidate observed free-vector
@@ -250,7 +268,9 @@ and incoming-parameter extents, even when the objects are unrelated. This reject
 the external-alias examples without claiming
 to resolve the temporal identity of module, enclosing-function or caller bindings.
 Different parameter names retain distinct abstract input origins: arbitrary
-caller aliasing between two parameters is not inferred. Opaque call results may
+caller aliasing between two parameters is not inferred. A write through an
+incoming parameter also conservatively invalidates observed free-vector extents,
+because the caller may have passed that free object as the parameter. Opaque call results may
 carry possible references from their arguments, but the call's effects are not
 interpreted. This is a bounded witness recognizer, not general Python alias analysis.
 

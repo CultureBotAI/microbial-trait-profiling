@@ -488,10 +488,19 @@ def visible_by_derivation(
             value = expression(node.args[0], env)
             return ("size", value[1]) if value and value[0] in {"vector", "array"} else None
         if (
-            name == "numpy.ones"
+            name in {"numpy.ones", "numpy.zeros"}
             and len(node.args) == 1
-            and all(k.arg == "dtype" for k in node.keywords)
+            and all(
+                k.arg == "dtype"
+                and isinstance(k.value, ast.Name)
+                and k.value.id not in env
+                and k.value.id not in module_writes
+                and unit.resolve(k.value, scope) in {"float", "int", "bool"}
+                for k in node.keywords
+            )
         ):
+            # Object/unknown dtypes may hold references inserted later. Their
+            # assignments use the ordinary container model, not this shortcut.
             value = expression(node.args[0], env)
             return ("array", value[1]) if value and value[0] == "size" else None
         if (
@@ -691,7 +700,16 @@ def visible_by_derivation(
             return select_origins(possible_origins(node.value, env), "." + node.attr)
         if isinstance(node, ast.Call):
             name = target(node, env)
-            if name in {"len", "float", "sum", "numpy.sum", "numpy.ones"}:
+            if name in {"len", "float", "sum", "numpy.sum"}:
+                return frozenset()
+            if (
+                name in {"numpy.ones", "numpy.zeros"}
+                and len(node.args) == 1
+                and all(k.arg == "dtype" for k in node.keywords)
+            ):
+                # These allocations retain no shape/dtype object references.
+                # In particular, dtype=float is not an external-vector alias.
+                # Keep dispatch signatures such as like= opaque.
                 return frozenset()
             if name == "typing.cast" and len(node.args) == 2 and not node.keywords:
                 return possible_origins(node.args[1], env)
@@ -710,7 +728,11 @@ def visible_by_derivation(
                         )
                 return possible
             copied = None
-            if name in {"list", "tuple"} and len(node.args) == 1 and not node.keywords:
+            if (
+                name in {"list", "tuple", "copy.copy", "sorted"}
+                and len(node.args) == 1
+                and not node.keywords
+            ):
                 copied = node.args[0]
             elif (
                 isinstance(node.func, ast.Attribute)
@@ -859,7 +881,9 @@ def visible_by_derivation(
             partition = possible, origins, external
             partitioned_origins[id(possible)] = partition
         _, origins, external = partition
-        if external:
+        charge("write_alias_scan", len(origins))
+        parameter_write = not origins.isdisjoint(parameter_names)
+        if external or parameter_write:
             # Unknown external objects can alias incoming arguments. The final
             # syntactic Unit.aliases map cannot establish their temporal identity.
             # Only free/incoming extent keys are candidates; a local allocation's
@@ -870,17 +894,24 @@ def visible_by_derivation(
                 for fact in env.values()
                 if fact[0] in {"vector", "size", "harmonic", "BH", "scaled", "BY"}
                 and fact[1].isidentifier()
+                and (external or fact[1] not in parameter_names)
             }
             charge("write_alias_scan", len(external))
             unresolved = any(not (name in env and env[name][1] != name) for name in external)
-            if unresolved:
+            if unresolved or parameter_write:
                 charge("write_alias_scan", len(origins) + len(incoming))
                 origins = origins | incoming
         return origins
 
     def remember_origins(origins: frozenset[str], env: DerivationEnvironment) -> None:
         charge("write_alias_scan", len(origins))
-        for origin in origins:
+        # Only ordered traversals may insert environment/cache entries. Charge
+        # the comparisons (including string lengths) and sorted-list allocation.
+        charge(
+            "write_alias_scan",
+            len(origins) + sum(map(len, origins)) * len(origins).bit_length(),
+        )
+        for origin in sorted(origins):
             if origin.isidentifier():
                 env.setdefault(origin, ("vector", origin))
 
@@ -928,6 +959,17 @@ def visible_by_derivation(
                 # without invalidating an enclosing wrapper's own extent.
                 charge("write_alias_scan", len(env))
                 for name in env:
+                    if not env.aliases.get(name):
+                        # A materialized name with no side references has just
+                        # its vector identity, or no references at all. Avoid
+                        # indexing every unrelated singleton for every write.
+                        fact = env[name]
+                        charge("write_alias_scan")
+                        if fact[0] != "vector" or fact[1] not in identities:
+                            continue
+                        charge("assignment", 3)
+                        wrapper_aliases[name] = direct_origin(fact[1]), frozenset({()})
+                        continue
                     references = named_origins(name, env)
                     prefixes = reference_prefixes(root_references, identities, references)
                     if prefixes:
@@ -967,7 +1009,13 @@ def visible_by_derivation(
                     contained = contain_origins(contained, selector)
                 for alias, (_, prefixes) in wrapper_aliases.items():
                     charge("assignment", len(prefixes))
-                    for prefix in prefixes:
+                    charge("assignment", sum(map(len, prefixes)))
+                    charge(
+                        "assignment",
+                        len(prefixes)
+                        + sum(len(s) + 1 for p in prefixes for s in p) * len(prefixes).bit_length(),
+                    )
+                    for prefix in sorted(prefixes):
                         at_alias = contained
                         for selector in reversed(prefix):
                             at_alias = contain_origins(at_alias, selector)
@@ -992,6 +1040,14 @@ def visible_by_derivation(
                 if fact == previous or (fact[0] == "vector" and fact[1] in origins):
                     env[alias] = ("unknown", f"{alias}:{node.lineno}")
         else:
+            # Augmented slot assignment first mutates the slot's referent,
+            # unlike an ordinary replacement of the wrapper's slot.
+            origins = mutation_origins(node, env)
+            remember_origins(origins, env)
+            charge("alias_invalidation", len(env))
+            for alias, fact in list(env.items()):
+                if fact[0] == "vector" and fact[1] in origins:
+                    env[alias] = ("unknown", alias)
             assign(node, None, env)
 
     def intersection(
@@ -1268,6 +1324,7 @@ def visible_by_derivation(
     args = function.args
     parameters = [*args.posonlyargs, *args.args, *args.kwonlyargs]
     parameters.extend(arg for arg in (args.vararg, args.kwarg) if arg is not None)
+    parameter_names = frozenset(arg.arg for arg in parameters)
     statements(
         function.body,
         DerivationEnvironment({arg.arg: ("vector", arg.arg) for arg in parameters}),

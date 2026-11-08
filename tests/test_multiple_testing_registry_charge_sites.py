@@ -116,36 +116,33 @@ def observed(unit: guard.Unit, counts: dict[str, int]) -> bool:
         # The tuple target costs one; each name costs one assignment plus
         # one empty origin-map lookup: 1 + 2 * (1 + 1).
         pytest.param("def screen(p):\n    a, b = p\n", "assignment", 5, id="assignment"),
-        # A singleton index miss costs lookup 1 + origin scan 2 + bucket 2
-        # + insertion 1 + map 1 + frozen paths 2 + cache entry 3 = 12.
-        # Matching/nonmatching prefix queries cost 21/19; alias reuses p's
-        # query for one. Capture 6 + 3 + 21 + 19 + 1 = 50, then partition 9,
-        # remembrance 1 and final facts 3: 50 + 9 + 1 + 3.
+        # Direct identities need no reference index: root identity 6, capture
+        # 3 names + 3 membership checks = 6, partition 9, parameter check 1,
+        # incoming scan 3 + union 1, sorted remembrance 3, final facts 3.
+        # Total 6 + 6 + 9 + 1 + 3 + 1 + 3 + 3 = 32.
         pytest.param(
             "def screen(p, q):\n    alias = p\n    alias[0] = 1\n",
             "write_alias_scan",
-            63,
+            32,
             id="write-alias-scan",
         ),
-        # The third parameter adds one inspected name and another unmatched
-        # singleton query: capture 6 + 4 + 21 + 19 + 19 + 1 = 70.
-        # Partition 9 + remembrance 1 + final facts 4 give 70 + 9 + 1 + 4.
+        # The extra parameter adds one capture name, one membership check,
+        # one incoming scan and one final fact: 32 + 4 = 36.
         pytest.param(
             "def screen(p, q, r):\n    alias = p\n    alias[0] = 1\n",
             "write_alias_scan",
-            84,
+            36,
             id="write-alias-scan-four-facts",
         ),
-        # The {p, external/p} origin scan costs 2 + 1 + 10 = 13; its index
-        # costs 1 + 13 + 4 + 2 + 2 + 4 + 3 = 29. The matching query costs
-        # 1 + 29 + 2 + 2 + 2 + 4 = 40; q's unmatched query costs 20.
-        # Capture is 17 + 2 + 20 + 40 = 79. Partition/external work is
-        # 1 + 13 + 13 + 4 + 2 + 1 + 3 = 37; remembering two origins and
-        # scanning final q/alias/p adds five: 79 + 37 + 2 + 3.
+        # The free alias retains {p, external/p}: root identity 17, capture
+        # 2 names + q's direct membership 1 + full alias query 40 = 43.
+        # Partition 31 + parameter check 1 + incoming 2 + external 1 +
+        # union 3 = 38. Remembering/sorting p,q costs 2 + 2 + 2*2 = 8;
+        # final q/alias/p scan 3: 17 + 43 + 38 + 8 + 3 = 109.
         pytest.param(
             "def screen(q):\n    alias = p\n    alias[0] = 1\n",
             "write_alias_scan",
-            121,
+            109,
             id="write-alias-scan-free-origin",
         ),
         # The same three facts must be inspected after augmented assignment.
