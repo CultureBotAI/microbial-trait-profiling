@@ -361,24 +361,51 @@ def test_guide_cell_status_labels_match_emitted_code_constants() -> None:
 def test_three_arm_statistics_pins_common_quantity_modules_and_historical_screen_provenance() -> (
     None
 ):
-    """#1265, #1322: three_arm_statistics.md cites shipped modules and pins 344/317 provenance."""
+    """#1265, #1322, #2028, #2029, #2030: three_arm_statistics.md pins modules and counts."""
     raw = (METHODS_DIR / "three_arm_statistics.md").read_text(encoding="utf-8")
     content = " ".join(raw.split())
 
     assert "until that work is complete" not in content
+    assert "until the study-dependence work in" not in content
     assert "tracks harmonization and the numerical rerun" not in content
     assert "tracks this planned sensitivity analysis" not in content
+    assert "tracks the shared biological-interpretation guidance" not in content
     assert "specifies the harmonized comparison to implement in" not in content
+    assert "whereas Jed's inspected paired-screen code excludes" not in content
 
+    assert (
+        "This section specifies the harmonized comparison implemented, for the individual-fraction "
+        "and ratio quantities, in "
+        "[`src/mtp/integrated_evidence.py`](../src/mtp/integrated_evidence.py)"
+    ) in content
+    assert "the fixed-background fold summaries below remain a proposed definition." in content
     assert "src/mtp/composition_denominators.py" in content
     assert "src/mtp/integrated_evidence.py" in content
     assert "src/mtp/log_ratio_sensitivity.py" in content
+    assert "src/mtp/native_composition.py" in content
     assert "src/mtp/trait_guilds.py" in content
     assert "drop_zero_total_pairs" in content
+    assert (
+        "retain their own transformed units (with study-level aggregation added in "
+        "`mt-core-native-study-t` via "
+        "[`src/mtp/native_composition.py`](../src/mtp/native_composition.py)"
+    ) in content
+    assert (
+        "whereas historically Jed's inspected paired-screen code excluded MediaDive from trait "
+        "selection but included it in the denominator (on `main`, "
+        "[`src/mtp/native_composition.py`](../src/mtp/native_composition.py) normalizes through "
+        "`trait_fractions` in "
+        "[`src/mtp/composition_denominators.py`](../src/mtp/composition_denominators.py))."
+    ) in content
     assert (
         "Noel owns the integrated evidence table in "
         "[#178](https://github.com/CultureBotAI/microbial-trait-profiling/issues/178), "
         "implemented in [`src/mtp/integrated_evidence.py`](../src/mtp/integrated_evidence.py)"
+    ) in content
+    assert (
+        "[`methods/biological_interpretation.md`](biological_interpretation.md) "
+        "([#179](https://github.com/CultureBotAI/microbial-trait-profiling/issues/179)) sets out "
+        "the shared biological-interpretation guidance for all contributors."
     ) in content
     assert (
         "retain their original run-specific denominator definitions from the snapshots in which "
@@ -392,9 +419,13 @@ def test_three_arm_statistics_pins_common_quantity_modules_and_historical_screen
         "retained columns."
     ) in content
     assert (
-        "across the 317 `off`-scope candidates in the historical v1.3.1 screen "
-        "([`trait_direction_screen.md`](trait_direction_screen.md); [Vintage](#vintage)), "
-        "606 to 898 for the six of Table 1 in the historical `off`-scope shift table "
+        "2 to 905 of the 922 nonzero studies (932 total, in the historical `off`-scope table "
+        "`519a095b` in "
+        "[`table1_trait_condition_body_site_maps.md`](table1_trait_condition_body_site_maps.md)) "
+        "across the 317 `off`-scope candidates "
+        "([`trait_direction_screen.md`](trait_direction_screen.md)); "
+        "the run producing that range is not identified ([Vintage](#vintage)), 606 to 898 for the "
+        "six of Table 1 in that historical `off`-scope shift table "
         "([`table1_trait_condition_body_site_maps.md`](table1_trait_condition_body_site_maps.md), "
         "ties excluded)"
     ) in content
