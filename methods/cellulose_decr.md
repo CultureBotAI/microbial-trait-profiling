@@ -314,8 +314,8 @@ and layouts; they are not the slide-size versions.
 Slide exports require fresh output routes: both `figures_slides/` and
 `cellulose_decr_slide_figures.pdf` must be absent. Existing directories, files or
 symlinks at either route are refused before report figures or manifests are
-changed. For a rerender, use a fresh analysis-directory copy containing the saved
-input tables; this avoids leaving obsolete pages from a longer previous export.
+changed. To rerender the slides, first delete both slide outputs; requiring
+fresh routes avoids leaving obsolete pages from a longer previous export.
 
 The figure provenance records slide captions, the page-to-report mapping,
 producer-file hashes and all generated output hashes. The slide pages display
