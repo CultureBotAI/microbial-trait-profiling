@@ -9,9 +9,10 @@ and aggregates KG-Microbe trait annotations for paired comparisons and
 enrichment analyses.
 
 The Python package is `mtp` (`src/mtp/`, `schema/mtp.yaml`). `src/bsdbng/` holds
-compatibility shims for the old import path. The legacy `schema/bsdbng.yaml`, the
-`BSDBNG_*` environment variables (such as `BSDBNG_MONGO_URI`) and the `bsdbng-*`
-release assets keep the `bsdbng` name; they have no `mtp` equivalent.
+compatibility shims for the old import path, and `schema/bsdbng.yaml` is the legacy
+copy of `schema/mtp.yaml`. The `BSDBNG_*` environment variables (such as
+`BSDBNG_MONGO_URI`) and the `bsdbng-*` release assets keep the `bsdbng` name; they
+have no `mtp` equivalent.
 
 All biological claims, figure captions, and pipeline interpretations follow the
 project-wide biological interpretation guide in [`methods/biological_interpretation.md`](methods/biological_interpretation.md)
