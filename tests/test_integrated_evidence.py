@@ -1213,7 +1213,7 @@ def test_an_undefined_odds_ratio_is_missing_rather_than_infinite() -> None:
 def test_a_nonfinite_mcnemar_p_is_not_tested_and_leaves_p_blank(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A non-finite McNemar p must be recorded as not_tested, never tested (#1808)."""
+    """A non-finite McNemar p must be recorded as untested, never tested (#1808, #1882)."""
     from types import SimpleNamespace
 
     import mtp.integrated_evidence as ie
@@ -1233,7 +1233,7 @@ def test_a_nonfinite_mcnemar_p_is_not_tested_and_leaves_p_blank(
                 guild_maps, "binomtest", lambda *_a, _p=bad_p, **_k: SimpleNamespace(pvalue=_p)
             )
             (record,) = guild_records(profiles, source="x", columns={}, **THRESHOLDS)
-        assert record.test_status == "not_tested"
+        assert record.test_status == UNTESTED
         assert record.p_value is None
         assert record.q_value is None
         assert record.effect_value is None
@@ -1244,7 +1244,7 @@ def test_a_nonfinite_mcnemar_p_is_not_tested_and_leaves_p_blank(
         table_path = write_table([record], tmp_path / f"evidence_{label}.tsv")
         with table_path.open(encoding="utf-8", newline="") as handle:
             (written,) = list(csv.DictReader(handle, delimiter="\t"))
-        assert written["test_status"] == "not_tested"
+        assert written["test_status"] == UNTESTED
         assert written["p_value"] == ""
         assert written["q_value"] == ""
         assert written["effect_value"] == ""
@@ -1278,7 +1278,7 @@ def test_a_nonfinite_mcnemar_p_is_not_tested_and_leaves_p_blank(
         with monkeypatch.context() as patch:
             patch.setattr(ie, "compute_correlation", lambda *_a, _c=overridden, **_k: _c)
             (record,) = guild_records(profiles, source="x", columns={}, **THRESHOLDS)
-        assert record.test_status == "not_tested"
+        assert record.test_status == UNTESTED
         assert record.p_value is None
         assert record.effect_value is None
         assert record.decision == UNDECIDED

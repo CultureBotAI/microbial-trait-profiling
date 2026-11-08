@@ -1086,3 +1086,24 @@ def test_a_nonfinite_mcnemar_p_is_not_counted_as_a_tested_replicate(
         assert replicate_q["null_tests_evaluated"] == 1
         assert replicate_q["null_tests_rejected_p"] == 1
         assert replicate_q["family_rejected_q"] == 0
+
+        # #1883: A FAMILY q rejection also requires a finite p_value.
+        bad_p_good_q = Outcome("guild_mcnemar", "aerobe_vs_anaerobe", bad_p, 0.01, scored=4)
+        rows_pq = summarize([[bad_p_good_q]], scenario, None)
+        summary_pq = next(r for r in rows_pq if r["label"] == "aerobe_vs_anaerobe")
+        family_pq = next(r for r in rows_pq if r["label"] == "FAMILY")
+        assert summary_pq["replicates_tested"] == 0
+        assert summary_pq["rejections_p"] == 0
+        assert summary_pq["rejections_q"] == 0
+        assert summary_pq["rejection_rate_p"] is None
+        assert summary_pq["rejection_rate_q"] is None
+        assert family_pq["rejections_p"] == 0
+        assert family_pq["rejections_q"] == 0
+        assert family_pq["rejection_rate_p"] == 0.0
+        assert family_pq["rejection_rate_q"] == 0.0
+
+        (replicate_pq,) = replicate_counts([[bad_p_good_q]], scenario, None)
+        assert replicate_pq["tests_evaluated"] == 0
+        assert replicate_pq["null_tests_evaluated"] == 0
+        assert replicate_pq["null_tests_rejected_p"] == 0
+        assert replicate_pq["family_rejected_q"] == 0

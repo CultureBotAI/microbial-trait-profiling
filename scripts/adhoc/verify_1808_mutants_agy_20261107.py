@@ -14,10 +14,10 @@ Inputs:
   - tests/test_calibration.py
 
 Outputs:
-  - stdout summary of CONTROL (rc=0) and 12 killed mutants (rc=1, AssertionError,
+  - stdout summary of CONTROL (rc=0) and 14 killed mutants (rc=1, AssertionError,
     PYTEST_ORIGIN_OK).
 
-Issue: #1808
+Issue: #1808, #1882, #1883
 Date: 2026-11-07
 """
 
@@ -65,18 +65,18 @@ MUTANTS: tuple[Mutant, ...] = (
         test_filter=TEST_IE_NAME,
         old=(
             "    elif mcnemar_p is None:\n"
-            '        status = "not_tested"\n'
+            "        status = UNTESTED\n"
             "    else:\n"
             "        status = TESTED"
         ),
         new="    else:\n        status = TESTED",
     ),
     Mutant(
-        name="M02_ie_status_insufficient_instead_of_not_tested",
+        name="M02_ie_status_insufficient_instead_of_untested",
         target_rel=IE_REL,
         test_rel=TEST_IE_REL,
         test_filter=TEST_IE_NAME,
-        old='    elif mcnemar_p is None:\n        status = "not_tested"',
+        old="    elif mcnemar_p is None:\n        status = UNTESTED",
         new="    elif mcnemar_p is None:\n        status = INSUFFICIENT",
     ),
     Mutant(
@@ -233,6 +233,50 @@ MUTANTS: tuple[Mutant, ...] = (
             '                    "family_rejected_q": int(\n'
             "                        any(\n"
             "                            o.q_value is not None and o.q_value <= Q_THRESHOLD\n"
+            "                            for o in mine\n"
+            "                        )\n"
+            "                    ),"
+        ),
+    ),
+    Mutant(
+        name="M13_cal_summarize_family_calls_drop_p_checks_only_1883",
+        target_rel=CAL_REL,
+        test_rel=TEST_CAL_REL,
+        test_filter=TEST_CAL_NAME,
+        old=(
+            "                and o.p_value is not None\n"
+            "                and math.isfinite(o.p_value)\n"
+            "                and o.q_value is not None\n"
+            "                and math.isfinite(o.q_value)\n"
+            "                and o.q_value <= Q_THRESHOLD"
+        ),
+        new=(
+            "                and o.q_value is not None\n"
+            "                and math.isfinite(o.q_value)\n"
+            "                and o.q_value <= Q_THRESHOLD"
+        ),
+    ),
+    Mutant(
+        name="M14_cal_replicate_counts_family_rejected_q_over_mine_only_1883",
+        target_rel=CAL_REL,
+        test_rel=TEST_CAL_REL,
+        test_filter=TEST_CAL_NAME,
+        old=(
+            '                    "family_rejected_q": int(\n'
+            "                        any(\n"
+            "                            o.q_value is not None\n"
+            "                            and math.isfinite(o.q_value)\n"
+            "                            and o.q_value <= Q_THRESHOLD\n"
+            "                            for o in tested\n"
+            "                        )\n"
+            "                    ),"
+        ),
+        new=(
+            '                    "family_rejected_q": int(\n'
+            "                        any(\n"
+            "                            o.q_value is not None\n"
+            "                            and math.isfinite(o.q_value)\n"
+            "                            and o.q_value <= Q_THRESHOLD\n"
             "                            for o in mine\n"
             "                        )\n"
             "                    ),"

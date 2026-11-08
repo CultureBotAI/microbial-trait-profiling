@@ -584,7 +584,7 @@ def guild_records(
     if not (up_down + down_up):
         status = INSUFFICIENT
     elif mcnemar_p is None:
-        status = "not_tested"
+        status = UNTESTED
     else:
         status = TESTED
     records = [
