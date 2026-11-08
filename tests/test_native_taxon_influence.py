@@ -594,3 +594,36 @@ def test_unselected_but_testable_traits_are_excluded_from_native_bh_family() -> 
     for row in records.values():
         assert row["family_tests"] == 2
         assert row["family_selected_traits"] == 3
+
+
+def test_zero_composition_variance_within_support_bounds_is_not_selected() -> None:
+    """In-bounds support with zero composition variance stays not_selected (#1893)."""
+    policy = {
+        "minimum_profile_support": 2,
+        "maximum_profile_support_fraction": 0.75,
+        "minimum_pairs": 1,
+        "transform_multiplier": 1000,
+    }
+    profiles = {
+        ("s0", "e0", "inc"): {"Z_const": 2, "bg": 6},
+        ("s0", "e0", "dec"): {"Z_const": 3, "bg": 9},
+    }
+    keys = list(profiles)
+    base = Base(["Z_const"], {"z_const": "Z_const"}, profiles, {}, {}, {}, {}, {}, [])
+
+    records, _, _ = transformed(base, base.profiles, keys, policy)
+
+    assert list(records) == ["Z_const"]
+    row = records["Z_const"]
+    upper_support = max(2, int(len(keys) * policy["maximum_profile_support_fraction"]))
+    assert policy["minimum_profile_support"] <= row["profile_support"] <= upper_support
+    assert row["profile_support"] == 2
+    assert row["composition_variance"] == 0.0
+    assert row["selected"] is False
+    assert row["status"] == "not_selected"
+    assert row["p"] == ""
+    assert row["q"] == ""
+    assert row["significant_0.05"] is False
+    assert row["significant_0.001"] is False
+    assert row["family_selected_traits"] == 0
+    assert row["family_tests"] == 0
