@@ -17,7 +17,7 @@ Inputs:
   - tests/test_ontology_audit.py
 
 Outputs:
-  - Exit 0 if all 28 mutants are killed by assertion failure (rc=1) with
+  - Exit 0 if all 31 mutants are killed by assertion failure (rc=1) with
     verified scratch import origin; non-zero otherwise.
 
 Date: 2026-11-07
@@ -79,7 +79,10 @@ MUTANTS: list[tuple[str, str, str, str, str]] = [
     (
         "N6_ontology_clusters_constant_len",
         "src/mtp/ontology_audit.py",
-        'int(df_pairs["cluster_id"].nunique())\n'
+        "int(\n"
+        '            df_pairs.loc[df_pairs["cluster_id"].isin(surviving_cluster_ids), '
+        '"cluster_id"].nunique()\n'
+        "        )\n"
         '        if "cluster_id" in df_pairs.columns and not df_pairs.empty\n'
         "        else 0",
         "len(clusters)",
@@ -175,7 +178,10 @@ MUTANTS: list[tuple[str, str, str, str, str]] = [
     (
         "N19_clusters_equal_pair_count_K02",
         "src/mtp/ontology_audit.py",
-        'int(df_pairs["cluster_id"].nunique())\n'
+        "int(\n"
+        '            df_pairs.loc[df_pairs["cluster_id"].isin(surviving_cluster_ids), '
+        '"cluster_id"].nunique()\n'
+        "        )\n"
         '        if "cluster_id" in df_pairs.columns and not df_pairs.empty\n'
         "        else 0",
         "len(df_pairs)",
@@ -246,6 +252,31 @@ MUTANTS: list[tuple[str, str, str, str, str]] = [
         "Both labels are annotated to largely overlapping taxa in the trait matrix.",
         "Both labels are annotated to the same taxa in the trait matrix.",
         "tests/test_density_consolidated_conclusions.py::test_density_interpretation_and_audit_docs_qualify_historical_vif_and_list_provenance",
+    ),
+    (
+        "N29_report_ignores_recorded_orphans_O3_1901",
+        "scripts/audit_trait_density_correlation.py",
+        'n_orphan = int(ontology_res.get("n_orphan_features", 0))',
+        "n_orphan = int(n_collapsed if n_clusters == 0 else max(0, n_collapsed - n_pairs))",
+        "tests/test_density_consolidated_conclusions.py::test_consolidated_report_pluralizes_singular_and_plural_counts",
+    ),
+    (
+        "N30_report_reintroduces_orphan_estimate_fallback_1901",
+        "scripts/audit_trait_density_correlation.py",
+        'n_orphan = int(ontology_res.get("n_orphan_features", 0))',
+        "n_orphan = int(\n"
+        '        ontology_res["n_orphan_features"]\n'
+        '        if "n_orphan_features" in ontology_res\n'
+        "        else (n_collapsed if n_clusters == 0 else max(0, n_collapsed - n_pairs))\n"
+        "    )",
+        "tests/test_density_consolidated_conclusions.py::test_consolidated_report_pluralizes_singular_and_plural_counts",
+    ),
+    (
+        "N31_clusters_count_absent_survivors_1901",
+        "src/mtp/ontology_audit.py",
+        'df_pairs["cluster_id"].isin(surviving_cluster_ids)',
+        "slice(None)",
+        "tests/test_ontology_audit.py::test_ontology_redundancy_audit_counts_observed_clusters_only",
     ),
 ]
 

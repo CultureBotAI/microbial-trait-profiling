@@ -491,6 +491,36 @@ def test_consolidated_report_pluralizes_singular_and_plural_counts(
         "1 feature removed because its cluster survivor is absent)"
     ) in mixed_collapse
 
+    # When n_orphan_features is recorded on a multi-pair corpus where n_pairs > n_collapsed
+    # (so max(0, n_collapsed - n_pairs) would give 0), the recorded orphan count is used.
+    motility_orphan_ontology = {
+        **ontology,
+        "n_redundant_pairs": 21,
+        "n_clusters": 9,
+        "n_collapsed_features": 16,
+        "n_orphan_features": 3,
+        "bounded_trait_space": 301,
+    }
+    _, motility_orphan_conclusions = _report_and_conclusions(
+        audit_script, tmp_path, density, motility_orphan_ontology
+    )
+    motility_orphan_collapse = _point(motility_orphan_conclusions, 5)
+    assert "16 features collapsed into 9 clusters" not in motility_orphan_collapse
+    assert (
+        "21 redundant pairs (13 features collapsed into 9 clusters; "
+        "3 features removed because their cluster survivors are absent)"
+    ) in motility_orphan_collapse
+
+    # When n_orphan_features is absent from ontology_res, keep base's combined wording
+    # rather than estimating orphans from n_collapsed - n_pairs.
+    legacy_ontology = {k: v for k, v in mixed_ontology.items() if k != "n_orphan_features"}
+    _, legacy_conclusions = _report_and_conclusions(
+        audit_script, tmp_path, density, legacy_ontology
+    )
+    legacy_collapse = _point(legacy_conclusions, 5)
+    assert "removed because" not in legacy_collapse
+    assert "1 redundant pair (2 features collapsed into 1 cluster)" in legacy_collapse
+
 
 def test_density_interpretation_and_audit_docs_qualify_historical_vif_and_list_provenance() -> None:
     """#1391, #1392, #1400, #1827, #1857: docs qualify historical binarized VIF 5.88, omit
