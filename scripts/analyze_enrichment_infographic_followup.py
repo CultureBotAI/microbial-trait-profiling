@@ -1142,9 +1142,15 @@ def save_traits_vs_organisms_heatmap(
         "#86efac",
         "#300012",
     ]
+    if len(TARGET_CONDITIONS) > len(palette_colors):
+        msg = (
+            f"The companion heatmap has {len(palette_colors)} distinct condition colours; "
+            f"{len(TARGET_CONDITIONS)} conditions would reuse one. Use "
+            f"--top-paired-conditions {len(palette_colors)} or fewer."
+        )
+        raise ValueError(msg)
     condition_palette = {
-        condition: palette_colors[index % len(palette_colors)]
-        for index, condition in enumerate(TARGET_CONDITIONS)
+        condition: palette_colors[index] for index, condition in enumerate(TARGET_CONDITIONS)
     }
     condition_palette["unknown"] = "#64748b"
     row_taxon_ids = matrix.index.tolist()

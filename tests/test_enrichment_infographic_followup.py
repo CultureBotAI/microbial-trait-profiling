@@ -505,3 +505,27 @@ def test_main_heatmap_caption_matches_supplied_order_and_clustering(
         output / "fixture_traits_vs_organisms_heatmap_matrix.tsv", sep="\t", index_col=0
     )
     pd.testing.assert_frame_equal(saved_matrix, matrix)
+
+
+def test_companion_heatmap_refuses_more_conditions_than_distinct_colours(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A ninth condition must not silently reuse a strip colour (#2005 delta)."""
+    conditions = tuple(f"Condition {i}" for i in range(9))
+    monkeypatch.setattr(followup, "TARGET_CONDITIONS", conditions)
+    matrix = pd.DataFrame([[1, 0], [0, 1]], index=["taxon-a", "taxon-b"], columns=["T:1", "T:2"])
+    taxa = pd.DataFrame(
+        {
+            "taxon_name": ["Taxon A", "Taxon B"],
+            "target_profile_count": [1, 1],
+            "display_condition": [conditions[0], conditions[8]],
+        },
+        index=matrix.index,
+    )
+    traits = pd.DataFrame({"heatmap_label": ["One", "Two"]}, index=matrix.columns)
+    output = tmp_path / "nine.png"
+    with pytest.raises(
+        ValueError, match=r"^The companion heatmap has 8 distinct condition colours; 9"
+    ):
+        followup.save_traits_vs_organisms_heatmap(matrix, taxa, traits, output)
+    assert not output.exists()
