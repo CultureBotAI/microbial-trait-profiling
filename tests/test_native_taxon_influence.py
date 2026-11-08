@@ -535,12 +535,12 @@ def test_unselected_but_testable_traits_are_excluded_from_native_bh_family() -> 
         "transform_multiplier": 1000,
     }
     pair_rows = (
-        (("s0", "e0", "inc"), {"A": 9, "B": 2, "S_const": 4, "U_low": 7, "U_high": 18}),
-        (("s0", "e0", "dec"), {"A": 1, "B": 8, "S_const": 4, "U_low": 1, "U_high": 26}),
+        (("s0", "e0", "inc"), {"A": 9, "B": 8, "S_const": 4, "U_low": 7, "U_high": 12}),
+        (("s0", "e0", "dec"), {"A": 1, "B": 2, "S_const": 4, "U_low": 1, "U_high": 32}),
         (("s1", "e1", "inc"), {"A": 8, "B": 3, "S_const": 8, "U_low": 5, "U_high": 16}),
         (("s1", "e1", "dec"), {"A": 2, "B": 7, "S_const": 8, "U_low": 0, "U_high": 23}),
-        (("s2", "e2", "inc"), {"A": 7, "B": 4, "S_const": 0, "U_low": 0, "U_high": 29}),
-        (("s2", "e2", "dec"), {"A": 3, "B": 0, "S_const": 0, "U_low": 0, "U_high": 37}),
+        (("s2", "e2", "inc"), {"A": 7, "B": 0, "S_const": 0, "U_low": 0, "U_high": 33}),
+        (("s2", "e2", "dec"), {"A": 3, "B": 14, "S_const": 0, "U_low": 0, "U_high": 23}),
         (("s3", "e3", "inc"), {"A": 0, "B": 0, "S_const": 0, "U_low": 0, "U_high": 30}),
         (("s3", "e3", "dec"), {"A": 0, "B": 0, "S_const": 0, "U_low": 0, "U_high": 10}),
     )
@@ -552,11 +552,14 @@ def test_unselected_but_testable_traits_are_excluded_from_native_bh_family() -> 
 
     assert records["U_low"]["profile_support"] == 3
     assert records["U_high"]["profile_support"] == 8
+    unselected_p: dict[str, float] = {}
     for unselected in ("U_low", "U_high"):
         items = list(pairs[unselected].values())
         assert len(items) == 4 >= policy["minimum_pairs"]
         assert stdev(items) > 1e-8
-        assert math.isfinite(float(ttest_1samp(items, 0.0).pvalue))
+        raw_p = float(ttest_1samp(items, 0.0).pvalue)
+        assert math.isfinite(raw_p)
+        unselected_p[unselected] = raw_p
         assert records[unselected]["selected"] is False
         assert records[unselected]["status"] == "not_selected"
         assert records[unselected]["p"] == ""
@@ -575,8 +578,19 @@ def test_unselected_but_testable_traits_are_excluded_from_native_bh_family() -> 
         assert isinstance(records[tested_trait]["p"], float)
         assert math.isfinite(records[tested_trait]["p"])
 
+    assert unselected_p["U_high"] > records["A"]["p"]
     expected_q = adjust([records["A"]["p"], records["B"]["p"]])
+    four_member_q = adjust(
+        [
+            records["A"]["p"],
+            records["B"]["p"],
+            unselected_p["U_low"],
+            unselected_p["U_high"],
+        ]
+    )[:2]
+    assert expected_q != pytest.approx(four_member_q)
     assert [records["A"]["q"], records["B"]["q"]] == pytest.approx(expected_q)
+    assert [records["A"]["q"], records["B"]["q"]] != pytest.approx(four_member_q)
     for row in records.values():
         assert row["family_tests"] == 2
         assert row["family_selected_traits"] == 3

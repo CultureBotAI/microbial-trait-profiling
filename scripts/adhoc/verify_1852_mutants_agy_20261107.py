@@ -13,10 +13,10 @@ Inputs:
   - tests/test_native_taxon_influence.py
 
 Outputs:
-  - stdout summary of CONTROL (rc=0) and 8 killed mutants (rc=1, AssertionError,
+  - stdout summary of CONTROL (rc=0) and 10 killed mutants (rc=1, AssertionError,
     PYTEST_ORIGIN_OK).
 
-Issue: #1852
+Issue: #1852, #1892
 Date: 2026-11-07
 """
 
@@ -136,6 +136,26 @@ MUTANTS: tuple[Mutant, ...] = (
         new=(
             '            "p": float(ttest_1samp(items, 0.0).pvalue) '
             'if (len(items) >= policy["minimum_pairs"] and sd > 1e-8) else "",'
+        ),
+    ),
+    Mutant(
+        name="M10_bh_plus_unselected_testable_1892",
+        old='    for row, q in zip(tested, adjust([r["p"] for r in tested]), strict=True):',
+        new=(
+            "    for row, q in zip(\n"
+            "        tested,\n"
+            "        adjust(\n"
+            '            [r["p"] for r in tested]\n'
+            "            + [\n"
+            "                float(ttest_1samp(list(contrasts[k].values()), 0.0).pvalue)\n"
+            "                for k, r in records.items()\n"
+            '                if not r["selected"]\n'
+            '                and len(contrasts[k]) >= policy["minimum_pairs"]\n'
+            "                and float(np.std(list(contrasts[k].values()), ddof=1)) > 1e-8\n"
+            "            ]\n"
+            "        )[: len(tested)],\n"
+            "        strict=True,\n"
+            "    ):"
         ),
     ),
 )
