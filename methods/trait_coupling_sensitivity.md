@@ -161,13 +161,13 @@ $$\text{If } |\Delta \text{effect}_{\text{coccus} \mid -\text{sphere}}| > \min_{
    $$\mathbf{0.000268 < 0.002040 \implies \text{PASSES CRITERION}}$$
 
 ### Interpretation of the Decision Rule:
-The shift induced by dropping *sphere* ($0.000237$) is **8.6-fold smaller** than the narrowest gap between adjacent Table 1 rows. Dropping *sphere* does not reorder Table 1 traits or distort *coccus*'s effect size.
+The shift induced by dropping *sphere* ($0.000237$) is **8.6-fold smaller** than the narrowest gap between adjacent Table 1 rows. For this historical binarized evaluation, the measured coccus shift is below the chosen reference gap. This comparison alone does not establish unchanged rankings for every trait after every exclusion.
 
 ---
 
-## 6. Methodological Synthesis: Coupling vs. Semantic Redundancy
+## 6. Methodological Synthesis: Annotation Association and Leave-Out Sensitivity
 
-A critical conceptual distinction emerges from the coupling audit. The correlation
+The audit separates annotation-count association from sensitivity to named denominator exclusions. The correlation
 and counts quoted in this section (r = +0.911, VIF 5.88, 415,436 annotations, 14,689
 coccus counts in 3,004 profiles) come from the historical binarized-profile
 evaluation and were not recomputed on the current tables. Across raw profile counts,
@@ -177,19 +177,19 @@ the `phenotype` table now committed (`43b2e230…`;
 
 ```mermaid
 flowchart TD
-    A["Observed Trait Correlation (historical binarized-profile r = +0.911; raw-count r = +0.797)"] --> B["Mechanism 1: Denominator Coupling"]
-    A --> C["Mechanism 2: Semantic Redundancy"]
+    A["Observed Trait Correlation (historical binarized-profile r = +0.911; raw-count r = +0.797)"] --> B["Leave-out sensitivity"]
+    A --> C["Annotation overlap inventory"]
     B --> D["Evaluated in #260 (LOTO / LCO)"]
     C --> E["Evaluated in #264 / #189"]
     D --> F["Composition |Delta| <= 0.000636 (LOTO) / <= 0.001008 (LCO)<br/>Twin LOTO |Delta| <= 0.000268 < 0.002040 (passes rule)<br/>Directional |Delta| <= 0.002736; ORA |Delta| <= 0.024908"]
-    E --> G["Historical binarized-profile VIF = 5.88 (raw-count profile VIF = 2.74, paired VIF = 2.34)<br/>Coccus and sphere are annotated to largely overlapping taxa<br/>Fails semantic independence"]
+    E --> G["Historical binarized-profile VIF = 5.88 (raw-count profile VIF = 2.74, paired VIF = 2.34)<br/>Source-level annotation overlap requires separate assessment<br/>Semantic equivalence and the cause of association are not established"]
 ```
 
-1. **Denominator Coupling is Structurally Robust:**
-   Because total non-MediaDive counts are distributed across $317$ `off`-scope columns ($415,436$ total profile annotations), removing any single trait—even a high-annotation trait like *coccus shaped* ($14,689$ counts across $3,004$ nonzero profiles)—shrinks the profile denominator smoothly without tilting the relative composition of remaining traits. The effect sizes and rankings in Table 1 are not artifacts of denominator closure.
+1. **Named denominator exclusions:**
+   The historical binarized evaluation distributed non-MediaDive counts across $317$ `off`-scope columns ($415,436$ total profile annotations); *coccus shaped* contributed $14,689$ counts across $3,004$ nonzero profiles. The two named twin comparisons pass the historical criterion shown above. That does not establish stability across all leave-outs or show that relative compositions are unchanged. These binarized-profile quantities must not be substituted for the raw-count results in the linked report.
 
-2. **Semantic Redundancy Remains the Binding Constraint:**
-   While *coccus* and *sphere* are stable under denominator coupling, they remain **semantically redundant** in METPO ontology mappings (historical binarized-profile $r = +0.911$, VIF = $5.88$; raw-count profile $r = +0.7970$, VIF = $2.74$, paired VIF = $2.34$). Both labels are annotated to largely overlapping taxa in the trait matrix. Therefore, *coccus* and *sphere* cannot be claimed as independent biological mechanisms in the narrative, but this is due to **ontological overlap** ([#189](https://github.com/CultureBotAI/microbial-trait-profiling/issues/189), [#264](https://github.com/CultureBotAI/microbial-trait-profiling/issues/264)), **not denominator distortion** ([#260](https://github.com/CultureBotAI/microbial-trait-profiling/issues/260)).
+2. **Annotation-count association:**
+   The coccus–sphere summaries describe association (historical binarized-profile $r = +0.911$, VIF = $5.88$; raw-count profile $r = +0.7970$, VIF = $2.74$, paired VIF = $2.34$). Correlation and VIF do not establish semantic equivalence or the cause of the association. Source assertions and ontology relations require separate assessment ([#189](https://github.com/CultureBotAI/microbial-trait-profiling/issues/189), [#264](https://github.com/CultureBotAI/microbial-trait-profiling/issues/264)); the leave-out audit ([#260](https://github.com/CultureBotAI/microbial-trait-profiling/issues/260)) measures sensitivity to its specified denominator changes. These shared annotation data do not establish independent biological mechanisms.
 
 ---
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 import numpy as np
@@ -654,3 +655,109 @@ def test_coupling_correlation_sentence_reports_statistics_without_attributing_ca
     )
     assert "NOT denominator distortion" not in report
     assert "due to semantic/curation redundancy" not in report
+
+
+@pytest.mark.parametrize(
+    ("direct", "reverse", "loto_max", "lco_max", "gap"),
+    [
+        (0.000014, 0.003657, 0.005937, 0.005322, 0.003904),
+        (0.02, -0.03, 0.04, 0.06, 0.01),
+        (-0.001, 0.002, 0.003, 0.0025, 0.005),
+        (0.005, -0.005, 0.005, 0.005, 0.005),
+    ],
+)
+def test_coupling_synthesis_scopes_twin_changes_and_all_leave_outs(
+    direct: float, reverse: float, loto_max: float, lco_max: float, gap: float
+) -> None:
+    names = ["coccus shaped", "sphere shaped", "other"]
+    shifts = pd.DataFrame(
+        [[np.nan, reverse, loto_max], [direct, np.nan, 0.0], [0.0, 0.0, np.nan]],
+        index=names,
+        columns=names,
+    )
+    rule = DecisionRuleResult(
+        COCCUS_ID,
+        names[0],
+        SPHERE_ID,
+        names[1],
+        direct,
+        abs(direct),
+        gap,
+        abs(direct) < gap,
+        [gap],
+        [0.0, gap],
+        "named criterion",
+    )
+    reverse_rule = replace(
+        rule,
+        target_trait_id=SPHERE_ID,
+        target_trait_name=names[1],
+        dropped_trait_id=COCCUS_ID,
+        dropped_trait_name=names[0],
+        delta_effect=reverse,
+        abs_delta_effect=abs(reverse),
+        passes_stability_criterion=abs(reverse) < gap,
+    )
+    lco = LCOSummaryRow(
+        "composition",
+        "coccus + sphere",
+        "other",
+        "other",
+        0.0,
+        -lco_max,
+        -lco_max,
+        1.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+    )
+    report = build_coupling_report_text(shifts, shifts * 0, [lco], rule, reverse_rule)
+    section = report.split("b. ", 1)[1]
+    assert section.startswith("Annotation Association and Leave-Out Sensitivity:")
+    assert (
+        f"Dropping sphere changes the coccus composition effect by {direct:+.6f} "
+        f"(absolute {abs(direct):.6f})" in section
+    )
+    assert (
+        f"dropping coccus changes sphere by {reverse:+.6f} (absolute {abs(reverse):.6f})" in section
+    )
+    assert f"baseline minimum adjacent gap is {gap:.6f}" in section
+    assert (
+        "Across all 6 evaluated LOTO entries, the maximum absolute composition change "
+        f"is {loto_max:.6f}" in section
+    )
+    assert f"the LCO maximum is {lco_max:.6f}" in section
+    assert (
+        "They do not establish unchanged rankings for every leave-out or independent "
+        "biological mechanisms." in section
+    )
+    for unsupported in (
+        "without tilting",
+        "structurally stable",
+        "due to semantic overlap",
+        "Distinction Between Redundancy",
+        "both pass",
+    ):
+        assert unsupported not in section
+
+
+def test_coupling_methods_distinguish_annotation_association_from_a_cause() -> None:
+    path = Path(__file__).resolve().parents[1] / "methods/trait_coupling_sensitivity.md"
+    text = path.read_text(encoding="utf-8")
+    section = text.split("## 6. ", 1)[1].split("## 7. ", 1)[0]
+    assert section.startswith(
+        "Methodological Synthesis: Annotation Association and Leave-Out Sensitivity"
+    )
+    for unsupported in (
+        "semantically redundant",
+        "Semantic Redundancy",
+        "Fails semantic independence",
+        "not denominator distortion",
+        "without tilting",
+        "due to **ontological overlap**",
+    ):
+        assert unsupported not in section
+    assert "do not establish semantic equivalence or the cause of the association" in section
+    assert "does not establish stability across all leave-outs" in section
+    assert "does not reorder Table 1 traits" not in text

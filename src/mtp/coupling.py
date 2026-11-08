@@ -706,18 +706,23 @@ def build_coupling_report_text(
                 f"sensitivity check rather than full-family Table 1 q-values."
             ),
             "",
-            "b. Distinction Between Redundancy and Denominator Coupling:",
+            "b. Annotation Association and Leave-Out Sensitivity:",
             (
                 f"   Coccus and sphere annotation counts: profile correlation summary"
                 f"{twin_stats_str}. These statistics do not establish the cause of the association."
             ),
             (
-                f"   Because total non-MediaDive annotation counts are distributed across "
-                f"{cols_str}, removing even a high-annotation trait like "
-                f"coccus{coccus_str} shrinks the denominator smoothly without tilting relative "
-                f"compositions. Therefore, while coccus and sphere should not be claimed as "
-                f"independent biological mechanisms (due to semantic overlap), their Table 1 "
-                f"statistics are structurally stable."
+                f"   The input spans {cols_str}, including coccus{coccus_str}. "
+                f"Dropping sphere changes the coccus composition effect by "
+                f"{rule_result.delta_effect:+.6f} (absolute {rule_result.abs_delta_effect:.6f}); "
+                f"dropping coccus changes sphere by {rule_result_reverse.delta_effect:+.6f} "
+                f"(absolute {rule_result_reverse.abs_delta_effect:.6f}). "
+                f"The baseline minimum adjacent gap is {rule_result.min_adjacent_distance:.6f}. "
+                f"Across all {n_loto_pairs} evaluated LOTO entries, the maximum absolute "
+                f"composition change is {max_comp_loto:.6f}; the LCO maximum is "
+                f"{max_comp_lco:.6f}. These diagnostics describe sensitivity to the named "
+                f"removals. They do not establish unchanged rankings for every leave-out "
+                f"or independent biological mechanisms."
             ),
             "=" * 80,
         ]
