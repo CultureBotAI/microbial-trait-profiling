@@ -1757,7 +1757,9 @@ def comparison_rows(
     """Fraction directions and pairwise log-ratios for each population, side by side.
 
     Each population keeps the native families of the two analyses: Benjamini-Hochberg
-    over the declared fractions and Benjamini-Yekutieli over the declared ratios.
+    over the declared fractions and Benjamini-Yekutieli over the declared ratios
+    (``ratio_traits``, defaulting to ``TABLE1_TRAITS``; every named trait must be a
+    known trait in ``TABLE1_TRAITS``).
     Labels count each returned family, including untestable members held at p=1
     internally; displayed missing p/q values do not remove family members. An
     empty population emits untestable rows across both families.
@@ -1768,6 +1770,10 @@ def comparison_rows(
         declared_ratio_traits
     ):
         raise ValueError("Provide at least two distinct traits")
+    known_ratio_traits = set(TABLE1_TRAITS)
+    for trait in declared_ratio_traits:
+        if trait not in known_ratio_traits:
+            raise ValueError(f"Missing trait {trait}; missing is not zero")
     ratio_pairs = list(combinations(declared_ratio_traits, 2))
     rows: list[dict[str, object]] = []
     for population, profiles in populations:

@@ -1161,6 +1161,7 @@ def test_comparison_rows_emit_untestable_rows_for_an_empty_population_without_ch
         " ".join(comparison_rows.__doc__.split())
     )
     assert "no paired profiles" not in comparison_rows.__doc__.lower()
+    assert "ratio_traits" in comparison_rows.__doc__
     traits = tuple(TABLE1_TRAITS)
     profiles = [
         Profile(
@@ -1307,6 +1308,14 @@ def test_comparison_rows_emit_untestable_rows_for_an_empty_population_without_ch
                 comparison_rows([("invalid_traits", [])])
         with pytest.raises(ValueError, match="Provide at least two distinct traits"):
             comparison_rows([("invalid_traits", [])], ratio_traits=bad_traits)
+    for unknown_traits in (
+        ("no_such_a", "no_such_b"),
+        (traits[0], "no_such_b"),
+        ("no_such_a", traits[0]),
+    ):
+        for target_populations in ((), (("empty", ()),), (("populated", profiles),)):
+            with pytest.raises(ValueError, match="Missing trait no_such_"):
+                comparison_rows(target_populations, ratio_traits=unknown_traits)
     with pytest.raises(ValueError, match="1 increased vs 0 decreased profiles"):
         comparison_rows([("unpaired_study", [profiles[0]])])
     with pytest.raises(ValueError, match="Unpaired experiment"):
