@@ -1,7 +1,7 @@
 ================================================================================
 TRAIT COUPLING SENSITIVITY AUDIT REPORT (Issue #260)
 ================================================================================
-Code commit: a2b8c28da120f518428dfe8853c18756e4f830a4
+Code commit: a62ebc2b09860df526c076fa80855b09d36a90ef
 
 1. LEAVE-ONE-TRAIT-OUT (LOTO) - COMPOSITION DELTA EFFECT MATRIX (6 x 6):
    Rows: Dropped Trait | Columns: Evaluated Trait
@@ -64,7 +64,7 @@ Reverse Test (Drop Coccus -> Sphere Effect Shift):
 5. SENSITIVITY SUMMARY:
 --------------------------------------------------------------------------------
 a. Denominator Coupling Sensitivity by Analytical Arm:
-   In the composition arm, denominator coupling induced by dropping any single Table 1 trait across all 30 LOTO pairs produces a maximum |Delta effect| of 0.005937 (and up to 0.005322 under LCO; overall composition |Delta effect| <= 0.005937), compared against the tightest Table 1 inter-trait gap of 0.003904.
+   In the composition arm, denominator coupling induced by dropping any single Table 1 trait across all 30 LOTO pairs produces a maximum |Delta effect| of 0.005937 (and up to 0.005322 under LCO; overall composition |Delta effect| <= 0.005937), compared against the tightest Table 1 inter-trait gap of 0.003904. The overall maximum exceeds that gap; 3 of 30 LOTO entries and 1 of 4 LCO entries exceed it.
    In the directional sign-test arm, maximum |Delta share_up| is 0.006553; in the ORA arm, maximum |Delta mean_fold| is 0.073474 as removing high-count traits shrinks the shared background urn M. Note that focal-set BH q-values above are evaluated over m=6 (baseline), m=5 (LOTO), and m=4 (LCO) traits as a sensitivity check rather than full-family Table 1 q-values.
 
 b. Annotation Association and Leave-Out Sensitivity:
