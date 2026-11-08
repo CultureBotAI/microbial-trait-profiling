@@ -219,13 +219,13 @@ def arrow(delta: float) -> str:
     return "↑" if delta > 0 else "↓" if delta < 0 else "="
 
 
-def fragile_sentence(metrics: dict) -> str:
+def fragile_sentence(metrics: dict[str, Any]) -> str:
     """' In the cellulose deep-dive, the HIV result depends on ...' or '' (#590)."""
     fragile = metrics["cellulose_statements"]["fragile"]
     return f" In the cellulose deep-dive, {fragile}." if fragile else ""
 
 
-def taxon_family_text(metrics: dict) -> str:
+def taxon_family_text(metrics: dict[str, Any]) -> str:
     survivors = metrics["pd_taxon_survivors"]
     family = metrics["pd_taxon_family"]
     if survivors == 0:
@@ -310,9 +310,9 @@ def _has_p(row: Mapping[str, str]) -> bool:
     return row.get("p_value_type") != "not_tested" and _has_finite(row, "p_value")
 
 
-def load_rerun_metrics(repo: Path) -> dict:
+def load_rerun_metrics(repo: Path) -> dict[str, Any]:
     """Read fresh rerun TSVs to ensure slide titles, takeaways, and cover table match rerun data."""
-    metrics: dict = {}
+    metrics: dict[str, Any] = {}
 
     # 1. Six-shared-traits direction contrasts
     contrasts_path = (
@@ -325,7 +325,7 @@ def load_rerun_metrics(repo: Path) -> dict:
     # Index by (analysis_level, condition_label, body_site_group, trait_label)
     by_key = {}
     for row in contrasts:
-        key = (
+        key: Any = (
             row.get("view_key", ""),
             row.get("condition", ""),
             row.get("body_site_group", ""),
@@ -615,7 +615,7 @@ def down_text(test: SignTest) -> str:
     )
 
 
-def ratio_survivors_text(metrics: dict) -> str:
+def ratio_survivors_text(metrics: dict[str, Any]) -> str:
     """The log-ratios passing BY in all studies and in the oriented subset (#579)."""
     every, oriented = metrics["table1"][ALL_STUDIES], metrics["table1"][ORIENTED]
     passing = [test.label for test in every.ratio_survivors()]
@@ -641,13 +641,13 @@ def ratio_survivors_text(metrics: dict) -> str:
     return text
 
 
-def oriented_ratio_count(metrics: dict) -> str:
+def oriented_ratio_count(metrics: dict[str, Any]) -> str:
     """'3 BY-significant log-ratios' in the oriented subset (#579)."""
     survivors = metrics["table1"][ORIENTED].ratio_survivors()
     return plural(len(survivors), "BY-significant log-ratio")
 
 
-def increased_side_caveat(metrics: dict) -> str:
+def increased_side_caveat(metrics: dict[str, Any]) -> str:
     """Tufte Plate III's caveat on the pairs among the traits shifted toward the increased
     signature in all studies (#579)."""
     every, oriented = metrics["table1"][ALL_STUDIES], metrics["table1"][ORIENTED]
@@ -694,7 +694,7 @@ def _table1_sign_test_count(population: Any) -> int:
     return sum(math.isfinite(t.p_value) for t in population.fractions.values())
 
 
-def oriented_cellulose_text(metrics: dict) -> str:
+def oriented_cellulose_text(metrics: dict[str, Any]) -> str:
     """Cellulose in all studies and in the oriented subset (#579, #606), as the share of
     scored studies whose decreased signature has the larger annotation share (#685, #1558)."""
     every = metrics["table1"][ALL_STUDIES].fractions[CELLULOSE]
@@ -710,7 +710,7 @@ def oriented_cellulose_text(metrics: dict) -> str:
     )
 
 
-def arm_two_text(metrics: dict) -> str:
+def arm_two_text(metrics: dict[str, Any]) -> str:
     """The cover's Arm 2 sentence, from the ORA tables' headers (#579)."""
     enriched, depleted = metrics["ora_enrichment"], metrics["ora_depletion"]
     return (
@@ -720,7 +720,7 @@ def arm_two_text(metrics: dict) -> str:
     )
 
 
-def mcnemar_text(metrics: dict) -> str:
+def mcnemar_text(metrics: dict[str, Any]) -> str:
     """The oxygen-guild McNemar test, from the guild table (#579, #1558)."""
     test = metrics["mcnemar"]
     return (
@@ -730,7 +730,7 @@ def mcnemar_text(metrics: dict) -> str:
     )
 
 
-def cover_table1_text(metrics: dict) -> str:
+def cover_table1_text(metrics: dict[str, Any]) -> str:
     """The cover's Arm 3 sentence, from disease_control_comparison.tsv (#579, #1558)."""
     every, oriented = metrics["table1"][ALL_STUDIES], metrics["table1"][ORIENTED]
     passing = sum(test.q_value < 0.01 for test in every.fractions.values())
@@ -768,7 +768,7 @@ def cover_wilcoxon_text(metrics: Mapping[str, Any]) -> str:
     )
 
 
-def exploratory_heatmap_text(metrics: dict) -> tuple[str, str, str]:
+def exploratory_heatmap_text(metrics: dict[str, Any]) -> tuple[str, str, str]:
     """The PD exploratory taxa heatmap's slide, from its manifest and taxa table (#579)."""
     manifest = metrics["pd_exploratory"]["manifest"]
     taxa = metrics["pd_exploratory"]["taxa"]
@@ -800,7 +800,7 @@ def exploratory_heatmap_text(metrics: dict) -> tuple[str, str, str]:
     return title, takeaway, caveat
 
 
-def direction_shift_text(metrics: dict) -> tuple[str, str, str]:
+def direction_shift_text(metrics: dict[str, Any]) -> tuple[str, str, str]:
     """The Table 1 direction-shift map's slide, from the table behind the map and, for the
     oriented subset it does not draw, from disease_control_comparison.tsv (#579, #606)."""
     rows = metrics["table1_shift"]
@@ -854,7 +854,7 @@ PLATE_COUNT_KEYS = (
 )
 
 
-def plate_count(metrics: dict, key: str) -> str:
+def plate_count(metrics: dict[str, Any], key: str) -> str:
     return str(metrics["plate_counts"].get(key, "?"))
 
 
@@ -893,7 +893,7 @@ def record_problems(
     return found
 
 
-def three_arm_text(metrics: dict) -> str:
+def three_arm_text(metrics: dict[str, Any]) -> str:
     """Tufte Plate VII's takeaway, from the counts the plates record (#579, #640, #685)."""
     counts = metrics["plate_counts"]
 
@@ -961,7 +961,7 @@ def trait_names(rows: list[dict[str, str]]) -> str:
     return listing([name(r) for r in rows])
 
 
-def paired_contrast_title(metrics: dict) -> str:
+def paired_contrast_title(metrics: dict[str, Any]) -> str:
     """Tufte Plate II's slide title, read from the pooled table (#607)."""
     passing = study_bh_rows(metrics["paired_contrasts"]["pooled"])
     verb = "passes" if len(passing) == 1 else "pass"
@@ -971,7 +971,7 @@ def paired_contrast_title(metrics: dict) -> str:
     )
 
 
-def paired_contrast_text(metrics: dict) -> str:
+def paired_contrast_text(metrics: dict[str, Any]) -> str:
     """Tufte Plate II's takeaway, read from the stratum tables (#556, #608)."""
     contrasts = metrics["paired_contrasts"]
     passing = study_bh_rows(contrasts["pooled"])
@@ -1008,7 +1008,7 @@ def paired_contrast_text(metrics: dict) -> str:
     return f"{head}: {'; '.join(sides)}." if sides else f"{head}."
 
 
-def paired_contrast_caveat(metrics: dict) -> str:
+def paired_contrast_caveat(metrics: dict[str, Any]) -> str:
     """Tufte Plate II's caveat: the strata without Feces, and saliva's nominal nitrate sign."""
     contrasts = metrics["paired_contrasts"]
 
@@ -1017,7 +1017,7 @@ def paired_contrast_caveat(metrics: dict) -> str:
 
     def nitrate(stratum: str) -> dict[str, str]:
         trait = "METPO:2000103|pathways:nitrate_reduction"
-        rows = [r for r in contrasts[stratum] if r["trait"] == trait]
+        rows: list[dict[str, str]] = [r for r in contrasts[stratum] if r["trait"] == trait]
         if len(rows) != 1:
             raise ValueError(f"the {stratum} paired-contrast table needs one {trait} row")
         return rows[0]
@@ -1071,7 +1071,7 @@ def oxygen_switch_strata(rows: list[dict[str, str]]) -> list[dict[str, str]]:
     return up + down
 
 
-def oxygen_switch_text(metrics: dict) -> str:
+def oxygen_switch_text(metrics: dict[str, Any]) -> str:
     """Tufte Plate V's takeaway: how the strata it shows split by site (#610)."""
     strata = oxygen_switch_strata(metrics["oxygen_switch"])
 
@@ -1107,7 +1107,7 @@ def oxygen_switch_text(metrics: dict) -> str:
     return text
 
 
-def plate_one_text(metrics: dict) -> tuple[str, str]:
+def plate_one_text(metrics: dict[str, Any]) -> tuple[str, str]:
     """Tufte Plate I's takeaway and caveat, read from the tables the plate draws (#636, #1557,
     #1559)."""
     pooled = metrics["paired_contrasts"]["pooled"]
@@ -1417,7 +1417,7 @@ def crc_oxygen_text(rows: list[dict[str, str]]) -> str:
     )
 
 
-def crc_mucosa_shown(metrics: dict) -> str:
+def crc_mucosa_shown(metrics: dict[str, Any]) -> str:
     """Whether Plate V shows the CRC Intestinal / GI mucosa stratum (#641)."""
     shown = any(
         r["condition"] == "Colorectal cancer" and r["body_site_display"] == "Intestinal / GI mucosa"
@@ -1455,7 +1455,9 @@ def moved_figure(row: dict[str, str]) -> None:
     )
 
 
-def update_previous_slide_text(row: dict[str, str], metrics: dict) -> tuple[str, str, str]:
+def update_previous_slide_text(
+    row: dict[str, str], metrics: dict[str, Any]
+) -> tuple[str, str, str]:
     """Update title, takeaway, and caveat for previous slides where rerun metrics changed."""
     fig_path = row["figure_file_path"]
     title = row["title"]
@@ -1947,7 +1949,7 @@ def pd_direction_caveat(
     )
 
 
-def pd_profiles_text(metrics: dict) -> str:
+def pd_profiles_text(metrics: dict[str, Any]) -> str:
     """'130 increased vs 123 decreased fecal profiles', the lollipop's population (#641)."""
     summary = metrics["pd_six_trait_summary"]
 
@@ -1961,7 +1963,7 @@ def pd_profiles_text(metrics: dict) -> str:
     )
 
 
-def survivor_text(metrics: dict) -> str:
+def survivor_text(metrics: dict[str, Any]) -> str:
     """The profile-level Fisher FDR survivors with their direction, read from the table."""
     rows = metrics["ind_sig_rows"]
     listed = ", ".join(
@@ -1975,7 +1977,7 @@ def survivor_text(metrics: dict) -> str:
     return f"the {len(rows)} profile Fisher FDR {noun} (★ q ≤ 0.05: {listed})"
 
 
-def get_new_slides_metadata(metrics: dict) -> list[dict[str, str]]:
+def get_new_slides_metadata(metrics: dict[str, Any]) -> list[dict[str, Any]]:
     """Metadata for the Methods plates, the Tufte plates and the newly generated figures."""
     new_slides = [
         # --- Section 0A: Two High-Level Visual Methods Architecture Plates ---
@@ -2733,7 +2735,7 @@ PR315_HISTOGRAMS = frozenset(
 
 
 def get_remaining_appendix_slides(
-    already_included: set[str], repo: Path, metrics: dict
+    already_included: set[str], repo: Path, metrics: dict[str, Any]
 ) -> list[dict[str, str]]:
     """Collect all remaining distinct regenerated PNGs after pruning redundant/superseded views."""
     # Exclude exact duplicate audit/mirror directories and low-res preview
@@ -3813,7 +3815,7 @@ def plate_problems(
     """
     problems: dict[str, list[str]] = {}
     if record.get("rerun_commit") != COMMIT:
-        reason = (
+        reason: Any = (
             f"plates drawn for rerun {str(record.get('rerun_commit'))[:12]}, not {SHORT_COMMIT}"
         )
         return {plate: [reason] for plate in record.get("plates", [])}
@@ -3999,6 +4001,7 @@ def refreshed_hashes(
     files; both are replaced by bare hashes. A missing file keeps its recorded hash.
     """
     old: dict[str, str] = {}
+    path: Any
     for index, value in enumerate(recorded):
         path, sep, sha = value.rpartition(":")
         if sep and re.fullmatch(r"[0-9a-f]{64}", sha):
@@ -4465,6 +4468,7 @@ def build_deck(
 
     checks = trees or {}
     unverified, quoted = check_slides(repo, ordered_entries, checks, TABLES_READ)
+    found: Any
     for plate, found in plate_problems(repo, plate_record, checks, revision).items():
         unverified.setdefault(f"{PLATES_DIR}{plate}", []).extend(
             (f"{PLATES_DIR}{plate}", reason) for reason in found
