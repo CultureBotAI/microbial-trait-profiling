@@ -6,7 +6,7 @@ Addresses Issue #264, Issue #352, and follow-ups #375-#383:
    - Dominant annotation density axis: PC1 and top principal components variance explained.
    - Effective number of independent tests: Li & Ji (2005), Galwey (2009), Cheverud/Nyholt (2004).
      (Note: Cheverud/Nyholt is reported for completeness but excluded as unreliable per #325, #357).
-2. Adjusts for the curation density axis:
+2. Adjusts for the primary annotation density axis:
    - Method A: Profile-level PC1 regression / residualization.
    - Method B: Profile composition normalization (Total Sum Scaling / profile
      annotation depth normalization).
@@ -794,18 +794,25 @@ def evaluate_conditional_twin_test(
         r_bz = float(np.corrcoef(vec_b, depth)[0, 1])
         denom = math.sqrt(max(0.0, (1.0 - r_az**2) * (1.0 - r_bz**2)))
         partial_r = (
-            float(np.clip((corr_prof - r_az * r_bz) / denom, -1.0, 1.0)) if denom > 1e-12 else 0.0
+            float(np.clip((corr_prof - r_az * r_bz) / denom, -1.0, 1.0))
+            if denom > 1e-12
+            else float("nan")
         )
     else:
         partial_r = float("nan")
 
     # Profile OLS regression: A ~ B
+    max_abs_a = float(np.max(np.abs(vec_a))) if len(vec_a) > 0 else 0.0
     if len(vec_b) >= 2 and std_b > 0.0:
-        res_prof = stats.linregress(vec_b, vec_a)
-        slope_prof = float(res_prof.slope)
-        intercept_prof = float(res_prof.intercept)
+        if std_a <= _EXACT_FIT_RESIDUAL_SHARE * max_abs_a:
+            slope_prof = 0.0
+            intercept_prof = float(np.mean(vec_a))
+        else:
+            res_prof = stats.linregress(vec_b, vec_a)
+            slope_prof = 0.0 if float(res_prof.slope) == 0.0 else float(res_prof.slope)
+            intercept_prof = float(res_prof.intercept)
     else:
-        slope_prof = 0.0
+        slope_prof = float("nan")
         intercept_prof = float(np.mean(vec_a)) if len(vec_a) > 0 else 0.0
 
     # Paired experiment contrasts
@@ -836,17 +843,27 @@ def evaluate_conditional_twin_test(
     )
 
     if can_eval_paired:
-        delta_a = (pvt[(trait_a, "inc")] - pvt[(trait_a, "dec")]).to_numpy(dtype=float)
+        inc_a = pvt[(trait_a, "inc")].to_numpy(dtype=float)
+        dec_a = pvt[(trait_a, "dec")].to_numpy(dtype=float)
+        delta_a = inc_a - dec_a
         delta_b = (pvt[(trait_b, "inc")] - pvt[(trait_b, "dec")]).to_numpy(dtype=float)
     else:
+        inc_a = np.array([], dtype=float)
+        dec_a = np.array([], dtype=float)
         delta_a = np.array([], dtype=float)
         delta_b = np.array([], dtype=float)
 
     n_paired = len(delta_a)
     std_delta_a = float(np.std(delta_a)) if n_paired > 0 else 0.0
     std_delta_b = float(np.std(delta_b)) if n_paired > 0 else 0.0
+    max_abs_delta_a = (
+        float(max(np.max(np.abs(delta_a)), np.max(np.abs(inc_a)), np.max(np.abs(dec_a))))
+        if n_paired > 0
+        else 0.0
+    )
+    delta_a_is_constant = std_delta_a <= _EXACT_FIT_RESIDUAL_SHARE * max_abs_delta_a
 
-    if n_paired >= 2 and std_delta_a > 0.0 and std_delta_b > 0.0:
+    if n_paired >= 2 and not delta_a_is_constant and std_delta_b > 0.0:
         corr_paired = float(np.corrcoef(delta_a, delta_b)[0, 1])
         r2_paired = corr_paired**2
         vif_paired = float(1.0 / (1.0 - r2_paired)) if (1.0 - r2_paired) > 1e-12 else float("inf")
@@ -857,18 +874,22 @@ def evaluate_conditional_twin_test(
 
     # Paired regression: delta_A ~ delta_B
     if n_paired >= 2 and std_delta_b > 0.0:
-        res_paired = stats.linregress(delta_b, delta_a)
-        slope_paired = float(res_paired.slope)
-        # A regression p needs residual variation: >= 3 pairs (N=2 fits two points with
-        # 0 residual df, #1660) and residual variance above rounding noise. On an exact
-        # line scipy's p is an artefact of its internal constant, and rounding can leave a
-        # tiny positive stderr, so the test is on 1 - r^2 (noise <= ~1e-15), not stderr (#1713).
-        residual_share = 1.0 - float(res_paired.rvalue) ** 2
-        pval_paired_slope = (
-            float(res_paired.pvalue)
-            if n_paired >= 3 and residual_share > _EXACT_FIT_RESIDUAL_SHARE
-            else float("nan")
-        )
+        if delta_a_is_constant:
+            slope_paired = 0.0
+            pval_paired_slope = float("nan")
+        else:
+            res_paired = stats.linregress(delta_b, delta_a)
+            slope_paired = 0.0 if float(res_paired.slope) == 0.0 else float(res_paired.slope)
+            # A regression p needs residual variation: >= 3 pairs (N=2 fits two points with
+            # 0 residual df, #1660) and residual variance above rounding noise. On an exact
+            # line scipy's p is an artefact of its internal constant, and rounding can leave a
+            # tiny positive stderr, so the test is on 1 - r^2 (noise <= ~1e-15), not stderr (#1713).
+            residual_share = 1.0 - float(res_paired.rvalue) ** 2
+            pval_paired_slope = (
+                float(res_paired.pvalue)
+                if n_paired >= 3 and residual_share > _EXACT_FIT_RESIDUAL_SHARE
+                else float("nan")
+            )
     else:
         slope_paired = float("nan")
         pval_paired_slope = float("nan")
@@ -918,7 +939,11 @@ def density_provenance(
         path if path.exists() else path.with_name(f"{path.name}.gz")
         for path in (profiles_path, columns_path)
     )
-    ids = list(trait_ids) if trait_list is None else list(trait_list.trait_ids)
+    ids = list(trait_ids)
+    if trait_list is not None and ids != list(trait_list.trait_ids):
+        raise ValueError(
+            f"trait_ids {ids} do not match trait_list.trait_ids {list(trait_list.trait_ids)}"
+        )
     trait_fields: dict[str, object] = (
         {"trait_count": len(ids), "trait_ids": ids}
         if trait_list is None
@@ -927,7 +952,11 @@ def density_provenance(
     return {
         **trait_fields,
         "reported_table": "table1_density_adjusted_effects.tsv",
-        "pc1_fit_traits": "every non-MediaDive trait column, independent of the list",
+        "pc1_fit_traits": (
+            "every non-MediaDive trait column"
+            if trait_list is None
+            else "every non-MediaDive trait column, independent of the list"
+        ),
         "q_values": q_value_provenance(len(ids)),
         "profiles_file": resolved_profiles.name,
         "profiles_sha256": file_sha256(resolved_profiles),
@@ -983,6 +1012,60 @@ def reported_traits_heading(trait_list: DeclaredTraitList | None) -> str:
     if trait_list is None:
         return "SURVIVAL OF CONVERGENT SIX TRAIT SIGNALS"
     return f"DECLARED TRAIT LIST SIGNALS ({len(trait_list.trait_ids)} TRAITS)"
+
+
+def format_report_number(
+    value: float,
+    format_spec: str,
+    *,
+    suffix: str = "",
+    allow_positive_infinity: bool = False,
+) -> str:
+    """Format a report scalar without rendering NaN/-inf sentinels (#1328, #1406)."""
+    if math.isfinite(value):
+        return f"{format(value, format_spec)}{suffix}"
+    if allow_positive_infinity and value == math.inf:
+        return "inf"
+    return "NA"
+
+
+def format_correlation_metric(
+    metrics: CorrelationMetrics,
+    field: str,
+    format_spec: str,
+    *,
+    suffix: str = "",
+) -> str:
+    """Format a CorrelationMetrics field, returning NA when < 2 traits vary (#1406)."""
+    if metrics.n_traits - metrics.constant_traits_excluded < 2:
+        return "NA"
+    return format_report_number(float(getattr(metrics, field)), format_spec, suffix=suffix)
+
+
+def format_metric_diff(
+    after: CorrelationMetrics,
+    before: CorrelationMetrics,
+    field: str = "test_pair_r",
+    format_spec: str = "+.4f",
+) -> str:
+    """Format a difference between two CorrelationMetrics fields, or NA if unavailable."""
+    if (
+        after.n_traits - after.constant_traits_excluded < 2
+        or before.n_traits - before.constant_traits_excluded < 2
+    ):
+        return "NA"
+    after_val = float(getattr(after, field))
+    before_val = float(getattr(before, field))
+    if not (math.isfinite(after_val) and math.isfinite(before_val)):
+        return "NA"
+    return format(after_val - before_val, format_spec)
+
+
+def format_profile_regression_slope(twin: ConditionalTwinSummary) -> str:
+    """Format the profile OLS regression slope, or NA when it is not estimable (#1406, #1791)."""
+    if math.isfinite(twin.profile_slope_a_on_b):
+        return f"{0.0 if twin.profile_slope_a_on_b == 0.0 else twin.profile_slope_a_on_b:.4f}"
+    return "NA"
 
 
 def _has_density_directory_component(path: Path) -> bool:
@@ -1149,36 +1232,52 @@ def run_density_audit(
             f"Input profiles evaluated: {raw_pearson.n_samples:,}",
             f"Non-MediaDive trait columns: {raw_pearson.n_traits} "
             f"({raw_pearson.constant_traits_excluded} constant excluded)",
-            f"Pearson pairwise correlation: median {raw_pearson.median_pairwise_r:+.4f}, "
-            f"mean {raw_pearson.mean_pairwise_r:+.4f}",
-            f"Pairs exceeding +0.5: {raw_pearson.pct_pairs_gt_05:.1f}% | "
-            f"Pairs exceeding +0.9: {raw_pearson.pct_pairs_gt_09:.1f}%",
-            f"PC1 variance explained: {raw_pearson.pc1_variance_pct:.2f}% | "
-            f"PC1-PC5 variance explained: {raw_pearson.pc1_5_variance_pct:.2f}%",
+            "Pearson pairwise correlation: "
+            f"median {format_correlation_metric(raw_pearson, 'median_pairwise_r', '+.4f')}, "
+            f"mean {format_correlation_metric(raw_pearson, 'mean_pairwise_r', '+.4f')}",
+            "Pairs exceeding +0.5: "
+            f"{format_correlation_metric(raw_pearson, 'pct_pairs_gt_05', '.1f', suffix='%')} | "
+            "Pairs exceeding +0.9: "
+            f"{format_correlation_metric(raw_pearson, 'pct_pairs_gt_09', '.1f', suffix='%')}",
+            "PC1 variance explained: "
+            f"{format_correlation_metric(raw_pearson, 'pc1_variance_pct', '.2f', suffix='%')} | "
+            "PC1-PC5 variance explained: "
+            f"{format_correlation_metric(raw_pearson, 'pc1_5_variance_pct', '.2f', suffix='%')}",
             f"Effective number of independent tests: "
             f"Li & Ji (2005) = {raw_pearson.m_eff_li_ji:.1f}, "
             f"Galwey (2009) = {raw_pearson.m_eff_galwey:.1f}, "
             f"Cheverud/Nyholt = {raw_pearson.m_eff_nyholt:.1f} (unreliable, #325, #357)",
             "",
             "Spearman baseline verification:",
-            f"  Median pairwise rho: {raw_spearman.median_pairwise_r:+.4f}, "
-            f"Mean pairwise rho: {raw_spearman.mean_pairwise_r:+.4f}",
-            f"  Pairs > 0.5: {raw_spearman.pct_pairs_gt_05:.1f}% | "
-            f"Pairs > 0.9: {raw_spearman.pct_pairs_gt_09:.1f}%",
-            f"  PC1 variance: {raw_spearman.pc1_variance_pct:.2f}%",
+            "  Median pairwise rho: "
+            f"{format_correlation_metric(raw_spearman, 'median_pairwise_r', '+.4f')}, "
+            "Mean pairwise rho: "
+            f"{format_correlation_metric(raw_spearman, 'mean_pairwise_r', '+.4f')}",
+            "  Pairs > 0.5: "
+            f"{format_correlation_metric(raw_spearman, 'pct_pairs_gt_05', '.1f', suffix='%')} | "
+            "Pairs > 0.9: "
+            f"{format_correlation_metric(raw_spearman, 'pct_pairs_gt_09', '.1f', suffix='%')}",
+            "  PC1 variance: "
+            f"{format_correlation_metric(raw_spearman, 'pc1_variance_pct', '.2f', suffix='%')}",
             "",
-            "2. DENSITY AXIS ADJUSTMENT: SEPARATING BIOLOGY FROM CURATION EFFORT",
+            "2. DENSITY AXIS ADJUSTMENT AND CORRELATION CENTERING",
             "-" * 80,
             f"Test Case Pair: {test_pair_a_label} x moderately halophilic",
-            f"  Baseline Pearson r: {raw_pearson.test_pair_r:+.4f}",
-            f"  Post-PC1 regression r: {adj_pc1_pearson.test_pair_r:+.4f} "
-            f"(attenuation: {adj_pc1_pearson.test_pair_r - raw_pearson.test_pair_r:+.4f})",
-            f"  Post-profile-composition r: {adj_comp_pearson.test_pair_r:+.4f}",
+            "  Baseline Pearson r: "
+            f"{format_correlation_metric(raw_pearson, 'test_pair_r', '+.4f')}",
+            "  Post-PC1 regression r: "
+            f"{format_correlation_metric(adj_pc1_pearson, 'test_pair_r', '+.4f')} "
+            f"(change: {format_metric_diff(adj_pc1_pearson, raw_pearson)})",
+            "  Post-profile-composition r: "
+            f"{format_correlation_metric(adj_comp_pearson, 'test_pair_r', '+.4f')}",
             "",
             "Global Correlation Matrix Centering (Method A - PC1 Regression):",
-            f"  Median pairwise r: {adj_pc1_pearson.median_pairwise_r:+.4f} (centered around 0)",
-            f"  Mean pairwise r: {adj_pc1_pearson.mean_pairwise_r:+.4f}",
-            f"  Pairs > 0.5: {adj_pc1_pearson.pct_pairs_gt_05:.1f}%",
+            "  Median pairwise r: "
+            f"{format_correlation_metric(adj_pc1_pearson, 'median_pairwise_r', '+.4f')}",
+            "  Mean pairwise r: "
+            f"{format_correlation_metric(adj_pc1_pearson, 'mean_pairwise_r', '+.4f')}",
+            "  Pairs > 0.5: "
+            f"{format_correlation_metric(adj_pc1_pearson, 'pct_pairs_gt_05', '.1f', suffix='%')}",
             "",
             f"3. {reported_traits_heading(trait_list)} "
             f"(PAIRED EXPERIMENTS N={twin_summary.n_paired_experiments:,})",
@@ -1198,6 +1297,12 @@ def run_density_audit(
             f"{eff.status}"
         )
 
+    twin_vif_prof = format_report_number(
+        twin_summary.vif_profile, ".2f", allow_positive_infinity=True
+    )
+    twin_vif_pair = format_report_number(
+        twin_summary.vif_paired, ".2f", allow_positive_infinity=True
+    )
     report_lines.extend(
         [
             "",
@@ -1205,31 +1310,40 @@ def run_density_audit(
             "-" * 80,
             f"Candidate pair: {twin_summary.trait_a_label} ({twin_summary.trait_a}) vs. "
             f"{twin_summary.trait_b_label} ({twin_summary.trait_b})",
-            f"Profile-level correlation: r = {twin_summary.profile_correlation:+.4f} | "
-            f"Partial r (controlling for depth): r = {twin_summary.profile_partial_r_depth:+.4f}",
-            f"Variance Inflation Factor (VIF): {twin_summary.vif_profile:.2f}",
-            f"Profile OLS regression slope (coccus ~ sphere): "
-            f"{twin_summary.profile_slope_a_on_b:.4f}",
+            "Profile-level correlation: r = "
+            f"{format_report_number(twin_summary.profile_correlation, '+.4f')} | "
+            "Partial r (controlling for depth): r = "
+            f"{format_report_number(twin_summary.profile_partial_r_depth, '+.4f')}",
+            f"Variance Inflation Factor (VIF): {twin_vif_prof}",
+            "Profile OLS regression slope (coccus ~ sphere): "
+            f"{format_profile_regression_slope(twin_summary)}",
             f"Paired contrasts (N={twin_summary.n_paired_experiments}): "
-            f"r = {twin_summary.paired_correlation:+.4f} | "
-            f"Paired VIF: {twin_summary.vif_paired:.2f}",
+            f"r = {format_report_number(twin_summary.paired_correlation, '+.4f')} | "
+            "Paired VIF: "
+            f"{format_report_number(twin_summary.vif_paired, '.2f', allow_positive_infinity=True)}",
             f"Paired regression slope: "
             f"{format_paired_regression_slope(twin_summary.paired_slope_a_on_b)} "
             f"({format_paired_regression_test(twin_summary.paired_slope_pvalue)})",
             "",
             "5. METHODOLOGICAL FINDINGS SUMMARY",
             "-" * 80,
-            f"1. A substantial positive correlation component among traits is driven by PC1 "
-            f"({raw_pearson.pc1_variance_pct:.2f}% variance explained).",
-            f"2. Method A (PC1 regression) centers median pairwise correlation from "
-            f"{raw_pearson.median_pairwise_r:+.4f} to {adj_pc1_pearson.median_pairwise_r:+.4f}.",
-            f"3. Test case pair ({test_pair_a_label} x moderately halophilic) "
-            f"correlation attenuates from r={raw_pearson.test_pair_r:+.4f} "
-            f"to r={adj_pc1_pearson.test_pair_r:+.4f}.",
-            f"4. Near-twins ({twin_summary.trait_a_label} and {twin_summary.trait_b_label}) show "
-            f"profile VIF = {twin_summary.vif_profile:.2f} "
-            f"(paired VIF = {twin_summary.vif_paired:.2f}), "
-            "indicating strong collinearity.",
+            "1. Raw PC1 variance explained across non-MediaDive trait columns: "
+            f"{format_correlation_metric(raw_pearson, 'pc1_variance_pct', '.2f', suffix='%')}.",
+            "2. Median pairwise Pearson r across profile trait annotations: "
+            f"raw = {format_correlation_metric(raw_pearson, 'median_pairwise_r', '+.4f')}; "
+            "post-PC1 regression = "
+            f"{format_correlation_metric(adj_pc1_pearson, 'median_pairwise_r', '+.4f')}.",
+            f"3. Test case pair ({test_pair_a_label} x moderately halophilic) Pearson r: "
+            f"raw = {format_correlation_metric(raw_pearson, 'test_pair_r', '+.4f')}; "
+            "post-PC1 regression = "
+            f"{format_correlation_metric(adj_pc1_pearson, 'test_pair_r', '+.4f')} "
+            f"(change = {format_metric_diff(adj_pc1_pearson, raw_pearson)}).",
+            f"4. Near-twins ({twin_summary.trait_a_label} and {twin_summary.trait_b_label}): "
+            f"profile r = {format_report_number(twin_summary.profile_correlation, '+.4f')}, "
+            f"VIF = {twin_vif_prof} "
+            f"(paired r = {format_report_number(twin_summary.paired_correlation, '+.4f')}, "
+            f"paired VIF = {twin_vif_pair}). "
+            "Joint-model coefficient stability was not evaluated.",
             "=" * 80,
         ]
     )
@@ -1335,6 +1449,7 @@ def main() -> None:
     print(f"Summary TSV: {results['summary_tsv']}")
     print(f"Table 1 Effects TSV: {results['table1_tsv']}")
     print(f"Report: {results['report_txt']}")
+    print(f"Provenance JSON: {results['provenance']}")
 
 
 if __name__ == "__main__":

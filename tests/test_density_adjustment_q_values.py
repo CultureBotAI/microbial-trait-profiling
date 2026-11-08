@@ -524,7 +524,7 @@ def test_default_run_records_machine_readable_provenance_matching_trait_list_sch
         "trait_count": 6,
         "trait_ids": list(TABLE_1_TRAITS),
         "reported_table": "table1_density_adjusted_effects.tsv",
-        "pc1_fit_traits": "every non-MediaDive trait column, independent of the list",
+        "pc1_fit_traits": "every non-MediaDive trait column",
         "q_values": expected_default_q,
         "profiles_file": "profiles.tsv",
         "profiles_sha256": file_sha256(profiles),

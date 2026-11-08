@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import hashlib
 import importlib.util
 import json
@@ -731,9 +732,39 @@ def test_evaluate_conditional_twin_test_constant_and_unpaired() -> None:
     assert np.isnan(summary_const.profile_correlation)
     assert np.isnan(summary_const.vif_profile)
     assert np.isnan(summary_const.profile_partial_r_depth)
-    assert summary_const.profile_slope_a_on_b == 0.0
+    assert np.isnan(summary_const.profile_slope_a_on_b)
     assert np.isnan(summary_const.paired_slope_a_on_b)
     assert np.isnan(summary_const.paired_slope_pvalue)
+
+    # Zero partial-correlation denominator (all traits moving linearly with depth, #1791):
+    # partial_r is NaN rather than 0.0.
+    collinear_depth_df = pd.DataFrame(
+        {
+            "study_id": ["s1", "s2", "s3"],
+            "experiment_id": ["e1", "e2", "e3"],
+            "inc_dec": ["inc", "inc", "inc"],
+            TWIN_A: [1.0, 2.0, 3.0],
+            TWIN_B: [2.0, 4.0, 6.0],
+        }
+    )
+    summary_collinear_depth = evaluate_conditional_twin_test(collinear_depth_df, TWIN_A, TWIN_B)
+    assert summary_collinear_depth.profile_correlation == pytest.approx(1.0)
+    assert np.isnan(summary_collinear_depth.profile_partial_r_depth)
+
+    # Constant TWIN_A with varying TWIN_B: profile slope is genuinely 0.0 (#1791)
+    zero_prof_slope_df = pd.DataFrame(
+        {
+            "study_id": ["s1", "s2", "s3"],
+            "experiment_id": ["e1", "e2", "e3"],
+            "inc_dec": ["inc", "inc", "inc"],
+            TWIN_A: [5.0, 5.0, 5.0],
+            TWIN_B: [1.0, 3.0, 6.0],
+        }
+    )
+    summary_zero_prof = evaluate_conditional_twin_test(zero_prof_slope_df, TWIN_A, TWIN_B)
+    assert np.isnan(summary_zero_prof.profile_correlation)
+    assert summary_zero_prof.profile_slope_a_on_b == 0.0
+    assert density_module.format_profile_regression_slope(summary_zero_prof) == "0.0000"
 
     # Single direction data (no paired contrasts)
     unpaired_df = pd.DataFrame(
@@ -839,6 +870,78 @@ def test_evaluate_conditional_twin_test_constant_and_unpaired() -> None:
     near_df = collinear_df.assign(**{TWIN_A: [10.0, 2.0, 22.0001, 5.0, 38.0, 6.0]})
     summary_near = evaluate_conditional_twin_test(near_df, TWIN_A, TWIN_B)
     assert np.isfinite(summary_near.paired_slope_pvalue)
+
+    # Paired delta_A constant up to float subtraction rounding noise (#1792):
+    # 0.3-0.2, 0.4-0.3, 0.7-0.6, 0.9-0.8 against delta_B = [1, 3, 6, 10] must yield
+    # exact +0.0 slope (never -0.0000) and NaN regression p / correlation.
+    noise_pairs_df = pd.DataFrame(
+        {
+            "study_id": ["s1", "s1", "s2", "s2", "s3", "s3", "s4", "s4"],
+            "experiment_id": ["e1", "e1", "e2", "e2", "e3", "e3", "e4", "e4"],
+            "inc_dec": ["inc", "dec"] * 4,
+            TWIN_A: [0.3, 0.2, 0.4, 0.3, 0.7, 0.6, 0.9, 0.8],
+            TWIN_B: [2.0, 1.0, 5.0, 2.0, 10.0, 4.0, 15.0, 5.0],
+        }
+    )
+    summary_noise = evaluate_conditional_twin_test(noise_pairs_df, TWIN_A, TWIN_B)
+    assert summary_noise.n_paired_experiments == 4
+    assert summary_noise.paired_slope_a_on_b == 0.0
+    assert f"{summary_noise.paired_slope_a_on_b:.4f}" == "0.0000"
+    assert np.isnan(summary_noise.paired_slope_pvalue)
+    assert np.isnan(summary_noise.paired_correlation)
+    assert np.isnan(summary_noise.vif_paired)
+
+    # Large-operand decimal-constant deltas (#1824): rounding noise in inc - dec scales
+    # with operand magnitude (~1000), not |delta_a| (0.1) or |delta_b| (<= 1.1).
+    large_operand_noise_df = pd.DataFrame(
+        {
+            "study_id": ["s1", "s1", "s2", "s2", "s3", "s3", "s4", "s4"],
+            "experiment_id": ["e1", "e1", "e2", "e2", "e3", "e3", "e4", "e4"],
+            "inc_dec": ["inc", "dec"] * 4,
+            TWIN_A: [1000.3, 1000.2, 1000.4, 1000.3, 1000.7, 1000.6, 1000.9, 1000.8],
+            TWIN_B: [0.2, 0.1, 0.5, 0.2, 1.0, 0.3, 1.5, 0.4],
+        }
+    )
+    summary_large_ops = evaluate_conditional_twin_test(large_operand_noise_df, TWIN_A, TWIN_B)
+    assert summary_large_ops.n_paired_experiments == 4
+    assert summary_large_ops.paired_slope_a_on_b == 0.0
+    assert f"{summary_large_ops.paired_slope_a_on_b:.4f}" == "0.0000"
+    assert np.isnan(summary_large_ops.paired_slope_pvalue)
+    assert np.isnan(summary_large_ops.paired_correlation)
+    assert np.isnan(summary_large_ops.vif_paired)
+
+    # Genuine small relative slope of 1e-9 (#1824): must stay non-constant.
+    small_slope_b = [1.0, 2.0, 3.0, 4.0, 5.0]
+    small_slope_df = pd.DataFrame(
+        {
+            "study_id": [f"s{i}" for i in range(5) for _ in range(2)],
+            "experiment_id": [f"e{i}" for i in range(5) for _ in range(2)],
+            "inc_dec": ["inc", "dec"] * 5,
+            TWIN_A: [v for b in small_slope_b for v in (5.0 + 1e-9 * b, 0.0)],
+            TWIN_B: [v for b in small_slope_b for v in (b, 0.0)],
+        }
+    )
+    summary_small_slope = evaluate_conditional_twin_test(small_slope_df, TWIN_A, TWIN_B)
+    assert summary_small_slope.paired_slope_a_on_b == pytest.approx(1e-9, rel=1e-4)
+    assert summary_small_slope.paired_correlation == pytest.approx(1.0)
+    assert np.isinf(summary_small_slope.vif_paired)
+
+    # All-zero delta_A with varying delta_B (#1824): std_delta_a == 0.0 <= 0.0 must be
+    # treated as constant so paired r, VIF, and p are NaN (never p = 1.0 from linregress).
+    all_zero_delta_a_df = pd.DataFrame(
+        {
+            "study_id": ["s1", "s1", "s2", "s2", "s3", "s3", "s4", "s4"],
+            "experiment_id": ["e1", "e1", "e2", "e2", "e3", "e3", "e4", "e4"],
+            "inc_dec": ["inc", "dec"] * 4,
+            TWIN_A: [0.0] * 8,
+            TWIN_B: [2.0, 1.0, 5.0, 2.0, 10.0, 3.0, 15.0, 4.0],
+        }
+    )
+    summary_zero_a = evaluate_conditional_twin_test(all_zero_delta_a_df, TWIN_A, TWIN_B)
+    assert summary_zero_a.paired_slope_a_on_b == 0.0
+    assert np.isnan(summary_zero_a.paired_slope_pvalue)
+    assert np.isnan(summary_zero_a.paired_correlation)
+    assert np.isnan(summary_zero_a.vif_paired)
 
 
 def test_evaluate_table1_paired_effects_missing_keys_and_mismatched_shape() -> None:
@@ -1101,6 +1204,10 @@ def test_density_audit_reports_a_declared_trait_list_without_changing_shared_row
     )
     assert "3. SURVIVAL OF CONVERGENT SIX TRAIT SIGNALS" in default_report
     assert "Trait list:" not in default_report
+    twin_out = results["twin_summary"]
+    assert f"{twin_out.vif_profile:.2f}" != f"{twin_out.vif_paired:.2f}"
+    assert f"Variance Inflation Factor (VIF): {twin_out.vif_profile:.2f}" in default_report
+    assert f"Paired VIF: {twin_out.vif_paired:.2f}" in default_report
 
     provenance = json.loads(
         (tmp_path / "declared" / TRAIT_LIST_PROVENANCE_FILENAME).read_text(encoding="utf-8")
@@ -1154,6 +1261,45 @@ def test_default_density_rerun_drops_a_stale_trait_list_record(tmp_path: Path) -
     assert effects["trait_id"].tolist() == list(TABLE_1_TRAITS)
 
 
+def test_declared_trait_list_run_drops_a_stray_default_provenance_record(tmp_path: Path) -> None:
+    """#1396: list-mode run unlinks a stray density_adjustment_provenance.json."""
+    profiles, columns = _write_density_fixture(tmp_path)
+    list_path = _write_trait_list(tmp_path / "traits.txt", ["METPO:1000605"])
+    output = tmp_path / "list_output"
+    output.mkdir()
+    stray_default_prov = output / density_module.DENSITY_PROVENANCE_FILENAME
+    stray_default_prov.write_text('{"stray": true}\n', encoding="utf-8")
+    assert stray_default_prov.exists()
+
+    results = run_density_audit(profiles, columns, output, trait_list=load_trait_list(list_path))
+
+    assert results["density_provenance"] is None
+    assert results["trait_list_provenance"] == output / TRAIT_LIST_PROVENANCE_FILENAME
+    assert not stray_default_prov.exists()
+    assert (output / TRAIT_LIST_PROVENANCE_FILENAME).is_file()
+
+
+def test_density_provenance_rejects_mismatched_trait_ids_for_declared_list(tmp_path: Path) -> None:
+    """#1399, #1825: density_provenance raises ValueError if trait_ids differ in length,
+    membership, or order from trait_list.trait_ids."""
+    profiles, columns = _write_density_fixture(tmp_path)
+    list_path = _write_trait_list(tmp_path / "traits.txt", ["METPO:1000605", "METPO:1000608"])
+    declared = load_trait_list(list_path)
+    for mismatched_ids in (
+        list(TABLE_1_TRAITS),
+        ["METPO:1000605", "METPO:1000623"],
+        ["METPO:1000608", "METPO:1000605"],
+    ):
+        with pytest.raises(ValueError, match="do not match"):
+            density_module.density_provenance(
+                mismatched_ids,
+                profiles_path=profiles,
+                columns_path=columns,
+                code_commit="abc",
+                trait_list=declared,
+            )
+
+
 @pytest.mark.parametrize(
     ("trait_id", "message"),
     [
@@ -1173,7 +1319,9 @@ def test_declared_density_traits_must_be_non_mediadive_columns(
     assert not (tmp_path / "output" / "table1_density_adjusted_effects.tsv").exists()
 
 
-def test_density_cli_accepts_a_trait_list(tmp_path: Path) -> None:
+def test_density_cli_accepts_a_trait_list(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     profiles, columns = _write_density_fixture(tmp_path)
     list_path = _write_trait_list(tmp_path / "traits.txt", list(EXTRA_TRAITS))
     argv = [
@@ -1189,10 +1337,29 @@ def test_density_cli_accepts_a_trait_list(tmp_path: Path) -> None:
     ]
     with patch.object(sys, "argv", argv):
         main()
+    stdout = capsys.readouterr().out
+    assert f"Provenance JSON: {tmp_path / 'output' / TRAIT_LIST_PROVENANCE_FILENAME}" in stdout
     effects = pd.read_csv(tmp_path / "output/table1_density_adjusted_effects.tsv", sep="\t")
     assert effects["trait_id"].tolist() == list(EXTRA_TRAITS)
     assert effects["trait_label"].tolist() == list(EXTRA_TRAITS.values())
     assert (tmp_path / "output" / TRAIT_LIST_PROVENANCE_FILENAME).exists()
+
+    default_argv = [
+        "density_adjustment",
+        "--profiles",
+        str(profiles),
+        "--columns",
+        str(columns),
+        "--output-dir",
+        str(tmp_path / "default_cli"),
+    ]
+    with patch.object(sys, "argv", default_argv):
+        main()
+    default_stdout = capsys.readouterr().out
+    assert (
+        f"Provenance JSON: {tmp_path / 'default_cli' / density_module.DENSITY_PROVENANCE_FILENAME}"
+        in default_stdout
+    )
 
 
 def _audit_script() -> Any:
@@ -1217,12 +1384,15 @@ def test_audit_script_conclusions_never_round_a_q_onto_the_threshold(q: float, t
     assert _audit_script()._q_text(np.float64(q)) == text
 
 
-def test_audit_script_reports_a_trait_list_without_fixed_conclusions(tmp_path: Path) -> None:
+def test_audit_script_reports_a_trait_list_without_fixed_conclusions(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     """The arm's audit script takes the list; its six-trait narrative is not printed (#1054)."""
     profiles, columns = _write_density_fixture(tmp_path)
     list_path = _write_trait_list(tmp_path / "traits.txt", list(EXTRA_TRAITS))
     audit = _audit_script()
     reports = {}
+    stdouts = {}
     for name, extra in (("default", []), ("declared", ["--trait-list", str(list_path)])):
         argv = [
             "audit_trait_density_correlation.py",
@@ -1236,6 +1406,7 @@ def test_audit_script_reports_a_trait_list_without_fixed_conclusions(tmp_path: P
         ]
         with patch.object(sys, "argv", argv):
             assert audit.main() == 0
+        stdouts[name] = capsys.readouterr().out
         reports[name] = (tmp_path / name / "density_adjustment_report.txt").read_text(
             encoding="utf-8"
         )
@@ -1258,10 +1429,88 @@ def test_audit_script_reports_a_trait_list_without_fixed_conclusions(tmp_path: P
     assert "Significant before and after PC1 regression in the same direction" in default
     for report in (declared, default):
         assert "Benjamini-Hochberg q <= 0.05" in report
+        lower = report.lower()
+        for fixed_claim in (
+            "separating biology from curation effort",
+            "driven by curation density",
+            "strictly necessary",
+            "does not attenuate",
+        ):
+            assert fixed_claim not in lower
+    for stdout in stdouts.values():
+        assert "confirms pc1 is curation density" not in stdout.lower()
     assert "over all 3 reported traits" in declared
     assert "over all 6 reported traits" in default
     assert "Trait list:" not in default
     assert not (tmp_path / "default" / TRAIT_LIST_PROVENANCE_FILENAME).exists()
+
+
+def test_module_report_omits_fixed_claims_and_formats_unavailable_sentinels_as_na(
+    tmp_path: Path,
+) -> None:
+    """#1405, #1406: run_density_audit report avoids fixed causal/severity claims and prints NA
+    when fewer than two traits vary or twin correlation is undefined."""
+    traits = list(TABLE_1_TRAITS)
+    rows = []
+    for exp_idx in range(4):
+        for inc_dec in ("inc", "dec"):
+            rows.append(
+                {
+                    "study_id": f"s{exp_idx}",
+                    "experiment_id": f"e{exp_idx}",
+                    "inc_dec": inc_dec,
+                    **dict.fromkeys(traits, 5.0),
+                }
+            )
+    profiles = tmp_path / "const_profiles.tsv"
+    columns = tmp_path / "const_columns.tsv"
+    pd.DataFrame(rows).to_csv(profiles, sep="\t", index=False)
+    pd.DataFrame(
+        {
+            "column_id": traits,
+            "column_label": list(TABLE_1_TRAITS.values()),
+            "object_name": list(TABLE_1_TRAITS.values()),
+            "object_category": ["biolink:PhenotypicQuality"] * len(traits),
+        }
+    ).to_csv(columns, sep="\t", index=False)
+
+    res = run_density_audit(profiles, columns, tmp_path / "const_out")
+    report = res["report_txt"].read_text(encoding="utf-8")
+    lower = report.lower()
+    for fixed_claim in (
+        "separating biology from curation effort",
+        "driven by pc1",
+        "indicating strong collinearity",
+        "attenuates from",
+    ):
+        assert fixed_claim not in lower
+    assert "nan" not in lower
+    assert "Pearson pairwise correlation: median NA, mean NA" in report
+    assert "PC1 variance explained: NA | PC1-PC5 variance explained: NA" in report
+    assert "Profile-level correlation: r = NA | Partial r (controlling for depth): r = NA" in report
+    assert "Variance Inflation Factor (VIF): NA" in report
+    assert "Profile OLS regression slope (coccus ~ sphere): NA" in report
+    assert "Paired contrasts (N=4): r = NA | Paired VIF: NA" in report
+
+    # #1825: positive infinity formats as 'inf', and format_metric_diff checks finiteness
+    # even when >= 2 traits vary.
+    assert (
+        density_module.format_report_number(float("inf"), ".2f", allow_positive_infinity=True)
+        == "inf"
+    )
+    varying_nan_pair = dataclasses.replace(
+        res["raw_pearson"], constant_traits_excluded=0, test_pair_r=float("nan")
+    )
+    varying_finite_pair = dataclasses.replace(
+        res["adj_pc1_pearson"], constant_traits_excluded=0, test_pair_r=0.25
+    )
+    assert density_module.format_metric_diff(varying_nan_pair, varying_finite_pair) == "NA"
+    assert density_module.format_metric_diff(varying_finite_pair, varying_nan_pair) == "NA"
+
+    # #1827: module docstring describes the primary annotation density axis, not curation cause.
+    module_doc = density_module.__doc__ or ""
+    assert "Adjusts for the curation density axis" not in module_doc
+    assert "Adjusts for the primary annotation density axis:" in module_doc
 
 
 def test_trait_list_runs_never_write_the_six_trait_density_directory(

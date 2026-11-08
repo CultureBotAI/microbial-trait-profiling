@@ -139,6 +139,22 @@ def synthetic_results(case: str = "negative_correlation") -> tuple[dict[str, Any
     return density, ontology
 
 
+def _report_and_conclusions(
+    audit_script: ModuleType,
+    output_dir: Path,
+    density: dict[str, Any],
+    ontology: dict[str, Any],
+    trait_list: DeclaredTraitList | None = None,
+) -> tuple[str, str]:
+    report: Path = audit_script.write_consolidated_report(output_dir, density, ontology, trait_list)
+    assert report.is_file()
+    content = report.read_text(encoding="utf-8")
+    assert content.count(_SECTION) == 1
+    if trait_list is None:
+        _assert_no_fixed_claims(content)
+    return content, content.split(_SECTION, 1)[1]
+
+
 def _conclusions(
     audit_script: ModuleType,
     output_dir: Path,
@@ -146,11 +162,10 @@ def _conclusions(
     ontology: dict[str, Any],
     trait_list: DeclaredTraitList | None = None,
 ) -> str:
-    report: Path = audit_script.write_consolidated_report(output_dir, density, ontology, trait_list)
-    assert report.is_file()
-    content = report.read_text(encoding="utf-8")
-    assert content.count(_SECTION) == 1
-    return content.split(_SECTION, 1)[1]
+    _, conclusions = _report_and_conclusions(
+        audit_script, output_dir, density, ontology, trait_list
+    )
+    return conclusions
 
 
 def _point(conclusions: str, number: int) -> str:
@@ -164,10 +179,15 @@ def _assert_no_fixed_claims(conclusions: str) -> None:
     for claim in (
         "vast majority",
         "driven by curation density",
+        "driven by pc1",
+        "separating biology from curation effort",
+        "confirms pc1 is curation density",
         "severe collinearity",
+        "indicating strong collinearity",
         "conditional testing confirms",
         "unstable coefficients",
         "collapsing alone does not collapse pc1",
+        "does not attenuate",
         "necessary and complementary",
         "strictly necessary",
     ):
@@ -209,7 +229,7 @@ def test_conclusions_report_profile_and_paired_diagnostics_without_severity_clai
         r_text = re.escape(f"{correlation:+.4f}")
         vif_text = re.escape(f"{vif:.2f}")
         assert re.search(rf"{label}.{{0,60}}r\s*=\s*{r_text}", twin, re.I)
-        assert re.search(rf"{label}.{{0,100}}VIF\s*[~=:]\s*{vif_text}", twin, re.I)
+        assert re.search(rf"{label}.{{0,100}}VIF\s*=\s*{vif_text}", twin, re.I)
     _assert_no_fixed_claims(conclusions)
 
 
@@ -237,7 +257,9 @@ def test_conclusions_report_observed_correlations_and_pc1_changes(
         ("adj_collapsed_metrics", adjusted_pc1),
     ):
         ontology[key] = replace(ontology[key], pc1_variance_pct=value)
-    conclusions = _conclusions(audit_script, tmp_path, density, ontology)
+    content, conclusions = _report_and_conclusions(audit_script, tmp_path, density, ontology)
+    assert (f"collapsed + PC1 regression PC1 variance explained = {adjusted_pc1:.2f}%).") in content
+    assert "collapsed + PC1 regression variance explained" not in content
     correlation = _point(conclusions, 1)
     assert "raw = -0.0234; post-PC1 regression = -0.0456." in correlation
     assert f"Raw PC1 variance explained (%) = {raw_pc1:.2f}." in correlation
@@ -263,27 +285,35 @@ def test_conclusions_distinguish_undefined_from_infinite_diagnostics(
     tmp_path: Path, audit_script: ModuleType, unavailable: float
 ) -> None:
     density, ontology = synthetic_results("undefined")
-    density["raw_pearson"] = _metrics(unavailable, unavailable)
-    density["adj_pc1_pearson"] = _metrics(unavailable, unavailable)
+    density["raw_pearson"] = replace(_metrics(unavailable, unavailable), test_pair_r=unavailable)
+    density["raw_spearman"] = _metrics(unavailable, unavailable)
+    density["adj_pc1_pearson"] = replace(
+        _metrics(unavailable, unavailable), test_pair_r=unavailable
+    )
     density["twin_summary"] = replace(
         density["twin_summary"],
         profile_correlation=unavailable,
         vif_profile=unavailable,
+        profile_slope_a_on_b=unavailable,
         paired_correlation=-1.0,
         vif_paired=float("inf"),
     )
     for key in ("native_metrics", "max_metrics", "adj_collapsed_metrics"):
         ontology[key] = _metrics(unavailable, unavailable)
-    conclusions = _conclusions(audit_script, tmp_path, density, ontology)
+    content, conclusions = _report_and_conclusions(audit_script, tmp_path, density, ontology)
     twin = _point(conclusions, 4)
     assert re.search(r"profile.{0,60}r\s*=\s*NA", twin, re.I)
-    assert re.search(r"profile.{0,100}VIF\s*[~=:]\s*NA", twin, re.I)
+    assert re.search(r"profile.{0,100}VIF\s*=\s*NA", twin, re.I)
     assert re.search(r"paired.{0,60}r\s*=\s*-1\.0000", twin, re.I)
-    assert re.search(r"paired.{0,100}VIF\s*[~=:]\s*inf", twin, re.I)
+    assert re.search(r"paired.{0,100}VIF\s*=\s*inf", twin, re.I)
+    assert "Variance Inflation Factor (VIF): NA" in content
+    assert "Paired VIF: inf" in content
+    assert "Post-PC1 regression r: NA (change: NA)" in content
+    assert "Profile OLS regression slope (coccus ~ sphere): NA" in content
     assert "NA" in _point(conclusions, 1)
     assert "NA" in _point(conclusions, 5)
-    assert not re.search(r"\bnan\b", conclusions, re.I)
-    _assert_no_fixed_claims(conclusions)
+    assert not re.search(r"\bnan\b", content, re.I)
+    _assert_no_fixed_claims(content)
 
 
 def test_conclusions_report_no_paired_experiments_as_unavailable(
@@ -296,38 +326,41 @@ def test_conclusions_report_no_paired_experiments_as_unavailable(
         paired_correlation=float("nan"),
         vif_paired=float("nan"),
     )
-    conclusions = _conclusions(audit_script, tmp_path, density, ontology)
+    content, conclusions = _report_and_conclusions(audit_script, tmp_path, density, ontology)
     twin = _point(conclusions, 4)
     assert re.search(r"paired.{0,60}N=0", twin, re.I)
     assert re.search(r"paired.{0,60}r\s*=\s*NA", twin, re.I)
-    assert re.search(r"paired.{0,100}VIF\s*[~=:]\s*NA", twin, re.I)
-    _assert_no_fixed_claims(conclusions)
+    assert re.search(r"paired.{0,100}VIF\s*=\s*NA", twin, re.I)
+    assert not re.search(r"\bnan\b", content, re.I)
+    _assert_no_fixed_claims(content)
 
 
 @pytest.mark.parametrize("n_constant", [38, 39, 40])
 def test_conclusions_do_not_treat_unavailable_zero_sentinels_as_observations(
     tmp_path: Path, audit_script: ModuleType, n_constant: int
 ) -> None:
-    """Fewer than two nonconstant traits leaves correlations and PC1 uncomputed."""
+    """Two or more nonconstant traits report computed values; <2 report NA (#1406, #1514)."""
     density, ontology = synthetic_results()
-    sentinel = replace(_metrics(0.0, 0.0), constant_traits_excluded=n_constant)
+    base_metrics = _metrics(0.1234, 45.67) if n_constant == 38 else _metrics(0.0, 0.0)
+    sentinel = replace(base_metrics, constant_traits_excluded=n_constant)
     density["raw_pearson"] = sentinel
+    density["raw_spearman"] = sentinel
     density["adj_pc1_pearson"] = sentinel
     for key in ("native_metrics", "max_metrics", "adj_collapsed_metrics"):
         ontology[key] = sentinel
-    conclusions = _conclusions(audit_script, tmp_path, density, ontology)
+    content, conclusions = _report_and_conclusions(audit_script, tmp_path, density, ontology)
     correlation = _point(conclusions, 1)
     collapse = _point(conclusions, 5)
     if n_constant == 38:
-        assert "raw = +0.0000; post-PC1 regression = +0.0000." in correlation
-        assert "Raw PC1 variance explained (%) = 0.00." in correlation
+        assert "raw = +0.1234; post-PC1 regression = +0.1234." in correlation
+        assert "Raw PC1 variance explained (%) = 45.67." in correlation
         assert (
-            "PC1 variance explained (%): raw = 0.00; collapsed native = 0.00; "
-            "collapsed max-member = 0.00; collapsed + PC1 regression = 0.00."
+            "PC1 variance explained (%): raw = 45.67; collapsed native = 45.67; "
+            "collapsed max-member = 45.67; collapsed + PC1 regression = 45.67."
         ) in collapse
         assert (
-            "Median pairwise Pearson r: collapsed native = +0.0000; "
-            "collapsed max-member = +0.0000; collapsed + PC1 regression = +0.0000."
+            "Median pairwise Pearson r: collapsed native = +0.1234; "
+            "collapsed max-member = +0.1234; collapsed + PC1 regression = +0.1234."
         ) in collapse
         assert "= NA" not in correlation + collapse
         return
@@ -342,6 +375,12 @@ def test_conclusions_do_not_treat_unavailable_zero_sentinels_as_observations(
     ):
         assert re.search(rf"{re.escape(label)}\s*=\s*NA", collapse)
     assert "0.00" not in correlation + collapse
+    assert "Pearson pairwise correlation: median NA, mean NA" in content
+    assert "PC1 variance explained: NA | PC1-PC5 variance explained: NA" in content
+    assert "Median pairwise rho: NA, Mean pairwise rho: NA" in content
+    assert "Baseline Pearson r: NA" in content
+    assert "Post-PC1 regression r: NA (change: NA)" in content
+    assert "PC1 var = NA | Med r = NA" in content
 
 
 def test_conclusions_keep_bh_statuses_labels_and_survivor_membership(
@@ -375,3 +414,65 @@ def test_declared_trait_list_keeps_the_existing_section6_guard(
         + "trait's computed effects.\n"
         + "=" * 80
     )
+
+
+def test_consolidated_report_pluralizes_singular_and_plural_counts(
+    tmp_path: Path, audit_script: ModuleType
+) -> None:
+    """#1407: singular counts use singular nouns ('1 redundant pair', '1 feature', '1 cluster')."""
+    density, ontology = synthetic_results()
+    ontology = {
+        **ontology,
+        "n_redundant_pairs": 1,
+        "n_clusters": 1,
+        "n_collapsed_features": 1,
+        "bounded_trait_space": 1,
+    }
+    content, conclusions = _report_and_conclusions(audit_script, tmp_path, density, ontology)
+    assert "Redundant pairs identified: 1 pair across 1 concept cluster" in content
+    assert "Bounded distinct trait space: 1 feature" in content
+    collapse = _point(conclusions, 5)
+    assert "1 redundant pair (1 feature collapsed into 1 cluster)" in collapse
+    assert "bounding distinct trait space to 1 feature." in collapse
+
+    # #1826: when a collapsed member (e.g. sphere) is present without its cluster survivor
+    # (coccus), n_redundant_pairs == 0 and n_clusters == 0 while n_collapsed_features == 1;
+    # item 5 must not say '1 feature collapsed into 0 clusters'.
+    orphan_ontology = {
+        **ontology,
+        "n_redundant_pairs": 0,
+        "n_clusters": 0,
+        "n_collapsed_features": 1,
+        "bounded_trait_space": 2,
+    }
+    orphan_content, orphan_conclusions = _report_and_conclusions(
+        audit_script, tmp_path, density, orphan_ontology
+    )
+    orphan_collapse = _point(orphan_conclusions, 5)
+    assert "collapsed into 0 clusters" not in orphan_content
+    assert (
+        "0 redundant pairs (1 feature removed without a present cluster survivor across 0 clusters)"
+        in orphan_collapse
+    )
+
+
+def test_density_interpretation_and_audit_docs_qualify_historical_vif_and_list_provenance() -> None:
+    """#1391, #1392, #1400, #1827: docs qualify historical binarized VIF 5.88, omit severity and
+    curation-mechanism claims, and list density_adjustment_provenance.json."""
+    repo_root = Path(__file__).resolve().parents[1]
+    bio_audit = (repo_root / "methods/biological_interpretation_audit.md").read_text(
+        encoding="utf-8"
+    )
+    assert "show substantial collinearity" not in bio_audit
+    g16_line = next(line for line in bio_audit.splitlines() if line.startswith("| G16 "))
+    assert "historical binarized-profile VIF = 5.88" in g16_line
+    assert "2.74" in g16_line
+
+    coupling_doc = (repo_root / "methods/trait_coupling_sensitivity.md").read_text(encoding="utf-8")
+    assert "historical binarized-profile r = +0.911" in coupling_doc
+    assert "Historical binarized-profile VIF = 5.88" in coupling_doc
+    assert "Curators assign" not in coupling_doc
+    assert "Coccus and sphere are annotated to the same taxa" in coupling_doc
+
+    density_doc = (repo_root / "docs/density_adjustment_audit.md").read_text(encoding="utf-8")
+    assert "data/derived/density_adjustment/density_adjustment_provenance.json" in density_doc
