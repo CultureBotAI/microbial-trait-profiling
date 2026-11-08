@@ -348,7 +348,7 @@ def write_consolidated_report(
     paired_r = _conclusion_number(twin.paired_correlation, "+.4f")
     profile_vif = _conclusion_number(twin.vif_profile, ".2f", allow_positive_infinity=True)
     paired_vif = _conclusion_number(twin.vif_paired, ".2f", allow_positive_infinity=True)
-    n_orphan = int(ontology_res.get("n_orphan_features", 0))
+    n_orphan = int(ontology_res.get("n_orphan_features", n_collapsed if n_clusters == 0 else 0))
     n_collapsed_in_clusters = n_collapsed - n_orphan
     cluster_summary = (
         f"{n_collapsed_in_clusters} "

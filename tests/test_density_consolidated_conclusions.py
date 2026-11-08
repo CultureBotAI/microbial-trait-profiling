@@ -511,8 +511,10 @@ def test_consolidated_report_pluralizes_singular_and_plural_counts(
         "3 features removed because their cluster survivors are absent)"
     ) in motility_orphan_collapse
 
-    # When n_orphan_features is absent from ontology_res, keep base's combined wording
-    # rather than estimating orphans from n_collapsed - n_pairs.
+    # When n_orphan_features is absent from ontology_res and n_clusters > 0, keep base's
+    # combined wording rather than estimating orphans from n_collapsed - n_pairs; when
+    # n_clusters == 0 (#1906), every present collapsed member is an orphan so item 5 must
+    # not fall back to "collapsed into 0 clusters".
     legacy_ontology = {k: v for k, v in mixed_ontology.items() if k != "n_orphan_features"}
     _, legacy_conclusions = _report_and_conclusions(
         audit_script, tmp_path, density, legacy_ontology
@@ -520,6 +522,19 @@ def test_consolidated_report_pluralizes_singular_and_plural_counts(
     legacy_collapse = _point(legacy_conclusions, 5)
     assert "removed because" not in legacy_collapse
     assert "1 redundant pair (2 features collapsed into 1 cluster)" in legacy_collapse
+
+    legacy_zero_cluster_ontology = {
+        k: v for k, v in orphan_ontology.items() if k != "n_orphan_features"
+    }
+    legacy_zero_content, legacy_zero_conclusions = _report_and_conclusions(
+        audit_script, tmp_path, density, legacy_zero_cluster_ontology
+    )
+    legacy_zero_collapse = _point(legacy_zero_conclusions, 5)
+    assert "collapsed into 0 clusters" not in legacy_zero_content
+    assert (
+        "0 redundant pairs (1 feature removed because its cluster survivor is absent)"
+        in legacy_zero_collapse
+    )
 
 
 def test_density_interpretation_and_audit_docs_qualify_historical_vif_and_list_provenance() -> None:
