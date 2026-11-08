@@ -27,7 +27,7 @@ _KIND = "root-relative-v1"
 _SUPPLIED_KIND = "supplied-root-v1"
 _LOCAL_PATH = compile_absolute_local_paths(flags=re.IGNORECASE, classified=False)
 _SLASHLESS_LOCAL_PATH = re.compile(
-    r"(?<![\w])(?:(?:Users|home)/[A-Za-z0-9._-]+"
+    r"(?<![\w])(?<!\w-)(?:(?:Users|home)/[A-Za-z0-9._-]+"
     r"|(?:private/)?var/folders(?=/)|private/tmp(?=/))",
     re.IGNORECASE,
 )
@@ -38,7 +38,15 @@ _ROOT_GUIDANCE = (
 
 
 def assert_portable_text(text: str) -> None:
-    """Refuse machine prefixes without interpreting the reader's account name."""
+    """Refuse recognized home/temp prefixes without using the reader's account name.
+
+    A word character followed by a hyphen permits ordinary run names, but also
+    custom parents ending in -home/-Users and x-private/tmp-style layouts. This
+    text check cannot discover every site's home or temporary root. Leading and
+    standalone hyphens do not exempt a prefix; standard home prefixes remain
+    refused in all contexts. Writer-account tokens are checked separately on
+    path locators, not on arbitrary scientific metadata.
+    """
     if _LOCAL_PATH.search(text) or _SLASHLESS_LOCAL_PATH.search(text):
         raise ValueError("Provenance contains a local path or local prefix. " + _ROOT_GUIDANCE)
 

@@ -1056,6 +1056,7 @@ class ArmRun(ConfiguredBaseModel):
                        'ScientificResultRecord',
                        'ComparisonRun'],
          'ifabsent': 'string(group_1_vs_group_0)'} })
+    provenance_root_supplied: Optional[bool] = Field(default=None, title="Provenance root supplied", description="""Whether this execution received an explicit provenance root; new runs record true or false without a root locator. Absent historical values mean unrecorded, not false.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ArmRun', 'ComparisonRun']} })
     scope: str = Field(default=..., title="Scope", description="""Explicit scope; historical PD and presentation investigations are separate.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ArmRun']} })
     status: ExecutionStatus = Field(default=..., title="Status", description="""Actual attempt status.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ValidationResult',
                        'StepExecution',
@@ -1440,6 +1441,7 @@ class ComparisonRun(ConfiguredBaseModel):
                        'ArmRun',
                        'ScientificResultRecord',
                        'ComparisonRun']} })
+    provenance_root_supplied: Optional[bool] = Field(default=None, title="Provenance root supplied", description="""Whether this execution received an explicit provenance root; new runs record true or false without a root locator. Absent historical values mean unrecorded, not false.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ArmRun', 'ComparisonRun']} })
     status: ExecutionStatus = Field(default=..., title="Status", description="""Explicit lifecycle outcome of the cross-arm comparison run.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ValidationResult',
                        'StepExecution',
                        'WorkflowRun',

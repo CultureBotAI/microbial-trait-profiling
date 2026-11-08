@@ -303,10 +303,15 @@ profiles and experiments are hashed without locators; they need not lie beneath
 this root. Noel checks ORA profiles and its output
 layout before planning, then checks sources selected by the actual integrated-evidence
 arguments and earlier planned outputs before execution. Missing optional assessments
-that no earlier step produces do not acquire locators. Both checks share the producer's
-source selector and path policy. The final producer still validates
-actual files and references inside metadata; preflight cannot guarantee that
-later filesystem changes or newly produced metadata will be acceptable.
+that no earlier step produces do not acquire locators. Existing assessment files are
+parsed with the producer's status reader and the verified core input identities;
+the check includes the metadata and diagnostic locators that reader retains. This
+also uses the native influence reader where applicable, rather than scanning JSON
+strings for paths. Both checks share the producer's source selector and path policy.
+The workflow preflight requires `--core-run`; the standalone integrated-evidence CLI
+still supports its existing no-core inputs. The final producer rechecks actual files
+and references inside metadata; preflight cannot guarantee that later filesystem
+changes or newly produced metadata will be acceptable.
 
 Noel's own outputs are bound sources, so its root must contain its located core
 and native inputs and arm output. The option can select an accepted root at or above the
@@ -322,9 +327,38 @@ outside its supplied root declares `supplied-root-v1`; verifying its source
 references requires `just verify-integrated-provenance RECORD
 --provenance-root ROOT`. Noel retains the option in its hash-bound command plan.
 Omitting it preserves the existing commands, parameters and root inference.
-The comparison manifest does not separately declare that this option was supplied;
-a portable workflow-level flag remains a schema follow-up (#1820). Noel's plan
-and the integrated record retain their existing provenance conventions.
+New `ArmRun` and `ComparisonRun` records also declare `provenance_root_supplied`
+as `true` or `false`, including `false` for Jed and Ilyas, which do not accept the
+option. This field contains only the execution decision, never a root locator.
+An absent or null field on a historical record means unrecorded, not false; old
+records remain readable without rewriting them. The declaration does not identify
+which root was used or replace the integrated record's path basis and verification
+requirements. Noel's plan and the integrated record retain their existing
+provenance conventions.
+
+Forward compatibility is limited: the generated models use `extra="forbid"`, so
+a verifier from before the schema addition in #1884 rejects an `ArmRun` or
+`ComparisonRun` containing `provenance_root_supplied`, even when its value is
+`false`. Verify new records with a checkout that includes this field. This does
+not change the newer verifier's ability to read older records without the field.
+
+A hyphen preceded by a word character in a directory name, such as `x-home` or
+`noel-delta-home`, does not start a local home prefix. Leading or standalone
+hyphens do not grant this exemption. The trade-off is that the text-prefix checks
+also accept site-specific homes beneath parents ending in `-home` or `-Users`,
+such as `/nfs-home/<account>/x.tsv` and `/srv/data-Users/<account>/x.tsv`, and
+temp-like spellings such as `x-private/tmp/...` and `x-var/folders/...`. These
+patterns do not recognize every site's home or temporary-directory layout.
+Standard Unix home prefixes and drive-letter Windows user-profile prefixes
+(a drive letter, a colon, then `Users` with either separator) remain refused in
+bare, quoted, JSON and prose text. Driveless and UNC Windows profile paths
+(a leading backslash or a `\\server` share before `Users`) are not recognized by
+these text checks (#1830).
+Path locators still undergo the separate root, containment and writer-account
+checks. The writer-account check refuses a directory containing the writer's
+account token, including two- and three-character names; the generic `root` login
+and single-character names retain their existing exemptions. That account check
+does not scan non-locator metadata for names.
 
 Verification derives each analysis basis again from the verified core: its recorded
 strain rollup scope, its feature catalog and the retained features of its count and ORA

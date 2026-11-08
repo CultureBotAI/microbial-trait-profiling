@@ -287,9 +287,11 @@ def test_comparison_forwards_its_root_to_the_real_integrated_parser(
     products = {
         "count_profiles": sources / "study_trait_profiles_wide.tsv",
         "ora_profiles": sources / "study_trait_profiles_ora_wide.tsv",
+        "experiments": sources / "experiments.tsv",
+        "raw_dump": sources / "full_dump.csv",
     }
     for path in products.values():
-        path.write_text("fixture profile bytes for routing only\n", encoding="utf-8")
+        path.write_text("fixture core product bytes for routing only\n", encoding="utf-8")
     core = SimpleNamespace(
         run_id="fixture-core",
         contrast_population="all_paired",
