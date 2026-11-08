@@ -536,6 +536,21 @@ def test_consolidated_report_pluralizes_singular_and_plural_counts(
         in legacy_zero_collapse
     )
 
+    legacy_plural_zero_cluster_ontology = {
+        **legacy_zero_cluster_ontology,
+        "n_collapsed_features": 3,
+    }
+    legacy_plural_zero_content, legacy_plural_zero_conclusions = _report_and_conclusions(
+        audit_script, tmp_path, density, legacy_plural_zero_cluster_ontology
+    )
+    legacy_plural_zero_collapse = _point(legacy_plural_zero_conclusions, 5)
+    assert "collapsed into 0 clusters" not in legacy_plural_zero_content
+    assert "1 feature" not in legacy_plural_zero_collapse
+    assert (
+        "0 redundant pairs (3 features removed because their cluster survivors are absent)"
+        in legacy_plural_zero_collapse
+    )
+
 
 def test_density_interpretation_and_audit_docs_qualify_historical_vif_and_list_provenance() -> None:
     """#1391, #1392, #1400, #1827, #1857: docs qualify historical binarized VIF 5.88, omit
