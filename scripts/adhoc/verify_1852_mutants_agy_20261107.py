@@ -13,10 +13,10 @@ Inputs:
   - tests/test_native_taxon_influence.py
 
 Outputs:
-  - stdout summary of CONTROL (rc=0) and 10 killed mutants (rc=1, AssertionError,
+  - stdout summary of CONTROL (rc=0) and 11 killed mutants (rc=1, AssertionError,
     PYTEST_ORIGIN_OK).
 
-Issue: #1852, #1892
+Issue: #1852, #1892, #1893
 Date: 2026-11-07
 """
 
@@ -157,6 +157,11 @@ MUTANTS: tuple[Mutant, ...] = (
             "        strict=True,\n"
             "    ):"
         ),
+    ),
+    Mutant(
+        name="M11_variance_nonstrict_1893",
+        old="            and var > 0\n        )",
+        new="            and var >= 0\n        )",
     ),
 )
 
