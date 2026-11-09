@@ -7,6 +7,7 @@ authorize a full-scope inferential result.
 
 ```bash
 just audit-coassertions --edges KG/merged-kg_edges.tsv \
+  --trait-key-policy facultative_union_v1 \
   --nodes KG/merged-kg_nodes.tsv --output-dir RESULTS/coassertion-audit
 ```
 
@@ -22,13 +23,20 @@ does not replace the run-specific provenance record.
 | Aerobic and anaerobic | `METPO:1000602` | `METPO:1000603` |
 | Obligately aerobic and anaerobic | `METPO:1000606` | `METPO:1000603` |
 | Mesophilic and psychrophilic | `METPO:1000615` | `METPO:1000614` |
-| Facultative oxygen-growth annotation union and obligately aerobic | `METPO:1000608` (union of `1000605`, `1000608`, `1000612`) | `METPO:1000606` |
+| Facultative oxygen-growth annotation and obligately aerobic | `METPO:1000608` (raw object or union, as selected below) | `METPO:1000606` |
 | Aerobe and anaerobe guilds | `trait_guilds.OXYGEN_GUILDS["aerobe"]` | `trait_guilds.OXYGEN_GUILDS["anaerobe"]` |
 
 These are declared class or guild memberships, without added ontology ancestry.
-The facultative member uses the local `facultative_union_v1` mapping described in
-[`trait_key_policy.md`](trait_key_policy.md); its historical pair identifier remains
-unchanged. The other three class pairs retain their literal members. All four
+Select the same `--trait-key-policy` as the producing core: `raw_object_v1` keeps
+original object IDs, while `facultative_union_v1` maps `METPO:1000605`,
+`METPO:1000608`, and `METPO:1000612` to `METPO:1000608`, as described in
+[`trait_key_policy.md`](trait_key_policy.md). The CLI and Python API default to
+`facultative_union_v1` for compatibility; the selector is not inferred from KG
+labels. Unknown policies are refused before input reads or output creation.
+Both selections retain the current facultative pair's left key `METPO:1000608`
+and historical pair identifier. Thus `raw_object_v1` does not restore the old
+`METPO:1000605` pair used in the historical table below. The other three class
+pairs retain their literal members. All four
 are separate from the broader canonical guild pair. The aerobe guild is
 `METPO:1000602` and `METPO:1000604`; since #1237 it no longer includes
 `METPO:1000608`, so the facultative union is in neither side of the guild pair.
@@ -87,7 +95,9 @@ can carry both classes through different descendants even when no carrier
 node co-asserts them. Nor do they count BugSigDB signatures, studies or
 patients. They complement the reported-taxon census in the #773 label-support
 audit. Input and implementation hashes, parser repair counts, class/pair
-definitions and exact output hashes are recorded in `provenance.json`.
+definitions, the consumed `trait_key_policy`, and exact output hashes are recorded
+in `provenance.json`; the generated `README.md` also names the policy. This
+standalone census does not independently verify a core run or infer its policy.
 Its `code_dirty_at_execution` flag records whole-repository Git status, including
 modified data or documentation; the implementation hashes identify the code bytes.
 
