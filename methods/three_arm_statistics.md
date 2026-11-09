@@ -66,8 +66,8 @@ estimates from the shared counts and retains each framework's original test as
 its own evidence record. Computing the same descriptive estimate through three
 exporters is a consistency check, not three independent findings.
 
-This section specifies the harmonized comparison to implement in
-[#178](https://github.com/CultureBotAI/microbial-trait-profiling/issues/178). It does not certify that
+This section specifies the harmonized comparison implemented, for the individual-fraction and ratio quantities, in
+[`src/mtp/integrated_evidence.py`](../src/mtp/integrated_evidence.py) ([#178](https://github.com/CultureBotAI/microbial-trait-profiling/issues/178); see [`integrated_evidence.md`](integrated_evidence.md)), with shared non-MediaDive denominators in [`src/mtp/composition_denominators.py`](../src/mtp/composition_denominators.py) ([#174](https://github.com/CultureBotAI/microbial-trait-profiling/issues/174)), zero-total pair exclusion via `drop_zero_total_pairs` in [`src/mtp/trait_guilds.py`](../src/mtp/trait_guilds.py) (#228), and scenario sensitivity in [`src/mtp/log_ratio_sensitivity.py`](../src/mtp/log_ratio_sensitivity.py) ([#183](https://github.com/CultureBotAI/microbial-trait-profiling/issues/183); see [`table1_log_ratio_sensitivity.md`](table1_log_ratio_sensitivity.md)); the fixed-background fold summaries below remain a proposed definition. It does not certify that
 the historical runs below already meet the specification. No new significance
 cutoff, minimum effect, support cutoff, ranking score or top-k value is selected
 here; the first comparison displays every declared candidate in manifest order.
@@ -81,7 +81,7 @@ here; the first comparison displays every declared candidate in manifest order.
 | Base population | Human experiments with exactly one increased and one decreased profile and consistent pair metadata. Reject ambiguous keys and malformed, missing or negative counts; never silently coerce them to zero. Record all filtering and available annotation-coverage information. Unknown coverage remains flagged. |
 | Analysis scope | The initial comparison pools the full base population. A body-site or condition-by-body-site analysis is a separately identified scope using exact source labels and its own eligible-pair list. Missing labels remain explicit. Heatmap top-N cuts, masking and an Other display group never define the analysis population. |
 | Candidate families | Keep the six traits named in Table 1 and all 15 unordered pairs as separate feature types for the matched-corpus Table 1-trait analog sensitivity analysis. Freeze the source qualifiers and ID mapping in `TABLE1_TRAITS`; orient every ratio in that declared trait order, with an explicit numerator and reference. A larger trait screen requires its own candidate manifest: the directional arm's full-trait screen declares one in [`trait_screen_manifest.json`](trait_screen_manifest.json) and is corrected in its own family, separate from the six (#255). |
-| Fraction denominator | For each profile, sum every column in the declared non-MediaDive trait universe, including traits outside Table 1. Historical examples below report 317 retained columns under `off`, with 2,333 MediaDive columns excluded, and 344 under `phenotype` in the scope audit. These are run-specific observations; take the actual universe from the run's retained-column inventory. Selecting six traits or a ratio must not redefine this total. |
+| Fraction denominator | For each profile, sum every column in the declared non-MediaDive trait universe, including traits outside Table 1. Historical examples below report 317 retained columns under `off`, with 2,333 MediaDive columns excluded, and 344 under `phenotype` in the historical scope audit at main 8b280a3. These are historical run-specific observations; take the actual universe from the run's retained-column inventory. Selecting six traits or a ratio must not redefine this total. |
 | ORA background | For the harmonized baseline, fix the background to all valid profiles in the full paired human base population, using that same retained-column universe. Record its trait totals, grand total and contributing profile IDs. Do not rebuild it from a displayed stratum or a ratio's positive-count subset. Alternative backgrounds are separately versioned sensitivity scenarios. |
 | Weighting | Average eligible experiment contrasts within a study, then give each eligible study equal weight within the declared scope. Pool a study's experiments directly across conditions; do not count each condition-study group as another study. Identify shared cohorts where known when assessing independence and uncertainty. |
 
@@ -127,7 +127,7 @@ These are observations from that audit, not predicted counts for the next rerun:
   A full-trait screen uses its executed catalog; each ORA tail uses its eligible
   profiles × traits. The matrix audit does not establish completed screen, ORA
   or calibration runs. Calibrations must use the corresponding executed families.
-- **Denominators.** Every profile's fraction sums 344 retained columns. The retained count
+- **Denominators.** In that historical 8b280a3 audit, every profile's fraction sums 344 retained columns. The retained count
   mass summed over reported taxa rises by 11.4% (136,906). The 27 new traits add only 6.8%
   of that rise. Most of it comes from existing traits that strain records also assert:
   mesophilic, whose count mass goes from 27,509 to 96,358, adds 50.3% of the rise, rod
@@ -212,7 +212,7 @@ fractions with A/B then exposes the changed estimand. Different ratio population
 must not be collapsed into a common ordering of individual traits. A comparison
 across references requires a declared common-support scenario using the same
 experiment pairs for every included reference, with its coverage reported.
-[#183](https://github.com/CultureBotAI/microbial-trait-profiling/issues/183) tracks this planned
+[`src/mtp/log_ratio_sensitivity.py`](../src/mtp/log_ratio_sensitivity.py) ([#183](https://github.com/CultureBotAI/microbial-trait-profiling/issues/183); [`table1_log_ratio_sensitivity.md`](table1_log_ratio_sensitivity.md)) implements this
 sensitivity analysis. Neither fraction contrasts nor ratios establish absolute
 trait abundance changes.
 
@@ -228,8 +228,8 @@ unresolved population or identity mismatch remains explicitly non-comparable.
 
 Jed's transformed experiment-level mean is not the shared raw fraction effect.
 His source counts supply that common effect, while his native effect and test
-retain their own units until the study-dependence work in
-[#133](https://github.com/CultureBotAI/microbial-trait-profiling/issues/133) is completed. Noel's
+retain their own transformed units (with study-level aggregation added in
+`mt-core-native-study-t` via [`src/mtp/native_composition.py`](../src/mtp/native_composition.py), [#133](https://github.com/CultureBotAI/microbial-trait-profiling/issues/133)). Noel's
 study contrasts can match the shared quantities after eligibility is reconciled.
 Their tests still target directional consistency rather than a nonzero mean.
 
@@ -269,9 +269,9 @@ framework, described under [Compositionality](#compositionality).
 | Paired | yes, by construction | no; increased and decreased tested separately | yes, then reduced to one sign per study |
 | Native multiple testing | Benjamini-Hochberg within each stratum's per-pair trait family (`mt-core-native-pair-t`); the separate current study-mean family is `mt-core-native-study-t` | Benjamini-Hochberg across eligible profile–trait tests separately per tail (`mt-core-ora-upper-global`, `mt-core-ora-lower-global`) | Benjamini-Yekutieli across the executed full retained-trait family (`mt-core-noel-sign-nominal`); effective-multiplier values (`mt-core-noel-sign-effective`, #255, #265) are sensitivity bounds with no FDR guarantee. The six-trait BH family (`mt-supp-table1-direction`) remains separate |
 | Historical selection/display rule | no significance cutoff; the figure takes the top ten by nominal p | upper-tail global-family BH q at most 0.001 and fold at least 1.5 | no display cutoff; full-candidate BY q reported per trait |
-| Typical n per test | 2,257 pairs, identical for every trait | a mean of 9.05 taxa per profile against 5,829 background taxa in the production run; tens of thousands of assertions per profile in the Table 1 native reruns | 2 to 905 of the 922 nonzero studies (932 total) across the 317 `off`-scope candidates, 606 to 898 for the six of Table 1 (ties excluded) |
+| Typical n per test | 2,257 pairs, identical for every trait | a mean of 9.05 taxa per profile against 5,829 background taxa in the production run; tens of thousands of assertions per profile in the Table 1 native reruns | 2 to 905 of the 922 nonzero studies (932 total, in the historical `off`-scope table `519a095b` in [`table1_trait_condition_body_site_maps.md`](table1_trait_condition_body_site_maps.md)) across the 317 `off`-scope candidates ([`trait_direction_screen.md`](trait_direction_screen.md)); the run producing that range is not identified ([Vintage](#vintage)), 606 to 898 for the six of Table 1 in that historical `off`-scope shift table ([`table1_trait_condition_body_site_maps.md`](table1_trait_condition_body_site_maps.md), ties excluded) |
 | Strength | Uses matched contrasts and their magnitudes; screens many traits | Locates profile-specific excess relative to a declared corpus background | Gives each study one directional vote; exact test without a normality assumption for magnitudes |
-| Main limitations | Repeated experiments within studies are not independent; denominator and transformation affect the estimand | Nested taxa inherit the same annotations, so draws are not independent; coverage and background composition affect calls | Discards magnitude, excludes ties, and remains denominator-dependent; support varies by orders of magnitude across the 317 `off`-scope candidates, so a lopsided share on few studies is not a finding |
+| Main limitations | Repeated experiments within studies are not independent; denominator and transformation affect the estimand | Nested taxa inherit the same annotations, so draws are not independent; coverage and background composition affect calls | Discards magnitude, excludes ties, and remains denominator-dependent; support varies by orders of magnitude across the 317 `off`-scope candidates in that historical screen ([`trait_direction_screen.md`](trait_direction_screen.md); [Vintage](#vintage)), so a lopsided share on few studies is not a finding |
 | Contribution to the shared comparison | Supply matched source counts and native transformed effects; reconcile the denominator, then report the common study-weighted fraction/ratio quantities | Supply profile counts, fixed-background folds and native profile evidence; provide separate descriptive increased/decreased study summaries | Supply study-level direction and coverage for the shared fraction quantities and all 15 explicitly referenced ratios |
 | Meaning of disagreement | A mean contrast can be large despite inconsistent study signs | Background enrichment can occur on both sides without a paired shift | Consistent small shifts can coexist with a small mean; ratio directions also depend on the named reference |
 
@@ -289,11 +289,9 @@ The core paired analyses restrict to human samples and experiments carrying both
 directions, at different points in the pipeline. The enrichment branch filters
 host species at ingest; the other analyses filter downstream. The same retained
 rows do not guarantee the same normalization: Ilyas and Noel remove MediaDive
-before computing totals, whereas Jed's inspected paired-screen code excludes
-MediaDive from trait selection but includes it in the denominator. Issue
-[#174](https://github.com/CultureBotAI/microbial-trait-profiling/issues/174) tracks harmonization and
-the numerical rerun; the historical results below must retain their original
-denominator definitions until that work is complete.
+before computing totals, whereas historically Jed's inspected paired-screen code excluded
+MediaDive from trait selection but included it in the denominator (on `main`, [`src/mtp/native_composition.py`](../src/mtp/native_composition.py) normalizes through `trait_fractions` in [`src/mtp/composition_denominators.py`](../src/mtp/composition_denominators.py)). [`src/mtp/composition_denominators.py`](../src/mtp/composition_denominators.py) ([#174](https://github.com/CultureBotAI/microbial-trait-profiling/issues/174)), `drop_zero_total_pairs` in [`src/mtp/trait_guilds.py`](../src/mtp/trait_guilds.py) (#228), [`src/mtp/log_ratio_sensitivity.py`](../src/mtp/log_ratio_sensitivity.py) ([#183](https://github.com/CultureBotAI/microbial-trait-profiling/issues/183)), and [`src/mtp/integrated_evidence.py`](../src/mtp/integrated_evidence.py) ([#178](https://github.com/CultureBotAI/microbial-trait-profiling/issues/178)) implement the shared non-MediaDive denominator and common paired quantities on `main`; the historical results below retain their original run-specific
+denominator definitions from the snapshots in which they were produced.
 
 ## Thresholds and ranks follow the shared basis
 
@@ -414,7 +412,7 @@ has been calibrated. [#176](https://github.com/CultureBotAI/microbial-trait-prof
 display-selection and profile-support questions in PR #173.
 
 Noel owns the integrated evidence table in
-[#178](https://github.com/CultureBotAI/microbial-trait-profiling/issues/178). Each method's result
+[#178](https://github.com/CultureBotAI/microbial-trait-profiling/issues/178), implemented in [`src/mtp/integrated_evidence.py`](../src/mtp/integrated_evidence.py) ([`integrated_evidence.md`](integrated_evidence.md)). Each method's result
 must retain trait identity, tested condition/site and level, version/input hash,
 denominator/background, selection rules, study/pair/profile counts, effect units
 and uncertainty type, p/q and correction family, thresholds, and separate
@@ -426,7 +424,7 @@ results must survive joins and exports as distinguishable states.
 
 All arms measure annotations attached to curated taxon signatures. They do not
 directly measure patient-level trait abundance, pathway activity, oxygen exposure
-or causation. [#179](https://github.com/CultureBotAI/microbial-trait-profiling/issues/179) tracks the
+or causation. [`methods/biological_interpretation.md`](biological_interpretation.md) ([#179](https://github.com/CultureBotAI/microbial-trait-profiling/issues/179)) sets out the
 shared biological-interpretation guidance for all contributors.
 
 ## Compositionality
