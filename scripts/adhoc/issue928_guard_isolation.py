@@ -12,7 +12,9 @@ import importlib.util
 import io
 import json
 import os
+import re
 import sys
+import tempfile
 from collections.abc import Sequence
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
@@ -29,10 +31,14 @@ TEST = ROOT / "tests/test_trait_profile_infographic.py"
 GUARD_TEST = "test_min_stratified_pairs_is_rejected_outside_site_stats"
 
 
-def inventory(root: Path) -> dict[str, str]:
+def inventory(root: Path, repo_paths: PortablePaths | None = None) -> dict[str, str]:
     """Include ignored and untracked files as well as tracked checkout outputs."""
+    if not root.exists():
+        return {}
     return {
-        path.relative_to(root).as_posix(): file_sha256(path)
+        (
+            repo_paths.encode(path) if repo_paths is not None else path.relative_to(root).as_posix()
+        ): file_sha256(path)
         for path in sorted(root.rglob("*"))
         if path.is_file()
     }
@@ -96,7 +102,10 @@ class Probe:
 
 
 def _path_spellings(path: Path) -> set[str]:
-    spellings = {path.as_posix(), path.resolve().as_posix()}
+    resolved = path.resolve()
+    spellings = {Path(os.path.abspath(path)).as_posix(), resolved.as_posix()}
+    if path.is_absolute():
+        spellings.add(path.as_posix())
     for item in list(spellings):
         if item.startswith("/private/"):
             spellings.add(item.removeprefix("/private"))
@@ -119,7 +128,7 @@ def scrub_pytest_log(
     cwd = Path.cwd().resolve()
     if cwd != repo_root.resolve():
         rel_repo = os.path.relpath(repo_root.resolve(), cwd).replace(os.sep, "/")
-        if rel_repo and rel_repo != ".":
+        if rel_repo and any(part not in {".", ".."} for part in Path(rel_repo).parts):
             replacements.append((rel_repo, "<repo-root>"))
     for temp_root in temp_roots:
         for spelling in _path_spellings(temp_root):
@@ -127,9 +136,18 @@ def scrub_pytest_log(
     ordered = sorted(set(replacements), key=lambda item: len(item[0]), reverse=True)
     scrubbed = log_text
     for target, placeholder in ordered:
-        scrubbed = scrubbed.replace(target, placeholder)
+        if target.startswith("/"):
+            scrubbed = scrubbed.replace(target, placeholder)
+        else:
+            scrubbed = re.sub(
+                r"(?:^|(?<=[\s'\"(=]))" + re.escape(target) + r"(?=/)",
+                placeholder,
+                scrubbed,
+            )
     if "..." in scrubbed:
         for target, placeholder in ordered:
+            if not target.startswith("/"):
+                continue
             for index in range(1, max(1, len(target) - 5)):
                 fragment = f"...{target[index:]}"
                 if fragment in scrubbed:
@@ -157,7 +175,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     checkout_outputs = vars(canonical)["INVESTIGATION_DIR"]
     if not isinstance(checkout_outputs, Path):
         raise ValueError("The producer must declare a Path output directory")
+    if args.output_dir.is_symlink() or args.output_dir.exists():
+        raise FileExistsError("Probe output directory already exists; choose a fresh --output-dir")
     output = args.output_dir.resolve()
+    if output.exists() or output.is_symlink():
+        raise FileExistsError("Probe output directory already exists; choose a fresh --output-dir")
     if output.is_relative_to(checkout_outputs):
         raise ValueError("Probe evidence must be outside the checkout's investigation outputs")
     assert_portable_path_text(output.name)
@@ -166,10 +188,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     repo_root = args.provenance_root.resolve() if args.provenance_root is not None else ROOT
     repo_paths = PortablePaths.create(
         output / "isolation.json",
-        [*canonical_paths, copied] if args.provenance_root is not None else canonical_paths,
+        [*canonical_paths, checkout_outputs, copied]
+        if args.provenance_root is not None
+        else [*canonical_paths, checkout_outputs],
         root=repo_root,
     )
-    before = inventory(checkout_outputs)
+    before = inventory(checkout_outputs, repo_paths)
     source_before = {repo_paths.encode(path): file_sha256(path) for path in canonical_paths}
     guard = (
         "        if not args.stratified_stats_only:\n"
@@ -178,23 +202,33 @@ def main(argv: Sequence[str] | None = None) -> int:
     text = PRODUCER.read_text()
     if text.count(guard) != 1:
         raise ValueError("Guard target changed; inspect the producer before mutation")
-    output.mkdir(parents=True, exist_ok=False)
-    copied.write_text(text.replace(guard, ""))
-    output_root = repo_root if output.is_relative_to(repo_root) else output
-    output_paths = PortablePaths.create(output / "isolation.json", [copied], root=output_root)
-    mutated = load(copied, "issue950_isolated_infographic")
-    # Relocation must not change default paths. The shared fixture redirects these
-    # exact declared outputs, including future constants, before main() executes.
-    for name, value in vars(canonical).items():
-        if isinstance(value, Path):
-            vars(mutated)[name] = value
-    probe = Probe(mutated)
-    captured = io.StringIO()
-    with redirect_stdout(captured), redirect_stderr(captured):
-        code = int(
-            pytest.main(["-q", "-p", "no:cacheprovider", f"{TEST}::{GUARD_TEST}"], plugins=[probe])
-        )
-    after = inventory(checkout_outputs)
+    copied_text = text.replace(guard, "")
+    output_paths = PortablePaths.create(
+        output / "isolation.json",
+        [copied],
+        root=repo_root if output.is_relative_to(repo_root) else None,
+    )
+    with tempfile.TemporaryDirectory() as scratch_dir:
+        scratch_root = Path(scratch_dir).resolve()
+        scratch_copy = scratch_root / "infographic_without_guard.py"
+        scratch_copy.write_text(copied_text, encoding="utf-8")
+        isolated_sha256 = file_sha256(scratch_copy)
+        mutated = load(scratch_copy, "issue950_isolated_infographic")
+        # Relocation must not change default paths. The shared fixture redirects these
+        # exact declared outputs, including future constants, before main() executes.
+        for name, value in vars(canonical).items():
+            if isinstance(value, Path):
+                vars(mutated)[name] = value
+        probe = Probe(mutated)
+        probe.temp_roots.update((scratch_root, scratch_root.parent))
+        captured = io.StringIO()
+        with redirect_stdout(captured), redirect_stderr(captured):
+            code = int(
+                pytest.main(
+                    ["-q", "-p", "no:cacheprovider", f"{TEST}::{GUARD_TEST}"], plugins=[probe]
+                )
+            )
+    after = inventory(checkout_outputs, repo_paths)
     source_after = {repo_paths.encode(path): file_sha256(path) for path in canonical_paths}
     verified = (
         code == 1
@@ -211,8 +245,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         "isolated_path_basis": output_paths.declaration,
         "canonical_origin": repo_paths.encode(PRODUCER),
         "isolated_origin": output_paths.encode(copied),
-        "isolated_sha256": file_sha256(copied),
-        "checkout_outputs": checkout_outputs.relative_to(ROOT).as_posix(),
+        "isolated_sha256": isolated_sha256,
+        "checkout_outputs": repo_paths.encode(checkout_outputs),
         "before": before,
         "after": after,
         "source_before": source_before,
@@ -223,10 +257,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     assert_portable_text(isolation_text)
     log_text = scrub_pytest_log(
         captured.getvalue(),
-        output=args.output_dir,
+        output=output,
         repo_root=ROOT,
         temp_roots=probe.temp_roots,
     )
+    output.mkdir(parents=True, exist_ok=False)
+    copied.write_text(copied_text, encoding="utf-8")
     (output / "pytest.log").write_text(log_text, encoding="utf-8")
     (output / "isolation.json").write_text(isolation_text, encoding="utf-8")
     print(json.dumps({"verified": verified, "intended_failed_calls": probe.failed}))
@@ -234,4 +270,8 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        raise SystemExit(main())
+    except (ValueError, FileExistsError) as exc:
+        print(str(exc), file=sys.stderr)
+        raise SystemExit(2) from None

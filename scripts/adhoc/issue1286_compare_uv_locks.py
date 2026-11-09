@@ -12,6 +12,7 @@ import argparse
 import hashlib
 import json
 import os
+import sys
 import tomllib
 from collections.abc import Sequence
 from copy import deepcopy
@@ -155,6 +156,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     content = json.dumps(result, indent=2, ensure_ascii=False, allow_nan=False) + "\n"
     assert_portable_text(content)
+    if args.output.is_symlink() or args.output.exists():
+        raise FileExistsError("Output report already exists; choose a fresh --output path")
     # Exclusive creation also refuses existing or dangling symlinks.
     with args.output.open("x", encoding="utf-8") as handle:
         handle.write(content)
@@ -162,4 +165,8 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    try:
+        raise SystemExit(main())
+    except (ValueError, FileExistsError) as exc:
+        print(str(exc), file=sys.stderr)
+        raise SystemExit(2) from None

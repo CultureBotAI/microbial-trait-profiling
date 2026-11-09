@@ -145,6 +145,21 @@ MUTANTS: tuple[Mutant, ...] = (
         old="    assert_portable_text(isolation_text)\n",
         new="",
     ),
+    Mutant(
+        name="M13_guard_probe_checkout_outputs_ignores_root_2054",
+        rel_path=PROBE_REL,
+        old='        "checkout_outputs": repo_paths.encode(checkout_outputs),',
+        new='        "checkout_outputs": checkout_outputs.relative_to(ROOT).as_posix(),',
+    ),
+    Mutant(
+        name="M14_guard_probe_unbounded_relative_replace_2055",
+        rel_path=PROBE_REL,
+        old=(
+            '        if target.startswith("/"):\n'
+            "            scrubbed = scrubbed.replace(target, placeholder)\n"
+        ),
+        new="        if True:\n            scrubbed = scrubbed.replace(target, placeholder)\n",
+    ),
 )
 
 
