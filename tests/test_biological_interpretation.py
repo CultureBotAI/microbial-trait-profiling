@@ -67,12 +67,15 @@ def test_guild_methods_distinguish_annotation_zero_from_biological_absence() -> 
     """C01 and #1343: describe recorded signal and align zero-signal wording with the guide."""
     content = " ".join((METHODS_DIR / "guild_condition_body_site_heatmap.md").read_text().split())
     rows = content.split("## Row selection and clustering", 1)[1].split("##", 1)[0]
-    assert '"sampled, with no recorded guild annotation signal"' in rows, (
-        "guild heatmap row selection missing aligned zero-signal wording"
-    )
+    assert (
+        'because "sampled, with no recorded guild annotation signal" distinguishes mapped zero '
+        "signal from unsampled cells."
+    ) in rows, "guild heatmap row selection missing aligned zero-signal wording"
     assert "sampled, but no recorded guild annotation signal" not in rows, (
         "guild heatmap row selection retains old sampled, but wording"
     )
+    assert "is absent" not in rows
+    assert "are absent" not in rows
     assert "no taxon carried" not in rows
     assert "no recorded guild annotation signal under the selected sources and mappings" in content
     assert "does not establish biological absence" in content
