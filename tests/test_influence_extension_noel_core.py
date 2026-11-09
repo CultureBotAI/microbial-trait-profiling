@@ -12,7 +12,7 @@ from mtp import influence_extension as extension
 from mtp.paths import REPO_ROOT, file_sha256
 from mtp.workflow.arms.runtime import execute_arm, verify_arm
 from mtp.workflow.arms.types import ArmContext, Command
-from mtp.workflow.consumers import verify_consumer_record
+from mtp.workflow.consumers import open_core_bundle, verify_consumer_record
 from test_influence_extension_core import extension_core as extension_core
 
 PREPARED_NAMES = (
@@ -109,6 +109,22 @@ def test_verified_noel_baseline_crosscheck_is_recorded_without_changing_arm(tmp_
     assert check["rows"] == 24
     assert check["families"] == 4
     assert check["by_source"] == "derived_from_noel_p_values"
+    assert len(check["comparisons"]) == 24
+    assert {row["scope"] for row in check["comparisons"]} == {
+        "pooled",
+        "feces",
+        "saliva",
+        "parkinsons_feces",
+    }
+    expected_statuses = {
+        "p_status": "matched",
+        "bh_status": "matched",
+        "by_status": "recomputed_from_noel_p",
+    }
+    for row in check["comparisons"]:
+        assert set(expected_statuses) <= set(row)
+        assert {name: row[name] for name in expected_statuses} == expected_statuses
+        assert "status" not in row
     assert provenance["input_sha256"]["noel_manifest"] == before[noel]
     assert provenance["input_sha256"]["native_summary"] == before[summary]
     assert summary.read_text(encoding="utf-8") in (
@@ -118,6 +134,53 @@ def test_verified_noel_baseline_crosscheck_is_recorded_without_changing_arm(tmp_
     assert record.run_id == provenance["core_run_id"]
     assert {path: file_sha256(path) for path in before} == before
     verify_arm(noel)
+
+
+def test_verified_noel_from_different_core_refuses_before_publication(tmp_path: Path) -> None:
+    primary_root = tmp_path / "primary"
+    foreign_root = tmp_path / "foreign"
+    primary_root.mkdir()
+    foreign_root.mkdir()
+    core = extension_core(primary_root)
+    foreign_core = extension_core(foreign_root)
+    primary_bundle = open_core_bundle(core)
+    foreign_bundle = open_core_bundle(foreign_core)
+    # Identical analysis inputs ensure that later statistical mismatch checks
+    # cannot hide a missing same-core identity check on the production path.
+    for product in (
+        "count_profiles",
+        "experiments",
+        "reported_taxa",
+        "taxa_matrix",
+        "kg_edges",
+        "kg_nodes",
+    ):
+        assert file_sha256(primary_bundle.path(product)) == file_sha256(
+            foreign_bundle.path(product)
+        )
+    noel = _produce_noel(foreign_core, tmp_path / "noel")
+    verified = verify_arm(noel)
+    assert verified.core_manifest_sha256 == file_sha256(foreign_core)
+    assert verified.core_manifest_sha256 != file_sha256(core)
+    before = {
+        path.relative_to(tmp_path).as_posix(): file_sha256(path)
+        for path in tmp_path.rglob("*")
+        if path.is_file()
+    }
+    output = tmp_path / "must-not-publish"
+
+    with pytest.raises(
+        ValueError, match=r"^Noel outputs must come from a verified Noel run of this exact core$"
+    ):
+        extension.run_extension(core, output, noel)
+
+    assert not output.exists()
+    assert {
+        path.relative_to(tmp_path).as_posix(): file_sha256(path)
+        for path in tmp_path.rglob("*")
+        if path.is_file()
+    } == before
+    assert verify_arm(noel) == verified
 
 
 @pytest.mark.parametrize("field", ["p", "q"])

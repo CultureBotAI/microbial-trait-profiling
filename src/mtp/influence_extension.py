@@ -524,15 +524,8 @@ def loso_summary(baseline: list[Record], omissions: list[Record]) -> list[Record
 def _verified_noel(core_manifest: Path, noel_manifest: Path) -> ArmRun:
     run = verify_arm(noel_manifest)
     if run.arm != "noel" or run.core_manifest_sha256 != file_sha256(core_manifest):
-        raise ValueError("Native summary must come from a verified Noel run of this exact core")
+        raise ValueError("Noel outputs must come from a verified Noel run of this exact core")
     return run
-
-
-def native_summary_source(core_manifest: Path, noel_manifest: Path) -> Path:
-    """Locate the declared native summary through a verified same-core Noel run."""
-    return recorded_arm_output(
-        _verified_noel(core_manifest, noel_manifest), "native_taxon_influence", "native_summary.md"
-    )
 
 
 def _noel_sources(core_manifest: Path, noel_manifest: Path) -> dict[str, tuple[Path, str]]:

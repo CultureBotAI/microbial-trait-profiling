@@ -156,7 +156,9 @@ def check_noel_baseline(path: Path, expected_sha256: str, baseline: list[Record]
                     "noel_q_bh_six": q,
                     "sidecar_q_by_six": sidecar_values["q_by_six"],
                     "noel_q_by_six_derived": derived_q,
-                    "status": "matched",
+                    "p_status": "matched",
+                    "bh_status": "matched",
+                    "by_status": "recomputed_from_noel_p",
                 }
             )
     return {

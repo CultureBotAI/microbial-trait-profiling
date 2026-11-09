@@ -168,6 +168,10 @@ Numeric comparisons use relative tolerance `1e-10` and zero absolute tolerance;
 zero versus a nonzero probability cannot pass by an absolute floor. A numeric mismatch
 also fails before publication. `extension_provenance.json` records
 `noel_baseline_check`: source digest, all checked p/q values, family and row counts,
-tolerances and `by_source=derived_from_noel_p_values`. Without `--noel-run`, it records
+tolerances and `by_source=derived_from_noel_p_values`. Each comparison records
+`p_status=matched` and `bh_status=matched` for the stored Noel quantities, while
+`by_status=recomputed_from_noel_p` identifies the BY implementation check;
+the aggregate `status=matched` means all checks passed, not that Noel supplied
+an independent BY-six result. Without `--noel-run`, it records
 `status=not_supplied`; an unchecked recomputation is not reported as agreement with Noel.
 This check changes neither the native analysis nor the declared sensitivity estimators.

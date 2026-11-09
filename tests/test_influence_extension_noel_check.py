@@ -82,9 +82,31 @@ def test_checks_every_scope_family_and_labels_by_as_derived(tmp_path: Path) -> N
     assert result["relative_tolerance"] == 1e-10
     assert result["absolute_tolerance"] == 0.0
     assert len(result["comparisons"]) == 12
-    assert all(row["status"] == "matched" for row in result["comparisons"])
+    assert {row["scope"] for row in result["comparisons"]} == {"pooled", "feces"}
+    expected_statuses = {
+        "p_status": "matched",
+        "bh_status": "matched",
+        "by_status": "recomputed_from_noel_p",
+    }
+    for row in result["comparisons"]:
+        assert set(expected_statuses) <= set(row)
+        assert {name: row[name] for name in expected_statuses} == expected_statuses
+        assert "status" not in row
     missing = [r for r in result["comparisons"] if r["trait_key"] == "METPO:fixture3"]
-    assert all(r["noel_p"] is None and r["noel_q_by_six_derived"] is None for r in missing)
+    assert len(missing) == 2
+    assert {row["scope"] for row in missing} == {"pooled", "feces"}
+    assert all(
+        row[name] is None
+        for row in missing
+        for name in (
+            "sidecar_p",
+            "noel_p",
+            "sidecar_q_bh_six",
+            "noel_q_bh_six",
+            "sidecar_q_by_six",
+            "noel_q_by_six_derived",
+        )
+    )
 
 
 @pytest.mark.parametrize("field", ["p", "q_bh_six", "q_by_six"])
