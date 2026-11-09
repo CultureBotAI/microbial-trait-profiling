@@ -1244,6 +1244,10 @@ def test_calibration_protocol_and_docs_declare_ora_urn_scope_amendment() -> None
         "src/mtp/composition_calibration/ #550)",
         "the aggregated profile-support rule (#177)",
     )
+    bsdbng_shim_source = (repo_root / "src" / "bsdbng" / "calibration.py").read_text(
+        encoding="utf-8"
+    )
+    assert '"NOT_CALIBRATED_HERE",' in bsdbng_shim_source
 
     calibration_md = " ".join(
         (repo_root / "methods" / "calibration.md").read_text(encoding="utf-8").split()

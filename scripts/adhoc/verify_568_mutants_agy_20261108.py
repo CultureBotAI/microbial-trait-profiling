@@ -183,6 +183,12 @@ MUTANTS: tuple[tuple[str, str, str, str], ...] = (
         ),
         "",
     ),
+    (
+        "M13_bsdbng_calibration_shim_omit_not_calibrated_here",
+        "src/bsdbng/calibration.py",
+        '    "NOT_CALIBRATED_HERE",\n',
+        "",
+    ),
 )
 
 
