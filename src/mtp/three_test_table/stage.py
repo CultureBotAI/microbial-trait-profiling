@@ -386,7 +386,9 @@ def run_table(
     _disjoint(scratch, declared_roots)
     _probe_publication(output, [scratch, *declared_roots])
     comparison_hash = file_sha256(comparison_path)
-    sources = bind_recorded_hashes(open_verified_sources(comparison_path), comparison_hash)
+    sources = bind_recorded_hashes(
+        open_verified_sources(comparison_path, expected_sha256=comparison_hash), comparison_hash
+    )
     roots = [
         *declared_roots,
         *_source_roots(sources, multiplicity=multiplicity, label_support=label_support),

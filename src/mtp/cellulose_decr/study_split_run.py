@@ -80,7 +80,7 @@ def _inputs(comparison_path: Path) -> tuple[VerifiedSources, dict[str, Path]]:
         comparison_path / "comparison_run.json" if comparison_path.is_dir() else comparison_path
     )
     comparison_digest = file_sha256(manifest)
-    verified = open_verified_sources(comparison_path)
+    verified = open_verified_sources(comparison_path, expected_sha256=comparison_digest)
     if (
         verified.core.contrast_population != scanner.TIER1_2
         or verified.core.direction_basis != ORIENTED_DIRECTION_BASIS

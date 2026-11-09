@@ -147,7 +147,7 @@ def test_execution_resolves_and_records_the_verified_core_policy(
     # plan construction/validation, and creation of the execution record are real.
     core = _core(policy)
     bundle = CoreBundle(HISTORICAL_CORE, core, "count_profiles", "all")
-    monkeypatch.setattr(runtime, "open_core_bundle", lambda *_args: bundle)
+    monkeypatch.setattr(runtime, "open_core_bundle", lambda *_args, **_kwargs: bundle)
     monkeypatch.setattr(runtime, "preflight_consumer_outputs", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(runtime, "repository_state", lambda _root: ("fixture", False))
     monkeypatch.setattr(runtime, "_code_inventory", lambda _root: [])

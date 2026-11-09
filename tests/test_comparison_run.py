@@ -34,7 +34,7 @@ from mtp.integrated_evidence import main as integrated_evidence_main
 from mtp.integrated_provenance import verify_integrated_provenance
 from mtp.multiplicity import sources as multiplicity_sources
 from mtp.multiplicity.stage import run_post_arm
-from mtp.paths import REPO_ROOT
+from mtp.paths import REPO_ROOT, file_sha256
 from mtp.provenance_paths import PortablePaths, resolve_provenance_root, verify_reference
 from mtp.three_test_table import stage as three_test_stage
 from mtp.workflow import comparison
@@ -699,7 +699,7 @@ def test_verified_comparison_uses_supplied_manifest_bytes(
     ("field", "value", "message"),
     [
         ("status", "running", "expected completed"),
-        ("core_manifest_sha256", "0" * 64, "core_manifest_sha256 mismatch"),
+        ("core_manifest_sha256", "0" * 64, "Core manifest SHA-256 mismatch"),
     ],
 )
 def test_supplied_comparison_buffer_retains_execution_and_source_checks(
@@ -808,10 +808,12 @@ def test_buffered_adapter_rejects_one_core_population_or_direction_mismatch(
     verified_calls: list[Path] = []
 
     def different_core(
-        path: Path, *, manifest_bytes: bytes | None = None
+        path: Path, *, manifest_bytes: bytes | None = None, expected_sha256: str | None = None
     ) -> tuple[ComparisonRun, WorkflowRun, dict[str, ArmRun]]:
         assert manifest_bytes == raw
-        record, core, arms = real_verify(path, manifest_bytes=manifest_bytes)
+        record, core, arms = real_verify(
+            path, manifest_bytes=manifest_bytes, expected_sha256=expected_sha256
+        )
         verified_calls.append(path)
         assert core.contrast_population == record.contrast_population
         assert core.direction_basis == record.direction_basis
@@ -856,9 +858,10 @@ def test_upstream_graph_verifies_each_execution_once(
     verify_core = verify_core_run
     validate_plan = arm_runtime._validate_plan
 
-    def counted_core(path: Path) -> WorkflowRun:
+    def counted_core(path: Path, *, expected_sha256: str | None = None) -> WorkflowRun:
         core_calls.append(path.resolve())
-        return verify_core(path)
+        assert expected_sha256 == file_sha256(path)
+        return verify_core(path, expected_sha256=expected_sha256)
 
     def counted_plan(
         commands: list[Command], context: ArmContext, *, absent_scope_is_off: bool = False
@@ -901,7 +904,9 @@ def test_reused_core_must_be_the_arms_recorded_manifest(stage: dict[str, Path]) 
     core = verify_core_run(stage["core"])
     core.manifest_path = str(stage["core"].parent / "different-run.json")
     with pytest.raises(ValueError, match=r"Core manifest.*verified core"):
-        arm_runtime._verify_arm_with_core(stage["jed"], core)
+        arm_runtime._verify_arm_with_core(
+            stage["jed"], core, core_manifest_sha256=file_sha256(stage["core"])
+        )
 
 
 @pytest.mark.parametrize("with_multiplicity", [False, True])
@@ -919,9 +924,12 @@ def test_table_generation_verifies_full_graph_once_including_native_consumer(
     arm_calls: list[Path] = []
     validate_plan = arm_runtime._validate_plan
 
-    def counted_core(path: Path, *, resolver: LocationResolver | None = None) -> WorkflowRun:
+    def counted_core(
+        path: Path, *, resolver: LocationResolver | None = None, expected_sha256: str | None = None
+    ) -> WorkflowRun:
         core_calls.append(path.resolve())
-        return verify_core_run(path, resolver=resolver)
+        assert expected_sha256 == file_sha256(path)
+        return verify_core_run(path, resolver=resolver, expected_sha256=expected_sha256)
 
     def counted_plan(
         commands: list[Command], context: ArmContext, *, absent_scope_is_off: bool = False
