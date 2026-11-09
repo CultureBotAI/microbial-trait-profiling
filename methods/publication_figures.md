@@ -84,9 +84,19 @@ before rendering the full set.
 The bundle audit compares table row identities against the hash-bound
 `per_trait_evidence.tsv` input and checks each page's row and mark counts. It
 checks quadrant marks and population-prefixed comparison identities against
-each population's declared comparison count, including axis points. The table
-audit therefore needs the recorded input-table path as well as the figure
-bundle. Automated design checks supplement manual inspection: a passing
+the independently hash-bound `quadrant_summary.tsv` counts for `all` and `stool`,
+including axis points. The quadrant audit requires one complete population page;
+each declared population count and the actual marks and IDs must agree with the
+summary. The two populations overlap, so panel marks are counted separately.
+Summary counts are parsed from the same bytes that were hashed, with both source
+aliases and contents rechecked before audit publication. The table and quadrant
+audits therefore need their recorded input tables as well as the figure bundle.
+An older bundle without its bound source summary is refused rather than checked
+against its own page declarations; this audit does not regenerate the source.
+For valid inputs these expected counts already equal the plotted populations;
+the change does not alter coordinates or select observations. Count agreement
+alone does not establish coordinate fidelity or biological independence.
+Automated design checks supplement manual inspection: a passing
 report alone does not rule out text covering a data mark.
 
 This first slice supplies the builder and these three figures. Other publication
