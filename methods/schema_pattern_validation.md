@@ -12,6 +12,10 @@ never stripped or normalized: a final LF fails validation. The permissive bodies
 of Study identifiers and DOIs remain permissive; this correction is not a general
 whitespace prohibition or a new DOI syntax rule.
 
+Python `.` admits CR (`\r`), U+2028 and U+2029; the preserved `.+` bodies
+therefore accept them in the Python layers, while ECMAScript without `dotAll`
+rejects them.
+
 All five Python models are generated from these schemas by `just gen-pydantic`.
 Their custom validators compile the source pattern with Python `re` and apply it
 to scalars or each item of a list. LinkML's JSON Schema generator carries the same

@@ -5,6 +5,7 @@ from __future__ import annotations
 import copy
 import importlib
 import json
+import re
 import runpy
 import shutil
 import subprocess
@@ -324,18 +325,60 @@ def test_exported_patterns_have_the_same_lf_boundary_in_an_available_ecmascript_
         for case in CASES
         for value in case.values()
     ]
+    permissive_cases = [
+        case
+        for case in CASES
+        if (case.class_name, case.field)
+        in {("Study", "id"), ("Study", "doi"), ("Experiment", "id"), ("Signature", "id")}
+    ]
+    expected_keys = {
+        "bsdbng/Study/id",
+        "bsdbng/Study/doi",
+        "bsdbng/Experiment/id",
+        "bsdbng/Signature/id",
+        "mtp/Study/id",
+        "mtp/Study/doi",
+        "mtp/Experiment/id",
+        "mtp/Signature/id",
+    }
+    assert {case.key for case in permissive_cases} == expected_keys
+    assert len(permissive_cases) == len(expected_keys)
+    characters = {"CR": "\r", "U+2028": "\u2028"}
+    disagreements = []
+    for case in permissive_cases:
+        pattern = layers.patterns[case.key]
+        assert ".+" in pattern, case.key
+        assert len(case.values()) == 1
+        value = case.values()[0]
+        prefix = "10." if case.field == "doi" else "bsdb:"
+        assert value.startswith(prefix), case.key
+        for character, separator in characters.items():
+            # Insert inside .+, retaining the numeric endings of Experiment/Signature ids.
+            altered = prefix + separator + value[len(prefix) :]
+            assert re.search(pattern, altered) is not None, (case.key, character)
+            disagreements.append(
+                {"key": case.key, "character": character, "pattern": pattern, "value": altered}
+            )
+    assert {(row["key"], row["character"]) for row in disagreements} == {
+        (key, character) for key in expected_keys for character in ("CR", "U+2028")
+    }
+    assert len(disagreements) == 16
     javascript = """
 const fs = require('node:fs');
-const rows = JSON.parse(fs.readFileSync(0, 'utf8'));
-const result = rows.map(row => {
+const payload = JSON.parse(fs.readFileSync(0, 'utf8'));
+const controls = payload.controls.map(row => {
   const pattern = new RegExp(row.pattern);
   return {key: row.key, valid: pattern.test(row.value), invalid: pattern.test(row.value + '\\n')};
 });
-process.stdout.write(JSON.stringify(result));
+const disagreements = payload.disagreements.map(row => {
+  const bodyPattern = new RegExp(row.pattern);
+  return {key: row.key, character: row.character, accepted: bodyPattern.test(row.value)};
+});
+process.stdout.write(JSON.stringify({controls, disagreements}));
 """
     completed = subprocess.run(
         [node, "-e", javascript],
-        input=json.dumps(rows),
+        input=json.dumps({"controls": rows, "disagreements": disagreements}),
         text=True,
         capture_output=True,
         timeout=15,
@@ -343,4 +386,22 @@ process.stdout.write(JSON.stringify(result));
     )
     assert completed.returncode == 0, completed.stderr
     observed = json.loads(completed.stdout)
-    assert observed == [{"key": row["key"], "valid": True, "invalid": False} for row in rows]
+    assert observed == {
+        "controls": [{"key": row["key"], "valid": True, "invalid": False} for row in rows],
+        "disagreements": [
+            {"key": row["key"], "character": row["character"], "accepted": False}
+            for row in disagreements
+        ],
+    }
+
+
+def test_methods_states_permissive_body_engine_difference() -> None:
+    methods = " ".join(
+        (ROOT / "methods/schema_pattern_validation.md").read_text(encoding="utf-8").split()
+    )
+    assert (
+        "Python `.` admits CR (`\\r`), U+2028 and U+2029; the preserved `.+` bodies "
+        "therefore accept them in the Python layers, while ECMAScript without `dotAll` "
+        "rejects them."
+    ) in methods
+    assert "Leading anchors and pattern bodies are preserved." in methods
