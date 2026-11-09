@@ -868,3 +868,54 @@ def test_definition_bound_cache_distinguishes_pending_destination() -> None:
     source = '- [first]: docs/first.md\n  [pending]:\n"outside"\n'
     expected = source.replace(": docs/first.md", ": ../docs/first.md")
     assert links_relative_to_github(source) == expected
+
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_contributor_docs_agree_on_package_paths_and_check_before_commit() -> None:
+    """#1341, #463: contributor docs state mtp package paths and check-before-commit."""
+    repo_root = REPO_ROOT
+    pyproject = (repo_root / "pyproject.toml").read_text(encoding="utf-8")
+    agents = (repo_root / "AGENTS.md").read_text(encoding="utf-8")
+    copilot = (repo_root / ".github" / "copilot-instructions.md").read_text(encoding="utf-8")
+    contributing = (repo_root / "CONTRIBUTING.md").read_text(encoding="utf-8")
+    readme = (repo_root / "README.md").read_text(encoding="utf-8")
+
+    assert 'name = "mtp"' in pyproject
+
+    for name, doc in (
+        ("AGENTS.md", agents),
+        (".github/copilot-instructions.md", copilot),
+        ("CONTRIBUTING.md", contributing),
+        ("README.md", readme),
+    ):
+        assert "before committing" in doc, f"{name} must state the check-before-commit rule"
+        assert "before requesting review" not in doc, f"{name} has conflicting check timing"
+        assert "before opening a PR" not in doc, f"{name} has conflicting check timing"
+
+    assert "3. **Run `just check`** — all checks must pass before committing" in agents
+    assert "4. **Commit, push, and open a PR.**" in agents
+    assert "3. **Run `just check`** — all checks must pass before committing" in copilot
+    assert "4. **Commit, push, and open a PR.**" in copilot
+    assert "4. Run `just check` — **all checks must pass before committing**" in readme
+    assert "### 4. Run checks before committing" in contributing
+    assert "**All checks must pass before committing.**" in contributing
+
+    assert "- Source code goes in `src/mtp/` (with compatibility shims in `src/bsdbng/`)" in (
+        contributing
+    )
+    assert "- Source code goes in `src/bsdbng/`" not in contributing
+
+    assert "The Python package remains `bsdbng`" not in readme
+    assert "The Python package is `mtp` (`src/mtp/`, `schema/mtp.yaml`)" in readme
+    assert "compatibility shims" in readme
+    assert "schema/mtp.yaml" in readme
+    assert "src/mtp/" in readme
+    assert "datamodel/mtp_pydantic.py" in readme
+    assert "1900+" not in readme
+    assert "1,900+" not in readme
+    assert "1,245 reviewed studies" not in readme
+    assert "1,245 studies in pinned v1.3.1" not in readme
+    assert "parse into per-study YAML for the pinned BugSigDB release (~22s)" in readme
+    assert "load study YAMLs into MongoDB (~45s; for the pinned BugSigDB release)" in readme
