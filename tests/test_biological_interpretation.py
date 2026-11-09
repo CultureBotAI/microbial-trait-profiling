@@ -160,6 +160,9 @@ def test_overlay_audit_intro_records_closed_pr_and_rebuild() -> None:
 @pytest.mark.parametrize(
     ("number", "status", "date"),
     [
+        (131, "Closed", "2026-10-07"),
+        (132, "Closed", "2026-10-07"),
+        (165, "Closed", "2026-10-13"),
         (182, "Closed", "2026-10-12"),
         (188, "Closed", "2026-10-11"),
         (189, "Closed", "2026-10-08"),
@@ -176,12 +179,48 @@ def test_audit_separates_dated_tracker_closures_from_biological_validation(
     checkpoint = content.split("## Status checkpoint (2026-10-30)", 1)[1].split("##", 1)[0]
     kind = "pull" if number == 194 else "issues"
     target = f"https://github.com/CultureBotAI/microbial-trait-profiling/{kind}/{number}"
-    row = next(line for line in checkpoint.splitlines() if f"]({target})" in line)
+    matching = [line for line in checkpoint.splitlines() if f"]({target})" in line]
+    assert len(matching) == 1, f"Expected 1 checkpoint row for #{number}, found {len(matching)}"
+    row = matching[0]
     assert status in row
     assert date in row
     assert "Dates are UTC" in checkpoint
     assert "do not establish patient-level effects or validate a mechanism" in " ".join(
         checkpoint.split()
+    )
+
+
+def test_c04_and_p09_date_scope_closed_issues_without_claiming_biological_validation() -> None:
+    """#1314: C04 and P09 date-scope historical issue references and cite closures."""
+    content = BIOLOGICAL_INTERPRETATION_AUDIT_MD.read_text(encoding="utf-8")
+    assert "#165/#182 and #189 retain their work" not in content, "C04 retains open-work wording"
+    assert "#131/#132/#182 remain independent requirements" not in content, (
+        "P09 retains open-work wording"
+    )
+
+    c04 = next(line for line in content.splitlines() if line.startswith("| C04 "))
+    assert (
+        "At the original audit, #165/#182 and #189 tracked the statistical-dependence, "
+        "calibration and trait-semantics work"
+    ) in c04, "C04 missing historical date-scoping"
+    assert "[status checkpoint](#status-checkpoint-2026-10-30)" in c04, "C04 missing checkpoint"
+    assert (
+        "subsequent closures (closing them does not establish semantic equivalence or "
+        "validate a mechanism)"
+    ) in c04, "C04 missing non-validation closure caveat"
+
+    p09 = next(line for line in content.splitlines() if line.startswith("| P09 "))
+    assert (
+        "in the historical PR #173 review, #131/#132/#182 were separate statistical requirements"
+    ) in p09, "P09 missing historical date-scoping"
+    assert "[status checkpoint](#status-checkpoint-2026-10-30)" in p09, "P09 missing checkpoint"
+    assert "their closure does not validate the biological explanation" in p09, (
+        "P09 missing non-validation closure caveat"
+    )
+
+    adoption = " ".join(content.split("## Adoption record", 1)[1].split())
+    assert "#131, #132, #165, #194/#190, #182 and #188-#191" in adoption, (
+        "Adoption record missing #131/#132/#165 closures"
     )
 
 
