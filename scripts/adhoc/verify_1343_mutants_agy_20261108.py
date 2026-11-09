@@ -55,7 +55,7 @@ CP = Path(".github/copilot-instructions.md")
 CO = Path("CONTRIBUTING.md")
 HEAT = Path("methods/guild_condition_body_site_heatmap.md")
 
-SIDEBAR_AG = "   a maintainer). A closing keyword in a commit message (and so in the\n"
+SIDEBAR_AG = "   a maintainer). A closing keyword in a commit message (and so, by default,\n"
 SIDEBAR_CO = "must ask a maintainer). A closing keyword in a\n"
 ALSO = "A Development-sidebar link also goes away when the PR body is edited. "
 
@@ -88,7 +88,8 @@ MUTANTS: tuple[Mutant, ...] = (
                 "a link that comes only from a closing keyword goes away once the\n"
                 "   keyword is removed from the PR body, whereas a Development-sidebar or\n"
                 "   branch link persists and must be removed in the PR's Development\n"
-                "   sidebar in the web UI (there is no `gh` command, so an agent must ask\n"
+                "   sidebar in the web UI (no `gh` subcommand does this, and only a linked\n"
+                "   branch can be unlinked through the GraphQL API, so an agent must ask\n"
                 "   a maintainer).",
                 "a link can outlast a later edit of the body.",
             ),
@@ -185,8 +186,8 @@ MUTANTS: tuple[Mutant, ...] = (
         edits=(
             (
                 AG,
-                "A closing keyword in a commit message (and so in the\n"
-                "   squash message) also closes the issue on merge, appears in neither\n"
+                "A closing keyword in a commit message (and so, by default,\n"
+                "   in the squash message) also closes the issue on merge, appears in neither\n"
                 "   check, and is not removed by editing the PR body: write `Refs #<number>`\n"
                 '   in commits, and never a negated keyword such as "does not close #<number>"\n'
                 "   (which still closes). ",
@@ -194,8 +195,8 @@ MUTANTS: tuple[Mutant, ...] = (
             ),
             (
                 CP,
-                "A closing keyword in a commit message (and so in the\n"
-                "   squash message) also closes the issue on merge, appears in neither\n"
+                "A closing keyword in a commit message (and so, by default,\n"
+                "   in the squash message) also closes the issue on merge, appears in neither\n"
                 "   check, and is not removed by editing the PR body: write `Refs #<number>`\n"
                 '   in commits, and never a negated keyword such as "does not close #<number>"\n'
                 "   (which still closes). ",
@@ -204,7 +205,7 @@ MUTANTS: tuple[Mutant, ...] = (
             (
                 CO,
                 "A closing keyword in a\n"
-                "commit message (and so in the squash message) also closes the issue on merge,\n"
+                "commit message (and so, by default, in the squash message) also closes the issue on merge,\n"
                 "appears in neither check, and is not removed by editing the PR body: write\n"
                 '`Refs #<number>` in commits, and never a negated keyword such as "does not\n'
                 'close #<number>" (which still closes). ',

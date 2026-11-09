@@ -945,11 +945,12 @@ def test_contributor_docs_agree_on_package_paths_and_check_before_commit() -> No
         ) in flat, f"{name} missing closing-keyword removal rule"
         assert (
             "whereas a Development-sidebar or branch link persists and must be removed in the "
-            "PR's Development sidebar in the web UI (there is no `gh` command, so an agent must "
-            "ask a maintainer)"
+            "PR's Development sidebar in the web UI (no `gh` subcommand does this, and only a "
+            "linked branch can be unlinked through the GraphQL API, so an agent must ask a "
+            "maintainer)"
         ) in flat, f"{name} missing Development-sidebar removal rule"
         assert (
-            "A closing keyword in a commit message (and so in the squash message) also closes "
+            "A closing keyword in a commit message (and so, by default, in the squash message) also closes "
             "the issue on merge, appears in neither check, and is not removed by editing the PR "
             'body: write `Refs #<number>` in commits, and never a negated keyword such as "does '
             'not close #<number>" (which still closes).'
