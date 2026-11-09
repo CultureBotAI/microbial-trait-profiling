@@ -44,6 +44,7 @@ ASSERTION_MARKERS = (
     "AssertionError",
     "Failed: DID NOT RAISE",
     "Regex pattern did not match",
+    "E   assert",
 )
 ERROR_MARKERS = (
     "ImportError",
@@ -159,6 +160,48 @@ MUTANTS: tuple[Mutant, ...] = (
             "            scrubbed = scrubbed.replace(target, placeholder)\n"
         ),
         new="        if True:\n            scrubbed = scrubbed.replace(target, placeholder)\n",
+    ),
+    Mutant(
+        name="M15_guard_probe_no_left_boundary_2089",
+        rel_path=PROBE_REL,
+        old='                r"(?:^|(?<=[\\s\'\\"(=]))" + re.escape(target) + r"(?=/)",\n',
+        new='                re.escape(target) + r"(?=/)",\n',
+    ),
+    Mutant(
+        name="M16_guard_probe_no_main_handler_2089",
+        rel_path=PROBE_REL,
+        old=(
+            "    try:\n"
+            "        raise SystemExit(main())\n"
+            "    except (ValueError, FileExistsError) as exc:\n"
+            "        print(str(exc), file=sys.stderr)\n"
+            "        raise SystemExit(2) from None\n"
+        ),
+        new="    raise SystemExit(main())\n",
+    ),
+    Mutant(
+        name="M17_lock_compare_no_main_handler_2089",
+        rel_path=LOCK_REL,
+        old=(
+            "    try:\n"
+            "        raise SystemExit(main())\n"
+            "    except (ValueError, FileExistsError) as exc:\n"
+            "        print(str(exc), file=sys.stderr)\n"
+            "        raise SystemExit(2) from None\n"
+        ),
+        new="    raise SystemExit(main())\n",
+    ),
+    Mutant(
+        name="M18_guard_probe_isolated_sha_of_canonical_2089",
+        rel_path=PROBE_REL,
+        old="        isolated_sha256 = file_sha256(scratch_copy)\n",
+        new="        isolated_sha256 = file_sha256(PRODUCER)\n",
+    ),
+    Mutant(
+        name="M19_guard_probe_written_copy_differs_2089",
+        rel_path=PROBE_REL,
+        old='    copied.write_text(copied_text, encoding="utf-8")\n',
+        new='    copied.write_text(copied_text + "# changed\\n", encoding="utf-8")\n',
     ),
 )
 

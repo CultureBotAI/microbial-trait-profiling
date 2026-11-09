@@ -148,6 +148,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--provenance-root", type=Path, default=None)
     args = parser.parse_args(argv)
+    if args.output.is_symlink() or args.output.exists():
+        raise FileExistsError("Output report already exists; choose a fresh --output path")
     result = compare_locks(
         args.before,
         args.after,
@@ -156,11 +158,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     content = json.dumps(result, indent=2, ensure_ascii=False, allow_nan=False) + "\n"
     assert_portable_text(content)
-    if args.output.is_symlink() or args.output.exists():
-        raise FileExistsError("Output report already exists; choose a fresh --output path")
     # Exclusive creation also refuses existing or dangling symlinks.
-    with args.output.open("x", encoding="utf-8") as handle:
-        handle.write(content)
+    try:
+        with args.output.open("x", encoding="utf-8") as handle:
+            handle.write(content)
+    except FileExistsError:
+        raise FileExistsError(
+            "Output report already exists; choose a fresh --output path"
+        ) from None
     return 0
 
 

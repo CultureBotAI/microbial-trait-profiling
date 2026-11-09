@@ -123,7 +123,20 @@ def test_multiple_versions_are_reported_without_collapsing_a_package(tmp_path: P
     }
 
 
-def test_cli_writes_fresh_report_and_never_overwrites(tmp_path: Path) -> None:
+def _run_script_main(script_path: Path) -> None:
+    try:
+        runpy.run_path(str(script_path), run_name="__main__")
+    except (ValueError, FileExistsError) as exc:
+        raise AssertionError(
+            f"__main__ did not convert {type(exc).__name__} to SystemExit(2)"
+        ) from exc
+
+
+def test_cli_writes_fresh_report_and_never_overwrites(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     before, after, output = (
         tmp_path / name for name in ("before.lock", "after.lock", "audit.json")
     )
@@ -133,11 +146,29 @@ def test_cli_writes_fresh_report_and_never_overwrites(tmp_path: Path) -> None:
     assert HELPER["main"](argv) == 0
     saved = output.read_bytes()
     assert json.loads(saved)["substantive_equal"] is True
-    with pytest.raises(FileExistsError) as exc_info:
-        HELPER["main"](argv)
+    with monkeypatch.context() as mp:
+        mp.setitem(
+            HELPER["main"].__globals__,
+            "compare_locks",
+            lambda *_a, **_kw: (_ for _ in ()).throw(
+                AssertionError("precheck must refuse existing output before compare_locks")
+            ),
+        )
+        with pytest.raises(FileExistsError) as exc_info:
+            HELPER["main"](argv)
     assert str(output) not in str(exc_info.value)
     assert_portable_text(str(exc_info.value))
     assert output.read_bytes() == saved
+    with monkeypatch.context() as mp:
+        mp.setattr(sys, "argv", [str(SCRIPT), *argv])
+        capsys.readouterr()
+        with pytest.raises(SystemExit) as main_exc:
+            _run_script_main(SCRIPT)
+        assert main_exc.value.code == 2
+        main_err = capsys.readouterr().err
+        assert "Output report already exists; choose a fresh --output path" in main_err
+        assert str(output) not in main_err
+        assert_portable_text(main_err)
     alias = tmp_path / "dangling.json"
     alias.symlink_to(tmp_path / "missing.json")
     with pytest.raises(FileExistsError) as symlink_exc:
@@ -267,7 +298,9 @@ def test_compare_locks_uses_portable_provenance_and_refuses_account_paths(
 
 
 def test_guard_isolation_probe_emits_portable_paths_and_refuses_account_paths(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     """#1027, #2054, #2055, #2056: guard probe portable paths, boundary scrub, and root basis."""
     home = tmp_path / "Users" / "probeacct"
@@ -311,7 +344,7 @@ def test_guard_isolation_probe_emits_portable_paths_and_refuses_account_paths(
         rel_repo_scrubbed = GUARD_PROBE["scrub_pytest_log"](
             "out/tests/test_sample.py:10: in "
             "test_min_stratified_pairs_is_rejected_outside_site_stats\n"
-            "output = isolated_investigation(infographic)\n"
+            "output = isolated_investigation(infographic) x_out/y\n"
             "Captured stdout call\n",
             output=Path("out"),
             repo_root=workspace / "out",
@@ -319,7 +352,8 @@ def test_guard_isolation_probe_emits_portable_paths_and_refuses_account_paths(
         )
     assert "<repo-root>/tests/test_sample.py:10:" in rel_repo_scrubbed
     assert "test_min_stratified_pairs_is_rejected_outside_site_stats" in rel_repo_scrubbed
-    assert "output = isolated_investigation(infographic)" in rel_repo_scrubbed
+    assert "output = isolated_investigation(infographic) x_out/y" in rel_repo_scrubbed
+    assert "x_<repo-root>/y" not in rel_repo_scrubbed
     assert "Captured stdout call" in rel_repo_scrubbed
     assert "<output-dir>side" not in rel_repo_scrubbed
     assert "std<output-dir>" not in rel_repo_scrubbed
@@ -373,11 +407,34 @@ def test_guard_isolation_probe_emits_portable_paths_and_refuses_account_paths(
 
     probe_output = workspace / "guard-evidence"
     assert GUARD_PROBE["main"](["--output-dir", str(probe_output)]) == 0
-    with pytest.raises(FileExistsError) as exists_exc:
-        GUARD_PROBE["main"](["--output-dir", str(probe_output)])
+    with monkeypatch.context() as mp:
+        mp.setattr(
+            GUARD_PROBE["pytest"],
+            "main",
+            lambda *_a, **_kw: (_ for _ in ()).throw(
+                AssertionError("precheck must refuse existing output before pytest.main")
+            ),
+        )
+        with pytest.raises(FileExistsError) as exists_exc:
+            GUARD_PROBE["main"](["--output-dir", str(probe_output)])
     assert str(probe_output) not in str(exists_exc.value)
     assert "probeacct" not in str(exists_exc.value).casefold()
     assert_portable_text(str(exists_exc.value))
+    with monkeypatch.context() as mp:
+        mp.setattr(
+            sys,
+            "argv",
+            [str(GUARD_PROBE_SCRIPT), "--output-dir", str(probe_output)],
+        )
+        capsys.readouterr()
+        with pytest.raises(SystemExit) as probe_main_exc:
+            _run_script_main(GUARD_PROBE_SCRIPT)
+        assert probe_main_exc.value.code == 2
+        probe_err = capsys.readouterr().err
+        assert "Probe output directory already exists; choose a fresh --output-dir" in probe_err
+        assert str(probe_output) not in probe_err
+        assert "probeacct" not in probe_err.casefold()
+        assert_portable_text(probe_err)
 
     isolation_path = probe_output / "isolation.json"
     raw_isolation = isolation_path.read_text(encoding="utf-8")
@@ -387,6 +444,10 @@ def test_guard_isolation_probe_emits_portable_paths_and_refuses_account_paths(
     assert record.get("isolated_path_basis") == {"kind": "root-relative-v1", "root": "."}
     assert record["canonical_origin"] == "scripts/create_trait_profile_infographic.py"
     assert record["isolated_origin"] == "infographic_without_guard.py"
+    assert (
+        record["isolated_sha256"]
+        == hashlib.sha256((probe_output / "infographic_without_guard.py").read_bytes()).hexdigest()
+    )
     assert record["checkout_outputs"] == "trait-visualization/trait-profile-investigation"
     assert not Path(record["canonical_origin"]).is_absolute()
     assert not Path(record["isolated_origin"]).is_absolute()

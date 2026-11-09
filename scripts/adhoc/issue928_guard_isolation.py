@@ -261,7 +261,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         repo_root=ROOT,
         temp_roots=probe.temp_roots,
     )
-    output.mkdir(parents=True, exist_ok=False)
+    try:
+        output.mkdir(parents=True, exist_ok=False)
+    except FileExistsError:
+        raise FileExistsError(
+            "Probe output directory already exists; choose a fresh --output-dir"
+        ) from None
     copied.write_text(copied_text, encoding="utf-8")
     (output / "pytest.log").write_text(log_text, encoding="utf-8")
     (output / "isolation.json").write_text(isolation_text, encoding="utf-8")
