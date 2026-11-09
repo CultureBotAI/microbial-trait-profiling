@@ -298,6 +298,22 @@ def test_every_slide_page_meets_native_slide_size_font_and_canvas_bounds(source:
                 for line in page.figure.findobj(Line2D):
                     if line.get_visible() and line.get_linestyle() not in ("None", "none", "", " "):
                         assert line.get_linewidth() >= 0.5
+                for axis in page.figure.axes:
+                    for spine in axis.spines.values():
+                        if spine.get_visible():
+                            assert spine.get_linewidth() >= 0.5, (page.stem, spine)
+                    for tick in (
+                        *axis.xaxis.get_major_ticks(),
+                        *axis.xaxis.get_minor_ticks(),
+                        *axis.yaxis.get_major_ticks(),
+                        *axis.yaxis.get_minor_ticks(),
+                    ):
+                        for tick_line in (tick.tick1line, tick.tick2line):
+                            if tick_line.get_visible():
+                                assert tick_line.get_markeredgewidth() >= 0.5, (
+                                    page.stem,
+                                    tick_line,
+                                )
                 assert all(
                     getattr(page.caption, field)
                     for field in ("title", "takeaway", "caveat", "evidence")
@@ -389,11 +405,12 @@ def test_slide_exports_are_opt_in_and_registered_with_captions_and_hashes(
     assert seen == ([True] if enabled else [])
     assert (tmp_path / "cellulose_decr_slide_figures.pdf").exists() is enabled
     assert ("figures_slides/fixture_page.svg" in captions["figures"]) is enabled
+    assert ("slide_pages" in manifest) is enabled
     if enabled:
         assert (
             captions["figures"]["figures_slides/fixture_page.svg"]["evidence"] == caption.evidence
         )
-        assert manifest["slide_pages"] == [
+        assert manifest.get("slide_pages") == [
             {
                 "stem": "fixture_page",
                 "source_figure": "fixture_source",

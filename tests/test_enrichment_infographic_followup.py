@@ -13,6 +13,7 @@ import pandas as pd
 import pytest
 from matplotlib.backends.backend_agg import FigureCanvasAgg, RendererAgg
 from matplotlib.collections import QuadMesh
+from matplotlib.colors import rgb_to_hsv, to_hex, to_rgb
 from matplotlib.figure import Figure
 from matplotlib.text import Text
 
@@ -120,6 +121,120 @@ def test_companion_heatmap_layout_keeps_every_labelled_binary_cell(
         expected.sort_index().sort_index(axis=1),
         check_dtype=False,
     )
+
+
+def _cie_lightness(rgb: tuple[float, float, float]) -> float:
+    channels = np.asarray(rgb, dtype=float)
+    linear = np.where(channels <= 0.04045, channels / 12.92, ((channels + 0.055) / 1.055) ** 2.4)
+    luminance = float(0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2])
+    return 116.0 * (luminance ** (1.0 / 3.0)) - 16.0 if luminance > 0.008856 else 903.3 * luminance
+
+
+def test_companion_heatmap_multi_condition_palette_and_legend_clear_dendrogram(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Multi-condition strip colours stay distinct and clear all axes (#1922, #2005, #2006)."""
+    conditions = (
+        *followup.TARGET_CONDITIONS,
+        "Multiple sclerosis",
+        "Stroke",
+        "Constipation",
+        "Colorectal cancer",
+        "Parkinson's disease",
+    )[:8]
+    assert len(conditions) == 8
+    monkeypatch.setattr(followup, "TARGET_CONDITIONS", conditions)
+    matrix = pd.DataFrame(
+        [[int((i >> j) & 1) for j in range(4)] for i in range(len(conditions))],
+        index=[f"taxon-{i}" for i in range(len(conditions))],
+        columns=["METPO:1", "METPO:2", "METPO:3", "METPO:4"],
+    )
+    taxa = pd.DataFrame(
+        {
+            "taxon_name": [f"Taxon {i}" for i in range(len(conditions))],
+            "target_profile_count": list(range(1, len(conditions) + 1)),
+            "display_condition": list(conditions),
+        },
+        index=matrix.index,
+    )
+    traits = pd.DataFrame(
+        {"heatmap_label": ["First", "Second", "Third", "Fourth"]}, index=matrix.columns
+    )
+    captured: list[Figure] = []
+
+    def at_save(figure: Figure, _path: Path, **_kwargs: object) -> None:
+        draw = cast(Callable[[], None], FigureCanvasAgg(figure).draw)
+        draw()
+        captured.append(figure)
+
+    monkeypatch.setattr(Figure, "savefig", at_save)
+    followup.save_traits_vs_organisms_heatmap(
+        matrix, taxa, traits, tmp_path / "multi.png", cluster_columns=True
+    )
+    assert len(captured) == 1
+    figure = captured[0]
+    get_renderer = cast(Callable[[], RendererAgg], FigureCanvasAgg(figure).get_renderer)
+    renderer = get_renderer()
+    dendrogram = next(axis for axis in figure.axes if axis.get_legend() is not None)
+    legend = dendrogram.get_legend()
+    assert legend is not None
+    patches = legend.get_patches()
+    assert len(patches) == len(conditions)
+    legend_hexes = [to_hex(patch.get_facecolor()) for patch in patches]
+    assert len(set(legend_hexes)) == len(conditions), legend_hexes
+    trait_rgb = to_rgb("#155e75")
+    trait_hue = float(rgb_to_hsv(trait_rgb)[0])
+    palette_rgbs = [to_rgb(patch.get_facecolor()) for patch in patches]
+    for color_hex, color_rgb in zip(legend_hexes, palette_rgbs, strict=True):
+        hue_diff = abs(float(rgb_to_hsv(color_rgb)[0]) - trait_hue)
+        assert min(hue_diff, 1.0 - hue_diff) >= 0.03, color_hex
+    data_rgbs = [trait_rgb, *palette_rgbs]
+    lightness = [_cie_lightness(rgb) for rgb in data_rgbs]
+    for i in range(len(lightness)):
+        for j in range(i + 1, len(lightness)):
+            assert abs(lightness[i] - lightness[j]) >= 8.0, (i, j, lightness)
+
+    heatmap_ax = next(axis for axis in figure.axes if axis.get_xlabel() == "Trait")
+    strip_ax = next(
+        axis
+        for axis in figure.axes
+        if axis is not heatmap_ax
+        and axis.collections
+        and len(axis.collections[0].get_facecolor()) == len(conditions)
+    )
+    strip_mesh = cast(QuadMesh, strip_ax.collections[0])
+    strip_hexes = [
+        to_hex(cast(tuple[float, float, float, float], color))
+        for color in strip_mesh.get_facecolor()
+    ]
+    label_to_index = {
+        followup.display_taxon_label(taxon_id, taxa): idx
+        for idx, taxon_id in enumerate(matrix.index)
+    }
+    row_labels = [tick.get_text() for tick in heatmap_ax.get_yticklabels()]
+    assert len(row_labels) == len(conditions)
+    assert strip_hexes == [legend_hexes[label_to_index[label]] for label in row_labels]
+    strip_in_condition_order = [""] * len(conditions)
+    for row_pos, label in enumerate(row_labels):
+        strip_in_condition_order[label_to_index[label]] = strip_hexes[row_pos]
+    assert strip_in_condition_order == legend_hexes
+
+    dendrogram_box = dendrogram.get_window_extent(renderer)
+    legend_box = legend.get_window_extent(renderer)
+    assert not legend_box.overlaps(dendrogram_box)
+    for axis in figure.axes:
+        if axis is dendrogram:
+            continue
+        assert not legend_box.overlaps(axis.get_window_extent(renderer))
+        tight_box = axis.get_tightbbox(renderer)
+        assert tight_box is not None
+        assert not legend_box.overlaps(tight_box)
+    legend_words = [
+        text for text in legend.findobj(Text) if text.get_visible() and text.get_text().strip()
+    ]
+    assert legend_words
+    for word in legend_words:
+        assert not word.get_window_extent(renderer).overlaps(dendrogram_box), word.get_text()
 
 
 def test_targets_below_the_profile_minimum_are_reported_with_their_counts() -> None:
@@ -390,3 +505,27 @@ def test_main_heatmap_caption_matches_supplied_order_and_clustering(
         output / "fixture_traits_vs_organisms_heatmap_matrix.tsv", sep="\t", index_col=0
     )
     pd.testing.assert_frame_equal(saved_matrix, matrix)
+
+
+def test_companion_heatmap_refuses_more_conditions_than_distinct_colours(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A ninth condition must not silently reuse a strip colour (#2005 delta)."""
+    conditions = tuple(f"Condition {i}" for i in range(9))
+    monkeypatch.setattr(followup, "TARGET_CONDITIONS", conditions)
+    matrix = pd.DataFrame([[1, 0], [0, 1]], index=["taxon-a", "taxon-b"], columns=["T:1", "T:2"])
+    taxa = pd.DataFrame(
+        {
+            "taxon_name": ["Taxon A", "Taxon B"],
+            "target_profile_count": [1, 1],
+            "display_condition": [conditions[0], conditions[8]],
+        },
+        index=matrix.index,
+    )
+    traits = pd.DataFrame({"heatmap_label": ["One", "Two"]}, index=matrix.columns)
+    output = tmp_path / "nine.png"
+    with pytest.raises(
+        ValueError, match=r"^The companion heatmap has 8 distinct condition colours; 9"
+    ):
+        followup.save_traits_vs_organisms_heatmap(matrix, taxa, traits, output)
+    assert not output.exists()

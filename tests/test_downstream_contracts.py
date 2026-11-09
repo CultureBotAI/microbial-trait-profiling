@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import csv
 import json
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
+import yaml
 
 from mtp.datamodel.workflow_pydantic import (
     CalibrationOutcome,
@@ -14,7 +17,9 @@ from mtp.datamodel.workflow_pydantic import (
     DirectionBasis,
     ExecutionStatus,
 )
+from mtp.integrated_evidence import main as integrated_evidence_main
 from mtp.integrated_evidence import read_status
+from mtp.paths import REPO_ROOT
 from mtp.workflow.arms.__main__ import build_parser
 from mtp.workflow.comparison import _inventory_directory
 from mtp.workflow.downstream_contracts import (
@@ -25,6 +30,7 @@ from mtp.workflow.downstream_contracts import (
     build_scientific_result_record,
     check_analysis_spec_compatibility,
     compute_common_support_ids,
+    get_standard_analysis_spec,
     validate_qualified_feature_ids,
     validate_strict_numeric_value,
     validate_unique_record_ids,
@@ -211,8 +217,6 @@ def test_b6_arms_cli_exposes_compare_and_verify_comparison(tmp_path: Path) -> No
     entries = _inventory_directory(tmp_path, subdir)
     assert len(entries) == 1
     assert entries[0].path == "integrated_evidence/integrated_evidence_method_results.tsv"
-    from datetime import UTC, datetime
-
     now = datetime.now(UTC)
     run_obj = ComparisonRun(
         id="comparison-all_paired-test01",
@@ -280,3 +284,156 @@ def test_b7_scientific_result_record_rejects_unqualified_feature() -> None:
         n_eligible=500,
     )
     assert rec.feature_id == "METPO:2000103|GO:0030245"
+
+
+def test_native_influence_analysis_spec_matches_registry_families_and_emitted_metadata(
+    tmp_path: Path,
+) -> None:
+    """Pin the native-influence AnalysisSpec against all four registry families (#1522)."""
+    spec_id = "historical_native_taxon_influence_experiment_weighted_v1"
+    expected_policy = (
+        "BH_q_in_mt-supp-native-influence-composition_selected_per_scenario_scope_and_"
+        "mt-supp-native-influence-ora-enrichment_mt-supp-native-influence-ora-depletion_"
+        "selected_per_scenario_scope_tail_plus_mt-supp-native-influence-shared-sign_"
+        "executed_focal_per_scenario_scope_reference_or_background_and_"
+        "before_after_before_matched_after_matched_matched_change_population"
+    )
+    expected_spec = {
+        "id": spec_id,
+        "estimand": "leave_one_taxon_out_influence_on_table1_signals",
+        "kernel": "experiment_weighted_composition_and_assertion_count_ora",
+        "transformation": "raw_experiment_fraction_difference_and_assertion_counts",
+        "sampling_unit": "experiment_contrast_and_assertion",
+        "weighting": "equal_experiment_weight",
+        "eligibility_rule": "historical_experiment_paired_contrasts",
+        "multiple_testing_policy": expected_policy,
+    }
+    spec = get_standard_analysis_spec(spec_id)
+    assert spec == STANDARD_ANALYSIS_SPECS[spec_id]
+    assert spec.model_dump(mode="json") == expected_spec
+
+    registry = yaml.safe_load(
+        (REPO_ROOT / "methods" / "multiple_testing_families.yaml").read_text(encoding="utf-8")
+    )
+    influence_families = {
+        entry["family_id"]: entry
+        for entry in registry["families"]
+        if str(entry["family_id"]).startswith("mt-supp-native-influence-")
+    }
+    assert set(influence_families) == {
+        "mt-supp-native-influence-composition",
+        "mt-supp-native-influence-ora-enrichment",
+        "mt-supp-native-influence-ora-depletion",
+        "mt-supp-native-influence-shared-sign",
+    }
+    for family_id in influence_families:
+        assert family_id in spec.multiple_testing_policy
+    assert (
+        influence_families["mt-supp-native-influence-composition"]["size_source"]["kind"]
+        == "selected_rows"
+    )
+    assert (
+        influence_families["mt-supp-native-influence-ora-enrichment"]["size_source"]["kind"]
+        == "selected_rows"
+    )
+    assert (
+        influence_families["mt-supp-native-influence-ora-depletion"]["size_source"]["kind"]
+        == "selected_rows"
+    )
+    shared_sign = influence_families["mt-supp-native-influence-shared-sign"]
+    assert shared_sign["size_source"]["kind"] == "executed_inventory"
+    assert "(scenario, scope, reference)" in shared_sign["family_definition"]
+    assert "(scenario, scope, background)" in shared_sign["family_definition"]
+    for pop in ("before", "after", "before_matched", "after_matched", "matched_change"):
+        assert pop in shared_sign["outputs"][0]["column"]
+        assert pop in spec.multiple_testing_policy
+
+    profile_path = tmp_path / "study_trait_profiles_wide.tsv"
+    with profile_path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.writer(handle, delimiter="\t", lineterminator="\n")
+        writer.writerow(
+            [
+                "study_id",
+                "experiment_id",
+                "inc_dec",
+                "METPO:1000608",
+                "METPO:2000103|GO:0030245",
+                "METPO:1000668",
+                "METPO:1000683",
+                "METPO:2000103|pathways:arsenate_reduction",
+                "METPO:1000623",
+                "METPO:1000604",
+                "METPO:1000602",
+                "METPO:1000603",
+                "METPO:1000607",
+            ]
+        )
+        writer.writerow(
+            ["bsdb:1", "bsdb:1/1", "inc", "5", "4", "4", "4", "1", "4", "5", "5", "1", "1"]
+        )
+        writer.writerow(
+            ["bsdb:1", "bsdb:1/1", "dec", "1", "1", "1", "1", "4", "1", "1", "1", "5", "5"]
+        )
+    experiments_path = tmp_path / "experiments.tsv"
+    with experiments_path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.writer(handle, delimiter="\t", lineterminator="\n")
+        writer.writerow(["study_id", "experiment_id", "host_species", "condition", "body_site"])
+        writer.writerow(["bsdb:1", "bsdb:1/1", "Homo sapiens", "Colitis", "Feces"])
+
+    output_dir = tmp_path / "integrated_out"
+    rc = integrated_evidence_main(
+        [
+            "--profile-input",
+            str(profile_path),
+            "--experiments-input",
+            str(experiments_path),
+            "--full-dump-input",
+            str(tmp_path / "missing_dump.csv"),
+            "--calibration-status",
+            str(tmp_path / "missing_cal.json"),
+            "--sensitivity-status",
+            str(tmp_path / "missing_sens.json"),
+            "--orientation-provenance",
+            str(tmp_path / "missing_orient.json"),
+            "--output-dir",
+            str(output_dir),
+            "--code-commit",
+            "0" * 40,
+        ]
+    )
+    assert rc == 0
+    provenance = json.loads(
+        (output_dir / "integrated_evidence_provenance.json").read_text(encoding="utf-8")
+    )
+    emitted_specs = provenance["downstream_contracts"]["analysis_specs"]
+    assert emitted_specs[spec_id] == expected_spec
+
+    now = datetime.now(UTC)
+    run_obj = ComparisonRun(
+        id="comparison-all_paired-test02",
+        contrast_population=ContrastPopulation.all_paired,
+        direction_basis=DirectionBasis.group_1_vs_group_0,
+        status=ExecutionStatus.completed,
+        started_at=now,
+        ended_at=now,
+        manifest_path=str(tmp_path / "comparison_run.json"),
+        core_manifest_path=str(tmp_path / "core.json"),
+        core_manifest_sha256="a" * 64,
+        core_run_id="core-1",
+        noel_manifest_path=str(tmp_path / "noel.json"),
+        noel_manifest_sha256="b" * 64,
+        jed_manifest_path=str(tmp_path / "jed.json"),
+        jed_manifest_sha256="c" * 64,
+        ilyas_manifest_path=str(tmp_path / "ilyas.json"),
+        ilyas_manifest_sha256="d" * 64,
+        git_commit="0" * 40,
+        git_dirty=False,
+        analysis_specs=[STANDARD_ANALYSIS_SPECS[k] for k in sorted(STANDARD_ANALYSIS_SPECS)],
+        eligibility_ledgers=[],
+        analysis_bases=[],
+        calibration_verdicts=[],
+        outputs=[],
+    )
+    dumped = run_obj.model_dump(mode="json")
+    by_id = {item["id"]: item for item in dumped["analysis_specs"]}
+    assert by_id[spec_id] == expected_spec

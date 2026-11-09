@@ -166,9 +166,12 @@ module = [
 ]
 ignore_errors = true
 
-# pandas, scipy and plotly ship no type information; the repo's own code stays strict.
+# scipy, plotly, seaborn and linkml-store ship no type information; the repo's
+# own code stays strict. pandas is typed by the dev-group pandas-stubs, so its
+# entry matters only for installs without that group. seaborn's typeshed stubs
+# (types-seaborn) are not a dependency, so the override is used instead (#1945).
 [[tool.mypy.overrides]]
-module = ["pandas", "scipy.*", "plotly.*"]
+module = ["pandas", "scipy.*", "plotly.*", "seaborn", "linkml_store", "linkml_store.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

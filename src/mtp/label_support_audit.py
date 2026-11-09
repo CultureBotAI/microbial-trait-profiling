@@ -17,8 +17,9 @@ import numpy as np
 import pandas as pd
 from scipy.stats import binomtest
 
-from mtp import audit_input_binding, count_input, madin_source, trait_guilds, trait_key_policy
+from mtp import audit_input_binding, count_input, madin_source, trait_guilds
 from mtp import taxa_trait_matrix as matrix_api
+from mtp import trait_key_policy as trait_key_policy_module
 from mtp.count_input import CountTableReader, profile_count_reader, taxa_trait_count_reader
 from mtp.paths import KG_MICROBE_DIR, REPO_ROOT, file_sha256
 from mtp.taxa_trait_matrix import (
@@ -33,7 +34,11 @@ from mtp.taxa_trait_matrix import (
 )
 from mtp.trait_guilds import MEDIADIVE_MARKER, OXYGEN_GUILDS, TABLE1_TRAIT_LABELS, TABLE1_TRAITS
 from mtp.trait_key_policy import (
+    DEFAULT_TRAIT_KEY_POLICY,
+    TRAIT_KEY_POLICIES,
+    TraitKeyPolicy,
     display_trait_label,
+    parse_trait_key_policy,
     read_recorded_member_evidence,
     read_recorded_member_ids,
 )
@@ -128,10 +133,12 @@ def load_kg_provenance_graph(
     nodes_path: Path,
     *,
     strain_rollup: Scope = "off",
+    trait_key_policy: TraitKeyPolicy = DEFAULT_TRAIT_KEY_POLICY,
     edges_stream: IO[str] | None = None,
     nodes_stream: IO[str] | None = None,
 ) -> dict[str, Any]:
     """Read named KG columns; phenotype requires the shared scope API from #828."""
+    policy = parse_trait_key_policy(trait_key_policy)
     parents: defaultdict[str, set[str]] = defaultdict(set)
     traits: dict[str, set[str]] = {}
     sources: defaultdict[str, defaultdict[str, set[str]]] = defaultdict(lambda: defaultdict(set))
@@ -153,7 +160,7 @@ def load_kg_provenance_graph(
             continue
         if not (obj.startswith(TRAIT_PREFIX) or predicate.startswith(TRAIT_PREFIX)):
             continue
-        key = make_trait_key(predicate, obj)
+        key = make_trait_key(predicate, obj, trait_key_policy=policy)
         if MEDIADIVE_MARKER in key.lower():
             continue
         primary = {
@@ -655,8 +662,10 @@ def run_label_support_audit(
     strain_rollup: Scope = "off",
     trait_list: Path | None = None,
     column_metadata_path: Path | None = None,
+    trait_key_policy: TraitKeyPolicy = DEFAULT_TRAIT_KEY_POLICY,
 ) -> Row:
     """Write sidecar products only, after all source reconciliations pass."""
+    policy = parse_trait_key_policy(trait_key_policy)
     if output_dir.exists() and any(output_dir.iterdir()):
         raise FileExistsError("Choose an empty output directory for the label-support sidecar")
     declared_traits = load_trait_list(trait_list) if trait_list is not None else None
@@ -720,6 +729,7 @@ def run_label_support_audit(
             edges_path,
             nodes_path,
             strain_rollup=strain_rollup,
+            trait_key_policy=policy,
             edges_stream=edges_stream,
             nodes_stream=nodes_stream,
         )
@@ -788,6 +798,7 @@ def run_label_support_audit(
         "created_at": datetime.now(UTC).isoformat(),
         "analysis": "label_support_sidecar",
         "strain_rollup": strain_rollup,
+        "trait_key_policy": policy,
         "inputs": provenance_inputs,
         "scope": scope_facts,
         "madin_status": madin_status,
@@ -800,7 +811,7 @@ def run_label_support_audit(
         "matrix_policy_code": _inventory(Path(matrix_api.__file__)),
         "kg_parser_code": _inventory(Path(kg_inputs.__file__)),
         "trait_definitions_code": _inventory(Path(trait_guilds.__file__)),
-        "trait_key_policy_code": _inventory(Path(trait_key_policy.__file__)),
+        "trait_key_policy_code": _inventory(Path(trait_key_policy_module.__file__)),
         "madin_verification_code": _inventory(Path(madin_source.__file__)),
         "kg_edge_serialization": graph["edge_serialization"],
         "environment_lock": _inventory(REPO_ROOT / "uv.lock"),
@@ -854,6 +865,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--trait-list", type=Path, default=None)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--strain-rollup", choices=("off", "phenotype"), required=True)
+    parser.add_argument(
+        "--trait-key-policy", choices=TRAIT_KEY_POLICIES, default=DEFAULT_TRAIT_KEY_POLICY
+    )
     add_temporary_output_option(parser)
     args = parser.parse_args(argv)
     require_durable_output(parser, args.output_dir, allowed=args.allow_temporary_output)
@@ -868,6 +882,7 @@ def main(argv: list[str] | None = None) -> int:
         output_dir=args.output_dir,
         trait_list=args.trait_list,
         column_metadata_path=args.columns,
+        trait_key_policy=args.trait_key_policy,
     )
     return 0
 

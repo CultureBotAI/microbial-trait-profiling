@@ -29,8 +29,97 @@ def _svg_texts(svg: str) -> list[str]:
     return [_plain("".join(node.itertext())) for node in ET.fromstring(svg).findall(".//{*}text")]
 
 
-def _producer_image_routes() -> list[str]:
-    """Read the small literal route table, without importing or running its producer."""
+def _assigned_expression(name: str, statements: list[ast.stmt]) -> ast.expr | None:
+    values: list[ast.expr] = []
+    for statement in statements:
+        targets = (
+            statement.targets
+            if isinstance(statement, ast.Assign)
+            else [statement.target]
+            if isinstance(statement, ast.AnnAssign)
+            else []
+        )
+        if any(isinstance(target, ast.Name) and target.id == name for target in targets):
+            assert isinstance(statement, ast.Assign | ast.AnnAssign)
+            assert statement.value is not None
+            values.append(statement.value)
+    assert len(values) <= 1, f"Ambiguous route binding: {name}"
+    return values[0] if values else None
+
+
+def _saved_image_suffixes(tree: ast.Module) -> set[str]:
+    saves = [
+        node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == "save"
+    ]
+    assert len(saves) == 1
+    save = saves[0]
+    returns = [node.value for node in save.body if isinstance(node, ast.Return)]
+    assert len(returns) == 1
+    assert isinstance(returns[0], ast.Name)
+    written = returns[0].id
+    expression = _assigned_expression(written, save.body)
+    assert isinstance(expression, ast.ListComp)
+    assert len(expression.generators) == 1
+    generator = expression.generators[0]
+    assert not generator.ifs
+    assert not generator.is_async
+    assert isinstance(generator.target, ast.Name)
+    assert isinstance(generator.iter, ast.Tuple | ast.List)
+    suffixes = []
+    for suffix in generator.iter.elts:
+        assert isinstance(suffix, ast.Constant)
+        assert isinstance(suffix.value, str)
+        assert suffix.value.startswith(".")
+        suffixes.append(suffix.value)
+    assert suffixes
+    assert len(set(suffixes)) == len(suffixes)
+    # Only claim routes for the supported directory / f"{stem}{suffix}" form,
+    # and require an actual fig.savefig for every returned path index.
+    args = save.args.args
+    assert len(args) == 4
+    value = expression.elt
+    assert isinstance(value, ast.BinOp)
+    assert isinstance(value.op, ast.Div)
+    assert isinstance(value.left, ast.Name)
+    assert value.left.id == args[1].arg
+    assert isinstance(value.right, ast.JoinedStr)
+    names = []
+    for part in value.right.values:
+        assert isinstance(part, ast.FormattedValue)
+        assert isinstance(part.value, ast.Name)
+        assert part.conversion == -1
+        assert part.format_spec is None
+        names.append(part.value.id)
+    assert names == [args[2].arg, generator.target.id]
+    indices = []
+    for node in ast.walk(save):
+        if (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and isinstance(node.func.value, ast.Name)
+            and node.func.value.id == args[0].arg
+            and node.func.attr == "savefig"
+        ):
+            assert node.args
+            assert isinstance(node.args[0], ast.Subscript)
+            path = node.args[0]
+            assert isinstance(path.value, ast.Name)
+            assert path.value.id == written
+            assert isinstance(path.slice, ast.Constant)
+            assert type(path.slice.value) is int
+            indices.append(path.slice.value)
+    assert sorted(indices) == list(range(len(suffixes)))
+    return set(suffixes)
+
+
+def _producer_image_routes() -> set[str]:
+    """Resolve the table used by main and suffixes actually written by save.
+
+    This bounded AST reader supports a single literal table assigned locally or
+    at module scope, under any name. Dynamic table/suffix expressions are
+    unsupported. This checks literal routes, not arbitrary control/data flow
+    through save call arguments. No producer loading or rendering is run.
+    """
     producer = Path(tufte_plates.__file__).with_name("figures.py")
     assert producer.stat().st_size <= 262_144
     source = producer.read_text(encoding="utf-8")
@@ -40,28 +129,49 @@ def _producer_image_routes() -> list[str]:
         node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == "main"
     ]
     assert len(mains) == 1
-    tables = [
-        node.value
-        for node in mains[0].body
-        if isinstance(node, ast.AnnAssign)
-        and isinstance(node.target, ast.Name)
-        and node.target.id == "plates"
+    main = mains[0]
+    loops = [
+        node
+        for node in main.body
+        if isinstance(node, ast.For)
+        and isinstance(node.iter, ast.Call)
+        and isinstance(node.iter.func, ast.Attribute)
+        and node.iter.func.attr == "items"
+        and any(
+            isinstance(call, ast.Call)
+            and isinstance(call.func, ast.Name)
+            and call.func.id == "save"
+            for call in ast.walk(node)
+        )
     ]
-    assert len(tables) == 1
-    table = tables[0]
+    assert len(loops) == 1
+    loop = loops[0]
+    assert isinstance(loop.iter, ast.Call)
+    assert isinstance(loop.iter.func, ast.Attribute)
+    assert not loop.iter.args
+    assert not loop.iter.keywords
+    reference = loop.iter.func.value
+    assert isinstance(reference, ast.Name)
+    table = _assigned_expression(reference.id, main.body[: main.body.index(loop)])
+    if table is None:
+        table = _assigned_expression(reference.id, tree.body[: tree.body.index(main)])
     assert isinstance(table, ast.Dict)
-    routes = []
+    suffixes = _saved_image_suffixes(tree)
+    routes: set[str] = set()
     for folder, entries in zip(table.keys, table.values, strict=True):
         assert isinstance(folder, ast.Constant)
         assert isinstance(folder.value, str)
-        assert isinstance(entries, ast.List)
+        assert isinstance(entries, ast.List | ast.Tuple)
         for entry in entries.elts:
             assert isinstance(entry, ast.Tuple)
             assert len(entry.elts) == 3
             stem = entry.elts[0]
             assert isinstance(stem, ast.Constant)
             assert isinstance(stem.value, str)
-            routes.append(f"{folder.value}/{stem.value}.svg")
+            for suffix in suffixes:
+                route = f"{folder.value}/{stem.value}{suffix}"
+                assert route not in routes, f"Duplicate producer output: {route}"
+                routes.add(route)
     return routes
 
 
@@ -417,10 +527,10 @@ def test_current_table_image_labels_are_scoped_to_the_correct_output_route(
     The table-driven generator and its outputs are documented in
     methods/cellulose_decr.md (the figures section) and the analysis README.
     The literals keep the slide-to-figure identity pinned; the independent AST
-    read refuses a producer rename that would leave those literals stale.
+    read refuses a table-entry rename that would leave those literals stale.
     No producer table loading, calculations or rendering are executed.
     """
-    assert _producer_image_routes()[slide_number - 8] == image_src
+    assert image_src in _producer_image_routes()
     section = deck_sections[slide_number - 1]
     assert re.findall(r'<img\s+src="([^"]+)"', section) == [image_src]
     subtitle = re.search(r'<p class="subtitle"[^>]*>(.*?)</p>', section, re.DOTALL)
@@ -564,3 +674,69 @@ def test_no_rejected_family_or_run_name_is_rendered(
     for svg in svgs:
         assert all(invented not in text for text in _svg_texts(svg))
     assert all(invented not in _plain(section) for section in deck_sections)
+
+
+@pytest.mark.parametrize("change", ["reorder", "module-table", "rename-local", "suffix"])
+def test_route_guard_tracks_outputs_not_table_layout_or_assumed_svg(
+    change: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Independent syntax fixture: the real producer may itself already be
+    # reordered, renamed, or hoisted without breaking construction of this test.
+    tree = ast.parse("""
+def save(fig, directory, stem, book):
+    paths = [directory / f"{stem}{suffix}" for suffix in (".png", ".svg")]
+    fig.savefig(paths[0])
+    fig.savefig(paths[1])
+    return paths
+
+def main():
+    plates = {"plots": [("first", draw, caption), ("second", draw, caption)]}
+    for folder, entries in plates.items():
+        for stem, draw, caption in entries:
+            save(draw(), root / folder, stem, book)
+""")
+    main = next(
+        node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == "main"
+    )
+    table = main.body[0]
+    assert isinstance(table, ast.Assign)
+    assert isinstance(table.value, ast.Dict)
+    if change == "reorder":
+        entries = table.value.values[0]
+        assert isinstance(entries, ast.List)
+        entries.elts.reverse()
+    elif change in {"module-table", "rename-local"}:
+
+        class Rename(ast.NodeTransformer):
+            def visit_Name(self, node: ast.Name) -> ast.AST:
+                if node.id == "plates":
+                    node.id = "OUTPUT_ROUTES"
+                return node
+
+        Rename().visit(main)
+        if change == "module-table":
+            main.body.remove(table)
+            tree.body.insert(tree.body.index(main), table)
+    else:
+        save = next(
+            node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == "save"
+        )
+        suffixes = [
+            node
+            for node in ast.walk(save)
+            if isinstance(node, ast.Constant) and node.value == ".svg"
+        ]
+        assert len(suffixes) == 1
+        suffixes[0].value = ".svgz"
+    changed = ast.unparse(tree)
+    producer = Path(tufte_plates.__file__).with_name("figures.py")
+    read_text = Path.read_text
+
+    def changed_producer(path: Path, *args: Any, **kwargs: Any) -> str:
+        return changed if path == producer else read_text(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", changed_producer)
+    suffix = ".svgz" if change == "suffix" else ".svg"
+    assert _producer_image_routes() == {
+        f"plots/{stem}{ext}" for stem in ("first", "second") for ext in (".png", suffix)
+    }

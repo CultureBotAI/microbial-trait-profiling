@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import importlib
 import importlib.util
+import json
 import re
 import sys
 from pathlib import Path
@@ -145,6 +146,40 @@ def test_provenance_keeps_its_additional_case_and_slashless_checks(text: str) ->
         writer.assert_portable_text(text)
 
 
+def pattern_roots(source: str) -> list[str]:
+    """Ignore regex syntax while retaining literal directory names (#1916)."""
+    return re.findall(r"[A-Za-z0-9_.-]+", re.sub(r"\[[^\]]+\]|\\\\|\\[A-Za-z]", " ", source))
+
+
+@pytest.mark.parametrize("root", ["Users", "TenantHomes"])
+def test_pattern_roots_keep_words_after_escaped_backslashes(root: str) -> None:
+    source = r"[A-Za-z]:\\" + root + r"\\\w+"
+    assert pattern_roots(source) == [root]
+
+
+@pytest.mark.parametrize(
+    ("prefix", "matched_prefix"),
+    [("", ""), ("C:", "C:"), ("\\", "\\"), ("\\\\", "\\\\"), ("\\\\server\\share\\", "\\")],
+)
+@pytest.mark.parametrize("separator", ["\\", "\\\\", "\\\\/"])
+def test_windows_home_forms_are_shared_guard_hits(
+    prefix: str, matched_prefix: str, separator: str
+) -> None:
+    text = prefix + "Users" + separator + "otherresident" + "\\file.tsv"
+    expected = matched_prefix + "Users" + separator
+    start = len(prefix) - len(matched_prefix)
+    hits = guard._scan_records((("fixture.json", "fixture", text),))
+    assert [(hit.family, hit.matched) for hit in hits.get("fixture.json", [])] == [
+        ("user_home", expected)
+    ]
+    shared = shared_module()
+    assert matches(shared.compile_absolute_local_paths(flags=0, classified=True), text) == [
+        ((start, start + len(expected)), expected, "user_home")
+    ]
+    with pytest.raises(ValueError, match="Provenance contains a local path or local prefix"):
+        writer.assert_portable_text(text)
+
+
 def test_shared_posix_matches_keep_their_slashless_provenance_rejection() -> None:
     """Check the two-way relation across pattern roots and name-class characters (#1835, #1871)."""
     shared = shared_module()
@@ -165,11 +200,7 @@ def test_shared_posix_matches_keep_their_slashless_provenance_rejection() -> Non
         for code in range(33, 127)
         if (ch := chr(code)) not in "/\\" and any(cls.fullmatch(ch) for cls in char_classes)
     ]
-    extracted_roots = [
-        word
-        for src in pattern_sources
-        for word in re.findall(r"[A-Za-z0-9_.-]+", re.sub(r"\[[^\]]+\]|\\[A-Za-z]", " ", src))
-    ]
+    extracted_roots = [word for src in pattern_sources for word in pattern_roots(src)]
     names = tuple(
         dict.fromkeys(
             [
@@ -265,7 +296,10 @@ def test_shared_posix_matches_keep_their_slashless_provenance_rejection() -> Non
 def test_safe_text_controls_stay_outside_both_patterns(text: str) -> None:
     # These are text-only rules; structural private-root checks remain separate.
     assert matches(guard.ABSOLUTE_LOCAL_PATH_PATTERN, text) == []
-    writer.assert_portable_text(text)
+    try:
+        writer.assert_portable_text(text)
+    except ValueError as error:
+        raise AssertionError("A safe word-prefix control must remain accepted (#1900)") from error
 
 
 def test_consumer_grouping_and_case_flags_remain_distinct() -> None:
@@ -379,3 +413,122 @@ def test_shared_pattern_module_and_tests_do_not_match_the_guard() -> None:
 
 def test_shared_pattern_module_is_a_required_guard_input() -> None:
     assert "src/mtp/local_path_patterns.py" in guard.REQUIRED_SCANNED
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "Counted 3 users" + "\nDone",
+        "All Users" + "\tok",
+        'quote "users"',
+        "users" + "é",
+        *("Users" + end for end in ("\rDone", "\bDone", "\fDone", '"', "\\", "\\ rest")),
+    ],
+)
+def test_ordinary_json_escapes_after_users_are_not_home_paths(value: str) -> None:
+    text = json.dumps({"diagnostic": value})
+    assert matches(guard.ABSOLUTE_LOCAL_PATH_PATTERN, text) == []
+    try:
+        writer.assert_portable_text(text)
+    except ValueError as error:
+        raise AssertionError("Ordinary JSON escapes after users must remain accepted") from error
+
+
+def test_json_escaped_solidus_after_users_is_not_a_home_path() -> None:
+    text = json.dumps({"note": "Users/remaining"}).replace("/", "\\/")
+    assert matches(guard.ABSOLUTE_LOCAL_PATH_PATTERN, text) == []
+    try:
+        writer.assert_portable_text(text)
+    except ValueError as error:
+        raise AssertionError("An escaped JSON solidus must remain accepted") from error
+
+
+@pytest.mark.parametrize("account", ["nancy", "tim", "robin", "bob", "frank", "user"])
+def test_ambiguous_single_backslash_home_text_is_accepted_but_json_path_is_refused(
+    account: str,
+) -> None:
+    raw = "Users" + "\\" + account
+    assert matches(guard.ABSOLUTE_LOCAL_PATH_PATTERN, raw) == []
+    try:
+        writer.assert_portable_text(raw)
+    except ValueError as error:
+        raise AssertionError(
+            "Single-backslash escape ambiguity is documented as accepted"
+        ) from error
+    encoded = json.dumps({"path": raw})
+    assert guard.ABSOLUTE_LOCAL_PATH_PATTERN.search(encoded) is not None
+    with pytest.raises(ValueError, match="Provenance contains a local path or local prefix"):
+        writer.assert_portable_text(encoded)
+
+
+@pytest.mark.parametrize("account", ["Nancy", "Tim", "Robin", "Bob", "Frank", "User"])
+def test_json_escape_letters_remain_case_sensitive_in_provenance(account: str) -> None:
+    raw = "Users" + "\\" + account
+    assert guard.ABSOLUTE_LOCAL_PATH_PATTERN.search(raw) is not None
+    refusal = None
+    try:
+        writer.assert_portable_text(raw)
+    except ValueError as error:
+        refusal = error
+    assert refusal is not None, "Uppercase initials are not JSON escape letters"
+    assert "Provenance contains a local path or local prefix" in str(refusal)
+
+
+@pytest.mark.parametrize("separator", ["\\", "\\\\", "\\\\/", "/\\"])
+@pytest.mark.parametrize("ending", ["", '"', " rest"])
+def test_relative_separator_without_an_account_is_not_a_home(separator: str, ending: str) -> None:
+    text = "Users" + separator + ending
+    assert matches(guard.ABSOLUTE_LOCAL_PATH_PATTERN, text) == []
+    try:
+        writer.assert_portable_text(text)
+    except ValueError as error:
+        raise AssertionError("A separator without an account is not a home path") from error
+
+
+@pytest.mark.parametrize("consumer", ["guard", "provenance"])
+@pytest.mark.parametrize(
+    ("prefix", "account"),
+    [("C:", "Émile"), ("\\", "émile"), ("\\\\server\\share\\", "张伟"), ("", "Émile")],
+    ids=["drive-relative", "rooted", "unc", "relative"],
+)
+@pytest.mark.parametrize("separator", ["\\", "\\\\"], ids=["single", "doubled"])
+def test_unicode_initial_accounts_are_refused_by_both_consumers(
+    consumer: str, prefix: str, account: str, separator: str
+) -> None:
+    text = prefix + "Users" + separator + account + "\\file.tsv"
+    pattern = guard.ABSOLUTE_LOCAL_PATH_PATTERN if consumer == "guard" else writer._LOCAL_PATH
+    assert pattern.flags & re.UNICODE
+    assert not pattern.flags & re.ASCII
+    if consumer == "guard":
+        hits = guard._scan_records((("fixture.json", "fixture", text),))
+        assert hits.get("fixture.json"), "A Unicode account initial must not hide a home prefix"
+        assert {hit.family for hit in hits["fixture.json"]} == {"user_home"}
+    else:
+        refusal = None
+        try:
+            writer.assert_portable_text(text)
+        except ValueError as error:
+            refusal = error
+        assert refusal is not None, "A Unicode account initial must not hide a home prefix"
+        assert "Provenance contains a local path or local prefix" in str(refusal)
+
+
+@pytest.mark.parametrize("consumer", ["guard", "provenance"])
+@pytest.mark.parametrize(
+    "suffix", [r"\s+", r"\_per\_study", r"\x08"], ids=["regex", "markdown", "python-repr"]
+)
+def test_documented_raw_escape_false_positives_are_conservatively_refused(
+    consumer: str, suffix: str
+) -> None:
+    text = "Users" + suffix
+    if consumer == "guard":
+        assert guard.ABSOLUTE_LOCAL_PATH_PATTERN.search(text) is not None
+    else:
+        for prefix in ("Users", "users"):
+            refusal = None
+            try:
+                writer.assert_portable_text(prefix + suffix)
+            except ValueError as error:
+                refusal = error
+            assert refusal is not None, "The documented raw-text refusal is intentional"
+            assert "Provenance contains a local path or local prefix" in str(refusal)

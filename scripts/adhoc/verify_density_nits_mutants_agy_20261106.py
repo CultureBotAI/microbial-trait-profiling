@@ -2,7 +2,8 @@
 
 Purpose:
   Verify that source-level mutants for #1396, #1398, #1399, #1400, #1401, #1402,
-  #1405, #1406, #1407, #1514, #1791, #1792, #1824, #1826, #1827, and #1857 are
+  #1405, #1406, #1407, #1514, #1791, #1792, #1824, #1826, #1827, #1857, #1901,
+  #1906, and #1966 are
   killed by assertion failure (rc=1) in an isolated temporary copy without
   touching the live worktree files, and that pytest imports the scratch copy
   (PYTEST_ORIGIN_OK).
@@ -17,7 +18,7 @@ Inputs:
   - tests/test_ontology_audit.py
 
 Outputs:
-  - Exit 0 if all 31 mutants are killed by assertion failure (rc=1) with
+  - Exit 0 if all 33 mutants are killed by assertion failure (rc=1) with
     verified scratch import origin; non-zero otherwise.
 
 Date: 2026-11-07
@@ -256,14 +257,20 @@ MUTANTS: list[tuple[str, str, str, str, str]] = [
     (
         "N29_report_ignores_recorded_orphans_O3_1901",
         "scripts/audit_trait_density_correlation.py",
-        'n_orphan = int(ontology_res.get("n_orphan_features", 0))',
+        (
+            'n_orphan = int(ontology_res.get("n_orphan_features", '
+            "n_collapsed if n_clusters == 0 else 0))"
+        ),
         "n_orphan = int(n_collapsed if n_clusters == 0 else max(0, n_collapsed - n_pairs))",
         "tests/test_density_consolidated_conclusions.py::test_consolidated_report_pluralizes_singular_and_plural_counts",
     ),
     (
         "N30_report_reintroduces_orphan_estimate_fallback_1901",
         "scripts/audit_trait_density_correlation.py",
-        'n_orphan = int(ontology_res.get("n_orphan_features", 0))',
+        (
+            'n_orphan = int(ontology_res.get("n_orphan_features", '
+            "n_collapsed if n_clusters == 0 else 0))"
+        ),
         "n_orphan = int(\n"
         '        ontology_res["n_orphan_features"]\n'
         '        if "n_orphan_features" in ontology_res\n'
@@ -277,6 +284,26 @@ MUTANTS: list[tuple[str, str, str, str, str]] = [
         'df_pairs["cluster_id"].isin(surviving_cluster_ids)',
         "slice(None)",
         "tests/test_ontology_audit.py::test_ontology_redundancy_audit_counts_observed_clusters_only",
+    ),
+    (
+        "N32_absent_field_zero_clusters_defaults_to_zero_1906",
+        "scripts/audit_trait_density_correlation.py",
+        (
+            'n_orphan = int(ontology_res.get("n_orphan_features", '
+            "n_collapsed if n_clusters == 0 else 0))"
+        ),
+        'n_orphan = int(ontology_res.get("n_orphan_features", 0))',
+        "tests/test_density_consolidated_conclusions.py::test_consolidated_report_pluralizes_singular_and_plural_counts",
+    ),
+    (
+        "N33_absent_field_zero_clusters_hardcodes_one_1966",
+        "scripts/audit_trait_density_correlation.py",
+        (
+            'n_orphan = int(ontology_res.get("n_orphan_features", '
+            "n_collapsed if n_clusters == 0 else 0))"
+        ),
+        'n_orphan = int(ontology_res.get("n_orphan_features", 1 if n_clusters == 0 else 0))',
+        "tests/test_density_consolidated_conclusions.py::test_consolidated_report_pluralizes_singular_and_plural_counts",
     ),
 ]
 

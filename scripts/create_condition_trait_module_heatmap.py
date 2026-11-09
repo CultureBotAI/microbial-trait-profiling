@@ -5,13 +5,18 @@ from __future__ import annotations
 import argparse
 import math
 from collections import Counter
+from collections.abc import Mapping
 from pathlib import Path
 from textwrap import fill
+from typing import TYPE_CHECKING, cast
 
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 from matplotlib.patches import FancyBboxPatch, Patch, Rectangle
+
+if TYPE_CHECKING:
+    from matplotlib.axes import Axes
 
 from mtp.composition_denominators import (
     DENOMINATOR_DEFINITION,
@@ -91,7 +96,7 @@ def load_trait_labels(columns_path: Path) -> pd.DataFrame:
     columns = pd.read_csv(columns_path, sep="\t", dtype=str).fillna("")
     columns = columns.set_index("column_id", drop=False)
     columns["display_label"] = [
-        format_trait_label(column_id, row) for column_id, row in columns.iterrows()
+        format_trait_label(cast(str, column_id), row) for column_id, row in columns.iterrows()
     ]
     columns["display_category"] = columns["object_category"].str.removeprefix("biolink:")
     columns.loc[columns["display_category"] == "", "display_category"] = "unknown"
@@ -342,7 +347,7 @@ def build_plot_matrix(group_matrix: pd.DataFrame, selected_traits: pd.Index) -> 
     """Create column-scaled log composition values for plotting."""
     composition = trait_fractions(group_matrix).loc[:, selected_traits]
     scaled = (composition * 1000).apply(lambda column: column.map(math.log1p))
-    zscores = (scaled - scaled.mean(axis=0)) / scaled.std(axis=0).replace(0, pd.NA)
+    zscores: pd.DataFrame = (scaled - scaled.mean(axis=0)) / scaled.std(axis=0).replace(0, pd.NA)
     return zscores.fillna(0).clip(-2.5, 2.5)
 
 
@@ -369,17 +374,23 @@ def build_display_matrix(
     return display
 
 
-def palette_for_categories(categories: pd.Series, palette_name: str) -> dict[str, object]:
+def palette_for_categories(
+    categories: pd.Series,
+    palette_name: str,
+) -> dict[str, str | tuple[float, float, float]]:
     """Build a stable palette for annotation categories."""
     ordered = [
         category for category in sorted(categories.unique()) if category not in {"Other", "unknown"}
     ]
-    colors: dict[str, object] = {}
+    colors: dict[str, str | tuple[float, float, float]] = {}
     if ordered:
         colors = dict(
             zip(
                 ordered,
-                sns.color_palette(palette_name, n_colors=len(ordered)),
+                cast(
+                    list[tuple[float, float, float]],
+                    sns.color_palette(palette_name, n_colors=len(ordered)),
+                ),
                 strict=True,
             )
         )
@@ -388,7 +399,10 @@ def palette_for_categories(categories: pd.Series, palette_name: str) -> dict[str
     return colors
 
 
-def legend_handles(palette: dict[str, object], present_categories: pd.Series) -> list[Patch]:
+def legend_handles(
+    palette: Mapping[str, str | tuple[float, float, float]],
+    present_categories: pd.Series,
+) -> list[Patch]:
     """Build legend handles only for categories present in the plot."""
     present = set(present_categories)
     return [Patch(color=color, label=label) for label, color in palette.items() if label in present]
@@ -506,7 +520,7 @@ def summarize_trait_categories(trait_metadata: pd.DataFrame, max_categories: int
 
 
 def add_table_cell(
-    ax: plt.Axes,
+    ax: Axes,
     *,
     x: float,
     y: float,

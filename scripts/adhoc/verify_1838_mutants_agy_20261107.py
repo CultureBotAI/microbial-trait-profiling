@@ -1,24 +1,26 @@
 #!/usr/bin/env python3
-"""Scratch-copy mutation verifier for #1838 and PR #1886 review fixes (#1888-#1890).
+"""Scratch-copy mutation verifier for #1838 and PR #1886/#1962 review fixes.
 
 Purpose:
   Verify that the empty-population comparison_rows regression test in
   tests/test_contrast_orientation.py kills source-level mutations of
   comparison_rows in src/mtp/contrast_orientation.py (including revert mutants
-  #1889, non-default ratio trait mismatches #1888, and docstring regression #1890)
-  via assertion failure (rc=1) when executed against an isolated scratch copy
-  with verified import origin inside pytest.
+  #1889, non-default ratio trait mismatches #1888, docstring regression #1890,
+  unknown ratio_traits names #1898, non-Table 1 profile columns #1988, unknown
+  ratio trait message #1989, and docstring Table 1 rule #1990) via assertion
+  failure (rc=1) when executed against an isolated scratch copy with verified
+  import origin inside pytest.
 
 Inputs:
   - src/mtp/contrast_orientation.py
   - tests/test_contrast_orientation.py
 
 Outputs:
-  - stdout summary of CONTROL (rc=0) and 14 killed mutants (rc=1, assertion,
+  - stdout summary of CONTROL (rc=0) and 19 killed mutants (rc=1, assertion,
     PYTEST_ORIGIN_OK).
 
-Issue: #1838, #1888, #1889, #1890
-Date: 2026-11-07
+Issue: #1838, #1888, #1889, #1890, #1898, #1988, #1989, #1990
+Date: 2026-11-08
 """
 
 from __future__ import annotations
@@ -165,6 +167,60 @@ MUTANTS: tuple[Mutant, ...] = (
         new=(
             "A\n    population with no paired profiles emits untestable rows across both families."
         ),
+    ),
+    Mutant(
+        name="M15_unknown_ratio_trait_accepted_1898",
+        old=(
+            "    for trait in declared_ratio_traits:\n"
+            "        if trait not in known_ratio_traits:\n"
+            "            raise ValueError(\n"
+            '                f"Unknown ratio trait {trait}: ratio_traits must be Table 1 traits "\n'
+            "                f\"({', '.join(TABLE1_TRAITS)})\"\n"
+            "            )"
+        ),
+        new=(
+            "    for trait in ():\n"
+            "        if trait not in known_ratio_traits:\n"
+            "            raise ValueError(\n"
+            '                f"Unknown ratio trait {trait}: ratio_traits must be Table 1 traits "\n'
+            "                f\"({', '.join(TABLE1_TRAITS)})\"\n"
+            "            )"
+        ),
+    ),
+    Mutant(
+        name="M16_docstring_drops_ratio_traits_1898",
+        old=(
+            "    over the declared fractions and Benjamini-Yekutieli over the declared ratios\n"
+            "    (``ratio_traits``, defaulting to ``TABLE1_TRAITS``; every named trait must be a\n"
+            "    known trait in ``TABLE1_TRAITS``)."
+        ),
+        new="    over the declared fractions and Benjamini-Yekutieli over the declared ratios.",
+    ),
+    Mutant(
+        name="M17_profile_columns_also_accepted_1988",
+        old="    known_ratio_traits = set(TABLE1_TRAITS)\n",
+        new=(
+            "    known_ratio_traits = set(TABLE1_TRAITS) | {\n"
+            "        name for _, group in populations for p in group for name in p.guild_counts\n"
+            "    }\n"
+        ),
+    ),
+    Mutant(
+        name="M18_check_only_when_no_population_has_profiles_1988",
+        old="    for trait in declared_ratio_traits:\n        if trait not in known_ratio_traits:",
+        new=(
+            "    for trait in (() if any(len(g) for _, g in populations) "
+            "else declared_ratio_traits):\n"
+            "        if trait not in known_ratio_traits:"
+        ),
+    ),
+    Mutant(
+        name="M19_docstring_keeps_name_drops_table1_rule_1990",
+        old=(
+            "    (``ratio_traits``, defaulting to ``TABLE1_TRAITS``; every named trait must be a\n"
+            "    known trait in ``TABLE1_TRAITS``)."
+        ),
+        new="    (``ratio_traits``, defaulting to ``TABLE1_TRAITS``).",
     ),
 )
 

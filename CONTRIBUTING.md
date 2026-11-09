@@ -136,7 +136,7 @@ an issue the PR only partly addresses.
 
 ### 3. Write code
 
-- Source code goes in `src/bsdbng/`
+- Source code goes in `src/mtp/` (with compatibility shims in `src/bsdbng/`)
 - Tests go in `tests/`
 - Justfile recipes for new pipeline steps should use the `timed` wrapper
 
@@ -174,7 +174,7 @@ the Linux packages; temporary requirements and audit caches are removed on exit.
 The audit targets that platform and Python version only. The normal Linux CI
 checks must still pass.
 
-**All checks must pass.** If something fails, fix it. If you think the
+**All checks must pass before committing.** If something fails, fix it. If you think the
 check is wrong, open an issue — don't skip the check.
 
 If you want to auto-fix formatting:

@@ -13,6 +13,7 @@ import pytest
 from mtp import provenance_paths
 from mtp.workflow.arms import runtime
 from mtp.workflow.arms.types import ArmContext, Command
+from workflow_provenance_fixtures import routing_core
 
 
 class ReachedAfterPreflight(Exception):
@@ -34,13 +35,7 @@ def test_noel_checks_tokens_in_selected_earlier_outputs_before_execution(
     }
     for path in (manifest, *products.values()):
         path.write_text("synthetic routing input\n", encoding="utf-8")
-    core = SimpleNamespace(
-        run_id="synthetic-core",
-        contrast_population="all_paired",
-        direction_basis="group_1_vs_group_0",
-        parameters=[],
-        artifacts=[SimpleNamespace(product_id=name) for name in products],
-    )
+    core = routing_core(manifest, products)
     bundle = SimpleNamespace(manifest=manifest, run=core, path=products.__getitem__)
     monkeypatch.setenv("TMPDIR", str(tmp_path))
     monkeypatch.setattr(provenance_paths, "_account_names", lambda: {"researcher"})
