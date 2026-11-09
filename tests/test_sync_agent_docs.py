@@ -950,7 +950,8 @@ def test_contributor_docs_agree_on_package_paths_and_check_before_commit() -> No
             "maintainer)"
         ) in flat, f"{name} missing Development-sidebar removal rule"
         assert (
-            "A closing keyword in a commit message (and so, by default, in the squash message) also closes "
+            "A closing keyword in a commit message (and so, by default, in the squash message) "
+            "also closes "
             "the issue on merge, appears in neither check, and is not removed by editing the PR "
             'body: write `Refs #<number>` in commits, and never a negated keyword such as "does '
             'not close #<number>" (which still closes).'

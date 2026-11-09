@@ -205,7 +205,8 @@ MUTANTS: tuple[Mutant, ...] = (
             (
                 CO,
                 "A closing keyword in a\n"
-                "commit message (and so, by default, in the squash message) also closes the issue on merge,\n"
+                "commit message (and so, by default, in the squash message) also closes the "
+                "issue on merge,\n"
                 "appears in neither check, and is not removed by editing the PR body: write\n"
                 '`Refs #<number>` in commits, and never a negated keyword such as "does not\n'
                 'close #<number>" (which still closes). ',
