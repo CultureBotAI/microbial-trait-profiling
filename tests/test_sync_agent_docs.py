@@ -919,3 +919,21 @@ def test_contributor_docs_agree_on_package_paths_and_check_before_commit() -> No
     assert "1,245 studies in pinned v1.3.1" not in readme
     assert "parse into per-study YAML for the pinned BugSigDB release (~22s)" in readme
     assert "load study YAMLs into MongoDB (~45s; for the pinned BugSigDB release)" in readme
+
+    for name, doc in (
+        ("AGENTS.md", agents),
+        (".github/copilot-instructions.md", copilot),
+        ("CONTRIBUTING.md", contributing),
+    ):
+        flat = " ".join(doc.split())
+        assert "gh pr view N --json closingIssuesReferences" in flat, (
+            f"{name} missing closingIssuesReferences command"
+        )
+        assert (
+            "a link that comes only from a closing keyword goes away when the PR body is edited"
+            in flat
+        ), f"{name} missing closing-keyword removal rule"
+        assert (
+            "whereas a Development-sidebar or branch link persists and must be removed in the "
+            "Development sidebar"
+        ) in flat, f"{name} missing Development-sidebar removal rule"

@@ -130,8 +130,10 @@ Do not use `gh issue develop`: its Development-sidebar link makes GitHub close
 the issue when the PR merges into `main`, even if the PR only partly addresses
 it (#1317). In the PR body, write `Closes #<number>` only when the PR fully
 resolves the issue, and `Refs #<number>` otherwise. Decide before opening the
-PR, and before merging check the PR's Development sidebar for the issues it will
-close, because a link can outlast a later edit of the body; remove any link to
+PR, and before merging check which issues the PR will close (`gh pr view N --json closingIssuesReferences`,
+or the PR's Development sidebar): a link that comes only from a closing keyword
+goes away when the PR body is edited, whereas a Development-sidebar or branch
+link persists and must be removed in the Development sidebar. Remove any link to
 an issue the PR only partly addresses.
 
 ### 3. Write code
