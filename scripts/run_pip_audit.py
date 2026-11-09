@@ -1,9 +1,10 @@
 """Run pip-audit with typed, bounded transient-network retries (#1113, #1185).
 
 Only a completed successful audit exits zero. Findings and usage errors retain
-pip-audit's nonzero codes; exhausted transient errors use 3, distinct from
-argparse's 2. Certificate/TLS, proxy, redirect and unclassified HTTP failures
-are not retried, even beneath a broader connection-error wrapper.
+pip-audit's nonzero codes; recognized network failures use 3, distinct from
+argparse's 2. Certificate/hostname verification, proxy, redirect and unclassified
+HTTP failures are not retried, even beneath a broader connection-error wrapper.
+Typed TLS EOF and zero-return closures remain retryable.
 
 The serial in-process adapter retains exception types instead of classifying
 stderr text. It checks the installed private API before capture and restores
@@ -17,6 +18,7 @@ from __future__ import annotations
 import contextlib
 import http.client
 import importlib
+import importlib.util
 import io
 import logging
 import ssl
@@ -36,6 +38,10 @@ TRANSIENT_HTTP_STATUS_CODES = frozenset({408, 429})
 
 class PipAuditCompatibilityError(RuntimeError):
     """The installed pip-audit no longer exposes the adapter's required API."""
+
+
+class PipAuditNotInstalledError(RuntimeError):
+    """The current environment lacks pip-audit, rather than an adapter API symbol."""
 
 
 class _UnmatchedVulnServiceConnectionError(Exception):
@@ -65,6 +71,10 @@ def _exception_class(module: Any, name: str) -> type[Exception]:
 
 
 def _prepare_pip_audit() -> tuple[Any, type[Exception]]:
+    if importlib.util.find_spec("pip_audit") is None:
+        raise PipAuditNotInstalledError(
+            "pip-audit is not installed in this environment (run just sync)"
+        )
     # Import outside capture: basicConfig must not retain attempt 1's buffer.
     cli_mod = _import_api("pip_audit._cli")
     service_mod = _import_api("pip_audit._service.interface")
@@ -76,7 +86,7 @@ def _prepare_pip_audit() -> tuple[Any, type[Exception]]:
 
 
 def _iter_exception_chain(exc: BaseException) -> Iterator[BaseException]:
-    """Visit causes/contexts and structured urllib3 reasons, once per exception."""
+    """Visit typed causes, contexts, reasons and exception-valued args once each."""
     seen: set[int] = set()
     pending = [exc]
     while pending:
@@ -86,7 +96,7 @@ def _iter_exception_chain(exc: BaseException) -> Iterator[BaseException]:
         seen.add(id(current))
         yield current
         cause = current.__cause__ if current.__cause__ is not None else current.__context__
-        for linked in (getattr(current, "reason", None), cause):
+        for linked in (getattr(current, "reason", None), cause, *current.args):
             if isinstance(linked, BaseException):
                 pending.append(linked)
 
@@ -109,12 +119,11 @@ def is_transient_network_error(
         )
     chain = list(_iter_exception_chain(exc))
     permanent_classes = (
-        requests_exceptions.SSLError,
+        ssl.SSLCertVerificationError,
+        ssl.CertificateError,
         requests_exceptions.ProxyError,
         requests_exceptions.TooManyRedirects,
-        urllib3_exceptions.SSLError,
         urllib3_exceptions.ProxyError,
-        ssl.SSLError,
     )
     if any(isinstance(item, permanent_classes) for item in chain):
         return False
@@ -131,12 +140,35 @@ def is_transient_network_error(
         requests_exceptions.ChunkedEncodingError,
         urllib3_exceptions.ProtocolError,
         urllib3_exceptions.TimeoutError,
+        ssl.SSLEOFError,
+        ssl.SSLZeroReturnError,
         http.client.BadStatusLine,
         http.client.IncompleteRead,
         ConnectionError,
         TimeoutError,
     )
     return bool(http_errors) or any(isinstance(item, transient_classes) for item in chain)
+
+
+def _is_recognized_network_error(exc: BaseException) -> bool:
+    """Label typed network refusals without treating arbitrary service errors as network."""
+    requests_exceptions: Any = importlib.import_module("requests.exceptions")
+    urllib3_exceptions: Any = importlib.import_module("urllib3.exceptions")
+    network_classes = (
+        requests_exceptions.ConnectionError,
+        requests_exceptions.Timeout,
+        requests_exceptions.ChunkedEncodingError,
+        requests_exceptions.HTTPError,
+        requests_exceptions.TooManyRedirects,
+        urllib3_exceptions.HTTPError,
+        ssl.SSLError,
+        ssl.CertificateError,
+        http.client.BadStatusLine,
+        http.client.IncompleteRead,
+        ConnectionError,
+        TimeoutError,
+    )
+    return any(isinstance(item, network_classes) for item in _iter_exception_chain(exc))
 
 
 def _format_exception_detail(exc: BaseException) -> str:
@@ -307,6 +339,13 @@ def run_pip_audit(
             if not is_transient_network_error(
                 exc, service_connection_error=service_connection_error
             ):
+                if _is_recognized_network_error(exc):
+                    err_stream.write(
+                        "[pip-audit] NETWORK ERROR (not retried): "
+                        f"{_format_exception_detail(exc)}\n"
+                    )
+                    err_stream.flush()
+                    return NETWORK_FAILURE_EXIT_CODE
                 raise
             detail = _format_exception_detail(exc)
             if attempt < max_attempts:
@@ -333,6 +372,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     try:
         return run_pip_audit(args)
+    except PipAuditNotInstalledError as error:
+        print(f"[pip-audit] INSTALLATION ERROR: {error}", file=sys.stderr)
+        return 1
     except PipAuditCompatibilityError as error:
         print(f"[pip-audit] COMPATIBILITY ERROR: {error}", file=sys.stderr)
         return 1

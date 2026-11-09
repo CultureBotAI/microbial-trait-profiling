@@ -322,7 +322,8 @@ def test_does_not_retry_non_network_service_or_source_errors(
         )
 
     monkeypatch.setattr(pypi_service_cls, "query", http_400_query)
-    with pytest.raises(service_error_cls):
+    http_diagnostic = io.StringIO()
+    assert (
         run_pip_audit.run_pip_audit(
             [
                 "-r",
@@ -337,10 +338,15 @@ def test_does_not_retry_non_network_service_or_source_errors(
             max_attempts=4,
             sleep_fn=sleeps.append,
             stdout=io.StringIO(),
-            stderr=io.StringIO(),
+            stderr=http_diagnostic,
         )
+        == run_pip_audit.NETWORK_FAILURE_EXIT_CODE
+    )
     assert http_400_attempts == 1
     assert sleeps == []
+    assert "NETWORK ERROR (not retried):" in http_diagnostic.getvalue()
+    assert "HTTPError" in http_diagnostic.getvalue()
+    assert "Traceback" not in http_diagnostic.getvalue()
 
     missing_req = tmp_path / "missing.txt"
     missing_stdout = io.StringIO()

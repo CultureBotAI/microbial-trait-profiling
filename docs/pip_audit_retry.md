@@ -9,20 +9,31 @@ replace an incomplete audit with a successful result.
 
 A completed successful pip-audit invocation exits 0. Known vulnerabilities
 retain pip-audit's exit 1, and argument errors retain argparse's exit 2. The
-wrapper exits **3** after exhausting transient failures; this distinguishes
-an unavailable feed from findings and invalid arguments (#1163). Other
+wrapper exits **3** after exhausting transient failures or refusing a recognized
+network error without retry; this distinguishes an incomplete network audit
+from findings and invalid arguments (#1163, #2073). Other
 nonzero pip-audit results are propagated unchanged. String-valued SystemExit
 messages are printed once and exit 1.
 
 There are at most four attempts by default, separated by 2, 4 and 8 seconds.
 Recognized connection, timeout, incomplete-read and protocol failures, or
-HTTP 408/429/5xx responses, may retry. TLS/SSL, proxy and redirect errors do not
-retry. This conservative TLS rule also refuses SSL failures whose transience
-cannot be established from their type. HTTP errors without a recognized
-transient status do not retry. An explicit permanent cause takes precedence
-over a broader connection wrapper. Structured urllib3 `reason` exceptions are
-checked as well as cause/context chains, with cycle detection. Unknown errors
-fail instead of being guessed transient.
+HTTP 408/429/5xx responses, may retry. Typed TLS closures `SSLEOFError` and
+`SSLZeroReturnError` also retry, whether bare or nested in requests/urllib3
+exceptions. Certificate and hostname verification (`SSLCertVerificationError`
+and `CertificateError`), proxy and redirect errors do not retry. HTTP errors
+without a recognized transient status do not retry. An explicit permanent cause
+takes precedence over a broader connection wrapper. An unclassified bare
+`ssl.SSLError` is not guessed transient and is refused without retry; a generic
+requests connection error retains the connection retry policy unless its typed
+chain contains a permanent cause. Diagnostic words do not classify certificates.
+Structured urllib3 `reason` exceptions, exception-valued arguments and
+cause/context chains are checked with cycle detection.
+
+Recognized network refusals, including non-transient or unclassified HTTP
+errors, print `[pip-audit] NETWORK ERROR (not retried):` followed by typed detail
+and exit 3 without a traceback. Unknown programming errors and service errors
+without a recognized network cause still raise; they are not guessed transient
+or relabeled as network failures.
 
 Console stdout and stderr are forwarded during each attempt. Retry failures
 retain their output, and existing console handlers retain their formatters.
@@ -44,7 +55,10 @@ closed, but would lose retries. The existing synthetic-query tests exercise the
 real installed CLI and pin the typed retry path. This is the reason for retaining
 that path, rather than claiming subprocess isolation is unnecessary.
 
-Before an audit attempt, the wrapper imports the CLI outside stream capture and
+Before an audit attempt, the wrapper checks whether the top-level `pip_audit`
+package is present. If it is not installed in this environment, the CLI reports
+an installation error advising `just sync`, then exits 1 before private imports.
+For an installed package, the wrapper imports the CLI outside stream capture and
 checks its callable and exception aliases. Missing or incompatible private APIs
 raise a compatibility error naming the installed pip-audit version; the CLI
 reports that error and exits 1. The interface module is prepared once per real

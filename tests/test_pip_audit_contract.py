@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import importlib
 import importlib.metadata
+import importlib.util
 import io
 import sys
 import tomllib
+from importlib.machinery import ModuleSpec
 from types import ModuleType
 from typing import Any
 
@@ -131,6 +133,72 @@ def test_missing_cli_exception_alias_refuses_before_audit_and_is_not_recreated(
     assert "_cli" in str(refused.value)
     assert calls == []
     assert not hasattr(cli, "VulnServiceConnectionError")
+    assert sys.argv is original_argv
+
+
+def test_main_reports_missing_cli_alias_without_recreating_it_or_auditing(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    wrapper = _load_script("run_pip_audit")
+    cli, _ = _installed_api()
+    original_argv = sys.argv
+    calls: list[str] = []
+
+    def audit() -> int:
+        calls.append("audit")
+        return 0
+
+    monkeypatch.setattr(cli, "audit", audit)
+    monkeypatch.delattr(cli, "VulnServiceConnectionError")
+    try:
+        exit_code = wrapper.main(["--synthetic-missing-alias"])
+    except RuntimeError as error:
+        raise AssertionError("The CLI must report adapter drift rather than raise it") from error
+    assert exit_code == 1
+    output = capsys.readouterr()
+    assert output.out == ""
+    assert output.err.startswith("[pip-audit] COMPATIBILITY ERROR: ")
+    assert importlib.metadata.version("pip-audit") in output.err
+    assert "VulnServiceConnectionError" in output.err
+    assert "Traceback" not in output.err
+    assert calls == []
+    assert not hasattr(cli, "VulnServiceConnectionError")
+    assert sys.argv is original_argv
+
+
+def test_main_missing_package_names_installation_and_sync_before_private_imports(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    wrapper = _load_script("run_pip_audit")
+    original_spec, original_import = importlib.util.find_spec, importlib.import_module
+    original_argv = sys.argv
+    probes: list[str] = []
+    private_imports: list[str] = []
+
+    def absent_package(name: str, package: str | None = None) -> ModuleSpec | None:
+        if name == "pip_audit":
+            probes.append(name)
+            return None
+        return original_spec(name, package)
+
+    def unavailable_import(name: str, package: str | None = None) -> ModuleType:
+        if name.startswith("pip_audit"):
+            private_imports.append(name)
+            raise ModuleNotFoundError("Controlled missing package", name="pip_audit")
+        return original_import(name, package)
+
+    monkeypatch.setattr(importlib.util, "find_spec", absent_package)
+    monkeypatch.setattr(importlib, "import_module", unavailable_import)
+    assert wrapper.main(["--synthetic-missing-package"]) != 0
+    output = capsys.readouterr()
+    assert output.out == ""
+    assert "pip-audit is not installed in this environment" in output.err
+    assert "just sync" in output.err
+    assert "incompatible adapter API" not in output.err
+    assert "COMPATIBILITY ERROR" not in output.err
+    assert "Traceback" not in output.err
+    assert probes == ["pip_audit"]
+    assert private_imports == []
     assert sys.argv is original_argv
 
 
