@@ -158,8 +158,8 @@ def test_overlay_audit_intro_records_closed_pr_and_rebuild() -> None:
     assert "historical 62-cell discussion" in intro
     assert (
         'Issue references in the "Owner / remaining work" column record the 2026-09-14 '
-        "review state, and the [status checkpoint](#status-checkpoint-2026-10-30) dates "
-        "their closures."
+        "review state (P09 and P10 were updated in #1314), and the "
+        "[status checkpoint](#status-checkpoint-2026-10-30) dates their closures."
     ) in intro
     p10 = next(line for line in raw.splitlines() if line.startswith("| P10 "))
     assert "in #172 before interpreting the 62-cell summary." in p10
@@ -217,7 +217,7 @@ def test_c04_and_p09_date_scope_closed_issues_without_claiming_biological_valida
         if match:
             checkpoint_status[int(match.group(1))] = match.group(2)
     closed_issues = {num for num, state in checkpoint_status.items() if state == "Closed"}
-    assert {131, 132, 165, 182, 188, 189, 190, 191}.issubset(closed_issues), (
+    assert {118, 120, 131, 132, 165, 182, 183, 188, 189, 190, 191}.issubset(closed_issues), (
         "Checkpoint missing expected closed issues"
     )
 

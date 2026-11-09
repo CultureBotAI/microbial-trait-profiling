@@ -144,7 +144,8 @@ MUTANTS: tuple[Mutant, ...] = (
         name="M12_overlay_intro_drops_2026_09_14_review_state_2085",
         old=(
             "Issue references in the\n"
-            '"Owner / remaining work" column record the 2026-09-14 review state, and the\n'
+            '"Owner / remaining work" column record the 2026-09-14 review state (P09 and P10\n'
+            "were updated in #1314), and the\n"
             "[status checkpoint](#status-checkpoint-2026-10-30) dates their closures."
         ),
         new="The Owner / remaining work column lists open items.",

@@ -41,10 +41,13 @@ status update does not reanalyse or recertify their scientific results.
 
 | Record | Tracker status | Date (UTC) |
 | --- | --- | --- |
+| [#118](https://github.com/CultureBotAI/microbial-trait-profiling/issues/118), ORA background stratification and density sensitivity | Closed | 2026-10-07 |
+| [#120](https://github.com/CultureBotAI/microbial-trait-profiling/issues/120), per-body-site composition statistics | Closed | 2026-10-16 |
 | [#131](https://github.com/CultureBotAI/microbial-trait-profiling/issues/131), enrichment sampling unit | Closed | 2026-10-07 |
 | [#132](https://github.com/CultureBotAI/microbial-trait-profiling/issues/132), depletion structural zeros | Closed | 2026-10-07 |
 | [#165](https://github.com/CultureBotAI/microbial-trait-profiling/issues/165), guild/Table 1 dependence and ties | Closed | 2026-10-13 |
 | [#182](https://github.com/CultureBotAI/microbial-trait-profiling/issues/182), calibration | Closed | 2026-10-12 |
+| [#183](https://github.com/CultureBotAI/microbial-trait-profiling/issues/183), log-ratio zero-exclusion and reference sensitivity | Closed | 2026-10-12 |
 | [#188](https://github.com/CultureBotAI/microbial-trait-profiling/issues/188), contrast orientation | Closed | 2026-10-11 |
 | [#189](https://github.com/CultureBotAI/microbial-trait-profiling/issues/189), trait semantics | Closed | 2026-10-08 |
 | [#190](https://github.com/CultureBotAI/microbial-trait-profiling/issues/190), taxon influence | Closed | 2026-10-12 |
@@ -80,7 +83,8 @@ the head listed above; its rebuild is tracked in
 [#172](https://github.com/CultureBotAI/microbial-trait-profiling/issues/172).
 Its later rule/count changes need review in that rebuild; the historical 62-cell
 discussion below is not a result for the closing head. Issue references in the
-"Owner / remaining work" column record the 2026-09-14 review state, and the
+"Owner / remaining work" column record the 2026-09-14 review state (P09 and P10
+were updated in #1314), and the
 [status checkpoint](#status-checkpoint-2026-10-30) dates their closures.
 
 | ID / affected claim | Replacement or supporting evidence | Owner / remaining work |
