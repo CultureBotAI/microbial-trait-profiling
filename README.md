@@ -263,6 +263,83 @@ This project uses a minimal set of file types:
 
 No DuckDB, no Parquet, no Jupyter notebooks in this repo.
 
+## Releases
+
+Pushing a version tag matching `v*` (for example `v0.4.0`) triggers the
+automated release workflow in `.github/workflows/release.yaml`.
+
+**Human approval boundary:** Explicit human approval is required before tagging
+or publishing a release (never tag or publish a release unless a human has
+approved it in the current conversation), and always ask the user before
+downloading large release assets.
+
+### Creating a release (GitHub Web UI)
+
+1. Go to `https://github.com/CultureBotAI/microbial-trait-profiling/releases`
+2. Click **"Draft a new release"** (or **"Create a new release"**)
+3. Click **"Choose a tag"**, type the version (`vX.Y.Z`, matching `v*`, e.g. `v0.4.0`), and click **"Create new tag on publish"**
+4. Confirm the target branch is `main`
+5. Click **"Generate release notes"** to populate the changelog from merged PRs
+6. Add a brief summary of major changes at the top if needed
+7. Click **"Publish release"** once explicit human approval is granted
+
+Publishing creates and pushes the `v*` tag on `main`, which starts
+`.github/workflows/release.yaml` and attaches the generated data archives to the
+release when the workflow finishes (~2 minutes).
+
+### Creating a release (CLI)
+
+After obtaining explicit human approval to cut a release:
+
+```bash
+git checkout main && git pull
+just check          # verify all checks pass before tagging
+git tag vX.Y.Z
+git push origin vX.Y.Z
+```
+
+### Release pipeline and attached assets
+
+When a `v*` tag is pushed, `.github/workflows/release.yaml` runs `just check`,
+`just download`, `just ingest`, `just validate-studies`, and `just stats`, then
+attaches five release assets to the GitHub Release:
+
+| Asset | Contents |
+|-------|----------|
+| `bsdbng-raw-data-<tag>.tar.gz` | Raw BugSigDB CSV exports (`studies.csv`, `experiments.csv`, `signatures.csv`, `full_dump.csv`) and `download_provenance.json` |
+| `bsdbng-studies-<tag>.tar.gz` | All validated per-study YAML files from `data/studies/` |
+| `bsdbng-stats-<tag>.txt` | Summary counts and statistics output from `just stats` |
+| `bsdbng-ingest-log-<tag>.json` | Structured ingest audit log (`data/derived/ingest_log.json`) |
+| `bsdbng-pipeline-log-<tag>.log` | Pipeline step timing log (`logs/pipeline.log`) |
+
+### Post-release verification
+
+Once `.github/workflows/release.yaml` completes:
+
+1. Check the latest release:
+   ```bash
+   gh release list --repo CultureBotAI/microbial-trait-profiling --limit 1
+   ```
+2. **Ask the user before downloading** — release archives can be large.
+3. Download the release assets for inspection:
+   ```bash
+   mkdir -p release-assets
+   gh release download <tag> --repo CultureBotAI/microbial-trait-profiling --dir release-assets \
+     --pattern 'bsdbng-raw-data-*.tar.gz' \
+     --pattern 'bsdbng-studies-*.tar.gz' \
+     --pattern 'bsdbng-stats-*.txt' \
+     --pattern 'bsdbng-ingest-log-*.json' \
+     --pattern 'bsdbng-pipeline-log-*.log'
+   ```
+4. Unpack and verify the outputs:
+   ```bash
+   mkdir -p studies
+   tar xzf release-assets/bsdbng-studies-<tag>.tar.gz -C studies/
+   ```
+   - Read `release-assets/bsdbng-stats-<tag>.txt` and compare counts against the previous release and BugSigDB live (`https://bugsigdb.org/Main_Page`).
+   - Spot-check unpacked study YAML files to confirm taxon names are real organism names rather than `taxon_<ID>` placeholders.
+   - Check `release-assets/bsdbng-ingest-log-<tag>.json` and `release-assets/bsdbng-pipeline-log-<tag>.log` to confirm skip counts and step timings are reasonable.
+
 ## Project structure
 
 ```
