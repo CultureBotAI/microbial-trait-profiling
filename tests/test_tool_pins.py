@@ -27,6 +27,12 @@ def _normalize(name: str) -> str:
     return re.sub(r"[-_.]+", "-", name).lower()
 
 
+def _normalize_repo_url(url: str) -> str:
+    normalized = url.strip().casefold().rstrip("/")
+    normalized = normalized.removesuffix(".git").rstrip("/")
+    return normalized
+
+
 def _pyproject_pins(pyproject_path: Path = ROOT / "pyproject.toml") -> dict[str, set[str]]:
     data = tomllib.loads(pyproject_path.read_text(encoding="utf-8"))
     groups = [
@@ -48,10 +54,24 @@ def _pyproject_pins(pyproject_path: Path = ROOT / "pyproject.toml") -> dict[str,
                 continue
             name = _normalize(pkg_match.group(1))
             rest = pkg_match.group(2).strip()
-            exact_match = re.fullmatch(r"==\s*([^\s;,]+)", rest)
+            version_part, sep, _ = rest.partition(";")
+            version_part = version_part.strip()
+            has_marker = bool(sep)
+            exact_match = (
+                None
+                if has_marker or version_part.startswith("@")
+                else re.fullmatch(
+                    r"==(?!=)\s*([^\s;,)]+)|\(\s*==(?!=)\s*([^\s;,)]+)\s*\)",
+                    version_part,
+                )
+            )
+            has_equals = not version_part.startswith("@") and bool(
+                re.search(r"(?<![=!<>~])==(?!=)", version_part)
+            )
             if exact_match:
-                pins.setdefault(name, set()).add(exact_match.group(1))
-            elif "==" in rest or (name in PINNED_HOOKS and ";" in rest):
+                pin_version = exact_match.group(1) or exact_match.group(2)
+                pins.setdefault(name, set()).add(pin_version)
+            elif name in PINNED_HOOKS and (has_marker or has_equals):
                 raise AssertionError(
                     f"{name}: marker-gated or compound pin in pyproject.toml "
                     f"is not unconditional: {spec!r}"
@@ -64,14 +84,16 @@ def _hook_revs(config_path: Path = ROOT / ".pre-commit-config.yaml") -> dict[str
     revs: dict[str, list[str]] = {}
     for repo in config["repos"]:
         if "rev" in repo:
-            revs.setdefault(str(repo["repo"]), []).append(str(repo["rev"]))
+            key = _normalize_repo_url(str(repo["repo"]))
+            revs.setdefault(key, []).append(str(repo["rev"]))
     return revs
 
 
 def _single_hook_rev(repo_url: str, config_path: Path = ROOT / ".pre-commit-config.yaml") -> str:
     revs = _hook_revs(config_path)
-    assert repo_url in revs, f"{repo_url} is missing from .pre-commit-config.yaml"
-    repo_revs = revs[repo_url]
+    key = _normalize_repo_url(repo_url)
+    assert key in revs, f"{repo_url} is missing from .pre-commit-config.yaml"
+    repo_revs = revs[key]
     assert len(repo_revs) == 1, (
         f"{repo_url} appears {len(repo_revs)} times in .pre-commit-config.yaml: {repo_revs}"
     )
@@ -171,6 +193,38 @@ def test_duplicate_hook_repo_fails_closed(tmp_path: Path) -> None:
             config_path=identical_duplicate,
         )
 
+    for alias_url in (
+        "https://github.com/astral-sh/uv-pre-commit.git",
+        "https://github.com/Astral-SH/uv-pre-commit",
+        "https://github.com/astral-sh/uv-pre-commit/",
+    ):
+        alias_duplicate = tmp_path / "alias_duplicate.yaml"
+        alias_duplicate.write_text(
+            f"repos:\n"
+            f"  - repo: {alias_url}\n"
+            f"    rev: 0.12.22\n"
+            f"  - repo: https://github.com/astral-sh/uv-pre-commit\n"
+            f"    rev: 0.13.4\n",
+            encoding="utf-8",
+        )
+        with pytest.raises(AssertionError, match="appears 2 times"):
+            _check_pyproject_pin_matches_hook_rev(
+                "uv",
+                pyproject_path=pyproject_path,
+                config_path=alias_duplicate,
+            )
+
+    dot_git_only = tmp_path / "dot_git_only.yaml"
+    dot_git_only.write_text(
+        "repos:\n  - repo: https://github.com/astral-sh/uv-pre-commit.git\n    rev: 0.13.4\n",
+        encoding="utf-8",
+    )
+    _check_pyproject_pin_matches_hook_rev(
+        "uv",
+        pyproject_path=pyproject_path,
+        config_path=dot_git_only,
+    )
+
 
 @pytest.mark.parametrize(
     "bad_spec",
@@ -214,3 +268,32 @@ def test_marker_gated_or_compound_pyproject_pin_fails_closed(
             pyproject_path=side_by_side,
             config_path=config_path,
         )
+
+
+def test_unrelated_markers_urls_and_parenthesised_pin_pass(tmp_path: Path) -> None:
+    """Unrelated marker specs, URL fragments with ==, and PEP 508 (==...) pins must pass (#2093)."""
+    pyproject_path = tmp_path / "pyproject.toml"
+    pyproject_path.write_text(
+        "[project]\n"
+        "dependencies = [\n"
+        "  \"pywin32>=306; sys_platform == 'win32'\",\n"
+        "  \"colorama>=0.4; platform_system == 'Windows'\",\n"
+        "  \"tomli==2.0.1; python_version < '3.11'\",\n"
+        '  "pkg @ https://example.org/archive.tar.gz#sha256==abc",\n'
+        '  "requests>=2,==2.32.0",\n'
+        "]\n"
+        "[dependency-groups]\n"
+        'qa = ["uv (==0.13.4)"]\n',
+        encoding="utf-8",
+    )
+    config_path = tmp_path / ".pre-commit-config.yaml"
+    config_path.write_text(
+        "repos:\n  - repo: https://github.com/astral-sh/uv-pre-commit\n    rev: 0.13.4\n",
+        encoding="utf-8",
+    )
+    assert _pyproject_pins(pyproject_path) == {"uv": {"0.13.4"}}
+    _check_pyproject_pin_matches_hook_rev(
+        "uv",
+        pyproject_path=pyproject_path,
+        config_path=config_path,
+    )
