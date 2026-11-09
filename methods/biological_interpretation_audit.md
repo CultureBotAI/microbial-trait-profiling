@@ -79,7 +79,9 @@ not been recomputed or approved here. PR #173 closed unmerged on 2026-10-30 at
 the head listed above; its rebuild is tracked in
 [#172](https://github.com/CultureBotAI/microbial-trait-profiling/issues/172).
 Its later rule/count changes need review in that rebuild; the historical 62-cell
-discussion below is not a result for the closing head.
+discussion below is not a result for the closing head. Issue references in the
+"Owner / remaining work" column record the 2026-09-14 review state, and the
+[status checkpoint](#status-checkpoint-2026-10-30) dates their closures.
 
 | ID / affected claim | Replacement or supporting evidence | Owner / remaining work |
 | --- | --- | --- |
@@ -92,7 +94,7 @@ discussion below is not a result for the closing head.
 | P07 Cervical "direction inverts"; "vaginal community is rod-dominated at baseline" | "Coccus-associated annotations meet the enrichment display rule in decreased signatures for the named cervical/vaginal strata. This is not a test of a reversed paired effect or of baseline community morphology." A baseline claim needs a scoped source and matched observations. | Noel; #188/#189, exact anatomical/condition scope; do not generalize a gut mechanism. |
 | P08 Named condition patterns are a "coherent set"; pattern "crosses" feces and saliva | Describe the specific annotation calls and per-cell study support. Shared studies, traits and corpus selection do not make these independent confirmation or multiple independent mechanisms. | All three coordinators; carry overlapping-study IDs and #165/#182 limitations. |
 | P09 Outline means "unusually assertion-rich", not "taxon-rich"; depends on unresolved urn issue | **Retain** that limit, but explicitly tie "unusually" to the specified background/test and calibration. A fixes-in-progress warning is not evidence that the biological explanation is correct. | Ilyas/Noel; in the historical PR #173 review, #131/#132/#182 were separate statistical requirements (subsequently closed; see the [status checkpoint](#status-checkpoint-2026-10-30); their closure does not validate the biological explanation). |
-| P10 `trait_significance.py::build_overlay` versus `_significance_note` | The code counts studies with any nonempty verdict toward the majority, labels enrichment/depletion by their relative counts, and can mark a cell for condition-level composition alone or both arms. The legend describes all outlines as enrichment. Require a legend keyed to the actual mark kind and verdict, or restrict marks to the declared rule; report any depletion threshold and its test. Do not label every outline as an enrichment majority. | Noel with Ilyas/Jed; reconcile the generated legend and actual mark provenance in #172/#173 before interpreting the 62-cell summary. |
+| P10 `trait_significance.py::build_overlay` versus `_significance_note` | The code counts studies with any nonempty verdict toward the majority, labels enrichment/depletion by their relative counts, and can mark a cell for condition-level composition alone or both arms. The legend describes all outlines as enrichment. Require a legend keyed to the actual mark kind and verdict, or restrict marks to the declared rule; report any depletion threshold and its test. Do not label every outline as an enrichment majority. | Noel with Ilyas/Jed; reconcile the generated legend and actual mark provenance in #172 before interpreting the 62-cell summary. |
 
 ## PR #192: worked claim corrections from the separate review
 
