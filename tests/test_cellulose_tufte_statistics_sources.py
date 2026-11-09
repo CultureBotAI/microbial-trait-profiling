@@ -1,4 +1,4 @@
-"""Bind historical plate statistics to independent tracked sources (#1551, #1555).
+"""Bind selected historical plate statistics to independent tracked sources (#1551, #1555).
 
 These tests construct artists, not rendered files. Display rounding is applied to
 source values; they do not recompute a statistical result. Historical fixture
@@ -7,6 +7,7 @@ extracts are verbatim tracked documents, with their source commits recorded besi
 
 from __future__ import annotations
 
+import hashlib
 import re
 from pathlib import Path
 
@@ -18,9 +19,9 @@ import test_cellulose_tufte_historical_labels as historical_labels
 from test_cellulose_tufte_historical_labels import label_plates as label_plates
 
 ROOT = Path(__file__).resolve().parents[1]
-VALIDATION = ROOT / "methods/table1_log_ratio_validation.md"
 ORA_AUDIT = ROOT / "docs/reviews/2026-10-19-ora-provenance-refresh.md"
 HISTORICAL = ROOT / "tests/fixtures/cellulose_tufte_historical_sources"
+VALIDATION = HISTORICAL / "table1_log_ratio_validation_1e0d0eef.md"
 
 
 def _row(path: Path, key: str, *, section: str | None = None) -> list[str]:
@@ -271,3 +272,51 @@ def test_plate_six_method_counts_match_the_historical_methods_snapshot(
             if artist.get_position()[0] == column_x
         ]
         assert cells == [expected], (plate_key, heading, cells)
+
+
+def _fixture_manifest() -> dict[str, tuple[str, str, str]]:
+    readme = (HISTORICAL / "README.md").read_text(encoding="utf-8")
+    assert "| Fixture |" in readme
+    manifest = readme.split("| Fixture |", 1)[1].split("\n\n", 1)[0]
+    rows = [line.strip("| ").split("|") for line in manifest.splitlines() if line.startswith("| `")]
+    assert rows, "Document every historical fixture and its original Git blob"
+    records = {}
+    for cells in rows:
+        assert len(cells) == 4, (
+            "Fixture table must record file, full commit, source path and blob ID"
+        )
+        filename, commit, path, blob = (cell.strip().strip("`") for cell in cells)
+        assert re.fullmatch(r"[0-9a-f]{40}", commit), commit
+        assert re.fullmatch(r"[0-9a-f]{40}", blob), blob
+        assert filename not in records
+        records[filename] = (commit, path, blob)
+    return records
+
+
+def test_historical_fixture_manifest_covers_every_preserved_source() -> None:
+    records = _fixture_manifest()
+    actual = {
+        path.name for path in HISTORICAL.iterdir() if path.is_file() and path.name != "README.md"
+    }
+    assert set(records) == actual
+
+
+@pytest.mark.parametrize(
+    "fixture",
+    sorted(
+        path.name for path in HISTORICAL.iterdir() if path.is_file() and path.name != "README.md"
+    ),
+)
+def test_historical_fixture_bytes_equal_the_documented_git_blob(fixture: str) -> None:
+    expected = _fixture_manifest()[fixture][2]
+    content = (HISTORICAL / fixture).read_bytes()
+    header = f"blob {len(content)}\0".encode("ascii")
+    actual = hashlib.sha1(header + content, usedforsecurity=False).hexdigest()
+    assert actual == expected, f"Historical fixture changed: {fixture}"
+
+
+def test_plate_five_validation_is_a_documented_historical_fixture() -> None:
+    assert VALIDATION.parent == HISTORICAL, (
+        "Plate V's methods-validation numbers must read the historical snapshot, not HEAD"
+    )
+    assert _fixture_manifest()[VALIDATION.name][1] == "methods/table1_log_ratio_validation.md"
