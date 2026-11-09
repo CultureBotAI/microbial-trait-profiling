@@ -72,6 +72,7 @@ from mtp.trait_guilds import (
 PROTOCOL_PATH = REPO_ROOT / "methods" / "calibration_protocol.json"
 DEFAULT_OUTPUT_DIR = DERIVED_DATA_DIR / "calibration"
 VERSION = "calibration-v3"
+EXPORT_SCHEMA_VERSION = "calibration-output-v1"
 
 ALPHA = 0.05
 Q_THRESHOLD = 0.05
@@ -1488,6 +1489,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     ]
     status = {
         "version": VERSION,
+        "export_schema_version": EXPORT_SCHEMA_VERSION,
         "protocol": str(PROTOCOL_PATH.relative_to(REPO_ROOT)),
         "bugsigdb_vintage": vintage,
         "code_commit": args.code_commit,
