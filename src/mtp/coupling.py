@@ -5,8 +5,8 @@ Addresses Issue #260 (and follow-ups #478, #479):
    - Leave-One-Trait-Out (LOTO): For each of the six canonical Table 1 traits,
      removes it from the trait universe, renormalizes profile denominators,
      and evaluates the resulting delta in effect size and focal-set FDR q-value.
-   - Leave-Cluster-Out (LCO): Removes correlated near-twins (coccus shaped +
-     sphere shaped) simultaneously and evaluates the shifts for remaining traits.
+   - Leave-Cluster-Out (LCO): Removes coccus shaped +
+     sphere shaped simultaneously and evaluates the shifts for remaining traits.
 2. Evaluates sensitivity across all three analytical arms:
    - Composition arm: Paired profile fraction log-ratio contrast, z-score, paired t-test.
    - Directional arm: Study-level sign test over paired contrasts, Clopper-Pearson / binomial test.
@@ -16,7 +16,7 @@ Addresses Issue #260 (and follow-ups #478, #479):
    m = 4 in LCO) on all-profile statistics, rather than full-family Table 1 BH q-values
    across all 317 non-MediaDive (or 2,607 total) columns. Consequently, delta_q combines
    denominator perturbation with the focal BH family-size step.
-3. Evaluates the formal stability decision rule:
+3. Evaluates the named-removal comparison:
    - Tests whether dropping sphere moves coccus by more than the minimum distance
      between adjacent Table 1 rows.
 """
@@ -44,7 +44,7 @@ from mtp.paths import DERIVED_DATA_DIR
 
 DEFAULT_OUTPUT_DIR = DERIVED_DATA_DIR
 
-# Canonical near-twin cluster for Leave-Cluster-Out (LCO)
+# Declared coccus/sphere cluster for Leave-Cluster-Out (LCO)
 COCCUS_ID = "METPO:1000668"
 SPHERE_ID = "METPO:1000683"
 CANONICAL_LCO_CLUSTER: dict[str, str] = {
@@ -494,11 +494,10 @@ def evaluate_decision_rule(
     target_trait_id: str = COCCUS_ID,
     dropped_trait_id: str = SPHERE_ID,
 ) -> DecisionRuleResult:
-    """Evaluate the formal stability decision rule.
+    """Compare one named removal's effect change with the baseline adjacent-row gap.
 
-    Criterion:
-        If dropping sphere moves coccus by more than the minimum distance between
-        adjacent Table 1 rows, the two cannot be reported as separate convergent findings.
+    Passing this criterion describes only the evaluated target after the specified
+    removal; it does not establish stability of other traits or removals.
     """
     target_name = TABLE_1_TRAITS.get(target_trait_id, target_trait_id)
     dropped_name = TABLE_1_TRAITS.get(dropped_trait_id, dropped_trait_id)
@@ -519,15 +518,17 @@ def evaluate_decision_rule(
 
     if passes:
         verdict = (
-            f"Passes stability criterion: |Delta effect| ({abs_d_eff:.6f}) < "
-            f"min adjacent row distance ({min_adj_dist:.6f}). Denominator coupling does not "
-            f"destabilize effect rankings."
+            f"Passes named-removal criterion: |Delta effect| ({abs_d_eff:.6f}) < "
+            f"baseline min adjacent row distance ({min_adj_dist:.6f}). "
+            f"This compares only the {target_name} effect after removing {dropped_name}; "
+            "it does not establish stability for other traits or removals."
         )
     else:
         verdict = (
-            f"Fails stability criterion: |Delta effect| ({abs_d_eff:.6f}) >= "
-            f"min adjacent row distance ({min_adj_dist:.6f}). Near-twin coupling destabilizes "
-            f"separate reporting."
+            f"Fails named-removal criterion: |Delta effect| ({abs_d_eff:.6f}) >= "
+            f"baseline min adjacent row distance ({min_adj_dist:.6f}). "
+            f"This compares only the {target_name} effect after removing {dropped_name}; "
+            "it does not establish stability for other traits or removals."
         )
 
     return DecisionRuleResult(
@@ -572,6 +573,11 @@ def build_coupling_report_text(
     comp_lco_deltas = [abs(r.delta_stat) for r in lco_rows if r.arm == "composition"]
     max_comp_lco = max(comp_lco_deltas, default=0.0)
     max_comp_overall = max(max_comp_loto, max_comp_lco)
+    n_loto_exceed = int(np.count_nonzero(finite_comp_loto > rule_result.min_adjacent_distance))
+    n_lco_exceed = sum(delta > rule_result.min_adjacent_distance for delta in comp_lco_deltas)
+    gap_comparison = (
+        "exceeds" if max_comp_overall > rule_result.min_adjacent_distance else "does not exceed"
+    )
 
     dir_deltas = [abs(r.delta_stat) for r in (loto_rows or []) if r.arm == "directional"] + [
         abs(r.delta_stat) for r in lco_rows if r.arm == "directional"
@@ -687,7 +693,7 @@ def build_coupling_report_text(
             f"  |Delta effect|:                  {rule_result_reverse.abs_delta_effect:.6f}",
             f"  Criterion verdict:               {rule_result_reverse.verdict}",
             "",
-            "5. METHODOLOGICAL & BIOLOGICAL SYNTHESIS:",
+            "5. SENSITIVITY SUMMARY:",
             "-" * 80,
             "a. Denominator Coupling Sensitivity by Analytical Arm:",
             (
@@ -695,7 +701,10 @@ def build_coupling_report_text(
                 f"Table 1 trait across all {n_loto_pairs} LOTO pairs produces a maximum "
                 f"|Delta effect| of {max_comp_loto:.6f} (and up to {max_comp_lco:.6f} under LCO; "
                 f"overall composition |Delta effect| <= {max_comp_overall:.6f}), compared against "
-                f"the tightest Table 1 inter-trait gap of {rule_result.min_adjacent_distance:.6f}."
+                f"the tightest Table 1 inter-trait gap of {rule_result.min_adjacent_distance:.6f}. "
+                f"The overall maximum {gap_comparison} that gap; "
+                f"{n_loto_exceed} of {n_loto_pairs} LOTO entries and "
+                f"{n_lco_exceed} of {len(comp_lco_deltas)} LCO entries exceed it."
             ),
             (
                 f"   In the directional sign-test arm, maximum |Delta share_up| is "
@@ -706,18 +715,23 @@ def build_coupling_report_text(
                 f"sensitivity check rather than full-family Table 1 q-values."
             ),
             "",
-            "b. Distinction Between Redundancy and Denominator Coupling:",
+            "b. Annotation Association and Leave-Out Sensitivity:",
             (
-                f"   Coccus and sphere correlate strongly{twin_stats_str} due to "
-                f"semantic/curation redundancy in METPO mappings, NOT denominator distortion."
+                f"   Coccus and sphere annotation counts: profile correlation summary"
+                f"{twin_stats_str}. These statistics do not establish the cause of the association."
             ),
             (
-                f"   Because total non-MediaDive annotation counts are distributed across "
-                f"{cols_str}, removing even a high-annotation trait like "
-                f"coccus{coccus_str} shrinks the denominator smoothly without tilting relative "
-                f"compositions. Therefore, while coccus and sphere should not be claimed as "
-                f"independent biological mechanisms (due to semantic overlap), their Table 1 "
-                f"statistics are structurally stable."
+                f"   The input spans {cols_str}, including coccus{coccus_str}. "
+                f"Dropping sphere changes the coccus composition effect by "
+                f"{rule_result.delta_effect:+.6f} (absolute {rule_result.abs_delta_effect:.6f}); "
+                f"dropping coccus changes sphere by {rule_result_reverse.delta_effect:+.6f} "
+                f"(absolute {rule_result_reverse.abs_delta_effect:.6f}). "
+                f"The baseline minimum adjacent gap is {rule_result.min_adjacent_distance:.6f}. "
+                f"Across all {n_loto_pairs} evaluated LOTO entries, the maximum absolute "
+                f"composition change is {max_comp_loto:.6f}; the LCO maximum is "
+                f"{max_comp_lco:.6f}. These diagnostics describe sensitivity to the named "
+                f"removals. They do not establish unchanged rankings for every leave-out "
+                f"or independent biological mechanisms."
             ),
             "=" * 80,
         ]

@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import pytest
 
+from mtp import coupling
 from mtp.coupling import (
     COCCUS_ID,
     DEFAULT_OUTPUT_DIR,
@@ -442,7 +444,7 @@ def test_build_coupling_report_text_content() -> None:
     assert "2. LEAVE-ONE-TRAIT-OUT (LOTO) - COMPOSITION DELTA Q-VALUE MATRIX (6 x 6):" in text
     assert "3. LEAVE-CLUSTER-OUT (LCO) - DROPPING COCCUS + SPHERE SIMULTANEOUSLY:" in text
     assert "4. FORMAL DECISION RULE EVALUATION:" in text
-    assert "5. METHODOLOGICAL & BIOLOGICAL SYNTHESIS:" in text
+    assert "5. SENSITIVITY SUMMARY:" in text
     assert "facultatively aerobic" in text
     assert "Direct Test (Drop Sphere -> Coccus Effect Shift):" in text
     assert "Reverse Test (Drop Coccus -> Sphere Effect Shift):" in text
@@ -548,7 +550,7 @@ def test_full_coupling_audit_on_synthetic_data(
     assert "2. LEAVE-ONE-TRAIT-OUT (LOTO) - COMPOSITION DELTA Q-VALUE MATRIX" in report
     assert "3. LEAVE-CLUSTER-OUT (LCO) - DROPPING COCCUS + SPHERE SIMULTANEOUSLY:" in report
     assert "4. FORMAL DECISION RULE EVALUATION:" in report
-    assert "5. METHODOLOGICAL & BIOLOGICAL SYNTHESIS:" in report
+    assert "5. SENSITIVITY SUMMARY:" in report
     assert "7 columns (" in report
     assert "maximum |Delta effect|" in report
     assert "maximum |Delta share_up|" in report
@@ -606,3 +608,237 @@ def test_cli_main_handles_error(tmp_path: Path) -> None:
     bad_profiles = tmp_path / "does_not_exist.tsv"
     exit_code = module.main([f"--profiles={bad_profiles}"])
     assert exit_code == 1
+
+
+@pytest.mark.parametrize(
+    ("metrics", "summary"),
+    [
+        (
+            {"coccus_sphere_r": 0.0123, "coccus_sphere_vif": 1.25},
+            " (r = +0.012, VIF = 1.25, Issue #264)",
+        ),
+        (
+            {"coccus_sphere_r": -0.65, "coccus_sphere_vif": 1.73},
+            " (r = -0.650, VIF = 1.73, Issue #264)",
+        ),
+        (
+            {"coccus_sphere_r": 0.0, "coccus_sphere_vif": 1.0},
+            " (r = +0.000, VIF = 1.00, Issue #264)",
+        ),
+        (None, " (Issue #264)"),
+    ],
+)
+def test_coupling_correlation_sentence_reports_statistics_without_attributing_cause(
+    metrics: dict[str, float | int] | None, summary: str
+) -> None:
+    """Correlation, including weak/negative/zero values, does not establish a cause (#1856)."""
+    rule = DecisionRuleResult(
+        target_trait_id=COCCUS_ID,
+        target_trait_name="coccus shaped",
+        dropped_trait_id=SPHERE_ID,
+        dropped_trait_name="sphere shaped",
+        delta_effect=0.001,
+        abs_delta_effect=0.001,
+        min_adjacent_distance=0.005,
+        passes_stability_criterion=True,
+        adjacent_distances=[0.005],
+        sorted_effects=[0.01, 0.015],
+        verdict="Passes",
+    )
+    report = build_coupling_report_text(
+        pd.DataFrame(), pd.DataFrame(), [], rule, rule, corpus_metrics=metrics
+    )
+    sentence = next(line for line in report.splitlines() if line.startswith("   Coccus"))
+    assert sentence == (
+        "   Coccus and sphere annotation counts: profile correlation summary"
+        + summary
+        + ". These statistics do not establish the cause of the association."
+    )
+    assert "NOT denominator distortion" not in report
+    assert "due to semantic/curation redundancy" not in report
+
+
+@pytest.mark.parametrize(
+    ("direct", "reverse", "loto_max", "lco_max", "gap", "n_loto", "n_lco"),
+    [
+        (0.000014, 0.003657, 0.005937, 0.005322, 0.003904, 1, 1),
+        (0.02, -0.03, 0.04, 0.06, 0.01, 3, 1),
+        (-0.001, 0.002, 0.003, 0.0025, 0.005, 0, 0),
+        (0.005, -0.005, 0.005, 0.005, 0.005, 0, 0),
+        (0.00001, 0.00002, 0.0039042, 0.0039042, 0.0039044, 0, 0),
+    ],
+)
+def test_coupling_synthesis_scopes_twin_changes_and_all_leave_outs(
+    direct: float,
+    reverse: float,
+    loto_max: float,
+    lco_max: float,
+    gap: float,
+    n_loto: int,
+    n_lco: int,
+) -> None:
+    names = ["coccus shaped", "sphere shaped", "other"]
+    shifts = pd.DataFrame(
+        [[np.nan, reverse, loto_max], [direct, np.nan, 0.0], [0.0, 0.0, np.nan]],
+        index=names,
+        columns=names,
+    )
+    rule = DecisionRuleResult(
+        COCCUS_ID,
+        names[0],
+        SPHERE_ID,
+        names[1],
+        direct,
+        abs(direct),
+        gap,
+        abs(direct) < gap,
+        [gap],
+        [0.0, gap],
+        "named criterion",
+    )
+    reverse_rule = replace(
+        rule,
+        target_trait_id=SPHERE_ID,
+        target_trait_name=names[1],
+        dropped_trait_id=COCCUS_ID,
+        dropped_trait_name=names[0],
+        delta_effect=reverse,
+        abs_delta_effect=abs(reverse),
+        passes_stability_criterion=abs(reverse) < gap,
+    )
+    lco = LCOSummaryRow(
+        "composition",
+        "coccus + sphere",
+        "other",
+        "other",
+        0.0,
+        -lco_max,
+        -lco_max,
+        1.0,
+        1.0,
+        0.0,
+        0.0,
+        0.0,
+    )
+    # Non-composition shifts must not inflate composition counts or maxima.
+    other_arms = [replace(lco, arm=arm, delta_stat=1000.0) for arm in ("directional", "ora")]
+    report = build_coupling_report_text(shifts, shifts * 0, [lco, *other_arms], rule, reverse_rule)
+    section5a = report.split("a. Denominator Coupling Sensitivity by Analytical Arm:", 1)[1].split(
+        "b. ", 1
+    )[0]
+    comparison = "exceeds" if max(loto_max, lco_max) > gap else "does not exceed"
+    assert f"The overall maximum {comparison} that gap" in section5a
+    assert (f"{n_loto} of 6 LOTO entries and {n_lco} of 1 LCO entries exceed it.") in section5a
+    section = report.split("b. ", 1)[1]
+    assert section.startswith("Annotation Association and Leave-Out Sensitivity:")
+    assert (
+        f"Dropping sphere changes the coccus composition effect by {direct:+.6f} "
+        f"(absolute {abs(direct):.6f})" in section
+    )
+    assert (
+        f"dropping coccus changes sphere by {reverse:+.6f} (absolute {abs(reverse):.6f})" in section
+    )
+    assert f"baseline minimum adjacent gap is {gap:.6f}" in section
+    assert (
+        "Across all 6 evaluated LOTO entries, the maximum absolute composition change "
+        f"is {loto_max:.6f}" in section
+    )
+    assert f"the LCO maximum is {lco_max:.6f}" in section
+    assert (
+        "They do not establish unchanged rankings for every leave-out or independent "
+        "biological mechanisms." in section
+    )
+    for unsupported in (
+        "without tilting",
+        "structurally stable",
+        "due to semantic overlap",
+        "Distinction Between Redundancy",
+        "both pass",
+    ):
+        assert unsupported not in section
+
+
+def test_coupling_methods_distinguish_annotation_association_from_a_cause() -> None:
+    path = Path(__file__).resolve().parents[1] / "methods/trait_coupling_sensitivity.md"
+    text = path.read_text(encoding="utf-8")
+    section = text.split("## 6. ", 1)[1].split("## 7. ", 1)[0]
+    assert section.startswith(
+        "Methodological Synthesis: Annotation Association and Leave-Out Sensitivity"
+    )
+    for unsupported in (
+        "semantically redundant",
+        "Semantic Redundancy",
+        "Fails semantic independence",
+        "not denominator distortion",
+        "without tilting",
+        "due to **ontological overlap**",
+    ):
+        assert unsupported not in section
+    assert "do not establish semantic equivalence or the cause of the association" in section
+    assert "does not establish stability across all leave-outs" in section
+    assert "does not reorder Table 1 traits" not in text
+
+
+@pytest.mark.parametrize("delta", [0.001, 0.004, -0.005])
+@pytest.mark.parametrize(("target", "dropped"), [(COCCUS_ID, SPHERE_ID), (SPHERE_ID, COCCUS_ID)])
+def test_coupling_section4_verdict_is_limited_to_named_removal(
+    delta: float, target: str, dropped: str
+) -> None:
+    """Both threshold branches and directions stay scoped, including equality (#1976)."""
+    ids = [COCCUS_ID, SPHERE_ID, "other"]
+    names = [TABLE_1_TRAITS.get(trait, trait) for trait in ids]
+    baseline = {
+        trait: ArmResult(trait, name, effect, 1.0, 1.0)
+        for trait, name, effect in zip(ids, names, [0.0, 0.004, 0.02], strict=True)
+    }
+    shifts = pd.DataFrame(np.nan, index=names, columns=names)
+    target_name, dropped_name = TABLE_1_TRAITS[target], TABLE_1_TRAITS[dropped]
+    shifts.loc[dropped_name, target_name] = delta
+    rule = evaluate_decision_rule(baseline, shifts, target, dropped)
+    passes = abs(delta) < 0.004
+    prefix, comparison = ("Passes", "<") if passes else ("Fails", ">=")
+    expected = (
+        f"{prefix} named-removal criterion: |Delta effect| ({abs(delta):.6f}) "
+        f"{comparison} baseline min adjacent row distance (0.004000). "
+        f"This compares only the {target_name} effect after removing {dropped_name}; "
+        "it does not establish stability for other traits or removals."
+    )
+    assert rule.passes_stability_criterion is passes
+    assert rule.verdict == expected
+    report = build_coupling_report_text(shifts, shifts * 0, [], rule, rule)
+    section4 = report.split("4. FORMAL DECISION RULE EVALUATION:", 1)[1].split("5. ", 1)[0]
+    assert section4.count(expected) == 2
+    assert "destabilize effect rankings" not in report
+    assert "destabilizes separate reporting" not in report
+    assert "5. SENSITIVITY SUMMARY:" in report
+    assert "METHODOLOGICAL & BIOLOGICAL SYNTHESIS" not in report
+
+
+def test_coupling_methods_report_historical_bounds_without_grading_or_cause() -> None:
+    """Preserve historical quantities without inventing a mechanism or quality grade (#1978)."""
+    text = (
+        Path(__file__).resolve().parents[1] / "methods/trait_coupling_sensitivity.md"
+    ).read_text()
+    correlation = next(
+        line for line in text.splitlines() if line.startswith("2. **Across-test correlation:**")
+    )
+    assert "Correlations between annotated traits across taxa" in correlation
+    assert "their causes are not established by this audit" in correlation
+    assert "causing" not in correlation
+    composition = next(
+        line for line in text.splitlines() if line.startswith("- **Composition Arm:**")
+    )
+    assert "historical binarized evaluation" in composition
+    assert "0.000636" in composition
+    assert "0.001008" in composition
+    assert "both below the historical minimum adjacent gap of $0.002040$" in composition
+    assert "exceptionally small" not in text
+
+
+def test_coupling_producer_describes_named_removals_without_twin_or_stability_framing() -> None:
+    assert coupling.__doc__ is not None
+    assert "near-twin" not in coupling.__doc__
+    assert "formal stability decision rule" not in coupling.__doc__
+    assert "named-removal comparison" in coupling.__doc__
+    source = Path(coupling.__file__).read_text()
+    assert "# Canonical near-twin cluster" not in source
