@@ -43,54 +43,56 @@ def system_temporary_directories() -> list[Path]:
     return directories
 
 
-def _resolved_path(path: Path) -> Path:
+def _resolved_path(path: Path, *, role: str = "output path") -> Path:
     """Allow missing suffixes, but refuse other resolution failures on every platform."""
     try:
         return path.resolve(strict=True)
     except RuntimeError as error:
         # Python 3.11/3.12 use RuntimeError for a symlink loop.
-        raise ValueError(f"Cannot resolve output path {path}: symbolic link loop") from error
+        raise ValueError(f"Cannot resolve {role} {path}: symbolic link loop") from error
     except OSError as error:
         # Newer pathlib reports ELOOP only when strict=True. Only ENOENT can
         # represent a fresh output; permission and unsupported-path errors refuse.
-        _require_missing_path(path, error)
+        _require_missing_path(path, error, role=role)
     try:
         resolved = path.resolve(strict=False)
     except RuntimeError as error:
-        raise ValueError(f"Cannot resolve output path {path}: symbolic link loop") from error
+        raise ValueError(f"Cannot resolve {role} {path}: symbolic link loop") from error
     except OSError as error:
-        raise ValueError(f"Cannot resolve output path {path}: {error}") from error
+        raise ValueError(f"Cannot resolve {role} {path}: {error}") from error
     # A missing/../ prefix can stop the first strict probe before a real loop.
     # Nonstrict normalization removes that prefix but newer pathlib suppresses
     # the loop; probe the resulting spelling before accepting a fresh output.
     try:
         resolved.resolve(strict=True)
     except RuntimeError as error:
-        raise ValueError(f"Cannot resolve output path {path}: symbolic link loop") from error
+        raise ValueError(f"Cannot resolve {role} {path}: symbolic link loop") from error
     except OSError as error:
-        _require_missing_path(path, error)
+        _require_missing_path(path, error, role=role)
     return resolved
 
 
-def _spellings(path: Path) -> set[Path]:
+def _spellings(path: Path, *, role: str = "output path") -> set[Path]:
     """A path as written, made absolute, and with every symlink resolved."""
-    return {Path(os.path.abspath(path)), _resolved_path(path)}
+    return {Path(os.path.abspath(path)), _resolved_path(path, role=role)}
 
 
-def _require_missing_path(path: Path, error: OSError) -> None:
+def _require_missing_path(path: Path, error: OSError, *, role: str = "output path") -> None:
     """Only ENOENT is evidence of a new path, never a failed inspection."""
     if error.errno == errno.ELOOP:
-        raise ValueError(f"Cannot resolve output path {path}: symbolic link loop") from error
+        raise ValueError(f"Cannot resolve {role} {path}: symbolic link loop") from error
     if error.errno != errno.ENOENT:
-        raise ValueError(f"Cannot inspect output path {path}: {error}") from error
+        raise ValueError(f"Cannot inspect {role} {path}: {error}") from error
 
 
-def _filesystem_identity(path: Path, *, directory: bool = False) -> tuple[int, int] | None:
+def _filesystem_identity(
+    path: Path, *, directory: bool = False, role: str = "output path"
+) -> tuple[int, int] | None:
     """Follow aliases; refuse unusable identities rather than guessing containment."""
     try:
         information = path.stat()
     except OSError as error:
-        _require_missing_path(path, error)
+        _require_missing_path(path, error, role=role)
         return None
     device = getattr(information, "st_dev", None)
     inode = getattr(information, "st_ino", None)
@@ -102,11 +104,11 @@ def _filesystem_identity(path: Path, *, directory: bool = False) -> tuple[int, i
         or isinstance(inode, bool)
         or inode <= 0
     ):
-        raise ValueError(f"Cannot establish filesystem identity for output path {path}")
+        raise ValueError(f"Cannot establish filesystem identity for {role} {path}")
     if directory:
         mode = getattr(information, "st_mode", None)
         if not isinstance(mode, int) or isinstance(mode, bool) or not stat.S_ISDIR(mode):
-            raise ValueError(f"Output containment root has no valid directory mode: {path}")
+            raise ValueError(f"Cannot inspect {role} {path}: no valid directory mode")
     return device, inode
 
 
@@ -122,7 +124,13 @@ def containing_root(path: Path, directories: Iterable[Path]) -> Path | None:
     checks the filesystem at inspection time and is not a race-proof write guard.
     """
     candidates = sorted(_spellings(path))
-    roots = sorted({spelling for directory in directories for spelling in _spellings(directory)})
+    roots = sorted(
+        {
+            spelling
+            for directory in directories
+            for spelling in _spellings(directory, role="protected root")
+        }
+    )
     for candidate in candidates:
         for root in roots:
             if candidate.is_relative_to(root):
@@ -138,7 +146,7 @@ def containing_root(path: Path, directories: Iterable[Path]) -> Path | None:
         if (identity := _filesystem_identity(ancestor)) is not None
     }
     for root in roots:
-        identity = _filesystem_identity(root, directory=True)
+        identity = _filesystem_identity(root, directory=True, role="protected root")
         if identity is not None and identity in identities:
             return root
     return None
@@ -165,25 +173,41 @@ def add_temporary_output_option(parser: argparse.ArgumentParser) -> None:
     )
 
 
-def require_durable_output_path(output: Path, *, allowed: bool) -> Path:
+def require_durable_output_path(
+    output: Path, *, allowed: bool, include_temporary_hint: bool = True
+) -> Path:
     """Check the literal destination without writing; callers expand a home explicitly.
 
     The temporary-storage opt-in does not waive resolution or identity inspection.
+    Callers without an opt-in suppress its hint without changing that policy.
     """
     root = containing_root(output, ()) if allowed else temporary_root(output)
     if root is not None:
+        hint = (
+            f", or pass {ALLOW_TEMPORARY_OUTPUT} for a throwaway run."
+            if include_temporary_hint
+            else "."
+        )
         raise ValueError(
             f"output root {output} is under the temporary directory {root}, which the "
             "system can empty on restart (#1049). Write outputs that a record will cite "
-            f"to a durable location, or pass {ALLOW_TEMPORARY_OUTPUT} for a throwaway run."
+            f"to a durable location{hint}"
         )
     return _resolved_path(output)
 
 
-def require_durable_output(parser: argparse.ArgumentParser, output: Path, *, allowed: bool) -> None:
+def require_durable_output(
+    parser: argparse.ArgumentParser,
+    output: Path,
+    *,
+    allowed: bool,
+    include_temporary_hint: bool = True,
+) -> None:
     """Exit with a usage error, before anything is written, if a restart could erase it."""
     try:
-        require_durable_output_path(output, allowed=allowed)
+        require_durable_output_path(
+            output, allowed=allowed, include_temporary_hint=include_temporary_hint
+        )
     except ValueError as error:
         parser.error(str(error))
 

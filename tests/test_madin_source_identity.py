@@ -49,6 +49,74 @@ def _bind_directory_identity(monkeypatch: pytest.MonkeyPatch, alias: Path, check
 
 @pytest.mark.usefixtures("pinned_payload")
 @pytest.mark.parametrize("interface", ["api", "cli"])
+def test_madin_temporary_refusal_does_not_advertise_an_unavailable_override(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    interface: str,
+) -> None:
+    destination = tmp_path / "volatile" / "new" / "nested" / "madin"
+    before = set(tmp_path.rglob("*"))
+    requests: list[httpx.Request] = []
+    serve(monkeypatch, PAYLOAD, requests)
+
+    if interface == "api":
+        with pytest.raises(MadinPinError, match="under the temporary directory") as api_error:
+            _invoke(destination, interface)
+        message = str(api_error.value)
+    else:
+        with pytest.raises(SystemExit) as cli_error:
+            _invoke(destination, interface)
+        assert cli_error.value.code == 2
+        message = capsys.readouterr().err
+
+    assert "durable location" in message
+    assert "--allow-temporary-output" not in message
+    assert requests == []
+    assert set(tmp_path.rglob("*")) == before
+    assert not (tmp_path / "volatile").exists()
+
+
+@pytest.mark.usefixtures("pinned_payload")
+@pytest.mark.parametrize("interface", ["api", "cli"])
+def test_madin_destination_itself_alias_is_refused_before_target_preflight(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, interface: str
+) -> None:
+    checkout, alias = _alias_pair(tmp_path, "lexical")
+    monkeypatch.setattr(madin_source, "REPO_ROOT", checkout)
+    checkout_stat = checkout.stat()
+    root_identity = (checkout_stat.st_dev, checkout_stat.st_ino)
+    assert not alias.resolve().is_relative_to(checkout.resolve())
+    assert all(
+        (parent.stat().st_dev, parent.stat().st_ino) != root_identity for parent in alias.parents
+    )
+    before = set(tmp_path.rglob("*"))
+    requests: list[httpx.Request] = []
+    serve(monkeypatch, PAYLOAD, requests)
+    original_preflight = madin_source._external_durable_path
+    preflight_paths: list[Path] = []
+
+    def observed_preflight(path: Path) -> Path:
+        preflight_paths.append(path)
+        return original_preflight(path)
+
+    monkeypatch.setattr(madin_source, "_external_durable_path", observed_preflight)
+    expected_error = MadinPinError if interface == "api" else SystemExit
+    with monkeypatch.context() as identity_patch:
+        _bind_directory_identity(identity_patch, alias, checkout)
+        with pytest.raises(expected_error, match=r"(?i)repository|working.tree"):
+            _invoke(alias, interface)
+
+    # A later check of target.parent must not mask a missed destination alias.
+    assert preflight_paths == [alias]
+    assert requests == []
+    assert set(tmp_path.rglob("*")) == before
+    assert not (alias / madin_source.MADIN_PIN.filename).exists()
+    assert not (alias / madin_source.PROVENANCE_FILE).exists()
+
+
+@pytest.mark.usefixtures("pinned_payload")
+@pytest.mark.parametrize("interface", ["api", "cli"])
 @pytest.mark.parametrize("spelling", ["lexical", "case", "firmlink"])
 def test_madin_refuses_checkout_alias_identity_with_missing_output_suffix(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, interface: str, spelling: str

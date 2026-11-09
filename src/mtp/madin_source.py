@@ -106,7 +106,9 @@ def _external_durable_path(path: Path) -> Path:
     """Apply main's temporary-root rule and refuse this working tree before any write."""
     expanded = path.expanduser()
     try:
-        resolved = output_roots.require_durable_output_path(expanded, allowed=False)
+        resolved = output_roots.require_durable_output_path(
+            expanded, allowed=False, include_temporary_hint=False
+        )
         checkout_root = output_roots.containing_root(expanded, [REPO_ROOT])
     except ValueError as error:
         raise MadinPinError(str(error)) from error
@@ -233,7 +235,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
     destination = args.dest_dir.expanduser()
-    output_roots.require_durable_output(parser, destination, allowed=False)
+    output_roots.require_durable_output(
+        parser, destination, allowed=False, include_temporary_hint=False
+    )
     try:
         path = download_madin_table(destination)
     except MadinPinError as error:

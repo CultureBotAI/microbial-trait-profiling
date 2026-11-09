@@ -1,7 +1,8 @@
 """Containment follows filesystem identity without guessing across devices (#1178).
 
-Controlled probes use real pytest directories and override only Path.stat results;
-resolution is not mocked. Native macOS probes are conditional on an actual alias.
+Identity-alias probes use real pytest directories and override only Path.stat results;
+separate resolution-failure probes isolate those diagnostics. Native macOS probes
+are conditional on an actual alias.
 """
 
 from __future__ import annotations
@@ -10,6 +11,7 @@ import errno
 import os
 import stat
 import sys
+import tempfile
 from collections.abc import Mapping
 from pathlib import Path
 from types import SimpleNamespace
@@ -67,6 +69,125 @@ def test_disjoint_identity_alias_contains_a_missing_multicomponent_output(
     output = alias / "new" / "nested" / "output"
 
     assert output_roots.temporary_root(output, [protected]) == protected
+    assert not output.exists()
+
+
+def test_output_itself_can_be_an_identity_alias_of_a_protected_root(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    protected, alias = _directories(tmp_path)
+    root_stat = protected.stat()
+    root_identity = (root_stat.st_dev, root_stat.st_ino)
+    assert not alias.resolve().is_relative_to(protected.resolve())
+    assert all(
+        (parent.stat().st_dev, parent.stat().st_ino) != root_identity for parent in alias.parents
+    )
+    before = set(tmp_path.rglob("*"))
+    monkeypatch.setattr(output_roots, "system_temporary_directories", lambda: [protected])
+
+    with monkeypatch.context() as identity_patch:
+        _patch_stat(
+            identity_patch,
+            {alias: _identity(alias.stat(), device=root_stat.st_dev, inode=root_stat.st_ino)},
+        )
+        assert output_roots.containing_root(alias, [protected]) == protected
+        with pytest.raises(ValueError, match="under the temporary directory"):
+            output_roots.require_durable_output_path(alias, allowed=False)
+
+    assert set(tmp_path.rglob("*")) == before
+
+
+def test_general_temporary_refusal_keeps_its_available_opt_in_hint(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    protected, _ = _directories(tmp_path)
+    monkeypatch.setattr(output_roots, "system_temporary_directories", lambda: [protected])
+
+    with pytest.raises(ValueError, match="under the temporary directory") as refused:
+        output_roots.require_durable_output_path(protected / "new-output", allowed=False)
+
+    assert "durable location" in str(refused.value)
+    assert output_roots.ALLOW_TEMPORARY_OUTPUT in str(refused.value)
+
+
+def test_tmpdir_below_a_regular_file_is_identified_as_the_protected_root(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    regular_file = tmp_path / "regular-file"
+    regular_file.write_text("not a directory")
+    protected = regular_file / "temporary-root"
+    output = tmp_path / "durable" / "new-output"
+    before = set(tmp_path.rglob("*"))
+    monkeypatch.setattr(output_roots, "FIXED_TEMPORARY_ROOTS", ())
+    monkeypatch.setattr(tempfile, "gettempdir", lambda: str(tmp_path / "process-temp"))
+    monkeypatch.setenv("TMPDIR", str(protected))
+
+    with pytest.raises(ValueError, match="Cannot inspect") as refused:
+        output_roots.require_durable_output_path(output, allowed=False)
+
+    assert f"Cannot inspect protected root {protected}" in str(refused.value)
+    assert "output path" not in str(refused.value)
+    assert isinstance(refused.value.__cause__, OSError)
+    assert refused.value.__cause__.errno == errno.ENOTDIR
+    assert set(tmp_path.rglob("*")) == before
+
+
+@pytest.mark.parametrize("failure_stage", ["initial", "after_normalization"])
+def test_protected_root_resolver_permission_errors_name_the_root(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, failure_stage: str
+) -> None:
+    protected = tmp_path / "missing" / ".." / "protected"
+    normalized = tmp_path / "protected"
+    output = tmp_path / "durable" / "new-output"
+    original = Path.resolve
+
+    def controlled(path: Path, strict: bool = False) -> Path:
+        if path == protected:
+            if strict:
+                number = errno.EACCES if failure_stage == "initial" else errno.ENOENT
+                raise OSError(number, "controlled protected-root resolution error")
+            return normalized
+        if path == normalized:
+            if strict and failure_stage == "after_normalization":
+                raise PermissionError(errno.EACCES, "controlled normalized root denial")
+            return normalized
+        return original(path, strict=strict)
+
+    monkeypatch.setattr(Path, "resolve", controlled)
+    with pytest.raises(ValueError, match="Cannot inspect") as refused:
+        output_roots.containing_root(output, [protected])
+
+    assert f"Cannot inspect protected root {protected}" in str(refused.value)
+    assert "output path" not in str(refused.value)
+    assert isinstance(refused.value.__cause__, OSError)
+    assert refused.value.__cause__.errno == errno.EACCES
+    assert not output.exists()
+
+
+def test_protected_root_identity_stat_denial_names_the_root(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    protected, outside = _directories(tmp_path)
+    output = outside / "new" / "output"
+    original_resolve = Path.resolve
+
+    def resolved(path: Path, strict: bool = False) -> Path:
+        # Isolate the identity-stat failure from resolution on this existing root.
+        if path == protected:
+            return protected
+        return original_resolve(path, strict=strict)
+
+    monkeypatch.setattr(Path, "resolve", resolved)
+    observed = _patch_stat(
+        monkeypatch,
+        {protected: PermissionError(errno.EACCES, "controlled root identity denial")},
+    )
+    with pytest.raises(ValueError, match="Cannot inspect") as refused:
+        output_roots.containing_root(output, [protected])
+
+    assert protected in observed
+    assert f"Cannot inspect protected root {protected}" in str(refused.value)
+    assert "output path" not in str(refused.value)
     assert not output.exists()
 
 
@@ -160,7 +281,7 @@ def test_protected_root_probe_errors_are_not_silently_treated_as_missing(
     protected, outside = _directories(tmp_path)
     _patch_stat(monkeypatch, {protected: OSError(error_number, "controlled root probe error")})
 
-    with pytest.raises(ValueError, match=r"(?i)(output|identity|contain)"):
+    with pytest.raises(ValueError, match="Cannot inspect protected root"):
         output_roots.temporary_root(outside / "new" / "output", [protected])
 
 
@@ -282,7 +403,7 @@ def test_unusable_protected_root_mode_is_a_clear_refusal(
     malformed = cast(os.stat_result, SimpleNamespace(**fields))
     _patch_stat(monkeypatch, {protected: malformed})
 
-    with pytest.raises(ValueError, match=r"(?i)(output|identity|contain)"):
+    with pytest.raises(ValueError, match="Cannot inspect protected root"):
         output_roots.temporary_root(outside / "missing" / "output", [protected])
 
 
