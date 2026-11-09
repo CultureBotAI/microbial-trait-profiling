@@ -313,13 +313,27 @@ Ilyas leads the battery; the format is a proposal, not a fait accompli.
 
 ## What this does not cover
 
-- The enrichment arm's hypergeometric procedure. Its production urn now draws
-  distinct taxa rather than trait-annotation assertions (#131), but nested taxa
-  inherit the same annotations and are not independent draws. That is a model
-  question a resampling study of this shape cannot settle; its calibration at the
-  production thresholds is tracked in #551, and its adapter belongs to its owner.
-- The composition arm's native transformed test, for the same reason. Because those
-  two arms are not covered, this work is part of #182 and does not close it.
+- The enrichment arm's hypergeometric procedures across all three documented ORA
+  background definitions (`methods/three_arm_statistics.md`, #568): production ORA
+  (`src/mtp/three_test_table/ora.py`) draws distinct reported taxa against the
+  all-host `taxa_trait_matrix.tsv` background (`M = 5,829` BugSigDB-reported taxa,
+  including 645 non-human-only and 862 non-paired-human taxa) rather than
+  trait-annotation assertions (#131), where nested taxa inherit the same annotations
+  and are not independent draws, and is calibrated separately at the production
+  thresholds in `src/mtp/ora_calibration/` (#551); the Table 1 native influence ORA
+  reruns (`src/mtp/native_taxon_influence.py`, `methods/table1_native_influence.md`)
+  retain the historical #131 assertion-count urn (4,517 testable profiles against
+  106,993,585 assertions across 556,516 enrichment tests, with depletion fold <=
+  0.67); and the harmonized baseline in `methods/three_arm_statistics.md` defines a
+  proposed paired-human assertion-weighted background.
+- The composition arm's native transformed test, which is calibrated separately
+  against the shared study-flip null in `src/mtp/composition_calibration/`
+  (`methods/calibration_composition.md`, #550).
+  [`calibration_protocol.json`](calibration_protocol.json) records this scope
+  amendment explicitly (`v3.1`, #568) rather than silently rewriting its earlier
+  #131 assertion-level and #182 owner-adapter declaration. Because those two arms
+  are evaluated in their own harnesses rather than by this directional protocol,
+  this report covers only the directional arm of #182.
 - The aggregated profile-support rule of #177, whose code is not on main.
 - Calibration is not validity of interpretation. A procedure that holds its error
   rate still measures annotation shares, and none of this addresses orientation
