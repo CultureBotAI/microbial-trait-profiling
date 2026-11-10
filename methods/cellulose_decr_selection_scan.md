@@ -181,7 +181,7 @@ made with the first two, which change nothing computed, and the marked pointer t
 - in *What is reported*, that the core's p-values pile up at 1 rather than being
   roughly uniform.
 
-(This paragraph was corrected on 2026-10-22, #907; it had said the declared rule was
+(This paragraph was corrected on 2026-10-23, #907; it had said the declared rule was
 left as committed.) When the first two amendments were made, no scan result on real data
 existed.
 The eligible counts on the pinned export and timings on synthetic fixtures were known.
