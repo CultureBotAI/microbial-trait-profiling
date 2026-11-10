@@ -27,7 +27,7 @@ from mtp.datamodel import (
     workflow_pydantic as workflow,
 )
 
-# The public bsdbng.datamodel compatibility alias points to mtp. Load the
+# Public bsdbng.datamodel model imports forward to canonical mtp modules. Load the
 # separately generated legacy file explicitly so its validators are covered.
 REPO_ROOT = Path(__file__).parents[1]
 _BSDBNG_SPEC = importlib.util.find_spec("bsdbng")
