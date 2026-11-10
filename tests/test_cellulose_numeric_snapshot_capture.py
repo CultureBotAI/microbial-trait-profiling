@@ -213,14 +213,21 @@ def test_main_captures_the_reviewed_module_not_the_current_producer(
 
 
 def test_real_git_blob_matches_documented_full_identity(capture_helper: ModuleType) -> None:
-    """Missing/ambiguous object names in a full clone are failures, never skips (#1730)."""
+    """Check the real-Git pin in only full local clones.
+
+    CI uses shallow checkouts (fetch-depth: 1) and skips this check (#1740).
+    Missing/ambiguous object names in a full clone fail, never skip (#1730).
+    """
     try:
         repository = Repo(ROOT)
     except (InvalidGitRepositoryError, NoSuchPathError):
         pytest.skip("Historical Git-object check requires a Git checkout")
     try:
         if repository.git.rev_parse("--is-shallow-repository").strip() == "true":
-            pytest.skip("Historical Git-object check requires full history")
+            pytest.skip(
+                "Real-Git object pin: only full local clones check it; "
+                "CI uses shallow checkouts (fetch-depth: 1) and skips it"
+            )
         assert capture_helper.REVIEWED_SOURCE_BLOB == "0672ee7d"
         blob = repository.rev_parse("0672ee7d")
         assert blob.type == "blob"
@@ -251,3 +258,37 @@ def test_real_git_check_propagates_bad_name_instead_of_skipping(
     monkeypatch.setattr(pytest, "skip", pytest.fail)
     with pytest.raises(BadName):
         test_real_git_blob_matches_documented_full_identity(capture_helper)
+
+
+def test_shallow_ci_disclosure(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[str] = []
+    closed: list[bool] = []
+
+    def resolve(revision: str) -> None:
+        calls.append(revision)
+        raise AssertionError("Shallow clones must skip before resolving the blob")
+
+    repository = SimpleNamespace(
+        git=SimpleNamespace(rev_parse=lambda _flag: "true"),
+        rev_parse=resolve,
+        close=lambda: closed.append(True),
+    )
+    monkeypatch.setattr(sys.modules[__name__], "Repo", lambda _root: repository)
+    try:
+        test_real_git_blob_matches_documented_full_identity(ModuleType("unused"))
+    except pytest.skip.Exception as exc:
+        message = str(exc)
+    else:
+        raise AssertionError("Shallow checkout did not skip")
+    assert calls == []
+    assert closed == [True]
+    for text in (
+        message,
+        test_real_git_blob_matches_documented_full_identity.__doc__ or "",
+        " ".join(DOCUMENTATION.read_text(encoding="utf-8").split()),
+    ):
+        assert "only full local clones" in text
+        assert "CI" in text
+        assert "fetch-depth: 1" in text
+        assert "shallow" in text
+        assert "skip" in text
