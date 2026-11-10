@@ -2460,7 +2460,7 @@ dev = [
     { name = "types-pyyaml", specifier = ">=6.0.12.20260408" },
 ]
 qa = [
-    { name = "bandit", extras = ["toml"], specifier = ">=1.9.4" },
+    { name = "bandit", specifier = ">=1.9.4" },
     { name = "deptry", specifier = ">=0.21.1" },
     { name = "detect-secrets", specifier = "==1.5.0" },
     { name = "dulwich", specifier = ">=1.2.17" },
