@@ -73,6 +73,8 @@ TAXONOMY_ROOTS = {
     "NCBITaxon:2157": "archaea",
     "NCBITaxon:2759": "eukaryota",
     "NCBITaxon:10239": "viruses",
+    "NCBITaxon:12908": "unclassified_sequences",
+    "NCBITaxon:2787823": "unclassified_sequences",
 }
 
 # Standard taxonomic hierarchy (ascending order)
@@ -205,7 +207,8 @@ class CoverageTaxonomy:
         if taxon not in self.nodes:
             return TaxonomyState("unresolved", "not_in_taxonomy_edges", ())
         roots = tuple(sorted(set(TAXONOMY_ROOTS) & self.graph.ancestors(taxon)))
-        if len(roots) > 1:
+        groups = {TAXONOMY_ROOTS[root] for root in roots}
+        if len(groups) > 1:
             raise ValueError(f"Conflicting recognized taxonomy roots for {taxon}: {roots}")
         if not roots:
             return TaxonomyState("unresolved", "no_recognized_root_path", ())
@@ -223,7 +226,7 @@ def diagnose_zero_trait_taxon(
             "Ambiguous Taxon / Bin Slash",
             "Resolve to lowest common ancestor (LCA) or treat as composite multi-taxon marker",
         )
-    if lower_name in {"uncultured organism", "unidentified", "unclassified", "unknown"}:
+    if taxonomy.group == "unclassified_sequences":
         return (
             "Unresolved Taxonomic Label",
             "Review the reported taxonomic label and source assignment before trait matching; "
@@ -270,7 +273,7 @@ def diagnose_zero_trait_taxon(
 
     if (
         "uncultured" in lower_name
-        or re.search(r"\b(cag:\d+|uba\d+|ucg-\d+|rf39|gut metagenome)\b", lower_name)
+        or re.search(r"\b(cag:\d+|uba\d+|ucg-\d+|rf39)\b", lower_name)
         or re.search(r"\s+bacterium\b", lower_name)
         or re.search(r"\s+sp\.\s*$", lower_name)
     ):
