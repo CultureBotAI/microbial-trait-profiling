@@ -414,6 +414,10 @@ def load_profiles(
     ``reject_missing_counts`` (``True`` for ``"complete"``, ``False`` for
     ``"legacy_sparse_zero"``). Passing both options with disagreeing values
     raises ``ValueError``.
+
+    An explicit ``human_only=False`` requires an all-host profile table with at
+    least one retained row whose host is recorded as non-human. Unmatched rows,
+    unrecorded hosts, and rows removed by pairing cannot satisfy that request.
     """
     effective_mode = _resolve_count_input_mode(count_input_mode, reject_missing_counts)
     guild_map = OXYGEN_GUILDS if guilds is None else guilds
@@ -431,6 +435,12 @@ def load_profiles(
     unmatched = 0
     dropped_non_human = 0
     candidates: list[Profile] = []
+    recorded_non_human: set[tuple[str, str]] = set()
+    unrecorded_hosts: set[str] = set()
+    if not human_only:
+        from mtp.human_host_corpus import UNRECORDED_HOST, UNRECORDED_HOST_VALUES
+
+        unrecorded_hosts = UNRECORDED_HOST_VALUES | {UNRECORDED_HOST}
     count_offset = len(PROFILE_ID_COLUMNS)
 
     try:
@@ -448,9 +458,16 @@ def load_profiles(
             if meta is None:
                 unmatched += 1
                 continue
-            if human_only and meta["host_species"].strip() != HUMAN_HOST_SPECIES:
+            host = meta["host_species"].strip()
+            if human_only and host != HUMAN_HOST_SPECIES:
                 dropped_non_human += 1
                 continue
+            if (
+                not human_only
+                and host != HUMAN_HOST_SPECIES
+                and host.casefold() not in unrecorded_hosts
+            ):
+                recorded_non_human.add((study_id, experiment_id))
 
             values = [parsed_row.counts[i - count_offset] for i in total_positions]
             guild_counts = {
@@ -483,6 +500,14 @@ def load_profiles(
         raise
 
     kept, dropped_unpaired = _apply_pair_filter(candidates, paired_only=paired_only)
+    if not human_only and not any(
+        (profile.study_id, profile.experiment_id) in recorded_non_human for profile in kept
+    ):
+        raise ValueError(
+            "The supplied profile table contains no retained non-human rows with a recorded host; "
+            "--include-non-human requires an all-host profile table with non-human rows surviving "
+            "metadata joining and pairing."
+        )
     experiments_seen = len({(p.study_id, p.experiment_id) for p in candidates})
     reader_summary = count_reader.summary
     stats = CorpusStats(

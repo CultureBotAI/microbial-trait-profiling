@@ -1,13 +1,18 @@
 """Corpus filters, guild aggregation, and the guild-map statistics."""
 
+import builtins
 import gzip
+import importlib.util
 import io
 import re
+import sys
 from collections.abc import Callable
 from dataclasses import asdict
 from math import isnan
 from pathlib import Path
 from statistics import fmean
+from types import ModuleType
+from typing import Any
 
 import pytest
 from scipy.stats import binomtest, spearmanr
@@ -124,6 +129,174 @@ def test_filters_drop_non_human_unpaired_and_mediadive(corpus: tuple[Path, Path]
     assert stats.kept_experiments == 2
     assert stats.kept_profiles == 4
     assert {p.study_id for p in profiles} == {"bsdb:1", "bsdb:2"}
+
+
+def test_default_profile_loading_does_not_import_all_host_dependencies(
+    corpus: tuple[Path, Path], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Freshly execute the loader module and default API with optional imports refused."""
+    original_import = builtins.__import__
+
+    def without_all_host_dependencies(name: str, *args: Any, **kwargs: Any) -> ModuleType:
+        forbidden = (
+            name == "mtp.human_host_corpus" or name == "pandas" or name.startswith("pandas.")
+        )
+        assert not forbidden, f"Default profile loading must not import {name}"
+        return original_import(name, *args, **kwargs)
+
+    monkeypatch.setattr(builtins, "__import__", without_all_host_dependencies)
+    source = Path(__file__).resolve().parents[1] / "src/mtp/trait_guilds.py"
+    spec = importlib.util.spec_from_file_location("trait_guilds_default_import_669", source)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    monkeypatch.setitem(sys.modules, spec.name, module)
+    spec.loader.exec_module(module)
+    assert isinstance(module.__file__, str)
+    assert Path(module.__file__).resolve() == source
+    profiles, stats = module.load_profiles(*corpus, module.OXYGEN_GUILDS)
+    assert [(row.study_id, row.inc_dec) for row in profiles] == [
+        ("bsdb:1", "inc"),
+        ("bsdb:1", "dec"),
+        ("bsdb:2", "inc"),
+        ("bsdb:2", "dec"),
+    ]
+    assert stats.kept_profiles == 4
+    assert stats.dropped_non_human == 2
+    assert stats.dropped_unpaired == 1
+
+
+def _nonhuman_request_inputs(
+    tmp_path: Path, extra_directions: tuple[str, ...], extra_host: str | None
+) -> tuple[Path, Path]:
+    profiles = tmp_path / "profiles.tsv"
+    experiments = tmp_path / "experiments.tsv"
+    rows: list[tuple[str, str, str, list[int | str]]] = [
+        ("human", "human-1", "inc", [6, 0, 0, 1, 0, 3, 100]),
+        ("human", "human-1", "dec", [1, 0, 0, 6, 0, 3, 100]),
+    ]
+    rows.extend(
+        ("extra", "extra-1", direction, [4, 0, 0, 2, 0, 1, 100]) for direction in extra_directions
+    )
+    _write_profiles(profiles, rows)
+    metadata = [("human", "human-1", "Colitis", "Feces", "Homo sapiens")]
+    if extra_host is not None:
+        metadata.append(("extra", "extra-1", "Colitis", "Feces", extra_host))
+    _write_experiments(experiments, metadata)
+    return profiles, experiments
+
+
+@pytest.mark.parametrize(
+    ("extra_directions", "extra_host"),
+    [
+        pytest.param((), None, id="human-only"),
+        pytest.param((), "Mus musculus", id="metadata-only-mouse"),
+        pytest.param(("inc", "dec"), None, id="unmatched-profiles"),
+        pytest.param(("inc",), "Mus musculus", id="unpaired-mouse"),
+        pytest.param(("inc", "dec"), "", id="blank-host"),
+        pytest.param(("inc", "dec"), " unknown ", id="unknown-host"),
+        pytest.param(("inc", "dec"), "NA", id="na-host"),
+        pytest.param(("inc", "dec"), "NaN", id="nan-host"),
+        pytest.param(("inc", "dec"), "not recorded", id="unrecorded-host"),
+    ],
+)
+def test_include_non_human_requires_retained_recorded_nonhuman_profiles(
+    tmp_path: Path, extra_directions: tuple[str, ...], extra_host: str | None
+) -> None:
+    inputs = _nonhuman_request_inputs(tmp_path, extra_directions, extra_host)
+    before = tuple(path.read_bytes() for path in inputs)
+    with pytest.raises(ValueError, match=r"no .*non-human.*all-host"):
+        load_profiles(*inputs, OXYGEN_GUILDS, human_only=False)
+    assert tuple(path.read_bytes() for path in inputs) == before
+
+
+def test_include_non_human_does_not_share_host_evidence_between_studies(tmp_path: Path) -> None:
+    profiles = tmp_path / "profiles.tsv"
+    experiments = tmp_path / "experiments.tsv"
+    _write_profiles(
+        profiles,
+        [
+            ("human", "e1", "inc", [6, 0, 0, 1, 0, 3, 100]),
+            ("human", "e1", "dec", [1, 0, 0, 6, 0, 3, 100]),
+            ("mouse", "e1", "inc", [4, 0, 0, 2, 0, 1, 100]),
+        ],
+    )
+    _write_experiments(
+        experiments,
+        [
+            ("human", "e1", "Colitis", "Feces", "Homo sapiens"),
+            ("mouse", "e1", "Colitis", "Feces", "Mus musculus"),
+        ],
+    )
+    before = (profiles.read_bytes(), experiments.read_bytes())
+    retained, _ = load_profiles(profiles, experiments, OXYGEN_GUILDS)
+    assert [(row.study_id, row.experiment_id, row.inc_dec) for row in retained] == [
+        ("human", "e1", "inc"),
+        ("human", "e1", "dec"),
+    ]
+    with pytest.raises(ValueError, match=r"no .*non-human.*all-host"):
+        load_profiles(profiles, experiments, OXYGEN_GUILDS, human_only=False)
+    assert (profiles.read_bytes(), experiments.read_bytes()) == before
+
+
+def test_include_non_human_accepts_a_retained_unpaired_mouse_when_pairing_is_disabled(
+    tmp_path: Path,
+) -> None:
+    inputs = _nonhuman_request_inputs(tmp_path, ("inc",), " Mus musculus ")
+    profiles, stats = load_profiles(*inputs, OXYGEN_GUILDS, human_only=False, paired_only=False)
+    assert [(row.study_id, row.inc_dec) for row in profiles] == [
+        ("human", "inc"),
+        ("human", "dec"),
+        ("extra", "inc"),
+    ]
+    assert profiles[-1].guild_counts == {"aerobe": 4, "anaerobe": 2}
+    assert profiles[-1].total == 7
+    assert stats.kept_profiles == 3
+    assert stats.dropped_unpaired == 0
+
+
+def test_include_non_human_preserves_mixed_and_default_profile_counts(
+    corpus: tuple[Path, Path],
+) -> None:
+    human, human_stats = load_profiles(*corpus, OXYGEN_GUILDS)
+    mixed, mixed_stats = load_profiles(*corpus, OXYGEN_GUILDS, human_only=False)
+    assert mixed[:4] == human
+    assert [(row.study_id, row.inc_dec) for row in mixed[4:]] == [
+        ("bsdb:4", "inc"),
+        ("bsdb:4", "dec"),
+    ]
+    assert [row.guild_counts for row in mixed[4:]] == [
+        {"aerobe": 9, "anaerobe": 1},
+        {"aerobe": 1, "anaerobe": 9},
+    ]
+    assert [row.total for row in mixed[4:]] == [11, 11]
+    assert human_stats.kept_profiles == 4
+    assert human_stats.dropped_non_human == 2
+    assert mixed_stats.kept_profiles == 6
+    assert mixed_stats.kept_experiments == 3
+    assert mixed_stats.dropped_non_human == 0
+    assert mixed_stats.dropped_unpaired == human_stats.dropped_unpaired == 1
+
+
+def test_include_non_human_does_not_drop_unknown_rows_from_a_genuinely_mixed_table(
+    corpus: tuple[Path, Path],
+) -> None:
+    profiles_path, experiments_path = corpus
+    original, _ = load_profiles(*corpus, OXYGEN_GUILDS, human_only=False)
+    with profiles_path.open("a", encoding="utf-8") as stream:
+        stream.write("unknown\tunknown-1\tinc\t4\t0\t0\t2\t0\t1\t100\n")
+        stream.write("unknown\tunknown-1\tdec\t2\t0\t0\t4\t0\t1\t100\n")
+    with experiments_path.open("a", encoding="utf-8") as stream:
+        stream.write("unknown\tunknown-1\tColitis\tFeces\tunknown\n")
+    profiles, stats = load_profiles(*corpus, OXYGEN_GUILDS, human_only=False)
+    assert profiles[:6] == original
+    assert [(row.study_id, row.inc_dec) for row in profiles[6:]] == [
+        ("unknown", "inc"),
+        ("unknown", "dec"),
+    ]
+    assert [row.total for row in profiles[6:]] == [7, 7]
+    assert stats.kept_profiles == 8
+    assert stats.dropped_non_human == 0
 
 
 def test_guild_counts_sum_member_terms_and_exclude_media(corpus: tuple[Path, Path]) -> None:
