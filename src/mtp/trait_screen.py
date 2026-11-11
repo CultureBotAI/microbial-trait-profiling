@@ -227,10 +227,11 @@ def step_up(p_values: Sequence[float], *, method: str, family_size: int) -> list
 def step_up_array(
     p_values: NDArray[np.float64], *, method: str, family_size: int
 ) -> NDArray[np.float64]:
-    """The shared step-up arithmetic on numeric vectors, without Python row lists.
+    """The shared step-up arithmetic requires finite 1D p-values.
 
     Preserve the historical multiplication-then-division order, stable sorting,
-    reverse cumulative minimum, raw-p floor and unit ceiling for explicit m.
+    reverse cumulative minimum, raw-p floor and unit ceiling for finite p-values
+    and explicit m; non-finite values are rejected.
     """
     if method not in ("bh", "by"):
         msg = f"unknown correction method {method!r}"
@@ -241,6 +242,8 @@ def step_up_array(
     values = np.asarray(p_values, dtype=float)
     if values.ndim != 1:
         raise ValueError("p-values must be one-dimensional")
+    if not np.all(np.isfinite(values)):
+        raise ValueError("p-values must be finite")
     if values.size == 0:
         return np.empty(0, dtype=float)
     factor = family_size * (harmonic(family_size) if method == "by" else 1.0)
