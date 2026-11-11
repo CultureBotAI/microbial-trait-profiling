@@ -192,7 +192,7 @@ def test_shared_posix_matches_keep_their_slashless_provenance_rejection() -> Non
     char_classes = [
         re.compile(cls)
         for src in (shared.USER_HOME_SOURCE, writer._SLASHLESS_LOCAL_PATH.pattern)
-        for cls in re.findall(r"/(\[[^\]]+\])\+", src)
+        for cls in re.findall(r"/(?:\(\?:)?(\[[^\]]+\])(?:\|\\\\u\[0-9A-Fa-f\]\{4\}\))?\+", src)
     ]
     assert len(char_classes) == 2
     name_chars = [
@@ -549,36 +549,40 @@ def test_documented_raw_escape_false_positives_are_conservatively_refused(
         "é.user-1",
     ],
 )
-@pytest.mark.parametrize("wrapper", ["bare", "quoted", "prose", "json"])
+@pytest.mark.parametrize("wrapper", ["bare", "quoted", "prose", "json_utf8", "json_ascii"])
 def test_posix_non_ascii_accounts_are_matched_in_full_across_both_consumers(
     root: str, account: str, wrapper: str
 ) -> None:
     """POSIX Users and home paths with non-ASCII accounts match full spans (#1973)."""
     posix_home = "/" + root + "/" + account
     posix_path = posix_home + "/file.tsv"
+    expected_home = posix_home
     if wrapper == "bare":
         text = posix_path
     elif wrapper == "quoted":
         text = f'"{posix_path}"'
     elif wrapper == "prose":
         text = f"Loaded from {posix_path} during run"
-    else:
+    elif wrapper == "json_utf8":
         text = json.dumps({"path": posix_path}, ensure_ascii=False)
+    else:
+        text = json.dumps({"path": posix_path}, ensure_ascii=True)
+        expected_home = json.dumps(posix_home, ensure_ascii=True)[1:-1]
 
-    start = text.index(posix_home)
-    expected_span = (start, start + len(posix_home))
+    start = text.index(expected_home)
+    expected_span = (start, start + len(expected_home))
     shared = shared_module()
     classified = shared.compile_absolute_local_paths(flags=0, classified=True)
-    assert matches(classified, text) == [(expected_span, posix_home, "user_home")]
+    assert matches(classified, text) == [(expected_span, expected_home, "user_home")]
     assert matches(guard.ABSOLUTE_LOCAL_PATH_PATTERN, text) == [
-        (expected_span, posix_home, "user_home")
+        (expected_span, expected_home, "user_home")
     ]
-    assert matches(guard.USER_HOME_PATTERN, text) == [(expected_span, posix_home, None)]
-    assert matches(writer._LOCAL_PATH, text) == [(expected_span, posix_home, None)]
+    assert matches(guard.USER_HOME_PATTERN, text) == [(expected_span, expected_home, None)]
+    assert matches(writer._LOCAL_PATH, text) == [(expected_span, expected_home, None)]
 
     hits = guard._scan_records((("fixture.json", "fixture", text),))
     assert [(hit.family, hit.matched) for hit in hits.get("fixture.json", [])] == [
-        ("user_home", posix_home)
+        ("user_home", expected_home)
     ]
 
     refusal = None
@@ -604,15 +608,22 @@ def test_posix_non_ascii_accounts_are_matched_in_full_across_both_consumers(
         "é.user-1",
     ],
 )
+@pytest.mark.parametrize("ascii_escaped", [False, True])
 def test_slashless_posix_non_ascii_accounts_are_refused_in_provenance(
-    root: str, account: str
+    root: str, account: str, ascii_escaped: bool
 ) -> None:
     """Slashless POSIX Users and home paths with non-ASCII accounts match full spans (#1973)."""
     slashless_home = root + "/" + account
-    text = f"prefix {slashless_home}/file.tsv"
-    start = text.index(slashless_home)
-    expected_span = (start, start + len(slashless_home))
-    assert matches(writer._SLASHLESS_LOCAL_PATH, text) == [(expected_span, slashless_home, None)]
+    raw_path = f"{slashless_home}/file.tsv"
+    if ascii_escaped:
+        text = json.dumps({"path": raw_path}, ensure_ascii=True)
+        expected_home = json.dumps(slashless_home, ensure_ascii=True)[1:-1]
+    else:
+        text = f"prefix {raw_path}"
+        expected_home = slashless_home
+    start = text.index(expected_home)
+    expected_span = (start, start + len(expected_home))
+    assert matches(writer._SLASHLESS_LOCAL_PATH, text) == [(expected_span, expected_home, None)]
 
     for checker in (writer.assert_portable_text, writer.assert_portable_path_text):
         refusal = None

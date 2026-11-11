@@ -1,15 +1,18 @@
 """Isolated scratch-copy mutation verifier for issue #1973.
 
 Purpose:
-    Verify that non-ASCII POSIX home account pattern regressions in
-    src/mtp/local_path_patterns.py and src/mtp/provenance_paths.py are caught
-    by AssertionError in tests/test_local_path_patterns.py without mutating
-    the canonical repository worktree.
+    Verify that non-ASCII POSIX home account pattern regressions (both literal
+    UTF-8 and default JSON \\uXXXX escapes) in src/mtp/local_path_patterns.py
+    and src/mtp/provenance_paths.py are caught by AssertionError in
+    tests/test_local_path_patterns.py without mutating the canonical
+    repository worktree.
 Inputs:
     Canonical repository files under src/mtp/ and tests/.
 Outputs:
-    JSON summary printed to stdout; exit code 0 iff all 7 mutants fail with
-    AssertionError and canonical file digests remain unchanged.
+    JSON summary printed to stdout; exit code 0 iff all 9 mutants fail with
+    call-phase AssertionError, all selected test nodes pass unmutated controls,
+    the broken-control self-check is rejected, and canonical file digests
+    remain unchanged.
 Issue:
     #1973
 Date:
@@ -55,70 +58,88 @@ MUTANTS: tuple[MutantSpec, ...] = (
     MutantSpec(
         name="local_path_patterns_ascii_only_posix_accounts",
         rel_path="src/mtp/local_path_patterns.py",
-        target=r"/(?:Users|home)/[\w.-]+",
+        target=r"/(?:Users|home)/(?:[\w.-]|\\u[0-9A-Fa-f]{4})+",
         replacement=r"/(?:Users|home)/[A-Za-z0-9._-]+",
+        test_node="test_posix_non_ascii_accounts_are_matched_in_full_across_both_consumers",
+    ),
+    MutantSpec(
+        name="local_path_patterns_drop_json_unicode_escape",
+        rel_path="src/mtp/local_path_patterns.py",
+        target=r"/(?:Users|home)/(?:[\w.-]|\\u[0-9A-Fa-f]{4})+",
+        replacement=r"/(?:Users|home)/[\w.-]+",
         test_node="test_posix_non_ascii_accounts_are_matched_in_full_across_both_consumers",
     ),
     MutantSpec(
         name="local_path_patterns_single_char_posix_account",
         rel_path="src/mtp/local_path_patterns.py",
-        target=r"/(?:Users|home)/[\w.-]+",
-        replacement=r"/(?:Users|home)/[\w.-]",
+        target=r"/(?:Users|home)/(?:[\w.-]|\\u[0-9A-Fa-f]{4})+",
+        replacement=r"/(?:Users|home)/(?:[\w.-]|\\u[0-9A-Fa-f]{4})",
         test_node="test_posix_non_ascii_accounts_are_matched_in_full_across_both_consumers",
     ),
     MutantSpec(
         name="local_path_patterns_drop_home_root",
         rel_path="src/mtp/local_path_patterns.py",
-        target=r"/(?:Users|home)/[\w.-]+",
-        replacement=r"/(?:Users)/[\w.-]+",
+        target=r"/(?:Users|home)/(?:[\w.-]|\\u[0-9A-Fa-f]{4})+",
+        replacement=r"/(?:Users)/(?:[\w.-]|\\u[0-9A-Fa-f]{4})+",
         test_node="test_posix_non_ascii_accounts_are_matched_in_full_across_both_consumers",
     ),
     MutantSpec(
         name="local_path_patterns_drop_dot_hyphen_in_posix_account",
         rel_path="src/mtp/local_path_patterns.py",
-        target=r"/(?:Users|home)/[\w.-]+",
-        replacement=r"/(?:Users|home)/\w+",
+        target=r"/(?:Users|home)/(?:[\w.-]|\\u[0-9A-Fa-f]{4})+",
+        replacement=r"/(?:Users|home)/(?:\w|\\u[0-9A-Fa-f]{4})+",
         test_node="test_posix_non_ascii_accounts_are_matched_in_full_across_both_consumers",
     ),
     MutantSpec(
         name="provenance_slashless_ascii_only_posix_accounts",
         rel_path="src/mtp/provenance_paths.py",
-        target=r"(?<![\w])(?<!\w-)(?:(?:Users|home)/[\w.-]+",
+        target=r"(?<![\w])(?<!\w-)(?:(?:Users|home)/(?:[\w.-]|\\u[0-9A-Fa-f]{4})+",
         replacement=r"(?<![\w])(?<!\w-)(?:(?:Users|home)/[A-Za-z0-9._-]+",
+        test_node="test_slashless_posix_non_ascii_accounts_are_refused_in_provenance",
+    ),
+    MutantSpec(
+        name="provenance_slashless_drop_json_unicode_escape",
+        rel_path="src/mtp/provenance_paths.py",
+        target=r"(?<![\w])(?<!\w-)(?:(?:Users|home)/(?:[\w.-]|\\u[0-9A-Fa-f]{4})+",
+        replacement=r"(?<![\w])(?<!\w-)(?:(?:Users|home)/[\w.-]+",
         test_node="test_slashless_posix_non_ascii_accounts_are_refused_in_provenance",
     ),
     MutantSpec(
         name="provenance_slashless_single_char_posix_account",
         rel_path="src/mtp/provenance_paths.py",
-        target=r"(?<![\w])(?<!\w-)(?:(?:Users|home)/[\w.-]+",
-        replacement=r"(?<![\w])(?<!\w-)(?:(?:Users|home)/[\w.-]",
+        target=r"(?<![\w])(?<!\w-)(?:(?:Users|home)/(?:[\w.-]|\\u[0-9A-Fa-f]{4})+",
+        replacement=r"(?<![\w])(?<!\w-)(?:(?:Users|home)/(?:[\w.-]|\\u[0-9A-Fa-f]{4})",
         test_node="test_slashless_posix_non_ascii_accounts_are_refused_in_provenance",
     ),
     MutantSpec(
         name="provenance_slashless_drop_home_root",
         rel_path="src/mtp/provenance_paths.py",
-        target=r"(?<![\w])(?<!\w-)(?:(?:Users|home)/[\w.-]+",
-        replacement=r"(?<![\w])(?<!\w-)(?:(?:Users)/[\w.-]+",
+        target=r"(?<![\w])(?<!\w-)(?:(?:Users|home)/(?:[\w.-]|\\u[0-9A-Fa-f]{4})+",
+        replacement=r"(?<![\w])(?<!\w-)(?:(?:Users)/(?:[\w.-]|\\u[0-9A-Fa-f]{4})+",
         test_node="test_slashless_posix_non_ascii_accounts_are_refused_in_provenance",
     ),
 )
 
 
 class _AssertionCapturePlugin:
-    """Capture failed test reports and exception types from in-process pytest."""
+    """Capture failed test reports, phases, and exception types from in-process pytest."""
 
     def __init__(self) -> None:
-        self.failures: list[tuple[str, str]] = []
+        self.failures: list[tuple[str, str, str]] = []
 
     def pytest_runtest_logreport(self, report: pytest.TestReport) -> None:
-        if report.when == "call" and report.failed:
+        if report.failed:
             exc_name = "UnknownFailure"
             if report.longrepr is not None and hasattr(report.longrepr, "reprcrash"):
                 reprcrash = getattr(report.longrepr, "reprcrash", None)
                 if reprcrash is not None and hasattr(reprcrash, "message"):
                     msg = str(reprcrash.message)
                     exc_name = msg.split(":", 1)[0].strip()
-            self.failures.append((report.nodeid, exc_name))
+            self.failures.append((report.nodeid, report.when, exc_name))
+
+    def pytest_collectreport(self, report: pytest.CollectReport) -> None:
+        if report.failed:
+            self.failures.append((str(report.nodeid), "collect", "CollectFailure"))
 
 
 def _sha256_map(root: Path) -> dict[str, str]:
@@ -147,7 +168,9 @@ def _purge_loaded_modules() -> None:
     importlib.invalidate_caches()
 
 
-def _run_pytest_in_scratch(scratch_root: Path, test_node: str) -> tuple[int, list[tuple[str, str]]]:
+def _run_pytest_in_scratch(
+    scratch_root: Path, test_node: str
+) -> tuple[int, list[tuple[str, str, str]]]:
     plugin = _AssertionCapturePlugin()
     old_sys_path = list(sys.path)
     sys.path.insert(0, str(scratch_root / "tests"))
@@ -172,6 +195,40 @@ def _run_pytest_in_scratch(scratch_root: Path, test_node: str) -> tuple[int, lis
     return code, plugin.failures
 
 
+def _verify_unmutated_controls(control_dir: Path, selected_nodes: Sequence[str]) -> None:
+    for node in selected_nodes:
+        control_code, control_failures = _run_pytest_in_scratch(control_dir, node)
+        if control_code != 0 or control_failures:
+            raise RuntimeError(
+                f"Unmutated control failed for {node}: code={control_code}, "
+                f"failures={control_failures}"
+            )
+
+
+def _verify_broken_control_refused(broken_dir: Path) -> None:
+    test_file = broken_dir / "tests" / "test_local_path_patterns.py"
+    text = test_file.read_text(encoding="utf-8")
+    anchor = (
+        "def test_slashless_posix_non_ascii_accounts_are_refused_in_provenance(\n"
+        "    root: str, account: str, ascii_escaped: bool\n"
+        ") -> None:\n"
+    )
+    if anchor not in text:
+        raise RuntimeError("Slashless test anchor not found for broken-control self-check")
+    test_file.write_text(
+        text.replace(anchor, anchor + '    raise AssertionError("unrelated control failure")\n', 1),
+        encoding="utf-8",
+    )
+    try:
+        _verify_unmutated_controls(
+            broken_dir,
+            ("test_slashless_posix_non_ascii_accounts_are_refused_in_provenance",),
+        )
+    except RuntimeError:
+        return
+    raise RuntimeError("Broken slashless control was not refused by _verify_unmutated_controls")
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Verify #1973 mutants in isolated scratch copies.")
     parser.add_argument(
@@ -183,6 +240,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     before_digests = _sha256_map(REPO_ROOT)
+    for spec in MUTANTS:
+        source_text = (REPO_ROOT / spec.rel_path).read_text(encoding="utf-8")
+        if spec.target not in source_text:
+            raise RuntimeError(
+                f"Preflight failed: mutant {spec.name} target missing in {spec.rel_path}"
+            )
+
+    selected_nodes = tuple(dict.fromkeys(spec.test_node for spec in MUTANTS))
     results: list[dict[str, object]] = []
 
     with ExitStack() as stack:
@@ -202,15 +267,11 @@ def main(argv: Sequence[str] | None = None) -> int:
 
         control_dir = base_dir / "control"
         _prepare_scratch_tree(control_dir)
-        control_code, control_failures = _run_pytest_in_scratch(
-            control_dir,
-            "test_posix_non_ascii_accounts_are_matched_in_full_across_both_consumers",
-        )
-        if control_code != 0 or control_failures:
-            raise RuntimeError(
-                f"Unmutated control failed in scratch copy: code={control_code}, "
-                f"failures={control_failures}"
-            )
+        _verify_unmutated_controls(control_dir, selected_nodes)
+
+        broken_control_dir = base_dir / "broken_control"
+        _prepare_scratch_tree(broken_control_dir)
+        _verify_broken_control_refused(broken_control_dir)
 
         for spec in MUTANTS:
             mutant_dir = base_dir / spec.name
@@ -225,12 +286,17 @@ def main(argv: Sequence[str] | None = None) -> int:
             target_file.write_text(mutated_text, encoding="utf-8")
 
             code, failures = _run_pytest_in_scratch(mutant_dir, spec.test_node)
-            assertion_killed = code != 0 and any(
-                exc_type == "AssertionError" for _, exc_type in failures
+            assertion_killed = (
+                code == int(pytest.ExitCode.TESTS_FAILED)
+                and bool(failures)
+                and all(
+                    when == "call" and exc_type == "AssertionError"
+                    for _, when, exc_type in failures
+                )
             )
             if not assertion_killed:
                 raise RuntimeError(
-                    f"Mutant {spec.name} was not killed by AssertionError: "
+                    f"Mutant {spec.name} was not cleanly killed by call-phase AssertionError: "
                     f"code={code}, failures={failures}"
                 )
             results.append(
@@ -253,6 +319,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     summary = {
         "issue": 1973,
         "mutant_count": len(results),
+        "selected_control_nodes": list(selected_nodes),
+        "broken_control_refused": True,
         "all_killed_by_assertion": True,
         "canonical_digests_unchanged": True,
         "canonical_sha256": after_digests,
