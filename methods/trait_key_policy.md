@@ -8,7 +8,18 @@ catalog and profile contracts. Changing the field alone cannot relabel a run.
 
 `raw_object_v1` preserves each raw object CURIE. `facultative_union_v1` maps
 `METPO:1000605`, `METPO:1000608` and `METPO:1000612` to `METPO:1000608` before
-per-taxon set deduplication and ancestor rollup. Existing predicate handling is
+per-taxon set deduplication and ancestor rollup. Each policy version's semantics
+are frozen in `TRAIT_KEY_POLICY_DEFINITIONS` (`TraitKeyPolicyDefinition` in
+`src/mtp/trait_key_policy.py`, #1137), which binds the version identifier to its
+immutable canonical trait ID, member CURIEs, raw KG label, display label, and
+declared source vocabularies. Lookup helpers (`canonical_trait_object_id`,
+`canonical_object`, `policy_member_ids_for_trait`, `policy_metadata`,
+`expected_trait_display_label`, and `display_trait_label`) resolve semantics
+from the requested policy version's `TraitKeyPolicyDefinition` rather than a
+single unversioned global constant. Any future change to member CURIEs, canonical
+mappings, labels, or source vocabularies requires introducing a new policy version
+identifier so existing `raw_object_v1` and `facultative_union_v1` runs remain
+verifiable (#1137). Existing predicate handling is
 unchanged: negated METPO-object assertions and relation-value keys retain their
 predicates; positive METPO-object assertions remain bare class keys. A direct and
 strain-derived annotation

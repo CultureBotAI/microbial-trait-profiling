@@ -1,9 +1,14 @@
-"""Versioned local trait-key semantics and declared source vocabularies (#1129).
+"""Versioned local trait-key semantics and declared source vocabularies (#1129, #1137).
 
 The facultative union is an analysis mapping, not an upstream ontology merger.
 Source labels document the METPO template mappings; they do not assert that a
 particular matrix cell contains evidence from every listed source. Original KG
 assertions, node labels, and source attribution remain authoritative evidence.
+
+Each policy version in ``TRAIT_KEY_POLICY_DEFINITIONS`` freezes its canonical trait ID,
+member CURIEs, raw/display labels, and declared source vocabularies. Any future change
+to membership or source vocabularies requires adding a new policy version identifier
+rather than mutating an existing version in place (#1137).
 """
 
 from __future__ import annotations
@@ -11,19 +16,14 @@ from __future__ import annotations
 import csv
 import gzip
 import json
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Literal
+from types import MappingProxyType
+from typing import Literal, cast
 
 TraitKeyPolicy = Literal["raw_object_v1", "facultative_union_v1"]
-TRAIT_KEY_POLICIES: tuple[TraitKeyPolicy, ...] = ("raw_object_v1", "facultative_union_v1")
 DEFAULT_TRAIT_KEY_POLICY: TraitKeyPolicy = "facultative_union_v1"
-FACULTATIVE_TRAIT_ID = "METPO:1000608"
-FACULTATIVE_RAW_LABEL = "facultatively aerobic"
-FACULTATIVE_UNION_LABEL = "facultative (aerobe or anaerobe)"
-FACULTATIVE_MEMBER_IDS = ("METPO:1000605", "METPO:1000608", "METPO:1000612")
-FACULTATIVE_EXTRA_MEMBER_IDS = frozenset({"METPO:1000605", "METPO:1000612"})
 TRAIT_POLICY_METADATA_COLUMNS = (
     "trait_key_policy",
     "trait_member_ids_json",
@@ -40,10 +40,55 @@ class SourceVocabulary:
     source_label: str
 
 
+@dataclass(frozen=True)
+class TraitKeyPolicyDefinition:
+    """Immutable definition for a specific trait-key policy version (#1137)."""
+
+    policy: TraitKeyPolicy
+    canonical_trait_id: str
+    member_ids: tuple[str, ...]
+    raw_label: str
+    display_label: str
+    source_vocabularies: tuple[SourceVocabulary, ...]
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.policy, str) or not self.policy.strip():
+            raise ValueError("Policy version identifier must be a non-empty string")
+        if not isinstance(self.canonical_trait_id, str) or not self.canonical_trait_id.strip():
+            raise ValueError("canonical_trait_id must be a non-empty string")
+        if (
+            not isinstance(self.member_ids, tuple)
+            or not self.member_ids
+            or not all(isinstance(item, str) and item.strip() for item in self.member_ids)
+            or len(set(self.member_ids)) != len(self.member_ids)
+        ):
+            raise ValueError("member_ids must be a non-empty tuple of unique non-empty CURIEs")
+        if self.canonical_trait_id not in self.member_ids:
+            raise ValueError("canonical_trait_id must be included in member_ids")
+        if not isinstance(self.raw_label, str) or not self.raw_label.strip():
+            raise ValueError("raw_label must be a non-empty string")
+        if not isinstance(self.display_label, str) or not self.display_label.strip():
+            raise ValueError("display_label must be a non-empty string")
+        if not isinstance(self.source_vocabularies, tuple) or not all(
+            isinstance(item, SourceVocabulary) for item in self.source_vocabularies
+        ):
+            raise ValueError("source_vocabularies must be a tuple of SourceVocabulary records")
+
+    @property
+    def version(self) -> TraitKeyPolicy:
+        """Return the frozen policy version identifier."""
+        return self.policy
+
+    @property
+    def extra_member_ids(self) -> frozenset[str]:
+        """Return non-canonical union member CURIEs for this policy version."""
+        return frozenset(member for member in self.member_ids if member != self.canonical_trait_id)
+
+
 # METPO source template c6f4947, rows 80/83/87; OMP:0000087 has
 # "facultative aerobe" as an exact synonym of facultative anaerobe (2024-03-25).
 # BacDive distinguishes its source labels; BactoTraits already combines them.
-FACULTATIVE_SOURCE_VOCABULARIES = (
+_V1_SOURCE_VOCABULARIES: tuple[SourceVocabulary, ...] = (
     SourceVocabulary("METPO:1000605", "infores:bacdive", "facultative anaerobe"),
     SourceVocabulary("METPO:1000605", "infores:madin_etal", "facultative"),
     SourceVocabulary("METPO:1000608", "infores:bacdive", "facultative aerobe"),
@@ -51,22 +96,115 @@ FACULTATIVE_SOURCE_VOCABULARIES = (
     SourceVocabulary("METPO:1000612", "infores:bactotraits", "Ox_facultative_aerobe_anaerobe"),
 )
 
+_FROZEN_V1_DEFINITIONS: dict[TraitKeyPolicy, TraitKeyPolicyDefinition] = {
+    "raw_object_v1": TraitKeyPolicyDefinition(
+        policy="raw_object_v1",
+        canonical_trait_id="METPO:1000608",
+        member_ids=("METPO:1000608",),
+        raw_label="facultatively aerobic",
+        display_label="facultatively aerobic",
+        source_vocabularies=_V1_SOURCE_VOCABULARIES,
+    ),
+    "facultative_union_v1": TraitKeyPolicyDefinition(
+        policy="facultative_union_v1",
+        canonical_trait_id="METPO:1000608",
+        member_ids=("METPO:1000605", "METPO:1000608", "METPO:1000612"),
+        raw_label="facultatively aerobic",
+        display_label="facultative (aerobe or anaerobe)",
+        source_vocabularies=_V1_SOURCE_VOCABULARIES,
+    ),
+}
+
+TRAIT_KEY_POLICY_DEFINITIONS: Mapping[TraitKeyPolicy, TraitKeyPolicyDefinition] = MappingProxyType(
+    dict(_FROZEN_V1_DEFINITIONS)
+)
+TRAIT_KEY_POLICIES: tuple[TraitKeyPolicy, ...] = tuple(TRAIT_KEY_POLICY_DEFINITIONS.keys())
+
+_UNION_V1_DEFINITION = TRAIT_KEY_POLICY_DEFINITIONS["facultative_union_v1"]
+FACULTATIVE_TRAIT_ID = _UNION_V1_DEFINITION.canonical_trait_id
+FACULTATIVE_RAW_LABEL = _UNION_V1_DEFINITION.raw_label
+FACULTATIVE_UNION_LABEL = _UNION_V1_DEFINITION.display_label
+FACULTATIVE_MEMBER_IDS = _UNION_V1_DEFINITION.member_ids
+FACULTATIVE_EXTRA_MEMBER_IDS = _UNION_V1_DEFINITION.extra_member_ids
+FACULTATIVE_SOURCE_VOCABULARIES = _UNION_V1_DEFINITION.source_vocabularies
+
+
+def validate_trait_key_policy_definitions(
+    definitions: (
+        Mapping[TraitKeyPolicy, TraitKeyPolicyDefinition] | Mapping[str, TraitKeyPolicyDefinition]
+    ) = TRAIT_KEY_POLICY_DEFINITIONS,
+    *,
+    allow_additional_versions: bool = False,
+) -> None:
+    """Verify that frozen v1 policy definitions are intact and new definitions use new versions."""
+    typed_definitions = cast(Mapping[str, TraitKeyPolicyDefinition], definitions)
+    for required_version, frozen_def in _FROZEN_V1_DEFINITIONS.items():
+        if required_version not in typed_definitions:
+            raise ValueError(f"Missing frozen trait_key_policy version {required_version!r}")
+        candidate = typed_definitions[required_version]
+        if candidate != frozen_def:
+            raise ValueError(
+                f"Frozen trait_key_policy definition {required_version!r} was modified in place; "
+                "introduce a new policy version identifier instead"
+            )
+    for key, definition in typed_definitions.items():
+        if not isinstance(definition, TraitKeyPolicyDefinition):
+            raise ValueError(f"Invalid policy definition for {key!r}: {definition!r}")
+        if definition.policy != key:
+            raise ValueError(
+                f"Policy key {key!r} does not match definition.policy {definition.policy!r}"
+            )
+        if not allow_additional_versions and key not in _FROZEN_V1_DEFINITIONS:
+            raise ValueError(
+                f"Unregistered trait_key_policy version {key!r}; update TRAIT_KEY_POLICIES "
+                "and TraitKeyPolicy explicitly when adding a new version"
+            )
+
+
+validate_trait_key_policy_definitions(TRAIT_KEY_POLICY_DEFINITIONS)
+
 
 def parse_trait_key_policy(value: object) -> TraitKeyPolicy:
     """Refuse unknown policies instead of silently applying current semantics."""
-    for policy in TRAIT_KEY_POLICIES:
-        if value == policy:
-            return policy
-    raise ValueError(f"trait_key_policy must be one of {TRAIT_KEY_POLICIES!r}: {value!r}")
+    if isinstance(value, str) and value in TRAIT_KEY_POLICY_DEFINITIONS:
+        return cast(TraitKeyPolicy, value)
+    supported = tuple(TRAIT_KEY_POLICY_DEFINITIONS.keys())
+    raise ValueError(f"trait_key_policy must be one of {supported!r}: {value!r}")
+
+
+def get_trait_key_policy_definition(trait_key_policy: object) -> TraitKeyPolicyDefinition:
+    """Return the version-frozen definition for ``trait_key_policy`` (#1137)."""
+    policy = parse_trait_key_policy(trait_key_policy)
+    return TRAIT_KEY_POLICY_DEFINITIONS[policy]
+
+
+def canonical_trait_object_id(
+    obj: str, *, trait_key_policy: TraitKeyPolicy = DEFAULT_TRAIT_KEY_POLICY
+) -> str:
+    """Map declared union members using the version-frozen definition for ``trait_key_policy``."""
+    definition = get_trait_key_policy_definition(trait_key_policy)
+    return definition.canonical_trait_id if obj in definition.member_ids else obj
 
 
 def canonical_object(obj: str, *, trait_key_policy: TraitKeyPolicy) -> str:
     """Map only declared union members; raw policy preserves the exact object ID."""
-    if trait_key_policy == "raw_object_v1":
-        return obj
-    if trait_key_policy != "facultative_union_v1":
-        raise ValueError(f"Unknown trait_key_policy: {trait_key_policy!r}")
-    return FACULTATIVE_TRAIT_ID if obj in FACULTATIVE_MEMBER_IDS else obj
+    return canonical_trait_object_id(obj, trait_key_policy=trait_key_policy)
+
+
+def policy_member_ids_for_trait(
+    trait_id: str, *, trait_key_policy: TraitKeyPolicy = DEFAULT_TRAIT_KEY_POLICY
+) -> tuple[str, ...]:
+    """Return the version-frozen member object CURIEs for a canonical trait or column ID (#1137)."""
+    definition = get_trait_key_policy_definition(trait_key_policy)
+    cleaned_id = trait_id.strip()
+    obj_id = cleaned_id.split("|", 1)[1].strip() if "|" in cleaned_id else cleaned_id
+    if canonical_trait_object_id(obj_id, trait_key_policy=definition.policy) != obj_id:
+        raise ValueError(
+            f"Feature metadata object {trait_id!r} is not canonical under {definition.policy}"
+        )
+    if obj_id == definition.canonical_trait_id:
+        return definition.member_ids
+    return (obj_id,)
 
 
 def _parse_member_ids(member_ids: Sequence[str] | str | None) -> tuple[str, ...]:
@@ -87,10 +225,46 @@ def _parse_member_ids(member_ids: Sequence[str] | str | None) -> tuple[str, ...]
     return tuple(str(item).strip() for item in member_ids if str(item).strip())
 
 
+def expected_trait_display_label(
+    trait_id: str,
+    recorded_label: str | None = None,
+    *,
+    trait_key_policy: TraitKeyPolicy = DEFAULT_TRAIT_KEY_POLICY,
+    member_ids: Sequence[str] | str | None = None,
+) -> str:
+    """Return the version-defined display label for ``trait_id`` under ``trait_key_policy``."""
+    definition = get_trait_key_policy_definition(trait_key_policy)
+    cleaned_id = trait_id.strip()
+    obj_id = cleaned_id.split("|", 1)[1].strip() if "|" in cleaned_id else cleaned_id
+    if recorded_label is None:
+        if obj_id != definition.canonical_trait_id:
+            return trait_id
+        effective_label = definition.raw_label
+    else:
+        effective_label = recorded_label
+    if obj_id != definition.canonical_trait_id or not effective_label:
+        return effective_label
+    effective_members = (
+        definition.member_ids if member_ids is None else _parse_member_ids(member_ids)
+    )
+    if not definition.extra_member_ids.intersection(effective_members):
+        return effective_label
+    if definition.display_label in effective_label:
+        return effective_label
+    if definition.raw_label in effective_label:
+        return effective_label.replace(definition.raw_label, definition.display_label)
+    capitalized_raw = definition.raw_label.capitalize()
+    if capitalized_raw in effective_label:
+        return effective_label.replace(capitalized_raw, definition.display_label)
+    return definition.display_label
+
+
 def display_trait_label(
     trait_id: str,
     recorded_label: str,
     member_ids: Sequence[str] | str | None = None,
+    *,
+    trait_key_policy: TraitKeyPolicy = DEFAULT_TRAIT_KEY_POLICY,
 ) -> str:
     """Return the render-time display label for a trait from its recorded member IDs.
 
@@ -100,21 +274,13 @@ def display_trait_label(
     only when ``trait_id`` (or its object suffix after ``|``) is ``METPO:1000608`` and
     recorded ``member_ids`` include ``METPO:1000605`` or ``METPO:1000612`` (#1138, #1232).
     """
-    cleaned_id = trait_id.strip()
-    obj_id = cleaned_id.split("|", 1)[1].strip() if "|" in cleaned_id else cleaned_id
-    if obj_id != FACULTATIVE_TRAIT_ID or not recorded_label:
-        return recorded_label
     parsed_members = _parse_member_ids(member_ids)
-    if not FACULTATIVE_EXTRA_MEMBER_IDS.intersection(parsed_members):
-        return recorded_label
-    if FACULTATIVE_UNION_LABEL in recorded_label:
-        return recorded_label
-    if FACULTATIVE_RAW_LABEL in recorded_label:
-        return recorded_label.replace(FACULTATIVE_RAW_LABEL, FACULTATIVE_UNION_LABEL)
-    capitalized_raw = FACULTATIVE_RAW_LABEL.capitalize()
-    if capitalized_raw in recorded_label:
-        return recorded_label.replace(capitalized_raw, FACULTATIVE_UNION_LABEL)
-    return FACULTATIVE_UNION_LABEL
+    return expected_trait_display_label(
+        trait_id,
+        recorded_label,
+        trait_key_policy=trait_key_policy,
+        member_ids=parsed_members,
+    )
 
 
 @dataclass(frozen=True)
@@ -170,19 +336,46 @@ def policy_metadata(obj: str, *, trait_key_policy: TraitKeyPolicy) -> tuple[str,
     never invented from the canonical node label. Both JSON arrays are declarations,
     not claims that every member or source actually contributed to a given run.
     """
-    policy = parse_trait_key_policy(trait_key_policy)
-    if canonical_object(obj, trait_key_policy=policy) != obj:
-        raise ValueError(f"Feature metadata object {obj!r} is not canonical under {policy}")
-    members = (
-        FACULTATIVE_MEMBER_IDS
-        if policy == "facultative_union_v1" and obj == FACULTATIVE_TRAIT_ID
-        else (obj,)
-    )
+    definition = get_trait_key_policy_definition(trait_key_policy)
+    if "|" in obj or canonical_trait_object_id(obj, trait_key_policy=definition.policy) != obj:
+        raise ValueError(
+            f"Feature metadata object {obj!r} is not canonical under {definition.policy}"
+        )
+    members = policy_member_ids_for_trait(obj, trait_key_policy=definition.policy)
     mappings = [
-        asdict(item) for item in FACULTATIVE_SOURCE_VOCABULARIES if item.object_id in members
+        asdict(item) for item in definition.source_vocabularies if item.object_id in members
     ]
     return (
-        policy,
+        definition.policy,
         json.dumps(members, separators=(",", ":")),
         json.dumps(mappings, sort_keys=True, separators=(",", ":")),
     )
+
+
+__all__ = [
+    "DEFAULT_TRAIT_KEY_POLICY",
+    "FACULTATIVE_EXTRA_MEMBER_IDS",
+    "FACULTATIVE_MEMBER_IDS",
+    "FACULTATIVE_RAW_LABEL",
+    "FACULTATIVE_SOURCE_VOCABULARIES",
+    "FACULTATIVE_TRAIT_ID",
+    "FACULTATIVE_UNION_LABEL",
+    "TRAIT_KEY_POLICIES",
+    "TRAIT_KEY_POLICY_DEFINITIONS",
+    "TRAIT_POLICY_METADATA_COLUMNS",
+    "RecordedMemberEvidence",
+    "SourceVocabulary",
+    "TraitKeyPolicy",
+    "TraitKeyPolicyDefinition",
+    "canonical_object",
+    "canonical_trait_object_id",
+    "display_trait_label",
+    "expected_trait_display_label",
+    "get_trait_key_policy_definition",
+    "parse_trait_key_policy",
+    "policy_member_ids_for_trait",
+    "policy_metadata",
+    "read_recorded_member_evidence",
+    "read_recorded_member_ids",
+    "validate_trait_key_policy_definitions",
+]
