@@ -14,9 +14,11 @@ The plate builders are called in the original order. The differences:
   copies (two of them named ``..._20.pdf``), and is written without a date;
 - ``manifest.json`` gives paths relative to the output folder, the code revision, and
   for every plate where its numbers and data marks come from (``data_status``);
-- the data-story plots draw their points from a random generator (#775), so the build
+- data-story plots 02-10 draw their points from a random generator (#775), so the build
   refuses to draw them unless ``--audit-random-marks`` is given, and then each carries
-  a banner saying so.
+  a banner saying so;
+- data-story plot 01 (plate 21) is drawn from run tables and needs ``--run``, the root
+  of the run to read; the manifest lists the files it read with their hashes.
 """
 
 from __future__ import annotations
@@ -26,7 +28,7 @@ import json
 import shutil
 from collections.abc import Callable, Sequence
 from pathlib import Path
-from typing import TypedDict
+from typing import NamedTuple, TypedDict
 
 import matplotlib as mpl
 import matplotlib.image as mpimg
@@ -36,6 +38,7 @@ from matplotlib.backends.backend_pdf import PdfPages
 from mtp.ncasm_tufte_plates.data_status import (
     DataStatus,
     random_marks_status,
+    run_tables_status,
     typed_literals_status,
 )
 from mtp.ncasm_tufte_plates.plates_common import (
@@ -70,10 +73,13 @@ from mtp.ncasm_tufte_plates.plates_part2 import (
     build_plate_19,
     build_plate_20,
 )
+from mtp.ncasm_tufte_plates.run_tables import RunIdentity, RunTableError
+from mtp.ncasm_tufte_plates.story_from_tables import TableStoryPlot, plot_01_trait_cloud
 from mtp.ncasm_tufte_plates.story_plots import (
     PLOT_BUILDERS,
     PLOT_SPEAKER_NOTES,
     RANDOM_MARK_PLOTS,
+    StoryPlotInfo,
 )
 
 __all__ = [
@@ -83,9 +89,11 @@ __all__ = [
     "PLATE_BUILDERS",
     "SPEAKER_NOTES",
     "STORY_DIR",
+    "STORY_PLOTS",
     "Manifest",
     "ManifestEntry",
-    "RandomMarksError",
+    "PlateBuildError",
+    "StoryPlot",
     "build_plates",
     "main",
     "parse_args",
@@ -337,18 +345,49 @@ class ManifestEntry(TypedDict):
     data_status: DataStatus
 
 
+class RunRecord(TypedDict):
+    """The run whose tables the table-driven plates read."""
+
+    comparison_id: str
+    contrast_population: str
+    direction_basis: str
+    core_run_id: str
+    git_commit: str
+    git_dirty: bool
+
+
 class Manifest(TypedDict):
     """``manifest.json``: the build's record of what it drew and from what."""
 
     schema_version: int
     generator: str
     code_commit: str | None
+    run: RunRecord | None
     combined_pdf: str
     plates: list[ManifestEntry]
 
 
-class RandomMarksError(ValueError):
-    """Plates that draw random points were requested without ``audit_random_marks``."""
+class PlateBuildError(ValueError):
+    """The build was asked for plates it will not draw as requested.
+
+    Either plates that draw random points without ``audit_random_marks``, or plates that
+    read run tables without a run root."""
+
+
+class StoryPlot(NamedTuple):
+    """One data-story plot: drawn from a random generator as ported, or from run tables."""
+
+    number: int
+    random: Callable[[Path], StoryPlotInfo] | None = None
+    from_run: Callable[[Path, Path], TableStoryPlot] | None = None
+
+
+# Plates 21-30, in order. A plot moves from ``random`` to ``from_run`` when it is rebuilt
+# from run tables (#775).
+STORY_PLOTS: tuple[StoryPlot, ...] = (
+    StoryPlot(1, from_run=plot_01_trait_cloud),
+    *(StoryPlot(number, random=builder) for number, builder in enumerate(PLOT_BUILDERS, start=2)),
+)
 
 
 def _report(entry: ManifestEntry) -> None:
@@ -361,29 +400,58 @@ def _report(entry: ManifestEntry) -> None:
         print(f"   Overlaps: {ovl}")
 
 
-def _random_mark_plates() -> list[int]:
-    first_story_plate = len(PLATE_BUILDERS) + 1
-    return [
-        number
-        for number, plot_builder in enumerate(PLOT_BUILDERS, start=first_story_plate)
-        if plot_builder in RANDOM_MARK_PLOTS
-    ]
+def _plates(numbers: list[int]) -> str:
+    listed = ", ".join(str(number) for number in numbers)
+    return f"plate {listed}" if len(numbers) == 1 else f"plates {listed}"
+
+
+def _plate_number(plot: StoryPlot) -> int:
+    return len(PLATE_BUILDERS) + plot.number
+
+
+def _run_record(identity: RunIdentity) -> RunRecord:
+    return {
+        "comparison_id": identity.comparison_id,
+        "contrast_population": identity.contrast_population,
+        "direction_basis": identity.direction_basis,
+        "core_run_id": identity.core_run_id,
+        "git_commit": identity.git_commit,
+        "git_dirty": identity.git_dirty,
+    }
 
 
 def build_plates(
-    out_dir: Path, *, audit_random_marks: bool = False, code_commit: str | None = None
+    out_dir: Path,
+    *,
+    audit_random_marks: bool = False,
+    run_root: Path | None = None,
+    code_commit: str | None = None,
 ) -> Manifest:
     """Draw all 30 plates into ``out_dir`` and write the manifest and the combined PDF.
 
-    Raises ``RandomMarksError`` before drawing anything when a plate's points come from a
-    random generator and ``audit_random_marks`` is false (#775)."""
-    random_plates = _random_mark_plates()
+    Raises ``PlateBuildError`` before drawing anything when a plate's points come from a
+    random generator and ``audit_random_marks`` is false (#775), or when a plate reads
+    run tables and no ``run_root`` is given."""
+    if [plot.number for plot in STORY_PLOTS] != list(range(1, len(STORY_PLOTS) + 1)):
+        raise AssertionError("STORY_PLOTS must list the data-story plots in order")
+    random_plots = [plot for plot in STORY_PLOTS if plot.random is not None]
+    if any(plot.random not in RANDOM_MARK_PLOTS for plot in random_plots):
+        raise AssertionError("a random-mark plot is missing from RANDOM_MARK_PLOTS")
+    random_plates = [_plate_number(plot) for plot in random_plots]
+    run_plates = [_plate_number(plot) for plot in STORY_PLOTS if plot.from_run is not None]
+    refusals = []
     if random_plates and not audit_random_marks:
-        numbers = ", ".join(str(number) for number in random_plates)
-        raise RandomMarksError(
-            f"plates {numbers} draw their points from a random generator, not from data "
-            "(#775); pass --audit-random-marks to draw them with a banner saying so"
+        refusals.append(
+            f"{_plates(random_plates)}: the points come from a random generator, not from "
+            "data (#775); pass --audit-random-marks to draw them with a banner saying so"
         )
+    if run_plates and run_root is None:
+        refusals.append(
+            f"{_plates(run_plates)}: drawn from run tables; pass --run with the root of the "
+            "run to read (the folder holding comparison/ and arms/)"
+        )
+    if refusals:
+        raise PlateBuildError("\n".join(refusals))
     out_dir.mkdir(parents=True, exist_ok=True)
     plates: list[ManifestEntry] = []
 
@@ -407,14 +475,23 @@ def build_plates(
         _report(entry)
 
     story_dir = out_dir / STORY_DIR
-    for idx, plot_builder in enumerate(PLOT_BUILDERS, start=len(PLATE_BUILDERS) + 1):
-        if plot_builder not in RANDOM_MARK_PLOTS:
-            raise NotImplementedError(
-                f"plate {idx} is not listed as drawing random points, and no builder that "
-                "reads run tables records its inputs yet (#2264)"
-            )
+    run_record: RunRecord | None = None
+    for plot in STORY_PLOTS:
+        idx = _plate_number(plot)
         with mpl.style.context("default"):
-            story = plot_builder(story_dir)
+            if plot.from_run is not None and run_root is not None:
+                drawn = plot.from_run(story_dir, run_root)
+                story, notes = drawn.info, drawn.speaker_notes
+                status = run_tables_status(drawn.inputs)
+                record = _run_record(drawn.run)
+                if run_record is not None and record != run_record:
+                    raise PlateBuildError("table-driven plates read different runs")
+                run_record = record
+            elif plot.random is not None:
+                story, notes = plot.random(story_dir), PLOT_SPEAKER_NOTES[plot.number]
+                status = random_marks_status()
+            else:
+                raise AssertionError(f"data-story plot {plot.number} has no builder to run")
         plate_stem = f"plate_{idx:02d}_{story['stem']}"
         shutil.copy2(story["png_path"], out_dir / f"{plate_stem}.png")
         shutil.copy2(story["svg_path"], out_dir / f"{plate_stem}.svg")
@@ -427,8 +504,8 @@ def build_plates(
             "pdf_path": None,
             "out_of_bounds": story["out_of_bounds"],
             "overlaps": [f"{left!r} <-> {right!r}" for left, right in story["overlaps"]],
-            "speaker_notes": PLOT_SPEAKER_NOTES[idx - len(PLATE_BUILDERS)],
-            "data_status": random_marks_status(),
+            "speaker_notes": notes,
+            "data_status": status,
         }
         plates.append(entry)
         _report(entry)
@@ -437,6 +514,7 @@ def build_plates(
         "schema_version": MANIFEST_SCHEMA_VERSION,
         "generator": "python -m mtp.ncasm_tufte_plates",
         "code_commit": code_commit,
+        "run": run_record,
         "combined_pdf": COMBINED_PDF,
         "plates": plates,
     }
@@ -465,8 +543,9 @@ def build_plates(
     print(f"Combined PDF -> {combined_pdf}")
     print(f"Geometry summary: total_oob={total_oob}, total_overlaps={total_overlaps}")
     if random_plates:
-        numbers = ", ".join(str(number) for number in random_plates)
-        print(f"Plates drawn from random points, with the banner (#775): {numbers}")
+        print(f"Drawn from random points, with the banner (#775): {_plates(random_plates)}")
+    if run_plates:
+        print(f"Drawn from run tables: {_plates(run_plates)}")
     return manifest
 
 
@@ -496,6 +575,14 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--run",
+        type=Path,
+        help=(
+            "root of the analysis run the table-driven plates read: the folder holding "
+            "comparison/ and arms/"
+        ),
+    )
+    parser.add_argument(
         "--code-commit",
         help="revision of the code drawing the plates, recorded in the manifest",
     )
@@ -511,9 +598,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         return 1
     try:
         build_plates(
-            out_dir, audit_random_marks=args.audit_random_marks, code_commit=args.code_commit
+            out_dir,
+            audit_random_marks=args.audit_random_marks,
+            run_root=args.run,
+            code_commit=args.code_commit,
         )
-    except RandomMarksError as error:
+    except (PlateBuildError, RunTableError) as error:
         print(error)
         return 1
     return 0

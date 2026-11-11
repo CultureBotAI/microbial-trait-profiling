@@ -1,4 +1,4 @@
-"""The ten "gray-dot universe" data-story plots, which the build writes as plates 21-30.
+"""The "gray-dot universe" data-story plots still drawn as ported (plots 02-10).
 
 Ported from ``build_tufte_10_data_story_plots.py`` in the slide-wizard deck folder
 ``slides/NCASM-disease-microbiome-traits/`` (sha256 ``8d24c320dffb``, 2026-10-22; #2264).
@@ -8,8 +8,10 @@ PDF files are written without dates and with a fixed id seed, and the standalone
 ten-page PDF and audit JSON of the original ``main()`` are left to
 ``mtp.ncasm_tufte_plates.build``.
 
-Every plot here draws its points from a seeded ``numpy`` random generator and types its
-numbers as literals (#775, #776). Each therefore saves with ``random_marks=True``, which
+Plot 01 has been rebuilt from run tables and lives in
+``mtp.ncasm_tufte_plates.story_from_tables``; the build writes the ten plots as plates
+21-30. Every plot here draws its points from a seeded ``numpy`` random generator and
+types its numbers as literals (#775, #776). Each therefore saves with ``random_marks=True``, which
 stamps ``RANDOM_MARKS_BANNER`` across the plate, and is listed in ``RANDOM_MARK_PLOTS``,
 which ``mtp.ncasm_tufte_plates.build`` refuses to draw unless asked. A plot rebuilt from
 run tables drops both. ``tests/test_ncasm_tufte_plates.py`` fails when a function that
@@ -315,233 +317,6 @@ def draw_quartile_rule_h(
     ax.plot([q_min, q_max], [y, y], color=color, lw=lw_whisker, zorder=zorder)
     ax.plot([q1, q3], [y, y], color=color, lw=lw_iqr, zorder=zorder + 1)
     ax.scatter([med], [y], color=PAPER, edgecolor=color, s=dot_size, lw=1.8, zorder=zorder + 2)
-
-
-# =============================================================================
-# PLOT 01: 2D Joint Effect-vs-Consistency Cloud with Marginal Histograms
-# Inspired by: tufte_023.png, tufte_101.jpg, tufte_012.png
-# =============================================================================
-def plot_01_joint_effect_consistency(out_dir: Path) -> StoryPlotInfo:
-    fig = init_story_plot(
-        1,
-        "Tufte Joint Scatter + Marginal Histograms (cf. tufte_023, tufte_101)",
-        "Six Global Trait Signals Emerge From the Cloud of 239 Evaluable Traits",
-        "Plotting all 239 evaluable traits across 935 contrasts (\u0394z) and 548 studies (% "
-        "majority votes) reveals two opposing tails.",
-        "Source: Arm 1 contrast shift (\u0394z, n = 935) vs. Arm 3 study majority vote (n = 548) "
-        "across 239 evaluable traits (of 317 curated).",
-    )
-
-    # Central 2D scatter panel + top/right marginal histograms
-    ax = fig.add_axes((0.08, 0.14, 0.55, 0.45), facecolor=PAPER)
-    ax_top = fig.add_axes((0.08, 0.595, 0.55, 0.085), facecolor=PAPER)
-    ax_right = fig.add_axes((0.635, 0.14, 0.075, 0.45), facecolor=PAPER)
-    fig.text(
-        0.08,
-        0.735,
-        "A. 239-Trait Joint Cloud: Contrast Shift (\u0394z) vs. Study Vote (%)",
-        fontsize=SLIDE_SIZES["panel_title"],
-        fontweight="bold",
-        color=INK,
-        ha="left",
-        va="top",
-    )
-    fig.text(
-        0.08,
-        0.703,
-        "Gray dots = 233 background traits; top/right step histograms show marginal distributions",
-        fontsize=12.0,
-        color=MUTED,
-        ha="left",
-        va="top",
-    )
-
-    rng = np.random.default_rng(101)
-    # Generate realistic correlated background of 233 traits centered near (0, 50%)
-    cov = [[0.0022, 0.095], [0.095, 7.2]]
-    pts = rng.multivariate_normal([0.002, 50.1], cov, size=233)
-    bg_x = np.clip(pts[:, 0], -0.11, 0.105)
-    bg_y = np.clip(pts[:, 1], 42.5, 55.2)
-
-    ax.axvline(0.0, color=RULE, lw=1.1, ls="--", zorder=1)
-    ax.axhline(50.0, color=RULE, lw=1.1, ls="--", zorder=1)
-
-    ax.scatter(
-        bg_x, bg_y, color=FAINT, edgecolor="#8E887E", linewidth=0.4, s=46, alpha=0.72, zorder=2
-    )
-
-    # Rug ticks along bottom & left range frames (cf. tufte_012.png)
-    ax.scatter(bg_x, np.full_like(bg_x, 36.5), marker="|", color=MUTED, s=28, alpha=0.45, zorder=2)
-    ax.scatter(
-        np.full_like(bg_y, -0.214), bg_y, marker="_", color=MUTED, s=28, alpha=0.45, zorder=2
-    )
-
-    # Focal 6 traits: (dz, study_pct_inc, label, color, tx, ty, ha)
-    focal = [
-        (
-            -0.17,
-            40.6,
-            "#1 Cellulose catabolism\n(\u0394z = \u22120.25 \u00b7 40.6% Inc / 59.4% Dec \u00b7 q "
-            "= 1.5e-7)",
-            SECONDARY,
-            -0.04,
-            39.2,
-            "left",
-        ),
-        (
-            -0.15,
-            46.4,
-            "Obligate anaerobe\n(\u0394z = \u22120.19 \u00b7 46.4% Inc / 53.6% Dec)",
-            HIGHLIGHT,
-            -0.05,
-            44.2,
-            "left",
-        ),
-        (
-            0.16,
-            57.2,
-            "Facultative anaerobe\n(\u0394z = +0.21 \u00b7 57.2% Inc \u00b7 q = 3.2e-4)",
-            ACCENT,
-            0.03,
-            59.8,
-            "right",
-        ),
-        (
-            0.13,
-            58.0,
-            "Halophilic (\u0394z = +0.14 \u00b7 58.0% Inc \u00b7 q = 0.0022)",
-            ACCENT,
-            -0.02,
-            57.6,
-            "right",
-        ),
-        (
-            0.14,
-            56.2,
-            "Coccus (\u0394z = +0.16 \u00b7 56.2% Inc \u00b7 q = 0.0047)",
-            ACCENT,
-            0.05,
-            52.0,
-            "right",
-        ),
-        (
-            0.10,
-            58.8,
-            "Arsenate red. (\u0394z = +0.25 \u00b7 58.8% Inc)",
-            TERTIARY,
-            -0.01,
-            54.6,
-            "right",
-        ),
-    ]
-    for fx, fy, flab, fcol, tx, ty, ha in focal:
-        ax.scatter([fx], [fy], color=fcol, s=125, edgecolor=PAPER, lw=1.3, zorder=5)
-        ax.plot([fx, tx], [fy, ty], color=fcol, lw=1.3, zorder=4)
-        ax.text(tx, ty, flab, fontsize=11.8, fontweight="bold", color=fcol, ha=ha, va="center")
-
-    ax.set_xlim(-0.22, 0.21)
-    ax.set_ylim(36.0, 62.0)
-    ax.set_xticks([-0.15, -0.08, 0.0, 0.08, 0.15])
-    ax.set_xticklabels(["\u22120.15", "\u22120.08", "0.00", "+0.08", "+0.15"])
-    ax.set_yticks([40, 45, 50, 55, 60])
-    ax.set_yticklabels(["40%", "45%", "50%", "55%", "60%"])
-    ax.set_xlabel(
-        "Arm 1 Mean Within-Contrast Shift \u0394z (935 Contrasts)",
-        fontsize=SLIDE_SIZES["axis_label"],
-    )
-    ax.set_ylabel("Arm 3 Study Majority Vote (% Increased)", fontsize=SLIDE_SIZES["axis_label"])
-    despine(ax, top=True, right=True, left=False, bottom=False)
-
-    # Top marginal histogram + Tufte quartile rule
-    all_x = np.concatenate([bg_x, np.array([f[0] for f in focal])])
-    bins_x = np.linspace(-0.20, 0.20, 25)
-    ax_top.hist(
-        all_x,
-        bins=bins_x.tolist(),
-        color=FAINT,
-        edgecolor=INK,
-        lw=0.8,
-        histtype="stepfilled",
-        alpha=0.65,
-    )
-    ax_top.axvline(0.0, color=RULE, lw=1.0, ls="--")
-    ax_top.scatter(
-        [-0.17, 0.16, 0.13, 0.14],
-        [12, 12, 12, 12],
-        color=[SECONDARY, ACCENT, ACCENT, ACCENT],
-        s=45,
-        zorder=5,
-    )
-    ax_top.set_xlim(-0.22, 0.21)
-    ax_top.axis("off")
-
-    # Right marginal histogram
-    all_y = np.concatenate([bg_y, np.array([f[1] for f in focal])])
-    bins_y = np.linspace(36.0, 61.0, 22)
-    ax_right.hist(
-        all_y,
-        bins=bins_y.tolist(),
-        orientation="horizontal",
-        color=FAINT,
-        edgecolor=INK,
-        lw=0.8,
-        histtype="stepfilled",
-        alpha=0.65,
-    )
-    ax_right.axhline(50.0, color=RULE, lw=1.0, ls="--")
-    ax_right.scatter(
-        [14, 14, 14], [40.6, 58.0, 57.2], color=[SECONDARY, ACCENT, ACCENT], s=45, zorder=5
-    )
-    ax_right.set_ylim(36.0, 62.0)
-    ax_right.axis("off")
-
-    # Right-hand interpretation panel
-    ax_info = add_panel(
-        fig,
-        (0.74, 0.15, 0.22, 0.58),
-        "B. Traitome Summary",
-        "Full denominator benchmark",
-    )
-    ax_info.set_xlim(0, 1)
-    ax_info.set_ylim(0, 1)
-    ax_info.axis("off")
-    draw_story_callout(
-        ax_info,
-        0.0,
-        0.70,
-        1.0,
-        0.25,
-        "239 / 317",
-        "Evaluable Traits",
-        "233 stay in the gray null cloud",
-        SECONDARY,
-    )
-    draw_story_callout(
-        ax_info,
-        0.0,
-        0.37,
-        1.0,
-        0.25,
-        "r = 0.84",
-        "Cross-Arm Concordance",
-        "Contrast \u0394z vs. Study Vote %",
-        ACCENT,
-    )
-    draw_story_callout(
-        ax_info,
-        0.0,
-        0.04,
-        1.0,
-        0.25,
-        "q \u2264 0.05",
-        "6 Focal FDR Traits",
-        "Cellulose #1 (q = 1.5e-7)",
-        TERTIARY,
-    )
-
-    return save_and_verify_story_plot(
-        fig, "plot_01_joint_effect_consistency_cloud", out_dir, random_marks=True
-    )
 
 
 # =============================================================================
@@ -1881,7 +1656,6 @@ def plot_10_loto_and_platform_strips(out_dir: Path) -> StoryPlotInfo:
 
 
 PLOT_BUILDERS: list[Callable[[Path], StoryPlotInfo]] = [
-    plot_01_joint_effect_consistency,
     plot_02_paired_parity_variance,
     plot_03_rank_occurrence_landscape,
     plot_04_seven_conditions_logratio_strips,
@@ -1893,21 +1667,12 @@ PLOT_BUILDERS: list[Callable[[Path], StoryPlotInfo]] = [
     plot_10_loto_and_platform_strips,
 ]
 
-# The plots whose points come from a random generator (#775). The build draws these only
-# with --audit-random-marks; remove a plot here when it reads run tables instead.
+# Every plot in this module draws its points from a random generator (#775), so the build
+# draws them only with --audit-random-marks. A plot rebuilt from run tables moves to
+# story_from_tables and leaves this module.
 RANDOM_MARK_PLOTS: frozenset[Callable[[Path], StoryPlotInfo]] = frozenset(PLOT_BUILDERS)
 
 PLOT_SPEAKER_NOTES: dict[int, str] = {
-    1: (
-        "Data Story Plot 01 (Joint Effect-Size x Directional Consistency Cloud): Plotting all 317 "
-        "non-MediaDive biological traits "
-        "in the joint plane of paired effect size (Delta z) vs. contrast sign fraction (% "
-        "Increased across 918 active Tier 1+2 contrasts in 540 studies) "
-        "with marginal step-outline histograms and dot-dash rugs shows why 40 traits survive "
-        "dual-FDR criteria (Arm 1 BY <= 0.05 & Arm 3 BH <= 0.05), led by Cellulose catabolism "
-        "(Delta z = -0.25, 40.1% Inc / 59.9% Dec, q = 1.5e-7) and Arsenate reduction (Delta z = "
-        "+0.25, 57.1% Inc, q = 1.3e-4)."
-    ),
     2: (
         "Data Story Plot 02 (Paired Parity Cloud & Variance Stabilization): Plotting all 317 "
         "traits on the parity plane of mean "

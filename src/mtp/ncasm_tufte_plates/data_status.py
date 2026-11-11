@@ -16,6 +16,7 @@ __all__ = [
     "MarkSource",
     "NumberSource",
     "random_marks_status",
+    "run_tables_status",
     "typed_literals_status",
 ]
 
@@ -64,4 +65,14 @@ def random_marks_status() -> DataStatus:
         "marks": "random_generator",
         "inputs": [],
         "issues": [775, 776, 777, 778, 779],
+    }
+
+
+def run_tables_status(inputs: tuple[InputFile, ...]) -> DataStatus:
+    """A plate whose points and quoted numbers are all read from the listed run tables."""
+    return {
+        "numbers": "run_tables",
+        "marks": "run_tables",
+        "inputs": list(inputs),
+        "issues": [],
     }

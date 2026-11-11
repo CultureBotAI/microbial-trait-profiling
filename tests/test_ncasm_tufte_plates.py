@@ -1,14 +1,21 @@
 """The NCASM plate builders ported from slide-wizard: outputs, repeatability, hygiene (#2264).
 
-None of these tests checks a number on a plate against data. The plates read no data
-files; #775-#779 record what is wrong with their content.
+Plates 1-20 and 22-30 read no data files, and none of these tests checks their numbers
+against data; #775-#779 record what is wrong with their content. Plate 21 is drawn from
+run tables, and the tests at the end check every number it prints against an independent
+reading of those tables.
 """
 
 from __future__ import annotations
 
 import ast
+import csv
+import hashlib
 import json
 import os
+import re
+import shutil
+import statistics
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
@@ -26,12 +33,15 @@ from mtp.ncasm_tufte_plates import (
     plates_common,
     plates_part1,
     plates_part2,
+    run_tables,
+    story_from_tables,
     story_plots,
 )
 
 STORED_TEXT = (
     Path(__file__).parent / "fixtures/ncasm_tufte_plates/stored_plate_text_2026-10-22.json"
 )
+FIXTURE_RUN = Path(__file__).parent / "fixtures/ncasm_tufte_plates/run_tier12_off_511c891"
 TEST_DPI = 40
 Built = tuple[Path, list[build.ManifestEntry]]
 PACKAGE = Path(build.__file__).parent
@@ -54,7 +64,9 @@ def built(tmp_path_factory: pytest.TempPathFactory) -> Iterator[Built]:
         patch.setattr(build, "PLATE_DPI", TEST_DPI)
         patch.setattr(story_plots, "SLIDE_DPI", TEST_DPI)
         out_dir = tmp_path_factory.mktemp("ncasm_plates")
-        manifest = build.build_plates(out_dir, audit_random_marks=True, code_commit=CODE_COMMIT)
+        manifest = build.build_plates(
+            out_dir, audit_random_marks=True, run_root=FIXTURE_RUN, code_commit=CODE_COMMIT
+        )
         yield out_dir, manifest["plates"]
 
 
@@ -92,13 +104,21 @@ def test_build_writes_thirty_plates_a_manifest_and_one_combined_pdf(built: Built
         "schema_version": 1,
         "generator": "python -m mtp.ncasm_tufte_plates",
         "code_commit": CODE_COMMIT,
+        "run": {
+            "comparison_id": "comparison-disease_vs_healthy_tier1_2_subject_controls-3d40e23048d0",
+            "contrast_population": "disease_vs_healthy_tier1_2_subject_controls",
+            "direction_basis": "disease_vs_comparison",
+            "core_run_id": "run-a2d30f9ca1dd45aeb98085f39badc4bf",
+            "git_commit": "511c891229b659e207cfe0f4281a97c3fc039a80",
+            "git_dirty": False,
+        },
         "combined_pdf": build.COMBINED_PDF,
         "plates": manifest,
     }
 
 
 def test_manifest_says_where_each_plates_numbers_and_marks_come_from(built: Built) -> None:
-    """No plate reads a data file yet: #776 for the numbers, #775 for the random points."""
+    """Plate 21 reads run tables; the rest do not: #776 for numbers, #775 for random points."""
     _out_dir, manifest = built
     for entry in manifest[:20]:
         assert entry["data_status"] == {
@@ -107,7 +127,24 @@ def test_manifest_says_where_each_plates_numbers_and_marks_come_from(built: Buil
             "inputs": [],
             "issues": [776, 777, 778, 779],
         }
-    for entry in manifest[20:]:
+    from_tables: data_status.DataStatus = {
+        "numbers": "run_tables",
+        "marks": "run_tables",
+        "inputs": [
+            {
+                "path": relative.as_posix(),
+                "sha256": hashlib.sha256((FIXTURE_RUN / relative).read_bytes()).hexdigest(),
+            }
+            for relative in (
+                run_tables.COMPARISON_RUN,
+                run_tables.ARM1_POOLED_STATS,
+                run_tables.DIRECTION_SCREEN,
+            )
+        ],
+        "issues": [],
+    }
+    assert manifest[20]["data_status"] == from_tables
+    for entry in manifest[21:]:
         assert entry["data_status"] == {
             "numbers": "typed_literals",
             "marks": "random_generator",
@@ -138,10 +175,20 @@ def test_plates_drawn_from_random_points_carry_the_banner_and_the_others_do_not(
 def test_build_stops_before_drawing_when_random_points_are_not_asked_for(tmp_path: Path) -> None:
     out_dir = tmp_path / "plates"
 
-    with pytest.raises(build.RandomMarksError, match="--audit-random-marks") as refusal:
-        build.build_plates(out_dir)
+    with pytest.raises(build.PlateBuildError, match="--audit-random-marks") as refusal:
+        build.build_plates(out_dir, run_root=FIXTURE_RUN)
 
-    assert "plates 21, 22, 23, 24, 25, 26, 27, 28, 29, 30 " in str(refusal.value)
+    assert str(refusal.value).startswith("plates 22, 23, 24, 25, 26, 27, 28, 29, 30: ")
+    assert not out_dir.exists()
+
+
+def test_build_stops_before_drawing_when_the_table_plate_has_no_run(tmp_path: Path) -> None:
+    out_dir = tmp_path / "plates"
+
+    with pytest.raises(build.PlateBuildError, match="--run") as refusal:
+        build.build_plates(out_dir, audit_random_marks=True)
+
+    assert str(refusal.value).startswith("plate 21: drawn from run tables")
     assert not out_dir.exists()
 
 
@@ -152,8 +199,14 @@ def test_main_reports_the_refusal_and_exits_nonzero(
 
     assert build.main(["--output-dir", str(out_dir)]) == 1
 
-    assert "--audit-random-marks" in capsys.readouterr().out
+    said = capsys.readouterr().out
+    assert "--audit-random-marks" in said
+    assert "--run" in said
     assert not out_dir.exists()
+
+    missing = ["--output-dir", str(out_dir), "--audit-random-marks", "--run", str(tmp_path)]
+    assert build.main(missing) == 1
+    assert "comparison/comparison_run.json is missing" in capsys.readouterr().out
 
 
 def _is_random_generator(node: ast.AST) -> bool:
@@ -189,7 +242,9 @@ def test_only_the_gated_data_story_plots_reach_for_a_random_generator() -> None:
     ``RANDOM_MARK_PLOTS`` and must save with ``random_marks=True``; every other builder
     must not touch one. A new random draw anywhere else fails here."""
     gated = {plot.__name__ for plot in story_plots.RANDOM_MARK_PLOTS}
-    assert gated <= {plot.__name__ for plot in story_plots.PLOT_BUILDERS}
+    assert gated == {plot.random.__name__ for plot in build.STORY_PLOTS if plot.random}
+    assert [plot.number for plot in build.STORY_PLOTS] == list(range(1, 11))
+    assert all((plot.random is None) != (plot.from_run is None) for plot in build.STORY_PLOTS)
 
     using_random: set[str] = set()
     stamped: set[str] = set()
@@ -365,3 +420,208 @@ def test_recipe_records_this_checkouts_commit_and_forwards_its_arguments(tmp_pat
     )
     assert refused.returncode != 0
     assert "drop --code-commit=abc" in refused.stderr
+
+
+# --- Plate 21: every number against an independent reading of the run tables (#776) ---
+
+
+def _table(relative: Path, root: Path = FIXTURE_RUN) -> list[dict[str, str]]:
+    with (root / relative).open(encoding="utf-8", newline="") as handle:
+        return list(csv.DictReader(handle, delimiter="\t"))
+
+
+def _signed(value: float) -> str:
+    return f"{value:+.2f}".replace("-", "\u2212")
+
+
+def _expected_plate_21_text(root: Path = FIXTURE_RUN) -> set[str]:
+    """Every digit-bearing string plate 21 should print, computed here from the TSVs.
+
+    This reads the tables with ``csv`` and formats the values itself; it shares no code
+    with ``run_tables`` or ``story_from_tables``."""
+    arm1 = {row["trait"]: row for row in _table(run_tables.ARM1_POOLED_STATS, root)}
+    screen = _table(run_tables.DIRECTION_SCREEN, root)
+    both = [row for row in screen if row["trait"] in arm1]
+    table1 = [row for row in both if row["in_table1"] == "true"]
+    by_hits = [row for row in screen if float(row["by_q_nominal"]) <= 0.05]
+    table1_hits = [row for row in table1 if float(row["by_q_nominal"]) <= 0.05]
+    comparisons = {row["pair_count"] for row in arm1.values()}
+    studies = {row["study_count"] for row in arm1.values()}
+    assert len(comparisons) == len(studies) == 1
+    n_comparisons, n_studies = int(comparisons.pop()), int(studies.pop())
+    r = statistics.correlation(
+        [float(arm1[row["trait"]]["mean_increased_minus_decreased"]) for row in both],
+        [float(row["share_up"]) for row in both],
+    )
+    commit = json.loads((root / run_tables.COMPARISON_RUN).read_text())["git_commit"]
+    words = {6: "Six"}
+    labels = set()
+    for row in table1:
+        name = row["object_name"].replace("_", " ")
+        shift = float(arm1[row["trait"]]["mean_increased_minus_decreased"])
+        labels.add(
+            f"{name[0].upper()}{name[1:]}  {_signed(shift)} \u00b7 "
+            f"{100 * float(row['share_up']):.1f}% up "
+            f"({row['studies_up']}:{row['studies_down']}) \u00b7 "
+            f"BY q = {float(row['by_q_nominal']):.3f}"
+        )
+    return labels | {
+        "DATA STORY PLOT 01 OF 10  \u00b7  TUFTE JOINT SCATTER + MARGINAL HISTOGRAMS "
+        "(CF. TUFTE_023, TUFTE_101)",
+        f"Where the {words[len(table1)]} Table 1 Traits Sit Among {len(both)} Traits Tested "
+        "by Both Arms",
+        f"One dot per trait: mean paired shift across {n_comparisons:,} comparisons "
+        "(\u0394z) against the share of studies in which the trait rises.",
+        f"Source: Arm 1 pooled shift ({n_comparisons:,} comparisons, {n_studies} studies) and "
+        f"Arm 3 study sign screen ({len(screen)} traits); run {commit[:7]}.",
+        "Tufte Data Story (1/10)",
+        f"A. {len(both)} Traits: Mean Paired Shift (\u0394z) vs. Share of Studies Voting Up",
+        f"Gray dots = {len(both) - len(table1)} other traits; dark rings = the {len(by_hits)} "
+        "traits passing BY q \u2264 0.05 in the sign screen",
+        f"Arm 1 Mean Paired Shift \u0394z, Increased \u2212 Decreased "
+        f"({n_comparisons:,} Comparisons)",
+        "Arm 3 Share of Studies Voting Up (%)",
+        f"{len(both)} / {len(screen)}",
+        f"{len(screen) - len(both)} screen traits lack an Arm 1 row",
+        f"r = {r:.2f}",
+        f"{len(by_hits)} / {len(screen)}",
+        "Pass BY q \u2264 0.05 (sign test)",
+        f"{len(table1_hits)} of the {len(table1)} Table 1 traits pass",
+    }
+
+
+def _is_axis_tick(text: str) -> bool:
+    return re.fullmatch(r"[+\u2212]?\d+(\.\d+)?%?", text) is not None
+
+
+def _digit_bearing_text(svg: Path) -> set[str]:
+    return {
+        text
+        for text in _svg_text(svg)
+        if any(character.isdigit() for character in text) and not _is_axis_tick(text)
+    }
+
+
+def test_plate_21_prints_only_numbers_read_from_the_run_tables(built: Built) -> None:
+    """Every string with a digit on the plate equals one computed here from the tables.
+
+    Axis tick labels are the only digits left out. A number typed into the builder, or a
+    table value formatted from the wrong column, fails here."""
+    out_dir, manifest = built
+    printed = _digit_bearing_text(out_dir / manifest[20]["svg_path"])
+
+    assert printed == _expected_plate_21_text()
+    # One value spelled out, so the comparison above cannot pass on two matching mistakes.
+    assert (
+        "Cellulose catabolic process  \u22120.25 \u00b7 40.6% up (181:265) \u00b7 BY q = 0.041"
+        in printed
+    )
+
+
+def test_plate_21_draws_one_dot_per_trait_at_the_tabulated_values() -> None:
+    cloud = run_tables.load_trait_cloud(FIXTURE_RUN)
+    arm1 = {row["trait"]: row for row in _table(run_tables.ARM1_POOLED_STATS)}
+    screen = {row["trait"]: row for row in _table(run_tables.DIRECTION_SCREEN)}
+
+    assert [point.trait for point in cloud.points] == list(arm1)
+    for point in cloud.points:
+        assert point.mean_shift == float(arm1[point.trait]["mean_increased_minus_decreased"])
+        assert point.share_up == float(screen[point.trait]["share_up"])
+        assert point.studies_up == int(screen[point.trait]["studies_up"])
+        assert point.studies_down == int(screen[point.trait]["studies_down"])
+        assert point.in_table1 == (screen[point.trait]["in_table1"] == "true")
+    assert cloud.comparisons == 935
+    assert cloud.arm1_studies == 548
+    assert (len(cloud.points), cloud.screen_traits, len(cloud.table1)) == (311, 317, 6)
+
+
+def _edited_run(tmp_path: Path, relative: Path, edit: dict[str, dict[str, str]]) -> Path:
+    """A copy of the fixture run with some cells of one table replaced, keyed by trait."""
+    root = tmp_path / "run"
+    shutil.copytree(FIXTURE_RUN, root)
+    rows = _table(relative, root)
+    for row in rows:
+        row.update(edit.get(row["trait"], {}))
+    with (root / relative).open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(rows[0]), delimiter="\t")
+        writer.writeheader()
+        writer.writerows(rows)
+    return root
+
+
+def test_plate_21_follows_the_tables_when_they_change(tmp_path: Path) -> None:
+    """Change one table cell and the plate, its note and its input hash change with it."""
+    cellulose = "METPO:2000103|GO:0030245"
+    root = _edited_run(
+        tmp_path,
+        run_tables.DIRECTION_SCREEN,
+        {cellulose: {"studies_up": "200", "share_up": "0.4301", "by_q_nominal": "0.2"}},
+    )
+    with pytest.MonkeyPatch.context() as patch, mpl.style.context("default"):
+        patch.setattr(story_plots, "SLIDE_DPI", TEST_DPI)
+        drawn = story_from_tables.plot_01_trait_cloud(tmp_path / "out", root)
+
+    printed = _digit_bearing_text(Path(drawn.info["svg_path"]))
+    assert printed == _expected_plate_21_text(root)
+    assert (
+        "Cellulose catabolic process  \u22120.25 \u00b7 43.0% up (200:265) \u00b7 BY q = 0.200"
+        in printed
+    )
+    assert "3 / 317" in printed
+    assert "0 of the 6 Table 1 traits pass" in printed
+    assert "Of the 6 Table 1 traits, 0 pass (none)" in drawn.speaker_notes
+    original = hashlib.sha256((FIXTURE_RUN / run_tables.DIRECTION_SCREEN).read_bytes())
+    hashes = {entry["path"]: entry["sha256"] for entry in drawn.inputs}
+    assert hashes[run_tables.DIRECTION_SCREEN.as_posix()] != original.hexdigest()
+
+
+@pytest.mark.parametrize(
+    ("relative", "edit", "message"),
+    [
+        (
+            run_tables.ARM1_POOLED_STATS,
+            {"METPO:1000608": {"stratum_kind": "body_site"}},
+            "stratum_kind is not constant",
+        ),
+        (
+            run_tables.ARM1_POOLED_STATS,
+            {"METPO:1000608": {"mean_increased_minus_decreased": "nan"}},
+            "is not finite",
+        ),
+        (
+            run_tables.ARM1_POOLED_STATS,
+            {"METPO:1000608": {"trait": "METPO:0000000"}},
+            "lacks pooled-shift traits",
+        ),
+        (
+            run_tables.DIRECTION_SCREEN,
+            {"METPO:1000608": {"test_status": "untestable"}},
+            "test_status is not constant",
+        ),
+        (
+            run_tables.DIRECTION_SCREEN,
+            {"METPO:1000608": {"studies_up": "12.5"}},
+            "is not a count",
+        ),
+    ],
+)
+def test_loader_refuses_tables_that_are_not_what_the_plate_assumes(
+    tmp_path: Path, relative: Path, edit: dict[str, dict[str, str]], message: str
+) -> None:
+    root = _edited_run(tmp_path, relative, edit)
+
+    with pytest.raises(run_tables.RunTableError, match=message):
+        run_tables.load_trait_cloud(root)
+
+
+def test_loader_refuses_an_unfinished_comparison_and_a_missing_table(tmp_path: Path) -> None:
+    root = tmp_path / "run"
+    shutil.copytree(FIXTURE_RUN, root)
+    record = json.loads((root / run_tables.COMPARISON_RUN).read_text())
+    (root / run_tables.COMPARISON_RUN).write_text(json.dumps(record | {"status": "failed"}))
+    with pytest.raises(run_tables.RunTableError, match="not completed"):
+        run_tables.load_trait_cloud(root)
+
+    (root / run_tables.DIRECTION_SCREEN).unlink()
+    with pytest.raises(run_tables.RunTableError, match=r"trait_direction_screen\.tsv is missing"):
+        run_tables.load_trait_cloud(root)

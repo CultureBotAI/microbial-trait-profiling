@@ -501,12 +501,14 @@ cellulose-decr-tufte *ARGS:
 
 # The 30 NCASM Tufte plates (plates I-XX and the ten data-story plots) with their
 # manifest and combined PDF, drawn into data/derived/ncasm_tufte_plates/, a folder of
-# their own beside the deck's data/derived/tufte_plates/ (#2264). The plates read no data
-# files: their numbers are typed literals (#776), and plates 21-30 draw their points from
-# a random generator (#775). The build therefore stops unless --audit-random-marks is
-# given, and then stamps a banner on those plates. Pass --output-dir for another folder
-# and --overwrite to replace existing plates. The manifest records this checkout's commit
-# (+dirty when its code is modified) and each plate's data status.
+# their own beside the deck's data/derived/tufte_plates/ (#2264). Plate 21 is drawn from
+# run tables: pass --run with the root of the run to read (the folder holding comparison/
+# and arms/). The other plates read no data files: their numbers are typed literals
+# (#776), and plates 22-30 draw their points from a random generator (#775), so the build
+# stops unless --audit-random-marks is given, and then stamps a banner on those plates.
+# Pass --output-dir for another folder and --overwrite to replace existing plates. The
+# manifest records this checkout's commit (+dirty when its code is modified), the run,
+# and each plate's data status with the hashes of the files it read.
 [positional-arguments]
 ncasm-tufte-plates *ARGS:
 	#!/usr/bin/env bash
