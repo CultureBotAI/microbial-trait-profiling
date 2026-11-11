@@ -529,3 +529,141 @@ def test_companion_heatmap_refuses_more_conditions_than_distinct_colours(
     ):
         followup.save_traits_vs_organisms_heatmap(matrix, taxa, traits, output)
     assert not output.exists()
+
+
+@pytest.mark.parametrize(
+    ("column_name", "unlisted_value"),
+    [
+        ("display_condition", "unknown"),
+        ("display_condition", "Asthma"),
+        ("dominant_condition", "unknown"),
+    ],
+    ids=["display-unknown", "display-unlisted", "dominant-unknown"],
+)
+def test_companion_heatmap_refuses_unlisted_row_conditions(
+    tmp_path: Path, column_name: str, unlisted_value: str
+) -> None:
+    """Rows whose condition is not in TARGET_CONDITIONS are refused (#2035)."""
+    assert len(followup.COMPANION_HEATMAP_PALETTE_COLORS) == 8
+    assert "#64748b" not in followup.COMPANION_HEATMAP_PALETTE_COLORS
+    matrix = pd.DataFrame([[1, 0], [0, 1]], index=["taxon-a", "taxon-b"], columns=["T:1", "T:2"])
+    taxa = pd.DataFrame(
+        {
+            "taxon_name": ["Taxon A", "Taxon B"],
+            "target_profile_count": [1, 1],
+            column_name: [followup.TARGET_CONDITIONS[0], unlisted_value],
+        },
+        index=matrix.index,
+    )
+    traits = pd.DataFrame({"heatmap_label": ["One", "Two"]}, index=matrix.columns)
+    output = tmp_path / f"unlisted_{column_name}_{unlisted_value}.png"
+    raised_msg = ""
+    try:
+        followup.save_traits_vs_organisms_heatmap(matrix, taxa, traits, output)
+    except ValueError as exc:
+        raised_msg = str(exc)
+    expected_prefix = (
+        f"Companion heatmap row condition(s) ['{unlisted_value}'] are not in TARGET_CONDITIONS "
+    )
+    assert raised_msg.startswith(expected_prefix), (
+        f"Expected ValueError starting with {expected_prefix!r}, got {raised_msg!r}"
+    )
+    assert not output.exists()
+
+
+@pytest.mark.parametrize("condition_source", ["paired-top", "infographic"])
+def test_main_refuses_excess_conditions_before_mkdir_or_loading_or_writing_tables(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, condition_source: str
+) -> None:
+    """main() refuses >8 conditions before creating output_dir or loading/writing (#2047)."""
+    followup.validate_companion_heatmap_condition_count(8)
+    calls: list[str] = []
+
+    def record_call(label: str) -> Callable[..., object]:
+        def _stub(*_args: object, **_kwargs: object) -> object:
+            calls.append(label)
+            raise AssertionError(f"{label} should not be called when condition count > 8")
+
+        return _stub
+
+    for hook_name in (
+        "load_experiments",
+        "load_studies",
+        "load_trait_labels",
+        "load_profile_labels",
+        "load_profiles",
+        "load_top_paired_conditions",
+        "summarize_condition_depth",
+        "write_target_title_table",
+        "summarize_autism_labels",
+        "compute_profile_neighbors",
+        "summarize_guild_connections",
+        "build_traits_vs_organisms_heatmap",
+        "save_traits_vs_organisms_heatmap",
+        "write_report",
+    ):
+        monkeypatch.setattr(followup, hook_name, record_call(hook_name))
+
+    output_dir = tmp_path / f"early_refusal_{condition_source}"
+    argv = [
+        "followup",
+        "--output-dir",
+        str(output_dir),
+        "--artifact-prefix",
+        "probe_",
+        "--condition-source",
+        condition_source,
+    ]
+    if condition_source == "paired-top":
+        argv.extend(["--top-paired-conditions", "9"])
+    else:
+        monkeypatch.setattr(
+            followup,
+            "TARGET_CONDITIONS",
+            tuple(f"Condition {i}" for i in range(9)),
+        )
+    monkeypatch.setattr(sys, "argv", argv)
+
+    raised_msg = ""
+    try:
+        followup.main()
+    except ValueError as exc:
+        raised_msg = str(exc)
+
+    expected_msg = (
+        "The companion heatmap has 8 distinct condition colours; 9 conditions "
+        "would reuse one. Use --top-paired-conditions 8 or fewer."
+    )
+    assert raised_msg == expected_msg, f"Expected {expected_msg!r}, got {raised_msg!r}"
+    assert calls == []
+    assert not output_dir.exists()
+
+
+def test_direct_save_heatmap_backstop_refuses_ninth_condition_with_value_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Direct callers of save_traits_vs_organisms_heatmap still hit the >8 backstop (#2047)."""
+    conditions = tuple(f"Condition {i}" for i in range(9))
+    monkeypatch.setattr(followup, "TARGET_CONDITIONS", conditions)
+    matrix = pd.DataFrame([[1, 0], [0, 1]], index=["taxon-a", "taxon-b"], columns=["T:1", "T:2"])
+    taxa = pd.DataFrame(
+        {
+            "taxon_name": ["Taxon A", "Taxon B"],
+            "target_profile_count": [1, 1],
+            "display_condition": [conditions[0], conditions[8]],
+        },
+        index=matrix.index,
+    )
+    traits = pd.DataFrame({"heatmap_label": ["One", "Two"]}, index=matrix.columns)
+    output = tmp_path / "backstop_nine.png"
+    raised_msg = ""
+    try:
+        followup.save_traits_vs_organisms_heatmap(matrix, taxa, traits, output)
+    except ValueError as exc:
+        raised_msg = str(exc)
+    expected_msg = (
+        "The companion heatmap has 8 distinct condition colours; 9 conditions "
+        "would reuse one. Use --top-paired-conditions 8 or fewer."
+    )
+    assert raised_msg == expected_msg, f"Expected {expected_msg!r}, got {raised_msg!r}"
+    assert not output.exists()
