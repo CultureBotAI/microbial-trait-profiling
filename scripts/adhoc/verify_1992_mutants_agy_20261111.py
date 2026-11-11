@@ -2,11 +2,12 @@
 
 Purpose:
     Verify that the direct assertion checks in `tests/test_missing_trait_fraction_1992.py`
-    fail by call-phase `AssertionError` when `study_direction_means` omits or weakens
-    the missing-trait guard (`guild not in profile.guild_counts`), when `not in` is
-    inverted to `in`, when only the first profile or first guild is checked, when
-    the `"missing is not zero"` error message is altered, or when test assertions are
-    mutated.
+    fail by call-phase `AssertionError` (with exact pytest exit code 1) when
+    `study_direction_means` omits or weakens the missing-trait guard
+    (`guild not in profile.guild_counts`), when `not in` is inverted to `in`, when
+    only the first profile, first guild, or increased direction is checked, when
+    the `"missing is not zero"` error message is altered, or when test assertions
+    are mutated.
 
 Inputs:
     - Worktree copies of `src/mtp/` and `tests/test_missing_trait_fraction_1992.py`.
@@ -70,8 +71,9 @@ MUTANTS: tuple[MutantSpec, ...] = (
         mutant_id="M2_invert_not_in_check",
         description=(
             "study_direction_means replaces `guild not in profile.guild_counts` with "
-            "`guild in profile.guild_counts`; must fail by AssertionError when complete "
-            "guild_counts are passed in "
+            "`guild in profile.guild_counts`, rejecting the first present trait "
+            "(`facultatively_aerobic`) instead of the omitted `cellulose_catabolic_process`; "
+            "must fail the exact error-message AssertionError in "
             "test_comparison_rows_rejects_absent_table1_trait_and_accepts_explicit_zero."
         ),
         target_relpath="src/mtp/guild_maps.py",
@@ -175,6 +177,24 @@ MUTANTS: tuple[MutantSpec, ...] = (
             "test_comparison_rows_rejects_absent_table1_trait_and_accepts_explicit_zero"
         ),
     ),
+    MutantSpec(
+        mutant_id="M8_inc_only_missing_trait_guard",
+        description=(
+            "study_direction_means restricts the missing-trait check to increased "
+            'profiles (`profile.inc_dec == "inc"`), silently imputing 0.0 for '
+            "decreased profiles missing a requested trait; must fail by AssertionError in "
+            "test_study_direction_means_and_comparison_rows_reject_missing_trait_on_decreased_profile."
+        ),
+        target_relpath="src/mtp/guild_maps.py",
+        needle="            if guild not in profile.guild_counts:",
+        replacement=(
+            '            if profile.inc_dec == "inc" and guild not in profile.guild_counts:'
+        ),
+        pytest_nodeid=(
+            "tests/test_missing_trait_fraction_1992.py::"
+            "test_study_direction_means_and_comparison_rows_reject_missing_trait_on_decreased_profile"
+        ),
+    ),
 )
 
 
@@ -194,7 +214,7 @@ class _CallPhaseInspector:
         self,
         node: object,
         call: pytest.CallInfo[object],
-        report: pytest.TestReport,
+        report: pytest.CollectReport | pytest.TestReport,
     ) -> None:
         _ = node
         exc_name = call.excinfo.type.__name__ if call.excinfo is not None else "UnknownError"
@@ -289,16 +309,12 @@ def _run_pytest_node(
     return exit_code, inspector, combined_output
 
 
-def _run_targeted_pytest(
-    scratch_repo: Path,
-    nodeid: str,
+def _evaluate_pytest_outcome(
+    exit_code: int,
+    inspector: _CallPhaseInspector,
     junit_xml: Path,
-    *,
-    repo_root: Path | None = None,
+    output: str,
 ) -> tuple[bool, str]:
-    """Run one pytest nodeid and return (killed_by_call_assertion, detail)."""
-    effective_root = repo_root if repo_root is not None else Path(__file__).resolve().parents[2]
-    exit_code, inspector, output = _run_pytest_node(effective_root, scratch_repo, nodeid, junit_xml)
     junit_exists = junit_xml.is_file() and junit_xml.stat().st_size > 0
     call_failed = (
         len(inspector.call_reports) == 1
@@ -306,7 +322,7 @@ def _run_targeted_pytest(
         and not inspector.non_call_failures
     )
     killed_by_assertion = (
-        exit_code != 0
+        exit_code == int(pytest.ExitCode.TESTS_FAILED)
         and junit_exists
         and call_failed
         and inspector.call_exc_types == ["AssertionError"]
@@ -320,12 +336,39 @@ def _run_targeted_pytest(
     return killed_by_assertion, detail
 
 
+def _run_targeted_pytest(
+    scratch_repo: Path,
+    nodeid: str,
+    junit_xml: Path,
+    *,
+    repo_root: Path | None = None,
+) -> tuple[bool, str]:
+    """Run one pytest nodeid and return (killed_by_call_assertion, detail)."""
+    effective_root = repo_root if repo_root is not None else Path(__file__).resolve().parents[2]
+    exit_code, inspector, output = _run_pytest_node(effective_root, scratch_repo, nodeid, junit_xml)
+    return _evaluate_pytest_outcome(exit_code, inspector, junit_xml, output)
+
+
+def _validate_scratch_parent(repo_root: Path, scratch_parent: Path) -> None:
+    resolved_repo = Path(repo_root).expanduser().resolve()
+    resolved_scratch = Path(scratch_parent).expanduser().resolve(strict=False)
+    lexical_repo = Path(os.path.abspath(Path(repo_root).expanduser()))
+    lexical_scratch = Path(os.path.abspath(Path(scratch_parent).expanduser()))
+    if any(
+        candidate == root or candidate.is_relative_to(root)
+        for candidate in (resolved_scratch, lexical_scratch)
+        for root in (resolved_repo, lexical_repo)
+    ):
+        raise ValueError("scratch_dir must be outside the repository root")
+
+
 def verify_mutants(
     repo_root: Path,
     scratch_parent: Path,
     *,
     canary_only: bool = False,
 ) -> tuple[Path, list[dict[str, object]]]:
+    _validate_scratch_parent(repo_root, scratch_parent)
     scratch_parent.mkdir(parents=True, exist_ok=True)
     run_label = "canary" if canary_only else "all"
     scratch_dir = Path(
@@ -360,22 +403,25 @@ def verify_mutants(
         target_path.write_text(mutated_text, encoding="utf-8")
         junit_xml = scratch_dir / f"junit_{spec.mutant_id}.xml"
         try:
-            killed_by_assertion, detail = _run_targeted_pytest(
-                scratch_repo,
-                spec.pytest_nodeid,
-                junit_xml,
-                repo_root=repo_root,
+            exit_code, inspector, output = _run_pytest_node(
+                repo_root, scratch_repo, spec.pytest_nodeid, junit_xml
             )
         finally:
             target_path.write_text(original_text, encoding="utf-8")
 
+        killed_by_assertion, detail = _evaluate_pytest_outcome(
+            exit_code, inspector, junit_xml, output
+        )
         verdict: dict[str, object] = {
             "mutant_id": spec.mutant_id,
             "description": spec.description,
             "target_relpath": spec.target_relpath,
             "pytest_nodeid": spec.pytest_nodeid,
-            "status": "KILLED" if killed_by_assertion else "SURVIVED",
+            "status": "KILLED" if killed_by_assertion else "SURVIVED_OR_INVALID",
             "killed": killed_by_assertion,
+            "exit_code": exit_code,
+            "call_exc_types": inspector.call_exc_types,
+            "non_call_failures": inspector.non_call_failures,
             "junit_xml": str(junit_xml),
             "detail": detail,
         }
@@ -400,10 +446,16 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         required=True,
         help="Parent directory under which a persistent scratch run directory will be created.",
     )
-    parser.add_argument(
+    mode_group = parser.add_mutually_exclusive_group()
+    mode_group.add_argument(
         "--canary",
         action="store_true",
         help="Run only the first mutant (M1) after baseline verification.",
+    )
+    mode_group.add_argument(
+        "--all",
+        action="store_true",
+        help="Run all mutants after baseline verification (default when --canary is omitted).",
     )
     return parser.parse_args(argv)
 
@@ -413,7 +465,7 @@ def main(argv: list[str] | None = None) -> int:
     repo_root = Path(__file__).resolve().parents[2]
     verdicts_path, verdicts = verify_mutants(
         repo_root,
-        args.scratch_dir.resolve(),
+        args.scratch_dir,
         canary_only=bool(args.canary),
     )
     killed_count = sum(1 for item in verdicts if item.get("killed") is True)
