@@ -9,6 +9,8 @@ from __future__ import annotations
 
 import hashlib
 import re
+import runpy
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -16,11 +18,12 @@ from matplotlib.axes import Axes
 from matplotlib.figure import Figure
 
 import test_cellulose_tufte_historical_labels as historical_labels
+from mtp.local_path_patterns import compile_absolute_local_paths
 from test_cellulose_tufte_historical_labels import label_plates as label_plates
 
 ROOT = Path(__file__).resolve().parents[1]
-ORA_AUDIT = ROOT / "docs/reviews/2026-10-19-ora-provenance-refresh.md"
 HISTORICAL = ROOT / "tests/fixtures/cellulose_tufte_historical_sources"
+ORA_AUDIT = HISTORICAL / "ora_provenance_refresh_781e92e4.md"
 VALIDATION = HISTORICAL / "table1_log_ratio_validation_1e0d0eef.md"
 
 
@@ -293,19 +296,27 @@ def _fixture_manifest() -> dict[str, tuple[str, str, str]]:
     return records
 
 
+def _historical_source_names(directory: Path) -> list[str]:
+    """Discover non-hidden sources recursively; only the root README is the manifest."""
+    sources = []
+    for path in directory.rglob("*"):
+        relative = path.relative_to(directory)
+        if not path.is_file():
+            continue
+        if relative == Path("README.md") or any(part.startswith(".") for part in relative.parts):
+            continue
+        sources.append(relative.as_posix())
+    return sorted(sources)
+
+
 def test_historical_fixture_manifest_covers_every_preserved_source() -> None:
     records = _fixture_manifest()
-    actual = {
-        path.name for path in HISTORICAL.iterdir() if path.is_file() and path.name != "README.md"
-    }
-    assert set(records) == actual
+    assert set(records) == set(_historical_source_names(HISTORICAL))
 
 
 @pytest.mark.parametrize(
     "fixture",
-    sorted(
-        path.name for path in HISTORICAL.iterdir() if path.is_file() and path.name != "README.md"
-    ),
+    _historical_source_names(HISTORICAL),
 )
 def test_historical_fixture_bytes_equal_the_documented_git_blob(fixture: str) -> None:
     expected = _fixture_manifest()[fixture][2]
@@ -319,4 +330,159 @@ def test_plate_five_validation_is_a_documented_historical_fixture() -> None:
     assert VALIDATION.parent == HISTORICAL, (
         "Plate V's methods-validation numbers must read the historical snapshot, not HEAD"
     )
+    assert ORA_AUDIT.parent == HISTORICAL, (
+        "Plate V's ORA numbers must read the historical snapshot, not HEAD"
+    )
     assert _fixture_manifest()[VALIDATION.name][1] == "methods/table1_log_ratio_validation.md"
+
+
+def test_plate_five_ora_audit_is_a_documented_historical_fixture() -> None:
+    """The ORA source is frozen independently of subsequent live-document edits (#1993)."""
+    assert ORA_AUDIT.parent == HISTORICAL, "Plate V's ORA source must be a historical snapshot"
+    assert ORA_AUDIT.name == "ora_provenance_refresh_781e92e4.md"
+    commit, source, _ = _fixture_manifest()[ORA_AUDIT.name]
+    assert commit.startswith("781e92e4")
+    assert source == "docs/reviews/2026-10-19-ora-provenance-refresh.md"
+
+
+def test_historical_ora_snapshot_has_no_machine_local_paths() -> None:
+    pattern = compile_absolute_local_paths(flags=0, classified=True)
+    assert pattern.search(ORA_AUDIT.read_text(encoding="utf-8")) is None
+
+
+def _require_guard_failure(check: Callable[[], None], message: str) -> None:
+    failure = None
+    try:
+        check()
+    except AssertionError as exc:
+        failure = exc
+    assert failure is not None, message
+
+
+def test_historical_source_parent_guard_refuses_live_ora_audit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setitem(
+        globals(), "ORA_AUDIT", ROOT / "docs/reviews/2026-10-19-ora-provenance-refresh.md"
+    )
+    _require_guard_failure(
+        test_plate_five_validation_is_a_documented_historical_fixture,
+        "The parent guard accepted the live ORA audit instead of its historical snapshot",
+    )
+
+
+def _write_historical_manifest(directory: Path, sources: dict[str, bytes]) -> None:
+    """Make tiny source fixtures and their independent Git-blob manifest for guard tests."""
+    rows = [
+        "| Fixture | Source commit | Original repository path | Git blob ID |",
+        "|---|---|---|---|",
+    ]
+    for filename, content in sources.items():
+        path = directory / filename
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(content)
+        header = f"blob {len(content)}\0".encode("ascii")
+        blob = hashlib.sha1(header + content, usedforsecurity=False).hexdigest()
+        rows.append(f"| `{filename}` | `{'a' * 40}` | `docs/source.md` | `{blob}` |")
+    (directory / "README.md").write_text("\n".join(rows) + "\n\n", encoding="utf-8")
+
+
+@pytest.mark.parametrize(
+    "sources",
+    [
+        {"source.md": b"root\n", "nested/source.md": b"nested\n"},
+        {"first/source.md": b"first\n", "second/source.md": b"second\n"},
+        {"nested/README.md": b"historical source, not the root manifest\n"},
+    ],
+    ids=["nested-source", "same-basename", "nested-readme"],
+)
+def test_historical_manifest_accepts_documented_nested_sources(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, sources: dict[str, bytes]
+) -> None:
+    _write_historical_manifest(tmp_path, sources)
+    monkeypatch.setitem(globals(), "HISTORICAL", tmp_path)
+    test_historical_fixture_manifest_covers_every_preserved_source()
+    for filename in sources:
+        test_historical_fixture_bytes_equal_the_documented_git_blob(filename)
+
+
+def test_historical_manifest_refuses_undocumented_nested_source(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _write_historical_manifest(tmp_path, {"source.md": b"documented\n"})
+    nested = tmp_path / "nested" / "unlisted.md"
+    nested.parent.mkdir()
+    nested.write_bytes(b"unlisted\n")
+    monkeypatch.setitem(globals(), "HISTORICAL", tmp_path)
+    _require_guard_failure(
+        test_historical_fixture_manifest_covers_every_preserved_source,
+        "The manifest guard ignored an undocumented nested historical source",
+    )
+
+
+@pytest.mark.parametrize("hidden", [".DS_Store", ".cache/source.md", "nested/.cache/source.md"])
+def test_historical_manifest_ignores_hidden_entries(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, hidden: str
+) -> None:
+    _write_historical_manifest(tmp_path, {"source.md": b"documented\n"})
+    path = tmp_path / hidden
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(b"operating-system or tool metadata\n")
+    monkeypatch.setitem(globals(), "HISTORICAL", tmp_path)
+    test_historical_fixture_manifest_covers_every_preserved_source()
+
+
+def test_historical_source_discovery_uses_relative_names_for_every_byte_case(
+    tmp_path: Path,
+) -> None:
+    sources = {"source.md": b"root\n", "nested/source.md": b"nested\n"}
+    _write_historical_manifest(tmp_path, sources)
+    (tmp_path / ".DS_Store").write_bytes(b"ignored\n")
+    discover = globals().get("_historical_source_names")
+    assert callable(discover), "Manifest and byte tests must share recursive source discovery"
+    assert discover(tmp_path) == sorted(sources)
+
+
+def test_historical_byte_parametrization_includes_nested_sources(tmp_path: Path) -> None:
+    """Evaluate the actual decorator in a tiny checkout, independently of helper assertions."""
+    tests_dir = tmp_path / "checkout" / "tests"
+    historical = tests_dir / "fixtures" / "cellulose_tufte_historical_sources"
+    sources = {
+        "first/source.md": b"first\n",
+        "second/source.md": b"second\n",
+        "nested/README.md": b"nested source\n",
+    }
+    _write_historical_manifest(historical, sources)
+    (historical / ".DS_Store").write_bytes(b"metadata\n")
+    hidden = historical / ".cache" / "source.md"
+    hidden.parent.mkdir()
+    hidden.write_bytes(b"metadata\n")
+    copied_module = tests_dir / Path(__file__).name
+    copied_module.write_bytes(Path(__file__).read_bytes())
+
+    namespace = runpy.run_path(str(copied_module))
+    byte_test = namespace.get("test_historical_fixture_bytes_equal_the_documented_git_blob")
+    assert callable(byte_test)
+    parametrizations = [
+        mark
+        for mark in getattr(byte_test, "pytestmark", ())
+        if mark.name == "parametrize" and mark.args[0] == "fixture"
+    ]
+    assert len(parametrizations) == 1
+    assert list(parametrizations[0].args[1]) == sorted(sources), (
+        "The byte-test decorator must enumerate every nested source using its relative path"
+    )
+
+
+def test_historical_byte_guard_refuses_changed_nested_source(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    filename = "nested/source.md"
+    _write_historical_manifest(tmp_path, {filename: b"original\n"})
+    monkeypatch.setitem(globals(), "HISTORICAL", tmp_path)
+    test_historical_fixture_bytes_equal_the_documented_git_blob(filename)
+    (tmp_path / filename).write_bytes(b"modified\n")
+    _require_guard_failure(
+        lambda: test_historical_fixture_bytes_equal_the_documented_git_blob(filename),
+        "The byte guard accepted a changed nested historical source",
+    )
