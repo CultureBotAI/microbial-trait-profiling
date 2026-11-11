@@ -268,6 +268,8 @@ def main(argv: list[str] | None = None) -> None:
     )
 
     args = parse_args(argv)
+    if args.background_scope == "all_matrix" and args.corpus_taxa_file is not None:
+        raise ValueError("--corpus-taxa-file requires --background-scope profile_corpus")
     corpus_taxa = (
         read_corpus_taxa(args.corpus_taxa_file)
         if args.background_scope == "profile_corpus"

@@ -1,5 +1,6 @@
 """Verify #746 scratch copies of source/tests/methods; print verdicts, 2026-11-10."""
 
+import argparse
 import contextlib
 import importlib.util
 import io
@@ -23,6 +24,10 @@ def check(root: Path) -> None:
     checks.test_default_background_bytes(case)
     checks.test_profile_corpus_background(case, "t1\nt2\n")
     checks.test_background_methods_contract()
+    for index, scope in enumerate(([], ["--background-scope", "all_matrix"])):
+        rejection_case = root / f"rejection_{index}"
+        rejection_case.mkdir()
+        checks.test_all_matrix_rejects_corpus_file(rejection_case, scope)
     corpus = case / "corpus.tsv"
     corpus.write_text("t1\nt2\nunknown\n")
     try:
@@ -38,8 +43,21 @@ def check(root: Path) -> None:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--canary", action="store_true", help="Run control and new flag mutant only"
+    )
+    parser.add_argument("--scratch-dir", type=Path)
+    args = parser.parse_args()
+    if args.scratch_dir is not None:
+        args.scratch_dir.mkdir(parents=True, exist_ok=True)
     originals = {path: (ROOT / path).read_bytes() for path in (SCRIPT, TEST, DOC)}
     mutants = [
+        (
+            SCRIPT,
+            'if args.background_scope == "all_matrix" and args.corpus_taxa_file is not None:',
+            "if False:",
+        ),
         (
             SCRIPT,
             "background_taxa_universe = corpus_rows",
@@ -52,8 +70,10 @@ def main() -> None:
         (SCRIPT, "{file_sha256(args.corpus_taxa_file)}", "unbound"),
         (DOC, "--background-scope profile_corpus", "--background-scope other"),
     ]
+    if args.canary:
+        mutants = mutants[:1]
     try:
-        with TemporaryDirectory() as directory:
+        with TemporaryDirectory(dir=args.scratch_dir) as directory:
             for index in range(len(mutants) + 1):
                 root = Path(directory) / str(index)
                 for path, content in originals.items():
@@ -81,7 +101,7 @@ def main() -> None:
         for path, content in originals.items():
             if (ROOT / path).read_bytes() != content:
                 raise RuntimeError(f"Changed worktree: {path}")
-    print("7/7 killed; worktree targets byte-identical")
+    print(f"{len(mutants)}/{len(mutants)} killed; worktree targets byte-identical")
 
 
 if __name__ == "__main__":

@@ -129,3 +129,17 @@ def test_background_methods_contract() -> None:
 def test_missing_corpus_file_is_value_error(tmp_path: Path) -> None:
     with pytest.raises(ValueError, match="corpus taxon file is missing"):
         load_script().read_corpus_taxa(tmp_path / "absent.tsv")
+
+
+@pytest.mark.parametrize("scope", [[], ["--background-scope", "all_matrix"]])
+def test_all_matrix_rejects_corpus_file(tmp_path: Path, scope: list[str]) -> None:
+    corpus = tmp_path / "corpus.tsv"
+    corpus.write_text("t1\nt2\n")
+    error = ""
+    try:
+        run_case(load_script(), tmp_path, [*scope, "--corpus-taxa-file", str(corpus)])
+    except ValueError as exc:
+        error = str(exc)
+    assert error == "--corpus-taxa-file requires --background-scope profile_corpus"
+    for name in ("report.txt", "hits.tsv", "all.tsv"):
+        assert not (tmp_path / name).exists()
