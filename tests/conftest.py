@@ -9,8 +9,8 @@ import pytest
 
 from bsdbng.paths import REPO_ROOT
 
-# The cellulose_decr figure tests import matplotlib, from the viz extra. Without it they
-# are left out rather than failing at collection (#631).
+# The cellulose_decr figure tests and the NCASM plate tests import matplotlib, from the
+# viz extra. Without it they are left out rather than failing at collection (#631, #2264).
 collect_ignore = (
     []
     if importlib.util.find_spec("matplotlib")
@@ -21,6 +21,7 @@ collect_ignore = (
         "test_cellulose_review_wording.py",
         "test_cellulose_slide_figures.py",
         "test_cellulose_statement_consumers.py",
+        "test_ncasm_tufte_plates.py",
     ]
 )
 

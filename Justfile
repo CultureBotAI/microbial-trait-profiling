@@ -499,6 +499,15 @@ cellulose-decr-cleanup-retired *ARGS:
 cellulose-decr-tufte *ARGS:
 	uv run python -m mtp.cellulose_decr.tufte_plates "$@"
 
+# The 30 NCASM Tufte plates (plates I-XX and the ten data-story plots) with their
+# manifest and combined PDF, drawn into data/derived/ncasm_tufte_plates/, a folder of
+# their own beside the deck's data/derived/tufte_plates/ (#2264). Pass --output-dir for
+# another folder and --overwrite to replace existing plates. The plates read no data
+# files: their numbers are typed literals and plates 21-30 draw random marks (#775, #776).
+[positional-arguments]
+ncasm-tufte-plates *ARGS:
+	uv run python -m mtp.ncasm_tufte_plates "$@"
+
 # The #835 selection scan (methods/cellulose_decr_selection_scan.md): cellulose_decr's
 # overlap and U6 null for every triple of eligible conditions and the top decreasing
 # traits, on a verified Tier 1+2 core RUN (its run.json), into a new or empty OUTPUT
