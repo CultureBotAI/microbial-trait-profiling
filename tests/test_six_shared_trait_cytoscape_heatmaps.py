@@ -107,7 +107,7 @@ def oral_contrast_source(tmp_path: Path) -> pd.DataFrame:
     return source
 
 
-def test_oral_writer_keeps_source_q_family_and_unsupported_diagnoses(
+def test_oral_writer_keeps_source_q_family_and_audits_unsupported_diagnoses(
     tmp_path: Path, oral_contrast_source: pd.DataFrame
 ) -> None:
     source = oral_contrast_source
@@ -116,8 +116,10 @@ def test_oral_writer_keeps_source_q_family_and_unsupported_diagnoses(
     assert output.name == "oral_six_trait_heatmap.png"
     first = plot.call_args_list[0]
     matrix = first.args[0]
-    assert len(matrix) == 3
-    assert matrix.loc[matrix.index.str.startswith("Gingivitis")].isna().all().all()
+    assert len(matrix) == 2
+    assert not matrix.index.str.startswith("Gingivitis").any()
+    complete = plot.call_args_list[1].args[0]
+    assert complete.loc[complete.index.str.startswith("Gingivitis")].isna().all().all()
     borders = first.kwargs["significance_borders"]
     assert borders.loc[borders.index.str.startswith("Root caries")].all().all()
     assert not borders.loc[borders.index.str.startswith("Rheumatoid")].any().any()
@@ -127,7 +129,7 @@ def test_oral_writer_keeps_source_q_family_and_unsupported_diagnoses(
     assert "12 oral cells met nominal Fisher p < 0.01" in subtitle
     assert "|effect|>0.01" in subtitle
     assert "at/below the absolute-effect cutoff" in subtitle
-    assert "other rows with displayed cells" in subtitle
+    assert "finite non-zero displayed source effect before rounding" in subtitle
     rows = pd.read_csv(output.parent / "oral_six_trait_rows.tsv", sep="\t")
     rheumatoid = rows.loc[rows["condition"] == "Rheumatoid arthritis"]
     assert rheumatoid["max_trait_study_count"].item() == 5
@@ -1072,3 +1074,90 @@ def test_oral_and_full_contrast_nominal_p_versus_bh_border_regression() -> None:
         flag_column="selected_after_bh",
     )
     assert not oral_borders.loc["Colorectal cancer | Oral cavity / dental", "METPO:1000668"]
+
+
+@pytest.mark.parametrize("cohort", ["oral", "skin"])
+@pytest.mark.parametrize("effect", [0.0000001, 0.0, float("nan"), float("inf")])
+def test_cohort_row_filter_and_audit_270(
+    tmp_path: Path, oral_contrast_source: pd.DataFrame, cohort: str, effect: float
+) -> None:
+    source = oral_contrast_source.copy()
+    if cohort == "skin":
+        source["condition"] = source["condition"].replace(
+            {"Gingivitis": "Psoriasis", "Root caries": "Atopic dermatitis"}
+        )
+        source["body_site_group"] = source["body_site_group"].replace(
+            {"Oral cavity / dental": "Skin"}
+        )
+        source["condition_body_site_pair"] = source["condition"] + " | " + source["body_site_group"]
+    source.loc[6:11, "increased_minus_decreased_positive_fraction"] = effect
+    source.to_csv(tmp_path / heatmaps.CONTRAST_TABLE_FILENAME, sep="\t", index=False)
+    writer = getattr(heatmaps, f"write_{cohort}_trait_heatmaps", None)
+    assert callable(writer)
+    with patch.object(heatmaps, "plot_matrix_heatmap") as plot:
+        output = writer(tmp_path, source_commit="fixture")
+    rows = pd.read_csv(output.parent / f"{cohort}_six_trait_rows.tsv", sep="\t")
+    retained = rows.loc[rows["in_main_figure"], "condition"].tolist()
+    assert ("Rheumatoid arthritis" in retained) == (math.isfinite(effect) and effect != 0)
+    assert ("Gingivitis" if cohort == "oral" else "Psoriasis") not in retained
+    assert len(rows) == 3
+    exported = pd.read_csv(output.parent / f"{cohort}_six_trait_cells.tsv", sep="\t")
+    pd.testing.assert_series_equal(
+        exported["fisher_q_value"], source.iloc[:18]["fisher_q_value"], check_names=False
+    )
+    assert exported["selected_after_bh"].tolist() == source.iloc[:18]["selected_after_bh"].tolist()
+    first = plot.call_args_list[0]
+    assert first.kwargs["vmin"] == -1.0
+    assert first.kwargs["vmax"] == 1.0
+    assert first.kwargs["cmap_name"] == "RdBu_r"
+    assert first.args[0].shape[1] == 6
+    assert not np.isinf(first.args[0].to_numpy()).any()
+    assert "does not indicate nonsignificance" in first.kwargs["subtitle"]
+    record = json.loads((output.parent / f"{cohort}_six_trait_provenance.json").read_text())
+    assert record["source_individual_bh_family_size"] == 24
+    assert record["source_artifact_commit"] == "fixture"
+    assert record["clustering"] == "not clustered; source trait order and deterministic row order"
+
+
+@pytest.mark.parametrize("count", [0, 1])
+def test_skin_sparse_cohort_has_audit_270(
+    tmp_path: Path, oral_contrast_source: pd.DataFrame, count: int
+) -> None:
+    source = oral_contrast_source.copy()
+    source.loc[6:11, "body_site_group"] = "Skin" if count else "Feces"
+    source["condition_body_site_pair"] = source["condition"] + " | " + source["body_site_group"]
+    source.to_csv(tmp_path / heatmaps.CONTRAST_TABLE_FILENAME, sep="\t", index=False)
+    writer = getattr(heatmaps, "write_skin_trait_heatmaps", None)
+    assert callable(writer)
+    with (
+        patch.object(heatmaps, "plot_matrix_heatmap", wraps=heatmaps.plot_matrix_heatmap) as plot,
+        patch.object(heatmaps.Figure, "savefig"),
+    ):
+        output = writer(tmp_path)
+    assert len(plot.call_args_list[0].args[0]) == count
+    record = json.loads((output.parent / "skin_six_trait_provenance.json").read_text())
+    assert record["main_figure_rows"] == count
+    assert (output.parent / "skin_six_trait_rows.tsv").stat().st_size > 0
+
+
+def test_skin_exact_selection_and_source_preservation_270(
+    oral_contrast_source: pd.DataFrame,
+) -> None:
+    source = oral_contrast_source.copy()
+    source.loc[:5, "condition"] = "Non-psoriasis comparison"
+    source.loc[6:11, "body_site_group"] = "Skin"
+    source.loc[12:17, "condition"] = "Atopic dermatitis,Diabetes mellitus"
+    source["condition_body_site_pair"] = source["condition"] + " | " + source["body_site_group"]
+    selected = heatmaps.select_skin_contrast_cells(source)
+    assert selected.index.tolist() == list(range(6, 18))
+    pd.testing.assert_frame_equal(selected[source.columns], source.iloc[6:18])
+    assert set(selected["inclusion_reason"]) == {"skin site", "skin disease"}
+
+
+def test_skin_cli_270(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(sys, "argv", ["heatmaps", "--skin-only", "--source-commit", "fixture"])
+    with patch.object(
+        heatmaps, "write_skin_trait_heatmaps", return_value=Path("skin.png")
+    ) as writer:
+        heatmaps.main()
+    writer.assert_called_once_with(source_commit="fixture")
