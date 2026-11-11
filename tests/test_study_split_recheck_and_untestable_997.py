@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
-from types import SimpleNamespace
+from types import ModuleType, SimpleNamespace
+from typing import Any
 
 import pandas as pd
 import pytest
@@ -372,3 +374,130 @@ def test_training_selection_converts_selected_without_disjoint_triples() -> None
     )
     assert candidates == []
     assert status == "no_testable_study_disjoint_triple"
+
+
+@pytest.fixture
+def verifier_997() -> Iterator[ModuleType]:
+    """Load the helper by file path in both the live and copied test suites."""
+    import importlib.util
+    import sys
+
+    path = REPO_ROOT / "scripts/adhoc/verify_997_mutants_agy_20261111.py"
+    spec = importlib.util.spec_from_file_location("verifier_997_regression", path)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    # Nested verifier pytest runs evict these modules; preserve the outer suite's
+    # identities so later tests patch the same objects their consumers import.
+    outer_modules = {
+        name: value
+        for name, value in sys.modules.items()
+        if name in {"mtp", "tests"} or name.startswith(("mtp.", "tests.", "test_"))
+    }
+    sys.modules[spec.name] = module
+    try:
+        spec.loader.exec_module(module)
+        yield module
+    finally:
+        module._evict_project_modules()
+        sys.modules.update(outer_modules)
+        sys.modules.pop(spec.name, None)
+
+
+@pytest.mark.parametrize("case", ["root", "nested", "symlink"])
+def test_verifier_rejects_repository_scratch_before_mkdir(
+    case: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, verifier_997: ModuleType
+) -> None:
+    scratch = REPO_ROOT
+    if case == "nested":
+        scratch = REPO_ROOT / "methods" / "nonexistent_scratch"
+    elif case == "symlink":
+        alias = tmp_path / "methods_alias"
+        alias.symlink_to(REPO_ROOT / "methods", target_is_directory=True)
+        scratch = alias / "sub"
+    before = set((REPO_ROOT / "methods").iterdir())
+
+    def forbidden_mkdir(*_args: object, **_kwargs: object) -> None:
+        raise AssertionError("containment must be checked before any mkdir")
+
+    monkeypatch.setattr(Path, "mkdir", forbidden_mkdir)
+    with pytest.raises(ValueError, match=r"^scratch_dir must be outside the repository root$"):
+        verifier_997.verify_mutants(REPO_ROOT, scratch, canary_only=True)
+    assert set((REPO_ROOT / "methods").iterdir()) == before
+    if case != "root":
+        assert not scratch.exists()
+
+
+def test_verifier_rejects_lexically_internal_outward_symlink(
+    tmp_path: Path, verifier_997: ModuleType
+) -> None:
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    external = tmp_path / "external"
+    external.mkdir()
+    (repo / "alias").symlink_to(external, target_is_directory=True)
+    with pytest.raises(ValueError, match="scratch_dir must be outside the repository root"):
+        verifier_997.verify_mutants(repo, repo / "alias" / "new", canary_only=True)
+    assert list(external.iterdir()) == []
+
+
+def test_verifier_rejects_post_call_internal_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, verifier_997: ModuleType
+) -> None:
+    """Real pytest returns 3 after an assertion when logfinish raises INTERNALERROR."""
+    import json
+
+    source = tmp_path / "source"
+    source.mkdir()
+
+    def populate(_source: Path, destination: Path) -> None:
+        destination.mkdir()
+        (destination / "probe.py").write_text("VALUE = 1\n")
+        (destination / "test_probe.py").write_text(
+            "from pathlib import Path\n"
+            "def test_probe():\n"
+            "    assert Path('probe.py').read_text() == 'VALUE = 1\\n'\n"
+        )
+        (destination / "conftest.py").write_text(
+            "failed_call = False\n"
+            "def pytest_runtest_logreport(report):\n"
+            "    global failed_call\n"
+            "    if report.when == 'call':\n"
+            "        failed_call = report.failed\n"
+            "def pytest_runtest_logfinish(nodeid, location):\n"
+            "    if failed_call:\n"
+            "        raise RuntimeError('post-call internal error')\n"
+        )
+
+    original_run = verifier_997._run_pytest_node
+
+    def run(source_root: Path, scratch: Path, node: str, junit: Path) -> tuple[int, Any, str]:
+        target = "test_probe.py" if "::" not in node else node
+        code, inspector, output = original_run(source_root, scratch, target, junit)
+        return code, inspector, output
+
+    monkeypatch.setattr(verifier_997, "_populate_scratch_repo", populate)
+    monkeypatch.setattr(verifier_997, "_run_pytest_node", run)
+    monkeypatch.setattr(
+        verifier_997,
+        "MUTANTS",
+        (
+            verifier_997.MutantSpec(
+                "probe", "internal error", "probe.py", "1", "2", "test_probe.py::test_probe"
+            ),
+        ),
+    )
+    parent = tmp_path / "scratch"
+    with pytest.raises(RuntimeError, match="not killed by call-phase AssertionError"):
+        verifier_997.verify_mutants(source, parent, canary_only=True)
+    receipts = list(parent.glob("*/verdicts.json"))
+    assert len(receipts) == 1
+    verdicts = json.loads(receipts[0].read_text())
+    assert len(verdicts) == 1
+    verdict = verdicts[0]
+    assert verdict["status"] == "SURVIVED_OR_INVALID"
+    assert verdict["exit_code"] == 3
+    assert verdict["call_exc_types"] == ["AssertionError"]
+    assert verdict["non_call_failures"] == []
+    assert verdict["killed"] is False
+    assert "INTERNALERROR" in verdict["detail"]

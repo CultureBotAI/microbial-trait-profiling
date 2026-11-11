@@ -240,6 +240,9 @@ def _populate_scratch_repo(repo_root: Path, scratch_repo: Path) -> None:
         repo_root / "tests/test_study_split_recheck_and_untestable_997.py",
         dst,
     )
+    helper = Path("scripts/adhoc/verify_997_mutants_agy_20261111.py")
+    (scratch_repo / helper).parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(repo_root / helper, scratch_repo / helper)
 
 
 def _run_pytest_node(
@@ -301,6 +304,16 @@ def verify_mutants(
     *,
     canary_only: bool = False,
 ) -> tuple[Path, list[dict[str, object]]]:
+    resolved_repo = repo_root.resolve()
+    resolved_scratch = scratch_parent.resolve()
+    lexical_repo = Path(os.path.abspath(repo_root))
+    lexical_scratch = Path(os.path.abspath(scratch_parent))
+    if any(
+        candidate == root or candidate.is_relative_to(root)
+        for candidate in (resolved_scratch, lexical_scratch)
+        for root in (resolved_repo, lexical_repo)
+    ):
+        raise ValueError("scratch_dir must be outside the repository root")
     scratch_parent.mkdir(parents=True, exist_ok=True)
     run_label = "canary" if canary_only else "all"
     scratch_dir = Path(
@@ -348,7 +361,7 @@ def verify_mutants(
             and not inspector.non_call_failures
         )
         killed_by_assertion = (
-            exit_code != 0
+            exit_code == int(pytest.ExitCode.TESTS_FAILED)
             and junit_exists
             and call_failed
             and inspector.call_exc_types == ["AssertionError"]
@@ -364,7 +377,7 @@ def verify_mutants(
             "description": spec.description,
             "target_relpath": spec.target_relpath,
             "pytest_nodeid": spec.pytest_nodeid,
-            "status": "KILLED" if killed_by_assertion else "SURVIVED",
+            "status": "KILLED" if killed_by_assertion else "SURVIVED_OR_INVALID",
             "killed": killed_by_assertion,
             "exit_code": exit_code,
             "call_exc_types": inspector.call_exc_types,
@@ -406,7 +419,7 @@ def main(argv: list[str] | None = None) -> int:
     repo_root = Path(__file__).resolve().parents[2]
     verdicts_path, verdicts = verify_mutants(
         repo_root,
-        args.scratch_dir.resolve(),
+        args.scratch_dir,
         canary_only=bool(args.canary),
     )
     killed_count = sum(1 for item in verdicts if item.get("killed") is True)
