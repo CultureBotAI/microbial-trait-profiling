@@ -40,7 +40,9 @@ class DataStatus(TypedDict):
 
     ``numbers`` covers every figure quoted in text; ``marks`` covers the points, bars
     and lines. ``typed_literals`` means the value is written in the plate's code with
-    no recorded source. ``issues`` lists the open issues about that content."""
+    no recorded source. ``issues`` lists the open issues about the content of the plate
+    set at this status; it is the same for every plate of a status and is not a
+    plate-by-plate mapping (#2281)."""
 
     numbers: NumberSource
     marks: MarkSource

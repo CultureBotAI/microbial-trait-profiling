@@ -22,7 +22,14 @@ import numpy as np
 from matplotlib.ticker import FuncFormatter, MaxNLocator
 
 from mtp.ncasm_tufte_plates.data_status import InputFile
-from mtp.ncasm_tufte_plates.run_tables import RunIdentity, TraitCloud, TraitPoint, load_trait_cloud
+from mtp.ncasm_tufte_plates.run_tables import (
+    SIGNIFICANCE_LEVEL,
+    RunIdentity,
+    RunTableError,
+    TraitCloud,
+    TraitPoint,
+    load_trait_cloud,
+)
 from mtp.ncasm_tufte_plates.story_common import (
     ACCENT,
     FAINT,
@@ -52,6 +59,8 @@ AXES_RECT = (0.08, 0.14, 0.55, 0.45)
 LABEL_STEP_PT = 15.5
 LABEL_PAD_PT = 9.0
 RUG_PT = 9.0
+MAX_LABEL_BANDS = 0.6
+LEVEL = f"{SIGNIFICANCE_LEVEL:g}"
 COUNT_WORDS = ("No", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten")
 
 
@@ -173,7 +182,7 @@ def trait_cloud_notes(cloud: TraitCloud) -> str:
         f"of studies in which it rises in the study sign screen ({cloud.screen_traits} "
         f"traits, up to {cloud.screen_studies_max} studies). The two measures agree "
         f"(Pearson r = {cloud.correlation:.2f}). {len(cloud.screen_by_hits)} of "
-        f"{cloud.screen_traits} traits pass Benjamini-Yekutieli q <= 0.05 in the sign "
+        f"{cloud.screen_traits} traits pass Benjamini-Yekutieli q <= {LEVEL} in the sign "
         f"screen: {', '.join(cloud.screen_by_hits)}. Of the {len(table1)} Table 1 traits, "
         f"{len(passing)} pass ({', '.join(passing) if passing else 'none'}). These are "
         "alignments between reported taxa and trait annotations, not measured physiology."
@@ -219,7 +228,8 @@ def plot_01_trait_cloud(out_dir: Path, run_root: Path) -> TableStoryPlot:
         0.08,
         0.703,
         f"Gray dots = {len(points) - len(table1)} other traits; dark rings = the "
-        f"{int(by_hit.sum())} traits passing BY q \u2264 0.05 in the sign screen",
+        f"{int(by_hit.sum())} of these {len(points)} traits passing BY q \u2264 {LEVEL} in "
+        "the sign screen",
         fontsize=12.0,
         color=MUTED,
         ha="left",
@@ -235,6 +245,11 @@ def plot_01_trait_cloud(out_dir: Path, run_root: Path) -> TableStoryPlot:
     axes_height_pt = AXES_RECT[3] * SLIDE_H * 72.0
     band_top = (len(rising) * LABEL_STEP_PT + LABEL_PAD_PT) / axes_height_pt
     band_bottom = (len(falling) * LABEL_STEP_PT + LABEL_PAD_PT + RUG_PT) / axes_height_pt
+    if band_top + band_bottom > MAX_LABEL_BANDS:
+        raise RunTableError(
+            f"the run flags {len(table1)} Table 1 traits; their labels would leave too "
+            "little of plate 21 for the data"
+        )
     data_low, data_high = float(np.floor(y.min())) - 1.0, float(np.ceil(y.max())) + 1.0
     y_span = (data_high - data_low) / (1.0 - band_top - band_bottom)
     y_low = data_low - band_bottom * y_span
@@ -398,7 +413,7 @@ def plot_01_trait_cloud(out_dir: Path, run_root: Path) -> TableStoryPlot:
         1.0,
         0.25,
         f"{len(cloud.screen_by_hits)} / {cloud.screen_traits}",
-        "Pass BY q \u2264 0.05 (sign test)",
+        f"Pass BY q \u2264 {LEVEL} (sign test)",
         f"{len(passing_table1)} of the {len(table1)} Table 1 traits pass",
         TERTIARY,
     )

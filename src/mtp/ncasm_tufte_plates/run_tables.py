@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import csv
 import hashlib
+import io
 import json
 import math
 from dataclasses import dataclass
@@ -23,6 +24,7 @@ __all__ = [
     "ARM1_POOLED_STATS",
     "COMPARISON_RUN",
     "DIRECTION_SCREEN",
+    "SIGNIFICANCE_LEVEL",
     "RunIdentity",
     "RunTableError",
     "TraitCloud",
@@ -95,24 +97,22 @@ class TraitCloud:
         return tuple(point for point in self.points if point.in_table1)
 
 
-def _sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
-def _input(run_root: Path, relative: Path) -> InputFile:
+def _read(run_root: Path, relative: Path) -> tuple[bytes, InputFile]:
+    """The file's bytes and its manifest record. Each file is read once, so the hash
+    describes exactly the bytes that are parsed (#2278)."""
     path = run_root / relative
     if not path.is_file():
         raise RunTableError(f"{relative} is missing under the run root {run_root}")
-    return {"path": relative.as_posix(), "sha256": _sha256(path)}
+    data = path.read_bytes()
+    return data, {"path": relative.as_posix(), "sha256": hashlib.sha256(data).hexdigest()}
 
 
-def _rows(run_root: Path, relative: Path, required: tuple[str, ...]) -> list[dict[str, str]]:
-    with (run_root / relative).open(encoding="utf-8", newline="") as handle:
-        reader = csv.DictReader(handle, delimiter="\t")
-        missing = [column for column in required if column not in (reader.fieldnames or [])]
-        if missing:
-            raise RunTableError(f"{relative} lacks the columns {', '.join(missing)}")
-        rows = list(reader)
+def _rows(data: bytes, relative: Path, required: tuple[str, ...]) -> list[dict[str, str]]:
+    reader = csv.DictReader(io.StringIO(data.decode("utf-8"), newline=""), delimiter="\t")
+    missing = [column for column in required if column not in (reader.fieldnames or [])]
+    if missing:
+        raise RunTableError(f"{relative} lacks the columns {', '.join(missing)}")
+    rows = list(reader)
     if not rows:
         raise RunTableError(f"{relative} has no rows")
     return rows
@@ -147,18 +147,26 @@ def _display_name(object_name: str) -> str:
     return name[:1].upper() + name[1:]
 
 
-def _identity(run_root: Path) -> RunIdentity:
-    record = json.loads((run_root / COMPARISON_RUN).read_text(encoding="utf-8"))
+def _identity(data: bytes) -> RunIdentity:
+    try:
+        record = json.loads(data.decode("utf-8"))
+    except ValueError as error:
+        raise RunTableError(f"{COMPARISON_RUN} is not valid JSON: {error}") from error
+    if not isinstance(record, dict):
+        raise RunTableError(f"{COMPARISON_RUN} is not a JSON object")
     if record.get("status") != "completed":
         raise RunTableError(f"{COMPARISON_RUN}: the comparison is not completed")
     try:
+        dirty = record["git_dirty"]
+        if not isinstance(dirty, bool):
+            raise RunTableError(f"{COMPARISON_RUN}: git_dirty is not true or false")
         return RunIdentity(
             comparison_id=str(record["id"]),
             contrast_population=str(record["contrast_population"]),
             direction_basis=str(record["direction_basis"]),
             core_run_id=str(record["core_run_id"]),
             git_commit=str(record["git_commit"]),
-            git_dirty=bool(record["git_dirty"]),
+            git_dirty=dirty,
         )
     except KeyError as error:
         raise RunTableError(f"{COMPARISON_RUN} lacks {error}") from error
@@ -169,14 +177,14 @@ def load_trait_cloud(run_root: Path) -> TraitCloud:
 
     Refuses tables that are stratified, untested or inconsistent, and a pooled-shift
     trait that the screen does not list, rather than drawing a partial cloud."""
-    inputs = tuple(
-        _input(run_root, relative)
-        for relative in (COMPARISON_RUN, ARM1_POOLED_STATS, DIRECTION_SCREEN)
-    )
-    identity = _identity(run_root)
+    run_bytes, run_input = _read(run_root, COMPARISON_RUN)
+    arm1_bytes, arm1_input = _read(run_root, ARM1_POOLED_STATS)
+    screen_bytes, screen_input = _read(run_root, DIRECTION_SCREEN)
+    inputs = (run_input, arm1_input, screen_input)
+    identity = _identity(run_bytes)
 
     arm1 = _rows(
-        run_root,
+        arm1_bytes,
         ARM1_POOLED_STATS,
         (
             "trait",
@@ -195,7 +203,7 @@ def load_trait_cloud(run_root: Path) -> TraitCloud:
     arm1_studies = int(_one(arm1, "study_count", ARM1_POOLED_STATS))
 
     screen = _rows(
-        run_root,
+        screen_bytes,
         DIRECTION_SCREEN,
         (
             "trait",

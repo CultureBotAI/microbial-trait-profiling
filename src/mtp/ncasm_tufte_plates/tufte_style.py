@@ -5,12 +5,43 @@ Copied from ``figure_wizard/tufte.py`` in CultureBotAI/figure-wizard (file revis
 ``fc1197b``, 2026-10-17; BSD 3-Clause License, Copyright (c) 2026, CultureBotAI), which
 the original builders imported from a local checkout (#2264). Only the helpers the
 30 plates use are kept. The drawing calls are unchanged; the differences are type
-annotations and explicit keyword arguments.
-
-BSD 3-Clause notice for this file: redistribution and use in source and binary forms,
-with or without modification, are permitted provided that the above copyright notice,
-this list of conditions and the disclaimer in figure-wizard's LICENSE are retained.
+annotations and explicit keyword arguments. figure-wizard's licence, which covers this
+file, follows this docstring in full, as its first clause requires (#2276).
 """
+
+# --- Licence of the code this file was copied from (CultureBotAI/figure-wizard) ---
+#
+# BSD 3-Clause License
+#
+# Copyright (c) 2026, CultureBotAI
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice,
+#    this list of conditions and the following disclaimer.
+#
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# 3. Neither the name of the copyright holder nor the names of its contributors
+#    may be used to endorse or promote products derived from this software
+#    without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+#
+# --- End of the figure-wizard licence ---
 
 from __future__ import annotations
 

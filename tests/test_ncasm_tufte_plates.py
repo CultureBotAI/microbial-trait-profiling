@@ -204,14 +204,17 @@ def test_main_reports_the_refusal_and_exits_nonzero(
     assert "--run" in said
     assert not out_dir.exists()
 
+    # A run root without the tables is found before anything is drawn (#2274).
     missing = ["--output-dir", str(out_dir), "--audit-random-marks", "--run", str(tmp_path)]
     assert build.main(missing) == 1
     assert "comparison/comparison_run.json is missing" in capsys.readouterr().out
+    assert not out_dir.exists()
 
 
 def _is_random_generator(node: ast.AST) -> bool:
+    """Whether the node reaches for a random generator, however it is imported (#2277)."""
     if isinstance(node, ast.Attribute):
-        if node.attr in {"default_rng", "RandomState", "Generator"}:
+        if node.attr in {"default_rng", "RandomState", "Generator", "rvs"}:
             return True
         return (
             node.attr == "random"
@@ -219,9 +222,11 @@ def _is_random_generator(node: ast.AST) -> bool:
             and node.value.id in {"np", "numpy"}
         )
     if isinstance(node, ast.Import):
-        return any(alias.name.split(".")[0] == "random" for alias in node.names)
+        return any("random" in alias.name.split(".") for alias in node.names)
     if isinstance(node, ast.ImportFrom):
-        return node.module in {"random", "numpy.random"}
+        return "random" in (node.module or "").split(".") or any(
+            alias.name == "random" for alias in node.names
+        )
     return False
 
 
@@ -233,6 +238,24 @@ def _random_generator_calls(tree: ast.AST) -> list[int]:
         if isinstance(node, ast.Attribute | ast.Import | ast.ImportFrom)
         and _is_random_generator(node)
     ]
+
+
+@pytest.mark.parametrize(
+    ("code", "found"),
+    [
+        ("import numpy as np\ndef f():\n    return np.random.normal(size=3)", True),
+        ("import numpy as np\ndef f():\n    return np.random.default_rng(1)", True),
+        ("from numpy.random import default_rng as make\ndef f():\n    return make(1)", True),
+        ("import numpy.random as npr\ndef f():\n    return npr.normal(size=3)", True),
+        ("from numpy import random as nr\ndef f():\n    return nr.normal(size=3)", True),
+        ("import random as r\ndef f():\n    return r.random()", True),
+        ("from scipy import stats\ndef f():\n    return stats.norm.rvs(size=3)", True),
+        ("from mtp.ncasm_tufte_plates.data_status import random_marks_status", False),
+        ("import numpy as np\ndef f():\n    return np.linspace(0, 1, 3)", False),
+    ],
+)
+def test_random_generator_detector_sees_through_import_aliases(code: str, found: bool) -> None:
+    assert bool(_random_generator_calls(ast.parse(code))) == found
 
 
 def test_only_the_gated_data_story_plots_reach_for_a_random_generator() -> None:
@@ -444,6 +467,7 @@ def _expected_plate_21_text(root: Path = FIXTURE_RUN) -> set[str]:
     both = [row for row in screen if row["trait"] in arm1]
     table1 = [row for row in both if row["in_table1"] == "true"]
     by_hits = [row for row in screen if float(row["by_q_nominal"]) <= 0.05]
+    ringed = [row for row in both if float(row["by_q_nominal"]) <= 0.05]
     table1_hits = [row for row in table1 if float(row["by_q_nominal"]) <= 0.05]
     comparisons = {row["pair_count"] for row in arm1.values()}
     studies = {row["study_count"] for row in arm1.values()}
@@ -476,8 +500,8 @@ def _expected_plate_21_text(root: Path = FIXTURE_RUN) -> set[str]:
         f"Arm 3 study sign screen ({len(screen)} traits); run {commit[:7]}.",
         "Tufte Data Story (1/10)",
         f"A. {len(both)} Traits: Mean Paired Shift (\u0394z) vs. Share of Studies Voting Up",
-        f"Gray dots = {len(both) - len(table1)} other traits; dark rings = the {len(by_hits)} "
-        "traits passing BY q \u2264 0.05 in the sign screen",
+        f"Gray dots = {len(both) - len(table1)} other traits; dark rings = the {len(ringed)} "
+        f"of these {len(both)} traits passing BY q \u2264 0.05 in the sign screen",
         f"Arm 1 Mean Paired Shift \u0394z, Increased \u2212 Decreased "
         f"({n_comparisons:,} Comparisons)",
         "Arm 3 Share of Studies Voting Up (%)",
@@ -491,7 +515,10 @@ def _expected_plate_21_text(root: Path = FIXTURE_RUN) -> set[str]:
 
 
 def _is_axis_tick(text: str) -> bool:
-    return re.fullmatch(r"[+\u2212]?\d+(\.\d+)?%?", text) is not None
+    """Only the plate's two tick formats: a signed two-decimal shift or a whole percentage.
+
+    Any other bare number is treated as content and must be accounted for (#2279)."""
+    return re.fullmatch(r"[+\u2212]\d\.\d\d|0\.00|\d{1,3}%", text) is not None
 
 
 def _digit_bearing_text(svg: Path) -> set[str]:
@@ -625,3 +652,49 @@ def test_loader_refuses_an_unfinished_comparison_and_a_missing_table(tmp_path: P
     (root / run_tables.DIRECTION_SCREEN).unlink()
     with pytest.raises(run_tables.RunTableError, match=r"trait_direction_screen\.tsv is missing"):
         run_tables.load_trait_cloud(root)
+
+
+def test_loader_reports_a_malformed_run_record_instead_of_crashing(tmp_path: Path) -> None:
+    root = tmp_path / "run"
+    shutil.copytree(FIXTURE_RUN, root)
+    record = json.loads((root / run_tables.COMPARISON_RUN).read_text())
+
+    (root / run_tables.COMPARISON_RUN).write_text(json.dumps(record | {"git_dirty": "false"}))
+    with pytest.raises(run_tables.RunTableError, match="git_dirty is not true or false"):
+        run_tables.load_trait_cloud(root)
+
+    (root / run_tables.COMPARISON_RUN).write_text("{not json")
+    with pytest.raises(run_tables.RunTableError, match="is not valid JSON"):
+        run_tables.load_trait_cloud(root)
+
+
+def test_a_screen_only_by_hit_is_counted_in_the_callout_but_not_among_the_rings(
+    tmp_path: Path,
+) -> None:
+    """A trait with no Arm 1 row is not drawn, so it cannot be one of the rings (#2275)."""
+    screen_only = "METPO:1000603"
+    assert screen_only not in {row["trait"] for row in _table(run_tables.ARM1_POOLED_STATS)}
+    root = _edited_run(
+        tmp_path, run_tables.DIRECTION_SCREEN, {screen_only: {"by_q_nominal": "0.001"}}
+    )
+    with pytest.MonkeyPatch.context() as patch, mpl.style.context("default"):
+        patch.setattr(story_plots, "SLIDE_DPI", TEST_DPI)
+        drawn = story_from_tables.plot_01_trait_cloud(tmp_path / "out", root)
+
+    printed = _digit_bearing_text(Path(drawn.info["svg_path"]))
+    assert printed == _expected_plate_21_text(root)
+    assert "5 / 317" in printed
+    assert any("dark rings = the 4 of these 311 traits" in text for text in printed)
+
+
+def test_plate_21_refuses_more_table_1_labels_than_it_has_room_for(tmp_path: Path) -> None:
+    screen = _table(run_tables.DIRECTION_SCREEN)
+    flagged = {row["trait"]: {"in_table1": "true"} for row in screen[:40]}
+    root = _edited_run(tmp_path, run_tables.DIRECTION_SCREEN, flagged)
+
+    with (
+        mpl.style.context("default"),
+        pytest.raises(run_tables.RunTableError, match="too little of plate 21 for the data"),
+    ):
+        story_from_tables.plot_01_trait_cloud(tmp_path / "out", root)
+    assert not (tmp_path / "out").exists()
