@@ -209,13 +209,16 @@ def transformed(
             "weighting": "equal_experiments",
         }
     tested = [r for r in records.values() if r["p"] != ""]
-    for row, q in zip(tested, adjust([r["p"] for r in tested]), strict=True):
+    selected_rows = [r for r in records.values() if r["selected"]]
+    for row, q in zip(
+        selected_rows,
+        adjust([r["p"] if r["p"] != "" else 1.0 for r in selected_rows]),
+        strict=True,
+    ):
         row["q"] = q
     for row in records.values():
-        if row["selected"] and row["p"] == "":
-            row["q"] = 1.0
         row["family_tests"] = len(tested)
-        row["family_selected_traits"] = sum(r["selected"] for r in records.values())
+        row["family_selected_traits"] = len(selected_rows)
         for threshold in (0.001, 0.05):
             row[f"significant_{threshold}"] = row["status"] == "tested" and row["q"] <= threshold
     return records, contrasts, scales
@@ -457,9 +460,9 @@ def native_summary(base: Base, composition: list[Record], ora: list[Record]) -> 
         "## Composition",
         "",
         "Native effects are experiment-weighted increased-minus-decreased z-score contrasts. "
-        "Native p-values test the mean; native BH families contain finite p-values among "
-        "selected supported variable traits, not just Table 1. Selected untestable traits "
-        "receive q = 1.0 outside the correction vector. "
+        "Native p-values test the mean; native BH families contain all selected supported "
+        "variable traits (family_selected_traits), not just Table 1, padding selected "
+        "untestable traits at p = 1.0 (q = 1.0) inside the correction vector. "
         "Zero-total profiles remain as zero fractions. "
         "Study-weighted comparisons, sign tests and conditional intervals are separately "
         "labeled in native_composition_comparison.tsv. Refitted scales and fixed baseline "
