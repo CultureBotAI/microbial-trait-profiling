@@ -1083,7 +1083,7 @@ def test_plate6_reads_compact_remediation_and_nonempty_rank_rows(
                 "taxonomy_root_ids": '["NCBITaxon:2"]',
                 "diagnosis_category": "Ambiguous Taxon / Bin Slash",
                 "suggested_remediation": (
-                    "Split composite 16S OTU bin into constituent genera for trait union"
+                    "Split composite 16S bin into constituent genera for trait union"
                 ),
             },
             {
@@ -1165,14 +1165,21 @@ def test_plate6_reads_compact_remediation_and_nonempty_rank_rows(
         assert bar_rgb == pytest.approx(label_rgb, abs=1e-4)
         panel_b_bar_colors[label] = bar_rgb
     _assert_pairwise_distinct_colors(panel_b_bar_colors)
-    panel_c_yticks = [t.get_text() for t in fig_new.axes[2].get_yticklabels()]
     assert len(fig_new.axes[2].patches) == len(merged_zero)
-    panel_c_bar_colors = {
-        label: to_rgb(patch.get_facecolor()[:3])
-        for label, patch in zip(panel_c_yticks, fig_new.axes[2].patches, strict=True)
-        if isinstance(patch, Patch)
-    }
-    assert len(panel_c_bar_colors) == len(merged_zero)
+    sorted_zero_cats = (
+        merged_zero.sort_values("profile_count", ascending=True)["diagnosis_category"]
+        .astype(str)
+        .tolist()
+    )
+    panel_c_bar_colors: dict[str, tuple[float, float, float]] = {}
+    for category, patch in zip(sorted_zero_cats, fig_new.axes[2].patches, strict=True):
+        assert isinstance(patch, Patch)
+        bar_rgb = to_rgb(patch.get_facecolor()[:3])
+        if category in panel_c_bar_colors:
+            assert bar_rgb == pytest.approx(panel_c_bar_colors[category], abs=1e-4)
+        else:
+            panel_c_bar_colors[category] = bar_rgb
+    assert len(panel_c_bar_colors) == len(set(sorted_zero_cats))
     _assert_pairwise_distinct_colors(panel_c_bar_colors)
     panel_c_texts = "\n".join(t.get_text() for t in fig_new.axes[2].texts)
     assert "Review taxonomic label / source" in panel_c_texts
