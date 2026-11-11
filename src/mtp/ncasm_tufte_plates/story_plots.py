@@ -8,9 +8,12 @@ PDF files are written without dates and with a fixed id seed, and the standalone
 ten-page PDF and audit JSON of the original ``main()`` are left to
 ``mtp.ncasm_tufte_plates.build``.
 
-Every plot here draws its data marks from a seeded ``numpy`` random generator and types
-its numbers as literals (#775, #776). ``mtp.ncasm_tufte_plates.build`` records that and
-refuses to present them as data.
+Every plot here draws its points from a seeded ``numpy`` random generator and types its
+numbers as literals (#775, #776). Each therefore saves with ``random_marks=True``, which
+stamps ``RANDOM_MARKS_BANNER`` across the plate, and is listed in ``RANDOM_MARK_PLOTS``,
+which ``mtp.ncasm_tufte_plates.build`` refuses to draw unless asked. A plot rebuilt from
+run tables drops both. ``tests/test_ncasm_tufte_plates.py`` fails when a function that
+calls a random generator is missing from either.
 """
 
 from __future__ import annotations
@@ -29,6 +32,7 @@ from matplotlib.patches import Ellipse, FancyBboxPatch
 from matplotlib.text import Text
 from matplotlib.transforms import Bbox
 
+from mtp.ncasm_tufte_plates.data_status import RANDOM_MARKS_BANNER
 from mtp.ncasm_tufte_plates.story_common import (
     ACCENT,
     FAINT,
@@ -154,8 +158,32 @@ def init_story_plot(
     return fig
 
 
-def save_and_verify_story_plot(fig: Figure, stem: str, out_dir: Path) -> StoryPlotInfo:
-    """Save PNG/SVG/PDF into ``out_dir`` and report overlapping and out-of-bounds text."""
+def stamp_random_marks(fig: Figure) -> None:
+    """Say across the top of the plate that its points are random draws (#775)."""
+    fig.text(
+        0.5,
+        0.992,
+        RANDOM_MARKS_BANNER,
+        fontsize=11.5,
+        fontweight="bold",
+        color=PAPER,
+        ha="center",
+        va="top",
+        bbox={"facecolor": ACCENT, "edgecolor": "none", "boxstyle": "square,pad=0.35"},
+        gid="random-marks-banner",
+        zorder=10,
+    )
+
+
+def save_and_verify_story_plot(
+    fig: Figure, stem: str, out_dir: Path, *, random_marks: bool
+) -> StoryPlotInfo:
+    """Save PNG/SVG/PDF into ``out_dir`` and report overlapping and out-of-bounds text.
+
+    ``random_marks`` is true for a plot whose points come from a random generator; the
+    plate is then stamped with ``RANDOM_MARKS_BANNER``."""
+    if random_marks:
+        stamp_random_marks(fig)
     out_dir.mkdir(parents=True, exist_ok=True)
     png_path = out_dir / f"{stem}.png"
     svg_path = out_dir / f"{stem}.svg"
@@ -511,7 +539,9 @@ def plot_01_joint_effect_consistency(out_dir: Path) -> StoryPlotInfo:
         TERTIARY,
     )
 
-    return save_and_verify_story_plot(fig, "plot_01_joint_effect_consistency_cloud", out_dir)
+    return save_and_verify_story_plot(
+        fig, "plot_01_joint_effect_consistency_cloud", out_dir, random_marks=True
+    )
 
 
 # =============================================================================
@@ -662,7 +692,9 @@ def plot_02_paired_parity_variance(out_dir: Path) -> StoryPlotInfo:
         fontsize=SLIDE_SIZES["axis_label"],
     )
 
-    return save_and_verify_story_plot(fig, "plot_02_paired_parity_variance_cloud", out_dir)
+    return save_and_verify_story_plot(
+        fig, "plot_02_paired_parity_variance_cloud", out_dir, random_marks=True
+    )
 
 
 # =============================================================================
@@ -770,7 +802,9 @@ def plot_03_rank_occurrence_landscape(out_dir: Path) -> StoryPlotInfo:
         fontsize=SLIDE_SIZES["axis_label"],
     )
 
-    return save_and_verify_story_plot(fig, "plot_03_rank_occurrence_bubble_rug", out_dir)
+    return save_and_verify_story_plot(
+        fig, "plot_03_rank_occurrence_bubble_rug", out_dir, random_marks=True
+    )
 
 
 # =============================================================================
@@ -892,7 +926,9 @@ def plot_04_seven_conditions_logratio_strips(out_dir: Path) -> StoryPlotInfo:
         fontsize=SLIDE_SIZES["axis_label"],
     )
 
-    return save_and_verify_story_plot(fig, "plot_04_seven_conditions_logratio_strips", out_dir)
+    return save_and_verify_story_plot(
+        fig, "plot_04_seven_conditions_logratio_strips", out_dir, random_marks=True
+    )
 
 
 # =============================================================================
@@ -1074,7 +1110,9 @@ def plot_05_redox_phase_space(out_dir: Path) -> StoryPlotInfo:
         TERTIARY,
     )
 
-    return save_and_verify_story_plot(fig, "plot_05_redox_phase_space_quadrants", out_dir)
+    return save_and_verify_story_plot(
+        fig, "plot_05_redox_phase_space_quadrants", out_dir, random_marks=True
+    )
 
 
 # =============================================================================
@@ -1174,7 +1212,9 @@ def plot_06_organism_guild_cloud(out_dir: Path) -> StoryPlotInfo:
     ax.set_ylabel("Contrast Occurrences (Log10)", fontsize=SLIDE_SIZES["axis_label"])
     despine(ax, top=True, right=True)
 
-    return save_and_verify_story_plot(fig, "plot_06_organism_guild_mechanism_cloud", out_dir)
+    return save_and_verify_story_plot(
+        fig, "plot_06_organism_guild_mechanism_cloud", out_dir, random_marks=True
+    )
 
 
 # =============================================================================
@@ -1334,7 +1374,9 @@ def plot_07_pathway_universe_and_nulls(out_dir: Path) -> StoryPlotInfo:
         fontsize=SLIDE_SIZES["axis_label"],
     )
 
-    return save_and_verify_story_plot(fig, "plot_07_pathway_universe_and_five_nulls", out_dir)
+    return save_and_verify_story_plot(
+        fig, "plot_07_pathway_universe_and_five_nulls", out_dir, random_marks=True
+    )
 
 
 # =============================================================================
@@ -1545,7 +1587,9 @@ def plot_08_barycentric_disease_simplex(out_dir: Path) -> StoryPlotInfo:
         TERTIARY,
     )
 
-    return save_and_verify_story_plot(fig, "plot_08_barycentric_disease_simplex", out_dir)
+    return save_and_verify_story_plot(
+        fig, "plot_08_barycentric_disease_simplex", out_dir, random_marks=True
+    )
 
 
 # =============================================================================
@@ -1703,7 +1747,9 @@ def plot_09_compartment_barcode_strips(out_dir: Path) -> StoryPlotInfo:
         fontsize=SLIDE_SIZES["axis_label"],
     )
 
-    return save_and_verify_story_plot(fig, "plot_09_compartment_barcode_strip_forest", out_dir)
+    return save_and_verify_story_plot(
+        fig, "plot_09_compartment_barcode_strip_forest", out_dir, random_marks=True
+    )
 
 
 # =============================================================================
@@ -1829,7 +1875,9 @@ def plot_10_loto_and_platform_strips(out_dir: Path) -> StoryPlotInfo:
     ax_b.set_xticklabels(["\u22120.8", "0.0", "+0.8"])
     ax_b.set_xlabel("Contrast Shift \u0394z", fontsize=SLIDE_SIZES["axis_label"])
 
-    return save_and_verify_story_plot(fig, "plot_10_loto_jackknife_and_platform_strips", out_dir)
+    return save_and_verify_story_plot(
+        fig, "plot_10_loto_jackknife_and_platform_strips", out_dir, random_marks=True
+    )
 
 
 PLOT_BUILDERS: list[Callable[[Path], StoryPlotInfo]] = [
@@ -1844,6 +1892,10 @@ PLOT_BUILDERS: list[Callable[[Path], StoryPlotInfo]] = [
     plot_09_compartment_barcode_strips,
     plot_10_loto_and_platform_strips,
 ]
+
+# The plots whose points come from a random generator (#775). The build draws these only
+# with --audit-random-marks; remove a plot here when it reads run tables instead.
+RANDOM_MARK_PLOTS: frozenset[Callable[[Path], StoryPlotInfo]] = frozenset(PLOT_BUILDERS)
 
 PLOT_SPEAKER_NOTES: dict[int, str] = {
     1: (

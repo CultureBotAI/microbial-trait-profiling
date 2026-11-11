@@ -12,7 +12,11 @@ The plate builders are called in the original order. The differences:
   copied to their plate names, as before;
 - one combined PDF, ``NCASM_Tufte_Plates_30.pdf``, replaces three identical 30-page
   copies (two of them named ``..._20.pdf``), and is written without a date;
-- ``manifest.json`` gives paths relative to the output folder.
+- ``manifest.json`` gives paths relative to the output folder, the code revision, and
+  for every plate where its numbers and data marks come from (``data_status``);
+- the data-story plots draw their points from a random generator (#775), so the build
+  refuses to draw them unless ``--audit-random-marks`` is given, and then each carries
+  a banner saying so.
 """
 
 from __future__ import annotations
@@ -29,6 +33,11 @@ import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 
+from mtp.ncasm_tufte_plates.data_status import (
+    DataStatus,
+    random_marks_status,
+    typed_literals_status,
+)
 from mtp.ncasm_tufte_plates.plates_common import (
     PLATE_DPI,
     PLATE_HEIGHT_IN,
@@ -61,7 +70,11 @@ from mtp.ncasm_tufte_plates.plates_part2 import (
     build_plate_19,
     build_plate_20,
 )
-from mtp.ncasm_tufte_plates.story_plots import PLOT_BUILDERS, PLOT_SPEAKER_NOTES
+from mtp.ncasm_tufte_plates.story_plots import (
+    PLOT_BUILDERS,
+    PLOT_SPEAKER_NOTES,
+    RANDOM_MARK_PLOTS,
+)
 
 __all__ = [
     "COMBINED_PDF",
@@ -70,7 +83,9 @@ __all__ = [
     "PLATE_BUILDERS",
     "SPEAKER_NOTES",
     "STORY_DIR",
+    "Manifest",
     "ManifestEntry",
+    "RandomMarksError",
     "build_plates",
     "main",
     "parse_args",
@@ -79,6 +94,7 @@ __all__ = [
 DEFAULT_OUTPUT_DIR = Path("data/derived/ncasm_tufte_plates")
 COMBINED_PDF = "NCASM_Tufte_Plates_30.pdf"
 MANIFEST = "manifest.json"
+MANIFEST_SCHEMA_VERSION = 1
 STORY_DIR = "data_story_plots"
 
 SPEAKER_NOTES: dict[int, str] = {
@@ -318,6 +334,21 @@ class ManifestEntry(TypedDict):
     out_of_bounds: list[str]
     overlaps: list[str]
     speaker_notes: str
+    data_status: DataStatus
+
+
+class Manifest(TypedDict):
+    """``manifest.json``: the build's record of what it drew and from what."""
+
+    schema_version: int
+    generator: str
+    code_commit: str | None
+    combined_pdf: str
+    plates: list[ManifestEntry]
+
+
+class RandomMarksError(ValueError):
+    """Plates that draw random points were requested without ``audit_random_marks``."""
 
 
 def _report(entry: ManifestEntry) -> None:
@@ -330,10 +361,31 @@ def _report(entry: ManifestEntry) -> None:
         print(f"   Overlaps: {ovl}")
 
 
-def build_plates(out_dir: Path) -> list[ManifestEntry]:
-    """Draw all 30 plates into ``out_dir`` and write the manifest and the combined PDF."""
+def _random_mark_plates() -> list[int]:
+    first_story_plate = len(PLATE_BUILDERS) + 1
+    return [
+        number
+        for number, plot_builder in enumerate(PLOT_BUILDERS, start=first_story_plate)
+        if plot_builder in RANDOM_MARK_PLOTS
+    ]
+
+
+def build_plates(
+    out_dir: Path, *, audit_random_marks: bool = False, code_commit: str | None = None
+) -> Manifest:
+    """Draw all 30 plates into ``out_dir`` and write the manifest and the combined PDF.
+
+    Raises ``RandomMarksError`` before drawing anything when a plate's points come from a
+    random generator and ``audit_random_marks`` is false (#775)."""
+    random_plates = _random_mark_plates()
+    if random_plates and not audit_random_marks:
+        numbers = ", ".join(str(number) for number in random_plates)
+        raise RandomMarksError(
+            f"plates {numbers} draw their points from a random generator, not from data "
+            "(#775); pass --audit-random-marks to draw them with a banner saying so"
+        )
     out_dir.mkdir(parents=True, exist_ok=True)
-    manifest: list[ManifestEntry] = []
+    plates: list[ManifestEntry] = []
 
     for builder in PLATE_BUILDERS:
         with mpl.style.context("default"):
@@ -349,12 +401,18 @@ def build_plates(out_dir: Path) -> list[ManifestEntry]:
             "out_of_bounds": info["out_of_bounds"],
             "overlaps": info["overlaps"],
             "speaker_notes": SPEAKER_NOTES[pnum],
+            "data_status": typed_literals_status(),
         }
-        manifest.append(entry)
+        plates.append(entry)
         _report(entry)
 
     story_dir = out_dir / STORY_DIR
     for idx, plot_builder in enumerate(PLOT_BUILDERS, start=len(PLATE_BUILDERS) + 1):
+        if plot_builder not in RANDOM_MARK_PLOTS:
+            raise NotImplementedError(
+                f"plate {idx} is not listed as drawing random points, and no builder that "
+                "reads run tables records its inputs yet (#2264)"
+            )
         with mpl.style.context("default"):
             story = plot_builder(story_dir)
         plate_stem = f"plate_{idx:02d}_{story['stem']}"
@@ -370,10 +428,18 @@ def build_plates(out_dir: Path) -> list[ManifestEntry]:
             "out_of_bounds": story["out_of_bounds"],
             "overlaps": [f"{left!r} <-> {right!r}" for left, right in story["overlaps"]],
             "speaker_notes": PLOT_SPEAKER_NOTES[idx - len(PLATE_BUILDERS)],
+            "data_status": random_marks_status(),
         }
-        manifest.append(entry)
+        plates.append(entry)
         _report(entry)
 
+    manifest: Manifest = {
+        "schema_version": MANIFEST_SCHEMA_VERSION,
+        "generator": "python -m mtp.ncasm_tufte_plates",
+        "code_commit": code_commit,
+        "combined_pdf": COMBINED_PDF,
+        "plates": plates,
+    }
     (out_dir / MANIFEST).write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
 
     # One page per plate, each the plate's PNG on a full-bleed canvas.
@@ -382,7 +448,7 @@ def build_plates(out_dir: Path) -> list[ManifestEntry]:
         mpl.style.context("default"),
         PdfPages(combined_pdf, metadata={"CreationDate": None}) as pdf,
     ):
-        for item in manifest:
+        for item in plates:
             img = mpimg.imread(out_dir / item["png_path"])
             fig = plt.figure(
                 figsize=(PLATE_WIDTH_IN, PLATE_HEIGHT_IN), dpi=PLATE_DPI, facecolor=TUFTE_PAPER
@@ -393,11 +459,14 @@ def build_plates(out_dir: Path) -> list[ManifestEntry]:
             pdf.savefig(fig, facecolor=TUFTE_PAPER)
             plt.close(fig)
 
-    total_oob = sum(len(item["out_of_bounds"]) for item in manifest)
-    total_overlaps = sum(len(item["overlaps"]) for item in manifest)
-    print(f"\nCompleted {len(manifest)} Tufte plates -> {out_dir}")
+    total_oob = sum(len(item["out_of_bounds"]) for item in plates)
+    total_overlaps = sum(len(item["overlaps"]) for item in plates)
+    print(f"\nCompleted {len(plates)} Tufte plates -> {out_dir}")
     print(f"Combined PDF -> {combined_pdf}")
     print(f"Geometry summary: total_oob={total_oob}, total_overlaps={total_overlaps}")
+    if random_plates:
+        numbers = ", ".join(str(number) for number in random_plates)
+        print(f"Plates drawn from random points, with the banner (#775): {numbers}")
     return manifest
 
 
@@ -418,6 +487,18 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         action="store_true",
         help="write into an output folder that already holds files",
     )
+    parser.add_argument(
+        "--audit-random-marks",
+        action="store_true",
+        help=(
+            "also draw the plates whose points come from a random generator, each with a "
+            "banner saying so (#775); without it the build stops before drawing anything"
+        ),
+    )
+    parser.add_argument(
+        "--code-commit",
+        help="revision of the code drawing the plates, recorded in the manifest",
+    )
     return parser.parse_args(argv)
 
 
@@ -428,5 +509,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     if out_dir.is_dir() and any(out_dir.iterdir()) and not args.overwrite:
         print(f"{out_dir} is not empty; pass --overwrite to replace its plates")
         return 1
-    build_plates(out_dir)
+    try:
+        build_plates(
+            out_dir, audit_random_marks=args.audit_random_marks, code_commit=args.code_commit
+        )
+    except RandomMarksError as error:
+        print(error)
+        return 1
     return 0
