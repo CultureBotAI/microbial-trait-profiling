@@ -34,6 +34,7 @@ from mtp.density_adjustment import (
     load_non_media_profile_matrix,
     regress_out_pc1,
 )
+from mtp.trait_key_policy import display_trait_label, read_recorded_member_ids
 
 DEFAULT_PAIRS_OUT = DEFAULT_OUTPUT_DIR / "ontology_redundancy_pairs.tsv"
 DEFAULT_REDUNDANCY_SUMMARY_OUT = DEFAULT_OUTPUT_DIR / "ontology_redundancy_summary.tsv"
@@ -246,7 +247,17 @@ def build_redundant_pairs_table(
         else:
             raise FileNotFoundError(f"Columns file not found: {columns_path} (or {gz_candidate})")
     cols_df = pd.read_csv(columns_path, sep="\t")
-    col_label_map = dict(zip(cols_df["column_id"], cols_df["column_label"], strict=False))
+    members = read_recorded_member_ids(columns_path)
+    col_label_map = {
+        str(column_id): display_trait_label(
+            str(column_id),
+            str(column_label),
+            members.get(str(column_id)),
+        )
+        for column_id, column_label in zip(
+            cols_df["column_id"], cols_df["column_label"], strict=False
+        )
+    }
 
     pairs_rows: list[dict[str, Any]] = []
 

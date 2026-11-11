@@ -658,3 +658,89 @@ def test_ontology_redundancy_audit_counts_observed_clusters_only(tmp_path: Path)
     assert res_multi_orphan["n_clusters"] == 1
     assert res_multi_orphan["n_collapsed_features"] == 3
     assert res_multi_orphan["n_orphan_features"] == 2
+
+
+def test_build_redundant_pairs_table_applies_display_trait_label(tmp_path: Path) -> None:
+    """Verify build_redundant_pairs_table applies display_trait_label (#1250)."""
+    df = pd.DataFrame(
+        {
+            "METPO:1000608": [1.0, 2.0, 3.0],
+            "METPO:1000607": [2.0, 4.0, 6.0],
+        }
+    )
+    cluster_survivor_608 = RedundancyCluster(
+        cluster_id="facultative_test_1",
+        cluster_label="Facultative Test 1",
+        tier="synonym",
+        surviving_trait="METPO:1000608",
+        surviving_label="facultatively aerobic",
+        collapsed_traits=["METPO:1000607"],
+        selection_rule="max_support_canonical",
+        rationale="test",
+    )
+    cluster_collapsed_608 = RedundancyCluster(
+        cluster_id="facultative_test_2",
+        cluster_label="Facultative Test 2",
+        tier="synonym",
+        surviving_trait="METPO:1000607",
+        surviving_label="obligately anaerobic",
+        collapsed_traits=["METPO:1000608"],
+        selection_rule="max_support_canonical",
+        rationale="test",
+    )
+
+    union_cols_path = tmp_path / "union_columns.tsv"
+    pd.DataFrame(
+        {
+            "column_id": ["METPO:1000608", "METPO:1000607"],
+            "column_label": ["facultatively aerobic", "obligately anaerobic"],
+            "object_category": ["biolink:PhenotypicQuality", "biolink:PhenotypicQuality"],
+            "trait_key_policy": ["facultative_union_v1", "facultative_union_v1"],
+            "trait_member_ids_json": [
+                '["METPO:1000605","METPO:1000608","METPO:1000612"]',
+                '["METPO:1000607"]',
+            ],
+        }
+    ).to_csv(union_cols_path, sep="\t", index=False)
+
+    raw_cols_path = tmp_path / "raw_columns.tsv"
+    pd.DataFrame(
+        {
+            "column_id": ["METPO:1000608", "METPO:1000607"],
+            "column_label": ["facultatively aerobic", "obligately anaerobic"],
+            "object_category": ["biolink:PhenotypicQuality", "biolink:PhenotypicQuality"],
+            "trait_key_policy": ["raw_object_v1", "raw_object_v1"],
+            "trait_member_ids_json": [
+                '["METPO:1000608"]',
+                '["METPO:1000607"]',
+            ],
+        }
+    ).to_csv(raw_cols_path, sep="\t", index=False)
+
+    union_pairs = build_redundant_pairs_table(
+        df,
+        columns_path=union_cols_path,
+        clusters=[cluster_survivor_608, cluster_collapsed_608],
+    )
+    assert list(union_pairs["label_1"]) == [
+        "facultative (aerobe or anaerobe)",
+        "obligately anaerobic",
+    ]
+    assert list(union_pairs["label_2"]) == [
+        "obligately anaerobic",
+        "facultative (aerobe or anaerobe)",
+    ]
+
+    raw_pairs = build_redundant_pairs_table(
+        df,
+        columns_path=raw_cols_path,
+        clusters=[cluster_survivor_608, cluster_collapsed_608],
+    )
+    assert list(raw_pairs["label_1"]) == [
+        "facultatively aerobic",
+        "obligately anaerobic",
+    ]
+    assert list(raw_pairs["label_2"]) == [
+        "obligately anaerobic",
+        "facultatively aerobic",
+    ]
