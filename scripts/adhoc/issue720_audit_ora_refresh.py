@@ -10,6 +10,12 @@ checked independently (#725); p/q values and effect estimates are not recalculat
 Nominal exports may use blank q with scope/family none, or the historical copied-p
 representation with global/profile scope. Each format is validated independently;
 switching formats still changes body bytes and fails the refresh-parity audit.
+New audit records use a declared relative root. ``--write-portable-manifest``
+converts an existing inputs manifest to that format and pins every source hash;
+the legacy manifest format remains readable. Legacy conversion requires the
+original attesting ``--expected-audit``. ``--provenance-root`` declares the safe
+source tree; stage verified inputs together if their old trees cannot be encoded
+safely. No analysis is rerun by conversion.
 """
 
 from __future__ import annotations
@@ -37,6 +43,12 @@ from mtp.enrichment_results import (
     classify_result_status,
 )
 from mtp.paths import file_sha256
+from mtp.provenance_paths import (
+    PortablePaths,
+    assert_portable_text,
+    resolve_reference,
+    verify_reference,
+)
 from mtp.trait_guilds import MEDIADIVE_MARKER
 
 FINGERPRINTS = {"Profiles-SHA256": "profiles", "Taxa-Matrix-SHA256": "taxa_matrix"}
@@ -306,6 +318,7 @@ class TableAudit:
 def read_table(path: Path, population: InputPopulation) -> TableAudit:
     """Stream a complete export and reconcile its declared and observed counts."""
     metadata: dict[str, str] = {}
+    source_digest = hashlib.sha256()
     body_digest = hashlib.sha256()
     body_bytes = 0
     rows = 0
@@ -315,6 +328,7 @@ def read_table(path: Path, population: InputPopulation) -> TableAudit:
     with path.open("rb") as handle:
         first_line = handle.readline()
         while first_line.startswith(b"#"):
+            source_digest.update(first_line)
             key, separator, value = first_line.decode("utf-8").strip()[1:].strip().partition(": ")
             if not separator or not key or key in metadata:
                 raise ValueError(f"{path}: malformed or duplicate metadata: {first_line!r}")
@@ -324,6 +338,7 @@ def read_table(path: Path, population: InputPopulation) -> TableAudit:
         def lines() -> Iterator[str]:
             nonlocal body_bytes
             for line in chain((first_line,), handle):
+                source_digest.update(line)
                 body_digest.update(line)
                 body_bytes += len(line)
                 yield line.decode("utf-8")
@@ -364,7 +379,7 @@ def read_table(path: Path, population: InputPopulation) -> TableAudit:
         errors.append("incomplete eligible profile/trait family")
     return TableAudit(
         path=str(path),
-        sha256=file_sha256(path),
+        sha256=source_digest.hexdigest(),
         body_sha256=body_digest.hexdigest(),
         body_bytes=body_bytes,
         rows=rows,
@@ -374,19 +389,42 @@ def read_table(path: Path, population: InputPopulation) -> TableAudit:
     )
 
 
-def audit_pair(pair: dict[str, str], base: Path) -> dict[str, object]:
+def audit_pair(
+    pair: dict[str, str],
+    base: Path,
+    *,
+    path_context: PortablePaths | None = None,
+    expected_hashes: dict[str, str] | None = None,
+) -> dict[str, object]:
     paths = {key: (base / value).resolve() for key, value in pair.items() if key != "label"}
     if same_path(paths["historical"], paths["current"]):
         raise ValueError(f"{pair['label']}: historical and current paths must differ")
+    # Population TSV/gzip readers remain streaming. Fingerprints bracket their
+    # consumption; this is a stability check, not an atomic snapshot guarantee.
+    before_hashes = {key: file_sha256(path) for key, path in paths.items()}
+    if expected_hashes is not None and before_hashes != expected_hashes:
+        raise ValueError("Source SHA-256 differs from manifest before auditing")
     population = input_population(paths["profiles"], paths["taxa_matrix"])
     historical = read_table(paths["historical"], population)
     current = read_table(paths["current"], population)
     old_meta = historical.metadata
     new_meta = current.metadata
     inputs = {
-        key: {"path": str(paths[key]), "sha256": file_sha256(paths[key])}
+        key: {
+            "path": path_context.encode(paths[key]) if path_context else str(paths[key]),
+            "sha256": file_sha256(paths[key]),
+        }
         for key in FINGERPRINTS.values()
     }
+    consumed_hashes = {
+        "historical": historical.sha256,
+        "current": current.sha256,
+        **{key: str(reference["sha256"]) for key, reference in inputs.items()},
+    }
+    if consumed_hashes != before_hashes:
+        raise ValueError("Source SHA-256 changed while auditing manifest inputs")
+    if expected_hashes is not None and consumed_hashes != expected_hashes:
+        raise ValueError("Consumed source SHA-256 differs from manifest")
     changes = {
         key: {"historical": old_meta.get(key), "current": new_meta.get(key)}
         for key in sorted(old_meta.keys() | new_meta.keys())
@@ -419,10 +457,15 @@ def audit_pair(pair: dict[str, str], base: Path) -> dict[str, object]:
     for key, input_key in FINGERPRINTS.items():
         if new_meta.get(key) != inputs[input_key]["sha256"]:
             errors.append(f"{key}: current export does not match supplied input")
+    historical_record = asdict(historical)
+    current_record = asdict(current)
+    if path_context is not None:
+        historical_record["path"] = path_context.encode(paths["historical"])
+        current_record["path"] = path_context.encode(paths["current"])
     return {
         "label": pair["label"],
-        "historical": asdict(historical),
-        "current": asdict(current),
+        "historical": historical_record,
+        "current": current_record,
         "inputs": inputs,
         "metadata_changes": changes,
         "table_body_equal": body_equal,
@@ -431,51 +474,319 @@ def audit_pair(pair: dict[str, str], base: Path) -> dict[str, object]:
     }
 
 
-def audit_manifest(manifest: Path, output: Path) -> dict[str, object]:
-    raw = json.loads(manifest.read_text(encoding="utf-8"))
-    if not isinstance(raw, dict) or set(raw) != {"pairs"}:
-        raise ValueError("Manifest must contain exactly the 'pairs' key")
+def read_manifest(
+    manifest: Path,
+    *,
+    provenance_root: Path | None = None,
+) -> tuple[list[dict[str, str]], str, dict[str, dict[str, str]]]:
+    """Resolve old paths or verify versioned source references from one buffer."""
+    try:
+        payload = manifest.read_bytes()
+    except OSError as exc:
+        raise ValueError("Inputs manifest is missing or cannot be read") from exc
+    raw = json.loads(payload)
+    if not isinstance(raw, dict) or set(raw) not in (
+        {"pairs"},
+        {"pairs", "path_basis"},
+        {"pairs", "path_basis", "converted_from"},
+    ):
+        raise ValueError("Manifest must contain pairs and optionally path_basis/converted_from")
+    if "converted_from" in raw:
+        origin = raw["converted_from"]
+        if not isinstance(origin, dict) or set(origin) != {"manifest_sha256", "audit_sha256"}:
+            raise ValueError("converted_from must declare manifest_sha256 and audit_sha256")
+        _digest(origin["manifest_sha256"], "converted_from manifest")
+        if origin["audit_sha256"] is not None:
+            _digest(origin["audit_sha256"], "converted_from audit")
+    portable = "path_basis" in raw
+    basis = raw.get("path_basis")
+    if portable and not isinstance(basis, dict):
+        raise ValueError("Portable manifest path_basis must be an object")
     pairs = raw["pairs"]
     if not isinstance(pairs, list) or not pairs:
         raise ValueError("Manifest 'pairs' must be a nonempty list")
     labels: set[str] = set()
+    resolved: list[dict[str, str]] = []
+    expected_hashes: dict[str, dict[str, str]] = {}
     for pair in pairs:
         if (
             not isinstance(pair, dict)
             or set(pair) != PAIR_FIELDS
-            or any(not isinstance(value, str) or not value.strip() for value in pair.values())
+            or not isinstance(pair["label"], str)
+            or not pair["label"].strip()
         ):
-            raise ValueError(f"Each pair must supply nonempty strings for {sorted(PAIR_FIELDS)}")
+            raise ValueError(f"Each pair must supply a label and {sorted(PAIR_FIELDS - {'label'})}")
         if pair["label"] in labels:
             raise ValueError(f"Duplicate pair label: {pair['label']}")
         labels.add(pair["label"])
+        entry = {"label": pair["label"]}
+        fingerprints: dict[str, str] = {}
         for key in PAIR_FIELDS - {"label"}:
-            if same_path(manifest.parent / pair[key], output):
-                raise ValueError("Audit output must not overwrite any input")
+            if portable:
+                reference = pair[key]
+                if not isinstance(reference, dict):
+                    raise ValueError(f"Portable {key} must provide path and sha256")
+                try:
+                    path = verify_reference(
+                        manifest, reference, path_basis=basis, provenance_root=provenance_root
+                    )
+                except ValueError as exc:
+                    message = f"Pair {pair['label']} source {key}: {exc}"
+                    assert_portable_text(message)
+                    raise ValueError(message) from exc
+                fingerprints[key] = reference["sha256"]
+            else:
+                value = pair[key]
+                if not isinstance(value, str) or not value.strip():
+                    raise ValueError(f"Legacy {key} must be a nonempty path")
+                path = resolve_reference(
+                    manifest, value, path_basis=None, provenance_root=provenance_root
+                )
+            entry[key] = str(path)
+        resolved.append(entry)
+        if portable:
+            expected_hashes[pair["label"]] = fingerprints
+    require_source_presence(resolved)
+    return resolved, hashlib.sha256(payload).hexdigest(), expected_hashes
+
+
+def source_paths(pairs: list[dict[str, str]]) -> list[Path]:
+    return [Path(pair[key]) for pair in pairs for key in PAIR_FIELDS - {"label"}]
+
+
+def require_source_presence(pairs: list[dict[str, str]]) -> None:
+    """Count missing file references before legacy source roots are considered."""
+    missing = []
+    total = 0
+    for pair in pairs:
+        for role in sorted(PAIR_FIELDS - {"label"}):
+            total += 1
+            try:
+                present = Path(pair[role]).is_file()
+            except OSError:
+                present = False
+            if not present:
+                missing.append(f"{pair['label']}:{role}")
+    if missing:
+        message = (
+            f"{len(missing)} of {total} referenced source files are missing or not files; "
+            "pair:role = "
+            + ", ".join(missing)
+            + ". Recover and verify the original bytes before auditing or converting."
+        )
+        assert_portable_text(message)
+        raise ValueError(message)
+
+
+def portable_context(
+    manifest: Path,
+    output: Path,
+    pairs: list[dict[str, str]],
+    *,
+    root: Path | None,
+) -> PortablePaths:
+    """Name an out-of-root input by role without disclosing its machine location."""
+    if root is not None:
+        # Validate directory existence and root safety before role containment.
+        validated = PortablePaths.create(output, [], root=root)
+        if not manifest.resolve().is_relative_to(validated.root):
+            raise ValueError(
+                "Input manifest is outside the declared provenance root (--provenance-root)"
+            )
+        for pair in pairs:
+            for role in sorted(PAIR_FIELDS - {"label"}):
+                if not Path(pair[role]).is_relative_to(validated.root):
+                    message = f"Pair {pair['label']} source {role} is outside --provenance-root"
+                    assert_portable_text(message)
+                    raise ValueError(message)
+    return PortablePaths.create(output, [manifest, *source_paths(pairs)], root=root)
+
+
+def protect_output(manifest: Path, output: Path, pairs: list[dict[str, str]]) -> None:
+    """Keep conversion and auditing from overwriting source bytes, including hard links."""
+    for path in source_paths(pairs):
+        if same_path(path, output):
+            raise ValueError("Audit output must not overwrite any input")
     if same_path(manifest, output):
         raise ValueError("Audit output must not overwrite manifest")
+
+
+def _digest(value: object, name: str) -> str:
+    if (
+        not isinstance(value, str)
+        or len(value) != 64
+        or any(character not in "0123456789abcdef" for character in value)
+    ):
+        raise ValueError(f"{name} must provide a valid SHA-256 digest")
+    return value
+
+
+def _attested_hashes(
+    expected_audit: Path,
+    manifest_sha256: str,
+    labels: set[str],
+) -> tuple[dict[str, dict[str, str]], str]:
+    """Use exactly the audit buffer whose hash is recorded in converted_from."""
+    payload = expected_audit.read_bytes()
+    audit = json.loads(payload)
+    if not isinstance(audit, dict) or audit.get("passed") is not True:
+        raise ValueError("Expected audit must attest a successful refresh")
+    if audit.get("manifest_sha256") != manifest_sha256:
+        raise ValueError("Expected audit manifest SHA-256 differs from the supplied manifest")
+    audited_pairs = audit.get("pairs")
+    if not isinstance(audited_pairs, list) or not audited_pairs:
+        raise ValueError("Expected audit must contain nonempty pairs")
+    result: dict[str, dict[str, str]] = {}
+    for pair in audited_pairs:
+        if (
+            not isinstance(pair, dict)
+            or not isinstance(pair.get("label"), str)
+            or pair["label"] in result
+            or pair.get("passed") is not True
+        ):
+            raise ValueError("Expected audit has an invalid, failed or duplicate pair")
+        inputs = pair.get("inputs")
+        if not isinstance(inputs, dict):
+            raise ValueError("Expected audit pair must attest its inputs")
+        hashes: dict[str, str] = {}
+        for key in ("historical", "current", "profiles", "taxa_matrix"):
+            reference = pair.get(key) if key in {"historical", "current"} else inputs.get(key)
+            if not isinstance(reference, dict):
+                raise ValueError(f"Expected audit lacks {key} SHA-256")
+            hashes[key] = _digest(reference.get("sha256"), f"Expected audit {key}")
+        result[pair["label"]] = hashes
+    if set(result) != labels:
+        raise ValueError("Expected audit pair labels differ from the supplied manifest")
+    return result, hashlib.sha256(payload).hexdigest()
+
+
+def write_portable_manifest(
+    manifest: Path,
+    output: Path,
+    *,
+    root: Path | None = None,
+    expected_audit: Path | None = None,
+) -> dict[str, object]:
+    """Write a new source-hash-bound manifest without modifying a historical record."""
+    pairs, manifest_sha256, expected_hashes = read_manifest(manifest, provenance_root=root)
+    protect_output(manifest, output, pairs)
+    audit_sha256: str | None = None
+    if expected_audit is not None:
+        if same_path(expected_audit, output):
+            raise ValueError("Conversion output must not overwrite the expected audit")
+        attested, audit_sha256 = _attested_hashes(
+            expected_audit, manifest_sha256, {pair["label"] for pair in pairs}
+        )
+        if expected_hashes and attested != expected_hashes:
+            raise ValueError("Expected audit SHA-256 declarations differ from portable manifest")
+        expected_hashes = attested
+    elif not expected_hashes:
+        raise ValueError("Legacy conversion requires --expected-audit from the original refresh")
+    context = portable_context(manifest, output, pairs, root=root)
+    portable_pairs: list[dict[str, object]] = []
+    for pair in pairs:
+        fingerprints = {key: file_sha256(Path(pair[key])) for key in PAIR_FIELDS - {"label"}}
+        if pair["label"] in expected_hashes and fingerprints != expected_hashes[pair["label"]]:
+            raise ValueError("Source SHA-256 differs from manifest during conversion")
+        portable_pairs.append(
+            {
+                "label": pair["label"],
+                **{
+                    key: {"path": context.encode(Path(pair[key])), "sha256": fingerprints[key]}
+                    for key in ("historical", "current", "profiles", "taxa_matrix")
+                },
+            }
+        )
+    result: dict[str, object] = {
+        "path_basis": context.declaration,
+        "pairs": portable_pairs,
+        "converted_from": {"manifest_sha256": manifest_sha256, "audit_sha256": audit_sha256},
+    }
+    text = json.dumps(result, indent=2) + "\n"
+    assert_portable_text(text)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    with output.open("x", encoding="utf-8") as handle:
+        handle.write(text)
+    return result
+
+
+def audit_manifest(
+    manifest: Path,
+    output: Path,
+    *,
+    root: Path | None = None,
+) -> dict[str, object]:
+    pairs, manifest_sha256, expected_hashes = read_manifest(manifest, provenance_root=root)
+    protect_output(manifest, output, pairs)
+    paths = [manifest.resolve(), *source_paths(pairs)]
+    context = portable_context(manifest, output, pairs, root=root)
     results = []
     for pair in pairs:
         try:
-            results.append(audit_pair(pair, manifest.parent))
+            results.append(
+                audit_pair(
+                    pair,
+                    manifest.parent,
+                    path_context=context,
+                    expected_hashes=expected_hashes.get(pair["label"]),
+                )
+            )
         except (OSError, ValueError, csv.Error) as exc:
-            results.append({"label": pair["label"], "passed": False, "errors": [str(exc)]})
-    return {
+            message = str(exc)
+            for path in sorted(paths, key=lambda item: len(str(item)), reverse=True):
+                message = message.replace(str(path), context.encode(path))
+            results.append({"label": pair["label"], "passed": False, "errors": [message]})
+    result = {
         "issue": 720,
-        "manifest": str(manifest.resolve()),
-        "manifest_sha256": file_sha256(manifest),
+        "path_basis": context.declaration,
+        "manifest": context.encode(manifest),
+        "manifest_sha256": manifest_sha256,
         "passed": all(result["passed"] for result in results),
         "pairs": results,
     }
+    assert_portable_text(json.dumps(result))
+    return result
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument(
+        "--provenance-root",
+        type=Path,
+        help=(
+            "Safe root containing sources and input manifest; "
+            "stage verified inputs together if needed"
+        ),
+    )
+    parser.add_argument(
+        "--expected-audit",
+        type=Path,
+        help=(
+            "Original successful audit attesting source hashes; "
+            "required for legacy manifest conversion"
+        ),
+    )
+    parser.add_argument(
+        "--write-portable-manifest",
+        action="store_true",
+        help="Convert the supplied inputs manifest to portable hash-bound references; do not audit",
+    )
     args = parser.parse_args()
     try:
-        result = audit_manifest(args.manifest, args.output)
+        if args.write_portable_manifest:
+            write_portable_manifest(
+                args.manifest,
+                args.output,
+                root=args.provenance_root,
+                expected_audit=args.expected_audit,
+            )
+            print(f"Portable ORA inputs manifest written: {args.output}")
+            return 0
+        if args.expected_audit is not None:
+            raise ValueError("--expected-audit is only used with --write-portable-manifest")
+        result = audit_manifest(args.manifest, args.output, root=args.provenance_root)
     except (OSError, ValueError) as exc:
         parser.error(str(exc))
     args.output.parent.mkdir(parents=True, exist_ok=True)

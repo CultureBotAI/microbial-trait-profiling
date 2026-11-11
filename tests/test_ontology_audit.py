@@ -422,7 +422,7 @@ def test_write_consolidated_report_dynamic_numbers(tmp_path: Path) -> None:
 
     # Assert dynamic formatting
     assert "N=1,234" in content
-    assert "VIF ~ 6.12" in content
+    assert "VIF = 6.12" in content
     # Section 6 reads the BH q-values and labels of the reported effects (#1321).
     assert (
         "After PC1 regression the facultatively aerobic paired contrast is labelled "
@@ -450,3 +450,211 @@ def test_write_consolidated_report_dynamic_numbers(tmp_path: Path) -> None:
                 density_res={**density_res, "table1_effects": bad_effects},
                 ontology_res=ontology_res,
             )
+
+
+def test_ontology_redundancy_audit_counts_observed_clusters_only(tmp_path: Path) -> None:
+    """#1402: n_clusters counts clusters with at least one redundant pair present in the inputs."""
+    traits = ["METPO:1000668", "METPO:1000683", "METPO:1000608"]
+    profiles = tmp_path / "profiles.tsv"
+    columns = tmp_path / "columns.tsv"
+    pd.DataFrame(
+        {
+            "study_id": ["s1", "s1", "s2", "s2"],
+            "experiment_id": ["e1", "e1", "e2", "e2"],
+            "inc_dec": ["inc", "dec", "inc", "dec"],
+            "METPO:1000668": [2.0, 4.0, 6.0, 8.0],
+            "METPO:1000683": [1.0, 2.0, 3.0, 4.0],
+            "METPO:1000608": [5.0, 1.0, 2.0, 3.0],
+        }
+    ).to_csv(profiles, sep="\t", index=False)
+    pd.DataFrame(
+        {
+            "column_id": traits,
+            "column_label": ["coccus shaped", "sphere shaped", "facultatively aerobic"],
+            "object_name": ["coccus shaped", "sphere shaped", "facultatively aerobic"],
+            "object_category": ["biolink:PhenotypicQuality"] * len(traits),
+        }
+    ).to_csv(columns, sep="\t", index=False)
+
+    res = run_ontology_redundancy_audit(
+        profiles_path=profiles,
+        columns_path=columns,
+        output_dir=tmp_path / "out",
+    )
+    assert res["n_redundant_pairs"] == 1
+    assert res["n_clusters"] == 1
+    assert res["n_collapsed_features"] == 1
+    summary_df = pd.read_csv(res["summary_tsv"], sep="\t").set_index("metric")["value"].to_dict()
+    assert summary_df["redundant_clusters_count"] == 1.0
+    assert summary_df["redundant_pairs_count"] == 1.0
+
+    # Zero observed pairs -> 0 observed clusters
+    no_pair_traits = ["METPO:1000668", "METPO:1000608"]
+    profiles_zero = tmp_path / "profiles_zero.tsv"
+    columns_zero = tmp_path / "columns_zero.tsv"
+    pd.DataFrame(
+        {
+            "study_id": ["s1", "s1", "s2", "s2"],
+            "experiment_id": ["e1", "e1", "e2", "e2"],
+            "inc_dec": ["inc", "dec", "inc", "dec"],
+            "METPO:1000668": [2.0, 4.0, 6.0, 8.0],
+            "METPO:1000608": [5.0, 1.0, 2.0, 3.0],
+        }
+    ).to_csv(profiles_zero, sep="\t", index=False)
+    pd.DataFrame(
+        {
+            "column_id": no_pair_traits,
+            "column_label": ["coccus shaped", "facultatively aerobic"],
+            "object_name": ["coccus shaped", "facultatively aerobic"],
+            "object_category": ["biolink:PhenotypicQuality"] * len(no_pair_traits),
+        }
+    ).to_csv(columns_zero, sep="\t", index=False)
+
+    res_zero = run_ontology_redundancy_audit(
+        profiles_path=profiles_zero,
+        columns_path=columns_zero,
+        output_dir=tmp_path / "out_zero",
+    )
+    assert res_zero["n_redundant_pairs"] == 0
+    assert res_zero["n_clusters"] == 0
+
+    # Multiple redundant pairs in one cluster (#1825 K02): motility has survivor METPO:1000702
+    # plus three collapsed traits (3 pairs in 1 cluster when 3 members are present).
+    multi_pair_traits = ["METPO:1000702", "METPO:1000705", "METPO:1000704", "METPO:1000608"]
+    profiles_multi = tmp_path / "profiles_multi.tsv"
+    columns_multi = tmp_path / "columns_multi.tsv"
+    pd.DataFrame(
+        {
+            "study_id": ["s1", "s1", "s2", "s2"],
+            "experiment_id": ["e1", "e1", "e2", "e2"],
+            "inc_dec": ["inc", "dec", "inc", "dec"],
+            "METPO:1000702": [3.0, 6.0, 9.0, 12.0],
+            "METPO:1000705": [2.0, 4.0, 6.0, 8.0],
+            "METPO:1000704": [1.0, 2.0, 3.0, 4.0],
+            "METPO:1000608": [5.0, 1.0, 2.0, 3.0],
+        }
+    ).to_csv(profiles_multi, sep="\t", index=False)
+    pd.DataFrame(
+        {
+            "column_id": multi_pair_traits,
+            "column_label": [
+                "motile",
+                "axially filamented",
+                "flagellated",
+                "facultatively aerobic",
+            ],
+            "object_name": ["motile", "axially filamented", "flagellated", "facultatively aerobic"],
+            "object_category": ["biolink:PhenotypicQuality"] * len(multi_pair_traits),
+        }
+    ).to_csv(columns_multi, sep="\t", index=False)
+
+    res_multi = run_ontology_redundancy_audit(
+        profiles_path=profiles_multi,
+        columns_path=columns_multi,
+        output_dir=tmp_path / "out_multi",
+    )
+    assert res_multi["n_redundant_pairs"] == 3
+    assert res_multi["n_clusters"] == 1
+    assert res_multi["n_collapsed_features"] == 2
+    assert res_multi["n_orphan_features"] == 0
+
+    # Paired cluster (coccus + sphere) plus orphan-removed member (flagellated without motile,
+    # #1857)
+    mixed_traits = ["METPO:1000668", "METPO:1000683", "METPO:1000704", "METPO:1000608"]
+    profiles_mixed = tmp_path / "profiles_mixed.tsv"
+    columns_mixed = tmp_path / "columns_mixed.tsv"
+    pd.DataFrame(
+        {
+            "study_id": ["s1", "s1", "s2", "s2"],
+            "experiment_id": ["e1", "e1", "e2", "e2"],
+            "inc_dec": ["inc", "dec", "inc", "dec"],
+            "METPO:1000668": [2.0, 4.0, 6.0, 8.0],
+            "METPO:1000683": [1.0, 2.0, 3.0, 4.0],
+            "METPO:1000704": [1.0, 2.0, 3.0, 4.0],
+            "METPO:1000608": [5.0, 1.0, 2.0, 3.0],
+        }
+    ).to_csv(profiles_mixed, sep="\t", index=False)
+    pd.DataFrame(
+        {
+            "column_id": mixed_traits,
+            "column_label": [
+                "coccus shaped",
+                "sphere shaped",
+                "flagellated",
+                "facultatively aerobic",
+            ],
+            "object_name": [
+                "coccus shaped",
+                "sphere shaped",
+                "flagellated",
+                "facultatively aerobic",
+            ],
+            "object_category": ["biolink:PhenotypicQuality"] * len(mixed_traits),
+        }
+    ).to_csv(columns_mixed, sep="\t", index=False)
+
+    res_mixed = run_ontology_redundancy_audit(
+        profiles_path=profiles_mixed,
+        columns_path=columns_mixed,
+        output_dir=tmp_path / "out_mixed",
+    )
+    assert res_mixed["n_redundant_pairs"] == 1
+    assert res_mixed["n_clusters"] == 1
+    assert res_mixed["n_collapsed_features"] == 2
+    assert res_mixed["n_orphan_features"] == 1
+
+    # Multi-orphan case (#1857, PR #1901 review): motility survivor (METPO:1000702) is absent
+    # while two of its collapsed members (METPO:1000705, METPO:1000704) are present alongside
+    # coccus + sphere. The member-member motility pair is in df_pairs, but n_clusters must count
+    # only clusters whose survivor is present (1 cluster: morphology_sphere, not 2).
+    multi_orphan_traits = [
+        "METPO:1000668",
+        "METPO:1000683",
+        "METPO:1000705",
+        "METPO:1000704",
+        "METPO:1000608",
+    ]
+    profiles_multi_orphan = tmp_path / "profiles_multi_orphan.tsv"
+    columns_multi_orphan = tmp_path / "columns_multi_orphan.tsv"
+    pd.DataFrame(
+        {
+            "study_id": ["s1", "s1", "s2", "s2"],
+            "experiment_id": ["e1", "e1", "e2", "e2"],
+            "inc_dec": ["inc", "dec", "inc", "dec"],
+            "METPO:1000668": [2.0, 4.0, 6.0, 8.0],
+            "METPO:1000683": [1.0, 2.0, 3.0, 4.0],
+            "METPO:1000705": [2.0, 4.0, 6.0, 8.0],
+            "METPO:1000704": [1.0, 2.0, 3.0, 4.0],
+            "METPO:1000608": [5.0, 1.0, 2.0, 3.0],
+        }
+    ).to_csv(profiles_multi_orphan, sep="\t", index=False)
+    pd.DataFrame(
+        {
+            "column_id": multi_orphan_traits,
+            "column_label": [
+                "coccus shaped",
+                "sphere shaped",
+                "axially filamented",
+                "flagellated",
+                "facultatively aerobic",
+            ],
+            "object_name": [
+                "coccus shaped",
+                "sphere shaped",
+                "axially filamented",
+                "flagellated",
+                "facultatively aerobic",
+            ],
+            "object_category": ["biolink:PhenotypicQuality"] * len(multi_orphan_traits),
+        }
+    ).to_csv(columns_multi_orphan, sep="\t", index=False)
+
+    res_multi_orphan = run_ontology_redundancy_audit(
+        profiles_path=profiles_multi_orphan,
+        columns_path=columns_multi_orphan,
+        output_dir=tmp_path / "out_multi_orphan",
+    )
+    assert res_multi_orphan["n_redundant_pairs"] == 2
+    assert res_multi_orphan["n_clusters"] == 1
+    assert res_multi_orphan["n_collapsed_features"] == 3
+    assert res_multi_orphan["n_orphan_features"] == 2

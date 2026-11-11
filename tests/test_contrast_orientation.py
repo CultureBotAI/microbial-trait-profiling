@@ -9,6 +9,7 @@ import json
 import re
 from collections import Counter
 from dataclasses import asdict, replace
+from functools import partial
 from pathlib import Path
 
 import pytest
@@ -52,6 +53,8 @@ from bsdbng.contrast_orientation import (
 )
 from bsdbng.trait_guilds import TABLE1_TRAITS, Profile
 from mtp.contrast_orientation import _acronym_spelled_out
+from mtp.table1_trait_maps import compute_direction_shifts
+from mtp.trait_composition import compute_log_ratio_shifts
 
 #: The record that the regression tables and most tests below change a few fields of. The
 #: classifier-version guard (#793) classifies the regression tables built on it, so an edit
@@ -1071,6 +1074,337 @@ def test_comparison_rows_report_both_analyses_for_each_population() -> None:
         "Benjamini-Hochberg over 6 fractions",
         "Benjamini-Yekutieli over 15 ratios",
     }
+
+
+@pytest.mark.parametrize(("fraction_count", "ratio_count"), [(3, 4), (4, 3)])
+@pytest.mark.parametrize("all_tied", [False, True])
+def test_comparison_rows_use_executed_families_including_untestable_members(
+    monkeypatch: pytest.MonkeyPatch,
+    fraction_count: int,
+    ratio_count: int,
+    all_tied: bool,
+) -> None:
+    """Labels follow each real kernel's complete family, including internal p=1s."""
+    traits = tuple(TABLE1_TRAITS)
+    fractions = traits[:fraction_count]
+    ratios = traits[:ratio_count]
+    profiles = [
+        Profile(
+            f"bsdb:{study}",
+            f"bsdb:{study}-1",
+            direction,
+            "C",
+            "Feces",
+            {
+                trait: (
+                    0
+                    if index == 0
+                    else 4
+                    if all_tied or (index == 1) == (direction == "inc")
+                    else 1
+                )
+                for index, trait in enumerate(traits)
+            },
+            10,
+        )
+        for study in range(1, 5)
+        for direction in ("inc", "dec")
+    ]
+    expected_fractions = compute_direction_shifts(profiles, trait_order=fractions)
+    expected_ratios = compute_log_ratio_shifts(profiles, traits=ratios)
+    monkeypatch.setattr(
+        "mtp.contrast_orientation.compute_direction_shifts",
+        partial(compute_direction_shifts, trait_order=fractions),
+    )
+    monkeypatch.setattr(
+        "mtp.contrast_orientation.TABLE1_TRAITS",
+        ratios,
+    )
+
+    rows = comparison_rows([("synthetic", profiles)])
+    fraction_rows = [row for row in rows if row["comparison"] == "fraction"]
+    ratio_rows = [row for row in rows if row["comparison"] == "log_ratio"]
+    pair_count = len(list(itertools.combinations(ratios, 2)))
+    assert len(fraction_rows) == fraction_count
+    assert len(ratio_rows) == pair_count
+    assert {row["family"] for row in fraction_rows} == {
+        f"Benjamini-Hochberg over {fraction_count} fractions"
+    }
+    assert {row["family"] for row in ratio_rows} == {
+        f"Benjamini-Yekutieli over {pair_count} ratios"
+    }
+    for actual, expected in zip(fraction_rows, expected_fractions.shifts, strict=True):
+        assert (actual["numerator"], actual["p_value"], actual["q_value"]) == (
+            expected.trait,
+            expected.p_value,
+            expected.q_value,
+        )
+    for actual, ratio in zip(ratio_rows, expected_ratios.summaries, strict=True):
+        assert (
+            actual["numerator"],
+            actual["reference"],
+            actual["p_value"],
+            actual["q_value"],
+        ) == (ratio.numerator, ratio.reference, ratio.sign_p, ratio.by_q)
+    for family in (fraction_rows, ratio_rows):
+        finite_count = sum(row["p_value"] is not None for row in family)
+        assert finite_count < len(family)
+        assert (finite_count == 0) is all_tied
+
+
+def test_comparison_rows_emit_untestable_rows_for_an_empty_population_without_changing_others(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """An empty population emits untestable rows across both families without aborting (#1838)."""
+    assert comparison_rows.__doc__ is not None
+    normalized_doc = " ".join(comparison_rows.__doc__.split())
+    assert "An empty population emits untestable rows across both families." in normalized_doc
+    assert "no paired profiles" not in comparison_rows.__doc__.lower()
+    assert (
+        "(``ratio_traits``, defaulting to ``TABLE1_TRAITS``; every named trait must be a "
+        "known trait in ``TABLE1_TRAITS``)."
+    ) in normalized_doc
+    traits = tuple(TABLE1_TRAITS)
+    profiles = [
+        Profile(
+            f"bsdb:{study}",
+            f"bsdb:{study}-1",
+            direction,
+            "C",
+            "Feces",
+            {
+                trait: (4 if (index % 2 == 0) == (direction == "inc") else 1)
+                for index, trait in enumerate(traits)
+            },
+            10,
+        )
+        for study in range(1, 5)
+        for direction in ("inc", "dec")
+    ]
+    baseline = comparison_rows([("populated", profiles)])
+    try:
+        combined = comparison_rows(
+            [("empty_before", []), ("populated", profiles), ("empty_after", [])]
+        )
+    except ValueError as error:
+        pytest.fail(f"an empty population must not abort the table: {error}")
+    assert [row for row in combined if row["population"] == "populated"] == baseline
+
+    expected_pairs = list(itertools.combinations(traits, 2))
+    for empty_name in ("empty_before", "empty_after"):
+        empty_rows = [row for row in combined if row["population"] == empty_name]
+        fraction_rows = [row for row in empty_rows if row["comparison"] == "fraction"]
+        ratio_rows = [row for row in empty_rows if row["comparison"] == "log_ratio"]
+        assert len(fraction_rows) == len(traits)
+        assert len(ratio_rows) == len(expected_pairs)
+        assert [row["numerator"] for row in fraction_rows] == list(traits)
+        assert {row["reference"] for row in fraction_rows} == {""}
+        assert [(row["numerator"], row["reference"]) for row in ratio_rows] == expected_pairs
+        assert {row["family"] for row in fraction_rows} == {
+            f"Benjamini-Hochberg over {len(traits)} fractions"
+        }
+        assert {row["family"] for row in ratio_rows} == {
+            f"Benjamini-Yekutieli over {len(expected_pairs)} ratios"
+        }
+        for row in empty_rows:
+            assert (
+                row["population_studies"],
+                row["population_experiments"],
+                row["studies_scored"],
+                row["studies_up"],
+                row["studies_down"],
+                row["studies_tied"],
+                row["share_up"],
+                row["ci_low"],
+                row["ci_high"],
+                row["mean_effect"],
+                row["p_value"],
+                row["q_value"],
+            ) == (0, 0, 0, 0, 0, 0, None, None, None, None, None, None)
+
+    # Non-default trait list: the empty population's labels and pairs match populated rows (#1888).
+    custom_fractions = traits[:3]
+    custom_ratios = traits[:4]
+    expected_custom_pairs = list(itertools.combinations(custom_ratios, 2))
+    with monkeypatch.context() as patch:
+        patch.setattr(
+            "mtp.contrast_orientation.compute_direction_shifts",
+            partial(compute_direction_shifts, trait_order=custom_fractions),
+        )
+        patch.setattr("mtp.contrast_orientation.TABLE1_TRAITS", custom_ratios)
+        try:
+            custom_rows = comparison_rows([("custom_populated", profiles), ("custom_empty", [])])
+        except ValueError as error:
+            pytest.fail(f"an empty population must not abort the table: {error}")
+    pop_frac = [
+        row
+        for row in custom_rows
+        if row["population"] == "custom_populated" and row["comparison"] == "fraction"
+    ]
+    pop_rat = [
+        row
+        for row in custom_rows
+        if row["population"] == "custom_populated" and row["comparison"] == "log_ratio"
+    ]
+    custom_frac = [
+        row
+        for row in custom_rows
+        if row["population"] == "custom_empty" and row["comparison"] == "fraction"
+    ]
+    custom_rat = [
+        row
+        for row in custom_rows
+        if row["population"] == "custom_empty" and row["comparison"] == "log_ratio"
+    ]
+    assert len(custom_frac) == len(pop_frac) == 3
+    assert len(custom_rat) == len(pop_rat) == 6
+    assert (
+        {row["family"] for row in custom_frac}
+        == {row["family"] for row in pop_frac}
+        == {"Benjamini-Hochberg over 3 fractions"}
+    )
+    assert (
+        {row["family"] for row in custom_rat}
+        == {row["family"] for row in pop_rat}
+        == {"Benjamini-Yekutieli over 6 ratios"}
+    )
+    assert (
+        [(row["numerator"], row["reference"]) for row in custom_rat]
+        == [(row["numerator"], row["reference"]) for row in pop_rat]
+        == expected_custom_pairs
+    )
+
+    try:
+        explicit_rows = comparison_rows(
+            [("explicit_populated", profiles), ("explicit_empty", [])],
+            ratio_traits=custom_ratios,
+        )
+    except ValueError as error:
+        pytest.fail(f"an empty population must not abort the table: {error}")
+    explicit_pop_rat = [
+        row
+        for row in explicit_rows
+        if row["population"] == "explicit_populated" and row["comparison"] == "log_ratio"
+    ]
+    explicit_emp_rat = [
+        row
+        for row in explicit_rows
+        if row["population"] == "explicit_empty" and row["comparison"] == "log_ratio"
+    ]
+    assert (
+        {row["family"] for row in explicit_emp_rat}
+        == {row["family"] for row in explicit_pop_rat}
+        == {"Benjamini-Yekutieli over 6 ratios"}
+    )
+    assert (
+        [(row["numerator"], row["reference"]) for row in explicit_emp_rat]
+        == [(row["numerator"], row["reference"]) for row in explicit_pop_rat]
+        == expected_custom_pairs
+    )
+
+    # Invalid ratio trait list still raises on an empty population; unpaired profiles still raise.
+    for bad_traits in (("only_one",), (traits[0], traits[0])):
+        with monkeypatch.context() as patch:
+            patch.setattr("mtp.contrast_orientation.TABLE1_TRAITS", bad_traits)
+            with pytest.raises(ValueError, match="Provide at least two distinct traits"):
+                comparison_rows([("invalid_traits", [])])
+        with pytest.raises(ValueError, match="Provide at least two distinct traits"):
+            comparison_rows([("invalid_traits", [])], ratio_traits=bad_traits)
+    for unknown_traits in (
+        ("no_such_a", "no_such_b"),
+        (traits[0], "no_such_b"),
+        ("no_such_a", traits[0]),
+    ):
+        for target_populations in (
+            (),
+            (("empty", ()),),
+            (("populated", profiles),),
+            (("populated", profiles), ("empty", ())),
+        ):
+            with pytest.raises(
+                ValueError,
+                match=r"Unknown ratio trait no_such_[ab]: ratio_traits must be Table 1 traits",
+            ):
+                comparison_rows(target_populations, ratio_traits=unknown_traits)
+    extra_profiles = [
+        replace(profile, guild_counts={**profile.guild_counts, "extra_profile_column": 3})
+        for profile in profiles
+    ]
+    for extra_ratio_traits in (
+        (traits[0], "extra_profile_column"),
+        ("extra_profile_column", traits[0]),
+    ):
+        for target_populations in (
+            (),
+            (("empty", ()),),
+            (("populated", extra_profiles),),
+            (("populated", extra_profiles), ("empty", ())),
+        ):
+            with pytest.raises(
+                ValueError,
+                match=(
+                    r"Unknown ratio trait extra_profile_column: "
+                    r"ratio_traits must be Table 1 traits"
+                ),
+            ):
+                comparison_rows(target_populations, ratio_traits=extra_ratio_traits)
+    with pytest.raises(ValueError, match="1 increased vs 0 decreased profiles"):
+        comparison_rows([("unpaired_study", [profiles[0]])])
+    with pytest.raises(ValueError, match="Unpaired experiment"):
+        comparison_rows(
+            [
+                (
+                    "unpaired_experiment",
+                    [profiles[0], replace(profiles[1], experiment_id="bsdb:1-2")],
+                )
+            ]
+        )
+
+    # CLI writes disease_control_comparison.tsv even when Tier 1 and strong subsets are empty.
+    dump, profile_tsv, experiments_tsv = _write_corpus(tmp_path)
+    dump.write_text(
+        dump.read_text(encoding="utf-8").replace("Healthy controls", "Non-colorectal cancer"),
+        encoding="utf-8",
+    )
+    output = tmp_path / "out_tier2_only"
+    assert (
+        main(
+            [
+                "--full-dump-input",
+                str(dump),
+                "--profile-input",
+                str(profile_tsv),
+                "--experiments-input",
+                str(experiments_tsv),
+                "--output-dir",
+                str(output),
+                "--code-commit",
+                "abc123",
+            ]
+        )
+        == 0
+    )
+    written = list(
+        csv.DictReader(
+            (output / "disease_control_comparison.tsv").open(encoding="utf-8"), delimiter="\t"
+        )
+    )
+    for empty_tier in (
+        "disease_vs_healthy_strong_evidence",
+        "disease_vs_healthy_tier1_healthy_normal",
+    ):
+        tier_rows = [row for row in written if row["population"] == empty_tier]
+        assert len(tier_rows) == len(traits) + len(expected_pairs)
+        assert {row["population_studies"] for row in tier_rows} == {"0"}
+        assert {row["population_experiments"] for row in tier_rows} == {"0"}
+        assert {row["studies_scored"] for row in tier_rows} == {"0"}
+        assert {row["p_value"] for row in tier_rows} == {""}
+        assert {row["q_value"] for row in tier_rows} == {""}
+    populated_tier = [
+        row for row in written if row["population"] == "disease_vs_healthy_tier1_2_subject_controls"
+    ]
+    assert {row["population_studies"] for row in populated_tier} == {"1"}
+    assert {row["population_experiments"] for row in populated_tier} == {"1"}
 
 
 def _write_corpus(tmp_path: Path) -> tuple[Path, Path, Path]:

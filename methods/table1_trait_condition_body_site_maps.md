@@ -352,7 +352,9 @@ correlate at 0.34. A pair is omitted rather than written as a
 missing value if either series is constant, since Spearman is undefined there.
 The fifteen pairwise Spearman p-values are reported uncorrected, unlike the six
 binomial p-values; they describe the redundancy between traits rather than
-supporting a claim of their own.
+supporting a claim of their own. `table1_traits_contrast_correlation.tsv` appends
+`p_value_type` (`nominal` when tested, `not_tested` when no finite p-value exists)
+and `n_tests` (the number of finite Spearman p-values in the table).
 
 The separate [paired log-ratio analysis](table1_paired_log_ratios.md) tests
 reference-explicit relative contrasts for all 15 trait pairs. It reports zero

@@ -362,9 +362,35 @@ def test_rank_class_skip_count_is_emitted_in_coverage_provenance(
 
     provenance = json.loads((output / "provenance.json").read_text())
     audit = provenance["taxonomy_diagnosis"]["parser_audit"]
+    assert audit["excluded_records"] == 0
+    assert (
+        "taxonomy_rank_class_edge_records_skipped counts well-formed ontology rank-class"
+        in audit["excluded_records_note"]
+    )
     assert audit["taxonomy_rank_class_edge_records_skipped"] == 1
     assert audit["records"] == 2
     assert audit["taxonomy_edge_records"] == 1
+
+
+def test_rank_class_only_taxonomy_input_fails_closed(tmp_path: Path) -> None:
+    """A taxonomy input containing only rank-class edges must fail closed (#1022)."""
+    fixture = Path(__file__).parent / "fixtures/coverage/taxonomy_rank_class.tsv"
+    with pytest.raises(
+        ValueError, match=re.escape("Taxonomy input has no NCBITaxon subclass_of edges")
+    ):
+        coverage.CoverageTaxonomy(fixture)
+
+    letter_led_only = tmp_path / "rank_only.tsv"
+    letter_led_only.write_text(
+        "id\tsubject\tpredicate\tobject\n"
+        "r1\tNCBITaxon:biotype\tbiolink:subclass_of\tOBO:NCBITaxon#_taxonomic_rank\n"
+        "r2\tNCBITaxon:Homo_sapiens\tbiolink:subclass_of\tOBO:NCBITaxon#_taxonomic_rank\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(
+        ValueError, match=re.escape("Taxonomy input has no NCBITaxon subclass_of edges")
+    ):
+        coverage.CoverageTaxonomy(letter_led_only)
 
 
 @pytest.mark.parametrize(
@@ -375,7 +401,9 @@ def test_rank_class_skip_count_is_emitted_in_coverage_provenance(
             "expected leading KG edge columns id/subject/predicate/object",
         ),
         (
-            "id\tsubject\tpredicate\tobject\ne1\tNCBITaxon:10\tbiolink:subclass_of\n",
+            "id\tsubject\tpredicate\tobject\n"
+            "e0\tNCBITaxon:91626\tbiolink:subclass_of\tNCBITaxon:2759\n"
+            "e1\tNCBITaxon:10\tbiolink:subclass_of\n",
             "unknown malformed KG edge record",
         ),
         (
@@ -397,18 +425,24 @@ def test_malformed_or_unusable_taxonomy_fails_closed(
     ("bad_edge", "identifier"),
     [
         ("NCBITaxon:nope\tbiolink:subclass_of\tNCBITaxon:2", "NCBITaxon:nope"),
+        ("NCBITaxon:10\tbiolink:subclass_of\tNCBITaxon:nope", "NCBITaxon:nope"),
+        ("NCBITaxon:0\tbiolink:subclass_of\tNCBITaxon:2", "NCBITaxon:0"),
         (
             "NCBITaxon:biotype\tbiolink:subclass_of\tOBO:NCBITaxon#_taxonomic_rank_extra",
             "NCBITaxon:biotype",
         ),
         ("NCBITaxon:10\tbiolink:subclass_of\tNCBITaxon:biotype", "NCBITaxon:biotype"),
+        (
+            "NCBITaxon:10\tbiolink:subclass_of\tOBO:NCBITaxon#_taxonomic_rank",
+            "NCBITaxon:10",
+        ),
     ],
 )
 def test_invalid_taxonomy_identifier_rejects_beside_a_valid_organism_edge(
     tmp_path: Path, bad_edge: str, identifier: str
 ) -> None:
     # The valid organism edge keeps the input usable, so silently skipping the
-    # bad edge would load instead of raising (#1271).
+    # bad edge would load instead of raising (#1022, #1271).
     edges = tmp_path / "bad.tsv"
     edges.write_text(
         "id\tsubject\tpredicate\tobject\n"

@@ -59,6 +59,7 @@ from mtp.integrated_evidence import (
     is_cell_row,
     log_ratio_records,
     main,
+    nominal_p_columns,
     placeholder_records,
     read_status,
     summarize,
@@ -1209,6 +1210,80 @@ def test_an_undefined_odds_ratio_is_missing_rather_than_infinite() -> None:
     assert ratio.effect_value == 3.0
 
 
+def test_a_nonfinite_mcnemar_p_is_not_tested_and_leaves_p_blank(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A non-finite McNemar p must be recorded as untested, never tested (#1808, #1882)."""
+    from types import SimpleNamespace
+
+    import mtp.integrated_evidence as ie
+
+    profiles = _guild_profiles(reverse=1)
+    baseline = compute_correlation(profiles)
+    assert baseline.status == "tested"
+    assert baseline.discordant == (11, 1)
+
+    for label, bad_p in (
+        ("nan", float("nan")),
+        ("pos_inf", float("inf")),
+        ("neg_inf", float("-inf")),
+    ):
+        with monkeypatch.context() as patch:
+            patch.setattr(
+                guild_maps, "binomtest", lambda *_a, _p=bad_p, **_k: SimpleNamespace(pvalue=_p)
+            )
+            (record,) = guild_records(profiles, source="x", columns={}, **THRESHOLDS)
+        assert record.test_status == UNTESTED
+        assert record.p_value is None
+        assert record.q_value is None
+        assert record.effect_value is None
+        assert record.decision == UNDECIDED
+        assert record.strict_decision == UNDECIDED
+        assert record.testable_units == 12
+
+        table_path = write_table([record], tmp_path / f"evidence_{label}.tsv")
+        with table_path.open(encoding="utf-8", newline="") as handle:
+            (written,) = list(csv.DictReader(handle, delimiter="\t"))
+        assert written["test_status"] == UNTESTED
+        assert written["p_value"] == ""
+        assert written["q_value"] == ""
+        assert written["effect_value"] == ""
+        assert written["decision"] == UNDECIDED
+
+        (summary,) = summarize([record])
+        assert summary["tested"] == 0
+        assert summary["untested_or_unsupplied"] == 1
+        assert summary["undecided"] == 1
+
+        (family,) = family_inventory([record])
+        assert family["tested"] == 0
+        assert family["rows_exported"] == 1
+        assert family["with_q_value"] == 0
+
+        nominal = nominal_p_columns([record], [record])
+        tables = nominal["tables"]
+        assert isinstance(tables, dict)
+        for entry in tables.values():
+            assert entry["columns"]["p_value"] == {
+                "finite_nominal_rows": 0,
+                "missing_or_nonfinite_rows": 1,
+            }
+
+    for overridden in (
+        replace(baseline, status="tested", mcnemar_p=float("nan")),
+        replace(baseline, status="tested", mcnemar_p=float("inf")),
+        replace(baseline, status="tested", mcnemar_p=None),
+        replace(baseline, status="not_tested", mcnemar_p=0.25),
+    ):
+        with monkeypatch.context() as patch:
+            patch.setattr(ie, "compute_correlation", lambda *_a, _c=overridden, **_k: _c)
+            (record,) = guild_records(profiles, source="x", columns={}, **THRESHOLDS)
+        assert record.test_status == UNTESTED
+        assert record.p_value is None
+        assert record.effect_value is None
+        assert record.decision == UNDECIDED
+
+
 def test_a_q_value_without_a_family_is_rejected() -> None:
     """Every corrected value must name the family it was corrected in (#236)."""
     record = _built()[0]
@@ -1268,6 +1343,13 @@ def test_main_writes_every_artifact_and_its_provenance(tmp_path: Path) -> None:
 
     # Every declared field is exported, under its own name.
     assert list(rows[0]) == [field.name for field in fields(Record)]
+    assert "nominal_p_columns" in provenance, "The saved record must declare its p columns"
+    declaration = provenance["nominal_p_columns"]
+    assert declaration["version"] == "nominal-p-columns-v1"
+    assert set(declaration["tables"]) == {
+        "integrated_evidence.tsv",
+        "integrated_evidence_method_results.tsv",
+    }
 
     # The corpus cascade: one mouse study and one unpaired increased side are
     # dropped by the loader, and the zero-total pair by the shared basis.

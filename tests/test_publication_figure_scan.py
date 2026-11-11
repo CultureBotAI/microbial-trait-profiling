@@ -78,7 +78,10 @@ def fixture(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Fixture:
     artifacts, inputs = [], {}
     for product in native.CORE_PRODUCTS:
         path = core / f"{product}.tsv"
-        path.write_text("column_id\tcolumn_label\n" + TRAIT + "\t" + LABEL + "\n", encoding="utf-8")
+        path.write_text(
+            "column_id\tobject_name\tcolumn_label\n" + TRAIT + "\t\t" + LABEL + "\n",
+            encoding="utf-8",
+        )
         item = identity(path)
         artifacts.append(
             {
@@ -663,9 +666,12 @@ def test_late_scan_only_source_mutation_is_refused(fixture: Fixture) -> None:
         scan.recheck_scan_inputs(bundle)
 
 
-def set_metadata(fixture: Fixture, object_name: str) -> None:
+def set_metadata(fixture: Fixture, object_name: str | None) -> None:
     frame = pd.read_csv(fixture.metadata, sep="\t", keep_default_na=False)
-    frame["object_name"] = object_name
+    if object_name is None:
+        frame = frame.drop(columns=["object_name"])
+    else:
+        frame["object_name"] = object_name
     frame.to_csv(fixture.metadata, sep="\t", index=False)
     core = json.loads(fixture.core.read_bytes())
     item = next(row for row in core["artifacts"] if row["product_id"] == "feature_metadata")
@@ -680,17 +686,46 @@ def set_metadata(fixture: Fixture, object_name: str) -> None:
 def test_display_label_uses_object_name_with_native_column_label_check(
     fixture: Fixture, object_name: str
 ) -> None:
+    from collections.abc import Callable
+    from itertools import pairwise
+    from typing import cast
+
+    from matplotlib.backends.backend_agg import FigureCanvasAgg, RendererAgg
+
     set_metadata(fixture, object_name)
     bundle = fixture.load()
     expected = object_name or LABEL
     assert bundle.labels[TRAIT] == expected
-    assert set(scan.scan_audit(bundle)["trait_label"]) == {expected}
-    text = " ".join(item.get_text() for item in next(scan.scan_pages(bundle)).figure.findobj(Text))
+    audit = scan.scan_audit(bundle)
+    assert set(audit["trait_id"]) == {TRAIT}
+    assert set(audit["trait_label"]) == {expected}
+    page = next(scan.scan_pages(bundle))
+    assert page.details["trait_id"] == TRAIT
+    assert page.details["trait_label"] == expected
+    text_items = [item.get_text() for item in page.figure.findobj(Text)]
+    text = " ".join(text_items)
+    assert f"{expected}\n{TRAIT}" in text_items
     assert expected in text
+    assert TRAIT in text
     if object_name:
         assert LABEL not in text
+    canvas = cast(FigureCanvasAgg, page.figure.canvas)
+    cast(Callable[[], None], canvas.draw)()
+    renderer = cast(Callable[[], RendererAgg], canvas.get_renderer)()
+    header_bounds = sorted(
+        (item.get_window_extent(renderer) for item in page.figure.texts[:4]),
+        key=lambda box: box.y0,
+    )
+    for lower, upper in pairwise(header_bounds):
+        assert not lower.overlaps(upper)
     fixture.traits.loc[0, "trait_label"] = "A different native label"
     with pytest.raises(ValueError, match="label differs from bound metadata"):
+        fixture.load()
+
+
+def test_missing_object_name_column_in_metadata_is_refused(fixture: Fixture) -> None:
+    set_metadata(fixture, None)
+    with pytest.raises(ValueError, match="Scan label metadata columns missing"):
         fixture.load()
 
 
@@ -766,7 +801,8 @@ def test_scan_refuses_unknown_historical_policy(fixture: Fixture) -> None:
 def test_scan_explains_rank_null_and_readable_recorded_role(fixture: Fixture) -> None:
     page = next(scan.scan_pages(fixture.load()))
     text = " ".join(" ".join(item.get_text() for item in page.figure.findobj(Text)).split())
-    assert "rank 1 = smallest nominal p-value" in text
+    assert "Rank 1 = smallest nominal p-value." in text
+    assert "rank 1 = smallest nominal p-value" not in text
     assert "U6: whole-study-signature null" in text
     assert "distinct studies" in text
     assert "declared sensitivity" in text

@@ -25,6 +25,7 @@ from mtp.contribution_inputs import (
 )
 from mtp.paths import DERIVED_DATA_DIR, REPO_ROOT
 from mtp.taxa_trait_matrix import PRIMARY_STRAIN_ROLLUP, STRAIN_ROLLUPS
+from mtp.trait_key_policy import DEFAULT_TRAIT_KEY_POLICY, TRAIT_KEY_POLICIES
 
 Record = dict[str, Any]
 
@@ -255,6 +256,12 @@ def argument_parser(
             "scope, which `just taxa-trait-matrix` also builds (#788)."
         ),
     )
+    parser.add_argument(
+        "--trait-key-policy",
+        choices=TRAIT_KEY_POLICIES,
+        default=DEFAULT_TRAIT_KEY_POLICY,
+        help="Input matrix trait-key policy; verified reruns pass the core policy.",
+    )
     return parser
 
 
@@ -284,6 +291,7 @@ def main() -> None:
         set(base.columns),
         set(base.traits.values()),
         strain_rollup=args.strain_rollup,
+        trait_key_policy=args.trait_key_policy,
     )
     print("Reconciling all matrix and profile counts", flush=True)
     ledger = reconcile(base, graph)
@@ -304,6 +312,7 @@ def main() -> None:
         "traits": base.traits,
         "denominator_columns": base.columns,
         "strain_rollup": args.strain_rollup,
+        "trait_key_policy": args.trait_key_policy,
         "profiles": len(base.profiles),
         "studies": len({k[0] for k in base.profiles}),
         "header_continuation_repaired": graph.header_repaired,
@@ -311,7 +320,12 @@ def main() -> None:
         "mismatches": len(ledger.mismatches),
         "code_sha256": {
             name: digest(Path(__file__).parent / name)
-            for name in ("contribution_inputs.py", "taxon_contributions.py", "taxon_influence.py")
+            for name in (
+                "contribution_inputs.py",
+                "taxon_contributions.py",
+                "taxon_influence.py",
+                "trait_key_policy.py",
+            )
         },
     }
     (output / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")

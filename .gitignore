@@ -62,7 +62,9 @@ data/kg-microbe/*.tsv
 data/analysis/cellulose_decr/figures/
 data/analysis/cellulose_decr/figures_graphical/
 data/analysis/cellulose_decr/figures_tufte/
+data/analysis/cellulose_decr/figures_slides/
 data/analysis/cellulose_decr/cellulose_decr_figures.pdf
+data/analysis/cellulose_decr/cellulose_decr_slide_figures.pdf
 data/analysis/cellulose_decr/cellulose_decr_graphical_figures.pdf
 data/analysis/cellulose_decr/cellulose_decr_slide_deck.html
 logs/

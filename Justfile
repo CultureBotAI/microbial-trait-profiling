@@ -120,8 +120,18 @@ core-ora run output *ARGS:
 	  --p-threshold 0.001 --min-fold 1.5 --max-fold 0.5 --fdr-scope global "${@:4}"
 
 [positional-arguments]
-audit-ora-refresh manifest output:
-	uv run python scripts/adhoc/issue720_audit_ora_refresh.py --manifest "$1" --output "$2"
+audit-ora-refresh manifest output *ARGS:
+	uv run python scripts/adhoc/issue720_audit_ora_refresh.py --manifest "$1" --output "$2" "${@:3}"
+
+# Write a new portable, hash-bound inputs manifest; leave historical records intact.
+[positional-arguments]
+ora-refresh-inputs manifest output *ARGS:
+	uv run python scripts/adhoc/issue720_audit_ora_refresh.py --manifest "$1" --output "$2" --write-portable-manifest "${@:3}"
+
+# Read-only verification of every source reference in the integrated record.
+[positional-arguments]
+verify-integrated-provenance record *ARGS:
+	uv run python -m mtp.integrated_provenance "$1" "${@:2}"
 
 # Bind all anatomical partitions and summaries to the same verified ORA core.
 [positional-arguments]
@@ -315,8 +325,9 @@ pd-trait-taxa-heatmap:
 # records it in the manifest (#788).
 # Build PD trait contributor tables from the Table 1 contribution ledger (#190) on the pinned
 # KG in data/kg-microbe, then draw the dot heatmap and co-carriage network (#584).
-pd-trait-contributors:
-	uv run python scripts/create_pd_trait_contributors.py
+[positional-arguments]
+pd-trait-contributors *ARGS:
+	uv run python scripts/create_pd_trait_contributors.py "$@"
 
 # Test all eligible fecal condition-taxon and condition-trait pairs, apply global
 # BH correction, and redraw the FDR-tiered evidence landscape.
@@ -763,8 +774,8 @@ table1-taxon-influence: study-trait-profiles
 # strain_rollup must be the scope the inputs' matrix was built with: off, phenotype or full.
 # A core's derived products carry the scope its run recorded (#788).
 # Use already-materialized, independently pinned inputs without rebuilding the defaults.
-table1-taxon-influence-from kg_dir inputs="data/derived" output="data/derived/table1_taxon_influence" strain_rollup="phenotype":
-	uv run python -m mtp.taxon_contributions --kg-dir "{{kg_dir}}" --inputs "{{inputs}}" --output "{{output}}" --strain-rollup "{{strain_rollup}}"
+table1-taxon-influence-from kg_dir inputs="data/derived" output="data/derived/table1_taxon_influence" strain_rollup="phenotype" trait_key_policy="facultative_union_v1":
+	uv run python -m mtp.taxon_contributions --kg-dir "{{kg_dir}}" --inputs "{{inputs}}" --output "{{output}}" --strain-rollup "{{strain_rollup}}" --trait-key-policy "{{trait_key_policy}}"
 	just table1-native-influence "{{inputs}}" "{{output}}"
 
 # Requires an unchanged, completed contribution ledger; no KG reload is needed.

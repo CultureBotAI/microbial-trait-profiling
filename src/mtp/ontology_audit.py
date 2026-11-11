@@ -425,8 +425,23 @@ def run_ontology_redundancy_audit(
 
     # 7. Summary metrics of redundant pairs
     n_redundant_pairs = len(df_pairs)
-    n_clusters = len(clusters)
+    non_media_set = set(non_media_cols)
+    surviving_cluster_ids = {c.cluster_id for c in clusters if c.surviving_trait in non_media_set}
+    n_clusters = (
+        int(
+            df_pairs.loc[df_pairs["cluster_id"].isin(surviving_cluster_ids), "cluster_id"].nunique()
+        )
+        if "cluster_id" in df_pairs.columns and not df_pairs.empty
+        else 0
+    )
     n_collapsed_features = len(non_media_cols) - len(cols_max)
+    n_orphan_features = sum(
+        1
+        for c in clusters
+        if c.surviving_trait not in non_media_set
+        for m in c.collapsed_traits
+        if m in non_media_set
+    )
     bounded_trait_space = len(cols_max)
 
     summary_rows = [
@@ -485,6 +500,7 @@ def run_ontology_redundancy_audit(
         "n_redundant_pairs": n_redundant_pairs,
         "n_clusters": n_clusters,
         "n_collapsed_features": n_collapsed_features,
+        "n_orphan_features": n_orphan_features,
         "bounded_trait_space": bounded_trait_space,
         "raw_metrics": raw_metrics,
         "native_metrics": native_metrics,

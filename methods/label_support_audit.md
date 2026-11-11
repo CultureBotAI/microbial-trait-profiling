@@ -9,7 +9,8 @@ physiology or independent replication of the original findings.
 ## Run against matching inputs
 
 Use the reported-taxon, taxon-matrix, and wide-profile tables from one run, with
-the exact KG snapshot used to produce them. Supply the run's strain scope:
+the exact KG snapshot used to produce them. Supply the run's strain scope and
+trait-key policy:
 
 ```bash
 just audit-label-support \
@@ -20,6 +21,7 @@ just audit-label-support \
   --edges KG/merged-kg_edges.tsv \
   --nodes KG/merged-kg_nodes.tsv \
   --strain-rollup off \
+  --trait-key-policy facultative_union_v1 \
   --output-dir RESULTS/label-support-off
 ```
 
@@ -29,6 +31,23 @@ empty or new. No other pipeline step is triggered. Optionally supply
 described below; a file with any other bytes fails before outputs are written.
 Omitting it leaves Madin subsources unknown. A supplied but unreadable or
 malformed table fails instead of silently falling back to unknown.
+
+`--trait-key-policy` accepts `raw_object_v1` and `facultative_union_v1`.
+The raw policy preserves original KG object IDs; the union policy maps
+`METPO:1000605`, `METPO:1000608`, and `METPO:1000612` to `METPO:1000608` before
+carrier counting and source attribution. Both the CLI and Python API default to
+`facultative_union_v1` for compatibility. Select the policy used by the input
+matrix and profiles explicitly for historical raw-object runs. Unknown policies
+are refused before input reads or output creation. The selector is not inferred
+from column metadata, which continues to supply display labels only.
+
+The consumed selector is recorded as `trait_key_policy` in `provenance.json`.
+This is additive metadata under schema version `1.0`; the verification status
+remains `hashes_and_counts_reconciled_not_core_execution_verified`. Counts that
+disagree with the selected KG policy fail reconciliation, but agreement alone
+does not prove which policy produced a matrix: the policies can yield identical
+counts for some inputs. This standalone audit does not independently verify a
+core execution record or derive its policy from one.
 
 `--columns` selects the column metadata used to interpret recorded trait member
 IDs for display labels. An explicit path must exist; it never falls back to a
@@ -289,8 +308,9 @@ Table 1 trait membership and the oxygen guild pair use `trait_guilds` definition
 Since #1237 the aerobe side of the guild pair is `METPO:1000602` and
 `METPO:1000604`; the facultative column `METPO:1000608` is in neither side.
 The separate `trait_key_policy_code` inventory records the path, SHA256 and size
-of `src/mtp/trait_key_policy.py`, which interprets the recorded member IDs and
-selects display labels. These declarations and late checks do not establish
+of `src/mtp/trait_key_policy.py`, which supplies the selected key mapping,
+interprets the recorded member IDs, and selects display labels. These
+declarations and late checks do not establish
 that hashing and parsing consumed one immutable byte buffer; that separate
 consistency fix is tracked in #1357.
 

@@ -655,16 +655,16 @@
       ],
       "area": "Ilyas stratified ORA",
       "hypotheses": "One positive-background trait in a nonempty profile within pooled stratum.",
-      "family_definition": "One global eligible profile x trait family within pooled stratum; each stratum separately.",
+      "family_definition": "Default global BH over the eligible profile x trait family within pooled stratum, with each stratum corrected separately; --fdr-scope profile uses a separate BH family per profile. --no-fdr performs no correction and records scope none regardless of the requested FDR scope.",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "Partition profiles with stratum=pooled (all supplied profiles); run_stratum_enrichment invokes the native ORA producer on positive-total profiles and positive-background traits, preserving the supplied background.",
+        "selection_rule": "Partition profiles with stratum=pooled (all supplied profiles); run_stratum_enrichment invokes the native ORA producer on profiles with positive taxa_count (the number of distinct matrix-matched reported taxa, including matched taxa with no retained annotation) and positive-background traits, preserving the supplied background.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BH",
       "comparison_procedure": [],
       "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
-      "threshold": "q <= p_threshold (pipeline default .001) plus min-fold",
+      "threshold": "fdr_q <= configured p-threshold (pipeline default .001) when FDR is enabled; p_value <= configured p-threshold in nominal --no-fdr mode. Both require fold >= configured min-fold.",
       "outputs": [
         {
           "file": "arms/ilyas/strata/trait_enrichment_all_results_pooled.tsv",
@@ -717,16 +717,16 @@
       ],
       "area": "Ilyas stratified ORA",
       "hypotheses": "One positive-background trait in a nonempty profile within feces stratum.",
-      "family_definition": "One global eligible profile x trait family within feces stratum; each stratum separately.",
+      "family_definition": "Default global BH over the eligible profile x trait family within feces stratum, with each stratum corrected separately; --fdr-scope profile uses a separate BH family per profile. --no-fdr performs no correction and records scope none regardless of the requested FDR scope.",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "Partition profiles into the feces stratum using stratification's body-site rules, then invoke run_stratum_enrichment; retain N>0 profiles and K>0 traits before report filtering.",
+        "selection_rule": "Partition profiles into the feces stratum using stratification's body-site rules, then invoke run_stratum_enrichment; retain profiles with positive taxa_count (the number of distinct matrix-matched reported taxa, including matched taxa with no retained annotation) and positive-background traits before report filtering.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BH",
       "comparison_procedure": [],
       "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
-      "threshold": "q <= p_threshold (pipeline default .001) plus min-fold",
+      "threshold": "fdr_q <= configured p-threshold (pipeline default .001) when FDR is enabled; p_value <= configured p-threshold in nominal --no-fdr mode. Both require fold >= configured min-fold.",
       "outputs": [
         {
           "file": "arms/ilyas/strata/trait_enrichment_all_results_feces.tsv",
@@ -779,16 +779,16 @@
       ],
       "area": "Ilyas stratified ORA",
       "hypotheses": "One positive-background trait in a nonempty profile within feces_excluded stratum.",
-      "family_definition": "One global eligible profile x trait family within feces_excluded stratum; each stratum separately.",
+      "family_definition": "Default global BH over the eligible profile x trait family within feces_excluded stratum, with each stratum corrected separately; --fdr-scope profile uses a separate BH family per profile. --no-fdr performs no correction and records scope none regardless of the requested FDR scope.",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "Partition profiles into feces_excluded using stratification's body-site rules, then invoke run_stratum_enrichment; retain N>0 profiles and K>0 traits before report filtering.",
+        "selection_rule": "Partition profiles into feces_excluded using stratification's body-site rules, then invoke run_stratum_enrichment; retain profiles with positive taxa_count (the number of distinct matrix-matched reported taxa, including matched taxa with no retained annotation) and positive-background traits before report filtering.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BH",
       "comparison_procedure": [],
       "procedure_role": "Reporting designation under methods/multiple_testing_policy.md R1/R2/R4/R5/R7; current native exceptions preserve the producer's computation.",
-      "threshold": "q <= p_threshold (pipeline default .001) plus min-fold",
+      "threshold": "fdr_q <= configured p-threshold (pipeline default .001) when FDR is enabled; p_value <= configured p-threshold in nominal --no-fdr mode. Both require fold >= configured min-fold.",
       "outputs": [
         {
           "file": "arms/ilyas/strata/trait_enrichment_all_results_feces_excluded.tsv",
@@ -1158,7 +1158,7 @@
           "path": "src/mtp/composition_calibration/adapters/jed_composition.py",
           "function": "JedCompositionAdapter.run_inference",
           "derived_procedures": {
-            "BY": "Reviewed arithmetic: clip(benjamini_hochberg(p_array) * sum(1/i for i=1..len(p_array)), 0, 1), when correction is by. The guard checks the declaration, not the formula."
+            "BY": "Reviewed arithmetic: clip(benjamini_hochberg(p_array) * sum(1/i for i=1..len(p_array)), 0, 1), when correction is by. The guard checks a visible BH * H_m -> clip[0, 1] calculation at this anchor (#1490); the per-output link is source-reviewed."
           },
           "procedures": [
             "BH",
@@ -1575,7 +1575,7 @@
           "path": "src/mtp/composition_calibration/composition.py",
           "function": "run_composition_calibration",
           "derived_procedures": {
-            "BY": "Reviewed observed arithmetic: obs_by = clip(obs_bh * harmonic_sum, 0, 1); harmonic_sum is sum(1/i for i=1..n_traits). The guard checks the declaration, not the formula."
+            "BY": "Reviewed observed arithmetic: obs_by = clip(obs_bh * harmonic_sum, 0, 1); harmonic_sum is sum(1/i for i=1..n_traits). The guard checks a visible BH * H_m -> clip[0, 1] calculation at this shared anchor (#1490), supplied by the null-replicate calculation. The observed arithmetic is not checked: obs_bh comes from the adapter's q_value column; the per-output link is source-reviewed (#1579)."
           },
           "procedures": [
             "BH",
@@ -1642,7 +1642,7 @@
           "path": "src/mtp/composition_calibration/composition.py",
           "function": "run_composition_calibration",
           "derived_procedures": {
-            "BY": "Reviewed null arithmetic: by_r = clip(benjamini_hochberg(p_r) * harmonic_sum, 0, 1); harmonic_sum is sum(1/i for i=1..n_traits). The guard checks the declaration, not the formula."
+            "BY": "Reviewed null arithmetic: by_r = clip(benjamini_hochberg(p_r) * harmonic_sum, 0, 1); harmonic_sum is sum(1/i for i=1..n_traits). The guard checks a visible BH * H_m -> clip[0, 1] calculation in the null-replicate loop at this shared anchor (#1490); the per-output link is source-reviewed."
           },
           "procedures": [
             "BH",
@@ -4562,12 +4562,12 @@
       ],
       "area": "Investigation/deck scripts",
       "hypotheses": "One eligible fecal condition \u00d7 trait: within-study paired annotation-z contrast versus zero.",
-      "family_definition": "Finite p-values across condition/trait rows passing MIN_PAIRED_STUDIES; separate from the taxon screen.",
+      "family_definition": "All condition/trait rows passing MIN_PAIRED_STUDIES, including rows with missing Wilcoxon p-values padded internally to 1 for BH; separate from the taxon screen. Missing p-values and their q-values remain missing in the exported table.",
       "size_source": {
         "kind": "selected_rows",
-        "selection_rule": "Form paired study z contrasts for eligible human fecal condition/trait rows; require paired_study_count>=MIN_PAIRED_STUDIES and pass supported finite Wilcoxon probabilities to BH.",
+        "selection_rule": "Form paired study z contrasts for eligible human fecal condition/trait rows; require paired_study_count>=MIN_PAIRED_STUDIES. Apply BH to all supported rows, replacing missing p-values with 1 internally. The executed family size is the supported-row count recorded in bh_family_size, not the finite-p count n_tests.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size.",
-        "unfiltered_count_rule": "Count all returned condition/trait test rows before passes_min_paired_studies and finite-p selection; retained below-support or undefined rows make the prefilter inventory count recoverable from the full table."
+        "unfiltered_count_rule": "Count all returned condition/trait test rows before the passes_min_paired_studies filter; retained below-support rows make the prefilter inventory count recoverable from the full table. Supported rows with missing p-values remain members of the padded BH family."
       },
       "primary_procedure": "BH",
       "comparison_procedure": [],
@@ -4968,7 +4968,7 @@
       "family_definition": "Default global BH over profile x eligible trait tests within each requested site; --fdr-scope profile uses a separate BH family per profile. --no-fdr performs no correction and records scope none regardless of the requested FDR scope.",
       "size_source": {
         "kind": "executed_inventory",
-        "selection_rule": "Select profiles for the user-requested site through stratification and pass that partition and the supplied taxa background to run_stratum_enrichment. Test traits with positive background count in profiles with positive retained count; use global/profile BH or nominal p-value selection when --no-fdr is set.",
+        "selection_rule": "Select profiles for the user-requested site through stratification and pass that partition and the supplied taxa background to run_stratum_enrichment. Test traits with positive background count in profiles with positive taxa_count (the number of distinct matrix-matched reported taxa, including matched taxa with no retained annotation); use global/profile BH or nominal p-value selection when --no-fdr is set.",
         "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
       },
       "primary_procedure": "BH",
@@ -5025,7 +5025,7 @@
       "size_source": {
         "kind": "executed_inventory",
         "selection_rule": "For each supplied pre-filtered contrast population, comparison_rows calls compute_direction_shifts over the declared focal traits without selecting them from that population's results.",
-        "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
+        "count_rule": "Count len(shifts.shifts) returned by compute_direction_shifts for the current population, including untestable members held at p=1 internally for BH. This executed count supplies the fraction-family label; missing displayed p/q do not remove family members."
       },
       "primary_procedure": "BH",
       "comparison_procedure": [],
@@ -5051,10 +5051,8 @@
         "R7"
       ],
       "deliberate_difference": "BH retains the focal Table 1 fraction kernel while comparison_rows changes the contrast population, isolating population sensitivity from multiplicity-method changes; it is not the full-trait BY analysis (methods/multiple_testing_policy.md R4).",
-      "open_issue": [
-        1454
-      ],
-      "conformance_status": "The producer currently hard-codes the labels 'over 6 fractions'/'over 15 ratios'; #1454 records this run-size-label defect. The registry does not make those labels authoritative current counts.",
+      "open_issue": [],
+      "conformance_status": "comparison_rows derives its fraction-family label from len(shifts.shifts) for the current population, retaining the kernel's untestable family members. This registry does not certify all output consumers.",
       "anchors": [
         {
           "path": "src/mtp/contrast_orientation.py",
@@ -5083,7 +5081,7 @@
       "size_source": {
         "kind": "executed_inventory",
         "selection_rule": "For each supplied pre-filtered population, comparison_rows calls compute_log_ratio_shifts on all declared focal pairs; positive-count eligibility selects observations within each pair only.",
-        "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size."
+        "count_rule": "Count len(ratios.summaries) returned by compute_log_ratio_shifts for the current population, including untestable members held at p=1 internally for BY. This executed count supplies the ratio-family label; missing displayed p/q do not remove family members."
       },
       "primary_procedure": "BY",
       "comparison_procedure": [],
@@ -5109,10 +5107,8 @@
         "R7"
       ],
       "deliberate_difference": "The focal fraction family and focal unordered-ratio family test different estimands. Population sensitivity recomputes each family separately; Table 1 BH is not the full-screen BY family.",
-      "open_issue": [
-        1454
-      ],
-      "conformance_status": "The producer currently hard-codes the labels 'over 6 fractions'/'over 15 ratios'; #1454 records this run-size-label defect. The registry does not make those labels authoritative current counts.",
+      "open_issue": [],
+      "conformance_status": "comparison_rows derives its ratio-family label from len(ratios.summaries) for the current population, retaining the kernel's untestable family members. This registry does not certify all output consumers.",
       "anchors": [
         {
           "path": "src/mtp/contrast_orientation.py",

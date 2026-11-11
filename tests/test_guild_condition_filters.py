@@ -363,10 +363,14 @@ def test_condition_summary_and_labels_report_nominal_paired_t_test_counts(
     )
     top_pd_label = module.paired_smd_label(top_pd_row)
     assert (
-        "(one of 3 condition tests; shown: top 2 by guild-z difference, 1 of them tested)"
-        in top_pd_label
+        "(one of 3 condition tests; shown: top 2 eligible conditions by guild-z difference, "
+        "1 of them tested)" in top_pd_label
     )
     assert module.paired_smd_label(top_rare_row) == "paired d=NA, p=NA (not tested), n=4"
+    top1_row = next(module.select_top_conditions(raw_summary, limit=1).itertuples(index=False))
+    assert "shown: top 1 eligible condition by guild-z difference, " in module.paired_smd_label(
+        top1_row
+    )
 
     monkeypatch.setattr(module, "OUTPUT_DIR", tmp_path)
     empty_occ = pd.DataFrame(columns=["inc_dec", "profile_id", "study_id", "exclusion_reason"])

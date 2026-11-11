@@ -894,6 +894,24 @@ def test_figure3_lead_concordance_depends_on_shift_sign(
     assert wilcoxon_signed_rank_diff([0.0, 0.0]) == 0.0
     assert math.isnan(wilcoxon_signed_rank_diff([]))
 
+    # #1643: pin zero-shift exclusion, average tie ranks, and Concordant-before-Mixed precedence.
+    assert wilcoxon_signed_rank_diff([5, 4, -0.1, -0.2, -0.3, 0, 0, 0, 0]) == pytest.approx(3.0)
+    assert wilcoxon_signed_rank_diff([1, -1]) == pytest.approx(0.0)
+    assert (
+        lead_consistency_status("Increased", 1.0, 0.01, 0.4, 0.6) == "Concordant (nominal p < 0.05)"
+    )
+    assert (
+        lead_consistency_status("Decreased", -1.0, 0.01, 0.4, 0.6)
+        == "Concordant (nominal p < 0.05)"
+    )
+    assert (
+        lead_consistency_status("Increased", -1.0, 0.6, 0.8, 0.01)
+        == "Concordant (nominal p < 0.05)"
+    )
+    assert (
+        lead_consistency_status("Decreased", 1.0, 0.6, 0.8, 0.01) == "Concordant (nominal p < 0.05)"
+    )
+
     figures: list[Any] = []
 
     def _capture(fig: Any, path: str, **_kw: Any) -> None:

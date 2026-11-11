@@ -144,7 +144,10 @@ def test_pattern_caption_counts_capped_rows_without_relabeling_legacy_count(
         result = heatmaps.write_pattern_heatmap(cells, view, traits, tmp_path)
     assert result[1:] == (2, 7, 9)
     subtitle = plot.call_args.kwargs["subtitle"]
-    assert "7 finite Fisher tests in the source view; 3 finite tested cells shown" in subtitle
+    assert (
+        "BH over all 9 candidate cells (untested held at p = 1); "
+        "7 finite Fisher tests in the source view; 3 finite tested cells shown" in subtitle
+    )
     assert "nominal Fisher evidence" in subtitle
     assert "Exploratory cells require nominal Fisher p < 0.01" in subtitle
     assert "nominal" in plot.call_args.kwargs["colorbar_label"]
@@ -168,6 +171,7 @@ def test_contrast_captions_separate_page_counts_and_source_tests(
     for call in plot.call_args_list:
         expected_shown = 3 if len(call.args[0]) == 2 else {"A": 1, "B": 2}[call.args[0].index[0]]
         assert (
+            "BH over all 9 candidate cells (untested held at p = 1); "
             f"7 finite Fisher tests in the source view; {expected_shown} finite tested cells shown"
             in call.kwargs["subtitle"]
         )
@@ -175,9 +179,68 @@ def test_contrast_captions_separate_page_counts_and_source_tests(
         assert "source-view cells" in call.kwargs["subtitle"]
     for call in clustered.call_args_list:
         assert (
+            "BH over all 9 candidate cells (untested held at p = 1); "
             "7 finite Fisher tests in the source view; 3 finite tested cells shown"
             in call.kwargs["subtitle"]
         )
+
+
+LEGACY_MANIFEST_COLUMNS = [
+    "view_key",
+    "view_label",
+    "heatmap_type",
+    "focus_direction",
+    "condition_mode",
+    "row_count",
+    "displayed_cell_count",
+    "nominal_p_value_cell_count",
+    "significant_cell_count",
+    "bh_selected_cell_count",
+    "tested_cell_count",
+    "min_positive_profiles",
+    "min_studies",
+    "p_value_cutoff",
+    "q_value_cutoff",
+    "color_value",
+    "png_path",
+    "source_display_edges_path",
+    "condition_label_count",
+    "anatomy_group_count",
+    "absolute_effect_cutoff",
+    "display_rule",
+    "filled_fraction",
+    "page_count",
+    "clustered_png_path",
+    "preview_png_path",
+    "primary_row_order",
+    "cluster_metric",
+    "cluster_linkage",
+    "cluster_min_shared_traits",
+    "cluster_input_order",
+    "undefined_cluster_distance",
+    "clustered_row_count",
+    "insufficient_overlap_row_count",
+    "spearman_pair_count",
+    "undefined_spearman_pair_count",
+    "undefined_spearman_pair_fraction",
+    "distinct_spearman_distance_count",
+    "distance_tie_excess_count",
+    "distance_tie_fraction",
+    "linkage_pair_count",
+    "linkage_undefined_spearman_pair_count",
+    "linkage_undefined_spearman_pair_fraction",
+    "linkage_distinct_distance_count",
+    "linkage_distance_tie_excess_count",
+    "linkage_distance_tie_fraction",
+    "dendrogram_cut_applied",
+    "dendrogram_branch_label_rule",
+    "estimand_scope_note",
+    "cluster_tree_nodes_path",
+    "cluster_tree_leaves_path",
+    "cluster_comparison_path",
+    "source_increased_edges_path",
+    "source_decreased_edges_path",
+]
 
 
 def test_generated_manifest_and_pages_append_finite_counts(
@@ -229,12 +292,34 @@ def test_generated_manifest_and_pages_append_finite_counts(
         ),
     ):
         manifest = heatmaps.write_six_shared_trait_cytoscape_heatmaps(tmp_path, tmp_path)
+    assert list(manifest.columns) == [
+        *LEGACY_MANIFEST_COLUMNS,
+        "finite_test_count",
+        "displayed_finite_test_count",
+    ]
+    tracked_manifest_path = (
+        SOURCE.parents[1]
+        / "trait-visualization/trait-profile-investigation/six-shared-traits"
+        / heatmaps.MANIFEST_FILENAME
+    )
+    with tracked_manifest_path.open("r", encoding="utf-8") as handle:
+        tracked_header = handle.readline().rstrip("\n").split("\t")
+    # The committed manifest predates the two count columns; after regeneration it carries
+    # them at the end. Either is valid; any other order or set is not (#1741).
+    assert tracked_header in (
+        LEGACY_MANIFEST_COLUMNS,
+        [*LEGACY_MANIFEST_COLUMNS, "finite_test_count", "displayed_finite_test_count"],
+    )
     assert manifest["tested_cell_count"].tolist() == [9] * len(manifest)
     assert manifest["finite_test_count"].tolist() == [7] * len(manifest)
     assert manifest["displayed_finite_test_count"].tolist() == [3] * len(manifest)
     pages = exports[heatmaps.CONTRAST_PAGES_FILENAME]
     assert pages["finite_test_count"].tolist() == [7] * 4
     assert pages["displayed_finite_test_count"].tolist() == [1, 2, 1, 2]
+    with pytest.raises(ValueError, match="undeclared columns"):
+        heatmaps.validate_manifest_record_keys(
+            [{**dict.fromkeys(heatmaps.MANIFEST_COLUMNS, 1), "new_audit_field": 1}]
+        )
 
 
 def test_readme_names_candidates_and_finite_tests_separately(tmp_path: Path) -> None:
@@ -263,6 +348,12 @@ def test_readme_names_candidates_and_finite_tests_separately(tmp_path: Path) -> 
     assert "Cells require nominal Fisher p<0.01" in text
     assert "Cell color is nominal Fisher evidence" in text
     assert "smaller nominal p-values" in text
+    assert "BH over all 9 candidate cells (untested held at p = 1)" in text
+    assert (
+        "Each view's BH q-value family is all `tested_cell_count` candidate cells "
+        "(untested held at p = 1), not `finite_test_count` or `displayed_finite_test_count`."
+        in text
+    )
     header = next(line for line in text.splitlines() if line.startswith("| heatmap |"))
     row = next(line for line in text.splitlines() if line.startswith("| Fixture |"))
     fields = dict(
@@ -277,6 +368,31 @@ def test_readme_names_candidates_and_finite_tests_separately(tmp_path: Path) -> 
     assert fields["finite tested cells shown"] == "3"
     assert (
         "The legacy `tested_cell_count` counts candidate cells, including untestable cells." in text
+    )
+
+
+def test_figure_methods_approach_2_names_nominal_fisher_and_bh_family() -> None:
+    methods_path = SOURCE.parents[1] / "trait-visualization/figure_methods.md"
+    paragraphs = [
+        " ".join(block.splitlines())
+        for block in methods_path.read_text(encoding="utf-8").split("\n\n")
+    ]
+    passage = next(
+        p for p in paragraphs if p.startswith("Four trait-pattern heatmaps are written:")
+    )
+    assert "nominal Fisher evidence, `-log10(p)`" in passage
+    assert "smaller nominal p-values" in passage
+    assert "nominal Fisher p < 0.01" in passage
+    assert "nominal-p recurrence" in passage
+    assert "nominal p-value evidence" in passage
+    assert "over all candidate cells (untested held at p = 1)" in passage
+
+    contrast_passage = next(
+        p for p in paragraphs if p.startswith("Two primary signed direction contrast heatmaps")
+    )
+    assert (
+        "A dark cell border marks BH-adjusted `q <= 0.05` over all candidate cells "
+        "per view (untested held at p = 1)" in contrast_passage
     )
 
 

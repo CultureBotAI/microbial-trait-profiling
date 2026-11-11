@@ -854,40 +854,87 @@ def test_calibration_summary_marks_p_value_columns_as_uncorrected_diagnostics(
 ) -> None:
     """#1410, #1483, #1485, #1488: raw-p columns and status JSON carry nominal diagnostic labels."""
     import csv
+    import re
 
     import mtp.calibration as cal
 
-    runs = [[Outcome("p", "a", 0.02, 0.04, scored=40)]]
+    # #1746: p <= 0.05 < q distinguishes nominal per-test rejections_p (1) from
+    # corrected FAMILY rejections_p / rejections_q (0).
+    runs = [[Outcome("p", "a", 0.02, 0.12, scored=40)]]
     rows = summarize(runs, _scenario(), None)
     row = next(r for r in rows if r["label"] == "a")
     family = next(r for r in rows if r["label"] == "FAMILY")
     assert "rejections_p" in row
     assert "rejection_rate_p" in row
+    assert "rejection_rate_p_ci_low" in row
+    assert "rejection_rate_p_ci_high" in row
     assert "smallest_observed_p" in row
     assert "attainable_p_below_alpha" in row
     assert "attainable_p_above_alpha" in row
+    assert "exact_size_at_median_scored" in row
+    assert row["rejections_p"] == 1
+    assert row["rejection_rate_p"] == pytest.approx(1.0)
+    assert row["rejections_q"] == 0
+    assert row["rejection_rate_q"] == pytest.approx(0.0)
     assert row["p_value_diagnostics_role"] == "calibration_diagnostic"
     assert row["p_value_diagnostics_correction"] == "none (nominal)"
     assert "p_value_diagnostics_role" not in family
     assert "p_value_diagnostics_correction" not in family
+    assert family["rejections_p"] == 0
+    assert family["rejections_q"] == 0
+    assert family["rejection_rate_p"] == pytest.approx(0.0)
+    assert family["rejection_rate_q"] == pytest.approx(0.0)
+    # The FAMILY interval counts replicates with any q <= 0.05, not nominal p (#1794).
+    assert (family["rejection_rate_p_ci_low"], family["rejection_rate_p_ci_high"]) == (
+        pytest.approx(cal._interval(0, 1))
+    )
+    assert family["rejections_p"] == family["rejections_q"]
+    assert family["rejection_rate_p"] == family["rejection_rate_q"]
 
     (rep_row,) = replicate_counts(runs, _scenario(), None)
     assert rep_row["null_tests_rejected_p"] == 1
+    assert rep_row["family_rejected_q"] == 0
     assert rep_row["p_value_diagnostics_role"] == "calibration_diagnostic"
     assert rep_row["p_value_diagnostics_correction"] == "none (nominal)"
 
+    mixed_runs = [
+        [Outcome("p", "a", 0.02, 0.12, scored=40)],
+        [Outcome("p", "a", 0.02, 0.04, scored=40)],
+    ]
+    mixed_rows = summarize(mixed_runs, _scenario(), None)
+    mixed_row = next(r for r in mixed_rows if r["label"] == "a")
+    mixed_family = next(r for r in mixed_rows if r["label"] == "FAMILY")
+    assert mixed_row["rejections_p"] == 2
+    assert mixed_row["rejections_q"] == 1
+    assert mixed_family["rejections_p"] == 1
+    assert mixed_family["rejections_q"] == 1
+    assert mixed_family["rejection_rate_p"] == pytest.approx(0.5)
+    assert mixed_family["rejection_rate_q"] == pytest.approx(0.5)
+    assert (
+        mixed_family["rejection_rate_p_ci_low"],
+        mixed_family["rejection_rate_p_ci_high"],
+    ) == pytest.approx(cal._interval(1, 2))
+
     note = str(cal.P_VALUE_DIAGNOSTICS_NOTE)
-    for token in (
-        "rejections_p",
-        "rejection_rate_p",
-        "null_tests_rejected_p (at nominal p <= ALPHA)",
-        "smallest_observed_p",
-        "attainable_p_below_alpha",
-        "attainable_p_above_alpha",
+    assert note == (
+        "On per-test rows, rejections_p, rejection_rate_p, rejection_rate_p_ci_low, "
+        "rejection_rate_p_ci_high, smallest_observed_p, attainable_p_below_alpha, "
+        "attainable_p_above_alpha, exact_size_at_median_scored, and replicate-level "
+        "null_tests_rejected_p (at nominal p <= 0.05) are uncorrected nominal "
+        "p-value calibration diagnostics, not inferential results; on FAMILY rows, "
+        "rejections_p, rejection_rate_p, rejection_rate_p_ci_low, and "
+        "rejection_rate_p_ci_high count replicates with any q <= 0.05 "
+        "(a corrected family-wise rate, matching rejections_q)"
+    )
+    assert "ALPHA" not in note
+    assert "Q_THRESHOLD" not in note
+    for composition_only_token in (
         "null_p_value",
-        "are uncorrected nominal p-value calibration diagnostics, not inferential results",
+        "observed_p",
+        "null_type_i_alpha_05",
+        "type_i_error_metrics",
     ):
-        assert token in note
+        assert re.search(rf"\b{re.escape(composition_only_token)}\b", note) is None
 
     monkeypatch.setattr(
         cal,
@@ -937,3 +984,126 @@ def test_calibration_summary_marks_p_value_columns_as_uncorrected_diagnostics(
     assert written_replicates
     assert {r["p_value_diagnostics_role"] for r in written_replicates} == {"calibration_diagnostic"}
     assert {r["p_value_diagnostics_correction"] for r in written_replicates} == {"none (nominal)"}
+
+
+def test_a_nonfinite_mcnemar_p_is_not_counted_as_a_tested_replicate(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A non-finite McNemar p must not be passed or counted as a tested replicate (#1808)."""
+    from types import SimpleNamespace
+
+    import mtp.calibration as cal
+    import mtp.guild_maps as gm
+
+    profiles: list[Profile] = []
+    for study in range(4):
+        for direction in ("inc", "dec"):
+            aerobe = 6 if (direction == "inc") == (study > 0) else 4
+            profiles.append(
+                Profile(
+                    study_id=f"s{study}",
+                    experiment_id=f"s{study}-1",
+                    inc_dec=direction,
+                    condition="C",
+                    body_site="Feces",
+                    guild_counts={"aerobe": aerobe, "anaerobe": 10 - aerobe},
+                    total=10,
+                )
+            )
+    baseline = compute_correlation(drop_zero_total_pairs(profiles).profiles)
+    assert baseline.status == "tested"
+    assert baseline.discordant == (3, 1)
+    scenario = _scenario("complete_null_study_flip")
+
+    for bad_p in (float("nan"), float("inf"), float("-inf")):
+        with monkeypatch.context() as patch:
+            patch.setattr(gm, "binomtest", lambda *_a, _p=bad_p, **_k: SimpleNamespace(pvalue=_p))
+            (outcome,) = guild_mcnemar_with()(profiles)
+        assert outcome.p_value is None
+        assert outcome.q_value is None
+        assert outcome.scored == sum(baseline.discordant)
+
+        rows = summarize([[outcome]], scenario, None)
+        summary = next(r for r in rows if r["label"] == "aerobe_vs_anaerobe")
+        family = next(r for r in rows if r["label"] == "FAMILY")
+        assert summary["replicates_tested"] == 0
+        assert summary["rejections_p"] == 0
+        assert summary["rejection_rate_p"] is None
+        assert summary["rejections_q"] == 0
+        assert summary["rejection_rate_q"] is None
+        assert summary["smallest_observed_p"] is None
+        assert family["rejections_p"] == 0
+        assert family["rejections_q"] == 0
+
+        (replicate,) = replicate_counts([[outcome]], scenario, None)
+        assert replicate["tests_evaluated"] == 0
+        assert replicate["null_tests_evaluated"] == 0
+        assert replicate["null_tests_rejected_p"] == 0
+        assert replicate["family_rejected_q"] == 0
+
+    for overridden in (
+        replace(baseline, status="tested", mcnemar_p=float("nan")),
+        replace(baseline, status="tested", mcnemar_p=float("inf")),
+        replace(baseline, status="tested", mcnemar_p=None),
+        replace(baseline, status="not_tested", mcnemar_p=0.25),
+    ):
+        with monkeypatch.context() as patch:
+            patch.setattr(cal, "compute_correlation", lambda *_a, _c=overridden, **_k: _c)
+            (outcome,) = guild_mcnemar_with()(profiles)
+        assert outcome.p_value is None
+        assert outcome.q_value is None
+
+    for bad_p in (float("nan"), float("inf"), float("-inf")):
+        direct = Outcome("guild_mcnemar", "aerobe_vs_anaerobe", bad_p, bad_p, scored=4)
+        rows = summarize([[direct]], scenario, None)
+        summary = next(r for r in rows if r["label"] == "aerobe_vs_anaerobe")
+        family = next(r for r in rows if r["label"] == "FAMILY")
+        assert summary["replicates_tested"] == 0
+        assert summary["rejections_p"] == 0
+        assert summary["rejections_q"] == 0
+        assert summary["smallest_observed_p"] is None
+        assert family["rejections_p"] == 0
+        assert family["rejections_q"] == 0
+
+        (replicate,) = replicate_counts([[direct]], scenario, None)
+        assert replicate["tests_evaluated"] == 0
+        assert replicate["null_tests_evaluated"] == 0
+        assert replicate["null_tests_rejected_p"] == 0
+        assert replicate["family_rejected_q"] == 0
+
+        bad_q = Outcome("guild_mcnemar", "aerobe_vs_anaerobe", 0.01, bad_p, scored=4)
+        rows_q = summarize([[bad_q]], scenario, None)
+        summary_q = next(r for r in rows_q if r["label"] == "aerobe_vs_anaerobe")
+        family_q = next(r for r in rows_q if r["label"] == "FAMILY")
+        assert summary_q["replicates_tested"] == 1
+        assert summary_q["rejections_p"] == 1
+        assert summary_q["rejections_q"] == 0
+        assert family_q["rejections_p"] == 0
+        assert family_q["rejections_q"] == 0
+
+        (replicate_q,) = replicate_counts([[bad_q]], scenario, None)
+        assert replicate_q["tests_evaluated"] == 1
+        assert replicate_q["null_tests_evaluated"] == 1
+        assert replicate_q["null_tests_rejected_p"] == 1
+        assert replicate_q["family_rejected_q"] == 0
+
+        # #1883: A FAMILY q rejection also requires a finite p_value.
+        bad_p_good_q = Outcome("guild_mcnemar", "aerobe_vs_anaerobe", bad_p, 0.01, scored=4)
+        rows_pq = summarize([[bad_p_good_q]], scenario, None)
+        summary_pq = next(r for r in rows_pq if r["label"] == "aerobe_vs_anaerobe")
+        family_pq = next(r for r in rows_pq if r["label"] == "FAMILY")
+        assert summary_pq["replicates_tested"] == 0
+        assert summary_pq["rejections_p"] == 0
+        assert summary_pq["rejections_q"] == 0
+        assert summary_pq["rejection_rate_p"] is None
+        assert summary_pq["rejection_rate_q"] is None
+        assert family_pq["rejections_p"] == 0
+        assert family_pq["rejections_q"] == 0
+        assert family_pq["rejection_rate_p"] == 0.0
+        assert family_pq["rejection_rate_q"] == 0.0
+
+        (replicate_pq,) = replicate_counts([[bad_p_good_q]], scenario, None)
+        assert replicate_pq["tests_evaluated"] == 0
+        assert replicate_pq["null_tests_evaluated"] == 0
+        assert replicate_pq["null_tests_rejected_p"] == 0
+        assert replicate_pq["family_rejected_q"] == 0

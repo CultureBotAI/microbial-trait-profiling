@@ -33,6 +33,7 @@ from mtp.datamodel.workflow_pydantic import (
     WorkflowRun,
 )
 from mtp.paths import REPO_ROOT
+from mtp.trait_key_policy import TraitKeyPolicy, parse_trait_key_policy
 from mtp.workflow.arms.types import ArmContext, Command
 from mtp.workflow.consumers import (
     CoreBundle,
@@ -41,6 +42,7 @@ from mtp.workflow.consumers import (
     preflight_consumer_outputs,
 )
 from mtp.workflow.operations import run_strain_rollup
+from mtp.workflow.provenance import preflight_integrated_sources, preflight_provenance_root
 from mtp.workflow.runtime import (
     artifact_path,
     content_hash,
@@ -48,6 +50,7 @@ from mtp.workflow.runtime import (
     repository_state,
     sha256_file,
 )
+from mtp.workflow.trait_policy import resolve_trait_policy
 from mtp.workflow.verification import verify_core_run
 
 Planner = Callable[[ArmContext], list[Command]]
@@ -245,6 +248,30 @@ def _step_strain_rollup(command: Command, *, absent_scope_is_off: bool) -> str:
     return "off"
 
 
+def _step_trait_key_policy(command: Command) -> TraitKeyPolicy | None:
+    """Parse the effective explicit choice without assigning today's default to old plans."""
+    parser = SCOPED_MODULES[command.argv[2]](_StepArguments)
+    parser.set_defaults(trait_key_policy=None)
+    try:
+        policy = parser.parse_args(command.argv[3:]).trait_key_policy
+    except ValueError as error:
+        raise ValueError(f"{command.id} has invalid trait-key-policy arguments: {error}") from error
+    return parse_trait_key_policy(policy) if policy is not None else None
+
+
+def _recorded_trait_key_policy(record: ArmRun, core: WorkflowRun) -> TraitKeyPolicy | None:
+    """Check new arm declarations; preserve unrecorded historical policy as absent."""
+    declarations = [item for item in record.parameters if item.name == "trait_key_policy"]
+    if not declarations:
+        return None
+    if len(declarations) != 1 or declarations[0].source != "verified_core":
+        raise ValueError("Arm trait-key-policy requires one verified_core parameter")
+    policy = parse_trait_key_policy(declarations[0].value)
+    if policy != resolve_trait_policy(core).policy:
+        raise ValueError("Arm trait-key-policy differs from its verified core")
+    return policy
+
+
 def _step_direction_basis(command: Command, repository: Path) -> str | None:
     """Use registered figures' complete execution parsers, including rejection rules."""
     script = Path(command.argv[1])
@@ -330,6 +357,12 @@ def _validate_plan(
                 raise ValueError(
                     f"{command.id} uses strain rollup scope {scope!r}, but its core "
                     f"recorded {context.strain_rollup!r}"
+                )
+            policy = _step_trait_key_policy(command)
+            if policy != context.trait_key_policy:
+                raise ValueError(
+                    f"{command.id} uses trait-key-policy {policy!r}, but its arm "
+                    f"declares verified core policy {context.trait_key_policy!r}"
                 )
         direction_basis = _step_direction_basis(command, context.repository)
         if direction_basis is not None and direction_basis != context.direction_basis:
@@ -435,8 +468,11 @@ def execute_arm(
     seed: int | None = None,
     figures: bool = True,
     repository: Path = REPO_ROOT,
+    provenance_root: Path | None = None,
 ) -> ArmRun:
     """Verify sources, execute the complete selected plan, and retain failed attempts."""
+    if provenance_root is not None and arm != "noel":
+        raise ValueError("--provenance-root is supported only for the Noel arm")
     if output.is_symlink():
         raise ValueError(f"Output must not be a symlink: {output}")
     repository, manifest, output = repository.resolve(), manifest.resolve(), output.resolve()
@@ -475,9 +511,34 @@ def execute_arm(
         contrast_population=ContrastPopulation(bundle.run.contrast_population).value,
         direction_basis=DirectionBasis(bundle.run.direction_basis).value,
         strain_rollup=run_strain_rollup(bundle.run),
+        provenance_root=provenance_root.resolve() if provenance_root is not None else None,
+        trait_key_policy=resolve_trait_policy(bundle.run).policy,
     )
+    if provenance_root is not None:
+        preflight_provenance_root(
+            output / "integrated_evidence/integrated_evidence_provenance.json",
+            (context.products["ora_profiles"], output),
+            root=provenance_root,
+        )
     commands = planner(context)
     _validate_plan(commands, context)
+    if provenance_root is not None:
+        # Only this command publishes integrated evidence; earlier steps have their
+        # own protocols and must not acquire unrelated root-containment rules.
+        previous_outputs: list[Path] = []
+        for command in commands:
+            if command.id == "integrated_evidence":
+                preflight_integrated_sources(
+                    output / "integrated_evidence/integrated_evidence_provenance.json",
+                    command.argv[3:],
+                    count_profiles=context.products["count_profiles"],
+                    ora_profiles=context.products["ora_profiles"],
+                    experiments=context.products["experiments"],
+                    full_dump=context.products["raw_dump"],
+                    root=provenance_root,
+                    planned_files=previous_outputs,
+                )
+            previous_outputs.extend(command.outputs)
     if any(command.argv[0] != sys.executable for command in commands):
         raise ValueError("Commands must use this Python executable")
     plan = [_definition(command) for command in commands]
@@ -494,6 +555,7 @@ def execute_arm(
         profile_product=profile,
         contrast_population=bundle.run.contrast_population,
         direction_basis=bundle.run.direction_basis,
+        provenance_root_supplied=provenance_root is not None,
         git_commit=commit,
         git_dirty=dirty,
         repository_path=str(repository),
@@ -525,6 +587,7 @@ def execute_arm(
                     "override" if seed is not None else "default",
                 ),
                 ("figures", figures, "override" if not figures else "default"),
+                ("trait_key_policy", context.trait_key_policy, "verified_core"),
             )
         ],
         plan=plan,
@@ -653,6 +716,7 @@ def _verify_arm_record(path: Path, record: ArmRun, core: WorkflowRun) -> ArmRun:
         contrast_population=ContrastPopulation(record.contrast_population).value,
         direction_basis=DirectionBasis(record.direction_basis).value,
         strain_rollup=run_strain_rollup(core),
+        trait_key_policy=_recorded_trait_key_policy(record, core),
     )
     commands = [
         Command(

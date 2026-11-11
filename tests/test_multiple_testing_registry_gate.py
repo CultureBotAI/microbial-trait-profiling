@@ -62,8 +62,11 @@ def test_derivation_gate_uses_resolved_calls_owned_by_each_function(
     )
     entered: list[str] = []
 
-    def record_candidate(unit: guard.Unit, scope: str) -> bool:
+    def record_candidate(
+        unit: guard.Unit, scope: str, *, file_budget: guard.FileDerivationBudget
+    ) -> bool:
         assert scope in unit.functions
+        assert file_budget.limit == guard.DEFAULT_LIMITS.file_derivation_steps
         entered.append(scope)
         return False
 

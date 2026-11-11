@@ -26,9 +26,14 @@ from mtp.density_adjustment import (
     SIGNIFICANT_POST_ADJUSTMENT_STATUSES,
     CorrelationMetrics,
     add_trait_list_argument,
+    format_correlation_metric,
+    format_metric_diff,
     format_p_and_q,
+    format_paired_regression_slope,
     format_paired_regression_test,
+    format_profile_regression_slope,
     format_q_value,
+    format_report_number,
     nominal_test_count_statement,
     q_value_statement,
     reported_traits_heading,
@@ -108,12 +113,15 @@ def _conclusion_number(
 
 def _conclusion_metrics(metrics: CorrelationMetrics) -> tuple[str, str]:
     """Return median r and PC1 percent; the producer's no-variation zeros are unavailable."""
-    if metrics.n_traits - metrics.constant_traits_excluded < 2:
-        return "NA", "NA"
     return (
-        _conclusion_number(metrics.median_pairwise_r, "+.4f"),
-        _conclusion_number(metrics.pc1_variance_pct, ".2f"),
+        format_correlation_metric(metrics, "median_pairwise_r", "+.4f"),
+        format_correlation_metric(metrics, "pc1_variance_pct", ".2f"),
     )
+
+
+def _plural(count: int, singular: str, plural: str) -> str:
+    """Return singular when count == 1, otherwise plural (#1407)."""
+    return singular if count == 1 else plural
 
 
 def write_consolidated_report(
@@ -174,41 +182,56 @@ def write_consolidated_report(
         "-" * 80,
         f"Input profiles evaluated: {raw.n_samples:,}",
         f"Non-MediaDive trait columns: {raw.n_traits}",
-        f"Pearson pairwise correlation: median {raw.median_pairwise_r:+.4f}, "
-        f"mean {raw.mean_pairwise_r:+.4f}",
-        f"Pairs exceeding +0.5: {raw.pct_pairs_gt_05:.1f}% | "
-        f"Pairs exceeding +0.9: {raw.pct_pairs_gt_09:.1f}%",
-        f"PC1 variance explained: {raw.pc1_variance_pct:.2f}% | "
-        f"PC1-PC5 variance explained: {raw.pc1_5_variance_pct:.2f}%",
+        "Pearson pairwise correlation: "
+        f"median {format_correlation_metric(raw, 'median_pairwise_r', '+.4f')}, "
+        f"mean {format_correlation_metric(raw, 'mean_pairwise_r', '+.4f')}",
+        "Pairs exceeding +0.5: "
+        f"{format_correlation_metric(raw, 'pct_pairs_gt_05', '.1f', suffix='%')} | "
+        "Pairs exceeding +0.9: "
+        f"{format_correlation_metric(raw, 'pct_pairs_gt_09', '.1f', suffix='%')}",
+        "PC1 variance explained: "
+        f"{format_correlation_metric(raw, 'pc1_variance_pct', '.2f', suffix='%')} | "
+        "PC1-PC5 variance explained: "
+        f"{format_correlation_metric(raw, 'pc1_5_variance_pct', '.2f', suffix='%')}",
         "Effective number of independent tests: "
         f"Li & Ji (2005) = {raw.m_eff_li_ji:.1f}, "
         f"Galwey (2009) = {raw.m_eff_galwey:.1f}, "
         f"Cheverud/Nyholt = {raw.m_eff_nyholt:.1f}",
         "",
         "Spearman baseline verification:",
-        f"  Median pairwise rho: {raw_sp.median_pairwise_r:+.4f}, "
-        f"Mean pairwise rho: {raw_sp.mean_pairwise_r:+.4f}",
-        f"  Pairs > 0.5: {raw_sp.pct_pairs_gt_05:.1f}% | "
-        f"Pairs > 0.9: {raw_sp.pct_pairs_gt_09:.1f}%",
-        f"  PC1 variance: {raw_sp.pc1_variance_pct:.2f}%",
+        "  Median pairwise rho: "
+        f"{format_correlation_metric(raw_sp, 'median_pairwise_r', '+.4f')}, "
+        "Mean pairwise rho: "
+        f"{format_correlation_metric(raw_sp, 'mean_pairwise_r', '+.4f')}",
+        "  Pairs > 0.5: "
+        f"{format_correlation_metric(raw_sp, 'pct_pairs_gt_05', '.1f', suffix='%')} | "
+        "Pairs > 0.9: "
+        f"{format_correlation_metric(raw_sp, 'pct_pairs_gt_09', '.1f', suffix='%')}",
+        "  PC1 variance: "
+        f"{format_correlation_metric(raw_sp, 'pc1_variance_pct', '.2f', suffix='%')}",
         "",
-        "2. DENSITY AXIS ADJUSTMENT: SEPARATING BIOLOGY FROM CURATION EFFORT",
+        "2. DENSITY AXIS ADJUSTMENT AND CORRELATION CENTERING",
         "-" * 80,
         f"Test Case Pair: {aerobic_label} x moderately halophilic",
-        f"  Baseline Pearson r: {raw.test_pair_r:+.4f}",
-        f"  Post-PC1 regression r: {adj_pc1.test_pair_r:+.4f} "
-        f"(attenuation: {adj_pc1.test_pair_r - raw.test_pair_r:+.4f})",
+        f"  Baseline Pearson r: {format_correlation_metric(raw, 'test_pair_r', '+.4f')}",
+        "  Post-PC1 regression r: "
+        f"{format_correlation_metric(adj_pc1, 'test_pair_r', '+.4f')} "
+        f"(change: {format_metric_diff(adj_pc1, raw)})",
     ]
     if adj_norm is not None:
-        lines.append(f"  Post-normalization r: {adj_norm.test_pair_r:+.4f}")
+        lines.append(
+            f"  Post-normalization r: {format_correlation_metric(adj_norm, 'test_pair_r', '+.4f')}"
+        )
 
     lines.extend(
         [
             "",
             "Global Correlation Matrix Centering (Method A - PC1 Regression):",
-            f"  Median pairwise r: {adj_pc1.median_pairwise_r:+.4f} (centered around 0)",
-            f"  Mean pairwise r: {adj_pc1.mean_pairwise_r:+.4f}",
-            f"  Pairs > 0.5: {adj_pc1.pct_pairs_gt_05:.1f}%",
+            "  Median pairwise r: "
+            f"{format_correlation_metric(adj_pc1, 'median_pairwise_r', '+.4f')}",
+            f"  Mean pairwise r: {format_correlation_metric(adj_pc1, 'mean_pairwise_r', '+.4f')}",
+            "  Pairs > 0.5: "
+            f"{format_correlation_metric(adj_pc1, 'pct_pairs_gt_05', '.1f', suffix='%')}",
             "",
             (
                 f"3. {reported_traits_heading(trait_list)} "
@@ -237,20 +260,27 @@ def write_consolidated_report(
             "-" * 80,
             f"Candidate pair: {twin.trait_a_label} ({twin.trait_a}) vs. "
             f"{twin.trait_b_label} ({twin.trait_b})",
-            f"Profile-level correlation: r = {twin.profile_correlation:+.4f} | "
-            f"Variance Inflation Factor (VIF): {twin.vif_profile:.2f}",
-            f"Profile OLS regression slope (coccus ~ sphere): {twin.profile_slope_a_on_b:.4f}",
+            "Profile-level correlation: r = "
+            f"{format_report_number(twin.profile_correlation, '+.4f')} | "
+            "Variance Inflation Factor (VIF): "
+            f"{format_report_number(twin.vif_profile, '.2f', allow_positive_infinity=True)}",
+            "Profile OLS regression slope (coccus ~ sphere): "
+            f"{format_profile_regression_slope(twin)}",
             f"Paired contrasts (N={twin.n_paired_experiments}): "
-            f"r = {twin.paired_correlation:+.4f} | Paired VIF: {twin.vif_paired:.2f}",
-            f"Paired regression slope: {twin.paired_slope_a_on_b:.4f} "
+            f"r = {format_report_number(twin.paired_correlation, '+.4f')} | Paired VIF: "
+            f"{format_report_number(twin.vif_paired, '.2f', allow_positive_infinity=True)}",
+            f"Paired regression slope: "
+            f"{format_paired_regression_slope(twin.paired_slope_a_on_b)} "
             f"({format_paired_regression_test(twin.paired_slope_pvalue)})",
             "",
             "5. METPO ONTOLOGY REDUNDANCY AUDIT AND BRANCH COLLAPSING (TASK 2)",
             "-" * 80,
             f"Audited non-MediaDive traits: {raw.n_traits}",
-            f"Redundant pairs identified: {n_pairs} pairs across {n_clusters} concept clusters",
+            f"Redundant pairs identified: {n_pairs} {_plural(n_pairs, 'pair', 'pairs')} "
+            f"across {n_clusters} concept {_plural(n_clusters, 'cluster', 'clusters')}",
             f"Redundant features collapsed: {n_collapsed}",
-            f"Bounded distinct trait space: {bounded_space} features",
+            f"Bounded distinct trait space: {bounded_space} "
+            f"{_plural(bounded_space, 'feature', 'features')}",
             "",
             "Stated Collapsing Rule:",
             "  1. Survivor Selection (Max-Support Evidence Rule): The term with the greatest",
@@ -263,26 +293,36 @@ def write_consolidated_report(
             "",
             "Dimensionality Comparison (Raw vs Collapsed vs PC1 Adjusted):",
             f"  - Raw Uncollapsed (P={raw.n_traits}):       "
-            f"PC1 var = {raw.pc1_variance_pct:.2f}% | "
-            f"Med r = {raw.median_pairwise_r:+.4f} | M_eff (Galwey) = {raw.m_eff_galwey:.1f}",
+            f"PC1 var = {format_correlation_metric(raw, 'pc1_variance_pct', '.2f', suffix='%')} | "
+            f"Med r = {format_correlation_metric(raw, 'median_pairwise_r', '+.4f')} | "
+            f"M_eff (Galwey) = {raw.m_eff_galwey:.1f}",
             f"  - Collapsed Native (P={bounded_space}):      "
-            f"PC1 var = {nat_m.pc1_variance_pct:.2f}% | "
-            f"Med r = {nat_m.median_pairwise_r:+.4f} | M_eff (Galwey) = {nat_m.m_eff_galwey:.1f}",
+            "PC1 var = "
+            f"{format_correlation_metric(nat_m, 'pc1_variance_pct', '.2f', suffix='%')} | "
+            f"Med r = {format_correlation_metric(nat_m, 'median_pairwise_r', '+.4f')} | "
+            f"M_eff (Galwey) = {nat_m.m_eff_galwey:.1f}",
             f"  - Collapsed Deduplicated (P={bounded_space}): "
-            f"PC1 var = {max_m.pc1_variance_pct:.2f}% | "
-            f"Med r = {max_m.median_pairwise_r:+.4f} | M_eff (Galwey) = {max_m.m_eff_galwey:.1f}",
+            "PC1 var = "
+            f"{format_correlation_metric(max_m, 'pc1_variance_pct', '.2f', suffix='%')} | "
+            f"Med r = {format_correlation_metric(max_m, 'median_pairwise_r', '+.4f')} | "
+            f"M_eff (Galwey) = {max_m.m_eff_galwey:.1f}",
             f"  - Collapsed + PC1 Adj (P={bounded_space}):   "
-            f"PC1 var = {adj_col_m.pc1_variance_pct:.2f}% | "
-            f"Med r = {adj_col_m.median_pairwise_r:+.4f} | "
+            "PC1 var = "
+            f"{format_correlation_metric(adj_col_m, 'pc1_variance_pct', '.2f', suffix='%')} | "
+            f"Med r = {format_correlation_metric(adj_col_m, 'median_pairwise_r', '+.4f')} | "
             f"M_eff (Galwey) = {adj_col_m.m_eff_galwey:.1f}",
             "",
-            "Critical Finding on Redundancy vs Density:",
-            f"  Branch collapsing bounds distinct trait space to {bounded_space} features, "
-            "but DOES NOT",
-            "  attenuate the dominant positive correlation axis (PC1 still explains "
-            f"{max_m.pc1_variance_pct:.2f}%).",
-            "  The correlation structure is driven by curation density effort across profiles,",
-            "  not ontology redundancy. Density adjustment remains strictly necessary.",
+            "Redundancy vs. PC1 Summary:",
+            f"  Branch collapsing bounds distinct trait space to {bounded_space} "
+            f"{_plural(bounded_space, 'feature', 'features')}",
+            "  (raw PC1 variance explained = "
+            f"{format_correlation_metric(raw, 'pc1_variance_pct', '.2f', suffix='%')}; "
+            "collapsed deduplicated PC1 variance explained = "
+            f"{format_correlation_metric(max_m, 'pc1_variance_pct', '.2f', suffix='%')};",
+            "  collapsed + PC1 regression PC1 variance explained = "
+            f"{format_correlation_metric(adj_col_m, 'pc1_variance_pct', '.2f', suffix='%')}).",
+            "  These descriptive comparisons summarize the annotation matrices without",
+            "  attributing the correlation axis to curation effort or ontology redundancy.",
             "",
             "6. CONCLUSION & METHODOLOGICAL IMPLICATIONS",
             "-" * 80,
@@ -308,6 +348,24 @@ def write_consolidated_report(
     paired_r = _conclusion_number(twin.paired_correlation, "+.4f")
     profile_vif = _conclusion_number(twin.vif_profile, ".2f", allow_positive_infinity=True)
     paired_vif = _conclusion_number(twin.vif_paired, ".2f", allow_positive_infinity=True)
+    n_orphan = int(ontology_res.get("n_orphan_features", n_collapsed if n_clusters == 0 else 0))
+    n_collapsed_in_clusters = n_collapsed - n_orphan
+    cluster_summary = (
+        f"{n_collapsed_in_clusters} "
+        f"{_plural(n_collapsed_in_clusters, 'feature', 'features')} "
+        f"collapsed into {n_clusters} {_plural(n_clusters, 'cluster', 'clusters')}"
+    )
+    orphan_summary = (
+        f"{n_orphan} {_plural(n_orphan, 'feature', 'features')} "
+        f"removed because "
+        f"{_plural(n_orphan, 'its cluster survivor is', 'their cluster survivors are')} absent"
+    )
+    if n_orphan > 0 and n_collapsed_in_clusters > 0:
+        collapsed_summary = f"{cluster_summary}; {orphan_summary}"
+    elif n_orphan > 0:
+        collapsed_summary = orphan_summary
+    else:
+        collapsed_summary = cluster_summary
     lines.extend(
         [
             "1. Median pairwise Pearson r across profile trait annotations: "
@@ -319,14 +377,14 @@ def write_consolidated_report(
             "3. Significant before and after PC1 regression in the same direction "
             f"(BH q <= 0.05; survived or enhanced): {survivors or 'none'}.",
             f"4. {twin.trait_a_label} and {twin.trait_b_label}: "
-            f"profile r = {profile_r}, VIF ~ {profile_vif}.",
+            f"profile r = {profile_r}, VIF = {profile_vif}.",
             "   Paired increased-minus-decreased experiment contrasts "
-            f"(N={twin.n_paired_experiments:,}): r = {paired_r}, VIF ~ {paired_vif}.",
+            f"(N={twin.n_paired_experiments:,}): r = {paired_r}, VIF = {paired_vif}.",
             "   Joint-model coefficient stability was not evaluated.",
             f"5. Ontology redundancy accounts for {n_pairs} "
-            f"redundant pairs ({n_collapsed} features "
-            f"collapsed into {n_clusters} clusters),",
-            f"   bounding distinct trait space to {bounded_space} features.",
+            f"redundant {_plural(n_pairs, 'pair', 'pairs')} ({collapsed_summary}),",
+            f"   bounding distinct trait space to {bounded_space} "
+            f"{_plural(bounded_space, 'feature', 'features')}.",
             f"   PC1 variance explained (%): raw = {raw_pc1}; collapsed native = {native_pc1};",
             f"   collapsed max-member = {max_member_pc1}; "
             f"collapsed + PC1 regression = {collapsed_adjusted_pc1}.",
@@ -381,7 +439,6 @@ def main() -> int:
     raw = density_res["raw_pearson"]
     adj = density_res["adj_pc1_pearson"]
     twin = density_res["twin_summary"]
-    pair_attenuation = adj.test_pair_r - raw.test_pair_r
     t1_by_id = {eff.trait_id: eff for eff in density_res["table1_effects"]}
     aerobic_label = (
         t1_by_id["METPO:1000608"].trait_label
@@ -389,32 +446,49 @@ def main() -> int:
         else "facultatively aerobic"
     )
     print(
-        f"  - Baseline PC1 explains {raw.pc1_variance_pct:.2f}% of variance "
+        f"  - Baseline PC1 explains "
+        f"{format_correlation_metric(raw, 'pc1_variance_pct', '.2f', suffix='%')} of variance "
         f"across {raw.n_traits} traits."
     )
     print(
-        f"  - Post-adjustment pairwise correlation centered at median {adj.median_pairwise_r:+.4f} "
-        f"(was {raw.median_pairwise_r:+.4f})."
+        f"  - Post-adjustment median pairwise r: "
+        f"{format_correlation_metric(adj, 'median_pairwise_r', '+.4f')} "
+        f"(raw: {format_correlation_metric(raw, 'median_pairwise_r', '+.4f')})."
     )
     print(
-        f"  - {aerobic_label} x moderately halophilic r: {raw.test_pair_r:+.4f} "
-        f"-> {adj.test_pair_r:+.4f} (attenuated by {pair_attenuation:+.4f})."
+        f"  - {aerobic_label} x moderately halophilic r: "
+        f"{format_correlation_metric(raw, 'test_pair_r', '+.4f')} "
+        f"-> {format_correlation_metric(adj, 'test_pair_r', '+.4f')} "
+        f"(change: {format_metric_diff(adj, raw)})."
     )
     print(
-        f"  - Near-twins (coccus x sphere) collinearity: r = {twin.profile_correlation:+.4f}, "
-        f"VIF = {twin.vif_profile:.2f}."
+        f"  - Near-twins (coccus x sphere): r = "
+        f"{format_report_number(twin.profile_correlation, '+.4f')}, "
+        f"VIF = {format_report_number(twin.vif_profile, '.2f', allow_positive_infinity=True)}."
+    )
+    n_clusters_label = _plural(ontology_res["n_clusters"], "cluster", "clusters")
+    print(
+        f"  - Ontology Redundancy: {ontology_res['n_redundant_pairs']} redundant "
+        f"{_plural(ontology_res['n_redundant_pairs'], 'pair', 'pairs')} across "
+        f"{ontology_res['n_clusters']} {n_clusters_label}."
     )
     print(
-        f"  - Ontology Redundancy: {ontology_res['n_redundant_pairs']} redundant pairs across "
-        f"{ontology_res['n_clusters']} clusters."
+        f"  - Distinct Trait Space Bounded: {ontology_res['bounded_trait_space']} "
+        f"{_plural(ontology_res['bounded_trait_space'], 'feature', 'features')} "
+        f"(collapsed {ontology_res['n_collapsed_features']} "
+        f"{_plural(ontology_res['n_collapsed_features'], 'feature', 'features')} from "
+        f"{raw.n_traits})."
+    )
+    max_pc1 = format_correlation_metric(
+        ontology_res["max_metrics"], "pc1_variance_pct", ".2f", suffix="%"
+    )
+    raw_pc1 = format_correlation_metric(raw, "pc1_variance_pct", ".2f", suffix="%")
+    adj_col_pc1 = format_correlation_metric(
+        ontology_res["adj_collapsed_metrics"], "pc1_variance_pct", ".2f", suffix="%"
     )
     print(
-        f"  - Distinct Trait Space Bounded: {ontology_res['bounded_trait_space']} features "
-        f"(collapsed {ontology_res['n_collapsed_features']} features from {raw.n_traits})."
-    )
-    print(
-        f"  - Collapsed Matrix PC1 Variance: {ontology_res['max_metrics'].pc1_variance_pct:.2f}% "
-        "(confirms PC1 is curation density, not ontology redundancy)."
+        f"  - Collapsed Matrix PC1 Variance: {max_pc1} "
+        f"(raw: {raw_pc1}; collapsed + PC1 regression: {adj_col_pc1})."
     )
     print("=" * 80 + "\n")
     return 0

@@ -1485,7 +1485,14 @@ cell tables, and output manifests.
 
 The six traits were selected from the pooled paired-profile contrast statistics
 in `trait-profile-investigation/trait_profile_paired_contrast_trait_stats.tsv`
-using `q_value <= 0.001`. The selected traits are facultatively aerobic
+using `q_value <= 0.001`, where `q_value` is the pooled pair-level BH q over the
+340 support/variance-selected traits that `select_stratum_traits` kept in that
+table (its `correction_family_size`, of 344 retained non-MediaDive traits in
+`retained_trait_count` before the `select_stratum_traits` support-bounds,
+positive-variance, and MediaDive-exclusion filter; the selection keeps traits
+annotated in at least 6 and at most 95% of profiles with positive composition
+variance).
+The selected traits are facultatively aerobic
 (`METPO:1000608`), cellulose catabolic process
 (`METPO:2000103|GO:0030245`), coccus shaped (`METPO:1000668`), sphere shaped
 (`METPO:1000683`), arsenate reduction
@@ -1650,15 +1657,15 @@ Four trait-pattern heatmaps are written:
 and
 `six_shared_traits_decreased_individual_conditions_condition_body_site_trait_pattern_heatmap.png`.
 Rows are condition/body-site pairs and columns are the six shared traits. The
-color value is Fisher evidence, `-log10(p)`, from a one-sided Fisher exact test
-asking whether focus positive-z support exceeds comparator positive-z support.
-This makes darker cells correspond to smaller p-values. A cell is shown for
-exploratory review only when `p < 0.01`, with at least 3 positive-z focus
-profiles and at least 2 positive-z focus-profile studies. Rows are ranked by
-significant trait recurrence, BH-selected recurrence, p-value evidence, and
-support, with at most 24 rows displayed. The companion table retains the
-original support-strength components as `n`, `signal`, and `strength` columns,
-and also records BH q-values computed within each heatmap view.
+color value is nominal Fisher evidence, `-log10(p)`, from a one-sided Fisher
+exact test asking whether focus positive-z support exceeds comparator positive-z
+support. This makes darker cells correspond to smaller nominal p-values. A cell
+is shown for exploratory review only when `nominal Fisher p < 0.01`, with at
+least 3 positive-z focus profiles and at least 2 positive-z focus-profile
+studies. Rows are ranked by nominal-p recurrence, BH-selected recurrence,
+nominal p-value evidence, and support, with at most 24 rows displayed. The
+companion table retains the original support-strength components as `n`,
+`signal`, and `strength` columns, and also records BH q-values computed within each heatmap view over all candidate cells (untested held at p = 1).
 
 Two primary signed direction contrast heatmaps are written:
 `six_shared_traits_grouped_condition_body_site_signed_direction_contrast_heatmap.png`
@@ -1672,7 +1679,8 @@ Supported effects with finite two-sided Fisher exact p-values are displayed when
 the absolute increased-minus-decreased positive-z fraction is strictly greater
 than 0.01, including nonsignificant results above that effect cutoff. Support
 requires at least 3 positive-z profiles in either direction and at least 2 total
-studies. A dark cell border marks BH-adjusted `q <= 0.05`; the manifest separately
+studies. A dark cell border marks BH-adjusted `q <= 0.05` over all candidate cells
+per view (untested held at p = 1); the manifest separately
 reports how many cells passed the nominal Fisher `p < 0.01` threshold. Unbordered
 cells are descriptive effects. The figure legend reports the displayed condition-label,
 anatomy-group, row, cell, and BH-border counts. The

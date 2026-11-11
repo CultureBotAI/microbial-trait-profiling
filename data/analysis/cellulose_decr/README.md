@@ -603,7 +603,10 @@ stay out of git outside `trait-visualization/`.
   standalone SVG and HTML slide carries the banner
   `RETIRED: historical, unverified numbers (#1572)`. Audit opt-in does not validate
   or recompute the historical numbers. Source snapshots and source-pin tests are
-  retained as evidence. A replacement built from current rerun data is pending
+  retained as evidence. All 16 slides carry their own HTML banner even without
+  referenced images. Inline fig8/fig9 omit the duplicate SVG banner band and keep
+  their original size; referenced plate files retain their own banners (#1738).
+  A replacement built from current rerun data is pending
   under [#1670](https://github.com/CultureBotAI/microbial-trait-profiling/issues/1670).
   The separate seven-plate generator, `scripts/generate_tufte_plates.py`, is unaffected.
   Older unmarked copies trigger a warning: preview with `just cellulose-decr-cleanup-retired`,

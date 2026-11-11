@@ -1133,18 +1133,24 @@ def save_traits_vs_organisms_heatmap(
     ]
 
     palette_colors = [
-        "#b91c1c",
-        "#2563eb",
-        "#047857",
-        "#7c3aed",
         "#c2410c",
-        "#0f766e",
-        "#be123c",
-        "#4338ca",
+        "#60a5fa",
+        "#eab308",
+        "#3b0764",
+        "#7f1d1d",
+        "#ab7578",
+        "#86efac",
+        "#300012",
     ]
+    if len(TARGET_CONDITIONS) > len(palette_colors):
+        msg = (
+            f"The companion heatmap has {len(palette_colors)} distinct condition colours; "
+            f"{len(TARGET_CONDITIONS)} conditions would reuse one. Use "
+            f"--top-paired-conditions {len(palette_colors)} or fewer."
+        )
+        raise ValueError(msg)
     condition_palette = {
-        condition: palette_colors[index % len(palette_colors)]
-        for index, condition in enumerate(TARGET_CONDITIONS)
+        condition: palette_colors[index] for index, condition in enumerate(TARGET_CONDITIONS)
     }
     condition_palette["unknown"] = "#64748b"
     row_taxon_ids = matrix.index.tolist()
@@ -1159,6 +1165,7 @@ def save_traits_vs_organisms_heatmap(
     row_colors.index = display_matrix.index
     row_colors.name = ""
 
+    colorbar_position = (0.02, 0.82, 0.025, 0.12)
     cluster = sns.clustermap(
         display_matrix,
         cmap=sns.color_palette(["#f8fafc", "#155e75"], as_cmap=True),
@@ -1166,12 +1173,12 @@ def save_traits_vs_organisms_heatmap(
         metric="jaccard",
         col_cluster=cluster_columns,
         row_colors=row_colors,
-        linewidths=0.2,
+        linewidths=0.5,
         linecolor="#e2e8f0",
         xticklabels=True,
         yticklabels=True,
         figsize=(18, 16),
-        cbar_pos=(0.02, 0.82, 0.025, 0.12),
+        cbar_pos=colorbar_position,
         dendrogram_ratio=(0.12, 0.10),
         colors_ratio=(0.025, 0.025),
     )
@@ -1179,6 +1186,9 @@ def save_traits_vs_organisms_heatmap(
     cluster.ax_heatmap.set_ylabel("Organism observed in target-condition profiles")
     cluster.ax_heatmap.set_title("")
     cluster.fig.subplots_adjust(top=0.88)
+    # subplots_adjust also moves the colorbar back into the condition strip.
+    # Restore its separate position so tick labels stay on the white margin.
+    cluster.ax_cbar.set_position(colorbar_position)
     cluster.fig.suptitle(
         f"{title}\n"
         "Rows are organisms observed in target BugSigDB profiles; columns are binary "
@@ -1204,8 +1214,8 @@ def save_traits_vs_organisms_heatmap(
     cluster.ax_row_dendrogram.legend(
         handles=handles,
         title="Target condition",
-        loc="center",
-        bbox_to_anchor=(-0.08, 0.5),
+        loc="center right",
+        bbox_to_anchor=(-0.04, 0.5),
         frameon=False,
     )
     output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -1661,7 +1671,7 @@ def main() -> None:
             heatmap_title = (
                 f"Companion Heatmap: Our Top Paired-Profile Traits vs Organisms in "
                 f"{condition_source_title}\n"
-                "Traits ranked left-to-right by paired-profile contrast p-value"
+                "Trait columns follow the supplied paired-trait table order"
             )
             heatmap_trait_description = (
                 f"the top {len(preferred_traits)} paired-profile contrast traits from "

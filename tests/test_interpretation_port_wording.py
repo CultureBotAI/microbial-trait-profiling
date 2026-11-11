@@ -300,28 +300,29 @@ def test_shift_figure_title_top_edge_and_ink_bounds_guard_canvas_top(
 
 
 @pytest.mark.parametrize(
-    ("mutated_y", "mutated_yanchor", "expected_message"),
+    ("top_offset_px", "mutated_yanchor", "expected_message_template"),
     [
         pytest.param(
-            1.0,
+            0.0,
             "top",
             "Rendered title or subtitle reaches the top canvas edge: row=0",
             id="y-at-top-edge",
         ),
         pytest.param(
-            1 - 15 / 724,
+            15.0,
             "top",
             "Rendered title or subtitle reaches the top canvas edge: row=1",
             id="y-within-4px-of-top-edge",
         ),
         pytest.param(
-            1 - 35 / 724,
+            35.0,
             "middle",
-            "The main title and all 7 subtitle lines must be rendered: got 5 bands",
+            "The main title and all {subtitle_lines} subtitle lines must be rendered: "
+            "got {rendered_bands} bands",
             id="upper-lines-clipped-above-canvas",
         ),
         pytest.param(
-            1.0,
+            0.0,
             "bottom",
             "Rendered title ink must be measurable",
             id="entire-header-block-above-canvas",
@@ -329,15 +330,22 @@ def test_shift_figure_title_top_edge_and_ink_bounds_guard_canvas_top(
     ],
 )
 def test_shift_title_ink_bounds_reject_mutants_above_canvas(
-    mutated_y: float, mutated_yanchor: str, expected_message: str
+    top_offset_px: float, mutated_yanchor: str, expected_message_template: str
 ) -> None:
-    """#1313: moving title.y to 1.0 or above the canvas fails the top-edge/band bounds."""
+    """#1313, #1520: moving title.y to 1.0 or above the canvas fails the top-edge/band bounds."""
     result, traits = _sample_shift_result()
     figure = table1_trait_maps.build_shift_figure(result, "synthetic fixture, 2026-10-30", traits)
     figure.layout.title.text = "Synthetic fixture: " + str(figure.layout.title.text)
     expected_lines = str(figure.layout.title.text).count("<br>") + 1
-    figure.layout.title.y = mutated_y
+    height = float(figure.layout.height)
+    block_height = 21.0 * max(0, expected_lines - 1) + 16.0
+    anchor_px = block_height / 2.0 - 46.5 if mutated_yanchor == "middle" else top_offset_px
+    figure.layout.title.y = 1.0 - anchor_px / height
     figure.layout.title.yanchor = mutated_yanchor
+    expected_message = expected_message_template.format(
+        subtitle_lines=expected_lines - 1,
+        rendered_bands=expected_lines - 3,
+    )
     pixels = _rasterize_shift_title_and_headers_from_layout(figure)
     with pytest.raises(AssertionError, match=re.escape(expected_message)):
         _assert_shift_title_and_subtitle_ink_bounds(pixels, expected_lines=expected_lines)

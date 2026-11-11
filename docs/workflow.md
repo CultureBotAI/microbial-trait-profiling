@@ -288,6 +288,113 @@ just rerun-compare /absolute/path/core-runs/run-ID/run.json \
 just rerun-verify-comparison /absolute/path/reruns/comparison
 ```
 
+Noel and comparison reruns accept an optional `--provenance-root ROOT` for their
+integrated-evidence records (#1780). For example, append it to `just rerun-noel`
+or `just rerun-compare`. The root must be an existing safe source directory
+containing every input that the integrated-evidence producer binds. Its existing
+privacy and containment checks still apply. Jed and Ilyas reject this option
+with "supported only for the Noel arm" before execution; their plans do not
+invoke that producer.
+
+A supplied root is checked against the producer's located sources, including ORA
+profiles, existing native tables and assessment files, and the planned pooled-statistics
+file, before the comparison creates its output. Raw BugSigDB and KG inputs, count
+profiles and experiments are hashed without locators; they need not lie beneath
+this root. Noel checks ORA profiles and its output
+layout before planning, then checks sources selected by the actual integrated-evidence
+arguments and earlier planned outputs before execution. Missing optional assessments
+that no earlier step produces do not acquire locators. Existing assessment files are
+parsed with the producer's status reader and the verified core input identities;
+the check includes the metadata and diagnostic locators that reader retains. This
+also uses the native influence reader where applicable, rather than scanning JSON
+strings for paths. Both checks share the producer's source selector and path policy.
+The workflow preflight requires `--core-run`; the standalone integrated-evidence CLI
+still supports its existing no-core inputs. The final producer rechecks actual files
+and references inside metadata; preflight cannot guarantee that later filesystem
+changes or newly produced metadata will be acceptable.
+
+Noel's own outputs are bound sources, so its root must contain its located core
+and native inputs and arm output. The option can select an accepted root at or above the
+inferred root, for example to align with a bundle root; it cannot make a layout
+that inference refuses acceptable. Inputs and outputs with no safe common
+ancestor remain unsupported. The comparison can use a report outside its
+source tree, as described below.
+
+For a comparison report outside the source tree, supply `--arm1-pooled-stats`
+from inside the declared root. Otherwise the comparison creates that source
+inside its output directory, which must then also lie beneath the root. A report
+outside its supplied root declares `supplied-root-v1`; verifying its source
+references requires `just verify-integrated-provenance RECORD
+--provenance-root ROOT`. Noel retains the option in its hash-bound command plan.
+Omitting it preserves the existing commands, parameters and root inference.
+New `ArmRun` and `ComparisonRun` records also declare `provenance_root_supplied`
+as `true` or `false`, including `false` for Jed and Ilyas, which do not accept the
+option. This field contains only the execution decision, never a root locator.
+An absent or null field on a historical record means unrecorded, not false; old
+records remain readable without rewriting them. The declaration does not identify
+which root was used or replace the integrated record's path basis and verification
+requirements. Noel's plan and the integrated record retain their existing
+provenance conventions.
+
+Forward compatibility is limited: the generated models use `extra="forbid"`, so
+a verifier from before the schema addition in #1884 rejects an `ArmRun` or
+`ComparisonRun` containing `provenance_root_supplied`, even when its value is
+`false`. Verify new records with a checkout that includes this field. This does
+not change the newer verifier's ability to read older records without the field.
+
+A hyphen preceded by a word character in a directory name, such as `x-home` or
+`noel-delta-home`, does not start a local home prefix. Leading or standalone
+hyphens do not grant this exemption. The trade-off is that the text-prefix checks
+also accept site-specific homes beneath parents ending in `-home` or `-Users`,
+such as `/nfs-home/<account>/x.tsv` and `/srv/data-Users/<account>/x.tsv`, and
+temp-like spellings such as `x-private/tmp/...` and `x-var/folders/...`. These
+patterns do not recognize every site's home or temporary-directory layout.
+Standard Unix home prefixes and Windows user-profile prefixes remain refused in
+bare, quoted, JSON and prose text. Windows forms include drive-rooted and
+drive-relative paths, rooted paths without a drive, UNC paths containing a
+backslash-delimited `Users` component, and relative paths with `Users` followed by
+a backslash separator. Single, doubled/JSON-escaped and mixed separators are
+recognized. Relative Windows spellings keep the same word/internal-hyphen
+boundary as slashless Unix spellings: a directory such as `x-Users` is accepted,
+while a leading or standalone hyphen does not exempt `Users`. The repository
+text guard uses these Windows patterns case-sensitively; provenance uses them
+case-insensitively. Custom share layouts without a `Users` component remain
+outside these text checks (#1682).
+
+For the added drive-relative, driveless-rooted, UNC and relative Windows forms,
+a separator must be followed by a Unicode word character (including an
+underscore), a dot or a hyphen. Both consumers use Unicode string patterns,
+without the ASCII flag. A single backslash
+followed by a JSON escape introducer (`n`, `t`, `r`, `b`, `f`, `"`, `/` or `u`)
+is accepted as ambiguous text. Thus a raw relative Windows spelling with `Users`,
+a single backslash and the account `nancy` is accepted; its JSON serialization
+has doubled backslashes and is refused. Uppercase initials such as `Nancy` are
+not JSON escapes and are refused. A trailing escaped backslash pair without
+an account is accepted. This deliberate false-negative trade-off lets ordinary
+JSON diagnostics mention users before a newline, tab, quote or Unicode escape.
+Serialize real Windows paths as JSON to avoid that raw-text ambiguity. Existing
+drive-rooted Windows and Unix prefix checks retain their previous behavior.
+
+The opposite trade-off is conservative refusal of some ordinary raw text. Apart
+from the JSON escape introducers above, `Users` followed by a backslash and an
+account character is refused even when it denotes regex source, Markdown or
+LaTeX, a Python repr, or a Windows principal rather than a home directory. Examples
+are `Users` + `\s+` or `\d+`, `Users` + `\_per\_study`, `Active Users` + two
+backslashes + `Total`, `Users` + `\x08`, and `DOMAIN` + backslash + `Users` +
+backslash + `Admins`. Doubly serialized JSON can contain these spellings too.
+Provenance also refuses lowercase `users`; the repository guard keeps its
+case-sensitive rule. Literal test fixtures that need these strings should follow
+`tests/test_no_absolute_local_paths.py`: split the directory token from its
+separators and concatenate at runtime. This preserves the fixture value without
+placing an intact path-like spelling in scanned source; it is not a bypass for
+publishing a local path in a provenance record.
+
+Path locators still undergo the separate root, containment and writer-account
+checks. The writer-account check refuses a directory containing the writer's
+account token, including two- and three-character names; the generic `root` login
+and single-character names retain their existing exemptions. That account check
+does not scan non-locator metadata for names.
+
 Verification derives each analysis basis again from the verified core: its recorded
 strain rollup scope, its feature catalog and the retained features of its count and ORA
 profile tables. A record whose bases differ, in any field, number or order, is refused
@@ -329,7 +436,7 @@ no result or archived record is regenerated by this correction.
 | `ilyas_signature_hypergeometric_ora_v1` | MT policy: `global_BH_fdr_across_signature_trait_tests` → `global_BH_q_per_tail_across_eligible_profile_trait_tests`. |
 | `jed_table1_paired_log_ratio_sign_test_v1` | MT policy: `BH_and_BY_q_across_15_trait_pairs` → `BY_q_across_15_trait_pairs`. |
 | `jed_composition_arcsine_sqrt_ttest_calibration_v1` | MT policy: `BH_q_across_6_focal_traits` → `BH_and_BY_q_across_retained_non_MediaDive_catalog_traits`. |
-| `historical_native_taxon_influence_experiment_weighted_v1` | MT policy: `descriptive_influence_delta_audit` → `BH_q_within_selected_native_influence_families_per_scenario_scope_tail`. |
+| `historical_native_taxon_influence_experiment_weighted_v1` | MT policy: `descriptive_influence_delta_audit` → `BH_q_in_mt-supp-native-influence-composition_selected_per_scenario_scope_and_mt-supp-native-influence-ora-enrichment_mt-supp-native-influence-ora-depletion_selected_per_scenario_scope_tail_plus_mt-supp-native-influence-shared-sign_executed_focal_per_scenario_scope_reference_or_background_and_before_after_before_matched_after_matched_matched_change_population` (via `BH_q_within_selected_native_influence_families_per_scenario_scope_tail` before #1522). |
 
 The historical list used in the verification regression test is preserved in
 [`analysis_specs_f0cb5b7.json`](../tests/fixtures/comparison_specs/analysis_specs_f0cb5b7.json).

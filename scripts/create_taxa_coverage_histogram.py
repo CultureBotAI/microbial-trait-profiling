@@ -164,11 +164,12 @@ class CoverageTaxonomy:
                 continue
             subject, parent = row["subject"], row["object"]
             # These are ontology rank classes, not organism ancestry (#1008).
-            if parent == "OBO:NCBITaxon#_taxonomic_rank" and re.fullmatch(
-                r"NCBITaxon:[A-Za-z_][A-Za-z0-9_]*", subject
-            ):
-                rank_class_records += 1
-                continue
+            if parent == "OBO:NCBITaxon#_taxonomic_rank":
+                if re.fullmatch(r"NCBITaxon:[A-Za-z_][A-Za-z0-9_]*", subject):
+                    rank_class_records += 1
+                    continue
+                if subject.startswith("NCBITaxon:"):
+                    raise ValueError(f"Invalid taxonomy identifier in edge {row['id']}: {subject}")
             for identifier in (subject, parent):
                 if identifier.startswith("NCBITaxon:") and not re.fullmatch(
                     r"NCBITaxon:[1-9][0-9]*", identifier
@@ -184,6 +185,12 @@ class CoverageTaxonomy:
         if not accepted:
             raise ValueError("Taxonomy input has no NCBITaxon subclass_of edges")
         self.audit.update(
+            excluded_records_note=(
+                "excluded_records counts malformed KG edge records dropped by the strict "
+                "edge parser (always 0); taxonomy_rank_class_edge_records_skipped counts "
+                "well-formed ontology rank-class subclass_of records skipped during "
+                "organism-ancestry graph projection (#1008, #1274)."
+            ),
             taxonomy_edge_records=accepted,
             taxonomy_rank_class_edge_records_skipped=rank_class_records,
             unique_taxonomy_edges=sum(len(values) for values in parents.values()),
@@ -2519,8 +2526,9 @@ def write_readme(
             ),
             "taxonomy_status and JSON taxonomy_root_ids. Missing paths are explicit; conflicting",
             "recognized roots or reachable cycles reject the run before outputs are written.",
-            "Ontology rank-class edges are excluded from organism ancestry and counted in",
-            "the provenance audit as taxonomy_rank_class_edge_records_skipped.",
+            "Ontology rank-class edges are skipped during organism-ancestry projection",
+            "(counted in parser_audit as taxonomy_rank_class_edge_records_skipped, while",
+            "excluded_records: 0 confirms the strict KG edge parser dropped no record).",
             "Explicit unresolved labels and slash composites retain their distinct diagnoses.",
             "Eukaryotic and viral ancestry precedes Candidatus/cultivation heuristics;",
             "alias suggestions do not transfer ancestry or traits.",
