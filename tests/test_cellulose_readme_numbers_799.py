@@ -823,7 +823,7 @@ def _unbound_numbers(text: str) -> list[str]:
     leftovers = re.sub(r"(?<!\w)fig[1-9](?:/fig[1-9])?(?!\w)", "FIGURE_ID", leftovers)
     leftovers = re.sub(r"`fig[1-9]_[A-Za-z0-9_]+`", "FIGURE_BASENAME", leftovers)
     found = re.findall(
-        r"(?<![A-Za-z])[-+]?\d+(?:[.,]\d+)*(?:e[-+]?\d+)?(?:%|st|nd|rd|th)?", leftovers
+        r"(?<![A-Za-z])[-+]?\d+(?:[.,]\d+)*(?:e[-+]?\d+)?(?:%|st|[n]d|rd|th)?", leftovers
     )
     return found + NUMBER_WORD.findall(leftovers)
 
