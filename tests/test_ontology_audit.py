@@ -731,6 +731,21 @@ def test_build_redundant_pairs_table_applies_display_trait_label(tmp_path: Path)
         "facultative (aerobe or anaerobe)",
     ]
 
+    recorded_union_pairs = build_redundant_pairs_table(
+        df,
+        columns_path=union_cols_path,
+        clusters=[cluster_survivor_608, cluster_collapsed_608],
+        use_display_labels=False,
+    )
+    assert list(recorded_union_pairs["label_1"]) == [
+        "facultatively aerobic",
+        "obligately anaerobic",
+    ]
+    assert list(recorded_union_pairs["label_2"]) == [
+        "obligately anaerobic",
+        "facultatively aerobic",
+    ]
+
     raw_pairs = build_redundant_pairs_table(
         df,
         columns_path=raw_cols_path,

@@ -1,15 +1,17 @@
 """Isolated scratch-copy mutation verifier for issue #1250.
 
 Purpose:
-    Verify that regressions in display_trait_label resolution across
-    src/mtp/ontology_audit.py and src/mtp/coupling.py are caught by
-    AssertionError in tests/test_ontology_audit.py and
-    tests/test_trait_coupling.py without mutating the canonical worktree.
+    Verify that regressions in display_trait_label resolution and recorded-table
+    KG label preservation across src/mtp/ontology_audit.py and
+    src/mtp/coupling.py are caught by call-phase AssertionError in
+    tests/test_ontology_audit.py and tests/test_trait_coupling.py without
+    mutating the canonical worktree.
 Inputs:
     Canonical repository files under src/mtp/ and tests/.
 Outputs:
-    JSON summary printed to stdout; exit code 0 iff all 8 mutants fail with
-    AssertionError and canonical file digests remain unchanged.
+    JSON summary printed to stdout; exit code 0 iff all 9 mutants fail with
+    call-phase AssertionError, all controls pass, and canonical file digests
+    remain unchanged.
 Issue:
     #1250
 Date:
@@ -57,8 +59,8 @@ MUTANTS: tuple[MutantSpec, ...] = (
     MutantSpec(
         name="ontology_audit_ignore_member_ids",
         rel_path="src/mtp/ontology_audit.py",
-        target="members = read_recorded_member_ids(columns_path)",
-        replacement="members: dict[str, tuple[str, ...]] = {}",
+        target="        members = read_recorded_member_ids(columns_path)",
+        replacement="        members: dict[str, tuple[str, ...]] = {}",
         test_file="tests/test_ontology_audit.py",
         test_node="test_build_redundant_pairs_table_applies_display_trait_label",
     ),
@@ -66,13 +68,21 @@ MUTANTS: tuple[MutantSpec, ...] = (
         name="ontology_audit_skip_display_trait_label",
         rel_path="src/mtp/ontology_audit.py",
         target=(
-            "display_trait_label(\n"
-            "            str(column_id),\n"
-            "            str(column_label),\n"
-            "            members.get(str(column_id)),\n"
-            "        )"
+            "            str(column_id): display_trait_label(\n"
+            "                str(column_id),\n"
+            "                str(column_label),\n"
+            "                members.get(str(column_id)),\n"
+            "            )"
         ),
-        replacement="str(column_label)",
+        replacement="            str(column_id): str(column_label)",
+        test_file="tests/test_ontology_audit.py",
+        test_node="test_build_redundant_pairs_table_applies_display_trait_label",
+    ),
+    MutantSpec(
+        name="ontology_audit_leak_display_label_when_disabled",
+        rel_path="src/mtp/ontology_audit.py",
+        target="    if use_display_labels:",
+        replacement="    if True:",
         test_file="tests/test_ontology_audit.py",
         test_node="test_build_redundant_pairs_table_applies_display_trait_label",
     ),
@@ -95,8 +105,16 @@ MUTANTS: tuple[MutantSpec, ...] = (
     MutantSpec(
         name="coupling_composition_arm_use_raw_table1_traits",
         rel_path="src/mtp/coupling.py",
-        target="trait_name=resolved_names.get(t, t),",
-        replacement="trait_name=TABLE_1_TRAITS.get(t, t),",
+        target=(
+            "            trait_id=t,\n"
+            "            trait_name=resolved_names.get(t, t),\n"
+            '            primary_stat=stats_list[idx]["effect"],'
+        ),
+        replacement=(
+            "            trait_id=t,\n"
+            "            trait_name=TABLE_1_TRAITS.get(t, t),\n"
+            '            primary_stat=stats_list[idx]["effect"],'
+        ),
         test_file="tests/test_trait_coupling.py",
         test_node="test_coupling_applies_display_trait_label_for_union_and_preserves_raw",
     ),
@@ -109,26 +127,22 @@ MUTANTS: tuple[MutantSpec, ...] = (
         test_node="test_coupling_applies_display_trait_label_for_union_and_preserves_raw",
     ),
     MutantSpec(
-        name="coupling_lco_use_raw_table1_traits",
+        name="coupling_report_drop_columns_path_resolution",
         rel_path="src/mtp/coupling.py",
-        target=(
-            "cluster_dropped=cluster_label,\n"
-            "                    trait_id=t,\n"
-            "                    trait_name=resolved_names.get(t, t),"
-        ),
-        replacement=(
-            "cluster_dropped=cluster_label,\n"
-            "                    trait_id=t,\n"
-            "                    trait_name=TABLE_1_TRAITS.get(t, t),"
-        ),
+        target="        corpus_metrics=corpus_metrics,\n        columns_path=columns_path,",
+        replacement="        corpus_metrics=corpus_metrics,\n        columns_path=None,",
         test_file="tests/test_trait_coupling.py",
         test_node="test_coupling_applies_display_trait_label_for_union_and_preserves_raw",
     ),
     MutantSpec(
-        name="coupling_audit_drop_columns_path_resolution",
+        name="coupling_recorded_lco_leak_display_names",
         rel_path="src/mtp/coupling.py",
-        target="trait_names = resolve_table1_trait_names(columns_path)",
-        replacement="trait_names = dict(TABLE_1_TRAITS)",
+        target="        focal_traits=t1_keys,\n        cluster_to_drop=CANONICAL_LCO_CLUSTER,",
+        replacement=(
+            "        focal_traits=t1_keys,\n"
+            "        cluster_to_drop=CANONICAL_LCO_CLUSTER,\n"
+            "        columns_path=columns_path,"
+        ),
         test_file="tests/test_trait_coupling.py",
         test_node="test_coupling_applies_display_trait_label_for_union_and_preserves_raw",
     ),
@@ -136,13 +150,13 @@ MUTANTS: tuple[MutantSpec, ...] = (
 
 
 class _AssertionCapturePlugin:
-    """Capture failed test reports and exception types from in-process pytest."""
+    """Capture failed test reports, phases, and exception types from in-process pytest."""
 
     def __init__(self) -> None:
-        self.failures: list[tuple[str, str]] = []
+        self.failures: list[tuple[str, str, str]] = []
 
     def pytest_runtest_logreport(self, report: pytest.TestReport) -> None:
-        if report.when == "call" and report.failed:
+        if report.failed:
             exc_name = "UnknownFailure"
             if report.longrepr is not None and hasattr(report.longrepr, "reprcrash"):
                 reprcrash = getattr(report.longrepr, "reprcrash", None)
@@ -152,7 +166,11 @@ class _AssertionCapturePlugin:
                         exc_name = "AssertionError"
                     else:
                         exc_name = msg.split(":", 1)[0].strip()
-            self.failures.append((report.nodeid, exc_name))
+            self.failures.append((report.nodeid, report.when, exc_name))
+
+    def pytest_collectreport(self, report: pytest.CollectReport) -> None:
+        if report.failed:
+            self.failures.append((str(report.nodeid), "collect", "CollectFailure"))
 
 
 def _sha256_map(root: Path) -> dict[str, str]:
@@ -183,7 +201,7 @@ def _purge_loaded_modules() -> None:
 
 def _run_pytest_in_scratch(
     scratch_root: Path, test_file: str, test_node: str
-) -> tuple[int, list[tuple[str, str]]]:
+) -> tuple[int, list[tuple[str, str, str]]]:
     plugin = _AssertionCapturePlugin()
     old_sys_path = list(sys.path)
     sys.path.insert(0, str(scratch_root / "src"))
@@ -218,81 +236,89 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     before_digests = _sha256_map(REPO_ROOT)
+    for spec in MUTANTS:
+        source_text = (REPO_ROOT / spec.rel_path).read_text(encoding="utf-8")
+        occurrences = source_text.count(spec.target)
+        if occurrences != 1:
+            raise RuntimeError(
+                f"Preflight failed: mutant {spec.name} target count={occurrences} "
+                f"in {spec.rel_path}"
+            )
+
+    selected_controls = tuple(dict.fromkeys((spec.test_file, spec.test_node) for spec in MUTANTS))
     results: list[dict[str, object]] = []
 
-    with ExitStack() as stack:
-        if args.scratch_dir is not None:
-            args.scratch_dir.mkdir(parents=True, exist_ok=True)
-            base_dir = Path(
-                stack.enter_context(
-                    tempfile.TemporaryDirectory(
-                        prefix="verify_1250_mutants_", dir=str(args.scratch_dir)
+    try:
+        with ExitStack() as stack:
+            if args.scratch_dir is not None:
+                args.scratch_dir.mkdir(parents=True, exist_ok=True)
+                base_dir = Path(
+                    stack.enter_context(
+                        tempfile.TemporaryDirectory(
+                            prefix="verify_1250_mutants_", dir=str(args.scratch_dir)
+                        )
                     )
                 )
-            )
-        else:
-            base_dir = Path(
-                stack.enter_context(tempfile.TemporaryDirectory(prefix="verify_1250_mutants_"))
-            )
-
-        control_dir = base_dir / "control"
-        _prepare_scratch_tree(control_dir)
-        for test_file, test_node in (
-            (
-                "tests/test_ontology_audit.py",
-                "test_build_redundant_pairs_table_applies_display_trait_label",
-            ),
-            (
-                "tests/test_trait_coupling.py",
-                "test_coupling_applies_display_trait_label_for_union_and_preserves_raw",
-            ),
-        ):
-            control_code, control_failures = _run_pytest_in_scratch(
-                control_dir, test_file, test_node
-            )
-            if control_code != 0 or control_failures:
-                raise RuntimeError(
-                    f"Unmutated control failed in scratch copy ({test_node}): "
-                    f"code={control_code}, failures={control_failures}"
+            else:
+                base_dir = Path(
+                    stack.enter_context(tempfile.TemporaryDirectory(prefix="verify_1250_mutants_"))
                 )
 
-        for spec in MUTANTS:
-            mutant_dir = base_dir / spec.name
-            _prepare_scratch_tree(mutant_dir)
-            target_file = mutant_dir / spec.rel_path
-            original_text = target_file.read_text(encoding="utf-8")
-            if spec.target not in original_text:
-                raise RuntimeError(f"Mutant {spec.name} target not found in {spec.rel_path}")
-            mutated_text = original_text.replace(spec.target, spec.replacement, 1)
-            if mutated_text == original_text:
-                raise RuntimeError(f"Mutant {spec.name} produced no change in {spec.rel_path}")
-            target_file.write_text(mutated_text, encoding="utf-8")
-
-            code, failures = _run_pytest_in_scratch(mutant_dir, spec.test_file, spec.test_node)
-            assertion_killed = code != 0 and any(
-                exc_type == "AssertionError" for _, exc_type in failures
-            )
-            if not assertion_killed:
-                raise RuntimeError(
-                    f"Mutant {spec.name} was not killed by AssertionError: "
-                    f"code={code}, failures={failures}"
+            control_dir = base_dir / "control"
+            _prepare_scratch_tree(control_dir)
+            for test_file, test_node in selected_controls:
+                control_code, control_failures = _run_pytest_in_scratch(
+                    control_dir, test_file, test_node
                 )
-            results.append(
-                {
-                    "mutant": spec.name,
-                    "rel_path": spec.rel_path,
-                    "test_node": spec.test_node,
-                    "exit_code": code,
-                    "failures": failures,
-                    "killed_by_assertion": assertion_killed,
-                }
-            )
+                if control_code != 0 or control_failures:
+                    raise RuntimeError(
+                        f"Unmutated control failed in scratch copy ({test_node}): "
+                        f"code={control_code}, failures={control_failures}"
+                    )
 
-    after_digests = _sha256_map(REPO_ROOT)
-    if before_digests != after_digests:
-        raise RuntimeError(
-            f"Canonical digests changed during mutation run: {before_digests} != {after_digests}"
-        )
+            for spec in MUTANTS:
+                mutant_dir = base_dir / spec.name
+                _prepare_scratch_tree(mutant_dir)
+                target_file = mutant_dir / spec.rel_path
+                original_text = target_file.read_text(encoding="utf-8")
+                if original_text.count(spec.target) != 1:
+                    raise RuntimeError(f"Mutant {spec.name} target not unique in {spec.rel_path}")
+                mutated_text = original_text.replace(spec.target, spec.replacement, 1)
+                if mutated_text == original_text:
+                    raise RuntimeError(f"Mutant {spec.name} produced no change in {spec.rel_path}")
+                target_file.write_text(mutated_text, encoding="utf-8")
+
+                code, failures = _run_pytest_in_scratch(mutant_dir, spec.test_file, spec.test_node)
+                assertion_killed = (
+                    code == int(pytest.ExitCode.TESTS_FAILED)
+                    and bool(failures)
+                    and all(
+                        when == "call" and exc_type == "AssertionError"
+                        for _, when, exc_type in failures
+                    )
+                )
+                if not assertion_killed:
+                    raise RuntimeError(
+                        f"Mutant {spec.name} was not cleanly killed by call-phase AssertionError: "
+                        f"code={code}, failures={failures}"
+                    )
+                results.append(
+                    {
+                        "mutant": spec.name,
+                        "rel_path": spec.rel_path,
+                        "test_node": spec.test_node,
+                        "exit_code": code,
+                        "failures": failures,
+                        "killed_by_assertion": assertion_killed,
+                    }
+                )
+    finally:
+        after_digests = _sha256_map(REPO_ROOT)
+        if before_digests != after_digests:
+            raise RuntimeError(
+                f"Canonical digests changed during mutation run: "
+                f"{before_digests} != {after_digests}"
+            )
 
     summary = {
         "issue": 1250,

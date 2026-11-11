@@ -120,7 +120,7 @@ class DecisionRuleResult:
     min_adjacent_pair: tuple[str, str] = ("", "")
 
 
-def resolve_table1_trait_names(
+def _resolve_table1_trait_names(
     columns_path: Path | None = None,
     trait_names: Mapping[str, str] | None = None,
 ) -> dict[str, str]:
@@ -164,7 +164,7 @@ def compute_composition_arm(
     Returned q_value is a focal-set Benjamini-Hochberg adjustment over focal_traits
     (m = len(focal_traits), a sensitivity check distinct from full-family Table 1 q-values).
     """
-    resolved_names = resolve_table1_trait_names(columns_path=columns_path, trait_names=trait_names)
+    resolved_names = _resolve_table1_trait_names(columns_path=columns_path, trait_names=trait_names)
     counts_all = profiles_df[trait_universe].values.astype(float)
     totals = counts_all.sum(axis=1)
     denom = np.where(totals > 0, totals, 1.0)
@@ -245,7 +245,7 @@ def compute_directional_arm(
     Returned q_value is a focal-set Benjamini-Hochberg adjustment over focal_traits
     (m = len(focal_traits), a sensitivity check distinct from full-family Table 1 q-values).
     """
-    resolved_names = resolve_table1_trait_names(columns_path=columns_path, trait_names=trait_names)
+    resolved_names = _resolve_table1_trait_names(columns_path=columns_path, trait_names=trait_names)
     counts_all = profiles_df[trait_universe].values.astype(float)
     totals = counts_all.sum(axis=1)
     denom = np.where(totals > 0, totals, 1.0)
@@ -316,7 +316,7 @@ def compute_ora_arm(
     Fisher's combined test evaluates global significance, with focal-set BH q_value
     computed over focal_traits (m = len(focal_traits)).
     """
-    resolved_names = resolve_table1_trait_names(columns_path=columns_path, trait_names=trait_names)
+    resolved_names = _resolve_table1_trait_names(columns_path=columns_path, trait_names=trait_names)
     counts_universe = paired_profiles_df[trait_universe].values.astype(int)
     M = int(counts_universe.sum())
     N_arr = counts_universe.sum(axis=1)
@@ -398,7 +398,7 @@ def evaluate_loto(
     Returns:
         tuple of (list of LOTORow, dict mapping arm to delta_matrix DataFrame)
     """
-    resolved_names = resolve_table1_trait_names(columns_path=columns_path, trait_names=trait_names)
+    resolved_names = _resolve_table1_trait_names(columns_path=columns_path, trait_names=trait_names)
     base_comp = compute_composition_arm(
         profiles_df, trait_universe, focal_traits, trait_names=resolved_names
     )
@@ -501,7 +501,7 @@ def evaluate_lco(
     Note (#478): base_q uses a focal-set BH family of size m = len(focal_traits),
     whereas lco_q uses the reduced focal family of size len(lco_focal).
     """
-    resolved_names = resolve_table1_trait_names(columns_path=columns_path, trait_names=trait_names)
+    resolved_names = _resolve_table1_trait_names(columns_path=columns_path, trait_names=trait_names)
     cluster_ids = set(cluster_to_drop.keys())
     cluster_label = " + ".join(cluster_to_drop.values())
 
@@ -574,7 +574,7 @@ def evaluate_decision_rule(
     Passing this criterion describes only the evaluated target after the specified
     removal; it does not establish stability of other traits or removals.
     """
-    resolved_names = resolve_table1_trait_names(columns_path=columns_path, trait_names=trait_names)
+    resolved_names = _resolve_table1_trait_names(columns_path=columns_path, trait_names=trait_names)
     target_name = resolved_names.get(target_trait_id, target_trait_id)
     dropped_name = resolved_names.get(dropped_trait_id, dropped_trait_id)
 
@@ -632,8 +632,21 @@ def build_coupling_report_text(
     code_commit: str = "",
     loto_rows: list[LOTORow] | None = None,
     corpus_metrics: dict[str, float | int] | None = None,
+    *,
+    columns_path: Path | None = None,
+    trait_names: Mapping[str, str] | None = None,
 ) -> str:
     """Format comprehensive text report for trait coupling audit."""
+    display_names = _resolve_table1_trait_names(columns_path=columns_path, trait_names=trait_names)
+    raw_to_display = {
+        raw_label: display_names.get(trait_id, raw_label)
+        for trait_id, raw_label in TABLE_1_TRAITS.items()
+    }
+    if not delta_eff_mat.empty:
+        delta_eff_mat = delta_eff_mat.rename(index=raw_to_display, columns=raw_to_display)
+    if not delta_q_mat.empty:
+        delta_q_mat = delta_q_mat.rename(index=raw_to_display, columns=raw_to_display)
+
     base_m = delta_eff_mat.shape[0] if not delta_eff_mat.empty else len(TABLE_1_TRAITS)
     loto_m = max(base_m - 1, 1)
     lco_traits = {r.trait_id for r in lco_rows}
@@ -665,11 +678,15 @@ def build_coupling_report_text(
     ]
     max_ora_delta = max(ora_deltas, default=0.0)
 
-    pair_suffix = (
-        f" (between {rule_result.min_adjacent_pair[0]} and {rule_result.min_adjacent_pair[1]})"
-        if rule_result.min_adjacent_pair[0] and rule_result.min_adjacent_pair[1]
-        else ""
-    )
+    p0 = raw_to_display.get(rule_result.min_adjacent_pair[0], rule_result.min_adjacent_pair[0])
+    p1 = raw_to_display.get(rule_result.min_adjacent_pair[1], rule_result.min_adjacent_pair[1])
+    pair_suffix = f" (between {p0} and {p1})" if p0 and p1 else ""
+    rule_verdict = rule_result.verdict
+    rule_reverse_verdict = rule_result_reverse.verdict
+    for raw_label, display_label in raw_to_display.items():
+        if raw_label != display_label:
+            rule_verdict = rule_verdict.replace(raw_label, display_label)
+            rule_reverse_verdict = rule_reverse_verdict.replace(raw_label, display_label)
 
     if corpus_metrics is not None:
         n_cols_val = int(corpus_metrics.get("n_traits", base_m))
@@ -737,8 +754,11 @@ def build_coupling_report_text(
     )
 
     for row in lco_rows:
+        row_display_name = display_names.get(
+            row.trait_id, raw_to_display.get(row.trait_name, row.trait_name)
+        )
         lines.append(
-            f"{row.arm:<14} | {row.trait_name:<28} | {row.base_stat:+10.4f} | "
+            f"{row.arm:<14} | {row_display_name:<28} | {row.base_stat:+10.4f} | "
             f"{row.lco_stat:+10.4f} | {row.delta_stat:+11.6f} | "
             f"{row.base_q:9.2e} | {row.lco_q:9.2e}"
         )
@@ -762,12 +782,12 @@ def build_coupling_report_text(
             "Direct Test (Drop Sphere -> Coccus Effect Shift):",
             f"  Delta effect(coccus):            {rule_result.delta_effect:+.6f}",
             f"  |Delta effect|:                  {rule_result.abs_delta_effect:.6f}",
-            f"  Criterion verdict:               {rule_result.verdict}",
+            f"  Criterion verdict:               {rule_verdict}",
             "",
             "Reverse Test (Drop Coccus -> Sphere Effect Shift):",
             f"  Delta effect(sphere):            {rule_result_reverse.delta_effect:+.6f}",
             f"  |Delta effect|:                  {rule_result_reverse.abs_delta_effect:.6f}",
-            f"  Criterion verdict:               {rule_result_reverse.verdict}",
+            f"  Criterion verdict:               {rule_reverse_verdict}",
             "",
             "5. SENSITIVITY SUMMARY:",
             "-" * 80,
@@ -827,7 +847,6 @@ def run_coupling_audit(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     profiles_df, valid_cols = load_non_media_profile_matrix(profiles_path, columns_path)
-    trait_names = resolve_table1_trait_names(columns_path)
     t1_keys = list(TABLE_1_TRAITS.keys())
 
     # Filter to paired experiments for paired and ORA evaluations
@@ -841,8 +860,8 @@ def run_coupling_audit(
     ]
     sub_paired_df = profiles_df[paired_mask].copy()
 
-    # 1. Baseline evaluations
-    base_comp = compute_composition_arm(profiles_df, valid_cols, t1_keys, trait_names=trait_names)
+    # 1. Baseline evaluations (recorded objects preserve KG labels per #1250)
+    base_comp = compute_composition_arm(profiles_df, valid_cols, t1_keys)
 
     # 2. LOTO evaluation
     loto_rows, delta_matrices = evaluate_loto(
@@ -850,7 +869,6 @@ def run_coupling_audit(
         paired_profiles_df=sub_paired_df,
         trait_universe=valid_cols,
         focal_traits=t1_keys,
-        trait_names=trait_names,
     )
 
     # 3. LCO evaluation
@@ -860,7 +878,6 @@ def run_coupling_audit(
         trait_universe=valid_cols,
         focal_traits=t1_keys,
         cluster_to_drop=CANONICAL_LCO_CLUSTER,
-        trait_names=trait_names,
     )
 
     # 4. Decision rule evaluation
@@ -869,14 +886,12 @@ def run_coupling_audit(
         comp_delta_eff_matrix=delta_matrices["composition_delta_effect"],
         target_trait_id=COCCUS_ID,
         dropped_trait_id=SPHERE_ID,
-        trait_names=trait_names,
     )
     rule_result_rev = evaluate_decision_rule(
         base_comp=base_comp,
         comp_delta_eff_matrix=delta_matrices["composition_delta_effect"],
         target_trait_id=SPHERE_ID,
         dropped_trait_id=COCCUS_ID,
-        trait_names=trait_names,
     )
 
     # Compute dynamic corpus metrics for report prose (#479)
@@ -927,6 +942,7 @@ def run_coupling_audit(
         code_commit=code_commit,
         loto_rows=loto_rows,
         corpus_metrics=corpus_metrics,
+        columns_path=columns_path,
     )
     report_txt_path.write_text(report_text, encoding="utf-8")
 

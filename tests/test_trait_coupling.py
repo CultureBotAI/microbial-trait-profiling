@@ -872,9 +872,9 @@ def test_coupling_applies_display_trait_label_for_union_and_preserves_raw(
     raw_columns_path = tmp_path / "raw_taxa_trait_matrix_columns.tsv"
     raw_cols_df.to_csv(raw_columns_path, sep="\t", index=False)
 
-    union_names = coupling.resolve_table1_trait_names(union_columns_path)
-    raw_names = coupling.resolve_table1_trait_names(raw_columns_path)
-    default_names = coupling.resolve_table1_trait_names(None)
+    union_names = coupling._resolve_table1_trait_names(union_columns_path)
+    raw_names = coupling._resolve_table1_trait_names(raw_columns_path)
+    default_names = coupling._resolve_table1_trait_names(None)
     assert union_names["METPO:1000608"] == "facultative (aerobe or anaerobe)"
     assert raw_names["METPO:1000608"] == "facultatively aerobic"
     assert default_names["METPO:1000608"] == "facultatively aerobic"
@@ -959,10 +959,14 @@ def test_coupling_applies_display_trait_label_for_union_and_preserves_raw(
         output_dir=out_union,
         code_commit="union_commit",
     )
-    for out_key in ("loto_tsv", "lco_tsv", "report_txt"):
+    # Recorded TSVs keep raw KG labels (#1250); human-facing report uses display label.
+    for out_key in ("loto_tsv", "lco_tsv"):
         content = Path(res_union[out_key]).read_text(encoding="utf-8")
-        assert "facultative (aerobe or anaerobe)" in content
-        assert "facultatively aerobic" not in content
+        assert "facultatively aerobic" in content
+        assert "facultative (aerobe or anaerobe)" not in content
+    union_report = Path(res_union["report_txt"]).read_text(encoding="utf-8")
+    assert "facultative (aerobe or anaerobe)" in union_report
+    assert "facultatively aerobic" not in union_report
 
     out_raw = tmp_path / "audit_raw"
     res_raw = run_coupling_audit(
@@ -975,3 +979,9 @@ def test_coupling_applies_display_trait_label_for_union_and_preserves_raw(
         content = Path(res_raw[out_key]).read_text(encoding="utf-8")
         assert "facultatively aerobic" in content
         assert "facultative (aerobe or anaerobe)" not in content
+    assert Path(res_union["loto_tsv"]).read_text(encoding="utf-8") == Path(
+        res_raw["loto_tsv"]
+    ).read_text(encoding="utf-8")
+    assert Path(res_union["lco_tsv"]).read_text(encoding="utf-8") == Path(
+        res_raw["lco_tsv"]
+    ).read_text(encoding="utf-8")
