@@ -2,10 +2,16 @@
 
 from __future__ import annotations
 
+import importlib.util
+import json
+import sys
 from pathlib import Path
+from types import ModuleType
 
 import pytest
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
+VERIFIER_PATH = REPO_ROOT / "scripts" / "adhoc" / "verify_2036_mutants_agy_20261110.py"
 README_PATH = (
     Path(__file__).resolve().parent
     / "fixtures"
@@ -143,3 +149,79 @@ def test_check_historical_sources_readme_scope_rejects_regressions(
     mutated = text.replace(target, replacement, 1)
     with pytest.raises(AssertionError):
         check_historical_sources_readme_scope(mutated)
+
+
+def _load_verifier_module() -> ModuleType:
+    spec = importlib.util.spec_from_file_location("verify_2036_mutants_mod", VERIFIER_PATH)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_verifier_rejects_setup_value_error_mentioning_assertion_error(
+    tmp_path: Path,
+) -> None:
+    """PR #2260 F1: setup ValueError mentioning AssertionError must not count as a kill."""
+    verifier = _load_verifier_module()
+    scratch_case = tmp_path / "f1_setup_value_error"
+    scratch_case.mkdir(parents=True, exist_ok=True)
+    verifier._populate_scratch(scratch_case)
+
+    first_mutant = verifier.MUTANTS[0]
+    readme_target = scratch_case / first_mutant.rel_path
+    readme_text = readme_target.read_text(encoding="utf-8")
+    readme_target.write_text(
+        readme_text.replace(first_mutant.old, first_mutant.new, 1),
+        encoding="utf-8",
+    )
+
+    test_target = scratch_case / verifier.TEST_REL
+    with test_target.open("a", encoding="utf-8") as handle:
+        handle.write(
+            "\n\n@pytest.fixture(autouse=True)\n"
+            "def _injected_setup_failure() -> None:\n"
+            '    if "These\\ntests bind selected" in README_PATH.read_text(encoding="utf-8"):\n'
+            '        raise ValueError("AssertionError: unrelated setup failure before test")\n'
+        )
+
+    result = verifier._run_targeted_pytest(scratch_case, verifier.TARGET_NODEID)
+    assert result.origin_ok is True
+    assert result.setup_outcome == "failed"
+    assert result.call_outcome is None
+    assert result.killed_by_call_assertion is False
+    assert any("setup:ValueError:AssertionError" in entry for entry in result.non_call_exceptions)
+
+
+def test_verifier_persists_verdicts_json_and_requires_scratch_dir(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """PR #2260 F2: --scratch-dir is required and printed evidence path persists on disk."""
+    verifier = _load_verifier_module()
+    with pytest.raises(SystemExit) as exc_info:
+        verifier.main(["--canary"])
+    assert exc_info.value.code == 2
+
+    scratch_dir = tmp_path / "f2_persisted_scratch"
+    rc = verifier.main(["--canary", "--scratch-dir", str(scratch_dir)])
+    captured = capsys.readouterr()
+    assert rc == 0
+    assert "evidence: " in captured.out
+    evidence_dir_str = captured.out.split("evidence: ", 1)[1].splitlines()[0].strip()
+    evidence_dir = Path(evidence_dir_str)
+    assert evidence_dir.is_dir()
+    assert (evidence_dir / "verdicts.json").is_file()
+    assert (scratch_dir / "verdicts.json").is_file()
+    verdicts = json.loads((evidence_dir / "verdicts.json").read_text(encoding="utf-8"))
+    assert len(verdicts) == 2
+    assert verdicts[0]["verdict"] == "CONTROL OK"
+    assert verdicts[0]["call_outcome"] == "passed"
+    assert str(verdicts[0]["detail"]).strip()
+    assert verdicts[1]["verdict"] == "KILLED"
+    assert verdicts[1]["killed"] is True
+    assert verdicts[1]["setup_outcome"] == "passed"
+    assert verdicts[1]["call_outcome"] == "failed"
+    assert verdicts[1]["call_exc_type"] == "AssertionError"
+    assert str(verdicts[1]["detail"]).strip()
