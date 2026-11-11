@@ -403,7 +403,7 @@ def compute_tier12_coverage_and_cascade(
         .dropna()
         .nunique()
     )
-    stool_mask = t12_exp["body_site"].map(validate_stool_body_site)
+    stool_mask = t12_exp["body_site"].map(validate_stool_body_site).astype(bool)
     tier12_stool_studies = int(t12_exp.loc[stool_mask, "study_id"].nunique())
     tier12_stool_experiments = int(stool_mask.sum())
 
