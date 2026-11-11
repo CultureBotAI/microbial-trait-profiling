@@ -67,8 +67,8 @@ def test_summary_preserves_available_cases(
     assert target.read_text() == "source\n"
 
 
-@pytest.mark.parametrize("missing", [True, False])
-def test_revision_errors_are_narrow(monkeypatch: pytest.MonkeyPatch, missing: bool) -> None:
+@pytest.mark.parametrize("mode", ["missing", "git_other", "permission"])
+def test_revision_errors_are_narrow(monkeypatch: pytest.MonkeyPatch, mode: str) -> None:
     probe = load_probe()
 
     class Repository:
@@ -83,8 +83,10 @@ def test_revision_errors_are_narrow(monkeypatch: pytest.MonkeyPatch, missing: bo
             pass
 
         def rev_parse(self, *_args: str) -> None:
-            if missing:
+            if mode == "missing":
                 raise GitCommandError("git rev-parse", 1)
+            if mode == "git_other":
+                raise GitCommandError("git rev-parse", 128)
             raise PermissionError("cannot read object database")
 
     monkeypatch.setattr(probe, "Repo", lambda _root: Repository())
@@ -93,7 +95,12 @@ def test_revision_errors_are_narrow(monkeypatch: pytest.MonkeyPatch, missing: bo
         probe.revision_source("revision")
     except Exception as exc:
         error = exc
-    assert isinstance(error, probe.UnavailableRevision if missing else PermissionError)
+    expected = {
+        "missing": probe.UnavailableRevision,
+        "git_other": GitCommandError,
+        "permission": PermissionError,
+    }[mode]
+    assert isinstance(error, expected)
 
 
 def test_real_missing_revision() -> None:

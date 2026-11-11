@@ -29,9 +29,9 @@ def check(root: Path) -> None:
         case.mkdir()
         with pytest.MonkeyPatch.context() as patch:
             checks.test_summary_preserves_available_cases(case, patch, missing)
-    for missing_error in (True, False):
+    for mode in ("missing", "git_other", "permission"):
         with pytest.MonkeyPatch.context() as patch:
-            checks.test_revision_errors_are_narrow(patch, missing_error)
+            checks.test_revision_errors_are_narrow(patch, mode)
 
 
 def main() -> None:
@@ -49,6 +49,7 @@ def main() -> None:
         ("for case in args.cases or CASES]", "for case in (args.cases or CASES)[:1]]"),
         ('"selected": 0', '"selected": 1'),
         ("except GitCommandError as exc:", "except PermissionError as exc:"),
+        ("if exc.status == 1:", "if True:"),
         ('"revision": str(exc)', '"revision": "wrong"'),
     ]
     if args.canary:
