@@ -14,6 +14,32 @@ from matplotlib.patches import Patch
 from scipy import stats
 
 from mtp.composition_denominators import load_retained_profiles, trait_fractions
+from mtp.trait_key_policy import FACULTATIVE_RAW_LABEL, FACULTATIVE_UNION_LABEL
+
+
+def resolve_facultative_display_label(policy: str = "phenotype") -> str:
+    """Resolve the declared display policy; historical raw mode must be explicit."""
+    if policy in {"phenotype", "facultative_union_v1"}:
+        return FACULTATIVE_UNION_LABEL
+    if policy in {"off", "raw_object_v1"}:
+        return FACULTATIVE_RAW_LABEL
+    raise ValueError(f"Unknown facultative label policy: {policy}")
+
+
+def normalize_facultative_labels(frame: pd.DataFrame, policy: str = "phenotype") -> pd.DataFrame:
+    """Accept either recorded label without changing trait IDs, values or guild membership."""
+    label = resolve_facultative_display_label(policy)
+    result = frame.copy()
+    for column in ("trait", "trait_label", "object_name"):
+        if column in result:
+            result[column] = result[column].replace(
+                {
+                    FACULTATIVE_RAW_LABEL: label,
+                    FACULTATIVE_UNION_LABEL: label,
+                }
+            )
+    return result
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VIS_DIR = REPO_ROOT / "trait-visualization"
@@ -49,7 +75,8 @@ SLATE_500 = "#64748b"
 SLATE_700 = "#334155"
 SLATE_900 = "#0f172a"
 TRAIT_COLORS = {
-    "facultatively aerobic": "#0072b2",
+    FACULTATIVE_RAW_LABEL: "#0072b2",
+    FACULTATIVE_UNION_LABEL: "#0072b2",
     "cellulose catabolic process": CELLULOSE_COLOR,
     "coccus shaped": "#009e73",
     "sphere shaped": "#cc79a7",
@@ -58,9 +85,9 @@ TRAIT_COLORS = {
 }
 
 
-def read_tsv(path: Path, **kwargs: object) -> pd.DataFrame:
+def read_tsv(path: Path, *, policy: str = "phenotype", **kwargs: object) -> pd.DataFrame:
     """Read a local TSV file."""
-    return pd.read_csv(path, sep="\t", **kwargs)
+    return normalize_facultative_labels(pd.read_csv(path, sep="\t", **kwargs), policy)
 
 
 def clean_text(value: object) -> str:
@@ -783,9 +810,10 @@ def plot_pd_trait_lollipop(summary: pd.DataFrame, output_path: Path) -> None:
 def plot_cytoscape_highlight(pd_display: pd.DataFrame, output_path: Path) -> None:
     """Plot focused Cytoscape-style PD-to-trait-to-feces highlights."""
     frame = pd_display[pd_display["body_site"].eq(FECES)].copy()
+    frame = normalize_facultative_labels(frame)
     directions = ["increased", "decreased"]
     trait_order = [
-        "facultatively aerobic",
+        resolve_facultative_display_label(),
         "cellulose catabolic process",
         "coccus shaped",
         "sphere shaped",
