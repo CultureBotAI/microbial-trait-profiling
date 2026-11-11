@@ -27,16 +27,11 @@ identified after the fact.
 
 from __future__ import annotations
 
-import argparse
 import hashlib
 import json
 import os
 import re
-import shutil
-import tarfile
-import tempfile
 import time
-from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path, PurePosixPath
 from typing import Any
@@ -380,6 +375,8 @@ def _validate_release_tag(tag: str | None) -> str | None:
 
 
 def _fetch_release_archive(dest_dir: Path, *, tag: str | None, repo: str) -> Path:
+    import shutil
+
     gh_bin = shutil.which("gh")
     if not gh_bin:
         raise SourceResolutionError(
@@ -428,6 +425,8 @@ def _infer_release_tag(archive_name: str, requested_tag: str | None) -> str:
 
 
 def _read_release_archive_members(archive_path: Path) -> dict[str, bytes]:
+    import tarfile
+
     expected_set = set(RELEASE_EXPECTED_CSVS)
     ignorable_set = {PROVENANCE_FILE, ".gitkeep"}
     extracted: dict[str, bytes] = {}
@@ -501,6 +500,7 @@ def download_from_release(
     validated_repo = _validate_release_repo(repo)
     resolved_tag = _validate_release_tag(tag)
     target_dir = output_dir if output_dir is not None else RAW_DATA_DIR
+    import tempfile
 
     with tempfile.TemporaryDirectory(prefix="mtp-release-download-") as tmp_str:
         tmp_dir = Path(tmp_str)
@@ -581,8 +581,10 @@ def download_from_release(
     return written_paths
 
 
-def build_parser() -> argparse.ArgumentParser:
+def build_parser() -> Any:
     """Create CLI argument parser for ``python -m mtp.download`` (#92)."""
+    import argparse
+
     parser = argparse.ArgumentParser(
         prog="python -m mtp.download",
         description="Download BugSigDB CSV exports or restore them from a GitHub release tarball.",
@@ -619,7 +621,7 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv: Sequence[str] | None = None) -> int:
+def main(argv: list[str] | tuple[str, ...] | None = None) -> int:
     """CLI entry point for ``python -m mtp.download``."""
     parser = build_parser()
     args = parser.parse_args(list(argv) if argv is not None else None)
