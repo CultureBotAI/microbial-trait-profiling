@@ -12,8 +12,8 @@ TEST = Path("tests/test_enrichment_followup_readme_525.py")
 
 def main() -> None:
     spec = importlib.util.spec_from_file_location("readme_checks", ROOT / TEST)
-    assert spec is not None
-    assert spec.loader is not None
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Could not load module spec for {ROOT / TEST}")
     checks = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(checks)
     script = checks.SCRIPT
@@ -46,7 +46,8 @@ def main() -> None:
                     path, before, after = mutants[index - 1]
                     target = root / path
                     source = target.read_text()
-                    assert before in source
+                    if before not in source:
+                        raise RuntimeError(f"Expected substring not found in {target}: {before!r}")
                     target.write_text(source.replace(before, after, 1))
                     try:
                         checks.check_reports(root, root)
@@ -58,7 +59,8 @@ def main() -> None:
                     checks.check_reports(root, root)
     finally:
         for path, content in originals.items():
-            assert (ROOT / path).read_bytes() == content
+            if (ROOT / path).read_bytes() != content:
+                raise RuntimeError(f"Worktree file modified during verification: {path}")
     print("8/8 killed; worktree targets byte-identical")
 
 
