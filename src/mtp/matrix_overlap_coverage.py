@@ -28,6 +28,15 @@ from typing import Any
 
 import pandas as pd
 
+from mtp.delta_z_derived.tables import (
+    STOOL_BODY_SITE as STOOL_BODY_SITE,
+)
+from mtp.delta_z_derived.tables import (
+    is_stool_body_site as is_stool_body_site,
+)
+from mtp.delta_z_derived.tables import (
+    validate_stool_body_site as validate_stool_body_site,
+)
 from mtp.human_host_corpus import (
     CORPUS_SEQUENCING_TYPES,
     HUMAN_HOST_SPECIES,
@@ -394,7 +403,7 @@ def compute_tier12_coverage_and_cascade(
         .dropna()
         .nunique()
     )
-    stool_mask = t12_exp["body_site"].eq("Feces")
+    stool_mask = t12_exp["body_site"].map(validate_stool_body_site)
     tier12_stool_studies = int(t12_exp.loc[stool_mask, "study_id"].nunique())
     tier12_stool_experiments = int(stool_mask.sum())
 
@@ -569,7 +578,7 @@ def _is_parkinsons_stool_row(
     else:
         cond_tokens = [part.strip().lower() for part in str(condition).split(",") if part.strip()]
         has_pd = any(tok == "parkinson's disease" for tok in cond_tokens)
-    is_feces = isinstance(body_site, str) and body_site == "Feces"
+    is_feces = validate_stool_body_site(body_site)
     return has_pd and is_feces
 
 

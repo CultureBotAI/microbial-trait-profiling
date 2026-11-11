@@ -83,6 +83,13 @@ biological antagonism or coordinated physiological activity. See the
 Report these quantities for all supplied comparisons and for stool. Stool is
 the exact condition `experiments.body_site == "Feces"`; it is not inferred
 from `body_site_category`, a case-insensitive alias, or a condition name.
+Across `mtp.delta_z_derived.tables`, `mtp.cellulose_decr.analysis`,
+`mtp.matrix_overlap_coverage`, and `mtp.density_adjustment`, stool membership
+is defined by one shared literal predicate (`is_stool_body_site`, returning
+`True` only for `"Feces"`), with `validate_stool_body_site` refusing case or
+whitespace variants such as `"feces"` or `" Feces "` with a `ValueError` so
+non-canonical stool spellings are neither silently accepted nor silently folded
+into non-stool strata (#1157).
 The output includes both distinct study and comparison counts. A sign test
 with no discordant pairs and a correlation with a constant or insufficient
 vector have explicit untestable status and missing inferential values.
