@@ -69,6 +69,19 @@ def _saved_image_suffixes(tree: ast.Module) -> set[str]:
         name = iterable.id
         iterable = _assigned_expression(name, save.body)
         if iterable is None:
+            param_names = {
+                arg.arg
+                for arg in (
+                    *save.args.posonlyargs,
+                    *save.args.args,
+                    *save.args.kwonlyargs,
+                )
+            }
+            if save.args.vararg is not None:
+                param_names.add(save.args.vararg.arg)
+            if save.args.kwarg is not None:
+                param_names.add(save.args.kwarg.arg)
+            assert name not in param_names, f"Parameter shadows suffix binding: {name}"
             iterable = _assigned_expression(name, tree.body)
     assert isinstance(iterable, ast.Tuple | ast.List)
     suffixes = []
@@ -690,6 +703,7 @@ def test_no_rejected_family_or_run_name_is_rendered(
         "module-table",
         "rename-local",
         "suffix",
+        "save-three-args",
         "save-optional-dpi",
         "module-suffixes",
         "local-suffixes",
@@ -739,6 +753,8 @@ def main():
         if change == "module-table":
             main.body.remove(table)
             tree.body.insert(tree.body.index(main), table)
+    elif change == "save-three-args":
+        save.args.args = save.args.args[:3]
     elif change == "save-optional-dpi":
         save.args.args.append(ast.arg(arg="dpi", annotation=ast.Name(id="int", ctx=ast.Load())))
         save.args.defaults.append(ast.Name(id="PNG_DPI", ctx=ast.Load()))
@@ -778,7 +794,13 @@ def main():
 
 @pytest.mark.parametrize(
     "invalid",
-    ["two-args", "unbound-suffixes", "non-sequence-suffixes", "duplicate-suffixes"],
+    [
+        "two-args",
+        "unbound-suffixes",
+        "non-sequence-suffixes",
+        "duplicate-suffixes",
+        "shadowed-parameter-suffixes",
+    ],
 )
 def test_route_guard_refuses_underarity_save_or_invalid_suffix_binding(invalid: str) -> None:
     if invalid == "two-args":
@@ -802,6 +824,14 @@ def save(fig, directory, stem, book):
 FIGURE_SUFFIXES = ".svg"
 def save(fig, directory, stem, book):
     paths = [directory / f"{stem}{suffix}" for suffix in FIGURE_SUFFIXES]
+    fig.savefig(paths[0])
+    return paths
+"""
+    elif invalid == "shadowed-parameter-suffixes":
+        source = """
+suffixes = (".svg",)
+def save(fig, directory, stem, book=None, suffixes=(".png",)):
+    paths = [directory / f"{stem}{suffix}" for suffix in suffixes]
     fig.savefig(paths[0])
     return paths
 """

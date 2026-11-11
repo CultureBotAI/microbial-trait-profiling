@@ -89,6 +89,13 @@ def mutations() -> dict[str, tuple[str, str, str, str, str]]:
             f"{tracks}[save-optional-dpi]",
             "assert len(args) == 4",
         ),
+        "require_at_least_four_args": (
+            TEST,
+            "    assert len(args) >= 3",
+            "    assert len(args) >= 4",
+            f"{tracks}[save-three-args]",
+            "assert len(args) >= 4",
+        ),
         "allow_two_save_args": (
             TEST,
             "    assert len(args) >= 3",
@@ -116,6 +123,16 @@ def mutations() -> dict[str, tuple[str, str, str, str, str]]:
             "            iterable = None",
             f"{tracks}[module-suffixes]",
             "assert isinstance(iterable, ast.Tuple | ast.List)",
+        ),
+        "allow_parameter_shadowed_suffixes": (
+            TEST,
+            (
+                "            assert name not in param_names, "
+                'f"Parameter shadows suffix binding: {name}"'
+            ),
+            "            assert True",
+            f"{refuses}[shadowed-parameter-suffixes]",
+            'raise AssertionError(f"Route guard accepted invalid save AST: {invalid}")',
         ),
         "allow_ambiguous_suffix_binding": (
             TEST,
