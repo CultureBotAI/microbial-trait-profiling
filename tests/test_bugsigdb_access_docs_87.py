@@ -114,8 +114,10 @@ def check_docs(root: Path) -> None:
     assert "#62" in methods
     for evidence in (
         "oldid=259555",
-        "5815c2638d6b56134ac8db19edc2bb3c4b17f1ca",
-        "2523676c1bb667e524dad5a8b76bc0a97bbb4bbf",
+        "BugSigDBExports/blob/5815c2638d6b",
+        "b3c4b17f1ca",
+        "BugSigDBExports/blob/2523676c1bb6",
+        "b76bc0a97bbb4bbf",
         "api/records/10627578",
     ):
         assert evidence in methods
