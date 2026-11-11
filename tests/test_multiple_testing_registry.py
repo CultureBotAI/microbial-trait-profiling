@@ -99,6 +99,50 @@ PRIMITIVES = {
 NAMED_WRAPPERS = {"mtp.taxon_influence.adjust", "mtp.log_ratio_sensitivity.correct"}
 HELPER_NAME = re.compile(r"(?:^|_)(?:bh|by|fdr|benjamini)(?:_|$)")
 PROCEDURES = {"bh": "BH", "by": "BY", "fdr_bh": "BH", "fdr_by": "BY"}
+IN_SCOPE_SOURCE_DIRS = ("src", "scripts")
+OUT_OF_SCOPE_SOURCE_DIRS = ("tests", "tools", "methods", "docs", "data", "schema")
+STRUCTURAL_CORRECTION_SEED = "<structural_correction>"
+PARTIAL_PROC_PREFIX = "<proc:"
+P_VALUE_IDENTIFIERS = {
+    "p",
+    "pval",
+    "p_val",
+    "p_value",
+    "pvals",
+    "p_values",
+    "raw_p",
+    "p_vec",
+    "p_array",
+    "probabilities",
+    "probs",
+}
+EXPLICIT_P_VALUE_IDENTIFIERS = {
+    "pval",
+    "p_val",
+    "p_value",
+    "pvals",
+    "p_values",
+    "raw_p",
+}
+COUNT_IDENTIFIERS = {
+    "m",
+    "n",
+    "k",
+    "size",
+    "n_tests",
+    "num_tests",
+    "family_size",
+    "m_tests",
+    "total_tests",
+}
+EXPLICIT_COUNT_IDENTIFIERS = {
+    "n_tests",
+    "num_tests",
+    "family_size",
+    "m_tests",
+    "total_tests",
+}
+RANK_IDENTIFIERS = {"rank", "ranks", "order", "idx"}
 REQUIRED = {
     "family_id",
     "area",
@@ -121,12 +165,32 @@ def dotted(node: ast.AST, limits: Limits = DEFAULT_LIMITS) -> str:
     """Return a simple qualified expression, without evaluating it."""
     parts: list[str] = []
     count = 0
-    while isinstance(node, ast.Attribute):
-        parts.append(node.attr)
-        count += len(node.attr) + 1
-        if count > limits.name_characters:
-            raise DiscoveryLimitError("qualified name length budget exceeded")
-        node = node.value
+    while True:
+        if isinstance(node, ast.Attribute):
+            parts.append(node.attr)
+            count += len(node.attr) + 1
+            if count > limits.name_characters:
+                raise DiscoveryLimitError("qualified name length budget exceeded")
+            node = node.value
+            continue
+        if (
+            isinstance(node, ast.Call)
+            and len(node.args) >= 2
+            and not node.keywords
+            and isinstance(node.args[1], ast.Constant)
+            and isinstance(node.args[1].value, str)
+            and node.args[1].value
+            and all(part.isidentifier() for part in node.args[1].value.split("."))
+            and dotted(node.func, limits) in {"getattr", "builtins.getattr"}
+        ):
+            for attr in reversed(node.args[1].value.split(".")):
+                parts.append(attr)
+                count += len(attr) + 1
+                if count > limits.name_characters:
+                    raise DiscoveryLimitError("qualified name length budget exceeded")
+            node = node.args[0]
+            continue
+        break
     if isinstance(node, ast.Name):
         parts.append(node.id)
     elif not parts:
@@ -137,6 +201,135 @@ def dotted(node: ast.AST, limits: Limits = DEFAULT_LIMITS) -> str:
     return name
 
 
+def _names_in_expr(expr: ast.AST) -> set[str]:
+    return {child.id.lower() for child in ast.walk(expr) if isinstance(child, ast.Name)}
+
+
+def _has_size_expr(expr: ast.AST, limits: Limits) -> bool:
+    if _names_in_expr(expr) & COUNT_IDENTIFIERS:
+        return True
+    for child in ast.walk(expr):
+        if isinstance(child, ast.Call) and dotted(child.func, limits).rsplit(".", 1)[-1] in {
+            "len",
+            "size",
+        }:
+            return True
+        if isinstance(child, ast.Attribute) and child.attr == "size":
+            return True
+    return False
+
+
+def _has_rank_expr(expr: ast.AST, limits: Limits) -> bool:
+    if _names_in_expr(expr) & RANK_IDENTIFIERS:
+        return True
+    for child in ast.walk(expr):
+        if isinstance(child, ast.Call) and dotted(child.func, limits).rsplit(".", 1)[-1] in {
+            "arange",
+            "range",
+        }:
+            return True
+    return False
+
+
+def _is_unit_constant(expr: ast.AST) -> bool:
+    return isinstance(expr, ast.Constant) and type(expr.value) in {int, float} and expr.value == 1
+
+
+def _is_step_up_formula(node: ast.AST, limits: Limits) -> bool:
+    if (
+        isinstance(node, ast.BinOp)
+        and isinstance(node.op, ast.Div)
+        and isinstance(node.left, ast.BinOp)
+        and isinstance(node.left.op, ast.Mult)
+        and _has_rank_expr(node.right, limits)
+    ):
+        left_mul, right_mul = node.left.left, node.left.right
+        if (
+            bool(_names_in_expr(left_mul) & P_VALUE_IDENTIFIERS)
+            and _has_size_expr(right_mul, limits)
+        ) or (
+            bool(_names_in_expr(right_mul) & P_VALUE_IDENTIFIERS)
+            and _has_size_expr(left_mul, limits)
+        ):
+            return True
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Mult):
+        for p_side, ratio_side in ((node.left, node.right), (node.right, node.left)):
+            if (
+                isinstance(ratio_side, ast.BinOp)
+                and isinstance(ratio_side.op, ast.Div)
+                and bool(_names_in_expr(p_side) & P_VALUE_IDENTIFIERS)
+                and _has_size_expr(ratio_side.left, limits)
+                and _has_rank_expr(ratio_side.right, limits)
+            ):
+                return True
+    return False
+
+
+def _is_p_times_count(expr: ast.AST, limits: Limits, *, clamped: bool) -> bool:
+    if not (isinstance(expr, ast.BinOp) and isinstance(expr.op, ast.Mult)):
+        return False
+    for left, right in ((expr.left, expr.right), (expr.right, expr.left)):
+        left_names = _names_in_expr(left)
+        right_names = _names_in_expr(right)
+        if clamped:
+            if bool(left_names & P_VALUE_IDENTIFIERS) and _has_size_expr(right, limits):
+                return True
+        else:
+            if bool(left_names & EXPLICIT_P_VALUE_IDENTIFIERS) and _has_size_expr(right, limits):
+                return True
+            if bool(left_names & P_VALUE_IDENTIFIERS) and bool(
+                right_names & EXPLICIT_COUNT_IDENTIFIERS
+            ):
+                return True
+    return False
+
+
+def _is_clamped_bonferroni(node: ast.AST, limits: Limits) -> bool:
+    if not isinstance(node, ast.Call):
+        return False
+    leaf = dotted(node.func, limits).rsplit(".", 1)[-1]
+    if leaf not in {"min", "minimum", "clip"}:
+        return False
+    return any(_is_unit_constant(arg) for arg in node.args) and any(
+        _is_p_times_count(arg, limits, clamped=True) for arg in node.args
+    )
+
+
+def _is_sidak_formula(node: ast.AST, limits: Limits) -> bool:
+    if not (
+        isinstance(node, ast.BinOp)
+        and isinstance(node.op, ast.Sub)
+        and _is_unit_constant(node.left)
+        and isinstance(node.right, ast.BinOp)
+        and isinstance(node.right.op, ast.Pow)
+    ):
+        return False
+    base, exponent = node.right.left, node.right.right
+    return (
+        isinstance(base, ast.BinOp)
+        and isinstance(base.op, ast.Sub)
+        and _is_unit_constant(base.left)
+        and bool(_names_in_expr(base.right) & P_VALUE_IDENTIFIERS)
+        and _has_size_expr(exponent, limits)
+    )
+
+
+def has_structural_correction(nodes: Iterable[ast.AST], limits: Limits = DEFAULT_LIMITS) -> bool:
+    """Detect inline/hand-rolled multiple-testing arithmetic independent of helper names."""
+    for node in nodes:
+        if isinstance(node, ast.Call) and dotted(node.func, limits).endswith("minimum.accumulate"):
+            return True
+        if _is_step_up_formula(node, limits):
+            return True
+        if _is_clamped_bonferroni(node, limits):
+            return True
+        if _is_p_times_count(node, limits, clamped=False):
+            return True
+        if _is_sidak_formula(node, limits):
+            return True
+    return False
+
+
 @dataclass
 class Unit:
     path: str
@@ -145,9 +338,38 @@ class Unit:
     limits: Limits = DEFAULT_LIMITS
     functions: dict[str, ast.FunctionDef | ast.AsyncFunctionDef] = field(default_factory=dict)
     aliases: dict[str, dict[str, str]] = field(default_factory=dict)
+    module_aliases: dict[str, str] = field(default_factory=dict)
+    partial_procedures: dict[tuple[str, str], tuple[str, ...]] = field(default_factory=dict)
     calls: list[tuple[str, ast.Call]] = field(default_factory=list)
 
+    def is_partial_call(self, expression: ast.AST, scope: str = "") -> bool:
+        if not isinstance(expression, ast.Call) or not expression.args:
+            return False
+        callee = self.resolve(expression.func, scope)
+        return callee in {"partial", "functools.partial"}
+
+    def resolve_partial_procedures(self, expression: ast.AST, scope: str = "") -> tuple[str, ...]:
+        if isinstance(expression, ast.Call) and self.is_partial_call(expression, scope):
+            wrapped = self.resolve(expression.args[0], scope)
+            return tuple(
+                sorted(
+                    literal_procedures(expression, wrapped, partial_call=True, allow_default=False)
+                )
+            )
+        name = dotted(expression, self.limits)
+        if not name or "." in name:
+            return ()
+        scope = "" if scope == "<module>" else scope
+        pieces = scope.split(".") if scope else []
+        scopes = [".".join(pieces[:index]) for index in range(len(pieces), -1, -1)]
+        for local_scope in scopes:
+            if (local_scope, name) in self.partial_procedures:
+                return self.partial_procedures[(local_scope, name)]
+        return ()
+
     def resolve(self, expression: ast.AST, scope: str = "") -> str:
+        if isinstance(expression, ast.Call) and self.is_partial_call(expression, scope):
+            return self.resolve(expression.args[0], scope)
         name = dotted(expression, self.limits)
         scope = "" if scope == "<module>" else scope
         pieces = scope.split(".") if scope else []
@@ -182,6 +404,7 @@ class Visitor(ast.NodeVisitor):
     def __init__(self, unit: Unit) -> None:
         self.unit = unit
         self.stack: list[str] = []
+        self._consumed_partials: set[int] = set()
 
     def bind(self, name: str, target: str) -> None:
         if max(len(name), len(target)) > self.unit.limits.name_characters:
@@ -214,26 +437,63 @@ class Visitor(ast.NodeVisitor):
             parts = self.unit.module.split(".")[: -node.level]
             module = ".".join([*parts, module]).rstrip(".")
         for alias in node.names:
-            self.bind(alias.asname or alias.name, f"{module}.{alias.name}")
+            bound_name = alias.asname or alias.name
+            target = f"{module}.{alias.name}"
+            self.bind(bound_name, target)
+            if not self.stack and alias.asname and alias.asname != alias.name:
+                self.unit.module_aliases[bound_name] = self.unit.resolve(
+                    ast.Name(id=bound_name), ""
+                )
 
     def visit_Assign(self, node: ast.Assign) -> None:
+        scope = ".".join(self.stack)
         value = dotted(node.value, self.unit.limits)
+        bound_procs: tuple[str, ...] = ()
+        if (
+            not value
+            and isinstance(node.value, ast.Call)
+            and self.unit.is_partial_call(node.value, scope)
+        ):
+            self._consumed_partials.add(id(node.value))
+            value = self.unit.resolve(node.value.args[0], scope)
+            if value:
+                bound_procs = tuple(
+                    sorted(
+                        literal_procedures(
+                            node.value, value, partial_call=True, allow_default=False
+                        )
+                    )
+                )
         if value:
             for target in node.targets:
                 if isinstance(target, ast.Name):
                     self.bind(target.id, value)
+                    if bound_procs:
+                        self.unit.partial_procedures[(scope, target.id)] = bound_procs
+                    if not scope:
+                        self.unit.module_aliases[target.id] = self.unit.resolve(
+                            ast.Name(id=target.id), ""
+                        )
         self.generic_visit(node)
 
     def visit_Call(self, node: ast.Call) -> None:
-        self.unit.calls.append((".".join(self.stack) or "<module>", node))
+        scope = ".".join(self.stack)
+        if isinstance(node.func, ast.Call) and self.unit.is_partial_call(node.func, scope):
+            self._consumed_partials.add(id(node.func))
+        if id(node) not in self._consumed_partials:
+            self.unit.calls.append((scope or "<module>", node))
         self.generic_visit(node)
 
 
-def is_seed(name: str) -> bool:
+def is_seed(name: str, *, defined: bool = False) -> bool:
+    if name == STRUCTURAL_CORRECTION_SEED:
+        return True
     leaf = name.rsplit(".", 1)[-1]
+    if leaf.strip("_") in {"correct", "adjust"}:
+        return defined or "." not in name or name in NAMED_WRAPPERS
     return (
         leaf in PRIMITIVES
-        or leaf.strip("_") in {"bh", "by", "fdr", "correct", "adjust"}
+        or leaf.strip("_") in {"bh", "by", "fdr"}
         or name in NAMED_WRAPPERS
         or bool(
             HELPER_NAME.search(leaf)
@@ -260,7 +520,8 @@ def function_dependencies(unit: Unit, budget: SummaryBudget) -> dict[str, set[st
         assigned: dict[str, set[str]] = defaultdict(set)
         returned: set[str] = set()
         targets: set[str] = set()
-        for node in owned_nodes(function):
+        nodes = list(owned_nodes(function))
+        for node in nodes:
             if isinstance(node, ast.Assign):
                 calls = {
                     unit.resolve(child.func, name)
@@ -278,20 +539,42 @@ def function_dependencies(unit: Unit, budget: SummaryBudget) -> dict[str, set[st
                         returned.add(child.id)
         for name_returned in returned:
             targets.update(assigned[name_returned])
+        if has_structural_correction(nodes, unit.limits):
+            targets.add(STRUCTURAL_CORRECTION_SEED)
         qualified = f"{unit.module}.{name}"
         for target_name in targets:
             budget.charge(qualified, target_name)
         dependencies[qualified] = targets
+    for alias_name, resolved in unit.module_aliases.items():
+        if alias_name in unit.functions or not resolved:
+            continue
+        qualified = f"{unit.module}.{alias_name}"
+        alias_targets = {resolved}
+        for proc in unit.partial_procedures.get(("", alias_name), ()):
+            alias_targets.add(f"{PARTIAL_PROC_PREFIX}{proc}>")
+        for target_name in alias_targets:
+            budget.charge(qualified, target_name)
+        dependencies[qualified] = alias_targets
     return dependencies
 
 
 def forwarding_names(dependencies: dict[str, set[str]]) -> set[str]:
     """Fixed point over bounded strings only; source and ASTs are already released."""
-    names = {name for name in dependencies if is_seed(name)}
+    names = {name for name in dependencies if is_seed(name, defined=True)}
     reverse: dict[str, set[str]] = defaultdict(set)
     initial = set(names)
     for qualified, targets in dependencies.items():
+        if qualified.startswith("scripts."):
+            bare = qualified.removeprefix("scripts.")
+            if bare not in dependencies:
+                reverse[qualified].add(bare)
+                reverse[bare].add(qualified)
+                if qualified in names:
+                    names.add(bare)
+                    initial.add(bare)
         for target in targets:
+            if target.startswith(PARTIAL_PROC_PREFIX):
+                continue
             reverse[target].add(qualified)
             if is_seed(target):
                 initial.add(target)
@@ -309,22 +592,37 @@ def forwarding_names(dependencies: dict[str, set[str]]) -> set[str]:
     return names
 
 
-def literal_procedures(call: ast.Call, target: str) -> set[str]:
+def literal_procedures(
+    call: ast.Call,
+    target: str,
+    *,
+    partial_call: bool = False,
+    allow_default: bool = True,
+) -> set[str]:
     """Infer literal method/by flags; dynamic policies remain explicitly unchecked."""
     leaf = target.rsplit(".", 1)[-1]
+    offset = 1 if partial_call else 0
     keywords = {keyword.arg: keyword.value for keyword in call.keywords}
     method = keywords.get("method")
-    if method is None and leaf == "multipletests" and len(call.args) >= 3:
-        method = call.args[2]
-    if method is None and target == "mtp.log_ratio_sensitivity.correct" and len(call.args) >= 3:
-        method = call.args[2]
+    if method is None and leaf == "multipletests" and len(call.args) >= 3 + offset:
+        method = call.args[2 + offset]
+    if (
+        method is None
+        and target == "mtp.log_ratio_sensitivity.correct"
+        and len(call.args) >= 3 + offset
+    ):
+        method = call.args[2 + offset]
     if isinstance(method, ast.Constant) and isinstance(method.value, str):
         return {PROCEDURES.get(method.value.lower(), method.value)}
     if method is not None:
         return set()
     if target == "mtp.taxon_influence.adjust":
-        by = keywords.get("by", call.args[1] if len(call.args) > 1 else ast.Constant(False))
-        return {"BY" if by.value else "BH"} if isinstance(by, ast.Constant) else set()
+        if "by" in keywords or len(call.args) > 1 + offset:
+            by = keywords.get("by", call.args[1 + offset] if len(call.args) > 1 + offset else None)
+            return {"BY" if by.value else "BH"} if isinstance(by, ast.Constant) else set()
+        return {"BH"} if allow_default else set()
+    if not allow_default:
+        return set()
     if leaf in {"benjamini_hochberg", "family_bh_q_values", "false_discovery_control"}:
         return {"BH"}
     if leaf == "multipletests":
@@ -1390,7 +1688,11 @@ def summarize_source(path: str, source: str, budget: SummaryBudget) -> CompactUn
     clip_scopes: set[str] = set()
     for function, call in unit.calls:
         target = unit.resolve(call.func, function)
-        procedures = tuple(sorted(literal_procedures(call, target)))
+        explicit = literal_procedures(call, target, allow_default=False)
+        bound = set(unit.resolve_partial_procedures(call.func, function))
+        procedures = tuple(
+            sorted(explicit or bound or literal_procedures(call, target, allow_default=True))
+        )
         budget.charge(path, function, target, *procedures)
         calls.append((function, target, procedures, call.lineno))
         if target.rsplit(".", 1)[-1] == "benjamini_hochberg":
@@ -1434,12 +1736,23 @@ def discover(
         for function, target, inferred, line in summary.calls:
             if not is_seed(target) and target not in names:
                 continue
+            bound_from_dep = tuple(
+                sorted(
+                    item.removeprefix(PARTIAL_PROC_PREFIX).removesuffix(">")
+                    for item in dependencies.get(target, set())
+                    if item.startswith(PARTIAL_PROC_PREFIX)
+                )
+            )
+            effective = inferred or bound_from_dep
             key = (summary.path, function)
             site = sites.setdefault(key, {"procedures": set(), "calls": [], "definition": False})
-            site["procedures"].update(inferred)
-            site["calls"].append({"target": target, "procedures": list(inferred), "line": line})
+            site["procedures"].update(effective)
+            site["calls"].append({"target": target, "procedures": list(effective), "line": line})
         for function in summary.functions:
-            if is_seed(f"{summary.module}.{function}"):
+            qualified = f"{summary.module}.{function}"
+            if is_seed(
+                qualified, defined=True
+            ) or STRUCTURAL_CORRECTION_SEED in summary.dependencies.get(qualified, set()):
                 sites.setdefault((summary.path, function), {"procedures": set(), "calls": []})[
                     "definition"
                 ] = True
@@ -1963,3 +2276,115 @@ def test_streamed_source_input_matches_small_mapping_input() -> None:
     source = "def screen(p):\n    return false_discovery_control(p, method='by')\n"
     items = [("src/x.py", source)]
     assert discover(iter(items)) == discover(dict(items))
+
+
+def test_structural_cumulative_minimum_and_step_up_loop_are_detected() -> None:
+    sources = {
+        "src/x.py": (
+            "import numpy as np\n"
+            "def _review_qvals(p):\n"
+            "    order = np.argsort(p)\n"
+            "    ranked = np.asarray(p, dtype=float)[order] * len(p) / np.arange(1, len(p) + 1)\n"
+            "    return np.minimum.accumulate(ranked[::-1])[::-1]\n"
+            "def caller_qvals(p):\n"
+            "    return _review_qvals(p)\n"
+            "def _review_cummin(scaled):\n"
+            "    return np.minimum.accumulate(scaled[::-1])[::-1]\n"
+            "def _review_step(p):\n"
+            "    m = len(p)\n"
+            "    out = [1.0] * m\n"
+            "    for rank, i in enumerate(sorted(range(m), key=p.__getitem__), 1):\n"
+            "        out[i] = p[i] * m / rank\n"
+            "    return out\n"
+            "def caller_step(p):\n"
+            "    return _review_step(p)\n"
+        )
+    }
+    errors = registry_errors(sources, example_registry())
+    assert "unregistered correction: src/x.py::_review_qvals" in errors
+    assert "unregistered correction: src/x.py::caller_qvals" in errors
+    assert "unregistered correction: src/x.py::_review_cummin" in errors
+    assert "unregistered correction: src/x.py::_review_step" in errors
+    assert "unregistered correction: src/x.py::caller_step" in errors
+
+
+def test_inline_bonferroni_and_sidak_corrections_are_detected() -> None:
+    sources = {
+        "src/x.py": (
+            "import numpy as np\n"
+            "def _review_bonf(p):\n"
+            "    return np.minimum(np.asarray(p) * len(p), 1.0)\n"
+            "def scalar_bonf(p, m):\n"
+            "    return min(1.0, p * m)\n"
+            "def bare_bonf(p_val, n_tests):\n"
+            "    return p_val * n_tests\n"
+            "def sidak_adjust(p, m):\n"
+            "    return 1.0 - (1.0 - p) ** m\n"
+            "def unrelated_math(a, b):\n"
+            "    return min(1.0, a * b)\n"
+        )
+    }
+    errors = registry_errors(sources, example_registry())
+    assert "unregistered correction: src/x.py::_review_bonf" in errors
+    assert "unregistered correction: src/x.py::scalar_bonf" in errors
+    assert "unregistered correction: src/x.py::bare_bonf" in errors
+    assert "unregistered correction: src/x.py::sidak_adjust" in errors
+    assert "unregistered correction: src/x.py::unrelated_math" not in errors
+
+
+def test_reexported_alias_partial_getattr_and_bare_script_imports_are_detected() -> None:
+    sources = {
+        "src/mtp/_review_reexport.py": (
+            "from scipy.stats import false_discovery_control\nqvals = false_discovery_control\n"
+        ),
+        "src/mtp/caller.py": (
+            "from functools import partial\n"
+            "import scipy.stats as ss\n"
+            "from mtp._review_reexport import qvals\n"
+            "def via_reexport(p):\n"
+            "    return qvals(p, method='by')\n"
+            "def via_partial(p):\n"
+            "    fn = partial(ss.false_discovery_control, method='by')\n"
+            "    return fn(p)\n"
+            "def via_getattr(p):\n"
+            "    return getattr(ss, 'false_discovery_control')(p, method='by')\n"
+            "def _review_unrelated(text):\n"
+            "    return text.correct(), text.adjust()\n"
+        ),
+        "scripts/_review_helper.py": (
+            "from scipy.stats import false_discovery_control\n"
+            "def qvals(p):\n"
+            "    return false_discovery_control(p, method='by')\n"
+        ),
+        "scripts/caller_script.py": (
+            "from _review_helper import qvals\ndef run(p):\n    return qvals(p)\n"
+        ),
+    }
+    sites, _ = discover(sources)
+    assert ("src/mtp/caller.py", "via_reexport") in sites
+    assert sites[("src/mtp/caller.py", "via_reexport")]["procedures"] == {"BY"}
+    assert ("src/mtp/caller.py", "via_partial") in sites
+    assert sites[("src/mtp/caller.py", "via_partial")]["procedures"] == {"BY"}
+    assert ("src/mtp/caller.py", "via_getattr") in sites
+    assert sites[("src/mtp/caller.py", "via_getattr")]["procedures"] == {"BY"}
+    assert ("scripts/_review_helper.py", "qvals") in sites
+    assert ("scripts/caller_script.py", "run") in sites
+    assert ("src/mtp/caller.py", "_review_unrelated") not in sites
+
+
+def test_policy_enforcement_scope_and_out_of_scope_list_match_guard() -> None:
+    policy_path = ROOT / "methods/multiple_testing_policy.md"
+    text = policy_path.read_text(encoding="utf-8")
+    for directory in ("src/", "scripts/"):
+        assert f"`{directory}`" in text
+    for directory in ("tests/", "tools/", "methods/", "docs/", "data/", "schema/"):
+        assert f"`{directory}`" in text
+    for phrase in (
+        "minimum.accumulate",
+        "p * m / rank",
+        "min(1.0, p * m)",
+        "1 - (1 - p) ** m",
+        "functools.partial",
+        "getattr",
+    ):
+        assert phrase in text
