@@ -19,7 +19,7 @@ from mtp.cellulose_decr import selection_scan as native
 from mtp.datamodel.workflow_pydantic import ConsumerRecord
 from mtp.publication_figures import scan
 from mtp.publication_figures.inputs import _table
-from mtp.publication_figures.plots import validate_authored_wording
+from mtp.publication_figures.plots import _wrap, validate_authored_wording
 from mtp.workflow.trait_policy import HISTORICAL_MATRIX_POLICIES, MATRIX_SOURCE
 
 TRAIT = "METPO:2000103|GO:0030245"
@@ -682,7 +682,15 @@ def set_metadata(fixture: Fixture, object_name: str | None) -> None:
     rebind_core(fixture, core)
 
 
-@pytest.mark.parametrize("object_name", ["cellulose catabolic process", ""])
+@pytest.mark.parametrize(
+    "object_name",
+    [
+        "cellulose catabolic process",
+        "",
+        "capable of: an intentionally long synthetic display label that exceeds the "
+        "ninety-five character wrap width of the scan heading so it spans two lines [X]",
+    ],
+)
 def test_display_label_uses_object_name_with_native_column_label_check(
     fixture: Fixture, object_name: str
 ) -> None:
@@ -695,6 +703,7 @@ def test_display_label_uses_object_name_with_native_column_label_check(
     set_metadata(fixture, object_name)
     bundle = fixture.load()
     expected = object_name or LABEL
+    wrapped_expected = _wrap(expected, 95)
     assert bundle.labels[TRAIT] == expected
     audit = scan.scan_audit(bundle)
     assert set(audit["trait_id"]) == {TRAIT}
@@ -703,29 +712,39 @@ def test_display_label_uses_object_name_with_native_column_label_check(
     assert page.details["trait_id"] == TRAIT
     assert page.details["trait_label"] == expected
     text_items = [item.get_text() for item in page.figure.findobj(Text)]
-    text = " ".join(text_items)
-    assert f"{expected}\n{TRAIT}" in text_items
+    text = " ".join(" ".join(text_items).split())
+    assert f"{wrapped_expected}\n{TRAIT}" in text_items
     assert expected in text
     assert TRAIT in text
     if object_name:
         assert LABEL not in text
+    if len(expected) > 95:
+        assert len(page.figure.texts[1].get_text().splitlines()) == 3
     canvas = cast(FigureCanvasAgg, page.figure.canvas)
     cast(Callable[[], None], canvas.draw)()
     renderer = cast(Callable[[], RendererAgg], canvas.get_renderer)()
-    header_bounds = sorted(
-        (item.get_window_extent(renderer) for item in page.figure.texts[:4]),
-        key=lambda box: box.y0,
-    )
-    for lower, upper in pairwise(header_bounds):
+    header_bounds = [item.get_window_extent(renderer) for item in page.figure.texts[:4]]
+    for upper, lower in pairwise(header_bounds):
+        assert upper.y0 > lower.y1
         assert not lower.overlaps(upper)
+    assert page.figure.texts[1].get_verticalalignment() == "top"
     fixture.traits.loc[0, "trait_label"] = "A different native label"
     with pytest.raises(ValueError, match="label differs from bound metadata"):
         fixture.load()
 
 
-def test_missing_object_name_column_in_metadata_is_refused(fixture: Fixture) -> None:
+@pytest.mark.parametrize("display", [True, False])
+def test_missing_object_name_column_in_metadata_is_refused(fixture: Fixture, display: bool) -> None:
     set_metadata(fixture, None)
-    with pytest.raises(ValueError, match="Scan label metadata columns missing"):
+    frame = pd.read_csv(fixture.metadata, sep="\t", keep_default_na=False)
+    with pytest.raises(ValueError, match=r"^Scan label metadata columns missing: object_name$"):
+        scan._labels(frame, display=display)
+    with pytest.raises(
+        ValueError,
+        match=r"^Scan label metadata columns missing: column_id, column_label, object_name$",
+    ):
+        scan._labels(frame.drop(columns=["column_id", "column_label"]), display=display)
+    with pytest.raises(ValueError, match=r"^Scan label metadata columns missing: object_name$"):
         fixture.load()
 
 
