@@ -512,12 +512,16 @@ def study_direction_means(
     per-experiment paired differences only when every experiment contributes both
     sides, so by default the per-study inc and dec profile counts must match;
     callers on unpaired corpora must pass require_paired=False and must not
-    describe the result as paired.
+    describe the result as paired. Every guild in ``guild_order`` must be present
+    in ``profile.guild_counts`` (missing is not zero).
     """
     sums: defaultdict[str, defaultdict[str, float]] = defaultdict(lambda: defaultdict(float))
     counts: defaultdict[str, defaultdict[str, int]] = defaultdict(lambda: defaultdict(int))
     for profile in profiles:
+        key_id = (profile.study_id, profile.experiment_id)
         for guild in guild_order:
+            if guild not in profile.guild_counts:
+                raise ValueError(f"Missing trait {guild} for {key_id}; missing is not zero")
             key = f"{guild}_{profile.inc_dec}"
             sums[profile.study_id][key] += profile.fraction(guild)
             counts[profile.study_id][key] += 1
