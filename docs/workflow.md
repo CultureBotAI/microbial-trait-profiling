@@ -850,7 +850,7 @@ but deduplicated for traversal. Subclass edges from named NCBITaxon rank classes
 (such as `NCBITaxon:biotype`) to `OBO:NCBITaxon#_taxonomic_rank` describe rank
 vocabulary, not organism ancestry. They are skipped and counted separately as
 `taxonomy_rank_class_edge_records_skipped` in the provenance parser audit (#1008).
-Malformed NCBITaxon identifiers in organism ancestry edges still fail. An input
+Malformed NCBITaxon identifiers in organism ancestry edges and non-rank NCBITaxon subjects under OBO:NCBITaxon#_taxonomic_rank still fail. An input
 without usable taxonomy edges fails, including a file containing only rank classes.
 All selected reported taxa are checked before output publication: reachable
 cycles and ancestry spanning multiple recognized roots fail; multiple paths to
