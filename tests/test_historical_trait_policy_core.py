@@ -5,7 +5,6 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
-import re
 import shutil
 import tarfile
 from collections.abc import Callable
@@ -161,7 +160,7 @@ def test_real_verifier_accepts_relocated_union_core_produced_by_main_without_cha
     assert report["normalized_historical_verification"] is True
     assert isinstance(report.get("helper_sha256"), str)
     assert len(report["helper_sha256"]) == 64
-    assert re.fullmatch(r"[0-9a-f]{64}", report["helper_sha256"]) is not None
+    assert _is_valid_helper_sha256(report["helper_sha256"])
     readme_text = (FIXTURE.parent / "README.md").read_text(encoding="utf-8")
     assert "$ORIGINAL_OUTPUT" in readme_text
     assert "core/steps/identify_sources/provenance/source_identity.json" in readme_text
@@ -188,38 +187,9 @@ def test_real_verifier_accepts_relocated_union_core_produced_by_main_without_cha
     assert payloads(copied) == before
 
 
-def test_union_core_verification_rejects_metadata_relabel_of_facultative_column(
-    tmp_path: Path,
-) -> None:
-    """Mutating recorded object_name/column_label in a union core fails verification (#1231)."""
-    copied = tmp_path / "relabelled union core"
-    extract_union_fixture(copied)
-    manifest = copied / "core/run.json"
-    run = WorkflowRun.model_validate_json(manifest.read_bytes())
-    resolve = resolver(copied, UNION_NAMESPACE)
-    feature_meta = artifact_path(run, "feature_metadata", resolve)
-    catalog_meta = artifact_path(run, "feature_catalog", resolve)
-    text = feature_meta.read_text(encoding="utf-8").replace(
-        "facultatively aerobic", "facultative (aerobe or anaerobe)"
-    )
-    feature_meta.write_text(text, encoding="utf-8")
-    write_feature_catalog(
-        feature_meta,
-        catalog_meta,
-        trait_key_policy="facultative_union_v1",
-        include_policy_metadata=True,
-    )
-    for prod_id, path in (("feature_metadata", feature_meta), ("feature_catalog", catalog_meta)):
-        artifact = next(item for item in run.artifacts or [] if item.product_id == prod_id)
-        artifact.sha256, artifact.size_bytes, artifact.inventory = inventory(path, "file")
-    manifest.write_text(run.model_dump_json(indent=2) + "\n", encoding="utf-8")
-    with pytest.raises(
-        ValueError, match="Feature metadata differs from consumed KG evidence and nodes"
-    ):
-        verify_core_run(UNION_NAMESPACE / "core/run.json", resolver=resolve)
-
-
 def _is_valid_helper_sha256(value: object) -> bool:
+    import re
+
     return isinstance(value, str) and re.fullmatch(r"[0-9a-f]{64}", value) is not None
 
 
@@ -227,6 +197,8 @@ def test_fixture_readme_audit_command_and_methods_member_wording_are_accurate(
     tmp_path: Path,
 ) -> None:
     """Verify fixture README globs and methods member-reading wording (#1261)."""
+    import re
+
     extracted = tmp_path / "extracted_union_fixture"
     extract_union_fixture(extracted)
     report = json.loads((extracted / "generation.json").read_text(encoding="utf-8"))
@@ -279,3 +251,34 @@ def test_fixture_readme_audit_command_and_methods_member_wording_are_accurate(
         assert "parse `trait_member_ids_json` during statistical computation" in normalized
         assert "can read `trait_member_ids_json` from the core's `feature_metadata`" in normalized
         assert "#1261" in normalized
+
+
+def test_union_core_verification_rejects_metadata_relabel_of_facultative_column(
+    tmp_path: Path,
+) -> None:
+    """Mutating recorded object_name/column_label in a union core fails verification (#1231)."""
+    copied = tmp_path / "relabelled union core"
+    extract_union_fixture(copied)
+    manifest = copied / "core/run.json"
+    run = WorkflowRun.model_validate_json(manifest.read_bytes())
+    resolve = resolver(copied, UNION_NAMESPACE)
+    feature_meta = artifact_path(run, "feature_metadata", resolve)
+    catalog_meta = artifact_path(run, "feature_catalog", resolve)
+    text = feature_meta.read_text(encoding="utf-8").replace(
+        "facultatively aerobic", "facultative (aerobe or anaerobe)"
+    )
+    feature_meta.write_text(text, encoding="utf-8")
+    write_feature_catalog(
+        feature_meta,
+        catalog_meta,
+        trait_key_policy="facultative_union_v1",
+        include_policy_metadata=True,
+    )
+    for prod_id, path in (("feature_metadata", feature_meta), ("feature_catalog", catalog_meta)):
+        artifact = next(item for item in run.artifacts or [] if item.product_id == prod_id)
+        artifact.sha256, artifact.size_bytes, artifact.inventory = inventory(path, "file")
+    manifest.write_text(run.model_dump_json(indent=2) + "\n", encoding="utf-8")
+    with pytest.raises(
+        ValueError, match="Feature metadata differs from consumed KG evidence and nodes"
+    ):
+        verify_core_run(UNION_NAMESPACE / "core/run.json", resolver=resolve)
