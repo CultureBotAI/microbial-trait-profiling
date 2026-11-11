@@ -3,8 +3,8 @@
 
 Purpose:
     Verify that tests/test_table1_native_results_readme_1635.py kills at least
-    6 distinct mutations in isolated scratch copies of
-    methods/table1-native-results/README.md.
+    6 distinct README mutations plus a generator-only BH-policy drift mutation
+    in isolated scratch copies.
 Inputs:
     Repository root (defaults to two parent directories above this script).
 Outputs:
@@ -17,6 +17,8 @@ import importlib.util
 import tempfile
 from pathlib import Path
 from types import ModuleType
+
+import pytest
 
 
 def _load_module(name: str, path: Path) -> ModuleType:
@@ -32,9 +34,11 @@ def main() -> int:
     repo_root = Path(__file__).resolve().parents[2]
     readme_src = repo_root / "methods/table1-native-results/README.md"
     test_src = repo_root / "tests/test_table1_native_results_readme_1635.py"
+    gen_src = repo_root / "src/mtp/native_taxon_influence.py"
 
     test_module = _load_module("test_table1_native_results_readme_1635", test_src)
     readme_text = readme_src.read_text(encoding="utf-8")
+    gen_text = gen_src.read_text(encoding="utf-8")
 
     # Verify baseline passes
     test_module.check_readme_text(readme_text)
@@ -111,9 +115,49 @@ def main() -> int:
             else:
                 raise RuntimeError(f"Mutant survived: {name}")
 
-    if killed != len(mutants) or killed < 6:
-        raise RuntimeError(f"Expected at least 6 killed mutants, got {killed}/{len(mutants)}")
-    print(f"All {killed}/{len(mutants)} mutants killed by AssertionError.")
+    # Mutant 8: generator-only drift where native_summary claims padded inside-vector BH
+    # while transformed() still computes finite-only outside-vector BH.
+    old_gen_lines = (
+        (
+            '        "Native p-values test the mean; native BH families contain "\n'
+            '        "finite p-values among "\n'
+        ).replace('contain "\n        "finite', "contain finite")
+        + (
+            '        "selected supported variable traits, not just Table 1. "\n'
+            '        "Selected untestable traits "\n'
+        ).replace('Table 1. "\n        "Selected', "Table 1. Selected")
+        + ('        "receive q = 1.0 outside the correction vector. "')
+    )
+    new_gen_lines = (
+        '        "Native p-values test the mean; native BH families contain all "\n'
+        '        "selected supported "\n'
+    ).replace('all "\n        "selected', "all selected") + (
+        '        "variable traits (family_selected_traits), not just Table 1, padding selected "\n'
+        '        "untestable traits at p = 1.0 (q = 1.0) inside the correction vector. "'
+    )
+    mutated_gen_text = gen_text.replace(old_gen_lines, new_gen_lines, 1)
+    if mutated_gen_text == gen_text:
+        raise RuntimeError("Generator drift mutant did not alter native_taxon_influence.py text")
+    with tempfile.TemporaryDirectory(prefix="verify_1635_mutant_8_gen_drift_") as raw_dir:
+        scratch_gen = Path(raw_dir) / "native_taxon_influence.py"
+        scratch_gen.write_text(mutated_gen_text, encoding="utf-8")
+        mutated_gen_module = _load_module("mutant_8_native_taxon_influence", scratch_gen)
+        monkeypatch = pytest.MonkeyPatch()
+        try:
+            monkeypatch.setattr(test_module, "native_summary", mutated_gen_module.native_summary)
+            try:
+                test_module.check_readme_text(readme_text)
+            except AssertionError:
+                killed += 1
+            else:
+                raise RuntimeError("Mutant survived: mutant_8_generator_only_bh_wording_drift")
+        finally:
+            monkeypatch.undo()
+
+    total_expected = len(mutants) + 1
+    if killed != total_expected or killed < 8:
+        raise RuntimeError(f"Expected {total_expected} killed mutants, got {killed}")
+    print(f"All {killed}/{total_expected} mutants killed by AssertionError.")
     return 0
 
 
