@@ -11,6 +11,7 @@ from collections.abc import Iterator
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from mtp.datamodel.workflow_pydantic import WorkflowRun
 from mtp.paths import REPO_ROOT
 from mtp.taxa_trait_matrix import (
     PRIMARY_STRAIN_ROLLUP,
@@ -26,6 +27,7 @@ from mtp.trait_key_policy import (
     TraitKeyPolicy,
     parse_trait_key_policy,
 )
+from mtp.workflow.trait_policy import resolve_trait_policy
 
 Key = tuple[str, str, str]
 Pair = tuple[str, str]
@@ -305,6 +307,57 @@ def load_graph(
     return Graph(dict(parents), scoped, dict(assertions), names, repaired, continued)
 
 
+def resolve_inputs_trait_key_policy(
+    inputs_dir: Path,
+    requested_policy: TraitKeyPolicy | str | None = None,
+    *,
+    core_manifest: Path | None = None,
+) -> TraitKeyPolicy:
+    """Resolve effective trait-key policy from core/column metadata and fail on mismatch."""
+    explicit = parse_trait_key_policy(requested_policy) if requested_policy is not None else None
+    manifest_path = core_manifest
+    if manifest_path is None:
+        candidate = inputs_dir / "run.json"
+        if candidate.is_file():
+            manifest_path = candidate
+    manifest_policy: TraitKeyPolicy | None = None
+    if manifest_path is not None:
+        run = WorkflowRun.model_validate_json(manifest_path.read_bytes())
+        manifest_policy = resolve_trait_policy(run).policy
+    columns_path = inputs_dir / "taxa_trait_matrix_columns.tsv"
+    column_policy: TraitKeyPolicy | None = None
+    if columns_path.is_file():
+        column_policies = {
+            parse_trait_key_policy(row["trait_key_policy"].strip())
+            for row in rows(columns_path)
+            if row.get("trait_key_policy", "").strip()
+        }
+        if len(column_policies) > 1:
+            raise ValueError(
+                f"Conflicting trait_key_policy values in {columns_path}: {sorted(column_policies)}"
+            )
+        if len(column_policies) == 1:
+            column_policy = next(iter(column_policies))
+    if (
+        manifest_policy is not None
+        and column_policy is not None
+        and manifest_policy != column_policy
+    ):
+        raise ValueError(
+            f"Core manifest trait_key_policy {manifest_policy!r} contradicts "
+            f"{columns_path.name} policy {column_policy!r}"
+        )
+    recorded_policy = manifest_policy or column_policy
+    if recorded_policy is not None:
+        if explicit is not None and explicit != recorded_policy:
+            raise ValueError(
+                f"Requested trait_key_policy {explicit!r} contradicts recorded input policy "
+                f"{recorded_policy!r}"
+            )
+        return recorded_policy
+    return explicit if explicit is not None else DEFAULT_TRAIT_KEY_POLICY
+
+
 def verify_kg(kg_dir: Path, expected: dict[str, str]) -> dict[str, str]:
     hashes = {}
     for filename, wanted in expected.items():
@@ -357,6 +410,7 @@ __all__ = [
     "load_base",
     "load_graph",
     "main",
+    "resolve_inputs_trait_key_policy",
     "rows",
     "verify_kg",
 ]

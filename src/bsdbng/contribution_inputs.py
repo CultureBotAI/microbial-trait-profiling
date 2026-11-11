@@ -16,6 +16,7 @@ from mtp.contribution_inputs import (
     load_base,
     load_graph,
     main,
+    resolve_inputs_trait_key_policy,
     rows,
     verify_kg,
 )
@@ -33,6 +34,7 @@ __all__ = [
     "load_base",
     "load_graph",
     "main",
+    "resolve_inputs_trait_key_policy",
     "rows",
     "verify_kg",
 ]
