@@ -16,8 +16,8 @@ DOC = Path("methods/cellulose_decr.md")
 
 def check(root: Path) -> None:
     spec = importlib.util.spec_from_file_location("pin_mutant", root / TEST)
-    assert spec is not None
-    assert spec.loader is not None
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Could not load module spec for {root / TEST}")
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
     try:
@@ -58,7 +58,8 @@ def main() -> None:
                     target.write_bytes(content)
                 target = scratch / path
                 source = target.read_text()
-                assert before in source
+                if before not in source:
+                    raise RuntimeError(f"Expected substring not found in {target}: {before!r}")
                 target.write_text(source.replace(before, after, 1))
                 try:
                     check(scratch)
@@ -68,7 +69,8 @@ def main() -> None:
                     raise AssertionError(f"mutant {index} survived")
     finally:
         for path, content in originals.items():
-            assert (ROOT / path).read_bytes() == content
+            if (ROOT / path).read_bytes() != content:
+                raise RuntimeError(f"Worktree file modified during verification: {path}")
     print("6/6 killed; worktree targets byte-identical")
 
 
