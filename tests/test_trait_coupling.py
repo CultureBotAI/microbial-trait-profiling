@@ -985,3 +985,30 @@ def test_coupling_applies_display_trait_label_for_union_and_preserves_raw(
     assert Path(res_union["lco_tsv"]).read_text(encoding="utf-8") == Path(
         res_raw["lco_tsv"]
     ).read_text(encoding="utf-8")
+
+    malformed_columns_path = tmp_path / "malformed_columns.tsv"
+    malformed_df = pd.read_csv(union_columns_path, sep="\t")
+    malformed_df.loc[malformed_df["column_id"] == "METPO:1000608", "trait_member_ids_json"] = (
+        "malformed-member-json"
+    )
+    malformed_df.to_csv(malformed_columns_path, sep="\t", index=False)
+
+    seeded_dir = tmp_path / "audit_seeded"
+    seeded_dir.mkdir()
+    seeded_paths = {
+        "loto": seeded_dir / "trait_coupling_loto_matrix.tsv",
+        "lco": seeded_dir / "trait_coupling_lco_summary.tsv",
+        "report": seeded_dir / "trait_coupling_report.txt",
+    }
+    for name, path in seeded_paths.items():
+        path.write_text(f"sentinel-{name}\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="Invalid trait_member_ids_json"):
+        run_coupling_audit(
+            profiles_path=profiles_path,
+            columns_path=malformed_columns_path,
+            output_dir=seeded_dir,
+            code_commit="malformed_commit",
+        )
+    for name, path in seeded_paths.items():
+        assert path.read_text(encoding="utf-8") == f"sentinel-{name}\n"

@@ -129,8 +129,24 @@ MUTANTS: tuple[MutantSpec, ...] = (
     MutantSpec(
         name="coupling_report_drop_columns_path_resolution",
         rel_path="src/mtp/coupling.py",
-        target="        corpus_metrics=corpus_metrics,\n        columns_path=columns_path,",
-        replacement="        corpus_metrics=corpus_metrics,\n        columns_path=None,",
+        target=(
+            "        corpus_metrics=corpus_metrics,\n"
+            "        columns_path=columns_path,\n"
+            "        trait_names=display_trait_names,"
+        ),
+        replacement=(
+            "        corpus_metrics=corpus_metrics,\n"
+            "        columns_path=None,\n"
+            "        trait_names=None,"
+        ),
+        test_file="tests/test_trait_coupling.py",
+        test_node="test_coupling_applies_display_trait_label_for_union_and_preserves_raw",
+    ),
+    MutantSpec(
+        name="coupling_defer_member_validation_until_after_tsv_writes",
+        rel_path="src/mtp/coupling.py",
+        target="    display_trait_names = _resolve_table1_trait_names(columns_path=columns_path)",
+        replacement="    display_trait_names: dict[str, str] | None = None",
         test_file="tests/test_trait_coupling.py",
         test_node="test_coupling_applies_display_trait_label_for_union_and_preserves_raw",
     ),

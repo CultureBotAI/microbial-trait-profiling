@@ -848,6 +848,7 @@ def run_coupling_audit(
 
     profiles_df, valid_cols = load_non_media_profile_matrix(profiles_path, columns_path)
     t1_keys = list(TABLE_1_TRAITS.keys())
+    display_trait_names = _resolve_table1_trait_names(columns_path=columns_path)
 
     # Filter to paired experiments for paired and ORA evaluations
     pvt_check = profiles_df.pivot(
@@ -943,6 +944,7 @@ def run_coupling_audit(
         loto_rows=loto_rows,
         corpus_metrics=corpus_metrics,
         columns_path=columns_path,
+        trait_names=display_trait_names,
     )
     report_txt_path.write_text(report_text, encoding="utf-8")
 
