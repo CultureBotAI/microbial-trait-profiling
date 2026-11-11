@@ -8,7 +8,7 @@ These reruns extend the reconciled 190-v2 audit using protocol 190-native-v2. Th
 
 ## Composition
 
-Native effects are experiment-weighted increased-minus-decreased z-score contrasts. Native p-values test the mean; native BH families contain all supported variable traits, not just Table 1. Zero-total profiles remain as zero fractions. Study-weighted comparisons, sign tests and conditional intervals are separately labeled in native_composition_comparison.tsv.gz. Refitted scales and fixed baseline SD comparisons must not be conflated.
+Native effects are experiment-weighted increased-minus-decreased z-score contrasts. Native p-values test the mean; native BH families contain finite p-values among selected supported variable traits, not just Table 1. Selected untestable traits receive q = 1.0 outside the correction vector. Zero-total profiles remain as zero fractions. Study-weighted comparisons, sign tests and conditional intervals are separately labeled in native_composition_comparison.tsv.gz. Refitted scales and fixed baseline SD comparisons must not be conflated.
 
 | Trait | Pooled native effect | Native p | Native q | Largest matched change, fixed baseline SD | Exclusion |
 | --- | --- | --- | --- | --- | --- | --- |
