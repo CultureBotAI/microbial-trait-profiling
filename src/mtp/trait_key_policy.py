@@ -16,14 +16,19 @@ from __future__ import annotations
 import csv
 import gzip
 import json
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from types import MappingProxyType
-from typing import Literal, cast
+from typing import Literal
 
 TraitKeyPolicy = Literal["raw_object_v1", "facultative_union_v1"]
+TRAIT_KEY_POLICIES: tuple[TraitKeyPolicy, ...] = ("raw_object_v1", "facultative_union_v1")
 DEFAULT_TRAIT_KEY_POLICY: TraitKeyPolicy = "facultative_union_v1"
+FACULTATIVE_TRAIT_ID = "METPO:1000608"
+FACULTATIVE_RAW_LABEL = "facultatively aerobic"
+FACULTATIVE_UNION_LABEL = "facultative (aerobe or anaerobe)"
+FACULTATIVE_MEMBER_IDS = ("METPO:1000605", "METPO:1000608", "METPO:1000612")
+FACULTATIVE_EXTRA_MEMBER_IDS = frozenset({"METPO:1000605", "METPO:1000612"})
 TRAIT_POLICY_METADATA_COLUMNS = (
     "trait_key_policy",
     "trait_member_ids_json",
@@ -115,28 +120,35 @@ _FROZEN_V1_DEFINITIONS: dict[TraitKeyPolicy, TraitKeyPolicyDefinition] = {
     ),
 }
 
-TRAIT_KEY_POLICY_DEFINITIONS: Mapping[TraitKeyPolicy, TraitKeyPolicyDefinition] = MappingProxyType(
-    dict(_FROZEN_V1_DEFINITIONS)
-)
-TRAIT_KEY_POLICIES: tuple[TraitKeyPolicy, ...] = tuple(TRAIT_KEY_POLICY_DEFINITIONS.keys())
+
+def _freeze_v1_definitions() -> dict[TraitKeyPolicy, TraitKeyPolicyDefinition]:
+    from types import MappingProxyType
+    from typing import cast
+
+    return cast(
+        dict[TraitKeyPolicy, TraitKeyPolicyDefinition],
+        MappingProxyType(dict(_FROZEN_V1_DEFINITIONS)),
+    )
+
+
+TRAIT_KEY_POLICY_DEFINITIONS = _freeze_v1_definitions()
+TRAIT_KEY_POLICIES = tuple(TRAIT_KEY_POLICY_DEFINITIONS.keys())
 
 _UNION_V1_DEFINITION = TRAIT_KEY_POLICY_DEFINITIONS["facultative_union_v1"]
-FACULTATIVE_TRAIT_ID = _UNION_V1_DEFINITION.canonical_trait_id
-FACULTATIVE_RAW_LABEL = _UNION_V1_DEFINITION.raw_label
-FACULTATIVE_UNION_LABEL = _UNION_V1_DEFINITION.display_label
-FACULTATIVE_MEMBER_IDS = _UNION_V1_DEFINITION.member_ids
-FACULTATIVE_EXTRA_MEMBER_IDS = _UNION_V1_DEFINITION.extra_member_ids
 FACULTATIVE_SOURCE_VOCABULARIES = _UNION_V1_DEFINITION.source_vocabularies
 
 
 def validate_trait_key_policy_definitions(
-    definitions: (
-        Mapping[TraitKeyPolicy, TraitKeyPolicyDefinition] | Mapping[str, TraitKeyPolicyDefinition]
-    ) = TRAIT_KEY_POLICY_DEFINITIONS,
+    definitions: object = TRAIT_KEY_POLICY_DEFINITIONS,
     *,
     allow_additional_versions: bool = False,
 ) -> None:
     """Verify that frozen v1 policy definitions are intact and new definitions use new versions."""
+    from collections.abc import Mapping
+    from typing import cast
+
+    if not isinstance(definitions, Mapping):
+        raise ValueError(f"Policy definitions must be a mapping, got {type(definitions).__name__}")
     typed_definitions = cast(Mapping[str, TraitKeyPolicyDefinition], definitions)
     for required_version, frozen_def in _FROZEN_V1_DEFINITIONS.items():
         if required_version not in typed_definitions:
@@ -166,8 +178,8 @@ validate_trait_key_policy_definitions(TRAIT_KEY_POLICY_DEFINITIONS)
 
 def parse_trait_key_policy(value: object) -> TraitKeyPolicy:
     """Refuse unknown policies instead of silently applying current semantics."""
-    if isinstance(value, str) and value in TRAIT_KEY_POLICY_DEFINITIONS:
-        return cast(TraitKeyPolicy, value)
+    if value in ("raw_object_v1", "facultative_union_v1") and value in TRAIT_KEY_POLICY_DEFINITIONS:
+        return value
     supported = tuple(TRAIT_KEY_POLICY_DEFINITIONS.keys())
     raise ValueError(f"trait_key_policy must be one of {supported!r}: {value!r}")
 
