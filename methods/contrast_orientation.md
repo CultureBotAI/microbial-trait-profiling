@@ -363,8 +363,24 @@ alone needs no new version.
 
 `tests/test_contrast_orientation.py` checks this for a fixed set of cases only (#793).
 For each version, `tests/fixtures/contrast_orientation_guard_digests.json` pins SHA-256
-digests of the cases and of the classifier's decisions on them, and the test fails when
-the decisions change but the version does not, or when the version has no section below.
+digests of the cases and of the classifier's decisions on them. A frozen per-case
+reference in the test preserves the original record fields and the five decision fields;
+both reference digests must still match the original pins. The guard classifies each
+frozen record with the current rules and reports changes by study, experiment, condition
+and group names, naming each changed decision field. Duplicate five-field keys retain
+their individual variants, so exchanging two variants' decisions cannot hide a change.
+The test fails when the decisions change but the version does not, or when the version
+has no section below.
+
+Fixture-input changes are reported separately as added, removed or edited/replaced rows.
+An unused record-field change, including a new defaulted field, still changes the input
+digest, but does not by itself require a classifier version bump. Restore the frozen
+inputs and put new cases in separate tests. If rules and fixture inputs both change, the
+guard reports both; it checks the frozen records even when the evolving fixture has
+removed them. A true decision change requires a new classifier version, a methods
+version-history entry and reviewed pins/reference for that version. The existing pins
+are never replaced. Evidence wording and row order remain outside decision identity.
+
 The 116 cases are the repository's committed tables of experiment strings: the 60
 experiments of the committed review, from the condition and group names it records, the
 52 cases of the #291 and #569 regression tables, and the four experiments that the v6
@@ -379,6 +395,17 @@ the pinned export, and only 42 of those deletions move a guard case, with or wit
 four v6 experiments. A rule change can therefore still move experiments without failing
 the guard, and the comparison on the pinned export remains the measure of what a version
 changed.
+
+The earlier [#803 coverage audit](https://github.com/CultureBotAI/microbial-trait-profiling/issues/803)
+reported that the guard caught 37 of 138 term deletions that moved an export experiment,
+and that adding 113 export rows would catch all 138 in that audit. These are historical
+audit counts, separate from the later 42-of-146 figures above. The #803 diagnostic change
+does not add those 113 rows, to avoid duplicating raw BugSigDB export text in the test
+suite, and does not re-run that export audit. Its reference contains only the same 116
+already-committed cases, and both existing SHA-256 pins remain unchanged.
+Broader coverage would require a separately reviewed set of export fixtures. Neither
+audit establishes complete classifier coverage; the pinned-export old/new comparison
+remains required when changing rules.
 
 ## Changes from `contrast-orientation-v3` to `-v4` (#569)
 
