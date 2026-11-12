@@ -324,3 +324,47 @@ def test_pd_main_persists_consumed_policy_and_input_binding(
     assert {name: "".join(chunks) for name, chunks in manifest["input_sha256_chunks"].items()} == {
         name: digest(inputs / name, "sha256") for name in contributors.LEDGER_INPUTS
     }
+
+
+@pytest.mark.parametrize("policy", ["raw_object_v1", "facultative_union_v1"])
+def test_taxon_contributions_main_forwards_explicit_trait_key_policy_to_load_graph(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    policy: TraitKeyPolicy,
+) -> None:
+    class Reached(Exception):
+        pass
+
+    inputs = tmp_path / policy
+    protocol = write_inputs(inputs, policy)
+    output = tmp_path / "output"
+    captured_policies: list[object] = []
+
+    def inspect_load_graph(*_args: object, **kwargs: object) -> None:
+        captured_policies.append(kwargs.get("trait_key_policy"))
+        raise Reached
+
+    monkeypatch.setattr(taxon_contributions, "load_graph", inspect_load_graph)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "ledger",
+            "--kg-dir",
+            str(inputs),
+            "--inputs",
+            str(inputs),
+            "--protocol",
+            str(protocol),
+            "--output",
+            str(output),
+            "--strain-rollup",
+            "phenotype",
+            "--trait-key-policy",
+            policy,
+        ],
+    )
+    with pytest.raises(Reached):
+        taxon_contributions.main()
+    captured_policy = captured_policies[0] if len(captured_policies) == 1 else None
+    assert captured_policy == policy

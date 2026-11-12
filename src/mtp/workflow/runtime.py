@@ -643,15 +643,20 @@ def validate_run(
     verify_inputs: bool = True,
     *,
     resolver: LocationResolver | None = None,
+    expected_sha256: str | None = None,
 ) -> WorkflowRun:
     """Require a complete, internally consistent run and verify artifact bytes.
 
     The embedded definition and recorded execution fingerprint are authoritative;
     current checkout code/spec files need not remain available to read an old run.
-    This validates evidence consistency, not cryptographic authorship.
+    This validates evidence consistency, not cryptographic authorship. An expected
+    digest, when supplied, is checked against the same bytes passed to the parser.
     """
     manifest = locate(Path(run_path), resolver).resolve()
-    run = WorkflowRun.model_validate_json(manifest.read_text(encoding="utf-8"))
+    raw = manifest.read_bytes()
+    if expected_sha256 is not None and hashlib.sha256(raw).hexdigest() != expected_sha256:
+        raise ValueError("Core manifest SHA-256 mismatch")
+    run = WorkflowRun.model_validate_json(raw)
     run.manifest_path = str(manifest)
     return _validate_run_record(run, manifest, verify_inputs, resolver)
 

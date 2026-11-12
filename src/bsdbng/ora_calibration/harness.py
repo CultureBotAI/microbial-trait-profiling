@@ -71,7 +71,8 @@ __all__ = [
 
 import mtp.ora_calibration.harness as _target
 
-sys.modules[__name__] = _target
+if __name__ != "__main__":
+    sys.modules[__name__] = _target
 
 
 def __getattr__(name: str) -> Any:
@@ -79,6 +80,4 @@ def __getattr__(name: str) -> Any:
 
 
 if __name__ == "__main__":
-    import runpy
-
-    runpy.run_module("mtp.ora_calibration.harness", run_name="__main__")
+    raise SystemExit(main())

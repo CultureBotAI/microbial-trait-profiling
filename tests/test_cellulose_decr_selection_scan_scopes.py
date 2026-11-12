@@ -20,8 +20,311 @@ from mtp.cellulose_decr import selection_scan_scopes as scopes
 from mtp.datamodel.workflow_pydantic import ConsumerRecord, WorkflowRun
 from mtp.workflow import consumers
 from mtp.workflow.archive import ArchiveResolver, create_archive
+from mtp.workflow.runtime import inventory
 from test_cellulose_decr_selection_scan import cores as cores
 from test_cellulose_decr_selection_scan import scans as scans
+
+
+@pytest.fixture
+def trait_records_1183() -> tuple[scan.Protocol, dict[str, Any], pd.DataFrame]:
+    """Small serialized rows, independent of the scientific core/scan fixtures."""
+    protocol = scan.load_protocol()
+    rows = [
+        {
+            "trait_id": protocol.lead_trait,
+            "trait_label": "001",
+            "is_lead_trait": True,
+            "count": 2,
+            "p": 0.00001,
+            "missing": None,
+            "unbounded": "inf",
+        },
+        {
+            "trait_id": "CUSTOM:other",
+            "trait_label": "other annotation",
+            "is_lead_trait": False,
+            "count": 3,
+            "p": 0.25,
+            "missing": None,
+            "unbounded": "-inf",
+        },
+    ]
+    traits = pd.DataFrame(
+        [
+            [protocol.lead_trait, "001", "True", "2.0", "1e-05", "", "inf"],
+            ["CUSTOM:other", "other annotation", "False", "3", "0.25", "", "-inf"],
+        ],
+        columns=list(rows[0]),
+    )
+    return protocol, {"traits": rows, "lead_trait": protocol.lead_trait}, traits
+
+
+def _check_trait_records_1183(
+    protocol: scan.Protocol, summary: dict[str, Any], traits: pd.DataFrame
+) -> None:
+    validator = getattr(scopes, "_check_trait_summary", None)
+    assert callable(validator), "The scopes reader needs a summary-to-TSV cross-check"
+    validator(Path("fixture-scan"), summary, traits, protocol)
+
+
+def _expect_trait_refusal_1183(
+    protocol: scan.Protocol, summary: dict[str, Any], traits: pd.DataFrame
+) -> None:
+    try:
+        _check_trait_records_1183(protocol, summary, traits)
+    except ValueError as error:
+        message = str(error)
+    else:
+        raise AssertionError("Inconsistent summary/trait evidence was accepted")
+    assert "trait" in message.lower()
+
+
+def test_1183_trait_crosscheck_accepts_exact_serialized_values(
+    trait_records_1183: tuple[scan.Protocol, dict[str, Any], pd.DataFrame],
+) -> None:
+    protocol, summary, traits = trait_records_1183
+    before = traits.copy(deep=True)
+    _check_trait_records_1183(protocol, summary, traits)
+    pd.testing.assert_frame_equal(traits, before)
+
+
+@pytest.mark.parametrize(
+    ("column", "value"),
+    [
+        ("trait_label", "1"),
+        ("p", "0.000010000001"),
+        ("p", "nan"),
+        ("p", "inf"),
+        ("is_lead_trait", "1"),
+        ("missing", "NaN"),
+        ("missing", "None"),
+        ("unbounded", ""),
+    ],
+    ids=[
+        "literal-label",
+        "tiny-numeric-change",
+        "numeric-nan",
+        "numeric-inf",
+        "boolean",
+        "null-nan",
+        "null-none",
+        "infinity-string",
+    ],
+)
+def test_1183_trait_crosscheck_rejects_changed_cells(
+    trait_records_1183: tuple[scan.Protocol, dict[str, Any], pd.DataFrame],
+    column: str,
+    value: str,
+) -> None:
+    protocol, summary, traits = trait_records_1183
+    traits.loc[0, column] = value
+    _expect_trait_refusal_1183(protocol, summary, traits)
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        "missing-row",
+        "extra-row",
+        "reordered-rows",
+        "missing-column",
+        "extra-column",
+        "duplicate-trait",
+    ],
+)
+def test_1183_trait_crosscheck_rejects_changed_inventory(
+    trait_records_1183: tuple[scan.Protocol, dict[str, Any], pd.DataFrame], change: str
+) -> None:
+    protocol, summary, traits = trait_records_1183
+    if change == "missing-row":
+        traits = traits.iloc[:1]
+    elif change == "extra-row":
+        traits = pd.concat([traits, traits.iloc[[1]]], ignore_index=True)
+    elif change == "reordered-rows":
+        traits = traits.iloc[::-1].reset_index(drop=True)
+    elif change == "missing-column":
+        traits = traits.drop(columns="p")
+    elif change == "extra-column":
+        traits["extra"] = "unexpected"
+    else:
+        summary["traits"].append(dict(summary["traits"][1]))
+        traits = pd.concat([traits, traits.iloc[[1]]], ignore_index=True)
+    _expect_trait_refusal_1183(protocol, summary, traits)
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        "cell",
+        "field",
+        "rows-type",
+        "row-type",
+        "lead-id",
+        "lead-missing",
+        "lead-flag",
+        "other-flag",
+    ],
+)
+def test_1183_trait_crosscheck_rejects_summary_or_lead_disagreement(
+    trait_records_1183: tuple[scan.Protocol, dict[str, Any], pd.DataFrame], change: str
+) -> None:
+    protocol, summary, traits = trait_records_1183
+    if change == "cell":
+        summary["traits"][0]["p"] = 0.5
+    elif change == "field":
+        summary["traits"][1]["extra"] = "unexpected"
+    elif change == "rows-type":
+        summary["traits"] = {}
+    elif change == "row-type":
+        summary["traits"][1] = None
+    elif change == "lead-id":
+        summary["lead_trait"] = "CUSTOM:other"
+    elif change == "lead-missing":
+        del summary["lead_trait"]
+    else:
+        index = 0 if change == "lead-flag" else 1
+        value = index == 1
+        summary["traits"][index]["is_lead_trait"] = value
+        traits.loc[index, "is_lead_trait"] = str(value)
+    _expect_trait_refusal_1183(protocol, summary, traits)
+
+
+@pytest.mark.parametrize(
+    ("summary_version", "provenance_version", "historical"),
+    [
+        (scan.VERSION_V1, scan.VERSION_V1, True),
+        ("future-scan-v3", "future-scan-v3", False),
+        (scan.VERSION, "future-scan-v3", False),
+        (scan.VERSION_V1, scan.VERSION, False),
+        (None, scan.VERSION, False),
+    ],
+    ids=["actual-v1", "future", "mismatched-future", "mixed-v1-v2", "missing"],
+)
+def test_1183_protocol_refusal_only_calls_matching_v1_historical(
+    summary_version: str | None, provenance_version: str, historical: bool
+) -> None:
+    try:
+        scopes._require_v2(
+            Path("fixture-scan"),
+            {"protocol": summary_version},
+            {"protocol": {"version": provenance_version}},
+        )
+    except ValueError as error:
+        message = str(error)
+    else:
+        raise AssertionError("The scopes report accepted a non-v2 declaration")
+    assert ("records remain historical evidence" in message) == historical
+    assert scan.VERSION in message
+
+
+def test_1183_pairing_rechecks_preloaded_trait_rows(
+    trait_records_1183: tuple[scan.Protocol, dict[str, Any], pd.DataFrame],
+) -> None:
+    protocol, template, traits = trait_records_1183
+    runs = []
+    for scope in ("phenotype", "off"):
+        summary = {
+            **json.loads(json.dumps(template)),
+            scan.STRAIN_ROLLUP: scan.scope_record(scope, "recorded", protocol),
+            "rule": {},
+        }
+        provenance = {
+            "protocol": scan.protocol_record(),
+            "code_commit": "fixture",
+            "scripts": {},
+            "environment": {},
+            "methods": {},
+            "chunk": 1,
+            "core_run": {
+                "contrast_population": "fixture",
+                "direction_basis": "fixture",
+                "git_commit": "fixture",
+                "git_dirty": False,
+                "parameters": {scan.STRAIN_ROLLUP: scope},
+                "sources": {},
+            },
+        }
+        runs.append(
+            scopes.ScanRun(Path(scope), summary, provenance, traits.copy(), protocol, {}, scope)
+        )
+    assert scopes.pair_scopes(runs, protocol) == runs
+    runs[1].traits.loc[0, "p"] = "0.000010000001"
+    try:
+        scopes.pair_scopes(runs, protocol)
+    except ValueError as error:
+        message = str(error)
+    else:
+        raise AssertionError("Pairing accepted contradictory preloaded trait rows")
+    assert "trait" in message.lower()
+
+
+def test_1183_load_run_rechecks_bound_trait_rows_after_verification(
+    trait_records_1183: tuple[scan.Protocol, dict[str, Any], pd.DataFrame],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Exercise the real loader with a small, explicit scientific-verification boundary."""
+    protocol, summary, traits = trait_records_1183
+    rollup = scan.scope_record("off", "recorded", protocol)
+    summary.update(protocol=scan.VERSION, **{scan.STRAIN_ROLLUP: rollup})
+    provenance = {"protocol": scan.protocol_record(), scan.STRAIN_ROLLUP: rollup}
+    paths = {name: tmp_path / scan.OUTPUTS[name] for name in scopes.READ}
+    paths["summary"].write_text(json.dumps(summary), encoding="utf-8")
+    paths["provenance"].write_text(json.dumps(provenance), encoding="utf-8")
+    traits.to_csv(paths["traits"], sep="\t", index=False)
+    manifest = tmp_path / "run.json"
+    manifest.write_text(json.dumps({"run_id": "fixture-core"}), encoding="utf-8")
+    manifest_hash = hashlib.sha256(manifest.read_bytes()).hexdigest()
+    consumer_path = tmp_path / scan.CONSUMER_RECORD
+
+    def bind() -> ConsumerRecord:
+        record = ConsumerRecord.model_validate(
+            {
+                "id": "fixture-consumer",
+                "run_id": "fixture-core",
+                "run_manifest_path": str(manifest),
+                "run_manifest_sha256": manifest_hash,
+                "consumer": scan.CONSUMER,
+                "product_ids": [],
+                "artifact_ids": [],
+                "feature_policy": "fixture",
+                "cohort": "fixture",
+                "created_at": "2026-11-10T00:00:00Z",
+                "coverage_path": "unused-coverage.tsv",
+                "feature_filter_id": f"sha256:{manifest_hash}",
+                "coverage_scope": "input_cohort_before_analysis_specific_exclusions",
+                "outputs": [
+                    {
+                        "path": str(path),
+                        "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+                        "size_bytes": path.stat().st_size,
+                    }
+                    for path in paths.values()
+                ],
+            }
+        )
+        consumer_path.write_text(record.model_dump_json(), encoding="utf-8")
+        return record
+
+    record = bind()
+    monkeypatch.setattr(consumers, "verify_consumer_record", lambda *_args, **_kwargs: record)
+    monkeypatch.setattr(
+        WorkflowRun,
+        "model_validate_json",
+        lambda _raw: WorkflowRun.model_construct(run_id="fixture-core"),
+    )
+    monkeypatch.setattr(scopes, "check_bound_core", lambda *_args, **_kwargs: None)
+    pd.testing.assert_frame_equal(scopes.load_run(tmp_path).traits, traits)
+    traits.loc[0, "p"] = "0.000010000001"
+    traits.to_csv(paths["traits"], sep="\t", index=False)
+    record = bind()
+    try:
+        scopes.load_run(tmp_path)
+    except ValueError as error:
+        message = str(error)
+    else:
+        raise AssertionError("Loading accepted bound trait rows that contradict the summary")
+    assert "trait TSV" in message
 
 
 @pytest.fixture(scope="module")
@@ -171,6 +474,49 @@ def test_loaded_bytes_must_still_match_the_verified_output_inventory(
             scopes.load_run(scans["off"], resolver=isolated_retained.resolve)
     finally:
         assert source.read_bytes() == retained_source.read_bytes() == original_bytes
+
+
+def test_1183_rebound_trait_output_is_checked_against_the_unchanged_summary(
+    scans: dict[str, Path], isolated_retained: ArchiveResolver
+) -> None:
+    """A private archive reproduces the output-plus-consumer rewrite in #1183."""
+    original = scans["off"]
+    path = isolated_retained.resolve(original / scan.OUTPUTS["traits"])
+    path.write_bytes(one_byte_change("traits", path.read_bytes()))
+    consumer_path = isolated_retained.resolve(original / scan.CONSUMER_RECORD)
+    record = ConsumerRecord.model_validate_json(consumer_path.read_bytes())
+    outputs = []
+    for output in record.outputs:
+        if isolated_retained.resolve(Path(output.path)) == path:
+            raw = path.read_bytes()
+            output = output.model_copy(
+                update={"sha256": hashlib.sha256(raw).hexdigest(), "size_bytes": len(raw)}
+            )
+        outputs.append(output)
+    consumer_path.write_text(
+        record.model_copy(update={"outputs": outputs}).model_dump_json(), encoding="utf-8"
+    )
+    locations = []
+    for location in isolated_retained.record.locations:
+        target = isolated_retained.root / location.archive_path
+        digest, size, members = inventory(target, str(location.storage_kind))
+        locations.append(
+            location.model_copy(update={"sha256": digest, "size_bytes": size, "inventory": members})
+        )
+    archive_path = isolated_retained.root / "archive.json"
+    archive_path.write_text(
+        isolated_retained.record.model_copy(update={"locations": locations}).model_dump_json(),
+        encoding="utf-8",
+    )
+    rebound = ArchiveResolver(archive_path)
+    consumers.verify_consumer_record(original / scan.CONSUMER_RECORD, resolver=rebound.resolve)
+    try:
+        scopes.load_run(original, resolver=rebound.resolve)
+    except ValueError as error:
+        message = str(error)
+    else:
+        raise AssertionError("Rebinding a changed trait output bypassed its summary cross-check")
+    assert "trait" in message.lower()
 
 
 def test_loaded_consumer_record_must_equal_the_verified_record(

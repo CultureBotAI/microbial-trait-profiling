@@ -364,8 +364,12 @@ def test_rank_class_skip_count_is_emitted_in_coverage_provenance(
     audit = provenance["taxonomy_diagnosis"]["parser_audit"]
     assert audit["excluded_records"] == 0
     assert (
-        "taxonomy_rank_class_edge_records_skipped counts well-formed ontology rank-class"
-        in audit["excluded_records_note"]
+        "excluded_records counts malformed KG edge records dropped by the strict "
+        "edge parser (always 0)" in audit["excluded_records_note"]
+    )
+    assert (
+        "taxonomy_rank_class_edge_records_skipped counts well-formed "
+        "NCBITaxon:<name> ontology rank-class" in audit["excluded_records_note"]
     )
     assert audit["taxonomy_rank_class_edge_records_skipped"] == 1
     assert audit["records"] == 2
@@ -449,9 +453,12 @@ def test_invalid_taxonomy_identifier_rejects_beside_a_valid_organism_edge(
         "e0\tNCBITaxon:91626\tbiolink:subclass_of\tNCBITaxon:2759\n"
         f"e1\t{bad_edge}\n"
     )
-    with pytest.raises(
-        ValueError, match=re.escape(f"Invalid taxonomy identifier in edge e1: {identifier}")
-    ):
+    expected = (
+        f"Rank-class edge e1 has a non-rank NCBITaxon subject: {identifier}"
+        if bad_edge.endswith("\tOBO:NCBITaxon#_taxonomic_rank")
+        else f"Invalid taxonomy identifier in edge e1: {identifier}"
+    )
+    with pytest.raises(ValueError, match=re.escape(expected)):
         coverage.CoverageTaxonomy(edges)
 
 

@@ -169,7 +169,9 @@ class CoverageTaxonomy:
                     rank_class_records += 1
                     continue
                 if subject.startswith("NCBITaxon:"):
-                    raise ValueError(f"Invalid taxonomy identifier in edge {row['id']}: {subject}")
+                    raise ValueError(
+                        f"Rank-class edge {row['id']} has a non-rank NCBITaxon subject: {subject}"
+                    )
             for identifier in (subject, parent):
                 if identifier.startswith("NCBITaxon:") and not re.fullmatch(
                     r"NCBITaxon:[1-9][0-9]*", identifier
@@ -188,8 +190,9 @@ class CoverageTaxonomy:
             excluded_records_note=(
                 "excluded_records counts malformed KG edge records dropped by the strict "
                 "edge parser (always 0); taxonomy_rank_class_edge_records_skipped counts "
-                "well-formed ontology rank-class subclass_of records skipped during "
-                "organism-ancestry graph projection (#1008, #1274)."
+                "well-formed NCBITaxon:<name> ontology rank-class subclass_of records "
+                "skipped during organism-ancestry graph projection, while OBO-form rank-class "
+                "subjects take the non-NCBITaxon skip (#1008, #1274)."
             ),
             taxonomy_edge_records=accepted,
             taxonomy_rank_class_edge_records_skipped=rank_class_records,
@@ -2528,7 +2531,8 @@ def write_readme(
             "recognized roots or reachable cycles reject the run before outputs are written.",
             "Ontology rank-class edges are skipped during organism-ancestry projection",
             "(counted in parser_audit as taxonomy_rank_class_edge_records_skipped, while",
-            "excluded_records: 0 confirms the strict KG edge parser dropped no record).",
+            "excluded_records is always 0: the strict KG edge parser raises on a "
+            "malformed record instead of dropping it).",
             "Explicit unresolved labels and slash composites retain their distinct diagnoses.",
             "Eukaryotic and viral ancestry precedes Candidatus/cultivation heuristics;",
             "alias suggestions do not transfer ancestry or traits.",

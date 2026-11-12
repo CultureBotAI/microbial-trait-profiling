@@ -157,16 +157,17 @@ def native_run(scan: Any) -> ScanRun:
     """Construct real native records; publication tests exercise the native checker."""
     identity = scan.pairing_identity
     protocol = native_scan.load_protocol()
+    trait_row = {"trait_id": protocol.lead_trait, "is_lead_trait": True}
     return ScanRun(
         scan.source_roots[0] / scan.context["strain_rollup"],
         {
             "rule": identity["rule"],
             "strain_rollup": {
                 "scope": scan.context["strain_rollup"],
-                "role": "primary"
-                if scan.context["strain_rollup"] == "phenotype"
-                else "sensitivity",
+                "role": native_scan.scope_role(scan.context["strain_rollup"], protocol),
             },
+            "lead_trait": protocol.lead_trait,
+            "traits": [trait_row],
         },
         {
             **{
@@ -185,7 +186,7 @@ def native_run(scan: Any) -> ScanRun:
                 "sources": identity["core sources"],
             },
         },
-        pd.DataFrame(),
+        pd.DataFrame([{"trait_id": protocol.lead_trait, "is_lead_trait": "True"}]),
         protocol,
         {},
         scan.context["core_run_id"],
@@ -345,6 +346,28 @@ def test_v2_scan_exports_both_scopes(
     ]
     audit = pd.read_csv(output / "candidate-triples/audit.tsv", sep="\t")
     assert audit.groupby("strain_rollup").size().to_dict() == {"off": 2, "phenotype": 2}
+
+
+def test_v2_scan_refuses_companion_trait_summary_mismatch_before_output(
+    sources: Any, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    companion = companion_scan(sources, monkeypatch)
+    companion.native_run.traits.loc[0, "is_lead_trait"] = "False"
+    output = tmp_path / "fresh" / "figures"
+    try:
+        slice2.build_slice2_figures(
+            output=output,
+            scan_companion_run=sources.source.parent / "companion",
+            scan_companion_sha256="f" * 64,
+            **sources.args,
+        )
+    except ValueError as error:
+        message = str(error)
+    else:
+        raise AssertionError("Publication accepted conflicting companion trait records")
+    assert "native comparability" in message
+    assert "trait TSV" in message
+    assert not output.parent.exists()
 
 
 @pytest.mark.parametrize("role", ["scan", "overlap"])
