@@ -158,7 +158,7 @@ to a cell in the other, while the hue still identifies which guild is being read
 
 A condition whose every cell was masked would render as a blank row and is
 dropped before clustering; the dropped labels are listed on each run. A row that
-keeps only dark-grey cells is retained, because "sampled, but no recorded guild
+keeps only dark-grey cells is retained, because "sampled, with no recorded guild
 annotation signal" distinguishes mapped zero signal from unsampled cells.
 On the run described here 9
 conditions were dropped (Atopic asthma, Cervical cancer, Head and neck squamous

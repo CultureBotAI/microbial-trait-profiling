@@ -158,9 +158,18 @@ To add or change a correction:
 ## Enforcement
 
 `tests/test_multiple_testing_registry.py` parses every Python file under `src/` and
-`scripts/`, including ignored files. It resolves import and assignment aliases and local
-wrapper functions. Among other checks, it fails when:
-- a correction call has no registry entry for its enclosing function;
+`scripts/`, including ignored files (`IN_SCOPE_SOURCE_DIRS = ("src", "scripts")`).
+Repository directories outside `src/` and `scripts/` — explicitly `tests/`, `tools/`,
+`methods/`, `docs/`, `data/`, and `schema/` (`OUT_OF_SCOPE_SOURCE_DIRS`) — are out of
+scope of the production/script registry scan. Within `src/` and `scripts/`, the guard
+resolves import and assignment aliases, cross-module re-exported aliases,
+`functools.partial` bindings, literal `getattr` attribute lookups, bare-name imports
+between sibling scripts, local wrapper functions, and structural correction patterns
+(`minimum.accumulate` step-up, `p * m / rank` step-up loops, inline Bonferroni
+`min(1.0, p * m)` / `p_val * n_tests`, and Šidák `1 - (1 - p) ** m`). Among other
+checks, it fails when:
+- a correction call or structural correction definition has no registry entry for its
+  enclosing function;
 - a registry anchor does not exist, or an infrastructure anchor gives no reason;
 - the literal procedures in a discovered function do not match the per-function counts
   pinned in `literal_procedure_counts`. A change that alters a count is caught; a swap
@@ -282,15 +291,29 @@ calculation; the observed arithmetic is not checked. A calculation in a shared a
 can therefore satisfy several families' claims without establishing each output's
 derivation.
 
-The test checks registration, anchors and literal procedures. It recognises a correction
-by the name of the function it calls, so it does not detect any of these (#1443):
-- hand-rolled arithmetic that is not named like a correction, such as a step-up loop or
-  `p * m` Bonferroni;
-- a correction function re-exported under another name;
-- `functools.partial` and `getattr` dispatch;
-- calls between scripts that import each other by bare module name;
-- methods called on objects. Conversely, any `obj.correct()` or `obj.adjust()` call is
-  reported as a correction even when it is not one.
+The test checks registration, anchors and literal procedures. In addition to named
+correction primitives and wrappers, it structurally detects (#1443):
+- hand-rolled step-up and Bonferroni/Šidák arithmetic even when the function is not
+  named like a correction (`minimum.accumulate` step-up, `p * m / rank` step-up loops,
+  clamped `min(1.0, p * m)` or `np.minimum(p * len(p), 1.0)`, explicit `p_val * n_tests`
+  Bonferroni scaling, and `1 - (1 - p) ** m` Šidák scaling);
+- correction functions re-exported under another module-level alias or `import ... as`;
+- `functools.partial` bindings (preserving bound `method=` / `by=` arguments) and
+  literal `getattr(module, "name")` dispatch;
+- calls between scripts under `scripts/` that import each other by bare module name;
+- defined `correct` / `adjust` helpers while ignoring unrelated `obj.correct()` and
+  `obj.adjust()` method calls on arbitrary objects.
+
+Because discovery is a bounded static AST scan over `src/` and `scripts/` (with
+`tests/`, `tools/`, `methods/`, `docs/`, `data/`, and `schema/` explicitly out of
+scope), it still does not detect:
+- dynamic imports (`importlib.import_module`, `__import__`), `eval` / `exec`, or
+  `getattr(obj, variable)` with a non-literal attribute name;
+- arbitrary custom multiple-testing arithmetic written without recognizable step-up
+  (`minimum.accumulate`, `p * m / rank`), Bonferroni (`min(1.0, p * m)`, `p_val * n_tests`),
+  or Šidák (`1 - (1 - p) ** m`) structure;
+- calls dispatched through runtime registries, callbacks, or arbitrary object methods
+  outside resolved module/class namespaces.
 
 Within a registered function, it also does not detect:
 - a procedure chosen from a variable or a loop;

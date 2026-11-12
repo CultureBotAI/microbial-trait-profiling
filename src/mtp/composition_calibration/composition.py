@@ -54,6 +54,7 @@ from mtp.paths import DERIVED_DATA_DIR
 
 logger = logging.getLogger(__name__)
 
+EXPORT_SCHEMA_VERSION = "composition-calibration-output-v1"
 STREAM = "complete_null_study_flip"
 UNIT = "study"
 SEED = 182
@@ -424,6 +425,7 @@ def run_composition_calibration(
 
     # Metadata & summary object
     summary_dict: dict[str, Any] = {
+        "export_schema_version": EXPORT_SCHEMA_VERSION,
         "method_id": adapter.method_id,
         "owner": adapter.owner,
         "issue": "https://github.com/CultureBotAI/microbial-trait-profiling/issues/263",

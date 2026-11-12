@@ -11,9 +11,93 @@ import pytest
 from mtp import guild_maps
 from mtp.corpus_identity import CorpusIdentity
 from mtp.paths import REPO_ROOT
+from mtp.trait_guilds import CorpusStats
 from mtp.workflow.consumers import CoreBundle, open_core_bundle, verify_consumer_record
 from mtp.workflow.operations import OPERATIONS, validate_execution_product
 from mtp.workflow.runtime import execute_workflow
+
+
+@pytest.mark.parametrize(
+    ("include_non_human", "has_mouse_profiles", "expected_profiles"),
+    [
+        pytest.param(False, False, 2, id="default-human"),
+        pytest.param(False, True, 2, id="default-mixed"),
+        pytest.param(True, True, 4, id="include-mixed"),
+        pytest.param(True, False, 0, id="refuse-human-with-mouse-metadata"),
+    ],
+)
+def test_guild_cli_requires_nonhuman_rows_when_explicitly_requested(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    include_non_human: bool,
+    has_mouse_profiles: bool,
+    expected_profiles: int,
+) -> None:
+    """Use the real parser and loader; stop before identity/plotting after loading."""
+    profiles = tmp_path / "profiles.tsv"
+    experiments = tmp_path / "experiments.tsv"
+    output = tmp_path / "output"
+    studies = ("human", "mouse") if has_mouse_profiles else ("human",)
+    profiles.write_text(
+        "study_id\texperiment_id\tinc_dec\tMETPO:1000602\tMETPO:1000603\n"
+        + "".join(
+            f"{study}\t{study}-1\t{direction}\t3\t2\n"
+            for study in studies
+            for direction in ("inc", "dec")
+        ),
+        encoding="utf-8",
+    )
+    experiments.write_text(
+        "study_id\texperiment_id\tcondition\tbody_site\thost_species\n"
+        "human\thuman-1\tColitis\tFeces\tHomo sapiens\n"
+        "mouse\tmouse-1\tColitis\tFeces\tMus musculus\n",
+        encoding="utf-8",
+    )
+    before = (profiles.read_bytes(), experiments.read_bytes())
+    observed: list[CorpusStats] = []
+
+    class LoadedBoundary(Exception):
+        pass
+
+    def stop_after_loading(stats: CorpusStats, _vintage: str | None) -> None:
+        assert expected_profiles > 0, "Explicit non-human request crossed the loader guard"
+        assert stats.kept_profiles == expected_profiles
+        observed.append(stats)
+        raise LoadedBoundary
+
+    monkeypatch.setattr(guild_maps, "write_stats_report", stop_after_loading)
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        [
+            "guild-maps",
+            "--profile-input",
+            str(profiles),
+            "--experiments-input",
+            str(experiments),
+            "--full-dump-input",
+            str(tmp_path / "absent-dump.csv"),
+            "--output-dir",
+            str(output),
+            *(["--include-non-human"] if include_non_human else []),
+        ],
+    )
+    if expected_profiles == 0:
+        with pytest.raises(ValueError, match=r"no .*non-human.*all-host"):
+            guild_maps.main()
+        assert observed == []
+    else:
+        with pytest.raises(LoadedBoundary):
+            guild_maps.main()
+        assert len(observed) == 1
+    assert not output.exists()
+    assert (profiles.read_bytes(), experiments.read_bytes()) == before
+
+
+def test_guild_cli_help_states_the_all_host_input_requirement() -> None:
+    help_text = " ".join(guild_maps.build_parser().format_help().split()).lower()
+    assert "--include-non-human" in help_text
+    assert "all-host profile table" in help_text
 
 
 @pytest.fixture

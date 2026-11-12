@@ -14,9 +14,18 @@ The home pattern has no left anchor on purpose (#1691): an anchor would miss a h
 reached through the macOS firmlink root (``System/Volumes/Data``), a form that disk
 tools print. A false positive inside a URL fails loudly, which is the safer error.
 
-What it deliberately leaves out, tracked in #1682: a bare ``tmp`` directory at the
-root (the tree uses it in synthetic examples), ``~``-relative homes and external
-volumes.
+What it deliberately leaves out (#1682, pinned in ``EXCLUDED_PATH_FAMILIES``):
+
+- ``bare_root_tmp``: a bare ``tmp`` directory at the POSIX root, which the repository
+  uses as a portable, user-agnostic scratch placeholder in ``Justfile`` comments and
+  synthetic test fixtures (whereas macOS ``/private`` temp roots and per-user
+  ``var/folders`` paths remain forbidden);
+- ``tilde_relative_home``: ``~``-relative home shorthands (such as ``~/.cache/uv``),
+  which are user-agnostic shell notation that disclose no account name (whereas concrete
+  POSIX and Windows user-home paths remain forbidden);
+- ``external_volume``: generic ``Volumes`` mount paths when they contain no user-home or
+  temp-root segment (a user home or macOS temp root beneath ``System/Volumes/Data`` or
+  ``Volumes`` is still caught by the unanchored patterns).
 
 No pattern or sample in this file spells out a path it matches, because the guard
 scans this file too (#1674).
@@ -538,7 +547,79 @@ SAFE_SAMPLES: tuple[str, ...] = (
     "https://github.com/CultureBotAI/microbial-trait-profiling/issues/1622",
 )
 
-# Left out on purpose and tracked in #1682; a change here should update that issue.
+
+@dataclass(frozen=True)
+class ExcludedPathFamily:
+    """Explicit #1682 scope decision for a path family left out of the guard."""
+
+    rationale: str
+    representative_samples: tuple[str, ...]
+    forbidden_counterparts: tuple[tuple[str, str], ...]
+
+
+EXPECTED_EXCLUDED_PATH_FAMILIES: frozenset[str] = frozenset(
+    {
+        "bare_root_tmp",
+        "tilde_relative_home",
+        "external_volume",
+    }
+)
+
+# Left out on purpose and pinned under #1682; each excluded family pairs portable
+# out-of-scope samples with forbidden machine-local counterparts across the boundary.
+EXCLUDED_PATH_FAMILIES: dict[str, ExcludedPathFamily] = {
+    "bare_root_tmp": ExcludedPathFamily(
+        rationale=(
+            "Bare POSIX root tmp paths are portable scratch placeholders used in Justfile "
+            "comments and synthetic test fixtures without identifying a user or host; macOS "
+            "resolved temp paths under private/tmp and per-user var/folders remain forbidden "
+            "(#1682)."
+        ),
+        representative_samples=(
+            "/" + "tmp/mtp-run/out.json",
+            "/" + "tmp/scratch/table.tsv",
+        ),
+        forbidden_counterparts=(
+            (TEMP_ROOT, "/" + "private/tmp/mtp-run/out.json"),
+            (TEMP_ROOT, "/" + "private/var" + "/" + "folders/ab/cd1234/T/run/out.json"),
+            (TEMP_ROOT, "/" + "var/folders/ab/cd1234/T/run/out.json"),
+        ),
+    ),
+    "tilde_relative_home": ExcludedPathFamily(
+        rationale=(
+            "Tilde-relative home shorthands (~/.cache/uv and similar CLI instructions) are "
+            "user-agnostic shell notation that disclose no account name; concrete POSIX and "
+            "Windows user-home paths remain forbidden (#1682)."
+        ),
+        representative_samples=(
+            "~/" + ".cache/uv",
+            "~/" + "project/data.tsv",
+        ),
+        forbidden_counterparts=(
+            (USER_HOME, "/" + "Users/alice/.cache/uv"),
+            (USER_HOME, "/" + "home/bob/.cache/uv"),
+            (USER_HOME, "C:\\" + "Users" + "\\carol\\.cache\\uv"),
+        ),
+    ),
+    "external_volume": ExcludedPathFamily(
+        rationale=(
+            "Generic macOS Volumes mount prefixes are excluded unless they embed a forbidden "
+            "user-home or temp-root segment (such as the macOS firmlink root "
+            "System/Volumes/Data followed by a user home, which the unanchored home pattern "
+            "catches) (#1682)."
+        ),
+        representative_samples=(
+            "/" + "Volumes/External/mtp/out.tsv",
+            "/" + "Volumes/ScratchDisk/runs/matrix.tsv",
+        ),
+        forbidden_counterparts=(
+            (USER_HOME, "/" + "System/Volumes/Data" + "/" + "Users/alice/mtp/out.tsv"),
+            (USER_HOME, "/" + "Volumes/External" + "/" + "Users/alice/mtp/out.tsv"),
+            (TEMP_ROOT, "/" + "Volumes/External" + "/" + "private/tmp/mtp/out.tsv"),
+        ),
+    ),
+}
+
 OUT_OF_SCOPE_SAMPLES: tuple[str, ...] = (
     "/" + "tmp/mtp-run/out.json",
     "~/" + ".cache/uv",
@@ -562,6 +643,56 @@ def test_safe_and_out_of_scope_samples_match_no_pattern() -> None:
     for sample in SAFE_SAMPLES + OUT_OF_SCOPE_SAMPLES:
         for pattern in (USER_HOME_PATTERN, MACOS_TEMP_ROOT_PATTERN, ABSOLUTE_LOCAL_PATH_PATTERN):
             assert pattern.search(sample) is None, (pattern.pattern, sample)
+
+
+def test_excluded_path_families_pin_scope_rationale_and_boundary() -> None:
+    """Each #1682 excluded family records its rationale and passes both boundary directions."""
+    assert __doc__ is not None
+    for required_token in (
+        "#1682",
+        "EXCLUDED_PATH_FAMILIES",
+        *EXPECTED_EXCLUDED_PATH_FAMILIES,
+    ):
+        assert required_token in __doc__, required_token
+    assert set(EXCLUDED_PATH_FAMILIES) == EXPECTED_EXCLUDED_PATH_FAMILIES
+    assert len(EXCLUDED_PATH_FAMILIES) == 3
+    assert (
+        tuple(spec.representative_samples[0] for spec in EXCLUDED_PATH_FAMILIES.values())
+        == OUT_OF_SCOPE_SAMPLES
+    )
+    both_families = frozenset({USER_HOME, TEMP_ROOT})
+    for family_name, spec in EXCLUDED_PATH_FAMILIES.items():
+        assert "#1682" in spec.rationale, family_name
+        assert len(spec.rationale.strip()) >= 40, family_name
+        assert len(spec.representative_samples) >= 2, family_name
+        assert len(spec.forbidden_counterparts) >= 3, family_name
+        for sample in spec.representative_samples:
+            for pattern in (
+                USER_HOME_PATTERN,
+                MACOS_TEMP_ROOT_PATTERN,
+                ABSOLUTE_LOCAL_PATH_PATTERN,
+            ):
+                assert pattern.search(sample) is None, (family_name, sample)
+            assert _scan_records((("doc.md", "index stage 0", sample),)) == {}, (
+                family_name,
+                sample,
+            )
+        for expected_family, counterpart in spec.forbidden_counterparts:
+            assert expected_family in both_families, (family_name, expected_family)
+            assert ABSOLUTE_LOCAL_PATH_PATTERN.search(counterpart) is not None, (
+                family_name,
+                counterpart,
+            )
+            hits = _scan_records((("doc.md", "index stage 0", counterpart),))
+            assert [hit.family for hit in hits["doc.md"]] == [expected_family], (
+                family_name,
+                counterpart,
+            )
+            unexpected = _unexpected_hits(hits, both_families)
+            assert [hit.family for hit in unexpected["doc.md"]] == [expected_family], (
+                family_name,
+                counterpart,
+            )
 
 
 def test_user_home_after_a_temp_root_is_still_reported() -> None:

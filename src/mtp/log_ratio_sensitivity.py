@@ -46,6 +46,7 @@ PROTOCOL_PATH = REPO_ROOT / "methods" / "table1_log_ratio_sensitivity_protocol.j
 DEFAULT_TAXA_PATH = DERIVED_DATA_DIR / "bugsigdb_taxa.tsv"
 DEFAULT_OUTPUT_DIR = DERIVED_DATA_DIR / "table1_composition_sensitivity"
 VERSION = "log-ratio-sensitivity-v1"
+EXPORT_SCHEMA_VERSION = "log-ratio-sensitivity-output-v1"
 
 TIE_TOLERANCE = 1e-12
 CONFIDENCE_LEVEL = 0.95
@@ -1137,6 +1138,7 @@ def write_outputs(
     status = {
         **provenance,
         "version": VERSION,
+        "export_schema_version": EXPORT_SCHEMA_VERSION,
         "protocol": str(PROTOCOL_PATH.relative_to(REPO_ROOT)),
         "protocol_sha256": _sha256(PROTOCOL_PATH),
         "row_fields": [field.name for field in fields(Row)],

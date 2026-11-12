@@ -1,6 +1,8 @@
 """The widened directional family: its correction, its dependence, its missing states."""
 
 import csv
+import gzip
+import hashlib
 import json
 import random
 from pathlib import Path
@@ -20,6 +22,7 @@ from bsdbng.trait_screen import (
     dependence,
     effective_family_size,
     main,
+    read_header,
     run_screen,
     screen_candidates,
     significant,
@@ -116,6 +119,65 @@ def test_the_candidate_family_is_the_retained_universe_and_excludes_mediadive(
     assert columns == ["A", "B"]
     assert excluded == 1
     assert len(positions) == 2
+
+
+@pytest.mark.parametrize("suffix", [".gz", ".GZ"])
+def test_public_header_readers_accept_real_gzip(tmp_path: Path, suffix: str) -> None:
+    """#1301: read compressed bytes and preserve the ordered candidate vocabulary."""
+    header = [
+        "study_id",
+        "experiment_id",
+        "inc_dec",
+        "taxa_count",
+        "METPO:2000103|GO:0030245",
+        "mediadive.medium:X",
+        "METPO:1000608",
+    ]
+    raw = ("\t".join(header) + "\nétude1\te1\tinc\t12\t3\t7\t2\n").encode()
+    plain = tmp_path / "profiles.tsv"
+    packed = tmp_path / f"profiles.tsv{suffix}"
+    encoded = gzip.compress(raw, mtime=0)
+    plain.write_bytes(raw)
+    packed.write_bytes(encoded)
+    assert gzip.decompress(encoded) == raw
+    expected = ("METPO:2000103|GO:0030245", "METPO:1000608")
+
+    assert read_header(plain) == header
+    assert screen_candidates(plain) == expected
+    assert read_header(packed) == header
+    assert screen_candidates(packed) == expected
+    assert plain.read_bytes() == raw
+    assert packed.read_bytes() == encoded
+
+
+@pytest.mark.parametrize("suffix", [".gz", ".GZ"])
+@pytest.mark.parametrize("reader_name", ["header", "candidates"])
+def test_public_header_readers_refuse_empty_gzip(
+    tmp_path: Path, suffix: str, reader_name: str
+) -> None:
+    path = tmp_path / f"empty.tsv{suffix}"
+    encoded = gzip.compress(b"", mtime=0)
+    path.write_bytes(encoded)
+    reader = read_header if reader_name == "header" else screen_candidates
+
+    with pytest.raises(ValueError, match="is empty"):
+        reader(path)
+    assert path.read_bytes() == encoded
+
+
+@pytest.mark.parametrize("suffix", [".gz", ".GZ"])
+@pytest.mark.parametrize("reader_name", ["header", "candidates"])
+def test_public_header_readers_refuse_plain_text_disguised_as_gzip(
+    tmp_path: Path, suffix: str, reader_name: str
+) -> None:
+    path = tmp_path / f"invalid.tsv{suffix}"
+    raw = b"study_id\texperiment_id\tinc_dec\tMETPO:1000608\ns1\te1\tinc\t3\n"
+    path.write_bytes(raw)
+    reader = read_header if reader_name == "header" else screen_candidates
+
+    with pytest.raises(gzip.BadGzipFile, match="Not a gzipped file"):
+        reader(path)
+    assert path.read_bytes() == raw
 
 
 def test_each_candidate_is_its_own_single_column_slot() -> None:
@@ -308,6 +370,93 @@ def test_the_effective_set_contains_the_nominal_one() -> None:
 
 
 # --- the pinned corpus and the CLI -----------------------------------------
+
+
+@pytest.mark.parametrize("suffix", [".gz", ".GZ"])
+def test_cli_gzip_profiles_preserve_outputs_and_stored_input_hash(
+    tmp_path: Path, suffix: str
+) -> None:
+    """#1301: the real CLI preserves statistics while identifying each stored file."""
+    plain = tmp_path / "profiles.tsv"
+    packed = tmp_path / f"profiles.tsv{suffix}"
+    experiments = tmp_path / "experiments.tsv"
+    dump = tmp_path / "dump.csv"
+    labels = tmp_path / "absent-labels.tsv"
+    columns = [ids[0] for ids in TABLE1_TRAITS.values()] + ["METPO:9999999"]
+    rows = []
+    for index in range(4):
+        rows.append((f"s{index}", "e1", "inc", [9, 1, 5, 5, 3, 7, 0]))
+        rows.append((f"s{index}", "e1", "dec", [1, 9, 5, 5, 3, 2, 0]))
+    _corpus(plain, columns, rows)
+    raw = plain.read_bytes()
+    packed.write_bytes(gzip.compress(raw, mtime=0))
+    assert gzip.decompress(packed.read_bytes()) == raw
+    experiments.write_text(
+        "study_id\texperiment_id\tcondition\tbody_site\thost_species\n"
+        + "".join(f"s{i}\te1\tX\tFeces\tHomo sapiens\n" for i in range(4)),
+        encoding="utf-8",
+    )
+    dump.write_text("# BugSigDB gzip-parity, License: test\n", encoding="utf-8")
+    input_bytes = {path: path.read_bytes() for path in (plain, packed, experiments, dump)}
+    outputs = (tmp_path / "plain-output", tmp_path / "gzip-output")
+    expected_files = {
+        "trait_direction_screen.tsv",
+        "trait_screen_family.tsv",
+        "trait_screen_correlation.tsv",
+        "trait_screen_provenance.json",
+        "trait_screen_report.md",
+    }
+    for profile, output in zip((plain, packed), outputs, strict=True):
+        assert (
+            main(
+                [
+                    "--profile-input",
+                    str(profile),
+                    "--experiments-input",
+                    str(experiments),
+                    "--full-dump-input",
+                    str(dump),
+                    "--output-dir",
+                    str(output),
+                    "--column-labels",
+                    str(labels),
+                ]
+            )
+            == 0
+        )
+        assert {path.name for path in output.iterdir()} == expected_files
+        assert all((output / name).stat().st_size > 0 for name in expected_files)
+
+    plain_output, packed_output = outputs
+    for name in expected_files - {"trait_screen_provenance.json"}:
+        assert (plain_output / name).read_bytes() == (packed_output / name).read_bytes()
+    with (plain_output / "trait_direction_screen.tsv").open(encoding="utf-8") as handle:
+        written = list(csv.DictReader(handle, delimiter="\t"))
+    assert {row["trait"] for row in written} == set(columns)
+    assert len(written) == len(columns)
+    assert {row["family_size_nominal"] for row in written} == {str(len(columns))}
+    tested = [row for row in written if row["test_status"] == TESTED]
+    untested = [row for row in written if row["test_status"] != TESTED]
+    assert tested
+    assert untested
+    assert any(0 < float(row["binomial_p"]) < 1 for row in tested)
+    assert all(row["bh_q_nominal"] and row["by_q_nominal"] for row in tested)
+    assert all(row["binomial_p"] == row["by_q_nominal"] == "" for row in untested)
+    plain_record = json.loads((plain_output / "trait_screen_provenance.json").read_bytes())
+    packed_record = json.loads((packed_output / "trait_screen_provenance.json").read_bytes())
+    assert set(plain_record) == set(packed_record)
+    for profile, record in ((plain, plain_record), (packed, packed_record)):
+        assert record["profile_path"] == str(profile)
+        assert record["profile_sha256"] == hashlib.sha256(input_bytes[profile]).hexdigest()
+        assert record["family_size_nominal"] == len(columns)
+        assert record["studies"] == 4
+    assert {key for key in plain_record if plain_record[key] != packed_record[key]} == {
+        "profile_path",
+        "profile_sha256",
+    }
+    assert packed_record["profile_sha256"] != hashlib.sha256(raw).hexdigest()
+    assert {path: path.read_bytes() for path in input_bytes} == input_bytes
+    assert not labels.exists()
 
 
 def test_the_cli_writes_every_candidate_with_an_explicit_state(tmp_path: Path) -> None:

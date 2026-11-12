@@ -1015,6 +1015,11 @@ check: check-generated check-agent-docs lint typecheck test check-schema workflo
 download:
 	just timed download "uv run python -c 'from mtp.download import download_exports; download_exports()'"
 
+# Fallback when BugSigDB upstream CSV exports are unreachable: unpack bsdbng-raw-data-*.tar.gz
+# from a GitHub release into data/raw/ and record release provenance (#92).
+download-from-release tag="latest":
+	uv run python -m mtp.download --from-release "{{tag}}"
+
 ingest:
 	just timed ingest "uv run python -c 'from mtp.ingest import ingest; ingest()'"
 

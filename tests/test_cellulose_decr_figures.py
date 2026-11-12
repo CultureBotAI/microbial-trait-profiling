@@ -474,6 +474,7 @@ def retirement_export(tmp_path_factory: pytest.TempPathFactory) -> RetirementExp
         # Check before changing visibility: never repair an already-hidden banner.
         banner = _retirement_artist(figure)
         original_visibility, original_dpi = banner.get_visible(), figure.dpi
+        original_size = tuple(figure.get_size_inches())
         try:
             figure.set_dpi(float(kwargs["dpi"]))
             figure.draw_without_rendering()
@@ -488,6 +489,7 @@ def retirement_export(tmp_path_factory: pytest.TempPathFactory) -> RetirementExp
         finally:
             banner.set_visible(original_visibility)
             figure.set_dpi(original_dpi)
+            figure.set_size_inches(original_size)
 
     def checked_packet_savefig(packet: PdfPages, figure: Figure, **kwargs: Any) -> None:
         _assert_retirement_save_crop(figure, kwargs)
@@ -991,3 +993,62 @@ def test_tufte_options_are_never_abbreviated() -> None:
     with pytest.raises(SystemExit) as stopped:
         tufte_plates.parse_args(["--audit"])
     assert stopped.value.code == 2
+
+
+def test_tufte_plate_headers_and_subtitles_fit_inside_fixed_packet_canvas() -> None:
+    """All 6 Tufte plates keep headers and subtitles inside the fixed PDF packet canvas (#1542)."""
+    import matplotlib.pyplot as plt
+    from matplotlib.lines import Line2D
+
+    from mtp.cellulose_decr import tufte_plates
+
+    builders = (
+        ("plate1", tufte_plates.build_plate1_convergence_slope_and_overlap),
+        ("plate2", tufte_plates.build_plate2_core_guild_dot_table),
+        ("plate3", tufte_plates.build_plate3_why_only_stool),
+        ("plate4", tufte_plates.build_plate4_trait_landscape_and_four_pairs),
+        ("plate5", tufte_plates.build_plate5_three_statistical_arms),
+        ("plate6", tufte_plates.build_plate6_combining_results_integrated_evidence),
+    )
+    for name, builder in builders:
+        fig = builder()
+        try:
+            fig.draw_without_rendering()
+            fig_bbox = fig.bbox
+            right_limit = fig_bbox.x1 - 0.02 * fig_bbox.width
+            left_limit = fig_bbox.x0 + 0.02 * fig_bbox.width
+            for idx, text_artist in enumerate(fig.texts):
+                bbox = text_artist.get_window_extent()
+                assert bbox.x0 >= left_limit, (
+                    f"{name} fig.texts[{idx}] ({text_artist.get_text()!r}) "
+                    f"overflows left margin: x0={bbox.x0:.1f} < {left_limit:.1f}"
+                )
+                assert bbox.x1 <= right_limit, (
+                    f"{name} fig.texts[{idx}] ({text_artist.get_text()!r}) "
+                    f"overflows right canvas edge: x1={bbox.x1:.1f} > {right_limit:.1f} "
+                    f"(canvas width={fig_bbox.width:.1f})"
+                )
+                assert bbox.y0 >= fig_bbox.y0, f"{name} fig.texts[{idx}] clips bottom edge"
+                assert bbox.y1 <= fig_bbox.y1, f"{name} fig.texts[{idx}] clips top edge"
+
+            rule_lines = [a for a in fig.artists if isinstance(a, Line2D)]
+            assert len(rule_lines) >= 2
+            title_bbox = fig.texts[1].get_window_extent()
+            subtitle_bbox = fig.texts[2].get_window_extent()
+            header_rule_y = float(rule_lines[0].get_window_extent().y0)
+            max_axes_top = max(ax.get_window_extent().y1 for ax in fig.axes)
+            assert "\n" in fig.texts[2].get_text(), f"{name} subtitle should wrap across two lines"
+            assert subtitle_bbox.y1 < title_bbox.y0, (
+                f"{name} subtitle top {subtitle_bbox.y1:.1f} overlaps "
+                f"title bottom {title_bbox.y0:.1f}"
+            )
+            assert subtitle_bbox.y0 > header_rule_y + 1.5, (
+                f"{name} subtitle bottom {subtitle_bbox.y0:.1f} collides with header rule "
+                f"at y={header_rule_y:.1f}"
+            )
+            assert header_rule_y > max_axes_top + 1.5, (
+                f"{name} header rule at y={header_rule_y:.1f} collides with "
+                f"panel top {max_axes_top:.1f}"
+            )
+        finally:
+            plt.close(fig)

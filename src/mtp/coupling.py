@@ -23,6 +23,7 @@ Addresses Issue #260 (and follow-ups #478, #479):
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -41,6 +42,7 @@ from mtp.density_adjustment import (
 )
 from mtp.enrichment_stats import benjamini_hochberg
 from mtp.paths import DERIVED_DATA_DIR
+from mtp.trait_key_policy import display_trait_label, read_recorded_member_ids
 
 DEFAULT_OUTPUT_DIR = DERIVED_DATA_DIR
 
@@ -118,10 +120,39 @@ class DecisionRuleResult:
     min_adjacent_pair: tuple[str, str] = ("", "")
 
 
+def _resolve_table1_trait_names(
+    columns_path: Path | None = None,
+    trait_names: Mapping[str, str] | None = None,
+) -> dict[str, str]:
+    """Return Table 1 trait display names resolved from column member metadata (#1250)."""
+    base_names: dict[str, str] = dict(TABLE_1_TRAITS)
+    if trait_names is not None:
+        base_names.update({str(k): str(v) for k, v in trait_names.items()})
+    if columns_path is None:
+        return base_names
+    resolved_columns = Path(columns_path)
+    if not resolved_columns.exists():
+        gz_candidate = (
+            resolved_columns
+            if resolved_columns.suffix == ".gz"
+            else resolved_columns.with_name(f"{resolved_columns.name}.gz")
+        )
+        if gz_candidate.exists():
+            resolved_columns = gz_candidate
+    members = read_recorded_member_ids(resolved_columns)
+    return {
+        trait_id: display_trait_label(trait_id, raw_name, members.get(trait_id))
+        for trait_id, raw_name in base_names.items()
+    }
+
+
 def compute_composition_arm(
     profiles_df: pd.DataFrame,
     trait_universe: list[str],
     focal_traits: list[str],
+    *,
+    trait_names: Mapping[str, str] | None = None,
+    columns_path: Path | None = None,
 ) -> dict[str, ArmResult]:
     """Compute paired composition arm effects, t-statistics, and focal-set FDR q-values.
 
@@ -133,6 +164,7 @@ def compute_composition_arm(
     Returned q_value is a focal-set Benjamini-Hochberg adjustment over focal_traits
     (m = len(focal_traits), a sensitivity check distinct from full-family Table 1 q-values).
     """
+    resolved_names = _resolve_table1_trait_names(columns_path=columns_path, trait_names=trait_names)
     counts_all = profiles_df[trait_universe].values.astype(float)
     totals = counts_all.sum(axis=1)
     denom = np.where(totals > 0, totals, 1.0)
@@ -184,7 +216,7 @@ def compute_composition_arm(
     for idx, t in enumerate(focal_traits):
         results[t] = ArmResult(
             trait_id=t,
-            trait_name=TABLE_1_TRAITS.get(t, t),
+            trait_name=resolved_names.get(t, t),
             primary_stat=stats_list[idx]["effect"],
             p_value=stats_list[idx]["p_val"],
             q_value=float(q_vals[idx]) if len(q_vals) > idx else stats_list[idx]["p_val"],
@@ -198,6 +230,9 @@ def compute_directional_arm(
     trait_universe: list[str],
     focal_traits: list[str],
     sign_tol: float = 1e-12,
+    *,
+    trait_names: Mapping[str, str] | None = None,
+    columns_path: Path | None = None,
 ) -> dict[str, ArmResult]:
     """Compute directional arm study-level sign-test over paired contrasts.
 
@@ -210,6 +245,7 @@ def compute_directional_arm(
     Returned q_value is a focal-set Benjamini-Hochberg adjustment over focal_traits
     (m = len(focal_traits), a sensitivity check distinct from full-family Table 1 q-values).
     """
+    resolved_names = _resolve_table1_trait_names(columns_path=columns_path, trait_names=trait_names)
     counts_all = profiles_df[trait_universe].values.astype(float)
     totals = counts_all.sum(axis=1)
     denom = np.where(totals > 0, totals, 1.0)
@@ -251,7 +287,7 @@ def compute_directional_arm(
     for idx, t in enumerate(focal_traits):
         results[t] = ArmResult(
             trait_id=t,
-            trait_name=TABLE_1_TRAITS.get(t, t),
+            trait_name=resolved_names.get(t, t),
             primary_stat=stats_list[idx]["share_up"],
             p_value=stats_list[idx]["p_val"],
             q_value=float(q_vals[idx]) if len(q_vals) > idx else stats_list[idx]["p_val"],
@@ -264,6 +300,9 @@ def compute_ora_arm(
     paired_profiles_df: pd.DataFrame,
     trait_universe: list[str],
     focal_traits: list[str],
+    *,
+    trait_names: Mapping[str, str] | None = None,
+    columns_path: Path | None = None,
 ) -> dict[str, ArmResult]:
     """Compute ORA hypergeometric enrichment arm across paired profiles.
 
@@ -277,6 +316,7 @@ def compute_ora_arm(
     Fisher's combined test evaluates global significance, with focal-set BH q_value
     computed over focal_traits (m = len(focal_traits)).
     """
+    resolved_names = _resolve_table1_trait_names(columns_path=columns_path, trait_names=trait_names)
     counts_universe = paired_profiles_df[trait_universe].values.astype(int)
     M = int(counts_universe.sum())
     N_arr = counts_universe.sum(axis=1)
@@ -331,7 +371,7 @@ def compute_ora_arm(
     for idx, t in enumerate(focal_traits):
         results[t] = ArmResult(
             trait_id=t,
-            trait_name=TABLE_1_TRAITS.get(t, t),
+            trait_name=resolved_names.get(t, t),
             primary_stat=stats_list[idx]["mean_fold"],
             p_value=stats_list[idx]["fisher_p"],
             q_value=float(q_vals[idx]) if len(q_vals) > idx else stats_list[idx]["fisher_p"],
@@ -345,6 +385,9 @@ def evaluate_loto(
     paired_profiles_df: pd.DataFrame,
     trait_universe: list[str],
     focal_traits: list[str],
+    *,
+    trait_names: Mapping[str, str] | None = None,
+    columns_path: Path | None = None,
 ) -> tuple[list[LOTORow], dict[str, pd.DataFrame]]:
     """Evaluate Leave-One-Trait-Out (LOTO) for all focal traits across three arms.
 
@@ -355,9 +398,16 @@ def evaluate_loto(
     Returns:
         tuple of (list of LOTORow, dict mapping arm to delta_matrix DataFrame)
     """
-    base_comp = compute_composition_arm(profiles_df, trait_universe, focal_traits)
-    base_dir = compute_directional_arm(profiles_df, trait_universe, focal_traits)
-    base_ora = compute_ora_arm(paired_profiles_df, trait_universe, focal_traits)
+    resolved_names = _resolve_table1_trait_names(columns_path=columns_path, trait_names=trait_names)
+    base_comp = compute_composition_arm(
+        profiles_df, trait_universe, focal_traits, trait_names=resolved_names
+    )
+    base_dir = compute_directional_arm(
+        profiles_df, trait_universe, focal_traits, trait_names=resolved_names
+    )
+    base_ora = compute_ora_arm(
+        paired_profiles_df, trait_universe, focal_traits, trait_names=resolved_names
+    )
 
     base_maps = {
         "composition": base_comp,
@@ -372,14 +422,20 @@ def evaluate_loto(
     comp_delta_q = pd.DataFrame(index=focal_traits, columns=focal_traits, dtype=float)
 
     for dropped in focal_traits:
-        dropped_name = TABLE_1_TRAITS.get(dropped, dropped)
+        dropped_name = resolved_names.get(dropped, dropped)
         rem_universe = [c for c in trait_universe if c != dropped]
         rem_focal = [t for t in focal_traits if t != dropped]
 
         # Recompute all three arms under reduced universe
-        loto_comp = compute_composition_arm(profiles_df, rem_universe, rem_focal)
-        loto_dir = compute_directional_arm(profiles_df, rem_universe, rem_focal)
-        loto_ora = compute_ora_arm(paired_profiles_df, rem_universe, rem_focal)
+        loto_comp = compute_composition_arm(
+            profiles_df, rem_universe, rem_focal, trait_names=resolved_names
+        )
+        loto_dir = compute_directional_arm(
+            profiles_df, rem_universe, rem_focal, trait_names=resolved_names
+        )
+        loto_ora = compute_ora_arm(
+            paired_profiles_df, rem_universe, rem_focal, trait_names=resolved_names
+        )
 
         loto_arm_results = {
             "composition": loto_comp,
@@ -416,7 +472,7 @@ def evaluate_loto(
                     comp_delta_q.loc[dropped, target] = d_q
 
     # Convert indices to readable trait names
-    readable_names = [TABLE_1_TRAITS.get(t, t) for t in focal_traits]
+    readable_names = [resolved_names.get(t, t) for t in focal_traits]
     comp_delta_eff.index = readable_names
     comp_delta_eff.columns = readable_names
     comp_delta_q.index = readable_names
@@ -436,25 +492,41 @@ def evaluate_lco(
     trait_universe: list[str],
     focal_traits: list[str],
     cluster_to_drop: dict[str, str],
+    *,
+    trait_names: Mapping[str, str] | None = None,
+    columns_path: Path | None = None,
 ) -> list[LCOSummaryRow]:
     """Evaluate Leave-Cluster-Out (LCO) by removing correlated traits simultaneously.
 
     Note (#478): base_q uses a focal-set BH family of size m = len(focal_traits),
     whereas lco_q uses the reduced focal family of size len(lco_focal).
     """
+    resolved_names = _resolve_table1_trait_names(columns_path=columns_path, trait_names=trait_names)
     cluster_ids = set(cluster_to_drop.keys())
     cluster_label = " + ".join(cluster_to_drop.values())
 
-    base_comp = compute_composition_arm(profiles_df, trait_universe, focal_traits)
-    base_dir = compute_directional_arm(profiles_df, trait_universe, focal_traits)
-    base_ora = compute_ora_arm(paired_profiles_df, trait_universe, focal_traits)
+    base_comp = compute_composition_arm(
+        profiles_df, trait_universe, focal_traits, trait_names=resolved_names
+    )
+    base_dir = compute_directional_arm(
+        profiles_df, trait_universe, focal_traits, trait_names=resolved_names
+    )
+    base_ora = compute_ora_arm(
+        paired_profiles_df, trait_universe, focal_traits, trait_names=resolved_names
+    )
 
     lco_universe = [c for c in trait_universe if c not in cluster_ids]
     lco_focal = [t for t in focal_traits if t not in cluster_ids]
 
-    lco_comp = compute_composition_arm(profiles_df, lco_universe, lco_focal)
-    lco_dir = compute_directional_arm(profiles_df, lco_universe, lco_focal)
-    lco_ora = compute_ora_arm(paired_profiles_df, lco_universe, lco_focal)
+    lco_comp = compute_composition_arm(
+        profiles_df, lco_universe, lco_focal, trait_names=resolved_names
+    )
+    lco_dir = compute_directional_arm(
+        profiles_df, lco_universe, lco_focal, trait_names=resolved_names
+    )
+    lco_ora = compute_ora_arm(
+        paired_profiles_df, lco_universe, lco_focal, trait_names=resolved_names
+    )
 
     lco_rows: list[LCOSummaryRow] = []
 
@@ -473,7 +545,7 @@ def evaluate_lco(
                     arm=arm_name,
                     cluster_dropped=cluster_label,
                     trait_id=t,
-                    trait_name=TABLE_1_TRAITS.get(t, t),
+                    trait_name=resolved_names.get(t, t),
                     base_stat=b.primary_stat,
                     lco_stat=lco_res.primary_stat,
                     delta_stat=lco_res.primary_stat - b.primary_stat,
@@ -493,14 +565,18 @@ def evaluate_decision_rule(
     comp_delta_eff_matrix: pd.DataFrame,
     target_trait_id: str = COCCUS_ID,
     dropped_trait_id: str = SPHERE_ID,
+    *,
+    trait_names: Mapping[str, str] | None = None,
+    columns_path: Path | None = None,
 ) -> DecisionRuleResult:
     """Compare one named removal's effect change with the baseline adjacent-row gap.
 
     Passing this criterion describes only the evaluated target after the specified
     removal; it does not establish stability of other traits or removals.
     """
-    target_name = TABLE_1_TRAITS.get(target_trait_id, target_trait_id)
-    dropped_name = TABLE_1_TRAITS.get(dropped_trait_id, dropped_trait_id)
+    resolved_names = _resolve_table1_trait_names(columns_path=columns_path, trait_names=trait_names)
+    target_name = resolved_names.get(target_trait_id, target_trait_id)
+    dropped_name = resolved_names.get(dropped_trait_id, dropped_trait_id)
 
     d_eff = float(
         comp_delta_eff_matrix.loc[[dropped_name], [target_name]].to_numpy(dtype=float).item()
@@ -556,8 +632,21 @@ def build_coupling_report_text(
     code_commit: str = "",
     loto_rows: list[LOTORow] | None = None,
     corpus_metrics: dict[str, float | int] | None = None,
+    *,
+    columns_path: Path | None = None,
+    trait_names: Mapping[str, str] | None = None,
 ) -> str:
     """Format comprehensive text report for trait coupling audit."""
+    display_names = _resolve_table1_trait_names(columns_path=columns_path, trait_names=trait_names)
+    raw_to_display = {
+        raw_label: display_names.get(trait_id, raw_label)
+        for trait_id, raw_label in TABLE_1_TRAITS.items()
+    }
+    if not delta_eff_mat.empty:
+        delta_eff_mat = delta_eff_mat.rename(index=raw_to_display, columns=raw_to_display)
+    if not delta_q_mat.empty:
+        delta_q_mat = delta_q_mat.rename(index=raw_to_display, columns=raw_to_display)
+
     base_m = delta_eff_mat.shape[0] if not delta_eff_mat.empty else len(TABLE_1_TRAITS)
     loto_m = max(base_m - 1, 1)
     lco_traits = {r.trait_id for r in lco_rows}
@@ -589,11 +678,15 @@ def build_coupling_report_text(
     ]
     max_ora_delta = max(ora_deltas, default=0.0)
 
-    pair_suffix = (
-        f" (between {rule_result.min_adjacent_pair[0]} and {rule_result.min_adjacent_pair[1]})"
-        if rule_result.min_adjacent_pair[0] and rule_result.min_adjacent_pair[1]
-        else ""
-    )
+    p0 = raw_to_display.get(rule_result.min_adjacent_pair[0], rule_result.min_adjacent_pair[0])
+    p1 = raw_to_display.get(rule_result.min_adjacent_pair[1], rule_result.min_adjacent_pair[1])
+    pair_suffix = f" (between {p0} and {p1})" if p0 and p1 else ""
+    rule_verdict = rule_result.verdict
+    rule_reverse_verdict = rule_result_reverse.verdict
+    for raw_label, display_label in raw_to_display.items():
+        if raw_label != display_label:
+            rule_verdict = rule_verdict.replace(raw_label, display_label)
+            rule_reverse_verdict = rule_reverse_verdict.replace(raw_label, display_label)
 
     if corpus_metrics is not None:
         n_cols_val = int(corpus_metrics.get("n_traits", base_m))
@@ -661,8 +754,11 @@ def build_coupling_report_text(
     )
 
     for row in lco_rows:
+        row_display_name = display_names.get(
+            row.trait_id, raw_to_display.get(row.trait_name, row.trait_name)
+        )
         lines.append(
-            f"{row.arm:<14} | {row.trait_name:<28} | {row.base_stat:+10.4f} | "
+            f"{row.arm:<14} | {row_display_name:<28} | {row.base_stat:+10.4f} | "
             f"{row.lco_stat:+10.4f} | {row.delta_stat:+11.6f} | "
             f"{row.base_q:9.2e} | {row.lco_q:9.2e}"
         )
@@ -686,12 +782,12 @@ def build_coupling_report_text(
             "Direct Test (Drop Sphere -> Coccus Effect Shift):",
             f"  Delta effect(coccus):            {rule_result.delta_effect:+.6f}",
             f"  |Delta effect|:                  {rule_result.abs_delta_effect:.6f}",
-            f"  Criterion verdict:               {rule_result.verdict}",
+            f"  Criterion verdict:               {rule_verdict}",
             "",
             "Reverse Test (Drop Coccus -> Sphere Effect Shift):",
             f"  Delta effect(sphere):            {rule_result_reverse.delta_effect:+.6f}",
             f"  |Delta effect|:                  {rule_result_reverse.abs_delta_effect:.6f}",
-            f"  Criterion verdict:               {rule_result_reverse.verdict}",
+            f"  Criterion verdict:               {rule_reverse_verdict}",
             "",
             "5. SENSITIVITY SUMMARY:",
             "-" * 80,
@@ -752,6 +848,7 @@ def run_coupling_audit(
 
     profiles_df, valid_cols = load_non_media_profile_matrix(profiles_path, columns_path)
     t1_keys = list(TABLE_1_TRAITS.keys())
+    display_trait_names = _resolve_table1_trait_names(columns_path=columns_path)
 
     # Filter to paired experiments for paired and ORA evaluations
     pvt_check = profiles_df.pivot(
@@ -764,7 +861,7 @@ def run_coupling_audit(
     ]
     sub_paired_df = profiles_df[paired_mask].copy()
 
-    # 1. Baseline evaluations
+    # 1. Baseline evaluations (recorded objects preserve KG labels per #1250)
     base_comp = compute_composition_arm(profiles_df, valid_cols, t1_keys)
 
     # 2. LOTO evaluation
@@ -846,6 +943,8 @@ def run_coupling_audit(
         code_commit=code_commit,
         loto_rows=loto_rows,
         corpus_metrics=corpus_metrics,
+        columns_path=columns_path,
+        trait_names=display_trait_names,
     )
     report_txt_path.write_text(report_text, encoding="utf-8")
 

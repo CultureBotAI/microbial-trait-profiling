@@ -11,16 +11,17 @@ just audit-coassertions --edges KG/merged-kg_edges.tsv \
   --nodes KG/merged-kg_nodes.tsv --output-dir RESULTS/coassertion-audit
 ```
 
-Run this only on the exact KG used by the final verified cores. The generated
-`README.md` is the count-bearing methods supplement; its table is constructed
-from `coassertion_summary.tsv`, never copied from historical issue numbers.
-The lead independently verified the pinned-KG counts below during review #948.
-The final rerun still requires its own hashed audit products; a methods table
-does not replace the run-specific provenance record.
+Run this only on the exact KG used by the final verified cores. Each generated
+`README.md` is a run-specific methods supplement whose table is constructed
+from that run's `coassertion_summary.tsv`. The historical table below reproduces
+the pinned-KG recount recorded in [review #948](https://github.com/CultureBotAI/microbial-trait-profiling/issues/948);
+it is not the generated report for a new run. The final rerun requires its own
+hashed audit products; this historical table does not replace the run-specific
+provenance record.
 
 | Pair | Left class | Right class |
 | --- | --- | --- |
-| Aerobic and anaerobic | `METPO:1000602` | `METPO:1000603` |
+| Aerobic class and anaerobic class | `METPO:1000602` | `METPO:1000603` |
 | Obligately aerobic and anaerobic | `METPO:1000606` | `METPO:1000603` |
 | Mesophilic and psychrophilic | `METPO:1000615` | `METPO:1000614` |
 | Facultative oxygen-growth annotation and obligately aerobic | `METPO:1000608` (raw object or union, as selected below) | `METPO:1000606` |
@@ -51,7 +52,7 @@ sets and their counts must not be treated as the same measure.
 
 ## Historical pinned-KG review counts, before facultative unification
 
-The lead's [independent review and recount](https://github.com/CultureBotAI/microbial-trait-profiling/issues/948)
+The [independent recount in review #948](https://github.com/CultureBotAI/microbial-trait-profiling/issues/948)
 used KG edges with SHA-256
 `d13812a436bd0b1c51cfe20c97076912a131f72b2b8e8ca3bb2db15095ab9ebb`,
 also recorded in `methods/table1-native-results/contribution_manifest.json`.
@@ -73,8 +74,9 @@ run-bound audit before using these numbers for basis P.
 No individual strain subject co-asserted both sides of any audited pair in that
 snapshot. Every additional co-asserting taxon under `phenotype` therefore required
 annotations from different original subjects. This is annotation union evidence,
-not evidence of incompatible physiology in an individual organism. These are
-lead-reviewed counts from the pinned KG, not a new analysis run by this PR.
+not evidence of incompatible physiology in an individual organism. These counts
+are reproduced from review #948's pinned-KG recount; they are not a new analysis
+run by this PR.
 
 `coassertion_summary.tsv` counts distinct NCBITaxon carrier nodes before
 taxonomic ancestor closure. Each node contributes once to a pair, independent
@@ -99,7 +101,10 @@ definitions, the consumed `trait_key_policy`, and exact output hashes are record
 in `provenance.json`; the generated `README.md` also names the policy. This
 standalone census does not independently verify a core run or infer its policy.
 Its `code_dirty_at_execution` flag records whole-repository Git status, including
-modified data or documentation; the implementation hashes identify the code bytes.
+tracked changes to code, data or documentation and untracked files reported by
+`git status` with `untracked_files="normal"`.
+[`repository_state` in `workflow/runtime.py`](../src/mtp/workflow/runtime.py)
+supplies this flag; the implementation hashes separately identify the code bytes.
 
 ## Biological meaning
 
@@ -140,6 +145,6 @@ on uneven strain sampling and missingness; they are proposals requiring an
 owner decision, not automatic corrections.
 
 The audit neither executes these sensitivities nor changes the matrix, feature
-catalog, arm plans or primary calls. Issue #846 remains open until the lead
-publishes the run-bound audit and oxygen sensitivity, or the owner records a
-resolution decision. The reviewed counts above do not settle that sensitivity.
+catalog, arm plans or primary calls. Issue #846 remains open until the run-bound
+audit and oxygen sensitivity are published, or the owner records a resolution
+decision. The reviewed counts above do not settle that sensitivity.
