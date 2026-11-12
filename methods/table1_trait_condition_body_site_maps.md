@@ -52,6 +52,16 @@ leaving 317 traits (the `off` scope; 344 under `phenotype`), 2,257 experiments,
 4,514 profiles, and 932 studies — the
 same corpus as the composition arm's 2,257 pairs.
 
+The host filter drops 0 rows on the canonical `count_input_16s_wms_v1` profile
+matrix identified below (`519a095b…` / `43b2e230…`, 5,629 profile rows), which
+is built upstream from human-host 16S and shotgun profiles only (#656, #742).
+Earlier revisions of this note and the dated log-ratio snapshot named earlier
+all-host wide matrices of 2,653 header columns (2,333 MediaDive, 317 retained)
+where the host filter did drop non-human rows: sha256 `6e70724e…` over 7,329
+profile rows, where 1,500 rows were dropped as non-human (#333), and sha256
+`a0c28978…` over 7,111 profile rows, where 1,482 rows were dropped as
+non-human (#222).
+
 The matrix these counts were measured on is
 `data/derived/study_trait_profiles_wide.tsv`, sha256
 `519a095b09e179dc92fb51f9d892984a52dd100dece4dadf6c94b036a5323e6c`, the `off`-scope

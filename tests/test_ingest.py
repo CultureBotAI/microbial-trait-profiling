@@ -1,13 +1,16 @@
+import json
 from pathlib import Path
 
 import pytest
 import yaml
 
 from bsdbng.ingest import (
+    _MAX_INFO_EXAMPLES,
     _clean,
     _clean_float,
     _clean_int,
     _clean_list,
+    _summarize_ingest_log,
     assert_required_exports,
     ingest,
 )
@@ -205,3 +208,160 @@ def test_ingest_yaml_round_trips_through_pydantic(tmp_path: Path) -> None:
     study = Study.model_validate(study_data)
     assert study.id == "bsdb:99"
     assert study.pmid == 12345678
+
+
+def test_ingest_log_summarizes_repetitive_info_entries_by_default(tmp_path: Path) -> None:
+    """Default ingest_log.json summarizes repeated info entries and keeps skips (#65)."""
+    raw_dir = tmp_path / "raw"
+    study_dir = tmp_path / "studies"
+    derived_dir = tmp_path / "derived"
+    raw_dir.mkdir()
+
+    # Build a row with 7 three-level taxa and 2 four-level taxa, plus a skipped signature row
+    three_level_ids = ";".join(f"1783272|91061|{1350 + idx}" for idx in range(7))
+    three_level_names = ",".join(f"k__Bacillati|c__Bacilli|g__Genus{idx}" for idx in range(7))
+    four_level_ids = ";".join(f"1783272|1239|1578|{1485 + idx}" for idx in range(2))
+    four_level_names = ",".join(
+        f"k__Bacillati|p__Bacillota|c__Clostridia|g__Clostridium{idx}" for idx in range(2)
+    )
+    row_many_taxa = (
+        "bsdb:99/1/1,Study 99,case-control,12345678,https://doi.org/10.1234/test,,John Doe,"
+        "Test Study Title,Test Journal,2024,keyword1,"
+        "Experiment 1,USA,Homo sapiens,stool,UBERON:0001988,"
+        "obesity,EFO:0001073,lean,obese,obese subjects,10,10,yes,"
+        "16S,V4,Illumina,relative abundances,Mann-Whitney,0.05,"
+        "BH,NA,age,BMI,,,,,,NA,"
+        "Signature 1,Table S1,2024-01-15,TestCurator,TestEditor,Obesity-related taxa,"
+        f"increased,{three_level_ids};{four_level_ids},"
+        f'"{three_level_names},{four_level_names}",'
+        "Complete,TestReviewer\n"
+    )
+    row_skipped_sig = (
+        "bsdb:99/1/3,Study 99,case-control,12345678,https://doi.org/10.1234/test,,John Doe,"
+        "Test Study Title,Test Journal,2024,keyword1,"
+        "Experiment 1,USA,Homo sapiens,stool,UBERON:0001988,"
+        "obesity,EFO:0001073,lean,obese,obese subjects,10,10,yes,"
+        "16S,V4,Illumina,relative abundances,Mann-Whitney,0.05,"
+        "BH,NA,age,BMI,,,,,,NA,"
+        "Signature 3,Table S2,2024-01-15,TestCurator,TestEditor,Invalid direction,"
+        "unchanged,5678,s__Bacteroides fragilis,Complete,TestReviewer\n"
+    )
+    (raw_dir / "full_dump.csv").write_text(
+        FULL_DUMP_HEADER + row_many_taxa + FULL_DUMP_ROW_2 + row_skipped_sig,
+        encoding="utf-8",
+    )
+
+    ingest(raw_dir, study_dir, derived_dir)
+    events = json.loads((derived_dir / "ingest_log.json").read_text(encoding="utf-8"))
+
+    assert isinstance(events, list)
+    for event in events:
+        assert isinstance(event, dict)
+        assert all(isinstance(k, str) and isinstance(v, str) for k, v in event.items())
+
+    skips = [e for e in events if e.get("level") == "skip"]
+    assert skips == [
+        {
+            "level": "skip",
+            "entity": "signature",
+            "id": "bsdb:99-1-3",
+            "reason": "unparsable direction: 'unchanged'",
+        }
+    ]
+
+    info_events = [e for e in events if e.get("level") == "info"]
+    assert len(info_events) == 3
+    infos = {e["reason"]: e for e in info_events}
+    assert set(infos) == {
+        "lineage with 3 levels, used leaf",
+        "lineage with 4 levels, used leaf",
+        "DOI normalized from URL: 'https://doi.org/10.1234/test' → '10.1234/test'",
+    }
+
+    three_level_info = infos["lineage with 3 levels, used leaf"]
+    assert three_level_info.get("entity") == "taxon"
+    assert three_level_info.get("count") == "7"
+    examples_3 = three_level_info.get("examples", "").split(", ")
+    assert len(examples_3) == _MAX_INFO_EXAMPLES
+    assert examples_3[0] == "bsdb:99-1-1:NCBITaxon:1350"
+    assert examples_3[-1] == f"bsdb:99-1-1:NCBITaxon:{1350 + _MAX_INFO_EXAMPLES - 1}"
+
+    four_level_info = infos["lineage with 4 levels, used leaf"]
+    assert four_level_info.get("entity") == "taxon"
+    assert four_level_info.get("count") == "2"
+    assert four_level_info.get("examples") == (
+        "bsdb:99-1-1:NCBITaxon:1485, bsdb:99-1-1:NCBITaxon:1486"
+    )
+
+    doi_info = infos["DOI normalized from URL: 'https://doi.org/10.1234/test' → '10.1234/test'"]
+    assert doi_info.get("entity") == "study"
+    assert doi_info.get("count") == "1"
+    assert doi_info.get("examples") == "bsdb:99"
+
+
+def test_ingest_verbose_log_preserves_individual_info_entries(tmp_path: Path) -> None:
+    """Passing verbose_log=True writes uncollapsed per-taxon info entries (#65)."""
+    raw_dir = tmp_path / "raw"
+    study_dir = tmp_path / "studies"
+    derived_dir = tmp_path / "derived"
+    raw_dir.mkdir()
+    _write_full_dump(raw_dir)
+
+    ingest(raw_dir, study_dir, derived_dir, verbose_log=True)
+    events = json.loads((derived_dir / "ingest_log.json").read_text(encoding="utf-8"))
+    assert events == [
+        {
+            "level": "info",
+            "entity": "taxon",
+            "id": "NCBITaxon:1350",
+            "signature": "bsdb:99-1-1",
+            "reason": "lineage with 3 levels, used leaf",
+        },
+        {
+            "level": "info",
+            "entity": "taxon",
+            "id": "NCBITaxon:1485",
+            "signature": "bsdb:99-1-1",
+            "reason": "lineage with 4 levels, used leaf",
+        },
+    ]
+
+
+def test_summarize_ingest_log_validates_max_examples_and_deduplicates_examples() -> None:
+    """_summarize_ingest_log rejects invalid max_examples and deduplicates repeated example IDs."""
+    with pytest.raises(ValueError, match="max_examples must be at least 1"):
+        _summarize_ingest_log([], max_examples=0)
+
+    raw_events = [
+        {
+            "level": "info",
+            "entity": "taxon",
+            "id": "NCBITaxon:100",
+            "signature": "bsdb:1-1-1",
+            "reason": "lineage with 2 levels, used leaf",
+        },
+        {
+            "level": "info",
+            "entity": "taxon",
+            "id": "NCBITaxon:100",
+            "signature": "bsdb:1-1-1",
+            "reason": "lineage with 2 levels, used leaf",
+        },
+        {
+            "level": "info",
+            "entity": "taxon",
+            "id": "NCBITaxon:101",
+            "signature": "bsdb:1-1-2",
+            "reason": "lineage with 2 levels, used leaf",
+        },
+    ]
+    summarized = _summarize_ingest_log(raw_events, max_examples=2)
+    assert summarized == [
+        {
+            "level": "info",
+            "entity": "taxon",
+            "reason": "lineage with 2 levels, used leaf",
+            "count": "3",
+            "examples": "bsdb:1-1-1:NCBITaxon:100, bsdb:1-1-2:NCBITaxon:101",
+        }
+    ]

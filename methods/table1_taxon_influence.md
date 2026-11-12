@@ -21,8 +21,13 @@ additionally validates the local corpus.
 
 This is a provisional annotation influence diagnostic. The archived Rosalind
 discussion and separate review in [PR #192](https://github.com/CultureBotAI/microbial-trait-profiling/pull/192)
-motivate tests, not established contributors or mechanisms. Contrast eligibility
-and orientation remain subject to #188; feature semantics remain subject to #189.
+motivate tests, not established contributors or mechanisms. In the historical
+`190-v2` run, contrast eligibility and orientation were scoped to #188 and feature
+semantics to #189 prior to their subsequent tracker closures (#188 Closed 2026-10-11
+UTC; #189 Closed 2026-10-08 UTC; see the status checkpoint in
+[`methods/biological_interpretation_audit.md#status-checkpoint-2026-10-30`](biological_interpretation_audit.md#status-checkpoint-2026-10-30));
+closing them in the tracker does not retroactively recertify the historical `190-v2`
+outputs or establish biological validation.
 Increased/decreased here are curated signature labels, not verified disease/control
 labels. Neither taxon removal nor robustness establishes causation, oxygen exposure,
 pathway activity, SCFA production, or independent confirmation. Apply the shared

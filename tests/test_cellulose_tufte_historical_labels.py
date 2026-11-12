@@ -64,9 +64,28 @@ def _saved_image_suffixes(tree: ast.Module) -> set[str]:
     assert not generator.ifs
     assert not generator.is_async
     assert isinstance(generator.target, ast.Name)
-    assert isinstance(generator.iter, ast.Tuple | ast.List)
+    iterable: ast.expr | None = generator.iter
+    if isinstance(iterable, ast.Name):
+        name = iterable.id
+        iterable = _assigned_expression(name, save.body)
+        if iterable is None:
+            param_names = {
+                arg.arg
+                for arg in (
+                    *save.args.posonlyargs,
+                    *save.args.args,
+                    *save.args.kwonlyargs,
+                )
+            }
+            if save.args.vararg is not None:
+                param_names.add(save.args.vararg.arg)
+            if save.args.kwarg is not None:
+                param_names.add(save.args.kwarg.arg)
+            assert name not in param_names, f"Parameter shadows suffix binding: {name}"
+            iterable = _assigned_expression(name, tree.body)
+    assert isinstance(iterable, ast.Tuple | ast.List)
     suffixes = []
-    for suffix in generator.iter.elts:
+    for suffix in iterable.elts:
         assert isinstance(suffix, ast.Constant)
         assert isinstance(suffix.value, str)
         assert suffix.value.startswith(".")
@@ -76,7 +95,7 @@ def _saved_image_suffixes(tree: ast.Module) -> set[str]:
     # Only claim routes for the supported directory / f"{stem}{suffix}" form,
     # and require an actual fig.savefig for every returned path index.
     args = save.args.args
-    assert len(args) == 4
+    assert len(args) >= 3
     value = expression.elt
     assert isinstance(value, ast.BinOp)
     assert isinstance(value.op, ast.Div)
@@ -115,10 +134,11 @@ def _saved_image_suffixes(tree: ast.Module) -> set[str]:
 def _producer_image_routes() -> set[str]:
     """Resolve the table used by main and suffixes actually written by save.
 
-    This bounded AST reader supports a single literal table assigned locally or
-    at module scope, under any name. Dynamic table/suffix expressions are
-    unsupported. This checks literal routes, not arbitrary control/data flow
-    through save call arguments. No producer loading or rendering is run.
+    This bounded AST reader supports a single literal table or suffix sequence
+    assigned locally or at module scope, under any name. Dynamic table/suffix
+    expressions are unsupported. This checks literal routes, not arbitrary
+    control/data flow through save call arguments. No producer loading or
+    rendering is run.
     """
     producer = Path(tufte_plates.__file__).with_name("figures.py")
     assert producer.stat().st_size <= 262_144
@@ -676,7 +696,19 @@ def test_no_rejected_family_or_run_name_is_rendered(
     assert all(invented not in _plain(section) for section in deck_sections)
 
 
-@pytest.mark.parametrize("change", ["reorder", "module-table", "rename-local", "suffix"])
+@pytest.mark.parametrize(
+    "change",
+    [
+        "reorder",
+        "module-table",
+        "rename-local",
+        "suffix",
+        "save-three-args",
+        "save-optional-dpi",
+        "module-suffixes",
+        "local-suffixes",
+    ],
+)
 def test_route_guard_tracks_outputs_not_table_layout_or_assumed_svg(
     change: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -698,9 +730,13 @@ def main():
     main = next(
         node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == "main"
     )
+    save = next(
+        node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == "save"
+    )
     table = main.body[0]
     assert isinstance(table, ast.Assign)
     assert isinstance(table.value, ast.Dict)
+    expected_suffixes: tuple[str, ...] = (".png", ".svg")
     if change == "reorder":
         entries = table.value.values[0]
         assert isinstance(entries, ast.List)
@@ -717,10 +753,24 @@ def main():
         if change == "module-table":
             main.body.remove(table)
             tree.body.insert(tree.body.index(main), table)
+    elif change == "save-three-args":
+        save.args.args = save.args.args[:3]
+    elif change == "save-optional-dpi":
+        save.args.args.append(ast.arg(arg="dpi", annotation=ast.Name(id="int", ctx=ast.Load())))
+        save.args.defaults.append(ast.Name(id="PNG_DPI", ctx=ast.Load()))
+    elif change in {"module-suffixes", "local-suffixes"}:
+        binding = ast.parse('FIGURE_SUFFIXES = (".svg", ".pdf", ".png")').body[0]
+        paths_assign = save.body[0]
+        assert isinstance(paths_assign, ast.Assign)
+        assert isinstance(paths_assign.value, ast.ListComp)
+        paths_assign.value.generators[0].iter = ast.Name(id="FIGURE_SUFFIXES", ctx=ast.Load())
+        save.body.insert(-1, ast.parse("fig.savefig(paths[2])").body[0])
+        if change == "module-suffixes":
+            tree.body.insert(0, binding)
+        else:
+            save.body.insert(0, binding)
+        expected_suffixes = (".svg", ".pdf", ".png")
     else:
-        save = next(
-            node for node in tree.body if isinstance(node, ast.FunctionDef) and node.name == "save"
-        )
         suffixes = [
             node
             for node in ast.walk(save)
@@ -728,6 +778,7 @@ def main():
         ]
         assert len(suffixes) == 1
         suffixes[0].value = ".svgz"
+        expected_suffixes = (".png", ".svgz")
     changed = ast.unparse(tree)
     producer = Path(tufte_plates.__file__).with_name("figures.py")
     read_text = Path.read_text
@@ -736,7 +787,71 @@ def main():
         return changed if path == producer else read_text(path, *args, **kwargs)
 
     monkeypatch.setattr(Path, "read_text", changed_producer)
-    suffix = ".svgz" if change == "suffix" else ".svg"
     assert _producer_image_routes() == {
-        f"plots/{stem}{ext}" for stem in ("first", "second") for ext in (".png", suffix)
+        f"plots/{stem}{ext}" for stem in ("first", "second") for ext in expected_suffixes
     }
+
+
+@pytest.mark.parametrize(
+    "invalid",
+    [
+        "two-args",
+        "unbound-suffixes",
+        "non-sequence-suffixes",
+        "duplicate-suffixes",
+        "shadowed-parameter-suffixes",
+    ],
+)
+def test_route_guard_refuses_underarity_save_or_invalid_suffix_binding(invalid: str) -> None:
+    if invalid == "two-args":
+        source = """
+def save(fig, directory):
+    paths = [directory / f"{stem}{suffix}" for suffix in (".png", ".svg")]
+    fig.savefig(paths[0])
+    fig.savefig(paths[1])
+    return paths
+"""
+    elif invalid == "unbound-suffixes":
+        source = """
+def save(fig, directory, stem, book):
+    paths = [directory / f"{stem}{suffix}" for suffix in UNKNOWN_SUFFIXES]
+    fig.savefig(paths[0])
+    fig.savefig(paths[1])
+    return paths
+"""
+    elif invalid == "non-sequence-suffixes":
+        source = """
+FIGURE_SUFFIXES = ".svg"
+def save(fig, directory, stem, book):
+    paths = [directory / f"{stem}{suffix}" for suffix in FIGURE_SUFFIXES]
+    fig.savefig(paths[0])
+    return paths
+"""
+    elif invalid == "shadowed-parameter-suffixes":
+        source = """
+suffixes = (".svg",)
+def save(fig, directory, stem, book=None, suffixes=(".png",)):
+    paths = [directory / f"{stem}{suffix}" for suffix in suffixes]
+    fig.savefig(paths[0])
+    return paths
+"""
+    else:
+        source = """
+FIGURE_SUFFIXES = (".svg", ".png")
+FIGURE_SUFFIXES = (".svg", ".pdf", ".png")
+def save(fig, directory, stem, book):
+    paths = [directory / f"{stem}{suffix}" for suffix in FIGURE_SUFFIXES]
+    fig.savefig(paths[0])
+    fig.savefig(paths[1])
+    return paths
+"""
+    tree = ast.parse(source)
+    try:
+        _saved_image_suffixes(tree)
+    except AssertionError:
+        return
+    except Exception as exc:
+        raise AssertionError(
+            f"Expected AssertionError for {invalid}, got {type(exc).__name__}"
+        ) from exc
+    raise AssertionError(f"Route guard accepted invalid save AST: {invalid}")

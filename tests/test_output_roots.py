@@ -161,16 +161,18 @@ def test_shared_path_validator_resolves_durable_relative_paths_without_writing(
 
 
 @pytest.mark.parametrize("allowed", [False, True])
+@pytest.mark.parametrize("include_temporary_hint", [False, True])
 def test_cli_durable_guard_delegates_to_shared_library_validator(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
     allowed: bool,
+    include_temporary_hint: bool,
 ) -> None:
-    calls: list[tuple[Path, bool]] = []
+    calls: list[tuple[Path, bool, bool]] = []
 
-    def reject(output: Path, *, allowed: bool) -> Path:
-        calls.append((output, allowed))
+    def reject(output: Path, *, allowed: bool, include_temporary_hint: bool) -> Path:
+        calls.append((output, allowed, include_temporary_hint))
         raise ValueError("shared validator rejected this output")
 
     monkeypatch.setattr(output_roots, "require_durable_output_path", reject, raising=False)
@@ -178,9 +180,11 @@ def test_cli_durable_guard_delegates_to_shared_library_validator(
     parser = argparse.ArgumentParser(prog="guard-test")
     output = tmp_path / "uncreated"
     with pytest.raises(SystemExit) as error:
-        output_roots.require_durable_output(parser, output, allowed=allowed)
+        output_roots.require_durable_output(
+            parser, output, allowed=allowed, include_temporary_hint=include_temporary_hint
+        )
     assert error.value.code == 2
-    assert calls == [(output, allowed)]
+    assert calls == [(output, allowed, include_temporary_hint)]
     assert "shared validator rejected this output" in capsys.readouterr().err
     assert not output.exists()
 

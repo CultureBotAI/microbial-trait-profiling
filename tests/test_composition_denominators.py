@@ -10,10 +10,12 @@ import importlib.util
 import sys
 from pathlib import Path
 from types import ModuleType
+from typing import Any
 
 import pandas as pd
 import pytest
 
+from mtp import composition_denominators as denominators
 from mtp.composition_denominators import (
     DENOMINATOR_DEFINITION,
     load_retained_profiles,
@@ -177,6 +179,249 @@ def test_load_retained_profiles_rejects_duplicate_keys(tmp_path: Path) -> None:
     )
     with pytest.raises(ValueError, match="Profile keys must be unique"):
         load_retained_profiles(tsv_path, metadata)
+
+
+@pytest.fixture
+def file_inputs_529(tmp_path: Path) -> tuple[Path, pd.DataFrame, pd.DataFrame]:
+    """Whole-universe totals include an off-screen trait and zero/media-only rows."""
+    frame = pd.DataFrame(
+        {
+            "study_id": ["s1", "s1", "s2", "s2"],
+            "experiment_id": ["e1", "e1", "e2", "e2"],
+            "inc_dec": ["inc", "dec", "inc", "dec"],
+            "trait_a": [2, 1, 0, 0],
+            "trait_b": [3, 0, 0, 0],
+            "trait_offscreen": [7, 4, 0, 0],
+            "METPO:2000517|mediadive.medium:1": [100, 200, 999, 0],
+            "METPO:2000517|MediaDive.Medium:2": [900, 800, 888, 0],
+        }
+    )
+    path = tmp_path / "profiles.tsv"
+    frame.to_csv(path, sep="\t", index=False)
+    metadata = pd.DataFrame(
+        {"total_trait_signal": [12, 5, 0, 0]},
+        index=["s1|e1|inc", "s1|e1|dec", "s2|e2|inc", "s2|e2|dec"],
+    )
+    return path, frame, metadata
+
+
+def _run_file_reader_529(reader: str, path: Path, metadata: pd.DataFrame) -> pd.DataFrame | None:
+    if reader == "loader":
+        return load_retained_profiles(path, metadata)
+    assert reader == "guard"
+    function = getattr(denominators, "validate_cached_totals_from_path", None)
+    assert callable(function), "The retained-only path guard must be available"
+    assert function(path, metadata) is None, "The path guard returns no materialized matrix"
+    return None
+
+
+def _expect_file_error_529(
+    reader: str,
+    path: Path,
+    metadata: pd.DataFrame,
+    expected: type[Exception] | tuple[type[Exception], ...],
+    message: str = "",
+) -> None:
+    """A fail-open reader produces an actual AssertionError for the mutant proof."""
+    try:
+        _run_file_reader_529(reader, path, metadata)
+    except expected as error:
+        captured_message = str(error)
+    else:
+        raise AssertionError("The file reader accepted invalid source/cache evidence")
+    assert message in captured_message
+
+
+def test_file_guard_529_is_public() -> None:
+    assert "validate_cached_totals_from_path" in denominators.__all__
+    assert callable(getattr(denominators, "validate_cached_totals_from_path", None))
+
+
+@pytest.mark.parametrize("reader", ["loader", "guard"])
+def test_file_reader_529_filters_media_at_read_time(
+    file_inputs_529: tuple[Path, pd.DataFrame, pd.DataFrame],
+    monkeypatch: pytest.MonkeyPatch,
+    reader: str,
+) -> None:
+    path, frame, metadata = file_inputs_529
+    media = [str(column) for column in frame if "mediadive.medium" in str(column).lower()]
+    frame[media] = "excluded text is not a biological count"
+    frame.to_csv(path, sep="\t", index=False)
+    original = path.read_bytes()
+    read_csv = pd.read_csv
+    selected_reads: list[list[str]] = []
+
+    def inspect_read(*args: Any, **kwargs: Any) -> Any:
+        predicate = kwargs.get("usecols")
+        assert callable(predicate), "MediaDive must be excluded by read_csv usecols"
+        for key in ("study_id", "experiment_id", "inc_dec", "trait_offscreen"):
+            assert predicate(key), f"Required retained column was excluded: {key}"
+        for column in media:
+            assert not predicate(column), "MediaDive must be rejected before loading"
+        loaded = read_csv(*args, **kwargs)
+        assert isinstance(loaded, pd.DataFrame)
+        assert not any("mediadive.medium" in str(column).lower() for column in loaded.columns)
+        selected_reads.append([str(column) for column in loaded.columns])
+        return loaded
+
+    monkeypatch.setattr(pd, "read_csv", inspect_read)
+    loaded = _run_file_reader_529(reader, path, metadata)
+    assert selected_reads, "The guard must inspect the source table"
+    if loaded is not None:
+        expected = frame[["trait_a", "trait_b", "trait_offscreen"]].copy()
+        expected.index = metadata.index
+        pd.testing.assert_frame_equal(loaded, expected)
+    assert path.read_bytes() == original
+
+
+@pytest.mark.parametrize("reader", ["loader", "guard"])
+def test_file_reader_529_preserves_keys_order_counts_and_zero_rows(
+    file_inputs_529: tuple[Path, pd.DataFrame, pd.DataFrame], reader: str
+) -> None:
+    path, _frame, metadata = file_inputs_529
+    metadata = metadata.loc[["s2|e2|inc", "s1|e1|dec", "s2|e2|dec", "s1|e1|inc"]]
+    before = path.read_bytes()
+    loaded = _run_file_reader_529(reader, path, metadata)
+    if loaded is not None:
+        expected = pd.DataFrame(
+            {"trait_a": [0, 1, 0, 2], "trait_b": [0, 0, 0, 3], "trait_offscreen": [0, 4, 0, 7]},
+            index=metadata.index,
+        )
+        pd.testing.assert_frame_equal(loaded, expected)
+    assert path.read_bytes() == before
+
+
+@pytest.mark.parametrize("reader", ["loader", "guard"])
+@pytest.mark.parametrize("missing", ["study_id", "experiment_id", "inc_dec"])
+@pytest.mark.parametrize("header_only", [False, True])
+def test_file_reader_529_rejects_missing_key_columns(
+    file_inputs_529: tuple[Path, pd.DataFrame, pd.DataFrame],
+    reader: str,
+    missing: str,
+    header_only: bool,
+) -> None:
+    path, frame, metadata = file_inputs_529
+    frame = frame.drop(columns=missing)
+    if header_only:
+        frame = frame.iloc[:0]
+        metadata = metadata.iloc[:0]
+    frame.to_csv(path, sep="\t", index=False)
+    _expect_file_error_529(reader, path, metadata, (KeyError, ValueError), missing)
+
+
+@pytest.mark.parametrize("reader", ["loader", "guard"])
+@pytest.mark.parametrize("empty_metadata", [False, True])
+def test_file_reader_529_rejects_unselected_duplicate_raw_keys(
+    file_inputs_529: tuple[Path, pd.DataFrame, pd.DataFrame],
+    reader: str,
+    empty_metadata: bool,
+) -> None:
+    path, frame, metadata = file_inputs_529
+    pd.concat([frame, frame.iloc[[0]]], ignore_index=True).to_csv(path, sep="\t", index=False)
+    metadata = metadata.iloc[:0] if empty_metadata else metadata.loc[["s2|e2|inc"]]
+    _expect_file_error_529(reader, path, metadata, ValueError, "Profile keys must be unique")
+
+
+@pytest.mark.parametrize("reader", ["loader", "guard"])
+def test_file_reader_529_rejects_duplicate_metadata_keys(
+    file_inputs_529: tuple[Path, pd.DataFrame, pd.DataFrame], reader: str
+) -> None:
+    path, _frame, metadata = file_inputs_529
+    duplicated = metadata.loc[["s1|e1|inc", "s1|e1|inc"]]
+    _expect_file_error_529(reader, path, duplicated, ValueError, "Profile keys must be unique")
+
+
+@pytest.mark.parametrize("reader", ["loader", "guard"])
+def test_file_reader_529_rejects_metadata_keys_absent_from_source(
+    file_inputs_529: tuple[Path, pd.DataFrame, pd.DataFrame], reader: str
+) -> None:
+    path, _frame, metadata = file_inputs_529
+    metadata.loc["missing|experiment|inc"] = 0
+    _expect_file_error_529(
+        reader, path, metadata, ValueError, "Cached metadata contains profile keys missing"
+    )
+
+
+@pytest.mark.parametrize("reader", ["loader", "guard"])
+@pytest.mark.parametrize("cached", [17.0, 1012.0, float("nan")], ids=["wrong", "media", "nan"])
+def test_file_reader_529_rejects_incompatible_cached_totals(
+    file_inputs_529: tuple[Path, pd.DataFrame, pd.DataFrame], reader: str, cached: float
+) -> None:
+    path, _frame, metadata = file_inputs_529
+    metadata = metadata.astype({"total_trait_signal": float})
+    metadata.loc["s1|e1|inc", "total_trait_signal"] = cached
+    _expect_file_error_529(
+        reader, path, metadata, ValueError, "Stale or incompatible non-MediaDive denominator cache"
+    )
+
+
+@pytest.mark.parametrize("reader", ["loader", "guard"])
+def test_file_reader_529_rejects_nonnumeric_cached_totals(
+    file_inputs_529: tuple[Path, pd.DataFrame, pd.DataFrame], reader: str
+) -> None:
+    path, _frame, metadata = file_inputs_529
+    metadata = metadata.astype({"total_trait_signal": object})
+    metadata.loc["s1|e1|inc", "total_trait_signal"] = "not-a-total"
+    _expect_file_error_529(reader, path, metadata, ValueError)
+
+
+@pytest.mark.parametrize("reader", ["loader", "guard"])
+def test_file_reader_529_requires_the_cached_total_column(
+    file_inputs_529: tuple[Path, pd.DataFrame, pd.DataFrame], reader: str
+) -> None:
+    path, _frame, metadata = file_inputs_529
+    _expect_file_error_529(
+        reader,
+        path,
+        metadata.drop(columns="total_trait_signal"),
+        KeyError,
+        "total_trait_signal",
+    )
+
+
+@pytest.mark.parametrize("reader", ["loader", "guard"])
+def test_file_reader_529_rejects_nonnumeric_retained_counts(
+    file_inputs_529: tuple[Path, pd.DataFrame, pd.DataFrame], reader: str
+) -> None:
+    path, frame, metadata = file_inputs_529
+    frame["trait_a"] = ["not-a-count", "1", "0", "0"]
+    frame.to_csv(path, sep="\t", index=False)
+    _expect_file_error_529(reader, path, metadata, ValueError)
+
+
+@pytest.mark.parametrize("reader", ["loader", "guard"])
+def test_file_reader_529_handles_media_only_columns(
+    file_inputs_529: tuple[Path, pd.DataFrame, pd.DataFrame], reader: str
+) -> None:
+    path, frame, metadata = file_inputs_529
+    frame.drop(columns=["trait_a", "trait_b", "trait_offscreen"]).to_csv(
+        path, sep="\t", index=False
+    )
+    metadata["total_trait_signal"] = 0
+    loaded = _run_file_reader_529(reader, path, metadata)
+    if loaded is not None:
+        assert loaded.shape == (4, 0)
+        assert loaded.index.tolist() == metadata.index.tolist()
+
+
+@pytest.mark.parametrize("reader", ["loader", "guard"])
+def test_file_reader_529_preserves_whole_file_numeric_key_inference(
+    tmp_path: Path, reader: str
+) -> None:
+    """The new guard must use the loader's existing whole-file key semantics."""
+    path = tmp_path / "numeric-keys.tsv"
+    path.write_text(
+        "study_id\texperiment_id\tinc_dec\ttrait_a\tmediadive.medium:1\n"
+        "12\t2\tinc\t7\t500\n"
+        "13\t3\tdec\t9\t600\n",
+        encoding="utf-8",
+    )
+    metadata = pd.DataFrame({"total_trait_signal": [9, 7]}, index=["13|3|dec", "12|2|inc"])
+    loaded = _run_file_reader_529(reader, path, metadata)
+    if loaded is not None:
+        pd.testing.assert_frame_equal(
+            loaded, pd.DataFrame({"trait_a": [9, 7]}, index=metadata.index)
+        )
 
 
 def test_study_heatmap_caller_excludes_mediadive_from_denominator() -> None:

@@ -1285,6 +1285,72 @@ def create_anaerobe_guild_definition_table(
     plt.close(fig)
 
 
+def build_workflow_stages(counts: dict[str, object]) -> list[dict[str, str]]:
+    """Build the numbered workflow stage definitions for the summary diagram."""
+    bugsigdb_version = text_label(counts, "bugsigdb_version")
+    return [
+        {
+            "number": "1",
+            "title": "BugSigDB data",
+            "body": (
+                f"{bugsigdb_version} full dump: "
+                f"{count_label(counts, 'full_dump_complete_row_count')} complete rows, "
+                f"{count_label(counts, 'full_dump_study_count')} parsed studies. "
+                f"Filters: {HUMAN_HOST_SPECIES} host; {SEQUENCING_TYPES_TEXT} sequencing."
+            ),
+            "accent": SLATE_700,
+            "facecolor": "white",
+            "edgecolor": SLATE_200,
+        },
+        {
+            "number": "2",
+            "title": "Trait profiles",
+            "body": (
+                f"{count_label(counts, 'raw_profile_count')} canonical {HUMAN_HOST_SPECIES} "
+                f"{SEQUENCING_TYPES_TEXT} profiles x "
+                f"{count_label(counts, 'raw_trait_column_count')} non-empty KG-Microbe "
+                "trait columns before plotting trait filters."
+            ),
+            "accent": GREEN_700,
+            "facecolor": GREEN_50,
+            "edgecolor": "#a7f3d0",
+        },
+        {
+            "number": "3",
+            "title": "Guild enrichment",
+            "body": (
+                "Compute selected oxygen-tolerance mean z-scores, then contrast the "
+                "focus direction against its comparator direction."
+            ),
+            "accent": AMBER_600,
+            "facecolor": AMBER_50,
+            "edgecolor": "#fde68a",
+        },
+        {
+            "number": "4",
+            "title": "Sankey tables",
+            "body": (
+                "Aggregate condition-to-body-site edges, apply v3 display rollups, "
+                "and write edge, node, and audit TSVs."
+            ),
+            "accent": BLUE_600,
+            "facecolor": BLUE_50,
+            "edgecolor": "#bfdbfe",
+        },
+        {
+            "number": "5",
+            "title": "Sankey diagrams",
+            "body": (
+                "Curved lines are condition-to-body-site edges. Width is n=profiles; "
+                "color shows guild signal or direction, and grey is bg support."
+            ),
+            "accent": RED_600,
+            "facecolor": RED_50,
+            "edgecolor": "#fecaca",
+        },
+    ]
+
+
 def create_workflow_diagram(
     *,
     output_png: Path = OUTPUT_PNG,
@@ -1339,66 +1405,7 @@ def create_workflow_diagram(
     stage_h = 12.0
     stage_w = 17.4
     stage_xs = [3.0, 22.0, 41.0, 60.0, 79.0]
-    stages = [
-        {
-            "number": "1",
-            "title": "BugSigDB data",
-            "body": (
-                f"{bugsigdb_version} full dump: "
-                f"{count_label(counts, 'full_dump_complete_row_count')} complete rows, "
-                f"{count_label(counts, 'full_dump_study_count')} parsed studies. "
-                f"Filters: {HUMAN_HOST_SPECIES} host; {SEQUENCING_TYPES_TEXT} sequencing."
-            ),
-            "accent": SLATE_700,
-            "facecolor": "white",
-            "edgecolor": SLATE_200,
-        },
-        {
-            "number": "2",
-            "title": "Trait profiles",
-            "body": (
-                f"{count_label(counts, 'raw_profile_count')} study/experiment/direction "
-                f"profiles x {count_label(counts, 'raw_trait_column_count')} KG-Microbe "
-                "trait columns before human-host plotting filters."
-            ),
-            "accent": GREEN_700,
-            "facecolor": GREEN_50,
-            "edgecolor": "#a7f3d0",
-        },
-        {
-            "number": "3",
-            "title": "Guild enrichment",
-            "body": (
-                "Compute selected oxygen-tolerance mean z-scores, then contrast the "
-                "focus direction against its comparator direction."
-            ),
-            "accent": AMBER_600,
-            "facecolor": AMBER_50,
-            "edgecolor": "#fde68a",
-        },
-        {
-            "number": "4",
-            "title": "Sankey tables",
-            "body": (
-                "Aggregate condition-to-body-site edges, apply v3 display rollups, "
-                "and write edge, node, and audit TSVs."
-            ),
-            "accent": BLUE_600,
-            "facecolor": BLUE_50,
-            "edgecolor": "#bfdbfe",
-        },
-        {
-            "number": "5",
-            "title": "Sankey diagrams",
-            "body": (
-                "Curved lines are condition-to-body-site edges. Width is n=profiles; "
-                "color shows guild signal or direction, and grey is bg support."
-            ),
-            "accent": RED_600,
-            "facecolor": RED_50,
-            "edgecolor": "#fecaca",
-        },
-    ]
+    stages = build_workflow_stages(counts)
     for stage_x, stage in zip(stage_xs, stages, strict=True):
         add_stage_box(
             ax,

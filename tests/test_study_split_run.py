@@ -491,7 +491,13 @@ def test_directory_input_uses_the_verified_manifest_path(
         product=lambda name: tmp_path / "core" / name,
     )
 
-    def open_then_change_comparison(_path: Path) -> SimpleNamespace:
+    observed: list[str | None] = []
+
+    def open_then_change_comparison(
+        _path: Path, *, expected_sha256: str | None = None
+    ) -> SimpleNamespace:
+        observed.append(expected_sha256)
+        assert expected_sha256 == original_digest, "Existing comparison digest was not forwarded"
         manifest.write_text(manifest.read_text() + "\n", encoding="utf-8")
         assert file_sha256(manifest) != original_digest
         return upstream
@@ -506,6 +512,7 @@ def test_directory_input_uses_the_verified_manifest_path(
 
     monkeypatch.setattr(sources, "bind_recorded_hashes", bind)
     _, paths = runner._inputs(comparison_dir)
+    assert observed == [original_digest]
     assert paths["comparison:manifest"] == manifest
     assert bindings == [original_digest]
     runner.preflight_bundle_roots(tmp_path / "sidecar", paths)
@@ -530,9 +537,15 @@ def test_source_boundary_refuses_other_populations_directions_and_scopes(
         core=SimpleNamespace(contrast_population=population, direction_basis=direction),
         scope=scope,
     )
-    monkeypatch.setattr(sources, "open_verified_sources", lambda _path: upstream)
     comparison = tmp_path / "comparison_run.json"
     comparison.write_text('{"invalid_population_fixture": true}\n')
+
+    def verified(path: Path, *, expected_sha256: str | None = None) -> SimpleNamespace:
+        assert path == comparison
+        assert expected_sha256 == file_sha256(comparison)
+        return upstream
+
+    monkeypatch.setattr(sources, "open_verified_sources", verified)
     with pytest.raises(ValueError, match=r"Tier 1\+2|phenotype sensitivity"):
         runner.execute(comparison, tmp_path / "out", Protocol())
     assert not (tmp_path / "out").exists()

@@ -83,10 +83,8 @@ def _count(value: Any, description: str) -> int:
 
 
 def _labels(metadata: pd.DataFrame, *, display: bool) -> dict[str, str]:
-    required = (
-        {"column_id", "object_name", "column_label"} if display else {"column_id", "column_label"}
-    )
-    _require(required.issubset(metadata), "Scan label metadata columns missing")
+    missing = sorted({"column_id", "object_name", "column_label"} - set(metadata))
+    _require(not missing, f"Scan label metadata columns missing: {', '.join(missing)}")
     _require(not metadata["column_id"].duplicated().any(), "Duplicate scan metadata trait")
     result = {
         str(row["column_id"]): str(
@@ -539,9 +537,10 @@ def scan_pages(bundle: ScanFigureInputs) -> Iterator[Page]:
         )
         figure.text(
             0.12,
-            0.905,
+            0.938,
             _wrap(bundle.labels[trait_id], 95) + "\n" + _wrap(trait_id, 99),
             color=INK,
+            va="top",
         )
         figure.text(
             0.12,

@@ -23,6 +23,7 @@ import argparse
 import functools
 import inspect
 import re
+import textwrap
 from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Any, cast
@@ -138,9 +139,19 @@ def _make_tufte_plate(
 ) -> Figure:
     """Create a figure with Tufte plate header, subtitle, hairlines, and source footer."""
     fig = plt.figure(figsize=figsize, facecolor=PAPER_BG)
+    wrapped_subtitle = "\n".join(
+        textwrap.fill(line, width=136, break_long_words=False, break_on_hyphens=False)
+        for line in subtitle.splitlines()
+    )
+    is_multiline_subtitle = "\n" in wrapped_subtitle
+    plate_label_y = 0.964 if is_multiline_subtitle else 0.962
+    title_y = 0.935 if is_multiline_subtitle else 0.930
+    subtitle_y = 0.898 if is_multiline_subtitle else 0.885
+    subtitle_fs = 9.8 if is_multiline_subtitle else 10.1
+    effective_header_rule_y = min(header_rule_y, 0.846) if is_multiline_subtitle else header_rule_y
     fig.text(
         0.03,
-        0.962,
+        plate_label_y,
         plate_label,
         fontsize=8.8,
         fontweight="bold",
@@ -150,7 +161,7 @@ def _make_tufte_plate(
     )
     fig.text(
         0.03,
-        0.930,
+        title_y,
         title,
         fontsize=16.2,
         fontweight="bold",
@@ -160,18 +171,19 @@ def _make_tufte_plate(
     )
     fig.text(
         0.03,
-        0.885,
-        subtitle,
-        fontsize=10.1,
+        subtitle_y,
+        wrapped_subtitle,
+        fontsize=subtitle_fs,
         style="italic",
         color=MUTED,
         ha="left",
         va="top",
+        linespacing=1.15,
     )
     fig.add_artist(
         Line2D(
             [0.03, 0.97],
-            [header_rule_y, header_rule_y],
+            [effective_header_rule_y, effective_header_rule_y],
             transform=fig.transFigure,
             color=INK,
             linewidth=0.9,
@@ -814,7 +826,7 @@ def build_plate2_core_guild_dot_table() -> Figure:
         " · historical (#1416)",
         "Nine Butyrate- and Fiber-Degrading Genera Decrease Across All Three Diseases",
         "Removing broad family and order labels to compare only specific genera and species "
-        "(93 background taxa) strengthens the overlap: 62.5% of lost fiber-digesting genera "
+        "(93 background taxa) strengthens the overlap:\n62.5% of lost fiber-digesting genera "
         "and species are shared between Parkinson\u2019s disease and colorectal cancer.",
         "Source: Genus + Species sensitivity analysis (N = 93 stool decreased genera/species; "
         f"22 cellulose-annotated). {pdcrc_note} "
@@ -1468,7 +1480,7 @@ def build_plate4_trait_landscape_and_four_pairs() -> Figure:
         " · historical (#1416)",
         "Plant-Fiber Breakdown Ranks First Among Metabolic Pathways as Salt-Tolerant Taxa Increase",
         "Across all 90 microbial functional traits tested in stool, the three plant-polysaccharide "
-        "pathways (cellulose, xylan, chitin) rank #1, #2, and #3 among metabolic pathways for "
+        "pathways (cellulose, xylan, chitin) rank #1,\n#2, and #3 among metabolic pathways for "
         "cross-disease convergence, while salt-tolerant bacteria increase in "
         "Parkinson\u2019s disease.",
         "Source: 90-trait benchmark (trait_convergence_benchmark.tsv) & 4-pair literature audit "

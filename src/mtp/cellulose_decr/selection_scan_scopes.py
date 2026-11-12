@@ -35,6 +35,7 @@ import sys
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -148,10 +149,76 @@ def _require_v2(directory: Path, summary: object, provenance: object) -> None:
         declaration.get("version") if isinstance(declaration, Mapping) else None,
     )
     if versions != (VERSION, VERSION):
+        historical = (
+            f" {VERSION_V1} records remain historical evidence."
+            if versions == (VERSION_V1, VERSION_V1)
+            else ""
+        )
         raise ValueError(
             f"{directory}: scan records name protocols {versions!r}; the scopes report "
-            f"requires {VERSION}. {VERSION_V1} records remain historical evidence."
+            f"requires {VERSION}.{historical}"
         )
+
+
+def _trait_value_matches(actual: object, expected: object) -> bool:
+    """Compare a TSV cell with its JSON value at the producer's recorded precision."""
+    if not isinstance(actual, str):
+        return False
+    if expected is None:
+        return actual == ""
+    if isinstance(expected, (str, bool)):
+        return actual == str(expected)
+    if isinstance(expected, (int, float)):
+        try:
+            observed, recorded = Decimal(actual), Decimal(str(expected))
+        except InvalidOperation:
+            return False
+        return observed.is_finite() and recorded.is_finite() and observed == recorded
+    return False
+
+
+def _check_trait_summary(
+    directory: Path,
+    summary: Mapping[str, Any],
+    traits: pd.DataFrame,
+    protocol: Protocol,
+) -> None:
+    """Refuse inconsistent redundant trait records without recomputing scan results.
+
+    JSON and TSV use the producer's six-significant-digit values. Numeric cells
+    compare exactly, without tolerance; null maps only to a blank TSV cell.
+    Row order, fields, trait identities and the declared lead must also agree.
+    The scan CLI always includes the declared lead, even without eligible triples;
+    study-split selections that omit it do not emit these scan consumer records.
+    """
+    records = summary.get("traits")
+    if not isinstance(records, list) or any(not isinstance(row, Mapping) for row in records):
+        raise ValueError(f"{directory}: summary traits must be a list of row objects")
+    columns = list(traits.columns)
+    if not traits.columns.is_unique or not {"trait_id", "is_lead_trait"} <= set(columns):
+        raise ValueError(f"{directory}: trait TSV needs unique columns and trait/lead identifiers")
+    if len(records) != len(traits) or any(set(row) != set(columns) for row in records):
+        raise ValueError(f"{directory}: trait TSV rows or fields disagree with summary traits")
+    identifiers = [row["trait_id"] for row in records]
+    if any(not isinstance(value, str) or not value for value in identifiers):
+        raise ValueError(f"{directory}: summary trait identifiers must be nonempty strings")
+    if len(set(identifiers)) != len(identifiers):
+        raise ValueError(f"{directory}: summary trait identifiers must be unique")
+    if summary.get("lead_trait") != protocol.lead_trait:
+        raise ValueError(f"{directory}: summary lead_trait disagrees with the scan protocol")
+    if identifiers.count(protocol.lead_trait) != 1:
+        raise ValueError(f"{directory}: summary traits must contain the declared lead trait once")
+    if any(row["is_lead_trait"] is not (row["trait_id"] == protocol.lead_trait) for row in records):
+        raise ValueError(f"{directory}: summary trait lead flags disagree with lead_trait")
+    for number, (recorded, observed) in enumerate(
+        zip(records, traits.to_dict("records"), strict=True), start=1
+    ):
+        for column in columns:
+            if not _trait_value_matches(observed[column], recorded[column]):
+                raise ValueError(
+                    f"{directory}: trait TSV row {number}, field {column!r}, "
+                    "disagrees with summary traits"
+                )
 
 
 def load_run(directory: Path, *, resolver: LocationResolver | None = None) -> ScanRun:
@@ -198,6 +265,7 @@ def load_run(directory: Path, *, resolver: LocationResolver | None = None) -> Sc
     traits = pd.read_csv(io.BytesIO(buffers["traits"]), sep="\t", dtype=str, keep_default_na=False)
     _require_v2(directory, summary, provenance)
     protocol = recorded_protocol(summary, provenance)
+    _check_trait_summary(directory, summary, traits, protocol)
     # The bound core, from the manifest bytes whose hash the record holds.
     manifest = locate(Path(record.run_manifest_path), resolver).read_bytes()
     if hashlib.sha256(manifest).hexdigest() != record.run_manifest_sha256:
@@ -257,6 +325,7 @@ def pair_scopes(runs: Sequence[ScanRun], protocol: Protocol | None = None) -> li
                 f"{run.directory.name} follows {run.protocol.version}; the scopes report "
                 f"needs both under {protocol.version}"
             )
+        _check_trait_summary(run.directory, run.summary, run.traits, protocol)
     ordered = sorted(runs, key=lambda run: declared.index(run.scope))
     first, *others = (comparable(run) for run in ordered)
     for run, other in zip(ordered[1:], others, strict=True):
