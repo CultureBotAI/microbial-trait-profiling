@@ -505,12 +505,14 @@ def _expected_blocks(root: Path = DATA) -> dict[str, Binding]:
         for row in definitions
         if row["short_condition"] == "Pooled" and row["unit"] == "study"
     ]
+    mantissa, exponent = f"{max(pooled):.2e}".split("e")
+    pooled_bound = f"{mantissa}e{int(exponent)}"
     add(
         "direction_synonyms",
         "4. Direction within each condition",
         _table(("Synonym labels", "Population", "Experiments", "p", "Studies", "p"), synonym_rows)
-        + f"\n\nThe largest pooled study sign-test p across the committed condition-definition "
-        f"rows is {_g(max(pooled))}.",
+        + "\n\nThe pooled study-level sign test stays at "
+        f"p \u2264 {pooled_bound} in every scenario.",
     )
 
     compartment_rows = []
