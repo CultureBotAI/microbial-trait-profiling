@@ -55,7 +55,10 @@ MUTANTS: tuple[MutantSpec, ...] = (
         target_relpath="src/mtp/cellulose_decr/study_split_run.py",
         needle=(
             "    documents = _documents(verified, paths, protocol, timestamp)\n"
-            "    if _provenance(paths, protocol, verified) != provenance:\n"
+            "    if (\n"
+            "        _provenance(paths, protocol, verified) != provenance\n"
+            "        or _scope_binding(verified) != scope_binding\n"
+            "    ):\n"
             '        raise ValueError("Study-split inputs or implementation '
             'changed during execution")'
         ),
@@ -73,12 +76,18 @@ MUTANTS: tuple[MutantSpec, ...] = (
         ),
         target_relpath="src/mtp/cellulose_decr/study_split_run.py",
         needle=(
-            "    if _provenance(paths, protocol, verified) != provenance:\n"
+            "    if (\n"
+            "        _provenance(paths, protocol, verified) != provenance\n"
+            "        or _scope_binding(verified) != scope_binding\n"
+            "    ):\n"
             '        raise ValueError("Study-split inputs or implementation '
             'changed during execution")'
         ),
         replacement=(
-            "    if _provenance(paths, protocol, verified) != provenance:\n"
+            "    if (\n"
+            "        _provenance(paths, protocol, verified) != provenance\n"
+            "        or _scope_binding(verified) != scope_binding\n"
+            "    ):\n"
             '        raise ValueError("unexpected recheck error message")'
         ),
         pytest_nodeid=(
