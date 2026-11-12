@@ -1266,14 +1266,20 @@ def test_ncbi_bacterial_zero_trait_categories_and_parser_audit_wording(
     audit = provenance["taxonomy_diagnosis"]["parser_audit"]
     assert audit["excluded_records"] == 0
     assert audit["taxonomy_rank_class_edge_records_skipped"] == 1
-    assert "excluded_records counts malformed KG edge records" in audit["excluded_records_note"]
     assert (
-        "taxonomy_rank_class_edge_records_skipped counts well-formed ontology rank-class"
-        in audit["excluded_records_note"]
+        "excluded_records counts malformed KG edge records dropped by the strict "
+        "edge parser (always 0)" in audit["excluded_records_note"]
+    )
+    assert (
+        "taxonomy_rank_class_edge_records_skipped counts well-formed "
+        "NCBITaxon:<name> ontology rank-class" in audit["excluded_records_note"]
     )
     readme = (output / "README.md").read_text(encoding="utf-8")
     assert "Ontology rank-class edges are skipped during organism-ancestry projection" in readme
-    assert "excluded_records: 0 confirms the strict KG edge parser dropped no record" in readme
+    assert (
+        "excluded_records is always 0: the strict KG edge parser raises on a "
+        "malformed record instead of dropping it" in readme
+    )
 
 
 @pytest.mark.parametrize("all_zero", [False, True])
