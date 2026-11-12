@@ -66,8 +66,8 @@ the live audit must not update this fixture or those historical plate values.
 ## Scope of the source pins (#1596)
 
 The table below lists what `test_cellulose_tufte_statistics_sources.py` binds to
-identified historical sources; the other test files are summarised after it. These
-tests bind selected displayed values and labels to identified historical sources. They do not pin every numeric token or every repeated occurrence,
+identified historical sources; the other test files are summarised after it.
+They do not pin every numeric token or every repeated occurrence,
 validate confidence-interval geometry, rerun statistical analyses, or establish
 scientific validity. Fixture byte identity protects the source, not all claims
 made by a plate. No broader numeric-token coverage is claimed by this change.
@@ -83,17 +83,15 @@ made by a plate. No broader numeric-token coverage is claimed by this change.
 | `test_plate_six_total_rows_match_the_historical_methods_snapshot` | Selected overall, method and grid-row totals. |
 | `test_plate_six_method_counts_match_the_historical_methods_snapshot` | Fraction-direction and log-ratio-direction row counts and two q-threshold counts. |
 
-`test_cellulose_tufte_overlap_sources.py` pins selected set sizes and direction labels
-for Plates I to IV and figures 7 to 9; it is summarised here, not tabulated.
+`test_cellulose_tufte_overlap_sources.py` pins selected set sizes, direction labels, percentages, distances and Plate III's nominal p-values for Plates I to IV and figures 7 to 9; it is summarised here, not tabulated.
 `test_cellulose_tufte_historical_labels.py` checks historical/nominal-p wording and
 current producer image routes, and also literal-pins some displayed numbers (for
 example a Plate II p-value and a Plate V enrichment count) as change detectors, not
-as source pins. `test_cellulose_tufte_source_pin_mutations.py` checks that the pins
-above fail on targeted mutations. None of these establishes comprehensive numerical
+as source pins. `test_cellulose_tufte_source_pin_mutations.py` checks that every tabulated pin, and one overlap pin, fails on targeted mutations. None of these establishes comprehensive numerical
 provenance. The historical #1573 review's token counts are not a current coverage
 measurement. Its examples outside these pins include repeated union/disease/set
 size sentences in fig7 and fig9, narrative duplicates in Plates I/III/IV, Plate V's
 sampling-unit panel pair count, and Plate VI's free-form fraction summary. They
 must not be described as covered merely because the source fixtures are intact.
 Retirement notices or labels likewise do not turn those values into verified
-current-run results. Broader source pins remain a separate task.
+current-run results. The ten sourced-but-unpinned tokens from #1596/#1997 ('10 PD∩CRC', '= 40 taxa', '46 PD', and '27 shared (57.4%)' in fig7; '17 &lt; 27 (PD–CRC)' in fig9; '17 of 32' in Plate I; '45%–57%' in Plate III; '50.4% shared' in Plate IV; 'n = 2,335 pairs' in Plate V; 'Both FA (58.2% up' in Plate VI) have explicit disposition: won't pin (#1997), because the plates were retired from default generation by #1693 (#1572).
