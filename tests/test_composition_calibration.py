@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -369,6 +370,122 @@ def test_composition_cli_smoke(tmp_path: Path, synthetic_paired_profiles: pd.Dat
     summary_json = json.loads((out_dir / "composition_calibration_summary.json").read_text())
     assert summary_json["replicates_completed"] == 2
     assert summary_json["n_studies"] == 3
+
+
+def test_composition_cli_export_schema_preserves_scientific_contract(
+    tmp_path: Path, synthetic_paired_profiles: pd.DataFrame
+) -> None:
+    """#1487: the real CLI persists all numerical tables before the export-schema assertion."""
+    inputs = tmp_path / "inputs"
+    inputs.mkdir()
+    profiles_path = inputs / "profiles.tsv"
+    columns_path = inputs / "columns.tsv"
+    output = tmp_path / "output"
+    profiles = synthetic_paired_profiles.assign(**{"METPO:1000608": [9, 1, 9, 1, 6, 1, 4, 1, 5, 5]})
+    traits = ["trait_A", "trait_B", "trait_C", "METPO:1000608"]
+    profiles.to_csv(profiles_path, sep="\t", index=False)
+    pd.DataFrame({"column_id": traits, "object_category": ["phenotype"] * len(traits)}).to_csv(
+        columns_path, sep="\t", index=False
+    )
+    assert (
+        composition_main(
+            [
+                "--profiles",
+                str(profiles_path),
+                "--columns",
+                str(columns_path),
+                "--output-dir",
+                str(output),
+                "--replicates",
+                "2",
+                "--seed",
+                "182",
+            ]
+        )
+        == 0
+    )
+    expected_files = {
+        "composition_calibration_summary.json",
+        "composition_calibration_summary.tsv",
+        "composition_calibration_replicates.tsv",
+        "composition_null_pvalues.tsv.gz",
+        "table1_composition_calibration.tsv",
+    }
+    assert {path.name for path in output.iterdir()} == expected_files
+    assert all((output / name).stat().st_size > 0 for name in expected_files)
+    summary = json.loads(
+        (output / "composition_calibration_summary.json").read_text(encoding="utf-8")
+    )
+    assert summary["method_id"] == "jed_composition_ttest"
+    assert summary["stream"] == "complete_null_study_flip"
+    assert summary["unit"] == "study"
+    assert summary["seed"] == 182
+    assert summary["replicates_requested"] == summary["replicates_completed"] == 2
+    assert summary["n_studies"] == 3
+    assert summary["n_traits"] == 4
+    for role, path in (("profiles", profiles_path), ("columns", columns_path)):
+        assert (
+            summary["provenance"]["inputs"][role]["sha256"]
+            == hashlib.sha256(path.read_bytes()).hexdigest()
+        )
+    nulls = pd.read_csv(
+        output / "composition_null_pvalues.tsv.gz", sep="\t", float_precision="round_trip"
+    )
+    assert nulls.columns.tolist() == [
+        "null_p_value",
+        "null_t_statistic",
+        "replicate",
+        "trait",
+        "p_value_diagnostics_role",
+        "p_value_diagnostics_correction",
+        "n_tests",
+    ]
+    assert len(nulls) == 8
+    assert set(nulls.trait) == set(traits)
+    assert set(nulls.n_tests) == {4}
+    assert set(nulls.p_value_diagnostics_role) == {"calibration_diagnostic"}
+    assert set(nulls.p_value_diagnostics_correction) == {"none (nominal)"}
+    assert np.isfinite(nulls[["null_p_value", "null_t_statistic"]].to_numpy()).all()
+    assert ((nulls.null_p_value > 0) & (nulls.null_p_value < 1)).any()
+    replicates = pd.read_csv(output / "composition_calibration_replicates.tsv", sep="\t")
+    assert replicates.columns.tolist() == [
+        "seed",
+        "stream",
+        "unit",
+        "replicate",
+        "correction",
+        "threshold",
+        "n_tests",
+        "significant",
+    ]
+    assert len(replicates) == 12
+    assert set(replicates.correction) == {"BH", "BY"}
+    assert set(replicates.threshold) == {0.05, 0.01, 0.001}
+    assert set(replicates.n_tests) == {4}
+    observed = pd.read_csv(
+        output / "table1_composition_calibration.tsv", sep="\t", float_precision="round_trip"
+    )
+    assert observed.trait_id.tolist() == ["METPO:1000608"]
+    assert {
+        "observed_t",
+        "observed_p",
+        "observed_bh_q",
+        "observed_by_q",
+        "null_type_i_alpha_05",
+    }.issubset(observed.columns)
+    assert np.isfinite(
+        observed[["observed_t", "observed_p", "observed_bh_q", "observed_by_q"]].to_numpy()
+    ).all()
+    written_summary = pd.read_csv(output / "composition_calibration_summary.tsv", sep="\t")
+    assert len(written_summary) == 6
+    assert set(written_summary.correction) == {"BH", "BY"}
+    assert set(written_summary.n_tests) == {4}
+    assert summary["p_value_diagnostics_role"] == "calibration_diagnostic"
+    assert summary["p_value_diagnostics_correction"] == "none (nominal)"
+    assert "export_schema_version" not in nulls.columns
+    assert "export_schema_version" not in replicates.columns
+    assert "export_schema_version" in summary, "Completed composition export has no schema version"
+    assert summary["export_schema_version"] == "composition-calibration-output-v1"
 
 
 def test_bsdbng_shim_exports() -> None:

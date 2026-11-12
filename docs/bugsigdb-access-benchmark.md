@@ -2,6 +2,15 @@
 
 This file records a single-run benchmark of the non-R BugSigDB data access methods.
 
+For fidelity, freshness, field completeness and endpoint stability, use the
+[access decision matrix (#87)](bugsigdb-access-methods.md#decision-matrix-87).
+These timings compare v1.3.1 release artifacts and the then-live raw exports;
+this is **not a benchmark of v1.2.1**, the older release identified by
+`10.5281/zenodo.10627578`. No timings were rerun for the 2026-11-10 documentary
+review. A single-run result does not establish sustained throughput, endpoint
+availability, update latency, or metadata completeness. R `bugsigdbr` interfaces
+remain untested (#62).
+
 Generated at: `2026-08-26T19:42:10+00:00`
 
 ## Methodology
@@ -26,5 +35,5 @@ Generated at: `2026-08-26T19:42:10+00:00`
 
 - `raw_csv_exports` is the live source-faithful path and remains the preferred surface once separate-table ingestion is implemented.
 - `bugsigdbexports_v1_3_1_full_dump` is the citable convenience single-file path currently used by bsdbng.
-- `bugsigdbexports_v1_3_1_gmt_bundle` is the heaviest path and is optimized for set-based analysis, not canonical ingestion.
+- `bugsigdbexports_v1_3_1_gmt_bundle` transfers more bytes than the single CSV in this run and serves set-based analysis, not canonical ingestion.
 - `zenodo_release_v1_3_1` is the reproducible pinned-release path (10.5281/zenodo.19740674).

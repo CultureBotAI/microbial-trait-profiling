@@ -727,7 +727,13 @@ both refreshed pooled aliases. Existing historical statistics tables outside the
 emitted output set, the condition and body-site summaries, and the infographic PNG
 are listed with hashes under `not_regenerated` in the JSON. Schema version 1.2
 distinguishes `existing_stratum_table_not_refreshed` from
-`not_produced_by_site_stats_mode` (the summaries and figure). These files are not
+`not_produced_by_site_stats_mode` (the summaries and figure). The committed
+`trait-visualization/trait-profile-investigation/stratified_stats_provenance.json`
+written by the final rerun (#1004) is schema version 1.1, with all eight of its
+`not_regenerated` entries using the single legacy reason
+`"not refreshed by pooled/site statistics mode"`; the next
+`just trait-profile-site-stats` run rewrites it compatibly under schema version 1.2,
+and nothing reads it. These files are not
 covered by this record; their freshness depends on their own producing execution.
 In particular, running full mode immediately before this step can produce fresh
 summaries and a figure. The rerun PR must either regenerate each
@@ -794,6 +800,10 @@ BY/BH, a distinct six-trait BH comparison, coverage/eligibility ledgers and
 LinkML multiplicity records are emitted without changing an arm plan or output.
 See [the methods](../methods/presence_depth_sensitivity.md) for the depth metric,
 conditional estimand, denominators, missing-feature policy and provenance scope.
+The `presence-depth-focal-export-v2` focal table aligns generic IDs with the full
+family and names six-trait IDs explicitly. The methods also document how these
+identities differ from historical unversioned exports; existing outputs are not
+rewritten.
 
 ## Checks and maintenance
 
@@ -850,7 +860,7 @@ but deduplicated for traversal. Subclass edges from named NCBITaxon rank classes
 (such as `NCBITaxon:biotype`) to `OBO:NCBITaxon#_taxonomic_rank` describe rank
 vocabulary, not organism ancestry. They are skipped and counted separately as
 `taxonomy_rank_class_edge_records_skipped` in the provenance parser audit (#1008).
-Malformed NCBITaxon identifiers in organism ancestry edges still fail. An input
+Malformed NCBITaxon identifiers in organism ancestry edges and non-rank NCBITaxon subjects under OBO:NCBITaxon#_taxonomic_rank still fail. An input
 without usable taxonomy edges fails, including a file containing only rank classes.
 All selected reported taxa are checked before output publication: reachable
 cycles and ancestry spanning multiple recognized roots fail; multiple paths to

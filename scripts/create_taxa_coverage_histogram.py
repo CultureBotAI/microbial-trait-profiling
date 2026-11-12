@@ -73,6 +73,8 @@ TAXONOMY_ROOTS = {
     "NCBITaxon:2157": "archaea",
     "NCBITaxon:2759": "eukaryota",
     "NCBITaxon:10239": "viruses",
+    "NCBITaxon:12908": "unclassified_sequences",
+    "NCBITaxon:2787823": "unclassified_sequences",
 }
 
 # Standard taxonomic hierarchy (ascending order)
@@ -169,7 +171,9 @@ class CoverageTaxonomy:
                     rank_class_records += 1
                     continue
                 if subject.startswith("NCBITaxon:"):
-                    raise ValueError(f"Invalid taxonomy identifier in edge {row['id']}: {subject}")
+                    raise ValueError(
+                        f"Rank-class edge {row['id']} has a non-rank NCBITaxon subject: {subject}"
+                    )
             for identifier in (subject, parent):
                 if identifier.startswith("NCBITaxon:") and not re.fullmatch(
                     r"NCBITaxon:[1-9][0-9]*", identifier
@@ -188,8 +192,9 @@ class CoverageTaxonomy:
             excluded_records_note=(
                 "excluded_records counts malformed KG edge records dropped by the strict "
                 "edge parser (always 0); taxonomy_rank_class_edge_records_skipped counts "
-                "well-formed ontology rank-class subclass_of records skipped during "
-                "organism-ancestry graph projection (#1008, #1274)."
+                "well-formed NCBITaxon:<name> ontology rank-class subclass_of records "
+                "skipped during organism-ancestry graph projection, while OBO-form rank-class "
+                "subjects take the non-NCBITaxon skip (#1008, #1274)."
             ),
             taxonomy_edge_records=accepted,
             taxonomy_rank_class_edge_records_skipped=rank_class_records,
@@ -205,7 +210,8 @@ class CoverageTaxonomy:
         if taxon not in self.nodes:
             return TaxonomyState("unresolved", "not_in_taxonomy_edges", ())
         roots = tuple(sorted(set(TAXONOMY_ROOTS) & self.graph.ancestors(taxon)))
-        if len(roots) > 1:
+        groups = {TAXONOMY_ROOTS[root] for root in roots}
+        if len(groups) > 1:
             raise ValueError(f"Conflicting recognized taxonomy roots for {taxon}: {roots}")
         if not roots:
             return TaxonomyState("unresolved", "no_recognized_root_path", ())
@@ -223,7 +229,7 @@ def diagnose_zero_trait_taxon(
             "Ambiguous Taxon / Bin Slash",
             "Resolve to lowest common ancestor (LCA) or treat as composite multi-taxon marker",
         )
-    if lower_name in {"uncultured organism", "unidentified", "unclassified", "unknown"}:
+    if taxonomy.group == "unclassified_sequences":
         return (
             "Unresolved Taxonomic Label",
             "Review the reported taxonomic label and source assignment before trait matching; "
@@ -270,7 +276,7 @@ def diagnose_zero_trait_taxon(
 
     if (
         "uncultured" in lower_name
-        or re.search(r"\b(cag:\d+|uba\d+|ucg-\d+|rf39|gut metagenome)\b", lower_name)
+        or re.search(r"\b(cag:\d+|uba\d+|ucg-\d+|rf39)\b", lower_name)
         or re.search(r"\s+bacterium\b", lower_name)
         or re.search(r"\s+sp\.\s*$", lower_name)
     ):
@@ -2528,7 +2534,8 @@ def write_readme(
             "recognized roots or reachable cycles reject the run before outputs are written.",
             "Ontology rank-class edges are skipped during organism-ancestry projection",
             "(counted in parser_audit as taxonomy_rank_class_edge_records_skipped, while",
-            "excluded_records: 0 confirms the strict KG edge parser dropped no record).",
+            "excluded_records is always 0: the strict KG edge parser raises on a "
+            "malformed record instead of dropping it).",
             "Explicit unresolved labels and slash composites retain their distinct diagnoses.",
             "Eukaryotic and viral ancestry precedes Candidatus/cultivation heuristics;",
             "alias suggestions do not transfer ancestry or traits.",

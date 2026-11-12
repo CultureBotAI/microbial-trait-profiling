@@ -9,9 +9,14 @@ from mtp.workflow.runtime import artifact_path, validate_run
 from mtp.workflow.trait_policy import resolve_trait_policy
 
 
-def verify_core_run(manifest: Path, *, resolver: LocationResolver | None = None) -> WorkflowRun:
+def verify_core_run(
+    manifest: Path,
+    *,
+    resolver: LocationResolver | None = None,
+    expected_sha256: str | None = None,
+) -> WorkflowRun:
     """Check actual bytes and then scientific relationships across the product bundle."""
-    run = validate_run(manifest, resolver=resolver)
+    run = validate_run(manifest, resolver=resolver, expected_sha256=expected_sha256)
     trait_policy = resolve_trait_policy(run)
     artifacts = {artifact.product_id: artifact for artifact in run.artifacts or []}
     paths = {key: artifact_path(run, key, resolver) for key in artifacts}

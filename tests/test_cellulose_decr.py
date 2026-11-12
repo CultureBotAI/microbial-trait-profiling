@@ -382,7 +382,6 @@ def test_benjamini_hochberg_matches_scipy_and_keeps_missing() -> None:
     ("site", "compartment"),
     [
         ("Feces", FECES),
-        ("feces", FECES),
         ("Feces,Blood", OTHER),
         ("Oral cavity,Feces", OTHER),
         ("Saliva", ORAL),
@@ -397,6 +396,11 @@ def test_benjamini_hochberg_matches_scipy_and_keeps_missing() -> None:
 )
 def test_compartment_of(site: str, compartment: str) -> None:
     assert compartment_of(site) == compartment
+
+
+def test_compartment_of_refuses_non_canonical_feces_casing() -> None:
+    with pytest.raises(ValueError, match="Refusing non-canonical stool body_site"):
+        compartment_of("feces")
 
 
 def _hashes(**digests: str) -> dict[str, dict[str, object]]:

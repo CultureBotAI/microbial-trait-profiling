@@ -133,7 +133,7 @@ The registry IDs are `mt-supp-native-influence-ora-enrichment` and
 `mt-supp-native-influence-ora-depletion`. Their run sizes are the respective
 `enrichment_tests` and `depletion_tests` fields in `native_ora_families.tsv`.
 These historical annotation-count families are not the modern distinct-taxon
-native ORA families or the joint-tail multiplicity family.
+native ORA families or the joint-tail multiplicity family. [`calibration_protocol.json`](calibration_protocol.json) (`v3.1`, #568) and [`calibration.md`](calibration.md) record this distinction between the historical #131 assertion-count urn retained here, the production `M = 5,829` all-host distinct-taxon urn calibrated in `src/mtp/ora_calibration/` (#551), and the proposed harmonized-baseline paired-human assertion-weighted background.
 
 Zero-total profiles remain visible with no tests. A zero-background trait remains
 in the depletion family with p=q=1, but has undefined fold, explicit status and no

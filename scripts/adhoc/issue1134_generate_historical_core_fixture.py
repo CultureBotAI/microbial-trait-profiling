@@ -11,13 +11,19 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import inspect
 import json
 import shutil
 import sys
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any
 
 from git import Repo
+
+if TYPE_CHECKING:
+    from mtp.datamodel.workflow_pydantic import ProductDefinition, ValidationResult
+    from mtp.workflow.runtime import Validator
 
 REPOSITORY = Path(__file__).resolve().parents[2]
 NAMESPACE = Path("/fixture/trait-policy-511c891")
@@ -77,9 +83,43 @@ def _inputs(output: Path) -> dict[str, Path]:
     }
 
 
+def adapt_historical_validator(
+    validator_fn: Callable[..., Sequence[ValidationResult]],
+) -> Validator:
+    """Adapt either the pre-union 511c891 validator or current validate_core_product.
+
+    The historical 511c891 checkout's validate_core_product accepts
+    (product, path, context, *, recorded_sources=None, parameters=None), whereas
+    the current checkout's validate_core_product additionally requires explicit
+    trait_key_policy and include_policy_metadata keywords (#1148).
+    """
+    params = inspect.signature(validator_fn).parameters
+    accepts_policy = "trait_key_policy" in params and "include_policy_metadata" in params
+
+    def validate(
+        product: ProductDefinition,
+        path: Path,
+        context: Mapping[str, Path],
+        *,
+        parameters: Mapping[str, str],
+    ) -> Sequence[ValidationResult]:
+        if accepts_policy:
+            return validator_fn(
+                product,
+                path,
+                context,
+                parameters=parameters,
+                trait_key_policy="raw_object_v1",
+                include_policy_metadata=False,
+            )
+        return validator_fn(product, path, context, parameters=parameters)
+
+    return validate
+
+
 def generate(code: Path, output: Path, fixture: Path) -> None:
     from mtp.workflow.operations import OPERATIONS, validate_core_product
-    from mtp.workflow.runtime import Validator, execute_workflow, inventory
+    from mtp.workflow.runtime import execute_workflow, inventory
     from mtp.workflow.verification import verify_core_run
 
     if output.exists() or fixture.exists():
@@ -104,9 +144,9 @@ def generate(code: Path, output: Path, fixture: Path) -> None:
         output / "runs",
         OPERATIONS,
         parameter_overrides={"source_mode": "fixture", "strain_rollup": "phenotype"},
-        # The authenticated historical checkout implements this older protocol;
+        # The authenticated historical checkout implements the pre-union protocol;
         # the current checkout's validator additionally requires policy keywords.
-        validator=cast(Validator, validate_core_product),
+        validator=adapt_historical_validator(validate_core_product),
         repository_root=code,
     )
     original = Path(run.manifest_path)

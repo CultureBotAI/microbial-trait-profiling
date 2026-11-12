@@ -1,5 +1,7 @@
 """Tests for publication slide deck visualization suite (#347, #354)."""
 
+import hashlib
+import json
 from pathlib import Path
 from typing import Any
 
@@ -39,6 +41,7 @@ def mock_pipeline_data(tmp_path: Path) -> dict[str, Path]:
         exp_rows,
         columns=["study_id", "experiment_id", "condition", "body_site", "host_species"],
     )
+    exp_df["sequencing_type"] = "16S"
     exp_path = derived_dir / "experiments.tsv"
     exp_df.to_csv(exp_path, sep="\t", index=False)
 
@@ -253,6 +256,227 @@ def test_figure5_generation(mock_pipeline_data: dict[str, Path], tmp_path: Path)
     assert result == out_file
     assert out_file.exists()
     assert out_file.stat().st_size > 1000
+
+
+def _figure5_population_inputs(
+    tmp_path: Path,
+    *,
+    excluded_host: str | None = "Mus musculus",
+    excluded_method: str | None = "16S",
+    excluded_site: str = "Feces",
+    excluded_condition: str | None = None,
+) -> dict[str, Path]:
+    """Six eligible studies; excluded taxa dominate ranking and contaminate shared counts."""
+    experiments: list[tuple[str, str, str, str, str | None, str | None]] = []
+    occurrences: list[tuple[str, str, str, str, str, str]] = []
+    for panel, condition in enumerate(("Parkinson's disease", "Colorectal cancer")):
+        directions = (
+            ("increased", "increased", "decreased")
+            if panel == 0
+            else ("decreased", "decreased", "increased")
+        )
+        valid_methods = ("16S", "WMS", " WMS " if panel == 0 else " 16S ")
+        for index, (direction, method) in enumerate(zip(directions, valid_methods, strict=True)):
+            study = f"valid-{panel}-{index}"
+            host = " Homo sapiens " if index == 2 else "Homo sapiens"
+            experiments.append((study, "e1", condition, "Feces", host, method))
+            occurrences.append((study, "e1", direction, "NCBITaxon:1", "Eligible taxon", "species"))
+        contaminating_direction = "decreased" if panel == 0 else "increased"
+        for index in range(8):
+            study = f"excluded-{panel}-{index}"
+            experiments.append(
+                (
+                    study,
+                    "e1",
+                    excluded_condition or condition,
+                    excluded_site,
+                    excluded_host,
+                    excluded_method,
+                )
+            )
+            occurrences.append(
+                (
+                    study,
+                    "e1",
+                    contaminating_direction,
+                    "NCBITaxon:2",
+                    "Excluded-only taxon",
+                    "species",
+                )
+            )
+            if index < 3:
+                occurrences.append(
+                    (
+                        study,
+                        "e1",
+                        contaminating_direction,
+                        "NCBITaxon:1",
+                        "Eligible taxon",
+                        "species",
+                    )
+                )
+    paths = {
+        "experiments": tmp_path / "population_experiments.tsv",
+        "bugsigdb_taxa": tmp_path / "population_taxa.tsv",
+        "taxa_matrix": tmp_path / "population_matrix.tsv",
+    }
+    pd.DataFrame(
+        experiments,
+        columns=[
+            "study_id",
+            "experiment_id",
+            "condition",
+            "body_site",
+            "host_species",
+            "sequencing_type",
+        ],
+    ).to_csv(paths["experiments"], sep="\t", index=False)
+    pd.DataFrame(
+        occurrences,
+        columns=[
+            "study_id",
+            "experiment_id",
+            "direction",
+            "taxon_id",
+            "taxon_name",
+            "taxonomic_rank",
+        ],
+    ).to_csv(paths["bugsigdb_taxa"], sep="\t", index=False)
+    pd.DataFrame(
+        [
+            {
+                "taxon_id": taxon_id,
+                "taxon_name": taxon_name,
+                **dict.fromkeys(TABLE_1_TRAITS, 0),
+                "METPO:2000103|GO:0030245": 1,
+            }
+            for taxon_id, taxon_name in (
+                ("NCBITaxon:1", "Eligible taxon"),
+                ("NCBITaxon:2", "Excluded-only taxon"),
+            )
+        ]
+    ).to_csv(paths["taxa_matrix"], sep="\t", index=False)
+    return paths
+
+
+def _capture_figure5_population(
+    inputs: dict[str, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> dict[str, Any]:
+    """Persist the real figure JSON in place of raster export; all calculations remain real."""
+    import plotly.graph_objects as go
+
+    output = tmp_path / "figure5.capture.json"
+    before = {name: hashlib.sha256(path.read_bytes()).hexdigest() for name, path in inputs.items()}
+    (tmp_path / "input_hashes.json").write_text(
+        json.dumps(before, sort_keys=True), encoding="utf-8"
+    )
+    written: list[Path] = []
+
+    def capture(figure: Any, path: str, **_kwargs: Any) -> None:
+        assert Path(path) == output
+        Path(path).write_text(figure.to_json(), encoding="utf-8")
+        written.append(Path(path))
+
+    monkeypatch.setattr(go.Figure, "write_image", capture)
+    result = generate_figure5_pd_crc_taxon_attribution_bubble(
+        bugsigdb_taxa_path=inputs["bugsigdb_taxa"],
+        experiments_path=inputs["experiments"],
+        taxa_matrix_path=inputs["taxa_matrix"],
+        output_path=output,
+        top_n_taxa=1,
+    )
+    assert result == output
+    assert written == [output]
+    assert output.stat().st_size > 0
+    assert {
+        name: hashlib.sha256(path.read_bytes()).hexdigest() for name, path in inputs.items()
+    } == before
+    figure = json.loads(output.read_text(encoding="utf-8"))
+    assert isinstance(figure, dict)
+    return figure
+
+
+@pytest.mark.parametrize(
+    ("host", "method", "site", "condition"),
+    [
+        pytest.param("Mus musculus", "16S", "Feces", None, id="mouse-16s"),
+        pytest.param("Mus musculus", "WMS", "Feces", None, id="mouse-wms"),
+        pytest.param(None, "16S", "Feces", None, id="missing-host"),
+        pytest.param("unknown", "16S", "Feces", None, id="unknown-host"),
+        pytest.param("Homo sapiens", "ITS", "Feces", None, id="human-its"),
+        pytest.param("Homo sapiens", "ITS2", "Feces", None, id="human-its2"),
+        pytest.param("Homo sapiens", "PCR", "Feces", None, id="human-pcr"),
+        pytest.param("Homo sapiens", "18S", "Feces", None, id="human-18s"),
+        pytest.param("Homo sapiens", None, "Feces", None, id="missing-method"),
+        pytest.param("Homo sapiens", "untyped", "Feces", None, id="untyped-method"),
+        pytest.param("Homo sapiens", "16s", "Feces", None, id="method-is-case-sensitive"),
+        pytest.param("Homo sapiens", "16S", "Blood", None, id="blood"),
+        pytest.param("Homo sapiens", "WMS", "Feces,Blood", None, id="mixed-body-site"),
+        pytest.param("Homo sapiens", "16S", "Feces", "Asthma", id="other-condition"),
+    ],
+)
+def test_figure5_filters_before_ranking_and_direction_counts(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    host: str | None,
+    method: str | None,
+    site: str,
+    condition: str | None,
+) -> None:
+    inputs = _figure5_population_inputs(
+        tmp_path,
+        excluded_host=host,
+        excluded_method=method,
+        excluded_site=site,
+        excluded_condition=condition,
+    )
+    figure = _capture_figure5_population(inputs, tmp_path, monkeypatch)
+    assert len(figure["data"]) == 2
+    for trace, expected_direction in zip(figure["data"], (1 / 3, -1 / 3), strict=True):
+        assert trace["y"] == ["Eligible taxon"]
+        assert trace["x"] == [0]
+        assert trace["marker"]["size"] == [13.5]
+        assert trace["marker"]["color"] == pytest.approx([expected_direction])
+        assert len(trace["text"]) == 1
+        assert "Studies: 3<br>" in trace["text"][0]
+        assert f"Net Direction: {expected_direction:+.2f}" in trace["text"][0]
+    assert [annotation["text"] for annotation in figure["layout"]["annotations"]] == [
+        "Parkinson's disease x Feces",
+        "Colorectal cancer x Feces",
+    ]
+
+
+@pytest.mark.parametrize("missing_column", ["host_species", "sequencing_type"])
+def test_figure5_requires_population_metadata(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, missing_column: str
+) -> None:
+    import plotly.graph_objects as go
+
+    inputs = _figure5_population_inputs(tmp_path)
+    experiments = pd.read_csv(inputs["experiments"], sep="\t")
+    experiments.drop(columns=[missing_column]).to_csv(inputs["experiments"], sep="\t", index=False)
+    before = {name: hashlib.sha256(path.read_bytes()).hexdigest() for name, path in inputs.items()}
+    output = tmp_path / "figure5.capture.json"
+    written: list[Path] = []
+
+    def capture(figure: Any, path: str, **_kwargs: Any) -> None:
+        Path(path).write_text(figure.to_json(), encoding="utf-8")
+        written.append(Path(path))
+
+    monkeypatch.setattr(go.Figure, "write_image", capture)
+    with pytest.raises((KeyError, ValueError), match=missing_column):
+        generate_figure5_pd_crc_taxon_attribution_bubble(
+            bugsigdb_taxa_path=inputs["bugsigdb_taxa"],
+            experiments_path=inputs["experiments"],
+            taxa_matrix_path=inputs["taxa_matrix"],
+            output_path=output,
+            top_n_taxa=1,
+        )
+    assert written == []
+    assert not output.exists()
+    assert {
+        name: hashlib.sha256(path.read_bytes()).hexdigest() for name, path in inputs.items()
+    } == before
 
 
 def test_generate_all_deck_figures(mock_pipeline_data: dict[str, Path], tmp_path: Path) -> None:

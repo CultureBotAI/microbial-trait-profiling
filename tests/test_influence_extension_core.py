@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import csv
 import json
-import sys
 from pathlib import Path
 
 import pytest
@@ -15,7 +14,6 @@ from mtp.influence_extension import run_extension
 from mtp.paths import REPO_ROOT, file_sha256
 from mtp.trait_guilds import TABLE1_TRAITS
 from mtp.workflow.arms.runtime import execute_arm, verify_arm
-from mtp.workflow.arms.types import ArmContext, Command
 from mtp.workflow.consumers import open_core_bundle, verify_consumer_record
 from mtp.workflow.operations import OPERATIONS, validate_execution_product
 from mtp.workflow.runtime import execute_workflow
@@ -168,7 +166,7 @@ def test_verified_extension_reconciles_scope_subset_and_orientation(
     assert len(joint) == 6
     # Neither declared family is in this synthetic graph: distinguish no removed
     # annotation mass from a supported removal that happens to leave an effect unchanged.
-    assert {row["removal_status"] for row in joint} == {"no_removed_annotation_mass"}
+    assert {row["removal_status"] for row in joint} == {"absent_lineages"}
     assert {int(row["removed_annotation_mass"]) for row in joint} == {0}
     assert {int(row["removed_trait_annotation_mass"]) for row in joint} == {0}
     for row in joint:
@@ -270,35 +268,16 @@ def test_cli_includes_a_real_verified_same_core_noel_summary(tmp_path: Path) -> 
     """Exercise immutable arm binding with a minimal fixture producer, no verifier stub."""
     core = extension_core(tmp_path)
 
-    def plan(context: ArmContext) -> list[Command]:
-        source = context.products["count_profiles"]
-        report = context.output / "native_summary.md"
-        return [
-            Command(
-                "native_taxon_influence",
-                (
-                    sys.executable,
-                    str(REPO_ROOT / "scripts/adhoc/issue658_arm_test_command.py"),
-                    "--input",
-                    str(source),
-                    "--output",
-                    str(report),
-                    "--payload",
-                    "\n# Synthetic native baseline\nVerified fixture binding marker.\n",
-                ),
-                (source,),
-                (report,),
-            )
-        ]
+    from test_influence_extension_noel_core import noel_fixture_plan
 
-    produced = execute_arm("noel", core, tmp_path / "noel", plan, figures=False)
+    produced = execute_arm("noel", core, tmp_path / "noel", noel_fixture_plan, figures=False)
     noel_manifest = Path(produced.manifest_path)
     verified = verify_arm(noel_manifest)
     assert verified.steps
-    assert verified.steps[0].id == "native_taxon_influence"
-    assert verified.steps[0].outputs
-    assert len(verified.steps[0].outputs) == 1
-    native_path = Path(verified.steps[0].outputs[0].path)
+    native_step = next(step for step in verified.steps if step.id == "native_taxon_influence")
+    assert native_step.outputs
+    assert len(native_step.outputs) == 1
+    native_path = Path(native_step.outputs[0].path)
     assert native_path.name == "native_summary.md"
     native_text, native_hash = native_path.read_text(), file_sha256(native_path)
     output = tmp_path / "with-noel"

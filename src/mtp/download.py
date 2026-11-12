@@ -33,7 +33,7 @@ import os
 import re
 import time
 from datetime import UTC, datetime
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 import httpx
@@ -76,8 +76,16 @@ PROVENANCE_FILE = "download_provenance.json"
 
 SOURCE_PINNED = "pinned"
 SOURCE_LIVE = "live"
+SOURCE_RELEASE = "release"
 SOURCE_ENV_VAR = "BSDBNG_BUGSIGDB_SOURCE"
 DEFAULT_SOURCE = SOURCE_PINNED
+
+DEFAULT_RELEASE_REPO = "CultureBotAI/microbial-trait-profiling"
+RELEASE_ARCHIVE_PATTERN = "bsdbng-raw-data-*.tar.gz"
+RELEASE_EXPECTED_CSVS = (*EXPORT_FILES, FULL_DUMP_NAME)
+_REPO_SLUG_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*/[A-Za-z0-9][A-Za-z0-9_.-]*$")
+_TAG_SLUG_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]*$")
+_ARCHIVE_TAG_RE = re.compile(r"^bsdbng-raw-data-(.+)\.tar\.gz$")
 
 SNAPSHOT_RE = re.compile(rb"^#\s*BugSigDB\s+(\S+?),")
 
@@ -346,3 +354,291 @@ def download_exports(
 
     provenance_path.write_text(json.dumps(provenance, indent=2) + "\n")
     return downloaded
+
+
+def _validate_release_repo(repo: str) -> str:
+    cleaned = repo.strip()
+    if not _REPO_SLUG_RE.match(cleaned):
+        raise ValueError(f"Invalid GitHub repository slug {repo!r}; expected 'owner/repo'")
+    return cleaned
+
+
+def _validate_release_tag(tag: str | None) -> str | None:
+    if tag is None:
+        return None
+    cleaned = tag.strip()
+    if not cleaned or cleaned.lower() == "latest":
+        return None
+    if ".." in cleaned or not _TAG_SLUG_RE.match(cleaned):
+        raise ValueError(f"Invalid release tag {tag!r}")
+    return cleaned
+
+
+def _fetch_release_archive(dest_dir: Path, *, tag: str | None, repo: str) -> Path:
+    import shutil
+
+    gh_bin = shutil.which("gh")
+    if not gh_bin:
+        raise SourceResolutionError(
+            "gh CLI not found on PATH; install GitHub CLI to run download-from-release."
+        )
+    cmd = [gh_bin, "release", "download"]
+    if tag is not None:
+        cmd.append(tag)
+    cmd.extend(
+        [
+            "--repo",
+            repo,
+            "--dir",
+            str(dest_dir),
+            "--pattern",
+            RELEASE_ARCHIVE_PATTERN,
+        ]
+    )
+    pid = os.posix_spawn(gh_bin, cmd, os.environ)
+    _, wait_status = os.waitpid(pid, 0)
+    exit_code = os.waitstatus_to_exitcode(wait_status)
+    if exit_code != 0:
+        raise SourceResolutionError(
+            f"gh release download failed with exit code {exit_code} "
+            f"for repo={repo!r} tag={tag or 'latest'!r}."
+        )
+    matches = sorted(dest_dir.glob(RELEASE_ARCHIVE_PATTERN))
+    if not matches:
+        raise SourceResolutionError(
+            f"No release archive matching {RELEASE_ARCHIVE_PATTERN!r} downloaded "
+            f"from {repo!r} ({tag or 'latest'})."
+        )
+    if len(matches) > 1:
+        raise IntegrityError(
+            f"Multiple release archives matched {RELEASE_ARCHIVE_PATTERN!r}: "
+            f"{[m.name for m in matches]}"
+        )
+    return matches[0]
+
+
+def _infer_release_tag(archive_name: str, requested_tag: str | None) -> str:
+    if requested_tag is not None:
+        return requested_tag
+    match = _ARCHIVE_TAG_RE.match(archive_name)
+    return match.group(1) if match else "latest"
+
+
+def _read_release_archive_members(archive_path: Path) -> dict[str, bytes]:
+    import tarfile
+
+    expected_set = set(RELEASE_EXPECTED_CSVS)
+    ignorable_set = {PROVENANCE_FILE, ".gitkeep"}
+    extracted: dict[str, bytes] = {}
+    with tarfile.open(archive_path, mode="r:gz") as tar:
+        for member in tar.getmembers():
+            raw_name = member.name
+            if not raw_name or raw_name.startswith("/") or "\\" in raw_name:
+                raise IntegrityError(f"Unsafe path in release archive: {raw_name!r}")
+            parts = PurePosixPath(raw_name).parts
+            if ".." in parts:
+                raise IntegrityError(f"Unsafe path traversal in release archive: {raw_name!r}")
+            if (
+                member.issym()
+                or member.islnk()
+                or member.isdev()
+                or member.isfifo()
+                or member.ischr()
+                or member.isblk()
+            ):
+                raise IntegrityError(
+                    f"Refusing non-regular tar member {raw_name!r} in release archive"
+                )
+            if member.isdir():
+                if parts != ():
+                    raise IntegrityError(
+                        f"Unexpected directory member {raw_name!r} in release archive"
+                    )
+                continue
+            if not member.isfile():
+                raise IntegrityError(
+                    f"Refusing non-regular tar member {raw_name!r} in release archive"
+                )
+            if len(parts) != 1:
+                raise IntegrityError(f"Unexpected nested member {raw_name!r} in release archive")
+            filename = parts[0]
+            if filename in ignorable_set:
+                continue
+            if filename not in expected_set:
+                raise IntegrityError(
+                    f"Unexpected file {raw_name!r} in release archive; "
+                    f"expected only {sorted(expected_set)}"
+                )
+            if filename in extracted:
+                raise IntegrityError(f"Duplicate member {filename!r} in release archive")
+            file_obj = tar.extractfile(member)
+            if file_obj is None:
+                raise IntegrityError(f"Unable to read tar member {raw_name!r}")
+            with file_obj:
+                extracted[filename] = file_obj.read()
+    if FULL_DUMP_NAME not in extracted or not extracted[FULL_DUMP_NAME]:
+        raise IntegrityError(
+            f"Release archive {archive_path.name!r} is missing non-empty {FULL_DUMP_NAME}"
+        )
+    return extracted
+
+
+def download_from_release(
+    tag: str | None = None,
+    output_dir: Path | None = None,
+    repo: str = DEFAULT_RELEASE_REPO,
+) -> list[Path]:
+    """Download and extract BugSigDB CSVs from a GitHub release tarball (#92).
+
+    Resolves ``bsdbng-raw-data-*.tar.gz`` via ``gh release download`` into a
+    temporary directory, validates every archive member against path traversal
+    and unexpected entries, verifies ``full_dump.csv`` against the pinned digest
+    when its size or checksum matches the pinned release, writes the CSV files
+    into ``output_dir``, and records ``download_provenance.json`` with
+    ``"source": "release"``.
+    """
+    validated_repo = _validate_release_repo(repo)
+    resolved_tag = _validate_release_tag(tag)
+    target_dir = output_dir if output_dir is not None else RAW_DATA_DIR
+    import tempfile
+
+    with tempfile.TemporaryDirectory(prefix="mtp-release-download-") as tmp_str:
+        tmp_dir = Path(tmp_str)
+        archive_path = _fetch_release_archive(tmp_dir, tag=resolved_tag, repo=validated_repo)
+        archive_bytes = archive_path.read_bytes()
+        archive_sha256 = hashlib.sha256(archive_bytes).hexdigest()
+        archive_name = archive_path.name
+        release_tag = _infer_release_tag(archive_name, resolved_tag)
+        extracted_payloads = _read_release_archive_members(archive_path)
+
+    full_dump_bytes = extracted_payloads[FULL_DUMP_NAME]
+    full_dump_md5 = hashlib.md5(full_dump_bytes, usedforsecurity=False).hexdigest()
+    pinned_match = (
+        len(full_dump_bytes) == PINNED_FULL_DUMP_BYTES and full_dump_md5 == PINNED_FULL_DUMP_MD5
+    )
+    if len(full_dump_bytes) == PINNED_FULL_DUMP_BYTES or full_dump_md5 == PINNED_FULL_DUMP_MD5:
+        verify_pinned_dump(full_dump_bytes)
+
+    target_dir.mkdir(parents=True, exist_ok=True)
+    now_iso = datetime.now(tz=UTC).isoformat()
+    full_dump_snapshot = parse_snapshot(full_dump_bytes)
+
+    provenance: dict[str, Any] = {
+        "source": SOURCE_RELEASE,
+        "release_tag": release_tag,
+        "release_repo": validated_repo,
+        "archive_name": archive_name,
+        "archive_sha256": archive_sha256,
+        "downloaded_at": now_iso,
+        "bugsigdb_release": {
+            "source": f"github-release:{validated_repo}@{release_tag}",
+            "pinned": pinned_match,
+            "version": BUGSIGDB_EXPORTS_VERSION if pinned_match else release_tag,
+            "doi": BUGSIGDB_EXPORTS_DOI if pinned_match else None,
+            "tag_sha": BUGSIGDB_EXPORTS_TAG_SHA if pinned_match else None,
+            "release_tag": release_tag,
+            "release_repo": validated_repo,
+            "archive_name": archive_name,
+            "archive_sha256": archive_sha256,
+            "resolved_at": now_iso,
+            **({"bugsigdb_snapshot": full_dump_snapshot} if full_dump_snapshot is not None else {}),
+        },
+    }
+
+    written_paths: list[Path] = []
+    for name in RELEASE_EXPECTED_CSVS:
+        if name not in extracted_payloads:
+            continue
+        payload = extracted_payloads[name]
+        dest = target_dir / name
+        dest.write_bytes(payload)
+        written_paths.append(dest)
+        file_md5 = hashlib.md5(payload, usedforsecurity=False).hexdigest()
+        file_sha256 = hashlib.sha256(payload).hexdigest()
+        is_pinned_file = name == FULL_DUMP_NAME and pinned_match
+        file_prov: dict[str, Any] = {
+            "downloaded_at": now_iso,
+            "source": SOURCE_RELEASE,
+            "release_tag": release_tag,
+            "release_repo": validated_repo,
+            "archive_name": archive_name,
+            "archive_sha256": archive_sha256,
+            "pinned": is_pinned_file,
+            "downloaded_bytes": len(payload),
+            "md5": file_md5,
+            "sha256": file_sha256,
+        }
+        snapshot = parse_snapshot(payload)
+        if snapshot is not None:
+            file_prov["bugsigdb_snapshot"] = snapshot
+        if is_pinned_file:
+            file_prov["integrity_verified"] = True
+        provenance[name] = file_prov
+
+    (target_dir / PROVENANCE_FILE).write_text(
+        json.dumps(provenance, indent=2) + "\n", encoding="utf-8"
+    )
+    return written_paths
+
+
+def build_parser() -> Any:
+    """Create CLI argument parser for ``python -m mtp.download`` (#92)."""
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        prog="python -m mtp.download",
+        description="Download BugSigDB CSV exports or restore them from a GitHub release tarball.",
+    )
+    parser.add_argument(
+        "--from-release",
+        nargs="?",
+        const="latest",
+        default=None,
+        metavar="TAG",
+        help="Download raw CSVs from a GitHub release tarball (default tag: latest).",
+    )
+    parser.add_argument(
+        "--repo",
+        default=DEFAULT_RELEASE_REPO,
+        help="GitHub owner/repo for --from-release.",
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=RAW_DATA_DIR,
+        help="Destination directory for downloaded CSV files (default: data/raw).",
+    )
+    parser.add_argument(
+        "--source",
+        default=None,
+        help="Ingest source for direct download ('pinned' or 'live').",
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Force re-download even when cached files exist.",
+    )
+    return parser
+
+
+def main(argv: list[str] | tuple[str, ...] | None = None) -> int:
+    """CLI entry point for ``python -m mtp.download``."""
+    parser = build_parser()
+    args = parser.parse_args(list(argv) if argv is not None else None)
+    if args.from_release is not None:
+        download_from_release(
+            tag=args.from_release,
+            output_dir=args.output_dir,
+            repo=args.repo,
+        )
+    else:
+        download_exports(
+            raw_dir=args.output_dir,
+            force=bool(args.force),
+            source=args.source,
+        )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

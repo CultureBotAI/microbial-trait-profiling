@@ -130,9 +130,18 @@ Do not use `gh issue develop`: its Development-sidebar link makes GitHub close
 the issue when the PR merges into `main`, even if the PR only partly addresses
 it (#1317). In the PR body, write `Closes #<number>` only when the PR fully
 resolves the issue, and `Refs #<number>` otherwise. Decide before opening the
-PR, and before merging check the PR's Development sidebar for the issues it will
-close, because a link can outlast a later edit of the body; remove any link to
-an issue the PR only partly addresses.
+PR, and before merging check which issues the PR will close (`gh pr view N --json closingIssuesReferences`,
+which lists issues only, never PRs, or the PR's Development sidebar): a link
+that comes only from a closing keyword goes away once the keyword is removed
+from the PR body, whereas a Development-sidebar or branch link persists and
+must be removed in the PR's Development sidebar in the web UI (no `gh`
+subcommand does this, and only a linked branch can be unlinked through the
+GraphQL API, so an agent must ask a maintainer). A closing keyword in a
+commit message (and so, by default, in the squash message) also closes the issue on merge,
+appears in neither check, and is not removed by editing the PR body: write
+`Refs #<number>` in commits, and never a negated keyword such as "does not
+close #<number>" (which still closes). Remove any link to an issue the PR
+only partly addresses.
 
 ### 3. Write code
 
