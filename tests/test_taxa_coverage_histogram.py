@@ -3,6 +3,7 @@
 import importlib.util
 import inspect
 import json
+import math
 import shlex
 import subprocess
 import sys
@@ -12,6 +13,8 @@ import numpy as np
 import pandas as pd
 import pytest
 from matplotlib.axes import Axes
+from matplotlib.colors import to_rgb
+from matplotlib.patches import Patch
 from matplotlib.text import Annotation
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts/create_taxa_coverage_histogram.py"
@@ -879,6 +882,51 @@ def test_provenance_paths_follow_resolved_checkout_membership(
     assert coverage.provenance_path(paths[location]) == expected
 
 
+def _srgb_to_cie_lab(rgb: tuple[float, float, float]) -> tuple[float, float, float]:
+    """Convert an sRGB triple in [0, 1]^3 to CIE L*a*b* (D65) for perceptual distance checks."""
+
+    def _linearize(channel: float) -> float:
+        return channel / 12.92 if channel <= 0.04045 else ((channel + 0.055) / 1.055) ** 2.4
+
+    r_lin, g_lin, b_lin = _linearize(rgb[0]), _linearize(rgb[1]), _linearize(rgb[2])
+    x_val = (0.4124564 * r_lin + 0.3575761 * g_lin + 0.1804375 * b_lin) / 0.95047
+    y_val = (0.2126729 * r_lin + 0.7151522 * g_lin + 0.0721750 * b_lin) / 1.00000
+    z_val = (0.0193339 * r_lin + 0.1191920 * g_lin + 0.9503041 * b_lin) / 1.08883
+
+    def _f(t_val: float) -> float:
+        return t_val ** (1.0 / 3.0) if t_val > 0.008856 else 7.787 * t_val + 16.0 / 116.0
+
+    fx, fy, fz = _f(x_val), _f(y_val), _f(z_val)
+    return (116.0 * fy - 16.0, 500.0 * (fx - fy), 200.0 * (fy - fz))
+
+
+def _assert_pairwise_distinct_colors(
+    color_map: dict[str, tuple[float, float, float]],
+    *,
+    min_srgb_dist: float = 0.14,
+    min_cie76_delta_e: float = 12.0,
+) -> None:
+    """Require all colors in color_map to be pairwise distinct in sRGB and CIE L*a*b* (#1035)."""
+    items = list(color_map.items())
+    assert len(items) >= 2
+    for idx_a in range(len(items)):
+        name_a, rgb_a = items[idx_a]
+        lab_a = _srgb_to_cie_lab(rgb_a)
+        for idx_b in range(idx_a + 1, len(items)):
+            name_b, rgb_b = items[idx_b]
+            srgb_dist = math.dist(rgb_a, rgb_b)
+            delta_e = math.dist(lab_a, _srgb_to_cie_lab(rgb_b))
+            assert rgb_a != rgb_b, f"Duplicate RGB color between {name_a!r} and {name_b!r}: {rgb_a}"
+            assert srgb_dist >= min_srgb_dist, (
+                f"sRGB distance {srgb_dist:.4f} < {min_srgb_dist} between "
+                f"{name_a!r} ({rgb_a}) and {name_b!r} ({rgb_b})"
+            )
+            assert delta_e >= min_cie76_delta_e, (
+                f"Perceptual CIE76 Delta E {delta_e:.2f} < {min_cie76_delta_e} between "
+                f"{name_a!r} ({rgb_a}) and {name_b!r} ({rgb_b})"
+            )
+
+
 def test_plate6_reads_compact_remediation_and_nonempty_rank_rows(
     inputs: dict[str, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -920,14 +968,19 @@ def test_plate6_reads_compact_remediation_and_nonempty_rank_rows(
     assert "do not establish leaf-taxon traits" in remediation
     coverage.plt.close(fig)
 
-    # Also verify that the three new #957 / #1009 diagnosis categories render with distinct
-    # Panel B short names, distinct bar colors, and Panel C remediation labels (#1009):
+    # Also verify that all nine zero-trait diagnosis categories (including the #957 / #1009
+    # additions) render with distinct Panel B short names, perceptually distinct bar colors
+    # in both sRGB and CIE L*a*b* space (#1035), and Panel C remediation labels (#1009):
+    _assert_pairwise_distinct_colors(
+        {rank: to_rgb(color) for rank, color in coverage.RANK_COLORS.items()}
+    )
     zero_path = output / "top_zero_trait_bugsigdb_taxa.tsv"
     zero_df = pd.read_csv(zero_path, sep="\t")
+    base_row = zero_df.iloc[0].to_dict()
     extra_rows = pd.DataFrame(
         [
             {
-                **zero_df.iloc[0].to_dict(),
+                **base_row,
                 "zero_trait_rank": len(zero_df) + 1,
                 "taxon_id": "NCBITaxon:155900",
                 "taxon_name": "uncultured organism",
@@ -945,7 +998,7 @@ def test_plate6_reads_compact_remediation_and_nonempty_rank_rows(
                 ),
             },
             {
-                **zero_df.iloc[0].to_dict(),
+                **base_row,
                 "zero_trait_rank": len(zero_df) + 2,
                 "taxon_id": "NCBITaxon:1505663",
                 "taxon_name": "Thomasclavelia",
@@ -963,7 +1016,7 @@ def test_plate6_reads_compact_remediation_and_nonempty_rank_rows(
                 ),
             },
             {
-                **zero_df.iloc[0].to_dict(),
+                **base_row,
                 "zero_trait_rank": len(zero_df) + 3,
                 "taxon_id": "NCBITaxon:10239",
                 "taxon_name": "Caudoviricetes sp.",
@@ -978,6 +1031,93 @@ def test_plate6_reads_compact_remediation_and_nonempty_rank_rows(
                 "suggested_remediation": (
                     "Review viral annotation resources; missing retained annotations do not "
                     "establish biological absence"
+                ),
+            },
+            {
+                **base_row,
+                "zero_trait_rank": len(zero_df) + 4,
+                "taxon_id": "NCBITaxon:77133",
+                "taxon_name": "uncultured bacterium",
+                "taxonomic_rank": "species",
+                "signature_occurrences": 10,
+                "profile_count": 10,
+                "study_count": 4,
+                "taxonomy_group": "bacteria",
+                "taxonomy_status": "resolved_root",
+                "taxonomy_root_ids": '["NCBITaxon:2"]',
+                "diagnosis_category": "Uncultivated / Metagenomic MAG",
+                "suggested_remediation": (
+                    "Review environmental/MAG source metadata; family/genus context does "
+                    "not establish leaf-taxon traits"
+                ),
+            },
+            {
+                **base_row,
+                "zero_trait_rank": len(zero_df) + 5,
+                "taxon_id": "NCBITaxon:2001",
+                "taxon_name": "Rarebacter exemplum",
+                "taxonomic_rank": "species",
+                "signature_occurrences": 9,
+                "profile_count": 9,
+                "study_count": 3,
+                "taxonomy_group": "bacteria",
+                "taxonomy_status": "resolved_root",
+                "taxonomy_root_ids": '["NCBITaxon:2"]',
+                "diagnosis_category": "Rare / Novel Isolate (Lacks KG Phenotype)",
+                "suggested_remediation": (
+                    "Curate BacDive/Madin/FAPROTAX traits; parent-rank traits do not "
+                    "establish leaf-taxon traits"
+                ),
+            },
+            {
+                **base_row,
+                "zero_trait_rank": len(zero_df) + 6,
+                "taxon_id": "NCBITaxon:2002",
+                "taxon_name": "Escherichia / Shigella",
+                "taxonomic_rank": "genus",
+                "signature_occurrences": 8,
+                "profile_count": 8,
+                "study_count": 3,
+                "taxonomy_group": "bacteria",
+                "taxonomy_status": "resolved_root",
+                "taxonomy_root_ids": '["NCBITaxon:2"]',
+                "diagnosis_category": "Ambiguous Taxon / Bin Slash",
+                "suggested_remediation": (
+                    "Split composite 16S bin into constituent genera for trait union"
+                ),
+            },
+            {
+                **base_row,
+                "zero_trait_rank": len(zero_df) + 7,
+                "taxon_id": "NCBITaxon:4932",
+                "taxon_name": "Saccharomyces cerevisiae",
+                "taxonomic_rank": "species",
+                "signature_occurrences": 7,
+                "profile_count": 7,
+                "study_count": 2,
+                "taxonomy_group": "eukaryota",
+                "taxonomy_status": "resolved_root",
+                "taxonomy_root_ids": '["NCBITaxon:2759"]',
+                "diagnosis_category": "Non-Bacterial / Fungal Eukaryote",
+                "suggested_remediation": (
+                    "Exclude from prokaryotic trait matrix or integrate FungalTraits DB"
+                ),
+            },
+            {
+                **base_row,
+                "zero_trait_rank": len(zero_df) + 8,
+                "taxon_id": "NCBITaxon:2003",
+                "taxon_name": "Candidatus Arthromitus",
+                "taxonomic_rank": "genus",
+                "signature_occurrences": 6,
+                "profile_count": 6,
+                "study_count": 2,
+                "taxonomy_group": "bacteria",
+                "taxonomy_status": "resolved_root",
+                "taxonomy_root_ids": '["NCBITaxon:2"]',
+                "diagnosis_category": "Candidatus Lineage",
+                "suggested_remediation": (
+                    "Review genomic/metabolic predictions for provisional Candidatus taxon"
                 ),
             },
         ]
@@ -1001,9 +1141,46 @@ def test_plate6_reads_compact_remediation_and_nonempty_rank_rows(
     fig_new = captured[0]
     fig_new.canvas.draw()
     panel_b_yticks = [t.get_text() for t in fig_new.axes[1].get_yticklabels()]
-    assert "Unresolved Taxon Label" in panel_b_yticks
-    assert "Taxonomy Unresolved" in panel_b_yticks
-    assert "Viral Taxon (Non-Bacterial)" in panel_b_yticks
+    expected_panel_b_labels = {
+        "Uncultivated / MAG",
+        "Rare / Novel Isolate",
+        "Ambiguous Slash Bin",
+        "Non-Bacterial Eukaryote",
+        "NCBI TaxID Desync",
+        "Candidatus Lineage",
+        "Unresolved Taxon Label",
+        "Taxonomy Unresolved",
+        "Viral Taxon (Non-Bacterial)",
+    }
+    assert set(panel_b_yticks) == expected_panel_b_labels
+    assert len(fig_new.axes[1].patches) == len(expected_panel_b_labels)
+    assert len(fig_new.axes[1].texts) == len(expected_panel_b_labels)
+    panel_b_bar_colors: dict[str, tuple[float, float, float]] = {}
+    for label, patch, text_artist in zip(
+        panel_b_yticks, fig_new.axes[1].patches, fig_new.axes[1].texts, strict=True
+    ):
+        assert isinstance(patch, Patch)
+        bar_rgb = to_rgb(patch.get_facecolor()[:3])
+        label_rgb = to_rgb(text_artist.get_color())
+        assert bar_rgb == pytest.approx(label_rgb, abs=1e-4)
+        panel_b_bar_colors[label] = bar_rgb
+    _assert_pairwise_distinct_colors(panel_b_bar_colors)
+    assert len(fig_new.axes[2].patches) == len(merged_zero)
+    sorted_zero_cats = (
+        merged_zero.sort_values("profile_count", ascending=True)["diagnosis_category"]
+        .astype(str)
+        .tolist()
+    )
+    panel_c_bar_colors: dict[str, tuple[float, float, float]] = {}
+    for category, patch in zip(sorted_zero_cats, fig_new.axes[2].patches, strict=True):
+        assert isinstance(patch, Patch)
+        bar_rgb = to_rgb(patch.get_facecolor()[:3])
+        if category in panel_c_bar_colors:
+            assert bar_rgb == pytest.approx(panel_c_bar_colors[category], abs=1e-4)
+        else:
+            panel_c_bar_colors[category] = bar_rgb
+    assert len(panel_c_bar_colors) == len(set(sorted_zero_cats))
+    _assert_pairwise_distinct_colors(panel_c_bar_colors)
     panel_c_texts = "\n".join(t.get_text() for t in fig_new.axes[2].texts)
     assert "Review taxonomic label / source" in panel_c_texts
     assert "Review taxonomy placement" in panel_c_texts
