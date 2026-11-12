@@ -436,7 +436,9 @@ def composition_q_sensitivity_table(base: Base, composition: list[Record]) -> li
     return lines
 
 
-def native_summary(base: Base, composition: list[Record], ora: list[Record]) -> str:
+def native_summary(
+    base: Base, composition: list[Record], ora: list[Record], protocol_version: str
+) -> str:
     scenario_count = len({r["scenario"] for r in composition if r["scenario"] != "baseline"})
     lines = [
         "# Native lineage influence completion",
@@ -450,7 +452,7 @@ def native_summary(base: Base, composition: list[Record], ora: list[Record]) -> 
         "(they do not reproduce published Table 1 baseline values such as facultatively "
         "aerobic $q = 2.8 \\times 10^{-10}$).",
         "",
-        "These reruns extend the reconciled 190-v2 audit using protocol 190-native-v2. "
+        f"These reruns extend the reconciled 190-v2 audit using protocol {protocol_version}. "
         f"The {scenario_count} rule-declared exclusion scenarios, four scopes, raw trait keys "
         "and human paired corpus "
         "are unchanged. This is matched-corpus sensitivity analysis, not a reproduction "
@@ -571,7 +573,24 @@ def native_summary(base: Base, composition: list[Record], ora: list[Record]) -> 
     return "\n".join(lines)
 
 
+def _validate_protocol(protocol: Record) -> None:
+    if protocol.get("version") == "190-native-v2":
+        raise ValueError(
+            "190-native-v2 is historical finite-p-only evidence; new execution requires "
+            "190-native-v3 with selected untestable traits padded at p=1"
+        )
+    if protocol.get("version") != "190-native-v3":
+        raise ValueError("Unsupported native protocol")
+    composition = protocol["composition"]
+    if (
+        composition.get("family_size_field") != "family_selected_traits"
+        or composition.get("untestable_correction_p") != 1.0
+    ):
+        raise ValueError("190-native-v3 requires the all-selected family with p=1 padding")
+
+
 def export_native(base: Base, audit: Record, protocol: Record, output: Path) -> Record:
+    _validate_protocol(protocol)
     scopes = {s["id"]: scope_keys(base, s) for s in audit["protocol"]["scopes"]}
     scenario_names = [
         "baseline",
@@ -715,7 +734,8 @@ def export_native(base: Base, audit: Record, protocol: Record, output: Path) -> 
         write_table(output / filename, list(records[0]), records)
         output_hashes[filename] = digest(output / filename)
     (output / "native_summary.md").write_text(
-        native_summary(base, native_comparisons, ora_comparisons), encoding="utf-8"
+        native_summary(base, native_comparisons, ora_comparisons, protocol["version"]),
+        encoding="utf-8",
     )
     output_hashes["native_summary.md"] = digest(output / "native_summary.md")
     return {
@@ -745,8 +765,7 @@ def run(
             raise ValueError(f"Audit input changed: {name}")
     base = load_base(*(inputs / name for name in INPUT_NAMES))
     protocol = json.loads(protocol_path.read_text(encoding="utf-8"))
-    if protocol["version"] != "190-native-v2":
-        raise ValueError("Unsupported native protocol")
+    _validate_protocol(protocol)
     if len(code_commit) != 40 or any(c not in "0123456789abcdef" for c in code_commit):
         raise ValueError("The Justfile recipe must supply the full code commit")
     manifest: Record = {

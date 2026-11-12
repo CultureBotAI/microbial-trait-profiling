@@ -188,6 +188,46 @@ def test_completed_native_diagnostic_has_no_procedure_verdict(tmp_path: Path) ->
     assert any(row["scope_kind"] == "native_ora_family" for row in exported)
 
 
+@pytest.mark.parametrize(
+    ("version", "composition"),
+    [
+        (
+            "190-native-v2",
+            {"family": "BH over finite p-values of all selected traits per scenario/scope"},
+        ),
+        (
+            "190-native-v3",
+            {
+                "family": "BH over all selected traits, padding untestable traits at p=1",
+                "family_size_field": "family_selected_traits",
+                "untestable_correction_p": 1.0,
+            },
+        ),
+    ],
+)
+def test_native_protocol_versions_preserve_the_recorded_historical_or_current_meaning(
+    tmp_path: Path, version: str, composition: dict[str, object]
+) -> None:
+    path = _native(tmp_path)
+    content = json.loads(path.read_text(encoding="utf-8"))
+    content["protocol"]["version"] = version
+    content["protocol"]["composition"] = composition
+    _write(path, content)
+    original = path.read_bytes()
+
+    status = _read(path)
+
+    assert status.default.startswith("native influence results reported;")
+    assert ("protocol", "native_influence", "version", version) in status.detail
+    recorded = next(
+        value
+        for kind, scope, key, value in status.detail
+        if (kind, scope, key) == ("protocol", "native_influence", "composition")
+    )
+    assert json.loads(recorded) == composition
+    assert path.read_bytes() == original
+
+
 def test_incomplete_native_run_is_distinct_from_no_input(tmp_path: Path) -> None:
     status = _read(_native(tmp_path, completed=False))
     assert status.default == "native influence execution incomplete #190"

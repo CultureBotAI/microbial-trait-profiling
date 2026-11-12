@@ -111,6 +111,15 @@ Benjamini-Hochberg (BH) q-values declare their pre-testing family membership
 and untestable-member padding explicitly:
 
 - **Native taxon influence (`src/mtp/native_taxon_influence.py`)**:
+  New runs use protocol `190-native-v3`, whose machine-carried composition
+  declaration names the selected-trait correction family and p=1 padding.
+  Already-written `190-native-v2` manifests retain their finite-test family
+  meaning and remain readable; the current producer refuses to execute v2.
+  The publication handoff reports `native_family_size` separately from
+  `native_tested_count`, using the recorded protocol to choose the denominator.
+  Historical v2 tables use `family_tests` even if they also have
+  `family_selected_traits`; legacy manifests without a version use the finite-test
+  count with an explicit legacy basis. V3 requires the selected-trait count.
   - **Composition t-test family (`transformed`)**: Pre-testing eligibility
     (`row["selected"]`) requires `profile_support >= minimum_profile_support`,
     `profile_support <= max(2, int(len(keys) * maximum_profile_support_fraction))`,

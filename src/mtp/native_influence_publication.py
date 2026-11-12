@@ -30,7 +30,24 @@ def _one(records: list[dict[str, str]], **criteria: str) -> dict[str, str]:
 
 
 def interpretation_handoff(source: Path) -> list[dict[str, str]]:
-    """Extract the two #213 interpretation flags without merging their estimands."""
+    """Keep estimands separate and interpret family counts using the recorded protocol.
+
+    Historical v2 corrected only finite tests, even when its tables also recorded
+    selected traits. Legacy manifests without a protocol version use that same
+    finite-test denominator, explicitly labelled as a legacy interpretation.
+    """
+    manifest = json.loads((source / "native_manifest.json").read_text(encoding="utf-8"))
+    version = manifest.get("protocol", {}).get("version")
+    if version == "190-native-v3":
+        family_field = "native_before_family_selected_traits"
+        family_basis = "all_selected_traits_padded_at_one"
+    elif version in (None, "190-native-v2"):
+        family_field = "native_before_family_tests"
+        family_basis = (
+            "historical_finite_tests" if version else "legacy_finite_tests_no_protocol_version"
+        )
+    else:
+        raise ValueError(f"Unknown native protocol for correction family: {version!r}")
     effects = list(compressed_rows(source / "effects.tsv.gz"))
     native = list(rows(source / "native_composition_comparison.tsv"))
     contributors = list(rows(source / "contributing_universe.tsv"))
@@ -61,6 +78,9 @@ def interpretation_handoff(source: Path) -> list[dict[str, str]]:
         trait_key=ARSENATE,
         reference="refitted",
     )
+    for record in (sphere_native, arsenate_native):
+        if not record.get(family_field):
+            raise ValueError(f"Missing correction family field for {version}: {family_field}")
     escherichia = _one(
         contributors,
         scope="pooled",
@@ -78,6 +98,7 @@ def interpretation_handoff(source: Path) -> list[dict[str, str]]:
         "raw_fraction_interval": "conditional Student t 95% interval for the study mean",
         "native_weighting": sphere_native["native_before_weighting"],
         "native_unit": sphere_native["native_before_unit"],
+        "native_family_basis": family_basis,
         "q_threshold": "0.05",
         "integration_rule": (
             "interpretation flag only; preserve raw-fraction and native results as separate "
@@ -104,7 +125,8 @@ def interpretation_handoff(source: Path) -> list[dict[str, str]]:
             "directional_correction": arsenate["correction"],
             "directional_baseline_q": arsenate["before_q"],
             "directional_after_q": arsenate["after_q"],
-            "native_family_size": arsenate_native["native_before_family_tests"],
+            "native_family_size": arsenate_native[family_field],
+            "native_tested_count": arsenate_native["native_before_family_tests"],
             "native_baseline_q": arsenate_native["native_before_q"],
             "native_after_q": arsenate_native["native_after_q"],
             "flag_status": "lineage_sensitive",
@@ -133,7 +155,8 @@ def interpretation_handoff(source: Path) -> list[dict[str, str]]:
             "directional_correction": sphere["correction"],
             "directional_baseline_q": sphere["before_q"],
             "directional_after_q": "",
-            "native_family_size": sphere_native["native_before_family_tests"],
+            "native_family_size": sphere_native[family_field],
+            "native_tested_count": sphere_native["native_before_family_tests"],
             "native_baseline_q": sphere_native["native_before_q"],
             "native_after_q": "",
             "flag_status": "cross_scale_non_reproduction",
