@@ -337,7 +337,6 @@ def run_derived(
     _disjoint(staging, roots)
     created: list[tuple[Path, tuple[int, int]]] = []
     staging_identity: tuple[int, int] | None = None
-    published = False
     try:
         _create_parents(output.parent, created)
         # An exclusive mkdir never grants ownership of a colliding path.
@@ -360,8 +359,13 @@ def run_derived(
             encoding="utf-8",
         )
         _publish_directory(staging, output)
-        published = True
-    finally:
-        if not published:
+    except BaseException as error:
+        # Clean up on body interruptions too, without masking the original failure.
+        try:
             _cleanup_failed_output(staging, staging_identity, created)
+        except Exception as cleanup_error:
+            error.add_note(
+                f"Output cleanup failed ({type(cleanup_error).__name__}): {cleanup_error}"
+            )
+        raise
     return record
