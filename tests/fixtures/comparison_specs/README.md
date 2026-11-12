@@ -2,21 +2,20 @@
 
 `analysis_specs_f0cb5b7.json` contains every field of all seven literal
 `STANDARD_ANALYSIS_SPECS` declarations in
-`src/mtp/workflow/downstream_contracts.py` at commit `f0cb5b7`.
+`src/mtp/workflow/downstream_contracts.py` at commit `f0cb5b7a500b11320ea84e63bfaf125fe1520df9`.
 
 The fixture was originally extracted on 2026-11-05. The committed
 [extractor](../../../scripts/adhoc/extract_comparison_specs_f0cb5b7.py)
 reproduces it without importing historical code. It uses the existing GitPython
 dependency to read the Git blob equivalent to
-`git show f0cb5b7:src/mtp/workflow/downstream_contracts.py`, then parses the
+`git show f0cb5b7a500b11320ea84e63bfaf125fe1520df9:src/mtp/workflow/downstream_contracts.py`, then parses the
 top-level `STANDARD_ANALYSIS_SPECS` mapping with Python's standard-library AST.
 It requires seven `AnalysisSpec(...)` calls with all eight fields as literal
 strings, preserving declaration and keyword order. JSON uses two-space
 indentation and a final newline. Comparison records themselves sort specs by id;
 this fixture retains the source declaration order.
 
-From the repository root, with dependencies installed and commit `f0cb5b7`
-(`f0cb5b7a500b11320ea84e63bfaf125fe1520df9`) available locally, reproduce the fixture into a fresh temporary directory and
+From the repository root, with dependencies installed and commit `f0cb5b7a500b11320ea84e63bfaf125fe1520df9` available locally, reproduce the fixture into a fresh temporary directory and
 compare every byte:
 
 ```bash
