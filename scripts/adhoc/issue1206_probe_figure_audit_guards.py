@@ -73,7 +73,7 @@ MUTANTS = {
     ),
     "drop_quadrant_coverage": (
         AUDITOR,
-        "            quadrant_coverage(pages)",
+        "            quadrant_coverage(pages, counts)",
         "            pass",
         set(QUADRANT_CASES),
     ),

@@ -2036,3 +2036,154 @@ def test_cli_binds_imported_assessments_to_its_actual_inputs(tmp_path: Path) -> 
         row for row in records if row["method"] == "directional_consistency_fraction_sign_test"
     )
     assert fraction["calibration_status"].startswith("pass #182")
+
+
+@pytest.mark.parametrize("shape", ["nested", "top_level"])
+@pytest.mark.parametrize("missing", ["profile_sha256", "experiments_sha256"])
+@pytest.mark.parametrize("change", ["absent", "renamed"])
+def test_status_missing_input_keys_816(
+    tmp_path: Path, shape: str, missing: str, change: str
+) -> None:
+    from mtp.integrated_evidence import UNBOUND_STATUSES
+
+    expected = {"profile_sha256": "1" * 64, "experiments_sha256": "2" * 64}
+    claimed = dict(expected)
+    value = claimed.pop(missing)
+    if change == "renamed":
+        claimed[f"old_{missing}"] = value
+    content = {"inputs": claimed} if shape == "nested" else claimed
+    path = tmp_path / "status.json"
+    path.write_text(json.dumps({**content, "sensitivity_status": "pass"}))
+    status = read_status(path, "sensitivity_status", "#183", expected_input_sha256=expected)
+    assert status.source["binding"] == "incomplete_inputs"
+    assert status.source["missing_input_keys"] == [missing]
+    assert status.source["binding"] in UNBOUND_STATUSES
+    assert status.default.startswith("unreadable")
+    assert status.verdicts == {}
+
+
+@pytest.mark.parametrize("shape", ["nested", "top_level"])
+@pytest.mark.parametrize("bad", ["", "wrong", None])
+def test_status_rejects_invalid_hashes_816(tmp_path: Path, shape: str, bad: str | None) -> None:
+    expected = {"profile_sha256": "1" * 64, "experiments_sha256": "2" * 64}
+    claimed = {**expected, "profile_sha256": bad}
+    path = tmp_path / "status.json"
+    path.write_text(json.dumps({"inputs": claimed} if shape == "nested" else claimed))
+    status = read_status(path, "sensitivity_status", "#183", expected_input_sha256=expected)
+    assert status.source["binding"] == "mismatch_or_missing_identity"
+    assert status.default.startswith("unreadable")
+
+
+def test_real_sensitivity_producer_binding_816(tmp_path: Path) -> None:
+    from argparse import Namespace
+
+    from mtp.integrated_evidence import _read_assessment_statuses
+    from mtp.log_ratio_sensitivity import write_outputs
+
+    profiles, experiments = _corpus(tmp_path)
+    expected = {
+        "profile_sha256": file_sha256(profiles),
+        "experiments_sha256": file_sha256(experiments),
+    }
+    write_outputs(
+        [],
+        [],
+        [],
+        [],
+        tmp_path / "producer",
+        {
+            **expected,
+            "taxa_sha256": "3" * 64,
+            "analysis_source_sha256": "4" * 64,
+        },
+        population=[],
+        stratum_influence=[],
+        strata_below_minimum=0,
+        label_counts={},
+    )
+    path = tmp_path / "producer/sensitivity_status.json"
+    content = json.loads(path.read_text())
+    assert "inputs" not in content
+    assert "full_dump_sha256" not in content
+    args = Namespace(
+        calibration_status=None,
+        sensitivity_status=path,
+        coverage_status=None,
+        orientation_provenance=None,
+        influence_status=None,
+    )
+    statuses = _read_assessment_statuses(
+        args,
+        profile_input=profiles,
+        experiments_input=experiments,
+        full_dump_input=tmp_path / "absent.csv",
+        supplied={name: name == "sensitivity_status" for name in vars(args)},
+    )
+    status = statuses["sensitivity_status"]
+    assert status.source["binding"] == "matched"
+    assert status.source["expected_input_sha256"] == expected
+    assert status.source["input_sha256"] == {key: content[key] for key in expected}
+    scope = status.source["validation_scope"]
+    assert isinstance(scope, str)
+    assert "taxa" in scope
+    assert "not checked" in scope
+    content["experiments_sha256"] = "0" * 64
+    path.write_text(json.dumps(content))
+    changed = read_status(path, "sensitivity_status", "#183", expected_input_sha256=expected)
+    assert changed.source["binding"] == "mismatch_or_missing_identity"
+
+
+@pytest.mark.parametrize("inputs", [{}, None, []])
+def test_present_invalid_or_empty_inputs_never_fall_back_816(
+    tmp_path: Path, inputs: object
+) -> None:
+    expected = {"profile_sha256": "1" * 64}
+    path = tmp_path / "status.json"
+    path.write_text(json.dumps({**expected, "inputs": inputs, "coverage_status": "pass"}))
+    status = read_status(path, "coverage_status", "#184", expected_input_sha256=expected)
+    assert status.source["binding"] == "incomplete_inputs"
+    assert status.source["missing_input_keys"] == ["profile_sha256"]
+
+
+@pytest.mark.parametrize("binding", ["incomplete_inputs", "inputs_not_declared"])
+def test_strict_cli_rejects_unbound_status_816(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, binding: str
+) -> None:
+    module = sys.modules[read_status.__module__]
+    profiles, experiments = _corpus(tmp_path)
+    status_path = tmp_path / "status.json"
+    status_path.write_text("{}")
+    for name in ("native_composition_records", "ora_profile_records"):
+        monkeypatch.setattr(module, name, lambda *_a, **_kw: [])
+    monkeypatch.setattr(module, "attach_full_screen", lambda records, *_a, **_kw: records)
+    monkeypatch.setattr(
+        module,
+        "_read_assessment_statuses",
+        lambda *_a, **_kw: {
+            "sensitivity_status": AssessmentStatus("#183", {}, "pass", source={"binding": binding})
+        },
+    )
+    arguments = [
+        "--profile-input",
+        str(profiles),
+        "--experiments-input",
+        str(experiments),
+        "--output-dir",
+        str(tmp_path / "output"),
+        "--require-complete-sources",
+    ]
+    for flag in (
+        "--arm1-pooled-stats",
+        "--arm2-enrichment-results",
+        "--arm2-depletion-results",
+        "--full-screen",
+        "--full-screen-provenance",
+        "--calibration-status",
+        "--sensitivity-status",
+        "--orientation-provenance",
+        "--influence-status",
+    ):
+        arguments.extend([flag, str(status_path)])
+    with pytest.raises(ValueError, match="unreadable or unbound statuses"):
+        main(arguments)
+    assert not (tmp_path / "output/integrated_evidence_provenance.json").exists()

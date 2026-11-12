@@ -421,8 +421,7 @@ def test_standard_module_command_executes_benchmark(
         check=False,
     )
     assert proc.returncode == EXIT_SUCCESS, proc.stderr
-    if package == "mtp":
-        assert "RuntimeWarning" not in proc.stderr
+    assert "RuntimeWarning" not in proc.stderr
     summary = _read_summary(out)
     assert summary["status"] == "SUCCESS"
     assert summary["completed_replicates"] == 4
@@ -436,6 +435,7 @@ def test_standard_module_command_executes_benchmark(
         check=False,
     )
     assert bad.returncode == EXIT_FAILURE
+    assert "RuntimeWarning" not in bad.stderr
     assert _read_summary(out)["status"] == "FAILED"
 
 

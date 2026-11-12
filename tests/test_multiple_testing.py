@@ -264,13 +264,21 @@ def test_source_metadata_and_dropped_results_are_verified() -> None:
 
 
 def test_regex_suffixes_cannot_bypass_status_or_digest_validation() -> None:
-    malformed = RawHypothesis(hypothesis_id="h0", status="untestable\n", reason="no observations")
+    with pytest.raises(ValueError, match="status"):
+        RawHypothesis(hypothesis_id="h0", status="untestable\n", reason="no observations")
+    # model_copy intentionally bypasses validation; the engine must revalidate it.
+    malformed = RawHypothesis(
+        hypothesis_id="h0", status="untestable", reason="no observations"
+    ).model_copy(update={"status": "untestable\n"})
     with pytest.raises(ValueError, match="status"):
         correct_family(family(1), [malformed])
     declared = family(1)
-    declared.analysis_basis_sha256 = DIGEST + "\n"
-    with pytest.raises(ValueError, match="SHA256"):
-        correct_family(declared, raw([0.2]))
+    with pytest.raises(ValueError, match="analysis_basis_sha256"):
+        declared.analysis_basis_sha256 = DIGEST + "\n"
+    assert declared.analysis_basis_sha256 == DIGEST
+    malformed_family = declared.model_copy(update={"analysis_basis_sha256": DIGEST + "\n"})
+    with pytest.raises(ValueError, match="analysis_basis_sha256"):
+        correct_family(malformed_family, raw([0.2]))
 
 
 def test_renamed_scientific_duplicates_are_rejected() -> None:
@@ -340,8 +348,13 @@ def test_source_identities_must_be_unique() -> None:
 
 def test_eligibility_digest_requires_full_match() -> None:
     declared = family(1)
-    declared.members[0].eligibility_sha256 = DIGEST + "\n"
-    with pytest.raises(ValueError, match="SHA256"):
+    with pytest.raises(ValueError, match="eligibility_sha256"):
+        declared.members[0].eligibility_sha256 = DIGEST + "\n"
+    assert declared.members[0].eligibility_sha256 == DIGEST
+    declared.members[0] = declared.members[0].model_copy(
+        update={"eligibility_sha256": DIGEST + "\n"}
+    )
+    with pytest.raises(ValueError, match="eligibility_sha256"):
         correct_family(declared, raw([0.2]))
 
 
@@ -404,7 +417,9 @@ def test_duplicate_conditions_are_rejected() -> None:
 )
 def test_scope_and_filter_identity_are_strict(field: str, value: str) -> None:
     declared = family(1).model_copy(update={field: value})
-    with pytest.raises(ValueError, match=r"strain_rollup|strain rollup|feature filter"):
+    with pytest.raises(
+        ValueError, match=r"strain_rollup|strain rollup|feature_filter_id|feature filter"
+    ):
         correct_family(declared, raw([0.01]))
 
 

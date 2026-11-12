@@ -4,7 +4,8 @@
   "also_answers": "https://github.com/CultureBotAI/microbial-trait-profiling/issues/265",
   "comparison_spec": "three-framework-comparison-v1",
   "declared_before_first_run": true,
-  "declared_by": "drafted by a coding agent (Claude Code) before any screen result was computed; not revised after seeing results",
+  "declared_by": "drafted by a coding agent (Claude Code) before any screen result was computed; not revised after seeing results (self-attestation only: cannot be verified from Git history because methods/trait_screen_manifest.json landed in commit 1f3d36c alongside methods/trait_direction_screen.md, which already quoted Li & Ji effective family size 112.0; #329)",
+  "declared_before_first_run_verification": "self-attestation only (#329): pre-run timing cannot be verified from Git history alone because methods/trait_screen_manifest.json was first committed in 1f3d36c together with methods/trait_direction_screen.md, which already quoted screen results (including Li & Ji effective family size 112.0). Future pre-registration manifests must be committed on their own before any code or document that produces or quotes results.",
   "why_a_separate_manifest": "methods/three_arm_statistics.md requires that a larger trait screen declare its own candidate manifest rather than reuse the frozen six-trait family. The six Table 1 traits keep their own family and their own published q-values; this screen neither replaces nor recorrects them.",
   "candidate_rule": "every retained trait column of the pinned profile matrix, in header order: all columns except the three identifier columns and every MediaDive growth-medium column. The candidate set is read from the matrix at run time and never hard-coded, so a corpus change moves the family rather than silently mismatching it.",
   "candidate_count_on_the_pinned_corpus": 317,
@@ -57,6 +58,13 @@
       "reason": "#325: on this corpus Cheverud/Nyholt gives the largest effective m of the three (294.4 vs Li & Ji 112.0 on the contrast basis; 198.9 vs 60.0 on the profile basis), so it would give the strictest correction, the opposite of the original rationale.",
       "known_when_amended": "the full screen result, including the effective family sizes in trait_screen_family.tsv.",
       "unchanged": "which estimators are reported and which is excluded; every number and output column"
+    },
+    {
+      "date": "2026-11-09",
+      "change": "declared_by and declared_before_first_run_verification disclose that declared_before_first_run rests on self-attestation only and cannot be verified from Git history alone, and record the standalone pre-commit rule for future pre-registration manifests.",
+      "reason": "#329: methods/trait_screen_manifest.json landed in the same commit (1f3d36c) as methods/trait_direction_screen.md, which already quoted screen results (Li & Ji 112.0). Future pre-registration manifests must be committed on their own before the code or documents that produce or quote results.",
+      "known_when_amended": "the full screen result and git commit history of 1f3d36c.",
+      "unchanged": "declared_before_first_run, the candidate rule, the test, both corrections, both family sizes and every output column"
     }
   ]
 }

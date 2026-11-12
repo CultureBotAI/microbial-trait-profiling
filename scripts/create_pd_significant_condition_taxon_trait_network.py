@@ -21,6 +21,33 @@ from mtp.composition_denominators import load_retained_profiles, trait_fractions
 if TYPE_CHECKING:
     from matplotlib.axes import Axes
 
+from mtp.trait_key_policy import FACULTATIVE_RAW_LABEL, FACULTATIVE_UNION_LABEL
+
+
+def resolve_facultative_display_label(policy: str = "phenotype") -> str:
+    """Resolve the declared display policy; historical raw mode must be explicit."""
+    if policy in {"phenotype", "facultative_union_v1"}:
+        return FACULTATIVE_UNION_LABEL
+    if policy in {"off", "raw_object_v1"}:
+        return FACULTATIVE_RAW_LABEL
+    raise ValueError(f"Unknown facultative label policy: {policy}")
+
+
+def normalize_facultative_labels(frame: pd.DataFrame, policy: str = "phenotype") -> pd.DataFrame:
+    """Accept either recorded label without changing trait IDs, values or guild membership."""
+    label = resolve_facultative_display_label(policy)
+    result = frame.copy()
+    for column in ("trait", "trait_label", "object_name"):
+        if column in result:
+            result[column] = result[column].replace(
+                {
+                    FACULTATIVE_RAW_LABEL: label,
+                    FACULTATIVE_UNION_LABEL: label,
+                }
+            )
+    return result
+
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VIS_DIR = REPO_ROOT / "trait-visualization"
 INVESTIGATION_DIR = VIS_DIR / "trait-profile-investigation"
@@ -56,7 +83,8 @@ SLATE_500 = "#64748b"
 SLATE_700 = "#334155"
 SLATE_900 = "#0f172a"
 TRAIT_COLORS = {
-    "facultatively aerobic": "#0072b2",
+    FACULTATIVE_RAW_LABEL: "#0072b2",
+    FACULTATIVE_UNION_LABEL: "#0072b2",
     "cellulose catabolic process": "#d55e00",
     "coccus shaped": "#009e73",
     "sphere shaped": "#cc79a7",
@@ -65,11 +93,13 @@ TRAIT_COLORS = {
 }
 
 
-def read_tsv(path: Path, **kwargs: Any) -> pd.DataFrame:
+def read_tsv(path: Path, *, policy: str = "phenotype", **kwargs: Any) -> pd.DataFrame:
     """Read a local TSV file."""
     # The cast holds because no caller passes chunksize= or iterator=True, which would
     # make read_csv return a TextFileReader instead of a DataFrame (#1941).
-    return cast(pd.DataFrame, pd.read_csv(path, sep="\t", **kwargs))
+    return normalize_facultative_labels(
+        cast(pd.DataFrame, pd.read_csv(path, sep="\t", **kwargs)), policy
+    )
 
 
 def write_tsv(frame: pd.DataFrame, path: Path) -> None:

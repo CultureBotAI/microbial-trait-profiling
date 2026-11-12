@@ -4316,7 +4316,7 @@ def test_deck_and_plates_derive_corpus_and_trait_counts_from_tables(
 
 
 def test_committed_phenotype_coverage_tables_drive_deck_and_plate6(tmp_path: Path) -> None:
-    """Committed phenotype coverage tables drive Plate VI and deck text (#1015, #1009)."""
+    """Committed phenotype coverage tables drive Plate VI and deck text (#1015, #1009, #1035)."""
     cov_dir = REPO / "trait-visualization" / "trait-profile-investigation" / "taxa-coverage"
     rank_rows = deck.read_tsv(cov_dir / "taxa_coverage_by_rank.tsv")
     zero_rows = deck.read_tsv(cov_dir / "top_zero_trait_bugsigdb_taxa.tsv")
@@ -4324,6 +4324,13 @@ def test_committed_phenotype_coverage_tables_drive_deck_and_plate6(tmp_path: Pat
     meta_rows = deck.read_tsv(
         REPO / "trait-visualization" / "study_trait_profile_study_metadata.tsv"
     )
+    expected_profiles = len(summary_rows)
+    expected_studies = len({r["study_id"] for r in summary_rows if r.get("study_id")})
+    assert expected_profiles > 0
+    assert expected_studies > 0
+    assert len(meta_rows) == expected_profiles
+    assert len({r["study_id"] for r in meta_rows if r.get("study_id")}) == expected_studies
+
     cov_info = deck.read_coverage_run_info(
         cov_dir,
         profile_summary_rows=summary_rows,
@@ -4331,14 +4338,42 @@ def test_committed_phenotype_coverage_tables_drive_deck_and_plate6(tmp_path: Pat
         require_counts=True,
     )
     assert cov_info.strain_rollup == "phenotype"
-    assert cov_info.retained_profiles == 5629
-    assert cov_info.retained_studies == 1047
+    assert cov_info.retained_profiles == expected_profiles
+    assert cov_info.retained_studies == expected_studies
+
+    present_ranks = [r for r in rank_rows if int(r[deck.COVERAGE_TOTAL_TAXA_COL]) > 0]
+    by_rank = {r["taxonomic_rank"]: r for r in present_ranks}
+    sp = by_rank["species"]
+    gen = by_rank["genus"]
+    fam = by_rank["family"]
+    gen_occ = float(gen[deck.COVERAGE_TRAIT_BEARING_OCC_PCT_COL])
+    fam_occ = float(fam[deck.COVERAGE_TRAIT_BEARING_OCC_PCT_COL])
+    gen_unique = float(gen[deck.COVERAGE_TRAIT_BEARING_PCT_COL])
+    sp_unique = float(sp[deck.COVERAGE_TRAIT_BEARING_PCT_COL])
+    sp_occ = float(sp[deck.COVERAGE_TRAIT_BEARING_OCC_PCT_COL])
+    sp_zero_pct = float(sp[deck.COVERAGE_ZERO_TRAIT_PCT_COL])
+    sp_zero_occ_pct = float(sp[deck.COVERAGE_ZERO_TRAIT_OCC_PCT_COL])
+    sp_zero_taxa = int(sp[deck.COVERAGE_ZERO_TRAIT_TAXA_COL])
+    sp_total_taxa = int(sp[deck.COVERAGE_TOTAL_TAXA_COL])
+    sp_zero_occ = int(sp[deck.COVERAGE_ZERO_TRAIT_OCC_COL])
+    sp_total_occ = int(sp[deck.COVERAGE_TOTAL_OCC_COL])
+    total_occ = sum(int(r[deck.COVERAGE_TOTAL_OCC_COL]) for r in present_ranks)
+    total_taxa = sum(int(r[deck.COVERAGE_TOTAL_TAXA_COL]) for r in present_ranks)
+    gen_fam_occ = (
+        f"{gen_occ:.1f}%"
+        if f"{gen_occ:.1f}" == f"{fam_occ:.1f}"
+        else f"{gen_occ:.1f}%/{fam_occ:.1f}%"
+    )
 
     p6 = plates.plate6_text(rank_rows, zero_rows)
-    assert "98.2%/97.3% trait coverage" in p6["subtitle"]
-    assert "39.4% of distinct Species (18.2% of species occurrences)" in p6["subtitle"]
+    assert f"{gen_fam_occ} trait coverage" in p6["subtitle"]
     assert (
-        "Species: 60.6% unique / 81.8% occurrences vs Genus: 86.5% / 98.2%" in p6["panel_a_title"]
+        f"{sp_zero_pct:.1f}% of distinct Species ({sp_zero_occ_pct:.1f}% of species occurrences)"
+        in p6["subtitle"]
+    )
+    assert (
+        f"Species: {sp_unique:.1f}% unique / {sp_occ:.1f}% occurrences vs Genus: "
+        f"{gen_unique:.1f}% / {gen_occ:.1f}%" in p6["panel_a_title"]
     )
     mp1_cov = plates.methods_plate1_coverage_labels(
         rank_rows,
@@ -4346,11 +4381,14 @@ def test_committed_phenotype_coverage_tables_drive_deck_and_plate6(tmp_path: Pat
         retained_profiles=cov_info.retained_profiles,
         population=cov_info.population,
     )
-    assert mp1_cov["occurrences_title"] == "46,865 All-Profile Taxon Occurrences"
+    assert mp1_cov["occurrences_title"] == f"{total_occ:,} All-Profile Taxon Occurrences"
     assert mp1_cov["taxa_subtitle"].startswith(
-        "4,750 unique NCBI TaxIDs across 5,629 retained profiles"
+        f"{total_taxa:,} unique NCBI TaxIDs across {expected_profiles:,} retained profiles"
     )
-    assert "Species gap (18% of species occurrences)" in mp1_cov["species_gap_note"]
+    assert (
+        f"Species gap ({sp_zero_occ_pct:.0f}% of species occurrences)"
+        in mp1_cov["species_gap_note"]
+    )
 
     metrics = {
         "taxa_coverage_by_rank": {r["taxonomic_rank"]: r for r in rank_rows},
@@ -4359,25 +4397,50 @@ def test_committed_phenotype_coverage_tables_drive_deck_and_plate6(tmp_path: Pat
         "coverage_population": cov_info.population,
     }
     caveat = deck.methods_plate_one_caveat(metrics)
-    assert "Genus/Family 98.2%/97.3% vs Species 81.8% occurrences / 60.6% unique species" in caveat
-    assert "strain_rollup=phenotype" in caveat
-    p6_takeaway, p6_caveat = deck.plate_six_text(metrics)
-    assert "Genus (98.2%) and Family (97.3%) occurrences" in p6_takeaway
     assert (
-        "39.4% of distinct species (1,246/3,165) and 18.2% of species occurrences (2,816/15,507)"
+        f"Genus/Family {gen_fam_occ} vs Species {sp_occ:.1f}% occurrences / "
+        f"{sp_unique:.1f}% unique species" in caveat
+    )
+    assert f"strain_rollup={cov_info.strain_rollup}" in caveat
+    p6_takeaway, p6_caveat = deck.plate_six_text(metrics)
+    assert f"Genus ({gen_occ:.1f}%) and Family ({fam_occ:.1f}%) occurrences" in p6_takeaway
+    assert (
+        f"{sp_zero_pct:.1f}% of distinct species ({sp_zero_taxa:,}/{sp_total_taxa:,}) and "
+        f"{sp_zero_occ_pct:.1f}% of species occurrences ({sp_zero_occ:,}/{sp_total_occ:,})"
         in p6_takeaway
     )
-    assert "strain_rollup=phenotype" in p6_takeaway
-    assert "Auditing the top 100 zero-trait taxa (1,258 occurrences)" in p6_caveat
+    assert f"strain_rollup={cov_info.strain_rollup}" in p6_takeaway
+
+    active_zero_rows = [r for r in zero_rows if int(r.get("signature_occurrences", "0")) > 0]
+    zero_taxa_count = len(active_zero_rows)
+    zero_occ_count = sum(int(r["signature_occurrences"]) for r in active_zero_rows)
     assert (
-        "Oscillospiraceae (NCBITaxon:541000 → NCBITaxon:216572, 74 occs across 53 studies)"
+        f"Auditing the top {zero_taxa_count} zero-trait taxa ({zero_occ_count:,} occurrences)"
         in p6_caveat
     )
+    alias_rows = [
+        r for r in active_zero_rows if r.get("diagnosis_category") == "NCBI TaxID Desynchronization"
+    ]
+    assert alias_rows
+    for alias_row in alias_rows:
+        target = deck._extract_alias_target(alias_row)
+        assert target is not None
+        name = alias_row.get("taxon_name") or alias_row["taxon_id"]
+        occ = int(alias_row["signature_occurrences"])
+        st = int(alias_row["study_count"])
+        assert (
+            f"{name} ({alias_row['taxon_id']} → {target}, {occ} occs across {st} studies)"
+            in p6_caveat
+        )
     assert plates.build_plate6(REPO, tmp_path).exists()
 
-    # Committed trait metadata and pooled stats reflect the 344-trait phenotype rerun (#1015):
+    # Committed trait metadata and pooled stats match their paired matrices and stats tables
+    # (#1015, #1035):
     mod_traits = deck.read_tsv(
         REPO / "trait-visualization" / "condition_trait_module_trait_metadata.tsv"
+    )
+    mod_matrix = deck.read_tsv(
+        REPO / "trait-visualization" / "condition_trait_module_clustered_heatmap_matrix.tsv"
     )
     pooled_stats = deck.read_tsv(
         REPO
@@ -4385,9 +4448,22 @@ def test_committed_phenotype_coverage_tables_drive_deck_and_plate6(tmp_path: Pat
         / "trait-profile-investigation"
         / "trait_profile_paired_contrast_trait_stats_pooled.tsv"
     )
-    assert len(mod_traits) == 60
-    assert len(pooled_stats) == 340
-    assert {r["retained_trait_count"] for r in pooled_stats} == {"344"}
+    all_stats = deck.read_tsv(
+        REPO
+        / "trait-visualization"
+        / "trait-profile-investigation"
+        / "trait_profile_paired_contrast_trait_stats.tsv"
+    )
+    assert mod_traits
+    assert mod_matrix
+    assert [r["display_label"] for r in mod_traits] == [col for col in mod_matrix[0] if col]
+    expected_pooled_traits = [r["trait"] for r in all_stats if r.get("stratum") == "pooled"]
+    assert expected_pooled_traits
+    assert [r["trait"] for r in pooled_stats] == expected_pooled_traits
+    assert {int(r["correction_family_size"]) for r in pooled_stats} == {len(pooled_stats)}
+    retained_counts = {int(r["retained_trait_count"]) for r in pooled_stats}
+    assert len(retained_counts) == 1
+    assert next(iter(retained_counts)) >= len(pooled_stats)
 
 
 def test_pd_network_slide_and_cover_label_nominal_p_and_exclude_unrun_tests(
