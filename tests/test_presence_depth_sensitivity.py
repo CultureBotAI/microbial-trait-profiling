@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import copy
+import csv
 import json
 import math
 from dataclasses import asdict, replace
@@ -194,6 +196,7 @@ def test_focal_rows_keep_primary_corrections_and_exact_trait_identity() -> None:
             "representation": "raw",
             "test": "sign",
             "feature_id": column,
+            "hypothesis_id": column,
             "feature_ids": [column],
             "status": "tested",
             "p_value": 0.001,
@@ -209,6 +212,8 @@ def test_focal_rows_keep_primary_corrections_and_exact_trait_identity() -> None:
         assert focal["q_by"] == 1.0
         assert focal["q_bh"] == 0.317
         assert focal["family_size"] == 317
+        assert "full_hypothesis_id" in focal
+        assert focal["full_hypothesis_id"] == focal["feature_id"]
 
     # Missing focal classes retain their biological identity and explicit null calls.
     for focal in sensitivity.focal_screen(screen[:1], columns[:1]):
@@ -216,6 +221,359 @@ def test_focal_rows_keep_primary_corrections_and_exact_trait_identity() -> None:
         if focal["status"] == "missing_feature":
             assert focal["q_by"] is None
             assert focal["q_bh"] is None
+
+
+def test_focal_screen_captures_the_exact_full_hypothesis_before_slug_replacement() -> None:
+    column = "METPO:relation|METPO:1000608"
+    full: sensitivity.Result = {
+        "family_id": "fixture:full",
+        "representation": "raw",
+        "test": "sign",
+        "feature_id": column,
+        "feature_ids": [column],
+        "hypothesis_id": "retained-object:facultative",
+        "status": "all_tied",
+        "p_value": None,
+        "q_by": None,
+        "q_bh": None,
+        "family_size": 1,
+    }
+    before = copy.deepcopy(full)
+    focal = sensitivity.focal_screen([full], [column])
+    assert all("full_hypothesis_id" in row for row in focal)
+    member = next(row for row in focal if row["focal_trait"] == "facultatively_aerobic")
+    assert member["hypothesis_id"] == "facultatively_aerobic"
+    assert member["family_id"] == "fixture:full:focal_six"
+    assert member["full_hypothesis_id"] == "retained-object:facultative"
+    assert member["full_hypothesis_id"] != member["feature_id"]
+    assert all(row["full_hypothesis_id"] is None for row in focal if row is not member)
+    assert full == before
+    missing_identity = {key: value for key, value in full.items() if key != "hypothesis_id"}
+    with pytest.raises((KeyError, ValueError), match="hypothesis_id"):
+        sensitivity.focal_screen([missing_identity], [column])
+
+
+def test_focal_export_is_an_identity_only_copy_without_recorrection(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import mtp.presence_depth_families as family_adapter
+
+    internal: list[sensitivity.Result] = [
+        {
+            "family_id": "fixture:full:focal_six",
+            "hypothesis_id": slug,
+            "full_family_id": "fixture:full",
+            "full_hypothesis_id": full_id,
+            "feature_id": feature,
+            "feature_ids": [feature],
+            "focal_trait": slug,
+            "representation": "raw",
+            "test": "sign",
+            "status": status,
+            "p_value": p,
+            "q_by": q_by,
+            "q_bh": q_bh,
+            "family_size": 3,
+            "q_by_six_trait": six_by,
+            "q_bh_six_trait": six_bh,
+            "family_size_six_trait": 6,
+            "n_studies": 8,
+            "mean_difference": effect,
+        }
+        for slug, full_id, feature, status, p, q_by, q_bh, six_by, six_bh, effect in (
+            (
+                "facultatively_aerobic",
+                "member:fac",
+                "METPO:1000608",
+                "tested",
+                0.0078125,
+                0.021484375,
+                0.01171875,
+                0.057421875,
+                0.0234375,
+                0.5,
+            ),
+            (
+                "sphere_shaped",
+                "member:sphere",
+                "METPO:1000683",
+                "all_tied",
+                None,
+                None,
+                None,
+                None,
+                None,
+                0.0,
+            ),
+            (
+                "cellulose_catabolic_process",
+                None,
+                "GO:0030245",
+                "missing_feature",
+                None,
+                None,
+                None,
+                None,
+                None,
+                None,
+            ),
+        )
+    ]
+    before = copy.deepcopy(internal)
+
+    def no_correction(*args: Any, **kwargs: Any) -> None:
+        raise AssertionError(
+            f"Export called a correction: {len(args)} positional, {sorted(kwargs)} keywords"
+        )
+
+    monkeypatch.setattr(sensitivity, "declare_and_correct", no_correction)
+    monkeypatch.setattr(family_adapter, "correct_family", no_correction)
+    exported = sensitivity.export_focal_rows(internal)
+    assert internal == before
+    assert len(exported) == len(internal)
+    assert sensitivity.FOCAL_EXPORT_VERSION == "presence-depth-focal-export-v2"
+    for original, emitted in zip(before, exported, strict=True):
+        assert (
+            set(original)
+            | {
+                "family_id_six_trait",
+                "hypothesis_id_six_trait",
+                "full_family_membership",
+                "export_contract_version",
+            }
+            <= emitted.keys()
+        )
+        assert emitted is not original
+        assert emitted["family_id"] == emitted["full_family_id"] == original["full_family_id"]
+        assert (
+            emitted["hypothesis_id"]
+            == emitted["full_hypothesis_id"]
+            == original["full_hypothesis_id"]
+        )
+        assert emitted["family_id_six_trait"] == original["family_id"]
+        assert emitted["hypothesis_id_six_trait"] == original["hypothesis_id"]
+        assert emitted["full_family_membership"] == (
+            "absent_from_retained_vocabulary"
+            if original["full_hypothesis_id"] is None
+            else "member"
+        )
+        assert emitted["export_contract_version"] == sensitivity.FOCAL_EXPORT_VERSION
+        for key, value in original.items():
+            if key not in {"family_id", "hypothesis_id"}:
+                assert emitted[key] == value, key
+    assert all(
+        emitted is not original for emitted, original in zip(exported, internal, strict=True)
+    )
+
+
+def _assert_probability_cell(cell: str, expected: float | None) -> None:
+    if expected is None:
+        assert cell == ""
+    else:
+        assert cell != ""
+        assert float(cell) == expected
+
+
+def _assert_focal_export_joins(output: Path) -> None:
+    """Join exported identities directly, never repairing them with feature_id."""
+    from mtp.datamodel.multiple_testing_pydantic import (
+        CorrectionRun,
+        HypothesisFamily,
+        RawHypothesis,
+    )
+    from mtp.multiple_testing import verify_correction
+
+    families = json.loads((output / "families.json").read_text())
+    corrections = json.loads((output / "corrections.json").read_text())
+    by_family = {family["family_id"]: family for family in families}
+    by_correction = {record["family"]["family_id"]: record for record in corrections}
+    assert len(by_family) == len(families) == len(by_correction) == len(corrections)
+    assert by_family.keys() == by_correction.keys()
+    for identity, record in by_correction.items():
+        # Verification normalizes member ordering and optional fields before comparison.
+        verify_correction(
+            CorrectionRun.model_validate(record),
+            family=HypothesisFamily.model_validate(by_family[identity]),
+            hypotheses=[RawHypothesis.model_validate(row) for row in record["hypotheses"]],
+        )
+    for name in ("trait_screen.tsv", "composition_presence.tsv"):
+        for row in rows(output / name):
+            family = by_family[row["family_id"]]
+            corrected = [
+                item
+                for item in by_correction[row["family_id"]]["results"]
+                if item["hypothesis_id"] == row["hypothesis_id"]
+            ]
+            assert len(corrected) == 1
+            assert int(row["family_size"]) == family["expected_family_size"]
+            for key in ("p_value", "q_by", "q_bh"):
+                _assert_probability_cell(row[key], corrected[0][key])
+    focal = list(rows(output / "focal_traits.tsv"))
+    for row in focal:
+        # Existing output must fail here, not at a missing new-field lookup.
+        assert {"family_id", "full_family_id"} <= row.keys()
+        assert row["family_id"] == row["full_family_id"]
+        assert {
+            "hypothesis_id",
+            "full_hypothesis_id",
+            "export_contract_version",
+            "family_id_six_trait",
+            "hypothesis_id_six_trait",
+            "full_family_membership",
+        } <= row.keys()
+        assert row["hypothesis_id"] == row["full_hypothesis_id"]
+        assert row["export_contract_version"] == sensitivity.FOCAL_EXPORT_VERSION
+        full = by_family[row["family_id"]]
+        assert not full["family_id"].endswith(":focal_six")
+        assert int(row["family_size"]) == full["expected_family_size"]
+        focal_family = by_family[row["family_id_six_trait"]]
+        assert focal_family["family_id"] == row["family_id"] + ":focal_six"
+        assert row["hypothesis_id_six_trait"] == row["focal_trait"]
+        assert int(row["family_size_six_trait"]) == focal_family["expected_family_size"] == 6
+        focal_matches = [
+            item
+            for item in by_correction[row["family_id_six_trait"]]["results"]
+            if item["hypothesis_id"] == row["hypothesis_id_six_trait"]
+        ]
+        assert len(focal_matches) == 1
+        for source_key, exported_key in (
+            ("p_value", "p_value"),
+            ("q_by", "q_by_six_trait"),
+            ("q_bh", "q_bh_six_trait"),
+        ):
+            _assert_probability_cell(row[exported_key], focal_matches[0][source_key])
+        full_members = {item["hypothesis_id"] for item in full["members"]}
+        if row["status"] == "missing_feature":
+            assert row["full_family_membership"] == "absent_from_retained_vocabulary"
+            assert row["hypothesis_id"] == row["full_hypothesis_id"] == ""
+            assert row["feature_id"] not in full_members
+            assert row["p_value"] == row["q_by"] == row["q_bh"] == ""
+        else:
+            assert row["full_family_membership"] == "member"
+            assert row["hypothesis_id"] in full_members
+            full_matches = [
+                item
+                for item in by_correction[row["family_id"]]["results"]
+                if item["hypothesis_id"] == row["hypothesis_id"]
+            ]
+            assert len(full_matches) == 1
+            for key in ("p_value", "q_by", "q_bh"):
+                _assert_probability_cell(row[key], full_matches[0][key])
+    focal_ids = {
+        family["family_id"] for family in families if family["family_id"].endswith(":focal_six")
+    }
+    for family_id in focal_ids:
+        expected = {item["hypothesis_id"] for item in by_family[family_id]["members"]}
+        selected = [row for row in focal if row["family_id_six_trait"] == family_id]
+        assert {row["hypothesis_id_six_trait"] for row in selected} == expected
+        assert len(selected) == len(expected) == 6
+    provenance = json.loads((output / "provenance.json").read_text())
+    assert provenance["protocol"] == sensitivity.PROTOCOL == "presence-depth-study-v2"
+    assert "focal_export_contract_version" in provenance
+    assert provenance["focal_export_contract_version"] == sensitivity.FOCAL_EXPORT_VERSION
+    readme = (output / "README.md").read_text()
+    for field in (
+        sensitivity.FOCAL_EXPORT_VERSION,
+        "family_id_six_trait",
+        "hypothesis_id_six_trait",
+    ):
+        assert field in readme
+
+
+def _three_feature_export_core(tmp_path: Path) -> Path:
+    """Three retained traits: two shifts, a tied sphere, and three absent focal slots."""
+    source = REPO_ROOT / "tests/fixtures/workflow/contrast_population.csv"
+    with source.open(newline="") as handle:
+        next(handle)  # Retain the established CSV shape, excluding its comment line.
+        reader = csv.DictReader(handle)
+        assert reader.fieldnames is not None
+        header = reader.fieldnames
+        template = next(reader)
+    raw = tmp_path / "eight_studies.csv"
+    with raw.open("w", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=header)
+        writer.writeheader()
+        for study in range(1, 9):
+            for signature, direction, taxon, name in (
+                (1, "increased", "101", "s__Examplegenus_alpha"),
+                (2, "decreased", "300", "s__Unannotated_bacterium"),
+            ):
+                writer.writerow(
+                    {
+                        **template,
+                        "BSDB ID": f"bsdb:{study}/1/{signature}",
+                        "Study": f"Study {study}",
+                        "Abundance in Group 1": direction,
+                        "NCBI Taxonomy IDs": taxon,
+                        "MetaPhlAn taxon names": name,
+                    }
+                )
+    edges, nodes = tmp_path / "edges.tsv", tmp_path / "nodes.tsv"
+    edges.write_text(
+        "id\tsubject\tpredicate\tobject\tprimary_knowledge_source\n"
+        "a1\tNCBITaxon:101\tbiolink:has_phenotype\tMETPO:1000608\tfixture\n"
+        "a2\tNCBITaxon:101\tbiolink:has_phenotype\tMETPO:1000683\tfixture\n"
+        "b1\tNCBITaxon:300\tbiolink:has_phenotype\tMETPO:1000668\tfixture\n"
+        "b2\tNCBITaxon:300\tbiolink:has_phenotype\tMETPO:1000683\tfixture\n"
+    )
+    nodes.write_text(
+        "id\tcategory\tname\n"
+        "NCBITaxon:101\tbiolink:OrganismTaxon\tExamplegenus alpha\n"
+        "NCBITaxon:300\tbiolink:OrganismTaxon\tUnannotated bacterium\n"
+        "METPO:1000608\tbiolink:PhenotypicQuality\tfacultative oxygen preference\n"
+        "METPO:1000668\tbiolink:PhenotypicQuality\tcoccus shaped\n"
+        "METPO:1000683\tbiolink:PhenotypicQuality\tsphere shaped\n"
+    )
+    run = execute_workflow(
+        REPO_ROOT / "workflows/bugsigdb_core.yaml",
+        {"raw_dump": raw, "kg_edges": edges, "kg_nodes": nodes},
+        tmp_path / "core",
+        OPERATIONS,
+        parameter_overrides={"source_mode": "fixture", "strain_rollup": "off"},
+        validator=validate_execution_product,
+        repository_root=REPO_ROOT,
+    )
+    return Path(run.manifest_path)
+
+
+def test_public_export_joins_full_and_focal_corrections_with_missing_and_untestable_members(
+    tmp_path: Path,
+) -> None:
+    manifest = _three_feature_export_core(tmp_path)
+    output = tmp_path / "sensitivity"
+    binding = run_sensitivity(manifest, output)
+    verify_consumer_record(binding)
+    verify_consumer_record(output / "ora_core_consumption.json")
+    focal = list(rows(output / "focal_traits.tsv"))
+    assert focal
+    # This is the existing wrong-identity defect, before any new-field access.
+    assert all(row["family_id"] == row["full_family_id"] for row in focal)
+    _assert_focal_export_joins(output)
+    provenance = json.loads((output / "provenance.json").read_text())
+    assert provenance["retained_features"] == 3
+    assert provenance["included_studies"] == 8
+    assert len(focal) == 3 * 4 * 6
+    for representation in sensitivity.REPRESENTATIONS:
+        sign = {
+            row["focal_trait"]: row
+            for row in focal
+            if row["representation"] == representation and row["test"] == "sign"
+        }
+        assert len(sign) == 6
+        for trait in ("facultatively_aerobic", "coccus_shaped"):
+            assert sign[trait]["status"] == "tested"
+            assert sign[trait]["family_size"] == "3"
+            assert sign[trait]["family_size_six_trait"] == "6"
+            assert float(sign[trait]["q_by"]) != float(sign[trait]["q_by_six_trait"])
+            assert float(sign[trait]["q_bh"]) != float(sign[trait]["q_bh_six_trait"])
+        assert sign["sphere_shaped"]["status"] == "all_tied"
+        assert sign["sphere_shaped"]["full_family_membership"] == "member"
+        assert sign["sphere_shaped"]["hypothesis_id"]
+        assert sign["sphere_shaped"]["p_value"] == sign["sphere_shaped"]["q_by"] == ""
+        for trait in ("cellulose_catabolic_process", "arsenate_reduction", "moderately_halophilic"):
+            assert sign[trait]["status"] == "missing_feature"
+            assert sign[trait]["full_family_membership"] == "absent_from_retained_vocabulary"
+            assert sign[trait]["hypothesis_id"] == ""
 
 
 def test_native_sign_tally_mismatch_is_rejected() -> None:
@@ -414,6 +772,7 @@ def test_verified_core_run_records_actual_family_and_population(
     full_screen = list(rows(output / "trait_screen.tsv"))
     assert len(full_screen) == 24
     for row in rows(output / "focal_traits.tsv"):
+        assert row["family_id"] == row["full_family_id"]
         assert column_term_id(row["feature_id"]) in TABLE1_TRAITS[row["focal_trait"]]
         assert "q_by_six_trait" in row
         assert "q_bh_six_trait" in row
@@ -421,15 +780,18 @@ def test_verified_core_run_records_actual_family_and_population(
             assert row["p_value"] == ""
             assert row["q_by"] == row["q_bh"] == ""
             continue
-        original = next(
+        matches = [
             r
             for r in full_screen
-            if r["family_id"] == row["full_family_id"] and r["feature_id"] == row["feature_id"]
-        )
+            if r["family_id"] == row["family_id"] and r["hypothesis_id"] == row["hypothesis_id"]
+        ]
+        assert len(matches) == 1
+        original = matches[0]
         assert row["q_by"] == original["q_by"]
         assert row["q_bh"] == original["q_bh"]
         assert row["family_size"] == original["family_size"]
         assert row["family_size_six_trait"] == "6"
+    _assert_focal_export_joins(output)
     ora_record = verify_consumer_record(output / "ora_core_consumption.json")
     assert "ora_profiles" in ora_record.product_ids
     assert "count_profiles" not in ora_record.product_ids

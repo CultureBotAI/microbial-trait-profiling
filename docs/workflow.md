@@ -794,6 +794,10 @@ BY/BH, a distinct six-trait BH comparison, coverage/eligibility ledgers and
 LinkML multiplicity records are emitted without changing an arm plan or output.
 See [the methods](../methods/presence_depth_sensitivity.md) for the depth metric,
 conditional estimand, denominators, missing-feature policy and provenance scope.
+The `presence-depth-focal-export-v2` focal table aligns generic IDs with the full
+family and names six-trait IDs explicitly. The methods also document how these
+identities differ from historical unversioned exports; existing outputs are not
+rewritten.
 
 ## Checks and maintenance
 
