@@ -31,9 +31,17 @@ merely covers the nominal level is not evidence of control, so the criterion dem
 the one-sided upper bound fall below the tolerance, and its own operating
 characteristics are reported beside each verdict.
 
-Only the procedures this repository owns are evaluated. The composition and
-enrichment arms' native procedures need adapters from their owners, and the
-assertion-level urn of #131 is a model question this cannot settle.
+Only the directional-consistency procedures in this module are evaluated here.
+As recorded in the v3.1 (#568) amendment to methods/calibration_protocol.json,
+the enrichment arm's production distinct-taxon urn over taxa_trait_matrix.tsv
+(M = 5,829 all-host taxa, calibrated in src/mtp/ora_calibration/, #551), the
+historical #131 assertion-count urn retained only in the Table 1 native
+influence ORA reruns (106,993,585 assertions across 4,517 testable profiles,
+src/mtp/native_taxon_influence.py), the proposed harmonized-baseline
+paired-human assertion-weighted ORA background
+(methods/three_arm_statistics.md), and the composition arm's native transformed
+test (calibrated in src/mtp/composition_calibration/, #550) are outside this
+directional protocol.
 """
 
 from __future__ import annotations
@@ -87,6 +95,15 @@ P_VALUE_DIAGNOSTICS_NOTE = (
     "rejections_p, rejection_rate_p, rejection_rate_p_ci_low, and "
     f"rejection_rate_p_ci_high count replicates with any q <= {Q_THRESHOLD} "
     "(a corrected family-wise rate, matching rejections_q)"
+)
+NOT_CALIBRATED_HERE: tuple[str, ...] = (
+    "the enrichment arm's hypergeometric procedures (production M = 5,829 "
+    "all-host distinct-taxon urn in src/mtp/ora_calibration/ #551; historical "
+    "#131 assertion-count urn in Table 1 native influence reruns; proposed "
+    "harmonized-baseline paired-human assertion-weighted background #568)",
+    "the composition arm's native transformed test (calibrated in "
+    "src/mtp/composition_calibration/ #550)",
+    "the aggregated profile-support rule (#177)",
 )
 #: One-sided 95% bound: the criteria ask whether a rate is demonstrably below a
 #: tolerance, not whether its two-sided interval happens to cover the nominal level.
@@ -1521,11 +1538,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         "calibration_status_rule": OVERALL_RULE,
         "calibration_status": calibration_status(criteria),
         "p_value_diagnostics": P_VALUE_DIAGNOSTICS_NOTE,
-        "not_calibrated_here": [
-            "the enrichment arm's hypergeometric urn (#131)",
-            "the composition arm's native transformed test",
-            "the aggregated profile-support rule (#177)",
-        ],
+        "not_calibrated_here": list(NOT_CALIBRATED_HERE),
     }
     status_path = output / "calibration_status.json"
     status_path.write_text(json.dumps(status, indent=2) + "\n", encoding="utf-8")

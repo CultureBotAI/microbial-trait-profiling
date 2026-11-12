@@ -365,7 +365,7 @@ all 5,829 rows of `taxa_trait_matrix.tsv`: every taxon reported in any BugSigDB
 signature, from any host. 645 of those taxa occur only in non-human samples, and
 862 never appear in a paired human profile. "Corpus frequency" therefore means
 the share of all reported taxa that bear the trait, and each profile's own taxa
-are part of its background.
+are part of its background. [`calibration_protocol.json`](calibration_protocol.json) (`v3.1`, #568) and [`calibration.md`](calibration.md) explicitly record how these three ORA background definitions relate to the directional calibration scope and the separate ORA calibration harness (`src/mtp/ora_calibration/`, #551).
 
 The historical per-pair composition test's n is the number of matched pairs, in the hundreds to low
 thousands. For a nonconstant trait, column centering cancels in an
