@@ -334,23 +334,32 @@ class CountTableReader:
                     )
                 seen_keys[key] = line_number
 
-                parsed: list[int] = []
-                for column, position in zip(self.count_columns, self._count_positions, strict=True):
-                    value = values[position]
-                    if not value.strip() and self.mode == LEGACY_SPARSE_ZERO_MODE:
-                        self._blank_counts += 1
-                    parsed.append(
-                        parse_nonnegative_integer(
-                            value,
-                            path=self.path,
-                            line_number=line_number,
-                            column_name=column,
-                            mode=self.mode,
-                            row_key=key,
+                stripped_counts = [values[position].strip() for position in self._count_positions]
+                if self.mode == COMPLETE_COUNT_MODE and all(
+                    cell.isascii() and cell.isdecimal() for cell in stripped_counts
+                ):
+                    counts = tuple(map(int, stripped_counts))
+                else:
+                    parsed: list[int] = []
+                    for column, position in zip(
+                        self.count_columns, self._count_positions, strict=True
+                    ):
+                        value = values[position]
+                        if not value.strip() and self.mode == LEGACY_SPARSE_ZERO_MODE:
+                            self._blank_counts += 1
+                        parsed.append(
+                            parse_nonnegative_integer(
+                                value,
+                                path=self.path,
+                                line_number=line_number,
+                                column_name=column,
+                                mode=self.mode,
+                                row_key=key,
+                            )
                         )
-                    )
+                    counts = tuple(parsed)
                 self._rows += 1
-                yield CountTableRow(line_number, key, values, tuple(parsed))
+                yield CountTableRow(line_number, key, values, counts)
 
 
 def profile_count_reader(
