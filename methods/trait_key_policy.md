@@ -105,7 +105,9 @@ plan; absence is not reinterpreted as today's union default.
 
 Standalone contribution, PD-contributor, coassertion, label-support and KG-coverage
 recount commands expose `--trait-key-policy`; the `pd-trait-contributors` recipe forwards its
-arguments and `table1-taxon-influence-from` takes a `trait_key_policy` parameter. Their
+arguments and `table1-taxon-influence-from` takes `trait_key_policy` as its fifth positional parameter
+(pass all five arguments when overriding it, e.g.
+`just table1-taxon-influence-from <kg> data/derived data/derived/table1_taxon_influence phenotype raw_object_v1`). Their
 compatibility default is
 `facultative_union_v1`; historical raw tables require `raw_object_v1` explicitly.
 Each command records the policy it consumed in its accompanying manifest or
