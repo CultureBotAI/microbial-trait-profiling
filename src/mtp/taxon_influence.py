@@ -270,7 +270,9 @@ def concentration(
                         "resolved_total": resolved_total,
                         "unresolved_total": total - resolved_total,
                         "resolved_taxa": len(resolved),
-                        "hhi_resolved": sum((v / resolved_total) ** 2 for v in resolved.values())
+                        "hhi_resolved": sum(
+                            (resolved[k] / resolved_total) ** 2 for k in sorted(resolved)
+                        )
                         if resolved_total
                         else "",
                         "largest_share_resolved": max(resolved.values()) / resolved_total
@@ -306,7 +308,7 @@ def overlap(counts: dict[tuple[str, str, str], Counter[str]], traits: list[str])
                         "jaccard": len(shared) / len(union) if union else "",
                         "weighted_overlap": sum(
                             min(left[k] / sum(left.values()), right[k] / sum(right.values()))
-                            for k in shared
+                            for k in sorted(shared)
                         )
                         if left and right
                         else "",
