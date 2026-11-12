@@ -114,18 +114,39 @@ def run(analysis: Path) -> int:
     c.check("U6 size-matched draws", f"{iterations:,}", rs, "summary.json")
     universes = summary["universes"]
     union = universes["all_feces_decreased_taxa_PD_HIV_CRC_union"]
-    c.check("U4 universe", f"on the {union} decreased", r_only, "summary.json: universes")
+    c.check(
+        "U4 universe",
+        f"U4: random trait on {union} decreased feces taxa",
+        r_only,
+        "summary.json: universes",
+    )
     units = universes["U6_units_per_condition"]
-    text = f"draws {units['PD']}, {units['HIV']} and {units['CRC']} whole"
+    text = f"U6 samples whole signatures: PD {units['PD']}, HIV {units['HIV']}, CRC {units['CRC']},"
     c.check("U6 units", text, r_only, "summary.json: universes")
-    c.check("U6 studies", f"from all {universes['U6_studies']} feces", r_only, "summary.json")
+    c.check(
+        "U6 studies",
+        f"from {universes['U6_studies']} feces studies with a decreased signature.",
+        r_only,
+        "summary.json",
+    )
 
     total = summary["trait_benchmark_total_traits_tested"]
     biological = summary["trait_benchmark_non_growth_medium_traits_tested"]
     median = summary["benchmark_median_mean_pairwise_jaccard_distance_excluding_growth_media"]
-    c.check("benchmark traits", f"{total} matrix traits have", r_only, "summary.json")
-    c.check("benchmark non-MediaDive", f"second of the {biological}", r_only, "summary.json")
-    c.check("benchmark median", f"d_J {median:.3f}", r_only, "summary.json")
+    c.check("benchmark traits", f"The benchmark contains {total} traits", r_only, "summary.json")
+    rank = summary["cellulose_rank_excluding_growth_media"]
+    c.check(
+        "benchmark non-MediaDive",
+        f"{biological} excluding growth media. Cellulose ranks {rank} among those traits",
+        r_only,
+        "summary.json",
+    )
+    c.check(
+        "benchmark median",
+        f"The non-media median mean d_J is {median:.3f}.",
+        r_only,
+        "summary.json",
+    )
     c.check("summary benchmark", f"of {biological} non-MediaDive", ("SUMMARY",), "summary.json")
     for rank, trait in enumerate(summary["benchmark_top_10_excluding_growth_media"], 1):
         source = "summary.json: benchmark_top_10_excluding_growth_media"
@@ -166,7 +187,7 @@ def run(analysis: Path) -> int:
     )
     r = inter[("disease_vs_healthy_oriented", stratified, "study", gi)]
     text = fisher(
-        r, f"{float(r['conditional_or']):.2f}", f"{float(r['conditional_or_ci95_high']):.3g}"
+        r, f"{float(r['conditional_or']):.3g}", f"{float(r['conditional_or_ci95_high']):.3g}"
     )
     c.check(
         "Fisher, all three, disease vs healthy",
@@ -208,7 +229,13 @@ def run(analysis: Path) -> int:
         for r in read_tsv(analysis / "condition_definition_sensitivity.tsv")
     }
     r = sensitivity[("synonyms_merged", oriented, "CRC", "study")]
-    text = f"{r['down']} : {r['up']} : {r['tied']} studies (p = {p2(r['binom_p_two_sided'])})"
+    experiment = sensitivity[("synonyms_merged", oriented, "CRC", "experiment")]
+    text = (
+        f"| CRC | {oriented} | "
+        f"{experiment['down']} : {experiment['up']} : {experiment['tied']} | "
+        f"{p2(experiment['binom_p_two_sided'])} | "
+        f"{r['down']} : {r['up']} : {r['tied']} | {p2(r['binom_p_two_sided'])} |"
+    )
     c.check(
         "CRC synonyms, disease vs healthy", text, r_only, "condition_definition_sensitivity.tsv"
     )
@@ -273,8 +300,8 @@ def run(analysis: Path) -> int:
         text = f"| {label} | {four[key]['n_supporting_studies_in_target_dir']} |"
         c.check(f"four pairs, {label}", text, ("PAIRS",), "four_highlighted_pairs_summary.json")
 
-    for row in c.rows:
-        print("\t".join(row))
+    for check in c.rows:
+        print("\t".join(check))
     missing = [row for row in c.rows if row[3] != "OK"]
     print(f"{len(c.rows)} checks, {len(missing)} missing")
     return 1 if missing else 0
