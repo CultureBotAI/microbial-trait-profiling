@@ -1140,6 +1140,64 @@ def test_skin_sparse_cohort_has_audit_270(
     assert (output.parent / "skin_six_trait_rows.tsv").stat().st_size > 0
 
 
+@pytest.mark.parametrize("cohort", ["oral", "skin"])
+@pytest.mark.parametrize("effect", [-1e-7, 1e-7])
+def test_single_signed_displayed_trait_retains_cohort_row_2312(
+    tmp_path: Path, oral_contrast_source: pd.DataFrame, cohort: str, effect: float
+) -> None:
+    """Exactly one signed source effect suffices, even below rounding and at q=0.4."""
+    source = oral_contrast_source.copy()
+    if cohort == "skin":
+        source["condition"] = source["condition"].replace(
+            {"Gingivitis": "Psoriasis", "Root caries": "Atopic dermatitis"}
+        )
+        source["body_site_group"] = source["body_site_group"].replace(
+            {"Oral cavity / dental": "Skin"}
+        )
+        source["condition_body_site_pair"] = source["condition"] + " | " + source["body_site_group"]
+    source.loc[:17, "increased_minus_decreased_positive_fraction"] = 0.0
+    source.loc[6, "increased_minus_decreased_positive_fraction"] = effect
+    source.to_csv(tmp_path / heatmaps.CONTRAST_TABLE_FILENAME, sep="\t", index=False)
+    writer = getattr(heatmaps, f"write_{cohort}_trait_heatmaps")
+    with patch.object(heatmaps, "plot_matrix_heatmap") as plot:
+        output = writer(tmp_path, source_commit="fixture")
+
+    rows = pd.read_csv(output.parent / f"{cohort}_six_trait_rows.tsv", sep="\t")
+    assert len(rows) == 3
+    assert rows.loc[rows["in_main_figure"], "condition"].tolist() == ["Rheumatoid arthritis"]
+    target = rows.loc[rows["condition"].eq("Rheumatoid arthritis")].iloc[0]
+    assert target["finite_nonzero_displayed_traits"] == 1
+    assert rows.loc[~rows["in_main_figure"], "finite_nonzero_displayed_traits"].eq(0).all()
+
+    plotted = plot.call_args_list[0].args[0]
+    assert plotted.shape == (1, 6)
+    assert plotted.index.tolist() == [f"Rheumatoid arthritis | {cohort.title()} | max n=5"]
+    assert plotted.columns.tolist() == [f"trait{i}" for i in range(6)]
+    np.testing.assert_array_equal(plotted.to_numpy(), [[effect, 0.0, 0.0, 0.0, 0.0, 0.0]])
+    assert not plot.call_args_list[0].kwargs["significance_borders"].to_numpy().any()
+    assert len(plot.call_args_list[1].args[0]) == 3
+
+    exported = pd.read_csv(output.parent / f"{cohort}_six_trait_cells.tsv", sep="\t")
+    assert len(exported) == 18
+    pd.testing.assert_frame_equal(
+        exported[source.columns], source.iloc[:18].reset_index(drop=True), check_dtype=False
+    )
+    focal = exported.loc[
+        exported["condition"].eq("Rheumatoid arthritis") & exported["trait_id"].eq("trait0")
+    ].iloc[0]
+    assert focal["increased_minus_decreased_positive_fraction"] == effect
+    assert focal["fisher_p_value"] == 0.001
+    assert focal["fisher_q_value"] == 0.4
+    assert focal["study_count"] == 5
+    assert bool(focal["displayed_in_heatmap"])
+    assert not bool(focal["selected_after_bh"])
+    record = json.loads((output.parent / f"{cohort}_six_trait_provenance.json").read_text())
+    assert record["main_figure_rows"] == 1
+    assert record["selected_rows"] == 3
+    assert record["selected_cells"] == 18
+    assert record["source_individual_bh_family_size"] == 24
+
+
 def test_skin_exact_selection_and_source_preservation_270(
     oral_contrast_source: pd.DataFrame,
 ) -> None:
