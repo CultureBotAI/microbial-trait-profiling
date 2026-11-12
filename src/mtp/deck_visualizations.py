@@ -25,6 +25,7 @@ import pandas as pd
 from scipy import stats
 
 from mtp.density_adjustment import SIGNIFICANT_POST_ADJUSTMENT_STATUSES
+from mtp.human_host_corpus import CORPUS_SEQUENCING_TYPES, HUMAN_HOST_SPECIES
 from mtp.paths import DERIVED_DATA_DIR
 from mtp.quoted_results import refuse_nominal_ora
 from mtp.trait_key_policy import display_trait_label, read_recorded_member_ids
@@ -1319,7 +1320,7 @@ def generate_figure5_pd_crc_taxon_attribution_bubble(
     top_n_taxa: int = 12,
     columns_path: Path | None = None,
 ) -> Path:
-    """Render Taxon Attribution Bubble Map for Lead Fecal Conditions."""
+    """Render human 16S/WMS fecal taxon attribution for PD and CRC."""
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
 
@@ -1329,8 +1330,13 @@ def generate_figure5_pd_crc_taxon_attribution_bubble(
     exp_df = pd.read_csv(experiments_path, sep="\t")
     matrix_df = pd.read_csv(taxa_matrix_path, sep="\t")
 
+    # Apply the corpus policy before top-taxon ranking and per-condition counts.
+    eligible_experiments = exp_df.loc[
+        (exp_df["host_species"].astype("string").str.strip() == HUMAN_HOST_SPECIES)
+        & exp_df["sequencing_type"].astype("string").str.strip().isin(CORPUS_SEQUENCING_TYPES)
+    ]
     merged = taxa_df.merge(
-        exp_df[["study_id", "experiment_id", "condition", "body_site"]],
+        eligible_experiments[["study_id", "experiment_id", "condition", "body_site"]],
         on=["study_id", "experiment_id"],
         how="inner",
     )

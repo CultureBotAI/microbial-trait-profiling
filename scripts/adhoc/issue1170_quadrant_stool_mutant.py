@@ -34,7 +34,7 @@ TESTS = (
     "test_row_two_quadrants_exclude_multisite_nonaxis_pairs",
     "test_row_three_counts_every_trait_cell_against_exact_raw_stool_metadata",
 )
-BEFORE = 'result["is_stool"] = result.body_site.eq("Feces")'
+BEFORE = 'result["is_stool"] = result.body_site.map(is_stool_body_site)'
 AFTER = 'result["is_stool"] = result.body_site.str.contains("Feces", regex=False)'
 SOURCES = (
     "src/mtp/delta_z_derived/tables.py",

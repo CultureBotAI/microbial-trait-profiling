@@ -331,7 +331,7 @@ Synonym labels change the retained studies and experiments:
 | CRC | all_contrasts | 37 : 10 : 12 | 9.8e-5 | 22 : 3 : 7 | 1.6e-4 |
 | CRC | disease_vs_healthy_oriented | 25 : 6 : 8 | 8.8e-4 | 18 : 3 : 7 | 0.0015 |
 
-The largest pooled study sign-test p across the committed condition-definition rows is 0.000121.
+The pooled study-level sign test stays at p ≤ 1.21e-4 in every scenario.
 <!-- /numbers -->
 
 The former corpus-wide comparison cited an untracked
