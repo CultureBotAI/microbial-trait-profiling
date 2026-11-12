@@ -38,7 +38,16 @@ from create_pd_six_trait_taxon_heatmap import (
     sha256_chunks,
 )
 from lookup_pd_trait_taxa import SUMMARY_NAME, pd_feces_profile_ids, trait_directions
-from mtp.contribution_inputs import Base, Graph, Key, load_base, load_graph, verify_kg
+from mtp.contribution_inputs import (
+    Base,
+    Graph,
+    InputTraitPolicyResolution,
+    Key,
+    load_base,
+    load_graph,
+    resolve_inputs_trait_key_policy_record,
+    verify_kg,
+)
 from mtp.taxa_trait_matrix import PRIMARY_STRAIN_ROLLUP, StrainRollup
 from mtp.taxon_contributions import Ledger, reconcile
 from mtp.trait_guilds import table1_trait_label
@@ -46,7 +55,6 @@ from mtp.trait_key_policy import (
     DEFAULT_TRAIT_KEY_POLICY,
     TRAIT_KEY_POLICIES,
     TraitKeyPolicy,
-    parse_trait_key_policy,
 )
 from mtp.trait_lists import TRAIT_ID_PATTERN
 
@@ -121,15 +129,26 @@ def load_contribution_ledger(
     protocol_path: Path,
     strain_rollup: StrainRollup,
     *,
-    trait_key_policy: TraitKeyPolicy = DEFAULT_TRAIT_KEY_POLICY,
+    trait_key_policy: TraitKeyPolicy | None = None,
+    core_manifest: Path | None = None,
+    policy_resolution: InputTraitPolicyResolution | None = None,
 ) -> tuple[Base, Graph, Ledger]:
     """Load the pinned KG and the profile inputs and reconcile them, as `mtp.taxon_contributions`.
 
     The reconciliation rebuilds every taxa-trait matrix and profile count from the KG under
     the strain rollup scope, so a KG or scope that does not reproduce the matrix stops the
-    analysis here. The trait-key policy is explicit; it cannot be inferred from columns.
+    analysis here. Policy metadata is parsed and validated; the caller must verify the core
+    and bind it to these inputs. The policy cannot be inferred from column names alone.
+    A captured resolution keeps the main command's decision and source hashes together
+    without re-reading metadata while loading the ledger.
     """
-    trait_key_policy = parse_trait_key_policy(trait_key_policy)
+    if policy_resolution is None:
+        policy_resolution = resolve_inputs_trait_key_policy_record(
+            derived_dir, trait_key_policy, core_manifest=core_manifest
+        )
+    if trait_key_policy is not None and trait_key_policy != policy_resolution.policy:
+        raise ValueError("Requested trait_key_policy contradicts the captured policy resolution")
+    resolved_policy = policy_resolution.policy
     protocol = json.loads(protocol_path.read_text(encoding="utf-8"))
     verify_kg(kg_dir, protocol["kg_md5"])
     base = load_base(*(derived_dir / name for name in LEDGER_INPUTS))
@@ -139,13 +158,13 @@ def load_contribution_ledger(
         set(base.columns),
         set(base.traits.values()),
         strain_rollup,
-        trait_key_policy=trait_key_policy,
+        trait_key_policy=resolved_policy,
     )
     ledger = reconcile(base, graph)
     if ledger.mismatches:
         msg = (
             f"{len(ledger.mismatches)} taxa-trait matrix or profile counts differ from the KG "
-            f"rebuild under the {strain_rollup} strain rollup scope and {trait_key_policy}; "
+            f"rebuild under the {strain_rollup} strain rollup scope and {resolved_policy}; "
             "check the KG and "
             "data/derived inputs with `just table1-taxon-influence`."
         )
@@ -1374,7 +1393,26 @@ def main() -> None:
         default=DEFAULT_TRAIT_KEY_POLICY,
         help="Trait-key policy of the input matrix; use raw_object_v1 for historical raw products.",
     )
+    parser.add_argument(
+        "--core-manifest",
+        type=Path,
+        default=None,
+        help=(
+            "Parse and validate policy metadata from a core run.json manifest; "
+            "the caller must verify the core and bind it to the inputs."
+        ),
+    )
     args = parser.parse_args()
+    explicit_parser = argparse.ArgumentParser(description=__doc__)
+    explicit_parser.add_argument("--trait-key-policy", choices=TRAIT_KEY_POLICIES, default=None)
+    explicit_parser.add_argument("--core-manifest", type=Path, default=None)
+    explicit_policy = explicit_parser.parse_args().trait_key_policy
+    resolution = resolve_inputs_trait_key_policy_record(
+        DERIVED_DIR,
+        explicit_policy,
+        core_manifest=args.core_manifest,
+    )
+    policy = resolution.policy
     metadata = load_profile_metadata()
     require_current_trait_taxa_evidence(metadata, OUTPUT_DIR)
     # Every path is built from OUTPUT_DIR here, so redirecting it redirects every write.
@@ -1386,7 +1424,8 @@ def main() -> None:
         DERIVED_DIR,
         KG_PROTOCOL_PATH,
         STRAIN_ROLLUP,
-        trait_key_policy=args.trait_key_policy,
+        trait_key_policy=policy,
+        policy_resolution=resolution,
     )
     keys = pd_contribution_profiles(base, metadata)
     counts, coverage_counts = count_contributions(base, graph, ledger, keys)
@@ -1456,7 +1495,8 @@ def main() -> None:
         "method": "Table 1 contribution ledger (#190) restricted to PD fecal profiles",
         "profile_scope": "human PD fecal profiles in experiments with both directions",
         "strain_rollup": STRAIN_ROLLUP,
-        "trait_key_policy": args.trait_key_policy,
+        "trait_key_policy": policy,
+        "trait_key_policy_resolution": resolution.as_dict(),
         **scope,
         "ranks": list(CONTRIBUTOR_RANKS),
         "rank_statuses": [RESOLVED_STATUS, "unresolved_rank", "ambiguous_rank"],

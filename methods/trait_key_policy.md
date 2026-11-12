@@ -108,14 +108,33 @@ recount commands expose `--trait-key-policy`; the `pd-trait-contributors` recipe
 arguments and `table1-taxon-influence-from` takes `trait_key_policy` as its fifth positional parameter
 (pass all five arguments when overriding it, e.g.
 `just table1-taxon-influence-from <kg> data/derived data/derived/table1_taxon_influence phenotype raw_object_v1`). Their
-compatibility default is
-`facultative_union_v1`; historical raw tables require `raw_object_v1` explicitly.
+compatibility default without supplied or recorded policy metadata is
+`facultative_union_v1`. Contribution and PD-contributor commands also parse and
+validate policy metadata from `--core-manifest` (or an input-directory `run.json`)
+and `taxa_trait_matrix_columns.tsv`; an explicit policy must agree with that
+metadata. Other standalone recount commands require `raw_object_v1` explicitly
+for historical raw tables.
 Each command records the policy it consumed in its accompanying manifest or
 provenance record (stdout for the recount). These standalone readers do not verify
 a core execution or infer policy from the retained column vocabulary. Raw and union
 inputs can share that vocabulary while containing different counts. Label-support's
 policy field is additive metadata under its existing `1.0` schema; absence in an
 older record is not evidence of either policy.
+
+For contribution and PD-contributor outputs, `trait_key_policy_resolution` records
+the effective `policy`, its `basis` (`explicit`, `core_manifest`, `column_metadata`,
+or `default`), and `source_sha256` for every metadata file consumed. The stable
+source roles are `core_manifest` and `taxa_trait_matrix_columns.tsv`; each digest
+is computed from the same byte buffer that was parsed, including metadata checked
+for agreement with an explicit choice and a columns file lacking a policy field.
+PD reconstruction reuses the captured resolution rather than resolving metadata
+again. These hashes identify the policy evidence; they do not verify core artifacts
+or establish that a manifest belongs to the supplied input directory. That execution
+verification and input binding remain the caller's responsibility. Consequently an
+unrelated, internally valid historical manifest may resolve a policy even for an
+empty input directory; later scientific input loading and KG/count reconciliation
+remain separate checks. Do not describe that metadata-only resolution as a verified
+core execution.
 
 `AnalysisBasis` remains unchanged: its feature-catalog hash and core binding retain
 identity, but do not expose a separate policy field. Adding that field would need a
