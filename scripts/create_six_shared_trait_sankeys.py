@@ -54,6 +54,7 @@ from mtp.composition_denominators import (
     validate_cached_totals,
 )
 from mtp.stool_group_contrasts import exact_stool_profiles
+from mtp.trait_key_policy import FACULTATIVE_RAW_LABEL, FACULTATIVE_UNION_LABEL
 from mtp.trait_lists import (
     DeclaredTraitList,
     file_sha256,
@@ -62,6 +63,31 @@ from mtp.trait_lists import (
     trait_labels,
 )
 from mtp.workflow.output_roots import add_temporary_output_option, require_durable_output
+
+
+def resolve_facultative_display_label(policy: str = "phenotype") -> str:
+    """Resolve the declared display policy; historical raw mode must be explicit."""
+    if policy in {"phenotype", "facultative_union_v1"}:
+        return FACULTATIVE_UNION_LABEL
+    if policy in {"off", "raw_object_v1"}:
+        return FACULTATIVE_RAW_LABEL
+    raise ValueError(f"Unknown facultative label policy: {policy}")
+
+
+def normalize_facultative_labels(frame: pd.DataFrame, policy: str = "phenotype") -> pd.DataFrame:
+    """Accept either recorded label without changing trait IDs, values or guild membership."""
+    label = resolve_facultative_display_label(policy)
+    result = frame.copy()
+    for column in ("trait", "trait_label", "object_name"):
+        if column in result:
+            result[column] = result[column].replace(
+                {
+                    FACULTATIVE_RAW_LABEL: label,
+                    FACULTATIVE_UNION_LABEL: label,
+                }
+            )
+    return result
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VIS_DIR = REPO_ROOT / "trait-visualization"
@@ -114,7 +140,7 @@ class SharedTrait:
 SHARED_TRAITS = (
     SharedTrait(
         trait_id="METPO:1000608",
-        label="facultatively aerobic",
+        label=resolve_facultative_display_label(),
         slug="facultatively_aerobic",
         base_color="#0072b2",
     ),
@@ -153,9 +179,9 @@ SHARED_TRAITS = (
 TRAIT_SORT_COLUMNS = ["focus_enriched_profile_count", "rank_score", "trait_rank"]
 
 
-def read_tsv(path: Path, **kwargs: object) -> pd.DataFrame:
+def read_tsv(path: Path, *, policy: str = "phenotype", **kwargs: object) -> pd.DataFrame:
     """Read a TSV file with local default options."""
-    return pd.read_csv(path, sep="\t", **kwargs)
+    return normalize_facultative_labels(pd.read_csv(path, sep="\t", **kwargs), policy)
 
 
 def reset_output_dir() -> None:
