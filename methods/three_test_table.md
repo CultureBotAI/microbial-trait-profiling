@@ -201,9 +201,15 @@ Missing original record identifiers remain unresolved.
 
 `METPO:1000603` means anaerobic; `METPO:1000607` means obligately anaerobic.
 The anaerobe guild combines both. Preserve qualified trait IDs; never substitute
-one term for the other based on a display label. The historical six-trait delta-z
-script uses neither oxygen term; the retained expanded summary uses 1000603,
-whereas the obligately-anaerobic plate uses 1000607.
+one term for the other based on a display label. Recorded and verified
+`three_test_table` and `delta_z_derived` outputs keep the KG node label
+`facultatively aerobic` because readers compare labels with the core; they do not
+record member arrays themselves, nor do `three_test_table` or `delta_z_derived`
+parse `trait_member_ids_json` during statistical computation, though downstream
+consumers can read `trait_member_ids_json` from the core's `feature_metadata`
+when resolving policy membership (#1246, #1250, #1259, #1261). The historical
+six-trait delta-z script uses neither oxygen term; the retained expanded summary
+uses 1000603, whereas the obligately-anaerobic plate uses 1000607.
 
 ## Execution and provenance
 

@@ -163,6 +163,7 @@ def test_real_verifier_accepts_relocated_union_core_produced_by_main_without_cha
     assert report["normalized_historical_verification"] is True
     assert isinstance(report.get("helper_sha256"), str)
     assert len(report["helper_sha256"]) == 64
+    assert _is_valid_helper_sha256(report["helper_sha256"])
     readme_text = (FIXTURE.parent / "README.md").read_text(encoding="utf-8")
     assert "$ORIGINAL_OUTPUT" in readme_text
     assert "core/steps/identify_sources/provenance/source_identity.json" in readme_text
@@ -187,6 +188,72 @@ def test_real_verifier_accepts_relocated_union_core_produced_by_main_without_cha
     assert focal["column_label"] == "facultatively aerobic METPO:1000608"
     assert json.loads(focal["trait_member_ids_json"]) == sorted(MEMBERS)
     assert payloads(copied) == before
+
+
+def _is_valid_helper_sha256(value: object) -> bool:
+    import re
+
+    return isinstance(value, str) and re.fullmatch(r"[0-9a-f]{64}", value) is not None
+
+
+def test_fixture_readme_audit_command_and_methods_member_wording_are_accurate(
+    tmp_path: Path,
+) -> None:
+    """Verify fixture README globs and methods member-reading wording (#1261)."""
+    import re
+
+    extracted = tmp_path / "extracted_union_fixture"
+    extract_union_fixture(extracted)
+    report = json.loads((extracted / "generation.json").read_text(encoding="utf-8"))
+    assert _is_valid_helper_sha256(report.get("helper_sha256"))
+    assert not _is_valid_helper_sha256("z" * 64)
+    assert not _is_valid_helper_sha256("A" * 64)
+
+    readme_text = (FIXTURE.parent / "README.md").read_text(encoding="utf-8")
+    assert "core/steps/ingest_bugsigdb/studies/*.yaml" not in readme_text
+    required_globs = (
+        "inputs/*",
+        "core/steps/ingest/studies/*.yaml",
+        "core/steps/export_tables/derived/*.tsv",
+        "core/steps/taxa_matrix/derived/*.tsv",
+        "core/steps/feature_catalog/derived/*.tsv",
+        "core/steps/count_profiles/derived/*.tsv",
+        "core/steps/ora_profiles/derived/*.tsv",
+    )
+    for pattern in required_globs:
+        assert f'"$EXTRACTED_FIXTURE"/{pattern}' in readme_text
+
+    readme_globs = re.findall(r'"\$EXTRACTED_FIXTURE"/([^\s\\]+)', readme_text)
+    assert tuple(readme_globs) == required_globs
+    covered_files: set[str] = set()
+    for pattern in readme_globs:
+        matches = [
+            path.relative_to(extracted).as_posix()
+            for path in extracted.glob(pattern)
+            if path.is_file()
+        ]
+        assert matches, f"README detect-secrets glob matched no extracted files: {pattern}"
+        covered_files.update(matches)
+
+    expected_non_json_files = {
+        path.relative_to(extracted).as_posix()
+        for path in extracted.rglob("*")
+        if path.is_file() and path.suffix in {".csv", ".tsv", ".yaml"}
+    }
+    assert covered_files == expected_non_json_files
+
+    overstated_phrase = (
+        "and instead read `trait_member_ids_json` from the core's `feature_metadata` "
+        "when resolving policy membership"
+    )
+    for rel_doc in ("methods/three_test_table.md", "methods/delta_z_derived.md"):
+        normalized = " ".join((ROOT / rel_doc).read_text(encoding="utf-8").split())
+        assert overstated_phrase not in normalized
+        assert "keep the KG node label" in normalized
+        assert "do not record member arrays" in normalized
+        assert "parse `trait_member_ids_json` during statistical computation" in normalized
+        assert "can read `trait_member_ids_json` from the core's `feature_metadata`" in normalized
+        assert "#1261" in normalized
 
 
 def test_union_core_verification_rejects_metadata_relabel_of_facultative_column(
