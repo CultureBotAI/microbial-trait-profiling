@@ -1,4 +1,4 @@
-"""Keep table1-native-results/README.md synchronized with the native BH family wording (#1635)."""
+"""Pin historical README wording separately from the current v3 native BH family (#1635)."""
 
 from __future__ import annotations
 
@@ -52,9 +52,10 @@ def extract_composition_paragraph(markdown_text: str) -> str:
 
 
 def generated_published_composition_paragraph() -> str:
-    """Render native_summary with a stub and apply the review-bundle filename substitution."""
+    """Render the current v3 summary with the review-bundle filename substitution."""
     stub_base = cast(Base, SimpleNamespace(traits={}))
-    raw_summary = native_summary(stub_base, [], [])
+    raw_summary = native_summary(stub_base, [], [], protocol_version="190-native-v3")
+    assert "using protocol 190-native-v3." in raw_summary
     published_summary = raw_summary.replace(
         "native_composition_comparison.tsv",
         "native_composition_comparison.tsv.gz",
@@ -63,7 +64,7 @@ def generated_published_composition_paragraph() -> str:
 
 
 def expected_generator_composition_paragraph() -> str:
-    """Determine the required generator paragraph from transformed()'s live BH vector behavior."""
+    """Require the current v3 paragraph and its selected-family numerical behavior."""
     keys = [
         ("s1", "e1", "inc"),
         ("s1", "e1", "dec"),
@@ -92,17 +93,12 @@ def expected_generator_composition_paragraph() -> str:
     assert untestable_row["q"] == pytest.approx(1.0)
     tested_p = float(tested_row["p"])
     tested_q = float(tested_row["q"])
-    if tested_q == pytest.approx(tested_p):
-        return EXPECTED_COMPOSITION_PARAGRAPH
-    if tested_q == pytest.approx(min(1.0, 2.0 * tested_p)):
-        return EXPECTED_POST_1334_COMPOSITION_PARAGRAPH
-    raise AssertionError(
-        f"Unexpected BH adjustment ratio q={tested_q} vs p={tested_p} in transformed()"
-    )
+    assert tested_q == pytest.approx(min(1.0, 2.0 * tested_p))
+    return EXPECTED_POST_1334_COMPOSITION_PARAGRAPH
 
 
 def check_readme_text(readme_text: str) -> None:
-    """Validate the committed README text against the generator and #1635 BH family contract."""
+    """Keep the historical finite-test claim and the current padded-family claim distinct."""
     assert "native BH families contain all supported variable traits" not in readme_text
     assert EXPECTED_BH_SENTENCES in readme_text
     composition_paragraph = extract_composition_paragraph(readme_text)

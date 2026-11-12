@@ -115,8 +115,8 @@ def main() -> int:
             else:
                 raise RuntimeError(f"Mutant survived: {name}")
 
-    # Mutant 8: generator-only drift where native_summary claims padded inside-vector BH
-    # while transformed() still computes finite-only outside-vector BH.
+    # Mutant 8: generator-only drift where native_summary claims finite-only BH
+    # while the current v3 transformed() computes padded inside-vector BH.
     old_gen_lines = (
         (
             '        "Native p-values test the mean; native BH families contain "\n'
@@ -135,7 +135,7 @@ def main() -> int:
         '        "variable traits (family_selected_traits), not just Table 1, padding selected "\n'
         '        "untestable traits at p = 1.0 (q = 1.0) inside the correction vector. "'
     )
-    mutated_gen_text = gen_text.replace(old_gen_lines, new_gen_lines, 1)
+    mutated_gen_text = gen_text.replace(new_gen_lines, old_gen_lines, 1)
     if mutated_gen_text == gen_text:
         raise RuntimeError("Generator drift mutant did not alter native_taxon_influence.py text")
     with tempfile.TemporaryDirectory(prefix="verify_1635_mutant_8_gen_drift_") as raw_dir:

@@ -41,6 +41,20 @@ The historical contribution manifest's `not_rerun` statements describe that earl
 stage, not the native extension. Only a completed native manifest establishes that
 the native files exist and match the recorded inputs.
 
+New execution uses `190-native-v3`, which places selected untestable traits inside
+the BH vector at p=1. The producer refuses a supplied `190-native-v2` protocol for
+new execution: v2 declared a finite-p-only correction family. Existing v2 manifests
+and their embedded protocol declarations remain historical evidence and are read
+without rewriting their bytes or relabeling their correction. Readers accept both
+versions and retain the version and declaration supplied by the recorded run.
+The publication handoff also recognizes `190-native-v1` as finite-test history,
+using `native_before_family_tests` and the distinct basis
+`historical_v1_finite_tests`, without changing its recorded protocol. This does
+not widen the assessment reader: `influence_assessment` accepts v2 and v3 only.
+The committed snapshot records v1 despite its README's v2 label, and also lacks
+`code_dirty`; assessment support for that historical snapshot remains a separate
+follow-up (#2317), not evidence of a verified clean historical run.
+
 `just table1-native-summary <audit-output-directory>` verifies all native input and
 output artifact hashes and writes the compact review bundle to the untracked
 `<audit-output-directory>/review/` directory. It refuses a run recorded from a dirty
@@ -71,22 +85,27 @@ not the differently grouped historical manuscript strata.
 Within each scope and scenario, transform with `log1p(1000 * fraction)` and
 refit the population mean/SD. Centering cancels in paired differences. The native
 two-sided one-sample t test weights experiment contrasts equally. Fewer than
-three pairs or contrast SD within `1e-8` of zero is untestable. BH uses every
-finite native p-value among selected traits in that scope/scenario. Untestable
-selected traits retain the native q=1 convention, missing p and explicit status;
+three pairs or contrast SD within `1e-8` of zero is untestable. In v3, BH uses every
+selected trait in that scope/scenario: finite native p-values for testable traits
+and p=1 padding for selected untestable traits. Untestable selected traits retain
+the native q=1 convention, missing reported p and explicit status;
 unselected traits have no native p/q. q=1 does not make an untestable result null
 evidence. Tests do not use the six-trait-only family.
 
 This is registry family `mt-supp-native-influence-composition`. Its executed
-BH size is `family_tests` in `native_composition.tsv.gz`, not
-`family_selected_traits` or the full retained catalog size. The support,
+BH size in v3 is `family_selected_traits` in `native_composition.tsv.gz`;
+`family_tests` counts finite tested p-values and can be smaller. The protocol's
+`composition.family_size_field` and `composition.untestable_correction_p` declare
+that denominator and padding. For historical v1/v2 outputs, the executed BH size
+remains `family_tests`, even when `family_selected_traits` is also present. Neither
+historical protocol nor v3 uses the full retained catalog size. The support,
 variance and testability selection remains part of this sensitivity; BH within
 the selected family does not correct that selection.
-The compact `native_table1_stats.tsv.gz` retains `family_tests` from those full
+The compact `native_table1_stats.tsv.gz` retains both counters from those full
 native families. In the generated summary, "Native p" means nominal native
 p and "Native q" means BH q from this family, including the
-baseline-versus-exclusion table. Those values belong to the committed bundle's
-historical manifests; this qualification does not represent a new rerun.
+baseline-versus-exclusion table. The committed bundle's values belong to its
+historical v1 manifest; this protocol update does not represent a new rerun.
 
 Native mean intervals target experiment-weighted effects; exact binomial intervals
 describe the positive share of experiment contrasts after applying the same `1e-12`
