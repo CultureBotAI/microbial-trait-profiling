@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import csv
+import hashlib
 import json
 from collections.abc import Sequence
 from dataclasses import replace
@@ -984,6 +986,163 @@ def test_calibration_summary_marks_p_value_columns_as_uncorrected_diagnostics(
     assert written_replicates
     assert {r["p_value_diagnostics_role"] for r in written_replicates} == {"calibration_diagnostic"}
     assert {r["p_value_diagnostics_correction"] for r in written_replicates} == {"none (nominal)"}
+
+
+def test_calibration_cli_export_schema_preserves_scientific_and_flip_contracts(
+    tmp_path: Path,
+) -> None:
+    """#1487: real small CLI inputs retain scientific/RNG contracts and add export metadata."""
+    import mtp.calibration as cal
+
+    inputs = tmp_path / "inputs"
+    inputs.mkdir()
+    profile_path = inputs / "profiles.tsv"
+    experiments_path = inputs / "experiments.tsv"
+    full_dump_path = inputs / "full_dump.csv"
+    output = tmp_path / "output"
+    traits = [term for terms in {**TABLE1_TRAITS, **OXYGEN_GUILDS}.values() for term in terms]
+    assert len(traits) == len(set(traits))
+    with profile_path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.writer(handle, delimiter="\t", lineterminator="\n")
+        writer.writerow(["study_id", "experiment_id", "inc_dec", *traits, "METPO:9999999"])
+        for study in range(30):
+            for direction, offset in (("inc", 4), ("dec", 1)):
+                counts = [(study * 3 + index * 5 + offset) % 17 + 1 for index in range(len(traits))]
+                writer.writerow([f"s{study:02d}", "e1", direction, *counts, 400])
+    with experiments_path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.writer(handle, delimiter="\t", lineterminator="\n")
+        writer.writerow(["study_id", "experiment_id", "condition", "body_site", "host_species"])
+        writer.writerows(
+            [f"s{study:02d}", "e1", "synthetic condition", "Feces", "Homo sapiens"]
+            for study in range(30)
+        )
+    full_dump_path.write_text(
+        "# BugSigDB 2026-04-24, synthetic calibration fixture\nstudy_id\nsynthetic\n",
+        encoding="utf-8",
+    )
+    assert (
+        cal.main(
+            [
+                "--profile-input",
+                str(profile_path),
+                "--experiments-input",
+                str(experiments_path),
+                "--full-dump-input",
+                str(full_dump_path),
+                "--output-dir",
+                str(output),
+                "--replicates",
+                "2",
+                "--power-replicates",
+                "2",
+                "--seed",
+                "182",
+            ]
+        )
+        == 0
+    )
+    expected_files = {
+        "calibration_flip_assignments.tsv",
+        "calibration_flip_assignments.json",
+        "calibration_results.tsv",
+        "calibration_replicates.tsv",
+        "calibration_injection.tsv",
+        "calibration_criteria.tsv",
+        "calibration_status.json",
+    }
+    assert {path.name for path in output.iterdir()} == expected_files
+    assert all((output / name).stat().st_size > 0 for name in expected_files)
+    status = json.loads((output / "calibration_status.json").read_text(encoding="utf-8"))
+    flips = json.loads((output / "calibration_flip_assignments.json").read_text(encoding="utf-8"))
+    assert cal.VERSION == status["version"] == flips["version"] == "calibration-v3"
+    assert status["protocol"] == "methods/calibration_protocol.json"
+    assert status["seed"] == flips["seed"] == 182
+    assert status["corpus"]["kept_profiles"] == 60
+    assert status["corpus"]["kept_experiments"] == 30
+    assert set(status["replicates_completed"].values()) == {2}
+    for role, path in (
+        ("profile", profile_path),
+        ("experiments", experiments_path),
+        ("full_dump", full_dump_path),
+    ):
+        assert status["inputs"][f"{role}_sha256"] == hashlib.sha256(path.read_bytes()).hexdigest()
+    assert flips["inputs"] == status["inputs"]
+    assert set(flips) == {
+        "version",
+        "issue",
+        "seed",
+        "stream",
+        "unit",
+        "replicates",
+        "units",
+        "rows",
+        "rng",
+        "draw_order",
+        "semantics",
+        "table_sha256",
+        "bugsigdb_vintage",
+        "inputs",
+        "code_commit",
+    }
+    assert flips["stream"] == "complete_null_study_flip"
+    assert flips["unit"] == "study"
+    assert flips["replicates"] == 100
+    assert flips["units"] == 30
+    assert flips["rows"] == 3000
+    assert (
+        flips["table_sha256"]
+        == hashlib.sha256((output / "calibration_flip_assignments.tsv").read_bytes()).hexdigest()
+    )
+    with (output / "calibration_flip_assignments.tsv").open(encoding="utf-8") as handle:
+        reader = csv.DictReader(handle, delimiter="\t")
+        assert reader.fieldnames == [
+            "seed",
+            "stream",
+            "unit",
+            "replicate",
+            "study_id",
+            "experiment_id",
+            "flipped",
+        ]
+        written_flips = list(reader)
+    assert len(written_flips) == 3000
+    assert {int(row["replicate"]) for row in written_flips} == set(range(100))
+    assert {row["study_id"] for row in written_flips} == {f"s{study:02d}" for study in range(30)}
+    assert {row["flipped"] for row in written_flips} == {"0", "1"}
+    with (output / "calibration_results.tsv").open(encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle, delimiter="\t"))
+    non_family = [row for row in rows if row["label"] != "FAMILY"]
+    family = [row for row in rows if row["label"] == "FAMILY"]
+    assert non_family
+    assert family
+    assert {row["procedure"] for row in non_family} == {
+        "fraction_sign_test",
+        "log_ratio_sign_test",
+        "guild_mcnemar",
+        "screened_fraction_sign_test",
+    }
+    assert any(
+        0 < float(row["smallest_observed_p"]) < 1
+        for row in non_family
+        if row["smallest_observed_p"]
+    )
+    for row in non_family:
+        assert row["p_value_diagnostics_role"] == "calibration_diagnostic"
+        assert row["p_value_diagnostics_correction"] == "none (nominal)"
+        assert "rejections_q" in row
+    for row in family:
+        assert row["p_value_diagnostics_role"] == ""
+        assert row["p_value_diagnostics_correction"] == ""
+    with (output / "calibration_replicates.tsv").open(encoding="utf-8") as handle:
+        ledger = list(csv.DictReader(handle, delimiter="\t"))
+    assert ledger
+    assert any(int(row["tests_evaluated"]) > 0 for row in ledger)
+    assert {row["p_value_diagnostics_role"] for row in ledger} == {"calibration_diagnostic"}
+    assert {row["p_value_diagnostics_correction"] for row in ledger} == {"none (nominal)"}
+    assert "export_schema_version" not in rows[0]
+    assert "export_schema_version" not in ledger[0]
+    assert "export_schema_version" in status, "Completed calibration export has no schema version"
+    assert status["export_schema_version"] == "calibration-output-v1"
 
 
 def test_a_nonfinite_mcnemar_p_is_not_counted_as_a_tested_replicate(
