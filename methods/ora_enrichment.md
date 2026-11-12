@@ -17,9 +17,12 @@ infer host or sequencing eligibility from the file's name.
 
 In corpus mode, only matching matrix rows contribute to both M and K. Duplicate
 IDs in the corpus list are collapsed; an absent, empty, or out-of-matrix taxon
-list fails closed. Existing checks still reject profile counts incompatible with
-the selected urn. The aggregated profile input cannot prove membership of each
-reported taxon, so preparing a compatible corpus list remains the caller's duty.
+list fails closed. Before writing any result, both modes validate every tested
+profile/trait cell, including zero observations, against the full hypergeometric
+support: `max(0, N-(M-K)) <= k <= min(N,K)`. Impossible legacy inputs are now refused;
+valid `all_matrix` report and TSV bytes remain unchanged. The aggregated profile
+input cannot prove membership of each reported taxon, so preparing a compatible
+corpus list remains the caller's duty.
 
 Changing M or K changes the reference for every hypergeometric p-value and can
 change the K>0 testing family and BH-adjusted q-values. Numerical values need not
@@ -30,7 +33,8 @@ unchanged. These are organism-level trait annotations, not in vivo activity.
 
 Corpus-mode reports identify `background_scope=profile_corpus` and
 `ProfileCorpusTaxaMatrix (filename; corpus=filename)`. Both TSV exports additionally
-record `Background-Scope` and `Corpus-Taxa-SHA256`, alongside the existing full
+record `Background-Scope` and `Corpus-Taxa-SHA256`; the corpus is parsed and hashed
+from the same captured byte buffer. These accompany the existing full
 matrix/profile fingerprints and M/K counts. In legacy default outputs the unchanged
 `Background-Mode: TaxaMatrix (...)` identifies all_matrix; no new metadata lines
 are inserted, preserving committed output compatibility.

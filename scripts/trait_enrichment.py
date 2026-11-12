@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import csv
 import gzip
+import hashlib
 import math
 from collections import defaultdict
 from collections.abc import Sequence
@@ -238,13 +239,14 @@ def open_input_text(path: Path) -> TextIO:
     return path.open("r", encoding="utf-8", newline="")
 
 
-def read_corpus_taxa(path: Path | None) -> set[str]:
-    """Read a nonempty declared corpus without inferring profile eligibility."""
+def read_corpus_taxa(path: Path | None) -> tuple[set[str], str]:
+    """Parse and hash one corpus buffer without inferring profile eligibility."""
     if path is None:
         raise ValueError("profile_corpus requires --corpus-taxa-file")
     if not path.is_file():
         raise ValueError("corpus taxon file is missing or is not a regular file")
-    lines = [line for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+    content = path.read_bytes()
+    lines = [line for line in content.decode("utf-8").splitlines() if line.strip()]
     if not lines:
         raise ValueError("corpus taxon file is empty")
     header = lines[0].split("\t")
@@ -257,7 +259,7 @@ def read_corpus_taxa(path: Path | None) -> set[str]:
         taxa = {line.strip() for line in lines}
     if not taxa or "" in taxa:
         raise ValueError("corpus taxon file has empty taxon_id values")
-    return taxa
+    return taxa, hashlib.sha256(content).hexdigest()
 
 
 def main(argv: list[str] | None = None) -> None:
@@ -270,10 +272,10 @@ def main(argv: list[str] | None = None) -> None:
     args = parse_args(argv)
     if args.background_scope == "all_matrix" and args.corpus_taxa_file is not None:
         raise ValueError("--corpus-taxa-file requires --background-scope profile_corpus")
-    corpus_taxa = (
+    corpus_taxa, corpus_sha256 = (
         read_corpus_taxa(args.corpus_taxa_file)
         if args.background_scope == "profile_corpus"
-        else None
+        else (None, None)
     )
     statistic_key = "fdr_q" if args.fdr else "p_value"
     statistic_label = "FDR q" if args.fdr else "nominal p"
@@ -488,6 +490,23 @@ def main(argv: list[str] | None = None) -> None:
     testable_profiles_list = [r for r in rows if r["n_taxa"] > 0]
     testable_profile_count = len(testable_profiles_list)
 
+    # A zero count can also be impossible when the draw includes nearly all taxa.
+    # Validate every tested cell before computing probabilities or writing outputs.
+    for row in testable_profiles_list:
+        n_draws = row["n_taxa"]
+        for trait in candidate_traits:
+            count = row["traits"].get(trait, 0)
+            trait_total = background_counts[trait]
+            lower = max(0, n_draws - (background_taxa_universe - trait_total))
+            upper = min(n_draws, trait_total)
+            if not lower <= count <= upper:
+                raise ValueError(
+                    f"Profile ({row['study_id']}, {row['experiment_id']}, {row['inc_dec']}) "
+                    f"trait '{trait}' count k={count} is outside hypergeometric support "
+                    f"[{lower}, {upper}] (M={background_taxa_universe}, "
+                    f"K={trait_total}, N={n_draws})"
+                )
+
     # Hypergeometric testing
     all_hits: list[dict[str, Any]] = []
     if candidate_traits and testable_profiles_list:
@@ -597,7 +616,7 @@ def main(argv: list[str] | None = None) -> None:
             out_fh.write(f"# Background-Mode: {bg_mode}\n")
             if corpus_taxa is not None:
                 out_fh.write(f"# Background-Scope: {args.background_scope}\n")
-                out_fh.write(f"# Corpus-Taxa-SHA256: {file_sha256(args.corpus_taxa_file)}\n")
+                out_fh.write(f"# Corpus-Taxa-SHA256: {corpus_sha256}\n")
             out_fh.write(f"# Total-Profiles-Input: {len(rows)}\n")
             out_fh.write(f"# Testable-Profiles: {testable_profile_count}\n")
             out_fh.write(f"# Background-Taxa-Universe-M: {background_taxa_universe}\n")
@@ -669,7 +688,7 @@ def main(argv: list[str] | None = None) -> None:
             out_fh.write(f"# Background-Mode: {bg_mode}\n")
             if corpus_taxa is not None:
                 out_fh.write(f"# Background-Scope: {args.background_scope}\n")
-                out_fh.write(f"# Corpus-Taxa-SHA256: {file_sha256(args.corpus_taxa_file)}\n")
+                out_fh.write(f"# Corpus-Taxa-SHA256: {corpus_sha256}\n")
             out_fh.write(f"# Total-Profiles-Input: {len(rows)}\n")
             out_fh.write(f"# Testable-Profiles: {testable_profile_count}\n")
             out_fh.write(f"# Background-Taxa-Universe-M: {background_taxa_universe}\n")
