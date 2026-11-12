@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from collections.abc import Iterator
 from dataclasses import replace
 from datetime import UTC, datetime
@@ -12,6 +13,7 @@ from typing import Any
 import pandas as pd
 import pytest
 
+from mtp.cellulose_decr import selection_scan as scanner
 from mtp.cellulose_decr import study_split as split_module
 from mtp.cellulose_decr import study_split_run as runner
 from mtp.cellulose_decr.study_split import (
@@ -102,6 +104,24 @@ def _setup_execute_fixture(
     expected_digests: dict[Path, str] = {path: file_sha256(path) for path in paths.values()}
     verified = SimpleNamespace(
         scope="off",
+        # Real VerifiedSources always carries the verified core used by scope binding.
+        core=SimpleNamespace(
+            run_id="core-fixture",
+            contrast_population=scanner.TIER1_2,
+            direction_basis="disease_vs_comparison",
+            trait_key_policy="raw_object_v1",
+            definition_sha256=hashlib.sha256(b"core-definition").hexdigest(),
+            code_sha256=hashlib.sha256(b"core-code").hexdigest(),
+            lock_sha256=hashlib.sha256(b"core-lock").hexdigest(),
+            runtime_json='{"python": "fixture"}',
+            git_commit="0adcceed",
+            git_dirty=False,
+            parameters=[SimpleNamespace(name="strain_rollup", value="off")],
+            artifacts=[
+                SimpleNamespace(product_id=name, sha256=hashlib.sha256(name.encode()).hexdigest())
+                for name in scanner.CORE_SOURCES
+            ],
+        ),
         comparison=SimpleNamespace(id="comparison-fixture"),
         expected_digest=lambda path: expected_digests.get(path),
     )
