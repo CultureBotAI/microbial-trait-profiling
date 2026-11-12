@@ -228,14 +228,85 @@ def table_coverage(pages: list[dict[str, Any]], traits: set[str]) -> None:
         )
 
 
-def quadrant_coverage(pages: list[dict[str, Any]]) -> None:
+def expected_quadrant_counts(
+    record: dict[str, Any],
+    snapshots: dict[Path, dict[str, Any]],
+    targets: dict[Path, Path],
+    output: Path,
+) -> dict[str, int]:
+    """Read comparison totals from the bound summary, independently of rendered pages."""
+    sources = record.get("input_files")
+    if not isinstance(sources, list):
+        raise ValueError("Quadrant requires a bound summary source")
+    evidence = [
+        item
+        for item in sources
+        if isinstance(item, dict)
+        and isinstance(item.get("path"), str)
+        and Path(item["path"]).name == "quadrant_summary.tsv"
+    ]
+    require(bool(evidence), "Quadrant requires a bound summary source")
+    for item in evidence:
+        require(
+            set(item) == {"path", "sha256", "size_bytes"}
+            and isinstance(item.get("sha256"), str)
+            and re.fullmatch(r"[0-9a-f]{64}", item["sha256"]) is not None
+            and type(item.get("size_bytes")) is int
+            and item["size_bytes"] >= 0,
+            "Malformed bound quadrant summary identity",
+        )
+    summary_aliases = {
+        Path(item["path"]): Path(item["path"]).resolve(strict=True) for item in evidence
+    }
+    require(len(set(summary_aliases.values())) == 1, "Ambiguous distinct quadrant summary sources")
+    protect_table_sources(output, summary_aliases)
+    contents = [
+        read_bound(
+            summary_aliases[Path(item["path"])],
+            snapshots,
+            targets,
+            {key: item[key] for key in ("sha256", "size_bytes")},
+        )
+        for item in evidence
+    ]
+    for alias, target in summary_aliases.items():
+        require(alias.resolve(strict=True) == target, "Quadrant summary target changed")
+        require(alias not in targets or targets[alias] == target, "Quadrant summary target changed")
+        targets[alias] = target
+    require(all(raw == contents[0] for raw in contents), "Conflicting quadrant summary sources")
+    rows = list(csv.reader(io.StringIO(contents[0].decode("utf-8")), delimiter="\t"))
+    require(
+        bool(rows)
+        and len(rows[0]) == len(set(rows[0]))
+        and {"population", "n_comparisons"}.issubset(rows[0]),
+        "Malformed quadrant summary columns",
+    )
+    population_column = rows[0].index("population")
+    count_column = rows[0].index("n_comparisons")
+    counts: dict[str, int] = {}
+    for row in rows[1:]:
+        require(len(row) == len(rows[0]), "Malformed quadrant summary row")
+        population, count = row[population_column], row[count_column]
+        require(
+            population in {"all", "stool"} and population not in counts,
+            "Quadrant summary populations must be unique all and stool rows",
+        )
+        require(
+            re.fullmatch(r"[0-9]+", count) is not None, "Invalid quadrant summary comparison count"
+        )
+        counts[population] = int(count)
+    require(set(counts) == {"all", "stool"}, "Quadrant summary population coverage is incomplete")
+    return counts
+
+
+def quadrant_coverage(pages: list[dict[str, Any]], expected_counts: dict[str, int]) -> None:
+    require(len(pages) == 1, "Quadrant requires one complete population page")
     for page in pages:
         populations = page["details"].get("populations")
         require(
             isinstance(populations, dict) and set(populations) == {"all", "stool"},
             "Quadrant population coverage is incomplete",
         )
-        counts: dict[str, int] = {}
         for population, detail in populations.items():
             require(
                 isinstance(detail, dict)
@@ -243,13 +314,16 @@ def quadrant_coverage(pages: list[dict[str, Any]]) -> None:
                 and detail["n_comparisons"] >= 0,
                 "Quadrant population comparison count is invalid",
             )
-            counts[population] = detail["n_comparisons"]
+            require(
+                detail["n_comparisons"] == expected_counts[population],
+                "Quadrant population comparison count differs from the bound summary",
+            )
         observed = Counter(row.partition(":")[0] for row in page["row_ids"])
         require(
-            page["mark_count"] == sum(counts.values())
-            and len(page["row_ids"]) == sum(counts.values())
-            and all(observed[population] == count for population, count in counts.items())
-            and set(observed).issubset(counts),
+            page["mark_count"] == sum(expected_counts.values())
+            and len(page["row_ids"]) == sum(expected_counts.values())
+            and all(observed[population] == count for population, count in expected_counts.items())
+            and set(observed).issubset(expected_counts),
             "Quadrant marks and identities do not cover every population comparison",
         )
 
@@ -315,7 +389,8 @@ def audit(bundle: Path, output: Path, design_reports: Path | None) -> dict[str, 
             traits = expected_table_traits(record, snapshots, targets, output)
             table_coverage(pages, traits)
         elif name == "quadrant":
-            quadrant_coverage(pages)
+            counts = expected_quadrant_counts(record, snapshots, targets, output)
+            quadrant_coverage(pages, counts)
         verdicts: Counter[str] = Counter()
         for page in pages:
             prefix = record_path.parent / f"page-{page['page']:03d}"
