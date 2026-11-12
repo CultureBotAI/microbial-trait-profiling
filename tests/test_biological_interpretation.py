@@ -149,17 +149,29 @@ def test_claim_audit_names_the_reviewed_revision(surface: str, revision_abbrevia
 
 def test_overlay_audit_intro_records_closed_pr_and_rebuild() -> None:
     """The historical P rows must not be presented as an open PR's current results."""
-    content = " ".join(BIOLOGICAL_INTERPRETATION_AUDIT_MD.read_text().split())
+    raw = BIOLOGICAL_INTERPRETATION_AUDIT_MD.read_text(encoding="utf-8")
+    content = " ".join(raw.split())
     intro = content.split("## PR #173: proposed overlay and narrative", 1)[1].split("| ID", 1)[0]
     assert "closed unmerged on 2026-10-30" in intro
     assert "#172" in intro
     assert "remains open" not in intro
     assert "historical 62-cell discussion" in intro
+    assert (
+        'Issue references in the "Owner / remaining work" column record the 2026-09-14 '
+        "review state (P09 and P10 were updated in #1314), and the "
+        "[status checkpoint](#status-checkpoint-2026-10-30) dates their closures."
+    ) in intro
+    p10 = next(line for line in raw.splitlines() if line.startswith("| P10 "))
+    assert "in #172 before interpreting the 62-cell summary." in p10
+    assert "#172/#173" not in p10
 
 
 @pytest.mark.parametrize(
     ("number", "status", "date"),
     [
+        (131, "Closed", "2026-10-07"),
+        (132, "Closed", "2026-10-07"),
+        (165, "Closed", "2026-10-13"),
         (182, "Closed", "2026-10-12"),
         (188, "Closed", "2026-10-11"),
         (189, "Closed", "2026-10-08"),
@@ -176,13 +188,86 @@ def test_audit_separates_dated_tracker_closures_from_biological_validation(
     checkpoint = content.split("## Status checkpoint (2026-10-30)", 1)[1].split("##", 1)[0]
     kind = "pull" if number == 194 else "issues"
     target = f"https://github.com/CultureBotAI/microbial-trait-profiling/{kind}/{number}"
-    row = next(line for line in checkpoint.splitlines() if f"]({target})" in line)
+    matching = [line for line in checkpoint.splitlines() if f"]({target})" in line]
+    assert len(matching) == 1, f"Expected 1 checkpoint row for #{number}, found {len(matching)}"
+    row = matching[0]
     assert status in row
     assert date in row
     assert "Dates are UTC" in checkpoint
     assert "do not establish patient-level effects or validate a mechanism" in " ".join(
         checkpoint.split()
     )
+
+
+def test_c04_and_p09_date_scope_closed_issues_without_claiming_biological_validation() -> None:
+    """#1314, #2084, #2085: C04/P09/P02/P08 date-scope closed issues and reject open-work claims."""
+    content = BIOLOGICAL_INTERPRETATION_AUDIT_MD.read_text(encoding="utf-8")
+    assert "#165/#182 and #189 retain their work" not in content, "C04 retains open-work wording"
+    assert "#131/#132/#182 remain independent requirements" not in content, (
+        "P09 retains open-work wording"
+    )
+
+    checkpoint = content.split("## Status checkpoint (2026-10-30)", 1)[1].split("##", 1)[0]
+    checkpoint_status: dict[int, str] = {}
+    for line in checkpoint.splitlines():
+        match = re.match(
+            r"^\|\s*\[(?:PR\s+)?#(\d+)\]\([^)]+\),\s*[^|]+\|\s*([A-Za-z]+)\s*\|\s*\d{4}-\d{2}-\d{2}\s*\|$",
+            line.strip(),
+        )
+        if match:
+            checkpoint_status[int(match.group(1))] = match.group(2)
+    closed_issues = {num for num, state in checkpoint_status.items() if state == "Closed"}
+    assert {118, 120, 131, 132, 165, 182, 183, 188, 189, 190, 191}.issubset(closed_issues), (
+        "Checkpoint missing expected closed issues"
+    )
+
+    c04 = next(line for line in content.splitlines() if line.startswith("| C04 "))
+    assert (
+        "At the original audit, #165/#182 and #189 tracked the statistical-dependence, "
+        "calibration and trait-semantics work"
+    ) in c04, "C04 missing historical date-scoping"
+    assert "[status checkpoint](#status-checkpoint-2026-10-30)" in c04, "C04 missing checkpoint"
+    assert (
+        "subsequent closures (closing them does not establish semantic equivalence or "
+        "validate a mechanism)"
+    ) in c04, "C04 missing non-validation closure caveat"
+
+    p09 = next(line for line in content.splitlines() if line.startswith("| P09 "))
+    assert (
+        "in the historical PR #173 review, #131/#132/#182 were separate statistical requirements "
+        "(subsequently closed; see the [status checkpoint](#status-checkpoint-2026-10-30); "
+        "their closure does not validate the biological explanation)"
+    ) in p09, "P09 missing subsequently-closed date-scoping or non-validation caveat"
+
+    adoption = " ".join(content.split("## Adoption record", 1)[1].split())
+    assert (
+        "The dated tracker closures above supersede the original pending-review status "
+        "for #131, #132, #165, #194/#190, #182 and #188-#191."
+    ) in adoption, "Adoption record missing dated tracker closure supersession"
+
+    open_word_re = re.compile(
+        r"\b(?:remain\w*|retain\w*|still|open\w*|pending|unresolved)\b",
+        re.IGNORECASE,
+    )
+    for row_id in ("C04", "P09", "P02", "P08"):
+        row_line = next(line for line in content.splitlines() if line.startswith(f"| {row_id} "))
+        cells = [cell.strip() for cell in row_line.strip().strip("|").split("|")]
+        disposition_cell = cells[-1]
+        cited = {int(num) for num in re.findall(r"#(\d+)", disposition_cell)}
+        closed_cited = sorted(cited & closed_issues)
+        assert closed_cited, (
+            f"{row_id} expected to cite closed issues in its disposition/owner cell"
+        )
+        if row_id == "P02":
+            assert "#131/#182 limitations remain." in disposition_cell
+            checked_text = disposition_cell.replace("#131/#182 limitations remain.", "")
+        else:
+            checked_text = disposition_cell
+        bad_words = open_word_re.findall(checked_text)
+        assert not bad_words, (
+            f"{row_id} cites closed issues {closed_cited} alongside open-work wording "
+            f"{bad_words} in: {disposition_cell}"
+        )
 
 
 def test_audit_reproduction_uses_public_pull_refs() -> None:
