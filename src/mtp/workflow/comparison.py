@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import csv
+import hashlib
 import json
 import sys
 import uuid
@@ -572,10 +573,14 @@ def execute_comparison_run(
     jed_manifest = jed_manifest.resolve()
     ilyas_manifest = ilyas_manifest.resolve()
 
-    core_run = verify_core_run(core_manifest)
-    noel_run = verify_arm(noel_manifest)
-    jed_run = verify_arm(jed_manifest)
-    ilyas_run = verify_arm(ilyas_manifest)
+    parent_hashes = {
+        path: file_sha256(path)
+        for path in (core_manifest, noel_manifest, jed_manifest, ilyas_manifest)
+    }
+    core_run = verify_core_run(core_manifest, expected_sha256=parent_hashes[core_manifest])
+    noel_run = verify_arm(noel_manifest, expected_sha256=parent_hashes[noel_manifest])
+    jed_run = verify_arm(jed_manifest, expected_sha256=parent_hashes[jed_manifest])
+    ilyas_run = verify_arm(ilyas_manifest, expected_sha256=parent_hashes[ilyas_manifest])
 
     for expected_arm, arm_record, arm_path in (
         ("noel", noel_run, noel_manifest),
@@ -591,7 +596,7 @@ def execute_comparison_run(
                 f"Arm {expected_arm} core_run_id {arm_record.core_run_id!r} does not match "
                 f"core run {core_run.run_id!r}"
             )
-        if arm_record.core_manifest_sha256 != file_sha256(core_manifest):
+        if arm_record.core_manifest_sha256 != parent_hashes[core_manifest]:
             raise ValueError(
                 f"Arm {expected_arm} core_manifest_sha256 does not match {core_manifest}"
             )
@@ -705,14 +710,14 @@ def execute_comparison_run(
         ended_at=ended_at,
         manifest_path=str(manifest_file),
         core_manifest_path=str(core_manifest),
-        core_manifest_sha256=file_sha256(core_manifest),
+        core_manifest_sha256=parent_hashes[core_manifest],
         core_run_id=core_run.run_id,
         noel_manifest_path=str(noel_manifest),
-        noel_manifest_sha256=file_sha256(noel_manifest),
+        noel_manifest_sha256=parent_hashes[noel_manifest],
         jed_manifest_path=str(jed_manifest),
-        jed_manifest_sha256=file_sha256(jed_manifest),
+        jed_manifest_sha256=parent_hashes[jed_manifest],
         ilyas_manifest_path=str(ilyas_manifest),
-        ilyas_manifest_sha256=file_sha256(ilyas_manifest),
+        ilyas_manifest_sha256=parent_hashes[ilyas_manifest],
         git_commit=effective_commit,
         git_dirty=git_dirty,
         analysis_specs=[STANDARD_ANALYSIS_SPECS[k] for k in sorted(STANDARD_ANALYSIS_SPECS)],
@@ -721,6 +726,9 @@ def execute_comparison_run(
         calibration_verdicts=[verdict_noel, verdict_jed_mismatch],
         outputs=inventory_entries,
     )
+    for parent, digest in parent_hashes.items():
+        if file_sha256(parent) != digest:
+            raise ValueError(f"Upstream manifest SHA-256 changed during comparison: {parent}")
     manifest_file.write_text(
         json.dumps(comparison_record.model_dump(mode="json"), indent=2) + "\n",
         encoding="utf-8",
@@ -763,17 +771,21 @@ def verify_comparison_sources(
     path: Path,
     *,
     manifest_bytes: bytes | None = None,
+    expected_sha256: str | None = None,
 ) -> tuple[ComparisonRun, WorkflowRun, dict[str, ArmRun]]:
     """Verify the comparison DAG once and return its verified core and three arms.
 
-    When supplied, ``manifest_bytes`` is the manifest snapshot to verify. Publishing
-    callers must bind its hash and recheck the path before publication. It changes
-    only the parser input; every upstream, basis and output check still runs.
+    When supplied, ``manifest_bytes`` is the manifest snapshot to verify. The
+    optional ``expected_sha256`` is checked against exactly the parsed bytes.
+    Publishing callers still recheck live paths before publication; every upstream,
+    basis and output check runs for both buffered and path-based verification.
     """
     manifest = (path / "comparison_run.json" if path.is_dir() else path).resolve()
     if not manifest.is_file():
         raise FileNotFoundError(f"ComparisonRun manifest not found: {manifest}")
     raw = manifest.read_bytes() if manifest_bytes is None else manifest_bytes
+    if expected_sha256 is not None and hashlib.sha256(raw).hexdigest() != expected_sha256:
+        raise ValueError("Comparison manifest SHA-256 mismatch")
     record = ComparisonRun.model_validate_json(raw)
     if record.status != ExecutionStatus.completed:
         raise ValueError(
@@ -789,10 +801,25 @@ def verify_comparison_sources(
     jed_path = Path(record.jed_manifest_path)
     ilyas_path = Path(record.ilyas_manifest_path)
 
-    core_run = verify_core_run(core_path)
-    noel_run = _verify_arm_with_core(noel_path, core_run)
-    jed_run = _verify_arm_with_core(jed_path, core_run)
-    ilyas_run = _verify_arm_with_core(ilyas_path, core_run)
+    core_run = verify_core_run(core_path, expected_sha256=record.core_manifest_sha256)
+    noel_run = _verify_arm_with_core(
+        noel_path,
+        core_run,
+        expected_sha256=record.noel_manifest_sha256,
+        core_manifest_sha256=record.core_manifest_sha256,
+    )
+    jed_run = _verify_arm_with_core(
+        jed_path,
+        core_run,
+        expected_sha256=record.jed_manifest_sha256,
+        core_manifest_sha256=record.core_manifest_sha256,
+    )
+    ilyas_run = _verify_arm_with_core(
+        ilyas_path,
+        core_run,
+        expected_sha256=record.ilyas_manifest_sha256,
+        core_manifest_sha256=record.core_manifest_sha256,
+    )
 
     if file_sha256(core_path) != record.core_manifest_sha256:
         raise ValueError("core_manifest_sha256 mismatch in ComparisonRun")

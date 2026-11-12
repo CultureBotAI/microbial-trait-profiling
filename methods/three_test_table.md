@@ -325,6 +325,20 @@ byte identity. Final path, alias-target and hash checks remain mandatory before
 publication. For the comparison manifest and `count_profiles`, restoring a
 transiently replaced file cannot authorize different parsed bytes.
 
+The core and arm manifest verifiers also hash the exact byte buffer they parse
+when an expected SHA-256 is supplied. Comparison verification supplies each
+parent's recorded hash, and standalone arm verification supplies its core hash.
+A shared-core traversal reconciles the arm's core hash to the already verified
+core snapshot without repeating scientific core validation. The comparison
+verifier checks an optional expected hash for both path and buffered reads; the
+completed-table reader, multiplicity generation/replay, three-test generation
+and study-split input adapter forward their existing comparison hashes. All
+manifest-location, inventory, population, direction and final live-path checks
+remain in force. Arm and comparison producers record the hashes captured before
+verification and refuse parent changes before publishing successful manifests.
+These bindings do not change the scientific tables or historical manifest schema;
+they are snapshot checks, not a filesystem transaction or a claim of authorship.
+
 `just test-three-test-table` covers synthetic contracts. The separate
 `test-three-test-off-reproduction` recipe requires a completed, verified historical
 off sidecar and its original comparison; it checks the rounded cellulose target
