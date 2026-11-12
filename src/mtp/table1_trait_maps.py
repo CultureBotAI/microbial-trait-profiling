@@ -841,7 +841,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--include-non-human",
         action="store_true",
-        help="Keep non-human host species (issue #129 excludes them by default).",
+        help=(
+            "Keep non-human host species; requires an all-host profile table with "
+            "non-human rows (human hosts only by default)."
+        ),
     )
     parser.add_argument(
         "--min-site-conditions",

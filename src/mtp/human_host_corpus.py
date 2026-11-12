@@ -25,6 +25,7 @@ __all__ = [
     "EXCLUDED_BY_SEQUENCING_TYPE",
     "HUMAN_HOST_SPECIES",
     "UNRECORDED_HOST",
+    "UNRECORDED_HOST_VALUES",
     "UNRECORDED_SEQUENCING_TYPE",
     "excluded_host_note",
     "excluded_host_summary",
