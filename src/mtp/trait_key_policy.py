@@ -12,9 +12,10 @@ import csv
 import gzip
 import json
 from collections.abc import Sequence
+from contextlib import nullcontext
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Literal
+from typing import IO, Literal
 
 TraitKeyPolicy = Literal["raw_object_v1", "facultative_union_v1"]
 TRAIT_KEY_POLICIES: tuple[TraitKeyPolicy, ...] = ("raw_object_v1", "facultative_union_v1")
@@ -125,20 +126,30 @@ class RecordedMemberEvidence:
     member_id_rows: int
 
 
-def read_recorded_member_evidence(column_metadata_path: Path | None) -> RecordedMemberEvidence:
+def read_recorded_member_evidence(
+    column_metadata_path: Path | None, *, text_stream: IO[str] | None = None
+) -> RecordedMemberEvidence:
     """Read declared members and count rows with nonempty members and an identifier.
 
     A column/object alias pair counts once; duplicate rows still count separately.
     Legacy metadata without member declarations retains the empty-mapping fallback.
+    A supplied text stream is caller-owned; its path is a diagnostic name only.
     """
     if column_metadata_path is None:
+        if text_stream is not None:
+            raise ValueError("A member-evidence stream requires its source path")
         return RecordedMemberEvidence({}, 0)
-    if not column_metadata_path.exists():
+    if text_stream is None and not column_metadata_path.exists():
         raise FileNotFoundError(f"Column metadata TSV not found: {column_metadata_path}")
     member_ids_by_trait: dict[str, tuple[str, ...]] = {}
     member_id_rows = 0
     open_fn = gzip.open if column_metadata_path.suffix == ".gz" else open
-    with open_fn(column_metadata_path, "rt", encoding="utf-8", newline="") as handle:
+    source = (
+        nullcontext(text_stream)
+        if text_stream is not None
+        else open_fn(column_metadata_path, "rt", encoding="utf-8", newline="")
+    )
+    with source as handle:
         reader = csv.DictReader(handle, delimiter="\t")
         if not reader.fieldnames or "trait_member_ids_json" not in reader.fieldnames:
             return RecordedMemberEvidence({}, 0)
