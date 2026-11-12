@@ -480,8 +480,10 @@ def test_three_arm_statistics_pins_common_quantity_modules_and_historical_screen
     assert "drop_zero_total_pairs" in content
     assert (
         "retain their own transformed units (with study-level aggregation added in "
-        "`mt-core-native-study-t` via "
-        "[`src/mtp/native_composition.py`](../src/mtp/native_composition.py)"
+        "`mt-core-native-study-t` via `study_contrasts` in "
+        "[`src/mtp/native_composition.py`](../src/mtp/native_composition.py), "
+        "corrected in [`scripts/create_trait_profile_infographic.py`]"
+        "(../scripts/create_trait_profile_infographic.py)"
     ) in content
     assert (
         "whereas historically Jed's inspected paired-screen code excluded MediaDive from trait "
@@ -516,13 +518,14 @@ def test_three_arm_statistics_pins_common_quantity_modules_and_historical_screen
         "`519a095b` in "
         "[`table1_trait_condition_body_site_maps.md`](table1_trait_condition_body_site_maps.md)) "
         "across the 317 `off`-scope candidates "
-        "([`trait_direction_screen.md`](trait_direction_screen.md)); "
-        "the run producing that range is not identified ([Vintage](#vintage)), 606 to 898 for the "
+        "([`table1_trait_condition_body_site_maps.md`](table1_trait_condition_body_site_maps.md)); "
+        "the run producing that range is not identified ([Vintage](#vintage)). 606 to 898 for the "
         "six of Table 1 in that historical `off`-scope shift table "
         "([`table1_trait_condition_body_site_maps.md`](table1_trait_condition_body_site_maps.md), "
         "ties excluded)"
     ) in content
     assert (
-        "across the 317 `off`-scope candidates in that historical screen "
-        "([`trait_direction_screen.md`](trait_direction_screen.md); [Vintage](#vintage))"
+        "across the 317 `off`-scope candidates in that table "
+        "([`table1_trait_condition_body_site_maps.md`](table1_trait_condition_body_site_maps.md); "
+        "[Vintage](#vintage))"
     ) in content
