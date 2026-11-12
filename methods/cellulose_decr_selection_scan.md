@@ -361,13 +361,24 @@ summary names the other scope as the one they must be reported beside.
     outputs it binds.
   - Each scan's summary and provenance must agree with the protocol version they name
     (`recorded_protocol`). The scopes report accepts v2 only. A rejection-only
-    preflight names v1 explicitly before core verification; it does not certify the
-    rejected records. Historical v1 records remain readable by `recorded_protocol`
+    preflight names the supplied versions before core verification; it does not certify
+    the rejected records. It describes the records as historical v1 evidence only when
+    both declarations name v1, not for unknown or mismatched versions.
+    Historical v1 records remain readable by `recorded_protocol`
     and are never relabelled as v2 by the scopes report.
   - Every parsed scan buffer is checked against its bound output's size and SHA-256.
     The reported hashes describe those same bytes. The separately read consumer
     record must parse to the record that was verified, and the resolved core manifest
     must still match the bound hash and run ID.
+  - The trait TSV must agree with `summary["traits"]` in row order, field inventory
+    and values, with unique trait identifiers. Both outputs record six significant
+    digits; numeric cells compare exactly at that saved precision, with no tolerance.
+    Equivalent numeric encodings such as `1` and `1.0` agree. Strings and Boolean
+    spellings compare exactly; JSON null corresponds only to a blank TSV cell.
+    The explicit strings `inf` and `-inf` remain distinct from missing values.
+    `summary["lead_trait"]` must name the protocol's lead, present once, and only that
+    row may carry `is_lead_trait: true`. The cross-check runs on loading and again on
+    pairing already loaded scans (#1183).
   - A scan's own summary is not trusted for its scope (#1079). Its summary and
     provenance must name the core run its consumer record binds, with that core's
     manifest hash, and its scope and where the scope came from must be what
@@ -379,12 +390,17 @@ summary names the other scope as the one they must be reported beside.
     methods hash, environment versions, chunk size, rule (draws and seed included),
     core population, core commit, core parameters other than the scope, and core
     sources. Missing comparability fields or differences are refused.
-- **Verification limit.** Consumer records bind output bytes by hash, not the process
-  that produced those bytes. These checks detect mismatched recorded identities,
-  scopes and inputs. They cannot establish computational authorship if an actor
-  rewrites every record consistently using a real other-scope run's fields and
-  rebinds the output hashes. Detecting that case requires recomputation, which this
-  reporting step does not perform.
+- **Verification limit.** A consumer record binds output bytes by hash, not the process
+  that produced them. Changing one output and its hash in the consumer record is
+  enough to pass that byte-binding check; retained archives also require their
+  inventory to be updated. The summary-to-TSV cross-check rejects a changed trait
+  cell whose redundant summary row is unchanged, and checks the lead declaration.
+  It does not require an actor to rewrite every record: coordinated changes to the
+  relevant trait representations and their output hashes can still pass. These
+  identity, scope, input and consistency checks do not establish computational
+  authorship or prove that the recorded statistics were computed from the bound
+  inputs. That requires independent recomputation, which this reporting step does
+  not perform.
 - **Outputs.**
 
 | File | Contents |
