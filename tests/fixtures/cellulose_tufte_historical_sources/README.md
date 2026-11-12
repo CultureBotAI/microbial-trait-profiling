@@ -10,6 +10,7 @@ compare selected displayed values with them. They do not need Git history in CI.
 | `integrated_evidence_a3c32cf.md` | `a3c32cf9e32e46ff55b2077ed596b498e2c3e1cb` | `data/derived/integrated_evidence/integrated_evidence.md` | `e74b90f6f9eed341b44f3364123a5c43f6889b50` |
 | `methods_integrated_evidence_a3c32cf.md` | `a3c32cf9e32e46ff55b2077ed596b498e2c3e1cb` | `methods/integrated_evidence.md` | `c72893d0d9c541c5579af188b556fac9d57e8037` |
 | `table1_log_ratio_validation_1e0d0eef.md` | `1e0d0eef52095d3032b14e0291e52a8417ec21d8` | `methods/table1_log_ratio_validation.md` | `b6557f185d6ea628ce58bfeb88454a256354e05a` |
+| `ora_provenance_refresh_781e92e4.md` | `781e92e4c168ce5454ed737a2f50399d20883ce5` | `docs/reviews/2026-10-19-ora-provenance-refresh.md` | `782c5e4bb96c2a8ff3a938f5a261eb2dfd8a126a` |
 
 The JSON tests select `label_source_comparison.study_modal`: the reconstructed
 study-modal labels that the dated README compares with experiment labels. The
@@ -35,12 +36,32 @@ revision named inside the document is a separate provenance field. Later edits
 to the live methods note must not update this historical fixture or the plate.
 
 The three earlier fixtures were extracted by the repository script above. The
-new document was read with `git show <source commit>:<original repository path>`
-using this table, and compared byte-for-byte with that Git object. All four
-fixtures are checked in CI without Git history: SHA-1 of `blob <byte size>` plus
+validation document was read with `git show <source commit>:<original repository path>`
+using this table, and compared byte-for-byte with that Git object. The ORA source
+was extracted by `scripts/adhoc/extract_1993_ora_historical_source_20261110.sh`.
+All five fixtures are checked in CI without Git history: SHA-1 of `blob <byte size>` plus
 a NUL byte plus the contents must equal the documented Git blob ID. The manifest
-also covers every preserved source file in this folder. These are content
-identity checks, not cryptographic authentication of the historical claims.
+also covers every preserved source file in this folder and its subdirectories,
+using paths relative to this folder (#1995). The root `README.md` is the manifest;
+a nested `README.md` is a source that needs its own manifest row. Files with a
+dot-prefixed path component, such as `.DS_Store` or files in hidden tool-cache
+directories, are excluded from both source discovery and byte checks. These are
+content identity checks, not cryptographic authentication of the historical claims.
+
+## Plate V ORA source version (#1993)
+
+The ORA snapshot is the exact document at `781e92e4`, the first path-redacted
+revision of the earlier audit at `fa5d2343` (#1673). The earlier revision contains
+machine-local paths; this explicitly selected later revision avoids restoring
+those paths. The full source commit and blob identity are recorded above. This
+is not a claim that the complete document is identical to the earlier revision:
+the later document also includes multiple-testing-family explanations.
+
+The `Pooled enrichment` and `Pooled depletion` table rows are byte-identical in
+both revisions. The extraction helper checks these exact rows against the two
+Git objects, in addition to checking the extracted file's complete blob identity.
+These are the pooled values consumed by the Plate V source pin. Later edits to
+the live audit must not update this fixture or those historical plate values.
 
 ## Scope of the source pins (#1596)
 
@@ -57,7 +78,7 @@ made by a plate. No broader numeric-token coverage is claimed by this change.
 | `test_plate_five_fraction_labels_match_the_tracked_validation_rows` | Six selected fraction summaries: proportions, displayed sample counts, q-values and stars; CEL's summary has no sample count. |
 | `test_plate_five_ratio_labels_match_the_tracked_validation_rows` | Four selected ratio summaries (FA/CEL, FA/COC, CEL/SPH, CEL/ARS), plus three displayed effects; no confidence-interval geometry. |
 | `test_plate_five_retained_trait_family_matches_the_matrix_source` | Matrix column counts and the displayed six-trait/fifteen-ratio family sizes. |
-| `test_plate_five_ora_numbers_match_the_historical_export_audit` | Selected pooled ORA profile, test and hit totals, read from the tracked export audit in docs/reviews/, which is a live document, not a snapshot here (#1993). |
+| `test_plate_five_ora_numbers_match_the_historical_export_audit` | Selected pooled ORA profile, test and hit totals, read from the pinned path-redacted audit snapshot documented above (#1993). |
 | `test_plate_six_cell_counts_match_the_historical_inventory` | Four cell-state counts and percentages. |
 | `test_plate_six_total_rows_match_the_historical_methods_snapshot` | Selected overall, method and grid-row totals. |
 | `test_plate_six_method_counts_match_the_historical_methods_snapshot` | Fraction-direction and log-ratio-direction row counts and two q-threshold counts. |
