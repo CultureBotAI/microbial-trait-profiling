@@ -21,7 +21,7 @@ from mtp.contribution_inputs import (
     encoded,
     load_base,
     load_graph,
-    resolve_inputs_trait_key_policy,
+    resolve_inputs_trait_key_policy_record,
     verify_kg,
 )
 from mtp.paths import DERIVED_DATA_DIR, REPO_ROOT
@@ -267,7 +267,10 @@ def argument_parser(
         "--core-manifest",
         type=Path,
         default=None,
-        help="Optional core run.json manifest to verify and inherit trait-key policy from.",
+        help=(
+            "Optional core run.json to parse and validate trait-key policy metadata. "
+            "The caller must verify the core and bind it to the input directory."
+        ),
     )
     return parser
 
@@ -278,11 +281,12 @@ def main() -> None:
     explicit_parser = argument_parser()
     explicit_parser.set_defaults(trait_key_policy=None)
     explicit_policy = explicit_parser.parse_args().trait_key_policy
-    policy = resolve_inputs_trait_key_policy(
+    policy_resolution = resolve_inputs_trait_key_policy_record(
         args.inputs,
         explicit_policy,
         core_manifest=args.core_manifest,
     )
+    policy = policy_resolution.policy
     protocol = json.loads(args.protocol.read_text(encoding="utf-8"))
     output: Path = args.output
     output.mkdir(parents=True, exist_ok=True)
@@ -329,6 +333,7 @@ def main() -> None:
         "denominator_columns": base.columns,
         "strain_rollup": args.strain_rollup,
         "trait_key_policy": policy,
+        "trait_key_policy_resolution": policy_resolution.as_dict(),
         "profiles": len(base.profiles),
         "studies": len({k[0] for k in base.profiles}),
         "header_continuation_repaired": graph.header_repaired,
