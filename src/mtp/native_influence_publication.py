@@ -32,7 +32,7 @@ def _one(records: list[dict[str, str]], **criteria: str) -> dict[str, str]:
 def interpretation_handoff(source: Path) -> list[dict[str, str]]:
     """Keep estimands separate and interpret family counts using the recorded protocol.
 
-    Historical v2 corrected only finite tests, even when its tables also recorded
+    Historical v1/v2 corrected only finite tests, even when their tables recorded
     selected traits. Legacy manifests without a protocol version use that same
     finite-test denominator, explicitly labelled as a legacy interpretation.
     """
@@ -41,6 +41,9 @@ def interpretation_handoff(source: Path) -> list[dict[str, str]]:
     if version == "190-native-v3":
         family_field = "native_before_family_selected_traits"
         family_basis = "all_selected_traits_padded_at_one"
+    elif version == "190-native-v1":
+        family_field = "native_before_family_tests"
+        family_basis = "historical_v1_finite_tests"
     elif version in (None, "190-native-v2"):
         family_field = "native_before_family_tests"
         family_basis = (

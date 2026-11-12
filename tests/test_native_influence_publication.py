@@ -260,6 +260,8 @@ def test_publication_preserves_comparisons_and_full_family_metadata(run_director
     ("version", "selected", "expected_size", "basis"),
     [
         ("190-native-v3", "4", "4", "all_selected_traits_padded_at_one"),
+        ("190-native-v1", "4", "2", "historical_v1_finite_tests"),
+        ("190-native-v1", None, "2", "historical_v1_finite_tests"),
         ("190-native-v2", "4", "2", "historical_finite_tests"),
         ("190-native-v2", None, "2", "historical_finite_tests"),
         (None, None, "2", "legacy_finite_tests_no_protocol_version"),
@@ -285,9 +287,18 @@ def test_handoff_distinguishes_correction_family_from_tested_count(
         manifest["protocol"] = {"version": version}
     manifest["results"]["output_sha256"][table.name] = digest(table)
     manifest_path.write_text(json.dumps(manifest))
+    original_manifest = manifest_path.read_bytes()
 
     destination = run_directory.parent / "review"
-    publish(run_directory, destination)
+    refusal = ""
+    try:
+        publish(run_directory, destination)
+    except ValueError as error:
+        refusal = str(error)
+    assert not refusal, f"Known historical/current protocol {version} refused: {refusal}"
+    assert manifest_path.read_bytes() == original_manifest
+    published_manifest = json.loads((destination / "run_manifest.json").read_text())
+    assert published_manifest.get("protocol") == manifest.get("protocol")
     handoff = list(rows(destination / "interpretation_handoff.tsv"))
     assert len(handoff) == 2
     assert [record["native_family_size"] for record in handoff] == [expected_size] * 2

@@ -74,7 +74,7 @@ PUBLICATION = _TestPlan(
         "test_handoff_refuses_undeclared_correction_family",
     ),
     "mtp.native_influence_publication",
-    6,
+    8,
 )
 PROTOCOL = _TestPlan(
     "protocol",
@@ -153,6 +153,13 @@ MUTANTS: tuple[tuple[str, Path, str, str], ...] = (
 )
 
 FOLLOWUP_MUTANTS: tuple[tuple[str, Path, str, str, _TestPlan], ...] = (
+    (
+        "M26_known_v1_protocol_refused",
+        Path("src/mtp/native_influence_publication.py"),
+        'elif version == "190-native-v1":',
+        'elif version == "removed-native-v1":',
+        PUBLICATION,
+    ),
     (
         "M10_current_family_uses_tested_count",
         Path("src/mtp/native_influence_publication.py"),

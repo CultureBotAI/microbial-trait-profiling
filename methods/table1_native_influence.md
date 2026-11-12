@@ -47,6 +47,13 @@ new execution: v2 declared a finite-p-only correction family. Existing v2 manife
 and their embedded protocol declarations remain historical evidence and are read
 without rewriting their bytes or relabeling their correction. Readers accept both
 versions and retain the version and declaration supplied by the recorded run.
+The publication handoff also recognizes `190-native-v1` as finite-test history,
+using `native_before_family_tests` and the distinct basis
+`historical_v1_finite_tests`, without changing its recorded protocol. This does
+not widen the assessment reader: `influence_assessment` accepts v2 and v3 only.
+The committed snapshot records v1 despite its README's v2 label, and also lacks
+`code_dirty`; assessment support for that historical snapshot remains a separate
+follow-up (#2317), not evidence of a verified clean historical run.
 
 `just table1-native-summary <audit-output-directory>` verifies all native input and
 output artifact hashes and writes the compact review bundle to the untracked
@@ -89,16 +96,16 @@ This is registry family `mt-supp-native-influence-composition`. Its executed
 BH size in v3 is `family_selected_traits` in `native_composition.tsv.gz`;
 `family_tests` counts finite tested p-values and can be smaller. The protocol's
 `composition.family_size_field` and `composition.untestable_correction_p` declare
-that denominator and padding. For historical v2 outputs, the executed BH size
+that denominator and padding. For historical v1/v2 outputs, the executed BH size
 remains `family_tests`, even when `family_selected_traits` is also present. Neither
-version uses the full retained catalog size. The support,
+historical protocol nor v3 uses the full retained catalog size. The support,
 variance and testability selection remains part of this sensitivity; BH within
 the selected family does not correct that selection.
 The compact `native_table1_stats.tsv.gz` retains both counters from those full
 native families. In the generated summary, "Native p" means nominal native
 p and "Native q" means BH q from this family, including the
 baseline-versus-exclusion table. The committed bundle's values belong to its
-historical v2 manifests; this protocol update does not represent a new rerun.
+historical v1 manifest; this protocol update does not represent a new rerun.
 
 Native mean intervals target experiment-weighted effects; exact binomial intervals
 describe the positive share of experiment contrasts after applying the same `1e-12`
