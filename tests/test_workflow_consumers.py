@@ -191,7 +191,7 @@ def test_ora_uses_catalog_media_filter_case_insensitively(tmp_path: Path) -> Non
         "bsdb:1\tbsdb:1-1\tinc\t1\t1\t1\n"
         "bsdb:1\tbsdb:1-1\tdec\t1\t0\t1\n"
     )
-    matrix.write_text(f"taxon_id\tMETPO:1\t{medium}\nNCBITaxon:1\t1\t1\n")
+    matrix.write_text(f"taxon_id\tMETPO:1\t{medium}\nNCBITaxon:1\t1\t1\nNCBITaxon:2\t0\t1\n")
     full = tmp_path / "full.tsv"
     subprocess.run(
         [
