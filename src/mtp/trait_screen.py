@@ -45,6 +45,7 @@ from numpy.typing import NDArray
 from scipy.linalg import eigvalsh
 from scipy.stats import binomtest, spearmanr
 
+from mtp.count_input import open_input_text
 from mtp.paths import DERIVED_DATA_DIR, REPO_ROOT, file_sha256
 from mtp.table1_trait_maps import study_trait_contrasts, tally_direction_signs
 from mtp.trait_guilds import (
@@ -164,8 +165,8 @@ class ScreenResult:
 
 
 def read_header(profile_path: Path) -> list[str]:
-    """The profile matrix's header row, without reading the matrix itself."""
-    with profile_path.open(encoding="utf-8", newline="") as handle:
+    """Read the header row of a plain or gzip-compressed profile matrix."""
+    with open_input_text(profile_path) as handle:
         line = handle.readline()
     if not line:
         msg = f"{profile_path} is empty"
