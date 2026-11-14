@@ -212,14 +212,15 @@ MUTANTS: tuple[MutantSpec, ...] = (
         ),
     ),
     MutantSpec(
+        # #2336: mkdir now follows row validation. Inject premature creation before
+        # the count guards; retain the later idempotent mkdir without anchoring to it.
         name="M6_mkdir_before_condition_count_guard_in_main_2047",
         issue="#2047",
         rel_path=SCRIPT_REL,
         old=(
             "    validate_companion_heatmap_condition_count(len(TARGET_CONDITIONS))\n"
             '    if args.condition_source == "paired-top":\n'
-            "        validate_companion_heatmap_condition_count(args.top_paired_conditions)\n"
-            "    args.output_dir.mkdir(parents=True, exist_ok=True)"
+            "        validate_companion_heatmap_condition_count(args.top_paired_conditions)"
         ),
         new=(
             "    args.output_dir.mkdir(parents=True, exist_ok=True)\n"
