@@ -499,6 +499,31 @@ cellulose-decr-cleanup-retired *ARGS:
 cellulose-decr-tufte *ARGS:
 	uv run python -m mtp.cellulose_decr.tufte_plates "$@"
 
+# The 30 NCASM Tufte plates (plates I-XX and the ten data-story plots) with their
+# manifest and combined PDF, drawn into data/derived/ncasm_tufte_plates/, a folder of
+# their own beside the deck's data/derived/tufte_plates/ (#2264). Plate 21 is drawn from
+# run tables: pass --run with the root of the run to read (the folder holding comparison/
+# and arms/). The other plates read no data files: their numbers are typed literals
+# (#776), and plates 22-30 draw their points from a random generator (#775), so the build
+# stops unless --audit-random-marks is given, and then stamps a banner on those plates.
+# Pass --output-dir for another folder and --overwrite to replace existing plates. The
+# manifest records this checkout's commit (+dirty when its code is modified), the run,
+# and each plate's data status with the hashes of the files it read.
+[positional-arguments]
+ncasm-tufte-plates *ARGS:
+	#!/usr/bin/env bash
+	set -euo pipefail
+	for arg in "$@"; do
+		case "$arg" in
+			--code-commit*)
+				echo "the recipe records this checkout's commit; drop $arg" >&2
+				exit 1
+				;;
+		esac
+	done
+	commit="$(git rev-parse HEAD)$(git diff --quiet HEAD -- {{code_paths}} && git diff --cached --quiet -- {{code_paths}} || echo +dirty)"
+	uv run python -m mtp.ncasm_tufte_plates --code-commit "$commit" "$@"
+
 # The #835 selection scan (methods/cellulose_decr_selection_scan.md): cellulose_decr's
 # overlap and U6 null for every triple of eligible conditions and the top decreasing
 # traits, on a verified Tier 1+2 core RUN (its run.json), into a new or empty OUTPUT
