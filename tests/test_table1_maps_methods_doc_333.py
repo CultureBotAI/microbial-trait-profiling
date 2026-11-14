@@ -54,3 +54,20 @@ def test_table1_maps_methods_distinguishes_human_only_and_historical_all_host_ma
     assert len(drop_1500_sentences) == 1
     assert "7,329" in drop_1500_sentences[0]
     assert "6e70724e" in drop_1500_sentences[0]
+
+
+def test_table1_maps_methods_names_canonical_producer_module() -> None:
+    """#2193: producer references must name src/mtp/table1_trait_maps.py, not the shim."""
+    text = METHODS_PATH.read_text(encoding="utf-8")
+    normalized = " ".join(text.split())
+    assert (REPO_ROOT / "src/mtp/table1_trait_maps.py").is_file()
+    assert (
+        "Produced by `src/mtp/table1_trait_maps.py`, driven by `just table1-trait-maps`"
+        in normalized
+    )
+    assert (
+        "are produced by `src/mtp/table1_trait_maps.py`, driven deterministically by "
+        "`just table1-trait-maps`" in normalized
+    )
+    assert "src/bsdbng/table1_trait_maps.py" not in text
+    assert "src/bsdbng/guild_maps.py" not in text
