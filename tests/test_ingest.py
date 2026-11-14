@@ -275,7 +275,7 @@ def test_ingest_log_summarizes_repetitive_info_entries_by_default(tmp_path: Path
     assert set(infos) == {
         "lineage with 3 levels, used leaf",
         "lineage with 4 levels, used leaf",
-        "DOI normalized from URL: 'https://doi.org/10.1234/test' → '10.1234/test'",
+        "DOI normalized from URL",
     }
 
     three_level_info = infos["lineage with 3 levels, used leaf"]
@@ -293,10 +293,10 @@ def test_ingest_log_summarizes_repetitive_info_entries_by_default(tmp_path: Path
         "bsdb:99-1-1:NCBITaxon:1485, bsdb:99-1-1:NCBITaxon:1486"
     )
 
-    doi_info = infos["DOI normalized from URL: 'https://doi.org/10.1234/test' → '10.1234/test'"]
+    doi_info = infos["DOI normalized from URL"]
     assert doi_info.get("entity") == "study"
     assert doi_info.get("count") == "1"
-    assert doi_info.get("examples") == "bsdb:99"
+    assert doi_info.get("examples") == ("bsdb:99: 'https://doi.org/10.1234/test' → '10.1234/test'")
 
 
 def test_ingest_verbose_log_preserves_individual_info_entries(tmp_path: Path) -> None:
@@ -364,4 +364,226 @@ def test_summarize_ingest_log_validates_max_examples_and_deduplicates_examples()
             "count": "3",
             "examples": "bsdb:1-1-1:NCBITaxon:100, bsdb:1-1-2:NCBITaxon:101",
         }
+    ]
+
+
+@pytest.mark.parametrize(
+    ("reason", "values"),
+    [
+        ("non-numeric publication year dropped", ["'unknown'", "'2020?'", "'in press'"]),
+        ("non-numeric PMID dropped", ["'pmid:123'", "'pending'", "'12x'"]),
+        (
+            "DOI normalized from URL",
+            [
+                "'https://doi.org/10.1234/one' → '10.1234/one'",
+                "'http://doi.org/10.1234/two' → '10.1234/two'",
+                "'https://doi.org/10.1234/three' → '10.1234/three'",
+            ],
+        ),
+        ("unrecognized DOI format dropped", ["'pending'", "'doi:123'", "'not, a DOI'"]),
+        ("non-HTTP URL dropped", ["'ftp://one'", "'www.two.org'", "'see: supplement'"]),
+    ],
+)
+def test_summarize_study_info_collapses_distinct_raw_values(reason: str, values: list[str]) -> None:
+    """Repeated study normalizations retain each ID and value under one reason (#2204)."""
+    events = [
+        {"level": "info", "entity": "study", "id": f"bsdb:{i}", "reason": f"{reason}: {value}"}
+        for i, value in enumerate(values, start=1)
+    ]
+    original = [dict(event) for event in events]
+    assert _summarize_ingest_log(events) == [
+        {
+            "level": "info",
+            "entity": "study",
+            "reason": reason,
+            "count": "3",
+            "examples": ", ".join(f"bsdb:{i}: {value}" for i, value in enumerate(values, start=1)),
+        }
+    ]
+    assert events == original
+
+
+def test_summarize_study_info_caps_examples_without_losing_distinct_values() -> None:
+    """Count every event; cap unique ID/value pairs, including repeats within a study."""
+    pairs = [(1, "first"), (1, "first"), (1, "second"), *[(i, f"value{i}") for i in range(2, 8)]]
+    events = [
+        {
+            "level": "info",
+            "entity": "study",
+            "id": f"bsdb:{study}",
+            "reason": f"non-numeric PMID dropped: {value!r}",
+        }
+        for study, value in pairs
+    ]
+    summaries = _summarize_ingest_log(events, max_examples=2)
+    assert summaries == [
+        {
+            "level": "info",
+            "entity": "study",
+            "reason": "non-numeric PMID dropped",
+            "count": "9",
+            "examples": "bsdb:1: 'first', bsdb:1: 'second'",
+        }
+    ]
+    assert _summarize_ingest_log(events)[0]["examples"] == (
+        "bsdb:1: 'first', bsdb:1: 'second', bsdb:2: 'value2', bsdb:3: 'value3', bsdb:4: 'value4'"
+    )
+
+
+def test_summarize_study_info_preserves_other_entities_reasons_and_levels() -> None:
+    """The five study-info templates do not generalize to other entries or mutate input."""
+    reason = "non-HTTP URL dropped: 'ftp://one'"
+    unchanged = [
+        {"level": level, "entity": "study", "id": "bsdb:1", "reason": reason}
+        for level in ("warning", "error", "skip")
+    ]
+    other_info = [
+        {"level": "info", "entity": "taxon", "id": "NCBITaxon:1", "reason": reason},
+        {"level": "info", "entity": "study", "id": "bsdb:2", "reason": "custom reason: one"},
+        {"level": "info", "entity": "study", "id": "bsdb:3", "reason": "custom reason: two"},
+        {
+            "level": "info",
+            "entity": "study",
+            "id": "bsdb:4",
+            "reason": "non-HTTP URL dropped elsewhere: 'ftp://two'",
+        },
+    ]
+    raw = [other_info[0], *unchanged, *other_info[1:]]
+    original = [dict(event) for event in raw]
+    assert _summarize_ingest_log(raw) == [
+        *unchanged,
+        *[
+            {
+                "level": "info",
+                "entity": event["entity"],
+                "reason": event["reason"],
+                "count": "1",
+                "examples": event["id"],
+            }
+            for event in other_info
+        ],
+    ]
+    assert raw == original
+
+
+@pytest.mark.parametrize("verbose_log", [False, True], ids=["summary", "verbose"])
+def test_ingest_multiple_study_doi_normalizations(tmp_path: Path, verbose_log: bool) -> None:
+    """Real ingestion collapses distinct DOI events only in the nonverbose log (#2204)."""
+    raw_dir = tmp_path / "raw"
+    raw_dir.mkdir()
+    rows = [
+        FULL_DUMP_ROW_1.replace("bsdb:99/", f"bsdb:{i}/")
+        .replace("Study 99", f"Study {i}")
+        .replace("10.1234/test", f"https://doi.org/10.1234/study{i}")
+        for i in range(1, 4)
+    ]
+    (raw_dir / "full_dump.csv").write_text(FULL_DUMP_HEADER + "".join(rows), encoding="utf-8")
+    derived = tmp_path / "derived"
+    written = ingest(raw_dir, tmp_path / "studies", derived, verbose_log=verbose_log)
+    assert len(written) == 3
+    assert [yaml.safe_load(path.read_text())["doi"] for path in written] == [
+        "10.1234/study1",
+        "10.1234/study2",
+        "10.1234/study3",
+    ]
+    events = json.loads((derived / "ingest_log.json").read_text(encoding="utf-8"))
+    study_info = [e for e in events if e["level"] == "info" and e["entity"] == "study"]
+    details = [f"'https://doi.org/10.1234/study{i}' → '10.1234/study{i}'" for i in range(1, 4)]
+    if verbose_log:
+        assert study_info == [
+            {
+                "level": "info",
+                "entity": "study",
+                "id": f"bsdb:{i}",
+                "reason": f"DOI normalized from URL: {value}",
+            }
+            for i, value in enumerate(details, start=1)
+        ]
+    else:
+        assert study_info == [
+            {
+                "level": "info",
+                "entity": "study",
+                "reason": "DOI normalized from URL",
+                "count": "3",
+                "examples": ", ".join(
+                    f"bsdb:{i}: {value}" for i, value in enumerate(details, start=1)
+                ),
+            }
+        ]
+
+
+def test_summarize_study_info_keeps_mixed_groups_separate() -> None:
+    """Interleaved templates, bare reasons, taxa and warnings retain independent groups."""
+    warning = {"level": "warning", "entity": "study", "id": "bsdb:1", "reason": "keep warning"}
+    events = [
+        {
+            "level": "info",
+            "entity": "study",
+            "id": "bsdb:1",
+            "reason": "non-numeric PMID dropped: 'unknown'",
+        },
+        {
+            "level": "info",
+            "entity": "taxon",
+            "id": "NCBITaxon:1",
+            "reason": "lineage with 2 levels, used leaf",
+        },
+        {
+            "level": "info",
+            "entity": "study",
+            "id": "bsdb:1",
+            "reason": "non-HTTP URL dropped: 'ftp://one'",
+        },
+        warning,
+        {
+            "level": "info",
+            "entity": "study",
+            "id": "bsdb:2",
+            "reason": "non-numeric PMID dropped: 'unknown'",
+        },
+        {
+            "level": "info",
+            "entity": "study",
+            "id": "bsdb:3",
+            "reason": "non-numeric PMID dropped: 'pending'",
+        },
+        {
+            "level": "info",
+            "entity": "study",
+            "id": "bsdb:2",
+            "reason": "non-HTTP URL dropped: 'ftp://two'",
+        },
+        {"level": "info", "entity": "study", "id": "bsdb:4", "reason": "non-HTTP URL dropped"},
+    ]
+    assert _summarize_ingest_log(events) == [
+        warning,
+        {
+            "level": "info",
+            "entity": "study",
+            "reason": "non-numeric PMID dropped",
+            "count": "3",
+            "examples": "bsdb:1: 'unknown', bsdb:2: 'unknown', bsdb:3: 'pending'",
+        },
+        {
+            "level": "info",
+            "entity": "taxon",
+            "reason": "lineage with 2 levels, used leaf",
+            "count": "1",
+            "examples": "NCBITaxon:1",
+        },
+        {
+            "level": "info",
+            "entity": "study",
+            "reason": "non-HTTP URL dropped",
+            "count": "2",
+            "examples": "bsdb:1: 'ftp://one', bsdb:2: 'ftp://two'",
+        },
+        {
+            "level": "info",
+            "entity": "study",
+            "reason": "non-HTTP URL dropped",
+            "count": "1",
+            "examples": "bsdb:4",
+        },
     ]

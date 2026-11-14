@@ -229,6 +229,19 @@ def diagnose_zero_trait_taxon(
             "Ambiguous Taxon / Bin Slash",
             "Resolve to lowest common ancestor (LCA) or treat as composite multi-taxon marker",
         )
+
+    if taxon_id in {"NCBITaxon:541000", "NCBITaxon:81850", "NCBITaxon:508215"}:
+        canonical_map = {
+            "NCBITaxon:541000": "NCBITaxon:216572 (Oscillospiraceae)",
+            "NCBITaxon:81850": "NCBITaxon:33958 (Lactobacillaceae)",
+            "NCBITaxon:508215": "NCBITaxon:32207 (Rothia)",
+        }
+        twin = canonical_map.get(taxon_id, "canonical TaxID")
+        return (
+            "NCBI TaxID Desynchronization",
+            "Review possible alias before transferring traits: " + twin.split(" (")[0],
+        )
+
     if taxonomy.group == "unclassified_sequences":
         return (
             "Unresolved Taxonomic Label",
@@ -247,18 +260,6 @@ def diagnose_zero_trait_taxon(
             "Non-Bacterial / Viral Taxon",
             "Review viral annotation resources; missing retained annotations do not establish "
             "biological absence",
-        )
-
-    if taxon_id in {"NCBITaxon:541000", "NCBITaxon:81850", "NCBITaxon:508215"}:
-        canonical_map = {
-            "NCBITaxon:541000": "NCBITaxon:216572 (Oscillospiraceae)",
-            "NCBITaxon:81850": "NCBITaxon:33958 (Lactobacillaceae)",
-            "NCBITaxon:508215": "NCBITaxon:32207 (Rothia)",
-        }
-        twin = canonical_map.get(taxon_id, "canonical TaxID")
-        return (
-            "NCBI TaxID Desynchronization",
-            "Review possible alias before transferring traits: " + twin.split(" (")[0],
         )
 
     if taxonomy.group == "unresolved":

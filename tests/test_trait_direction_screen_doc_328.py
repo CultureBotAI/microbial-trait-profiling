@@ -5,6 +5,8 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+import pytest
+
 METHODS = Path(__file__).resolve().parents[1] / "methods"
 
 
@@ -23,8 +25,9 @@ def _candidate_family() -> str:
     return _normalized(_section(text, "The candidate family"))
 
 
-def test_historical_matrix_counts_name_their_population() -> None:
-    family = _candidate_family()
+def _assert_historical_matrix_counts_name_their_population(doc_text: str) -> None:
+    text = _normalized(doc_text)
+    family = _normalized(_section(doc_text, "The candidate family"))
     assert "historical v1.3.1" in family
     assert "historical profile matrix" in family
     assert "5,829 input profiles" in family
@@ -34,6 +37,38 @@ def test_historical_matrix_counts_name_their_population() -> None:
     assert "2,335 experiments" in family
     assert "959 studies" in family
     assert "2,333" not in family
+    assert "2,333" not in text
+
+
+def test_historical_matrix_counts_name_their_population() -> None:
+    doc_text = (METHODS / "trait_direction_screen.md").read_text(encoding="utf-8")
+    _assert_historical_matrix_counts_name_their_population(doc_text)
+
+
+@pytest.mark.parametrize(
+    ("anchor", "replacement"),
+    [
+        pytest.param(
+            "## Why the family changed",
+            "## Why the family changed\n\nHistorical typo: 2,333 experiments.",
+            id="before-candidate-family",
+        ),
+        pytest.param(
+            "## Outputs",
+            "## Outputs\n\nHistorical typo: **2,333** experiments.",
+            id="after-candidate-family-bold",
+        ),
+    ],
+)
+def test_historical_matrix_counts_rejects_2333_outside_candidate_family(
+    anchor: str, replacement: str
+) -> None:
+    """#2196: `"2,333"` must fail anywhere in `trait_direction_screen.md`, not just one section."""
+    doc_text = (METHODS / "trait_direction_screen.md").read_text(encoding="utf-8")
+    assert doc_text.count(anchor) == 1
+    mutated = doc_text.replace(anchor, replacement, 1)
+    with pytest.raises(AssertionError):
+        _assert_historical_matrix_counts_name_their_population(mutated)
 
 
 def test_historical_matrix_identity_has_a_pinned_source() -> None:
