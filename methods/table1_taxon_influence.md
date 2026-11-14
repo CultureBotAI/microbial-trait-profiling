@@ -202,6 +202,12 @@ and population; retain the effect unit, all uncertainty/support fields, family i
 input hashes, missingness and ambiguity flags. The native extension supplies the pinned
 transformed-composition and ORA reruns. Its experiment-weighted t/BH statistics and
 profile-level ORA families remain distinct from the study-weighted sign-test BH6 fields;
-none substitutes for another. Matched-corpus analog scope (#210; not a reproduction of the published Table 1 baseline), native-owner review, the #188/#189
-prerequisites and review of resolved source semantics remain required before manuscript
-adoption or assigning mechanisms.
+none substitutes for another. As date-scoped above for #188 and #189 in the
+historical `190-v2` run (and in [the native rerun extension](table1_native_influence.md)
+for the historical `190-native-v1` snapshot), closing those tracker issues does
+not retroactively recertify either historical output set. Matched-corpus analog
+scope (#210; not a reproduction of the published Table 1 baseline), native-owner
+review, output-specific verification of contrast orientation and feature semantics
+for any `190-v2` or native outputs adopted in a manuscript, and review of resolved
+source semantics remain required before manuscript adoption or assigning
+mechanisms.
