@@ -7,7 +7,7 @@ name = "mtp"
 version = "0.1.0"
 description = "Integration and comparative analysis of microbial trait annotations"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11.5"
 authors = [
   # Keep in step with CITATION.cff.
   { name = "Jed Dongjin Kim-Ozaeta" },

@@ -24,6 +24,8 @@ not direct in vivo physiological or metabolic measurements.
 
 ### Prerequisites
 
+The project requires Python 3.11.5 or newer; uv manages the interpreter.
+
 You need two tools installed. Everything else is managed automatically — with
 one exception: the figure recipes (`just guild-maps`, `just table1-trait-maps`)
 and the rendered-layout regression in `just check` need a local Chrome/Chromium.

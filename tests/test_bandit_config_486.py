@@ -32,8 +32,8 @@ def validate_bandit_configuration(
     """Verify bandit is configured without the Python <3.11 [toml] extra across repo configs."""
     pyproject_data = tomllib.loads(pyproject_path.read_text(encoding="utf-8"))
     requires_python = str(pyproject_data.get("project", {}).get("requires-python", ""))
-    assert requires_python == ">=3.11", (
-        f"Expected project.requires-python == '>=3.11', got {requires_python!r}"
+    assert requires_python == ">=3.11.5", (
+        f"Expected project.requires-python == '>=3.11.5', got {requires_python!r}"
     )
 
     all_specs = _iter_pyproject_specs(pyproject_data)
@@ -137,7 +137,7 @@ def test_validate_bandit_configuration_rejects_regressions(tmp_path: Path) -> No
     uv_lock_path = tmp_path / "uv.lock"
 
     valid_pyproject = (
-        '[project]\nname = "microbial-trait-profiling"\nrequires-python = ">=3.11"\n'
+        '[project]\nname = "microbial-trait-profiling"\nrequires-python = ">=3.11.5"\n'
         '[dependency-groups]\nqa = ["bandit>=1.9.4"]\n'
         '[tool.bandit]\nexclude_dirs = ["tests"]\n'
     )
