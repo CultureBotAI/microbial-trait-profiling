@@ -2,6 +2,8 @@
 
 import importlib.util
 import json
+import os
+import sys
 from collections.abc import Callable, Iterator
 from pathlib import Path
 
@@ -41,7 +43,77 @@ def _snapshot(root: Path) -> dict[str, tuple[int, int]]:
 
 
 @pytest.fixture(autouse=True, scope="session")
-def _tests_never_write_real_data() -> Iterator[None]:
+def _tests_refuse_protected_output_writes() -> Iterator[None]:
+    """Reject audited in-process writes, regardless of how an output path was stored.
+
+    Defaults, composite constants and dynamically constructed paths all reach these
+    filesystem operations. Child processes, native code and descriptor-relative writes
+    can bypass Python's audit information; the independent snapshot remains a backstop.
+    Hooks cannot be removed, so deactivate this one even when session teardown fails.
+    """
+    # Protect each root entry as well as its storage when the root itself is a link.
+    roots = tuple(
+        spelling
+        for root in _PROTECTED_OUTPUT_DIRS
+        for spelling in (Path(os.path.abspath(root)), root.resolve())
+    )
+    active = True
+    write_flags = os.O_WRONLY | os.O_RDWR | os.O_CREAT | os.O_TRUNC | os.O_APPEND
+    mutations = {
+        "os.mkdir",
+        "os.remove",
+        "os.rmdir",
+        "os.rename",
+        "os.link",
+        "os.symlink",
+        "os.chmod",
+        "os.chown",
+        "os.truncate",
+        "os.utime",
+    }
+
+    def refuse_write(event: str, arguments: tuple[object, ...]) -> None:
+        if not active:
+            return
+        if event == "open":
+            flags = arguments[2]
+            if not isinstance(flags, int) or not flags & write_flags:
+                return
+            paths = arguments[:1]
+        elif event in mutations:
+            # Renaming removes the source; links only modify the destination.
+            paths = arguments[:2] if event == "os.rename" else arguments[:1]
+            if event in {"os.link", "os.symlink"}:
+                paths = arguments[1:2]
+        else:
+            return
+        for value in paths:
+            if not isinstance(value, str | bytes | os.PathLike):
+                continue
+            path = Path(os.fsdecode(value))
+            absolute = Path(os.path.abspath(path))
+            # Unlink/rename affect the final entry, while writable opens affect its target.
+            resolved = (
+                path.parent.resolve() / path.name
+                if event in {"os.remove", "os.rename"}
+                else path.resolve()
+            )
+            if any(
+                candidate.is_relative_to(root)
+                for root in roots
+                for candidate in (absolute, resolved)
+            ):
+                raise AssertionError(f"tests must not write protected output: {path} ({event})")
+
+    sys.addaudithook(refuse_write)
+    try:
+        yield
+    finally:
+        active = False
+
+
+@pytest.fixture(autouse=True, scope="session")
+def _tests_never_write_real_data(_tests_refuse_protected_output_writes: None) -> Iterator[None]:
     """Detect changes under data/ and trait-visualization/ (#417, #421, #1026).
 
     A test that falls back to a default path writes over real pipeline data:
