@@ -975,7 +975,7 @@ security:
 	uv run python scripts/run_pip_audit.py -r "$reqfile" --disable-pip \
 	  --cache-dir "$tmpdir/pip-audit-cache"
 
-# Audit locked packages selected for Linux x86_64 / Python 3.11, on any host.
+# Audit locked packages selected for Linux x86_64 / Python 3.11.5, on any host.
 security-linux:
 	audit_tmp="$(mktemp -d)" && \
 	trap 'rm -rf "$audit_tmp"' EXIT && \
@@ -983,7 +983,7 @@ security-linux:
 	  --format requirements-txt --no-emit-project --no-emit-workspace \
 	  --output-file "$audit_tmp/requirements.txt" && \
 	uv run --locked --group qa uv pip compile "$audit_tmp/requirements.txt" \
-	  --python-platform x86_64-unknown-linux-gnu --python-version 3.11 --no-deps \
+	  --python-platform x86_64-unknown-linux-gnu --python-version 3.11.5 --no-deps \
 	  --no-header --no-annotate --output-file "$audit_tmp/requirements-linux.txt" && \
 	uv run --locked --group qa python scripts/run_pip_audit.py -r "$audit_tmp/requirements-linux.txt" \
 	  --disable-pip --no-deps --cache-dir "$audit_tmp/pip-audit-cache"
