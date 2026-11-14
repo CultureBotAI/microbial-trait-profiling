@@ -6,15 +6,19 @@ from pathlib import Path
 import pytest
 
 
+def _two_trait_matrix() -> str:
+    """Ten taxa per joint annotation state permit the profiles used below."""
+    return "taxon_id\tTraitA\tTraitB\n" + "".join(
+        f"NCBITaxon:{10 * state + index + 1}\t{trait_a}\t{trait_b}\n"
+        for state, (trait_a, trait_b) in enumerate(((1, 1), (1, 0), (0, 1), (0, 0)))
+        for index in range(10)
+    )
+
+
 def test_enrichment_pipeline_fdr_propagation(tmp_path: Path) -> None:
     # 1. Create a dummy trait profile TSV
     matrix_tsv = tmp_path / "taxa_trait_matrix.tsv"
-    matrix_tsv.write_text(
-        "taxon_id\tTraitA\tTraitB\n"
-        + "\n".join(f"NCBITaxon:{i}\t1\t1" for i in range(1, 11))
-        + "\n",
-        encoding="utf-8",
-    )
+    matrix_tsv.write_text(_two_trait_matrix(), encoding="utf-8")
 
     input_tsv = tmp_path / "input_profiles.tsv"
     input_tsv.write_text(
@@ -227,12 +231,7 @@ def test_depletion_hypergeometric_taxon_sampling_values(tmp_path: Path) -> None:
 
 def test_enrichment_pipeline_no_fdr_propagation(tmp_path: Path) -> None:
     matrix_tsv = tmp_path / "taxa_trait_matrix.tsv"
-    matrix_tsv.write_text(
-        "taxon_id\tTraitA\tTraitB\n"
-        + "\n".join(f"NCBITaxon:{i}\t1\t1" for i in range(1, 11))
-        + "\n",
-        encoding="utf-8",
-    )
+    matrix_tsv.write_text(_two_trait_matrix(), encoding="utf-8")
     input_tsv = tmp_path / "input_profiles.tsv"
     input_tsv.write_text(
         "study_id\texperiment_id\tinc_dec\ttaxa_count\tTraitA\tTraitB\n"
@@ -300,6 +299,8 @@ def test_enrichment_pipeline_censorship_detection(tmp_path: Path) -> None:
     matrix_tsv.write_text(
         "taxon_id\tTraitA\tTraitB\tTraitC\n"
         + "\n".join(f"NCBITaxon:{i}\t1\t1\t1" for i in range(1, 101))
+        + "\n"
+        + "\n".join(f"NCBITaxon:{i}\t0\t0\t0" for i in range(101, 201))
         + "\n",
         encoding="utf-8",
     )
@@ -617,7 +618,7 @@ def test_malformed_taxa_count_strict_rejection(tmp_path: Path) -> None:
     valid_profiles_tsv.write_text(
         "study_id\texperiment_id\tinc_dec\ttaxa_count\tTraitA\n"
         "s1\te1\tinc\t3\t2\n"
-        "s1\te1\tdec\t3\t0\n",
+        "s1\te1\tdec\t3\t1\n",
         encoding="utf-8",
     )
 
@@ -658,7 +659,7 @@ def test_malformed_taxa_count_strict_rejection(tmp_path: Path) -> None:
     invalid_profiles_tsv.write_text(
         "study_id\texperiment_id\tinc_dec\ttaxa_count\tTraitA\n"
         "s1\te1\tinc\tinvalid\t2\n"
-        "s1\te1\tdec\t3\t0\n",
+        "s1\te1\tdec\t3\t1\n",
         encoding="utf-8",
     )
     res1 = subprocess.run(
@@ -684,7 +685,7 @@ def test_malformed_taxa_count_strict_rejection(tmp_path: Path) -> None:
     missing_val_tsv.write_text(
         "study_id\texperiment_id\tinc_dec\ttaxa_count\tTraitA\n"
         "s1\te1\tinc\t\t2\n"
-        "s1\te1\tdec\t3\t0\n",
+        "s1\te1\tdec\t3\t1\n",
         encoding="utf-8",
     )
     res2 = subprocess.run(
@@ -710,7 +711,7 @@ def test_malformed_taxa_count_strict_rejection(tmp_path: Path) -> None:
     less_taxa_tsv.write_text(
         "study_id\texperiment_id\tinc_dec\ttaxa_count\tTraitA\n"
         "s1\te1\tinc\t1\t2\n"
-        "s1\te1\tdec\t3\t0\n",
+        "s1\te1\tdec\t3\t1\n",
         encoding="utf-8",
     )
     res3 = subprocess.run(
@@ -736,7 +737,7 @@ def test_malformed_taxa_count_strict_rejection(tmp_path: Path) -> None:
     more_taxa_tsv.write_text(
         "study_id\texperiment_id\tinc_dec\ttaxa_count\tTraitA\n"
         "s1\te1\tinc\t5\t2\n"
-        "s1\te1\tdec\t3\t0\n",
+        "s1\te1\tdec\t3\t1\n",
         encoding="utf-8",
     )
     res4 = subprocess.run(
@@ -799,8 +800,8 @@ def test_complete_unfiltered_export_254(tmp_path: Path) -> None:
     profiles_tsv = tmp_path / "profiles.tsv"
     profiles_tsv.write_text(
         "study_id\texperiment_id\tinc_dec\ttaxa_count\tTraitA\tTraitB\n"
-        "s1\te1\tinc\t3\t2\t0\n"
-        "s1\te1\tdec\t3\t0\t1\n",
+        "s1\te1\tinc\t3\t2\t1\n"
+        "s1\te1\tdec\t3\t1\t1\n",
         encoding="utf-8",
     )
 
@@ -1345,7 +1346,9 @@ def test_taxa_matrix_strict_count_parsing(tmp_path: Path) -> None:
 
     # 1. Float-like integer '1.0' succeeds
     valid_matrix = tmp_path / "matrix_float_int.tsv"
-    valid_matrix.write_text("taxon_id\tTraitA\nNCBITaxon:1\t1.0\n", encoding="utf-8")
+    valid_matrix.write_text(
+        "taxon_id\tTraitA\nNCBITaxon:1\t1.0\nNCBITaxon:2\t0\n", encoding="utf-8"
+    )
     report = tmp_path / "report1.txt"
     res_valid = subprocess.run(
         [
@@ -1365,7 +1368,9 @@ def test_taxa_matrix_strict_count_parsing(tmp_path: Path) -> None:
 
     # 2. Non-integer float '1.5' fails
     matrix_non_int = tmp_path / "matrix_non_int.tsv"
-    matrix_non_int.write_text("taxon_id\tTraitA\nNCBITaxon:1\t1.5\n", encoding="utf-8")
+    matrix_non_int.write_text(
+        "taxon_id\tTraitA\nNCBITaxon:1\t1.5\nNCBITaxon:2\t0\n", encoding="utf-8"
+    )
     res_non_int = subprocess.run(
         [
             sys.executable,
@@ -1385,7 +1390,7 @@ def test_taxa_matrix_strict_count_parsing(tmp_path: Path) -> None:
 
     # 3. String 'abc' fails
     matrix_str = tmp_path / "matrix_str.tsv"
-    matrix_str.write_text("taxon_id\tTraitA\nNCBITaxon:1\tabc\n", encoding="utf-8")
+    matrix_str.write_text("taxon_id\tTraitA\nNCBITaxon:1\tabc\nNCBITaxon:2\t0\n", encoding="utf-8")
     res_str = subprocess.run(
         [
             sys.executable,
@@ -1404,7 +1409,7 @@ def test_taxa_matrix_strict_count_parsing(tmp_path: Path) -> None:
 
     # 4. Negative count '-1' fails
     matrix_neg = tmp_path / "matrix_neg.tsv"
-    matrix_neg.write_text("taxon_id\tTraitA\nNCBITaxon:1\t-1\n", encoding="utf-8")
+    matrix_neg.write_text("taxon_id\tTraitA\nNCBITaxon:1\t-1\nNCBITaxon:2\t0\n", encoding="utf-8")
     res_neg = subprocess.run(
         [
             sys.executable,
@@ -1494,12 +1499,7 @@ def test_depletion_ranking_export_sorting_and_headers(tmp_path: Path) -> None:
     - Pair ranking is sorted by stat asc, fold asc.
     """
     matrix_tsv = tmp_path / "taxa_trait_matrix.tsv"
-    matrix_tsv.write_text(
-        "taxon_id\tTraitA\tTraitB\n"
-        + "\n".join(f"NCBITaxon:{i}\t1\t1" for i in range(1, 11))
-        + "\n",
-        encoding="utf-8",
-    )
+    matrix_tsv.write_text(_two_trait_matrix(), encoding="utf-8")
 
     profiles_tsv = tmp_path / "profiles.tsv"
     profiles_tsv.write_text(

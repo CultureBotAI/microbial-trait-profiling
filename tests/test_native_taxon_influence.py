@@ -10,7 +10,8 @@ import numpy as np
 import pytest
 from scipy.stats import hypergeom, ttest_1samp
 
-from mtp.contribution_inputs import Base
+from mtp import native_taxon_influence
+from mtp.contribution_inputs import Base, digest
 from mtp.influence_assessment import read_influence_assessment
 from mtp.native_taxon_influence import (
     composition_q_sensitivity_table,
@@ -22,7 +23,7 @@ from mtp.native_taxon_influence import (
     run,
     transformed,
 )
-from mtp.taxon_contributions import write_table
+from mtp.taxon_contributions import Record, write_table
 from mtp.taxon_influence import TIE, adjust, comparison, directional_counts
 
 POLICY = {
@@ -287,8 +288,7 @@ def test_native_mean_interval_targets_experiments_not_sign_share() -> None:
     assert 0 <= records["A"]["share_ci_low"] <= records["A"]["share_ci_high"] <= 1
 
 
-def test_native_exports_end_to_end_with_an_empty_stratum(tmp_path: Path) -> None:
-    base = corpus()
+def _native_export_fixture(tmp_path: Path, base: Base) -> Record:
     base.reported = {k: {"taxon": {"signature"}} for k in base.profiles}
     base.metadata = {k[:2]: {"condition": "c", "body_site": "site"} for k in base.profiles}
     directory = tmp_path / "baseline"
@@ -322,10 +322,24 @@ def test_native_exports_end_to_end_with_an_empty_stratum(tmp_path: Path) -> None
             ]
         }
     }
+    return audit
+
+
+def test_native_exports_end_to_end_with_an_empty_stratum(tmp_path: Path) -> None:
+    base = corpus()
+    audit = _native_export_fixture(tmp_path, base)
     result = export_native(
         base,
         audit,
-        {"composition": POLICY, "ora": {"backgrounds": ["fixed_baseline", "recomputed_remaining"]}},
+        {
+            "version": "190-native-v3",
+            "composition": {
+                **POLICY,
+                "family_size_field": "family_selected_traits",
+                "untestable_correction_p": 1.0,
+            },
+            "ora": {"backgrounds": ["fixed_baseline", "recomputed_remaining"]},
+        },
         tmp_path,
     )
     assert result["ora_families"] == 4
@@ -334,19 +348,20 @@ def test_native_exports_end_to_end_with_an_empty_stratum(tmp_path: Path) -> None
     assert result["ora_comparisons"] == 8
     summary_text = (tmp_path / "native_summary.md").read_text()
     assert "Native lineage" in summary_text
-    assert "protocol 190-native-v2" in summary_text
+    assert "protocol 190-native-v3" in summary_text
     assert "0 rule-declared exclusion scenarios" in summary_text
     assert "within the rule-declared panel" in summary_text
     assert (
-        "Native p-values test the mean; native BH families contain finite p-values among "
-        "selected supported variable traits, not just Table 1. Selected untestable traits "
-        "receive q = 1.0 outside the correction vector."
+        "Native p-values test the mean; native BH families contain all selected supported "
+        "variable traits (family_selected_traits), not just Table 1, padding selected "
+        "untestable traits at p = 1.0 (q = 1.0) inside the correction vector."
     ) in summary_text
+    assert "outside the correction vector" not in summary_text
     assert "native BH families contain all supported variable traits" not in summary_text
     protocol_file = (
         Path(__file__).resolve().parents[1] / "methods" / "table1_native_influence_protocol.json"
     )
-    assert json.loads(protocol_file.read_text(encoding="utf-8"))["version"] == "190-native-v2"
+    assert json.loads(protocol_file.read_text(encoding="utf-8"))["version"] == "190-native-v3"
     from mtp.contribution_inputs import rows
 
     comparisons = list(rows(tmp_path / "native_composition_comparison.tsv"))
@@ -369,7 +384,7 @@ def test_native_exports_end_to_end_with_an_empty_stratum(tmp_path: Path) -> None
     manifest = {
         "completed": True,
         "protocol": {
-            "version": "190-native-v2",
+            "version": "190-native-v3",
             "composition": POLICY,
             "ora": {"backgrounds": ["fixed_baseline", "recomputed_remaining"]},
         },
@@ -389,6 +404,128 @@ def test_native_exports_end_to_end_with_an_empty_stratum(tmp_path: Path) -> None
     assessment = read_influence_assessment(manifest_path)
     assert assessment.default.startswith("native influence results reported;")
     assert not assessment.verdicts
+
+
+def _native_run_fixture(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    base = corpus()
+    for key, profile in base.profiles.items():
+        profile["C"] = 5 if key[1] in {"e0", "e1"} else 10 if key[1] == "e2" else 0
+    audit = _native_export_fixture(tmp_path, base)
+    inputs = tmp_path / "inputs"
+    inputs.mkdir()
+    for name in native_taxon_influence.INPUT_NAMES:
+        (inputs / name).write_text("fixture input\n", encoding="utf-8")
+    audit.update(
+        completed=True,
+        mismatches=0,
+        input_sha256={name: digest(inputs / name) for name in native_taxon_influence.INPUT_NAMES},
+    )
+    (tmp_path / "manifest.json").write_text(json.dumps(audit), encoding="utf-8")
+    monkeypatch.setattr(native_taxon_influence, "load_base", lambda *_paths: base)
+    return inputs
+
+
+def test_native_v3_manifest_declares_the_executed_padded_family(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    inputs = _native_run_fixture(tmp_path, monkeypatch)
+    protocol_file = (
+        Path(__file__).resolve().parents[1] / "methods" / "table1_native_influence_protocol.json"
+    )
+    protocol = json.loads(protocol_file.read_text(encoding="utf-8"))
+    assert protocol["version"] == "190-native-v3"
+    assert protocol["composition"]["family_size_field"] == "family_selected_traits"
+    assert protocol["composition"]["untestable_correction_p"] == 1.0
+    assert "all selected traits" in protocol["composition"]["family"]
+    assert "p=1 inside the correction vector" in protocol["composition"]["family"]
+    protocol["composition"].update(POLICY)
+    supplied = tmp_path / "protocol.json"
+    supplied.write_text(json.dumps(protocol), encoding="utf-8")
+
+    run(inputs, tmp_path, supplied, "a" * 40)
+
+    manifest = json.loads((tmp_path / "native_manifest.json").read_text(encoding="utf-8"))
+    assert manifest["completed"] is True
+    assert manifest["protocol"] == protocol
+    assert manifest["protocol_sha256"] == digest(supplied)
+    exported = native_taxon_influence.compressed_rows(tmp_path / "native_composition.tsv.gz")
+    pooled = {row["trait_key"]: row for row in exported if row["scope"] == "pooled"}
+    assert {row["family_tests"] for row in pooled.values()} == {"2"}
+    family_field = manifest["protocol"]["composition"]["family_size_field"]
+    assert {row[family_field] for row in pooled.values()} == {"3"}
+    assert pooled["C"]["p"] == ""
+    assert float(pooled["C"]["q"]) == 1.0
+    raw: list[float | None] = [float(pooled[trait]["p"]) for trait in ("A", "B")]
+    actual = [float(pooled[trait]["q"]) for trait in ("A", "B")]
+    assert actual == pytest.approx(adjust([*raw, 1.0])[:2])
+    assert actual != pytest.approx(adjust(raw))
+    assert "protocol 190-native-v3" in (tmp_path / "native_summary.md").read_text()
+    assessment = read_influence_assessment(tmp_path / "native_manifest.json")
+    assert assessment.default.startswith("native influence results reported;")
+
+
+def test_native_run_refuses_historical_v2_before_writing_outputs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    inputs = _native_run_fixture(tmp_path, monkeypatch)
+    historical = {
+        "version": "190-native-v2",
+        "composition": {**POLICY, "family": "BH over finite p-values of all selected traits"},
+        "ora": {"backgrounds": ["fixed_baseline", "recomputed_remaining"]},
+    }
+    supplied = tmp_path / "historical-protocol.json"
+    supplied.write_text(json.dumps(historical), encoding="utf-8")
+    before = {
+        path.relative_to(tmp_path): path.read_bytes()
+        for path in tmp_path.rglob("*")
+        if path.is_file()
+    }
+
+    message = ""
+    try:
+        run(inputs, tmp_path, supplied, "a" * 40)
+    except ValueError as error:
+        message = str(error)
+    assert "190-native-v2" in message
+    assert "historical" in message
+
+    after = {
+        path.relative_to(tmp_path): path.read_bytes()
+        for path in tmp_path.rglob("*")
+        if path.is_file()
+    }
+    assert after == before
+
+
+@pytest.mark.parametrize(
+    ("field", "contradiction"),
+    [("family_size_field", "family_tests"), ("untestable_correction_p", 0.0)],
+)
+def test_native_run_refuses_v3_family_contract_contradictions(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, field: str, contradiction: object
+) -> None:
+    inputs = _native_run_fixture(tmp_path, monkeypatch)
+    protocol = {
+        "version": "190-native-v3",
+        "composition": {
+            **POLICY,
+            "family_size_field": "family_selected_traits",
+            "untestable_correction_p": 1.0,
+            field: contradiction,
+        },
+        "ora": {"backgrounds": ["fixed_baseline", "recomputed_remaining"]},
+    }
+    supplied = tmp_path / "contradictory-protocol.json"
+    supplied.write_text(json.dumps(protocol), encoding="utf-8")
+
+    message = ""
+    try:
+        run(inputs, tmp_path, supplied, "a" * 40)
+    except ValueError as error:
+        message = str(error)
+    assert "all-selected family with p=1 padding" in message
+
+    assert not (tmp_path / "native_manifest.json").exists()
 
 
 def test_zero_total_lineage_exclusion_reported_as_lost_pairs_not_matched_change(
@@ -498,7 +635,15 @@ def test_zero_total_lineage_exclusion_reported_as_lost_pairs_not_matched_change(
     export_native(
         base,
         audit,
-        {"composition": POLICY, "ora": {"backgrounds": ["fixed_baseline"]}},
+        {
+            "version": "190-native-v3",
+            "composition": {
+                **POLICY,
+                "family_size_field": "family_selected_traits",
+                "untestable_correction_p": 1.0,
+            },
+            "ora": {"backgrounds": ["fixed_baseline"]},
+        },
         tmp_path,
     )
     from mtp.contribution_inputs import rows as load_rows
@@ -579,21 +724,120 @@ def test_unselected_but_testable_traits_are_excluded_from_native_bh_family() -> 
         assert math.isfinite(records[tested_trait]["p"])
 
     assert unselected_p["U_high"] > records["A"]["p"]
-    expected_q = adjust([records["A"]["p"], records["B"]["p"]])
-    four_member_q = adjust(
+    expected_q = adjust([records["A"]["p"], records["B"]["p"], 1.0])[:2]
+    tested_only_q = adjust([records["A"]["p"], records["B"]["p"]])
+    five_member_q = adjust(
         [
             records["A"]["p"],
             records["B"]["p"],
+            1.0,
             unselected_p["U_low"],
             unselected_p["U_high"],
         ]
     )[:2]
-    assert expected_q != pytest.approx(four_member_q)
+    assert expected_q != pytest.approx(tested_only_q)
+    assert expected_q != pytest.approx(five_member_q)
     assert [records["A"]["q"], records["B"]["q"]] == pytest.approx(expected_q)
-    assert [records["A"]["q"], records["B"]["q"]] != pytest.approx(four_member_q)
+    assert [records["A"]["q"], records["B"]["q"]] != pytest.approx(tested_only_q)
+    assert [records["A"]["q"], records["B"]["q"]] != pytest.approx(five_member_q)
     for row in records.values():
         assert row["family_tests"] == 2
         assert row["family_selected_traits"] == 3
+
+
+def test_selected_untestable_traits_are_padded_at_one_in_native_bh_family() -> None:
+    """Selected untestable traits stay in the BH family via p=1.0 padding (#1334)."""
+    policy = {
+        "minimum_profile_support": 2,
+        "maximum_profile_support_fraction": 0.75,
+        "minimum_pairs": 3,
+        "transform_multiplier": 1000,
+    }
+    pair_rows = (
+        (
+            ("s0", "e0", "inc"),
+            {"A": 9, "B": 8, "S_const_1": 4, "S_const_2": 6, "U_high": 3, "U_zero": 0},
+        ),
+        (
+            ("s0", "e0", "dec"),
+            {"A": 1, "B": 2, "S_const_1": 4, "S_const_2": 6, "U_high": 17, "U_zero": 0},
+        ),
+        (
+            ("s1", "e1", "inc"),
+            {"A": 8, "B": 3, "S_const_1": 8, "S_const_2": 2, "U_high": 9, "U_zero": 0},
+        ),
+        (
+            ("s1", "e1", "dec"),
+            {"A": 2, "B": 7, "S_const_1": 8, "S_const_2": 2, "U_high": 11, "U_zero": 0},
+        ),
+        (
+            ("s2", "e2", "inc"),
+            {"A": 7, "B": 0, "S_const_1": 0, "S_const_2": 0, "U_high": 13, "U_zero": 0},
+        ),
+        (
+            ("s2", "e2", "dec"),
+            {"A": 3, "B": 14, "S_const_1": 0, "S_const_2": 0, "U_high": 3, "U_zero": 0},
+        ),
+        (
+            ("s3", "e3", "inc"),
+            {"A": 0, "B": 0, "S_const_1": 0, "S_const_2": 0, "U_high": 10, "U_zero": 0},
+        ),
+        (
+            ("s3", "e3", "dec"),
+            {"A": 0, "B": 0, "S_const_1": 0, "S_const_2": 0, "U_high": 10, "U_zero": 0},
+        ),
+    )
+    profiles = dict(pair_rows)
+    columns = ["A", "B", "S_const_1", "S_const_2", "U_high", "U_zero"]
+    base = Base(columns, {c.lower(): c for c in columns}, profiles, {}, {}, {}, {}, {}, [])
+
+    records, _, _ = transformed(base, base.profiles, list(base.profiles), policy)
+
+    for untestable_selected in ("S_const_1", "S_const_2"):
+        assert records[untestable_selected]["selected"] is True
+        assert records[untestable_selected]["status"] == "untestable"
+        assert records[untestable_selected]["p"] == ""
+        assert records[untestable_selected]["q"] == 1.0
+        assert records[untestable_selected]["significant_0.05"] is False
+        assert records[untestable_selected]["significant_0.001"] is False
+
+    for unselected in ("U_high", "U_zero"):
+        assert records[unselected]["selected"] is False
+        assert records[unselected]["status"] == "not_selected"
+        assert records[unselected]["p"] == ""
+        assert records[unselected]["q"] == ""
+
+    padded_q = adjust([records["A"]["p"], records["B"]["p"], 1.0, 1.0])[:2]
+    unpadded_q = adjust([records["A"]["p"], records["B"]["p"]])
+    assert padded_q != pytest.approx(unpadded_q)
+    assert [records["A"]["q"], records["B"]["q"]] == pytest.approx(padded_q)
+    assert [records["A"]["q"], records["B"]["q"]] != pytest.approx(unpadded_q)
+    for row in records.values():
+        assert row["family_tests"] == 2
+        assert row["family_selected_traits"] == 4
+
+
+def test_multiple_testing_methods_doc_covers_native_influence_and_pd_network_bh_families() -> None:
+    """methods/multiple_testing.md documents pre-testing selection and p=1.0 padding (#1334)."""
+    doc_path = Path(__file__).resolve().parents[1] / "methods" / "multiple_testing.md"
+    text = doc_path.read_text(encoding="utf-8")
+    required_fragments = (
+        "src/mtp/native_taxon_influence.py",
+        "family_selected_traits",
+        "family_tests",
+        "ora_cells",
+        "enrichment_tests",
+        "depletion_tests",
+        "correct_shared_comparisons",
+        "BH{len(family)}_directional_sign_test",
+        "scripts/create_pd_significant_condition_taxon_trait_network.py",
+        "passes_min_taxon_studies",
+        "passes_min_paired_studies",
+        "bh_family_size = int(support.sum())",
+        "fillna(1.0)",
+    )
+    for fragment in required_fragments:
+        assert fragment in text, f"Missing required BH family documentation fragment: {fragment}"
 
 
 def test_zero_composition_variance_within_support_bounds_is_not_selected() -> None:

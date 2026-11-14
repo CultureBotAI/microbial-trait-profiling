@@ -14,6 +14,54 @@ from mtp.datamodel import Study
 from mtp.paths import DERIVED_DATA_DIR, RAW_DATA_DIR, STUDY_DATA_DIR
 
 REQUIRED_EXPORTS = ("studies.csv", "experiments.csv", "signatures.csv")
+_MAX_INFO_EXAMPLES = 5
+
+
+def _format_info_example(entry: dict[str, str]) -> str:
+    """Format a compact identifier for an informational ingest log entry."""
+    sig_id = entry.get("signature", "")
+    item_id = entry.get("id", "")
+    if sig_id and item_id:
+        return f"{sig_id}:{item_id}"
+    return item_id or sig_id
+
+
+def _summarize_ingest_log(
+    log: list[dict[str, str]],
+    *,
+    max_examples: int = _MAX_INFO_EXAMPLES,
+) -> list[dict[str, str]]:
+    """Keep all non-info entries verbatim and collapse repeated info entries by (entity, reason)."""
+    if max_examples < 1:
+        raise ValueError("max_examples must be at least 1")
+
+    summarized: list[dict[str, str]] = []
+    info_groups: dict[tuple[str, str], list[dict[str, str]]] = defaultdict(list)
+
+    for entry in log:
+        if entry.get("level") == "info":
+            key = (entry.get("entity", ""), entry.get("reason", ""))
+            info_groups[key].append(entry)
+        else:
+            summarized.append(entry)
+
+    for (entity, reason), group in info_groups.items():
+        examples: list[str] = []
+        for item in group:
+            label = _format_info_example(item)
+            if label and label not in examples and len(examples) < max_examples:
+                examples.append(label)
+        summary_entry: dict[str, str] = {
+            "level": "info",
+            "entity": entity,
+            "reason": reason,
+            "count": str(len(group)),
+        }
+        if examples:
+            summary_entry["examples"] = ", ".join(examples)
+        summarized.append(summary_entry)
+
+    return summarized
 
 
 def assert_required_exports(raw_dir: Path) -> None:
@@ -101,6 +149,7 @@ def ingest(
     *,
     full_dump_path: Path | None = None,
     log_path: Path | None = None,
+    verbose_log: bool = False,
 ) -> list[Path]:
     """Parse raw CSVs and emit per-study YAML files.
 
@@ -162,7 +211,8 @@ def ingest(
     # Write ingest log
     log_path = log_path if log_path is not None else derived_dir / "ingest_log.json"
     log_path.parent.mkdir(parents=True, exist_ok=True)
-    log_path.write_text(json.dumps(log, indent=2) + "\n")
+    serialized_log = log if verbose_log else _summarize_ingest_log(log)
+    log_path.write_text(json.dumps(serialized_log, indent=2) + "\n")
 
     # Print summary and check for systemic problems
     from collections import Counter

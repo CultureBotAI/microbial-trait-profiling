@@ -358,10 +358,11 @@ Git abbreviation `0672ee7d`; a missing or ambiguous object is an error. The
 fixture retains `92539eb` as the historical review commit, but reproduction reads
 the blob directly, not that PR commit or current producer code. Extraction omits
 only the exact retirement banner; historical numbers remain pinned. The helper
-refuses existing output files. Full-clone tests resolve the abbreviation and
-check the full object ID against this record; they skip only outside Git or in a
-shallow checkout.
-CI's shallow checkout skips the real-Git pin check; that check runs only in full clones (#1740).
+refuses existing output files. The real-Git object pin is checked in only full local clones:
+the test resolves the abbreviation and checks the full object ID against this record.
+CI uses shallow checkouts (`fetch-depth: 1`), where `0672ee7d` is absent after
+retirement, so CI skips this check (#1740). The test also skips outside Git;
+missing or ambiguous objects in full clones remain failures.
 
 **Building the inputs.**
 

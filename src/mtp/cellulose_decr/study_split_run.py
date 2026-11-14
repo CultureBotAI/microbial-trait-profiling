@@ -19,7 +19,15 @@ import pandas as pd
 import scipy
 
 from mtp.cellulose_decr import selection_scan as scanner
-from mtp.cellulose_decr.study_split import Protocol, run_splits, summarize_stability
+from mtp.cellulose_decr.study_split import (
+    VERSION,
+    Protocol,
+    StudySplit,
+    _declaration,
+    _scope_role,
+    run_splits,
+    summarize_stability,
+)
 from mtp.datamodel.multiple_testing_pydantic import SourceArtifact
 from mtp.multiplicity.stage import code_sha256
 from mtp.paths import REPO_ROOT, file_sha256
@@ -50,6 +58,7 @@ IMPLEMENTATIONS = (
     "methods/cellulose_decr_selection_scan_protocol.json",
     "methods/cellulose_decr_selection_scan_protocol_v2.json",
     "methods/study_split_selection_protocol.json",
+    "methods/study_split_selection_protocol_v1.json",
     "methods/study_split_selection.md",
     "uv.lock",
 )
@@ -80,14 +89,17 @@ def _inputs(comparison_path: Path) -> tuple[VerifiedSources, dict[str, Path]]:
         comparison_path / "comparison_run.json" if comparison_path.is_dir() else comparison_path
     )
     comparison_digest = file_sha256(manifest)
-    verified = open_verified_sources(comparison_path)
+    verified = open_verified_sources(comparison_path, expected_sha256=comparison_digest)
     if (
         verified.core.contrast_population != scanner.TIER1_2
         or verified.core.direction_basis != ORIENTED_DIRECTION_BASIS
     ):
         raise ValueError("Study splits require the verified, disease-oriented Tier 1+2 population")
     if verified.scope not in {"off", "phenotype"}:
-        raise ValueError("Study splits declare off primary and phenotype sensitivity only")
+        raise ValueError(
+            "Study splits declare phenotype primary and off sensitivity only "
+            "(amended from phenotype sensitivity)"
+        )
     verified = bind_recorded_hashes(verified, comparison_digest)
     paths = {f"core:{name}": verified.product(name) for name in PRODUCTS}
     paths["comparison:manifest"] = Path(verified.comparison.manifest_path).resolve()
@@ -98,7 +110,7 @@ def _inputs(comparison_path: Path) -> tuple[VerifiedSources, dict[str, Path]]:
 
 
 def _execution_identity(protocol: Protocol) -> dict[str, Any]:
-    declared = json.loads(PROTOCOL_FILE.read_text(encoding="utf-8"))
+    declared = _declaration(PROTOCOL_FILE)
     defaults = Protocol()
     numeric = {
         "splits": defaults.splits,
@@ -112,11 +124,6 @@ def _execution_identity(protocol: Protocol) -> dict[str, Any]:
         raise ValueError("Committed protocol disagrees with the implemented defaults")
     if declared["direction_basis"] != ORIENTED_DIRECTION_BASIS:
         raise ValueError("Committed protocol direction basis mismatch")
-    if (declared["primary_strain_rollup"], declared["sensitivity_strain_rollup"]) != (
-        "off",
-        "phenotype",
-    ):
-        raise ValueError("Committed protocol strain-rollup roles mismatch")
     return {
         "protocol": declared,
         "parameters": asdict(protocol),
@@ -153,6 +160,56 @@ def _provenance(
     return {**_execution_identity(protocol), "inputs": _recorded_inputs(paths, verified)}
 
 
+def _scope_binding(verified: VerifiedSources) -> dict[str, Any]:
+    """Capture the verified common corpus and the scope-specific core identity."""
+    core = verified.core
+    declared = _declaration(PROTOCOL_FILE)
+    parameters = {item.name: item.value for item in core.parameters or []}
+    if len(parameters) != len(core.parameters or []):
+        raise ValueError("Duplicate core parameters in study-split scope binding")
+    recorded_scope = parameters.pop("strain_rollup", declared["absent_means"])
+    if recorded_scope != verified.scope:
+        raise ValueError("Study-split scope contradicts its verified core parameters")
+    sources = {
+        item.product_id: item.sha256
+        for item in core.artifacts or []
+        if item.product_id in scanner.CORE_SOURCES
+    }
+    if set(sources) != set(scanner.CORE_SOURCES) or any(not value for value in sources.values()):
+        raise ValueError("Study-split scope comparison needs every recorded raw/core source")
+    return {
+        "core_run_id": core.run_id,
+        "strain_rollup": verified.scope,
+        "role": _scope_role(verified.scope),
+        "comparison_contract": {
+            "population": core.contrast_population,
+            "direction_basis": core.direction_basis,
+            "trait_key_policy": core.trait_key_policy,
+            "producer": {
+                "definition_sha256": core.definition_sha256,
+                "code_sha256": core.code_sha256,
+                "lock_sha256": core.lock_sha256,
+                "runtime_sha256": hashlib.sha256(core.runtime_json.encode("utf-8")).hexdigest(),
+                "git_commit": core.git_commit,
+                "git_dirty": core.git_dirty,
+            },
+            "parameters": parameters,
+            "sources": sources,
+        },
+    }
+
+
+def _stability_table(records: Sequence[dict[str, Any]]) -> str:
+    output = io.StringIO(newline="")
+    writer = csv.DictWriter(
+        output, fieldnames=STABILITY_FIELDS, delimiter="\t", lineterminator="\n"
+    )
+    writer.writeheader()
+    for row in summarize_stability(records):
+        writer.writerow({**row, "conditions": json.dumps(row["conditions"], ensure_ascii=False)})
+    return output.getvalue()
+
+
 def _documents(
     verified: VerifiedSources,
     paths: dict[str, Path],
@@ -178,9 +235,7 @@ def _documents(
         for name, digest in _recorded_inputs(paths, verified).items()
     ]
     sources.append(
-        SourceArtifact(
-            identity="protocol:study-split-selection-v1", sha256=file_sha256(PROTOCOL_FILE)
-        )
+        SourceArtifact(identity=f"protocol:{VERSION}", sha256=file_sha256(PROTOCOL_FILE))
     )
     records = run_splits(
         profiles,
@@ -195,21 +250,15 @@ def _documents(
         strain_rollup=verified.scope,
         recorded_at=recorded_at,
     )
-    stability = summarize_stability(records)
-    output = io.StringIO(newline="")
-    writer = csv.DictWriter(
-        output, fieldnames=STABILITY_FIELDS, delimiter="\t", lineterminator="\n"
-    )
-    writer.writeheader()
-    for row in stability:
-        writer.writerow({**row, "conditions": json.dumps(row["conditions"], ensure_ascii=False)})
     selected = sum(bool(record["selected_candidates"]) for record in records)
-    role = "primary historical-lead scope" if verified.scope == "off" else "declared sensitivity"
+    role = _scope_role(verified.scope)
+    companion = "off" if verified.scope == "phenotype" else "phenotype"
     readme = (
         "# Internal study-split selection assessment\n\n"
         f"Strain rollup `{verified.scope}`: "
         f"{role}. "
-        "Report both scopes separately; do not choose the favorable result.\n\n"
+        f"Report beside the `{companion}` scope with the side-by-side report; "
+        "do not choose the favorable result. This role was amended after results.\n\n"
         f"Completed {len(records)} splits; {selected} selected at least one candidate. "
         "Empty and untestable splits remain recorded.\n\n"
         "Each split selects only on its training studies and tests only on its held-out studies. "
@@ -221,7 +270,7 @@ def _documents(
     )
     return {
         "split_results.json": _json(records),
-        "split_stability.tsv": output.getvalue(),
+        "split_stability.tsv": _stability_table(records),
         "README.md": readme,
     }
 
@@ -262,6 +311,7 @@ def execute(
     bundle = open_core_bundle(paths["core:manifest"])
     preflight_consumer_outputs(bundle, manifest_path, output_directory=output_dir)
     provenance = _provenance(paths, protocol, verified)
+    scope_binding = _scope_binding(verified)
     if any(provenance[key] != value for key, value in execution_identity.items()):
         raise ValueError("Study-split implementation changed during verification")
     if saved is not None and saved["provenance"] != provenance:
@@ -275,17 +325,21 @@ def execute(
         # the provenance inventory above is the replay identity (#906).
         repository_context = saved["repository_context"]
     documents = _documents(verified, paths, protocol, timestamp)
-    if _provenance(paths, protocol, verified) != provenance:
+    if (
+        _provenance(paths, protocol, verified) != provenance
+        or _scope_binding(verified) != scope_binding
+    ):
         raise ValueError("Study-split inputs or implementation changed during execution")
     output_hashes = {
         name: hashlib.sha256(content.encode("utf-8")).hexdigest()
         for name, content in sorted(documents.items())
     }
     record = {
-        "protocol_version": "study-split-selection-v1",
+        "protocol_version": VERSION,
         "recorded_at": timestamp.isoformat(),
         "repository_context": repository_context,
         "provenance": provenance,
+        "scope_binding": scope_binding,
         "output_sha256": output_hashes,
     }
     if saved is not None:
@@ -311,27 +365,253 @@ def execute(
     return manifest_path
 
 
+def _load_scope_run(directory: Path, scope: str) -> dict[str, Any]:
+    """Check saved bytes and their internal contracts; do not rerun the null model."""
+    expected_files = {
+        "study_split_run.json",
+        "split_results.json",
+        "split_stability.tsv",
+        "README.md",
+    }
+    entries = list(directory.iterdir())
+    if {entry.name for entry in entries} != expected_files or any(
+        entry.is_symlink() or not entry.is_file() for entry in entries
+    ):
+        raise ValueError("Saved study-split output inventory differs from its declared files")
+    buffers = {entry.name: entry.read_bytes() for entry in entries}
+    saved = json.loads(buffers["study_split_run.json"])
+    declared = _declaration(PROTOCOL_FILE)
+    if saved["protocol_version"] != VERSION or saved["provenance"]["protocol"] != declared:
+        raise ValueError("Both saved scope runs must follow the current v2 protocol")
+    outputs = saved["output_sha256"]
+    if set(outputs) != expected_files - {"study_split_run.json"}:
+        raise ValueError("Saved study-split manifest does not bind the complete output inventory")
+    for name, digest in outputs.items():
+        if hashlib.sha256(buffers[name]).hexdigest() != digest:
+            raise ValueError(f"Saved study-split output changed: {name}")
+    binding = saved["scope_binding"]
+    if binding["strain_rollup"] != scope or binding["role"] != _scope_role(scope):
+        raise ValueError("Saved study-split scope or primary/sensitivity role is contradictory")
+    contract = binding["comparison_contract"]
+    if set(contract) != {
+        "population",
+        "direction_basis",
+        "trait_key_policy",
+        "parameters",
+        "sources",
+        "producer",
+    } or set(contract["producer"]) != {
+        "definition_sha256",
+        "code_sha256",
+        "lock_sha256",
+        "runtime_sha256",
+        "git_commit",
+        "git_dirty",
+    }:
+        raise ValueError("Saved study-split comparison contract or producer metadata is incomplete")
+    if (
+        contract["population"] != scanner.TIER1_2
+        or contract["direction_basis"] != ORIENTED_DIRECTION_BASIS
+        or set(contract["sources"]) != set(scanner.CORE_SOURCES)
+        or "strain_rollup" in contract["parameters"]
+    ):
+        raise ValueError(
+            "Saved study-split population, direction or comparison contract is invalid"
+        )
+    provenance = saved["provenance"]
+    parameters = Protocol(**provenance["parameters"])
+    if not provenance["inputs"].get("comparison:manifest") or not provenance["implementation"]:
+        raise ValueError("Saved study-split run lacks its comparison or implementation binding")
+    if not provenance["environment"] or not contract["producer"]:
+        raise ValueError("Saved study-split run lacks its producer or execution environment")
+    records = json.loads(buffers["split_results.json"])
+    if len(records) != parameters.splits:
+        raise ValueError("Saved study-split count differs from the declared parameters")
+    partitions = []
+    for index, record in enumerate(records):
+        partition = StudySplit(**record["split"])
+        if partition.index != index:
+            raise ValueError("Saved study-split indices are incomplete or reordered")
+        partitions.append(asdict(partition))
+        family = record["correction"]["family"]
+        if (
+            family["family_id"] != f"{VERSION}:split-{index:03}"
+            or family["strain_rollup"] != scope
+            or family["profile_unit"] != "count_profiles"
+            or family["direction_basis"] != ORIENTED_DIRECTION_BASIS
+        ):
+            raise ValueError("Saved correction family contradicts its split scope or direction")
+    stability = _stability_table(records).encode("utf-8")
+    if stability != buffers["split_stability.tsv"]:
+        raise ValueError("Saved stability table disagrees with its split result records")
+    return {
+        "manifest_sha256": hashlib.sha256(buffers["study_split_run.json"]).hexdigest(),
+        "saved": saved,
+        "records": records,
+        "partitions": partitions,
+        "stability": summarize_stability(records),
+    }
+
+
+def report_scopes(
+    phenotype_dir: Path, off_dir: Path, output_dir: Path, *, verify: bool = False
+) -> Path:
+    """Pair both saved v2 scopes without selection, resampling or choosing a winner.
+
+    This checks the recorded source identities and outputs, not the live upstream
+    bundles. Use each run's full ``--verify`` mode for source-to-result replay.
+    """
+    preflight_bundle_roots(
+        output_dir,
+        {
+            "phenotype:manifest": phenotype_dir / "study_split_run.json",
+            "off:manifest": off_dir / "study_split_run.json",
+        },
+    )
+    if (
+        not verify
+        and output_dir.exists()
+        and (not output_dir.is_dir() or any(output_dir.iterdir()))
+    ):
+        raise ValueError("Study-split scopes output must be a new or empty directory")
+    try:
+        runs = {
+            "phenotype": _load_scope_run(phenotype_dir, "phenotype"),
+            "off": _load_scope_run(off_dir, "off"),
+        }
+        first, second = (runs[scope] for scope in ("phenotype", "off"))
+        bindings = [run["saved"]["scope_binding"] for run in (first, second)]
+        if (
+            any(not binding["core_run_id"] for binding in bindings)
+            or bindings[0]["core_run_id"] == bindings[1]["core_run_id"]
+        ):
+            raise ValueError("Each study-split scope must have its own recorded core run")
+        if bindings[0]["comparison_contract"] != bindings[1]["comparison_contract"]:
+            raise ValueError("Study-split scopes differ in their core comparison contract")
+        for field in ("protocol", "parameters", "code_sha256", "implementation", "environment"):
+            if first["saved"]["provenance"][field] != second["saved"]["provenance"][field]:
+                raise ValueError(f"Study-split scopes differ in {field}")
+        if first["partitions"] != second["partitions"]:
+            raise ValueError("Study-split scopes differ in their study partitions")
+    except (KeyError, TypeError) as error:
+        raise ValueError("Incomplete saved study-split scope contract") from error
+    output = io.StringIO(newline="")
+    writer = csv.DictWriter(
+        output,
+        fieldnames=("strain_rollup", "role", *STABILITY_FIELDS),
+        delimiter="\t",
+        lineterminator="\n",
+    )
+    writer.writeheader()
+    scopes = {}
+    for scope, run in runs.items():
+        saved = run["saved"]
+        role = _scope_role(scope)
+        for row in run["stability"]:
+            writer.writerow(
+                {
+                    "strain_rollup": scope,
+                    "role": role,
+                    **row,
+                    "conditions": json.dumps(row["conditions"], ensure_ascii=False),
+                }
+            )
+        scopes[scope] = {
+            "role": role,
+            "core_run_id": saved["scope_binding"]["core_run_id"],
+            "manifest_sha256": run["manifest_sha256"],
+            "input_sha256": saved["provenance"]["inputs"],
+            "output_sha256": saved["output_sha256"],
+            "splits": len(run["records"]),
+            "splits_with_candidates": sum(
+                bool(row["selected_candidates"]) for row in run["records"]
+            ),
+        }
+    documents = {
+        "study_split_scopes.tsv": output.getvalue(),
+        "README.md": (
+            "# Study-split scopes, side by side\n\n"
+            "`phenotype`: primary_phenotype; `off`: declared_sensitivity. Both are required. "
+            "The scope amendment was made after results were known; do not select a winner.\n\n"
+            "Saved stability counts are descriptive. Overlapping splits are dependent, "
+            "and no across-split p-value or FDR claim is computed. Empty selections remain "
+            "in the JSON split counts. Database trait annotations do not measure physiology.\n\n"
+            "This report checks saved manifest/output hashes and their internal consistency. "
+            "It does not rerun nulls or authenticate a coordinated rewrite of the manifests "
+            "and dependent outputs. Replay each split run with --verify to check live sources.\n"
+        ),
+    }
+    summary = {
+        "protocol_version": VERSION,
+        "protocol": first["saved"]["provenance"]["protocol"],
+        "parameters": first["saved"]["provenance"]["parameters"],
+        "comparison_contract": bindings[0]["comparison_contract"],
+        "scope_order": ["phenotype", "off"],
+        "scopes": scopes,
+        "output_sha256": {
+            name: hashlib.sha256(text.encode()).hexdigest() for name, text in documents.items()
+        },
+    }
+    name = "study_split_scopes.json"
+    documents[name] = _json(summary)
+    if verify:
+        entries = list(output_dir.iterdir())
+        if {path.name for path in entries} != set(documents) or any(
+            path.is_symlink() or not path.is_file() for path in entries
+        ):
+            raise ValueError("Study-split scopes report inventory differs")
+        for filename, content in documents.items():
+            if (output_dir / filename).read_bytes() != content.encode():
+                raise ValueError(f"Study-split scopes report differs: {filename}")
+    else:
+        output_dir.mkdir(parents=True, exist_ok=True)
+        for filename, content in documents.items():
+            with (output_dir / filename).open("xb") as stream:
+                stream.write(content.encode())
+    return output_dir / name
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--comparison-run", type=Path, required=True)
+    parser.add_argument("--comparison-run", type=Path)
+    parser.add_argument("--phenotype-run", type=Path, help="Saved v2 primary study-split run")
+    parser.add_argument("--off-run", type=Path, help="Saved v2 sensitivity study-split run")
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--splits", type=int, default=20)
     parser.add_argument("--seed", type=int, default=20261023)
     parser.add_argument("--permutations", type=int, default=100000)
     parser.add_argument(
-        "--verify", action="store_true", help="Replay all splits and nulls; no writes"
+        "--verify",
+        action="store_true",
+        help="Replay a single run's nulls, or check a saved paired report; no writes",
     )
     add_temporary_output_option(parser)
     args = parser.parse_args(argv)
+    pairing = args.phenotype_run is not None or args.off_run is not None
+    if pairing:
+        if args.comparison_run is not None or args.phenotype_run is None or args.off_run is None:
+            parser.error("Pairing requires --phenotype-run and --off-run, without --comparison-run")
+        if (args.splits, args.seed, args.permutations) != (20, 20261023, 100000):
+            parser.error("Scope pairing reads recorded parameters; do not supply numeric overrides")
+    elif args.comparison_run is None:
+        parser.error("Provide --comparison-run, or both saved scope runs")
     # Verification writes nothing; an execution's outputs are cited (#1087)
     if not args.verify:
         require_durable_output(parser, args.output_dir, allowed=args.allow_temporary_output)
-    result = execute(
-        args.comparison_run,
-        args.output_dir,
-        Protocol(splits=args.splits, seed=args.seed, permutations=args.permutations),
-        verify=args.verify,
-    )
+    if pairing:
+        result = report_scopes(
+            args.phenotype_run, args.off_run, args.output_dir, verify=args.verify
+        )
+    else:
+        comparison_run = args.comparison_run
+        if not isinstance(comparison_run, Path):
+            parser.error("Single-scope execution requires --comparison-run")
+        result = execute(
+            comparison_run,
+            args.output_dir,
+            Protocol(splits=args.splits, seed=args.seed, permutations=args.permutations),
+            verify=args.verify,
+        )
     print(result)
     return 0
 

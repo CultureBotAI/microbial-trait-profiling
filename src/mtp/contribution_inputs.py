@@ -5,12 +5,16 @@ from __future__ import annotations
 import argparse
 import csv
 import hashlib
+import io
 import json
 from collections import defaultdict
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
+from types import MappingProxyType
+from typing import Literal
 
+from mtp.datamodel.workflow_pydantic import WorkflowRun
 from mtp.paths import REPO_ROOT
 from mtp.taxa_trait_matrix import (
     PRIMARY_STRAIN_ROLLUP,
@@ -26,6 +30,7 @@ from mtp.trait_key_policy import (
     TraitKeyPolicy,
     parse_trait_key_policy,
 )
+from mtp.workflow.trait_policy import resolve_trait_policy
 
 Key = tuple[str, str, str]
 Pair = tuple[str, str]
@@ -305,6 +310,114 @@ def load_graph(
     return Graph(dict(parents), scoped, dict(assertions), names, repaired, continued)
 
 
+@dataclass(frozen=True)
+class InputTraitPolicyResolution:
+    """Parsed policy metadata and the exact consumed bytes, not verified core artifacts."""
+
+    policy: TraitKeyPolicy
+    basis: Literal["explicit", "core_manifest", "column_metadata", "default"]
+    source_sha256: Mapping[str, str]
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "source_sha256", MappingProxyType(dict(self.source_sha256)))
+
+    def as_dict(self) -> dict[str, object]:
+        """Return a JSON-serializable snapshot with stable source roles, without local paths."""
+        return {
+            "policy": self.policy,
+            "basis": self.basis,
+            "source_sha256": dict(self.source_sha256),
+        }
+
+
+def _column_policy_rows(data: bytes, path: Path) -> Iterator[dict[str, str]]:
+    reader = csv.reader(io.StringIO(data.decode("utf-8"), newline=""), delimiter="\t")
+    header = next(reader, [])
+    if not header or len(set(header)) != len(header):
+        raise ValueError(f"Empty or duplicate header: {path}")
+    for number, row in enumerate(reader, 2):
+        if len(row) != len(header):
+            raise ValueError(f"Wrong field count: {path}:{number}")
+        yield dict(zip(header, row, strict=True))
+
+
+def resolve_inputs_trait_key_policy_record(
+    inputs_dir: Path,
+    requested_policy: TraitKeyPolicy | str | None = None,
+    *,
+    core_manifest: Path | None = None,
+) -> InputTraitPolicyResolution:
+    """Parse and validate policy metadata, retaining hashes of the same consumed buffers.
+
+    Manifest structure and internal policy declarations are checked. Verifying core
+    artifacts and binding the manifest to inputs_dir remain the caller's responsibility;
+    an unrelated structurally valid historical manifest can supply policy metadata.
+    """
+    explicit = parse_trait_key_policy(requested_policy) if requested_policy is not None else None
+    source_sha256: dict[str, str] = {}
+    manifest_path = core_manifest
+    if manifest_path is None:
+        candidate = inputs_dir / "run.json"
+        if candidate.is_file():
+            manifest_path = candidate
+    manifest_policy: TraitKeyPolicy | None = None
+    if manifest_path is not None:
+        manifest_data = manifest_path.read_bytes()
+        run = WorkflowRun.model_validate_json(manifest_data)
+        manifest_policy = resolve_trait_policy(run).policy
+        source_sha256["core_manifest"] = hashlib.sha256(manifest_data).hexdigest()
+    columns_path = inputs_dir / "taxa_trait_matrix_columns.tsv"
+    column_policy: TraitKeyPolicy | None = None
+    if columns_path.is_file():
+        columns_data = columns_path.read_bytes()
+        source_sha256["taxa_trait_matrix_columns.tsv"] = hashlib.sha256(columns_data).hexdigest()
+        column_policies = {
+            parse_trait_key_policy(row["trait_key_policy"].strip())
+            for row in _column_policy_rows(columns_data, columns_path)
+            if row.get("trait_key_policy", "").strip()
+        }
+        if len(column_policies) > 1:
+            raise ValueError(
+                f"Conflicting trait_key_policy values in {columns_path}: {sorted(column_policies)}"
+            )
+        if len(column_policies) == 1:
+            column_policy = next(iter(column_policies))
+    if (
+        manifest_policy is not None
+        and column_policy is not None
+        and manifest_policy != column_policy
+    ):
+        raise ValueError(
+            f"Core manifest trait_key_policy {manifest_policy!r} contradicts "
+            f"{columns_path.name} policy {column_policy!r}"
+        )
+    recorded_policy = manifest_policy or column_policy
+    if recorded_policy is not None and explicit is not None and explicit != recorded_policy:
+        raise ValueError(
+            f"Requested trait_key_policy {explicit!r} contradicts recorded input policy "
+            f"{recorded_policy!r}"
+        )
+    if explicit is not None:
+        return InputTraitPolicyResolution(explicit, "explicit", source_sha256)
+    if manifest_policy is not None:
+        return InputTraitPolicyResolution(manifest_policy, "core_manifest", source_sha256)
+    if column_policy is not None:
+        return InputTraitPolicyResolution(column_policy, "column_metadata", source_sha256)
+    return InputTraitPolicyResolution(DEFAULT_TRAIT_KEY_POLICY, "default", source_sha256)
+
+
+def resolve_inputs_trait_key_policy(
+    inputs_dir: Path,
+    requested_policy: TraitKeyPolicy | str | None = None,
+    *,
+    core_manifest: Path | None = None,
+) -> TraitKeyPolicy:
+    """Return the parsed policy; full core verification and input binding belong to the caller."""
+    return resolve_inputs_trait_key_policy_record(
+        inputs_dir, requested_policy, core_manifest=core_manifest
+    ).policy
+
+
 def verify_kg(kg_dir: Path, expected: dict[str, str]) -> dict[str, str]:
     hashes = {}
     for filename, wanted in expected.items():
@@ -349,6 +462,7 @@ __all__ = [
     "Assertion",
     "Base",
     "Graph",
+    "InputTraitPolicyResolution",
     "Key",
     "Pair",
     "count",
@@ -357,6 +471,8 @@ __all__ = [
     "load_base",
     "load_graph",
     "main",
+    "resolve_inputs_trait_key_policy",
+    "resolve_inputs_trait_key_policy_record",
     "rows",
     "verify_kg",
 ]

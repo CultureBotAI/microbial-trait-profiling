@@ -26,6 +26,7 @@ from collections.abc import Mapping
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
+from mtp.count_input import open_input_text
 from mtp.paths import KG_MICROBE_DIR, file_sha256
 from mtp.trait_guilds import (
     MEDIADIVE_MARKER,
@@ -149,9 +150,9 @@ class CorpusIdentity:
 
 
 def measure_matrix(profile_path: Path) -> MatrixIdentity:
-    """Read ``profile_path`` once for its shape, and hash it."""
+    """Measure plain or gzip TSV shape; hash and size identify the stored bytes."""
     rows = 0
-    with profile_path.open(encoding="utf-8", newline="") as handle:
+    with open_input_text(profile_path) as handle:
         reader = csv.reader(handle, delimiter="\t")
         header = next(reader, [])
         for row in reader:

@@ -2150,7 +2150,7 @@ PLATE2_TRAIT_ROWS: list[tuple[str, str, str]] = [
     # A display group of oxygen-related rows, not an oxygen guild: METPO:1000608
     # is in neither guild (#1237); its ★ marks it as a Table 1 trait.
     ("METPO:1000608", "[O₂]  Facultatively aerobic ★", "O₂ / Aerotolerance"),
-    ("METPO:1000606", "Microaerophilic", "O₂ / Aerotolerance"),
+    ("METPO:1000606", "Obligately aerobic", "O₂ / Aerotolerance"),
     ("METPO:1000602", "Aerobic", "O₂ / Aerotolerance"),
     ("METPO:1000623", "[Halophily]  Moderately halophilic ★", "Halotolerance / Osmotic"),
     ("METPO:1000467", "NaCl optimum mid2", "Halotolerance / Osmotic"),

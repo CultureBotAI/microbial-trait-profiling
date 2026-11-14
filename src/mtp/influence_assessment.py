@@ -275,7 +275,7 @@ def _native(
     review_path: Path | None,
 ) -> InfluenceAssessment:
     protocol = _object(content.get("protocol"), "protocol")
-    if protocol.get("version") != NATIVE_VERSION:
+    if protocol.get("version") not in {NATIVE_VERSION, "190-native-v3"}:
         raise ValueError("incompatible native influence protocol version")
     for method in ("composition", "ora"):
         if not _object(protocol.get(method), f"protocol.{method}"):

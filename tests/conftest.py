@@ -27,6 +27,7 @@ collect_ignore = (
 # Every real pipeline input and output: raw downloads and their provenance,
 # study YAML, derived tables, and the KG-Microbe snapshot.
 GUARDED_DATA_DIR = REPO_ROOT / "data"
+_PROTECTED_OUTPUT_DIRS = (GUARDED_DATA_DIR, REPO_ROOT / "trait-visualization")
 
 
 def _snapshot(root: Path) -> dict[str, tuple[int, int]]:
@@ -41,19 +42,24 @@ def _snapshot(root: Path) -> dict[str, tuple[int, int]]:
 
 @pytest.fixture(autouse=True, scope="session")
 def _tests_never_write_real_data() -> Iterator[None]:
-    """Fail the run if any test creates, modifies or deletes a file under data/ (#417, #421).
+    """Detect changes under data/ and trait-visualization/ (#417, #421, #1026).
 
     A test that falls back to a default path writes over real pipeline data:
     ingest() once wrote its fixture log over data/derived/ingest_log.json, and
     ingest() and download_exports() also default to data/studies and data/raw.
     """
-    before = _snapshot(GUARDED_DATA_DIR)
+    before = {root: _snapshot(root) for root in _PROTECTED_OUTPUT_DIRS}
     yield
-    after = _snapshot(GUARDED_DATA_DIR)
+    after = {root: _snapshot(root) for root in _PROTECTED_OUTPUT_DIRS}
     changed = sorted(
-        name for name in before.keys() | after.keys() if before.get(name) != after.get(name)
+        str(root / name)
+        for root in _PROTECTED_OUTPUT_DIRS
+        for name in before[root].keys() | after[root].keys()
+        if before[root].get(name) != after[root].get(name)
     )
-    assert not changed, f"tests changed real files under {GUARDED_DATA_DIR}: {', '.join(changed)}"
+    assert not changed, (
+        f"tests changed real files under protected output roots: {', '.join(changed)}"
+    )
 
 
 @pytest.fixture
