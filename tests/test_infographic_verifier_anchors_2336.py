@@ -2,7 +2,9 @@
 
 import importlib.util
 import sys
+from collections.abc import Sequence
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -40,21 +42,23 @@ EXPECTED_MUTANTS = {
 }
 
 
+def _load_verifier_mutants(filename: str) -> tuple[Path, Sequence[Any]]:
+    """Load a verifier module without running its mutator and return its path and mutants."""
+    path = ROOT / "scripts/adhoc" / filename
+    spec = importlib.util.spec_from_file_location(f"anchor2336_{path.stem}", path)
+    assert spec is not None
+    assert spec.loader is not None
+    verifier = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = verifier
+    spec.loader.exec_module(verifier)
+    return path, verifier.MUTANTS
+
+
 def _anchor_cases() -> list[tuple[str, Path, str]]:
     """Read the verifiers' specifications without invoking their mutation runners."""
     cases: list[tuple[str, Path, str]] = []
     for filename, target_attribute in VERIFIERS:
-        path = ROOT / "scripts/adhoc" / filename
-        spec = importlib.util.spec_from_file_location(f"anchor2336_{path.stem}", path)
-        assert spec is not None
-        assert spec.loader is not None
-        verifier = importlib.util.module_from_spec(spec)
-        sys.modules[spec.name] = verifier
-        spec.loader.exec_module(verifier)
-        mutants = verifier.MUTANTS
-        assert tuple(mutant.name for mutant in mutants) == EXPECTED_MUTANTS[filename], (
-            f"{filename}: the mutant list changed; repair anchors instead of dropping mutants"
-        )
+        path, mutants = _load_verifier_mutants(filename)
         for mutant in mutants:
             name = mutant.name
             target = getattr(mutant, target_attribute)
@@ -68,6 +72,14 @@ def _anchor_cases() -> list[tuple[str, Path, str]]:
 
 
 ANCHOR_CASES = _anchor_cases()
+
+
+@pytest.mark.parametrize("filename", [filename for filename, _ in VERIFIERS])
+def test_verifier_mutant_names_match_expected(filename: str) -> None:
+    _, mutants = _load_verifier_mutants(filename)
+    assert tuple(mutant.name for mutant in mutants) == EXPECTED_MUTANTS[filename], (
+        f"{filename}: the mutant list changed; repair anchors instead of dropping mutants"
+    )
 
 
 @pytest.mark.parametrize(
