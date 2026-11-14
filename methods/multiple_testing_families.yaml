@@ -242,8 +242,19 @@
       "size_source": {
         "kind": "selected_rows",
         "selection_rule": "Within the stratum, select_stratum_traits applies support bounds, positive composition variance and MediaDive exclusion; ranks by variance times log1p(total signal), then variance, support and trait ID; and applies max_traits when supplied. Use its matrix columns for the pair t tests.",
-        "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size.",
-        "unfiltered_count_rule": "Count retained_trait_counts(profile_matrix).columns before select_stratum_traits; the producer records this as retained_trait_count in the stratum statistics, while correction_family_size records the selected matrix width."
+        "count_rule": "Count len(matrix.columns) in compute_trait_stats for this stratum, equivalently all selected trait rows in its statistics TSV. The repeated correction_family_size records the pair-test correction count, including unavailable p_value held at internal p=1; finite-p and significant-q subsets do not define its size.",
+        "unfiltered_count_rule": "Count len(retained_trait_counts(profile_matrix).columns) in pair_denominator_summary before support, variance, ranking and optional max_traits selection. The repeated retained_trait_count records this full retained input catalog in the stratum statistics TSV, including traits subsequently filtered out; selected row counts do not recover it.",
+        "recorded_sizes": {
+          "file": "trait_profile_paired_contrast_trait_stats_<filename_token>.tsv",
+          "selected_count": "correction_family_size",
+          "unfiltered_count": "retained_trait_count",
+          "group_by": [
+            "stratum_kind",
+            "stratum"
+          ],
+          "missing_or_blank": "unavailable",
+          "read_rule": "Resolve <filename_token> from trait_profile_paired_contrast_trait_stats_manifest.tsv (or pooled for the pooled stratum). The pooled stratum is also written unsuffixed to trait_profile_paired_contrast_trait_stats.tsv; read one pooled output so its rows are not counted twice. Use a nonempty current-schema TSV from the bound execution and verify each repeated count agrees within its stratum. Never sum repeated counts or borrow another stratum's count. Legacy headers can omit these fields, and missing denominator summaries can leave them blank: record unavailable, not zero; an absent output also does not establish an empty inventory."
+        }
       },
       "primary_procedure": "BH",
       "comparison_procedure": [],
@@ -315,8 +326,19 @@
       "size_source": {
         "kind": "selected_rows",
         "selection_rule": "Reuse select_stratum_traits columns (support bounds, positive variance, MediaDive exclusion, variance times log1p(signal) ranking and optional max_traits); aggregate pair contrasts by study before testing without further feature removal.",
-        "count_rule": "Count declared hypothesis members from this execution, including held untestable slots where specified; no source constant or historical observed size is a current size.",
-        "unfiltered_count_rule": "Read retained_trait_count from the stratum statistics (the width of retained_trait_counts before support/variance selection); use correction_family_size only for the selected study-test family."
+        "count_rule": "Count len(matrix.columns) in compute_trait_stats for this stratum, equivalently all selected trait rows in its statistics TSV. Study aggregation changes observations without removing traits. The repeated correction_family_size records the study-test correction count, including unavailable study_p_value held at internal p=1; finite-p and significant-q subsets do not define its size.",
+        "unfiltered_count_rule": "Count len(retained_trait_counts(profile_matrix).columns) in pair_denominator_summary before support, variance, ranking and optional max_traits selection. Read the repeated retained_trait_count from this stratum's statistics TSV; the study family reuses the same full retained input catalog as the pair family, not only its selected traits.",
+        "recorded_sizes": {
+          "file": "trait_profile_paired_contrast_trait_stats_<filename_token>.tsv",
+          "selected_count": "correction_family_size",
+          "unfiltered_count": "retained_trait_count",
+          "group_by": [
+            "stratum_kind",
+            "stratum"
+          ],
+          "missing_or_blank": "unavailable",
+          "read_rule": "Resolve <filename_token> from trait_profile_paired_contrast_trait_stats_manifest.tsv (or pooled for the pooled stratum). The pooled stratum is also written unsuffixed to trait_profile_paired_contrast_trait_stats.tsv; read one pooled output so its rows are not counted twice. Use a nonempty current-schema TSV from the bound execution and verify each repeated count agrees within its stratum. Never sum repeated counts or borrow another stratum's count. Legacy headers can omit these fields, and missing denominator summaries can leave them blank: record unavailable, not zero; an absent output also does not establish an empty inventory."
+        }
       },
       "primary_procedure": "BH",
       "comparison_procedure": [],

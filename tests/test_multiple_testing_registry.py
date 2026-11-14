@@ -13,10 +13,12 @@ runtime-selected methods. It never imports analysis modules or runs a test.
 from __future__ import annotations
 
 import ast
+import csv
 import re
 import unicodedata
 from collections import Counter, defaultdict
 from collections.abc import Iterable, Iterator, Mapping
+from copy import deepcopy
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -159,6 +161,102 @@ REQUIRED = {
     "open_issue",
     "anchors",
 }
+
+# #1450 part 1: these two families share a producer and committed header proof.
+# Other selected families retain their existing checks pending separate evidence.
+NATIVE_SELECTED_FAMILIES = ("mt-core-native-pair-t", "mt-core-native-study-t")
+NATIVE_RECORDED_SIZES = {
+    "file": "trait_profile_paired_contrast_trait_stats_<filename_token>.tsv",
+    "selected_count": "correction_family_size",
+    "unfiltered_count": "retained_trait_count",
+    "group_by": ["stratum_kind", "stratum"],
+    "missing_or_blank": "unavailable",
+}
+NATIVE_MANIFEST = (
+    ROOT
+    / "trait-visualization/trait-profile-investigation"
+    / "trait_profile_paired_contrast_trait_stats_manifest.tsv"
+)
+NATIVE_POOLED_WITNESSES = (
+    "data/derived/trait_profile_paired_contrast_trait_stats_pooled.tsv",
+    "trait-visualization/trait-profile-investigation/"
+    "trait_profile_paired_contrast_trait_stats_pooled.tsv",
+    "trait-visualization/trait-profile-investigation/trait_profile_paired_contrast_trait_stats.tsv",
+)
+
+
+def manifest_witness_paths(file_template: str, manifest_path: Path = NATIVE_MANIFEST) -> list[Path]:
+    """Instantiate a recorded_sizes file template against every manifest stratum row."""
+    placeholders = re.findall(r"<([a-z_]+)>", file_template)
+    if not placeholders:
+        raise AssertionError(f"Expected <placeholder> in template: {file_template!r}")
+    manifest_dir = manifest_path.parent
+    existing_names = {entry.name for entry in manifest_dir.iterdir() if entry.is_file()}
+    with manifest_path.open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle, delimiter="\t"))
+    if not rows:
+        raise AssertionError(f"Expected manifest rows in {manifest_path}")
+    paths: list[Path] = []
+    for row in rows:
+        missing_cols = [col for col in placeholders if not row.get(col)]
+        if missing_cols:
+            raise AssertionError(
+                f"Template {file_template!r} references missing manifest columns {missing_cols}"
+            )
+        filename = file_template
+        for col in placeholders:
+            filename = filename.replace(f"<{col}>", row[col])
+        recorded_path = ROOT / row["path"]
+        if filename != recorded_path.name:
+            raise AssertionError(
+                f"Template {file_template!r} instantiated {filename!r} "
+                f"for stratum {row.get('stratum')!r}, expected {recorded_path.name!r}"
+            )
+        if filename not in existing_names:
+            raise AssertionError(
+                f"Derived witness file {filename!r} is missing from {manifest_dir}"
+            )
+        paths.append(manifest_dir / filename)
+    return paths
+
+
+def native_selected_size_errors(size: Any) -> list[str]:
+    """Require reconstructable counts for the two header-verified native families."""
+    if not isinstance(size, dict):
+        return ["native selected size_source must be a mapping"]
+    errors = []
+    if size.get("kind") != "selected_rows":
+        errors.append("native inventory must remain selected_rows")
+    for name, required_terms in (
+        ("count_rule", ("matrix.columns", "correction_family_size", "p=1")),
+        ("unfiltered_count_rule", ("retained_trait_counts", "retained_trait_count", "before")),
+    ):
+        rule = size.get(name)
+        if not isinstance(rule, str) or not all(term in rule for term in required_terms):
+            errors.append(f"native {name} needs its specific inventory recipe")
+    recorded = size.get("recorded_sizes")
+    if not isinstance(recorded, dict):
+        errors.append("native inventory needs recorded_sizes locations")
+    else:
+        for key, expected in NATIVE_RECORDED_SIZES.items():
+            if recorded.get(key) != expected:
+                errors.append(f"native recorded_sizes {key} must be {expected!r}")
+        note = recorded.get("read_rule")
+        required_read_rule_terms = (
+            "nonempty",
+            "legacy",
+            "stratum",
+            "never sum",
+            "trait_profile_paired_contrast_trait_stats_manifest.tsv",
+            "filename_token",
+            "trait_profile_paired_contrast_trait_stats.tsv",
+            "not counted twice",
+        )
+        if not isinstance(note, str) or not all(
+            term in note.lower() for term in required_read_rule_terms
+        ):
+            errors.append("native recorded_sizes needs a qualified read_rule")
+    return errors
 
 
 def dotted(node: ast.AST, limits: Limits = DEFAULT_LIMITS) -> str:
@@ -1809,6 +1907,8 @@ def family_schema_errors(
     if not isinstance(issues, list) or any(type(issue) is not int for issue in issues):
         errors.append("open_issue must be a list of integers")
     size = family.get("size_source")
+    if family.get("family_id") in NATIVE_SELECTED_FAMILIES:
+        errors.extend(native_selected_size_errors(size))
     if not isinstance(size, dict):
         errors.append("size_source must be a mapping")
     else:
@@ -2041,6 +2141,114 @@ def test_repository_corrections_have_registered_families() -> None:
     registry = yaml.safe_load(REGISTRY.read_text(encoding="utf-8"))
     assert isinstance(registry, dict)
     assert not (errors := registry_errors(repository_sources(ROOT), registry)), "\n".join(errors)
+
+
+@pytest.mark.parametrize("family_id", NATIVE_SELECTED_FAMILIES)
+def test_native_selected_family_records_both_inventory_sizes(family_id: str) -> None:
+    registry = yaml.safe_load(REGISTRY.read_text(encoding="utf-8"))
+    family = next(item for item in registry["families"] if item["family_id"] == family_id)
+    assert not (errors := native_selected_size_errors(family["size_source"])), errors
+
+
+@pytest.fixture
+def complete_native_size_source() -> dict[str, Any]:
+    return {
+        "kind": "selected_rows",
+        "count_rule": "Count matrix.columns as correction_family_size, including held p=1.",
+        "unfiltered_count_rule": (
+            "Count retained_trait_counts before selection as retained_trait_count."
+        ),
+        "recorded_sizes": {
+            **deepcopy(NATIVE_RECORDED_SIZES),
+            "read_rule": (
+                "Resolve <filename_token> from "
+                "trait_profile_paired_contrast_trait_stats_manifest.tsv (or pooled). "
+                "Read one pooled output rather than both pooled and unsuffixed "
+                "trait_profile_paired_contrast_trait_stats.tsv so rows are not counted twice. "
+                "Use a nonempty table per stratum; never sum repeated counts. "
+                "Treat legacy missing fields as unavailable."
+            ),
+        },
+    }
+
+
+def test_complete_native_inventory_declaration_is_accepted(
+    complete_native_size_source: dict[str, Any],
+) -> None:
+    assert native_selected_size_errors(complete_native_size_source) == []
+
+
+@pytest.mark.parametrize("field", ["count_rule", "unfiltered_count_rule", "recorded_sizes"])
+@pytest.mark.parametrize(
+    "replacement", [None, "Count declared hypothesis members from this execution."]
+)
+def test_missing_or_generic_native_inventory_is_rejected(
+    complete_native_size_source: dict[str, Any], field: str, replacement: str | None
+) -> None:
+    if replacement is None:
+        del complete_native_size_source[field]
+    else:
+        complete_native_size_source[field] = replacement
+    assert native_selected_size_errors(complete_native_size_source)
+
+
+@pytest.mark.parametrize(
+    ("field", "replacement"),
+    [
+        ("file", "significant_traits.tsv"),
+        ("selected_count", "p_value"),
+        ("unfiltered_count", "correction_family_size"),
+        ("group_by", []),
+        ("missing_or_blank", "zero"),
+        ("read_rule", "Read counts."),
+    ],
+)
+def test_misbound_native_recorded_size_is_rejected(
+    complete_native_size_source: dict[str, Any], field: str, replacement: object
+) -> None:
+    complete_native_size_source["recorded_sizes"][field] = replacement
+    assert native_selected_size_errors(complete_native_size_source)
+
+
+def test_native_inventory_kind_cannot_bypass_the_guard(
+    complete_native_size_source: dict[str, Any],
+) -> None:
+    complete_native_size_source["kind"] = "executed_inventory"
+    family = {"family_id": NATIVE_SELECTED_FAMILIES[0], "size_source": complete_native_size_source}
+    assert "native inventory must remain selected_rows" in family_schema_errors(family, set(), {})
+
+
+def test_native_recorded_size_fields_have_committed_header_witnesses() -> None:
+    registry = yaml.safe_load(REGISTRY.read_text(encoding="utf-8"))
+    for family_id in NATIVE_SELECTED_FAMILIES:
+        family = next(item for item in registry["families"] if item["family_id"] == family_id)
+        recorded = family["size_source"]["recorded_sizes"]
+        witness_paths = manifest_witness_paths(recorded["file"])
+        witness_paths.extend(ROOT / rel for rel in NATIVE_POOLED_WITNESSES)
+        for path in witness_paths:
+            with path.open(encoding="utf-8", newline="") as handle:
+                header = next(csv.reader(handle, delimiter="\t"))
+            assert {
+                recorded["selected_count"],
+                recorded["unfiltered_count"],
+                *recorded["group_by"],
+                "stratum_kind",
+                "stratum",
+                "correction_family_size",
+                "retained_trait_count",
+                "p_value",
+                "q_value",
+                "study_p_value",
+                "study_q_value",
+            } <= set(header), f"Missing required columns in {path}"
+
+
+def test_wrong_native_file_template_fails_manifest_witness_derivation() -> None:
+    with pytest.raises(
+        AssertionError,
+        match=re.escape("expected 'trait_profile_paired_contrast_trait_stats_feces.tsv'"),
+    ):
+        manifest_witness_paths("trait_profile_paired_contrast_trait_stats_<stratum>.tsv")
 
 
 def example_registry(*anchors: tuple[str, str, list[str]]) -> dict[str, Any]:
