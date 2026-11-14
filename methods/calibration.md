@@ -1,6 +1,6 @@
 # Do these directional tests hold their error rates?
 
-Produced by `src/bsdbng/calibration.py`, driven by `just calibration-report`, which
+Produced by `src/mtp/calibration.py`, driven by `just calibration-report`, which
 writes `data/derived/calibration/`: every scenario's per-test and family results
 (`calibration_results.tsv`), one row per procedure and replicate
 (`calibration_replicates.tsv`), the effective injection sizes

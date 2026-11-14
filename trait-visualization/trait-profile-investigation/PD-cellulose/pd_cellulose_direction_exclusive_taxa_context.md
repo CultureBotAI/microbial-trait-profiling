@@ -83,4 +83,4 @@ The plot counts profiles whose normalized cellulose trait z-score is above zero.
 - [Cellulose profile support](pd_cellulose_display_edge_summary.tsv). Source of the 34/69 positive-z profile counts and 22/34 supporting-study counts.
 - [Profile metadata](../../study_trait_profile_study_metadata.tsv). Source of condition/body-site restrictions and deduplicated cohort study totals.
 - [Taxon occurrence records](../../../data/derived/taxa.tsv). Joined to profile metadata by study, experiment, and direction; deduplicated by taxon ID and profile.
-- [Taxa-trait counting implementation](../../../src/bsdbng/taxa_trait_matrix.py). See compute_trait_counts for annotation inheritance.
+- [Taxa-trait counting implementation](../../../src/mtp/taxa_trait_matrix.py). See compute_trait_counts for annotation inheritance.

@@ -36,7 +36,7 @@ binomial test of its non-tied studies against a half-and-half null, with an exac
 Clopper-Pearson 95% interval for the share shifting up.
 
 The study contrasts and the sign tally are computed by `study_trait_contrasts` and
-`tally_direction_signs` in `src/bsdbng/table1_trait_maps.py`, which the six-trait arm
+`tally_direction_signs` in `src/mtp/table1_trait_maps.py`, which the six-trait arm
 also calls. The widened screen shares that code rather than reimplementing it, so the
 two cannot drift apart. Regenerating the six-trait outputs after this change produced
 files byte-identical to the previous run.
@@ -68,7 +68,7 @@ the family size of the earlier `off` screen or of a future run.
 
 The set is read from the matrix at run time and never written down, so a corpus change
 moves the family rather than silently mismatching it. `retained_trait_columns` in
-`src/bsdbng/trait_guilds.py` is the single implementation of that rule and is also what
+`src/mtp/trait_guilds.py` is the single implementation of that rule and is also what
 the profile loader uses to build its denominator, so the tested universe and the
 denominator universe are the same set by construction.
 
@@ -94,7 +94,7 @@ would shrink the family they were declared into.
 Correcting across m traits counts m declared hypotheses, whether or not the tests
 are independent. Primary BY uses that complete inventory. A separate sensitivity
 calculation uses a dependence-based effective multiplier with the same p-value
-vector; it is not a smaller hypothesis family. `step_up` in `src/bsdbng/trait_screen.py`
+vector; it is not a smaller hypothesis family. `step_up` in `src/mtp/trait_screen.py`
 takes the family size as a parameter for that reason — `scipy.stats.false_discovery_control`
 always corrects at the number of p-values it is handed. With the family size equal to
 the number of tests it reproduces scipy exactly, which the test suite asserts against

@@ -70,7 +70,7 @@ learned through data exploration.
 
 - Prototype: discovered through analysis of the CSV data and the
   [MetaPhlAn taxon names column](https://github.com/CultureBotAI/KG-Microbe-search/blob/main/schema/YAML_CONVERSION_GUIDE.md)
-- This project: `src/bsdbng/ingest.py`, function `_parse_taxa` — implements
+- This project: `src/mtp/ingest.py`, function `_parse_taxa` — implements
   correct semicolon/pipe parsing with the `METAPHLAN_RANK_MAP`
 
 ### 6. 1,743 BugSigDB studies were successfully analyzed
