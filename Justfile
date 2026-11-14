@@ -716,10 +716,11 @@ study-trait-profiles: taxa-trait-matrix
 taxa-coverage *ARGS:
 	uv run python scripts/create_taxa_coverage_histogram.py "$@"
 
-# Regenerate taxa-coverage histograms filtered to the 548-study Tier 1+2 healthy/disease subset.
+# Taxa-coverage histograms for the disease_vs_healthy_tier1_2_subject_controls contrast subset,
+# written to their own directory so the canonical taxa-coverage outputs stay unchanged.
 [positional-arguments]
 taxa-coverage-548 *ARGS:
-	uv run python scripts/create_taxa_coverage_histogram.py --strain-rollup phenotype --contrast-population disease_vs_healthy_tier1_2_subject_controls --raw-dump data/raw/full_dump.csv --output-dir trait-visualization/trait-profile-investigation/taxa-coverage "$@"
+	uv run python scripts/create_taxa_coverage_histogram.py --strain-rollup phenotype --contrast-population disease_vs_healthy_tier1_2_subject_controls --raw-dump data/raw/full_dump.csv --output-dir trait-visualization/trait-profile-investigation/taxa-coverage-tier1-2-subject-controls "$@"
 
 # Isolate one synthetic population-guard mutation; canonical source stays untouched (#1176).
 [positional-arguments]
