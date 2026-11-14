@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from mtp.contribution_inputs import digest, rows
-from mtp.native_influence_publication import publish
+from mtp.native_influence_publication import interpretation_handoff, publish
 from mtp.native_taxon_influence import compressed_rows
 from mtp.taxon_contributions import write_table
 
@@ -254,6 +254,74 @@ def test_publication_preserves_comparisons_and_full_family_metadata(run_director
     assert "See run_manifest.json and native_composition_comparison.tsv.gz." in summary
     assert "Cross-scale interpretation flags (#213)" in summary
     assert "directional sign-test q is 0.0029" in summary
+
+
+@pytest.mark.parametrize(
+    ("version", "selected", "expected_size", "basis"),
+    [
+        ("190-native-v3", "4", "4", "all_selected_traits_padded_at_one"),
+        ("190-native-v1", "4", "2", "historical_v1_finite_tests"),
+        ("190-native-v1", None, "2", "historical_v1_finite_tests"),
+        ("190-native-v2", "4", "2", "historical_finite_tests"),
+        ("190-native-v2", None, "2", "historical_finite_tests"),
+        (None, None, "2", "legacy_finite_tests_no_protocol_version"),
+    ],
+)
+def test_handoff_distinguishes_correction_family_from_tested_count(
+    run_directory: Path,
+    version: str | None,
+    selected: str | None,
+    expected_size: str,
+    basis: str,
+) -> None:
+    table = run_directory / "native_composition_comparison.tsv"
+    records = list(rows(table))
+    for record in records:
+        record["native_before_family_tests"] = "2"
+        if selected is not None:
+            record["native_before_family_selected_traits"] = selected
+    write_table(table, list(records[0]), records)
+    manifest_path = run_directory / "native_manifest.json"
+    manifest = json.loads(manifest_path.read_text())
+    if version is not None:
+        manifest["protocol"] = {"version": version}
+    manifest["results"]["output_sha256"][table.name] = digest(table)
+    manifest_path.write_text(json.dumps(manifest))
+    original_manifest = manifest_path.read_bytes()
+
+    destination = run_directory.parent / "review"
+    refusal = ""
+    try:
+        publish(run_directory, destination)
+    except ValueError as error:
+        refusal = str(error)
+    assert not refusal, f"Known historical/current protocol {version} refused: {refusal}"
+    assert manifest_path.read_bytes() == original_manifest
+    published_manifest = json.loads((destination / "run_manifest.json").read_text())
+    assert published_manifest.get("protocol") == manifest.get("protocol")
+    handoff = list(rows(destination / "interpretation_handoff.tsv"))
+    assert len(handoff) == 2
+    assert [record["native_family_size"] for record in handoff] == [expected_size] * 2
+    assert [record.get("native_tested_count") for record in handoff] == ["2"] * 2
+    assert [record.get("native_family_basis") for record in handoff] == [basis] * 2
+    assert [record["native_baseline_q"] for record in handoff] == ["3e-05"] * 2
+
+
+@pytest.mark.parametrize("version", ["190-native-v3", "unknown-native-protocol"])
+def test_handoff_refuses_undeclared_correction_family(
+    run_directory: Path,
+    version: str,
+) -> None:
+    manifest_path = run_directory / "native_manifest.json"
+    manifest = json.loads(manifest_path.read_text())
+    manifest["protocol"] = {"version": version}
+    manifest_path.write_text(json.dumps(manifest))
+    message = ""
+    try:
+        interpretation_handoff(run_directory)
+    except ValueError as exc:
+        message = str(exc)
+    assert "family" in message or "protocol" in message
 
 
 def test_publication_rejects_changed_outputs_before_writing(run_directory: Path) -> None:

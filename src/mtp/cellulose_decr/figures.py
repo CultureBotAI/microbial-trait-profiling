@@ -21,7 +21,7 @@ import json
 import math
 import sys
 import textwrap
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Literal, cast
@@ -112,6 +112,12 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         description=__doc__.splitlines()[0] if __doc__ else None, allow_abbrev=False
     )
     parser.add_argument("--analysis-dir", type=Path, default=ANALYSIS_DIR)
+    parser.add_argument(
+        "--slide-pages",
+        action="store_true",
+        help="Also export paginated 16:9 slides with a native 12 pt text floor; "
+        "the existing report figures are retained.",
+    )
     parser.add_argument(
         "--code-commit",
         default="unrecorded",
@@ -1874,6 +1880,24 @@ class Caption:
     evidence: str
 
 
+@dataclass(frozen=True)
+class SlidePage:
+    """One additive slide page, bound to its detailed report and saved tables."""
+
+    stem: str
+    source_figure: str
+    section: str
+    figure: Figure
+    caption: Caption
+
+
+def slide_pages(results: Results) -> Iterator[SlidePage]:
+    """Build one native-size slide at a time without retaining previous figures."""
+    from mtp.cellulose_decr.slide_figures import pages
+
+    yield from pages(results)
+
+
 # How captions name each condition row of the tables.
 CAPTION_NAMES = {**{short: short for short in SHORT}, "Pooled": "all three pooled"}
 
@@ -2246,7 +2270,7 @@ def caption_direction(results: Results) -> Caption:
         takeaway=f"Exact condition labels, down : up : tied studies: {counts}.",
         caveat=(
             f"{ranges}{crc_compartment_statement(results)}. "
-            "Scope including the scenario endpoints behind the verdicts: "
+            "Scope including the scenario endpoints behind the verdicts. "
             f"{nominal_scope(endpoints)}"
         ),
         evidence="condition_definition_sensitivity.tsv",
@@ -2379,6 +2403,13 @@ def caption_shared_by_two(results: Results) -> Caption:
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
+    if args.slide_pages:
+        for name in ("figures_slides", "cellulose_decr_slide_figures.pdf"):
+            path = args.analysis_dir / name
+            if path.exists() or path.is_symlink():
+                raise FileExistsError(
+                    f"Slide exports require fresh output routes; already present: {name}"
+                )
     results = load(args.analysis_dir)
     # The stems describe what each figure shows, not a conclusion (#570).
     plates: Mapping[
@@ -2414,6 +2445,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         (args.analysis_dir / "figures" / name).unlink(missing_ok=True)
     outputs: list[str] = []
     captions: dict[str, dict[str, str]] = {}
+    slide_inventory: list[dict[str, str]] = []
     for folder, entries in plates.items():
         with (
             matplotlib.rc_context(STYLE),
@@ -2426,6 +2458,29 @@ def main(argv: Sequence[str] | None = None) -> int:
                 captions[f"{folder}/{stem}.svg"] = asdict(caption(results))
                 print(f"wrote {', '.join(path.name for path in written)}")
         outputs.append(combined[folder])
+    if args.slide_pages:
+        slide_book = "cellulose_decr_slide_figures.pdf"
+        with (
+            matplotlib.rc_context(STYLE),
+            PdfPages(args.analysis_dir / slide_book, metadata={"CreationDate": None}) as book,
+        ):
+            for page in slide_pages(results):
+                try:
+                    written = save(
+                        page.figure, args.analysis_dir / "figures_slides", page.stem, book
+                    )
+                    outputs.extend(f"figures_slides/{path.name}" for path in written)
+                    captions[f"figures_slides/{page.stem}.svg"] = asdict(page.caption)
+                    slide_inventory.append(
+                        {
+                            "stem": page.stem,
+                            "source_figure": page.source_figure,
+                            "section": page.section,
+                        }
+                    )
+                finally:
+                    page.figure.clear()
+        outputs.append(slide_book)
     # Slide text for decks, from the same tables (scripts/build_slide_deck.py; #556).
     captions_path = args.analysis_dir / "figures" / "figure_captions.json"
     statement_writers = {
@@ -2450,7 +2505,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         encoding="utf-8",
     )
     outputs.append("figures/figure_captions.json")
-    provenance = {
+    provenance: dict[str, Any] = {
         "script": "src/mtp/cellulose_decr/figures.py",
         "script_sha256": sha256(Path(__file__).resolve()),
         "code_commit": args.code_commit,
@@ -2459,6 +2514,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         # With hashes, so a deck can check that it shows the figures this run drew (#637)
         "outputs": {name: sha256(args.analysis_dir / name) for name in sorted(outputs)},
     }
+    if args.slide_pages:
+        provenance["slide_pages"] = slide_inventory
+        provenance["producer_files"] = {
+            f"src/mtp/cellulose_decr/{name}": sha256(Path(__file__).with_name(name))
+            for name in ("figures.py", "slide_figures.py")
+        }
     (args.analysis_dir / "figures" / "figures_provenance.json").write_text(
         json.dumps(provenance, indent=1) + "\n", encoding="utf-8"
     )

@@ -490,8 +490,11 @@ def test_verification_reads_an_absent_ledger_scope_as_off_only_before_788(
     parameters = [item for item in core.parameters or [] if item.name != "strain_rollup"]
     before_788 = core.model_copy(update={"parameters": parameters})
 
-    def verify_core_before_788(manifest: Path) -> WorkflowRun:
+    def verify_core_before_788(
+        manifest: Path, *, expected_sha256: str | None = None
+    ) -> WorkflowRun:
         assert manifest == Path(core.manifest_path)
+        assert expected_sha256 == file_sha256(manifest)
         return before_788
 
     monkeypatch.setattr(arms_runtime, "verify_core_run", verify_core_before_788)

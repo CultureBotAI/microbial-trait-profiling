@@ -13,6 +13,10 @@ The scopes are taxa_trait_matrix's --strain-rollup values: "off" (no strain reco
 The evaluable vocabulary is what retained_trait_columns keeps of the matrix columns:
 every trait some reported taxon carries, without MediaDive growth media. All counts are
 annotation coverage.
+
+Trait-key semantics are selected by --trait-key-policy and recorded in trait_coverage.tsv,
+summary.json and stdout. The default remains the current facultative union for compatibility;
+historical pre-union counts require an explicit raw_object_v1 selection.
 """
 
 from __future__ import annotations
@@ -45,6 +49,12 @@ from mtp.taxa_trait_matrix import (
     trait_column_label,
 )
 from mtp.trait_guilds import HUMAN_HOST_SPECIES, MEDIADIVE_MARKER, retained_trait_columns
+from mtp.trait_key_policy import (
+    DEFAULT_TRAIT_KEY_POLICY,
+    TRAIT_KEY_POLICIES,
+    TraitKeyPolicy,
+    parse_trait_key_policy,
+)
 
 # The six Table 1 traits (with facultative oxygen preference unified under #1123).
 FOCAL_TRAITS = {
@@ -57,6 +67,7 @@ FOCAL_TRAITS = {
 }
 COVERAGE_COLUMNS = (
     "trait_key",
+    "trait_key_policy",
     "label",
     "predicate_id",
     "predicate_name",
@@ -146,11 +157,14 @@ def audit(
     edges_path: Path,
     nodes_path: Path,
     study_dir: Path | None,
+    *,
+    trait_key_policy: TraitKeyPolicy = DEFAULT_TRAIT_KEY_POLICY,
 ) -> tuple[list[dict[str, object]], dict[str, object]]:
     """Return the per-trait coverage rows and the summary, checking every scope's rule."""
+    trait_key_policy = parse_trait_key_policy(trait_key_policy)
     reported = read_reported_taxa(reported_taxa_path)
     targets = {taxon.taxon_id for taxon in reported}
-    edges = read_kg_trait_edges(edges_path, strains=True)
+    edges = read_kg_trait_edges(edges_path, strains=True, trait_key_policy=trait_key_policy)
     nodes: dict[StrainRollup, dict[str, set[str]]] = {}
     labels: dict[StrainRollup, dict[str, set[str]]] = {}
     vocabularies: dict[StrainRollup, set[str]] = {}
@@ -193,6 +207,7 @@ def audit(
         rows.append(
             {
                 "trait_key": key,
+                "trait_key_policy": trait_key_policy,
                 "label": trait_column_label(key, metadata),
                 "predicate_id": predicate or "",
                 "predicate_name": predicate_name(key, metadata),
@@ -240,6 +255,7 @@ def audit(
             },
         }
     summary: dict[str, object] = {
+        "trait_key_policy": trait_key_policy,
         "inputs": {
             str(path): file_sha256(path) for path in (reported_taxa_path, edges_path, nodes_path)
         },
@@ -293,14 +309,30 @@ def main() -> None:
     parser.add_argument("--nodes", type=Path, required=True)
     parser.add_argument("--study-dir", type=Path, default=None)
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument(
+        "--trait-key-policy",
+        choices=TRAIT_KEY_POLICIES,
+        default=DEFAULT_TRAIT_KEY_POLICY,
+        help="Trait keys (default: %(default)s); use raw_object_v1 for pre-union counts.",
+    )
     args = parser.parse_args()
-    rows, summary = audit(args.reported_taxa, args.edges, args.nodes, args.study_dir)
+    rows, summary = audit(
+        args.reported_taxa,
+        args.edges,
+        args.nodes,
+        args.study_dir,
+        trait_key_policy=parse_trait_key_policy(args.trait_key_policy),
+    )
     args.output_dir.mkdir(parents=True, exist_ok=True)
     write_rows(args.output_dir / "trait_coverage.tsv", rows)
     (args.output_dir / "summary.json").write_text(
         json.dumps(summary, indent=2) + "\n", encoding="utf-8"
     )
-    print(json.dumps({key: summary[key] for key in ("strains", "scopes")}, indent=2))
+    print(
+        json.dumps(
+            {key: summary[key] for key in ("trait_key_policy", "strains", "scopes")}, indent=2
+        )
+    )
 
 
 if __name__ == "__main__":

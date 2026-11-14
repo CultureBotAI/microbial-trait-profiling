@@ -25,11 +25,17 @@ def assigned_guard_and_headroom_check() -> None:
 
 
 def repository_fixture(
-    root: Path, location: str, *, depth: int, claimed: bool
+    root: Path, location: str, *, depth: int, claimed: bool, padding: int = 0
 ) -> tuple[dict[str, str], str]:
     """The registry is valid for its declared sources; extra is independently optional."""
     extra_path = f"{location}/extra.py"
     sources = {"src/x.py": work.nested_derivation(0), extra_path: work.nested_derivation(depth)}
+    if padding:
+        header = "def screen(p, other):\n"
+        assert sources[extra_path].count(header) == 1
+        sources[extra_path] = sources[extra_path].replace(
+            header, header + "    pass\n" * padding, 1
+        )
     for path, text in sources.items():
         target = root / path
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -128,10 +134,15 @@ def test_headroom_discovery_uses_exactly_one_sixteenth(
     ]
 
 
-def test_depth_seven_candidate_fits_fifteenth_but_exceeds_headroom(tmp_path: Path) -> None:
+def test_padded_candidate_fits_fifteenth_but_exceeds_headroom(tmp_path: Path) -> None:
     # This narrower witness distinguishes a sixteenth from even a fifteenth;
     # the original depth-eight fixture cannot distinguish an eighth.
-    sources, extra_path = repository_fixture(tmp_path, "scripts", depth=7, claimed=False)
+    # A pass costs one statement and one AST visit. The 32,000 passes
+    # therefore cost 64,000 units independently of alias-model bookkeeping:
+    # above 62,500 (a sixteenth), below 66,666 (a fifteenth), with room for BY.
+    sources, extra_path = repository_fixture(
+        tmp_path, "scripts", depth=0, claimed=False, padding=32_000
+    )
     fifteenth = replace(
         guard.DEFAULT_LIMITS, derivation_steps=guard.DEFAULT_LIMITS.derivation_steps // 15
     )
@@ -149,7 +160,11 @@ def test_depth_seven_candidate_fits_fifteenth_but_exceeds_headroom(tmp_path: Pat
 
 def multiple_candidate_repository_fixture(root: Path, copies: int) -> tuple[dict[str, str], str]:
     """Put independently named candidates in one ignored, unclaimed source file."""
-    sources, extra_path = repository_fixture(root, "scripts", depth=6, claimed=False)
+    # Each candidate contributes 24,000 known pass units plus a short BY
+    # witness. Two fit 62,500; three exceed it while remaining below 125,000.
+    sources, extra_path = repository_fixture(
+        root, "scripts", depth=0, claimed=False, padding=12_000
+    )
     header, separator, function = sources[extra_path].partition("def screen")
     assert separator == "def screen"
     sources[extra_path] = header + "".join(

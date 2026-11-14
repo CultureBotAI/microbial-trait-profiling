@@ -90,11 +90,13 @@ def observed(unit: guard.Unit, counts: dict[str, int]) -> bool:
             1,
             id="loop-pass",
         ),
-        # The first pass changes p; a second pass establishes the fixed point.
+        # Two passes, then two alias-map entries on the stable second pass.
+        # The cached immutable union is shared, so no element comparison:
+        # 2 passes + 2 map entries.
         pytest.param(
             "def screen(p):\n    while flag:\n        p = 1\n",
             "loop_pass",
-            2,
+            4,
             id="loop-pass-two-iterations",
         ),
         # Exactly three statements, including the bare return.
@@ -111,27 +113,36 @@ def observed(unit: guard.Unit, counts: dict[str, int]) -> bool:
             3,
             id="expression",
         ),
-        # The tuple target and its two names require three assignments.
-        pytest.param("def screen(p):\n    a, b = p\n", "assignment", 3, id="assignment"),
-        # Two parameters plus alias make the write scan three facts.
+        # The tuple target costs one; each name costs one assignment plus
+        # one empty origin-map lookup: 1 + 2 * (1 + 1).
+        pytest.param("def screen(p):\n    a, b = p\n", "assignment", 5, id="assignment"),
+        # Direct identities need no reference index: root identity 6, capture
+        # 3 names + 3 membership checks = 6, partition 9, parameter check 1,
+        # incoming scan 3 + union 1, sorted remembrance 3, final facts 3.
+        # Total 6 + 6 + 9 + 1 + 3 + 1 + 3 + 3 = 32.
         pytest.param(
             "def screen(p, q):\n    alias = p\n    alias[0] = 1\n",
             "write_alias_scan",
-            3,
+            32,
             id="write-alias-scan",
         ),
-        # Three parameters plus alias make the write scan four facts.
+        # The extra parameter adds one capture name, one membership check,
+        # one incoming scan and one final fact: 32 + 4 = 36.
         pytest.param(
             "def screen(p, q, r):\n    alias = p\n    alias[0] = 1\n",
             "write_alias_scan",
-            4,
+            36,
             id="write-alias-scan-four-facts",
         ),
-        # q and alias plus the remembered free origin p are three scan facts.
+        # The free alias retains {p, external/p}: root identity 17, capture
+        # 2 names + q's direct membership 1 + full alias query 40 = 43.
+        # Partition 31 + parameter check 1 + incoming 2 + external 1 +
+        # union 3 = 38. Remembering/sorting p,q costs 2 + 2 + 2*2 = 8;
+        # final q/alias/p scan 3: 17 + 43 + 38 + 8 + 3 = 109.
         pytest.param(
             "def screen(q):\n    alias = p\n    alias[0] = 1\n",
             "write_alias_scan",
-            3,
+            109,
             id="write-alias-scan-free-origin",
         ),
         # The same three facts must be inspected after augmented assignment.

@@ -458,10 +458,23 @@ def test_degenerate_model_interpretations_distinguish_displayed_and_total_tests(
         ].iloc[0]
         assert decreased.p_value_type == "not_tested"
         assert decreased.positive_z_rate == 1.0
-        assert "decreased-direction" in comparison_section
-        assert "not tested" in comparison_section
-        assert "odds ratio" not in comparison_section
-        assert "nominal p=" not in comparison_section
+        increased = comparisons[
+            comparisons["direction"].eq("increased") & comparisons["group"].eq("PD feces")
+        ].iloc[0]
+        assert increased.p_value_type == "nominal"
+        assert (
+            comparison_section.count(
+                "The decreased-direction PD-vs-other comparison was not tested."
+            )
+            == 1
+        )
+        assert comparison_section.count("was not tested") == 1
+        assert "The increased-direction PD-vs-other Fisher test" in comparison_section
+        assert f"`nominal p={increased.pd_vs_other_fisher_p:.3g}`" in comparison_section
+        assert (
+            f"Mann-Whitney `nominal p={increased.pd_vs_other_mannwhitney_p:.3g}`"
+        ) in comparison_section
+        assert comparison_section.count("nominal p=") == 2
         assert "`100.0%`" not in comparison_section
         assert "1 direction x 2 tests = 2 nominal tests" in comparison_section
         assert "1 directions" not in comparison_section
@@ -481,13 +494,142 @@ def test_interpretations_omit_rates_for_untested_increased_direction(tmp_path: P
     comparison_section = text.split("## PD vs Other Fecal Profiles", 1)[1].split(
         "The feces-only linear model", 1
     )[0]
-    assert "increased-direction PD-vs-other comparison was not tested" in comparison_section
+    assert (
+        comparison_section.count("increased-direction PD-vs-other comparison was not tested") == 1
+    )
     assert "Among decreased fecal profiles" in comparison_section
     assert "`100.0%`" not in comparison_section
     assert "nan" not in comparison_section.lower()
     assert comparison_section.count("nominal p=") == 2
     assert "1 direction x 2 tests = 2 nominal tests" in comparison_section
     assert "1 directions" not in comparison_section
+
+
+def test_interpretations_do_not_invent_a_missing_comparison_test(tmp_path: Path) -> None:
+    """A direction-level nominal flag does not make its missing second p available."""
+    model, _groups, comparisons = _degenerate_consumer_tables(
+        all_untested=False, rank_deficient=True
+    )
+    increased = comparisons["direction"].eq("increased")
+    comparisons.loc[increased, "pd_vs_other_mannwhitney_p"] = math.nan
+    comparisons.loc[:, "n_tests"] = 1
+    original = comparisons.copy(deep=True)
+
+    text = _write_synthetic_interpretations(tmp_path, model, comparisons)
+    section = text.split("## PD vs Other Fecal Profiles", 1)[1].split(
+        "The feces-only linear model", 1
+    )[0]
+    assert "The increased-direction PD-vs-other Fisher test" in section
+    assert "`nominal p=1`" in section
+    assert "Mann-Whitney p unavailable" in section
+    assert "1 nominal test" in section
+    assert "1 nominal tests" not in section
+    assert "1 direction x 2 tests = 1" not in section
+    assert "nominal p=nan" not in section
+    assert section.count("was not tested") == 1
+    pd.testing.assert_frame_equal(comparisons, original)
+
+
+@pytest.mark.parametrize(
+    "case",
+    [
+        "untested-decreased",
+        "untested-increased",
+        "tested-infinite-odds",
+        "tested-undefined-odds",
+    ],
+)
+def test_direction_figure_marks_availability_without_changing_bar_values(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, case: str
+) -> None:
+    """Consumer labels distinguish absent tests and boundary odds from plotted rates."""
+    import matplotlib.figure
+    import matplotlib.pyplot as plt
+    from matplotlib.patches import Rectangle
+    from matplotlib.text import Annotation
+
+    untested = case.startswith("untested-")
+    _model, _groups, comparisons = _degenerate_consumer_tables(
+        all_untested=case == "tested-undefined-odds",
+        rank_deficient=untested,
+        reverse_directions=case == "untested-increased",
+    )
+    if case == "tested-infinite-odds":
+        decreased = comparisons["direction"].eq("decreased")
+        comparisons.loc[decreased, "pd_vs_other_positive_z_odds_ratio"] = math.inf
+        comparisons.loc[decreased, "pd_vs_other_fisher_p"] = 0.04
+    display = pd.DataFrame(
+        [
+            {
+                "direction": direction,
+                "trait": cellulose.CELLULOSE_LABEL,
+                "body_site": cellulose.FECES,
+                "focus_enriched_profiles": focus,
+                "comparator_enriched_profiles": comparator,
+                "focus_studies": 3,
+                "focus_enriched_mean_z": 0.2,
+                "focus_minus_comparator_z": 0.1,
+            }
+            for direction, focus, comparator in (("increased", 4, 6), ("decreased", 6, 4))
+        ]
+    )
+    original = comparisons.copy(deep=True)
+    texts: list[str] = []
+    bars: list[tuple[float, float]] = []
+    labels: dict[float, str] = {}
+
+    def capture(fig: matplotlib.figure.Figure, _output: Path) -> None:
+        assert len(fig.axes) == 2
+        right = fig.axes[1]
+        texts.extend(text.get_text() for ax in fig.axes for text in ax.texts)
+        texts.extend(ax.get_title() for ax in fig.axes)
+        texts.extend(text.get_text() for text in fig.texts)
+        bars.extend(
+            (round(patch.get_x() + patch.get_width() / 2, 2), patch.get_height())
+            for patch in right.patches
+            if isinstance(patch, Rectangle)
+        )
+        labels.update(
+            (round(float(label.xy[0]), 2), label.get_text())
+            for label in right.texts
+            if isinstance(label, Annotation)
+        )
+        plt.close(fig)
+
+    monkeypatch.setattr(cellulose, "save_figure", capture)
+    cellulose.plot_direction_specificity(display, comparisons, tmp_path / "direction.png")
+    assert len(bars) == 4
+    expected: dict[float, float] = {}
+    for row in comparisons.to_dict("records"):
+        position = (0 if row["direction"] == "increased" else 1) + (
+            -0.18 if row["group"] == "Other feces" else 0.18
+        )
+        expected[round(position, 2)] = float(row["positive_z_rate"]) * 100
+    assert {position for position, _height in bars} == set(expected)
+    for position, height in bars:
+        assert height == pytest.approx(expected[position], nan_ok=True)
+    pd.testing.assert_frame_equal(comparisons, original)
+
+    text = "\n".join(texts)
+    assert "nan" not in text.lower()
+    assert "1 directions" not in text
+    if untested:
+        direction = "increased" if case == "untested-increased" else "decreased"
+        position = 0.18 if direction == "increased" else 1.18
+        assert "1 direction tested" in text
+        assert "not tested" in labels[position].lower()
+        assert labels[position] != "100.0%"
+        if direction == "decreased":
+            assert "decreased comparison not tested" in text.lower()
+            assert "nominal Fisher p=" not in text
+    elif case == "tested-infinite-odds":
+        assert "OR=inf" in text
+        assert "nominal Fisher p=0.040" in text
+        assert "not tested" not in text
+    else:
+        assert "OR not estimable" in text
+        assert "nominal Fisher p=1.000" in text
+        assert "not tested" not in text
 
 
 def test_interpretations_preserve_tested_infinite_odds_ratio(tmp_path: Path) -> None:
@@ -561,8 +703,12 @@ def test_interpretations_use_singular_grammar_for_one_tablewide_nominal_term(
     text = _write_synthetic_interpretations(tmp_path, model, comparisons)
     assert "1 terms across" not in text
     if interaction_tested:
-        assert "(1 term across 2 outcomes in `pd_cellulose_interaction_model.tsv`)" in text
-        assert "and 1 term across 2 outcomes in `pd_cellulose_interaction_model.tsv`" in text
+        assert "one of 1" not in text
+        assert "1 term across 2 outcomes" not in text
+        assert "the only non-intercept model term tested in the figure" in text
+        assert (
+            "the only nominal term in `pd_cellulose_interaction_model.tsv`, which has 2 outcomes"
+        ) in text
         assert "It tests whether" in text
     else:
         assert "1 of the 8 table terms has a nominal test across 2 outcomes" in text

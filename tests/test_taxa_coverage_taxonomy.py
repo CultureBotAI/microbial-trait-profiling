@@ -90,8 +90,11 @@ def test_four_reviewed_taxa_use_lineage_or_unresolved_label(
             ("4896", "4751"),
             ("4751", "2759"),
             ("2759", "1"),
-            ("155900", "1"),
-            ("32644", "1"),
+            ("155900", "151659"),
+            ("151659", "12908"),
+            ("32644", "12908"),
+            ("12908", "2787823"),
+            ("2787823", "1"),
         ],
     )
     # The old API accepts these inputs but misdiagnoses all four rows. The new
@@ -100,6 +103,11 @@ def test_four_reviewed_taxa_use_lineage_or_unresolved_label(
     _, _, _, _, _, zero = coverage.load_and_process_data(**taxonomic_inputs)
     row = zero.set_index("taxon_id").loc[taxon]
     assert row.diagnosis_category == expected
+    if expected == "Unresolved Taxonomic Label":
+        assert row.taxonomy_group == "unclassified_sequences"
+        assert row.taxonomy_status == "resolved_root"
+        assert row.taxonomy_root_ids == '["NCBITaxon:12908", "NCBITaxon:2787823"]'
+        assert "missing lineage" not in row.suggested_remediation
 
 
 @pytest.fixture
@@ -120,6 +128,12 @@ def taxonomy(tmp_path: Path) -> Any:
                 ("16", "10"),
                 ("16", "2"),
                 ("17", "1"),
+                ("18", "12908"),
+                ("19", "2787823"),
+                ("20", "408169"),
+                ("408169", "12908"),
+                ("12908", "2787823"),
+                ("2787823", "1"),
             ],
         )
     )
@@ -134,8 +148,29 @@ def taxonomy(tmp_path: Path) -> Any:
         ("NCBITaxon:13", "viruses", "resolved_root", ("NCBITaxon:10239",)),
         ("NCBITaxon:2", "bacteria", "resolved_root", ("NCBITaxon:2",)),
         ("NCBITaxon:16", "bacteria", "resolved_root", ("NCBITaxon:2",)),
+        (
+            "NCBITaxon:18",
+            "unclassified_sequences",
+            "resolved_root",
+            ("NCBITaxon:12908", "NCBITaxon:2787823"),
+        ),
+        ("NCBITaxon:19", "unclassified_sequences", "resolved_root", ("NCBITaxon:2787823",)),
+        (
+            "NCBITaxon:20",
+            "unclassified_sequences",
+            "resolved_root",
+            ("NCBITaxon:12908", "NCBITaxon:2787823"),
+        ),
+        (
+            "NCBITaxon:12908",
+            "unclassified_sequences",
+            "resolved_root",
+            ("NCBITaxon:12908", "NCBITaxon:2787823"),
+        ),
+        ("NCBITaxon:2787823", "unclassified_sequences", "resolved_root", ("NCBITaxon:2787823",)),
         ("NCBITaxon:14", "unresolved", "no_recognized_root_path", ()),
         ("NCBITaxon:15", "unresolved", "no_recognized_root_path", ()),
+        ("NCBITaxon:17", "unresolved", "no_recognized_root_path", ()),
         ("NCBITaxon:999", "unresolved", "not_in_taxonomy_edges", ()),
         ("local:10", "unresolved", "non_ncbi_identifier", ()),
     ],
@@ -152,20 +187,32 @@ def test_taxonomic_state_is_evidence_not_a_name_guess(
         ("12", "Previously unnamed fungus", "Non-Bacterial / Fungal Eukaryote"),
         ("12", "Candidatus unfamiliar lineage", "Non-Bacterial / Fungal Eukaryote"),
         ("12", "Viridiplantae", "Non-Bacterial / Fungal Eukaryote"),
+        ("12", "uncultured organism", "Non-Bacterial / Fungal Eukaryote"),
+        ("12", "unidentified", "Non-Bacterial / Fungal Eukaryote"),
         ("13", "Candidatus virus", "Non-Bacterial / Viral Taxon"),
-        ("12", "uncultured organism", "Unresolved Taxonomic Label"),
-        ("12", "unidentified", "Unresolved Taxonomic Label"),
-        ("13", "unclassified", "Unresolved Taxonomic Label"),
-        ("13", "unknown", "Unresolved Taxonomic Label"),
+        ("13", "unclassified", "Non-Bacterial / Viral Taxon"),
+        ("13", "unknown", "Non-Bacterial / Viral Taxon"),
+        ("18", "gut metagenome", "Unresolved Taxonomic Label"),
+        ("18", "human gut metagenome", "Unresolved Taxonomic Label"),
+        ("18", "mouse gut metagenome", "Unresolved Taxonomic Label"),
+        ("20", "metagenome", "Unresolved Taxonomic Label"),
+        ("18", "uncultured prokaryote", "Unresolved Taxonomic Label"),
+        ("18", "uncultured organism", "Unresolved Taxonomic Label"),
+        ("19", "unidentified", "Unresolved Taxonomic Label"),
+        ("18", "Candidatus placeholder", "Unresolved Taxonomic Label"),
+        ("19", "uncultured bacterium", "Unresolved Taxonomic Label"),
+        ("18", "Alpha / beta", "Ambiguous Taxon / Bin Slash"),
         ("12", "Fungal alpha / fungal beta", "Ambiguous Taxon / Bin Slash"),
         ("13", "Viral alpha / viral beta", "Ambiguous Taxon / Bin Slash"),
         ("10", "Candida", "Rare / Novel Isolate (Lacks KG Phenotype)"),
+        ("10", "unidentified", "Rare / Novel Isolate (Lacks KG Phenotype)"),
+        ("10", "gut metagenome", "Rare / Novel Isolate (Lacks KG Phenotype)"),
         ("11", "Archaeal isolate", "Rare / Novel Isolate (Lacks KG Phenotype)"),
         ("10", "Candidatus example", "Candidatus Lineage"),
         ("10", "uncultured bacterium", "Uncultivated / Metagenomic MAG"),
         ("10", "Unknown / composite", "Ambiguous Taxon / Bin Slash"),
-        ("17", "  Unclassified  ", "Unresolved Taxonomic Label"),
-        ("17", "UNKNOWN", "Unresolved Taxonomic Label"),
+        ("17", "  Unclassified  ", "Taxonomy Unresolved"),
+        ("17", "UNKNOWN", "Taxonomy Unresolved"),
         ("999", "Fungus with missing lineage", "Taxonomy Unresolved"),
         ("999", "Candidatus unknown placement", "Taxonomy Unresolved"),
         ("541000", "Alias candidate", "NCBI TaxID Desynchronization"),
@@ -182,12 +229,19 @@ def test_lineage_and_label_priority(taxonomy: Any, taxon: str, name: str, catego
         assert remediation.startswith("Review possible alias before transferring traits")
     if category == "Unresolved Taxonomic Label":
         assert "LCA" not in remediation
+        assert "missing lineage" not in remediation
+        assert remediation == (
+            "Review the reported taxonomic label and source assignment before trait matching; "
+            "an unresolved label does not establish a multi-taxon composite"
+        )
 
 
 @pytest.mark.parametrize(
     ("pairs", "message"),
     [
         ([("91626", "2"), ("91626", "2759")], "Conflicting recognized taxonomy roots"),
+        ([("91626", "2"), ("91626", "12908")], "Conflicting recognized taxonomy roots"),
+        ([("91626", "2759"), ("91626", "2787823")], "Conflicting recognized taxonomy roots"),
         ([("91626", "4751"), ("4751", "91626")], "Taxonomy cycle"),
         ([("91626", "91626")], "Taxonomy cycle"),
     ],
@@ -231,25 +285,140 @@ def test_alias_candidate_does_not_inherit_suggested_target_ancestry(tmp_path: Pa
 
 
 @pytest.mark.parametrize(
+    ("taxon_num", "canonical_id"),
+    [
+        ("541000", "NCBITaxon:216572"),
+        ("81850", "NCBITaxon:33958"),
+        ("508215", "NCBITaxon:32207"),
+    ],
+)
+@pytest.mark.parametrize(
+    ("parent_id", "expected_group"),
+    [
+        ("12908", "unclassified_sequences"),
+        ("2787823", "unclassified_sequences"),
+        ("2759", "eukaryota"),
+        ("10239", "viruses"),
+    ],
+)
+def test_alias_desynchronization_precedes_non_bacterial_groups(
+    tmp_path: Path,
+    taxon_num: str,
+    canonical_id: str,
+    parent_id: str,
+    expected_group: str,
+) -> None:
+    """Explicit alias TaxIDs beat non-bacterial group branches on wrongly rooted edges (#2207)."""
+    taxon_id = f"NCBITaxon:{taxon_num}"
+    taxonomy = coverage.CoverageTaxonomy(
+        write_edges(
+            tmp_path / "misrooted-alias.tsv",
+            [(taxon_num, parent_id), (parent_id, "1")],
+        )
+    )
+    state = taxonomy.classify(taxon_id)
+    assert state == coverage.TaxonomyState(
+        expected_group, "resolved_root", (f"NCBITaxon:{parent_id}",)
+    )
+    category, remediation = coverage.diagnose_zero_trait_taxon(
+        taxon_id, "Alias candidate", "family", state
+    )
+    assert category == "NCBI TaxID Desynchronization"
+    assert remediation == f"Review possible alias before transferring traits: {canonical_id}"
+
+
+@pytest.mark.parametrize("taxon_num", ["541000", "81850", "508215"])
+def test_bin_slash_precedes_alias_desynchronization(taxon_num: str) -> None:
+    """Slash bin names still precede explicit alias TaxID desynchronization (#2207)."""
+    state = coverage.TaxonomyState("eukaryota", "resolved_root", ("NCBITaxon:2759",))
+    category, _ = coverage.diagnose_zero_trait_taxon(
+        f"NCBITaxon:{taxon_num}", "Alias / composite", "species", state
+    )
+    assert category == "Ambiguous Taxon / Bin Slash"
+
+
+@pytest.mark.parametrize(
     "name",
     [
         "unclassified sequences",
         "Candidatus placeholder lineage",
         "uncultured bacterium",
         "Placeholder isolate",
+        "gut metagenome",
     ],
 )
 def test_lineage_without_recognized_root_is_taxonomy_unresolved(tmp_path: Path, name: str) -> None:
     """A present lineage that reaches no recognized root skips the name rules (#1272)."""
-    # Shaped like NCBI "unclassified sequences" (NCBITaxon:12908), whose lineage
-    # exists but reaches only the NCBI root, never a recognized domain root.
     taxonomy = coverage.CoverageTaxonomy(
-        write_edges(tmp_path / "unrooted.tsv", [("12908", "1"), ("10", "2"), ("2", "1")])
+        write_edges(tmp_path / "unrooted.tsv", [("131567", "1"), ("10", "2"), ("2", "1")])
     )
-    state = taxonomy.classify("NCBITaxon:12908")
+    state = taxonomy.classify("NCBITaxon:131567")
     assert state == coverage.TaxonomyState("unresolved", "no_recognized_root_path", ())
-    category, _ = coverage.diagnose_zero_trait_taxon("NCBITaxon:12908", name, "species", state)
+    category, remediation = coverage.diagnose_zero_trait_taxon(
+        "NCBITaxon:131567", name, "species", state
+    )
     assert category == "Taxonomy Unresolved"
+    assert "missing lineage" in remediation
+
+
+@pytest.mark.parametrize(
+    ("pairs", "taxon", "expected_roots"),
+    [
+        (
+            [("749906", "410656"), ("410656", "408169"), ("408169", "12908"), ("12908", "1")],
+            "NCBITaxon:749906",
+            ("NCBITaxon:12908",),
+        ),
+        (
+            [("32644", "2787823"), ("2787823", "1")],
+            "NCBITaxon:32644",
+            ("NCBITaxon:2787823",),
+        ),
+        (
+            [
+                ("749906", "410656"),
+                ("410656", "408169"),
+                ("408169", "12908"),
+                ("12908", "2787823"),
+                ("2787823", "1"),
+            ],
+            "NCBITaxon:749906",
+            ("NCBITaxon:12908", "NCBITaxon:2787823"),
+        ),
+    ],
+)
+@pytest.mark.parametrize(
+    "name",
+    [
+        "gut metagenome",
+        "human gut metagenome",
+        "mouse gut metagenome",
+        "metagenome",
+        "uncultured prokaryote",
+        "uncultured organism",
+        "unidentified",
+    ],
+)
+def test_placeholder_lineages_resolve_to_unresolved_taxonomic_label(
+    tmp_path: Path,
+    pairs: list[tuple[str, str]],
+    taxon: str,
+    expected_roots: tuple[str, ...],
+    name: str,
+) -> None:
+    """Metagenome and unclassified placeholders resolve by 12908/2787823 lineage (#1010)."""
+    taxonomy = coverage.CoverageTaxonomy(write_edges(tmp_path / "placeholder.tsv", pairs))
+    state = taxonomy.classify(taxon)
+    assert state == coverage.TaxonomyState(
+        "unclassified_sequences", "resolved_root", expected_roots
+    )
+    category, remediation = coverage.diagnose_zero_trait_taxon(taxon, name, "species", state)
+    assert category == "Unresolved Taxonomic Label"
+    assert "missing lineage" not in remediation
+    assert remediation == (
+        "Review the reported taxonomic label and source assignment before trait matching; "
+        "an unresolved label does not establish a multi-taxon composite"
+    )
 
 
 def test_mapped_taxa_also_undergo_taxonomy_validation(
@@ -362,9 +531,39 @@ def test_rank_class_skip_count_is_emitted_in_coverage_provenance(
 
     provenance = json.loads((output / "provenance.json").read_text())
     audit = provenance["taxonomy_diagnosis"]["parser_audit"]
+    assert audit["excluded_records"] == 0
+    assert (
+        "excluded_records counts malformed KG edge records dropped by the strict "
+        "edge parser (always 0)" in audit["excluded_records_note"]
+    )
+    assert (
+        "taxonomy_rank_class_edge_records_skipped counts well-formed "
+        "NCBITaxon:<name> ontology rank-class" in audit["excluded_records_note"]
+    )
     assert audit["taxonomy_rank_class_edge_records_skipped"] == 1
     assert audit["records"] == 2
     assert audit["taxonomy_edge_records"] == 1
+
+
+def test_rank_class_only_taxonomy_input_fails_closed(tmp_path: Path) -> None:
+    """A taxonomy input containing only rank-class edges must fail closed (#1022)."""
+    fixture = Path(__file__).parent / "fixtures/coverage/taxonomy_rank_class.tsv"
+    with pytest.raises(
+        ValueError, match=re.escape("Taxonomy input has no NCBITaxon subclass_of edges")
+    ):
+        coverage.CoverageTaxonomy(fixture)
+
+    letter_led_only = tmp_path / "rank_only.tsv"
+    letter_led_only.write_text(
+        "id\tsubject\tpredicate\tobject\n"
+        "r1\tNCBITaxon:biotype\tbiolink:subclass_of\tOBO:NCBITaxon#_taxonomic_rank\n"
+        "r2\tNCBITaxon:Homo_sapiens\tbiolink:subclass_of\tOBO:NCBITaxon#_taxonomic_rank\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(
+        ValueError, match=re.escape("Taxonomy input has no NCBITaxon subclass_of edges")
+    ):
+        coverage.CoverageTaxonomy(letter_led_only)
 
 
 @pytest.mark.parametrize(
@@ -375,7 +574,9 @@ def test_rank_class_skip_count_is_emitted_in_coverage_provenance(
             "expected leading KG edge columns id/subject/predicate/object",
         ),
         (
-            "id\tsubject\tpredicate\tobject\ne1\tNCBITaxon:10\tbiolink:subclass_of\n",
+            "id\tsubject\tpredicate\tobject\n"
+            "e0\tNCBITaxon:91626\tbiolink:subclass_of\tNCBITaxon:2759\n"
+            "e1\tNCBITaxon:10\tbiolink:subclass_of\n",
             "unknown malformed KG edge record",
         ),
         (
@@ -397,27 +598,36 @@ def test_malformed_or_unusable_taxonomy_fails_closed(
     ("bad_edge", "identifier"),
     [
         ("NCBITaxon:nope\tbiolink:subclass_of\tNCBITaxon:2", "NCBITaxon:nope"),
+        ("NCBITaxon:10\tbiolink:subclass_of\tNCBITaxon:nope", "NCBITaxon:nope"),
+        ("NCBITaxon:0\tbiolink:subclass_of\tNCBITaxon:2", "NCBITaxon:0"),
         (
             "NCBITaxon:biotype\tbiolink:subclass_of\tOBO:NCBITaxon#_taxonomic_rank_extra",
             "NCBITaxon:biotype",
         ),
         ("NCBITaxon:10\tbiolink:subclass_of\tNCBITaxon:biotype", "NCBITaxon:biotype"),
+        (
+            "NCBITaxon:10\tbiolink:subclass_of\tOBO:NCBITaxon#_taxonomic_rank",
+            "NCBITaxon:10",
+        ),
     ],
 )
 def test_invalid_taxonomy_identifier_rejects_beside_a_valid_organism_edge(
     tmp_path: Path, bad_edge: str, identifier: str
 ) -> None:
     # The valid organism edge keeps the input usable, so silently skipping the
-    # bad edge would load instead of raising (#1271).
+    # bad edge would load instead of raising (#1022, #1271).
     edges = tmp_path / "bad.tsv"
     edges.write_text(
         "id\tsubject\tpredicate\tobject\n"
         "e0\tNCBITaxon:91626\tbiolink:subclass_of\tNCBITaxon:2759\n"
         f"e1\t{bad_edge}\n"
     )
-    with pytest.raises(
-        ValueError, match=re.escape(f"Invalid taxonomy identifier in edge e1: {identifier}")
-    ):
+    expected = (
+        f"Rank-class edge e1 has a non-rank NCBITaxon subject: {identifier}"
+        if bad_edge.endswith("\tOBO:NCBITaxon#_taxonomic_rank")
+        else f"Invalid taxonomy identifier in edge e1: {identifier}"
+    )
+    with pytest.raises(ValueError, match=re.escape(expected)):
         coverage.CoverageTaxonomy(edges)
 
 

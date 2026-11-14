@@ -15,7 +15,7 @@ from mtp.datamodel.multiple_testing_pydantic import (
     HypothesisFamilyMetadata,
     RawHypothesis,
 )
-from mtp.datamodel.workflow_pydantic import AnalysisBasis
+from mtp.datamodel.workflow_pydantic import AnalysisBasis, ArmRun, ComparisonRun, WorkflowRun
 from mtp.multiple_testing import canonical_sha256, correct_family, load_policy
 from mtp.multiplicity import sources as source_module
 from mtp.multiplicity import stage as stage_module
@@ -46,6 +46,35 @@ from multiplicity_fixture import fixture_sources, write_table
 from test_multiple_testing import family, raw
 
 
+@pytest.mark.parametrize("entrypoint", ["run", "verify"])
+def test_comparison_pin_reaches_post_arm_source_verification(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, entrypoint: str
+) -> None:
+    """Both public routes must forward the digest they will record (#1216)."""
+    sources = fixture_sources(tmp_path / "inputs", monkeypatch)
+    comparison = Path(sources.comparison.manifest_path)
+    expected = file_sha256(comparison)
+    observed: list[str | None] = []
+    checking = entrypoint == "run"
+
+    def verified(path: Path, *, expected_sha256: str | None = None) -> VerifiedSources:
+        assert path == comparison
+        if checking:
+            observed.append(expected_sha256)
+            assert expected_sha256 == expected, "Existing comparison digest was not forwarded"
+        return sources
+
+    monkeypatch.setattr(stage_module, "open_verified_sources", verified)
+    output = tmp_path / "sidecars"
+    produced = run_post_arm(comparison, output)
+    if entrypoint == "verify":
+        checking = True
+        assert verify_post_arm(output) == produced
+    assert observed == [expected]
+    assert produced.comparison_manifest_sha256 == expected
+    assert (output / "multiplicity_run.json").stat().st_size > 0
+
+
 def test_private_replay_reuses_verified_sources_without_opening_again(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -54,8 +83,10 @@ def test_private_replay_reuses_verified_sources_without_opening_again(
     expected = run_post_arm(comparison_path, tmp_path / "sidecars")
     bound = bind_recorded_hashes(sources, file_sha256(comparison_path))
 
-    def reopen_forbidden(path: Path) -> VerifiedSources:
-        raise AssertionError(f"Source graph was unnecessarily verified again: {path}")
+    def reopen_forbidden(path: Path, *, expected_sha256: str | None = None) -> VerifiedSources:
+        raise AssertionError(
+            f"Source graph was unnecessarily verified again: {path}, pin={expected_sha256}"
+        )
 
     monkeypatch.setattr(stage_module, "open_verified_sources", reopen_forbidden)
     assert stage_module._verify_post_arm_from_sources(tmp_path / "sidecars", bound) == expected
@@ -250,7 +281,8 @@ def test_post_arm_refuses_identity_changes_during_execution(
         change_definition()
         return counts
 
-    def load_then_edit_code(_path: Path) -> VerifiedSources:
+    def load_then_edit_code(path: Path, *, expected_sha256: str | None = None) -> VerifiedSources:
+        assert expected_sha256 == file_sha256(path)
         change_definition()
         return sources
 
@@ -753,10 +785,19 @@ def test_source_loader_checks_actual_basis_after_upstream_verification(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     fixture = fixture_sources(tmp_path / "inputs", monkeypatch)
+
+    def verified(
+        path: Path, *, manifest_bytes: bytes | None = None, expected_sha256: str | None = None
+    ) -> tuple[ComparisonRun, WorkflowRun, dict[str, ArmRun]]:
+        assert path == Path(fixture.comparison.manifest_path)
+        assert manifest_bytes is None
+        assert expected_sha256 is None
+        return fixture.comparison, fixture.core, fixture.arms
+
     monkeypatch.setattr(
         source_module,
         "verify_comparison_sources",
-        lambda _path: (fixture.comparison, fixture.core, fixture.arms),
+        verified,
     )
     opened = source_module.open_verified_sources(Path(fixture.comparison.manifest_path))
     assert opened.features == fixture.features
@@ -771,10 +812,19 @@ def test_source_loader_rejects_mixed_arm_core(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     fixture = fixture_sources(tmp_path / "inputs", monkeypatch)
+
+    def verified(
+        path: Path, *, manifest_bytes: bytes | None = None, expected_sha256: str | None = None
+    ) -> tuple[ComparisonRun, WorkflowRun, dict[str, ArmRun]]:
+        assert path == Path(fixture.comparison.manifest_path)
+        assert manifest_bytes is None
+        assert expected_sha256 is None
+        return fixture.comparison, fixture.core, fixture.arms
+
     monkeypatch.setattr(
         source_module,
         "verify_comparison_sources",
-        lambda _path: (fixture.comparison, fixture.core, fixture.arms),
+        verified,
     )
     fixture.arms["jed"].core_manifest_sha256 = "b" * 64
     with pytest.raises(ValueError, match="core binding"):
@@ -790,10 +840,19 @@ def test_source_loader_rejects_changed_producer_semantics(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, product: str, field: str
 ) -> None:
     fixture = fixture_sources(tmp_path / "inputs", monkeypatch)
+
+    def verified(
+        path: Path, *, manifest_bytes: bytes | None = None, expected_sha256: str | None = None
+    ) -> tuple[ComparisonRun, WorkflowRun, dict[str, ArmRun]]:
+        assert path == Path(fixture.comparison.manifest_path)
+        assert manifest_bytes is None
+        assert expected_sha256 is None
+        return fixture.comparison, fixture.core, fixture.arms
+
     monkeypatch.setattr(
         source_module,
         "verify_comparison_sources",
-        lambda _path: (fixture.comparison, fixture.core, fixture.arms),
+        verified,
     )
     setattr(fixture.bases[product], field, "different-scientific-basis")
     with pytest.raises(ValueError, match="producer contract"):

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from textwrap import wrap
+from typing import TYPE_CHECKING, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -22,6 +23,19 @@ from create_six_shared_trait_graphs import (
     read_display_edges,
     value_for_color,
 )
+
+if TYPE_CHECKING:
+    from typing import Protocol
+
+    from matplotlib.axes import Axes
+
+    class _BundleRow(Protocol):
+        @property
+        def body_site_group(self) -> object: ...
+
+        @property
+        def trait_id(self) -> object: ...
+
 
 MANIFEST_FILENAME = "six_shared_trait_static_graph_manifest.tsv"
 
@@ -106,7 +120,7 @@ def scale_values(
     max_count = float(positive.max())
     if max_count <= min_count:
         return pd.Series((output_min + output_max) / 2, index=values.index, dtype=float)
-    scaled = (np.sqrt(numeric.clip(lower=min_count)) - np.sqrt(min_count)) / (
+    scaled: pd.Series = (np.sqrt(numeric.clip(lower=min_count)) - np.sqrt(min_count)) / (
         np.sqrt(max_count) - np.sqrt(min_count)
     )
     return output_min + scaled.clip(0.0, 1.0) * (output_max - output_min)
@@ -185,7 +199,7 @@ def body_site_bundle_stats(frame: pd.DataFrame) -> pd.DataFrame:
                 "trait_id": trait_id,
                 "trait_label": trait_label,
                 "trait_color": trait_color,
-                "trait_rank": int(trait_rank),
+                "trait_rank": int(cast(float, trait_rank)),
                 "bundle_label": f"{trait_label} -> {body_site}",
                 "n": int(group["focus_enriched_profile_count"].sum()),
                 "bg": int(group["background_no_enriched_profile_count"].sum()),
@@ -226,7 +240,7 @@ def aggregate_graph_edges(frame: pd.DataFrame, bundles: pd.DataFrame) -> pd.Data
                 "trait_id": trait_id,
                 "trait_label": trait_label,
                 "trait_color": trait_color,
-                "trait_rank": int(trait_rank),
+                "trait_rank": int(cast(float, trait_rank)),
                 "n": int(group["focus_enriched_profile_count"].sum()),
                 "bg": int(group["background_no_enriched_profile_count"].sum()),
                 "s": joined_unique_count(group["focus_enriched_study_ids"]),
@@ -242,13 +256,13 @@ def aggregate_graph_edges(frame: pd.DataFrame, bundles: pd.DataFrame) -> pd.Data
                 "trait_id": row.trait_id,
                 "trait_label": row.trait_label,
                 "trait_color": row.trait_color,
-                "trait_rank": int(row.trait_rank),
-                "n": int(row.n),
-                "bg": int(row.bg),
-                "s": int(row.s),
-                "links": int(row.links),
-                "signal": float(row.signal),
-                "rank_score": float(row.rank_score),
+                "trait_rank": int(cast(int, row.trait_rank)),
+                "n": int(cast(int, row.n)),
+                "bg": int(cast(int, row.bg)),
+                "s": int(cast(int, row.s)),
+                "links": int(cast(int, row.links)),
+                "signal": float(cast(float, row.signal)),
+                "rank_score": float(cast(float, row.rank_score)),
                 "edge_type": "trait_body_bundle",
                 "source_label": row.trait_label,
                 "target_label": row.bundle_label,
@@ -260,13 +274,13 @@ def aggregate_graph_edges(frame: pd.DataFrame, bundles: pd.DataFrame) -> pd.Data
                 "trait_id": row.trait_id,
                 "trait_label": row.trait_label,
                 "trait_color": row.trait_color,
-                "trait_rank": int(row.trait_rank),
-                "n": int(row.n),
-                "bg": int(row.bg),
-                "s": int(row.s),
-                "links": int(row.links),
-                "signal": float(row.signal),
-                "rank_score": float(row.rank_score),
+                "trait_rank": int(cast(int, row.trait_rank)),
+                "n": int(cast(int, row.n)),
+                "bg": int(cast(int, row.bg)),
+                "s": int(cast(int, row.s)),
+                "links": int(cast(int, row.links)),
+                "signal": float(cast(float, row.signal)),
+                "rank_score": float(cast(float, row.rank_score)),
                 "edge_type": "bundle_body_site",
                 "source_label": row.bundle_label,
                 "target_label": row.body_site_group,
@@ -319,13 +333,14 @@ def body_site_bundle_positions(
     return {
         (str(row.body_site_group), str(row.trait_id)): (
             x,
-            body_site_positions[str(row.body_site_group)][1] + float(row.bundle_offset),
+            body_site_positions[str(row.body_site_group)][1]
+            + float(cast(float, row.bundle_offset)),
         )
         for row in bundles.itertuples(index=False)
     }
 
 
-def bundle_row_key(row: object) -> tuple[str, str]:
+def bundle_row_key(row: _BundleRow) -> tuple[str, str]:
     """Return the position lookup key for a bundle-like row."""
     return (str(row.body_site_group), str(row.trait_id))
 
@@ -335,7 +350,7 @@ def trait_positions(traits: pd.DataFrame) -> dict[str, tuple[float, float]]:
     ordered_traits = traits.sort_values("trait_rank")
     y_values = [0.50] if len(ordered_traits) == 1 else np.linspace(0.82, 0.18, len(ordered_traits))
     return {
-        row.trait_label: (0.51, float(y))
+        cast(str, row.trait_label): (0.51, float(y))
         for row, y in zip(ordered_traits.itertuples(index=False), y_values, strict=True)
     }
 
@@ -348,7 +363,7 @@ def text_color_for_fill(color: str) -> str:
 
 
 def draw_curve(
-    ax: plt.Axes,
+    ax: Axes,
     start: tuple[float, float],
     end: tuple[float, float],
     *,
@@ -387,7 +402,7 @@ def draw_curve(
 
 
 def draw_circle_node(
-    ax: plt.Axes,
+    ax: Axes,
     *,
     x: float,
     y: float,
@@ -411,7 +426,7 @@ def draw_circle_node(
 
 
 def draw_diamond_node(
-    ax: plt.Axes,
+    ax: Axes,
     *,
     x: float,
     y: float,
@@ -456,12 +471,20 @@ def render_static_graph(
     trait_frame = trait_stats(frame)
     bundles = body_site_bundle_stats(frame)
     bundles["color"] = [
-        color_from_signal(row.trait_color, float(row.signal), shared_signal_max)
+        color_from_signal(
+            cast(str, row.trait_color),
+            float(cast(float, row.signal)),
+            shared_signal_max,
+        )
         for row in bundles.itertuples(index=False)
     ]
     graph_edges = aggregate_graph_edges(frame, bundles)
     graph_edges["color"] = [
-        color_from_signal(row.trait_color, float(row.signal), shared_signal_max)
+        color_from_signal(
+            cast(str, row.trait_color),
+            float(cast(float, row.signal)),
+            shared_signal_max,
+        )
         for row in graph_edges.itertuples(index=False)
     ]
     graph_edges = assign_edge_widths(graph_edges)
@@ -488,37 +511,37 @@ def render_static_graph(
                 "traits": int(row.traits),
             }
         )
-    for row in trait_frame.itertuples(index=False):
-        x, y = center_positions[row.trait_label]
+    for trait_row in trait_frame.itertuples(index=False):
+        x, y = center_positions[cast(str, trait_row.trait_label)]
         node_records.append(
             {
                 "node_type": "trait",
-                "label": row.trait_label,
-                "trait_id": row.trait_id,
+                "label": trait_row.trait_label,
+                "trait_id": trait_row.trait_id,
                 "x": x,
                 "y": y,
-                "n": int(row.n),
-                "s": int(row.s),
-                "links": int(row.links),
-                "condition_count": int(row.condition_count),
-                "body_site_count": int(row.body_site_count),
+                "n": int(cast(int, trait_row.n)),
+                "s": int(cast(int, trait_row.s)),
+                "links": int(cast(int, trait_row.links)),
+                "condition_count": int(cast(int, trait_row.condition_count)),
+                "body_site_count": int(cast(int, trait_row.body_site_count)),
             }
         )
-    for row in bundles.itertuples(index=False):
-        x, y = bundle_positions[bundle_row_key(row)]
+    for bundle_row in bundles.itertuples(index=False):
+        x, y = bundle_positions[bundle_row_key(bundle_row)]
         node_records.append(
             {
                 "node_type": "trait_body_bundle",
-                "label": row.bundle_label,
-                "body_site_group": row.body_site_group,
-                "trait_id": row.trait_id,
-                "trait_label": row.trait_label,
+                "label": bundle_row.bundle_label,
+                "body_site_group": bundle_row.body_site_group,
+                "trait_id": bundle_row.trait_id,
+                "trait_label": bundle_row.trait_label,
                 "x": x,
                 "y": y,
-                "n": int(row.n),
-                "s": int(row.s),
-                "links": int(row.links),
-                "bundle_rank": int(row.bundle_rank),
+                "n": int(cast(int, bundle_row.n)),
+                "s": int(cast(int, bundle_row.s)),
+                "links": int(cast(int, bundle_row.links)),
+                "bundle_rank": int(cast(int, bundle_row.bundle_rank)),
             }
         )
     for label, row in body_site_frame.iterrows():
@@ -587,14 +610,16 @@ def render_static_graph(
         else:
             continue
         bend = (
-            0.0 if edge.edge_type == "bundle_body_site" else (float(edge.trait_rank) - 2.5) * 0.010
+            0.0
+            if edge.edge_type == "bundle_body_site"
+            else (float(cast(int, edge.trait_rank)) - 2.5) * 0.010
         )
         draw_curve(
             ax,
             start,
             end,
             color=str(edge.color),
-            linewidth=float(edge.width),
+            linewidth=float(cast(float, edge.width)),
             alpha=alpha,
             zorder=zorder,
             bend=bend,
@@ -607,7 +632,7 @@ def render_static_graph(
 
     for label in condition_order:
         x, y = condition_positions[label]
-        row = condition_frame.loc[label]
+        row = cast(pd.Series, condition_frame.loc[label])
         draw_circle_node(
             ax,
             x=x,
@@ -637,7 +662,7 @@ def render_static_graph(
             ax,
             x=x,
             y=y,
-            radius=float(bundle_sizes.loc[index]),
+            radius=float(bundle_sizes.loc[cast(int, index)]),
             facecolor=str(row.color),
             edgecolor="none",
             linewidth=0.0,
@@ -646,7 +671,7 @@ def render_static_graph(
 
     for label in body_site_order:
         x, y = body_site_positions[label]
-        row = body_site_frame.loc[label]
+        row = cast(pd.Series, body_site_frame.loc[label])
         draw_circle_node(
             ax,
             x=x,
@@ -670,15 +695,15 @@ def render_static_graph(
             linespacing=1.03,
         )
 
-    for row in trait_frame.itertuples(index=False):
-        x, y = center_positions[row.trait_label]
-        radius = float(trait_sizes.loc[row.trait_id])
+    for trait_row in trait_frame.itertuples(index=False):
+        x, y = center_positions[cast(str, trait_row.trait_label)]
+        radius = float(trait_sizes.loc[cast(str, trait_row.trait_id)])
         draw_circle_node(
             ax,
             x=x,
             y=y,
             radius=radius,
-            facecolor=row.trait_color,
+            facecolor=cast(str, trait_row.trait_color),
             edgecolor=SLATE_900,
             linewidth=1.4,
             zorder=6.0,
@@ -686,11 +711,11 @@ def render_static_graph(
         ax.text(
             x,
             y,
-            wrap_node_label(row.trait_label, width=15),
+            wrap_node_label(trait_row.trait_label, width=15),
             ha="center",
             va="center",
             fontsize=7.6,
-            color=text_color_for_fill(row.trait_color),
+            color=text_color_for_fill(cast(str, trait_row.trait_color)),
             fontweight="bold",
             linespacing=1.02,
             zorder=7.0,
@@ -699,8 +724,9 @@ def render_static_graph(
             x,
             y - radius - 0.018,
             (
-                f"n={int(row.n):,}\n"
-                f"conditions={int(row.condition_count)}, sites={int(row.body_site_count)}"
+                f"n={int(cast(int, trait_row.n)):,}\n"
+                f"conditions={int(cast(int, trait_row.condition_count))}, "
+                f"sites={int(cast(int, trait_row.body_site_count))}"
             ),
             ha="center",
             va="top",

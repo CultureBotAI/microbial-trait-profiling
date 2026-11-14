@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
-"""Verify source-level mutants for #1835 in an isolated scratch copy.
+"""Verify source-level mutants for #1835 and #1871 in an isolated scratch copy.
 
 Purpose:
-  Confirm that the #1835 two-way slashless relation test and character-class candidate
+  Confirm that the #1835/#1871 two-way slashless relation test, root extraction (including
+  non-purely-alphabetic roots such as x1 and home2), and character-class candidate
   generation in tests/test_local_path_patterns.py kill one-sided widenings and narrowings
   of both src/mtp/local_path_patterns.py and src/mtp/provenance_paths.py (including
-  Volumes, people, var/tmp, srv, and '+' in the user-name class) by AssertionError (rc=1)
-  in pytest, with import origins verified inside pytest and zero writes to the worktree.
+  Volumes, people, var/tmp, srv, x1, home2, and '+' in the user-name class) by
+  AssertionError (rc=1) in pytest, with import origins verified inside pytest and zero
+  writes to the worktree.
 
 Inputs:
   - Worktree src/mtp/local_path_patterns.py
@@ -15,10 +17,10 @@ Inputs:
   - Worktree tests/test_no_absolute_local_paths.py
 
 Outputs:
-  - Exit code 0 if the unmutated control passes (rc=0) and all 12 mutants are killed by
+  - Exit code 0 if the unmutated control passes (rc=0) and all 16 mutants are killed by
     assertion failure (rc=1) with verified scratch import origins; non-zero otherwise.
 
-Issue: #1835 (from PR #1822 delta review)
+Issue: #1835, #1871 (from PR #1822 and PR #1863 reviews)
 Date: 2026-11-07
 """
 
@@ -126,6 +128,30 @@ MUTANTS: list[tuple[str, str, str, str]] = [
         LPP,
         "[A-Za-z0-9._-]+|",
         "[A-Za-z0-9_-]+|",
+    ),
+    (
+        "M13_shared_home_adds_x1_1871",
+        LPP,
+        'r"/(?:Users|home)/',
+        'r"/(?:Users|home|x1)/',
+    ),
+    (
+        "M14_slashless_home_adds_x1_1871",
+        PROV,
+        SLASHLESS_HOME,
+        "(?:(?:Users|home|x1)/[A-Za-z0-9._-]+",
+    ),
+    (
+        "M15_shared_home_adds_home2_1871",
+        LPP,
+        'r"/(?:Users|home)/',
+        'r"/(?:Users|home|home2)/',
+    ),
+    (
+        "M16_slashless_home_adds_home2_1871",
+        PROV,
+        SLASHLESS_HOME,
+        "(?:(?:Users|home|home2)/[A-Za-z0-9._-]+",
     ),
 ]
 
@@ -243,7 +269,7 @@ def main() -> int:
     if failures:
         print(f"FAILED: {failures}/{len(MUTANTS)} mutants survived.")
         return 1
-    print(f"ALL {len(MUTANTS)} #1835 MUTANTS KILLED CLEANLY.")
+    print(f"ALL {len(MUTANTS)} #1835/#1871 MUTANTS KILLED CLEANLY.")
     return 0
 
 

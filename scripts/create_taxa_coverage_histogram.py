@@ -73,6 +73,8 @@ TAXONOMY_ROOTS = {
     "NCBITaxon:2157": "archaea",
     "NCBITaxon:2759": "eukaryota",
     "NCBITaxon:10239": "viruses",
+    "NCBITaxon:12908": "unclassified_sequences",
+    "NCBITaxon:2787823": "unclassified_sequences",
 }
 
 # Standard taxonomic hierarchy (ascending order)
@@ -164,11 +166,14 @@ class CoverageTaxonomy:
                 continue
             subject, parent = row["subject"], row["object"]
             # These are ontology rank classes, not organism ancestry (#1008).
-            if parent == "OBO:NCBITaxon#_taxonomic_rank" and re.fullmatch(
-                r"NCBITaxon:[A-Za-z_][A-Za-z0-9_]*", subject
-            ):
-                rank_class_records += 1
-                continue
+            if parent == "OBO:NCBITaxon#_taxonomic_rank":
+                if re.fullmatch(r"NCBITaxon:[A-Za-z_][A-Za-z0-9_]*", subject):
+                    rank_class_records += 1
+                    continue
+                if subject.startswith("NCBITaxon:"):
+                    raise ValueError(
+                        f"Rank-class edge {row['id']} has a non-rank NCBITaxon subject: {subject}"
+                    )
             for identifier in (subject, parent):
                 if identifier.startswith("NCBITaxon:") and not re.fullmatch(
                     r"NCBITaxon:[1-9][0-9]*", identifier
@@ -184,6 +189,13 @@ class CoverageTaxonomy:
         if not accepted:
             raise ValueError("Taxonomy input has no NCBITaxon subclass_of edges")
         self.audit.update(
+            excluded_records_note=(
+                "excluded_records counts malformed KG edge records dropped by the strict "
+                "edge parser (always 0); taxonomy_rank_class_edge_records_skipped counts "
+                "well-formed NCBITaxon:<name> ontology rank-class subclass_of records "
+                "skipped during organism-ancestry graph projection, while OBO-form rank-class "
+                "subjects take the non-NCBITaxon skip (#1008, #1274)."
+            ),
             taxonomy_edge_records=accepted,
             taxonomy_rank_class_edge_records_skipped=rank_class_records,
             unique_taxonomy_edges=sum(len(values) for values in parents.values()),
@@ -198,7 +210,8 @@ class CoverageTaxonomy:
         if taxon not in self.nodes:
             return TaxonomyState("unresolved", "not_in_taxonomy_edges", ())
         roots = tuple(sorted(set(TAXONOMY_ROOTS) & self.graph.ancestors(taxon)))
-        if len(roots) > 1:
+        groups = {TAXONOMY_ROOTS[root] for root in roots}
+        if len(groups) > 1:
             raise ValueError(f"Conflicting recognized taxonomy roots for {taxon}: {roots}")
         if not roots:
             return TaxonomyState("unresolved", "no_recognized_root_path", ())
@@ -216,7 +229,20 @@ def diagnose_zero_trait_taxon(
             "Ambiguous Taxon / Bin Slash",
             "Resolve to lowest common ancestor (LCA) or treat as composite multi-taxon marker",
         )
-    if lower_name in {"uncultured organism", "unidentified", "unclassified", "unknown"}:
+
+    if taxon_id in {"NCBITaxon:541000", "NCBITaxon:81850", "NCBITaxon:508215"}:
+        canonical_map = {
+            "NCBITaxon:541000": "NCBITaxon:216572 (Oscillospiraceae)",
+            "NCBITaxon:81850": "NCBITaxon:33958 (Lactobacillaceae)",
+            "NCBITaxon:508215": "NCBITaxon:32207 (Rothia)",
+        }
+        twin = canonical_map.get(taxon_id, "canonical TaxID")
+        return (
+            "NCBI TaxID Desynchronization",
+            "Review possible alias before transferring traits: " + twin.split(" (")[0],
+        )
+
+    if taxonomy.group == "unclassified_sequences":
         return (
             "Unresolved Taxonomic Label",
             "Review the reported taxonomic label and source assignment before trait matching; "
@@ -236,18 +262,6 @@ def diagnose_zero_trait_taxon(
             "biological absence",
         )
 
-    if taxon_id in {"NCBITaxon:541000", "NCBITaxon:81850", "NCBITaxon:508215"}:
-        canonical_map = {
-            "NCBITaxon:541000": "NCBITaxon:216572 (Oscillospiraceae)",
-            "NCBITaxon:81850": "NCBITaxon:33958 (Lactobacillaceae)",
-            "NCBITaxon:508215": "NCBITaxon:32207 (Rothia)",
-        }
-        twin = canonical_map.get(taxon_id, "canonical TaxID")
-        return (
-            "NCBI TaxID Desynchronization",
-            "Review possible alias before transferring traits: " + twin.split(" (")[0],
-        )
-
     if taxonomy.group == "unresolved":
         return (
             "Taxonomy Unresolved",
@@ -263,7 +277,7 @@ def diagnose_zero_trait_taxon(
 
     if (
         "uncultured" in lower_name
-        or re.search(r"\b(cag:\d+|uba\d+|ucg-\d+|rf39|gut metagenome)\b", lower_name)
+        or re.search(r"\b(cag:\d+|uba\d+|ucg-\d+|rf39)\b", lower_name)
         or re.search(r"\s+bacterium\b", lower_name)
         or re.search(r"\s+sp\.\s*$", lower_name)
     ):
@@ -2519,8 +2533,10 @@ def write_readme(
             ),
             "taxonomy_status and JSON taxonomy_root_ids. Missing paths are explicit; conflicting",
             "recognized roots or reachable cycles reject the run before outputs are written.",
-            "Ontology rank-class edges are excluded from organism ancestry and counted in",
-            "the provenance audit as taxonomy_rank_class_edge_records_skipped.",
+            "Ontology rank-class edges are skipped during organism-ancestry projection",
+            "(counted in parser_audit as taxonomy_rank_class_edge_records_skipped, while",
+            "excluded_records is always 0: the strict KG edge parser raises on a "
+            "malformed record instead of dropping it).",
             "Explicit unresolved labels and slash composites retain their distinct diagnoses.",
             "Eukaryotic and viral ancestry precedes Candidatus/cultivation heuristics;",
             "alias suggestions do not transfer ancestry or traits.",

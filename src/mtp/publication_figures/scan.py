@@ -83,13 +83,12 @@ def _count(value: Any, description: str) -> int:
 
 
 def _labels(metadata: pd.DataFrame, *, display: bool) -> dict[str, str]:
-    _require(
-        {"column_id", "column_label"}.issubset(metadata), "Scan label metadata columns missing"
-    )
+    missing = sorted({"column_id", "object_name", "column_label"} - set(metadata))
+    _require(not missing, f"Scan label metadata columns missing: {', '.join(missing)}")
     _require(not metadata["column_id"].duplicated().any(), "Duplicate scan metadata trait")
     result = {
         str(row["column_id"]): str(
-            (row.get("object_name") or row["column_label"]) if display else row["column_label"]
+            (row["object_name"] or row["column_label"]) if display else row["column_label"]
         )
         for row in metadata.to_dict("records")
     }
@@ -514,6 +513,8 @@ def scan_pages(bundle: ScanFigureInputs) -> Iterator[Page]:
     }
     callout_conditions = " / ".join(abbreviations.get(name, name) for name in conditions)
     details: dict[str, Any] = {
+        "trait_id": trait_id,
+        "trait_label": bundle.labels[trait_id],
         "candidate_triples": candidate_count,
         "tested_triples": tested,
         "untestable_triples": candidate_count - tested,
@@ -534,7 +535,13 @@ def scan_pages(bundle: ScanFigureInputs) -> Iterator[Page]:
             fontsize=11,
             color=INK,
         )
-        figure.text(0.12, 0.915, _wrap(bundle.labels[trait_id], 95), color=INK)
+        figure.text(
+            0.12,
+            0.938,
+            _wrap(bundle.labels[trait_id], 95) + "\n" + _wrap(trait_id, 99),
+            color=INK,
+            va="top",
+        )
         figure.text(
             0.12,
             0.865,
@@ -602,7 +609,7 @@ def scan_pages(bundle: ScanFigureInputs) -> Iterator[Page]:
             )
         note = (
             "Stool decreased-signature annotation sets; every p-value is nominal. "
-            "rank 1 = smallest nominal p-value. "
+            "Rank 1 = smallest nominal p-value. "
             "U6: whole-study-signature null; draws distinct studies from the stool-signature pool, "
             "takes one random condition unit per study, and splits them into three groups "
             "of the recorded sizes. "

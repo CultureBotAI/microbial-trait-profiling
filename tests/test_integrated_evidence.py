@@ -59,6 +59,7 @@ from mtp.integrated_evidence import (
     is_cell_row,
     log_ratio_records,
     main,
+    nominal_p_columns,
     placeholder_records,
     read_status,
     summarize,
@@ -1209,6 +1210,80 @@ def test_an_undefined_odds_ratio_is_missing_rather_than_infinite() -> None:
     assert ratio.effect_value == 3.0
 
 
+def test_a_nonfinite_mcnemar_p_is_not_tested_and_leaves_p_blank(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A non-finite McNemar p must be recorded as untested, never tested (#1808, #1882)."""
+    from types import SimpleNamespace
+
+    import mtp.integrated_evidence as ie
+
+    profiles = _guild_profiles(reverse=1)
+    baseline = compute_correlation(profiles)
+    assert baseline.status == "tested"
+    assert baseline.discordant == (11, 1)
+
+    for label, bad_p in (
+        ("nan", float("nan")),
+        ("pos_inf", float("inf")),
+        ("neg_inf", float("-inf")),
+    ):
+        with monkeypatch.context() as patch:
+            patch.setattr(
+                guild_maps, "binomtest", lambda *_a, _p=bad_p, **_k: SimpleNamespace(pvalue=_p)
+            )
+            (record,) = guild_records(profiles, source="x", columns={}, **THRESHOLDS)
+        assert record.test_status == UNTESTED
+        assert record.p_value is None
+        assert record.q_value is None
+        assert record.effect_value is None
+        assert record.decision == UNDECIDED
+        assert record.strict_decision == UNDECIDED
+        assert record.testable_units == 12
+
+        table_path = write_table([record], tmp_path / f"evidence_{label}.tsv")
+        with table_path.open(encoding="utf-8", newline="") as handle:
+            (written,) = list(csv.DictReader(handle, delimiter="\t"))
+        assert written["test_status"] == UNTESTED
+        assert written["p_value"] == ""
+        assert written["q_value"] == ""
+        assert written["effect_value"] == ""
+        assert written["decision"] == UNDECIDED
+
+        (summary,) = summarize([record])
+        assert summary["tested"] == 0
+        assert summary["untested_or_unsupplied"] == 1
+        assert summary["undecided"] == 1
+
+        (family,) = family_inventory([record])
+        assert family["tested"] == 0
+        assert family["rows_exported"] == 1
+        assert family["with_q_value"] == 0
+
+        nominal = nominal_p_columns([record], [record])
+        tables = nominal["tables"]
+        assert isinstance(tables, dict)
+        for entry in tables.values():
+            assert entry["columns"]["p_value"] == {
+                "finite_nominal_rows": 0,
+                "missing_or_nonfinite_rows": 1,
+            }
+
+    for overridden in (
+        replace(baseline, status="tested", mcnemar_p=float("nan")),
+        replace(baseline, status="tested", mcnemar_p=float("inf")),
+        replace(baseline, status="tested", mcnemar_p=None),
+        replace(baseline, status="not_tested", mcnemar_p=0.25),
+    ):
+        with monkeypatch.context() as patch:
+            patch.setattr(ie, "compute_correlation", lambda *_a, _c=overridden, **_k: _c)
+            (record,) = guild_records(profiles, source="x", columns={}, **THRESHOLDS)
+        assert record.test_status == UNTESTED
+        assert record.p_value is None
+        assert record.effect_value is None
+        assert record.decision == UNDECIDED
+
+
 def test_a_q_value_without_a_family_is_rejected() -> None:
     """Every corrected value must name the family it was corrected in (#236)."""
     record = _built()[0]
@@ -1961,3 +2036,154 @@ def test_cli_binds_imported_assessments_to_its_actual_inputs(tmp_path: Path) -> 
         row for row in records if row["method"] == "directional_consistency_fraction_sign_test"
     )
     assert fraction["calibration_status"].startswith("pass #182")
+
+
+@pytest.mark.parametrize("shape", ["nested", "top_level"])
+@pytest.mark.parametrize("missing", ["profile_sha256", "experiments_sha256"])
+@pytest.mark.parametrize("change", ["absent", "renamed"])
+def test_status_missing_input_keys_816(
+    tmp_path: Path, shape: str, missing: str, change: str
+) -> None:
+    from mtp.integrated_evidence import UNBOUND_STATUSES
+
+    expected = {"profile_sha256": "1" * 64, "experiments_sha256": "2" * 64}
+    claimed = dict(expected)
+    value = claimed.pop(missing)
+    if change == "renamed":
+        claimed[f"old_{missing}"] = value
+    content = {"inputs": claimed} if shape == "nested" else claimed
+    path = tmp_path / "status.json"
+    path.write_text(json.dumps({**content, "sensitivity_status": "pass"}))
+    status = read_status(path, "sensitivity_status", "#183", expected_input_sha256=expected)
+    assert status.source["binding"] == "incomplete_inputs"
+    assert status.source["missing_input_keys"] == [missing]
+    assert status.source["binding"] in UNBOUND_STATUSES
+    assert status.default.startswith("unreadable")
+    assert status.verdicts == {}
+
+
+@pytest.mark.parametrize("shape", ["nested", "top_level"])
+@pytest.mark.parametrize("bad", ["", "wrong", None])
+def test_status_rejects_invalid_hashes_816(tmp_path: Path, shape: str, bad: str | None) -> None:
+    expected = {"profile_sha256": "1" * 64, "experiments_sha256": "2" * 64}
+    claimed = {**expected, "profile_sha256": bad}
+    path = tmp_path / "status.json"
+    path.write_text(json.dumps({"inputs": claimed} if shape == "nested" else claimed))
+    status = read_status(path, "sensitivity_status", "#183", expected_input_sha256=expected)
+    assert status.source["binding"] == "mismatch_or_missing_identity"
+    assert status.default.startswith("unreadable")
+
+
+def test_real_sensitivity_producer_binding_816(tmp_path: Path) -> None:
+    from argparse import Namespace
+
+    from mtp.integrated_evidence import _read_assessment_statuses
+    from mtp.log_ratio_sensitivity import write_outputs
+
+    profiles, experiments = _corpus(tmp_path)
+    expected = {
+        "profile_sha256": file_sha256(profiles),
+        "experiments_sha256": file_sha256(experiments),
+    }
+    write_outputs(
+        [],
+        [],
+        [],
+        [],
+        tmp_path / "producer",
+        {
+            **expected,
+            "taxa_sha256": "3" * 64,
+            "analysis_source_sha256": "4" * 64,
+        },
+        population=[],
+        stratum_influence=[],
+        strata_below_minimum=0,
+        label_counts={},
+    )
+    path = tmp_path / "producer/sensitivity_status.json"
+    content = json.loads(path.read_text())
+    assert "inputs" not in content
+    assert "full_dump_sha256" not in content
+    args = Namespace(
+        calibration_status=None,
+        sensitivity_status=path,
+        coverage_status=None,
+        orientation_provenance=None,
+        influence_status=None,
+    )
+    statuses = _read_assessment_statuses(
+        args,
+        profile_input=profiles,
+        experiments_input=experiments,
+        full_dump_input=tmp_path / "absent.csv",
+        supplied={name: name == "sensitivity_status" for name in vars(args)},
+    )
+    status = statuses["sensitivity_status"]
+    assert status.source["binding"] == "matched"
+    assert status.source["expected_input_sha256"] == expected
+    assert status.source["input_sha256"] == {key: content[key] for key in expected}
+    scope = status.source["validation_scope"]
+    assert isinstance(scope, str)
+    assert "taxa" in scope
+    assert "not checked" in scope
+    content["experiments_sha256"] = "0" * 64
+    path.write_text(json.dumps(content))
+    changed = read_status(path, "sensitivity_status", "#183", expected_input_sha256=expected)
+    assert changed.source["binding"] == "mismatch_or_missing_identity"
+
+
+@pytest.mark.parametrize("inputs", [{}, None, []])
+def test_present_invalid_or_empty_inputs_never_fall_back_816(
+    tmp_path: Path, inputs: object
+) -> None:
+    expected = {"profile_sha256": "1" * 64}
+    path = tmp_path / "status.json"
+    path.write_text(json.dumps({**expected, "inputs": inputs, "coverage_status": "pass"}))
+    status = read_status(path, "coverage_status", "#184", expected_input_sha256=expected)
+    assert status.source["binding"] == "incomplete_inputs"
+    assert status.source["missing_input_keys"] == ["profile_sha256"]
+
+
+@pytest.mark.parametrize("binding", ["incomplete_inputs", "inputs_not_declared"])
+def test_strict_cli_rejects_unbound_status_816(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, binding: str
+) -> None:
+    module = sys.modules[read_status.__module__]
+    profiles, experiments = _corpus(tmp_path)
+    status_path = tmp_path / "status.json"
+    status_path.write_text("{}")
+    for name in ("native_composition_records", "ora_profile_records"):
+        monkeypatch.setattr(module, name, lambda *_a, **_kw: [])
+    monkeypatch.setattr(module, "attach_full_screen", lambda records, *_a, **_kw: records)
+    monkeypatch.setattr(
+        module,
+        "_read_assessment_statuses",
+        lambda *_a, **_kw: {
+            "sensitivity_status": AssessmentStatus("#183", {}, "pass", source={"binding": binding})
+        },
+    )
+    arguments = [
+        "--profile-input",
+        str(profiles),
+        "--experiments-input",
+        str(experiments),
+        "--output-dir",
+        str(tmp_path / "output"),
+        "--require-complete-sources",
+    ]
+    for flag in (
+        "--arm1-pooled-stats",
+        "--arm2-enrichment-results",
+        "--arm2-depletion-results",
+        "--full-screen",
+        "--full-screen-provenance",
+        "--calibration-status",
+        "--sensitivity-status",
+        "--orientation-provenance",
+        "--influence-status",
+    ):
+        arguments.extend([flag, str(status_path)])
+    with pytest.raises(ValueError, match="unreadable or unbound statuses"):
+        main(arguments)
+    assert not (tmp_path / "output/integrated_evidence_provenance.json").exists()

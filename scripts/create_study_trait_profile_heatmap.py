@@ -6,7 +6,9 @@ import argparse
 import csv
 import math
 from collections import Counter, defaultdict
+from collections.abc import Mapping
 from pathlib import Path
+from typing import cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -196,7 +198,7 @@ def load_trait_labels(columns_path: Path) -> pd.DataFrame:
     columns = pd.read_csv(columns_path, sep="\t", dtype=str).fillna("")
     columns = columns.set_index("column_id", drop=False)
     columns["display_label"] = [
-        format_trait_label(column_id, row) for column_id, row in columns.iterrows()
+        format_trait_label(cast(str, column_id), row) for column_id, row in columns.iterrows()
     ]
     columns["display_category"] = columns["object_category"].str.removeprefix("biolink:")
     columns.loc[columns["display_category"] == "", "display_category"] = "unknown"
@@ -457,7 +459,9 @@ def build_plot_matrix(
     """Create column z-scores from log-scaled trait fractions."""
     composition = trait_fractions(selected_profile_matrix).loc[:, selected_traits]
     scaled = (composition * 1000).apply(lambda column: column.map(math.log1p))
-    zscores = (scaled - scaled.mean(axis=0)) / scaled.std(axis=0, ddof=0).replace(0, pd.NA)
+    zscores: pd.DataFrame = (scaled - scaled.mean(axis=0)) / scaled.std(axis=0, ddof=0).replace(
+        0, pd.NA
+    )
     return zscores.fillna(0)
 
 
@@ -472,7 +476,7 @@ def cluster_index(indexed_matrix: pd.DataFrame) -> pd.Index:
         row_linkage = linkage(values, method="average", metric="euclidean")
     except ValueError:
         return indexed_matrix.index
-    return indexed_matrix.index[leaves_list(row_linkage)]
+    return cast(pd.Index, indexed_matrix.index[leaves_list(row_linkage)])
 
 
 def order_profiles_by_direction(
@@ -646,7 +650,7 @@ def build_paired_enrichment_matrix(
         pair_values.name = pair_id
         rows.append(pair_values)
 
-        pair_metadata = group.iloc[0]
+        first_row = group.iloc[0]
         metadata_rows.append(
             {
                 "pair_id": pair_id,
@@ -659,14 +663,14 @@ def build_paired_enrichment_matrix(
                 "decreased_profile_ids": ";".join(dec_ids),
                 "mean_paired_trait_enrichment": pair_values.mean(),
                 "max_abs_paired_trait_enrichment": pair_values.abs().max(),
-                "body_site": pair_metadata["body_site"],
-                "body_site_group": pair_metadata["body_site_group"],
-                "condition": pair_metadata["condition"],
-                "condition_group": pair_metadata["condition_group"],
-                "location": pair_metadata["location"],
-                "host_species": pair_metadata["host_species"],
-                "title": pair_metadata["title"],
-                "publication_year": pair_metadata["publication_year"],
+                "body_site": first_row["body_site"],
+                "body_site_group": first_row["body_site_group"],
+                "condition": first_row["condition"],
+                "condition_group": first_row["condition_group"],
+                "location": first_row["location"],
+                "host_species": first_row["host_species"],
+                "title": first_row["title"],
+                "publication_year": first_row["publication_year"],
             }
         )
 
@@ -825,26 +829,65 @@ def build_rendered_paired_enrichment_matrix(
     return display_matrix, display_metadata
 
 
-def palette_for_categories(categories: pd.Series, palette_name: str) -> dict[str, object]:
-    """Build a stable palette for row or column annotation categories."""
+CELL_BORDER_LINEWIDTH = 0.25
+ACCESSIBLE_CATEGORY_PALETTE: tuple[str, ...] = (
+    "#005AB5",
+    "#D55E00",
+    "#117733",
+    "#E69F00",
+    "#56B4E9",
+    "#332288",
+    "#F0E442",
+    "#882255",
+    "#009E73",
+    "#CC79A7",
+    "#1111EE",
+    "#DDDD99",
+)
+PALETTE_ROTATIONS: dict[str, int] = {
+    "accessible": 0,
+    "body_site": 0,
+    "tab20": 0,
+    "condition": 2,
+    "Set3": 2,
+    "trait_category": 4,
+    "Set2": 4,
+}
+
+
+def palette_for_categories(
+    categories: pd.Series,
+    palette_name: str = "accessible",
+) -> dict[str, str | tuple[float, float, float]]:
+    """Build a stable, color-vision-accessible palette for row or column annotation categories."""
     ordered = [
         category for category in sorted(categories.unique()) if category not in {"Other", "unknown"}
     ]
-    colors: dict[str, object] = {}
+    offset = PALETTE_ROTATIONS.get(palette_name, 0)
+    rotated = ACCESSIBLE_CATEGORY_PALETTE[offset:] + ACCESSIBLE_CATEGORY_PALETTE[:offset]
+    colors: dict[str, str | tuple[float, float, float]] = {}
     if ordered:
-        colors = dict(
-            zip(
-                ordered,
-                sns.color_palette(palette_name, n_colors=len(ordered)),
-                strict=True,
+        if len(ordered) <= len(rotated):
+            selected_colors: list[str | tuple[float, float, float]] = list(rotated[: len(ordered)])
+        else:
+            extra = cast(
+                list[tuple[float, float, float]],
+                sns.color_palette("husl", n_colors=len(ordered) - len(rotated)),
             )
-        )
+            selected_colors = [*rotated, *extra]
+        colors = dict(zip(ordered, selected_colors, strict=True))
     colors["Other"] = "#b0b0b0"
     colors["unknown"] = "#e5e7eb"
     return colors
 
 
-def legend_handles(palette: dict[str, object], present_categories: pd.Series) -> list[Patch]:
+build_palette = palette_for_categories
+
+
+def legend_handles(
+    palette: Mapping[str, str | tuple[float, float, float]],
+    present_categories: pd.Series,
+) -> list[Patch]:
     """Build legend handles only for categories present in the plot."""
     present = set(present_categories)
     return [Patch(color=color, label=label) for label, color in palette.items() if label in present]
@@ -864,9 +907,9 @@ def save_heatmap(
     display_to_trait_id = dict(zip(display_matrix.columns, trait_metadata.index, strict=True))
 
     direction_palette = {"inc": "#c0392b", "dec": "#2874a6"}
-    body_palette = palette_for_categories(display_metadata["body_site_group"], "tab20")
-    condition_palette = palette_for_categories(display_metadata["condition_group"], "Set3")
-    trait_palette = palette_for_categories(trait_metadata["display_category"], "Set2")
+    body_palette = palette_for_categories(display_metadata["body_site_group"], "body_site")
+    condition_palette = palette_for_categories(display_metadata["condition_group"], "condition")
+    trait_palette = palette_for_categories(trait_metadata["display_category"], "trait_category")
 
     row_colors = pd.DataFrame(
         {
@@ -905,7 +948,7 @@ def save_heatmap(
         col_cluster=True,
         row_colors=row_colors,
         col_colors=col_colors,
-        linewidths=0.05,
+        linewidths=CELL_BORDER_LINEWIDTH,
         linecolor="#e5e7eb",
         xticklabels=True,
         yticklabels=len(display_matrix) <= 120,
@@ -997,9 +1040,9 @@ def save_paired_enrichment_heatmap(
     sns.set_theme(style="white")
     display_to_trait_id = dict(zip(display_matrix.columns, trait_metadata.index, strict=True))
 
-    body_palette = palette_for_categories(display_metadata["body_site_group"], "tab20")
-    condition_palette = palette_for_categories(display_metadata["condition_group"], "Set3")
-    trait_palette = palette_for_categories(trait_metadata["display_category"], "Set2")
+    body_palette = palette_for_categories(display_metadata["body_site_group"], "body_site")
+    condition_palette = palette_for_categories(display_metadata["condition_group"], "condition")
+    trait_palette = palette_for_categories(trait_metadata["display_category"], "trait_category")
 
     row_colors = pd.DataFrame(
         {
@@ -1034,7 +1077,7 @@ def save_paired_enrichment_heatmap(
         col_cluster=True,
         row_colors=row_colors,
         col_colors=col_colors,
-        linewidths=0.05,
+        linewidths=CELL_BORDER_LINEWIDTH,
         linecolor="#e5e7eb",
         xticklabels=True,
         yticklabels=len(display_matrix) <= 120,

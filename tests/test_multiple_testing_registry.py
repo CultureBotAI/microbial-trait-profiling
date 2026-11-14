@@ -13,10 +13,12 @@ runtime-selected methods. It never imports analysis modules or runs a test.
 from __future__ import annotations
 
 import ast
+import csv
 import re
 import unicodedata
 from collections import Counter, defaultdict
 from collections.abc import Iterable, Iterator, Mapping
+from copy import deepcopy
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -99,6 +101,50 @@ PRIMITIVES = {
 NAMED_WRAPPERS = {"mtp.taxon_influence.adjust", "mtp.log_ratio_sensitivity.correct"}
 HELPER_NAME = re.compile(r"(?:^|_)(?:bh|by|fdr|benjamini)(?:_|$)")
 PROCEDURES = {"bh": "BH", "by": "BY", "fdr_bh": "BH", "fdr_by": "BY"}
+IN_SCOPE_SOURCE_DIRS = ("src", "scripts")
+OUT_OF_SCOPE_SOURCE_DIRS = ("tests", "tools", "methods", "docs", "data", "schema")
+STRUCTURAL_CORRECTION_SEED = "<structural_correction>"
+PARTIAL_PROC_PREFIX = "<proc:"
+P_VALUE_IDENTIFIERS = {
+    "p",
+    "pval",
+    "p_val",
+    "p_value",
+    "pvals",
+    "p_values",
+    "raw_p",
+    "p_vec",
+    "p_array",
+    "probabilities",
+    "probs",
+}
+EXPLICIT_P_VALUE_IDENTIFIERS = {
+    "pval",
+    "p_val",
+    "p_value",
+    "pvals",
+    "p_values",
+    "raw_p",
+}
+COUNT_IDENTIFIERS = {
+    "m",
+    "n",
+    "k",
+    "size",
+    "n_tests",
+    "num_tests",
+    "family_size",
+    "m_tests",
+    "total_tests",
+}
+EXPLICIT_COUNT_IDENTIFIERS = {
+    "n_tests",
+    "num_tests",
+    "family_size",
+    "m_tests",
+    "total_tests",
+}
+RANK_IDENTIFIERS = {"rank", "ranks", "order", "idx"}
 REQUIRED = {
     "family_id",
     "area",
@@ -116,17 +162,133 @@ REQUIRED = {
     "anchors",
 }
 
+# #1450 part 1: these two families share a producer and committed header proof.
+# Other selected families retain their existing checks pending separate evidence.
+NATIVE_SELECTED_FAMILIES = ("mt-core-native-pair-t", "mt-core-native-study-t")
+NATIVE_RECORDED_SIZES = {
+    "file": "trait_profile_paired_contrast_trait_stats_<filename_token>.tsv",
+    "selected_count": "correction_family_size",
+    "unfiltered_count": "retained_trait_count",
+    "group_by": ["stratum_kind", "stratum"],
+    "missing_or_blank": "unavailable",
+}
+NATIVE_MANIFEST = (
+    ROOT
+    / "trait-visualization/trait-profile-investigation"
+    / "trait_profile_paired_contrast_trait_stats_manifest.tsv"
+)
+NATIVE_POOLED_WITNESSES = (
+    "data/derived/trait_profile_paired_contrast_trait_stats_pooled.tsv",
+    "trait-visualization/trait-profile-investigation/"
+    "trait_profile_paired_contrast_trait_stats_pooled.tsv",
+    "trait-visualization/trait-profile-investigation/trait_profile_paired_contrast_trait_stats.tsv",
+)
+
+
+def manifest_witness_paths(file_template: str, manifest_path: Path = NATIVE_MANIFEST) -> list[Path]:
+    """Instantiate a recorded_sizes file template against every manifest stratum row."""
+    placeholders = re.findall(r"<([a-z_]+)>", file_template)
+    if not placeholders:
+        raise AssertionError(f"Expected <placeholder> in template: {file_template!r}")
+    manifest_dir = manifest_path.parent
+    existing_names = {entry.name for entry in manifest_dir.iterdir() if entry.is_file()}
+    with manifest_path.open(encoding="utf-8", newline="") as handle:
+        rows = list(csv.DictReader(handle, delimiter="\t"))
+    if not rows:
+        raise AssertionError(f"Expected manifest rows in {manifest_path}")
+    paths: list[Path] = []
+    for row in rows:
+        missing_cols = [col for col in placeholders if not row.get(col)]
+        if missing_cols:
+            raise AssertionError(
+                f"Template {file_template!r} references missing manifest columns {missing_cols}"
+            )
+        filename = file_template
+        for col in placeholders:
+            filename = filename.replace(f"<{col}>", row[col])
+        recorded_path = ROOT / row["path"]
+        if filename != recorded_path.name:
+            raise AssertionError(
+                f"Template {file_template!r} instantiated {filename!r} "
+                f"for stratum {row.get('stratum')!r}, expected {recorded_path.name!r}"
+            )
+        if filename not in existing_names:
+            raise AssertionError(
+                f"Derived witness file {filename!r} is missing from {manifest_dir}"
+            )
+        paths.append(manifest_dir / filename)
+    return paths
+
+
+def native_selected_size_errors(size: Any) -> list[str]:
+    """Require reconstructable counts for the two header-verified native families."""
+    if not isinstance(size, dict):
+        return ["native selected size_source must be a mapping"]
+    errors = []
+    if size.get("kind") != "selected_rows":
+        errors.append("native inventory must remain selected_rows")
+    for name, required_terms in (
+        ("count_rule", ("matrix.columns", "correction_family_size", "p=1")),
+        ("unfiltered_count_rule", ("retained_trait_counts", "retained_trait_count", "before")),
+    ):
+        rule = size.get(name)
+        if not isinstance(rule, str) or not all(term in rule for term in required_terms):
+            errors.append(f"native {name} needs its specific inventory recipe")
+    recorded = size.get("recorded_sizes")
+    if not isinstance(recorded, dict):
+        errors.append("native inventory needs recorded_sizes locations")
+    else:
+        for key, expected in NATIVE_RECORDED_SIZES.items():
+            if recorded.get(key) != expected:
+                errors.append(f"native recorded_sizes {key} must be {expected!r}")
+        note = recorded.get("read_rule")
+        required_read_rule_terms = (
+            "nonempty",
+            "legacy",
+            "stratum",
+            "never sum",
+            "trait_profile_paired_contrast_trait_stats_manifest.tsv",
+            "filename_token",
+            "trait_profile_paired_contrast_trait_stats.tsv",
+            "not counted twice",
+        )
+        if not isinstance(note, str) or not all(
+            term in note.lower() for term in required_read_rule_terms
+        ):
+            errors.append("native recorded_sizes needs a qualified read_rule")
+    return errors
+
 
 def dotted(node: ast.AST, limits: Limits = DEFAULT_LIMITS) -> str:
     """Return a simple qualified expression, without evaluating it."""
     parts: list[str] = []
     count = 0
-    while isinstance(node, ast.Attribute):
-        parts.append(node.attr)
-        count += len(node.attr) + 1
-        if count > limits.name_characters:
-            raise DiscoveryLimitError("qualified name length budget exceeded")
-        node = node.value
+    while True:
+        if isinstance(node, ast.Attribute):
+            parts.append(node.attr)
+            count += len(node.attr) + 1
+            if count > limits.name_characters:
+                raise DiscoveryLimitError("qualified name length budget exceeded")
+            node = node.value
+            continue
+        if (
+            isinstance(node, ast.Call)
+            and len(node.args) >= 2
+            and not node.keywords
+            and isinstance(node.args[1], ast.Constant)
+            and isinstance(node.args[1].value, str)
+            and node.args[1].value
+            and all(part.isidentifier() for part in node.args[1].value.split("."))
+            and dotted(node.func, limits) in {"getattr", "builtins.getattr"}
+        ):
+            for attr in reversed(node.args[1].value.split(".")):
+                parts.append(attr)
+                count += len(attr) + 1
+                if count > limits.name_characters:
+                    raise DiscoveryLimitError("qualified name length budget exceeded")
+            node = node.args[0]
+            continue
+        break
     if isinstance(node, ast.Name):
         parts.append(node.id)
     elif not parts:
@@ -137,6 +299,135 @@ def dotted(node: ast.AST, limits: Limits = DEFAULT_LIMITS) -> str:
     return name
 
 
+def _names_in_expr(expr: ast.AST) -> set[str]:
+    return {child.id.lower() for child in ast.walk(expr) if isinstance(child, ast.Name)}
+
+
+def _has_size_expr(expr: ast.AST, limits: Limits) -> bool:
+    if _names_in_expr(expr) & COUNT_IDENTIFIERS:
+        return True
+    for child in ast.walk(expr):
+        if isinstance(child, ast.Call) and dotted(child.func, limits).rsplit(".", 1)[-1] in {
+            "len",
+            "size",
+        }:
+            return True
+        if isinstance(child, ast.Attribute) and child.attr == "size":
+            return True
+    return False
+
+
+def _has_rank_expr(expr: ast.AST, limits: Limits) -> bool:
+    if _names_in_expr(expr) & RANK_IDENTIFIERS:
+        return True
+    for child in ast.walk(expr):
+        if isinstance(child, ast.Call) and dotted(child.func, limits).rsplit(".", 1)[-1] in {
+            "arange",
+            "range",
+        }:
+            return True
+    return False
+
+
+def _is_unit_constant(expr: ast.AST) -> bool:
+    return isinstance(expr, ast.Constant) and type(expr.value) in {int, float} and expr.value == 1
+
+
+def _is_step_up_formula(node: ast.AST, limits: Limits) -> bool:
+    if (
+        isinstance(node, ast.BinOp)
+        and isinstance(node.op, ast.Div)
+        and isinstance(node.left, ast.BinOp)
+        and isinstance(node.left.op, ast.Mult)
+        and _has_rank_expr(node.right, limits)
+    ):
+        left_mul, right_mul = node.left.left, node.left.right
+        if (
+            bool(_names_in_expr(left_mul) & P_VALUE_IDENTIFIERS)
+            and _has_size_expr(right_mul, limits)
+        ) or (
+            bool(_names_in_expr(right_mul) & P_VALUE_IDENTIFIERS)
+            and _has_size_expr(left_mul, limits)
+        ):
+            return True
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Mult):
+        for p_side, ratio_side in ((node.left, node.right), (node.right, node.left)):
+            if (
+                isinstance(ratio_side, ast.BinOp)
+                and isinstance(ratio_side.op, ast.Div)
+                and bool(_names_in_expr(p_side) & P_VALUE_IDENTIFIERS)
+                and _has_size_expr(ratio_side.left, limits)
+                and _has_rank_expr(ratio_side.right, limits)
+            ):
+                return True
+    return False
+
+
+def _is_p_times_count(expr: ast.AST, limits: Limits, *, clamped: bool) -> bool:
+    if not (isinstance(expr, ast.BinOp) and isinstance(expr.op, ast.Mult)):
+        return False
+    for left, right in ((expr.left, expr.right), (expr.right, expr.left)):
+        left_names = _names_in_expr(left)
+        right_names = _names_in_expr(right)
+        if clamped:
+            if bool(left_names & P_VALUE_IDENTIFIERS) and _has_size_expr(right, limits):
+                return True
+        else:
+            if bool(left_names & EXPLICIT_P_VALUE_IDENTIFIERS) and _has_size_expr(right, limits):
+                return True
+            if bool(left_names & P_VALUE_IDENTIFIERS) and bool(
+                right_names & EXPLICIT_COUNT_IDENTIFIERS
+            ):
+                return True
+    return False
+
+
+def _is_clamped_bonferroni(node: ast.AST, limits: Limits) -> bool:
+    if not isinstance(node, ast.Call):
+        return False
+    leaf = dotted(node.func, limits).rsplit(".", 1)[-1]
+    if leaf not in {"min", "minimum", "clip"}:
+        return False
+    return any(_is_unit_constant(arg) for arg in node.args) and any(
+        _is_p_times_count(arg, limits, clamped=True) for arg in node.args
+    )
+
+
+def _is_sidak_formula(node: ast.AST, limits: Limits) -> bool:
+    if not (
+        isinstance(node, ast.BinOp)
+        and isinstance(node.op, ast.Sub)
+        and _is_unit_constant(node.left)
+        and isinstance(node.right, ast.BinOp)
+        and isinstance(node.right.op, ast.Pow)
+    ):
+        return False
+    base, exponent = node.right.left, node.right.right
+    return (
+        isinstance(base, ast.BinOp)
+        and isinstance(base.op, ast.Sub)
+        and _is_unit_constant(base.left)
+        and bool(_names_in_expr(base.right) & P_VALUE_IDENTIFIERS)
+        and _has_size_expr(exponent, limits)
+    )
+
+
+def has_structural_correction(nodes: Iterable[ast.AST], limits: Limits = DEFAULT_LIMITS) -> bool:
+    """Detect inline/hand-rolled multiple-testing arithmetic independent of helper names."""
+    for node in nodes:
+        if isinstance(node, ast.Call) and dotted(node.func, limits).endswith("minimum.accumulate"):
+            return True
+        if _is_step_up_formula(node, limits):
+            return True
+        if _is_clamped_bonferroni(node, limits):
+            return True
+        if _is_p_times_count(node, limits, clamped=False):
+            return True
+        if _is_sidak_formula(node, limits):
+            return True
+    return False
+
+
 @dataclass
 class Unit:
     path: str
@@ -145,9 +436,38 @@ class Unit:
     limits: Limits = DEFAULT_LIMITS
     functions: dict[str, ast.FunctionDef | ast.AsyncFunctionDef] = field(default_factory=dict)
     aliases: dict[str, dict[str, str]] = field(default_factory=dict)
+    module_aliases: dict[str, str] = field(default_factory=dict)
+    partial_procedures: dict[tuple[str, str], tuple[str, ...]] = field(default_factory=dict)
     calls: list[tuple[str, ast.Call]] = field(default_factory=list)
 
+    def is_partial_call(self, expression: ast.AST, scope: str = "") -> bool:
+        if not isinstance(expression, ast.Call) or not expression.args:
+            return False
+        callee = self.resolve(expression.func, scope)
+        return callee in {"partial", "functools.partial"}
+
+    def resolve_partial_procedures(self, expression: ast.AST, scope: str = "") -> tuple[str, ...]:
+        if isinstance(expression, ast.Call) and self.is_partial_call(expression, scope):
+            wrapped = self.resolve(expression.args[0], scope)
+            return tuple(
+                sorted(
+                    literal_procedures(expression, wrapped, partial_call=True, allow_default=False)
+                )
+            )
+        name = dotted(expression, self.limits)
+        if not name or "." in name:
+            return ()
+        scope = "" if scope == "<module>" else scope
+        pieces = scope.split(".") if scope else []
+        scopes = [".".join(pieces[:index]) for index in range(len(pieces), -1, -1)]
+        for local_scope in scopes:
+            if (local_scope, name) in self.partial_procedures:
+                return self.partial_procedures[(local_scope, name)]
+        return ()
+
     def resolve(self, expression: ast.AST, scope: str = "") -> str:
+        if isinstance(expression, ast.Call) and self.is_partial_call(expression, scope):
+            return self.resolve(expression.args[0], scope)
         name = dotted(expression, self.limits)
         scope = "" if scope == "<module>" else scope
         pieces = scope.split(".") if scope else []
@@ -182,6 +502,7 @@ class Visitor(ast.NodeVisitor):
     def __init__(self, unit: Unit) -> None:
         self.unit = unit
         self.stack: list[str] = []
+        self._consumed_partials: set[int] = set()
 
     def bind(self, name: str, target: str) -> None:
         if max(len(name), len(target)) > self.unit.limits.name_characters:
@@ -214,26 +535,63 @@ class Visitor(ast.NodeVisitor):
             parts = self.unit.module.split(".")[: -node.level]
             module = ".".join([*parts, module]).rstrip(".")
         for alias in node.names:
-            self.bind(alias.asname or alias.name, f"{module}.{alias.name}")
+            bound_name = alias.asname or alias.name
+            target = f"{module}.{alias.name}"
+            self.bind(bound_name, target)
+            if not self.stack and alias.asname and alias.asname != alias.name:
+                self.unit.module_aliases[bound_name] = self.unit.resolve(
+                    ast.Name(id=bound_name), ""
+                )
 
     def visit_Assign(self, node: ast.Assign) -> None:
+        scope = ".".join(self.stack)
         value = dotted(node.value, self.unit.limits)
+        bound_procs: tuple[str, ...] = ()
+        if (
+            not value
+            and isinstance(node.value, ast.Call)
+            and self.unit.is_partial_call(node.value, scope)
+        ):
+            self._consumed_partials.add(id(node.value))
+            value = self.unit.resolve(node.value.args[0], scope)
+            if value:
+                bound_procs = tuple(
+                    sorted(
+                        literal_procedures(
+                            node.value, value, partial_call=True, allow_default=False
+                        )
+                    )
+                )
         if value:
             for target in node.targets:
                 if isinstance(target, ast.Name):
                     self.bind(target.id, value)
+                    if bound_procs:
+                        self.unit.partial_procedures[(scope, target.id)] = bound_procs
+                    if not scope:
+                        self.unit.module_aliases[target.id] = self.unit.resolve(
+                            ast.Name(id=target.id), ""
+                        )
         self.generic_visit(node)
 
     def visit_Call(self, node: ast.Call) -> None:
-        self.unit.calls.append((".".join(self.stack) or "<module>", node))
+        scope = ".".join(self.stack)
+        if isinstance(node.func, ast.Call) and self.unit.is_partial_call(node.func, scope):
+            self._consumed_partials.add(id(node.func))
+        if id(node) not in self._consumed_partials:
+            self.unit.calls.append((scope or "<module>", node))
         self.generic_visit(node)
 
 
-def is_seed(name: str) -> bool:
+def is_seed(name: str, *, defined: bool = False) -> bool:
+    if name == STRUCTURAL_CORRECTION_SEED:
+        return True
     leaf = name.rsplit(".", 1)[-1]
+    if leaf.strip("_") in {"correct", "adjust"}:
+        return defined or "." not in name or name in NAMED_WRAPPERS
     return (
         leaf in PRIMITIVES
-        or leaf.strip("_") in {"bh", "by", "fdr", "correct", "adjust"}
+        or leaf.strip("_") in {"bh", "by", "fdr"}
         or name in NAMED_WRAPPERS
         or bool(
             HELPER_NAME.search(leaf)
@@ -260,7 +618,8 @@ def function_dependencies(unit: Unit, budget: SummaryBudget) -> dict[str, set[st
         assigned: dict[str, set[str]] = defaultdict(set)
         returned: set[str] = set()
         targets: set[str] = set()
-        for node in owned_nodes(function):
+        nodes = list(owned_nodes(function))
+        for node in nodes:
             if isinstance(node, ast.Assign):
                 calls = {
                     unit.resolve(child.func, name)
@@ -278,20 +637,42 @@ def function_dependencies(unit: Unit, budget: SummaryBudget) -> dict[str, set[st
                         returned.add(child.id)
         for name_returned in returned:
             targets.update(assigned[name_returned])
+        if has_structural_correction(nodes, unit.limits):
+            targets.add(STRUCTURAL_CORRECTION_SEED)
         qualified = f"{unit.module}.{name}"
         for target_name in targets:
             budget.charge(qualified, target_name)
         dependencies[qualified] = targets
+    for alias_name, resolved in unit.module_aliases.items():
+        if alias_name in unit.functions or not resolved:
+            continue
+        qualified = f"{unit.module}.{alias_name}"
+        alias_targets = {resolved}
+        for proc in unit.partial_procedures.get(("", alias_name), ()):
+            alias_targets.add(f"{PARTIAL_PROC_PREFIX}{proc}>")
+        for target_name in alias_targets:
+            budget.charge(qualified, target_name)
+        dependencies[qualified] = alias_targets
     return dependencies
 
 
 def forwarding_names(dependencies: dict[str, set[str]]) -> set[str]:
     """Fixed point over bounded strings only; source and ASTs are already released."""
-    names = {name for name in dependencies if is_seed(name)}
+    names = {name for name in dependencies if is_seed(name, defined=True)}
     reverse: dict[str, set[str]] = defaultdict(set)
     initial = set(names)
     for qualified, targets in dependencies.items():
+        if qualified.startswith("scripts."):
+            bare = qualified.removeprefix("scripts.")
+            if bare not in dependencies:
+                reverse[qualified].add(bare)
+                reverse[bare].add(qualified)
+                if qualified in names:
+                    names.add(bare)
+                    initial.add(bare)
         for target in targets:
+            if target.startswith(PARTIAL_PROC_PREFIX):
+                continue
             reverse[target].add(qualified)
             if is_seed(target):
                 initial.add(target)
@@ -309,22 +690,37 @@ def forwarding_names(dependencies: dict[str, set[str]]) -> set[str]:
     return names
 
 
-def literal_procedures(call: ast.Call, target: str) -> set[str]:
+def literal_procedures(
+    call: ast.Call,
+    target: str,
+    *,
+    partial_call: bool = False,
+    allow_default: bool = True,
+) -> set[str]:
     """Infer literal method/by flags; dynamic policies remain explicitly unchecked."""
     leaf = target.rsplit(".", 1)[-1]
+    offset = 1 if partial_call else 0
     keywords = {keyword.arg: keyword.value for keyword in call.keywords}
     method = keywords.get("method")
-    if method is None and leaf == "multipletests" and len(call.args) >= 3:
-        method = call.args[2]
-    if method is None and target == "mtp.log_ratio_sensitivity.correct" and len(call.args) >= 3:
-        method = call.args[2]
+    if method is None and leaf == "multipletests" and len(call.args) >= 3 + offset:
+        method = call.args[2 + offset]
+    if (
+        method is None
+        and target == "mtp.log_ratio_sensitivity.correct"
+        and len(call.args) >= 3 + offset
+    ):
+        method = call.args[2 + offset]
     if isinstance(method, ast.Constant) and isinstance(method.value, str):
         return {PROCEDURES.get(method.value.lower(), method.value)}
     if method is not None:
         return set()
     if target == "mtp.taxon_influence.adjust":
-        by = keywords.get("by", call.args[1] if len(call.args) > 1 else ast.Constant(False))
-        return {"BY" if by.value else "BH"} if isinstance(by, ast.Constant) else set()
+        if "by" in keywords or len(call.args) > 1 + offset:
+            by = keywords.get("by", call.args[1 + offset] if len(call.args) > 1 + offset else None)
+            return {"BY" if by.value else "BH"} if isinstance(by, ast.Constant) else set()
+        return {"BH"} if allow_default else set()
+    if not allow_default:
+        return set()
     if leaf in {"benjamini_hochberg", "family_bh_q_values", "false_discovery_control"}:
         return {"BH"}
     if leaf == "multipletests":
@@ -333,6 +729,15 @@ def literal_procedures(call: ast.Call, target: str) -> set[str]:
 
 
 Fact = tuple[str, str]
+AliasOrigin = tuple[tuple[str, ...], str]
+
+
+class DerivationEnvironment(dict[str, Fact]):
+    """Arithmetic facts and separately joined possible object references."""
+
+    def __init__(self, facts: Mapping[str, Fact] | None = None) -> None:
+        super().__init__({} if facts is None else facts)
+        self.aliases: dict[str, frozenset[AliasOrigin]] = {}
 
 
 def visible_by_derivation(
@@ -347,6 +752,11 @@ def visible_by_derivation(
     This deliberately small recognizer is an anchor-level witness, not output
     lineage or a general Python interpreter. Opaque helpers and mutating calls
     are outside its model. Facts exist only while this one bounded AST is live.
+    Writes through unrelated parameters/self can refuse a free-vector witness;
+    a post-BH write into an np.float64/np.int64 allocation also refuses it. Only
+    default/unshadowed built-in numeric dtypes get the fixed-size shortcut.
+    These conservative refusals are intentional (#1928), not evidence that the
+    source's arithmetic is incorrect. Literal BH registration is unaffected.
     Optional counters accumulate attempted work in thirteen fixed categories,
     including a charge that exceeds the limit. Reusing a dictionary accumulates
     counts but never shares the per-invocation budget. Overlapping operations
@@ -370,9 +780,12 @@ def visible_by_derivation(
         if file_budget is not None:
             file_budget.charge(amount, unit.path, scope)
 
-    def copy_env(env: dict[str, Fact]) -> dict[str, Fact]:
+    def copy_env(env: DerivationEnvironment) -> DerivationEnvironment:
         charge("env_copy", len(env))
-        return env.copy()
+        copied = DerivationEnvironment(env)
+        charge("env_copy", len(env.aliases))
+        copied.aliases = env.aliases.copy()
+        return copied
 
     def local_nodes(root: ast.AST) -> Iterator[ast.AST]:
         pending = [root]
@@ -402,12 +815,12 @@ def visible_by_derivation(
             and node.value == value
         )
 
-    def target(call: ast.Call, env: dict[str, Fact]) -> str:
+    def target(call: ast.Call, env: DerivationEnvironment) -> str:
         # A locally rebound callable is not the imported primitive.
         root = dotted(call.func, unit.limits).split(".")[0]
         return "" if root in env or root in module_writes else unit.resolve(call.func, scope)
 
-    def extent(call: ast.Call, env: dict[str, Fact], expected: str) -> str | None:
+    def extent(call: ast.Call, env: DerivationEnvironment, expected: str) -> str | None:
         if target(call, env) != expected or call.keywords or len(call.args) not in {2, 3}:
             return None
         start, stop = call.args[:2]
@@ -422,7 +835,7 @@ def visible_by_derivation(
         size = expression(stop.left, env)
         return size[1] if size is not None and size[0] == "size" else None
 
-    def harmonic(call: ast.Call, env: dict[str, Fact]) -> Fact | None:
+    def harmonic(call: ast.Call, env: DerivationEnvironment) -> Fact | None:
         if len(call.args) != 1 or call.keywords:
             return None
         value = call.args[0]
@@ -456,7 +869,7 @@ def visible_by_derivation(
                 family = extent(generator.iter, env, "range")
         return ("harmonic", family) if family is not None else None
 
-    def expression(node: ast.AST, env: dict[str, Fact]) -> Fact | None:
+    def expression(node: ast.AST, env: DerivationEnvironment) -> Fact | None:
         charge("expression")
         if isinstance(node, ast.Name):
             return env.get(node.id, ("vector", node.id))
@@ -476,10 +889,19 @@ def visible_by_derivation(
             value = expression(node.args[0], env)
             return ("size", value[1]) if value and value[0] in {"vector", "array"} else None
         if (
-            name == "numpy.ones"
+            name in {"numpy.ones", "numpy.zeros"}
             and len(node.args) == 1
-            and all(k.arg == "dtype" for k in node.keywords)
+            and all(
+                k.arg == "dtype"
+                and isinstance(k.value, ast.Name)
+                and k.value.id not in env
+                and k.value.id not in module_writes
+                and unit.resolve(k.value, scope) in {"float", "int", "bool"}
+                for k in node.keywords
+            )
         ):
+            # Object/unknown dtypes may hold references inserted later. Their
+            # assignments use the ordinary container model, not this shortcut.
             value = expression(node.args[0], env)
             return ("array", value[1]) if value and value[0] == "size" else None
         if (
@@ -500,7 +922,411 @@ def visible_by_derivation(
                 return ("BY", value[1])
         return None
 
-    def remember_mutated_origin(previous: Fact | None, env: dict[str, Fact]) -> None:
+    def charge_origins(category: str, possible: frozenset[AliasOrigin]) -> None:
+        charge(category, len(possible))
+        for path, origin in possible:
+            charge(category, len(path) + len(origin))
+            for selector in path:
+                charge(category, len(selector))
+
+    no_origins: frozenset[AliasOrigin] = frozenset()
+    singleton_origins: dict[tuple[str, bool], frozenset[AliasOrigin]] = {}
+    resolved_origins: dict[
+        tuple[str, Fact, int, bool], tuple[frozenset[AliasOrigin], frozenset[AliasOrigin]]
+    ] = {}
+    merged_origins: dict[
+        tuple[int, int],
+        tuple[frozenset[AliasOrigin], frozenset[AliasOrigin], frozenset[AliasOrigin]],
+    ] = {}
+    selected_origins: dict[
+        tuple[int, str], tuple[frozenset[AliasOrigin], frozenset[AliasOrigin]]
+    ] = {}
+    contained_origins: dict[
+        tuple[int, str], tuple[frozenset[AliasOrigin], frozenset[AliasOrigin]]
+    ] = {}
+    subtracted_origins: dict[
+        tuple[int, int],
+        tuple[frozenset[AliasOrigin], frozenset[AliasOrigin], frozenset[AliasOrigin]],
+    ] = {}
+    wrapper_identities: dict[int, tuple[frozenset[AliasOrigin], frozenset[str]]] = {}
+    matched_prefixes: dict[
+        tuple[int, int],
+        tuple[frozenset[AliasOrigin], frozenset[AliasOrigin], frozenset[tuple[str, ...]]],
+    ] = {}
+    reference_indexes: dict[
+        int, tuple[frozenset[AliasOrigin], dict[str, frozenset[tuple[str, ...]]]]
+    ] = {}
+    partitioned_origins: dict[
+        int, tuple[frozenset[AliasOrigin], frozenset[str], frozenset[str]]
+    ] = {}
+
+    def direct_origin(origin: str, *, external: bool = False) -> frozenset[AliasOrigin]:
+        # Per-invocation immutable singletons share the same reference through
+        # copied environments. Charge each lookup and the full construction on
+        # a miss before allocating the string, tuple, set and cache entry.
+        charge("expression")
+        key = origin, external
+        existing = singleton_origins.get(key)
+        if existing is not None:
+            return existing
+        charge("expression", len(origin) + (len("external/") if external else 0) + 4)
+        value = "external/" + origin if external else origin
+        created = frozenset({((), value)})
+        singleton_origins[key] = created
+        return created
+
+    def merge_origins(*groups: frozenset[AliasOrigin]) -> frozenset[AliasOrigin]:
+        merged: frozenset[AliasOrigin] = frozenset()
+        for group in groups:
+            charge("expression")
+            if not group or group is merged:
+                continue
+            if not merged:
+                merged = group
+                continue
+            # Strong input references in each entry prevent identity-key reuse.
+            # These operations depend only on immutable inputs, never on env.
+            # Uncached container copies need these references: without them,
+            # an input can be freed and its identity reused by a later merge.
+            # The slice/.copy() refusal tests witness this lifetime requirement
+            # (#1969). Their mutant kill depends on allocation; refusal does not.
+            charge("expression")
+            left_id, right_id = id(merged), id(group)
+            key = (left_id, right_id) if left_id < right_id else (right_id, left_id)
+            existing = merged_origins.get(key)
+            if existing is not None:
+                merged = existing[2]
+                continue
+            left, right = merged, group
+            # Reuse the larger immutable input when it already contains the
+            # smaller one. A real subset scan and any new union remain charged.
+            if len(group) > len(merged):
+                merged, group = group, merged
+            charge_origins("expression", group)
+            if not group <= merged:
+                charge_origins("expression", merged)
+                charge_origins("expression", group)
+                merged = merged | group
+            charge("expression", 4)
+            merged_origins[key] = left, right, merged
+        return merged
+
+    def named_origins(name: str, env: DerivationEnvironment) -> frozenset[AliasOrigin]:
+        possible = env.aliases.get(name, no_origins)
+        fact = env.get(name, ("vector", name))
+        if fact[0] != "vector":
+            return possible
+        is_free = name not in env
+        # Read the current binding first. Only the ensuing pure computation is
+        # cached; rebinding, free-name materialization and side-map updates all
+        # produce a different key. No environment is retained in this cache.
+        # The free bit is defensive (#1915, #1929): no reachable same-fact,
+        # same-side-map free/materialized collision is established by tests.
+        # Mutation-driven materialization invalidates the fact before rereading;
+        # an explicit alias assignment retains external side references instead.
+        charge("expression")
+        key = name, fact, id(possible), is_free
+        existing = resolved_origins.get(key)
+        if existing is not None:
+            return existing[1]
+        original = possible
+        possible = merge_origins(possible, direct_origin(fact[1]))
+        if is_free:
+            # Retain external uncertainty through local aliases/containers;
+            # inspecting only the eventual write root would lose it.
+            possible = merge_origins(possible, direct_origin(name, external=True))
+        charge("expression", 7)
+        resolved_origins[key] = original, possible
+        return possible
+
+    def select_origins(possible: frozenset[AliasOrigin], selector: str) -> frozenset[AliasOrigin]:
+        charge("expression")
+        if not possible:
+            return possible
+        key = id(possible), selector
+        existing = selected_origins.get(key)
+        if existing is not None:
+            return existing[1]
+        charge_origins("expression", possible)
+        selected = frozenset(
+            (path[1:], origin) for path, origin in possible if path and path[0] == selector
+        )
+        charge("expression", len(selector) + 3)
+        selected_origins[key] = possible, selected
+        return selected
+
+    def contain_origins(possible: frozenset[AliasOrigin], selector: str) -> frozenset[AliasOrigin]:
+        charge("expression")
+        if not possible:
+            return possible
+        key = id(possible), selector
+        existing = contained_origins.get(key)
+        if existing is not None:
+            return existing[1]
+        charge_origins("expression", possible)
+        charge("expression", len(possible) * (len(selector) + 1))
+        contained = frozenset(((selector, *path), origin) for path, origin in possible)
+        charge("expression", len(selector) + 3)
+        contained_origins[key] = possible, contained
+        return contained
+
+    def possible_origins(node: ast.AST, env: DerivationEnvironment) -> frozenset[AliasOrigin]:
+        """Track references, never infer arithmetic from an ambiguous value."""
+        charge("expression")
+        if isinstance(node, ast.Name):
+            return named_origins(node.id, env)
+        if isinstance(node, ast.NamedExpr):
+            return possible_origins(node.value, env)
+        if isinstance(node, ast.BoolOp):
+            possible: frozenset[AliasOrigin] = frozenset()
+            for value in node.values:
+                possible = merge_origins(possible, possible_origins(value, env))
+            return possible
+        if isinstance(node, ast.IfExp):
+            return merge_origins(
+                possible_origins(node.body, env), possible_origins(node.orelse, env)
+            )
+        if isinstance(node, ast.List | ast.Tuple | ast.Set):
+            possible = frozenset()
+            for element in node.elts:
+                possible = merge_origins(possible, possible_origins(element, env))
+            return contain_origins(possible, "[]")
+        if isinstance(node, ast.Dict):
+            possible = frozenset()
+            for value in node.values:
+                possible = merge_origins(possible, possible_origins(value, env))
+            return contain_origins(possible, "[]")
+        if isinstance(node, ast.Subscript):
+            possible = possible_origins(node.value, env)
+            if isinstance(node.slice, ast.Slice):
+                # A shallow copy owns its outer sequence, but retains references
+                # to any objects inside it. Direct vector extents are not shared.
+                charge_origins("expression", possible)
+                return frozenset(item for item in possible if item[0])
+            return select_origins(possible, "[]")
+        if isinstance(node, ast.Attribute):
+            charge("expression", len(node.attr) + 1)
+            return select_origins(possible_origins(node.value, env), "." + node.attr)
+        if isinstance(node, ast.Call):
+            name = target(node, env)
+            if name in {"len", "float", "sum", "numpy.sum"}:
+                return frozenset()
+            if (
+                name in {"numpy.ones", "numpy.zeros"}
+                and len(node.args) == 1
+                and all(k.arg == "dtype" for k in node.keywords)
+            ):
+                # These allocations retain no shape/dtype object references.
+                # In particular, dtype=float is not an external-vector alias.
+                # Keep dispatch signatures such as like= opaque.
+                return frozenset()
+            if name == "typing.cast" and len(node.args) == 2 and not node.keywords:
+                return possible_origins(node.args[1], env)
+            if name == "contextlib.nullcontext" and len(node.args) == 1 and not node.keywords:
+                return possible_origins(node.args[0], env)
+            if name == "types.SimpleNamespace":
+                possible = frozenset()
+                for keyword in node.keywords:
+                    if keyword.arg is not None:
+                        charge("expression", len(keyword.arg) + 1)
+                        possible = merge_origins(
+                            possible,
+                            contain_origins(
+                                possible_origins(keyword.value, env), "." + keyword.arg
+                            ),
+                        )
+                return possible
+            copied = None
+            if (
+                name in {"list", "tuple", "copy.copy", "sorted"}
+                and len(node.args) == 1
+                and not node.keywords
+            ):
+                copied = node.args[0]
+            elif (
+                isinstance(node.func, ast.Attribute)
+                and node.func.attr == "copy"
+                and not node.args
+                and not node.keywords
+            ):
+                copied = node.func.value
+            if copied is not None:
+                possible = possible_origins(copied, env)
+                charge_origins("expression", possible)
+                return frozenset(item for item in possible if item[0])
+            # An opaque binding may return an argument. It does not provide an
+            # arithmetic witness, and merely binding it does not invalidate one.
+            possible = frozenset()
+            for argument in node.args:
+                possible = merge_origins(possible, possible_origins(argument, env))
+            for keyword in node.keywords:
+                possible = merge_origins(possible, possible_origins(keyword.value, env))
+            return possible
+        return frozenset()
+
+    def root_identities(references: frozenset[AliasOrigin]) -> frozenset[str]:
+        charge("write_alias_scan")
+        if not references:
+            return frozenset()
+        existing = wrapper_identities.get(id(references))
+        if existing is not None:
+            return existing[1]
+        charge_origins("write_alias_scan", references)
+        identities = frozenset(origin for path, origin in references if not path)
+        charge("write_alias_scan", 3)
+        wrapper_identities[id(references)] = references, identities
+        return identities
+
+    def reference_index(
+        references: frozenset[AliasOrigin],
+    ) -> dict[str, frozenset[tuple[str, ...]]]:
+        charge("write_alias_scan")
+        existing = reference_indexes.get(id(references))
+        if existing is not None:
+            return existing[1]
+        # Index the immutable set once rather than scanning every origin/path
+        # again for each different wrapper queried against that same set.
+        charge_origins("write_alias_scan", references)
+        grouped: dict[str, set[tuple[str, ...]]] = {}
+        for path, origin in references:
+            if origin not in grouped:
+                charge("write_alias_scan", 2)
+                grouped[origin] = set()
+            charge("write_alias_scan")
+            grouped[origin].add(path)
+        charge("write_alias_scan", len(grouped))
+        indexed: dict[str, frozenset[tuple[str, ...]]] = {}
+        for origin, paths in grouped.items():
+            charge("write_alias_scan", len(paths) + 1)
+            indexed[origin] = frozenset(paths)
+        charge("write_alias_scan", 3)
+        reference_indexes[id(references)] = references, indexed
+        return indexed
+
+    def reference_prefixes(
+        root_references: frozenset[AliasOrigin],
+        identities: frozenset[str],
+        references: frozenset[AliasOrigin],
+    ) -> frozenset[tuple[str, ...]]:
+        charge("write_alias_scan")
+        if not identities or not references:
+            return frozenset()
+        key = id(root_references), id(references)
+        existing = matched_prefixes.get(key)
+        if existing is not None:
+            return existing[2]
+        indexed = reference_index(references)
+        charge("write_alias_scan", len(identities))
+        matched: set[tuple[str, ...]] = set()
+        for origin in identities:
+            paths = indexed.get(origin, frozenset())
+            charge("write_alias_scan", len(paths))
+            for path in paths:
+                charge("write_alias_scan", len(path))
+                for selector in path:
+                    charge("write_alias_scan", len(selector))
+            matched.update(paths)
+        charge("write_alias_scan", len(matched) + 1)
+        prefixes = frozenset(matched)
+        charge("write_alias_scan", 4)
+        matched_prefixes[key] = root_references, references, prefixes
+        return prefixes
+
+    def bind_origins(
+        name: str, possible: frozenset[AliasOrigin], env: DerivationEnvironment
+    ) -> None:
+        fact = env.get(name)
+        if possible and fact is not None and fact[0] == "vector":
+            # The arithmetic fact already retains this exact direct identity.
+            # Keep the side map for additional possibilities/contained objects.
+            direct = direct_origin(fact[1])
+            if possible is direct:
+                possible = frozenset()
+            else:
+                charge("assignment")
+                key = id(possible), id(direct)
+                existing = subtracted_origins.get(key)
+                if existing is not None:
+                    possible = existing[2]
+                else:
+                    original = possible
+                    charge_origins("assignment", direct)
+                    if direct <= possible:
+                        charge_origins("assignment", possible)
+                        charge_origins("assignment", direct)
+                        possible = possible - direct
+                    charge("assignment", 4)
+                    subtracted_origins[key] = original, direct, possible
+        charge("assignment")
+        existing_value = env.aliases.get(name)
+        if existing_value is possible or (existing_value is None and not possible):
+            return
+        if possible:
+            charge("assignment", len(possible))
+            env.aliases[name] = possible
+        else:
+            env.aliases.pop(name, None)
+
+    def mutation_origins(node: ast.AST, env: DerivationEnvironment) -> frozenset[str]:
+        possible = possible_origins(node, env)
+        charge("write_alias_scan")
+        if not possible:
+            return frozenset()
+        partition = partitioned_origins.get(id(possible))
+        if partition is None:
+            charge_origins("write_alias_scan", possible)
+            origins = frozenset(
+                origin
+                for path, origin in possible
+                if not path and not origin.startswith("external/")
+            )
+            charge_origins("write_alias_scan", possible)
+            external = frozenset(
+                origin.removeprefix("external/")
+                for path, origin in possible
+                if not path and origin.startswith("external/")
+            )
+            charge("write_alias_scan", 4)
+            partition = possible, origins, external
+            partitioned_origins[id(possible)] = partition
+        _, origins, external = partition
+        charge("write_alias_scan", len(origins))
+        parameter_write = not origins.isdisjoint(parameter_names)
+        if external or parameter_write:
+            # Unknown external objects can alias incoming arguments. The final
+            # syntactic Unit.aliases map cannot establish their temporal identity.
+            # Only free/incoming extent keys are candidates; a local allocation's
+            # position-tagged identity and scalar/array values are not aliases.
+            charge("write_alias_scan", len(env))
+            incoming = {
+                fact[1]
+                for fact in env.values()
+                if fact[0] in {"vector", "size", "harmonic", "BH", "scaled", "BY"}
+                and fact[1].isidentifier()
+                and (external or fact[1] not in parameter_names)
+            }
+            charge("write_alias_scan", len(external))
+            unresolved = any(not (name in env and env[name][1] != name) for name in external)
+            if unresolved or parameter_write:
+                charge("write_alias_scan", len(origins) + len(incoming))
+                origins = origins | incoming
+        return origins
+
+    def remember_origins(origins: frozenset[str], env: DerivationEnvironment) -> None:
+        charge("write_alias_scan", len(origins))
+        # Only ordered traversals may insert environment/cache entries. Charge
+        # the comparisons (including string lengths) and sorted-list allocation.
+        # The #1929 regression observes insertion order itself. It does not
+        # claim this sort changes current BY credits or real-producer charges.
+        charge(
+            "write_alias_scan",
+            len(origins) + sum(map(len, origins)) * len(origins).bit_length(),
+        )
+        for origin in sorted(origins):
+            if origin.isidentifier():
+                env.setdefault(origin, ("vector", origin))
+
+    def remember_mutated_origin(previous: Fact | None, env: DerivationEnvironment) -> None:
         # A free vector read may exist only through its aliases. Include its
         # original name in the mutation scan so a later read cannot recreate
         # the old extent. Position-tagged local assignments have no free origin;
@@ -508,10 +1334,16 @@ def visible_by_derivation(
         if previous and previous[0] == "vector" and previous[1].isidentifier():
             env.setdefault(previous[1], previous)
 
-    def assign(node: ast.AST, value: Fact | None, env: dict[str, Fact]) -> None:
+    def assign(
+        node: ast.AST,
+        value: Fact | None,
+        env: DerivationEnvironment,
+        possible: frozenset[AliasOrigin] = frozenset(),
+    ) -> None:
         charge("assignment")
         if isinstance(node, ast.Name):
             env[node.id] = value or ("vector", f"{node.id}:{node.lineno}:{node.col_offset}")
+            bind_origins(node.id, possible, env)
         elif isinstance(node, ast.Subscript | ast.Attribute):
             # Only a direct write into a known fixed-size allocation preserves
             # extent. Other writes may mutate a view of any tracked BH result.
@@ -526,44 +1358,168 @@ def visible_by_derivation(
             while isinstance(root, ast.Subscript | ast.Attribute):
                 root = root.value
             previous = expression(root, env)
+            wrapper_aliases: dict[
+                str, tuple[frozenset[AliasOrigin], frozenset[tuple[str, ...]]]
+            ] = {}
+            if isinstance(root, ast.Name):
+                root_references = named_origins(root.id, env)
+                identities = root_identities(root_references)
+                # Mutating a wrapper changes its arithmetic extent, not the
+                # identity shared by its aliases. Retain direct and contained
+                # identity paths, so insertion reaches every known spelling
+                # without invalidating an enclosing wrapper's own extent.
+                charge("write_alias_scan", len(env))
+                for name in env:
+                    if not env.aliases.get(name):
+                        # A materialized name with no side references has just
+                        # its vector identity, or no references at all. Avoid
+                        # indexing every unrelated singleton for every write.
+                        fact = env[name]
+                        charge("write_alias_scan")
+                        if fact[0] != "vector" or fact[1] not in identities:
+                            continue
+                        charge("assignment", 3)
+                        wrapper_aliases[name] = direct_origin(fact[1]), frozenset({()})
+                        continue
+                    references = named_origins(name, env)
+                    prefixes = reference_prefixes(root_references, identities, references)
+                    if prefixes:
+                        wrapper_aliases[name] = references, prefixes
+                if root.id not in wrapper_aliases:
+                    charge("assignment")
+                    wrapper_aliases[root.id] = root_references, frozenset({()})
+            origins = mutation_origins(node.value, env)
             remember_mutated_origin(previous, env)
+            remember_origins(origins, env)
             if isinstance(root, ast.Name):
                 env[root.id] = ("unknown", root.id)
             charge("write_alias_scan", len(env))
             for alias, fact in list(env.items()):
-                if fact == previous or fact[0] in {"BH", "scaled", "BY"}:
+                if (
+                    fact == previous
+                    or fact[0] in {"BH", "scaled", "BY"}
+                    or (fact[0] == "vector" and fact[1] in origins)
+                ):
                     env[alias] = ("unknown", alias)
+            for alias, (references, _) in wrapper_aliases.items():
+                bind_origins(alias, references, env)
+            if not isinstance(node.ctx, ast.Del) and possible and isinstance(root, ast.Name):
+                # The write changes the wrapper, not the inserted object. Keep
+                # possible references for a later write *through* the new slot.
+                selectors: list[str] = []
+                child: ast.AST = node
+                while isinstance(child, ast.Subscript | ast.Attribute):
+                    charge(
+                        "assignment", 3 if isinstance(child, ast.Subscript) else len(child.attr) + 2
+                    )
+                    selector = "[]" if isinstance(child, ast.Subscript) else "." + child.attr
+                    selectors.append(selector)
+                    child = child.value
+                contained = possible
+                for selector in selectors:
+                    contained = contain_origins(contained, selector)
+                for alias, (_, prefixes) in wrapper_aliases.items():
+                    charge("assignment", len(prefixes))
+                    charge("assignment", sum(map(len, prefixes)))
+                    charge(
+                        "assignment",
+                        len(prefixes)
+                        + sum(len(s) + 1 for p in prefixes for s in p) * len(prefixes).bit_length(),
+                    )
+                    for prefix in sorted(prefixes):
+                        at_alias = contained
+                        for selector in reversed(prefix):
+                            at_alias = contain_origins(at_alias, selector)
+                        bind_origins(
+                            alias,
+                            merge_origins(env.aliases.get(alias, frozenset()), at_alias),
+                            env,
+                        )
         elif isinstance(node, ast.Tuple | ast.List):
+            elements = select_origins(possible, "[]")
             for element in node.elts:
-                assign(element, None, env)
+                assign(element, None, env, elements)
 
-    def invalidate_aliases(node: ast.AST, env: dict[str, Fact]) -> None:
+    def invalidate_aliases(node: ast.AST, env: DerivationEnvironment) -> None:
         if isinstance(node, ast.Name):
             previous = env.get(node.id, ("vector", node.id))
+            origins = mutation_origins(node, env)
             remember_mutated_origin(previous, env)
+            remember_origins(origins, env)
             charge("alias_invalidation", len(env))
             for alias, fact in list(env.items()):
-                if fact == previous:
+                if fact == previous or (fact[0] == "vector" and fact[1] in origins):
                     env[alias] = ("unknown", f"{alias}:{node.lineno}")
         else:
+            # Augmented slot assignment first mutates the slot's referent,
+            # unlike an ordinary replacement of the wrapper's slot.
+            origins = mutation_origins(node, env)
+            remember_origins(origins, env)
+            charge("alias_invalidation", len(env))
+            for alias, fact in list(env.items()):
+                if fact[0] == "vector" and fact[1] in origins:
+                    env[alias] = ("unknown", alias)
             assign(node, None, env)
 
-    def intersection(left: dict[str, Fact], right: dict[str, Fact]) -> dict[str, Fact]:
+    def intersection(
+        left: DerivationEnvironment, right: DerivationEnvironment
+    ) -> DerivationEnvironment:
         # Keep invalidated names present, so an earlier fact cannot reappear
         # through the fallback for an unbound parameter.
         charge("env_join", len(left) + len(right))
-        return {
-            name: left[name]
-            if name in left and left.get(name) == right.get(name)
-            else ("unknown", name)
-            for name in left.keys() | right.keys()
-        }
+        joined = DerivationEnvironment(
+            {
+                name: left[name]
+                if name in left and left.get(name) == right.get(name)
+                else ("unknown", name)
+                for name in dict.fromkeys((*left, *right))
+            }
+        )
+        for name in joined:
+            left_possible = left.aliases.get(name, frozenset())
+            right_possible = right.aliases.get(name, frozenset())
+            same_fact = left.get(name) == right.get(name)
+            if same_fact and not left_possible and not right_possible:
+                continue
+            if not same_fact:
+                if name in left:
+                    left_possible = named_origins(name, left)
+                if name in right:
+                    right_possible = named_origins(name, right)
+            if left_possible is right_possible or not right_possible:
+                possible = left_possible
+            elif not left_possible:
+                possible = right_possible
+            else:
+                possible = merge_origins(left_possible, right_possible)
+            if possible:
+                joined.aliases[name] = possible
+        return joined
 
-    def invalidate_bindings(statement: ast.stmt, env: dict[str, Fact]) -> None:
+    def same_aliases(left: DerivationEnvironment, right: DerivationEnvironment) -> bool:
+        charge("loop_pass", len(left.aliases) + len(right.aliases))
+        if len(left.aliases) != len(right.aliases):
+            return False
+        for name, possible in left.aliases.items():
+            other = right.aliases.get(name)
+            if possible is other:
+                continue
+            if other is None:
+                return False
+            charge_origins("loop_pass", possible)
+            charge_origins("loop_pass", other)
+            if possible != other:
+                return False
+        return True
+
+    def invalidate_bindings(statement: ast.stmt, env: DerivationEnvironment) -> None:
         """Special bindings are unknown, including those inside unsupported blocks."""
         for node in local_nodes(statement):
             names: list[str] = []
             if isinstance(node, ast.NamedExpr) and isinstance(node.target, ast.Name):
+                possible = possible_origins(node.value, env)
+                env[node.target.id] = ("unknown", node.target.id)
+                bind_origins(node.target.id, possible, env)
                 names.append(node.target.id)
             elif isinstance(node, ast.Import | ast.ImportFrom):
                 charge("import_names", len(node.names))
@@ -585,6 +1541,7 @@ def visible_by_derivation(
             elif isinstance(node, ast.Delete):
                 for item in node.targets:
                     if isinstance(item, ast.Name):
+                        env.aliases.pop(item.id, None)
                         names.append(item.id)
                     else:
                         assign(item, None, env)
@@ -610,11 +1567,34 @@ def visible_by_derivation(
                     return True
         return False
 
-    loop_paths: list[tuple[list[dict[str, Fact]], list[dict[str, Fact]]]] = []
+    loop_paths: list[tuple[list[DerivationEnvironment], list[DerivationEnvironment]]] = []
+
+    def bind_expression(
+        node: ast.AST, value: ast.AST, env: DerivationEnvironment, fact: Fact | None
+    ) -> None:
+        if (
+            isinstance(node, ast.Tuple | ast.List)
+            and isinstance(value, ast.Tuple | ast.List)
+            and len(node.elts) == len(value.elts)
+        ):
+            charge("assignment", len(node.elts))
+            evaluated = [
+                (target, expression(item, env), possible_origins(item, env))
+                for target, item in zip(node.elts, value.elts, strict=True)
+            ]
+            for target_node, fact, possible in evaluated:
+                assign(target_node, fact, env, possible)
+        else:
+            possible = (
+                possible_origins(value, env)
+                if fact is None or fact[0] in {"vector", "unknown"}
+                else frozenset()
+            )
+            assign(node, fact, env, possible)
 
     def statements(
-        body: list[ast.stmt], env: dict[str, Fact], *, credit: bool = True
-    ) -> dict[str, Fact]:
+        body: list[ast.stmt], env: DerivationEnvironment, *, credit: bool = True
+    ) -> DerivationEnvironment:
         nonlocal witnessed
         for statement in body:
             charge("statement")
@@ -625,7 +1605,10 @@ def visible_by_derivation(
                     statement.targets if isinstance(statement, ast.Assign) else [statement.target]
                 )
                 for item in targets:
-                    assign(item, value, env)
+                    if statement.value is not None:
+                        bind_expression(item, statement.value, env, value)
+                    else:
+                        assign(item, value, env)
                 if (
                     credit
                     and value
@@ -674,21 +1657,31 @@ def visible_by_derivation(
                     charge("loop_pass")
                     inside = copy_env(entry)
                     if isinstance(statement, ast.For | ast.AsyncFor):
-                        assign(statement.target, None, inside)
-                    break_paths: list[dict[str, Fact]] = []
-                    continue_paths: list[dict[str, Fact]] = []
+                        assign(
+                            statement.target,
+                            None,
+                            inside,
+                            select_origins(possible_origins(statement.iter, inside), "[]"),
+                        )
+                    break_paths: list[DerivationEnvironment] = []
+                    continue_paths: list[DerivationEnvironment] = []
                     loop_paths.append((break_paths, continue_paths))
                     inside = statements(statement.body, inside, credit=False)
                     loop_paths.pop()
                     updated = intersection(entry, inside)
                     for continued in continue_paths:
                         updated = intersection(updated, continued)
-                    if updated == entry:
+                    if updated == entry and same_aliases(updated, entry):
                         break
                     entry = updated
                 inside = copy_env(entry)
                 if isinstance(statement, ast.For | ast.AsyncFor):
-                    assign(statement.target, None, inside)
+                    assign(
+                        statement.target,
+                        None,
+                        inside,
+                        select_origins(possible_origins(statement.iter, inside), "[]"),
+                    )
                 break_paths, continue_paths = [], []
                 loop_paths.append((break_paths, continue_paths))
                 inside = statements(statement.body, inside, credit=credit)
@@ -703,7 +1696,12 @@ def visible_by_derivation(
             elif isinstance(statement, ast.With | ast.AsyncWith):
                 for context_item in statement.items:
                     if context_item.optional_vars is not None:
-                        assign(context_item.optional_vars, None, env)
+                        assign(
+                            context_item.optional_vars,
+                            None,
+                            env,
+                            possible_origins(context_item.context_expr, env),
+                        )
                 env = statements(statement.body, env, credit=credit)
                 if terminates(statement.body):
                     break
@@ -711,10 +1709,22 @@ def visible_by_derivation(
                 # Unsupported control flow must not lend assignments to a
                 # later derivation; do not claim witnesses inside these blocks.
                 for node in local_nodes(statement):
+                    if isinstance(node, ast.Assign | ast.AnnAssign) and node.value is not None:
+                        targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+                        possible = possible_origins(node.value, env)
+                        for item in targets:
+                            if isinstance(item, ast.Name):
+                                bind_origins(
+                                    item.id,
+                                    merge_origins(named_origins(item.id, env), possible),
+                                    env,
+                                )
                     if isinstance(node, ast.AugAssign):
                         invalidate_aliases(node.target, env)
                     if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Store):
+                        possible = named_origins(node.id, env)
                         env[node.id] = ("unknown", node.id)
+                        bind_origins(node.id, possible, env)
                     elif isinstance(node, ast.Subscript | ast.Attribute) and isinstance(
                         node.ctx, ast.Store | ast.Del
                     ):
@@ -725,7 +1735,11 @@ def visible_by_derivation(
     args = function.args
     parameters = [*args.posonlyargs, *args.args, *args.kwonlyargs]
     parameters.extend(arg for arg in (args.vararg, args.kwarg) if arg is not None)
-    statements(function.body, {arg.arg: ("vector", arg.arg) for arg in parameters})
+    parameter_names = frozenset(arg.arg for arg in parameters)
+    statements(
+        function.body,
+        DerivationEnvironment({arg.arg: ("vector", arg.arg) for arg in parameters}),
+    )
     return witnessed
 
 
@@ -772,7 +1786,11 @@ def summarize_source(path: str, source: str, budget: SummaryBudget) -> CompactUn
     clip_scopes: set[str] = set()
     for function, call in unit.calls:
         target = unit.resolve(call.func, function)
-        procedures = tuple(sorted(literal_procedures(call, target)))
+        explicit = literal_procedures(call, target, allow_default=False)
+        bound = set(unit.resolve_partial_procedures(call.func, function))
+        procedures = tuple(
+            sorted(explicit or bound or literal_procedures(call, target, allow_default=True))
+        )
         budget.charge(path, function, target, *procedures)
         calls.append((function, target, procedures, call.lineno))
         if target.rsplit(".", 1)[-1] == "benjamini_hochberg":
@@ -816,12 +1834,23 @@ def discover(
         for function, target, inferred, line in summary.calls:
             if not is_seed(target) and target not in names:
                 continue
+            bound_from_dep = tuple(
+                sorted(
+                    item.removeprefix(PARTIAL_PROC_PREFIX).removesuffix(">")
+                    for item in dependencies.get(target, set())
+                    if item.startswith(PARTIAL_PROC_PREFIX)
+                )
+            )
+            effective = inferred or bound_from_dep
             key = (summary.path, function)
             site = sites.setdefault(key, {"procedures": set(), "calls": [], "definition": False})
-            site["procedures"].update(inferred)
-            site["calls"].append({"target": target, "procedures": list(inferred), "line": line})
+            site["procedures"].update(effective)
+            site["calls"].append({"target": target, "procedures": list(effective), "line": line})
         for function in summary.functions:
-            if is_seed(f"{summary.module}.{function}"):
+            qualified = f"{summary.module}.{function}"
+            if is_seed(
+                qualified, defined=True
+            ) or STRUCTURAL_CORRECTION_SEED in summary.dependencies.get(qualified, set()):
                 sites.setdefault((summary.path, function), {"procedures": set(), "calls": []})[
                     "definition"
                 ] = True
@@ -878,6 +1907,8 @@ def family_schema_errors(
     if not isinstance(issues, list) or any(type(issue) is not int for issue in issues):
         errors.append("open_issue must be a list of integers")
     size = family.get("size_source")
+    if family.get("family_id") in NATIVE_SELECTED_FAMILIES:
+        errors.extend(native_selected_size_errors(size))
     if not isinstance(size, dict):
         errors.append("size_source must be a mapping")
     else:
@@ -1110,6 +2141,114 @@ def test_repository_corrections_have_registered_families() -> None:
     registry = yaml.safe_load(REGISTRY.read_text(encoding="utf-8"))
     assert isinstance(registry, dict)
     assert not (errors := registry_errors(repository_sources(ROOT), registry)), "\n".join(errors)
+
+
+@pytest.mark.parametrize("family_id", NATIVE_SELECTED_FAMILIES)
+def test_native_selected_family_records_both_inventory_sizes(family_id: str) -> None:
+    registry = yaml.safe_load(REGISTRY.read_text(encoding="utf-8"))
+    family = next(item for item in registry["families"] if item["family_id"] == family_id)
+    assert not (errors := native_selected_size_errors(family["size_source"])), errors
+
+
+@pytest.fixture
+def complete_native_size_source() -> dict[str, Any]:
+    return {
+        "kind": "selected_rows",
+        "count_rule": "Count matrix.columns as correction_family_size, including held p=1.",
+        "unfiltered_count_rule": (
+            "Count retained_trait_counts before selection as retained_trait_count."
+        ),
+        "recorded_sizes": {
+            **deepcopy(NATIVE_RECORDED_SIZES),
+            "read_rule": (
+                "Resolve <filename_token> from "
+                "trait_profile_paired_contrast_trait_stats_manifest.tsv (or pooled). "
+                "Read one pooled output rather than both pooled and unsuffixed "
+                "trait_profile_paired_contrast_trait_stats.tsv so rows are not counted twice. "
+                "Use a nonempty table per stratum; never sum repeated counts. "
+                "Treat legacy missing fields as unavailable."
+            ),
+        },
+    }
+
+
+def test_complete_native_inventory_declaration_is_accepted(
+    complete_native_size_source: dict[str, Any],
+) -> None:
+    assert native_selected_size_errors(complete_native_size_source) == []
+
+
+@pytest.mark.parametrize("field", ["count_rule", "unfiltered_count_rule", "recorded_sizes"])
+@pytest.mark.parametrize(
+    "replacement", [None, "Count declared hypothesis members from this execution."]
+)
+def test_missing_or_generic_native_inventory_is_rejected(
+    complete_native_size_source: dict[str, Any], field: str, replacement: str | None
+) -> None:
+    if replacement is None:
+        del complete_native_size_source[field]
+    else:
+        complete_native_size_source[field] = replacement
+    assert native_selected_size_errors(complete_native_size_source)
+
+
+@pytest.mark.parametrize(
+    ("field", "replacement"),
+    [
+        ("file", "significant_traits.tsv"),
+        ("selected_count", "p_value"),
+        ("unfiltered_count", "correction_family_size"),
+        ("group_by", []),
+        ("missing_or_blank", "zero"),
+        ("read_rule", "Read counts."),
+    ],
+)
+def test_misbound_native_recorded_size_is_rejected(
+    complete_native_size_source: dict[str, Any], field: str, replacement: object
+) -> None:
+    complete_native_size_source["recorded_sizes"][field] = replacement
+    assert native_selected_size_errors(complete_native_size_source)
+
+
+def test_native_inventory_kind_cannot_bypass_the_guard(
+    complete_native_size_source: dict[str, Any],
+) -> None:
+    complete_native_size_source["kind"] = "executed_inventory"
+    family = {"family_id": NATIVE_SELECTED_FAMILIES[0], "size_source": complete_native_size_source}
+    assert "native inventory must remain selected_rows" in family_schema_errors(family, set(), {})
+
+
+def test_native_recorded_size_fields_have_committed_header_witnesses() -> None:
+    registry = yaml.safe_load(REGISTRY.read_text(encoding="utf-8"))
+    for family_id in NATIVE_SELECTED_FAMILIES:
+        family = next(item for item in registry["families"] if item["family_id"] == family_id)
+        recorded = family["size_source"]["recorded_sizes"]
+        witness_paths = manifest_witness_paths(recorded["file"])
+        witness_paths.extend(ROOT / rel for rel in NATIVE_POOLED_WITNESSES)
+        for path in witness_paths:
+            with path.open(encoding="utf-8", newline="") as handle:
+                header = next(csv.reader(handle, delimiter="\t"))
+            assert {
+                recorded["selected_count"],
+                recorded["unfiltered_count"],
+                *recorded["group_by"],
+                "stratum_kind",
+                "stratum",
+                "correction_family_size",
+                "retained_trait_count",
+                "p_value",
+                "q_value",
+                "study_p_value",
+                "study_q_value",
+            } <= set(header), f"Missing required columns in {path}"
+
+
+def test_wrong_native_file_template_fails_manifest_witness_derivation() -> None:
+    with pytest.raises(
+        AssertionError,
+        match=re.escape("expected 'trait_profile_paired_contrast_trait_stats_feces.tsv'"),
+    ):
+        manifest_witness_paths("trait_profile_paired_contrast_trait_stats_<stratum>.tsv")
 
 
 def example_registry(*anchors: tuple[str, str, list[str]]) -> dict[str, Any]:
@@ -1345,3 +2484,115 @@ def test_streamed_source_input_matches_small_mapping_input() -> None:
     source = "def screen(p):\n    return false_discovery_control(p, method='by')\n"
     items = [("src/x.py", source)]
     assert discover(iter(items)) == discover(dict(items))
+
+
+def test_structural_cumulative_minimum_and_step_up_loop_are_detected() -> None:
+    sources = {
+        "src/x.py": (
+            "import numpy as np\n"
+            "def _review_qvals(p):\n"
+            "    order = np.argsort(p)\n"
+            "    ranked = np.asarray(p, dtype=float)[order] * len(p) / np.arange(1, len(p) + 1)\n"
+            "    return np.minimum.accumulate(ranked[::-1])[::-1]\n"
+            "def caller_qvals(p):\n"
+            "    return _review_qvals(p)\n"
+            "def _review_cummin(scaled):\n"
+            "    return np.minimum.accumulate(scaled[::-1])[::-1]\n"
+            "def _review_step(p):\n"
+            "    m = len(p)\n"
+            "    out = [1.0] * m\n"
+            "    for rank, i in enumerate(sorted(range(m), key=p.__getitem__), 1):\n"
+            "        out[i] = p[i] * m / rank\n"
+            "    return out\n"
+            "def caller_step(p):\n"
+            "    return _review_step(p)\n"
+        )
+    }
+    errors = registry_errors(sources, example_registry())
+    assert "unregistered correction: src/x.py::_review_qvals" in errors
+    assert "unregistered correction: src/x.py::caller_qvals" in errors
+    assert "unregistered correction: src/x.py::_review_cummin" in errors
+    assert "unregistered correction: src/x.py::_review_step" in errors
+    assert "unregistered correction: src/x.py::caller_step" in errors
+
+
+def test_inline_bonferroni_and_sidak_corrections_are_detected() -> None:
+    sources = {
+        "src/x.py": (
+            "import numpy as np\n"
+            "def _review_bonf(p):\n"
+            "    return np.minimum(np.asarray(p) * len(p), 1.0)\n"
+            "def scalar_bonf(p, m):\n"
+            "    return min(1.0, p * m)\n"
+            "def bare_bonf(p_val, n_tests):\n"
+            "    return p_val * n_tests\n"
+            "def sidak_adjust(p, m):\n"
+            "    return 1.0 - (1.0 - p) ** m\n"
+            "def unrelated_math(a, b):\n"
+            "    return min(1.0, a * b)\n"
+        )
+    }
+    errors = registry_errors(sources, example_registry())
+    assert "unregistered correction: src/x.py::_review_bonf" in errors
+    assert "unregistered correction: src/x.py::scalar_bonf" in errors
+    assert "unregistered correction: src/x.py::bare_bonf" in errors
+    assert "unregistered correction: src/x.py::sidak_adjust" in errors
+    assert "unregistered correction: src/x.py::unrelated_math" not in errors
+
+
+def test_reexported_alias_partial_getattr_and_bare_script_imports_are_detected() -> None:
+    sources = {
+        "src/mtp/_review_reexport.py": (
+            "from scipy.stats import false_discovery_control\nqvals = false_discovery_control\n"
+        ),
+        "src/mtp/caller.py": (
+            "from functools import partial\n"
+            "import scipy.stats as ss\n"
+            "from mtp._review_reexport import qvals\n"
+            "def via_reexport(p):\n"
+            "    return qvals(p, method='by')\n"
+            "def via_partial(p):\n"
+            "    fn = partial(ss.false_discovery_control, method='by')\n"
+            "    return fn(p)\n"
+            "def via_getattr(p):\n"
+            "    return getattr(ss, 'false_discovery_control')(p, method='by')\n"
+            "def _review_unrelated(text):\n"
+            "    return text.correct(), text.adjust()\n"
+        ),
+        "scripts/_review_helper.py": (
+            "from scipy.stats import false_discovery_control\n"
+            "def qvals(p):\n"
+            "    return false_discovery_control(p, method='by')\n"
+        ),
+        "scripts/caller_script.py": (
+            "from _review_helper import qvals\ndef run(p):\n    return qvals(p)\n"
+        ),
+    }
+    sites, _ = discover(sources)
+    assert ("src/mtp/caller.py", "via_reexport") in sites
+    assert sites[("src/mtp/caller.py", "via_reexport")]["procedures"] == {"BY"}
+    assert ("src/mtp/caller.py", "via_partial") in sites
+    assert sites[("src/mtp/caller.py", "via_partial")]["procedures"] == {"BY"}
+    assert ("src/mtp/caller.py", "via_getattr") in sites
+    assert sites[("src/mtp/caller.py", "via_getattr")]["procedures"] == {"BY"}
+    assert ("scripts/_review_helper.py", "qvals") in sites
+    assert ("scripts/caller_script.py", "run") in sites
+    assert ("src/mtp/caller.py", "_review_unrelated") not in sites
+
+
+def test_policy_enforcement_scope_and_out_of_scope_list_match_guard() -> None:
+    policy_path = ROOT / "methods/multiple_testing_policy.md"
+    text = policy_path.read_text(encoding="utf-8")
+    for directory in ("src/", "scripts/"):
+        assert f"`{directory}`" in text
+    for directory in ("tests/", "tools/", "methods/", "docs/", "data/", "schema/"):
+        assert f"`{directory}`" in text
+    for phrase in (
+        "minimum.accumulate",
+        "p * m / rank",
+        "min(1.0, p * m)",
+        "1 - (1 - p) ** m",
+        "functools.partial",
+        "getattr",
+    ):
+        assert phrase in text

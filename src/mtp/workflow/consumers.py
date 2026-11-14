@@ -55,9 +55,10 @@ def open_core_bundle(
     profile_product: ProfileKind = "count_profiles",
     *,
     expected_cohort: str | None = None,
+    expected_sha256: str | None = None,
 ) -> CoreBundle:
     """Verify bytes, producer completion, units, coverage and catalog before consumption."""
-    run = verify_core_run(manifest)
+    run = verify_core_run(manifest, expected_sha256=expected_sha256)
     products = {product.id: product for product in run.definition.products}
     artifacts = {artifact.product_id: artifact for artifact in run.artifacts or []}
     profile = products[profile_product]
@@ -299,7 +300,7 @@ def verify_consumer_record(
     """Check a deck/figure input's entire recorded chain before accepting its outputs."""
     record = _read_consumer_record(path, resolver)
     manifest = locate(Path(record.run_manifest_path), resolver)
-    run = verify_core_run(manifest, resolver=resolver)
+    run = verify_core_run(manifest, resolver=resolver, expected_sha256=record.run_manifest_sha256)
     return _verify_consumer_with_core(record, run, resolver)
 
 

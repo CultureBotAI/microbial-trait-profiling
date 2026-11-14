@@ -1415,9 +1415,9 @@ def test_audit_script_reports_a_trait_list_without_fixed_conclusions(
     digest = hashlib.sha256(list_path.read_bytes()).hexdigest()
     assert f"Trait list: traits.txt (sha256 {digest}, 3 traits)" in declared
     assert "3. DECLARED TRAIT LIST SIGNALS (3 TRAITS)" in declared
-    assert "Not written for a declared trait list" in declared
-    for fixed_text in ("After PC1 regression the", "Significant before and after PC1"):
-        assert fixed_text not in declared
+    assert "Not written for a declared trait list" not in declared
+    assert "After PC1 regression the" not in declared
+    assert "Significant before and after PC1 regression in the same direction" in declared
     for label in EXTRA_TRAITS.values():
         assert label in declared
     effects = pd.read_csv(tmp_path / "declared/table1_density_adjusted_effects.tsv", sep="\t")

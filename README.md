@@ -8,8 +8,11 @@ per-study YAML files validated against a [LinkML](https://linkml.io) schema,
 and aggregates KG-Microbe trait annotations for paired comparisons and
 enrichment analyses.
 
-The Python package remains `bsdbng`; existing imports, schema identifiers,
-environment variables, and release asset names retain that name for compatibility.
+The Python package is `mtp` (`src/mtp/`, `schema/mtp.yaml`). `src/bsdbng/` holds
+compatibility shims for the old import path, and `schema/bsdbng.yaml` is the legacy
+copy of `schema/mtp.yaml`. The `BSDBNG_*` environment variables (such as
+`BSDBNG_MONGO_URI`) and the `bsdbng-*` release assets keep the `bsdbng` name; they
+have no `mtp` equivalent.
 
 All biological claims, figure captions, and pipeline interpretations follow the
 project-wide biological interpretation guide in [`methods/biological_interpretation.md`](methods/biological_interpretation.md)
@@ -20,6 +23,8 @@ not direct in vivo physiological or metabolic measurements.
 ## Quick start
 
 ### Prerequisites
+
+The project requires Python 3.11.5 or newer; uv manages the interpreter.
 
 You need two tools installed. Everything else is managed automatically — with
 one exception: the figure recipes (`just guild-maps`, `just table1-trait-maps`)
@@ -45,7 +50,7 @@ cd microbial-trait-profiling
 uv sync --all-extras --group dev --group qa
 just check       # run all checks (should pass on a fresh clone)
 just download    # download BugSigDB data (~28 MB, ~6s)
-just ingest      # parse into per-study YAML (~22s, 1900+ studies)
+just ingest      # parse into per-study YAML for the pinned BugSigDB release (~22s)
 ```
 
 That's it. After `just ingest`, look at `data/studies/` for the output.
@@ -201,7 +206,7 @@ exact-match, trigram similarity, or OpenAI embedding semantic search.
 **One-time setup:**
 
 ```bash
-just mongo-load         # load 1,900+ study YAMLs into MongoDB (~45s)
+just mongo-load         # load study YAMLs into MongoDB (~45s; for the pinned BugSigDB release)
 just index-trigram      # build trigram index (free, ~seconds)
 just index-embeddings   # build OpenAI embedding index (~minutes, $)
 ```
@@ -229,7 +234,7 @@ linkml-store approach.
 1. Pick an [open issue](https://github.com/CultureBotAI/microbial-trait-profiling/issues)
 2. Create a plain branch named for the issue: `git fetch origin`, then `git switch -c <number>-<short-slug> --no-track origin/main` (not `gh issue develop`; see AGENTS.md)
 3. Make your changes
-4. Run `just check` — **all checks must pass before opening a PR**
+4. Run `just check` — **all checks must pass before committing**
 5. Commit and push (`git push -u origin <branch>`)
 6. Open a PR that references the issue: "Closes #30" only if it fully resolves the issue, otherwise "Refs #30"
 
@@ -260,24 +265,101 @@ This project uses a minimal set of file types:
 
 No DuckDB, no Parquet, no Jupyter notebooks in this repo.
 
+## Releases
+
+Pushing a version tag matching `v*` (for example `v0.4.0`) triggers the
+automated release workflow in `.github/workflows/release.yaml`.
+
+**Human approval boundary:** Explicit human approval is required before tagging
+or publishing a release (never tag or publish a release unless a human has
+approved it in the current conversation), and always ask the user before
+downloading large release assets.
+
+### Creating a release (GitHub Web UI)
+
+1. Go to `https://github.com/CultureBotAI/microbial-trait-profiling/releases`
+2. Click **"Draft a new release"** (or **"Create a new release"**)
+3. Click **"Choose a tag"**, type the version (`vX.Y.Z`, matching `v*`, e.g. `v0.4.0`), and click **"Create new tag on publish"**
+4. Confirm the target branch is `main`
+5. Click **"Generate release notes"** to populate the changelog from merged PRs
+6. Add a brief summary of major changes at the top if needed
+7. Click **"Publish release"** once explicit human approval is granted
+
+Publishing creates and pushes the `v*` tag on `main`, which starts
+`.github/workflows/release.yaml` and attaches the generated data archives to the
+release when the workflow finishes (~2 minutes).
+
+### Creating a release (CLI)
+
+After obtaining explicit human approval to cut a release:
+
+```bash
+git checkout main && git pull
+just check          # verify all checks pass before tagging
+git tag vX.Y.Z
+git push origin vX.Y.Z
+```
+
+### Release pipeline and attached assets
+
+When a `v*` tag is pushed, `.github/workflows/release.yaml` runs `just check`,
+`just download`, `just ingest`, `just validate-studies`, and `just stats`, then
+attaches five release assets to the GitHub Release:
+
+| Asset | Contents |
+|-------|----------|
+| `bsdbng-raw-data-<tag>.tar.gz` | Raw BugSigDB CSV exports (`studies.csv`, `experiments.csv`, `signatures.csv`, `full_dump.csv`) and `download_provenance.json` |
+| `bsdbng-studies-<tag>.tar.gz` | All validated per-study YAML files from `data/studies/` |
+| `bsdbng-stats-<tag>.txt` | Summary counts and statistics output from `just stats` |
+| `bsdbng-ingest-log-<tag>.json` | Structured ingest audit log (`data/derived/ingest_log.json`) |
+| `bsdbng-pipeline-log-<tag>.log` | Pipeline step timing log (`logs/pipeline.log`) |
+
+### Post-release verification
+
+Once `.github/workflows/release.yaml` completes:
+
+1. Check the latest release:
+   ```bash
+   gh release list --repo CultureBotAI/microbial-trait-profiling --limit 1
+   ```
+2. **Ask the user before downloading** — release archives can be large.
+3. Download the release assets for inspection:
+   ```bash
+   mkdir -p release-assets
+   gh release download <tag> --repo CultureBotAI/microbial-trait-profiling --dir release-assets \
+     --pattern 'bsdbng-raw-data-*.tar.gz' \
+     --pattern 'bsdbng-studies-*.tar.gz' \
+     --pattern 'bsdbng-stats-*.txt' \
+     --pattern 'bsdbng-ingest-log-*.json' \
+     --pattern 'bsdbng-pipeline-log-*.log'
+   ```
+4. Unpack and verify the outputs:
+   ```bash
+   mkdir -p studies
+   tar xzf release-assets/bsdbng-studies-<tag>.tar.gz -C studies/
+   ```
+   - Read `release-assets/bsdbng-stats-<tag>.txt` and compare counts against the previous release and BugSigDB live (`https://bugsigdb.org/Main_Page`).
+   - Spot-check unpacked study YAML files to confirm taxon names are real organism names rather than `taxon_<ID>` placeholders.
+   - Check `release-assets/bsdbng-ingest-log-<tag>.json` and `release-assets/bsdbng-pipeline-log-<tag>.log` to confirm skip counts and step timings are reasonable.
+
 ## Project structure
 
 ```
 microbial-trait-profiling/
-  schema/bsdbng.yaml              # LinkML schema (source of truth)
-  src/bsdbng/
-    download.py                    # BugSigDB CSV download with caching
-    ingest.py                      # CSV → per-study YAML pipeline
-    datamodel/bsdbng_pydantic.py   # generated Pydantic models (do not edit)
-    paths.py                       # project path constants
-  tests/                           # pytest tests
+  schema/mtp.yaml                 # LinkML schema (source of truth; legacy: schema/bsdbng.yaml)
+  src/mtp/                        # canonical package (compatibility shims in src/bsdbng/)
+    download.py                   # BugSigDB CSV download with caching
+    ingest.py                     # CSV → per-study YAML pipeline
+    datamodel/mtp_pydantic.py     # generated Pydantic models (do not edit)
+    paths.py                      # project path constants
+  tests/                          # pytest tests
   data/
-    raw/                           # downloaded CSVs (gitignored)
-    studies/                       # per-study YAML output (gitignored)
-    derived/                       # aggregate artifacts (gitignored)
-  Justfile                         # developer commands
-  pyproject.toml                   # project config
-  logs/                            # pipeline timing logs (gitignored)
+    raw/                          # downloaded CSVs (gitignored)
+    studies/                      # per-study YAML output (gitignored)
+    derived/                      # aggregate artifacts (gitignored)
+  Justfile                        # developer commands
+  pyproject.toml                  # project config
+  logs/                           # pipeline timing logs (gitignored)
 ```
 
 ## Schema
@@ -295,7 +377,7 @@ The schema defines four entity types, all inheriting from `NamedThing`:
 - **Signature** — a set of taxa with a shared direction (increased/decreased)
 - **Taxon** — a microbial organism identified by NCBITaxon CURIE
 
-See `schema/bsdbng.yaml` for the full definition.
+See `schema/mtp.yaml` (legacy: `schema/bsdbng.yaml`) for the full definition.
 
 ## Data quality
 

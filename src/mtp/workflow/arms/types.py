@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from mtp.taxa_trait_matrix import StrainRollup
+from mtp.trait_key_policy import TraitKeyPolicy
 
 
 @dataclass(frozen=True)
@@ -26,6 +27,8 @@ class ArmContext:
     # The core's recorded BacDive strain rollup scope; a core from before #788 is off
     strain_rollup: StrainRollup = "off"
     provenance_root: Path | None = None
+    # Historical arm plans did not declare this; absence is not an implicit union.
+    trait_key_policy: TraitKeyPolicy | None = None
 
 
 @dataclass(frozen=True)

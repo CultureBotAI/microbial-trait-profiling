@@ -129,12 +129,15 @@ def write_consolidated_report(
     density_res: dict[str, Any],
     ontology_res: dict[str, Any],
     trait_list: DeclaredTraitList | None = None,
+    *,
+    code_commit: str = "",
 ) -> Path:
     """Generate a comprehensive consolidated report for Issue #264 covering all tasks.
 
-    With a declared ``trait_list`` the conclusions of section 6 are not written: they
-    name Table 1 traits (#1054). They quote BH q-values and statuses from the reported
-    effects, and read NA for a trait that is not reported (#1321).
+    Section 6 summarizes the same reported effects as section 3, including declared
+    trait lists. Only survived/enhanced statuses enter its survivor list (#1069).
+    A supplied ``code_commit`` is recorded as provided; an omitted identifier is
+    explicitly unbound. No Git metadata or working-tree state is inferred.
     Section 6 describes the computed correlations and VIFs without inferring their
     cause, a severity category, or joint-model coefficient stability (#1328).
     """
@@ -157,10 +160,22 @@ def write_consolidated_report(
     t1_by_id = {eff.trait_id: eff for eff in t1_effects}
     aerobic_eff = t1_by_id.get("METPO:1000608")
     aerobic_label = aerobic_eff.trait_label if aerobic_eff is not None else "facultatively aerobic"
-    nan = float("nan")
-    aerobic_status = aerobic_eff.status if aerobic_eff is not None else "not reported"
-    aerobic_q_raw_str = _q_text(aerobic_eff.raw_wilcoxon_bh_q if aerobic_eff is not None else nan)
-    aerobic_q_adj_str = _q_text(aerobic_eff.adj_wilcoxon_bh_q if aerobic_eff is not None else nan)
+    if aerobic_eff is not None:
+        effect_conclusions = [
+            f"2. After PC1 regression the {aerobic_label} paired contrast is labelled "
+            f"'{aerobic_eff.status}'",
+            f"   (raw BH {_q_text(aerobic_eff.raw_wilcoxon_bh_q)}, "
+            f"adjusted BH {_q_text(aerobic_eff.adj_wilcoxon_bh_q)}).",
+        ]
+    else:
+        effect_conclusions = ["2. Reported paired contrasts after PC1 regression (from section 3):"]
+    effect_conclusions.extend(
+        f"   {eff.trait_label}: '{eff.status}' "
+        f"(raw BH {_q_text(eff.raw_wilcoxon_bh_q)}, "
+        f"adjusted BH {_q_text(eff.adj_wilcoxon_bh_q)})."
+        for eff in t1_effects
+        if eff is not aerobic_eff
+    )
     survivors = ", ".join(
         eff.trait_label for eff in t1_effects if eff.status in SIGNIFICANT_POST_ADJUSTMENT_STATUSES
     )
@@ -169,6 +184,11 @@ def write_consolidated_report(
         "=" * 80,
         "TRAIT CORRELATION, ANNOTATION DENSITY ADJUSTMENT, AND REDUNDANCY AUDIT",
         "=" * 80,
+        (
+            f"code_commit: {code_commit}"
+            if code_commit
+            else "Provenance note: code_commit not supplied; producer commit is unverified."
+        ),
         *(
             []
             if trait_list is None
@@ -328,17 +348,6 @@ def write_consolidated_report(
             "-" * 80,
         ]
     )
-    if trait_list is not None:
-        lines.extend(
-            [
-                "Not written for a declared trait list; section 3 reports each listed",
-                "trait's computed effects.",
-                "=" * 80,
-            ]
-        )
-        report_out.write_text("\n".join(lines), encoding="utf-8")
-        return report_out
-
     raw_r, raw_pc1 = _conclusion_metrics(raw)
     adjusted_r, _ = _conclusion_metrics(adj_pc1)
     native_r, native_pc1 = _conclusion_metrics(nat_m)
@@ -348,22 +357,30 @@ def write_consolidated_report(
     paired_r = _conclusion_number(twin.paired_correlation, "+.4f")
     profile_vif = _conclusion_number(twin.vif_profile, ".2f", allow_positive_infinity=True)
     paired_vif = _conclusion_number(twin.vif_paired, ".2f", allow_positive_infinity=True)
-    collapsed_summary = (
-        f"{n_collapsed} {_plural(n_collapsed, 'feature', 'features')} "
-        f"removed without a present cluster survivor across {n_clusters} "
-        f"{_plural(n_clusters, 'cluster', 'clusters')}"
-        if n_collapsed > 0 and n_clusters == 0
-        else f"{n_collapsed} {_plural(n_collapsed, 'feature', 'features')} "
+    n_orphan = int(ontology_res.get("n_orphan_features", n_collapsed if n_clusters == 0 else 0))
+    n_collapsed_in_clusters = n_collapsed - n_orphan
+    cluster_summary = (
+        f"{n_collapsed_in_clusters} "
+        f"{_plural(n_collapsed_in_clusters, 'feature', 'features')} "
         f"collapsed into {n_clusters} {_plural(n_clusters, 'cluster', 'clusters')}"
     )
+    orphan_summary = (
+        f"{n_orphan} {_plural(n_orphan, 'feature', 'features')} "
+        f"removed because "
+        f"{_plural(n_orphan, 'its cluster survivor is', 'their cluster survivors are')} absent"
+    )
+    if n_orphan > 0 and n_collapsed_in_clusters > 0:
+        collapsed_summary = f"{cluster_summary}; {orphan_summary}"
+    elif n_orphan > 0:
+        collapsed_summary = orphan_summary
+    else:
+        collapsed_summary = cluster_summary
     lines.extend(
         [
             "1. Median pairwise Pearson r across profile trait annotations: "
             f"raw = {raw_r}; post-PC1 regression = {adjusted_r}.",
             f"   Raw PC1 variance explained (%) = {raw_pc1}.",
-            f"2. After PC1 regression the {aerobic_label} paired contrast is labelled "
-            f"'{aerobic_status}'",
-            f"   (raw BH {aerobic_q_raw_str}, adjusted BH {aerobic_q_adj_str}).",
+            *effect_conclusions,
             "3. Significant before and after PC1 regression in the same direction "
             f"(BH q <= 0.05; survived or enhanced): {survivors or 'none'}.",
             f"4. {twin.trait_a_label} and {twin.trait_b_label}: "
@@ -410,7 +427,7 @@ def main() -> int:
             output_dir=args.output_dir,
         )
         report_path = write_consolidated_report(
-            args.output_dir, density_res, ontology_res, trait_list
+            args.output_dir, density_res, ontology_res, trait_list, code_commit=args.code_commit
         )
     except Exception as exc:
         sys.stderr.write(f"Error during density & redundancy audit: {exc}\n")

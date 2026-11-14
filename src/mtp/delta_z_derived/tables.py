@@ -21,7 +21,34 @@ from scipy import stats
 
 FACULTATIVE = "METPO:1000608"
 OBLIGATE = "METPO:1000607"
+STOOL_BODY_SITE = "Feces"
 ACTIVE_THRESHOLD = 1e-12
+
+
+def is_stool_body_site(body_site: object) -> bool:
+    """Return True only when body_site is the exact literal 'Feces' (#1157)."""
+    return isinstance(body_site, str) and body_site == STOOL_BODY_SITE
+
+
+def validate_stool_body_site(body_site: object) -> bool:
+    """Validate and classify whether body_site is the exact literal 'Feces' (#1157).
+
+    Refuses case or whitespace variants of 'Feces' (such as 'feces' or
+    ' Feces ') with a ValueError so non-canonical stool spellings cannot be
+    silently folded into 'Feces' or silently dropped into non-stool strata.
+    """
+    if (
+        isinstance(body_site, str)
+        and body_site.strip().lower() == STOOL_BODY_SITE.lower()
+        and body_site != STOOL_BODY_SITE
+    ):
+        raise ValueError(
+            f"Refusing non-canonical stool body_site {body_site!r}; "
+            f"expected exact literal {STOOL_BODY_SITE!r} (#1157)"
+        )
+    return is_stool_body_site(body_site)
+
+
 MEAN_RTOL = 1e-12
 MEAN_ATOL = 1e-14
 WILCOXON_METHOD_CONTRACTS = {
@@ -224,7 +251,7 @@ def _quadrant_rows(pairs: pd.DataFrame, metadata: pd.DataFrame) -> pd.DataFrame:
         ["fa_up_oa_down", "fa_down_oa_up", "both_up", "both_down"],
         default="axis",
     )
-    result["is_stool"] = result.body_site.eq("Feces")
+    result["is_stool"] = result.body_site.map(is_stool_body_site)
     return result
 
 
@@ -272,7 +299,7 @@ def _quadrant_summary(per_pair: pd.DataFrame, labels: dict[str, str]) -> pd.Data
                 "test_unit": "comparison",
                 "p_adjustment": "none_nominal",
                 "stool_field": "experiments.body_site",
-                "stool_value": "Feces",
+                "stool_value": STOOL_BODY_SITE,
                 **_pearson(frame),
             }
         )
@@ -362,7 +389,7 @@ def _stool_shifts(
     *,
     by_study: bool = False,
 ) -> pd.DataFrame:
-    stool = metadata.loc[metadata.body_site.eq("Feces")]
+    stool = metadata.loc[metadata.body_site.map(is_stool_body_site)]
     groups = {
         str(condition): group
         for condition, group in stool.groupby("condition", sort=True, dropna=False)
@@ -374,7 +401,7 @@ def _stool_shifts(
     for rank, condition in enumerate(selected, start=1):
         group = groups[condition]
         for trait in traits:
-            cell = _cell(pairs, group, trait, labels[trait], "Feces", condition)
+            cell = _cell(pairs, group, trait, labels[trait], STOOL_BODY_SITE, condition)
             values = pairs.loc[group.index, trait]
             if by_study:
                 values = values.groupby(level="study_id", sort=True).mean()

@@ -1,7 +1,17 @@
 {
-  "protocol": "study-split-selection-v1",
-  "issue": 854,
-  "declared": "2026-10-22 before any new real-data execution; historical corpus inspection disclosed",
+  "protocol": "study-split-selection-v2",
+  "issue": 1076,
+  "amends": {
+    "protocol": "study-split-selection-v1",
+    "path": "methods/study_split_selection_protocol_v1.json",
+    "sha256": "94e5bcec0e93ce0bfa1b5ae80a2d7fe2ef3737d4e07b9f09483f5d5baaab7a18"
+  },
+  "declared": "2026-11-10 implementation of the owner's 2026-10-25 phenotype-primary decision; a post-results amendment, not retrospective preregistration",
+  "known_results": {
+    "declared_after_results": ["off", "phenotype"],
+    "source": "methods/cellulose_decr_selection_scan_protocol_v2.json#/amendments/0/known_when_amended",
+    "limitations": "The historical corpus had already been inspected, and both off and phenotype selection-scan results were known as disclosed in the cited amendment. That declaration identifies the recorded off evidence and the phenotype result used outside the repository's recorded evidence. This amendment makes no assertion that study-split results were unseen. It changes the scope roles and reporting contract, not the within-scope statistical rules."
+  },
   "splits": 20,
   "seed": 20261023,
   "training_fraction": 0.5,
@@ -9,9 +19,10 @@
   "unit": "whole study, all experiments and signatures kept together",
   "population": "disease_vs_healthy_tier1_2_subject_controls",
   "direction_basis": "disease_vs_comparison",
-  "primary_strain_rollup": "off",
-  "sensitivity_strain_rollup": "phenotype",
-  "scope_reporting": "off is the historical-lead/talk scope; phenotype is a declared sensitivity; report each separately without choosing a favorable scope",
+  "primary_strain_rollup": "phenotype",
+  "sensitivity_strain_rollups": ["off"],
+  "absent_means": "off",
+  "scope_reporting": "side_by_side",
   "min_studies_per_condition_per_partition": 3,
   "top_decreasing_traits": 10,
   "trait_rule": "training Noel sign screen: tested and down > up; p ascending, scored studies descending, trait ID ascending; no forced cellulose",

@@ -285,13 +285,17 @@ def test_declared_core_file_cannot_disappear_from_publication_inputs(
     sources = sources_for_stage(tmp_path, monkeypatch)
     path = add_external_inputs(sources, tmp_path / "external", monkeypatch)[role]
     original_bind = source_module.bind_recorded_hashes
+    comparison = Path(sources.comparison.manifest_path)
+    comparison_digest = file_sha256(comparison)
 
     def change_type() -> None:
         path.unlink()
         if mutation == "directory":
             path.mkdir()
 
-    def opened(_path: Path) -> VerifiedSources:
+    def opened(comparison_path: Path, *, expected_sha256: str | None = None) -> VerifiedSources:
+        assert comparison_path == comparison
+        assert expected_sha256 == comparison_digest
         if timing == "after_open":
             change_type()
         return sources
@@ -309,7 +313,7 @@ def test_declared_core_file_cannot_disappear_from_publication_inputs(
     scratch = tmp_path / "scratch"
     with pytest.raises((FileNotFoundError, IsADirectoryError)):
         stage.run_table(Path(sources.comparison.manifest_path), output, scratch=scratch)
-    checked.assert_called_once()
+    checked.assert_called_once_with(comparison, expected_sha256=comparison_digest)
     assert not output.parent.exists()
     assert not scratch.exists()
 

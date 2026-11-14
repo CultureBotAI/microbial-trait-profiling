@@ -14,6 +14,32 @@ from matplotlib.patches import Patch
 from scipy import stats
 
 from mtp.composition_denominators import load_retained_profiles, trait_fractions
+from mtp.trait_key_policy import FACULTATIVE_RAW_LABEL, FACULTATIVE_UNION_LABEL
+
+
+def resolve_facultative_display_label(policy: str = "phenotype") -> str:
+    """Resolve the declared display policy; historical raw mode must be explicit."""
+    if policy in {"phenotype", "facultative_union_v1"}:
+        return FACULTATIVE_UNION_LABEL
+    if policy in {"off", "raw_object_v1"}:
+        return FACULTATIVE_RAW_LABEL
+    raise ValueError(f"Unknown facultative label policy: {policy}")
+
+
+def normalize_facultative_labels(frame: pd.DataFrame, policy: str = "phenotype") -> pd.DataFrame:
+    """Accept either recorded label without changing trait IDs, values or guild membership."""
+    label = resolve_facultative_display_label(policy)
+    result = frame.copy()
+    for column in ("trait", "trait_label", "object_name"):
+        if column in result:
+            result[column] = result[column].replace(
+                {
+                    FACULTATIVE_RAW_LABEL: label,
+                    FACULTATIVE_UNION_LABEL: label,
+                }
+            )
+    return result
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VIS_DIR = REPO_ROOT / "trait-visualization"
@@ -49,7 +75,8 @@ SLATE_500 = "#64748b"
 SLATE_700 = "#334155"
 SLATE_900 = "#0f172a"
 TRAIT_COLORS = {
-    "facultatively aerobic": "#0072b2",
+    FACULTATIVE_RAW_LABEL: "#0072b2",
+    FACULTATIVE_UNION_LABEL: "#0072b2",
     "cellulose catabolic process": CELLULOSE_COLOR,
     "coccus shaped": "#009e73",
     "sphere shaped": "#cc79a7",
@@ -58,9 +85,9 @@ TRAIT_COLORS = {
 }
 
 
-def read_tsv(path: Path, **kwargs: object) -> pd.DataFrame:
+def read_tsv(path: Path, *, policy: str = "phenotype", **kwargs: object) -> pd.DataFrame:
     """Read a local TSV file."""
-    return pd.read_csv(path, sep="\t", **kwargs)
+    return normalize_facultative_labels(pd.read_csv(path, sep="\t", **kwargs), policy)
 
 
 def clean_text(value: object) -> str:
@@ -675,7 +702,16 @@ def plot_direction_specificity(
             alpha=0.84,
             label=group_label,
         )
-        ax.bar_label(bars, labels=[f"{v:.1f}%" for v in group["positive_z_rate"] * 100], padding=3)
+        ax.bar_label(
+            bars,
+            labels=[
+                f"{float(row['positive_z_rate']) * 100:.1f}%"
+                if row["p_value_type"] == "nominal"
+                else "not tested"
+                for row in group.to_dict("records")
+            ],
+            padding=3,
+        )
     ax.set_xticks([0, 1], ["Increased", "Decreased"])
     ax.set_ylabel("Profiles with cellulose z > 0 (%)")
     ax.set_title("PD vs other fecal profiles", fontweight="bold")
@@ -688,11 +724,25 @@ def plot_direction_specificity(
     n_directions = int(
         pd_vs_other.loc[pd_vs_other["p_value_type"].eq("nominal"), "direction"].nunique()
     )
+    direction_noun = "direction" if n_directions == 1 else "directions"
+    if dec_pd.p_value_type == "nominal":
+        odds_ratio = (
+            f"OR={dec_pd.pd_vs_other_positive_z_odds_ratio:.2f}"
+            if not np.isnan(dec_pd.pd_vs_other_positive_z_odds_ratio)
+            else "OR not estimable"
+        )
+        fisher_label = (
+            f"nominal Fisher p={dec_pd.pd_vs_other_fisher_p:.3f}"
+            if np.isfinite(dec_pd.pd_vs_other_fisher_p)
+            else "Fisher p unavailable"
+        )
+        comparison_label = f"Decreased PD vs other feces:\n{odds_ratio}, {fisher_label}"
+    else:
+        comparison_label = "PD vs other feces:\nDecreased comparison not tested"
     ax.text(
         0.98,
         0.05,
-        f"Decreased PD vs other feces:\nOR={dec_pd.pd_vs_other_positive_z_odds_ratio:.2f}, "
-        f"nominal Fisher p={dec_pd.pd_vs_other_fisher_p:.3f} ({n_directions} directions tested)",
+        f"{comparison_label} ({n_directions} {direction_noun} tested)",
         transform=ax.transAxes,
         ha="right",
         va="bottom",
@@ -760,9 +810,10 @@ def plot_pd_trait_lollipop(summary: pd.DataFrame, output_path: Path) -> None:
 def plot_cytoscape_highlight(pd_display: pd.DataFrame, output_path: Path) -> None:
     """Plot focused Cytoscape-style PD-to-trait-to-feces highlights."""
     frame = pd_display[pd_display["body_site"].eq(FECES)].copy()
+    frame = normalize_facultative_labels(frame)
     directions = ["increased", "decreased"]
     trait_order = [
-        "facultatively aerobic",
+        resolve_facultative_display_label(),
         "cellulose catabolic process",
         "coccus shaped",
         "sphere shaped",
@@ -1217,11 +1268,22 @@ def write_interpretations(
         f"{n_non_intercept_terms} of the {len(displayed_model)} plotted cellulose-z terms "
         f"{availability_verb} a nominal test"
     )
+    tested_term_description = (
+        "This nominal p is for the only non-intercept model term tested in the figure"
+        if n_non_intercept_terms == 1
+        else "This is the interaction's nominal p, one of "
+        f"{n_non_intercept_terms} non-intercept model {term_noun} tested in the figure"
+    )
+    model_test_inventory = (
+        "the only nominal term in `pd_cellulose_interaction_model.tsv`, "
+        f"which has {n_outcomes} outcomes"
+        if n_model_tests == 1
+        else f"{n_model_tests} {model_term_noun} across {n_outcomes} outcomes in "
+        "`pd_cellulose_interaction_model.tsv`"
+    )
     interaction_context = (
-        f", and the interval {interval} zero. This is the interaction's nominal p, one of "
-        f"{n_non_intercept_terms} non-intercept model {term_noun} tested in the figure "
-        f"({n_model_tests} {model_term_noun} across {n_outcomes} outcomes in "
-        "`pd_cellulose_interaction_model.tsv`), not corrected for "
+        f", and the interval {interval} zero. {tested_term_description} "
+        f"({model_test_inventory}), not corrected for "
         if interaction_tested
         else f". The interaction was not tested; {plotted_scope} "
         f"({n_model_tests} of the {len(model_table)} terms across {n_outcomes} outcomes in "
@@ -1229,9 +1291,7 @@ def write_interpretations(
     )
     model_test_scope = (
         f"uncorrected across {n_non_intercept_terms} non-intercept model {term_noun} plotted in "
-        f"`pd_cellulose_enrichment_test.png` and "
-        f"{n_model_tests} {model_term_noun} across {n_outcomes} outcomes in "
-        "`pd_cellulose_interaction_model.tsv`"
+        f"`pd_cellulose_enrichment_test.png` and {model_test_inventory}"
         if interaction_tested
         else f"{plotted_scope} in `pd_cellulose_enrichment_test.png`; "
         f"{n_model_tests} of the {len(model_table)} table terms {model_availability_verb} "
@@ -1270,21 +1330,41 @@ def write_interpretations(
     direction_scope = (
         f"uncorrected across {n_directions} {direction_noun} x {n_tests_per_direction} tests = "
         f"{n_direction_tests} nominal tests in `pd_cellulose_vs_other_feces_summary.tsv`"
+        if n_direction_tests == n_directions * n_tests_per_direction and n_direction_tests > 0
+        else f"uncorrected across {n_direction_tests} nominal "
+        f"{'test' if n_direction_tests == 1 else 'tests'} "
+        "in `pd_cellulose_vs_other_feces_summary.tsv`"
     )
-    odds_ratio_text = (
-        f"an odds ratio of `{dec_vs_other.pd_vs_other_positive_z_odds_ratio:.2f}`"
-        if not np.isnan(dec_vs_other.pd_vs_other_positive_z_odds_ratio)
-        else "an odds ratio that is not estimable"
-    )
-    comparison_test = (
-        f"The decreased-direction PD-vs-other Fisher test gives {odds_ratio_text} and "
-        f"`nominal p={dec_vs_other.pd_vs_other_fisher_p:.3g}` "
-        f"(two-sided Mann-Whitney `nominal p={dec_vs_other.pd_vs_other_mannwhitney_p:.3g}`; "
-        f"{direction_scope}). It treats the profiles of one "
-        "study as independent, so the study-clustered model below is the better guide."
-        if dec_vs_other.p_value_type == "nominal"
-        else f"The decreased-direction PD-vs-other comparison was not tested ({direction_scope})."
-    )
+    tested_comparisons = [
+        (direction, row)
+        for direction, row in (("decreased", dec_vs_other), ("increased", inc_vs_other))
+        if row.p_value_type == "nominal"
+    ]
+    if tested_comparisons:
+        tested_direction, tested_comparison = tested_comparisons[0]
+        odds_ratio_text = (
+            f"an odds ratio of `{tested_comparison.pd_vs_other_positive_z_odds_ratio:.2f}`"
+            if not np.isnan(tested_comparison.pd_vs_other_positive_z_odds_ratio)
+            else "an odds ratio that is not estimable"
+        )
+        fisher_text = (
+            f"`nominal p={tested_comparison.pd_vs_other_fisher_p:.3g}`"
+            if np.isfinite(tested_comparison.pd_vs_other_fisher_p)
+            else "Fisher p unavailable"
+        )
+        mannwhitney_text = (
+            f"two-sided Mann-Whitney `nominal p={tested_comparison.pd_vs_other_mannwhitney_p:.3g}`"
+            if np.isfinite(tested_comparison.pd_vs_other_mannwhitney_p)
+            else "Mann-Whitney p unavailable"
+        )
+        comparison_test = (
+            f"The {tested_direction}-direction PD-vs-other Fisher test gives {odds_ratio_text} "
+            f"and {fisher_text} ({mannwhitney_text}; {direction_scope}). It treats the "
+            "profiles of one study as independent, so the study-clustered model below "
+            "is the better guide."
+        )
+    else:
+        comparison_test = "Neither direction supplies a nominal PD-vs-other test."
 
     lines = [
         "# Parkinson's Disease and Cellulose Catabolic Process",

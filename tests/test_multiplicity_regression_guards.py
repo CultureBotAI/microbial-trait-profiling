@@ -145,8 +145,14 @@ def test_non_rows_recorded_hash_checks(
     )
     before = file_sha256(path)
     parsed = json.loads(path.read_text())
+    comparison = Path(sources.comparison.manifest_path)
+    comparison_digest = file_sha256(comparison)
 
-    def open_then_change_metadata(_path: Path) -> source_module.VerifiedSources:
+    def open_then_change_metadata(
+        comparison_path: Path, *, expected_sha256: str | None = None
+    ) -> source_module.VerifiedSources:
+        assert comparison_path == comparison
+        assert expected_sha256 == comparison_digest
         path.write_text(path.read_text() + "\n ", encoding="utf-8")
         assert json.loads(path.read_text()) == parsed
         assert file_sha256(path) != before

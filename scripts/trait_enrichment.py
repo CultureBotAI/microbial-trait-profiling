@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import csv
 import gzip
+import hashlib
 import math
 from collections import defaultdict
 from collections.abc import Sequence
@@ -54,6 +55,18 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         description="Trait enrichment or depletion report with hypergeometric p-values"
     )
     parser.add_argument("--core-run", type=Path, help="Verified core workflow run manifest")
+    parser.add_argument(
+        "--background-scope",
+        choices=("all_matrix", "profile_corpus"),
+        default="all_matrix",
+        help="ORA reference population: all matrix rows or an explicitly supplied corpus",
+    )
+    parser.add_argument(
+        "--corpus-taxa-file",
+        type=Path,
+        default=None,
+        help="Newline taxon IDs or TSV with a taxon_id column",
+    )
     parser.add_argument("--input", type=Path, help="Path to trait TSV file")
     parser.add_argument("--output", type=Path, required=True, help="Path to write text report")
     parser.add_argument(
@@ -226,6 +239,29 @@ def open_input_text(path: Path) -> TextIO:
     return path.open("r", encoding="utf-8", newline="")
 
 
+def read_corpus_taxa(path: Path | None) -> tuple[set[str], str]:
+    """Parse and hash one corpus buffer without inferring profile eligibility."""
+    if path is None:
+        raise ValueError("profile_corpus requires --corpus-taxa-file")
+    if not path.is_file():
+        raise ValueError("corpus taxon file is missing or is not a regular file")
+    content = path.read_bytes()
+    lines = [line for line in content.decode("utf-8").splitlines() if line.strip()]
+    if not lines:
+        raise ValueError("corpus taxon file is empty")
+    header = lines[0].split("\t")
+    if "taxon_id" in header:
+        records = csv.DictReader(lines, delimiter="\t")
+        taxa = {(row.get("taxon_id") or "").strip() for row in records}
+    elif any("\t" in line for line in lines):
+        raise ValueError("corpus TSV requires a taxon_id column")
+    else:
+        taxa = {line.strip() for line in lines}
+    if not taxa or "" in taxa:
+        raise ValueError("corpus taxon file has empty taxon_id values")
+    return taxa, hashlib.sha256(content).hexdigest()
+
+
 def main(argv: list[str] | None = None) -> None:
     from mtp.workflow.consumers import (
         open_core_bundle,
@@ -234,6 +270,13 @@ def main(argv: list[str] | None = None) -> None:
     )
 
     args = parse_args(argv)
+    if args.background_scope == "all_matrix" and args.corpus_taxa_file is not None:
+        raise ValueError("--corpus-taxa-file requires --background-scope profile_corpus")
+    corpus_taxa, corpus_sha256 = (
+        read_corpus_taxa(args.corpus_taxa_file)
+        if args.background_scope == "profile_corpus"
+        else (None, None)
+    )
     statistic_key = "fdr_q" if args.fdr else "p_value"
     statistic_label = "FDR q" if args.fdr else "nominal p"
     hits_label = "Significant hits" if args.fdr else "Nominal hits"
@@ -378,11 +421,21 @@ def main(argv: list[str] | None = None) -> None:
     taxa_matrix_sha256 = file_sha256(args.taxa_matrix)
     background_counts: dict[str, int] = dict.fromkeys(trait_columns, 0)
     matrix_taxa_total = 0
+    corpus_rows = 0
+    observed_taxa: set[str] = set()
     with open_input_text(args.taxa_matrix) as m_fh:
         m_reader = csv.DictReader(m_fh, delimiter="\t")
         m_fieldnames = set(m_reader.fieldnames or [])
+        if corpus_taxa is not None and "taxon_id" not in m_fieldnames:
+            raise ValueError("corpus background requires matrix taxon_id column")
         for row_idx, m_row in enumerate(m_reader, start=2):
             matrix_taxa_total += 1
+            if corpus_taxa is not None:
+                taxon = m_row["taxon_id"]
+                if taxon not in corpus_taxa:
+                    continue
+                observed_taxa.add(taxon)
+                corpus_rows += 1
             for t in trait_columns:
                 if t not in m_fieldnames:
                     continue
@@ -396,6 +449,15 @@ def main(argv: list[str] | None = None) -> None:
 
     background_taxa_universe = matrix_taxa_total
     bg_mode = f"TaxaMatrix ({args.taxa_matrix.name})"
+    if corpus_taxa is not None:
+        unknown = corpus_taxa - observed_taxa
+        if unknown:
+            raise ValueError(f"Unknown corpus taxon_id values: {sorted(unknown)}")
+        background_taxa_universe = corpus_rows
+        bg_mode = (
+            f"ProfileCorpusTaxaMatrix ({args.taxa_matrix.name}; "
+            f"corpus={args.corpus_taxa_file.name})"
+        )
 
     # Validate profile draws and background counts against reference universe M
     max_k_trait = max(background_counts.values(), default=0)
@@ -427,6 +489,23 @@ def main(argv: list[str] | None = None) -> None:
     candidate_traits = [t for t in trait_columns if background_counts[t] > 0]
     testable_profiles_list = [r for r in rows if r["n_taxa"] > 0]
     testable_profile_count = len(testable_profiles_list)
+
+    # A zero count can also be impossible when the draw includes nearly all taxa.
+    # Validate every tested cell before computing probabilities or writing outputs.
+    for row in testable_profiles_list:
+        n_draws = row["n_taxa"]
+        for trait in candidate_traits:
+            count = row["traits"].get(trait, 0)
+            trait_total = background_counts[trait]
+            lower = max(0, n_draws - (background_taxa_universe - trait_total))
+            upper = min(n_draws, trait_total)
+            if not lower <= count <= upper:
+                raise ValueError(
+                    f"Profile ({row['study_id']}, {row['experiment_id']}, {row['inc_dec']}) "
+                    f"trait '{trait}' count k={count} is outside hypergeometric support "
+                    f"[{lower}, {upper}] (M={background_taxa_universe}, "
+                    f"K={trait_total}, N={n_draws})"
+                )
 
     # Hypergeometric testing
     all_hits: list[dict[str, Any]] = []
@@ -535,6 +614,9 @@ def main(argv: list[str] | None = None) -> None:
                 out_fh.write(f"# Max-Fold: {args.max_fold}\n")
             out_fh.write(f"# Max-Traits-Per-Row-Report: {args.max_traits_per_row}\n")
             out_fh.write(f"# Background-Mode: {bg_mode}\n")
+            if corpus_taxa is not None:
+                out_fh.write(f"# Background-Scope: {args.background_scope}\n")
+                out_fh.write(f"# Corpus-Taxa-SHA256: {corpus_sha256}\n")
             out_fh.write(f"# Total-Profiles-Input: {len(rows)}\n")
             out_fh.write(f"# Testable-Profiles: {testable_profile_count}\n")
             out_fh.write(f"# Background-Taxa-Universe-M: {background_taxa_universe}\n")
@@ -604,6 +686,9 @@ def main(argv: list[str] | None = None) -> None:
             else:
                 out_fh.write(f"# Max-Fold: {args.max_fold}\n")
             out_fh.write(f"# Background-Mode: {bg_mode}\n")
+            if corpus_taxa is not None:
+                out_fh.write(f"# Background-Scope: {args.background_scope}\n")
+                out_fh.write(f"# Corpus-Taxa-SHA256: {corpus_sha256}\n")
             out_fh.write(f"# Total-Profiles-Input: {len(rows)}\n")
             out_fh.write(f"# Testable-Profiles: {testable_profile_count}\n")
             out_fh.write(f"# Background-Taxa-Universe-M: {background_taxa_universe}\n")
@@ -676,6 +761,8 @@ def main(argv: list[str] | None = None) -> None:
     report_lines.append(f"Tests performed: {len(all_hits)}")
     report_lines.append(f"{hits_label}: {len(significant_hits)}")
     report_lines.append(f"Result status: {result_status}")
+    if corpus_taxa is not None:
+        report_lines.append(f"background_scope={args.background_scope}; {bg_mode}")
     report_lines.append("")
 
     # Group significant hits for report

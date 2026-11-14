@@ -1,5 +1,5 @@
 {
-  "version": "190-native-v2",
+  "version": "190-native-v3",
   "composition_source_commit": "b931b3abb70f850d1c7318433557169286f6c64d",
   "ora_source_commit": "3ae7ac847d5d1ebc3bdd388bb2793d5e60bfdc81",
   "corpus": "Reuse the reconciled 190-v2 human paired corpus, rule-declared exclusion panel and exact scopes; not a reproduction of differently filtered published outputs",
@@ -11,7 +11,9 @@
     "selection": "All supported variable non-MediaDive traits, independently selected before and after; no top-N cutoff",
     "reference": "Refit population mean and population SD of log1p(1000*fraction) within each scope and scenario; export fixed baseline SD comparison separately",
     "test": "Two-sided one-sample t test across experiment contrasts; fewer than three pairs or contrast SD close to zero (absolute tolerance 1e-8) is untestable",
-    "family": "BH over finite p-values of all selected traits per scenario/scope; preserve native q=1 for untestable selected traits, missing p and explicit status",
+    "family": "BH over all selected traits per scenario/scope, including untestable selected traits padded at p=1 inside the correction vector; preserve their reported missing p, native q=1 and explicit status",
+    "family_size_field": "family_selected_traits",
+    "untestable_correction_p": 1.0,
     "weighting": "Native: equal experiments. Shared transformed comparison: equal experiments within study then equal studies, separately labeled"
   },
   "ora": {

@@ -380,6 +380,7 @@ def test_recipe_stops_before_writing_when_evidence_is_stale(
     monkeypatch.setattr(module, "OUTPUT_DIR", tmp_path)
     monkeypatch.setattr(module, "load_profile_metadata", metadata)
     fingerprint_inputs_as(monkeypatch, module)
+    monkeypatch.setattr(sys, "argv", ["recipe"])
 
     with pytest.raises(ValueError, match=r"^[^;]*not current PD fecal profiles"):
         module.main()
@@ -401,6 +402,7 @@ def test_contributors_stop_when_the_heatmap_trait_table_is_stale(
     monkeypatch.setattr(contributors, "OUTPUT_DIR", tmp_path)
     monkeypatch.setattr(contributors, "load_profile_metadata", metadata)
     fingerprint_inputs_as(monkeypatch, contributors)
+    monkeypatch.setattr(sys, "argv", ["pd-contributors"])
 
     with pytest.raises(ValueError, match=r"heatmap_traits\.tsv does not match .*coccus"):
         contributors.main()

@@ -14,8 +14,10 @@ hard-coded. Each representation and test has a separately declared full family,
 BY as the primary correction and BH as a comparison. Both the full screen and
 the focal table retain these primary full-family values in `q_by` and `q_bh`,
 with `family_size` identifying the full number of candidates. The focal table's
-`full_family_id` names that source family; its `family_id` names the additional
-six-trait family, whose results appear only in `q_by_six_trait`,
+generic `family_id` and `hypothesis_id` name that full family and its exact
+retained member. `full_family_id` and `full_hypothesis_id` are explicit aliases.
+The additional six-trait family has separate `family_id_six_trait` and
+`hypothesis_id_six_trait` identities; its results appear only in `q_by_six_trait`,
 `q_bh_six_trait`, and `family_size_six_trait`. The six-trait BH comparison uses
 the focal Table 1 membership and procedure within this sensitivity's declared
 representation and test; it is not the same estimand or population as every
@@ -29,6 +31,51 @@ unsupported or insufficient fits. Untestable candidates occupy their family
 slots but receive no reported p-value or q-value; internal
 correction uses p=1 for these slots. Comparisons across these sensitivity families
 are exploratory and are not independent replication.
+
+## Focal export contract and historical migration
+
+New `focal_traits.tsv` rows carry
+`export_contract_version=presence-depth-focal-export-v2`. The same value is
+recorded as `focal_export_contract_version` in `provenance.json` and stated in
+the generated README. This export version is separate from scientific protocol
+`presence-depth-study-v2`: no family definition, member inventory, p-value,
+correction procedure, q-value or family size changes. The producer projects
+copies of the focal rows only after the full and six-trait corrections have
+completed; it does not rerun either correction or modify its input rows.
+
+| Columns | New version | Historical unversioned exports |
+| --- | --- | --- |
+| `family_id`, `hypothesis_id` | Full family and exact retained hypothesis; align with generic q-values and size | Six-trait family and focal trait slug; do not align with generic full-family q-values and size |
+| `full_family_id`, `full_hypothesis_id` | Explicit aliases of the generic full identity | Only `full_family_id` was recorded; confirm exact full membership using `feature_id` and the saved declaration |
+| `q_by`, `q_bh`, `family_size` | Full-family correction values | Full-family correction values |
+| `family_id_six_trait`, `hypothesis_id_six_trait` | Exact six-trait correction identity | Not recorded separately; the generic IDs have this meaning |
+| `q_by_six_trait`, `q_bh_six_trait`, `family_size_six_trait` | Six-trait correction values | Six-trait correction values |
+
+`full_family_membership=member` identifies a retained full-family member even
+when it is untestable and its reported p/q values are unavailable. A focal
+feature absent from the retained vocabulary instead has
+`full_family_membership=absent_from_retained_vocabulary`: `hypothesis_id` and
+`full_hypothesis_id` are null in the export mapping and blank in TSV. Its full
+family ID and size remain context, not a claim that it is a member. The fallback
+biological `feature_id` does not manufacture a full-family hypothesis. The
+separate six-trait identity still joins to its declared unavailable slot;
+unavailable probabilities remain null/blank rather than zero.
+
+For each full member, join `(family_id, hypothesis_id)` to the saved
+family's member inventory and to its correction record's embedded
+`family.family_id` and `results[].hypothesis_id`. Use
+`(family_id_six_trait, hypothesis_id_six_trait)` for the separate six-trait
+correction. Absent full members have explicit nonmembership instead of a
+fabricated full correction join.
+
+Published unversioned tables and their bound manifests are not rewritten. A
+consumer migrating across versions must distinguish absent legacy markers from
+the explicit new marker, use the corresponding identity mapping, and refuse
+unknown versions or contradictory aliases. This producer change adds no generic
+legacy/new table reader. New focal headers and identity values, version metadata,
+README text and output hashes change; the full screen and composition output
+contracts and scientific correction values remain unchanged. Any historical
+table migration or regeneration requires a separate reviewed plan.
 
 For each profile, deduplicate reported taxon IDs. Reconstruct raw counts by
 summing their consumed matrix vectors, and require exact agreement with the core

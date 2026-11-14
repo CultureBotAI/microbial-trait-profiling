@@ -12,11 +12,13 @@ from types import SimpleNamespace
 import pytest
 
 from mtp import integrated_evidence
+from mtp.datamodel.workflow_pydantic import WorkflowRun
 from mtp.paths import REPO_ROOT, file_sha256
 from mtp.workflow import comparison
 from mtp.workflow.arms import __main__ as cli
 from mtp.workflow.arms import ilyas, jed, noel, runtime
 from mtp.workflow.arms.types import ArmContext, Command
+from workflow_provenance_fixtures import routing_core
 
 Call = tuple[str, tuple[object, ...], dict[str, object]]
 
@@ -204,8 +206,25 @@ def context(tmp_path: Path) -> ArmContext:
 
 def _require_context_option() -> None:
     options = fields(ArmContext)
-    assert options[-1].name == "provenance_root", "Append the option after existing context fields"
-    assert options[-1].default is None
+    historical_prefix = (
+        "repository",
+        "manifest",
+        "output",
+        "inputs",
+        "products",
+        "code_commit",
+        "replicates",
+        "seed",
+        "figures",
+        "contrast_population",
+        "direction_basis",
+        "strain_rollup",
+        "provenance_root",
+    )
+    assert tuple(option.name for option in options[: len(historical_prefix)]) == historical_prefix
+    assert options[len(historical_prefix) - 1].default is None
+    assert options[len(historical_prefix)].name == "trait_key_policy"
+    assert options[len(historical_prefix)].default is None
 
 
 def test_default_noel_plan_has_no_root_flag_and_explicit_none_is_identical(
@@ -287,18 +306,12 @@ def test_comparison_forwards_its_root_to_the_real_integrated_parser(
     products = {
         "count_profiles": sources / "study_trait_profiles_wide.tsv",
         "ora_profiles": sources / "study_trait_profiles_ora_wide.tsv",
+        "experiments": sources / "experiments.tsv",
+        "raw_dump": sources / "full_dump.csv",
     }
     for path in products.values():
-        path.write_text("fixture profile bytes for routing only\n", encoding="utf-8")
-    core = SimpleNamespace(
-        run_id="fixture-core",
-        contrast_population="all_paired",
-        direction_basis="group_1_vs_group_0",
-        artifacts=[
-            SimpleNamespace(product_id=name, path=str(path.resolve()))
-            for name, path in products.items()
-        ],
-    )
+        path.write_text("fixture core product bytes for routing only\n", encoding="utf-8")
+    core = routing_core(paths["core"], products, run_id="fixture-core")
     arms = {
         path: SimpleNamespace(
             arm=name,
@@ -310,8 +323,17 @@ def test_comparison_forwards_its_root_to_the_real_integrated_parser(
         for name, path in paths.items()
         if name != "core"
     }
-    monkeypatch.setattr(comparison, "verify_core_run", lambda _path: core)
-    monkeypatch.setattr(comparison, "verify_arm", lambda path: arms[path])
+
+    def checked_core(path: Path, *, expected_sha256: str | None = None) -> WorkflowRun:
+        assert expected_sha256 == file_sha256(path)
+        return core
+
+    def checked_arm(path: Path, *, expected_sha256: str | None = None) -> SimpleNamespace:
+        assert expected_sha256 == file_sha256(path)
+        return arms[path]
+
+    monkeypatch.setattr(comparison, "verify_core_run", checked_core)
+    monkeypatch.setattr(comparison, "verify_arm", checked_arm)
     monkeypatch.setattr(comparison, "repository_state", lambda _root: ("a" * 40, False))
     monkeypatch.setattr(
         comparison, "recorded_output", lambda arm, step, name: sources / arm.arm / step / name
@@ -379,18 +401,13 @@ def test_noel_execution_passes_the_normalized_root_to_its_context(
 ) -> None:
     _root_keyword(runtime.execute_arm)
     _require_context_option()
-    bundle = SimpleNamespace(
-        run=SimpleNamespace(
-            artifacts=[SimpleNamespace(product_id=name) for name in context.products],
-            parameters=[],
-            contrast_population="all_paired",
-            direction_basis="group_1_vs_group_0",
-        ),
-        path=lambda product: context.products[product],
-    )
     for path in (context.manifest, *context.products.values()):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text("synthetic routing input\n", encoding="utf-8")
+    bundle = SimpleNamespace(
+        run=routing_core(context.manifest, context.products),
+        path=lambda product: context.products[product],
+    )
     monkeypatch.setattr(runtime, "open_core_bundle", lambda *_args, **_kwargs: bundle)
     monkeypatch.setattr(runtime, "preflight_consumer_outputs", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(runtime, "repository_state", lambda _root: ("a" * 40, False))

@@ -204,7 +204,10 @@ def test_manifest_native_influence_policy_matches_four_selected_bh_families() ->
             else:
                 assert row[f"{population}_q"] == pytest.approx(q, rel=1e-12, abs=1e-15)
     spec = get_standard_analysis_spec("historical_native_taxon_influence_experiment_weighted_v1")
-    assert (
-        spec.multiple_testing_policy
-        == "BH_q_within_selected_native_influence_families_per_scenario_scope_tail"
+    assert spec.multiple_testing_policy == (
+        "BH_q_in_mt-supp-native-influence-composition_selected_per_scenario_scope_and_"
+        "mt-supp-native-influence-ora-enrichment_mt-supp-native-influence-ora-depletion_"
+        "selected_per_scenario_scope_tail_plus_mt-supp-native-influence-shared-sign_"
+        "executed_focal_per_scenario_scope_reference_or_background_and_"
+        "before_after_before_matched_after_matched_matched_change_population"
     )

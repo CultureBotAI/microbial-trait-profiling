@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 from collections.abc import Callable
-from dataclasses import replace
+from dataclasses import asdict, replace
 from itertools import combinations
 from pathlib import Path
 
@@ -811,6 +812,59 @@ def test_eligibility_partitions_every_study(tmp_path: Path) -> None:
         assert eligible + int(str(row["studies_entirely_excluded"])) == total
         assert 0 <= int(str(row["studies_partially_observed"])) <= eligible
     assert any(int(str(row["studies_entirely_excluded"])) > 0 for row in strata)
+
+
+def test_writer_labels_export_schema_without_replacing_scientific_version(tmp_path: Path) -> None:
+    """Write a complete small result before asserting the additive export label (#1487)."""
+    profiles = _corpus()
+    snapshot = {
+        "fixture": "_corpus(studies=12)",
+        "traits": list(TRAITS),
+        "min_studies": 1,
+        "rng": "not used by this deterministic fixture or log-ratio analysis",
+        "profiles": [asdict(profile) for profile in profiles],
+    }
+    input_bytes = (json.dumps(snapshot, sort_keys=True, indent=2) + "\n").encode("utf-8")
+    (tmp_path / "synthetic_profiles.json").write_bytes(input_bytes)
+    pairs = complete_pairs(profiles, TRAITS)
+    rows = run_scenarios(pairs, TRAITS, min_studies=1)
+    overall, strata = eligibility_tables(pairs, TRAITS, {})
+    stratum_influence, skipped = leave_one_stratum_out(pairs, TRAITS, min_studies=1)
+    output_dir = tmp_path / "log_ratio_output"
+    written = write_outputs(
+        rows,
+        leave_one_study_out(pairs, TRAITS),
+        overall,
+        strata,
+        output_dir,
+        {
+            "profile_sha256": hashlib.sha256(input_bytes).hexdigest(),
+            "complete_pairs": len(pairs),
+            "studies": len({pair.study_id for pair in pairs}),
+        },
+        population=population_comparison(rows, TRAITS),
+        stratum_influence=stratum_influence,
+        strata_below_minimum=skipped,
+        label_counts=label_accounting(pairs),
+    )
+    assert {path.name for path in written} == {
+        "sensitivity_results.tsv",
+        "leave_one_study_out.tsv",
+        "eligibility_by_ratio.tsv",
+        "eligibility_by_stratum.tsv",
+        "population_sensitivity.tsv",
+        "leave_one_stratum_out.tsv",
+        "sensitivity_status.json",
+        "sensitivity_report.md",
+    }
+    assert all(path.is_file() and path.stat().st_size > 0 for path in written)
+    assert any(row.p_value is not None and 0 < row.p_value < 1 for row in rows)
+    assert any(row.q_value is not None and 0 < row.q_value <= 1 for row in rows)
+    status = json.loads((output_dir / "sensitivity_status.json").read_text(encoding="utf-8"))
+    assert status["version"] == "log-ratio-sensitivity-v1"
+    assert status["protocol"] == "methods/table1_log_ratio_sensitivity_protocol.json"
+    assert status["protocol_sha256"] == hashlib.sha256(PROTOCOL_PATH.read_bytes()).hexdigest()
+    assert status.get("export_schema_version") == "log-ratio-sensitivity-output-v1"
 
 
 def test_family_status_keeps_the_two_families_of_one_scenario_apart(tmp_path: Path) -> None:

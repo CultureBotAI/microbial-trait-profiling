@@ -18,10 +18,12 @@ from types import ModuleType, SimpleNamespace
 import pytest
 
 from mtp import integrated_evidence, provenance_paths
+from mtp.datamodel.workflow_pydantic import WorkflowRun
 from mtp.paths import file_sha256
 from mtp.workflow import comparison
 from mtp.workflow.arms import runtime
 from mtp.workflow.arms.types import ArmContext, Command
+from workflow_provenance_fixtures import routing_core
 
 
 @dataclass(frozen=True)
@@ -64,13 +66,7 @@ def inputs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Inputs:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text("synthetic routing input\n", encoding="utf-8")
     monkeypatch.setenv("TMPDIR", str(tmp_path))
-    core = SimpleNamespace(
-        run_id="synthetic-core",
-        contrast_population="all_paired",
-        direction_basis="group_1_vs_group_0",
-        parameters=[],
-        artifacts=[SimpleNamespace(product_id=name) for name in products],
-    )
+    core = routing_core(manifests["core"], products)
     arms = {
         path: SimpleNamespace(
             arm=name,
@@ -82,8 +78,17 @@ def inputs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Inputs:
         for name, path in manifests.items()
         if name != "core"
     }
-    monkeypatch.setattr(comparison, "verify_core_run", lambda _path: core)
-    monkeypatch.setattr(comparison, "verify_arm", lambda path: arms[path])
+
+    def checked_core(path: Path, *, expected_sha256: str | None = None) -> WorkflowRun:
+        assert expected_sha256 == file_sha256(path)
+        return core
+
+    def checked_arm(path: Path, *, expected_sha256: str | None = None) -> SimpleNamespace:
+        assert expected_sha256 == file_sha256(path)
+        return arms[path]
+
+    monkeypatch.setattr(comparison, "verify_core_run", checked_core)
+    monkeypatch.setattr(comparison, "verify_arm", checked_arm)
     monkeypatch.setattr(comparison, "artifact_path", lambda _run, product: products[product])
     monkeypatch.setattr(
         comparison, "recorded_output", lambda arm, step, name: evidence[(arm.arm, step, name)]
@@ -143,6 +148,81 @@ def invoke_comparison(inputs: Inputs, output: Path, root: Path, *, generated: bo
 
 class ReachedNextStage(Exception):
     """A valid retry reached the real wrapper's next stage, without scientific work."""
+
+
+@pytest.mark.parametrize("workflow", ["comparison", "noel"])
+def test_workflow_metadata_preflight_receives_verified_core_identities(
+    inputs: Inputs,
+    monkeypatch: pytest.MonkeyPatch,
+    workflow: str,
+) -> None:
+    """Route verified identities into the semantic reader, before output creation."""
+    output = inputs.root / f"{workflow}-metadata-output"
+    seen: list[tuple[Path, Path, Path]] = []
+
+    def capture(
+        _args: object,
+        *,
+        profile_input: Path,
+        experiments_input: Path,
+        full_dump_input: Path,
+        supplied: object,
+    ) -> dict[str, integrated_evidence.AssessmentStatus]:
+        seen.append((profile_input, experiments_input, full_dump_input))
+        assert profile_input == inputs.products["count_profiles"]
+        assert experiments_input == inputs.products["experiments"]
+        assert full_dump_input == inputs.products["raw_dump"]
+        assert isinstance(supplied, dict)
+        raise ReachedNextStage
+
+    def planner(context: ArmContext) -> list[Command]:
+        # The semantic reader is intercepted; no status or science is fabricated.
+        return [
+            Command(
+                "integrated_evidence",
+                (
+                    sys.executable,
+                    "-m",
+                    "mtp.integrated_evidence",
+                    "--core-run",
+                    str(context.manifest),
+                    "--coverage-status",
+                    str(context.products["experiments"]),
+                ),
+                (context.manifest, context.products["experiments"]),
+                (output / "integrated_evidence/result.tsv",),
+            )
+        ]
+
+    monkeypatch.setattr(integrated_evidence, "_read_assessment_statuses", capture)
+
+    def invoke() -> None:
+        if workflow == "comparison":
+            invoke_comparison(inputs, output, inputs.root)
+        else:
+            runtime.execute_arm(
+                "noel",
+                inputs.manifests["core"],
+                output,
+                planner,
+                provenance_root=inputs.root,
+            )
+
+    try:
+        with pytest.raises(ReachedNextStage):
+            invoke()
+    except TypeError as error:
+        raise AssertionError(
+            "Every workflow must forward the required verified identity paths"
+        ) from error
+    assert seen == [
+        (
+            inputs.products["count_profiles"],
+            inputs.products["experiments"],
+            inputs.products["raw_dump"],
+        )
+    ]
+    assert not output.exists()
 
 
 @pytest.mark.parametrize("workflow", ["comparison", "noel"])
@@ -503,7 +583,11 @@ def test_noel_custom_integrated_plan_checks_actual_full_screen_before_execution(
     monkeypatch.setattr(runtime, "_run_process", execute)
     monkeypatch.setattr(runtime, "_prepare_inputs", lambda *_args: [])
     monkeypatch.setattr(runtime, "_code_inventory", lambda _root: [])
-    monkeypatch.setattr(runtime, "verify_core_run", lambda _path: None)
+
+    def checked_final_core(path: Path, *, expected_sha256: str | None = None) -> None:
+        assert expected_sha256 == file_sha256(path)
+
+    monkeypatch.setattr(runtime, "verify_core_run", checked_final_core)
     monkeypatch.setattr(importlib.metadata, "distributions", lambda: ())
     if screen_outside:
         expected = producer_refusal(record, (inputs.products["ora_profiles"], screen), inputs.root)
@@ -571,6 +655,8 @@ def test_future_native_child_of_an_earlier_output_directory_is_checked(
             ["--core-run", str(inputs.manifests["core"]), "--full-screen", str(selected)],
             count_profiles=inputs.products["count_profiles"],
             ora_profiles=inputs.products["ora_profiles"],
+            experiments=inputs.products["experiments"],
+            full_dump=inputs.products["raw_dump"],
             root=inputs.root,
             planned_files=(previous_output,),
         )

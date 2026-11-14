@@ -59,7 +59,7 @@ def main() -> None:
 
     from pymongo import MongoClient
 
-    mongo = MongoClient(mongo_uri)
+    mongo: MongoClient[dict[str, object]] = MongoClient(mongo_uri)
     mdb = mongo.get_database()
     index_coll_name = f"internal__index__{COLLECTION_NAME}__{args.kind}"
     existing = index_coll_name in mdb.list_collection_names()

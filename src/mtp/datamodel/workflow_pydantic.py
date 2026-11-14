@@ -216,7 +216,7 @@ class ProductDefinition(ConfiguredBaseModel):
 
     @field_validator('id')
     def pattern_id(cls, v):
-        pattern=re.compile(r"^[A-Za-z][A-Za-z0-9_.-]*$")
+        pattern=re.compile(r"^[A-Za-z][A-Za-z0-9_.-]*(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -242,7 +242,7 @@ class ParameterDefinition(ConfiguredBaseModel):
 
     @field_validator('name')
     def pattern_name(cls, v):
-        pattern=re.compile(r"^[A-Za-z][A-Za-z0-9_]*$")
+        pattern=re.compile(r"^[A-Za-z][A-Za-z0-9_]*(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -307,7 +307,7 @@ class StepDefinition(ConfiguredBaseModel):
 
     @field_validator('id')
     def pattern_id(cls, v):
-        pattern=re.compile(r"^[A-Za-z][A-Za-z0-9_.-]*$")
+        pattern=re.compile(r"^[A-Za-z][A-Za-z0-9_.-]*(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -356,7 +356,7 @@ class WorkflowDefinition(ConfiguredBaseModel):
 
     @field_validator('id')
     def pattern_id(cls, v):
-        pattern=re.compile(r"^[A-Za-z][A-Za-z0-9_.-]*$")
+        pattern=re.compile(r"^[A-Za-z][A-Za-z0-9_.-]*(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -387,7 +387,7 @@ class FileInventoryEntry(ConfiguredBaseModel):
 
     @field_validator('sha256')
     def pattern_sha256(cls, v):
-        pattern=re.compile(r"^[0-9a-f]{64}$")
+        pattern=re.compile(r"^[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -463,7 +463,7 @@ class ArtifactInstance(ConfiguredBaseModel):
 
     @field_validator('sha256')
     def pattern_sha256(cls, v):
-        pattern=re.compile(r"^[0-9a-f]{64}$")
+        pattern=re.compile(r"^[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -594,7 +594,7 @@ class WorkflowRun(ConfiguredBaseModel):
 
     @field_validator('trait_key_policy')
     def pattern_trait_key_policy(cls, v):
-        pattern=re.compile(r"^(raw_object_v1|facultative_union_v1)$")
+        pattern=re.compile(r"^(raw_object_v1|facultative_union_v1)(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -607,7 +607,7 @@ class WorkflowRun(ConfiguredBaseModel):
 
     @field_validator('spec_sha256')
     def pattern_spec_sha256(cls, v):
-        pattern=re.compile(r"^[0-9a-f]{64}$")
+        pattern=re.compile(r"^[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -620,7 +620,7 @@ class WorkflowRun(ConfiguredBaseModel):
 
     @field_validator('definition_sha256')
     def pattern_definition_sha256(cls, v):
-        pattern=re.compile(r"^[0-9a-f]{64}$")
+        pattern=re.compile(r"^[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -633,7 +633,7 @@ class WorkflowRun(ConfiguredBaseModel):
 
     @field_validator('execution_fingerprint')
     def pattern_execution_fingerprint(cls, v):
-        pattern=re.compile(r"^[0-9a-f]{64}$")
+        pattern=re.compile(r"^[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -646,7 +646,7 @@ class WorkflowRun(ConfiguredBaseModel):
 
     @field_validator('code_sha256')
     def pattern_code_sha256(cls, v):
-        pattern=re.compile(r"^[0-9a-f]{64}$")
+        pattern=re.compile(r"^[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -659,7 +659,7 @@ class WorkflowRun(ConfiguredBaseModel):
 
     @field_validator('lock_sha256')
     def pattern_lock_sha256(cls, v):
-        pattern=re.compile(r"^[0-9a-f]{64}$")
+        pattern=re.compile(r"^[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -716,7 +716,7 @@ class ConsumerRecord(ConfiguredBaseModel):
 
     @field_validator('run_manifest_sha256')
     def pattern_run_manifest_sha256(cls, v):
-        pattern=re.compile(r"^[0-9a-f]{64}$")
+        pattern=re.compile(r"^[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -729,7 +729,7 @@ class ConsumerRecord(ConfiguredBaseModel):
 
     @field_validator('feature_filter_id')
     def pattern_feature_filter_id(cls, v):
-        pattern=re.compile(r"^sha256:[0-9a-f]{64}$")
+        pattern=re.compile(r"^sha256:[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -742,7 +742,7 @@ class ConsumerRecord(ConfiguredBaseModel):
 
     @field_validator('coverage_scope')
     def pattern_coverage_scope(cls, v):
-        pattern=re.compile(r"^input_cohort_before_analysis_specific_exclusions$")
+        pattern=re.compile(r"^input_cohort_before_analysis_specific_exclusions(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -786,7 +786,7 @@ class LegacyImportRecord(ConfiguredBaseModel):
 
     @field_validator('source_sha256')
     def pattern_source_sha256(cls, v):
-        pattern=re.compile(r"^[0-9a-f]{64}$")
+        pattern=re.compile(r"^[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -799,7 +799,7 @@ class LegacyImportRecord(ConfiguredBaseModel):
 
     @field_validator('verification_status')
     def pattern_verification_status(cls, v):
-        pattern=re.compile(r"^imported_unverified$")
+        pattern=re.compile(r"^imported_unverified(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -832,7 +832,7 @@ class ArchivedLocation(ConfiguredBaseModel):
 
     @field_validator('sha256')
     def pattern_sha256(cls, v):
-        pattern=re.compile(r"^[0-9a-f]{64}$")
+        pattern=re.compile(r"^[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -876,7 +876,7 @@ class EvidenceArchive(ConfiguredBaseModel):
 
     @field_validator('archive_version')
     def pattern_archive_version(cls, v):
-        pattern=re.compile(r"^1$")
+        pattern=re.compile(r"^1(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -908,7 +908,7 @@ class RecordedPath(ConfiguredBaseModel):
 
     @field_validator('sha256')
     def pattern_sha256(cls, v):
-        pattern=re.compile(r"^[0-9a-f]{64}$")
+        pattern=re.compile(r"^[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -956,7 +956,7 @@ class ArmCommandDefinition(ConfiguredBaseModel):
 
     @field_validator('id')
     def pattern_id(cls, v):
-        pattern=re.compile(r"^[A-Za-z][A-Za-z0-9_.-]*$")
+        pattern=re.compile(r"^[A-Za-z][A-Za-z0-9_.-]*(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -1056,6 +1056,7 @@ class ArmRun(ConfiguredBaseModel):
                        'ScientificResultRecord',
                        'ComparisonRun'],
          'ifabsent': 'string(group_1_vs_group_0)'} })
+    provenance_root_supplied: Optional[bool] = Field(default=None, title="Provenance root supplied", description="""Whether this execution received an explicit provenance root; new runs record true or false without a root locator. Absent historical values mean unrecorded, not false.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ArmRun', 'ComparisonRun']} })
     scope: str = Field(default=..., title="Scope", description="""Explicit scope; historical PD and presentation investigations are separate.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ArmRun']} })
     status: ExecutionStatus = Field(default=..., title="Status", description="""Actual attempt status.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ValidationResult',
                        'StepExecution',
@@ -1103,7 +1104,7 @@ class ArmRun(ConfiguredBaseModel):
 
     @field_validator('arm')
     def pattern_arm(cls, v):
-        pattern=re.compile(r"^(ilyas|noel|jed)$")
+        pattern=re.compile(r"^(ilyas|noel|jed)(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -1116,7 +1117,7 @@ class ArmRun(ConfiguredBaseModel):
 
     @field_validator('scope')
     def pattern_scope(cls, v):
-        pattern=re.compile(r"^standard_analysis_calibration_and_optional_figures$")
+        pattern=re.compile(r"^standard_analysis_calibration_and_optional_figures(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -1129,7 +1130,7 @@ class ArmRun(ConfiguredBaseModel):
 
     @field_validator('core_manifest_sha256')
     def pattern_core_manifest_sha256(cls, v):
-        pattern=re.compile(r"^[0-9a-f]{64}$")
+        pattern=re.compile(r"^[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -1142,7 +1143,7 @@ class ArmRun(ConfiguredBaseModel):
 
     @field_validator('profile_product')
     def pattern_profile_product(cls, v):
-        pattern=re.compile(r"^(count_profiles|ora_profiles)$")
+        pattern=re.compile(r"^(count_profiles|ora_profiles)(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -1155,7 +1156,7 @@ class ArmRun(ConfiguredBaseModel):
 
     @field_validator('plan_sha256')
     def pattern_plan_sha256(cls, v):
-        pattern=re.compile(r"^[0-9a-f]{64}$")
+        pattern=re.compile(r"^[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -1200,7 +1201,7 @@ class AnalysisSpec(ConfiguredBaseModel):
 
     @field_validator('id')
     def pattern_id(cls, v):
-        pattern=re.compile(r"^[A-Za-z][A-Za-z0-9_:.-]*$")
+        pattern=re.compile(r"^[A-Za-z][A-Za-z0-9_:.-]*(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -1283,7 +1284,7 @@ class AnalysisBasis(ConfiguredBaseModel):
 
     @field_validator('feature_catalog_sha256')
     def pattern_feature_catalog_sha256(cls, v):
-        pattern=re.compile(r"^[0-9a-f]{64}$")
+        pattern=re.compile(r"^[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -1296,7 +1297,7 @@ class AnalysisBasis(ConfiguredBaseModel):
 
     @field_validator('feature_filter_id')
     def pattern_feature_filter_id(cls, v):
-        pattern=re.compile(r"^sha256:[0-9a-f]{64}$")
+        pattern=re.compile(r"^sha256:[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -1309,7 +1310,7 @@ class AnalysisBasis(ConfiguredBaseModel):
 
     @field_validator('profile_unit')
     def pattern_profile_unit(cls, v):
-        pattern=re.compile(r"^(count_profiles|ora_profiles)$")
+        pattern=re.compile(r"^(count_profiles|ora_profiles)(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -1440,6 +1441,7 @@ class ComparisonRun(ConfiguredBaseModel):
                        'ArmRun',
                        'ScientificResultRecord',
                        'ComparisonRun']} })
+    provenance_root_supplied: Optional[bool] = Field(default=None, title="Provenance root supplied", description="""Whether this execution received an explicit provenance root; new runs record true or false without a root locator. Absent historical values mean unrecorded, not false.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ArmRun', 'ComparisonRun']} })
     status: ExecutionStatus = Field(default=..., title="Status", description="""Explicit lifecycle outcome of the cross-arm comparison run.""", json_schema_extra = { "linkml_meta": {'domain_of': ['ValidationResult',
                        'StepExecution',
                        'WorkflowRun',
@@ -1483,7 +1485,7 @@ class ComparisonRun(ConfiguredBaseModel):
 
     @field_validator('core_manifest_sha256')
     def pattern_core_manifest_sha256(cls, v):
-        pattern=re.compile(r"^[0-9a-f]{64}$")
+        pattern=re.compile(r"^[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -1496,7 +1498,7 @@ class ComparisonRun(ConfiguredBaseModel):
 
     @field_validator('noel_manifest_sha256')
     def pattern_noel_manifest_sha256(cls, v):
-        pattern=re.compile(r"^[0-9a-f]{64}$")
+        pattern=re.compile(r"^[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -1509,7 +1511,7 @@ class ComparisonRun(ConfiguredBaseModel):
 
     @field_validator('jed_manifest_sha256')
     def pattern_jed_manifest_sha256(cls, v):
-        pattern=re.compile(r"^[0-9a-f]{64}$")
+        pattern=re.compile(r"^[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):
@@ -1522,7 +1524,7 @@ class ComparisonRun(ConfiguredBaseModel):
 
     @field_validator('ilyas_manifest_sha256')
     def pattern_ilyas_manifest_sha256(cls, v):
-        pattern=re.compile(r"^[0-9a-f]{64}$")
+        pattern=re.compile(r"^[0-9a-f]{64}(?![\s\S])$")
         if isinstance(v, list):
             for element in v:
                 if isinstance(element, str) and not pattern.search(element):

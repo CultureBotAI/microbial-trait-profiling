@@ -73,8 +73,10 @@ tar -xzf tests/fixtures/trait_key_policy/historical_union_core.tar.gz -C "$EXTRA
    ```sh
    uv run detect-secrets-hook --baseline .secrets.baseline \
      "$EXTRACTED_FIXTURE"/inputs/* \
-     "$EXTRACTED_FIXTURE"/core/steps/ingest_bugsigdb/studies/*.yaml \
+     "$EXTRACTED_FIXTURE"/core/steps/ingest/studies/*.yaml \
+     "$EXTRACTED_FIXTURE"/core/steps/export_tables/derived/*.tsv \
      "$EXTRACTED_FIXTURE"/core/steps/taxa_matrix/derived/*.tsv \
+     "$EXTRACTED_FIXTURE"/core/steps/feature_catalog/derived/*.tsv \
      "$EXTRACTED_FIXTURE"/core/steps/count_profiles/derived/*.tsv \
      "$EXTRACTED_FIXTURE"/core/steps/ora_profiles/derived/*.tsv
    ```

@@ -158,9 +158,18 @@ To add or change a correction:
 ## Enforcement
 
 `tests/test_multiple_testing_registry.py` parses every Python file under `src/` and
-`scripts/`, including ignored files. It resolves import and assignment aliases and local
-wrapper functions. Among other checks, it fails when:
-- a correction call has no registry entry for its enclosing function;
+`scripts/`, including ignored files (`IN_SCOPE_SOURCE_DIRS = ("src", "scripts")`).
+Repository directories outside `src/` and `scripts/` — explicitly `tests/`, `tools/`,
+`methods/`, `docs/`, `data/`, and `schema/` (`OUT_OF_SCOPE_SOURCE_DIRS`) — are out of
+scope of the production/script registry scan. Within `src/` and `scripts/`, the guard
+resolves import and assignment aliases, cross-module re-exported aliases,
+`functools.partial` bindings, literal `getattr` attribute lookups, bare-name imports
+between sibling scripts, local wrapper functions, and structural correction patterns
+(`minimum.accumulate` step-up, `p * m / rank` step-up loops, inline Bonferroni
+`min(1.0, p * m)` / `p_val * n_tests`, and Šidák `1 - (1 - p) ** m`). Among other
+checks, it fails when:
+- a correction call or structural correction definition has no registry entry for its
+  enclosing function;
 - a registry anchor does not exist, or an infrastructure anchor gives no reason;
 - the literal procedures in a discovered function do not match the per-function counts
   pinned in `literal_procedure_counts`. A change that alters a count is caught; a swap
@@ -192,12 +201,26 @@ within one sixteenth of `Limits.file_derivation_steps` (#1806).
 Registry claims supply a non-vacuity check, not the source-selection rule.
 The recognizer charges AST visits, expression/statement analysis,
 loop fixed-point passes, declaration-name processing, and the sizes of copied,
-joined or invalidated fact environments before doing that work. Exceeding the budget
+joined or invalidated fact environments before doing that work. Possible-alias
+maps, their origin entries and nested selector paths also contribute to the existing
+expression, assignment, environment-copy/join, write-scan and loop work categories
+(#1796, #1798); they do not introduce a separate unbounded analysis. Exceeding the budget
 refuses discovery with the source path, anchor, attempted work and limit, and asks
 the developer to simplify the function or review and raise `Limits.derivation_steps`;
 it does not silently skip the anchor or credit a partial witness. This deterministic
 per-function work bound is not a
 wall-time or RSS guarantee.
+
+Repeated operations on immutable possible-reference sets use caches local to one
+derivation invocation. They preserve the reference facts; they do not cache mutable
+environments or share results between functions or later invocations. Entries keyed
+by object identity retain strong references to their inputs, preventing identity
+reuse while an entry remains live. Every lookup is charged. On a miss, the actual
+scan or construction still incurs its element, identifier and selector-path charges,
+plus the cache-entry allocation charge. Cache misses and retained entries therefore
+consume the same function and file work allowances; a cache does not create an
+unaccounted analysis outside those limits.
+
 The additional `Limits.file_derivation_steps` allowance is shared by all candidate
 functions in one file, including those that yield no BY witness (#1685). Its
 1,000,000-unit default matches the existing allowance for one function; the two
@@ -215,6 +238,51 @@ and arithmetic are valid is the false-negative boundary. An undeclared free-vect
 read may be accepted. Keeping the invalidation also rejects declared callable
 bindings that the recognizer cannot verify; it does not establish correct lookup
 for undeclared enclosing callables (#1684).
+
+The local derivation model keeps possible object references separately from its
+arithmetic facts (#1796, #1798). It carries references through matching tuple/list
+unpacking, `or` and conditional expressions, walrus bindings, branch and loop
+joins, `for` targets, and `with` targets with a recognized `nullcontext` binding.
+It also retains possible references from assignments inside unsupported `try` or
+`match` blocks without crediting derivations inside those blocks. Literal
+containers, `SimpleNamespace` members and `typing.cast` are recognized; nested
+container selection tracks depth but not individual indices or dictionary keys.
+A later write through a possible alias invalidates the affected vector witness.
+Merely binding or reading an alias does not. Rebinding an alias to a fresh object,
+deleting its name, or replacing/removing an outer container element does not by
+itself mutate the contained vector. Recognized shallow copies own their outer
+extent while retaining references to nested objects.
+Recognized copies include a slice, `list(...)`, `tuple(...)`, `.copy()`,
+`copy.copy(...)` and `sorted(...)`; these call forms have one positional input
+and no keywords (the method form has no arguments). Augmented writes through
+container slots or namespace attributes also invalidate the slot's possible
+referent before the store. Namespace attributes retain distinct selectors.
+
+Fresh `numpy.ones` and `numpy.zeros` allocations with one positional shape and
+only an optional `dtype` keyword retain no references to their shape or dtype
+inputs. A shape tied to a recognized family size supplies a fixed-size array
+fact only with the default dtype or an unshadowed built-in `float`, `int` or
+`bool` dtype. Object and unknown dtypes use the ordinary container model so
+later inserted references remain visible. Tuple shapes do not supply that
+arithmetic witness. Other signatures,
+including `like=` dispatch, remain opaque. Names without additional possible
+references use direct identity membership checks during a write scan; names with
+side references retain the full path lookup. State-changing set traversals are
+ordered, with comparison and allocation work charged, so cache construction and
+environment insertion do not depend on the interpreter's hash seed.
+
+A write through an unresolved external origin, including one carried into a
+local alias or container, can conservatively invalidate observed free-vector
+and incoming-parameter extents, even when the objects are unrelated. This rejects
+the external-alias examples without claiming
+to resolve the temporal identity of module, enclosing-function or caller bindings.
+Different parameter names retain distinct abstract input origins: arbitrary
+caller aliasing between two parameters is not inferred. A write through an
+incoming parameter also conservatively invalidates observed free-vector extents,
+because the caller may have passed that free object as the parameter. Opaque call results may
+carry possible references from their arguments, but the call's effects are not
+interpreted. This is a bounded witness recognizer, not general Python alias analysis.
+
 Derivation facts are reduced while each file's AST is resident; the summaries retain
 neither the AST nor source text. The check establishes a supported calculation in an
 anchor, not the ancestry of each family's output. At `run_composition_calibration`,
@@ -223,15 +291,29 @@ calculation; the observed arithmetic is not checked. A calculation in a shared a
 can therefore satisfy several families' claims without establishing each output's
 derivation.
 
-The test checks registration, anchors and literal procedures. It recognises a correction
-by the name of the function it calls, so it does not detect any of these (#1443):
-- hand-rolled arithmetic that is not named like a correction, such as a step-up loop or
-  `p * m` Bonferroni;
-- a correction function re-exported under another name;
-- `functools.partial` and `getattr` dispatch;
-- calls between scripts that import each other by bare module name;
-- methods called on objects. Conversely, any `obj.correct()` or `obj.adjust()` call is
-  reported as a correction even when it is not one.
+The test checks registration, anchors and literal procedures. In addition to named
+correction primitives and wrappers, it structurally detects (#1443):
+- hand-rolled step-up and Bonferroni/Šidák arithmetic even when the function is not
+  named like a correction (`minimum.accumulate` step-up, `p * m / rank` step-up loops,
+  clamped `min(1.0, p * m)` or `np.minimum(p * len(p), 1.0)`, explicit `p_val * n_tests`
+  Bonferroni scaling, and `1 - (1 - p) ** m` Šidák scaling);
+- correction functions re-exported under another module-level alias or `import ... as`;
+- `functools.partial` bindings (preserving bound `method=` / `by=` arguments) and
+  literal `getattr(module, "name")` dispatch;
+- calls between scripts under `scripts/` that import each other by bare module name;
+- defined `correct` / `adjust` helpers while ignoring unrelated `obj.correct()` and
+  `obj.adjust()` method calls on arbitrary objects.
+
+Because discovery is a bounded static AST scan over `src/` and `scripts/` (with
+`tests/`, `tools/`, `methods/`, `docs/`, `data/`, and `schema/` explicitly out of
+scope), it still does not detect:
+- dynamic imports (`importlib.import_module`, `__import__`), `eval` / `exec`, or
+  `getattr(obj, variable)` with a non-literal attribute name;
+- arbitrary custom multiple-testing arithmetic written without recognizable step-up
+  (`minimum.accumulate`, `p * m / rank`), Bonferroni (`min(1.0, p * m)`, `p_val * n_tests`),
+  or Šidák (`1 - (1 - p) ** m`) structure;
+- calls dispatched through runtime registries, callbacks, or arbitrary object methods
+  outside resolved module/class namespaces.
 
 Within a registered function, it also does not detect:
 - a procedure chosen from a variable or a loop;
@@ -244,13 +326,10 @@ Within a registered function, it also does not detect:
   interpreted. Derivations inside unsupported `try` or `match` blocks, or stored only
   through a subscript or attribute rather than a local name, are not credited.
   Escaping `break` or `continue` paths inside those unsupported blocks are not propagated;
-- mutation through an alias whose identity the recognizer does not track. This includes
-  aliases bound outside the function (in the module, an enclosing function or the caller),
-  tuple unpacking, `or` or conditional expressions, walrus bindings, aliases joined across
-  branches or loops, `for`/`with` targets, aliases created inside unsupported `try`/`match`
-  blocks, container or object holders, and `cast`. A write through one of these aliases
-  may leave a stale vector extent credited as a BY derivation; resolving these aliases
-  remains follow-up work (#1796, #1798);
+- general object identity, custom copy or context-manager semantics, or arbitrary
+  interprocedural aliasing. The possible-reference model above covers specified local
+  forms and conservatively handles unknown external writes; it does not establish
+  Python-wide mutation safety or the effects of calls;
 - other binding forms, including starred targets, `def`/`class` rebinding (including
   decorated definitions), `global` writes from another function and context managers
   that suppress a `raise`, are not modelled. An enclosing function's binding that

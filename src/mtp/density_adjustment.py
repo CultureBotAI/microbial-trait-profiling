@@ -34,6 +34,15 @@ import pandas as pd
 from scipy import stats
 
 from mtp.composition_denominators import MEDIADIVE_MARKER, trait_fractions
+from mtp.delta_z_derived.tables import (
+    STOOL_BODY_SITE as STOOL_BODY_SITE,
+)
+from mtp.delta_z_derived.tables import (
+    is_stool_body_site as is_stool_body_site,
+)
+from mtp.delta_z_derived.tables import (
+    validate_stool_body_site as validate_stool_body_site,
+)
 from mtp.enrichment_stats import benjamini_hochberg
 from mtp.paths import DERIVED_DATA_DIR
 from mtp.trait_key_policy import display_trait_label, read_recorded_member_ids
@@ -856,6 +865,9 @@ def evaluate_conditional_twin_test(
     n_paired = len(delta_a)
     std_delta_a = float(np.std(delta_a)) if n_paired > 0 else 0.0
     std_delta_b = float(np.std(delta_b)) if n_paired > 0 else 0.0
+    # Scaling by max(|delta_a|, |inc_a|, |dec_a|) sets a floor of 64 * eps * operand
+    # on std(delta_a), treating delta_a ranges within a few hundred ulps of the
+    # operands as rounding noise (unreachable on integer twin counts; #1824, #1858).
     max_abs_delta_a = (
         float(max(np.max(np.abs(delta_a)), np.max(np.abs(inc_a)), np.max(np.abs(dec_a))))
         if n_paired > 0

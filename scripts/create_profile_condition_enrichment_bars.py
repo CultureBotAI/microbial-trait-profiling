@@ -5,11 +5,16 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 from textwrap import shorten
+from typing import TYPE_CHECKING, Any
 
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 from matplotlib.patches import Patch
+
+if TYPE_CHECKING:
+    from matplotlib.axes import Axes
+    from matplotlib.container import BarContainer
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VIS_DIR = REPO_ROOT / "trait-visualization"
@@ -406,7 +411,7 @@ def low_coverage_label() -> str:
 
 
 def style_limited_support_bars(
-    bars: object,
+    bars: BarContainer,
     low_support: pd.Series,
     *,
     alpha: float,
@@ -506,7 +511,7 @@ def select_focus_conditions(
     return selected.head(top_n).copy()
 
 
-def set_signal_axis_limits(ax: plt.Axes, values: pd.Series) -> None:
+def set_signal_axis_limits(ax: Axes, values: pd.Series) -> None:
     """Set padded x limits for a signal axis that may include negative values."""
     min_value = min(float(values.min()), 0.0)
     max_value = max(float(values.max()), 0.0)
@@ -588,7 +593,7 @@ def save_focus_signal_bar(
         fontsize=8.5,
         color="#475569",
     )
-    fig.tight_layout(rect=[0, 0.03, 1, 1])
+    fig.tight_layout(rect=(0, 0.03, 1, 1))
     output_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output_path, dpi=300, bbox_inches="tight")
     plt.close(fig)
@@ -665,6 +670,7 @@ def save_focus_coverage_bar(
     )
 
     max_total = max(float(totals.max()), 1.0)
+    row: Any
     for y_index, row in enumerate(plot_data.itertuples(index=False)):
         total = float(getattr(row, focus_count_column)) + float(
             getattr(row, comparator_count_column)
@@ -813,6 +819,7 @@ def save_focus_signal_diagram(
     )
 
     max_total = max(float(totals.max()), 1.0)
+    row: Any
     for y_index, row in enumerate(plot_data.itertuples(index=False)):
         total = float(getattr(row, focus_count_column)) + float(
             getattr(row, comparator_count_column)
@@ -861,7 +868,7 @@ def save_focus_signal_diagram(
         fontsize=8.2,
         color="#475569",
     )
-    fig.tight_layout(rect=[0, 0.04, 1, 0.925])
+    fig.tight_layout(rect=(0, 0.04, 1, 0.925))
     output_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output_path, dpi=300, bbox_inches="tight")
     plt.close(fig)
@@ -995,7 +1002,7 @@ def save_signal_vs_coverage_scatter(
         fontsize=8.4,
         color="#475569",
     )
-    fig.tight_layout(rect=[0, 0.04, 1, 1])
+    fig.tight_layout(rect=(0, 0.04, 1, 1))
     output_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output_path, dpi=300, bbox_inches="tight")
     plt.close(fig)
@@ -1100,7 +1107,7 @@ def save_condition_trait_signal_heatmap(
         fontsize=8.8,
         color="#475569",
     )
-    fig.tight_layout(rect=[0, 0, 1, 0.94])
+    fig.tight_layout(rect=(0, 0, 1, 0.94))
     output_path.parent.mkdir(parents=True, exist_ok=True)
     tmp_output_path = output_path.with_name(f"{output_path.stem}.tmp{output_path.suffix}")
     if tmp_output_path.exists():
@@ -1209,6 +1216,7 @@ def write_readme(
         "| condition | positive profiles | increased | decreased | studies |",
         "| --- | ---: | ---: | ---: | ---: |",
     ]
+    row: Any
     for row in top_count.itertuples(index=False):
         lines.append(
             f"| {row.condition} | {int(row.positive_profile_count)} | "

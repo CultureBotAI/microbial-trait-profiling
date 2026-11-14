@@ -248,34 +248,67 @@ def test_manifest_spec_matches_native_transformed_study_primary_statistic(tmp_pa
 def isolated_investigation(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> Iterator[Callable[[ModuleType], Path]]:
-    """Redirect all declared output paths and prove the real output tree is intact."""
+    """Rebase visualization Path constants and tuples; check the real tree's bytes."""
     originals: dict[Path, dict[str, str]] = {}
 
     def isolate(producer: ModuleType) -> Path:
-        original = producer.INVESTIGATION_DIR
+        original = producer.VIS_DIR
         assert isinstance(original, Path)
         originals.setdefault(original, output_inventory(original))
-        output = tmp_path / f"isolated-investigation-{len(originals)}"
-        for name, value in list(vars(producer).items()):
+        output = tmp_path / f"isolated-visualization-{len(originals)}"
+        output.mkdir()
+
+        def relocate(value: object) -> object:
             if isinstance(value, Path) and value.is_relative_to(original):
-                monkeypatch.setattr(producer, name, output / value.relative_to(original))
+                return output / value.relative_to(original)
+            if isinstance(value, tuple):
+                return tuple(relocate(item) for item in value)
+            return value
+
+        for name, value in list(vars(producer).items()):
+            if isinstance(value, Path | tuple):
+                monkeypatch.setattr(producer, name, relocate(value))
         monkeypatch.setattr(producer, "create_infographic", lambda *_args, **_kwargs: None)
-        return output
+        return Path(producer.INVESTIGATION_DIR)
 
     yield isolate
     for root, before in originals.items():
-        assert output_inventory(root) == before, "Real investigation outputs changed during test"
+        assert output_inventory(root) == before, "Real visualization outputs changed during test"
 
 
 def test_isolation_discovers_new_output_constants(
-    isolated_investigation: Callable[[ModuleType], Path], monkeypatch: pytest.MonkeyPatch
+    isolated_investigation: Callable[[ModuleType], Path],
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
 ) -> None:
     original = infographic.INVESTIGATION_DIR
     monkeypatch.setattr(infographic, "FUTURE_OUTPUT", original / "nested/future.tsv", raising=False)
+    monkeypatch.setattr(
+        infographic, "VIS_OUTPUT", infographic.VIS_DIR / "future-vis.tsv", raising=False
+    )
+    monkeypatch.setattr(
+        infographic,
+        "OUTPUT_PAIR",
+        (infographic.VIS_DIR / "composite-one.tsv", original / "composite-two.tsv"),
+        raising=False,
+    )
     output = isolated_investigation(infographic)
+    assert infographic.VIS_DIR.is_relative_to(tmp_path), "VIS_DIR escaped isolation"
+    assert infographic.VIS_OUTPUT.is_relative_to(tmp_path), "VIS output escaped isolation"
+    assert all(p.is_relative_to(tmp_path) for p in infographic.OUTPUT_PAIR), (
+        "Composite outputs escaped isolation"
+    )
     assert output / "nested/future.tsv" == infographic.FUTURE_OUTPUT
     infographic.FUTURE_OUTPUT.parent.mkdir(parents=True)
     infographic.FUTURE_OUTPUT.write_text("synthetic fixture output\n")
+    for path in (
+        *infographic.OUTPUT_PAIR,
+        infographic.VIS_OUTPUT,
+        infographic.VIS_DIR / "built.tsv",
+    ):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("synthetic isolated output\n")
+        assert path.read_text() == "synthetic isolated output\n"
     assert output == infographic.INVESTIGATION_DIR
 
 
@@ -771,9 +804,28 @@ def test_compute_trait_stats_writes_stable_ids_and_annotation_depth() -> None:
     assert "study_q_value" in stats.columns
 
 
+@pytest.mark.parametrize("output_mode", ["explicit", "default"])
 def test_write_stratified_trait_stats_emits_feces_excluded_and_body_site_files(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    output_mode: str,
 ) -> None:
+    original_mkdir = Path.mkdir
+
+    def mkdir_safely(
+        path: Path, mode: int = 0o777, parents: bool = False, exist_ok: bool = False
+    ) -> None:
+        # Refuse the old captured default before it can write to the real tree.
+        assert path.is_relative_to(tmp_path), "Writer escaped the test output root"
+        original_mkdir(path, mode=mode, parents=parents, exist_ok=exist_ok)
+
+    monkeypatch.setattr(Path, "mkdir", mkdir_safely)
+    monkeypatch.setattr(
+        infographic,
+        "INVESTIGATION_DIR",
+        tmp_path if output_mode == "default" else tmp_path / "unused-default",
+    )
+    output_arguments = {} if output_mode == "default" else {"output_dir": tmp_path}
     profile_matrix = pd.DataFrame(
         {
             "METPO:1": [10, 1, 9, 1, 0, 0, 1, 0],
@@ -826,7 +878,7 @@ def test_write_stratified_trait_stats_emits_feces_excluded_and_body_site_files(
         profile_matrix,
         pair_metadata,
         trait_labels,
-        output_dir=tmp_path,
+        **output_arguments,
         min_pairs=2,
         max_traits=2,
         min_profile_support=1,
@@ -854,11 +906,13 @@ def test_write_stratified_trait_stats_emits_feces_excluded_and_body_site_files(
     assert (tmp_path / "trait_profile_paired_contrast_trait_stats_manifest.tsv").exists()
 
     uncapped_dir = tmp_path / "uncapped"
+    monkeypatch.setattr(infographic, "INVESTIGATION_DIR", uncapped_dir)
+    uncapped_arguments = {} if output_mode == "default" else {"output_dir": uncapped_dir}
     uncapped_manifest = infographic.write_stratified_trait_stats(
         profile_matrix,
         pair_metadata,
         trait_labels,
-        output_dir=uncapped_dir,
+        **uncapped_arguments,
         min_pairs=2,
         min_profile_support=1,
         max_profile_support_fraction=1.0,

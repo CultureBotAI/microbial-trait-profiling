@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import importlib
 import math
+import re
 import sys
 from pathlib import Path
 from unittest.mock import patch
@@ -332,7 +333,7 @@ def test_family_size_parser_accepts_whole_sizes(raw: object, size: int) -> None:
 def test_retained_trait_count_below_family_size_is_refused(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Refuse retained count below family size with ValueError (#1812, #1872, #1873, #1874)."""
+    """Refuse retained count below family size with ValueError (#1812, #1872-#1876, #1908)."""
     with pytest.raises(ValueError, match=r"300.*340"):
         sankeys._format_paired_q_value_family(340, 300)
     with pytest.raises(ValueError, match=r"339.*340.*METPO:1000608"):
@@ -368,10 +369,17 @@ def test_retained_trait_count_below_family_size_is_refused(
         sankeys.SHARED_TRAITS
     )
 
+    expected_table_remedy = (
+        "in trait-visualization/trait-profile-investigation/"
+        "trait_profile_paired_contrast_trait_stats.tsv (regenerate the trait statistics)"
+    )
     inconsistent_stats = supplied_stats(
         MIXED_P, correction_family_size=340, retained_trait_count=300
     )
-    with pytest.raises(ValueError, match=r"300.*340.*METPO:1000608"):
+    with pytest.raises(
+        ValueError,
+        match=rf"300.*340.*for trait METPO:1000608 {re.escape(expected_table_remedy)}",
+    ):
         sankeys.build_trait_selection(inconsistent_stats)
 
     raw_inconsistent = inconsistent_stats.reset_index().assign(
@@ -383,7 +391,10 @@ def test_retained_trait_count_below_family_size_is_refused(
     )
     with (
         patch.object(sankeys, "read_tsv", return_value=raw_inconsistent),
-        pytest.raises(ValueError, match=r"300.*340.*METPO:1000608"),
+        pytest.raises(
+            ValueError,
+            match=rf"300.*340.*for trait METPO:1000608 {re.escape(expected_table_remedy)}",
+        ),
     ):
         sankeys.load_q_significance()
 
@@ -405,7 +416,10 @@ def test_retained_trait_count_below_family_size_is_refused(
     ] = 300
     with (
         patch.object(sankeys, "read_tsv", return_value=single_row_inconsistent),
-        pytest.raises(ValueError, match=rf"300.*340.*{third_trait_id}"),
+        pytest.raises(
+            ValueError,
+            match=rf"300.*340.*for trait {third_trait_id} {re.escape(expected_table_remedy)}",
+        ),
     ):
         sankeys.load_q_significance()
 
@@ -416,19 +430,89 @@ def test_retained_trait_count_below_family_size_is_refused(
         .iloc[[0]]
         .copy()
     )
-    with pytest.raises(ValueError, match=r"300.*340.*METPO:1000608"):
+    with pytest.raises(
+        ValueError,
+        match=rf"300.*340.*for trait METPO:1000608 {re.escape(expected_table_remedy)}",
+    ):
         sankeys.selection_display_metadata(
             slice_without,
             default_bh_family_size=340,
             default_bh_unfiltered_trait_count=300,
         )
-    with pytest.raises(ValueError, match=r"300.*340.*METPO:1000608"):
+    with pytest.raises(
+        ValueError,
+        match=rf"300.*340.*for trait METPO:1000608 {re.escape(expected_table_remedy)}",
+    ):
         sankeys.selection_display_metadata(
             slice_without.assign(bh_family_size=340, bh_unfiltered_trait_count=300)
         )
 
-    with pytest.raises(ValueError, match=r"300.*340.*METPO:1000608"):
+    # #1875: selection_display_metadata without a trait_id column or with a NaN/blank trait_id.
+    no_id = pd.DataFrame(
+        {
+            "paired_p_value": [0.01],
+            "bh_family_size": [340],
+            "bh_unfiltered_trait_count": [344],
+        }
+    )
+    try:
+        labelled_no_id = sankeys.selection_display_metadata(no_id)
+    except KeyError as exc:
+        pytest.fail(f"selection_display_metadata without trait_id raised KeyError: {exc}")
+    assert labelled_no_id["paired_q_value_family"].tolist() == [
+        f"pooled pair-level BH over 340 support/variance-selected traits "
+        f"(of 344 retained; {SELECTION_RULE_NOTE})"
+    ]
+    for missing_id_frame in (
+        no_id.assign(bh_unfiltered_trait_count=300),
+        no_id.assign(trait_id=[float("nan")], bh_unfiltered_trait_count=300),
+        no_id.assign(
+            trait_id=pd.Series([pd.NA], index=no_id.index, dtype="string"),
+            bh_unfiltered_trait_count=300,
+        ),
+        no_id.assign(trait_id=["nan"], bh_unfiltered_trait_count=300),
+        no_id.assign(trait_id=["  "], bh_unfiltered_trait_count=300),
+    ):
+        try:
+            with pytest.raises(
+                ValueError,
+                match=rf"300.*340.*{re.escape(expected_table_remedy)}",
+            ) as exc_info:
+                sankeys.selection_display_metadata(missing_id_frame)
+        except KeyError as exc:
+            pytest.fail(f"selection_display_metadata without trait_id raised KeyError: {exc}")
+        refusal_text = str(exc_info.value)
+        assert "for trait" not in refusal_text
+        assert "nan" not in refusal_text.lower()
+
+    with pytest.raises(
+        ValueError,
+        match=rf"300.*340.*for trait METPO:1000608 {re.escape(expected_table_remedy)}",
+    ):
         sankeys.build_trait_summary(metadata, raw_counts, zscores, inconsistent_stats)
+
+    # #1908: A table outside the repository or using a lexical .. path must fall back to the
+    # filename without showing a directory outside the repository.
+    expected_outside_remedy = "in stats.tsv (regenerate the trait statistics)"
+    for outside_path in (
+        tmp_path / "outside-repo" / "stats.tsv",
+        sankeys.REPO_ROOT / ".." / "outside-repo" / "stats.tsv",
+        sankeys.REPO_ROOT / ".." / ".." / "Users" / "someone" / "stats.tsv",
+    ):
+        with (
+            patch.object(sankeys, "TRAIT_STATS_PATH", outside_path),
+            pytest.raises(
+                ValueError,
+                match=rf"300.*340.*for trait METPO:1000608 {re.escape(expected_outside_remedy)}",
+            ) as outside_exc,
+        ):
+            sankeys.build_trait_selection(inconsistent_stats)
+        outside_text = str(outside_exc.value)
+        assert ".." not in outside_text
+        assert "outside-repo" not in outside_text
+        assert "someone" not in outside_text
+        assert str(tmp_path) not in outside_text
+        assert str(sankeys.REPO_ROOT.parent) not in outside_text
 
     assert equal_summary["bh_unfiltered_trait_count"].dropna().tolist() == [340] * len(
         sankeys.SHARED_TRAITS

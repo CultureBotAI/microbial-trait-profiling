@@ -400,7 +400,7 @@ def test_conclusions_keep_bh_statuses_labels_and_survivor_membership(
     assert "facultative union (fixture)" not in survivors
 
 
-def test_declared_trait_list_keeps_the_existing_section6_guard(
+def test_declared_trait_list_renders_computed_section6_conclusions(
     tmp_path: Path, audit_script: ModuleType
 ) -> None:
     density, ontology = synthetic_results()
@@ -408,12 +408,8 @@ def test_declared_trait_list_keeps_the_existing_section6_guard(
         tuple(effect.trait_id for effect in density["table1_effects"]), "fixture.txt", "a" * 64
     )
     conclusions = _conclusions(audit_script, tmp_path, density, ontology, declared)
-    assert conclusions == (
-        "-" * 80
-        + "\nNot written for a declared trait list; section 3 reports each listed\n"
-        + "trait's computed effects.\n"
-        + "=" * 80
-    )
+    assert conclusions == _conclusions(audit_script, tmp_path, density, ontology, None)
+    assert "Not written for a declared trait list" not in conclusions
 
 
 def test_consolidated_report_pluralizes_singular_and_plural_counts(
@@ -435,14 +431,17 @@ def test_consolidated_report_pluralizes_singular_and_plural_counts(
     assert "1 redundant pair (1 feature collapsed into 1 cluster)" in collapse
     assert "bounding distinct trait space to 1 feature." in collapse
 
-    # #1826: when a collapsed member (e.g. sphere) is present without its cluster survivor
-    # (coccus), n_redundant_pairs == 0 and n_clusters == 0 while n_collapsed_features == 1;
-    # item 5 must not say '1 feature collapsed into 0 clusters'.
+    # #1826, #1857: when a collapsed member (e.g. sphere) is present without its cluster
+    # survivor (coccus), n_redundant_pairs == 0 and n_clusters == 0 while
+    # n_collapsed_features == 1; item 5 must state that 1 feature was removed because its
+    # cluster survivor is absent, and must count orphan removals separately even when
+    # n_clusters > 0.
     orphan_ontology = {
         **ontology,
         "n_redundant_pairs": 0,
         "n_clusters": 0,
         "n_collapsed_features": 1,
+        "n_orphan_features": 1,
         "bounded_trait_space": 2,
     }
     orphan_content, orphan_conclusions = _report_and_conclusions(
@@ -450,15 +449,109 @@ def test_consolidated_report_pluralizes_singular_and_plural_counts(
     )
     orphan_collapse = _point(orphan_conclusions, 5)
     assert "collapsed into 0 clusters" not in orphan_content
+    assert "across 0 clusters" not in orphan_collapse
     assert (
-        "0 redundant pairs (1 feature removed without a present cluster survivor across 0 clusters)"
+        "0 redundant pairs (1 feature removed because its cluster survivor is absent)"
         in orphan_collapse
+    )
+
+    multi_orphan_ontology = {
+        **ontology,
+        "n_redundant_pairs": 0,
+        "n_clusters": 0,
+        "n_collapsed_features": 2,
+        "n_orphan_features": 2,
+        "bounded_trait_space": 2,
+    }
+    _, multi_orphan_conclusions = _report_and_conclusions(
+        audit_script, tmp_path, density, multi_orphan_ontology
+    )
+    assert (
+        "0 redundant pairs (2 features removed because their cluster survivors are absent)"
+        in _point(multi_orphan_conclusions, 5)
+    )
+
+    mixed_ontology = {
+        **ontology,
+        "n_redundant_pairs": 1,
+        "n_clusters": 1,
+        "n_collapsed_features": 2,
+        "n_orphan_features": 1,
+        "bounded_trait_space": 2,
+    }
+    _, mixed_conclusions = _report_and_conclusions(audit_script, tmp_path, density, mixed_ontology)
+    mixed_collapse = _point(mixed_conclusions, 5)
+    assert "2 features collapsed into 1 cluster" not in mixed_collapse
+    assert (
+        "1 redundant pair (1 feature collapsed into 1 cluster; "
+        "1 feature removed because its cluster survivor is absent)"
+    ) in mixed_collapse
+
+    # When n_orphan_features is recorded on a multi-pair corpus where n_pairs > n_collapsed
+    # (so max(0, n_collapsed - n_pairs) would give 0), the recorded orphan count is used.
+    motility_orphan_ontology = {
+        **ontology,
+        "n_redundant_pairs": 21,
+        "n_clusters": 9,
+        "n_collapsed_features": 16,
+        "n_orphan_features": 3,
+        "bounded_trait_space": 301,
+    }
+    _, motility_orphan_conclusions = _report_and_conclusions(
+        audit_script, tmp_path, density, motility_orphan_ontology
+    )
+    motility_orphan_collapse = _point(motility_orphan_conclusions, 5)
+    assert "16 features collapsed into 9 clusters" not in motility_orphan_collapse
+    assert (
+        "21 redundant pairs (13 features collapsed into 9 clusters; "
+        "3 features removed because their cluster survivors are absent)"
+    ) in motility_orphan_collapse
+
+    # When n_orphan_features is absent from ontology_res and n_clusters > 0, keep base's
+    # combined wording rather than estimating orphans from n_collapsed - n_pairs; when
+    # n_clusters == 0 (#1906), every present collapsed member is an orphan so item 5 must
+    # not fall back to "collapsed into 0 clusters".
+    legacy_ontology = {k: v for k, v in mixed_ontology.items() if k != "n_orphan_features"}
+    _, legacy_conclusions = _report_and_conclusions(
+        audit_script, tmp_path, density, legacy_ontology
+    )
+    legacy_collapse = _point(legacy_conclusions, 5)
+    assert "removed because" not in legacy_collapse
+    assert "1 redundant pair (2 features collapsed into 1 cluster)" in legacy_collapse
+
+    legacy_zero_cluster_ontology = {
+        k: v for k, v in orphan_ontology.items() if k != "n_orphan_features"
+    }
+    legacy_zero_content, legacy_zero_conclusions = _report_and_conclusions(
+        audit_script, tmp_path, density, legacy_zero_cluster_ontology
+    )
+    legacy_zero_collapse = _point(legacy_zero_conclusions, 5)
+    assert "collapsed into 0 clusters" not in legacy_zero_content
+    assert (
+        "0 redundant pairs (1 feature removed because its cluster survivor is absent)"
+        in legacy_zero_collapse
+    )
+
+    legacy_plural_zero_cluster_ontology = {
+        **legacy_zero_cluster_ontology,
+        "n_collapsed_features": 3,
+    }
+    legacy_plural_zero_content, legacy_plural_zero_conclusions = _report_and_conclusions(
+        audit_script, tmp_path, density, legacy_plural_zero_cluster_ontology
+    )
+    legacy_plural_zero_collapse = _point(legacy_plural_zero_conclusions, 5)
+    assert "collapsed into 0 clusters" not in legacy_plural_zero_content
+    assert "1 feature" not in legacy_plural_zero_collapse
+    assert (
+        "0 redundant pairs (3 features removed because their cluster survivors are absent)"
+        in legacy_plural_zero_collapse
     )
 
 
 def test_density_interpretation_and_audit_docs_qualify_historical_vif_and_list_provenance() -> None:
-    """#1391, #1392, #1400, #1827: docs qualify historical binarized VIF 5.88, omit severity and
-    curation-mechanism claims, and list density_adjustment_provenance.json."""
+    """#1391, #1392, #1400, #1827, #1857: docs qualify historical binarized VIF 5.88, omit
+    severity and curation-mechanism claims, state largely overlapping taxa, and list
+    density_adjustment_provenance.json."""
     repo_root = Path(__file__).resolve().parents[1]
     bio_audit = (repo_root / "methods/biological_interpretation_audit.md").read_text(
         encoding="utf-8"
@@ -472,7 +565,11 @@ def test_density_interpretation_and_audit_docs_qualify_historical_vif_and_list_p
     assert "historical binarized-profile r = +0.911" in coupling_doc
     assert "Historical binarized-profile VIF = 5.88" in coupling_doc
     assert "Curators assign" not in coupling_doc
-    assert "Coccus and sphere are annotated to the same taxa" in coupling_doc
+    assert "annotated to the same taxa" not in coupling_doc
+    assert "Coccus and sphere are annotated to largely overlapping taxa" in coupling_doc
+    assert (
+        "Both labels are annotated to largely overlapping taxa in the trait matrix." in coupling_doc
+    )
 
     density_doc = (repo_root / "docs/density_adjustment_audit.md").read_text(encoding="utf-8")
     assert "data/derived/density_adjustment/density_adjustment_provenance.json" in density_doc

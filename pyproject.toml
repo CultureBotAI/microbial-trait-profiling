@@ -7,7 +7,7 @@ name = "mtp"
 version = "0.1.0"
 description = "Integration and comparative analysis of microbial trait annotations"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.11.5"
 authors = [
   # Keep in step with CITATION.cff.
   { name = "Jed Dongjin Kim-Ozaeta" },
@@ -86,7 +86,7 @@ dev = [
   "types-PyYAML>=6.0.12.20260408",
 ]
 qa = [
-  "bandit[toml]>=1.9.4",
+  "bandit>=1.9.4",
   "deptry>=0.21.1",
   # Keep these maintenance CLIs aligned with .pre-commit-config.yaml.
   "detect-secrets==1.5.0",
@@ -166,9 +166,12 @@ module = [
 ]
 ignore_errors = true
 
-# pandas, scipy and plotly ship no type information; the repo's own code stays strict.
+# scipy, plotly, seaborn and linkml-store ship no type information; the repo's
+# own code stays strict. pandas is typed by the dev-group pandas-stubs, so its
+# entry matters only for installs without that group. seaborn's typeshed stubs
+# (types-seaborn) are not a dependency, so the override is used instead (#1945).
 [[tool.mypy.overrides]]
-module = ["pandas", "scipy.*", "plotly.*"]
+module = ["pandas", "scipy.*", "plotly.*", "seaborn", "linkml_store", "linkml_store.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

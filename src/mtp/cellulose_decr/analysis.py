@@ -62,6 +62,15 @@ from mtp.contrast_orientation import (
     TIER_1_HEALTHY_NORMAL,
     TIER_2_CONDITION_NEGATIVE_SCREENED,
 )
+from mtp.delta_z_derived.tables import (
+    STOOL_BODY_SITE as STOOL_BODY_SITE,
+)
+from mtp.delta_z_derived.tables import (
+    is_stool_body_site as is_stool_body_site,
+)
+from mtp.delta_z_derived.tables import (
+    validate_stool_body_site as validate_stool_body_site,
+)
 from mtp.paths import REPO_ROOT, file_sha256
 
 ANALYSIS_DIR = REPO_ROOT / "data" / "analysis" / "cellulose_decr"
@@ -127,7 +136,7 @@ CASE_CONTROL_RULES = {
 }
 SHORT = list(CONDITIONS)
 PAIRS = list(itertools.combinations(SHORT, 2))
-FECES = "Feces"
+FECES = STOOL_BODY_SITE
 NON_FECAL_GI = "Non-fecal GI (mucosa/lumen)"
 ORAL = "Oral / Oropharyngeal"
 OTHER = "Other non-GI"
@@ -313,9 +322,9 @@ def read_tsv(path: Path, **kwargs: Any) -> pd.DataFrame:
 
 def compartment_of(body_site: str) -> str:
     """Assign an experiment body-site label to one of the four compartments."""
-    site = body_site.strip().lower()
-    if site == FECES.lower():
+    if validate_stool_body_site(body_site):
         return FECES
+    site = body_site.strip().lower()
     if "," in site:
         return OTHER
     if any(term in site for term in ORAL_TERMS):
@@ -1752,12 +1761,6 @@ def load_dump(path: Path) -> pd.DataFrame:
 # --------------------------------------------------------------------------- summary rows
 
 
-def fmt_p(value: float) -> str:
-    if math.isnan(value):
-        return "NA"
-    return f"{value:.3g}"
-
-
 def tier(value: float) -> str:
     if math.isnan(value):
         return "not tested"
@@ -1776,10 +1779,12 @@ def _nominal_p(value: float) -> str:
     return f"{value:.3g}" if math.isfinite(value) else "unavailable"
 
 
-def _nominal_scope(values: Sequence[float]) -> str:
+def _nominal_scope(values: Sequence[float], *, components: str = "") -> str:
     finite = sum(math.isfinite(value) for value in values)
+    description = f"{components}; " if components else ""
     return (
-        f"Nominal narrative endpoints: {finite} finite; {len(values) - finite} unavailable; "
+        f"Nominal narrative endpoints: {description}{finite} finite; "
+        f"{len(values) - finite} unavailable; "
         "not a correction family."
     )
 
@@ -1834,11 +1839,6 @@ def _direction_endpoints(
     return _scenario_endpoints(chosen, "binom_p_two_sided")
 
 
-def definition_range(scenarios: pd.DataFrame, population_name: str, short: str, unit: str) -> str:
-    """How far a feces direction p moves across the condition-definition scenarios."""
-    return _nominal_range(_direction_endpoints(scenarios, population_name, short, unit))
-
-
 def direction_summary_rows(
     compartments: pd.DataFrame, scenarios: pd.DataFrame
 ) -> list[dict[str, Any]]:
@@ -1868,6 +1868,13 @@ def direction_summary_rows(
                 scenarios, population_name, row["short_condition"], unit
             )
             spread = _range_statement("sign-test", endpoints)
+            sign_test_noun = "test" if len(endpoints) == 1 else "tests"
+            scope = _nominal_scope(
+                [wilcoxon, *endpoints],
+                components=(
+                    f"1 Wilcoxon and {len(endpoints)} condition-definition sign {sign_test_noun}"
+                ),
+            )
             units = "experiments" if unit == "experiment" else "studies"
             mean_delta = row["mean_paired_delta_inc_minus_dec"]
             effect = (
@@ -1903,7 +1910,7 @@ def direction_summary_rows(
                         f"{spread}. Describes curated signature annotations, not measured "
                         "cellulose degradation. Endpoint counts include all distinct condition "
                         "definitions represented by the range. "
-                        f"{_nominal_scope([wilcoxon, *endpoints])}"
+                        f"{scope}"
                     ),
                 }
             )
@@ -2001,11 +2008,6 @@ def _interaction_endpoints(
         & scenarios["compartment_b"].eq(NON_FECAL_GI)
     ]
     return _scenario_endpoints(chosen, "fisher_p_two_sided")
-
-
-def interaction_range(scenarios: pd.DataFrame, population_name: str, short: str, unit: str) -> str:
-    """How far a Feces-vs-GI p moves across the condition-definition scenarios (#673)."""
-    return _nominal_range(_interaction_endpoints(scenarios, population_name, short, unit))
 
 
 def interaction_summary_rows(
@@ -2344,7 +2346,7 @@ def label_inventory(
                 "status": status,
                 "studies": group["study_id"].nunique(),
                 "experiments": len(group),
-                "feces_experiments": int(group["body_site"].eq(FECES).sum()),
+                "feces_experiments": int(group["body_site"].map(validate_stool_body_site).sum()),
             }
         )
     frame = pd.DataFrame(rows)

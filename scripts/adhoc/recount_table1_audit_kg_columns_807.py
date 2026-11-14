@@ -19,6 +19,11 @@ Inputs:
 
 Output: plain-text counts on stdout. The edge file is read twice (about 1 GB each time),
 so this is a heavy run.
+
+--trait-key-policy selects and records the coverage semantics. Its default remains
+facultative_union_v1 for compatibility; use raw_object_v1 to reproduce pre-union
+coverage. The source-edge section always counts exact raw KG objects, separately
+from the policy-mapped direct and rolled-up coverage counts.
 """
 
 from __future__ import annotations
@@ -32,6 +37,12 @@ from mtp.taxa_trait_matrix import (
     read_kg_trait_edges,
     read_reported_taxa,
     scoped_taxon_traits,
+)
+from mtp.trait_key_policy import (
+    DEFAULT_TRAIT_KEY_POLICY,
+    TRAIT_KEY_POLICIES,
+    TraitKeyPolicy,
+    parse_trait_key_policy,
 )
 
 SIX = {
@@ -74,11 +85,21 @@ def nodes_with(sets: dict[str, set[str]], key: str) -> set[str]:
     return {node for node, keys in sets.items() if key in keys}
 
 
-def recount(edges_path: Path, reported_taxa_path: Path) -> None:
+def recount(
+    edges_path: Path,
+    reported_taxa_path: Path,
+    *,
+    trait_key_policy: TraitKeyPolicy = DEFAULT_TRAIT_KEY_POLICY,
+) -> None:
+    """Print raw source-edge counts and coverage under the selected trait-key policy."""
+    trait_key_policy = parse_trait_key_policy(trait_key_policy)
+    print(f"trait_key_policy={trait_key_policy}")
+    print("Source edge counts: raw KG objects (not policy-mapped)")
     for (key, kind, predicate, source), n in sorted(edge_counts(edges_path).items()):
         print(f"  {SIX[key]:28s} {kind:10s} {predicate:28s} {source:24s} {n}")
 
-    edges = read_kg_trait_edges(edges_path, strains=True)
+    print("Coverage counts: trait-key-policy-mapped")
+    edges = read_kg_trait_edges(edges_path, strains=True, trait_key_policy=trait_key_policy)
     direct = edges.taxon_traits
     phenotype = scoped_taxon_traits(
         edges.taxon_traits, edges.strain_taxa, edges.strain_traits, "phenotype"
@@ -114,8 +135,18 @@ def main() -> None:
     parser.add_argument(
         "--reported-taxa", type=Path, default=Path("data/derived/bugsigdb_taxa.tsv")
     )
+    parser.add_argument(
+        "--trait-key-policy",
+        choices=TRAIT_KEY_POLICIES,
+        default=DEFAULT_TRAIT_KEY_POLICY,
+        help="Trait keys (default: %(default)s); use raw_object_v1 for pre-union counts.",
+    )
     args = parser.parse_args()
-    recount(args.edges, args.reported_taxa)
+    recount(
+        args.edges,
+        args.reported_taxa,
+        trait_key_policy=parse_trait_key_policy(args.trait_key_policy),
+    )
 
 
 if __name__ == "__main__":

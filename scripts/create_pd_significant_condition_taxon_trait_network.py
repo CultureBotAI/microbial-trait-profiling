@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 from pathlib import Path
 from textwrap import wrap
+from typing import TYPE_CHECKING, Any, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -16,6 +17,36 @@ from matplotlib.path import Path as MplPath
 from scipy import stats
 
 from mtp.composition_denominators import load_retained_profiles, trait_fractions
+
+if TYPE_CHECKING:
+    from matplotlib.axes import Axes
+
+from mtp.trait_key_policy import FACULTATIVE_RAW_LABEL, FACULTATIVE_UNION_LABEL
+
+
+def resolve_facultative_display_label(policy: str = "phenotype") -> str:
+    """Resolve the declared display policy; historical raw mode must be explicit."""
+    if policy in {"phenotype", "facultative_union_v1"}:
+        return FACULTATIVE_UNION_LABEL
+    if policy in {"off", "raw_object_v1"}:
+        return FACULTATIVE_RAW_LABEL
+    raise ValueError(f"Unknown facultative label policy: {policy}")
+
+
+def normalize_facultative_labels(frame: pd.DataFrame, policy: str = "phenotype") -> pd.DataFrame:
+    """Accept either recorded label without changing trait IDs, values or guild membership."""
+    label = resolve_facultative_display_label(policy)
+    result = frame.copy()
+    for column in ("trait", "trait_label", "object_name"):
+        if column in result:
+            result[column] = result[column].replace(
+                {
+                    FACULTATIVE_RAW_LABEL: label,
+                    FACULTATIVE_UNION_LABEL: label,
+                }
+            )
+    return result
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VIS_DIR = REPO_ROOT / "trait-visualization"
@@ -52,7 +83,8 @@ SLATE_500 = "#64748b"
 SLATE_700 = "#334155"
 SLATE_900 = "#0f172a"
 TRAIT_COLORS = {
-    "facultatively aerobic": "#0072b2",
+    FACULTATIVE_RAW_LABEL: "#0072b2",
+    FACULTATIVE_UNION_LABEL: "#0072b2",
     "cellulose catabolic process": "#d55e00",
     "coccus shaped": "#009e73",
     "sphere shaped": "#cc79a7",
@@ -61,9 +93,13 @@ TRAIT_COLORS = {
 }
 
 
-def read_tsv(path: Path, **kwargs: object) -> pd.DataFrame:
+def read_tsv(path: Path, *, policy: str = "phenotype", **kwargs: Any) -> pd.DataFrame:
     """Read a local TSV file."""
-    return pd.read_csv(path, sep="\t", **kwargs)
+    # The cast holds because no caller passes chunksize= or iterator=True, which would
+    # make read_csv return a TextFileReader instead of a DataFrame (#1941).
+    return normalize_facultative_labels(
+        cast(pd.DataFrame, pd.read_csv(path, sep="\t", **kwargs)), policy
+    )
 
 
 def write_tsv(frame: pd.DataFrame, path: Path) -> None:
@@ -72,7 +108,7 @@ def write_tsv(frame: pd.DataFrame, path: Path) -> None:
     frame.to_csv(path, sep="\t", index=False, na_rep="NA", float_format="%.8g")
 
 
-def clean_text(value: object) -> str:
+def clean_text(value: Any) -> str:
     """Return a stripped text value for identifiers and labels."""
     if pd.isna(value):
         return ""
@@ -173,11 +209,10 @@ def build_condition_eligibility(metadata: pd.DataFrame) -> tuple[pd.DataFrame, p
     feces = metadata[
         metadata["body_site_group"].eq(FECES) & metadata["host_species"].eq(HUMAN_HOST)
     ].copy()
-    direction_counts = (
-        feces.groupby(["condition", "study_id"], as_index=False)["inc_dec"]
-        .nunique()
-        .rename(columns={"inc_dec": "direction_count"})
-    )
+    direction_counts = cast(
+        pd.DataFrame,
+        feces.groupby(["condition", "study_id"], as_index=False)["inc_dec"].nunique(),
+    ).rename(columns={"inc_dec": "direction_count"})
     paired = direction_counts[direction_counts["direction_count"].eq(2)][
         ["condition", "study_id"]
     ].copy()
@@ -202,7 +237,7 @@ def load_annotated_taxa(traits: pd.DataFrame) -> pd.DataFrame:
     for column in ["taxon_id", "taxon_name", "taxonomic_rank"]:
         matrix[column] = matrix[column].map(clean_text)
     matrix = matrix[matrix["taxonomic_rank"].isin(ALLOWED_TAXON_RANKS)].copy()
-    annotations = matrix[trait_ids].apply(pd.to_numeric, errors="coerce").fillna(0)
+    annotations: pd.DataFrame = matrix[trait_ids].apply(pd.to_numeric, errors="coerce").fillna(0)
     matrix[trait_ids] = annotations
     return matrix[annotations.gt(0).any(axis=1)].copy()
 
@@ -321,7 +356,7 @@ def build_zscore_matrix(metadata: pd.DataFrame, traits: pd.DataFrame) -> pd.Data
     trait_ids = traits["trait_id"].tolist()
     values = load_retained_profiles(PROFILE_MATRIX_PATH, metadata)
     composition = trait_fractions(values).loc[:, trait_ids]
-    scaled = (composition * 1000).apply(lambda column: column.map(math.log1p))
+    scaled: pd.DataFrame = (composition * 1000).apply(lambda column: column.map(math.log1p))
     zscores = (scaled - scaled.mean(axis=0)) / scaled.std(axis=0, ddof=0).replace(0, float("nan"))
     return zscores.fillna(0.0)
 
@@ -489,6 +524,7 @@ def build_network_tables(
                 "taxonomic_rank": pd.NA,
             }
         )
+    row: Any
     for row in selected_taxa.itertuples(index=False):
         edges.append(
             {
@@ -636,7 +672,7 @@ def _even_positions(labels: list[str], top: float = 0.9, bottom: float = 0.08) -
 
 
 def _curved_edge(
-    ax: plt.Axes,
+    ax: Axes,
     start: tuple[float, float],
     end: tuple[float, float],
     *,
@@ -670,7 +706,7 @@ def _curved_edge(
 
 
 def _draw_node(
-    ax: plt.Axes,
+    ax: Axes,
     x: float,
     y: float,
     label: str,
@@ -786,6 +822,7 @@ def plot_significant_network(
     for node_id, y in _even_positions(trait_ids).items():
         positions[node_id] = (x_positions["trait"], y)
 
+    row: Any
     for row in taxon_edges.itertuples(index=False):
         q_value = max(float(row.q_value), np.finfo(float).tiny)
         _curved_edge(
@@ -1137,7 +1174,7 @@ def _plot_ready_tests(frame: pd.DataFrame, effect_column: str) -> pd.DataFrame:
 
 
 def _scatter_evidence_tiers(
-    ax: plt.Axes,
+    ax: Axes,
     frame: pd.DataFrame,
     *,
     effect_column: str,
@@ -1158,6 +1195,7 @@ def _scatter_evidence_tiers(
                 continue
             support = pd.to_numeric(subset[support_column], errors="coerce").fillna(0)
             sizes = np.clip(18.0 + 1.6 * support.to_numpy(dtype=float), 20.0, 90.0)
+            facecolors: np.ndarray[Any, Any] | str
             if tier == "FDR-significant":
                 facecolors = np.where(
                     subset[effect_column].to_numpy(dtype=float) >= 0,
@@ -1193,14 +1231,14 @@ def _scatter_evidence_tiers(
             )
 
 
-def _format_probability(value: object) -> str:
+def _format_probability(value: Any) -> str:
     """Format a p- or q-value compactly for figure annotations."""
     numeric = float(value)
     return f"{numeric:.3g}"
 
 
 def _label_priority_results(
-    ax: plt.Axes,
+    ax: Axes,
     frame: pd.DataFrame,
     *,
     effect_column: str,
@@ -1235,7 +1273,7 @@ def _label_priority_results(
 
 
 def _style_evidence_axis(
-    ax: plt.Axes,
+    ax: Axes,
     frame: pd.DataFrame,
     *,
     effect_column: str,
@@ -1400,6 +1438,7 @@ def plot_fdr_evidence_landscape(
     pd_rows["trait_order"] = pd_rows["trait"].map(trait_order)
     pd_rows = pd_rows.sort_values("trait_order", ascending=False).reset_index(drop=True)
     y_positions = np.arange(len(pd_rows))
+    row: Any
     for y_position, row in zip(y_positions, pd_rows.itertuples(index=False), strict=True):
         effect = float(row.mean_contrast)
         tier = str(row.evidence_tier)

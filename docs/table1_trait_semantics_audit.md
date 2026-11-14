@@ -64,6 +64,17 @@ The machine-readable table captures all required audit attributes across the 6 f
   - *BugSigDB Matrix Taxa* counts, among the 5,829 reported taxa of the taxa-trait matrix that the final rerun built under `phenotype`, those that bear the trait themselves or through a descendant; the percentage is of the 5,829. That matrix is not committed. Its sha256 `45df0fe7…` is the pin in `data/analysis/cellulose_decr/cellulose_decr_provenance.json`, and five of the six counts are also its `matrix_taxon_count` in the committed `data/analysis/cellulose_decr/trait_convergence_benchmark.tsv` (arsenate reduction has too few decreased feces taxa to enter that benchmark). Under `off` the six counts are 916, 189, 721, 305, 61 and 350.
   - *Profile Support* counts, among the 5,629 human 16S/WMS profiles with no Tier 1+2, pairing or disease-orientation filter, those with a nonzero count in the committed `data/derived/study_trait_profiles_wide.tsv.gz`, which the final rerun rebuilt under `phenotype` (decompressed sha256 `43b2e230…`). The `off` table it replaced (`519a095b…`) gave 4,411, 2,922, 4,338, 3,490, 1,739 and 3,364.
 
+The KG recount above describes the pre-union producer at `511c891`. When using the
+current `scripts/adhoc/recount_table1_audit_kg_columns_807.py` to reproduce that
+trait-key rule, pass `--trait-key-policy raw_object_v1`; for the current facultative
+union, pass `--trait-key-policy facultative_union_v1`. The command prints its
+consumed policy and distinguishes exact raw source-object edge counts from
+policy-mapped node and reported-taxon coverage. The companion
+`issue774_strain_rollup_coverage.py` accepts the same option and records it in its
+coverage TSV, summary JSON and stdout. Omitting the option retains the current union
+default, not the historical rule. This disclosure does not regenerate or update any
+numbers in this audit.
+
 ---
 
 ## 4. Deep-Dive Findings by Acceptance Criteria

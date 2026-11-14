@@ -1,14 +1,29 @@
 # Study-split assessment of exploratory condition triples (#854)
 
-The protocol in `study_split_selection_protocol.json` is declared before this
-sidecar is run on real data. The historical corpus has already been inspected.
-This is an internal exploratory assessment, not external replication or a claim
-that the historical choices were preregistered.
+Protocol `study-split-selection-v2` in `study_split_selection_protocol.json`
+implements the owner's phenotype-primary decision of 2026-10-25 (#1076). The
+original declaration is preserved byte-for-byte as
+`study_split_selection_protocol_v1.json`; v2 names its path, version and SHA-256,
+and the reader verifies those bytes before accepting the amendment. All within-scope
+statistical rules remain unchanged. New families and run manifests carry v2;
+historical v1 outputs require their recorded implementation for replay.
 
-The primary scope is `off`, matching the historical lead selection and the talk's
-comparison. `phenotype` is a declared sensitivity. Other scopes are rejected;
-both accepted scopes must be reported separately without selecting the more
-favorable result. The core's verified record supplies the scope.
+This is a post-results amendment. The historical corpus had already been inspected,
+and both off and phenotype selection-scan results were known. The exact disclosure
+is `amendments[0].known_when_amended` in
+`cellulose_decr_selection_scan_protocol_v2.json`: it distinguishes the recorded
+off evidence from the phenotype result used outside the repository's recorded
+evidence. The amendment does not assert that study-split results were unseen.
+This remains an internal exploratory assessment, not external replication or
+retrospective preregistration.
+
+`phenotype` is primary (`primary_phenotype`); `off` is the declared sensitivity
+(`declared_sensitivity`). Both must be reported side by side without selecting the
+more favorable result. The core's verified record supplies the execution scope.
+The explicit `absent_means: off` declaration applies only to historical core
+records without a strain-rollup parameter. Calls to the selection and held-out
+helpers that omit their scope use the current primary, `phenotype`; explicit
+`off` remains supported. Unknown scopes are refused even for empty selections.
 
 For each seeded split, all experiments and signatures of a study stay together.
 The training half supplies the Noel directional trait screen over all body sites
@@ -64,6 +79,43 @@ split/draw/seed overrides are recorded as off-protocol, for fixtures or explicit
 declared sensitivity runs. Add `--verify` with the original parameter overrides
 to replay the full analysis from verified sources and compare every output.
 The native arm calls and outputs remain unchanged.
+
+After producing and verifying one v2 run for each scope, build the joint report
+with the module CLI (the existing Justfile recipe continues to run one scope):
+
+```sh
+uv run python -m mtp.cellulose_decr.study_split_run \
+  --phenotype-run evidence/phenotype/study-splits \
+  --off-run evidence/off/study-splits \
+  --output-dir evidence/study-split-scopes
+```
+
+The reader checks the exact saved output inventory and hashes the same buffers
+that it parses. It requires the current v2 declaration, equal split parameters,
+implementation and environment, the same population and direction, trait-key
+policy, raw corpus and KG hashes, core producer identity and core parameters
+other than strain scope. Each scope must name a distinct core run, and the study
+partitions must match. The selected traits and triples may differ by scope.
+Per-split family scope and direction must agree with their run. The saved
+stability TSV must equal the descriptive counts reconstructed from the split
+results. The reader performs no selection or null simulation.
+
+`study_split_scopes.tsv` contains both saved stability tables with scope and role
+columns, phenotype first. `study_split_scopes.json` records both run-manifest
+hashes, their input and output hashes, common comparison contract and split counts;
+empty-selection runs remain represented even when their stability table has no
+rows. `README.md` states the roles and inferential limits. Output directories must
+be new or empty and must not overlap either source run. The joint `--verify` mode
+reconstructs and compares this report without writing. It differs from a single
+run's `--verify`, which replays the null calculations against verified upstream
+sources.
+
+The joint report checks recorded evidence, not live upstream bundles. Its hashes
+detect changed bytes relative to a saved manifest; its cross-checks detect
+inconsistent recorded scope and stability. They do not authenticate a coordinated
+rewrite of manifests and their dependent outputs. Use full per-run replay for
+live source-to-result verification, and preserve externally recorded manifest
+hashes for an independent historical identity.
 
 The sidecar binds every Git-tracked canonical `src/mtp` Python file through the
 shared multiplicity code inventory, the consumed protocols and methods, and the

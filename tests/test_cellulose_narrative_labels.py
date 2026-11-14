@@ -193,10 +193,12 @@ def test_direction_narratives_label_both_tests_and_count_distinct_definitions() 
     assert "Wilcoxon 2-sided nominal p on study means = unavailable." in study
     assert "nominal sign-test p-values range from 0.2 to 0.2" in study
     assert experiment.endswith(
-        "Nominal narrative endpoints: 3 finite; 2 unavailable; not a correction family."
+        "Nominal narrative endpoints: 1 Wilcoxon and 4 condition-definition sign tests; "
+        "3 finite; 2 unavailable; not a correction family."
     )
     assert study.endswith(
-        "Nominal narrative endpoints: 2 finite; 1 unavailable; not a correction family."
+        "Nominal narrative endpoints: 1 Wilcoxon and 2 condition-definition sign tests; "
+        "2 finite; 1 unavailable; not a correction family."
     )
     for text in (experiment, study):
         assert "all distinct condition definitions represented by the range" in text
@@ -216,7 +218,9 @@ def test_direction_range_reports_unavailable_without_inventing_endpoints(empty: 
     assert f"nominal sign-test p-values range: {expected_range}." in text
     expected_count = 0 if empty else 4
     assert text.endswith(
-        f"Nominal narrative endpoints: 1 finite; {expected_count} unavailable; "
+        "Nominal narrative endpoints: 1 Wilcoxon and "
+        f"{expected_count} condition-definition sign tests; "
+        f"1 finite; {expected_count} unavailable; "
         "not a correction family."
     )
 
@@ -287,6 +291,35 @@ def test_no_scenario_column_is_one_supplied_definition_per_selected_row_scope() 
         assert row["summary_interpretation"].endswith(
             "Nominal narrative endpoints: 1 finite; 0 unavailable; not a correction family."
         )
+
+
+@pytest.mark.parametrize("kind", ["direction", "interaction"])
+def test_duplicate_nan_scenario_is_accepted_and_counted_once(kind: str) -> None:
+    compartments, direction, _, interaction, scenarios = narrative_inputs()
+    source = direction if kind == "direction" else scenarios
+    unavailable = source.loc[source["scenario"].eq("no_pairs")].copy()
+    assert len(unavailable) == 1
+    duplicates = pd.concat([unavailable, unavailable], ignore_index=True)
+    before = duplicates.copy(deep=True)
+    try:
+        if kind == "direction":
+            row = analysis.direction_summary_rows(compartments, duplicates)[0]
+        else:
+            row = analysis.interaction_summary_rows(interaction, duplicates)[0]
+    except ValueError as error:
+        raise AssertionError(
+            "Two NaN copies of one scenario must be accepted as one unavailable endpoint"
+        ) from error
+    text = row["summary_interpretation"]
+    finite = 1 if kind == "direction" else 0
+    assert text.endswith(f"{finite} finite; 1 unavailable; not a correction family.")
+    if kind == "direction":
+        assert (
+            "Nominal narrative endpoints: 1 Wilcoxon and 1 condition-definition sign test; " in text
+        )
+    assert "p-values range: unavailable." in text
+    assert row["p_value"] == (0.3 if kind == "direction" else 0.04)
+    pd.testing.assert_frame_equal(before, duplicates)
 
 
 @pytest.mark.parametrize("kind", ["direction", "interaction"])

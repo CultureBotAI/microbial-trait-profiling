@@ -1,7 +1,7 @@
 ================================================================================
 TRAIT COUPLING SENSITIVITY AUDIT REPORT (Issue #260)
 ================================================================================
-Code commit: 8b280a399d71a36d2f8eec639800f282503eeb93
+Code commit: a62ebc2b09860df526c076fa80855b09d36a90ef
 
 1. LEAVE-ONE-TRAIT-OUT (LOTO) - COMPOSITION DELTA EFFECT MATRIX (6 x 6):
    Rows: Dropped Trait | Columns: Evaluated Trait
@@ -54,20 +54,20 @@ Minimum adjacent row distance:   0.003904 (between arsenate reduction and coccus
 Direct Test (Drop Sphere -> Coccus Effect Shift):
   Delta effect(coccus):            +0.000014
   |Delta effect|:                  0.000014
-  Criterion verdict:               Passes stability criterion: |Delta effect| (0.000014) < min adjacent row distance (0.003904). Denominator coupling does not destabilize effect rankings.
+  Criterion verdict:               Passes named-removal criterion: |Delta effect| (0.000014) < baseline min adjacent row distance (0.003904). This compares only the coccus shaped effect after removing sphere shaped; it does not establish stability for other traits or removals.
 
 Reverse Test (Drop Coccus -> Sphere Effect Shift):
   Delta effect(sphere):            +0.003657
   |Delta effect|:                  0.003657
-  Criterion verdict:               Passes stability criterion: |Delta effect| (0.003657) < min adjacent row distance (0.003904). Denominator coupling does not destabilize effect rankings.
+  Criterion verdict:               Passes named-removal criterion: |Delta effect| (0.003657) < baseline min adjacent row distance (0.003904). This compares only the sphere shaped effect after removing coccus shaped; it does not establish stability for other traits or removals.
 
-5. METHODOLOGICAL & BIOLOGICAL SYNTHESIS:
+5. SENSITIVITY SUMMARY:
 --------------------------------------------------------------------------------
 a. Denominator Coupling Sensitivity by Analytical Arm:
-   In the composition arm, denominator coupling induced by dropping any single Table 1 trait across all 30 LOTO pairs produces a maximum |Delta effect| of 0.005937 (and up to 0.005322 under LCO; overall composition |Delta effect| <= 0.005937), compared against the tightest Table 1 inter-trait gap of 0.003904.
+   In the composition arm, denominator coupling induced by dropping any single Table 1 trait across all 30 LOTO pairs produces a maximum |Delta effect| of 0.005937 (and up to 0.005322 under LCO; overall composition |Delta effect| <= 0.005937), compared against the tightest Table 1 inter-trait gap of 0.003904. The overall maximum exceeds that gap; 3 of 30 LOTO entries and 1 of 4 LCO entries exceed it.
    In the directional sign-test arm, maximum |Delta share_up| is 0.006553; in the ORA arm, maximum |Delta mean_fold| is 0.073474 as removing high-count traits shrinks the shared background urn M. Note that focal-set BH q-values above are evaluated over m=6 (baseline), m=5 (LOTO), and m=4 (LCO) traits as a sensitivity check rather than full-family Table 1 q-values.
 
-b. Distinction Between Redundancy and Denominator Coupling:
-   Coccus and sphere correlate strongly (r = +0.797, VIF = 2.74, Issue #264) due to semantic/curation redundancy in METPO mappings, NOT denominator distortion.
-   Because total non-MediaDive annotation counts are distributed across 317 columns (119.80M annotations), removing even a high-annotation trait like coccus (4.43M counts) shrinks the denominator smoothly without tilting relative compositions. Therefore, while coccus and sphere should not be claimed as independent biological mechanisms (due to semantic overlap), their Table 1 statistics are structurally stable.
+b. Annotation Association and Leave-Out Sensitivity:
+   Coccus and sphere annotation counts: profile correlation summary (r = +0.797, VIF = 2.74, Issue #264). These statistics do not establish the cause of the association.
+   The input spans 317 columns (119.80M annotations), including coccus (4.43M counts). Dropping sphere changes the coccus composition effect by +0.000014 (absolute 0.000014); dropping coccus changes sphere by +0.003657 (absolute 0.003657). The baseline minimum adjacent gap is 0.003904. Across all 30 evaluated LOTO entries, the maximum absolute composition change is 0.005937; the LCO maximum is 0.005322. These diagnostics describe sensitivity to the named removals. They do not establish unchanged rankings for every leave-out or independent biological mechanisms.
 ================================================================================

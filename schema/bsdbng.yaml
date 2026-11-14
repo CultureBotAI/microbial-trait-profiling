@@ -63,7 +63,7 @@ classes:
         required: true
     slot_usage:
       id:
-        pattern: "^bsdb:.+$"
+        pattern: '^bsdb:.+(?![\s\S])$'
         description: >-
           BugSigDB study identifier. Usually numeric (e.g. bsdb:10202341)
           but some entries use DOIs or PMC IDs (e.g. bsdb:PMC11017998).
@@ -116,7 +116,7 @@ classes:
         required: true
     slot_usage:
       id:
-        pattern: "^bsdb:.+-[0-9]+$"
+        pattern: '^bsdb:.+-[0-9]+(?![\s\S])$'
         description: BugSigDB experiment identifier, e.g. bsdb:10202341-1.
 
   Signature:
@@ -141,7 +141,7 @@ classes:
         required: true
     slot_usage:
       id:
-        pattern: "^bsdb:.+-[0-9]+-[0-9]+$"
+        pattern: '^bsdb:.+-[0-9]+-[0-9]+(?![\s\S])$'
         description: BugSigDB signature identifier, e.g. bsdb:10202341-1-1.
       direction:
         required: true
@@ -159,7 +159,7 @@ classes:
       - taxonomic_rank
     slot_usage:
       id:
-        pattern: "^NCBITaxon:[0-9]+$"
+        pattern: '^NCBITaxon:[0-9]+(?![\s\S])$'
         description: NCBITaxon CURIE, e.g. NCBITaxon:9606.
         recommended: true
         required: false
@@ -305,7 +305,7 @@ slots:
     title: DOI
     description: Digital object identifier for the study.
     range: string
-    pattern: "^10\\..+$"
+    pattern: '^10\..+(?![\s\S])$'
 
   url:
     title: URL
@@ -360,7 +360,7 @@ slots:
     aliases:
       - UBERON ID
     range: string
-    pattern: "^UBERON:[0-9]+$"
+    pattern: '^UBERON:[0-9]+(?![\s\S])$'
     multivalued: true
 
   condition:
@@ -580,13 +580,13 @@ slots:
     title: Taxon ID
     description: NCBITaxon identifier for a matrix row.
     range: string
-    pattern: "^NCBITaxon:[0-9]+$"
+    pattern: '^NCBITaxon:[0-9]+(?![\s\S])$'
 
   phenotype_id:
     title: Phenotype ID
     description: METPO phenotype or trait identifier.
     range: string
-    pattern: "^METPO:[0-9]+$"
+    pattern: '^METPO:[0-9]+(?![\s\S])$'
 
   phenotype_name:
     title: Phenotype Name

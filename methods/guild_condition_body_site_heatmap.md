@@ -1,7 +1,7 @@
 # Oxygen guild composition by condition and body site
 
 Figure: `guild_condition_body_site_heatmap.png`. Produced by
-`src/bsdbng/guild_maps.py`, driven by `just guild-maps`. How this analysis
+`src/mtp/guild_maps.py`, driven by `just guild-maps`. How this analysis
 differs from the composition and enrichment arms is set out in
 [`three_arm_statistics.md`](three_arm_statistics.md).
 
@@ -158,7 +158,7 @@ to a cell in the other, while the hue still identifies which guild is being read
 
 A condition whose every cell was masked would render as a blank row and is
 dropped before clustering; the dropped labels are listed on each run. A row that
-keeps only dark-grey cells is retained, because "sampled, but no recorded guild
+keeps only dark-grey cells is retained, because "sampled, with no recorded guild
 annotation signal" distinguishes mapped zero signal from unsampled cells.
 On the run described here 9
 conditions were dropped (Atopic asthma, Cervical cancer, Head and neck squamous
@@ -271,7 +271,7 @@ hypothesis or establish FDR control across these diagnostics.
 ## Reproducing
 
 All statistics use scipy (binomtest, spearmanr) rather than hand-rolled
-implementations. The figure was produced by `src/bsdbng/guild_maps.py`, driven
+implementations. The figure was produced by `src/mtp/guild_maps.py`, driven
 deterministically by `just guild-maps`, alongside the value matrix, the
 study-count matrix, the cell-status table, the row-cluster table, and the
 statistics table as tab-separated files. The statistics table's first row and a

@@ -303,6 +303,25 @@ just cellulose-decr
 just cellulose-decr-figures
 ```
 
+For projected slides, use `just cellulose-decr-figures --slide-pages`. This
+adds paginated 13.33 × 7.5 in exports in `figures_slides/` and a combined
+`cellulose_decr_slide_figures.pdf`. These pages split the three detailed report
+views at a native floor of 12 pt text and 0.5 pt strokes. Row-heavy tables paginate
+without dropping taxa, condition definitions, intervals or the first 15
+non-growth-medium benchmark traits. Existing report exports keep their paths
+and layouts; they are not the slide-size versions.
+
+Slide exports require fresh output routes: both `figures_slides/` and
+`cellulose_decr_slide_figures.pdf` must be absent. Existing directories, files or
+symlinks at either route are refused before report figures or manifests are
+changed. To rerender the slides, first delete both slide outputs; requiring
+fresh routes avoids leaving obsolete pages from a longer previous export.
+
+The figure provenance records slide captions, the page-to-report mapping,
+producer-file hashes and all generated output hashes. The slide pages display
+the saved tables, with the same descriptive calculations as the report views;
+they do not rerun inference or define a new multiple-testing family.
+
 The recipe records `git rev-parse HEAD` as the code commit, with `+dirty` when
 the analysis scripts or the repository's code paths (`src`, `scripts`,
 `methods`, `schema`, `Justfile`, `pyproject.toml`, `uv.lock`) differ from it.
@@ -339,10 +358,11 @@ Git abbreviation `0672ee7d`; a missing or ambiguous object is an error. The
 fixture retains `92539eb` as the historical review commit, but reproduction reads
 the blob directly, not that PR commit or current producer code. Extraction omits
 only the exact retirement banner; historical numbers remain pinned. The helper
-refuses existing output files. Full-clone tests resolve the abbreviation and
-check the full object ID against this record; they skip only outside Git or in a
-shallow checkout.
-CI's shallow checkout skips the real-Git pin check; that check runs only in full clones (#1740).
+refuses existing output files. The real-Git object pin is checked in only full local clones:
+the test resolves the abbreviation and checks the full object ID against this record.
+CI uses shallow checkouts (`fetch-depth: 1`), where `0672ee7d` is absent after
+retirement, so CI skips this check (#1740). The test also skips outside Git;
+missing or ambiguous objects in full clones remain failures.
 
 **Building the inputs.**
 

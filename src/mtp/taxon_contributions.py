@@ -21,10 +21,12 @@ from mtp.contribution_inputs import (
     encoded,
     load_base,
     load_graph,
+    resolve_inputs_trait_key_policy_record,
     verify_kg,
 )
 from mtp.paths import DERIVED_DATA_DIR, REPO_ROOT
 from mtp.taxa_trait_matrix import PRIMARY_STRAIN_ROLLUP, STRAIN_ROLLUPS
+from mtp.trait_key_policy import DEFAULT_TRAIT_KEY_POLICY, TRAIT_KEY_POLICIES
 
 Record = dict[str, Any]
 
@@ -255,11 +257,36 @@ def argument_parser(
             "scope, which `just taxa-trait-matrix` also builds (#788)."
         ),
     )
+    parser.add_argument(
+        "--trait-key-policy",
+        choices=TRAIT_KEY_POLICIES,
+        default=DEFAULT_TRAIT_KEY_POLICY,
+        help="Input matrix trait-key policy; verified reruns pass the core policy.",
+    )
+    parser.add_argument(
+        "--core-manifest",
+        type=Path,
+        default=None,
+        help=(
+            "Optional core run.json to parse and validate trait-key policy metadata. "
+            "The caller must verify the core and bind it to the input directory."
+        ),
+    )
     return parser
 
 
 def main() -> None:
-    args = argument_parser().parse_args()
+    parser = argument_parser()
+    args = parser.parse_args()
+    explicit_parser = argument_parser()
+    explicit_parser.set_defaults(trait_key_policy=None)
+    explicit_policy = explicit_parser.parse_args().trait_key_policy
+    policy_resolution = resolve_inputs_trait_key_policy_record(
+        args.inputs,
+        explicit_policy,
+        core_manifest=args.core_manifest,
+    )
+    policy = policy_resolution.policy
     protocol = json.loads(args.protocol.read_text(encoding="utf-8"))
     output: Path = args.output
     output.mkdir(parents=True, exist_ok=True)
@@ -284,6 +311,7 @@ def main() -> None:
         set(base.columns),
         set(base.traits.values()),
         strain_rollup=args.strain_rollup,
+        trait_key_policy=policy,
     )
     print("Reconciling all matrix and profile counts", flush=True)
     ledger = reconcile(base, graph)
@@ -304,6 +332,8 @@ def main() -> None:
         "traits": base.traits,
         "denominator_columns": base.columns,
         "strain_rollup": args.strain_rollup,
+        "trait_key_policy": policy,
+        "trait_key_policy_resolution": policy_resolution.as_dict(),
         "profiles": len(base.profiles),
         "studies": len({k[0] for k in base.profiles}),
         "header_continuation_repaired": graph.header_repaired,
@@ -311,7 +341,12 @@ def main() -> None:
         "mismatches": len(ledger.mismatches),
         "code_sha256": {
             name: digest(Path(__file__).parent / name)
-            for name in ("contribution_inputs.py", "taxon_contributions.py", "taxon_influence.py")
+            for name in (
+                "contribution_inputs.py",
+                "taxon_contributions.py",
+                "taxon_influence.py",
+                "trait_key_policy.py",
+            )
         },
     }
     (output / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")

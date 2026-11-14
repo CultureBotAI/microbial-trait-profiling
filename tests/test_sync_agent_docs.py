@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import importlib.util
+import re
 from pathlib import Path
 from types import ModuleType
 from typing import Any, SupportsIndex
@@ -868,3 +869,102 @@ def test_definition_bound_cache_distinguishes_pending_destination() -> None:
     source = '- [first]: docs/first.md\n  [pending]:\n"outside"\n'
     expected = source.replace(": docs/first.md", ": ../docs/first.md")
     assert links_relative_to_github(source) == expected
+
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_contributor_docs_agree_on_package_paths_and_check_before_commit() -> None:
+    """#1341, #463: contributor docs state mtp package paths and check-before-commit."""
+    repo_root = REPO_ROOT
+    pyproject = (repo_root / "pyproject.toml").read_text(encoding="utf-8")
+    agents = (repo_root / "AGENTS.md").read_text(encoding="utf-8")
+    copilot = (repo_root / ".github" / "copilot-instructions.md").read_text(encoding="utf-8")
+    contributing = (repo_root / "CONTRIBUTING.md").read_text(encoding="utf-8")
+    readme = (repo_root / "README.md").read_text(encoding="utf-8")
+
+    assert 'name = "mtp"' in pyproject
+
+    for name, doc in (
+        ("AGENTS.md", agents),
+        (".github/copilot-instructions.md", copilot),
+        ("CONTRIBUTING.md", contributing),
+        ("README.md", readme),
+    ):
+        assert "before committing" in doc, f"{name} must state the check-before-commit rule"
+        assert "before requesting review" not in doc, f"{name} has conflicting check timing"
+        assert "before opening a PR" not in doc, f"{name} has conflicting check timing"
+
+    assert "3. **Run `just check`** — all checks must pass before committing" in agents
+    assert "4. **Commit, push, and open a PR.**" in agents
+    assert "3. **Run `just check`** — all checks must pass before committing" in copilot
+    assert "4. **Commit, push, and open a PR.**" in copilot
+    assert "4. Run `just check` — **all checks must pass before committing**" in readme
+    assert "### 4. Run checks before committing" in contributing
+    assert "**All checks must pass before committing.**" in contributing
+
+    assert "- Source code goes in `src/mtp/` (with compatibility shims in `src/bsdbng/`)" in (
+        contributing
+    )
+    assert "- Source code goes in `src/bsdbng/`" not in contributing
+
+    assert "The Python package remains `bsdbng`" not in readme
+    assert "The Python package is `mtp` (`src/mtp/`, `schema/mtp.yaml`)" in readme
+    assert "compatibility shims" in readme
+    assert "schema/mtp.yaml" in readme
+    assert "src/mtp/" in readme
+    assert "datamodel/mtp_pydantic.py" in readme
+    assert "1900+" not in readme
+    assert "1,900+" not in readme
+    assert "1,245 reviewed studies" not in readme
+    assert "1,245 studies in pinned v1.3.1" not in readme
+    assert "parse into per-study YAML for the pinned BugSigDB release (~22s)" in readme
+    assert "load study YAMLs into MongoDB (~45s; for the pinned BugSigDB release)" in readme
+
+    for name, doc in (
+        ("AGENTS.md", agents),
+        (".github/copilot-instructions.md", copilot),
+        ("CONTRIBUTING.md", contributing),
+    ):
+        flat = " ".join(doc.split())
+        assert "Do not use `gh issue develop`" in flat, (
+            f"{name} missing gh issue develop prohibition"
+        )
+        assert re.search(r"(?<!Do not )(?<!do not )\b[Uu]se `gh issue develop`", flat) is None, (
+            f"{name} permits gh issue develop"
+        )
+        assert "gh pr view N --json closingIssuesReferences" in flat, (
+            f"{name} missing closingIssuesReferences command"
+        )
+        assert "which lists issues only, never PRs, or the PR's Development sidebar" in flat, (
+            f"{name} missing closingIssuesReferences issues-only scope"
+        )
+        assert (
+            "a link that comes only from a closing keyword goes away once the keyword is removed "
+            "from the PR body"
+        ) in flat, f"{name} missing closing-keyword removal rule"
+        assert (
+            "whereas a Development-sidebar or branch link persists and must be removed in the "
+            "PR's Development sidebar in the web UI (no `gh` subcommand does this, and only a "
+            "linked branch can be unlinked through the GraphQL API, so an agent must ask a "
+            "maintainer)"
+        ) in flat, f"{name} missing Development-sidebar removal rule"
+        assert (
+            "A closing keyword in a commit message (and so, by default, in the squash message) "
+            "also closes "
+            "the issue on merge, appears in neither check, and is not removed by editing the PR "
+            'body: write `Refs #<number>` in commits, and never a negated keyword such as "does '
+            'not close #<number>" (which still closes).'
+        ) in flat, f"{name} missing commit-message and negated-keyword rule"
+        assert "Remove any link to an issue the PR only partly addresses." in flat, (
+            f"{name} missing remove-partial-link rule"
+        )
+        assert "Keep any link" not in flat, f"{name} reverses remove-partial-link rule"
+        for sentence in re.split(r"(?<=[.!?])\s+", flat):
+            if ("sidebar" in sentence or "branch link" in sentence) and "goes away" in sentence:
+                assert "only from a closing keyword goes away" in sentence, (
+                    f"{name} claims sidebar/branch link goes away: {sentence!r}"
+                )
+                assert "whereas" in sentence, (
+                    f"{name} claims sidebar/branch link goes away: {sentence!r}"
+                )

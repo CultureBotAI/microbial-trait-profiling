@@ -46,6 +46,7 @@ Key = tuple[str, str, str]
 Pair = tuple[str, str]
 Result = dict[str, Any]
 PROTOCOL = "presence-depth-study-v2"
+FOCAL_EXPORT_VERSION = "presence-depth-focal-export-v2"
 REPRESENTATIONS = ("raw", "presence", "prevalence")
 
 
@@ -475,17 +476,37 @@ def focal_screen(screen: Sequence[Result], columns: Sequence[str]) -> list[Resul
                     "p_value": None,
                 }
             )
+            full_hypothesis_id = row["hypothesis_id"] if column is not None else None
             row.update(
                 family_id=f"{family}:focal_six",
                 hypothesis_id=slug,
                 focal_trait=slug,
                 full_family_id=family,
+                full_hypothesis_id=full_hypothesis_id,
                 q_by=row.get("q_by"),
                 q_bh=row.get("q_bh"),
                 family_size=template["family_size"],
             )
             results.append(row)
     return results
+
+
+def export_focal_rows(rows: Sequence[Result]) -> list[Result]:
+    """Project corrected focal rows onto explicit full/six-trait export identities."""
+    return [
+        {
+            **row,
+            "family_id": row["full_family_id"],
+            "hypothesis_id": row["full_hypothesis_id"],
+            "family_id_six_trait": row["family_id"],
+            "hypothesis_id_six_trait": row["hypothesis_id"],
+            "full_family_membership": "member"
+            if row["full_hypothesis_id"] is not None
+            else "absent_from_retained_vocabulary",
+            "export_contract_version": FOCAL_EXPORT_VERSION,
+        }
+        for row in rows
+    ]
 
 
 def composition_screen(
@@ -663,6 +684,7 @@ def run_sensitivity(core_run: Path, output_dir: Path) -> Path:
     )
     families.extend(extra_families)
     corrections.extend(extra_corrections)
+    focal_export = export_focal_rows(focal)
     final_sources = implementation_sources()
     changed_sources = sorted(
         name
@@ -688,7 +710,23 @@ def run_sensitivity(core_run: Path, output_dir: Path) -> Path:
     fields = fields_for(screen, ["family_id", "hypothesis_id", "status"])
     # DictWriter needs complete row keys only; missing inferential fields remain blank.
     table("trait_screen.tsv", screen, fields)
-    table("focal_traits.tsv", focal, fields_for(focal, ["focal_trait", *fields]))
+    table(
+        "focal_traits.tsv",
+        focal_export,
+        fields_for(
+            focal_export,
+            [
+                "focal_trait",
+                *fields,
+                "full_family_id",
+                "full_hypothesis_id",
+                "family_id_six_trait",
+                "hypothesis_id_six_trait",
+                "full_family_membership",
+                "export_contract_version",
+            ],
+        ),
+    )
     table("composition_presence.tsv", composition, fields_for(composition, ["hypothesis_id"]))
     table(
         "composition_studies.tsv",
@@ -742,6 +780,7 @@ def run_sensitivity(core_run: Path, output_dir: Path) -> Path:
     code_commit, code_dirty = repository_state(REPO_ROOT)
     provenance = {
         "protocol": PROTOCOL,
+        "focal_export_contract_version": FOCAL_EXPORT_VERSION,
         "core_run_id": bundle.run.run_id,
         "core_manifest_sha256": file_sha256(bundle.manifest),
         "contrast_population": bundle.run.contrast_population,
@@ -805,7 +844,16 @@ def run_sensitivity(core_run: Path, output_dir: Path) -> Path:
         "diagnostics are retained; the composition result uses the native paired-ratio test. "
         "The focal extract retains full-screen q_by/q_bh and family_size, and reports "
         "q_by_six_trait/q_bh_six_trait with family_size_six_trait for the separate "
-        "six-trait comparison. Families remain exploratory "
+        "six-trait comparison. "
+        f"Focal export contract `{FOCAL_EXPORT_VERSION}` assigns family_id/hypothesis_id "
+        "and their full_family_id/full_hypothesis_id aliases to the full-family values. "
+        "The separate family_id_six_trait/hypothesis_id_six_trait identify the six-trait values. "
+        "Absent focal features have full_family_membership=absent_from_retained_vocabulary "
+        "and blank full hypothesis IDs; their full family ID and size provide context only. "
+        "Present untestable members retain their full IDs despite unavailable p/q values. "
+        "Historical unversioned focal exports use generic IDs for the six-trait family; "
+        "they are not rewritten or silently interpreted as this export version. "
+        "Families remain exploratory "
         "across representations and tests. See methods/presence_depth_sensitivity.md for "
         "the declared transforms, HC3 support guards and denominators.\n",
         encoding="utf-8",

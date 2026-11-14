@@ -42,7 +42,7 @@ classes:
         description: Experiment component of the unique profile key.
       inc_dec:
         required: true
-        pattern: ^(inc|dec)$
+        pattern: '^(inc|dec)(?![\s\S])$'
         title: Inc dec
         description: Reported increased or decreased direction component of the profile key.
       feature_counts:
@@ -54,13 +54,13 @@ classes:
         title: Feature counts
       trait_filter_id:
         required: true
-        pattern: '^sha256:[0-9a-f]{64}$'
+        pattern: '^sha256:[0-9a-f]{64}(?![\s\S])$'
         title: Trait filter id
         description: Hash of the complete ordered feature vocabulary including verified zero coordinates.
       unit:
         required: true
         ifabsent: string(rolled_up_source_taxon_count)
-        pattern: ^rolled_up_source_taxon_count$
+        pattern: '^rolled_up_source_taxon_count(?![\s\S])$'
         description: Counts sum descendant-rollup source counts over distinct reported taxon IDs.
           Repeated reported IDs are deduplicated; the same source annotation can contribute
           through distinct reported ancestor and descendant IDs.
@@ -79,7 +79,7 @@ classes:
         description: Experiment component of the unique profile key.
       inc_dec:
         required: true
-        pattern: ^(inc|dec)$
+        pattern: '^(inc|dec)(?![\s\S])$'
         title: Inc dec
         description: Reported increased or decreased direction component of the profile key.
       sample_size:
@@ -97,13 +97,13 @@ classes:
         title: Feature counts
       trait_filter_id:
         required: true
-        pattern: '^sha256:[0-9a-f]{64}$'
+        pattern: '^sha256:[0-9a-f]{64}(?![\s\S])$'
         title: Trait filter id
         description: Hash of the complete ordered feature vocabulary including verified zero coordinates.
       unit:
         required: true
         ifabsent: string(distinct_matched_reported_taxon_count)
-        pattern: ^distinct_matched_reported_taxon_count$
+        pattern: '^distinct_matched_reported_taxon_count(?![\s\S])$'
         description: Counts distinct matched reported taxa without descendant multiplicity.
         title: Unit
     title: ORAProfile Row
@@ -121,7 +121,7 @@ classes:
         title: Path
       sha256:
         required: true
-        pattern: ^[0-9a-f]{64}$
+        pattern: '^[0-9a-f]{64}(?![\s\S])$'
         title: Sha256
         description: Lowercase SHA-256 of file bytes or the canonical collection inventory.
       size_bytes:
@@ -161,7 +161,7 @@ classes:
         title: Recorded at utc
       declared_source_mode:
         required: true
-        pattern: ^(unknown|fixture|live|pinned)$
+        pattern: '^(unknown|fixture|live|pinned)(?![\s\S])$'
         description: User-declared source mode; declaration alone does not verify origin.
         title: Declared source mode
       pinned_verified:
@@ -171,7 +171,7 @@ classes:
         title: Pinned verified
       verification_status:
         required: true
-        pattern: ^(pinned_bytes_verified|origin_unverified)$
+        pattern: '^(pinned_bytes_verified|origin_unverified)(?![\s\S])$'
         title: Verification status
         description: Whether exact pinned source bytes were verified or source origin remains unknown.
       snapshot_header:
@@ -323,7 +323,7 @@ classes:
         title: Signature id
       direction:
         required: true
-        pattern: ^(increased|decreased)$
+        pattern: '^(increased|decreased)(?![\s\S])$'
         description: Curated reported taxon abundance direction in Group 1 relative to Group 0.
           Clinical case-control orientation is not established by this core field.
         title: Direction
@@ -351,7 +351,7 @@ classes:
         title: Signature id
       direction:
         required: true
-        pattern: ^(increased|decreased)$
+        pattern: '^(increased|decreased)(?![\s\S])$'
         description: Reported abundance direction.
         title: Direction
       taxon_id:
@@ -460,7 +460,7 @@ classes:
         title: Object category
         description: KG category of the assertion object.
       trait_key_policy:
-        pattern: ^(raw_object_v1|facultative_union_v1)$
+        pattern: '^(raw_object_v1|facultative_union_v1)(?![\s\S])$'
         title: Trait key policy
         description: Versioned trait identity rule; required by the current scientific contract and absent only in verified historical formats.
       trait_member_ids_json:
@@ -476,7 +476,7 @@ classes:
         description: Whether the feature is a trait annotation or a culture-medium relation.
       annotation_evidence:
         required: true
-        pattern: ^(direct_or_descendant_unresolved|direct_descendant_or_strain_unresolved)$
+        pattern: '^(direct_or_descendant_unresolved|direct_descendant_or_strain_unresolved)(?![\s\S])$'
         title: Annotation evidence
         description: The assertion origins the feature's counts may combine, unresolved by this matrix; direct or descendant, and BacDive strain records when the run's strain rollup scope admits the feature.
     title: Feature Definition
@@ -540,12 +540,12 @@ classes:
         title: Matched without annotation taxon ids
       trait_filter_id:
         required: true
-        pattern: ^sha256:[0-9a-f]{64}$
+        pattern: '^sha256:[0-9a-f]{64}(?![\s\S])$'
         title: Trait filter id
         description: SHA-256 identifying the exact ordered retained feature vocabulary.
       lineage_resolution:
         required: true
-        pattern: ^unresolved$
+        pattern: '^unresolved(?![\s\S])$'
         title: Lineage resolution
         description: Unresolved direct-versus-descendant lineage; presence does not establish direct evidence.
     title: Profile Coverage Record

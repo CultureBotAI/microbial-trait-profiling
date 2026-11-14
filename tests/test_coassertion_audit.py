@@ -182,6 +182,59 @@ def test_canonical_guild_definition_and_shared_scope_policy(
     assert called == ["off", "phenotype", "full"]
 
 
+def test_guild_pair_accepts_either_member_per_side(
+    inputs: tuple[Path, Path], tmp_path: Path
+) -> None:
+    """A second-member carrier tests guild unions, separately from exact classes."""
+    edges, nodes = inputs
+    with edges.open("a", encoding="utf-8") as handle:
+        handle.write(
+            "guild_left\tNCBITaxon:7\tbiolink:has_phenotype\tMETPO:1000604\tfixture\n"
+            "guild_right\tNCBITaxon:7\tbiolink:has_phenotype\tMETPO:1000607\tfixture\n"
+        )
+    output = tmp_path / "guild-audit"
+    audit.run_audit(edges, nodes, output)
+    summary = table(output / "coassertion_summary.tsv")
+    carriers = table(output / "coasserted_taxon_nodes.tsv")
+    pair = "aerobe_guild_and_anaerobe_guild"
+    for scope, expected in (
+        ("off", {"NCBITaxon:1", "NCBITaxon:7"}),
+        ("phenotype", {"NCBITaxon:1", "NCBITaxon:2", "NCBITaxon:7"}),
+        ("full", {"NCBITaxon:1", "NCBITaxon:2", "NCBITaxon:7"}),
+    ):
+        row = next(r for r in summary if r["scope"] == scope and r["pair_id"] == pair)
+        assert int(row["coasserted_taxon_nodes"]) == len(expected)
+        selected = [r for r in carriers if r["scope"] == scope and r["pair_id"] == pair]
+        assert {r["taxon_id"] for r in selected} == expected
+        guild_only = next(r for r in selected if r["taxon_id"] == "NCBITaxon:7")
+        assert json.loads(guild_only["left_keys"]) == ["METPO:1000604"]
+        assert json.loads(guild_only["right_keys"]) == ["METPO:1000607"]
+        assert guild_only["direct_taxon_has_both"] == "True"
+    assert not any(r["taxon_id"] == "NCBITaxon:7" and r["pair_id"] != pair for r in carriers)
+
+
+def test_strain_links_require_ncbi_parent(inputs: tuple[Path, Path]) -> None:
+    """Only child-strain to NCBITaxon-parent links enter either reader's map."""
+    edges, _ = inputs
+    with edges.open("a", encoding="utf-8") as handle:
+        handle.write(
+            "not_ncbi\tkgmicrobe.strain:a\tbiolink:subclass_of\texample:parent\tfixture\n"
+            "not_strain\texample:subject\tbiolink:subclass_of\tNCBITaxon:2\tfixture\n"
+            "reversed\tNCBITaxon:2\tbiolink:subclass_of\tkgmicrobe.strain:a\tfixture\n"
+        )
+    graph = audit.read_graph(edges)
+    canonical = matrix_api.read_kg_trait_edges(edges, strains=True)
+    expected = {
+        "kgmicrobe.strain:s": {"NCBITaxon:1"},
+        "kgmicrobe.strain:a": {"NCBITaxon:2"},
+        "kgmicrobe.strain:b": {"NCBITaxon:2"},
+        "kgmicrobe.strain:c": {"NCBITaxon:3", "NCBITaxon:4"},
+        "kgmicrobe.strain:d": {"NCBITaxon:5"},
+    }
+    assert graph.strain_taxa == expected
+    assert canonical.strain_taxa == expected
+
+
 @pytest.mark.parametrize("scope", matrix_api.STRAIN_ROLLUPS)
 def test_target_carriers_match_canonical_edge_reader_before_ancestor_closure(
     inputs: tuple[Path, Path], scope: matrix_api.StrainRollup

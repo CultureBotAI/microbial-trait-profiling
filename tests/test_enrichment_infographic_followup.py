@@ -4,10 +4,18 @@ from __future__ import annotations
 
 import importlib.util
 import sys
+from collections.abc import Callable
 from pathlib import Path
+from typing import cast
 
+import numpy as np
 import pandas as pd
 import pytest
+from matplotlib.backends.backend_agg import FigureCanvasAgg, RendererAgg
+from matplotlib.collections import QuadMesh
+from matplotlib.colors import rgb_to_hsv, to_hex, to_rgb
+from matplotlib.figure import Figure
+from matplotlib.text import Text
 
 MODULE_PATH = (
     Path(__file__).resolve().parents[1] / "scripts" / "analyze_enrichment_infographic_followup.py"
@@ -18,6 +26,215 @@ assert SPEC.loader is not None
 followup = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = followup
 SPEC.loader.exec_module(followup)
+
+
+@pytest.fixture(params=[False, True], ids=["supplied-order", "clustered-columns"])
+def companion_heatmap_at_save(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, request: pytest.FixtureRequest
+) -> tuple[Figure, pd.DataFrame]:
+    """Draw the producer's actual artists at its save boundary (#1861)."""
+    matrix = pd.DataFrame(
+        [[0, 1, 1], [1, 0, 1]],
+        index=["taxon-a", "taxon-b"],
+        columns=["METPO:3", "METPO:1", "METPO:2"],
+    )
+    before = matrix.copy(deep=True)
+    taxa = pd.DataFrame(
+        {
+            "taxon_name": ["Synthetic taxon A", "Synthetic taxon B"],
+            "target_profile_count": [1, 1],
+            "display_condition": [followup.TARGET_CONDITIONS[0]] * 2,
+        },
+        index=matrix.index,
+    )
+    traits = pd.DataFrame({"heatmap_label": ["Third", "First", "Second"]}, index=matrix.columns)
+    captured: list[Figure] = []
+    output = tmp_path / "heatmap.png"
+
+    def at_save(figure: Figure, path: Path, **kwargs: object) -> None:
+        assert path == output
+        assert kwargs == {"dpi": 300, "bbox_inches": "tight"}
+        draw = cast(Callable[[], None], FigureCanvasAgg(figure).draw)
+        draw()
+        captured.append(figure)
+
+    monkeypatch.setattr(Figure, "savefig", at_save)
+    displayed = followup.save_traits_vs_organisms_heatmap(
+        matrix, taxa, traits, output, cluster_columns=request.param
+    )
+    pd.testing.assert_frame_equal(matrix, before)
+    assert len(captured) == 1
+    return captured[0], displayed
+
+
+def test_companion_heatmap_mesh_strokes_have_a_half_point_floor(
+    companion_heatmap_at_save: tuple[Figure, pd.DataFrame],
+) -> None:
+    figure, _ = companion_heatmap_at_save
+    meshes = figure.findobj(QuadMesh)
+    assert len(meshes) >= 2, "Both the binary matrix and condition strip must be inspected"
+    assert all(np.min(mesh.get_linewidth()) >= 0.5 for mesh in meshes)
+
+
+def test_companion_heatmap_colorbar_text_clears_the_condition_strip(
+    companion_heatmap_at_save: tuple[Figure, pd.DataFrame],
+) -> None:
+    figure, _ = companion_heatmap_at_save
+    get_renderer = cast(Callable[[], RendererAgg], FigureCanvasAgg(figure).get_renderer)
+    renderer = get_renderer()
+    colorbar = next(axis for axis in figure.axes if axis.get_ylabel() == "Trait present")
+    other_mesh_axes = [
+        axis for axis in figure.axes if axis is not colorbar and axis.findobj(QuadMesh)
+    ]
+    assert len(other_mesh_axes) == 2
+    words = [
+        text for text in colorbar.findobj(Text) if text.get_visible() and text.get_text().strip()
+    ]
+    assert words
+    assert any(text.get_text().startswith("0") for text in words)
+    for text in words:
+        bounds = text.get_window_extent(renderer)
+        for axis in other_mesh_axes:
+            assert not bounds.overlaps(axis.get_window_extent(renderer)), text.get_text()
+
+
+def test_companion_heatmap_layout_keeps_every_labelled_binary_cell(
+    companion_heatmap_at_save: tuple[Figure, pd.DataFrame],
+) -> None:
+    figure, expected = companion_heatmap_at_save
+    axis = next(
+        axis
+        for axis in figure.axes
+        if axis.get_ylabel() == "Organism observed in target-condition profiles"
+    )
+    meshes = axis.findobj(QuadMesh)
+    assert len(meshes) == 1
+    rows = [label.get_text() for label in axis.get_yticklabels()]
+    columns = [label.get_text() for label in axis.get_xticklabels()]
+    actual = pd.DataFrame(
+        np.asarray(meshes[0].get_array()).reshape(len(rows), len(columns)),
+        index=rows,
+        columns=columns,
+    )
+    pd.testing.assert_frame_equal(
+        actual.sort_index().sort_index(axis=1),
+        expected.sort_index().sort_index(axis=1),
+        check_dtype=False,
+    )
+
+
+def _cie_lightness(rgb: tuple[float, float, float]) -> float:
+    channels = np.asarray(rgb, dtype=float)
+    linear = np.where(channels <= 0.04045, channels / 12.92, ((channels + 0.055) / 1.055) ** 2.4)
+    luminance = float(0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2])
+    return 116.0 * (luminance ** (1.0 / 3.0)) - 16.0 if luminance > 0.008856 else 903.3 * luminance
+
+
+def test_companion_heatmap_multi_condition_palette_and_legend_clear_dendrogram(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Multi-condition strip colours stay distinct and clear all axes (#1922, #2005, #2006)."""
+    conditions = (
+        *followup.TARGET_CONDITIONS,
+        "Multiple sclerosis",
+        "Stroke",
+        "Constipation",
+        "Colorectal cancer",
+        "Parkinson's disease",
+    )[:8]
+    assert len(conditions) == 8
+    monkeypatch.setattr(followup, "TARGET_CONDITIONS", conditions)
+    matrix = pd.DataFrame(
+        [[int((i >> j) & 1) for j in range(4)] for i in range(len(conditions))],
+        index=[f"taxon-{i}" for i in range(len(conditions))],
+        columns=["METPO:1", "METPO:2", "METPO:3", "METPO:4"],
+    )
+    taxa = pd.DataFrame(
+        {
+            "taxon_name": [f"Taxon {i}" for i in range(len(conditions))],
+            "target_profile_count": list(range(1, len(conditions) + 1)),
+            "display_condition": list(conditions),
+        },
+        index=matrix.index,
+    )
+    traits = pd.DataFrame(
+        {"heatmap_label": ["First", "Second", "Third", "Fourth"]}, index=matrix.columns
+    )
+    captured: list[Figure] = []
+
+    def at_save(figure: Figure, _path: Path, **_kwargs: object) -> None:
+        draw = cast(Callable[[], None], FigureCanvasAgg(figure).draw)
+        draw()
+        captured.append(figure)
+
+    monkeypatch.setattr(Figure, "savefig", at_save)
+    followup.save_traits_vs_organisms_heatmap(
+        matrix, taxa, traits, tmp_path / "multi.png", cluster_columns=True
+    )
+    assert len(captured) == 1
+    figure = captured[0]
+    get_renderer = cast(Callable[[], RendererAgg], FigureCanvasAgg(figure).get_renderer)
+    renderer = get_renderer()
+    dendrogram = next(axis for axis in figure.axes if axis.get_legend() is not None)
+    legend = dendrogram.get_legend()
+    assert legend is not None
+    patches = legend.get_patches()
+    assert len(patches) == len(conditions)
+    legend_hexes = [to_hex(patch.get_facecolor()) for patch in patches]
+    assert len(set(legend_hexes)) == len(conditions), legend_hexes
+    trait_rgb = to_rgb("#155e75")
+    trait_hue = float(rgb_to_hsv(trait_rgb)[0])
+    palette_rgbs = [to_rgb(patch.get_facecolor()) for patch in patches]
+    for color_hex, color_rgb in zip(legend_hexes, palette_rgbs, strict=True):
+        hue_diff = abs(float(rgb_to_hsv(color_rgb)[0]) - trait_hue)
+        assert min(hue_diff, 1.0 - hue_diff) >= 0.03, color_hex
+    data_rgbs = [trait_rgb, *palette_rgbs]
+    lightness = [_cie_lightness(rgb) for rgb in data_rgbs]
+    for i in range(len(lightness)):
+        for j in range(i + 1, len(lightness)):
+            assert abs(lightness[i] - lightness[j]) >= 8.0, (i, j, lightness)
+
+    heatmap_ax = next(axis for axis in figure.axes if axis.get_xlabel() == "Trait")
+    strip_ax = next(
+        axis
+        for axis in figure.axes
+        if axis is not heatmap_ax
+        and axis.collections
+        and len(axis.collections[0].get_facecolor()) == len(conditions)
+    )
+    strip_mesh = cast(QuadMesh, strip_ax.collections[0])
+    strip_hexes = [
+        to_hex(cast(tuple[float, float, float, float], color))
+        for color in strip_mesh.get_facecolor()
+    ]
+    label_to_index = {
+        followup.display_taxon_label(taxon_id, taxa): idx
+        for idx, taxon_id in enumerate(matrix.index)
+    }
+    row_labels = [tick.get_text() for tick in heatmap_ax.get_yticklabels()]
+    assert len(row_labels) == len(conditions)
+    assert strip_hexes == [legend_hexes[label_to_index[label]] for label in row_labels]
+    strip_in_condition_order = [""] * len(conditions)
+    for row_pos, label in enumerate(row_labels):
+        strip_in_condition_order[label_to_index[label]] = strip_hexes[row_pos]
+    assert strip_in_condition_order == legend_hexes
+
+    dendrogram_box = dendrogram.get_window_extent(renderer)
+    legend_box = legend.get_window_extent(renderer)
+    assert not legend_box.overlaps(dendrogram_box)
+    for axis in figure.axes:
+        if axis is dendrogram:
+            continue
+        assert not legend_box.overlaps(axis.get_window_extent(renderer))
+        tight_box = axis.get_tightbbox(renderer)
+        assert tight_box is not None
+        assert not legend_box.overlaps(tight_box)
+    legend_words = [
+        text for text in legend.findobj(Text) if text.get_visible() and text.get_text().strip()
+    ]
+    assert legend_words
+    for word in legend_words:
+        assert not word.get_window_extent(renderer).overlaps(dendrogram_box), word.get_text()
 
 
 def test_targets_below_the_profile_minimum_are_reported_with_their_counts() -> None:
@@ -237,7 +454,10 @@ def test_main_heatmap_caption_matches_supplied_order_and_clustering(
         )
         return (
             binary[selected].copy(),
-            pd.DataFrame(index=binary.index),
+            pd.DataFrame(
+                {"display_condition": [followup.TARGET_CONDITIONS[0]] * len(binary.index)},
+                index=binary.index,
+            ),
             actual_labels.loc[selected],
         )
 
@@ -288,3 +508,300 @@ def test_main_heatmap_caption_matches_supplied_order_and_clustering(
         output / "fixture_traits_vs_organisms_heatmap_matrix.tsv", sep="\t", index_col=0
     )
     pd.testing.assert_frame_equal(saved_matrix, matrix)
+
+
+def test_companion_heatmap_refuses_more_conditions_than_distinct_colours(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A ninth condition must not silently reuse a strip colour (#2005 delta)."""
+    conditions = tuple(f"Condition {i}" for i in range(9))
+    monkeypatch.setattr(followup, "TARGET_CONDITIONS", conditions)
+    matrix = pd.DataFrame([[1, 0], [0, 1]], index=["taxon-a", "taxon-b"], columns=["T:1", "T:2"])
+    taxa = pd.DataFrame(
+        {
+            "taxon_name": ["Taxon A", "Taxon B"],
+            "target_profile_count": [1, 1],
+            "display_condition": [conditions[0], conditions[8]],
+        },
+        index=matrix.index,
+    )
+    traits = pd.DataFrame({"heatmap_label": ["One", "Two"]}, index=matrix.columns)
+    output = tmp_path / "nine.png"
+    with pytest.raises(
+        ValueError, match=r"^The companion heatmap has 8 distinct condition colours; 9"
+    ):
+        followup.save_traits_vs_organisms_heatmap(matrix, taxa, traits, output)
+    assert not output.exists()
+
+
+@pytest.mark.parametrize(
+    ("column_name", "unlisted_value"),
+    [
+        ("display_condition", "unknown"),
+        ("display_condition", "Asthma"),
+        ("dominant_condition", "unknown"),
+    ],
+    ids=["display-unknown", "display-unlisted", "dominant-unknown"],
+)
+def test_companion_heatmap_refuses_unlisted_row_conditions(
+    tmp_path: Path, column_name: str, unlisted_value: str
+) -> None:
+    """Rows whose condition is not in TARGET_CONDITIONS are refused (#2035)."""
+    assert len(followup.COMPANION_HEATMAP_PALETTE_COLORS) == 8
+    assert "#64748b" not in followup.COMPANION_HEATMAP_PALETTE_COLORS
+    matrix = pd.DataFrame([[1, 0], [0, 1]], index=["taxon-a", "taxon-b"], columns=["T:1", "T:2"])
+    taxa = pd.DataFrame(
+        {
+            "taxon_name": ["Taxon A", "Taxon B"],
+            "target_profile_count": [1, 1],
+            column_name: [followup.TARGET_CONDITIONS[0], unlisted_value],
+        },
+        index=matrix.index,
+    )
+    traits = pd.DataFrame({"heatmap_label": ["One", "Two"]}, index=matrix.columns)
+    output = tmp_path / f"unlisted_{column_name}_{unlisted_value}.png"
+    raised_msg = ""
+    try:
+        followup.save_traits_vs_organisms_heatmap(matrix, taxa, traits, output)
+    except ValueError as exc:
+        raised_msg = str(exc)
+    expected_prefix = (
+        f"Companion heatmap row condition(s) ['{unlisted_value}'] are not in TARGET_CONDITIONS "
+    )
+    assert raised_msg.startswith(expected_prefix), (
+        f"Expected ValueError starting with {expected_prefix!r}, got {raised_msg!r}"
+    )
+    assert not output.exists()
+
+
+@pytest.mark.parametrize("condition_source", ["paired-top", "infographic"])
+def test_main_refuses_excess_conditions_before_mkdir_or_loading_or_writing_tables(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, condition_source: str
+) -> None:
+    """main() refuses >8 conditions before creating output_dir or loading/writing (#2047)."""
+    followup.validate_companion_heatmap_condition_count(8)
+    calls: list[str] = []
+
+    def record_call(label: str) -> Callable[..., object]:
+        def _stub(*_args: object, **_kwargs: object) -> object:
+            calls.append(label)
+            raise AssertionError(f"{label} should not be called when condition count > 8")
+
+        return _stub
+
+    for hook_name in (
+        "load_experiments",
+        "load_studies",
+        "load_trait_labels",
+        "load_profile_labels",
+        "load_profiles",
+        "load_top_paired_conditions",
+        "summarize_condition_depth",
+        "write_target_title_table",
+        "summarize_autism_labels",
+        "compute_profile_neighbors",
+        "summarize_guild_connections",
+        "build_traits_vs_organisms_heatmap",
+        "save_traits_vs_organisms_heatmap",
+        "write_report",
+    ):
+        monkeypatch.setattr(followup, hook_name, record_call(hook_name))
+
+    output_dir = tmp_path / f"early_refusal_{condition_source}"
+    argv = [
+        "followup",
+        "--output-dir",
+        str(output_dir),
+        "--artifact-prefix",
+        "probe_",
+        "--condition-source",
+        condition_source,
+    ]
+    if condition_source == "paired-top":
+        argv.extend(["--top-paired-conditions", "9"])
+    else:
+        monkeypatch.setattr(
+            followup,
+            "TARGET_CONDITIONS",
+            tuple(f"Condition {i}" for i in range(9)),
+        )
+    monkeypatch.setattr(sys, "argv", argv)
+
+    raised_msg = ""
+    try:
+        followup.main()
+    except ValueError as exc:
+        raised_msg = str(exc)
+
+    expected_msg = (
+        "The companion heatmap has 8 distinct condition colours; 9 conditions "
+        "would reuse one. Use --top-paired-conditions 8 or fewer."
+    )
+    assert raised_msg == expected_msg, f"Expected {expected_msg!r}, got {raised_msg!r}"
+    assert calls == []
+    assert not output_dir.exists()
+
+
+def test_direct_save_heatmap_backstop_refuses_ninth_condition_with_value_error(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Direct callers of save_traits_vs_organisms_heatmap still hit the >8 backstop (#2047)."""
+    conditions = tuple(f"Condition {i}" for i in range(9))
+    monkeypatch.setattr(followup, "TARGET_CONDITIONS", conditions)
+    matrix = pd.DataFrame([[1, 0], [0, 1]], index=["taxon-a", "taxon-b"], columns=["T:1", "T:2"])
+    taxa = pd.DataFrame(
+        {
+            "taxon_name": ["Taxon A", "Taxon B"],
+            "target_profile_count": [1, 1],
+            "display_condition": [conditions[0], conditions[8]],
+        },
+        index=matrix.index,
+    )
+    traits = pd.DataFrame({"heatmap_label": ["One", "Two"]}, index=matrix.columns)
+    output = tmp_path / "backstop_nine.png"
+    raised_msg = ""
+    try:
+        followup.save_traits_vs_organisms_heatmap(matrix, taxa, traits, output)
+    except ValueError as exc:
+        raised_msg = str(exc)
+    expected_msg = (
+        "The companion heatmap has 8 distinct condition colours; 9 conditions "
+        "would reuse one. Use --top-paired-conditions 8 or fewer."
+    )
+    assert raised_msg == expected_msg, f"Expected {expected_msg!r}, got {raised_msg!r}"
+    assert not output.exists()
+
+
+@pytest.mark.parametrize(
+    "existing_output_dir",
+    [True, False],
+    ids=["existing-title-table", "missing-output-dir"],
+)
+@pytest.mark.parametrize(
+    ("column_name", "unlisted_value"),
+    [
+        ("display_condition", "unknown"),
+        ("display_condition", "Asthma"),
+        ("dominant_condition", "unknown"),
+    ],
+    ids=["display-unknown", "display-unlisted", "dominant-unknown"],
+)
+def test_main_refuses_unlisted_row_conditions_without_touching_output_dir(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    column_name: str,
+    unlisted_value: str,
+    existing_output_dir: bool,
+) -> None:
+    """main() refuses unmapped row conditions before mkdir or writing the title table (#2319)."""
+    target = followup.TARGET_CONDITIONS[0]
+    metadata = _profiles(
+        [
+            ("s1|s1-1|inc", "s1", "s1-1", target),
+            ("s1|s1-1|dec", "s1", "s1-1", target),
+            ("s2|s2-1|inc", "s2", "s2-1", "Other condition"),
+        ]
+    )
+    experiments = pd.DataFrame(
+        {
+            "study_id": ["s1", "s2"],
+            "experiment_id": ["s1-1", "s2-1"],
+            "condition": [target, "Other condition"],
+            "efo_id": ["MONDO:1", "MONDO:2"],
+            "experiment_label": [
+                "Experiment 1: control vs case",
+                "Experiment 2: control vs case",
+            ],
+            "group_1_definition": ["cases", "cases"],
+            "sequencing_type": ["16S", "16S"],
+        }
+    )
+    studies = pd.DataFrame(
+        {
+            "study_id": ["s1", "s2"],
+            "title": ["Study one", "Study two"],
+            "publication_year": ["2020", "2021"],
+        }
+    ).assign(doi="", url="")
+    labels = pd.DataFrame(
+        {
+            "display_name": ["First", "Second"],
+            "display_category": ["phenotype", "phenotype"],
+            "heatmap_label": ["First", "Second"],
+        },
+        index=["T:1", "T:2"],
+    )
+    values = pd.DataFrame([[2, 1], [1, 2], [1, 1]], index=metadata.index, columns=labels.index)
+    matrix = pd.DataFrame([[1, 0], [0, 1]], index=["taxon-a", "taxon-b"], columns=labels.index)
+    taxa = pd.DataFrame(
+        {
+            "taxon_name": ["Taxon A", "Taxon B"],
+            "target_profile_count": [1, 1],
+            column_name: [target, unlisted_value],
+        },
+        index=matrix.index,
+    )
+
+    monkeypatch.setattr(followup, "load_experiments", lambda *_args: experiments)
+    monkeypatch.setattr(followup, "load_studies", lambda *_args: studies)
+    monkeypatch.setattr(followup, "load_trait_labels", lambda *_args: labels)
+    monkeypatch.setattr(followup, "load_profile_labels", lambda *_args: pd.DataFrame())
+    monkeypatch.setattr(followup, "load_profiles", lambda *_args: (values, metadata, None))
+    monkeypatch.setattr(
+        followup,
+        "build_traits_vs_organisms_heatmap",
+        lambda *_args: (matrix.copy(), taxa.copy(), labels.copy()),
+    )
+    monkeypatch.setattr(
+        followup.sns,
+        "clustermap",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("clustermap should not be called on unmapped row condition")
+        ),
+    )
+
+    expected_msg = (
+        f"Companion heatmap row condition(s) ['{unlisted_value}'] are not in "
+        f"TARGET_CONDITIONS {list(followup.TARGET_CONDITIONS)}."
+    )
+
+    if existing_output_dir:
+        output_dir = tmp_path / f"existing_{column_name}_{unlisted_value}"
+        output_dir.mkdir()
+        title_table = output_dir / "outlier_condition_study_experiment_titles.tsv"
+        sentinel_bytes = b"condition\tstudy_id\tprior_sentinel\nThalassemia\ts0\tkeep\n"
+        title_table.write_bytes(sentinel_bytes)
+        before_entries = sorted(path.relative_to(output_dir) for path in output_dir.rglob("*"))
+        before_files = {
+            path.relative_to(output_dir): path.read_bytes()
+            for path in sorted(output_dir.rglob("*"))
+            if path.is_file()
+        }
+
+        monkeypatch.setattr(sys, "argv", ["followup", "--output-dir", str(output_dir)])
+        raised_msg = ""
+        try:
+            followup.main()
+        except ValueError as exc:
+            raised_msg = str(exc)
+        assert raised_msg == expected_msg, f"Expected {expected_msg!r}, got {raised_msg!r}"
+        after_entries = sorted(path.relative_to(output_dir) for path in output_dir.rglob("*"))
+        after_files = {
+            path.relative_to(output_dir): path.read_bytes()
+            for path in sorted(output_dir.rglob("*"))
+            if path.is_file()
+        }
+        assert after_entries == before_entries
+        assert after_files == before_files
+        assert title_table.read_bytes() == sentinel_bytes
+    else:
+        output_dir = tmp_path / f"missing_{column_name}_{unlisted_value}"
+        assert not output_dir.exists()
+        monkeypatch.setattr(sys, "argv", ["followup", "--output-dir", str(output_dir)])
+        raised_msg = ""
+        try:
+            followup.main()
+        except ValueError as exc:
+            raised_msg = str(exc)
+        assert raised_msg == expected_msg, f"Expected {expected_msg!r}, got {raised_msg!r}"
+        assert not output_dir.exists()

@@ -6,6 +6,7 @@ import hashlib
 import json
 from dataclasses import dataclass
 from pathlib import Path
+from typing import cast
 
 import pandas as pd
 
@@ -77,6 +78,8 @@ def read_display_edges(path: Path) -> pd.DataFrame:
         "focus_enriched_minus_comparator_guild_z",
         "rank_score",
     ]
+    # These columns stay int64 when complete but become float64 after fillna when a
+    # value is missing, so downstream casts on them say float, not int (#2012).
     for column in numeric_columns:
         frame[column] = pd.to_numeric(frame[column], errors="coerce").fillna(0.0)
     return frame
@@ -138,7 +141,9 @@ def node_stats(frame: pd.DataFrame, column: str) -> pd.DataFrame:
 def hex_to_rgb(color: str) -> tuple[int, int, int]:
     """Convert #rrggbb into RGB integers."""
     color = color.strip().lstrip("#")
-    return tuple(int(color[index : index + 2], 16) for index in (0, 2, 4))
+    return cast(
+        tuple[int, int, int], tuple(int(color[index : index + 2], 16) for index in (0, 2, 4))
+    )
 
 
 def rgb_to_hex(rgb: tuple[float, float, float]) -> str:
@@ -150,7 +155,7 @@ def lighten_color(color: str, fraction: float = 0.18) -> str:
     """Return a light tint from the same hue family."""
     rgb = hex_to_rgb(color)
     mixed = tuple(255 - ((255 - channel) * fraction) for channel in rgb)
-    return rgb_to_hex(mixed)
+    return rgb_to_hex(cast(tuple[float, float, float], mixed))
 
 
 def color_from_signal(base_color: str, signal: float, shared_signal_max: float) -> str:
@@ -159,7 +164,7 @@ def color_from_signal(base_color: str, signal: float, shared_signal_max: float) 
     base = hex_to_rgb(base_color)
     weight = 0.0 if shared_signal_max <= 0 else min(1.0, signal / shared_signal_max)
     mixed = tuple((light[i] * (1.0 - weight)) + (base[i] * weight) for i in range(3))
-    return rgb_to_hex(mixed)
+    return rgb_to_hex(cast(tuple[float, float, float], mixed))
 
 
 def parallel_offsets(count: int, *, spacing: float = 16.0, max_offset: float = 40.0) -> list[float]:
@@ -223,8 +228,8 @@ def trait_legend_records(frames: list[pd.DataFrame]) -> list[dict[str, object]]:
             "label": row.trait_label,
             "slug": row.trait_slug,
             "color": row.trait_color,
-            "rank": int(row.trait_rank),
-            "lightColor": lighten_color(row.trait_color),
+            "rank": int(cast(float, row.trait_rank)),
+            "lightColor": lighten_color(cast(str, row.trait_color)),
         }
         for row in legend.itertuples(index=False)
     ]
@@ -334,7 +339,7 @@ def build_view_payload(
 
     elements: list[dict[str, object]] = []
     for label in condition_order:
-        stats = condition_stats.loc[label]
+        stats = cast(pd.Series, condition_stats.loc[label])
         y = condition_y[label]
         elements.append(
             {
@@ -359,7 +364,7 @@ def build_view_payload(
             }
         )
     for row in bundles.itertuples(index=False):
-        y = body_site_y[row.body_site_group] + float(row.bundle_offset)
+        y = body_site_y[cast(str, row.body_site_group)] + float(cast(float, row.bundle_offset))
         x = 930
         elements.append(
             {
@@ -374,11 +379,11 @@ def build_view_payload(
                     "traitLabel": row.trait_label,
                     "color": row.color,
                     "baseColor": row.trait_color,
-                    "n": int(row.n),
-                    "bg": int(row.bg),
-                    "s": int(row.s),
-                    "links": int(row.links),
-                    "signal": round(float(row.signal), 4),
+                    "n": int(cast(int, row.n)),
+                    "bg": int(cast(int, row.bg)),
+                    "s": int(cast(int, row.s)),
+                    "links": int(cast(int, row.links)),
+                    "signal": round(float(cast(float, row.signal)), 4),
                     "presetX": x,
                     "presetY": y,
                 },
@@ -386,7 +391,7 @@ def build_view_payload(
             }
         )
     for label in body_site_order:
-        stats = body_site_stats.loc[label]
+        stats = cast(pd.Series, body_site_stats.loc[label])
         y = body_site_y[label]
         elements.append(
             {
@@ -413,7 +418,7 @@ def build_view_payload(
 
     for index, row in enumerate(frame.itertuples(index=False), start=1):
         base_color = str(row.trait_color)
-        signal = float(row.color_value)
+        signal = float(cast(float, row.color_value))
         source = condition_ids[str(row.condition)]
         target = bundle_ids[(row.body_site_group, row.trait_id)]
         elements.append(
@@ -430,22 +435,24 @@ def build_view_payload(
                     "edgeType": "source",
                     "source": source,
                     "target": target,
-                    "label": f"{row.trait_label}: n={int(row.focus_enriched_profile_count)}",
+                    "label": (
+                        f"{row.trait_label}: n={int(cast(float, row.focus_enriched_profile_count))}"
+                    ),
                     "condition": row.condition,
                     "bodySite": row.body_site_group,
                     "traitId": row.trait_id,
                     "traitLabel": row.trait_label,
                     "baseColor": base_color,
                     "color": color_from_signal(base_color, signal, shared_signal_max),
-                    "n": int(row.focus_enriched_profile_count),
-                    "bg": int(row.background_no_enriched_profile_count),
-                    "s": int(row.focus_enriched_study_count),
+                    "n": int(cast(float, row.focus_enriched_profile_count)),
+                    "bg": int(cast(float, row.background_no_enriched_profile_count)),
+                    "s": int(cast(float, row.focus_enriched_study_count)),
                     "signal": round(signal, 4),
                     "contrast": round(
-                        float(row.focus_enriched_minus_comparator_guild_z),
+                        float(cast(float, row.focus_enriched_minus_comparator_guild_z)),
                         4,
                     ),
-                    "rankScore": round(float(row.rank_score), 4),
+                    "rankScore": round(float(cast(float, row.rank_score)), 4),
                 }
             }
         )
@@ -462,18 +469,18 @@ def build_view_payload(
                     ),
                     "edgeType": "body_site_connector",
                     "source": bundle_ids[(row.body_site_group, row.trait_id)],
-                    "target": body_site_ids[row.body_site_group],
-                    "label": f"{row.trait_label}: summed n={int(row.n)}",
+                    "target": body_site_ids[cast(str, row.body_site_group)],
+                    "label": f"{row.trait_label}: summed n={int(cast(int, row.n))}",
                     "bodySite": row.body_site_group,
                     "traitId": row.trait_id,
                     "traitLabel": row.trait_label,
                     "baseColor": row.trait_color,
                     "color": row.color,
-                    "n": int(row.n),
-                    "bg": int(row.bg),
-                    "s": int(row.s),
-                    "signal": round(float(row.signal), 4),
-                    "sourceLinks": int(row.links),
+                    "n": int(cast(int, row.n)),
+                    "bg": int(cast(int, row.bg)),
+                    "s": int(cast(int, row.s)),
+                    "signal": round(float(cast(float, row.signal)), 4),
+                    "sourceLinks": int(cast(int, row.links)),
                 }
             }
         )
@@ -484,7 +491,7 @@ def build_view_payload(
     )
     ranges["signalMax"] = round(shared_signal_max, 4)
 
-    payload = {
+    payload: dict[str, object] = {
         "key": view.key,
         "label": view.label,
         "focusDirection": view.focus_direction,
@@ -504,7 +511,7 @@ def build_view_payload(
             "displayedTraits": frame["trait_id"].nunique(),
         },
     }
-    manifest = {
+    manifest: dict[str, object] = {
         "view_key": view.key,
         "view_label": view.label,
         "focus_direction": view.focus_direction,

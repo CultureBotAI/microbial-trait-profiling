@@ -5,8 +5,8 @@ Addresses Issue #260 (and follow-ups #478, #479):
    - Leave-One-Trait-Out (LOTO): For each of the six canonical Table 1 traits,
      removes it from the trait universe, renormalizes profile denominators,
      and evaluates the resulting delta in effect size and focal-set FDR q-value.
-   - Leave-Cluster-Out (LCO): Removes correlated near-twins (coccus shaped +
-     sphere shaped) simultaneously and evaluates the shifts for remaining traits.
+   - Leave-Cluster-Out (LCO): Removes coccus shaped +
+     sphere shaped simultaneously and evaluates the shifts for remaining traits.
 2. Evaluates sensitivity across all three analytical arms:
    - Composition arm: Paired profile fraction log-ratio contrast, z-score, paired t-test.
    - Directional arm: Study-level sign test over paired contrasts, Clopper-Pearson / binomial test.
@@ -16,13 +16,14 @@ Addresses Issue #260 (and follow-ups #478, #479):
    m = 4 in LCO) on all-profile statistics, rather than full-family Table 1 BH q-values
    across all 317 non-MediaDive (or 2,607 total) columns. Consequently, delta_q combines
    denominator perturbation with the focal BH family-size step.
-3. Evaluates the formal stability decision rule:
+3. Evaluates the named-removal comparison:
    - Tests whether dropping sphere moves coccus by more than the minimum distance
      between adjacent Table 1 rows.
 """
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
@@ -41,10 +42,11 @@ from mtp.density_adjustment import (
 )
 from mtp.enrichment_stats import benjamini_hochberg
 from mtp.paths import DERIVED_DATA_DIR
+from mtp.trait_key_policy import display_trait_label, read_recorded_member_ids
 
 DEFAULT_OUTPUT_DIR = DERIVED_DATA_DIR
 
-# Canonical near-twin cluster for Leave-Cluster-Out (LCO)
+# Declared coccus/sphere cluster for Leave-Cluster-Out (LCO)
 COCCUS_ID = "METPO:1000668"
 SPHERE_ID = "METPO:1000683"
 CANONICAL_LCO_CLUSTER: dict[str, str] = {
@@ -118,10 +120,39 @@ class DecisionRuleResult:
     min_adjacent_pair: tuple[str, str] = ("", "")
 
 
+def _resolve_table1_trait_names(
+    columns_path: Path | None = None,
+    trait_names: Mapping[str, str] | None = None,
+) -> dict[str, str]:
+    """Return Table 1 trait display names resolved from column member metadata (#1250)."""
+    base_names: dict[str, str] = dict(TABLE_1_TRAITS)
+    if trait_names is not None:
+        base_names.update({str(k): str(v) for k, v in trait_names.items()})
+    if columns_path is None:
+        return base_names
+    resolved_columns = Path(columns_path)
+    if not resolved_columns.exists():
+        gz_candidate = (
+            resolved_columns
+            if resolved_columns.suffix == ".gz"
+            else resolved_columns.with_name(f"{resolved_columns.name}.gz")
+        )
+        if gz_candidate.exists():
+            resolved_columns = gz_candidate
+    members = read_recorded_member_ids(resolved_columns)
+    return {
+        trait_id: display_trait_label(trait_id, raw_name, members.get(trait_id))
+        for trait_id, raw_name in base_names.items()
+    }
+
+
 def compute_composition_arm(
     profiles_df: pd.DataFrame,
     trait_universe: list[str],
     focal_traits: list[str],
+    *,
+    trait_names: Mapping[str, str] | None = None,
+    columns_path: Path | None = None,
 ) -> dict[str, ArmResult]:
     """Compute paired composition arm effects, t-statistics, and focal-set FDR q-values.
 
@@ -133,6 +164,7 @@ def compute_composition_arm(
     Returned q_value is a focal-set Benjamini-Hochberg adjustment over focal_traits
     (m = len(focal_traits), a sensitivity check distinct from full-family Table 1 q-values).
     """
+    resolved_names = _resolve_table1_trait_names(columns_path=columns_path, trait_names=trait_names)
     counts_all = profiles_df[trait_universe].values.astype(float)
     totals = counts_all.sum(axis=1)
     denom = np.where(totals > 0, totals, 1.0)
@@ -184,7 +216,7 @@ def compute_composition_arm(
     for idx, t in enumerate(focal_traits):
         results[t] = ArmResult(
             trait_id=t,
-            trait_name=TABLE_1_TRAITS.get(t, t),
+            trait_name=resolved_names.get(t, t),
             primary_stat=stats_list[idx]["effect"],
             p_value=stats_list[idx]["p_val"],
             q_value=float(q_vals[idx]) if len(q_vals) > idx else stats_list[idx]["p_val"],
@@ -198,6 +230,9 @@ def compute_directional_arm(
     trait_universe: list[str],
     focal_traits: list[str],
     sign_tol: float = 1e-12,
+    *,
+    trait_names: Mapping[str, str] | None = None,
+    columns_path: Path | None = None,
 ) -> dict[str, ArmResult]:
     """Compute directional arm study-level sign-test over paired contrasts.
 
@@ -210,6 +245,7 @@ def compute_directional_arm(
     Returned q_value is a focal-set Benjamini-Hochberg adjustment over focal_traits
     (m = len(focal_traits), a sensitivity check distinct from full-family Table 1 q-values).
     """
+    resolved_names = _resolve_table1_trait_names(columns_path=columns_path, trait_names=trait_names)
     counts_all = profiles_df[trait_universe].values.astype(float)
     totals = counts_all.sum(axis=1)
     denom = np.where(totals > 0, totals, 1.0)
@@ -251,7 +287,7 @@ def compute_directional_arm(
     for idx, t in enumerate(focal_traits):
         results[t] = ArmResult(
             trait_id=t,
-            trait_name=TABLE_1_TRAITS.get(t, t),
+            trait_name=resolved_names.get(t, t),
             primary_stat=stats_list[idx]["share_up"],
             p_value=stats_list[idx]["p_val"],
             q_value=float(q_vals[idx]) if len(q_vals) > idx else stats_list[idx]["p_val"],
@@ -264,6 +300,9 @@ def compute_ora_arm(
     paired_profiles_df: pd.DataFrame,
     trait_universe: list[str],
     focal_traits: list[str],
+    *,
+    trait_names: Mapping[str, str] | None = None,
+    columns_path: Path | None = None,
 ) -> dict[str, ArmResult]:
     """Compute ORA hypergeometric enrichment arm across paired profiles.
 
@@ -277,6 +316,7 @@ def compute_ora_arm(
     Fisher's combined test evaluates global significance, with focal-set BH q_value
     computed over focal_traits (m = len(focal_traits)).
     """
+    resolved_names = _resolve_table1_trait_names(columns_path=columns_path, trait_names=trait_names)
     counts_universe = paired_profiles_df[trait_universe].values.astype(int)
     M = int(counts_universe.sum())
     N_arr = counts_universe.sum(axis=1)
@@ -331,7 +371,7 @@ def compute_ora_arm(
     for idx, t in enumerate(focal_traits):
         results[t] = ArmResult(
             trait_id=t,
-            trait_name=TABLE_1_TRAITS.get(t, t),
+            trait_name=resolved_names.get(t, t),
             primary_stat=stats_list[idx]["mean_fold"],
             p_value=stats_list[idx]["fisher_p"],
             q_value=float(q_vals[idx]) if len(q_vals) > idx else stats_list[idx]["fisher_p"],
@@ -345,6 +385,9 @@ def evaluate_loto(
     paired_profiles_df: pd.DataFrame,
     trait_universe: list[str],
     focal_traits: list[str],
+    *,
+    trait_names: Mapping[str, str] | None = None,
+    columns_path: Path | None = None,
 ) -> tuple[list[LOTORow], dict[str, pd.DataFrame]]:
     """Evaluate Leave-One-Trait-Out (LOTO) for all focal traits across three arms.
 
@@ -355,9 +398,16 @@ def evaluate_loto(
     Returns:
         tuple of (list of LOTORow, dict mapping arm to delta_matrix DataFrame)
     """
-    base_comp = compute_composition_arm(profiles_df, trait_universe, focal_traits)
-    base_dir = compute_directional_arm(profiles_df, trait_universe, focal_traits)
-    base_ora = compute_ora_arm(paired_profiles_df, trait_universe, focal_traits)
+    resolved_names = _resolve_table1_trait_names(columns_path=columns_path, trait_names=trait_names)
+    base_comp = compute_composition_arm(
+        profiles_df, trait_universe, focal_traits, trait_names=resolved_names
+    )
+    base_dir = compute_directional_arm(
+        profiles_df, trait_universe, focal_traits, trait_names=resolved_names
+    )
+    base_ora = compute_ora_arm(
+        paired_profiles_df, trait_universe, focal_traits, trait_names=resolved_names
+    )
 
     base_maps = {
         "composition": base_comp,
@@ -372,14 +422,20 @@ def evaluate_loto(
     comp_delta_q = pd.DataFrame(index=focal_traits, columns=focal_traits, dtype=float)
 
     for dropped in focal_traits:
-        dropped_name = TABLE_1_TRAITS.get(dropped, dropped)
+        dropped_name = resolved_names.get(dropped, dropped)
         rem_universe = [c for c in trait_universe if c != dropped]
         rem_focal = [t for t in focal_traits if t != dropped]
 
         # Recompute all three arms under reduced universe
-        loto_comp = compute_composition_arm(profiles_df, rem_universe, rem_focal)
-        loto_dir = compute_directional_arm(profiles_df, rem_universe, rem_focal)
-        loto_ora = compute_ora_arm(paired_profiles_df, rem_universe, rem_focal)
+        loto_comp = compute_composition_arm(
+            profiles_df, rem_universe, rem_focal, trait_names=resolved_names
+        )
+        loto_dir = compute_directional_arm(
+            profiles_df, rem_universe, rem_focal, trait_names=resolved_names
+        )
+        loto_ora = compute_ora_arm(
+            paired_profiles_df, rem_universe, rem_focal, trait_names=resolved_names
+        )
 
         loto_arm_results = {
             "composition": loto_comp,
@@ -416,7 +472,7 @@ def evaluate_loto(
                     comp_delta_q.loc[dropped, target] = d_q
 
     # Convert indices to readable trait names
-    readable_names = [TABLE_1_TRAITS.get(t, t) for t in focal_traits]
+    readable_names = [resolved_names.get(t, t) for t in focal_traits]
     comp_delta_eff.index = readable_names
     comp_delta_eff.columns = readable_names
     comp_delta_q.index = readable_names
@@ -436,25 +492,41 @@ def evaluate_lco(
     trait_universe: list[str],
     focal_traits: list[str],
     cluster_to_drop: dict[str, str],
+    *,
+    trait_names: Mapping[str, str] | None = None,
+    columns_path: Path | None = None,
 ) -> list[LCOSummaryRow]:
     """Evaluate Leave-Cluster-Out (LCO) by removing correlated traits simultaneously.
 
     Note (#478): base_q uses a focal-set BH family of size m = len(focal_traits),
     whereas lco_q uses the reduced focal family of size len(lco_focal).
     """
+    resolved_names = _resolve_table1_trait_names(columns_path=columns_path, trait_names=trait_names)
     cluster_ids = set(cluster_to_drop.keys())
     cluster_label = " + ".join(cluster_to_drop.values())
 
-    base_comp = compute_composition_arm(profiles_df, trait_universe, focal_traits)
-    base_dir = compute_directional_arm(profiles_df, trait_universe, focal_traits)
-    base_ora = compute_ora_arm(paired_profiles_df, trait_universe, focal_traits)
+    base_comp = compute_composition_arm(
+        profiles_df, trait_universe, focal_traits, trait_names=resolved_names
+    )
+    base_dir = compute_directional_arm(
+        profiles_df, trait_universe, focal_traits, trait_names=resolved_names
+    )
+    base_ora = compute_ora_arm(
+        paired_profiles_df, trait_universe, focal_traits, trait_names=resolved_names
+    )
 
     lco_universe = [c for c in trait_universe if c not in cluster_ids]
     lco_focal = [t for t in focal_traits if t not in cluster_ids]
 
-    lco_comp = compute_composition_arm(profiles_df, lco_universe, lco_focal)
-    lco_dir = compute_directional_arm(profiles_df, lco_universe, lco_focal)
-    lco_ora = compute_ora_arm(paired_profiles_df, lco_universe, lco_focal)
+    lco_comp = compute_composition_arm(
+        profiles_df, lco_universe, lco_focal, trait_names=resolved_names
+    )
+    lco_dir = compute_directional_arm(
+        profiles_df, lco_universe, lco_focal, trait_names=resolved_names
+    )
+    lco_ora = compute_ora_arm(
+        paired_profiles_df, lco_universe, lco_focal, trait_names=resolved_names
+    )
 
     lco_rows: list[LCOSummaryRow] = []
 
@@ -473,7 +545,7 @@ def evaluate_lco(
                     arm=arm_name,
                     cluster_dropped=cluster_label,
                     trait_id=t,
-                    trait_name=TABLE_1_TRAITS.get(t, t),
+                    trait_name=resolved_names.get(t, t),
                     base_stat=b.primary_stat,
                     lco_stat=lco_res.primary_stat,
                     delta_stat=lco_res.primary_stat - b.primary_stat,
@@ -493,15 +565,18 @@ def evaluate_decision_rule(
     comp_delta_eff_matrix: pd.DataFrame,
     target_trait_id: str = COCCUS_ID,
     dropped_trait_id: str = SPHERE_ID,
+    *,
+    trait_names: Mapping[str, str] | None = None,
+    columns_path: Path | None = None,
 ) -> DecisionRuleResult:
-    """Evaluate the formal stability decision rule.
+    """Compare one named removal's effect change with the baseline adjacent-row gap.
 
-    Criterion:
-        If dropping sphere moves coccus by more than the minimum distance between
-        adjacent Table 1 rows, the two cannot be reported as separate convergent findings.
+    Passing this criterion describes only the evaluated target after the specified
+    removal; it does not establish stability of other traits or removals.
     """
-    target_name = TABLE_1_TRAITS.get(target_trait_id, target_trait_id)
-    dropped_name = TABLE_1_TRAITS.get(dropped_trait_id, dropped_trait_id)
+    resolved_names = _resolve_table1_trait_names(columns_path=columns_path, trait_names=trait_names)
+    target_name = resolved_names.get(target_trait_id, target_trait_id)
+    dropped_name = resolved_names.get(dropped_trait_id, dropped_trait_id)
 
     d_eff = float(
         comp_delta_eff_matrix.loc[[dropped_name], [target_name]].to_numpy(dtype=float).item()
@@ -519,15 +594,17 @@ def evaluate_decision_rule(
 
     if passes:
         verdict = (
-            f"Passes stability criterion: |Delta effect| ({abs_d_eff:.6f}) < "
-            f"min adjacent row distance ({min_adj_dist:.6f}). Denominator coupling does not "
-            f"destabilize effect rankings."
+            f"Passes named-removal criterion: |Delta effect| ({abs_d_eff:.6f}) < "
+            f"baseline min adjacent row distance ({min_adj_dist:.6f}). "
+            f"This compares only the {target_name} effect after removing {dropped_name}; "
+            "it does not establish stability for other traits or removals."
         )
     else:
         verdict = (
-            f"Fails stability criterion: |Delta effect| ({abs_d_eff:.6f}) >= "
-            f"min adjacent row distance ({min_adj_dist:.6f}). Near-twin coupling destabilizes "
-            f"separate reporting."
+            f"Fails named-removal criterion: |Delta effect| ({abs_d_eff:.6f}) >= "
+            f"baseline min adjacent row distance ({min_adj_dist:.6f}). "
+            f"This compares only the {target_name} effect after removing {dropped_name}; "
+            "it does not establish stability for other traits or removals."
         )
 
     return DecisionRuleResult(
@@ -555,8 +632,21 @@ def build_coupling_report_text(
     code_commit: str = "",
     loto_rows: list[LOTORow] | None = None,
     corpus_metrics: dict[str, float | int] | None = None,
+    *,
+    columns_path: Path | None = None,
+    trait_names: Mapping[str, str] | None = None,
 ) -> str:
     """Format comprehensive text report for trait coupling audit."""
+    display_names = _resolve_table1_trait_names(columns_path=columns_path, trait_names=trait_names)
+    raw_to_display = {
+        raw_label: display_names.get(trait_id, raw_label)
+        for trait_id, raw_label in TABLE_1_TRAITS.items()
+    }
+    if not delta_eff_mat.empty:
+        delta_eff_mat = delta_eff_mat.rename(index=raw_to_display, columns=raw_to_display)
+    if not delta_q_mat.empty:
+        delta_q_mat = delta_q_mat.rename(index=raw_to_display, columns=raw_to_display)
+
     base_m = delta_eff_mat.shape[0] if not delta_eff_mat.empty else len(TABLE_1_TRAITS)
     loto_m = max(base_m - 1, 1)
     lco_traits = {r.trait_id for r in lco_rows}
@@ -572,6 +662,11 @@ def build_coupling_report_text(
     comp_lco_deltas = [abs(r.delta_stat) for r in lco_rows if r.arm == "composition"]
     max_comp_lco = max(comp_lco_deltas, default=0.0)
     max_comp_overall = max(max_comp_loto, max_comp_lco)
+    n_loto_exceed = int(np.count_nonzero(finite_comp_loto > rule_result.min_adjacent_distance))
+    n_lco_exceed = sum(delta > rule_result.min_adjacent_distance for delta in comp_lco_deltas)
+    gap_comparison = (
+        "exceeds" if max_comp_overall > rule_result.min_adjacent_distance else "does not exceed"
+    )
 
     dir_deltas = [abs(r.delta_stat) for r in (loto_rows or []) if r.arm == "directional"] + [
         abs(r.delta_stat) for r in lco_rows if r.arm == "directional"
@@ -583,11 +678,15 @@ def build_coupling_report_text(
     ]
     max_ora_delta = max(ora_deltas, default=0.0)
 
-    pair_suffix = (
-        f" (between {rule_result.min_adjacent_pair[0]} and {rule_result.min_adjacent_pair[1]})"
-        if rule_result.min_adjacent_pair[0] and rule_result.min_adjacent_pair[1]
-        else ""
-    )
+    p0 = raw_to_display.get(rule_result.min_adjacent_pair[0], rule_result.min_adjacent_pair[0])
+    p1 = raw_to_display.get(rule_result.min_adjacent_pair[1], rule_result.min_adjacent_pair[1])
+    pair_suffix = f" (between {p0} and {p1})" if p0 and p1 else ""
+    rule_verdict = rule_result.verdict
+    rule_reverse_verdict = rule_result_reverse.verdict
+    for raw_label, display_label in raw_to_display.items():
+        if raw_label != display_label:
+            rule_verdict = rule_verdict.replace(raw_label, display_label)
+            rule_reverse_verdict = rule_reverse_verdict.replace(raw_label, display_label)
 
     if corpus_metrics is not None:
         n_cols_val = int(corpus_metrics.get("n_traits", base_m))
@@ -655,8 +754,11 @@ def build_coupling_report_text(
     )
 
     for row in lco_rows:
+        row_display_name = display_names.get(
+            row.trait_id, raw_to_display.get(row.trait_name, row.trait_name)
+        )
         lines.append(
-            f"{row.arm:<14} | {row.trait_name:<28} | {row.base_stat:+10.4f} | "
+            f"{row.arm:<14} | {row_display_name:<28} | {row.base_stat:+10.4f} | "
             f"{row.lco_stat:+10.4f} | {row.delta_stat:+11.6f} | "
             f"{row.base_q:9.2e} | {row.lco_q:9.2e}"
         )
@@ -680,14 +782,14 @@ def build_coupling_report_text(
             "Direct Test (Drop Sphere -> Coccus Effect Shift):",
             f"  Delta effect(coccus):            {rule_result.delta_effect:+.6f}",
             f"  |Delta effect|:                  {rule_result.abs_delta_effect:.6f}",
-            f"  Criterion verdict:               {rule_result.verdict}",
+            f"  Criterion verdict:               {rule_verdict}",
             "",
             "Reverse Test (Drop Coccus -> Sphere Effect Shift):",
             f"  Delta effect(sphere):            {rule_result_reverse.delta_effect:+.6f}",
             f"  |Delta effect|:                  {rule_result_reverse.abs_delta_effect:.6f}",
-            f"  Criterion verdict:               {rule_result_reverse.verdict}",
+            f"  Criterion verdict:               {rule_reverse_verdict}",
             "",
-            "5. METHODOLOGICAL & BIOLOGICAL SYNTHESIS:",
+            "5. SENSITIVITY SUMMARY:",
             "-" * 80,
             "a. Denominator Coupling Sensitivity by Analytical Arm:",
             (
@@ -695,7 +797,10 @@ def build_coupling_report_text(
                 f"Table 1 trait across all {n_loto_pairs} LOTO pairs produces a maximum "
                 f"|Delta effect| of {max_comp_loto:.6f} (and up to {max_comp_lco:.6f} under LCO; "
                 f"overall composition |Delta effect| <= {max_comp_overall:.6f}), compared against "
-                f"the tightest Table 1 inter-trait gap of {rule_result.min_adjacent_distance:.6f}."
+                f"the tightest Table 1 inter-trait gap of {rule_result.min_adjacent_distance:.6f}. "
+                f"The overall maximum {gap_comparison} that gap; "
+                f"{n_loto_exceed} of {n_loto_pairs} LOTO entries and "
+                f"{n_lco_exceed} of {len(comp_lco_deltas)} LCO entries exceed it."
             ),
             (
                 f"   In the directional sign-test arm, maximum |Delta share_up| is "
@@ -706,18 +811,23 @@ def build_coupling_report_text(
                 f"sensitivity check rather than full-family Table 1 q-values."
             ),
             "",
-            "b. Distinction Between Redundancy and Denominator Coupling:",
+            "b. Annotation Association and Leave-Out Sensitivity:",
             (
-                f"   Coccus and sphere correlate strongly{twin_stats_str} due to "
-                f"semantic/curation redundancy in METPO mappings, NOT denominator distortion."
+                f"   Coccus and sphere annotation counts: profile correlation summary"
+                f"{twin_stats_str}. These statistics do not establish the cause of the association."
             ),
             (
-                f"   Because total non-MediaDive annotation counts are distributed across "
-                f"{cols_str}, removing even a high-annotation trait like "
-                f"coccus{coccus_str} shrinks the denominator smoothly without tilting relative "
-                f"compositions. Therefore, while coccus and sphere should not be claimed as "
-                f"independent biological mechanisms (due to semantic overlap), their Table 1 "
-                f"statistics are structurally stable."
+                f"   The input spans {cols_str}, including coccus{coccus_str}. "
+                f"Dropping sphere changes the coccus composition effect by "
+                f"{rule_result.delta_effect:+.6f} (absolute {rule_result.abs_delta_effect:.6f}); "
+                f"dropping coccus changes sphere by {rule_result_reverse.delta_effect:+.6f} "
+                f"(absolute {rule_result_reverse.abs_delta_effect:.6f}). "
+                f"The baseline minimum adjacent gap is {rule_result.min_adjacent_distance:.6f}. "
+                f"Across all {n_loto_pairs} evaluated LOTO entries, the maximum absolute "
+                f"composition change is {max_comp_loto:.6f}; the LCO maximum is "
+                f"{max_comp_lco:.6f}. These diagnostics describe sensitivity to the named "
+                f"removals. They do not establish unchanged rankings for every leave-out "
+                f"or independent biological mechanisms."
             ),
             "=" * 80,
         ]
@@ -738,6 +848,7 @@ def run_coupling_audit(
 
     profiles_df, valid_cols = load_non_media_profile_matrix(profiles_path, columns_path)
     t1_keys = list(TABLE_1_TRAITS.keys())
+    display_trait_names = _resolve_table1_trait_names(columns_path=columns_path)
 
     # Filter to paired experiments for paired and ORA evaluations
     pvt_check = profiles_df.pivot(
@@ -750,7 +861,7 @@ def run_coupling_audit(
     ]
     sub_paired_df = profiles_df[paired_mask].copy()
 
-    # 1. Baseline evaluations
+    # 1. Baseline evaluations (recorded objects preserve KG labels per #1250)
     base_comp = compute_composition_arm(profiles_df, valid_cols, t1_keys)
 
     # 2. LOTO evaluation
@@ -832,6 +943,8 @@ def run_coupling_audit(
         code_commit=code_commit,
         loto_rows=loto_rows,
         corpus_metrics=corpus_metrics,
+        columns_path=columns_path,
+        trait_names=display_trait_names,
     )
     report_txt_path.write_text(report_text, encoding="utf-8")
 

@@ -9,7 +9,8 @@ physiology or independent replication of the original findings.
 ## Run against matching inputs
 
 Use the reported-taxon, taxon-matrix, and wide-profile tables from one run, with
-the exact KG snapshot used to produce them. Supply the run's strain scope:
+the exact KG snapshot used to produce them. Supply the run's strain scope and
+trait-key policy:
 
 ```bash
 just audit-label-support \
@@ -20,6 +21,7 @@ just audit-label-support \
   --edges KG/merged-kg_edges.tsv \
   --nodes KG/merged-kg_nodes.tsv \
   --strain-rollup off \
+  --trait-key-policy facultative_union_v1 \
   --output-dir RESULTS/label-support-off
 ```
 
@@ -30,6 +32,23 @@ described below; a file with any other bytes fails before outputs are written.
 Omitting it leaves Madin subsources unknown. A supplied but unreadable or
 malformed table fails instead of silently falling back to unknown.
 
+`--trait-key-policy` accepts `raw_object_v1` and `facultative_union_v1`.
+The raw policy preserves original KG object IDs; the union policy maps
+`METPO:1000605`, `METPO:1000608`, and `METPO:1000612` to `METPO:1000608` before
+carrier counting and source attribution. Both the CLI and Python API default to
+`facultative_union_v1` for compatibility. Select the policy used by the input
+matrix and profiles explicitly for historical raw-object runs. Unknown policies
+are refused before input reads or output creation. The selector is not inferred
+from column metadata, which continues to supply display labels only.
+
+The consumed selector is recorded as `trait_key_policy` in `provenance.json`.
+This is additive metadata under schema version `1.0`; the verification status
+remains `hashes_and_counts_reconciled_not_core_execution_verified`. Counts that
+disagree with the selected KG policy fail reconciliation, but agreement alone
+does not prove which policy produced a matrix: the policies can yield identical
+counts for some inputs. This standalone audit does not independently verify a
+core execution record or derive its policy from one.
+
 `--columns` selects the column metadata used to interpret recorded trait member
 IDs for display labels. An explicit path must exist; it never falls back to a
 different file. Without the flag, the audit checks for
@@ -37,7 +56,7 @@ different file. Without the flag, the audit checks for
 `inputs.column_metadata` records the selected file's `path`, `sha256`, and
 `size_bytes`. If the default sibling is absent, it instead records its candidate
 `path` and `status: absent`. Both forms include `selection` (`explicit` or
-`sibling_default`) and `member_id_rows`.
+`sibling_default`), `member_id_rows`, and `label_changed_trait_ids`.
 
 `member_id_rows` counts parsed source rows with nonempty member IDs in
 `trait_member_ids_json` and at least one nonempty `column_id` or `object_id`.
@@ -48,6 +67,14 @@ an empty file, a missing `trait_member_ids_json` header, or metadata with no
 qualifying rows records zero and retains the existing raw-label fallback. This
 preserves compatibility with historical metadata without member declarations;
 hashing such a file does not imply that its rows supplied member-based labels.
+
+`label_changed_trait_ids` is a sorted, deduplicated list of actually audited
+trait keys whose emitted label differs when the consumed member IDs are omitted.
+It is empty for absent metadata, raw singleton declarations, unchanged labels,
+and metadata for unaudited traits. It does not count source rows, assert a
+trait-key policy, or imply that physiology was measured. The Python table-builder
+API refuses a `column_metadata_path` together with any `member_ids_by_trait` map,
+including an empty one; path-only and map-only calls remain supported (#1362).
 
 Directories and broken symlinks are refused. The late input check checks this
 same candidate again: changes to the file, its disappearance, or its appearance
@@ -289,10 +316,31 @@ Table 1 trait membership and the oxygen guild pair use `trait_guilds` definition
 Since #1237 the aerobe side of the guild pair is `METPO:1000602` and
 `METPO:1000604`; the facultative column `METPO:1000608` is in neither side.
 The separate `trait_key_policy_code` inventory records the path, SHA256 and size
-of `src/mtp/trait_key_policy.py`, which interprets the recorded member IDs and
-selects display labels. These declarations and late checks do not establish
-that hashing and parsing consumed one immutable byte buffer; that separate
-consistency fix is tracked in #1357.
+of `src/mtp/trait_key_policy.py`, which supplies the selected key mapping,
+interprets the recorded member IDs, and selects display labels. The
+`input_binding_code` and `count_reader_code` inventories additionally bind the streaming input verifier and strict count reader.
+
+Since #1357, each matrix, profile, occurrence, KG edge, KG node, supplied Madin
+and selected member-metadata parser receives a caller-owned text stream. SHA-256
+and size are calculated from the raw bytes feeding decoding and compared with
+the preflight input identity before publication. Existing gzip inputs are hashed
+as compressed bytes, not as normalized text. The trait-list reader already hashes
+the same buffer it parses; its identity remains checked against the inventory.
+The run records `input_binding: raw_bytes_hashed_during_parse_v1`.
+
+The count reader consumes header and rows through one CSV reader in this mode.
+Raw reads and successful early-return draining use bounded blocks; KG exports are
+not copied into a second in-memory buffer or a scratch snapshot. Existing analysis
+data frames and graph structures retain their usual memory requirements. Legacy
+metadata without member columns is drained before verification, so a header-only
+parse does not leave an unchecked tail. Parser exceptions are preserved.
+
+The final pathname check remains in addition to consumed-byte verification. A
+same-size A-to-B-to-A substitution cannot silently publish B's values with A's
+hash: the bytes supplied to the parser must match the recorded identity. Madin's
+consumed identity must therefore also match its early verified pin. Outputs are
+written only after these checks and count reconciliation. These checks still do
+not establish a verified core execution or independently prove corpus selection.
 
 The broader node-level co-assertion census, mesophilic/psychrophilic and
 facultative-anaerobe/obligate-aerobe pairs, and the off/phenotype/full scope

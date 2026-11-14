@@ -10,7 +10,9 @@ from __future__ import annotations
 
 import csv
 from collections.abc import Iterator
+from contextlib import nullcontext
 from pathlib import Path
+from typing import IO
 
 KG_EDGE_CONTRACT = "kg-edge-export-v1"
 _SPLIT_HEADER = ["id", "subject", "predicate", "object", "relation", "agent_type", "agent_type"]
@@ -23,16 +25,24 @@ _HEADER_CONTINUATION = [
 ]
 
 
-def iter_kg_edges(path: Path, audit: dict[str, object] | None = None) -> Iterator[dict[str, str]]:
+def iter_kg_edges(
+    path: Path, audit: dict[str, object] | None = None, *, text_stream: IO[str] | None = None
+) -> Iterator[dict[str, str]]:
     """Read complete evidence records and record every recognized serialization repair.
 
     Both duplicate-named agent fields are preserved as agent_type and
     agent_type_secondary. The four columns used by native numerical aggregation
     are unchanged. Physical source line numbers remain available in each record.
+    A supplied text stream is caller-owned and is never reopened or closed here.
     """
     facts = audit if audit is not None else {}
     records = continuations = header_repairs = duplicate_fields = 0
-    with path.open(encoding="utf-8", newline="") as handle:
+    source = (
+        nullcontext(text_stream)
+        if text_stream is not None
+        else path.open(encoding="utf-8", newline="")
+    )
+    with source as handle:
         reader = csv.reader(handle, delimiter="\t")
         header = next(reader, [])
         if header[:4] != ["id", "subject", "predicate", "object"]:

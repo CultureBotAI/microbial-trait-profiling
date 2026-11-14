@@ -17,6 +17,12 @@ from typing import Any
 from mtp import taxa_trait_matrix as matrix_api
 from mtp import trait_guilds
 from mtp.paths import REPO_ROOT, file_sha256
+from mtp.trait_key_policy import (
+    DEFAULT_TRAIT_KEY_POLICY,
+    TRAIT_KEY_POLICIES,
+    TraitKeyPolicy,
+    parse_trait_key_policy,
+)
 from mtp.workflow import kg_inputs
 from mtp.workflow.runtime import repository_state
 
@@ -117,8 +123,11 @@ class Graph:
     serialization: dict[str, object]
 
 
-def read_graph(edges: Path) -> Graph:
+def read_graph(
+    edges: Path, *, trait_key_policy: TraitKeyPolicy = DEFAULT_TRAIT_KEY_POLICY
+) -> Graph:
     """Retain target assertions and strain links through the shared KG reader."""
+    policy = parse_trait_key_policy(trait_key_policy)
     taxa: defaultdict[str, set[str]] = defaultdict(set)
     strains: defaultdict[str, set[str]] = defaultdict(set)
     links: defaultdict[str, set[str]] = defaultdict(set)
@@ -136,7 +145,7 @@ def read_graph(edges: Path) -> Graph:
         ):
             links[subject].add(obj)
             continue
-        key = matrix_api.make_trait_key(predicate, obj)
+        key = matrix_api.make_trait_key(predicate, obj, trait_key_policy=policy)
         if key not in TARGET_KEYS:
             continue
         if subject.startswith(matrix_api.TAXON_PREFIX):
@@ -344,7 +353,7 @@ def _tsv(fields: tuple[str, ...], rows: list[dict[str, Any]]) -> bytes:
     return output.getvalue().encode("utf-8")
 
 
-def _report(summary: list[dict[str, Any]]) -> bytes:
+def _report(summary: list[dict[str, Any]], *, trait_key_policy: TraitKeyPolicy) -> bytes:
     lines = [
         "# KG phenotype co-assertion audit",
         "",
@@ -352,6 +361,8 @@ def _report(summary: list[dict[str, Any]]) -> bytes:
         "closure. They are not counts of BugSigDB taxa, experiments, patients or matrix cells.",
         "This is not a measurement of physiology or a classification of contradictory organisms.",
         "Broad oxygen labels can be compatible; strains and source conditions can differ.",
+        "",
+        f"Trait-key policy: `{trait_key_policy}`.",
         "",
         "| Pair | Scope | Co-asserted taxon nodes | Both direct | "
         "Both on one strain | Requires union |",
@@ -403,14 +414,21 @@ def _identities(edges: Path, nodes: Path) -> dict[str, Any]:
     }
 
 
-def run_audit(edges: Path, nodes: Path, output: Path) -> Path:
+def run_audit(
+    edges: Path,
+    nodes: Path,
+    output: Path,
+    *,
+    trait_key_policy: TraitKeyPolicy = DEFAULT_TRAIT_KEY_POLICY,
+) -> Path:
     """Write a new independent audit with exact input, implementation and output hashes."""
+    policy = parse_trait_key_policy(trait_key_policy)
     if output.is_symlink() or (output.exists() and (not output.is_dir() or any(output.iterdir()))):
         raise ValueError("Audit output must be a new or empty directory without a symlink alias")
     if any(path.resolve().is_relative_to(output.resolve()) for path in (edges, nodes)):
         raise ValueError("Audit output must not contain its KG inputs")
     identities = _identities(edges, nodes)
-    graph = read_graph(edges)
+    graph = read_graph(edges, trait_key_policy=policy)
     wanted = (
         set(graph.taxon_traits)
         | {node for nodes_ in graph.strain_taxa.values() for node in nodes_}
@@ -419,7 +437,7 @@ def run_audit(edges: Path, nodes: Path, output: Path) -> Path:
     names = read_names(nodes, wanted)
     tables = build_tables(graph, names)
     documents = {name: _tsv(fields, rows) for name, (fields, rows) in tables.items()}
-    documents["README.md"] = _report(tables["coassertion_summary.tsv"][1])
+    documents["README.md"] = _report(tables["coassertion_summary.tsv"][1], trait_key_policy=policy)
     if _identities(edges, nodes) != identities:
         raise ValueError("Audit inputs or implementation changed during execution")
     commit, dirty = repository_state(REPO_ROOT)
@@ -429,6 +447,7 @@ def run_audit(edges: Path, nodes: Path, output: Path) -> Path:
     record = {
         "analysis_kind": "kg_annotation_census_not_a_core_or_arm_rerun",
         "protocol": "scope-coassertion-census-v1",
+        "trait_key_policy": policy,
         "recorded_at": datetime.now(UTC).isoformat(),
         **identities,
         "code_commit": commit,
@@ -455,8 +474,18 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--edges", type=Path, required=True)
     parser.add_argument("--nodes", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument(
+        "--trait-key-policy", choices=TRAIT_KEY_POLICIES, default=DEFAULT_TRAIT_KEY_POLICY
+    )
     arguments = parser.parse_args(argv)
-    print(run_audit(arguments.edges, arguments.nodes, arguments.output_dir))
+    print(
+        run_audit(
+            arguments.edges,
+            arguments.nodes,
+            arguments.output_dir,
+            trait_key_policy=arguments.trait_key_policy,
+        )
+    )
     return 0
 
 
