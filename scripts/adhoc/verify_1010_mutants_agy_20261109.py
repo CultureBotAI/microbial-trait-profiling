@@ -11,7 +11,8 @@ Inputs:
     - tests/test_taxa_coverage_taxonomy.py (copied to a temporary scratch directory)
 Outputs:
     - Per-mutant verification summary printed to stdout; non-zero exit if any
-      mutant survives, fails outside AssertionError, or if worktree files change.
+      mutant survives, fails outside the AssertionError/assert or DID NOT RAISE
+      call-phase crash-message markers, or if worktree files change.
 Issue: #1010
 Date: 2026-11-09
 """
@@ -93,6 +94,7 @@ class _OutcomeCapturePlugin:
         self.origin_checked = False
         self.passed = 0
         self.assertion_failures = 0
+        self.did_not_raise_failures = 0
         self.other_failures: list[str] = []
 
     def pytest_collection_modifyitems(self, items: list[pytest.Item]) -> None:
@@ -117,10 +119,12 @@ class _OutcomeCapturePlugin:
         elif report.failed:
             longrepr = getattr(report, "longrepr", None)
             crash = getattr(longrepr, "reprcrash", None)
-            msg = getattr(crash, "message", str(longrepr))
-            if report.when == "call" and (
-                msg.startswith(("AssertionError", "Failed: DID NOT RAISE", "assert "))
-                or "AssertionError" in msg
+            raw_msg = getattr(crash, "message", None)
+            msg = str(longrepr) if raw_msg is None else str(raw_msg)
+            if report.when == "call" and msg.startswith("Failed: DID NOT RAISE"):
+                self.did_not_raise_failures += 1
+            elif report.when == "call" and (
+                msg.startswith(("AssertionError", "assert ")) or "AssertionError" in msg
             ):
                 self.assertion_failures += 1
             else:
@@ -197,17 +201,24 @@ def main() -> int:
         print(
             f"CONTROL: rc={ctrl_rc} origin_checked={ctrl_plugin.origin_checked} "
             f"passed={ctrl_plugin.passed} assertion_failures={ctrl_plugin.assertion_failures} "
+            f"did_not_raise_failures={ctrl_plugin.did_not_raise_failures} "
             f"other_failures={len(ctrl_plugin.other_failures)}"
         )
         if (
             ctrl_rc != 0
             or not ctrl_plugin.origin_checked
             or ctrl_plugin.assertion_failures != 0
+            or ctrl_plugin.did_not_raise_failures != 0
             or ctrl_plugin.other_failures
         ):
             return 1
 
         killed = 0
+        mutants_assertion_only = 0
+        mutants_did_not_raise_only = 0
+        mutants_both = 0
+        total_assertion_failures = 0
+        total_did_not_raise_failures = 0
         for name, target, replacement in MUTANTS:
             if target not in base_source:
                 print(f"ERROR: target not found for {name}")
@@ -218,13 +229,14 @@ def main() -> int:
             is_killed = (
                 rc != 0
                 and plugin.origin_checked
-                and plugin.assertion_failures > 0
+                and (plugin.assertion_failures > 0 or plugin.did_not_raise_failures > 0)
                 and not plugin.other_failures
             )
             status = "KILLED" if is_killed else "SURVIVED_OR_ERROR"
             print(
                 f"{name}: {status} (rc={rc}) origin_checked={plugin.origin_checked} "
                 f"passed={plugin.passed} assertion_failures={plugin.assertion_failures} "
+                f"did_not_raise_failures={plugin.did_not_raise_failures} "
                 f"other_failures={len(plugin.other_failures)}"
             )
             if not is_killed:
@@ -232,13 +244,29 @@ def main() -> int:
                     print("OTHER_FAILURE:", item)
                 return 1
             killed += 1
+            total_assertion_failures += plugin.assertion_failures
+            total_did_not_raise_failures += plugin.did_not_raise_failures
+            if plugin.assertion_failures > 0 and plugin.did_not_raise_failures > 0:
+                mutants_both += 1
+            elif plugin.assertion_failures > 0:
+                mutants_assertion_only += 1
+            else:
+                mutants_did_not_raise_only += 1
 
     after = {path: _sha256(path) for path in tracked}
     if before != after:
         print("ERROR: worktree file hashes changed during verification!")
         return 1
 
-    print(f"ALL {killed}/{len(MUTANTS)} MUTANTS KILLED BY ASSERTIONERROR; WORKTREE UNTOUCHED.")
+    print(
+        f"ALL {killed}/{len(MUTANTS)} MUTANTS KILLED "
+        f"({mutants_assertion_only} matched AssertionError/assert markers only, "
+        f"{mutants_did_not_raise_only} matched DID NOT RAISE marker only, "
+        f"{mutants_both} matched both; "
+        f"{total_assertion_failures} AssertionError/assert-marker and "
+        f"{total_did_not_raise_failures} DID-NOT-RAISE-marker call-phase failures); "
+        "WORKTREE UNTOUCHED."
+    )
     return 0
 
 
