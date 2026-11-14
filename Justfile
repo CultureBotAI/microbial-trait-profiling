@@ -228,13 +228,13 @@ probe-influence-extension-guards mutation output:
 probe-arm-parser-guards *ARGS:
 	uv run python scripts/adhoc/issue973_probe_parser_guards.py "$@"
 
-sync:
-	uv sync --all-extras --group dev --group qa
-
 # Isolated copies prove actual plotted-label and metadata propagation (#955, #962).
 [positional-arguments]
 probe-direction-forwarding *ARGS:
 	uv run python scripts/adhoc/issue955_probe_direction_forwarding.py "$@"
+
+sync:
+	uv sync --all-extras --group dev --group qa
 
 # Use the same declared uv version as the lock hook; run `just sync` first.
 [positional-arguments]
