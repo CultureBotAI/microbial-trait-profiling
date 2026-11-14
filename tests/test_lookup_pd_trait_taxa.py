@@ -165,6 +165,51 @@ def test_note_names_every_trait_with_its_direction() -> None:
     assert "four" not in note
 
 
+def test_note_cites_canonical_mtp_module_matching_committed_lookup() -> None:
+    """#2342: lookup_note cites src/mtp/taxa_trait_matrix.py and matches the committed line."""
+    from mtp import taxa_trait_matrix
+
+    assert callable(taxa_trait_matrix.compute_trait_counts)
+    directions = lookup.trait_directions(summary())
+    carriers = pd.DataFrame(
+        {
+            "trait_id": list(LOLLIPOP),
+            "taxon_name": "Escherichia",
+            "taxonomic_rank": "genus",
+            "increased_profiles": 9,
+            "decreased_profiles": 2,
+            "increased_positive_z_profiles": 9,
+            "decreased_positive_z_profiles": 2,
+        }
+    )
+    profiles = pd.DataFrame({"inc_dec": ["inc"] * 126 + ["dec"] * 116})
+
+    note = lookup.lookup_note(directions, carriers, profiles)
+    generated_lines = [line for line in note.splitlines() if "compute_trait_counts" in line]
+    assert len(generated_lines) == 1
+    generated_line = generated_lines[0]
+
+    assert "(src/mtp/taxa_trait_matrix.py, compute_trait_counts)" in generated_line
+    assert "src/bsdbng/" not in note
+
+    repo_root = Path(__file__).resolve().parents[1]
+    assert (repo_root / "src" / "mtp" / "taxa_trait_matrix.py").is_file()
+    committed_path = (
+        repo_root
+        / "trait-visualization"
+        / "trait-profile-investigation"
+        / "PD-cellulose"
+        / lookup.NOTE_NAME
+    )
+    committed_text = committed_path.read_text(encoding="utf-8")
+    committed_lines = [
+        line for line in committed_text.splitlines() if "compute_trait_counts" in line
+    ]
+    assert len(committed_lines) == 1
+    assert "src/bsdbng/" not in committed_text
+    assert generated_line == committed_lines[0]
+
+
 def test_stale_summary_names_itself_and_how_to_rebuild_it() -> None:
     """A rebuilt metadata table moves the profile counts; the saved lollipop is then stale."""
     saved = summary().assign(increased_profiles=128)

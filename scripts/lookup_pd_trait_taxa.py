@@ -315,7 +315,7 @@ def lookup_note(
         "These are observed annotation carriers, not estimated causal contributions to "
         "the z-score difference. Profile z>0 describes relative trait enrichment. "
         "The matrix counts trait-bearing taxa at or below each reported taxon "
-        "(src/bsdbng/taxa_trait_matrix.py, compute_trait_counts). Different descendant "
+        "(src/mtp/taxa_trait_matrix.py, compute_trait_counts). Different descendant "
         "taxa can supply different annotations, including for species with strain-level "
         "descendants, so one reported label carrying several trait annotations does not "
         "establish that one organism has those traits together. Counts across taxonomic "
