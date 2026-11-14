@@ -445,13 +445,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(f"Profiles: {stats.profiles}")
     print(f"Trait columns: {stats.trait_columns}")
     if stats.dropped_trait_columns:
-        # Today every dropped column is a MediaDive medium; name any other, since the
-        # trait screen reads its family from this header (#670)
+        # Today every dropped column is a MediaDive medium; print all dropped names and
+        # call out any other, since the trait screen reads its family from this header (#670)
         others = [c for c in stats.dropped_trait_columns if MEDIADIVE_MARKER not in c.lower()]
         print(
             f"Trait columns dropped as empty in every profile: {len(stats.dropped_trait_columns)}"
             f" ({len(stats.dropped_trait_columns) - len(others)} MediaDive)"
         )
+        print(f"Dropped trait columns: {', '.join(stats.dropped_trait_columns)}")
         if others:
             print(f"Non-MediaDive trait columns dropped: {', '.join(others)}")
     print(f"Taxon observations in YAML: {stats.taxon_observations}")
