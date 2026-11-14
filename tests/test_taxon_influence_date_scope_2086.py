@@ -56,13 +56,15 @@ def _assert_date_scoped_taxon_influence_docs(
         ("table1_taxon_influence_results.md", results_text, results_diag),
         ("table1_taxon_influence.md", methods_text, methods_diag),
     ):
-        lower_full = full_text.lower()
+        flat_lower_full = " ".join(full_text.split()).lower()
         for forbidden in (
             "remain unreviewed",
             "remain subject to #188",
             "feature semantics remain subject to #189",
+            "the #188/#189 prerequisites",
+            "prerequisites and review of resolved source semantics remain required",
         ):
-            assert forbidden not in lower_full, (
+            assert forbidden not in flat_lower_full, (
                 f"Timeless present-tense phrase {forbidden!r} must not appear in {label}"
             )
 
@@ -81,11 +83,61 @@ def _assert_date_scoped_taxon_influence_docs(
         assert "2026-10-11" in flat_diag, f"Expected #188 closure date (2026-10-11 UTC) in {label}"
         assert "#189" in flat_diag, f"Expected #189 reference in {label}"
         assert "2026-10-08" in flat_diag, f"Expected #189 closure date (2026-10-08 UTC) in {label}"
+        paired_188 = (
+            "#188 (Closed 2026-10-11 UTC)"
+            if label == "table1_taxon_influence_results.md"
+            else "#188 Closed 2026-10-11 UTC"
+        )
+        paired_189 = (
+            "#189 (Closed 2026-10-08 UTC)"
+            if label == "table1_taxon_influence_results.md"
+            else "#189 Closed 2026-10-08 UTC"
+        )
+        assert paired_188 in flat_diag, f"Expected paired {paired_188!r} in {label}"
+        assert paired_189 in flat_diag, f"Expected paired {paired_189!r} in {label}"
         assert "does not retroactively recertify the historical `190-v2` outputs" in flat_diag, (
             f"Expected non-recertification statement for historical 190-v2 outputs in {label}"
         )
         assert "establish biological validation" in lower_diag, (
             f"Expected explicit biological-validation non-equivalence caveat in {label}"
+        )
+
+    methods_handoff = _diagnostic_paragraph(
+        methods_text, "For #178, join on the **full qualified trait key**"
+    )
+    flat_handoff = " ".join(methods_handoff.split())
+    lower_handoff = flat_handoff.lower()
+    assert "as date-scoped above for #188 and #189" in lower_handoff, (
+        "Expected back-reference to the earlier #188/#189 date-scoped paragraph in "
+        "table1_taxon_influence.md"
+    )
+    assert "historical `190-v2` run" in flat_handoff, (
+        "Expected closing handoff paragraph in table1_taxon_influence.md to name "
+        "the historical 190-v2 run"
+    )
+    assert "(table1_native_influence.md)" in flat_handoff, (
+        "Expected link to table1_native_influence.md in table1_taxon_influence.md"
+    )
+    assert "historical `190-native-v1` snapshot" in flat_handoff, (
+        "Expected closing handoff paragraph in table1_taxon_influence.md to name "
+        "the historical 190-native-v1 snapshot"
+    )
+    assert "does not retroactively recertify either historical output set" in lower_handoff, (
+        "Expected closing non-recertification statement for both historical output sets in "
+        "table1_taxon_influence.md"
+    )
+    for required_clause in (
+        "matched-corpus analog scope (#210; not a reproduction of the published table 1 baseline)",
+        "native-owner review",
+        (
+            "output-specific verification of contrast orientation and feature semantics for any "
+            "`190-v2` or native outputs adopted in a manuscript"
+        ),
+        "review of resolved source semantics",
+        "remain required before manuscript adoption or assigning mechanisms",
+    ):
+        assert required_clause in lower_handoff, (
+            f"Expected remaining requirement {required_clause!r} in table1_taxon_influence.md"
         )
 
 
@@ -156,8 +208,14 @@ def test_taxon_influence_docs_date_scope_188_and_189_to_historical_190_v2_run() 
         pytest.param(
             "methods-missing-checkpoint-link",
             "methods",
-            f"({CHECKPOINT_RELATIVE_LINK})",
-            "(biological_interpretation_audit.md)",
+            (
+                "UTC; #189 Closed 2026-10-08 UTC; see the status checkpoint in\n"
+                f"[`methods/{CHECKPOINT_RELATIVE_LINK}`]({CHECKPOINT_RELATIVE_LINK})"
+            ),
+            (
+                "UTC; #189 Closed 2026-10-08 UTC; see the status checkpoint in\n"
+                f"[`methods/{CHECKPOINT_RELATIVE_LINK}`](biological_interpretation_audit.md)"
+            ),
             id="methods-missing-checkpoint-link",
         ),
         pytest.param(
@@ -165,17 +223,129 @@ def test_taxon_influence_docs_date_scope_188_and_189_to_historical_190_v2_run() 
             "methods",
             (
                 "closing them in the tracker does not retroactively recertify the "
-                "historical `190-v2`\noutputs or establish biological validation."
+                "historical `190-v2`\noutputs or establish biological validation.\n"
+                "Increased/decreased"
             ),
-            "closing them in the tracker updates the historical run.",
+            "closing them in the tracker updates the historical run.\nIncreased/decreased",
             id="methods-missing-non-recertification",
         ),
         pytest.param(
             "methods-wrong-189-date",
             "methods",
-            "2026-10-08",
-            "2026-10-09",
+            "#189 Closed 2026-10-08 UTC",
+            "#189 Closed 2026-10-09 UTC",
             id="methods-wrong-189-date",
+        ),
+        pytest.param(
+            "methods-swapped-188-189-dates",
+            "methods",
+            "(#188 Closed 2026-10-11\nUTC; #189 Closed 2026-10-08 UTC",
+            "(#188 Closed 2026-10-08\nUTC; #189 Closed 2026-10-11 UTC",
+            id="methods-swapped-188-189-dates",
+        ),
+        pytest.param(
+            "methods-handoff-timeless-prerequisites",
+            "methods",
+            (
+                "As date-scoped above for #188 and #189 in the\n"
+                "historical `190-v2` run (and in "
+                "[the native rerun extension](table1_native_influence.md)\n"
+                "for the historical `190-native-v1` snapshot), closing those tracker issues does\n"
+                "not retroactively recertify either historical output set. Matched-corpus analog\n"
+                "scope (#210; not a reproduction of the published Table 1 baseline), native-owner\n"
+                "review, output-specific verification of contrast orientation and feature "
+                "semantics\n"
+                "for any `190-v2` or native outputs adopted in a manuscript, and review of "
+                "resolved\n"
+                "source semantics remain required before manuscript adoption or assigning\n"
+                "mechanisms."
+            ),
+            (
+                "Matched-corpus analog scope (#210; not a reproduction of the published Table 1 "
+                "baseline), native-owner review, the #188/#189 prerequisites and review of "
+                "resolved source semantics remain required before manuscript adoption or assigning "
+                "mechanisms."
+            ),
+            id="methods-handoff-timeless-prerequisites",
+        ),
+        pytest.param(
+            "methods-handoff-missing-backref-to-188-189",
+            "methods",
+            "As date-scoped above for #188 and #189 in the\n",
+            "In the\n",
+            id="methods-handoff-missing-backref-to-188-189",
+        ),
+        pytest.param(
+            "methods-handoff-missing-190-v2",
+            "methods",
+            "historical `190-v2` run (",
+            "earlier run (",
+            id="methods-handoff-missing-190-v2",
+        ),
+        pytest.param(
+            "methods-handoff-missing-190-native-v1",
+            "methods",
+            "for the historical `190-native-v1` snapshot)",
+            "for the native extension)",
+            id="methods-handoff-missing-190-native-v1",
+        ),
+        pytest.param(
+            "methods-handoff-missing-native-link",
+            "methods",
+            "[the native rerun extension](table1_native_influence.md)",
+            "the native rerun extension",
+            id="methods-handoff-missing-native-link",
+        ),
+        pytest.param(
+            "methods-handoff-missing-non-recertification",
+            "methods",
+            (
+                "closing those tracker issues does\n"
+                "not retroactively recertify either historical output set."
+            ),
+            "those tracker issues are closed.",
+            id="methods-handoff-missing-non-recertification",
+        ),
+        pytest.param(
+            "methods-handoff-deleted-analog-scope",
+            "methods",
+            (
+                "Matched-corpus analog\n"
+                "scope (#210; not a reproduction of the published Table 1 baseline), "
+            ),
+            "",
+            id="methods-handoff-deleted-analog-scope",
+        ),
+        pytest.param(
+            "methods-handoff-deleted-native-owner-review",
+            "methods",
+            "native-owner\nreview, ",
+            "",
+            id="methods-handoff-deleted-native-owner-review",
+        ),
+        pytest.param(
+            "methods-handoff-deleted-orientation-and-semantics-requirement",
+            "methods",
+            (
+                "output-specific verification of contrast orientation and feature semantics\n"
+                "for any `190-v2` or native outputs adopted in a manuscript, "
+            ),
+            "",
+            id="methods-handoff-deleted-orientation-and-semantics-requirement",
+        ),
+        pytest.param(
+            "methods-handoff-deleted-orientation-only",
+            "methods",
+            "output-specific verification of contrast orientation and feature semantics",
+            "output-specific verification of feature semantics",
+            id="methods-handoff-deleted-orientation-only",
+        ),
+        pytest.param(
+            "methods-handoff-deleted-resolved-source-semantics",
+            "methods",
+            ", and review of resolved\nsource semantics remain required",
+            " remain required",
+            id="methods-handoff-deleted-resolved-source-semantics",
         ),
         pytest.param(
             "audit-missing-checkpoint-heading",
@@ -270,16 +440,13 @@ def _assert_date_scoped_native_influence_doc(native_text: str, audit_text: str) 
     assert CHECKPOINT_DOC_LABEL in flat_handoff, (
         f"Expected explicit citation of {CHECKPOINT_DOC_LABEL} in table1_native_influence.md"
     )
-    for issue_ref, closure_date in (
-        ("#188", "2026-10-11"),
-        ("#189", "2026-10-08"),
-        ("#182", "2026-10-12"),
+    for paired_closure in (
+        "#188 Closed 2026-10-11 UTC",
+        "#189 Closed 2026-10-08 UTC",
+        "closing #182 on 2026-10-12 UTC",
     ):
-        assert issue_ref in flat_handoff, (
-            f"Expected {issue_ref} reference in table1_native_influence.md"
-        )
-        assert closure_date in flat_handoff, (
-            f"Expected {issue_ref} closure date ({closure_date} UTC) in table1_native_influence.md"
+        assert paired_closure in flat_handoff, (
+            f"Expected paired tracker closure {paired_closure!r} in table1_native_influence.md"
         )
     assert (
         "does not retroactively recertify the historical `190-native-v1` outputs" in flat_handoff
@@ -291,12 +458,22 @@ def _assert_date_scoped_native_influence_doc(native_text: str, audit_text: str) 
         assert f"`{version}`" in flat_handoff, (
             f"Expected the manuscript-adoption requirements to name {version}"
         )
-    assert "native model owner review" in lower_handoff, (
-        "Expected uncompleted native model owner review requirement to remain explicit"
-    )
-    assert "remain required for manuscript adoption" in lower_handoff, (
-        "Expected remaining manuscript-adoption requirements to remain explicit"
-    )
+    for required_clause in (
+        "native model owner review",
+        (
+            "output-specific verification of contrast orientation and trait semantics for any "
+            "native results (`190-native-v1`, `190-native-v2` or `190-native-v3`) adopted in a "
+            "manuscript"
+        ),
+        "source-count validity (#184)",
+        "full-pipeline calibration of these native diagnostics",
+        "remain required for manuscript adoption",
+        "this handoff does not complete those reviews or resolve #184",
+    ):
+        assert required_clause in lower_handoff, (
+            f"Expected remaining manuscript-adoption clause {required_clause!r} in "
+            "table1_native_influence.md"
+        )
 
 
 def test_native_influence_doc_date_scopes_188_and_189_and_keeps_remaining_requirements() -> None:
@@ -383,6 +560,63 @@ def test_native_influence_doc_date_scopes_188_and_189_and_keeps_remaining_requir
             "Native model owner review,",
             "Prior handoff review,",
             id="native-dropped-owner-review-requirement",
+        ),
+        pytest.param(
+            "native-swapped-188-189-dates",
+            "native",
+            "#188 Closed 2026-10-11 UTC; #189 Closed\n2026-10-08 UTC",
+            "#188 Closed 2026-10-08 UTC; #189 Closed\n2026-10-11 UTC",
+            id="native-swapped-188-189-dates",
+        ),
+        pytest.param(
+            "native-deleted-owner-review-requirement",
+            "native",
+            "Native model owner review, output-specific",
+            "Output-specific",
+            id="native-deleted-owner-review-requirement",
+        ),
+        pytest.param(
+            "native-deleted-orientation-semantics-requirement",
+            "native",
+            (
+                "output-specific verification of\n"
+                "contrast orientation and trait semantics for any native results "
+                "(`190-native-v1`,\n`190-native-v2` or `190-native-v3`) adopted in a "
+                "manuscript, "
+            ),
+            "",
+            id="native-deleted-orientation-semantics-requirement",
+        ),
+        pytest.param(
+            "native-deleted-orientation-semantics-version-moved",
+            "native",
+            (
+                "output-specific verification of\n"
+                "contrast orientation and trait semantics for any native results "
+            ),
+            "reporting of any native outputs ",
+            id="native-deleted-orientation-semantics-version-moved",
+        ),
+        pytest.param(
+            "native-deleted-source-count-validity-requirement",
+            "native",
+            "source-count validity\n(#184), ",
+            "",
+            id="native-deleted-source-count-validity-requirement",
+        ),
+        pytest.param(
+            "native-deleted-calibration-requirement",
+            "native",
+            ", and full-pipeline calibration of these native diagnostics",
+            "",
+            id="native-deleted-calibration-requirement",
+        ),
+        pytest.param(
+            "native-deleted-does-not-resolve-184",
+            "native",
+            "; this handoff does not complete those reviews or\nresolve #184.",
+            ".",
+            id="native-deleted-does-not-resolve-184",
         ),
         pytest.param(
             "audit-182-not-closed",
