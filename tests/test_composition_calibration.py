@@ -770,3 +770,146 @@ def test_composition_null_pvalues_are_marked_as_uncorrected_calibration_diagnost
     assert written_summary["p_value_diagnostics_role"] == "calibration_diagnostic"
     assert written_summary["p_value_diagnostics_correction"] == "none (nominal)"
     assert written_summary["p_value_diagnostics"] == expected_note
+
+
+@pytest.mark.parametrize(
+    ("columns_mode", "expected_console_label", "forbidden_console_label"),
+    [
+        ("union", "facultative (aerobe or anaerobe)", "facultatively aerobic"),
+        ("raw", "facultatively aerobic", "facultative (aerobe or anaerobe)"),
+        ("legacy_no_column", "facultatively aerobic", "facultative (aerobe or anaerobe)"),
+        ("legacy_empty_cell", "facultatively aerobic", "facultative (aerobe or anaerobe)"),
+    ],
+    ids=["union", "raw", "legacy-no-column", "legacy-empty-cell"],
+)
+def test_composition_cli_console_displays_member_label_while_preserving_recorded_table1(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    synthetic_paired_profiles: pd.DataFrame,
+    columns_mode: str,
+    expected_console_label: str,
+    forbidden_console_label: str,
+) -> None:
+    """Console summary uses display_trait_label while recorded Table 1 keeps raw names (#2300)."""
+    profiles_path = tmp_path / "profiles.tsv"
+    columns_path = tmp_path / f"columns_{columns_mode}.tsv"
+    out_dir = tmp_path / f"out_{columns_mode}"
+
+    profiles = synthetic_paired_profiles.assign(
+        **{
+            "METPO:1000608": [9, 1, 9, 1, 6, 1, 4, 1, 5, 5],
+            "METPO:1000668": [2, 8, 2, 7, 1, 6, 2, 5, 3, 3],
+        }
+    )
+    traits = ["trait_A", "trait_B", "trait_C", "METPO:1000608", "METPO:1000668"]
+    profiles.to_csv(profiles_path, sep="\t", index=False)
+
+    columns_data: dict[str, list[str]] = {
+        "column_id": traits,
+        "object_category": ["phenotype"] * len(traits),
+    }
+    if columns_mode == "union":
+        columns_data["trait_member_ids_json"] = [
+            '["trait_A"]',
+            '["trait_B"]',
+            '["trait_C"]',
+            '["METPO:1000605","METPO:1000608","METPO:1000612"]',
+            '["METPO:1000668"]',
+        ]
+    elif columns_mode == "raw":
+        columns_data["trait_member_ids_json"] = [
+            '["trait_A"]',
+            '["trait_B"]',
+            '["trait_C"]',
+            '["METPO:1000608"]',
+            '["METPO:1000668"]',
+        ]
+    elif columns_mode == "legacy_empty_cell":
+        columns_data["trait_member_ids_json"] = ["", "", "", "", ""]
+    pd.DataFrame(columns_data).to_csv(columns_path, sep="\t", index=False)
+
+    capsys.readouterr()
+    exit_code = composition_main(
+        [
+            "--profiles",
+            str(profiles_path),
+            "--columns",
+            str(columns_path),
+            "--output-dir",
+            str(out_dir),
+            "--replicates",
+            "2",
+            "--seed",
+            "182",
+        ]
+    )
+    assert exit_code == 0
+
+    captured = capsys.readouterr()
+    table1_header = "--- Table 1 Canonical Traits Calibration ---"
+    assert table1_header in captured.out
+    table1_section = captured.out.split(table1_header, 1)[1].split("Saved artifacts to:", 1)[0]
+    assert f"  {expected_console_label:<28}: " in table1_section
+    assert "  coccus shaped               : " in table1_section
+    assert forbidden_console_label not in table1_section
+
+    recorded_tsv_text = (out_dir / "table1_composition_calibration.tsv").read_text(encoding="utf-8")
+    recorded_tsv = pd.read_csv(out_dir / "table1_composition_calibration.tsv", sep="\t")
+    assert recorded_tsv.loc[recorded_tsv["trait_id"] == "METPO:1000608", "trait_name"].tolist() == [
+        "facultatively aerobic"
+    ]
+    assert "facultative (aerobe or anaerobe)" not in recorded_tsv_text
+
+    recorded_json_text = (out_dir / "composition_calibration_summary.json").read_text(
+        encoding="utf-8"
+    )
+    recorded_json = json.loads(recorded_json_text)
+    assert [
+        row["trait_name"]
+        for row in recorded_json["table1_traits"]
+        if row["trait_id"] == "METPO:1000608"
+    ] == ["facultatively aerobic"]
+    assert "facultative (aerobe or anaerobe)" not in recorded_json_text
+
+
+def test_composition_cli_refuses_malformed_member_metadata_before_writing(
+    tmp_path: Path,
+    synthetic_paired_profiles: pd.DataFrame,
+) -> None:
+    """Malformed trait_member_ids_json in --columns fails before writing outputs (#2300)."""
+    profiles_path = tmp_path / "profiles.tsv"
+    columns_path = tmp_path / "malformed_columns.tsv"
+    out_dir = tmp_path / "out_malformed"
+
+    profiles = synthetic_paired_profiles.assign(**{"METPO:1000608": [9, 1, 9, 1, 6, 1, 4, 1, 5, 5]})
+    traits = ["trait_A", "trait_B", "trait_C", "METPO:1000608"]
+    profiles.to_csv(profiles_path, sep="\t", index=False)
+    pd.DataFrame(
+        {
+            "column_id": traits,
+            "object_category": ["phenotype"] * len(traits),
+            "trait_member_ids_json": [
+                '["trait_A"]',
+                '["trait_B"]',
+                '["trait_C"]',
+                "malformed-member-json",
+            ],
+        }
+    ).to_csv(columns_path, sep="\t", index=False)
+
+    with pytest.raises(ValueError, match="Invalid trait_member_ids_json"):
+        composition_main(
+            [
+                "--profiles",
+                str(profiles_path),
+                "--columns",
+                str(columns_path),
+                "--output-dir",
+                str(out_dir),
+                "--replicates",
+                "2",
+                "--seed",
+                "182",
+            ]
+        )
+    assert not out_dir.exists()

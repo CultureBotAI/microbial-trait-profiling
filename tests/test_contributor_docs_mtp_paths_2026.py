@@ -1,5 +1,6 @@
-"""Pin active producer links in the six zero-overlap contributor docs (Refs #2026)."""
+"""Pin active producer links in migrated contributor docs (Refs #2026, #2154)."""
 
+import re
 from pathlib import Path
 
 import pytest
@@ -27,9 +28,26 @@ CANONICAL_REFERENCES: dict[str, dict[str, int]] = {
         "src/mtp/table1_trait_maps.py": 3,
         "src/mtp/trait_screen.py": 1,
     },
+    "methods/calibration.md": {"src/mtp/calibration.py": 1},
+    "methods/biological_interpretation.md": {
+        "src/mtp/taxa_trait_matrix.py": 1,
+        "src/mtp/study_trait_profiles.py": 1,
+        "src/mtp/guild_maps.py": 1,
+        "src/mtp/integrated_evidence.py": 1,
+    },
+    "methods/guild_condition_body_site_heatmap.md": {"src/mtp/guild_maps.py": 2},
     "methods/integrated_evidence.md": {"src/mtp/integrated_evidence.py": 1},
     "methods/table1_log_ratio_sensitivity.md": {"src/mtp/log_ratio_sensitivity.py": 1},
     "methods/table1_paired_log_ratios.md": {"src/mtp/trait_composition.py": 1},
+    "methods/trait_direction_screen.md": {
+        "src/mtp/table1_trait_maps.py": 1,
+        "src/mtp/trait_guilds.py": 1,
+        "src/mtp/trait_screen.py": 1,
+    },
+    "methods/validation_feasibility.md": {"src/mtp/validation_evidence.py": 1},
+    "docs/origin-story.md": {"src/mtp/ingest.py": 1},
+    "trait-visualization/trait-profile-investigation/PD-cellulose/"
+    "pd_cellulose_direction_exclusive_taxa_context.md": {"src/mtp/taxa_trait_matrix.py": 1},
     "docs/rosalind-six-trait-interpretation.md": {
         "src/mtp/study_trait_profiles.py": 1,
         "src/mtp/trait_guilds.py": 2,
@@ -48,3 +66,33 @@ def test_active_producer_references_use_canonical_mtp(document: str) -> None:
         )
         assert (ROOT / canonical).is_file(), f"Missing canonical producer: {canonical}"
     assert "src/bsdbng/" not in text, f"Active producer still points to a shim: {document}"
+
+
+_RELATIVE_SRC_LINK = re.compile(r"\]\((?!https?://)([^)\s#]*src/mtp/[^)\s#]+)(?:#[^)\s]*)?\)")
+
+
+@pytest.mark.parametrize("document", CANONICAL_REFERENCES)
+def test_relative_links_to_canonical_modules_resolve_from_the_document(document: str) -> None:
+    """#2349: a relative Markdown link must reach the module from the document's own folder."""
+    path = ROOT / document
+    for target in _RELATIVE_SRC_LINK.findall(path.read_text(encoding="utf-8")):
+        resolved = (path.parent / target).resolve()
+        assert resolved.is_file(), f"{document}: link {target} does not resolve to a file"
+        assert resolved.is_relative_to((ROOT / "src/mtp").resolve()), (
+            f"{document}: link {target} resolves outside src/mtp/"
+        )
+
+
+RELATIVE_LINK_COUNTS = {
+    "methods/biological_interpretation.md": 2,
+    "trait-visualization/trait-profile-investigation/PD-cellulose/"
+    "pd_cellulose_direction_exclusive_taxa_context.md": 1,
+    "docs/rosalind-six-trait-interpretation.md": 3,
+}
+
+
+def test_relative_link_scan_finds_the_known_links() -> None:
+    """#2349: the link check above must see the documents' relative module links."""
+    for document, count in RELATIVE_LINK_COUNTS.items():
+        found = _RELATIVE_SRC_LINK.findall((ROOT / document).read_text(encoding="utf-8"))
+        assert len(found) == count, (document, found)

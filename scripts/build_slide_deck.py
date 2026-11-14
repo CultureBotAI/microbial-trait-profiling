@@ -3882,6 +3882,24 @@ def cellulose_problems(
     return found
 
 
+def normalize_quoted_tables(value: Any, default: Sequence[str] = ()) -> list[str]:
+    """Normalize an entry's ``quoted_tables`` value to a list of path strings (#2248)."""
+    if value is None or (isinstance(value, str) and not value.strip()):
+        return list(default)
+    if isinstance(value, str):
+        parsed = json.loads(value)
+        if not isinstance(parsed, list):
+            raise TypeError(
+                f"quoted_tables JSON must decode to a list, got {type(parsed).__name__}"
+            )
+        return [str(item) for item in parsed]
+    if isinstance(value, Sequence) and not isinstance(value, (bytes, bytearray)):
+        return [str(item) for item in value]
+    raise TypeError(
+        f"quoted_tables must be a JSON string or sequence of strings, got {type(value).__name__}"
+    )
+
+
 def check_slides(
     repo: Path,
     entries: Sequence[dict[str, Any]],
@@ -3940,7 +3958,7 @@ def check_slides(
             if reason:
                 quoted.append(f"{rel}: {reason}")
                 for entry in entries:
-                    if rel in json.loads(entry.get("quoted_tables", "[]")):
+                    if rel in normalize_quoted_tables(entry.get("quoted_tables")):
                         found = unverified.setdefault(entry["figure_file_path"], [])
                         if (rel, reason) not in found:
                             found.append((rel, reason))
@@ -4476,13 +4494,13 @@ def build_deck(
     # declares a narrower dependency list, conservatively record the entire shared
     # input set: a stale table must never leave a potentially affected slide verified.
     # This is an upper bound on dependencies, not a claim that every value is quoted.
-    shared_tables = json.dumps(
-        sorted(
-            path.relative_to(repo).as_posix() for path in TABLES_READ if path.is_relative_to(repo)
-        )
+    shared_tables = sorted(
+        path.relative_to(repo).as_posix() for path in TABLES_READ if path.is_relative_to(repo)
     )
     for entry in ordered_entries:
-        entry.setdefault("quoted_tables", shared_tables)
+        entry["quoted_tables"] = json.dumps(
+            normalize_quoted_tables(entry.get("quoted_tables"), shared_tables)
+        )
     unverified, quoted = check_slides(repo, ordered_entries, checks, TABLES_READ)
     found: list[str] | list[tuple[str, str]]
     for plate, found in plate_problems(repo, plate_record, checks, revision).items():
