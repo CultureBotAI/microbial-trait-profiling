@@ -193,10 +193,21 @@ full qualified trait key, exact scope, scenario and reference/background; keep
 units, weights, missingness and correction families. Opposite and untestable
 results belong in the integration, not just the five originally upward traits.
 For #179, retain annotation-level interpretation, unresolved higher-rank source
-allocation, taxonomy coverage and corpus restrictions. Native model owner review,
-#188 orientation and #189 semantics review remain required for manuscript adoption;
-this work does not resolve those issues or #182/#184. Taxonomic removal is not a
-causal intervention or proof of taxonomy-independent mechanisms.
+allocation, taxonomy coverage and corpus restrictions. In the historical
+`190-native-v1` committed snapshot (`methods/table1-native-results/`), contrast
+orientation (#188) and feature semantics (#189) were unreviewed at execution time
+prior to their subsequent tracker closures (#188 Closed 2026-10-11 UTC; #189 Closed
+2026-10-08 UTC; see the status checkpoint in
+[`methods/biological_interpretation_audit.md#status-checkpoint-2026-10-30`](biological_interpretation_audit.md#status-checkpoint-2026-10-30));
+closing them in the tracker (or closing #182 on 2026-10-12 UTC) does not
+retroactively recertify the historical `190-native-v1` outputs or establish
+biological validation. Native model owner review, output-specific verification of
+contrast orientation and trait semantics for any native results (`190-native-v1`,
+`190-native-v2` or `190-native-v3`) adopted in a manuscript, source-count validity
+(#184), and full-pipeline calibration of these native diagnostics remain required
+for manuscript adoption; this handoff does not complete those reviews or
+resolve #184. Taxonomic removal is not a causal intervention or proof of
+taxonomy-independent mechanisms.
 
 ## Public Checksum Review
 
