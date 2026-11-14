@@ -22,7 +22,7 @@ Outputs:
   - stdout summary of CONTROL (rc=0) and 12 killed mutants (rc=1, matched marker,
     PYTEST_ORIGIN_OK).
 
-Issue: #1921, #1922, #2005, #2006, #2063
+Issue: #1921, #1922, #2005, #2006, #2063, #2336 (anchors repaired 2026-11-13)
 Date: 2026-11-10
 """
 
@@ -125,8 +125,8 @@ MUTANTS: tuple[Mutant, ...] = (
     Mutant(
         name="M5_heatmap_palette_reverts_equal_lightness_1922",
         target_rel=FOLLOWUP_REL,
-        old='        "#c2410c",\n        "#60a5fa",\n        "#eab308",',
-        new='        "#b91c1c",\n        "#2563eb",\n        "#047857",',
+        old=('    "#c2410c",\n    "#60a5fa",\n    "#eab308",'),
+        new=('    "#b91c1c",\n    "#2563eb",\n    "#047857",'),
         test_rel=TEST_FOLLOWUP_REL,
         test_filter="test_companion_heatmap_multi_condition_palette_and_legend_clear_dendrogram",
     ),
@@ -141,34 +141,31 @@ MUTANTS: tuple[Mutant, ...] = (
     Mutant(
         name="M7_sixth_colour_reverts_to_7c3aed_2005",
         target_rel=FOLLOWUP_REL,
-        old='        "#ab7578",\n',
-        new='        "#7c3aed",\n',
+        old=('    "#ab7578",\n'),
+        new=('    "#7c3aed",\n'),
         test_rel=TEST_FOLLOWUP_REL,
         test_filter="test_companion_heatmap_multi_condition_palette_and_legend_clear_dendrogram",
     ),
     Mutant(
-        # Retargeted (lead, #2005 delta 2): with the >8-condition guard in place, dropping a
-        # colour now fails by ValueError, not assertion. The real regression is removing the
-        # guard and restoring the modulo wrap, which the nine-condition test must catch.
+        # #2336: the inline capacity check is now a shared helper call. Remove that
+        # backstop and wrap the module-level palette index: the same ninth-condition
+        # silent colour reuse must still fail the direct-render test.
         name="M8_guard_removed_wrap_restored_2005",
         target_rel=FOLLOWUP_REL,
         old=(
-            "    if len(TARGET_CONDITIONS) > len(palette_colors):\n"
-            "        msg = (\n"
-            '            f"The companion heatmap has {len(palette_colors)} '
-            'distinct condition colours; "\n'
-            '            f"{len(TARGET_CONDITIONS)} conditions would reuse one. Use "\n'
-            '            f"--top-paired-conditions {len(palette_colors)} or fewer."\n'
-            "        )\n"
-            "        raise ValueError(msg)\n"
+            "    validate_companion_heatmap_condition_count(len(TARGET_CONDITIONS))\n"
             "    condition_palette = {\n"
-            "        condition: palette_colors[index] for index, condition in "
-            "enumerate(TARGET_CONDITIONS)\n"
+            "        condition: COMPANION_HEATMAP_PALETTE_COLORS[index]\n"
+            "        for index, condition in enumerate(TARGET_CONDITIONS)\n"
+            "    }"
         ),
         new=(
             "    condition_palette = {\n"
-            "        condition: palette_colors[index % len(palette_colors)]\n"
+            "        condition: COMPANION_HEATMAP_PALETTE_COLORS[\n"
+            "            index % len(COMPANION_HEATMAP_PALETTE_COLORS)\n"
+            "        ]\n"
             "        for index, condition in enumerate(TARGET_CONDITIONS)\n"
+            "    }"
         ),
         test_rel=TEST_FOLLOWUP_REL,
         test_filter="test_companion_heatmap_refuses_more_conditions_than_distinct_colours",
@@ -176,8 +173,8 @@ MUTANTS: tuple[Mutant, ...] = (
     Mutant(
         name="M9_fourth_colour_equals_trait_2005",
         target_rel=FOLLOWUP_REL,
-        old='        "#3b0764",\n',
-        new='        "#155e75",\n',
+        old=('    "#3b0764",\n'),
+        new=('    "#155e75",\n'),
         test_rel=TEST_FOLLOWUP_REL,
         test_filter="test_companion_heatmap_multi_condition_palette_and_legend_clear_dendrogram",
     ),
@@ -190,18 +187,20 @@ MUTANTS: tuple[Mutant, ...] = (
         test_filter="test_companion_heatmap_multi_condition_palette_and_legend_clear_dendrogram",
     ),
     Mutant(
+        # #2336: strict lookup replaced fallback mapping. Keep row validation, but
+        # replace the strip lookup with one colour so it disagrees with the legend.
         name="M11_strip_ignores_palette_2006",
         target_rel=FOLLOWUP_REL,
-        old='        lambda condition: condition_palette.get(condition, "#64748b")\n',
-        new='        lambda condition: "#155e75"\n',
+        old=("    row_colors = row_conditions.map(lambda condition: condition_palette[condition])"),
+        new=('    row_colors = row_conditions.map(lambda condition: "#155e75")'),
         test_rel=TEST_FOLLOWUP_REL,
         test_filter="test_companion_heatmap_multi_condition_palette_and_legend_clear_dendrogram",
     ),
     Mutant(
         name="M12_cyan_ramp_palette_2006",
         target_rel=FOLLOWUP_REL,
-        old='        "#c2410c",\n        "#60a5fa",\n        "#eab308",',
-        new='        "#083344",\n        "#0891b2",\n        "#a5f3fc",',
+        old=('    "#c2410c",\n    "#60a5fa",\n    "#eab308",'),
+        new=('    "#083344",\n    "#0891b2",\n    "#a5f3fc",'),
         test_rel=TEST_FOLLOWUP_REL,
         test_filter="test_companion_heatmap_multi_condition_palette_and_legend_clear_dendrogram",
     ),
