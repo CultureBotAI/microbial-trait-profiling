@@ -253,6 +253,7 @@ def _documents(
     selected = sum(bool(record["selected_candidates"]) for record in records)
     role = _scope_role(verified.scope)
     companion = "off" if verified.scope == "phenotype" else "phenotype"
+    follows_protocol = protocol == Protocol()
     readme = (
         "# Internal study-split selection assessment\n\n"
         f"Strain rollup `{verified.scope}`: "
@@ -260,6 +261,8 @@ def _documents(
         f"Report beside the `{companion}` scope with the side-by-side report; "
         "do not choose the favorable result. This role was amended after results.\n\n"
         f"Completed {len(records)} splits; {selected} selected at least one candidate. "
+        f"Parameters: `splits={protocol.splits}`, `seed={protocol.seed}`, "
+        f"`permutations={protocol.permutations}`, `follows_protocol={follows_protocol}`. "
         "Empty and untestable splits remain recorded.\n\n"
         "Each split selects only on its training studies and tests only on its held-out studies. "
         "Both overlap statistics form one BY/BH family. Historical leads are not forced in.\n\n"
@@ -572,14 +575,15 @@ def report_scopes(
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    defaults = Protocol()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--comparison-run", type=Path)
     parser.add_argument("--phenotype-run", type=Path, help="Saved v2 primary study-split run")
     parser.add_argument("--off-run", type=Path, help="Saved v2 sensitivity study-split run")
     parser.add_argument("--output-dir", type=Path, required=True)
-    parser.add_argument("--splits", type=int, default=20)
-    parser.add_argument("--seed", type=int, default=20261023)
-    parser.add_argument("--permutations", type=int, default=100000)
+    parser.add_argument("--splits", type=int, default=defaults.splits)
+    parser.add_argument("--seed", type=int, default=defaults.seed)
+    parser.add_argument("--permutations", type=int, default=defaults.permutations)
     parser.add_argument(
         "--verify",
         action="store_true",
@@ -591,7 +595,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     if pairing:
         if args.comparison_run is not None or args.phenotype_run is None or args.off_run is None:
             parser.error("Pairing requires --phenotype-run and --off-run, without --comparison-run")
-        if (args.splits, args.seed, args.permutations) != (20, 20261023, 100000):
+        if (args.splits, args.seed, args.permutations) != (
+            defaults.splits,
+            defaults.seed,
+            defaults.permutations,
+        ):
             parser.error("Scope pairing reads recorded parameters; do not supply numeric overrides")
     elif args.comparison_run is None:
         parser.error("Provide --comparison-run, or both saved scope runs")
