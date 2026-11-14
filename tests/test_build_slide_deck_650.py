@@ -7,6 +7,7 @@ import importlib.util
 import json
 from pathlib import Path
 from types import ModuleType
+from typing import Any
 from unittest.mock import Mock
 
 import pytest
@@ -21,7 +22,12 @@ def load_deck(path: Path) -> ModuleType:
     return module
 
 
-def exercise_build(module: ModuleType, root: Path, patch: pytest.MonkeyPatch) -> None:
+def run_build_with_entries(
+    module: ModuleType,
+    root: Path,
+    patch: pytest.MonkeyPatch,
+    entries: list[dict[str, Any]],
+) -> tuple[list[dict[str, str]], dict[str, Mock], Path]:
     patch.setattr(module, "REPO_ROOT", root)
     table = root / "quoted.tsv"
     table.write_text("value\n2\n")
@@ -63,21 +69,8 @@ def exercise_build(module: ModuleType, root: Path, patch: pytest.MonkeyPatch) ->
         "revision_problem",
         lambda _t, _r, rel, _p: "changed table" if rel == "quoted.tsv" else None,
     )
-    entries = []
-    for name in ("dependent", "independent"):
-        (root / f"{name}.png").write_bytes(b"image fixture")
-        entries.append(
-            {
-                "figure_file_path": f"{name}.png",
-                "owner": "test",
-                "title": name,
-                "tag": "test",
-                "takeaway": "test",
-                "caveat": "test",
-                "code_path": "",
-                "quoted_tables": json.dumps(["quoted.tsv"] if name == "dependent" else []),
-            }
-        )
+    for entry in entries:
+        (root / str(entry["figure_file_path"])).write_bytes(b"image fixture")
     patch.setattr(module, "get_new_slides_metadata", Mock(return_value=entries))
     for relative, content in {
         "Justfile": "",
@@ -111,12 +104,30 @@ def exercise_build(module: ModuleType, root: Path, patch: pytest.MonkeyPatch) ->
         trees={module.COMMIT: {"quoted.tsv": "old"}},
         allow_unverified=True,
     )
+    with (output / "slide_manifest_v6.tsv").open() as handle:
+        rows = list(csv.DictReader(handle, delimiter="\t"))
+    return rows, guards, output
+
+
+def exercise_build(module: ModuleType, root: Path, patch: pytest.MonkeyPatch) -> None:
+    entries = [
+        {
+            "figure_file_path": f"{name}.png",
+            "owner": "test",
+            "title": name,
+            "tag": "test",
+            "takeaway": "test",
+            "caveat": "test",
+            "code_path": "",
+            "quoted_tables": json.dumps(["quoted.tsv"] if name == "dependent" else []),
+        }
+        for name in ("dependent", "independent")
+    ]
+    rows, guards, output = run_build_with_entries(module, root, patch, entries)
     for name, guard in guards.items():
         assert guard.called, name
     assert guards["check_slides"].call_args.args[3] == module.TABLES_READ
     assert guards["refuse_or_review"].call_args.args[0]
-    with (output / "slide_manifest_v6.tsv").open() as handle:
-        rows = list(csv.DictReader(handle, delimiter="\t"))
     assert len(rows) == 2
     assert "quoted.tsv" in rows[0]["unverified"]
     assert rows[1]["unverified"] == ""
@@ -142,3 +153,90 @@ def test_build_guards_and_quoted_table_review(
 ) -> None:
     module = load_deck(Path(__file__).resolve().parents[1] / "scripts/build_slide_deck.py")
     exercise_build(module, tmp_path, monkeypatch)
+
+
+def test_check_slides_normalizes_quoted_tables(tmp_path: Path) -> None:
+    module = load_deck(Path(__file__).resolve().parents[1] / "scripts/build_slide_deck.py")
+    table = tmp_path / "quoted.tsv"
+    table.write_text("value\n2\n")
+    tree: dict[str, str] = {"quoted.tsv": "0" * 40}
+    cases: list[tuple[str, Any, bool]] = [
+        ("empty_str.png", "", False),
+        ("none_val.png", None, False),
+        ("empty_seq.png", [], False),
+        ("json_str.png", json.dumps(["quoted.tsv"]), True),
+        ("list_seq.png", ["quoted.tsv"], True),
+        ("tuple_seq.png", ("quoted.tsv",), True),
+    ]
+    entries: list[dict[str, Any]] = []
+    for fig_rel, raw_quoted, _ in cases:
+        fig_path = tmp_path / fig_rel
+        fig_path.write_bytes(b"image fixture")
+        tree[fig_rel] = module.git_blob_id(fig_path)
+        entries.append({"figure_file_path": fig_rel, "quoted_tables": raw_quoted})
+    omitted_fig = tmp_path / "omitted.png"
+    omitted_fig.write_bytes(b"image fixture")
+    tree["omitted.png"] = module.git_blob_id(omitted_fig)
+    entries.append({"figure_file_path": "omitted.png"})
+
+    unverified, quoted = module.check_slides(tmp_path, entries, {module.COMMIT: tree}, [table])
+    expected_reason = f"differs from {module.SHORT_COMMIT}"
+    assert quoted == [f"quoted.tsv: {expected_reason}"]
+    assert "omitted.png" not in unverified
+    for fig_rel, _, expect_flagged in cases:
+        if expect_flagged:
+            assert unverified[fig_rel] == [("quoted.tsv", expected_reason)]
+        else:
+            assert fig_rel not in unverified
+
+
+def test_build_deck_normalizes_quoted_tables(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    module = load_deck(Path(__file__).resolve().parents[1] / "scripts/build_slide_deck.py")
+    shared = [
+        f"{module.DECK_DIR}/slides/slide_manifest_v1.tsv",
+        f"{module.DECK_DIR}/slides/slide_manifest_v2.tsv",
+        "quoted.tsv",
+    ]
+    cases: list[tuple[str, Any, list[str]]] = [
+        ("blank_str.png", "", shared),
+        ("none_val.png", None, shared),
+        ("seq_quoted.png", ["quoted.tsv"], ["quoted.tsv"]),
+        ("seq_empty.png", [], []),
+        ("json_empty.png", "[]", []),
+    ]
+    entries: list[dict[str, Any]] = [
+        {
+            "figure_file_path": fig_rel,
+            "owner": "test",
+            "title": fig_rel,
+            "tag": "test",
+            "takeaway": "test",
+            "caveat": "test",
+            "code_path": "",
+            "quoted_tables": raw_quoted,
+        }
+        for fig_rel, raw_quoted, _ in cases
+    ]
+    entries.append(
+        {
+            "figure_file_path": "omitted.png",
+            "owner": "test",
+            "title": "omitted.png",
+            "tag": "test",
+            "takeaway": "test",
+            "caveat": "test",
+            "code_path": "",
+        }
+    )
+    rows, _, _ = run_build_with_entries(module, tmp_path, monkeypatch, entries)
+    by_fig = {row["figure_file_path"]: row for row in rows}
+    for fig_rel, _, expected_tables in cases:
+        assert json.loads(by_fig[fig_rel]["quoted_tables"]) == expected_tables
+        if expected_tables:
+            assert "quoted.tsv" in by_fig[fig_rel]["unverified"]
+        else:
+            assert by_fig[fig_rel]["unverified"] == ""
+    assert json.loads(by_fig["omitted.png"]["quoted_tables"]) == shared
+    assert "quoted.tsv" in by_fig["omitted.png"]["unverified"]
