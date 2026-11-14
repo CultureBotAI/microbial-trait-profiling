@@ -1,5 +1,6 @@
 """Pin active producer links in migrated contributor docs (Refs #2026, #2154)."""
 
+import re
 from pathlib import Path
 
 import pytest
@@ -65,3 +66,33 @@ def test_active_producer_references_use_canonical_mtp(document: str) -> None:
         )
         assert (ROOT / canonical).is_file(), f"Missing canonical producer: {canonical}"
     assert "src/bsdbng/" not in text, f"Active producer still points to a shim: {document}"
+
+
+_RELATIVE_SRC_LINK = re.compile(r"\]\((?!https?://)([^)\s#]*src/mtp/[^)\s#]+)(?:#[^)\s]*)?\)")
+
+
+@pytest.mark.parametrize("document", CANONICAL_REFERENCES)
+def test_relative_links_to_canonical_modules_resolve_from_the_document(document: str) -> None:
+    """#2349: a relative Markdown link must reach the module from the document's own folder."""
+    path = ROOT / document
+    for target in _RELATIVE_SRC_LINK.findall(path.read_text(encoding="utf-8")):
+        resolved = (path.parent / target).resolve()
+        assert resolved.is_file(), f"{document}: link {target} does not resolve to a file"
+        assert resolved.is_relative_to((ROOT / "src/mtp").resolve()), (
+            f"{document}: link {target} resolves outside src/mtp/"
+        )
+
+
+RELATIVE_LINK_COUNTS = {
+    "methods/biological_interpretation.md": 2,
+    "trait-visualization/trait-profile-investigation/PD-cellulose/"
+    "pd_cellulose_direction_exclusive_taxa_context.md": 1,
+    "docs/rosalind-six-trait-interpretation.md": 3,
+}
+
+
+def test_relative_link_scan_finds_the_known_links() -> None:
+    """#2349: the link check above must see the documents' relative module links."""
+    for document, count in RELATIVE_LINK_COUNTS.items():
+        found = _RELATIVE_SRC_LINK.findall((ROOT / document).read_text(encoding="utf-8"))
+        assert len(found) == count, (document, found)
