@@ -22,7 +22,7 @@ Outputs:
   - stdout summary of CONTROL (rc=0) and 12 killed mutants (rc=1, matched marker,
     PYTEST_ORIGIN_OK).
 
-Issue: #1921, #1922, #2005, #2006, #2063
+Issue: #1921, #1922, #2005, #2006, #2063, #2336 (anchors repaired 2026-11-13)
 Date: 2026-11-10
 """
 

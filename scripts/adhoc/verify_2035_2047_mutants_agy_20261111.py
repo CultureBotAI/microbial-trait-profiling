@@ -20,7 +20,7 @@ Inputs:
 Outputs:
     - <scratch-dir>/verdicts.json and <scratch-dir>/<run-dir>/verdicts.json
 
-Issue: #2035, #2047
+Issue: #2035, #2047, #2336 (anchors repaired 2026-11-13)
 Date: 2026-11-11
 """
 
