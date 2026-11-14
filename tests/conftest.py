@@ -24,6 +24,8 @@ collect_ignore = (
         "test_cellulose_slide_figures.py",
         "test_cellulose_statement_consumers.py",
         "test_ncasm_tufte_plates.py",
+        "test_ncasm_tufte_coordinates.py",
+        "test_ncasm_tufte_preflight.py",
     ]
 )
 

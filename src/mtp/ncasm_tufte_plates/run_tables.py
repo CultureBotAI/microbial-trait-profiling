@@ -57,6 +57,20 @@ class RunIdentity:
 
 
 @dataclass(frozen=True)
+class _ScreenVote:
+    """One validated screen row, including traits without a pooled-shift row."""
+
+    trait: str
+    name: str
+    studies_up: int
+    studies_down: int
+    studies_scored: int
+    share_up: float
+    by_q: float
+    in_table1: bool
+
+
+@dataclass(frozen=True)
 class TraitPoint:
     """One trait tested by both arms."""
 
@@ -147,6 +161,46 @@ def _display_name(object_name: str) -> str:
     return name[:1].upper() + name[1:]
 
 
+def _probability(row: dict[str, str], column: str) -> float:
+    value = _number(row, column, DIRECTION_SCREEN)
+    if not 0.0 <= value <= 1.0:
+        raise RunTableError(f"{DIRECTION_SCREEN}: {column} of {row['trait']} must be in [0, 1]")
+    return value
+
+
+def _screen_vote(row: dict[str, str]) -> _ScreenVote:
+    up = _count(row, "studies_up", DIRECTION_SCREEN)
+    down = _count(row, "studies_down", DIRECTION_SCREEN)
+    scored = _count(row, "studies_scored", DIRECTION_SCREEN)
+    if scored == 0 or scored != up + down:
+        raise RunTableError(
+            f"{DIRECTION_SCREEN}: studies_scored of {row['trait']} must equal "
+            "studies_up + studies_down and be positive for a tested trait"
+        )
+    share = _probability(row, "share_up")
+    by_q = _probability(row, "by_q_nominal")
+    # trait_screen._cell writes six significant digits. Compare at that precision;
+    # ties are excluded from studies_scored and from the share's denominator.
+    if float(format(share, ".6g")) != float(format(up / scored, ".6g")):
+        raise RunTableError(
+            f"{DIRECTION_SCREEN}: share_up of {row['trait']} disagrees with "
+            "studies_up / studies_scored at six significant digits"
+        )
+    flag = row["in_table1"].lower()
+    if flag not in {"true", "false"}:
+        raise RunTableError(f"{DIRECTION_SCREEN}: in_table1 of {row['trait']} is {flag!r}")
+    return _ScreenVote(
+        trait=row["trait"],
+        name=_display_name(row["object_name"]),
+        studies_up=up,
+        studies_down=down,
+        studies_scored=scored,
+        share_up=share,
+        by_q=by_q,
+        in_table1=flag == "true",
+    )
+
+
 def _identity(data: bytes) -> RunIdentity:
     try:
         record = json.loads(data.decode("utf-8"))
@@ -222,7 +276,8 @@ def load_trait_cloud(run_root: Path) -> TraitCloud:
         raise RunTableError(f"{DIRECTION_SCREEN} holds untested traits")
     if int(_one(screen, "family_size_nominal", DIRECTION_SCREEN)) != len(screen):
         raise RunTableError(f"{DIRECTION_SCREEN}: the family size is not the number of rows")
-    by_trait = {row["trait"]: row for row in screen}
+    votes = tuple(_screen_vote(row) for row in screen)
+    by_trait = {vote.trait: vote for vote in votes}
     if len(by_trait) != len(screen) or len({row["trait"] for row in arm1}) != len(arm1):
         raise RunTableError("a trait is listed twice in a run table")
     absent = sorted(row["trait"] for row in arm1 if row["trait"] not in by_trait)
@@ -232,26 +287,19 @@ def load_trait_cloud(run_root: Path) -> TraitCloud:
     points = []
     for row in arm1:
         vote = by_trait[row["trait"]]
-        flag = vote["in_table1"].lower()
-        if flag not in {"true", "false"}:
-            raise RunTableError(f"{DIRECTION_SCREEN}: in_table1 of {row['trait']} is {flag!r}")
         points.append(
             TraitPoint(
                 trait=row["trait"],
-                name=_display_name(vote["object_name"]),
+                name=vote.name,
                 mean_shift=_number(row, "mean_increased_minus_decreased", ARM1_POOLED_STATS),
-                studies_up=_count(vote, "studies_up", DIRECTION_SCREEN),
-                studies_down=_count(vote, "studies_down", DIRECTION_SCREEN),
-                share_up=_number(vote, "share_up", DIRECTION_SCREEN),
-                by_q=_number(vote, "by_q_nominal", DIRECTION_SCREEN),
-                in_table1=flag == "true",
+                studies_up=vote.studies_up,
+                studies_down=vote.studies_down,
+                share_up=vote.share_up,
+                by_q=vote.by_q,
+                in_table1=vote.in_table1,
             )
         )
-    by_hits = tuple(
-        _display_name(row["object_name"])
-        for row in screen
-        if _number(row, "by_q_nominal", DIRECTION_SCREEN) <= SIGNIFICANCE_LEVEL
-    )
+    by_hits = tuple(vote.name for vote in votes if vote.by_q <= SIGNIFICANCE_LEVEL)
     correlation = float(
         np.corrcoef([point.mean_shift for point in points], [point.share_up for point in points])[
             0, 1
@@ -263,7 +311,7 @@ def load_trait_cloud(run_root: Path) -> TraitCloud:
         comparisons=comparisons,
         arm1_studies=arm1_studies,
         screen_traits=len(screen),
-        screen_studies_max=max(_count(row, "studies_scored", DIRECTION_SCREEN) for row in screen),
+        screen_studies_max=max(vote.studies_scored for vote in votes),
         screen_by_hits=by_hits,
         correlation=correlation,
         inputs=inputs,

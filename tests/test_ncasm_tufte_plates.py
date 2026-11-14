@@ -211,15 +211,15 @@ def test_main_reports_the_refusal_and_exits_nonzero(
     assert not out_dir.exists()
 
 
-def _is_random_generator(node: ast.AST) -> bool:
-    """Whether the node reaches for a random generator, however it is imported (#2277)."""
+def _is_random_generator(node: ast.AST, numpy_aliases: frozenset[str]) -> bool:
+    """Recognize random APIs and directly imported NumPy aliases (#2277, #2382)."""
     if isinstance(node, ast.Attribute):
         if node.attr in {"default_rng", "RandomState", "Generator", "rvs"}:
             return True
         return (
             node.attr == "random"
             and isinstance(node.value, ast.Name)
-            and node.value.id in {"np", "numpy"}
+            and node.value.id in {"np", "numpy"} | numpy_aliases
         )
     if isinstance(node, ast.Import):
         return any("random" in alias.name.split(".") for alias in node.names)
@@ -230,14 +230,47 @@ def _is_random_generator(node: ast.AST) -> bool:
     return False
 
 
-def _random_generator_calls(tree: ast.AST) -> list[int]:
-    """Line numbers where the code reaches for a random generator."""
-    return [
-        node.lineno
-        for node in ast.walk(tree)
-        if isinstance(node, ast.Attribute | ast.Import | ast.ImportFrom)
-        and _is_random_generator(node)
-    ]
+def _numpy_import_aliases(tree: ast.AST) -> frozenset[str]:
+    """Collect direct imports in this scope, excluding nested scopes' local aliases."""
+    aliases: set[str] = set()
+    pending = [tree]
+    while pending:
+        node = pending.pop()
+        if node is not tree and isinstance(
+            node, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef | ast.Lambda
+        ):
+            continue
+        if isinstance(node, ast.Import):
+            aliases.update(
+                alias.asname or alias.name for alias in node.names if alias.name == "numpy"
+            )
+        pending.extend(ast.iter_child_nodes(node))
+    return frozenset(aliases)
+
+
+def _random_generator_calls(
+    tree: ast.AST, numpy_aliases: frozenset[str] = frozenset()
+) -> list[int]:
+    """Find random references, carrying direct import aliases into nested scopes.
+
+    This conservative source check does not infer assignment aliases or rebinding.
+    """
+    aliases = numpy_aliases | _numpy_import_aliases(tree)
+    lines: list[int] = []
+    pending = [tree]
+    while pending:
+        node = pending.pop()
+        if node is not tree and isinstance(
+            node, ast.FunctionDef | ast.AsyncFunctionDef | ast.ClassDef | ast.Lambda
+        ):
+            lines.extend(_random_generator_calls(node, aliases))
+            continue
+        if isinstance(node, ast.Attribute | ast.Import | ast.ImportFrom) and _is_random_generator(
+            node, aliases
+        ):
+            lines.append(node.lineno)
+        pending.extend(ast.iter_child_nodes(node))
+    return sorted(lines)
 
 
 @pytest.mark.parametrize(
@@ -252,6 +285,18 @@ def _random_generator_calls(tree: ast.AST) -> list[int]:
         ("from scipy import stats\ndef f():\n    return stats.norm.rvs(size=3)", True),
         ("from mtp.ncasm_tufte_plates.data_status import random_marks_status", False),
         ("import numpy as np\ndef f():\n    return np.linspace(0, 1, 3)", False),
+        ("import numpy as xp\ndef f():\n    return xp.random.normal(size=3)", True),
+        (
+            "import numpy as another_alias\ndef f():\n"
+            "    return another_alias.random.uniform(size=3)",
+            True,
+        ),
+        ("def f():\n    import numpy as xp\n    return xp.random.normal(size=3)", True),
+        ("def f():\n    import numpy\n    return numpy.random.normal(size=3)", True),
+        ("from numpy import random\ndef f():\n    return random.normal(size=3)", True),
+        ("def f():\n    from numpy import random as nr\n    return nr.normal(size=3)", True),
+        ("import numpy as xp\ndef f():\n    return xp.linspace(0, 1, 3)", False),
+        ("def f():\n    import numpy as xp\n    return xp.linspace(0, 1, 3)", False),
     ],
 )
 def test_random_generator_detector_sees_through_import_aliases(code: str, found: bool) -> None:
@@ -274,10 +319,15 @@ def test_only_the_gated_data_story_plots_reach_for_a_random_generator() -> None:
     for module in sorted(PACKAGE.glob("*.py")):
         tree = ast.parse(module.read_text(encoding="utf-8"))
         functions = [node for node in tree.body if isinstance(node, ast.FunctionDef)]
-        inside = {line for function in functions for line in _random_generator_calls(function)}
+        numpy_aliases = _numpy_import_aliases(tree)
+        inside = {
+            line
+            for function in functions
+            for line in _random_generator_calls(function, numpy_aliases)
+        }
         assert set(_random_generator_calls(tree)) <= inside, f"{module.name}: module-level draw"
         for function in functions:
-            if _random_generator_calls(function):
+            if _random_generator_calls(function, numpy_aliases):
                 assert module.name == "story_plots.py", f"{module.name}:{function.name}"
                 using_random.add(function.name)
             for node in ast.walk(function):
@@ -294,6 +344,63 @@ def test_only_the_gated_data_story_plots_reach_for_a_random_generator() -> None:
 
     assert using_random == gated
     assert stamped == gated
+
+
+@pytest.mark.parametrize("scope", ["module", "function"])
+@pytest.mark.parametrize("spelling", ["module_alias", "random_alias"])
+def test_package_guard_rejects_numpy_alias_marks_in_real_plate_one(
+    monkeypatch: pytest.MonkeyPatch, scope: str, spelling: str
+) -> None:
+    """Exercise the real package scanner on an in-memory plate-I scatter mutation (#2382)."""
+    source = PACKAGE / "plates_part1.py"
+    text = source.read_text(encoding="utf-8")
+    if spelling == "module_alias":
+        imported, generator = "import numpy as xp", "xp.random.normal(size=3)"
+    else:
+        imported, generator = "from numpy import random as nr", "nr.normal(size=3)"
+    panel_anchor = "    ax_a, ax_b = two_panels(fig)\n"
+    assert panel_anchor in text
+    addition = f"    ax_a.scatter([0, 1, 2], {generator})\n"
+    if scope == "module":
+        import_anchor = "import numpy as np\n"
+        assert text.count(import_anchor) == 1
+        text = text.replace(import_anchor, f"{import_anchor}{imported}\n", 1)
+    else:
+        addition = f"    {imported}\n{addition}"
+    text = text.replace(panel_anchor, panel_anchor + addition, 1)
+    ast.parse(text)
+    original_read_text = Path.read_text
+
+    def read_text(path: Path, encoding: str | None = None, errors: str | None = None) -> str:
+        if path == source:
+            return text
+        return original_read_text(path, encoding=encoding, errors=errors)
+
+    monkeypatch.setattr(Path, "read_text", read_text)
+    with pytest.raises(AssertionError, match=r"plates_part1\.py"):
+        test_only_the_gated_data_story_plots_reach_for_a_random_generator()
+
+
+def test_package_guard_accepts_gated_story_draws_through_a_module_numpy_alias(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Module aliases must reach each function scan without becoming module-level draws."""
+    source = PACKAGE / "story_plots.py"
+    text = source.read_text(encoding="utf-8")
+    assert text.count("import numpy as np\n") == 1
+    text = text.replace("import numpy as np\n", "import numpy as xp\n").replace("np.", "xp.")
+    text, replacements = re.subn(r"xp\.random\.default_rng\([0-9]+\)", "xp.random", text)
+    assert replacements == len(story_plots.PLOT_BUILDERS)
+    ast.parse(text)
+    original_read_text = Path.read_text
+
+    def read_text(path: Path, encoding: str | None = None, errors: str | None = None) -> str:
+        if path == source:
+            return text
+        return original_read_text(path, encoding=encoding, errors=errors)
+
+    monkeypatch.setattr(Path, "read_text", read_text)
+    test_only_the_gated_data_story_plots_reach_for_a_random_generator()
 
 
 def test_data_story_plates_are_copies_of_the_data_story_plots(built: Built) -> None:
@@ -545,7 +652,7 @@ def test_plate_21_prints_only_numbers_read_from_the_run_tables(built: Built) -> 
     )
 
 
-def test_plate_21_draws_one_dot_per_trait_at_the_tabulated_values() -> None:
+def test_plate_21_loads_one_point_per_trait_with_the_tabulated_values() -> None:
     cloud = run_tables.load_trait_cloud(FIXTURE_RUN)
     arm1 = {row["trait"]: row for row in _table(run_tables.ARM1_POOLED_STATS)}
     screen = {row["trait"]: row for row in _table(run_tables.DIRECTION_SCREEN)}
@@ -582,7 +689,14 @@ def test_plate_21_follows_the_tables_when_they_change(tmp_path: Path) -> None:
     root = _edited_run(
         tmp_path,
         run_tables.DIRECTION_SCREEN,
-        {cellulose: {"studies_up": "200", "share_up": "0.4301", "by_q_nominal": "0.2"}},
+        {
+            cellulose: {
+                "studies_up": "200",
+                "studies_scored": "465",
+                "share_up": "0.430108",
+                "by_q_nominal": "0.2",
+            }
+        },
     )
     with pytest.MonkeyPatch.context() as patch, mpl.style.context("default"):
         patch.setattr(story_plots, "SLIDE_DPI", TEST_DPI)

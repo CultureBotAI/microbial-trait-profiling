@@ -73,8 +73,12 @@ from mtp.ncasm_tufte_plates.plates_part2 import (
     build_plate_19,
     build_plate_20,
 )
-from mtp.ncasm_tufte_plates.run_tables import RunIdentity, RunTableError, load_trait_cloud
-from mtp.ncasm_tufte_plates.story_from_tables import TableStoryPlot, plot_01_trait_cloud
+from mtp.ncasm_tufte_plates.run_tables import RunIdentity, RunTableError, TraitCloud
+from mtp.ncasm_tufte_plates.story_from_tables import (
+    TableStoryPlot,
+    check_trait_cloud,
+    draw_trait_cloud,
+)
 from mtp.ncasm_tufte_plates.story_plots import (
     PLOT_BUILDERS,
     PLOT_SPEAKER_NOTES,
@@ -375,18 +379,18 @@ class PlateBuildError(ValueError):
 
 
 class StoryPlot(NamedTuple):
-    """One data-story plot: drawn from a random generator as ported, or from run tables."""
+    """A random illustration or a renderer consuming the model returned by preflight."""
 
     number: int
     random: Callable[[Path], StoryPlotInfo] | None = None
-    from_run: Callable[[Path, Path], TableStoryPlot] | None = None
-    check_run: Callable[[Path], object] | None = None
+    from_run: Callable[[Path, TraitCloud], TableStoryPlot] | None = None
+    check_run: Callable[[Path], TraitCloud] | None = None
 
 
 # Plates 21-30, in order. A plot moves from ``random`` to ``from_run`` when it is rebuilt
 # from run tables (#775).
 STORY_PLOTS: tuple[StoryPlot, ...] = (
-    StoryPlot(1, from_run=plot_01_trait_cloud, check_run=load_trait_cloud),
+    StoryPlot(1, from_run=draw_trait_cloud, check_run=check_trait_cloud),
     *(StoryPlot(number, random=builder) for number, builder in enumerate(PLOT_BUILDERS, start=2)),
 )
 
@@ -433,7 +437,9 @@ def build_plates(
     Raises ``PlateBuildError`` before drawing anything when a plate's points come from a
     random generator and ``audit_random_marks`` is false (#775), or when a plate reads
     run tables and no ``run_root`` is given. The run's tables are read and checked before
-    anything is drawn too, so a ``RunTableError`` leaves no partial output (#2274)."""
+    anything is drawn too, including label capacity, so a ``RunTableError`` leaves no
+    partial output. Renderers use those retained models instead of rereading inputs
+    after the first plate has been written (#2274, #2379)."""
     if [plot.number for plot in STORY_PLOTS] != list(range(1, len(STORY_PLOTS) + 1)):
         raise AssertionError("STORY_PLOTS must list the data-story plots in order")
     random_plots = [plot for plot in STORY_PLOTS if plot.random is not None]
@@ -454,11 +460,12 @@ def build_plates(
         )
     if refusals:
         raise PlateBuildError("\n".join(refusals))
+    checked_clouds: dict[int, TraitCloud] = {}
     for plot in STORY_PLOTS:
         if plot.from_run is not None and run_root is not None:
             if plot.check_run is None:
                 raise AssertionError(f"data-story plot {plot.number} has no run check")
-            plot.check_run(run_root)
+            checked_clouds[plot.number] = plot.check_run(run_root)
     out_dir.mkdir(parents=True, exist_ok=True)
     plates: list[ManifestEntry] = []
 
@@ -487,7 +494,7 @@ def build_plates(
         idx = _plate_number(plot)
         with mpl.style.context("default"):
             if plot.from_run is not None and run_root is not None:
-                drawn = plot.from_run(story_dir, run_root)
+                drawn = plot.from_run(story_dir, checked_clouds[plot.number])
                 story, notes = drawn.info, drawn.speaker_notes
                 status = run_tables_status(drawn.inputs)
                 record = _run_record(drawn.run)

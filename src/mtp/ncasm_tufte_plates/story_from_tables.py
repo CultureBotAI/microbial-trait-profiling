@@ -51,7 +51,13 @@ from mtp.ncasm_tufte_plates.story_plots import (
     save_and_verify_story_plot,
 )
 
-__all__ = ["TableStoryPlot", "plot_01_trait_cloud", "trait_cloud_notes"]
+__all__ = [
+    "TableStoryPlot",
+    "check_trait_cloud",
+    "draw_trait_cloud",
+    "plot_01_trait_cloud",
+    "trait_cloud_notes",
+]
 
 MINUS = "\u2212"
 # Plot 01 layout: the scatter axes in figure fractions, and the label bands in points.
@@ -189,11 +195,38 @@ def trait_cloud_notes(cloud: TraitCloud) -> str:
     )
 
 
+def _label_bands(table1: tuple[TraitPoint, ...]) -> tuple[float, float]:
+    """Validate the label capacity without creating a figure or writing a plate."""
+    rising = sum(point.mean_shift >= 0 for point in table1)
+    falling = len(table1) - rising
+    axes_height_pt = AXES_RECT[3] * SLIDE_H * 72.0
+    band_top = (rising * LABEL_STEP_PT + LABEL_PAD_PT) / axes_height_pt
+    band_bottom = (falling * LABEL_STEP_PT + LABEL_PAD_PT + RUG_PT) / axes_height_pt
+    if band_top + band_bottom > MAX_LABEL_BANDS:
+        raise RunTableError(
+            f"the run flags {len(table1)} Table 1 traits; their labels would leave too "
+            "little of plate 21 for the data"
+        )
+    return band_top, band_bottom
+
+
+def check_trait_cloud(run_root: Path) -> TraitCloud:
+    """Read and validate all inputs and label capacity before any plate is written (#2379)."""
+    cloud = load_trait_cloud(run_root)
+    _label_bands(cloud.table1)
+    return cloud
+
+
 def plot_01_trait_cloud(out_dir: Path, run_root: Path) -> TableStoryPlot:
     """Plot 01: every trait's pooled shift against its share of studies voting up."""
-    cloud = load_trait_cloud(run_root)
+    return draw_trait_cloud(out_dir, check_trait_cloud(run_root))
+
+
+def draw_trait_cloud(out_dir: Path, cloud: TraitCloud) -> TableStoryPlot:
+    """Draw the retained input snapshot; do not reopen tables after preflight (#2379)."""
     points = cloud.points
     table1 = cloud.table1
+    band_top, band_bottom = _label_bands(table1)
     passing_table1 = [point for point in table1 if point.passes_by]
     x = np.array([point.mean_shift for point in points])
     y = np.array([point.percent_up for point in points])
@@ -243,13 +276,6 @@ def plot_01_trait_cloud(out_dir: Path, run_root: Path) -> TableStoryPlot:
     rising = sorted((p for p in table1 if p.mean_shift >= 0), key=lambda p: -p.mean_shift)
     falling = sorted((p for p in table1 if p.mean_shift < 0), key=lambda p: p.mean_shift)
     axes_height_pt = AXES_RECT[3] * SLIDE_H * 72.0
-    band_top = (len(rising) * LABEL_STEP_PT + LABEL_PAD_PT) / axes_height_pt
-    band_bottom = (len(falling) * LABEL_STEP_PT + LABEL_PAD_PT + RUG_PT) / axes_height_pt
-    if band_top + band_bottom > MAX_LABEL_BANDS:
-        raise RunTableError(
-            f"the run flags {len(table1)} Table 1 traits; their labels would leave too "
-            "little of plate 21 for the data"
-        )
     data_low, data_high = float(np.floor(y.min())) - 1.0, float(np.ceil(y.max())) + 1.0
     y_span = (data_high - data_low) / (1.0 - band_top - band_bottom)
     y_low = data_low - band_bottom * y_span
