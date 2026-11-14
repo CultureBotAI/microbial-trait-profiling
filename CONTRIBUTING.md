@@ -167,7 +167,7 @@ an architecture-marker gap, not a Linux-only dependency: Intel macOS also
 selects greenlet. Matching dependency groups does not guarantee matching
 packages across hosts (#823, #888).
 
-To audit the packages selected for Linux x86_64 / Python 3.11 locally, run:
+To audit the packages selected for Linux x86_64 / Python 3.11.5 locally, run:
 
 ```bash
 just security-linux
@@ -175,7 +175,7 @@ just security-linux
 
 This uses the repository's locked `uv` and `pip-audit` tools via `uv run --locked`.
 It exports all extras plus `dev` and `qa` from the frozen lock, then applies
-`uv pip compile --python-platform x86_64-unknown-linux-gnu --python-version 3.11
+`uv pip compile --python-platform x86_64-unknown-linux-gnu --python-version 3.11.5
 --no-deps` to that export. Compilation selects the target's pinned packages and
 strips their environment markers, so the host does not filter them again during
 `pip-audit --disable-pip --no-deps`. It does not update dependencies or install
