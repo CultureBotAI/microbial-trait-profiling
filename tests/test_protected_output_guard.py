@@ -1,4 +1,4 @@
-"""Exercise the actual session guard only inside a synthetic checkout (#1026)."""
+"""Exercise the session snapshot backstop inside a synthetic checkout (#1026)."""
 
 from __future__ import annotations
 
@@ -12,6 +12,8 @@ import pytest
 CONFTEXT = Path(__file__).with_name("conftest.py")
 CHILD_TEST = """from pathlib import Path
 import os
+import subprocess
+import sys
 import conftest
 
 def test_output_operation():
@@ -22,12 +24,17 @@ def test_output_operation():
     if action == "roots":
         actual = getattr(conftest, "_PROTECTED_OUTPUT_DIRS", (conftest.GUARDED_DATA_DIR,))
         assert set(actual) == {root / "data", root / "trait-visualization"}
-    elif action == "create":
-        target.write_text("created synthetic output\\n", encoding="utf-8")
-    elif action == "modify":
-        target.write_text("modified synthetic output with a different size\\n", encoding="utf-8")
-    elif action == "delete":
-        target.unlink()
+    elif action in {"create", "modify", "delete"}:
+        # Audit hooks do not cross a process boundary. Keep proving that the
+        # independent teardown snapshot catches all three kinds of mutation.
+        script = (
+            "from pathlib import Path; import sys; "
+            "target = Path(sys.argv[1]); action = sys.argv[2]; "
+            "target.unlink() if action == 'delete' else "
+            "target.write_text(('created synthetic output' if action == 'create' else "
+            "'modified synthetic output with a different size') + chr(10), encoding='utf-8')"
+        )
+        subprocess.run([sys.executable, "-c", script, str(target), action], check=True)
     else:
         assert action == "unchanged"
 """
