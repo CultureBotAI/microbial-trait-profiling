@@ -27,7 +27,7 @@ dependencies = [
   "numpy>=2.4.6",
   "pandas>=3.0.6",
   "plotly>=7.1.0",
-  "pydantic>=2.13.0",
+  "pydantic>=2.14.3",
   "pyyaml>=6.0.2",
   # scipy stays a runtime dependency on purpose (#288): the analysis modules
   # guild_maps, table1_trait_maps and trait_composition all import it at module
