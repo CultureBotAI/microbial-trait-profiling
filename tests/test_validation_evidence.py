@@ -892,3 +892,88 @@ def test_supplement_parsing_joins_wrapped_titles_and_stops_at_the_next_table() -
     parsed = parse_supplement(text)
     assert parsed["QinJ_2012"]["reference_title"].endswith("in type 2 diabetes")
     assert "0.123" not in parsed["QinJ_2012"]["reference_title"]
+
+
+def test_validation_feasibility_docs_and_docstrings_distinguish_human_and_discovery_universes() -> (
+    None
+):
+    """#744: docs and docstrings distinguish all-export human rows from paired 16S/WMS discovery."""
+    import mtp.validation_evidence as ve
+
+    repo_root = Path(ve.__file__).resolve().parents[2]
+    feasibility_md = " ".join(
+        (repo_root / "methods" / "validation_feasibility.md").read_text(encoding="utf-8").split()
+    )
+
+    assert (
+        "The inventory reports two nested human study universes side by side (#744): "
+        "all 1,080 human-host studies in `full_dump.csv` (**Human studies** / "
+        "**Human studies mentioning**, spanning every sequencing modality in the "
+        "export — including ITS, PCR, 18S or untyped rows — as well as unpaired "
+        "studies) and the 959 discovery-eligible paired human 16S/WMS studies "
+        "(**Discovery studies** / **Discovery studies mentioning**, flagged by "
+        "`in_discovery_corpus` from `data/derived/study_trait_profiles_wide.tsv`, "
+        "#742). Keeping the whole-export human denominator alongside the "
+        "discovery-corpus denominator is intentional so validation-feasibility "
+        "pointers in non-16S/WMS or unpaired human studies remain visible while "
+        "discovery-corpus counts stay separate; changing the underlying denominator "
+        "would be a separate scientific decision."
+    ) in feasibility_md
+
+    assert (
+        "As in the study-level summary above, the **Human** column "
+        '(`bucket["human"]` in `validation_evidence_provenance.json`) counts every '
+        "`Homo sapiens` experiment row in `full_dump.csv` across all sequencing "
+        "modalities (including ITS, PCR, 18S or untyped rows) and pairing states, "
+        'whereas **In discovery corpus** (`bucket["in_discovery_corpus"]`) counts '
+        "only paired human 16S/WMS experiments present in the discovery corpus "
+        "(`data/derived/study_trait_profiles_wide.tsv`, #742, #744). Non-16S/WMS or "
+        "unpaired human experiments (such as the ITS experiment `bsdb:684/1` in "
+        "`marker_named_groups_not_measured`) therefore increment **Human** without "
+        "being eligible for **In discovery corpus**."
+    ) in feasibility_md
+
+    mod_doc = " ".join((ve.__doc__ or "").split())
+    assert (
+        "Both study-level and experiment-level summaries report two nested human "
+        "evidence universes (#744): all `Homo sapiens` rows in `full_dump.csv` "
+        "(1,080 human studies across all sequencing modalities — including ITS, "
+        "PCR, 18S, or untyped rows — and pairing states) alongside the "
+        "discovery-eligible paired human 16S/WMS subset (959 studies in "
+        "`study_trait_profiles_wide.tsv`, #742)."
+    ) in mod_doc
+
+    ev_doc = " ".join((ve.evidence_rows.__doc__ or "").split())
+    assert ev_doc == (
+        "One wide row per human study in `full_dump.csv` (all 1,080 `Homo sapiens` "
+        "export studies across all sequencing modalities, including ITS, PCR, 18S or "
+        "untyped and unpaired studies), with `in_discovery_corpus` flagging "
+        "membership in the 959-study paired human 16S/WMS discovery corpus (#742, "
+        "#744)."
+    )
+
+    sum_doc = " ".join((ve.summary_rows.__doc__ or "").split())
+    assert sum_doc == (
+        "One count row per evidence type, reporting both `human_studies` / "
+        "`human_studies_mentioning` over all `Homo sapiens` export studies (1,080 "
+        "across all modalities and pairing states) and `discovery_studies` / "
+        "`discovery_studies_mentioning` over the paired human 16S/WMS discovery "
+        "corpus (959 studies, #742, #744)."
+    )
+
+    cand_doc = " ".join((ve.marker_split_candidates.__doc__ or "").split())
+    assert (
+        "`in_discovery_corpus` flags paired human 16S/WMS experiments in "
+        "`study_trait_profiles_wide.tsv` (#742), whereas whole-export human rows "
+        "also include non-16S/WMS (e.g. ITS, PCR, 18S, untyped) and unpaired human "
+        "experiments (#744)."
+    ) in cand_doc
+
+    counts_doc = " ".join((ve._classification_counts.__doc__ or "").split())
+    assert counts_doc == (
+        "Per-classification counts for `validation_evidence_provenance.json`, "
+        "separating all export experiments (`experiments`), all `Homo sapiens` "
+        "export experiments across every sequencing modality and pairing state "
+        "(`human`), and paired human 16S/WMS discovery-corpus experiments "
+        "(`in_discovery_corpus`, #742, #744)."
+    )

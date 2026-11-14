@@ -707,7 +707,42 @@ def test_the_recipe_flags_write_the_canonical_table(
     ]
     printed = capsys.readouterr().out
     assert "Trait columns dropped as empty in every profile: 2 (1 MediaDive)" in printed
+    assert "Dropped trait columns: METPO:MOUSE, mediadive.medium:1" in printed
     assert "Non-MediaDive trait columns dropped: METPO:MOUSE" in printed
+
+
+def test_drop_empty_traits_names_mediadive_only_columns(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """#670: dropping only MediaDive columns still prints each dropped column name."""
+    study_dir = tmp_path / "studies"
+    study_dir.mkdir()
+    _write_study_yaml(study_dir)
+    taxa_trait_matrix_path = tmp_path / "taxa_trait_matrix.tsv"
+    taxa_trait_matrix_path.write_text(
+        "taxon_id\ttaxon_name\ttaxonomic_rank\tMETPO:1\tmediadive.medium:1\tmediadive.medium:2\n"
+        "NCBITaxon:1\tTaxon one\tspecies\t2\t0\t0\n",
+        encoding="utf-8",
+    )
+    output = tmp_path / "profiles.tsv"
+    assert (
+        main(
+            [
+                "--study-dir",
+                str(study_dir),
+                "--taxa-trait-matrix",
+                str(taxa_trait_matrix_path),
+                "--output",
+                str(output),
+                "--drop-empty-traits",
+            ]
+        )
+        == 0
+    )
+    printed = capsys.readouterr().out
+    assert "Trait columns dropped as empty in every profile: 2 (2 MediaDive)" in printed
+    assert "Dropped trait columns: mediadive.medium:1, mediadive.medium:2" in printed
+    assert "Non-MediaDive" not in printed
 
 
 def test_without_the_drop_every_matrix_column_is_written(tmp_path: Path) -> None:

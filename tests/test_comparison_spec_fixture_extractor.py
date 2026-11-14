@@ -14,6 +14,8 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 HELPER = ROOT / "scripts/adhoc/extract_comparison_specs_f0cb5b7.py"
 FIXTURE = ROOT / "tests/fixtures/comparison_specs/analysis_specs_f0cb5b7.json"
+README = FIXTURE.parent / "README.md"
+EXPECTED_COMMIT = "".join(("f0cb5", "b7a50", "0b113", "20ea8", "4e63b", "faf12", "5fe15", "20df9"))
 
 
 @pytest.fixture(scope="module")
@@ -114,7 +116,9 @@ def test_pinned_git_extraction_reproduces_fixture_bytes_and_refuses_overwrite(
     extractor.write_fixture(tmp_path, output)
     assert output.read_bytes() == original
     assert FIXTURE.read_bytes() == original
-    assert repository.revisions == ["f0cb5b7"]
+    assert extractor.SOURCE_COMMIT == EXPECTED_COMMIT
+    assert len(extractor.SOURCE_COMMIT) == 40
+    assert repository.revisions == [EXPECTED_COMMIT]
     assert repository.tree.paths == ["src/mtp/workflow/downstream_contracts.py"]
     assert repository.tree.stream.read_sizes == [extractor.MAX_SOURCE_BYTES + 1]
     assert repository.closed
@@ -189,9 +193,29 @@ def test_real_pinned_blob_reproduces_the_fixture_when_the_commit_is_present(
     if repo.git.rev_parse("--is-shallow-repository") == "true":
         pytest.skip("shallow clone: fetch the pinned commit first; see the README")
     commit = repo.commit(extractor.SOURCE_COMMIT)
-    # The short SHA resolves to the commit the README names in full (#1722).
-    assert commit.hexsha.startswith("f0cb5b7")
-    assert commit.hexsha in (FIXTURE.parent / "README.md").read_text(encoding="utf-8")
+    assert commit.hexsha == EXPECTED_COMMIT
+    assert commit.hexsha == extractor.SOURCE_COMMIT
+    assert commit.hexsha in README.read_text(encoding="utf-8")
     output = tmp_path / "from_real_blob.json"
     extractor.write_fixture(ROOT, output)
     assert output.read_bytes() == FIXTURE.read_bytes()
+
+
+def test_source_commit_and_readme_pin_full_40_char_sha(extractor: ModuleType) -> None:
+    """Pin the full 40-character commit SHA in the extractor and fixture README (#1722)."""
+    assert len(EXPECTED_COMMIT) == 40
+    assert extractor.SOURCE_COMMIT == EXPECTED_COMMIT
+    assert len(extractor.SOURCE_COMMIT) == 40
+    assert extractor.__doc__ is not None
+    assert EXPECTED_COMMIT in extractor.__doc__
+    assert "commit f0cb5b7." not in extractor.__doc__
+
+    readme_text = README.read_text(encoding="utf-8")
+    assert f"at commit `{EXPECTED_COMMIT}`." in readme_text
+    assert f"`git show {EXPECTED_COMMIT}:src/mtp/workflow/downstream_contracts.py`" in readme_text
+    assert f"and commit `{EXPECTED_COMMIT}` available locally" in readme_text
+    assert f"git fetch origin {EXPECTED_COMMIT}" in readme_text
+    assert "commit `f0cb5b7`" not in readme_text
+    assert "git show f0cb5b7:" not in readme_text
+    assert "analysis_specs_f0cb5b7.json" in readme_text
+    assert "extract_comparison_specs_f0cb5b7.py" in readme_text

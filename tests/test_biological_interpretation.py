@@ -64,10 +64,18 @@ def test_biological_interpretation_audit_findings() -> None:
 
 
 def test_guild_methods_distinguish_annotation_zero_from_biological_absence() -> None:
-    """C01 must describe recorded signal in both row selection and cell states."""
+    """C01 and #1343: describe recorded signal and align zero-signal wording with the guide."""
     content = " ".join((METHODS_DIR / "guild_condition_body_site_heatmap.md").read_text().split())
     rows = content.split("## Row selection and clustering", 1)[1].split("##", 1)[0]
-    assert "no recorded guild annotation signal" in rows
+    assert (
+        'because "sampled, with no recorded guild annotation signal" distinguishes mapped zero '
+        "signal from unsampled cells."
+    ) in rows, "guild heatmap row selection missing aligned zero-signal wording"
+    assert "sampled, but no recorded guild annotation signal" not in rows, (
+        "guild heatmap row selection retains old sampled, but wording"
+    )
+    assert "is absent" not in rows
+    assert "are absent" not in rows
     assert "no taxon carried" not in rows
     assert "no recorded guild annotation signal under the selected sources and mappings" in content
     assert "does not establish biological absence" in content
@@ -149,17 +157,29 @@ def test_claim_audit_names_the_reviewed_revision(surface: str, revision_abbrevia
 
 def test_overlay_audit_intro_records_closed_pr_and_rebuild() -> None:
     """The historical P rows must not be presented as an open PR's current results."""
-    content = " ".join(BIOLOGICAL_INTERPRETATION_AUDIT_MD.read_text().split())
+    raw = BIOLOGICAL_INTERPRETATION_AUDIT_MD.read_text(encoding="utf-8")
+    content = " ".join(raw.split())
     intro = content.split("## PR #173: proposed overlay and narrative", 1)[1].split("| ID", 1)[0]
     assert "closed unmerged on 2026-10-30" in intro
     assert "#172" in intro
     assert "remains open" not in intro
     assert "historical 62-cell discussion" in intro
+    assert (
+        'Issue references in the "Owner / remaining work" column record the 2026-09-14 '
+        "review state (P09 and P10 were updated in #1314), and the "
+        "[status checkpoint](#status-checkpoint-2026-10-30) dates their closures."
+    ) in intro
+    p10 = next(line for line in raw.splitlines() if line.startswith("| P10 "))
+    assert "in #172 before interpreting the 62-cell summary." in p10
+    assert "#172/#173" not in p10
 
 
 @pytest.mark.parametrize(
     ("number", "status", "date"),
     [
+        (131, "Closed", "2026-10-07"),
+        (132, "Closed", "2026-10-07"),
+        (165, "Closed", "2026-10-13"),
         (182, "Closed", "2026-10-12"),
         (188, "Closed", "2026-10-11"),
         (189, "Closed", "2026-10-08"),
@@ -176,13 +196,86 @@ def test_audit_separates_dated_tracker_closures_from_biological_validation(
     checkpoint = content.split("## Status checkpoint (2026-10-30)", 1)[1].split("##", 1)[0]
     kind = "pull" if number == 194 else "issues"
     target = f"https://github.com/CultureBotAI/microbial-trait-profiling/{kind}/{number}"
-    row = next(line for line in checkpoint.splitlines() if f"]({target})" in line)
+    matching = [line for line in checkpoint.splitlines() if f"]({target})" in line]
+    assert len(matching) == 1, f"Expected 1 checkpoint row for #{number}, found {len(matching)}"
+    row = matching[0]
     assert status in row
     assert date in row
     assert "Dates are UTC" in checkpoint
     assert "do not establish patient-level effects or validate a mechanism" in " ".join(
         checkpoint.split()
     )
+
+
+def test_c04_and_p09_date_scope_closed_issues_without_claiming_biological_validation() -> None:
+    """#1314, #2084, #2085: C04/P09/P02/P08 date-scope closed issues and reject open-work claims."""
+    content = BIOLOGICAL_INTERPRETATION_AUDIT_MD.read_text(encoding="utf-8")
+    assert "#165/#182 and #189 retain their work" not in content, "C04 retains open-work wording"
+    assert "#131/#132/#182 remain independent requirements" not in content, (
+        "P09 retains open-work wording"
+    )
+
+    checkpoint = content.split("## Status checkpoint (2026-10-30)", 1)[1].split("##", 1)[0]
+    checkpoint_status: dict[int, str] = {}
+    for line in checkpoint.splitlines():
+        match = re.match(
+            r"^\|\s*\[(?:PR\s+)?#(\d+)\]\([^)]+\),\s*[^|]+\|\s*([A-Za-z]+)\s*\|\s*\d{4}-\d{2}-\d{2}\s*\|$",
+            line.strip(),
+        )
+        if match:
+            checkpoint_status[int(match.group(1))] = match.group(2)
+    closed_issues = {num for num, state in checkpoint_status.items() if state == "Closed"}
+    assert {118, 120, 131, 132, 165, 182, 183, 188, 189, 190, 191}.issubset(closed_issues), (
+        "Checkpoint missing expected closed issues"
+    )
+
+    c04 = next(line for line in content.splitlines() if line.startswith("| C04 "))
+    assert (
+        "At the original audit, #165/#182 and #189 tracked the statistical-dependence, "
+        "calibration and trait-semantics work"
+    ) in c04, "C04 missing historical date-scoping"
+    assert "[status checkpoint](#status-checkpoint-2026-10-30)" in c04, "C04 missing checkpoint"
+    assert (
+        "subsequent closures (closing them does not establish semantic equivalence or "
+        "validate a mechanism)"
+    ) in c04, "C04 missing non-validation closure caveat"
+
+    p09 = next(line for line in content.splitlines() if line.startswith("| P09 "))
+    assert (
+        "in the historical PR #173 review, #131/#132/#182 were separate statistical requirements "
+        "(subsequently closed; see the [status checkpoint](#status-checkpoint-2026-10-30); "
+        "their closure does not validate the biological explanation)"
+    ) in p09, "P09 missing subsequently-closed date-scoping or non-validation caveat"
+
+    adoption = " ".join(content.split("## Adoption record", 1)[1].split())
+    assert (
+        "The dated tracker closures above supersede the original pending-review status "
+        "for #131, #132, #165, #194/#190, #182 and #188-#191."
+    ) in adoption, "Adoption record missing dated tracker closure supersession"
+
+    open_word_re = re.compile(
+        r"\b(?:remain\w*|retain\w*|still|open\w*|pending|unresolved)\b",
+        re.IGNORECASE,
+    )
+    for row_id in ("C04", "P09", "P02", "P08"):
+        row_line = next(line for line in content.splitlines() if line.startswith(f"| {row_id} "))
+        cells = [cell.strip() for cell in row_line.strip().strip("|").split("|")]
+        disposition_cell = cells[-1]
+        cited = {int(num) for num in re.findall(r"#(\d+)", disposition_cell)}
+        closed_cited = sorted(cited & closed_issues)
+        assert closed_cited, (
+            f"{row_id} expected to cite closed issues in its disposition/owner cell"
+        )
+        if row_id == "P02":
+            assert "#131/#182 limitations remain." in disposition_cell
+            checked_text = disposition_cell.replace("#131/#182 limitations remain.", "")
+        else:
+            checked_text = disposition_cell
+        bad_words = open_word_re.findall(checked_text)
+        assert not bad_words, (
+            f"{row_id} cites closed issues {closed_cited} alongside open-work wording "
+            f"{bad_words} in: {disposition_cell}"
+        )
 
 
 def test_audit_reproduction_uses_public_pull_refs() -> None:
@@ -387,8 +480,10 @@ def test_three_arm_statistics_pins_common_quantity_modules_and_historical_screen
     assert "drop_zero_total_pairs" in content
     assert (
         "retain their own transformed units (with study-level aggregation added in "
-        "`mt-core-native-study-t` via "
-        "[`src/mtp/native_composition.py`](../src/mtp/native_composition.py)"
+        "`mt-core-native-study-t` via `study_contrasts` in "
+        "[`src/mtp/native_composition.py`](../src/mtp/native_composition.py), "
+        "corrected in [`scripts/create_trait_profile_infographic.py`]"
+        "(../scripts/create_trait_profile_infographic.py)"
     ) in content
     assert (
         "whereas historically Jed's inspected paired-screen code excluded MediaDive from trait "
@@ -423,13 +518,14 @@ def test_three_arm_statistics_pins_common_quantity_modules_and_historical_screen
         "`519a095b` in "
         "[`table1_trait_condition_body_site_maps.md`](table1_trait_condition_body_site_maps.md)) "
         "across the 317 `off`-scope candidates "
-        "([`trait_direction_screen.md`](trait_direction_screen.md)); "
-        "the run producing that range is not identified ([Vintage](#vintage)), 606 to 898 for the "
+        "([`table1_trait_condition_body_site_maps.md`](table1_trait_condition_body_site_maps.md)); "
+        "the run producing that range is not identified ([Vintage](#vintage)). 606 to 898 for the "
         "six of Table 1 in that historical `off`-scope shift table "
         "([`table1_trait_condition_body_site_maps.md`](table1_trait_condition_body_site_maps.md), "
         "ties excluded)"
     ) in content
     assert (
-        "across the 317 `off`-scope candidates in that historical screen "
-        "([`trait_direction_screen.md`](trait_direction_screen.md); [Vintage](#vintage))"
+        "across the 317 `off`-scope candidates in that table "
+        "([`table1_trait_condition_body_site_maps.md`](table1_trait_condition_body_site_maps.md); "
+        "[Vintage](#vintage))"
     ) in content

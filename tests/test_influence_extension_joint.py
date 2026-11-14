@@ -211,7 +211,7 @@ def test_absent_joint_lineage_reports_no_removed_mass(joint_corpus: tuple[Base, 
     )
     assert all(row["removed_annotation_mass"] == 0 for row in rows)
     assert all(row["removed_trait_annotation_mass"] == 0 for row in rows)
-    assert all(row["removal_status"] == "no_removed_annotation_mass" for row in rows)
+    assert all(row["removal_status"] == "absent_lineages" for row in rows)
     assert rows[0]["before_effect"] == rows[0]["after_effect"]
     assert rows[0]["effect_reduction_fraction"] == 0
 

@@ -36,7 +36,7 @@ binomial test of its non-tied studies against a half-and-half null, with an exac
 Clopper-Pearson 95% interval for the share shifting up.
 
 The study contrasts and the sign tally are computed by `study_trait_contrasts` and
-`tally_direction_signs` in `src/bsdbng/table1_trait_maps.py`, which the six-trait arm
+`tally_direction_signs` in `src/mtp/table1_trait_maps.py`, which the six-trait arm
 also calls. The widened screen shares that code rather than reimplementing it, so the
 two cannot drift apart. Regenerating the six-trait outputs after this change produced
 files byte-identical to the previous run.
@@ -49,16 +49,26 @@ never redefines that total.
 
 Every retained column of `data/derived/study_trait_profiles_wide.tsv` — all columns
 except the three identifier columns and every MediaDive growth-medium column. The
-historical v1.3.1 `off` screen described here reported **317 candidates**, with 2,333
-MediaDive columns excluded, tested over 4,670 paired human profiles from 2,335
-experiments and 959 studies. The primary `phenotype` scope's 344 were counted on the
-later 5,629-profile table; the [F rebuild record](../docs/reviews/2026-10-25-rebuild-of-F-record.md)
-also records that scope's candidate count for its named runs. That later count does
-not establish the family size of the earlier `off` screen or of a future run.
+historical v1.3.1 `off` screen described here reported **317 candidates**, tested over
+4,670 paired human profiles from 2,335 experiments and 959 studies.
+
+The [pinned comparison record](https://github.com/CultureBotAI/microbial-trait-profiling/blob/de1a54b99ea8144531559c0d34be3fee681ec076/methods/table1_log_ratio_validation.md#L16-L27)
+identifies a historical profile matrix with **5,829 input profiles**, 317 retained
+traits and **2,290 excluded MediaDive columns**, with profile matrix SHA-256
+`c07d589f6cc88724e43c683ebd132bcd5c7f316f36b95df3ff9acad24ebbf62f`.
+These counts describe that matrix, not the currently tracked gzip or a future run;
+see the [snapshot qualifications](three_arm_statistics.md#vintage). The original
+directional screen still lacks a complete execution manifest; matching these counts
+does not reconstruct it.
+
+The primary `phenotype` scope's 344 were counted on the later 5,629-profile table;
+the [F rebuild record](../docs/reviews/2026-10-25-rebuild-of-F-record.md) also records
+that scope's candidate count for its named runs. That later count does not establish
+the family size of the earlier `off` screen or of a future run.
 
 The set is read from the matrix at run time and never written down, so a corpus change
 moves the family rather than silently mismatching it. `retained_trait_columns` in
-`src/bsdbng/trait_guilds.py` is the single implementation of that rule and is also what
+`src/mtp/trait_guilds.py` is the single implementation of that rule and is also what
 the profile loader uses to build its denominator, so the tested universe and the
 denominator universe are the same set by construction.
 
@@ -84,7 +94,7 @@ would shrink the family they were declared into.
 Correcting across m traits counts m declared hypotheses, whether or not the tests
 are independent. Primary BY uses that complete inventory. A separate sensitivity
 calculation uses a dependence-based effective multiplier with the same p-value
-vector; it is not a smaller hypothesis family. `step_up` in `src/bsdbng/trait_screen.py`
+vector; it is not a smaller hypothesis family. `step_up` in `src/mtp/trait_screen.py`
 takes the family size as a parameter for that reason — `scipy.stats.false_discovery_control`
 always corrects at the number of p-values it is handed. With the family size equal to
 the number of tests it reproduces scipy exactly, which the test suite asserts against

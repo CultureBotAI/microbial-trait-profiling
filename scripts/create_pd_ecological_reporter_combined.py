@@ -30,6 +30,32 @@ from create_pd_cellulose_analysis import (
     load_profile_metadata,
     load_trait_summary,
 )
+from mtp.trait_key_policy import FACULTATIVE_RAW_LABEL, FACULTATIVE_UNION_LABEL
+
+
+def resolve_facultative_display_label(policy: str = "phenotype") -> str:
+    """Resolve the declared display policy; historical raw mode must be explicit."""
+    if policy in {"phenotype", "facultative_union_v1"}:
+        return FACULTATIVE_UNION_LABEL
+    if policy in {"off", "raw_object_v1"}:
+        return FACULTATIVE_RAW_LABEL
+    raise ValueError(f"Unknown facultative label policy: {policy}")
+
+
+def normalize_facultative_labels(frame: pd.DataFrame, policy: str = "phenotype") -> pd.DataFrame:
+    """Accept either recorded label without changing trait IDs, values or guild membership."""
+    label = resolve_facultative_display_label(policy)
+    result = frame.copy()
+    for column in ("trait", "trait_label", "object_name"):
+        if column in result:
+            result[column] = result[column].replace(
+                {
+                    FACULTATIVE_RAW_LABEL: label,
+                    FACULTATIVE_UNION_LABEL: label,
+                }
+            )
+    return result
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DIR = REPO_ROOT / "trait-visualization" / "trait-profile-investigation" / "PD-cellulose"
@@ -51,7 +77,7 @@ CONTRAST_DEFINITION = "mean z increased - mean z decreased"
 MIN_PAIRED_STUDIES = 3
 SIX_TRAITS = [
     "moderately halophilic",
-    "facultatively aerobic",
+    resolve_facultative_display_label(),
     "arsenate reduction",
     "coccus shaped",
     "sphere shaped",
@@ -59,7 +85,7 @@ SIX_TRAITS = [
 ]
 INCREASED_SIDE_TRAITS = [
     "moderately halophilic",
-    "facultatively aerobic",
+    resolve_facultative_display_label(),
     "arsenate reduction",
 ]
 CELLULOSE = "cellulose catabolic process"
@@ -82,9 +108,9 @@ SLATE_700 = "#334155"
 SLATE_900 = "#0f172a"
 
 
-def read_tsv(path: Path) -> pd.DataFrame:
+def read_tsv(path: Path, *, policy: str = "phenotype") -> pd.DataFrame:
     """Read an audited tab-separated table."""
-    return pd.read_csv(path, sep="\t")
+    return normalize_facultative_labels(pd.read_csv(path, sep="\t"), policy)
 
 
 def write_tsv(frame: pd.DataFrame, path: Path) -> None:
@@ -118,6 +144,7 @@ def build_condition_trait_summaries(
     A study contributes to a fecal condition when it has both increased and decreased
     profiles for it; its contrast is the mean increased z minus the mean decreased z.
     """
+    traits = normalize_facultative_labels(traits)
     trait_ids = traits["trait_id"].tolist()
     trait_names = dict(zip(traits["trait_id"], traits["trait_label"], strict=True))
     missing_composite = (set(INCREASED_SIDE_TRAITS) | {CELLULOSE}) - set(trait_names.values())

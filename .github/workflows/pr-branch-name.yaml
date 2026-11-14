@@ -1,0 +1,22 @@
+name: PR Branch Name
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - synchronize
+      - reopened
+
+permissions:
+  contents: read
+
+jobs:
+  branch-name:
+    name: Check PR head branch name
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+      - name: Validate PR head branch name
+        run: python3 scripts/check_pr_branch_name.py --event-path "${GITHUB_EVENT_PATH}"

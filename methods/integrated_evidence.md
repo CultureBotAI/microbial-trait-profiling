@@ -1,6 +1,6 @@
 # The integrated evidence table
 
-Produced by `src/bsdbng/integrated_evidence.py`, driven by `just integrated-evidence`,
+Produced by `src/mtp/integrated_evidence.py`, driven by `just integrated-evidence`,
 which writes `data/derived/integrated_evidence/`: the machine-readable table
 (`integrated_evidence.tsv`), three tidy side-cars for the feature-to-column map,
 the correction families and the assessments, a generated view with the data

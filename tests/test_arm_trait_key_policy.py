@@ -72,12 +72,15 @@ def _without_policy(command: Command) -> Command:
     return replace(command, argv=tuple(args))
 
 
+def _pairs(argv: Sequence[str]) -> tuple[tuple[str, str], ...]:
+    return tuple((argv[i], argv[i + 1]) for i in range(len(argv) - 1))
+
+
 @pytest.mark.parametrize("policy", [RAW, UNION])
 def test_noel_ledger_names_the_resolved_core_policy(tmp_path: Path, policy: TraitKeyPolicy) -> None:
     context = _context(tmp_path, policy)
     ledger = _ledger(context)
-    index = ledger.argv.index("--trait-key-policy")
-    assert ledger.argv[index + 1] == policy
+    assert ("--trait-key-policy", policy) in _pairs(ledger.argv)
     runtime._validate_plan([ledger], context)
 
 
@@ -147,7 +150,7 @@ def test_execution_resolves_and_records_the_verified_core_policy(
     # plan construction/validation, and creation of the execution record are real.
     core = _core(policy)
     bundle = CoreBundle(HISTORICAL_CORE, core, "count_profiles", "all")
-    monkeypatch.setattr(runtime, "open_core_bundle", lambda *_args: bundle)
+    monkeypatch.setattr(runtime, "open_core_bundle", lambda *_args, **_kwargs: bundle)
     monkeypatch.setattr(runtime, "preflight_consumer_outputs", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(runtime, "repository_state", lambda _root: ("fixture", False))
     monkeypatch.setattr(runtime, "_code_inventory", lambda _root: [])
@@ -254,3 +257,18 @@ def test_recorded_arm_policy_must_be_derived_from_the_verified_core(
     with pytest.raises(ValueError, match="verified_core"):
         runtime._verify_arm_record(Path(record.manifest_path), record, core)
     assert not contexts
+
+
+def test_raw_core_ledger_command_carries_raw_object_v1(tmp_path: Path) -> None:
+    from mtp.workflow.trait_policy import resolve_trait_policy
+
+    resolved_policy = resolve_trait_policy(_core(RAW)).policy
+    context = _context(tmp_path, resolved_policy)
+    ledger = _ledger(context)
+    assert resolved_policy == RAW
+    assert ("--trait-key-policy", RAW) in _pairs(ledger.argv)
+
+
+def test_step_policy_parser_returns_none_when_flag_is_omitted(tmp_path: Path) -> None:
+    ledger = _without_policy(_ledger(_context(tmp_path, RAW)))
+    assert runtime._step_trait_key_policy(ledger) is None

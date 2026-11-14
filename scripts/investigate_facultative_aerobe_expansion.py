@@ -33,6 +33,32 @@ from mtp.human_host_corpus import (
     join_human_host_profiles,
 )
 from mtp.trait_guilds import OXYGEN_GUILDS
+from mtp.trait_key_policy import FACULTATIVE_RAW_LABEL, FACULTATIVE_UNION_LABEL
+
+
+def resolve_facultative_display_label(policy: str = "phenotype") -> str:
+    """Resolve the declared display policy; historical raw mode must be explicit."""
+    if policy in {"phenotype", "facultative_union_v1"}:
+        return FACULTATIVE_UNION_LABEL
+    if policy in {"off", "raw_object_v1"}:
+        return FACULTATIVE_RAW_LABEL
+    raise ValueError(f"Unknown facultative label policy: {policy}")
+
+
+def normalize_facultative_labels(frame: pd.DataFrame, policy: str = "phenotype") -> pd.DataFrame:
+    """Accept either recorded label without changing trait IDs, values or guild membership."""
+    label = resolve_facultative_display_label(policy)
+    result = frame.copy()
+    for column in ("trait", "trait_label", "object_name"):
+        if column in result:
+            result[column] = result[column].replace(
+                {
+                    FACULTATIVE_RAW_LABEL: label,
+                    FACULTATIVE_UNION_LABEL: label,
+                }
+            )
+    return result
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 VIS_DIR = REPO_ROOT / "trait-visualization"
@@ -154,8 +180,8 @@ def add_specificity_note(ax: plt.Axes, note: str) -> None:
     )
 
 
-def read_tsv(path: Path, **kwargs: object) -> pd.DataFrame:
-    return pd.read_csv(path, sep="\t", **kwargs)
+def read_tsv(path: Path, *, policy: str = "phenotype", **kwargs: object) -> pd.DataFrame:
+    return normalize_facultative_labels(pd.read_csv(path, sep="\t", **kwargs), policy)
 
 
 def clean_text(value: object) -> str:

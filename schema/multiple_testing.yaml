@@ -99,7 +99,7 @@ classes:
         title: Sha256
         description: Lowercase SHA256 of the referenced source bytes.
         required: true
-        pattern: ^[0-9a-f]{64}$
+        pattern: '^[0-9a-f]{64}(?![\s\S])$'
   HypothesisCoordinates:
     title: Hypothesis coordinates
     description: >-
@@ -153,7 +153,7 @@ classes:
       eligibility_sha256:
         title: Eligibility sha256
         description: Optional identity of this hypothesis-specific eligibility ledger.
-        pattern: ^[0-9a-f]{64}$
+        pattern: '^[0-9a-f]{64}(?![\s\S])$'
   HypothesisFamilyMetadata:
     title: Hypothesis family metadata
     description: >-
@@ -173,12 +173,12 @@ classes:
         title: Analysis basis sha256
         description: Canonical identity of the verified upstream AnalysisBasis.
         required: true
-        pattern: ^[0-9a-f]{64}$
+        pattern: '^[0-9a-f]{64}(?![\s\S])$'
       source_membership_sha256:
         title: Source membership sha256
         description: Exact cohort or eligibility membership identity supplied by the verified adapter.
         required: true
-        pattern: ^[0-9a-f]{64}$
+        pattern: '^[0-9a-f]{64}(?![\s\S])$'
       retained_feature_count:
         title: Retained feature count
         description: Feature count from AnalysisBasis; distinct from the number of hypotheses.
@@ -188,12 +188,12 @@ classes:
       strain_rollup:
         title: Strain rollup
         description: Verified annotation scope; full rollup is not supported by this contract.
-        pattern: ^(off|phenotype)$
+        pattern: '^(off|phenotype)(?![\s\S])$'
         required: true
       feature_filter_id:
         title: Feature filter id
         description: Ordered retained-feature identity copied from the verified AnalysisBasis.
-        pattern: ^sha256:[0-9a-f]{64}$
+        pattern: '^sha256:[0-9a-f]{64}(?![\s\S])$'
         required: true
       expected_family_size:
         title: Expected family size
@@ -264,7 +264,7 @@ classes:
       status:
         title: Status
         description: Tested or explicitly untestable, never an inferred missing row.
-        pattern: ^(tested|untestable)$
+        pattern: '^(tested|untestable)(?![\s\S])$'
         required: true
       p_value:
         title: P value
@@ -373,32 +373,32 @@ classes:
         title: Code sha256
         description: Digest of engine and generated model source bytes.
         required: true
-        pattern: ^[0-9a-f]{64}$
+        pattern: '^[0-9a-f]{64}(?![\s\S])$'
       policy_sha256:
         title: Policy sha256
         description: Canonical executed policy digest.
         required: true
-        pattern: ^[0-9a-f]{64}$
+        pattern: '^[0-9a-f]{64}(?![\s\S])$'
       family_sha256:
         title: Family sha256
         description: Canonical declared inventory and scientific metadata digest.
         required: true
-        pattern: ^[0-9a-f]{64}$
+        pattern: '^[0-9a-f]{64}(?![\s\S])$'
       input_sha256:
         title: Input sha256
         description: Canonical raw hypothesis digest; includes test status and undefined reasons.
         required: true
-        pattern: ^[0-9a-f]{64}$
+        pattern: '^[0-9a-f]{64}(?![\s\S])$'
       output_sha256:
         title: Output sha256
         description: Canonical adjusted hypothesis digest.
         required: true
-        pattern: ^[0-9a-f]{64}$
+        pattern: '^[0-9a-f]{64}(?![\s\S])$'
       run_sha256:
         title: Run sha256
         description: Execution envelope digest including scientific hashes, software and timestamp.
         required: true
-        pattern: ^[0-9a-f]{64}$
+        pattern: '^[0-9a-f]{64}(?![\s\S])$'
   ExternalFamilyCorrection:
     title: External family correction
     description: A complete correction with inventories stored once as canonical JSON Lines artifacts.
@@ -436,22 +436,22 @@ classes:
         title: Policy sha256
         description: Canonical policy identity.
         required: true
-        pattern: ^[0-9a-f]{64}$
+        pattern: '^[0-9a-f]{64}(?![\s\S])$'
       family_sha256:
         title: Family sha256
         description: Canonical full family identity, equal to the in-memory contract digest.
         required: true
-        pattern: ^[0-9a-f]{64}$
+        pattern: '^[0-9a-f]{64}(?![\s\S])$'
       input_sha256:
         title: Input sha256
         description: Canonical raw hypothesis identity, equal to the in-memory contract digest.
         required: true
-        pattern: ^[0-9a-f]{64}$
+        pattern: '^[0-9a-f]{64}(?![\s\S])$'
       output_sha256:
         title: Output sha256
         description: Canonical adjusted hypothesis identity, equal to the in-memory contract digest.
         required: true
-        pattern: ^[0-9a-f]{64}$
+        pattern: '^[0-9a-f]{64}(?![\s\S])$'
       tested:
         title: Tested
         description: Number of members with defined tests.
@@ -471,7 +471,7 @@ classes:
       version:
         title: Version
         description: Supported sidecar execution format.
-        pattern: ^1\.2\.0$
+        pattern: '^1\.2\.0(?![\s\S])$'
         required: true
       recorded_at:
         title: Recorded at
@@ -486,7 +486,7 @@ classes:
         title: Comparison manifest sha256
         description: Exact consumed comparison record bytes.
         required: true
-        pattern: ^[0-9a-f]{64}$
+        pattern: '^[0-9a-f]{64}(?![\s\S])$'
       core_run_id:
         title: Core run id
         description: Shared verified core execution identity.
@@ -502,7 +502,7 @@ classes:
       strain_rollup:
         title: Strain rollup
         description: Verified source core strain scope.
-        pattern: ^(off|phenotype)$
+        pattern: '^(off|phenotype)(?![\s\S])$'
         required: true
       policy:
         title: Policy
@@ -514,7 +514,7 @@ classes:
         title: Code sha256
         description: Correction, adapter and generated model source identity.
         required: true
-        pattern: ^[0-9a-f]{64}$
+        pattern: '^[0-9a-f]{64}(?![\s\S])$'
       scipy_version:
         title: Scipy version
         description: Numerical implementation version used by the stage.

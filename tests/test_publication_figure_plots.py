@@ -272,6 +272,30 @@ def test_quadrant_keeps_every_pair_axis_and_duplicate_without_jitter() -> None:
     assert "Stool" in text(page.figure)
 
 
+def test_quadrant_expected_counts_survive_post_verification_thinning() -> None:
+    rows = quadrant_rows().head(3).copy()
+    source = bundle(pairs=rows)
+    summary = {
+        str(row["population"]): int(row["n_comparisons"])
+        for row in source.tables["quadrant_summary.tsv"].to_dict(orient="records")
+    }
+    # Preserve the independently verified summary while simulating a renderer
+    # losing one exact-axis comparison that also belongs to the stool panel.
+    thinned = rows.drop(index=1)
+    source.tables["quadrant_pairs.tsv"] = thinned
+    page = next(quadrant_pages(source))
+    for population, frame in (("all", thinned), ("stool", thinned.loc[thinned.is_stool])):
+        assert page.details["populations"][population]["n_comparisons"] == summary[population]
+        np.testing.assert_array_equal(
+            points(page.figure, f"quadrant-{population}").get_offsets(),
+            frame[["fa_delta_z", "oa_delta_z"]],
+        )
+        assert sum(row.startswith(f"{population}:") for row in page.row_ids) == len(frame)
+    assert page.mark_count == len(page.row_ids) == 3
+    assert "all:s0/e1" not in page.row_ids
+    assert "stool:s0/e1" not in page.row_ids
+
+
 def test_table_paginates_complete_catalog_with_no_significance_selection() -> None:
     frame = evidence(87).iloc[::-1].reset_index(drop=True)
     frame.loc[0, "noel_q_by_nominal"] = 1.0

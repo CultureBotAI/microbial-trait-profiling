@@ -1467,7 +1467,14 @@ class AssessmentStatus:
 
 
 #: Bindings that mean a status belongs to other input bytes or names no producer.
-UNBOUND_STATUSES = frozenset({"mismatch_or_missing_identity", "missing_producer_identity"})
+UNBOUND_STATUSES = frozenset(
+    {
+        "mismatch_or_missing_identity",
+        "missing_producer_identity",
+        "incomplete_inputs",
+        "inputs_not_declared",
+    }
+)
 
 
 def _unreadable(issue: str, why: str) -> AssessmentStatus:
@@ -1757,19 +1764,39 @@ def _read_status(
         ),
         "binding": "not_checked" if expected_input_sha256 is None else "matched",
     }
-    claimed_inputs = content.get("inputs")
-    if expected_input_sha256 is not None and isinstance(claimed_inputs, Mapping):
-        for name, required in expected_input_sha256.items():
-            if name in claimed_inputs and required:
-                actual = claimed_inputs.get(name)
-                if not isinstance(actual, str) or actual != required:
+    # A declared nested contract takes precedence, even when empty or malformed.
+    # Sensitivity's real producer writes the fingerprints at the top level.
+    declared = "inputs" in content or any(name.endswith("_sha256") for name in content)
+    claimed_inputs = content.get("inputs") if "inputs" in content else content
+    if expected_input_sha256 is not None:
+        if not declared:
+            source_meta["binding"] = "inputs_not_declared"
+        else:
+            claimed = claimed_inputs if isinstance(claimed_inputs, Mapping) else {}
+            missing = sorted(name for name in expected_input_sha256 if name not in claimed)
+            source_meta["missing_input_keys"] = missing
+            source_meta["input_sha256"] = {
+                name: claimed.get(name) for name in expected_input_sha256
+            }
+            if missing or not isinstance(claimed_inputs, Mapping):
+                source_meta["binding"] = "incomplete_inputs"
+                return replace(
+                    _unreadable(issue, "assessment missing input hashes: " + ", ".join(missing)),
+                    source=source_meta,
+                )
+            for name, required in expected_input_sha256.items():
+                actual = claimed.get(name)
+                if not required or not isinstance(actual, str) or actual != required:
                     source_meta["binding"] = "mismatch_or_missing_identity"
                     return replace(
                         _unreadable(issue, f"assessment {name} missing or mismatched"),
                         source=source_meta,
                     )
-    elif expected_input_sha256 is not None:
-        source_meta["binding"] = "inputs_not_declared"
+    if key == "sensitivity_status":
+        source_meta["validation_scope"] = (
+            "Only expected_input_sha256 fingerprints checked; producer taxa and analysis "
+            "identity are not checked unless explicitly included in that mapping."
+        )
     if key == "sensitivity_status":
         return replace(_sensitivity_status(content, issue), source=source_meta)
     value = content.get(key)
@@ -2792,7 +2819,11 @@ def _read_assessment_statuses(
             args.sensitivity_status,
             "sensitivity_status",
             "#183",
-            expected_input_sha256=assessment_inputs,
+            # This producer has no full_dump_sha256. Integration has no taxa input
+            # against which to verify its taxa_sha256; disclose that scope above.
+            expected_input_sha256={
+                name: assessment_inputs[name] for name in ("profile_sha256", "experiments_sha256")
+            },
             supplied=supplied["sensitivity_status"],
         ),
         "coverage_status": read_status(
@@ -3010,8 +3041,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     if args.require_complete_sources:
         # A status that cannot be read, or that belongs to other input bytes, is no more
-        # complete than a missing one (#844). A status that declares no input hashes is
-        # still accepted until #816 decides what it binds to.
+        # complete than a missing one (#844). Undeclared and incomplete input
+        # contracts are unbound too (#816).
         rejected = [
             f"{key} ({status.default})"
             for key, status in sorted(statuses.items())

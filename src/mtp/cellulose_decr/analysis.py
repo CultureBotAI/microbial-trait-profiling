@@ -62,6 +62,15 @@ from mtp.contrast_orientation import (
     TIER_1_HEALTHY_NORMAL,
     TIER_2_CONDITION_NEGATIVE_SCREENED,
 )
+from mtp.delta_z_derived.tables import (
+    STOOL_BODY_SITE as STOOL_BODY_SITE,
+)
+from mtp.delta_z_derived.tables import (
+    is_stool_body_site as is_stool_body_site,
+)
+from mtp.delta_z_derived.tables import (
+    validate_stool_body_site as validate_stool_body_site,
+)
 from mtp.paths import REPO_ROOT, file_sha256
 
 ANALYSIS_DIR = REPO_ROOT / "data" / "analysis" / "cellulose_decr"
@@ -127,7 +136,7 @@ CASE_CONTROL_RULES = {
 }
 SHORT = list(CONDITIONS)
 PAIRS = list(itertools.combinations(SHORT, 2))
-FECES = "Feces"
+FECES = STOOL_BODY_SITE
 NON_FECAL_GI = "Non-fecal GI (mucosa/lumen)"
 ORAL = "Oral / Oropharyngeal"
 OTHER = "Other non-GI"
@@ -313,9 +322,9 @@ def read_tsv(path: Path, **kwargs: Any) -> pd.DataFrame:
 
 def compartment_of(body_site: str) -> str:
     """Assign an experiment body-site label to one of the four compartments."""
-    site = body_site.strip().lower()
-    if site == FECES.lower():
+    if validate_stool_body_site(body_site):
         return FECES
+    site = body_site.strip().lower()
     if "," in site:
         return OTHER
     if any(term in site for term in ORAL_TERMS):
@@ -2337,7 +2346,7 @@ def label_inventory(
                 "status": status,
                 "studies": group["study_id"].nunique(),
                 "experiments": len(group),
-                "feces_experiments": int(group["body_site"].eq(FECES).sum()),
+                "feces_experiments": int(group["body_site"].map(validate_stool_body_site).sum()),
             }
         )
     frame = pd.DataFrame(rows)

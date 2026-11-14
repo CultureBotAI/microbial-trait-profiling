@@ -71,7 +71,7 @@ def test_qualifying_conditions_requires_one_of_six_individual_traits() -> None:
 def test_panel_b_composite_uses_the_three_supported_positive_pd_traits() -> None:
     assert reporter.INCREASED_SIDE_TRAITS == [
         "moderately halophilic",
-        "facultatively aerobic",
+        reporter.FACULTATIVE_UNION_LABEL,
         "arsenate reduction",
     ]
 
@@ -199,7 +199,7 @@ def test_condition_summary_interval_calls_and_study_counts() -> None:
     assert arsenate["zero_study_count"] == 0
     assert arsenate["majority_direction_fraction"] == pytest.approx(2 / 3)
     assert arsenate["study_weighted_median_contrast"] == pytest.approx(1.0)
-    aerobic = row.loc["facultatively aerobic"]
+    aerobic = row.loc[reporter.FACULTATIVE_UNION_LABEL]
     assert aerobic["zero_study_count"] == 3
     assert aerobic["majority_direction_fraction"] == pytest.approx(0.0)
     assert not aerobic["ci_excludes_zero"]

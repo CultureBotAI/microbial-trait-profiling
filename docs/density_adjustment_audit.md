@@ -30,7 +30,46 @@ page; recover and verify it before reusing its numerical examples as run-bound
 results. The [MT policy](../methods/multiple_testing_policy.md) and
 [registry](../methods/multiple_testing_families.yaml) govern new reporting.
 
-`just density-adjustment-trait-list` reports the paired effects for a declared list of trait identifiers instead of the six Table 1 traits (#1054). PC1 is still fit on every non-MediaDive trait, so a trait's means and Wilcoxon p-values are the same whichever list it appears in, while its BH q-values and status are taken over the list it is reported in (#1321); each listed trait must be a non-MediaDive column, and labels come from the columns table's `object_name`. The six-trait default keeps its fixed labels, so a shared trait can carry a different label in the two tables while its means and p-values are identical: arsenate reduction is `arsenate_reduction` in the current columns table (#1084). The run writes `trait_list_provenance.json` with the list file's SHA-256, the input hashes and the q-value family (`q_values`). `just audit-trait-density --trait-list FILE --output-dir DIR` passes the same list through the jed arm's script; its consolidated report then leaves out the conclusions of section 6, which name Table 1 traits (#1069). A list run refuses the default `data/derived/density_adjustment/` and any directory with a `density_adjustment` path component, including arm directories, nested destinations and symlink aliases (#1093). Component comparisons use `casefold()`, so spellings such as `Density_Adjustment` are also protected (#1144). A destination already containing `table1_density_adjusted_effects.tsv` is reserved regardless of the entry contents or type; use a fresh destination for each declared-list run. The audit API checks the destination before profile-input reads or directory creation; the module CLI also checks before loading the trait list. An empty `--output-dir` is rejected rather than read as the current directory (#1084). Without a list, default runs write `density_adjustment_provenance.json` with the same input-hash and q-value family fields (without the list-file fields, #1327).
+`just density-adjustment-trait-list` reports the paired effects for a declared list of trait identifiers instead of the six Table 1 traits (#1054). PC1 is still fit on every non-MediaDive trait, so a trait's means and Wilcoxon p-values are the same whichever list it appears in, while its BH q-values and status are taken over the list it is reported in (#1321); each listed trait must be a non-MediaDive column, and labels come from the columns table's `object_name`. The six-trait default keeps its fixed labels, so a shared trait can carry a different label in the two tables while its means and p-values are identical: arsenate reduction is `arsenate_reduction` in the current columns table (#1084). The run writes `trait_list_provenance.json` with the list file's SHA-256, the input hashes and the q-value family (`q_values`). `just audit-trait-density --trait-list FILE --output-dir DIR` passes the same list through the jed arm's script; its consolidated report computes section 6 from the same reported effects and statuses, including declared lists (#1069). A list run refuses the default `data/derived/density_adjustment/` and any directory with a `density_adjustment` path component, including arm directories, nested destinations and symlink aliases (#1093). Component comparisons use `casefold()`, so spellings such as `Density_Adjustment` are also protected (#1144). A destination already containing `table1_density_adjusted_effects.tsv` is reserved regardless of the entry contents or type; use a fresh destination for each declared-list run. The audit API checks the destination before profile-input reads or directory creation; the module CLI also checks before loading the trait list. An empty `--output-dir` is rejected rather than read as the current directory (#1084). Without a list, default runs write `density_adjustment_provenance.json` with the same input-hash and q-value family fields (without the list-file fields, #1327).
+
+### Consolidated report contract (#1069)
+
+The report section 3 corresponds to this document's section 5: both contain
+paired trait effects. The report section 6 contains conclusions; this document's
+section 6 remains the separate near-twin discussion. Their section numbers are
+not interchangeable.
+
+For every reported trait set, report section 6 repeats each reported label,
+status and raw/adjusted BH q-value from section 3. Its survivor list includes only
+`survived (significant post-adjustment)` and
+`enhanced (significant, larger magnitude)`, in report order. It prints `none`
+when no reported row has either status. Adjusted-only, reversed, undefined
+magnitude and nonsignificant rows do not enter that survivor list. Declared lists
+use the same rule; the paired-effect/status summary in report section 6, point 2,
+introduces no trait absent from section 3. Global near-twin diagnostics remain
+separate in point 4 and can describe traits outside the reported effects list.
+The survivor list describes annotation contrasts, not measured trait activity
+or causal effects.
+
+Applied to the historical statuses retained in section 5, the summary is:
+
+Historical surviving labels: Facultatively aerobic; Cellulose catabolic process; Coccus shaped; Sphere shaped; Arsenate reduction; Moderately halophilic.
+
+This is a consistency summary of the historical table, not a new audit run.
+Its numerical cells and the near-twin diagnostics are unchanged. The reporting
+scope above explains the documentation-only BH reconstruction and missing
+historical producer binding.
+
+The CLI's `--code-commit` is passed explicitly to the consolidated report writer
+and printed as `code_commit: VALUE`. This records the caller-supplied identifier;
+it does not prove a clean checkout or verify the identifier against Git. When
+omitted, the report prints:
+
+`Provenance note: code_commit not supplied; producer commit is unverified.`
+
+No Git discovery or dirty-working-tree check is required. This unbound note
+also applies when rendering historical results whose producer commit was not
+recorded; it does not turn this page's examples into verified current outputs.
 
 > [!NOTE]
 > **Step 5 Decomposition Boundary (#355, #382):** This document and PR #370 cover trait correlation, annotation density adjustment, and near-twin collinearity. The trait-semantics audit (#311) is tracked separately in the ontology redundancy workstream.

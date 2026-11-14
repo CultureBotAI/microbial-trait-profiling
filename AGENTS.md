@@ -72,10 +72,19 @@ references it:
 4. **Commit, push, and open a PR.** Reference the issue in
    the PR body: `Closes #<number>` only when the PR fully resolves it,
    `Refs #<number>` for partial work. Choose before opening the PR, and
-   before merging check which issues the PR will close (its Development
-   sidebar, or `closingIssuesReferences` in the GraphQL API): a link can
-   outlast a later edit of the body. Remove any link to an issue the PR
-   only partly addresses.
+   before merging check which issues the PR will close (`gh pr view N --json closingIssuesReferences`,
+   which lists issues only, never PRs, or the PR's Development sidebar):
+   a link that comes only from a closing keyword goes away once the
+   keyword is removed from the PR body, whereas a Development-sidebar or
+   branch link persists and must be removed in the PR's Development
+   sidebar in the web UI (no `gh` subcommand does this, and only a linked
+   branch can be unlinked through the GraphQL API, so an agent must ask
+   a maintainer). A closing keyword in a commit message (and so, by default,
+   in the squash message) also closes the issue on merge, appears in neither
+   check, and is not removed by editing the PR body: write `Refs #<number>`
+   in commits, and never a negated keyword such as "does not close #<number>"
+   (which still closes). Remove any link to an issue the PR only partly
+   addresses.
 5. **Wait for CI and Copilot review.** Address all review comments.
 6. **Do not merge your own PR** unless you are the repo owner.
 

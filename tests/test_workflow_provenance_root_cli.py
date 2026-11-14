@@ -12,6 +12,7 @@ from types import SimpleNamespace
 import pytest
 
 from mtp import integrated_evidence
+from mtp.datamodel.workflow_pydantic import WorkflowRun
 from mtp.paths import REPO_ROOT, file_sha256
 from mtp.workflow import comparison
 from mtp.workflow.arms import __main__ as cli
@@ -322,8 +323,17 @@ def test_comparison_forwards_its_root_to_the_real_integrated_parser(
         for name, path in paths.items()
         if name != "core"
     }
-    monkeypatch.setattr(comparison, "verify_core_run", lambda _path: core)
-    monkeypatch.setattr(comparison, "verify_arm", lambda path: arms[path])
+
+    def checked_core(path: Path, *, expected_sha256: str | None = None) -> WorkflowRun:
+        assert expected_sha256 == file_sha256(path)
+        return core
+
+    def checked_arm(path: Path, *, expected_sha256: str | None = None) -> SimpleNamespace:
+        assert expected_sha256 == file_sha256(path)
+        return arms[path]
+
+    monkeypatch.setattr(comparison, "verify_core_run", checked_core)
+    monkeypatch.setattr(comparison, "verify_arm", checked_arm)
     monkeypatch.setattr(comparison, "repository_state", lambda _root: ("a" * 40, False))
     monkeypatch.setattr(
         comparison, "recorded_output", lambda arm, step, name: sources / arm.arm / step / name

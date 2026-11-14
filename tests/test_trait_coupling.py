@@ -842,3 +842,173 @@ def test_coupling_producer_describes_named_removals_without_twin_or_stability_fr
     assert "named-removal comparison" in coupling.__doc__
     source = Path(coupling.__file__).read_text()
     assert "# Canonical near-twin cluster" not in source
+
+
+def test_coupling_applies_display_trait_label_for_union_and_preserves_raw(
+    synthetic_audit_files: tuple[Path, Path],
+    tmp_path: Path,
+) -> None:
+    """Verify coupling functions and audit report apply display_trait_label (#1250)."""
+    profiles_path, base_columns_path = synthetic_audit_files
+    profiles_df = pd.read_csv(profiles_path, sep="\t")
+    base_cols_df = pd.read_csv(base_columns_path, sep="\t")
+    t1_keys = list(TABLE_1_TRAITS.keys())
+    valid_cols = list(base_cols_df["column_id"])
+
+    union_cols_df = base_cols_df.copy()
+    union_cols_df["trait_key_policy"] = "facultative_union_v1"
+    union_cols_df["trait_member_ids_json"] = [
+        '["METPO:1000605","METPO:1000608","METPO:1000612"]'
+        if cid == "METPO:1000608"
+        else f'["{cid}"]'
+        for cid in union_cols_df["column_id"]
+    ]
+    union_columns_path = tmp_path / "union_taxa_trait_matrix_columns.tsv"
+    union_cols_df.to_csv(union_columns_path, sep="\t", index=False)
+
+    raw_cols_df = base_cols_df.copy()
+    raw_cols_df["trait_key_policy"] = "raw_object_v1"
+    raw_cols_df["trait_member_ids_json"] = [f'["{cid}"]' for cid in raw_cols_df["column_id"]]
+    raw_columns_path = tmp_path / "raw_taxa_trait_matrix_columns.tsv"
+    raw_cols_df.to_csv(raw_columns_path, sep="\t", index=False)
+
+    union_names = coupling._resolve_table1_trait_names(union_columns_path)
+    raw_names = coupling._resolve_table1_trait_names(raw_columns_path)
+    default_names = coupling._resolve_table1_trait_names(None)
+    assert union_names["METPO:1000608"] == "facultative (aerobe or anaerobe)"
+    assert raw_names["METPO:1000608"] == "facultatively aerobic"
+    assert default_names["METPO:1000608"] == "facultatively aerobic"
+
+    comp_union = compute_composition_arm(
+        profiles_df, valid_cols, t1_keys, columns_path=union_columns_path
+    )
+    dir_union = compute_directional_arm(
+        profiles_df, valid_cols, t1_keys, columns_path=union_columns_path
+    )
+    ora_union = compute_ora_arm(profiles_df, valid_cols, t1_keys, columns_path=union_columns_path)
+    assert comp_union["METPO:1000608"].trait_name == "facultative (aerobe or anaerobe)"
+    assert dir_union["METPO:1000608"].trait_name == "facultative (aerobe or anaerobe)"
+    assert ora_union["METPO:1000608"].trait_name == "facultative (aerobe or anaerobe)"
+
+    comp_raw = compute_composition_arm(
+        profiles_df, valid_cols, t1_keys, columns_path=raw_columns_path
+    )
+    dir_raw = compute_directional_arm(
+        profiles_df, valid_cols, t1_keys, columns_path=raw_columns_path
+    )
+    ora_raw = compute_ora_arm(profiles_df, valid_cols, t1_keys, columns_path=raw_columns_path)
+    assert comp_raw["METPO:1000608"].trait_name == "facultatively aerobic"
+    assert dir_raw["METPO:1000608"].trait_name == "facultatively aerobic"
+    assert ora_raw["METPO:1000608"].trait_name == "facultatively aerobic"
+
+    loto_rows_union, delta_mats_union = evaluate_loto(
+        profiles_df,
+        profiles_df,
+        valid_cols,
+        t1_keys,
+        columns_path=union_columns_path,
+    )
+    assert any(
+        r.dropped_trait_id == "METPO:1000608"
+        and r.dropped_trait_name == "facultative (aerobe or anaerobe)"
+        for r in loto_rows_union
+    )
+    assert any(
+        r.target_trait_id == "METPO:1000608"
+        and r.target_trait_name == "facultative (aerobe or anaerobe)"
+        for r in loto_rows_union
+    )
+    assert not any(
+        r.dropped_trait_name == "facultatively aerobic"
+        or r.target_trait_name == "facultatively aerobic"
+        for r in loto_rows_union
+    )
+    assert "facultative (aerobe or anaerobe)" in delta_mats_union["composition_delta_effect"].index
+    assert (
+        "facultative (aerobe or anaerobe)" in delta_mats_union["composition_delta_effect"].columns
+    )
+    assert "facultative (aerobe or anaerobe)" in delta_mats_union["composition_delta_q"].index
+    assert "facultative (aerobe or anaerobe)" in delta_mats_union["composition_delta_q"].columns
+
+    lco_rows_union = evaluate_lco(
+        profiles_df,
+        profiles_df,
+        valid_cols,
+        t1_keys,
+        {COCCUS_ID: "coccus shaped", SPHERE_ID: "sphere shaped"},
+        columns_path=union_columns_path,
+    )
+    assert [r.trait_name for r in lco_rows_union if r.trait_id == "METPO:1000608"] == [
+        "facultative (aerobe or anaerobe)"
+    ] * 3
+
+    rule_union = evaluate_decision_rule(
+        comp_union,
+        delta_mats_union["composition_delta_effect"],
+        target_trait_id="METPO:1000608",
+        dropped_trait_id=SPHERE_ID,
+        columns_path=union_columns_path,
+    )
+    assert rule_union.target_trait_name == "facultative (aerobe or anaerobe)"
+    assert "facultative (aerobe or anaerobe)" in rule_union.verdict
+
+    out_union = tmp_path / "audit_union"
+    res_union = run_coupling_audit(
+        profiles_path=profiles_path,
+        columns_path=union_columns_path,
+        output_dir=out_union,
+        code_commit="union_commit",
+    )
+    # Recorded TSVs keep raw KG labels (#1250); human-facing report uses display label.
+    for out_key in ("loto_tsv", "lco_tsv"):
+        content = Path(res_union[out_key]).read_text(encoding="utf-8")
+        assert "facultatively aerobic" in content
+        assert "facultative (aerobe or anaerobe)" not in content
+    union_report = Path(res_union["report_txt"]).read_text(encoding="utf-8")
+    assert "facultative (aerobe or anaerobe)" in union_report
+    assert "facultatively aerobic" not in union_report
+
+    out_raw = tmp_path / "audit_raw"
+    res_raw = run_coupling_audit(
+        profiles_path=profiles_path,
+        columns_path=raw_columns_path,
+        output_dir=out_raw,
+        code_commit="raw_commit",
+    )
+    for out_key in ("loto_tsv", "lco_tsv", "report_txt"):
+        content = Path(res_raw[out_key]).read_text(encoding="utf-8")
+        assert "facultatively aerobic" in content
+        assert "facultative (aerobe or anaerobe)" not in content
+    assert Path(res_union["loto_tsv"]).read_text(encoding="utf-8") == Path(
+        res_raw["loto_tsv"]
+    ).read_text(encoding="utf-8")
+    assert Path(res_union["lco_tsv"]).read_text(encoding="utf-8") == Path(
+        res_raw["lco_tsv"]
+    ).read_text(encoding="utf-8")
+
+    malformed_columns_path = tmp_path / "malformed_columns.tsv"
+    malformed_df = pd.read_csv(union_columns_path, sep="\t")
+    malformed_df.loc[malformed_df["column_id"] == "METPO:1000608", "trait_member_ids_json"] = (
+        "malformed-member-json"
+    )
+    malformed_df.to_csv(malformed_columns_path, sep="\t", index=False)
+
+    seeded_dir = tmp_path / "audit_seeded"
+    seeded_dir.mkdir()
+    seeded_paths = {
+        "loto": seeded_dir / "trait_coupling_loto_matrix.tsv",
+        "lco": seeded_dir / "trait_coupling_lco_summary.tsv",
+        "report": seeded_dir / "trait_coupling_report.txt",
+    }
+    for name, path in seeded_paths.items():
+        path.write_text(f"sentinel-{name}\n", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="Invalid trait_member_ids_json"):
+        run_coupling_audit(
+            profiles_path=profiles_path,
+            columns_path=malformed_columns_path,
+            output_dir=seeded_dir,
+            code_commit="malformed_commit",
+        )
+    for name, path in seeded_paths.items():
+        assert path.read_text(encoding="utf-8") == f"sentinel-{name}\n"

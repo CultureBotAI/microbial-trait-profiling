@@ -1,8 +1,11 @@
 """Which corpus a run read, recorded so a number can be traced to it (#222)."""
 
+import gzip
+import hashlib
 import importlib.util
 import json
 import sys
+from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
@@ -41,6 +44,108 @@ def _matrix(path: Path, *, mediadive: int, retained: int, rows: int) -> Path:
         lines.append("\t".join([f"bsdb:{row}", f"bsdb:{row}-1", "inc", *counts]))
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return path
+
+
+def _gzip_matrix_pair(tmp_path: Path, suffix: str) -> tuple[Path, Path]:
+    plain = _matrix(tmp_path / "profiles.tsv", mediadive=2, retained=3, rows=3)
+    lines = plain.read_text(encoding="utf-8").splitlines()
+    lines[0] += "\ttaxa_count"
+    lines[1:] = [line + "\t2" for line in lines[1:]]
+    plain.write_text(lines[0] + "\n\n" + "\n".join(lines[1:]) + "\n\n", encoding="utf-8")
+    compressed = tmp_path / f"profiles.tsv{suffix}"
+    compressed.write_bytes(gzip.compress(plain.read_bytes(), mtime=0))
+    return plain, compressed
+
+
+@pytest.mark.parametrize("suffix", [".gz", ".GZ"])
+@pytest.mark.parametrize("reader", ["measure_matrix", "corpus_identity"])
+def test_gzip_matrix_identity_preserves_shape_and_hashes_stored_bytes(
+    tmp_path: Path, suffix: str, reader: str
+) -> None:
+    plain, compressed = _gzip_matrix_pair(tmp_path, suffix)
+    sidecar = tmp_path / "kg_provenance.json"
+    sidecar.write_text(json.dumps({"release": "fixture-kg", "files": {}}), encoding="utf-8")
+    inputs = {path: path.read_bytes() for path in (plain, compressed, sidecar)}
+    expected_shape = {
+        "header_columns": 9,
+        "identifier_columns": 3,
+        "metadata_columns": 1,
+        "mediadive_columns": 2,
+        "retained_trait_columns": 3,
+        "profile_rows": 3,
+    }
+    records = []
+    for path in (plain, compressed):
+        if reader == "measure_matrix":
+            matrix = measure_matrix(path)
+        else:
+            identity = corpus_identity(
+                path, bugsigdb_vintage="fixture-bugsigdb", kg_provenance_path=sidecar
+            )
+            assert identity.bugsigdb_vintage == "fixture-bugsigdb"
+            assert identity.kg_release_tag == "fixture-kg"
+            assert identity.kg_provenance_path == str(sidecar)
+            matrix = identity.matrix
+        record = asdict(matrix)
+        assert record.pop("path") == str(path)
+        assert record.pop("sha256") == hashlib.sha256(inputs[path]).hexdigest()
+        assert record.pop("bytes") == len(inputs[path])
+        assert record == expected_shape
+        records.append(record)
+    assert records[0] == records[1]
+    assert hashlib.sha256(inputs[compressed]).digest() != hashlib.sha256(inputs[plain]).digest()
+    assert len(inputs[compressed]) != len(inputs[plain])
+    assert {path: path.read_bytes() for path in inputs} == inputs
+
+
+@pytest.mark.parametrize(
+    ("contents", "message"),
+    [
+        (
+            "study_id\tstudy_id\tfoo\tbar\tmediadive.medium:1\nbsdb:1\tbsdb:1\t0\t0\t0\n",
+            "not the 5 columns in the header",
+        ),
+        (
+            "study_id\texperiment_id\tMETPO:1\nbsdb:1\tbsdb:1-1\t0\n",
+            "expected 3 identifier columns",
+        ),
+    ],
+    ids=["duplicate-identifier", "missing-identifier"],
+)
+def test_measure_matrix_checks_headers_inside_gzip(
+    tmp_path: Path, contents: str, message: str
+) -> None:
+    path = tmp_path / "malformed.tsv.gz"
+    stored = gzip.compress(contents.encode("utf-8"), mtime=0)
+    path.write_bytes(stored)
+    with pytest.raises(ValueError, match=message):
+        measure_matrix(path)
+    assert path.read_bytes() == stored
+
+
+@pytest.mark.parametrize("reader", ["measure_matrix", "corpus_identity"])
+@pytest.mark.parametrize("damage", ["not-gzip", "truncated-trailer"])
+def test_matrix_identity_refuses_invalid_or_truncated_gzip(
+    tmp_path: Path, reader: str, damage: str
+) -> None:
+    plain, compressed = _gzip_matrix_pair(tmp_path, ".gz")
+    stored = b"not gzip data\n" if damage == "not-gzip" else compressed.read_bytes()[:-8]
+    compressed.write_bytes(stored)
+    plain_bytes = plain.read_bytes()
+    error = gzip.BadGzipFile if damage == "not-gzip" else EOFError
+    message = "Not a gzipped file" if damage == "not-gzip" else "Compressed file ended"
+    if reader == "measure_matrix":
+        with pytest.raises(error, match=message):
+            measure_matrix(compressed)
+    else:
+        with pytest.raises(error, match=message):
+            corpus_identity(
+                compressed,
+                bugsigdb_vintage="synthetic gzip fixture",
+                kg_provenance_path=tmp_path / "absent-sidecar.json",
+            )
+    assert compressed.read_bytes() == stored
+    assert plain.read_bytes() == plain_bytes
 
 
 def test_the_three_column_groups_account_for_the_whole_header(tmp_path: Path) -> None:
@@ -230,14 +335,7 @@ def test_verify_provenance_source_hashes_detects_stale_and_fresh_records(
     assert mismatches["missing.py"]["actual"] == "(missing)"
 
 
-def test_log_ratio_outputs_include_corpus_identity(tmp_path: Path) -> None:
-    """write_log_ratio_outputs embeds corpus_identity in trait_log_ratio_provenance.json (#337)."""
-    matrix = _matrix(tmp_path / "m.tsv", mediadive=1, retained=2, rows=2)
-    experiments = tmp_path / "experiments.tsv"
-    experiments.write_text("study_id\texperiment_id\nhost\n", encoding="utf-8")
-    full_dump = tmp_path / "full_dump.csv"
-    full_dump.write_text("# v1.3.1\n", encoding="utf-8")
-    identity = corpus_identity(matrix, bugsigdb_vintage="v1.3.1")
+def _log_ratio_result() -> LogRatioResult:
     summary = LogRatioSummary(
         numerator="METPO:0",
         reference="METPO:1",
@@ -270,7 +368,18 @@ def test_log_ratio_outputs_include_corpus_identity(tmp_path: Path) -> None:
         excluded_zero_experiments=0,
         mean_log2_ratio_change=0.5,
     )
-    result = LogRatioResult(summaries=[summary], studies=[study_row], family_size=1)
+    return LogRatioResult(summaries=[summary], studies=[study_row], family_size=1)
+
+
+def test_log_ratio_outputs_include_corpus_identity(tmp_path: Path) -> None:
+    """write_log_ratio_outputs embeds corpus_identity in trait_log_ratio_provenance.json (#337)."""
+    matrix = _matrix(tmp_path / "m.tsv", mediadive=1, retained=2, rows=2)
+    experiments = tmp_path / "experiments.tsv"
+    experiments.write_text("study_id\texperiment_id\nhost\n", encoding="utf-8")
+    full_dump = tmp_path / "full_dump.csv"
+    full_dump.write_text("# v1.3.1\n", encoding="utf-8")
+    identity = corpus_identity(matrix, bugsigdb_vintage="v1.3.1")
+    result = _log_ratio_result()
     write_log_ratio_outputs(
         result,
         tmp_path / "lr",
@@ -284,6 +393,64 @@ def test_log_ratio_outputs_include_corpus_identity(tmp_path: Path) -> None:
     assert "corpus_identity" in prov
     assert prov["corpus_identity"]["matrix"]["sha256"] == identity.matrix.sha256
     assert prov["corpus_identity"]["bugsigdb_vintage"] == "v1.3.1"
+
+
+@pytest.mark.parametrize("suffix", [".gz", ".GZ"])
+def test_log_ratio_writer_derives_identity_from_gzip_without_supplied_identity(
+    tmp_path: Path, suffix: str
+) -> None:
+    """The real writer's identity fallback accepts gzip without changing saved statistics."""
+    plain, compressed = _gzip_matrix_pair(tmp_path, suffix)
+    experiments = tmp_path / "experiments.tsv"
+    experiments.write_text("study_id\texperiment_id\nhost\n", encoding="utf-8")
+    full_dump = tmp_path / "full_dump.csv"
+    full_dump.write_text("# v1.3.1\n", encoding="utf-8")
+    inputs = {path: path.read_bytes() for path in (plain, compressed, experiments, full_dump)}
+    result = _log_ratio_result()
+    outputs = []
+    records = []
+    expected_files = {
+        "trait_log_ratio_stats.tsv",
+        "trait_log_ratio_studies.tsv",
+        "trait_log_ratio_report.md",
+        "trait_log_ratio_provenance.json",
+    }
+    for index, profile in enumerate((plain, compressed)):
+        output_dir = tmp_path / f"log_ratio_{index}"
+        written = write_log_ratio_outputs(
+            result,
+            output_dir,
+            profile_path=profile,
+            experiments_path=experiments,
+            full_dump_path=full_dump,
+            code_commit="fixture-revision",
+        )
+        assert {path.name for path in written} == expected_files
+        assert all(path.is_file() and path.stat().st_size > 0 for path in written)
+        output = {path.name: path.read_bytes() for path in written}
+        record = json.loads(output.pop("trait_log_ratio_provenance.json"))
+        assert record["profile_path"] == str(profile)
+        assert record["profile_sha256"] == hashlib.sha256(inputs[profile]).hexdigest()
+        matrix = record["corpus_identity"]["matrix"]
+        assert matrix["path"] == str(profile)
+        assert matrix["sha256"] == hashlib.sha256(inputs[profile]).hexdigest()
+        assert matrix["bytes"] == len(inputs[profile])
+        assert matrix["profile_rows"] == 3
+        assert matrix["retained_trait_columns"] == 3
+        assert matrix["mediadive_columns"] == 2
+        assert matrix["metadata_columns"] == 1
+        # Validate the only location/storage differences before comparing every
+        # remaining provenance field, including all scientific settings.
+        record["profile_path"] = str(plain)
+        record["profile_sha256"] = hashlib.sha256(inputs[plain]).hexdigest()
+        matrix["path"] = str(plain)
+        matrix["sha256"] = hashlib.sha256(inputs[plain]).hexdigest()
+        matrix["bytes"] = len(inputs[plain])
+        records.append(record)
+        outputs.append(output)
+    assert records[0] == records[1]
+    assert outputs[0] == outputs[1]
+    assert {path: path.read_bytes() for path in inputs} == inputs
 
 
 def _load_script_module(script_name: str) -> Any:

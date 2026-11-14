@@ -45,6 +45,7 @@ from numpy.typing import NDArray
 from scipy.linalg import eigvalsh
 from scipy.stats import binomtest, spearmanr
 
+from mtp.count_input import open_input_text
 from mtp.paths import DERIVED_DATA_DIR, REPO_ROOT, file_sha256
 from mtp.table1_trait_maps import study_trait_contrasts, tally_direction_signs
 from mtp.trait_guilds import (
@@ -164,8 +165,8 @@ class ScreenResult:
 
 
 def read_header(profile_path: Path) -> list[str]:
-    """The profile matrix's header row, without reading the matrix itself."""
-    with profile_path.open(encoding="utf-8", newline="") as handle:
+    """Read the header row of a plain or gzip-compressed profile matrix."""
+    with open_input_text(profile_path) as handle:
         line = handle.readline()
     if not line:
         msg = f"{profile_path} is empty"
@@ -227,10 +228,11 @@ def step_up(p_values: Sequence[float], *, method: str, family_size: int) -> list
 def step_up_array(
     p_values: NDArray[np.float64], *, method: str, family_size: int
 ) -> NDArray[np.float64]:
-    """The shared step-up arithmetic on numeric vectors, without Python row lists.
+    """The shared step-up arithmetic requires finite 1D p-values.
 
     Preserve the historical multiplication-then-division order, stable sorting,
-    reverse cumulative minimum, raw-p floor and unit ceiling for explicit m.
+    reverse cumulative minimum, raw-p floor and unit ceiling for finite p-values
+    and explicit m; non-finite values are rejected.
     """
     if method not in ("bh", "by"):
         msg = f"unknown correction method {method!r}"
@@ -241,6 +243,8 @@ def step_up_array(
     values = np.asarray(p_values, dtype=float)
     if values.ndim != 1:
         raise ValueError("p-values must be one-dimensional")
+    if not np.all(np.isfinite(values)):
+        raise ValueError("p-values must be finite")
     if values.size == 0:
         return np.empty(0, dtype=float)
     factor = family_size * (harmonic(family_size) if method == "by" else 1.0)

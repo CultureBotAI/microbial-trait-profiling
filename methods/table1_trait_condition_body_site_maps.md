@@ -8,7 +8,7 @@ Figures: `table1_traits_condition_body_site_heatmap.png`, the four cuts
 `table1_traits_focus_feces.png`, `table1_traits_focus_feces_other.png`,
 `table1_traits_focus_cervical.png`, and `table1_traits_focus_oral.png`, and
 `table1_traits_direction_shift.png`. Produced by
-`src/bsdbng/table1_trait_maps.py`, driven by `just table1-trait-maps`. How this
+`src/mtp/table1_trait_maps.py`, driven by `just table1-trait-maps`. How this
 analysis differs from the composition and enrichment arms is set out in
 [`three_arm_statistics.md`](three_arm_statistics.md).
 
@@ -51,6 +51,16 @@ experiments were dropped as unpaired; 2,290 trait columns were MediaDive,
 leaving 317 traits (the `off` scope; 344 under `phenotype`), 2,257 experiments,
 4,514 profiles, and 932 studies — the
 same corpus as the composition arm's 2,257 pairs.
+
+The host filter drops 0 rows on the canonical `count_input_16s_wms_v1` profile
+matrix identified below (`519a095b…` / `43b2e230…`, 5,629 profile rows), which
+is built upstream from human-host 16S and shotgun profiles only (#656, #742).
+Earlier revisions of this note and the dated log-ratio snapshot named earlier
+all-host wide matrices of 2,653 header columns (2,333 MediaDive, 317 retained)
+where the host filter did drop non-human rows: sha256 `6e70724e…` over 7,329
+profile rows, where 1,500 rows were dropped as non-human (#333), and sha256
+`a0c28978…` over 7,111 profile rows, where 1,482 rows were dropped as
+non-human (#222).
 
 The matrix these counts were measured on is
 `data/derived/study_trait_profiles_wide.tsv`, sha256
@@ -390,10 +400,10 @@ all use the six Table 1 traits through `TRAIT_ORDER`, explicitly or by default.
 
 All statistics use scipy (binomtest, false_discovery_control, spearmanr) rather
 than hand-rolled implementations. The six figures and their six backing tables
-are produced by `src/bsdbng/table1_trait_maps.py`, driven deterministically by
+are produced by `src/mtp/table1_trait_maps.py`, driven deterministically by
 `just table1-trait-maps`, which shares its zero-total pair exclusion, matrix
 construction, masking, row clustering, and table writing with
-`src/bsdbng/guild_maps.py` rather than duplicating them. The BugSigDB export
+`src/mtp/guild_maps.py` rather than duplicating them. The BugSigDB export
 timestamp is read from the dump's leading comment line and recorded in every
 output table. PNG export runs through kaleido
 1.x, which drives a headless Chrome. For a reproducible figure run, run

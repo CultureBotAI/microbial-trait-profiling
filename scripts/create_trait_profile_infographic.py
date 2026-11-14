@@ -694,13 +694,15 @@ def write_stratified_trait_stats(
     pair_metadata: pd.DataFrame,
     trait_labels: pd.DataFrame,
     *,
-    output_dir: Path = INVESTIGATION_DIR,
+    output_dir: Path | None = None,
     min_pairs: int = MIN_STRATIFIED_PAIRS,
     max_traits: int | None = STRATIFIED_TRAIT_COUNT,
     min_profile_support: int = MIN_STRATIFIED_PROFILE_SUPPORT,
     max_profile_support_fraction: float = MAX_STRATIFIED_PROFILE_SUPPORT_FRACTION,
 ) -> pd.DataFrame:
     """Write per-stratum trait-stat TSVs and return a manifest of emitted files."""
+    if output_dir is None:
+        output_dir = INVESTIGATION_DIR
     output_dir.mkdir(parents=True, exist_ok=True)
     manifest_rows: list[dict[str, object]] = []
     emitted_tokens: set[str] = set()

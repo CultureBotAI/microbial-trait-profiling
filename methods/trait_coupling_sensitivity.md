@@ -110,8 +110,8 @@ Rows represent the dropped trait; columns represent the evaluated trait:
 | **Moderately halophilic** | $-0.005814$ | $+2.03 \times 10^{-8}$ | $+4.00 \times 10^{-6}$ | $+8.93 \times 10^{-9}$ | $+4.00 \times 10^{-6}$ | — |
 
 **Key LOTO Observations:**
-- **Magnitude of perturbation by arm:** In the composition arm, the maximum absolute shift in effect size across all 30 LOTO evaluations is $|\Delta \text{effect}| = 0.000636$ (when dropping cellulose catabolism on coccus shaped). In the directional sign-test arm, the maximum LOTO shift is $|\Delta \text{share\_up}| = 0.002183$; in the ORA arm, the maximum LOTO shift is $|\Delta \text{mean\_fold}| = 0.024908$ (when dropping coccus shaped on cellulose catabolism).
-- **Statistical significance (focal-set BH sensitivity check):** All evaluated traits retain their statistical sign, order of magnitude, and focal-set significance status ($q \ll 0.05$ for five traits; $q \approx 0.15$ for all-profile *facultatively aerobic* in this module's 6-trait z-contrast test).
+- **Magnitude of perturbation by arm:** In the historical binarized evaluation, in the composition arm, the maximum absolute shift in effect size across all 30 LOTO evaluations is $|\Delta \text{effect}| = 0.000636$ (when dropping cellulose catabolism on coccus shaped). In the directional sign-test arm, the maximum LOTO shift is $|\Delta \text{share\_up}| = 0.002183$; in the ORA arm, the maximum LOTO shift is $|\Delta \text{mean\_fold}| = 0.024908$ (when dropping coccus shaped on cellulose catabolism).
+- **Statistical significance (focal-set BH sensitivity check):** In the historical binarized evaluation, all evaluated traits retain their statistical sign, order of magnitude, and focal-set significance status ($q \ll 0.05$ for five traits; $q \approx 0.15$ for all-profile *facultatively aerobic* in this module's 6-trait z-contrast test).
 
 ---
 
@@ -136,7 +136,7 @@ The historical binarized evaluation dropped the *coccus shaped* and *sphere shap
 
 ### Cross-Arm Comparison
 - **Composition Arm:** In the historical binarized evaluation, maximum absolute shifts are $|\Delta \text{effect}| \le 0.000636$ in LOTO and $\le 0.001008$ in LCO, both below the historical minimum adjacent gap of $0.002040$. These bounds do not describe the current raw-count report.
-- **Directional Arm:** Study share up shifts by at most $|\Delta \text{share\_up}| \le 0.002183$ in LOTO and $\le 0.002736$ in LCO (reflecting shifts in only $1$ to $2$ marginal studies out of $>600$–$900$ scored studies, with *facultatively aerobic* scored studies shifting from $916$ to $917$ under LCO).
+- **Directional Arm:** In the historical binarized evaluation, study share up shifts by at most $|\Delta \text{share\_up}| \le 0.002183$ in LOTO and $\le 0.002736$ in LCO (reflecting shifts in only $1$ to $2$ marginal studies out of $>600$–$900$ scored studies, with *facultatively aerobic* scored studies shifting from $916$ to $917$ under LCO).
 - **ORA Arm:** In the historical binarized evaluation, mean fold enrichment shifts by up to $|\Delta \text{mean\_fold}| \le 0.024908$ in LOTO and $\le 0.022271$ in LCO. Removing the coccus/sphere columns reduces the non-MediaDive background annotation pool by $\sim 7.0\%$; *facultatively aerobic* profile-level hits at $q \le 0.05$ change from $33$ to $38$ under LCO.
 
 ---

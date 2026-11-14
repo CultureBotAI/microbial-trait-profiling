@@ -22,6 +22,7 @@ __all__ = [
     "retained_trait_counts",
     "trait_fractions",
     "validate_cached_totals",
+    "validate_cached_totals_from_path",
 ]
 
 
@@ -64,12 +65,32 @@ def validate_cached_totals(counts: pd.DataFrame, metadata: pd.DataFrame) -> None
         )
 
 
-def load_retained_profiles(path: Path, metadata: pd.DataFrame) -> pd.DataFrame:
-    """Read the full denominator universe and align by keys, never by row position."""
-    frame = pd.read_csv(path, sep="\t")
+def _read_retained_counts(path: Path) -> pd.DataFrame:
+    """Read retained columns with whole-file dtype inference and the existing key policy."""
     keys = ["study_id", "experiment_id", "inc_dec"]
-    counts = frame.drop(columns=keys).apply(pd.to_numeric, errors="raise")
+    frame = pd.read_csv(
+        path,
+        sep="\t",
+        usecols=lambda column: column in keys or MEDIADIVE_MARKER not in str(column).lower(),
+    )
+    counts: pd.DataFrame = frame.drop(columns=keys).apply(pd.to_numeric, errors="raise")
     counts.index = frame[keys].astype(str).agg("|".join, axis=1)
-    counts = retained_trait_counts(counts)
+    return counts
+
+
+def validate_cached_totals_from_path(path: Path, metadata: pd.DataFrame) -> None:
+    """Check cached totals without reading MediaDive columns or returning aligned counts.
+
+    The retained columns are read together to preserve whole-file numeric dtype
+    inference. Raw profile keys are checked before selecting metadata rows, so
+    duplicates outside the requested metadata subset are still rejected.
+    """
+    counts = _read_retained_counts(path)
+    validate_cached_totals(counts, metadata)
+
+
+def load_retained_profiles(path: Path, metadata: pd.DataFrame) -> pd.DataFrame:
+    """Read the full retained denominator universe and align by keys, never row position."""
+    counts = _read_retained_counts(path)
     validate_cached_totals(counts, metadata)
     return counts.loc[metadata.index]

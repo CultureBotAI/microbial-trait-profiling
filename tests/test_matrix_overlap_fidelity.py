@@ -356,7 +356,7 @@ def test_pd_profile_keys_exclude_a_decoy_taxon_that_changes_the_overlap(
     assert (row["intersection_taxa"], row["union_taxa"]) == (1, 3)
 
 
-@pytest.mark.parametrize("site", ["feces", " Feces ", "FECES", "Feces,Blood", "Oral cavity,Feces"])
+@pytest.mark.parametrize("site", ["Feces,Blood", "Oral cavity,Feces"])
 def test_literal_stool_rule_controls_cascade_and_every_pd_scope(
     corpus: dict[str, pd.DataFrame],
     site: str,
@@ -370,6 +370,19 @@ def test_literal_stool_rule_controls_cascade_and_every_pd_scope(
     assert summaries[0]["n_studies"] == 1
     assert summaries[0]["mean_jaccard"] is None
     assert all("s2" not in (row["study_a_id"], row["study_b_id"]) for row in pairs)
+
+
+@pytest.mark.parametrize("site", ["feces", " Feces ", "FECES"])
+def test_literal_stool_rule_refuses_case_and_whitespace_variants(
+    corpus: dict[str, pd.DataFrame],
+    site: str,
+) -> None:
+    for name in ("tier12_experiments", "source_experiments"):
+        corpus[name].loc[1, "body_site"] = site
+    with pytest.raises(ValueError, match="Refusing non-canonical stool body_site"):
+        coverage(corpus)
+    with pytest.raises(ValueError, match="Refusing non-canonical stool body_site"):
+        overlap(corpus)
 
 
 def test_shared_host_method_and_medium_rules(corpus: dict[str, pd.DataFrame]) -> None:

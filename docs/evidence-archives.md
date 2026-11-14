@@ -48,8 +48,8 @@ in the source
 On macOS, `/tmp` links to `/private/tmp` and is refused. A macOS
 `/tmp/<link to durable>` path is accepted, though, because `/tmp` is not a root in
 its written form. On Linux, `/tmp` is refused only when it is the process temporary
-directory, which is the default. If `$TMPDIR` points somewhere else, a Linux `/tmp`
-output root is **not** refused, so do not use one.
+directory, which is the default. If `$TMPDIR`, `$TEMP` or `$TMP` points somewhere
+else, a Linux `/tmp` output root is **not** refused, so do not use one.
 
 Pass `--allow-temporary-output` only for a test or a throwaway run whose outputs no
 record will cite. The offline `just core-fixture` run is synthetic and is not checked.

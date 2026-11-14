@@ -3882,6 +3882,24 @@ def cellulose_problems(
     return found
 
 
+def normalize_quoted_tables(value: Any, default: Sequence[str] = ()) -> list[str]:
+    """Normalize an entry's ``quoted_tables`` value to a list of path strings (#2248)."""
+    if value is None or (isinstance(value, str) and not value.strip()):
+        return list(default)
+    if isinstance(value, str):
+        parsed = json.loads(value)
+        if not isinstance(parsed, list):
+            raise TypeError(
+                f"quoted_tables JSON must decode to a list, got {type(parsed).__name__}"
+            )
+        return [str(item) for item in parsed]
+    if isinstance(value, Sequence) and not isinstance(value, (bytes, bytearray)):
+        return [str(item) for item in value]
+    raise TypeError(
+        f"quoted_tables must be a JSON string or sequence of strings, got {type(value).__name__}"
+    )
+
+
 def check_slides(
     repo: Path,
     entries: Sequence[dict[str, Any]],
@@ -3939,6 +3957,11 @@ def check_slides(
             reason = revision_problem(trees, COMMIT, rel, path)
             if reason:
                 quoted.append(f"{rel}: {reason}")
+                for entry in entries:
+                    if rel in normalize_quoted_tables(entry.get("quoted_tables")):
+                        found = unverified.setdefault(entry["figure_file_path"], [])
+                        if (rel, reason) not in found:
+                            found.append((rel, reason))
     return unverified, quoted
 
 
@@ -4467,6 +4490,17 @@ def build_deck(
     )
 
     checks = trees or {}
+    # Shared metrics feed slide text through several formatters. Unless a slide
+    # declares a narrower dependency list, conservatively record the entire shared
+    # input set: a stale table must never leave a potentially affected slide verified.
+    # This is an upper bound on dependencies, not a claim that every value is quoted.
+    shared_tables = sorted(
+        path.relative_to(repo).as_posix() for path in TABLES_READ if path.is_relative_to(repo)
+    )
+    for entry in ordered_entries:
+        entry["quoted_tables"] = json.dumps(
+            normalize_quoted_tables(entry.get("quoted_tables"), shared_tables)
+        )
     unverified, quoted = check_slides(repo, ordered_entries, checks, TABLES_READ)
     found: list[str] | list[tuple[str, str]]
     for plate, found in plate_problems(repo, plate_record, checks, revision).items():
@@ -4599,6 +4633,7 @@ def build_deck(
                 "methods_url": methods_url,
                 "source_note": source_note,
                 "unverified": "; ".join(f"{rel}: {reason}" for rel, reason in found),
+                "quoted_tables": entry["quoted_tables"],
                 "not_rerun": entry.get("not_rerun", ""),
                 "figure_sha256": src_sha,
                 # What the slide shows, which is the SVG when there is one (#684)
@@ -4634,6 +4669,7 @@ def build_deck(
         "methods_url",
         "source_note",
         "unverified",
+        "quoted_tables",
         "not_rerun",
         "figure_sha256",
         "asset_sha256",
@@ -4890,6 +4926,8 @@ def build_deck(
 
     for html_name in ("selected_figures_v6.html", "selected_figures.html"):
         (slides_dir / html_name).write_text(html_content, encoding="utf-8")
+    if review:
+        (slides_dir / "selected_figures_v6_review.html").write_text(html_content, encoding="utf-8")
 
     # Synchronize figure_provenance_and_results.yaml with all 153 manifest_rows;
     # `just figure-review-deck` then validates it against its LinkML schema.
@@ -4996,7 +5034,7 @@ def build_deck(
     with prov_yaml_path.open("w", encoding="utf-8") as f:
         yaml.safe_dump(prov_doc, f, sort_keys=False, allow_unicode=True, width=120)
 
-    validation = {
+    validation: dict[str, Any] = {
         "version": "v6",
         "commit": COMMIT,
         "branch": BRANCH,
@@ -5024,6 +5062,10 @@ def build_deck(
             "provenance_yaml": str(prov_yaml_path),
         },
     }
+    if review:
+        validation["outputs"]["review_html_v6"] = str(
+            slides_dir / "selected_figures_v6_review.html"
+        )
     (slides_dir / "deck_validation_v6.json").write_text(
         json.dumps(validation, indent=2) + "\n", encoding="utf-8"
     )

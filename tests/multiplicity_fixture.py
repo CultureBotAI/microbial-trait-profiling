@@ -391,7 +391,13 @@ def fixture_sources(
         "phenotype" if subset else "off",
     )
     monkeypatch.setattr(sources, "artifact_path", lambda _run, name: products[name])
-    monkeypatch.setattr(stage, "open_verified_sources", lambda _path: verified)
+
+    def open_fixture(path: Path, *, expected_sha256: str | None = None) -> VerifiedSources:
+        manifest = path / "comparison_run.json" if path.is_dir() else path
+        assert expected_sha256 == file_sha256(manifest)
+        return verified
+
+    monkeypatch.setattr(stage, "open_verified_sources", open_fixture)
     monkeypatch.setattr(
         native,
         "_verify_consumer_record_with_core",

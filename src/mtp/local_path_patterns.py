@@ -19,7 +19,7 @@ _WINDOWS_HOME_TAIL = (
     r"(?=[\w.-])"
 )
 USER_HOME_SOURCE = (
-    r"/(?:Users|home)/[A-Za-z0-9._-]+|[A-Za-z]:[\\/]+Users[\\/]+"
+    r"/(?:Users|home)/(?:[\w.-]|\\u[0-9A-Fa-f]{4})+|[A-Za-z]:[\\/]+Users[\\/]+"
     rf"|(?:[A-Za-z]:|(?<![\\])[\\]+)Users{_WINDOWS_HOME_TAIL}"
     rf"|(?<![\w])(?<!\w-)(?:Users)(?=[\\]){_WINDOWS_HOME_TAIL}"
 )

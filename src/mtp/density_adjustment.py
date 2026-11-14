@@ -34,6 +34,15 @@ import pandas as pd
 from scipy import stats
 
 from mtp.composition_denominators import MEDIADIVE_MARKER, trait_fractions
+from mtp.delta_z_derived.tables import (
+    STOOL_BODY_SITE as STOOL_BODY_SITE,
+)
+from mtp.delta_z_derived.tables import (
+    is_stool_body_site as is_stool_body_site,
+)
+from mtp.delta_z_derived.tables import (
+    validate_stool_body_site as validate_stool_body_site,
+)
 from mtp.enrichment_stats import benjamini_hochberg
 from mtp.paths import DERIVED_DATA_DIR
 from mtp.trait_key_policy import display_trait_label, read_recorded_member_ids
